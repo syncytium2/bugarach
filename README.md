@@ -27,7 +27,7 @@ supra-threshold detection modes. Detectors run live off per-slice event-onset da
 1. **Store reader** — `bugarach.store.load_slice` reads the `event_store_onset*`
    `.mat` files directly (both MATLAB v7 via scipy and v7.3/HDF5 via h5py). ✅ working
 2. **Detectors** — in port order: rate+context ✅, CoactDetect ✅, LoCo ✅, binned SCE ✅,
-   CICADA, SPIKE-synchronization — each ported against interface2's
+   CICADA ✅, SPIKE-synchronization — each ported against interface2's
    `docs/specs/detector_output_spec.md` (the unified detector-output contract).
    SPIKE-synchronization comes from
    [PySpike](https://github.com/mariomulansky/PySpike) (same Kreuz-lab algorithms as

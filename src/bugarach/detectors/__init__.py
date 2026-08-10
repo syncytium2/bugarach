@@ -5,7 +5,7 @@ Port order (each lands only with a MATLAB parity test):
   local     CoactDetect                        -- landed (see coact.py)
   loco      LoCo                               -- landed (see loco.py)
   sce       binned SCE                         -- landed (see sce.py)
-  cicada    CICADA (native peak detection)
+  cicada    CICADA (native peak detection)     -- landed (see cicada.py)
   sync      SPIKE-synchronization via PySpike (cSPIKE equivalent)
 
 The output contract mirrors interface2's docs/specs/detector_output_spec.md:
@@ -15,6 +15,12 @@ The shared peak-gating kernel (if2_peak_gate + findpeaksTD half-prominence
 extents) is ported in peaks.py.
 """
 
+from bugarach.detectors.cicada import (
+    CicadaDetection,
+    CicadaStream,
+    cicada_detect,
+    rise_durations,
+)
 from bugarach.detectors.coact import CoactDetection, coact_detect
 from bugarach.detectors.loco import (
     LocoDetection,
@@ -37,6 +43,8 @@ from bugarach.detectors.rate import (
 )
 
 __all__ = [
+    "CicadaDetection",
+    "CicadaStream",
     "CoactDetection",
     "DetectorSignal",
     "GridDtNotSetWarning",
@@ -48,10 +56,12 @@ __all__ = [
     "SceDetection",
     "SceSignal",
     "SceStream",
+    "cicada_detect",
     "coact_detect",
     "event_rate",
     "loco_detect",
     "region_windows",
+    "rise_durations",
     "sce_detect",
     "event_rate_context",
     "peak_gate",
