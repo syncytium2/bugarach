@@ -2,7 +2,7 @@
 
 Port order (each lands only with a MATLAB parity test):
   rate      rate+context (RateDetect)          -- landed (see rate.py)
-  local     CoactDetect
+  local     CoactDetect                        -- landed (see coact.py)
   loco      LoCo
   sce       binned SCE
   cicada    CICADA (native peak detection)
@@ -15,6 +15,7 @@ The shared peak-gating kernel (if2_peak_gate + findpeaksTD half-prominence
 extents) is ported in peaks.py.
 """
 
+from bugarach.detectors.coact import CoactDetection, coact_detect
 from bugarach.detectors.peaks import PeakGateResult, peak_gate
 from bugarach.detectors.rate import (
     DetectorSignal,
@@ -28,10 +29,12 @@ from bugarach.detectors.rate import (
 )
 
 __all__ = [
+    "CoactDetection",
     "DetectorSignal",
     "GridDtNotSetWarning",
     "PeakGateResult",
     "RateDetection",
+    "coact_detect",
     "event_rate",
     "event_rate_context",
     "peak_gate",

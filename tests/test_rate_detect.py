@@ -12,6 +12,7 @@ from pathlib import Path
 
 import numpy as np
 import pytest
+from conftest import as1d, as2d
 
 from bugarach.detectors.peaks import peak_gate
 from bugarach.detectors.rate import (
@@ -26,24 +27,6 @@ from bugarach.store import load_slice
 FIXTURES = Path(__file__).parent / "fixtures"
 RTOL = 1e-9
 ATOL = 1e-9
-
-
-def as1d(v):
-    """MATLAB jsonencode collapses 1-element arrays to scalars, empties to [],
-    and NaN to null — normalize back to a 1-D float array."""
-    if v is None:
-        return np.empty(0)
-    if not isinstance(v, list):
-        v = [v]
-    return np.array([np.nan if x is None else x for x in v], dtype=float)
-
-
-def as2d(v):
-    """Normalize a jsonencode'd Kx2 matrix ([] / flat pair / nested lists)."""
-    if v is None or v == []:
-        return np.empty((0, 2))
-    a = np.array(v, dtype=float)
-    return a.reshape(1, 2) if a.ndim == 1 else a
 
 
 # ---------------------------------------------------------------- peak gate
