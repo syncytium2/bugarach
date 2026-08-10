@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 import numpy as np
@@ -6,9 +7,11 @@ import pytest
 from bugarach.store import load_slice
 
 FIXTURE = Path(__file__).parent / "fixtures" / "synth_fastcal_s1.mat"
-REAL_STORE = Path.home() / (
-    "University of Michigan Dropbox/Richard DeFazio/data/"
-    "processed_archive/event_store_onset_revised_2v"
+REAL_STORE = Path(
+    os.environ.get("BUGARACH_DATA_ROOT")
+    or Path.home()
+    / "University of Michigan Dropbox/Richard DeFazio/data/"
+      "processed_archive/event_store_onset_revised_2v"
 )
 
 
