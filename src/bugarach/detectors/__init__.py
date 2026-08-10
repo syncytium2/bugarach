@@ -18,6 +18,7 @@ extents) is ported in peaks.py.
 from bugarach.detectors.peaks import PeakGateResult, peak_gate
 from bugarach.detectors.rate import (
     DetectorSignal,
+    GridDtNotSetWarning,
     RateDetection,
     event_rate,
     event_rate_context,
@@ -28,6 +29,7 @@ from bugarach.detectors.rate import (
 
 __all__ = [
     "DetectorSignal",
+    "GridDtNotSetWarning",
     "PeakGateResult",
     "RateDetection",
     "event_rate",

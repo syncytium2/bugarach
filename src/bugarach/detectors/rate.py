@@ -23,6 +23,7 @@ the SPIKE-synchronization port lands.
 
 from __future__ import annotations
 
+import warnings
 from dataclasses import dataclass, field
 
 import numpy as np
@@ -30,13 +31,32 @@ import numpy as np
 from bugarach.detectors.peaks import peak_gate
 from bugarach.store import Slice, Stream
 
-# Default rate-trace grid (s). 0.1 s matches the MATLAB original (RateViewer
-# copy), which hardcodes the MLspike output resolution of 10 Hz imaging. The
-# grid should really come from the recording's frame rate — the onset stores
-# don't carry it yet (filed with the pipeline team) — so every entry point
-# below takes grid_dt and this constant is only the parity-preserving default.
-GRID_DT = 0.1
+# Fallback rate-trace grid (s), used only when grid_dt is not given. 0.1 s
+# matches the MATLAB original (RateViewer copy), which hardcodes the MLspike
+# output resolution of 10 Hz imaging. grid_dt SHOULD be the mean acquired
+# frame interval of the underlying recording — the onset stores don't carry
+# it yet (filed with the pipeline team), so relying on this fallback raises
+# GridDtNotSetWarning to keep the assumption visible.
+GRID_DT_FALLBACK = 0.1
 CHARACTERIZATION_PAD_S = 0.5
+
+
+class GridDtNotSetWarning(UserWarning):
+    """grid_dt was not specified and fell back to the nominal 0.1 s grid."""
+
+
+def _resolve_grid_dt(grid_dt: float | None, stacklevel: int) -> float:
+    if grid_dt is not None:
+        return grid_dt
+    warnings.warn(
+        f"grid_dt not set — falling back to {GRID_DT_FALLBACK} s (the MATLAB "
+        "original's hardcoded 10 Hz MLspike grid). Set grid_dt to the sampling "
+        "interval of the underlying recording (mean acquired frame interval); "
+        "the onset stores do not carry it, so it must be supplied by the caller.",
+        GridDtNotSetWarning,
+        stacklevel=stacklevel,
+    )
+    return GRID_DT_FALLBACK
 
 
 @dataclass
@@ -117,16 +137,19 @@ def event_rate(
     trains: list[np.ndarray],
     t_range: tuple[float, float],
     window_sec: float,
-    grid_dt: float = GRID_DT,
+    grid_dt: float | None = None,
 ) -> tuple[np.ndarray, np.ndarray]:
     """Pooled sliding-window population event rate (Hz) on a grid_dt grid,
     edge-corrected: at recording boundaries the divisor is the truncated
-    window span, so rate does not artificially dip. grid_dt should match the
-    recording's frame resolution (default 0.1 s = 10 Hz imaging)."""
+    window span, so rate does not artificially dip.
+
+    grid_dt MUST be the sampling interval of the underlying recording (mean
+    acquired frame interval). Omitting it falls back to the nominal 0.1 s
+    grid and raises GridDtNotSetWarning."""
+    dt = _resolve_grid_dt(grid_dt, stacklevel=3)
     if not _populated(trains):
         return np.empty(0), np.empty(0)
     tmin, tmax = t_range
-    dt = grid_dt
     rate_x = _grid(t_range, dt)
     m = rate_x.size
     pooled = np.sort(np.concatenate(trains)) if trains else np.empty(0)
@@ -152,10 +175,12 @@ def event_rate_context(
     t_range: tuple[float, float],
     window_sec: float = 1.0,
     context_sec: float = 60.0,
-    grid_dt: float = GRID_DT,
+    grid_dt: float | None = None,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray, float]:
     """Primary and contextual rates on the shared grid; context window is
-    clipped to 0.9 x recording duration (the actual value used is returned)."""
+    clipped to 0.9 x recording duration (the actual value used is returned).
+    See event_rate for the grid_dt contract."""
+    grid_dt = _resolve_grid_dt(grid_dt, stacklevel=3)
     duration = t_range[1] - t_range[0]
     max_ctx = 0.9 * duration
     ctx_actual = max_ctx if context_sec >= max_ctx else context_sec
@@ -175,12 +200,16 @@ def rate_detect(
     detection_mode: str = "threshold",
     peak_prominence: float = 0.0,
     peak_min_distance_sec: float = 0.0,
-    grid_dt: float = GRID_DT,
+    grid_dt: float | None = None,
 ) -> RateDetection:
     """Detect synchronous events from spike-rate excess (RateDetect port).
 
-    grid_dt sets the rate-trace resolution and should match the recording's
-    frame rate; the 0.1 s default mirrors the MATLAB original."""
+    grid_dt sets the rate-trace resolution and MUST be the sampling interval
+    of the underlying recording (mean acquired frame interval). Omitting it
+    falls back to the MATLAB original's nominal 0.1 s grid and raises
+    GridDtNotSetWarning — silence it only when 10 Hz genuinely is the
+    acquisition rate."""
+    grid_dt = _resolve_grid_dt(grid_dt, stacklevel=2)
     rate_x, rate_y, ctx_y, ctx_actual = event_rate_context(
         trains, t_range, rate_win, context_win, grid_dt
     )

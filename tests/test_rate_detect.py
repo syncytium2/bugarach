@@ -7,6 +7,7 @@ regions + locs, rate_win=1 / context_win=60 on the RateViewer 0.1 s grid).
 """
 
 import json
+import warnings
 from pathlib import Path
 
 import numpy as np
@@ -14,6 +15,7 @@ import pytest
 
 from bugarach.detectors.peaks import peak_gate
 from bugarach.detectors.rate import (
+    GridDtNotSetWarning,
     event_rate_context,
     rate_detect,
     recording_extent,
@@ -82,7 +84,8 @@ SLICE = load_slice(FIXTURES / "synth_fastcal_s1.mat")
 def _detect(stream_name, params):
     ext = recording_extent(SLICE)
     trains = stream_trains(getattr(SLICE, stream_name), ext)
-    kw = dict(excess_threshold_hz=params["thr"])
+    # the MATLAB reference runs on its hardcoded 0.1 s grid — pass explicitly
+    kw = dict(excess_threshold_hz=params["thr"], grid_dt=0.1)
     if params["mode"] == "peak":
         kw.update(detection_mode="peak", peak_prominence=params["P"],
                   peak_min_distance_sec=params["D"])
@@ -132,7 +135,7 @@ def test_rate_signal_parity(stream):
 # ---------------------------------------------------------------- unit tests
 
 def test_empty_stream_yields_no_events():
-    det = rate_detect([np.empty(0), np.empty(0)], (0.0, 100.0))
+    det = rate_detect([np.empty(0), np.empty(0)], (0.0, 100.0), grid_dt=0.1)
     assert det.n_events == 0
     assert det.signal.t.size == 0
     assert det.signal.hilite.shape == (0, 2)
@@ -140,20 +143,35 @@ def test_empty_stream_yields_no_events():
 
 def test_context_window_clips_to_short_recording():
     trains = [np.array([1.0, 2.0, 3.0]), np.array([1.5, 2.5])]
-    _, _, _, ctx_actual = event_rate_context(trains, (0.0, 10.0), 1.0, 60.0)
+    _, _, _, ctx_actual = event_rate_context(trains, (0.0, 10.0), 1.0, 60.0,
+                                             grid_dt=0.1)
     assert ctx_actual == pytest.approx(9.0)  # 0.9 x duration
 
 
 def test_grid_dt_is_parameterized():
     trains = [np.arange(0.0, 100.0, 0.5), np.arange(0.25, 100.0, 0.5)]
-    det_10hz = rate_detect(trains, (0.0, 100.0))
+    det_10hz = rate_detect(trains, (0.0, 100.0), grid_dt=0.1)
     det_20hz = rate_detect(trains, (0.0, 100.0), grid_dt=0.05)
     assert det_20hz.signal.t.size == 2 * det_10hz.signal.t.size - 1
     assert det_20hz.settings["dt_grid"] == 0.05
     np.testing.assert_allclose(np.diff(det_20hz.signal.t), 0.05)
 
 
+def test_omitted_grid_dt_warns_and_falls_back():
+    trains = [np.array([1.0, 2.0]), np.array([1.5])]
+    with pytest.warns(GridDtNotSetWarning, match="sampling interval"):
+        det = rate_detect(trains, (0.0, 100.0))
+    assert det.settings["dt_grid"] == 0.1
+
+
+def test_explicit_grid_dt_does_not_warn():
+    trains = [np.array([1.0, 2.0]), np.array([1.5])]
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", GridDtNotSetWarning)
+        rate_detect(trains, (0.0, 100.0), grid_dt=0.1)
+
+
 def test_threshold_too_high_yields_no_events():
     trains = [np.array([1.0, 1.1, 1.2]), np.array([1.05, 1.15])]
-    det = rate_detect(trains, (0.0, 100.0), excess_threshold_hz=1e6)
+    det = rate_detect(trains, (0.0, 100.0), excess_threshold_hz=1e6, grid_dt=0.1)
     assert det.n_events == 0
