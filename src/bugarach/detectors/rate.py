@@ -30,7 +30,12 @@ import numpy as np
 from bugarach.detectors.peaks import peak_gate
 from bugarach.store import Slice, Stream
 
-GRID_DT = 0.1               # rate-trace grid (s) — RateViewer resolution
+# Default rate-trace grid (s). 0.1 s matches the MATLAB original (RateViewer
+# copy), which hardcodes the MLspike output resolution of 10 Hz imaging. The
+# grid should really come from the recording's frame rate — the onset stores
+# don't carry it yet (filed with the pipeline team) — so every entry point
+# below takes grid_dt and this constant is only the parity-preserving default.
+GRID_DT = 0.1
 CHARACTERIZATION_PAD_S = 0.5
 
 
@@ -109,15 +114,19 @@ def _grid(t_range: tuple[float, float], dt: float) -> np.ndarray:
 
 
 def event_rate(
-    trains: list[np.ndarray], t_range: tuple[float, float], window_sec: float
+    trains: list[np.ndarray],
+    t_range: tuple[float, float],
+    window_sec: float,
+    grid_dt: float = GRID_DT,
 ) -> tuple[np.ndarray, np.ndarray]:
-    """Pooled sliding-window population event rate (Hz) on the 0.1 s grid,
+    """Pooled sliding-window population event rate (Hz) on a grid_dt grid,
     edge-corrected: at recording boundaries the divisor is the truncated
-    window span, so rate does not artificially dip."""
+    window span, so rate does not artificially dip. grid_dt should match the
+    recording's frame resolution (default 0.1 s = 10 Hz imaging)."""
     if not _populated(trains):
         return np.empty(0), np.empty(0)
     tmin, tmax = t_range
-    dt = GRID_DT
+    dt = grid_dt
     rate_x = _grid(t_range, dt)
     m = rate_x.size
     pooled = np.sort(np.concatenate(trains)) if trains else np.empty(0)
@@ -143,14 +152,15 @@ def event_rate_context(
     t_range: tuple[float, float],
     window_sec: float = 1.0,
     context_sec: float = 60.0,
+    grid_dt: float = GRID_DT,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray, float]:
     """Primary and contextual rates on the shared grid; context window is
     clipped to 0.9 x recording duration (the actual value used is returned)."""
     duration = t_range[1] - t_range[0]
     max_ctx = 0.9 * duration
     ctx_actual = max_ctx if context_sec >= max_ctx else context_sec
-    rate_x, rate_y = event_rate(trains, t_range, window_sec)
-    _, ctx_y = event_rate(trains, t_range, ctx_actual)
+    rate_x, rate_y = event_rate(trains, t_range, window_sec, grid_dt)
+    _, ctx_y = event_rate(trains, t_range, ctx_actual, grid_dt)
     return rate_x, rate_y, ctx_y, ctx_actual
 
 
@@ -165,10 +175,14 @@ def rate_detect(
     detection_mode: str = "threshold",
     peak_prominence: float = 0.0,
     peak_min_distance_sec: float = 0.0,
+    grid_dt: float = GRID_DT,
 ) -> RateDetection:
-    """Detect synchronous events from spike-rate excess (RateDetect port)."""
+    """Detect synchronous events from spike-rate excess (RateDetect port).
+
+    grid_dt sets the rate-trace resolution and should match the recording's
+    frame rate; the 0.1 s default mirrors the MATLAB original."""
     rate_x, rate_y, ctx_y, ctx_actual = event_rate_context(
-        trains, t_range, rate_win, context_win
+        trains, t_range, rate_win, context_win, grid_dt
     )
     excess = rate_y - ctx_y
 
@@ -224,7 +238,7 @@ def rate_detect(
     ) if rate_x.size else np.empty((0, 2))
 
     settings = {
-        "dt_grid": GRID_DT,
+        "dt_grid": grid_dt,
         "tmin": t_range[0], "tmax": t_range[1],
         "rate_win": rate_win, "context_win": context_win,
         "context_win_actual": ctx_actual,

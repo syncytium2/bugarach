@@ -144,6 +144,15 @@ def test_context_window_clips_to_short_recording():
     assert ctx_actual == pytest.approx(9.0)  # 0.9 x duration
 
 
+def test_grid_dt_is_parameterized():
+    trains = [np.arange(0.0, 100.0, 0.5), np.arange(0.25, 100.0, 0.5)]
+    det_10hz = rate_detect(trains, (0.0, 100.0))
+    det_20hz = rate_detect(trains, (0.0, 100.0), grid_dt=0.05)
+    assert det_20hz.signal.t.size == 2 * det_10hz.signal.t.size - 1
+    assert det_20hz.settings["dt_grid"] == 0.05
+    np.testing.assert_allclose(np.diff(det_20hz.signal.t), 0.05)
+
+
 def test_threshold_too_high_yields_no_events():
     trains = [np.array([1.0, 1.1, 1.2]), np.array([1.05, 1.15])]
     det = rate_detect(trains, (0.0, 100.0), excess_threshold_hz=1e6)
