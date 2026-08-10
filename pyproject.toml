@@ -14,8 +14,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=8"]
-sync = ["pyspike"]
+dev = ["pytest>=8", "pyspike"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/bugarach"]

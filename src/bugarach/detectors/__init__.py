@@ -6,7 +6,9 @@ Port order (each lands only with a MATLAB parity test):
   loco      LoCo                               -- landed (see loco.py)
   sce       binned SCE                         -- landed (see sce.py)
   cicada    CICADA (native peak detection)     -- landed (see cicada.py)
-  sync      SPIKE-synchronization via PySpike (cSPIKE equivalent)
+  sync      SPIKE-synchronization              -- landed (see sync.py; native
+            port bit-exact vs cSPIKE — PySpike 0.9.0's max_tau cap is broken,
+            so it is a test-suite cross-check only, in the uncapped regime)
 
 The output contract mirrors interface2's docs/specs/detector_output_spec.md:
 each detector returns its statistic trace plus detected events (onset, width),
@@ -31,6 +33,12 @@ from bugarach.detectors.loco import (
 )
 from bugarach.detectors.peaks import PeakGateResult, peak_gate
 from bugarach.detectors.sce import SceDetection, SceSignal, SceStream, sce_detect
+from bugarach.detectors.sync import (
+    SyncDetection,
+    adaptive_profile,
+    binned_synchrony,
+    sync_detect,
+)
 from bugarach.detectors.rate import (
     DetectorSignal,
     GridDtNotSetWarning,
@@ -56,6 +64,9 @@ __all__ = [
     "SceDetection",
     "SceSignal",
     "SceStream",
+    "SyncDetection",
+    "adaptive_profile",
+    "binned_synchrony",
     "cicada_detect",
     "coact_detect",
     "event_rate",
@@ -63,6 +74,7 @@ __all__ = [
     "region_windows",
     "rise_durations",
     "sce_detect",
+    "sync_detect",
     "event_rate_context",
     "peak_gate",
     "rate_detect",

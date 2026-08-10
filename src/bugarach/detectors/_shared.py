@@ -12,11 +12,24 @@ import numpy as np
 
 
 def matlab_colon(lo: float, step: float, hi: float) -> np.ndarray:
-    """lo:step:hi — endpoint included when (hi-lo) is a multiple of step
-    within roundoff (MATLAB colon semantics)."""
+    """lo:step:hi with MATLAB's exact element values: the first half is
+    computed forward (lo + k*step), the second half BACKWARD from the
+    endpoint (Cleve Moler's two-ended colonop — verified element-for-element
+    against MATLAB R2025b). The endpoint snaps to hi when (hi-lo) is a
+    multiple of step within roundoff. A plain forward grid differs from
+    MATLAB in the last ulp for ~1/4 of the elements, which flips
+    strict/abs-comparison bin assignments downstream."""
     q = (hi - lo) / step
     n = int(np.floor(q * (1.0 + 4.0 * np.finfo(float).eps))) + 1
-    return lo + step * np.arange(max(n, 0))
+    if n < 1:
+        return np.empty(0)
+    k = np.arange(n)
+    fwd = lo + k * step
+    tol = 4.0 * np.spacing(max(abs(lo), abs(hi)))
+    end_val = hi if abs(fwd[-1] - hi) <= tol else fwd[-1]
+    bwd = end_val - (n - 1 - k) * step
+    mid = n // 2
+    return np.concatenate((fwd[:mid], bwd[mid:]))
 
 
 def matlab_round(x: float) -> int:
