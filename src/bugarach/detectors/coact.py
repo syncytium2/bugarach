@@ -27,6 +27,7 @@ from math import erfc, sqrt
 
 import numpy as np
 
+from bugarach.detectors._shared import clip_sorted
 from bugarach.detectors.peaks import peak_gate
 from bugarach.detectors.rate import DetectorSignal
 
@@ -90,11 +91,7 @@ def coact_detect(
     bw = int_win_sec
     C = context_win_sec
 
-    ev = []
-    for v in trains:
-        v = np.asarray(v, dtype=float).ravel()
-        v = v[np.isfinite(v)]
-        ev.append(np.sort(v[(v >= t0) & (v <= t1)]))
+    ev = clip_sorted(trains, t0, t1)
 
     nb = max(1, int(np.ceil((t1 - t0) / bw)))
     edges = t0 + np.arange(nb + 1) * bw

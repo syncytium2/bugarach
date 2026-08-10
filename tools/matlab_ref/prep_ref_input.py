@@ -24,6 +24,10 @@ def export(src, dst):
         "slow_t50rise": cells(s.slow, "t50rise"),
         "regions_start": np.array([r.start_sec for r in s.regions], dtype=float),
         "regions_end": np.array([r.end_sec for r in s.regions], dtype=float),
+        "regions_name": np.array([r.name or "" for r in s.regions],
+                                 dtype=object).reshape(1, -1),
+        "regions_slot": np.array([r.slot or "" for r in s.regions],
+                                 dtype=object).reshape(1, -1),
     }
     sio.savemat(dst, out)
     # scout: pooled t50rise rate scale to pick thresholds

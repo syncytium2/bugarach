@@ -127,10 +127,9 @@ def _populated(trains: list[np.ndarray]) -> bool:
 
 def _grid(t_range: tuple[float, float], dt: float) -> np.ndarray:
     """tmin:dt:tmax, MATLAB-colon style (endpoint included within roundoff)."""
-    lo, hi = t_range
-    q = (hi - lo) / dt
-    n = int(np.floor(q * (1.0 + 4.0 * np.finfo(float).eps))) + 1
-    return lo + dt * np.arange(n)
+    from bugarach.detectors._shared import matlab_colon
+
+    return matlab_colon(t_range[0], dt, t_range[1])
 
 
 def event_rate(
