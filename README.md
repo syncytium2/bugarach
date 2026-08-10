@@ -47,6 +47,11 @@ supra-threshold detection modes. Detectors run live off per-slice event-onset da
    min-distance D), in `bugarach.detectors.peaks`.
 4. **UI** — web front end with linked rasters/signal rows and per-detector recompute.
    Framework decision open: Dash vs Panel/HoloViews.
+   **Design constraint: streams are generic.** FAST/SLOW is a convention of this
+   project's stores, not of the viewer — the UI renders *N named streams*
+   (iterate `Slice.streams`, never hardcode fast/slow), so datasets with one
+   stream or differently named ones work unchanged. Per-stream parameter pairs
+   become per-stream maps at the UI boundary.
 
 ## Licensing & citations
 

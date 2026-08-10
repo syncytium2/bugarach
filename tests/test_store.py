@@ -39,6 +39,15 @@ def test_synthetic_v73_fixture():
     assert s.fast.n_events > 0
 
 
+def test_streams_mapping_is_generic():
+    s = load_slice(FIXTURE)
+    assert list(s.streams) == ["fast", "slow"]  # insertion-ordered
+    assert s.streams["fast"] is s.fast
+    assert s.streams["slow"] is s.slow
+    for name, stream in s.streams.items():
+        assert stream.n_rois == s.fast.n_rois, name
+
+
 @pytest.mark.skipif(not REAL_STORE.exists(), reason="interface2 data root not present")
 def test_real_v7_slice():
     s = load_slice(REAL_STORE / "20240708_13.mat")

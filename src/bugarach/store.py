@@ -65,6 +65,15 @@ class Slice:
     regions: list[Region] = field(default_factory=list)
     roi_ids: list[str] | None = None
 
+    @property
+    def streams(self) -> dict[str, Stream]:
+        """Ordered name -> Stream mapping. The on-disk store format carries
+        exactly FAST and SLOW, but that pairing is specific to this project —
+        consumers (especially the web UI) should iterate streams generically
+        through this mapping rather than hardcoding .fast/.slow, so other
+        datasets can carry one stream or several under their own names."""
+        return {"fast": self.fast, "slow": self.slow}
+
 
 def load_slice(path: str | Path) -> Slice:
     """Load one event_store_onset slice file (MATLAB v7 or v7.3)."""
