@@ -4,7 +4,7 @@ Port order (each lands only with a MATLAB parity test):
   rate      rate+context (RateDetect)          -- landed (see rate.py)
   local     CoactDetect                        -- landed (see coact.py)
   loco      LoCo                               -- landed (see loco.py)
-  sce       binned SCE
+  sce       binned SCE                         -- landed (see sce.py)
   cicada    CICADA (native peak detection)
   sync      SPIKE-synchronization via PySpike (cSPIKE equivalent)
 
@@ -24,6 +24,7 @@ from bugarach.detectors.loco import (
     region_windows,
 )
 from bugarach.detectors.peaks import PeakGateResult, peak_gate
+from bugarach.detectors.sce import SceDetection, SceSignal, SceStream, sce_detect
 from bugarach.detectors.rate import (
     DetectorSignal,
     GridDtNotSetWarning,
@@ -44,10 +45,14 @@ __all__ = [
     "PeakGateResult",
     "RateDetection",
     "RegionWindow",
+    "SceDetection",
+    "SceSignal",
+    "SceStream",
     "coact_detect",
     "event_rate",
     "loco_detect",
     "region_windows",
+    "sce_detect",
     "event_rate_context",
     "peak_gate",
     "rate_detect",
