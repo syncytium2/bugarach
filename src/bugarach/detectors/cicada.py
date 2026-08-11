@@ -1,7 +1,11 @@
 """CICADA sliding-window SCE detector — port of interface2's
 ``generate_sce_cicada``, itself a faithful port of the Cossart lab's CICADA
-(``cossartlab/cicada`` sce_stats_utils: get_sce_threshold + detect_sce; MIT
-license — see the repo README's Licensing & citations section).
+(``cossartlab/cicada`` sce_stats_utils: get_sce_threshold + detect_sce).
+
+Upstream notice (MIT License): Copyright (c) 2019 Cossart Lab —
+https://gitlab.com/cossartlab/cicada. The detection method implemented here
+derives from that source; see the repo README's Licensing & citations
+section for the full licensing table.
 
 1. Binary raster at imaging-frame resolution from the store's event times;
    each event marks its cell active for the transient DURATION (fixed scalar,

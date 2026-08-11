@@ -6,6 +6,8 @@ build-backend = "hatchling.build"
 name = "bugarach"
 version = "0.0.1"
 description = "Web port of interface2's explore_sce coordination viewer"
+license = "BSD-3-Clause"
+license-files = ["LICENSE"]
 requires-python = ">=3.11"
 dependencies = [
     "numpy>=1.26",

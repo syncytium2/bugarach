@@ -49,7 +49,10 @@ def export(src, dst):
 export("/Users/tonydefazio/Developer/bugarach/tests/fixtures/synth_fastcal_s1.mat",
        SCRATCH / "ref_input_synth.mat")
 
-real = Path.home() / ("University of Michigan Dropbox/Richard DeFazio/data/"
-                      "processed_archive/event_store_onset_revised_2v/20240708_13.mat")
-if real.exists():
-    export(real, SCRATCH / "ref_input_real.mat")
+import os  # noqa: E402
+
+_root = os.environ.get("BUGARACH_DATA_ROOT")
+if _root:
+    mats = sorted(Path(_root).glob("*.mat"))
+    if mats:
+        export(mats[0], SCRATCH / "ref_input_real.mat")

@@ -61,8 +61,9 @@ supra-threshold detection modes. Detectors run live off per-slice event-onset da
 
 ## Licensing & citations
 
-This project deliberately builds only on permissively licensed implementations — that
-is what lets it run as a shared web app without asking anyone's permission. The one
+bugarach itself is **BSD-3-Clause** (see `LICENSE`). It deliberately builds only on
+permissively licensed implementations — that is what lets it run as a shared web app
+without asking anyone's permission. The one
 restricted tool in the ecosystem, cSPIKE, is **not** used; its algorithms are taken
 from PySpike instead. Do not port code from cSPIKE's MATLAB source.
 
@@ -109,8 +110,9 @@ bugarach view path/to/store.mat          # or an events CSV, or a directory
 
 The viewer needs only the onset stores (`event_store_onset_revised_2v` is ~4 MB for
 85 slices), **not** the 127 GB trace archive. Only **synthetic** slices are committed
-here as test fixtures (`tests/fixtures/`); real stores stay out of the repo until the
-data-sharing question is settled. The repo is private for the same reason.
+here as test fixtures (`tests/fixtures/`) — all committed parity references derive
+from synthetic data too. Real stores stay out of the repo (and machine-local, via
+`BUGARACH_DATA_ROOT`) until the data-sharing question is settled.
 
 ## Dev
 

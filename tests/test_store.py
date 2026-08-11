@@ -7,12 +7,10 @@ import pytest
 from bugarach.store import load_slice
 
 FIXTURE = Path(__file__).parent / "fixtures" / "synth_fastcal_s1.mat"
-REAL_STORE = Path(
-    os.environ.get("BUGARACH_DATA_ROOT")
-    or Path.home()
-    / "University of Michigan Dropbox/Richard DeFazio/data/"
-      "processed_archive/event_store_onset_revised_2v"
-)
+# real-store smoke test runs only where BUGARACH_DATA_ROOT points at an
+# event_store_onset directory; no default — real data stays machine-local
+_root = os.environ.get("BUGARACH_DATA_ROOT")
+REAL_STORE = Path(_root) if _root else None
 
 
 def _check_slice(s):
@@ -48,11 +46,13 @@ def test_streams_mapping_is_generic():
         assert stream.n_rois == s.fast.n_rois, name
 
 
-@pytest.mark.skipif(not REAL_STORE.exists(), reason="interface2 data root not present")
-def test_real_v7_slice():
-    s = load_slice(REAL_STORE / "20240708_13.mat")
+@pytest.mark.skipif(REAL_STORE is None or not REAL_STORE.exists(),
+                    reason="BUGARACH_DATA_ROOT not set")
+def test_real_v7_slices():
+    mats = sorted(REAL_STORE.glob("*.mat"))
+    assert mats, "data root contains no slices"
+    s = load_slice(mats[0])
     _check_slice(s)
-    assert s.slice_id == "20240708_13"
-    assert s.fast.n_rois == 34
+    assert s.slice_id == mats[0].stem
     assert s.regions, "real slices carry region annotations"
     assert all(r.name for r in s.regions)
