@@ -1,5 +1,14 @@
 # Clean-room specification: `find_peaks_halfprom`
 
+**Revision 2.** Changes from rev 1, after integration testing of the first
+submission: the SADDLE definition below is corrected — positions of
+equal-adjacent value runs collapse to the run's FIRST index before the
+minimum/tie rule applies (rev 1's "occurrence nearest the peak" wording was
+wrong for plateau-shaped valleys; your implementation followed rev 1
+faithfully). Three new vectors (`plateau_valley_left`,
+`plateau_valley_right`, `equal_valley_runs`) pin the corrected rule.
+Everything else is unchanged.
+
 You are implementing ONE pure function from this behavioral specification.
 
 **Ground rules for the implementer:** work ONLY from this document. Do not
@@ -75,9 +84,14 @@ The half-prominence extent on each side is bounded by that side's
   just before that maximum's position. (Only equal-height maxima can occur
   inside, since anything strictly greater already terminated the base
   interval.)
-- **Left saddle index** = the index of the minimum value within the
-  (possibly truncated) interval; if that minimum occurs more than once,
-  take the occurrence NEAREST the peak.
+- Within the (possibly truncated) interval, collapse runs of equal
+  adjacent values exactly as in the local-maxima definition: each run is a
+  single candidate whose POSITION is the run's FIRST (leftmost) index —
+  on BOTH sides of the peak, the position is always the run's leftmost
+  sample.
+- **Left saddle index** = the position of the candidate with the minimum
+  value; if two or more DISTINCT runs tie for the minimum, take the run
+  NEAREST the peak.
 
 Note the asymmetry that the vectors pin down: the prominence base looks
 THROUGH equal-height peaks (so twin equal peaks each get full prominence
@@ -152,7 +166,19 @@ means NaN. Positions/indices are 0-based.
   "S": [0,1,0.5,2,0.2,8,0.2,2,0.5,1,0], "min_prominence": 1.5,
   "idx": [3,5,7], "prominence": [1.8,8.0,1.8],
   "left_x": [2.4,4.487179487179,6.5],
-  "right_x": [3.5,5.512820512821,7.6]}
+  "right_x": [3.5,5.512820512821,7.6]},
+ {"name": "plateau_valley_left",
+  "S": [2,5,4,4,5,1], "min_prominence": 0.0,
+  "idx": [1,4], "prominence": [3.0,3.0],
+  "left_x": [0.5,2.0], "right_x": [2.0,4.375]},
+ {"name": "plateau_valley_right",
+  "S": [1,5,4,4,5,2], "min_prominence": 0.0,
+  "idx": [1,4], "prominence": [3.0,3.0],
+  "left_x": [0.625,2.0], "right_x": [2.0,4.5]},
+ {"name": "equal_valley_runs",
+  "S": [0,6,5,5.5,5,6,0], "min_prominence": 0.0,
+  "idx": [1,3,5], "prominence": [6.0,0.5,6.0],
+  "left_x": [0.5,2.5,4.0], "right_x": [2.0,3.5,5.5]}
 ]
 ```
 
@@ -166,6 +192,15 @@ Worked notes on the two decisive vectors:
 - **ref_equal_stop** `[0,1,2,4,2,1,0]`: `ref = 2.0` and the flanking
   samples equal it exactly — the walk stops there and the edge lands
   exactly on the sample (2.0 / 4.0), NOT further out at the 1-samples.
+- **plateau_valley_left** `[2,5,4,4,5,1]`: the valley between the equal
+  5-peaks is a `4,4` RUN. Its collapsed position is index 2 (the run's
+  first sample) on BOTH sides — so the second peak's left edge clamps to
+  2.0, not 3.0. `plateau_valley_right` is the mirror: the first peak's
+  right edge clamps to 2.0 as well.
+- **equal_valley_runs** `[0,6,5,5.5,5,6,0]`: two DISTINCT equal-depth
+  valley runs (indices 2 and 4) between equal 6-peaks — here the
+  nearest-run tie rule applies: the right peak's left edge clamps to 4.0,
+  the left peak's right edge to 2.0.
 
 ## Acceptance
 
