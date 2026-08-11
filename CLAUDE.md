@@ -22,6 +22,28 @@ Status: `find_peaks_halfprom` implemented against spec rev 2, accepted
 2026-08-11 and integrated into `src/bugarach/detectors/peaks.py` (the tests
 target that integrated copy, not a standalone file).
 
+## Plot conventions (viewer, exports, figures)
+
+- **Minutes-friendly time axes, always**: 60-base ticks (1/2/5/10/15/30 x
+  60^k s) labeled `45s` / `2m` / `2m30s`, never raw seconds. Implemented as
+  `_time_axis_hook` in `src/bugarach/ui/app.py` — reuse it.
+- **Compact labeling**: no titles above plots; identity + counts live in
+  y-axis labels ("fast · 30 ROI", "rate (27)"); one x-axis per linked group
+  (bottom row only, with extra height so plot areas match).
+- **Unlinked y, linked x**: signal rows carry a unique value dimension per
+  detector so y-ranges never link across rows; x links through the shared
+  `t` dimension.
+- **Scroll wins**: wheel-zoom stays in the toolbar but inactive — the mouse
+  wheel scrolls the page; drag pans.
+
+## Git conduct
+
+- Commit and push verified work without asking (Tony juggles projects and
+  wants finished work landed) — with ONE exception: **never rewrite git
+  history** (filter-repo, rebase of pushed commits, force-push) without
+  restating what will be destroyed and getting explicit confirmation in
+  words. A bare menu-choice reply is not consent (near-miss 2026-08-11).
+
 ## Housekeeping
 
 Prefer durable notes in this repo (this file, `docs/`) over agent memory —
