@@ -1,28 +1,37 @@
-"""Peak-gated event selection — port of interface2's ``if2_peak_gate`` and the
-subset of ``findpeaksTD`` it uses (local maxima + topographic prominence +
-half-prominence extents; no height/threshold/distance/NPeaks options).
+"""Peak-gated event selection — port of interface2's ``if2_peak_gate`` plus
+the peak-extent kernel it needs (local maxima + topographic prominence +
+half-prominence extents).
 
-The extent machinery is a faithful port of MATLAB's
-``signal.internal.findpeaks.findExtents`` stack algorithm, whose semantics
-matter on real statistic traces (verified against MATLAB reference output in
-tests/fixtures/ref_peak_gate.json):
+The extent kernel reproduces MATLAB findpeaks' OBSERVABLE half-prominence
+semantics, as pinned by MATLAB-generated reference fixtures
+(tests/fixtures/ref_peak_gate.json and the detector parity suites):
 
 - A flat-topped peak is reported at its LEFT edge; a rising staircase's
   shoulders are not peaks (they are not local maxima).
-- NaN acts as a border: it resets the base scan, so a peak's prominence base
-  never crosses a NaN.
-- The prominence BASE extends to the nearest strictly-taller sample (through
-  equal-height peaks); the SADDLE stops at the nearest equal-or-taller peak.
-- The prominence gate is INCLUSIVE (prominence exactly P is kept).
-- Half-prominence edges are linearly interpolated crossings of the reference
-  line at ``peak - prominence/2``, walking outward from the peak but bounded
-  by the SADDLE: if the line is not crossed before the saddle (typical
-  between equal-height peaks), the edge clamps to the saddle sample.
-- min-distance thinning is greedy tallest-first with a STABLE sort (equal
-  peaks: the earlier one wins) and keeps peaks ``>= D`` samples apart.
+- NaN acts as a border: signals split into segments nothing crosses.
+- The prominence BASE extends to the nearest strictly-taller sample
+  (through equal-height peaks); the prominence gate is INCLUSIVE.
+- Half-prominence edges are linearly interpolated crossings of the
+  reference line at ``peak - prominence/2``, walking outward from the peak
+  but bounded by the SADDLE — the minimum-valued run between the peak and
+  the nearest equal-or-taller peak (run positions collapse to their first
+  index; equal-depth run ties resolve nearest the peak) — clamping there
+  when the line is never crossed (typical between equal-height peaks).
 
-All indices and fractional positions here are 0-BASED (MATLAB's are 1-based);
-a caller converting to seconds uses ``t0 + idx * dt`` — identical values to
+Provenance: the kernel is a CLEAN-ROOM implementation, written solely from
+the behavioral specification in docs/clean_room/find_peaks_halfprom_spec.md
+by an independent session with no access to MATLAB, this repository, or any
+existing peak-finder source, and accepted after passing the full
+MATLAB-parity suite plus a 20k-case fuzz against the reference behavior.
+
+``peak_gate`` itself (threshold/floor gating + min-distance thinning) is a
+port of interface2's if2_peak_gate: gating uses a scalar or per-sample
+threshold with strict/non-strict comparison on the ORIGINAL trace values,
+and thinning is greedy tallest-first with a STABLE sort (equal peaks: the
+earlier one wins), keeping peaks ``>= D`` samples apart.
+
+All indices and fractional positions are 0-BASED (MATLAB's are 1-based); a
+caller converting to seconds uses ``t0 + idx * dt`` — identical values to
 MATLAB's ``t0 + (idx - 1) * dt``.
 """
 
@@ -45,108 +54,154 @@ class PeakGateResult:
     right_x: np.ndarray        # 0-based fractional position of the right edge
 
 
-def _skeleton(y: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
-    """(peaks, inflections), 0-based, MATLAB findpeaks-style: NaN bookends,
-    adjacent equal values collapse to their first sample (plateaus report
-    their left edge), peaks where the derivative sign transitions + -> -,
-    inflections at every sign change (peaks, valleys, NaN boundaries)."""
-    yb = np.concatenate(([np.nan], y, [np.nan]))
-    finite = ~np.isnan(yb)
-    with np.errstate(invalid="ignore"):
-        neq = (yb[:-1] != yb[1:]) & (finite[:-1] | finite[1:])
-    i_temp = np.concatenate(([0], np.flatnonzero(neq) + 1))
-    s = np.sign(np.diff(yb[i_temp]))
-    with np.errstate(invalid="ignore"):
-        i_max = np.flatnonzero(np.diff(s) < 0) + 1
-    with np.errstate(invalid="ignore"):
-        # NaN != NaN is True for both MATLAB and numpy — NaN runs transition
-        i_any = np.flatnonzero(s[:-1] != s[1:]) + 1
-    return i_temp[i_max] - 1, i_temp[i_any] - 1  # strip the leading bookend
+# ---------------------------------------------------------------------------
+# Peak-extent kernel — clean-room implementation (see module docstring).
+# Implemented solely from docs/clean_room/find_peaks_halfprom_spec.md.
+# ---------------------------------------------------------------------------
+
+def _collapsed_maxima(S, a, b):
+    """Local maxima of the segment S[a:b] (no NaNs inside), as absolute indices.
+
+    Runs of equal adjacent values collapse to their first index, so a
+    flat-topped peak reports at the left edge of its plateau. Segment
+    endpoints are never maxima.
+    """
+    pts = [a]
+    for k in range(a + 1, b):
+        if S[k] != S[k - 1]:
+            pts.append(k)
+    maxima = []
+    for t in range(1, len(pts) - 1):
+        v = S[pts[t]]
+        if v > S[pts[t - 1]] and v > S[pts[t + 1]]:
+            maxima.append(pts[t])
+    return maxima
 
 
-def _left_bases(
-    y: np.ndarray, i_peak: np.ndarray, i_inflect: np.ndarray
-) -> tuple[np.ndarray, np.ndarray]:
-    """Per-peak (base_idx, saddle_idx) on the traversal side implied by the
-    ordering of i_peak/i_inflect (pass reversed views for the right side).
-    Port of findExtents>getLeftBase: a monotone stack of previously seen
-    peaks merges valley minima; NaN resets the stack (border). The BASE
-    valley extends past equal-height peaks, the SADDLE stops at them."""
-    i_base = np.zeros(i_peak.size, dtype=int)
-    i_saddle = np.zeros(i_peak.size, dtype=int)
-    stack: list[tuple[float, float, int]] = []  # (peak_val, valley_val, valley_idx)
-    v, iv = np.nan, 0
-    i = k = 0
-    while k < i_peak.size:
-        while i_inflect[i] != i_peak[k]:
-            v, iv = y[i_inflect[i]], i_inflect[i]
-            if np.isnan(v):
-                stack.clear()  # border seen, start over
-            else:
-                while stack and stack[-1][1] > v:
-                    stack.pop()
+def _side(S, a, b, p, V, maxima, left):
+    """Base value and saddle index for one side of the peak at p.
+
+    The base interval walks away from p through samples <= V, stopping
+    before the first sample > V, the segment edge, or (implicitly) a NaN.
+    The base value is the interval's minimum. For the saddle, the interval
+    is truncated just before the first equal-or-higher local maximum
+    encountered walking outward, then equal-value runs collapse to their
+    first (leftmost) index; the saddle is the position of the
+    minimum-valued run, ties between distinct runs resolving to the run
+    nearest the peak.
+    """
+    if left:
+        i = p - 1
+        while i >= a and S[i] <= V:
+            i -= 1
+        lo, hi = i + 1, p - 1
+    else:
+        i = p + 1
+        while i < b and S[i] <= V:
             i += 1
-        p = y[i_inflect[i]]
-        while stack and stack[-1][0] < p:  # merge valleys of smaller peaks
-            _, sv, si = stack.pop()
-            if sv < v:
-                v, iv = sv, si
-        i_saddle[k] = iv                   # before crossing equal-height peaks
-        while stack and stack[-1][0] <= p:  # extend base through equal peaks
-            _, sv, si = stack.pop()
-            if sv < v:
-                v, iv = sv, si
-        stack.append((p, v, iv))
-        i_base[k] = iv
-        i += 1
-        k += 1
-    return i_base, i_saddle
+        lo, hi = p + 1, i - 1
+    if lo > hi:
+        return V, p
 
+    base = float(np.min(S[lo:hi + 1]))
 
-def _interp_edge(xa: int, xb: int, ya: float, yb: float, ref: float) -> float:
-    """Fractional crossing of ref on the segment (xa, ya)-(xb, yb); ya <= ref."""
-    if yb == ya:
-        return float(xa)
-    return xa + (xb - xa) * (ref - ya) / (yb - ya)
+    tlo, thi = lo, hi
+    if left:
+        for m in reversed(maxima):
+            if lo <= m <= hi and S[m] >= V:
+                tlo = m + 1
+                break
+    else:
+        for m in maxima:
+            if lo <= m <= hi and S[m] >= V:
+                thi = m - 1
+                break
+    if tlo > thi:
+        tlo, thi = lo, hi
+
+    starts = [tlo] + [k for k in range(tlo + 1, thi + 1) if S[k] != S[k - 1]]
+    mn = min(S[r] for r in starts)
+    cands = [r for r in starts if S[r] == mn]
+    saddle = max(cands) if left else min(cands)
+    return base, saddle
 
 
 def find_peaks_halfprom(
-    S: np.ndarray, min_prominence: float = 0.0
+    S, min_prominence: float = 0.0
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-    """Local maxima with topographic prominence and half-prominence extents.
+    """-> (idx, prominence, left_x, right_x), four 1-D numpy arrays.
 
-    Returns (idx, prominence, left_x, right_x); the prominence gate keeps
-    peaks with ``prominence >= min_prominence`` (inclusive, matching MATLAB).
+    idx: 0-based sample index of each qualifying peak, ascending.
+    prominence: peak height above the higher of its two base minima.
+    left_x, right_x: fractional sample positions of the half-prominence
+    extent, clamped at the side's saddle when no crossing occurs.
+    A peak qualifies iff prominence >= min_prominence (inclusive). NaNs
+    split the signal into segments that nothing crosses.
     """
     S = np.asarray(S, dtype=float).ravel()
-    peaks, inflect = _skeleton(S)
-    if peaks.size == 0:
-        z = np.empty(0)
-        return np.empty(0, dtype=int), z.copy(), z.copy(), z.copy()
+    n = S.size
+    idx_o, prom_o, lx_o, rx_o = [], [], [], []
 
-    lbase, lsaddle = _left_bases(S, peaks, inflect)
-    rbase_r, rsaddle_r = _left_bases(S, peaks[::-1], inflect[::-1])
-    rbase, rsaddle = rbase_r[::-1], rsaddle_r[::-1]
+    a = 0
+    while a < n:
+        if np.isnan(S[a]):
+            a += 1
+            continue
+        b = a
+        while b < n and not np.isnan(S[b]):
+            b += 1
 
-    prom_all = S[peaks] - np.maximum(S[lbase], S[rbase])
-    keep = prom_all >= min_prominence
-    peaks, prom = peaks[keep], prom_all[keep]
-    lsad, rsad = lsaddle[keep], rsaddle[keep]
+        maxima = _collapsed_maxima(S, a, b)
+        for p in maxima:
+            V = S[p]
+            lbase, lsad = _side(S, a, b, p, V, maxima, True)
+            rbase, rsad = _side(S, a, b, p, V, maxima, False)
+            prom = V - max(lbase, rbase)
+            if prom < min_prominence:
+                continue
+            ref = V - prom / 2.0
 
-    lx = np.empty(peaks.size)
-    rx = np.empty(peaks.size)
-    for i, p in enumerate(peaks):
-        ref = S[p] - 0.5 * prom[i]
-        j = p
-        while j >= lsad[i] and S[j] > ref:
-            j -= 1
-        lx[i] = float(lsad[i]) if j < lsad[i] else _interp_edge(j, j + 1, S[j], S[j + 1], ref)
-        j = p
-        while j <= rsad[i] and S[j] > ref:
-            j += 1
-        rx[i] = float(rsad[i]) if j > rsad[i] else _interp_edge(j, j - 1, S[j], S[j - 1], ref)
-    return peaks, prom, lx, rx
+            lx = None
+            j = p - 1
+            while j >= lsad:
+                if S[j] <= ref:
+                    if S[j] == ref:
+                        lx = float(j)
+                    else:
+                        lx = j + (ref - S[j]) / (S[j + 1] - S[j])
+                    break
+                j -= 1
+            if lx is None:
+                lx = float(lsad)
 
+            rx = None
+            j = p + 1
+            while j <= rsad:
+                if S[j] <= ref:
+                    if S[j] == ref:
+                        rx = float(j)
+                    else:
+                        rx = j - (ref - S[j]) / (S[j - 1] - S[j])
+                    break
+                j += 1
+            if rx is None:
+                rx = float(rsad)
+
+            idx_o.append(p)
+            prom_o.append(prom)
+            lx_o.append(lx)
+            rx_o.append(rx)
+        a = b
+
+    return (np.asarray(idx_o, dtype=np.int64),
+            np.asarray(prom_o, dtype=float),
+            np.asarray(lx_o, dtype=float),
+            np.asarray(rx_o, dtype=float))
+
+
+# ---------------------------------------------------------------------------
+# if2_peak_gate port (interface2's own code)
+# ---------------------------------------------------------------------------
 
 def peak_gate(
     S,
