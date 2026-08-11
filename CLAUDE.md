@@ -4,6 +4,11 @@
 truth — it wins over conversation) and use [`docs/GLOSSARY.md`](docs/GLOSSARY.md)'s
 vocabulary (stream axis vs detector axis; "modality" is banned).
 
+## Todos
+
+Open work items live in `docs/todo/` (one file per item, frontmatter
+status). Check it when Tony asks "what's next" or has spare cycles.
+
 ## Sapper (mechanized rules)
 
 `tools/sapper.py` converts incidents into checks that fire by themselves —
