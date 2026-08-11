@@ -92,13 +92,13 @@ class RateDetection:
 
 
 def recording_extent(s: Slice) -> tuple[float, float]:
-    """[t_lo, t_hi] seconds = union span of regions + both streams' locs."""
+    """[t_lo, t_hi] seconds = union span of regions + every stream's locs."""
     lo, hi = np.inf, -np.inf
     for r in s.regions:
         for v in (r.start_sec, r.end_sec):
             if np.isfinite(v):
                 lo, hi = min(lo, v), max(hi, v)
-    for stream in (s.fast, s.slow):
+    for stream in s.streams.values():
         for v in stream.locs:
             if v.size:
                 lo, hi = min(lo, v.min()), max(hi, v.max())

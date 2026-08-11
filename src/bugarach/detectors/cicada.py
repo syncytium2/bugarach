@@ -34,7 +34,11 @@ from dataclasses import dataclass, field
 import numpy as np
 
 from bugarach.detectors._shared import matlab_prctile, matlab_round
-from bugarach.detectors.loco import RegionWindow, region_windows
+from bugarach.detectors.loco import (
+    RegionWindow,
+    effective_region_windows,
+    per_stream_param,
+)
 from bugarach.detectors.rate import recording_extent
 from bugarach.detectors.sce import SceSignal
 from bugarach.store import Slice, Stream
@@ -62,11 +66,18 @@ class CicadaStream:
 @dataclass
 class CicadaDetection:
     slice_id: str
-    fast: CicadaStream
-    slow: CicadaStream
+    streams: dict[str, CicadaStream]   # name -> result, in slice stream order
     regions: list[RegionWindow]
     ext: tuple[float, float]
     params: dict = field(default_factory=dict)
+
+    @property
+    def fast(self) -> CicadaStream:
+        return self.streams["fast"]
+
+    @property
+    def slow(self) -> CicadaStream:
+        return self.streams["slow"]
 
 
 def rise_durations(stream: Stream) -> list[np.ndarray]:
@@ -74,15 +85,6 @@ def rise_durations(stream: Stream) -> list[np.ndarray]:
     duration explore_sce feeds CICADA to tame long SLOW transients."""
     return [np.asarray(pk, dtype=float) - np.asarray(on, dtype=float)
             for pk, on in zip(stream.locs, stream.t50rise)]
-
-
-def _stream_param(x, si: int, name: str) -> float:
-    a = np.atleast_1d(np.asarray(x, dtype=float))
-    if a.size == 1:
-        return float(a[0])
-    if a.size == 2:
-        return float(a[si])
-    raise ValueError(f"{name} must be scalar or a [FAST SLOW] pair")
 
 
 def cicada_detect(
@@ -122,8 +124,8 @@ def cicada_detect(
     ext = recording_extent(s)
     t_lo, t_hi = ext
     L = t_hi - t_lo
-    rw = region_windows(
-        s, t_hi,
+    rw = effective_region_windows(
+        s, ext,
         solution_delay_sec=solution_delay_sec,
         baseline_window_max_sec=baseline_window_max_sec,
         treatment_window_sec=treatment_window_sec,
@@ -132,8 +134,12 @@ def cicada_detect(
     rng = np.random.RandomState(rng_seed) if rng_seed is not None \
         else np.random.RandomState()
 
-    results = []
-    for si, stream in enumerate((s.fast, s.slow)):
+    names = list(s.streams)
+    pcts = per_stream_param(sce_percentile, names, "sce_percentile")
+    adurs = per_stream_param(active_duration_sec, names, "active_duration_sec")
+
+    results = {}
+    for name, stream in s.streams.items():
         trains = getattr(stream, onset_field) if onset_field != "t50rise" \
             else (stream.t50rise or stream.locs)
         if active_duration_mode == "per_event":
@@ -147,16 +153,16 @@ def cicada_detect(
                     f'"{duration_field}" on the stream')
         else:
             dur = None
-        results.append(_detect_stream(
+        results[name] = _detect_stream(
             trains, dur, t_lo, L, rw, rng,
             dt=1.0 / imaging_rate_hz,
             nsync=int(n_synchronous_frames),
-            pct=_stream_param(sce_percentile, si, "sce_percentile"),
-            adur=_stream_param(active_duration_sec, si, "active_duration_sec"),
+            pct=pcts[name],
+            adur=adurs[name],
             n_sur=int(n_surrogates),
             min_dist=int(sce_min_distance_frames),
             scope=threshold_scope, emit_signal=emit_signal,
-        ))
+        )
 
     params = {
         "method": "cicada_sliding", "threshold_scope": threshold_scope,
@@ -167,10 +173,11 @@ def cicada_detect(
         "sce_percentile": sce_percentile, "n_surrogates": n_surrogates,
         "sce_min_distance_frames": sce_min_distance_frames,
         "imaging_rate_hz": imaging_rate_hz, "rng_seed": rng_seed,
-        "recording_extent": ext, "n_roi": s.fast.n_rois,
+        "recording_extent": ext,
+        "n_roi": next(iter(s.streams.values())).n_rois,
     }
-    return CicadaDetection(slice_id=s.slice_id, fast=results[0],
-                           slow=results[1], regions=rw, ext=ext, params=params)
+    return CicadaDetection(slice_id=s.slice_id, streams=results,
+                           regions=rw, ext=ext, params=params)
 
 
 def _build_raster(trains, dur, t_lo, dt, nf, dframes) -> np.ndarray:

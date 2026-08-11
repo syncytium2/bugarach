@@ -59,20 +59,27 @@ class Region:
 
 @dataclass
 class Slice:
+    """A recording: N named event streams + optional region annotations.
+
+    ``streams`` is the generic surface — an ordered name -> Stream mapping.
+    The on-disk event_store format carries exactly FAST and SLOW, but that
+    pairing is specific to this project; foreign data (see bugarach.io) may
+    carry one stream or several under any names. Consumers should iterate
+    ``streams`` rather than hardcoding .fast/.slow, which are conveniences
+    for the canonical two-stream stores."""
+
     slice_id: str
-    fast: Stream
-    slow: Stream
+    streams: dict[str, Stream]
     regions: list[Region] = field(default_factory=list)
     roi_ids: list[str] | None = None
 
     @property
-    def streams(self) -> dict[str, Stream]:
-        """Ordered name -> Stream mapping. The on-disk store format carries
-        exactly FAST and SLOW, but that pairing is specific to this project —
-        consumers (especially the web UI) should iterate streams generically
-        through this mapping rather than hardcoding .fast/.slow, so other
-        datasets can carry one stream or several under their own names."""
-        return {"fast": self.fast, "slow": self.slow}
+    def fast(self) -> Stream:
+        return self.streams["fast"]
+
+    @property
+    def slow(self) -> Stream:
+        return self.streams["slow"]
 
 
 def load_slice(path: str | Path) -> Slice:
@@ -133,8 +140,7 @@ def _load_v7(path: Path) -> Slice:
         roi_ids = [str(x) for x in np.atleast_1d(m["roi_ids"])]
     return Slice(
         slice_id=str(m["slice_id"]),
-        fast=_stream_v7(m["fast"]),
-        slow=_stream_v7(m["slow"]),
+        streams={"fast": _stream_v7(m["fast"]), "slow": _stream_v7(m["slow"])},
         regions=regions,
         roi_ids=roi_ids,
     )
@@ -187,7 +193,6 @@ def _load_v73(path: Path) -> Slice:
             slice_id = _maybe_str(f["slice_id"])
     return Slice(
         slice_id=slice_id or path.stem,
-        fast=fast,
-        slow=slow,
+        streams={"fast": fast, "slow": slow},
         regions=regions,
     )

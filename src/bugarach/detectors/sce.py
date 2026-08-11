@@ -33,7 +33,10 @@ from dataclasses import dataclass, field
 import numpy as np
 
 from bugarach.detectors._shared import matlab_prctile, matlab_round
-from bugarach.detectors.loco import RegionWindow, region_windows
+from bugarach.detectors.loco import (
+    RegionWindow,
+    effective_region_windows,
+)
 from bugarach.detectors.peaks import peak_gate
 from bugarach.detectors.rate import recording_extent
 from bugarach.store import Slice
@@ -78,11 +81,18 @@ class SceStream:
 @dataclass
 class SceDetection:
     slice_id: str
-    fast: SceStream
-    slow: SceStream
+    streams: dict[str, SceStream]      # name -> result, in slice stream order
     regions: list[RegionWindow]
     ext: tuple[float, float]
     params: dict = field(default_factory=dict)
+
+    @property
+    def fast(self) -> SceStream:
+        return self.streams["fast"]
+
+    @property
+    def slow(self) -> SceStream:
+        return self.streams["slow"]
 
 
 def sce_detect(
@@ -119,8 +129,8 @@ def sce_detect(
     ext = recording_extent(s)
     t_lo, t_hi = ext
     L = t_hi - t_lo
-    rw = region_windows(
-        s, t_hi,
+    rw = effective_region_windows(
+        s, ext,
         solution_delay_sec=solution_delay_sec,
         baseline_window_max_sec=baseline_window_max_sec,
         treatment_window_sec=treatment_window_sec,
@@ -144,20 +154,22 @@ def sce_detect(
         peak_min_distance_sec=peak_min_distance_sec, emit_signal=emit_signal,
     )
 
-    results = []
-    for stream in (s.fast, s.slow):
+    # streams in declaration order off ONE RNG stream (MATLAB FAST-then-SLOW)
+    results = {}
+    for name, stream in s.streams.items():
         trains = getattr(stream, onset_field) or stream.locs
         # per-ROI event times relative to the FULL-extent start (wrap math)
         rel = [np.asarray(v, dtype=float).ravel() - t_lo for v in trains]
-        results.append(_detect_modality(rel, t_lo, L, rw, rng, opts))
+        results[name] = _detect_modality(rel, t_lo, L, rw, rng, opts)
 
+    n_roi = next(iter(s.streams.values())).n_rois
     params = {
         **{k: v for k, v in opts.items() if k != "emit_signal"},
         "surrogate_model": surrogate_model, "onset_field": onset_field,
         "rng_seed": rng_seed, "recording_extent": ext,
-        "n_roi": s.fast.n_rois,
+        "n_roi": n_roi,
     }
-    return SceDetection(slice_id=s.slice_id, fast=results[0], slow=results[1],
+    return SceDetection(slice_id=s.slice_id, streams=results,
                         regions=rw, ext=ext, params=params)
 
 

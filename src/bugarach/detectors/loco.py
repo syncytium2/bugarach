@@ -83,11 +83,18 @@ class LocoStream:
 @dataclass
 class LocoDetection:
     slice_id: str
-    fast: LocoStream
-    slow: LocoStream
+    streams: dict[str, LocoStream]     # name -> result, in slice stream order
     regions: list[RegionWindow]
     ext: tuple[float, float]
     params: dict = field(default_factory=dict)
+
+    @property
+    def fast(self) -> LocoStream:
+        return self.streams["fast"]
+
+    @property
+    def slow(self) -> LocoStream:
+        return self.streams["slow"]
 
 
 def region_windows(
@@ -148,13 +155,39 @@ def region_windows(
     return out
 
 
-def _per_stream(x, name: str) -> tuple[float, float]:
+def per_stream_param(x, names: list[str], param: str) -> dict[str, float]:
+    """Broadcast a per-stream parameter: scalar (all streams), sequence in
+    stream order, or name-keyed dict. For the canonical two-stream stores a
+    (FAST, SLOW) pair keeps its historical meaning."""
+    if isinstance(x, dict):
+        missing = [n for n in names if n not in x]
+        if missing:
+            raise ValueError(f"{param} missing streams: {missing}")
+        return {n: float(x[n]) for n in names}
     a = np.atleast_1d(np.asarray(x, dtype=float))
     if a.size == 1:
-        return float(a[0]), float(a[0])
-    if a.size == 2:
-        return float(a[0]), float(a[1])
-    raise ValueError(f"{name} must be scalar or a [FAST SLOW] pair")
+        return {n: float(a[0]) for n in names}
+    if a.size == len(names):
+        return {n: float(v) for n, v in zip(names, a)}
+    raise ValueError(
+        f"{param} must be scalar, a {len(names)}-element sequence in stream "
+        f"order, or a dict keyed by stream name {names}")
+
+
+def effective_region_windows(s: Slice, ext: tuple[float, float], **kw) -> list[RegionWindow]:
+    """Region windows, or — when the slice carries no region annotations
+    (foreign data) — one implicit whole-recording window, so region-scoped
+    detection analyzes the full extent instead of nothing."""
+    rw = region_windows(s, ext[1], **kw)
+    if rw:
+        return rw
+    dur = ext[1] - ext[0]
+    region_min = kw.get("region_min_sec", 900.0)
+    return [RegionWindow(
+        label="recording", slot="", raw_start=ext[0], raw_end=ext[1],
+        win_start=ext[0], win_end=ext[1], win_dur=dur,
+        meets_floor=dur >= region_min, is_baseline=True, is_hik=False,
+        too_short=dur < 240.0)]
 
 
 def loco_detect(
@@ -191,15 +224,16 @@ def loco_detect(
     if detection_mode not in ("threshold", "peak"):
         raise ValueError('detection_mode must be "threshold" or "peak"')
 
-    binw = _per_stream(bin_width_sec, "bin_width_sec")
-    mgap = _per_stream(merge_gap_sec, "merge_gap_sec")
-    ctxw = _per_stream(context_win_sec, "context_win_sec")
-    pcti = _per_stream(threshold_pctile, "threshold_pctile")
-    tstp = _per_stream(thr_step_sec, "thr_step_sec")
+    names = list(s.streams)
+    binw = per_stream_param(bin_width_sec, names, "bin_width_sec")
+    mgap = per_stream_param(merge_gap_sec, names, "merge_gap_sec")
+    ctxw = per_stream_param(context_win_sec, names, "context_win_sec")
+    pcti = per_stream_param(threshold_pctile, names, "threshold_pctile")
+    tstp = per_stream_param(thr_step_sec, names, "thr_step_sec")
 
     ext = recording_extent(s)
-    rw = region_windows(
-        s, ext[1],
+    rw = effective_region_windows(
+        s, ext,
         solution_delay_sec=solution_delay_sec,
         baseline_window_max_sec=baseline_window_max_sec,
         treatment_window_sec=treatment_window_sec,
@@ -208,18 +242,21 @@ def loco_detect(
     rng = np.random.RandomState(rng_seed) if rng_seed is not None \
         else np.random.RandomState()
 
-    results = []
-    for si, stream in enumerate((s.fast, s.slow)):
+    # streams processed in declaration order off ONE RNG stream (parity with
+    # MATLAB's FAST-then-SLOW for the canonical stores)
+    results = {}
+    for name, stream in s.streams.items():
         trains = getattr(stream, onset_field) or stream.locs
-        results.append(_detect_stream(
+        results[name] = _detect_stream(
             trains, rw, ext, rng,
-            binw=binw[si], mgap=mgap[si], ctx=ctxw[si], pctile=pcti[si],
-            tstep=tstp[si], min_rois=min_rois, n_surrogates=int(n_surrogates),
+            binw=binw[name], mgap=mgap[name], ctx=ctxw[name],
+            pctile=pcti[name], tstep=tstp[name],
+            min_rois=min_rois, n_surrogates=int(n_surrogates),
             null_context_mode=null_context_mode,
             clamp_context_to_region=clamp_context_to_region,
             detection_mode=detection_mode, peak_prominence=peak_prominence,
             peak_min_distance_sec=peak_min_distance_sec,
-        ))
+        )
 
     params = {
         "bin_width_sec": binw, "context_win_sec": ctxw,
@@ -233,7 +270,7 @@ def loco_detect(
         "peak_min_distance_sec": peak_min_distance_sec,
         "recording_extent": ext,
     }
-    return LocoDetection(slice_id=s.slice_id, fast=results[0], slow=results[1],
+    return LocoDetection(slice_id=s.slice_id, streams=results,
                          regions=rw, ext=ext, params=params)
 
 

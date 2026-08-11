@@ -95,7 +95,8 @@ def _mini_slice(regions):
     st = Stream(locs=[np.array([1.0]), np.array([2.0])],
                 amp=[np.empty(1)] * 2, width=[np.empty(1)] * 2,
                 t50rise=[np.array([1.0]), np.array([2.0])])
-    return Slice(slice_id="mini", fast=st, slow=st, regions=regions)
+    return Slice(slice_id="mini", streams={"fast": st, "slow": st},
+                 regions=regions)
 
 
 def test_region_guards_halt():
