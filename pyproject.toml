@@ -14,7 +14,11 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=8", "pyspike"]
+ui = ["panel>=1.4", "holoviews>=1.18"]
+dev = ["pytest>=8", "pyspike", "panel>=1.4", "holoviews>=1.18"]
+
+[project.scripts]
+bugarach = "bugarach.cli:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/bugarach"]

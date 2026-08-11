@@ -45,13 +45,19 @@ supra-threshold detection modes. Detectors run live off per-slice event-onset da
 3. **Peak gating** — ✅ port of `if2_peak_gate` + the `findpeaksTD` half-prominence
    extent machinery (prominence-qualified maxima of the statistic trace, shared
    min-distance D), in `bugarach.detectors.peaks`.
-4. **UI** — web front end with linked rasters/signal rows and per-detector recompute.
-   Framework decision open: Dash vs Panel/HoloViews.
+4. **UI** — ✅ v0 landed on **Panel/HoloViews** (chosen for free linked x-axes
+   across raster + signal rows, and per-stream components): per-stream raster,
+   one signal row per enabled detector with event-span shading and threshold
+   overlays, sidebar parameter widgets, live recompute. Launch:
+   `bugarach view <store.mat | events.csv | dir>`.
    **Design constraint: streams are generic.** FAST/SLOW is a convention of this
    project's stores, not of the viewer — the UI renders *N named streams*
    (iterate `Slice.streams`, never hardcode fast/slow), so datasets with one
-   stream or differently named ones work unchanged. Per-stream parameter pairs
-   become per-stream maps at the UI boundary.
+   stream or differently named ones work unchanged. Region annotations are
+   optional: un-annotated recordings analyze as one implicit whole-recording
+   region. Foreign data comes in through `bugarach.io` (`slice_from_events`
+   for per-ROI arrays, `load_events_csv` for long-format CSV) — most labs have
+   a single event train per ROI, and that is the viewer's default presentation.
 
 ## Licensing & citations
 
@@ -80,9 +86,23 @@ from PySpike instead. Do not port code from cSPIKE's MATLAB source.
 from bugarach import load_slice
 
 s = load_slice("tests/fixtures/synth_fastcal_s1.mat")
-s.fast.n_rois, s.fast.n_events   # per-stream ROI/event counts
+s.streams                        # generic name -> Stream mapping
+s.fast.n_rois, s.fast.n_events   # canonical-store accessors
 s.fast.locs[0]                   # onset times (sec) for ROI 0, FAST stream
-s.regions                        # annotated time windows (name, slot, start, end)
+s.regions                        # annotated time windows (optional)
+```
+
+Foreign data (any lab's event times, no store format needed):
+
+```python
+from bugarach.io import slice_from_events
+s = slice_from_events([roi0_times, roi1_times, ...], slice_id="my_recording")
+```
+
+Viewer (needs the `[ui]` extra):
+
+```bash
+bugarach view path/to/store.mat          # or an events CSV, or a directory
 ```
 
 ## Data
