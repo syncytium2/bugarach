@@ -48,6 +48,40 @@ target that integrated copy, not a standalone file).
 - **Scroll wins**: wheel-zoom stays in the toolbar but inactive — the mouse
   wheel scrolls the page; drag pans.
 
+## Repo management — stop-on-a-dime, any machine, any OS
+
+The state on `origin` must always be enough to resume elsewhere (FOUNDATIONS
+§8). Operational rules:
+
+- **Push important steps promptly.** A completed, verified step (port lands,
+  bug fixed, doc revised) is committed and pushed in the same breath — never
+  batched for later. `main` stays green (CI is the gate).
+- **Stopping mid-task**: push a WIP branch (`wip/<slug>`) AND write
+  `HANDOFF.md` at the repo root — what's in flight, exact next step, how to
+  verify — then push that too. Delete `HANDOFF.md` when the task completes.
+  No handoff file on `main` == nothing is in flight.
+- **Machine-local inventory** (everything else lives in the repo): the
+  `.venv` (rebuild: `python3 -m venv .venv && pip install -e ".[dev]"`),
+  `BUGARACH_DATA_ROOT` (real stores; optional — everything but the
+  real-slice smoke tests runs without it), MATLAB + interface2 checkout
+  (ONLY needed to regenerate parity references; running/validating the
+  ports needs neither), Playwright chromium (screenshots only).
+- **Cross-OS**: code uses pathlib and env vars — keep it that way (sapper
+  SAP004 blocks personal absolute paths). MATLAB launch for reference
+  regeneration is version-pinned R2025b, full path, never bare `matlab`:
+  - Mac: `/Applications/MATLAB_R2025b.app/bin/matlab -batch "..."`
+  - WSL: `/mnt/c/Program Files/MATLAB/R2025b/bin/matlab.exe -batch "..."`
+    (launch path only — script bodies use Windows `C:\...` paths, per
+    interface2's SAP003 lesson).
+
+## Portfolio posture
+
+The repo is a resume artifact as much as a tool (FOUNDATIONS §8): commit
+messages tell the story a reviewer will read; README screenshot and CI badge
+stay current; process docs (clean-room, sapper, parity methodology) are
+presentation surface. Before landing work, ask: does this read well to a
+stranger deciding whether to hire its author?
+
 ## Git conduct
 
 - Commit and push verified work without asking (Tony juggles projects and

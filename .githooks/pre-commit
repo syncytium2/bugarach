@@ -1,4 +1,11 @@
 #!/bin/sh
 # sapper gate on staged changes — enable with:
 #   git config core.hooksPath .githooks
-exec python3 tools/sapper.py --staged
+# python3 on mac/linux; py/python on Windows git-bash
+if command -v python3 >/dev/null 2>&1; then
+    exec python3 tools/sapper.py --staged
+elif command -v py >/dev/null 2>&1; then
+    exec py tools/sapper.py --staged
+else
+    exec python tools/sapper.py --staged
+fi

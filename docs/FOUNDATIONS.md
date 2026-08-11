@@ -91,7 +91,24 @@ code**. The peak-extent kernel is a **clean-room implementation** — spec +
 adversarial differential validation under `docs/clean_room/` (process:
 `docs/clean_room/WORKFLOW.md`). Cite per README "Licensing & citations".
 
-## 8. Conventions with teeth
+## 8. Team & operations
+
+**One human (Tony); everyone else on the team is an AI session**, possibly
+several in parallel, across changing workstations and operating systems
+(currently a MacBook Pro; Windows/WSL and cluster machines are in the
+ecosystem's rotation). Consequences:
+
+- **The repo on `origin` is the only durable channel.** Anything not pushed
+  does not exist to the next session or the next machine. Important steps
+  are committed AND pushed promptly — see CLAUDE.md "Repo management".
+- **Stop-on-a-dime is a standing requirement**: at any moment the state on
+  `origin` must be enough to resume on a different machine/OS.
+- **Dual purpose**: bugarach is a working lab tool AND a resume/portfolio
+  artifact. The README, docs, commit history, and process artifacts
+  (parity methodology, clean-room workflow, sapper) are showcase surface —
+  keep them presentation-quality, current, and honest.
+
+## 9. Conventions with teeth
 
 Durable session rules live in `CLAUDE.md` (plot conventions, git conduct).
 What can be mechanized is enforced by **sapper** (`tools/sapper.py`,
