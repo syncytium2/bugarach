@@ -74,6 +74,9 @@ TITLES = {
     "rate": "rate+context", "sce": "binned SCE", "cicada": "CICADA",
     "sync": "SPIKE-synch", "coact": "CoactDetect", "loco": "LoCo",
 }
+# short row labels — the full titles overflow the slim signal rows
+SHORT = {"rate": "rate", "sce": "SCE", "cicada": "CIC",
+         "sync": "sync", "coact": "coact", "loco": "LoCo"}
 DEFAULT_ON = ["rate", "coact", "loco"]
 
 # widget spec: (param, label, default, (lo, hi), step)
@@ -187,14 +190,16 @@ def _raster(stream, name: str, ext) -> hv.Scatter:
         ys.append(np.full(v.size, i))
     t = np.concatenate(ts) if ts else np.empty(0)
     y = np.concatenate(ys) if ys else np.empty(0)
-    # no title — vertical space is precious; the y-label carries identity
+    # no title — vertical space is precious; the y-label carries identity.
+    # wheel zoom stays in the toolbar but NOT active, so the mouse wheel
+    # scrolls the page; drag pans, toolbar toggles zoom when wanted
     return hv.Scatter((t, y), kdims=["t"], vdims=["roi"]).opts(
         marker="dash", angle=90, size=5, color="black", alpha=0.7,
-        width=950, height=240, xlim=ext, title="",
+        width=950, height=150, xlim=ext, title="",
         ylabel=f"{name} · {stream.n_rois} ROI",
         fontsize={"ylabel": "10pt"},
         tools=["xwheel_zoom", "xpan", "reset", "hover"],
-        active_tools=["xwheel_zoom", "xpan"], default_tools=["reset"],
+        active_tools=["xpan"], default_tools=["reset"],
         hooks=[_time_axis_hook],
     )
 
@@ -203,8 +208,12 @@ def _signal_row(det, t, y, events, extra, ext) -> hv.Overlay:
     color = COLORS[det]
     onsets, widths = events
     # curve FIRST: the overlay inherits its 't' dimension, keeping every row
-    # on the same axis as the rasters (Rectangles would impose 'x0')
-    items = [hv.Curve((t, y), kdims=["t"]).opts(color=color, line_width=1)]
+    # on the same axis as the rasters (Rectangles would impose 'x0').
+    # the value dimension is UNIQUE per detector so y-ranges do NOT link
+    # across rows (a 0-1 synchrony trace must not share the ROI-count scale)
+    ydim = hv.Dimension(f"{det}_y", label=TITLES[det])
+    items = [hv.Curve((t, y), kdims=["t"], vdims=[ydim]).opts(
+        color=color, line_width=1)]
     if onsets is not None and np.size(onsets):
         w = np.where(np.isfinite(widths) & (widths > 0), widths, 0.5)
         finite_y = y[np.isfinite(y)]
@@ -214,7 +223,7 @@ def _signal_row(det, t, y, events, extra, ext) -> hv.Overlay:
             color=color, alpha=0.25, line_alpha=0))
     ref = extra.get("ref")
     if ref is not None and np.size(ref) == np.size(t):
-        items.append(hv.Curve((t, ref), kdims=["t"]).opts(
+        items.append(hv.Curve((t, ref), kdims=["t"], vdims=[ydim]).opts(
             color="gray", line_width=1, line_dash="dashed"))
     thr = extra.get("threshold")
     if thr is not None:
@@ -222,15 +231,17 @@ def _signal_row(det, t, y, events, extra, ext) -> hv.Overlay:
             items.append(hv.HLine(float(thr)).opts(
                 color=color, line_dash="dotted", line_width=1))
         elif np.size(thr) == np.size(t):
-            items.append(hv.Curve((t, thr), kdims=["t"]).opts(
+            items.append(hv.Curve((t, thr), kdims=["t"], vdims=[ydim]).opts(
                 color="black", line_width=1, line_dash="dotted"))
     n_ev = int(np.size(onsets)) if onsets is not None else 0
     # identity + event count live on the y-label; titles are redundant rows
     return hv.Overlay(items).opts(
-        width=950, height=110, xlim=ext, xlabel="t", title="",
-        ylabel=f"{TITLES[det]} ({n_ev})", yticks=3,
+        width=950, height=75, xlim=ext, xlabel="", title="",
+        ylabel=f"{SHORT[det]} ({n_ev})", yticks=2,
         fontsize={"ylabel": "9pt"},
         show_legend=False, hooks=[_time_axis_hook],
+        tools=["xwheel_zoom", "xpan", "reset"],
+        active_tools=["xpan"], default_tools=["reset"],
     )
 
 
@@ -241,7 +252,11 @@ def build_viewer(slices: dict[str, Slice], *, title: str = "bugarach"):
         raise ValueError("no slices to view")
 
     slice_sel = pn.widgets.Select(name="slice", options=list(slices))
-    det_checks = {d: pn.widgets.Checkbox(name=TITLES[d], value=d in DEFAULT_ON)
+    # Toggle buttons, not checkboxes — a full-size click target
+    det_checks = {d: pn.widgets.Toggle(name=TITLES[d], value=d in DEFAULT_ON,
+                                       button_type="primary",
+                                       button_style="outline",
+                                       sizing_mode="stretch_width")
                   for d in PARAM_SPECS}
     widgets: dict[str, dict[str, pn.widgets.Widget]] = {}
     accordion_items = []
@@ -257,8 +272,9 @@ def build_viewer(slices: dict[str, Slice], *, title: str = "bugarach"):
                                           start=lo, end=hi, step=step)
             ws[pname] = w
         widgets[det] = ws
-        accordion_items.append(
-            (TITLES[det], pn.Column(det_checks[det], *ws.values())))
+        accordion_items.append((TITLES[det], pn.Column(*ws.values())))
+    # enable toggles live OUTSIDE the accordion, always visible, big targets
+    toggle_grid = pn.GridBox(*det_checks.values(), ncols=2)
 
     go = pn.widgets.Button(name="Recompute", button_type="primary")
     status = pn.pane.Markdown("")
@@ -286,10 +302,18 @@ def build_viewer(slices: dict[str, Slice], *, title: str = "bugarach"):
                     if np.size(t):
                         rows.append(_signal_row(det, t, y, events, extra, ext))
             # one x-axis per group: only the bottom row shows it (zoom/pan
-            # stays linked through the shared 't' dimension)
-            rows = [r.opts(xaxis=None) if i < len(rows) - 1 else r
-                    for i, r in enumerate(rows)]
-            layout = hv.Layout(rows).cols(1).opts(shared_axes=True)
+            # stays linked through the shared 't' dimension). The bottom row
+            # gets extra height so its PLOT area matches the others — the
+            # axis+label live in the extra 45px, not carved out of the plot
+            last = len(rows) - 1
+            styled = []
+            for i, r in enumerate(rows):
+                if i < last:
+                    styled.append(r.opts(xaxis=None))
+                else:
+                    base_h = 150 if i == 0 else 75   # raster may be last
+                    styled.append(r.opts(height=base_h + 45))
+            layout = hv.Layout(styled).cols(1).opts(shared_axes=True)
             blocks.append(pn.pane.HoloViews(layout))
         main.objects = blocks
         status.object = f"`{s.slice_id}` — {len(s.streams)} stream(s)"
@@ -299,7 +323,8 @@ def build_viewer(slices: dict[str, Slice], *, title: str = "bugarach"):
     render()
 
     sidebar = pn.Column(
-        slice_sel, go, status,
+        slice_sel, go, status, toggle_grid,
+        pn.pane.Markdown("**parameters**", margin=(6, 0, 0, 5)),
         pn.Accordion(*accordion_items, active=[]),
         width=340,
     )
