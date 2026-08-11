@@ -37,6 +37,30 @@ from bugarach.store import Slice, load_slice
 hv.extension("bokeh")
 pn.extension()
 
+
+def _time_axis_hook(plot, element):
+    """Minutes-friendly time axis: ticks at 1/2/5/10/15/30 x 60^k seconds
+    (…30s, 1m, 2m, 5m…), labels as 45s / 2m / 2m30s. Fresh bokeh models per
+    plot — they cannot be shared across documents."""
+    from bokeh.models import AdaptiveTicker, CustomJSTickFormatter
+
+    xaxis = plot.handles.get("xaxis")
+    if xaxis is None:
+        return
+    xaxis.ticker = AdaptiveTicker(base=60,
+                                  mantissas=[1, 2, 5, 10, 15, 30],
+                                  min_interval=1)
+    xaxis.formatter = CustomJSTickFormatter(code="""
+        const s = tick;
+        const sign = s < 0 ? '-' : '';
+        const a = Math.abs(s);
+        if (a < 60) return sign + a + 's';
+        const m = Math.floor(a / 60);
+        const r = Math.round(a - m * 60);
+        return r ? sign + m + 'm' + String(r).padStart(2, '0') + 's'
+                 : sign + m + 'm';
+    """)
+
 # explore_sce-recognizable detector palette
 COLORS = {
     "rate":   "#1f77b4",
@@ -169,13 +193,16 @@ def _raster(stream, name: str, ext) -> hv.Scatter:
         title=f"{name} — {stream.n_rois} ROIs, {stream.n_events} events",
         tools=["xwheel_zoom", "xpan", "reset", "hover"],
         active_tools=["xwheel_zoom", "xpan"], default_tools=["reset"],
+        hooks=[_time_axis_hook],
     )
 
 
 def _signal_row(det, t, y, events, extra, ext) -> hv.Overlay:
     color = COLORS[det]
-    items = []
     onsets, widths = events
+    # curve FIRST: the overlay inherits its 't' dimension, keeping every row
+    # on the same axis as the rasters (Rectangles would impose 'x0')
+    items = [hv.Curve((t, y), kdims=["t"]).opts(color=color, line_width=1)]
     if onsets is not None and np.size(onsets):
         w = np.where(np.isfinite(widths) & (widths > 0), widths, 0.5)
         finite_y = y[np.isfinite(y)]
@@ -183,7 +210,6 @@ def _signal_row(det, t, y, events, extra, ext) -> hv.Overlay:
         rects = [(o, 0.0, o + ww, top) for o, ww in zip(onsets, w)]
         items.append(hv.Rectangles(rects).opts(
             color=color, alpha=0.25, line_alpha=0))
-    items.append(hv.Curve((t, y), kdims=["t"]).opts(color=color, line_width=1))
     ref = extra.get("ref")
     if ref is not None and np.size(ref) == np.size(t):
         items.append(hv.Curve((t, ref), kdims=["t"]).opts(
@@ -198,9 +224,9 @@ def _signal_row(det, t, y, events, extra, ext) -> hv.Overlay:
                 color="black", line_width=1, line_dash="dotted"))
     n_ev = int(np.size(onsets)) if onsets is not None else 0
     return hv.Overlay(items).opts(
-        width=950, height=130, xlim=ext,
+        width=950, height=130, xlim=ext, xlabel="t",
         ylabel=TITLES[det], title=f"{TITLES[det]} — {n_ev} events",
-        show_legend=False,
+        show_legend=False, hooks=[_time_axis_hook],
     )
 
 
@@ -255,6 +281,10 @@ def build_viewer(slices: dict[str, Slice], *, title: str = "bugarach"):
                     t, y, events, extra = results[det][name]
                     if np.size(t):
                         rows.append(_signal_row(det, t, y, events, extra, ext))
+            # one x-axis per group: only the bottom row shows it (zoom/pan
+            # stays linked through the shared 't' dimension)
+            rows = [r.opts(xaxis=None) if i < len(rows) - 1 else r
+                    for i, r in enumerate(rows)]
             layout = hv.Layout(rows).cols(1).opts(shared_axes=True)
             blocks.append(pn.pane.HoloViews(layout))
         main.objects = blocks
