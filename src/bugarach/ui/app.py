@@ -187,10 +187,12 @@ def _raster(stream, name: str, ext) -> hv.Scatter:
         ys.append(np.full(v.size, i))
     t = np.concatenate(ts) if ts else np.empty(0)
     y = np.concatenate(ys) if ys else np.empty(0)
+    # no title — vertical space is precious; the y-label carries identity
     return hv.Scatter((t, y), kdims=["t"], vdims=["roi"]).opts(
         marker="dash", angle=90, size=5, color="black", alpha=0.7,
-        width=950, height=260, xlim=ext, ylabel="ROI",
-        title=f"{name} — {stream.n_rois} ROIs, {stream.n_events} events",
+        width=950, height=240, xlim=ext, title="",
+        ylabel=f"{name} · {stream.n_rois} ROI",
+        fontsize={"ylabel": "10pt"},
         tools=["xwheel_zoom", "xpan", "reset", "hover"],
         active_tools=["xwheel_zoom", "xpan"], default_tools=["reset"],
         hooks=[_time_axis_hook],
@@ -223,9 +225,11 @@ def _signal_row(det, t, y, events, extra, ext) -> hv.Overlay:
             items.append(hv.Curve((t, thr), kdims=["t"]).opts(
                 color="black", line_width=1, line_dash="dotted"))
     n_ev = int(np.size(onsets)) if onsets is not None else 0
+    # identity + event count live on the y-label; titles are redundant rows
     return hv.Overlay(items).opts(
-        width=950, height=130, xlim=ext, xlabel="t",
-        ylabel=TITLES[det], title=f"{TITLES[det]} — {n_ev} events",
+        width=950, height=110, xlim=ext, xlabel="t", title="",
+        ylabel=f"{TITLES[det]} ({n_ev})", yticks=3,
+        fontsize={"ylabel": "9pt"},
         show_legend=False, hooks=[_time_axis_hook],
     )
 
