@@ -1,5 +1,7 @@
 # bugarach
 
+[![CI](https://github.com/syncytium2/bugarach/actions/workflows/ci.yml/badge.svg)](https://github.com/syncytium2/bugarach/actions/workflows/ci.yml)
+
 Python/web port of `explore_sce` — the interactive per-slice coordination viewer from
 [interface2](https://gitlab.com/defazio/interface2) — so colleagues **without MATLAB**
 can browse slices and tune detectors in a browser.
@@ -7,6 +9,8 @@ can browse slices and tune detectors in a browser.
 Detector ports build on open-source implementations. **See
 [Licensing & citations](#licensing--citations)** for what to cite in any publication
 that uses results from this tool.
+
+![bugarach viewer: per-stream rasters with linked detector signal rows](docs/screenshot.png)
 
 > **The name.** Pic de Bugarach is the mountain in the French Pyrenees that doomsday
 > believers converged on for the 2012 Mayan-calendar apocalypse, convinced it alone

@@ -1,0 +1,18 @@
+cff-version: 1.2.0
+title: bugarach
+type: software
+message: >-
+  If you use this software, please cite it as below, and also cite the
+  upstream method references listed in the README's Licensing & citations
+  section (PySpike/SPIKE-synchronization, CICADA, and the detector method
+  papers).
+authors:
+  - family-names: DeFazio
+    given-names: Richard
+license: BSD-3-Clause
+repository-code: "https://github.com/syncytium2/bugarach"
+abstract: >-
+  Browser-based viewer and Python ports of six neural-coordination
+  detectors (rate+context, CoactDetect, LoCo, binned SCE, CICADA,
+  SPIKE-synchronization), each validated to 1e-9 against MATLAB reference
+  output.
