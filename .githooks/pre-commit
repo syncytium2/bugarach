@@ -1,0 +1,4 @@
+#!/bin/sh
+# sapper gate on staged changes — enable with:
+#   git config core.hooksPath .githooks
+exec python3 tools/sapper.py --staged

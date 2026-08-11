@@ -132,6 +132,5 @@ The `[dev]` extra includes PySpike, used only as a cross-validation reference
 in the test suite (the detectors themselves have no PySpike dependency).
 
 The test suite runs on the committed synthetic fixture. To also smoke-test a real
-slice, point `BUGARACH_DATA_ROOT` at an `event_store_onset_revised_2v` store
-directory (it defaults to the lab Dropbox path); the test skips if the directory
-is absent.
+slice, point `BUGARACH_DATA_ROOT` at an `event_store_onset*` store directory;
+the test skips when it is unset.

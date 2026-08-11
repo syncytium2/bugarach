@@ -1,5 +1,17 @@
 # bugarach — durable session rules
 
+**Session start:** read [`docs/FOUNDATIONS.md`](docs/FOUNDATIONS.md) (canonical
+truth — it wins over conversation) and use [`docs/GLOSSARY.md`](docs/GLOSSARY.md)'s
+vocabulary (stream axis vs detector axis; "modality" is banned).
+
+## Sapper (mechanized rules)
+
+`tools/sapper.py` converts incidents into checks that fire by themselves —
+`--selftest` proves every rule can fire, `--all` scans the tree, `--staged`
+gates commits (enable: `git config core.hooksPath .githooks`). pytest/CI run
+both via `tests/test_sapper.py`. Prefer adding a sapper rule over adding
+prose; file new-rule requests and disputes in `docs/sapper_feedback/`.
+
 ## Clean-room specs (`docs/clean_room/`)
 
 Specs in `docs/clean_room/*_spec.md` are implemented from the spec document
