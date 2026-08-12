@@ -58,48 +58,18 @@ target that integrated copy, not a standalone file).
 The state on `origin` must always be enough to resume elsewhere (FOUNDATIONS
 §8). Operational rules:
 
-- **Push important steps promptly.** A completed, verified step (port lands,
-  bug fixed, doc revised) is committed and pushed in the same breath — never
-  batched for later. This is the rule that matters most; nothing below may be
-  used as a reason to sit on unpushed work.
-- **Work on a branch; land on `main` through a green PR.** Never commit to
-  `main` directly. Branch, push the branch immediately (`git push -u origin
-  <slug>`), open a PR, merge when CI passes — `gh pr merge --merge --auto`.
-  Use `--merge`, **not** `--squash`: commit messages here are the story a
-  reviewer reads (Portfolio posture, below), and squashing flattens them.
-- **One PR per theme, not per commit.** A PR is a unit of review, not a unit of
-  work. Several related commits — a vendored tool plus its wiring plus its
-  docs — belong in one. Six PRs for one afternoon of related doc edits is
-  fragmentation, not rigour.
-- **Merge with `bash tools/merge_when_green.sh <pr>`, not `gh pr merge --auto`.**
-  `--auto` only waits for *required* checks; with no branch protection nothing is
-  required, so it merges instantly and the PR gates nothing. The script does the
-  waiting and verifying itself, and **fails closed when no checks are found** —
-  an absent gate is indistinguishable from a passed one, so absence is treated as
-  failure. It self-tests, and `tests/test_merge_gate.py` runs that in CI.
-  It is weaker than branch protection (it only governs merges that go through
-  it), so `docs/todo/2026-08-12-enable-branch-protection-on-main.md` stays open —
-  but nothing is waiting on that todo to be safe today.
-  *This was live for a whole session:* every PR merged ~90 seconds before its
-  own CI finished. They all happened to pass, so it looked fine. The tell is
-  `gh pr view N --json autoMergeRequest` returning `null` — if auto-merge were
-  armed it would name a merge method. **Check that, don't read past it.**
-  It is the skipped-gate trap from [`docs/simulation_plan.md`](docs/simulation_plan.md),
-  committed in the same session that documented it: a gate written as a
-  sentence, shipped without the mechanism.
-  *Why this replaced "commit straight to main" (reconciled 2026-08-12):* CI
-  triggers on `push: [main]` and `pull_request`, so a direct push to `main`
-  runs CI **after** `main` already has the commit. "`main` stays green (CI is
-  the gate)" was therefore unachievable by the flow that sentence sat next to —
-  CI could only report the breakage, not prevent it. A PR makes the same
-  sentence true. It also makes one-session-one-branch real, so two sessions
-  cannot collide on `main` (`docs/session_protocol.md`).
-  The push-promptly rule is unaffected: the branch is pushed on creation, so
-  work is durable on `origin` long before the PR merges.
-- **Stopping mid-task**: push a WIP branch (`wip/<slug>`) AND write
-  `HANDOFF.md` at the repo root — what's in flight, exact next step, how to
-  verify — then push that too. Delete `HANDOFF.md` when the task completes.
-  No handoff file on `main` == nothing is in flight.
+- **Push important steps promptly.** A completed, verified step is committed and
+  pushed in the same breath — never batched. Nothing below is a reason to sit on
+  unpushed work.
+- **Branch; land on `main` via a green PR** — full rules, and which of them fire
+  by themselves, in [`docs/git_workflow.md`](docs/git_workflow.md). The two that
+  are mechanized need no memory: `.githooks/pre-commit` refuses a commit on
+  `main`, and `tools/merge_when_green.sh <pr>` refuses to merge a PR whose checks
+  have not passed (including when there are none). Enable the hook once per
+  clone: `git config core.hooksPath .githooks`.
+- **Stopping mid-task**: push a `wip/<slug>` branch AND a root `HANDOFF.md`, then
+  push that too; delete it when done. No handoff file on `main` == nothing in
+  flight.
 - **Machine-local inventory** (everything else lives in the repo): the
   `.venv` (rebuild: `python3 -m venv .venv && pip install -e ".[dev]"`),
   `BUGARACH_DATA_ROOT` (real stores; optional — everything but the
@@ -183,23 +153,9 @@ claim that overstates, or a test count quoted from memory, costs more here than 
 
 ## Writing for a human reader
 
-Tony's correction, 2026-08-12: *"the numbers and dates don't mean much to a
-human."* Applies to docs, commit messages, PR bodies, and replies.
-
-- **Name things; don't index them.** If a doc defines a list of traps, stages, or
-  findings, refer to them by a short descriptive name, never `T3` or `stage 4`. A
-  sentence like "stage 4 is T3 again" asks the reader to hold two numbered
-  taxonomies in their head and cross-reference them — it carries no meaning on
-  its own. "We'd be skipping the check again because there was something more
-  interesting to build" does.
-- **Commit shas and dates are lookup keys, not content.** `b94062e` and
-  `2026-07-23` tell a reader nothing. Say what changed and how long it sat.
-  Include the sha only when someone would actually go look it up, and then in
-  parentheses after the meaning.
-- **Prefer the consequence to the label.** "LoCo goes from 81 events to 28 on a
-  real recording" beats "the adoption had a large effect".
-- Same instinct as the plot conventions above: identity in the label, no titles
-  restating what the axes already say.
+Name things; don't index them. Shas and dates are lookup keys, not content.
+Prefer the consequence to the label. Full version, with the examples that
+prompted it: [`docs/writing_conventions.md`](docs/writing_conventions.md).
 
 ## Portfolio posture
 

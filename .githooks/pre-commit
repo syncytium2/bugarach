@@ -1,6 +1,17 @@
 #!/bin/sh
-# sapper gate on staged changes — enable with:
-#   git config core.hooksPath .githooks
+# Commit gates — enable with:  git config core.hooksPath .githooks
+#
+# Both run without anyone remembering them, which is the point: rules that
+# matter get mechanized here rather than written in CLAUDE.md and skipped.
+# Each gate self-tests (`--selftest`) and is run by pytest/CI, so a gate that
+# has quietly stopped working is itself a test failure.
+
+# 1. branch guard — refuse a commit authored directly on main/master.
+if command -v bash >/dev/null 2>&1; then
+    bash tools/guard_branch.sh || exit $?
+fi
+
+# 2. sapper — content rules on the staged diff.
 # python3 on mac/linux; py/python on Windows git-bash
 if command -v python3 >/dev/null 2>&1; then
     exec python3 tools/sapper.py --staged
