@@ -157,18 +157,134 @@ uniform placement). Real trains are not. In rough order of likely impact:
 Do **not** fix all six before shipping anything. (1), (2) and (4) are the ones
 that plausibly change what a network learns; the rest can wait for evidence.
 
+## 4bis. The traps this already fell into — read before writing any generator
+
+Everything in this section is documented in
+`<darkroom>/constellation/optim_history/` (the `optim_history.pptx` deck, its
+README, and the figures it embeds). It is not hypothetical: this exact project
+has already paid for each of these once.
+
+### T1 — The benchmark's event spacing broke the detectors' null model
+
+Gen-1 (2026-07-15) planted **a coordinated event every 14 s**. The detectors
+estimate their null over a **60 s context window**. So **four coordinated events
+sat inside every context window**: the circular-shift "null" was built from data
+containing real coordination, and the threshold inflated. Gen-3 spaces events
+150 s (FAST) / 300 s (SLOW) — one per window, a clean background-only null.
+
+The cost, measured (`deploy_cost.png`, dense-tuned settings run on sparse data —
+**both synthetic**):
+
+| | RateDetect | SCE | CICADA | spike-sync | CoactDetect | LoCo |
+|---|---|---|---|---|---|---|
+| precision where tuned | 90 | 74 | 58 | 75 | 90 | 89 |
+| precision when sparse | **45** | **10** | **10** | **30** | **16** | **21** |
+
+The deck's own conclusion: *"The benchmark, not the detectors, was the original
+problem."*
+
+**Why a network does not escape this.** It has no circular-shift null, so T1
+looks inapplicable — it is not. Event spacing sets the **class base rate**. Train
+where events are 10× too frequent and the model learns a 10× too-high prior, then
+over-fires on sparse real data. *Same observable failure — precision collapse on
+deployment — reached by a different mechanism.* Any generator knob that changes
+how often events occur is a knob on the label distribution, not a cosmetic
+realism detail.
+
+### T2 — Realism is not one property, and randomizing is not centering
+
+Three generations, each fixing a different mismatch: Gen-1 dense +
+synthetic-default timescales; Gen-2 (ADR 0009) fixed the **spacing** but kept
+synthetic-default timescales and was **FAST-only**; Gen-3 added onset jitter and
+per-ROI rate **measured from the real baseline**. Gen-2 looked fixed and was not.
+
+This tempers §4.2 directly: **domain randomization widens a distribution, it does
+not center one.** Sampling event spacing over [10, 60] s when reality is 150 s
+covers reality zero percent of the time — and produces a confident-looking
+training set. Randomize *around measured values*, never instead of measuring them.
+
+### T3 — The step named as deciding was the step that got skipped
+
+The 2026-07-23 deck listed four next steps. Item 1 was *"validate the calibrated
+settings on real data in the viewer."* Status on 2026-08-05: **NOT DONE — not
+attempted.** Item 4 was *"revisit ADR 0009, then touch production."* Status:
+**REVERSED** — production changed first. The calibrated settings were adopted as
+shipped defaults (`b94062e`) without the validation the deck called decisive, and
+the effect is large: on one real slice, LoCo FAST went **81 → 28 events**.
+
+The record notes the validation was *reachable* the whole time (a fix for the
+viewer crash sat on a pushed branch from 07-23) — *"not prioritised, not
+impossible."*
+
+**And the caveat was not missing.** Nearly every slide carries "Not validated on
+real data" in its footer. The warning was present, prominent, repeated — and
+overridden anyway. That is the strongest possible argument for this repo's own
+rule: *prefer a firing check over prose* (FOUNDATIONS §9). A gate that is a
+sentence is not a gate. §6bis makes it a script.
+
+### T4 — A structural flaw cannot be tuned away, and a network hides its own
+
+CICADA's F1 sat at 0.68 through **all three generations** — 83% recall, 57%
+precision, ~19 false alarms per recording. Root cause: it has no
+minimum-active-cell floor, so it fires on sparse low-count coincidences that
+SCE / CoactDetect / LoCo reject (they require ≥3 co-active ROIs). Raising a
+percentile cannot add a floor the algorithm does not have. The 2026-08-05
+adoption raised CICADA's SLOW percentile anyway; `generate_sce_cicada.m` still
+has no `min_rois` gate, and the flaw is still open.
+
+For a network this is *worse*, not better. CICADA's flaw was visible by reading
+the algorithm. A model's equivalent — no notion of a participant floor, or a
+learned dependence on local rate — cannot be read off the weights. **Behavioural
+probes are the only instrument**, which promotes `hot_window` and
+`gt.distractors` from diagnostics to required, thresholded tests (§6bis).
+
+### T5 — Tuning scope ≠ deployment scope
+
+SCE and CICADA were tuned under **global** scope on single-region, whole-trace
+synthetic data. The real-data viewer runs **per-region** scope. Generate in the
+scope the thing actually deploys in.
+
+### T6 — Validation was done on the generation that got superseded
+
+Leave-one-recording-out CV exists only for **Gen-2**. The Gen-3 calibrated optima
+are **not cross-validated**, and *the detector ranking differs between the two
+generations*. Any change to the generator invalidates every validation number
+computed before it — silently, unless something enforces the link.
+
+### T7 — Grid-edge censoring
+
+Several optima sit at the extreme of the swept range (SCE/CICADA percentiles;
+CoactDetect alpha 1e-6; CICADA 99.9999 SLOW). An optimum at the boundary means
+the true optimum may lie outside it — the search reports a number either way.
+
+### T8 — Artifacts outlive the settings that made them
+
+A 2026-07-20 export sat on disk produced by the **old** settings, indistinguishable
+at a glance from current output.
+
 ## 5. The honest blocker: nothing measures the domain gap
 
 Two facts that have to be stated plainly:
 
-1. **The benchmark's realism parameters were never signed off.**
-   `rederive_optima_fast.m` says "PROVISIONAL — params from a measurement pending
-   Tony's review". The benchmark is parameterized by the *measured coordination
-   timescale*, and that measurement was not reviewed. Training on it bakes an
-   unreviewed number into a model instead of into a config file.
+1. **The realism measurement exists and is used, but was never reviewed.**
+   (Corrected 2026-08-12 after reading the optim_history deck — an earlier draft
+   of this file implied the measurement had not been made.) It *has*: the Gen-3
+   calibrated benchmark is built from onset-jitter and per-ROI rate measured off
+   the real baseline, and those files —
+   `fast_coordination_measured.mat`, `slow_coordination_measured.mat`,
+   `coordination_timescale_*`, `rate_measured.*`, `width_measured.*` — live in
+   `<darkroom>/constellation/` (deliberately *not* moved into `optim_history/`,
+   because other work reads them too). What is missing is the **review**:
+   `rederive_optima_fast.m` still says "PROVISIONAL — params from a measurement
+   pending Tony's review". So the number is real, in use, shipped as production
+   defaults — and unsigned. Training on it bakes an unreviewed constant into a
+   model instead of into a config file.
 2. **There is no labeled real data.** So "does the synthetic distribution match
    reality" is currently unanswerable, and a model can look excellent on
-   held-out synthetic while failing on a real slice.
+   held-out synthetic while failing on a real slice. This is not a hypothetical:
+   the calibrated settings were adopted into production **without** the
+   real-data validation step (T3), so right now nobody knows whether the Gen-3
+   benchmark improved real detection or only synthetic scores.
 
 ### What to do about it
 
@@ -198,17 +314,52 @@ work happens.
 |---|---|---|---|
 | 1 | Port Layer 1 + parity test | benchmark runs in Python; the opaque fixture is replaced by a regenerable one | MATLAB once, to emit reference JSONs |
 | 2 | Port scoring (`score_coord_detection`, `score_coord_grid`) | recall-by-participation and FA-vs-density for all six ports | 1 |
-| 3 | **ROC / sensitivity bench across the six** | a portfolio-grade result, and the first real answer to "which detector, when" | 2 |
+| 3 | **ROC / sensitivity bench across the six** — plus the regime-shift test (§6bis #3) | a portfolio-grade result, and a standing guard against T1 | 2 |
 | 4 | Measure real-data statistics; review the timescale | the generator's priors, and a realism check | real stores + Tony's review |
 | 5 | Layer 2: superset generator + domain randomization + noise model | training-set generation at volume | 1, 4 |
 | 6 | Dataset contract + label emitter + rasterizer | a stable on-disk format | 5 |
 | 7 | Gold-set labeling (scope TBD) | the only honest eval number | a human decision |
 
 **Stages 1–3 are worth doing on their own merits.** They replace an
-unreproducible fixture, and they answer a question the lab actually has — how the
-six detectors compare, and where each fails — without committing to any machine
-learning at all. Stage 4 is the gate: everything after it depends on numbers
-nobody has reviewed yet.
+unreproducible fixture and turn `deploy_cost.png` from a figure into a test.
+
+One correction to an earlier draft: stage 3 is **not** the first comparison of
+the six — that exists, pooled over 6 seeds (deck slide 14: LoCo FAST F1 0.86 at
+99% precision; SCE and CoactDetect 0.83; spike-sync 0.82; CICADA 0.68;
+RateDetect 0.44). Its value here is different and larger: a Python bench can be
+run by anyone without MATLAB, wired into CI, and — unlike the MATLAB campaign —
+made to **fail** when a regime shift or a participant-floor probe regresses.
+
+Stage 4 is the gate, and §6bis is what stops "the gate" from meaning what it
+meant on 2026-08-05.
+
+## 6bis. Making the gate mechanical — the actual anti-trap work
+
+T3 is the load-bearing lesson: **a gate written as a sentence gets skipped.** The
+07-23 deck named its deciding step, footered every slide with "not validated on
+real data", and production shipped without it anyway. So the following are not
+recommendations in this document — they are things to build, and each one is a
+specific trap turned into a check that fails closed.
+
+| # | check | catches | shape |
+|---|---|---|---|
+| 1 | **Provenance stamp on every dataset** — generator git sha, hashes of the measured-parameter files it was built from, `measurements_reviewed: bool`, `scope: global\|regional`. Model artifacts record the dataset stamp. | T6, T8 | metadata written at generation; nothing to remember |
+| 2 | **Promotion gate** — refuse to mark any dataset or model "production" when `measurements_reviewed` is false, or when its generator sha ≠ the current one. | T3, T6 | `tools/check_training_provenance.py`, exit 1 |
+| 3 | **Regime-shift test** — tune/train on regime A, evaluate on regime B, assert the precision drop stays under a bound. | **T1** | a test, not a figure |
+| 4 | **Negative-class probes with thresholds** — false-alarm rate inside `hot_window`; fire rate on `gt.distractors`. Bounded, asserted. | T1, T4 | required test cases |
+| 5 | **Participant-floor probe** — plant events with `n_part` below the intended floor; assert the model does not fire. | **T4** | behavioural test for a structural property |
+| 6 | **Edge-of-range guard** — if a selected operating point or optimum lands on the boundary of the swept/sampled range, fail loudly instead of reporting it. | T7 | assertion in the sweep |
+| 7 | **Measured-vs-synthetic statistics check** — two-sample comparison of per-ROI rate, ISI/CV, coactivity and event spacing, synthetic vs real. | T2 | the realism check from §5 |
+
+Check 3 deserves emphasis: **`deploy_cost.png` is a test that was drawn as a
+figure.** Had it existed as an assertion on 2026-07-15, the 14 s benchmark would
+have failed on day one instead of after two weeks of tuning against it. Turning
+that one figure into a standing test is probably the single highest-value item on
+this page.
+
+Checks 1 and 2 are what make §6's "Stage 4 is the gate" true rather than
+aspirational. Written only as prose, it is the same sentence the 07-23 deck
+wrote — and that sentence lost to a shipping deadline.
 
 ## 7. Open questions for Tony
 
@@ -223,3 +374,12 @@ nobody has reviewed yet.
 4. **What is the actual downstream goal:** a better detector, a faster one, or a
    *calibration-free* one? They imply different training targets, and only the
    third is clearly worth the trouble given six working detectors already exist.
+   The optim_history campaign sharpens this: the expensive, repeated failure was
+   **calibration against a mis-specified benchmark**, not detection itself. A
+   model whose selling point is "no operating point to mis-tune" would attack the
+   thing that actually cost two weeks — twice.
+5. **Should the real-data validation (deck item 1) be run before any of this?**
+   It has been outstanding since 2026-07-23, the viewer crash that blocked it was
+   fixed on 2026-08-04, and current production defaults rest on it. Porting a
+   benchmark whose real-world effect is still unverified risks building stage 5
+   on stage 4's unreviewed number — which is T3 again, one level up.
