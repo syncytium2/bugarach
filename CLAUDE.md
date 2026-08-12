@@ -71,11 +71,15 @@ The state on `origin` must always be enough to resume elsewhere (FOUNDATIONS
   work. Several related commits — a vendored tool plus its wiring plus its
   docs — belong in one. Six PRs for one afternoon of related doc edits is
   fragmentation, not rigour.
-- **`--auto` only waits if something is required to pass.** `main` must have
-  branch protection with the CI contexts (`test (3.11)/(3.13)/(3.14)`) as
-  required status checks, no required reviews, `enforce_admins=false` so a
-  wedged CI cannot lock the repo. **Without it, `--auto` merges instantly and
-  the PR gates nothing.**
+- **Merge with `bash tools/merge_when_green.sh <pr>`, not `gh pr merge --auto`.**
+  `--auto` only waits for *required* checks; with no branch protection nothing is
+  required, so it merges instantly and the PR gates nothing. The script does the
+  waiting and verifying itself, and **fails closed when no checks are found** —
+  an absent gate is indistinguishable from a passed one, so absence is treated as
+  failure. It self-tests, and `tests/test_merge_gate.py` runs that in CI.
+  It is weaker than branch protection (it only governs merges that go through
+  it), so `docs/todo/2026-08-12-enable-branch-protection-on-main.md` stays open —
+  but nothing is waiting on that todo to be safe today.
   *This was live for a whole session:* every PR merged ~90 seconds before its
   own CI finished. They all happened to pass, so it looked fine. The tell is
   `gh pr view N --json autoMergeRequest` returning `null` — if auto-merge were

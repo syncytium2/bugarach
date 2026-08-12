@@ -63,7 +63,21 @@ gh api repos/syncytium2/bugarach/branches/main/protection --jq '.required_status
 gh pr view <N> --json autoMergeRequest   # must NOT be null
 ```
 
-## Why this is filed rather than just done
+## Not blocked on this — the client-side half already landed
+
+Filing a todo that says "a human should run a command" is the same failure this
+document is about: a gate that depends on somebody remembering. So the half that
+needs no permissions was built instead — `tools/merge_when_green.sh` waits for a
+PR's checks, verifies them, and **refuses to merge when no checks are found**,
+which is precisely the condition that made `--auto` a no-op. It self-tests and
+runs in CI via `tests/test_merge_gate.py`.
+
+That script is **weaker** than branch protection and does not replace it: it only
+governs merges that go through it, so a session calling `gh pr merge` directly
+still bypasses it. Server-side protection is the real fix — but it is now an
+improvement, not a prerequisite for being safe.
+
+## Why the server-side half is filed rather than just done
 
 Changing branch protection is a settings change on a public repo and needs
 admin rights; it was declined to the session that found the problem, correctly —
