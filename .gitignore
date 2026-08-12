@@ -7,3 +7,6 @@ build/
 *.egg-info/
 .pytest_cache/
 .DS_Store
+# Claude Code writes interactive "always allow" rules here; the shared
+# baseline is the tracked .claude/settings.json (see docs/session_protocol.md)
+.claude/settings.local.json
