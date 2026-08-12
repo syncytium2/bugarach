@@ -5,6 +5,12 @@ filed: 2026-08-12
 
 # Port interface2's coordination benchmark + scoring suite
 
+> **Design lives in [`docs/simulation_plan.md`](../simulation_plan.md)** (added
+> 2026-08-12, when Tony asked to plan the rebuild with training sets in view).
+> This file stays the *inventory* of what exists upstream; the plan decides what
+> to build. Read the plan first — it supersedes the "just port it" framing below
+> with a two-layer design and names the blocker (no labeled real data).
+
 The simulation, scoring and calibration tooling for coordinated-event detection
 **already exists** in interface2. It was never ported to bugarach, and nothing
 in this repo pointed at it — a session surveying bugarach alone concluded no
