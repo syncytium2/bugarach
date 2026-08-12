@@ -60,7 +60,21 @@ The state on `origin` must always be enough to resume elsewhere (FOUNDATIONS
 
 - **Push important steps promptly.** A completed, verified step (port lands,
   bug fixed, doc revised) is committed and pushed in the same breath — never
-  batched for later. `main` stays green (CI is the gate).
+  batched for later. This is the rule that matters most; nothing below may be
+  used as a reason to sit on unpushed work.
+- **Work on a branch; land on `main` through a green PR.** Never commit to
+  `main` directly. Branch, push the branch immediately (`git push -u origin
+  <slug>`), open a PR, merge when CI passes — `gh pr merge --squash --auto`
+  does the waiting for you.
+  *Why this replaced "commit straight to main" (reconciled 2026-08-12):* CI
+  triggers on `push: [main]` and `pull_request`, so a direct push to `main`
+  runs CI **after** `main` already has the commit. "`main` stays green (CI is
+  the gate)" was therefore unachievable by the flow that sentence sat next to —
+  CI could only report the breakage, not prevent it. A PR makes the same
+  sentence true. It also makes one-session-one-branch real, so two sessions
+  cannot collide on `main` (`docs/session_protocol.md`).
+  The push-promptly rule is unaffected: the branch is pushed on creation, so
+  work is durable on `origin` long before the PR merges.
 - **Stopping mid-task**: push a WIP branch (`wip/<slug>`) AND write
   `HANDOFF.md` at the repo root — what's in flight, exact next step, how to
   verify — then push that too. Delete `HANDOFF.md` when the task completes.
@@ -80,11 +94,22 @@ The state on `origin` must always be enough to resume elsewhere (FOUNDATIONS
   `optimize_detectors.m`, `calibrate6.m`. Running/validating the ports still
   needs neither MATLAB nor the checkout. See
   [`docs/todo/2026-08-12-port-coordination-benchmark.md`](docs/todo/2026-08-12-port-coordination-benchmark.md).
-- **Optimizer/figure output goes to the Dropbox darkroom**, not the repo and
-  not local disk: `<dropbox>/darkroom/constellation/` (routed by branch name
-  via interface2's `if2_darkroom.m`). It is mounted on **every** machine, so
-  it is a cross-machine shared resource — claim it on the board before
-  writing. Never hardcode the path (sapper SAP004); resolve it.
+- **Figure/report output goes to the Dropbox darkroom**, not the repo and not
+  local disk. bugarach owns `<darkroom>/bugarach/` — resolve it with
+  `bugarach.paths.darkroom()`, which reads `$BUGARACH_DARKROOM` and returns
+  `None` (skip the export) when unset. Never hardcode it: the path carries a
+  person's name and this repo is public (sapper SAP004).
+  `<darkroom>/constellation/` is the **MATLAB producer** team's folder —
+  detector sweeps and calibrated operating points live there; don't write into
+  it. The darkroom is mounted on **every** machine, so it is a cross-machine
+  shared resource: claim it on the board before writing.
+- **Cross-OS**: code uses pathlib and env vars — keep it that way (sapper
+  SAP004 blocks personal absolute paths). MATLAB launch for reference
+  regeneration is version-pinned R2025b, full path, never bare `matlab`:
+  - Mac: `/Applications/MATLAB_R2025b.app/bin/matlab -batch "..."`
+  - WSL: `/mnt/c/Program Files/MATLAB/R2025b/bin/matlab.exe -batch "..."`
+    (launch path only — script bodies use Windows `C:\...` paths, per
+    interface2's SAP003 lesson).
 
 ## Multi-session coordination — assume you are not alone
 
@@ -104,13 +129,6 @@ a vendored file in place. Check staleness with
 interface2 clone first; the wrapper refuses to guess, and
 [`docs/todo/2026-08-12-report-freshness-gate-clone-bug.md`](docs/todo/2026-08-12-report-freshness-gate-clone-bug.md)
 explains why).
-- **Cross-OS**: code uses pathlib and env vars — keep it that way (sapper
-  SAP004 blocks personal absolute paths). MATLAB launch for reference
-  regeneration is version-pinned R2025b, full path, never bare `matlab`:
-  - Mac: `/Applications/MATLAB_R2025b.app/bin/matlab -batch "..."`
-  - WSL: `/mnt/c/Program Files/MATLAB/R2025b/bin/matlab.exe -batch "..."`
-    (launch path only — script bodies use Windows `C:\...` paths, per
-    interface2's SAP003 lesson).
 
 ## Portfolio posture
 
@@ -123,10 +141,14 @@ stranger deciding whether to hire its author?
 ## Git conduct
 
 - Commit and push verified work without asking (Tony juggles projects and
-  wants finished work landed) — with ONE exception: **never rewrite git
-  history** (filter-repo, rebase of pushed commits, force-push) without
-  restating what will be destroyed and getting explicit confirmation in
-  words. A bare menu-choice reply is not consent (near-miss 2026-08-11).
+  wants finished work landed) — including opening the PR and setting it to
+  auto-merge on green. "Without asking" survives the branch-and-PR flow above;
+  what changed is the route to `main`, not whether you need permission.
+- **Never rewrite git history** (filter-repo, rebase of pushed commits,
+  force-push) without restating what will be destroyed and getting explicit
+  confirmation in words. A bare menu-choice reply is not consent (near-miss
+  2026-08-11). Merging a PR is not a rewrite; squash-merging your own
+  feature branch is fine.
 
 ## Housekeeping
 
