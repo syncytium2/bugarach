@@ -68,9 +68,33 @@ The state on `origin` must always be enough to resume elsewhere (FOUNDATIONS
 - **Machine-local inventory** (everything else lives in the repo): the
   `.venv` (rebuild: `python3 -m venv .venv && pip install -e ".[dev]"`),
   `BUGARACH_DATA_ROOT` (real stores; optional — everything but the
-  real-slice smoke tests runs without it), MATLAB + interface2 checkout
-  (ONLY needed to regenerate parity references; running/validating the
-  ports needs neither), Playwright chromium (screenshots only).
+  real-slice smoke tests runs without it), MATLAB + interface2 checkout,
+  Playwright chromium (screenshots only).
+- **What the interface2 checkout actually holds** (this line used to say
+  "ONLY needed to regenerate parity references" — that was wrong, and a
+  session acting on it concluded bugarach had no simulator and proposed
+  building one from scratch): besides the MATLAB originals, it carries the
+  **coordinated-event simulation, scoring and calibration suite** that
+  produced the detector operating points — `generate_synth_coord.m`,
+  `generate_coord_benchmark.m`, `score_coord_detection.m`,
+  `optimize_detectors.m`, `calibrate6.m`. Running/validating the ports still
+  needs neither MATLAB nor the checkout. See
+  [`docs/todo/2026-08-12-port-coordination-benchmark.md`](docs/todo/2026-08-12-port-coordination-benchmark.md).
+- **Optimizer/figure output goes to the Dropbox darkroom**, not the repo and
+  not local disk: `<dropbox>/darkroom/constellation/` (routed by branch name
+  via interface2's `if2_darkroom.m`). It is mounted on **every** machine, so
+  it is a cross-machine shared resource — claim it on the board before
+  writing. Never hardcode the path (sapper SAP004); resolve it.
+
+## Multi-session coordination — assume you are not alone
+
+Several stateless sessions may run against this repo at once, on this machine
+and others; a session learns what another did **only** from durable artifacts.
+Read [`docs/session_protocol.md`](docs/session_protocol.md) and claim shared
+external outputs on [`docs/SESSIONS.md`](docs/SESSIONS.md) before writing them.
+The `SessionStart` hook (`.claude/hooks/session-start.sh`) prints the briefing
+automatically — if it ever stops firing, that is a bug worth fixing, not an
+inconvenience to route around.
 - **Cross-OS**: code uses pathlib and env vars — keep it that way (sapper
   SAP004 blocks personal absolute paths). MATLAB launch for reference
   regeneration is version-pinned R2025b, full path, never bare `matlab`:
