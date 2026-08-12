@@ -132,6 +132,32 @@ interface2 clone first; the wrapper refuses to guess, and
 [`docs/todo/2026-08-12-report-freshness-gate-clone-bug.md`](docs/todo/2026-08-12-report-freshness-gate-clone-bug.md)
 explains why).
 
+## Document deliverables — run the murderboard first (anti-slop)
+
+When asked for a **document** deliverable — the methodology narrative, methods or
+manuscript text, an explainer, a figure or its caption, a report, or a human-facing
+handoff — do **not** hand over a first draft. **Invoke `/murderboard <artifact>`**
+(vendored skill in `.claude/skills/murderboard/`); it gates freshness, derives the
+role roster, resolves the **built** artifact rather than its generator, and emits a
+checkable run record. Without the skill, follow
+[`docs/doc_review_process.md`](docs/doc_review_process.md) by hand: draft, run the
+review team (**every role runs** — scale *how* you run them to stakes, never
+*which* ones), apply the fixes, **re-review the repaired artifact — blind pass
+first**, and deliver the corrected document **plus a summary and a role ledger**
+with any residual `⚠` flags. Then `bash tools/murderboard_roster.sh check <report>`
+so a dropped role cannot pass as a clean one (it derives the roster from the process
+doc, so a new role propagates for free — 11 roles as of b2b2ba2).
+
+For papers, use `tools/fetch_paper.py` with `MURDERBOARD_LIT` set to a directory of
+PDFs — check `--have` before downloading, `--need` what you cannot reach.
+
+**Why this repo in particular:** FOUNDATIONS §8 makes bugarach a portfolio artifact,
+and the open [methodology narrative](docs/todo/2026-08-11-methodology-narrative-doc.md)
+is explicitly written for outside readers — bios, grant facilities sections, hiring
+reviewers. That todo already warns "verify all counts/claims against the tree at
+writing time"; the murderboard is the mechanized version of that warning. A parity
+claim that overstates, or a test count quoted from memory, costs more here than a bug.
+
 ## Portfolio posture
 
 The repo is a resume artifact as much as a tool (FOUNDATIONS §8): commit
