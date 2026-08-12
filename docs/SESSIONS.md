@@ -68,3 +68,16 @@ Template:
 - **Notes:** Installed the vendored session protocol, the SessionStart hook, and this board.
   Read-only survey of `interface2` (`origin/main`, `origin/detector-defaults-optimized`) and
   the Dropbox darkroom — no writes to either. Findings filed in `docs/todo/`.
+
+### WSMIP-win/vendor-session-protocol — create the bugarach darkroom folder
+- **Status:** DONE
+- **Started:** 2026-08-12
+- **Writes:** `<darkroom>/bugarach/` (NEW), `<darkroom>/README.md` (appended one dated
+  UPDATE section — that file is the shared convention and asks for notes to be left in it)
+- **Claims:** `<darkroom>/bugarach/` — **exclusive-write for bugarach**. No other project
+  writes here; nothing branch-routes into it (it is a separate Python repo, like
+  `haruspex/` and `no_peak/`).
+- **Notes:** Created because bugarach's output is distinct from the `constellation/` team's
+  (Tony, 2026-08-12): constellation is the MATLAB **producer**, bugarach is the Python port
+  + viewer that consumes the same contract. Did NOT touch `constellation/` or any other
+  project folder. Resolve the path via `$BUGARACH_DARKROOM` — never hardcode it (SAP004).
