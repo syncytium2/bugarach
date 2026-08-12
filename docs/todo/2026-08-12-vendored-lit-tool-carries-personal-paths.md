@@ -3,7 +3,7 @@ status: open
 filed: 2026-08-12
 ---
 
-# murderboard's `fetch_paper.py` carries personal paths — removed here; needs a decision + an upstream report
+# murderboard's `fetch_paper.py` carries personal paths — removed here; history decided, upstream report still open
 
 ## What
 
@@ -34,7 +34,16 @@ prevent, and bugarach has little use for the lit tool (the murderboard process
 references it only when a reviewer needs a paper). `check_vendor_freshness.sh`
 no longer lists it. The deviation is recorded in `CLAUDE.md`.
 
-## 1. Decision needed from Tony — history
+## 1. History — DECIDED: leave it (Tony, 2026-08-12)
+
+**Resolved: leave it. No history rewrite.** The file is gone from the tip; the
+blob stays in history. The reasoning below is kept as the record of why, since
+"we decided not to" is only useful if the alternatives are written down.
+
+This item stays **open** for the upstream report and the sapper-rule question
+below — only the history question is closed.
+
+### The reasoning, as it stood
 
 The string reached `main` and was pushed to a **public** GitHub remote (in the
 merge of PR #2, commit `2ad4ac4`). Removing the file fixes the *tip*; the blob
