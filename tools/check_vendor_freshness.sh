@@ -71,10 +71,18 @@ else
   [ "$rc" -eq 0 ] && rc=2
 fi
 
-# --- family 2: the gate itself, vendored from murderboard --------------------
+# --- family 2: the murderboard review harness --------------------------------
+# List EVERY vendored file of the family: the gate takes the first one's stamp as
+# the family's version and reports the others if they disagree, which is how a
+# half-finished re-vendor (process doc bumped, skill left behind) gets caught.
 bash "$GATE" $VERBOSE \
   --label murderboard \
   --slug syncytium2/murderboard \
-  --file tools/murderboard_freshness.sh || { [ $? -eq 1 ] && rc=1 || { [ "$rc" -eq 0 ] && rc=2; }; }
+  --file docs/doc_review_process.md \
+  --file tools/murderboard_roster.sh \
+  --file tools/fetch_paper.py \
+  --file tools/murderboard_freshness.sh \
+  --file .claude/skills/murderboard/SKILL.md \
+  || { [ $? -eq 1 ] && rc=1 || { [ "$rc" -eq 0 ] && rc=2; }; }
 
 exit $rc
