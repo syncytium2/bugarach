@@ -162,6 +162,26 @@ reviewers. That todo already warns "verify all counts/claims against the tree at
 writing time"; the murderboard is the mechanized version of that warning. A parity
 claim that overstates, or a test count quoted from memory, costs more here than a bug.
 
+## Writing for a human reader
+
+Tony's correction, 2026-08-12: *"the numbers and dates don't mean much to a
+human."* Applies to docs, commit messages, PR bodies, and replies.
+
+- **Name things; don't index them.** If a doc defines a list of traps, stages, or
+  findings, refer to them by a short descriptive name, never `T3` or `stage 4`. A
+  sentence like "stage 4 is T3 again" asks the reader to hold two numbered
+  taxonomies in their head and cross-reference them — it carries no meaning on
+  its own. "We'd be skipping the check again because there was something more
+  interesting to build" does.
+- **Commit shas and dates are lookup keys, not content.** `b94062e` and
+  `2026-07-23` tell a reader nothing. Say what changed and how long it sat.
+  Include the sha only when someone would actually go look it up, and then in
+  parentheses after the meaning.
+- **Prefer the consequence to the label.** "LoCo goes from 81 events to 28 on a
+  real recording" beats "the adoption had a large effect".
+- Same instinct as the plot conventions above: identity in the label, no titles
+  restating what the axes already say.
+
 ## Portfolio posture
 
 The repo is a resume artifact as much as a tool (FOUNDATIONS §8): commit
