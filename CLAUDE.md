@@ -148,8 +148,12 @@ with any residual `⚠` flags. Then `bash tools/murderboard_roster.sh check <rep
 so a dropped role cannot pass as a clean one (it derives the roster from the process
 doc, so a new role propagates for free — 11 roles as of b2b2ba2).
 
-For papers, use `tools/fetch_paper.py` with `MURDERBOARD_LIT` set to a directory of
-PDFs — check `--have` before downloading, `--need` what you cannot reach.
+**Deliberate deviation:** murderboard's `fetch_paper.py` is **not** vendored here.
+It hardcodes a personal/institutional library path, which SAP004 blocks and which
+must not sit in a public repo — see
+[`docs/todo/2026-08-12-vendored-lit-tool-carries-personal-paths.md`](docs/todo/2026-08-12-vendored-lit-tool-carries-personal-paths.md).
+If a review needs a paper, fetch it by hand. Do not re-vendor that file without
+reading it first.
 
 **Why this repo in particular:** FOUNDATIONS §8 makes bugarach a portfolio artifact,
 and the open [methodology narrative](docs/todo/2026-08-11-methodology-narrative-doc.md)
