@@ -80,7 +80,6 @@ bash "$GATE" $VERBOSE \
   --slug syncytium2/murderboard \
   --file docs/doc_review_process.md \
   --file tools/murderboard_roster.sh \
-  --file tools/fetch_paper.py \
   --file tools/murderboard_freshness.sh \
   --file .claude/skills/murderboard/SKILL.md \
   || { [ $? -eq 1 ] && rc=1 || { [ "$rc" -eq 0 ] && rc=2; }; }
