@@ -64,10 +64,29 @@ The state on `origin` must always be enough to resume elsewhere (FOUNDATIONS
   used as a reason to sit on unpushed work.
 - **Work on a branch; land on `main` through a green PR.** Never commit to
   `main` directly. Branch, push the branch immediately (`git push -u origin
-  <slug>`), open a PR, merge when CI passes — `gh pr merge --merge --auto`
-  does the waiting for you. Use `--merge`, **not** `--squash`: commit messages
-  here are the story a reviewer reads (Portfolio posture, below), and squashing
-  a branch flattens several of them into one.
+  <slug>`), open a PR, merge when CI passes — `gh pr merge --merge --auto`.
+  Use `--merge`, **not** `--squash`: commit messages here are the story a
+  reviewer reads (Portfolio posture, below), and squashing flattens them.
+- **One PR per theme, not per commit.** A PR is a unit of review, not a unit of
+  work. Several related commits — a vendored tool plus its wiring plus its
+  docs — belong in one. Six PRs for one afternoon of related doc edits is
+  fragmentation, not rigour.
+- **Merge with `bash tools/merge_when_green.sh <pr>`, not `gh pr merge --auto`.**
+  `--auto` only waits for *required* checks; with no branch protection nothing is
+  required, so it merges instantly and the PR gates nothing. The script does the
+  waiting and verifying itself, and **fails closed when no checks are found** —
+  an absent gate is indistinguishable from a passed one, so absence is treated as
+  failure. It self-tests, and `tests/test_merge_gate.py` runs that in CI.
+  It is weaker than branch protection (it only governs merges that go through
+  it), so `docs/todo/2026-08-12-enable-branch-protection-on-main.md` stays open —
+  but nothing is waiting on that todo to be safe today.
+  *This was live for a whole session:* every PR merged ~90 seconds before its
+  own CI finished. They all happened to pass, so it looked fine. The tell is
+  `gh pr view N --json autoMergeRequest` returning `null` — if auto-merge were
+  armed it would name a merge method. **Check that, don't read past it.**
+  It is the skipped-gate trap from [`docs/simulation_plan.md`](docs/simulation_plan.md),
+  committed in the same session that documented it: a gate written as a
+  sentence, shipped without the mechanism.
   *Why this replaced "commit straight to main" (reconciled 2026-08-12):* CI
   triggers on `push: [main]` and `pull_request`, so a direct push to `main`
   runs CI **after** `main` already has the commit. "`main` stays green (CI is
