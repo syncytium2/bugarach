@@ -95,6 +95,15 @@ external outputs on [`docs/SESSIONS.md`](docs/SESSIONS.md) before writing them.
 The `SessionStart` hook (`.claude/hooks/session-start.sh`) prints the briefing
 automatically — if it ever stops firing, that is a bug worth fixing, not an
 inconvenience to route around.
+
+**Vendored copies** (`docs/session_protocol.md` and the hook, from interface2;
+`tools/murderboard_freshness.sh`, from syncytium2/murderboard) carry a
+provenance stamp on line 1. To refresh: re-copy and bump the stamp — never edit
+a vendored file in place. Check staleness with
+`bash tools/check_vendor_freshness.sh` (set `BUGARACH_INTERFACE2` to a local
+interface2 clone first; the wrapper refuses to guess, and
+[`docs/todo/2026-08-12-report-freshness-gate-clone-bug.md`](docs/todo/2026-08-12-report-freshness-gate-clone-bug.md)
+explains why).
 - **Cross-OS**: code uses pathlib and env vars — keep it that way (sapper
   SAP004 blocks personal absolute paths). MATLAB launch for reference
   regeneration is version-pinned R2025b, full path, never bare `matlab`:
