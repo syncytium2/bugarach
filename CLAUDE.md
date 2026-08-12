@@ -64,10 +64,25 @@ The state on `origin` must always be enough to resume elsewhere (FOUNDATIONS
   used as a reason to sit on unpushed work.
 - **Work on a branch; land on `main` through a green PR.** Never commit to
   `main` directly. Branch, push the branch immediately (`git push -u origin
-  <slug>`), open a PR, merge when CI passes — `gh pr merge --merge --auto`
-  does the waiting for you. Use `--merge`, **not** `--squash`: commit messages
-  here are the story a reviewer reads (Portfolio posture, below), and squashing
-  a branch flattens several of them into one.
+  <slug>`), open a PR, merge when CI passes — `gh pr merge --merge --auto`.
+  Use `--merge`, **not** `--squash`: commit messages here are the story a
+  reviewer reads (Portfolio posture, below), and squashing flattens them.
+- **One PR per theme, not per commit.** A PR is a unit of review, not a unit of
+  work. Several related commits — a vendored tool plus its wiring plus its
+  docs — belong in one. Six PRs for one afternoon of related doc edits is
+  fragmentation, not rigour.
+- **`--auto` only waits if something is required to pass.** `main` must have
+  branch protection with the CI contexts (`test (3.11)/(3.13)/(3.14)`) as
+  required status checks, no required reviews, `enforce_admins=false` so a
+  wedged CI cannot lock the repo. **Without it, `--auto` merges instantly and
+  the PR gates nothing.**
+  *This was live for a whole session:* every PR merged ~90 seconds before its
+  own CI finished. They all happened to pass, so it looked fine. The tell is
+  `gh pr view N --json autoMergeRequest` returning `null` — if auto-merge were
+  armed it would name a merge method. **Check that, don't read past it.**
+  It is the skipped-gate trap from [`docs/simulation_plan.md`](docs/simulation_plan.md),
+  committed in the same session that documented it: a gate written as a
+  sentence, shipped without the mechanism.
   *Why this replaced "commit straight to main" (reconciled 2026-08-12):* CI
   triggers on `push: [main]` and `pull_request`, so a direct push to `main`
   runs CI **after** `main` already has the commit. "`main` stays green (CI is
