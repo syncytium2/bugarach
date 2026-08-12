@@ -64,8 +64,10 @@ The state on `origin` must always be enough to resume elsewhere (FOUNDATIONS
   used as a reason to sit on unpushed work.
 - **Work on a branch; land on `main` through a green PR.** Never commit to
   `main` directly. Branch, push the branch immediately (`git push -u origin
-  <slug>`), open a PR, merge when CI passes — `gh pr merge --squash --auto`
-  does the waiting for you.
+  <slug>`), open a PR, merge when CI passes — `gh pr merge --merge --auto`
+  does the waiting for you. Use `--merge`, **not** `--squash`: commit messages
+  here are the story a reviewer reads (Portfolio posture, below), and squashing
+  a branch flattens several of them into one.
   *Why this replaced "commit straight to main" (reconciled 2026-08-12):* CI
   triggers on `push: [main]` and `pull_request`, so a direct push to `main`
   runs CI **after** `main` already has the commit. "`main` stays green (CI is
