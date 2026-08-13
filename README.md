@@ -134,5 +134,3 @@ in the test suite (the detectors themselves have no PySpike dependency).
 The test suite runs on the committed synthetic fixture. To also smoke-test a real
 slice, point `BUGARACH_DATA_ROOT` at an `event_store_onset*` store directory;
 the test skips when it is unset.
-# probe
-# probe2
