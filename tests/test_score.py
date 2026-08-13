@@ -250,3 +250,69 @@ def test_score_stream_handles_the_other_field_convention():
 def test_score_stream_refuses_something_that_is_not_a_detection():
     with pytest.raises(TypeError, match="no detection times"):
         score_stream(gt_at([10.0]), object())
+
+
+def _all_six(s):
+    """Every detector on one single-stream slice. Two call shapes, two field
+    conventions — score_stream absorbs both, which is the point of it."""
+    from bugarach.detectors.cicada import cicada_detect
+    from bugarach.detectors.coact import coact_detect
+    from bugarach.detectors.loco import loco_detect
+    from bugarach.detectors.rate import rate_detect, recording_extent, stream_trains
+    from bugarach.detectors.sce import sce_detect
+    from bugarach.detectors.sync import sync_detect
+    ext = recording_extent(s)
+    tr = stream_trains(s.streams["events"], ext)
+    return {
+        "loco": loco_detect(s).streams["events"],
+        "cicada": cicada_detect(s).streams["events"],
+        "sce": sce_detect(s).streams["events"],
+        "coact": coact_detect(tr, ext),
+        "rate": rate_detect(tr, ext),
+        "sync": sync_detect(tr, ext, tau_max=0.25, max_gap=0.5),
+    }
+
+
+@pytest.mark.parametrize("name", ["loco", "cicada", "sce", "coact", "rate", "sync"])
+def test_spans_reclassify_but_never_invent(name):
+    """The control on the interval rule, across every detector rather than the
+    convenient three.
+
+    Scoring by span must not be a tolerance quietly loosened for everyone. Two
+    properties say it isn't: the detection count is untouched (no detector gains
+    events by being scored differently), and hits only ever go up, by a
+    detection whose own span reached an event the point rule placed just out of
+    reach. Measured when this landed: SCE 0.08-0.38 F1 to 0.77-0.97, coact
+    +1 hit on 3 seeds in 7, and loco / cicada / rate / sync identical.
+
+    A regression here means the rule started matching on something other than
+    the detector's own claimed extent.
+    """
+    s_, gt = simulate_coordination(seed=3)
+    det = _all_six(s_)[name]
+    onsets = getattr(det, "onset_sec", None)
+    onsets = det.locs if onsets is None else onsets
+
+    points = score_detections(gt, onsets)
+    spans = score_stream(gt, det)
+
+    assert spans.n_detected == points.n_detected, "spans must not add detections"
+    assert spans.n_hit >= points.n_hit, "spans must not lose a hit"
+    assert spans.n_hit + spans.n_fa == points.n_hit + points.n_fa, \
+        "every detection is still either a hit or a false alarm"
+
+
+def test_only_the_binned_detector_moves_much():
+    """SCE is the one the point rule misread badly; the rest were already being
+    scored at roughly the right resolution. If a second detector ever swings
+    like SCE did, its reported resolution has changed and the bench's numbers
+    need re-reading before they are believed."""
+    s_, gt = simulate_coordination(seed=3)
+    for name, det in _all_six(s_).items():
+        onsets = getattr(det, "onset_sec", None)
+        onsets = det.locs if onsets is None else onsets
+        gained = score_stream(gt, det).n_hit - score_detections(gt, onsets).n_hit
+        if name == "sce":
+            assert gained >= 10, "the whole reason the rule exists"
+        else:
+            assert gained <= 1, f"{name} gained {gained} hits — check its width_kind"
