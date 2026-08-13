@@ -1,0 +1,22 @@
+{
+  // Cloudflare Workers config — assets-only, same shape as colonel_kernel's:
+  // no server script, Cloudflare just serves ./site directly.
+  //
+  // Nothing here runs Python. The site is a static build produced by
+  // `python tools/build_site.py`, so there is no server to keep warm, nothing
+  // to sleep, and no per-request cost. The interactive viewer (`bugarach view`)
+  // still needs a local Python process — see docs/deploy.md for why, and what
+  // it would take to put it in the browser instead.
+  //
+  // DATA POSTURE, load-bearing: only SYNTHETIC data is ever built into this
+  // site. FOUNDATIONS §5 keeps real stores machine-local behind
+  // BUGARACH_DATA_ROOT, and this repo and this site are public. The build
+  // script generates its own data from a seed; it reads no store.
+  "name": "bugarach",
+  "compatibility_date": "2026-07-01",
+  "workers_dev": true,
+  "preview_urls": true,
+  "assets": {
+    "directory": "./site"
+  }
+}

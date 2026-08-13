@@ -24,9 +24,14 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from pathlib import Path
 
-import h5py
 import numpy as np
 import scipy.io as sio
+
+# h5py is imported lazily, inside the v7.3 branch only. It is a compiled
+# extension with no pure-Python fallback, so a top-level import makes the whole
+# package unimportable anywhere h5py is unavailable — notably Pyodide, which is
+# how the viewer would run in a browser with no server. v7 stores (scipy) and
+# foreign CSV/array data need none of it.
 
 EVENT_FIELDS = ("locs", "amp", "width", "t50rise")
 
@@ -82,10 +87,31 @@ class Slice:
         return self.streams["slow"]
 
 
+def _h5py():
+    """Import h5py on demand, with a message that says what is actually wrong."""
+    try:
+        import h5py
+    except ImportError as exc:                       # pragma: no cover - env
+        raise ImportError(
+            "reading a MATLAB v7.3 (HDF5) store needs h5py, which is not "
+            "installed here. v7 stores and CSV/array input do not need it."
+        ) from exc
+    return h5py
+
+
+def is_v73(path: str | Path) -> bool:
+    """Is this an HDF5-backed (MATLAB v7.3) store? False when h5py is absent —
+    the caller then takes the scipy path, which is the right answer for v7."""
+    try:
+        return bool(_h5py().is_hdf5(Path(path)))
+    except ImportError:
+        return False
+
+
 def load_slice(path: str | Path) -> Slice:
     """Load one event_store_onset slice file (MATLAB v7 or v7.3)."""
     path = Path(path)
-    if h5py.is_hdf5(path):
+    if is_v73(path):
         return _load_v73(path)
     return _load_v7(path)
 
@@ -171,6 +197,7 @@ def _maybe_str(node) -> str | None:
 
 
 def _load_v73(path: Path) -> Slice:
+    h5py = _h5py()
     with h5py.File(path, "r") as f:
         fast = _stream_v73(f, f["fast"])
         slow = _stream_v73(f, f["slow"])
