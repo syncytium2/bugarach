@@ -9,8 +9,18 @@ Produces, named by the run so successive runs sit side by side rather than
 overwriting each other:
 
     coord_diagnostic_<tag>.html   the interactive view — zoom into a false alarm
+    coord_diagnostic_<tag>.png    a flat render of the same page
     coord_diagnostic_<tag>.txt    the scoreboard, in text so it can go in a
                                   commit message or a log where a figure cannot
+
+The PNG is not a convenience. The first version of this figure shipped with its
+lane labels written on top of the data, an unexplained marker, and detections
+too faint to see — because it was published without anyone rendering it. Both
+the darkroom README ("render every slide and look at it before shipping") and
+the murderboard's build-and-craft gate already said not to do that. Producing
+the flat render in the same command is that rule mechanized: the picture a
+reader will see is now an artifact of the build, previewable in Dropbox without
+opening anything.
 
 Destination is ``$BUGARACH_DARKROOM`` (see ``bugarach.paths``). It is never
 hardcoded: that path carries a person's name and this repo is public. With the
@@ -65,7 +75,8 @@ def build(args):
     from bugarach.detectors.rate import recording_extent
     from bugarach.simulate import simulate_coordination
     from bugarach.ui.app import _compute
-    from bugarach.ui.diagnostic import coordination_raster, score_table
+    from bugarach.ui.diagnostic import (coordination_diagnostic, legend_html,
+                                        score_table)
 
     slice_, gt = simulate_coordination(
         seed=args.seed,
@@ -91,8 +102,9 @@ def build(args):
             # docs/todo/2026-08-13-single-stream-defaults-fail.md.
             failed[det] = f"{type(exc).__name__}: {exc}"
 
-    fig = coordination_raster(slice_.streams["events"], ext=ext, lanes=lanes,
-                              gt=gt, height=args.height)
+    fig = coordination_diagnostic(slice_.streams["events"], ext=ext, lanes=lanes,
+                                  gt=gt, height=args.height)
+    legend = legend_html(lanes, gt)
 
     header = [
         f"bugarach coordination diagnostic — seed {args.seed}",
@@ -115,7 +127,7 @@ def build(args):
                    "points — this is a troubleshooting view, not a ranking."]
     report = "\n".join(header)
 
-    return fig, report, pn
+    return fig, legend, header, report, pn
 
 
 def main(argv=None):
@@ -137,6 +149,8 @@ def main(argv=None):
     p.add_argument("--tag", default=None, help="filename suffix (default: seed)")
     p.add_argument("--out", default=None,
                    help="destination directory; default $BUGARACH_DARKROOM")
+    p.add_argument("--no-png", dest="png", action="store_false", default=True,
+                   help="skip the flat render (needs playwright chromium)")
     args = p.parse_args(argv)
 
     from bugarach.paths import ENV_VAR, darkroom
@@ -154,7 +168,7 @@ def main(argv=None):
                   file=sys.stderr)
             return 2
 
-    fig, report, pn = build(args)
+    fig, legend, header, report, pn = build(args)
     tag = args.tag or f"seed{args.seed}"
     html, txt = dest / f"coord_diagnostic_{tag}.html", dest / f"coord_diagnostic_{tag}.txt"
 
@@ -162,15 +176,59 @@ def main(argv=None):
     # what produced its orphaned-file problem.
     with tempfile.TemporaryDirectory() as td:
         tmp_html = Path(td) / "fig.html"
-        pn.pane.HoloViews(fig).save(str(tmp_html))
+        # header + legend + figure: a figure whose markers need explaining
+        # and does not carry the explanation is not finished.
+        title = header[0]
+        subtitle = "  \n".join(header[1:4])
+        page = pn.Column(
+            pn.pane.Markdown("### " + title + "\n\n" + subtitle),
+            pn.pane.HTML(legend),
+            pn.pane.HoloViews(fig),
+            pn.pane.HTML("<pre style='font:12px ui-monospace,monospace'>"
+                         + report + "</pre>"),
+        )
+        page.save(str(tmp_html))
         os.replace(tmp_html, html)
         tmp_txt = Path(td) / "report.txt"
         tmp_txt.write_text(report + "\n", encoding="utf-8")
         os.replace(tmp_txt, txt)
 
+    written = [html, txt]
+    if getattr(args, "png", True):
+        shot = dest / f"coord_diagnostic_{tag}.png"
+        if _render_png(html, shot):
+            written.append(shot)
+        else:
+            print("(no PNG: pip install playwright && python -m playwright "
+                  "install chromium, or pass --no-png)", file=sys.stderr)
+
     print(report)
-    print(f"\nwrote {html}\n      {txt}")
+    print("\nwrote " + "\n      ".join(str(w) for w in written))
     return 0
+
+
+def _render_png(html_path: Path, png_path: Path, *, wait_ms: int = 3500) -> bool:
+    """Flatten the page to a PNG. Returns False rather than raising when the
+    browser is unavailable — a missing screenshot must not cost you the figure."""
+    try:
+        from playwright.sync_api import sync_playwright
+    except ImportError:
+        return False
+    try:
+        with tempfile.TemporaryDirectory() as td:
+            tmp = Path(td) / "shot.png"
+            with sync_playwright() as pw:
+                browser = pw.chromium.launch()
+                page = browser.new_page(viewport={"width": 1180, "height": 1400})
+                page.goto(html_path.resolve().as_uri())
+                page.wait_for_timeout(wait_ms)      # bokeh draws after load
+                page.screenshot(path=str(tmp), full_page=True)
+                browser.close()
+            os.replace(tmp, png_path)
+        return True
+    except Exception as exc:                        # noqa: BLE001
+        print(f"(PNG render failed: {type(exc).__name__}: {exc})", file=sys.stderr)
+        return False
 
 
 if __name__ == "__main__":
