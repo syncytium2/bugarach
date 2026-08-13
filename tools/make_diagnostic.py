@@ -161,7 +161,7 @@ def main(argv=None):
     p.add_argument("--hot-rate", type=float, default=0.25)
     p.add_argument("--distractors", type=int, default=3)
     p.add_argument("--height", type=int, default=560)
-    p.add_argument("--bench", choices=("sparse", "dense"), default=None,
+    p.add_argument("--bench", choices=("baseline", "senktide"), default=None,
                    help="render the bugarach.bench recording for this regime "
                         "instead of one built from the options above")
     p.add_argument("--tag", default=None, help="filename suffix (default: seed)")
