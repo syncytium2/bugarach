@@ -50,3 +50,23 @@ def test_refuses_a_non_numeric_pr_argument():
     r = subprocess.run(["bash", str(GATE), "not-a-pr"],
                        capture_output=True, text=True, cwd=REPO)
     assert r.returncode == 2, r.stdout + r.stderr
+
+
+def test_grace_period_is_documented_and_parsed():
+    """"No checks yet" and "no checks ever" are indistinguishable right after a
+    PR opens. Refusing instantly makes the gate cry wolf in the normal case —
+    and a gate that cries wolf gets bypassed. The grace window is the fix, so
+    pin that it exists rather than trusting the comment."""
+    src = GATE.read_text(encoding="utf-8")
+    assert "--grace" in src
+    assert "GRACE=" in src
+    r = subprocess.run(["bash", str(GATE), "--help"], capture_output=True, text=True)
+    assert "--grace" in r.stdout
+
+
+def test_absence_is_still_failure_after_the_grace_window():
+    """The grace period must not have turned "no checks" into a pass."""
+    src = GATE.read_text(encoding="utf-8")
+    none_branch = src.split("NONE)", 1)[1].split(";;", 1)[0]
+    assert "exit 1" in none_branch, "no-checks must still refuse, not merge"
+    assert "gh pr merge" not in none_branch
