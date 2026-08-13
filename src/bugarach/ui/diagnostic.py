@@ -1,35 +1,42 @@
-"""The troubleshooting view: raster + detector lanes + ground truth, one x-axis.
+"""The troubleshooting view: detector lanes over an ROI raster, sharing an x-axis.
 
-Ported from interface2's ``explore_sce`` (``drawStream``). The interactive viewer
-in :mod:`bugarach.ui.app` browses a slice; this answers a different question —
-*why did this detector fire there, and did it find what was planted?* — and
-returns a static figure you can save next to a run.
+The interactive viewer in :mod:`bugarach.ui.app` browses a slice. This answers a
+different question — *why did this detector fire there, and did it find what was
+planted?* — and returns a figure you can save next to a run.
 
-What is carried over from the original, and why each detail is load-bearing:
+Structure, and why it is two panels rather than one
+---------------------------------------------------
+A first version drew the detector lanes *inside* the raster axes, the way
+``explore_sce``'s ``drawStream`` does, with lane names written as floating text
+at the left edge. In MATLAB that works because the text is placed in normalized
+figure coordinates outside the data area. Rebuilt naively it does not: the labels
+land **on top of the data**, and there is no axis to hang them off.
 
-* **Detector lanes above the raster.** One row per detector, each detection drawn
-  as a bar spanning ``onset → onset + width``. Stacked, they make disagreement
-  between the six legible at a glance, which a per-detector plot cannot.
-* **A white separator band** between the raster and the lanes. Without it a
-  horizontal duration bar reads as a burst of raster activity — the original
-  calls this out explicitly, and it is worth keeping.
-* **ROIs sorted by event count, ascending.** Quiet ROIs at the bottom, busy ones
-  at the top; coordination reads as a vertical stripe instead of being lost in
-  whichever order the store happened to use.
-* **Isolated events in red.** An onset that falls inside no detected coordination
-  window is drawn red, the rest in grey. This is the diagnostic that shows *what
-  a detector left on the table* rather than only what it claimed.
-* **Lane geometry scales with ROI count** (``ls = max(1, n_roi / 50)``), so lanes
-  stay visible on a 400-ROI recording instead of being squeezed into a sliver.
+So the lanes get their own panel with a real categorical y-axis, x-linked to the
+raster through the shared ``t`` dimension. Detector names are tick labels — they
+cannot collide with anything, at any zoom, by construction.
 
-What is new here, because the original could not have it: a **ground-truth lane**.
-With planted data there is a right answer, so hits, misses and false alarms are
-drawn rather than inferred — green for a recovered event, red for a missed one,
-and a marker on each detection that matched nothing.
+Reading it
+----------
+* **Lanes panel** — one row per detector. A bar spans ``onset → onset + width``:
+  that is what the detector claimed. A **✕** marks a detection that matched no
+  planted event (a false alarm). The **planted** row shows ground truth:
+  ▲ filled where a detector recovered it, hollow where every detector missed it.
+* **Raster** — one row per ROI, sorted quietest at the bottom, so coordination
+  reads as a vertical stripe rather than being lost in store order. Onsets that
+  fall inside a detected window are **highlighted**; everything else is muted
+  grey. The highlight answers "what did this detector actually claim", and the
+  grey around it answers "what did it leave".
+* **Shaded band** — a dense-but-random block containing **no** planted events by
+  construction. Detections inside it are false alarms, and a detector that keys
+  on rate rather than coordination lights it up. That is the promiscuity probe.
+
+Colour is used for one thing at a time: detector identity in the lanes, and
+found/missed in the ground-truth row. The raster is deliberately monochrome so
+it never competes with them.
 
 Plot conventions follow CLAUDE.md: 60-base time ticks via the shared
-``_time_axis_hook``, identity in the y-label rather than a title, x linked
-through the shared ``t`` dimension, y unlinked per row.
+``_time_axis_hook``, identity in the y-label, x linked through ``t``.
 """
 
 from __future__ import annotations
@@ -40,16 +47,21 @@ import numpy as np
 from bugarach.score import score_detections
 from bugarach.ui.app import COLORS, SHORT, _time_axis_hook
 
-GT_HIT = "#2e7d32"
-GT_MISS = "#c62828"
-ISOLATED = "#d92020"
-MEMBER = "#444444"
+FOUND = "#1b7f3b"
+MISSED = "#b3261e"
+FALSE_ALARM = "#b3261e"
+RASTER_MUTED = "#c9c9c9"
+RASTER_HIT = "#1f1f1f"
+PROBE_BAND = "#e8a33d"
 
 
 def _spans(onsets, widths, ext):
-    """(onset, width) pairs -> [(t0, t1)], clipped to the extent. A zero or
-    non-finite width becomes a hairline so the detection is still visible —
-    losing it entirely would read as 'the detector found nothing there'."""
+    """(onset, width) -> [(t0, t1)] clipped to the extent.
+
+    A zero or non-finite width becomes a small visible sliver rather than
+    nothing: a detection drawn as zero pixels reads as "the detector found
+    nothing here", which is the opposite of the truth.
+    """
     if onsets is None or np.size(onsets) == 0:
         return []
     o = np.asarray(onsets, dtype=float).ravel()
@@ -58,147 +70,138 @@ def _spans(onsets, widths, ext):
     if w.size != o.size:
         w = np.zeros_like(o)
     span = float(ext[1] - ext[0])
-    hair = max(span * 0.0015, 1e-9)
+    floor = max(span * 0.002, 1e-9)
     out = []
     for a, b in zip(o, w):
         if not np.isfinite(a):
             continue
-        ww = b if np.isfinite(b) and b > 0 else hair
-        out.append((max(a, ext[0]), min(a + ww, ext[1])))
+        ww = b if np.isfinite(b) and b > 0 else 0.0
+        out.append((max(a, ext[0]), min(a + max(ww, floor), ext[1])))
     return out
 
 
-def _is_member(t, spans, tol=0.0):
-    """Boolean per onset: does it fall inside any detected window?"""
+def _is_member(t, spans):
+    """Per onset: does it fall inside any detected window?"""
     if not spans or t.size == 0:
         return np.zeros(t.size, dtype=bool)
-    lo = np.array([s[0] for s in spans]) - tol
-    hi = np.array([s[1] for s in spans]) + tol
+    lo = np.array([s[0] for s in spans])
+    hi = np.array([s[1] for s in spans])
     return np.any((t[:, None] >= lo[None, :]) & (t[:, None] <= hi[None, :]), axis=1)
 
 
-def coordination_raster(
-    stream,
-    *,
-    ext,
-    lanes: dict | None = None,
-    gt=None,
-    member_source: str | None = None,
-    tol_sec: float = 1.5,
-    name: str = "events",
-    width: int = 950,
-    height: int | None = None,
-):
-    """Raster with detector lanes and (optionally) a ground-truth lane.
+def _base(ext, ydim: str):
+    """An invisible t-dimensioned point, placed FIRST in every overlay.
 
-    stream: a :class:`bugarach.store.Stream`.
-    ext: ``(t_lo, t_hi)``.
-    lanes: ``{detector_name: (onsets, widths)}`` — exactly the shape
-      ``bugarach.ui.app._compute`` already produces, so any of the six drops in.
-    gt: a :class:`bugarach.simulate.GroundTruth`; adds the ground-truth lane and
-      marks each detection lane's false alarms.
-    member_source: which detector's windows decide whether a raster onset is a
-      coordination member (red = isolated). Defaults to the first lane.
-    tol_sec: match tolerance for hits/misses.
+    Two jobs, both learned by getting them wrong:
+
+    1. HoloViews takes its x-dimension from the first element, and
+       ``Rectangles`` carries ``x0`` — leading with one relabels the shared axis
+       to "x0" and silently unlinks it from the raster. ``ui.app`` documents this
+       trap for the signal rows; this is the same trap one element type over.
+    2. The y-dimension NAME is what links y-ranges between panels. Sharing a name
+       across the lane panel and the raster made the lanes inherit the raster's
+       0–30 ROI range and collapse into a sliver at the bottom. Each panel passes
+       its own name, which is the same rule CLAUDE.md already states for the
+       signal rows: unique value dimension per row, so y never links; x links
+       through the shared ``t``.
     """
-    lanes = lanes or {}
-    n_roi = stream.n_rois
+    return hv.Scatter(([ext[0]], [0.0]), kdims=["t"], vdims=[ydim]).opts(alpha=0)
 
-    # --- ROI order: quietest at the bottom, so coordination reads as a stripe
+
+def lane_panel(lanes: dict, *, ext, gt=None, tol_sec: float = 1.5,
+               width: int = 1000, row_px: int = 26):
+    """Detector lanes with a real categorical y-axis (labels cannot collide)."""
+    lanes = lanes or {}
+    rows = list(lanes) + (["planted"] if gt is not None else [])
+    ypos = {name: len(rows) - 1 - i for i, name in enumerate(rows)}
+    items = [_base(ext, "lane")]
+
+    if gt is not None:
+        hw = gt.params.get("hot_window")
+        if hw is not None:
+            items.append(hv.VSpan(float(hw[0]), float(hw[1])).opts(
+                color=PROBE_BAND, alpha=0.16))
+
+    for key, ev in lanes.items():
+        y = ypos[key]
+        colour = COLORS.get(key, "#555555")
+        sp = _spans(ev[0], ev[1] if len(ev) > 1 else None, ext)
+        if sp:
+            items.append(hv.Rectangles(
+                [(a, y - 0.30, b, y + 0.30) for a, b in sp]
+            ).opts(color=colour, line_color=colour, line_width=1, alpha=0.9))
+        if gt is not None:
+            fa = score_detections(gt, ev[0], tol_sec=tol_sec).fa_times
+            if fa.size:
+                items.append(hv.Scatter((fa, np.full(fa.size, y + 0.40))).opts(
+                    marker="x", size=7, color=FALSE_ALARM, line_width=2, alpha=0.95))
+
+    if gt is not None:
+        y = ypos["planted"]
+        planted = np.asarray(gt.times, dtype=float)
+        if planted.size:
+            found = np.zeros(planted.size, dtype=bool)
+            for ev in lanes.values():
+                found |= score_detections(gt, ev[0], tol_sec=tol_sec).hits
+            for mask, colour, marker in ((found, FOUND, "triangle"),
+                                         (~found, MISSED, "inverted_triangle")):
+                if np.any(mask):
+                    items.append(hv.Scatter(
+                        (planted[mask], np.full(int(mask.sum()), y))
+                    ).opts(marker=marker, size=10, color=colour,
+                           line_color="white", line_width=1))
+
+    yticks = [(ypos[n], SHORT.get(n, n)) for n in rows]
+    return hv.Overlay(items).opts(
+        width=width, height=max(90, row_px * len(rows) + 46),
+        xlim=tuple(ext), ylim=(-0.8, len(rows) - 0.2),
+        yticks=yticks, ylabel="", xlabel="", title="", xaxis=None,
+        fontsize={"yticks": "9pt"},
+        show_legend=False, hooks=[_time_axis_hook],
+        tools=["xwheel_zoom", "xpan", "reset", "hover"],
+        active_tools=["xpan"], default_tools=["reset"],
+    )
+
+
+def raster_panel(stream, *, ext, member_spans=None, gt=None, name="events",
+                 width: int = 1000, height: int | None = None):
+    """ROI raster, quietest ROI at the bottom, onsets inside a detected window
+    highlighted against a muted background."""
+    n_roi = stream.n_rois
     counts = [int(np.sum(np.isfinite(np.asarray(v, dtype=float))))
               for v in stream.t50rise]
     order = np.argsort(counts, kind="stable")
 
-    src = member_source or (next(iter(lanes)) if lanes else None)
-    src_spans = _spans(*lanes[src], ext) if src in lanes else []
-
-    ts, ys, member = [], [], []
+    ts, ys = [], []
     for row, roi in enumerate(order):
         v = np.asarray(stream.t50rise[roi], dtype=float)
         v = v[np.isfinite(v) & (v >= ext[0]) & (v <= ext[1])]
-        if v.size == 0:
-            continue
-        ts.append(v)
-        ys.append(np.full(v.size, row))
-        member.append(_is_member(v, src_spans))
+        if v.size:
+            ts.append(v)
+            ys.append(np.full(v.size, row))
     t = np.concatenate(ts) if ts else np.zeros(0)
     y = np.concatenate(ys) if ys else np.zeros(0)
-    mem = np.concatenate(member) if member else np.zeros(0, dtype=bool)
+    mem = _is_member(t, member_spans or [])
 
-    # --- lane geometry, scaled to the population (ported from drawStream)
-    ls = max(1.0, n_roi / 50.0)
-    gap = 1.1 * ls
-    raster_gap = 2.0 * ls
-    bar_h = 0.34 * ls
-    n_lane = len(lanes) + (1 if gt is not None else 0)
-    y0 = n_roi + raster_gap
-    y_max = y0 + max(n_lane, 1) * gap + 0.6 * ls
-
-    items = []
-
-    # white separator: a duration bar must never read as raster activity
-    items.append(hv.Rectangles(
-        [(ext[0], n_roi + 0.4 * ls, ext[1], y0 - bar_h - 0.05 * ls)]
-    ).opts(color="white", line_alpha=0, alpha=1.0))
-
-    # --- raster: isolated onsets red, members grey
-    for m, colour, label in ((~mem, ISOLATED, "isolated"), (mem, MEMBER, "in a window")):
-        if not np.any(m):
-            continue
-        items.append(hv.Scatter((t[m], y[m]), kdims=["t"], vdims=["roi"]).opts(
-            marker="dash", angle=90, size=5, color=colour,
-            alpha=0.85 if colour == ISOLATED else 0.55))
-
-    # --- detector lanes, first at the top
-    lane_y = {}
-    for j, (key, ev) in enumerate(lanes.items()):
-        yy = y0 + (n_lane - 1 - j) * gap
-        lane_y[key] = yy
-        sp = _spans(*ev, ext)
-        colour = COLORS.get(key, "#555555")
-        if sp:
-            items.append(hv.Rectangles(
-                [(a, yy - bar_h, b, yy + bar_h) for a, b in sp]
-            ).opts(color=colour, line_alpha=0, alpha=0.85))
-        items.append(hv.Text(ext[0], yy + bar_h * 1.6,
-                             SHORT.get(key, key), halign="left",
-                             fontsize=8).opts(color=colour))
-
-        # false alarms, when there is a truth to be wrong about
-        if gt is not None:
-            sc = score_detections(gt, ev[0], tol_sec=tol_sec)
-            if sc.fa_times.size:
-                items.append(hv.Scatter(
-                    (sc.fa_times, np.full(sc.fa_times.size, yy))
-                ).opts(marker="x", size=7, color=ISOLATED, alpha=0.9))
-
-    # --- ground truth lane at the bottom of the stack
+    items = [_base(ext, "roi")]
     if gt is not None:
-        yy = y0
-        planted = np.asarray(gt.times, dtype=float)
-        if planted.size:
-            ref = next(iter(lanes)) if lanes else None
-            hits = (score_detections(gt, lanes[ref][0], tol_sec=tol_sec).hits
-                    if ref else np.zeros(planted.size, dtype=bool))
-            for m, colour in ((hits, GT_HIT), (~hits, GT_MISS)):
-                if np.any(m):
-                    items.append(hv.Scatter(
-                        (planted[m], np.full(int(m.sum()), yy))
-                    ).opts(marker="triangle", size=9, color=colour, alpha=0.95))
-        items.append(hv.Text(ext[0], yy + bar_h * 1.6, "planted",
-                             halign="left", fontsize=8).opts(color="#333333"))
-        # the dense-but-random block, if there is one: it should stay empty
         hw = gt.params.get("hot_window")
         if hw is not None:
-            items.append(hv.Rectangles([(hw[0], 0, hw[1], y_max)]).opts(
-                color="#b0761f", alpha=0.10, line_alpha=0))
+            items.append(hv.VSpan(float(hw[0]), float(hw[1])).opts(
+                color=PROBE_BAND, alpha=0.16))
+    # muted first, highlighted on top, so a claimed event is never hidden
+    for mask, colour, alpha, size in ((~mem, RASTER_MUTED, 0.85, 4),
+                                      (mem, RASTER_HIT, 0.95, 6)):
+        if np.any(mask):
+            items.append(hv.Scatter((t[mask], y[mask]),
+                                    kdims=["t"], vdims=["roi"]).opts(
+                marker="dash", angle=90, size=size, color=colour, alpha=alpha))
 
     if height is None:
-        height = int(np.clip(120 + 3.2 * n_roi + 14 * n_lane, 180, 700))
-
+        height = int(np.clip(30 + 9 * n_roi, 200, 640))
     return hv.Overlay(items).opts(
-        width=width, height=height, xlim=tuple(ext), ylim=(0, y_max),
-        title="", ylabel=f"{name} · {n_roi} ROI", yaxis=None,
+        width=width, height=height, xlim=tuple(ext), ylim=(-1, n_roi),
+        ylabel=f"{name} · {n_roi} ROI", title="",
         fontsize={"ylabel": "10pt"},
         show_legend=False, hooks=[_time_axis_hook],
         tools=["xwheel_zoom", "xpan", "reset", "hover"],
@@ -206,12 +209,54 @@ def coordination_raster(
     )
 
 
-def score_table(gt, lanes: dict, *, tol_sec: float = 1.5) -> str:
-    """Plain-text scoreboard for the same lanes — the numbers behind the picture.
+def coordination_diagnostic(stream, *, ext, lanes=None, gt=None,
+                            member_source: str | None = None,
+                            tol_sec: float = 1.5, name: str = "events",
+                            width: int = 1000, height: int | None = None):
+    """Lanes over raster, x-linked. Returns an ``hv.Layout``."""
+    lanes = lanes or {}
+    src = member_source or (next(iter(lanes)) if lanes else None)
+    spans = _spans(lanes[src][0], lanes[src][1], ext) if src in lanes else []
+    top = lane_panel(lanes, ext=ext, gt=gt, tol_sec=tol_sec, width=width)
+    bottom = raster_panel(stream, ext=ext, member_spans=spans, gt=gt, name=name,
+                          width=width, height=height)
+    # shared_axes links by DIMENSION NAME: both panels use "t" for x, and their
+    # y dimensions are deliberately named differently ("lane" vs "roi") so only
+    # x links. Same rule as the signal rows in ui.app.
+    return (top + bottom).cols(1).opts(shared_axes=True, merge_tools=True)
 
-    Deliberately text: it belongs in a log or a commit message next to the run,
-    where a PNG cannot go.
-    """
+
+def legend_html(lanes: dict, gt=None, member_source: str | None = None) -> str:
+    """The key. A reader should never have to guess what a marker means."""
+    src = member_source or (next(iter(lanes)) if lanes else None)
+    swatches = "".join(
+        f'<span style="display:inline-block;width:11px;height:11px;'
+        f'background:{COLORS.get(k, "#555")};margin:0 4px 0 12px;'
+        f'vertical-align:-1px"></span>{SHORT.get(k, k)}'
+        for k in lanes)
+    return f"""
+<div style="font:13px/1.6 system-ui,sans-serif;color:#222;max-width:1000px">
+  <b>How to read this</b><br>
+  <b>Lanes (top):</b> one row per detector; a bar spans a detection's
+  <i>onset → onset + width</i>.{swatches}<br>
+  <span style="color:{FALSE_ALARM};font-weight:bold">&#10005;</span>
+  a detection matching no planted event — a <b>false alarm</b>.<br>
+  <b>planted row:</b>
+  <span style="color:{FOUND}">&#9650;</span> recovered by at least one detector ·
+  <span style="color:{MISSED}">&#9660;</span> missed by all of them.<br>
+  <b>Raster (bottom):</b> one row per ROI, quietest at the bottom.
+  <span style="color:{RASTER_HIT};font-weight:bold">Dark</span> onsets fall inside
+  a window claimed by <b>{SHORT.get(src, src) if src else "—"}</b>;
+  <span style="color:#9a9a9a">grey</span> ones do not.<br>
+  <span style="background:{PROBE_BAND};opacity:.35;padding:0 10px">&nbsp;</span>
+  dense-but-random block — elevated firing rate, <b>no planted events</b>, so every
+  detection inside it is a false alarm by construction.
+</div>"""
+
+
+def score_table(gt, lanes: dict, *, tol_sec: float = 1.5) -> str:
+    """Plain-text scoreboard — the numbers behind the picture, in a form that
+    can travel into a commit message or a log where a figure cannot."""
     rows = ["detector    recall  prec    F1   FA  hotFA  by participation",
             "-" * 74]
     for key, ev in lanes.items():

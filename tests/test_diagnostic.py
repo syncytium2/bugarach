@@ -14,7 +14,8 @@ hv = pytest.importorskip("holoviews")
 from bugarach.detectors.rate import recording_extent  # noqa: E402
 from bugarach.simulate import simulate_coordination  # noqa: E402
 from bugarach.ui.diagnostic import (  # noqa: E402
-    _is_member, _spans, coordination_raster, score_table,
+    _is_member, _spans, coordination_diagnostic, lane_panel, legend_html,
+    raster_panel, score_table,
 )
 
 
@@ -55,33 +56,71 @@ def test_membership_with_no_windows_is_all_isolated():
 def test_builds_with_lanes_and_ground_truth(sim):
     s, gt, ext = sim
     lanes = {"coact": (gt.times, np.full(gt.times.size, 1.0))}
-    fig = coordination_raster(s.streams["events"], ext=ext, lanes=lanes, gt=gt)
-    assert isinstance(fig, hv.Overlay)
-    assert len(fig) > 3
+    fig = coordination_diagnostic(s.streams["events"], ext=ext, lanes=lanes, gt=gt)
+    assert isinstance(fig, hv.Layout)
+    assert len(fig) == 2, "lanes panel over raster panel"
 
 
 def test_builds_without_any_detections(sim):
     """The first thing you look at is often a detector that found nothing."""
     s, gt, ext = sim
-    fig = coordination_raster(s.streams["events"], ext=ext,
-                              lanes={"coact": (np.zeros(0), np.zeros(0))}, gt=gt)
-    assert isinstance(fig, hv.Overlay)
+    fig = coordination_diagnostic(s.streams["events"], ext=ext,
+                                  lanes={"coact": (np.zeros(0), np.zeros(0))}, gt=gt)
+    assert isinstance(fig, hv.Layout)
 
 
 def test_builds_with_no_lanes_and_no_truth(sim):
     s, _, ext = sim
-    assert isinstance(coordination_raster(s.streams["events"], ext=ext), hv.Overlay)
+    assert isinstance(coordination_diagnostic(s.streams["events"], ext=ext), hv.Layout)
+
+
+def test_panels_do_not_share_a_y_dimension(sim):
+    """The y dimension NAME is what links y-ranges across panels. When both used
+    "y", the lane panel inherited the raster's 0-30 ROI range and collapsed into
+    a sliver at the bottom — visible only by rendering it. Pin the names."""
+    s, gt, ext = sim
+    lanes = {"coact": (gt.times, None)}
+    top = lane_panel(lanes, ext=ext, gt=gt)
+    bottom = raster_panel(s.streams["events"], ext=ext, gt=gt)
+
+    def ydims(overlay):
+        return {d.name for el in overlay for d in el.vdims}
+
+    assert not (ydims(top) & ydims(bottom)), (
+        "lane and raster panels must not share a y dimension name, or their "
+        "y-ranges link and the lanes collapse")
+
+
+def test_only_one_x_axis_is_drawn(sim):
+    """CLAUDE.md: one x-axis per linked group, bottom row only."""
+    s, gt, ext = sim
+    top = lane_panel({"coact": (gt.times, None)}, ext=ext, gt=gt)
+    assert top.opts.get("plot").kwargs.get("xaxis") is None
+
+
+def test_legend_explains_every_marker(sim):
+    """A figure whose markers need explaining, that does not carry the
+    explanation, is not finished — this is what shipped the first time."""
+    _, gt, _ = sim
+    html = legend_html({"coact": (gt.times, None)}, gt)
+    for phrase in ("false alarm", "planted", "no planted events", "onset"):
+        assert phrase in html
 
 
 def test_hot_window_is_drawn_when_present(sim):
     """The probe band has to be visible, or a reader cannot tell that a cluster
     of false alarms sits inside a block with no planted events."""
     s, gt, ext = sim
-    with_gt = coordination_raster(s.streams["events"], ext=ext,
-                                  lanes={"coact": (gt.times, None)}, gt=gt)
-    without = coordination_raster(s.streams["events"], ext=ext,
-                                  lanes={"coact": (gt.times, None)})
-    assert len(with_gt) > len(without)
+
+    def n_bands(layout):
+        return sum(isinstance(el, hv.VSpan) for panel in layout for el in panel)
+
+    with_gt = coordination_diagnostic(s.streams["events"], ext=ext,
+                                      lanes={"coact": (gt.times, None)}, gt=gt)
+    without = coordination_diagnostic(s.streams["events"], ext=ext,
+                                      lanes={"coact": (gt.times, None)})
+    assert n_bands(with_gt) == 2, "the probe band belongs on both panels"
+    assert n_bands(without) == 0
 
 
 def test_score_table_covers_every_lane(sim):
