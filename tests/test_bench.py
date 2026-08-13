@@ -37,7 +37,7 @@ def bench():
     """Every detector on both regimes, computed once — each run is a 45-minute
     synthetic recording and there are twelve of them."""
     return {(name, regime): evaluate(name, regime, SEEDS)
-            for name in DETECTORS for regime in ("sparse", "dense")}
+            for name in DETECTORS for regime in ("baseline", "senktide")}
 
 
 # --- the regime-shift guard -------------------------------------------------
@@ -47,19 +47,19 @@ def bench():
 # when dense-tuned settings met sparse data, and drew it as a figure.
 
 MAX_PRECISION_DROP = {
-    "loco": 0.20,      # measured: 0.12 (1.00 -> 0.88)
-    "coact": 0.10,     # measured: none, precision rises 0.94 -> 1.00
-    "sce": 0.10,       # measured: none, 1.00 -> 1.00 — the most precise of the six
-    "cicada": 0.25,    # measured: 0.15
-    "rate": 0.65,      # measured: 0.55 — a real collapse, recorded not excused
-    "sync": 0.55,      # measured: 0.40 — likewise
+    "loco": 0.15,      # measured: 0.06 (0.92 -> 0.86)
+    "coact": 0.10,     # measured: none, precision rises 0.72 -> 0.77
+    "sce": 0.10,       # measured: none, 0.91 -> 1.00
+    "cicada": 0.20,    # measured: 0.11
+    "rate": 0.35,      # measured: 0.26 — the largest, and no longer a collapse
+    "sync": 0.20,      # measured: 0.12
 }
 
 
 @pytest.mark.parametrize("name", DETECTORS)
 def test_precision_survives_the_regime_shift(name, bench):
-    sparse = bench[(name, "sparse")].precision
-    dense = bench[(name, "dense")].precision
+    sparse = bench[(name, "baseline")].precision
+    dense = bench[(name, "senktide")].precision
     drop = sparse - dense
     assert drop <= MAX_PRECISION_DROP[name], (
         f"{name}: precision {sparse:.2f} -> {dense:.2f} when the background "
@@ -67,14 +67,22 @@ def test_precision_survives_the_regime_shift(name, bench):
         f"{MAX_PRECISION_DROP[name]:.2f}")
 
 
-def test_the_two_known_collapses_are_still_the_only_ones():
-    """The guard above is per-detector, so a *new* detector starting to collapse
-    would pass its own generous budget only if someone had already written one.
-    This is the cross-detector version: exactly rate and sync collapse, and if
-    that set changes the bench's conclusions need re-reading before publication.
+def test_nothing_collapses_on_measured_regimes():
+    """The precision collapse was an artifact of invented regimes.
+
+    On the old bench, RateDetect fell 0.68 -> 0.13 precision and spike-sync
+    0.44 -> 0.03, which read as reproducing the upstream deploy-cost figure. But
+    those regimes were bg 0.05 -> 0.15 Hz/ROI, and the measured range is
+    0.0040-0.0381 — the whole shift happened above anything real. Re-run between
+    measured baseline and senktide, the largest drop in the six is RateDetect's
+    0.26 and nothing collapses.
+
+    That does not retract the upstream finding, which was about settings *tuned*
+    in one regime meeting the other; this bench holds settings fixed. It does
+    mean the bench cannot claim to have reproduced it, and the budgets above are
+    now tight enough that a real collapse would fail rather than fit.
     """
-    collapsing = {n for n, b in MAX_PRECISION_DROP.items() if b > 0.3}
-    assert collapsing == {"rate", "sync"}
+    assert max(MAX_PRECISION_DROP.values()) <= 0.35
 
 
 # --- negative-class probes --------------------------------------------------
@@ -84,19 +92,18 @@ def test_the_two_known_collapses_are_still_the_only_ones():
 # cross-ROI coincidence that is not a coordinated event.
 
 MAX_PROBE_PER_MIN = {
-    "coact": 2.0,      # measured: 0.4
-    "loco": 5.0,       # measured: 1.1
-    "rate": 15.0,      # measured: 5.4
-    "sce": 15.0,       # measured: 5.9 — it read 0.0 only because the spurious
-                       # baseline region hid most of the probe block from it
-    "sync": 55.0,      # measured: 36.9
-    "cicada": 80.0,    # measured: 59.2 — the most rate-fooled of the six
+    "loco": 3.0,       # measured: 1.1
+    "coact": 3.0,      # measured: 1.2
+    "rate": 4.0,       # measured: 1.6
+    "sync": 4.0,       # measured: 1.6
+    "sce": 10.0,       # measured: 5.5
+    "cicada": 20.0,    # measured: 13.3 — still the most rate-fooled of the six
 }
 
 
 @pytest.mark.parametrize("name", DETECTORS)
 def test_promiscuity_probe_is_within_budget(name, bench):
-    rate = bench[(name, "sparse")].hot_fa_per_min
+    rate = bench[(name, "baseline")].hot_fa_per_min
     assert rate <= MAX_PROBE_PER_MIN[name], (
         f"{name}: {rate:.1f} firings/min inside the dense-but-random block, "
         f"which contains no coordination by construction")
@@ -107,8 +114,8 @@ def test_the_probe_actually_separates_the_detectors(bench):
     rate-keyed and coordination-keyed detectors answer it differently, so the
     spread across the six has to stay wide — if it narrows, the block stopped
     being dense enough to ask the question."""
-    rates = [bench[(n, "sparse")].hot_fa_per_min for n in DETECTORS]
-    assert min(rates) < 1.0, "no detector resists the probe — it is too severe"
+    rates = [bench[(n, "baseline")].hot_fa_per_min for n in DETECTORS]
+    assert min(rates) < 2.0, "no detector resists the probe — it is too severe"
     assert max(rates) > 10.0, "no detector is fooled by it — it is too mild"
 
 
@@ -117,7 +124,7 @@ def test_the_probe_stays_out_of_the_headline_numbers(bench):
     rather than how good the detector is: CICADA reads F1 0.09 that way, against
     0.68 in the upstream campaign, on 599 probe firings out of 601 false alarms.
     """
-    cicada = bench[("cicada", "sparse")]
+    cicada = bench[("cicada", "baseline")]
     assert cicada.hot_fa > 100, "the probe should be provoking CICADA"
     assert cicada.n_scored == cicada.n_detected - cicada.hot_fa
     assert cicada.f1 > 0.5, "the probe has leaked into the headline F1"
@@ -130,9 +137,9 @@ def test_recall_is_broken_down_by_participation(bench):
     different instrument from one that degrades gracefully, and the two share a
     headline recall."""
     for name in DETECTORS:
-        by = bench[(name, "sparse")].by_frac
-        assert set(by) == {1.0, 0.75, 0.5}, f"{name} lost a participation level"
-        assert sum(n for n, _ in by.values()) == bench[(name, "sparse")].n_planted
+        by = bench[(name, "baseline")].by_frac
+        assert set(by) == {0.30, 0.18, 0.10}, f"{name} lost a participation level"
+        assert sum(n for n, _ in by.values()) == bench[(name, "baseline")].n_planted
 
 
 # --- the edge-of-range guard ------------------------------------------------
@@ -140,7 +147,7 @@ def test_recall_is_broken_down_by_participation(bench):
 def _curve(f1s):
     out = []
     for i, f in enumerate(f1s):
-        r = BenchResult(detector="loco", regime="sparse", knob_value=float(i),
+        r = BenchResult(detector="loco", regime="baseline", knob_value=float(i),
                         n_planted=100, n_detected=100, n_hit=0)
         # F1 is derived, so drive it through the counts: hits set both halves
         r.n_hit = int(round(f * 100))
@@ -179,12 +186,12 @@ def test_the_declared_grid_brackets_its_own_optimum(name):
     """The edge-of-range guard against the grids actually shipped, not a
     synthetic curve. This is the check that caught LoCo's original grid, whose
     top value was still the best one."""
-    pick_operating_point(sweep(name, "sparse", seeds=(1,)))
+    pick_operating_point(sweep(name, "baseline", seeds=(1,)))
 
 
 def test_a_curve_with_no_defined_f1_says_so():
     with pytest.raises(ValueError, match="no point on the curve"):
-        pick_operating_point([BenchResult(detector="loco", regime="sparse")])
+        pick_operating_point([BenchResult(detector="loco", regime="baseline")])
 
 
 # --- the operating points themselves ----------------------------------------
@@ -199,7 +206,7 @@ def test_every_operating_point_records_where_it_came_from(name):
 @pytest.mark.parametrize("name", DETECTORS)
 def test_the_swept_knob_is_a_real_parameter(name):
     op = OPERATING_POINTS[name]
-    s, _ = make_recording("sparse", 1)
+    s, _ = make_recording("baseline", 1)
     run_detector(name, s, **{op.knob: op.grid[0]})   # raises on an unknown kwarg
 
 
@@ -234,7 +241,7 @@ def test_the_bench_recording_keeps_the_null_clean():
         for op in OPERATING_POINTS.values())
     assert BENCH_RECORDING["min_sep_sec"] >= widest_context
 
-    _, gt = make_recording("sparse", 1)
+    _, gt = make_recording("baseline", 1)
     intervals = np.diff(gt.times)
     assert intervals.min() >= widest_context * 0.9, (
         f"realized spacing {intervals.min():.0f}s is inside the {widest_context:.0f}s "
@@ -255,7 +262,7 @@ def test_the_generator_does_not_impose_an_experimental_protocol():
     Every detector must see the same recording, or the bench is not comparing
     them. A synthetic recording has no baseline and no treatment period.
     """
-    s, _ = make_recording("sparse", 1)
+    s, _ = make_recording("baseline", 1)
     assert not s.regions, (
         "the generator is annotating regions again — any named region triggers "
         "protocol windowing and silently shrinks what a region-scoped detector "
@@ -265,7 +272,7 @@ def test_the_generator_does_not_impose_an_experimental_protocol():
 def test_every_detector_sees_the_whole_recording():
     """The behavioural half of the test above: whatever the annotations say,
     no detector may be confined to a slice of the recording the others get."""
-    s, _ = make_recording("sparse", 1)
+    s, _ = make_recording("baseline", 1)
     ext = (0.0, BENCH_RECORDING["duration_sec"])
     for name in DETECTORS:
         det = run_detector(name, s)
@@ -285,7 +292,7 @@ def test_every_detector_sees_the_whole_recording():
 def test_the_schedule_is_not_metronomic():
     """Long recordings keep the null clean; they must not do it by pinning every
     interval to the floor. Regular spacing is a cue a training set would leak."""
-    _, gt = make_recording("sparse", 1)
+    _, gt = make_recording("baseline", 1)
     intervals = np.diff(gt.times)
     assert intervals.std() / intervals.mean() > 0.3
 
@@ -295,6 +302,6 @@ def test_the_schedule_is_not_metronomic():
 def test_the_bench_is_reproducible():
     """Same seeds, same numbers — on this machine and any other. A bench that
     drifts between runs cannot support a claim about a change."""
-    a = evaluate("loco", "sparse", (1,))
-    b = evaluate("loco", "sparse", (1,))
+    a = evaluate("loco", "baseline", (1,))
+    b = evaluate("loco", "baseline", (1,))
     assert (a.n_hit, a.n_fa, a.hot_fa) == (b.n_hit, b.n_fa, b.hot_fa)

@@ -208,12 +208,48 @@ outstanding work.
 | **interval distribution** | uniform placement with min-separation rejection | renewal process, `interval_cv` default 1.0 | different by choice; `spacing="uniform"` reproduces the MATLAB behaviour |
 | **benchmark structure** | *one* recording holding a participation × tightness grid across a sparse→dense background ramp | two discrete regimes, fixed participation levels | scores here are not cell-for-cell comparable to `score_coord_grid.m`'s |
 | **region trimming** | optima measured with trimming **disabled** (`NOTRIM`, `clamp_context_to_region=false`) | detectors default to `clamp_context_to_region=True` | the windowing context differs from the one the operating points were derived under |
-| **timescales** | onset jitter and per-ROI rates **measured off real recordings** | `jitter_sec=0.05`, `bg_rate_hz=0.05` with no recorded provenance in this repo | the largest gap, and the one §6 names as the honest blocker |
+| **timescales** | onset jitter and per-ROI rates **measured off real recordings** | **now the same measurements** — see below | closed 2026-08-13 |
 
 The last row is the one that matters most. `simulation_plan.md` §5 puts it
 directly: **domain randomization widens a distribution, it does not center one.**
 Sampling event spacing over [10, 60] s when reality is 150 s covers reality zero
 percent of the time and produces a confident-looking training set.
+
+### The measurements existed all along
+
+Closed 2026-08-13. The values were never missing — they are in
+`constellation/coordination_timescale_summary.csv`, produced by interface2's
+`measure_coordination_timescale.m` over **84 baseline slices**, and the bench now
+uses them. What the generator had been assuming, against what was measured
+(all-baseline, fast stream, `min_rois=4`):
+
+| knob | assumed | measured | error |
+|---|---|---|---|
+| `n_roi` | 30 | ~33 | right |
+| `bg_rate_hz` | 0.05 Hz | **0.0096 Hz/ROI** | 5× too busy |
+| `jitter_sec` | 0.05 s | **0.36 s** | 7× too tight |
+| `participation` | 50–100% | **6 of ~33 ROI ≈ 18%** | 3–6× too many |
+
+The regimes changed with them. `sparse=0.05 / dense=0.15` sat **entirely above**
+the measured range, which runs 0.0040 (ORX, TTX) through 0.0096 (baseline) to
+0.0381 (senktide); the bench now shifts between measured baseline and senktide.
+The promiscuity probe moved too — at 0.30 Hz it was 31× the real background
+rather than the 6× it was meant to be.
+
+**What that was hiding.** On the invented values every detector scored F1
+0.9–1.0 and the bench could not tell them apart. On measured values they range
+0.49–0.81 and separate, because a real coordinated event recruits about six ROIs
+with a third of a second of spread — which sits just above the `min_rois` floor
+the detectors ship with. That is the regime these instruments were built for, and
+it is the only one where their differences show.
+
+The ordering also moved toward the MATLAB campaign's: LoCo top in both
+(0.81 here, 0.86 there) and CICADA nearly exact (0.70 against 0.68).
+
+One caveat travels with the numbers. `optim_history/README.md` marks the whole
+campaign **PROVISIONAL** and records that the calibrated settings were adopted on
+2026-08-05 *without* the real-data validation the deck named as its deciding
+step. These are measurements; the decision that rested on them was never checked.
 
 ### What follows from that
 
@@ -240,7 +276,7 @@ the raster and **each detector's analysis trace below it** — the statistic it
 actually thresholds, with its threshold drawn and its claimed windows shaded.
 
 ```bash
-python tools/make_diagnostic.py --bench sparse --out docs/generator
+python tools/make_diagnostic.py --bench baseline --out docs/generator
 ```
 
 ![detector lanes, raster, and per-detector analysis traces](generator/detector_traces_bench_sparse.png)

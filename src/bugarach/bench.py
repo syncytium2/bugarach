@@ -49,6 +49,23 @@ from bugarach.simulate import simulate_coordination
 STREAM = "events"
 """The single-stream slice the generator emits (FOUNDATIONS §3)."""
 
+MEASURED_PROVENANCE = (
+    "constellation/coordination_timescale_summary.csv — flavour 'all-baseline', "
+    "fast stream, min_rois=4 (the file's own headline_K). 84 slices. Produced by "
+    "interface2 measure_coordination_timescale.m: roiRate = events/win_dur (Hz "
+    "per ROI), jit_obs = median within-cluster onset SD (s), partN_obs = median "
+    "participating ROIs per cluster."
+)
+"""Where the recording's structural values come from.
+
+Recorded as a string rather than a comment because a bench whose settings have
+no traceable origin cannot be re-derived when the measurement is revised, and
+this one **is** revisable: `optim_history/README.md` marks the whole campaign
+PROVISIONAL, and notes that the calibrated settings were adopted on 2026-08-05
+*without* the real-data validation the deck named as the deciding step. These
+numbers are measurements; the decision that rested on them was never checked.
+"""
+
 
 @dataclass(frozen=True)
 class OperatingPoint:
@@ -83,7 +100,7 @@ OPERATING_POINTS: dict[str, OperatingPoint] = {
     "cicada": OperatingPoint(
         params=dict(sce_percentile=99.99, active_duration_sec=1.0, n_surrogates=100),
         source="calibrated FAST pair (cicada_detect docstring)",
-        knob="sce_percentile", grid=(99.0, 99.9, 99.99, 99.999, 99.9999)),
+        knob="sce_percentile", grid=(90.0, 99.0, 99.9, 99.99, 99.999, 99.9999)),
     "sce": OperatingPoint(
         params=dict(bin_width_sec=10.0, threshold_pctile=99.0, n_surrogates=200),
         source="sce_detect defaults (generate_sce contract)",
@@ -98,12 +115,12 @@ OPERATING_POINTS: dict[str, OperatingPoint] = {
         params=dict(excess_threshold_hz=5.0, context_win=60.0, rate_win=1.0,
                     grid_dt=0.1),
         source="rate_detect defaults; grid_dt is the generator's own 0.1 s grid",
-        knob="excess_threshold_hz", grid=(1.0, 2.5, 5.0, 10.0, 20.0),
+        knob="excess_threshold_hz", grid=(0.5, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 8.0),
         takes_rng=False),
     "sync": OperatingPoint(
         params=dict(tau_max=0.25, max_gap=0.5, C_threshold=0.1, C_min=0.1),
         source="viewer FAST defaults (sync_detect docstring)",
-        knob="C_threshold", grid=(0.05, 0.1, 0.2, 0.4, 0.6),
+        knob="C_threshold", grid=(0.005, 0.01, 0.02, 0.04, 0.08, 0.12),
         takes_rng=False),
 }
 
@@ -114,24 +131,67 @@ DETECTORS = tuple(OPERATING_POINTS)
 # regime-shift guard shifts along: an operating point tuned where events are easy
 # to see must still work where they are not.
 REGIMES: dict[str, dict] = {
-    "sparse": dict(bg_rate_hz=0.05),
-    "dense": dict(bg_rate_hz=0.15),
+    "baseline": dict(bg_rate_hz=0.0096),
+    "senktide": dict(bg_rate_hz=0.0381),
 }
+"""The two regimes, and both numbers are **measured**, not chosen.
 
+Per-ROI rate medians from `constellation/coordination_timescale_summary.csv`
+(`roiRate_mean_med`, fast stream): `all-baseline` 0.0096 Hz, `all-senktide`
+0.0381 Hz. The full range across flavours runs 0.0040 (ORX, TTX) to 0.0381
+(senktide), so this pair brackets it about as widely as real data allows.
+
+They replace an invented `sparse=0.05 / dense=0.15`, which sat **entirely above
+the measured range** — every bench score before 2026-08-13 was taken on a
+background 5–15× busier than any real recording.
+"""
+
+# Measured off 84 baseline slices — see MEASURED_PROVENANCE below. These are the
+# numbers the review document was going to ask Tony for; they already existed.
 BENCH_RECORDING = dict(
     duration_sec=2700.0,
-    n_roi=30,
-    participation=(1.0, 0.75, 0.50),
+    n_roi=33,
+    participation=(0.30, 0.18, 0.10),
     n_per_level=(5, 5, 5),
-    jitter_sec=0.05,
+    jitter_sec=0.36,
     min_sep_sec=120.0,
     hot_window=(1200.0, 1500.0),
-    hot_rate_hz=0.30,
+    hot_rate_hz=0.06,
     ramp_sec=30.0,
     n_distractors=6,
     distractor_frac=0.5,
 )
 """The recording every bench run is scored on.
+
+Its structural values are **measured off real recordings**, not invented. Until
+2026-08-13 they were guesses, and every one of them made coordination easier
+than it is:
+
+===================  ==========  =============================  ==============
+knob                 was         measured                       effect
+===================  ==========  =============================  ==============
+``n_roi``            30          ~33                            (was right)
+``bg_rate_hz``       0.05 Hz     0.0096 Hz/ROI                  5× too busy
+``jitter_sec``       0.05 s      0.36 s                         7× too tight
+``participation``    50–100%     6 of ~33 ROI = 18%             3–6× too many
+===================  ==========  =============================  ==============
+
+The consequence was not subtle. On the invented values every detector scored
+F1 ≈ 0.9–1.0 and the bench could not tell them apart; on the measured ones they
+range 0.20–0.75 and separate sharply, because a real coordinated event recruits
+about **six ROIs with a third of a second of spread** — which sits just above
+the ``min_rois`` floor the detectors ship with. That is the regime the
+instruments were designed for, and it is where they differ.
+
+``participation`` keeps a spread (30 / 18 / 10%) around the measured median
+rather than collapsing to it, so recall still resolves a participant floor. The
+10% level is ~3 ROIs, at the floor itself.
+
+``hot_rate_hz`` moved with them. At 0.30 it was 6x the invented background and
+**31x the measured one** — a probe that severe stops asking whether a detector
+keys on rate and starts asking whether it survives an impossible surge. 0.06 is
+6x measured baseline and 1.6x senktide: busier than any real condition in the
+table, which is the point, without leaving the physical world.
 
 ``min_sep_sec`` is 120 s and not the generator's 15 s default on purpose. The
 detectors estimate their null over context windows up to 120 s wide, so events
