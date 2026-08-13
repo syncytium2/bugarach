@@ -13,10 +13,30 @@ filed: 2026-08-13
 > handed. Omitting widths gives zero-width spans, so point matching is the
 > special case and every pre-existing test passed unchanged.
 >
-> Measured over seeds 1–7: SCE F1 went from 0.08–0.38 (or undefined) to
-> 0.77–0.97, while LoCo and CICADA moved by **exactly zero** — the signature of
-> a scorer that was misreading one instrument rather than a tolerance loosened
-> for everyone.
+> Measured over seeds 1–7, **all six detectors** — the first version of this
+> note checked three, which was the convenient set (the ones taking a `Slice`)
+> rather than a control:
+>
+> | detector | F1 as points | F1 as spans | median width |
+> |---|---|---|---|
+> | loco | 0.97–1.00 | unchanged | 0.4 s |
+> | cicada | 0.91–1.00 | unchanged | 0.3 s |
+> | rate | 0.94–1.00 | unchanged | 2.1 s |
+> | sync | 0.81–0.94 | unchanged | 0.2 s |
+> | coact | 0.62–0.75 | 0.67–0.77 | 0.5 s |
+> | sce | 0.08–0.38 / undefined | 0.77–0.97 | 8.9 s |
+>
+> Two detectors move, not one. Coact's change is the same error as SCE's, three
+> orders of magnitude smaller: its detection count is identical and on 3 seeds
+> in 7 a single detection flips from false alarm to hit, where a ~0.5 s episode
+> span reached an event sitting just outside ±1.5 s. Nothing gained detections.
+> That is reclassification, which is what the rule is for — not a tolerance
+> loosened for everyone, which is what it had to be checked against.
+>
+> The control is now `test_spans_reclassify_but_never_invent`, parametrized over
+> all six, rather than a table in a document: detection counts must not change
+> and hits must not fall. A second detector swinging the way SCE did means its
+> claimed resolution moved, and the bench's numbers need re-reading.
 >
 > `score_stream(gt, det)` reads both fields off the detector, because "pass
 > widths for binned detectors" is a sentence, and this repo's own finding is
