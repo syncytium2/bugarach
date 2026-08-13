@@ -85,6 +85,21 @@ RULES = [
         fixture_bad='ROOT = Path.home() / "' + _UM + ' Dropbox/name/data"',
         fixture_good='ROOT = os.environ.get("BUGARACH_DATA_ROOT")',
     ),
+    Rule(
+        id="SAP005", level="BLOCK",
+        pattern=r"""["']{1,3}\s*<\s*(html\b|head\b|title\b)""",
+        include=["**/*.py"], exclude=["tools/sapper.py"],
+        message="An HTML document built here must open with "
+                '<meta charset="utf-8">. Opened from disk (file://) a page '
+                "with no declared charset is read as Latin-1, and every "
+                "en-dash, ×, · and — in it renders as mojibake. Cost a review "
+                "document 2026-08-13; the artifact pipeline hides this because "
+                "it supplies its own head. (Known gap: sapper matches per line, "
+                "so a literal opening '<!doctype html>' on its own line is not "
+                "checked — see docs/sapper_feedback/.)",
+        fixture_bad='page = f"""<title>Report</title><style>...',
+        fixture_good='page = f"""<meta charset="utf-8">\\n<title>Report</title>',
+    ),
 ]
 
 
