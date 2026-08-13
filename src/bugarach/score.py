@@ -67,6 +67,10 @@ class Score:
     """Matched detection time per planted event; NaN where missed."""
     fa_times: np.ndarray
     """Detections that matched no planted event."""
+    dup_times: np.ndarray = field(default_factory=lambda: np.zeros(0))
+    """The subset of ``fa_times`` that landed on a planted event which some
+    *other* detection had already claimed — a detector firing twice for one
+    event rather than firing at nothing."""
     by_frac: dict = field(default_factory=dict)
     """``{participation_fraction: (n_planted, n_hit)}``."""
     hot_fa: int = 0
@@ -86,6 +90,23 @@ class Score:
     @property
     def n_fa(self) -> int:
         return int(self.fa_times.size)
+
+    @property
+    def n_duplicate(self) -> int:
+        """Unmatched detections sitting on a planted event anyway.
+
+        Greedy matching is one-to-one, so a detector that splits one event into
+        three detections gets one hit and two false alarms — scored identically
+        to a detector that fired at nothing. The two are not the same failure:
+        fragmentation is a merge-gap problem, and firing at noise is a threshold
+        problem. Counting them together hides which one you have.
+        """
+        return int(self.dup_times.size)
+
+    @property
+    def n_spurious(self) -> int:
+        """False alarms that are not near any planted event — the real ones."""
+        return self.n_fa - self.n_duplicate
 
     @property
     def recall(self) -> float:
@@ -110,6 +131,8 @@ class Score:
     def summary(self) -> str:
         parts = [f"recall {self.recall:.2f}", f"precision {self.precision:.2f}",
                  f"F1 {self.f1:.2f}", f"FA {self.n_fa}"]
+        if self.n_duplicate:
+            parts.append(f"({self.n_duplicate} duplicate)")
         if self.hot_fa:
             parts.append(f"hot-window FA {self.hot_fa}")
         if self.distractor_hits:
@@ -193,6 +216,15 @@ def score_detections(gt, onsets, *, widths=None, tol_sec: float = 1.5) -> Score:
     fa_times = lo[~used] if nD else np.zeros(0)
     fa_ends = hi[~used] if nD else np.zeros(0)
 
+    # Split the false alarms: one that lands on a planted event is a duplicate
+    # of an event already claimed, not a detection of nothing.
+    if fa_times.size and nP:
+        near = np.array([np.min(_gap(planted, a, b)) <= tol_sec
+                         for a, b in zip(fa_times, fa_ends)])
+        dup_times = fa_times[near]
+    else:
+        dup_times = np.zeros(0)
+
     by_frac: dict = {}
     for e, hit in zip(gt.events, hits):
         n, h = by_frac.get(e.frac, (0, 0))
@@ -213,8 +245,9 @@ def score_detections(gt, onsets, *, widths=None, tol_sec: float = 1.5) -> Score:
             [np.any(_gap(t, lo, hi) <= tol_sec) for t in dt]))
 
     return Score(n_planted=nP, n_detected=nD, hits=hits, matched=matched,
-                 fa_times=fa_times, by_frac=by_frac, hot_fa=hot_fa,
-                 distractor_hits=distractor_hits, tol_sec=tol_sec)
+                 fa_times=fa_times, dup_times=dup_times, by_frac=by_frac,
+                 hot_fa=hot_fa, distractor_hits=distractor_hits,
+                 tol_sec=tol_sec)
 
 
 _ONSET_FIELDS = (("onset_sec", "width_sec"), ("locs", "widths"))

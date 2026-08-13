@@ -316,3 +316,41 @@ def test_only_the_binned_detector_moves_much():
             assert gained >= 10, "the whole reason the rule exists"
         else:
             assert gained <= 1, f"{name} gained {gained} hits — check its width_kind"
+
+
+# --- duplicates are not hallucinations --------------------------------------
+
+def test_a_second_detection_on_a_claimed_event_is_a_duplicate():
+    """Greedy matching is one-to-one, so a detector that splits one event into
+    two gets one hit and one false alarm — scored identically to a detector
+    that fired at nothing. They are different failures: fragmentation is a
+    merge-gap problem, firing at noise is a threshold problem."""
+    s = score_detections(gt_at([100.0]), [100.0, 100.8], tol_sec=1.5)
+    assert s.n_hit == 1
+    assert s.n_fa == 1
+    assert s.n_duplicate == 1 and s.n_spurious == 0
+
+
+def test_a_detection_at_nothing_is_spurious():
+    s = score_detections(gt_at([100.0]), [100.0, 500.0], tol_sec=1.5)
+    assert s.n_duplicate == 0 and s.n_spurious == 1
+
+
+def test_the_split_is_reported_by_span_too():
+    """A duplicate is judged on the same interval rule as a hit, so a binned
+    detector's second bin over one event counts as a duplicate rather than
+    being pushed into spurious by its bin edge."""
+    # both bins contain the event; only one can claim it
+    s = score_detections(gt_at([43.3]), [40.0, 42.0], widths=[10.0, 10.0])
+    assert s.n_hit == 1 and s.n_duplicate == 1 and s.n_spurious == 0
+    # a neighbouring bin that does NOT reach the event stays spurious
+    s2 = score_detections(gt_at([43.3]), [40.0, 50.0], widths=[10.0, 10.0])
+    assert s2.n_hit == 1 and s2.n_duplicate == 0 and s2.n_spurious == 1
+
+
+def test_duplicates_and_spurious_always_sum_to_the_false_alarms():
+    from bugarach.detectors.loco import loco_detect
+    s_, gt = simulate_coordination(seed=3)
+    det = loco_detect(s_).streams["events"]
+    sc = score_stream(gt, det)
+    assert sc.n_duplicate + sc.n_spurious == sc.n_fa

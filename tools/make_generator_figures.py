@@ -246,7 +246,8 @@ def _render_png(html_path: Path, png_path: Path, *, wait_ms: int = 3000) -> bool
     try:
         with sync_playwright() as pw:
             browser = pw.chromium.launch()
-            page = browser.new_page(viewport={"width": 1120, "height": 1200})
+            page = browser.new_page(viewport={"width": 1120, "height": 1200},
+                                   device_scale_factor=2)
             page.goto(html_path.as_uri())
             page.wait_for_timeout(wait_ms)
             with tempfile.TemporaryDirectory() as td:
