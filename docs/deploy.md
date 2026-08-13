@@ -12,6 +12,37 @@ Two machines, because the two halves need different toolchains: the build is
 Python and runs on any box with the repo installed; the upload needs node, which
 is not on every machine here.
 
+## What has to be done by hand at Porkbun and Cloudflare
+
+**Porkbun: nothing.** It is only the registrar. `tonydefazio.com`'s nameservers
+already delegate to Cloudflare (`arya.ns.cloudflare.com`,
+`clyde.ns.cloudflare.com`), so DNS lives entirely in Cloudflare. Porkbun matters
+again only if the registrar or the nameservers change.
+
+**Cloudflare: nothing to click either**, because the hostname is declared in
+`wrangler.jsonc`:
+
+```jsonc
+"routes": [{ "pattern": "bugarach.tonydefazio.com", "custom_domain": true }]
+```
+
+On `wrangler deploy`, Cloudflare creates the DNS record and the Worker binding
+for that hostname itself. Declaring it here rather than in the dashboard keeps
+the hostname in version control with everything else, and means a fresh clone
+deploys to the same place instead of to a `workers.dev` URL that someone then has
+to re-point by hand. (`colonel_kernel` predates this and was wired up in the UI —
+worth backporting there.)
+
+**Could a Python script do it instead?** Yes — Cloudflare has a REST API and DNS
+records are a `POST` away. It would be strictly worse: it needs an API token
+stored somewhere, it re-implements what `wrangler` already does with the auth you
+have, and it puts the hostname in a script instead of in the config file the
+deploy already reads. The one-line route above is the smaller, safer version of
+the same thing.
+
+The only genuinely manual step is the first `wrangler login` on a machine, which
+is an OAuth browser flow and cannot be scripted away.
+
 ## Why there is no server
 
 The static site is the whole product for **viewing**. The compute is small — a

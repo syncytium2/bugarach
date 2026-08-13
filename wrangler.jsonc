@@ -16,6 +16,20 @@
   "compatibility_date": "2026-07-01",
   "workers_dev": true,
   "preview_urls": true,
+
+  // The custom domain, declared rather than clicked. On `wrangler deploy`
+  // Cloudflare creates the DNS record and the Worker binding for this hostname
+  // itself — there is nothing to do in the dashboard, and nothing to do at
+  // Porkbun, which is only the registrar (tonydefazio.com's nameservers already
+  // delegate to Cloudflare: arya/clyde.ns.cloudflare.com).
+  //
+  // Declaring it here rather than in the UI means the hostname is in version
+  // control with everything else, and a fresh clone deploys to the same place
+  // instead of to a workers.dev URL somebody has to go and re-point by hand.
+  "routes": [
+    { "pattern": "bugarach.tonydefazio.com", "custom_domain": true }
+  ],
+
   "assets": {
     "directory": "./site"
   }
