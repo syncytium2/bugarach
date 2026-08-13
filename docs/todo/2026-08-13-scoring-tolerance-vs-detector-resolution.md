@@ -1,9 +1,27 @@
 ---
-status: open
+status: done
 filed: 2026-08-13
 ---
 
 # A fixed scoring tolerance reads SCE as a broken detector
+
+> **DONE 2026-08-13.** Fixed by **option 2**, interval overlap — a detection is
+> `[onset, onset + width]` and the tolerance is measured from the nearer edge.
+> Chosen over the per-detector resolution of option 1 because it needs no
+> declared resolution and is convention-independent: left edges, bin centres and
+> episode extents all score correctly without the scorer being told which it was
+> handed. Omitting widths gives zero-width spans, so point matching is the
+> special case and every pre-existing test passed unchanged.
+>
+> Measured over seeds 1–7: SCE F1 went from 0.08–0.38 (or undefined) to
+> 0.77–0.97, while LoCo and CICADA moved by **exactly zero** — the signature of
+> a scorer that was misreading one instrument rather than a tolerance loosened
+> for everyone.
+>
+> `score_stream(gt, det)` reads both fields off the detector, because "pass
+> widths for binned detectors" is a sentence, and this repo's own finding is
+> that a gate written as a sentence gets skipped. The stage-3 bench should call
+> that, not `score_detections`.
 
 Found while checking that the single-stream fix actually let all three
 Slice-based detectors run on simulator output (2026-08-13). They run — but the

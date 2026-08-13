@@ -12,7 +12,7 @@ clean result into a spurious miss plus a spurious false alarm.
 import numpy as np
 import pytest
 
-from bugarach.score import score_detections
+from bugarach.score import score_detections, score_stream
 from bugarach.simulate import GroundTruth, PlantedEvent, simulate_coordination
 
 
@@ -119,3 +119,134 @@ def test_scores_a_real_detector_run():
     det = coact_detect(tr, ext, int_win_sec=1.0, alpha=1e-4, n_surrogates=100)
     sc = score_detections(gt, det.onset_sec, tol_sec=2.0)
     assert sc.recall >= 0.9, sc.summary()
+
+
+# --- detections are intervals ----------------------------------------------
+#
+# A binned detector reports the bin, not the instant. Scoring its bin edge as if
+# it were an onset measures it at a resolution it never claimed to have.
+
+def test_a_span_containing_the_event_is_a_hit_at_any_tolerance():
+    """SCE's failure in one line: the bin edge is 3.3 s early, the bin is not."""
+    s = score_detections(gt_at([43.3]), [40.0], widths=[10.0], tol_sec=1.5)
+    assert s.n_hit == 1 and s.n_fa == 0
+
+
+def test_the_same_detection_misses_when_scored_as_a_point():
+    s = score_detections(gt_at([43.3]), [40.0], tol_sec=1.5)
+    assert s.n_hit == 0 and s.n_fa == 1
+
+
+def test_tolerance_still_applies_outside_the_span():
+    """The span is not a licence to match anything — tol_sec is measured from
+    the nearer edge, so a span that falls short by more than tol still misses."""
+    gt = gt_at([60.0])
+    assert score_detections(gt, [40.0], widths=[19.0], tol_sec=1.5).n_hit == 1
+    assert score_detections(gt, [40.0], widths=[17.0], tol_sec=1.5).n_hit == 0
+
+
+def test_omitting_widths_is_point_matching():
+    """The generalization must not move the onset-resolution detectors."""
+    gt = gt_at([10.0, 11.0])
+    a = score_detections(gt, [10.9, 10.1], tol_sec=1.5)
+    b = score_detections(gt, [10.9, 10.1], widths=[0.0, 0.0], tol_sec=1.5)
+    assert a.n_hit == b.n_hit == 2
+    np.testing.assert_allclose(a.matched, b.matched)
+
+
+def test_a_wide_span_cannot_claim_two_events():
+    """Greedy consumption still holds: one detection, one event, even when the
+    span covers both. The second is a miss, not a second hit."""
+    s = score_detections(gt_at([100.0, 105.0]), [98.0], widths=[10.0])
+    assert s.n_hit == 1 and s.n_miss == 1 and s.n_fa == 0
+
+
+def test_overlapping_spans_go_to_the_one_centred_on_the_event():
+    """Two spans both contain the event and tie at gap 0. The tie-break is
+    distance to the span's midpoint, so the better-centred detection wins
+    instead of whichever happened to start earlier."""
+    s = score_detections(gt_at([50.0]), [41.0, 48.0], widths=[10.0, 4.0])
+    np.testing.assert_allclose(s.matched, [48.0])
+
+
+def test_widths_ride_along_with_the_sort():
+    """Onsets are sorted internally; widths are per-detection, so a width that
+    stayed put would be paired with its neighbour's span."""
+    # unsorted: the 10 s span belongs to the detection at 40, not the one at 200
+    s = score_detections(gt_at([43.3]), [200.0, 40.0], widths=[0.0, 10.0])
+    assert s.n_hit == 1 and s.n_fa == 1
+
+
+def test_non_finite_and_negative_widths_are_treated_as_points():
+    s = score_detections(gt_at([10.0, 50.0]), [10.0, 50.0],
+                         widths=[np.nan, -5.0])
+    assert s.n_hit == 2
+
+
+def test_widths_must_be_column_aligned():
+    with pytest.raises(ValueError, match="column-aligned"):
+        score_detections(gt_at([10.0]), [10.0, 20.0], widths=[1.0])
+
+
+def test_a_straddling_false_alarm_counts_in_the_hot_window():
+    """A span that starts before the dense block and runs into it was still
+    fired inside it — the probe counts overlap, not left-edge containment."""
+    gt = gt_at([100.0], hot_window=(400.0, 700.0))
+    s = score_detections(gt, [100.0, 390.0], widths=[0.0, 20.0])
+    assert s.n_fa == 1 and s.hot_fa == 1
+
+
+def test_distractors_are_matched_by_span_too():
+    gt = gt_at([100.0])
+    gt.distractors = [PlantedEvent(time=505.0, frac=0.5, n_part=15,
+                                   rois=tuple(range(15)), jitter_sec=0.3,
+                                   kind="distractor")]
+    assert score_detections(gt, [100.0, 500.0]).distractor_hits == 0
+    s = score_detections(gt, [100.0, 500.0], widths=[0.0, 10.0])
+    assert s.distractor_hits == 1
+
+
+def test_the_binned_detector_is_scored_as_the_instrument_it_is():
+    """The regression this whole rule exists for. SCE bins at 10 s and reports
+    the bin's left edge; scored as points it read 0.00 recall on detections that
+    each spanned a planted event, while LoCo — which reports true onsets — is
+    unmoved by the change. Both halves matter: the fix must lift SCE without
+    inflating anything else."""
+    from bugarach.detectors.loco import loco_detect
+    from bugarach.detectors.sce import sce_detect
+    s_, gt = simulate_coordination(seed=3)
+
+    sce = sce_detect(s_).streams["events"]
+    assert score_detections(gt, sce.onset_sec).recall == 0.0, "the old reading"
+    assert score_detections(gt, sce.onset_sec, widths=sce.width_sec).recall >= 0.9
+
+    loco = loco_detect(s_).streams["events"]
+    points = score_detections(gt, loco.onset_sec)
+    spans = score_detections(gt, loco.onset_sec, widths=loco.width_sec)
+    assert points.n_hit == spans.n_hit and points.n_fa == spans.n_fa
+
+
+def test_score_stream_reads_the_spans_itself():
+    """The bench should not have to remember widths= — the failure it prevents
+    is silent, so the short call has to be the correct one."""
+    from bugarach.detectors.sce import sce_detect
+    s_, gt = simulate_coordination(seed=3)
+    sce = sce_detect(s_).streams["events"]
+    assert score_stream(gt, sce).recall == \
+        score_detections(gt, sce.onset_sec, widths=sce.width_sec).recall
+
+
+def test_score_stream_handles_the_other_field_convention():
+    """RateDetect and spike-sync say locs/widths, not onset_sec/width_sec."""
+    from bugarach.detectors.rate import recording_extent, stream_trains
+    from bugarach.detectors.sync import sync_detect
+    s_, gt = simulate_coordination(seed=3)
+    ext = recording_extent(s_)
+    det = sync_detect(stream_trains(s_.streams["events"], ext), ext,
+                      tau_max=0.25, max_gap=0.5)
+    assert score_stream(gt, det).n_detected == np.isfinite(det.locs).sum()
+
+
+def test_score_stream_refuses_something_that_is_not_a_detection():
+    with pytest.raises(TypeError, match="no detection times"):
+        score_stream(gt_at([10.0]), object())
