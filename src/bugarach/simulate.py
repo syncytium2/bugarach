@@ -236,6 +236,7 @@ def simulate_coordination(
     distractor_window=None,
     streams=("events",),
     slice_id: str = "synthetic",
+    regions=None,
     seed: int | None = None,
 ) -> tuple[Slice, GroundTruth]:
     """Build a synthetic recording with planted coordinated events.
@@ -263,6 +264,22 @@ def simulate_coordination(
       event. Recorded in ``gt.distractors``, never in ``gt.events``.
     streams: stream names. One by default; pass ``("fast", "slow")`` to duplicate
       into the canonical two-stream shape.
+    regions: **none by default, and that is a correction.** This used to emit
+      ``[("baseline", 0.0, duration)]`` unconditionally, which looks harmless and
+      is not: ``baseline`` is a label from the wet-lab protocol, and the region
+      windowing rules read it as "the pre-solution period" and trim the analysis
+      to its final ``baseline_window_max_sec`` (1200 s). SCE honours that trim,
+      so on a 45-minute synthetic recording it analysed only 1500–2700 s and was
+      scored against the 15 events planted across all of it — a recall ceiling of
+      7/15, and measured recall of 0.40 that read as a weak detector rather than
+      as a detector shown 44% of the data. Removing the annotation lifts it to
+      0.73–0.87 while LoCo and CICADA, which do not restrict detection to the
+      window, do not move at all.
+
+      A synthetic recording with events planted uniformly throughout has no
+      baseline and no treatment; claiming otherwise imposes an experimental
+      protocol that is not in the data. Pass ``regions`` explicitly to simulate
+      one on purpose — that is the only way it should ever happen.
     seed: ``None`` is nondeterministic; an int is reproducible everywhere.
 
     Returns ``(slice, ground_truth)``.
@@ -359,8 +376,7 @@ def simulate_coordination(
         per_roi.append(np.sort(a))
 
     slice_ = slice_from_events({name: per_roi for name in streams},
-                               slice_id=slice_id,
-                               regions=[("baseline", 0.0, T)])
+                               slice_id=slice_id, regions=regions)
     gt = GroundTruth(
         events=events,
         distractors=distractors,

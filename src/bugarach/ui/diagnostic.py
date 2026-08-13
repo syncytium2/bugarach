@@ -45,7 +45,7 @@ import holoviews as hv
 import numpy as np
 
 from bugarach.score import score_detections
-from bugarach.ui.app import COLORS, SHORT, _time_axis_hook
+from bugarach.ui.app import COLORS, SHORT, _signal_row, _time_axis_hook
 
 FOUND = "#1b7f3b"
 MISSED = "#b3261e"
@@ -209,11 +209,65 @@ def raster_panel(stream, *, ext, member_spans=None, gt=None, name="events",
     )
 
 
+def trace_panel(traces: dict, *, ext, width: int = 1000, height: int = 82):
+    """One analysis trace per detector, x-linked to the raster above.
+
+    The lanes say *what* a detector claimed; these say **why**. Each row is the
+    statistic the detector actually thresholds — distinct-ROI coactivity, event
+    rate against its rolling context, the SPIKE-synchrony profile — drawn with
+    its threshold and its claimed windows shaded on top. A detection is then
+    readable as a crossing rather than as an assertion, and a *miss* becomes
+    legible too: a peak that rose and stopped short is a different failure from
+    a statistic that never moved.
+
+    It answers questions the lanes cannot. SCE's ceiling on a long recording
+    looks like a bad threshold until you see the trace — a 10 s-binned staircase
+    against a flat percentile line, where the percentile is taken over bins, so
+    the number of bins that can clear it is set by how long the recording is.
+
+    Rows reuse ``ui.app._signal_row`` — but each one is given an **explicit
+    ylim**, which the viewer does not need and this figure does.
+
+    The unique-value-dimension trick that keeps y unlinked in ``ui.app`` is not
+    sufficient inside an ``hv.Layout`` with ``shared_axes``. The curve's value
+    dimension is per-detector, but the detection shading is ``hv.Rectangles``,
+    whose ``y0``/``y1`` dimensions are named identically in every row — so the
+    ranges link through the shading instead of through the curve. Measured
+    before this line existed: five of six rows rendered at y=(-3.7, 40.7),
+    squashing spike-sync's 0–1 synchrony profile into a flat line at the bottom
+    of an ROI-count axis. It looked like a detector that never fired, on a row
+    labelled with its 222 detections.
+
+    That is the same trap ``_base`` documents for the x-axis, one element type
+    over. Pinning the limits from each row's own data is the fix that does not
+    depend on getting HoloViews dimension matching exactly right.
+    """
+    rows = []
+    for det, (t, y, events, extra) in traces.items():
+        fy = np.asarray(y, dtype=float)
+        fy = fy[np.isfinite(fy)]
+        top = float(fy.max()) if fy.size else 1.0
+        bottom = min(0.0, float(fy.min()) if fy.size else 0.0)
+        pad = max((top - bottom) * 0.08, 1e-9)
+        rows.append(_signal_row(det, t, y, events, extra, ext).opts(
+            width=width, height=height, xaxis=None,
+            ylim=(bottom - pad, top + pad)))
+    if rows:
+        rows[-1] = rows[-1].opts(height=height + 28, xaxis="bottom")
+    return rows
+
+
 def coordination_diagnostic(stream, *, ext, lanes=None, gt=None,
                             member_source: str | None = None,
                             tol_sec: float = 1.5, name: str = "events",
+                            traces=None,
                             width: int = 1000, height: int | None = None):
-    """Lanes over raster, x-linked. Returns an ``hv.Layout``."""
+    """Lanes over raster over analysis traces, all x-linked.
+
+    ``traces`` is ``ui.app._compute``'s output for one stream, keyed by detector
+    — ``{det: (t, y, (onsets, widths), extra)}``. Omit it for the lanes-only
+    figure.
+    """
     lanes = lanes or {}
     src = member_source or (next(iter(lanes)) if lanes else None)
     spans = _spans(lanes[src][0], lanes[src][1], ext) if src in lanes else []
@@ -223,7 +277,15 @@ def coordination_diagnostic(stream, *, ext, lanes=None, gt=None,
     # shared_axes links by DIMENSION NAME: both panels use "t" for x, and their
     # y dimensions are deliberately named differently ("lane" vs "roi") so only
     # x links. Same rule as the signal rows in ui.app.
-    return (top + bottom).cols(1).opts(shared_axes=True, merge_tools=True)
+    panels = [top, bottom]
+    if traces:
+        # the raster stops drawing an x-axis once something sits below it
+        panels[1] = bottom.opts(xaxis=None)
+        panels += trace_panel(traces, ext=ext, width=width)
+    layout = panels[0]
+    for p in panels[1:]:
+        layout = layout + p
+    return layout.cols(1).opts(shared_axes=True, merge_tools=True)
 
 
 def legend_html(lanes: dict, gt=None, member_source: str | None = None) -> str:
@@ -256,13 +318,27 @@ def legend_html(lanes: dict, gt=None, member_source: str | None = None) -> str:
 
 def score_table(gt, lanes: dict, *, tol_sec: float = 1.5) -> str:
     """Plain-text scoreboard — the numbers behind the picture, in a form that
-    can travel into a commit message or a log where a figure cannot."""
-    rows = ["detector    recall  prec    F1   FA  hotFA  by participation",
+    can travel into a commit message or a log where a figure cannot.
+
+    Scored the same way :mod:`bugarach.bench` scores: **spans, not points**, and
+    the promiscuity probe kept out of precision. Both matter here or the table
+    contradicts the bench it sits beside. Measured while wiring this up: scoring
+    SCE's 10 s bin edges as points read 0.20 recall against the bench's 0.73–0.87
+    on the same recording, and folding the probe into precision took it to 0.07.
+    A caption that disagrees with the measurement is worse than no caption.
+    """
+    rows = ["detector    recall  prec    F1   FA  probe  by participation",
             "-" * 74]
     for key, ev in lanes.items():
-        s = score_detections(gt, ev[0], tol_sec=tol_sec)
+        onsets, widths = ev[0], ev[1]
+        s = score_detections(gt, onsets, widths=widths, tol_sec=tol_sec)
+        scored = s.n_detected - s.hot_fa          # probe firings are their own number
+        prec = s.n_hit / scored if scored else float("nan")
+        f1 = (2 * s.recall * prec / (s.recall + prec)
+              if np.isfinite(s.recall) and np.isfinite(prec) and (s.recall + prec)
+              else float("nan"))
         by = " ".join(f"{int(f * 100)}%:{s.recall_at(f):.2f}"
                       for f in sorted(s.by_frac, reverse=True))
-        rows.append(f"{SHORT.get(key, key):<11s} {s.recall:5.2f}  {s.precision:5.2f}  "
-                    f"{s.f1:5.2f} {s.n_fa:4d}  {s.hot_fa:4d}   {by}")
+        rows.append(f"{SHORT.get(key, key):<11s} {s.recall:5.2f}  {prec:5.2f}  "
+                    f"{f1:5.2f} {s.n_fa - s.hot_fa:4d}  {s.hot_fa:4d}   {by}")
     return "\n".join(rows)

@@ -87,13 +87,13 @@ OPERATING_POINTS: dict[str, OperatingPoint] = {
     "sce": OperatingPoint(
         params=dict(bin_width_sec=10.0, threshold_pctile=99.0, n_surrogates=200),
         source="sce_detect defaults (generate_sce contract)",
-        knob="threshold_pctile", grid=(95.0, 98.0, 99.0, 99.5, 99.9)),
+        knob="threshold_pctile", grid=(90.0, 95.0, 98.0, 99.0, 99.5, 99.9)),
     "coact": OperatingPoint(
         params=dict(int_win_sec=2.0, context_win_sec=60.0, alpha=1e-4,
                     n_surrogates=100),
         source="explore_sce viewer FAST point — NOT the coact_detect signature "
                "default of alpha=0.01, which scores F1 0.72 here",
-        knob="alpha", grid=(1e-2, 1e-3, 1e-4, 1e-5, 1e-6)),
+        knob="alpha", grid=(1e-2, 1e-3, 1e-4, 1e-5, 1e-6, 1e-7)),
     "rate": OperatingPoint(
         params=dict(excess_threshold_hz=5.0, context_win=60.0, rate_win=1.0,
                     grid_dt=0.1),

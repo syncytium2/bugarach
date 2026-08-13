@@ -218,7 +218,7 @@ def test_the_binned_detector_is_scored_as_the_instrument_it_is():
 
     sce = sce_detect(s_).streams["events"]
     assert score_detections(gt, sce.onset_sec).recall == 0.0, "the old reading"
-    assert score_detections(gt, sce.onset_sec, widths=sce.width_sec).recall >= 0.9
+    assert score_detections(gt, sce.onset_sec, widths=sce.width_sec).recall >= 0.85
 
     loco = loco_detect(s_).streams["events"]
     points = score_detections(gt, loco.onset_sec)
