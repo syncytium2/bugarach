@@ -16,3 +16,7 @@ site/
 
 # node is here only to run wrangler (see docs/deploy.md)
 node_modules/
+
+# figure tools write an interactive .html beside each .png; only the PNG is
+# a documentation artifact, the HTML is regenerable build output
+docs/generator/*.html

@@ -131,10 +131,31 @@ def lane_panel(lanes: dict, *, ext, gt=None, tol_sec: float = 1.5,
                 [(a, y - 0.30, b, y + 0.30) for a, b in sp]
             ).opts(color=colour, line_color=colour, line_width=1, alpha=0.9))
         if gt is not None:
-            fa = score_detections(gt, ev[0], tol_sec=tol_sec).fa_times
-            if fa.size:
-                items.append(hv.Scatter((fa, np.full(fa.size, y + 0.40))).opts(
-                    marker="x", size=7, color=FALSE_ALARM, line_width=2, alpha=0.95))
+            # spans, not points — the same rule the scoreboard and the bench
+            # use. Scored as points, a binned detector's bin edge lands up to a
+            # bin-width early and gets an ✕ beside the very event it found:
+            # every SCE detection was marked a false alarm while sitting on top
+            # of a planted one.
+            sc = score_detections(gt, ev[0],
+                                  widths=ev[1] if len(ev) > 1 else None,
+                                  tol_sec=tol_sec)
+            # a duplicate — a second detection of an event another detection
+            # already claimed — is not the same failure as firing at nothing,
+            # and drawing both as ✕ is what made the lanes look like every
+            # detector was hallucinating next to real events.
+            dup = set(np.round(sc.dup_times, 6).tolist())
+            spurious = np.array([t for t in sc.fa_times
+                                 if round(float(t), 6) not in dup])
+            if spurious.size:
+                items.append(hv.Scatter(
+                    (spurious, np.full(spurious.size, y + 0.40))).opts(
+                    marker="x", size=7, color=FALSE_ALARM, line_width=2,
+                    alpha=0.95))
+            if sc.dup_times.size:
+                items.append(hv.Scatter(
+                    (sc.dup_times, np.full(sc.dup_times.size, y + 0.40))).opts(
+                    marker="circle", size=5, color=FALSE_ALARM, alpha=0.55,
+                    line_color=FALSE_ALARM, line_width=1, fill_alpha=0.0))
 
     if gt is not None:
         y = ypos["planted"]
@@ -142,7 +163,9 @@ def lane_panel(lanes: dict, *, ext, gt=None, tol_sec: float = 1.5,
         if planted.size:
             found = np.zeros(planted.size, dtype=bool)
             for ev in lanes.values():
-                found |= score_detections(gt, ev[0], tol_sec=tol_sec).hits
+                found |= score_detections(gt, ev[0],
+                                          widths=ev[1] if len(ev) > 1 else None,
+                                          tol_sec=tol_sec).hits
             for mask, colour, marker in ((found, FOUND, "triangle"),
                                          (~found, MISSED, "inverted_triangle")):
                 if np.any(mask):
@@ -302,7 +325,11 @@ def legend_html(lanes: dict, gt=None, member_source: str | None = None) -> str:
   <b>Lanes (top):</b> one row per detector; a bar spans a detection's
   <i>onset → onset + width</i>.{swatches}<br>
   <span style="color:{FALSE_ALARM};font-weight:bold">&#10005;</span>
-  a detection matching no planted event — a <b>false alarm</b>.<br>
+  a detection near <b>no</b> planted event — a false alarm ·
+  <span style="color:{FALSE_ALARM}">&#9711;</span>
+  a <b>duplicate</b>: it lands on a real event another detection already
+  claimed, so matching (one-to-one) leaves it over. Fragmentation, not
+  hallucination.<br>
   <b>planted row:</b>
   <span style="color:{FOUND}">&#9650;</span> recovered by at least one detector ·
   <span style="color:{MISSED}">&#9660;</span> missed by all of them.<br>

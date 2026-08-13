@@ -237,7 +237,8 @@ def _render_png(html_path: Path, png_path: Path, *, wait_ms: int = 3500) -> bool
             tmp = Path(td) / "shot.png"
             with sync_playwright() as pw:
                 browser = pw.chromium.launch()
-                page = browser.new_page(viewport={"width": 1180, "height": 1400})
+                page = browser.new_page(viewport={"width": 1180, "height": 1400},
+                                   device_scale_factor=2)
                 page.goto(html_path.resolve().as_uri())
                 page.wait_for_timeout(wait_ms)      # bokeh draws after load
                 page.screenshot(path=str(tmp), full_page=True)

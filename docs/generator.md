@@ -249,3 +249,22 @@ python tools/make_diagnostic.py --bench sparse --out docs/generator
 scores describe the same run rather than merely the same detectors. That view is
 what found the region bug above: SCE's trace simply stopped, and no amount of
 staring at the scores would have said why.
+
+### ✕ and ○ are different failures
+
+A **✕** is a detection near no planted event. A **○** is a *duplicate*: it lands
+on a real event that another detection already claimed, and greedy matching is
+one-to-one, so it is left over.
+
+The distinction matters because the two have different causes and different
+fixes — fragmentation is a merge-gap problem, firing at noise is a threshold
+problem — and precision that lumps them together cannot tell you which you have.
+Measured on the sparse regime, outside the probe block: CICADA's false alarms
+are *all* within 2 s of a planted event, while RateDetect's and spike-sync's sit
+30 s+ away from anything. Those are not the same detector failing in the same
+way.
+
+The lane figure drew both as ✕ until 2026-08-13, and worse, marked them by
+**point** scoring while the scoreboard beside it used spans — so every SCE
+detection got an ✕ while sitting on top of the event it had found. Noticing that
+"almost every ✕ has an event next to it" is what surfaced it.
