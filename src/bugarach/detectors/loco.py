@@ -155,10 +155,24 @@ def region_windows(
     return out
 
 
-def per_stream_param(x, names: list[str], param: str) -> dict[str, float]:
+def per_stream_param(x, names: list[str], param: str, calibrated=None) -> dict[str, float]:
     """Broadcast a per-stream parameter: scalar (all streams), sequence in
     stream order, or name-keyed dict. For the canonical two-stream stores a
-    (FAST, SLOW) pair keeps its historical meaning."""
+    (FAST, SLOW) pair keeps its historical meaning.
+
+    ``x=None`` means "use the calibrated default", which is where the stream
+    count matters. The tuned optima were derived on the canonical two-stream
+    store and are written as (FAST, SLOW) pairs; a store with one stream — the
+    shape most outside labs have, and the viewer's default presentation
+    (FOUNDATIONS §3) — has no SLOW to apply the second element to. So the pair
+    is used verbatim for exactly two streams and its FAST element for any other
+    count. FAST rather than SLOW because the SLOW optimum is the weakly
+    determined one (see ``loco_detect``). Two-stream behaviour is unchanged.
+    """
+    if x is None:
+        if calibrated is None:
+            raise ValueError(f"{param} has no calibrated default")
+        x = calibrated if len(names) == 2 else calibrated[0]
     if isinstance(x, dict):
         missing = [n for n in names if n not in x]
         if missing:
@@ -169,6 +183,11 @@ def per_stream_param(x, names: list[str], param: str) -> dict[str, float]:
         return {n: float(a[0]) for n in names}
     if a.size == len(names):
         return {n: float(v) for n, v in zip(names, a)}
+    if a.size == 2 and len(names) == 1:
+        raise ValueError(
+            f"{param}: a (FAST, SLOW) pair is only meaningful for the canonical "
+            f"two-stream store, and this slice has one stream ({names[0]!r}) — "
+            f"pass a scalar, or omit the argument for the calibrated default")
     raise ValueError(
         f"{param} must be scalar, a {len(names)}-element sequence in stream "
         f"order, or a dict keyed by stream name {names}")
@@ -193,13 +212,13 @@ def effective_region_windows(s: Slice, ext: tuple[float, float], **kw) -> list[R
 def loco_detect(
     s: Slice,
     *,
-    bin_width_sec=(1.0, 2.0),
-    context_win_sec=(120.0, 60.0),
+    bin_width_sec=None,
+    context_win_sec=None,
     threshold_pctile=99.9,
     min_rois: int = 3,
     n_surrogates: int = 200,
-    thr_step_sec=(15.0, 30.0),
-    merge_gap_sec=(2.0, 4.0),
+    thr_step_sec=None,
+    merge_gap_sec=None,
     null_context_mode: str = "maxlt",
     onset_field: str = "t50rise",
     clamp_context_to_region: bool = True,
@@ -212,12 +231,15 @@ def loco_detect(
     peak_prominence: float = 0.0,
     peak_min_distance_sec: float = 0.0,
 ) -> LocoDetection:
-    """Run LoCo on both streams of a slice (FAST then SLOW, one RNG stream).
+    """Run LoCo on every stream of a slice (declaration order, one RNG stream).
 
-    The five tuned knobs take a scalar (both streams) or a (FAST, SLOW) pair;
-    defaults are the measured-regime F1-optima (FAST bin 1 / ctx 120 /
-    thr_step 15 / gap 2; SLOW bin 2 / ctx 60 / thr_step 30 / gap 4;
-    pctile 99.9). The SLOW optimum is weakly determined — treat as provisional.
+    The five tuned knobs take a scalar (all streams), a sequence in stream
+    order, or a name-keyed dict. Left unset they resolve to the measured-regime
+    F1-optima (FAST bin 1 / ctx 120 / thr_step 15 / gap 2; SLOW bin 2 / ctx 60 /
+    thr_step 30 / gap 4; pctile 99.9). Those are a (FAST, SLOW) pair, so they
+    apply as a pair only to the canonical two-stream store; a single-stream
+    slice gets the FAST element — see ``per_stream_param``. The SLOW optimum is
+    weakly determined — treat as provisional.
     """
     if null_context_mode not in ("maxlt", "symmetric"):
         raise ValueError('null_context_mode must be "maxlt" or "symmetric"')
@@ -225,11 +247,11 @@ def loco_detect(
         raise ValueError('detection_mode must be "threshold" or "peak"')
 
     names = list(s.streams)
-    binw = per_stream_param(bin_width_sec, names, "bin_width_sec")
-    mgap = per_stream_param(merge_gap_sec, names, "merge_gap_sec")
-    ctxw = per_stream_param(context_win_sec, names, "context_win_sec")
-    pcti = per_stream_param(threshold_pctile, names, "threshold_pctile")
-    tstp = per_stream_param(thr_step_sec, names, "thr_step_sec")
+    binw = per_stream_param(bin_width_sec, names, "bin_width_sec", (1.0, 2.0))
+    mgap = per_stream_param(merge_gap_sec, names, "merge_gap_sec", (2.0, 4.0))
+    ctxw = per_stream_param(context_win_sec, names, "context_win_sec", (120.0, 60.0))
+    pcti = per_stream_param(threshold_pctile, names, "threshold_pctile", (99.9, 99.9))
+    tstp = per_stream_param(thr_step_sec, names, "thr_step_sec", (15.0, 30.0))
 
     ext = recording_extent(s)
     rw = effective_region_windows(

@@ -95,9 +95,9 @@ def cicada_detect(
     s: Slice,
     *,
     threshold_scope: str = "global",
-    active_duration_sec=(1.0, 2.0),
+    active_duration_sec=None,
     n_synchronous_frames: int = 1,
-    sce_percentile=(99.99, 99.9999),
+    sce_percentile=None,
     n_surrogates: int = 100,
     sce_min_distance_frames: int = 4,
     imaging_rate_hz: float = 10.0,
@@ -111,14 +111,17 @@ def cicada_detect(
     active_duration_mode: str = "fixed",
     duration_field: str = "",
 ) -> CicadaDetection:
-    """Run the CICADA detector on both streams (FAST then SLOW, one RNG).
+    """Run the CICADA detector on every stream (declaration order, one RNG).
 
     onset_field anchors the raster ("locs" peak = CICADA default; explore_sce
     uses "t50rise"). active_duration_mode="per_event" reads per-event
     durations from duration_field on each Stream ("width"), or "rise_dur"
     (computed here as locs - t50rise, matching explore_sce's prep).
-    sce_percentile and active_duration_sec take a scalar or a (FAST, SLOW)
-    pair — SLOW transients are wider and need a stricter percentile.
+    sce_percentile and active_duration_sec take a scalar, a sequence in stream
+    order, or a name-keyed dict; left unset they resolve to the calibrated
+    (FAST, SLOW) pair for a two-stream store and its FAST element otherwise —
+    SLOW transients are wider and need a stricter percentile, and a
+    single-stream slice has no SLOW (see ``per_stream_param``).
     """
     if threshold_scope not in ("global", "regional"):
         raise ValueError('threshold_scope must be "global" or "regional"')
@@ -139,8 +142,10 @@ def cicada_detect(
         else np.random.RandomState()
 
     names = list(s.streams)
-    pcts = per_stream_param(sce_percentile, names, "sce_percentile")
-    adurs = per_stream_param(active_duration_sec, names, "active_duration_sec")
+    pcts = per_stream_param(sce_percentile, names, "sce_percentile",
+                            (99.99, 99.9999))
+    adurs = per_stream_param(active_duration_sec, names, "active_duration_sec",
+                             (1.0, 2.0))
 
     results = {}
     for name, stream in s.streams.items():

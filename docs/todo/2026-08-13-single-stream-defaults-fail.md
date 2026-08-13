@@ -1,9 +1,18 @@
 ---
-status: open
+status: done
 filed: 2026-08-13
 ---
 
 # LoCo and CICADA can't run on a single-stream slice with their own defaults
+
+> **DONE 2026-08-13.** Fixed by option 1 below (sentinel defaults, resolved
+> inside the detector). `per_stream_param` gained a `calibrated` argument: the
+> pair applies to a two-stream store, its FAST element to any other stream
+> count, and an explicit pair handed to a one-stream slice now says so instead
+> of naming a parameter. `tests/test_single_stream_defaults.py` runs every
+> detector on a single-stream slice with pure defaults — the missing test this
+> file identified as the real defect — and pins that two-stream resolution did
+> not move. The rest of the file is the record of why.
 
 Found while porting the simulator, which now emits single-stream slices by
 decision (2026-08-13).
