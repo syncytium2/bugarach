@@ -1,0 +1,14 @@
+{
+  "name": "bugarach-site",
+  "private": true,
+  "description": "Static site payload for bugarach.tonydefazio.com. The project itself is Python; node exists here only to run wrangler.",
+  "scripts": {
+    "build": "python tools/build_site.py",
+    "predeploy": "npm run build",
+    "deploy": "wrangler deploy",
+    "dry": "npm run build && wrangler deploy --dry-run"
+  },
+  "devDependencies": {
+    "wrangler": "4.122.0"
+  }
+}

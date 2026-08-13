@@ -4,13 +4,26 @@
 `colonel_kernel` uses: no server script, Cloudflare serves `./site` directly.
 
 ```bash
-python tools/build_site.py     # generate ./site   (Python; runs anywhere)
-npx wrangler deploy            # upload            (needs node + wrangler auth)
+npm install        # once per clone — installs the pinned wrangler
+npx wrangler login # once per machine — OAuth browser flow, cannot be scripted
+npm run deploy     # build (Python) + upload (wrangler), every time
 ```
 
-Two machines, because the two halves need different toolchains: the build is
-Python and runs on any box with the repo installed; the upload needs node, which
-is not on every machine here.
+`npm run deploy` runs `tools/build_site.py` first via `predeploy`, so the site is
+never uploaded stale. `npm run dry` does everything except the upload.
+
+**Node lives in the user profile, not system-wide.** This is a managed Windows
+box with no winget/choco/scoop, so node is a checksum-verified portable zip
+extracted to `%USERPROFILE%	ools
+ode` and appended to the *user* PATH. No
+admin, nothing installed system-wide, and uninstalling is deleting that folder
+and removing one PATH entry. Version at time of writing: node 24.19.0 LTS,
+npm 11.17.0, wrangler pinned to 4.122.0 in `package.json`.
+
+**npm 11 blocks postinstall scripts by default**, so `esbuild` and `workerd`
+never fetch their platform binaries. That does not matter for an assets-only
+Worker — nothing is bundled, and `wrangler deploy --dry-run` passes. If a future
+change needs real bundling, run `npm approve-scripts` for those two.
 
 ## What has to be done by hand at Porkbun and Cloudflare
 
