@@ -66,3 +66,47 @@ Carried verbatim from `if2_detector_defaults.m`, which is itself careful:
   [`2026-08-12-port-coordination-benchmark.md`](2026-08-12-port-coordination-benchmark.md)
   lands — with the benchmark ported, these numbers become re-derivable here
   instead of quoted from a branch.
+
+## Measured here, 2026-08-13 — the numbers are now re-derivable
+
+`src/bugarach/bench.py` landed, so the sweep no longer has to be quoted from a
+MATLAB branch. Swept on the sparse regime, one seed, F1 at each grid point:
+
+| detector | knob | declared point | F1 there | best on this bench | F1 |
+|---|---|---|---|---|---|
+| loco | `threshold_pctile` | 99.9 | 0.94 | 99.99 (plateau to 1e-4) | 1.00 |
+| cicada | `sce_percentile` | 99.99 | 0.97 | 99.9 | 0.97 |
+| sce | `threshold_pctile` | 99.0 | 0.57 | 99.0 | 0.57 |
+| coact | `alpha` | 1e-4 | 0.91 | 1e-5 | 1.00 |
+| rate | `excess_threshold_hz` | 5.0 | 0.88 | **10.0** | 1.00 |
+| sync | `C_threshold` | 0.1 | 0.62 | 0.2 | 1.00 |
+
+**Caveat 3 above partly resolves.** Upstream's `rate excess_thr=10` was
+untrustworthy because it sat at the edge of the swept range. A wider grid here
+finds the same value as a genuine interior peak — F1 falls to 0.80 at 20 — so
+that particular grid-edge worry was unfounded. An independent bench reproducing
+an upstream optimum is the useful kind of agreement.
+
+**Four of the six declared points are not optimal on this generator, and they
+have deliberately not been changed.** Re-tuning to a synthetic benchmark whose
+realism nothing has yet measured is the trap this project already paid for
+(`docs/simulation_plan.md` §5, *stranded validation* and *the benchmark, not the
+detectors, was the problem*). The numbers say the sweep works, not that the
+defaults are wrong. What would license a change is the real-data validation
+that §6 names as the honest blocker — not a better F1 against data we generated
+ourselves.
+
+## SCE is a separate problem from its defaults
+
+SCE tops out at **F1 0.57, recall 0.40** at every point on its grid — the only
+detector whose sweep has no good operating point anywhere. The cause looks
+structural rather than a bad default: `threshold_pctile` is a percentile over
+*bins*, so at 10 s bins on a 45-minute recording the 99th percentile admits
+roughly 27 bins total, and the detection count is capped by recording length
+rather than by how much coordination is present. Lowering the percentile trades
+that cap against precision directly (95.0 gives F1 0.50, not better).
+
+If that reading is right, no choice of `threshold_pctile` fixes it and the
+operating point is the wrong knob to be arguing about. Worth confirming against
+the MATLAB original's behaviour on a long recording before treating it as a port
+defect — it may be faithful to an upstream design that assumed shorter slices.
