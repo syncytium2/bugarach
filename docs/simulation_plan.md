@@ -369,7 +369,32 @@ The stamp and the promotion gate are what make the measurement step an actual
 gate rather than an intention. Written only as prose, it is the same sentence the
 deck wrote — and that sentence lost to a shipping deadline.
 
-## 9. Open questions for Tony
+## 9. Decisions taken (2026-08-13)
+
+| question | decision |
+|---|---|
+| What is this for? | **Undecided, deliberately.** Build the port and the bench; revisit once there are numbers to argue from rather than intentions. |
+| Does the outstanding real-data validation come first? | **No — port first**, because a Python bench makes that validation cheap to run and re-run. The bet: friction, not priority, is why it never happened. |
+| Single-stream or two? | **Single-stream is the target.** Most outside labs have one, and the viewer already presents single-stream as the default. `fast`/`slow` becomes a store convenience, not a generator concept. |
+| Hand-labeled gold set? | **Deferred** until the bench exists and there is a concrete validation run to attach it to. |
+
+### What single-stream means for parity
+
+It costs nothing. The MATLAB generator emits `fast` and `slow` **byte-identical**,
+so generating one stream and duplicating it reproduces its output exactly — the
+parity test still works, and the two-stream store form falls out as a special
+case rather than being baked into the generator.
+
+### What is still open
+
+- **Has the coordination-timescale measurement been reviewed?** A question of
+  fact, not a decision. Production defaults rest on it, and it is still marked
+  provisional upstream.
+- **What the gold set should be**, when it is revisited. The cheapest useful
+  option raised: label only the windows where the six detectors *disagree* —
+  agreement cases teach little, and disagreement is where the information is.
+
+## 10. The original questions, for the record
 
 1. **Is a hand-labeled real gold set affordable?** Even ~200 events. It changes
    the plan more than any technical choice here.

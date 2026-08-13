@@ -1,9 +1,15 @@
 ---
-status: open
+status: done
 filed: 2026-08-12
 ---
 
 # Enable branch protection on `main` — the PR policy currently gates nothing
+
+> **DONE 2026-08-13.** Tony authorised it and it is live: required checks
+> `test (3.11)/(3.13)/(3.14)`, no required reviews, `enforce_admins=false`,
+> force-push disabled. Verified by reading the protection back from the API.
+> The rest of this file is kept as the record of why, and of the failure that
+> prompted it.
 
 ## The state of things
 
