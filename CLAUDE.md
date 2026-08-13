@@ -39,6 +39,22 @@ Status: `find_peaks_halfprom` implemented against spec rev 2, accepted
 2026-08-11 and integrated into `src/bugarach/detectors/peaks.py` (the tests
 target that integrated copy, not a standalone file).
 
+## Show the picture — don't describe it
+
+**If a finding is visual, render it before writing about it.** Rasters,
+detector traces, distributions, sweeps, before/after comparisons: produce the
+figure, show it, and let the prose point at what to look at. Flagging something
+for Tony's attention and then explaining it in paragraphs is the failure mode
+he has called out (2026-08-13) — the text arrives, the evidence doesn't.
+
+This repo can already draw. `tools/make_diagnostic.py` renders detector lanes,
+the ROI raster and per-detector analysis traces to PNG through Playwright
+chromium; `bugarach.ui.diagnostic` is the figure itself. Reuse them rather than
+describing what a figure would have shown.
+
+Applies to the mid-task update as much as the final answer: "SCE tops out at
+F1 0.57 and here is the trace showing why" beats three paragraphs of mechanism.
+
 ## Plot conventions (viewer, exports, figures)
 
 - **Minutes-friendly time axes, always**: 60-base ticks (1/2/5/10/15/30 x

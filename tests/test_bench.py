@@ -47,12 +47,12 @@ def bench():
 # when dense-tuned settings met sparse data, and drew it as a figure.
 
 MAX_PRECISION_DROP = {
-    "loco": 0.10,      # measured: none, precision rises 0.88 -> 0.91
-    "coact": 0.10,     # measured: none, 0.79 -> 0.96
-    "sce": 0.15,       # measured: 0.06
-    "cicada": 0.25,    # measured: 0.13
+    "loco": 0.20,      # measured: 0.12 (1.00 -> 0.88)
+    "coact": 0.10,     # measured: none, precision rises 0.94 -> 1.00
+    "sce": 0.10,       # measured: none, 1.00 -> 1.00 — the most precise of the six
+    "cicada": 0.25,    # measured: 0.15
     "rate": 0.65,      # measured: 0.55 — a real collapse, recorded not excused
-    "sync": 0.55,      # measured: 0.41 — likewise
+    "sync": 0.55,      # measured: 0.40 — likewise
 }
 
 
@@ -84,12 +84,13 @@ def test_the_two_known_collapses_are_still_the_only_ones():
 # cross-ROI coincidence that is not a coordinated event.
 
 MAX_PROBE_PER_MIN = {
-    "sce": 2.0,        # measured: 0.0 — immune
-    "coact": 2.0,      # measured: 0.2
+    "coact": 2.0,      # measured: 0.4
     "loco": 5.0,       # measured: 1.1
     "rate": 15.0,      # measured: 5.4
-    "sync": 55.0,      # measured: 37.0
-    "cicada": 80.0,    # measured: 59.9 — the most rate-fooled of the six
+    "sce": 15.0,       # measured: 5.9 — it read 0.0 only because the spurious
+                       # baseline region hid most of the probe block from it
+    "sync": 55.0,      # measured: 36.9
+    "cicada": 80.0,    # measured: 59.2 — the most rate-fooled of the six
 }
 
 
@@ -238,6 +239,47 @@ def test_the_bench_recording_keeps_the_null_clean():
     assert intervals.min() >= widest_context * 0.9, (
         f"realized spacing {intervals.min():.0f}s is inside the {widest_context:.0f}s "
         "context window — the null is contaminated")
+
+
+def test_the_generator_does_not_impose_an_experimental_protocol():
+    """The generator used to stamp every recording with a region named
+    ``baseline`` spanning the whole duration. That reads as harmless metadata
+    and is not: ``baseline`` is a wet-lab protocol label, and the region
+    windowing rules trim such a region to its final 1200 s. SCE honours the
+    trim, so it analysed 1500-2700 s of a 45-minute recording while being scored
+    against the 15 events planted across all of it — a recall ceiling of 7/15,
+    measured at 0.40, which read as a weak detector rather than as a detector
+    shown 44% of the data. Removing it took SCE to 0.73-0.87 and moved LoCo and
+    CICADA not at all.
+
+    Every detector must see the same recording, or the bench is not comparing
+    them. A synthetic recording has no baseline and no treatment period.
+    """
+    s, _ = make_recording("sparse", 1)
+    assert not s.regions, (
+        "the generator is annotating regions again — any named region triggers "
+        "protocol windowing and silently shrinks what a region-scoped detector "
+        "is allowed to look at")
+
+
+def test_every_detector_sees_the_whole_recording():
+    """The behavioural half of the test above: whatever the annotations say,
+    no detector may be confined to a slice of the recording the others get."""
+    s, _ = make_recording("sparse", 1)
+    ext = (0.0, BENCH_RECORDING["duration_sec"])
+    for name in DETECTORS:
+        det = run_detector(name, s)
+        onsets = getattr(det, "onset_sec", None)
+        onsets = det.locs if onsets is None else onsets
+        finite = np.asarray(onsets, dtype=float)
+        finite = finite[np.isfinite(finite)]
+        if finite.size < 2:
+            continue
+        span = finite.max() - finite.min()
+        assert span > 0.5 * (ext[1] - ext[0]), (
+            f"{name} only produced detections across {span:.0f}s of a "
+            f"{ext[1] - ext[0]:.0f}s recording — check whether something is "
+            "restricting its analysis window")
 
 
 def test_the_schedule_is_not_metronomic():

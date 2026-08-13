@@ -76,10 +76,13 @@ MATLAB branch. Swept on the sparse regime, one seed, F1 at each grid point:
 |---|---|---|---|---|---|
 | loco | `threshold_pctile` | 99.9 | 0.94 | 99.99 (plateau to 1e-4) | 1.00 |
 | cicada | `sce_percentile` | 99.99 | 0.97 | 99.9 | 0.97 |
-| sce | `threshold_pctile` | 99.0 | 0.57 | 99.0 | 0.57 |
-| coact | `alpha` | 1e-4 | 0.91 | 1e-5 | 1.00 |
+| sce | `threshold_pctile` | 99.0 | 0.85 | 95.0 | 0.97 |
+| coact | `alpha` | 1e-4 | 0.97 | 1e-6 | 1.00 |
 | rate | `excess_threshold_hz` | 5.0 | 0.88 | **10.0** | 1.00 |
 | sync | `C_threshold` | 0.1 | 0.62 | 0.2 | 1.00 |
+
+(SCE and coact rows re-measured after the region fix below; the earlier figures
+for them were taken while SCE could see only 44% of the recording.)
 
 **Caveat 3 above partly resolves.** Upstream's `rate excess_thr=10` was
 untrustworthy because it sat at the edge of the swept range. A wider grid here
@@ -96,17 +99,38 @@ defaults are wrong. What would license a change is the real-data validation
 that §6 names as the honest blocker — not a better F1 against data we generated
 ourselves.
 
-## SCE is a separate problem from its defaults
+## ~~SCE is a separate problem from its defaults~~ — resolved, and the first diagnosis was wrong
 
-SCE tops out at **F1 0.57, recall 0.40** at every point on its grid — the only
-detector whose sweep has no good operating point anywhere. The cause looks
-structural rather than a bad default: `threshold_pctile` is a percentile over
-*bins*, so at 10 s bins on a 45-minute recording the 99th percentile admits
-roughly 27 bins total, and the detection count is capped by recording length
-rather than by how much coordination is present. Lowering the percentile trades
-that cap against precision directly (95.0 gives F1 0.50, not better).
+**Superseded 2026-08-13.** The original text here blamed SCE's ceiling on
+`threshold_pctile` being a percentile over *bins*, so that detection count was
+capped by recording length. That was a guess from the numbers, and it was wrong.
 
-If that reading is right, no choice of `threshold_pctile` fixes it and the
-operating point is the wrong knob to be arguing about. Worth confirming against
-the MATLAB original's behaviour on a long recording before treating it as a port
-defect — it may be faithful to an upstream design that assumed shorter slices.
+The actual cause was visible the moment the analysis traces were drawn under the
+raster: **SCE's trace simply stopped, covering 1505–2695 s of a 2700 s
+recording.** The generator was stamping every recording with a region named
+`baseline` spanning the whole duration, and the region windowing rules read
+`baseline` as the pre-solution period and trim it to the final
+`baseline_window_max_sec` (1200 s). SCE honours that trim; LoCo and CICADA do
+not restrict detection to the window, so they were unaffected and the asymmetry
+looked like a detector difference.
+
+SCE was therefore scored against 15 planted events while being shown 7 of them —
+a recall ceiling of 0.47, measured at 0.40. It was not a weak detector. It was a
+detector shown 44% of the data.
+
+With the annotation removed (`simulate_coordination` no longer invents regions):
+
+| | before | after |
+|---|---|---|
+| SCE recall | 0.40 | 0.73–0.87 |
+| SCE F1, sparse | 0.56 | **0.89** |
+| SCE precision | 0.92 | **1.00**, in both regimes — the most precise of the six |
+| LoCo, CICADA | — | unmoved |
+
+Two lessons worth keeping. The scope-mismatch trap in
+`docs/simulation_plan.md` §5 is listed as *tuned whole-recording, deployed
+per-region*; this is the same trap reached from the other direction, and nothing
+in the bench would have caught it, because a detector quietly analysing less
+data still returns plausible numbers. And the diagnosis only became obvious when
+the picture was drawn — the numbers alone supported a confident, wrong story for
+a full day.

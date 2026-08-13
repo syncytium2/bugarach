@@ -43,27 +43,21 @@ from pathlib import Path
 
 import numpy as np
 
-# The six, with the parameters this diagnostic runs them at. These are NOT the
-# calibrated operating points — they are deliberately plain values chosen to
-# make the picture legible. Anything comparative belongs in the bench, which
-# scores against the calibrated settings; see docs/simulation_plan.md.
-DETECTORS = {
-    "coact": dict(int_win_sec=1.0, context_win_sec=60.0, min_rois=3,
-                  n_surrogates=100, alpha=1e-4),
-    "sce": dict(bin_width_sec=2.0, threshold_pctile=99.9, min_rois=3,
-                n_surrogates=100),
-    "sync": dict(tau_max=0.25, max_gap=0.5, C_threshold=0.1, C_min=0.1, min_n=3),
-    "rate": dict(grid_dt=0.1, excess_threshold_hz=5.0, merge_gap_s=3.0,
-                 rate_win=1.0, context_win=60.0),
-    # loco and cicada are listed on purpose even though they currently FAIL on a
-    # single-stream slice: their defaults are (FAST, SLOW) pairs that cannot
-    # broadcast to one stream. Dropping them from this list would hide that in
-    # the very artifact meant to expose detector behaviour — the report names
-    # them under "did not run" instead. See
-    # docs/todo/2026-08-13-single-stream-defaults-fail.md.
-    "loco": {},
-    "cicada": {},
-}
+# The six, at the operating points the bench declares, with their provenance —
+# so this figure and the scores in bugarach.bench describe the same detectors.
+# An earlier version used "deliberately plain values chosen to make the picture
+# legible", which quietly meant the diagnostic and the bench could disagree
+# about what a detector does; coact at the MATLAB signature default scores F1
+# 0.72 against 1.00 at its calibrated point, and a picture drawn at the wrong
+# one is a picture of a different detector.
+#
+# (loco and cicada used to fail here outright — their defaults were (FAST, SLOW)
+# pairs that could not broadcast to a single-stream slice. Fixed 2026-08-13;
+# the "did not run" path below stays, because a detector that cannot run is a
+# finding worth printing rather than a crash worth losing the figure to.)
+def _detector_params():
+    from bugarach.bench import OPERATING_POINTS
+    return {name: dict(op.params) for name, op in OPERATING_POINTS.items()}
 
 
 def build(args):
@@ -78,53 +72,74 @@ def build(args):
     from bugarach.ui.diagnostic import (coordination_diagnostic, legend_html,
                                         score_table)
 
-    slice_, gt = simulate_coordination(
-        seed=args.seed,
-        duration_sec=args.duration,
-        n_roi=args.n_roi,
-        n_per_level=(args.per_level,) * 3,
-        interval_cv=args.interval_cv,
-        hot_window=(args.duration * 0.4, args.duration * 0.6) if args.hot else None,
-        hot_rate_hz=args.hot_rate if args.hot else 0.0,
-        ramp_sec=args.duration * 0.02 if args.hot else 0.0,
-        n_distractors=args.distractors,
-    )
+    if args.bench:
+        # The bench's own recording, so the figure and the scores in
+        # bugarach.bench describe the same run rather than merely the same
+        # detectors. The two differ in ways that matter — the bench spaces
+        # events 120 s apart to keep the null clean, this tool's default is 15 s
+        # — and a picture drawn on a different recording is not evidence about
+        # the bench.
+        from bugarach.bench import BENCH_RECORDING, make_recording
+        slice_, gt = make_recording(args.bench, args.seed)
+        args.duration = BENCH_RECORDING["duration_sec"]
+        args.n_roi = BENCH_RECORDING["n_roi"]
+    else:
+        slice_, gt = simulate_coordination(
+            seed=args.seed,
+            duration_sec=args.duration,
+            n_roi=args.n_roi,
+            n_per_level=(args.per_level,) * 3,
+            interval_cv=args.interval_cv,
+            hot_window=(args.duration * 0.4, args.duration * 0.6) if args.hot else None,
+            hot_rate_hz=args.hot_rate if args.hot else 0.0,
+            ramp_sec=args.duration * 0.02 if args.hot else 0.0,
+            n_distractors=args.distractors,
+        )
     ext = recording_extent(slice_)
 
-    lanes, failed = {}, {}
-    for det, params in DETECTORS.items():
+    lanes, traces, failed = {}, {}, {}
+    for det, params in _detector_params().items():
         try:
-            lanes[det] = _compute(det, slice_, ext, params)["events"][2]
+            t, y, events, extra = _compute(det, slice_, ext, params)["events"]
+            lanes[det] = events
+            traces[det] = (t, y, events, extra)
         except Exception as exc:                      # noqa: BLE001
             # A detector that cannot run on this slice is a finding, not a crash
             # — record it in the sidecar instead of losing the whole figure.
-            # loco and cicada currently land here on single-stream data; see
-            # docs/todo/2026-08-13-single-stream-defaults-fail.md.
             failed[det] = f"{type(exc).__name__}: {exc}"
 
     fig = coordination_diagnostic(slice_.streams["events"], ext=ext, lanes=lanes,
-                                  gt=gt, height=args.height)
+                                  gt=gt, traces=traces, height=args.height)
     legend = legend_html(lanes, gt)
 
     header = [
         f"bugarach coordination diagnostic — seed {args.seed}",
-        f"{args.n_roi} ROI · {args.duration:g}s · {len(gt.events)} planted events "
-        f"· interval CV {args.interval_cv:g}",
+        f"{args.n_roi} ROI · {args.duration:g}s · {len(gt.events)} planted events"
+        + (f" · bench {args.bench} regime" if args.bench
+           else f" · interval CV {args.interval_cv:g}"),
     ]
-    if args.hot:
+    # read the probe and distractors off the ground truth, not off the CLI args:
+    # with --bench the recording came from bugarach.bench and the args no longer
+    # describe it. A caption that describes a different recording is worse than
+    # no caption.
+    hot = gt.params.get("hot_window")
+    if hot:
         header.append(
-            f"dense-but-random block {args.duration * 0.4:g}–{args.duration * 0.6:g}s "
-            f"at +{args.hot_rate:g} Hz/ROI — contains NO planted events, so "
-            f"detections inside it are false alarms by construction")
-    if args.distractors:
-        header.append(f"{args.distractors} correlated-burst distractors — real "
+            f"dense-but-random block {hot[0]:g}–{hot[1]:g}s at "
+            f"+{gt.params.get('hot_rate_hz', args.hot_rate):g} Hz/ROI — contains "
+            f"NO planted events, so detections inside it are false alarms by "
+            f"construction")
+    if gt.distractors:
+        header.append(f"{len(gt.distractors)} correlated-burst distractors — real "
                       f"coincidence that is not a coordinated event")
     header += ["", score_table(gt, lanes)]
     if failed:
         header += ["", "did not run:"]
         header += [f"  {k}: {v}" for k, v in failed.items()]
-    header += ["", "Parameters here are plain, not the calibrated operating "
-                   "points — this is a troubleshooting view, not a ranking."]
+    header += ["", "Detectors run at the operating points declared in "
+                   "bugarach.bench, so this figure and the bench scores describe "
+                   "the same detectors. Still a troubleshooting view, not a "
+                   "ranking — one seed is not a measurement."]
     report = "\n".join(header)
 
     return fig, legend, header, report, pn
@@ -146,6 +161,9 @@ def main(argv=None):
     p.add_argument("--hot-rate", type=float, default=0.25)
     p.add_argument("--distractors", type=int, default=3)
     p.add_argument("--height", type=int, default=560)
+    p.add_argument("--bench", choices=("sparse", "dense"), default=None,
+                   help="render the bugarach.bench recording for this regime "
+                        "instead of one built from the options above")
     p.add_argument("--tag", default=None, help="filename suffix (default: seed)")
     p.add_argument("--out", default=None,
                    help="destination directory; default $BUGARACH_DARKROOM")
