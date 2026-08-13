@@ -13,6 +13,12 @@
 #
 #   *** IT FAILS CLOSED ON "NO CHECKS FOUND." ***
 #
+# with one refinement learned the hard way: "no checks YET" and "no checks EVER"
+# are indistinguishable in the seconds after a PR opens, before CI is even
+# scheduled. Refusing instantly makes the tool cry wolf in the normal case, and a
+# gate that cries wolf gets bypassed. So checks are given a bounded --grace
+# window to APPEAR; only then is absence treated as failure.
+#
 # That is the whole point. Zero checks is not "nothing to worry about", it is
 # exactly the condition that produced the bug — an absent gate reads identically
 # to a passed one unless you treat absence as failure.
@@ -23,6 +29,7 @@
 #
 # USAGE
 #   tools/merge_when_green.sh <pr-number> [--timeout SECONDS] [--poll SECONDS]
+#                                        [--grace SECONDS]
 #   tools/merge_when_green.sh --selftest
 #
 # EXIT  0 merged   1 not merged (checks failed, absent, or timed out)   2 usage/env
@@ -31,6 +38,7 @@ set -uo pipefail
 
 TIMEOUT=1800
 POLL=20
+GRACE=180          # how long to wait for checks to APPEAR before calling it none
 PR=""
 
 usage() { sed -n '2,30p' "$0"; exit 2; }
@@ -91,6 +99,7 @@ while [ $# -gt 0 ]; do
   case "$1" in
     --timeout) TIMEOUT="${2:-}"; shift 2 ;;
     --poll)    POLL="${2:-}";    shift 2 ;;
+    --grace)   GRACE="${2:-}";   shift 2 ;;
     *) usage ;;
   esac
 done
@@ -117,8 +126,15 @@ except Exception: print(0)')
       gh pr checks "$PR" 2>/dev/null | head -20
       exit 1 ;;
     NONE)
-      # The exact condition that made --auto a no-op. Absence is not success.
-      echo "merge_when_green: PR #$PR — NO checks reported. Refusing to merge."
+      # Absence is not success — but "no checks YET" and "no checks EVER" look
+      # identical for the first few seconds after a PR is opened, and CI has not
+      # even been scheduled. Refusing instantly makes the tool cry wolf in the
+      # normal case, and a gate that cries wolf gets bypassed. So allow a bounded
+      # grace period for checks to APPEAR; if none has by then, refuse as before.
+      if [ $(( SECONDS - started )) -lt "$GRACE" ]; then
+        sleep "$POLL"; continue
+      fi
+      echo "merge_when_green: PR #$PR — NO checks reported after ${GRACE}s. Refusing."
       echo "  An absent gate is indistinguishable from a passed one, so this"
       echo "  script treats it as failure. If CI genuinely does not run on this"
       echo "  PR, that is the thing to fix."
