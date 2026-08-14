@@ -126,3 +126,25 @@ bash tools/murderboard_roster.sh check docs/reviews/generator_2026-08-14.md
 ```
 
 Delete this file when `docs/generator.md` lands.
+
+---
+
+## Late note — the foundations merge was wider than its PR
+
+`syncytium2/foundations` PR #5 merged 2026-08-14. It was branched from a **local
+`main` carrying five unpushed commits**, so merging it published those too:
+
+- `a48afde` GLOSSARY: distances between structures are EDGE-TO-EDGE
+- `6e61cd5` Re-vendor interface2's session-protocol pair @ b01259f
+- `8559010` Gate the vendored session-protocol pair
+- `94a7415` GLOSSARY: state the distance convention (Tony, 2026-08-06)
+- `62f032a` README: state authorship
+
+None is mine and none looks unfinished — they are prior work that needed pushing
+anyway. But they went out under a PR whose title and body describe only the
+coordination section, so **the PR record understates what landed.** Worth a look
+to confirm they were meant to be public; if any was not, it is on `origin/main`
+now and removing it is a history rewrite.
+
+This is the exact failure the SessionStart hook's unpushed-work alarm exists to
+catch. I did not check `git log origin/main..main` before branching.
