@@ -3,9 +3,9 @@
 - upstream:  syncytium2/murderboard @ b2b2ba2
 - vendored:  b2b2ba2 (`murderboard_freshness.sh --refresh --verbose` → `current (via remote)`, exit 0)
 - freshness: current
-- artifact:  `docs/generator.md` (`4f44c40` → `b91786e`)
+- artifact:  `docs/generator.md` (`4f44c40` → `1485109`)
 - roles:     11 of 11 run
-- rounds:    2 blind verify rounds (round 1 returned 15 new findings; round 2 pending)
+- rounds:    2 blind verify rounds — **neither clean**. See "Why it is not converging".
 
 Run as parallel subagents, one per role, per the process's rule for a substantial
 deliverable. The artifact is a hand-written explainer whose ten figures are
@@ -173,3 +173,55 @@ that the diagnostic figure's documented command reproduces it exactly.
 - Roles 6 and 7 justified the process's insistence on extending review to the
   code: the two blocking defects that no prose-level reading could have found
   (the `.resolve()` bug, the distractors inside the probe) came from there.
+
+---
+
+## Blind verify — round 2
+
+Same protocol, a different reviewer, no knowledge of round 1. **Also not clean:**
+20 findings. Fixed in the artifact: the distance convention in the ✕/○ section
+(measured onset-to-event, which is what makes "0% for every other detector" true —
+by the span rule the document itself defines four lines earlier, SCE is 25%); the
+unsourced ~0.64 round-trip figure, now marked as a one-off reimplementation
+needing redoing; `2471 s` not `~2480`; the participation ratio 2.8–5.6× at both
+ends; a ⚠ on `grid_sec`, whose four rows are pixel-indistinguishable and which had
+none while `jitter_sec` did; the seed basis, now stated once at the top.
+
+Fixed in code: `score.py`'s module docstring said firing on a distractor is "not
+scored as a false alarm", contradicting both this document and its own behaviour;
+the `interval_cv` figure caption still said the knob was inert; three figures had
+y-labels abutting or clipping their neighbours (raised row height — found by
+zoom-cropping, which an ink-box check cannot do); and the diagnostic **counted
+distractors in its header and never drew them**, with no legend entry for the
+threshold line either.
+
+### Why it is not converging
+
+Round 1 found 15, round 2 found 20, and the overlap is small. That is not two
+unlucky draws — it is one defect with many faces:
+
+> **Every number in this document is transcribed by hand from a computation.**
+
+The sweep tally is the clearest case. Three review passes produced three
+different counts of "operating points beaten" — four, five, three — from the same
+sweep, because the answer turns on ties at the third decimal (CoactDetect 0.768
+against 0.776) that reverse with the seed. Each pass was right about its own run.
+The claim was never stable enough to state, and no amount of re-transcribing
+fixes that. It has been **removed** rather than corrected: the section makes its
+argument without a count.
+
+The general form is the same. Sixty-odd quantities are copied from a bench that
+has been recalibrated three times in two days. Each recalibration invalidates
+them silently, because prose does not fail a test.
+
+**The structural fix is to stop transcribing**: generate the numeric sections
+from `bugarach.bench` at build time, the way the figures are generated, so a
+recalibration updates the document or breaks the build. Until that lands, this
+document needs a review pass after every calibration change, and will keep
+drifting between them. Filed as a todo.
+
+**What both rounds agreed was solid:** every measured value against the CSV and
+its denominators, the null and censoring series, the region arithmetic, `tol_sec`
+and the matching rule, every generator default, the `optim_history` PROVISIONAL
+quote, the `simulation_plan` quotes, the TTX confirmation, and that the
+diagnostic's documented command reproduces it exactly.

@@ -157,6 +157,14 @@ def lane_panel(lanes: dict, *, ext, gt=None, tol_sec: float = 1.5,
                     marker="circle", size=5, color=FALSE_ALARM, alpha=0.55,
                     line_color=FALSE_ALARM, line_width=1, fill_alpha=0.0))
 
+    if gt is not None and len(getattr(gt, "distractors", [])):
+        # A named element with no ink reads as deliberate: the report header
+        # counts distractors, so the figure has to show them.
+        dt = np.asarray(gt.distractor_times, dtype=float)
+        items.append(hv.Scatter((dt, np.full(dt.size, ypos["planted"] + 0.42))).opts(
+            marker="inverted_triangle", size=7, color="#5a5a5a",
+            fill_alpha=0.0, line_width=1.2))
+
     if gt is not None:
         y = ypos["planted"]
         planted = np.asarray(gt.times, dtype=float)
@@ -341,6 +349,10 @@ def legend_html(lanes: dict, gt=None, member_source: str | None = None) -> str:
   <span style="color:{RASTER_HIT};font-weight:bold">Dark</span> onsets fall inside
   a window claimed by <b>{SHORT.get(src, src) if src else "—"}</b>;
   <span style="color:#9a9a9a">grey</span> ones do not.<br>
+  <span style="color:#5a5a5a">&#9661;</span> a <b>distractor</b> — a correlated
+  burst that is real coincidence but not a coordinated event ·
+  <span style="border-bottom:2px dotted #333;padding:0 6px">&nbsp;</span>
+  a detector's <b>threshold</b> on its own trace (four of the six expose one).<br>
   <span style="background:{PROBE_BAND};opacity:.35;padding:0 10px">&nbsp;</span>
   dense-but-random block — elevated firing rate, <b>no planted events</b>, so every
   detection inside it is a false alarm by construction.

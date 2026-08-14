@@ -13,7 +13,7 @@ only the background change" is answerable by looking.
 These exist because the generator's parameters are the experiment's assumptions.
 ``docs/simulation_plan.md`` §5 records what it cost to get two of them wrong —
 event spacing that put four coordinated events inside every null window, and
-made-up timescales that survived two rebuilds because nobody had a picture of
+made-up timescales that survived a rebuild because nobody had a picture of
 what they implied. A knob whose effect you cannot see is a knob you are guessing
 at.
 
@@ -72,9 +72,9 @@ SWEEPS: dict[str, dict] = {
         values=(0.0, 0.5, 1.0, 2.0),
         note="irregularity of the gaps between events. 0 is metronomic — a "
              "schedule a model can predict from the clock instead of from the "
-             "activity. WARNING: at the bench's own spacing the realized CV is "
-             "near zero regardless, because the floor leaves little room above "
-             "it.",
+             "activity. At the bench's own spacing the knob still works but is "
+             "compressed: 0 / 0.5 / 1.0 / 2.0 realize about 0.00 / 0.06 / 0.10 "
+             "/ 0.20, because the floor leaves little room above it.",
     ),
     "hot_rate_hz": dict(
         values=(0.0, 0.02, 0.06, 0.15),
@@ -150,6 +150,10 @@ def _row(param, value, base, seed):
     return simulate_coordination(seed=seed, **kw)
 
 
+# 196 px rows, not 170: at the tighter height the per-row y-labels abutted
+# each other and the bottom one clipped ("min_sep_sec=200 · 33 RO"). Found by
+# zoom-cropping the render — an ink-box check cannot see a label collided
+# with by its neighbour rather than by the page edge.
 def build(param: str, seed: int, width: int):
     import holoviews as hv
 
@@ -197,7 +201,7 @@ def build(param: str, seed: int, width: int):
             panel = hv.VSpan(60.0, 180.0).opts(
                 color="#4c78a8", alpha=0.12) * panel
         rows.append(panel.opts(
-            width=width, height=170, xlim=ext, ylim=(-1, n_roi), xaxis=None,
+            width=width, height=196, xlim=ext, ylim=(-1, n_roi), xaxis=None,
             ylabel=f"{param}={value:g} · {n_roi} ROI", xlabel="time",
             title="",
             fontsize={"ylabel": "10pt"}, show_legend=False,

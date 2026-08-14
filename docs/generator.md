@@ -281,15 +281,21 @@ default exists to avoid.
 
 ## What follows: no re-tuning is licensed
 
-A sweep on this generator beats the declared operating point for **four of the
-six in the quiet regime** (CICADA, SCE, RateDetect, SPIKE-synch) and **three in
-the busy one** (LoCo, SCE, SPIKE-synch). Only SCE and SPIKE-synch are beaten in
-both; no detector sits at its optimum in both. **That licenses no change to any
-of them.** Re-tuning to a synthetic benchmark
-whose realism rests on one unreviewed measurement, and which no real recording has
-ever checked, is the trap this project already paid for.
+A sweep on this generator beats the declared operating point for **most of the
+six**, in both regimes, and the set differs between them. SCE and SPIKE-synch are
+beaten in both by wide margins; others turn on differences in the third decimal
+(CoactDetect 0.768 against 0.776) that reverse with the seed.
 
-⚠ spike-sync's declared `C_threshold = 0.1` is **not on its own sweep grid**, so
+**No tally is quoted here on purpose.** Two independent review rounds produced
+three different counts from the same sweep, because the count is decided by ties.
+A number that unstable is not evidence of anything, and the argument does not
+need it.
+
+**None of it licenses a change.** Re-tuning to a synthetic benchmark whose
+realism rests on one unreviewed measurement, and which no real recording has ever
+checked, is the trap this project already paid for.
+
+⚠ SPIKE-synch's declared `C_threshold = 0.1` is **not on its own sweep grid**, so
 its F1 at the shipped point is not evaluated by the sweep that judges it.
 
 ---
