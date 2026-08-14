@@ -115,20 +115,39 @@ a wrong conclusion in this repo. The authority is the global
 `syncytium2/foundations` FOUNDATIONS §15; treatment effects themselves are
 `fireflies`' and must not be re-derived here.
 
-- **TTX IS NOT A SILENCING CONTROL.** Coordination persists under TTX — events
-  persist, coordination persists, and the mechanism is open work. The effect is
-  group-dependent and not uniformly downward: in ORX slow-event frequency and
-  amplitude *increase*; in male they are unchanged. Consequences that bind code
-  in this repo: "TTX silenced the field" may not be used as a premise, a
-  detector returning little in a TTX window is **not** thereby validated, and a
-  nonzero coactivity excess on TTX slices is evidence about the preparation —
-  not a false-alarm floor to raise `min_rois` until it disappears. (A session
-  proposed exactly that on 2026-08-13, from the dominant-paradigm assumption
-  rather than from this project's data.)
+- **TTX IS NOT A SILENCING CONTROL, and coordination persists under it.** Events
+  persist and coordination persists; the mechanism is open work. Two separate
+  measurements, and they must not be conflated: single-cell event frequency /
+  amplitude / width is global FOUNDATIONS §15.1, and **cross-ROI coordination is
+  §15.1b** — measured by running these six detectors on paired baseline/treatment
+  windows (`darkroom/constellation/coordBA_uniform_<detector>_{ttx,senktide}` and
+  `oxc_ttx_persistence.csv`). Coordination under TTX splits by stream: **FAST
+  median 0.46** of its own baseline, **SLOW median 2.50 with 44% of slices at or
+  above baseline**. **Confirmed with these ports** (2026-08-14): `sce_detect` and
+  `loco_detect` over the 39 archived baseline+TTX slices detect coordination in
+  **92–100%** of them under TTX, with SLOW at or above baseline (SCE 1.24, LoCo
+  1.28) — qualitative agreement with the MATLAB campaign, magnitudes differing
+  because settings and windowing differ. So a claim must name the stream, and neither "TTX abolishes
+  coordination" nor its converse is available as a premise. Consequences that bind
+  code here: a detector returning little in a TTX window is **not** thereby
+  validated, and a nonzero coactivity excess on TTX slices is evidence about the
+  preparation — not a false-alarm floor to raise `min_rois` until it disappears.
+  (A session proposed exactly that on 2026-08-13, reasoning from the textbook
+  prior rather than from this project's data.)
+- **Calibrate from baseline recordings only.** Tony, 2026-08-14: *"everything
+  should be based on baseline recordings. do not use senk or ttx as sources for
+  the properties of coordination."* Treatments are what the instruments are
+  pointed at; taking coordination properties from them assumes the answer. Where a
+  difficulty range is wanted, use the spread among untreated slices — baseline's
+  own interquartile per-ROI rate is 0.0038–0.0175 Hz. `bugarach.bench` follows
+  this; two earlier versions of it did not, in opposite directions.
 - **Senktide is not one effect.** It raises event frequency *and* the GCaMP6f
   background over time, so "more activity" conflates a frequency change with a
-  baseline shift. It is also the effect the instruments exist to measure, so it
-  is held out of any tuning axis: scored, never fitted to.
+  baseline shift. Any claim that a detector finds more under senktide must say
+  which.
+- **Group-dependence is not optional.** Effects run in opposite directions by
+  group (ORX up, male unchanged, diestrus down under TTX), so a pooled
+  across-group number hides sign changes and is not admissible on its own.
 
 ## 10. Conventions with teeth
 

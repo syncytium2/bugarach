@@ -100,7 +100,7 @@ OPERATING_POINTS: dict[str, OperatingPoint] = {
     "cicada": OperatingPoint(
         params=dict(sce_percentile=99.99, active_duration_sec=1.0, n_surrogates=100),
         source="calibrated FAST pair (cicada_detect docstring)",
-        knob="sce_percentile", grid=(90.0, 99.0, 99.9, 99.99, 99.999, 99.9999)),
+        knob="sce_percentile", grid=(90.0, 99.0, 99.9, 99.99, 99.999, 99.9999, 99.99999)),
     "sce": OperatingPoint(
         params=dict(bin_width_sec=10.0, threshold_pctile=99.0, n_surrogates=200),
         source="sce_detect defaults (generate_sce contract)",
@@ -127,71 +127,65 @@ OPERATING_POINTS: dict[str, OperatingPoint] = {
 DETECTORS = tuple(OPERATING_POINTS)
 
 
-# The two regimes are the ones calibrate6.m separates, and they are the axis the
-# regime-shift guard shifts along: an operating point tuned where events are easy
-# to see must still work where they are not.
 REGIMES: dict[str, dict] = {
-    "quiet": dict(bg_rate_hz=0.0040),
-    "baseline": dict(bg_rate_hz=0.0096),
+    "baseline_quiet": dict(bg_rate_hz=0.0038),
+    "baseline_busy": dict(bg_rate_hz=0.0175),
 }
-"""The axis the bench tunes and shifts along — a **rate** axis, and nothing more.
+"""The difficulty axis, and **every value on it comes from untreated recordings.**
 
-Both numbers are per-ROI rate medians from
-`constellation/coordination_timescale_summary.csv` (`roiRate_mean_med`, fast
-stream): the low end of the measured range, 0.0040 Hz, and the untreated
-condition, 0.0096 Hz. The point is to vary how much background a detector must
-see through, without any treatment entering the calibration.
+Both endpoints are the interquartile spread of the `all-baseline` flavour itself
+(fast stream, `min_rois=4`): per-ROI rates of 0.0038 Hz at p25 and 0.0175 Hz at
+p75, around a median of 0.0096. Untreated slices vary 4.6-fold among themselves,
+and that variation is the axis an operating point has to survive.
 
-**Senktide is not here, on purpose.** It is the effect the instrument exists to
-measure, and an instrument calibrated to maximise its own response to the
-treatment has assumed the answer. It lives in :data:`HELD_OUT`.
+**No treatment appears here, as a source or as an endpoint.** Tony, 2026-08-14:
+*"everything should be based on baseline recordings. do not use senk or ttx as
+sources for the properties of coordination."* Two earlier versions of this module
+got that wrong in opposite directions — the first ran baseline → senktide, which
+made the drug response the thing operating points were checked against; the
+second replaced it with a TTX-derived endpoint, which is still a treatment, and
+which pooled 37 slices whose measured effects run in **opposite directions by
+group** (ORX up, male unchanged, diestrus down). The global foundations doc
+forbids exactly that pooling: *"a TTX result on one group does not generalise to
+the arm."*
 
-The regime named ``quiet`` is *not* a TTX condition, and an earlier version of
-this module that called it one was wrong — see :data:`NULL_RECORDING`.
+The correction costs nothing, which is the part worth noticing: baseline's own
+p25 (0.0038) lands within 5% of the TTX median (0.0040). The quiet end of the
+range was reachable from untreated data the whole time, and reaching for a drug
+to justify it added a confound in exchange for no information.
+
+Senktide is absent entirely rather than held out. Holding it out still requires
+generating a recording at senktide's rate, which is using a treatment as a source
+of a coordination property. If a senktide evaluation is wanted it is a separate,
+explicit decision, not a default of this module.
 """
 
-HELD_OUT: dict[str, dict] = {
-    "senktide": dict(bg_rate_hz=0.0381),
-}
-"""Scored, never tuned on. Report it; do not fit to it.
-
-A number on senktide means something only if nothing about the detector was
-chosen to make that number good. Note also that senktide is not one effect: it
-raises event frequency *and* the GCaMP6f background over time, so "more activity"
-conflates a frequency change with a baseline shift. Any claim that a detector
-finds more under senktide has to say which.
-"""
-
-NULL_RECORDING = dict(bg_rate_hz=0.0040, n_per_level=(0, 0, 0),
+NULL_RECORDING = dict(bg_rate_hz=0.0038, n_per_level=(0, 0, 0),
                       hot_window=None, hot_rate_hz=0.0, ramp_sec=0.0,
                       n_distractors=0)
-"""A **synthetic** recording with no planted coordination — Poisson background
-and nothing else.
+"""A **synthetic** recording with no planted coordination — Poisson background at
+the quiet end of baseline, and nothing else.
 
-Its only claim is arithmetic: this generator planted no events, so a detector
-that reports one is reporting structure that was not put there. That is a useful
-false-positive floor precisely because it rests on the construction and on
+Its only claim is about construction: this generator planted no events, so a
+detector reporting one is reporting structure that was not put there. That is a
+useful false-positive floor precisely because it rests on the construction and on
 nothing about biology.
 
 **It is not a TTX recording, and TTX is not a silencing control.** An earlier
-version of this module asserted that under TTX action potentials are blocked so
-coordination cannot happen, and treated a detector's TTX detections as false
-positives by construction. That is false, and it is a premise the project
-explicitly forbids — global `foundations/FOUNDATIONS.md` §15.1, 2026-07-29:
-*"Stop saying Ttx is quiet. We have the data showing fast and slow calcium
-events often don't change amp or frequency in Ttx."* Coordination **persists**
-under TTX; the mechanism is open work. In ORX, slow-event frequency and
-amplitude *increase* under TTX; in male they are unchanged.
+version asserted that under TTX action potentials are blocked so coordination
+cannot happen, and treated a detector's TTX detections as false positives by
+construction. That is false and the project forbids the premise: coordination
+persists under TTX, the mechanism is open work, and a detector returning little
+in a TTX window is **not** thereby validated. The rate here is baseline's own
+p25, not a drug's median.
 
-Two consequences for anything built here. A detector returning little in a TTX
-window is **not** thereby validated. And the nonzero `coact_excess` measured on
-real TTX slices is evidence about the preparation, not a false-alarm rate to
-tune away — proposing a `min_rois` floor set where TTX "goes quiet" would have
-deleted the finding rather than measured it.
+⚠ **This is measured at one rate only.** Reviewer 2's finding, 2026-08-14: the
+false-positive ranking is not stable across the range — re-run at a busier
+background it reorders, so a detector that reports zero here is not thereby
+quiet. Report it with its rate attached, and do not read it as a ranking.
 """
 
-# Measured off 84 baseline slices — see MEASURED_PROVENANCE below. These are the
-# numbers the review document was going to ask Tony for; they already existed.
+# Measured off baseline slices only — see MEASURED_PROVENANCE.
 BENCH_RECORDING = dict(
     duration_sec=2700.0,
     n_roi=33,
@@ -203,7 +197,8 @@ BENCH_RECORDING = dict(
     hot_rate_hz=0.06,
     ramp_sec=30.0,
     n_distractors=6,
-    distractor_frac=0.5,
+    distractor_frac=0.18,
+    distractor_window=(120.0, 1100.0),
 )
 """The recording every bench run is scored on.
 
@@ -267,14 +262,13 @@ exist so the bench can fail a detector for firing on them.
 def make_recording(regime: str, seed: int, **overrides):
     """One bench recording. ``regime`` selects the background rate.
 
-    Accepts a held-out regime too — scoring one is fine, and the discipline that
-    matters is not fitting to it, which no function signature can enforce.
+    Every regime here is derived from untreated recordings; there is no
+    treatment regime to accept. See :data:`REGIMES`.
     """
-    known = {**REGIMES, **HELD_OUT}
-    if regime not in known:
-        raise ValueError(f"unknown regime {regime!r} — have {sorted(known)}")
+    if regime not in REGIMES:
+        raise ValueError(f"unknown regime {regime!r} — have {sorted(REGIMES)}")
     return simulate_coordination(
-        seed=seed, **{**BENCH_RECORDING, **known[regime], **overrides})
+        seed=seed, **{**BENCH_RECORDING, **REGIMES[regime], **overrides})
 
 
 def make_null_recording(seed: int, **overrides):
