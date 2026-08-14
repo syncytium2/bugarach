@@ -1,0 +1,94 @@
+#!/usr/bin/env bash
+# bugarach-specific SessionStart briefing — runs ALONGSIDE the vendored generic hook
+# (.claude/hooks/session-start.sh), wired as a separate entry in .claude/settings.json.
+#
+# Why a separate script rather than edits to that file: it carries a vendoring stamp
+# and must stay byte-identical to interface2's tools/session-start.hook.sh so it can be
+# re-copied. Its own header invites exactly this — "a repo may layer its own
+# repo-specific checks around this core; keep the core intact".
+#
+# WHAT THIS EXISTS TO FIX, and it is not a nicety. CLAUDE.md's first line says to read
+# docs/FOUNDATIONS.md at session start. On 2026-08-13 a session ran an entire day of
+# work without doing so, and proposed calibrating the detectors until TTX slices stopped
+# showing coordination — the dominant-paradigm assumption that TTX silences the field,
+# which this project's own data refutes and which FOUNDATIONS forbids in terms. Tony:
+# "claude.md is the first thing you ignore. we have built tools for this purpose."
+#
+# A rule written in a file that must be read to be obeyed is not mechanized. This is:
+# the facts that BIND are injected into every session's context whether anyone opens
+# the file or not.
+#
+# COST: local only — a couple of file reads and a git config lookup, milliseconds. It is
+# deliberately NOT budget-gated and runs FIRST. interface2 learned that the hard way:
+# their cross-team watch was written at the bottom of the briefing, sat behind a spent
+# budget, and never ran once. A channel dropped for budget is the "filed but unread"
+# failure it was built to prevent.
+
+set +e
+root=$(git rev-parse --show-toplevel 2>/dev/null) || exit 0
+[ -z "$root" ] && exit 0
+cd "$root" || exit 0
+
+echo "=================== bugarach — WHAT BINDS THIS SESSION ==================="
+
+# --- 1. the facts about the preparation, straight out of FOUNDATIONS ----------
+# Extracted rather than restated, so this cannot drift from the canonical file.
+if [ -r docs/FOUNDATIONS.md ]; then
+  awk '/^## 9\. Facts about the preparation/{f=1} /^## 10\./{f=0} f' docs/FOUNDATIONS.md
+else
+  echo "!! docs/FOUNDATIONS.md is missing — that file is canonical truth. Stop and find out why."
+fi
+
+echo
+echo "FOUNDATIONS is canonical and wins over anything said in conversation."
+echo "For facts about the PREPARATION that it does not cover, the authority is"
+echo "syncytium2/foundations FOUNDATIONS §15 — check it before assuming what a"
+echo "condition does. Do not reason from textbook priors where the lab has a finding."
+
+# --- 2. open threads: filed-but-unread is luck, not a channel -----------------
+opens=$(grep -l '^status: open[[:space:]]*$' docs/todo/*.md 2>/dev/null | wc -l | tr -d ' ')
+feedback=$(grep -l '^status: open[[:space:]]*$' docs/sapper_feedback/*.md 2>/dev/null | wc -l | tr -d ' ')
+if [ "${opens:-0}" -gt 0 ] || [ "${feedback:-0}" -gt 0 ]; then
+  echo
+  echo "--- open threads: ${opens} todo, ${feedback} sapper_feedback ---"
+  for f in docs/todo/*.md docs/sapper_feedback/*.md; do
+    [ -r "$f" ] || continue
+    grep -q '^status: open[[:space:]]*$' "$f" 2>/dev/null || continue
+    printf '   %-58s %s\n' "$(basename "$f")" "$(sed -n 's/^# //p' "$f" | head -1 | cut -c1-64)"
+  done
+fi
+
+# --- 3. is the commit gate actually installed in THIS clone? ------------------
+# core.hooksPath is per-clone and stored in .git/config, so it travels with nothing.
+# docs/todo/2026-08-13-hookspath-is-opt-in-per-clone.md is the writeup; this is the
+# part of it that can fire by itself.
+if [ "$(git config --get core.hooksPath 2>/dev/null)" = ".githooks" ]; then
+  echo
+  echo "commit gates: ACTIVE (branch guard + sapper run on every commit)"
+else
+  echo
+  echo "!! commit gates: OFF in this clone — the branch guard and sapper are NOT running."
+  echo "   git config core.hooksPath .githooks"
+fi
+
+# --- 4. the gates that apply before work is handed over ----------------------
+# Listed because these are the ones sessions skip. Every item here was skipped by
+# a session that had read neither CLAUDE.md nor this list.
+echo
+echo "--- gates, before you hand anything over ---"
+echo "   document deliverable (report, explainer, methodology, figure + caption)?"
+echo "     -> /murderboard <artifact> FIRST. Not a first draft. docs/doc_review_process.md"
+echo "   landing work?  branch + green PR; never commit on main."
+echo "   a visual finding?  render the figure and show it — do not describe it."
+echo "     -> tools/make_diagnostic.py, tools/make_generator_figures.py"
+echo "   writing to the darkroom?  it is shared across machines — claim it on docs/SESSIONS.md."
+
+# --- 5. is anything mid-flight? ----------------------------------------------
+if [ -f HANDOFF.md ]; then
+  echo
+  echo "--- !! HANDOFF.md present — work is in flight, read it before starting ---"
+  head -20 HANDOFF.md
+fi
+
+echo "========================================================================="
+exit 0
