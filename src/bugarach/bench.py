@@ -131,26 +131,23 @@ DETECTORS = tuple(OPERATING_POINTS)
 # regime-shift guard shifts along: an operating point tuned where events are easy
 # to see must still work where they are not.
 REGIMES: dict[str, dict] = {
-    "ttx": dict(bg_rate_hz=0.0040),
+    "quiet": dict(bg_rate_hz=0.0040),
     "baseline": dict(bg_rate_hz=0.0096),
 }
-"""The axis the bench tunes and shifts along — and it deliberately excludes the
-treatment.
+"""The axis the bench tunes and shifts along — a **rate** axis, and nothing more.
 
-Per-ROI rate medians from `constellation/coordination_timescale_summary.csv`
-(`roiRate_mean_med`, fast stream): `all-TTX` 0.0040 Hz, `all-baseline` 0.0096 Hz.
+Both numbers are per-ROI rate medians from
+`constellation/coordination_timescale_summary.csv` (`roiRate_mean_med`, fast
+stream): the low end of the measured range, 0.0040 Hz, and the untreated
+condition, 0.0096 Hz. The point is to vary how much background a detector must
+see through, without any treatment entering the calibration.
 
 **Senktide is not here, on purpose.** It is the effect the instrument exists to
 measure, and an instrument calibrated to maximise its own response to the
-treatment has assumed the answer. It lives in :data:`HELD_OUT` and is scored,
-never tuned on.
+treatment has assumed the answer. It lives in :data:`HELD_OUT`.
 
-The first version of this bench used `sparse=0.05 / dense=0.15` — invented, and
-sitting entirely above the measured range. The second used baseline → senktide,
-which was measured but was a *treatment axis*: it made the drug response the
-thing the operating points were checked against. This one runs from the
-silencing control to the untreated condition, so difficulty varies without the
-treatment entering the calibration at all.
+The regime named ``quiet`` is *not* a TTX condition, and an earlier version of
+this module that called it one was wrong — see :data:`NULL_RECORDING`.
 """
 
 HELD_OUT: dict[str, dict] = {
@@ -158,37 +155,39 @@ HELD_OUT: dict[str, dict] = {
 }
 """Scored, never tuned on. Report it; do not fit to it.
 
-The point of holding it out is that a number on senktide means something only if
-nothing about the detector was chosen to make that number good.
+A number on senktide means something only if nothing about the detector was
+chosen to make that number good. Note also that senktide is not one effect: it
+raises event frequency *and* the GCaMP6f background over time, so "more activity"
+conflates a frequency change with a baseline shift. Any claim that a detector
+finds more under senktide has to say which.
 """
 
 NULL_RECORDING = dict(bg_rate_hz=0.0040, n_per_level=(0, 0, 0),
                       hot_window=None, hot_rate_hz=0.0, ramp_sec=0.0,
                       n_distractors=0)
-"""The empirical negative control: TTX-rate background and **no coordination at
-all**.
+"""A **synthetic** recording with no planted coordination — Poisson background
+and nothing else.
 
-Under TTX action potentials are blocked, so any coordinated event a detector
-reports is wrong — and unlike every other number here, that judgement needs no
-ground truth, no planted events and no scoring rule. It is the strongest test in
-this module and it is the cheapest.
+Its only claim is arithmetic: this generator planted no events, so a detector
+that reports one is reporting structure that was not put there. That is a useful
+false-positive floor precisely because it rests on the construction and on
+nothing about biology.
 
-The measured data says the detectors are running below the floor where this goes
-quiet. `coact_excess_med` on real slices (fast stream, events/min above each
-slice's own circular-shift null):
+**It is not a TTX recording, and TTX is not a silencing control.** An earlier
+version of this module asserted that under TTX action potentials are blocked so
+coordination cannot happen, and treated a detector's TTX detections as false
+positives by construction. That is false, and it is a premise the project
+explicitly forbids — global `foundations/FOUNDATIONS.md` §15.1, 2026-07-29:
+*"Stop saying Ttx is quiet. We have the data showing fast and slow calcium
+events often don't change amp or frequency in Ttx."* Coordination **persists**
+under TTX; the mechanism is open work. In ORX, slow-event frequency and
+amplitude *increase* under TTX; in male they are unchanged.
 
-=============  ======  ======  ======  ======
-flavour        K=3     K=4     K=6     K=8
-=============  ======  ======  ======  ======
-all-TTX        0.84    0.44    0.00    0.00
-all-baseline   1.26    0.60    0.14    0.00
-all-senktide   34.12   29.91   22.08   13.83
-=============  ======  ======  ======  ======
-
-TTX only reaches zero at ``min_rois >= 6``, and senktide is still 22 there. The
-detectors ship with ``min_rois=3`` — inside the band where the *silencing
-control* still reports coordination. That is a participant floor derivable from
-real recordings without a simulation, and it is not the floor in use.
+Two consequences for anything built here. A detector returning little in a TTX
+window is **not** thereby validated. And the nonzero `coact_excess` measured on
+real TTX slices is evidence about the preparation, not a false-alarm rate to
+tune away — proposing a `min_rois` floor set where TTX "goes quiet" would have
+deleted the finding rather than measured it.
 """
 
 # Measured off 84 baseline slices — see MEASURED_PROVENANCE below. These are the
@@ -279,11 +278,12 @@ def make_recording(regime: str, seed: int, **overrides):
 
 
 def make_null_recording(seed: int, **overrides):
-    """A recording with no coordination in it at all — the empirical null.
+    """A recording with no planted coordination — background only.
 
     Returns the same ``(slice, ground_truth)`` pair as :func:`make_recording`,
-    with ``gt.events`` empty. Nothing here is scored against planted truth
-    because there is none: every detection is a false positive by construction.
+    with ``gt.events`` empty. Nothing is scored against planted truth because
+    there is none: every detection is a false positive *of this construction*.
+    See :data:`NULL_RECORDING` for what that does and does not license.
     """
     return simulate_coordination(
         seed=seed, **{**BENCH_RECORDING, **NULL_RECORDING, **overrides})
@@ -292,10 +292,13 @@ def make_null_recording(seed: int, **overrides):
 def false_positives_per_hour(name: str, seeds=(1, 2, 3), **overrides) -> float:
     """How often a detector fires on a recording containing no coordination.
 
-    The one number in this module that does not depend on the generator being
-    realistic in any way beyond its firing rate — there is no planted structure
-    to get wrong, so a detector cannot be flattered by an easy benchmark or
-    punished by a hard one. It can only be caught firing at nothing.
+    Does not depend on the generator being realistic beyond its firing rate:
+    there is no planted structure to get wrong, so a detector cannot be
+    flattered by an easy benchmark or punished by a hard one.
+
+    What it measures is a detector's response to Poisson background at a given
+    rate. It is not a statement about any biological preparation, and it must
+    not be read as one.
     """
     hours = 0.0
     total = 0

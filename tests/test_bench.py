@@ -41,7 +41,7 @@ def bench():
     """Every detector on both regimes, computed once — each run is a 45-minute
     synthetic recording and there are twelve of them."""
     return {(name, regime): evaluate(name, regime, SEEDS)
-            for name in DETECTORS for regime in ("ttx", "baseline")}
+            for name in DETECTORS for regime in ("quiet", "baseline")}
 
 
 # --- the regime-shift guard -------------------------------------------------
@@ -62,11 +62,11 @@ MAX_PRECISION_DROP = {
 
 @pytest.mark.parametrize("name", DETECTORS)
 def test_precision_survives_the_regime_shift(name, bench):
-    quiet = bench[(name, "ttx")].precision
+    quiet = bench[(name, "quiet")].precision
     normal = bench[(name, "baseline")].precision
     drop = abs(normal - quiet)
     assert drop <= MAX_PRECISION_DROP[name], (
-        f"{name}: precision {normal:.2f} (baseline) vs {quiet:.2f} (TTX-quiet), "
+        f"{name}: precision {normal:.2f} (baseline) vs {quiet:.2f} (quiet), "
         f"a swing of {drop:.2f} against a budget of "
         f"{MAX_PRECISION_DROP[name]:.2f} — an operating point that only works "
         "at one background is not an operating point")
@@ -74,7 +74,7 @@ def test_precision_survives_the_regime_shift(name, bench):
 
 def test_sce_is_the_one_that_does_not_transfer():
     """Five of the six hold their precision across the background range; SCE
-    does not, and the mechanism is visible in the null test below.
+    does not, and the mechanism is visible in the no-planted-events test below.
 
     Its threshold is a *percentile over bins*, so it adapts to whatever it is
     given: on a quiet recording the top 1% of a mostly-empty histogram is still
@@ -313,13 +313,14 @@ def test_the_bench_is_reproducible():
     assert (a.n_hit, a.n_fa, a.hot_fa) == (b.n_hit, b.n_fa, b.hot_fa)
 
 
-# --- the empirical null: TTX ------------------------------------------------
+# --- a recording with nothing planted in it ---------------------------------
 #
-# Under TTX action potentials are blocked, so a coordinated event cannot happen.
-# Any detection is a false positive, and saying so needs no planted truth, no
-# scoring rule and no assumption that the generator is realistic beyond its
-# firing rate. It is the one measurement here that cannot be flattered by an
-# easy benchmark.
+# The claim is arithmetic, not biological: this generator planted no events, so
+# a detector reporting one is reporting structure that was not put there. That
+# makes it a useful false-positive floor and NOT a statement about any
+# preparation. In particular it is not TTX — see bench.NULL_RECORDING, and
+# foundations §15.1: coordination persists under TTX, and a detector returning
+# little in a TTX window is not thereby validated.
 
 MAX_FALSE_POSITIVES_PER_HOUR = {
     "rate": 1.0,       # measured: 0.0
@@ -332,11 +333,11 @@ MAX_FALSE_POSITIVES_PER_HOUR = {
 
 
 @pytest.mark.parametrize("name", DETECTORS)
-def test_a_silent_recording_stays_silent(name):
+def test_nothing_planted_means_little_reported(name):
     rate = false_positives_per_hour(name)
     assert rate <= MAX_FALSE_POSITIVES_PER_HOUR[name], (
         f"{name} reports {rate:.1f} coordinated events per hour in a recording "
-        "that contains no coordination at all")
+        "where the generator planted none")
 
 
 def test_the_null_recording_really_is_empty():
@@ -358,7 +359,7 @@ def test_the_treatment_is_held_out_of_the_tuning_axis():
     """
     assert "senktide" not in REGIMES
     assert "senktide" in HELD_OUT
-    assert set(REGIMES) == {"ttx", "baseline"}
+    assert set(REGIMES) == {"quiet", "baseline"}
 
 
 def test_the_held_out_regime_is_still_reachable():
