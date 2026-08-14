@@ -230,11 +230,47 @@ uses them. What the generator had been assuming, against what was measured
 | `jitter_sec` | 0.05 s | **0.36 s** | 7× too tight |
 | `participation` | 50–100% | **6 of ~33 ROI ≈ 18%** | 3–6× too many |
 
-The regimes changed with them. `sparse=0.05 / dense=0.15` sat **entirely above**
-the measured range, which runs 0.0040 (ORX, TTX) through 0.0096 (baseline) to
-0.0381 (senktide); the bench now shifts between measured baseline and senktide.
-The promiscuity probe moved too — at 0.30 Hz it was 31× the real background
-rather than the 6× it was meant to be.
+The regimes changed with them, twice. `sparse=0.05 / dense=0.15` sat **entirely
+above** the measured range (0.0040 TTX → 0.0096 baseline → 0.0381 senktide). The
+replacement — baseline → senktide — was measured but was a **treatment axis**,
+which is its own mistake: senktide is the effect the instrument exists to
+measure, and an instrument calibrated to maximise its own response to the
+treatment has assumed the answer. The bench now runs **TTX → baseline**, and
+senktide is held out: scored, never tuned on. The promiscuity probe moved too —
+at 0.30 Hz it was 31× the real background rather than the 6× intended.
+
+### TTX is the null, and it is better than anything synthetic
+
+Under TTX action potentials are blocked, so a coordinated event cannot happen.
+Every detection is therefore a false positive, and saying so needs **no planted
+truth, no scoring rule, and no assumption that the generator is realistic**
+beyond its firing rate. It is the one measurement here that an easy benchmark
+cannot flatter.
+
+On a TTX-rate recording with no coordination in it at all:
+
+| detector | false positives / hour |
+|---|---|
+| RateDetect | 0.0 |
+| spike-sync | 0.0 |
+| LoCo | 1.3 |
+| CoactDetect | 3.6 |
+| CICADA | 4.4 |
+| SCE | 4.9 |
+
+And the real slices say the same thing about where the participant floor should
+sit — `coact_excess_med`, events/min above each slice's own circular-shift null:
+
+| flavour | K=3 | K=4 | K=6 | K=8 |
+|---|---|---|---|---|
+| all-TTX | **0.84** | **0.44** | 0.00 | 0.00 |
+| all-baseline | 1.26 | 0.60 | 0.14 | 0.00 |
+| all-senktide | 34.12 | 29.91 | 22.08 | 13.83 |
+
+TTX only reaches zero at `min_rois ≥ 6`, and senktide is still 22 there. **The
+detectors ship with `min_rois=3`** — inside the band where the silencing control
+still reports coordination. That is a participant floor derivable from real
+recordings with no simulation involved, and it is not the floor in use.
 
 **What that was hiding.** On the invented values every detector scored F1
 0.9–1.0 and the bench could not tell them apart. On measured values they range

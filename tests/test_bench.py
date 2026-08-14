@@ -19,10 +19,14 @@ import pytest
 from bugarach.bench import (
     BENCH_RECORDING,
     DETECTORS,
+    HELD_OUT,
+    REGIMES,
     OPERATING_POINTS,
     BenchResult,
     EdgeOfRange,
     evaluate,
+    false_positives_per_hour,
+    make_null_recording,
     make_recording,
     pick_operating_point,
     run_detector,
@@ -37,7 +41,7 @@ def bench():
     """Every detector on both regimes, computed once — each run is a 45-minute
     synthetic recording and there are twelve of them."""
     return {(name, regime): evaluate(name, regime, SEEDS)
-            for name in DETECTORS for regime in ("baseline", "senktide")}
+            for name in DETECTORS for regime in ("ttx", "baseline")}
 
 
 # --- the regime-shift guard -------------------------------------------------
@@ -47,42 +51,44 @@ def bench():
 # when dense-tuned settings met sparse data, and drew it as a figure.
 
 MAX_PRECISION_DROP = {
-    "loco": 0.15,      # measured: 0.06 (0.92 -> 0.86)
-    "coact": 0.10,     # measured: none, precision rises 0.72 -> 0.77
-    "sce": 0.10,       # measured: none, 0.91 -> 1.00
-    "cicada": 0.20,    # measured: 0.11
-    "rate": 0.35,      # measured: 0.26 — the largest, and no longer a collapse
-    "sync": 0.20,      # measured: 0.12
+    "rate": 0.10,      # measured: 0.00
+    "sync": 0.10,      # measured: 0.00
+    "loco": 0.15,      # measured: 0.03
+    "coact": 0.15,     # measured: 0.06 (precision rises in the quieter regime)
+    "cicada": 0.15,    # measured: 0.07
+    "sce": 0.65,       # measured: 0.58 — a real degradation, recorded not excused
 }
 
 
 @pytest.mark.parametrize("name", DETECTORS)
 def test_precision_survives_the_regime_shift(name, bench):
-    sparse = bench[(name, "baseline")].precision
-    dense = bench[(name, "senktide")].precision
-    drop = sparse - dense
+    quiet = bench[(name, "ttx")].precision
+    normal = bench[(name, "baseline")].precision
+    drop = abs(normal - quiet)
     assert drop <= MAX_PRECISION_DROP[name], (
-        f"{name}: precision {sparse:.2f} -> {dense:.2f} when the background "
-        f"triples, a drop of {drop:.2f} against a budget of "
-        f"{MAX_PRECISION_DROP[name]:.2f}")
+        f"{name}: precision {normal:.2f} (baseline) vs {quiet:.2f} (TTX-quiet), "
+        f"a swing of {drop:.2f} against a budget of "
+        f"{MAX_PRECISION_DROP[name]:.2f} — an operating point that only works "
+        "at one background is not an operating point")
 
 
-def test_nothing_collapses_on_measured_regimes():
-    """The precision collapse was an artifact of invented regimes.
+def test_sce_is_the_one_that_does_not_transfer():
+    """Five of the six hold their precision across the background range; SCE
+    does not, and the mechanism is visible in the null test below.
 
-    On the old bench, RateDetect fell 0.68 -> 0.13 precision and spike-sync
-    0.44 -> 0.03, which read as reproducing the upstream deploy-cost figure. But
-    those regimes were bg 0.05 -> 0.15 Hz/ROI, and the measured range is
-    0.0040-0.0381 — the whole shift happened above anything real. Re-run between
-    measured baseline and senktide, the largest drop in the six is RateDetect's
-    0.26 and nothing collapses.
+    Its threshold is a *percentile over bins*, so it adapts to whatever it is
+    given: on a quiet recording the top 1% of a mostly-empty histogram is still
+    marked as events. Precision 0.91 at baseline, 0.33 at TTX-quiet, and the
+    highest false-positive rate of the six on a recording with no coordination
+    in it at all. Those are one fact seen twice.
 
-    That does not retract the upstream finding, which was about settings *tuned*
-    in one regime meeting the other; this bench holds settings fixed. It does
-    mean the bench cannot claim to have reproduced it, and the budgets above are
-    now tight enough that a real collapse would fail rather than fit.
+    A threshold defined relative to the data cannot have a false-positive rate —
+    it has a quantile, and the two are the same thing only when the data
+    contains signal.
     """
-    assert max(MAX_PRECISION_DROP.values()) <= 0.35
+    others = {k: v for k, v in MAX_PRECISION_DROP.items() if k != "sce"}
+    assert max(others.values()) <= 0.15
+    assert MAX_PRECISION_DROP["sce"] > 0.5
 
 
 # --- negative-class probes --------------------------------------------------
@@ -305,3 +311,58 @@ def test_the_bench_is_reproducible():
     a = evaluate("loco", "baseline", (1,))
     b = evaluate("loco", "baseline", (1,))
     assert (a.n_hit, a.n_fa, a.hot_fa) == (b.n_hit, b.n_fa, b.hot_fa)
+
+
+# --- the empirical null: TTX ------------------------------------------------
+#
+# Under TTX action potentials are blocked, so a coordinated event cannot happen.
+# Any detection is a false positive, and saying so needs no planted truth, no
+# scoring rule and no assumption that the generator is realistic beyond its
+# firing rate. It is the one measurement here that cannot be flattered by an
+# easy benchmark.
+
+MAX_FALSE_POSITIVES_PER_HOUR = {
+    "rate": 1.0,       # measured: 0.0
+    "sync": 1.0,       # measured: 0.0
+    "loco": 3.0,       # measured: 1.3
+    "coact": 6.0,      # measured: 3.6
+    "cicada": 7.0,     # measured: 4.4
+    "sce": 8.0,        # measured: 4.9
+}
+
+
+@pytest.mark.parametrize("name", DETECTORS)
+def test_a_silent_recording_stays_silent(name):
+    rate = false_positives_per_hour(name)
+    assert rate <= MAX_FALSE_POSITIVES_PER_HOUR[name], (
+        f"{name} reports {rate:.1f} coordinated events per hour in a recording "
+        "that contains no coordination at all")
+
+
+def test_the_null_recording_really_is_empty():
+    """Guard the guard: if the null ever acquires planted events, every budget
+    above silently becomes meaningless."""
+    s, gt = make_null_recording(1)
+    assert not gt.events and not gt.distractors
+    assert gt.params.get("hot_window") is None
+
+
+def test_the_treatment_is_held_out_of_the_tuning_axis():
+    """Senktide is the effect the instrument exists to measure. An instrument
+    calibrated to maximise its own response to the treatment has assumed the
+    answer, so it is scored and never tuned on — which means it must not appear
+    among the regimes that sweeps and operating points are derived from.
+
+    An earlier version of this bench shifted baseline -> senktide and checked
+    precision across that axis, which is exactly the mistake.
+    """
+    assert "senktide" not in REGIMES
+    assert "senktide" in HELD_OUT
+    assert set(REGIMES) == {"ttx", "baseline"}
+
+
+def test_the_held_out_regime_is_still_reachable():
+    """Held out of tuning, not out of reach — reporting a number on it is the
+    point."""
+    s, gt = make_recording("senktide", 1)
+    assert len(gt.events) == sum(BENCH_RECORDING["n_per_level"])
