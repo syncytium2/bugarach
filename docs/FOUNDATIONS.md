@@ -108,7 +108,29 @@ ecosystem's rotation). Consequences:
   (parity methodology, clean-room workflow, sapper) are showcase surface —
   keep them presentation-quality, current, and honest.
 
-## 9. Conventions with teeth
+## 9. Facts about the preparation that constrain what a detector result means
+
+These are not bugarach's to derive, and getting them wrong has already produced
+a wrong conclusion in this repo. The authority is the global
+`syncytium2/foundations` FOUNDATIONS §15; treatment effects themselves are
+`fireflies`' and must not be re-derived here.
+
+- **TTX IS NOT A SILENCING CONTROL.** Coordination persists under TTX — events
+  persist, coordination persists, and the mechanism is open work. The effect is
+  group-dependent and not uniformly downward: in ORX slow-event frequency and
+  amplitude *increase*; in male they are unchanged. Consequences that bind code
+  in this repo: "TTX silenced the field" may not be used as a premise, a
+  detector returning little in a TTX window is **not** thereby validated, and a
+  nonzero coactivity excess on TTX slices is evidence about the preparation —
+  not a false-alarm floor to raise `min_rois` until it disappears. (A session
+  proposed exactly that on 2026-08-13, from the dominant-paradigm assumption
+  rather than from this project's data.)
+- **Senktide is not one effect.** It raises event frequency *and* the GCaMP6f
+  background over time, so "more activity" conflates a frequency change with a
+  baseline shift. It is also the effect the instruments exist to measure, so it
+  is held out of any tuning axis: scored, never fitted to.
+
+## 10. Conventions with teeth
 
 Durable session rules live in `CLAUDE.md` (plot conventions, git conduct).
 What can be mechanized is enforced by **sapper** (`tools/sapper.py`,

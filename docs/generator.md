@@ -239,15 +239,12 @@ treatment has assumed the answer. The bench now runs **TTX → baseline**, and
 senktide is held out: scored, never tuned on. The promiscuity probe moved too —
 at 0.30 Hz it was 31× the real background rather than the 6× intended.
 
-### TTX is the null, and it is better than anything synthetic
+### A recording with nothing planted in it
 
-Under TTX action potentials are blocked, so a coordinated event cannot happen.
-Every detection is therefore a false positive, and saying so needs **no planted
-truth, no scoring rule, and no assumption that the generator is realistic**
-beyond its firing rate. It is the one measurement here that an easy benchmark
-cannot flatter.
-
-On a TTX-rate recording with no coordination in it at all:
+The bench also scores a **synthetic** null: Poisson background at the low end of
+the measured range (0.0040 Hz/ROI) with no planted coordination at all. The claim
+is arithmetic — the generator planted nothing, so a detection is structure that
+was not put there:
 
 | detector | false positives / hour |
 |---|---|
@@ -258,34 +255,23 @@ On a TTX-rate recording with no coordination in it at all:
 | CICADA | 4.4 |
 | SCE | 4.9 |
 
-And the real slices say the same thing about where the participant floor should
-sit — `coact_excess_med`, events/min above each slice's own circular-shift null:
+**This is not TTX, and TTX is not a silencing control.** An earlier version of
+this document said otherwise — that under TTX action potentials are blocked so
+coordination cannot happen, which made real TTX detections false positives and
+suggested raising `min_rois` to where TTX "goes quiet". Every part of that is
+wrong, and it is a premise the project explicitly forbids
+(`foundations/FOUNDATIONS.md` §15.1, 2026-07-29):
 
-| flavour | K=3 | K=4 | K=6 | K=8 |
-|---|---|---|---|---|
-| all-TTX | **0.84** | **0.44** | 0.00 | 0.00 |
-| all-baseline | 1.26 | 0.60 | 0.14 | 0.00 |
-| all-senktide | 34.12 | 29.91 | 22.08 | 13.83 |
+> *"Stop saying Ttx is quiet. We have the data showing fast and slow calcium
+> events often don't change amp or frequency in Ttx."*
 
-TTX only reaches zero at `min_rois ≥ 6`, and senktide is still 22 there. **The
-detectors ship with `min_rois=3`** — inside the band where the silencing control
-still reports coordination. That is a participant floor derivable from real
-recordings with no simulation involved, and it is not the floor in use.
-
-**What that was hiding.** On the invented values every detector scored F1
-0.9–1.0 and the bench could not tell them apart. On measured values they range
-0.49–0.81 and separate, because a real coordinated event recruits about six ROIs
-with a third of a second of spread — which sits just above the `min_rois` floor
-the detectors ship with. That is the regime these instruments were built for, and
-it is the only one where their differences show.
-
-The ordering also moved toward the MATLAB campaign's: LoCo top in both
-(0.81 here, 0.86 there) and CICADA nearly exact (0.70 against 0.68).
-
-One caveat travels with the numbers. `optim_history/README.md` marks the whole
-campaign **PROVISIONAL** and records that the calibrated settings were adopted on
-2026-08-05 *without* the real-data validation the deck named as its deciding
-step. These are measurements; the decision that rested on them was never checked.
+Coordination **persists** under TTX; the mechanism is open work. The effect is
+group-dependent and not uniformly downward — in ORX, slow-event frequency and
+amplitude *increase* under TTX; in male they are unchanged. So a detector
+returning little in a TTX window is **not** thereby validated, and the nonzero
+`coact_excess` on real TTX slices is evidence about the preparation rather than
+a false-alarm rate to tune away. The `min_rois` proposal would have deleted the
+finding instead of measuring it.
 
 ### What follows from that
 

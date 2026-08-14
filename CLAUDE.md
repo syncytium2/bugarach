@@ -4,6 +4,16 @@
 truth — it wins over conversation) and use [`docs/GLOSSARY.md`](docs/GLOSSARY.md)'s
 vocabulary (stream axis vs detector axis; "modality" is banned).
 
+**This is not optional and skipping it has cost real work.** A session on
+2026-08-13 went the whole way without reading it, and proposed calibrating the
+detectors so that TTX slices stop showing coordination — the dominant-paradigm
+assumption that TTX silences the field, which this project's own data refutes
+and which §9 forbids in terms. The error was not a wrong number; it was
+reasoning from textbook priors where the lab has a finding. When this repo's
+FOUNDATIONS is silent on a question about the *preparation* (not the code), the
+authority is `syncytium2/foundations` FOUNDATIONS §15 — check it before building
+anything on an assumption about what a condition does.
+
 ## Todos
 
 Open work items live in `docs/todo/` (one file per item, frontmatter
