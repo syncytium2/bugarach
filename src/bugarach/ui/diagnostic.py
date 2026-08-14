@@ -308,7 +308,11 @@ def coordination_diagnostic(stream, *, ext, lanes=None, gt=None,
     layout = panels[0]
     for p in panels[1:]:
         layout = layout + p
-    return layout.cols(1).opts(shared_axes=True, merge_tools=True)
+    # toolbar=None: these render to static PNG for documents, and live
+    # pan/zoom/save icons baked into an image are chrome a reader tries
+    # to click. The interactive HTML keeps its own.
+    return layout.cols(1).opts(shared_axes=True, merge_tools=True,
+                               toolbar=None)
 
 
 def legend_html(lanes: dict, gt=None, member_source: str | None = None) -> str:

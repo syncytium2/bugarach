@@ -3,9 +3,9 @@
 - upstream:  syncytium2/murderboard @ b2b2ba2
 - vendored:  b2b2ba2 (`murderboard_freshness.sh --refresh --verbose` → `current (via remote)`, exit 0)
 - freshness: current
-- artifact:  `docs/generator.md` (`4f44c40` → `61019ab`)
+- artifact:  `docs/generator.md` (`4f44c40` → `b91786e`)
 - roles:     11 of 11 run
-- rounds:    1 blind verify round (in progress at time of writing — see "Residual" below)
+- rounds:    2 blind verify rounds (round 1 returned 15 new findings; round 2 pending)
 
 Run as parallel subagents, one per role, per the process's rule for a substantial
 deliverable. The artifact is a hand-written explainer whose ten figures are
@@ -118,10 +118,45 @@ than superseded.
    is scored as if those points were never searched. (role 6, minor)
 5. **`score.py`'s module docstring** repeats the corrected distractor claim.
    Filed; not changed in this run because it is code, not the artifact.
-6. **The blind verify round is still running** at the time of writing. The
-   process requires iterating until a blind pass returns no new findings and
-   reporting the round count. This record will be updated with its result; the
-   artifact is **not "done"** until that lands.
+6. **Blind round 1 returned 15 new findings and is recorded below.** Round 2 has
+   not yet run, so the artifact is **not "done"**.
+
+---
+
+## Blind verify — round 1
+
+Run by a reviewer given only the artifact, its figures and its sources, with no
+knowledge of round-one findings or which parts had been touched. Roles 1, 3 and
+10; role 10 re-run in full against the new renders, as the process requires.
+
+**Not clean.** Fifteen new findings, three of them errors introduced or left by
+the repair itself:
+
+| finding | severity | disposition |
+|---|---|---|
+| "Four of six operating points beaten; LoCo and CoactDetect sit at their optimum" — **wrong on both regimes**; the beaten set differs by regime and LoCo is beaten in the busy one | blocking | fixed — stated per regime |
+| "`interval_cv` realized CV is near zero regardless; the nominal value does not buy irregularity" — **the knob works**, realizing 0.00/0.06/0.11/0.23; and `bench.py` says "CV ~0.8" for the same recording | blocking | fixed in the doc — both numbers are real on different bases; `bench.py` still needs the same touch |
+| Three headline comparisons (probe, distractors, participation floor) carried **no regime** and all three reorder in the busy one | high | fixed — regime named, reversals flagged |
+| The two regime endpoints (0.0038 / 0.0175) are **derived through the same ratio the doc ⚠-flags two paragraphs later**, and carried no flag | high | fixed |
+| The `jitter_sec` figure is **visually null** — 0.36 s is sub-pixel at 900 s across — and unlike `grid_sec` it was not caveated | high | caveated; an event-scale inset is filed |
+| "medians run 31–47 s out" — SCE is 8.3 s, outside the stated band | mismatch | fixed |
+| "2700 — the shortest recording that fits" — ~2480 fits | mismatch | fixed |
+| "15 events at 120 s need 1680 s" — that is the *uniform* placer's requirement; the renewal placer the bench runs needs >1920 s | mismatch | fixed |
+| "each detector's trace, with its threshold drawn" — **CoactDetect and RateDetect expose no threshold** to the viewer | mismatch | fixed |
+| "every detector scored F1 0.9–1.0 on the invented values" — not reproducible (the same config also emitted the spurious region) | unverifiable | softened and flagged |
+| "recruits six ROIs, just above the min_rois floor" — the shipped floor is 3, so six is 2× it | mismatch | fixed |
+| `--param jitter_sec` without `--out` writes to the darkroom, not `docs/generator` | mismatch | fixed |
+| The **Bokeh toolbar was still baked into the diagnostic PNG** — `make_generator_figures.py` sets `toolbar=None`, `make_diagnostic.py` did not | craft | fixed in `ui/diagnostic.py` |
+| All nine figure y-axes named the swept value but never the plotted quantity, dropping CLAUDE.md's "identity + counts" convention | craft | fixed — `param=value · N ROI` |
+| Right margin 229–258 px against a 10 px left margin (clip used the fixed viewport width) | craft | fixed — clip measures ink width too |
+| Six load-bearing terms absent from `GLOSSARY.md`; "spike-sync" against the canonical **SPIKE-synch** | medium | fixed — glossary section added |
+
+**What round 1 confirmed clean:** every measured value against the CSV
+(0.0096/84, 0.36 with null 0.4166/47, participation 6, width 0.9, the 4.5/6/9/11
+censoring series), the F1 range 0.32–0.78, the probe and distractor tables, the
+41%/0% split, the 44% region arithmetic, `tol_sec`, every generator default, the
+`optim_history` PROVISIONAL quote verbatim, the `simulation_plan` quotes, and
+that the diagnostic figure's documented command reproduces it exactly.
 
 ---
 

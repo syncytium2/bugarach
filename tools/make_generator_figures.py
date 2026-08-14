@@ -198,7 +198,8 @@ def build(param: str, seed: int, width: int):
                 color="#4c78a8", alpha=0.12) * panel
         rows.append(panel.opts(
             width=width, height=170, xlim=ext, ylim=(-1, n_roi), xaxis=None,
-            ylabel=f"{param}={value:g}", xlabel="", title="",
+            ylabel=f"{param}={value:g} · {n_roi} ROI", xlabel="time",
+            title="",
             fontsize={"ylabel": "10pt"}, show_legend=False,
             hooks=[_time_axis_hook]))
     rows[-1] = rows[-1].opts(height=198, xaxis="bottom")
@@ -307,8 +308,14 @@ def _render_png(html_path: Path, png_path: Path, *, wait_ms: int = 3000) -> bool
                     "document.body.querySelectorAll('canvas, .bk-Canvas, div'))"
                     ".filter(e => e.offsetHeight > 0 && e.offsetHeight < 1100)"
                     ".map(e => e.getBoundingClientRect().bottom)))")
+                w = page.evaluate(
+                    "Math.ceil(Math.max(...Array.from("
+                    "document.body.querySelectorAll('canvas, .bk-Canvas, div'))"
+                    ".filter(e => e.offsetWidth > 0 && e.offsetWidth < 1119)"
+                    ".map(e => e.getBoundingClientRect().right)))")
                 page.screenshot(path=str(tmp), clip={
-                    "x": 0, "y": 0, "width": 1120,
+                    "x": 0, "y": 0,
+                    "width": min(float(w) + 12, 1120.0),
                     "height": min(float(h) + 12, 1200.0)})
                 browser.close()
                 os.replace(tmp, png_path)

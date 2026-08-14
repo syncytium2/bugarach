@@ -76,3 +76,28 @@ A sentence must pick its axis: "all six detectors, both streams" — never
   `docs/clean_room/WORKFLOW.md`; they never see each other's code.
 - **sapper** — the mechanized rule gate (`tools/sapper.py`); a rule must
   prove it can fire (self-test fixtures) to exist.
+
+## Bench and simulation
+
+Terms used by `bugarach.bench`, `bugarach.simulate` and
+[`generator.md`](generator.md). Added 2026-08-14, when a review found six
+load-bearing terms with no glossary entry.
+
+- **regime** — a named background-activity level the bench runs at. Both are
+  derived from untreated recordings: `baseline_quiet` (0.0038 Hz/ROI, the p25 of
+  baseline slices) and `baseline_busy` (0.0175, the p75). Treatments are never
+  regimes.
+- **operating point** — the parameter set a detector is benched at, declared with
+  its provenance in `bench.OPERATING_POINTS`. Not the same as its signature
+  defaults, which are not all calibrated.
+- **promiscuity probe** — a stretch of the synthetic recording with elevated
+  background and *no* planted events, used to see whether a detector keys on
+  rate rather than on coordination. Its firings are reported separately and kept
+  out of headline precision.
+- **distractor** — a planted correlated burst: real cross-ROI coincidence that is
+  not a coordinated event. A negative that is meant to be confusable.
+- **contaminated null** — a surrogate null estimated over a context window that
+  contains real coordinated events, which inflates the threshold. Avoided by
+  spacing events wider than the widest context window.
+- **participant floor** — the recruitment level below which a detector stops
+  finding events. Reported as recall broken down by participation fraction.

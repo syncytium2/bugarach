@@ -6,7 +6,7 @@ rather than against another detector's opinion.
 
 Terms — ROI, slice, stream, and the six detectors — are defined in
 [`GLOSSARY.md`](GLOSSARY.md). The six are **LoCo, CICADA, SCE, CoactDetect,
-RateDetect and spike-sync**; a *stream* is one channel of onset times per ROI
+RateDetect and SPIKE-synch** (written `spike-sync` in code); a *stream* is one channel of onset times per ROI
 (this lab's stores carry two, `fast` and `slow`; most labs have one).
 
 ---
@@ -27,10 +27,13 @@ The measurements were not missing — they were in
 `constellation/coordination_timescale_summary.csv` the whole time, produced by
 interface2's `run_coordination_timescale_batch.m`.
 
-**What that hid.** On the invented values every detector scored F1 0.9–1.0 and
-the bench could not tell them apart. On measured values they run 0.32–0.78 and
-separate, because a real coordinated event recruits about **six ROIs** — which
-sits just above the `min_rois` floor these detectors ship with. That is the
+**What that hid.** On the invented values most detectors scored F1 ≥0.9 and the
+bench could barely tell them apart. (⚠ that run is not exactly reproducible — the
+same historical configuration also emitted the spurious region below, so the two
+defects are entangled in any reconstruction.) On measured values they run 0.32–0.78 and
+separate, because a real coordinated event recruits about **six ROIs** — twice
+the `min_rois = 3` floor that LoCo, SCE and CoactDetect ship with, and close
+enough to it that a detector's floor decides what it can see. That is the
 regime the instruments were built for, and the only one where their differences
 show.
 
@@ -104,8 +107,10 @@ so the schedule redraws with the knob. Compare structure, not event for event.*
 ![participation](generator/generator_participation.png)
 
 The **participant floor**. Recall is reported broken down by this, and the six
-detectors diverge sharply at the bottom of the range — at ~3 ROIs, CoactDetect
-still finds 93% and SCE, RateDetect and spike-sync find none.
+detectors diverge sharply at the bottom of the range: in the **quiet regime** at
+~3 ROIs, CoactDetect still finds 93% while SCE, RateDetect and SPIKE-synch find
+none. ⚠ CoactDetect's 0.93 falls to 0.20 in the busy regime — the floor moves
+with the background.
 
 ⚠ The 10% level is ~3 ROIs, which is *below* the `min_rois=4` floor the
 participation measurement itself was taken at. It is a stress point, not a
@@ -114,6 +119,11 @@ calibration.
 ### `jitter_sec` — how tightly participants fire together (default 0.05; bench uses 0.36)
 
 ![jitter_sec](generator/generator_jitter_sec.png)
+
+⚠ **The figure cannot resolve this knob.** At 900 s across the panel, 0.36 s of
+jitter is under one pixel — the rows are indistinguishable, and that is a
+limitation of the rendering, not a property of the parameter. It needs an
+event-scale inset before it earns its place; until then read the row labels.
 
 ⚠ **The least trustworthy number here.** 0.36 s comes from a statistic whose own
 circular-shift surrogate null is **0.42 s** — destroy all cross-ROI phase and the
@@ -133,8 +143,10 @@ containing the signal and the threshold inflates — the trap that made the firs
 upstream benchmark unusable.
 
 That spacing sets the bench recording's 45-minute duration, not the other way
-round: 15 events at 120 s need 1680 s of placeable span, and the probe window is
-excluded from placement.
+round. The renewal placer the bench uses needs a *mean* interval above the floor,
+so 15 events at 120 s need **>1920 s** of placeable span — more than the 1680 s
+that simple end-to-end spacing would suggest — and the probe window is excluded
+from placement on top of that.
 
 ### `interval_cv` — irregularity of the gaps (default 1.0)
 
@@ -144,18 +156,23 @@ excluded from placement.
 activity — it would score well on synthetic data for a reason that does not
 transfer.
 
-⚠ At the bench's own spacing the *realized* CV is near zero regardless: a 120 s
-floor with a 134 s mean interval leaves 14 s of slack. The nominal value does not
-buy irregularity here.
+⚠ At the bench's own spacing the knob still works but is heavily compressed: a
+120 s floor with a ~136 s mean interval leaves little room above it, so setting
+0 / 0.5 / 1.0 / 2.0 realizes **0.00 / 0.06 / 0.11 / 0.23**. Quoted whole-recording
+the realized CV is **0.80**, but that figure is carried almost entirely by one
+gap — the schedule steps over the excluded probe window — so it describes the
+probe, not the spacing. Both numbers are real; they are different bases, and the
+0.11 one is the one that answers "is the spacing irregular".
 
 ### `hot_window` / `hot_rate_hz` / `ramp_sec` — the promiscuity probe (off by default; bench uses 1200–1500 s at 0.06 Hz with a 30 s ramp)
 
 ![hot_rate_hz](generator/generator_hot_rate_hz.png)
 
 Extra background inside the shaded block, with **no planted events**, ramping in
-rather than stepping. It separates one detector sharply: CICADA fires **17.3
+rather than stepping. In the **quiet regime** it separates one detector sharply: CICADA fires **17.3
 times a minute** in there, CoactDetect 0.0 and LoCo 0.1, with SCE intermediate at
-5.6. Those firings are counted separately and kept **out** of headline precision —
+5.6. ⚠ That separation is regime-dependent — in the busy regime CICADA and SCE
+converge, so the probe distinguishes them only where the background is thin. Those firings are counted separately and kept **out** of headline precision —
 folded in, the probe's severity would set everyone's precision instead of their
 behaviour.
 
@@ -165,8 +182,10 @@ behaviour.
 
 Real cross-ROI coincidence that is not a coordinated event, marked **▽**. They
 recruit the same fraction of ROIs as a planted event, so they are genuinely
-confusable, and the six detectors answer them differently: SCE fires on 3 of 18,
-spike-sync 4, RateDetect 13, LoCo 16, CICADA and CoactDetect 18.
+confusable, and the six detectors answer them differently — in the **quiet regime**, SCE
+fires on 3 of 18, SPIKE-synch 4, RateDetect 13, LoCo 16, CICADA and CoactDetect
+18. ⚠ The ordering reshuffles in the busy regime; this is one regime's answer,
+not a ranking.
 
 Detections on distractors match no planted event, so they **are** counted as
 false alarms and do lower precision.
@@ -192,7 +211,7 @@ the population size you set.
 
 | parameter | default | note |
 |---|---|---|
-| `duration_sec` | 600.0 | bench uses 2700 — the shortest recording that fits 15 events at a 120 s floor |
+| `duration_sec` | 600.0 | bench uses 2700; ~2480 is the shortest that fits 15 events at a 120 s floor, so this carries some margin |
 | `n_per_level` | `(5, 5, 5)` | events at each participation level |
 | `spacing` | `"renewal"` | `"uniform"` reproduces `generate_synth_coord.m`'s rejection-loop placement |
 | `margin_sec` | 5.0 | keep-out at each end |
@@ -213,6 +232,11 @@ operating point has to survive.
 
 Source: `constellation/coordination_timescale_summary.csv`, flavour
 `all-baseline`, fast stream, `min_rois=4`. **The denominators differ by row:**
+
+⚠ The two regime endpoints are **derived, not read**: the file carries population
+rates in events/min (`rate_p25` 7.55, `rate_p75` 34.88), and converting them to
+per-ROI needs the same `rate_med / (60 × roiRate_mean_med)` ratio flagged below.
+They inherit its uncertainty.
 
 | quantity | value | n |
 |---|---|---|
@@ -257,9 +281,11 @@ default exists to avoid.
 
 ## What follows: no re-tuning is licensed
 
-Four of the six declared operating points are beaten by a sweep on this generator
-(CICADA, SCE, RateDetect and spike-sync; LoCo and CoactDetect sit at their
-optimum). **That licenses no change to them.** Re-tuning to a synthetic benchmark
+A sweep on this generator beats the declared operating point for **four of the
+six in the quiet regime** (CICADA, SCE, RateDetect, SPIKE-synch) and **three in
+the busy one** (LoCo, SCE, SPIKE-synch). Only SCE and SPIKE-synch are beaten in
+both; no detector sits at its optimum in both. **That licenses no change to any
+of them.** Re-tuning to a synthetic benchmark
 whose realism rests on one unreviewed measurement, and which no real recording has
 ever checked, is the trap this project already paid for.
 
@@ -281,8 +307,10 @@ and this document would mislead a reader who stopped before here.
   a 0.42 surrogate null), and the calibration does not round-trip: build a
   recording at 0.36 and the estimator that produced 0.36 measures ~0.64 back.
 - **`bg_rate_hz` is a background rate; the measured value is a total rate** that
-  includes the coordinated events. The realized total on a bench recording is
-  above the value the regime is named for.
+  includes the coordinated events, the probe and the distractors. Realized totals
+  are **0.0114 Hz/ROI in the quiet regime against a nominal 0.0038** (3.0×) and
+  0.0255 against 0.0175 (1.5×) — so the regime named for the untreated p25 is in
+  fact busier than the untreated *median* it was cut from.
 - **The bench has never been run against a real recording.** Everything here is
   measured on data this generator produced.
 
@@ -297,7 +325,9 @@ real tissue.
 
 `tools/make_diagnostic.py` renders a recording with detector lanes above the
 raster and **each detector's analysis trace below it** — the statistic it
-actually thresholds, with its threshold drawn and its claimed windows shaded.
+actually thresholds, with its claimed windows shaded. Four of the six also carry
+their threshold as a dotted line; CoactDetect and RateDetect do not expose one to
+the viewer, so their rows show the statistic alone.
 
 ```bash
 python tools/make_diagnostic.py --bench baseline_quiet --tag bench_quiet --out docs/generator
@@ -319,7 +349,8 @@ The distinction matters because the causes differ — fragmentation is a merge-g
 problem, firing at noise is a threshold problem — and a precision number that
 merges them cannot tell you which you have. Measured on the quiet regime, outside
 the probe: **41% of CICADA's unmatched detections sit within 2 s of a planted
-event**, against 0% for every other detector, whose medians run 31–47 s out.
+event**, against 0% for every other detector — whose medians run 31–47 s out,
+except SCE at 8.3 s.
 
 ---
 
@@ -338,7 +369,7 @@ Every figure regenerates:
 
 ```bash
 python tools/make_generator_figures.py --out docs/generator   # all of them
-python tools/make_generator_figures.py --param jitter_sec     # just one
+python tools/make_generator_figures.py --param jitter_sec --out docs/generator
 ```
 
 ## Appendix — corrections to earlier versions
