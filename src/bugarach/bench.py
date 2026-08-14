@@ -131,19 +131,64 @@ DETECTORS = tuple(OPERATING_POINTS)
 # regime-shift guard shifts along: an operating point tuned where events are easy
 # to see must still work where they are not.
 REGIMES: dict[str, dict] = {
+    "ttx": dict(bg_rate_hz=0.0040),
     "baseline": dict(bg_rate_hz=0.0096),
-    "senktide": dict(bg_rate_hz=0.0381),
 }
-"""The two regimes, and both numbers are **measured**, not chosen.
+"""The axis the bench tunes and shifts along — and it deliberately excludes the
+treatment.
 
 Per-ROI rate medians from `constellation/coordination_timescale_summary.csv`
-(`roiRate_mean_med`, fast stream): `all-baseline` 0.0096 Hz, `all-senktide`
-0.0381 Hz. The full range across flavours runs 0.0040 (ORX, TTX) to 0.0381
-(senktide), so this pair brackets it about as widely as real data allows.
+(`roiRate_mean_med`, fast stream): `all-TTX` 0.0040 Hz, `all-baseline` 0.0096 Hz.
 
-They replace an invented `sparse=0.05 / dense=0.15`, which sat **entirely above
-the measured range** — every bench score before 2026-08-13 was taken on a
-background 5–15× busier than any real recording.
+**Senktide is not here, on purpose.** It is the effect the instrument exists to
+measure, and an instrument calibrated to maximise its own response to the
+treatment has assumed the answer. It lives in :data:`HELD_OUT` and is scored,
+never tuned on.
+
+The first version of this bench used `sparse=0.05 / dense=0.15` — invented, and
+sitting entirely above the measured range. The second used baseline → senktide,
+which was measured but was a *treatment axis*: it made the drug response the
+thing the operating points were checked against. This one runs from the
+silencing control to the untreated condition, so difficulty varies without the
+treatment entering the calibration at all.
+"""
+
+HELD_OUT: dict[str, dict] = {
+    "senktide": dict(bg_rate_hz=0.0381),
+}
+"""Scored, never tuned on. Report it; do not fit to it.
+
+The point of holding it out is that a number on senktide means something only if
+nothing about the detector was chosen to make that number good.
+"""
+
+NULL_RECORDING = dict(bg_rate_hz=0.0040, n_per_level=(0, 0, 0),
+                      hot_window=None, hot_rate_hz=0.0, ramp_sec=0.0,
+                      n_distractors=0)
+"""The empirical negative control: TTX-rate background and **no coordination at
+all**.
+
+Under TTX action potentials are blocked, so any coordinated event a detector
+reports is wrong — and unlike every other number here, that judgement needs no
+ground truth, no planted events and no scoring rule. It is the strongest test in
+this module and it is the cheapest.
+
+The measured data says the detectors are running below the floor where this goes
+quiet. `coact_excess_med` on real slices (fast stream, events/min above each
+slice's own circular-shift null):
+
+=============  ======  ======  ======  ======
+flavour        K=3     K=4     K=6     K=8
+=============  ======  ======  ======  ======
+all-TTX        0.84    0.44    0.00    0.00
+all-baseline   1.26    0.60    0.14    0.00
+all-senktide   34.12   29.91   22.08   13.83
+=============  ======  ======  ======  ======
+
+TTX only reaches zero at ``min_rois >= 6``, and senktide is still 22 there. The
+detectors ship with ``min_rois=3`` — inside the band where the *silencing
+control* still reports coordination. That is a participant floor derivable from
+real recordings without a simulation, and it is not the floor in use.
 """
 
 # Measured off 84 baseline slices — see MEASURED_PROVENANCE below. These are the
@@ -221,11 +266,48 @@ exist so the bench can fail a detector for firing on them.
 
 
 def make_recording(regime: str, seed: int, **overrides):
-    """One bench recording. ``regime`` selects the background rate."""
-    if regime not in REGIMES:
-        raise ValueError(f"unknown regime {regime!r} — have {sorted(REGIMES)}")
+    """One bench recording. ``regime`` selects the background rate.
+
+    Accepts a held-out regime too — scoring one is fine, and the discipline that
+    matters is not fitting to it, which no function signature can enforce.
+    """
+    known = {**REGIMES, **HELD_OUT}
+    if regime not in known:
+        raise ValueError(f"unknown regime {regime!r} — have {sorted(known)}")
     return simulate_coordination(
-        seed=seed, **{**BENCH_RECORDING, **REGIMES[regime], **overrides})
+        seed=seed, **{**BENCH_RECORDING, **known[regime], **overrides})
+
+
+def make_null_recording(seed: int, **overrides):
+    """A recording with no coordination in it at all — the empirical null.
+
+    Returns the same ``(slice, ground_truth)`` pair as :func:`make_recording`,
+    with ``gt.events`` empty. Nothing here is scored against planted truth
+    because there is none: every detection is a false positive by construction.
+    """
+    return simulate_coordination(
+        seed=seed, **{**BENCH_RECORDING, **NULL_RECORDING, **overrides})
+
+
+def false_positives_per_hour(name: str, seeds=(1, 2, 3), **overrides) -> float:
+    """How often a detector fires on a recording containing no coordination.
+
+    The one number in this module that does not depend on the generator being
+    realistic in any way beyond its firing rate — there is no planted structure
+    to get wrong, so a detector cannot be flattered by an easy benchmark or
+    punished by a hard one. It can only be caught firing at nothing.
+    """
+    hours = 0.0
+    total = 0
+    for seed in seeds:
+        s, _ = make_null_recording(seed)
+        det = run_detector(name, s, **overrides)
+        onsets = getattr(det, "onset_sec", None)
+        onsets = det.locs if onsets is None else onsets
+        onsets = np.asarray(onsets, dtype=float)
+        total += int(np.isfinite(onsets).sum())
+        hours += BENCH_RECORDING["duration_sec"] / 3600.0
+    return total / hours if hours else float("nan")
 
 
 def run_detector(name: str, s, *, rng_seed: int = 20260706, **overrides):
