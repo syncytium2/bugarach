@@ -1,13 +1,51 @@
 # The coordination generator
 
-Synthetic recordings with **coordinated events planted at known times, with known
-participants**, so a detector can be scored against what was actually there
-rather than against another detector's opinion.
+`simulate_coordination` builds synthetic recordings that stand in for a real
+slice's event data, with the coordinated events **planted** — their times and
+participants known exactly. A detector run on one can be scored against what was
+actually there, instead of against another detector's opinion.
 
 Terms — ROI, slice, stream, and the six detectors — are defined in
 [`GLOSSARY.md`](GLOSSARY.md). The six are **LoCo, CICADA, SCE, CoactDetect,
-RateDetect and SPIKE-synch** (written `spike-sync` in code); a *stream* is one channel of onset times per ROI
-(this lab's stores carry two, `fast` and `slow`; most labs have one).
+RateDetect and SPIKE-synch** (written `spike-sync` in code); a *stream* is one
+channel of onset times per ROI.
+
+---
+
+## Start here: what it is imitating, and how well
+
+![a real baseline recording above the generator asked to imitate it](generator/reality_check.png)
+
+Top is a real recording. Bottom is the generator given its ROI count, its
+duration and its per-ROI rate, with events planted at the measured participation
+and jitter. Same detector, same settings, on both.
+
+**They do not look alike, and the difference is not in the numbers this document
+spends most of its length on.** Every parameter below was matched. What was not
+matched is the *shape* of the background:
+
+| | real slice | generated |
+|---|---|---|
+| spread of per-ROI rates (CV) | **2.04** | 0.24 |
+| quietest → busiest ROI | 0 → 99 mHz | 7 → 18 mHz |
+| share of all events in the busiest ROI | **28.1%** | 4.4% |
+| clumping of events in time (CV per minute) | **0.78** | 0.25 |
+
+A real field has a few ROIs carrying most of the activity and many carrying
+almost none — one ROI here holds 28% of every event in the recording — and the
+activity arrives in bursts. The generator draws a **homogeneous Poisson process
+with the same rate for every ROI**, so its field is flat in both directions.
+
+That matters for these detectors specifically, because every one of them counts
+*distinct ROIs coactive*. A population where most ROIs are near-silent has a much
+smaller effective size than its ROI count suggests, and a circular-shift null
+built from a flat field is not the null a clumpy one produces. LoCo finds 5
+coordinated events in the real recording and 10 in the generated one — the
+synthetic recording is the easier problem.
+
+**So the calibration below is necessary and not sufficient.** Getting the rate,
+jitter and participation right — which took finding out they were 5×, 7× and 3×
+wrong — fixes the marginal distributions and leaves the structure untouched.
 
 ---
 
@@ -317,8 +355,15 @@ and this document would mislead a reader who stopped before here.
   are **0.0114 Hz/ROI in the quiet regime against a nominal 0.0038** (3.0×) and
   0.0255 against 0.0175 (1.5×) — so the regime named for the untreated p25 is in
   fact busier than the untreated *median* it was cut from.
-- **The bench has never been run against a real recording.** Everything here is
-  measured on data this generator produced.
+- **The background model is wrong in shape, not just in scale.** Per-ROI rates
+  are homogeneous where real ones span 0–99 mHz, and events are drawn
+  independently where real activity is bursty. Fixing that means a
+  per-ROI rate distribution and a clustered arrival process, neither of which
+  this generator has. It is the largest known gap and it is not a parameter.
+- **The bench has never been scored against a real recording.** Everything here
+  is measured on data this generator produced. The figure at the top is the only
+  thing in this document that touches real data, and it is a visual comparison,
+  not a score.
 
 None of these is a reason to distrust the *ports* — those are matched to their
 MATLAB originals to 1e-9 on committed fixtures, which is a separate and much
