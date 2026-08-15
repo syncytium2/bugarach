@@ -18,10 +18,14 @@ cannot collide with anything, at any zoom, by construction.
 
 Reading it
 ----------
-* **Lanes panel** — one row per detector. A bar spans ``onset → onset + width``:
-  that is what the detector claimed. A **✕** marks a detection that matched no
-  planted event (a false alarm). The **planted** row shows ground truth:
-  ▲ filled where a detector recovered it, hollow where every detector missed it.
+* **Lanes panel** — the **planted** row first, then one row per detector. Ground
+  truth leads because every row under it is an attempt at it, and a reader
+  scanning down should meet the answer before the attempts. A bar spans
+  ``onset → onset + width``: that is what the detector claimed. A **✕** marks a
+  detection that matched no planted event (a false alarm), a **○** a duplicate
+  of one another detection already claimed. On the planted row, ▲ marks an event
+  some detector recovered and ▼ one every detector missed, with ▽ distractors
+  riding above.
 * **Raster** — one row per ROI, sorted quietest at the bottom, so coordination
   reads as a vertical stripe rather than being lost in store order. Onsets that
   fall inside a detected window are **highlighted**; everything else is muted
@@ -45,7 +49,7 @@ import holoviews as hv
 import numpy as np
 
 from bugarach.score import score_detections
-from bugarach.ui.app import COLORS, SHORT, _signal_row, _time_axis_hook
+from bugarach.ui.app import COLORS, TITLES, _signal_row, _time_axis_hook
 
 FOUND = "#1b7f3b"
 MISSED = "#b3261e"
@@ -112,7 +116,12 @@ def lane_panel(lanes: dict, *, ext, gt=None, tol_sec: float = 1.5,
                width: int = 1000, row_px: int = 26):
     """Detector lanes with a real categorical y-axis (labels cannot collide)."""
     lanes = lanes or {}
-    rows = list(lanes) + (["planted"] if gt is not None else [])
+    # Ground truth goes at the TOP: it is what every other row is judged
+    # against, and a reader scanning down should meet the answer before the
+    # attempts at it (Tony, 2026-08-15). Distractors ride just above it and
+    # still clear `ylim` — the top row sits 0.8 units below the limit and the
+    # marker needs about 0.14.
+    rows = (["planted"] if gt is not None else []) + list(lanes)
     ypos = {name: len(rows) - 1 - i for i, name in enumerate(rows)}
     items = [_base(ext, "lane")]
 
@@ -182,7 +191,7 @@ def lane_panel(lanes: dict, *, ext, gt=None, tol_sec: float = 1.5,
                     ).opts(marker=marker, size=10, color=colour,
                            line_color="white", line_width=1))
 
-    yticks = [(ypos[n], SHORT.get(n, n)) for n in rows]
+    yticks = [(ypos[n], TITLES.get(n, n)) for n in rows]
     return hv.Overlay(items).opts(
         width=width, height=max(90, row_px * len(rows) + 46),
         xlim=tuple(ext), ylim=(-0.8, len(rows) - 0.2),
@@ -240,7 +249,7 @@ def raster_panel(stream, *, ext, member_spans=None, gt=None, name="events",
     )
 
 
-def trace_panel(traces: dict, *, ext, width: int = 1000, height: int = 82):
+def trace_panel(traces: dict, *, ext, width: int = 1000, height: int = 112):
     """One analysis trace per detector, x-linked to the raster above.
 
     The lanes say *what* a detector claimed; these say **why**. Each row is the
@@ -280,7 +289,13 @@ def trace_panel(traces: dict, *, ext, width: int = 1000, height: int = 82):
         top = float(fy.max()) if fy.size else 1.0
         bottom = min(0.0, float(fy.min()) if fy.size else 0.0)
         pad = max((top - bottom) * 0.08, 1e-9)
-        rows.append(_signal_row(det, t, y, events, extra, ext).opts(
+        # Full name, not the viewer's abbreviation: this figure's rows are tall
+        # enough to carry it, and the rotated y-label is the only place a reader
+        # learns which detector a trace belongs to. `height` is set by the
+        # longest of them — "rate+context (14)" runs ~100px at 9pt, so a row
+        # short enough for "CIC" clips it.
+        rows.append(_signal_row(det, t, y, events, extra, ext,
+                                label=TITLES.get(det, det)).opts(
             width=width, height=height, xaxis=None,
             ylim=(bottom - pad, top + pad)))
     if rows:
@@ -323,39 +338,106 @@ def coordination_diagnostic(stream, *, ext, lanes=None, gt=None,
                                toolbar=None)
 
 
+def _key(kind: str, colour: str, size: int = 16) -> str:
+    """One legend key, drawn as SVG rather than typed as a character.
+
+    The first version used Unicode glyphs — ``&#10005;`` for the false alarm and
+    ``&#9711;`` for the duplicate. They do not line up: U+2715 and U+25EF carry
+    different vertical metrics in every system font, so the two markers that
+    have to read as a matched pair sat at visibly different heights, and a
+    reader could not tell whether the offset meant something (Tony, 2026-08-15).
+    In the *plot* they were always aligned — both are drawn at ``y + 0.40`` —
+    which made the legend actively misleading about the figure it explains.
+
+    Drawing them puts the baseline under our control and makes each key the same
+    shape bokeh renders, instead of the nearest character to it.
+    """
+    c = size / 2
+    body = {
+        "x": f'<path d="M{c-4.6} {c-4.6}L{c+4.6} {c+4.6}M{c+4.6} {c-4.6}'
+             f'L{c-4.6} {c+4.6}" stroke="{colour}" stroke-width="2.2" '
+             f'stroke-linecap="round" fill="none"/>',
+        "circle": f'<circle cx="{c}" cy="{c}" r="4.1" stroke="{colour}" '
+                  f'stroke-width="1.5" fill="none"/>',
+        "triangle": f'<path d="M{c} {c-5}L{c+5} {c+3.8}L{c-5} {c+3.8}Z" '
+                    f'fill="{colour}" stroke="white" stroke-width="1"/>',
+        "inverted": f'<path d="M{c} {c+5}L{c+5} {c-3.8}L{c-5} {c-3.8}Z" '
+                    f'fill="{colour}" stroke="white" stroke-width="1"/>',
+        "inverted_open": f'<path d="M{c} {c+4.6}L{c+4.6} {c-3.5}L{c-4.6} '
+                         f'{c-3.5}Z" stroke="{colour}" stroke-width="1.3" '
+                         f'fill="none"/>',
+        "bar": f'<rect x="{c-5.5}" y="{c-5.5}" width="11" height="11" '
+               f'fill="{colour}"/>',
+        "tick": f'<line x1="{c}" y1="{c-5.5}" x2="{c}" y2="{c+5.5}" '
+                f'stroke="{colour}" stroke-width="2.6"/>',
+        "dotted": f'<line x1="0.5" y1="{c}" x2="{size-0.5}" y2="{c}" '
+                  f'stroke="{colour}" stroke-width="1.8" stroke-dasharray="2 2"/>',
+        "band": f'<rect x="0" y="{c-6}" width="{size}" height="12" '
+                f'fill="{colour}" opacity="0.35"/>',
+    }[kind]
+    return (f'<svg width="{size}" height="{size}" viewBox="0 0 {size} {size}" '
+            f'style="display:block">{body}</svg>')
+
+
 def legend_html(lanes: dict, gt=None, member_source: str | None = None) -> str:
-    """The key. A reader should never have to guess what a marker means."""
+    """The key. A reader should never have to guess what a marker means.
+
+    Laid out as a legend and not as prose: **symbol first, then what it means**,
+    one entry per row, keys aligned in their own column. The earlier version ran
+    the symbols inline through sentences, so finding out what ``✕`` meant took
+    reading a paragraph to locate it (Tony, 2026-08-15).
+    """
     src = member_source or (next(iter(lanes)) if lanes else None)
+    src_name = TITLES.get(src, src) if src else "—"
+
+    def row(key: str, text: str) -> str:
+        return (f'<div style="display:flex;gap:9px;align-items:flex-start;'
+                f'margin:3px 0">'
+                f'<div style="flex:0 0 18px;padding-top:2px">{key}</div>'
+                f'<div>{text}</div></div>')
+
     swatches = "".join(
-        f'<span style="display:inline-block;width:11px;height:11px;'
-        f'background:{COLORS.get(k, "#555")};margin:0 4px 0 12px;'
-        f'vertical-align:-1px"></span>{SHORT.get(k, k)}'
-        for k in lanes)
+        f'<span style="display:inline-flex;align-items:center;gap:4px;'
+        f'margin-right:11px">{_key("bar", COLORS.get(k, "#555"), 12)}'
+        f'{TITLES.get(k, k)}</span>' for k in lanes)
+
+    entries = [
+        (_key("bar", COLORS.get(src, "#555")),
+         "<b>Lane bar</b> — one row per detector; the bar spans a detection's "
+         "<i>onset → onset + width</i>. Colour is detector identity:<br>"
+         f'<div style="display:flex;flex-wrap:wrap;margin-top:3px">{swatches}</div>'),
+        (_key("x", FALSE_ALARM),
+         "<b>False alarm</b> — a detection near <b>no</b> planted event."),
+        (_key("circle", FALSE_ALARM),
+         "<b>Duplicate</b> — it lands on a real event another detection already "
+         "claimed, and matching is one-to-one, so it is left over. "
+         "Fragmentation, not hallucination."),
+        (_key("triangle", FOUND),
+         "<b>Planted event, recovered</b> by at least one detector."),
+        (_key("inverted", MISSED),
+         "<b>Planted event, missed</b> by all of them."),
+        (_key("inverted_open", "#5a5a5a"),
+         "<b>Distractor</b> — a correlated burst that is real coincidence but "
+         "<b>not</b> a coordinated event."),
+        (_key("tick", RASTER_HIT),
+         f"<b>Raster onset, claimed</b> — it falls inside a window claimed by "
+         f"<b>{src_name}</b>. One raster row per ROI, quietest at the bottom."),
+        (_key("tick", "#9a9a9a"),
+         "<b>Raster onset, unclaimed</b> — outside every window that detector "
+         "reported."),
+        (_key("dotted", "#333"),
+         "<b>Threshold</b> — a detector's own cut on its own trace (four of the "
+         "six expose one)."),
+        (_key("band", PROBE_BAND),
+         "<b>Dense-but-random block</b> — elevated firing rate and <b>no planted "
+         "events</b>, so every detection inside it is a false alarm by "
+         "construction."),
+    ]
+    body = "".join(row(k, t) for k, t in entries)
     return f"""
-<div style="font:13px/1.6 system-ui,sans-serif;color:#222;max-width:1000px">
-  <b>How to read this</b><br>
-  <b>Lanes (top):</b> one row per detector; a bar spans a detection's
-  <i>onset → onset + width</i>.{swatches}<br>
-  <span style="color:{FALSE_ALARM};font-weight:bold">&#10005;</span>
-  a detection near <b>no</b> planted event — a false alarm ·
-  <span style="color:{FALSE_ALARM}">&#9711;</span>
-  a <b>duplicate</b>: it lands on a real event another detection already
-  claimed, so matching (one-to-one) leaves it over. Fragmentation, not
-  hallucination.<br>
-  <b>planted row:</b>
-  <span style="color:{FOUND}">&#9650;</span> recovered by at least one detector ·
-  <span style="color:{MISSED}">&#9660;</span> missed by all of them.<br>
-  <b>Raster (bottom):</b> one row per ROI, quietest at the bottom.
-  <span style="color:{RASTER_HIT};font-weight:bold">Dark</span> onsets fall inside
-  a window claimed by <b>{SHORT.get(src, src) if src else "—"}</b>;
-  <span style="color:#9a9a9a">grey</span> ones do not.<br>
-  <span style="color:#5a5a5a">&#9661;</span> a <b>distractor</b> — a correlated
-  burst that is real coincidence but not a coordinated event ·
-  <span style="border-bottom:2px dotted #333;padding:0 6px">&nbsp;</span>
-  a detector's <b>threshold</b> on its own trace (four of the six expose one).<br>
-  <span style="background:{PROBE_BAND};opacity:.35;padding:0 10px">&nbsp;</span>
-  dense-but-random block — elevated firing rate, <b>no planted events</b>, so every
-  detection inside it is a false alarm by construction.
+<div style="font:13px/1.5 system-ui,sans-serif;color:#222;max-width:1000px">
+  <div style="font-weight:700;margin-bottom:5px">How to read this</div>
+  {body}
 </div>"""
 
 
@@ -370,8 +452,8 @@ def score_table(gt, lanes: dict, *, tol_sec: float = 1.5) -> str:
     on the same recording, and folding the probe into precision took it to 0.07.
     A caption that disagrees with the measurement is worse than no caption.
     """
-    rows = ["detector    recall  prec    F1   FA  probe  by participation",
-            "-" * 74]
+    rows = ["detector      recall  prec    F1   FA  probe  by participation",
+            "-" * 76]
     for key, ev in lanes.items():
         onsets, widths = ev[0], ev[1]
         s = score_detections(gt, onsets, widths=widths, tol_sec=tol_sec)
@@ -382,6 +464,6 @@ def score_table(gt, lanes: dict, *, tol_sec: float = 1.5) -> str:
               else float("nan"))
         by = " ".join(f"{int(f * 100)}%:{s.recall_at(f):.2f}"
                       for f in sorted(s.by_frac, reverse=True))
-        rows.append(f"{SHORT.get(key, key):<11s} {s.recall:5.2f}  {prec:5.2f}  "
+        rows.append(f"{TITLES.get(key, key):<13s} {s.recall:5.2f}  {prec:5.2f}  "
                     f"{f1:5.2f} {s.n_fa - s.hot_fa:4d}  {s.hot_fa:4d}   {by}")
     return "\n".join(rows)
