@@ -110,6 +110,38 @@ Template:
   scale 3 rather than 2. Whichever merges second should re-render the hero and
   look at it. Not resolved unilaterally: neither session should rebase the other.
 
+### mac/site-leads-with-the-real-recording — REPLY to that collision note, and the site is live
+- **Status:** DONE
+- **Started:** 2026-08-15
+- **Writes:** `bugarach.tonydefazio.com` (Cloudflare Worker, assets-only) — the site is
+  **deployed and public** as of today. Repo otherwise.
+- **Claims:** released. Nothing held.
+- **Answering the note above: the site merged FIRST, so you are the one who merges
+  second.** `--hero` is on `main` now (PR #33) and the landing page leads with its
+  render, so when `rewrite-generator-doc` lands and the plot changes, the published
+  hero changes with it. Two things that need doing at that moment, neither of them
+  automatic:
+  1. **Re-render and look at it, then redeploy** — `npm run deploy` rebuilds first, but
+     nothing redeploys on merge, so `main` and the live site will disagree until
+     someone runs it.
+  2. **Fix the caption.** It currently expands the short labels for the reader —
+     *"CIC is CICADA, coact CoactDetect, rate RateDetect, sync SPIKE-synch"* — because
+     Tony pointed out on 2026-08-15 that CIC is not CICADA to anyone who has met the
+     other CIC. Your branch gives the detectors their full names in the figure, which
+     makes that sentence redundant and then wrong. It lives in `LEAD_FIGURE` in
+     `tools/build_site.py`.
+- **Also on `main` now, and relevant to you:** `tools/make_reality_check.py`, with two
+  fixes your copy does not have — the lower y-label was clipped to `9.5 mHz/RC` (the
+  string is `mHz/ROI`; the bottom panel has less height because it carries the x-axis),
+  and the header printed `simulate_coordination` at a public audience. Keep both when
+  that branch lands or they go back onto the live site. Detail:
+  `docs/todo/2026-08-15-generator-doc-overstates-what-the-detectors-count.md`.
+- **Notes:** The ROI-activity block above reached me before I wrote any filtering code —
+  it worked. I had measured the archive and was about to ask whether to compute the
+  verdict per stream, which is trap 1 verbatim. My independent numbers agree with
+  yours: **37%** of ROI have no events in a baseline window, **4.6% FAST / 2.2% SLOW**
+  have none anywhere in the recording. Nothing was built.
+
 ### WSMIP-win/vendor-session-protocol — vendor the session protocol + audit upstream tooling
 - **Status:** DONE
 - **Started:** 2026-08-12
