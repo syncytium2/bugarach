@@ -8,10 +8,16 @@
   // still needs a local Python process — see docs/deploy.md for why, and what
   // it would take to put it in the browser instead.
   //
-  // DATA POSTURE, load-bearing: only SYNTHETIC data is ever built into this
-  // site. FOUNDATIONS §5 keeps real stores machine-local behind
-  // BUGARACH_DATA_ROOT, and this repo and this site are public. The build
-  // script generates its own data from a seed; it reads no store.
+  // DATA POSTURE, load-bearing: the build READS NO STORE. Every figure it
+  // generates comes from a seed, and nothing here opens BUGARACH_DATA_ROOT —
+  // FOUNDATIONS §5, and this repo and this site are public.
+  //
+  // One real recording is published here, and it is carried rather than read:
+  // docs/generator/reality_check.png is a committed figure of a real baseline
+  // slice, released by name under the §5 carve-out (Tony, 2026-08-15 — baseline
+  // only, so it can never carry a before/after result). build_site.py copies
+  // that one file. The exception is a list of one and does not extend to
+  // treatment slices; read §5 before adding to it.
   "name": "bugarach",
   "compatibility_date": "2026-07-01",
   "workers_dev": true,
