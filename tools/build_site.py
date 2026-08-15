@@ -4,10 +4,16 @@
     python tools/build_site.py            # -> ./site
     python tools/build_site.py --open     # ...and print the file:// URL
 
-Everything here is generated from a seed. **The build reads no store and no
-real data**: FOUNDATIONS §5 keeps real recordings machine-local behind
-``BUGARACH_DATA_ROOT``, and this site is public. A build that quietly picked up
-a real slice would be a data-policy breach, so it has no code path that could.
+**The build still reads no store.** Every figure it generates comes from a seed,
+and there is no code path here that opens ``BUGARACH_DATA_ROOT`` — FOUNDATIONS §5
+keeps real recordings machine-local and this site is public.
+
+The one exception is carried, not read: ``docs/generator/reality_check.png`` is a
+committed figure that contains a real baseline recording, released by name under
+the §5 carve-out (Tony, 2026-08-15 — that slice is baseline-only, and this lab's
+results are all baseline-vs-treatment, so it can never carry one). The build
+copies that file. It does not regenerate it, which is why a clean clone with no
+data still builds the whole site.
 
 Output is an assets-only Cloudflare Worker payload (``wrangler.jsonc`` points at
 ``./site``) — the same shape colonel_kernel uses. No server, nothing to sleep.
@@ -60,20 +66,29 @@ INDEX = """<!doctype html>
 <p class="sub">Six coordinated-event detectors, ported from MATLAB to Python —
 and a synthetic benchmark with planted ground truth to test them against.</p>
 
-{lead}
+{real}
 
-<p>Detectors flag moments when many neurons fire together in 2-photon calcium
-recordings. Six of them, each asking a different question, each matched to its
-MATLAB original to 1e-9 so it can be cited in its place. The figure above is
-them run against <b>simulated data where the right answer is known</b> — so a
-miss and a false alarm are drawn, not inferred.</p>
+<p>Each row above is one <b>ROI</b> — one cell's worth of signal pulled out of a
+2-photon calcium recording. Detectors flag the moments when many of them fire
+together. There are six here — LoCo, CICADA, SCE, CoactDetect, RateDetect and
+SPIKE-synch — each asking a different question, and each matched to its MATLAB
+original to 1e-9 on committed fixtures, so it can be cited in its place.</p>
 
-<p class="note"><b>Everything here is synthetic.</b> Real recordings stay
-machine-local and never reach this site. Every figure on this page is generated
-from a seed, so the whole thing is reproducible with one command:
-<code>python tools/build_site.py</code>.</p>
+<p>All six work by finding moments that stand out from the rest of the
+recording, which is what makes the shape of the background more than a cosmetic
+detail: on the pair above, the same detector at the same settings finds
+<b>twice as many</b> coordinated events in the imitation as in the original.
+Matching the rate, the jitter and the participation is necessary and not
+sufficient. That gap is open work, and it is written down rather than papered
+over.</p>
 
-<h2 style="font-size:1.15rem">What the benchmark is for</h2>
+<p class="note"><b>One real recording; everything else is synthetic.</b> The top
+panel above is a real baseline-only slice, published deliberately — it carries no
+before/after result, so releasing it costs nothing this lab intends to publish.
+It is a committed figure rather than a live read: the build opens no data store,
+and generates every other figure here from a seed.</p>
+
+<h2 style="font-size:1.15rem">What it cost to get this wrong</h2>
 <p>Tuning a detector against a synthetic benchmark that does not match reality
 is not a hypothetical failure here — it happened, and cost two weeks. Settings
 tuned on a benchmark with events every 14&nbsp;s collapsed when run on sparse
@@ -85,6 +100,12 @@ for one of them.</p>
 rate lights it up), <b>correlated bursts</b> that are real coincidence but not
 coordination, and <b>variable event timing</b>, so nothing can be predicted from
 the clock.</p>
+
+<h2 style="font-size:1.15rem">What the detectors do with a known answer</h2>
+<p>That is what the generator is <i>for</i>. Every coordinated event below was
+planted, so a miss and a false alarm are drawn, not inferred.</p>
+
+{lead}
 
 <p style="margin-top:2rem;color:#666;font-size:.9rem">
   Source: <a href="https://github.com/syncytium2/bugarach">github.com/syncytium2/bugarach</a>
@@ -104,13 +125,37 @@ LEAD_FIGURE = """<figure class="lead">
               the shaded block is a dense-but-random stretch containing none.">
   </a>
   <figcaption><b>Thirty minutes of simulated recording, and what six detectors
-  made of it.</b> Top: one lane per detector, each bar a call it made.
-  Middle: the raster every one of them was reading — one row per ROI.
-  Bottom: what each detector actually computes.
+  made of it.</b> One lane per detector, each bar a call it made; then the raster
+  all six were reading, one row per ROI; then what each detector computes.
+  Lanes are labelled by short name — <span class="key">CIC</span> is CICADA,
+  <span class="key">coact</span> CoactDetect, <span class="key">rate</span>
+  RateDetect, <span class="key">sync</span> SPIKE-synch.
+  In the lanes, <span class="key">&#10007;</span> marks a false alarm and
+  <span class="key">&#9711;</span> a second call on an event another detection
+  had already claimed. The bottom lane is the ground truth:
+  <span class="key">&#9650;</span> an event some detector recovered,
+  <span class="key">&#9660;</span> one they all missed.
   The <span class="key">shaded block</span> fires at a higher rate but contains
   <b>no planted events</b>, so every bar inside it is a false alarm by
   construction — you can see which detectors take the bait.
   <a href="diagnostic.html">Open the interactive version &rarr;</a></figcaption>
+</figure>"""
+
+# The real recording. Carried from docs/, never regenerated here — see the module
+# docstring for why that distinction is the whole reason a clean clone can build
+# this page. Its numbers (5 events found above, 10 below) are printed inside the
+# image itself, so quoting them in the caption cannot drift away from the figure.
+LEAD_REAL = """<figure class="lead">
+  <img src="reality.png" width="{w}" height="{h}"
+       alt="Two rasters stacked. Top, a real recording: most rows nearly empty,
+            a few dense, activity arriving in bursts. Bottom, the generated
+            imitation: events spread evenly across every row and all 30 minutes.">
+  <figcaption><b>The match is in the numbers, not in the shape.</b> The ROI
+  count, the duration, the per-ROI rate, the participation and the jitter are
+  the same above and below. The texture is not: a real field has a few ROIs
+  carrying most of the activity and many carrying almost none, and what activity
+  there is arrives in bursts, while the generator spreads events evenly — across
+  every ROI, and across the whole recording.</figcaption>
 </figure>"""
 
 LEAD_FALLBACK = """<a class="card" href="diagnostic.html">
@@ -166,6 +211,25 @@ def main(argv=None):
         if p.exists():
             p.rename(SITE / stray.replace("coord_diagnostic_site", "diagnostic"))
 
+    # The real-recording figure is committed, so this is a copy and not a build —
+    # which is what lets a clone with no data store build the whole page. Its
+    # absence is a broken tree, not a degraded environment, and three paragraphs
+    # of this page describe it by name. Refuse rather than publish prose about a
+    # picture that is not there.
+    src = ROOT / "docs" / "generator" / "reality_check.png"
+    if not src.exists():
+        print(f"build_site: {src.relative_to(ROOT)} is missing. The page leads "
+              f"with that figure and its text describes it, so this is a build "
+              f"failure, not something to ship without.", file=sys.stderr)
+        return 1
+    shutil.copyfile(src, SITE / "reality.png")
+    real_size = _png_size(SITE / "reality.png")
+    if real_size is None:
+        print(f"build_site: {src.relative_to(ROOT)} is not a readable PNG.",
+              file=sys.stderr)
+        return 1
+    real = LEAD_REAL.format(w=real_size[0], h=real_size[1])
+
     size = _png_size(SITE / "hero.png")
     if size:
         lead = LEAD_FIGURE.format(w=size[0], h=size[1])
@@ -177,8 +241,8 @@ def main(argv=None):
 
     commit = subprocess.run(["git", "rev-parse", "--short", "HEAD"], cwd=ROOT,
                             capture_output=True, text=True).stdout.strip() or "unknown"
-    (SITE / "index.html").write_text(INDEX.format(commit=commit, lead=lead),
-                                     encoding="utf-8")
+    (SITE / "index.html").write_text(
+        INDEX.format(commit=commit, lead=lead, real=real), encoding="utf-8")
 
     total = sum(f.stat().st_size for f in SITE.rglob("*") if f.is_file())
     print(f"\nsite/ built — {total/1024:.0f} KB")
