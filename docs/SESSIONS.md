@@ -76,6 +76,28 @@ Template:
   `tools/make_diagnostic.py` and `src/bugarach/ui/diagnostic.py` on this branch —
   see the collision note under the site session below before merging either.**
 
+### ANY SESSION touching ROI activity, dead ROIs, or event-rate filtering — READ FIRST
+- **Status:** ACTIVE — this block is a message, not a claim
+- **Posted:** 2026-08-15 by mac/rewrite-generator-doc
+- **Notes:** Another session is reported to be on the same question concurrently, so
+  this is here to stop the second and third rediscovery. **A zero-event ROI is not a
+  dead ROI.** fireflies owns that verdict and has a normative spec — its
+  `decisions/0002` @ `691ae62`, ACTIVE and diff-verified against the authoritative R:
+  `rejected = base_empty AND drug_empty AND (hik_present ? hik_empty : TRUE)`. Baseline
+  silence is one of three conjuncts; high K⁺ is the positive control. The rates differ
+  by an order of magnitude — **3.0% dead** vs **~35% with no events in a baseline
+  window**. The rule needs drug and high-K⁺ rows, so it is **not computable under
+  FOUNDATIONS §9's baseline-only restriction** and there is nothing to port.
+  **Three traps this session hit before finding the spec**, all already documented
+  upstream: do not recompute a verdict per stream (ADR 0002 §2 — computed once on the
+  combined signal so an ROI alive in SLOW is not rejected on FAST); do not drop
+  zero-event ROIs to tidy a distribution (`freq == 0` is a valid value, and
+  conditioning on having fired is group-dependent); and do not invent an activity
+  threshold — selection is the exporter's call, not the analysis layer's (Tony to
+  fireflies, 2026-08-10). Full write-up with citations and what it does **not** cost
+  the generator argument: `docs/todo/2026-08-15-zero-event-rois-are-not-dead-rois.md`,
+  now also summarised in FOUNDATIONS §9 so the SessionStart hook prints it.
+
 ### mac/site-leads-with-the-figure — COLLISION NOTE from rewrite-generator-doc
 - **Status:** ACTIVE (theirs) — this block is a message, not a claim
 - **Notes:** Both branches edit `tools/make_diagnostic.py` in the same argparse
