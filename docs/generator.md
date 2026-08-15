@@ -21,8 +21,13 @@ duration and its per-ROI rate, with events planted at the measured participation
 and jitter. Same detector, same settings, on both.
 
 **They do not look alike, and the difference is not in the numbers this document
-spends most of its length on.** Every parameter below was matched. What was not
-matched is the *shape* of the background:
+spends most of its length on.** Population, duration and per-ROI rate are taken
+from this recording; participation and jitter from the campaign's measurements.
+Spacing and irregularity are the bench's own settings, matched to no property of
+this slice, and the probe, the distractors and the imaging grid play no part at
+all. What is not matched — and cannot be, because the generator has no knob for
+it — is the *shape* of the background (`--seed 5`, so the generated column
+reproduces):
 
 | | real slice | generated |
 |---|---|---|
@@ -46,8 +51,9 @@ clumpy one produces. LoCo finds 5 coordinated events in the real recording and
 10 in the generated one — the synthetic recording is the easier problem.
 
 **So the calibration below is necessary and not sufficient.** Getting the rate,
-jitter and participation right — which took finding out they were 5×, 7× and 3×
-wrong — fixes the marginal distributions and leaves the structure untouched.
+jitter and participation right — which took finding out they were 5×, 7× and
+2.8–5.6× wrong — fixes the marginal distributions and leaves the structure
+untouched.
 
 ---
 
@@ -60,7 +66,7 @@ close, and every one of them made coordination **easier to find** than it is:
 |---|---|---|---|
 | background rate | 0.05 Hz/ROI | **0.0096 Hz/ROI** | assumed 5× busier |
 | onset jitter | 0.05 s | **0.36 s** ⚠ | assumed 7× tighter |
-| participation | 50–100% of ROIs | **6 of ~33 ≈ 18%** | assumed 3–5× more |
+| participation | 50–100% of ROIs | **6 of ~33 ≈ 18%** | assumed 2.8–5.6× more |
 | population | 30 ROIs | ~33 | right |
 
 The measurements were not missing — they were in
@@ -198,11 +204,12 @@ transfer.
 
 ⚠ At the bench's own spacing the knob still works but is heavily compressed: a
 120 s floor with a ~136 s mean interval leaves little room above it, so setting
-0 / 0.5 / 1.0 / 2.0 realizes **0.00 / 0.06 / 0.11 / 0.23**. Quoted whole-recording
-the realized CV is **0.80**, but that figure is carried almost entirely by one
-gap — the schedule steps over the excluded probe window — so it describes the
-probe, not the spacing. Both numbers are real; they are different bases, and the
-0.11 one is the one that answers "is the spacing irregular".
+0 / 0.5 / 1.0 / 2.0 realizes **0.00 / 0.05 / 0.11 / 0.15** — a mean over ten
+seeds, and worth stating because these move with the seed set. Quoted
+whole-recording the realized CV is **0.80**, but that figure is carried almost
+entirely by one gap — the schedule steps over the excluded probe window — so it
+describes the probe, not the spacing. Both numbers are real; they are different
+bases, and the 0.11 one is the one that answers "is the spacing irregular".
 
 ### `hot_window` / `hot_rate_hz` / `ramp_sec` — the promiscuity probe (off by default; bench uses 1200–1500 s at 0.06 Hz with a 30 s ramp)
 
@@ -222,10 +229,11 @@ behaviour.
 
 Real cross-ROI coincidence that is not a coordinated event, marked **▽**. They
 recruit the same fraction of ROIs as a planted event, so they are genuinely
-confusable, and the six detectors answer them differently — in the **quiet regime**, SCE
-fires on 3 of 18, SPIKE-synch 4, RateDetect 13, LoCo 16, CICADA and CoactDetect
-18. ⚠ The ordering reshuffles in the busy regime; this is one regime's answer,
-not a ranking.
+confusable, and the six detectors answer them differently — in the **quiet
+regime**, SCE fires on 3 of 18, SPIKE-synch 4, RateDetect 13, LoCo 16, CICADA and
+CoactDetect 18. The 18 is the bench's 6 distractors pooled over its three seeds,
+not a third setting of the knob. ⚠ The ordering reshuffles in the busy regime;
+this is one regime's answer, not a ranking.
 
 Detections on distractors match no planted event, so they **are** counted as
 false alarms and do lower precision.
@@ -251,7 +259,7 @@ the population size you set.
 
 | parameter | default | note |
 |---|---|---|
-| `duration_sec` | 600.0 | bench uses 2700; ~2480 is the shortest that fits 15 events at a 120 s floor, so this carries some margin |
+| `duration_sec` | 600.0 | bench uses 2700; **2471 s** is the shortest that fits 15 events at a 120 s floor (bisected, all 15 placed on twelve seeds), so this carries some margin |
 | `n_per_level` | `(5, 5, 5)` | events at each participation level |
 | `spacing` | `"renewal"` | `"uniform"` reproduces `generate_synth_coord.m`'s rejection-loop placement |
 | `margin_sec` | 5.0 | keep-out at each end |
@@ -404,6 +412,13 @@ merges them cannot tell you which you have. Measured on the quiet regime, outsid
 the probe: **41% of CICADA's unmatched detections sit within 2 s of a planted
 event**, against 0% for every other detector — whose medians run 31–47 s out,
 except SCE at 8.3 s.
+
+**These distances are onset-to-event**, not span-to-event: each unmatched
+detection's own onset to the nearest planted time. That is a different basis from
+the matching rule above, which asks whether the event falls inside the detection's
+*span* (or within `tol_sec` of its edge) — a wide detection can therefore be far
+in onset and close in span. The two bases give different numbers, so a comparison
+against these figures has to use the same one.
 
 ---
 
