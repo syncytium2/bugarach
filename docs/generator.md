@@ -36,12 +36,14 @@ almost none — one ROI here holds 28% of every event in the recording — and t
 activity arrives in bursts. The generator draws a **homogeneous Poisson process
 with the same rate for every ROI**, so its field is flat in both directions.
 
-That matters for these detectors specifically, because every one of them counts
-*distinct ROIs coactive*. A population where most ROIs are near-silent has a much
-smaller effective size than its ROI count suggests, and a circular-shift null
-built from a flat field is not the null a clumpy one produces. LoCo finds 5
-coordinated events in the real recording and 10 in the generated one — the
-synthetic recording is the easier problem.
+That matters for these detectors specifically. Four of the six count *distinct
+ROIs coactive* — CoactDetect, LoCo, binned SCE and CICADA; RateDetect scores a
+population-rate excess against a slow context rate, and SPIKE-synch a
+synchronization profile. For the four, a population where most ROIs contribute
+almost no events has a much smaller effective size than its ROI count suggests;
+for all six, a circular-shift null built from a flat field is not the null a
+clumpy one produces. LoCo finds 5 coordinated events in the real recording and
+10 in the generated one — the synthetic recording is the easier problem.
 
 **So the calibration below is necessary and not sufficient.** Getting the rate,
 jitter and participation right — which took finding out they were 5×, 7× and 3×
