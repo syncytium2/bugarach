@@ -127,12 +127,12 @@ LEAD_FIGURE = """<figure class="lead">
   <figcaption><b>Thirty minutes of simulated recording, and what six detectors
   made of it.</b> One lane per detector, each bar a call it made; then the raster
   all six were reading, one row per ROI; then what each detector computes.
-  Lanes are labelled by short name — <span class="key">CIC</span> is CICADA,
-  <span class="key">coact</span> CoactDetect, <span class="key">rate</span>
-  RateDetect, <span class="key">sync</span> SPIKE-synch.
+  Each lane carries its detector's own name; two of the six are named for what
+  they measure rather than for the tool — <span class="key">rate+context</span>
+  is RateDetect, and <span class="key">binned SCE</span> is SCE.
   In the lanes, <span class="key">&#10007;</span> marks a false alarm and
   <span class="key">&#9711;</span> a second call on an event another detection
-  had already claimed. The bottom lane is the ground truth:
+  had already claimed. The top lane is the ground truth:
   <span class="key">&#9650;</span> an event some detector recovered,
   <span class="key">&#9660;</span> one they all missed.
   The <span class="key">shaded block</span> fires at a higher rate but contains

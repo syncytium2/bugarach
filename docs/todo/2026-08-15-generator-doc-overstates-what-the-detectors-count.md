@@ -1,5 +1,5 @@
 ---
-status: open
+status: done
 filed: 2026-08-15
 ---
 
@@ -58,3 +58,22 @@ Two fixes went in on `main` that `rewrite-generator-doc` does not have:
 
 Whoever lands `rewrite-generator-doc` must keep both, or the next regeneration
 puts the clipped label and the identifier back on the live site.
+
+---
+
+## Resolved on landing (2026-08-15)
+
+`generator.md` now reads *"Four of the six count distinct ROIs coactive —
+CoactDetect, LoCo, binned SCE and CICADA; RateDetect scores a population-rate
+excess against a slow context rate, and SPIKE-synch a synchronization profile."*
+Verified against the code rather than the glossary: CICADA's coactivity trace is
+built by `.any(axis=2).sum(axis=0)` over the sync window and is labelled
+`"distinct cells / sync window"`, so it belongs in the counting group despite
+carrying no `min_rois` parameter — grepping for that parameter name finds only
+three of the four and is the wrong instrument.
+
+**Both `make_reality_check.py` fixes were kept.** The merge hit an add/add
+conflict on that file and on the figure, because `main` and the branch created
+each independently; `main`'s version won both, so the shortened y-label and the
+plain-words header survive and the next regeneration will not put
+`9.5 mHz/RC` or an internal identifier back on the live site.
