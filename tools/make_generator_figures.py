@@ -44,6 +44,19 @@ SWEEPS: dict[str, dict] = {
              "between rows: the background draw consumes RNG, so the schedule "
              "redraws. Compare structure, not event for event.)",
     ),
+    "bg_rate_shape": dict(
+        values=(None, 4.0, 1.0, 0.275),
+        note="how unevenly the background is spread across ROIs. The top row is "
+             "None — every ROI at the same rate, which is what this generator "
+             "did for its whole life. Below it each ROI draws its own rate from "
+             "a Gamma of that shape, with the MEAN held at bg_rate_hz, so what "
+             "changes down the rows is the spread and nothing else. 0.275 is "
+             "the value fitted to 81 real baseline windows "
+             "(bench.MEASURED_RATE_SHAPE): most ROIs nearly silent, a few "
+             "carrying the recording. The rows go from an even speckle to a "
+             "field with empty lanes and dense ones, and the real recordings "
+             "look like the bottom row.",
+    ),
     "participation": dict(
         values=(0.45, 0.30, 0.18, 0.10),
         note="fraction of ROIs recruited into each event, one value per row. "
@@ -134,6 +147,16 @@ def _base():
 BASE = _base()
 
 
+def _vlabel(param, value):
+    """``param=value`` for a row label.
+
+    ``None`` is a legitimate value for a knob whose "off" is itself the thing
+    being compared against — ``bg_rate_shape=None`` is the flat field — and
+    ``:g`` cannot format it.
+    """
+    return f"{param}={value:g}" if value is not None else f"{param}=None"
+
+
 def _row(param, value, base, seed):
     """One recording at one value of one parameter."""
     from bugarach.simulate import simulate_coordination
@@ -175,7 +198,8 @@ def build(param: str, seed: int, width: int):
         planted_spans = [(t - pad, t + pad) for t in gt.times]
         panel = raster_panel(s.streams["events"], ext=ext, gt=gt,
                              member_spans=planted_spans,
-                             name=f"{param}={value:g}", width=width, height=170)
+                             name=_vlabel(param, value),
+                             width=width, height=170)
         # planted times ticked along the top: the structure, separate from the
         # background it is buried in
         if len(gt.times):
@@ -202,11 +226,17 @@ def build(param: str, seed: int, width: int):
                 color="#4c78a8", alpha=0.12) * panel
         rows.append(panel.opts(
             width=width, height=196, xlim=ext, ylim=(-1, n_roi), xaxis=None,
-            ylabel=f"{param}={value:g} · {n_roi} ROI", xlabel="time",
+            ylabel=f"{_vlabel(param, value)} · {n_roi} ROI", xlabel="time",
             title="",
             fontsize={"ylabel": "10pt"}, show_legend=False,
             hooks=[_time_axis_hook]))
-    rows[-1] = rows[-1].opts(height=198, xaxis="bottom")
+    # The bottom row is the only one carrying an x-axis, and an axis with tick
+    # labels and a title costs about 45 px. Giving it +2 spends that out of the
+    # PLOT area instead: its raster is squashed relative to every row above, and
+    # its rotated y-label — laid out against the shorter plot — is silently
+    # clipped ("… · 33 R"). Match the plot areas by paying for the axis in
+    # addition to the row height, per the project's plot conventions.
+    rows[-1] = rows[-1].opts(height=196 + 45, xaxis="bottom")
 
     layout = rows[0]
     for r in rows[1:]:
@@ -307,20 +337,37 @@ def _render_png(html_path: Path, png_path: Path, *, wait_ms: int = 3000) -> bool
                 # exclude the containers themselves: Panel gives body/html
                 # height:100%, so their own box reports the viewport and would
                 # dominate the max, measuring exactly the thing we are cutting.
+                # Exclude the viewport-sized wrappers by comparing against the
+                # viewport itself, never against a pixel constant. A literal
+                # (`< 1100`) is a cap on how tall a figure may be before the
+                # filter silently drops EVERY element: Math.max() of nothing is
+                # -Infinity, which reaches the screenshot clip as a height and
+                # fails with a JSON parse error naming neither the figure nor
+                # the cause. Adding a fifth row to one sweep was enough.
                 h = page.evaluate(
-                    "Math.ceil(Math.max(...Array.from("
-                    "document.body.querySelectorAll('canvas, .bk-Canvas, div'))"
-                    ".filter(e => e.offsetHeight > 0 && e.offsetHeight < 1100)"
-                    ".map(e => e.getBoundingClientRect().bottom)))")
+                    "(() => { const vh = window.innerHeight;"
+                    "const b = [...document.body.querySelectorAll("
+                    "'canvas, .bk-Canvas, div')]"
+                    ".filter(e => e.offsetHeight > 0"
+                    " && Math.abs(e.offsetHeight - vh) > 2)"
+                    ".map(e => e.getBoundingClientRect().bottom);"
+                    "return b.length ? Math.ceil(Math.max(...b)) : 0; })()")
                 w = page.evaluate(
-                    "Math.ceil(Math.max(...Array.from("
-                    "document.body.querySelectorAll('canvas, .bk-Canvas, div'))"
-                    ".filter(e => e.offsetWidth > 0 && e.offsetWidth < 1119)"
-                    ".map(e => e.getBoundingClientRect().right)))")
+                    "(() => { const vw = window.innerWidth;"
+                    "const r = [...document.body.querySelectorAll("
+                    "'canvas, .bk-Canvas, div')]"
+                    ".filter(e => e.offsetWidth > 0"
+                    " && Math.abs(e.offsetWidth - vw) > 2)"
+                    ".map(e => e.getBoundingClientRect().right);"
+                    "return r.length ? Math.ceil(Math.max(...r)) : 0; })()")
+                if h <= 0 or w <= 0:
+                    raise RuntimeError(
+                        f"measured no rendered content ({w}x{h}) — the page "
+                        f"did not draw, or every element matched the viewport")
                 page.screenshot(path=str(tmp), clip={
                     "x": 0, "y": 0,
                     "width": min(float(w) + 12, 1120.0),
-                    "height": min(float(h) + 12, 1200.0)})
+                    "height": min(float(h) + 12, 4000.0)})
                 browser.close()
                 os.replace(tmp, png_path)
         return True

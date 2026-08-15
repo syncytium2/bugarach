@@ -66,6 +66,35 @@ PROVISIONAL, and notes that the calibrated settings were adopted on 2026-08-05
 numbers are measurements; the decision that rested on them was never checked.
 """
 
+MEASURED_RATE_SHAPE = 0.275
+"""Gamma shape of the per-ROI background rate in real baseline windows.
+
+Fitted, not chosen: within a window the ROI rate is modelled as
+``Gamma(shape, mean/shape)`` and the observed count as Poisson over that rate —
+Negative Binomial marginally — and this is the maximum-likelihood shape over
+**81 baseline windows / 2 643 ROIs**, each window keeping its own mean because
+untreated slices genuinely differ several-fold. Re-derive with
+``python tools/fit_background_shape.py`` (needs ``$BUGARACH_DATA_ROOT``); the
+tool prints the fit and says whether the tree's value still matches the data.
+
+The number worth looking at is not the shape but what it reproduces. Real
+windows leave **35%** of ROIs with no event at all, at a median 1.7 mHz, and
+reach 486 mHz. Drawing rates at this shape leaves **38%** silent at a median of
+1.7. The silent ROIs are **not modelled** — there is no zero-inflation term
+here. They are what a low rate drawn from the tail produces over a finite
+window, which is the reason to believe the shape rather than merely accept it.
+A flat field at the same mean leaves 2% silent at a median of 10.0 mHz.
+
+⚠ The tail overshoots: the fit reaches ~847 mHz where the data reaches 486. A
+Gamma is the simplest distribution that produces the silence and the skew
+together; it is not the last word on the busiest ROIs.
+
+⚠ **Not wired into the bench.** ``BENCH_RECORDING`` still runs a flat field, so
+every operating point and every score in this package is still measured on the
+old background. Switching it re-derives the whole bench and is not a default
+change — see ``docs/todo/2026-08-14-generator-background-model-is-flat.md``.
+"""
+
 
 @dataclass(frozen=True)
 class OperatingPoint:

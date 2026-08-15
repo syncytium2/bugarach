@@ -214,3 +214,85 @@ def test_ground_truth_is_a_ground_truth_object():
     assert isinstance(gt, GroundTruth)
     assert gt.params["seed"] == 1
     assert gt.params["spacing"] == "renewal"
+
+
+# ------------------------------------------------- heterogeneous background
+
+# A real baseline field is not flat: over 81 windows, 35% of ROIs record no
+# event at all and the busiest reaches 486 mHz, while a flat field at the same
+# mean leaves 2% silent and tops out near 138. `bg_rate_shape` draws each ROI's
+# own rate from a Gamma so both ends move. What is pinned here is the contract,
+# not the fitted value — that lives in bench.MEASURED_RATE_SHAPE and is re-derived
+# by tools/fit_background_shape.py against the archive.
+
+HETERO = dict(duration_sec=1800.0, n_roi=200, bg_rate_hz=0.01,
+              participation=(), n_per_level=(), grid_sec=0.0)
+
+
+def _rates(slice_, duration):
+    return np.array([len(v) / duration for v in trains_of(slice_)])
+
+
+def test_the_default_background_is_still_flat_and_untouched():
+    """None must not consume random numbers, or every existing seed moves."""
+    a, _ = simulate_coordination(seed=11)
+    b, _ = simulate_coordination(seed=11, bg_rate_shape=None)
+    for x, y in zip(trains_of(a), trains_of(b)):
+        np.testing.assert_array_equal(x, y)
+
+
+def test_heterogeneity_changes_the_field_it_is_given():
+    flat, _ = simulate_coordination(seed=3, **HETERO)
+    hetero, _ = simulate_coordination(seed=3, bg_rate_shape=0.275, **HETERO)
+    assert not np.array_equal(_rates(flat, 1800.0), _rates(hetero, 1800.0))
+
+
+def test_it_produces_silent_rois_without_modelling_them():
+    """No zero-inflation term exists — silence falls out of the drawn rate."""
+    flat, _ = simulate_coordination(seed=3, **HETERO)
+    hetero, _ = simulate_coordination(seed=3, bg_rate_shape=0.275, **HETERO)
+    silent_flat = np.mean(_rates(flat, 1800.0) == 0)
+    silent_hetero = np.mean(_rates(hetero, 1800.0) == 0)
+    assert silent_flat < 0.05
+    assert silent_hetero > 0.20
+
+
+def test_it_produces_the_busy_tail_a_flat_field_cannot():
+    flat, _ = simulate_coordination(seed=3, **HETERO)
+    hetero, _ = simulate_coordination(seed=3, bg_rate_shape=0.275, **HETERO)
+    assert _rates(hetero, 1800.0).max() > 3 * _rates(flat, 1800.0).max()
+
+
+def test_bg_rate_hz_stays_the_mean():
+    """The knob reshapes the field; it does not move its level."""
+    hetero, _ = simulate_coordination(seed=5, n_roi=4000, duration_sec=1800.0,
+                                      bg_rate_hz=0.01, bg_rate_shape=0.275,
+                                      participation=(), n_per_level=(),
+                                      grid_sec=0.0)
+    assert _rates(hetero, 1800.0).mean() == pytest.approx(0.01, rel=0.1)
+
+
+def test_a_large_shape_converges_on_the_flat_field():
+    """shape -> infinity is the homogeneous generator, so the limit must hold."""
+    tight, _ = simulate_coordination(seed=5, bg_rate_shape=5000.0, **HETERO)
+    flat, _ = simulate_coordination(seed=5, **HETERO)
+    assert np.std(_rates(tight, 1800.0)) == pytest.approx(
+        np.std(_rates(flat, 1800.0)), rel=0.35)
+
+
+def test_same_seed_same_heterogeneous_output():
+    a, _ = simulate_coordination(seed=9, bg_rate_shape=0.275, **HETERO)
+    b, _ = simulate_coordination(seed=9, bg_rate_shape=0.275, **HETERO)
+    for x, y in zip(trains_of(a), trains_of(b)):
+        np.testing.assert_array_equal(x, y)
+
+
+@pytest.mark.parametrize("bad", [0.0, -1.0])
+def test_rejects_a_non_positive_shape(bad):
+    with pytest.raises(ValueError, match="bg_rate_shape"):
+        simulate_coordination(seed=1, bg_rate_shape=bad)
+
+
+def test_the_shape_is_recorded_in_ground_truth():
+    _, gt = simulate_coordination(seed=1, bg_rate_shape=0.275)
+    assert gt.params["bg_rate_shape"] == 0.275
