@@ -219,6 +219,7 @@ def simulate_coordination(
     duration_sec: float = 600.0,
     n_roi: int = 30,
     bg_rate_hz: float = 0.05,
+    bg_rate_shape: float | None = None,
     participation=(1.0, 0.75, 0.50),
     n_per_level=(5, 5, 5),
     jitter_sec: float = 0.05,
@@ -241,7 +242,26 @@ def simulate_coordination(
 ) -> tuple[Slice, GroundTruth]:
     """Build a synthetic recording with planted coordinated events.
 
-    duration_sec, n_roi, bg_rate_hz: the background — per-ROI homogeneous Poisson.
+    duration_sec, n_roi, bg_rate_hz: the background. ``bg_rate_hz`` is the
+      **mean** per-ROI rate.
+    bg_rate_shape: heterogeneity of the background across ROIs. ``None`` (the
+      default) gives every ROI exactly ``bg_rate_hz`` — a flat field, and what
+      this generator did for its whole life. A positive number draws each ROI's
+      own rate from ``Gamma(shape, bg_rate_hz / shape)``, so the mean is still
+      ``bg_rate_hz`` while the spread is ``1/sqrt(shape)``; small shape means a
+      few busy ROIs and many near-silent ones.
+
+      **Why it exists.** A real baseline field is not flat, and the gap is not
+      subtle: measured over 81 baseline windows, 35% of real ROIs record no
+      event at all and the busiest reaches 486 mHz, while the flat generator
+      leaves 2% silent and tops out near 138. Its typical ROI is *busier* than
+      a real one and its busiest is far quieter — wrong in both directions at
+      once. See ``bugarach.bench.MEASURED_RATE_SHAPE`` for the fitted value and
+      how it was obtained; note that the silent ROIs are not modelled, they
+      fall out of a low rate drawn from the tail.
+
+      Leaving it ``None`` keeps the RNG stream identical, so every existing
+      seed reproduces exactly.
     participation / n_per_level: participating fractions and how many events at
       each. ``(1.0, 0.75, 0.5)`` with ``(5, 5, 5)`` plants 5 all-ROI events,
       5 at 75%, 5 at 50%, interleaved in time.
@@ -300,9 +320,18 @@ def simulate_coordination(
     T, nR = float(duration_sec), int(n_roi)
     trains: list[list[float]] = [[] for _ in range(nR)]
 
-    # ---- background: per-ROI homogeneous Poisson ------------------------------
+    # ---- background: per-ROI Poisson, homogeneous or Gamma-heterogeneous ------
+    # When bg_rate_shape is None every ROI gets bg_rate_hz and NO random numbers
+    # are drawn here, so the stream — and every existing seed — is unchanged.
+    if bg_rate_shape is None:
+        bg_rates = np.full(nR, float(bg_rate_hz))
+    else:
+        if bg_rate_shape <= 0:
+            raise ValueError(
+                f"bg_rate_shape must be positive, got {bg_rate_shape}")
+        bg_rates = rng.gamma(bg_rate_shape, bg_rate_hz / bg_rate_shape, size=nR)
     for r in range(nR):
-        k = rng.poisson(bg_rate_hz * T)
+        k = rng.poisson(bg_rates[r] * T)
         if k:
             trains[r].extend(rng.random_sample(k) * T)
 
@@ -382,6 +411,7 @@ def simulate_coordination(
         distractors=distractors,
         params=dict(
             duration_sec=T, n_roi=nR, bg_rate_hz=bg_rate_hz,
+            bg_rate_shape=bg_rate_shape,
             participation=tuple(participation), n_per_level=tuple(n_per_level),
             jitter_sec=jitter_sec, grid_sec=grid_sec, min_sep_sec=min_sep_sec,
             margin_sec=margin_sec, spacing=spacing, interval_cv=interval_cv,

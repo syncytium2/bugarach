@@ -25,9 +25,11 @@ spends most of its length on.** Population, duration and per-ROI rate are taken
 from this recording; participation and jitter from the campaign's measurements.
 Spacing and irregularity are the bench's own settings, matched to no property of
 this slice, and the probe, the distractors and the imaging grid play no part at
-all. What is not matched — and cannot be, because the generator has no knob for
-it — is the *shape* of the background (`--seed 5`, so the generated column
-reproduces):
+all. What the figure does not match is the *shape* of the background (`--seed 5`,
+so the generated column reproduces). Half of that gap now has a knob and half
+does not — `bg_rate_shape` spreads the background unevenly across ROIs, nothing
+yet makes it bursty in time — and **the figure shows the flat default**, which is
+still what the bench runs:
 
 | | real slice | generated |
 |---|---|---|
@@ -169,6 +171,39 @@ median.
 
 *Event times do shift between rows: the background draw consumes random numbers,
 so the schedule redraws with the knob. Compare structure, not event for event.*
+
+### `bg_rate_shape` — how unevenly the background is spread (default `None`; bench still uses `None`)
+
+![bg_rate_shape](generator/generator_bg_rate_shape.png)
+
+`bg_rate_hz` sets the background's *level*; this sets its *spread*. `None` gives
+every ROI the same rate — the flat field, and what this generator did for its
+whole life. A number draws each ROI's own rate from `Gamma(shape, mean/shape)`,
+holding the mean at `bg_rate_hz`, so only the spread changes down the rows.
+
+**0.275 is fitted, not chosen.** An ROI's rate is modelled as a Gamma and its
+count as Poisson over that rate — Negative Binomial marginally — and 0.275 is
+the maximum-likelihood shape over the 81 baseline windows above, each keeping
+its own mean. `python tools/fit_background_shape.py` re-derives it and exits
+non-zero if `bench.MEASURED_RATE_SHAPE` has drifted from the archive.
+
+What makes it believable is what it was *not* asked to do. Nothing in the fit
+targets the silent fraction, yet drawing at this shape leaves **38%** of ROIs
+with no event against a real **35%**, at a median of 1.7 mHz against a real 1.7.
+There is no zero-inflation term; the silence is what a low rate drawn from the
+tail does over a finite window. A flat field at the same mean leaves 2% silent
+at a median of 10.0 mHz — busier than a typical real ROI and missing every busy
+one.
+
+⚠ The tail overshoots — the fit reaches ~847 mHz where the data reaches 486.
+
+⚠ **It is off, and the bench does not use it.** Every operating point and every
+score in this document was measured on the flat field. Switching it on is a
+recalibration, not a default change, and it has not been done.
+
+⚠ **This fixes the ROI axis only.** Real activity also arrives in bursts *in
+time*; this knob does nothing about that, and no clustered arrival process
+exists here yet.
 
 ### `participation` — fraction of ROIs recruited (default `(1.0, 0.75, 0.50)`; bench uses `(0.30, 0.18, 0.10)`)
 
@@ -391,11 +426,15 @@ and this document would mislead a reader who stopped before here.
   are **0.0114 Hz/ROI in the quiet regime against a nominal 0.0038** (3.0×) and
   0.0255 against 0.0175 (1.5×) — so the regime named for the untreated p25 is in
   fact busier than the untreated *median* it was cut from.
-- **The background model is wrong in shape, not just in scale.** Per-ROI rates
-  are homogeneous where real ones span 0–99 mHz, and events are drawn
-  independently where real activity is bursty. Fixing that means a
-  per-ROI rate distribution and a clustered arrival process, neither of which
-  this generator has. It is the largest known gap and it is not a parameter.
+- **The background model is still wrong in time, and no longer wrong across
+  ROIs.** The per-ROI half is fixed: `bg_rate_shape` draws each ROI's rate from a
+  Gamma fitted to 81 real baseline windows, which reproduces the 35% of ROIs that
+  record nothing and the median rate, neither of which was modelled directly.
+  **The temporal half is untouched** — events are still drawn independently where
+  real activity arrives in bursts, and there is no clustered arrival process here.
+  And the fix is **not switched on**: `BENCH_RECORDING` still runs a flat field,
+  so every score in this document is still measured on the old background.
+  Turning it on re-derives the whole bench.
 - **The bench has never been scored against a real recording.** Everything here
   is measured on data this generator produced. The figure at the top is the only
   thing in this document that touches real data, and it is a visual comparison,
