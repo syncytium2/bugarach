@@ -162,6 +162,24 @@ a wrong conclusion in this repo. The authority is the global
   background over time, so "more activity" conflates a frequency change with a
   baseline shift. Any claim that a detector finds more under senktide must say
   which.
+- **A ZERO-EVENT ROI IS NOT A DEAD ROI, and the verdict is not this repo's to
+  compute.** `fireflies` owns it, spec'd normatively in its `decisions/0002` (@
+  `691ae62`): an ROI is dead only if silent at baseline **and** at drug **and**,
+  where a high-K⁺ test exists for its slice, under that too — high K⁺ being the
+  positive control that proves the ROI *can* fire. Baseline silence is one of
+  three conjuncts, and the two rates are an order of magnitude apart: **3.0%
+  rejected as dead** against roughly **35% with no events in a baseline window**.
+  That rule needs drug and high-K⁺ rows, which the baseline-only restriction above
+  puts out of reach, so there is nothing here to port and no activity threshold to
+  invent — selection is the exporter's decision, not the analysis layer's (Tony to
+  fireflies, 2026-08-10). Consequences that bind code here: report *"no events in
+  this window"* and never "silent", "dead", or any viability claim; do **not**
+  drop zero-event ROIs to tidy a distribution, because `freq == 0` is a valid
+  value and conditioning on having fired is group-dependent; and do **not**
+  recompute an ROI verdict per stream — fireflies computes it once on the combined
+  signal precisely so an ROI alive in SLOW is not rejected on FAST alone. Full
+  write-up, with what it does and does not cost the generator work:
+  [`docs/todo/2026-08-15-zero-event-rois-are-not-dead-rois.md`](todo/2026-08-15-zero-event-rois-are-not-dead-rois.md).
 - **Group-dependence is not optional.** Effects run in opposite directions by
   group (ORX up, male unchanged, diestrus down under TTX), so a pooled
   across-group number hides sign changes and is not admissible on its own.
