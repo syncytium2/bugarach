@@ -273,7 +273,7 @@ this round performed — re-derive the number, then grep the artifact for it.
 | # | role | findings | note |
 |---|---|---|---|
 | 1 | Claim & data verifier — "Prove It." | **6** | 40-row ledger below; every code-derived number recomputed, not eyeballed |
-| 2 | Citation & reference validator — "DOI or Die." | **0** | Checked: three internal links (`FOUNDATIONS.md`, `GLOSSARY.md`, `simulation_plan.md`) all resolve; both documented commands run and reproduce their committed figures **byte-identically**; no bibliographic references exist in this document to fabricate. Producer attributions (`run_coordination_timescale_batch.m`, `generate_synth_coord.m`, `generate_coord_benchmark.m`, `optim_history`) are upstream MATLAB and **not checkable from here** — the darkroom is not mounted on this machine. |
+| 2 | Citation & reference validator — "DOI or Die." | **0** | Checked: three internal links (`FOUNDATIONS.md`, `GLOSSARY.md`, `simulation_plan.md`) all resolve; both documented commands run and reproduce their committed figures **byte-identically**; no bibliographic references exist in this document to fabricate. `constellation/coordination_timescale_summary.csv` **exists in the darkroom and carries every column the document cites it for** — the source is real and holds the quantities quoted from it (role 1's table). The MATLAB producers themselves (`run_coordination_timescale_batch.m`, `generate_synth_coord.m`, `generate_coord_benchmark.m`, `optim_history`) live in an interface2 checkout and were not opened — the attribution of the CSV to its producer is unchecked. |
 | 3 | Consistency auditor — "Cross-Examiner." | **2** | `3×` vs `3–5×` for one ratio; "3 of 18" against a documented "bench uses 6" with no bridge. Verified consistent: `min_rois = 3` matches `coact.py:71`, `sce.py:110`, `loco.py:218`; "six detectors" agrees everywhere; no banned vocabulary (`silent`/`dead`/`modality`). |
 | 4 | Adversarial reviewer — "Reviewer 2." | **2** | "Every parameter below was matched" was false; two unstated bases. |
 | 5 | Line editor — "Kill Your Darlings." | **1** | The ratio inconsistency reads as two different claims about one measurement. |
@@ -342,14 +342,37 @@ Run against the shipped API, `PYTHONPATH` pinned to this worktree.
    explicitly not the span basis the matching rule four paragraphs earlier
    defines. This is the third of round 2's unapplied fixes.
 
-**Not verifiable this round — and not treated as verified:** every quantity
-sourced from `constellation/coordination_timescale_summary.csv` — the 0.0096 Hz
-median, n = 84 and n = 47, the 0.42 surrogate null, 6 ROIs, 0.9 s event width,
-`rate_p25` 7.55 / `rate_p75` 34.88, the 33.16 ratio, and the censoring series
-(4.5 / 6 / 9 / 11). **The darkroom is not mounted on this machine**, so the file
-cannot be opened. Rounds 1 and 2 checked these against it and agreed; this round
-neither confirms nor disputes them. Recorded so that "11 of 11 roles" is not read
-as "every number re-checked".
+**Also reproduced exactly — read straight out of the source CSV.** Row
+`flavor=all-baseline`, `stream=fast`, `min_rois=4` of
+`constellation/coordination_timescale_summary.csv`:
+
+| doc | column | file |
+|---|---|---|
+| per-ROI rate 0.0096 Hz | `roiRate_mean_med` | 0.0096242 |
+| n = 84 slices | `n_slices` | 84 |
+| n = 47, jitter subset | `n_jit_defined` @ `min_rois=4` | 47 |
+| onset jitter 0.36 s | `jit_obs_med` | 0.35952 |
+| surrogate null 0.42 s | `jit_obs_med − jit_excess_med` | 0.4166 |
+| participation 6 ROIs | `partN_med` | 6 |
+| event width 0.9 s | `width_med` | 0.9 |
+| `rate_p25` 7.55 / `rate_p75` 34.88 | as named | 7.55 / 34.875 |
+| n_roi 33.16 | `rate_med / (60 × roiRate_mean_med)` | 33.163 |
+| censoring 4.5 / 6 / 9 / 11 | `partN_med` @ `min_rois` 3/4/6/8 | 4.5 / 6 / 9 / 11 |
+| regimes 0.0038 / 0.0175, 4.6-fold | p25, p75 ÷ (60 × 33.16) | 0.00379 / 0.01753, 4.619 |
+
+Every one holds, including the two the document flags as *derived rather than
+read* — the endpoints and the 33.16 ratio — which are exactly the ones most
+likely to have gone stale.
+
+> **Correction, same session.** The paragraph that stood here said the darkroom
+> was "not mounted on this machine" and that these numbers were therefore not
+> re-verified. **That was wrong.** The darkroom is at
+> where `$BUGARACH_DARKROOM` points and the CSV was readable the whole time; I
+> concluded absence from a glob that returned nothing instead of looking, and
+> then wrote the conclusion into this record and a commit message. Tony caught
+> it. The lesson is this document's own: a negative result from a search you did
+> not verify is not evidence, and it is the same error class as the transcription
+> problem — a claim stated more strongly than the check behind it.
 
 ## Role 8 — per-section verdict
 
@@ -427,14 +450,18 @@ place for them.
 
 New from this round:
 
-1. **⚠ The CSV-derived numbers were not re-verified** (darkroom unmounted). See
-   role 1. They are not in doubt; they are simply not re-checked here.
-2. **⚠ Argument order** — role 11's recommendation above, deliberately not applied.
-3. **⚠ The transcription problem is unchanged.** Six numbers moved this round and
-   the mechanism that let them drift is still in place. But the evidence is now
-   more specific than "everything drifts": of roughly forty code-derived
-   quantities, **thirty-four reproduced exactly.** The failures cluster in
-   quantities with an *unstated basis* — which seed set, which distance
-   convention, which denominator — rather than in stale values. That sharpens the
-   filed fix: generating numbers at build time would help, but stating each
-   number's basis would have caught five of this round's six on its own.
+1. **⚠ Argument order** — role 11's recommendation above, deliberately not applied.
+2. **⚠ The MATLAB producers are unopened.** The CSV is verified; the claim that
+   `run_coordination_timescale_batch.m` produced it is taken on the document's
+   word. Checking it needs an interface2 checkout.
+3. **⚠ The transcription problem is real but much narrower than it looked.** Six
+   numbers moved this round and the mechanism that let them drift is still in
+   place. But the evidence no longer supports "everything drifts": of roughly
+   **fifty-four** quantities re-derived — forty from code, fourteen straight out
+   of the source CSV — **forty-eight reproduced exactly**, including every
+   measured value, every denominator, the derived regime endpoints and the whole
+   censoring series. The six failures cluster in quantities with an *unstated
+   basis* — which seed set, which distance convention, which denominator — not in
+   stale values. That sharpens the filed fix considerably: generating numbers at
+   build time would help, but **stating each number's basis would have caught
+   five of the six on its own**, and costs nothing.
