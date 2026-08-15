@@ -75,6 +75,23 @@ Real stores (and anything derived from real data) stay machine-local behind
 `BUGARACH_DATA_ROOT` — no personal paths, slice ids, or institution names in
 code. The repo is public; history has been audited on this basis.
 
+**Released by name — the one exception.**
+`docs/generator/reality_check.png` contains a real baseline recording and is
+committed and published, including on the public site. Tony released it
+2026-08-15, and the reason is what makes it narrow: *"this particular example
+will never be published. it is baseline only. all our relevant data are baseline
+vs treatment."* The slice carries no before/after result, so nothing this lab
+intends to publish is spent by showing it.
+
+That reasoning does not generalize, and the exception is a list of one, not a
+category. **A treatment slice, or a baseline paired with one, is not covered** —
+those are the results. Releasing anything else real needs Tony, in words, the
+same way this did. A session must not extend this by analogy.
+
+The **build stays clean** regardless: `tools/build_site.py` copies that
+committed file and has no code path that opens a store, so the public site is
+reproducible from a clone with no data.
+
 ## 6. grid_dt is the caller's responsibility
 
 The rate-trace grid must be the **acquisition sampling interval** (mean

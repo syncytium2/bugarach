@@ -465,3 +465,81 @@ New from this round:
    stale values. That sharpens the filed fix considerably: generating numbers at
    build time would help, but **stating each number's basis would have caught
    five of the six on its own**, and costs nothing.
+
+---
+
+## Round 3 — 2026-08-15, the eleven the handoff asked for
+
+The handoff was explicit that rounds 1 and 2 ran only roles 1, 3 and 10, so the
+document had been substantially rewritten in front of eight roles that never saw
+it — the cold-open comparison figure among them. This round ran all eleven,
+single-pass, and re-gated at 11 of 11. Three findings survived, and two of them
+were in text added *during this round*, which is the argument for the blind pass.
+
+| # | Role | Result |
+|---|---|---|
+| 1 | Claim & data verifier — "Prove It." | 2 findings. Every arithmetic-derivable quantity recomputed and matched: 0.05/0.0096 = 5.2× · 0.36/0.05 = 7.2× · 6/33 = 18.2% against "≈18%" and "2.8–5.6×" · 1200/2700 = 44% · fourteen 120 s gaps = 1680 s against the ">1920 s" claim · 0.0114/0.0038 = 3.0× · 0.0255/0.0175 = 1.46 against "1.5×" · rate_med/(60×roiRate_mean_med) = 33.16 against "≈33". Findings F1 and F2 below. |
+| 2 | Citation & reference validator — "DOI or Die." | No findings, and here is what I checked: the document cites no literature. Its three internal links (`GLOSSARY.md`, `FOUNDATIONS.md`, `simulation_plan.md`) all resolve, and all eleven referenced figures exist on disk. |
+| 3 | Consistency auditor — "Cross-Examiner." | 1 finding (F3). Reality-check table reconciles with the "still unsigned" section (0–99 mHz both places). All six terms the document leans on — regime, operating point, promiscuity probe, distractor, contaminated null, participant floor — are present in `GLOSSARY.md`. |
+| 4 | Adversarial reviewer — "Reviewer 2." | 1 finding (F1): the document's central new claim — a real field is concentrated, the generator flat — rested on a single slice while a population survey of 81 windows existed on this same branch and went uncited. Fragile-statistics rule: a claim resting on one instance must show the distribution. |
+| 5 | Line editor — "Kill Your Darlings." | 1 finding (F4): the promiscuity-probe paragraph ran a `⚠` caveat through the middle of a sentence pair, leaving "Those firings" stranded after an interruption. Split into three paragraphs. |
+| 6 | Methods / domain expert — "RTFM." | 1 finding, resolved as **not a defect**: "four of the six count distinct ROIs coactive" was checked against the code, not the glossary. CICADA carries no `min_rois` parameter, so grepping that name finds three — but its coactivity trace is `windowed.any(axis=2).sum(axis=0)`, labelled `"distinct cells / sync window"`, and RateDetect is a pooled population rate over a window width. The document is right and the grep was the wrong instrument. |
+| 7 | Reuse auditor — "Reinventing the Wheel." | No findings, and here is what I checked: this round added prose and corrected references only. The merge resolution kept both `--scale` (this branch) and `--hero` (`main`) on `make_diagnostic.py` rather than re-implementing either. |
+| 8 | Naive-reader accessibility — "You Lost Me." | No findings, and here is what I checked: every term first used here is either defined in place or routed to `GLOSSARY.md` in the second paragraph; "binned SCE" is the one relative phrase and its referent is the mode, named in the parameters section. |
+| 9 | Density & figure-first — "Show, Don't Tell." | No findings, and here is what I checked: every parameter section carries its own figure, which is the document's own stated rule, and the two sections that cannot show their knob (`jitter_sec` sub-pixel, `grid_sec` sub-pixel) say so in a `⚠` rather than implying the figure works. |
+| 10 | Build & craft gate — "Ship It." | Table below. |
+| 11 | Argument order — "Start With the Problem." | No findings, and here is what I checked: the spine opens on the real-vs-generated comparison and the gap it exposes, before any parameter — the arc the process names as default, and the reverse of the order the document had before Tony's instruction to lead with real data. |
+
+### Findings
+
+**F1 — the flat-field claim rested on one slice (Reviewer 2, Prove It).** Fixed by
+citing the 81-window survey. **Then the fix was itself wrong**, and the blind pass
+caught it: the numbers available to cite came from
+`docs/todo/2026-08-14-generator-background-model-is-flat.md`, which describes a
+survey whose tool has since been renamed *and whose statistic changed* — top-1
+share, top-3 share and per-ROI CV are no longer computed. Recomputed against the
+real archive with the current tool and rewritten to what it actually prints: real
+per-ROI rate median 1.7 mHz (IQR 0.0–10.6, max 486) against the quiet regime's
+11.1 (IQR 10.0–12.6, max 16); 35% of real ROIs with no events in their baseline
+window against 0% generated; within-slice mean/median ratio 2.6×. This is the
+transcription-drift class filed as
+`2026-08-14-generator-doc-numbers-are-transcribed.md`, caught inside a single
+round.
+
+**F2 — the added text cited a tool that does not exist.**
+`make_roi_concentration.py` was renamed to `make_roi_rate_distribution.py`. The
+stale name also survived in `SESSIONS.md` and in the background-model todo; a
+previous review record had already noted it and it had not been fixed. All three
+corrected. `docs/reviews/` keeps the old name deliberately — it is the record of
+the rename.
+
+**F3 — a todo on `main` said this document overstates what the detectors count.**
+It no longer does. Marked done, with the code-level verification recorded there.
+
+**F4 — interrupted paragraph at the promiscuity probe.** Split.
+
+**Merge hazard, caught by the todo rather than by a role.** `main` and this branch
+each created `tools/make_reality_check.py` independently, so landing produced an
+add/add conflict. `main` carries two fixes this branch does not: a shortened
+rotated y-label (the figure read `9.5 mHz/RC` on the public site until it was
+found) and plain words in place of an internal identifier in the published header.
+`main`'s version won both, and the figure with it.
+
+### Role 10 table — checked against the tree at merge
+
+| Row | Check | Result |
+|---|---|---|
+| figures present | 11 referenced, 11 on disk | pass |
+| links resolve | 3 internal document links | pass |
+| build currency | `reality_check.png` and its generator both taken from `main`, which is what the site ships | pass |
+| suite | `pytest` after every edit | 344 passed, 1 skipped |
+| sapper | `--all` over the tree | clear |
+| cited command runs | `make_roi_rate_distribution.py --numbers-only` | runs; refuses cleanly without `BUGARACH_DATA_ROOT`, and the document now says both forms need it |
+
+### Residual ⚠ — unchanged, and all four are decisions for Tony
+
+The handoff's four stand as written: `jitter_sec` calibrated to a near-null
+statistic; `bg_rate_hz` a background rate compared against a total; the background
+model wrong in shape; the bench never scored against a real recording. This round
+sharpened the third with verified numbers and closed none of them — none is a
+session's to close.

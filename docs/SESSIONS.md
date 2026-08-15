@@ -71,7 +71,7 @@ Template:
   is deleted; nothing else should be written under that name.
 - **Reads:** `$BUGARACH_DATA_ROOT/processed_archive/event_store_onset_revised_2v` —
   read-only, 88 slices, baseline regions only. No writes to any store.
-- **Notes:** Renders `tools/make_roi_concentration.py`. Evidence for
+- **Notes:** Renders `tools/make_roi_rate_distribution.py`. Evidence for
   `docs/todo/2026-08-14-generator-background-model-is-flat.md`. **Also editing
   `tools/make_diagnostic.py` and `src/bugarach/ui/diagnostic.py` on this branch —
   see the collision note under the site session below before merging either.**

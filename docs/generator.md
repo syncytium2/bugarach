@@ -41,6 +41,28 @@ almost none — one ROI here holds 28% of every event in the recording — and t
 activity arrives in bursts. The generator draws a **homogeneous Poisson process
 with the same rate for every ROI**, so its field is flat in both directions.
 
+**This is the rule, not this slice.** Across the baseline window of every
+archived slice that has one — 81 windows, 2 643 ROIs, fast stream — the per-ROI
+rate has a median of **1.7 mHz**, an interquartile range of **0.0–10.6**, and a
+maximum of **486**. The generator's quiet regime sits at a median of 11.1
+(IQR 10.0–12.6) with a maximum of **16**. It is wrong in both directions at once:
+its typical ROI is about six times busier than the real median, and its busiest
+is thirty times quieter than the real maximum. **Thirty-five percent of real ROIs
+record no events at all** in their baseline window, against none in either
+generated regime, and within a slice the mean per-ROI rate runs a median **2.6×**
+its median — a symmetric distribution gives 1.0. No setting of `bg_rate_hz`
+repairs any of this, because that knob scales every ROI together. Reproduce with
+`python tools/make_roi_rate_distribution.py` (`--numbers-only` prints the table
+and writes no figure; both forms need `$BUGARACH_DATA_ROOT`, because the survey
+reads the real archive).
+
+⚠ **A zero-event ROI is not a dead ROI.** That verdict belongs to `fireflies`,
+whose spec requires silence at baseline *and* under drug *and*, where the slice
+has one, under a high-potassium positive control — rows the baseline-only
+restriction in [`FOUNDATIONS.md`](FOUNDATIONS.md) §9 puts out of reach here. The
+dead rate lands nearer 3%. The 35% above is a property of the window, not a
+judgement about the cell.
+
 That matters for these detectors specifically. Four of the six count *distinct
 ROIs coactive* — CoactDetect, LoCo, binned SCE and CICADA; RateDetect scores a
 population-rate excess against a slow context rate, and SPIKE-synch a
@@ -216,12 +238,16 @@ bases, and the 0.11 one is the one that answers "is the spacing irregular".
 ![hot_rate_hz](generator/generator_hot_rate_hz.png)
 
 Extra background inside the shaded block, with **no planted events**, ramping in
-rather than stepping. In the **quiet regime** it separates one detector sharply: CICADA fires **17.3
-times a minute** in there, CoactDetect 0.0 and LoCo 0.1, with SCE intermediate at
-5.6. ⚠ That separation is regime-dependent — in the busy regime CICADA and SCE
-converge, so the probe distinguishes them only where the background is thin. Those firings are counted separately and kept **out** of headline precision —
+rather than stepping. In the **quiet regime** it separates one detector sharply:
+CICADA fires **17.3 times a minute** in there, CoactDetect 0.0 and LoCo 0.1, with
+SCE intermediate at 5.6.
+
+Those firings are counted separately and kept **out** of headline precision —
 folded in, the probe's severity would set everyone's precision instead of their
 behaviour.
+
+⚠ That separation is regime-dependent: in the busy regime CICADA and SCE
+converge, so the probe distinguishes them only where the background is thin.
 
 ### `n_distractors` / `distractor_frac` — correlated bursts (default 0; bench uses 6 at 0.18)
 

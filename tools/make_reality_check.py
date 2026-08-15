@@ -117,9 +117,13 @@ def build(args):
                 (gt.times, np.full(gt.times.size, n_roi - 2.4)),
                 kdims=["t"], vdims=["roi"]).opts(
                 marker="triangle", size=8, color="#1b7f3b", alpha=0.95)
-        lab = (f"REAL · {n_roi} ROI · {rate*1000:.1f} mHz/ROI"
-               if label == "real"
-               else f"GENERATED · {n_roi} ROI · {rate*1000:.1f} mHz/ROI")
+        # Keep this SHORT. The bottom panel spends part of its 250 px on an
+        # x-axis the top one does not have, so its rotated y-label has less room
+        # to run in and a long string is clipped with no error — the figure read
+        # "9.5 mHz/RC" until 2026-08-15, including on the public site. The ROI
+        # count is already in the header line, so the axis need not repeat it.
+        lab = ("REAL" if label == "real" else "GENERATED") + \
+              f" · {rate*1000:.1f} mHz/ROI"
         rows.append(panel.opts(
             width=args.width, height=250, xlim=ext, ylim=(-1, n_roi),
             xaxis=None if label == "real" else "bottom",
@@ -135,7 +139,10 @@ def build(args):
         f'imitate it</b><br>'
         f'Top: slice <code>{args.slice}</code>, {n_roi} ROI over '
         f'{dur/60:.0f} min — a <b>baseline-only</b> recording, so it carries no '
-        f'before/after result. Bottom: <code>simulate_coordination</code> at the '
+        # Plain words, not the function name: this figure is published on the
+        # public site, and a reader who has never seen the source cannot use
+        # "simulate_coordination" for anything.
+        f'before/after result. Bottom: the generator run at the '
         f'same ROI count, duration and per-ROI rate '
         f'({rate*1000:.1f} mHz), with events planted at the measured '
         f'participation and jitter.<br>'

@@ -173,6 +173,10 @@ def main(argv=None):
     p.add_argument("--scale", type=int, default=3,
                    help="device pixel ratio for the PNG — how far it can be "
                         "zoomed before it goes soft (default 3, ~1.4 MB)")
+    p.add_argument("--hero", default=None, metavar="PNG",
+                   help="also render the plot ALONE to this path — no title, no "
+                        "legend, no score table. For pages that lead with the "
+                        "picture and carry the explanation in their own words.")
     args = p.parse_args(argv)
 
     from bugarach.paths import ENV_VAR, darkroom
@@ -223,6 +227,22 @@ def main(argv=None):
         else:
             print("(no PNG: pip install playwright && python -m playwright "
                   "install chromium, or pass --no-png)", file=sys.stderr)
+
+    if args.hero:
+        # The plot without the prose above it. A page that leads with this must
+        # supply the reading instructions itself — the flat render carries them,
+        # this one deliberately does not, because a lead graphic that is 300px of
+        # rendered text at the top is a picture of a paragraph, not a picture.
+        hero = Path(args.hero).expanduser()
+        hero.parent.mkdir(parents=True, exist_ok=True)
+        with tempfile.TemporaryDirectory() as td:
+            tmp_html = Path(td) / "hero.html"
+            pn.Column(pn.pane.HoloViews(fig)).save(str(tmp_html))
+            if _render_png(tmp_html, hero):
+                written.append(hero)
+            else:
+                print("(no hero PNG: pip install playwright && python -m "
+                      "playwright install chromium)", file=sys.stderr)
 
     print(report)
     print("\nwrote " + "\n      ".join(str(w) for w in written))
