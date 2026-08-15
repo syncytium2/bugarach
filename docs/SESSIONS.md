@@ -60,12 +60,15 @@ Template:
 
 ## Active
 
-### mac/rewrite-generator-doc — ROI-concentration survey figure
+### mac/rewrite-generator-doc — roiRate distribution figure
 - **Status:** ACTIVE
 - **Started:** 2026-08-15
-- **Writes:** `<darkroom>/bugarach/roi_concentration.{html,png}` — that pair only
-- **Claims:** the two `roi_concentration.*` names. No claim on the rest of
+- **Writes:** `<darkroom>/bugarach/roi_rate_distribution.{html,png}` — that pair only
+- **Claims:** the two `roi_rate_distribution.*` names. No claim on the rest of
   `<darkroom>/bugarach/`; another session may write other figures there concurrently.
+  **Released:** `roi_concentration.*` — an earlier name for this figure, invented
+  rather than taken from the project's vocabulary (Tony, 2026-08-15). The stale pair
+  is deleted; nothing else should be written under that name.
 - **Reads:** `$BUGARACH_DATA_ROOT/processed_archive/event_store_onset_revised_2v` —
   read-only, 88 slices, baseline regions only. No writes to any store.
 - **Notes:** Renders `tools/make_roi_concentration.py`. Evidence for
