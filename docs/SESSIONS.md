@@ -60,6 +60,31 @@ Template:
 
 ## Active
 
+### mac/rewrite-generator-doc — ROI-concentration survey figure
+- **Status:** ACTIVE
+- **Started:** 2026-08-15
+- **Writes:** `<darkroom>/bugarach/roi_concentration.{html,png}` — that pair only
+- **Claims:** the two `roi_concentration.*` names. No claim on the rest of
+  `<darkroom>/bugarach/`; another session may write other figures there concurrently.
+- **Reads:** `$BUGARACH_DATA_ROOT/processed_archive/event_store_onset_revised_2v` —
+  read-only, 88 slices, baseline regions only. No writes to any store.
+- **Notes:** Renders `tools/make_roi_concentration.py`. Evidence for
+  `docs/todo/2026-08-14-generator-background-model-is-flat.md`. **Also editing
+  `tools/make_diagnostic.py` and `src/bugarach/ui/diagnostic.py` on this branch —
+  see the collision note under the site session below before merging either.**
+
+### mac/site-leads-with-the-figure — COLLISION NOTE from rewrite-generator-doc
+- **Status:** ACTIVE (theirs) — this block is a message, not a claim
+- **Notes:** Both branches edit `tools/make_diagnostic.py` in the same argparse
+  block: the site branch adds `--hero`, `rewrite-generator-doc` adds `--scale` and
+  gives `_render_png` a `scale` parameter. Textual conflict is small; the real
+  overlap is that `--hero` renders the plot alone and `rewrite-generator-doc`
+  **changes that plot** — ground truth moves to the top of the lanes, detectors get
+  their full names, and trace rows grow 82px → 112px. The site's hero image will
+  change when this branch lands, and `--hero` will start rendering at device
+  scale 3 rather than 2. Whichever merges second should re-render the hero and
+  look at it. Not resolved unilaterally: neither session should rebase the other.
+
 ### WSMIP-win/vendor-session-protocol — vendor the session protocol + audit upstream tooling
 - **Status:** DONE
 - **Started:** 2026-08-12

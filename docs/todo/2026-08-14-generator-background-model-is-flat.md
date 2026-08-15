@@ -35,6 +35,12 @@ carries one — 81 windows, fast stream, ≥300 s and ≥20 events:
 | CV of per-ROI event counts | median **2.00** (IQR 1.31–3.29) | 0.24 |
 | windows with ≥1 ROI firing ≥5× the median ROI | **73 of 81 (90%)** | 0 |
 
+Reproduce with `python tools/make_roi_concentration.py` (figure id
+`roi_concentration`, written to `$BUGARACH_DARKROOM`; `--numbers-only` prints the
+table and writes nothing). Needs `$BUGARACH_DATA_ROOT`; claim the figure id on
+[`SESSIONS.md`](../SESSIONS.md) before running it, since the darkroom is mounted
+on every machine.
+
 So the observation holds, with one correction worth carrying: **"1–3" undercounts
 the tail.** The median window has **4** such ROIs and the range runs 0–17; only
 35% fall in the 1–3 band. The right statement is *"almost every baseline
