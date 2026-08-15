@@ -5,6 +5,15 @@ filed: 2026-08-15
 
 # `generator.md` says all six detectors count distinct ROIs coactive, and two do not
 
+> **The prose half is FIXED** — `rewrite-generator-doc` `1ad1bc4`, 2026-08-15.
+> The paragraph now attributes the distinct-ROI count to the four detectors that
+> do it and the circular-shift point to all six, and the same commit dropped
+> "near-silent" for "contribute almost no events", which FOUNDATIONS §9 now
+> requires. **What is still open is the branch divergence at the bottom of this
+> file** — `make_reality_check.py` differs between `main` and
+> `rewrite-generator-doc`, and losing `main`'s two fixes puts a clipped axis
+> label and an internal identifier back onto the live site.
+
 The murderboard on the public landing page
 ([`docs/reviews/index_2026-08-15.md`](../reviews/index_2026-08-15.md), finding
 F1) caught this claim on its way onto `bugarach.tonydefazio.com`:
