@@ -21,6 +21,36 @@ not in any parameter.
 every ROI**. A real field has a few ROIs carrying most of the activity, many
 carrying almost none, and arrivals that come in bursts.
 
+## This is the rule, not one slice (surveyed 2026-08-15)
+
+Tony, 2026-08-15: *"what is generally missing in the simulation is 1-3 highly
+active ROIs as shown in the real data. it seems like most read data sets have at
+least one."* Checked against the **baseline window of every archived slice** that
+carries one — 81 windows, fast stream, ≥300 s and ≥20 events:
+
+| | real baseline windows (n=81) | generator |
+|---|---|---|
+| share held by the **single busiest ROI** | median **30%** (IQR 18–53%) | 4.2% quiet / 3.8% busy |
+| share held by the **top three** | median **61%** (IQR 40–89%) | ~12% |
+| CV of per-ROI event counts | median **2.00** (IQR 1.31–3.29) | 0.24 |
+| windows with ≥1 ROI firing ≥5× the median ROI | **73 of 81 (90%)** | 0 |
+
+So the observation holds, with one correction worth carrying: **"1–3" undercounts
+the tail.** The median window has **4** such ROIs and the range runs 0–17; only
+35% fall in the 1–3 band. The right statement is *"almost every baseline
+recording has at least one dominant ROI, usually several."*
+
+Two things follow that the single-slice version could not support:
+
+- The example in `generator.md`, `20240813_39` (top-1 28.1%, CV 2.04), is within
+  a couple of points of the **population median** on both. It is representative,
+  not cherry-picked, and the document may say so.
+- Cumulative-share curves for all 81 windows bow sharply away from the flat-field
+  diagonal; **both generator regimes lie on it.** The generator is not a poor
+  approximation of a real field's concentration — it is at the opposite extreme
+  of the axis, and no setting of `bg_rate_hz` moves it, because that knob scales
+  every ROI together.
+
 ## Why it matters here specifically
 
 Every one of the six detectors counts **distinct ROIs coactive**. Two
@@ -42,7 +72,9 @@ problem**, which is the direction that inflates every bench score.
 1. **Per-ROI rate heterogeneity.** Draw each ROI's rate from a distribution fit
    to the real per-ROI rates (log-normal or gamma is the obvious first try)
    rather than giving every ROI the mean. Cheap, and it fixes the largest of the
-   four gaps above.
+   four gaps above. The survey above gives the target to fit *against* — 81
+   windows of per-ROI counts — and the shape to beat: any candidate has to put
+   a median 30% of events in one ROI without being tuned to do so.
 2. **Bursty arrivals.** Replace the per-ROI homogeneous Poisson with a clustered
    process. More work, and worth measuring the real autocorrelation first.
 3. **Re-derive the bench after either.** Both change every score, so this is a
