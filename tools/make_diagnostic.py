@@ -161,7 +161,8 @@ def main(argv=None):
     p.add_argument("--hot-rate", type=float, default=0.25)
     p.add_argument("--distractors", type=int, default=3)
     p.add_argument("--height", type=int, default=560)
-    p.add_argument("--bench", choices=("baseline", "senktide"), default=None,
+    from bugarach.bench import REGIMES as _R
+    p.add_argument("--bench", choices=tuple(_R), default=None,
                    help="render the bugarach.bench recording for this regime "
                         "instead of one built from the options above")
     p.add_argument("--tag", default=None, help="filename suffix (default: seed)")
@@ -169,6 +170,9 @@ def main(argv=None):
                    help="destination directory; default $BUGARACH_DARKROOM")
     p.add_argument("--no-png", dest="png", action="store_false", default=True,
                    help="skip the flat render (needs playwright chromium)")
+    p.add_argument("--scale", type=int, default=3,
+                   help="device pixel ratio for the PNG — how far it can be "
+                        "zoomed before it goes soft (default 3, ~1.4 MB)")
     p.add_argument("--hero", default=None, metavar="PNG",
                    help="also render the plot ALONE to this path — no title, no "
                         "legend, no score table. For pages that lead with the "
@@ -218,7 +222,7 @@ def main(argv=None):
     written = [html, txt]
     if getattr(args, "png", True):
         shot = dest / f"coord_diagnostic_{tag}.png"
-        if _render_png(html, shot):
+        if _render_png(html, shot, scale=getattr(args, "scale", 3)):
             written.append(shot)
         else:
             print("(no PNG: pip install playwright && python -m playwright "
@@ -245,9 +249,19 @@ def main(argv=None):
     return 0
 
 
-def _render_png(html_path: Path, png_path: Path, *, wait_ms: int = 3500) -> bool:
+def _render_png(html_path: Path, png_path: Path, *, wait_ms: int = 3500,
+                scale: int = 3) -> bool:
     """Flatten the page to a PNG. Returns False rather than raising when the
-    browser is unavailable — a missing screenshot must not cost you the figure."""
+    browser is unavailable — a missing screenshot must not cost you the figure.
+
+    ``scale`` is the device pixel ratio the page is rendered at, and it is what
+    decides whether the figure survives being zoomed into. This view is read by
+    zooming — a 45-minute recording at 1180 CSS px puts a 0.36 s jitter well
+    under one pixel, and the reason to open it at all is usually to look closely
+    at one event. At 2 the raster ticks and the lane markers go soft before you
+    get there (Tony, 2026-08-15), so 3 is the default and the cost is file size:
+    roughly 0.7 MB at 2, 1.4 MB at 3.
+    """
     try:
         from playwright.sync_api import sync_playwright
     except ImportError:
@@ -258,7 +272,7 @@ def _render_png(html_path: Path, png_path: Path, *, wait_ms: int = 3500) -> bool
             with sync_playwright() as pw:
                 browser = pw.chromium.launch()
                 page = browser.new_page(viewport={"width": 1180, "height": 1400},
-                                   device_scale_factor=2)
+                                   device_scale_factor=scale)
                 page.goto(html_path.resolve().as_uri())
                 page.wait_for_timeout(wait_ms)      # bokeh draws after load
                 page.screenshot(path=str(tmp), full_page=True)

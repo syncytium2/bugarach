@@ -13,7 +13,7 @@ only the background change" is answerable by looking.
 These exist because the generator's parameters are the experiment's assumptions.
 ``docs/simulation_plan.md`` §5 records what it cost to get two of them wrong —
 event spacing that put four coordinated events inside every null window, and
-made-up timescales that survived two rebuilds because nobody had a picture of
+made-up timescales that survived a rebuild because nobody had a picture of
 what they implied. A knob whose effect you cannot see is a knob you are guessing
 at.
 
@@ -36,76 +36,163 @@ import numpy as np
 # and any base-recording overrides that value range needs to be legible.
 SWEEPS: dict[str, dict] = {
     "bg_rate_hz": dict(
-        values=(0.02, 0.05, 0.15, 0.40),
-        note="per-ROI background firing. The planted events are identical in "
-             "all four rows — only how well they stand out changes. This is the "
-             "sparse/dense regime axis the bench shifts along.",
+        values=(0.0019, 0.0038, 0.0096, 0.0175, 0.0350),
+        note="per-ROI background rate, in Hz. The middle three are the "
+             "untreated interquartile range and its median — the bench runs "
+             "from 0.0038 to 0.0175. The same planted structure is in every "
+             "row; only how far it stands out changes. (Event TIMES do shift "
+             "between rows: the background draw consumes RNG, so the schedule "
+             "redraws. Compare structure, not event for event.)",
+    ),
+    "bg_rate_shape": dict(
+        values=(None, 4.0, 1.0, 0.275),
+        note="how unevenly the background is spread across ROIs. The top row is "
+             "None — every ROI at the same rate, which is what this generator "
+             "did for its whole life. Below it each ROI draws its own rate from "
+             "a Gamma of that shape, with the MEAN held at bg_rate_hz, so what "
+             "changes down the rows is the spread and nothing else. 0.275 is "
+             "the value fitted to 81 real baseline windows "
+             "(bench.MEASURED_RATE_SHAPE): most ROIs nearly silent, a few "
+             "carrying the recording. The rows go from an even speckle to a "
+             "field with empty lanes and dense ones, and the real recordings "
+             "look like the bottom row.",
+    ),
+    "bg_burst_shape": dict(
+        values=(None, 1.388, (1.547, 1.388)),
+        base=dict(bg_rate_shape=0.275, duration_sec=1800.0, n_per_level=(3, 3, 3),
+                  min_sep_sec=120.0),
+        note="whether an ROI's own events clump in TIME. Rows share a background "
+             "that is already uneven across ROIs (bg_rate_shape=0.275), so what "
+             "changes is only how each ROI spends its events. Top: a constant "
+             "rate, evenly spread. Middle: one scale, 60 s bins. Bottom: two "
+             "scales, 300 s and 60 s, which is what real windows need — their "
+             "variance/mean keeps rising with the window (1.8 at 30 s, 2.6 at "
+             "60 s, 3.9 at 120 s, 5.7 at 300 s), and independent bins stop "
+             "growing once you look wider than the bin. Watch the busy ROIs "
+             "gather into stretches instead of ticking steadily.",
+    ),
+    "participation": dict(
+        values=(0.45, 0.30, 0.18, 0.10),
+        note="fraction of ROIs recruited into each event, one value per row. "
+             "0.18 is the measured median; the bench plants 0.30 / 0.18 / 0.10 "
+             "interleaved. The 0.10 row is about 3 ROIs — at the min_rois floor "
+             "the detectors ship with, and below the floor the measurement "
+             "itself was taken at, so it is a stress point, not a calibration.",
     ),
     "jitter_sec": dict(
-        values=(0.0, 0.05, 0.5, 2.0),
-        note="SD of participant onset jitter — how tightly the participating "
-             "ROIs fire together. 0 is a perfect vertical stripe; by 2 s the "
-             "event is a smear no coincidence detector can bind.",
+        values=(0.0, 0.10, 0.36, 1.00),
+        note="SD of participant onset jitter. 0.36 is what the bench uses. "
+             "WARNING: it comes from a statistic whose own surrogate null is "
+             "0.42, so most of it is the width of the measurement's gather "
+             "window rather than coordination tightness — an upper bound.",
+    ),
+    "min_sep_sec": dict(
+        values=(15.0, 45.0, 90.0, 200.0),
+        base=dict(duration_sec=2400.0, n_per_level=(2, 2, 2)),
+        note="the spacing floor. The shaded band on each row is one 120 s "
+             "detector context window, drawn to scale: at a 15 s floor several "
+             "events fall inside it, so the circular-shift null is built from "
+             "data containing the signal and the threshold inflates. That is "
+             "the contaminated null, and it is why the bench uses 120 s.",
     ),
     "interval_cv": dict(
         values=(0.0, 0.5, 1.0, 2.0),
-        note="irregularity of the gaps between events. 0 is metronomic and is a "
-             "cue a model can learn instead of learning coordination; 1 is "
-             "Poisson-like above the floor; >1 is bursty.",
-    ),
-    "min_sep_sec": dict(
-        values=(15.0, 60.0, 120.0, 300.0),
-        base=dict(duration_sec=3600.0),
-        note="the spacing floor, and the contaminated-null axis. Detectors "
-             "estimate their null over context windows up to 120 s: at 15 s "
-             "several coordinated events sit inside every window, so the "
-             "surrogate 'null' contains the signal and the threshold inflates.",
-    ),
-    "participation": dict(
-        values=(1.0, 0.75, 0.5, 0.25),
-        note="fraction of ROIs recruited into each event, one value per row "
-             "(elsewhere the generator interleaves all three). The participant "
-             "floor: somewhere down this axis every detector stops seeing it.",
+        note="irregularity of the gaps between events. 0 is metronomic — a "
+             "schedule a model can predict from the clock instead of from the "
+             "activity. At the bench's own spacing the knob still works but is "
+             "compressed: 0 / 0.5 / 1.0 / 2.0 realize about 0.00 / 0.06 / 0.10 "
+             "/ 0.20, because the floor leaves little room above it.",
     ),
     "hot_rate_hz": dict(
-        values=(0.0, 0.1, 0.3, 0.6),
-        base=dict(hot_window=(240.0, 420.0), ramp_sec=30.0),
-        note="the promiscuity probe — a dense-but-random block (shaded) with "
-             "NO planted events, ramping in rather than stepping. A detector "
-             "keyed on rate fires here; one keyed on coordination does not.",
+        values=(0.0, 0.02, 0.06, 0.15),
+        base=dict(duration_sec=1500.0, hot_window=(500.0, 800.0),
+                  ramp_sec=30.0),
+        note="the promiscuity probe — extra background inside the shaded block, "
+             "with no planted events in it. 0.06 is what the bench uses. A "
+             "detector keyed on rate fires here; one keyed on coordination "
+             "mostly does not.",
     ),
     "n_distractors": dict(
         values=(0, 3, 6, 12),
-        base=dict(distractor_frac=0.5),
-        note="correlated population bursts: real cross-ROI coincidence that is "
-             "not a coordinated event. They look like events in the raster on "
-             "purpose — they are the negatives that separate 'found "
-             "coordination' from 'found something happening at once'.",
+        base=dict(distractor_window=(60.0, 820.0)),
+        note="correlated population bursts — real cross-ROI coincidence that is "
+             "not a coordinated event, marked with an open down-triangle. They "
+             "recruit the same fraction of ROIs as a planted event, so they are "
+             "genuinely confusable; when they recruited more, every detector "
+             "fired on all of them and the control discriminated nothing.",
     ),
     "grid_sec": dict(
         values=(0.0, 0.1, 0.5, 2.0),
-        note="quantization onto the imaging grid. 0 is continuous time; coarse "
-             "grids collapse jitter into lockstep, which flatters any detector "
-             "binning at the same scale.",
+        note="quantization onto the imaging grid. Coarse grids collapse jitter "
+             "into lockstep, which flatters any detector binning at the same "
+             "scale. The effect is sub-pixel at this width — read the row "
+             "labels, not the ink.",
     ),
     "n_roi": dict(
-        values=(10, 30, 60, 120),
-        note="population size. Participation is a fraction, so the absolute "
-             "number of co-firing ROIs scales with this — and every detector "
-             "with a min_rois floor has an implicit opinion about it.",
+        values=(10, 33, 66, 120),
+        note="population size; the bench uses 33. Participation is a fraction, "
+             "so the absolute number of co-firing ROIs scales with this — and "
+             "every detector with a min_rois floor has an implicit opinion "
+             "about the population size you set.",
     ),
 }
 
-BASE = dict(
-    duration_sec=600.0,
-    n_roi=30,
-    bg_rate_hz=0.05,
-    participation=(1.0, 0.75, 0.50),
-    n_per_level=(2, 2, 2),
-    jitter_sec=0.05,
-    min_sep_sec=15.0,
-    interval_cv=1.0,
-)
+def _base():
+    """The bench's own recording, shortened so a sweep row stays legible.
+
+    Every value that is not being swept comes from ``BENCH_RECORDING`` — which is
+    calibrated from untreated slices — rather than from a literal here. An
+    earlier version hardcoded ``bg_rate_hz=0.05``, ``jitter_sec=0.05``,
+    ``participation=(1.0, 0.75, 0.50)`` and ``min_sep_sec=15``: precisely the
+    four values the bench documents as measured-wrong. The figures illustrated an
+    instrument the project had already disowned, which is a strange thing for a
+    document whose thesis is that an unseen knob is a guessed knob.
+    """
+    from bugarach.bench import BENCH_RECORDING, REGIMES
+    keep = ("n_roi", "participation", "jitter_sec", "min_sep_sec",
+            "interval_cv", "distractor_frac")
+    base = {k: v for k, v in BENCH_RECORDING.items() if k in keep}
+    base.update(duration_sec=900.0, n_per_level=(2, 2, 2),
+                min_sep_sec=90.0,          # 6 events in 900 s; the floor still binds
+                bg_rate_hz=REGIMES["baseline_quiet"]["bg_rate_hz"])
+    return base
+
+
+BASE = _base()
+
+
+def _vlabel(param, value):
+    """``param=value`` for a row label.
+
+    ``None`` is a legitimate value for a knob whose "off" is itself the thing
+    being compared against — ``bg_rate_shape=None`` is the flat field — and
+    ``:g`` cannot format it. A knob may also take a SEQUENCE, when it names more
+    than one scale.
+    """
+    if value is None:
+        return f"{param}=None"
+    if isinstance(value, (tuple, list)):
+        return f"{param}=({', '.join(format(v, 'g') for v in value)})"
+    return f"{param}={value:g}"
+
+
+#: Longest y-label a 196 px row can set rotated before the ends are cut off with
+#: no error. Measured off the render, not guessed: at 34 characters the label
+#: fits, at 38 the tail goes. A multi-scale value like
+#: ``bg_burst_shape=(1.547, 1.388)`` is already 30 before the ROI count is added.
+_YLABEL_MAX = 34
+
+
+def _ylabel(param, value, n_roi):
+    """Row label, dropping the ROI count when the value itself is long.
+
+    Every row of a figure carries the same ROI count, and the header states it —
+    so it is the part that can go. Losing the tail of the VALUE would leave a row
+    labelled with a number that is not the one it was drawn at.
+    """
+    label = _vlabel(param, value)
+    with_count = f"{label} · {n_roi} ROI"
+    return with_count if len(with_count) <= _YLABEL_MAX else label
 
 
 def _row(param, value, base, seed):
@@ -119,11 +206,24 @@ def _row(param, value, base, seed):
         kw["n_per_level"] = (6,)
     elif param == "n_distractors":
         kw["n_distractors"] = value
+    elif param == "bg_burst_shape":
+        # The bins travel with the shapes: one shape is one scale at 60 s, a pair
+        # is the 300/60 s pair they were fitted at. Setting shapes without
+        # matching bins is an error the generator refuses, correctly.
+        kw["bg_burst_shape"] = value
+        if isinstance(value, (tuple, list)):
+            kw["bg_burst_bin_sec"] = (300.0, 60.0)[-len(value):]
+        elif value is not None:
+            kw["bg_burst_bin_sec"] = 60.0
     else:
         kw[param] = value
     return simulate_coordination(seed=seed, **kw)
 
 
+# 196 px rows, not 170: at the tighter height the per-row y-labels abutted
+# each other and the bottom one clipped ("min_sep_sec=200 · 33 RO"). Found by
+# zoom-cropping the render — an ink-box check cannot see a label collided
+# with by its neighbour rather than by the page edge.
 def build(param: str, seed: int, width: int):
     import holoviews as hv
 
@@ -145,7 +245,8 @@ def build(param: str, seed: int, width: int):
         planted_spans = [(t - pad, t + pad) for t in gt.times]
         panel = raster_panel(s.streams["events"], ext=ext, gt=gt,
                              member_spans=planted_spans,
-                             name=f"{param}={value:g}", width=width, height=170)
+                             name=_vlabel(param, value),
+                             width=width, height=170)
         # planted times ticked along the top: the structure, separate from the
         # background it is buried in
         if len(gt.times):
@@ -159,17 +260,39 @@ def build(param: str, seed: int, width: int):
         # quarter as wide, labelled "roi", with the time axis in raw seconds
         # instead of the 60-base ticks CLAUDE.md requires — all three the same
         # mistake.
+        if len(gt.distractors):
+            dt = gt.distractor_times
+            panel = panel * hv.Scatter(
+                (dt, np.full(dt.size, n_roi - 2.0)),
+                kdims=["t"], vdims=["roi"]).opts(
+                marker="inverted_triangle", size=8, color="#5a5a5a",
+                fill_alpha=0.0, line_width=1.4)
+        # the context window the contaminated-null argument is about, to scale
+        if param == "min_sep_sec":
+            panel = hv.VSpan(60.0, 180.0).opts(
+                color="#4c78a8", alpha=0.12) * panel
         rows.append(panel.opts(
-            width=width, height=170, xlim=ext, ylim=(-1, n_roi), xaxis=None,
-            ylabel=f"{param}={value:g}", xlabel="", title="",
+            width=width, height=196, xlim=ext, ylim=(-1, n_roi), xaxis=None,
+            ylabel=_ylabel(param, value, n_roi), xlabel="time",
+            title="",
             fontsize={"ylabel": "10pt"}, show_legend=False,
             hooks=[_time_axis_hook]))
-    rows[-1] = rows[-1].opts(height=198, xaxis="bottom")
+    # The bottom row is the only one carrying an x-axis, and an axis with tick
+    # labels and a title costs about 45 px. Giving it +2 spends that out of the
+    # PLOT area instead: its raster is squashed relative to every row above, and
+    # its rotated y-label — laid out against the shorter plot — is silently
+    # clipped ("… · 33 R"). Match the plot areas by paying for the axis in
+    # addition to the row height, per the project's plot conventions.
+    rows[-1] = rows[-1].opts(height=196 + 45, xaxis="bottom")
 
     layout = rows[0]
     for r in rows[1:]:
         layout = layout + r
-    return layout.cols(1).opts(shared_axes=True, merge_tools=True)
+    # shared_axes=False: linking would override the per-row ylim set above,
+    # which flattened the n_roi=10 panel into a sliver on a 0-120 axis. x is
+    # already pinned by xlim on every row, so nothing is lost.
+    return layout.cols(1).opts(shared_axes=False, merge_tools=True,
+                               toolbar=None)
 
 
 def main(argv=None):
@@ -248,15 +371,58 @@ def _render_png(html_path: Path, png_path: Path, *, wait_ms: int = 3000) -> bool
             browser = pw.chromium.launch()
             page = browser.new_page(viewport={"width": 1120, "height": 1200},
                                    device_scale_factor=2)
-            page.goto(html_path.as_uri())
+            page.goto(html_path.resolve().as_uri())
             page.wait_for_timeout(wait_ms)
             with tempfile.TemporaryDirectory() as td:
                 tmp = Path(td) / "shot.png"
-                page.screenshot(path=str(tmp), full_page=True)
+                # Clip to the ink, not the viewport. A full_page screenshot of
+                # a short page pads to the viewport height, and body's own box
+                # is the viewport too — so measure the lowest rendered element
+                # and cut there. Roughly a third of every figure was blank
+                # canvas before this, which pushed the raster rows smaller than
+                # they needed to be.
+                # exclude the containers themselves: Panel gives body/html
+                # height:100%, so their own box reports the viewport and would
+                # dominate the max, measuring exactly the thing we are cutting.
+                # Exclude the viewport-sized wrappers by comparing against the
+                # viewport itself, never against a pixel constant. A literal
+                # (`< 1100`) is a cap on how tall a figure may be before the
+                # filter silently drops EVERY element: Math.max() of nothing is
+                # -Infinity, which reaches the screenshot clip as a height and
+                # fails with a JSON parse error naming neither the figure nor
+                # the cause. Adding a fifth row to one sweep was enough.
+                h = page.evaluate(
+                    "(() => { const vh = window.innerHeight;"
+                    "const b = [...document.body.querySelectorAll("
+                    "'canvas, .bk-Canvas, div')]"
+                    ".filter(e => e.offsetHeight > 0"
+                    " && Math.abs(e.offsetHeight - vh) > 2)"
+                    ".map(e => e.getBoundingClientRect().bottom);"
+                    "return b.length ? Math.ceil(Math.max(...b)) : 0; })()")
+                w = page.evaluate(
+                    "(() => { const vw = window.innerWidth;"
+                    "const r = [...document.body.querySelectorAll("
+                    "'canvas, .bk-Canvas, div')]"
+                    ".filter(e => e.offsetWidth > 0"
+                    " && Math.abs(e.offsetWidth - vw) > 2)"
+                    ".map(e => e.getBoundingClientRect().right);"
+                    "return r.length ? Math.ceil(Math.max(...r)) : 0; })()")
+                if h <= 0 or w <= 0:
+                    raise RuntimeError(
+                        f"measured no rendered content ({w}x{h}) — the page "
+                        f"did not draw, or every element matched the viewport")
+                page.screenshot(path=str(tmp), clip={
+                    "x": 0, "y": 0,
+                    "width": min(float(w) + 12, 1120.0),
+                    "height": min(float(h) + 12, 4000.0)})
                 browser.close()
                 os.replace(tmp, png_path)
         return True
-    except Exception:                                  # noqa: BLE001
+    except Exception as exc:                           # noqa: BLE001
+        # print it: the sibling tool does, and this copy's silence let a
+        # relative --out fail for months while claiming chromium was missing.
+        print(f"      PNG render failed: {type(exc).__name__}: {exc}",
+              file=sys.stderr)
         return False
 
 

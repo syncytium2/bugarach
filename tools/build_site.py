@@ -70,12 +70,10 @@ and a synthetic benchmark with planted ground truth to test them against.</p>
 
 <p><b>A model trained across everyone's recordings learns what is usually true —
 and what is usually true is the textbook.</b> The results worth having are often
-the ones where the textbook is wrong. In this preparation TTX, a sodium-channel
-blocker that is supposed to silence the tissue, leaves coordinated activity
-intact in the slower of the two event <b>streams</b> these recordings carry,
-while reducing it in the faster one. A model that had averaged over other labs'
-data would call that noise — confidently, and with no way for the recording to
-answer back.</p>
+the ones where a preparation departs from it, and those are exactly the ones such
+a model scores as noise: confidently, and with no way for the recording to answer
+back. An instrument built from the average of other people's tissue cannot be
+trusted to report what is unusual about yours.</p>
 
 <p>So nothing here is trained on a treatment. Measure the coordination
 parameters of an <i>untreated</i> recording, simulate from those alone, and let
@@ -145,12 +143,12 @@ LEAD_FIGURE = """<figure class="lead">
   <figcaption><b>Thirty minutes of simulated recording, and what six detectors
   made of it.</b> One lane per detector, each bar a call it made; then the raster
   all six were reading, one row per ROI; then what each detector computes.
-  Lanes are labelled by short name — <span class="key">CIC</span> is CICADA,
-  <span class="key">coact</span> CoactDetect, <span class="key">rate</span>
-  RateDetect, <span class="key">sync</span> SPIKE-synch.
+  Each lane carries its detector's own name; two of the six are named for what
+  they measure rather than for the tool — <span class="key">rate+context</span>
+  is RateDetect, and <span class="key">binned SCE</span> is SCE.
   In the lanes, <span class="key">&#10007;</span> marks a false alarm and
   <span class="key">&#9711;</span> a second call on an event another detection
-  had already claimed. The bottom lane is the ground truth:
+  had already claimed. The top lane is the ground truth:
   <span class="key">&#9650;</span> an event some detector recovered,
   <span class="key">&#9660;</span> one they all missed.
   The <span class="key">shaded block</span> fires at a higher rate but contains

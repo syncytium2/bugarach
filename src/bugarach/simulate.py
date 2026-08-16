@@ -219,6 +219,9 @@ def simulate_coordination(
     duration_sec: float = 600.0,
     n_roi: int = 30,
     bg_rate_hz: float = 0.05,
+    bg_rate_shape: float | None = None,
+    bg_burst_shape: float | None = None,
+    bg_burst_bin_sec: float = 60.0,
     participation=(1.0, 0.75, 0.50),
     n_per_level=(5, 5, 5),
     jitter_sec: float = 0.05,
@@ -241,7 +244,51 @@ def simulate_coordination(
 ) -> tuple[Slice, GroundTruth]:
     """Build a synthetic recording with planted coordinated events.
 
-    duration_sec, n_roi, bg_rate_hz: the background — per-ROI homogeneous Poisson.
+    duration_sec, n_roi, bg_rate_hz: the background. ``bg_rate_hz`` is the
+      **mean** per-ROI rate.
+    bg_rate_shape: heterogeneity of the background across ROIs. ``None`` (the
+      default) gives every ROI exactly ``bg_rate_hz`` — a flat field, and what
+      this generator did for its whole life. A positive number draws each ROI's
+      own rate from ``Gamma(shape, bg_rate_hz / shape)``, so the mean is still
+      ``bg_rate_hz`` while the spread is ``1/sqrt(shape)``; small shape means a
+      few busy ROIs and many near-silent ones.
+
+      **Why it exists.** A real baseline field is not flat, and the gap is not
+      subtle: measured over 81 baseline windows, 35% of real ROIs record no
+      event at all and the busiest reaches 486 mHz, while the flat generator
+      leaves 2% silent and tops out near 138. Its typical ROI is *busier* than
+      a real one and its busiest is far quieter — wrong in both directions at
+      once. See ``bugarach.bench.MEASURED_RATE_SHAPE`` for the fitted value and
+      how it was obtained; note that the silent ROIs are not modelled, they
+      fall out of a low rate drawn from the tail.
+
+      Leaving it ``None`` keeps the RNG stream identical, so every existing
+      seed reproduces exactly.
+    bg_burst_shape / bg_burst_bin_sec: how unevenly an ROI's own events are
+      spread **in time**. ``None`` (the default) is homogeneous Poisson — a
+      constant rate for the whole recording. A positive number multiplies the
+      rate in each bin by a ``Gamma(shape, 1/shape)`` draw, which has mean 1, so
+      the expected total is untouched and only its distribution over time moves;
+      counts per bin are then Negative Binomial, the model the clumping was
+      fitted under.
+
+      **Pass a sequence for more than one scale**, e.g.
+      ``bg_burst_shape=(1.55, 1.39), bg_burst_bin_sec=(300.0, 60.0)``. One scale
+      is not enough and the data says so: a single bin width draws independent
+      bins, so its over-dispersion stops growing once you look at windows wider
+      than the bin, while real ROIs keep getting more over-dispersed the wider
+      you look — variance/mean 1.8 at 30 s, 2.6 at 60 s, 3.9 at 120 s, 5.7 at
+      300 s. That is a busy stretch spanning several bins, and no single scale
+      reproduces it at any shape.
+
+      **Why this and not an interval distribution.** A baseline window gives the
+      median ROI under one event and leaves 35% with none, so most ROIs have no
+      interval to measure and requiring a few per ROI drops precisely the quiet
+      ones (``docs/generator.md``). Binned counts survive that; ISIs do not.
+
+      See ``bugarach.bench.MEASURED_BURST_SHAPE``. As with the rate shape this is
+      **off by default and not used by the bench**, and leaving it ``None``
+      leaves the RNG stream untouched.
     participation / n_per_level: participating fractions and how many events at
       each. ``(1.0, 0.75, 0.5)`` with ``(5, 5, 5)`` plants 5 all-ROI events,
       5 at 75%, 5 at 50%, interleaved in time.
@@ -300,11 +347,87 @@ def simulate_coordination(
     T, nR = float(duration_sec), int(n_roi)
     trains: list[list[float]] = [[] for _ in range(nR)]
 
-    # ---- background: per-ROI homogeneous Poisson ------------------------------
-    for r in range(nR):
-        k = rng.poisson(bg_rate_hz * T)
-        if k:
-            trains[r].extend(rng.random_sample(k) * T)
+    # ---- background: per-ROI Poisson, homogeneous or Gamma-heterogeneous ------
+    # When bg_rate_shape is None every ROI gets bg_rate_hz and NO random numbers
+    # are drawn here, so the stream — and every existing seed — is unchanged.
+    if bg_rate_shape is None:
+        bg_rates = np.full(nR, float(bg_rate_hz))
+    else:
+        if bg_rate_shape <= 0:
+            raise ValueError(
+                f"bg_rate_shape must be positive, got {bg_rate_shape}")
+        # NOTE, because it bit a figure: this reshuffles everything downstream.
+        # The draw consumes random numbers, and the per-ROI Poisson counts it
+        # produces consume a different quantity again, so at a fixed seed the
+        # planted events land at DIFFERENT times with the knob on than with it
+        # off. Giving the rates their own stream does not fix that — the counts
+        # still differ — and the only real fix, drawing the background after the
+        # events, would renumber every existing seed and move every bench score
+        # in this package. So the schedule redraws, exactly as it does for
+        # `bg_rate_hz`, and anything comparing flat against varied must use each
+        # run's OWN ground truth rather than assuming they share one.
+        bg_rates = rng.gamma(bg_rate_shape, bg_rate_hz / bg_rate_shape, size=nR)
+
+    if bg_burst_shape is None:
+        # Homogeneous in time: one Poisson draw per ROI over the whole span.
+        for r in range(nR):
+            k = rng.poisson(bg_rates[r] * T)
+            if k:
+                trains[r].extend(rng.random_sample(k) * T)
+    else:
+        # Clumped in time. The ROI keeps its own mean rate; on each scale that
+        # rate is multiplied by a Gamma(k, 1/k) draw, which has mean 1, so the
+        # expected total is unchanged and only its distribution over time moves.
+        # Counts on one scale are then Negative Binomial — exactly the model the
+        # clumping was fitted under, rather than a burst generator invented to
+        # look right.
+        #
+        # More than one scale is allowed, and is what real data needs. A single
+        # scale draws independent bins, so its over-dispersion stops growing once
+        # you look at windows wider than the bin; real ROIs keep getting more
+        # over-dispersed the wider you look (variance/mean 1.8 at 30 s, 2.6 at
+        # 60 s, 3.9 at 120 s, 5.7 at 300 s), which is a busy stretch spanning
+        # several bins. Multiplying a slow modulation by a fast one reproduces
+        # that; one bin width cannot, at any shape.
+        shapes = (np.atleast_1d(np.asarray(bg_burst_shape, dtype=float))
+                  .astype(float).tolist())
+        bins = (np.atleast_1d(np.asarray(bg_burst_bin_sec, dtype=float))
+                .astype(float).tolist())
+        if len(bins) == 1 and len(shapes) > 1:
+            raise ValueError(
+                "bg_burst_shape names more than one scale, so bg_burst_bin_sec "
+                f"must name the same number ({len(shapes)}), got 1")
+        if len(shapes) != len(bins):
+            raise ValueError(
+                f"bg_burst_shape and bg_burst_bin_sec must be the same length "
+                f"({len(shapes)} vs {len(bins)})")
+        if any(s <= 0 for s in shapes):
+            raise ValueError(
+                f"bg_burst_shape must be positive, got {bg_burst_shape}")
+        if any(b <= 0 for b in bins):
+            raise ValueError(
+                f"bg_burst_bin_sec must be positive, got {bg_burst_bin_sec}")
+
+        # Finest scale last: it defines the bins events are actually placed in,
+        # and the coarser scales multiply into it.
+        order = np.argsort(bins)[::-1]
+        shapes = [shapes[i] for i in order]
+        bins = [bins[i] for i in order]
+        fine = bins[-1]
+        edges = np.arange(0.0, T, fine)
+        for r in range(nR):
+            # One multiplier series per scale, drawn per ROI: a busy stretch
+            # belongs to a cell, not to the whole field.
+            series = [rng.gamma(s, 1.0 / s, size=int(np.ceil(T / b)))
+                      for s, b in zip(shapes, bins)]
+            for j, lo_b in enumerate(edges):
+                w = min(fine, T - lo_b)
+                mult = 1.0
+                for m, b in zip(series, bins):
+                    mult *= m[min(int(lo_b // b), m.size - 1)]
+                k = rng.poisson(bg_rates[r] * mult * w)
+                if k:
+                    trains[r].extend(lo_b + rng.random_sample(k) * w)
 
     # ---- optional dense-but-random block, no planted events -------------------
     if hot_window is not None and hot_rate_hz > 0:
@@ -382,6 +505,8 @@ def simulate_coordination(
         distractors=distractors,
         params=dict(
             duration_sec=T, n_roi=nR, bg_rate_hz=bg_rate_hz,
+            bg_rate_shape=bg_rate_shape, bg_burst_shape=bg_burst_shape,
+            bg_burst_bin_sec=bg_burst_bin_sec,
             participation=tuple(participation), n_per_level=tuple(n_per_level),
             jitter_sec=jitter_sec, grid_sec=grid_sec, min_sep_sec=min_sep_sec,
             margin_sec=margin_sec, spacing=spacing, interval_cv=interval_cv,

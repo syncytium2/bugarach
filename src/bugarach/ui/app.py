@@ -204,7 +204,7 @@ def _raster(stream, name: str, ext) -> hv.Scatter:
     )
 
 
-def _signal_row(det, t, y, events, extra, ext) -> hv.Overlay:
+def _signal_row(det, t, y, events, extra, ext, label: str | None = None) -> hv.Overlay:
     color = COLORS[det]
     onsets, widths = events
     # curve FIRST: the overlay inherits its 't' dimension, keeping every row
@@ -234,10 +234,13 @@ def _signal_row(det, t, y, events, extra, ext) -> hv.Overlay:
             items.append(hv.Curve((t, thr), kdims=["t"], vdims=[ydim]).opts(
                 color="black", line_width=1, line_dash="dotted"))
     n_ev = int(np.size(onsets)) if onsets is not None else 0
-    # identity + event count live on the y-label; titles are redundant rows
+    # identity + event count live on the y-label; titles are redundant rows.
+    # The viewer's 75px rows only fit the abbreviation; a caller with taller
+    # rows passes `label` and gets the real name — "CIC" is not CICADA to
+    # anyone who has met the other CIC (Tony, 2026-08-15).
     return hv.Overlay(items).opts(
         width=950, height=75, xlim=ext, xlabel="", title="",
-        ylabel=f"{SHORT[det]} ({n_ev})", yticks=2,
+        ylabel=f"{label or SHORT[det]} ({n_ev})", yticks=2,
         fontsize={"ylabel": "9pt"},
         show_legend=False, hooks=[_time_axis_hook],
         tools=["xwheel_zoom", "xpan", "reset"],
