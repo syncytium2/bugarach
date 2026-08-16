@@ -20,3 +20,6 @@ node_modules/
 # figure tools write an interactive .html beside each .png; only the PNG is
 # a documentation artifact, the HTML is regenerable build output
 docs/generator/*.html
+
+# regenerable intermediate for the MATLAB reference generator (prep_ref_input.py)
+tools/matlab_ref/ref_input_*.mat
