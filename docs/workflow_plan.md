@@ -24,18 +24,25 @@ for an outside lab. Event properties (amplitude, width, rise time) belong to a
 different project and are not read here: the detectors need per-ROI **event onset
 times** and nothing more, which is what `src/bugarach/io.py` already says.
 
-| file in the folder | one row per | carries |
-|---|---|---|
-| `events.csv` | one detected event in one ROI | `slice_id, stream, roi, time_sec` |
-| `regions.csv` | slice × region | `slice_id, region, treatment, treatment_idx, start_sec, end_sec` — **already windowed** |
-| `slices.csv` | slice | identity: `slice_id, group_id, mouse_id, …`; optional, absent means NA |
-| `metric_dictionary.csv` | metric | the column contract, shipped with the batch |
+The contract is written in full in
+[`docs/export_folder_spec.md`](export_folder_spec.md). In short: four CSVs, of
+which **only `events.csv` is required** — `slice_id, stream, roi, time_sec`, and
+nothing else read.
+
+Periods are carried by `regions.csv`, one row per region, ordered by a plain
+`region_idx` and named by the lab's own `label`. There is no notion of a treatment
+*slot*, so there is nothing to run out of: one region is a recording with no
+protocol, six is a baseline and five conditions. No region is privileged, no label
+is special, and windows arrive **already computed** — bugarach never derives one.
+
+Identity in `slices.csv` is an **open column set**, passed through to the output
+untouched and interpreted not at all.
 
 Output is **universally compatible first**. One computation, two writers: a plain
 long-format `detections.csv` any pipeline can read, and the contract frames that
-stack against the existing R analysis. Matching that contract is worth doing where
-it is free; where it conflicts with being readable by a stranger, the stranger
-wins and the R side adapts.
+stack against the existing statistical pipeline. Matching that contract is worth
+doing where it is free; where it conflicts with being readable by a stranger, the
+stranger wins.
 
 ### What acting buys first
 
@@ -100,17 +107,23 @@ statistics* and a round-trip test. Porting alone delivers neither.
 - **End to end**: point the app at a folder, tune, run, export; the result opens
   in R and in pandas.
 
-### Open decisions — yours
+### Decisions taken here, so nothing waits on them
 
-1. **Does the exporter emit `treatment_idx`?** It is what the R side uses to order
-   baseline against first treatment. If the exporter derives it from region order,
-   the whole identity chain works with no sidecar. If not, output cannot be stacked
-   against existing files without a join.
-2. **Which mode does a generated run report as?** The MATLAB exporter emits nine
-   detector keys in real mode and six in surrogate mode, and the per-event file is
-   written only in real mode. Choosing wrong either omits three keys or claims
-   three that were never computed — and can delete milestone 1a's only consumer.
-3. **Should we ask the R side to accept the peak-mode keys**, or hold them back?
+- **Ordering is `region_idx`; naming is `label`.** The pair the existing contract
+  calls `treatment_idx` / `treatment` is **derived at write time**, never stored
+  twice. Two independently-editable records of one fact is a failure this ecosystem
+  has already had, with disagreeing row counts to show for it.
+- **bugarach reports what it computed.** It has no notion of a run "mode". If a
+  detector ran in peak-gated form, its key appears in the output; if it did not,
+  the key is absent. The upstream exporter's mode switch is that exporter's
+  implementation detail and is not mirrored here.
+- **Peak-gated keys are emitted.** Universally compatible first: a consumer that
+  cannot yet read them adapts, rather than the producer withholding a result it
+  computed.
+- **Figures are deferred to the deliverables, not the plan.** Two reviewers flagged
+  that a plan violating "show the picture" is still a plan; the same gate will
+  demand figures of the reports and captions this work produces, where the picture
+  is the payload rather than the argument.
 
 ---
 
