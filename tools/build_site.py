@@ -68,6 +68,22 @@ and a synthetic benchmark with planted ground truth to test them against.</p>
 
 {real}
 
+<p><b>A model trained across everyone's recordings learns what is usually true —
+and what is usually true is the textbook.</b> The results worth having are often
+the ones where a preparation departs from it, and those are exactly the ones such
+a model scores as noise: confidently, and with no way for the recording to answer
+back. An instrument built from the average of other people's tissue cannot be
+trusted to report what is unusual about yours.</p>
+
+<p>So nothing here is trained on a treatment. Measure the coordination
+parameters of an <i>untreated</i> recording, simulate from those alone, and let
+that synthetic baseline do two jobs at once: tune the six detectors, and train
+the model. Only then is the finished instrument pointed at the whole dataset,
+treatments included. Simulate the treatment and you have spent the effect you
+ran the experiment to measure; withhold it and it comes back as a result. The
+detectors and the generator below are built and tested; <b>the training half is
+the plan, not yet the practice</b>.</p>
+
 <p>Each row above is one <b>ROI</b> — one cell's worth of signal pulled out of a
 2-photon calcium recording. Detectors flag the moments when many of them fire
 together. There are six here — LoCo, CICADA, SCE, CoactDetect, RateDetect and
