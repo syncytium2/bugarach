@@ -1,6 +1,39 @@
 {
  "learned": {
   "tiny": {
+   "centres": null,
+   "curve": [
+    {
+     "n_detected": 9,
+     "precision": 0.1111111111111111,
+     "recall": 0.022222222222222223,
+     "threshold": 0.5
+    },
+    {
+     "n_detected": 0,
+     "precision": 0.0,
+     "recall": 0.0,
+     "threshold": 0.9
+    },
+    {
+     "n_detected": 0,
+     "precision": 0.0,
+     "recall": 0.0,
+     "threshold": 0.99
+    },
+    {
+     "n_detected": 0,
+     "precision": 0.0,
+     "recall": 0.0,
+     "threshold": 0.997
+    },
+    {
+     "n_detected": 0,
+     "precision": 0.0,
+     "recall": 0.0,
+     "threshold": 0.999
+    }
+   ],
    "f1": 0.125,
    "loss": [
     1.9190508127212524,
@@ -28,9 +61,42 @@
    "precision": 1.0,
    "recall": 0.06666666666666667,
    "threshold": 0.05,
-   "train_seconds": 233.90122890472412
+   "train_seconds": 236.90389108657837
   },
   "trace": {
+   "centres": null,
+   "curve": [
+    {
+     "n_detected": 15,
+     "precision": 0.3333333333333333,
+     "recall": 0.1111111111111111,
+     "threshold": 0.5
+    },
+    {
+     "n_detected": 3,
+     "precision": 1.0,
+     "recall": 0.06666666666666667,
+     "threshold": 0.9
+    },
+    {
+     "n_detected": 0,
+     "precision": 0.0,
+     "recall": 0.0,
+     "threshold": 0.99
+    },
+    {
+     "n_detected": 0,
+     "precision": 0.0,
+     "recall": 0.0,
+     "threshold": 0.997
+    },
+    {
+     "n_detected": 0,
+     "precision": 0.0,
+     "recall": 0.0,
+     "threshold": 0.999
+    }
+   ],
    "f1": 0.1509433962264151,
    "loss": [
     1.7612379789352417,
@@ -58,7 +124,75 @@
    "precision": 0.5,
    "recall": 0.08888888888888889,
    "threshold": 0.35000000000000003,
-   "train_seconds": 8.238711833953857
+   "train_seconds": 8.319561958312988
+  },
+  "tube": {
+   "centres": [
+    1.8254158657470878,
+    4.206059814971028,
+    6.4902427605556445,
+    9.906307190266453
+   ],
+   "curve": [
+    {
+     "n_detected": 421,
+     "precision": 0.09501187648456057,
+     "recall": 0.8888888888888888,
+     "threshold": 0.5
+    },
+    {
+     "n_detected": 143,
+     "precision": 0.2517482517482518,
+     "recall": 0.8,
+     "threshold": 0.9
+    },
+    {
+     "n_detected": 49,
+     "precision": 0.5510204081632653,
+     "recall": 0.6,
+     "threshold": 0.99
+    },
+    {
+     "n_detected": 30,
+     "precision": 0.7,
+     "recall": 0.4666666666666667,
+     "threshold": 0.997
+    },
+    {
+     "n_detected": 16,
+     "precision": 1.0,
+     "recall": 0.35555555555555557,
+     "threshold": 0.999
+    }
+   ],
+   "f1": 0.56,
+   "loss": [
+    1.7860685586929321,
+    0.4296560287475586,
+    0.2868290841579437,
+    0.23915596306324005,
+    0.22436456382274628,
+    0.2194114774465561,
+    0.21926836669445038,
+    0.3797121047973633,
+    0.23168621957302094,
+    0.2166154533624649,
+    0.21977484226226807,
+    0.2005441039800644,
+    0.2547810673713684,
+    0.23441016674041748,
+    0.39728131890296936,
+    0.30771568417549133,
+    0.2061518430709839,
+    0.17777085304260254,
+    0.1508224904537201
+   ],
+   "n_detected": 30,
+   "params": 1149,
+   "precision": 0.7,
+   "recall": 0.4666666666666667,
+   "threshold": 0.9970340388579247,
+   "train_seconds": 5.656707048416138
   }
  },
  "round_trip": {

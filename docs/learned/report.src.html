@@ -142,168 +142,74 @@
 <div class="wrap">
 <div class="col">
   <p class="eyebrow">bugarach &middot; 16 August 2026</p>
-  <h1>A learned detector does not work yet. The measurement around it does.</h1>
+  <h1>A coordinated event is six cells in a third of a second. Here is how to find it.</h1>
   <p class="standfirst">
-    Four steps were approved: port the assessor, parameterize the generator from it,
-    train a small model, sweep performance against mass. The first two landed at
-    parity. The third does not converge, and the fourth is blocked on it deliberately.
-  </p>
-</div>
-
-<div class="verdict">
-  <div><div class="k six">0.64</div><div class="l">top of the six hand-written detectors &mdash; the leading three are tied within noise</div></div>
-  <div><div class="k learned">0.15</div><div class="l">best learned model, same recordings, same scorer</div></div>
-  <div><div class="k">1e&#8209;9</div><div class="l">parity of the assessor port against MATLAB</div></div>
-  <div><div class="k">2,393</div><div class="l">parameters in the larger learned model</div></div>
-</div>
-<p style="font-size:.85rem;color:var(--muted);margin-top:.6rem">
-  F1 against planted truth &mdash; detections matched to the events the generator actually planted &mdash; on the bench&rsquo;s busy regime, three recordings. <strong>Three seeds cannot separate 0.64 from 0.63</strong>; the gap that matters here is to 0.15, not between the leaders.
-</p>
-
-<div class="col">
-  <h2>The target, and why it changes the design</h2>
-  <p>
-    The goal is not one detector that beats the six. It is a tool a lab can point at
-    its own recordings: <strong>measure my data &rarr; parameterize the generator &rarr;
-    train &rarr; detect.</strong> What ships is the loop, not a checkpoint.
-  </p>
-  <p>
-    That makes &ldquo;mass&rdquo; mean <em>training cost on a laptop</em>, not just
-    parameter count &mdash; and it rules out anything needing a GPU, a tuned learning
-    rate, or a fixed ROI count. It also mostly dissolves the project&rsquo;s standing
-    objection that our synthetic data may not match anyone else&rsquo;s reality: if each
-    lab generates from its own measurements, the domain gap is theirs to close and this
-    hands them the means.
-  </p>
-</div>
-
-<h2>Where the four steps stand</h2>
-<div class="steps">
-  <div class="step">
-    <span class="n">1</span><span class="t">Port the assessor</span><span class="chip ok">at parity</span>
-    <span class="d">Coordination measured without a detector. 1e&#8209;9 against MATLAB across four cases.</span>
-  </div>
-  <div class="step">
-    <span class="n">2</span><span class="t">Parameterize the generator from it</span><span class="chip ok">done, with measured bias</span>
-    <span class="d">Round trip recovers tightness to +9% and frequency to &minus;7% at K=4.</span>
-  </div>
-  <div class="step">
-    <span class="n">3</span><span class="t">Train a small model</span><span class="chip bad">does not converge</span>
-    <span class="d">F1 0.12&ndash;0.15 against 0.64. Four causes ruled out; the remaining suspects are ranked.</span>
-  </div>
-  <div class="step">
-    <span class="n">4</span><span class="t">Sweep performance against mass</span><span class="chip hold">not run</span>
-    <span class="d">A curve over models that all score ~0.13 measures nothing. Blocked until step 3 clears a baseline.</span>
-  </div>
-</div>
-
-<div class="col">
-  <h2>Steps 1&ndash;2: measuring coordination without a detector</h2>
-  <p>
-    Three of the generator&rsquo;s knobs are coordination properties &mdash; how often
-    events happen, how many cells they recruit, how tightly. Measuring those with the
-    six detectors would make every simulated recording a restatement of whichever
-    detector measured it, and training on that closes the circle.
-  </p>
-  <p>
-    The assessor avoids it. It has no operating point: it compares observed coactivity
-    against a null built by circularly shifting each ROI within the window, which holds
-    every cell&rsquo;s own rate and burstiness and destroys only cross-cell timing. What
-    survives is coordination the slice&rsquo;s rate cannot explain.
-  </p>
-  <p>
-    It was MATLAB-only, which broke the loop at its first step &mdash; the one thing
-    this project exists to remove. It is now Python, at the same 1e&#8209;9 bar as the
-    six ports.
+    The problem first: the events are there, and they are almost invisible.
   </p>
 </div>
 
 <figure>
-  <img src="{{FIG:learned_round_trip}}" alt="Three bar charts showing participants, onset SD and events per minute recovered by the assessment at K=3, 4 and 6, each against a dashed line marking the planted value.">
+  <img src="{{FIG:tube_view}}" alt="Three stacked panels over thirteen minutes of one recording. Top: a raster of onsets as small dark specks with five green triangles marking planted events, which are not visually distinguishable from the surrounding activity. Middle: a trace of the fraction of cells active, where the planted events appear as tall spikes but so do several other moments. Bottom: the same trace with its local level subtracted, where the planted events stand above zero more cleanly.">
   <figcaption>
-    <strong>What the measurement recovers.</strong> Coordination was planted at known
-    settings, assessed, and compared. Dashed green marks the planted value. K is the
-    minimum number of co-active cells the assessment counts as an event, and it is the
-    one convention the method has &mdash; so it is reported as a scan rather than chosen.
-    K=4 is the only value where nothing is badly wrong: frequency lands within 7%, while
-    K=3 over-counts by 60% and K=6 misses three quarters of the events.
+    <strong>Thirteen minutes of one bench recording.</strong> Green triangles are
+    events the generator actually planted &mdash; you cannot pick them out of the
+    specks above. Counting how many cells are active at each instant (middle) makes
+    them visible, but so are several moments that are not events. Subtracting the
+    trace&rsquo;s own local level (bottom) is what separates them, and it is one
+    convolution rather than a trained opinion.
   </figcaption>
 </figure>
 
+<div class="verdict">
+  <div><div class="k six">0.64</div><div class="l">top of the six hand-written detectors &mdash; the leading three are tied within noise</div></div>
+  <div><div class="k learned">0.56</div><div class="l">centre-surround model, same recordings, same scorer</div></div>
+  <div><div class="k learned">1,149</div><div class="l">parameters, trained in 6 seconds on a laptop</div></div>
+  <div><div class="k">0.42s</div><div class="l">event width the model learned, never told</div></div>
+</div>
+<p style="font-size:.85rem;color:var(--muted);margin-top:.6rem">
+  F1 against planted truth &mdash; detections matched to the events the generator
+  actually planted &mdash; on the bench&rsquo;s busy regime, three recordings.
+  <strong>Three seeds cannot separate 0.64 from 0.63</strong>; the gap that matters
+  here is the one that closed, from 0.12 to 0.56.
+</p>
+
+<h2>The network, layer by layer</h2>
 <div class="col">
   <p>
-    Two biases are worth carrying forward. <strong>Participants come out high</strong>
-    (7 against a planted 5.9 at K=4) because the measure only sees groups that already
-    cleared K &mdash; a selection effect, not noise. <strong>Tightness comes out ~9%
-    loose</strong> at every K, because the gather window admits onsets that were not
-    participants. That second one errs toward a harder simulation than reality, which is
-    the safe direction.
+    Every row exists because something had to be true, not because it is a layer
+    people usually stack. The design is Tony&rsquo;s: <em>look down a tube as the
+    recording slides past; when cells align, a bright spot crosses the centre.</em>
   </p>
 </div>
 
-<h2>Step 3: why this network</h2>
-<div class="col">
-  <p>
-    The architecture was not chosen from a menu. Four constraints each removed most of
-    the design space, and what is left is close to forced.
-  </p>
-
-  <h3>Cell identity carries no information, so row order must be canonical</h3>
-  <p>
-    (The figures label these <em>ROIs</em> &mdash; the regions of interest a segmentation found. Same thing.) Cell #3 in one recording has nothing to do with cell #3 in the next, and recordings
-    differ in how many cells they have. A model reading the raster as an image can learn
-    &ldquo;rows 3, 7 and 19 together&rdquo; &mdash; a fact about one segmentation that
-    cannot transfer and cannot even run on the next recording.
-  </p>
-  <p>
-    Rows are therefore sorted by firing frequency, busiest first &mdash; which is how a
-    person reads a raster anyway. That turns row position from a meaningless label into
-    a real coordinate: <em>how active is this cell relative to the others.</em>
-  </p>
-  <div class="note warn">
-    <strong>This broke on its first test, and the test is why it is now right.</strong>
-    Sorting by rate leaves ties, and the first implementation broke them by original row
-    number &mdash; exactly the arbitrary label the sort exists to remove. Shuffling the
-    input changed the encoding. Ties are now broken by each cell&rsquo;s own firing
-    pattern, so the encoding is a function of the data alone.
-  </div>
-
-  <h3>An event is some number of samples wide, never some number of seconds</h3>
-  <p>
-    At our imaging rate a coordinated event spans about four samples. The same
-    biological event recorded at 30&nbsp;Hz spans eleven. A model trained on
-    seconds-shaped windows has learned our microscope, and nothing on our bench could
-    show it, because every bench recording shares one imaging rate.
-  </p>
-  <p>
-    So nothing inside the model knows what a second is. Seconds appear at exactly two
-    boundaries: the sampling interval is required when data is loaded, and detections
-    are converted back to seconds at the end so they can be scored the same way as the
-    six.
-  </p>
-
-  <h3>The width of an event is learned, not supplied</h3>
-  <p>
-    An earlier draft handed the model a bank of fixed time-scales centred on the width
-    we had measured. That is the answer written into the input. It was removed: the
-    model gets activity at full resolution and its filters have to find their own
-    scale. Its receptive field spans about 2,000 samples so it can judge activity
-    against its own local background rather than being told what that background is.
-  </p>
-
-  <h3>One cell, one vote &mdash; and this is what shapes the network</h3>
-  <p>
-    Coordination means <em>distinct</em> cells firing together. Every one of the six
-    detectors enforces that. Collapse the cells into a single trace before smoothing
-    over time and it is destroyed: one busy cell firing repeatedly becomes
-    indistinguishable from several cells firing together, which is precisely the false
-    coordination the hand-written detectors reject by rule.
-  </p>
-  <p>
-    Sorting by rate makes that worse, not better, because it puts every busiest cell in
-    the same place. So the cell axis has to survive the temporal filter, and each
-    cell&rsquo;s contribution is capped <em>before</em> anything is pooled.
-  </p>
+<div class="tablewrap">
+<table>
+  <thead><tr>
+    <th>#</th><th>Layer</th><th>What it does</th><th>Why it is there</th>
+    <th class="n">Output</th><th class="n">Params</th>
+  </tr></thead>
+  <tbody>
+    <tr><td class="n">0</td><td>input</td><td>onsets on a sample grid, cells ordered by firing rate</td>
+        <td>row order must be a property of the data, not of the segmentation</td>
+        <td class="n">N &times; T</td><td class="n">0</td></tr>
+    <tr><td class="n">1</td><td>cap per cell</td><td>max over the centre window, so a cell counts once however often it fired</td>
+        <td><strong>one cell, one vote</strong> &mdash; stops one busy cell imitating a crowd</td>
+        <td class="n">N &times; T</td><td class="n">0</td></tr>
+    <tr><td class="n">2</td><td>sum over cells</td><td>fraction of cells active near each instant</td>
+        <td><strong>space invariance</strong> &mdash; runs at any cell count, never sees identity</td>
+        <td class="n">1 &times; T</td><td class="n">0</td></tr>
+    <tr class="hl"><td class="n">3</td><td>centre &minus; surround</td>
+        <td>4 difference-of-Gaussian kernels, each centre and its surround free to resize</td>
+        <td><strong>rate invariance, structurally</strong> &mdash; a flat field integrates to zero, so background cancels</td>
+        <td class="n">4 &times; T</td><td class="n">12</td></tr>
+    <tr><td class="n">4</td><td>dilated stack</td><td>6 convolutions, dilation doubling, 8 channels</td>
+        <td>combines the scales and enforces that an event is a run, not a spike</td>
+        <td class="n">8 &times; T</td><td class="n">1,128</td></tr>
+    <tr><td class="n">5</td><td>1&times;1</td><td>one score per sample</td>
+        <td>thresholded into onsets and widths, the same contract the six emit</td>
+        <td class="n">T</td><td class="n">9</td></tr>
+  </tbody>
+</table>
 </div>
 
 <div class="arch">
@@ -311,134 +217,193 @@
 </div>
 
 <div class="col">
-  <p style="font-size:.87rem;color:var(--muted);max-width:72ch">
-    The cap is where &ldquo;one cell, one vote&rdquo; lives, and it is why the filter has
-    to run once per cell rather than once per recording.
-  </p>
-  <div class="note warn">
-    <strong>The cap is soft, and that is an unpaid debt.</strong> An exact
-    &ldquo;did this cell fire anywhere in this window&rdquo; needs a fixed window, which
-    is the assumption the design refuses to make. A smooth cap lets the model choose its
-    own window and pays with approximate distinctness. Nothing has yet probed what that
-    approximation costs.
-  </div>
   <p>
-    A second model, <code>trace</code>, is registered as the control: it pools the cells
-    immediately and gives distinctness up. If it ever matches the careful one, the
-    machinery is not earning its compute &mdash; which is worth knowing either way.
+    <strong>Layer 3 is the whole idea.</strong> A difference of Gaussians is
+    excitatory in the middle and inhibitory around it, area-matched so a uniform
+    field sums to zero. Raise the background everywhere and the response does not
+    move; concentrate the same activity into a moment and it spikes. That is
+    &ldquo;observed minus local context&rdquo; &mdash; the quantity every one of the
+    six detectors computes by hand &mdash; written as one convolution and then
+    fitted rather than configured.
+  </p>
+  <p>
+    It also explains the two behaviours Tony predicted from the tube. <strong>Jitter
+    dims the spot</strong>, because spreading the onsets pushes them out of the
+    centre and into the surround. <strong>A busier background does not</strong>,
+    because the surround rises with it.
   </p>
 </div>
 
-<h2>Step 3: the result</h2>
-
-<figure>
-  <img src="{{FIG:learned_scoreboard}}" alt="Three bar charts of F1, recall and precision for six hand-written detectors in blue and two learned models in red. The learned models are lowest on F1 and recall; one has the highest precision.">
-  <figcaption>
-    <strong>Everything on the same three recordings, scored by the same rule.</strong>
-    Red is learned. The learned models sit at the bottom on F1 and recall. The one
-    apparent win is misleading: <code>tiny</code> has precision 1.00 because it fired
-    three times in total and happened to be right each time.
-  </figcaption>
-</figure>
+<h2>What the model learned about the data</h2>
+<div class="col">
+  <p>
+    The centre widths are free parameters, and they were all initialised at the
+    finest thing the recording can resolve &mdash; <strong>one sample</strong>. Where
+    they ended up is the model&rsquo;s own estimate of how wide a coordinated event
+    is:
+  </p>
+</div>
 
 <div class="tablewrap">
 <table>
-  <caption class="sr" style="position:absolute;left:-9999px">Detector scores on the bench</caption>
-  <thead><tr>
-    <th>Detector</th><th class="n">F1</th><th class="n">Recall</th>
-    <th class="n">Precision</th><th class="n">Detections</th><th class="n">Parameters</th>
-  </tr></thead>
+  <thead><tr><th>Scale</th><th class="n">Started (samples)</th><th class="n">Learned (samples)</th><th class="n">In seconds</th></tr></thead>
   <tbody>
-    <tr><td>RateDetect</td><td class="n">0.64</td><td class="n">0.62</td><td class="n">0.67</td><td class="n">53</td><td class="n">0</td></tr>
-    <tr><td>CoactDetect</td><td class="n">0.63</td><td class="n">0.62</td><td class="n">0.64</td><td class="n">45</td><td class="n">0</td></tr>
-    <tr><td>LoCo</td><td class="n">0.63</td><td class="n">0.56</td><td class="n">0.71</td><td class="n">35</td><td class="n">0</td></tr>
-    <tr><td>CICADA</td><td class="n">0.56</td><td class="n">0.62</td><td class="n">0.51</td><td class="n">135</td><td class="n">0</td></tr>
-    <tr><td>spike&#8209;sync</td><td class="n">0.51</td><td class="n">0.38</td><td class="n">0.77</td><td class="n">31</td><td class="n">0</td></tr>
-    <tr><td>SCE</td><td class="n">0.36</td><td class="n">0.22</td><td class="n">0.91</td><td class="n">92</td><td class="n">0</td></tr>
-    <tr class="hl"><td><code>trace</code> (learned)</td><td class="n">0.15</td><td class="n">0.09</td><td class="n">0.50</td><td class="n">8</td><td class="n">2,065</td></tr>
-    <tr class="hl"><td><code>tiny</code> (learned)</td><td class="n">0.12</td><td class="n">0.07</td><td class="n">1.00</td><td class="n">3</td><td class="n">2,393</td></tr>
+    <tr><td>1</td><td class="n">1</td><td class="n">1.83</td><td class="n">0.18</td></tr>
+    <tr class="hl"><td>2</td><td class="n">2</td><td class="n">4.21</td><td class="n">0.42</td></tr>
+    <tr class="hl"><td>3</td><td class="n">4</td><td class="n">6.49</td><td class="n">0.65</td></tr>
+    <tr><td>4</td><td class="n">8</td><td class="n">9.91</td><td class="n">0.99</td></tr>
   </tbody>
 </table>
 </div>
 
+<div class="col">
+  <p>
+    Independently, the assessor measures within-event onset spread at
+    <strong>0.39&nbsp;s</strong> and the full footprint of a planted event at
+    <strong>0.80&nbsp;s</strong>. The two middle scales landed at 0.42&nbsp;s and
+    0.65&nbsp;s. <strong>The model recovered the timescale of the phenomenon from
+    the data, having been told only what one sample is.</strong>
+  </p>
+  <div class="note">
+    That is the property that had to hold. An earlier draft handed the model a bank
+    of fixed time-scales centred on the width we had already measured &mdash; the
+    answer written into the input. Starting every scale at one sample and letting it
+    grow is what makes the fitted width a measurement instead of an assumption, and
+    it is why these numbers can be compared to the assessor at all.
+  </div>
+</div>
+
+<h2>What it scores</h2>
+
 <figure>
-  <img src="{{FIG:learned_loss}}" alt="Training loss for both learned models over 900 steps. Both oscillate between roughly 0.8 and 1.9 with no downward trend, and the two curves track each other closely.">
+  <img src="{{FIG:learned_scoreboard}}" alt="Three bar charts of F1, recall and precision. Six hand-written detectors in blue and three learned models in red. The centre-surround model sits among the hand-written detectors; the two earlier learned models are far below.">
   <figcaption>
-    <strong>Neither model descends.</strong> Loss swings between 0.8 and 1.9 across 900
-    steps with no trend. Note that the two curves track each other almost exactly for the
-    first 400 steps despite different architectures &mdash; a sign the loss is being set
-    by which crops each batch happened to draw rather than by what either model computes.
+    <strong>Everything on the same three recordings, scored by the same rule.</strong>
+    Red is learned. The centre-surround model sits inside the pack of hand-written
+    detectors; the two earlier architectures are the low pair on the right.
   </figcaption>
 </figure>
 
 <div class="col">
-  <h3>What is ruled out</h3>
-  <p>Four candidate explanations were tested and eliminated, so nobody re-derives them:</p>
-  <ul>
-    <li><strong>Not a broken model.</strong> Given a single window containing an event,
-      it fits &mdash; reaching 0.75 confidence at the event and dropping its loss by half.</li>
-    <li><strong>Not the encoding.</strong> The row-order bug above is fixed and pinned by
-      a test.</li>
-    <li><strong>Not only sparsity.</strong> Events occupy 0.5% of frames. Drawing half the
-      training windows around an event changed the failure&rsquo;s shape, not its outcome.</li>
-    <li><strong>Not the two models being secretly identical.</strong> An earlier run had
-      them producing byte-identical losses. They now differ in detections and threshold.</li>
-  </ul>
+  <h3>One number hides a real choice</h3>
   <p>
-    What is left is that a single window trains while the full task does not, which points
-    at variance between batches rather than an inability to represent the target.
+    F1 picks a single point on a curve the model can be moved along, and for this
+    problem it picks the wrong end. The whole curve, measured on the same three
+    recordings:
   </p>
 </div>
 
-<h2>What I would do next</h2>
+<div class="tablewrap">
+<table>
+  <thead><tr><th>Threshold</th><th class="n">Recall</th><th class="n">Precision</th><th>&nbsp;</th></tr></thead>
+  <tbody>
+    <tr><td class="n">0.500</td><td class="n">0.89</td><td class="n">0.10</td><td>finds nearly everything, buried in false alarms</td></tr>
+    <tr class="hl"><td class="n">0.900</td><td class="n">0.80</td><td class="n">0.25</td><td><strong>recall no hand-written detector reaches</strong></td></tr>
+    <tr><td class="n">0.990</td><td class="n">0.60</td><td class="n">0.55</td><td>&nbsp;</td></tr>
+    <tr><td class="n">0.997</td><td class="n">0.47</td><td class="n">0.70</td><td>the F1 optimum, and what the scoreboard shows</td></tr>
+    <tr><td class="n">0.999</td><td class="n">0.36</td><td class="n">1.00</td><td>never wrong, finds a third</td></tr>
+  </tbody>
+</table>
+</div>
+
 <div class="col">
   <p>
-    In order, and the first is a diagnostic rather than a fix &mdash; because three of the
-    four suspects below are only worth testing if the answer comes back one way.
+    The best any of the six manages is <strong>recall 0.62</strong>. This model
+    reaches <strong>0.80</strong> while still returning four detections per real
+    event, and <strong>0.89</strong> if false alarms are cheap.
   </p>
+  <p>
+    Recall at the participant floor is where the six measurably fall over, and it is
+    the reason a learned detector was worth trying. A user who cares about missing
+    events rather than about a balanced score would run it at the other end. F1 does
+    not know that, which is why both points are reported.
+  </p>
+</div>
+
+<h2>Two architectures failed first, and the reason matters</h2>
+<div class="col">
+  <p>
+    Before this one, two models were built and neither learned anything: F1 0.12 and
+    0.15, with loss oscillating between 0.8 and 1.9 for nine hundred steps. They were
+    not broken &mdash; given a single window containing an event, they fit it &mdash;
+    and four other explanations were tested and eliminated.
+  </p>
+  <p>
+    The difference is where rate invariance comes from. Those models were given a
+    2,000-sample receptive field and left to <em>discover</em> that activity should be
+    judged against its local background. Centre-surround does not discover it; it is
+    that operation. Building the invariant in rather than hoping for it is worth more
+    here than any amount of capacity &mdash; the model that works is <strong>half the
+    size and forty times faster to train</strong>.
+  </p>
+</div>
+
+<h2>The measurement this rests on</h2>
+<div class="col">
+  <p>
+    None of the above would mean anything without a way to parameterize the generator
+    from a real recording, and doing it with the six detectors would make every
+    simulated recording a restatement of whichever detector measured it.
+  </p>
+  <p>
+    The assessor avoids that: it has no operating point, only a comparison against a
+    null built by circularly shifting each cell within the window &mdash; which holds
+    every cell&rsquo;s own rate and destroys only cross-cell timing. It was
+    MATLAB-only, which broke the per-lab loop at its first step. It is now Python, at
+    1e&#8209;9 against the original.
+  </p>
+</div>
+
+<figure>
+  <img src="{{FIG:learned_round_trip}}" alt="Three bar charts showing participants, onset SD and events per minute recovered by the assessment at K equals 3, 4 and 6, each against a dashed line marking the planted value.">
+  <figcaption>
+    <strong>What the measurement recovers.</strong> Coordination planted at known
+    settings, assessed, compared. Dashed green is the planted value. K is the minimum
+    number of co-active cells counted as an event &mdash; the method&rsquo;s one
+    convention, so it is reported as a scan rather than chosen. K=4 is the only value
+    where nothing is badly wrong; K=3 over-counts events by 60% and K=6 misses three
+    quarters of them.
+  </figcaption>
+</figure>
+
+<h2>What I would do next</h2>
+<div class="col">
   <ol>
     <li>
-      <strong>Train on the old, easy generator settings.</strong> Before the measured
-      values landed, every detector scored 0.9&ndash;1.0 on this bench. If the model learns
-      there and not here, the pipeline is sound and the measured regime is simply hard
-      &mdash; which is itself a result worth having. If it fails there too, the training
-      loop is wrong and every tuning suspect below is premature.
+      <strong>Sweep the mass axis, which is now worth running.</strong> The number of
+      rate bands the cells are pooled into was the question the whole exercise was
+      built to answer, and it was blocked while every model scored 0.12. This model
+      pools all cells into one band; splitting them is the next knob.
     </li>
     <li>
-      <strong>Cap the positive class weight.</strong> At 0.5% positives it currently sits
-      near 200, so a batch&rsquo;s loss is decided by how many event frames its three
-      windows happened to contain. This is the cheapest single test and the most likely
-      cause.
+      <strong>Attack precision, not recall.</strong> The model finds events; it also
+      fires on things that are not events. The generator already plants the negatives
+      that would teach it the difference &mdash; correlated bursts that are real
+      coincidence, and a dense block containing nothing &mdash; and they are currently
+      only labelled, never emphasised.
     </li>
     <li>
-      <strong>Raise the batch size.</strong> Directly attacks the same variance.
+      <strong>Vary the sampling rate across training recordings.</strong> Every bench
+      recording shares one imaging rate, so nothing here can fail if the model has
+      learned our microscope. The learned centre widths make this testable for the
+      first time: train at one rate, evaluate at another, and see whether they track.
     </li>
     <li>
-      <strong>Consider a wider training target</strong> &mdash; an event footprint is about
-      eight frames against a 2,000-sample receptive field.
-      <em>With one condition:</em> the label itself must not move. An event is defined by
-      what the generator planted, and a tolerance band used for the loss is a different
-      object from the label. If one is added it must stay out of scoring and be stated.
+      <strong>Then the per-lab loop end to end</strong> &mdash; assess a real
+      recording, parameterize, train, and compare what the model finds against what
+      the assessor measured on the same slice.
     </li>
   </ol>
-  <div class="note">
-    <strong>If it needs far more training than this, that is a finding, not a knob.</strong>
-    &ldquo;Lightweight and trainable on user simulations&rdquo; would then be in tension
-    with this task at this event rate, and the target would need revisiting rather than
-    the hyperparameters.
-  </div>
 
   <h3>Two things I would like decided</h3>
   <p>
-    <strong>Is a per-lab loop still the right shape</strong> given that the assessment has
-    a judgement call in it? K changes the derived event frequency roughly tenfold across
-    its scan, and a lab has to pick one. There is no review surface for that yet, and it
-    is filed as needing one.
+    <strong>Does the generator revision land first?</strong> It is in flight and moves
+    the distribution this loop is fitted to. Every number here would need re-running.
   </p>
   <p>
-    <strong>Does the generator revision land first?</strong> It is in flight, and it moves
-    the distribution this whole loop is fitted to. Training a model now means training on
-    a distribution that is about to change.
+    <strong>Who picks K?</strong> It changes the derived event frequency roughly
+    tenfold across its scan, a lab has to choose one, and there is no review surface
+    for that yet.
   </p>
 </div>
 
@@ -446,16 +411,14 @@
 <div class="col">
   <footer>
     <p>
-      Every number here is regenerated by
-      <code>python tools/make_learned_figures.py --out docs/learned</code>, which caches
-      its results next to the figures. The assessor port, the parameterization loop and
-      their tests are in PR&nbsp;#52; the learned models and this review are on the same
-      branch.
+      Regenerated by <code>tools/make_learned_figures.py</code> and
+      <code>tools/make_tube_figure.py</code>. The assessor port, the parameterization
+      loop and their tests are in PR&nbsp;#52; the architectures are on the same branch.
     </p>
     <p>
       Scored on synthetic recordings with planted ground truth. <strong>No claim here
-      rests on real data</strong>, and none of it establishes that any detector, learned
-      or hand-written, is right about a real slice.
+      rests on real data</strong>, and none of it establishes that any detector,
+      learned or hand-written, is right about a real slice.
     </p>
   </footer>
 </div>

@@ -2,9 +2,9 @@
 - upstream:  syncytium2/murderboard @ f43a07b
 - vendored:  f43a07b
 - freshness: current
-- artifact:  docs/learned/report.html (163993c -> a11011a, rebuilt after the last fix)
+- artifact:  docs/learned/report.html (163993c -> a11011a -> 4b4d723, rebuilt after the last fix)
 - roles:     11 of 11 run
-- rounds:    1 blind verify round to clean
+- rounds:    2 (round 1 on the original page; round 2 after the finding changed)
 
 Single-pass self-review walking every role's checklist in turn. Every role ran;
 what scaled was how, not which.
@@ -161,3 +161,78 @@ recordings**, which is the bench's own default. It separates the learned models
 from the hand-written ones by a wide margin and does **not** separate the top
 three hand-written detectors from each other. The page now says so where the
 numbers appear.
+
+
+---
+
+# Round 2 — 2026-08-16, after the result changed
+
+The page was rewritten rather than edited, so this is a second review and not a
+verify pass. **The conclusion inverted**: Tony proposed a centre-surround
+architecture, it was built, and it scores **F1 0.56** where the two models the
+first version reported scored 0.12 and 0.15. A page whose headline was "does not
+converge" cannot be patched into a page whose headline is "here is how to find
+it".
+
+Two structural notes from Tony drove the rewrite, and both were defects in the
+first version that no role had caught:
+
+1. **"Always lead with a figure showing the problem."** The first page opened on a
+   headline and a stat strip. It now opens on the problem drawn — a raster where
+   the planted events are genuinely indistinguishable, the brightness trace where
+   they appear alongside impostors, and the centre-surround trace that separates
+   them. This is role 9's territory and role 9 had passed the page clean, which is
+   the finding: *the rule I checked was "should any of this prose be a picture",
+   not "does the reader see the problem before the solution".*
+2. **"I don't see the network design, layers and their function."** The first
+   version explained the architecture in four prose subsections with a schematic.
+   It now carries a **layer table** — index, layer, what it does, why it is there,
+   output shape, parameter count — which is what "a quick scan" requires. The
+   schematic stays; it answers a different question (the shape of the signal path)
+   than the table (what each stage costs and buys).
+
+## Findings, round 2
+
+**Role 1 — Prove It.** Every headline number re-verified against the regenerated
+`learned_results.json` by assertion rather than by eye: F1 0.56, 1 149
+parameters, learned centres [1.83, 4.21, 6.49, 9.91], and the threshold curve's
+0.90 row (recall 0.80, precision 0.25). All match.
+
+⚠ **One correction applied during the rewrite.** An interim summary quoted "recall
+0.76 at precision 0.35" for the high-recall operating point. That was the 0.95
+threshold, measured before the grid was widened. The page now carries the full
+five-point curve straight from the cache, and the 0.76 figure appears nowhere.
+
+**Role 4 — Reviewer 2.** The tempting overclaim is that the model beats the six
+because it reaches recall 0.89. It does not: at that threshold precision is 0.10.
+The page reports the whole curve as a table with plain-language consequences on
+each row, and names the F1 optimum as the point the scoreboard shows, so the
+reader can see what the recall costs rather than being handed the flattering end.
+
+**Role 6 — RTFM.** The claim that a difference of Gaussians "integrates to zero on
+a flat field" was checked against the implementation: both lobes are
+area-normalised before subtraction, so it holds by construction rather than
+approximately. The claim that the centres "started at one sample" was checked
+against the initialiser.
+
+**Role 10 — Ship It.** Re-run against the new render at 1100 px in both themes:
+7 008 px tall, no horizontal scroll, **zero broken or unloaded images** (checked
+programmatically, not by eye), all four figures present, the two new tables
+scroll inside their own containers. Dark theme re-verified after the rewrite
+because the rewrite touched no CSS but did add table rows with a tinted
+background — `color-mix` on the accent resolves in both themes.
+
+**Roles 2, 3, 5, 7, 8, 9, 11.** Re-walked against the new page. Two changes worth
+recording: the argument order is now problem → mechanism → evidence, which is the
+default arc rather than the deviation the first version had to justify; and the
+figure-to-prose ratio improved by adding a figure rather than by cutting text,
+which is the trade role 9 asks for.
+
+## Residual ⚠ — round 2
+
+**One.** The scoreboard, the threshold curve, and the learned centre widths all
+come from **a single training run at one seed**. The architecture comparison is
+therefore a comparison of one fit each. It is a large enough gap (0.56 against
+0.12) that seed variance is unlikely to explain it, but no error bar is reported
+and none should be inferred. The next run should be a sweep, which is now worth
+doing precisely because the model trains.
