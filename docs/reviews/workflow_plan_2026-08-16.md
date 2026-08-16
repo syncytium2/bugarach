@@ -5,7 +5,7 @@
 - freshness: current
 - artifact:  `docs/workflow_plan.md` (19bae3d9 -> 0bdb52a6)
 - roles:     11 of 11 run
-- rounds:    blind verify in progress at time of writing
+- rounds:    3 blind verify rounds (each found blocking defects; see below)
 
 ## What was reviewed, and the one thing to know about it
 
@@ -82,6 +82,33 @@ residual flag rather than silently dropped.
 6. **⚠ The plan has no per-milestone abort condition.** Raised by the adversarial
    reviewer, not addressed: no stage says what happens if parity fails, if the
    round-trip fails, or if the sources disagree.
+
+## The three blind rounds, and what each layer was
+
+Each round found a different **class** of defect rather than more of the last one,
+which is the argument for having run three.
+
+**Round one — wrong about the world.** Four quantities that read as measurements had
+no source in any repository; a line citation resolved to a different sentence in
+every checkout; a claimed statistic existed in a file the plan did not cite. Every
+one arrived by message from another session and was written down unverified.
+
+**Round two — wrong about its own logic.** The plan specified an input contract in
+full and scheduled no milestone to read it. A caveat's arithmetic ran backwards. A
+guard was introduced to catch a failure it structurally could not see.
+
+**Round three — wrong about the consumer.** The output shape the plan proposed to
+match would have been rejected by the analysis it was matching: that side requires
+the first period of a recording to be named `baseline`, while the input contract
+deliberately asks for its real name, and one figure script silently discards labels
+it does not recognise. Tony resolved it by ruling the output must carry nothing
+project-specific at all — our analysis adapts, and the private dialect is dropped
+rather than reproduced.
+
+Several round-three findings were defects **introduced by round-two fixes** — a new
+milestone whose Part II section was missing, a heading scheme half-renamed. That is
+the "a repaired deliverable has not been reviewed" rule demonstrating itself, and it
+is why the blind pass runs before the follow-up pass rather than instead of it.
 
 ## Two process notes worth keeping
 

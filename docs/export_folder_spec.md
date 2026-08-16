@@ -136,18 +136,42 @@ frame and says the check was skipped.
 
 ## What bugarach emits back
 
-Into the same folder or one the user picks, from **one computation**:
+Into the same folder or one the user picks, from **one computation**. **One output
+shape, carrying nothing specific to any lab** — including ours. Our own analysis
+adapts to read this; it does not get a private dialect.
 
-- **`detections.csv`** — long format, one row per detected coordinated event, with
-  every identity column from `slices.csv` carried through. This is the general-use
-  output and it is the one that must never be compromised for compatibility.
-- **the contract frames** — the summary and per-event shapes this project's
-  existing statistical pipeline consumes. `treatment_idx` and `treatment` are
-  **derived** at write time from `region_idx` and `label`, never stored twice. Two
-  independently-editable records of one fact is a failure this ecosystem has
-  already had.
-- **`detector_settings.csv`** — every parameter each detector ran with, so a result
-  can be reproduced from the folder alone.
+### `detections.csv` — one row per detected coordinated event
+
+| column | meaning |
+|---|---|
+| `slice_id` · `stream` | which recording, which signal — the strings you sent |
+| `detector` | which detector called it, by its plain name |
+| `mode` | `threshold` or `peak` — how it was called, as a value rather than folded into the detector name |
+| `region_idx` · `region_label` | which period it fell in — **your** index and **your** name, unchanged |
+| `onset_sec` · `width_sec` | when it started and how long it lasted |
+| `n_roi` | how many cells took part |
+| `strength` · `strength_unit` | how strong, and **in what units** — because the six detectors do not measure strength in the same thing, the unit travels in the row rather than in a lookup table |
+| *identity columns* | every column from `slices.csv`, carried through unchanged |
+
+### `detector_settings.csv` — one row per parameter
+
+`detector, stream, parameter, value`. Every setting each detector ran with, so a
+result can be reproduced from the folder alone.
+
+### What this deliberately does not do
+
+- **No column means different things in different rows.** A single column holding a
+  count for one detector and a dimensionless index for another cannot be read
+  without a decoder, and a reader who lacks the decoder gets a plausible wrong
+  answer rather than an error. Where the meaning varies, the unit is in the row.
+- **No name has to be parsed.** Detector, stream and mode are their own columns.
+  Nothing is packed into an identifier for a consumer to split apart later.
+- **No privileged region, and no protocol vocabulary.** There is no "treatment
+  index" and no reserved `baseline`; there is the index you sent and the name you
+  gave it. A consumer that needs a baseline-versus-drug contrast picks the two rows
+  it wants — it knows which they are and we do not.
+- **No lookup file is required to read the output.** Every column is self-describing
+  from its header and its unit column.
 
 ## The rules that make it universal
 

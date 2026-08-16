@@ -39,16 +39,18 @@ is special, and windows arrive **already computed** — bugarach never derives o
 
 Identity in `slices.csv` is an **open column set**, passed through untouched, with
 exactly one exception: `frame_interval_sec`, the acquisition sampling interval.
-That one is read, because several detectors build a rate trace on a grid that must
-be the acquisition interval, and it cannot be recovered from onset times. Absent, a
-0.1 s fallback applies and warns every time — a deliberate noise that must not be
-silenced.
+That one is read, because three detectors assume a frame rate and it cannot be
+recovered from onset times. **Only one of the three currently complains when it is
+missing** — the other two fall back to ten hertz in silence, so a lab imaging at
+twenty gets one warning and two quietly wrong answers. Wiring all three is part of
+the first milestone.
 
-Output is **universally compatible first**. One computation, two writers: a plain
-long-format `detections.csv` any pipeline can read, and the **contract frames** —
-the two table shapes the existing R analysis already reads. Matching them is worth
-doing where it is free; where it conflicts with being readable by a stranger, the
-stranger wins and the R side adapts.
+Output is **one shape carrying nothing specific to any lab, including ours** —
+`detections.csv`, one row per detected coordinated event, plus a settings file so a
+result reproduces from the folder alone. Our own analysis must read it, and it must
+also be readable by someone who has never heard of this project; where those pull
+apart, the stranger wins and our R side adapts. No column changes meaning between
+rows, no identifier has to be parsed, no lookup file is needed to read it.
 
 ### What acting buys first
 
@@ -73,43 +75,42 @@ per ROI** and only over clusters that clear a minimum-participant floor, while t
 yardstick spans **every onset from every ROI** in its window with no floor at all.
 They coincide only when no ROI fires twice inside the window.
 
-So 1a produces a **related** onset-span statistic, not the candidate as specified.
-Making it the candidate means porting the participant-selection rule too — a
-decision for whoever takes 1a, and one this plan does not pre-empt. Either way,
+So the port produces a **related** onset-span statistic, not the candidate as
+specified. Making it the candidate means porting the participant-selection rule too
+— a decision for whoever takes the yardstick, and one this plan does not pre-empt. Either way,
 retiring the flag still needs a surrogate null computed *for the new statistic* and
 a round-trip test, and the port delivers neither.
 
 
 ### Build order
 
-1. **1.0 — the folder reader.** Nothing in the tree reads the input contract:
-   `regions.csv`, `slices.csv` and `frame_interval_sec` appear nowhere in `src/`,
-   `tools/` or `tests/`, and `io.load_events_csv` reads one file, takes `slice_id`
-   as a Python argument rather than the required column, and ignores the `stream`
-   column unless a caller opts in. Every later milestone depends on this and none
-   of them builds it. First, because otherwise the plan specifies an input nobody
-   can supply.
-2. **1a — port the uniform yardstick** (`characterize_coord_window.m`, in the
-   machine-local interface2 checkout). Pure, deterministic, no randomness.
-   **Prerequisite, on a machine with MATLAB R2025b:** write the reference
-   generator under `tools/matlab_ref/` and commit its output. There is no
-   generator for this function today, so the gate 1a's acceptance rests on does
-   not yet exist.
-3. **1b — the fitting stage.** Measure an export folder well enough to configure
-   the generator. **Blocked on an open decision — see below.**
-3. **1c — the writers.** Both output shapes, plus a validator that refuses a
-   non-conforming frame. Export button on the existing viewer; the quick path —
-   see the data, tune each detector, run, get a file — is then complete.
-4. **2 — batch.** Run the folder through all six detectors on an extracted
-   dispatch.
-5. **3 — comparison.** Move the generated-vs-real tools into the library.
-6. **4 — generator and optimization screens.** Thin wrappers over `simulate` and
-   `bench`.
-7. **5 — a named deep-learning seam.** It appears in the interface and does
-   nothing. Recorded for whoever fills it: training data comes from planted truth
-   only, never from detector output — score against detector calls and you measure
-   agreement, not truth; train on them and you get a detector emulator
-   (`docs/generator.md`).
+- **The folder reader.** Nothing in the tree reads the input contract: none of its
+  filenames or fields appear anywhere in the source, and the one CSV loader that
+  exists reads a single file, takes the slice name as a code argument rather than
+  from the required column, and ignores the stream column unless a caller asks for
+  it. It also owns the entry point: the viewer currently loads *every* CSV in a
+  directory as a separate recording, so pointed at a conforming folder today it
+  would try to read the region and identity files as recordings and crash. First,
+  because otherwise the plan specifies an input nobody can supply.
+- **The uniform yardstick.** Port the one function that measures how wide a
+  coordinated event is, identically for every detector. **Prerequisite, on a machine
+  with MATLAB:** write its reference generator and commit the output. There is no
+  generator for this function today, so the gate its acceptance rests on does not
+  yet exist.
+- **The writers.** The detections file and the settings file. Export button on the existing viewer; the quick
+  path — see the data, tune each detector, run, get a file — is then complete.
+- **The fitting stage.** Measure a folder well enough to configure the generator.
+  **Blocked on an open decision** — it is out of the critical path until that is
+  settled.
+- **Batch.** Run a whole folder through all six detectors on one extracted
+  dispatch.
+- **Comparison.** Move the generated-versus-real tools into the library.
+- **Generator and optimization screens.** Thin wrappers over machinery that already
+  works.
+- **A named deep-learning seam.** It appears in the interface and does nothing.
+  Recorded for whoever fills it: training data comes from planted truth only, never
+  from detector output — score against detector calls and you measure agreement,
+  not truth; train on them and you get a detector emulator (`docs/generator.md`).
 
 ### How we will know it worked
 
@@ -117,19 +118,22 @@ a round-trip test, and the port delivers neither.
 - **Parity** for the port: synthetic fixtures through `tools/matlab_ref/`, compared
   to **1e-9** on the floating-point fields and **exactly** on the counts. Plus
   hand-derived vectors for the branches the MATLAB test file does not reach.
-- **Contract**: emitted frames validated against the shipped dictionary; read back;
-  `NA` spelled literally; newline-only endings; a real zero preserved as zero
-  rather than becoming missing.
+- **Round-trip the output**: write it, read it back, compare. `NA` spelled
+  literally, newline-only endings, and a real zero preserved as zero rather than
+  becoming missing.
 - **Self-containment**, and it needs a test that can fail. "It ran on a one-file
   folder" proves only that no outside path was *needed* — on this machine the data
   root and the shared-folder variable are both set, so a stray read succeeds and the
-  check passes anyway. Assert on **what was opened**: patch the file-open call,
-  scrub the environment, run from an empty directory, and require every resolved
-  path to sit inside the folder. Assert too that the missing-interval warning
-  actually fires, since a regression that silences it would otherwise pass this
-  whole list.
-- **End to end**: point the app at a folder, tune, run, export; the result opens
-  in R and in pandas.
+  check passes anyway. Assert on **what was opened**: patch the file-open call and
+  require every resolved path to sit inside the folder. Run it **twice** — once with
+  the environment scrubbed, once with those variables pointed at empty sentinel
+  directories — because scrubbing removes the very condition under which a stray
+  read happens, so only the second run has power. Assert too that the
+  missing-interval warning fires for **each** detector that needs it, not just the
+  one that currently warns.
+- **End to end**, and it is a smoke test rather than a gate: point the app at a
+  folder, tune, run, export, and open the result. It proves the path runs; a file
+  with every value multiplied by a thousand would pass it too.
 
 ### Decisions taken here, so nothing waits on them
 
@@ -152,22 +156,38 @@ a round-trip test, and the port delivers neither.
 
 ### What you are being asked to approve
 
-**Milestones 1.0 through 1c.** That buys the quick path end to end: point the app at
-a folder, see the data, tune each detector, run, get a file that opens in R and in
-pandas. Nothing before 1c produces anything you can use, and 1b is blocked on a
-decision nobody has taken yet — so if you want the shortest useful thing, **1.0, 1a
-and 1c without 1b** is a coherent order and gets you the file.
+**The folder reader, the uniform yardstick, and the writers.** Those three, in that
+order, buy the quick path end to end: point the app at a folder, see the data, tune
+each detector, run, get a file. Nothing before the writers produces anything you can
+use. The fitting stage is blocked on an open decision and is not on this path.
 
-Everything after that is scale and comparison: running a whole folder, checking the
-generator against real recordings, and screens over machinery that already works.
-The deep-learning seam is a name in the interface and nothing else.
+Everything after is scale and comparison. The deep-learning seam is a name in the
+interface and nothing else.
+
+**⚠ The R side has work to do, and it is not this plan's.** The output carries no
+project-specific detail by decision, which means our own analysis cannot read it
+unchanged. Three things it does today that a general output will not feed:
+
+- it requires the first period of every recording to be named `baseline`, while the
+  input contract deliberately asks producers for the period's real name;
+- one of its figure scripts keeps only labels beginning `ba`, `se` or `tt` and
+  **silently discards the rest** — `washout`, `control` and `aCSF` would vanish with
+  no error, which is this project's own unlabelled-rows incident waiting to happen;
+- it reads a strength column whose meaning it recovers from a lookup table; the new
+  output puts the unit in the row instead.
+
+Two facts that make this cheaper than it sounds: the per-event shape is read by **no
+R file at all** today — that side consumes a pre-reduced table built in MATLAB — and
+the recruitment column two authorities disagree about is read by **zero** R files.
+So the adaptation is smaller than the surface suggests, and worth scheduling on that
+side before the writers land.
 
 ---
 
 ## Part II — execution detail
 
 *Written for the session doing the work. Read the section for the milestone you are
-starting; milestones 4 and 5 have none, deliberately, and say why below.*
+starting; the screens and the seam have none, deliberately, and say why below.*
 
 ### Before you run anything
 
@@ -181,7 +201,37 @@ starting; milestones 4 and 5 have none, deliberately, and say why below.*
 - **The primary checkout runs far behind `origin/main`.** Standing in it and setting
   `PYTHONPATH=src` loads stale code deterministically rather than correctly.
 
-### 1a — the uniform yardstick
+### The folder reader
+
+**It owns the entry point, and the entry point is currently broken for folders.**
+The viewer's directory mode globs every `.csv` and hands each one to the events
+loader as a separate recording. Pointed at a conforming export folder it will try to
+read the region and identity files as recordings and raise on the first one. So this
+milestone changes what "open a directory" means: a folder containing `events.csv` is
+**one input**, not a pile of independent slices.
+
+What the existing loader does and does not do: it reads one file; it takes the slice
+name as a code argument and ignores the `slice_id` column the contract requires; and
+it ignores the `stream` column unless a caller opts in, silently collapsing every
+event into one unnamed stream. All three need changing.
+
+**Reuse rather than rebuild.** The library already has a constructor that takes
+per-ROI event times plus regions as `(name, start, end)` tuples and builds the
+internal slice object — that is the natural target for `regions.csv`, and it exists.
+Two details it will need: the internal region type carries a slot field the export
+contract deliberately has no notion of, so pass nothing for it; and the constructor
+fills width and amplitude with missing values, which is correct here and is the
+reason the yardstick's amplitude outputs will be empty on real folder input.
+
+**The acquisition interval feeds more than one detector, and only one of them
+complains.** `frame_interval_sec` sets the rate detector's grid, which warns when it
+is missing. Two other detectors carry the same assumption silently — the synchrony
+detector bins on its own interval parameter, and CICADA derives a grid from an
+imaging-rate parameter that defaults to ten hertz. A lab imaging at twenty hertz
+that sends no interval gets one warning and two quietly wrong answers. Wire the
+folder's value into all three, or state in the spec which are left uncovered.
+
+### The uniform yardstick
 
 The detector decides **where** a coordinated event is; this function decides **how
 wide**, identically for every detector, from real onset times. That is what makes
@@ -238,7 +288,7 @@ percentile, rounding and grid helpers in `_shared.py` are not reached by this
 function; say so rather than leaving it open. Sort with a stable kind so the
 argument does not have to be re-derived.
 
-### 1b — the fitting stage
+### The fitting stage
 
 **⚠ Open decision, and it blocks this milestone.** The estimator selects its input
 by finding a region whose label is literally `baseline` and a stream literally named
@@ -248,7 +298,9 @@ name with `baseline`, so the label is not even evidence. Meanwhile FOUNDATIONS �
 canonical and requires calibrating from baseline recordings only. **On a conforming
 folder, bugarach cannot identify a baseline window — by design.** Two ways out, and
 someone must choose: ask the user which region to fit, or reintroduce label
-special-casing for this one path. Do not start 1b before this is settled.
+special-casing for this one path — and that second option is not a free choice: it
+is forbidden by the input contract and by FOUNDATIONS §4, so taking it means
+amending both in the same change. Do not start this milestone before it is settled.
 
 **Use the estimator that exists.** `tools/fit_background_shape.py` already fits
 **three** shapes by maximum likelihood on a negative-binomial count model: how
@@ -295,54 +347,53 @@ burst structure runs to five minutes. Say which window the fit uses and why. App
 the same round-trip test jitter got; if it fails, participation joins jitter as a
 named prior.
 
-### 1c — the writers
+### The writers
 
-**Two shapes from one computation.** A long-format detections file for general use,
-and the contract frames for the existing R analysis.
+**One shape, carrying nothing specific to any lab — including ours.** Tony settled
+this: our own analysis must read the output, *and* the output must be general enough
+for anyone, so no project-specific detail goes in it. Our R side adapts; it does not
+get a private dialect. The columns are in
+[`docs/export_folder_spec.md`](export_folder_spec.md).
 
-- The recruitment column — **`amp_median_total`**, how many ROIs an event recruited
-  — is **present and missing-filled** for the **three** detectors routed through the
-  producer's shim: RateDetect, SPIKE-synch and **CoactDetect**. Not absent. Dropping
-  it yields a frame one column short of the contract.
-  **⚠ The two authorities disagree about the third.** The metric dictionary declares
-  a recruitment row for CoactDetect; the shipped producer fills it with nothing. So
-  a port that computes a real value for CoactDetect matches the dictionary and
-  diverges from the frames this milestone claims to reproduce. Decide which
-  authority wins and record it — do not let the choice be made by whichever code is
-  written first.
-- The written per-event file carries one more column than its builder emits; a
-  validator built to the builder's count rejects real files.
-- Spell missing values literally as `NA` — the default in Python's CSV writer is an
-  empty field, which the contract does not name. Emit newline-only endings; a stray
-  carriage return poisons the last column under exact comparison.
-- A real zero is not a missing value. Some detectors legitimately report a
-  tightness of exactly zero, meaning perfectly synchronous. Preserve it.
+That decision removes most of what this milestone used to be, and it is worth
+knowing what it removes and why:
 
-**The validator's power, stated honestly.** A dictionary-driven check catches a
-**schema** that does not conform and has **no power at all** over a conforming
-schema carrying wrong values — multiply every width by a thousand and it passes.
-That is the failure the contract exists to stop, so say what actually catches it:
+- **No column whose meaning changes by row.** The existing contract has one strength
+  column that holds a cell count for some detectors, a dimensionless index for
+  another and a rate for a third, disambiguated by a lookup table shipped alongside.
+  A reader without the table gets a plausible wrong answer instead of an error. Here
+  the unit travels in the row.
+- **No packed identifiers.** Detector, stream and mode are three columns, not one
+  string a consumer has to split.
+- **No reserved vocabulary and no privileged period.** No treatment index, no
+  required `baseline`. The index and name the producer sent come back unchanged, and
+  the consumer picks the pair it wants to compare — it knows which they are.
+- **No lookup file needed to read the output.** Which also means no dictionary
+  validator: the check that was going to police conformance was a self-consistency
+  check against a file the producer supplies, absent exactly when a stranger needs
+  it most.
 
-- Asserting against the dictionary's unit and direction fields catches **schema
-  drift only** — those fields describe the column, not the row, and nothing in them
-  moves when a value is wrong.
-- A **committed synthetic frame, byte-diffed on every run, is a regression gate and
-  not a correctness gate.** It is produced by the port under test: write the port
-  wrong, generate the reference, and the diff is clean forever. It catches a *later*
-  change, never the original error. Freeze it, and require that regenerating it
-  re-runs the oracle — otherwise a session that changes the port and refreshes the
-  fixture silently disarms the gate for good.
-- **The only correctness gate is the MATLAB oracle** — the reference the port is
-  built against, not one it produced. That is why 1a's prerequisite is writing the
-  reference generator, and why it cannot be skipped.
+What survives, and still matters:
 
-The dictionary check has a matching limit worth stating plainly: the producer
-supplies the dictionary it is judged against, so a batch that ships a dictionary
-matching whatever it wrote passes by construction — and an outside lab has no reason
-to ship one at all. It is a self-consistency check for this project's own batches,
-not a guarantee for a stranger's folder.
+- Spell missing values literally as `NA` — Python's CSV writer defaults to an empty
+  field. Emit newline-only endings; a stray carriage return corrupts the last column
+  under exact comparison.
+- **A real zero is not a missing value.** Some detectors legitimately report a width
+  of exactly zero, meaning perfectly synchronous. Preserve it.
+- Carry every identity column through untouched, and carry the settings file, so a
+  result reproduces from the folder alone.
 
-### 2 — batch
+**What gates this, stated honestly.** A committed reference frame, byte-diffed on
+every run, is a **regression** gate and not a correctness one — it is produced by
+the code under test, so write the writer wrong, generate the reference, and the diff
+stays clean forever. Freeze it, and require that regenerating it re-runs the
+yardstick's oracle; otherwise a session that changes the writer and refreshes the
+fixture disarms the gate permanently. **Correctness for the numbers comes from the
+MATLAB oracle** — and note its scope: it covers the yardstick's arithmetic and has
+no opinion at all about column assembly, missing-value spelling, or line endings.
+Those need their own round-trip test, and it is cheap: write, read back, compare.
+
+### Batch
 
 **Do not reuse the viewer's compute path directly.** It is a compute function shaped
 for the plot: it materialises a full-length trace per detector and forces two of
@@ -383,7 +434,7 @@ a short and a long recording; raster height saturates at both ends of its clamp;
 and each trace row scales to its own data with nothing marking it. Fix before any
 cross-slice figure ships.
 
-### 3 — comparison
+### Comparison
 
 Move the comparison tools into the library, **but apply the outstanding fix list
 first** — `docs/reviews/roi_rate_distribution_2026-08-15.md` is a do-not-ship record
@@ -404,7 +455,7 @@ Match the library's window convention — the tools are half-open at the top, th
 library closed at both ends. One event per boundary, systematically, across every
 window the fitting stage measures.
 
-### 4 and 5 — deliberately unspecified
+### The screens and the seam — deliberately unspecified
 
 The generator and optimization screens are thin wrappers over machinery that
 already works, and the deep-learning seam does nothing. Neither has a section here,
