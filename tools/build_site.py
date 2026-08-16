@@ -68,15 +68,18 @@ and a synthetic benchmark with planted ground truth to test them against.</p>
 
 {real}
 
-<p><b>A model trained across everyone's recordings learns what is usually true —
-and what is usually true is the textbook.</b> The results worth having are often
-the ones where a preparation departs from it, and those are exactly the ones such
-a model scores as noise: confidently, and with no way for the recording to answer
-back. An instrument built from the average of other people's tissue cannot be
-trusted to report what is unusual about yours.</p>
+<p><b>Coordination is not one phenomenon, so there is no one detector to train.</b>
+Stars coordinate and cells coordinate, and between them the timescales run over
+many orders of magnitude — along with the sampling rates, the mechanisms, and
+what even counts as an event. A network trained across every source of
+coordination spends its capacity on a space in which almost nothing transfers,
+and comes out mediocre at all of it. Worse for a working lab: what it learns is
+the average case, so the preparation that departs from the average is the one it
+scores as noise.</p>
 
-<p>So nothing here is trained on a treatment. Measure the coordination
-parameters of an <i>untreated</i> recording, simulate from those alone, and let
+<p><b>So the instrument gets built for your recordings, not for coordination in
+general.</b> Measure the coordination parameters of an <i>untreated</i>
+recording, simulate from those alone, and let
 that synthetic baseline do two jobs at once: tune the six detectors, and train
 the model. Only then is the finished instrument pointed at the whole dataset,
 treatments included. Simulate the treatment and you have spent the effect you
