@@ -236,3 +236,77 @@ therefore a comparison of one fit each. It is a large enough gap (0.56 against
 0.12) that seed variance is unlikely to explain it, but no error bar is reported
 and none should be inferred. The next run should be a sweep, which is now worth
 doing precisely because the model trains.
+
+---
+
+# Round 3 — 2026-08-16, after the regime-shift test
+
+Tony: *"Test on the low to high background freq change."* The result changed a
+claim the round-2 page was making, so this is a third review rather than an
+addition.
+
+## The finding that forced it — Role 4
+
+**The page said the model "recovered the timescale of the phenomenon."** The
+transfer test retrained it on a quieter background with **identical planted
+events**, and the fitted centre widths moved: 4.21 samples became 2.96, a 40%
+shift in a quantity whose referent did not change. The widths are therefore partly
+absorbing background rather than purely measuring the event.
+
+Softened to "found the right range", with the contradicting measurement shown
+next to it rather than omitted. This is the class of defect that survives every
+other role: internally consistent, correctly computed, and stronger than the
+evidence.
+
+## Role 1 — Prove It
+
+All sixteen numbers in the new transfer table asserted against
+`regime_shift.json` programmatically rather than read across. The quiet-regime
+centre widths quoted in the caveat likewise.
+
+## Role 4 — the second finding, about the test itself
+
+**The guard does not reproduce the failure it exists to catch.** Upstream, a
+dense-tuned detector met sparse data and precision fell 90→45, 74→10. Across
+*these* two regimes the six hand-written detectors show no precision collapse at
+all — four score better on the busier side. So the axis as configured is milder
+than the historical one, and a clean pass here is weaker evidence than it looks.
+Stated on the page in those terms.
+
+**And the two failed models show a change of exactly 0.00**, which is a
+no-power result, not robustness: `tiny` emits three detections and its threshold
+sits at the grid edge (0.05) — flagged by the guard added earlier in the session,
+so those cells are not operating points and are labelled as such.
+
+## Role 11 — argument order
+
+The progression now runs in the order the work happened — `trace`, `tiny`,
+`tube`, each row naming what it settled — followed by the transfer test that
+qualifies the winner. A reader who stops after the table still leaves with the
+right conclusion, which is the test for this section.
+
+## Role 10 — Ship It
+
+Re-run on the rebuilt page: 8 538 px, both themes, no horizontal scroll, zero
+broken images, both new tables scroll in their own containers. Hash
+4b4d723 → fa29612, render post-dates the last edit.
+
+## Roles 2, 3, 5, 6, 7, 8, 9 — re-walked, no new findings
+
+Role 6 is worth one line: the mechanistic sentence added to explain the
+asymmetry — *centre-surround cancels the mean, not the variance* — was checked
+against the construction. The kernels are area-matched so the mean cancels
+exactly; nothing in them addresses fluctuation, whose scale grows with rate. The
+explanation matches the code rather than merely fitting the numbers.
+
+## Residual ⚠ — round 3
+
+**Two, both about statistical weight rather than about any claim being wrong.**
+
+1. Every cell is **one training run at one seed**. Six runs total. The 0.68-vs-0.12
+   gap is far outside any plausible seed variance, but the 0.68-vs-0.56 difference
+   between `tube`'s two regimes is not obviously so, and no error bar is reported.
+2. The transfer test uses **two points on one axis**. Background rate is the axis
+   the bench already varies; tightness, participation and sampling rate are
+   untested and, per the mechanism above, sampling rate is the one most likely to
+   break it.

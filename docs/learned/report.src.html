@@ -162,9 +162,9 @@
 
 <div class="verdict">
   <div><div class="k six">0.64</div><div class="l">top of the six hand-written detectors &mdash; the leading three are tied within noise</div></div>
-  <div><div class="k learned">0.56</div><div class="l">centre-surround model, same recordings, same scorer</div></div>
+  <div><div class="k learned">0.68</div><div class="l">centre-surround model at its best regime &mdash; recall 0.91</div></div>
   <div><div class="k learned">1,149</div><div class="l">parameters, trained in 6 seconds on a laptop</div></div>
-  <div><div class="k">0.42s</div><div class="l">event width the model learned, never told</div></div>
+  <div><div class="k">3&rarr;1</div><div class="l">architectures tried before one learned anything</div></div>
 </div>
 <p style="font-size:.85rem;color:var(--muted);margin-top:.6rem">
   F1 against planted truth &mdash; detections matched to the events the generator
@@ -261,9 +261,18 @@
     Independently, the assessor measures within-event onset spread at
     <strong>0.39&nbsp;s</strong> and the full footprint of a planted event at
     <strong>0.80&nbsp;s</strong>. The two middle scales landed at 0.42&nbsp;s and
-    0.65&nbsp;s. <strong>The model recovered the timescale of the phenomenon from
-    the data, having been told only what one sample is.</strong>
+    0.65&nbsp;s &mdash; the model found the right range having been told only what
+    one sample is.
   </p>
+  <div class="note warn">
+    <strong>How far that goes is now measured, and it is less far than it looks.</strong>
+    Retraining on a quieter background &mdash; identical events, only the background
+    changed &mdash; moved the fitted widths to 1.73, 2.96, 5.12, 8.61 samples. The
+    middle scale shifted by 40% while the thing it supposedly measures did not move
+    at all. So the widths are partly absorbing background rather than purely
+    measuring the event, and the honest claim is that they land in the right range,
+    not that they recover the timescale.
+  </div>
   <div class="note">
     That is the property that had to hold. An earlier draft handed the model a bank
     of fixed time-scales centred on the width we had already measured &mdash; the
@@ -320,7 +329,93 @@
   </p>
 </div>
 
-<h2>Two architectures failed first, and the reason matters</h2>
+<h2>Three architectures, and what each one taught</h2>
+<div class="tablewrap">
+<table>
+  <thead><tr><th>#</th><th>Model</th><th>Idea</th><th class="n">Params</th>
+    <th class="n">Train</th><th class="n">Best F1</th><th>What it settled</th></tr></thead>
+  <tbody>
+    <tr><td class="n">1</td><td><code>trace</code></td>
+        <td>pool the cells away first, then filter in time</td>
+        <td class="n">2,065</td><td class="n">8 s</td><td class="n">0.21</td>
+        <td>cheapest possible; gives up distinctness. Never learned &mdash; so the problem was not the cell axis.</td></tr>
+    <tr><td class="n">2</td><td><code>tiny</code></td>
+        <td>keep the cells, filter each, cap softly, pool by rate band</td>
+        <td class="n">2,393</td><td class="n">234 s</td><td class="n">0.12</td>
+        <td>a 2,000-sample receptive field, left to <em>discover</em> that activity should be judged against local background. It did not.</td></tr>
+    <tr class="hl"><td class="n">3</td><td><code>tube</code></td>
+        <td>centre &minus; surround on the brightness trace</td>
+        <td class="n">1,149</td><td class="n">6 s</td><td class="n">0.68</td>
+        <td>the same invariant, <strong>built in rather than hoped for</strong>. Half the size, forty times faster, and it converges.</td></tr>
+  </tbody>
+</table>
+</div>
+
+<div class="col">
+  <p>
+    The two failures were not broken models &mdash; given a single window
+    containing an event, both fit it &mdash; and four other explanations were
+    tested and eliminated. What separated them from the third was never capacity.
+    It was where the invariance came from.
+  </p>
+</div>
+
+<h2>Does it survive a change of background?</h2>
+<div class="col">
+  <p>
+    The claim behind centre-surround is that a uniform change in background
+    cancels. That is testable: train in one regime, deploy in the other,
+    <strong>carry the threshold over unchanged</strong>. Both regimes are
+    untreated &mdash; the quarter and three-quarter points of the per-cell rate
+    spread across real baseline slices, a 4.6-fold change slices show among
+    themselves.
+  </p>
+</div>
+
+<div class="tablewrap">
+<table>
+  <thead><tr><th>Trained on</th><th>Tested on</th><th class="n">F1</th>
+    <th class="n">Recall</th><th class="n">Precision</th><th>&nbsp;</th></tr></thead>
+  <tbody>
+    <tr class="hl"><td>quiet</td><td>quiet</td><td class="n">0.68</td><td class="n">0.91</td><td class="n">0.54</td><td>best result here</td></tr>
+    <tr><td>quiet</td><td>busy</td><td class="n">0.53</td><td class="n">0.73</td><td class="n">0.41</td><td><strong>precision &minus;0.13</strong></td></tr>
+    <tr><td>busy</td><td>busy</td><td class="n">0.56</td><td class="n">0.47</td><td class="n">0.70</td><td>&nbsp;</td></tr>
+    <tr><td>busy</td><td>quiet</td><td class="n">0.51</td><td class="n">0.40</td><td class="n">0.72</td><td><strong>precision +0.02</strong></td></tr>
+  </tbody>
+</table>
+</div>
+
+<div class="col">
+  <p>
+    <strong>Half the claim survives.</strong> Deploying from the busier regime into
+    the quieter one costs essentially nothing &mdash; precision even rises. Going
+    the other way costs 0.13 of precision.
+  </p>
+  <p>
+    The asymmetry says what the mechanism actually does: <strong>centre-surround
+    cancels the mean, not the variance.</strong> A uniform rise in background does
+    subtract out in expectation, but the fluctuations around it grow with the rate,
+    and those produce chance alignments no surround can remove. A model trained
+    where background is sparse has simply never seen enough of them.
+  </p>
+  <div class="note">
+    <strong>So: train on the busier regime and deploy downward</strong>, or train
+    across both. That is a deployable rule, and it came out of the test rather than
+    out of the design.
+  </div>
+  <div class="note warn">
+    <strong>What this test cannot yet do.</strong> The six hand-written detectors
+    show no precision collapse across the same shift &mdash; four of them score
+    <em>better</em> on the busier regime. The historical failure this guard exists
+    to catch (precision 90&rarr;45, 74&rarr;10 when a dense-tuned detector met
+    sparse data) does <strong>not</strong> reproduce here, so the axis as configured
+    is milder than the one that caused it. And the two models that never learned
+    show a change of exactly zero &mdash; not robustness, but a metric with no
+    dynamic range left to lose.
+  </div>
+</div>
+
+<h2>Why building the invariant in beats hoping for it</h2>
 <div class="col">
   <p>
     Before this one, two models were built and neither learned anything: F1 0.12 and
