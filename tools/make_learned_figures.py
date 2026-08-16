@@ -25,7 +25,7 @@ import numpy as np
 REGIME = "baseline_busy"
 BENCH_SEEDS = (1, 2, 3)
 ROUND_TRIP_SEEDS = tuple(range(1, 9))
-LEARNED = ("tiny", "trace")
+LEARNED = ("tube", "tiny", "trace")
 
 # The planted recording the round trip measures recovery against.
 PLANTED = dict(duration_sec=2700.0, n_roi=33, bg_rate_hz=0.0096,
@@ -52,9 +52,16 @@ def compute() -> dict:
 
     # --- the learned models, trained and scored the same way ------------------
     mk = lambda seed: make_recording(REGIME, seed=seed)          # noqa: E731
+    # Per-architecture learning rate. `tube` has ~1k parameters and a structured
+    # front end, so it takes a much larger step than the free-form stacks; using
+    # one rate for all three would report a tuning artifact as an architecture
+    # difference.
+    LR = {"tube": 1e-2, "tiny": 1e-3, "trace": 1e-3}
     learned = {}
     for name in LEARNED:
-        tr = train(name, mk, n_train=10, steps=900, crop=4096, batch=3, lr=1e-3)
+        tr = train(name, mk, n_train=10, steps=900, crop=4096, batch=3,
+                   lr=LR[name])
+        chosen_thr = float(tr.threshold)
         hit = det = pl = 0
         for s in BENCH_SEEDS:
             sl, gt = mk(s)
@@ -66,10 +73,31 @@ def compute() -> dict:
         rec = hit / pl if pl else float("nan")
         pre = hit / det if det else 0.0
         f1 = 0.0 if (rec + pre) == 0 else 2 * rec * pre / (rec + pre)
+        import math
+        # A single F1 point hides a real trade. Report the model's own curve at a
+        # few thresholds so a reader can see what recall costs in precision --
+        # recall at the participant floor is the stated target, and F1 does not
+        # know that.
+        curve = []
+        for thr in (0.5, 0.9, 0.99, 0.997, 0.999):
+            h = d_ = 0
+            for s in BENCH_SEEDS:
+                sl, gt = mk(s)
+                tr.threshold = thr
+                dd, _ = tr.predict(sl)
+                sc2 = score_stream(gt, dd)
+                h += sc2.n_hit; d_ += sc2.n_detected
+            curve.append(dict(threshold=thr, recall=h / pl if pl else 0.0,
+                              precision=h / d_ if d_ else 0.0, n_detected=d_))
+        tr.threshold = chosen_thr      # restore; the sweep left it at 0.999
         learned[name] = dict(f1=f1, recall=rec, precision=pre, n_detected=det,
-                             params=tr.n_params, threshold=tr.threshold,
+                             params=tr.n_params, threshold=chosen_thr,
                              train_seconds=tr.train_seconds,
-                             loss=[float(v) for _, v in tr.history])
+                             loss=[float(v) for _, v in tr.history],
+                             curve=curve,
+                             centres=[math.exp(v) for v in
+                                      tr.model.log_center.tolist()]
+                             if hasattr(tr.model, "log_center") else None)
     out["learned"] = learned
 
     # --- assessment round trip: what the measurement recovers ------------------

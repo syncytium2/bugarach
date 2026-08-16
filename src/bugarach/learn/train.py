@@ -164,8 +164,15 @@ def pick_threshold(model, make_recording, *, dt, seed, n_val: int = 4,
             p = torch.sigmoid(model(torch.from_numpy(enc.raster).unsqueeze(0)))
         scored.append((p.squeeze(0).numpy(), enc, gt))
 
+    # The grid must BRACKET the optimum. `tube` first picked 0.95 — the top of a
+    # 0.05-0.95 sweep — and this repo already refuses a boundary answer for the
+    # six (`bench.EdgeOfRange`): an optimum at the edge means the search stopped
+    # while still climbing, and reporting it as an operating point is how a
+    # boundary value once got published upstream as one.
+    grid = np.concatenate([np.arange(0.05, 0.95, 0.05),
+                           1.0 - np.geomspace(0.05, 1e-4, 12)])
     best, best_f1 = 0.5, -1.0
-    for thr in np.arange(0.05, 0.96, 0.05):
+    for thr in grid:
         tot_hit = tot_det = tot_pl = 0
         for p, enc, gt in scored:
             det = decode(p, threshold=float(thr),
@@ -180,4 +187,11 @@ def pick_threshold(model, make_recording, *, dt, seed, n_val: int = 4,
         f1 = 0.0 if (r + pr) == 0 else 2 * r * pr / (r + pr)
         if f1 > best_f1:
             best_f1, best = f1, float(thr)
+    if best >= grid[-1] - 1e-12 or best <= grid[0] + 1e-12:
+        import warnings
+        warnings.warn(
+            f"threshold {best:.4g} sits at the edge of the searched grid "
+            f"[{grid[0]:.4g}, {grid[-1]:.4g}] — the search was still climbing "
+            "when it stopped, so this is not an operating point. Widen it.",
+            RuntimeWarning, stacklevel=2)
     return best, merge_gap_frames

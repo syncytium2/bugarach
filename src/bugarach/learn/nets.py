@@ -175,3 +175,89 @@ def build_trace(*, head_width=8, head_depth=11):
             return self.head(torch.cat([frac, scale], dim=1)).squeeze(1)
 
     return Trace()
+
+
+@register("tube", note="center-surround on the brightness trace — Tony's tube, "
+                       "2026-08-16: rate invariance by construction",
+          n_scales=4, width=8, depth=6, max_center_frames=128)
+def build_tube(*, n_scales=4, width=8, depth=6, max_center_frames=128):
+    """Look down a tube as the recording slides past.
+
+    The tube is dark; onsets are specks. When several cells fire together a bright
+    spot crosses the centre. Jitter dims it. A busier background raises the whole
+    field, but a real spot still stands above its own surround.
+
+    That last sentence is the architecture. **Center-surround makes rate
+    invariance structural rather than learned**: the surround subtracts the local
+    level, so a uniform rate change cancels and only excess survives. It is what
+    every one of the six detectors computes by hand — observed minus context — and
+    what `tiny` was spending a 2 000-sample receptive field *hoping* to discover.
+
+    Three properties fall out rather than being enforced:
+
+    * **space invariance** — cells are summed, so the model never sees which cell
+      is which and runs at any cell count. Tony's phrase for it.
+    * **distinctness** — each cell is capped at one vote *inside the centre
+      window* before the sum, so a single cell bursting cannot imitate a crowd.
+      Here the cap is exact rather than soft, because a centre window exists.
+    * **tightness is a learned kernel width** — the centre widths are free
+      parameters, so how tight an event must be is fitted, not supplied.
+
+    ⚠ The centre widths are initialised across a geometric spread and then
+    trained. The spread is a starting point, not the answer: if a fitted width
+    runs to the end of its range the model is telling you the range was wrong.
+    """
+    torch = _torch()
+    nn = torch.nn
+    import math
+
+    class Tube(nn.Module):
+        def __init__(self):
+            super().__init__()
+            self.k = int(max_center_frames)
+            # **Start at one sample and let it zoom out.** Tony, 2026-08-16:
+            # "the scaling can start with dt, 1 point. if the events are long
+            # relative to dt the center surround zooms out." One sample is the
+            # finest thing the recording can resolve, so it is the only
+            # non-arbitrary place to begin — and because the width is a free
+            # parameter, the FITTED value is the model's own estimate of how wide
+            # an event is, in samples. Multiply by dt and it is directly
+            # comparable to what the assessor measured. Stored as a log so it
+            # stays positive under gradient descent.
+            init = [math.log(1.0 * (2 ** i)) for i in range(n_scales)]
+            self.log_center = nn.Parameter(torch.tensor(init))
+            self.log_ratio = nn.Parameter(torch.full((n_scales,), math.log(8.0)))
+            self.gain = nn.Parameter(torch.ones(n_scales))
+            self.head = _dilated_stack(nn, n_scales + 1, 1, width, depth)
+
+        def _kernels(self, device):
+            """Difference of Gaussians, centre minus surround, area-normalised so
+            a flat field integrates to zero — which is what makes a uniform rate
+            change cancel instead of merely shrink."""
+            t = torch.arange(-self.k, self.k + 1, device=device,
+                             dtype=torch.float32).view(1, -1)
+            c = torch.exp(self.log_center).clamp(0.5, self.k / 2).view(-1, 1)
+            s = c * torch.exp(self.log_ratio).clamp(1.5, 40.0).view(-1, 1)
+            centre = torch.exp(-0.5 * (t / c) ** 2)
+            surround = torch.exp(-0.5 * (t / s) ** 2)
+            centre = centre / centre.sum(dim=1, keepdim=True)
+            surround = surround / surround.sum(dim=1, keepdim=True)
+            return ((centre - surround) * self.gain.view(-1, 1)).unsqueeze(1)
+
+        def forward(self, x):                       # (B, n_roi, T)
+            b, n, t = x.shape
+            # --- one cell, one vote, inside the centre window -----------------
+            # Smooth each cell by the smallest centre, then clamp: "did this cell
+            # fire near here", not "how many times". Exact, not a soft cap.
+            kmin = int(torch.exp(self.log_center.detach()).min().clamp(1, self.k))
+            pooled = torch.nn.functional.max_pool1d(
+                x.reshape(b * n, 1, t), kernel_size=2 * kmin + 1,
+                stride=1, padding=kmin).reshape(b, n, t)
+            bright = pooled.sum(dim=1, keepdim=True) / max(n, 1)   # space invariant
+
+            # --- centre-surround in time --------------------------------------
+            resp = torch.nn.functional.conv1d(
+                bright, self._kernels(x.device), padding=self.k)
+            return self.head(torch.cat([bright, resp], dim=1)).squeeze(1)
+
+    return Tube()
