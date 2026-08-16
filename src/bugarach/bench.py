@@ -66,6 +66,35 @@ PROVISIONAL, and notes that the calibrated settings were adopted on 2026-08-05
 numbers are measurements; the decision that rested on them was never checked.
 """
 
+MEASURED_RATE_SHAPE = 0.275
+"""Gamma shape of the per-ROI background rate in real baseline windows.
+
+Fitted, not chosen: within a window the ROI rate is modelled as
+``Gamma(shape, mean/shape)`` and the observed count as Poisson over that rate —
+Negative Binomial marginally — and this is the maximum-likelihood shape over
+**81 baseline windows / 2 643 ROIs**, each window keeping its own mean because
+untreated slices genuinely differ several-fold. Re-derive with
+``python tools/fit_background_shape.py`` (needs ``$BUGARACH_DATA_ROOT``); the
+tool prints the fit and says whether the tree's value still matches the data.
+
+The number worth looking at is not the shape but what it reproduces. Real
+windows leave **35%** of ROIs with no event at all, at a median 1.7 mHz, and
+reach 486 mHz. Drawing rates at this shape leaves **38%** silent at a median of
+1.7. The silent ROIs are **not modelled** — there is no zero-inflation term
+here. They are what a low rate drawn from the tail produces over a finite
+window, which is the reason to believe the shape rather than merely accept it.
+A flat field at the same mean leaves 2% silent at a median of 10.0 mHz.
+
+⚠ The tail overshoots: the fit reaches ~847 mHz where the data reaches 486. A
+Gamma is the simplest distribution that produces the silence and the skew
+together; it is not the last word on the busiest ROIs.
+
+⚠ **Not wired into the bench.** ``BENCH_RECORDING`` still runs a flat field, so
+every operating point and every score in this package is still measured on the
+old background. Switching it re-derives the whole bench and is not a default
+change — see ``docs/todo/2026-08-14-generator-background-model-is-flat.md``.
+"""
+
 
 @dataclass(frozen=True)
 class OperatingPoint:
@@ -484,3 +513,44 @@ def pick_operating_point(curve: list[BenchResult]) -> BenchResult:
         f"({best.knob_value:g}, F1 {best.f1:.2f}) — the search was still "
         "climbing when it stopped; widen the grid before calling this an "
         "operating point")
+
+
+MEASURED_BURST_SHAPE = (1.547, 1.388)
+"""Gamma shapes of the per-bin rate multiplier, for `MEASURED_BURST_BINS`.
+
+The temporal partner of `MEASURED_RATE_SHAPE`, and the same estimator turned
+ninety degrees. There, ROIs differed from one another. Here **one ROI is followed
+across time bins**: under a constant rate its counts would be Poisson with
+variance equal to mean, and a bursty ROI is over-dispersed. Fixing the ROI is
+what makes the estimate clean — rate heterogeneity across ROIs is held constant
+inside one of them, so the over-dispersion left over is temporal.
+
+Maximum likelihood over the ROIs carrying at least 10 events in their baseline
+window (784 of them, across 85 windows), each ROI keeping its own mean.
+Re-derive with `python tools/fit_background_shape.py`.
+
+**Two scales, because one cannot work.** A single bin width draws independent
+bins, so its over-dispersion stops growing once the window exceeds the bin. Real
+ROIs keep getting more over-dispersed the wider you look:
+
+| variance/mean | 30 s | 60 s | 120 s | 300 s |
+|---|---|---|---|---|
+| real | 1.82 | 2.61 | 3.88 | 5.69 |
+| flat background | 0.99 | 0.95 | 0.93 | 0.74 |
+| these two scales | 1.87 | 2.76 | 3.04 | 4.44 |
+
+Fine scales are reproduced; the coarse end is still short, so a busy stretch of
+several minutes is shorter here than in real tissue.
+
+⚠ The two shapes are fitted **per scale independently** and then multiplied. A
+joint fit would not give these two numbers, and the agreement above is partly
+that approximation being forgiving. It is an approximation on purpose — the
+joint likelihood has no closed form — and it is why the coarse end is the half
+that misses.
+
+⚠ **Not wired into the bench**, exactly like `MEASURED_RATE_SHAPE`.
+`BENCH_RECORDING` still runs a homogeneous background in both axes.
+"""
+
+MEASURED_BURST_BINS = (300.0, 60.0)
+"""Bin widths (s) the shapes in `MEASURED_BURST_SHAPE` were fitted at."""

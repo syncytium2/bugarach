@@ -136,3 +136,26 @@ def test_score_table_reports_a_perfect_and_an_empty_detector(sim):
     txt = score_table(gt, {"coact": (gt.times, None), "sce": (np.zeros(0), None)})
     assert " 1.00" in txt, "a detector handed the truth should score 1.00"
     assert "nan" in txt.lower() or " 0.00" in txt, "an empty detector must show as such"
+
+
+def test_every_zoom_is_constrained_to_the_time_axis(sim):
+    """Zooming y is meaningless here and desynchronises rows meant to be read
+    against each other — the y axis is an ROI index or a detector name.
+
+    Pinned against the render, not the source, because the source was already
+    right and the render was not: every panel declares ``xwheel_zoom``/``xpan``
+    and HoloViews still put its own toolbar back when they were merged into a
+    layout. The shipped figure carried eight unconstrained ``BoxZoomTool``s with
+    no ``dimensions`` set at all.
+    """
+    from bokeh.models import BoxZoomTool, WheelZoomTool
+
+    s, gt, ext = sim
+    fig = coordination_diagnostic(s.streams["events"], ext=ext, gt=gt)
+    doc = hv.renderer("bokeh").get_plot(fig).state
+
+    zooms = list(doc.select({"type": BoxZoomTool})) + \
+            list(doc.select({"type": WheelZoomTool}))
+    assert zooms, "no zoom tools found — the check would pass vacuously"
+    offenders = [type(z).__name__ for z in zooms if z.dimensions != "width"]
+    assert not offenders, f"zoom not constrained to x: {offenders}"
