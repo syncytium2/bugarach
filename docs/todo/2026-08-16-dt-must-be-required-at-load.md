@@ -55,6 +55,17 @@ lab's rate, so every warning raised in this repo has been a false alarm in
 practice, which is the fastest way to train a team to filter one out. A lab
 imaging at 1 Hz or 30 Hz gets a wrong answer with a warning nobody reads.
 
+## Who is doing it
+
+**The wiring belongs to the workflow-app input contract (PR #45), by agreement
+between the two sessions on 2026-08-16.** That branch already defines a
+`frame_interval_sec` field and its first milestone threads it into the three
+detectors above. Its entry point *is* the load boundary this todo argues for, so
+duplicating it here would be two sessions editing the same three signatures.
+
+This file stays the rationale and the inventory. **Do not start the wiring from
+here without checking PR #45 first.**
+
 ## The shape of the fix
 
 1. **`Slice` carries `dt`**, set at construction, with no default. Loaders take it
