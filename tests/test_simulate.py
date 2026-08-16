@@ -296,3 +296,39 @@ def test_rejects_a_non_positive_shape(bad):
 def test_the_shape_is_recorded_in_ground_truth():
     _, gt = simulate_coordination(seed=1, bg_rate_shape=0.275)
     assert gt.params["bg_rate_shape"] == 0.275
+
+
+def test_turning_heterogeneity_on_redraws_the_schedule():
+    """Pinned because a figure assumed the opposite and marked the wrong times.
+
+    The background draw consumes random numbers and its per-ROI counts consume a
+    varying quantity more, so at one seed the planted events land elsewhere with
+    the knob on. Same as `bg_rate_hz`. Anything comparing a flat run against a
+    varied one must read each run's OWN ground truth.
+    """
+    kw = dict(seed=5, duration_sec=1800.0, n_roi=37, bg_rate_hz=0.0095,
+              participation=(0.30, 0.18, 0.10), n_per_level=(4, 4, 4),
+              jitter_sec=0.36, min_sep_sec=120.0, interval_cv=1.0)
+    _, flat = simulate_coordination(**kw)
+    _, varied = simulate_coordination(bg_rate_shape=0.275, **kw)
+    assert len(flat.times) == len(varied.times)
+    assert not np.allclose(flat.times, varied.times)
+
+
+def test_it_reaches_the_concentration_a_real_field_has():
+    """The point of the knob: one ROI carrying a large share of the recording.
+
+    Real slice 20240813_39 puts 28% of its events in one ROI of 37. A flat field
+    at the same mean reaches about 4%. Pinned loosely — this is a draw, and the
+    assertion is that the tail exists at all, not that it hits a number.
+    """
+    kw = dict(duration_sec=1800.0, n_roi=37, bg_rate_hz=0.0095,
+              participation=(0.30, 0.18, 0.10), n_per_level=(4, 4, 4),
+              jitter_sec=0.36, min_sep_sec=120.0, interval_cv=1.0)
+    for seed in (5, 6, 7):
+        flat, _ = simulate_coordination(seed=seed, **kw)
+        varied, _ = simulate_coordination(seed=seed, bg_rate_shape=0.275, **kw)
+        f = np.array([len(v) for v in trains_of(flat)])
+        v = np.array([len(v) for v in trains_of(varied)])
+        assert f.max() / f.sum() < 0.08
+        assert v.max() / v.sum() > 0.12

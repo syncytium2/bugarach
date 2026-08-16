@@ -44,6 +44,15 @@ def _window(stream, lo, hi):
     return out
 
 
+def _top_share(sl, name="events"):
+    """Percent of all events held by the busiest ROI — the concentration, in one
+    number. A flat field lands near 100/n_roi; a real baseline field runs far
+    above it."""
+    counts = np.array([len(v) for v in sl.streams[name].locs], dtype=float)
+    total = counts.sum()
+    return 0.0 if total <= 0 else 100.0 * counts.max() / total
+
+
 def build(args):
     import holoviews as hv
 
@@ -96,11 +105,16 @@ def build(args):
             jitter_sec=0.36, min_sep_sec=120.0, interval_cv=1.0)
 
     synth, gt = generated(None)
+    # Ground truth is PER RUN, not shared. The background draw consumes random
+    # numbers, so the heterogeneous run's events land at different times than the
+    # flat run's at the same seed. An earlier version of this figure marked the
+    # flat run's planted times on the heterogeneous raster, where nothing had
+    # been planted — the triangles pointed at background.
+    truth = {"synthetic": gt}
     series = [("real", real_win), ("synthetic", synth)]
     if args.shape is not None:
-        # Same seed, same mean rate, same planted events. The ONLY difference
-        # between the two generated panels is the shape of the background.
-        hetero, _ = generated(args.shape)
+        hetero, hetero_gt = generated(args.shape)
+        truth["heterogeneous"] = hetero_gt
         series.append(("heterogeneous", hetero))
 
     ext = (0.0, dur)
@@ -123,12 +137,12 @@ def build(args):
                 kdims=["t"], vdims=["roi"]).opts(
                 marker="diamond", size=9, color="#7b4a9c", alpha=0.95)
         # Planted truth exists in every generated panel and in none of the real
-        # one. Marking only the first generated panel would read as "nothing was
-        # planted below", when in fact both carry the same events at the same
-        # times — which is the point of the comparison.
-        if label != "real" and len(gt.times):
+        # one — and each panel gets ITS OWN, because the two generated runs do
+        # not share a schedule.
+        own = truth.get(label)
+        if own is not None and len(own.times):
             panel = panel * hv.Scatter(
-                (gt.times, np.full(gt.times.size, n_roi - 2.4)),
+                (own.times, np.full(own.times.size, n_roi - 2.4)),
                 kdims=["t"], vdims=["roi"]).opts(
                 marker="triangle", size=8, color="#1b7f3b", alpha=0.95)
         # Keep this SHORT. The bottom panel spends part of its 250 px on an
@@ -180,10 +194,15 @@ def build(args):
         f'in the real recording and <b>{det["synthetic"].onset_sec.size}</b> in '
         f'the generated one, where <b>{len(gt.times)}</b> were planted.</span>'
         + (f'<br><span style="color:#555">Third panel: the same generator with '
-           f'per-ROI rates drawn from a Gamma of shape '
-           f'<b>{args.shape:g}</b> instead of one rate for every ROI — same seed, '
-           f'same mean rate, same planted events. LoCo finds '
-           f'<b>{det["heterogeneous"].onset_sec.size}</b> there.</span>'
+           f'per-ROI rates drawn from a Gamma of shape <b>{args.shape:g}</b> '
+           f'instead of one rate for every ROI, at the same mean. Its busiest ROI '
+           f'carries <b>{_top_share(series[2][1]):.0f}%</b> of its events against '
+           f'<b>{_top_share(real_win):.0f}%</b> in the real recording and '
+           f'<b>{_top_share(synth):.0f}%</b> in the flat one. LoCo finds '
+           f'<b>{det["heterogeneous"].onset_sec.size}</b> there. The planted '
+           f'schedule is NOT shared between the two generated panels — the '
+           f'background draw consumes random numbers, so each carries its own '
+           f'truth marks.</span>'
            if args.shape is not None else '')
         + '</div>')
     return fig, header
