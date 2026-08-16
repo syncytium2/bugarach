@@ -329,6 +329,16 @@ def simulate_coordination(
         if bg_rate_shape <= 0:
             raise ValueError(
                 f"bg_rate_shape must be positive, got {bg_rate_shape}")
+        # NOTE, because it bit a figure: this reshuffles everything downstream.
+        # The draw consumes random numbers, and the per-ROI Poisson counts it
+        # produces consume a different quantity again, so at a fixed seed the
+        # planted events land at DIFFERENT times with the knob on than with it
+        # off. Giving the rates their own stream does not fix that — the counts
+        # still differ — and the only real fix, drawing the background after the
+        # events, would renumber every existing seed and move every bench score
+        # in this package. So the schedule redraws, exactly as it does for
+        # `bg_rate_hz`, and anything comparing flat against varied must use each
+        # run's OWN ground truth rather than assuming they share one.
         bg_rates = rng.gamma(bg_rate_shape, bg_rate_hz / bg_rate_shape, size=nR)
     for r in range(nR):
         k = rng.poisson(bg_rates[r] * T)
