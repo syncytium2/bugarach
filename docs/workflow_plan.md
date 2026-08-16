@@ -39,11 +39,13 @@ is special, and windows arrive **already computed** — bugarach never derives o
 
 Identity in `slices.csv` is an **open column set**, passed through untouched, with
 exactly one exception: `frame_interval_sec`, the acquisition sampling interval.
-That one is read, because three detectors assume a frame rate and it cannot be
-recovered from onset times. **Only one of the three currently complains when it is
-missing** — the other two fall back to ten hertz in silence, so a lab imaging at
-twenty gets one warning and two quietly wrong answers. Wiring all three is part of
-the first milestone.
+That one is **required, and a folder without it is refused at load** — the app does
+not start work it cannot do correctly. Three detectors build their analysis grid
+from it and it cannot be recovered from onset times. Today only one of the three
+complains when it is missing and the other two assume ten hertz in silence, so a lab
+imaging at twenty gets one warning and two quietly wrong answers. Refusing at the
+door replaces all three behaviours, and it replaces them at the boundary rather than
+after the numbers exist.
 
 Output is **one shape carrying nothing specific to any lab, including ours** —
 `detections.csv`, one row per detected coordinated event, plus a settings file so a
