@@ -69,14 +69,19 @@ Un-annotated recordings get **one implicit whole-recording window**
 (`effective_region_windows`) so region-scoped detection analyzes the full extent
 instead of nothing.
 
-**Export-folder input does not.** A folder conforming to
-[`docs/export_folder_spec.md`](export_folder_spec.md) carries `regions.csv`, whose
-bounds were computed by whatever produced the folder — trimming, caps, wash-in
-delays and exclusions already applied. Those bounds are used **verbatim**: no cap,
-no delay, no floor, no baseline privilege, no label special-casing, and none of the
-HALT guards. Those rules encode this lab's protocol, not a universal one.
-Re-deriving them would trim twice, and the guards would reject a legal folder from
-a lab whose regions are neither contiguous nor zero-based.
+**Export-folder input will not — and this half is specified, not yet built.** A
+folder conforming to [`docs/export_folder_spec.md`](export_folder_spec.md) carries
+`regions.csv`, whose bounds were computed by whatever produced the folder —
+trimming, caps, wash-in delays and exclusions already applied. Those bounds are to
+be used **verbatim**: no cap, no delay, no floor, no baseline privilege, no label
+special-casing, and none of the HALT guards. Those rules encode this lab's protocol,
+not a universal one. Re-deriving them would trim twice, and the guards would reject
+a legal folder from a lab whose regions are neither contiguous nor zero-based.
+
+**No code reads that folder today.** The reader is the first milestone of
+[`docs/workflow_plan.md`](workflow_plan.md). Until it lands, this paragraph is a
+contract to build against and not a description of behaviour — anything relying on
+it must check that the reader exists first.
 
 **The two paths must not be merged.** The aCa5z rule is right for the stores it was
 written for and wrong as a condition of entry for everybody else. It has been

@@ -59,38 +59,44 @@ the generator review.
 
 `docs/generator.md` carries an open flag that the generator's onset-jitter constant
 of 0.36 s is calibrated against a statistic that sits **below its own surrogate
-null** of 0.42 s, and that does not round-trip — build a recording at 0.36 and the
-estimator reads back about 0.64. `docs/reviews/generator_2026-08-14.md` names two
-candidate replacements: a median event **span** and a median **width**. The port
-delivers the first. It cannot deliver the second — that "width" is the stored
-transient width, which the yardstick is defined to exclude and which this app does
-not read at all.
+null** of 0.42 s — that is, shuffle away every real relationship between cells and
+the measurement barely moves — and that does not round-trip: build a recording at
+0.36 and the estimator reads back about 0.64.
+`docs/reviews/generator_2026-08-14.md` names two candidate replacements, a median
+event **span** and a median **width**.
 
-⚠ **A candidate, not a cure, and only half of one.** The span the yardstick returns
-is bounded by the aperture the caller collects over; its straggler-robust variant is
-capped by the 0.5 s clustering gap, the same order as the 0.42 s null it is meant to
-escape. Retiring the flag needs a surrogate null computed *for the new statistic*
-and a round-trip test. The port delivers neither, and the second candidate belongs
-to another project.
+⚠ **The port delivers neither of them, and that is worth knowing before approving
+the order.** The named `width` candidate is the stored transient width, which the
+yardstick is defined to exclude and this app does not read. The named `span`
+candidate is also not what the yardstick returns: it is computed from **one onset
+per ROI** and only over clusters that clear a minimum-participant floor, while the
+yardstick spans **every onset from every ROI** in its window with no floor at all.
+They coincide only when no ROI fires twice inside the window.
 
-### Read this before running anything
+So 1a produces a **related** onset-span statistic, not the candidate as specified.
+Making it the candidate means porting the participant-selection rule too — a
+decision for whoever takes 1a, and one this plan does not pre-empt. Either way,
+retiring the flag still needs a surrogate null computed *for the new statistic* and
+a round-trip test, and the port delivers neither.
 
-- **A worktree's Python imports the primary checkout's `src`.** The virtual
-  environment is an editable install rooted in the primary checkout, so a test run
-  from a worktree can execute a different branch's code and pass. Set
-  `PYTHONPATH=src`, then confirm it took — `python -c "import bugarach;
-  print(bugarach.__file__)"` must print a path inside the worktree. This has
-  already invalidated a reported clean test run, and it invalidates every check
-  below it.
-- **The primary checkout is far behind `origin/main`.** Standing in it and setting
-  `PYTHONPATH=src` loads stale code deterministically rather than correctly.
 
 ### Build order
 
-1. **1a — port the uniform yardstick** (`characterize_coord_window.m`). Pure,
-   deterministic, no randomness. Parity-tested against synthetic fixtures.
-2. **1b — the fitting stage.** Measure an export folder well enough to configure
-   the generator.
+1. **1.0 — the folder reader.** Nothing in the tree reads the input contract:
+   `regions.csv`, `slices.csv` and `frame_interval_sec` appear nowhere in `src/`,
+   `tools/` or `tests/`, and `io.load_events_csv` reads one file, takes `slice_id`
+   as a Python argument rather than the required column, and ignores the `stream`
+   column unless a caller opts in. Every later milestone depends on this and none
+   of them builds it. First, because otherwise the plan specifies an input nobody
+   can supply.
+2. **1a — port the uniform yardstick** (`characterize_coord_window.m`, in the
+   machine-local interface2 checkout). Pure, deterministic, no randomness.
+   **Prerequisite, on a machine with MATLAB R2025b:** write the reference
+   generator under `tools/matlab_ref/` and commit its output. There is no
+   generator for this function today, so the gate 1a's acceptance rests on does
+   not yet exist.
+3. **1b — the fitting stage.** Measure an export folder well enough to configure
+   the generator. **Blocked on an open decision — see below.**
 3. **1c — the writers.** Both output shapes, plus a validator that refuses a
    non-conforming frame. Export button on the existing viewer; the quick path —
    see the data, tune each detector, run, get a file — is then complete.
@@ -109,14 +115,19 @@ to another project.
 
 - The full test suite, with the import path confirmed first.
 - **Parity** for the port: synthetic fixtures through `tools/matlab_ref/`, compared
-  at the tolerance the detectors already use, with exact equality on integer
-  fields. Hand-derived adversarial vectors for the branches the MATLAB test file
-  does not reach.
+  to **1e-9** on the floating-point fields and **exactly** on the counts. Plus
+  hand-derived vectors for the branches the MATLAB test file does not reach.
 - **Contract**: emitted frames validated against the shipped dictionary; read back;
   `NA` spelled literally; newline-only endings; a real zero preserved as zero
   rather than becoming missing.
-- **Self-containment**: a folder with only `events.csv` produces detections,
-  figures and an export. Nothing reaches outside it.
+- **Self-containment**, and it needs a test that can fail. "It ran on a one-file
+  folder" proves only that no outside path was *needed* — on this machine the data
+  root and the shared-folder variable are both set, so a stray read succeeds and the
+  check passes anyway. Assert on **what was opened**: patch the file-open call,
+  scrub the environment, run from an empty directory, and require every resolved
+  path to sit inside the folder. Assert too that the missing-interval warning
+  actually fires, since a regression that silences it would otherwise pass this
+  whole list.
 - **End to end**: point the app at a folder, tune, run, export; the result opens
   in R and in pandas.
 
@@ -124,8 +135,8 @@ to another project.
 
 - **Ordering is `region_idx`; naming is `label`.** The pair the existing contract
   calls `treatment_idx` / `treatment` is **derived at write time**, never stored
-  twice. Two independently-editable records of one fact is a failure this ecosystem
-  has already had, with disagreeing row counts to show for it.
+  twice — two independently-editable records of one fact drift, and then nobody can
+  say which is right.
 - **bugarach reports what it computed.** It has no notion of a run "mode". If a
   detector ran in peak-gated form, its key appears in the output; if it did not,
   the key is absent. The upstream exporter's mode switch is that exporter's
@@ -133,16 +144,42 @@ to another project.
 - **Peak-gated keys are emitted.** Universally compatible first: a consumer that
   cannot yet read them adapts, rather than the producer withholding a result it
   computed.
-- **Figures are deferred to the deliverables, not the plan.** Two reviewers flagged
-  that a plan violating "show the picture" is still a plan; the same gate will
-  demand figures of the reports and captions this work produces, where the picture
-  is the payload rather than the argument.
+- **Figures are deferred to the deliverables, not the plan** — with one exception
+  owed. A plan that argues in prose is still a plan, and the same gate will demand
+  figures of the reports and captions this work produces. But the yardstick section
+  in Part II *specifies a mechanism* rather than planning one: five quantities laid
+  out on one time axis, in words. That one gets drawn before it is built.
+
+### What you are being asked to approve
+
+**Milestones 1.0 through 1c.** That buys the quick path end to end: point the app at
+a folder, see the data, tune each detector, run, get a file that opens in R and in
+pandas. Nothing before 1c produces anything you can use, and 1b is blocked on a
+decision nobody has taken yet — so if you want the shortest useful thing, **1.0, 1a
+and 1c without 1b** is a coherent order and gets you the file.
+
+Everything after that is scale and comparison: running a whole folder, checking the
+generator against real recordings, and screens over machinery that already works.
+The deep-learning seam is a name in the interface and nothing else.
 
 ---
 
 ## Part II — execution detail
 
-*Read the section for the milestone you are starting.*
+*Written for the session doing the work. Read the section for the milestone you are
+starting; milestones 4 and 5 have none, deliberately, and say why below.*
+
+### Before you run anything
+
+- **A worktree's Python imports the primary checkout's `src`.** The virtual
+  environment is an editable install rooted in the primary checkout, so a test run
+  from a worktree can execute a different branch's code and pass clean. Set
+  `PYTHONPATH=src`, then confirm it took — `python -c "import bugarach;
+  print(bugarach.__file__)"` must print a path inside your worktree. This has
+  already turned a reported green suite into a result about the wrong branch, and it
+  invalidates every other check on this page.
+- **The primary checkout runs far behind `origin/main`.** Standing in it and setting
+  `PYTHONPATH=src` loads stale code deterministically rather than correctly.
 
 ### 1a — the uniform yardstick
 
@@ -203,13 +240,25 @@ argument does not have to be re-derived.
 
 ### 1b — the fitting stage
 
+**⚠ Open decision, and it blocks this milestone.** The estimator selects its input
+by finding a region whose label is literally `baseline` and a stream literally named
+`fast`. The input contract forbids both: no region is privileged, no label is
+reserved, no stream name is. And this project's own exporter *overwrites* region 1's
+name with `baseline`, so the label is not even evidence. Meanwhile FOUNDATIONS §9 is
+canonical and requires calibrating from baseline recordings only. **On a conforming
+folder, bugarach cannot identify a baseline window — by design.** Two ways out, and
+someone must choose: ask the user which region to fit, or reintroduce label
+special-casing for this one path. Do not start 1b before this is settled.
+
 **Use the estimator that exists.** `tools/fit_background_shape.py` already fits
 **three** shapes by maximum likelihood on a negative-binomial count model: how
 unevenly activity is spread across ROIs, and how much each ROI clumps in time at
 two scales. It fits **no rate level** — every window keeps its own mean by
 construction. It also carries a drift gate that fails when the constants in the
-source stop matching the data. **That gate lives entirely in the command-line half
-and is the most valuable thing in the file — lift it with the compute.**
+source stop matching the data. **That gate lives entirely in the command-line half —
+lift it with the compute.** But point it only at this lab's archive: it compares
+against constants fitted on this preparation, so on an outside lab's folder it
+would fire on every run, and that is a different preparation rather than drift.
 
 **Do not fit to a summary.** The dispersion curve is a *reported diagnostic*, never
 the objective. The file says why in its own docstring: matching the statistics by
@@ -252,9 +301,15 @@ named prior.
 and the contract frames for the existing R analysis.
 
 - The recruitment column — **`amp_median_total`**, how many ROIs an event recruited
-  — is **present and missing-filled** for the two detectors that have no recruitment
-  measure, RateDetect and SPIKE-synch. Not absent. Dropping it yields a frame one
-  column short of the contract.
+  — is **present and missing-filled** for the **three** detectors routed through the
+  producer's shim: RateDetect, SPIKE-synch and **CoactDetect**. Not absent. Dropping
+  it yields a frame one column short of the contract.
+  **⚠ The two authorities disagree about the third.** The metric dictionary declares
+  a recruitment row for CoactDetect; the shipped producer fills it with nothing. So
+  a port that computes a real value for CoactDetect matches the dictionary and
+  diverges from the frames this milestone claims to reproduce. Decide which
+  authority wins and record it — do not let the choice be made by whichever code is
+  written first.
 - The written per-event file carries one more column than its builder emits; a
   validator built to the builder's count rejects real files.
 - Spell missing values literally as `NA` — the default in Python's CSV writer is an
@@ -271,12 +326,21 @@ That is the failure the contract exists to stop, so say what actually catches it
 - Asserting against the dictionary's unit and direction fields catches **schema
   drift only** — those fields describe the column, not the row, and nothing in them
   moves when a value is wrong.
-- The one check with power is a **byte-diff against a known-good frame**. The real
-  reference exports cannot be committed (FOUNDATIONS §5), so CI needs a
-  **synthetic** known-good frame, produced by this port from a committed fixture and
-  diffed on every run. The real diff is a second, machine-local gate.
+- A **committed synthetic frame, byte-diffed on every run, is a regression gate and
+  not a correctness gate.** It is produced by the port under test: write the port
+  wrong, generate the reference, and the diff is clean forever. It catches a *later*
+  change, never the original error. Freeze it, and require that regenerating it
+  re-runs the oracle — otherwise a session that changes the port and refreshes the
+  fixture silently disarms the gate for good.
+- **The only correctness gate is the MATLAB oracle** — the reference the port is
+  built against, not one it produced. That is why 1a's prerequisite is writing the
+  reference generator, and why it cannot be skipped.
 
-Without that synthetic reference, the contract check is a spell-checker.
+The dictionary check has a matching limit worth stating plainly: the producer
+supplies the dictionary it is judged against, so a batch that ships a dictionary
+matching whatever it wrote passes by construction — and an outside lab has no reason
+to ship one at all. It is a self-consistency check for this project's own batches,
+not a guarantee for a stranger's folder.
 
 ### 2 — batch
 
