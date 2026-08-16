@@ -84,6 +84,31 @@ a round-trip test, and the port delivers neither.
 
 ### Build order
 
+```mermaid
+graph LR
+  R[The folder reader<br/>reads the input] --> Y[The uniform yardstick<br/>one width measure]
+  R --> W[The writers<br/>a file comes out]
+  Y --> W
+  W --> B[Batch<br/>a whole folder at once]
+  B --> C[Comparison<br/>generated vs real]
+  R -.-> F[The fitting stage<br/>BLOCKED]
+  C -.-> S[Screens]
+  S -.-> D[DL seam<br/>empty]
+
+  classDef path fill:#1b7f3b22,stroke:#1b7f3b,stroke-width:2px;
+  classDef later fill:#88888811,stroke:#888,stroke-dasharray:4 3;
+  classDef blocked fill:#c0392b22,stroke:#c0392b,stroke-width:2px,stroke-dasharray:4 3;
+  class R,Y,W path;
+  class B,C,S,D later;
+  class F blocked;
+```
+
+**Green is the critical path**: the reader, the yardstick and the writers. That is
+the shortest route to a file you can open, and each one is useless without the two
+beside it — the reader has nothing to hand on, the yardstick has nothing to measure,
+the writers have nothing to write. **Red is blocked** and off the path. **Grey is
+afterwards**, and each of those is smaller than it looks.
+
 - **The folder reader.** Nothing in the tree reads the input contract: none of its
   filenames or fields appear anywhere in the source, and the one CSV loader that
   exists reads a single file, takes the slice name as a code argument rather than
@@ -137,17 +162,15 @@ a round-trip test, and the port delivers neither.
 
 ### Decisions taken here, so nothing waits on them
 
-- **Ordering is `region_idx`; naming is `label`.** The pair the existing contract
-  calls `treatment_idx` / `treatment` is **derived at write time**, never stored
-  twice — two independently-editable records of one fact drift, and then nobody can
-  say which is right.
-- **bugarach reports what it computed.** It has no notion of a run "mode". If a
-  detector ran in peak-gated form, its key appears in the output; if it did not,
-  the key is absent. The upstream exporter's mode switch is that exporter's
-  implementation detail and is not mirrored here.
-- **Peak-gated keys are emitted.** Universally compatible first: a consumer that
-  cannot yet read them adapts, rather than the producer withholding a result it
-  computed.
+- **Ordering is the index the producer sent; naming is the label it sent.** Nothing
+  is renamed, nothing is renumbered, and no period is treated as special. A consumer
+  wanting a before-and-after picks the two rows it wants; it knows which they are and
+  we do not.
+- **bugarach reports what it computed**, and how. If a detector ran peak-gated, the
+  row says so in its own column. There is no run "mode" for the app as a whole —
+  that is the upstream exporter's implementation detail and is not mirrored here.
+- **Nothing is withheld because a consumer cannot yet read it.** A result that was
+  computed is emitted; the consumer adapts.
 - **Figures are deferred to the deliverables, not the plan** — with one exception
   owed. A plan that argues in prose is still a plan, and the same gate will demand
   figures of the reports and captions this work produces. But the yardstick section
