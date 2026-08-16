@@ -60,6 +60,17 @@ Template:
 
 ## Active
 
+### mac/site-leads-with-the-idea — publish the driving-idea page + its review to the darkroom
+- **Status:** DONE
+- **Started:** 2026-08-15
+- **Writes:** `<darkroom>/bugarach/2026-08-15-driving-idea/` (NEW) — the built landing page
+  and its murderboard record, so Tony can open them without navigating `docs/`.
+- **Claims:** that one dated subfolder only. Did not touch anything else under
+  `<darkroom>/bugarach/`, and did not go near `<darkroom>/constellation/`.
+- **Notes:** `$BUGARACH_DARKROOM` is **unset on this Mac**, so `bugarach.paths.darkroom()`
+  returns `None` and the path had to be found by hand. Anyone hitting the same thing:
+  the fix is to export it in the shell profile, not to hardcode it (SAP004). The folder
+  itself is the one created 2026-08-12 by the WSMIP-win session below.
 ### mac/rewrite-generator-doc — roiRate distribution figure
 - **Status:** ACTIVE
 - **Started:** 2026-08-15

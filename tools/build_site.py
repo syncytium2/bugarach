@@ -68,6 +68,25 @@ and a synthetic benchmark with planted ground truth to test them against.</p>
 
 {real}
 
+<p><b>Coordination is not one phenomenon, so there is no one detector to train.</b>
+Stars coordinate and cells coordinate, and between them the timescales run over
+many orders of magnitude — along with the sampling rates, the mechanisms, and
+what even counts as an event. A network trained across every source of
+coordination spends its capacity on a space in which almost nothing transfers,
+and comes out mediocre at all of it. Worse for a working lab: what it learns is
+the average case, so the preparation that departs from the average is the one it
+scores as noise.</p>
+
+<p><b>So the instrument gets built for your recordings, not for coordination in
+general.</b> Measure the coordination parameters of an <i>untreated</i>
+recording, simulate from those alone, and let
+that synthetic baseline do two jobs at once: tune the six detectors, and train
+the model. Only then is the finished instrument pointed at the whole dataset,
+treatments included. Simulate the treatment and you have spent the effect you
+ran the experiment to measure; withhold it and it comes back as a result. The
+detectors and the generator below are built and tested; <b>the training half is
+the plan, not yet the practice</b>.</p>
+
 <p>Each row above is one <b>ROI</b> — one cell's worth of signal pulled out of a
 2-photon calcium recording. Detectors flag the moments when many of them fire
 together. There are six here — LoCo, CICADA, SCE, CoactDetect, RateDetect and

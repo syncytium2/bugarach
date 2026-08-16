@@ -13,7 +13,7 @@
 # murderboard_freshness.sh.
 #
 # ---------------------------------------------------------------------------
-# WARNING — upstream defect in murderboard_freshness.sh (present at b2b2ba2).
+# WARNING — upstream defect in murderboard_freshness.sh (still present at f43a07b).
 #
 # `--slug` generalizes the gate to any vendoring relationship, but the offline
 # fallback list `CLONE_CANDIDATES` was never generalized with it: it is a fixed
