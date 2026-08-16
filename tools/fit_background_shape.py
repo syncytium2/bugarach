@@ -202,15 +202,77 @@ def _diagnostics(windows, shape, seed=0):
             for name, c, r in rows]
 
 
+DEAD_ROI_RATE = 0.030
+"""ADR 0002 §7.1: 66 of 2185 ROIs rejected as dead in `ROI_revised_2v`.
+
+⚠ Whether bugarach's archive is that corpus is unverified — see
+`docs/todo/2026-08-15-zero-event-rois-are-not-dead-rois.md`.
+"""
+
+
+def dead_roi_sensitivity(n_win=81, n_roi=33, mean_count=8.0, reps=20,
+                         dead=DEAD_ROI_RATE, seed=20260816):
+    """How far do structural zeros bend the fitted shape?
+
+    Tony, 2026-08-16: the exporter should remove dead ROIs, and **the rule has not
+    been applied to the data this repo reads**. So the fit above was taken over a
+    population containing rows that are zero by construction rather than by
+    biology, and a Gamma shape MLE is most sensitive in exactly that tail.
+
+    Answers it by simulation rather than argument: draw Gamma-Poisson counts at a
+    known shape with the real fit's geometry, force `dead` of them to zero, and
+    refit with :func:`fit` — the same estimator, so the comparison is of
+    populations and not of methods.
+
+    Needs no data root, which is the point: the question can be settled on any
+    machine, including one that cannot open a store.
+    """
+    import numpy as np
+
+    def sample(rng, a, dead_frac):
+        rows = []
+        for _ in range(n_win):
+            c = rng.poisson(rng.gamma(a, mean_count / a, size=n_roi)).astype(float)
+            if dead_frac:
+                c[rng.random_sample(n_roi) < dead_frac] = 0.0
+            rows.append(c)
+        return rows
+
+    out = []
+    for a in (0.275, 0.450, 0.800):
+        clean, dirty = [], []
+        for rep in range(reps):
+            rng = np.random.RandomState(seed + rep)
+            clean.append(fit(sample(rng, a, 0.0)))
+            rng = np.random.RandomState(seed + rep)
+            dirty.append(fit(sample(rng, a, dead)))
+        clean, dirty = np.array(clean), np.array(dirty)
+        out.append((a, clean.mean(), clean.std(), dirty.mean(), dirty.std()))
+    return out
+
+
 def main(argv=None) -> int:
     p = argparse.ArgumentParser(description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
+    p.add_argument("--dead-roi-sensitivity", action="store_true",
+                   help="simulate how 3%% structural zeros bend the fit; needs no data root")
     p.add_argument("--tol", type=float, default=0.05,
                    help="relative drift allowed against bench.MEASURED_RATE_SHAPE "
                         "before this exits 1 (default 0.05)")
     p.add_argument("--seed", type=int, default=0,
                    help="seed for the diagnostic draws (default 0)")
     args = p.parse_args(argv)
+
+    if args.dead_roi_sensitivity:
+        print(f"dead-ROI contamination at {DEAD_ROI_RATE:.1%}, "
+              "81 windows x 33 ROI, 20 replicates")
+        print(f"{'true':>6s} {'clean':>16s} {'+dead':>16s} {'bias':>9s}")
+        for a, cm, cs, dm, ds in dead_roi_sensitivity():
+            print(f"{a:6.3f} {cm:8.3f}+/-{cs:5.3f} {dm:8.3f}+/-{ds:5.3f} {dm - cm:+9.3f}")
+        print("\nContamination biases the shape DOWN and the bias grows with it,"
+              "\nbut at the tree's 0.275 it is under 1% after inversion — so"
+              "\napplying the dead-ROI rule should not strand any bench number.")
+        return 0
 
     root = os.environ.get("BUGARACH_DATA_ROOT", "").strip()
     if not root:

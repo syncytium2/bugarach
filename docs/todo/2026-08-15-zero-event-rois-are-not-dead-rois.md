@@ -40,6 +40,88 @@ These answer different questions and must never be swapped. ⚠ Whether bugarach
 extraction path may not. Do not quote the 3.0% as bugarach's number without
 checking that first.
 
+## The rule exists and has NOT been applied to the data bugarach reads
+
+Tony, 2026-08-16, asked directly:
+
+> *"the exporter (the data to be read by the webapp and detectors) should remove
+> DEAD rois. We have a rule for that, but it has not been applied to the data you
+> have access to."*
+
+Two things follow, and they point in opposite directions — which is why this
+section exists rather than a one-line note.
+
+**The direction of travel is settled.** Dead-ROI removal belongs to the
+**exporter**, not to bugarach, and the rule to apply is ADR 0002's, not an
+activity threshold invented here. Nothing in the section below changes; this is
+that principle being exercised by the person who owns it, not overturned.
+
+**But the corpus in hand still carries them.** So every measurement this repo has
+taken off `processed_archive/event_store_onset_revised_2v` was taken over a
+population that includes ~3% of rows which are zero **by construction rather than
+by biology**. That includes `bench.MEASURED_RATE_SHAPE` and
+`bench.MEASURED_BURST_SHAPE`. The ⚠ above about corpus correspondence is now
+*more* load-bearing, not less: if that archive is the `ROI_revised_2v` corpus,
+3.0% is the contamination; if it is not, the rate is unknown.
+
+### How much does that bend the fitted shape? Measured: almost none.
+
+The obvious worry is that structural zeros inflate the low tail, and a Gamma
+shape MLE is most sensitive exactly there. That worry was raised here and then
+**tested, and it does not survive the test.**
+
+Method: draw Gamma-Poisson count matrices at a known shape, 81 windows × 33 ROI
+to match the real fit's geometry, contaminate 3.0% of rows with structural zeros,
+and refit with `tools/fit_background_shape.py`'s own estimator (reused, not
+re-derived). 20 replicates per cell.
+
+| true shape | fit, clean | fit, +3% dead | bias |
+|---|---|---|---|
+| 0.275 | 0.286 ± 0.008 | 0.272 ± 0.008 | −0.014 |
+| 0.450 | 0.466 ± 0.013 | 0.431 ± 0.016 | −0.036 |
+| 0.800 | 0.825 ± 0.029 | 0.756 ± 0.018 | −0.069 |
+
+Reproduce with `python tools/fit_background_shape.py --dead-roi-sensitivity`,
+which needs **no data root** — the question is settleable on any machine,
+including one that cannot open a store.
+
+Contamination biases the shape **down** (toward more apparent skew) and the bias
+grows with the true shape — but at the value actually in the tree it is small,
+and it nearly cancels the estimator's own upward small-sample bias. Inverting:
+an observed 0.275 on contaminated data implies a live-population shape of
+**≈ 0.277**. Under 1%.
+
+**So applying the dead-ROI rule should not move `MEASURED_RATE_SHAPE`
+meaningfully, and no bench number computed against it is stranded by this.**
+Recorded because the opposite was assumed out loud before it was checked, and
+the assumption was more alarming than the truth.
+
+⚠ Two limits on that result. It assumes dead ROIs are **missing-at-random with
+respect to rate**, which is what a structural zero means — if dead ROIs are
+preferentially segmented from dim or marginal fields, the contamination is not
+random and this simulation does not cover it. And it assumes ~3.0%; the corpus
+question above has to close before that rate can be relied on.
+
+### A separate finding, free from the same run
+
+The estimator carries an **upward small-sample bias of roughly 5%** at this
+geometry (fitted 0.288 against a true 0.275; 0.836 against 0.800). That is larger
+than the dead-ROI effect at the operating point and is nobody's fault — it is what
+an 81 × 33 sample buys. Worth knowing before `--tol 0.05` is read as a drift
+alarm: the estimator's own noise floor is about that size.
+
+### Open, and with the people who can close it
+
+**Tony is confirming the export function with the MATLAB team (2026-08-16).**
+Until that lands, two things stay unknown and neither should be guessed here:
+whether `processed_archive/event_store_onset_revised_2v` is the `ROI_revised_2v`
+corpus, and whether the exporter that produced it will apply ADR 0002. When the
+answer arrives, the actions are: re-run `tools/fit_background_shape.py` against
+the filtered export and check the drift gate, and strike the ⚠ above.
+
+Nothing in bugarach should change before then. The measurement above exists
+precisely so that the wait is cheap — the expected correction is under 1%.
+
 ## Three traps, all of them already documented upstream
 
 1. **Do not recompute a verdict per stream.** ADR 0002 §2: the verdict is computed
