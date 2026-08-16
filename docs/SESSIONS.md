@@ -61,10 +61,17 @@ Template:
 ## Active
 
 ### mac/rewrite-generator-doc — roiRate distribution figure
-- **Status:** ACTIVE
+- **Status:** DONE — 2026-08-16. **Claim RELEASED**; the two `roi_rate_distribution.*`
+  names are free. The pair is left in place as evidence for the todo below, but nothing
+  is regenerating it, so overwrite or delete without asking.
+  ⚠ **Do not reuse that figure in anything publishable.** It carries a do-not-ship
+  murderboard record — `docs/reviews/roi_rate_distribution_2026-08-15.md`, 11 roles,
+  6 blocking items unfixed. The finding it argues is sound; the figure overstates it
+  roughly 3× by plotting `bench.make_recording()` (planted events + distractors +
+  promiscuity probe) under a label naming the background rate. Read the record first.
 - **Started:** 2026-08-15
 - **Writes:** `<darkroom>/bugarach/roi_rate_distribution.{html,png}` — that pair only
-- **Claims:** the two `roi_rate_distribution.*` names. No claim on the rest of
+- **Claims:** ~~the two `roi_rate_distribution.*` names~~ — released, see Status. No claim on the rest of
   `<darkroom>/bugarach/`; another session may write other figures there concurrently.
   **Released:** `roi_concentration.*` — an earlier name for this figure, invented
   rather than taken from the project's vocabulary (Tony, 2026-08-15). The stale pair
