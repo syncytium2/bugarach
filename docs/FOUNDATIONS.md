@@ -61,12 +61,27 @@ parameters broadcast from scalar / ordered sequence / name-keyed dict. Most
 outside labs have ONE stream; the viewer treats single-stream as the default
 presentation.
 
-## 4. Regions are optional
+## 4. Regions are optional, and windows come from one of two places
 
-Region annotations drive the aCa5z windowing (`region_windows`; guards HALT
-on malformed real data). Un-annotated recordings get **one implicit
-whole-recording window** (`effective_region_windows`) so region-scoped
-detection analyzes the full extent instead of nothing.
+**Store input derives its windows.** Region annotations on a `.mat` store drive
+the aCa5z windowing (`region_windows`; guards HALT on malformed real data).
+Un-annotated recordings get **one implicit whole-recording window**
+(`effective_region_windows`) so region-scoped detection analyzes the full extent
+instead of nothing.
+
+**Export-folder input does not.** A folder conforming to
+[`docs/export_folder_spec.md`](export_folder_spec.md) carries `regions.csv`, whose
+bounds were computed by whatever produced the folder — trimming, caps, wash-in
+delays and exclusions already applied. Those bounds are used **verbatim**: no cap,
+no delay, no floor, no baseline privilege, no label special-casing, and none of the
+HALT guards. Those rules encode this lab's protocol, not a universal one.
+Re-deriving them would trim twice, and the guards would reject a legal folder from
+a lab whose regions are neither contiguous nor zero-based.
+
+**The two paths must not be merged.** The aCa5z rule is right for the stores it was
+written for and wrong as a condition of entry for everybody else. It has been
+reimplemented five times across this ecosystem and drifted every time, which is why
+a conforming folder is trusted rather than re-checked.
 
 ## 5. Data policy
 

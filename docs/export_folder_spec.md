@@ -109,11 +109,21 @@ One row per recording. Identity, carried through.
 | column | type | meaning |
 |---|---|---|
 | `slice_id` | text | the join key; must match `events.csv` |
+| `frame_interval_sec` | number | **the one column bugarach reads** — the acquisition sampling interval, i.e. the mean time between imaged frames |
 | *anything else* | text or number | **an open set** — `group_id`, `mouse_id`, `sex`, `age`, `cohort`, whatever the lab records |
 
-bugarach **passes these through to its output unchanged and interprets none of
-them.** It does not know what a mouse is. Every column present becomes a column in
-the results, so a statistician gets their own vocabulary back rather than ours.
+**`frame_interval_sec` is the single exception to pass-through, and it is
+load-bearing.** Several detectors build a rate trace on a grid, and that grid must
+be the acquisition interval — a wrong value silently changes what a detector
+counts. It is a property of the microscope and cannot be recovered from onset
+times, so it can only be told to us. Omit it and bugarach falls back to 0.1 s
+**and warns, every time, deliberately** — the warning is the mechanism that stops a
+guess about somebody's rig from passing silently, and it is not to be suppressed.
+
+Everything else here bugarach **passes through to its output unchanged and
+interprets not at all.** It does not know what a mouse is. Every column present
+becomes a column in the results, so a statistician gets their own vocabulary back
+rather than ours.
 Absent file, or absent column, means the field is reported as missing — which
 still yields a usable file for a lab that has no metadata at all.
 

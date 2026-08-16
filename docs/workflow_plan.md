@@ -4,16 +4,18 @@
 
 ### The problem
 
-bugarach can already run six coordination detectors and draw them. It cannot be
-*used* end to end: there is no way to point it at a set of recordings, no way to
-tune the generator to those recordings, and **no way to get results out of it at
-all** — nothing in the tree writes a result file in any format.
+bugarach can already run six coordination detectors and draw them, and the viewer
+already opens a whole directory. What it cannot do is finish: there is no way to
+tune the generator to the recordings you loaded, and **no way to get a result out
+of it** — every number stays on screen. Nothing in the tree writes a data file. It
+writes pictures, and a page, and one text report; it has never written a table a
+statistician could open.
 
-Most of what is missing already exists as capability. It is locked inside
-command-line scripts in `tools/` that take flags and write pictures to Dropbox.
-**An app can call a function; it cannot call a script.** So the bulk of this work
-is moving capability into the library, not writing new machinery. The screens are
-thin once that is done.
+Most of what is missing already exists as capability, locked inside command-line
+scripts in `tools/` that take flags and write images to a shared folder. **A screen
+needs a function it can call and a value it gets back; a script gives it neither.**
+So the bulk of this work is moving capability into the library, not writing new
+machinery. The screens are thin once that is done.
 
 ### What the app takes in, and what it gives back
 
@@ -35,30 +37,41 @@ Periods are carried by `regions.csv`, one row per region, ordered by a plain
 protocol, six is a baseline and five conditions. No region is privileged, no label
 is special, and windows arrive **already computed** — bugarach never derives one.
 
-Identity in `slices.csv` is an **open column set**, passed through to the output
-untouched and interpreted not at all.
+Identity in `slices.csv` is an **open column set**, passed through untouched, with
+exactly one exception: `frame_interval_sec`, the acquisition sampling interval.
+That one is read, because several detectors build a rate trace on a grid that must
+be the acquisition interval, and it cannot be recovered from onset times. Absent, a
+0.1 s fallback applies and warns every time — a deliberate noise that must not be
+silenced.
 
 Output is **universally compatible first**. One computation, two writers: a plain
-long-format `detections.csv` any pipeline can read, and the contract frames that
-stack against the existing statistical pipeline. Matching that contract is worth
+long-format `detections.csv` any pipeline can read, and the **contract frames** —
+the two table shapes the existing R analysis already reads. Matching them is worth
 doing where it is free; where it conflicts with being readable by a stranger, the
-stranger wins.
+stranger wins and the R side adapts.
 
 ### What acting buys first
 
-The first thing to build — porting the uniform width/amplitude yardstick — also
-produces a measurement this project has wanted for two days. `docs/generator.md`
-carries an open flag that the generator's onset-jitter constant is calibrated
-against a statistic barely above its own noise floor, and that it does not
-round-trip. `docs/reviews/generator_2026-08-14.md` names the median event span and
-median width as the candidate replacements. Those are medians of what the yardstick
-returns per event, so milestone 1a produces the input to that decision.
+The first thing to build is the **yardstick**: one function that measures how wide a
+coordinated event is, applied identically to every detector, so their widths become
+comparable at all. Porting it also yields a statistic this project has wanted since
+the generator review.
 
-⚠ **That is a candidate, not a cure.** The yardstick's own outputs are bounded by
-measurement parameters — the span by the collection aperture, the core span by the
-clustering gap, which at 0.5 s sits inside the 0.42 s noise band of the statistic
-being replaced. Retiring the flag needs a surrogate null computed *for the new
-statistics* and a round-trip test. Porting alone delivers neither.
+`docs/generator.md` carries an open flag that the generator's onset-jitter constant
+of 0.36 s is calibrated against a statistic that sits **below its own surrogate
+null** of 0.42 s, and that does not round-trip — build a recording at 0.36 and the
+estimator reads back about 0.64. `docs/reviews/generator_2026-08-14.md` names two
+candidate replacements: a median event **span** and a median **width**. The port
+delivers the first. It cannot deliver the second — that "width" is the stored
+transient width, which the yardstick is defined to exclude and which this app does
+not read at all.
+
+⚠ **A candidate, not a cure, and only half of one.** The span the yardstick returns
+is bounded by the aperture the caller collects over; its straggler-robust variant is
+capped by the 0.5 s clustering gap, the same order as the 0.42 s null it is meant to
+escape. Retiring the flag needs a surrogate null computed *for the new statistic*
+and a round-trip test. The port delivers neither, and the second candidate belongs
+to another project.
 
 ### Read this before running anything
 
@@ -143,17 +156,35 @@ It returns the full extent between first and last onset, and a straggler-robust
 version over the largest single-linkage cluster. Deliberately onset-based; stored
 transient widths are excluded, and that boundary must survive the port.
 
-**Parity, and the trap in it.** The golden CSVs cannot test this function — they
-are the summary grain, produced by a different reducer that never calls it.
-Provable from the shapes alone. Build synthetic fixtures through
-`tools/matlab_ref/` the way every detector's oracle was built, and keep the
-goldens as a machine-local end-to-end check of the *export*.
+**Parity, and the trap in it.** The reference exports come in two grains. The
+**summary** files cannot test this function — a different reducer produces them and
+never calls it, provable from the column shapes alone. The **per-event** export
+does call it and is a genuine oracle, so it is the machine-local end-to-end check.
+Neither can be committed: both are real-derived, which FOUNDATIONS §5 keeps
+machine-local, and CI must still have a gate. So build synthetic fixtures through
+`tools/matlab_ref/` the way every detector's oracle was built — those travel — and
+use the per-event export as the second, local check.
 
-**Pin the production settings, not the defaults.** The clustering gap is
-per-stream — 0.5 s for the fast stream, 2.5 s for the slow one — and the
-coactivity window defaults to whichever gap applies. A fixture built at the
-default validates one stream and silently ships a wrong yardstick for the other.
-The port must carry the per-stream broadcast, not a scalar.
+**Pin the production settings, not the defaults.** Three of them, and the plan
+previously named one:
+
+- the **clustering gap** is per-stream — 0.5 s fast, 2.5 s slow. A fixture at the
+  default validates one stream and silently ships a wrong yardstick for the other,
+  so the port must carry the per-stream broadcast rather than a scalar.
+- the **collection pad** is 0 in production, and the MATLAB test file's last case is
+  entirely about it.
+- the **collection aperture** belongs to the caller, not to this function — one
+  second either side of the event centre. It is what Part I's ⚠ is actually about,
+  and it is a different parameter in a different function.
+
+**Amplitude: port it, and know it will be empty here.** Five of the function's
+outputs aggregate event amplitudes. Amplitudes are another project's and this app's
+input contract has no column for them, so on real bugarach input every one of those
+fields is missing. Port them anyway — parity is against the MATLAB oracle, which
+computes them — but do not present them as results, and note that the
+length-mismatch branch compares against the ROI's **full** onset array rather than
+the in-window subset. A port that naturally writes the in-window comparison
+diverges on every ROI with an event outside the window, which is most of them.
 
 **Branches the MATLAB test file does not reach** — hand-derive vectors for each:
 the cluster tie-break when two clusters hold equal counts; the strict gap boundary
@@ -173,10 +204,12 @@ argument does not have to be re-derived.
 ### 1b — the fitting stage
 
 **Use the estimator that exists.** `tools/fit_background_shape.py` already fits
-both background parameters by maximum likelihood on a negative-binomial count
-model, with a drift gate that fails when the constants in the source stop matching
-the data. **That gate lives entirely in the command-line half and is the most
-valuable thing in the file — lift it with the compute.**
+**three** shapes by maximum likelihood on a negative-binomial count model: how
+unevenly activity is spread across ROIs, and how much each ROI clumps in time at
+two scales. It fits **no rate level** — every window keeps its own mean by
+construction. It also carries a drift gate that fails when the constants in the
+source stop matching the data. **That gate lives entirely in the command-line half
+and is the most valuable thing in the file — lift it with the compute.**
 
 **Do not fit to a summary.** The dispersion curve is a *reported diagnostic*, never
 the objective. The file says why in its own docstring: matching the statistics by
@@ -188,11 +221,12 @@ what the generator consumes, and it is only correct when the heterogeneity
 parameter is set. Fitting and then generating with heterogeneity off walks back
 into a calibration error this project already made once.
 
-**The acquisition interval cannot be fitted — take it from the folder or ask.**
-It is a property of the microscope. Note that the parameter governed by
-FOUNDATIONS §6 is the detector-side grid, not the generator's quantization knob;
-they are different parameters in different modules and only the first raises a
-warning.
+**The acquisition interval cannot be fitted.** It is a property of the microscope,
+and it arrives as `frame_interval_sec` in `slices.csv` — the one field in that file
+bugarach reads. Absent, the 0.1 s fallback applies and warns, and the warning stays.
+Note this is the detector-side grid governed by FOUNDATIONS §6, not the generator's
+onset-quantization knob; different parameters in different modules, and only the
+first warns at all.
 
 **Do not fit jitter.** It is not identifiable *by the estimator that produced the
 current value* — that estimator is censored by a minimum-group-size floor, sits
@@ -204,19 +238,22 @@ from coactivity excess over a circular-shift null uses the same machinery four o
 the six detectors use, so a fitted value cannot validate a detector calibrated on
 it. Two further constraints: the excess must be taken as a *distribution* over
 coactivity levels, since a scalar cannot separate how many coordinated moments
-there are from how many ROIs each recruits; and the shift window must be at least
-as long as the structure it is meant to destroy — the shipped detectors shift
-inside a rolling context of one to two minutes, while real burst structure runs to
-five. Apply the same round-trip test jitter got. If it fails, participation joins
-jitter as a named prior.
+there are from how many ROIs each recruits; and the shift window must be at least as
+long as the structure it is meant to destroy. The shipped detectors disagree about
+that window — CoactDetect shifts inside a rolling minute and LoCo inside two, while
+CICADA rolls across the whole recording and SCE across the whole region — and real
+burst structure runs to five minutes. Say which window the fit uses and why. Apply
+the same round-trip test jitter got; if it fails, participation joins jitter as a
+named prior.
 
 ### 1c — the writers
 
 **Two shapes from one computation.** A long-format detections file for general use,
 and the contract frames for the existing R analysis.
 
-- The recruitment field is **present and missing-filled** for the detectors that
-  have no recruitment measure — not absent. Dropping the column yields a frame one
+- The recruitment column — **`amp_median_total`**, how many ROIs an event recruited
+  — is **present and missing-filled** for the two detectors that have no recruitment
+  measure, RateDetect and SPIKE-synch. Not absent. Dropping it yields a frame one
   column short of the contract.
 - The written per-event file carries one more column than its builder emits; a
   validator built to the builder's count rejects real files.
@@ -225,18 +262,36 @@ and the contract frames for the existing R analysis.
   carriage return poisons the last column under exact comparison.
 - A real zero is not a missing value. Some detectors legitimately report a
   tightness of exactly zero, meaning perfectly synchronous. Preserve it.
-- **The validator detects a non-conforming schema and has no power over a
-  conforming schema carrying wrong values** — which is the failure the contract
-  exists to stop. Assert against the dictionary's unit and direction fields too,
-  and diff values against a known-good file.
+
+**The validator's power, stated honestly.** A dictionary-driven check catches a
+**schema** that does not conform and has **no power at all** over a conforming
+schema carrying wrong values — multiply every width by a thousand and it passes.
+That is the failure the contract exists to stop, so say what actually catches it:
+
+- Asserting against the dictionary's unit and direction fields catches **schema
+  drift only** — those fields describe the column, not the row, and nothing in them
+  moves when a value is wrong.
+- The one check with power is a **byte-diff against a known-good frame**. The real
+  reference exports cannot be committed (FOUNDATIONS §5), so CI needs a
+  **synthetic** known-good frame, produced by this port from a committed fixture and
+  diffed on every run. The real diff is a second, machine-local gate.
+
+Without that synthetic reference, the contract check is a spell-checker.
 
 ### 2 — batch
 
-**Do not reuse the viewer's compute path directly.** It is a drawing function that
-also detects: it builds full-length traces and asks two detectors for signals
-purely so they can be rendered. Over a folder that dominates runtime and memory
-for arrays nobody draws. Extract the six-way dispatch; let the viewer and the batch
-each take what they need.
+**Do not reuse the viewer's compute path directly.** It is a compute function shaped
+for the plot: it materialises a full-length trace per detector and forces two of
+them to emit signals purely so the viewer can draw them. Over a folder that
+dominates runtime and peak memory, for arrays that are discarded undrawn.
+
+**Seed the extraction from the bench's runner, not the viewer's.** A name-keyed
+six-way dispatch already exists there and already absorbs both call shapes — three
+detectors take a whole recording, three take one stream's trains plus the extent —
+so callers work in detector names rather than signatures. It has one limitation the
+viewer's does not: it is hardcoded to a single stream. Lifting that assumption is a
+smaller change than extracting the dispatch out of the viewer, and it leaves the
+viewer a consumer rather than a donor.
 
 Four divergences to resolve deliberately while extracting:
 
@@ -244,7 +299,7 @@ Four divergences to resolve deliberately while extracting:
   synthetic single-stream data and diverge on real recordings, which is why this has
   gone unnoticed. This is the one that changes a detector's input.
 - **The bench's runner is hardcoded to a single stream**, so it cannot be the batch
-  home unchanged; it becomes a convenience wrapper over the extracted dispatch.
+  home unchanged; that assumption is what gets lifted.
 - **A third consumer already exists** — the diagnostic tool imports the viewer's
   private compute function because it needs per-stream traces. Changing that
   signature breaks it silently.
@@ -252,9 +307,11 @@ Four divergences to resolve deliberately while extracting:
   not independent draws. A feature in a redrawing viewer; a choice that must be made
   deliberately for a batch and stated in anything aggregated.
 
-Two smaller ones: the synchrony branch reports a threshold default duplicated from
+Two smaller ones. The synchrony branch reports a threshold default duplicated from
 its own signature, so a partial parameter set makes the reported value diverge from
-the applied one; and two detectors are fed different arrays for the same stream.
+the applied one. And the detectors disagree about clipping: RateDetect is fed trains
+clipped to the recording extent, while CoactDetect and SPIKE-synch are fed the raw
+onset arrays. Decide which is correct and apply it once.
 
 **Figures do not compare across slices** as they stand: drawn detection width is
 floored relative to recording length, so the same detection renders differently on
@@ -267,7 +324,8 @@ cross-slice figure ships.
 Move the comparison tools into the library, **but apply the outstanding fix list
 first** — `docs/reviews/roi_rate_distribution_2026-08-15.md` is a do-not-ship record
 whose fixes are not yet applied, and most of them are code. Lifting unchanged turns
-fourteen known script defects into a library interface.
+its fourteen ranked blocking-and-major defects, plus ten smaller ones, into a
+library interface.
 
 Core returns numbers and figure objects — never a verdict, and never a file path.
 The moment a function returns "match: yes/no", someone optimizes against it. The
@@ -281,6 +339,15 @@ scale; no single copy is canonical as it stands.
 Match the library's window convention — the tools are half-open at the top, the
 library closed at both ends. One event per boundary, systematically, across every
 window the fitting stage measures.
+
+### 4 and 5 — deliberately unspecified
+
+The generator and optimization screens are thin wrappers over machinery that
+already works, and the deep-learning seam does nothing. Neither has a section here,
+and that is a decision rather than an omission: the generator is under active
+development by another session, so writing its screen down now would specify a
+moving target, and the seam has no defined output to specify at all. Whoever picks
+either one starts by writing the section.
 
 ### Coordination
 
