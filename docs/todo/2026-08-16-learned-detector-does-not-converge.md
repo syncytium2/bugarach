@@ -1,7 +1,13 @@
 ---
-status: open
+status: superseded
 filed: 2026-08-16
 ---
+
+> **SUPERSEDED 2026-08-16 by [`2026-08-16-learned-detectors-handoff.md`](2026-08-16-learned-detectors-handoff.md).**
+> The model this file describes was replaced. A centre-surround architecture now
+> reaches F1 0.68 where these reached 0.12 and 0.15. The diagnosis below is kept
+> because it is still the record of what was ruled out, and because the two
+> failures are the reason the third design was chosen — but do not start from it.
 
 # The learned detector does not converge yet — what is ruled out, and what is not
 
