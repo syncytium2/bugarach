@@ -49,6 +49,18 @@ MIN_EVENTS = 20
 MIN_ROIS = 5
 
 
+def baseline_trains(path: Path):
+    """``(per-ROI event times re-zeroed, window duration)`` for the baseline region.
+
+    The temporal fit needs the times, not just the totals.
+    """
+    got = _baseline(path)
+    if got is None:
+        return None
+    trains, dur = got
+    return trains, dur
+
+
 def baseline_counts(path: Path):
     """``(counts per ROI, window duration)`` for a slice's baseline region.
 
@@ -81,13 +93,73 @@ def baseline_counts(path: Path):
     return c, dur
 
 
-def negative_log_likelihood(log_shape: float, windows) -> float:
-    """Pooled negative-binomial NLL at a shared shape, per-window means profiled out."""
+def _baseline(path: Path):
+    """``(per-ROI times re-zeroed to the window, duration)`` or ``None``."""
+    from bugarach.store import load_slice
+
+    try:
+        sl = load_slice(path)
+    except Exception:                                        # noqa: BLE001
+        return None
+    reg = next((r for r in sl.regions
+                if (r.name or "").strip().lower() == "baseline"), None)
+    if reg is None or STREAM not in sl.streams:
+        return None
+    lo, hi = float(reg.start_sec), float(reg.end_sec)
+    dur = hi - lo
+    if dur < MIN_DURATION_SEC:
+        return None
+    stream = sl.streams[STREAM]
+    trains = []
+    for v in (stream.t50rise or stream.locs):
+        v = np.asarray(v, dtype=float)
+        v = v[np.isfinite(v)]
+        trains.append(np.sort(v[(v >= lo) & (v < hi)]) - lo)
+    if sum(x.size for x in trains) < MIN_EVENTS or len(trains) < MIN_ROIS:
+        return None
+    return trains, dur
+
+
+MIN_EVENTS_PER_ROI = 10
+"""Below this a within-ROI temporal fit has nothing to say."""
+
+
+def burst_rows(windows_t, bin_sec):
+    """Per-ROI binned-count vectors, for ROIs carrying enough events."""
+    rows = []
+    for trains, dur in windows_t:
+        edges = np.arange(0.0, dur + bin_sec, bin_sec)
+        for v in trains:
+            if v.size >= MIN_EVENTS_PER_ROI:
+                rows.append(np.histogram(v, bins=edges)[0].astype(float))
+    return rows
+
+
+def fit_burst(windows_t, bin_sec) -> float:
+    """ML Gamma shape of the per-bin rate multiplier, ROI means profiled out.
+
+    Fixing the ROI is what isolates the temporal term: rate differences ACROSS
+    ROIs are constant inside one of them, so the over-dispersion left is time.
+    """
+    rows = burst_rows(windows_t, bin_sec)
+    if not rows:
+        return float("nan")
+    return fit(rows)
+
+
+def fano(rows) -> float:
+    """Mean variance/mean of per-bin counts — the diagnostic, never a target."""
+    vals = [c.var() / c.mean() for c in rows if c.mean() > 0]
+    return float(np.mean(vals)) if vals else float("nan")
+
+
+def negative_log_likelihood(log_shape: float, rows) -> float:
+    """Pooled negative-binomial NLL at a shared shape, per-row means profiled out."""
     from scipy.special import gammaln
 
     a = float(np.exp(log_shape))
     total = 0.0
-    for c, _dur in windows:
+    for c in rows:
         mu = c.mean()                       # MLE of the window's expected count
         if mu <= 0:
             continue
@@ -98,11 +170,12 @@ def negative_log_likelihood(log_shape: float, windows) -> float:
     return total
 
 
-def fit(windows) -> float:
+def fit(rows) -> float:
+    """ML shape for a set of count vectors, each keeping its own mean."""
     from scipy.optimize import minimize_scalar
 
-    res = minimize_scalar(negative_log_likelihood, args=(windows,),
-                          bounds=(np.log(1e-3), np.log(1e3)), method="bounded")
+    res = minimize_scalar(negative_log_likelihood, args=(rows,),
+                          bounds=(np.log(1e-3), np.log(1e4)), method="bounded")
     return float(np.exp(res.x))
 
 
@@ -159,7 +232,7 @@ def main(argv=None) -> int:
         return 2
 
     n_roi = sum(len(c) for c, _ in windows)
-    shape = fit(windows)
+    shape = fit([c for c, _ in windows])
 
     from bugarach.bench import MEASURED_RATE_SHAPE
 
@@ -174,6 +247,48 @@ def main(argv=None) -> int:
     print("\nDiagnostics, not targets: the fit maximises the likelihood of the "
           "counts and\nis never searched against the three columns above.")
 
+    # ---- the temporal axis ------------------------------------------------
+    from bugarach.bench import MEASURED_BURST_BINS, MEASURED_BURST_SHAPE
+
+    windows_t = []
+    for path in sorted(arc.glob("*.mat")):
+        got = baseline_trains(path)
+        if got is not None:
+            windows_t.append(got)
+
+    print("\n--- clumping in time, within an ROI ---")
+    print("(one ROI followed across bins: rate differences BETWEEN ROIs are held "
+          "constant\ninside one of them, so the over-dispersion left over is "
+          "temporal)\n")
+    n_rois = len(burst_rows(windows_t, MEASURED_BURST_BINS[-1]))
+    print(f"{len(windows_t)} windows · {n_rois} ROIs with "
+          f"{MIN_EVENTS_PER_ROI}+ events\n")
+    print(f"{'bin':>7s} {'fitted shape':>13s} {'in tree':>9s} "
+          f"{'real var/mean':>14s} {'constant rate':>14s}")
+    burst_fits = {}
+    for bin_sec in (30.0, 60.0, 120.0, 300.0):
+        k = fit_burst(windows_t, bin_sec)
+        burst_fits[bin_sec] = k
+        in_tree = ""
+        for b, s in zip(MEASURED_BURST_BINS, MEASURED_BURST_SHAPE):
+            if abs(b - bin_sec) < 1e-9:
+                in_tree = f"{s:.3f}"
+        print(f"{bin_sec:6.0f}s {k:13.3f} {in_tree:>9s} "
+              f"{fano(burst_rows(windows_t, bin_sec)):14.2f} {1.0:14.2f}")
+    print("\nVariance/mean rises with the bin because busy stretches span several "
+          "bins.\nOne scale cannot reproduce that at any shape, which is why the "
+          "generator\ntakes a sequence.")
+
+    burst_drift = max(
+        abs(burst_fits[b] - s) / s
+        for b, s in zip(MEASURED_BURST_BINS, MEASURED_BURST_SHAPE)
+        if b in burst_fits)
+    if burst_drift > args.tol:
+        print(f"\nDRIFT: the temporal fit is {burst_drift:.1%} from "
+              f"bench.MEASURED_BURST_SHAPE (tolerance {args.tol:.0%}). Update it, "
+              f"and re-derive anything calibrated on it.", file=sys.stderr)
+        return 1
+
     drift = abs(shape - MEASURED_RATE_SHAPE) / MEASURED_RATE_SHAPE
     if drift > args.tol:
         print(f"\nDRIFT: fitted {shape:.3f} is {drift:.1%} from the tree's "
@@ -181,7 +296,7 @@ def main(argv=None) -> int:
               f"bugarach.bench.MEASURED_RATE_SHAPE, and re-derive anything "
               f"calibrated on it.", file=sys.stderr)
         return 1
-    print(f"\nOK: within {args.tol:.0%} of the tree's constant.")
+    print(f"\nOK: both axes within {args.tol:.0%} of the tree's constants.")
     return 0
 
 

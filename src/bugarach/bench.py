@@ -513,3 +513,44 @@ def pick_operating_point(curve: list[BenchResult]) -> BenchResult:
         f"({best.knob_value:g}, F1 {best.f1:.2f}) — the search was still "
         "climbing when it stopped; widen the grid before calling this an "
         "operating point")
+
+
+MEASURED_BURST_SHAPE = (1.547, 1.388)
+"""Gamma shapes of the per-bin rate multiplier, for `MEASURED_BURST_BINS`.
+
+The temporal partner of `MEASURED_RATE_SHAPE`, and the same estimator turned
+ninety degrees. There, ROIs differed from one another. Here **one ROI is followed
+across time bins**: under a constant rate its counts would be Poisson with
+variance equal to mean, and a bursty ROI is over-dispersed. Fixing the ROI is
+what makes the estimate clean — rate heterogeneity across ROIs is held constant
+inside one of them, so the over-dispersion left over is temporal.
+
+Maximum likelihood over the ROIs carrying at least 10 events in their baseline
+window (784 of them, across 85 windows), each ROI keeping its own mean.
+Re-derive with `python tools/fit_background_shape.py`.
+
+**Two scales, because one cannot work.** A single bin width draws independent
+bins, so its over-dispersion stops growing once the window exceeds the bin. Real
+ROIs keep getting more over-dispersed the wider you look:
+
+| variance/mean | 30 s | 60 s | 120 s | 300 s |
+|---|---|---|---|---|
+| real | 1.82 | 2.61 | 3.88 | 5.69 |
+| flat background | 0.99 | 0.95 | 0.93 | 0.74 |
+| these two scales | 1.87 | 2.76 | 3.04 | 4.44 |
+
+Fine scales are reproduced; the coarse end is still short, so a busy stretch of
+several minutes is shorter here than in real tissue.
+
+⚠ The two shapes are fitted **per scale independently** and then multiplied. A
+joint fit would not give these two numbers, and the agreement above is partly
+that approximation being forgiving. It is an approximation on purpose — the
+joint likelihood has no closed form — and it is why the coarse end is the half
+that misses.
+
+⚠ **Not wired into the bench**, exactly like `MEASURED_RATE_SHAPE`.
+`BENCH_RECORDING` still runs a homogeneous background in both axes.
+"""
+
+MEASURED_BURST_BINS = (300.0, 60.0)
+"""Bin widths (s) the shapes in `MEASURED_BURST_SHAPE` were fitted at."""

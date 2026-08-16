@@ -205,6 +205,57 @@ recalibration, not a default change, and it has not been done.
 time*; this knob does nothing about that, and no clustered arrival process
 exists here yet.
 
+### `bg_burst_shape` / `bg_burst_bin_sec` — whether an ROI clumps in time (default `None`; bench still uses `None`)
+
+![bg_burst_shape](generator/generator_bg_burst_shape.png)
+
+`bg_rate_shape` decides which ROIs are busy. This decides whether a busy ROI
+spends its events steadily or in bursts. `None` is a constant rate; a number
+multiplies the rate in each bin by a `Gamma(shape, 1/shape)` draw, mean 1, so the
+expected total is untouched and only its distribution over time moves. Counts per
+bin are then Negative Binomial — the model the clumping was fitted under.
+
+**This is what a "hot ROI" actually is.** Rate heterogeneity alone does not
+produce one. On slice `20240813_39` the varied-rate generator gives its busiest
+ROI 170 events against the real 178 — and it still does not read as hot, because
+it spreads them at about six a minute where the real ROI puts **35 into one
+minute and 57% of everything into three**. The eye is reading clumping, not
+average rate.
+
+**One scale cannot work, and the data says so rather than the model.** Real ROIs
+keep getting more over-dispersed the wider the window:
+
+| variance/mean | 30 s | 60 s | 120 s | 300 s |
+|---|---|---|---|---|
+| real baseline windows | 1.81 | 2.60 | 3.87 | 5.68 |
+| constant rate | 1.00 | 1.00 | 1.00 | 1.00 |
+| two scales, 300 s + 60 s | 1.87 | 2.76 | 3.04 | 4.44 |
+
+Independent bins stop growing once the window exceeds the bin, so a busy stretch
+spanning several minutes needs a coarse scale multiplying a fine one. Pass a
+sequence: `bg_burst_shape=(1.547, 1.388)`, `bg_burst_bin_sec=(300.0, 60.0)`.
+Both shapes are maximum-likelihood over the 783 ROIs carrying 10+ events in
+their baseline window, each ROI keeping its own mean —
+`python tools/fit_background_shape.py` re-derives them and exits non-zero on
+drift.
+
+Fixing the ROI is what makes the estimate clean: rate differences *between* ROIs
+are constant inside one of them, so the over-dispersion left over is temporal.
+
+⚠ **The coarse end is still short** — 4.44 against 5.68 at 300 s. The two shapes
+are fitted per scale independently and then multiplied; a joint fit would not
+give these two numbers, and the joint likelihood has no closed form. So a busy
+stretch here is shorter than a real one.
+
+⚠ **Interval distributions were not an option**, and that is a property of the
+data rather than a preference — see the note under "Where the numbers come from".
+A baseline window gives the median ROI under one event and leaves 35% with none,
+so requiring a few intervals per ROI keeps 37% of them and drops exactly the
+quiet ones. Binned counts survive that.
+
+⚠ **Off, and the bench does not use it.** Every score in this document was
+measured on a background that is constant in time.
+
 ### `participation` — fraction of ROIs recruited (default `(1.0, 0.75, 0.50)`; bench uses `(0.30, 0.18, 0.10)`)
 
 ![participation](generator/generator_participation.png)
@@ -426,15 +477,17 @@ and this document would mislead a reader who stopped before here.
   are **0.0114 Hz/ROI in the quiet regime against a nominal 0.0038** (3.0×) and
   0.0255 against 0.0175 (1.5×) — so the regime named for the untreated p25 is in
   fact busier than the untreated *median* it was cut from.
-- **The background model is still wrong in time, and no longer wrong across
-  ROIs.** The per-ROI half is fixed: `bg_rate_shape` draws each ROI's rate from a
-  Gamma fitted to 81 real baseline windows, which reproduces the 35% of ROIs that
-  record nothing and the median rate, neither of which was modelled directly.
-  **The temporal half is untouched** — events are still drawn independently where
-  real activity arrives in bursts, and there is no clustered arrival process here.
-  And the fix is **not switched on**: `BENCH_RECORDING` still runs a flat field,
-  so every score in this document is still measured on the old background.
-  Turning it on re-derives the whole bench.
+- **The background model now has both axes, and neither is switched on.**
+  `bg_rate_shape` makes ROIs differ from each other — reproducing the 35% that
+  record nothing, without modelling silence directly — and `bg_burst_shape` makes
+  an ROI clump in time, reproducing the fine-scale over-dispersion. Both are
+  fitted from baseline windows and both are re-derived by
+  `tools/fit_background_shape.py`. What remains: **the coarse end of the temporal
+  fit undershoots** (variance/mean 4.44 against 5.68 at 300 s), so a busy stretch
+  is shorter here than in real tissue, and the two burst shapes are fitted per
+  scale independently rather than jointly. And `BENCH_RECORDING` still runs a
+  background that is flat in both axes, so **every score in this document is
+  measured on the old one**. Turning either on re-derives the whole bench.
 - **The bench has never been scored against a real recording.** Everything here
   is measured on data this generator produced. The figure at the top is the only
   thing in this document that touches real data, and it is a visual comparison,
