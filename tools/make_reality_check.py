@@ -44,6 +44,15 @@ def _window(stream, lo, hi):
     return out
 
 
+def _top_share(sl, name="events"):
+    """Percent of all events held by the busiest ROI — the concentration, in one
+    number. A flat field lands near 100/n_roi; a real baseline field runs far
+    above it."""
+    counts = np.array([len(v) for v in sl.streams[name].locs], dtype=float)
+    total = counts.sum()
+    return 0.0 if total <= 0 else 100.0 * counts.max() / total
+
+
 def build(args):
     import holoviews as hv
 
@@ -86,20 +95,36 @@ def build(args):
     rate = total / (n_roi * dur)
 
     real_win = slice_from_events(ev, slice_id="real")
-    synth, gt = simulate_coordination(
-        seed=args.seed, duration_sec=dur, n_roi=n_roi, bg_rate_hz=rate,
-        participation=(0.30, 0.18, 0.10),
-        n_per_level=(args.per_level,) * 3,
-        jitter_sec=0.36, min_sep_sec=120.0, interval_cv=1.0)
+
+    def generated(shape):
+        return simulate_coordination(
+            seed=args.seed, duration_sec=dur, n_roi=n_roi, bg_rate_hz=rate,
+            bg_rate_shape=shape,
+            participation=(0.30, 0.18, 0.10),
+            n_per_level=(args.per_level,) * 3,
+            jitter_sec=0.36, min_sep_sec=120.0, interval_cv=1.0)
+
+    synth, gt = generated(None)
+    # Ground truth is PER RUN, not shared. The background draw consumes random
+    # numbers, so the heterogeneous run's events land at different times than the
+    # flat run's at the same seed. An earlier version of this figure marked the
+    # flat run's planted times on the heterogeneous raster, where nothing had
+    # been planted — the triangles pointed at background.
+    truth = {"synthetic": gt}
+    series = [("real", real_win), ("synthetic", synth)]
+    if args.shape is not None:
+        hetero, hetero_gt = generated(args.shape)
+        truth["heterogeneous"] = hetero_gt
+        series.append(("heterogeneous", hetero))
 
     ext = (0.0, dur)
     det = {}
-    for label, sl in (("real", real_win), ("synthetic", synth)):
+    for label, sl in series:
         d = loco_detect(sl, n_surrogates=100, rng_seed=7).streams["events"]
         det[label] = d
 
     rows = []
-    for label, sl in (("real", real_win), ("synthetic", synth)):
+    for label, sl in series:
         d = det[label]
         spans = [(o, o + max(w, 1.0)) for o, w in zip(d.onset_sec, d.width_sec)]
         panel = raster_panel(sl.streams["events"], ext=ext, member_spans=spans,
@@ -111,10 +136,13 @@ def build(args):
                 (d.onset_sec, np.full(d.onset_sec.size, n_roi - 0.6)),
                 kdims=["t"], vdims=["roi"]).opts(
                 marker="diamond", size=9, color="#7b4a9c", alpha=0.95)
-        # planted truth exists only on the right-hand side of the comparison
-        if label == "synthetic" and len(gt.times):
+        # Planted truth exists in every generated panel and in none of the real
+        # one — and each panel gets ITS OWN, because the two generated runs do
+        # not share a schedule.
+        own = truth.get(label)
+        if own is not None and len(own.times):
             panel = panel * hv.Scatter(
-                (gt.times, np.full(gt.times.size, n_roi - 2.4)),
+                (own.times, np.full(own.times.size, n_roi - 2.4)),
                 kdims=["t"], vdims=["roi"]).opts(
                 marker="triangle", size=8, color="#1b7f3b", alpha=0.95)
         # Keep this SHORT. The bottom panel spends part of its 250 px on an
@@ -122,17 +150,27 @@ def build(args):
         # to run in and a long string is clipped with no error — the figure read
         # "9.5 mHz/RC" until 2026-08-15, including on the public site. The ROI
         # count is already in the header line, so the axis need not repeat it.
-        lab = ("REAL" if label == "real" else "GENERATED") + \
-              f" · {rate*1000:.1f} mHz/ROI"
+        # The published two-panel figure keeps saying GENERATED. Only when the
+        # third panel is present does "generated" become ambiguous, and only
+        # then do the two generated rows need distinguishing from each other.
+        if len(series) > 2:
+            short = {"real": "REAL", "synthetic": "FLAT BG",
+                     "heterogeneous": "VARIED BG"}[label]
+        else:
+            short = "REAL" if label == "real" else "GENERATED"
+        lab = f"{short} · {rate*1000:.1f} mHz/ROI"
+        last = label == series[-1][0]
         rows.append(panel.opts(
             width=args.width, height=250, xlim=ext, ylim=(-1, n_roi),
-            xaxis=None if label == "real" else "bottom",
-            ylabel=lab, xlabel="" if label == "real" else "time", title="",
+            xaxis="bottom" if last else None,
+            ylabel=lab, xlabel="time" if last else "", title="",
             fontsize={"ylabel": "10pt"}, show_legend=False,
             hooks=[_time_axis_hook]))
 
-    fig = (rows[0] + rows[1]).cols(1).opts(shared_axes=False, merge_tools=True,
-                                           toolbar=None)
+    fig = rows[0]
+    for r in rows[1:]:
+        fig = fig + r
+    fig = fig.cols(1).opts(shared_axes=False, merge_tools=True, toolbar=None)
     header = (
         f'<div style="font:13px/1.6 system-ui,sans-serif;max-width:{args.width}px">'
         f'<b style="font-size:15px">A real recording, and the generator asked to '
@@ -142,8 +180,10 @@ def build(args):
         # Plain words, not the function name: this figure is published on the
         # public site, and a reader who has never seen the source cannot use
         # "simulate_coordination" for anything.
-        f'before/after result. Bottom: the generator run at the '
-        f'same ROI count, duration and per-ROI rate '
+        + (f'before/after result. Below it: the generator run at the '
+           if args.shape is not None else
+           f'before/after result. Bottom: the generator run at the ')
+        + f'same ROI count, duration and per-ROI rate '
         f'({rate*1000:.1f} mHz), with events planted at the measured '
         f'participation and jitter.<br>'
         f'<span style="color:#7b4a9c">◆</span> LoCo\'s coordinated-event calls, '
@@ -153,7 +193,18 @@ def build(args):
         f'<span style="color:#555">LoCo finds <b>{det["real"].onset_sec.size}</b> '
         f'in the real recording and <b>{det["synthetic"].onset_sec.size}</b> in '
         f'the generated one, where <b>{len(gt.times)}</b> were planted.</span>'
-        f'</div>')
+        + (f'<br><span style="color:#555">Third panel: the same generator with '
+           f'per-ROI rates drawn from a Gamma of shape <b>{args.shape:g}</b> '
+           f'instead of one rate for every ROI, at the same mean. Its busiest ROI '
+           f'carries <b>{_top_share(series[2][1]):.0f}%</b> of its events against '
+           f'<b>{_top_share(real_win):.0f}%</b> in the real recording and '
+           f'<b>{_top_share(synth):.0f}%</b> in the flat one. LoCo finds '
+           f'<b>{det["heterogeneous"].onset_sec.size}</b> there. The planted '
+           f'schedule is NOT shared between the two generated panels — the '
+           f'background draw consumes random numbers, so each carries its own '
+           f'truth marks.</span>'
+           if args.shape is not None else '')
+        + '</div>')
     return fig, header
 
 
@@ -164,6 +215,12 @@ def main(argv=None):
     p.add_argument("--slice", default=DEFAULT_SLICE)
     p.add_argument("--seed", type=int, default=5)
     p.add_argument("--per-level", type=int, default=4)
+    p.add_argument("--shape", type=float, default=None, metavar="A",
+                   help="add a third panel whose per-ROI background rates are "
+                        "drawn from Gamma(A, mean/A) instead of every ROI "
+                        "getting the same rate. The fitted value is "
+                        "bugarach.bench.MEASURED_RATE_SHAPE; re-derive it with "
+                        "tools/fit_background_shape.py.")
     p.add_argument("--width", type=int, default=1000)
     p.add_argument("--out", default=None,
                    help="destination directory; default $BUGARACH_DARKROOM")

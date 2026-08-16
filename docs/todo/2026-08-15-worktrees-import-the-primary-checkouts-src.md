@@ -1,0 +1,66 @@
+---
+status: open
+filed: 2026-08-15
+---
+
+# A worktree's tests import `main`'s library, and nothing says so
+
+The `.venv` lives in the primary checkout and was created with `pip install -e`,
+so `bugarach` resolves to `/…/bugarach/src` — **the primary checkout, whatever
+branch it happens to be on** — no matter which worktree the interpreter is
+invoked from. Every other worktree therefore runs *its own tests* against
+*`main`'s source*.
+
+It fails silently and in the most convincing possible way: the suite passes, the
+figures render, and the numbers look right. It was caught only because a rendered
+figure disagreed with the branch's code — the lane labels showed `CIC` and
+`coact` where `diagnostic.py` on that branch clearly asked for `TITLES`, which
+maps to `CICADA` and `CoactDetect`.
+
+## What it cost, concretely
+
+Landing `rewrite-generator-doc`, a session reported "344 passed, sapper clear" as
+evidence the branch was green. That run had imported `main`'s library and proved
+nothing about the branch. Re-run correctly it was *also* 344 passed — so the
+claim happened to be true and was entirely unearned, which is the worst outcome,
+because nothing would have contradicted it.
+
+The same session then rebuilt the site's hero figure from that worktree and got
+`main`'s render, and nearly rewrote the caption to match a figure the branch does
+not produce.
+
+## The workaround that works today
+
+```bash
+PYTHONPATH=src python -m pytest -q          # from the worktree root
+PYTHONPATH=src python tools/build_site.py   # env is inherited by subprocesses
+```
+
+Verify it took, rather than trusting it:
+
+```bash
+PYTHONPATH=src python -c "import bugarach; print(bugarach.__file__)"
+```
+
+## What to actually do
+
+Options, roughly in order of preference:
+
+1. **A `.venv` per worktree.** Correct and boring; costs disk and a rebuild per
+   worktree (`python3 -m venv .venv && pip install -e ".[dev]"`).
+2. **A `conftest.py` guard** that fails the run when `bugarach.__file__` is not
+   under the rootdir. Cheap, catches it everywhere pytest runs, and turns a
+   silent wrong answer into a red test — the shape this repo already prefers.
+3. **A sapper rule** — poor fit: sapper reads files, and this is a property of
+   the interpreter's import state, not of any file's contents.
+
+Option 2 is the one that fires by itself, which is the test this repo applies to
+every other gate. It also generalizes: the same guard catches a stale editable
+install pointing at a deleted path.
+
+## Related
+
+The session protocol already says to work in your own worktree
+([`session_protocol.md`](../session_protocol.md)), and the SessionStart hook
+prints that advice on every start. Following that advice is what exposes you to
+this. Worth a line in the briefing until it is fixed.

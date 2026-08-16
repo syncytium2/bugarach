@@ -42,10 +42,13 @@ What it reports, and why each part earns its place:
   Detections there are, by construction, not coordination: the block has an
   elevated rate and *no planted events*. A detector fooled by rate lights it up.
 * **detections on distractors** — correlated population bursts are genuine
-  cross-ROI coincidence that is not a coordinated event. Firing on them is not
-  scored as a false alarm by default (they are real structure), but it is
-  counted, because "should a burst count?" is a live question and the number is
-  the way to settle it.
+  cross-ROI coincidence that is not a coordinated event. They are counted
+  separately in ``distractor_hits`` because "should a burst count?" is a live
+  question and the number is the way to settle it. **They are not exempt from
+  the false-alarm count**: a detection on a distractor matches no planted event,
+  so it lands in ``fa_times`` and costs precision like any other. An earlier
+  version of this docstring said the opposite, which was wrong about this
+  module's own behaviour.
 """
 
 from __future__ import annotations
