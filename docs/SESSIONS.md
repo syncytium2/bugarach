@@ -60,6 +60,29 @@ Template:
 
 ## Active
 
+### Mac/generator-records-realized-onsets — the generator should record what it planted
+- **Status:** ACTIVE — open PR, **wants review before it lands**
+- **Started:** 2026-08-16
+- **Writes:** repo only
+- **Claims:** none
+- **Notes:** A **proposal, deliberately not auto-merged.** `PlantedEvent` gains an
+  `onsets` field carrying the time each participant actually got, plus an
+  `observed_span` property. `span` is untouched and still the nominal ±3σ. Emitted data
+  is unchanged — verified byte-for-byte across 36 generator configurations — so no
+  committed figure, bench number or fixture moves.
+
+  Why another session should care: **the ±3σ window is 2.7× wider than the median
+  realized footprint** (2.16 s, constant for every event, against a measured median of
+  0.80 s ranging 0.10–1.70 s). Anything treating `span` as an event's extent is using a
+  parametric restatement of the *request* rather than the event. That is a labelling
+  question for a learned detector, and it may also be a scoring question —
+  `docs/todo/2026-08-13-scoring-tolerance-vs-detector-resolution.md` reasons about `span`
+  in the old terms. **If you are working on scoring tolerance, this PR is either in your
+  way or is your answer; say which on the PR.**
+
+  Context: this fell out of a paused attempt to evaluate learned detectors for
+  performance-vs-mass. None of that work is in this PR and nothing about it is settled.
+
 ### WSMIP-win/vendor-session-protocol — vendor the session protocol + audit upstream tooling
 - **Status:** DONE
 - **Started:** 2026-08-12
