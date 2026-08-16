@@ -57,6 +57,20 @@ SWEEPS: dict[str, dict] = {
              "field with empty lanes and dense ones, and the real recordings "
              "look like the bottom row.",
     ),
+    "bg_burst_shape": dict(
+        values=(None, 1.388, (1.547, 1.388)),
+        base=dict(bg_rate_shape=0.275, duration_sec=1800.0, n_per_level=(3, 3, 3),
+                  min_sep_sec=120.0),
+        note="whether an ROI's own events clump in TIME. Rows share a background "
+             "that is already uneven across ROIs (bg_rate_shape=0.275), so what "
+             "changes is only how each ROI spends its events. Top: a constant "
+             "rate, evenly spread. Middle: one scale, 60 s bins. Bottom: two "
+             "scales, 300 s and 60 s, which is what real windows need — their "
+             "variance/mean keeps rising with the window (1.8 at 30 s, 2.6 at "
+             "60 s, 3.9 at 120 s, 5.7 at 300 s), and independent bins stop "
+             "growing once you look wider than the bin. Watch the busy ROIs "
+             "gather into stretches instead of ticking steadily.",
+    ),
     "participation": dict(
         values=(0.45, 0.30, 0.18, 0.10),
         note="fraction of ROIs recruited into each event, one value per row. "
@@ -152,9 +166,33 @@ def _vlabel(param, value):
 
     ``None`` is a legitimate value for a knob whose "off" is itself the thing
     being compared against — ``bg_rate_shape=None`` is the flat field — and
-    ``:g`` cannot format it.
+    ``:g`` cannot format it. A knob may also take a SEQUENCE, when it names more
+    than one scale.
     """
-    return f"{param}={value:g}" if value is not None else f"{param}=None"
+    if value is None:
+        return f"{param}=None"
+    if isinstance(value, (tuple, list)):
+        return f"{param}=({', '.join(format(v, 'g') for v in value)})"
+    return f"{param}={value:g}"
+
+
+#: Longest y-label a 196 px row can set rotated before the ends are cut off with
+#: no error. Measured off the render, not guessed: at 34 characters the label
+#: fits, at 38 the tail goes. A multi-scale value like
+#: ``bg_burst_shape=(1.547, 1.388)`` is already 30 before the ROI count is added.
+_YLABEL_MAX = 34
+
+
+def _ylabel(param, value, n_roi):
+    """Row label, dropping the ROI count when the value itself is long.
+
+    Every row of a figure carries the same ROI count, and the header states it —
+    so it is the part that can go. Losing the tail of the VALUE would leave a row
+    labelled with a number that is not the one it was drawn at.
+    """
+    label = _vlabel(param, value)
+    with_count = f"{label} · {n_roi} ROI"
+    return with_count if len(with_count) <= _YLABEL_MAX else label
 
 
 def _row(param, value, base, seed):
@@ -168,6 +206,15 @@ def _row(param, value, base, seed):
         kw["n_per_level"] = (6,)
     elif param == "n_distractors":
         kw["n_distractors"] = value
+    elif param == "bg_burst_shape":
+        # The bins travel with the shapes: one shape is one scale at 60 s, a pair
+        # is the 300/60 s pair they were fitted at. Setting shapes without
+        # matching bins is an error the generator refuses, correctly.
+        kw["bg_burst_shape"] = value
+        if isinstance(value, (tuple, list)):
+            kw["bg_burst_bin_sec"] = (300.0, 60.0)[-len(value):]
+        elif value is not None:
+            kw["bg_burst_bin_sec"] = 60.0
     else:
         kw[param] = value
     return simulate_coordination(seed=seed, **kw)
@@ -226,7 +273,7 @@ def build(param: str, seed: int, width: int):
                 color="#4c78a8", alpha=0.12) * panel
         rows.append(panel.opts(
             width=width, height=196, xlim=ext, ylim=(-1, n_roi), xaxis=None,
-            ylabel=f"{_vlabel(param, value)} · {n_roi} ROI", xlabel="time",
+            ylabel=_ylabel(param, value, n_roi), xlabel="time",
             title="",
             fontsize={"ylabel": "10pt"}, show_legend=False,
             hooks=[_time_axis_hook]))

@@ -332,3 +332,112 @@ def test_it_reaches_the_concentration_a_real_field_has():
         v = np.array([len(v) for v in trains_of(varied)])
         assert f.max() / f.sum() < 0.08
         assert v.max() / v.sum() > 0.12
+
+
+# ------------------------------------------------------ bursty in time
+
+# The partner of bg_rate_shape, on the other axis. Real ROIs are over-dispersed
+# in time — variance/mean 1.8 at 30 s bins and 5.7 at 300 s, against 1.0 for a
+# constant rate — and the growth with bin width is why one scale is not enough.
+
+BURSTY = dict(duration_sec=1800.0, n_roi=60, bg_rate_hz=0.02,
+              participation=(), n_per_level=(), grid_sec=0.0)
+
+
+def _fano(slice_, dur, w, min_events=10):
+    """Mean variance/mean of per-bin counts, over ROIs with enough events."""
+    edges = np.arange(0.0, dur + w, w)
+    out = []
+    for v in trains_of(slice_):
+        if v.size >= min_events:
+            c = np.histogram(v, bins=edges)[0].astype(float)
+            if c.mean() > 0:
+                out.append(c.var() / c.mean())
+    return float(np.mean(out)) if out else float("nan")
+
+
+def test_the_default_is_still_homogeneous_in_time():
+    """None must not consume random numbers, or every existing seed moves."""
+    a, _ = simulate_coordination(seed=13)
+    b, _ = simulate_coordination(seed=13, bg_burst_shape=None)
+    for x, y in zip(trains_of(a), trains_of(b)):
+        np.testing.assert_array_equal(x, y)
+
+
+def test_a_constant_rate_is_not_overdispersed_and_bursting_is():
+    flat, _ = simulate_coordination(seed=2, **BURSTY)
+    burst, _ = simulate_coordination(seed=2, bg_burst_shape=1.388,
+                                     bg_burst_bin_sec=60.0, **BURSTY)
+    # Expected Fano for one scale is 1 + (rate*bin)/shape = 1 + 1.2/1.388 ~ 1.86;
+    # thirty bins per ROI leave real sampling noise around it, so the bar is set
+    # where it still separates cleanly from a constant rate rather than at the
+    # analytic value.
+    assert _fano(flat, 1800.0, 60.0) == pytest.approx(1.0, abs=0.35)
+    assert _fano(burst, 1800.0, 60.0) > 1.4
+
+
+def test_one_scale_stops_growing_and_two_scales_keep_going():
+    """The reason a sequence is accepted at all.
+
+    A single bin draws independent bins, so looking at windows much wider than
+    the bin averages the modulation away. Real ROIs keep getting more
+    over-dispersed the wider you look, and only a coarse scale reproduces that.
+    """
+    one, _ = simulate_coordination(seed=4, bg_burst_shape=1.388,
+                                   bg_burst_bin_sec=60.0, **BURSTY)
+    two, _ = simulate_coordination(seed=4, bg_burst_shape=(1.547, 1.388),
+                                   bg_burst_bin_sec=(300.0, 60.0), **BURSTY)
+    grow_one = _fano(one, 1800.0, 300.0) / _fano(one, 1800.0, 60.0)
+    grow_two = _fano(two, 1800.0, 300.0) / _fano(two, 1800.0, 60.0)
+    assert grow_two > grow_one
+
+
+def test_bursting_does_not_move_the_mean_rate():
+    """The multiplier has mean 1, so only the distribution over time changes."""
+    flat, _ = simulate_coordination(seed=8, n_roi=4000, duration_sec=1800.0,
+                                    bg_rate_hz=0.01, participation=(),
+                                    n_per_level=(), grid_sec=0.0)
+    burst, _ = simulate_coordination(seed=8, n_roi=4000, duration_sec=1800.0,
+                                     bg_rate_hz=0.01, bg_burst_shape=(1.547, 1.388),
+                                     bg_burst_bin_sec=(300.0, 60.0),
+                                     participation=(), n_per_level=(), grid_sec=0.0)
+    n_flat = sum(v.size for v in trains_of(flat))
+    n_burst = sum(v.size for v in trains_of(burst))
+    assert n_burst == pytest.approx(n_flat, rel=0.1)
+
+
+def test_same_seed_same_bursty_output():
+    a, _ = simulate_coordination(seed=3, bg_burst_shape=(1.547, 1.388),
+                                 bg_burst_bin_sec=(300.0, 60.0), **BURSTY)
+    b, _ = simulate_coordination(seed=3, bg_burst_shape=(1.547, 1.388),
+                                 bg_burst_bin_sec=(300.0, 60.0), **BURSTY)
+    for x, y in zip(trains_of(a), trains_of(b)):
+        np.testing.assert_array_equal(x, y)
+
+
+def test_both_axes_compose():
+    """Rate heterogeneity across ROIs and clumping within one are independent."""
+    both, _ = simulate_coordination(seed=6, bg_rate_shape=0.275,
+                                    bg_burst_shape=(1.547, 1.388),
+                                    bg_burst_bin_sec=(300.0, 60.0), **BURSTY)
+    rates = np.array([v.size for v in trains_of(both)], dtype=float)
+    assert rates.max() / rates.sum() > 0.10          # a busy ROI exists
+    assert _fano(both, 1800.0, 60.0) > 1.4           # and it clumps in time
+
+
+@pytest.mark.parametrize("bad", [0.0, -1.0])
+def test_rejects_a_non_positive_burst_shape(bad):
+    with pytest.raises(ValueError, match="bg_burst_shape"):
+        simulate_coordination(seed=1, bg_burst_shape=bad)
+
+
+def test_rejects_mismatched_scale_lengths():
+    with pytest.raises(ValueError, match="same"):
+        simulate_coordination(seed=1, bg_burst_shape=(1.5, 1.4),
+                              bg_burst_bin_sec=(300.0, 60.0, 10.0))
+
+
+def test_a_sequence_of_shapes_needs_a_sequence_of_bins():
+    with pytest.raises(ValueError, match="bg_burst_bin_sec"):
+        simulate_coordination(seed=1, bg_burst_shape=(1.5, 1.4),
+                              bg_burst_bin_sec=60.0)
