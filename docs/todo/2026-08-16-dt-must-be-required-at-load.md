@@ -21,6 +21,22 @@ The code still does the old thing. This is the gap.
   `_resolve_grid_dt` warns `GridDtNotSetWarning` and returns the fallback.
 - Reached from `event_rate`, `rate_context` and `rate_detect`.
 
+**Three detectors assume the acquisition interval and only one complains.**
+Reported by the `refresh-murderboard-vendor` session (PR #45) and verified here
+against `origin/main`:
+
+| detector | how it gets the interval | says anything? |
+|---|---|---|
+| `rate_detect` | `grid_dt=None` -> `_resolve_grid_dt` | **warns** (`GridDtNotSetWarning`) |
+| `sync_detect` | `dt: float = 0.1` | **silent** |
+| `cicada_detect` | `imaging_rate_hz: float = 10.0`, then `dt = 1/rate` | **silent** |
+
+Every one of the 7 `GridDtNotSetWarning` references in the tree is inside
+`rate.py`. So a lab imaging at 20 Hz that supplies nothing gets **one warning and
+two quietly wrong answers** — which is a sharper version of this todo's own
+argument: the warning is not merely late, it is also outnumbered two to one by
+paths that do not raise it.
+
 Nothing at the **load** boundary asks for it at all: `bugarach.store` readers and
 `bugarach.io.slice_from_events` construct a `Slice` with no sampling interval,
 and the viewer exposes `grid_dt` as a detector widget
