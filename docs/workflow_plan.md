@@ -27,9 +27,9 @@ different project and are not read here: the detectors need per-ROI **event onse
 times** and nothing more, which is what `src/bugarach/io.py` already says.
 
 The contract is written in full in
-[`docs/export_folder_spec.md`](export_folder_spec.md). In short: four CSVs, of
-which **only `events.csv` is required** — `slice_id, stream, roi, time_sec`, and
-nothing else read.
+[`docs/export_folder_spec.md`](export_folder_spec.md). In short: four CSVs, of which
+**two are required** — `events.csv` for the onset times, and `slices.csv` for one
+field, the frame interval. The rest add fidelity and none is a precondition.
 
 Periods are carried by `regions.csv`, one row per region, ordered by a plain
 `region_idx` and named by the lab's own `label`. There is no notion of a treatment
