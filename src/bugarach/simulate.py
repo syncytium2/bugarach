@@ -70,12 +70,52 @@ class PlantedEvent:
     """SD of participant onset jitter (s). 0 = perfectly synchronous."""
     kind: str = "coordinated"
     """``coordinated`` (a recall target) or ``distractor`` (see below)."""
+    onsets: tuple[float, ...] = ()
+    """The onset each participant actually got — jittered, clipped to the
+    recording, and quantized to the imaging grid — column-aligned with ``rois``.
+
+    **Additive: nothing that existed before this field reads it, and no emitted
+    data changed when it arrived.** It is recorded because these are the times
+    actually written into the trains, so they are what the event *is* rather than
+    what it was asked to be. A footprint derived from ``time ± k·jitter_sec`` is a
+    parametric restatement of the request — right on average and wrong on every
+    individual event, since six Gaussian draws do not span exactly ±3 sigma and
+    grid quantization moves the edges again. Read :attr:`observed_span` for the
+    realized footprint; :attr:`span` is unchanged and still nominal.
+    """
 
     @property
     def span(self) -> tuple[float, float]:
-        """A conventional ±3-sigma window around the event, for scoring or masks."""
+        """A conventional ±3-sigma window around the event, for scoring or masks.
+
+        **Unchanged, deliberately.** This is what the generator *asked* for, and
+        `docs/todo/2026-08-13-scoring-tolerance-vs-detector-resolution.md`
+        describes it in those terms. Redefining it in place would have moved a
+        published meaning with no test watching — see :attr:`observed_span` for
+        what was actually planted.
+        """
         w = 3.0 * self.jitter_sec
         return (self.time - w, self.time + w)
+
+    @property
+    def observed_span(self) -> tuple[float, float]:
+        """First to last participant onset — the event's realized footprint.
+
+        Falls back to :attr:`span` only for a :class:`PlantedEvent` built without
+        onsets, which the generator never does but hand-built test fixtures do.
+
+        ⚠ **A one-participant event has zero width here**, and that is reachable
+        from ordinary settings: ``max(1, matlab_round(frac * n_roi))`` guarantees
+        a participant, so a small population at a small fraction plants events
+        whose realized footprint is a point. One onset genuinely has no spread,
+        so it is not padded — but a consumer using this as a mask or a training
+        target gets a degenerate interval, and should decide what to do about
+        that rather than discover it. :attr:`span` is never degenerate, which is
+        one of the few things it is better at.
+        """
+        if self.onsets:
+            return (min(self.onsets), max(self.onsets))
+        return self.span
 
 
 @dataclass
@@ -117,6 +157,20 @@ class GroundTruth:
         for i, e in enumerate(self.events):
             m[i, list(e.rois)] = True
         return m
+
+
+def _quantize(values, grid_sec: float) -> tuple[float, ...]:
+    """Snap onsets to the imaging grid exactly as the trains are snapped.
+
+    Must stay identical to the quantization applied to ``trains`` at the end of
+    :func:`simulate_coordination` — including ``matlab_round``'s half-away-from-
+    zero, which decides which bin a tie lands in. A recorded onset that differs
+    from the one in the train by a grid step would make the label disagree with
+    the data it labels, in the one place nothing would notice.
+    """
+    if grid_sec <= 0:
+        return tuple(float(v) for v in values)
+    return tuple(float(matlab_round(v / grid_sec) * grid_sec) for v in values)
 
 
 def _place_uniform(rng, m, lo, hi, min_sep, exclude, max_tries=10000):
@@ -454,12 +508,15 @@ def simulate_coordination(
         for t in bt:
             np_ = max(1, matlab_round(distractor_frac * nR))
             rois = np.sort(rng.choice(nR, size=np_, replace=False))
+            got = []
             for r in rois:
-                trains[r].append(min(max(t + bj * rng.randn(), 0.0), T))
+                onset = min(max(t + bj * rng.randn(), 0.0), T)
+                trains[r].append(onset)
+                got.append(onset)
             distractors.append(PlantedEvent(
                 time=float(t), frac=float(distractor_frac), n_part=int(np_),
                 rois=tuple(int(x) for x in rois), jitter_sec=float(bj),
-                kind="distractor"))
+                onsets=_quantize(got, grid_sec), kind="distractor"))
 
     # ---- planted events -------------------------------------------------------
     fracs = np.array([f for f, n in zip(participation, n_per_level)
@@ -480,11 +537,15 @@ def simulate_coordination(
     for t, f in zip(times, fracs):
         np_ = max(1, matlab_round(f * nR))
         rois = np.sort(rng.choice(nR, size=np_, replace=False))
+        got = []
         for r in rois:
-            trains[r].append(min(max(t + jitter_sec * rng.randn(), 0.0), T))
+            onset = min(max(t + jitter_sec * rng.randn(), 0.0), T)
+            trains[r].append(onset)
+            got.append(onset)
         events.append(PlantedEvent(
             time=float(t), frac=float(f), n_part=int(np_),
-            rois=tuple(int(x) for x in rois), jitter_sec=float(jitter_sec)))
+            rois=tuple(int(x) for x in rois), jitter_sec=float(jitter_sec),
+            onsets=_quantize(got, grid_sec)))
     events.sort(key=lambda e: e.time)
 
     # ---- quantize + sort ------------------------------------------------------
