@@ -103,6 +103,15 @@ class PlantedEvent:
 
         Falls back to :attr:`span` only for a :class:`PlantedEvent` built without
         onsets, which the generator never does but hand-built test fixtures do.
+
+        ⚠ **A one-participant event has zero width here**, and that is reachable
+        from ordinary settings: ``max(1, matlab_round(frac * n_roi))`` guarantees
+        a participant, so a small population at a small fraction plants events
+        whose realized footprint is a point. One onset genuinely has no spread,
+        so it is not padded — but a consumer using this as a mask or a training
+        target gets a degenerate interval, and should decide what to do about
+        that rather than discover it. :attr:`span` is never degenerate, which is
+        one of the few things it is better at.
         """
         if self.onsets:
             return (min(self.onsets), max(self.onsets))
