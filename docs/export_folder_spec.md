@@ -37,9 +37,16 @@ One row per region of a recording. **This is how a recording says it has periods
 |---|---|---|
 | `slice_id` | text | which recording |
 | `region_idx` | integer | **1-based, chronological.** This is the ordering, and the only ordering. |
-| `label` | text | the lab's own word for this period — `baseline`, `TTX`, `senktide`, `washout`, `high K`, anything. |
+| `label` | text | the word this period is known by — `baseline`, `TTX`, `senktide`, `washout`, `high K`, anything. |
 | `start_sec` | number | window start |
 | `end_sec` | number | window end |
+| `meets_floor` | boolean | *optional.* The producer's judgement that this window is long enough to analyse. |
+| `too_short` | boolean | *optional.* The producer's judgement that it is not. |
+
+The last two exist because a producer that computes such a judgement and cannot
+record it throws it away at the folder boundary. bugarach **surfaces them and never
+acts on them** — dropping a region is the analyst's call, not the reader's. Absent,
+nothing is assumed.
 
 **Windows arrive already computed.** Whatever produced this folder decided where
 each period begins and ends — trimming, caps, wash-in delays, exclusions. bugarach
@@ -58,6 +65,28 @@ rows and changes nothing else.
 not treat any label as special, and does not decide which pair of regions is a
 comparison. It reports every region separately and the contrast is chosen
 downstream, by the person who knows the experiment.
+
+**⚠ A label may be load-bearing upstream, even though it is inert here.** bugarach
+interprets no label — but the producer that wrote the bounds may have. This
+project's own MATLAB exporter decides a region's treatment by **substring match on
+the label**: a name containing `hi` is taken to be a high-potassium condition and
+is given raw, untrimmed bounds, while every other treatment gets a two-minute
+wash-in delay and a twenty-minute cap. So `high K` and `elevated potassium`
+describe the same experiment and produce different windows, and any label
+containing those two letters — `chelerythrine`, `histamine`, `washin` — trips the
+same rule.
+
+The consequence for a producer: **renaming a region can silently change its
+bounds.** The consequence for a reader: the label tells you what a period was
+called, not that the bounds were computed the way a similar name elsewhere implies.
+That is a reason to receive windows rather than derive them, not a reason to
+re-derive them here.
+
+**A label of `baseline` is not evidence of a baseline.** This project's exporter
+overwrites the first region's real name with the literal string `baseline` on every
+run, so a period the lab called `pre-drug`, `control` or `aCSF` arrives labelled
+`baseline` and its original name is lost. Read such a label as *"whatever region 1
+was called"*. A producer conforming to this spec should send the real name.
 
 **When the file is absent**, the recording has one region spanning its own extent,
 with `region_idx = 1` and **no label**. It is emitted as missing, never as
