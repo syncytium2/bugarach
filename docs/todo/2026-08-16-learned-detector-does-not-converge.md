@@ -19,10 +19,16 @@ Bench, `baseline_busy`, seeds 1–3, against planted truth:
 | `tiny` | 2 393 | 238 s | 0.12 | 0.07 | 1.00 | 3 |
 | `trace` | 2 065 | 8 s | 0.15 | 0.09 | 0.50 | 8 |
 
-The six, on the same recordings: **CoactDetect 0.66**, LoCo 0.64, RateDetect 0.63,
-CICADA 0.54, spike-sync 0.54, SCE 0.42. So a learned detector is currently far
+The six, on the same recordings: **RateDetect 0.64**, CoactDetect 0.63, LoCo 0.63,
+CICADA 0.56, spike-sync 0.51, SCE 0.36. So a learned detector is currently far
 worse than every hand-written one, and nothing about this should be reported
 otherwise.
+
+⚠ **Corrected 2026-08-16.** An earlier draft of this file quoted CoactDetect 0.66
+as the best of six. That came from a **2-seed** run; the bench's canonical three
+seeds give the numbers above, and the leader changes. Re-derive with
+`python tools/make_learned_figures.py --out docs/learned`, which caches every
+number the write-up quotes.
 
 ## Ruled out — do not spend time here again
 

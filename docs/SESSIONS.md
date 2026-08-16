@@ -60,6 +60,26 @@ Template:
 
 ## Active
 
+### Mac/learned-detectors-framework — assessor port, adapt loop, and the learned-detector review
+- **Status:** ACTIVE — PR #52
+- **Started:** 2026-08-16
+- **Writes:** `<darkroom>/bugarach/2026-08-16-learned-detectors/` (NEW) — the review page
+  and its murderboard record, so Tony can open them without navigating `docs/`.
+- **Claims:** that one dated subfolder only. Nothing else under `<darkroom>/bugarach/`,
+  and nothing in `<darkroom>/constellation/` (read-only there — the assessment explainer
+  panels were read to understand the method, not modified).
+- **Notes:** `bugarach.assess` ports interface2's `measure_coordination_timescale` at 1e-9
+  parity — coordination measured **without a detector**, so generator priors do not inherit
+  an operating point. `bugarach.adapt` turns an assessment into generator parameters with a
+  measured round-trip fidelity table (K=4 default; participation +18%, jitter +9%).
+  **The learned detector itself does NOT converge** (F1 0.12-0.15 against CoactDetect's
+  0.66) — diagnosis in `docs/todo/2026-08-16-learned-detector-does-not-converge.md`.
+  Anyone picking this up: read that first, four causes are already ruled out.
+
+  `$BUGARACH_DARKROOM` is **unset on this Mac**, same as the earlier site session found.
+  Resolve by hand or export it in the shell profile; never hardcode (SAP004).
+
+
 ### Mac/generator-records-realized-onsets — the generator should record what it planted
 - **Status:** ACTIVE — open PR, **wants review before it lands**
 - **Started:** 2026-08-16

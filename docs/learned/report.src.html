@@ -1,0 +1,462 @@
+<title>Learned Detector Review</title>
+<style>
+  :root {
+    --paper:   #f6f7f9;
+    --card:    #ffffff;
+    --ink:     #16202b;
+    --muted:   #5c6773;
+    --rule:    #d8dde3;
+    --accent:  #2f5d8a;
+    --learned: #b0413e;
+    --truth:   #1b7f3b;
+    --ok-bg:   #e4efe6;  --ok-fg:   #1b6b34;
+    --bad-bg:  #f7e4e3;  --bad-fg:  #97362f;
+    --hold-bg: #eceff3;  --hold-fg: #4a5561;
+    --serif: Charter, "Bitstream Charter", "Sitka Text", Cambria, Georgia, serif;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #11151a; --card: #171c23; --ink: #e4e8ec; --muted: #97a2ae;
+      --rule: #2a323c; --accent: #7aa8d4; --learned: #e0796f; --truth: #59b37c;
+      --ok-bg: #17301f; --ok-fg: #7fc796;
+      --bad-bg: #331c1a; --bad-fg: #e08c84;
+      --hold-bg: #1e242c; --hold-fg: #9aa5b1;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #11151a; --card: #171c23; --ink: #e4e8ec; --muted: #97a2ae;
+    --rule: #2a323c; --accent: #7aa8d4; --learned: #e0796f; --truth: #59b37c;
+    --ok-bg: #17301f; --ok-fg: #7fc796;
+    --bad-bg: #331c1a; --bad-fg: #e08c84;
+    --hold-bg: #1e242c; --hold-fg: #9aa5b1;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--paper); color: var(--ink);
+    font-family: var(--sans); font-size: 16.5px; line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 960px; margin: 0 auto; padding: 4rem 1.5rem 6rem; }
+  .col { max-width: 66ch; }
+
+  h1 {
+    font-family: var(--serif); font-weight: 600; font-size: clamp(2rem, 5vw, 2.9rem);
+    line-height: 1.12; letter-spacing: -0.015em; margin: 0 0 .6rem;
+    text-wrap: balance;
+  }
+  h2 {
+    font-family: var(--serif); font-weight: 600; font-size: 1.5rem;
+    line-height: 1.25; margin: 3.5rem 0 .9rem; text-wrap: balance;
+  }
+  h3 {
+    font-family: var(--sans); font-weight: 640; font-size: 1.02rem;
+    margin: 2rem 0 .5rem; letter-spacing: -0.005em;
+  }
+  p, li { margin: 0 0 1rem; }
+  a { color: var(--accent); }
+  strong { font-weight: 640; }
+  code, .num { font-family: var(--mono); font-size: .89em; font-variant-numeric: tabular-nums; }
+
+  .eyebrow {
+    font-family: var(--sans); font-size: .74rem; font-weight: 660;
+    letter-spacing: .13em; text-transform: uppercase; color: var(--muted);
+    margin: 0 0 1.1rem;
+  }
+  .standfirst {
+    font-family: var(--serif); font-size: 1.24rem; line-height: 1.5;
+    color: var(--muted); margin: 0 0 2.5rem; max-width: 62ch;
+  }
+
+  .verdict {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: 1px; background: var(--rule); border: 1px solid var(--rule);
+    border-radius: 3px; overflow: hidden; margin: 0 0 1rem;
+  }
+  .verdict div { background: var(--card); padding: 1.15rem 1.25rem; }
+  .verdict .k {
+    font-family: var(--mono); font-size: 1.85rem; font-variant-numeric: tabular-nums;
+    line-height: 1; letter-spacing: -0.02em;
+  }
+  .verdict .l { font-size: .82rem; color: var(--muted); margin-top: .45rem; line-height: 1.45; }
+  .k.six { color: var(--accent); }
+  .k.learned { color: var(--learned); }
+
+  figure { margin: 2.2rem 0; }
+  figure img {
+    width: 100%; height: auto; display: block;
+    border: 1px solid var(--rule); border-radius: 3px; background: #fff;
+  }
+  figcaption {
+    font-size: .87rem; color: var(--muted); margin-top: .7rem;
+    max-width: 72ch; line-height: 1.55;
+  }
+
+  .steps { display: flex; flex-direction: column; gap: 1px; background: var(--rule);
+           border: 1px solid var(--rule); border-radius: 3px; overflow: hidden; }
+  .step { background: var(--card); padding: 1rem 1.2rem;
+          display: grid; grid-template-columns: 2.1rem 1fr auto; gap: .9rem; align-items: baseline; }
+  .step .n { font-family: var(--mono); color: var(--muted); font-size: .95rem; }
+  .step .t { font-weight: 600; }
+  .step .d { grid-column: 2 / -1; color: var(--muted); font-size: .91rem; margin-top: .15rem; }
+  .chip {
+    font-family: var(--sans); font-size: .72rem; font-weight: 660; letter-spacing: .04em;
+    padding: .22rem .55rem; border-radius: 2px; white-space: nowrap; text-transform: uppercase;
+  }
+  .chip.ok { background: var(--ok-bg); color: var(--ok-fg); }
+  .chip.bad { background: var(--bad-bg); color: var(--bad-fg); }
+  .chip.hold { background: var(--hold-bg); color: var(--hold-fg); }
+
+  .tablewrap { overflow-x: auto; margin: 1.5rem 0; }
+  table { border-collapse: collapse; width: 100%; font-size: .92rem; }
+  th, td { text-align: left; padding: .5rem .8rem; border-bottom: 1px solid var(--rule); }
+  th { font-size: .76rem; text-transform: uppercase; letter-spacing: .07em;
+       color: var(--muted); font-weight: 660; }
+  td.n, th.n { text-align: right; font-family: var(--mono);
+               font-variant-numeric: tabular-nums; }
+  tr.hl td { background: color-mix(in srgb, var(--learned) 8%, transparent); }
+
+  .note {
+    border-left: 2px solid var(--accent); padding: .1rem 0 .1rem 1.1rem;
+    margin: 1.6rem 0; color: var(--muted); max-width: 64ch;
+  }
+  .note.warn { border-left-color: var(--learned); }
+  .note strong { color: var(--ink); }
+
+  .arch { margin: 2rem 0; }
+  .arch svg { width: 100%; height: auto; display: block; }
+  .arch text { font-family: var(--mono); font-size: 12px; fill: var(--ink); }
+  .arch text.lbl { font-family: var(--sans); font-size: 12.5px; fill: var(--muted); }
+  .arch text.hi { fill: var(--learned); font-weight: 700; }
+  .arch rect { fill: var(--card); stroke: var(--rule); }
+  .arch rect.act { stroke: var(--learned); stroke-width: 1.6; }
+  .arch line, .arch path { stroke: var(--muted); }
+
+  hr { border: 0; border-top: 1px solid var(--rule); margin: 3.5rem 0; }
+  footer { color: var(--muted); font-size: .85rem; margin-top: 4rem; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+</style>
+
+<div class="wrap">
+<div class="col">
+  <p class="eyebrow">bugarach &middot; 16 August 2026</p>
+  <h1>A learned detector does not work yet. The measurement around it does.</h1>
+  <p class="standfirst">
+    Four steps were approved: port the assessor, parameterize the generator from it,
+    train a small model, sweep performance against mass. The first two landed at
+    parity. The third does not converge, and the fourth is blocked on it deliberately.
+  </p>
+</div>
+
+<div class="verdict">
+  <div><div class="k six">0.64</div><div class="l">top of the six hand-written detectors &mdash; the leading three are tied within noise</div></div>
+  <div><div class="k learned">0.15</div><div class="l">best learned model, same recordings, same scorer</div></div>
+  <div><div class="k">1e&#8209;9</div><div class="l">parity of the assessor port against MATLAB</div></div>
+  <div><div class="k">2,393</div><div class="l">parameters in the larger learned model</div></div>
+</div>
+<p style="font-size:.85rem;color:var(--muted);margin-top:.6rem">
+  F1 against planted truth &mdash; detections matched to the events the generator actually planted &mdash; on the bench&rsquo;s busy regime, three recordings. <strong>Three seeds cannot separate 0.64 from 0.63</strong>; the gap that matters here is to 0.15, not between the leaders.
+</p>
+
+<div class="col">
+  <h2>The target, and why it changes the design</h2>
+  <p>
+    The goal is not one detector that beats the six. It is a tool a lab can point at
+    its own recordings: <strong>measure my data &rarr; parameterize the generator &rarr;
+    train &rarr; detect.</strong> What ships is the loop, not a checkpoint.
+  </p>
+  <p>
+    That makes &ldquo;mass&rdquo; mean <em>training cost on a laptop</em>, not just
+    parameter count &mdash; and it rules out anything needing a GPU, a tuned learning
+    rate, or a fixed ROI count. It also mostly dissolves the project&rsquo;s standing
+    objection that our synthetic data may not match anyone else&rsquo;s reality: if each
+    lab generates from its own measurements, the domain gap is theirs to close and this
+    hands them the means.
+  </p>
+</div>
+
+<h2>Where the four steps stand</h2>
+<div class="steps">
+  <div class="step">
+    <span class="n">1</span><span class="t">Port the assessor</span><span class="chip ok">at parity</span>
+    <span class="d">Coordination measured without a detector. 1e&#8209;9 against MATLAB across four cases.</span>
+  </div>
+  <div class="step">
+    <span class="n">2</span><span class="t">Parameterize the generator from it</span><span class="chip ok">done, with measured bias</span>
+    <span class="d">Round trip recovers tightness to +9% and frequency to &minus;7% at K=4.</span>
+  </div>
+  <div class="step">
+    <span class="n">3</span><span class="t">Train a small model</span><span class="chip bad">does not converge</span>
+    <span class="d">F1 0.12&ndash;0.15 against 0.64. Four causes ruled out; the remaining suspects are ranked.</span>
+  </div>
+  <div class="step">
+    <span class="n">4</span><span class="t">Sweep performance against mass</span><span class="chip hold">not run</span>
+    <span class="d">A curve over models that all score ~0.13 measures nothing. Blocked until step 3 clears a baseline.</span>
+  </div>
+</div>
+
+<div class="col">
+  <h2>Steps 1&ndash;2: measuring coordination without a detector</h2>
+  <p>
+    Three of the generator&rsquo;s knobs are coordination properties &mdash; how often
+    events happen, how many cells they recruit, how tightly. Measuring those with the
+    six detectors would make every simulated recording a restatement of whichever
+    detector measured it, and training on that closes the circle.
+  </p>
+  <p>
+    The assessor avoids it. It has no operating point: it compares observed coactivity
+    against a null built by circularly shifting each ROI within the window, which holds
+    every cell&rsquo;s own rate and burstiness and destroys only cross-cell timing. What
+    survives is coordination the slice&rsquo;s rate cannot explain.
+  </p>
+  <p>
+    It was MATLAB-only, which broke the loop at its first step &mdash; the one thing
+    this project exists to remove. It is now Python, at the same 1e&#8209;9 bar as the
+    six ports.
+  </p>
+</div>
+
+<figure>
+  <img src="{{FIG:learned_round_trip}}" alt="Three bar charts showing participants, onset SD and events per minute recovered by the assessment at K=3, 4 and 6, each against a dashed line marking the planted value.">
+  <figcaption>
+    <strong>What the measurement recovers.</strong> Coordination was planted at known
+    settings, assessed, and compared. Dashed green marks the planted value. K is the
+    minimum number of co-active cells the assessment counts as an event, and it is the
+    one convention the method has &mdash; so it is reported as a scan rather than chosen.
+    K=4 is the only value where nothing is badly wrong: frequency lands within 7%, while
+    K=3 over-counts by 60% and K=6 misses three quarters of the events.
+  </figcaption>
+</figure>
+
+<div class="col">
+  <p>
+    Two biases are worth carrying forward. <strong>Participants come out high</strong>
+    (7 against a planted 5.9 at K=4) because the measure only sees groups that already
+    cleared K &mdash; a selection effect, not noise. <strong>Tightness comes out ~9%
+    loose</strong> at every K, because the gather window admits onsets that were not
+    participants. That second one errs toward a harder simulation than reality, which is
+    the safe direction.
+  </p>
+</div>
+
+<h2>Step 3: why this network</h2>
+<div class="col">
+  <p>
+    The architecture was not chosen from a menu. Four constraints each removed most of
+    the design space, and what is left is close to forced.
+  </p>
+
+  <h3>Cell identity carries no information, so row order must be canonical</h3>
+  <p>
+    (The figures label these <em>ROIs</em> &mdash; the regions of interest a segmentation found. Same thing.) Cell #3 in one recording has nothing to do with cell #3 in the next, and recordings
+    differ in how many cells they have. A model reading the raster as an image can learn
+    &ldquo;rows 3, 7 and 19 together&rdquo; &mdash; a fact about one segmentation that
+    cannot transfer and cannot even run on the next recording.
+  </p>
+  <p>
+    Rows are therefore sorted by firing frequency, busiest first &mdash; which is how a
+    person reads a raster anyway. That turns row position from a meaningless label into
+    a real coordinate: <em>how active is this cell relative to the others.</em>
+  </p>
+  <div class="note warn">
+    <strong>This broke on its first test, and the test is why it is now right.</strong>
+    Sorting by rate leaves ties, and the first implementation broke them by original row
+    number &mdash; exactly the arbitrary label the sort exists to remove. Shuffling the
+    input changed the encoding. Ties are now broken by each cell&rsquo;s own firing
+    pattern, so the encoding is a function of the data alone.
+  </div>
+
+  <h3>An event is some number of samples wide, never some number of seconds</h3>
+  <p>
+    At our imaging rate a coordinated event spans about four samples. The same
+    biological event recorded at 30&nbsp;Hz spans eleven. A model trained on
+    seconds-shaped windows has learned our microscope, and nothing on our bench could
+    show it, because every bench recording shares one imaging rate.
+  </p>
+  <p>
+    So nothing inside the model knows what a second is. Seconds appear at exactly two
+    boundaries: the sampling interval is required when data is loaded, and detections
+    are converted back to seconds at the end so they can be scored the same way as the
+    six.
+  </p>
+
+  <h3>The width of an event is learned, not supplied</h3>
+  <p>
+    An earlier draft handed the model a bank of fixed time-scales centred on the width
+    we had measured. That is the answer written into the input. It was removed: the
+    model gets activity at full resolution and its filters have to find their own
+    scale. Its receptive field spans about 2,000 samples so it can judge activity
+    against its own local background rather than being told what that background is.
+  </p>
+
+  <h3>One cell, one vote &mdash; and this is what shapes the network</h3>
+  <p>
+    Coordination means <em>distinct</em> cells firing together. Every one of the six
+    detectors enforces that. Collapse the cells into a single trace before smoothing
+    over time and it is destroyed: one busy cell firing repeatedly becomes
+    indistinguishable from several cells firing together, which is precisely the false
+    coordination the hand-written detectors reject by rule.
+  </p>
+  <p>
+    Sorting by rate makes that worse, not better, because it puts every busiest cell in
+    the same place. So the cell axis has to survive the temporal filter, and each
+    cell&rsquo;s contribution is capped <em>before</em> anything is pooled.
+  </p>
+</div>
+
+<div class="arch">
+{{ARCH_SVG}}
+</div>
+
+<div class="col">
+  <p style="font-size:.87rem;color:var(--muted);max-width:72ch">
+    The cap is where &ldquo;one cell, one vote&rdquo; lives, and it is why the filter has
+    to run once per cell rather than once per recording.
+  </p>
+  <div class="note warn">
+    <strong>The cap is soft, and that is an unpaid debt.</strong> An exact
+    &ldquo;did this cell fire anywhere in this window&rdquo; needs a fixed window, which
+    is the assumption the design refuses to make. A smooth cap lets the model choose its
+    own window and pays with approximate distinctness. Nothing has yet probed what that
+    approximation costs.
+  </div>
+  <p>
+    A second model, <code>trace</code>, is registered as the control: it pools the cells
+    immediately and gives distinctness up. If it ever matches the careful one, the
+    machinery is not earning its compute &mdash; which is worth knowing either way.
+  </p>
+</div>
+
+<h2>Step 3: the result</h2>
+
+<figure>
+  <img src="{{FIG:learned_scoreboard}}" alt="Three bar charts of F1, recall and precision for six hand-written detectors in blue and two learned models in red. The learned models are lowest on F1 and recall; one has the highest precision.">
+  <figcaption>
+    <strong>Everything on the same three recordings, scored by the same rule.</strong>
+    Red is learned. The learned models sit at the bottom on F1 and recall. The one
+    apparent win is misleading: <code>tiny</code> has precision 1.00 because it fired
+    three times in total and happened to be right each time.
+  </figcaption>
+</figure>
+
+<div class="tablewrap">
+<table>
+  <caption class="sr" style="position:absolute;left:-9999px">Detector scores on the bench</caption>
+  <thead><tr>
+    <th>Detector</th><th class="n">F1</th><th class="n">Recall</th>
+    <th class="n">Precision</th><th class="n">Detections</th><th class="n">Parameters</th>
+  </tr></thead>
+  <tbody>
+    <tr><td>RateDetect</td><td class="n">0.64</td><td class="n">0.62</td><td class="n">0.67</td><td class="n">53</td><td class="n">0</td></tr>
+    <tr><td>CoactDetect</td><td class="n">0.63</td><td class="n">0.62</td><td class="n">0.64</td><td class="n">45</td><td class="n">0</td></tr>
+    <tr><td>LoCo</td><td class="n">0.63</td><td class="n">0.56</td><td class="n">0.71</td><td class="n">35</td><td class="n">0</td></tr>
+    <tr><td>CICADA</td><td class="n">0.56</td><td class="n">0.62</td><td class="n">0.51</td><td class="n">135</td><td class="n">0</td></tr>
+    <tr><td>spike&#8209;sync</td><td class="n">0.51</td><td class="n">0.38</td><td class="n">0.77</td><td class="n">31</td><td class="n">0</td></tr>
+    <tr><td>SCE</td><td class="n">0.36</td><td class="n">0.22</td><td class="n">0.91</td><td class="n">92</td><td class="n">0</td></tr>
+    <tr class="hl"><td><code>trace</code> (learned)</td><td class="n">0.15</td><td class="n">0.09</td><td class="n">0.50</td><td class="n">8</td><td class="n">2,065</td></tr>
+    <tr class="hl"><td><code>tiny</code> (learned)</td><td class="n">0.12</td><td class="n">0.07</td><td class="n">1.00</td><td class="n">3</td><td class="n">2,393</td></tr>
+  </tbody>
+</table>
+</div>
+
+<figure>
+  <img src="{{FIG:learned_loss}}" alt="Training loss for both learned models over 900 steps. Both oscillate between roughly 0.8 and 1.9 with no downward trend, and the two curves track each other closely.">
+  <figcaption>
+    <strong>Neither model descends.</strong> Loss swings between 0.8 and 1.9 across 900
+    steps with no trend. Note that the two curves track each other almost exactly for the
+    first 400 steps despite different architectures &mdash; a sign the loss is being set
+    by which crops each batch happened to draw rather than by what either model computes.
+  </figcaption>
+</figure>
+
+<div class="col">
+  <h3>What is ruled out</h3>
+  <p>Four candidate explanations were tested and eliminated, so nobody re-derives them:</p>
+  <ul>
+    <li><strong>Not a broken model.</strong> Given a single window containing an event,
+      it fits &mdash; reaching 0.75 confidence at the event and dropping its loss by half.</li>
+    <li><strong>Not the encoding.</strong> The row-order bug above is fixed and pinned by
+      a test.</li>
+    <li><strong>Not only sparsity.</strong> Events occupy 0.5% of frames. Drawing half the
+      training windows around an event changed the failure&rsquo;s shape, not its outcome.</li>
+    <li><strong>Not the two models being secretly identical.</strong> An earlier run had
+      them producing byte-identical losses. They now differ in detections and threshold.</li>
+  </ul>
+  <p>
+    What is left is that a single window trains while the full task does not, which points
+    at variance between batches rather than an inability to represent the target.
+  </p>
+</div>
+
+<h2>What I would do next</h2>
+<div class="col">
+  <p>
+    In order, and the first is a diagnostic rather than a fix &mdash; because three of the
+    four suspects below are only worth testing if the answer comes back one way.
+  </p>
+  <ol>
+    <li>
+      <strong>Train on the old, easy generator settings.</strong> Before the measured
+      values landed, every detector scored 0.9&ndash;1.0 on this bench. If the model learns
+      there and not here, the pipeline is sound and the measured regime is simply hard
+      &mdash; which is itself a result worth having. If it fails there too, the training
+      loop is wrong and every tuning suspect below is premature.
+    </li>
+    <li>
+      <strong>Cap the positive class weight.</strong> At 0.5% positives it currently sits
+      near 200, so a batch&rsquo;s loss is decided by how many event frames its three
+      windows happened to contain. This is the cheapest single test and the most likely
+      cause.
+    </li>
+    <li>
+      <strong>Raise the batch size.</strong> Directly attacks the same variance.
+    </li>
+    <li>
+      <strong>Consider a wider training target</strong> &mdash; an event footprint is about
+      eight frames against a 2,000-sample receptive field.
+      <em>With one condition:</em> the label itself must not move. An event is defined by
+      what the generator planted, and a tolerance band used for the loss is a different
+      object from the label. If one is added it must stay out of scoring and be stated.
+    </li>
+  </ol>
+  <div class="note">
+    <strong>If it needs far more training than this, that is a finding, not a knob.</strong>
+    &ldquo;Lightweight and trainable on user simulations&rdquo; would then be in tension
+    with this task at this event rate, and the target would need revisiting rather than
+    the hyperparameters.
+  </div>
+
+  <h3>Two things I would like decided</h3>
+  <p>
+    <strong>Is a per-lab loop still the right shape</strong> given that the assessment has
+    a judgement call in it? K changes the derived event frequency roughly tenfold across
+    its scan, and a lab has to pick one. There is no review surface for that yet, and it
+    is filed as needing one.
+  </p>
+  <p>
+    <strong>Does the generator revision land first?</strong> It is in flight, and it moves
+    the distribution this whole loop is fitted to. Training a model now means training on
+    a distribution that is about to change.
+  </p>
+</div>
+
+<hr>
+<div class="col">
+  <footer>
+    <p>
+      Every number here is regenerated by
+      <code>python tools/make_learned_figures.py --out docs/learned</code>, which caches
+      its results next to the figures. The assessor port, the parameterization loop and
+      their tests are in PR&nbsp;#52; the learned models and this review are on the same
+      branch.
+    </p>
+    <p>
+      Scored on synthetic recordings with planted ground truth. <strong>No claim here
+      rests on real data</strong>, and none of it establishes that any detector, learned
+      or hand-written, is right about a real slice.
+    </p>
+  </footer>
+</div>
+</div>

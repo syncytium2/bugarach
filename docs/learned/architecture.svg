@@ -1,0 +1,65 @@
+<svg viewBox="0 0 900 250" xmlns="http://www.w3.org/2000/svg" role="img"
+     aria-label="Signal path: the rate-sorted raster passes through a shared per-cell filter, then a cap that bounds each cell's contribution, then pooling into rate bands, then a temporal head that emits a score per frame.">
+  <defs>
+    <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7"
+            orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor" stroke="none"/>
+    </marker>
+  </defs>
+
+  <!-- stage boxes -->
+  <rect x="10"  y="62" width="150" height="76" rx="3"/>
+  <rect x="190" y="62" width="150" height="76" rx="3"/>
+  <rect x="370" y="62" width="150" height="76" rx="3" class="act"/>
+  <rect x="550" y="62" width="150" height="76" rx="3"/>
+  <rect x="730" y="62" width="150" height="76" rx="3"/>
+
+  <!-- stage titles -->
+  <text x="85"  y="95"  text-anchor="middle">raster</text>
+  <text x="85"  y="114" text-anchor="middle">cells &#215; time</text>
+
+  <text x="265" y="95"  text-anchor="middle">shared filter</text>
+  <text x="265" y="114" text-anchor="middle">per cell</text>
+
+  <text x="445" y="95"  text-anchor="middle" class="hi">cap</text>
+  <text x="445" y="114" text-anchor="middle">bounded</text>
+
+  <text x="625" y="95"  text-anchor="middle">pool by</text>
+  <text x="625" y="114" text-anchor="middle">rate band</text>
+
+  <text x="805" y="95"  text-anchor="middle">temporal</text>
+  <text x="805" y="114" text-anchor="middle">head</text>
+
+  <!-- what each stage buys, above -->
+  <text x="85"  y="44" text-anchor="middle" class="lbl">sorted by rate</text>
+  <text x="265" y="44" text-anchor="middle" class="lbl">learns its own width</text>
+  <text x="445" y="44" text-anchor="middle" class="lbl hi">one cell, one vote</text>
+  <text x="625" y="44" text-anchor="middle" class="lbl">distinctness kept</text>
+  <text x="805" y="44" text-anchor="middle" class="lbl">score per frame</text>
+
+  <!-- shapes, below -->
+  <text x="85"  y="163" text-anchor="middle" class="lbl">N &#215; T</text>
+  <text x="265" y="163" text-anchor="middle" class="lbl">N &#215; C &#215; T</text>
+  <text x="445" y="163" text-anchor="middle" class="lbl">N &#215; C &#215; T</text>
+  <text x="625" y="163" text-anchor="middle" class="lbl">Q&#183;C &#215; T</text>
+  <text x="805" y="163" text-anchor="middle" class="lbl">T</text>
+
+  <!-- flow -->
+  <g fill="none" stroke-width="1.4" marker-end="url(#ah)" color="inherit">
+    <line x1="162" y1="100" x2="186" y2="100"/>
+    <line x1="342" y1="100" x2="366" y2="100"/>
+    <line x1="522" y1="100" x2="546" y2="100"/>
+    <line x1="702" y1="100" x2="726" y2="100"/>
+  </g>
+
+  <!-- the span the cell axis survives -->
+  <g stroke-width="1.1" fill="none" stroke-dasharray="3 3">
+    <path d="M 85 186 L 85 200 L 520 200 L 520 186"/>
+  </g>
+  <text x="302" y="219" text-anchor="middle" class="lbl">
+    the cell axis survives to here, then pooling consumes it
+  </text>
+  <text x="302" y="237" text-anchor="middle" class="lbl">
+    N = cells (any number) &#183; C = channels &#183; Q = rate bands &#183; T = samples
+  </text>
+</svg>
