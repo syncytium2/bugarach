@@ -37,16 +37,25 @@ One row per region of a recording. **This is how a recording says it has periods
 |---|---|---|
 | `slice_id` | text | which recording |
 | `region_idx` | integer | **1-based, chronological.** This is the ordering, and the only ordering. |
-| `label` | text | the word this period is known by — `baseline`, `TTX`, `senktide`, `washout`, `high K`, anything. |
+| `label` | text | **the treatment name** — `baseline`, `TTX`, `senktide`, `washout`, `pre-drug`, whatever the period actually was. |
 | `start_sec` | number | window start |
 | `end_sec` | number | window end |
-| `meets_floor` | boolean | *optional.* The producer's judgement that this window is long enough to analyse. |
-| `too_short` | boolean | *optional.* The producer's judgement that it is not. |
 
-The last two exist because a producer that computes such a judgement and cannot
-record it throws it away at the folder boundary. bugarach **surfaces them and never
-acts on them** — dropping a region is the analyst's call, not the reader's. Absent,
-nothing is assumed.
+**`label` is required whenever this file is present, and it must be the real
+treatment name.** It is not decoration. Every figure axis, every legend, and every
+row of the results is named by it — a region with no name yields a plot nobody can
+read and a table nobody can group. Two things a producer must not do: send a
+positional placeholder (`region 2`, `treatment 1`), and overwrite the first region's
+real name with `baseline`. This project's own MATLAB exporter currently does the
+second, discarding whatever the lab actually called that period.
+
+**Five columns, and none of them derived.** A producer may want to send its
+judgement that a window is long enough to analyse. It should not: that judgement is
+`end_sec - start_sec` compared against a threshold, the duration is already in the
+row, and the threshold is **policy, not fact** — one lab's floor is not another's.
+Sending it would put two records of one quantity in the same file, which is exactly
+what this contract avoids elsewhere by deriving the treatment index at write time
+instead of storing it. Send the bounds; let whoever is deciding decide.
 
 **Windows arrive already computed.** Whatever produced this folder decided where
 each period begins and ends — trimming, caps, wash-in delays, exclusions. bugarach
