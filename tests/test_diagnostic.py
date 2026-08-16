@@ -136,3 +136,53 @@ def test_score_table_reports_a_perfect_and_an_empty_detector(sim):
     txt = score_table(gt, {"coact": (gt.times, None), "sce": (np.zeros(0), None)})
     assert " 1.00" in txt, "a detector handed the truth should score 1.00"
     assert "nan" in txt.lower() or " 0.00" in txt, "an empty detector must show as such"
+
+
+def test_every_zoom_is_constrained_to_the_time_axis(sim):
+    """Zooming y is meaningless here and desynchronises rows meant to be read
+    against each other — the y axis is an ROI index or a detector name.
+
+    Pinned against the render, not the source, because the source was already
+    right and the render was not: every panel declares ``xwheel_zoom``/``xpan``
+    and HoloViews still put its own toolbar back when they were merged into a
+    layout. The shipped figure carried eight unconstrained ``BoxZoomTool``s with
+    no ``dimensions`` set at all.
+    """
+    from bokeh.models import BoxZoomTool, WheelZoomTool
+
+    s, gt, ext = sim
+    fig = coordination_diagnostic(s.streams["events"], ext=ext, gt=gt)
+    doc = hv.renderer("bokeh").get_plot(fig).state
+
+    from bokeh.models import PanTool
+
+    movers = (list(doc.select({"type": BoxZoomTool}))
+              + list(doc.select({"type": WheelZoomTool}))
+              + list(doc.select({"type": PanTool})))
+    assert movers, "no zoom or pan tools found — the check would pass vacuously"
+    offenders = [type(z).__name__ for z in movers if z.dimensions != "width"]
+    assert not offenders, f"not constrained to x: {sorted(set(offenders))}"
+
+
+def test_the_wheel_actually_zooms(sim):
+    """Constraining the wheel is not the same as connecting it.
+
+    bokeh leaves ``active_scroll`` on "auto" and nothing claims the wheel, so the
+    first version of this fix produced x-constrained tools that did nothing when
+    you scrolled — zooming meant finding the box-zoom button first. The tool has
+    to be x-only AND be the active scroll tool.
+    """
+    from bokeh.models import WheelZoomTool
+    from bokeh.plotting import figure as _figure
+
+    s, gt, ext = sim
+    fig = coordination_diagnostic(s.streams["events"], ext=ext, gt=gt)
+    doc = hv.renderer("bokeh").get_plot(fig).state
+
+    panels = list(doc.select({"type": _figure}))
+    assert panels, "no panels found — the check would pass vacuously"
+    for p in panels:
+        scroll = p.toolbar.active_scroll
+        assert isinstance(scroll, WheelZoomTool), (
+            f"active_scroll is {scroll!r} — the wheel does nothing")
+        assert scroll.dimensions == "width"

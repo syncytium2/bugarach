@@ -39,10 +39,38 @@ pn.extension()
 
 
 def _time_axis_hook(plot, element):
-    """Minutes-friendly time axis: ticks at 1/2/5/10/15/30 x 60^k seconds
-    (…30s, 1m, 2m, 5m…), labels as 45s / 2m / 2m30s. Fresh bokeh models per
-    plot — they cannot be shared across documents."""
-    from bokeh.models import AdaptiveTicker, CustomJSTickFormatter
+    """Own the time axis: minutes-friendly ticks, and zoom that follows it.
+
+    Ticks at 1/2/5/10/15/30 x 60^k seconds (…30s, 1m, 2m, 5m…), labelled
+    45s / 2m / 2m30s. Fresh bokeh models per plot — they cannot be shared
+    across documents.
+
+    **Zoom is constrained to x here rather than at the call site.** Every panel
+    declares ``xwheel_zoom``/``xpan``, and it is not enough: HoloViews adds its
+    own toolbar back when the panels are merged into a layout, and the built
+    figure shipped eight unconstrained ``BoxZoomTool``s with no ``dimensions``
+    set at all. Zooming y on these plots is meaningless — the axis is an ROI
+    index or a detector name — and it silently desynchronises rows that are
+    supposed to be read against each other. Doing it in the hook means a panel
+    added later cannot forget it, since every panel already needs this hook for
+    its ticks.
+    """
+    from bokeh.models import (AdaptiveTicker, BoxZoomTool, CustomJSTickFormatter,
+                              PanTool, WheelZoomTool)
+
+    toolbar = getattr(plot.state, "toolbar", None)
+    wheel = None
+    for tool in getattr(toolbar, "tools", ()) or ():
+        if isinstance(tool, (BoxZoomTool, WheelZoomTool, PanTool)):
+            tool.dimensions = "width"
+        if isinstance(tool, WheelZoomTool):
+            wheel = tool
+    # Constraining the wheel is not enough to make it work: bokeh leaves
+    # active_scroll on "auto" and nothing claims the wheel, so scrolling over
+    # the plot did nothing at all and zooming meant finding the box-zoom button
+    # first. Hand the wheel to the x-constrained zoom explicitly.
+    if wheel is not None and toolbar is not None:
+        toolbar.active_scroll = wheel
 
     xaxis = plot.handles.get("xaxis")
     if xaxis is None:
