@@ -161,7 +161,7 @@ review team (**every role runs** — scale *how* you run them to stakes, never
 first**, and deliver the corrected document **plus a summary and a role ledger**
 with any residual `⚠` flags. Then `bash tools/murderboard_roster.sh check <report>`
 so a dropped role cannot pass as a clean one (it derives the roster from the process
-doc, so a new role propagates for free — 11 roles as of b2b2ba2).
+doc, so a new role propagates for free — 11 roles as of f43a07b).
 
 **Deliberate deviation:** murderboard's `fetch_paper.py` is **not** vendored here.
 It hardcodes a personal/institutional library path, which SAP004 blocks and which
