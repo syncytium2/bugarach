@@ -92,12 +92,50 @@ The **build stays clean** regardless: `tools/build_site.py` copies that
 committed file and has no code path that opens a store, so the public site is
 reproducible from a clone with no data.
 
-## 6. grid_dt is the caller's responsibility
+## 6. dt is required at load. There is no default sampling interval.
 
-The rate-trace grid must be the **acquisition sampling interval** (mean
-acquired frame interval). The onset stores don't carry it (filed with the
-pipeline team in interface2's todo map); omitting `grid_dt` falls back to
-0.1 s and raises `GridDtNotSetWarning` **on purpose** — do not silence it.
+The sampling interval is a **property of the recording**, and nothing
+downstream can recover it. So it is supplied by the person who knows it, at the
+moment data enters, and **loading without it is refused rather than defaulted**.
+
+> Tony, 2026-08-16: *"we cannot allow data loading without the user specifying a
+> dt."*
+
+This **supersedes** the older arrangement, under which `grid_dt` was the
+caller's responsibility at *detection* time and omitting it fell back to 0.1 s
+with a `GridDtNotSetWarning`. That fallback is the MATLAB original's hardcoded
+10 Hz MLspike grid: correct for this lab's stores and silently wrong for
+everyone else's. A warning is not a gate — it is discovered after the fact, by
+whoever happens to be reading stderr, and the result it qualifies has already
+been computed and may already have been exported.
+
+The load boundary is the right place because it is the only one that fails
+*before* a number exists. A detector that warns has already produced output; a
+loader that refuses has not.
+
+Consequences that bind code here:
+
+- Every path that admits data — store readers, `bugarach.io` constructors, the
+  viewer's file intake, foreign-data adapters — takes the sampling interval as a
+  **required** input. No default, no inference from the data, no fallback
+  constant.
+- The stores still do not carry it (filed with the pipeline team in interface2's
+  todo map). That is exactly why it is asked for rather than read; it is not a
+  reason to guess.
+- Because dt is known at the boundary, the seconds↔samples conversion is total
+  and exact there. Code downstream is free to work in **samples** where samples
+  are the honest unit — a learned detector's receptive field is a number of
+  frames, not a number of seconds, and expressing it in seconds bakes in one
+  lab's imaging rate.
+- **The six ports keep their seconds-valued MATLAB-facing parameters.** Those are
+  part of the parity contract (§2) and are not up for reinterpretation. This
+  section governs the *load boundary* and new code, not the ports' signatures.
+
+Implementation is outstanding, and the gap between this rule and the code is
+tracked in
+[`todo/2026-08-16-dt-must-be-required-at-load.md`](todo/2026-08-16-dt-must-be-required-at-load.md).
+Until it closes, `GridDtNotSetWarning` still fires and still must not be
+silenced.
 
 ## 7. Licensing & provenance posture
 

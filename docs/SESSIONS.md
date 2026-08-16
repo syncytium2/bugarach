@@ -60,6 +60,48 @@ Template:
 
 ## Active
 
+### Mac/dt-required-at-load — FOUNDATIONS §6 reversed: dt is required, not defaulted
+- **Status:** ACTIVE — open PR
+- **Started:** 2026-08-16
+- **Writes:** repo only
+- **Claims:** none
+- **Notes:** **Read this before writing anything that loads data.** FOUNDATIONS §6 used
+  to say `grid_dt` is the caller's responsibility at detection time and that omitting it
+  falls back to 0.1 s with a warning. Tony, 2026-08-16: *"we cannot allow data loading
+  without the user specifying a dt."* §6 now requires it at the **load boundary**, and
+  refusing beats defaulting — a warning fires after the number already exists.
+
+  Doc-only so far; the code still falls back. The gap is
+  `docs/todo/2026-08-16-dt-must-be-required-at-load.md`. Until it closes,
+  `GridDtNotSetWarning` still fires and still must not be silenced. **The six ports keep
+  their seconds-valued MATLAB parameters — parity is untouched by this.**
+
+### Mac/generator-records-realized-onsets — the generator should record what it planted
+- **Status:** ACTIVE — open PR #46, **wants review before it lands**
+- **Started:** 2026-08-16
+- **Writes:** repo only
+- **Claims:** none
+- **Notes:** `PlantedEvent` gains an `onsets` field (what each participant actually got)
+  and an `observed_span` property. `span` untouched, still nominal ±3σ. Emitted data
+  verified bit-identical across 36 generator configurations, so no committed figure,
+  bench number or fixture moves. The ±3σ window is 2.7× wider than the median realized
+  footprint on the bench recording. **If you are working on scoring tolerance
+  (`docs/todo/2026-08-13-scoring-tolerance-vs-detector-resolution.md`, which reasons
+  about `span` in the old terms), this PR is either in your way or is your answer.**
+
+### Mac/— — lit folder in the darkroom
+- **Status:** DONE
+- **Started:** 2026-08-16
+- **Writes:** `<darkroom>/bugarach/lit/` (NEW), `<darkroom>/bugarach/lit/DL/` (NEW)
+- **Claims:** none — new namespace, nothing else writes there
+- **Notes:** A reference library for papers a bugarach design decision actually rests on,
+  each entry naming the decision. Seeded with Deep Sets (Zaheer 2017) and PointNet (Qi
+  2017), which bear on set-structured input and the distinct-ROI rule. Undated on purpose
+  — everything else in `bugarach/` is a dated review artifact; a citation does not expire.
+  Rule in `lit/README.md`: a PDF with no index entry is indistinguishable from one someone
+  downloaded and forgot. Fetch by hand — murderboard's `fetch_paper.py` is deliberately
+  not vendored (SAP004, personal paths).
+
 ### WSMIP-win/vendor-session-protocol — vendor the session protocol + audit upstream tooling
 - **Status:** DONE
 - **Started:** 2026-08-12
