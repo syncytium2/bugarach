@@ -1,5 +1,13 @@
 # From viewer to workflow — the plan
 
+> **Building the learned-detector stage?** Read
+> [`docs/learned/README_for_the_webapp.md`](learned/README_for_the_webapp.md) first.
+> That loop already runs end to end as four scripts with published numbers, so the
+> app's job is to put a UI in front of it rather than rebuild it — and the README
+> carries the measured costs, what to reuse, the one screen that needs a human
+> (choosing K), and ten traps that have each already cost someone time.
+
+
 ## Part I — the decision
 
 ### The problem
