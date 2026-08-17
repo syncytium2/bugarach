@@ -44,6 +44,9 @@ DATA = {
     # The fitted kernel parameters, read off a trained model by
     # make_architecture_figures.py. The page quotes them; nothing is retyped.
     "a": HERE / "architecture_fitted.json",
+    # The scoring-tolerance sweep. The landscape page argues from its shape, and
+    # a page arguing that a transcribed number drifts must not transcribe one.
+    "t": HERE / "tolerance_sweep.json",
 }
 
 
@@ -116,7 +119,7 @@ def main(argv=None) -> int:
             return "?"
         return format(v, fmt) if fmt else str(v)
 
-    html = re.sub(r"\{\{N:([rsbga]):([A-Za-z0-9_.\-]+)(?:\|([^}]+))?\}\}", num, html)
+    html = re.sub(r"\{\{N:([rsbgat]):([A-Za-z0-9_.\-]+)(?:\|([^}]+))?\}\}", num, html)
     if bad:
         print("UNRESOLVED DATA PATHS: " + ", ".join(bad), file=sys.stderr)
         return 1

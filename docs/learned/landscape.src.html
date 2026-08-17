@@ -1,0 +1,298 @@
+<title>Coordination Detection Across Neuroscience</title>
+<style>
+{{CSS:report}}
+/* --- additions this page needs, on top of the shared sheet --- */
+.map { margin: 2rem 0 1.2rem; }
+.map svg { width: 100%; height: auto; display: block; }
+.map text.lbl { font-family: var(--sans); }
+.cellwalk { border: 1px solid var(--rule); border-radius: 3px;
+            padding: 1.1rem 1.3rem; margin: 1.6rem 0; }
+.cellwalk h4 { font-family: var(--sans); font-size: .95rem; font-weight: 660;
+               margin: 1.1rem 0 .35rem; }
+.cellwalk h4:first-child { margin-top: 0; }
+.cellwalk p { margin: 0 0 .8rem; font-size: .95rem; }
+.claim { border-left: 3px solid var(--truth); padding-left: 1rem; margin: 1.6rem 0; }
+.claim.no { border-left-color: var(--learned); }
+.links td:first-child { white-space: nowrap; }
+.links code { font-size: .86em; }
+</style>
+
+<div class="wrap">
+<div class="col">
+  <p class="eyebrow">bugarach &middot; 17 August 2026</p>
+  <h1>Everyone finds coordinated events. Almost nobody learns to.</h1>
+  <p class="standfirst">
+    Where a learned coordination detector sits in neuroscience &mdash; what the
+    neighbouring fields already do, which of it was reached independently here, and
+    what is actually left to claim. Twelve papers on the shelf: nine read closely, two skimmed, one an earlier version of another.
+  </p>
+</div>
+
+<div class="note">
+  <strong>This page exists because an earlier claim was too strong.</strong> A
+  companion report said no prior work trains a network to emit coordinated
+  population events. Four searches deep, no paper opened. Reading them found three
+  such networks, so the claim is withdrawn and replaced with a narrower one that
+  survives contact with the methods sections. The shelf is at
+  <code>&lt;darkroom&gt;/bugarach/lit/coordination/</code>, with per-paper read
+  status, because a citation nobody opened is how the first version went wrong.
+</div>
+
+<h2>0 &middot; The question, stated so it can be answered</h2>
+<div class="col">
+  <p>
+    Not <em>has anyone used deep learning on calcium imaging</em> &mdash; a great many
+    people have, and the useful question is narrower. A coordination analysis takes
+    per-cell activity and asks when a group of cells fired together. So:
+  </p>
+  <blockquote>
+    Has anyone trained a model whose <strong>output is the coordinated population
+    event itself</strong> &mdash; a time interval, scored against known events &mdash;
+    rather than a per-cell spike train, a latent trajectory, or the settings of a
+    classical detector?
+  </blockquote>
+  <p>
+    That question has four independent parts, and they are worth keeping apart
+    because different fields answer them differently: what the method <strong>emits</strong>,
+    whether it is <strong>trained</strong>, where its <strong>ground truth</strong>
+    comes from, and what it is <strong>compared against</strong>.
+  </p>
+</div>
+
+<h2>1 &middot; The field, as one picture</h2>
+<div class="col">
+  <p>
+    Two axes carry most of the structure. What a method emits, left to right: which
+    cell fired, which cells group together, or when the group fired. And how it
+    decides &mdash; a rule somebody wrote, or a function fitted to data.
+  </p>
+</div>
+
+<figure class="map">
+  {{SVG:landscape}}
+  <figcaption>
+    Coordination detection by what it emits and how it decides. Substrate is
+    tagged: <strong>[Ca]</strong> calcium imaging, <strong>[LFP]</strong> local field
+    potential, <strong>[EEG]</strong> scalp or clinical EEG, <strong>[MEA]</strong>
+    multi-electrode array, <strong>[spikes]</strong> sorted units. Two methods sit
+    outside the grid because they answer a neighbouring question; both are named
+    below the panel.
+  </figcaption>
+</figure>
+
+<div class="col">
+  <p>
+    Three features of that picture do the work, and only one of them is flattering.
+  </p>
+</div>
+
+<div class="cellwalk">
+  <h4>The middle of the top row is empty, and it stays empty</h4>
+  <p>
+    Nobody trains a network to emit assembly membership, in anything this survey
+    reached. The likely reason &mdash; and this is a reading, not something any of these
+    papers says &mdash; is that membership is a clustering, which the field already
+    solves with eigenvalue tests and graph community detection that need no labels at
+    all. On that reading an empty cell is a field that does not need the tool rather
+    than a gap waiting to be filled. Nothing here rules out the alternative: that it was
+    tried and did not work well enough to publish.
+  </p>
+
+  <h4>The bottom right is where this project's six detectors live &mdash; and so does a step
+      inside three methods from the column to its left</h4>
+  <p>
+    M&ouml;lter, Avitan and Goodhill benchmark eight assembly detectors. Three of them
+    &mdash; SGC, CORE and SVD &mdash; <strong>cannot start</strong> without first finding
+    events: each binarises per cell, counts coactive cells per frame, and keeps only
+    frames whose coactivity level exceeds the 95th percentile (SVD: the 99th) of a
+    thousand-iteration per-cell permutation null.
+  </p>
+  <p>
+    That is the same construction as the SCE rule and as CICADA, arrived at
+    independently, sitting as a <em>precondition</em> of assembly detection rather
+    than as anybody's output. It is drawn as the dashed arrow. It also means the
+    most obvious published comparison for this work needs no adapter at all: those
+    high-coactivity frames already are events in the sense our scorer means.
+  </p>
+
+  <h4>The top right is occupied &mdash; and none of it is calcium imaging</h4>
+  <p>
+    DOSED predicts an event's centre, duration and class from raw multichannel EEG.
+    cnn-ripple emits a per-window probability of a hippocampal sharp-wave ripple.
+    SEED does spindles and K-complexes. SpikeNet does epileptiform discharges and its
+    title claims expert-level performance &mdash; that paper sits outside the
+    open-access subset and <strong>was not retrieved</strong>, so it appears here on its
+    bibliographic record alone and nothing is asserted about its contents. All four
+    descend from single-shot object detectors &mdash; YOLO and SSD, transplanted from vision to one dimension
+    &mdash; and all four take their ground truth from human experts.
+  </p>
+</div>
+
+<h2>2 &middot; What that costs the novelty claim, and what is left</h2>
+
+<div class="claim no">
+  <p>
+    <strong>Withdrawn.</strong> &ldquo;No prior work trains a network to emit
+    coordinated population events.&rdquo; Three groups do, in three substrates,
+    independently. Learned event detection over a physiological time series is an
+    established genre with a standard architecture family, and <strong>no claim about
+    the architecture being new survives</strong>. Nor should one be made about the
+    per-lab loop as an idea: CASCADE's stated central move is resampling its
+    ground-truth database to match the noise level and sampling rate of the unseen
+    recording, which is the same argument one level down, published in 2021.
+  </p>
+</div>
+
+<div class="claim">
+  <p>
+    <strong>What survives, taken from methods sections rather than from an absence of
+    search results.</strong> Across the assembly literature the evaluation metric is
+    <strong>membership, never event timing</strong>. M&ouml;lter scores a Best Match
+    set-difference over cell groups. Russo and Durstewitz score a Rand index over unit
+    assignment. Both <em>plant or compute the occurrence times they decline to
+    score</em>. Two substrates, two independent groups, the same omission.
+  </p>
+  <p>
+    So the defensible claim is positional and narrow: <strong>nobody detects the
+    coordinated event itself from per-cell calcium activity, against events planted
+    in a simulation parameterised from the lab's own recordings.</strong> The
+    substrate and the source of truth are what is new here &mdash; not the network.
+  </p>
+</div>
+
+<h2>3 &middot; What the neighbours do better, measured</h2>
+<div class="col">
+  <p>
+    The most useful thing reading them produced was not a citation. The sleep-EEG
+    detectors do not fix their scoring tolerance: DOSED reports F1 against an overlap
+    criterion swept from 0.1 to 0.9, re-tuning every competitor at each value, and
+    SEED adds mean overlap as a separate localization score. Their criterion is a
+    <em>ratio</em> &mdash; how much of the detection and the event coincide &mdash;
+    which makes it scale-free; ours is an absolute number of seconds, which is not.
+    This project fixes its tolerance at <strong>{{N:t:shipped_tol}} s</strong> and had
+    never varied it. Varying it says two things at once.
+  </p>
+  <p>
+    Two terms for the figure below. <strong>F1</strong> is the standard single number
+    for a detector &mdash; the harmonic mean of how many real events it found and how
+    many of its calls were real, so 1.0 is perfect and both halves have to be good.
+    <strong>Quiet</strong> and <strong>busy</strong> are the two difficulty settings
+    this project's simulated recordings come in, differing in how much uncoordinated
+    background activity surrounds the events. And the tolerance is a <strong>gap
+    measured edge to edge</strong> &mdash; from the nearer end of a detection's interval
+    to the nearer end of the real event &mdash; not a distance between midpoints, and
+    not a ratio.
+  </p>
+</div>
+
+<figure>
+  <img src="{{FIG:tolerance_sweep}}" alt="Two panels, labelled on their vertical axes as
+       F1 (quiet) and F1 (busy), each plotting F1 against scoring tolerance from 0.1 to
+       3 seconds for six detectors. In both panels the ordering of the detectors is the
+       same at every tolerance. LoCo, CoactDetect and rate-plus-context are flat
+       lines across the whole range. CICADA and SPIKE-synch rise steeply from the
+       left and flatten by about three quarters of a second; CICADA rises from 0.12
+       to 0.56 in the busy panel. A dashed vertical rule marks the shipped tolerance
+       of 1.5 seconds, which falls well to the right of the point where every curve
+       has levelled off."/>
+  <figcaption>
+    F1 against the scoring tolerance, six detectors, three seeds, both regimes.
+    The dashed rule is the value everything in this project is scored at.
+  </figcaption>
+</figure>
+
+<div class="col">
+  <p>
+    <strong>The published ranking is safe.</strong> Whoever leads a regime leads it at
+    every tolerance from 0.1 s to 3 s, so no comparison in this project rests on the
+    choice. That is worth knowing rather than assuming &mdash; and the sweep could have
+    come out the other way: three of the six move by more than 0.1 of F1 across the
+    range, CICADA by 0.44, and at the tightest tolerance CICADA sits below a fifth of
+    the leader in the busy regime. A sweep on which nothing moved at all would be the
+    uninformative one.
+  </p>
+  <p>
+    <strong>But the tolerance sits past the point where the instrument stops
+    reading.</strong> Every detector has plateaued by roughly three quarters of a
+    second, and the median realized event footprint is 0.80 s &mdash; so the shipped
+    tolerance is close to twice the width of the thing being found. Above the plateau
+    the bench cannot distinguish a detector that lands on an event from one that
+    lands a second away. Localization accuracy is not measured badly here; it is not
+    measured. The detectors that move most across the sweep are the binned ones,
+    which is exactly where timing error lives: CICADA reads
+    <strong>{{N:t:f1.baseline_busy.cicada.0|.2f}}</strong> at the tightest tolerance
+    and <strong>{{N:t:f1.baseline_busy.cicada.8|.2f}}</strong> at the shipped one, on
+    the same detections.
+  </p>
+</div>
+
+<h2>4 &middot; The methods, and where to find them</h2>
+<div class="col">
+  <p>
+    Positioning against work a reader cannot go and look at is marketing. Everything
+    named on this page that has public code:
+  </p>
+</div>
+
+<table class="links">
+  <thead><tr><th>method</th><th>what it emits</th><th>code</th><th>licence</th></tr></thead>
+  <tbody>
+    <tr><td>CICADA</td><td>population events [Ca]</td>
+        <td><a href="https://gitlab.com/cossartlab/cicada">gitlab.com/cossartlab/cicada</a></td><td>not stated</td></tr>
+    <tr><td>cnn-ripple</td><td>population events [LFP], learned</td>
+        <td><a href="https://github.com/PridaLab/cnn-ripple">PridaLab/cnn-ripple</a></td><td>GPL-3.0</td></tr>
+    <tr><td>DOSED</td><td>population events [EEG], learned</td>
+        <td><a href="https://github.com/Dreem-Organization/dosed">Dreem-Organization/dosed</a></td><td>MIT</td></tr>
+    <tr><td>CAD / CADopti</td><td>assemblies [spikes]</td>
+        <td><a href="https://github.com/DurstewitzLab/CADopti">DurstewitzLab/CADopti</a></td><td>GPL-3.0</td></tr>
+    <tr><td>PCA-Promax</td><td>assemblies [Ca]</td>
+        <td><a href="https://github.com/zebrain-lab/Toolbox-Romano-et-al">zebrain-lab/Toolbox-Romano-et-al</a></td><td>GPL-3.0</td></tr>
+    <tr><td>SVD ensembles</td><td>assemblies [Ca]</td>
+        <td><a href="https://github.com/hanshuting/SVDEnsemble">hanshuting/SVDEnsemble</a></td><td>MIT</td></tr>
+    <tr><td>CASCADE</td><td>per-cell rates [Ca], learned</td>
+        <td><a href="https://github.com/HelmchenLabSoftware/Cascade">HelmchenLabSoftware/Cascade</a></td><td>GPL-3.0</td></tr>
+  </tbody>
+</table>
+
+<h2>5 &middot; What this page does not establish</h2>
+<div class="col">
+  <p>
+    <strong>No method above has been run on this project's corpus.</strong> The
+    comparison here is six detectors ported into this repo plus its own networks, and
+    of those six only CICADA is published work &mdash; reaching us second-hand, as a
+    port of a port. Until something from this page goes through the same
+    fit-and-score procedure, &ldquo;competes with state of the art&rdquo; is not a
+    supported sentence and does not appear in one.
+  </p>
+  <p>
+    <strong>A survey is not a proof of absence.</strong> This is twelve papers and two
+    adjacent literatures, not a systematic review. Two of the four sub-questions in
+    section 0 &mdash; the corpus and the comparison &mdash; were answerable only for
+    the papers read in full, and two papers that bear directly on this are not on the
+    shelf at all: Malvache et al. 2016, which is the primary source for the canonical
+    SCE rule and is not open access, and SpikeNet, which is indexed but outside the
+    open-access subset.
+  </p>
+  <p>
+    <strong>The claim that the field never scores event timing is about the papers
+    read.</strong> It rests on two benchmarks &mdash; M&ouml;lter's and Russo and
+    Durstewitz's &mdash; being explicit about their metrics. It would be overturned by
+    a single assembly paper that reports temporal agreement, and no exhaustive search
+    for one has been done.
+  </p>
+  <p>
+    <strong>Nothing here says any detector is right about a real slice.</strong> The
+    corpus is simulated, every learned number is one training run per fold, and no
+    seed error bars exist.
+  </p>
+</div>
+
+<div class="col">
+  <p class="tail">
+    Sources, read status and provenance:
+    <code>&lt;darkroom&gt;/bugarach/lit/coordination/README.md</code>. The survey that
+    produced this page and what it leaves open:
+    <code>docs/todo/2026-08-17-literature-deep-dive-handoff.md</code>.
+  </p>
+</div>
+</div>
