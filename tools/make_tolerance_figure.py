@@ -32,10 +32,7 @@ import json
 import sys
 from pathlib import Path
 
-# The report's palette: hand-written detectors in blue, so a learned model
-# added to this figure later is visibly not one of them.
-HAND = "#4c78a8"
-ACCENT = "#7a1f22"
+ACCENT = "#7a1f22"   # the report's --learned red, for the shipped-tolerance rule
 TOLS = (0.1, 0.15, 0.25, 0.4, 0.5, 0.75, 1.0, 1.25, 1.5, 2.0, 2.5, 3.0)
 REGIMES = ("baseline_quiet", "baseline_busy")
 SHIPPED_TOL = 1.5
@@ -76,10 +73,12 @@ def build(d, width=920):
     panels = []
     for regime in REGIMES:
         rows = d["f1"][regime]
-        # Rank by F1 at the shipped tolerance so the legend order matches the
-        # ordering a reader has already seen in the bake-off.
-        i_ship = tols.index(d["shipped_tol"])
-        order = sorted(rows, key=lambda k: -rows[k][i_ship])
+        # ONE order for both panels. Ranking each panel by its own F1 put the
+        # legends in different orders, and two panels that disagree on category
+        # order cannot be lined up by a reader — the ranking is visible in the
+        # plot itself, so the legend does not need to carry it. Fixed order is
+        # STYLE's, which is also the order the colours are assigned in.
+        order = [k for k in STYLE if k in rows]
 
         curves = []
         for det in order:

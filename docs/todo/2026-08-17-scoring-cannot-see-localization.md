@@ -29,9 +29,10 @@ of 1.5 s, and that is worth knowing rather than assuming.
 **But 1.5 s is deep in the saturated part of every curve.** Every detector has
 plateaued by roughly 0.75 s. Above that the bench cannot distinguish a detector
 that lands on an event from one that lands a second away from it — and the
-realized event footprint has a median of **0.80 s** (`PlantedEvent.observed_span`,
-PR #46), so the shipped tolerance is close to *twice the width of the thing being
-found*. Localization accuracy is not measured badly here; it is not measured.
+realized event footprint has a median of **0.80 s** — recomputed from
+`PlantedEvent.observed_span` over the quiet regime, seeds 1–3: 45 events, range
+0.20–1.50 s — so the shipped tolerance is close to *twice the width of the thing
+being found*. Localization accuracy is not measured badly here; it is not measured.
 
 The detectors that move are the binned ones, which is exactly where timing error
 lives. CICADA's fourfold swing in the busy regime is the whole difference between
@@ -56,7 +57,7 @@ Two changes, the first small.
 Note the unit difference before copying either: **their criterion is IoU, a
 ratio; ours is an absolute gap in seconds.** A ratio is scale-free and an
 absolute tolerance is not, which matters here because event width varies
-0.10–1.70 s. Adopting IoU is the bigger change and the more defensible one; a
+by a factor of seven across the corpus (0.20–1.50 s, measured above). Adopting IoU is the bigger change and the more defensible one; a
 swept `tol_sec` is the cheap version and worth doing first.
 
 ## What this is not

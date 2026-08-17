@@ -63,7 +63,9 @@ Template:
 ### Mac/lit-adjacent-fields — the sleep and epilepsy sweep, and the four unread
 - **Status:** DONE 2026-08-17 — **claim released**, `lit/coordination/` is free
 - **Started:** 2026-08-17
-- **Done:** shelf is twelve papers, ten read in full. Every PDF checksum-matched after the
+- **Done:** shelf is twelve papers — **nine read closely, two skimmed, one (Chambon's
+  earlier short version of DOSED) not read**; an earlier version of this line said "ten
+  read in full" and was wrong. Every PDF checksum-matched after the
   copy, and every filename the README cites was checked to exist. Findings written into
   `docs/todo/2026-08-17-literature-deep-dive-handoff.md` as a revision header, so the
   review surface carries them rather than a board block.
@@ -91,8 +93,11 @@ Template:
   assignment, and both plant occurrence times they never score against.
 
   **Three techniques worth stealing, all from outside this field:** score F1 against a
-  **swept** IoU tolerance rather than one fixed window (DOSED reports δ = 0.1…0.9, which is
-  an answer to `docs/todo/2026-08-13-scoring-tolerance-vs-detector-resolution.md`);
+  **swept** IoU tolerance rather than one fixed window (DOSED reports δ = 0.1…0.9). ⚠ An
+  earlier version of this line called that "an answer to
+  `docs/todo/2026-08-13-scoring-tolerance-vs-detector-resolution.md`" — **wrong**, that todo
+  is done and fixed a different bug. Now measured and filed as
+  `2026-08-17-scoring-cannot-see-localization.md`;
   non-maximum suppression over overlapping candidate events; and **pretraining on a
   rule-based detector's output** before fine-tuning on true labels (SEED does this with the
   A7 spindle detector — our six ports are exactly such a teacher).

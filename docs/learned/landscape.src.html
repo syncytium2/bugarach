@@ -24,7 +24,7 @@
   <p class="standfirst">
     Where a learned coordination detector sits in neuroscience &mdash; what the
     neighbouring fields already do, which of it was reached independently here, and
-    what is actually left to claim. Twelve papers, ten of them read in full.
+    what is actually left to claim. Twelve papers on the shelf: nine read closely, two skimmed, one an earlier version of another.
   </p>
 </div>
 
@@ -89,10 +89,13 @@
 <div class="cellwalk">
   <h4>The middle of the top row is empty, and it stays empty</h4>
   <p>
-    Nobody trains a network to emit assembly membership. That is not an oversight
-    waiting to be filled &mdash; membership is a clustering, and the field solves it
-    with eigenvalue tests and graph community detection that need no labels at all.
-    An empty cell here is a field that does not need the tool, not a gap.
+    Nobody trains a network to emit assembly membership, in anything this survey
+    reached. The likely reason &mdash; and this is a reading, not something any of these
+    papers says &mdash; is that membership is a clustering, which the field already
+    solves with eigenvalue tests and graph community detection that need no labels at
+    all. On that reading an empty cell is a field that does not need the tool rather
+    than a gap waiting to be filled. Nothing here rules out the alternative: that it was
+    tried and did not work well enough to publish.
   </p>
 
   <h4>The bottom right is where this project's six detectors live &mdash; and so does a step
@@ -116,9 +119,11 @@
   <p>
     DOSED predicts an event's centre, duration and class from raw multichannel EEG.
     cnn-ripple emits a per-window probability of a hippocampal sharp-wave ripple.
-    SEED does spindles and K-complexes. SpikeNet does epileptiform discharges at
-    what its authors measure as expert level. All four descend from single-shot
-    object detectors &mdash; YOLO and SSD, transplanted from vision to one dimension
+    SEED does spindles and K-complexes. SpikeNet does epileptiform discharges and its
+    title claims expert-level performance &mdash; that paper sits outside the
+    open-access subset and <strong>was not retrieved</strong>, so it appears here on its
+    bibliographic record alone and nothing is asserted about its contents. All four
+    descend from single-shot object detectors &mdash; YOLO and SSD, transplanted from vision to one dimension
     &mdash; and all four take their ground truth from human experts.
   </p>
 </div>
@@ -161,16 +166,29 @@
     The most useful thing reading them produced was not a citation. The sleep-EEG
     detectors do not fix their scoring tolerance: DOSED reports F1 against an overlap
     criterion swept from 0.1 to 0.9, re-tuning every competitor at each value, and
-    SEED adds mean overlap as a separate localization score. This project fixes its
-    tolerance at <strong>{{N:t:shipped_tol}} s</strong> and had never varied it.
-    Varying it says two things at once.
+    SEED adds mean overlap as a separate localization score. Their criterion is a
+    <em>ratio</em> &mdash; how much of the detection and the event coincide &mdash;
+    which makes it scale-free; ours is an absolute number of seconds, which is not.
+    This project fixes its tolerance at <strong>{{N:t:shipped_tol}} s</strong> and had
+    never varied it. Varying it says two things at once.
+  </p>
+  <p>
+    Two terms for the figure below. <strong>F1</strong> is the standard single number
+    for a detector &mdash; the harmonic mean of how many real events it found and how
+    many of its calls were real, so 1.0 is perfect and both halves have to be good.
+    <strong>Quiet</strong> and <strong>busy</strong> are the two difficulty settings
+    this project's simulated recordings come in, differing in how much uncoordinated
+    background activity surrounds the events. And the tolerance is a <strong>gap
+    measured edge to edge</strong> &mdash; from the nearer end of a detection's interval
+    to the nearer end of the real event &mdash; not a distance between midpoints, and
+    not a ratio.
   </p>
 </div>
 
 <figure>
-  <img src="{{FIG:tolerance_sweep}}" alt="Two stacked panels, F1 against scoring
-       tolerance from 0.1 to 3 seconds, for six detectors, in the quiet regime above
-       and the busy regime below. In both panels the ordering of the detectors is the
+  <img src="{{FIG:tolerance_sweep}}" alt="Two panels, labelled on their vertical axes as
+       F1 (quiet) and F1 (busy), each plotting F1 against scoring tolerance from 0.1 to
+       3 seconds for six detectors. In both panels the ordering of the detectors is the
        same at every tolerance. LoCo, CoactDetect and rate-plus-context are flat
        lines across the whole range. CICADA and SPIKE-synch rise steeply from the
        left and flatten by about three quarters of a second; CICADA rises from 0.12
@@ -187,7 +205,11 @@
   <p>
     <strong>The published ranking is safe.</strong> Whoever leads a regime leads it at
     every tolerance from 0.1 s to 3 s, so no comparison in this project rests on the
-    choice. That is worth knowing rather than assuming.
+    choice. That is worth knowing rather than assuming &mdash; and the sweep could have
+    come out the other way: three of the six move by more than 0.1 of F1 across the
+    range, CICADA by 0.44, and at the tightest tolerance CICADA sits below a fifth of
+    the leader in the busy regime. A sweep on which nothing moved at all would be the
+    uninformative one.
   </p>
   <p>
     <strong>But the tolerance sits past the point where the instrument stops
@@ -216,7 +238,7 @@
   <thead><tr><th>method</th><th>what it emits</th><th>code</th><th>licence</th></tr></thead>
   <tbody>
     <tr><td>CICADA</td><td>population events [Ca]</td>
-        <td><a href="https://gitlab.com/cossartlab/cicada">gitlab.com/cossartlab/cicada</a></td><td>&mdash;</td></tr>
+        <td><a href="https://gitlab.com/cossartlab/cicada">gitlab.com/cossartlab/cicada</a></td><td>not stated</td></tr>
     <tr><td>cnn-ripple</td><td>population events [LFP], learned</td>
         <td><a href="https://github.com/PridaLab/cnn-ripple">PridaLab/cnn-ripple</a></td><td>GPL-3.0</td></tr>
     <tr><td>DOSED</td><td>population events [EEG], learned</td>
@@ -228,7 +250,7 @@
     <tr><td>SVD ensembles</td><td>assemblies [Ca]</td>
         <td><a href="https://github.com/hanshuting/SVDEnsemble">hanshuting/SVDEnsemble</a></td><td>MIT</td></tr>
     <tr><td>CASCADE</td><td>per-cell rates [Ca], learned</td>
-        <td><a href="https://github.com/HelmchenLabSoftware/Cascade">HelmchenLabSoftware/Cascade</a></td><td>&mdash;</td></tr>
+        <td><a href="https://github.com/HelmchenLabSoftware/Cascade">HelmchenLabSoftware/Cascade</a></td><td>GPL-3.0</td></tr>
   </tbody>
 </table>
 

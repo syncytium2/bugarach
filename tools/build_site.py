@@ -126,6 +126,26 @@ planted, so a miss and a false alarm are drawn, not inferred.</p>
 
 {lead}
 
+<h2 style="font-size:1.15rem">Where this sits, and who else is doing it</h2>
+<p>Detecting coordinated events is not a new problem, and a page that positions
+itself against work a reader cannot go and look at is marketing. So: three
+groups already train networks whose output is a population event with times —
+<a href="https://github.com/Dreem-Organization/dosed">DOSED</a> on sleep EEG,
+<a href="https://github.com/PridaLab/cnn-ripple">cnn-ripple</a> on hippocampal
+LFP, and SEED on sleep spindles. None of them works on calcium imaging, and all
+of them learn from events a human expert labelled. What is different here is the
+substrate and where the answers come from — the events are planted in a
+simulation fitted to one lab's own recordings, so the ground truth is exact and
+the benchmark is rebuilt per lab.</p>
+<p>The classical side of the same problem is
+<a href="https://gitlab.com/cossartlab/cicada">CICADA</a> and the coactivity-vs-shuffle
+rule it comes from, both of which are among the six detectors this project ports
+and scores against.
+<b>No method from the literature has yet been run on this project's corpus</b>, so
+nothing here claims to beat one.</p>
+<p><a href="landscape.html">The full landscape &rarr;</a> — what a dozen methods
+emit, whether they learned it, and what that leaves this work entitled to claim.</p>
+
 <p style="margin-top:2rem;color:#666;font-size:.9rem">
   Source: <a href="https://github.com/syncytium2/bugarach">github.com/syncytium2/bugarach</a>
   · BSD-3-Clause · built from <code>{commit}</code>
@@ -242,6 +262,19 @@ def main(argv=None):
               f"failure, not something to ship without.", file=sys.stderr)
         return 1
     shutil.copyfile(src, SITE / "reality.png")
+
+    # The landscape page is a self-contained single file, so publishing it is a
+    # copy. It has to travel: the page above links to it, and the coordination
+    # report's retraction points at it too — a relative href to a file that was
+    # not shipped is a dead end where the correction should be.
+    land = ROOT / "docs" / "learned" / "landscape.html"
+    if not land.exists():
+        print(f"build_site: {land.relative_to(ROOT)} is missing, and the page "
+              f"links to it. Run tools/build_learned_report.py on "
+              f"landscape.src.html first.", file=sys.stderr)
+        return 1
+    shutil.copyfile(land, SITE / "landscape.html")
+
     real_size = _png_size(SITE / "reality.png")
     if real_size is None:
         print(f"build_site: {src.relative_to(ROOT)} is not a readable PNG.",
