@@ -60,6 +60,39 @@ Template:
 
 ## Active
 
+### Mac/lit-adjacent-fields — the sleep and epilepsy sweep, and the four unread
+- **Status:** ACTIVE
+- **Started:** 2026-08-17
+- **Writes:** `<darkroom>/bugarach/lit/coordination/` — three PDFs added, `README.md` rewritten.
+- **Claims:** `lit/coordination/` exclusively, again. Nothing else under `<darkroom>/bugarach/`,
+  nothing in `<darkroom>/constellation/`.
+- **Notes:** Continues the block below, which released this folder cleanly.
+
+  ⚠ **The architecture-novelty claim is gone, and it should be.** Sleep EEG has a mature
+  genre of learned event detectors: DOSED (Chambon et al. 2019) predicts event **centre,
+  duration and class** from raw multichannel EEG via an SSD/YOLO localization head, and SEED
+  (Tapia-Rivas et al. 2024) reaches F1 0.81/0.84 on spindles and K-complexes. With
+  Navas-Olive's ripple CNN that is **three independent YOLO-lineage event detectors** over
+  physiological time series. "Learned detector emitting events with times" is an established
+  genre, not a gap. Nobody should write otherwise again.
+
+  ⚠ **A published antecedent for the per-lab loop exists, one level down.** CASCADE's
+  central idea is resampling its ground-truth database to match the **noise level and
+  sampling rate of the unseen test data**. That is our adapt loop's argument, made in 2021
+  for spike inference. Cite it as precedent rather than claiming the idea.
+
+  **What survived, and it is now verified rather than inferred:** across the assembly
+  literature the evaluation metric is **membership, never event timing** — Mölter scores a
+  Best Match set-difference over cell groups, Russo & Durstewitz score a Rand index over unit
+  assignment, and both plant occurrence times they never score against.
+
+  **Three techniques worth stealing, all from outside this field:** score F1 against a
+  **swept** IoU tolerance rather than one fixed window (DOSED reports δ = 0.1…0.9, which is
+  an answer to `docs/todo/2026-08-13-scoring-tolerance-vs-detector-resolution.md`);
+  non-maximum suppression over overlapping candidate events; and **pretraining on a
+  rule-based detector's output** before fine-tuning on true labels (SEED does this with the
+  A7 spindle detector — our six ports are exactly such a teacher).
+
 ### Mac/lit-coordination-library — stock the reference library on coordination detection
 - **Status:** DONE 2026-08-17 — **claim released**, `lit/coordination/` is free
 - **Started:** 2026-08-17
