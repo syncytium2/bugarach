@@ -52,9 +52,16 @@ for: a session doing nothing but literature
 >
 > **Three techniques worth stealing, none of them from this field:**
 > 1. **Score F1 against a swept IoU tolerance**, not one fixed window — DOSED reports
->    δ = 0.1…0.9 and re-tunes every competitor at each δ. This is an answer to
->    `2026-08-13-scoring-tolerance-vs-detector-resolution.md` and makes the
->    `span`/`observed_span` choice much less load-bearing.
+>    δ = 0.1…0.9 and re-tunes every competitor at each δ.
+>    ⚠ **Correction:** an earlier version of this line called that "an answer to
+>    `2026-08-13-scoring-tolerance-vs-detector-resolution.md`". It is not — that todo
+>    is **done**, and it fixed a different and real bug (point matching read SCE at
+>    0.08 recall on correct detections; interval overlap fixed it). The open question
+>    is the next one: how much overlap to require, and what stays invisible while the
+>    answer is one permissive constant. Now measured and filed as
+>    `2026-08-17-scoring-cannot-see-localization.md` — the ranking survives the sweep,
+>    but every detector plateaus by ~0.75 s and the shipped tolerance is 1.5 s against
+>    a median event footprint of 0.80 s.
 > 2. **Non-maximum suppression** over overlapping candidate events. `tube` thresholds a
 >    per-frame probability and has no equivalent.
 > 3. **Pretrain on a rule-based detector's output**, then fine-tune on true labels —

@@ -113,6 +113,43 @@ item on exactly this: `docs/todo/2026-08-16-assessment-needs-a-human-in-the-loop
   state-of-the-art" is not a supported claim and must not appear in app copy. See
   `docs/todo/2026-08-17-literature-deep-dive-handoff.md`.
 
+## What the literature survey changed for you — read before writing copy
+
+Added 2026-08-17, after twelve papers went onto the shelf at
+`<darkroom>/bugarach/lit/coordination/`. Four things bear on the app.
+
+1. **"A new kind of detector" is not available, and neither is "the first".** Three
+   groups already train networks that emit population events with times — DOSED
+   (sleep EEG), cnn-ripple (hippocampal LFP), SEED (sleep spindles) — all descended
+   from single-shot object detectors. The honest positioning, and it is still a good
+   one, is **the level of the analysis and where the truth comes from**: nobody does
+   this from per-cell calcium activity against events planted in a simulation fitted
+   to the lab's own recordings. `docs/learned/landscape.svg` is that claim as one
+   picture and the app is welcome to it.
+2. **Link to the competitors, do not just name them.** Whatever page positions this
+   work should link out to `PridaLab/cnn-ripple`, `Dreem-Organization/dosed` and
+   `gitlab.com/cossartlab/cicada`. A positioning claim with no route to the thing it
+   positions against reads as marketing.
+3. **A displayed F1 is more permissive than a reader will assume.** The bench scores
+   a hit at a 1.5 s edge gap, and the median realized event is 0.80 s wide — so the
+   score cannot distinguish landing on an event from landing a second away.
+   Measured: `docs/learned/tolerance_sweep.png`. The ranking is stable, so any
+   *comparison* the app shows is safe; a bare number implying timing accuracy is not.
+   If the app ever shows "how well did this detector do", say what tolerance it
+   means. `docs/todo/2026-08-17-scoring-cannot-see-localization.md`.
+4. **Two open upgrades would change the fit path**, so do not harden it yet:
+   non-maximum suppression on the learned model's probability trace
+   (`2026-08-17-no-suppression-of-overlapping-detections.md`), and pretraining on the
+   six hand-written detectors' output over unlabelled real recordings before
+   fine-tuning on the simulation
+   (`2026-08-17-pretrain-on-the-six-then-fine-tune.md`). The second one is a route to
+   a per-lab model that has actually seen that lab's real backgrounds, which is close
+   to the app's whole selling point — but it is unmeasured, and its control
+   experiment has not been run.
+
+**What you do not need to do:** nothing here blocks the first slice of work below.
+None of these change `train()`'s signature, the registry, or the scoring path.
+
 ## Suggested first slice of work
 
 Do not start with the whole loop. Start with **stage 3 on a spec that already exists**:
