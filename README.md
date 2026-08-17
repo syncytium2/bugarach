@@ -104,6 +104,19 @@ from bugarach.io import slice_from_events
 s = slice_from_events([roi0_times, roi1_times, ...], slice_id="my_recording")
 ```
 
+An export folder — the documented way in, and the whole input. bugarach asks a
+producer for **three facts and no fourth: the event times of each ROI, the timing
+of each treatment period, and the acquisition frame interval.** Nothing in the
+contract is specific to a lab, a preparation, a drug or a pipeline, and whatever
+else a producer ships is ignored rather than rejected. Full contract, including why
+a cell that was imaged and fired nothing has to be *declared* rather than inferred:
+[`docs/export_folder_spec.md`](docs/export_folder_spec.md).
+
+```python
+from bugarach.io import load_folder
+slices = load_folder("path/to/export")   # events.csv (+ rois.csv, regions.csv, slices.csv)
+```
+
 Viewer (needs the `[ui]` extra):
 
 ```bash

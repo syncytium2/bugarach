@@ -1,8 +1,21 @@
 # The export folder — bugarach's input contract
 
+**Three facts, and bugarach needs no fourth:** the event times of each ROI, the
+timing of each treatment period, and the acquisition frame interval. Everything
+below is those three and the identity strings that let a statistician recognise
+their own recordings. Nothing here is specific to any lab, any preparation, any
+drug or any pipeline — a producer that can state those three facts is a
+conforming producer, and one that cannot is not, whatever else it ships.
+
 **This is the whole input.** bugarach reads one folder and nothing else: no data
 store, no archive, no environment variable, no network, no companion database. If
 a fact is not in the folder, bugarach does not know it and does not guess it.
+
+> **Revision 2** (2026-08-17). Added `rois.csv`: the ROIs that were recorded.
+> Rev 1 had no way to say that a cell was imaged and fired nothing, so the ROI
+> set was derived from the event rows and every silent cell was invisible — see
+> that section for what it cost. Nothing else changed, and no file gained a
+> required column.
 
 Everything is CSV, UTF-8, newline-only endings, one header row. Times are
 **seconds** on the recording's own clock. Any producer can write these files —
@@ -28,6 +41,52 @@ Nothing else is read. **Event properties — amplitude, width, rise time — bel
 a different project and are not consumed here.** The six detectors need onset times
 and nothing more. Extra columns are ignored rather than rejected, so a producer may
 ship one file that serves several consumers.
+
+**This file cannot describe a cell that fired nothing.** One row per event means an
+ROI with no events has no rows, so it is not merely unremarked — it is absent, and
+absent is indistinguishable from never imaged. That is what `rois.csv` is for.
+
+### `rois.csv` — the ROIs that were recorded
+
+One row per ROI that was imaged, whether or not it produced an event.
+
+| column | type | meaning |
+|---|---|---|
+| `slice_id` | text | which recording; must match `events.csv` |
+| `roi` | text | which cell. The same string `events.csv` uses. |
+
+**This file is the denominator.** A per-ROI rate is events divided by cells, and
+only this file knows how many cells there were. Derive the population from the
+event table instead and the arithmetic silently changes: five cells recorded, two
+of them quiet, and the rate is computed over three — overstated by a factor of
+1.67, with nothing in the output saying so. The error scales with how quiet the
+preparation is, so it is largest exactly where a quiet condition is the finding.
+
+**A quiet cell is data.** `rate == 0` is a measurement, not a gap; a population
+conditioned on having fired is a different population, and which cells fired is
+group-dependent, so conditioning on it can reverse a comparison between groups. A
+producer that omits its silent ROIs is not tidying a file, it is choosing a
+denominator on the analyst's behalf.
+
+**When the file is absent** the ROI set is derived from the events — the only thing
+available — and every result is reported as resting on a population that is a lower
+bound. bugarach warns once per folder and carries the fact through
+(`Slice.roi_set_declared` is False). It does not guess a count, and it does not
+treat a derived set as a declared one.
+
+**An event in an ROI the roster does not list is an error, not a merge.** The two
+files then disagree about what was recorded, and there is no reading of that which
+is safe to resolve here: silently adding the ROI trusts the event table, silently
+dropping the event trusts the roster, and both hide a producer-side defect that
+will be much cheaper to fix now than after it is in a figure.
+
+**No verdict, no viability, no quality flag.** This file says which cells were
+recorded and nothing about whether any of them was worth keeping. Whether a cell
+is healthy, dead, admissible or excluded is the producer's judgement, made with
+evidence bugarach does not have and cannot reconstruct — if a producer has made
+that judgement, it applies it before writing the folder, and what arrives here is
+simply the population it chose. bugarach reports what it was given and computes no
+verdict of its own.
 
 ### `regions.csv` — optional
 
@@ -187,12 +246,15 @@ result can be reproduced from the folder alone.
 1. **One folder in, one folder out.** No path outside it is ever read.
 2. **Only `events.csv` is required.** Every other file adds fidelity; none is a
    precondition. A folder holding one CSV of onset times is a valid input.
+   Fidelity is not free, though: without `rois.csv` the population is a lower
+   bound, and without `frame_interval_sec` bugarach stops and asks.
 3. **No controlled vocabularies.** Stream names, region labels, ROI ids and slice
    ids are the lab's own strings. bugarach matches them, counts them, and hands
    them back.
 4. **Nothing is inferred that was not given.** No window is derived, no region is
    assumed to be a baseline, no viability verdict is computed, no missing metadata
-   is invented.
+   is invented, and no population is assumed complete that was not declared
+   complete.
 5. **Extra columns are ignored, not rejected**, so one file can serve several
    consumers.
 6. **Missing is written as missing** — literally `NA`, never an empty field and

@@ -71,12 +71,25 @@ class Slice:
     pairing is specific to this project; foreign data (see bugarach.io) may
     carry one stream or several under any names. Consumers should iterate
     ``streams`` rather than hardcoding .fast/.slow, which are conveniences
-    for the canonical two-stream stores."""
+    for the canonical two-stream stores.
+
+    ``roi_set_declared`` says whether the ROI count can be trusted as the
+    population. A store lists every ROI, so it is True there. An event table
+    can only name ROIs that produced an event, so a recording whose roster
+    was derived from events is a lower bound: silent cells are missing and
+    every per-ROI rate is correspondingly overstated. Report it; never
+    quietly treat one case as the other.
+
+    ``meta`` holds the producer's own per-recording columns, verbatim and
+    uninterpreted — group, sex, cohort, whatever the lab records. bugarach
+    passes them to its output and reads none of them."""
 
     slice_id: str
     streams: dict[str, Stream]
     regions: list[Region] = field(default_factory=list)
     roi_ids: list[str] | None = None
+    roi_set_declared: bool = False
+    meta: dict[str, str] = field(default_factory=dict)
 
     @property
     def fast(self) -> Stream:
@@ -169,6 +182,8 @@ def _load_v7(path: Path) -> Slice:
         streams={"fast": _stream_v7(m["fast"]), "slow": _stream_v7(m["slow"])},
         regions=regions,
         roi_ids=roi_ids,
+        # a store carries one entry per ROI, silent ones included
+        roi_set_declared=True,
     )
 
 
@@ -222,4 +237,5 @@ def _load_v73(path: Path) -> Slice:
         slice_id=slice_id or path.stem,
         streams={"fast": fast, "slow": slow},
         regions=regions,
+        roi_set_declared=True,
     )

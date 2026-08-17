@@ -3,15 +3,27 @@
 The detectors need only per-ROI event-onset times. ``slice_from_events``
 wraps plain arrays into a Slice (any number of streams, any names, regions
 optional); ``load_events_csv`` reads a long-format CSV of (time, roi[,
-stream]) rows. Foreign data typically has no amplitudes/widths/rise times —
-those fields are filled with NaN and onset times double as ``t50rise``, so
-every detector runs unchanged; CICADA's per-event duration modes need real
-durations and stay unavailable unless provided.
+stream]) rows; ``load_folder`` reads a whole export folder as specified in
+``docs/export_folder_spec.md``. Foreign data typically has no
+amplitudes/widths/rise times — those fields are filled with NaN and onset
+times double as ``t50rise``, so every detector runs unchanged; CICADA's
+per-event duration modes need real durations and stay unavailable unless
+provided.
+
+**A recorded ROI that fired nothing is still a recorded ROI.** An event
+table can only name ROIs that produced a row, so deriving the ROI set from
+it silently drops every silent cell and shrinks the denominator of every
+per-ROI rate. That is why the folder carries an optional ``rois.csv``
+roster: when it is present the ROI set is what the producer declared, not
+what the events happened to mention. When it is absent the set is still
+derived — the only thing available — and ``Slice.roi_set_declared`` is False
+so a consumer can say "at least this many" instead of "this many".
 """
 
 from __future__ import annotations
 
 import csv
+import warnings
 from pathlib import Path
 
 import numpy as np
@@ -35,6 +47,8 @@ def slice_from_events(
     regions=None,
     roi_ids: list[str] | None = None,
     durations=None,
+    roi_set_declared: bool = False,
+    meta: dict[str, str] | None = None,
 ) -> Slice:
     """Build a Slice from per-ROI event-onset times.
 
@@ -71,7 +85,8 @@ def slice_from_events(
                                       start_sec=float(start),
                                       end_sec=float(end)))
     return Slice(slice_id=slice_id, streams=streams, regions=region_objs,
-                 roi_ids=roi_ids)
+                 roi_ids=roi_ids, roi_set_declared=roi_set_declared,
+                 meta=dict(meta or {}))
 
 
 def load_events_csv(
@@ -81,10 +96,15 @@ def load_events_csv(
     roi_col: str = "roi",
     stream_col: str | None = None,
     slice_id: str | None = None,
+    roster: list[str] | None = None,
 ) -> Slice:
     """Load a long-format CSV of events: one row per event, columns for time
     (seconds) and ROI id, optionally a stream column for multi-stream data.
-    ROIs are index-aligned across streams by their sorted union of ids."""
+    ROIs are index-aligned across streams by their sorted union of ids.
+
+    ``roster`` declares the ROIs that were recorded, in order, so cells that
+    fired nothing still occupy a row. Without it the ROI set is whatever the
+    events mention, which is a lower bound — see the module docstring."""
     path = Path(path)
     rows = []
     with path.open(newline="") as f:
@@ -101,11 +121,125 @@ def load_events_csv(
     if not rows:
         raise ValueError(f"no event rows in {path}")
 
-    roi_ids = sorted({r[1] for r in rows})
+    return _assemble(rows, slice_id=slice_id or path.stem, roster=roster)
+
+
+def _assemble(rows, *, slice_id: str, roster: list[str] | None,
+              regions=None, meta: dict[str, str] | None = None) -> Slice:
+    """Build one Slice from (time, roi, stream) triples.
+
+    With a roster the ROI set is the producer's; every ROI in the events must
+    appear in it, because an event in an ROI nobody declared means the two
+    files disagree about what was recorded, and picking a winner here would
+    hide that."""
+    seen = {r[1] for r in rows}
+    if roster is None:
+        roi_ids, declared = sorted(seen), False
+    else:
+        undeclared = seen - set(roster)
+        if undeclared:
+            raise ValueError(
+                f"{slice_id}: events name {len(undeclared)} ROI(s) missing from "
+                f"the roster ({sorted(undeclared)[:5]}) — the roster must list "
+                f"every recorded ROI")
+        roi_ids, declared = list(roster), True
     roi_index = {rid: i for i, rid in enumerate(roi_ids)}
     stream_names = sorted({r[2] for r in rows})
     events = {name: [[] for _ in roi_ids] for name in stream_names}
     for t, rid, sname in rows:
         events[sname][roi_index[rid]].append(t)
-    return slice_from_events(
-        events, slice_id=slice_id or path.stem, roi_ids=roi_ids)
+    return slice_from_events(events, slice_id=slice_id, roi_ids=roi_ids,
+                             regions=regions, roi_set_declared=declared,
+                             meta=meta)
+
+
+class RosterNotDeclaredWarning(UserWarning):
+    """No ``rois.csv``, so the ROI set was derived from the events and any
+    silent cell is missing from it. Every per-ROI rate is then an upper bound
+    on a population that is a lower bound."""
+
+
+def _read_csv(path: Path) -> list[dict[str, str]]:
+    with path.open(newline="") as f:
+        return list(csv.DictReader(f))
+
+
+def _require(rows, cols, path: Path) -> None:
+    missing = [c for c in cols if rows and c not in rows[0]]
+    if missing:
+        raise ValueError(f"{path.name} must have column(s) {missing} "
+                         f"(found {sorted(rows[0]) if rows else 'no rows'})")
+
+
+def load_folder(folder) -> list[Slice]:
+    """Read an export folder — the contract in ``docs/export_folder_spec.md``.
+
+    Three things are read and nothing else: event times per ROI
+    (``events.csv``, required), the ROIs that were recorded (``rois.csv``),
+    and treatment timing (``regions.csv``). ``slices.csv`` is carried through
+    to ``Slice.meta`` verbatim and interpreted nowhere here.
+
+    Returns one Slice per ``slice_id``, ordered by id. Extra columns in any
+    file are ignored, so one folder can serve several consumers.
+    """
+    folder = Path(folder)
+    events_path = folder / "events.csv"
+    if not events_path.is_file():
+        raise FileNotFoundError(
+            f"{folder} is not an export folder: events.csv is required "
+            f"(see docs/export_folder_spec.md)")
+
+    ev = _read_csv(events_path)
+    if not ev:
+        raise ValueError(f"no event rows in {events_path}")
+    _require(ev, ["roi", "time_sec"], events_path)
+    has_slice = "slice_id" in ev[0]
+    has_stream = "stream" in ev[0]
+
+    by_slice: dict[str, list] = {}
+    for r in ev:
+        sid = r["slice_id"] if has_slice else folder.name
+        by_slice.setdefault(sid, []).append(
+            (float(r["time_sec"]), r["roi"],
+             r["stream"] if has_stream and r["stream"] else "events"))
+
+    rosters: dict[str, list[str]] = {}
+    roster_path = folder / "rois.csv"
+    if roster_path.is_file():
+        rows = _read_csv(roster_path)
+        _require(rows, ["roi"], roster_path)
+        for r in rows:
+            sid = r["slice_id"] if "slice_id" in r else folder.name
+            rosters.setdefault(sid, []).append(r["roi"])
+    else:
+        warnings.warn(
+            f"{folder.name}: no rois.csv, so the ROI set comes from the events "
+            f"and silent cells are absent from it. Per-ROI rates are computed "
+            f"over a population that is a lower bound.",
+            RosterNotDeclaredWarning, stacklevel=2)
+
+    regions: dict[str, list[Region]] = {}
+    regions_path = folder / "regions.csv"
+    if regions_path.is_file():
+        rows = _read_csv(regions_path)
+        _require(rows, ["region_idx", "label", "start_sec", "end_sec"],
+                 regions_path)
+        for r in sorted(rows, key=lambda r: int(r["region_idx"])):
+            sid = r["slice_id"] if "slice_id" in r else folder.name
+            regions.setdefault(sid, []).append(
+                Region(name=r["label"] or None, slot=str(r["region_idx"]),
+                       start_sec=float(r["start_sec"]),
+                       end_sec=float(r["end_sec"])))
+
+    meta: dict[str, dict[str, str]] = {}
+    slices_path = folder / "slices.csv"
+    if slices_path.is_file():
+        for r in _read_csv(slices_path):
+            sid = r.get("slice_id", folder.name)
+            meta[sid] = dict(r)
+
+    return [
+        _assemble(rows, slice_id=sid, roster=rosters.get(sid),
+                  regions=regions.get(sid), meta=meta.get(sid))
+        for sid, rows in sorted(by_slice.items())
+    ]
