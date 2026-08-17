@@ -141,9 +141,8 @@
   </p>
   <p>
     Nothing tells it what the background is. The head has a
-    <strong>2,047-sample receptive field</strong> &mdash; about three and a half
-    minutes &mdash; and the intent was that it would use that span to work out the
-    local level and judge excess against it. The bound is a sigmoid, so
+    <strong>2,047-sample receptive field</strong>, and the intent was that it would
+    use that span to work out the local level and judge excess against it. The bound is a sigmoid, so
     &ldquo;one cell, one vote&rdquo; here is <em>approximate</em>: an exact cap
     needs a fixed window, and a fixed window is the assumption the design refuses
     to make.
@@ -177,6 +176,104 @@
     bank&rsquo;s 2,047, because it is handed the contrast rather than having to
     infer it. Half the parameters, a sixteenth of the span.
   </p>
+</div>
+
+<h3>Samples, not seconds &mdash; and why that is a design commitment</h3>
+<div class="col">
+  <p>
+    Every width above is in <strong>samples</strong>, and that is deliberate rather
+    than incidental. <strong>Nothing inside a model knows what a second is.</strong>
+    Receptive fields, kernel widths and the centre window are all counted in frames;
+    the frame interval is the loader&rsquo;s business and never reaches the network.
+    Two things follow, and they are the reason for the rule.
+  </p>
+  <p>
+    First, a model trained on one rig transfers to a rig with a different frame
+    interval by <em>retraining on frames</em>, with no unit conversion to get wrong
+    &mdash; and a unit conversion applied twice, or not at all, is the classic way a
+    detector silently mis-scales. Second, and more useful:
+    <strong>a fitted width is a measurement.</strong> Because the centre widths are
+    free parameters counted in samples, multiplying a fitted width by the frame
+    interval turns the model&rsquo;s own estimate of &ldquo;how tight an event
+    is&rdquo; into a number comparable with what the assessor measured on real
+    slices, without the model ever having been told the answer.
+  </p>
+  <div class="note warn">
+    <strong>Where seconds do legitimately appear</strong>, and they must be read as
+    conversions rather than as anything the model used: the 1.5&nbsp;s matching
+    tolerance and the <code>Hz/ROI</code> rates are properties of the
+    <em>scorer</em> and the <em>corpus</em>, not of any network. An earlier draft of
+    this page glossed a receptive field as &ldquo;about three and a half
+    minutes&rdquo;, which reads as if the model were reasoning in time. It is
+    2,047&nbsp;samples; at this corpus&rsquo;s 0.1&nbsp;s frame interval that
+    happens to be 204.7&nbsp;s, and the model is indifferent to that fact.
+  </div>
+</div>
+
+<h3>What the operator actually looks like</h3>
+<div class="col">
+  <p>
+    A box labelled &ldquo;centre &minus; surround&rdquo; asserts a mechanism without
+    showing one, and a reader cannot tell from it whether the kernel is sensible,
+    what width it settled on, or whether the cancellation it claims actually happens.
+    So here is the operator itself, read out of a trained model rather than drawn by
+    hand.
+  </p>
+</div>
+
+<figure>
+  <img src="{{FIG:architecture_fitted}}" alt="Four panels. A: at the narrowest fitted scale, a narrow centre Gaussian, a very wide and nearly flat surround Gaussian of equal area, and their difference — a sharp positive lobe on a slightly negative pedestal. B: all four fitted kernels as solid curves against their dotted initialisations, showing four scales that began at 1, 2, 4 and 8 samples all converging into a band between 4.0 and 6.6 samples. C: a permanent doubling of the background pushed through each fitted kernel, producing a transient at the step that returns to exactly zero. D: samples visible after each layer on a log axis, one line per model, all following the same doubling schedule and differing only in where they stop — 31 and 2,047 for the per-cell model's two stages, 127 for centre−surround, 4,095 for the pooled trace.">
+  <figcaption>
+    <strong>The architecture, measured rather than described.</strong>
+    <strong>A</strong> is the mechanism at the narrowest fitted scale: the centre and
+    the surround each integrate to 1, so their difference integrates to 0 &mdash;
+    which is what makes a uniform change cancel instead of merely shrink.
+    <strong>B</strong> draws all four scales as fitted (solid) against where each one
+    started (dotted). <strong>C</strong> is the test of the central claim: a
+    permanent doubling of the background, convolved with each fitted kernel, produces
+    a transient at the step and then <em>returns to zero</em> rather than settling at
+    a new level. <strong>D</strong> is the dilation schedule, computed from the layer
+    stack &mdash; every model doubles its reach per layer, so the only difference
+    between them is where they stop.
+  </figcaption>
+</figure>
+
+<div class="col">
+  <p>
+    Two things in that figure are worth more than the confirmation.
+  </p>
+  <p>
+    <strong>The four scales collapsed into one band.</strong> They were initialised a
+    doubling apart &mdash; 1, 2, 4 and 8 samples &mdash; and trained to
+    <strong>{{N:a:centres.0|.1f}}, {{N:a:centres.1|.1f}},
+    {{N:a:centres.2|.1f}} and {{N:a:centres.3|.1f}} samples</strong>. A
+    four-scale bank that converges to four nearly identical scales is not using its
+    scales; it is one scale with redundant copies, and the honest reading is that
+    <em>the multi-scale part of this design is not currently earning its
+    parameters</em>. That is a cheap thing to test &mdash; run it with one scale and
+    see whether F1 moves &mdash; and it has not been tested.
+  </p>
+  <p>
+    <strong>The fitted width is a measurement, and it is in the right range.</strong>
+    Around {{N:a:centres.0|.1f}}&ndash;{{N:a:centres.3|.1f}} samples at a
+    0.1&nbsp;s frame interval is roughly 0.4&ndash;0.7&nbsp;s of event width, against
+    the assessor&rsquo;s measured within-cluster onset spread &mdash; the jitter the
+    generator was given, <strong>{{N:b:spec.jitter_sec|.2f}}&nbsp;s</strong>. The
+    model was never told that number. &#9888; It should not be quoted as
+    <em>recovering</em> the timescale: a previous run of this model on a quieter
+    background moved its fitted widths by 40%, so the width is a function of the
+    background as well as of the event.
+  </p>
+  <div class="note warn">
+    <strong>One fitted parameter is close to its clamp.</strong> The surround is
+    parameterised as a multiple of the centre, and the code clamps that ratio at 40.
+    The fitted ratios here are
+    {{N:a:ratios.0|.0f}}, {{N:a:ratios.1|.0f}}, {{N:a:ratios.2|.0f}} and
+    {{N:a:ratios.3|.0f}} &mdash; one of them within 10% of the ceiling. By this
+    project&rsquo;s own rule for the threshold grid, a fitted value at the end of its
+    range is the search telling you the range was wrong, not an answer. The clamp
+    should be widened and the fit re-run before any surround width here is quoted.
+  </div>
 </div>
 
 <h3>And the control</h3>
@@ -317,7 +414,13 @@
     <strong>SPIKE-synchronization</strong>. They are ports held to 1e&#8209;9
     against a MATLAB original; CICADA derives from the Cossart lab&rsquo;s
     <a href="https://gitlab.com/cossartlab/cicada">CICADA</a> (MIT, &copy; 2019
-    Cossart Lab) and the synchrony detector follows PySpike&rsquo;s semantics. They
+    Cossart Lab) and <strong>SpikyDetect</strong> &mdash; the sixth &mdash; is this
+    lab&rsquo;s own event detector running on top of a published <em>synchrony
+    profile</em>: cSPIKE / PySpike (Kreuz lab) supply an adaptive
+    SPIKE-synchronization value per spike, i.e. synchrony as a function of time, and
+    the detection of coordination <em>events</em> in that profile &mdash; binning,
+    a hysteresis scan, an artifact gate &mdash; is ours. PySpike is not a detector
+    and is not being compared to here. They
     are not mine, and this comparison is against other people&rsquo;s work.
   </p>
   <p>
@@ -605,8 +708,9 @@
   </p>
   <p>
     bugarach is BSD-3-Clause. CICADA derives from the Cossart lab&rsquo;s CICADA
-    (MIT, &copy; 2019 Cossart Lab); the synchrony detector follows PySpike&rsquo;s
-    SPIKE-synchronization semantics.
+    (MIT, &copy; 2019 Cossart Lab). The synchrony <em>profile</em> follows
+    cSPIKE/PySpike&rsquo;s adaptive SPIKE-synchronization semantics (Kreuz lab); the
+    coordination-event detector built on that profile is this project&rsquo;s.
   </p>
 </footer>
 </div>

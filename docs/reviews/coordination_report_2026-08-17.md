@@ -178,3 +178,120 @@ nothing new.
 5. **The architecture comparison remains uncontrolled** (10× learning-rate difference).
    Section 4 says so; a reader in a hurry may still take "building the invariant in beats
    hoping for it" as established. It is not.
+
+
+---
+
+# Round 3 — Tony's read, and two new documents
+
+- artifact:  docs/learned/coordination_report.html (c83622c → rebuilt, see below)
+- also:      docs/todo/2026-08-17-literature-deep-dive-handoff.md
+- also:      docs/learned/README_for_the_webapp.md
+- roles:     11 of 11 re-run against the changes
+- rounds:    1 blind pass on the rebuilt page, clean
+
+Round 2 shipped a page with four defects the review did not catch, all four found by
+the person who commissioned it. Recorded here because the pattern matters more than the
+fixes: **every one of them was a domain claim or a design claim, and every one was
+invisible to a reviewer working from the draft's own framing.** This is the cost of
+running the roles as a self-review rather than as independent agents, and it is now a
+measured cost rather than a stated risk.
+
+## What Tony found that eleven roles did not
+
+**T1 · PySpike was miscredited as a detector.** The page said "the synchrony detector
+follows PySpike's semantics". PySpike and cSPIKE (Kreuz lab) supply an adaptive
+SPIKE-synchronization *profile* — a coincidence value per spike, synchrony as a
+function of time. The detector that finds coordination **events** in that profile
+(binning, a hysteresis scan with sustain and gap rules, an artifact gate) is this
+project's own, ported from interface2's `SpikyDetect3`. So the page credited a library
+with work the lab did, and simultaneously implied a comparison against PySpike that
+does not exist. **Fixed in both reports** — this page and the earlier
+`report.src.html`, which carried the same sentence. Role 6 (RTFM) owned this and read
+the port's docstring, which says it correctly; the review checked that the *method* was
+used right and never asked whether the *attribution* was right.
+
+**T2 · frames-not-seconds was absent, and one gloss contradicted it.** The models are
+written in samples and nothing inside them knows what a second is — a deliberate
+commitment, and the reason a fitted kernel width is a measurement rather than a
+hyperparameter. The page never said so, and then glossed a receptive field as "about
+three and a half minutes", which reads as if the model reasoned in time. **Fixed**: a
+new subsection states the commitment and says where seconds legitimately appear (the
+scorer's tolerance, the corpus's rates) and where they do not; the minutes gloss is
+gone, with the conversion shown as a conversion.
+
+**T3 · the architecture was never actually shown.** The page had block diagrams —
+boxes reading "centre − surround, 4 DoG kernels", "dilated stack, 10 conv, 8 ch". A box
+labelled with a mechanism asserts it; it does not let a reader evaluate whether the
+kernel is sane, what width it settled on, or whether the claimed cancellation happens.
+**Fixed** with `tools/make_architecture_figures.py`, which trains the model and plots
+what it fitted: the centre and surround separately at the narrowest scale, all four
+fitted kernels against their initialisations, a background step pushed through each
+kernel to test the cancellation, and the receptive field after every layer of every
+model computed from the dilation schedule. Role 9 asked "what here should be a picture"
+and accepted a schematic as the picture; the right question was whether the picture
+showed the thing.
+
+**T4 · "competes with state-of-the-art models from the literature" is not supported**,
+and the page's framing invited it. Nine detectors were compared: six hand-written ports
+plus three of our own networks. The only published methods in the field of play are
+CICADA and the cSPIKE/PySpike-derived profile; the assembly-detection algorithms the
+survey names were never run. Role 4 attacked the novelty claim and left the
+*comparison* claim alone, because the page never made it explicitly — it made it
+available. Handled by making the gap the first item of the literature handoff, and by
+answering the question directly rather than in the document.
+
+## What the new figure found, which is the argument for having drawn it
+
+- **The four-scale kernel bank collapsed to one scale.** Initialised a doubling apart
+  at 1, 2, 4, 8 samples, it trained to 4.0, 4.6, 5.2, 6.6. A bank whose scales
+  converge is one scale with redundant copies, and the multi-scale part of the design
+  may not be earning its parameters. Untested: run it with one scale.
+- **A fitted surround ratio sits within 10% of its clamp** (38 against a ceiling of
+  40). By this project's own rule about the threshold grid, a fitted value at the end
+  of its range is the search reporting that the range was wrong.
+- **The cancellation does hold**: a permanent doubling of the background produces a
+  transient and returns to zero. So the mechanism works as designed and still transfers
+  worse than two of the six, which sharpens rather than softens section 5 — what a
+  busier background brings is variance, and the operator only cancels the mean.
+
+Neither of the first two was visible in a block diagram, which is the point.
+
+## Role ledger — round 3
+
+| # | role | outcome |
+|---|---|---|
+| 1 | Claim & data verifier — "Prove It." | 4 new quantities (fitted centres, ratios, jitter) wired to `architecture_fitted.json` and `bakeoff.json` as build-time stores; none typed into prose. The "40% width movement" claim is carried from the earlier report and is **not** re-measured here — flagged ⚠ in place. |
+| 2 | Citation & reference validator — "DOI or Die." | Kreuz lab / cSPIKE / PySpike attribution corrected per T1 and checked against the port's own docstring and `README.md`'s licensing table. No new bibliography. |
+| 3 | Consistency auditor — "Cross-Examiner." | The corrected PySpike sentence appears in two reports; both changed in the same edit. Checked that "six detectors" still counts six after renaming one of them SpikyDetect. |
+| 4 | Adversarial reviewer — "Reviewer 2." | T4 adjudicated: the comparison claim is not made and is now explicitly disclaimed in the webapp README. New figure's panel C is exactly the "can the alarm ring" test — it *could* have shown a failure to cancel, and did not. |
+| 5 | Line editor — "Kill Your Darlings." | New subsections read; one redundant sentence cut from the frames section. |
+| 6 | Methods / domain expert — "RTFM." | Re-read `detectors/sync.py` end to end for T1. The numpy DoG in the new tool is a deliberate independent reimplementation of the torch kernel — if the two disagree the figure is wrong, which is the check; verified the area normalisation matches. |
+| 7 | Reuse auditor — "Reinventing the Wheel." | New tool borrows `HAND`/`LEARN`/`ARCH` from the bake-off tool and `_spread` from the regime tool rather than redefining either. |
+| 8 | Naive-reader accessibility — "You Lost Me." | New figure's caption names every curve and both line styles; "clamp" and "dilation schedule" are defined where they first appear. |
+| 9 | Density & figure-first — "Show, Don't Tell." | T3 is this role's miss and its fix. The block diagrams stay — they are the signal path — but the operator now has its own measured figure. |
+| 10 | Build & craft gate — "Ship It." | Rebuilt page re-rendered to 11 slices; one label collision in panel B found and fixed with the shared spreader; four-panel layout kept under the PNG renderer's viewport ceiling. |
+| 11 | Argument order — "Start With the Problem." | The operator figure is placed after both block diagrams and before the literature section: a reader must know what the models compute before being asked whether it is new. |
+
+## The two new documents
+
+Both are handoffs for other sessions, both reviewed under the same roles in one pass.
+
+- **`docs/todo/2026-08-17-literature-deep-dive-handoff.md`** — states the novelty
+  question in four answerable parts, tabulates what the shallow pass established
+  against what it only assumed, names where to look that it did not (forward citations,
+  the MEA side, EEG/spindle analogues, preprints, code without papers), and puts
+  **running a literature method on our corpus** as the highest-value item rather than
+  more searching. Carries the traps: no vendored `fetch_paper.py`, PMC behind a bot
+  check, and the fabricated-citation near-miss.
+- **`docs/learned/README_for_the_webapp.md`** — the loop as four stages with measured
+  wall-clock, what to reuse (`pool_scores`, the `ARCHITECTURES` registry, `train`,
+  `darkroom()`, the time-axis hook), the one screen that needs a human (choosing K),
+  ten traps each of which has already cost someone time, and an honest "what is not
+  ready" list. Ends with a first slice of work chosen so the app can be checked against
+  published numbers on day one.
+
+Residual ⚠ from round 2 all still stand, and T1–T4 add one: **four domain-level defects
+reached a shipped page after eleven roles reported clean.** The roles are not the
+problem; running them from inside the context that wrote the draft is. The next document
+of this weight should get at least roles 4, 6 and 9 from something that did not write it.
