@@ -6,6 +6,71 @@ for: a session doing nothing but literature
 
 # Literature deep dive — establish whose feet we are standing on
 
+> ## Revision, 2026-08-17 — the reading was done; read this before the body
+>
+> **Twelve papers are on the shelf at `<darkroom>/bugarach/lit/coordination/`**, ten of
+> them read in full, with per-paper read status in that folder's `README.md`. The body
+> below is left as written; what it asked for has largely happened, and three of its
+> premises moved.
+>
+> **The wall was not a wall.** "PMC and Springer are behind a bot check" is true of the
+> web pages and false of the data. Europe PMC's REST API —
+> `.../rest/<PMCID>/fullTextXML` for text, `europepmc.org/articles/<PMCID>?pdf=render`
+> with a browser User-Agent for the PDF — is ungated, and `search?query=DOI:"..."`
+> resolves a DOI to a PMCID. This is why the deep dive took an afternoon.
+>
+> **Retracted: "no prior work trains a network to emit coordinated population events."**
+> Three groups do, independently, in three substrates, all descended from single-shot
+> object detectors: **DOSED** (Chambon et al. 2019) predicts event centre, duration and
+> class from raw multichannel EEG; **cnn-ripple** (Navas-Olive et al. 2022) emits a
+> per-window ripple probability scored by F1 against ground truth; **SEED**
+> (Tapia-Rivas et al. 2024) reaches F1 0.81/0.84 on sleep spindles and K-complexes.
+> Learned event detection over physiological time series is a genre, not a gap, and no
+> architecture-novelty claim survives.
+>
+> **Also weakened: the per-lab corpus loop is not unprecedented.** CASCADE's stated
+> central idea is resampling its ground-truth database to match the noise level and
+> sampling rate of the unseen recording — our argument, made in 2021 one level down.
+> Cite it as precedent.
+>
+> **What survives, verified from methods rather than inferred from silence:** across the
+> assembly literature the metric is **membership, never event timing**. Mölter scores a
+> Best Match set-difference over cell groups; Russo & Durstewitz score a Rand index over
+> unit assignment; both plant or compute occurrence times and never score against them.
+> Two substrates, two independent groups, the same omission. The defensible claim is
+> therefore narrow and positional: **nobody detects the coordinated event itself from
+> per-cell calcium activity, against events planted in a simulation parameterised from
+> the lab's own recordings.**
+>
+> Answering sub-question 4 of the body, and Tony's point that opened this: **there is a
+> detector inside Mölter's system.** SGC, CORE and SVD cannot start without one — they
+> binarise per cell, count coactive cells per frame, and keep frames above the 95th
+> (SVD: 99th) percentile of a per-cell permutation null. That is our `sce_detect` /
+> CICADA construction, as a precondition of assembly detection rather than its output.
+> It also means the bake-off below needs **no adapter** for those three: the
+> high-coactivity frames *are* the events.
+>
+> **Three techniques worth stealing, none of them from this field:**
+> 1. **Score F1 against a swept IoU tolerance**, not one fixed window — DOSED reports
+>    δ = 0.1…0.9 and re-tunes every competitor at each δ. This is an answer to
+>    `2026-08-13-scoring-tolerance-vs-detector-resolution.md` and makes the
+>    `span`/`observed_span` choice much less load-bearing.
+> 2. **Non-maximum suppression** over overlapping candidate events. `tube` thresholds a
+>    per-frame probability and has no equivalent.
+> 3. **Pretrain on a rule-based detector's output**, then fine-tune on true labels —
+>    SEED does this with the A7 spindle detector and reports it substantially cuts the
+>    annotation needed. Our six ports are exactly such a teacher.
+>
+> **Still open, and the body's ranking of them still holds:** nothing has been run on our
+> corpus, so "competes with state-of-the-art from the literature" remains unsupported —
+> the frame gate, `cnn-ripple` and DOSED all have public code. Malvache et al. 2016 is
+> not open access and the canonical SCE rule is still second-hand. SpikeNet (Jing et al.
+> 2020) is indexed but outside the OA subset and needs fetching by hand.
+>
+> **Section 3 has not been rewritten** — it is a document deliverable and goes through
+> the murderboard, per `docs/doc_review_process.md`. Its current verdict should not be
+> quoted in the meantime.
+
 The report at `docs/learned/coordination_report.html` claims, in section 3, that no
 prior work trains a network to emit coordinated population events scored against
 planted ground truth. **That claim is four web searches deep and no paper was read in
