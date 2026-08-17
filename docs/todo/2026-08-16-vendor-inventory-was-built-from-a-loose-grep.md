@@ -52,6 +52,38 @@ So a loose grep in one repo produced a wrong analysis in another, committed to a
 file there, in under an hour. The receiving session did nothing wrong; it reasoned
 correctly from what it was given.
 
+## The same failure twice in one hour, from opposite directions
+
+The interface2 session diagnosed its own error and it pairs exactly with ours.
+
+It answered *"is this sha on main?"* with `git branch -a --contains <sha> | head -5`,
+saw five feature branches, and concluded main was not among them. **53 refs contain
+that commit.** `main` was below the truncation. `merge-base --is-ancestor` — which
+answers the actual question with a boolean — returns true.
+
+Set the two side by side:
+
+| | the instrument | how it lied |
+|---|---|---|
+| ours | `grep -rl "vendored from"` | matched prose *about* stamps as though it were a stamp |
+| theirs | `git branch --contains \| head -5` | truncated the list above the answer |
+
+Neither tool malfunctioned. Both were **the wrong shape for the question** — one
+over-matched, one silently truncated — and both produced a confident answer with no
+signal that anything was missing. Their phrase for it is the right one: *a check
+that cannot see the answer reporting the answer absent.*
+
+Worth noticing that this is the same defect the session spent all day finding in
+other places: a load-boundary check that covers one of two producers, a validator
+with no power over the values it validates, a freshness gate whose fallback answers
+from the wrong repository. **A check that cannot fail is the recurring bug in this
+estate, and it turns up in one-line shell commands as readily as in architecture.**
+
+Practical form: when a lookup answers a yes/no question, use an instrument that
+returns yes or no. `--is-ancestor` over `--contains | head`. A positional test over
+a substring match. If the output is a list you are about to eyeball, ask what it
+would look like if the answer were absent — and whether you could tell.
+
 ## What to do
 
 - **When enumerating vendored files, check the first two lines, not the whole
