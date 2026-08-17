@@ -104,6 +104,29 @@ from bugarach.io import slice_from_events
 s = slice_from_events([roi0_times, roi1_times, ...], slice_id="my_recording")
 ```
 
+**An export folder is the documented way in.** bugarach asks for three facts and no
+fourth — *the event times of each ROI, the timing of each treatment period, and the
+acquisition frame interval* — and reads one folder holding one CSV per recording,
+named by the recording:
+
+```
+my_export/
+  20240708_13.csv     roi,time_sec[,stream]      <- 7,NA means ROI 7 fired nothing
+  20240708_17.csv
+  slices.csv          slice_id,frame_interval_sec,+ any identity columns
+  regions.csv         slice_id,region_idx,label,start_sec,end_sec
+```
+
+```python
+from bugarach.io import load_folder
+slices = load_folder("my_export")
+```
+
+Only the recording files are required; each table buys one thing. Nothing in the
+contract is specific to a lab, a preparation or a pipeline, no viability verdict is
+computed, and extra columns are ignored rather than rejected. Full contract:
+[`docs/export_folder_spec.md`](docs/export_folder_spec.md).
+
 Viewer (needs the `[ui]` extra):
 
 ```bash
