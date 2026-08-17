@@ -60,8 +60,29 @@ Template:
 
 ## Active
 
+### Mac/learned-detectors-framework — murderboard, then the per-lab loop on live data
+- **Status:** DONE 2026-08-17 (session ended) — PR #52 still open, `HANDOFF.md` on the branch
+- **Started:** 2026-08-16
+- **Writes:** repo only. **Nothing was written to the darkroom this session**, deliberately:
+  the copy there is the WITHDRAWN report and replacing it needs a claim taken while
+  someone is awake to hold it.
+- **Reads (no claim needed, recorded so the next session knows):**
+  `<data>/processed_archive/event_store_onset_revised_2v_alive_rescued` — interface2's
+  rescued dead-ROI store, `dead-roi-store` @ `752855a`. **Unclaimed on interface2's
+  board and not on their main.** Read-only here; if you intend to depend on it, tell
+  them first.
+- **Notes:** the murderboard on `docs/learned/report.html` retracted its conclusion three
+  times; the corrected page says the learned model is level with the six, not ahead.
+  Then the loop ran end to end on live data — 85 real recordings assessed, one generator
+  spec derived, one corpus, every detector fitted on 3 folds and scored on a held-out 4th.
+  Result and caveats: `docs/learned/bakeoff.md`. Review record:
+  `docs/reviews/report_2026-08-16-round2.md`.
+
+  ⚠ **Two blocking follow-ups are in `HANDOFF.md`** — the darkroom serves the withdrawn
+  report, and `report.html` predates the bake-off it is about to be read as describing.
+
 ### Mac/learned-detectors-framework — assessor port, adapt loop, and the learned-detector review
-- **Status:** ACTIVE — PR #52
+- **Status:** SUPERSEDED by the block above (same branch, same day)
 - **Started:** 2026-08-16
 - **Writes:** `<darkroom>/bugarach/2026-08-16-learned-detectors/` (NEW) — the review page
   and its murderboard record, so Tony can open them without navigating `docs/`.
