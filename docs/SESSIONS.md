@@ -61,8 +61,12 @@ Template:
 ## Active
 
 ### Mac/lit-adjacent-fields — the sleep and epilepsy sweep, and the four unread
-- **Status:** ACTIVE
+- **Status:** DONE 2026-08-17 — **claim released**, `lit/coordination/` is free
 - **Started:** 2026-08-17
+- **Done:** shelf is twelve papers, ten read in full. Every PDF checksum-matched after the
+  copy, and every filename the README cites was checked to exist. Findings written into
+  `docs/todo/2026-08-17-literature-deep-dive-handoff.md` as a revision header, so the
+  review surface carries them rather than a board block.
 - **Writes:** `<darkroom>/bugarach/lit/coordination/` — three PDFs added, `README.md` rewritten.
 - **Claims:** `lit/coordination/` exclusively, again. Nothing else under `<darkroom>/bugarach/`,
   nothing in `<darkroom>/constellation/`.
