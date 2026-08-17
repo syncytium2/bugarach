@@ -28,10 +28,18 @@ NETWORK = (
 
 
 def _body() -> str:
+    """The page with every comment removed.
+
+    Comments are stripped because they NAME the things the page must not do —
+    the header explains there is no `fetch(`, and a note in the script quotes
+    the injection that motivated building nodes instead of markup. A check that
+    reads those as code fires on the explanation of why it will never fire,
+    which is the fastest way to get a real check deleted.
+    """
     text = VIEWER.read_text(encoding="utf-8")
-    # the comment at the top NAMES the things it must not contain, so strip
-    # comments before looking — otherwise the promise trips its own check
-    return re.sub(r"<!--.*?-->", "", text, flags=re.S)
+    text = re.sub(r"<!--.*?-->", " ", text, flags=re.S)       # HTML
+    text = re.sub(r"/\*.*?\*/", " ", text, flags=re.S)        # JS block
+    return re.sub(r"^\s*//[^\n]*", " ", text, flags=re.M)     # JS line
 
 
 def test_the_viewer_page_exists():
@@ -70,6 +78,36 @@ def test_the_viewer_reads_the_contract_it_claims_to():
     for spelling in NO_EVENT:
         token = '""' if spelling == "" else f'"{spelling}"'
         assert token in body, f"{spelling!r} means no-event in io.py but not here"
+
+
+def test_no_value_is_ever_concatenated_into_markup():
+    """The page renders text somebody else wrote — a region label out of
+    `regions.csv`, a recording name off a filename — and folders get shared the
+    way any file does. Both reached `innerHTML` by concatenation in the first
+    version, and a label containing an image tag with an onerror handler ran
+    its script. Proven, not theorised: `window.__pwned` came back `1`.
+
+    The rule that replaced it is not "escape it" but "never build markup from a
+    value": text goes into a node's `textContent`, which cannot become an
+    element however hostile the string. So every `innerHTML` assignment on the
+    page must be a literal, and there is nothing to escape.
+    """
+    script = _body().split("<script>", 1)[-1]
+    # mask string literals before splitting on `;`, because a literal here
+    # contains one ("…are not recordings;") and a naive split cuts it in half
+    masked = re.sub(r'"(?:[^"\\\n]|\\.)*"|\'(?:[^\'\\\n]|\\.)*\'|`(?:[^`\\]|\\.)*`',
+                    '""', script)
+
+    bad = []
+    for stmt in masked.split(";"):
+        if "innerHTML" not in stmt or "=" not in stmt:
+            continue
+        rhs = stmt.split("innerHTML", 1)[1].split("=", 1)[1]
+        if rhs.replace('""', "").strip(" \n+"):        # anything but literals
+            bad.append(" ".join(stmt.split())[:120])
+    assert not bad, (
+        "innerHTML built from a value rather than a literal — build a node and "
+        "set textContent instead:\n  " + "\n  ".join(bad))
 
 
 def test_the_index_links_the_viewer_and_says_where_the_files_go():
