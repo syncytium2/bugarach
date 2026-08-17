@@ -173,7 +173,8 @@ Template:
   simulation **parameterised from the lab's own recordings**. Do not quote the old verdict.
 
 ### Mac/learned-detector-report — the complete coordination report
-- **Status:** DONE 2026-08-17 — **claim released**, the folder is free
+- **Status:** DONE 2026-08-17 — **claim released**, the folder is free.
+  ⚠ Released once and then written to twice more (see the last bullet).
 - **Started:** 2026-08-17
 - **Writes:** `<darkroom>/bugarach/2026-08-17-coordination-report/` (NEW) — the report and
   its figures.
@@ -187,6 +188,18 @@ Template:
   `docs/reviews/coordination_report_2026-08-17.md` (11/11 roles, 2 rounds, one fabricated
   citation caught). Published with a `README.md` naming what to open, and the review record
   travels beside the report as `murderboard_record.md`.
+- **Session closed 2026-08-17.** Everything landed on `main`: PRs #60 (the report),
+  #61 (the darkroom index pointer) and #65 (Tony's four corrections). No `HANDOFF.md`
+  — nothing is in flight. Open follow-ups live where the briefing will surface them:
+  `docs/todo/2026-08-17-literature-deep-dive-handoff.md`, and the app README is now
+  linked from `docs/workflow_plan.md` so the next app session cannot miss it.
+- **⚠ The claim was released before the writing actually stopped — twice.** After
+  marking this block DONE I wrote to the claimed folder again (the corrected report,
+  the architecture figures, both handoffs) and to the parent index. Nothing collided,
+  because no other session was in there; that is luck, not protocol. The rule this
+  breaks is worth stating for whoever reads the board next: **a claim is released when
+  the writing stops, not when the first deliverable ships** — if more is coming,
+  the block stays ACTIVE.
 - **One write outside the claim, recorded rather than tidied away:** the report was hard to
   find three levels down, so `<darkroom>/bugarach/README.md` — the parent index, which this
   block had explicitly *excluded* — gained a "start here" pointer and a table of the dated
