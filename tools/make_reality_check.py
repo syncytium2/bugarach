@@ -227,7 +227,7 @@ def main(argv=None):
     p.add_argument("--no-png", dest="png", action="store_false", default=True)
     args = p.parse_args(argv)
 
-    from bugarach.paths import ENV_VAR, darkroom
+    from bugarach.paths import darkroom, unresolved_message
 
     if args.out:
         dest = Path(args.out).expanduser()
@@ -235,8 +235,7 @@ def main(argv=None):
     else:
         dest = darkroom(create=True)
         if dest is None:
-            print(f"{ENV_VAR} is not set and --out was not given — writing "
-                  "nothing rather than guessing.", file=sys.stderr)
+            print(unresolved_message(), file=sys.stderr)
             return 2
 
     import panel as pn
