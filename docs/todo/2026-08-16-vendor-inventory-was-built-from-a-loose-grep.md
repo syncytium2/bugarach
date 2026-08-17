@@ -104,13 +104,20 @@ would look like if the answer were absent — and whether you could tell.
   session-to-session handoff — the interface2 session was right to decline, and its
   reason generalizes.
 
-## Related, and unresolved
+## Related — resolved 2026-08-17
 
-The cross-session message gate written this session
-(`~/.claude/hooks/require-commit-before-message.sh`, wired from user settings) is
-**not in any repository**. It enforces durability and is not itself durable — lose
-that directory and it disappears silently, since a missing hook command fails open.
-Where it should live is open: vendored per repo, or one tracked copy referenced by
-absolute path. See
+The cross-session message gate is now **canonical in murderboard and vendored here**
+like everything else in that family: `.claude/hooks/require-commit-before-message.sh`,
+stamped, wired from *project* settings, and listed in the freshness tool's governed
+files so its stamp is actually read. The untracked copy under `~/.claude/` and its
+user-level wiring are gone, so it cannot double-fire and cannot silently cover for a
+repo that has not adopted it.
+
+**Adoption is now per-repo, and that is the visible consequence of vendoring.** A
+repo without the hook has no gate — which is honest, where a global hook would have
+hidden the gap. Other repos adopt by vendoring the file and adding the `PreToolUse`
+entry, the same way they adopt the rest of the family.
+
+Still unresolved elsewhere. See
 [`2026-08-16-dt-does-not-travel-with-the-recording.md`](2026-08-16-dt-does-not-travel-with-the-recording.md)
 for the same shape of problem in the detectors.
