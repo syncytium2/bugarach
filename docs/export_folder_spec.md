@@ -240,6 +240,38 @@ result can be reproduced from the folder alone.
 - **No lookup file is required to read the output.** Every column is self-describing
   from its header and its unit column.
 
+## Check it yourself
+
+```
+bugarach check my_export/
+```
+
+Exits 0 when the folder conforms and 1 when it does not, so it drops into a build.
+It reads the folder with **the same loader the analysis uses**, so a pass means the
+analysis will read what you meant — not that a second implementation agreed with
+the first.
+
+```
+export folder: my_export
+2 recording(s), 2 conforming
+
+  ok   20240708_13     3 ROI (1 with no events)     3 events  streams fast+slow  dt 0.05  windows baseline, TTX
+  ok   20240708_17     2 ROI (1 with no events)     1 events  streams events     dt 0.1   windows —
+       · no treatment windows — analysed as one whole-recording window
+```
+
+Two kinds of line, and the difference between them is the point:
+
+- **`!` is an error.** The folder cannot be read as written, and the message names
+  the file and the line — a label in the `region_idx` column, a time that is not a
+  time, a frame interval given as a frame *rate*.
+- **`·` is a note.** It read fine and may not be what you meant. Notes never fail
+  the check, because none of them is decidable from the folder alone. The one worth
+  reading every time is **"no ROI declared with no events"**: if every ROI in that
+  recording really did fire, ignore it — but if some were quiet, they are missing
+  from the population, every per-ROI figure computed from it is too high, and
+  nothing downstream can tell those two cases apart.
+
 ## The rules that make it universal
 
 1. **One folder in, one folder out.** No path outside it is ever read.

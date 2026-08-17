@@ -35,7 +35,19 @@ def main(argv: list[str] | None = None) -> None:
     view.add_argument("--port", type=int, default=5006)
     view.add_argument("--no-show", action="store_true",
                       help="don't open a browser tab")
+    chk = sub.add_parser(
+        "check", help="does an export folder conform to the import contract?")
+    chk.add_argument("folder", help="the export folder to check")
     args = ap.parse_args(argv)
+
+    if args.cmd == "check":
+        # deliberately importable without panel: a producer checking a folder
+        # should not need the viewer's dependencies installed
+        from bugarach.conform import check_folder, format_report
+
+        rep = check_folder(args.folder)
+        print(format_report(rep))
+        raise SystemExit(0 if rep.ok else 1)
 
     import panel as pn
 
