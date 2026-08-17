@@ -61,8 +61,12 @@ Template:
 ## Active
 
 ### Mac/lit-coordination-library — stock the reference library on coordination detection
-- **Status:** ACTIVE
+- **Status:** DONE 2026-08-17 — **claim released**, `lit/coordination/` is free
 - **Started:** 2026-08-17
+- **Done:** nine open-access full texts on the shelf with a `README.md` that marks read
+  status per paper — three read in full (Mölter, Navas-Olive, autoMEA), two part-read
+  (Cotterill, Stern), four downloaded and explicitly **not** read. Every PDF was verified
+  to open and to carry the expected title and authors on page 1.
 - **Writes:** `<darkroom>/bugarach/lit/coordination/` (NEW) — full texts of the papers the
   coordination-detection survey rests on, plus the `README.md` the parent folder's rule
   requires. One line touched outside: the subfolder table in `<darkroom>/bugarach/lit/README.md`,
