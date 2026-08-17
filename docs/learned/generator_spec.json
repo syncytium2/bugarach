@@ -1,0 +1,111 @@
+{
+ "generator": {
+  "bg_burst_bin_sec": [
+   300.0,
+   60.0
+  ],
+  "bg_burst_shape": [
+   1.547,
+   1.388
+  ],
+  "bg_rate_hz": 0.009705882352941177,
+  "bg_rate_shape": 0.275,
+  "distractor_frac": 0.18,
+  "distractor_window": [
+   120.0,
+   1100.0
+  ],
+  "duration_sec": 3165.0,
+  "grid_sec": 0.1,
+  "hot_rate_hz": 0.06,
+  "hot_window": [
+   1200.0,
+   1500.0
+  ],
+  "jitter_sec": 0.310912635102958,
+  "min_sep_sec": 171.42857142857144,
+  "n_distractors": 6,
+  "n_per_level": [
+   5,
+   5,
+   5
+  ],
+  "n_roi": 32,
+  "participation": [
+   0.225,
+   0.1406,
+   0.0844
+  ],
+  "ramp_sec": 30.0
+ },
+ "k_chosen": 3,
+ "k_scan": {
+  "3": {
+   "clusters_permin": 0.35,
+   "jit_null": 0.3346484461454732,
+   "jit_obs": 0.310912635102958,
+   "n_jit_defined": 66,
+   "n_slices": 85,
+   "part_n_obs": 4.5
+  },
+  "4": {
+   "clusters_permin": 0.09523809523809523,
+   "jit_null": 0.3463026575591597,
+   "jit_obs": 0.33938175854999164,
+   "n_jit_defined": 48,
+   "n_slices": 85,
+   "part_n_obs": 6.0
+  },
+  "6": {
+   "clusters_permin": 0.034482758620689655,
+   "jit_null": 0.38631307238077445,
+   "jit_obs": 0.2994439290863501,
+   "n_jit_defined": 30,
+   "n_slices": 85,
+   "part_n_obs": 8.0
+  },
+  "8": {
+   "clusters_permin": 0.0,
+   "jit_null": 0.4278524609054703,
+   "jit_obs": 0.25503232346979154,
+   "n_jit_defined": 8,
+   "n_slices": 85,
+   "part_n_obs": 12.0
+  }
+ },
+ "notes": [
+  "bg_rate_hz=0.009706 is the assessment's TOTAL per-ROI rate, which includes coordinated events; the generator treats it as background only, so the background is biased slightly high",
+  "participation centred on the measured 4.5 of 32 ROI (14.1%), spread 0.6-1.6x so a participant floor stays resolvable",
+  "jitter_sec=0.311 from the measured within-cluster onset SD (null 0.335, excess -0.0764)",
+  "duration_sec=3165 exceeds the 1200s window that was measured \u2014 the spacing floor needs the room",
+  "bg_rate_hz derived from the population event rate / ROI count: median 0.00971 Hz, IQR 0.00370-0.01847. The tree's own measured regime endpoints are 0.0038 and 0.0175, so this store independently reproduces the interquartile band the bench was built on. The MEDIAN ROI rate is not used: 38% of slices have a median ROI with no events in baseline",
+  "bg_rate_shape=0.275 and bg_burst_shape=(1.547, 1.388) at bins (300.0, 60.0) turn on the fitted per-ROI heterogeneity and burstiness. The bench's flat field is documented in the tree as easier than real data; leaving it flat would calibrate every detector for a recording nobody has",
+  "the promiscuity probe and the correlated-burst distractors are carried over from BENCH_RECORDING unchanged: they are deliberate negatives, not properties of the recordings, so the assessment has nothing to say about them and they must not be fitted away"
+ ],
+ "provenance": {
+  "n_slices_assessed": 85,
+  "n_surrogates": 1000,
+  "region_labels_seen": {
+   "baseline": 85,
+   "hi k": 6,
+   "high k": 3,
+   "high k+": 4,
+   "hik": 47,
+   "sb222200": 12,
+   "senktide": 36,
+   "ttx": 40,
+   "wash": 10
+  },
+  "regions": "baseline only",
+  "store": "event_store_onset_revised_2v_alive_rescued"
+ },
+ "roi_rate": {
+  "frac_slices_median_roi_silent": 0.3764705882352941,
+  "iqr": [
+   0.0036979166666666666,
+   0.018472222222222223
+  ],
+  "median": 0.009705882352941177
+ },
+ "sweep": {}
+}
