@@ -72,8 +72,13 @@ def test_the_viewer_reads_the_contract_it_claims_to():
         assert token in body, f"{spelling!r} means no-event in io.py but not here"
 
 
-def test_the_index_links_the_viewer():
-    from tools.build_site import INDEX
-
-    assert 'href="viewer.html"' in INDEX
-    assert "never leave your computer" in INDEX
+def test_the_index_links_the_viewer_and_says_where_the_files_go():
+    """Read the builder rather than import it: `tools/` is a directory of
+    scripts, not an installed package, so importing it passes locally (where
+    the repo root happens to be on sys.path) and fails in CI."""
+    build = (ROOT / "tools" / "build_site.py").read_text(encoding="utf-8")
+    assert 'href="viewer.html"' in build, "the index must link the viewer"
+    assert "never leave your computer" in build, (
+        "the index sends people to a page that reads their data; it has to say "
+        "where that data goes, on the page that sends them")
+    assert 'SITE / "viewer.html"' in build, "the build must publish the page"
