@@ -19,6 +19,8 @@ import warnings
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from bugarach.detectors.loco import region_windows
+from bugarach.detectors.rate import recording_extent
 from bugarach.io import NO_EVENT, RESERVED, load_folder
 
 
@@ -147,6 +149,23 @@ def check_folder(folder) -> FolderReport:
                     f"number of seconds")
         if not r.windows:
             r.notes.append("no treatment windows — analysed as one whole-recording window")
+        else:
+            # THE CHECK THAT WAS MISSING. Loading a folder is not the same as
+            # being able to analyse it: `region_windows` re-applies this
+            # project's windowing convention and HALTS on a baseline that does
+            # not start at 0 or a gap between regions. A folder that shipped
+            # pre-trimmed windows loads perfectly and then halts every
+            # detector — and this check passed it, so a green result was taken
+            # as evidence the folder was usable. It was not.
+            try:
+                region_windows(s, recording_extent(s)[1])
+            except ValueError as exc:
+                r.errors.append(
+                    f"loads, but no detector can run on it: {exc}. Windows must "
+                    f"be the RAW bounds — region 1 starting at 0 and each region "
+                    f"beginning where the last ended. bugarach re-applies its own "
+                    f"wash-in delay and caps, so pre-trimmed windows are rejected "
+                    f"rather than trimmed twice")
         if r.n_silent == 0:
             r.notes.append(
                 f"no ROI declared with no events. If every one of the {r.n_rois} "

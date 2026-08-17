@@ -115,11 +115,36 @@ Sending it would put two records of one quantity in the same file, which is exac
 what this contract avoids elsewhere by deriving the treatment index at write time
 instead of storing it. Send the bounds; let whoever is deciding decide.
 
-**Windows arrive already computed.** Whatever produced this folder decided where
-each period begins and ends — trimming, caps, wash-in delays, exclusions. bugarach
-uses the bounds as given and never adjusts them. That rule exists because the
-windowing rule in this ecosystem has been reimplemented five times and has drifted
-every time; there will not be a sixth implementation here.
+**⚠ Send the RAW bounds, not analysis windows.** `start_sec` and `end_sec` are when
+the period *began and ended* on the recording's clock: **region 1 starts at 0, and
+each region starts where the previous one ended.** No trimming, no caps, no wash-in
+delay, no gaps.
+
+**This paragraph said the opposite until 2026-08-17, and it cost a whole export.** It
+promised bugarach "uses the bounds as given and never adjusts them". It does not:
+`region_windows` in `src/bugarach/detectors/loco.py` re-applies this project's
+windowing convention — a backward cap on the baseline, a two-minute wash-in delay and
+a cap on each treatment — and it **halts** on a baseline that does not begin at 0 or a
+gap between regions, because in these stores either means a data defect.
+
+So a producer who did the trimming, exactly as this text asked, shipped a folder that
+loaded cleanly and then halted **83 of 85** recordings. That happened: interface2 read
+this paragraph, sent pre-trimmed windows, and every detector refused them. `bugarach
+check` now runs `region_windows` over every recording, so a folder that cannot be
+analysed fails at the door rather than at the first detector.
+
+The case for raw bounds is the one the old text made, pointing the other way: this
+windowing rule has been reimplemented five times in this ecosystem and drifted every
+time, so it is applied **once**, here, to bounds nobody has already adjusted. Two
+consumers handed the same raw folder compute the same windows; two consumers handed
+pre-trimmed folders get whatever each producer decided.
+
+**⚠ If your lab has no wash-in and no cap, that convention is applied anyway**, and it
+is not currently optional: a treatment window will start two minutes after your
+`start_sec` and end twenty minutes later. For this project that is correct and matches
+its own analysis. For anyone else it is an inherited assumption, and making it a
+parameter is open work —
+[`docs/todo/2026-08-17-windowing-convention-is-not-optional.md`](todo/2026-08-17-windowing-convention-is-not-optional.md).
 
 **How this handles any number of treatments.** It carries no notion of a treatment
 *slot*, so there is nothing to run out of. One region is a recording with no

@@ -122,3 +122,29 @@ def test_absent_tables_are_allowed_and_explained(tmp_path: Path):
 def test_not_a_folder(tmp_path: Path):
     rep = check_folder(tmp_path / "nope")
     assert not rep.ok and "not a folder" in format_report(rep)
+
+
+def test_pretrimmed_windows_fail_the_check_even_though_they_load(tmp_path: Path):
+    """The blind spot that cost an export. A folder whose regions are already
+    analysis windows — baseline capped backward off zero, a wash-in gap at each
+    boundary — parses perfectly and then halts every detector. Loading is not
+    the same as being analysable, and the check has to know the difference."""
+    d = _write(tmp_path / "e", s1=GOOD,
+               regions="slice_id,region_idx,label,start_sec,end_sec\n"
+                       "s1,1,baseline,60,1260\n"        # does not start at 0
+                       "s1,2,TTX,1380,2580\n")          # 2-minute wash-in gap
+    rep = check_folder(d)
+    assert not rep.ok, "a folder no detector can run on must not pass"
+    r, = rep.recordings
+    assert any("no detector can run on it" in e for e in r.errors)
+    assert any("RAW bounds" in e for e in r.errors), "say what to send instead"
+
+
+def test_raw_contiguous_windows_pass(tmp_path: Path):
+    """The same two periods, sent raw: region 1 at 0, region 2 where 1 ended."""
+    d = _write(tmp_path / "e", s1=GOOD,
+               regions="slice_id,region_idx,label,start_sec,end_sec\n"
+                       "s1,1,baseline,0,1260\n"
+                       "s1,2,TTX,1260,2580\n")
+    rep = check_folder(d)
+    assert rep.ok, [e for r in rep.recordings for e in r.errors] + rep.errors
