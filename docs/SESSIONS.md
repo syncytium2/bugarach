@@ -60,6 +60,20 @@ Template:
 
 ## Active
 
+### Mac/darkroom-serves-the-corrected-report — replace the withdrawn report in the darkroom
+- **Status:** ACTIVE
+- **Started:** 2026-08-17
+- **Writes:** `<darkroom>/bugarach/2026-08-16-learned-detectors/` — `report.html` and the
+  run artifacts beside it, plus the bake-off the corrected page now points at.
+- **Claims:** that one dated subfolder, exclusively, until this block says DONE. Nothing
+  else under `<darkroom>/bugarach/`, and nothing in `<darkroom>/constellation/`.
+- **Notes:** closing the last blocking item from the learned-detectors handoff. What is
+  there is `fa29612`, whose central conclusion the murderboard retracted: it lacks the
+  corrected framing the page on `main` carries ("third of seven; it wins one end of the
+  curve and loses the other") and carries no notice that a later bake-off replaced it.
+  **A second workstation comes online today** — if you are that session, this folder is
+  taken; use a different namespace or wait for DONE.
+
 ### Mac/learned-detectors-framework — murderboard, then the per-lab loop on live data
 - **Status:** DONE 2026-08-17 (session ended) — PR #52 still open, `HANDOFF.md` on the branch
 - **Started:** 2026-08-16
