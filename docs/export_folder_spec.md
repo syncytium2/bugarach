@@ -102,7 +102,7 @@ with `region_idx = 1` and **no label**. It is emitted as missing, never as
 `baseline` — an unlabelled recording is one nobody has told us about, and calling
 it a baseline manufactures a claim about a possibly-treated preparation.
 
-### `slices.csv` — **required**, for one column only
+### `slices.csv` — the sidecar
 
 One row per recording. Identity, carried through — plus the one field bugarach
 cannot work without.
@@ -110,20 +110,25 @@ cannot work without.
 | column | type | meaning |
 |---|---|---|
 | `slice_id` | text | the join key; must match `events.csv` |
-| `frame_interval_sec` | number | **required** — the acquisition sampling interval, the mean time between imaged frames |
+| `frame_interval_sec` | number | the acquisition sampling interval, the mean time between imaged frames |
 | *anything else* | text or number | **an open set** — `group_id`, `mouse_id`, `sex`, `age`, `cohort`, whatever the lab records |
 
-**`frame_interval_sec` is required and a folder without it is refused at load.**
-Three of the six detectors build their analysis grid from it, so a wrong or guessed
-value silently changes what they count. It is a property of the microscope, it
-cannot be recovered from onset times, and it can only be told to us.
+**The interval comes from the sidecar. If it is not there, the app asks for it at
+load, and will not proceed until it has one.** Three of the six detectors build
+their analysis grid from it, so a wrong or guessed value silently changes what they
+count. It is a property of the microscope, it cannot be recovered from onset times,
+and it can only be told to us.
 
-The refusal is deliberate and replaces a warning. A warning fires *after* the number
-exists — by then the trace is computed, the figure may be drawn and the file may be
-on disk, and anyone whose rig genuinely runs at the default learns to filter the
-warning away. Refusing at the door is the only version that cannot be read too late.
-There is no default, because a default here is a guess about somebody else's
-microscope.
+Asking is deliberate, and it replaces both a warning and a bare refusal. A warning
+fires *after* the number exists — by then the trace is computed, the figure may be
+drawn and the file may be on disk, and anyone whose rig genuinely runs at the
+default learns to filter the warning away. A bare refusal is honest but useless: it
+turns a lab away at the door over a number they know perfectly well. Asking is the
+version that is both a gate and a way through. **There is no default**, because a
+default here is a guess about somebody else's microscope.
+
+A caller with no interface — a script, a batch run — supplies the value the same way
+the prompt would, and gets the same refusal if it does not.
 
 Everything else in this file bugarach **passes through to its output unchanged and
 interprets not at all.** It does not know what a mouse is. Every column present
