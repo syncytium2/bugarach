@@ -76,6 +76,25 @@ rig-dependent. Internals may live on the sample grid; parameters should not. The
 interval is what makes the two interconvertible, which is the argument for requiring
 it rather than defaulting it.
 
+## One upstream fix would beat every option above, for the lab's own data
+
+The direction above makes the interval a property of the recording *inside
+bugarach*. For **foreign** data that is the whole answer — it carries no interval
+anywhere, so somebody has to state it. But for this lab's own recordings there is
+a better place to fix it than anywhere downstream.
+
+FOUNDATIONS §6 records that the onset stores **do not carry** the frame interval,
+and that this is filed in interface2's todo map. If they did, the number would
+arrive with the data: no default to warn about, no argument to thread, nothing to
+refuse at a door, and no coupling for `bench.py` to hand-maintain. Both producers
+close at once, because the generator already knows its own grid and the store
+would know its own.
+
+That is interface2's to decide, not bugarach's, and an interface2 session has been
+reading that tree. **Worth asking before building either option above** — the
+cheaper fix may already be someone else's one-line schema change, and the
+downstream work is only unavoidable for data that comes from outside the lab.
+
 ## Provenance
 
 Found by cross-session conversation on 2026-08-16 between the workflow-plan session
