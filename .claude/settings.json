@@ -31,6 +31,19 @@
           }
         ]
       }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "SendMessage",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/require-commit-before-message.sh",
+            "timeout": 10,
+            "statusMessage": "Checking the work is committed before messaging…"
+          }
+        ]
+      }
     ]
   }
 }
