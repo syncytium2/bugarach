@@ -104,11 +104,14 @@ item on exactly this: `docs/todo/2026-08-16-assessment-needs-a-human-in-the-loop
   on the edge of the searched grid. Its number is not an operating point. Why it fails
   is unresolved — it also trains at a tenth the learning rate of the model that works,
   so the architecture comparison is uncontrolled.
-- **The four-scale kernel bank collapsed to one scale** in the fit (4.0–6.6 samples
-  from initialisations a doubling apart). The multi-scale design may not be earning its
-  parameters; one scale has not been tried.
-- **A fitted surround ratio sits within 10% of its clamp.** Widen and re-fit before
-  quoting surround widths.
+- **The four-scale kernel bank is redundant on this corpus — measured.** One kernel
+  scores 0.670 ± 0.043 against four at 0.668 ± 0.061 on the same folds, for 81 fewer
+  parameters, and transfers no better or worse. Ship one scale unless a corpus with
+  varying event widths says otherwise; that corpus does not exist yet.
+- **The surround clamp is a bookkeeping wart, not a cause — measured.** Raising it from
+  40 to 200 changes fold scores and the transfer penalty not at all; the ratio only
+  presses the ceiling when training on the busy background, which is the direction that
+  already works. Do not spend time on it.
 - **No literature method has been run on this corpus**, so "competes with
   state-of-the-art" is not a supported claim and must not appear in app copy. See
   `docs/todo/2026-08-17-literature-deep-dive-handoff.md`.
