@@ -60,13 +60,52 @@ Template:
 
 ## Active
 
+### Mac/import-contract+viewer — the import contract, its validator, and the public reader
+- **Status:** DONE 2026-08-17 (session ended)
+- **Started:** 2026-08-17
+- **Writes:** **the PUBLIC SITE** — deployed `bugarach.tonydefazio.com` three times today
+  (`npx wrangler deploy` from `main`; last version `9ea78b47`, and the live page now matches
+  `main`). Nothing written to the darkroom. Nothing written under `$BUGARACH_DATA_ROOT`.
+- **Claims:** released. While active this held the site deploy — coordinate before deploying,
+  since the last deploy wins and there is no per-page ownership.
+- **Reads (no claim needed, recorded so the next session knows):**
+  `<data>/exports/bugarach/2026-08-17_revised_2v` and `..._v2` — interface2's export folders,
+  written by their `generate_export_folder.m`. Read-only here.
+
+- **What landed (main):** the folder contract at revision 3, `bugarach check`, `bugarach view
+  --raster-only`, and a client-side raster viewer on the public site. PRs #70, #72, #73, #75,
+  #76, #77, #78. Closed as superseded: #68 (wrong contract shape), #51 (landed via #72).
+
+- **Notes another session must know:**
+  - **The windowing default is an open scientific decision**, filed at
+    `docs/todo/2026-08-17-windowing-convention-is-not-optional.md`. A folder with no
+    `analysis_*` columns gets this project's wash-in delay, caps, and the `"hi" in label`
+    substring exemption — which is why `histamine` would be spared and `elevated potassium`
+    trimmed. Three options are costed there. **Do not "fix" it by relaxing the guards in
+    `region_windows`:** they halt on real data defects, and that halt is what caught a bad
+    export instead of quietly scoring it.
+  - **`bugarach check` now runs `effective_region_windows`, and that is load-bearing.** Before
+    2026-08-17 it called `load_folder` and no detector, so a folder that halted 83 of 85
+    detectors and a good one were indistinguishable to it. Both teams cited the green result
+    as evidence. If you add a check, ask what it would fail on.
+  - **The viewer page reaches nothing, and that is tested.** `tests/test_site_viewer.py` fails
+    on any network primitive and on building markup from a value. It is not decoration: a
+    `regions.csv` label ran script on the deployed page on 2026-08-17 before the second rule
+    existed.
+  - **An analysis-window editor is version 2** (Tony, 2026-08-17). The contract carries
+    `analysis_start_sec`/`analysis_end_sec` and the detectors honour them; nothing edits them.
 ### Mac/sota-landscape — the landscape report, four upgrades, and the site's competitor links
 - **Status:** DONE 2026-08-17 — session ended, everything merged (PRs #69, #71, #74)
 - **Started:** 2026-08-17
 - **Writes:** repo, plus **two small writes to `<darkroom>/bugarach/lit/coordination/`**
   — see the honesty note below.
 - **Claims:** none held. Released.
-- **⚠ THE LIVE SITE IS NOW BEHIND `main`.** `tools/build_site.py` gained a
+- **✅ DEPLOYED 2026-08-17 by `Mac/import-contract+viewer`** (block above), so the warning
+  below is discharged: `landscape.html` and the competitor links are live, verified by
+  fetching them. Recorded rather than deleted, because the reason it was true is the
+  standing one — **nothing redeploys on merge**, and the next person to change
+  `build_site.py` inherits exactly this note.
+- **⚠ THE LIVE SITE WAS BEHIND `main` (resolved above).** `tools/build_site.py` gained a
   "Where this sits" section linking DOSED, cnn-ripple and CICADA, and it now publishes
   `landscape.html` into `site/`. **Nothing redeploys on merge** — someone must run
   `npm run deploy` (see `docs/deploy.md`; needs node + a wrangler login). Until then
