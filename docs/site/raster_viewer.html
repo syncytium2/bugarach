@@ -79,6 +79,8 @@
   .seg button[aria-pressed="true"] { background: var(--accent); color: #fff; }
   #meta { font-size: 13px; color: var(--muted); margin: 0 0 12px; }
   #meta b { color: var(--fg); font-weight: 600; }
+  #meta .sep { margin-left: 12px; }
+  #wins > span { display: inline-block; margin-right: 14px; }
   #wins { font-size: 12.5px; color: var(--muted); margin: 0 0 14px; }
   #wins span { display: inline-block; margin-right: 14px; }
   #wins i { font-style: normal; color: var(--fg); }
@@ -89,6 +91,24 @@
     padding: 10px 14px; margin: 10px 0; font-size: 13px;
   }
   .note { color: var(--muted); font-size: 12.5px; margin-top: 14px; max-width: 70ch; }
+  #checkbar { padding: 10px 16px; border-bottom: 1px solid var(--line); font-size: 12.5px; }
+  #checkbar button {
+    all: unset; cursor: pointer; color: var(--accent); text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+  .ok  { color: #2c7a4b; } :root:not([data-theme="light"]) .ok  { color: #6fbf8b; }
+  @media (prefers-color-scheme: dark) { .ok { color: #6fbf8b; } }
+  .bad { color: #b4433a; } @media (prefers-color-scheme: dark) { .bad { color: #e08078; } }
+  #panel {
+    border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px;
+    margin: 0 0 16px; background: var(--panel); font-size: 13px;
+  }
+  #panel h3 { margin: 0 0 8px; font-size: 13.5px; }
+  #panel ul { margin: 4px 0 10px; padding-left: 2px; }
+  #panel li { margin: 3px 0; line-height: 1.45; }
+  #panel .k { display: inline-block; width: 1.2em; font-weight: 700; }
+  #panel .who { font-weight: 600; }
+  #reopen { margin-top: 6px; }
   code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px; }
 </style>
 
@@ -108,10 +128,12 @@
     <div class="pick">
       <button id="pickDir">Choose folder…</button>
       <button id="pickFiles" class="ghost">or choose CSV files…</button>
+      <button id="reopen" class="ghost" hidden></button>
       <input id="dir" type="file" webkitdirectory directory multiple hidden>
       <input id="files" type="file" accept=".csv" multiple hidden>
       <div class="hint">Nothing is uploaded. Reading happens in this tab.</div>
     </div>
+    <div id="checkbar" hidden></div>
     <ul id="list"></ul>
   </div>
 
@@ -126,6 +148,7 @@
       and produced no event. Those ROIs are counted here, not dropped — they are
       the denominator of every per-ROI rate.</p>
     </div>
+    <div id="panel" hidden></div>
     <div id="view" hidden>
       <p id="meta"></p>
       <div id="bar">
@@ -192,6 +215,18 @@ const readText = file => new Promise((res, rej) => {
   fr.onerror = () => rej(new Error("could not read " + file.name));
   fr.readAsText(file);
 });
+
+/* Nothing read from a file is ever concatenated into markup. These build the
+   node instead, so a region label of `<img src=x onerror=…>` is a label that
+   reads oddly rather than a script that runs — which it did, once, before the
+   page was written this way. `innerHTML` is left for literals only. */
+function el(tag, text, cls) {
+  const n = document.createElement(tag);
+  n.textContent = text;
+  if (cls) n.className = cls;
+  return n;
+}
+const sep = text => el("span", text, "sep");
 
 /* ---------- ROI order: 2 before 10, like a lab numbers them --------------- */
 function natural(a, b) {
@@ -391,17 +426,35 @@ async function show(rec) {
   const mins = (data.t1 - data.t0) / 60;
   const m = META.get(rec.id) || {};
   const dt = m.frame_interval_sec;
-  document.getElementById("meta").innerHTML =
-    "<b>" + rec.id + "</b> &nbsp; " + data.nRois + " ROI"
-    + (data.quiet ? " (" + data.quiet + " with no events)" : "")
-    + " &nbsp; " + data.nEvents.toLocaleString() + " events"
-    + " &nbsp; " + mins.toFixed(1) + " min"
-    + (dt ? " &nbsp; dt " + dt + " s" : "");
+  // rec.id is a FILENAME and w.label below is a cell out of regions.csv —
+  // both are text somebody else wrote, and a folder gets shared like any file.
+  // So neither is concatenated into markup: these are nodes with textContent,
+  // which cannot be anything but text however hostile the value is.
+  const meta = document.getElementById("meta");
+  meta.textContent = "";
+  meta.append(el("b", rec.id),
+              sep(data.nRois + " ROI"
+                  + (data.quiet ? " (" + data.quiet + " with no events)" : "")),
+              sep(data.nEvents.toLocaleString() + " events"),
+              sep(mins.toFixed(1) + " min"));
+  // never append " s" to a value that is not seconds — the folder check
+  // rejects it, and printing "dt 30fps s" would dress it up as valid
+  if (dt !== undefined)
+    meta.append(Number(dt) > 0 ? sep("dt " + dt + " s")
+                               : el("span", "dt " + dt + " — not seconds", "bad sep"));
+
   const wins = REGIONS.get(rec.id) || [];
-  document.getElementById("wins").innerHTML = wins.length
-    ? wins.map(w => "<span><i>" + w.label + "</i> "
-        + (w.start / 60).toFixed(0) + "–" + (w.end / 60).toFixed(0) + "m</span>").join("")
-    : "<span>no treatment windows declared — shown as one recording</span>";
+  const winbox = document.getElementById("wins");
+  winbox.textContent = "";
+  if (!wins.length)
+    winbox.append(el("span", "no treatment windows declared — shown as one recording"));
+  for (const w of wins) {
+    const s = document.createElement("span");
+    s.append(el("i", w.label),
+             document.createTextNode(" " + (w.start / 60).toFixed(0) + "–"
+                                     + (w.end / 60).toFixed(0) + "m"));
+    winbox.append(s);
+  }
   if (!data.quiet)
     note.textContent = "No ROI in this recording is declared with no events. "
       + "If all " + data.nRois + " fired, that is right; if some were quiet and "
@@ -413,6 +466,108 @@ async function show(rec) {
       + "does not, because it only draws what it was given.";
   paintOrderNote(data);
   draw(rec, data);
+}
+
+/* ---------- conformance: the same report `bugarach check` prints, in the
+   browser, for the people who will never install Python. Two tiers, and the
+   difference is the point: an ERROR means the folder cannot be read as
+   written; a NOTE means it read fine and may not be what you meant. Notes
+   never fail, because none of them is decidable from the folder alone. ----- */
+async function checkFolder() {
+  const errors = [], notes = [];
+  let okCount = 0;
+
+  for (const rec of RECORDINGS) {
+    try {
+      const d = await loadRecording(rec);
+      okCount++;
+      if (!d.quiet)
+        notes.push([rec.id, "no ROI declared with no events — right if all "
+          + d.nRois + " fired; if some were quiet and were left out, they are "
+          + "missing from the population and every per-ROI figure is too high"]);
+      const dt = (META.get(rec.id) || {}).frame_interval_sec;
+      if (dt === undefined)
+        notes.push([rec.id, "no frame interval — detectors need one, this page does not"]);
+      else if (!(Number(dt) > 0))
+        errors.push([rec.id, "frame_interval_sec is \"" + dt + "\", which is not "
+          + "a positive number of seconds (a frame RATE is the usual slip)"]);
+      if (!(REGIONS.get(rec.id) || []).length)
+        notes.push([rec.id, "no treatment windows — analysed as one whole recording"]);
+    } catch (e) {
+      errors.push([rec.id, e.message]);
+    }
+    await new Promise(r => setTimeout(r, 0));   // keep the page answering
+  }
+
+  // a table that names a recording the folder does not hold is fine; one that
+  // MISSES a recording the folder does hold is almost always a typo
+  const ids = new Set(RECORDINGS.map(r => r.id));
+  for (const [name, table] of [["regions.csv", REGIONS], ["slices.csv", META]]) {
+    if (!table.size) continue;
+    const missed = [...ids].filter(id => !table.has(id));
+    if (missed.length)
+      notes.push([null, name + " has no row for " + missed.length + " of "
+        + ids.size + " recording(s) (" + missed.slice(0, 4).join(", ")
+        + (missed.length > 4 ? " …" : "") + ") — check the slice_id spelling "
+        + "against the file names"]);
+  }
+  return { okCount, total: RECORDINGS.length, errors, notes };
+}
+
+function paintCheck(rep) {
+  const bar = document.getElementById("checkbar");
+  const panel = document.getElementById("panel");
+  bar.hidden = false;
+  const good = rep.errors.length === 0;
+  bar.innerHTML = "";
+  const span = document.createElement("span");
+  span.className = good ? "ok" : "bad";
+  span.textContent = good
+    ? "✓ " + rep.okCount + " of " + rep.total + " conforming"
+    : "✕ " + rep.errors.length + " problem" + (rep.errors.length > 1 ? "s" : "");
+  bar.appendChild(span);
+  bar.appendChild(document.createTextNode(" "));
+  const btn = document.createElement("button");
+  const n = rep.errors.length + rep.notes.length;
+  btn.textContent = n ? "details (" + n + ")" : "details";
+  btn.onclick = () => { panel.hidden = !panel.hidden; };
+  bar.appendChild(btn);
+
+  panel.innerHTML = "";
+  const h = document.createElement("h3");
+  h.textContent = "Folder check";
+  panel.appendChild(h);
+  for (const [title, rows, mark, cls] of
+       [["Cannot be read as written", rep.errors, "!", "bad"],
+        ["Read fine — may not be what you meant", rep.notes, "·", ""]]) {
+    if (!rows.length) continue;
+    const t = document.createElement("p");
+    const strong = document.createElement("b");
+    strong.textContent = title;
+    t.appendChild(strong);
+    t.style.margin = "8px 0 2px";
+    panel.appendChild(t);
+    const ul = document.createElement("ul");
+    for (const [who, msg] of rows) {
+      const li = document.createElement("li");
+      const k = document.createElement("span");
+      k.className = "k " + cls; k.textContent = mark;
+      li.appendChild(k);
+      if (who) { const w = document.createElement("span");
+                 w.className = "who"; w.textContent = who + " — ";
+                 li.appendChild(w); }
+      li.appendChild(document.createTextNode(msg));
+      ul.appendChild(li);
+    }
+    panel.appendChild(ul);
+  }
+  if (!rep.errors.length && !rep.notes.length) {
+    const p = document.createElement("p");
+    p.textContent = "Nothing to report: every recording read, every ROI "
+      + "population declared, every recording covered by both tables.";
+    panel.appendChild(p);
+  }
+  panel.hidden = rep.errors.length === 0;   // problems open themselves
 }
 
 function paintOrderNote(data) {
@@ -431,6 +586,8 @@ async function open(fileList) {
   const files = [...fileList].filter(f => f.name.toLowerCase().endsWith(".csv"));
   const stage = document.getElementById("stage");
   RECORDINGS = []; REGIONS = new Map(); META = new Map();
+  document.getElementById("panel").hidden = true;
+  document.getElementById("checkbar").hidden = true;
 
   for (const f of files) {
     if (f.name === "regions.csv") {
@@ -474,8 +631,74 @@ async function open(fileList) {
     b.onclick = () => show(rec);
     li.appendChild(b); list.appendChild(li);
   }
-  show(RECORDINGS[0]);
+  await show(RECORDINGS[0]);
+  // the first raster goes up before the folder is checked: seeing something is
+  // the point of opening it, and the check walks every file
+  document.getElementById("checkbar").hidden = false;
+  document.getElementById("checkbar").textContent =
+    "checking " + RECORDINGS.length + " recording(s)…";
+  paintCheck(await checkFolder());
 }
+
+/* ---------- remember the folder, not the data --------------------------------
+   A FileSystemDirectoryHandle is a permission to read a place, not the bytes in
+   it, and IndexedDB is local storage in this browser. So this remembers WHERE
+   you pointed the page and never what it found — the recordings are re-read
+   from your disk each visit and are still never sent anywhere.
+
+   The browser will not let a page silently re-open a folder across visits, and
+   that is the right rule: reopening needs a click. Chrome and Edge have the
+   API; Safari and Firefox do not, and there the picker below is the whole
+   story, which is why it stays. ------------------------------------------- */
+const IDB = "bugarach", STORE = "handles", KEY = "lastDir";
+
+function idb(mode, fn) {
+  return new Promise((res, rej) => {
+    const req = indexedDB.open(IDB, 1);
+    req.onupgradeneeded = () => req.result.createObjectStore(STORE);
+    req.onerror = () => rej(req.error);
+    req.onsuccess = () => {
+      const db = req.result;
+      const tx = db.transaction(STORE, mode);
+      const out = fn(tx.objectStore(STORE));
+      tx.oncomplete = () => { db.close(); res(out && out.result); };
+      tx.onerror = () => { db.close(); rej(tx.error); };
+    };
+  });
+}
+const rememberDir = h => idb("readwrite", s => s.put(h, KEY)).catch(() => {});
+const recallDir = () => idb("readonly", s => s.get(KEY)).catch(() => null);
+
+async function filesFromHandle(dirHandle) {
+  const out = [];
+  for await (const [name, h] of dirHandle.entries())
+    if (h.kind === "file" && name.toLowerCase().endsWith(".csv"))
+      out.push(await h.getFile());
+  return out;
+}
+
+async function openHandle(dirHandle, {ask = true} = {}) {
+  const opts = { mode: "read" };
+  let perm = await dirHandle.queryPermission(opts);
+  if (perm !== "granted" && ask) perm = await dirHandle.requestPermission(opts);
+  if (perm !== "granted") return false;
+  await open(await filesFromHandle(dirHandle));
+  return true;
+}
+
+async function offerLastFolder() {
+  if (!window.showDirectoryPicker) return;         // not this browser
+  const h = await recallDir();
+  if (!h) return;
+  const b = document.getElementById("reopen");
+  b.hidden = false;
+  b.textContent = "Reopen “" + h.name + "”";
+  b.onclick = async () => {
+    // re-reads from disk; the handle stored nothing but the location
+    if (!await openHandle(h)) b.textContent = "Permission declined — choose folder…";
+  };
+}
+offerLastFolder();
 
 document.querySelectorAll(".seg button").forEach(b => {
   b.onclick = () => {
@@ -487,7 +710,31 @@ document.querySelectorAll(".seg button").forEach(b => {
   };
 });
 
-document.getElementById("pickDir").onclick = () => document.getElementById("dir").click();
+document.getElementById("pickDir").onclick = async () => {
+  // the modern picker gives a handle we can offer back next visit; without it
+  // the input below does the same job for this visit only
+  if (window.showDirectoryPicker) {
+    let h;
+    try {
+      h = await window.showDirectoryPicker({ mode: "read" });
+    } catch (e) {
+      // AbortError is the user closing the dialog — nothing to do, and saying
+      // something would be noise. Anything else means the API is present but
+      // unusable here (an embedded frame, a blocking permissions policy), and
+      // silently doing nothing would read as a broken button
+      if (e && e.name === "AbortError") return;
+      document.getElementById("dir").click();
+      return;
+    }
+    await rememberDir(h);
+    await openHandle(h, { ask: false });
+    const b = document.getElementById("reopen");
+    b.hidden = false; b.textContent = "Reopen “" + h.name + "”";
+    b.onclick = () => openHandle(h);
+    return;
+  }
+  document.getElementById("dir").click();
+};
 document.getElementById("pickFiles").onclick = () => document.getElementById("files").click();
 document.getElementById("dir").onchange = e => open(e.target.files);
 document.getElementById("files").onchange = e => open(e.target.files);
