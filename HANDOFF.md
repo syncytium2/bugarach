@@ -1,7 +1,12 @@
 # HANDOFF — learned detectors: the loop runs, the report page does not describe it
 
 Branch `learned-detectors-framework`, PR #52. Everything is committed and pushed.
-Delete this file when the two ⚠ BLOCKING items below are closed.
+Delete this file when the ⚠ BLOCKING item below is closed.
+
+**Closed 2026-08-17:** the report page now carries a superseding banner as its first
+element, in both themes, and every number in that banner resolves from
+`bakeoff.json` at build time rather than being transcribed into the prose. One
+blocking item left, and it is the darkroom copy.
 
 ⚠ **This handoff has not been through the murderboard.** `CLAUDE.md` asks for one on
 a human-facing handoff and there was no session left to run it. Treat its claims as
@@ -28,12 +33,14 @@ fourth. On that footing the learned model **ties** the best hand-written detecto
    machines: **claim it on `docs/SESSIONS.md` before writing.** (An earlier note of
    mine on that board said the copy was never made; that was wrong and is corrected
    in place.)
-2. **`docs/learned/report.html` predates the bake-off.** It describes the old
-   synthetic bench, not the corpus derived from real recordings, and its numbers
-   come from a different generator configuration (flat background). Nothing in it is
-   *false* as written — it is scoped to the old bench — but a reader will take it for
-   the current result. Either fold `docs/learned/bakeoff.md` into it or mark it
-   superseded.
+2. ~~**`docs/learned/report.html` predates the bake-off.**~~ **Done 2026-08-17** —
+   marked superseded rather than folded together, because the page is a usable record
+   of the earlier bench and the bake-off is a different comparison, not a revision of
+   this one. The banner names what changed (real-measured corpus, heterogeneous
+   background, fitted-and-held-out scoring), says the learned model *ties*, and says
+   which parts of the page still stand: the participant floor, the architecture story
+   and the failure modes. `bakeoff.json` is now a build-time store (`{{N:b:...}}`) so
+   the notice cannot drift from the result it points at.
 
 ## What is new and working
 

@@ -25,7 +25,14 @@ HERE = Path(__file__).resolve().parent.parent / "docs" / "learned"
 SRC = HERE / "report.src.html"
 OUT = HERE / "report.html"
 ARCH = HERE / "architecture.svg"
-DATA = {"r": HERE / "learned_results.json", "s": HERE / "regime_shift.json"}
+DATA = {
+    "r": HERE / "learned_results.json",
+    "s": HERE / "regime_shift.json",
+    # The bake-off that superseded this page. The banner quotes it, and a
+    # superseding notice carrying its own stale transcription of the newer
+    # result would be the exact failure this substitution exists to stop.
+    "b": HERE / "bakeoff.json",
+}
 
 
 def _lookup(store: dict, path: str):
@@ -91,7 +98,7 @@ def main() -> int:
             return "?"
         return format(v, fmt) if fmt else str(v)
 
-    html = re.sub(r"\{\{N:([rs]):([A-Za-z0-9_.\-]+)(?:\|([^}]+))?\}\}", num, html)
+    html = re.sub(r"\{\{N:([rsb]):([A-Za-z0-9_.\-]+)(?:\|([^}]+))?\}\}", num, html)
     if bad:
         print("UNRESOLVED DATA PATHS: " + ", ".join(bad), file=sys.stderr)
         return 1
