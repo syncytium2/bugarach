@@ -122,3 +122,79 @@ def test_absent_tables_are_allowed_and_explained(tmp_path: Path):
 def test_not_a_folder(tmp_path: Path):
     rep = check_folder(tmp_path / "nope")
     assert not rep.ok and "not a folder" in format_report(rep)
+
+
+def test_pretrimmed_windows_fail_the_check_even_though_they_load(tmp_path: Path):
+    """The blind spot that cost an export. A folder whose regions are already
+    analysis windows — baseline capped backward off zero, a wash-in gap at each
+    boundary — parses perfectly and then halts every detector. Loading is not
+    the same as being analysable, and the check has to know the difference."""
+    d = _write(tmp_path / "e", s1=GOOD,
+               regions="slice_id,region_idx,label,start_sec,end_sec\n"
+                       "s1,1,baseline,60,1260\n"        # does not start at 0
+                       "s1,2,TTX,1380,2580\n")          # 2-minute wash-in gap
+    rep = check_folder(d)
+    assert not rep.ok, "a folder no detector can run on must not pass"
+    r, = rep.recordings
+    joined = " ".join(r.errors)
+    assert "no detector can run on it" in joined
+    # both ways out are offered, because either is a valid fix and the producer
+    # knows which one their pipeline can actually do
+    assert "RAW period" in joined, "say what to send instead"
+    assert "analysis_start_sec" in joined, "offer the analysis-window column too"
+
+
+def test_supplied_analysis_windows_are_used_as_given(tmp_path: Path):
+    """Raw bounds plus the producer's own windows: their windows get scored, and
+    the wash-in delay and cap this project would have applied do not appear."""
+    from bugarach.detectors.loco import effective_region_windows
+    from bugarach.detectors.rate import recording_extent
+    from bugarach.io import load_folder
+
+    d = _write(tmp_path / "e", s1=GOOD,
+               regions="slice_id,region_idx,label,start_sec,end_sec,"
+                       "analysis_start_sec,analysis_end_sec\n"
+                       "s1,1,baseline,0,1260,60,1260\n"      # window not at 0
+                       "s1,2,TTX,1260,2580,1380,2400\n")     # their delay + cap
+    rep = check_folder(d)
+    assert rep.ok, [e for r in rep.recordings for e in r.errors] + rep.errors
+    r, = rep.recordings
+    assert any("scored as given" in n for n in r.notes)
+
+    s, = load_folder(d)
+    rw = effective_region_windows(s, recording_extent(s))
+    assert [(w.win_start, w.win_end) for w in rw] == [(60.0, 1260.0), (1380.0, 2400.0)]
+    # the raw period travels alongside, so how much was trimmed stays visible
+    assert [(w.raw_start, w.raw_end) for w in rw] == [(0.0, 1260.0), (1260.0, 2580.0)]
+
+
+def test_half_a_slice_of_analysis_windows_is_refused(tmp_path: Path):
+    """Two policies inside one number is worse than either one alone."""
+    d = _write(tmp_path / "e", s1=GOOD,
+               regions="slice_id,region_idx,label,start_sec,end_sec,"
+                       "analysis_start_sec,analysis_end_sec\n"
+                       "s1,1,baseline,0,1260,60,1260\n"
+                       "s1,2,TTX,1260,2580,,\n")
+    rep = check_folder(d)
+    assert not rep.ok
+    assert any("two policies" in e for r in rep.recordings for e in r.errors)
+
+
+def test_one_bound_of_an_analysis_window_is_refused(tmp_path: Path):
+    d = _write(tmp_path / "e", s1=GOOD,
+               regions="slice_id,region_idx,label,start_sec,end_sec,"
+                       "analysis_start_sec,analysis_end_sec\n"
+                       "s1,1,baseline,0,1260,60,\n")
+    rep = check_folder(d)
+    assert not rep.ok
+    assert any("given together" in e for e in rep.errors)
+
+
+def test_raw_contiguous_windows_pass(tmp_path: Path):
+    """The same two periods, sent raw: region 1 at 0, region 2 where 1 ended."""
+    d = _write(tmp_path / "e", s1=GOOD,
+               regions="slice_id,region_idx,label,start_sec,end_sec\n"
+                       "s1,1,baseline,0,1260\n"
+                       "s1,2,TTX,1260,2580\n")
+    rep = check_folder(d)
+    assert rep.ok, [e for r in rep.recordings for e in r.errors] + rep.errors
