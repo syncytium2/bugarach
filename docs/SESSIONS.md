@@ -60,6 +60,32 @@ Template:
 
 ## Active
 
+### Mac/lit-coordination-library — stock the reference library on coordination detection
+- **Status:** ACTIVE
+- **Started:** 2026-08-17
+- **Writes:** `<darkroom>/bugarach/lit/coordination/` (NEW) — full texts of the papers the
+  coordination-detection survey rests on, plus the `README.md` the parent folder's rule
+  requires. One line touched outside: the subfolder table in `<darkroom>/bugarach/lit/README.md`,
+  which exists to be appended to.
+- **Claims:** `lit/coordination/` exclusively. Nothing else under `<darkroom>/bugarach/` —
+  in particular not the dated report folders — and nothing in `<darkroom>/constellation/`.
+- **Notes:** Closing the gap `docs/todo/2026-08-17-literature-deep-dive-handoff.md` names:
+  the report's section-3 novelty claim was four searches deep with **no paper read in full**.
+
+  **The bot check that stopped the shallow pass is routable.** Europe PMC's REST API —
+  `https://www.ebi.ac.uk/europepmc/webservices/rest/<PMCID>/fullTextXML` — serves open-access
+  full text with no gate, and its `search?query=DOI:"..."` endpoint resolves a DOI to a PMCID.
+  Publisher pages and PMC's own HTML still bounce. Anyone doing literature work here should
+  start at the API, not the web page; it turned a blocked task into an afternoon.
+
+  ⚠ **The survey moved the novelty claim and the report has not caught up yet.**
+  Navas-Olive et al., *eLife* 11:e77772 (2022) trains a CNN whose output is a per-window
+  probability of a **population event** (hippocampal sharp-wave ripple), thresholded to event
+  times and scored by precision/recall/F1 against ground truth — the same shape as `tube`, in
+  LFP rather than calcium. Section 3 currently says no such work was found. What survives is
+  narrower: nobody does it from **per-cell calcium activity** against events planted in a
+  simulation **parameterised from the lab's own recordings**. Do not quote the old verdict.
+
 ### Mac/learned-detector-report — the complete coordination report
 - **Status:** DONE 2026-08-17 — **claim released**, the folder is free
 - **Started:** 2026-08-17
