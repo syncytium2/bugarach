@@ -28,9 +28,9 @@ with `if max_tau > 0.0: m = fmin(m, max_tau)`; 0.8.0 — the MRTS release, Octob
 Draft the issue text below; **Tony reviews before anything is posted**
 (external communication). After filing, add the issue URL here and flip status.
 
-**Before posting**: land this branch, then repoint the two repo links from `main`
-to the landed commit SHA. The pinned regression test they reference does not
-exist on `main` yet.
+**Before posting**: land this branch, then repoint all **three** repo links
+(fixture, `sync.py`, `test_sync_detect.py`) from `main` to the landed commit SHA.
+The pinned regression test they reference does not exist on `main` yet.
 
 ---
 
@@ -41,8 +41,9 @@ exist on `main` yet.
 ### Summary
 
 `spike_sync` returns the same number for `max_tau` of 1.0, 0.25 and 1e-6 on
-trains whose mean ISI is 10 s. A 1 µs coincidence window should report no
-coincidences at all; it reports SPIKE-Sync 0.33.
+trains whose mean ISI is 10 s. On those data a 1 µs coincidence window should
+report no coincidences at all; it reports SPIKE-Sync 0.33. On a real 30-train
+recording at a 0.25 s cap, the effect is a 4.5× overstatement of synchrony.
 
 The cause is in `get_tau`: `max_tau` is used only as the initial value for each
 of the four neighboring ISIs, and each is overwritten as soon as that neighbor
@@ -133,22 +134,18 @@ is correct.
 `cython_directionality.pyx` and `cython_distances.pyx`, so the affected public
 API is wider than SPIKE-Sync alone:
 
-- `spike_sync`, `spike_sync_profile` (bivariate and multivariate),
-  `spike_sync_matrix`, `filter_by_spike_sync`
+- `spike_sync`, `spike_sync_multi`, `spike_sync_profile` (bivariate and
+  multivariate), `spike_sync_matrix`, `filter_by_spike_sync`
 - `spike_directionality`, `spike_directionality_matrix`,
   `spike_directionality_values`
 - `spike_train_order`, `spike_train_order_bi`, `spike_train_order_multi`, and
   the three corresponding `..._profile` functions
+- `optimal_spike_train_sorting`
 
 On the same two trains as above, `spike_directionality` returns `-0.016667`
-uncapped and `0.0` for `max_tau` of 1.0, 0.25 and 1e-6 alike.
-
-### Versions
-
-PySpike 0.9.0 (pip, compiled Cython backend), NumPy 2.5.2, Python 3.14.5, macOS.
-The pure-Python backend gives the same results; I checked that the two
-`Interpolate` implementations agree on 200k random triples, so this is not a
-build artifact.
+uncapped and `0.0` for `max_tau` of 1.0, 0.25 and 1e-6 alike. On three such
+trains, `optimal_spike_train_sorting` returns a different permutation uncapped
+than it does for any finite cap.
 
 ### Diagnosis
 
@@ -208,17 +205,34 @@ if max_tau > 0.0:
 
 ### Expected behavior
 
-To be clear about provenance: the published measure is deliberately parameter-
-free — Eq. 19 of [3] defines the coincidence window as the minimum of the four
-surrounding half-ISIs with no upper bound, and [4] adds MRTS as a *lower* bound
-on the relevant time scale. `max_tau` is PySpike's own addition on top of that
-definition, so what it should do is set by PySpike's own docstring and by its
-implementation through 0.7.0. Both say the same thing:
+```
+window = min(ISI before a, ISI after a, ISI before b, ISI after b) / 2   # 0.9.0
+window = min(the above, max_tau)                                        # expected
+```
 
+To be clear about provenance, since the published measure is deliberately
+parameter-free: Eq. 19 of Kreuz, Mulansky & Bozanic (*SPIKY*, J Neurophysiol
+113:3432, 2015) defines the coincidence window as the minimum of the four
+surrounding half-ISIs with no upper bound, and Satuvuori et al. (J Neurosci
+Methods 287:25, 2017) add MRTS as a *lower* bound. The cap is not in either
+paper.
+
+It is in all three implementations. cSPIKE, the reference implementation from
+Kreuz's group, takes the same parameter under the name `max_dist` — a documented
+argument of `SPIKEsynchro` and `AdaptiveSPIKEsynchro`, defaulting to 10^12 — and
+applies it in `AdaptiveCoincidence` as a second condition on top of the adaptive
+window:
+
+```cpp
+if( std::abs(spiketime-closestSpike) < TAUij )
+{
+    if (((max_dist < 0) || (std::abs(spiketime-closestSpike) < max_dist)) && ...
 ```
-tau = min(mP1/2, mF1/2, mP2/2, mF2/2)            # 0.9.0 actual
-tau = min(mP1/2, mF1/2, mP2/2, mF2/2, max_tau)   # docstring, and 0.7.0
-```
+
+Requiring `|Δt| < TAUij` and `|Δt| < max_dist` is exactly requiring
+`|Δt| < min(TAUij, max_dist)`, so cSPIKE's semantics and the patch below agree.
+PySpike's own docstring promises the same bound, and PySpike implemented it
+through 0.7.0. Only 0.8.0 onward disagrees.
 
 ### Suggested fix
 
@@ -269,6 +283,7 @@ against a patched pure-Python backend:
 
 The uncapped case is untouched, finite caps become monotone in `max_tau`, and a
 1 µs window reaches 0 — the smallest cross-train gap in these data is 0.027 s.
+At `MRTS=0` this restores 0.7.0's semantics exactly.
 
 One design question I did not want to decide for you: with `MRTS > 0` this lets
 `max_tau` override the MRTS-raised window. That seems right for a hard cap, but
@@ -284,8 +299,8 @@ every cap we tested they diverge, and there our port matches cSPIKE to 1e-9.
 On a 30-train, 2670-event synthetic recording with a median ISI of 31 s
 ([the fixture is public](https://github.com/syncytium2/bugarach/blob/main/tests/fixtures/synth_fastcal_s1.mat)),
 comparing `pyspike.spike_sync(trains, max_tau=...)` against the mean of our
-port's per-spike coincidence values — the two agree bit-for-bit uncapped, which
-is what establishes they are the same estimator:
+port's per-spike coincidence values — on this recording the two agree bit-for-bit
+uncapped, which is what makes the capped rows comparable:
 
 | `max_tau` | PySpike 0.9.0 | our port (matches cSPIKE to 1e-9) |
 | --- | --- | --- |
@@ -299,6 +314,13 @@ The analysis and the cross-check test:
 [`sync.py`](https://github.com/syncytium2/bugarach/blob/main/src/bugarach/detectors/sync.py)
 and
 [`test_sync_detect.py`](https://github.com/syncytium2/bugarach/blob/main/tests/test_sync_detect.py).
+
+### Environment
+
+PySpike 0.9.0 (pip, compiled Cython backend), NumPy 2.5.2, Python 3.14.5, macOS.
+The pure-Python backend gives the same results; I checked that the two
+`Interpolate` implementations agree on 200k random triples, so this is not a
+build artifact.
 
 Happy to send the fix as a PR with a regression test if that is useful.
 
@@ -316,12 +338,17 @@ Happy to send the fix as a PR with a regression test if that is useful.
 - **The regression is from 0.8.0, not 0.9.0.** The first draft said 0.9.0 because
   that is the version we run. 0.7.0 has the cap and 0.8.0 does not, so the report
   now names the release that dropped it and the maintainer has a bisect boundary.
-- **The citation was re-attributed.** The draft cited Kreuz et al. 2015 for the
-  capped formula. That paper says the opposite — SPIKE-synchronization is
-  "parameter- and scale-free", and its Eq. 19 has no upper bound. The recipient is
-  a co-author of both cited papers, so the report now sources the cap where it
-  actually lives: PySpike's own docstring and its 0.7.0 implementation. This is
-  more honest and no less damning.
+- **The citation was re-attributed twice, and the first correction overshot.**
+  The original draft cited Kreuz et al. 2015 for the capped formula; that paper
+  says the opposite — SPIKE-synchronization is "parameter- and scale-free" and its
+  Eq. 19 has no upper bound — and the recipient co-authored it. The first fix
+  swung to "`max_tau` is PySpike's own addition", which is also false and which
+  this report's own cSPIKE-parity section contradicted. cSPIKE has the same
+  parameter as `max_dist` (`cSPIKE_mac/SpikeTrainSet.m:187` and its documented
+  API; applied in `cSPIKEmex/Spiketrains.cpp:453` as a second condition on top of
+  the adaptive window). The final version says what is actually true and is the
+  strongest of the three: absent from the papers, present in all three
+  implementations, dropped only in 0.8.0.
 - **Scope was understated.** `get_tau` has 14 call sites across three `.pyx`
   files, not the four SPIKE-Sync entry points originally listed; the
   directionality and spike-train-order APIs take `max_tau` too and are equally
@@ -344,5 +371,7 @@ Happy to send the fix as a PR with a regression test if that is useful.
 - **After filing**, the issue URL belongs in `docs/FOUNDATIONS.md` (the PySpike
   bullet at line 49), `README.md` (twice — lines 41 and 76), `tools/sapper.py`'s
   SAP003 message, and `src/bugarach/detectors/__init__.py`. All of them assert
-  the bug today with no upstream reference.
+  the bug today with no upstream reference — **and all five call it "PySpike
+  0.9.0's" bug, which this report now shows is wrong: it broke in 0.8.0.** Fix the
+  version in the same pass as the URL.
 - The repo links assume bugarach stays public at that path.
