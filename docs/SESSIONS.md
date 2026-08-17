@@ -60,6 +60,22 @@ Template:
 
 ## Active
 
+### Mac/learned-detector-report — the complete coordination report
+- **Status:** DONE 2026-08-17 — **claim released**, the folder is free
+- **Started:** 2026-08-17
+- **Writes:** `<darkroom>/bugarach/2026-08-17-coordination-report/` (NEW) — the report and
+  its figures.
+- **Claims:** that one dated subfolder, exclusively. Nothing else under
+  `<darkroom>/bugarach/`, and nothing in `<darkroom>/constellation/`.
+- **Notes:** pipeline diagram, both candidate architectures drawn from the code, a
+  literature survey, the bake-off against the six, and **a new measurement** — the regime
+  shift re-run on the fitted heterogeneous/bursty background instead of the flat bench, via
+  `tools/regime_shift.py --spec`. It reverses the architecture's own prediction: the learned
+  model transfers *worse* than CoactDetect and LoCo from quiet to busy. Murderboard record:
+  `docs/reviews/coordination_report_2026-08-17.md` (11/11 roles, 2 rounds, one fabricated
+  citation caught). Published with a `README.md` naming what to open, and the review record
+  travels beside the report as `murderboard_record.md`.
+
 ### Mac/darkroom-serves-the-corrected-report — replace the withdrawn report in the darkroom
 - **Status:** DONE 2026-08-17 — **claim released**, the folder is free
 - **Started:** 2026-08-17

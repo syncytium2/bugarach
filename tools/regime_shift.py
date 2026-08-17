@@ -75,19 +75,38 @@ def _score(tr, regime, make):
                             seeds=BENCH_SEEDS))
 
 
-def run() -> dict:
+def load_spec(path: Path) -> tuple[dict, dict]:
+    """The fitted generator settings, minus the one this test varies.
+
+    ``bg_rate_hz`` IS the difficulty axis here, so the spec's fitted value (the
+    median, 0.0097 Hz) is dropped and ``REGIMES`` supplies p25 and p75 instead.
+    Everything else the fit measured — the heterogeneous background shape, the
+    burst structure, participation, jitter — is carried, because the question is
+    whether a rate change breaks a detector on the background real recordings
+    actually have, not on a flat one.
+    """
+    doc = json.loads(path.read_text())
+    gen = {k: v for k, v in doc["generator"].items() if k != "bg_rate_hz"}
+    prov = {"spec": str(path), "k_chosen": doc.get("k_chosen"),
+            "provenance": doc.get("provenance"),
+            "dropped": {"bg_rate_hz": doc["generator"].get("bg_rate_hz")}}
+    return gen, prov
+
+
+def run(gen: dict | None = None) -> dict:
     from bugarach.bench import (DETECTORS, EdgeOfRange, OPERATING_POINTS,
                                 evaluate, make_recording, pick_operating_point,
                                 sweep)
     from bugarach.learn.train import train
 
     out: dict = {"learned": {}, "six": {}, "six_transfer": {}}
+    gen = gen or {}
 
     # The six at their shipped operating points, evaluated in each regime.
     for d in DETECTORS:
         out["six"][d] = {}
         for r in REGIMES:
-            out["six"][d][r] = _row(evaluate(d, r, seeds=BENCH_SEEDS))
+            out["six"][d][r] = _row(evaluate(d, r, seeds=BENCH_SEEDS, gen=gen))
 
     # --- the six under the SAME experiment the learned models get -------------
     # Evaluating a fixed detector twice is not a transfer test: a detector with
@@ -110,7 +129,7 @@ def run() -> dict:
         for train_on in REGIMES:
             try:
                 best = pick_operating_point(
-                    sweep(d, train_on, seeds=CALIBRATION_SEEDS))
+                    sweep(d, train_on, seeds=CALIBRATION_SEEDS, gen=gen))
             except EdgeOfRange as e:
                 out["six_transfer"][d][train_on] = {"edge_of_range": str(e)}
                 continue
@@ -120,13 +139,13 @@ def run() -> dict:
             for test_on in REGIMES:
                 # knob NOT re-picked on the target — the point of the test
                 cell[test_on] = _row(evaluate(d, test_on, seeds=BENCH_SEEDS,
-                                              **{knob: best.knob_value}))
+                                              gen=gen, **{knob: best.knob_value}))
             out["six_transfer"][d][train_on] = cell
 
     for name in ARCHES:
         out["learned"][name] = {}
         for train_on in REGIMES:
-            mk = lambda seed, _r=train_on: make_recording(_r, seed=seed)  # noqa: E731
+            mk = lambda seed, _r=train_on: make_recording(_r, seed=seed, **gen)  # noqa: E731
             tr = train(name, mk, n_train=10, steps=900, crop=4096, batch=3,
                        lr=LR[name])
             cell = {"threshold": float(tr.threshold),
@@ -134,7 +153,8 @@ def run() -> dict:
                     "train_seconds": tr.train_seconds}
             for test_on in REGIMES:
                 # NOTE: threshold NOT re-picked. Carried from the training regime.
-                cell[test_on] = _score(tr, test_on, make_recording)
+                cell[test_on] = _score(tr, test_on,
+                                       lambda r, seed: make_recording(r, seed=seed, **gen))
             if hasattr(tr.model, "log_center"):
                 import math
                 cell["centres"] = [math.exp(v)
@@ -193,8 +213,15 @@ def main(argv=None):
     p = argparse.ArgumentParser(description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("--out", type=Path, default=None)
+    p.add_argument("--spec", type=Path, default=None,
+                   help="generator_spec.json — run the shift on the background "
+                        "fitted from real recordings instead of the bench's flat "
+                        "one. Without it, the corpus is the flat bench and the "
+                        "result does not sit on the same footing as the bake-off.")
     a = p.parse_args(argv)
-    res = run()
+    gen, prov = load_spec(a.spec) if a.spec else ({}, {"spec": None})
+    res = run(gen)
+    res["corpus"] = prov
     print(report(res))
     if a.out:
         a.out.mkdir(parents=True, exist_ok=True)

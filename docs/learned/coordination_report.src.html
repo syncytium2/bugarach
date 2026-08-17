@@ -1,0 +1,612 @@
+<title>Learned Coordination Detectors</title>
+<style>
+{{CSS:report}}
+/* --- additions this page needs, on top of the shared sheet --- */
+.lit { border: 1px solid var(--rule); border-radius: 3px; padding: 1.2rem 1.4rem;
+       margin: 1.8rem 0; }
+.lit h4 { font-family: var(--sans); font-size: .95rem; font-weight: 660;
+          margin: 1.1rem 0 .35rem; }
+.lit h4:first-child { margin-top: 0; }
+.lit p { margin: 0 0 .8rem; font-size: .95rem; }
+.lit .cite { font-size: .85rem; color: var(--muted); }
+.verdict-line { border-left: 3px solid var(--truth); padding-left: 1rem;
+                margin: 1.6rem 0; }
+.verdict-line.no { border-left-color: var(--learned); }
+</style>
+
+<div class="wrap">
+<div class="col">
+  <p class="eyebrow">bugarach &middot; 17 August 2026</p>
+  <h1>A thousand parameters, fitted in six seconds, against six detectors and a
+      background that moves.</h1>
+  <p class="standfirst">
+    The whole pipeline in one place: what gets measured from real recordings, how
+    that becomes a benchmark with answers, what the two candidate networks
+    actually compute, and where they break.
+  </p>
+</div>
+
+<div class="note">
+  <strong>What is new here, and what is assembled.</strong> The comparison against
+  the six and the cost figures were run on 16 August and are reproduced. The
+  <strong>regime shift on the fitted background &mdash; section 5 &mdash; was run for
+  this report</strong> and had never been measured: the earlier version of that test
+  ran on a flat background, which is not the corpus anything else here is scored on.
+  It changes a conclusion, and not in the direction the architecture predicted.
+</div>
+
+<h2>0 &middot; The problem</h2>
+<div class="col">
+  <p>
+    A handful of cells fire together inside a third of a second. That is the event
+    every detector here is trying to find, and the difficulty is not subtle: on the
+    raw record it is almost invisible. Below is one simulated recording from the
+    corpus this report scores on &mdash; twenty-one minutes of it &mdash; with the
+    answer marked, because the generator planted it.
+  </p>
+</div>
+
+<figure>
+  <img src="{{FIG:problem_view}}" alt="Three stacked panels over twenty-one minutes of one simulated recording. A: a raster of onsets as small dark specks, with green triangles marking planted coordinated events and open grey triangles marking planted distractors; a shaded band on the right is a dense but random probe window. B: the fraction of cells active over time, in which planted events appear as tall spikes but so do the distractors and part of the probe window. C: the same trace with its local level subtracted, where planted events stand out more cleanly but several unplanted excursions remain comparable in height.">
+  <figcaption>
+    <strong>The events are there, and almost nothing about the raw record says so.</strong>
+    <span class="key truth">Green triangles</span> are events the generator planted;
+    <span class="key" style="color:var(--muted)">open grey triangles</span> are
+    <em>distractors</em> &mdash; correlated bursts planted on purpose as negatives
+    &mdash; and the shaded band is a dense-but-random block planted to tempt
+    anything that merely counts activity. <strong>A</strong> is every onset, cells
+    ordered by how often they fire. <strong>B</strong> is the fraction of cells
+    active at each instant, the quantity most of the six threshold.
+    <strong>C</strong> subtracts that trace&rsquo;s own local level: it sharpens the
+    events without separating them, and the tallest unplanted excursion is
+    comparable to the smaller planted ones. Drawn on the fitted corpus described in
+    section 1, in its busier background.
+  </figcaption>
+</figure>
+
+<div class="col">
+  <p>
+    Three words are used throughout and are worth pinning down now. A detection is
+    an interval, and it counts as a hit if a planted event falls inside it or within
+    1.5&nbsp;s of the nearer edge. <strong>Recall</strong> is the share of planted
+    events found; <strong>precision</strong> the share of detections that were real;
+    <strong>F1</strong> their harmonic mean, so it falls if either does. Matching is
+    one-to-one, so a detector that splits one event into three is charged two false
+    alarms rather than credited twice. Rates are quoted per cell &mdash; per
+    <em>region of interest</em>, the segmented patch of image one cell occupies,
+    which is what the axes label <code>Hz/ROI</code>.
+  </p>
+</div>
+
+<h2>1 &middot; The pipeline, end to end</h2>
+<div class="col">
+  <p>
+    Coordination cannot be validated against another detector&rsquo;s opinion, so
+    nothing here is. The chain starts at real recordings, measures them
+    <em>without</em> a detector, turns that measurement into a generator, and only
+    then asks any detector anything &mdash; on data where the answer is recorded
+    rather than inferred.
+  </p>
+</div>
+
+<div class="arch">{{SVG:pipeline}}</div>
+
+<div class="col">
+  <p>
+    Two properties of that chain carry the argument. First, the assessor at stage 1
+    uses <strong>clustering and circular-shift surrogates</strong>, not a detector,
+    so the settings it produces are not downstream of the thing being tested.
+    Second, ground truth reaches the <strong>scorer only</strong>. No detector,
+    learned or hand-written, is shown a label &mdash; the learned models see the
+    same rate-sorted raster the six see, and pick a threshold on the same three
+    folds the six sweep their knob on.
+  </p>
+  <p>
+    The place a human is required is marked in red, and it is not the modelling:
+    it is <strong>choosing K</strong>, the cluster size the assessment is run at.
+    K=3 was chosen for this corpus and K=4 halves the resulting event rate. The
+    whole scan ships beside the choice so that the judgement is visible rather
+    than buried.
+  </p>
+</div>
+
+<h2>2 &middot; The two models, and what each one computes</h2>
+<div class="col">
+  <p>
+    Two architectures were designed against the same requirement &mdash; a small
+    model that finds coordinated events on a lab&rsquo;s own data after a few
+    seconds of fitting. They differ in <em>where they refuse to give up
+    information</em>, and that difference is the whole experiment. A third, a
+    pooled-trace baseline, exists as a control and is described at the end of the
+    section.
+  </p>
+  <p>
+    Both obey one constraint taken from the six: <strong>one cell, one vote</strong>.
+    Coactivity is the number of distinct active cells, never a count of onsets, so
+    reducing over cells before smoothing over time destroys the very distinction
+    that separates coordination from one busy cell firing repeatedly.
+  </p>
+</div>
+
+<h3>The per-cell bank &mdash; keep every cell, discover the background</h3>
+<div class="arch">{{SVG:arch_tiny}}</div>
+<div class="col">
+  <p>
+    Each cell goes through the same small filter, is squashed so its contribution
+    is bounded, and only then is pooled &mdash; within <strong>rate bands</strong>,
+    so the busiest cells stay separable from the quietest. That pooling width is
+    the knob the model was built to turn: at one band it degenerates to the
+    coactivity trace the six threshold, and at four it keeps the rate
+    distribution&rsquo;s structure.
+  </p>
+  <p>
+    Nothing tells it what the background is. The head has a
+    <strong>2,047-sample receptive field</strong> &mdash; about three and a half
+    minutes &mdash; and the intent was that it would use that span to work out the
+    local level and judge excess against it. The bound is a sigmoid, so
+    &ldquo;one cell, one vote&rdquo; here is <em>approximate</em>: an exact cap
+    needs a fixed window, and a fixed window is the assumption the design refuses
+    to make.
+  </p>
+</div>
+
+<h3>Centre minus surround &mdash; make the background cancel</h3>
+<div class="arch">{{SVG:architecture}}</div>
+<div class="col">
+  <p>
+    The second model does not try to learn the background. It caps each cell
+    inside a window, sums the cells into a single brightness trace, and convolves
+    that trace with four <strong>difference-of-Gaussian</strong> kernels whose
+    centre and surround are area-matched, so a flat field integrates to zero.
+    A uniform change in background rate cancels rather than shrinks. That is the
+    same &ldquo;observed minus context&rdquo; every one of the six computes by
+    hand &mdash; here it is a 12-parameter operator, and its widths are fitted.
+  </p>
+  <p>
+    Three properties come out rather than being enforced. Cells are summed, so the
+    model runs at <strong>any cell count</strong>. Each cell is capped inside the
+    centre window before the sum, so distinctness is <strong>exact</strong> here
+    rather than approximate. And <strong>how tight an event must be is a learned
+    kernel width</strong>, initialised at one sample &mdash; the finest thing the
+    recording can resolve &mdash; and free to grow. Multiply a fitted width by the
+    frame interval and it is directly comparable to what the assessor measured on
+    real slices.
+  </p>
+  <p>
+    Its head needs to see only <strong>127 samples</strong> against the per-cell
+    bank&rsquo;s 2,047, because it is handed the contrast rather than having to
+    infer it. Half the parameters, a sixteenth of the span.
+  </p>
+</div>
+
+<h3>And the control</h3>
+<div class="col">
+  <p>
+    A third model, <strong>pooled trace</strong>, collapses the cell axis
+    immediately and then filters in time &mdash; deliberately the thing the design
+    argues against, included so that &ldquo;distinctness matters&rdquo; is a
+    measured claim rather than an assertion. It is not a candidate.
+  </p>
+</div>
+
+<h2>3 &middot; Is a learned coordination detector new?</h2>
+<div class="col">
+  <p>
+    Asked plainly, because it decides whether any of this is worth writing up:
+    <strong>has someone already trained a network to emit coordinated population
+    events?</strong> A survey of the obvious neighbours says the learning in this
+    field sits one level below this one, and the nearest thing that learns at this
+    level learns a parameter rather than a detection. That is a real gap, and it is
+    narrower than &ldquo;nobody has done deep learning on calcium imaging&rdquo;
+    &mdash; a great many people have.
+  </p>
+</div>
+
+<div class="tablewrap">
+<table>
+  <thead><tr>
+    <th>where the work happens</th><th>what is learned there</th>
+    <th>representative work</th>
+  </tr></thead>
+  <tbody>
+    <tr><td>fluorescence &rarr; per-cell events</td>
+        <td><strong>learned, and standard</strong> &mdash; supervised nets beat
+            classical deconvolution at this</td>
+        <td>CASCADE; DeepCINAC; the spikefinder-challenge winners</td></tr>
+    <tr><td>per-cell events &rarr; population dynamics</td>
+        <td><strong>learned</strong> &mdash; but a latent trajectory, not a list of
+            discrete events with times</td>
+        <td>RADICaL</td></tr>
+    <tr class="hl"><td><strong>population activity &rarr; coordinated events</strong></td>
+        <td><strong>hand-written everywhere found</strong> &mdash; ICA, PCA/Promax,
+            similarity clustering, SVD, graph methods, item-set mining, and
+            surrogate significance testing</td>
+        <td>M&ouml;lter et&nbsp;al.&rsquo;s benchmark of assembly detectors;
+            Russo &amp; Durstewitz; CICADA</td></tr>
+    <tr><td>choosing a classical detector&rsquo;s parameters</td>
+        <td><strong>learned</strong> &mdash; a net predicts the settings a human
+            expert would have picked; the classical detector still makes the call</td>
+        <td>autoMEA</td></tr>
+  </tbody>
+</table>
+</div>
+
+<div class="col">
+  <p>
+    The row in red is where this work sits, and it is the row where the survey found
+    no learned method. The learning in this field is <strong>one level below</strong>
+    &mdash; turning fluorescence into per-cell events, which is exactly the
+    <em>input</em> to a coordination analysis rather than its output. The nearest
+    thing that learns at the coordination level, <strong>autoMEA</strong>, learns the
+    <em>knob</em>: a supervised network on multi-electrode array data that outputs
+    the burst-detection parameters a human expert would have chosen, so the operator
+    stops being the bottleneck. Here the network <em>is</em> the detector, and what
+    replaces the operator is the pipeline in section 1.
+  </p>
+  <p>
+    One more thing the assembly-detection literature shares with this project, and it
+    is worth naming because it is the methodology rather than the model:
+    M&ouml;lter, Avitan and Goodhill benchmark their algorithms by
+    <strong>generating surrogate data with known assembly structure</strong> &mdash;
+    the same move as section 1, arrived at independently, and evidence that the
+    generate-with-truth half of this pipeline is a normal thing to do rather than a
+    liberty taken here.
+  </p>
+</div>
+
+<div class="lit">
+  <p class="cite">
+    <strong>References, and what was actually verified.</strong>
+    CASCADE &mdash; Rupprecht et&nbsp;al., <em>Nat. Neurosci.</em>
+    24:1324&ndash;1337 (2021).
+    DeepCINAC &mdash; Denis et&nbsp;al., <em>eNeuro</em> 7(4) (2020).
+    spikefinder &mdash; Berens et&nbsp;al., <em>PLoS Comput. Biol.</em>
+    14(5):e1006157 (2018).
+    RADICaL &mdash; Zhu, Grier et&nbsp;al., <em>Nat. Neurosci.</em>
+    25:1724&ndash;1734 (2022).
+    Assembly-detector benchmark &mdash; M&ouml;lter, Avitan &amp; Goodhill,
+    <em>BMC Biology</em> 16:143 (2018), doi:10.1186/s12915-018-0606-4.
+    Cell assemblies at multiple timescales &mdash; Russo &amp; Durstewitz,
+    <em>eLife</em> 6:e19428 (2017).
+    autoMEA &mdash; Hernandes, Heuvelmans, Gualtieri, Meijer, van&nbsp;Woerden &amp;
+    Greplova, <em>Front. Neurosci.</em> 18:1446578 (2024); preprint bioRxiv
+    2024.05.08.593078.
+    CICADA &mdash; Cossart lab,
+    <a href="https://gitlab.com/cossartlab/cicada">gitlab.com/cossartlab/cicada</a>.
+    <br>
+    &#9888; <strong>Bibliographic details were checked against publisher records;
+    no full text was retrieved</strong> &mdash; the open-access copies sit behind a
+    bot check in this environment. So the <em>existence and attribution</em> of every
+    reference above is verified, while claims about what each paper
+    <em>contains</em> &mdash; including the &ldquo;hand-written everywhere
+    found&rdquo; cell &mdash; rest on abstracts and method lists. One citation in the
+    first draft of this page carried a fabricated author list, which is what this
+    check is for.
+  </p>
+</div>
+
+<div class="verdict-line">
+  <p>
+    <strong>The honest verdict.</strong> No prior work was found that trains a
+    network to emit coordinated population events, scored against planted ground
+    truth, on a corpus parameterised from the lab&rsquo;s own recordings. That
+    combination appears to be new. Two qualifications belong with the claim, and
+    the first is the serious one: <strong>a survey is not a proof of absence</strong>
+    &mdash; this is four searches and a reading of the neighbours, not a systematic
+    review. <strong>&#9888; No paper was retrieved in full.</strong> Every
+    bibliographic detail above was checked against the publisher&rsquo;s own record,
+    and one citation in the first draft of this page had a
+    <em>fabricated author list</em> that this check caught; but claims about what
+    those papers <em>contain</em> rest on abstracts and publisher metadata, because
+    the full texts sit behind a bot check in this environment. And <strong>none of the pieces is
+    novel individually</strong>: centre-surround is a difference-of-Gaussians and
+    older than any of this, dilated convolutions are standard, and
+    training-on-simulation is what CASCADE already does one level down. What has not
+    been done before, as far as this survey reaches, is putting them at
+    <em>this</em> level of the analysis.
+  </p>
+</div>
+
+<h2>4 &middot; Against the six</h2>
+<div class="col">
+  <p>
+    Six hand-written detectors already exist in this repo, each computing
+    &ldquo;more coincidence than the local background explains&rdquo; by a
+    different rule: <strong>rate+context</strong>, <strong>CoactDetect</strong>,
+    <strong>LoCo</strong>, <strong>binned SCE</strong>, <strong>CICADA</strong> and
+    <strong>SPIKE-synchronization</strong>. They are ports held to 1e&#8209;9
+    against a MATLAB original; CICADA derives from the Cossart lab&rsquo;s
+    <a href="https://gitlab.com/cossartlab/cicada">CICADA</a> (MIT, &copy; 2019
+    Cossart Lab) and the synchrony detector follows PySpike&rsquo;s semantics. They
+    are not mine, and this comparison is against other people&rsquo;s work.
+  </p>
+  <p>
+    All nine went through one procedure: fitted on three folds of the corpus,
+    scored on the held-out fourth, all four rotations. Hand-written detectors sweep
+    their one declared knob; learned models train and pick a threshold. Same
+    corpus, same scorer.
+  </p>
+</div>
+
+<figure>
+  <img src="{{FIG:bakeoff}}" alt="Two panels. A: F1 per detector as bars with each of the four folds drawn as a point on top, showing the top three detectors' fold ranges overlapping heavily. B: the deployability plane, detection seconds on a log x-axis against F1, with marker area by parameter count; the centre-surround model sits at the top left, fastest among the accurate detectors.">
+  <figcaption>
+    <strong>Accuracy with every fold drawn, and what each detector costs.</strong>
+    Panel A draws all four folds as points so the overlap is visible rather than
+    hidden behind a bar &mdash; three detectors are tied at the top and the honest
+    statement is a tie, not a ranking. Panel B is the decision an app actually
+    faces: accuracy against time to run, marker area by parameter count.
+  </figcaption>
+</figure>
+
+<div class="tablewrap">
+<table>
+  <thead><tr>
+    <th>detector</th><th class="n">F1 (mean of 4 folds)</th><th class="n">fold range</th>
+    <th class="n">recall</th><th class="n">precision</th><th class="n">fit s</th>
+    <th class="n">detect s</th><th class="n">params</th>
+  </tr></thead>
+  <tbody>
+    <tr class="hl"><td><strong>centre&minus;surround (learned)</strong></td>
+      <td class="n"><strong>{{N:b:learned.tube.f1.mean|.3f}} &plusmn; {{N:b:learned.tube.f1.sd|.3f}}</strong></td>
+      <td class="n">{{N:b:learned.tube.f1.min|.2f}}&ndash;{{N:b:learned.tube.f1.max|.2f}}</td>
+      <td class="n">{{N:b:learned.tube.recall.mean|.3f}}</td>
+      <td class="n">{{N:b:learned.tube.precision.mean|.3f}}</td>
+      <td class="n">{{N:b:learned.tube.train_sec.mean|.1f}}</td>
+      <td class="n"><strong>{{N:b:learned.tube.detect_sec.mean|.3f}}</strong></td>
+      <td class="n">{{N:b:learned.tube.n_params|,d}}</td></tr>
+    <tr><td>CoactDetect</td>
+      <td class="n">{{N:b:hand_written.coact.f1.mean|.3f}} &plusmn; {{N:b:hand_written.coact.f1.sd|.3f}}</td>
+      <td class="n">{{N:b:hand_written.coact.f1.min|.2f}}&ndash;{{N:b:hand_written.coact.f1.max|.2f}}</td>
+      <td class="n">{{N:b:hand_written.coact.recall.mean|.3f}}</td>
+      <td class="n">{{N:b:hand_written.coact.precision.mean|.3f}}</td>
+      <td class="n">{{N:b:hand_written.coact.calibrate_sec.mean|.1f}}</td>
+      <td class="n">{{N:b:hand_written.coact.detect_sec.mean|.3f}}</td>
+      <td class="n">&mdash;</td></tr>
+    <tr><td>LoCo</td>
+      <td class="n">{{N:b:hand_written.loco.f1.mean|.3f}} &plusmn; {{N:b:hand_written.loco.f1.sd|.3f}}</td>
+      <td class="n">{{N:b:hand_written.loco.f1.min|.2f}}&ndash;{{N:b:hand_written.loco.f1.max|.2f}}</td>
+      <td class="n">{{N:b:hand_written.loco.recall.mean|.3f}}</td>
+      <td class="n">{{N:b:hand_written.loco.precision.mean|.3f}}</td>
+      <td class="n">{{N:b:hand_written.loco.calibrate_sec.mean|.1f}}</td>
+      <td class="n">{{N:b:hand_written.loco.detect_sec.mean|.3f}}</td>
+      <td class="n">&mdash;</td></tr>
+    <tr><td>rate+context</td>
+      <td class="n">{{N:b:hand_written.rate.f1.mean|.3f}} &plusmn; {{N:b:hand_written.rate.f1.sd|.3f}}</td>
+      <td class="n">{{N:b:hand_written.rate.f1.min|.2f}}&ndash;{{N:b:hand_written.rate.f1.max|.2f}}</td>
+      <td class="n">{{N:b:hand_written.rate.recall.mean|.3f}}</td>
+      <td class="n">{{N:b:hand_written.rate.precision.mean|.3f}}</td>
+      <td class="n">{{N:b:hand_written.rate.calibrate_sec.mean|.1f}}</td>
+      <td class="n">{{N:b:hand_written.rate.detect_sec.mean|.3f}}</td>
+      <td class="n">&mdash;</td></tr>
+    <tr><td>CICADA</td>
+      <td class="n">{{N:b:hand_written.cicada.f1.mean|.3f}} &plusmn; {{N:b:hand_written.cicada.f1.sd|.3f}}</td>
+      <td class="n">{{N:b:hand_written.cicada.f1.min|.2f}}&ndash;{{N:b:hand_written.cicada.f1.max|.2f}}</td>
+      <td class="n">{{N:b:hand_written.cicada.recall.mean|.3f}}</td>
+      <td class="n">{{N:b:hand_written.cicada.precision.mean|.3f}}</td>
+      <td class="n">{{N:b:hand_written.cicada.calibrate_sec.mean|.1f}}</td>
+      <td class="n">{{N:b:hand_written.cicada.detect_sec.mean|.3f}}</td>
+      <td class="n">&mdash;</td></tr>
+    <tr><td>binned SCE</td>
+      <td class="n">{{N:b:hand_written.sce.f1.mean|.3f}} &plusmn; {{N:b:hand_written.sce.f1.sd|.3f}}</td>
+      <td class="n">{{N:b:hand_written.sce.f1.min|.2f}}&ndash;{{N:b:hand_written.sce.f1.max|.2f}}</td>
+      <td class="n">{{N:b:hand_written.sce.recall.mean|.3f}}</td>
+      <td class="n">{{N:b:hand_written.sce.precision.mean|.3f}}</td>
+      <td class="n">{{N:b:hand_written.sce.calibrate_sec.mean|.1f}}</td>
+      <td class="n">{{N:b:hand_written.sce.detect_sec.mean|.3f}}</td>
+      <td class="n">&mdash;</td></tr>
+    <tr><td>SPIKE-synch</td>
+      <td class="n">{{N:b:hand_written.sync.f1.mean|.3f}} &plusmn; {{N:b:hand_written.sync.f1.sd|.3f}}</td>
+      <td class="n">{{N:b:hand_written.sync.f1.min|.2f}}&ndash;{{N:b:hand_written.sync.f1.max|.2f}}</td>
+      <td class="n">{{N:b:hand_written.sync.recall.mean|.3f}}</td>
+      <td class="n">{{N:b:hand_written.sync.precision.mean|.3f}}</td>
+      <td class="n">{{N:b:hand_written.sync.calibrate_sec.mean|.1f}}</td>
+      <td class="n">{{N:b:hand_written.sync.detect_sec.mean|.3f}}</td>
+      <td class="n">&mdash;</td></tr>
+    <tr><td>pooled trace (learned, control)</td>
+      <td class="n">{{N:b:learned.trace.f1.mean|.3f}} &plusmn; {{N:b:learned.trace.f1.sd|.3f}}</td>
+      <td class="n">{{N:b:learned.trace.f1.min|.2f}}&ndash;{{N:b:learned.trace.f1.max|.2f}}</td>
+      <td class="n">{{N:b:learned.trace.recall.mean|.3f}}</td>
+      <td class="n">{{N:b:learned.trace.precision.mean|.3f}}</td>
+      <td class="n">{{N:b:learned.trace.train_sec.mean|.1f}}</td>
+      <td class="n">{{N:b:learned.trace.detect_sec.mean|.3f}}</td>
+      <td class="n">{{N:b:learned.trace.n_params|,d}}</td></tr>
+    <tr><td>per-cell bank (learned) &#9888;</td>
+      <td class="n">{{N:b:learned.tiny.f1.mean|.3f}} &plusmn; {{N:b:learned.tiny.f1.sd|.3f}}</td>
+      <td class="n">{{N:b:learned.tiny.f1.min|.2f}}&ndash;{{N:b:learned.tiny.f1.max|.2f}}</td>
+      <td class="n">{{N:b:learned.tiny.recall.mean|.3f}}</td>
+      <td class="n">{{N:b:learned.tiny.precision.mean|.3f}}</td>
+      <td class="n">{{N:b:learned.tiny.train_sec.mean|.1f}}</td>
+      <td class="n">{{N:b:learned.tiny.detect_sec.mean|.3f}}</td>
+      <td class="n">{{N:b:learned.tiny.n_params|,d}}</td></tr>
+  </tbody>
+</table>
+</div>
+
+<div class="col">
+  <p>
+    <strong>A tie at the top, and it should be read as one.</strong>
+    Centre&minus;surround leads on the mean and is <em>not</em> ahead of
+    CoactDetect: four folds of thirty planted events cannot separate
+    {{N:b:learned.tube.f1.mean|.3f}} from {{N:b:hand_written.coact.f1.mean|.3f}}, and their fold ranges overlap almost entirely. Three detectors are tied
+    at the top. The defensible statement is that the learned model
+    <strong>reaches the level of the best hand-written detectors here</strong>,
+    having been given no more information than they were.
+  </p>
+  <p>
+    <strong>The difference that survives is cost.</strong> It scans a held-out fold
+    in {{N:b:learned.tube.detect_sec.mean|.3f}}&nbsp;s against CoactDetect&rsquo;s
+    {{N:b:hand_written.coact.detect_sec.mean|.3f}} and LoCo&rsquo;s
+    {{N:b:hand_written.loco.detect_sec.mean|.3f}}, trains from scratch in
+    {{N:b:learned.tube.train_sec.mean|.1f}}&nbsp;s &mdash; about what
+    CoactDetect&rsquo;s sweep costs &mdash; and stores
+    {{N:b:learned.tube.n_params|,d}} parameters. For a model meant to be retrained
+    inside an app on a lab&rsquo;s own simulated data, that is the case.
+  </p>
+  <div class="note warn">
+    <strong>The per-cell bank does not train, and its number is not an operating
+    point.</strong> It sits at the floor
+    ({{N:b:learned.tiny.f1.mean|.3f}}) at
+    {{N:b:learned.tiny.train_sec.mean|.0f}}&nbsp;s of training &mdash; more than
+    forty times the model that works &mdash; and its threshold lands on the low
+    edge of the searched grid, which this project treats as a search that stopped
+    too early rather than an answer. Its precision of
+    {{N:b:learned.tiny.precision.mean|.2f}} is the precision of something that
+    almost never fires. So the reading of section 2 is not &ldquo;both designs
+    work, one is cheaper&rdquo;: <strong>one of the two designs did not
+    learn.</strong>
+  </div>
+  <p>
+    Why it failed is <strong>not settled</strong>. The obvious explanation &mdash;
+    that discovering rate invariance is harder than being handed it &mdash; is the
+    reading, not the finding, because the model that works also trains at
+    <strong>ten times the learning rate</strong> of the two that do not, and this
+    project&rsquo;s own diagnostic ranks the loss weighting and batch size as the
+    leading untested cause. A controlled comparison has not been run.
+  </p>
+</div>
+
+<h2>5 &middot; The shift to a busier background</h2>
+<div class="col">
+  <p>
+    Everything above is a single background rate. The test that matters for
+    deployment is what happens when a detector is fitted in one background and run
+    in another, because untreated slices vary <strong>4.6-fold among
+    themselves</strong> &mdash; 0.0038&nbsp;Hz and 0.0175&nbsp;Hz per cell, both
+    measured, both untreated, taken from the same assessment of
+    {{N:g:corpus.provenance.n_slices_assessed|d}} slices with
+    {{N:g:corpus.provenance.n_surrogates|,d}} surrogates that set the corpus.
+    Those endpoints are the 25th and 75th percentiles of the <em>slice-population</em>
+    rate; read as per-cell rates they sit nearer the 60th and 83rd, which narrows the
+    axis and is caveat 4 in section 6. No
+    drug is involved: this is a generalization question, not a pharmacology one.
+  </p>
+  <p>
+    <strong>The knob and the threshold are carried over unchanged.</strong>
+    Re-picking them on arrival is the failure being tested for &mdash; it hides the
+    collapse at the exact moment a lab cannot afford it. The six are calibrated on
+    held-out recordings from the training regime and graded on the target, which is
+    the same experiment the learned models get rather than a fixed operating point
+    evaluated twice.
+  </p>
+  <div class="note">
+    <strong>This run is why the report exists.</strong> The earlier version of this
+    test used the bench&rsquo;s <em>flat</em> background, so it did not sit on the
+    corpus everything else is scored on. Re-run on the fitted background &mdash;
+    heterogeneous across cells, bursty in time, measured from 85 real recordings
+    &mdash; it says something different.
+  </div>
+</div>
+
+<figure>
+  <img src="{{FIG:regime_shift_fitted}}" alt="Three slope panels. A: F1 calibrated on the quiet background and deployed busy; from a shared starting point near 0.77, CoactDetect falls to 0.62 and centre-surround falls further to 0.53, while rate+context falls from 0.75 to 0.30. B: the reverse direction, calibrated busy and deployed quiet, where every detector holds or improves. C: precision in the quiet-to-busy direction, where rate+context falls from 0.60 to 0.18 and centre-surround from 0.64 to 0.37, both further than CoactDetect and LoCo.">
+  <figcaption>
+    <strong>What moving costs, in both directions.</strong> Each line runs from
+    where a detector scored at home to where the same fitted detector scored after
+    the shift.
+    <span class="key learned">Learned models</span> are the thick dark lines,
+    <span class="key hand">the six</span> the thin blue ones. Panel B is the same
+    experiment run the other way, and it is not a mirror &mdash; which is the
+    point of drawing both.
+  </figcaption>
+</figure>
+
+<div class="verdict-line no">
+  <p>
+    <strong>The failure this test exists to catch does reproduce here &mdash; and
+    the learned model is not the one that survives it.</strong> Calibrated quiet
+    and deployed busy, <strong>rate+context falls from {{N:g:six_transfer.rate.baseline_quiet.baseline_quiet.f1|.2f}} to
+    {{N:g:six_transfer.rate.baseline_quiet.baseline_busy.f1|.2f}}</strong>, and its precision from
+    {{N:g:six_transfer.rate.baseline_quiet.baseline_quiet.precision|.2f}} to {{N:g:six_transfer.rate.baseline_quiet.baseline_busy.precision|.2f}} &mdash; a genuine
+    collapse, of the kind that was previously only a figure in someone else&rsquo;s
+    deck. And from an essentially identical starting point,
+    <strong>centre&minus;surround falls further than CoactDetect and LoCo
+    do</strong> &mdash; {{N:g:learned.tube.baseline_quiet.baseline_quiet.f1|.2f}}&rarr;{{N:g:learned.tube.baseline_quiet.baseline_busy.f1|.2f}} against
+    {{N:g:six_transfer.coact.baseline_quiet.baseline_quiet.f1|.2f}}&rarr;{{N:g:six_transfer.coact.baseline_quiet.baseline_busy.f1|.2f}} and
+    {{N:g:six_transfer.loco.baseline_quiet.baseline_quiet.f1|.2f}}&rarr;{{N:g:six_transfer.loco.baseline_quiet.baseline_busy.f1|.2f}}, with precision
+    {{N:g:learned.tube.baseline_quiet.baseline_quiet.precision|.2f}}&rarr;{{N:g:learned.tube.baseline_quiet.baseline_busy.precision|.2f}} against
+    CoactDetect&rsquo;s {{N:g:six_transfer.coact.baseline_quiet.baseline_quiet.precision|.2f}}&rarr;{{N:g:six_transfer.coact.baseline_quiet.baseline_busy.precision|.2f}}.
+  </p>
+</div>
+
+<div class="col">
+  <p>
+    That is a <strong>negative result about this report&rsquo;s own
+    architecture</strong>, and it lands on the claim the design was built to
+    support. &ldquo;Rate invariance by construction&rdquo; predicts the
+    centre&minus;surround model should barely move across this axis while a model
+    that had to discover the invariant should. It moved more than two of the
+    hand-written detectors it ties with. The mechanism the design cancels is the
+    <em>mean</em> background; what a busier background also brings is
+    <strong>variance</strong>, and chance alignments that grow with rate are not
+    removed by subtracting a local level.
+  </p>
+  <p>
+    <strong>The direction is the usable part.</strong> Panel B is not a mirror of
+    panel A: fitted on the busy background and deployed quiet, every detector holds
+    or improves, and centre&minus;surround goes
+    {{N:g:learned.tube.baseline_busy.baseline_busy.f1|.2f}}&rarr;{{N:g:learned.tube.baseline_busy.baseline_quiet.f1|.2f}}. So the operational
+    rule is <strong>fit on the busier recordings and deploy downward</strong>,
+    which is a cheap thing for an app to enforce and a real finding about how to
+    use these models rather than about how good they are.
+  </p>
+  <p>
+    Two smaller readings. <strong>Binned SCE has no operating point on this axis
+    at all</strong> &mdash; its sweep peaks at the edge of its grid in both regimes,
+    so it is absent from the figure rather than plotted at a boundary value. And
+    the learned models that never trained are flat lines at the floor: a model that
+    does not fire cannot degrade, and their apparent stability is not robustness.
+  </p>
+</div>
+
+<h2>6 &middot; What this does not establish</h2>
+<div class="col">
+  <ol>
+    <li><strong>The corpus is simulated.</strong> Its settings are measured from 85
+      real recordings; the recordings the detectors are scored on are generated.
+      Nothing here says any detector is right about a real slice.</li>
+    <li><strong>One training run per fold.</strong> No learned number here has a
+      seed error bar, so fold spread confounds data variation with training
+      variation. This is the cheapest outstanding thing that could change a
+      conclusion, and it is not done.</li>
+    <li><strong>Four folds, eight recordings, thirty planted events per fold.</strong>
+      Every interval quoted is a fold range, not a confidence interval, and the top
+      three are a tie.</li>
+    <li><strong>The regime axis is narrower than it sounds.</strong> Its endpoints
+      are p25 and p75 of a slice-population rate divided by a derived cell count;
+      as per-cell rates they sit around the 60th and 83rd percentiles. A
+      <em>null</em> result on this axis would therefore be weak evidence &mdash;
+      which cuts against the flat lines, not against the collapses.</li>
+    <li><strong>The architecture comparison is not controlled.</strong> Ten-fold
+      difference in learning rate between the model that trains and the two that do
+      not, and the leading alternative explanations are untested.</li>
+    <li><strong>The promiscuity probe cannot fail.</strong> Firings inside the dense
+      random block leave both the numerator and the denominator of precision, so it
+      reports promiscuity rather than penalising it. No &ldquo;does not fire on
+      dense random activity&rdquo; claim is supported.</li>
+    <li><strong>K=3 was chosen by a human</strong> and the choice moves the corpus;
+      K=4 halves the event rate and would build a different benchmark.</li>
+    <li><strong>The novelty survey is a survey.</strong> Four searches and a reading
+      of the neighbours, no paper fetched in full, no systematic review.</li>
+  </ol>
+</div>
+
+<hr>
+<footer>
+  <p>
+    Regenerable end to end: <code>tools/assess_archive.py</code> &rarr;
+    <code>tools/derive_spec.py</code> &rarr; <code>tools/fair_bakeoff.py</code>
+    &rarr; <code>tools/make_bakeoff_figures.py</code>, with
+    <code>tools/regime_shift.py --spec docs/learned/generator_spec.json</code> and
+    <code>tools/make_regime_figure.py</code> for section 5. Every number in this
+    page is substituted from <code>bakeoff.json</code> or read from
+    <code>regime_shift_fitted.json</code> at build time rather than typed into the
+    prose. Built by <code>tools/build_learned_report.py</code>.
+  </p>
+  <p>
+    bugarach is BSD-3-Clause. CICADA derives from the Cossart lab&rsquo;s CICADA
+    (MIT, &copy; 2019 Cossart Lab); the synchrony detector follows PySpike&rsquo;s
+    SPIKE-synchronization semantics.
+  </p>
+</footer>
+</div>

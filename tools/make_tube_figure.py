@@ -34,6 +34,7 @@ from __future__ import annotations
 
 import argparse
 import importlib.util
+import json
 import sys
 from pathlib import Path
 
@@ -91,14 +92,14 @@ def _fitted(out_dir: Path):
     return centres
 
 
-def build(width=980, out_dir: Path | None = None):
+def build(gen=None, width=980, out_dir: Path | None = None):
     import holoviews as hv
 
     from bugarach.bench import make_recording
     from bugarach.learn.encode import encode
     from bugarach.ui.app import _time_axis_hook
 
-    s, gt = make_recording(REGIME, seed=SEED)
+    s, gt = make_recording(REGIME, seed=SEED, **(gen or {}))
     enc = encode(s, dt=0.1)
     dt = enc.dt
     lo, hi = int(WINDOW[0] / dt), int(WINDOW[1] / dt)
@@ -185,6 +186,12 @@ def main(argv=None):
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("--out", type=Path, required=True)
     p.add_argument("--width", type=int, default=980)
+    p.add_argument("--name", default="tube_view")
+    p.add_argument("--spec", type=Path, default=None,
+                   help="generator_spec.json — draw the corpus fitted from real "
+                        "recordings rather than the bench's flat background. A "
+                        "figure of the problem must show the corpus the report "
+                        "scores on, or it illustrates a different problem.")
     a = p.parse_args(argv)
 
     import holoviews as hv
@@ -199,8 +206,14 @@ def main(argv=None):
     a.out.mkdir(parents=True, exist_ok=True)
     # No title or standfirst baked into the raster — the HTML figcaption is the
     # single caption, where it is selectable, reflows, and follows the theme.
-    mgf._write(pn.Column(pn.pane.HoloViews(build(a.width, out_dir=a.out))),
-               a.out, "tube_view", png=True)
+    gen = {}
+    if a.spec:
+        doc = json.loads(a.spec.read_text())
+        gen = {k: v for k, v in doc["generator"].items() if k != "bg_rate_hz"}
+        # bg_rate_hz stays with REGIME: this figure is drawn in the busy regime
+        # on purpose, and the spec's fitted median would quietly replace it.
+    mgf._write(pn.Column(pn.pane.HoloViews(build(gen, a.width, out_dir=a.out))),
+               a.out, a.name, png=True)
     return 0
 
 

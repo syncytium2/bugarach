@@ -475,22 +475,32 @@ def pool_scores(scores, *, detector: str, regime: str, seeds=(),
 
 
 def evaluate(name: str, regime: str, seeds=(1, 2, 3), *, tol_sec: float = 1.5,
-             **overrides) -> BenchResult:
-    """Run one detector over several seeds and pool the outcome."""
+             gen: dict | None = None, **overrides) -> BenchResult:
+    """Run one detector over several seeds and pool the outcome.
+
+    ``gen`` passes generator settings through to :func:`make_recording`, so a
+    caller can hold the difficulty axis (``regime``) fixed while changing the
+    recording it runs on — the fitted background out of
+    ``docs/learned/generator_spec.json``, say, instead of the bench's flat one.
+    Separate from ``**overrides``, which are the *detector's* knobs: the two used
+    to be impossible to tell apart because only one of them existed.
+    """
     scores = []
     for seed in seeds:
-        s, gt = make_recording(regime, seed)
+        s, gt = make_recording(regime, seed, **(gen or {}))
         det = run_detector(name, s, **overrides)
         scores.append(score_stream(gt, det, tol_sec=tol_sec))
     return pool_scores(scores, detector=name, regime=regime, seeds=seeds,
                        knob_value=overrides.get(OPERATING_POINTS[name].knob))
 
 
-def sweep(name: str, regime: str, seeds=(1, 2, 3), values=None) -> list[BenchResult]:
+def sweep(name: str, regime: str, seeds=(1, 2, 3), values=None, *,
+          gen: dict | None = None) -> list[BenchResult]:
     """The sensitivity curve: one :class:`BenchResult` per knob value."""
     op = OPERATING_POINTS[name]
     values = op.grid if values is None else values
-    return [evaluate(name, regime, seeds, **{op.knob: v}) for v in values]
+    return [evaluate(name, regime, seeds, gen=gen, **{op.knob: v})
+            for v in values]
 
 
 class EdgeOfRange(ValueError):
