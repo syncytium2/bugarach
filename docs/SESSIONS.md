@@ -61,7 +61,7 @@ Template:
 ## Active
 
 ### Mac/learned-detector-report — the complete coordination report
-- **Status:** ACTIVE
+- **Status:** DONE 2026-08-17 — **claim released**, the folder is free
 - **Started:** 2026-08-17
 - **Writes:** `<darkroom>/bugarach/2026-08-17-coordination-report/` (NEW) — the report and
   its figures.
@@ -73,7 +73,8 @@ Template:
   `tools/regime_shift.py --spec`. It reverses the architecture's own prediction: the learned
   model transfers *worse* than CoactDetect and LoCo from quiet to busy. Murderboard record:
   `docs/reviews/coordination_report_2026-08-17.md` (11/11 roles, 2 rounds, one fabricated
-  citation caught). **A second workstation is expected today** — this folder is taken.
+  citation caught). Published with a `README.md` naming what to open, and the review record
+  travels beside the report as `murderboard_record.md`.
 
 ### Mac/darkroom-serves-the-corrected-report — replace the withdrawn report in the darkroom
 - **Status:** DONE 2026-08-17 — **claim released**, the folder is free
