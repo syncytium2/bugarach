@@ -41,6 +41,9 @@ DATA = {
     # The transfer test. Its numbers were typed into the prose of a first draft;
     # six of them were right and that was luck, not a process.
     "g": HERE / "regime_shift_fitted.json",
+    # The fitted kernel parameters, read off a trained model by
+    # make_architecture_figures.py. The page quotes them; nothing is retyped.
+    "a": HERE / "architecture_fitted.json",
 }
 
 
@@ -113,7 +116,7 @@ def main(argv=None) -> int:
             return "?"
         return format(v, fmt) if fmt else str(v)
 
-    html = re.sub(r"\{\{N:([rsbg]):([A-Za-z0-9_.\-]+)(?:\|([^}]+))?\}\}", num, html)
+    html = re.sub(r"\{\{N:([rsbga]):([A-Za-z0-9_.\-]+)(?:\|([^}]+))?\}\}", num, html)
     if bad:
         print("UNRESOLVED DATA PATHS: " + ", ".join(bad), file=sys.stderr)
         return 1
