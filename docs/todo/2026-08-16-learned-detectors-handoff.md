@@ -5,6 +5,52 @@ filed: 2026-08-16
 
 # Handoff — learned detectors: where this got to, and the next four things
 
+> ## Revision, 2026-08-17 — read this before the body
+>
+> **PR #52 is merged.** Everything described below is on `main`, and so is a later
+> bake-off that changed the result: `docs/learned/bakeoff.md`. The body is left in
+> the words of the session that wrote it, with three corrections.
+>
+> **Retracted.** *"The regime-shift guard does not reproduce the failure it exists
+> to catch"* — the murderboard on the report took this away. Do not build on it.
+>
+> **Superseded numbers.** Everything below is scoped to the earlier bench: three
+> simulated recordings, flat-background generator, each detector at a declared
+> operating point. `F1 0.68 / recall 0.91` belongs to that bench. On the corpus
+> measured from 85 real recordings, with every detector fitted on three folds and
+> scored on a held-out fourth, `tube` scores **0.668 ± 0.061 at recall 0.775** and
+> **ties** CoactDetect's 0.651 ± 0.044 rather than leading anything. Its case is
+> cost: 0.014 s to scan a held-out fold, 1,149 parameters, 5.6 s to train.
+>
+> **Still open, carried here from the root `HANDOFF.md` before it was deleted**
+> — the bake-off's own "what this does not establish" list has the full version:
+>
+> 1. **Multi-seed within a fold.** Still one training run per fold, so fold spread
+>    confounds data variation with training variation. Cheapest thing that could
+>    change a conclusion — this is item 1 below, unmoved by the bake-off.
+> 2. **K=3 was chosen by a human and moves the corpus.** The scan ships in
+>    `docs/learned/generator_spec.json`; K=4 halves the event rate. Review surface:
+>    `2026-08-16-assessment-needs-a-human-in-the-loop.md`.
+> 3. **The architecture conclusion is not controlled.** `tube` trains at 10× the
+>    learning rate of the two it is contrasted with, and the project's own
+>    diagnostic ranks `pos_weight`/batch size as the leading *untested* cause of
+>    their failure to descend. "Building the invariant in beats hoping for it" is
+>    the reading, not yet the finding.
+> 4. **Drop the raw brightness channel and re-run.** One line. It would settle
+>    whether the transfer asymmetry is the variance story below or simply the one
+>    channel that never had its background subtracted.
+> 5. **The probe cannot fail** — `2026-08-16-promiscuity-probe-cannot-fail.md`.
+>    Firings leave both numerator and denominator, so no "does not fire on dense
+>    random activity" claim is supported yet.
+> 6. **interface2 has an unanswered message to us** —
+>    `docs/teams/inbox/2026-08-16-bugarach-vendoring-ownership-and-two-bad-stamps.md`.
+>    Two of three files a session proposed re-vendoring are wrong, and
+>    `docs/writing_conventions.md` has no upstream there at all while a freshness
+>    gate reports it current. That last one is our bug and it is live.
+>
+> The darkroom copy is no longer the withdrawn report, and the board claim is
+> released — both closed 2026-08-17.
+
 Branch `learned-detectors-framework`, PR #52. Everything below is pushed. This
 supersedes `2026-08-16-learned-detector-does-not-converge.md`, which described a
 model that has since been replaced — **read this file, not that one**, and delete

@@ -61,8 +61,14 @@ Template:
 ## Active
 
 ### Mac/darkroom-serves-the-corrected-report — replace the withdrawn report in the darkroom
-- **Status:** ACTIVE
+- **Status:** DONE 2026-08-17 — **claim released**, the folder is free
 - **Started:** 2026-08-17
+- **Done:** `report.html` replaced with the corrected build (which now carries a
+  superseding banner of its own), `bakeoff.{md,png,html,json}` added because the banner
+  names them and a reader in the darkroom must be able to follow the pointer, and the
+  loose figures and JSONs refreshed so the folder is one run rather than two. A
+  `README.md` in the folder says which file is current. Written to a temporary name and
+  moved into place, per the darkroom README's 188 MB of orphans.
 - **Writes:** `<darkroom>/bugarach/2026-08-16-learned-detectors/` — `report.html` and the
   run artifacts beside it, plus the bake-off the corrected page now points at.
 - **Claims:** that one dated subfolder, exclusively, until this block says DONE. Nothing
