@@ -9,11 +9,17 @@ picture.** Upstream tuned detectors on a dense benchmark, deployed them on a
 sparse one, and precision fell from 90 to 45, 74 to 10, 58 to 10. That was a
 figure in a deck. Here it is an assertion.
 
-The two regimes are both **untreated** and both measured: the interquartile
-spread of per-ROI rate across baseline slices, 0.0038 Hz at p25 and 0.0175 Hz at
-p75 — a 4.6-fold change that real slices show among themselves. No drug is
+The two regimes are both **untreated** and both measured: 0.0038 Hz and 0.0175
+Hz per ROI, a 4.6-fold change real slices show among themselves. No drug is
 involved, which matters, because a treatment regime would make the test a
 question about pharmacology instead of about generalization.
+
+⚠ **Those endpoints are p25/p75 of the SLICE-POPULATION rate, divided by a
+derived ROI count.** As per-ROI rates they sit at roughly the **60th and 83rd
+percentiles** — a 23-percentile band, not an interquartile spread. See
+`docs/reviews/roi_rate_distribution_2026-08-15.md`. This is the concrete reason
+a null result on this axis is weak: the axis is provably narrower than the
+sentence that used to describe it.
 
 **The threshold is chosen on the training regime and carried over unchanged.**
 Re-picking it on the target is the whole failure being tested for: it hides the
@@ -38,40 +44,84 @@ REGIMES = ("baseline_quiet", "baseline_busy")
 ARCHES = ("tube", "trace", "tiny")
 LR = {"tube": 1e-2, "trace": 1e-3, "tiny": 1e-3}
 BENCH_SEEDS = (1, 2, 3)
+# Held out from BENCH_SEEDS, so the six's knob is chosen off the recordings it is
+# then graded on — matching what `learn.train.pick_threshold` already does for
+# the learned models.
+CALIBRATION_SEEDS = (901, 902, 903, 904)
+
+
+def _row(r) -> dict:
+    return dict(f1=r.f1, recall=r.recall, precision=r.precision,
+                n_detected=r.n_detected, n_scored=r.n_scored, hot_fa=r.hot_fa,
+                by_frac={f"{f:g}": r.recall_at(f) for f in sorted(r.by_frac)})
 
 
 def _score(tr, regime, make):
+    """Score a trained model, pooled by the bench's own rule.
+
+    This used to compute `n_hit / n_detected` by hand while the six went through
+    `evaluate` and got the promiscuity probe excluded from their denominator —
+    so the two halves of the comparison this file exists to make were on
+    different metrics.
+    """
+    from bugarach.bench import pool_scores
     from bugarach.score import score_stream
-    hit = det = pl = 0
+    scores = []
     for s in BENCH_SEEDS:
         sl, gt = make(regime, seed=s)
         d, _ = tr.predict(sl)
-        sc = score_stream(gt, d)
-        hit += sc.n_hit
-        det += sc.n_detected
-        pl += sc.n_planted
-    rec = hit / pl if pl else float("nan")
-    pre = hit / det if det else 0.0
-    f1 = 0.0 if (rec + pre) == 0 else 2 * rec * pre / (rec + pre)
-    return dict(f1=f1, recall=rec, precision=pre, n_detected=det)
+        scores.append(score_stream(gt, d))
+    return _row(pool_scores(scores, detector="learned", regime=regime,
+                            seeds=BENCH_SEEDS))
 
 
 def run() -> dict:
-    from bugarach.bench import DETECTORS, evaluate, make_recording
+    from bugarach.bench import (DETECTORS, EdgeOfRange, OPERATING_POINTS,
+                                evaluate, make_recording, pick_operating_point,
+                                sweep)
     from bugarach.learn.train import train
 
-    out: dict = {"learned": {}, "six": {}}
+    out: dict = {"learned": {}, "six": {}, "six_transfer": {}}
 
-    # The six do not train, so they only need evaluating in each regime — but
-    # their operating points WERE calibrated, in one regime, which is the same
-    # exposure a trained model has.
+    # The six at their shipped operating points, evaluated in each regime.
     for d in DETECTORS:
         out["six"][d] = {}
         for r in REGIMES:
-            e = evaluate(d, r, seeds=BENCH_SEEDS)
-            out["six"][d][r] = dict(f1=e.f1, recall=e.recall,
-                                    precision=e.precision,
-                                    n_detected=e.n_detected)
+            out["six"][d][r] = _row(evaluate(d, r, seeds=BENCH_SEEDS))
+
+    # --- the six under the SAME experiment the learned models get -------------
+    # Evaluating a fixed detector twice is not a transfer test: a detector with
+    # no fitted state cannot exhibit a transfer collapse, so its flatness is no
+    # evidence that the axis is mild. The matched test is to calibrate on one
+    # regime and carry the knob over unchanged — which is what the learned models
+    # do with their threshold, and what the historical failure this file cites
+    # actually was.
+    #
+    # **Calibrated on held-out seeds, scored on the bench seeds.** The learned
+    # models pick their threshold on four recordings drawn from a disjoint seed
+    # block and are never scored on them (`learn.train.pick_threshold`). Choosing
+    # the six's knob on BENCH_SEEDS and then reporting their "at home" number on
+    # those same three recordings would give one side of this comparison a knob
+    # fitted to the exact recordings it is graded on, and the other side a
+    # genuinely held-out one — which is not the same experiment, whichever way
+    # the bias happened to run.
+    for d in DETECTORS:
+        out["six_transfer"][d] = {}
+        for train_on in REGIMES:
+            try:
+                best = pick_operating_point(
+                    sweep(d, train_on, seeds=CALIBRATION_SEEDS))
+            except EdgeOfRange as e:
+                out["six_transfer"][d][train_on] = {"edge_of_range": str(e)}
+                continue
+            knob = OPERATING_POINTS[d].knob
+            cell = {"knob": knob, "knob_value": best.knob_value,
+                    "calibration_seeds": list(CALIBRATION_SEEDS)}
+            for test_on in REGIMES:
+                # knob NOT re-picked on the target — the point of the test
+                cell[test_on] = _row(evaluate(d, test_on, seeds=BENCH_SEEDS,
+                                              **{knob: best.knob_value}))
+            out["six_transfer"][d][train_on] = cell
 
     for name in ARCHES:
         out["learned"][name] = {}
@@ -113,11 +163,29 @@ def report(res) -> str:
                 f"{shift['precision'] - same['precision']:+7.2f}")
     lines.append("")
     lines.append("the six, at their fixed operating points (calibrated once, not here)")
+    lines.append("  -- NOT a transfer test: nothing is carried over, so nothing can collapse")
     for d, byreg in res["six"].items():
         lines.append(f"{d:>8} {'—':>6} | {byreg[q]['f1']:8.2f} {byreg[b]['f1']:9.2f} "
                      f"{byreg[b]['f1'] - byreg[q]['f1']:+7.2f} | "
                      f"{byreg[q]['precision']:10.2f} {byreg[b]['precision']:11.2f} "
                      f"{byreg[b]['precision'] - byreg[q]['precision']:+7.2f}")
+    lines.append("")
+    lines.append("the six, CALIBRATED on one regime and carried over — the matched test")
+    for d, byreg in res.get("six_transfer", {}).items():
+        for train_on, cell in byreg.items():
+            if "edge_of_range" in cell:
+                lines.append(f"{d:>8} {('quiet' if train_on == q else 'busy'):>6} |"
+                             f"  grid edge — no operating point")
+                continue
+            other = b if train_on == q else q
+            same, shift = cell[train_on], cell[other]
+            lines.append(
+                f"{d:>8} {('quiet' if train_on == q else 'busy'):>6} | "
+                f"{same['f1']:8.2f} {shift['f1']:9.2f} "
+                f"{shift['f1'] - same['f1']:+7.2f} | "
+                f"{same['precision']:10.2f} {shift['precision']:11.2f} "
+                f"{shift['precision'] - same['precision']:+7.2f}"
+                f"   @{cell['knob']}={cell['knob_value']:g}")
     return "\n".join(lines)
 
 

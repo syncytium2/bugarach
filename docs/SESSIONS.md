@@ -71,13 +71,20 @@ Template:
 - **Notes:** `bugarach.assess` ports interface2's `measure_coordination_timescale` at 1e-9
   parity — coordination measured **without a detector**, so generator priors do not inherit
   an operating point. `bugarach.adapt` turns an assessment into generator parameters with a
-  measured round-trip fidelity table (K=4 default; participation +18%, jitter +9%).
-  **The learned detector itself does NOT converge** (F1 0.12-0.15 against CoactDetect's
-  0.66) — diagnosis in `docs/todo/2026-08-16-learned-detector-does-not-converge.md`.
-  Anyone picking this up: read that first, four causes are already ruled out.
+  measured round-trip fidelity table.
 
-  `$BUGARACH_DARKROOM` is **unset on this Mac**, same as the earlier site session found.
-  Resolve by hand or export it in the shell profile; never hardcode (SAP004).
+  ⚠ **Two claims that used to sit here are dead, and both were quoted onward before
+  anyone caught them.** "The learned detector does NOT converge" describes a model that
+  was replaced the same day — Tony's centre-surround tube converges in six seconds. And
+  "CoactDetect 0.66" came from a two-seed run; at the bench's three seeds the leader is
+  `rate` at 0.64. The superseding write-up is
+  `docs/todo/2026-08-16-learned-detectors-handoff.md`, and
+  `2026-08-16-learned-detector-does-not-converge.md` should be deleted rather than read.
+
+  ⚠ **The darkroom copy claimed above was never made** — `$BUGARACH_DARKROOM` is unset on
+  this Mac, so the write silently did not happen while the board recorded it as done. Treat
+  `docs/learned/` as the only copy. Resolve the path by hand or export it in the shell
+  profile; never hardcode (SAP004).
 
 
 ### Mac/generator-records-realized-onsets — the generator should record what it planted

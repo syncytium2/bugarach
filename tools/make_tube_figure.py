@@ -12,11 +12,22 @@ Three rows over the same stretch of one bench recording:
 
 The point of the figure is the comparison between the last two. A coordinated
 event is a bright spot in the middle row, but so is a busy patch of background;
-the bottom row is what separates them, and it is one convolution rather than a
-trained opinion.
+the bottom row sharpens the difference, using one fixed-form convolution rather
+than a trained rule about what an event looks like.
+
+⚠ **This is an illustration of the operation, not a trace of the trained model.**
+The model runs four difference-of-Gaussian kernels at once at its own fitted
+widths and carries the untouched brightness trace alongside them; this draws one
+kernel at one width. The constants are read from the trained model's cached
+parameters rather than typed, so the illustration cannot drift from the
+implementation, but it is still one channel of five.
 
 Everything is measured off the generator's own planted truth, so the marks are
-where events actually are rather than where a detector believes they are.
+where events actually are rather than where a detector believes they are — and
+that includes the **distractors**: correlated population bursts the generator
+plants on purpose as negatives. They are the "moments that are not events" the
+middle row shows, and leaving them unmarked tells the reader a deliberate
+negative is ordinary background.
 """
 
 from __future__ import annotations
@@ -28,7 +39,13 @@ from pathlib import Path
 
 import numpy as np
 
-WINDOW = (300.0, 1150.0)      # a stretch holding several planted events
+# A stretch holding several planted events, several planted distractors, AND the
+# promiscuity probe at (1200, 1500) — the dense-but-random block put there
+# specifically to fool a rate-sensitive detector. The window used to stop at
+# 1150 s, fifty seconds short of it, so the figure arguing that centre-surround
+# separates events from busy background excluded the one stretch built to break
+# exactly that.
+WINDOW = (300.0, 1560.0)
 SEED = 1
 REGIME = "baseline_busy"
 
@@ -57,7 +74,24 @@ def _dog(trace, centre, ratio=8.0):
     return np.convolve(trace, kern, mode="same")
 
 
-def build(width=980):
+def _fitted(out_dir: Path):
+    """The trained model's own centre width and surround ratio, from the cache.
+
+    Hand-picked constants here previously disagreed with the model on every
+    axis: a pooling half-width of 4 samples against the model's 1, one kernel
+    against four, and a surround ratio of 8.0 that is the *initialisation* value
+    rather than a fitted one. Reading the cache keeps the illustration tied to
+    the implementation.
+    """
+    import json
+    cache = out_dir / "learned_results.json"
+    if not cache.exists():
+        return None
+    centres = json.loads(cache.read_text())["learned"]["tube"]["centres"]
+    return centres
+
+
+def build(width=980, out_dir: Path | None = None):
     import holoviews as hv
 
     from bugarach.bench import make_recording
@@ -68,44 +102,81 @@ def build(width=980):
     enc = encode(s, dt=0.1)
     dt = enc.dt
     lo, hi = int(WINDOW[0] / dt), int(WINDOW[1] / dt)
-    sub = enc.raster[:, lo:hi]
+    # Compute over the WHOLE recording, then crop for display. Cropping first
+    # convolved ~19 s at each end against zero padding, which the model never sees.
+    full_bright_src = enc.raster
     t = np.arange(lo, hi) * dt
 
-    bright = _brightness(sub, half=4)         # ~0.8 s, the measured event width
-    excess = _dog(bright, centre=4.0)
+    centres = _fitted(out_dir) if out_dir else None
+    # The model's cap window is set from its SMALLEST fitted centre, truncated to
+    # an integer — with the fitted centres that is 1 sample, not 4.
+    half = int(min(centres)) if centres else 1
+    centre = centres[1] if centres else 4.0     # the scale the page quotes
 
-    planted = [float(e.time) for e in gt.events
-               if WINDOW[0] <= e.time <= WINDOW[1]]
+    bright_full = _brightness(full_bright_src, half=max(half, 1))
+    excess_full = _dog(bright_full, centre=centre)
+    bright, excess = bright_full[lo:hi], excess_full[lo:hi]
+    sub = enc.raster[:, lo:hi]
 
-    # --- row 1: the specks ---------------------------------------------------
+    inwin = lambda v: WINDOW[0] <= v <= WINDOW[1]                    # noqa: E731
+    planted = [float(e.time) for e in gt.events if inwin(e.time)]
+    distractors = [float(v) for v in getattr(gt, "distractor_times", [])
+                   if inwin(v)]
+    hot = gt.params.get("hot_window") if hasattr(gt, "params") else None
+
+    def _probe(fig):
+        """Shade the promiscuity probe wherever it appears."""
+        if not hot:
+            return fig
+        return hv.VSpan(hot[0], hot[1]).opts(
+            color="#c9a227", alpha=0.13, line_alpha=0) * fig
+
+    # --- A: the specks -------------------------------------------------------
     rr, cc = np.nonzero(sub)
     raster = hv.Scatter((t[cc], rr), kdims=["t"], vdims=["cell"]).opts(
         marker="square", size=1.6, color="#3a4450", alpha=.85)
-    ticks = hv.Scatter((planted, [sub.shape[0] + 0.5] * len(planted)),
+    # Two marker rows, not one. Drawn at the same height, a planted event and a
+    # distractor 4 s apart overlapped into what reads as a six-pointed star — a
+    # third category the caption never declares.
+    ticks = hv.Scatter((planted, [sub.shape[0] + 1.6] * len(planted)),
                        kdims=["t"], vdims=["cell"]).opts(
         marker="triangle", size=9, color="#1b7f3b")
-    row1 = (raster * ticks).opts(
-        width=width, height=210, xaxis=None, ylabel="cells · by rate",
+    # Distractors carry the project's existing convention — an open inverted
+    # triangle in grey (`make_generator_figures.build`).
+    dmark = hv.Scatter((distractors, [sub.shape[0] - 0.6] * len(distractors)),
+                       kdims=["t"], vdims=["cell"]).opts(
+        marker="inverted_triangle", size=9, color="#5a5a5a", fill_alpha=0,
+        line_width=1.4)
+    rowA = _probe(raster * ticks * dmark).opts(
+        width=width, height=210, xaxis=None,
+        ylabel=f"A · cell (rank by rate) · {sub.shape[0]} ROI",
         ylim=(-1, sub.shape[0] + 2), xlim=WINDOW, show_legend=False,
-        fontsize={"ylabel": "10pt"}, hooks=[_time_axis_hook])
-
-    # --- row 2: what the tube sees -------------------------------------------
-    row2 = hv.Curve((t, bright), kdims=["t"], vdims=["bright"]).opts(
-        color="#2f5d8a", line_width=1.2, width=width, height=150, xaxis=None,
-        ylabel="cells active", xlim=WINDOW, fontsize={"ylabel": "10pt"},
+        fontsize={"ylabel": "10pt", "ticks": "10pt"},
         hooks=[_time_axis_hook])
 
-    # --- row 3: centre minus surround ----------------------------------------
+    # --- B: what the tube sees -----------------------------------------------
+    rowB = _probe(hv.Curve((t, bright), kdims=["t"], vdims=["bright"]).opts(
+        color="#2f5d8a", line_width=1.2)).opts(
+        width=width, height=150, xaxis=None,
+        ylabel="B · cells active (fraction)", xlim=WINDOW,
+        fontsize={"ylabel": "10pt", "ticks": "10pt"},
+        hooks=[_time_axis_hook])
+
+    # --- C: centre minus surround --------------------------------------------
     zero = hv.HLine(0).opts(color="#9aa5b1", line_width=1)
-    row3 = (zero * hv.Curve((t, excess), kdims=["t"], vdims=["excess"]).opts(
+    # Height, not wording. A y-label is laid out against the panel's own height,
+    # so lengthening it to carry units clipped the last glyphs off the bottom —
+    # the classic "any font or label change is a layout change" regression. The
+    # extra 55 px is the axis row this panel carries and the other two do not.
+    rowC = _probe(zero * hv.Curve((t, excess), kdims=["t"],
+                                  vdims=["excess"]).opts(
         color="#b0413e", line_width=1.3)).opts(
-        width=width, height=195, ylabel="centre − surround", xlabel="time",
-        xlim=WINDOW, fontsize={"ylabel": "10pt", "xlabel": "10pt"},
+        width=width, height=250,
+        ylabel="C · centre − surround (fraction)", xlabel="time (min:sec)",
+        xlim=WINDOW, fontsize={"ylabel": "10pt", "xlabel": "10pt", "ticks": "10pt"},
         hooks=[_time_axis_hook])
 
-    for r in (row1, row2, row3):
-        pass
-    lay = row1 + row2 + row3
+    lay = rowA + rowB + rowC
     return lay.cols(1).opts(shared_axes=False, merge_tools=True, toolbar=None)
 
 
@@ -126,17 +197,10 @@ def main(argv=None):
     spec.loader.exec_module(mgf)
 
     a.out.mkdir(parents=True, exist_ok=True)
-    page = pn.Column(
-        pn.pane.HTML(
-            '<div style="font:13px/1.6 system-ui,sans-serif;max-width:980px">'
-            '<b style="font-size:15px">What a coordinated event looks like, and '
-            'why it is hard to see</b><br>'
-            '<span style="color:#555">Green triangles mark events the generator '
-            'actually planted. Middle: the fraction of cells active near each '
-            'instant &mdash; every onset counted once per cell. Bottom: the same '
-            'trace minus its own local level.</span></div>'),
-        pn.pane.HoloViews(build(a.width)))
-    mgf._write(page, a.out, "tube_view", png=True)
+    # No title or standfirst baked into the raster — the HTML figcaption is the
+    # single caption, where it is selectable, reflows, and follows the theme.
+    mgf._write(pn.Column(pn.pane.HoloViews(build(a.width, out_dir=a.out))),
+               a.out, "tube_view", png=True)
     return 0
 
 

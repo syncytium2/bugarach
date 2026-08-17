@@ -171,21 +171,27 @@ def pick_threshold(model, make_recording, *, dt, seed, n_val: int = 4,
     # boundary value once got published upstream as one.
     grid = np.concatenate([np.arange(0.05, 0.95, 0.05),
                            1.0 - np.geomspace(0.05, 1e-4, 12)])
+    # Pooled by `bench.pool_scores`, like everything else scored against this
+    # benchmark. Selecting the operating point under one rule and reporting it
+    # under another is the same defect as scoring two detectors differently, and
+    # it is worse here because it is invisible: the number that ships is honest
+    # and the choice behind it was not. Picking by hand cost 0.08 of F1 — the
+    # hand-rolled rule counted probe firings against every candidate threshold,
+    # so it chose a stricter point than the reported metric wanted.
+    from bugarach.bench import pool_scores
+
     best, best_f1 = 0.5, -1.0
     for thr in grid:
-        tot_hit = tot_det = tot_pl = 0
+        scs = []
         for p, enc, gt in scored:
             det = decode(p, threshold=float(thr),
                          merge_gap_frames=merge_gap_frames)
-            sc = score_stream(gt, det.to_seconds(enc))
-            tot_hit += sc.n_hit
-            tot_det += sc.n_detected
-            tot_pl += sc.n_planted
-        if tot_det == 0 or tot_pl == 0:
+            scs.append(score_stream(gt, det.to_seconds(enc)))
+        pooled = pool_scores(scs, detector="learned", regime="val", seeds=seeds)
+        if pooled.n_scored <= 0 or pooled.n_planted == 0:
             continue
-        r, pr = tot_hit / tot_pl, tot_hit / tot_det
-        f1 = 0.0 if (r + pr) == 0 else 2 * r * pr / (r + pr)
-        if f1 > best_f1:
+        f1 = pooled.f1
+        if np.isfinite(f1) and f1 > best_f1:
             best_f1, best = f1, float(thr)
     if best >= grid[-1] - 1e-12 or best <= grid[0] + 1e-12:
         import warnings
