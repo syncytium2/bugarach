@@ -75,6 +75,12 @@ Template:
   `docs/reviews/coordination_report_2026-08-17.md` (11/11 roles, 2 rounds, one fabricated
   citation caught). Published with a `README.md` naming what to open, and the review record
   travels beside the report as `murderboard_record.md`.
+- **One write outside the claim, recorded rather than tidied away:** the report was hard to
+  find three levels down, so `<darkroom>/bugarach/README.md` — the parent index, which this
+  block had explicitly *excluded* — gained a "start here" pointer and a table of the dated
+  subfolders. Append-only, no existing text removed. Noting it because a claim that says
+  "nothing else under `<darkroom>/bugarach/`" and then writes there is worth less than one
+  that admits it.
 
 ### Mac/darkroom-serves-the-corrected-report — replace the withdrawn report in the darkroom
 - **Status:** DONE 2026-08-17 — **claim released**, the folder is free
