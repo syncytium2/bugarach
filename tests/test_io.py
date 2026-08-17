@@ -237,7 +237,13 @@ def test_load_folder_rejects_a_label_in_the_region_idx_column(tmp_path: Path):
 def test_a_store_round_trips_through_the_folder_contract(tmp_path: Path):
     """Write a real store out as the contract, read it back, and require the
     population and the events to survive intact — silent ROIs included, which
-    is the whole reason the NA row exists."""
+    is the whole reason the NA row exists.
+
+    This doubles as the worked example of a conforming producer, so it sends
+    **t50rise**: `time_sec` is when the event began, and in these stores that
+    is `t50rise`, not `locs` (the peak). Sending `locs` would round-trip just
+    as cleanly and be wrong by ~0.3 s in FAST and ~2 s in SLOW — a silent
+    error the format cannot catch, because both are plausible seconds."""
     import csv as _csv
 
     from bugarach import load_slice
@@ -249,11 +255,12 @@ def test_a_store_round_trips_through_the_folder_contract(tmp_path: Path):
         w = _csv.writer(f)
         w.writerow(["roi", "time_sec", "stream"])
         for sname, st in ref.streams.items():
-            for i, locs in enumerate(st.locs):
+            for i, onsets in enumerate(st.t50rise):
                 roi = ref.roi_ids[i] if ref.roi_ids else str(i + 1)
-                if locs.size == 0:
+                onsets = np.sort(onsets[np.isfinite(onsets)])
+                if onsets.size == 0:
                     w.writerow([roi, "NA", sname])       # recorded, fired nothing
-                for t in locs:
+                for t in onsets:
                     w.writerow([roi, f"{t:.6f}", sname])
     with (d / "regions.csv").open("w", newline="") as f:
         w = _csv.writer(f)
@@ -273,8 +280,8 @@ def test_a_store_round_trips_through_the_folder_contract(tmp_path: Path):
         # itself, and the contract promises the ids, not an index
         for i, rid in enumerate(ref_ids):
             j = got.roi_ids.index(rid)
-            np.testing.assert_allclose(np.sort(rst.locs[i]), gst.locs[j],
-                                       atol=1e-6)
+            onsets = np.sort(rst.t50rise[i][np.isfinite(rst.t50rise[i])])
+            np.testing.assert_allclose(onsets, gst.locs[j], atol=1e-6)
     assert [r.name for r in got.regions] == [r.name for r in ref.regions]
 
 

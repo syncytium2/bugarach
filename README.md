@@ -129,6 +129,12 @@ uses, exit 0 or 1, so it drops into a build:
 bugarach check my_export/
 ```
 
+Open the folder — one recording per page, both channels, nothing computed:
+
+```bash
+bugarach view my_export/ --raster-only
+```
+
 Only the recording files are required; each table buys one thing. Nothing in the
 contract is specific to a lab, a preparation or a pipeline, no viability verdict is
 computed, and extra columns are ignored rather than rejected. Full contract:

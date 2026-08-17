@@ -276,11 +276,21 @@ def _signal_row(det, t, y, events, extra, ext, label: str | None = None) -> hv.O
     )
 
 
-def build_viewer(slices: dict[str, Slice], *, title: str = "bugarach"):
+def build_viewer(slices: dict[str, Slice], *, title: str = "bugarach",
+                 raster_only: bool = False):
     """Assemble the viewer for a set of named slices. Returns a Panel
-    template servable with `panel serve` / pn.serve()."""
+    template servable with `panel serve` / pn.serve().
+
+    ``raster_only`` shows the recordings and nothing else — no detectors, no
+    parameters, no recompute. It is the honest first look at a folder you were
+    just handed: every detector on this page is a claim about the data, and
+    before making one it is worth seeing what arrived. It also loads instantly
+    on a deck this size, because nothing is computed."""
     if not slices:
         raise ValueError("no slices to view")
+
+    if raster_only:
+        return _build_raster_viewer(slices, title=title)
 
     slice_sel = pn.widgets.Select(name="slice", options=list(slices))
     # Toggle buttons, not checkboxes — a full-size click target
@@ -362,6 +372,48 @@ def build_viewer(slices: dict[str, Slice], *, title: str = "bugarach"):
     return pn.template.FastListTemplate(
         title=title, sidebar=[sidebar], main=[main],
         accent_base_color="#4f6d7a", header_background="#4f6d7a",
+    )
+
+
+def _build_raster_viewer(slices: dict[str, Slice], *, title: str):
+    """The recordings, and nothing that interprets them."""
+    slice_sel = pn.widgets.Select(name="recording", options=list(slices))
+    status = pn.pane.Markdown("")
+    main = pn.Column(sizing_mode="stretch_width")
+
+    def render(_=None):
+        s = slices[slice_sel.value]
+        ext = recording_extent(s)
+        rows = [_raster(stream, name, ext)
+                for name, stream in s.streams.items()]
+        last = len(rows) - 1
+        styled = [r.opts(xaxis=None) if i < last else r.opts(height=195)
+                  for i, r in enumerate(rows)]
+        main.objects = [pn.pane.HoloViews(
+            hv.Layout(styled).cols(1).opts(shared_axes=True))]
+
+        # what the reader needs to judge the picture: how long, how many ROIs,
+        # and which periods — a raster with no windows named is a wall of dots
+        mins = (ext[1] - ext[0]) / 60.0
+        n_events = sum(st.n_events for st in s.streams.values())
+        quiet = sum(1 for i in range(next(iter(s.streams.values())).n_rois)
+                    if all(st.locs[i].size == 0 for st in s.streams.values()))
+        bits = [f"`{s.slice_id}`",
+                f"{next(iter(s.streams.values())).n_rois} ROI"
+                + (f" ({quiet} with no events)" if quiet else ""),
+                f"{n_events} events",
+                f"{mins:.1f} min",
+                " · ".join(f"{r.name or '(unnamed)'} "
+                           f"{r.start_sec / 60:.0f}–{r.end_sec / 60:.0f}m"
+                           for r in s.regions) or "no windows declared"]
+        status.object = "  \n".join(bits)
+
+    slice_sel.param.watch(render, "value")
+    render()
+    return pn.template.FastListTemplate(
+        title=title, sidebar=[pn.Column(slice_sel, status, width=340)],
+        main=[main], accent_base_color="#4f6d7a",
+        header_background="#4f6d7a",
     )
 
 

@@ -146,6 +146,16 @@ nothing here claims to beat one.</p>
 <p><a href="landscape.html">The full landscape &rarr;</a> — what a dozen methods
 emit, whether they learned it, and what that leaves this work entitled to claim.</p>
 
+<h2>Open your own recordings</h2>
+<p><a href="viewer.html">The raster viewer &rarr;</a> — point it at a folder of
+event times and it draws them. It reads the
+<a href="https://github.com/syncytium2/bugarach/blob/main/docs/export_folder_spec.md">import
+contract</a>: one CSV per recording with <code>roi</code> and <code>time_sec</code>,
+which most labs can write from whatever their detector already produces.
+<b>Your files never leave your computer</b> — the page has no network call in it,
+and this site is static files with no server to receive anything. Nothing is
+installed and nothing is uploaded.</p>
+
 <p style="margin-top:2rem;color:#666;font-size:.9rem">
   Source: <a href="https://github.com/syncytium2/bugarach">github.com/syncytium2/bugarach</a>
   · BSD-3-Clause · built from <code>{commit}</code>
@@ -274,6 +284,30 @@ def main(argv=None):
               f"landscape.src.html first.", file=sys.stderr)
         return 1
     shutil.copyfile(land, SITE / "landscape.html")
+
+    # The raster viewer is hand-written and self-contained, so publishing it is
+    # a copy too. IT SHIPS NO DATA AND CANNOT: there is no network call in it,
+    # and the recording it draws is whichever folder the reader opens from their
+    # own disk. That is what lets a page which reads real recordings sit on a
+    # public site with §5 having nothing to say about it — the repo publishes an
+    # empty reader, not a recording.
+    viewer = ROOT / "docs" / "site" / "raster_viewer.html"
+    if not viewer.exists():
+        print(f"build_site: {viewer.relative_to(ROOT)} is missing, and the "
+              f"index links to it.", file=sys.stderr)
+        return 1
+    body = viewer.read_text(encoding="utf-8")
+    # The privacy line on that page is a property of its code, so it is checked
+    # here rather than believed. A page that fetches is a page that could send.
+    leaks = [w for w in ("fetch(", "XMLHttpRequest", "navigator.sendBeacon",
+                         "WebSocket", "EventSource", "import(")
+             if w in body.replace("no fetch(), no XHR", "")]
+    if leaks:
+        print(f"build_site: the viewer page contains {', '.join(leaks)}. It tells "
+              f"the reader their files never leave their computer, and that is "
+              f"only true while this page reaches nothing.", file=sys.stderr)
+        return 1
+    shutil.copyfile(viewer, SITE / "viewer.html")
 
     real_size = _png_size(SITE / "reality.png")
     if real_size is None:
