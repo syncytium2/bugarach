@@ -30,6 +30,7 @@ from __future__ import annotations
 
 import csv
 import re
+import warnings
 from pathlib import Path
 
 import numpy as np
@@ -45,6 +46,20 @@ RESERVED = ("slices.csv", "regions.csv", "metric_dictionary.csv")
 #: Spellings of "this ROI was recorded and produced no event here". The bare
 #: empty field is included because that is what a spreadsheet writes.
 NO_EVENT = ("", "na", "nan", "none", "null")
+
+
+class TableMissesARecordingWarning(UserWarning):
+    """A reserved table is present but has no row for some recording.
+
+    The producer shipped the table, so they meant to describe that recording —
+    a `slice_id` that matches no file, or a file that matches no row, is
+    usually one typo. Silence here costs a window or an interval and looks
+    exactly like a deliberate omission.
+
+    Not an error: a batch table legitimately covers more recordings than a
+    given folder holds, so extra rows are fine. What is reported is the other
+    direction — a recording the table failed to reach.
+    """
 
 
 def _as_stream(per_roi: list, durations: list | None = None) -> Stream:
@@ -251,6 +266,21 @@ def load_folder(folder) -> list[Slice]:
 
     meta = {r.get("slice_id", ""): dict(r)
             for r in _read_table(folder / "slices.csv", ("slice_id",))}
+
+    for name, table, present in (("regions.csv", regions,
+                                  (folder / "regions.csv").is_file()),
+                                 ("slices.csv", meta,
+                                  (folder / "slices.csv").is_file())):
+        if not present:
+            continue                      # absent is a choice, not a mistake
+        missed = [p.stem for p in files if p.stem not in table]
+        if missed:
+            shown = ", ".join(missed[:5]) + (" …" if len(missed) > 5 else "")
+            warnings.warn(
+                f"{folder.name}: {name} has no row for {len(missed)} of "
+                f"{len(files)} recording(s) ({shown}). Those recordings get "
+                f"nothing from it — check the slice_id spelling against the "
+                f"file names.", TableMissesARecordingWarning, stacklevel=2)
 
     return [
         load_events_csv(p, slice_id=p.stem, regions=regions.get(p.stem),

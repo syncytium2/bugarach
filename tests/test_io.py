@@ -1,6 +1,7 @@
 """Tests for generic ingestion (foreign single-stream, region-less data) and
 the region-optional detection path."""
 
+import warnings
 from pathlib import Path
 
 import numpy as np
@@ -9,7 +10,8 @@ import pytest
 from bugarach.detectors.loco import effective_region_windows, loco_detect
 from bugarach.detectors.rate import recording_extent
 from bugarach.detectors.sce import sce_detect
-from bugarach.io import load_events_csv, load_folder, slice_from_events
+from bugarach.io import (TableMissesARecordingWarning, load_events_csv,
+                         load_folder, slice_from_events)
 
 
 def _single_stream_events(n_rois=6, seed=11):
@@ -274,6 +276,30 @@ def test_a_store_round_trips_through_the_folder_contract(tmp_path: Path):
             np.testing.assert_allclose(np.sort(rst.locs[i]), gst.locs[j],
                                        atol=1e-6)
     assert [r.name for r in got.regions] == [r.name for r in ref.regions]
+
+
+def test_a_table_that_misses_a_recording_is_reported(tmp_path: Path):
+    """A typo'd slice_id costs a window or an interval and looks deliberate."""
+    d = _folder(tmp_path,
+                s1="roi,time_sec\n1,1.0\n",
+                regions=("slice_id,region_idx,label,start_sec,end_sec\n"
+                         "s7,1,baseline,0,60\n"))
+    with pytest.warns(TableMissesARecordingWarning, match="regions.csv"):
+        s, = load_folder(d)
+    assert s.regions == []
+
+
+def test_a_table_covering_extra_recordings_is_silent(tmp_path: Path):
+    """One batch table may legitimately cover more than this folder holds."""
+    d = _folder(tmp_path,
+                s1="roi,time_sec\n1,1.0\n",
+                regions=("slice_id,region_idx,label,start_sec,end_sec\n"
+                         "s1,1,baseline,0,60\n"
+                         "s2,1,baseline,0,60\n"))
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", TableMissesARecordingWarning)
+        s, = load_folder(d)
+    assert [r.name for r in s.regions] == ["baseline"]
 
 
 def test_roi_ids_order_numerically_not_lexicographically(tmp_path: Path):

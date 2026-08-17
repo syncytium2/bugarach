@@ -34,10 +34,21 @@ my_export/
   regions.csv         one row per treatment window
 ```
 
-**Every `.csv` is a recording except `slices.csv`, `regions.csv` and
-`metric_dictionary.csv`.** The file's name is the recording's id — no column
-declares it and nothing parses the name further. A folder of recording files and
-nothing else is a valid input; each of the two tables buys exactly one thing.
+**Every `.csv` is a recording except three reserved names**: `slices.csv` and
+`regions.csv`, the two input tables shown above, and `metric_dictionary.csv` — not
+shown, because it belongs to the *output* contract further down. It is reserved
+anyway, so that shipping it alongside the input does not read as a recording called
+"metric_dictionary".
+
+The file's name is the recording's id — no column declares it and nothing parses
+the name further. A folder of recording files and nothing else is a valid input;
+each input table buys exactly one thing.
+
+**A table that names a recording the folder does not hold is fine** — one batch
+table may cover more recordings than any given folder. **The reverse is reported:**
+if a table is present and has no row for a recording that *is* in the folder, that
+recording silently gets nothing from it, which is almost always one typo in a
+`slice_id`. bugarach warns and names the recordings it could not match.
 
 ### `<slice_id>.csv` — one per recording, at least one required
 
@@ -45,7 +56,7 @@ One row per detected event, in one ROI.
 
 | column | type | meaning |
 |---|---|---|
-| `roi` | text | which ROI. Any string, unique within the recording. |
+| `roi` | text | which ROI. Any string; the same string on every row of that ROI, and used by no other ROI in the recording. |
 | `time_sec` | number | when the event began, in seconds — **or `NA`**, see below. |
 | `stream` | text | which signal the event came from. Any name. A single-stream lab may omit the column entirely — every event is then one unnamed stream. |
 
@@ -61,10 +72,10 @@ empty field means the same thing, because that is what a spreadsheet writes.
 
 This is the only way to say it, and it has to be said. One row per event means a
 silent ROI otherwise has no rows at all — and *absent* is indistinguishable from
-*never imaged*, so the ROI drops out of the population. A per-ROI rate is events
-divided by ROIs: five recorded with two quiet, counted over three, is overstated by
-a factor of 1.67. The error is largest in the quietest recordings, which is exactly
-where quiet is the result.
+*never imaged*, so the ROI drops out of the population. Every per-ROI quantity
+divides by that population: five ROIs recorded with two quiet, counted over three,
+comes out **1.67× too high**. The error is largest in the quietest recordings,
+which is exactly where quiet is the result.
 
 So `rate == 0` is a measurement, not a gap. bugarach reports the ROIs it was given
 and never infers the ones it wasn't — a producer that omits its silent ROIs has
