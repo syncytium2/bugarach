@@ -118,6 +118,20 @@ def build(assessment: dict, k: int, *, events_per_level: int = 5,
         "properties of the recordings, so the assessment has nothing to say "
         "about them and they must not be fitted away")
 
+    # The probe is an EXCLUSION: no planted event may land inside it, so the
+    # recording has to be longer than the event budget alone implies. adapt.py
+    # sizes the duration before the probe exists, and the generator then refuses
+    # to pack events closer rather than quietly shortening the spacing — which is
+    # the right refusal and the reason this has to be corrected here rather than
+    # by lowering min_sep_sec.
+    hot = kwargs.get("hot_window")
+    if hot:
+        excluded = float(hot[1] - hot[0]) + 2 * float(kwargs.get("ramp_sec", 0.0))
+        kwargs["duration_sec"] = float(kwargs["duration_sec"] + excluded)
+        notes.append(
+            f"duration_sec raised by {excluded:.0f}s to cover the probe window, "
+            "which no planted event may occupy")
+
     return {
         "generator": kwargs,
         "sweep": gp.sweep,

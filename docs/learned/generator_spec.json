@@ -15,7 +15,7 @@
    120.0,
    1100.0
   ],
-  "duration_sec": 3165.0,
+  "duration_sec": 3525.0,
   "grid_sec": 0.1,
   "hot_rate_hz": 0.06,
   "hot_window": [
@@ -80,7 +80,8 @@
   "duration_sec=3165 exceeds the 1200s window that was measured \u2014 the spacing floor needs the room",
   "bg_rate_hz derived from the population event rate / ROI count: median 0.00971 Hz, IQR 0.00370-0.01847. The tree's own measured regime endpoints are 0.0038 and 0.0175, so this store independently reproduces the interquartile band the bench was built on. The MEDIAN ROI rate is not used: 38% of slices have a median ROI with no events in baseline",
   "bg_rate_shape=0.275 and bg_burst_shape=(1.547, 1.388) at bins (300.0, 60.0) turn on the fitted per-ROI heterogeneity and burstiness. The bench's flat field is documented in the tree as easier than real data; leaving it flat would calibrate every detector for a recording nobody has",
-  "the promiscuity probe and the correlated-burst distractors are carried over from BENCH_RECORDING unchanged: they are deliberate negatives, not properties of the recordings, so the assessment has nothing to say about them and they must not be fitted away"
+  "the promiscuity probe and the correlated-burst distractors are carried over from BENCH_RECORDING unchanged: they are deliberate negatives, not properties of the recordings, so the assessment has nothing to say about them and they must not be fitted away",
+  "duration_sec raised by 360s to cover the probe window, which no planted event may occupy"
  ],
  "provenance": {
   "n_slices_assessed": 85,
