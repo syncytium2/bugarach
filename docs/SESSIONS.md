@@ -94,6 +94,49 @@ Template:
     existed.
   - **An analysis-window editor is version 2** (Tony, 2026-08-17). The contract carries
     `analysis_start_sec`/`analysis_end_sec` and the detectors honour them; nothing edits them.
+### Mac/sota-landscape — the landscape report, four upgrades, and the site's competitor links
+- **Status:** DONE 2026-08-17 — session ended, everything merged (PRs #69, #71, #74)
+- **Started:** 2026-08-17
+- **Writes:** repo, plus **two small writes to `<darkroom>/bugarach/lit/coordination/`**
+  — see the honesty note below.
+- **Claims:** none held. Released.
+- **✅ DEPLOYED 2026-08-17 by `Mac/import-contract+viewer`** (block above), so the warning
+  below is discharged: `landscape.html` and the competitor links are live, verified by
+  fetching them. Recorded rather than deleted, because the reason it was true is the
+  standing one — **nothing redeploys on merge**, and the next person to change
+  `build_site.py` inherits exactly this note.
+- **⚠ THE LIVE SITE WAS BEHIND `main` (resolved above).** `tools/build_site.py` gained a
+  "Where this sits" section linking DOSED, cnn-ripple and CICADA, and it now publishes
+  `landscape.html` into `site/`. **Nothing redeploys on merge** — someone must run
+  `npm run deploy` (see `docs/deploy.md`; needs node + a wrangler login). Until then
+  `bugarach.tonydefazio.com` has neither the competitor links nor the landscape page,
+  and the build refuses to run without `docs/learned/landscape.html` present.
+- **Honesty note — I wrote to the darkroom after releasing the claim on it.** The
+  `lit-adjacent-fields` block below was marked DONE and its claim released; the
+  murderboard that ran afterwards found the shelf README overstating its own read
+  status ("ten read in full" — it is nine), and I corrected the README and its DOSED
+  entry **without re-taking the claim**. Two lines in one file, no other session was
+  active on it, and the alternative was leaving a known-wrong count on a shelf whose
+  entire purpose is honest read status. Recording it because a claim that is released
+  and then written to is worth less than one that says so.
+- **Notes:** Section 3 of the coordination report is **corrected at source** — the
+  novelty claim is withdrawn, three groups already train networks that emit population
+  events with times. New companion page `docs/learned/landscape.html` positions the work
+  and links every competitor; `docs/learned/next_stage.md` sequences the four upgrades.
+  Review records: `docs/reviews/landscape_2026-08-17.md` (11/11 roles, 2 blind rounds)
+  and `docs/reviews/coordination_report_section3_2026-08-17.md` (11/11, 1 round).
+
+  ⚠ **The two pages must publish together.** `coordination_report.html` links to
+  `landscape.html` relatively, and that link carries its retraction. Copying the report
+  anywhere without the landscape page beside it points the correction at nothing.
+
+  **A measurement fell out of the reading and it is the useful part.** Scoring tolerance
+  is fixed at 1.5 s everywhere and had never been varied. Sweeping it: the published
+  ranking of the six is stable at every tolerance from 0.1 s to 3 s — so nothing already
+  published needs retracting — but **1.5 s sits past the plateau of every curve**, against
+  a median realized event footprint of 0.80 s. The bench cannot see localization at all.
+  Figure `docs/learned/tolerance_sweep.png`, todo
+  `2026-08-17-scoring-cannot-see-localization.md`.
 
 
 ### Mac/lit-adjacent-fields — the sleep and epilepsy sweep, and the four unread
