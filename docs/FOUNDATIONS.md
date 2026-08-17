@@ -198,23 +198,33 @@ a wrong conclusion in this repo. The authority is the global
   baseline shift. Any claim that a detector finds more under senktide must say
   which.
 - **A ZERO-EVENT ROI IS NOT A DEAD ROI, and the verdict is not this repo's to
-  compute.** `fireflies` owns it, spec'd normatively in its `decisions/0002` (@
-  `691ae62`): an ROI is dead only if silent at baseline **and** at drug **and**,
-  where a high-K⁺ test exists for its slice, under that too — high K⁺ being the
-  positive control that proves the ROI *can* fire. Baseline silence is one of
-  three conjuncts, and the two rates are an order of magnitude apart: **3.0%
-  rejected as dead** against roughly **35% with no events in a baseline window**.
-  That rule needs drug and high-K⁺ rows, which the baseline-only restriction above
-  puts out of reach, so there is nothing here to port and no activity threshold to
-  invent — selection is the exporter's decision, not the analysis layer's (Tony to
-  fireflies, 2026-08-10). Consequences that bind code here: report *"no events in
-  this window"* and never "silent", "dead", or any viability claim; do **not**
-  drop zero-event ROIs to tidy a distribution, because `freq == 0` is a valid
-  value and conditioning on having fired is group-dependent; and do **not**
-  recompute an ROI verdict per stream — fireflies computes it once on the combined
-  signal precisely so an ROI alive in SLOW is not rejected on FAST alone. Full
-  write-up, with what it does and does not cost the generator work:
+  compute. It is decided at export, in MATLAB, by the only stage holding the full
+  record of every ROI.** An ROI is dead only if silent at baseline **and** at drug
+  **and**, where a high-K⁺ test exists for its slice, under that too — high K⁺
+  being the positive control that proves the ROI *can* fire. Baseline silence is
+  one of three conjuncts, and the two rates are an order of magnitude apart:
+  **3.0% rejected as dead** against roughly **35% with no events in a baseline
+  window**. The rule needs every treatment of an ROI at once, which the
+  baseline-only restriction above puts out of reach here, so there is nothing to
+  port and no activity threshold to invent — selection is the exporter's decision,
+  not the analysis layer's (Tony, 2026-08-10; ownership settled on the exporter
+  2026-08-15). Consequences that bind code here: report *"no events in this
+  window"* and never "silent", "dead", or any viability claim; do **not** drop
+  zero-event ROIs to tidy a distribution, because `freq == 0` is a valid value and
+  conditioning on having fired is group-dependent; and do **not** recompute an ROI
+  verdict per stream — it is computed once on the combined signal precisely so an
+  ROI alive in SLOW is not rejected on FAST alone. Full write-up:
   [`docs/todo/2026-08-15-zero-event-rois-are-not-dead-rois.md`](todo/2026-08-15-zero-event-rois-are-not-dead-rois.md).
+- **The rule has been applied, and a cleaned store is cleaned asymmetrically.**
+  The exporter ships `event_store[_onset]_revised_2v_alive` and a strictly more
+  lenient `_alive_rescued`, each `.mat` carrying a `dead_roi` record of what was
+  removed and under which rule. Only slices eligible under the rule get a verdict;
+  on `revised_2v` that is **67 of 85 slices**, and the other 18 keep every ROI. So
+  *"this store has been through the dead-ROI rule"* is true of most of its ROIs and
+  false of the rest. What binds work here: a population drawn from one of these
+  stores is not uniformly cleaned, so a rate quoted over it either says which
+  slices were judged or says nothing about viability at all. Never infer a verdict
+  from the store's name.
 - **Group-dependence is not optional.** Effects run in opposite directions by
   group (ORX up, male unchanged, diestrus down under TTX), so a pooled
   across-group number hides sign changes and is not admissible on its own.

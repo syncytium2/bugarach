@@ -144,9 +144,12 @@ range and should not be quoted as recovering the timescale.
 - **Who picks K?** It changes the derived event frequency roughly tenfold across
   its scan, a lab has to choose one, and there is no review surface —
   `2026-08-16-assessment-needs-a-human-in-the-loop.md`.
-- **The export team is applying the dead-ROI rule** (PR #51). Until it lands the
-  corpus carries ~3% structural zeros; measured effect on the fitted background is
-  under 1%.
+- **The dead-ROI rule has landed** — the exporter ships
+  `event_store[_onset]_revised_2v_alive` (2026-08-16), the verdict made in MATLAB
+  where the full record of each ROI is. It reaches 67 of 85 slices; the other 18
+  are not eligible and keep every ROI, so the corpus is cleaned unevenly rather
+  than cleaned. The ~3% structural zeros moved the fitted background under 1%, so
+  nothing fitted before this needs redoing.
 - **The regime-shift guard does not reproduce the failure it exists to catch.**
   The six show no precision collapse across this axis. A clean pass is weaker
   evidence than it looks, and the axis probably needs widening.

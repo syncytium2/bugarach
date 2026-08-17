@@ -73,8 +73,8 @@ item on exactly this: `docs/todo/2026-08-16-assessment-needs-a-human-in-the-loop
    this slice" badge — must preserve that, or one busy cell reads as a crowd.
 3. **A zero-event ROI is not a dead ROI**, and the app must never imply otherwise.
    Report "no events in this window". Never "silent", "dead", or any viability claim;
-   that verdict belongs to `fireflies` and needs drug and high-K⁺ rows this repo does
-   not have. See FOUNDATIONS §9.
+   that verdict is made at export, in MATLAB, which sees every treatment of an ROI at
+   once — a record this repo does not have. See FOUNDATIONS §9.
 4. **TTX does not silence the field.** If the app ever runs on treatment windows, a
    detector returning little under TTX is not thereby validated, and coordination
    persisting under TTX is a finding about the preparation rather than a false-alarm
