@@ -13,7 +13,9 @@ import pytest
 
 from bugarach.detectors.coact import coact_detect
 from bugarach.detectors.rate import recording_extent
-from bugarach.simulate import GroundTruth, simulate_coordination
+from bugarach.simulate import (  # noqa: E402
+    _SIGNATURE_DEFAULTS, GroundTruth, simulate_coordination,
+)
 
 
 def trains_of(slice_, name="events"):
@@ -539,3 +541,96 @@ def test_a_single_participant_event_has_no_width():
                                   min_sep_sec=60, jitter_sec=0.36)
     assert all(e.n_part == 1 for e in gt.events)
     assert all(e.observed_span[1] - e.observed_span[0] == 0.0 for e in gt.events)
+
+
+# ------------------------------------------------------------ RecordingSpec
+
+# The spec exists so a background axis can be added without touching a caller.
+# What has to be true for that to be worth anything: the spec path and the
+# keyword path must produce the SAME recording, or migrating a call site changes
+# results while looking like a refactor.
+
+SPEC_KW = dict(duration_sec=1800.0, n_roi=37, bg_rate_hz=0.0095,
+               bg_rate_shape=0.275, bg_burst_shape=[1.547, 1.388],
+               bg_burst_bin_sec=[300.0, 60.0], participation=(0.30, 0.18, 0.10),
+               n_per_level=(4, 4, 4), jitter_sec=0.36, min_sep_sec=120.0,
+               interval_cv=1.0, grid_sec=0.1)
+
+
+def test_a_spec_produces_the_same_recording_as_the_keywords():
+    """The migration's acceptance test. If this fails, moving a call site to the
+    spec form silently changes the data it generates."""
+    from bugarach.spec import RecordingSpec
+
+    a, ga = simulate_coordination(seed=5, **SPEC_KW)
+    b, gb = simulate_coordination(RecordingSpec.from_kwargs(**SPEC_KW), seed=5)
+    for x, y in zip(trains_of(a), trains_of(b)):
+        np.testing.assert_array_equal(x, y)
+    np.testing.assert_array_equal(ga.times, gb.times)
+    assert [e.rois for e in ga.events] == [e.rois for e in gb.events]
+    assert [e.onsets for e in ga.events] == [e.onsets for e in gb.events]
+
+
+def test_the_flat_default_round_trips_too():
+    from bugarach.spec import RecordingSpec
+
+    a, _ = simulate_coordination(seed=2)
+    defaults = {k: v for k, v in _SIGNATURE_DEFAULTS.items()
+                if k in RecordingSpec.from_kwargs(
+                    **{**_SIGNATURE_DEFAULTS}).as_kwargs()}
+    b, _ = simulate_coordination(RecordingSpec.from_kwargs(**defaults), seed=2)
+    for x, y in zip(trains_of(a), trains_of(b)):
+        np.testing.assert_array_equal(x, y)
+
+
+def test_kwargs_round_trip_through_the_spec():
+    from bugarach.spec import RecordingSpec
+
+    spec = RecordingSpec.from_kwargs(**SPEC_KW)
+    assert RecordingSpec.from_kwargs(**spec.as_kwargs()).as_kwargs() == \
+        spec.as_kwargs()
+
+
+def test_a_spec_and_a_field_it_owns_is_refused():
+    """Merging them silently is how a figure gets labelled with settings it was
+    not drawn at."""
+    from bugarach.spec import RecordingSpec
+
+    spec = RecordingSpec.from_kwargs(**SPEC_KW)
+    with pytest.raises(TypeError, match="bg_rate_hz"):
+        simulate_coordination(spec, bg_rate_hz=0.5, seed=1)
+
+
+def test_a_spec_alongside_a_field_it_does_not_own_is_fine():
+    """seed, streams, slice_id and regions describe the CALL, not the recording,
+    and the probe and distractors belong to the bench."""
+    from bugarach.spec import RecordingSpec
+
+    spec = RecordingSpec.from_kwargs(**SPEC_KW)
+    s, gt = simulate_coordination(spec, seed=1, streams=("fast", "slow"),
+                                  slice_id="x", n_distractors=2,
+                                  distractor_window=(100.0, 900.0))
+    assert set(s.streams) == {"fast", "slow"}
+    assert len(gt.distractors) == 2
+
+
+def test_the_wrong_type_says_so():
+    with pytest.raises(TypeError, match="RecordingSpec"):
+        simulate_coordination({"n_roi": 30}, seed=1)
+
+
+def test_burst_scales_must_pair_up():
+    from bugarach.spec import BackgroundModel
+
+    with pytest.raises(ValueError, match="same number of scales"):
+        BackgroundModel(rate_hz=0.01, burst_shape=(1.5, 1.4),
+                        burst_bin_sec=(300.0,))
+
+
+def test_is_flat_names_the_generator_that_shipped():
+    from bugarach.spec import BackgroundModel
+
+    assert BackgroundModel(rate_hz=0.01).is_flat
+    assert not BackgroundModel(rate_hz=0.01, rate_shape=0.275).is_flat
+    assert not BackgroundModel(rate_hz=0.01, burst_shape=(1.4,),
+                               burst_bin_sec=(60.0,)).is_flat
