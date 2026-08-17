@@ -81,10 +81,17 @@ Template:
   `docs/todo/2026-08-16-learned-detectors-handoff.md`, and
   `2026-08-16-learned-detector-does-not-converge.md` should be deleted rather than read.
 
-  ⚠ **The darkroom copy claimed above was never made** — `$BUGARACH_DARKROOM` is unset on
-  this Mac, so the write silently did not happen while the board recorded it as done. Treat
-  `docs/learned/` as the only copy. Resolve the path by hand or export it in the shell
-  profile; never hardcode (SAP004).
+  ⚠ **CORRECTION, 2026-08-16 (murderboard session):** an earlier line here said the darkroom
+  copy "was never made". **That was wrong** — I inferred it from `$BUGARACH_DARKROOM` being
+  unset in my shell and did not look. The copy exists, resolved by hand, and holds
+  `report.html` at `fa29612`.
+
+  ⚠ **What is actually true: the darkroom copy is now the SUPERSEDED report.** `fa29612` is
+  the version whose central conclusion the murderboard retracted — it claims the learned
+  model beats the six, which no matched comparison supports. The corrected page is
+  `5ebfe44` in `docs/learned/`. **Anyone opening the darkroom copy is reading a withdrawn
+  result.** Replacing it needs a board claim on this folder first; see the murderboard
+  record for what changed.
 
 
 ### Mac/generator-records-realized-onsets — the generator should record what it planted
