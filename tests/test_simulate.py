@@ -441,3 +441,101 @@ def test_a_sequence_of_shapes_needs_a_sequence_of_bins():
     with pytest.raises(ValueError, match="bg_burst_bin_sec"):
         simulate_coordination(seed=1, bg_burst_shape=(1.5, 1.4),
                               bg_burst_bin_sec=60.0)
+
+
+# ------------------------------------------------- the label matches the data
+
+# `PlantedEvent.onsets` records the onset each participant actually got. Its
+# whole value is that it agrees with the train it describes, and the agreement
+# rests on _quantize applying exactly the same rounding the trains get. Nothing
+# enforced that when the field landed, so these tests are the enforcement:
+# if the two quantization paths ever diverge, a label drifts one grid step from
+# the data it labels — wrong in the one place nothing would look.
+
+
+def _all_events(gt):
+    return list(gt.events) + list(gt.distractors)
+
+
+def test_every_recorded_onset_is_in_the_train_it_labels():
+    s, gt = simulate_coordination(seed=1, duration_sec=1200, n_roi=20,
+                                  n_per_level=(3, 3, 3), n_distractors=3,
+                                  distractor_window=(100.0, 1000.0))
+    trains = trains_of(s)
+    checked = 0
+    for e in _all_events(gt):
+        assert len(e.onsets) == len(e.rois), "onsets must align with rois"
+        for roi, onset in zip(e.rois, e.onsets):
+            assert np.any(np.isclose(trains[roi], onset, atol=1e-9)), (
+                f"onset {onset} recorded for ROI {roi} is not in its train")
+            checked += 1
+    assert checked > 0, "no onsets checked — the test would pass vacuously"
+
+
+def test_observed_span_is_first_to_last_onset():
+    _, gt = simulate_coordination(seed=2, duration_sec=1200, n_roi=20,
+                                  n_per_level=(3, 3, 3))
+    for e in gt.events:
+        assert e.observed_span == (min(e.onsets), max(e.onsets))
+
+
+@pytest.mark.parametrize("grid_sec", [0.0, 0.1, 2.0])
+def test_recorded_onsets_carry_the_grid_the_trains_carry(grid_sec):
+    """The two quantization paths must not drift apart.
+
+    Checked by asserting the recorded onset is ON the grid whenever the trains
+    are, which is the property that fails if either side changes rounding.
+    """
+    s, gt = simulate_coordination(seed=3, duration_sec=1200, n_roi=20,
+                                  n_per_level=(3, 3, 3), grid_sec=grid_sec)
+    onsets = np.array([o for e in _all_events(gt) for o in e.onsets])
+    assert onsets.size
+    if grid_sec > 0:
+        steps = onsets / grid_sec
+        np.testing.assert_allclose(steps, np.round(steps), atol=1e-9)
+    trains = np.concatenate([t for t in trains_of(s) if t.size])
+    assert np.isin(np.round(onsets, 9), np.round(trains, 9)).all()
+
+
+def test_a_half_grid_tie_lands_the_same_way_in_both():
+    """MATLAB rounds halves away from zero and numpy rounds them to even, so a
+    tie is exactly where a label and its data would part company."""
+    from bugarach.detectors._shared import matlab_round
+    from bugarach.simulate import _quantize
+
+    ties = [0.05, 0.15, 0.25, 1.05, 2.35]
+    got = _quantize(ties, 0.1)
+    want = tuple(float(matlab_round(v / 0.1) * 0.1) for v in ties)
+    assert got == want
+
+
+def test_nominal_and_realized_spans_are_not_interchangeable():
+    """`span` is what was requested and `observed_span` is what happened.
+
+    Pinned so nobody can quietly treat the plain name as the real one: on a bench
+    recording the nominal window is one width for every event while the realized
+    footprints differ from it and from each other.
+    """
+    from bugarach import bench
+
+    _, gt = bench.make_recording("baseline_quiet", seed=1)
+    nominal = {round(e.span[1] - e.span[0], 6) for e in gt.events}
+    realized = [e.observed_span[1] - e.observed_span[0] for e in gt.events]
+    assert len(nominal) == 1, "nominal width is parametric — one value throughout"
+    assert len(set(np.round(realized, 6))) > 1, "realized widths should vary"
+    assert max(realized) < nominal.pop(), "nominal should bracket what happened"
+
+
+def test_a_single_participant_event_has_no_width():
+    """Reachable from ordinary settings, and a label pipeline meets it first.
+
+    ``max(1, matlab_round(frac * n_roi))`` guarantees a participant, so a small
+    population with a small fraction plants one-ROI events whose realized
+    footprint is a point. Documented rather than padded — one onset genuinely
+    has no spread — but a consumer using observed_span as a mask needs to know.
+    """
+    _, gt = simulate_coordination(seed=1, n_roi=8, participation=(0.10,),
+                                  n_per_level=(4,), duration_sec=600,
+                                  min_sep_sec=60, jitter_sec=0.36)
+    assert all(e.n_part == 1 for e in gt.events)
+    assert all(e.observed_span[1] - e.observed_span[0] == 0.0 for e in gt.events)

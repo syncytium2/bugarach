@@ -56,12 +56,21 @@ def _time_axis_hook(plot, element):
     its ticks.
     """
     from bokeh.models import (AdaptiveTicker, BoxZoomTool, CustomJSTickFormatter,
-                              WheelZoomTool)
+                              PanTool, WheelZoomTool)
 
     toolbar = getattr(plot.state, "toolbar", None)
+    wheel = None
     for tool in getattr(toolbar, "tools", ()) or ():
-        if isinstance(tool, (BoxZoomTool, WheelZoomTool)):
+        if isinstance(tool, (BoxZoomTool, WheelZoomTool, PanTool)):
             tool.dimensions = "width"
+        if isinstance(tool, WheelZoomTool):
+            wheel = tool
+    # Constraining the wheel is not enough to make it work: bokeh leaves
+    # active_scroll on "auto" and nothing claims the wheel, so scrolling over
+    # the plot did nothing at all and zooming meant finding the box-zoom button
+    # first. Hand the wheel to the x-constrained zoom explicitly.
+    if wheel is not None and toolbar is not None:
+        toolbar.active_scroll = wheel
 
     xaxis = plot.handles.get("xaxis")
     if xaxis is None:
