@@ -13,7 +13,7 @@
 # murderboard_freshness.sh.
 #
 # ---------------------------------------------------------------------------
-# WARNING — upstream defect in murderboard_freshness.sh (still present at f43a07b).
+# HISTORY — upstream defect in murderboard_freshness.sh, FIXED at a46e255.
 #
 # `--slug` generalizes the gate to any vendoring relationship, but the offline
 # fallback list `CLONE_CANDIDATES` was never generalized with it: it is a fixed
@@ -21,7 +21,14 @@
 # vary with --slug. Resolution order is gh -> local clone. So for a family whose
 # slug `gh` cannot resolve, the gate silently answers with ANOTHER family's HEAD.
 #
-# Observed here 2026-08-12: `gh api repos/syncytium2/interface2` returns 404
+# Observed here 2026-08-12; fixed upstream 2026-08-17 (murderboard PR #13), where
+# the guessed clone paths became slug-scoped: they are consulted only when the slug
+# names murderboard, so another family with an unreachable upstream now gets
+# "cannot determine" instead of murderboard's HEAD. This wrapper stays for the
+# per-family invocation it already does; the safety property it was written for is
+# now upstream.
+#
+# Original report: `gh api repos/syncytium2/interface2` returns 404
 # (not a public repo under that slug), so a session-protocol check without
 # --clone resolved to murderboard's HEAD (635c5a8) and reported the vendored
 # copy STALE. It was current. The header's promise of "never a false current"
