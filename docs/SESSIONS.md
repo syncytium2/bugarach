@@ -105,6 +105,20 @@ Template:
   fetching them. Recorded rather than deleted, because the reason it was true is the
   standing one — **nothing redeploys on merge**, and the next person to change
   `build_site.py` inherits exactly this note.
+
+  **Re-deployed later the same day** from `origin/main` at `19a7812`, version
+  `98e82444` — that block's deploy predated two more merges, so `index.html` and
+  `diagnostic.html` went up again on top of it. Nothing was wrong with the earlier
+  deploy; `main` had simply moved. Two details neither of us wrote down and the next
+  person will want:
+  - **Cloudflare drops the `.html`.** `/landscape.html` 307s to `/landscape`. The
+    relative `href="landscape.html"` in `index.html` is still the right thing to
+    write — it works in a browser through the redirect and works from `file://`
+    directly — but a link check that treats a 307 as a failure will cry wolf.
+  - **Only `deploy-site` can deploy.** It is the one worktree with `node_modules` and
+    an authenticated wrangler; the rest have neither. Point it at `origin/main`
+    (`git checkout --detach origin/main`) before building, or you ship whatever
+    commit it was parked on — it was 40 PRs stale when I found it.
 - **⚠ THE LIVE SITE WAS BEHIND `main` (resolved above).** `tools/build_site.py` gained a
   "Where this sits" section linking DOSED, cnn-ripple and CICADA, and it now publishes
   `landscape.html` into `site/`. **Nothing redeploys on merge** — someone must run
