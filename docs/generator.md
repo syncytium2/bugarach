@@ -58,12 +58,13 @@ repairs any of this, because that knob scales every ROI together. Reproduce with
 and writes no figure; both forms need `$BUGARACH_DATA_ROOT`, because the survey
 reads the real archive).
 
-⚠ **A zero-event ROI is not a dead ROI.** That verdict belongs to `fireflies`,
-whose spec requires silence at baseline *and* under drug *and*, where the slice
-has one, under a high-potassium positive control — rows the baseline-only
-restriction in [`FOUNDATIONS.md`](FOUNDATIONS.md) §9 puts out of reach here. The
-dead rate lands nearer 3%. The 35% above is a property of the window, not a
-judgement about the cell.
+⚠ **A zero-event ROI is not a dead ROI.** That verdict is made at export, in
+MATLAB, which sees every treatment of an ROI at once: it requires silence at
+baseline *and* under drug *and*, where the slice has one, under a high-potassium
+positive control — a record the baseline-only restriction in
+[`FOUNDATIONS.md`](FOUNDATIONS.md) §9 puts out of reach here. The dead rate lands
+nearer 3%. The 35% above is a property of the window, not a judgement about the
+cell.
 
 That matters for these detectors specifically. Four of the six count *distinct
 ROIs coactive* — CoactDetect, LoCo, binned SCE and CICADA; RateDetect scores a
