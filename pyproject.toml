@@ -17,6 +17,7 @@ dependencies = [
 
 [project.optional-dependencies]
 ui = ["panel>=1.4", "holoviews>=1.18"]
+dl = ["torch>=2.0"]
 dev = ["pytest>=8", "pyspike", "panel>=1.4", "holoviews>=1.18"]
 
 [project.scripts]
