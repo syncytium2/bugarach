@@ -28,8 +28,9 @@ times** and nothing more, which is what `src/bugarach/io.py` already says.
 
 The contract is written in full in
 [`docs/export_folder_spec.md`](export_folder_spec.md). In short: four CSVs, of which
-**two are required** — `events.csv` for the onset times, and `slices.csv` for one
-field, the frame interval. The rest add fidelity and none is a precondition.
+**`events.csv` is the only one that must exist.** The sidecar carries identity and
+the frame interval; without the interval the app asks for it at load rather than
+guessing. The rest add fidelity and none is a precondition.
 
 Periods are carried by `regions.csv`, one row per region, ordered by a plain
 `region_idx` and named by the lab's own `label`. There is no notion of a treatment
@@ -39,13 +40,13 @@ is special, and windows arrive **already computed** — bugarach never derives o
 
 Identity in `slices.csv` is an **open column set**, passed through untouched, with
 exactly one exception: `frame_interval_sec`, the acquisition sampling interval.
-That one is **required, and a folder without it is refused at load** — the app does
-not start work it cannot do correctly. Three detectors build their analysis grid
-from it and it cannot be recovered from onset times. Today only one of the three
-complains when it is missing and the other two assume ten hertz in silence, so a lab
-imaging at twenty gets one warning and two quietly wrong answers. Refusing at the
-door replaces all three behaviours, and it replaces them at the boundary rather than
-after the numbers exist.
+That one comes from the sidecar, and **if it is not there the app asks for it at
+load and will not proceed without an answer**. Three detectors build their analysis
+grid from it and it cannot be recovered from onset times. Today only one of the
+three complains when it is missing and the other two assume ten hertz in silence, so
+a lab imaging at twenty gets one warning and two quietly wrong answers. Asking at
+the door replaces all three behaviours, and it does so before any number exists
+rather than after.
 
 Output is **one shape carrying nothing specific to any lab, including ours** —
 `detections.csv`, one row per detected coordinated event, plus a settings file so a
