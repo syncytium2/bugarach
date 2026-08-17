@@ -73,10 +73,30 @@ class Stream:
 
 @dataclass
 class Region:
+    """A period of a recording, and optionally the part of it to analyse.
+
+    ``start_sec``/``end_sec`` are **what happened** — when the period began and
+    ended. ``analysis_start_sec``/``analysis_end_sec`` are **what to score**,
+    when the producer has already decided: a wash-in delay, a duration cap, a
+    window trimmed for any reason of their own.
+
+    The two are kept apart rather than collapsed because they answer different
+    questions and only the producer knows the second. When they are absent
+    bugarach derives the analysis window itself, applying this project's
+    convention — which is right for this project and an inherited assumption
+    for anybody else (see ``docs/export_folder_spec.md``)."""
+
     name: str | None
     slot: str | None
     start_sec: float
     end_sec: float
+    analysis_start_sec: float | None = None
+    analysis_end_sec: float | None = None
+
+    @property
+    def has_analysis_window(self) -> bool:
+        return (self.analysis_start_sec is not None
+                and self.analysis_end_sec is not None)
 
 
 @dataclass

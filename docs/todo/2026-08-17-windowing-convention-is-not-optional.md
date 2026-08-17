@@ -29,7 +29,22 @@ lab with a condition called `histamine`, `chelerythrine`, `high-frequency stim` 
 `elevated potassium` and it gets trimmed. The spec already documents this as a trap for
 producers; it should not survive as behaviour.
 
-## Why it is filed rather than fixed
+## Partly answered 2026-08-17: the contract now carries analysis windows
+
+Tony's call: `regions.csv` gains optional `analysis_start_sec` / `analysis_end_sec`, so
+a region states **what happened** and **what to score**, and a producer with its own
+windowing policy is honoured rather than re-windowed. Verified behaviour-preserving on
+interface2's 84-recording export — supplying the windows bugarach would have derived
+reproduces all 240 of them exactly, so nothing already measured moves.
+
+That resolves option 3 below for anyone who *has* a policy to state. **What remains
+open is the default**, which is what this todo was filed about: a folder with no
+analysis windows still gets this project's delay, caps and `"hi"`-substring exemption,
+and a lab that dosed instantly still loses two minutes of every treatment without being
+asked. An analysis-window editor in the app is **version 2** (Tony, 2026-08-17) — the
+contract carries them now, nothing edits them yet.
+
+## Why the default is still filed rather than fixed
 
 The fix is not "add a parameter" — it is deciding **who owns the windowing** for a
 foreign folder, and that is a scientific call:

@@ -259,10 +259,22 @@ def load_folder(folder) -> list[Slice]:
                 f"ordering of the windows, not their name — the name is "
                 f"'label'.") from None
     for r in sorted(rows, key=lambda r: int(r["region_idx"])):
+        # The analysis window is optional, and either both bounds or neither:
+        # half of one is a producer bug, not a partial answer, and guessing the
+        # missing half would invent the policy this column exists to carry.
+        a0 = (r.get("analysis_start_sec") or "").strip()
+        a1 = (r.get("analysis_end_sec") or "").strip()
+        if bool(a0) != bool(a1):
+            raise ValueError(
+                f"regions.csv, {r.get('slice_id', '?')} region "
+                f"{r['region_idx']}: analysis_start_sec and analysis_end_sec "
+                f"must be given together (got {a0!r} and {a1!r})")
         regions.setdefault(r.get("slice_id", ""), []).append(
             Region(name=r["label"] or None, slot=str(r["region_idx"]),
                    start_sec=float(r["start_sec"]),
-                   end_sec=float(r["end_sec"])))
+                   end_sec=float(r["end_sec"]),
+                   analysis_start_sec=float(a0) if a0 else None,
+                   analysis_end_sec=float(a1) if a1 else None))
 
     meta = {r.get("slice_id", ""): dict(r)
             for r in _read_table(folder / "slices.csv", ("slice_id",))}

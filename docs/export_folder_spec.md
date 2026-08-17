@@ -14,6 +14,13 @@ Everything is CSV, UTF-8, newline-only endings, one header row. Times are
 this project's MATLAB exporter, another lab's Python, a spreadsheet exported by
 hand.
 
+> **Revision 3** (2026-08-17). `regions.csv` gains optional
+> `analysis_start_sec` / `analysis_end_sec`: a region now states what happened AND
+> what to score, so a producer with its own windowing policy is honoured instead of
+> re-windowed. Rev 2's instruction to send raw bounds still holds — that is what
+> `start_sec` / `end_sec` are — and the paragraph below records why sending analysis
+> windows in their place halted 83 of 85 recordings.
+>
 > **Revision 2** (2026-08-17). **One file per recording**, rather than one table
 > holding every recording. A lab's pipeline runs per recording and writes per
 > recording, so a batch table made them concatenate before they could start.
@@ -96,8 +103,41 @@ One row per region of a recording. **This is how a recording says it has periods
 | `slice_id` | text | which recording |
 | `region_idx` | integer | **1-based, chronological.** This is the ordering, and the only ordering. |
 | `label` | text | **the treatment name** — `baseline`, `TTX`, `senktide`, `washout`, `pre-drug`, whatever the period actually was. |
-| `start_sec` | number | window start |
-| `end_sec` | number | window end |
+| `start_sec` | number | when the period **began** — raw, untrimmed |
+| `end_sec` | number | when the period **ended** — raw, untrimmed |
+| `analysis_start_sec` | number | *optional* — the part of it to **score** |
+| `analysis_end_sec` | number | *optional* — as above |
+
+### Two windows, because they answer different questions
+
+`start_sec`/`end_sec` are **what happened**: the drug was on from here to here.
+`analysis_start_sec`/`analysis_end_sec` are **what to score**, and they exist because
+those are rarely the same thing — a wash-in delay before the drug reaches the tissue,
+a cap so a long application does not outweigh a short one, a stretch dropped for a
+reason only the producer knows.
+
+**Send both when you have a windowing policy.** They are used exactly as given: no
+delay, no cap, and no guard on where the baseline starts, because none of that is
+bugarach's to apply to your protocol. The raw period travels alongside, so how much
+was trimmed stays visible in the output rather than being absorbed into the number.
+
+**Both bounds or neither, and all regions of a recording or none.** Half an analysis
+window is a producer bug rather than a partial answer, and a recording scored half on
+your windows and half on ours is two policies inside one number — both are refused
+rather than guessed at.
+
+**When they are absent, bugarach derives the analysis window itself**, applying this
+project's convention: the baseline measured backward from its end with a 20-minute
+cap, every non-high-K treatment starting 2 minutes late and capped at 20 minutes,
+high K⁺ exempt from both. For this project that is correct and matches its own
+analysis. For anybody else it is an assumption you did not make, which is the reason
+these two columns exist —
+[`docs/todo/2026-08-17-windowing-convention-is-not-optional.md`](todo/2026-08-17-windowing-convention-is-not-optional.md).
+
+**This is not a derived column of the kind the section above refuses.** A duration
+judgement is recomputable from the row and so does not belong in it; an analysis
+window is not — it encodes a decision about the preparation that nothing in the file
+implies. Send the bounds and the policy; keep the verdicts out.
 
 **`label` is required whenever this file is present, and it must be the real
 treatment name.** It is not decoration. Every figure axis, every legend, and every

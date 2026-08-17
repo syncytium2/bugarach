@@ -193,10 +193,69 @@ def per_stream_param(x, names: list[str], param: str, calibrated=None) -> dict[s
         f"order, or a dict keyed by stream name {names}")
 
 
+def supplied_region_windows(s: Slice, t_hi_clamp: float, *,
+                            region_min_sec: float = 900.0,
+                            **_ignored) -> list[RegionWindow] | None:
+    """The producer's own analysis windows, where the folder carries them.
+
+    A region can state both what happened (``start_sec``/``end_sec``) and what
+    to score (``analysis_start_sec``/``analysis_end_sec``). Where it states the
+    second, that decision is used as given: no wash-in delay, no cap, and no
+    guard on where the baseline starts, because none of those are ours to apply
+    to somebody else's protocol.
+
+    All or nothing. A slice with windows for some regions and not others would
+    be scored under two policies at once, which is worse than either — so that
+    raises. Returns ``None`` when no region supplies one, and the caller then
+    derives them.
+    """
+    regs = [r for r in s.regions if np.isfinite(r.start_sec)]
+    if not regs:
+        return None
+    supplied = [r for r in regs if r.has_analysis_window]
+    if not supplied:
+        return None
+    if len(supplied) != len(regs):
+        missing = [str(r.slot or r.name or "?")
+                   for r in regs if not r.has_analysis_window]
+        raise ValueError(
+            f"slice {s.slice_id}: {len(supplied)} of {len(regs)} regions carry "
+            f"an analysis window; region(s) {', '.join(missing)} do not. Supply "
+            f"one for every region or for none — half the producer's windows and "
+            f"half ours is two policies inside one number")
+
+    out = []
+    for k, r in enumerate(regs):
+        raw_end = r.end_sec if np.isfinite(r.end_sec) else t_hi_clamp
+        win_start = float(r.analysis_start_sec)
+        win_end = (float(r.analysis_end_sec)
+                   if np.isfinite(r.analysis_end_sec) else t_hi_clamp)
+        name = r.name or ""
+        is_baseline = k == 0
+        is_hik = (not is_baseline) and ("hi" in name.lower())
+        win_dur = win_end - win_start
+        out.append(RegionWindow(
+            label=name if name else (r.slot or ""), slot=r.slot or "",
+            raw_start=r.start_sec, raw_end=raw_end,
+            win_start=win_start, win_end=win_end, win_dur=win_dur,
+            # the floor and the too-short flag stay ours: they are what a
+            # DETECTOR needs in order to refuse a window, not a windowing choice
+            meets_floor=is_hik or win_dur >= region_min_sec,
+            is_baseline=is_baseline, is_hik=is_hik,
+            too_short=win_dur < 240.0))
+    return out
+
+
 def effective_region_windows(s: Slice, ext: tuple[float, float], **kw) -> list[RegionWindow]:
     """Region windows, or — when the slice carries no region annotations
     (foreign data) — one implicit whole-recording window, so region-scoped
-    detection analyzes the full extent instead of nothing."""
+    detection analyzes the full extent instead of nothing.
+
+    The producer's own analysis windows win wherever the folder states them;
+    only otherwise is this project's convention applied."""
+    rw = supplied_region_windows(s, ext[1], **kw)
+    if rw:
+        return rw
     rw = region_windows(s, ext[1], **kw)
     if rw:
         return rw

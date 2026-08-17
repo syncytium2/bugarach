@@ -19,7 +19,7 @@ import warnings
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from bugarach.detectors.loco import region_windows
+from bugarach.detectors.loco import effective_region_windows
 from bugarach.detectors.rate import recording_extent
 from bugarach.io import NO_EVENT, RESERVED, load_folder
 
@@ -158,14 +158,23 @@ def check_folder(folder) -> FolderReport:
             # detector — and this check passed it, so a green result was taken
             # as evidence the folder was usable. It was not.
             try:
-                region_windows(s, recording_extent(s)[1])
+                # exactly what a detector calls, so the check fails on what the
+                # detectors would fail on rather than on a near-enough proxy
+                effective_region_windows(s, recording_extent(s))
             except ValueError as exc:
                 r.errors.append(
-                    f"loads, but no detector can run on it: {exc}. Windows must "
-                    f"be the RAW bounds — region 1 starting at 0 and each region "
-                    f"beginning where the last ended. bugarach re-applies its own "
-                    f"wash-in delay and caps, so pre-trimmed windows are rejected "
-                    f"rather than trimmed twice")
+                    f"loads, but no detector can run on it: {exc}")
+                if "does not match" in str(exc) or "expected 0" in str(exc):
+                    r.errors.append(
+                        "these look like analysis windows sent as region bounds. "
+                        "Either send the RAW period — region 1 at 0, each region "
+                        "starting where the last ended — or keep the raw bounds "
+                        "and put your windows in analysis_start_sec / "
+                        "analysis_end_sec, which are used as given")
+            if all(rg.has_analysis_window for rg in s.regions if s.regions):
+                r.notes.append(
+                    "analysis windows supplied — scored as given, and this "
+                    "project's wash-in delay and caps are not applied")
         if r.n_silent == 0:
             r.notes.append(
                 f"no ROI declared with no events. If every one of the {r.n_rois} "
