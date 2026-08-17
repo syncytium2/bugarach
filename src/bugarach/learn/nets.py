@@ -179,8 +179,9 @@ def build_trace(*, head_width=8, head_depth=11):
 
 @register("tube", note="center-surround on the brightness trace — Tony's tube, "
                        "2026-08-16: rate invariance by construction",
-          n_scales=4, width=8, depth=6, max_center_frames=128)
-def build_tube(*, n_scales=4, width=8, depth=6, max_center_frames=128):
+          n_scales=4, width=8, depth=6, max_center_frames=128, max_ratio=40.0)
+def build_tube(*, n_scales=4, width=8, depth=6, max_center_frames=128,
+               max_ratio=40.0):
     """Look down a tube as the recording slides past.
 
     The tube is dark; onsets are specks. When several cells fire together a bright
@@ -206,6 +207,13 @@ def build_tube(*, n_scales=4, width=8, depth=6, max_center_frames=128):
     ⚠ The centre widths are initialised across a geometric spread and then
     trained. The spread is a starting point, not the answer: if a fitted width
     runs to the end of its range the model is telling you the range was wrong.
+
+    ``max_ratio`` caps how much wider the surround may be than the centre, and it
+    is a **parameter rather than a constant** because a fit on the corpus put one
+    of the four ratios at 38 against a ceiling of 40 — which by the rule above is
+    the search reporting that the range was wrong, not an answer. Raising it is
+    how that gets tested; the default is the value everything published so far
+    was fitted under, so nothing moves unless it is passed.
     """
     torch = _torch()
     nn = torch.nn
@@ -237,7 +245,7 @@ def build_tube(*, n_scales=4, width=8, depth=6, max_center_frames=128):
             t = torch.arange(-self.k, self.k + 1, device=device,
                              dtype=torch.float32).view(1, -1)
             c = torch.exp(self.log_center).clamp(0.5, self.k / 2).view(-1, 1)
-            s = c * torch.exp(self.log_ratio).clamp(1.5, 40.0).view(-1, 1)
+            s = c * torch.exp(self.log_ratio).clamp(1.5, max_ratio).view(-1, 1)
             centre = torch.exp(-0.5 * (t / c) ** 2)
             surround = torch.exp(-0.5 * (t / s) ** 2)
             centre = centre / centre.sum(dim=1, keepdim=True)

@@ -47,6 +47,11 @@ DATA = {
     # The scoring-tolerance sweep. The landscape page argues from its shape, and
     # a page arguing that a transcribed number drifts must not transcribe one.
     "t": HERE / "tolerance_sweep.json",
+    # NOT a single letter. "t" was already taken by another session's tolerance
+    # sweep; adding a second "t" to this dict literal did not error — the later
+    # key silently won, the tokens resolved against the wrong file, and the build
+    # reported them as unresolved paths. Store names are words from here.
+    "ablation": HERE / "tube_ablation.json",
 }
 
 
@@ -110,7 +115,10 @@ def main(argv=None) -> int:
     def num(m):
         store, path, fmt = m.group(1), m.group(2), m.group(3) or ""
         if store not in stores:
-            bad.append(f"{path} (no {DATA[store].name})")
+            known = ", ".join(sorted(DATA))
+            bad.append(f"{path} (store {store!r} is not loaded; have: {known})"
+                       if store in DATA else
+                       f"{path} (unknown store {store!r}; have: {known})")
             return "?"
         try:
             v = _lookup(stores[store], path)
@@ -119,7 +127,7 @@ def main(argv=None) -> int:
             return "?"
         return format(v, fmt) if fmt else str(v)
 
-    html = re.sub(r"\{\{N:([rsbgat]):([A-Za-z0-9_.\-]+)(?:\|([^}]+))?\}\}", num, html)
+    html = re.sub(r"\{\{N:([a-z][a-z0-9_]*):([A-Za-z0-9_.\-]+)(?:\|([^}]+))?\}\}", num, html)
     if bad:
         print("UNRESOLVED DATA PATHS: " + ", ".join(bad), file=sys.stderr)
         return 1
