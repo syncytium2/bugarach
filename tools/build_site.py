@@ -156,6 +156,16 @@ which most labs can write from whatever their detector already produces.
 and this site is static files with no server to receive anything. Nothing is
 installed and nothing is uploaded.</p>
 
+<p><b>No recordings to hand?</b> The same page will invent a folder — event times
+drawn from the generator described above, written as the contract describes and
+read back through the same loader, so what you drive is the viewer rather than a
+demonstration of it. It opens at the measured settings: about six of thirty-three
+ROIs per coordinated event, a third of a second of spread, and a background whose
+quiet tail is the fitted one. The guesses those replaced are left on the switches,
+because the difference is worth seeing. Its treatment windows are
+<b>labels over identical statistics</b> — simulating an effect would spend the one
+the experiment exists to measure.</p>
+
 <p style="margin-top:2rem;color:#666;font-size:.9rem">
   Source: <a href="https://github.com/syncytium2/bugarach">github.com/syncytium2/bugarach</a>
   · BSD-3-Clause · built from <code>{commit}</code>
