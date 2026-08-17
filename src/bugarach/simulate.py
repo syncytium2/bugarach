@@ -45,6 +45,7 @@ reproducibly. So what is guaranteed instead:
 
 from __future__ import annotations
 
+import inspect
 from dataclasses import dataclass, field
 
 import numpy as np
@@ -269,6 +270,7 @@ def _place_renewal(rng, m, lo, hi, min_sep, exclude, interval_cv):
 
 
 def simulate_coordination(
+    spec=None,
     *,
     duration_sec: float = 600.0,
     n_roi: int = 30,
@@ -385,6 +387,49 @@ def simulate_coordination(
 
     Returns ``(slice, ground_truth)``.
     """
+    if spec is not None:
+        # A spec supplies everything that describes the RECORDING; the caller
+        # keeps everything that describes this CALL (seed, streams, slice_id,
+        # regions) and the bench keeps its test constructs (probe, distractors).
+        # Passing a spec and also naming one of its fields is refused rather
+        # than merged: silently letting one win is how a figure ends up
+        # labelled with settings it was not drawn at.
+        from bugarach.spec import RecordingSpec
+
+        if not isinstance(spec, RecordingSpec):
+            raise TypeError(
+                f"spec must be a RecordingSpec, got {type(spec).__name__}")
+        owned = spec.as_kwargs()
+        given = dict(
+            duration_sec=duration_sec, n_roi=n_roi, bg_rate_hz=bg_rate_hz,
+            bg_rate_shape=bg_rate_shape, bg_burst_shape=bg_burst_shape,
+            bg_burst_bin_sec=bg_burst_bin_sec, participation=participation,
+            n_per_level=n_per_level, jitter_sec=jitter_sec, grid_sec=grid_sec,
+            min_sep_sec=min_sep_sec, margin_sec=margin_sec, spacing=spacing,
+            interval_cv=interval_cv,
+        )
+        defaults = _SIGNATURE_DEFAULTS
+        clashes = sorted(k for k, v in given.items()
+                         if k in owned and v != defaults[k])
+        if clashes:
+            raise TypeError(
+                f"simulate_coordination() got both a spec and {clashes} — "
+                f"the spec owns those. Use spec.replace(...) to vary one.")
+        duration_sec = owned["duration_sec"]
+        n_roi = owned["n_roi"]
+        grid_sec = owned["grid_sec"]
+        bg_rate_hz = owned["bg_rate_hz"]
+        bg_rate_shape = owned["bg_rate_shape"]
+        bg_burst_shape = owned["bg_burst_shape"]
+        bg_burst_bin_sec = owned["bg_burst_bin_sec"]
+        participation = owned["participation"]
+        n_per_level = owned["n_per_level"]
+        jitter_sec = owned["jitter_sec"]
+        min_sep_sec = owned["min_sep_sec"]
+        margin_sec = owned["margin_sec"]
+        spacing = owned["spacing"]
+        interval_cv = owned["interval_cv"]
+
     if len(participation) != len(n_per_level):
         raise ValueError(
             f"participation and n_per_level must be the same length "
@@ -578,3 +623,12 @@ def simulate_coordination(
         ),
     )
     return slice_, gt
+
+
+# Derived from the signature rather than written out, so a default that changes
+# cannot leave the spec/keyword clash check comparing against a stale value.
+_SIGNATURE_DEFAULTS = {
+    name: p.default
+    for name, p in inspect.signature(simulate_coordination).parameters.items()
+    if p.default is not inspect.Parameter.empty
+}
