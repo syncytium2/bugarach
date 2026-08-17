@@ -762,116 +762,76 @@
   <p>
     Asked plainly, because it decides whether any of this is worth writing up:
     <strong>has someone already trained a network to emit coordinated population
-    events?</strong> A survey of the obvious neighbours says the learning in this
-    field sits one level below this one, and the nearest thing that learns at this
-    level learns a parameter rather than a detection. That is a real gap, and it is
-    narrower than &ldquo;nobody has done deep learning on calcium imaging&rdquo;
-    &mdash; a great many people have.
+    events?</strong> An earlier version of this section answered no. That answer
+    was four web searches deep with no paper read in full, and reading them
+    overturned it.
   </p>
 </div>
 
-<div class="tablewrap">
-<table>
-  <thead><tr>
-    <th>where the work happens</th><th>what is learned there</th>
-    <th>representative work</th>
-  </tr></thead>
-  <tbody>
-    <tr><td>fluorescence &rarr; per-cell events</td>
-        <td><strong>learned, and standard</strong> &mdash; supervised nets beat
-            classical deconvolution at this</td>
-        <td>CASCADE; DeepCINAC; the spikefinder-challenge winners</td></tr>
-    <tr><td>per-cell events &rarr; population dynamics</td>
-        <td><strong>learned</strong> &mdash; but a latent trajectory, not a list of
-            discrete events with times</td>
-        <td>RADICaL</td></tr>
-    <tr class="hl"><td><strong>population activity &rarr; coordinated events</strong></td>
-        <td><strong>hand-written everywhere found</strong> &mdash; ICA, PCA/Promax,
-            similarity clustering, SVD, graph methods, item-set mining, and
-            surrogate significance testing</td>
-        <td>M&ouml;lter et&nbsp;al.&rsquo;s benchmark of assembly detectors;
-            Russo &amp; Durstewitz; CICADA</td></tr>
-    <tr><td>choosing a classical detector&rsquo;s parameters</td>
-        <td><strong>learned</strong> &mdash; a net predicts the settings a human
-            expert would have picked; the classical detector still makes the call</td>
-        <td>autoMEA</td></tr>
-  </tbody>
-</table>
+<div class="note">
+  <strong>Withdrawn, 17 August 2026.</strong> Three groups already train networks
+  whose output is a population event with times &mdash;
+  <strong>DOSED</strong> (Chambon et al. 2019) predicts an event&rsquo;s centre,
+  duration and class from raw multichannel EEG; <strong>cnn-ripple</strong>
+  (Navas-Olive et al. 2022) emits a per-window probability of a hippocampal
+  sharp-wave ripple, scored by precision, recall and F1 against ground truth;
+  <strong>SEED</strong> (Tapia-Rivas et al. 2024) does sleep spindles and
+  K-complexes. All three descend from single-shot object detectors. Learned event
+  detection over a physiological time series is an established genre, and
+  <strong>no claim that the architecture is new survives</strong>.
 </div>
 
 <div class="col">
   <p>
-    The row in red is where this work sits, and it is the row where the survey found
-    no learned method. The learning in this field is <strong>one level below</strong>
-    &mdash; turning fluorescence into per-cell events, which is exactly the
-    <em>input</em> to a coordination analysis rather than its output. The nearest
-    thing that learns at the coordination level, <strong>autoMEA</strong>, learns the
-    <em>knob</em>: a supervised network on multi-electrode array data that outputs
-    the burst-detection parameters a human expert would have chosen, so the operator
-    stops being the bottleneck. Here the network <em>is</em> the detector, and what
-    replaces the operator is the pipeline in section 1.
+    The full landscape, the twelve papers behind it and what each one was read for
+    are in a companion page: <a href="landscape.html">Coordination detection across
+    neuroscience</a>. What follows is only what bears on this report&rsquo;s own
+    result.
   </p>
   <p>
-    One more thing the assembly-detection literature shares with this project, and it
-    is worth naming because it is the methodology rather than the model:
-    M&ouml;lter, Avitan and Goodhill benchmark their algorithms by
-    <strong>generating surrogate data with known assembly structure</strong> &mdash;
-    the same move as section 1, arrived at independently, and evidence that the
-    generate-with-truth half of this pipeline is a normal thing to do rather than a
-    liberty taken here.
-  </p>
-</div>
-
-<div class="lit">
-  <p class="cite">
-    <strong>References, and what was actually verified.</strong>
-    CASCADE &mdash; Rupprecht et&nbsp;al., <em>Nat. Neurosci.</em>
-    24:1324&ndash;1337 (2021).
-    DeepCINAC &mdash; Denis et&nbsp;al., <em>eNeuro</em> 7(4) (2020).
-    spikefinder &mdash; Berens et&nbsp;al., <em>PLoS Comput. Biol.</em>
-    14(5):e1006157 (2018).
-    RADICaL &mdash; Zhu, Grier et&nbsp;al., <em>Nat. Neurosci.</em>
-    25:1724&ndash;1734 (2022).
-    Assembly-detector benchmark &mdash; M&ouml;lter, Avitan &amp; Goodhill,
-    <em>BMC Biology</em> 16:143 (2018), doi:10.1186/s12915-018-0606-4.
-    Cell assemblies at multiple timescales &mdash; Russo &amp; Durstewitz,
-    <em>eLife</em> 6:e19428 (2017).
-    autoMEA &mdash; Hernandes, Heuvelmans, Gualtieri, Meijer, van&nbsp;Woerden &amp;
-    Greplova, <em>Front. Neurosci.</em> 18:1446578 (2024); preprint bioRxiv
-    2024.05.08.593078.
-    CICADA &mdash; Cossart lab,
-    <a href="https://gitlab.com/cossartlab/cicada">gitlab.com/cossartlab/cicada</a>.
-    <br>
-    &#9888; <strong>Bibliographic details were checked against publisher records;
-    no full text was retrieved</strong> &mdash; the open-access copies sit behind a
-    bot check in this environment. So the <em>existence and attribution</em> of every
-    reference above is verified, while claims about what each paper
-    <em>contains</em> &mdash; including the &ldquo;hand-written everywhere
-    found&rdquo; cell &mdash; rest on abstracts and method lists. One citation in the
-    first draft of this page carried a fabricated author list, which is what this
-    check is for.
+    Two further corrections belong with the withdrawal. <strong>The per-lab corpus
+    loop is not unprecedented either</strong>: CASCADE&rsquo;s stated central move is
+    resampling its ground-truth database to match the noise level and sampling rate
+    of the unseen recording, which is this project&rsquo;s argument made in 2021 one
+    level down, and it should be cited as precedent rather than reinvented. And
+    <strong>the assembly-detection literature does contain a coordination-event
+    detector</strong> &mdash; three of the eight algorithms M&ouml;lter, Avitan and
+    Goodhill benchmark cannot begin without one. SGC, CORE and SVD each binarise per
+    cell, count coactive cells per frame, and keep only frames whose coactivity level
+    exceeds the 95th percentile (SVD: the 99th) of a thousand-iteration per-cell
+    permutation null. That is the same construction as the SCE rule and as CICADA,
+    reached independently, sitting as a precondition of assembly detection rather
+    than as its output.
   </p>
 </div>
 
 <div class="verdict-line">
   <p>
-    <strong>The honest verdict.</strong> No prior work was found that trains a
-    network to emit coordinated population events, scored against planted ground
-    truth, on a corpus parameterised from the lab&rsquo;s own recordings. That
-    combination appears to be new. Two qualifications belong with the claim, and
-    the first is the serious one: <strong>a survey is not a proof of absence</strong>
-    &mdash; this is four searches and a reading of the neighbours, not a systematic
-    review. <strong>&#9888; No paper was retrieved in full.</strong> Every
-    bibliographic detail above was checked against the publisher&rsquo;s own record,
-    and one citation in the first draft of this page had a
-    <em>fabricated author list</em> that this check caught; but claims about what
-    those papers <em>contain</em> rest on abstracts and publisher metadata, because
-    the full texts sit behind a bot check in this environment. And <strong>none of the pieces is
-    novel individually</strong>: centre-surround is a difference-of-Gaussians and
-    older than any of this, dilated convolutions are standard, and
-    training-on-simulation is what CASCADE already does one level down. What has not
-    been done before, as far as this survey reaches, is putting them at
-    <em>this</em> level of the analysis.
+    <strong>What survives, and it comes from methods sections rather than from an
+    absence of search results.</strong> Across the assembly literature the evaluation
+    metric is <strong>membership, never event timing</strong>. M&ouml;lter scores a
+    Best Match set-difference over cell groups; Russo and Durstewitz score a Rand
+    index over unit assignment. Both plant or compute the occurrence times they then
+    decline to score. Two substrates, two independent groups, the same omission.
+  </p>
+  <p>
+    So the claim this report is entitled to is positional and narrow:
+    <strong>nobody detects the coordinated event itself from per-cell calcium
+    activity, against events planted in a simulation parameterised from the
+    lab&rsquo;s own recordings.</strong> The substrate and the source of truth are
+    what is new here. The network is not.
+  </p>
+</div>
+
+<div class="col">
+  <p class="tail">
+    &#9888; <strong>Still not established:</strong> no method named here has been run
+    on this report&rsquo;s corpus, so &ldquo;competes with state of the art&rdquo; is
+    not a supported sentence. Two relevant papers are not on the shelf &mdash;
+    Malvache et al. 2016, the primary source for the canonical SCE rule, and
+    SpikeNet &mdash; neither being open access. Read status for every paper that
+    <em>is</em> on the shelf:
+    <code>&lt;darkroom&gt;/bugarach/lit/coordination/README.md</code>.
   </p>
 </div>
 
