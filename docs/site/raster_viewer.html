@@ -21,6 +21,13 @@
   counted rather than skipped: dropping it would shrink the population and inflate
   every per-ROI rate, which is the defect the NA row exists to prevent.
 
+  It also SIMULATES a folder, for the reader who arrives without one. That
+  generator writes the same CSV text a lab would ship and hands it to the same
+  loader, so an explorer sees the real reading path over invented data — folder
+  check included, reporting on a simulated folder exactly as it reports on a real
+  one. Nothing in it is a recording of anything, and the page says so where the
+  numbers are, not only in a footnote.
+
   No dependencies, deliberately. A chart library would be a CDN fetch, and the
   whole point of the paragraph above is that this page reaches nothing.
 -->
@@ -47,11 +54,11 @@
   .sub a { color: var(--accent); }
   main { display: flex; align-items: flex-start; gap: 0; }
   #side {
-    width: 268px; flex: none; border-right: 1px solid var(--line);
+    width: 322px; flex: none; border-right: 1px solid var(--line);
     height: calc(100vh - 96px); overflow-y: auto; background: var(--panel);
   }
   #stage { flex: 1; min-width: 0; padding: 16px 20px 40px; }
-  .pick { padding: 16px; border-bottom: 1px solid var(--line); }
+  .pick { padding: 0 16px 14px; }
   button {
     font: inherit; font-size: 13.5px; padding: 7px 12px; border-radius: 6px;
     border: 1px solid var(--accent); background: var(--accent); color: #fff;
@@ -59,10 +66,52 @@
   }
   button.ghost { background: transparent; color: var(--accent); margin-top: 6px; }
   .hint { color: var(--muted); font-size: 12px; margin-top: 8px; }
+
+  /* Accordion. Two ways in — a folder you have, a folder that does not exist —
+     and only one open at a time, because the recording list wants the height
+     and the controls want the reader's attention while they are being set. */
+  details.acc { border-bottom: 1px solid var(--line); }
+  details.acc > summary {
+    list-style: none; cursor: pointer; padding: 11px 16px; font-size: 13px;
+    font-weight: 600; display: flex; align-items: center; gap: 8px;
+    user-select: none;
+  }
+  details.acc > summary::-webkit-details-marker { display: none; }
+  details.acc > summary::before {
+    content: "›"; color: var(--muted); font-size: 15px; line-height: 1;
+    transition: transform .12s ease;
+  }
+  details.acc[open] > summary::before { transform: rotate(90deg); }
+  details.acc > summary:hover { background: var(--band); }
+  details.acc > summary .cnt {
+    margin-left: auto; color: var(--muted); font-weight: 400; font-size: 11.5px;
+  }
+
+  /* Simulation controls: label left, value right, one row each. */
+  .ctl { display: grid; grid-template-columns: 1fr auto; gap: 7px 10px;
+         align-items: center; font-size: 12.5px; padding: 0 16px 12px; }
+  .ctl label { color: var(--muted); }
+  .ctl input, .ctl select {
+    font: inherit; font-size: 12.5px; width: 162px; padding: 3px 6px;
+    border: 1px solid var(--line); border-radius: 5px;
+    background: var(--bg); color: var(--fg);
+  }
+  .ctl input[type="number"] { width: 68px; }
+  .ctl .span { grid-column: 1 / -1; }
+  .ctl .span button { margin-top: 2px; }
+  .ctl .note { color: var(--muted); font-size: 11.5px; line-height: 1.4;
+               margin: -3px 0 2px; max-width: none; }
+  .fine { color: var(--muted); font-size: 11.5px; line-height: 1.45;
+          padding: 0 16px 14px; }
+  .fine b { color: var(--fg); font-weight: 600; }
   ul { list-style: none; margin: 0; padding: 0; }
   li button {
     all: unset; display: block; width: 100%; cursor: pointer;
     padding: 7px 16px; font-size: 13px; border-left: 3px solid transparent;
+    /* `all: unset` takes box-sizing with it, so width:100% went content-box and
+       every row ran its event count 19px past the panel edge, where the sidebar
+       clipped it to a bare number */
+    box-sizing: border-box;
   }
   li button:hover { background: var(--band); }
   li button[aria-current="true"] {
@@ -80,9 +129,14 @@
   #meta { font-size: 13px; color: var(--muted); margin: 0 0 12px; }
   #meta b { color: var(--fg); font-weight: 600; }
   #meta .sep { margin-left: 12px; }
-  #wins > span { display: inline-block; margin-right: 14px; }
+  /* The legend. Every window on the raster is a colour, so the colour has to be
+     named somewhere the reader can see both at once — and the name is ink, never
+     the window's own colour, so a pale hue never has to carry text. */
   #wins { font-size: 12.5px; color: var(--muted); margin: 0 0 14px; }
-  #wins span { display: inline-block; margin-right: 14px; }
+  #wins span.win { display: inline-flex; align-items: center; gap: 6px;
+                   margin-right: 16px; }
+  #wins .sw { width: 11px; height: 11px; border-radius: 3px; flex: none;
+              display: inline-block; }
   #wins i { font-style: normal; color: var(--fg); }
   canvas { width: 100%; display: block; }
   .empty { color: var(--muted); padding: 48px 8px; max-width: 60ch; }
@@ -91,6 +145,7 @@
     padding: 10px 14px; margin: 10px 0; font-size: 13px;
   }
   .note { color: var(--muted); font-size: 12.5px; margin-top: 14px; max-width: 70ch; }
+  .note p { margin: 0 0 9px; }
   #checkbar { padding: 10px 16px; border-bottom: 1px solid var(--line); font-size: 12.5px; }
   #checkbar button {
     all: unset; cursor: pointer; color: var(--accent); text-decoration: underline;
@@ -119,22 +174,88 @@
     <a href="https://github.com/syncytium2/bugarach/blob/main/docs/export_folder_spec.md">import
     contract</a>. <b>Your files never leave this computer:</b> the page has no
     network calls in it, and the site is static files with no server to send
-    anything to.
+    anything to. Arrived without a folder? Simulate one, and look at the viewer
+    with nothing of your own at stake.
   </div>
 </header>
 
 <main>
   <div id="side">
-    <div class="pick">
-      <button id="pickDir">Choose folder…</button>
-      <button id="pickFiles" class="ghost">or choose CSV files…</button>
-      <button id="reopen" class="ghost" hidden></button>
-      <input id="dir" type="file" webkitdirectory directory multiple hidden>
-      <input id="files" type="file" accept=".csv" multiple hidden>
-      <div class="hint">Nothing is uploaded. Reading happens in this tab.</div>
-    </div>
-    <div id="checkbar" hidden></div>
-    <ul id="list"></ul>
+    <details class="acc" id="accOpen" open>
+      <summary>Open a folder<span class="cnt">your own recordings</span></summary>
+      <div class="pick">
+        <button id="pickDir">Choose folder…</button>
+        <button id="pickFiles" class="ghost">or choose CSV files…</button>
+        <button id="reopen" class="ghost" hidden></button>
+        <input id="dir" type="file" webkitdirectory directory multiple hidden>
+        <input id="files" type="file" accept=".csv" multiple hidden>
+        <div class="hint">Nothing is uploaded. Reading happens in this tab.</div>
+      </div>
+    </details>
+
+    <details class="acc" id="accSim">
+      <summary>Simulate a folder<span class="cnt">no data needed</span></summary>
+      <div class="ctl">
+        <label for="sRec">recordings</label>
+        <input id="sRec" type="number" min="1" max="6" step="1" value="3">
+        <label for="sMin">minutes each</label>
+        <input id="sMin" type="number" min="2" max="90" step="1" value="45">
+        <label for="sRoi">ROIs</label>
+        <input id="sRoi" type="number" min="4" max="150" step="1" value="33">
+        <label for="sRate">mean rate (mHz/ROI)</label>
+        <input id="sRate" type="number" min="1" max="500" step="1" value="10">
+        <div class="span note">Baseline slices in this lab run 3.8–17.5 mHz per
+        ROI, interquartile.</div>
+        <label for="sBg">background</label>
+        <select id="sBg">
+          <option value="fitted" selected>uneven, bursty</option>
+          <option value="flat">flat</option>
+        </select>
+        <label for="sEv">coordinated events</label>
+        <input id="sEv" type="number" min="0" max="60" step="1" value="15">
+        <label for="sPart">participation</label>
+        <select id="sPart">
+          <option value="measured" selected>30/18/10% — measured</option>
+          <option value="mixed">100/75/50% — a guess</option>
+          <option value="all">every ROI</option>
+        </select>
+        <label for="sJit">jitter (ms)</label>
+        <input id="sJit" type="number" min="0" max="3000" step="10" value="360">
+        <label for="sWin">windows</label>
+        <select id="sWin">
+          <option value="2" selected>2 — baseline, drug</option>
+          <option value="0">none</option>
+          <option value="3">3 — + washout</option>
+          <option value="4">4 — + high K</option>
+        </select>
+        <label for="sSeed">seed</label>
+        <input id="sSeed" type="number" min="0" max="99999" step="1" value="1">
+        <div class="span"><button id="runSim">Simulate</button></div>
+      </div>
+      <div class="fine">
+        <b>Nothing here is a recording of anything.</b> Event times are drawn from
+        the model in <code>bugarach.simulate</code>, re-implemented for this page —
+        same model, a different generator, so a seed reproduces in this browser and
+        does not match Python's numbers.
+        <br><br>
+        <b>The settings you land on are measured, not chosen.</b> Rate, ROI count,
+        participation and jitter come off 84 untreated slices, and every one of
+        them used to be a guess that made coordination easier than it is — six
+        ROIs with a third of a second of spread, not half the field firing
+        together. The old guesses are on the switches, and worth a look.
+        <br><br>
+        <b>The windows are labels, not effects.</b> The statistics are identical
+        inside and outside every one of them. Simulating a treatment would spend
+        the effect the experiment exists to measure — so the drug is a name on the
+        axis and nothing more.
+      </div>
+    </details>
+
+    <details class="acc" id="accList" hidden>
+      <summary>Recordings<span class="cnt" id="cntList"></span></summary>
+      <div id="checkbar" hidden></div>
+      <ul id="list"></ul>
+    </details>
   </div>
 
   <div id="stage">
@@ -147,6 +268,11 @@
       <p>A <code>time_sec</code> of <code>NA</code> means an ROI that was recorded
       and produced no event. Those ROIs are counted here, not dropped — they are
       the denominator of every per-ROI rate.</p>
+      <p><b>No folder to hand?</b> The page will invent one — recordings written
+      as the contract above describes and read back through the same loader, so
+      what you get is this page working rather than a picture of it.</p>
+      <p><button id="simCta" class="ghost" style="width:auto;margin:0">Simulate a
+      folder</button></p>
     </div>
     <div id="panel" hidden></div>
     <div id="view" hidden>
@@ -161,7 +287,7 @@
       </div>
       <p id="wins"></p>
       <canvas id="cv"></canvas>
-      <p class="note" id="note"></p>
+      <div class="note" id="note"></div>
     </div>
   </div>
 </main>
@@ -176,9 +302,64 @@ let RECORDINGS = [];   // {id, file, loaded?}
 let REGIONS = new Map();   // slice_id -> [{idx,label,start,end}]
 let META = new Map();      // slice_id -> {col: val}
 let current = null;
+let SIMULATED = false;     // did the open folder come out of the generator below
 let ORDER = "id";          // "id" | "rate" — sticky across recordings, because
                            // comparing two recordings means comparing them the
                            // same way, and re-picking per slice invites not
+
+/* ---------- treatment windows are told apart by colour ---------------------
+   Every window used to be the same wash, so a baseline abutting a drug abutting
+   a washout was one grey block with three names floating above it — the reader
+   could see that periods existed and not which was which.
+
+   A window is an IDENTITY, so the colour is categorical: eight fixed hues taken
+   in order, never cycled and never generated. The order is the one validated for
+   colour-vision deficiency — adjacent pairs clear ΔE 8 under protanopia and
+   deuteranopia in both modes — and a ninth distinct label gets a neutral rather
+   than a ninth hue that would collide with one of the eight.
+
+   Two rules the palette does not enforce on its own, and both are load-bearing:
+   the hue is assigned to the LABEL and not to the position, so `TTX` is the same
+   colour in every recording of the folder and comparing two of them is a
+   comparison; and no text is ever painted in it — the wash is pale by design, so
+   names stay in ink and a colour chip beside them carries the identity. */
+const HUES_LIGHT = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100",
+                    "#e87ba4", "#008300", "#4a3aa7", "#e34948"];
+const HUES_DARK  = ["#3987e5", "#d95926", "#199e70", "#c98500",
+                    "#d55181", "#008300", "#9085e9", "#e66767"];
+const HUE_SPARE  = "#8a8f94";
+let SLOT = new Map();      // region label -> palette slot, in order of appearance
+
+const dark = () => window.matchMedia
+  && window.matchMedia("(prefers-color-scheme: dark)").matches;
+
+function ink(label) {
+  const i = SLOT.has(label) ? SLOT.get(label) : -1;
+  if (i < 0) return HUE_SPARE;
+  return (dark() ? HUES_DARK : HUES_LIGHT)[i];
+}
+
+/* The band behind the marks: the same hue, laid on thin enough that a mark over
+   it is still a mark. Thinner in dark mode, where the marks are pale and a fill
+   at the light-mode strength closes on them from the other side — the rail above
+   is what identifies the window, so the wash only has to say where it ends. */
+function wash(label) {
+  const h = ink(label);
+  const n = parseInt(h.slice(1), 16);
+  return "rgba(" + ((n >> 16) & 255) + "," + ((n >> 8) & 255) + "," + (n & 255)
+         + "," + (dark() ? 0.15 : 0.13) + ")";
+}
+
+/* Assigned once for the whole folder rather than per recording, and in
+   chronological order within each — so slot 1 is whatever every recording starts
+   with. A label already seen keeps its slot. */
+function assignHues() {
+  SLOT = new Map();
+  for (const rec of RECORDINGS)
+    for (const w of (REGIONS.get(rec.id) || []))
+      if (!SLOT.has(w.label))
+        SLOT.set(w.label, SLOT.size < HUES_LIGHT.length ? SLOT.size : -1);
+}
 
 /* ---------- CSV: minimal, and quoted fields are handled because a lab's
    treatment label can legitimately contain a comma ("wash, 10 min"). --------- */
@@ -209,12 +390,20 @@ function asObjects(rows) {
   });
 }
 
-const readText = file => new Promise((res, rej) => {
-  const fr = new FileReader();
-  fr.onload = () => res(fr.result);
-  fr.onerror = () => rej(new Error("could not read " + file.name));
-  fr.readAsText(file);
-});
+/* A simulated folder is CSV text with a name on it, and it arrives here as one:
+   the generator at the bottom of this file writes the same bytes a lab's exporter
+   would and everything downstream — the loader, the folder check, the raster —
+   cannot tell the two apart and is not told. That is the point of routing it
+   through the contract rather than building the internal structures directly:
+   what an explorer sees is this page reading a folder, not a demo of it. */
+const readText = file => typeof file.text === "string"
+  ? Promise.resolve(file.text)
+  : new Promise((res, rej) => {
+      const fr = new FileReader();
+      fr.onload = () => res(fr.result);
+      fr.onerror = () => rej(new Error("could not read " + file.name));
+      fr.readAsText(file);
+    });
 
 /* Nothing read from a file is ever concatenated into markup. These build the
    node instead, so a region label of `<img src=x onerror=…>` is a label that
@@ -321,7 +510,7 @@ function draw(rec, data) {
   const dpr = window.devicePixelRatio || 1;
   const W = cv.clientWidth || 900;
   const names = [...data.streams.keys()].sort();
-  const padL = 62, padR = 14, padT = 10, padB = 34, gap = 16;
+  const padL = 62, padR = 14, padT = 17, padB = 34, gap = 16;
   const rowH = Math.max(110, Math.min(230, 26 + data.nRois * 5));
   const H = padT + names.length * rowH + (names.length - 1) * gap + padB;
 
@@ -345,16 +534,28 @@ function draw(rec, data) {
     // treatment windows behind the marks — a raster whose periods are not
     // named is a wall of dots, and the bounds came with the folder
     wins.forEach(w => {
-      g.fillStyle = css.getPropertyValue("--band").trim();
-      g.fillRect(x(w.start), top, Math.max(1, x(w.end) - x(w.start)), bot - top);
+      const x0 = x(w.start), x1 = x(w.end);
+      // a 2px bite out of each shared edge: abutting windows are contiguous in
+      // the data, and touching fills of two colours read as a gradient
+      const a = Math.max(padL, x0 + 1), b = Math.min(W - padR, x1 - 1);
+      const wide = Math.max(1, b - a);
+      g.fillStyle = wash(w.label);
+      g.fillRect(a, top, wide, bot - top);
+      // a saturated rail along the top of the band. The wash has to stay pale
+      // enough to keep the marks readable, which leaves it too pale to identify;
+      // the rail is the same hue at full strength and costs 3px of raster.
+      g.fillStyle = ink(w.label);
+      g.fillRect(a, top, wide, 3);
       if (si === 0) {
-        g.fillStyle = css.getPropertyValue("--muted").trim();
         // clamp inside the plot: a window starting near the right edge ran its
         // label off the canvas, and a treatment silently rendered as "hig" is
         // worse than one rendered a few pixels from where it starts
-        const tw = g.measureText(w.label).width;
-        const lx = Math.min(x(w.start) + 3, W - padR - tw);
-        g.fillText(w.label, Math.max(padL, lx), top - 1);
+        const tw = g.measureText(w.label).width + 13;
+        const lx = Math.min(x0 + 1, W - padR - tw);
+        const at = Math.max(padL, lx);
+        g.fillRect(at, top - 11, 9, 9);                 // the chip carries hue…
+        g.fillStyle = css.getPropertyValue("--fg").trim();
+        g.fillText(w.label, at + 13, top - 3);          // …the name stays ink
       }
     });
 
@@ -450,20 +651,30 @@ async function show(rec) {
     winbox.append(el("span", "no treatment windows declared — shown as one recording"));
   for (const w of wins) {
     const s = document.createElement("span");
-    s.append(el("i", w.label),
-             document.createTextNode(" " + (w.start / 60).toFixed(0) + "–"
+    s.className = "win";
+    const sw = document.createElement("span");
+    sw.className = "sw";
+    sw.style.background = ink(w.label);
+    s.append(sw, el("i", w.label),
+             document.createTextNode((w.start / 60).toFixed(0) + "–"
                                      + (w.end / 60).toFixed(0) + "m"));
     winbox.append(s);
   }
+  const say = text => note.appendChild(el("p", text));
   if (!data.quiet)
-    note.textContent = "No ROI in this recording is declared with no events. "
-      + "If all " + data.nRois + " fired, that is right; if some were quiet and "
-      + "were left out of the file, they are missing from the population and every "
-      + "per-ROI rate computed from it is too high.";
+    say("No ROI in this recording is declared with no events. If all "
+      + data.nRois + " fired, that is right; if some were quiet and were left out "
+      + "of the file, they are missing from the population and every per-ROI rate "
+      + "computed from it is too high.");
   if (!dt)
-    note.textContent += (note.textContent ? "  " : "")
-      + "No frame interval for this recording — the detectors need one; this page "
-      + "does not, because it only draws what it was given.";
+    say("No frame interval for this recording — the detectors need one; this page "
+      + "does not, because it only draws what it was given.");
+  // said at the picture and not only in the panel that produced it: a raster
+  // gets screenshotted, and a screenshot carries no sidebar
+  if (SIMULATED)
+    say("Simulated. Every mark above was drawn from a model, no part of this is a "
+      + "recording of anything, and the treatment windows are labels over "
+      + "identical statistics — the drug is a name on the axis, not an effect.");
   paintOrderNote(data);
   draw(rec, data);
 }
@@ -520,13 +731,23 @@ function paintCheck(rep) {
   bar.hidden = false;
   const good = rep.errors.length === 0;
   bar.innerHTML = "";
-  const span = document.createElement("span");
-  span.className = good ? "ok" : "bad";
-  span.textContent = good
+  const verdict = good
     ? "✓ " + rep.okCount + " of " + rep.total + " conforming"
     : "✕ " + rep.errors.length + " problem" + (rep.errors.length > 1 ? "s" : "");
-  bar.appendChild(span);
-  bar.appendChild(document.createTextNode(" "));
+  // The verdict rides on the section header, because that section can be shut and
+  // a folder check nobody sees is a folder check nobody ran. It is repeated
+  // beside the details link only when it is bad news, which is when a reader
+  // wants it twice.
+  const cnt = document.getElementById("cntList");
+  cnt.textContent = verdict;
+  cnt.className = "cnt " + (good ? "ok" : "bad");
+  if (!good) {
+    const span = document.createElement("span");
+    span.className = "bad";
+    span.textContent = verdict;
+    bar.appendChild(span);
+    bar.appendChild(document.createTextNode(" "));
+  }
   const btn = document.createElement("button");
   const n = rep.errors.length + rep.notes.length;
   btn.textContent = n ? "details (" + n + ")" : "details";
@@ -582,9 +803,9 @@ function paintOrderNote(data) {
 }
 
 /* ---------- open ----------------------------------------------------------- */
-async function open(fileList) {
+async function open(fileList, opts) {
   const files = [...fileList].filter(f => f.name.toLowerCase().endsWith(".csv"));
-  const stage = document.getElementById("stage");
+  SIMULATED = !!(opts && opts.simulated);
   RECORDINGS = []; REGIONS = new Map(); META = new Map();
   document.getElementById("panel").hidden = true;
   document.getElementById("checkbar").hidden = true;
@@ -610,8 +831,15 @@ async function open(fileList) {
       RECORDINGS.push({ id: f.name.replace(/\.csv$/i, ""), file: f });
   RECORDINGS.sort((a, b) => natural(a.id, b.id));
 
+  assignHues();
+
   const list = document.getElementById("list");
   list.innerHTML = "";
+  document.getElementById("accList").hidden = !RECORDINGS.length;
+  const cnt = document.getElementById("cntList");
+  cnt.className = "cnt";
+  cnt.textContent = RECORDINGS.length
+    ? RECORDINGS.length + (SIMULATED ? " simulated" : " found") : "";
   if (!RECORDINGS.length) {
     document.getElementById("view").hidden = true;
     const e = document.getElementById("empty");
@@ -631,6 +859,9 @@ async function open(fileList) {
     b.onclick = () => show(rec);
     li.appendChild(b); list.appendChild(li);
   }
+  // the sidebar follows the reader: a folder that opened is a list to pick from,
+  // and a folder that was simulated is a set of knobs to turn again
+  showSection(SIMULATED ? "accSim" : "accList");
   await show(RECORDINGS[0]);
   // the first raster goes up before the folder is checked: seeing something is
   // the point of opening it, and the check walks every file
@@ -639,6 +870,282 @@ async function open(fileList) {
     "checking " + RECORDINGS.length + " recording(s)…";
   paintCheck(await checkFolder());
 }
+
+/* ---------- a folder that does not exist -------------------------------------
+   Most people who open this page have no export folder to point it at, and a
+   viewer with nothing in it is a screenshot of a promise. So the page can write
+   one: invented recordings, emitted as the CSV text the import contract
+   describes and handed to the loader above, which is not told where they came
+   from. What an explorer drives is the real reading path — the same parser, the
+   same folder check, the same raster.
+
+   The model is the one in `bugarach.simulate`: a per-ROI Poisson background with
+   coordinated events planted into it at known times with a known participating
+   fraction and a jittered onset per participant. Two things it gets from the
+   lab's own measurements rather than from taste, both fitted on **baseline
+   recordings only** (`bugarach.bench`): the per-ROI rate is Gamma-distributed
+   with shape 0.275, because a real field has a few busy cells and many nearly
+   silent — 35% of real ROIs record no event at all — and each ROI's events clump
+   in time on two scales at once, since over-dispersion in real ROIs keeps growing
+   with the window and no single scale reproduces that. The `flat` option is the
+   older model kept on a switch, and it is worth a look: it leaves almost nobody
+   silent, which is the defect the fitted one exists to fix.
+
+   THREE THINGS IT IS NOT, and each has cost this project something:
+
+   * It is not the Python generator's numbers. Same model, a different random
+     source, so a seed reproduces in this browser and nowhere else. Chasing bit
+     parity here would be chasing it for a demonstration.
+   * It does not simulate a treatment. The windows are labels over statistics
+     that are identical inside and outside them, because simulating the effect
+     spends the effect the experiment exists to measure.
+   * It is not evidence of anything. Nothing drawn from it is a finding, and the
+     page says so on the picture, not only beside the controls.               */
+
+const RATE_SHAPE = 0.275;                  // bench.MEASURED_RATE_SHAPE
+const BURST_SHAPE = [1.547, 1.388];        // bench.MEASURED_BURST_SHAPE
+const BURST_BINS = [300, 60];              // …at these bin widths, seconds
+const GRID = 0.1, MARGIN = 5;
+// 120 s, not the 15 s the generator ships: the detectors estimate their null
+// over context windows up to 120 s wide, so events packed tighter than that put
+// coordination inside the null a threshold is derived from. That contaminated
+// null is what made an upstream benchmark unusable and cost two weeks.
+const MIN_SEP = 120;
+// The measured level is first because it is the one that is true. Participation
+// was a guess here until 2026-08-13, and every guess made coordination easier
+// than it is: on 100/75/50% every detector scored F1 0.9-1.0 and the bench could
+// not tell them apart; on the measured 30/18/10% they range 0.20-0.75 and
+// separate, because a real coordinated event recruits about six of thirty-three
+// ROIs. The guess is kept on the switch so the difference can be looked at.
+const LEVELS = { measured: [0.3, 0.18, 0.1], mixed: [1, 0.75, 0.5], all: [1] };
+// Labels a lab would actually write, because the contract asks for the real
+// treatment name and a positional placeholder ("region 2") makes an unreadable
+// axis. Here they name nothing that happened — see the second point above.
+const SCHEMES = {
+  "0": [],
+  "2": [["baseline", 0, 0.5], ["drug", 0.5, 1]],
+  "3": [["baseline", 0, 0.4], ["drug", 0.4, 0.75], ["washout", 0.75, 1]],
+  "4": [["baseline", 0, 0.3], ["drug", 0.3, 0.55],
+        ["washout", 0.55, 0.8], ["high K", 0.8, 1]],
+};
+
+/* mulberry32 — small, fast, and seedable, which `Math.random` is not. A seed
+   that does not reproduce turns "look at this one" into "look at something
+   like this". */
+function rng32(seed) {
+  let a = ((seed >>> 0) + 0x9e3779b9) >>> 0;
+  return function () {
+    a = (a + 0x6d2b79f5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+// polar Box-Muller, second deviate discarded: caching it across calls would make
+// a draw depend on what was drawn before it, and a seed stop reproducing
+function randn(u) {
+  let a, b, r;
+  do { a = 2 * u() - 1; b = 2 * u() - 1; r = a * a + b * b; } while (!r || r >= 1);
+  return a * Math.sqrt(-2 * Math.log(r) / r);
+}
+function poissonSmall(u, lam) {
+  const L = Math.exp(-lam);
+  let k = 0, p = 1;
+  do { k++; p *= u(); } while (p > L);
+  return k - 1;
+}
+// a sum of Poissons is Poisson, so a large mean is drawn in chunks — exact, and
+// it keeps exp(-lambda) away from underflow, where the loop above never ends
+function poisson(u, lam) {
+  let k = 0;
+  while (lam > 12) { k += poissonSmall(u, 12); lam -= 12; }
+  return k + poissonSmall(u, lam);
+}
+// Marsaglia-Tsang, with the shape<1 boost — the fitted rate shape is 0.275
+function gammaDraw(u, shape) {
+  if (shape < 1) return gammaDraw(u, shape + 1) * Math.pow(u() || 1e-12, 1 / shape);
+  const d = shape - 1 / 3, c = 1 / Math.sqrt(9 * d);
+  for (;;) {
+    let x, v;
+    do { x = randn(u); v = 1 + c * x; } while (v <= 0);
+    v = v * v * v;
+    const w = u();
+    if (w < 1 - 0.0331 * x * x * x * x) return d * v;
+    if (Math.log(w) < 0.5 * x * x + d * (1 - v + Math.log(v))) return d * v;
+  }
+}
+// half away from zero, like MATLAB and unlike JS on negatives — a tie decides
+// which grid bin an event lands in, and the store rounds this way
+const mround = x => Math.sign(x) * Math.round(Math.abs(x));
+
+function pick(u, n, k) {
+  const a = [];
+  for (let i = 0; i < n; i++) a.push(i);
+  for (let i = 0; i < k; i++) {                       // partial Fisher-Yates
+    const j = i + Math.floor(u() * (n - i));
+    const t = a[i]; a[i] = a[j]; a[j] = t;
+  }
+  return a.slice(0, k).sort((p, q) => p - q);
+}
+
+/* Renewal placement with exponential excess above a floor: intervals vary.
+   Evenly spaced events are a cue in themselves — anything reading this could
+   learn "an event is due" from the clock rather than from the activity. */
+function plantTimes(u, m, T) {
+  if (!m) return [];
+  const lo = MARGIN, hi = T - MARGIN;
+  const mean = (hi - lo) / (m + 1);
+  const floor = Math.min(MIN_SEP, mean / 2);     // so m always fit
+  const excess = mean - floor;
+  const t = [];
+  let acc = lo;
+  for (let i = 0; i < m; i++) {
+    acc += floor - excess * Math.log(1 - u());
+    t.push(acc);
+  }
+  if (t[m - 1] > hi) {          // rescale the excess only: order and floor hold
+    const room = hi - lo - floor * m;
+    const ex = t.map((v, i) => v - lo - floor * (i + 1));
+    if (room > 0 && ex[m - 1] > 0)
+      for (let i = 0; i < m; i++)
+        t[i] = lo + floor * (i + 1) + ex[i] * (room / ex[m - 1]);
+  }
+  return t;
+}
+
+function simulateRecording(p, seed) {
+  const u = rng32(seed);
+  const T = p.minutes * 60, nR = p.rois;
+  const trains = [];
+  for (let r = 0; r < nR; r++) trains.push([]);
+
+  // ---- background, one ROI at a time ----------------------------------------
+  const rates = [];
+  for (let r = 0; r < nR; r++)
+    rates.push(p.fitted ? gammaDraw(u, RATE_SHAPE) * (p.rate / RATE_SHAPE)
+                        : p.rate);
+  const nC = Math.ceil(T / BURST_BINS[0]), nF = Math.ceil(T / BURST_BINS[1]);
+  for (let r = 0; r < nR; r++) {
+    if (!p.fitted) {
+      const k = poisson(u, rates[r] * T);
+      for (let i = 0; i < k; i++) trains[r].push(u() * T);
+      continue;
+    }
+    // two multiplier series per ROI, each Gamma(k, 1/k) so the mean is 1 and only
+    // the distribution over time moves — a busy stretch belongs to a cell, not
+    // to the field
+    const slow = [], fast = [];
+    for (let i = 0; i < nC; i++) slow.push(gammaDraw(u, BURST_SHAPE[0]) / BURST_SHAPE[0]);
+    for (let i = 0; i < nF; i++) fast.push(gammaDraw(u, BURST_SHAPE[1]) / BURST_SHAPE[1]);
+    for (let j = 0; j < nF; j++) {
+      const lo = j * BURST_BINS[1], w = Math.min(BURST_BINS[1], T - lo);
+      const mult = slow[Math.min(Math.floor(lo / BURST_BINS[0]), nC - 1)] * fast[j];
+      const k = poisson(u, rates[r] * mult * w);
+      for (let i = 0; i < k; i++) trains[r].push(lo + u() * w);
+    }
+  }
+
+  // ---- planted events -------------------------------------------------------
+  const levels = LEVELS[p.part] || LEVELS.measured;
+  const fracs = [];
+  for (let i = 0; i < p.events; i++) fracs.push(levels[i % levels.length]);
+  for (let i = fracs.length - 1; i > 0; i--) {        // interleave levels in time
+    const j = Math.floor(u() * (i + 1));
+    const t = fracs[i]; fracs[i] = fracs[j]; fracs[j] = t;
+  }
+  plantTimes(u, fracs.length, T).forEach((t, i) => {
+    const n = Math.max(1, mround(fracs[i] * nR));
+    for (const r of pick(u, nR, n))
+      trains[r].push(Math.min(Math.max(t + p.jitter * randn(u), 0), T));
+  });
+
+  // ---- write it as the contract says ----------------------------------------
+  const rows = ["roi,time_sec"];
+  for (let r = 0; r < nR; r++) {
+    const v = trains[r].map(x => mround(x / GRID) * GRID).sort((a, b) => a - b);
+    // an ROI that was recorded and fired nothing is a row with no time. The
+    // fitted background produces these in quantity, which is the honest thing:
+    // dropping them would shrink the population and lift every per-ROI rate.
+    if (!v.length) { rows.push((r + 1) + ",NA"); continue; }
+    for (const x of v) rows.push((r + 1) + "," + x.toFixed(1));
+  }
+  return rows.join("\n") + "\n";
+}
+
+function simulateFolder(p) {
+  const files = [];
+  const regions = ["slice_id,region_idx,label,start_sec,end_sec"];
+  const slices = ["slice_id,frame_interval_sec,source"];
+  const scheme = SCHEMES[p.windows] || [];
+  const T = p.minutes * 60;
+  for (let i = 0; i < p.n; i++) {
+    const id = "simulated_" + String(i + 1).padStart(2, "0");
+    // each recording its own seed, so they are siblings and not copies
+    files.push({ name: id + ".csv", text: simulateRecording(p, p.seed * 977 + i) });
+    slices.push(id + "," + GRID + ",simulated in this browser");
+    scheme.forEach((w, k) => regions.push(
+      [id, k + 1, w[0], (w[1] * T).toFixed(1), (w[2] * T).toFixed(1)].join(",")));
+  }
+  // raw bounds, contiguous, region 1 starting at 0 — what the contract asks for
+  if (scheme.length)
+    files.push({ name: "regions.csv", text: regions.join("\n") + "\n" });
+  files.push({ name: "slices.csv", text: slices.join("\n") + "\n" });
+  return files;
+}
+
+const clamp = (v, lo, hi) =>
+  Number.isFinite(v) ? Math.min(Math.max(v, lo), hi) : lo;
+
+function readSim() {
+  const num = id => Number(document.getElementById(id).value);
+  const val = id => document.getElementById(id).value;
+  return {
+    n: clamp(num("sRec"), 1, 6),
+    minutes: clamp(num("sMin"), 2, 90),
+    rois: clamp(num("sRoi"), 4, 150),
+    rate: clamp(num("sRate"), 1, 500) / 1000,        // mHz in the box, Hz here
+    fitted: val("sBg") === "fitted",
+    events: clamp(num("sEv"), 0, 60),
+    part: val("sPart"),
+    jitter: clamp(num("sJit"), 0, 2000) / 1000,      // ms in the box, s here
+    windows: val("sWin"),
+    seed: clamp(num("sSeed"), 0, 99999),
+  };
+}
+
+async function runSim() {
+  const btn = document.getElementById("runSim");
+  btn.textContent = "Simulating…";
+  btn.disabled = true;
+  // one frame, so the button repaints before the generator takes the thread
+  await new Promise(r => setTimeout(r, 0));
+  try {
+    await open(simulateFolder(readSim()), { simulated: true });
+  } finally {
+    btn.textContent = "Simulate";
+    btn.disabled = false;
+  }
+}
+
+/* ---------- the sidebar: one section at a time ----------------------------- */
+const SECTIONS = ["accOpen", "accSim", "accList"];
+function showSection(id) {
+  for (const s of SECTIONS) {
+    const n = document.getElementById(s);
+    n.open = s === id && !n.hidden;
+  }
+}
+SECTIONS.forEach(s => {
+  const n = document.getElementById(s);
+  // closing the others fires their toggle too, so only an OPENING one steers
+  n.addEventListener("toggle", () => { if (n.open) showSection(s); });
+});
+document.getElementById("runSim").onclick = runSim;
+document.getElementById("simCta").onclick = () => {
+  showSection("accSim");
+  runSim();
+};
 
 /* ---------- remember the folder, not the data --------------------------------
    A FileSystemDirectoryHandle is a permission to read a place, not the bytes in
@@ -748,4 +1255,12 @@ window.addEventListener("resize", () => {
   clearTimeout(rt);
   rt = setTimeout(() => { if (current?.loaded) draw(current, current.loaded); }, 120);
 });
+// the window colours are picked for the surface they sit on, so a reader who
+// switches the OS to dark mid-session gets the dark steps rather than the light
+// ones washed out; the legend swatches are repainted with them
+if (window.matchMedia) {
+  const mq = window.matchMedia("(prefers-color-scheme: dark)");
+  const again = () => { if (current) show(current); };
+  if (mq.addEventListener) mq.addEventListener("change", again);
+}
 </script>
