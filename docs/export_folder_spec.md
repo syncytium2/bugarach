@@ -1,5 +1,10 @@
 # The export folder — bugarach's input contract
 
+**bugarach needs three facts and no fourth:** the event times of each ROI, the
+timing of each treatment period, and the acquisition frame interval. Nothing here
+is specific to a lab, a preparation, a drug or a pipeline. A producer that can
+state those three is a conforming producer.
+
 **This is the whole input.** bugarach reads one folder and nothing else: no data
 store, no archive, no environment variable, no network, no companion database. If
 a fact is not in the folder, bugarach does not know it and does not guess it.
@@ -9,25 +14,67 @@ Everything is CSV, UTF-8, newline-only endings, one header row. Times are
 this project's MATLAB exporter, another lab's Python, a spreadsheet exported by
 hand.
 
-## Files
+> **Revision 2** (2026-08-17). **One file per recording**, rather than one table
+> holding every recording. A lab's pipeline runs per recording and writes per
+> recording, so a batch table made them concatenate before they could start.
+> `slices.csv` and `regions.csv` stay, as the two small tables a lab keeps like a
+> notebook: one row per recording, one row per window. And an ROI that was imaged
+> and fired nothing is now expressible — one row with no time — which rev 1 could
+> not say at all.
 
-Only `events.csv` is required.
+## The folder
 
-### `events.csv` — required
+```
+my_export/
+  20240708_13.csv     one recording — its ROIs and their event times
+  20240708_17.csv
+  20240723_22.csv
+  ...
+  slices.csv          one row per recording: the frame interval, plus identity
+  regions.csv         one row per treatment window
+```
+
+**Every `.csv` is a recording except `slices.csv`, `regions.csv` and
+`metric_dictionary.csv`.** The file's name is the recording's id — no column
+declares it and nothing parses the name further. A folder of recording files and
+nothing else is a valid input; each of the two tables buys exactly one thing.
+
+### `<slice_id>.csv` — one per recording, at least one required
 
 One row per detected event, in one ROI.
 
 | column | type | meaning |
 |---|---|---|
-| `slice_id` | text | which recording. Any string; it is an identifier, not a format. |
+| `roi` | text | which ROI. Any string, unique within the recording. |
+| `time_sec` | number | when the event began, in seconds — **or `NA`**, see below. |
 | `stream` | text | which signal the event came from. Any name. A single-stream lab may omit the column entirely — every event is then one unnamed stream. |
-| `roi` | text | which cell. Any string, unique within a slice. |
-| `time_sec` | number | when the event began, in seconds. |
 
 Nothing else is read. **Event properties — amplitude, width, rise time — belong to
 a different project and are not consumed here.** The six detectors need onset times
 and nothing more. Extra columns are ignored rather than rejected, so a producer may
 ship one file that serves several consumers.
+
+#### An ROI that fired nothing is a row with no time
+
+`roi = 7`, `time_sec = NA` says *ROI 7 was recorded here and produced no event*. An
+empty field means the same thing, because that is what a spreadsheet writes.
+
+This is the only way to say it, and it has to be said. One row per event means a
+silent ROI otherwise has no rows at all — and *absent* is indistinguishable from
+*never imaged*, so the ROI drops out of the population. A per-ROI rate is events
+divided by ROIs: five recorded with two quiet, counted over three, is overstated by
+a factor of 1.67. The error is largest in the quietest recordings, which is exactly
+where quiet is the result.
+
+So `rate == 0` is a measurement, not a gap. bugarach reports the ROIs it was given
+and never infers the ones it wasn't — a producer that omits its silent ROIs has
+chosen the denominator on the analyst's behalf, and nothing downstream can tell.
+
+**No verdict, no viability, no quality flag.** These files say which ROIs were
+recorded and nothing about whether any of them was worth keeping. That judgement
+belongs to the producer, who has evidence bugarach does not, and it is applied
+before the folder is written. What arrives is simply the population the producer
+chose.
 
 ### `regions.csv` — optional
 
@@ -109,7 +156,7 @@ cannot work without.
 
 | column | type | meaning |
 |---|---|---|
-| `slice_id` | text | the join key; must match `events.csv` |
+| `slice_id` | text | the join key; must match a recording file's name |
 | `frame_interval_sec` | number | the acquisition sampling interval, the mean time between imaged frames |
 | *anything else* | text or number | **an open set** — `group_id`, `mouse_id`, `sex`, `age`, `cohort`, whatever the lab records |
 
@@ -185,8 +232,11 @@ result can be reproduced from the folder alone.
 ## The rules that make it universal
 
 1. **One folder in, one folder out.** No path outside it is ever read.
-2. **Only `events.csv` is required.** Every other file adds fidelity; none is a
-   precondition. A folder holding one CSV of onset times is a valid input.
+2. **Only the recording files are required.** The two tables add fidelity; neither
+   is a precondition. A folder holding one CSV of onset times is a valid input —
+   bugarach then asks for the frame interval and analyses the recording as one
+   unlabelled window. Add `slices.csv` and it stops asking; add `regions.csv` and
+   the results split by treatment.
 3. **No controlled vocabularies.** Stream names, region labels, ROI ids and slice
    ids are the lab's own strings. bugarach matches them, counts them, and hands
    them back.

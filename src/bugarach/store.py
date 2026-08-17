@@ -71,12 +71,17 @@ class Slice:
     pairing is specific to this project; foreign data (see bugarach.io) may
     carry one stream or several under any names. Consumers should iterate
     ``streams`` rather than hardcoding .fast/.slow, which are conveniences
-    for the canonical two-stream stores."""
+    for the canonical two-stream stores.
+
+    ``meta`` holds the producer's own per-recording columns, verbatim and
+    uninterpreted — the frame interval, group, sex, cohort, whatever the lab
+    records. bugarach carries them to its output and reads none of them."""
 
     slice_id: str
     streams: dict[str, Stream]
     regions: list[Region] = field(default_factory=list)
     roi_ids: list[str] | None = None
+    meta: dict[str, str] = field(default_factory=dict)
 
     @property
     def fast(self) -> Stream:
