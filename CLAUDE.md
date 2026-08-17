@@ -113,9 +113,10 @@ The state on `origin` must always be enough to resume elsewhere (FOUNDATIONS
   [`docs/todo/2026-08-12-port-coordination-benchmark.md`](docs/todo/2026-08-12-port-coordination-benchmark.md).
 - **Figure/report output goes to the Dropbox darkroom**, not the repo and not
   local disk. bugarach owns `<darkroom>/bugarach/` — resolve it with
-  `bugarach.paths.darkroom()`, which reads `$BUGARACH_DARKROOM` and returns
-  `None` (skip the export) when unset. Never hardcode it: the path carries a
-  person's name and this repo is public (sapper SAP004).
+  `bugarach.paths.darkroom()` — it takes `$BUGARACH_DARKROOM` when set and
+  otherwise finds the mount itself, and the briefing prints what it resolved.
+  Rule and the incident behind it: FOUNDATIONS §5. Never hardcode the path: it
+  carries a person's name and this repo is public (sapper SAP004).
   `<darkroom>/constellation/` is the **MATLAB producer** team's folder —
   detector sweeps and calibrated operating points live there; don't write into
   it. The darkroom is mounted on **every** machine, so it is a cross-machine

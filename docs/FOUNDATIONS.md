@@ -95,6 +95,21 @@ Real stores (and anything derived from real data) stay machine-local behind
 `BUGARACH_DATA_ROOT` — no personal paths, slice ids, or institution names in
 code. The repo is public; history has been audited on this basis.
 
+**The darkroom's location is resolved, never known.** Figures and reports go to
+`<dropbox>/darkroom/bugarach/` — a folder shared with every other project in the
+ecosystem and mounted on every machine — so its absolute path, which carries a
+person's name, is never written down in this repo.
+`bugarach.paths.darkroom()` takes `$BUGARACH_DARKROOM` when set and otherwise
+reads Dropbox's own `info.json` to find the mount, accepting a location only when
+the directory is already there and declining when several accounts have one.
+**An unset variable is not evidence that the darkroom is unavailable.** On
+2026-08-17 a session reported it missing and skipped its export while Dropbox sat
+mounted and visible in Finder: the variable was exported from a `~/.zshrc`, which
+zsh reads for interactive shells only, and nothing the session ran was
+interactive. The briefing now prints the resolved path unprompted and
+`python -m bugarach.paths` answers on demand — check one of those before
+concluding there is nowhere to write.
+
 **Released by name — the one exception.**
 `docs/generator/reality_check.png` contains a real baseline recording and is
 committed and published, including on the public site. Tony released it

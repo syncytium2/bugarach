@@ -87,6 +87,49 @@ def test_it_reports_whether_the_commit_gates_are_installed(briefing):
     assert "commit gates:" in out.stdout
 
 
+def test_it_reports_where_figure_output_goes(briefing):
+    """A session must not have to ask, or infer it from a silent skip.
+
+    On 2026-08-17 one reported the darkroom unavailable and skipped its export
+    while Dropbox sat mounted and visible in Finder — BUGARACH_DARKROOM was
+    exported from a ~/.zshrc, which zsh reads for interactive shells only. The
+    briefing prints what resolved, so the next session sees the answer instead of
+    the absence of one.
+    """
+    out, _ = briefing
+    assert "darkroom:" in out.stdout
+
+
+@pytest.mark.parametrize(
+    "value, expected",
+    [
+        ("__set_to_a_real_dir__", "$BUGARACH_DARKROOM ->"),
+        ("/definitely/not/here", "does not exist"),
+    ],
+)
+def test_it_distinguishes_a_set_variable_from_a_usable_one(tmp_path, value, expected):
+    """Set-but-wrong is the failure a bare "is it set?" check reads as healthy."""
+    env = {"PATH": "/usr/bin:/bin:/usr/sbin:/sbin", "HOME": str(tmp_path)}
+    env["BUGARACH_DARKROOM"] = str(tmp_path) if value.startswith("__") else value
+    out = subprocess.run(["bash", str(SCRIPT)], cwd=ROOT, env=env,
+                         capture_output=True, text=True, timeout=30)
+    assert expected in out.stdout, out.stdout
+
+
+def test_with_no_variable_and_no_dropbox_it_says_exports_are_skipped(tmp_path):
+    """The honest end state: nowhere to write, and nothing pretending otherwise.
+
+    HOME points at an empty directory, so the resolver finds no info.json and
+    discovery declines — which is what a fresh machine with no Dropbox looks like.
+    """
+    env = {"PATH": "/usr/bin:/bin:/usr/sbin:/sbin", "HOME": str(tmp_path)}
+    out = subprocess.run(["bash", str(SCRIPT)], cwd=ROOT, env=env,
+                         capture_output=True, text=True, timeout=30)
+    assert "darkroom: not found" in out.stdout
+    assert "SKIPPED" in out.stdout
+    assert "python -m bugarach.paths" in out.stdout, "say how to look into it"
+
+
 def test_it_is_wired_into_both_session_start_matchers():
     """Wired as its own entry so the vendored generic hook stays byte-identical
     and re-copyable, and placed FIRST so the binding facts land even if the

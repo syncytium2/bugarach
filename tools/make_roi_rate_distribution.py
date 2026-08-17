@@ -274,7 +274,7 @@ def main(argv=None):
     if args.numbers_only:
         return 0
 
-    from bugarach.paths import ENV_VAR, darkroom
+    from bugarach.paths import darkroom, unresolved_message
 
     if args.out:
         dest = Path(args.out).expanduser()
@@ -282,8 +282,7 @@ def main(argv=None):
     else:
         dest = darkroom(create=True)
         if dest is None:
-            print(f"\n{ENV_VAR} is not set and --out was not given — writing "
-                  "nothing rather than guessing.", file=sys.stderr)
+            print("\n" + unresolved_message(), file=sys.stderr)
             return 2
 
     import holoviews as hv

@@ -83,7 +83,38 @@ echo "   a visual finding?  render the figure and show it — do not describe it
 echo "     -> tools/make_diagnostic.py, tools/make_generator_figures.py"
 echo "   writing to the darkroom?  it is shared across machines — claim it on docs/SESSIONS.md."
 
-# --- 5. is anything mid-flight? ----------------------------------------------
+# --- 5. where does figure output actually go on THIS machine? -----------------
+# Printed rather than left to be asked about. On 2026-08-17 a session reported the
+# darkroom unavailable and skipped its export while Dropbox sat mounted and visible
+# in Finder: BUGARACH_DARKROOM was exported from a ~/.zshrc, which zsh reads for
+# interactive shells only, so nothing a session runs ever saw it. FOUNDATIONS §5 now
+# carries the rule; this is the part of it that fires without being read.
+#
+# The env branch is pure shell so the common case costs nothing. Only discovery pays
+# for a python spawn, and paths.py imports stdlib alone, so it works in a worktree
+# with no venv (docs/todo/2026-08-15-worktrees-import-the-primary-checkouts-src.md)
+# and on a machine with no dependencies installed.
+echo
+if [ -n "${BUGARACH_DARKROOM:-}" ]; then
+  if [ -d "$BUGARACH_DARKROOM" ]; then
+    echo "darkroom: \$BUGARACH_DARKROOM -> $BUGARACH_DARKROOM"
+  else
+    echo "!! darkroom: \$BUGARACH_DARKROOM is set to a path that does not exist:"
+    echo "   $BUGARACH_DARKROOM"
+  fi
+else
+  found=$(PYTHONPATH=src python3 -c 'from bugarach.paths import discover_darkroom
+p = discover_darkroom()
+print(p if p else "")' 2>/dev/null)
+  if [ -n "$found" ]; then
+    echo "darkroom: found via Dropbox info.json -> $found"
+  else
+    echo "!! darkroom: not found — figure/report exports will be SKIPPED, not failed."
+    echo "   python -m bugarach.paths   says what this machine can see"
+  fi
+fi
+
+# --- 6. is anything mid-flight? ----------------------------------------------
 if [ -f HANDOFF.md ]; then
   echo
   echo "--- !! HANDOFF.md present — work is in flight, read it before starting ---"
