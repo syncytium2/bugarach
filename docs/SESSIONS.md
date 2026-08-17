@@ -60,6 +60,61 @@ Template:
 
 ## Active
 
+### Mac/learned-detectors-framework — murderboard, then the per-lab loop on live data
+- **Status:** DONE 2026-08-17 (session ended) — PR #52 still open, `HANDOFF.md` on the branch
+- **Started:** 2026-08-16
+- **Writes:** repo only. **Nothing was written to the darkroom this session**, deliberately:
+  the copy there is the WITHDRAWN report and replacing it needs a claim taken while
+  someone is awake to hold it.
+- **Reads (no claim needed, recorded so the next session knows):**
+  `<data>/processed_archive/event_store_onset_revised_2v_alive_rescued` — interface2's
+  rescued dead-ROI store, `dead-roi-store` @ `752855a`. **Unclaimed on interface2's
+  board and not on their main.** Read-only here; if you intend to depend on it, tell
+  them first.
+- **Notes:** the murderboard on `docs/learned/report.html` retracted its conclusion three
+  times; the corrected page says the learned model is level with the six, not ahead.
+  Then the loop ran end to end on live data — 85 real recordings assessed, one generator
+  spec derived, one corpus, every detector fitted on 3 folds and scored on a held-out 4th.
+  Result and caveats: `docs/learned/bakeoff.md`. Review record:
+  `docs/reviews/report_2026-08-16-round2.md`.
+
+  ⚠ **Two blocking follow-ups are in `HANDOFF.md`** — the darkroom serves the withdrawn
+  report, and `report.html` predates the bake-off it is about to be read as describing.
+
+### Mac/learned-detectors-framework — assessor port, adapt loop, and the learned-detector review
+- **Status:** SUPERSEDED by the block above (same branch, same day)
+- **Started:** 2026-08-16
+- **Writes:** `<darkroom>/bugarach/2026-08-16-learned-detectors/` (NEW) — the review page
+  and its murderboard record, so Tony can open them without navigating `docs/`.
+- **Claims:** that one dated subfolder only. Nothing else under `<darkroom>/bugarach/`,
+  and nothing in `<darkroom>/constellation/` (read-only there — the assessment explainer
+  panels were read to understand the method, not modified).
+- **Notes:** `bugarach.assess` ports interface2's `measure_coordination_timescale` at 1e-9
+  parity — coordination measured **without a detector**, so generator priors do not inherit
+  an operating point. `bugarach.adapt` turns an assessment into generator parameters with a
+  measured round-trip fidelity table.
+
+  ⚠ **Two claims that used to sit here are dead, and both were quoted onward before
+  anyone caught them.** "The learned detector does NOT converge" describes a model that
+  was replaced the same day — Tony's centre-surround tube converges in six seconds. And
+  "CoactDetect 0.66" came from a two-seed run; at the bench's three seeds the leader is
+  `rate` at 0.64. The superseding write-up is
+  `docs/todo/2026-08-16-learned-detectors-handoff.md`, and
+  `2026-08-16-learned-detector-does-not-converge.md` should be deleted rather than read.
+
+  ⚠ **CORRECTION, 2026-08-16 (murderboard session):** an earlier line here said the darkroom
+  copy "was never made". **That was wrong** — I inferred it from `$BUGARACH_DARKROOM` being
+  unset in my shell and did not look. The copy exists, resolved by hand, and holds
+  `report.html` at `fa29612`.
+
+  ⚠ **What is actually true: the darkroom copy is now the SUPERSEDED report.** `fa29612` is
+  the version whose central conclusion the murderboard retracted — it claims the learned
+  model beats the six, which no matched comparison supports. The corrected page is
+  `5ebfe44` in `docs/learned/`. **Anyone opening the darkroom copy is reading a withdrawn
+  result.** Replacing it needs a board claim on this folder first; see the murderboard
+  record for what changed.
+
+
 ### Mac/generator-records-realized-onsets — the generator should record what it planted
 - **Status:** ACTIVE — open PR, **wants review before it lands**
 - **Started:** 2026-08-16
