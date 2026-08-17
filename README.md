@@ -122,6 +122,13 @@ from bugarach.io import load_folder
 slices = load_folder("my_export")
 ```
 
+A producer checks their own folder before sending it — same loader the analysis
+uses, exit 0 or 1, so it drops into a build:
+
+```bash
+bugarach check my_export/
+```
+
 Only the recording files are required; each table buys one thing. Nothing in the
 contract is specific to a lab, a preparation or a pipeline, no viability verdict is
 computed, and extra columns are ignored rather than rejected. Full contract:
