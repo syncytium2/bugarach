@@ -61,8 +61,8 @@ Template:
 ## Active
 
 ### Mac/park-infra-ideas — two infrastructure ideas parked in the darkroom
-- **Status:** ACTIVE 2026-08-18
-- **Writes:** `<darkroom>/ideas/` — **creating that folder**. Two files, plus a README.
+- **Status:** DONE 2026-08-18 — **claim released**
+- **Writes:** `<darkroom>/ideas/` — **created it**. Two files, plus a README.
 - **Claims:** `<darkroom>/ideas/` only. Nothing in `bugarach/`, `constellation/`, `needs/`.
 - **Notes:** parked rather than built, at Tony's direction — the repo keeps a todo
   pointing at them so they are findable without being work in flight.
