@@ -60,6 +60,31 @@ Template:
 
 ## Active
 
+### Mac/explain-k-and-input — figures for K and the model input, and the two tracks split
+- **Status:** DONE 2026-08-18 — session ended, nothing in flight
+- **Started:** 2026-08-18
+- **Writes:** `<darkroom>/bugarach/` — `webapp_spec.html`, `model_track.html`,
+  `overnight_spec.html`, `overnight_spec_review.html` at the **top level**; the report
+  and its two new figures in `2026-08-17-coordination-report/`; and that folder's
+  `README.md`. **Claim released — the writing has stopped.**
+- **Notes for whoever picks this up:**
+  - **The cell-assembly question is handed off**, deliberately as a todo rather than a
+    `HANDOFF.md`, because it is a *new* piece of work and not an interrupted one:
+    [`docs/todo/2026-08-18-do-real-slices-have-recurring-assemblies.md`](todo/2026-08-18-do-real-slices-have-recurring-assemblies.md).
+    It is self-contained — the question, why it is cheap, why the answer is useful in
+    both directions, and the one thing that must not happen (porting an assembly
+    detector first and reporting its score).
+  - **Read `docs/model_track.md` before touching the model** and `docs/webapp_spec.md`
+    before touching the app. They are separate on Tony's instruction and neither blocks
+    the other; the only seam is the `ARCHITECTURES` registry.
+  - **Nothing in `docs/overnight_spec.md` is approved.** It carries its own refusal
+    block. Do not run it.
+  - **Three corrections landed today that were inherited, not invented** — "K=4 halves
+    the event rate" (it is a quarter, and it had spread to six places), PySpike credited
+    with a detector that is ours, and "no literature model has been run" when CICADA is
+    exactly that. All three survived earlier reviews. Assume the next one is in a
+    sentence nobody has divided.
+
 ### Mac/viewer-colours+simulator — deploying the site after the viewer work
 - **Status:** DONE 2026-08-18 — **claim released**, deploy finished and verified
 - **Started:** 2026-08-18
