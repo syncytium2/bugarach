@@ -61,11 +61,13 @@ Template:
 ## Active
 
 ### Mac/assembly-power — can this corpus see an assembly at all, before anyone measures one
-- **Status:** ACTIVE
+- **Status:** DONE 2026-08-18 — **claim released**, figure written and verified
 - **Started:** 2026-08-18
 - **Writes:** `<darkroom>/bugarach/assembly_power.{png,html,json}` (NEW). Nothing else
   under `<darkroom>/bugarach/`, nothing in `<darkroom>/constellation/`.
-- **Claims:** the three `assembly_power.*` files by that name, and nothing else.
+- **Claims:** released. Held the three `assembly_power.*` files by that name while writing;
+  they are now written and nothing further is pending on them. Rerun
+  `tools/assembly_power.py` to regenerate — it reads no store, so any machine can.
 - **Notes:** the open assembly question asks whether the same cells recur across events in
   the 85 baseline recordings. This answers the prior question — what an answer could
   possibly mean — by planting assemblies of known strength at the median slice geometry
