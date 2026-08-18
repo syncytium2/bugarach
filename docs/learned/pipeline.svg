@@ -47,7 +47,7 @@
   <rect x="246" y="230" width="192" height="76" rx="3" class="act"/>
   <text x="342" y="253" text-anchor="middle" class="hi">a human picks K</text>
   <text x="342" y="272" text-anchor="middle" class="lbl">cluster size. K=3 chosen;</text>
-  <text x="342" y="289" text-anchor="middle" class="lbl">K=4 halves the event rate</text>
+  <text x="342" y="289" text-anchor="middle" class="lbl">K=4 &#8594; a quarter the rate</text>
 
   <text x="342" y="332" text-anchor="middle" class="lbl">the whole scan ships</text>
   <text x="342" y="348" text-anchor="middle" class="lbl">beside the choice, so the</text>

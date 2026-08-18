@@ -29,7 +29,9 @@ filed: 2026-08-16
 >    confounds data variation with training variation. Cheapest thing that could
 >    change a conclusion — this is item 1 below, unmoved by the bake-off.
 > 2. **K=3 was chosen by a human and moves the corpus.** The scan ships in
->    `docs/learned/generator_spec.json`; K=4 halves the event rate. Review surface:
+>    `docs/learned/generator_spec.json`; K=4 cuts the cluster rate to roughly a quarter
+>    (0.095 against 0.350 per minute) — an earlier draft said "halves" and nobody had
+>    divided the two numbers. Review surface:
 >    `2026-08-16-assessment-needs-a-human-in-the-loop.md`.
 > 3. **The architecture conclusion is not controlled.** `tube` trains at 10× the
 >    learning rate of the two it is contrasted with, and the project's own

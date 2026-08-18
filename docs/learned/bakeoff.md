@@ -104,7 +104,8 @@ coordination should show.
    promiscuity *report*: CICADA fires 215 times in a block containing nothing;
    centre−surround fires 16; CoactDetect fires 1.
 4. **K=3 was chosen by a human and the choice moves the corpus.** The scan is in
-   `generator_spec.json`; K=4 halves the event rate and would build a different
+   `generator_spec.json`; K=4 cuts the cluster rate to roughly a quarter of K=3's
+   (0.095 against 0.350 per minute) and would build a different
    benchmark.
 5. **Timings are one machine, one process, no warm-up control.** They are
    order-of-magnitude comparisons, not benchmarks.
