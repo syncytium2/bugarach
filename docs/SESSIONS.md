@@ -60,6 +60,15 @@ Template:
 
 ## Active
 
+### Mac/windows-abut — the window boundary was drawing a gap that is not in the data
+- **Status:** ACTIVE 2026-08-18 — redeploying after the fix
+- **Writes:** the PUBLIC SITE. Nothing to the darkroom, nothing under `$BUGARACH_DATA_ROOT`.
+- **Claims:** the site deploy, taken from released. Same standing note as the block below —
+  check what `bugarach-worktrees/deploy-site` is checked out at first; it is a detached HEAD.
+- **Why:** the raster left a 1px unpainted column at every region boundary. Measured, not
+  guessed. On a time axis that reads as time nobody declared, and regions are contiguous by
+  contract — `region_windows` halts on a gap because in these stores one is a data defect.
+
 ### Mac/explain-k-and-input — figures for K and the model input, and the two tracks split
 - **Status:** DONE 2026-08-18 — session ended, nothing in flight
 - **Started:** 2026-08-18
