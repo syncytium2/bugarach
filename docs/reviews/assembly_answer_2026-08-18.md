@@ -1,4 +1,14 @@
 # Murderboard run — `<darkroom>/bugarach/assembly_answer.{html,png}`
+
+> **Superseded 2026-08-18, later the same day.** The artifact this run reviewed has been
+> replaced: the group workbook arrived, ⚠1 below is resolved, and the figure now leads
+> with the group split rather than the pooled result. Two things this run recorded are
+> now known to have been wrong in the reviewed version — it included a slice the lab
+> marks `exclude`, and it reported a pooled number FOUNDATIONS §9 does not admit. Neither
+> was caught by any of the eleven roles, because none of them knew the workbook existed.
+> **That is a finding about this review, not just about the figure**, and it belongs in
+> the upstream murderboard change alongside the point that this record leads with a
+> ledger instead of a picture.
 - upstream:  syncytium2/murderboard @ 57445b4
 - vendored:  57445b4 (re-vendored during this run — see *Preflight*)
 - freshness: current
