@@ -139,6 +139,20 @@ The `SessionStart` hook (`.claude/hooks/session-start.sh`) prints the briefing
 automatically — if it ever stops firing, that is a bug worth fixing, not an
 inconvenience to route around.
 
+**There are two boards and they answer different questions.** `docs/SESSIONS.md`
+is in git and covers what another *machine* can see — the darkroom, the public
+site, a remote store. The machine-local `../bugarach-worktrees/SESSIONS.md`
+covers what this *machine* shares: which session holds the primary checkout, a
+MATLAB process, the venv, a port. **Claiming on the local board is a
+precondition for working, not a courtesy**, and it is mechanized both ways: the
+briefing creates the board if it is missing, and `tools/guard_local_board.sh`
+refuses a commit from a worktree that has no block on it (override, one-shot:
+`ALLOW_UNCLAIMED_BOARD=1`). Prose did not hold — a session on 2026-08-18 read
+"(no board yet — create it)" at startup, worked all day across two worktrees and
+wrote to the shared darkroom without ever creating it, while four other sessions
+ran on the same machine. This is a bugarach-local addition; the vendored
+protocol does not require it, which is why the gate lives here and not upstream.
+
 **Vendored copies** (`docs/session_protocol.md` and the hook, from interface2;
 `tools/murderboard_freshness.sh`, from syncytium2/murderboard) carry a
 provenance stamp on line 1. To refresh: re-copy and bump the stamp — never edit

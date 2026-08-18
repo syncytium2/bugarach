@@ -11,7 +11,13 @@ if command -v bash >/dev/null 2>&1; then
     bash tools/guard_branch.sh || exit $?
 fi
 
-# 2. sapper — content rules on the staged diff.
+# 2. machine-local board — refuse a commit from a session that has not claimed
+#    itself where the other sessions on THIS MACHINE can see it.
+if command -v bash >/dev/null 2>&1; then
+    bash tools/guard_local_board.sh || exit $?
+fi
+
+# 3. sapper — content rules on the staged diff.
 # python3 on mac/linux; py/python on Windows git-bash
 if command -v python3 >/dev/null 2>&1; then
     exec python3 tools/sapper.py --staged

@@ -114,6 +114,42 @@ print(p if p else "")' 2>/dev/null)
   fi
 fi
 
+# --- 5b. the machine-local board is a precondition, not a suggestion ---------
+# The vendored hook prints "(no board yet — create it ...)" and that has proved
+# too quiet: on 2026-08-18 a session read it, worked all day across two worktrees
+# and never created the board, while four others ran on this machine. So the
+# board is scaffolded here if absent — a session should only ever have to add its
+# own block — and tools/guard_local_board.sh refuses the commit until it has.
+board=$(bash tools/guard_local_board.sh --path 2>/dev/null)
+if [ -n "$board" ]; then
+  if [ ! -f "$board" ]; then
+    mkdir -p "$(dirname "$board")" 2>/dev/null
+    {
+      echo "# Machine-local session board — $(hostname -s 2>/dev/null || echo this machine)"
+      echo
+      echo "**Not in git, and that is the point.** This half of the board carries what"
+      echo "cannot travel: which session holds the primary checkout, a MATLAB process, the"
+      echo "venv, a port, the darkroom mount. Anything another MACHINE can see belongs on"
+      echo "\`docs/SESSIONS.md\` instead."
+      echo
+      echo "Claiming is enforced: \`.githooks/pre-commit\` refuses a commit from a worktree"
+      echo "with no block here. Add yours before you start, and mark it DONE on the way out."
+      echo
+      echo "---"
+      echo
+    } > "$board" 2>/dev/null
+    echo
+    echo "--- machine-local board CREATED: $board"
+    echo "    It was missing. Add a block for this worktree before you commit —"
+    echo "    the pre-commit gate refuses until you do."
+  elif ! bash tools/guard_local_board.sh >/dev/null 2>&1; then
+    echo
+    echo "--- !! this worktree has NO block on the machine-local board"
+    echo "    $board"
+    echo "    Add one before starting; the pre-commit gate refuses the commit otherwise."
+  fi
+fi
+
 # --- 6. is anything mid-flight? ----------------------------------------------
 if [ -f HANDOFF.md ]; then
   echo
