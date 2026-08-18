@@ -60,6 +60,21 @@ Template:
 
 ## Active
 
+### Mac/needs-mechanism-gate — a cross-repo proposal in a NEW shared darkroom folder
+- **Status:** ACTIVE 2026-08-18
+- **Writes:** `<darkroom>/needs/` — **creating that folder**. One file:
+  `mechanism-changes-need-a-gate.md`, plus a `README.md` saying what the folder is for.
+  Nothing in `<darkroom>/bugarach/`, nothing in `<darkroom>/constellation/`, nothing
+  under `$BUGARACH_DATA_ROOT`.
+- **Claims:** `<darkroom>/needs/` for the duration. It is a **new top-level folder in a
+  mount every repo on every machine can see**, which is a wider claim than a file inside
+  our own folder — if another estate is also inventing a cross-repo review convention,
+  this is where the collision happens. `0-REVIEW/` was checked first and is slice
+  submissions, not process proposals, so this does not duplicate it.
+- **Notes:** the document invites other repos to comment, so treat it as shared and
+  append rather than overwrite. Tony asked for it by name after rejecting CLAUDE.md as
+  the vehicle for the same rule.
+
 ### Mac/assembly-membership — the assembly question, answered on the real corpus
 - **Status:** ACTIVE
 - **Started:** 2026-08-18
