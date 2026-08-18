@@ -6,6 +6,7 @@
     "build": "python tools/build_site.py",
     "predeploy": "npm run build",
     "deploy": "wrangler deploy",
+    "postdeploy": "python tools/audit_deployed_page.py",
     "dry": "npm run build && wrangler deploy --dry-run"
   },
   "devDependencies": {
