@@ -19,11 +19,13 @@ as a seed that any interior spike overwrites. 0.9.0 is the newest version on PyP
 and exists upstream as the `v0.9.0` tag (PR #87, 2026-05-11); GitHub's Releases
 page still tops out at 0.8.0.
 
-**The regression is older than the draft first said.** 0.7.0's Cython `get_tau`
-still ends with `if max_tau > 0.0: m = fmin(m, max_tau)`; 0.8.0 — the MRTS
-release, tagged July 2023 — does not. So the cap has been inert for over three
-years, not since 0.9.0. (The GitHub *Releases* entry for 0.8.0 is dated October
-2023; the tag and the PyPI sdist are July.)
+**The regression is older than the draft first said.** 0.7.0 carried three
+separate Cython copies of `get_tau`, each ending with
+`if max_tau > 0.0: m = fmin(m, max_tau)`. 0.8.0 — the MRTS release, tagged July
+2023 — consolidated them into one shared `cython_get_tau.pyx` and dropped the
+clamp from all three at once. So the cap has been inert for over three years
+counting from that July tag, not since 0.9.0. (The GitHub *Releases* entry for
+0.8.0 is dated October 2023; the tag and the PyPI sdist are July.)
 
 ## Process
 
@@ -231,17 +233,20 @@ parameter-free:
 
 | source | a global cap? | what it specifies |
 | --- | --- | --- |
+| Quian Quiroga, Kreuz & Grassberger 2002, Eq. 4 (Phys Rev E 66:041904) | **sanctioned** | defines the adaptive window, then: *"one could also make other choices, e.g. by taking τij smaller than in Eq.(4) or by using τ′ij = min{τ, τij}"* |
 | Kreuz, Mulansky & Bozanic 2015, Eq. 19 | no | window = min of the four surrounding half-ISIs |
 | Satuvuori et al. 2017, Eqs. 17–18 | no | raises each side to at least a quarter of the MRTS, then clips at half the adjacent ISI |
 | **Kreuz, Satuvuori, Pofahl & Mulansky 2017** (New J Phys 19:043028) | **yes — `τmax`** | *"For some applications it might be appropriate to additionally introduce a maximum coincidence window τmax as a parameter."* Used at 9 months for the El Niño data in §3.3 |
-| cSPIKE | yes — `max_dist` | `|Δt| < TAUij` **and** `|Δt| < max_dist` |
+| cSPIKE | yes — `max_dist` | `\|Δt\| < TAUij` **and** `\|Δt\| < max_dist`, plus an edge guard |
 | PySpike ≤ 0.7.0 | yes — `max_tau` | `if max_tau > 0.0: m = fmin(m, max_tau)` |
 | PySpike ≥ 0.8.0 | **no** | seeds four ISI slots, all overwritten for an interior spike |
 
-So the cap is not an invention of the implementations: it is an explicitly
-optional, domain-motivated extension published alongside the SPIKE-order work —
-which is also why it is absent from the two measure papers, and why losing it
-looks like a regression rather than a design decision.
+So the cap is not an invention of the implementations. `min{τ, τij}` is written
+into the paper that introduced the adaptive window in the first place, as an
+explicitly optional variant, and it is named and used in the SPIKE-order work
+fifteen years later. That is also why it is absent from the two measure papers —
+those describe the parameter-free default, not its optional bound — and why
+losing it silently reads as a regression rather than a design decision.
 
 cSPIKE applies it in `AdaptiveCoincidence` as a second condition on top of the
 adaptive window, where `TAUij` is that window and the elided conjunct is an
@@ -257,10 +262,14 @@ if( std::abs(spiketime-closestSpike) < TAUij )
 since `SPIKEsynchro` just calls `AdaptiveSPIKEsynchro` with `threshold = 0`. For
 `max_dist > 0`, requiring both conditions is exactly requiring
 `|Δt| < min(TAUij, max_dist)` — which is what the patch below computes. Two
-mismatches worth knowing if you adopt the semantics wholesale: negatives disable
-the bound in `AdaptiveCoincidence` but not in the spike-order routines, and
-`max_dist = 0` means "only exact ties count" in cSPIKE where `max_tau = 0` means
-"no cap" in PySpike.
+mismatches worth knowing if you adopt the semantics wholesale. A negative
+`max_dist` disables the bound in `AdaptiveCoincidence` but not in the spike-order
+routines, where it instead drives every value silently to zero. And `max_dist = 0`
+admits only exact ties — not through the strict `<` above, which admits nothing at
+zero, but through a fast path that returns 1 for simultaneous spikes before either
+condition is evaluated — where `max_tau = 0` in PySpike means "no cap" instead.
+That is the maximally wrong answer at the default value if the parameter is ported
+across as-is.
 
 ### Suggested fix
 
@@ -330,12 +339,12 @@ it is your call.
 ### How we found it
 
 We maintain a Python port of the cSPIKE synchronization stack and cross-check it
-against both cSPIKE reference output and PySpike. Uncapped, our port and PySpike agree exactly. At
+against both cSPIKE reference output and PySpike. Uncapped, our port and PySpike agreed exactly everywhere we compared them. At
 every cap we tested they diverge, and where we hold cSPIKE reference output —
 0.25 s on the fast stream, 0.5 s on the slow one — our port matches it to 1e-9.
 The 0.25 s row below is that fast-stream operating point.
 
-On a 30-train, 2670-unique-event synthetic recording with a median ISI of 31 s
+On a 30-train, 2670-event synthetic recording (per-train duplicates removed) with a median ISI of 31 s
 ([the fixture is public](https://github.com/syncytium2/bugarach/blob/main/tests/fixtures/synth_fastcal_s1.mat)),
 comparing `pyspike.spike_sync(trains, max_tau=...)` against the mean of our
 port's per-spike coincidence values. The two are not equivalent by definition —
@@ -384,8 +393,8 @@ Happy to send the fix as a PR with a regression test if that is useful.
   Eq. 19 has no upper bound — and the recipient co-authored it. The first fix
   swung to "`max_tau` is PySpike's own addition", which is also false and which
   this report's own "Expected behavior" section contradicted. cSPIKE has the same
-  parameter as `max_dist` (`cSPIKE_mac/SpikeTrainSet.m:187`, and in eight
-  signatures in the class help though never actually described there; applied in
+  parameter as `max_dist` (`cSPIKE_mac/SpikeTrainSet.m:187`, and in eight of the
+  nine signatures in the class help, and described in none of them; applied in
   `cSPIKEmex/Spiketrains.cpp:453` as a second condition on top of the adaptive
   window). The final version says what is actually true and is the
   strongest of the three: the cap is published, in a third paper
