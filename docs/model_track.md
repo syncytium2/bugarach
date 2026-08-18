@@ -27,10 +27,60 @@
 
 - **Nothing here says any detector is right about a real slice.** The corpus is
   simulated; its settings are measured.
-- **"Competes with state-of-the-art models from the literature" is not supported.** No
-  literature model has been run on this corpus. See
+- **"Competes with state-of-the-art models from the literature" is not supported —
+  but the earlier phrasing of this was wrong and Tony corrected it.** *Published
+  methods are in the comparison*: **CICADA** is the Cossart lab's, ported here (MIT,
+  © 2019 Cossart Lab) and scoring 0.541, and **SpikyDetect** runs on cSPIKE/PySpike's
+  adaptive SPIKE-synchronization profile (Kreuz lab) — a published measure with our
+  event detector on top. So the accurate claim is narrower and still worth making:
+  the comparison contains **no published *learned* method**, and **none of the
+  assembly-detection family** — ICA/PCA, CAD, graph and item-set methods — which is
+  where the coordination literature actually concentrates. See
   [`docs/todo/2026-08-17-literature-deep-dive-handoff.md`](todo/2026-08-17-literature-deep-dive-handoff.md),
   whose first item is to run two or three of them rather than search harder.
+
+## Why the assembly-detection family cannot be ported yet
+
+**Our generator plants no assemblies.** `simulate.py` draws each planted event's
+participants fresh — `rois = rng.choice(nR, size=np_, replace=False)` — so every event
+has a different random subset of cells and no group ever recurs.
+
+That matters more than it looks. The whole assembly-detection literature works by
+finding **recurring co-activation patterns**: ICA/PCA assembly detection projects onto
+patterns that repeat, CAD finds groups with consistent lag constellations, item-set
+mining counts sets that appear often. Run any of them on this corpus and they find
+nothing — **and the zero would be about our generator, not about the method.** Porting
+one today would produce a comparison we win meaninglessly, which is worse than not
+running it.
+
+It also means something about our own benchmark: **it cannot reward membership
+structure at all.** A detector that exploits which cells tend to fire together — ours
+or anyone's — has no advantage to demonstrate here, because there is none to find.
+
+The order that makes the comparison possible:
+
+1. **Ask the data whether assemblies exist.** Do the 85 real recordings show recurring
+   participant groups, or is participation event-by-event random? The assessor already
+   clusters co-active onsets and records which ROIs took part; the membership-overlap
+   statistic across events is a small addition, not a new instrument. **This is a real
+   result about the preparation either way**, and it is cheap.
+2. **If they recur, plant them.** The generator gains an assembly structure —
+   participants drawn from a small number of recurring groups rather than uniformly.
+3. **Then port PCA/ICA assembly detection** (Lopes-dos-Santos, Ribeiro & Tort 2013,
+   *J. Neurosci. Methods*): Marchenko–Pastur for the number of assemblies, ICA for the
+   patterns, and an activation time course per assembly that thresholds into events.
+   It is the right first port — a genuinely different principle from all six of ours,
+   which are variations on "more coincidence than the local background explains"; it
+   emits a **time course**, so our scorer works on it unmodified and its threshold is
+   exactly the one declared knob the fair bake-off sweeps; and Marchenko–Pastur picks
+   the assembly count without importing a second human judgement the way K did.
+4. **Hold the port to the same bar as the six.** They are 1e-9 against a MATLAB
+   original; a new port with no oracle is a claim nobody can check, and "we ported it
+   wrong" is the first thing a reviewer will say when a literature method loses.
+
+⚠ If step 1 says participation *is* random event-by-event, then the assembly family is
+not the right comparison for this preparation at all, and that is the answer — not a
+disappointment.
 
 ## The queue, in order
 

@@ -144,7 +144,13 @@ Two things, in order of value:
 1. **Run a literature method on our corpus.** The report's comparison is against six
    detectors ported *here* plus our own networks. Tony's reading — "competes with
    state-of-the-art models from the literature" — **is not currently supported**,
-   because no literature model has been run. CICADA is the one published method in
+   though the first draft of this line overstated it: **published methods are in the
+   comparison** — CICADA, and cSPIKE/PySpike's synchrony profile under SpikyDetect.
+   What is absent is any published *learned* method and the whole assembly-detection
+   family. ⚠ **And that family cannot be ported until the generator plants recurring
+   assemblies** — it currently draws each event's participants at random, so
+   membership-based methods would score zero for a reason about our corpus. See
+   `docs/model_track.md`. CICADA is the one published detector in
    the field of play, and beating a port of it on our own simulated corpus is a
    weaker claim than it sounds. Pick two or three from Mölter's benchmark set (ICA
    and a graph or item-set method are the obvious picks; several have reference
