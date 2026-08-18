@@ -1,5 +1,16 @@
 """Which animal, which group, and is this slice excluded — from the lab's workbook.
 
+⚠ **This module is a bridge, not architecture, and it should be deleted rather than
+extended.** Everything an analysis needs belongs in the folder the app reads.
+Experimental group does not: it lives in a spreadsheet on a Dropbox mount, so a
+corpus result computed through this module can only be reproduced on a machine that
+happens to hold that file. The fix is a revision to the import contract — the
+reasoning, the proposed columns, and the contradiction that makes the current spec
+unable to satisfy FOUNDATIONS §9 are in
+``docs/todo/2026-08-18-experimental-groups-are-not-in-the-import-contract.md``.
+What follows is written to be replaced by ``slices.csv``.
+
+
 A slice id alone cannot answer whether a result is admissible. FOUNDATIONS §9 says
 effects run in opposite directions by group and a pooled across-group number is not
 admissible on its own, so every corpus-level claim needs the group of each slice.
