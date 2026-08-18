@@ -243,8 +243,15 @@ def main(argv=None) -> int:
             print(f"  K={k}: {len(ok)}/{len(sub)} slices testable · "
                   + " · ".join(f"{n} {v}" for v, n in
                                sorted(tally.items(), key=lambda kv: -kv[1])))
-            print(f"        pooled (NOT group-split): margin p={fm:.3g}, "
-                  f"uniform p={fu:.3g}")
+            # Two independence assumptions this combination makes and the corpus
+            # does not honour, so it is printed with them attached rather than as
+            # a headline. Group: FOUNDATIONS §9. Preparation: 85 slices come from
+            # 48 dates, up to three apiece, so per-slice p-values are correlated
+            # and Fisher is anti-conservative. The per-slice tally above is the
+            # number to quote.
+            print(f"        pooled p (margin {fm:.3g}, uniform {fu:.3g}) — NOT "
+                  f"group-split, and slices from one preparation are not "
+                  f"independent; quote the tally, not this")
     return 0
 
 
