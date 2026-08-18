@@ -161,6 +161,9 @@
                    margin-right: 16px; }
   #wins .sw { width: 11px; height: 11px; border-radius: 3px; flex: none;
               display: inline-block; }
+  #wins .scored { opacity: .8; }
+  #wins .scored::before { content: "· "; }
+  #wins .chan { color: var(--muted); font-style: italic; }
   #wins i { font-style: normal; color: var(--fg); }
   canvas { width: 100%; display: block; }
   .empty { color: var(--muted); padding: 48px 8px; max-width: 60ch; }
@@ -449,6 +452,17 @@ function el(tag, text, cls) {
 }
 const sep = text => el("span", text, "sep");
 
+/* A cell that is absent or blank is "not sent"; anything else has to be a real
+   number or the check says so. Returns undefined rather than NaN, because
+   `undefined` flows through the drawing code as "no analysis window" while NaN
+   would quietly place a rectangle nowhere. */
+function num(v) {
+  const s = (v ?? "").trim();
+  if (!s) return undefined;
+  const n = Number(s);
+  return Number.isFinite(n) ? n : null;      // null = present and unreadable
+}
+
 /* ---------- ROI order: 2 before 10, like a lab numbers them --------------- */
 function natural(a, b) {
   const re = /(\d+)|(\D+)/g;
@@ -542,7 +556,7 @@ function draw(rec, data) {
   const dpr = window.devicePixelRatio || 1;
   const W = cv.clientWidth || 900;
   const names = [...data.streams.keys()].sort();
-  const padL = 62, padR = 14, padT = 17, padB = 34, gap = 16;
+  const padL = 62, padR = 14, padT = 23, padB = 34, gap = 16;
   const rowH = Math.max(110, Math.min(230, 26 + data.nRois * 5));
   const H = padT + names.length * rowH + (names.length - 1) * gap + padB;
 
@@ -566,15 +580,32 @@ function draw(rec, data) {
     // treatment windows behind the marks — a raster whose periods are not
     // named is a wall of dots, and the bounds came with the folder
     wins.forEach(w => {
+      // TWO WINDOWS, TWO CHANNELS, because the contract carries two and the
+      // difference between them is a decision somebody made:
+      //
+      //   the BAR above the frame = what happened — the raw period, drug on from
+      //     here to here, `start_sec`/`end_sec`;
+      //   the SHADING behind the marks = what gets scored — `analysis_*`, which
+      //     is the period minus a wash-in delay, minus a cap, minus anything the
+      //     producer dropped.
+      //
+      // Drawn one over the other they said the same thing twice. Split, the
+      // picture shows the trim: shading that stops short of its bar is time that
+      // happened and is not counted, and until now nothing in this project drew
+      // that at all. When a folder sends no analysis window the shading falls
+      // back to the whole period and the note under the plot says so — it is NOT
+      // derived here. That rule has been reimplemented five times in this
+      // ecosystem and drifted every time, and a sixth copy in a browser, out of
+      // reach of the tests that guard `region_windows`, is the worst place yet.
       const x0 = x(w.start), x1 = x(w.end);
-      // The fills ABUT, and taking a bite out of each shared edge to separate
-      // them was wrong: this axis is time. Two adjacent bars are discrete things
-      // and a gap between them is only separation, but a gap here is a claim —
-      // it reads as time nobody declared. Regions are contiguous by contract,
-      // region 1 starting at 0 and each starting where the last ended, and
-      // `region_windows` HALTS on a gap because in these stores one means a data
-      // defect. So the picture was drawing the error condition at every boundary.
-      const a = Math.max(padL, x0), b = Math.min(W - padR, x1);
+      // The fills ABUT where they are the whole period: this axis is time, and a
+      // gap between two raw periods is a claim — it reads as time nobody
+      // declared. Regions are contiguous by contract and `region_windows` HALTS
+      // on a gap, because in these stores one means a data defect. A gap between
+      // two SHADINGS is different, and is the point: that is unscored time.
+      const hasA = Number.isFinite(w.aStart) && Number.isFinite(w.aEnd);
+      const s0 = x(hasA ? w.aStart : w.start), s1 = x(hasA ? w.aEnd : w.end);
+      const a = Math.max(padL, s0), b = Math.min(W - padR, s1);
       const wide = Math.max(1, b - a);
       g.fillStyle = wash(w.label);
       g.fillRect(a, top, wide, bot - top);
@@ -587,11 +618,16 @@ function draw(rec, data) {
       // The boundary needs no help. The washes abut exactly and are different
       // hues, so the colour changes at the boundary and nowhere else, and the
       // rail above changes with them.
-      // a saturated rail along the top of the band. The wash has to stay pale
-      // enough to keep the marks readable, which leaves it too pale to identify;
-      // the rail is the same hue at full strength and costs 3px of raster.
+      // A saturated rail marking the window's extent — the wash has to stay pale
+      // enough to keep the marks readable, which leaves it too pale to identify
+      // on its own. It sits ABOVE the frame, not inside it: drawn at `top` it
+      // painted over the first ROI's lane, and on a real recording ordered by
+      // events that lane is the busiest cell in the field. Chrome is never worth
+      // a row of data, least of all the densest one.
+      // the bar spans the RAW period, so it is the one that stays contiguous
+      const ra = Math.max(padL, x0), rb = Math.min(W - padR, x1);
       g.fillStyle = ink(w.label);
-      g.fillRect(a, top, wide, 3);
+      g.fillRect(ra, top - 4, Math.max(1, rb - ra), 3);
       if (si === 0) {
         // clamp inside the plot: a window starting near the right edge ran its
         // label off the canvas, and a treatment silently rendered as "hig" is
@@ -599,9 +635,9 @@ function draw(rec, data) {
         const tw = g.measureText(w.label).width + 13;
         const lx = Math.min(x0 + 1, W - padR - tw);
         const at = Math.max(padL, lx);
-        g.fillRect(at, top - 11, 9, 9);                 // the chip carries hue…
+        g.fillRect(at, top - 17, 9, 9);                 // the chip carries hue…
         g.fillStyle = css.getPropertyValue("--fg").trim();
-        g.fillText(w.label, at + 13, top - 3);          // …the name stays ink
+        g.fillText(w.label, at + 13, top - 9);          // …the name stays ink
       }
     });
 
@@ -695,17 +731,30 @@ async function show(rec) {
   winbox.textContent = "";
   if (!wins.length)
     winbox.append(el("span", "no treatment windows declared — shown as one recording"));
+  let anyAnalysis = false;
   for (const w of wins) {
     const s = document.createElement("span");
     s.className = "win";
     const sw = document.createElement("span");
     sw.className = "sw";
     sw.style.background = ink(w.label);
-    s.append(sw, el("i", w.label),
-             document.createTextNode((w.start / 60).toFixed(0) + "–"
-                                     + (w.end / 60).toFixed(0) + "m"));
+    const span = (lo, hi) => (lo / 60).toFixed(0) + "–" + (hi / 60).toFixed(0) + "m";
+    s.append(sw, el("i", w.label), document.createTextNode(span(w.start, w.end)));
+    // only worth saying when it differs from the period — repeating the same
+    // two numbers in a second colour teaches the reader the channels are
+    // redundant, which is the opposite of the point
+    if (Number.isFinite(w.aStart) && Number.isFinite(w.aEnd)) {
+      anyAnalysis = true;
+      if (w.aStart !== w.start || w.aEnd !== w.end)
+        s.append(el("span", "scored " + span(w.aStart, w.aEnd), "scored"));
+    }
     winbox.append(s);
   }
+  if (wins.length)
+    winbox.append(el("span", anyAnalysis
+      ? "bar = the period · shading = the part scored"
+      : "bar = the period · shading = the same, no analysis window was sent",
+      "chan"));
   const say = text => note.appendChild(el("p", text));
   if (!data.quiet)
     say("No ROI in this recording is declared with no events. If all "
@@ -748,8 +797,43 @@ async function checkFolder() {
       else if (!(Number(dt) > 0))
         errors.push([rec.id, "frame_interval_sec is \"" + dt + "\", which is not "
           + "a positive number of seconds (a frame RATE is the usual slip)"]);
-      if (!(REGIONS.get(rec.id) || []).length)
+      const regs = REGIONS.get(rec.id) || [];
+      if (!regs.length)
         notes.push([rec.id, "no treatment windows — analysed as one whole recording"]);
+      else {
+        // "Both bounds or neither, and all regions of a recording or none." Half
+        // an analysis window is a producer bug rather than a partial answer, and
+        // a recording scored half on your windows and half on ours is two
+        // policies inside one number — the contract refuses both, so this reports
+        // both rather than drawing whichever half arrived.
+        const bad = regs.filter(r => r.aStart === null || r.aEnd === null);
+        if (bad.length)
+          errors.push([rec.id, "analysis_start_sec/analysis_end_sec is present but "
+            + "not a number on " + bad.length + " region(s) (" 
+            + bad.map(r => r.label).join(", ") + ")"]);
+        const whole = regs.filter(r => Number.isFinite(r.aStart) && Number.isFinite(r.aEnd));
+        const half = regs.filter(r =>
+          Number.isFinite(r.aStart) !== Number.isFinite(r.aEnd));
+        if (half.length)
+          errors.push([rec.id, "half an analysis window on " + half.length
+            + " region(s) (" + half.map(r => r.label).join(", ") + ") — both bounds "
+            + "or neither"]);
+        if (whole.length && whole.length !== regs.length)
+          errors.push([rec.id, whole.length + " of " + regs.length + " regions carry "
+            + "an analysis window — all of a recording's regions or none, or the "
+            + "recording is scored half on your policy and half on ours"]);
+        if (!whole.length && !half.length)
+          notes.push([rec.id, "no analysis windows — bugarach will derive them with "
+            + "this project's convention (baseline backward from its end with a "
+            + "20-minute cap; other treatments starting 2 minutes late and capped "
+            + "at 20; high K exempt). Send analysis_start_sec/analysis_end_sec to "
+            + "use your own instead. The shading here is the whole period, because "
+            + "this page does not derive that rule"]);
+        for (const r of whole)
+          if (r.aStart < r.start || r.aEnd > r.end)
+            notes.push([rec.id, "the analysis window for \"" + r.label + "\" reaches "
+              + "outside the period it belongs to — legal, and usually a typo"]);
+      }
     } catch (e) {
       errors.push([rec.id, e.message]);
     }
@@ -864,6 +948,14 @@ async function open(fileList, opts) {
         REGIONS.get(id).push({
           idx: +r.region_idx, label: r.label || "(unnamed)",
           start: +r.start_sec, end: +r.end_sec,
+          // The contract carries TWO windows per region because they answer
+          // different questions: start/end are what HAPPENED — the drug was on
+          // from here to here — and analysis_* is what to SCORE, which is rarely
+          // the same thing once a wash-in delay or a duration cap is applied.
+          // Optional, and read only when both bounds are there: half a window is
+          // a producer bug rather than a partial answer, and the check below says
+          // so rather than drawing half of it.
+          aStart: num(r.analysis_start_sec), aEnd: num(r.analysis_end_sec),
         });
       }
       for (const v of REGIONS.values()) v.sort((a, b) => a.idx - b.idx);
@@ -1121,7 +1213,8 @@ function simulateRecording(p, seed) {
 
 function simulateFolder(p) {
   const files = [];
-  const regions = ["slice_id,region_idx,label,start_sec,end_sec"];
+  const regions = ["slice_id,region_idx,label,start_sec,end_sec,"
+                  + "analysis_start_sec,analysis_end_sec"];
   const slices = ["slice_id,frame_interval_sec,source"];
   const scheme = SCHEMES[p.windows] || [];
   const T = p.minutes * 60;
@@ -1130,8 +1223,23 @@ function simulateFolder(p) {
     // each recording its own seed, so they are siblings and not copies
     files.push({ name: id + ".csv", text: simulateRecording(p, p.seed * 977 + i) });
     slices.push(id + "," + GRID + ",simulated in this browser");
-    scheme.forEach((w, k) => regions.push(
-      [id, k + 1, w[0], (w[1] * T).toFixed(1), (w[2] * T).toFixed(1)].join(",")));
+    scheme.forEach((w, k) => {
+      const lo = w[1] * T, hi = w[2] * T;
+      // The simulated folder SENDS its analysis windows rather than leaving them
+      // to be derived, which is what the contract asks a producer with a policy
+      // to do — and it is the only way this page can show the two channels
+      // apart. The policy imitated here is this project's own: a baseline
+      // measured backward from its end under a 20-minute cap, every other period
+      // starting 2 minutes late and capped at 20. Imitated, not shared code:
+      // deriving it for real is `region_windows`, and a second implementation is
+      // how that rule drifted five times already.
+      const CAP = 1200, DELAY = 120;
+      const [as, ae] = w[0] === "baseline"
+        ? [Math.max(lo, hi - CAP), hi]
+        : [Math.min(lo + DELAY, hi), Math.min(hi, Math.min(lo + DELAY, hi) + CAP)];
+      regions.push([id, k + 1, w[0], lo.toFixed(1), hi.toFixed(1),
+                    as.toFixed(1), ae.toFixed(1)].join(","));
+    });
   }
   // raw bounds, contiguous, region 1 starting at 0 — what the contract asks for
   if (scheme.length)
