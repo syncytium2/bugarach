@@ -21,11 +21,12 @@ page still tops out at 0.8.0.
 
 **The regression is older than the draft first said.** 0.7.0 carried three
 separate Cython copies of `get_tau`, each ending with
-`if max_tau > 0.0: m = fmin(m, max_tau)`. 0.8.0 — the MRTS release, tagged July
-2023 — consolidated them into one shared `cython_get_tau.pyx` and dropped the
-clamp from all three at once. So the cap has been inert for over three years
-counting from that July tag, not since 0.9.0. (The GitHub *Releases* entry for
-0.8.0 is dated October 2023; the tag and the PyPI sdist are July.)
+`if max_tau > 0.0: m = fmin(m, max_tau)`. 0.8.0 — the MRTS release, on PyPI
+2023-07-14 — consolidated them into one shared `cython_get_tau.pyx` and dropped
+the clamp from all three at once. So the cap has been inert for over three years
+counting from that release, not since 0.9.0. Don't date it from the git tag: the
+0.8.0 tag was added months later, after issue #71 pointed out it was missing, so
+the tag and the Releases entry both read October 2023.
 
 ## Process
 
@@ -37,6 +38,11 @@ Draft the issue text below; **Tony reviews before anything is posted**
 `test_sync_detect.py` resolves on `main` today, but the version there does not yet
 carry `test_pyspike_max_tau_is_still_inert` — the test that makes the link worth
 following.
+
+**When pasting**: the `**Title:**` line is the issue title, not body. Unwrap the
+prose paragraphs first — this file is hard-wrapped at 80 columns and GitHub treats
+every newline in an issue body as a line break, so wrapped prose ships as a stack
+of short ragged lines. Leave the fenced blocks and tables exactly as they are.
 
 ---
 
@@ -203,7 +209,7 @@ second argument — the half-ISI on the side facing the other spike — and rais
 MRTS can only move its result up toward that bound, never down. So no MRTS value
 bounds the window from above, and there is no way to express a hard cap with it.
 
-The behavior changed in 0.8.0 (tagged July 2023), which replaced three per-file
+The behavior changed in 0.8.0 (PyPI, 2023-07-14), which replaced three per-file
 copies of `get_tau` with one shared implementation. In 0.7.0 the seed and the cap
 were separate parameters and the cap was applied at the end — `max_tau` there is
 the user's raw value, not today's `true_max`:
@@ -251,8 +257,9 @@ parameter-free:
 So the cap is not an invention of the implementations. `min{τ, τij}` is written
 into the paper that introduced the adaptive window in the first place, as an
 explicitly optional variant, and it is named and used in the SPIKE-order work
-fifteen years later. That is also why it is absent from the 2015 and 2017 measure
-papers: those describe the parameter-free default, not its optional bound.
+fifteen years later. Neither measure paper carries it because neither is about
+bounding the window: 2015 describes the parameter-free default, and 2017's MRTS is
+a floor, which is the opposite thing.
 
 cSPIKE applies it in `AdaptiveCoincidence` as a second condition on top of the
 adaptive window, where `TAUij` is that window and the elided conjunct is an
@@ -319,12 +326,14 @@ Those two files cover every caller in both backends —
 No extra `max_tau > 0` guard is needed. When the user passes 0 or `None` the
 callers set `true_max = t_end - t_start`, so the new term bounds the window at half
 the recording span — which is exactly what 0.7.0 did, since it seeded `m` with
-`interval` before halving. At the default `MRTS = 0` the two are the same function:
-0.7.0 computes `min(interval, existing ISIs) / 2` then clamps at `max_tau`, and the
-patched 0.9.0 computes `min(existing ISIs / 2)` then clamps at
-`true_max/2 = min(interval/2, max_tau)`. Both reduce to
-`min(interval/2, ISI/2 over existing neighbors, max_tau)`. I also checked it
-numerically, including with spikes outside `[t_start, t_end]`.
+`interval` before halving. At the default `MRTS = 0` the two are the same function. 0.7.0 computes
+`min(interval, existing ISIs) / 2` and then, for a positive cap, clamps at
+`max_tau`; the patched 0.9.0 computes `min(existing ISIs / 2)` and clamps at
+`true_max/2`, which is `min(interval/2, max_tau)` for a positive cap and
+`interval/2` otherwise. Either way both land on
+`min(interval/2, ISI/2 over existing neighbors)`, further clamped at `max_tau`
+when one was asked for. I also checked it numerically, including with spikes
+outside `[t_start, t_end]`.
 
 That last part is worth stating explicitly, because it is the one case where the
 patch changes a currently-uncapped answer: with `Reconcile=False` a half-ISI can
@@ -355,8 +364,8 @@ We hit this porting the cSPIKE synchronization stack to Python and cross-checkin
 the result against both cSPIKE reference output and PySpike: the two agreed
 uncapped and disagreed at every cap.
 
-Here is what it costs on a real recording — 30 trains, 2670 distinct event times,
-median ISI 31 s, from
+Here is what it costs on a real recording — 30 trains, 2670 events at 2362
+distinct times, median ISI 31 s, from
 [a public fixture](https://github.com/syncytium2/bugarach/blob/main/tests/fixtures/synth_fastcal_s1.mat).
 Both columns are `pyspike.spike_sync`, so this is PySpike against itself:
 
@@ -459,9 +468,11 @@ Happy to send the fix as a PR with a regression test if that is useful.
 - **Unverified here** ⚠: whether upstream's own test suite stays green under the
   patch. The one `max_tau` assertion does — I ran it, patched and unpatched, and
   the issue says so. The other 11 test files were not executed against a patched
-  build. `test/` ships in the 0.9.0 sdist, so this is a small concrete job before
-  offering the PR, and `test_reconcile.py` is the one to watch given the
-  `Reconcile=False` behavior change the issue now discloses.
+  build — 13 test files ship in the 0.9.0 sdist, so this is a small concrete job
+  before offering the PR, and `test_reconcile.py` is the one to watch given the
+  `Reconcile=False` behavior change the issue now discloses. Note also that every
+  "with the patch" number was produced by the pure-Python backend; nothing has been
+  run through a patched *compiled* extension.
 - SPIKY, the MATLAB GUI, is not in this tree at all, so it cannot be checked from
   here — the issue claims the cap only for cSPIKE and PySpike, both read directly.
 - The repo links assume bugarach stays public at that path.
