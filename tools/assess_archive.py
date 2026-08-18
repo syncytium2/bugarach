@@ -30,19 +30,9 @@ from pathlib import Path
 
 import numpy as np
 
-BASELINE_TOKENS = ("baseline", "base", "pre", "control", "acsf")
-
-
-def _is_baseline(region) -> bool:
-    """A region counts as baseline if its own name says so.
-
-    Deliberately does not fall back to "the first region is baseline" — the
-    export contract calls that out as a thing producers must not do, and this
-    project's own MATLAB exporter has done it. A region with no name is skipped
-    and counted, not guessed at.
-    """
-    name = (getattr(region, "name", None) or "").strip().lower()
-    return bool(name) and any(name.startswith(t) for t in BASELINE_TOKENS)
+# The baseline rule lives in the library now, so this driver and `bugarach assess`
+# cannot drift apart on which regions may source coordination properties.
+from bugarach.assess_folder import BASELINE_TOKENS, is_baseline as _is_baseline  # noqa: E402,F401
 
 
 def assess_store(store: Path, *, stream: str | None, n_surrogates: int,
