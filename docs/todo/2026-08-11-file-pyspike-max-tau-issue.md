@@ -123,13 +123,13 @@ for max_tau in (None, 1.0, 0.25, 1e-6):
    1e-06   0.3333
 ```
 
-Every `max_tau` below 1.27 s returns exactly the same value. The `None` row
-differs, but that difference is not the cap working on the body of the trains: it
-comes from the spikes at the start and end of each train, the only ones where a
-missing neighbor lets the default survive. That is also the one route by which a
-cap still moves the number here — the last spikes of these two trains are 1.2681 s
-apart, so `max_tau=1.27` recovers the uncapped 0.3500 while `max_tau=1.26` does
-not. Everywhere else the parameter is inert.
+The `None` row differs, but that difference is not the cap working on the body of
+the trains: it comes from the spikes at the start and end of each train, the only
+ones where a missing neighbor lets the default survive. In these trains that is
+the last pair, 1.2680583 s apart — and it is the one route by which a cap still
+moves the number here. Sweeping `max_tau` densely finds exactly one transition,
+at that gap: every value below it returns 0.3333 and every value above it returns
+the uncapped 0.3500. Between those two points the parameter does nothing at all.
 
 This is also why casual testing misses the bug — with a single spike per train
 there are no neighbors, so the defaults survive, the cap applies, and the answer
@@ -149,8 +149,9 @@ API is wider than SPIKE-Sync alone:
   the three corresponding `..._profile` functions
 - `optimal_spike_train_sorting`
 
-On the same two trains as above, `spike_directionality` returns `-0.016667`
-uncapped and `0.0` for `max_tau` of 1.0, 0.25 and 1e-6 alike.
+On the two 60-spike random trains from the sweep above, `spike_directionality`
+returns `-0.016667` uncapped and `0.0` for `max_tau` of 1.0, 0.25 and 1e-6
+alike.
 
 ### Diagnosis
 
@@ -181,9 +182,10 @@ With the default `MRTS=0` (minimum relevant time scale), `Interpolate(a, b, 0)`
 returns `min(a, b)`, so the function reduces to the minimum of the four
 half-ISIs — a quantity `max_tau` never touches.
 
-**MRTS does not substitute for the cap.** `Interpolate` can only raise its result
-toward the larger half-ISI as MRTS grows, never lower it, so no MRTS value bounds
-the window from above and there is no way to express a hard cap with it.
+**MRTS does not substitute for the cap.** `Interpolate` is bounded above by its
+second argument — the half-ISI on the side facing the other spike — and raising
+MRTS can only move its result up toward that bound, never down. So no MRTS value
+bounds the window from above, and there is no way to express a hard cap with it.
 
 Two things say the bound was meant to survive the MRTS rewrite. The callers still
 compute a doubled `max_tau` and pass it in:
@@ -237,7 +239,8 @@ if( std::abs(spiketime-closestSpike) < TAUij )
     if (((max_dist < 0) || (std::abs(spiketime-closestSpike) < max_dist)) && ...
 ```
 
-For `max_dist > 0` — negatives being a disable sentinel — requiring
+For `max_dist > 0` — negatives act as a disable sentinel here, though the
+spike-order routines apply `max_dist` without that escape — requiring
 `|Δt| < TAUij` and `|Δt| < max_dist` is exactly requiring
 `|Δt| < min(TAUij, max_dist)`, so cSPIKE's semantics and the patch below agree.
 PySpike's own docstring promises the same bound, and PySpike implemented it
@@ -251,6 +254,7 @@ smaller) — so the bound to apply is half of it. In
 `pyspike/cython/cython_get_tau.pyx`:
 
 ```diff
+@@ -43,8 +43,8 @@
      if i<0 or j<0 or spikes1[i] <= spikes2[j]:
          s1F = Interpolate(mP1, mF1, MRTS)
          s2P = Interpolate(mF2, mP2, MRTS)
@@ -277,9 +281,12 @@ builtin rather than `fmin` (sketch, not an appliable patch):
 Those two files cover every caller in both backends —
 `directionality_python_backend.py` imports `get_tau` from `python_backend`.
 
-No `max_tau > 0` guard is needed: when the user passes 0 or `None` the callers
-set `true_max = t_end - t_start`, and no half-ISI can exceed half the recording
-duration, so the new minimum is never the binding term. Running the sweep above
+No `max_tau > 0` guard is needed for reconciled trains: when the user passes 0 or
+`None` the callers set `true_max = t_end - t_start`, and once spikes are confined
+to `[t_start, t_end]` no half-ISI can exceed half that span, so the new minimum is
+never the binding term. The exception is `Reconcile=False`, which lets spikes sit
+outside the interval — there a half-ISI can exceed the span and the patch would
+change the uncapped answer, so that path wants the guard. Running the sweep above
 against a patched pure-Python backend:
 
 ```
@@ -353,9 +360,10 @@ Happy to send the fix as a PR with a regression test if that is useful.
   Eq. 19 has no upper bound — and the recipient co-authored it. The first fix
   swung to "`max_tau` is PySpike's own addition", which is also false and which
   this report's own cSPIKE-parity section contradicted. cSPIKE has the same
-  parameter as `max_dist` (`cSPIKE_mac/SpikeTrainSet.m:187` and its documented
-  API; applied in `cSPIKEmex/Spiketrains.cpp:453` as a second condition on top of
-  the adaptive window). The final version says what is actually true and is the
+  parameter as `max_dist` (`cSPIKE_mac/SpikeTrainSet.m:187`, and in nine
+  signatures in the class help though never actually described there; applied in
+  `cSPIKEmex/Spiketrains.cpp:453` as a second condition on top of the adaptive
+  window). The final version says what is actually true and is the
   strongest of the three: absent from the papers, present in all three
   implementations, dropped only in 0.8.0.
 - **Scope was understated.** `get_tau` has 14 call sites across three `.pyx`
@@ -374,13 +382,17 @@ Happy to send the fix as a PR with a regression test if that is useful.
 - **A rendered figure was considered and left out.** The finding is a scalar
   comparison, the ASCII derivation carries all of it, and unlike an image it can
   be quoted in a reply and read in a terminal — where triage happens. The one
-  picture-shaped claim (SPIKE-Sync vs `max_tau`, PySpike flat while the capped
-  definition falls) has only two validated points, which is a table, not a curve.
-  Recorded so a later session does not reopen it.
+  two picture-shaped claims are both better as the tables they already are: the
+  cSPIKE comparison has only two validated points, and the as-shipped-vs-patched
+  sweep is four rows whose whole content is "one column moves and the other does
+  not". Recorded, with both reasons, so a later session does not reopen it.
 - **After filing**, the issue URL belongs in `docs/FOUNDATIONS.md` (the PySpike
   bullet at line 49), `README.md` (twice — lines 41 and 76), `tools/sapper.py`'s
-  SAP003 message, `src/bugarach/detectors/__init__.py`, and the NOTE comment in
-  `tests/test_sync_detect.py`. All six assert the bug today with no upstream
-  reference — **and all six call it "PySpike 0.9.0's" bug, which this report now
-  shows is wrong: it broke in 0.8.0.** Fix the version in the same pass as the URL.
+  SAP003 message, `src/bugarach/detectors/__init__.py`, the NOTE comment in
+  `tests/test_sync_detect.py`, `docs/sapper_feedback/2026-08-12-sap-id-namespace-collides-with-interface2.md`,
+  and — the one an outside reader meets —
+  `docs/todo/2026-08-11-methodology-narrative-doc.md`. All **eight** assert the bug
+  today with no upstream reference, **and all eight call it "PySpike 0.9.0's" bug,
+  which this report now shows is wrong: it broke in 0.8.0.** Fix the version in the
+  same pass as the URL.
 - The repo links assume bugarach stays public at that path.
