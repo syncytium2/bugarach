@@ -5,6 +5,20 @@ filed: 2026-08-16
 
 # The assessment will need a human to judge it, and nothing yet lets one
 
+> **Half of this landed 2026-08-18.** `bugarach assess <folder>` runs the
+> assessment over a lab's own export folder and prints **the scoreboard** — the K
+> scan side by side, `jit_defined` rendered as *undefined (no cluster in
+> surrogates)* rather than as a number, a window under the floor reported with no
+> numbers at all, and non-baseline regions counted and skipped. So the judgement
+> calls below are now **visible to a person**, which they were not before.
+>
+> **The figure is still missing, and so is the accept step.** What is described
+> under *What the feature probably is* — the raster with clusters marked, the
+> per-bin observed-vs-null trace, the cluster-SD distributions — is not built, and
+> neither is the part that matters most: **nothing records what the human decided
+> next to the parameters it produced.** Until that exists, the promotion gate this
+> todo asks for is still open, and the entry below stands unchanged.
+
 Tony, 2026-08-16, approving the assessor port:
 
 > *"port the assessor, but recognize that this might require human interaction to
