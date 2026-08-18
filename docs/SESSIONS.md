@@ -60,6 +60,29 @@ Template:
 
 ## Active
 
+### Mac/assembly-membership — the assembly question, answered on the real corpus
+- **Status:** ACTIVE
+- **Started:** 2026-08-18
+- **Writes:** `<darkroom>/bugarach/assembly_answer.{png,html,json}` (NEW). Nothing else
+  under `<darkroom>/bugarach/`, nothing in `<darkroom>/constellation/`.
+- **Claims:** the three `assembly_answer.*` files by that name, and nothing else. The
+  earlier `assembly_power.*` claim from this machine is released.
+- **Reads (no claim taken, recorded so the next session knows):**
+  `<dropbox>/data/processed_archive/event_store_onset_revised_2v_alive_rescued` — 86 files,
+  85 slices with a named baseline region. Interface2's rescued dead-ROI store, still
+  unclaimed on their board. **Read-only here**; nothing was written to it.
+- **Notes:** the answer is yes, in both streams. At K=3, FAST rejects both nulls in 28 of
+  49 testable slices and SLOW in 30 of 40, against 0 expected from generated recordings
+  whose participants are drawn by `rng.choice`. Consequences for other work: the generator
+  plants no recurring groups and so cannot reward membership structure, and PCA/ICA
+  assembly detection is now a defensible literature port rather than a rigged comparison.
+
+  Two limits that ride with the number. Slices with fewer than four clusters have no
+  permutation null and are reported **undefined, never negative** — 36 of 85 at K=3 in
+  FAST. And the combination is **pooled across groups**: slice group does not travel with
+  the store, and FOUNDATIONS §9 says a pooled across-group number is not admissible on
+  its own. Splitting it needs the group of each slice from whoever holds that mapping.
+
 ### Mac/assembly-power — can this corpus see an assembly at all, before anyone measures one
 - **Status:** DONE 2026-08-18 — **claim released**, figure written and verified
 - **Started:** 2026-08-18
