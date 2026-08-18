@@ -93,11 +93,35 @@ def controls(n: int, geometry: dict, *, seed0: int = 500) -> list[dict]:
 
 
 def _xy(rows):
-    """Each slice at (uniform p, margin p), each taken as the smaller of its two
-    statistics — the quantity the verdict actually thresholds."""
+    """Each slice at (uniform p, margin p), each the smaller of its two statistics.
+
+    Deliberately the same reduction the verdict applies, and the threshold drawn on
+    the axes comes from ``bugarach.assembly`` rather than a copy here: axes that
+    disagreed with the verdict would put a point on the significant side of a line
+    it was not called significant by.
+    """
     x = np.array([min(r["asm_p_uniform_disp"], r["asm_p_uniform_eig"]) for r in rows])
     y = np.array([min(r["asm_p_margin_disp"], r["asm_p_margin_eig"]) for r in rows])
     return np.maximum(x, FLOOR), np.maximum(y, FLOOR)
+
+
+def by_preparation(rows):
+    """Group testable slices by preparation, taken from the date in the slice id.
+
+    **The slices are not independent** — 85 of them come from 48 dates, up to three
+    per preparation — so a per-slice count overstates how many independent
+    observations stand behind it, and any combination of per-slice p-values
+    (Fisher) is anti-conservative for the same reason. Reported alongside the slice
+    count so the reader can see both units.
+    """
+    import re
+    from collections import defaultdict
+    out = defaultdict(list)
+    for r in rows:
+        m = re.match(r"(\d{8})", str(r.get("slice_id", "")))
+        out[m.group(1) if m else str(r.get("slice_id"))].append(r["asm_verdict"])
+    n_any = sum(1 for v in out.values() if "structure-beyond-rate" in v)
+    return n_any, len(out)
 
 
 def tally(rows) -> dict:
@@ -127,53 +151,78 @@ def build(fast, slow, ctrl, per_k, width: int):
     left = hv.Overlay(items).opts(
         width=width, height=470, logx=True, logy=True,
         xlim=(FLOOR * 0.7, 1.4), ylim=(FLOOR * 0.7, 1.4),
-        xlabel="p · uniform participation (any departure)",
-        ylabel="p · both margins fixed (beyond per-cell rate)",
+        xlabel="p · uniform participation, 1000 surrogates",
+        ylabel="A · p · both margins fixed, 1000 surrogates",
         title="", show_legend=False,
         fontsize={"labels": "11pt", "ticks": "10pt"})
 
     ks = sorted(per_k)
     order = ["structure-beyond-rate", "uniform-only", "margin-only", "no-assembly"]
     cols = {"structure-beyond-rate": "#1a7f4b", "uniform-only": "#d98324",
-            "margin-only": "#8a6fb4", "no-assembly": "#b9b9b9"}
+            "margin-only": "#8a6fb4", "no-assembly": "#7d7d7d"}
     # Stacking is a Bars option over a second key dimension, not an Overlay of
     # separate Bars — one element, two kdims.
     recs = [(f"K{k} {st}", v, per_k[k][st].get(v, 0))
             for k in ks for st in ("fast", "slow") for v in order]
     right = hv.Bars(recs, kdims=["cell", "verdict"], vdims=["slices"]).opts(
         width=int(width * 0.95), height=470, xrotation=45,
-        xlabel="", ylabel="slices with a testable answer",
+        xlabel="coactivity floor K · stream",
+        ylabel="B · slices with a testable answer",
         title="", stacked=True, show_legend=False,
         cmap=[cols[v] for v in order], line_color="white", line_width=1,
         fontsize={"labels": "11pt", "ticks": "9pt"})
 
     tf, ts, tc = tally(fast), tally(slow), tally(ctrl)
+    fp_any, fp_n = by_preparation(fast)
+    sp_any, sp_n = by_preparation(slow)
+
     def frac(t):
         n = sum(t.values())
         return f"{t.get('structure-beyond-rate', 0)}/{n}" if n else "0/0"
+
+    def sw(v, label):
+        return f'<span style="color:{cols[v]}"><b>{label}</b></span>'
+
     header = (
         '<div style="font:13px/1.6 system-ui,sans-serif;color:#222;'
         'max-width:1240px">'
-        '<b>The same cells do recur — in both streams, at every coactivity '
-        'floor</b><br>'
-        f'<b>Left</b> — one point per recording at K={K_SHOWN}, its two nulls as '
-        f'the two axes. <span style="color:{REAL_FAST}"><b>circles</b></span> = '
-        f'real FAST · <span style="color:{REAL_SLOW}"><b>squares</b></span> = '
-        f'real SLOW · <span style="color:{CONTROL}"><b>diamonds</b></span> = '
-        'generated recordings, whose participants are drawn at random by '
-        'construction. Dotted lines are alpha/2, the threshold each null is '
-        'actually read at. <b>Lower-left rejects both nulls</b>: co-participation '
-        'beyond what per-cell rates explain. Bottom-right rejects only the broader '
-        'null and is not assembly evidence by itself — this corpus has strongly '
-        'heterogeneous ROI rates, which is exactly what lands a slice there.<br>'
-        f'<b>Right</b> — every testable slice by verdict. FAST {frac(tf)} and '
-        f'SLOW {frac(ts)} reject both nulls at K={K_SHOWN}; the generated control '
-        f'gives {frac(tc)}. Slices with fewer than four clusters have no '
-        'permutation null and are counted nowhere here — <b>undefined, never '
-        'negative</b>.<br>'
-        'Baseline windows only. The pooled combination is <b>pooled across '
-        'groups</b> and not admissible alone: slice group does not travel with '
-        'the store (FOUNDATIONS §9).</div>')
+        '<b>Do the same cells take part in one coordinated event as in the next? '
+        'In these recordings, yes — co-participation is structured beyond what '
+        'each cell\'s own rate explains.</b><br>'
+        f'85 baseline recordings, both streams, at coactivity floor '
+        f'K={K_SHOWN} — K is the number of ROIs that must be co-active for a '
+        'cluster to count.<br>'
+        f'<b>A</b> — one point per <i>testable</i> recording, its two nulls as the '
+        f'two axes. <span style="color:{REAL_FAST}"><b>circles</b></span> real '
+        f'FAST · <span style="color:{REAL_SLOW}"><b>squares</b></span> real SLOW · '
+        f'<span style="color:{CONTROL}"><b>diamonds</b></span> generated '
+        'recordings, whose participants are drawn at random by construction. '
+        'Dotted lines are alpha/2, the threshold each null is read at. Points '
+        'against an axis edge are at the resolution floor, 1/1001 — the smallest '
+        'p 1000 surrogates can return, not identical values. <b>Lower-left rejects '
+        'both</b>: co-participation beyond per-cell rate. Many slices sit exactly on the floor and overlap there, so A shows the <i>separation</i> and B carries the counts. Bottom-right rejects '
+        'only the broader null, which per-cell rate heterogeneity alone produces — '
+        'and this corpus has it, measured separately in figure '
+        '<i>roi_rate_distribution</i>.<br>'
+        f'<b>B</b> — every testable slice by verdict: {sw("structure-beyond-rate", "both nulls")} · '
+        f'{sw("uniform-only", "uniform null only")} · '
+        f'{sw("margin-only", "margin null only")} · '
+        f'{sw("no-assembly", "neither")}. At K={K_SHOWN}, FAST {frac(tf)} slices '
+        f'reject both and SLOW {frac(ts)}; the generated control gives {frac(tc)}.'
+        '<br>'
+        '<b>Read with these three.</b> The two nulls are <b>nested, not '
+        'independent</b> — uniform participation is the stronger assumption, so '
+        'rejecting both is one conclusion, not two agreeing ones. The slices are '
+        f'<b>not independent</b> either: these come from {fp_n} (FAST) and {sp_n} '
+        f'(SLOW) preparations, so counted by preparation it is {fp_any}/{fp_n} and '
+        f'{sp_any}/{sp_n} with at least one slice rejecting both. And slices with '
+        'fewer than four clusters have no permutation null — they appear nowhere '
+        'here and are <b>undefined, never negative</b>.<br>'
+        'Baseline windows only. What this shows is that participation is '
+        'structured, which does not by itself make it one discrete recurring '
+        'group. Group-split, per-slice power, and the pooled combination this '
+        'figure deliberately does not quote: see the run record in '
+        '<i>docs/reviews/</i> and FOUNDATIONS §9.</div>')
     return (left + right).cols(2).opts(shared_axes=False, toolbar=None), header
 
 
@@ -249,6 +298,10 @@ def main(argv=None):
         n = sum(t.values())
         print(f"{name:>18}: {n:>3} testable · " + " · ".join(
             f"{c} {v}" for v, c in sorted(t.items(), key=lambda kv: -kv[1])))
+        if rows and rows[0].get("slice_id"):
+            a, b = by_preparation(rows)
+            print(f"{'':>18}  by preparation: {a}/{b} with at least one slice "
+                  f"rejecting both nulls (slices are NOT independent)")
     if args.numbers_only:
         return 0
 
