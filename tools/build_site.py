@@ -36,8 +36,8 @@ INDEX = """<!doctype html>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <style>
   :root {{ color-scheme: light dark; }}
-  body {{ font: 16px/1.65 system-ui, sans-serif; max-width: 46rem;
-         margin: 2.2rem auto 3rem; padding: 0 1.2rem; }}
+  body {{ font: 16px/1.65 system-ui, sans-serif; margin: 0; }}
+  .col {{ max-width: 46rem; margin: 2.2rem auto 3rem; padding: 0 1.2rem; }}
   h1 {{ font-size: 1.6rem; margin-bottom: .2rem; }}
   .sub {{ color: #666; margin-top: 0; }}
   /* the figure breaks out of the text column: it is the lead, not an
@@ -58,10 +58,32 @@ INDEX = """<!doctype html>
   .card b {{ display:block; font-size:1.05rem; }}
   .card span {{ color:#666; font-size:.92rem; }}
   code {{ background:#8881; padding:.1rem .35rem; border-radius:4px; }}
+  /* Site nav, first thing on the page — the viewer used to be reachable only by
+     scrolling past every paragraph below, which is a good way to publish a tool
+     nobody finds. */
+  /* full-bleed bar, links still starting at the text column's left edge — the
+     body is a 46rem column and a nav indented with it reads as a paragraph */
+  nav.site {{ display:flex; align-items:center; gap:4px; flex-wrap:wrap;
+              padding:.55rem max(1.2rem, calc(50% - 23rem));
+              border-bottom:1px solid #8883; font-size:.88rem; }}
+  nav.site .brand {{ font-weight:600; margin-right:.6rem; }}
+  nav.site a {{ color:#666; text-decoration:none; padding:.25rem .55rem;
+                border-radius:6px; }}
+  nav.site a:hover {{ background:#8881; color:inherit; }}
+  nav.site a[aria-current="page"] {{ color:inherit; background:#8881; }}
   .note {{ border-left:3px solid #e8a33d; padding:.4rem 0 .4rem .9rem;
            color:#555; font-size:.94rem; }}
 </style>
 
+<nav class="site">
+  <span class="brand">bugarach</span>
+  <a href="index.html" aria-current="page">Overview</a>
+  <a href="viewer.html">Raster viewer</a>
+  <a href="diagnostic.html">Detector diagnostic</a>
+  <a href="landscape.html">Landscape</a>
+</nav>
+
+<div class="col">
 <h1>bugarach</h1>
 <p class="sub">Six coordinated-event detectors, ported from MATLAB to Python —
 and a synthetic benchmark with planted ground truth to test them against.</p>
@@ -170,6 +192,7 @@ the experiment exists to measure.</p>
   Source: <a href="https://github.com/syncytium2/bugarach">github.com/syncytium2/bugarach</a>
   · BSD-3-Clause · built from <code>{commit}</code>
 </p>
+</div>
 """
 
 # The page leads with the figure. If the flat render could not be made — no

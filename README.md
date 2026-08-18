@@ -261,8 +261,7 @@ s.fast.locs[0]                   # the same events' PEAKS, which lag the onsets
 s.regions                        # annotated time windows (optional)
 ```
 
-Then run a detector. Each returns one result per stream, with the events as
-onsets and widths:
+Then run a detector:
 
 ```python
 from bugarach.detectors import loco_detect
@@ -272,10 +271,34 @@ fast = det.streams["fast"]
 fast.onset_sec, fast.width_sec, fast.width_kind    # width_kind says what width MEANS
 ```
 
-The six do not share one calling convention, and the split is not arbitrary: LoCo,
-binned SCE and CICADA take the whole slice because they window by region, while
-rate+context, CoactDetect and SPIKE-synch take per-ROI event trains and an extent
-(`stream_trains(s.fast, recording_extent(s))`).
+**All six answer in the same shape**, which is the point of the port rather than a
+coincidence of it: a statistic trace, the events found in it as an onset and a
+width, and `width_kind` saying what that width measures — in whichever of the two
+detection modes you asked for, supra-threshold or peak-gated. That contract is
+interface2's `detector_output_spec.md`, and it is what lets one scorer, one bench
+and one viewer drive all six with no special case for any of them. Scoring the
+whole set against planted truth is therefore a loop, not six branches:
+
+```python
+from bugarach.bench import run_detector
+from bugarach.score import score_stream
+from bugarach.simulate import simulate_coordination
+
+sim, truth = simulate_coordination(seed=1)
+for name in ("rate", "coact", "loco", "sce", "cicada", "sync"):
+    det = run_detector(name, sim)                 # by name, not by signature
+    print(name, round(score_stream(truth, det).f1, 2))
+```
+
+Two differences survive underneath the contract, and each has something that
+absorbs it. LoCo, binned SCE and CICADA take a whole slice because they window by
+region, while rate+context, CoactDetect and SPIKE-synch take one stream's trains
+and an extent — `run_detector` hides that split, though only for single-stream
+recordings like the generator's, so the viewer keeps its own dispatch for stores
+carrying several streams. And the two earliest ports spell the event fields
+`locs`/`widths` rather than `onset_sec`/`width_sec`, a scar of port order and not a
+difference in meaning — `score_stream` reads either spelling, and scores a binned
+detector by its spans instead of mistaking a bin edge for a miss.
 
 ⚠ **The acquisition frame interval is the caller's responsibility, and only one of
 the three detectors that need it will tell you.** Event times do not carry the
