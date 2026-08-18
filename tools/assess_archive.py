@@ -46,9 +46,12 @@ def _is_baseline(region) -> bool:
 
 
 def assess_store(store: Path, *, stream: str | None, n_surrogates: int,
-                 limit: int | None = None) -> dict:
+                 limit: int | None = None, assemblies: bool = False,
+                 assembly_surrogates: int = 1000) -> dict:
     from bugarach.assess import DEFAULT_MIN_ROIS, assess_coactivity
     from bugarach.store import load_slice
+    if assemblies:
+        from bugarach.assembly import assess_assemblies
 
     files = sorted(store.glob("*.mat"))
     if limit:
@@ -99,7 +102,24 @@ def assess_store(store: Path, *, stream: str | None, n_surrogates: int,
 
         n_roi = s.streams[want].n_rois
         for a in res:
+            asm = {}
+            if assemblies:
+                # Same clusters, asked a different question: not how much
+                # coactivity there is, but whether the same cells make it.
+                # Both nulls run; `verdict` is only readable as a pair —
+                # see bugarach.assembly.
+                q = assess_assemblies(a, n_surrogates=assembly_surrogates)
+                asm = dict(
+                    asm_defined=bool(q.defined), asm_verdict=q.verdict(),
+                    asm_n_events=int(q.n_events),
+                    asm_mean_pair_count=float(q.mean_pair_count),
+                    asm_p_margin_disp=float(q.p_margin_disp),
+                    asm_p_margin_eig=float(q.p_margin_eig),
+                    asm_p_uniform_disp=float(q.p_uniform_disp),
+                    asm_p_uniform_eig=float(q.p_uniform_eig),
+                )
             rows.append(dict(
+                **asm,
                 slice_id=s.slice_id, stream=want, n_roi=int(n_roi),
                 region=(getattr(r, "name", None) or ""),
                 window_sec=float(r.end_sec - r.start_sec),
@@ -175,11 +195,17 @@ def main(argv=None) -> int:
     p.add_argument("--stream", default="fast")
     p.add_argument("--n-surrogates", type=int, default=1000)
     p.add_argument("--limit", type=int, default=None)
+    p.add_argument("--assemblies", action="store_true",
+                   help="also ask whether the same cells recur across events "
+                        "(both nulls; see bugarach.assembly). Roughly doubles "
+                        "the run.")
+    p.add_argument("--assembly-surrogates", type=int, default=1000)
     a = p.parse_args(argv)
 
     a.out.mkdir(parents=True, exist_ok=True)
     res = assess_store(a.store, stream=a.stream, n_surrogates=a.n_surrogates,
-                       limit=a.limit)
+                       limit=a.limit, assemblies=a.assemblies,
+                       assembly_surrogates=a.assembly_surrogates)
 
     f = a.out / "assessment_real.json"
     f.write_text(json.dumps(res, indent=1, sort_keys=True))
@@ -194,6 +220,31 @@ def main(argv=None) -> int:
               f"(null {v['jit_null']['median']}), "
               f"events/min {v['clusters_permin']['median']}, "
               f"jit_defined {v['n_jit_defined']}/{v['n_slices']}")
+
+    if a.assemblies:
+        from bugarach.assembly import fisher
+        print("\n  do the same cells recur across events?")
+        for k in sorted({r["K"] for r in res["rows"]}):
+            sub = [r for r in res["rows"] if r["K"] == k]
+            ok = [r for r in sub if r["asm_defined"]]
+            if not ok:
+                print(f"  K={k}: no slice had enough clusters for a null — "
+                      f"undefined, not negative")
+                continue
+            tally: dict[str, int] = {}
+            for r in ok:
+                tally[r["asm_verdict"]] = tally.get(r["asm_verdict"], 0) + 1
+            # Corpus-level combination. FOUNDATIONS §9 says a pooled
+            # across-group number can hide a sign change, so this is quoted as
+            # what it is — pooled — and a per-group split is the caller's job
+            # once the group of each slice is known here.
+            fm = fisher([r["asm_p_margin_disp"] for r in ok])
+            fu = fisher([r["asm_p_uniform_disp"] for r in ok])
+            print(f"  K={k}: {len(ok)}/{len(sub)} slices testable · "
+                  + " · ".join(f"{n} {v}" for v, n in
+                               sorted(tally.items(), key=lambda kv: -kv[1])))
+            print(f"        pooled (NOT group-split): margin p={fm:.3g}, "
+                  f"uniform p={fu:.3g}")
     return 0
 
 

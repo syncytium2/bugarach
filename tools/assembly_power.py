@@ -124,132 +124,20 @@ def simulate_slice(rng, n_roi: int, n_events: int, part: float,
     return M
 
 
-# ---- the two statistics ----------------------------------------------------
+# ---- the statistics and both nulls come from the package -------------------
+#
+# Deliberately NOT re-implemented here. The whole value of this power curve is
+# that it validates the instrument the corpus will actually be measured with; a
+# second copy would let the two drift and quietly invalidate the curve.
+from bugarach.assembly import (          # noqa: E402
+    stat_dispersion, stat_eigen, pvalues_margin, pvalues_uniform,
+    _to_masks, _from_masks, _trade,      # selftest reaches in; see tests
+)
 
-def stat_dispersion(M: np.ndarray) -> float:
-    """Variance of the pairwise co-participation counts.
-
-    An assembly concentrates counts on a few pairs and leaves the rest at zero,
-    which is a variance increase whatever the mean count is.
-    """
-    C = (M.astype(np.float64).T @ M.astype(np.float64))
-    iu = np.triu_indices(M.shape[1], k=1)
-    return float(np.var(C[iu]))
-
-
-def stat_eigen(M: np.ndarray) -> float:
-    """Leading eigenvalue of the ROI correlation matrix — the classical instrument.
-
-    With 21 events and 32 ROIs the correlation matrix is rank-deficient, which is
-    the regime where the Marchenko-Pastur bound stops being available and a
-    permutation null is the only honest reference. That is why the null below is
-    empirical rather than analytic.
-    """
-    X = M.astype(np.float64)
-    sd = X.std(axis=0)
-    keep = sd > 0
-    if keep.sum() < 2:
-        return 0.0
-    Z = (X[:, keep] - X[:, keep].mean(axis=0)) / sd[keep]
-    C = (Z.T @ Z) / max(X.shape[0] - 1, 1)
-    return float(np.linalg.eigvalsh(C)[-1])
+pvalues = pvalues_margin                 # the name this script used before
 
 
-# ---- the margin-preserving null -------------------------------------------
-
-def _to_masks(M: np.ndarray) -> list[int]:
-    """Each event as a bitmask over ROIs — a trade is then three integer ops."""
-    return [sum(1 << int(j) for j in np.flatnonzero(row)) for row in M]
-
-
-def _from_masks(masks: list[int], n_roi: int) -> np.ndarray:
-    a = np.array(masks, dtype=object)
-    out = np.zeros((len(masks), n_roi), dtype=bool)
-    for i, m in enumerate(masks):
-        while m:
-            b = m & -m
-            out[i, b.bit_length() - 1] = True
-            m ^= b
-    return out
-
-
-def _trade(rng, masks: list[int], i: int, j: int) -> None:
-    """One curveball trade: redistribute the ROIs the two events do not share.
-
-    Both row sums and every column sum are conserved by construction — the swap
-    only moves membership between two events, and only among ROIs that exactly
-    one of them has.
-    """
-    a, b = masks[i], masks[j]
-    only_a = a & ~b
-    only_b = b & ~a
-    pool = only_a | only_b
-    if pool == 0:
-        return
-    idx = []
-    m = pool
-    while m:
-        low = m & -m
-        idx.append(low.bit_length() - 1)
-        m ^= low
-    need = bin(only_a).count("1")
-    if need == 0 or need == len(idx):
-        return
-    perm = rng.permutation(len(idx))
-    to_a = 0
-    for q in perm[:need]:
-        to_a |= 1 << idx[q]
-    masks[i] = (a & b) | to_a
-    masks[j] = (a & b) | (pool ^ to_a)
-
-
-def pvalues(rng, M: np.ndarray, n_surr: int, burn: int = 5) -> tuple[float, float]:
-    """Permutation p for both statistics off ONE surrogate ensemble.
-
-    The chain is burned in, then advanced by `n_events` trades between surrogates
-    — sequential sampling, so successive surrogates are near-independent without
-    rebuilding the chain each time.
-    """
-    n_events, n_roi = M.shape
-    obs_d, obs_e = stat_dispersion(M), stat_eigen(M)
-    masks = _to_masks(M)
-    pairs = rng.integers(0, n_events, size=(burn + n_surr) * n_events * 2)
-    p = 0
-    for _ in range(burn * n_events):
-        i, j = int(pairs[p]), int(pairs[p + 1]); p += 2
-        if i != j:
-            _trade(rng, masks, i, j)
-    ge_d = ge_e = 0
-    for _ in range(n_surr):
-        for _ in range(n_events):
-            i, j = int(pairs[p]), int(pairs[p + 1]); p += 2
-            if i != j:
-                _trade(rng, masks, i, j)
-        S = _from_masks(masks, n_roi)
-        if stat_dispersion(S) >= obs_d:
-            ge_d += 1
-        if stat_eigen(S) >= obs_e:
-            ge_e += 1
-    return ((1 + ge_d) / (1 + n_surr), (1 + ge_e) / (1 + n_surr))
-
-
-def fisher(ps: np.ndarray) -> float:
-    """Fisher's combination, as a p-value under the chi-square with 2n df.
-
-    Slices cannot be pooled cell-by-cell — the ROIs are different cells — so the
-    corpus-level test combines per-slice evidence, not per-slice data.
-    """
-    from math import lgamma, log, exp
-    x = float(-2.0 * np.log(np.clip(ps, 1e-12, 1.0)).sum())
-    if x <= 0.0:                      # every slice at p = 1; no evidence at all
-        return 1.0
-    n = 2 * len(ps)
-    # survival function of chi2(n) by the regularised upper incomplete gamma,
-    # series form — n is even and small here, so the closed form is exact.
-    k = n // 2
-    t = x / 2.0
-    s = sum(exp(-t + i * log(t) - lgamma(i + 1)) for i in range(k))
-    return float(min(1.0, max(0.0, s)))
+from bugarach.assembly import fisher  # noqa: E402,F811
 
 
 # ---- the sweep -------------------------------------------------------------
@@ -257,7 +145,7 @@ def fisher(ps: np.ndarray) -> float:
 def sweep(geo: dict, sizes, strengths, n_slices: int, n_surr: int,
           seed: int = 7) -> dict:
     """Per-slice p-values for every (assembly size, strength) cell of the grid."""
-    rng = np.random.default_rng(seed)
+    rng = np.random.RandomState(seed)
     out = {}
     for A in sizes:
         for s in strengths:
@@ -290,45 +178,16 @@ def powers(cell: tuple[np.ndarray, np.ndarray], group_n: int = GROUP_N) -> dict:
     }
 
 
-# ---- the companion null, and why one null is not enough ---------------------
-
-def pvalues_uniform(rng, M: np.ndarray, n_surr: int) -> tuple[float, float]:
-    """Permutation p against **uniform** participation: event sizes only.
-
-    This is the generator's own assumption — `rng.choice(nR, size=np_)` — so it
-    asks "do these recordings depart from uniform participation" with nothing
-    conditioned away. It sees a perfectly recurring assembly, which the
-    double-margin null cannot; it also fires on plain rate heterogeneity, which
-    the double-margin null correctly ignores.
-
-    **Neither null answers the question alone, and that is the finding.** Fixing
-    both margins absorbs an assembly into the very quantity it conditions on: at
-    full strength the non-members never participate, their column sums are zero,
-    and the null has no freedom left — power collapses to chance exactly where the
-    signal is purest. Run both. Uniform alone cannot separate an assembly from a
-    few busy cells; double-margin alone goes blind as the assembly sharpens. A
-    real slice is interpretable from the pair: both fire = structure beyond rate;
-    uniform only = look at the participation counts before claiming an assembly.
-    """
-    n_events, n_roi = M.shape
-    sizes = M.sum(axis=1)
-    obs_d, obs_e = stat_dispersion(M), stat_eigen(M)
-    ge_d = ge_e = 0
-    for _ in range(n_surr):
-        S = np.zeros_like(M)
-        for e in range(n_events):
-            S[e, rng.choice(n_roi, size=int(sizes[e]), replace=False)] = True
-        if stat_dispersion(S) >= obs_d:
-            ge_d += 1
-        if stat_eigen(S) >= obs_e:
-            ge_e += 1
-    return ((1 + ge_d) / (1 + n_surr), (1 + ge_e) / (1 + n_surr))
-
+# ---- the sweep under BOTH nulls --------------------------------------------
+#
+# Why both: `bugarach.assembly` explains it at length. Short version — the
+# double-margin null goes blind at full assembly strength and the uniform null
+# answers a broader question, so the curve has to show each one's failure mode.
 
 def sweep2(geo: dict, sizes, strengths, n_slices: int, n_surr: int,
            seed: int = 7) -> dict:
     """The grid under both nulls, on the same simulated slices."""
-    rng = np.random.default_rng(seed)
+    rng = np.random.RandomState(seed)
     out = {}
     for A in sizes:
         for s in strengths:

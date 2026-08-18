@@ -121,6 +121,14 @@ class Assessment:
     clusters_permin: float = float("nan")
     """Coordinated-event frequency — the generator's event count per unit time."""
 
+    members: tuple[tuple[int, ...], ...] = ()
+    """Which ROIs made up each observed cluster — the assembly question's input.
+
+    Observed clusters only. The surrogates deliberately do not carry it: the
+    circular shift is a null for *how much* coactivity there is, not for *who*
+    takes part, and reading assembly structure off it would answer the wrong
+    question (see ``bugarach.assembly``)."""
+
 
 def _coact_count(trains, win_dur, bin_width, n_bins, offsets=None):
     """Per-bin distinct-ROI coactivity. An ROI contributes 1 to a bin if it has
@@ -137,8 +145,17 @@ def _coact_count(trains, win_dur, bin_width, n_bins, offsets=None):
     return counts
 
 
-def _clusters(trains, counts, K, bin_width, n_bins, merge_bins, wm):
+def _clusters(trains, counts, K, bin_width, n_bins, merge_bins, wm,
+              with_members: bool = False):
     """Per co-active cluster: onset SD, participant count, peak coactivity, span.
+
+    With ``with_members``, a fifth value is returned: the ROI indices that made up
+    each cluster, in the order they were gathered. It is off by default and the
+    surrogate loop leaves it off — the four returned statistics, and every number
+    computed from them, are identical either way. Added because *which* cells took
+    part is the one thing this function knew and discarded, and the assembly
+    question cannot be asked without it
+    (``docs/todo/2026-08-18-do-real-slices-have-recurring-assemblies.md``).
 
     A cluster is a run of supra-K bins merged when no more than ``merge_bins``
     apart. Participants are each ROI's nearest onset within ±``wm`` of the cluster
@@ -153,10 +170,12 @@ def _clusters(trains, counts, K, bin_width, n_bins, merge_bins, wm):
     parts: list[int] = []
     peaks: list[float] = []
     spans: list[float] = []
+    members: list[tuple[int, ...]] = []
 
     fire = np.flatnonzero(counts >= K)
     if fire.size == 0:
-        return sds, parts, peaks, spans
+        return (sds, parts, peaks, spans, members) if with_members \
+            else (sds, parts, peaks, spans)
 
     groups: list[list[int]] = []
     cur = [int(fire[0])]
@@ -173,7 +192,8 @@ def _clusters(trains, counts, K, bin_width, n_bins, merge_bins, wm):
         tc = float(np.mean((gi + 0.5) * bin_width))
         pk = float(np.max(counts[g]))
         gathered: list[float] = []
-        for v in trains:
+        who: list[int] = []
+        for r, v in enumerate(trains):
             if v.size == 0:
                 continue
             near = v[np.abs(v - tc) <= wm]
@@ -181,6 +201,7 @@ def _clusters(trains, counts, K, bin_width, n_bins, merge_bins, wm):
                 continue
             # MATLAB min returns the first minimum on a tie; argmin does too.
             gathered.append(float(near[np.argmin(np.abs(near - tc))]))
+            who.append(r)
         if len(gathered) >= K:
             oo = np.asarray(gathered, dtype=np.float64)
             # ddof=1: MATLAB std is the sample SD. numpy defaults to ddof=0, and
@@ -189,7 +210,9 @@ def _clusters(trains, counts, K, bin_width, n_bins, merge_bins, wm):
             parts.append(int(oo.size))
             peaks.append(pk)
             spans.append(float(oo.max() - oo.min()))
-    return sds, parts, peaks, spans
+            members.append(tuple(who))
+    return (sds, parts, peaks, spans, members) if with_members \
+        else (sds, parts, peaks, spans)
 
 
 def _med(x):
@@ -320,8 +343,8 @@ def assess_coactivity(
         bk = np.flatnonzero(obs >= K)
         obs_mass = float(obs[bk].sum()) / win_min
         null_mass = float(null_mean[bk].sum()) / win_min
-        sd_obs, prt, pk, span = _clusters(trains, obs, K, bin_width, n_bins,
-                                          merge_bins, wm)
+        sd_obs, prt, pk, span, memb = _clusters(trains, obs, K, bin_width, n_bins,
+                                                merge_bins, wm, with_members=True)
         jit_obs, jit_null = _med(sd_obs), _med(sds_null[K])
         defined = bool(sd_obs) and bool(sds_null[K])
         out.append(Assessment(
@@ -337,5 +360,6 @@ def assess_coactivity(
             jit_defined=defined,
             part_n_obs=_med(prt), peak_med=_med(pk), span_med=_med(span),
             n_clusters_obs=len(sd_obs), n_clusters_null=len(sds_null[K]),
-            clusters_permin=len(sd_obs) / win_min))
+            clusters_permin=len(sd_obs) / win_min,
+            members=tuple(memb)))
     return out
