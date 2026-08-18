@@ -103,7 +103,7 @@
   </p>
   <p>
     The place a human is required is marked in red, and it is not the modelling:
-    it is <strong>choosing K</strong>, the cluster size the assessment is run at.
+    it is <strong>choosing K</strong>.
     K=3 was chosen for this corpus; K=4 drops the cluster rate to roughly a quarter of
     it &mdash; {{N:spec:k_scan.4.clusters_permin|.3f}} per minute against
     {{N:spec:k_scan.3.clusters_permin|.3f}}. The
@@ -111,6 +111,35 @@
     than buried.
   </p>
 </div>
+
+<h3>What K is</h3>
+<div class="col">
+  <p>
+    <strong>K is a threshold on how many cells are active at the same moment.</strong>
+    The assessor bins the recording, counts how many distinct cells have an onset in
+    each bin, and calls a bin co-active when that count reaches K. Runs of co-active
+    bins become one event. So K is not a tuning parameter on top of a definition of
+    coordination &mdash; <em>K is the definition</em>, and raising it does not make
+    events smaller, it deletes the ones with fewer participants.
+  </p>
+</div>
+
+<figure>
+  <img src="{{FIG:explain_k}}" alt="Two panels. A: five minutes of the coactivity trace — how many cells are active in each bin — mostly at zero, one or two, with occasional excursions to three and four. Dashed horizontal lines mark K=3, 4, 6 and 8; small squares sit on the trace wherever a bin reaches that K, and green triangles mark planted events. Nothing in the window reaches K=6 or K=8. B: a bar chart of events per minute found by the assessor across 85 real recordings at each K — 0.350 at K=3, 0.095 at K=4, 0.034 at K=6, and 0.000 at K=8.">
+  <figcaption>
+    <strong>K decides what counts as coordination at all.</strong> Panel A is the
+    count of distinct active cells per bin over five minutes; each dashed line is a
+    candidate K and the squares are the bins that clear it. Panel B is what the choice
+    costs, measured across the 85 real recordings rather than on this simulated
+    window: at K=3 the assessor finds
+    <strong>{{N:spec:k_scan.3.clusters_permin|.3f}}</strong> events per minute, at K=4
+    <strong>{{N:spec:k_scan.4.clusters_permin|.3f}}</strong>, at K=6
+    <strong>{{N:spec:k_scan.6.clusters_permin|.3f}}</strong>, and at K=8
+    <strong>{{N:spec:k_scan.8.clusters_permin|.3f}}</strong> &mdash; nothing at all.
+    That is the whole reason the choice is a human's: it is a judgement about what this
+    preparation's coordination <em>is</em>, and the pipeline refuses to make it.
+  </figcaption>
+</figure>
 
 <h2>2 &middot; The two models, and what each one computes</h2>
 <div class="col">
@@ -122,6 +151,31 @@
     pooled-trace baseline, exists as a control and is described at the end of the
     section.
   </p>
+  <p>
+    <strong>What they are handed is a binary array.</strong> One number per cell per
+    frame: did this cell have an onset here. Not amplitude, not width, not the
+    fluorescence trace it came from, and not the cell's identity &mdash; rows arrive
+    sorted busiest-first, so a row index means <em>how active this cell is relative to
+    the others</em> and nothing else. Permute the input cells and the array comes back
+    bit-identical, which the encoder has a test for rather than a claim about.
+  </p>
+</div>
+
+<figure>
+  <img src="{{FIG:explain_input}}" alt="Two panels of the encoded array. A: the whole recording as a scatter of onsets, 32 rows by roughly 35,000 frames, sparse everywhere except a dense block in the middle which is the planted probe window; the top rows are visibly denser because rows are sorted by firing rate. B: twelve seconds around the largest planted event with every frame drawn, showing a handful of marks clustered within a fraction of a second and the remaining rows completely empty.">
+  <figcaption>
+    <strong>Everything the model sees.</strong> <strong>A</strong> is the full array:
+    one mark per onset, 32 rows by ~35,000 frames, and the visible density gradient
+    from top to bottom is the rate sort. The dense block is the probe &mdash; a
+    stretch of deliberately random activity containing no planted event.
+    <strong>B</strong> zooms to twelve seconds around the largest planted event: a
+    few cells firing within a fraction of a second while the rest do nothing. There
+    is no other channel. A model that appears to use event amplitude has learned
+    something the generator never produced.
+  </figcaption>
+</figure>
+
+<div class="col">
   <p>
     Both obey one constraint taken from the six: <strong>one cell, one vote</strong>.
     Coactivity is the number of distinct active cells, never a count of onsets, so
