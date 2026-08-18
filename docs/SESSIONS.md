@@ -76,10 +76,11 @@ Template:
   exactly where the signal is purest** — at full strength the non-members never fire, the
   whole assembly sits in the column sums the null holds fixed, and power falls back to
   chance. It cannot be run alone, which is what the todo (and its first correction) had
-  wrong. **And the corpus is far better powered than its pair counts suggest**: a 4-8 cell
-  assembly recruiting one event in six is found in a single slice, and one in ten across a
-  group of twenty. The thin-looking 0.33 observations per pair is the wrong intuition,
-  because an assembly concentrates counts rather than spreading them.
+  wrong. **And the corpus is far better powered than its pair counts suggest**: across a
+  group of twenty slices, a four-to-six cell assembly taking part in one event in ten is
+  found every time, and eight cells at one event in seven. The thin-looking 0.33
+  observations per pair is the wrong intuition, because an assembly concentrates counts
+  rather than spreading them.
 
 ### Mac/explain-k-and-input — figures for K and the model input, and the two tracks split
 - **Status:** DONE 2026-08-18 — session ended, nothing in flight

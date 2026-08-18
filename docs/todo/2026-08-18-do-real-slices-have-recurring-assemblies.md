@@ -102,15 +102,24 @@ pair, and revision 1 read that as fatal. It is not. **An assembly concentrates c
 rather than spreading them**, and concentration is what the statistic measures. At the
 median geometry, against the uniform null:
 
-| assembly | detected in one slice | detected across a group of 20 |
-|---|---|---|
-| 4-8 cells | from ~1 event in 6 (power 0.37-0.64) | from ~1 event in 10 (power 1.00) |
-| 12 cells | from ~1 event in 4 (power 0.45) | from ~1 event in 5 (power 1.00) |
-| 16 cells — half the field | needs half the events (0.67) | from ~1 event in 4 (power 0.80) |
+Recruitment is the fraction of a slice's 21 clusters drawn from the assembly; the power
+in brackets is against the uniform null at alpha 0.05, over 400 simulated slices and 200
+surrogates each.
 
-So a negative result from this corpus would be worth publishing: it would exclude compact
-recurring assemblies recruiting more than about a tenth of coordinated events. Both nulls
-sit at their nominal 0.05 when nothing is planted.
+| assembly | one slice alone | group of 20 slices |
+|---|---|---|
+| 4 cells | 1 event in 7 (0.66) | **1 event in 10 (1.00)** |
+| 6 cells | 1 event in 7 (0.55) | **1 event in 10 (1.00)** |
+| 8 cells | 1 event in 4 (0.73) | **1 event in 7 (1.00)** |
+| 12 cells | 1 event in 2 (0.93) | **1 event in 4 (1.00)** |
+| 16 cells — half the field | 1 event in 2 (0.82) | 1 event in 4 (0.90) |
+
+So a negative result from this corpus would be worth publishing. Stated the way it would
+have to be written up: **a group of twenty slices excludes a recurring group of four to
+six cells that takes part in more than a tenth of coordinated events**, and a compact
+assembly is excluded well below the level a single slice could reach. A diffuse group
+spanning half the field needs to recruit a quarter of events before the same claim holds.
+Both nulls sit at their nominal 0.05 when nothing is planted.
 
 ### The event-conditioned null goes blind at full strength
 
