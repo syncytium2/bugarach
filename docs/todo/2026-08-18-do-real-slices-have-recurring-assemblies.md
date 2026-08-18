@@ -9,11 +9,17 @@ revised: 2026-08-18
 **A question about the preparation, small enough to answer in a day, and it gates a
 whole family of comparisons.**
 
-> **Revision.** The first draft of this file proposed testing co-participation against
-> the assessor's circular-shift null and called the work free. Both were wrong, and the
-> first would have returned a confident yes that meant nothing. The question survives
-> unchanged; the method below replaces it. Read *The null has to condition on the events*
-> before writing any code.
+> **Revision 2 — the power question is now measured, not argued.**
+> `tools/assembly_power.py` plants assemblies of known strength at this corpus's own
+> geometry and reports how often the test finds them. Two results change what follows.
+> **The event-conditioned null cannot be run alone**: it goes blind exactly where the
+> signal is purest. And **the corpus is well powered after all** — the arithmetic in
+> revision 1 that made it look hopeless was the wrong intuition. Read
+> *What the corpus can actually see* before writing any measurement code.
+>
+> *Revision 1 replaced the original method, which tested co-participation against the
+> assessor's circular-shift null and called the work free. Both were wrong, and the first
+> would have returned a confident yes that meant nothing.*
 
 ## Why it came up
 
@@ -74,22 +80,66 @@ both counts.
   sibling function that shares the clustering — and do not reshape what is pinned.
 - **The corrected null reuses none of the assessor's surrogate machinery.** It is a new
   randomization over a new matrix. The clustering is what gets reused, not the null.
+- **Both nulls and both statistics already exist** in `tools/assembly_power.py`, written
+  against simulated membership and validated there — margins conserved exactly, size
+  correct at 0.05, positive control passing under the null that has one. Measuring the
+  real corpus is wiring real membership into them, not writing them.
 
-## Do the counting pass first
+## What the corpus can actually see
 
-This is the step that decides whether the question is answerable at all, and it comes
-before any statistic is written.
+**Measured, not estimated** — `tools/assembly_power.py`, figure `assembly_power` in the
+darkroom. It plants an assembly of known size and known strength at the median slice
+geometry the derived spec already records (`docs/learned/generator_spec.json`, medians
+over all 85 baseline slices: **32 ROIs**, **21 clusters** at K=3 over a 59-minute window,
+**4.5 participants** each) and counts how often the test rejects. Membership is simulated
+directly — no onsets, no detector, no operating point — so it runs on a bare clone with no
+`BUGARACH_DATA_ROOT`.
 
-Pairs grow as the square of the ROI count; co-participation observations grow only as
-clusters x pairs-per-cluster. At tens of clusters and dozens of ROIs, most pairs are
-never observed together even once, per-pair tests have no power, and *"not significant"*
-becomes indistinguishable from the honest negative this file wants to be able to publish.
+### The corpus is well powered, and revision 1's arithmetic was misleading
 
-So count first, across all 85 baseline slices: clusters per slice, ROIs per slice, median
-participants per cluster. If the geometry supports the question, the design is **one
-scalar per slice** — dispersion of the pairwise counts, or the leading eigenvalue against
-its own null distribution — combined within group. Per-pair significance is not on the
-table at this corpus size.
+496 pairs share about 165 co-participation observations, a third of an observation per
+pair, and revision 1 read that as fatal. It is not. **An assembly concentrates counts
+rather than spreading them**, and concentration is what the statistic measures. At the
+median geometry, against the uniform null:
+
+| assembly | detected in one slice | detected across a group of 20 |
+|---|---|---|
+| 4-8 cells | from ~1 event in 6 (power 0.37-0.64) | from ~1 event in 10 (power 1.00) |
+| 12 cells | from ~1 event in 4 (power 0.45) | from ~1 event in 5 (power 1.00) |
+| 16 cells — half the field | needs half the events (0.67) | from ~1 event in 4 (power 0.80) |
+
+So a negative result from this corpus would be worth publishing: it would exclude compact
+recurring assemblies recruiting more than about a tenth of coordinated events. Both nulls
+sit at their nominal 0.05 when nothing is planted.
+
+### The event-conditioned null goes blind at full strength
+
+The null revision 1 argued for — hold event times and sizes fixed, preserve each ROI's own
+participation total — **loses all power exactly where the assembly is purest**. At full
+strength the non-members never participate at all: 24 of 32 ROIs have a column sum of
+zero, the entire signal has moved into the margins the null conditions on, and the
+observed statistic lands on the null mean. Power rises to 1.00 and then falls back to
+chance, so it is not monotonic in the quantity being measured — the shape a positive
+control exists to catch, and the failure mode
+[`2026-08-16-promiscuity-probe-cannot-fail.md`](2026-08-16-promiscuity-probe-cannot-fail.md)
+records in another guise.
+
+**So run both nulls.** The companion fixes event sizes only and redraws participants
+uniformly, which is exactly what `simulate.py` does; it is monotonic and passes the
+full-strength control, but it also fires on plain rate heterogeneity. Neither is
+sufficient alone and the pair is interpretable:
+
+- **both fire** — structure beyond what per-cell participation rates explain;
+- **uniform only** — read the participation counts before claiming an assembly; it may be
+  a few busy cells, or an assembly so sharp the conservative null cannot see it;
+- **neither fires** — no assembly above the strengths tabled above.
+
+### What is still worth counting on the real store
+
+The spec's medians are enough to size the test, not to run it. When the store is mounted:
+the per-slice *distribution* of ROI count and cluster count, since a slice well below the
+median may be individually unpowered and should be reported as such rather than as a
+negative.
 
 ## Why the answer matters either way
 

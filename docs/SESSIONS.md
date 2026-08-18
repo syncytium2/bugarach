@@ -60,6 +60,27 @@ Template:
 
 ## Active
 
+### Mac/assembly-power — can this corpus see an assembly at all, before anyone measures one
+- **Status:** ACTIVE
+- **Started:** 2026-08-18
+- **Writes:** `<darkroom>/bugarach/assembly_power.{png,html,json}` (NEW). Nothing else
+  under `<darkroom>/bugarach/`, nothing in `<darkroom>/constellation/`.
+- **Claims:** the three `assembly_power.*` files by that name, and nothing else.
+- **Notes:** the open assembly question asks whether the same cells recur across events in
+  the 85 baseline recordings. This answers the prior question — what an answer could
+  possibly mean — by planting assemblies of known strength at the median slice geometry
+  the derived spec already records, and measuring how often the test finds them. No real
+  recording is read and `BUGARACH_DATA_ROOT` is not needed, so it reruns on a bare clone.
+
+  Two results bind the measurement that follows. **The double-margin null goes blind
+  exactly where the signal is purest** — at full strength the non-members never fire, the
+  whole assembly sits in the column sums the null holds fixed, and power falls back to
+  chance. It cannot be run alone, which is what the todo (and its first correction) had
+  wrong. **And the corpus is far better powered than its pair counts suggest**: a 4-8 cell
+  assembly recruiting one event in six is found in a single slice, and one in ten across a
+  group of twenty. The thin-looking 0.33 observations per pair is the wrong intuition,
+  because an assembly concentrates counts rather than spreading them.
+
 ### Mac/explain-k-and-input — figures for K and the model input, and the two tracks split
 - **Status:** DONE 2026-08-18 — session ended, nothing in flight
 - **Started:** 2026-08-18
