@@ -60,6 +60,17 @@ Template:
 
 ## Active
 
+### Mac/spec-to-dropbox — put the overnight spec where Tony can find it
+- **Status:** ACTIVE
+- **Started:** 2026-08-18
+- **Writes:** `<darkroom>/bugarach/` — `overnight_spec.html` at the **top level**, not in a
+  dated subfolder, plus one line in that folder's `README.md`.
+- **Claims:** those two paths only. No dated subfolder, nothing in `<darkroom>/constellation/`.
+- **Notes:** third time a deliverable has been published and not found. The first two went
+  into dated subfolders; this one goes at the top level because the folder's own index is
+  the only thing a person reads first. The spec is **NOT APPROVED** and the page says so
+  above the fold.
+
 ### Mac/import-contract+viewer — the import contract, its validator, and the public reader
 - **Status:** DONE 2026-08-17 (session ended)
 - **Started:** 2026-08-17
