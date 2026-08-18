@@ -129,11 +129,15 @@ ones where a missing neighbor lets the default survive. In these trains that is
 the last pair, 1.2680583 s apart — and it is the one route by which a cap still
 moves the number here. Sweeping `max_tau` densely finds exactly one transition,
 at that gap: every value below it returns 0.3333 and every value above it returns
-the uncapped 0.3500. Between those two points the parameter does nothing at all.
+the uncapped 0.3500.
 
-This is also why casual testing misses the bug — with a single spike per train
-there are no neighbors, so the defaults survive, the cap applies, and the answer
-is correct.
+This is also why casual testing misses the bug. The pair under test has to be
+interior in *both* trains before all four defaults are overwritten, so with fewer
+than three spikes per train a neighbor is always missing, the cap applies, and the
+answer is correct. Worth noting in that light: the one `max_tau` assertion in
+`test/test_distance.py` scores `SpikeTrain([1.0, 2.0, 3.0], 4.0)` against
+`SpikeTrain([2.1], 4.0)` — a one-spike train, exactly the shape that still
+works.
 
 ### Scope
 
@@ -214,7 +218,7 @@ if max_tau > 0.0:
 ### Expected behavior
 
 ```
-window = min(ISI before a, ISI after a, ISI before b, ISI after b) / 2   # 0.9.0, at MRTS=0
+window = min(ISI before a, ISI after a, ISI before b, ISI after b) / 2   # 0.8.0 on, at MRTS=0
 window = min(the above, max_tau)                                        # expected
 ```
 
@@ -254,6 +258,8 @@ smaller) — so the bound to apply is half of it. In
 `pyspike/cython/cython_get_tau.pyx`:
 
 ```diff
+--- a/pyspike/cython/cython_get_tau.pyx
++++ b/pyspike/cython/cython_get_tau.pyx
 @@ -43,8 +43,8 @@
      if i<0 or j<0 or spikes1[i] <= spikes2[j]:
          s1F = Interpolate(mP1, mF1, MRTS)
@@ -281,13 +287,17 @@ builtin rather than `fmin` (sketch, not an appliable patch):
 Those two files cover every caller in both backends —
 `directionality_python_backend.py` imports `get_tau` from `python_backend`.
 
-No `max_tau > 0` guard is needed for reconciled trains: when the user passes 0 or
-`None` the callers set `true_max = t_end - t_start`, and once spikes are confined
-to `[t_start, t_end]` no half-ISI can exceed half that span, so the new minimum is
-never the binding term. The exception is `Reconcile=False`, which lets spikes sit
-outside the interval — there a half-ISI can exceed the span and the patch would
-change the uncapped answer, so that path wants the guard. Running the sweep above
-against a patched pure-Python backend:
+For reconciled trains no extra guard is needed: when the user passes 0 or `None`
+the callers set `true_max = t_end - t_start`, and once spikes are confined to
+`[t_start, t_end]` no half-ISI can exceed half that span, so the new minimum is
+never the binding term. One caveat I could not resolve cleanly: with
+`Reconcile=False` spikes may sit outside the interval, a half-ISI can then exceed
+the span, and the patch changes the uncapped answer. A `max_tau > 0` test inside
+`get_tau` will not catch it — the parameter there is `true_max`, always positive —
+so it needs a caller-side sentinel for "no cap" rather than a guard. Flagging it
+rather than guessing at your preferred shape.
+
+Running the sweep above against a patched pure-Python backend:
 
 ```
  max_tau   as shipped   with the patch
@@ -310,7 +320,8 @@ it is your call.
 We maintain a Python port of the cSPIKE synchronization stack — cSPIKE being the
 MATLAB implementation from Kreuz's group — and cross-check it against both cSPIKE
 reference output and PySpike. Uncapped, our port and PySpike agree exactly. At
-every cap we tested they diverge, and there our port matches cSPIKE to 1e-9.
+every cap we tested they diverge, and at the two caps where we hold cSPIKE
+reference output — 0.25 s and 0.5 s — our port matches it to 1e-9.
 
 On a 30-train, 2670-event synthetic recording with a median ISI of 31 s
 ([the fixture is public](https://github.com/syncytium2/bugarach/blob/main/tests/fixtures/synth_fastcal_s1.mat)),
@@ -359,8 +370,8 @@ Happy to send the fix as a PR with a regression test if that is useful.
   says the opposite — SPIKE-synchronization is "parameter- and scale-free" and its
   Eq. 19 has no upper bound — and the recipient co-authored it. The first fix
   swung to "`max_tau` is PySpike's own addition", which is also false and which
-  this report's own cSPIKE-parity section contradicted. cSPIKE has the same
-  parameter as `max_dist` (`cSPIKE_mac/SpikeTrainSet.m:187`, and in nine
+  this report's own "Expected behavior" section contradicted. cSPIKE has the same
+  parameter as `max_dist` (`cSPIKE_mac/SpikeTrainSet.m:187`, and in eight
   signatures in the class help though never actually described there; applied in
   `cSPIKEmex/Spiketrains.cpp:453` as a second condition on top of the adaptive
   window). The final version says what is actually true and is the
@@ -382,7 +393,7 @@ Happy to send the fix as a PR with a regression test if that is useful.
 - **A rendered figure was considered and left out.** The finding is a scalar
   comparison, the ASCII derivation carries all of it, and unlike an image it can
   be quoted in a reply and read in a terminal — where triage happens. The one
-  two picture-shaped claims are both better as the tables they already are: the
+  picture-shaped claims are both better as the tables they already are: the
   cSPIKE comparison has only two validated points, and the as-shipped-vs-patched
   sweep is four rows whose whole content is "one column moves and the other does
   not". Recorded, with both reasons, so a later session does not reopen it.
@@ -394,5 +405,13 @@ Happy to send the fix as a PR with a regression test if that is useful.
   `docs/todo/2026-08-11-methodology-narrative-doc.md`. All **eight** assert the bug
   today with no upstream reference, **and all eight call it "PySpike 0.9.0's" bug,
   which this report now shows is wrong: it broke in 0.8.0.** Fix the version in the
-  same pass as the URL.
+  same pass as the URL. `test_pyspike_max_tau_is_still_inert` is a ninth mention
+  but already names 0.8.0 correctly; it now points back here instead of keeping
+  its own copy of this list, which had already drifted to three entries.
+- **Unverified here** ⚠: whether upstream's own test suite stays green under the
+  patch. PySpike's `test/` is not in the installed wheel, so this session could
+  not run it, and the claim is deliberately absent from the issue. Worth doing
+  before offering the PR.
+- **Unverified here** ⚠: whether SPIKY, the MATLAB GUI, also carries the cap. The
+  issue claims it only for cSPIKE and PySpike, both checked.
 - The repo links assume bugarach stays public at that path.

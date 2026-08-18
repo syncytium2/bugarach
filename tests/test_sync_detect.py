@@ -112,11 +112,14 @@ def test_profile_cross_validates_against_pyspike_uncapped():
 def test_pyspike_max_tau_is_still_inert():
     # The reason the cross-check above must run uncapped, pinned so it cannot
     # rot: PySpike's max_tau is a default for missing edge-neighbor ISIs, never
-    # a bound on the window, so every finite cap returns the same answer. This
-    # test asserts the BUG, and is meant to fail the day upstream fixes it —
-    # at which point the cross-check can be extended to the capped regime and
-    # the warnings in FOUNDATIONS, the README and sapper's SAP003 come down.
-    # Reported upstream; regression landed in 0.8.0 (0.7.0 still capped).
+    # a bound on the window, so a finite cap changes nothing except through the
+    # spikes at each train's edge. This test asserts the BUG, and is meant to
+    # fail the day upstream fixes it — at which point the cross-check can be
+    # extended to the capped regime and every warning about this comes down.
+    # The full list of places to update, and the upstream report itself, live in
+    # docs/todo/2026-08-11-file-pyspike-max-tau-issue.md — keep it the one
+    # inventory, so a copy here cannot go stale behind it.
+    # Regression landed in 0.8.0 (0.7.0 still capped).
     pyspike = pytest.importorskip("pyspike")
     rng = np.random.default_rng(0)
     edges = (0.0, 600.0)
