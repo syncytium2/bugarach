@@ -388,8 +388,16 @@ uncapped regime, where the two definitions agree.
 
 ```bash
 pip install -e ".[dev]"
+git config core.hooksPath .githooks     # once per clone — see below
 pytest
 ```
+
+**That middle line is not optional, and the suite will tell you so.** Git ignores
+`.githooks/` until a clone is pointed at it, the setting lives in `.git/config` and
+travels with nothing, and a clone without it looks exactly like a clone with it —
+commits simply stop being checked. That was this clone's state from the first
+commit until someone thought to look, and nothing failed in between. `pytest` now
+fails on a clone whose gates are not wired, and prints that command.
 
 The `[dev]` extra includes PySpike, used only as a cross-validation reference in the
 test suite — the detectors themselves have no PySpike dependency. The suite runs on
