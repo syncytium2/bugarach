@@ -61,8 +61,8 @@ Template:
 ## Active
 
 ### Mac/needs-mechanism-gate — a cross-repo proposal in a NEW shared darkroom folder
-- **Status:** ACTIVE 2026-08-18
-- **Writes:** `<darkroom>/needs/` — **creating that folder**. One file:
+- **Status:** DONE 2026-08-18 — **claim released**, both files written
+- **Writes:** `<darkroom>/needs/` — **created it**. One file:
   `mechanism-changes-need-a-gate.md`, plus a `README.md` saying what the folder is for.
   Nothing in `<darkroom>/bugarach/`, nothing in `<darkroom>/constellation/`, nothing
   under `$BUGARACH_DATA_ROOT`.
@@ -72,8 +72,12 @@ Template:
   this is where the collision happens. `0-REVIEW/` was checked first and is slice
   submissions, not process proposals, so this does not duplicate it.
 - **Notes:** the document invites other repos to comment, so treat it as shared and
-  append rather than overwrite. Tony asked for it by name after rejecting CLAUDE.md as
-  the vehicle for the same rule.
+  append rather than overwrite — the folder README says so too. Tony asked for it by
+  name after rejecting CLAUDE.md as the vehicle for the same rule.
+- **Done:** `needs/README.md` and `needs/mechanism-changes-need-a-gate.md`. The
+  proposal went through the murderboard first (11/11 roles, 2 blind rounds); its
+  headline claim did not survive role 1 and was replaced with one the commit history
+  actually shows. Run record in `docs/reviews/`.
 
 ### Mac/assembly-membership — the assembly question, answered on the real corpus
 - **Status:** ACTIVE
