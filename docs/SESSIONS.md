@@ -61,7 +61,7 @@ Template:
 ## Active
 
 ### Mac/viewer-colours+simulator — deploying the site after the viewer work
-- **Status:** ACTIVE 2026-08-18 — deploying now
+- **Status:** DONE 2026-08-18 — **claim released**, deploy finished and verified
 - **Started:** 2026-08-18
 - **Writes:** **the PUBLIC SITE** — `npx wrangler deploy` from `origin/main`. Nothing to the
   darkroom, nothing under `$BUGARACH_DATA_ROOT`.
@@ -74,6 +74,15 @@ Template:
   where deploys happen, and it does not follow `main`. **Check what it is checked out at
   before deploying, every time**, or you will republish whatever it was pinned to. This
   session fast-forwarded it to `origin/main`; it will drift again.
+- **Deployed:** version `f9df77ef-24c3-4703-bea7-3aa7aff00b93`, live page now stamps `4c7c18f`.
+  `npm run deploy` needs `python` on PATH and this Mac only has `python3`, so it must be run
+  as `PATH=<repo>/.venv/bin:$PATH npm run deploy`. Do **not** "fix" `package.json` to say
+  `python3` — the Windows box has `python` and not `python3`, and that is the box the deploy
+  doc was written on.
+- **⚠ Found on the live page, not fixable from this repo:** Cloudflare injects its Web
+  Analytics beacon into the served HTML, so the viewer — the page that promises it makes no
+  network calls — makes two before the reader clicks anything. Needs a dashboard toggle.
+  `docs/todo/2026-08-18-cloudflare-injects-a-beacon-into-the-page-that-promises-none.md`.
 - **Publishing:** the only build inputs that changed since the live version are
   `docs/site/raster_viewer.html` and `tools/build_site.py` (PR #85 — window colours, the
   browser simulator, the accordion sidebar). Everything else that landed since goes to
