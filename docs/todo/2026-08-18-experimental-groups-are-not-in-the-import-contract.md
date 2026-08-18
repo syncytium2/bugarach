@@ -1,86 +1,88 @@
 ---
 status: open
 filed: 2026-08-18
+revised: 2026-08-18
 ---
 
-# Experimental group is not in the import contract, and the contract forbids reading it
+# The contract already carried what an analysis went outside for
 
-Everything an analysis needs must be in the folder the app reads. Group membership is
-not — it lives in a spreadsheet on a Dropbox mount, reachable only from machines that
-happen to have it, and `bugarach.groups` currently goes and gets it from there. That
-is a bridge built to land one result, and it should not survive as architecture.
+> **Revision.** The first version of this file said experimental group was missing from
+> the import contract and proposed adding it. That was wrong, and wrong in the
+> direction that matters: `group_id` and `mouse_id` were already in `slices.csv`, in a
+> conforming export folder that existed before the analysis started. The defect was
+> never the contract's coverage — it was an analysis that read `.mat` files and never
+> looked. What survives below is the narrower set of things the contract genuinely
+> cannot express.
 
-## The contradiction, which is the real finding
+## What happened
 
-[`docs/export_folder_spec.md`](../export_folder_spec.md) already anticipates this
-metadata. `slices.csv` names `group_id`, `mouse_id`, `sex`, `age`, `cohort` as
-examples of its open set of identity columns. So the fields are *allowed*.
+On 2026-08-18 the assembly measurement was run over
+`processed_archive/event_store_onset_revised_2v_alive_rescued` — a `.mat` store —
+because that path was the one to hand and `assess_archive.py` globbed `*.mat`.
+Meanwhile `exports/bugarach/2026-08-17_revised_2v` had existed since the previous day,
+conforming to [`docs/export_folder_spec.md`](../export_folder_spec.md) revision 3, and
+carried everything the analysis then went looking for elsewhere.
 
-The same section then says bugarach
+Three consequences, in increasing order of how much they cost:
+
+- **Metadata was re-derived from outside the data.** A loader was written to pull group
+  and animal out of a spreadsheet on a Dropbox mount. `slices.csv` had both columns.
+  The loader has been deleted.
+- **A withdrawn recording was analysed.** The folder's producer applies the lab's
+  exclusions before writing; the `.mat` store does not. Reading the folder, the
+  excluded slice would never have appeared.
+- **The wrong window was scored on 24 of 84 recordings.** `regions.csv` separates
+  `start_sec`/`end_sec` — what happened — from `analysis_start_sec`/`analysis_end_sec`
+  — what to score. `assess_archive.py` used the raw period, which on this corpus ran up
+  to **660 s longer**. More window is more clusters and more power, unevenly across the
+  corpus. Fixed: the tool now honours the analysis window and reports how many
+  recordings had one.
+
+The check that was supposed to catch the third one passed. It compared the analysed
+window against the workbook's raw baseline period — the same quantity, from a different
+source — and agreed on every slice. It was measuring the wrong thing and could not have
+failed.
+
+## What the contract still cannot say
+
+Reading the folder fixes the analysis. Two gaps in the spec itself remain, and both are
+now narrower than the first version of this file claimed.
+
+**1. The spec forbids interpreting the identity columns.** `slices.csv` names
+`group_id` and `mouse_id` as examples of an open set, and the same section says
+bugarach
 
 > passes through to its output unchanged and **interprets not at all**. It does not
 > know what a mouse is.
 
-That sentence is right about lab-agnosticism and it makes FOUNDATIONS §9
-unenforceable. §9 says effects run in opposite directions by group and a pooled
-across-group number **is not admissible on its own**. An app that refuses to
-interpret group cannot produce an admissible corpus result. Both rules are load
-bearing and they are currently in direct conflict; the conflict has been invisible
-because no analysis here had group at all.
+FOUNDATIONS §9 says a pooled across-group number is not admissible on its own. An app
+forbidden to interpret group cannot produce an admissible corpus result. The resolution
+keeps what that sentence protects: **interpret the ROLE of a column, never the meaning
+of its values.** Reserve `group_id` as *the design factor to split by* and `subject_id`
+as *the independence unit*; values stay the lab's own and uninterpreted. bugarach still
+does not know what a mouse is — it knows which column says two recordings came from
+one.
 
-## What is actually missing
+**2. Exclusion and provisional status are producer-side only.** This producer drops
+excluded recordings before writing, which is a clean answer. But the contract has no
+way to *say* a recording was withdrawn, so a folder cannot distinguish "this corpus is
+complete" from "someone silently dropped 12". A count in `PROVENANCE.md` is prose, not
+a column. Likewise the lab marks some rows provisional; nothing in the folder can carry
+that, so a caveat that belongs on a result is unavailable to the tool computing it.
 
-Three things, and only the first is a naming question:
+## What a fix looks like
 
-- **A reserved column for experimental group**, with the semantics that analyses may
-  split by it. Not a new vocabulary — the lab's own values pass through — but a
-  reserved *name* so an analysis can find it without being told.
-- **A subject key, reserved.** `mouse_id` is named as an example, which is not enough
-  to depend on. Slices are not independent: in the archive read on 2026-08-18, 85
-  slices came from 48 dates and up to three shared one animal. Without a reserved
-  subject column, every corpus statistic silently treats siblings as independent
-  observations, and any combination of per-slice p-values is anti-conservative.
-- **An exclusion column. There is none, in any form.** The lab withdraws recordings;
-  the contract has no way to say so. Every corpus result computed in this repo before
-  2026-08-18 therefore included withdrawn units, and nothing could have caught it.
-  This is the gap with teeth — the other two produce a weaker claim, this one produces
-  a wrong denominator.
+- Reserve `group_id` and `subject_id` with defined roles; keep every other column
+  pass-through exactly as today.
+- Add an optional `excluded` column, so a folder can be self-describing about what it
+  omits rather than relying on a prose note.
+- A corpus result that had no `group_id` available should say so on its face — a sapper
+  rule can catch a result written from a folder that lacked it.
 
-## And the archive path needs it too
+## The one that has no todo yet
 
-The 85-slice corpus was read from a `.mat` store, not from an export folder, so it is
-not covered by this contract at all. Whatever is agreed here has to reach that path as
-well, or the contract governs the input nobody actually uses for corpus work.
-
-## Proposed revision (revision 4)
-
-Reserve three names in `slices.csv`, keep every other column pass-through and
-uninterpreted exactly as today:
-
-| column | meaning |
-|---|---|
-| `group_id` | the experimental group. Values are the lab's own; bugarach never interprets a *value*, only that the column names the design factor to split by. |
-| `subject_id` | the independence unit. Recordings sharing one are siblings, never independent observations. |
-| `excluded` | truthy means the producer has withdrawn this recording. Anything reported as a corpus must drop it and say how many it dropped. |
-
-The distinction that resolves the contradiction: bugarach interprets the **role** of a
-column, never the **meaning of its values**. It still does not know what a mouse is; it
-knows which column says two recordings came from the same one.
-
-Then: a corpus-level result that never read `group_id` is incomplete, and a sapper rule
-can say so. Absent columns keep working as they do now — the app reports what is missing
-rather than refusing, per the spec's own posture — but a *result* that claims to describe
-a corpus while the columns were absent has to say that on its face.
-
-## Until then
-
-`bugarach.groups` is the bridge and is written as one: it resolves the workbook from the
-environment, never hardcodes it, refuses rather than guesses, and its tests skip when the
-file is absent. **It should be deleted when revision 4 lands**, not extended. Anything
-built on it inherits the defect this todo describes — a result that can only be
-reproduced on a machine holding a file nobody agreed to ship.
-
-Related: [`2026-08-16-dt-does-not-travel-with-the-recording.md`](2026-08-16-dt-does-not-travel-with-the-recording.md)
-is the same shape — a property an analysis needs that is not a property of the recording
-— and was resolved by putting the field in the contract and gating the load. That is the
-precedent to follow.
+`assess_archive.py` will still read a `.mat` store when asked. Nothing warns that a
+conforming export folder sits beside it, and nothing in the repo prefers the contract
+over the raw store. That is how this happened, and a warning at load — *"this store has
+an export folder; the folder carries windows and identity this path does not"* — is
+cheaper than the day it cost.

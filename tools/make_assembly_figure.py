@@ -26,13 +26,17 @@ one animal in six in ORX.
   coactivity floor K, both streams.
 
 **What is in the corpus.** Baseline windows only, every treatment arm pooled — the
-question is about the preparation, not about any drug. Slices the workbook marks
-`exclude` are dropped, and so are the side arms it marks with a `study` (the pilots
-and the APV+CNQX / GABAZINE variants). Baseline windows are checked against the
-workbook's own `exp_timing` sheet and the figure refuses to build if they disagree.
+question is about the preparation, not about any drug. The corpus is exactly what the
+export folder holds: the producer applies its own exclusions before writing it, so
+nothing here decides who is in. The window scored is the producer's
+`analysis_start_sec` / `analysis_end_sec` where it gives one, which is *what to
+score* rather than *what happened* — reading the raw period instead analysed up to
+660 s the producer had excluded, on 24 of 84 recordings, before this was fixed.
 
-Needs the group workbook — see `bugarach.groups` for how it is resolved and why the
-path is never written down.
+Reads an export folder and nothing else. Group and subject come from its
+`slices.csv`, exclusions are already applied by the producer, and the window scored is
+the producer's `analysis_start_sec` / `analysis_end_sec`. Nothing is side-loaded, so
+the result reproduces anywhere the folder goes.
 """
 
 from __future__ import annotations
@@ -114,25 +118,6 @@ def _xy(rows):
     return np.maximum(x, FLOOR), np.maximum(y, FLOOR)
 
 
-def by_preparation(rows):
-    """Group testable slices by preparation, taken from the date in the slice id.
-
-    **The slices are not independent** — 85 of them come from 48 dates, up to three
-    per preparation — so a per-slice count overstates how many independent
-    observations stand behind it, and any combination of per-slice p-values
-    (Fisher) is anti-conservative for the same reason. Reported alongside the slice
-    count so the reader can see both units.
-    """
-    import re
-    from collections import defaultdict
-    out = defaultdict(list)
-    for r in rows:
-        m = re.match(r"(\d{8})", str(r.get("slice_id", "")))
-        out[m.group(1) if m else str(r.get("slice_id"))].append(r["asm_verdict"])
-    n_any = sum(1 for v in out.values() if "structure-beyond-rate" in v)
-    return n_any, len(out)
-
-
 def tally(rows) -> dict:
     t: dict[str, int] = {}
     for r in rows:
@@ -144,11 +129,39 @@ GROUP_COLOUR = {"DI": "#1a7f4b", "MALE": "#1f6fb4",
                 "OVX": "#8a6fb4", "ORX": "#c4451e"}
 
 
-def animal_split(rows, meta):
-    """Per group: animals showing structure beyond rate, out of animals tested."""
-    from bugarach.groups import by_animal
-    return by_animal(rows, meta,
-                     hit=lambda r: r["asm_verdict"] == "structure-beyond-rate")
+def animal_split(rows):
+    """Per group: animals showing structure beyond rate, out of animals tested.
+
+    ``group_id`` and ``mouse_id`` come from the export folder's ``slices.csv``,
+    carried through by ``assess_archive``. They are the producer's own columns and
+    nothing here interprets their VALUES — only their role: which column names the
+    design factor, and which says two recordings came from one animal.
+
+    The animal is the unit because slices are not independent — one mouse gives up
+    to three. A mouse counts as showing the effect if ANY of its testable slices
+    does, which is the weakest defensible rule; the alternative would let one thin
+    slice veto an animal.
+    """
+    per_mouse: dict = {}
+    for r in rows:
+        g, m = r.get("group_id"), r.get("mouse_id")
+        if g in (None, "") or m in (None, ""):
+            continue
+        d = per_mouse.setdefault(str(m), {"group": str(g), "any": False,
+                                          "slices": 0, "slice_hits": 0})
+        d["slices"] += 1
+        if r["asm_verdict"] == "structure-beyond-rate":
+            d["any"] = True
+            d["slice_hits"] += 1
+    out: dict = {}
+    for d in per_mouse.values():
+        g = out.setdefault(d["group"], {"animals": 0, "animals_hit": 0,
+                                        "slices": 0, "slice_hits": 0})
+        g["animals"] += 1
+        g["animals_hit"] += int(d["any"])
+        g["slices"] += d["slices"]
+        g["slice_hits"] += d["slice_hits"]
+    return out
 
 
 def jeffreys(k, n):
@@ -257,8 +270,8 @@ def build(fast, slow, ctrl, per_k, splits, tests, width: int):
         'that.</b><br>'
         'Baseline windows from every treatment arm, at coactivity floor '
         f'K={K_SHOWN} — K is how many ROIs must be co-active for a cluster to '
-        'count. Slices the workbook excludes, and its pilot and APV+CNQX / '
-        'GABAZINE arms, are not here.<br>'
+        'count. The corpus is exactly what the export folder holds: the '
+        'producer applied its own exclusions before writing it.<br>'
         f'<b>A — the answer.</b> Animals, not slices: one mouse gives up to three '
         'slices and they are not independent. '
         + ' · '.join(f'{gsw(g)} {frac("fast", g)} FAST, {frac("slow", g)} SLOW'
@@ -285,14 +298,13 @@ def build(fast, slow, ctrl, per_k, splits, tests, width: int):
         '<b>Read with these.</b> The two nulls are <b>nested, not independent</b> — '
         'uniform participation is the stronger assumption, so rejecting both is one '
         'conclusion, not two. ORX rests on six animals in FAST and three in SLOW, so '
-        '"weak" and "absent" are not separable there. Thirteen slices carry a '
-        'PROVISIONAL note on their group — none of them ORX. Slices with fewer than '
+        '"weak" and "absent" are not separable there. Slices with fewer than '
         'four clusters have no permutation null: they appear nowhere here and are '
         '<b>undefined, never negative</b>. And structure beyond rate is not by '
         'itself one discrete recurring group.<br>'
-        f'Animals: {n_animals["fast"]} FAST, {n_animals["slow"]} SLOW. Baseline '
-        'windows agree with the workbook exp_timing sheet within 1 s for every '
-        'slice. Run record in <i>docs/reviews/</i>.</div>')
+        f'Animals: {n_animals["fast"]} FAST, {n_animals["slow"]} SLOW. Every window '
+        'scored is the producer\'s own analysis window, not the raw period. '
+        'Run record in <i>docs/reviews/</i>.</div>')
     return (a + b + c).cols(3).opts(shared_axes=False, toolbar=None), header
 
 
@@ -334,48 +346,28 @@ def main(argv=None):
     p.add_argument("--no-png", dest="png", action="store_false", default=True)
     args = p.parse_args(argv)
 
-    # ---- corpus membership comes from the workbook, not from the store -----
-    from bugarach.groups import (load_groups, check_baseline_windows,
-                                 unresolved_message as groups_missing)
-    try:
-        meta = load_groups()
-    except FileNotFoundError:
-        print(groups_missing(), file=sys.stderr)
-        return 1
+    # ---- the corpus is whatever the export folder contains --------------
+    # No side-loaded metadata. The producer decides what is in the folder: it
+    # applies its own exclusions before writing, and its slices.csv carries the
+    # identity columns. Anything this tool needed to reach outside for was a
+    # defect in the contract or in how it was read.
+    def _win_check(dirpath, label):
+        d = json.loads((dirpath / "assessment_real.json").read_text())
+        r3 = [r for r in d["rows"] if r["K"] == K_SHOWN]
+        used = sum(1 for r in r3 if r.get("used_analysis_window"))
+        raw_only = [r["slice_id"] for r in r3 if not r.get("used_analysis_window")]
+        print(f"{label}: {len(r3)} recordings · analysis window honoured on "
+              f"{used}" + (f"; RAW period on {len(raw_only)}: {raw_only[:6]}"
+                           if raw_only else ""))
+        return d
 
-    def in_corpus(r):
-        m = meta.get(str(r["slice_id"]))
-        return m is not None and m.in_main_corpus
-
-    def keep(rows):
-        return [r for r in rows if in_corpus(r)]
+    _win_check(args.fast, "FAST")
+    _win_check(args.slow, "SLOW")
 
     ks = (3, 4, 6, 8)
-    per_k = {k: {"fast": tally(keep(_rows(args.fast, k))),
-                 "slow": tally(keep(_rows(args.slow, k)))} for k in ks}
-    fast_all, slow_all = _rows(args.fast, K_SHOWN), _rows(args.slow, K_SHOWN)
-    fast, slow = keep(fast_all), keep(slow_all)
-    for nm, before, after in (("FAST", fast_all, fast), ("SLOW", slow_all, slow)):
-        drop = [r["slice_id"] for r in before if not in_corpus(r)]
-        unknown = [r["slice_id"] for r in before if str(r["slice_id"]) not in meta]
-        print(f"{nm}: {len(after)} testable in corpus "
-              f"(dropped {len(drop)} excluded/side-arm: {drop}"
-              + (f"; NOT IN WORKBOOK: {unknown}" if unknown else "") + ")")
-
-    # ---- the windows we analysed must be the windows the lab recorded ------
-    d0 = json.loads((args.fast / "assessment_real.json").read_text())
-    observed = {str(r["slice_id"]): r["window_sec"]
-                for r in d0["rows"] if r["K"] == K_SHOWN}
-    chk = check_baseline_windows(observed)
-    print(f"baseline windows vs workbook exp_timing: {chk['agree']}/{chk['n']} agree "
-          f"within 1 s; {len(chk['missing'])} missing; "
-          f"{len(chk['disagree'])} disagree")
-    if chk["disagree"]:
-        for row in chk["disagree"][:10]:
-            print(f"   !! {row}", file=sys.stderr)
-        print("refusing to build: the analysed window is not the recorded one.",
-              file=sys.stderr)
-        return 1
+    per_k = {k: {"fast": tally(_rows(args.fast, k)),
+                 "slow": tally(_rows(args.slow, k))} for k in ks}
+    fast, slow = _rows(args.fast, K_SHOWN), _rows(args.slow, K_SHOWN)
 
     # Control geometry: read from the real FAST run, so the comparison is at this
     # corpus's own numbers rather than remembered ones.
@@ -400,7 +392,7 @@ def main(argv=None):
     print(f"control geometry from the real run: {geo}")
     ctrl = controls(args.controls, geo)
 
-    splits = {"fast": animal_split(fast, meta), "slow": animal_split(slow, meta)}
+    splits = {"fast": animal_split(fast), "slow": animal_split(slow)}
     tests = {st: group_test(splits[st]) for st in ("fast", "slow")}
     print("\nby group, at the ANIMAL level (a mouse counts if any of its slices does):")
     for st in ("fast", "slow"):
@@ -419,10 +411,6 @@ def main(argv=None):
         n = sum(t.values())
         print(f"{name:>18}: {n:>3} testable · " + " · ".join(
             f"{c} {v}" for v, c in sorted(t.items(), key=lambda kv: -kv[1])))
-        if rows and rows[0].get("slice_id"):
-            a, b = by_preparation(rows)
-            print(f"{'':>18}  by preparation: {a}/{b} with at least one slice "
-                  f"rejecting both nulls (slices are NOT independent)")
     if args.numbers_only:
         return 0
 
@@ -445,7 +433,7 @@ def main(argv=None):
          "n_controls": len(ctrl),
          "by_group_animal_level": splits,
          "across_group_chi2_p": tests,
-         "baseline_window_check": {"agree": chk["agree"], "n": chk["n"]}},
+         "source": "export folder (contract), analysis windows honoured"},
         indent=1, default=str))
     print(f"\nwrote {html}")
     if args.png and _render_png(html, dest / f"{FIGURE_ID}.png"):
