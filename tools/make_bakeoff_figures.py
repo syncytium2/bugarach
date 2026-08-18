@@ -26,7 +26,7 @@ import sys
 from pathlib import Path
 
 HAND, LEARN = "#4c78a8", "#7a1f22"
-ARCH = {"tube": "centre−surround (learned)", "trace": "pooled trace (learned)",
+ARCH = {"tube": "center−surround (learned)", "trace": "pooled trace (learned)",
         "tiny": "per-cell bank (learned)"}
 
 
