@@ -60,6 +60,25 @@ Template:
 
 ## Active
 
+### Mac/viewer-colours+simulator — deploying the site after the viewer work
+- **Status:** ACTIVE 2026-08-18 — deploying now
+- **Started:** 2026-08-18
+- **Writes:** **the PUBLIC SITE** — `npx wrangler deploy` from `origin/main`. Nothing to the
+  darkroom, nothing under `$BUGARACH_DATA_ROOT`.
+- **Claims:** the site deploy, taken from released. Last deploy wins and there is no
+  per-page ownership, so coordinate here before deploying.
+- **Why now:** the live site was serving `19a7812` and `main` had moved twelve commits past
+  it. Not because nobody deployed — because the deploy ran from
+  `bugarach-worktrees/deploy-site`, which is a **detached HEAD pinned at that commit**. That
+  worktree holds the only `node_modules` and the only wrangler login on this Mac, so it is
+  where deploys happen, and it does not follow `main`. **Check what it is checked out at
+  before deploying, every time**, or you will republish whatever it was pinned to. This
+  session fast-forwarded it to `origin/main`; it will drift again.
+- **Publishing:** the only build inputs that changed since the live version are
+  `docs/site/raster_viewer.html` and `tools/build_site.py` (PR #85 — window colours, the
+  browser simulator, the accordion sidebar). Everything else that landed since goes to
+  `docs/learned/`, which the build does not publish.
+
 ### Mac/spec-to-dropbox — put the overnight spec where Tony can find it
 - **Status:** DONE 2026-08-18 — **claim released**, writing has stopped
 - **Started:** 2026-08-18
