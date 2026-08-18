@@ -1,12 +1,19 @@
 ---
 status: open
 filed: 2026-08-18
+revised: 2026-08-18
 ---
 
 # Do the real recordings have recurring assemblies, or random participation?
 
-**A question about the preparation, cheap to answer, and it gates a whole family of
-comparisons.**
+**A question about the preparation, small enough to answer in a day, and it gates a
+whole family of comparisons.**
+
+> **Revision.** The first draft of this file proposed testing co-participation against
+> the assessor's circular-shift null and called the work free. Both were wrong, and the
+> first would have returned a confident yes that meant nothing. The question survives
+> unchanged; the method below replaces it. Read *The null has to condition on the events*
+> before writing any code.
 
 ## Why it came up
 
@@ -27,19 +34,62 @@ be a fact about our generator rather than about those methods.
 **Across the 85 baseline recordings, do the same cells tend to participate together
 across events — and by how much more than chance?**
 
-## Why it is cheap
+The measurement is on the real recordings throughout. The generator appears twice below,
+once as the thing the answer would change and once as a name for the hypothesis being
+tested. Neither is a reason to run this on simulated data.
 
-The assessor already clusters co-active onsets and records which ROIs took part in each
-cluster. What is missing is one statistic over those memberships:
+## The null has to condition on the events
 
-- pairwise co-participation counts across events, against the circular-shift null the
-  assessor already builds — the null preserves each ROI's own rate, which is exactly
-  what a co-participation count must be corrected for, or the busiest cells look like an
-  assembly in every recording;
-- and a summary per slice: is participation drawn from a few recurring groups, or fresh
-  each time?
+The assessor's circular shift moves each ROI's train independently, so it destroys every
+trace of cross-ROI timing. Under it, co-participation sits at chance — and these
+recordings are coordinated, which is the one thing about them we already know and which
+survives even TTX (FOUNDATIONS §9). So every pair that appears together in a coordinated
+event clears that null, on essentially every slice. The test returns a resounding yes,
+the yes means *"these recordings are coordinated"*, and read as *"assemblies recur"* it
+walks directly into the trap the last section of this file warns about.
 
-No new instrument, no new null, no new human decision.
+**Condition on the events instead.** Hold the observed cluster times and each cluster's
+participant count fixed, and redraw *which* ROIs took part — preserving each ROI's own
+total participation count, so the busiest cells cannot manufacture an assembly. A
+margin-preserving shuffle of the event x ROI membership matrix (curveball / swap
+randomization) does this directly; the eigenvalue-against-Marchenko-Pastur route from the
+Lopes-dos-Santos and Peyrache line answers the same question with a different instrument
+and is worth running as a cross-check rather than a replacement.
+
+That null is exactly the assumption `rng.choice` makes. So the test on real membership
+reduces to *"do these recordings depart from uniform participation"* — which is the
+decision the answer feeds, stated as a hypothesis.
+
+## What it actually costs
+
+Small, but not free, and the first draft's "no new instrument, no new null" was wrong on
+both counts.
+
+- **Membership is not recorded anywhere.** `_clusters` in `src/bugarach/assess.py`
+  returns onset SD, participant *count*, peak coactivity and span. It gathers each
+  participating ROI's nearest onset and then keeps only the times — the ROI index is
+  discarded inside the loop. There is nothing yet to count co-participation over.
+- **That function is on the parity path**, running against a 1e-9 MATLAB reference and
+  called once per surrogate per K. Add membership additively — an optional return, or a
+  sibling function that shares the clustering — and do not reshape what is pinned.
+- **The corrected null reuses none of the assessor's surrogate machinery.** It is a new
+  randomization over a new matrix. The clustering is what gets reused, not the null.
+
+## Do the counting pass first
+
+This is the step that decides whether the question is answerable at all, and it comes
+before any statistic is written.
+
+Pairs grow as the square of the ROI count; co-participation observations grow only as
+clusters x pairs-per-cluster. At tens of clusters and dozens of ROIs, most pairs are
+never observed together even once, per-pair tests have no power, and *"not significant"*
+becomes indistinguishable from the honest negative this file wants to be able to publish.
+
+So count first, across all 85 baseline slices: clusters per slice, ROIs per slice, median
+participants per cluster. If the geometry supports the question, the design is **one
+scalar per slice** — dispersion of the pairwise counts, or the leading eigenvalue against
+its own null distribution — combined within group. Per-pair significance is not on the
+table at this corpus size.
 
 ## Why the answer matters either way
 
@@ -61,4 +111,23 @@ nothing it looks for, and the first reviewer to notice will be right.
 
 Baseline recordings only, as always — participation properties must not be taken from
 senktide or TTX windows. And group-dependence applies: if assembly structure differs by
-group, a pooled statistic hides it (FOUNDATIONS §9).
+group, a pooled statistic hides it (FOUNDATIONS §9). With 85 slices split across groups,
+the per-group n is around twenty, which is another reason the per-slice scalar is the
+unit and not the pair.
+
+Two more that bite this measurement specifically:
+
+- **The dead-ROI store is cleaned asymmetrically** — 67 of 85 slices carry a verdict and
+  the other 18 keep every ROI (FOUNDATIONS §9). A membership statistic is directly
+  sensitive to which cells are in the matrix, so record per slice whether it was judged.
+  Pooling the two silently would put the answer at the mercy of the exporter's coverage.
+- **This needs the real store mounted** — `BUGARACH_DATA_ROOT`. Nothing here runs on a
+  bare clone.
+
+## What this does and does not block
+
+It gates the assembly family only. The nearest neighbouring item — clean-rooming the
+Molter coactivity frame gate, recommended in
+[`2026-08-17-run-a-literature-method-on-our-corpus.md`](2026-08-17-run-a-literature-method-on-our-corpus.md)
+— detects population *events*, not assemblies, so it is unaffected by how this falls and
+remains the better move if a published-method comparison is wanted sooner.
