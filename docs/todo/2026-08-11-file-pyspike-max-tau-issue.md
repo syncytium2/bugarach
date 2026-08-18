@@ -12,8 +12,9 @@ for missing edge-neighbor ISIs — whenever all four surrounding ISIs exist,
 cap.
 
 **Verified unreported as of 2026-08-11** (searched their tracker: no issue
-touches the cap). **Re-verified 2026-08-17**: still nothing on the tracker (open
-items are #88 interval edges, #85 numpy 2.x), and `master`'s
+touches the cap). **Re-verified 2026-08-17**: still nothing on the tracker — #88
+(interval edges) is the only open *issue*; #85 (numpy 2.x) and #47 are open pull
+requests — and `master`'s
 `cython_get_tau.pyx` still never takes a minimum against `max_tau`. 0.9.0 is the
 newest version on PyPI and exists upstream as the `v0.9.0` tag (PR #87,
 2026-05-11); GitHub's Releases page still tops out at 0.8.0.
@@ -42,8 +43,9 @@ The pinned regression test they reference does not exist on `main` yet.
 
 `spike_sync` returns the same number for `max_tau` of 1.0, 0.25 and 1e-6 on
 trains whose mean ISI is 10 s. On those data a 1 µs coincidence window should
-report no coincidences at all; it reports SPIKE-Sync 0.33. On a real 30-train
-recording at a 0.25 s cap, the effect is a 4.5× overstatement of synchrony.
+report no coincidences at all; it reports SPIKE-Sync 0.33. On a 30-train
+synthetic recording at a 0.25 s cap, the effect is a 4.5× overstatement of
+synchrony.
 
 The cause is in `get_tau`: `max_tau` is used only as the initial value for each
 of the four neighboring ISIs, and each is overwritten as soon as that neighbor
@@ -118,11 +120,12 @@ for max_tau in (None, 1.0, 0.25, 1e-6):
    1e-06   0.3333
 ```
 
-Every finite `max_tau` returns exactly the same value. The `None` row differs,
-but that difference is not the cap working: it comes from the spikes at the start
-and end of each train, the only ones where a missing neighbor lets the default
-survive. So a finite cap is not quite the uncapped answer — it is the uncapped
-answer everywhere except the train edges.
+On these trains every finite `max_tau` returns exactly the same value. The `None`
+row differs, but that difference is not the cap working: it comes from the spikes
+at the start and end of each train, the only ones where a missing neighbor lets
+the default survive. So a finite cap is not quite the uncapped answer — it is the
+uncapped answer everywhere except the train edges, and on other data a cap can
+still move the number by that one route.
 
 This is also why casual testing misses the bug — with a single spike per train
 there are no neighbors, so the defaults survive, the cap applies, and the answer
@@ -143,9 +146,7 @@ API is wider than SPIKE-Sync alone:
 - `optimal_spike_train_sorting`
 
 On the same two trains as above, `spike_directionality` returns `-0.016667`
-uncapped and `0.0` for `max_tau` of 1.0, 0.25 and 1e-6 alike. On three such
-trains, `optimal_spike_train_sorting` returns a different permutation uncapped
-than it does for any finite cap.
+uncapped and `0.0` for `max_tau` of 1.0, 0.25 and 1e-6 alike.
 
 ### Diagnosis
 
@@ -206,22 +207,23 @@ if max_tau > 0.0:
 ### Expected behavior
 
 ```
-window = min(ISI before a, ISI after a, ISI before b, ISI after b) / 2   # 0.9.0
+window = min(ISI before a, ISI after a, ISI before b, ISI after b) / 2   # 0.9.0, at MRTS=0
 window = min(the above, max_tau)                                        # expected
 ```
 
 To be clear about provenance, since the published measure is deliberately
 parameter-free: Eq. 19 of Kreuz, Mulansky & Bozanic (*SPIKY*, J Neurophysiol
 113:3432, 2015) defines the coincidence window as the minimum of the four
-surrounding half-ISIs with no upper bound, and Satuvuori et al. (J Neurosci
-Methods 287:25, 2017) add MRTS as a *lower* bound. The cap is not in either
-paper.
+surrounding half-ISIs, with no global user-settable cap, and Satuvuori et al.
+(J Neurosci Methods 287:25, 2017) add MRTS as a *lower* bound. The cap is in
+neither paper.
 
 It is in all three implementations. cSPIKE, the reference implementation from
-Kreuz's group, takes the same parameter under the name `max_dist` — a documented
-argument of `SPIKEsynchro` and `AdaptiveSPIKEsynchro`, defaulting to 10^12 — and
-applies it in `AdaptiveCoincidence` as a second condition on top of the adaptive
-window:
+Kreuz's group, takes the same parameter as `max_dist` — an argument of nine
+public methods including `SPIKEsynchro` and `AdaptiveSPIKEsynchro`, defaulting
+to `10^12` through a private property (`SpikeTrainSet.m:187`) — and applies it in
+`AdaptiveCoincidence` as a second condition on top of the adaptive window
+(indentation normalized):
 
 ```cpp
 if( std::abs(spiketime-closestSpike) < TAUij )
@@ -229,7 +231,8 @@ if( std::abs(spiketime-closestSpike) < TAUij )
     if (((max_dist < 0) || (std::abs(spiketime-closestSpike) < max_dist)) && ...
 ```
 
-Requiring `|Δt| < TAUij` and `|Δt| < max_dist` is exactly requiring
+For `max_dist >= 0` — negatives being cSPIKE's disable sentinel — requiring
+`|Δt| < TAUij` and `|Δt| < max_dist` is exactly requiring
 `|Δt| < min(TAUij, max_dist)`, so cSPIKE's semantics and the patch below agree.
 PySpike's own docstring promises the same bound, and PySpike implemented it
 through 0.7.0. Only 0.8.0 onward disagrees.
@@ -254,8 +257,8 @@ smaller) — so the bound to apply is half of it. In
 +        return fmin(fmin(s1P, s2F), max_tau/2.)
 ```
 
-and the same in `pyspike/cython/python_backend.py`, which uses the builtin rather
-than `fmin`:
+and the same two returns in `pyspike/cython/python_backend.py`, which uses the
+builtin rather than `fmin` (sketch, not an appliable patch):
 
 ```diff
 -        return min(s1F, s2P)
