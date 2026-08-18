@@ -20,9 +20,10 @@ newest version on PyPI and exists upstream as the `v0.9.0` tag (PR #87,
 2026-05-11); GitHub's Releases page still tops out at 0.8.0.
 
 **The regression is older than the draft first said.** 0.7.0 still ends `get_tau`
-with `if max_tau > 0.0: m = fmin(m, max_tau)`; 0.8.0 — the MRTS release, October
-2023 — does not. So the cap has been inert for nearly three years, not since
-0.9.0.
+with `if max_tau > 0.0: m = fmin(m, max_tau)`; 0.8.0 — the MRTS release, tagged July
+2023 — does not. So the cap has been inert for over three years, not since
+0.9.0. (The GitHub *Releases* entry for 0.8.0 is dated October 2023; the tag and
+the PyPI sdist are July.)
 
 ## Process
 
@@ -31,7 +32,9 @@ Draft the issue text below; **Tony reviews before anything is posted**
 
 **Before posting**: land this branch, then repoint all **three** repo links
 (fixture, `sync.py`, `test_sync_detect.py`) from `main` to the landed commit SHA.
-The pinned regression test they reference does not exist on `main` yet.
+`test_sync_detect.py` resolves on `main` today, but the version there does not yet
+carry `test_pyspike_max_tau_is_still_inert` — the test that makes the link worth
+following.
 
 ---
 
@@ -42,8 +45,8 @@ The pinned regression test they reference does not exist on `main` yet.
 ### Summary
 
 `spike_sync` returns the same number for `max_tau` of 1.0, 0.25 and 1e-6 on
-trains whose mean ISI is 10 s. On those data a 1 µs coincidence window should
-report no coincidences at all; it reports SPIKE-Sync 0.33. On a 30-train
+trains whose mean ISI is about 10 s. On those data a 1 µs coincidence window
+should report no coincidences at all; it reports SPIKE-Sync 0.33. On a 30-train
 synthetic recording at a 0.25 s cap, the effect is a 4.5× overstatement of
 synchrony.
 
@@ -120,12 +123,13 @@ for max_tau in (None, 1.0, 0.25, 1e-6):
    1e-06   0.3333
 ```
 
-On these trains every finite `max_tau` returns exactly the same value. The `None`
-row differs, but that difference is not the cap working: it comes from the spikes
-at the start and end of each train, the only ones where a missing neighbor lets
-the default survive. So a finite cap is not quite the uncapped answer — it is the
-uncapped answer everywhere except the train edges, and on other data a cap can
-still move the number by that one route.
+Every `max_tau` below 1.27 s returns exactly the same value. The `None` row
+differs, but that difference is not the cap working on the body of the trains: it
+comes from the spikes at the start and end of each train, the only ones where a
+missing neighbor lets the default survive. That is also the one route by which a
+cap still moves the number here — the last spikes of these two trains are 1.2681 s
+apart, so `max_tau=1.27` recovers the uncapped 0.3500 while `max_tau=1.26` does
+not. Everywhere else the parameter is inert.
 
 This is also why casual testing misses the bug — with a single spike per train
 there are no neighbors, so the defaults survive, the cap applies, and the answer
@@ -197,7 +201,8 @@ promises it:
 > `max_tau` — Maximum coincidence window size. If 0 or `None`, the coincidence
 > window has no upper bound.
 
-The change landed in 0.8.0. 0.7.0's `get_tau` still ends with:
+The change landed in 0.8.0 (tagged July 2023). 0.7.0's `get_tau` still ends
+with:
 
 ```cython
 if max_tau > 0.0:
@@ -214,15 +219,16 @@ window = min(the above, max_tau)                                        # expect
 To be clear about provenance, since the published measure is deliberately
 parameter-free: Eq. 19 of Kreuz, Mulansky & Bozanic (*SPIKY*, J Neurophysiol
 113:3432, 2015) defines the coincidence window as the minimum of the four
-surrounding half-ISIs, with no global user-settable cap, and Satuvuori et al.
-(J Neurosci Methods 287:25, 2017) add MRTS as a *lower* bound. The cap is in
-neither paper.
+surrounding half-ISIs, and Satuvuori et al. (J Neurosci Methods 287:25, 2017)
+raise each side to at least a quarter of the MRTS before clipping it at half the
+adjacent ISI. No *global, user-settable* cap appears in either paper.
 
-It is in all three implementations. cSPIKE, the reference implementation from
+It appears in the implementations. cSPIKE, the reference implementation from
 Kreuz's group, takes the same parameter as `max_dist` — an argument of nine
 public methods including `SPIKEsynchro` and `AdaptiveSPIKEsynchro`, defaulting
 to `10^12` through a private property (`SpikeTrainSet.m:187`) — and applies it in
-`AdaptiveCoincidence` as a second condition on top of the adaptive window
+`AdaptiveCoincidence` as a second condition on top of the adaptive window, where
+`TAUij` is that window and the elided conjunct is an edge-correction guard
 (indentation normalized):
 
 ```cpp
@@ -231,7 +237,7 @@ if( std::abs(spiketime-closestSpike) < TAUij )
     if (((max_dist < 0) || (std::abs(spiketime-closestSpike) < max_dist)) && ...
 ```
 
-For `max_dist >= 0` — negatives being cSPIKE's disable sentinel — requiring
+For `max_dist > 0` — negatives being a disable sentinel — requiring
 `|Δt| < TAUij` and `|Δt| < max_dist` is exactly requiring
 `|Δt| < min(TAUij, max_dist)`, so cSPIKE's semantics and the patch below agree.
 PySpike's own docstring promises the same bound, and PySpike implemented it
@@ -373,8 +379,8 @@ Happy to send the fix as a PR with a regression test if that is useful.
   Recorded so a later session does not reopen it.
 - **After filing**, the issue URL belongs in `docs/FOUNDATIONS.md` (the PySpike
   bullet at line 49), `README.md` (twice — lines 41 and 76), `tools/sapper.py`'s
-  SAP003 message, and `src/bugarach/detectors/__init__.py`. All of them assert
-  the bug today with no upstream reference — **and all five call it "PySpike
-  0.9.0's" bug, which this report now shows is wrong: it broke in 0.8.0.** Fix the
-  version in the same pass as the URL.
+  SAP003 message, `src/bugarach/detectors/__init__.py`, and the NOTE comment in
+  `tests/test_sync_detect.py`. All six assert the bug today with no upstream
+  reference — **and all six call it "PySpike 0.9.0's" bug, which this report now
+  shows is wrong: it broke in 0.8.0.** Fix the version in the same pass as the URL.
 - The repo links assume bugarach stays public at that path.
