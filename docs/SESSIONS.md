@@ -60,6 +60,13 @@ Template:
 
 ## Active
 
+### Mac/park-infra-ideas — two infrastructure ideas parked in the darkroom
+- **Status:** DONE 2026-08-18 — **claim released**
+- **Writes:** `<darkroom>/ideas/` — **created it**. Two files, plus a README.
+- **Claims:** `<darkroom>/ideas/` only. Nothing in `bugarach/`, `constellation/`, `needs/`.
+- **Notes:** parked rather than built, at Tony's direction — the repo keeps a todo
+  pointing at them so they are findable without being work in flight.
+
 ### Mac/needs-mechanism-gate — a cross-repo proposal in a NEW shared darkroom folder
 - **Status:** DONE 2026-08-18 — **claim released**, both files written
 - **Writes:** `<darkroom>/needs/` — **created it**. One file:
