@@ -578,14 +578,15 @@ function draw(rec, data) {
       const wide = Math.max(1, b - a);
       g.fillStyle = wash(w.label);
       g.fillRect(a, top, wide, bot - top);
-      // What the gap was actually for — keeping two washes from bleeding into
-      // one another — is done by a rule ON the boundary instead of a hole in it.
-      // It is drawn in the incoming window's ink, so it reads as "the period
-      // changes here" rather than as an absence.
-      if (x0 > padL + 0.5) {
-        g.fillStyle = ink(w.label);
-        g.fillRect(Math.round(a), top, 1, bot - top);
-      }
+      // NOTHING VERTICAL IS DRAWN ACROSS THE LANES, and that is not a
+      // preference. In a raster a vertical line is a reading: many ROIs firing
+      // at once, which is the coordinated event this whole project exists to
+      // detect. A rule spanning every lane to mark a boundary draws a synthetic
+      // one, in the picture a lab uses to judge whether it has real ones.
+      //
+      // The boundary needs no help. The washes abut exactly and are different
+      // hues, so the colour changes at the boundary and nowhere else, and the
+      // rail above changes with them.
       // a saturated rail along the top of the band. The wash has to stay pale
       // enough to keep the marks readable, which leaves it too pale to identify;
       // the rail is the same hue at full strength and costs 3px of raster.
