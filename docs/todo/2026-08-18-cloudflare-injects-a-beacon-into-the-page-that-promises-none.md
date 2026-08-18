@@ -1,8 +1,8 @@
 ---
-status: open
+status: done
 opened: 2026-08-18
 area: site
-needs: a Cloudflare dashboard toggle — not fixable from this repo
+closed: 2026-08-18 — beacon off, and the gap is now a check
 ---
 
 # Cloudflare injects an analytics beacon into the one page that promises none
