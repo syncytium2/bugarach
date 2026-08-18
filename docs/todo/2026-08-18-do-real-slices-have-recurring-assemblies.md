@@ -80,10 +80,16 @@ both counts.
   sibling function that shares the clustering — and do not reshape what is pinned.
 - **The corrected null reuses none of the assessor's surrogate machinery.** It is a new
   randomization over a new matrix. The clustering is what gets reused, not the null.
-- **Both nulls and both statistics already exist** in `tools/assembly_power.py`, written
-  against simulated membership and validated there — margins conserved exactly, size
-  correct at 0.05, positive control passing under the null that has one. Measuring the
-  real corpus is wiring real membership into them, not writing them.
+- **Done.** `bugarach.assembly` holds both nulls, both statistics and the two-null
+  verdict; `tools/assembly_power.py` imports them rather than keeping a copy, so the
+  instrument the power curve validated is the one the corpus is measured with. The
+  assessor records `Assessment.members` (observed clusters only) at unchanged 1e-9 MATLAB
+  parity, and `tools/assess_archive.py --assemblies` runs the question over a store.
+- **One thing the build caught that the design had not.** The verdict takes the smaller
+  of two p-values per null, and a minimum of two tests is a third test with a larger size:
+  uncorrected it called 2 of 8 uniformly generated recordings an assembly. Bonferroni over
+  the two statistics fixed it — 22 of 24 now read `no-assembly`, and a test pins that rate,
+  because the negative result is the thing this exercise exists to be able to publish.
 
 ## What the corpus can actually see
 
@@ -148,7 +154,20 @@ sufficient alone and the pair is interpretable:
 The spec's medians are enough to size the test, not to run it. When the store is mounted:
 the per-slice *distribution* of ROI count and cluster count, since a slice well below the
 median may be individually unpowered and should be reported as such rather than as a
-negative.
+negative. `assess_assemblies` already refuses rather than guesses — under four clusters it
+returns `defined=False` and the verdict `undefined`, so "we could not look" can never be
+read as "we looked and found nothing".
+
+## All that is left is the store
+
+    python tools/assess_archive.py --store <archive> --out <dir> --assemblies
+
+Everything above this line runs on a bare clone and is tested. This command needs
+`BUGARACH_DATA_ROOT` and the machine that holds it. It prints the verdict tally and a
+pooled combination per K — **pooled, and labelled as such**, because the group of each
+slice is not carried through the assessor yet and FOUNDATIONS §9 forbids quoting an
+across-group number on its own. Splitting by group is the last piece, and it is a
+plumbing job rather than a measurement one.
 
 ## Why the answer matters either way
 

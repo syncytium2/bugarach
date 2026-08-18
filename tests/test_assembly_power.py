@@ -38,11 +38,11 @@ def test_geometry_comes_from_the_derived_spec():
 def test_trade_conserves_both_margins():
     """A curveball trade may move membership but may not change any row or column
     sum — which is the whole reason the null can be read as 'beyond rate'."""
-    rng = np.random.default_rng(0)
+    rng = np.random.RandomState(0)
     M = _slice(rng, 6, 0.5)
     masks = ap._to_masks(M)
     for _ in range(400):
-        i, j = rng.integers(0, GEO["n_events"], 2)
+        i, j = rng.randint(0, GEO["n_events"], 2)
         if i != j:
             ap._trade(rng, masks, int(i), int(j))
     S = ap._from_masks(masks, GEO["n_roi"])
@@ -55,7 +55,7 @@ def test_trade_conserves_both_margins():
 def test_size_is_nominal_with_nothing_planted(which):
     """Uniform participation is the null hypothesis, so both tests must reject it
     at about alpha and not more."""
-    rng = np.random.default_rng(11)
+    rng = np.random.RandomState(11)
     fn = ap.pvalues if which == "margin" else ap.pvalues_uniform
     ps = np.array([fn(rng, _slice(rng, 6, 0.0), 100)[0] for _ in range(60)])
     assert np.mean(ps < 0.05) < 0.20, f"size {np.mean(ps < 0.05):.2f} at alpha .05"
@@ -63,7 +63,7 @@ def test_size_is_nominal_with_nothing_planted(which):
 
 def test_uniform_null_passes_the_full_strength_control():
     """A test that cannot fire on a saturated assembly is not measuring anything."""
-    rng = np.random.default_rng(5)
+    rng = np.random.RandomState(5)
     ps = np.array([ap.pvalues_uniform(rng, _slice(rng, 6, 1.0), 100)[0]
                    for _ in range(20)])
     assert np.mean(ps < 0.05) > 0.8
@@ -77,7 +77,7 @@ def test_double_margin_null_is_blind_to_a_saturated_assembly():
     left for a margin-preserving shuffle to destroy. Power falls back to chance —
     not monotonic in the quantity being measured.
     """
-    rng = np.random.default_rng(5)
+    rng = np.random.RandomState(5)
     ps = np.array([ap.pvalues(rng, _slice(rng, 6, 1.0), 100)[0]
                    for _ in range(20)])
     assert np.mean(ps < 0.05) < 0.3, (
@@ -87,7 +87,7 @@ def test_double_margin_null_is_blind_to_a_saturated_assembly():
 
 def test_both_nulls_find_a_mid_strength_assembly():
     """Between the two failure modes, both nulls work and agree."""
-    rng = np.random.default_rng(9)
+    rng = np.random.RandomState(9)
     a = np.array([ap.pvalues(rng, _slice(rng, 5, 0.5), 100)[0] for _ in range(20)])
     b = np.array([ap.pvalues_uniform(rng, _slice(rng, 5, 0.5), 100)[0]
                   for _ in range(20)])
