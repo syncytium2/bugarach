@@ -52,6 +52,10 @@ DATA = {
     # key silently won, the tokens resolved against the wrong file, and the build
     # reported them as unresolved paths. Store names are words from here.
     "ablation": HERE / "tube_ablation.json",
+    # The K scan. "K=4 halves the event rate" travelled through three
+    # documents, a figure and a published page before anyone divided
+    # 0.0952 by 0.3500 and got 0.27.
+    "spec": HERE / "generator_spec.json",
 }
 
 

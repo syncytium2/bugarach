@@ -32,7 +32,8 @@ and 2.45 s to detect for a fifth of the F1 — do not put it in a default path.
 ## Where a human is required, and it is not the modelling
 
 **Stage 2 needs a person to choose K**, the cluster size the assessment runs at. K=3
-was chosen for the published corpus; **K=4 halves the resulting event rate** and builds
+was chosen for the published corpus; **K=4 cuts the cluster rate to roughly a quarter**
+(0.095 against 0.350 per minute) and builds
 a materially different benchmark. `derive_spec.py` refuses to choose and ships the whole
 scan beside the choice, deliberately.
 
