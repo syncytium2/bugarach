@@ -111,12 +111,21 @@ def test_the_check_can_fire_in_every_direction(tmp_path):
     assert hooks_state(str(real), tmp_path)[0] == "ok", "an absolute path is legal too"
 
 
+# `bool(...)` is load-bearing: pytest treats a STRING skipif condition as a Python
+# expression to eval, so the bare `os.environ.get("CI")` this started as passed
+# locally under `CI=1` (evals to 1) and errored in GitHub Actions, where CI is
+# "true" and evaluating it raises NameError. A skip condition that cannot be
+# evaluated is reported as an error, not a skip — so the guard against a false
+# failure became one.
+IN_CI = bool(os.environ.get("CI") or os.environ.get("GITHUB_ACTIONS"))
+NO_CHECKOUT = shutil.which("git") is None or not (REPO / ".git").exists()
+
+
 @pytest.mark.skipif(
-    os.environ.get("CI") or os.environ.get("GITHUB_ACTIONS"),
+    IN_CI,
     reason="hooks never run in CI; branch protection and the CI sapper job cover it there")
 @pytest.mark.skipif(
-    shutil.which("git") is None or not (REPO / ".git").exists(),
-    reason="not a git checkout, so there is no clone to configure")
+    NO_CHECKOUT, reason="not a git checkout, so there is no clone to configure")
 def test_this_clone_has_its_commit_gates_installed():
     state, msg = hooks_state(_configured_hooks_path(), REPO)
     assert state == "ok", msg
