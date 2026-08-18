@@ -34,17 +34,16 @@ carries the July commit date and gives the right answer.
 Draft the issue text below; **Tony reviews before anything is posted**
 (external communication). After filing, add the issue URL here and flip status.
 
-**Before posting**: land this branch, then repoint all **three** repo links
-(fixture, `sync.py`, `test_sync_detect.py`) from `main` to the landed commit SHA.
-`test_sync_detect.py` resolves on `main` today, but the version there does not yet
-carry `test_pyspike_max_tau_is_still_inert` — the test that makes the link worth
-following.
+**Before posting**: done — the branch landed as `6eafdb6` and all three repo links
+(fixture, `sync.py`, `test_sync_detect.py`) are pinned to that SHA, so they keep
+showing the tree the report describes, including
+`test_pyspike_max_tau_is_still_inert`.
 
 **When pasting**: the `**Title:**` line is the issue title, not body. Unwrap every
 wrapped run of prose first — every paragraph, both bulleted lists, and the
-docstring blockquote — because this file is hard-wrapped near 80 columns and GitHub treats
-each newline in an issue body as a line break, so wrapped text ships as a stack of
-short ragged lines. Leave the fenced blocks and the tables exactly as they are.
+docstring blockquote — because this file is hard-wrapped near 80 columns and
+GitHub treats each newline in an issue body as a line break, so wrapped text ships
+as a stack of short ragged lines. Leave the fenced blocks and the tables exactly as they are.
 
 ---
 
@@ -381,7 +380,7 @@ diverge wherever it binds.
 Here is what it costs on a synthetic 30-train recording — simulated calcium event
 times, 2670 events at 2362 distinct times after dropping within-train duplicates,
 median ISI 31 s — from
-[our committed test fixture](https://github.com/syncytium2/bugarach/blob/main/tests/fixtures/synth_fastcal_s1.mat).
+[our committed test fixture](https://github.com/syncytium2/bugarach/blob/6eafdb69cd3c3ed4694dcdddcf5978aa84af6636/tests/fixtures/synth_fastcal_s1.mat).
 Both columns are `pyspike.spike_sync`, so this is PySpike against itself; the
 patched column comes from the pure-Python backend with the diff above applied:
 
@@ -397,9 +396,9 @@ reproduces the patched column to the digit — corroboration rather than the
 measurement, since it implements the same semantics the patch restores.
 
 The port and the test that pins this bug:
-[`sync.py`](https://github.com/syncytium2/bugarach/blob/main/src/bugarach/detectors/sync.py)
+[`sync.py`](https://github.com/syncytium2/bugarach/blob/6eafdb69cd3c3ed4694dcdddcf5978aa84af6636/src/bugarach/detectors/sync.py)
 and
-[`test_sync_detect.py`](https://github.com/syncytium2/bugarach/blob/main/tests/test_sync_detect.py).
+[`test_sync_detect.py`](https://github.com/syncytium2/bugarach/blob/6eafdb69cd3c3ed4694dcdddcf5978aa84af6636/tests/test_sync_detect.py).
 
 ### Environment
 
