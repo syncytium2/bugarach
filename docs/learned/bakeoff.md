@@ -27,7 +27,7 @@
 
 | detector | F1 (mean of 4 folds) | fold range | recall | precision | fit s | detect s | params | probe firings |
 |---|---|---|---|---|---|---|---|---|
-| **centre−surround (learned)** | **0.668 ± 0.061** | 0.58–0.73 | 0.775 | 0.590 | 5.6 | **0.014** | 1,149 | 15.8 |
+| **center−surround (learned)** | 0.668 ± 0.061 | 0.58–0.73 | 0.775 | 0.590 | 5.6 | 0.014 | 1,149 | 15.8 |
 | CoactDetect | 0.651 ± 0.044 | 0.61–0.71 | 0.767 | 0.572 | 1.1 | 0.060 | — | 1.2 |
 | LoCo | 0.638 ± 0.053 | 0.57–0.70 | 0.733 | 0.569 | 4.4 | 0.245 | — | 2.5 |
 | rate+context | 0.571 ± 0.085 | 0.46–0.65 | 0.700 | 0.485 | 0.2 | 0.005 | — | 34.8 |
@@ -102,7 +102,7 @@ coordination should show.
    denominator, so the column above is a diagnostic and not a penalty
    (`docs/todo/2026-08-16-promiscuity-probe-cannot-fail.md`). Read it as a
    promiscuity *report*: CICADA fires 215 times in a block containing nothing;
-   centre−surround fires 16; CoactDetect fires 1.
+   center−surround fires 16; CoactDetect fires 1.
 4. **K=3 was chosen by a human and the choice moves the corpus.** The scan is in
    `generator_spec.json`; K=4 cuts the cluster rate to roughly a quarter of K=3's
    (0.095 against 0.350 per minute) and would build a different

@@ -54,7 +54,7 @@ measure. Withholding it is what lets the effect come back as a result.
 That loop has been run end to end exactly once, on this lab's own eighty-five
 recordings — the bake-off below is its output. No outside lab has taken it round
 yet, so read the last step as the shape of the thing rather than a road already
-travelled.
+traveled.
 
 ## What is built
 
@@ -131,7 +131,7 @@ only by finding everything and inventing nothing.
 
 | detector | F1 (mean of 4 folds) | fold range | detect s | params |
 | --- | --- | --- | --- | --- |
-| **centre−surround (learned)** | **0.668 ± 0.061** | 0.58–0.73 | **0.014** | 1,149 |
+| **center−surround (learned)** | 0.668 ± 0.061 | 0.58–0.73 | 0.014 | 1,149 |
 | CoactDetect | 0.651 ± 0.044 | 0.61–0.71 | 0.060 | — |
 | LoCo | 0.638 ± 0.053 | 0.57–0.70 | 0.245 | — |
 | rate+context | 0.571 ± 0.085 | 0.46–0.65 | 0.005 | — |
@@ -150,7 +150,9 @@ figure draws every fold so that is visible rather than hidden behind a bar. The
 claim the numbers support is that a 1,149-parameter network **reaches the level of
 the best hand-written detectors here**, having been given no more information than
 they were — and then detects four times faster than CoactDetect and seventeen
-times faster than LoCo, from 5.6 seconds of training.
+times faster than LoCo, from 5.6 seconds of training. It is **not** the fastest
+detector here: rate+context scans the same fold in 0.005 s, roughly three times
+quicker again, and sits 0.10 of F1 below.
 
 ⚠ **What this does not establish.** Eight recordings, four folds, one training run
 each — the intervals above are fold ranges, not confidence intervals, and seed
@@ -191,7 +193,7 @@ Three groups already train networks whose output is a population event with time
 — [DOSED](https://github.com/Dreem-Organization/dosed) on sleep EEG,
 [cnn-ripple](https://github.com/PridaLab/cnn-ripple) on hippocampal LFP, and SEED
 on sleep spindles. None works on calcium imaging, and all learn from events a
-human expert labelled. What differs here is the substrate and where the answers
+human expert labeled. What differs here is the substrate and where the answers
 come from: the events are planted in a simulation fitted to one lab's own
 recordings, so the ground truth is exact and the benchmark is rebuilt per lab.
 The classical side of the same problem is
