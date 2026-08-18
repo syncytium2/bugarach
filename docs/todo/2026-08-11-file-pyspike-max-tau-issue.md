@@ -172,16 +172,16 @@ flat response:
 `pyspike/cython/cython_get_tau.pyx` (same logic in
 `pyspike/cython/python_backend.py`). Note that the parameter named `max_tau`
 here receives `true_max` — twice the user's cap, or the recording span, whichever
-is smaller — which matters for the patch below. Annotations marked `<--`:
+is smaller — which matters for the patch below. Annotations marked `<-`:
 
 ```cython
-cdef double mF1 = max_tau        # <-- only a default
+cdef double mF1 = max_tau        # <- only a default
 cdef double mP1 = max_tau
 cdef double mF2 = max_tau
 cdef double mP2 = max_tau
 
 if i < len(spikes1)-1 and i > -1:
-    mF1 = (spikes1[i+1]-spikes1[i])      # <-- overwritten, uncapped
+    mF1 = (spikes1[i+1]-spikes1[i])      # <- overwritten, uncapped
 if j < len(spikes2)-1 and j > -1:
     mF2 = (spikes2[j+1]-spikes2[j])
 if i > 0:
@@ -191,7 +191,7 @@ if j > 0:
 
 mF1, mF2, mP1, mP2 = mF1/2., mF2/2., mP1/2., mP2/2.
 ...
-return fmin(s1F, s2P)            # <-- max_tau never enters
+return fmin(s1F, s2P)            # <- max_tau never enters
 ```
 
 With the default `MRTS=0` (minimum relevant time scale), `Interpolate(a, b, 0)`
@@ -240,10 +240,10 @@ parameter-free:
 
 | source | a global cap? | what it specifies |
 | --- | --- | --- |
-| Quian Quiroga, Kreuz & Grassberger 2002, Eq. 4 (Phys Rev E 66:041904) | **sanctioned** | defines the adaptive window, then: *"…one could also make other choices, e.g. by taking τij smaller than in Eq.(4) or by using τ′ij=min{τ,τij}."* |
-| Kreuz, Mulansky & Bozanic 2015, Eq. 19 | no | window = min of the four surrounding half-ISIs |
-| Satuvuori et al. 2017, Eqs. 17–18 | no | raises each side to at least a quarter of the MRTS, then clips at half the adjacent ISI |
-| **Kreuz, Satuvuori, Pofahl & Mulansky 2017** (New J Phys 19:043028) | **yes — `τmax`** | *"For some applications it might be appropriate to additionally introduce a maximum coincidence window τmax as a parameter."* Used at 9 months for the El Niño data in §3.3 |
+| Quian Quiroga, Kreuz & Grassberger 2002, Eq. 4 ([Phys Rev E 66:041904](https://doi.org/10.1103/PhysRevE.66.041904)) | **sanctioned** | defines the adaptive window, then: *"…one could also make other choices, e.g. by taking τij smaller than in Eq.(4) or by using τ′ij=min{τ,τij}."* |
+| Kreuz, Mulansky & Bozanic 2015, Eq. 19 ([J Neurophysiol 113:3432](https://doi.org/10.1152/jn.00848.2014)) | no | window = min of the four surrounding half-ISIs |
+| Satuvuori et al. 2017, Eqs. 17–18 ([J Neurosci Methods 287:25](https://doi.org/10.1016/j.jneumeth.2017.05.028)) | no | raises each side to at least a quarter of the MRTS, then clips at half the adjacent ISI |
+| **Kreuz, Satuvuori, Pofahl & Mulansky 2017** ([New J Phys 19:043028](https://doi.org/10.1088/1367-2630/aa68c3)) | **yes — `τmax`** | *"For some applications it might be appropriate to additionally introduce a maximum coincidence window τmax as a parameter."* Applied to the El Niño data in §3.3, with the 9-month value given in appendix B |
 | cSPIKE | yes — `max_dist` | `\|Δt\| < TAUij` **and** `\|Δt\| < max_dist`, plus an edge guard |
 | PySpike ≤ 0.7.0 | yes — `max_tau` | `if max_tau > 0.0: m = fmin(m, max_tau)` |
 | PySpike ≥ 0.8.0 | **no** | seeds four ISI slots, all overwritten for an interior spike |
@@ -275,15 +275,14 @@ result silently to zero. And in `AdaptiveCoincidence` itself `max_dist = 0` admi
 exactly the simultaneous spikes — not through the strict `<`, which admits nothing
 at zero, but through a fast path that returns 1 for ties before either condition is
 evaluated. In PySpike `max_tau = 0` means the opposite, "no cap", so porting the
-parameter across unchanged gives the wrong answer at the default value. PySpike has
-its own tie fast path that never calls `get_tau`, so the patch below leaves exact
-ties alone.
+parameter across unchanged gives the wrong answer at the default value. The patch
+below leaves exact ties alone either way: the bound it introduces is `true_max/2`,
+strictly positive for any positive cap, so `|Δt| = 0 < tau` still holds.
 
 ### Suggested fix
 
-`get_tau`'s parameter named `max_tau` now receives `true_max` — twice the user's
-cap, or the recording span, whichever is smaller — so the bound to apply is half
-of it. In
+As noted above, `get_tau`'s `max_tau` parameter receives `true_max`, so the bound
+to apply is half of it. In
 `pyspike/cython/cython_get_tau.pyx`:
 
 ```diff
@@ -303,7 +302,8 @@ of it. In
 ```
 
 and the same two returns in `pyspike/cython/python_backend.py`, which uses the
-builtin rather than `fmin`:
+builtin rather than `fmin` (both lines are unique in that file; this one is not a
+`git apply`-able hunk):
 
 ```diff
 -        return min(s1F, s2P)
@@ -319,10 +319,12 @@ Those two files cover every caller in both backends —
 No extra `max_tau > 0` guard is needed. When the user passes 0 or `None` the
 callers set `true_max = t_end - t_start`, so the new term bounds the window at half
 the recording span — which is exactly what 0.7.0 did, since it seeded `m` with
-`interval` before halving. The two are the same function: I reconstructed 0.7.0's
-`get_tau` and compared it against the patched 0.9.0 over 128,282 windows at seven
-cap values, half of them with spikes deliberately outside `[t_start, t_end]`, and
-found no disagreement.
+`interval` before halving. At the default `MRTS = 0` the two are the same function:
+0.7.0 computes `min(interval, existing ISIs) / 2` then clamps at `max_tau`, and the
+patched 0.9.0 computes `min(existing ISIs / 2)` then clamps at
+`true_max/2 = min(interval/2, max_tau)`. Both reduce to
+`min(interval/2, ISI/2 over existing neighbors, max_tau)`. I also checked it
+numerically, including with spikes outside `[t_start, t_end]`.
 
 That last part is worth stating explicitly, because it is the one case where the
 patch changes a currently-uncapped answer: with `Reconcile=False` a half-ISI can
@@ -353,8 +355,8 @@ We hit this porting the cSPIKE synchronization stack to Python and cross-checkin
 the result against both cSPIKE reference output and PySpike: the two agreed
 uncapped and disagreed at every cap.
 
-Here is what it costs on a real recording — 30 trains, 2670 events, median ISI
-31 s, from
+Here is what it costs on a real recording — 30 trains, 2670 distinct event times,
+median ISI 31 s, from
 [a public fixture](https://github.com/syncytium2/bugarach/blob/main/tests/fixtures/synth_fastcal_s1.mat).
 Both columns are `pyspike.spike_sync`, so this is PySpike against itself:
 
@@ -365,9 +367,9 @@ Both columns are `pyspike.spike_sync`, so this is PySpike against itself:
 | 1 µs | 0.3119 | 0.0156 |
 
 At a 0.25 s cap the shipped code reports 4.5× the synchrony the capped definition
-allows. Our independent port, which matches cSPIKE reference output to 1e-9 at
-that cap, produces the patched column's numbers to the digit — which is the
-corroboration rather than the measurement.
+allows. Our own port, which matches cSPIKE reference output to 1e-9 at that cap,
+reproduces the patched column to the digit — corroboration rather than the
+measurement, since it implements the same semantics the patch restores.
 
 The port and the test that pins this bug:
 [`sync.py`](https://github.com/syncytium2/bugarach/blob/main/src/bugarach/detectors/sync.py)
