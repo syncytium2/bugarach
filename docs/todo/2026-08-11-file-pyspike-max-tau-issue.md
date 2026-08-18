@@ -24,9 +24,10 @@ separate Cython copies of `get_tau`, each ending with
 `if max_tau > 0.0: m = fmin(m, max_tau)`. 0.8.0 — the MRTS release, on PyPI
 2023-07-14 — consolidated them into one shared `cython_get_tau.pyx` and dropped
 the clamp from all three at once. So the cap has been inert for over three years
-counting from that release, not since 0.9.0. Don't date it from the git tag: the
-0.8.0 tag was added months later, after issue #71 pointed out it was missing, so
-the tag and the Releases entry both read October 2023.
+counting from that release, not since 0.9.0. Don't date it from the GitHub
+*Releases* entry, which reads 2023-10-13 — three months late, because the tag was
+only pushed after issue #71 asked for it. The tag itself is lightweight, so it
+carries the July commit date and gives the right answer.
 
 ## Process
 
@@ -39,10 +40,11 @@ Draft the issue text below; **Tony reviews before anything is posted**
 carry `test_pyspike_max_tau_is_still_inert` — the test that makes the link worth
 following.
 
-**When pasting**: the `**Title:**` line is the issue title, not body. Unwrap the
-prose paragraphs first — this file is hard-wrapped at 80 columns and GitHub treats
-every newline in an issue body as a line break, so wrapped prose ships as a stack
-of short ragged lines. Leave the fenced blocks and tables exactly as they are.
+**When pasting**: the `**Title:**` line is the issue title, not body. Unwrap every
+wrapped run of prose first — paragraphs, the Scope bullets, and the docstring
+blockquote — because this file is hard-wrapped near 80 columns and GitHub treats
+each newline in an issue body as a line break, so wrapped text ships as a stack of
+short ragged lines. Leave the fenced blocks and the tables exactly as they are.
 
 ---
 
@@ -159,8 +161,9 @@ API is wider than SPIKE-Sync alone:
   `spike_directionality_values`
 - `spike_train_order`, `spike_train_order_bi`, `spike_train_order_multi`, and
   the three corresponding `..._profile` functions
-- `optimal_spike_train_sorting` (via `spike_directionality_matrix`; note its
-  simulated annealing is unseeded, so compare its cost, not its permutation)
+- `optimal_spike_train_sorting` (via `spike_directionality_matrix`; its annealing
+  uses libc `rand()`, not seedable from Python, so compare the indicator it
+  returns rather than the permutation)
 
 `spike_directionality` on the same two trains as the sweep above shows the same
 flat response:
@@ -209,7 +212,7 @@ second argument — the half-ISI on the side facing the other spike — and rais
 MRTS can only move its result up toward that bound, never down. So no MRTS value
 bounds the window from above, and there is no way to express a hard cap with it.
 
-The behavior changed in 0.8.0 (PyPI, 2023-07-14), which replaced three per-file
+The behavior changed in 0.8.0 (PyPI, 2023-07-14 UTC), which replaced three per-file
 copies of `get_tau` with one shared implementation. In 0.7.0 the seed and the cap
 were separate parameters and the cap was applied at the end — `max_tau` there is
 the user's raw value, not today's `true_max`:
@@ -237,8 +240,10 @@ of them should move.
 ### Expected behavior
 
 ```
-window = min(ISI before a, ISI after a, ISI before b, ISI after b) / 2   # 0.8.0 on, at MRTS=0
-window = min(the above, max_tau)                                        # expected
+# 0.8.0 on, at MRTS=0, for a spike interior to its train
+window = min(ISI before a, ISI after a, ISI before b, ISI after b) / 2
+# expected
+window = min(the above, max_tau)
 ```
 
 Where the parameter comes from, since the measure itself is deliberately
@@ -248,7 +253,7 @@ parameter-free:
 | --- | --- | --- |
 | Quian Quiroga, Kreuz & Grassberger 2002, Eq. 4 ([Phys Rev E 66:041904](https://doi.org/10.1103/PhysRevE.66.041904)) | **sanctioned** | defines the adaptive window, then: *"…one could also make other choices, e.g. by taking τij smaller than in Eq.(4) or by using τ′ij=min{τ,τij}."* |
 | Kreuz, Mulansky & Bozanic 2015, Eq. 19 ([J Neurophysiol 113:3432](https://doi.org/10.1152/jn.00848.2014)) | no | window = min of the four surrounding half-ISIs |
-| Satuvuori et al. 2017, Eqs. 17–18 ([J Neurosci Methods 287:25](https://doi.org/10.1016/j.jneumeth.2017.05.028)) | no | raises each side to at least a quarter of the MRTS, then clips at half the adjacent ISI |
+| Satuvuori et al. 2017, Eqs. 17–18 ([J Neurosci Methods 287:25](https://doi.org/10.1016/j.jneumeth.2017.05.028)) | no | raises each side toward a quarter of the MRTS, then clips at half the adjacent ISI |
 | **Kreuz, Satuvuori, Pofahl & Mulansky 2017** ([New J Phys 19:043028](https://doi.org/10.1088/1367-2630/aa68c3)) | **yes — `τmax`** | *"For some applications it might be appropriate to additionally introduce a maximum coincidence window τmax as a parameter."* Applied to the El Niño data in §3.3, with the 9-month value given in appendix B |
 | cSPIKE | yes — `max_dist` | `\|Δt\| < TAUij` **and** `\|Δt\| < max_dist`, plus an edge guard |
 | PySpike ≤ 0.7.0 | yes — `max_tau` | `if max_tau > 0.0: m = fmin(m, max_tau)` |
@@ -364,10 +369,12 @@ We hit this porting the cSPIKE synchronization stack to Python and cross-checkin
 the result against both cSPIKE reference output and PySpike: the two agreed
 uncapped and disagreed at every cap.
 
-Here is what it costs on a real recording — 30 trains, 2670 events at 2362
-distinct times, median ISI 31 s, from
+Here is what it costs on a synthetic 30-train recording — simulated calcium event
+times, 2670 events at 2362 distinct times after dropping within-train duplicates,
+median ISI 31 s — the project's committed test fixture, from
 [a public fixture](https://github.com/syncytium2/bugarach/blob/main/tests/fixtures/synth_fastcal_s1.mat).
-Both columns are `pyspike.spike_sync`, so this is PySpike against itself:
+Both columns are `pyspike.spike_sync`, so this is PySpike against itself; the
+patched column comes from the pure-Python backend with the diff below applied:
 
 | `max_tau` | as shipped | with the patch |
 | --- | --- | --- |
@@ -468,7 +475,8 @@ Happy to send the fix as a PR with a regression test if that is useful.
 - **Unverified here** ⚠: whether upstream's own test suite stays green under the
   patch. The one `max_tau` assertion does — I ran it, patched and unpatched, and
   the issue says so. The other 11 test files were not executed against a patched
-  build — 13 test files ship in the 0.9.0 sdist, so this is a small concrete job
+  build — 13 test files ship in the 0.9.0 sdist and one has been exercised, so
+  this is a small concrete job
   before offering the PR, and `test_reconcile.py` is the one to watch given the
   `Reconcile=False` behavior change the issue now discloses. Note also that every
   "with the patch" number was produced by the pure-Python backend; nothing has been
