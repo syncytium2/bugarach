@@ -41,8 +41,8 @@ carry `test_pyspike_max_tau_is_still_inert` — the test that makes the link wor
 following.
 
 **When pasting**: the `**Title:**` line is the issue title, not body. Unwrap every
-wrapped run of prose first — paragraphs, the Scope bullets, and the docstring
-blockquote — because this file is hard-wrapped near 80 columns and GitHub treats
+wrapped run of prose first — every paragraph, both bulleted lists, and the
+docstring blockquote — because this file is hard-wrapped near 80 columns and GitHub treats
 each newline in an issue body as a line break, so wrapped text ships as a stack of
 short ragged lines. Leave the fenced blocks and the tables exactly as they are.
 
@@ -144,8 +144,8 @@ it returns the uncapped 0.3500. (`max_tau=0`, like `None`, means no cap.)
 The pair under test has to be interior in *both* trains before all four defaults
 are overwritten, so a train with fewer than three spikes never has an interior
 spike and the cap still applies there. That is worth knowing for the test suite:
-the only `max_tau` assertion in the suite (`test/test_distance.py:184` — the other
-grep hit, `test_MRTS.py:20`, is an unused local) scores a three-spike train against
+the only `max_tau` assertion in the suite (`test/test_distance.py:184` — the only other
+hit outside that file, `test_MRTS.py:20`, is an unused local) scores a three-spike train against
 `SpikeTrain([2.1], 4.0)`, and the one-spike partner is enough to keep the cap
 working. The fix proposed below leaves that assertion green — I ran it.
 
@@ -180,8 +180,8 @@ flat response:
 
 `pyspike/cython/cython_get_tau.pyx` (same logic in
 `pyspike/cython/python_backend.py`). Note that the parameter named `max_tau`
-here receives `true_max` — twice the user's cap, or the recording span, whichever
-is smaller — which matters for the patch below. Annotations marked `<-`:
+here receives `true_max` — the recording span, or twice the user's cap when one
+was given and it is smaller — which matters for the patch below. Annotations marked `<-`:
 
 ```cython
 cdef double mF1 = max_tau        # <- only a default
@@ -241,7 +241,7 @@ of them should move.
 
 ```
 # 0.8.0 on, at MRTS=0, for spikes interior to their own trains
-window = min(ISI before a, ISI after a, ISI before b, ISI after b) / 2
+window = min(ISI before/after the spike in a, ISI before/after the spike in b) / 2
 # expected
 window = min(the above, the user's max_tau)
 ```
@@ -289,9 +289,11 @@ v1.5, 30.6.2023):
 - In `AdaptiveCoincidence` itself, `max_dist = 0` admits exactly the simultaneous
   spikes — not through the strict `<`, which admits nothing at zero, but through a
   fast path that returns 1 for ties (subject to the same edge guard) before either
-  condition is evaluated. cSPIKE's own no-cap conventions are `10^12` and negative
-  values, never zero; PySpike's `max_tau = 0` means "no cap". So porting the
-  parameter across unchanged inverts its meaning at that value.
+  condition is evaluated. cSPIKE's own no-cap values are `10^12` (the class default) and
+  `inf`, which its test driver passes; the code additionally treats any negative
+  value as no-cap, but only inside `AdaptiveCoincidence`. Zero is never used. In
+  PySpike `max_tau = 0` *is* the no-cap default, so porting the parameter across
+  unchanged inverts its meaning at that value.
 
 The patch below leaves exact ties alone either way: the bound it introduces is
 `true_max/2`, strictly positive for any positive cap, so `|Δt| = 0 < tau` still
@@ -373,13 +375,13 @@ it is your call.
 
 We hit this porting the cSPIKE synchronization stack to Python and cross-checking
 the result against both cSPIKE reference output and PySpike. Our port and PySpike
-agree uncapped, and still agree at any cap too loose to bind; they diverge at every
-cap tight enough to matter.
+agree uncapped, and still agree wherever the cap is too loose to bind; they
+diverge wherever it binds.
 
 Here is what it costs on a synthetic 30-train recording — simulated calcium event
 times, 2670 events at 2362 distinct times after dropping within-train duplicates,
-median ISI 31 s — the project's committed test fixture, from
-[a public fixture](https://github.com/syncytium2/bugarach/blob/main/tests/fixtures/synth_fastcal_s1.mat).
+median ISI 31 s — from
+[our committed test fixture](https://github.com/syncytium2/bugarach/blob/main/tests/fixtures/synth_fastcal_s1.mat).
 Both columns are `pyspike.spike_sync`, so this is PySpike against itself; the
 patched column comes from the pure-Python backend with the diff above applied:
 
@@ -483,7 +485,7 @@ Happy to send the fix as a PR with a regression test if that is useful.
   patch. The one `max_tau` assertion does — I ran it, patched and unpatched, and
   the issue says so. The other 11 test files were not executed against a patched
   build — 13 test files ship in the 0.9.0 sdist and one assertion in one of them
-  has been exercised, so this is a small concrete job
+  has been exercised, leaving 12 files, so this is a small concrete job
   before offering the PR, and `test_reconcile.py` is the one to watch given the
   `Reconcile=False` behavior change the issue now discloses. Note also that every
   "with the patch" number was produced by the pure-Python backend; nothing has been
