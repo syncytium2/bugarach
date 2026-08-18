@@ -202,11 +202,56 @@ block.</p>
 <ul>
 <li><strong>Nothing here says any detector is right about a real slice.</strong> The corpus is
   simulated; its settings are measured.</li>
-<li><strong>"Competes with state-of-the-art models from the literature" is not supported.</strong> No
-  literature model has been run on this corpus. See
+<li><strong>"Competes with state-of-the-art models from the literature" is not supported —
+  but the earlier phrasing of this was wrong and Tony corrected it.</strong> <em>Published
+  methods are in the comparison</em>: <strong>CICADA</strong> is the Cossart lab's, ported here (MIT,
+  © 2019 Cossart Lab) and scoring 0.541, and <strong>SpikyDetect</strong> runs on cSPIKE/PySpike's
+  adaptive SPIKE-synchronization profile (Kreuz lab) — a published measure with our
+  event detector on top. So the accurate claim is narrower and still worth making:
+  the comparison contains <strong>no published <em>learned</em> method</strong>, and <strong>none of the
+  assembly-detection family</strong> — ICA/PCA, CAD, graph and item-set methods — which is
+  where the coordination literature actually concentrates. See
   <a href="todo/2026-08-17-literature-deep-dive-handoff.md"><code>docs/todo/2026-08-17-literature-deep-dive-handoff.md</code></a>,
   whose first item is to run two or three of them rather than search harder.</li>
 </ul>
+<h2>Why the assembly-detection family cannot be ported yet</h2>
+<p><strong>Our generator plants no assemblies.</strong> <code>simulate.py</code> draws each planted event's
+participants fresh — <code>rois = rng.choice(nR, size=np_, replace=False)</code> — so every event
+has a different random subset of cells and no group ever recurs.</p>
+<p>That matters more than it looks. The whole assembly-detection literature works by
+finding <strong>recurring co-activation patterns</strong>: ICA/PCA assembly detection projects onto
+patterns that repeat, CAD finds groups with consistent lag constellations, item-set
+mining counts sets that appear often. Run any of them on this corpus and they find
+nothing — <strong>and the zero would be about our generator, not about the method.</strong> Porting
+one today would produce a comparison we win meaninglessly, which is worse than not
+running it.</p>
+<p>It also means something about our own benchmark: <strong>it cannot reward membership
+structure at all.</strong> A detector that exploits which cells tend to fire together — ours
+or anyone's — has no advantage to demonstrate here, because there is none to find.</p>
+<p>The order that makes the comparison possible:</p>
+<ol>
+<li><strong>Ask the data whether assemblies exist.</strong> Do the 85 real recordings show recurring
+   participant groups, or is participation event-by-event random? The assessor already
+   clusters co-active onsets and records which ROIs took part; the membership-overlap
+   statistic across events is a small addition, not a new instrument. <strong>This is a real
+   result about the preparation either way</strong>, and it is cheap.</li>
+<li><strong>If they recur, plant them.</strong> The generator gains an assembly structure —
+   participants drawn from a small number of recurring groups rather than uniformly.</li>
+<li><strong>Then port PCA/ICA assembly detection</strong> (Lopes-dos-Santos, Ribeiro &amp; Tort 2013,
+   <em>J. Neurosci. Methods</em>): Marchenko–Pastur for the number of assemblies, ICA for the
+   patterns, and an activation time course per assembly that thresholds into events.
+   It is the right first port — a genuinely different principle from all six of ours,
+   which are variations on "more coincidence than the local background explains"; it
+   emits a <strong>time course</strong>, so our scorer works on it unmodified and its threshold is
+   exactly the one declared knob the fair bake-off sweeps; and Marchenko–Pastur picks
+   the assembly count without importing a second human judgement the way K did.</li>
+<li><strong>Hold the port to the same bar as the six.</strong> They are 1e-9 against a MATLAB
+   original; a new port with no oracle is a claim nobody can check, and "we ported it
+   wrong" is the first thing a reviewer will say when a literature method loses.</li>
+</ol>
+<p>⚠ If step 1 says participation <em>is</em> random event-by-event, then the assembly family is
+not the right comparison for this preparation at all, and that is the answer — not a
+disappointment.</p>
 <h2>The queue, in order</h2>
 <ol>
 <li><strong>Close the seed gap.</strong> Every other number inherits its error bars.</li>
