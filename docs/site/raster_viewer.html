@@ -125,6 +125,10 @@
   .ctl .span button { margin-top: 2px; }
   .ctl .note { color: var(--muted); font-size: 11.5px; line-height: 1.4;
                margin: -3px 0 2px; max-width: none; }
+  /* `display` set on a class outranks the browser's own rule for [hidden], so
+     a hidden .ctl stays on screen unless this says otherwise. Learned by
+     switching detectors and watching both parameter sets sit there at once. */
+  .ctl[hidden] { display: none; }
   .fine { color: var(--muted); font-size: 11.5px; line-height: 1.45;
           padding: 0 16px 14px; }
   .fine b { color: var(--fg); font-weight: 600; }
@@ -350,28 +354,66 @@
     </details>
 
     <details class="acc" id="accDetect">
-      <summary>Detect events<span class="cnt">RateDetect</span></summary>
+      <summary>Detect events<span class="cnt" id="cntDetect">RateDetect</span></summary>
       <div class="ctl">
+        <label for="dDet">detector</label>
+        <select id="dDet">
+          <option value="rate">RateDetect — how fast</option>
+          <option value="sync">SPIKE-synch — how aligned</option>
+        </select>
+      </div>
+      <div class="ctl" id="dRateCtl">
         <label for="dThr">excess threshold (Hz)</label>
         <input id="dThr" type="number" min="0.1" max="50" step="0.5" value="5">
         <label for="dRate">rate window (s)</label>
         <input id="dRate" type="number" min="0.1" max="30" step="0.1" value="1">
         <label for="dCtx">context window (s)</label>
         <input id="dCtx" type="number" min="5" max="600" step="5" value="60">
+      </div>
+      <div class="ctl" id="dSyncCtl" hidden>
+        <label for="dTau">coincidence cap (s)</label>
+        <input id="dTau" type="number" min="0.01" max="10" step="0.05" value="0.25">
+        <label for="dGap">max gap (s)</label>
+        <input id="dGap" type="number" min="0.1" max="30" step="0.1" value="0.5">
+        <label for="dC">C to start an event</label>
+        <input id="dC" type="number" min="0.001" max="1" step="0.01" value="0.1">
+        <label for="dCmin">C to sustain one</label>
+        <input id="dCmin" type="number" min="0.001" max="1" step="0.01" value="0.1">
+      </div>
+      <div class="ctl">
         <div class="span"><button id="runDetect">Detect</button></div>
       </div>
-      <div class="fine">
-        <b>RateDetect, the same port the rest of this project cites.</b> It flags
-        moments when the population rate rises above its own local context, and it
-        draws no random numbers — so this browser copy is checked against the
-        Python one <b>exactly</b>, to 1e-9, on every event it finds. A mistake here
-        cannot pass as sampling noise.
+      <div class="fine" id="dFineRate">
+        <b>RateDetect asks how fast the population is firing.</b> It flags moments
+        when the pooled rate rises above its own local context — so a slice that
+        fires steadily has no events, however tightly aligned it is.
         <br><br>
-        <b>One of six, and the settings are not calibrated for your recordings.</b>
-        These are the values the project benches at. Finding the right ones for a
-        preparation is what the simulate step above is for: measure, simulate from
-        what you measured, tune against planted ground truth, then point the tuned
-        instrument at everything.
+        <b>Checked against the Python exactly.</b> It draws no random numbers, so
+        this browser copy is compared to the port the rest of the project cites at
+        1e-9 on every event it finds. A mistake here cannot pass as sampling noise.
+        <br><br>
+        <b>The settings are what the project benches at, not what your preparation
+        needs.</b> Finding those is what the simulate step above is for: measure,
+        simulate from what you measured, tune against planted events, then point
+        the tuned instrument at everything.
+      </div>
+      <div class="fine" id="dFineSync" hidden>
+        <b>SPIKE-synch asks how aligned the spikes are, whatever the rate.</b>
+        Every spike gets a coincidence value between 0 and 1 — the fraction of
+        other ROIs with a spike inside a window that adapts to how densely each
+        one is firing. A slice that never speeds up but tightens its timing shows
+        here and not in RateDetect, which is the reason to run both.
+        <br><br>
+        <b>The cap is the part worth setting.</b> It is the widest the adaptive
+        window may ever open, so it decides what counts as "together": 0.25 s for
+        a fast stream, 0.5 s for a slow one. Without it a busy ROI would look
+        coincident with everything.
+        <br><br>
+        <b>Checked against the Python exactly</b>, at 1e-9, on the coincidence
+        profile and on every event — this is the second detector here that draws
+        no random numbers, and the same reasoning applies. Events whose C is
+        near-total <i>and</i> narrow <i>and</i> shared by most of the field are
+        reported separately: that combination is a stage knock, not coordination.
       </div>
     </details>
 
@@ -641,6 +683,11 @@ function fmt(sec) {
 }
 
 /* ---------- draw ----------------------------------------------------------- */
+
+// The detector lane: a name line, a bar line, and clearance for the region
+// legend that hangs off the panel top at `top - 17`. All three numbers move
+// together — shrink this and the calls are drawn through the period chips.
+const LANE_H = 37;
 function draw(rec, data) {
   const cv = document.getElementById("cv");
   const css = getComputedStyle(document.documentElement);
@@ -650,7 +697,7 @@ function draw(rec, data) {
   const padL = 62, padR = 14, padT = 23, padB = 40, gap = 16;
   const rowH = Math.max(110, Math.min(230, 26 + data.nRois * 5));
   const H = padT + names.length * rowH + (names.length - 1) * gap + padB
-            + ((DETECT && DETECT.recId === rec.id) ? 14 : 0);
+            + ((DETECT && DETECT.recId === rec.id) ? LANE_H : 0);
 
   cv.width = W * dpr; cv.height = H * dpr; cv.style.height = H + "px";
   const g = cv.getContext("2d");
@@ -668,20 +715,23 @@ function draw(rec, data) {
   // A detector lane above the top panel — a bar per call, spanning what it
   // called. Above the frame and never through the lanes: a bar drawn across the
   // rows would be indistinguishable from the coincidence it is reporting.
-  const laneH = (DETECT && DETECT.recId === rec.id) ? 14 : 0;
+  const laneH = (DETECT && DETECT.recId === rec.id) ? LANE_H : 0;
   if (laneH) {
-    const ly = padT + 2;
+    // The name goes ABOVE the bars rather than in the left gutter, which is 56px
+    // wide and fits "RateDetect" only by luck — "SPIKE-synch · 4" ran off the
+    // canvas the first time a second detector was wired up. A lane that renames
+    // itself per detector cannot depend on the longest name being short.
+    g.fillStyle = css.getPropertyValue("--muted").trim();
+    g.fillText(DETECT.label + " · " + DETECT.starts.length + " called",
+               padL, padT + 8);
+    const ly = padT + 11;
     g.fillStyle = css.getPropertyValue("--accent").trim();
     for (let i = 0; i < DETECT.starts.length; i++) {
       const a = Math.max(padL, x(DETECT.starts[i]));
       const b = Math.min(W - padR, x(DETECT.ends[i]));
       if (b < padL || a > W - padR) continue;
-      g.fillRect(a, ly, Math.max(2, b - a), 7);   // min width: a call is visible
+      g.fillRect(a, ly, Math.max(2, b - a), 6);   // min width: a call is visible
     }
-    g.fillStyle = css.getPropertyValue("--muted").trim();
-    g.textAlign = "end";
-    g.fillText(DETECT.label + " · " + DETECT.starts.length, padL - 6, ly + 8);
-    g.textAlign = "start";
   }
 
   names.forEach((name, si) => {
@@ -1303,6 +1353,238 @@ function rateDetect(trains, tRange, opts) {
   }
   return { starts, ends, freqMax, freqMean, rateX, rateY, ctxY, excess,
            ctxActual, nEvents: starts.length };
+}
+
+/* ---------- SPIKE-synch, in the browser --------------------------------------
+   The second detector that draws no random numbers, and therefore the second
+   one this page is allowed to carry: a port of `bugarach.detectors.sync`, which
+   is itself the port of cSPIKE's adaptive SPIKE-synchronization profile into
+   interface2's SpikyDetect3. Checked against the Python at 1e-9 on the profile,
+   the binned trace and every event field — `tests/test_webapp_sync_detect_parity.py`.
+
+   WHAT IT MEASURES, and it is a different question from RateDetect's. RateDetect
+   asks how FAST the population is firing; this asks how well-ALIGNED the spikes
+   are, whatever the rate. Each spike gets a coincidence value C in [0,1]: the
+   fraction of other ROIs with a spike inside an adaptive window tau, where tau
+   is the smallest of the four half-intervals around the pair and never wider
+   than the cap. The cap is what stops a densely firing ROI from looking
+   synchronous with everything by accident.
+
+   Threshold mode only, matching the rest of this file. Peak mode needs the
+   clean-room peak-extent kernel, which is not ported.
+*/
+
+// cSPIKE's SpikeTrainSet drops duplicate times WITHIN a train; np.unique here
+function uniqSorted(v) {
+  const out = [];
+  for (let i = 0; i < v.length; i++) if (i === 0 || v[i] !== v[i - 1]) out.push(v[i]);
+  return Float64Array.from(out);
+}
+
+function clipSorted(trains, lo, hi) {
+  return trains.map(v => {
+    const out = [];
+    for (const x of v) if (isFinite(x) && x >= lo && x <= hi) out.push(x);
+    out.sort((a, b) => a - b);
+    return Float64Array.from(out);
+  });
+}
+
+// first index with arr[i] >= x — np.searchsorted, side "left"
+function lowerBound(arr, x) {
+  let lo = 0, hi = arr.length;
+  while (lo < hi) { const m = (lo + hi) >> 1; if (arr[m] < x) lo = m + 1; else hi = m; }
+  return lo;
+}
+
+/* Half-intervals either side of every spike. A train's first and last spike have
+   no neighbour on one side, and the missing one defaults to the cap rather than
+   to zero — PySpike's convention, and the one cSPIKE was checked against. */
+function halfIsis(v, capHalf) {
+  const prev = new Float64Array(v.length).fill(capHalf);
+  const next = new Float64Array(v.length).fill(capHalf);
+  for (let k = 1; k < v.length; k++) {
+    const d = (v[k] - v[k - 1]) / 2;
+    prev[k] = d; next[k - 1] = d;
+  }
+  return { prev, next };
+}
+
+/* Coincidence indicators for one pair of trains: a spike counts its nearest
+   neighbour in the other train if the separation is strictly inside tau. The
+   exact-tie shortcut is carried because the Python carries it, and it is worth
+   saying that it changes no answer: tau is always positive, so the neighbour
+   test below already accepts a separation of zero. Deleting it is invisible to
+   the parity suite, which is a fact about the shortcut and not a gap in it. */
+function pairCoincidence(a, ah, b, bh, capHalf) {
+  const ca = new Float64Array(a.length), cb = new Float64Array(b.length);
+  for (const side of [[a, ah, b, bh, ca], [b, bh, a, ah, cb]]) {
+    const [s, sh, o, oh, cs] = side;
+    for (let k = 0; k < s.length; k++) {
+      const jn = lowerBound(o, s[k]);
+      if (jn < o.length && o[jn] === s[k]) { cs[k] = 1; continue; }
+      const own = Math.min(sh.prev[k], sh.next[k]);
+      let hit = false;
+      if (jn < o.length) {
+        const tau = Math.min(own, Math.min(oh.prev[jn], oh.next[jn]), capHalf);
+        hit = (o[jn] - s[k]) < tau;
+      }
+      if (!hit && jn > 0) {
+        const jp = jn - 1;
+        const tau = Math.min(own, Math.min(oh.prev[jp], oh.next[jp]), capHalf);
+        hit = (s[k] - o[jp]) < tau;
+      }
+      cs[k] = hit ? 1 : 0;
+    }
+  }
+  return { ca, cb };
+}
+
+/* The per-spike profile, pooled over ROIs and sorted in time. C is the count of
+   ROIs that answered, over the number that could have. */
+function adaptiveProfile(trains, tRange, tauMax) {
+  const ev = clipSorted(trains, tRange[0], tRange[1]).map(uniqSorted);
+  const n = ev.length;
+  const span = tRange[1] - tRange[0];
+  const trueMax = tauMax > 0 ? Math.min(span, 2 * tauMax) : span;
+  const capHalf = trueMax / 2;
+
+  const counts = ev.map(v => new Float64Array(v.length));
+  const halves = ev.map(v => halfIsis(v, capHalf));
+  for (let i = 0; i < n; i++) {
+    if (!ev[i].length) continue;
+    for (let j = i + 1; j < n; j++) {
+      if (!ev[j].length) continue;
+      const { ca, cb } = pairCoincidence(ev[i], halves[i], ev[j], halves[j], capHalf);
+      for (let k = 0; k < ca.length; k++) counts[i][k] += ca[k];
+      for (let k = 0; k < cb.length; k++) counts[j][k] += cb[k];
+    }
+  }
+
+  const denom = Math.max(n - 1, 1);
+  const xs = [], ys = [];
+  for (let i = 0; i < n; i++)
+    for (let k = 0; k < ev[i].length; k++) { xs.push(ev[i][k]); ys.push(counts[i][k] / denom); }
+  const ord = xs.map((_, i) => i);
+  ord.sort((p, q) => (xs[p] - xs[q]) || (p - q));      // stable, as np.argsort
+  return { x: Float64Array.from(ord, i => xs[i]),
+           y: Float64Array.from(ord, i => ys[i]) };
+}
+
+/* max/mean_synchrony's binning, quirks included. Spikes at the SAME time are
+   aggregated first; the group then writes to the first grid centre within dt of
+   it, OVERWRITING whatever an earlier time put there — so a bin holds its last
+   writer rather than a sum, and Cn is that writer's group size rather than the
+   bin's total. Faithful because the detection below counts on it. */
+function binnedSynchrony(x, y, dt, tRange, statistic) {
+  const cx = matlabColon(tRange[0], dt, tRange[1]);
+  const cy = new Float64Array(cx.length), cn = new Float64Array(cx.length);
+  let s = 0;
+  while (s < x.length) {
+    let e = s + 1;
+    while (e < x.length && x[e] === x[s]) e++;
+    let val;
+    if (statistic === "max") { val = -Infinity; for (let i = s; i < e; i++) if (y[i] > val) val = y[i]; }
+    else { let sum = 0; for (let i = s; i < e; i++) sum += y[i]; val = sum / (e - s); }
+    const i0 = Math.max(0, Math.floor((x[s] - tRange[0]) / dt) - 2);
+    for (let i = i0; i < Math.min(cx.length, i0 + 5); i++) {
+      if (Math.abs(cx[i] - x[s]) < dt) { cy[i] = val; cn[i] = e - s; break; }
+    }
+    s = e;
+  }
+  return { cx, cy, cn };
+}
+
+/* flagArtifactEvents: a near-total C spike that is also NARROW is the signature
+   of a stage knock, not of a coordinated event. All three have to hold. */
+function flagArtifacts(begins, ends, amps, cx, cy, ev, athr, afthr, aplat90) {
+  const n = begins.length, nTotal = ev.length;
+  const peakC = new Float64Array(n), plat90 = new Float64Array(n);
+  const nPart = new Float64Array(n), isArtifact = new Array(n).fill(false);
+  for (let ie = 0; ie < n; ie++) {
+    const t0 = begins[ie], t1 = ends[ie];
+    const bx = [], by = [];
+    for (let k = 0; k < cx.length; k++)
+      if (cx[k] >= t0 && cx[k] <= t1) { bx.push(cx[k]); by.push(cy[k]); }
+    if (bx.length) {
+      let pk = -Infinity;
+      for (const v of by) if (v > pk) pk = v;
+      peakC[ie] = pk;
+      const d = bx.length >= 2 ? bx[1] - bx[0]
+              : (cx.length >= 2 ? cx[1] - cx[0] : 0.1);
+      const above = [];
+      for (let k = 0; k < bx.length; k++) if (by[k] >= 0.9 * pk) above.push(bx[k]);
+      plat90[ie] = above.length >= 2 ? (above[above.length - 1] - above[0] + d) : d;
+    } else if (!Number.isNaN(amps[ie])) {
+      peakC[ie] = amps[ie];
+      plat90[ie] = cx.length >= 2 ? cx[1] - cx[0] : 0.1;
+    }
+    let c = 0;
+    for (const v of ev) {
+      for (let k = 0; k < v.length; k++)
+        if (v[k] >= t0 && v[k] <= t1) { c++; break; }
+    }
+    nPart[ie] = c;
+    isArtifact[ie] = peakC[ie] >= athr && (c / Math.max(nTotal, 1)) >= afthr
+                     && plat90[ie] <= aplat90;
+  }
+  return { peakC, plat90, nPart, isArtifact };
+}
+
+/* SpikyDetect3's hysteresis scan, transliterated rather than tidied. A bin over
+   C_threshold opens an event; bins over the lower C_min keep it open across gaps
+   shorter than max_gap, and empty bins are stepped over without closing it. The
+   control flow re-tests a gap it has not recomputed and lets the outer cursor
+   jump to the bin that ended the event; both are load-bearing, because the
+   Python they are checked against does the same and the MATLAB before it did. */
+function syncDetect(trains, tRange, opts) {
+  const o = opts || {};
+  const tauMax = o.tauMax === undefined ? 0.25 : o.tauMax;
+  const maxGap = o.maxGap === undefined ? 0.5 : o.maxGap;
+  const Cthr = o.CThreshold === undefined ? 0.1 : o.CThreshold;
+  const Cmin = o.CMin === undefined ? 0.1 : o.CMin;
+  const minN = o.minN === undefined ? 3 : o.minN;
+  const dt = o.gridDt === undefined ? 0.1 : o.gridDt;
+  const stat = o.statistic === undefined ? "mean" : o.statistic;
+  const athr = o.artifactThreshold === undefined ? 0.85 : o.artifactThreshold;
+  const afthr = o.artifactThresholdFraction === undefined ? 0.70 : o.artifactThresholdFraction;
+  const aplat = o.artifactThresholdPlat90 === undefined ? 0.8 : o.artifactThresholdPlat90;
+
+  const ev = clipSorted(trains, tRange[0], tRange[1]);
+  const prof = adaptiveProfile(trains, tRange, tauMax);
+  const { cx, cy, cn } = binnedSynchrony(prof.x, prof.y, dt, tRange, stat);
+  const n2 = cy.length;
+
+  const starts = [], ends = [], amps = [];
+  let i = -1;
+  while (i < n2 - 1) {
+    i += 1;
+    if (cy[i] > Cthr) {
+      let cmean = cy[i], ncmean = 1;
+      const evBegin = cx[i];
+      let evEnd = evBegin, evSum = cn[i];
+      let j = i + 1;
+      let gap = j < n2 ? cx[j] - cx[i] : Infinity;
+      while (j < n2 - 1 && gap < maxGap) {
+        while (j < n2 - 2 && cy[j] === 0 && gap < maxGap) { j += 1; gap = cx[j] - cx[i]; }
+        if (gap <= maxGap && cy[j] > Cmin) {
+          cmean += cy[j]; ncmean += 1; evSum += cn[j];
+          evEnd = cx[j]; i = j; j += 1;
+        } else { i = j; break; }
+      }
+      if (evBegin === evEnd) evEnd = evEnd + dt;
+      if (evSum >= minN) { starts.push(evBegin); ends.push(evEnd); amps.push(cmean / ncmean); }
+    }
+  }
+
+  const art = flagArtifacts(starts, ends, amps, cx, cy, ev, athr, afthr, aplat);
+  return { starts, ends, amps,
+           widths: starts.map((s, k) => ends[k] - s),
+           peakC: Array.from(art.peakC), plat90: Array.from(art.plat90),
+           nParticipatingRois: Array.from(art.nPart), isArtifact: art.isArtifact,
+           nTotalRois: trains.length,
+           profileX: prof.x, profileY: prof.y, cx, cy, cn,
+           nEvents: starts.length };
 }
 
 /* ---------- the assessment, in the browser -----------------------------------
@@ -2076,61 +2358,116 @@ function clearDetect() {
   if (b) b.textContent = "";
 }
 
+/* Which instrument is pointed at the recording, and what each one needs. Two of
+   the six are here — the two that draw no random numbers and are therefore
+   checked against the Python exactly rather than to sampling error. */
+const DETECTOR_UI = {
+  rate: { label: "RateDetect", ctl: "dRateCtl", fine: "dFineRate" },
+  sync: { label: "SPIKE-synch", ctl: "dSyncCtl", fine: "dFineSync" },
+};
+
+const whichDetector = () =>
+  DETECTOR_UI[document.getElementById("dDet").value] ? document.getElementById("dDet").value : "rate";
+
+function paintDetectorChoice() {
+  const which = whichDetector();
+  for (const [k, d] of Object.entries(DETECTOR_UI)) {
+    document.getElementById(d.ctl).hidden = k !== which;
+    document.getElementById(d.fine).hidden = k !== which;
+  }
+  document.getElementById("cntDetect").textContent = DETECTOR_UI[which].label;
+  clearDetect();
+  if (current) loadRecording(current).then(d => draw(current, d));
+}
+
+function readDetector(dt) {
+  if (whichDetector() === "sync") {
+    return { gridDt: dt,
+      tauMax: clamp(Number(document.getElementById("dTau").value), 0.01, 10),
+      maxGap: clamp(Number(document.getElementById("dGap").value), 0.1, 30),
+      CThreshold: clamp(Number(document.getElementById("dC").value), 0.001, 1),
+      CMin: clamp(Number(document.getElementById("dCmin").value), 0.001, 1) };
+  }
+  return { gridDt: dt,
+    excessThresholdHz: clamp(Number(document.getElementById("dThr").value), 0.1, 50),
+    rateWin: clamp(Number(document.getElementById("dRate").value), 0.1, 30),
+    contextWin: clamp(Number(document.getElementById("dCtx").value), 5, 600) };
+}
+
+// what the run was, in the words the settings file would use
+const detectorSettingsLine = (which, cfg) => which === "sync"
+  ? "coincidence cap " + cfg.tauMax + " s · max gap " + cfg.maxGap
+    + " s · C " + cfg.CThreshold + " to start, " + cfg.CMin + " to sustain"
+    + " · dt " + cfg.gridDt + " s"
+  : "threshold " + cfg.excessThresholdHz + " Hz excess · rate window "
+    + cfg.rateWin + " s · context " + cfg.contextWin + " s · dt "
+    + cfg.gridDt + " s";
+
 async function runDetect() {
   if (!current) return;
   const btn = document.getElementById("runDetect");
   btn.textContent = "Detecting…"; btn.disabled = true;
   await new Promise(r => setTimeout(r, 0));
   try {
+    const which = whichDetector();
+    const label = DETECTOR_UI[which].label;
     const data = await loadRecording(current);
     const stream = [...data.streams.keys()].sort()[0];
     const byRoi = data.streams.get(stream);
     const m = META.get(current.id) || {};
     const dt = Number(m.frame_interval_sec) > 0 ? Number(m.frame_interval_sec) : 0.1;
-    const cfg = {
-      excessThresholdHz: clamp(Number(document.getElementById("dThr").value), 0.1, 50),
-      rateWin: clamp(Number(document.getElementById("dRate").value), 0.1, 30),
-      contextWin: clamp(Number(document.getElementById("dCtx").value), 5, 600),
-      gridDt: dt,
-    };
+    const cfg = readDetector(dt);
     // one run per analysis segment, treatments included — a detector run across
     // a boundary would take its context from a period that is not the one it is
     // reporting on
     const segs = analysisSegments(current, data);
     const starts = [], ends = [], perRegion = [];
+    let artifacts = 0;
     for (const seg of segs) {
       const trains = data.order.map(id =>
         (byRoi.get(id) || []).filter(x => x >= seg.start && x <= seg.end));
-      const d = rateDetect(trains, [seg.start, Math.max(seg.end, seg.start + 1)], cfg);
+      const range = [seg.start, Math.max(seg.end, seg.start + 1)];
+      const d = which === "sync" ? syncDetect(trains, range, cfg)
+                                 : rateDetect(trains, range, cfg);
+      const flagged = (d.isArtifact || []).filter(Boolean).length;
+      artifacts += flagged;
       starts.push(...d.starts); ends.push(...d.ends);
-      perRegion.push({ label: seg.label, n: d.nEvents, stated: seg.stated,
+      perRegion.push({ label: seg.label, n: d.nEvents, flagged, stated: seg.stated,
                        mins: (seg.end - seg.start) / 60 });
     }
-    const det = { starts, ends, nEvents: starts.length, perRegion, segs };
-    DETECT = { recId: current.id, label: "RateDetect",
-               starts: det.starts, ends: det.ends };
+    DETECT = { recId: current.id, label, starts, ends };
 
     const box = document.getElementById("detectOut");
     box.textContent = "";
-    box.append(el("h4", "RateDetect on " + current.id));
-    box.append(el("p", det.nEvents + " event(s) called · threshold "
-      + cfg.excessThresholdHz + " Hz excess · rate window " + cfg.rateWin
-      + " s · context " + cfg.contextWin + " s · dt " + dt + " s", "sub"));
+    box.append(el("h4", label + " on " + current.id));
+    box.append(el("p", starts.length + " event(s) called · "
+      + detectorSettingsLine(which, cfg), "sub"));
 
+    const cols = which === "sync"
+      ? ["region", "analysed", "window", "events", "of those, artifact"]
+      : ["region", "analysed", "window", "events"];
     const tbl = document.createElement("table");
     const hr = document.createElement("tr");
-    for (const h of ["region", "analysed", "window", "events"]) hr.append(el("th", h));
+    for (const h of cols) hr.append(el("th", h));
     tbl.append(hr);
-    for (const r of det.perRegion) {
+    for (const r of perRegion) {
       const tr = document.createElement("tr");
       tr.append(el("td", r.label));
       tr.append(el("td", r.mins.toFixed(1) + " min"));
       tr.append(el("td", r.stated ? "as the folder states it"
                                   : "whole period — none sent", "state"));
       tr.append(el("td", String(r.n)));
+      if (which === "sync") tr.append(el("td", String(r.flagged)));
       tbl.append(tr);
     }
     box.append(tbl);
+    if (which === "sync" && artifacts) {
+      box.append(el("p", artifacts + " of these are flagged as artifact — C is "
+        + "near-total, the event is narrow, and most of the field is in it. That "
+        + "combination is a stage knock rather than coordination. They are counted "
+        + "here and drawn like the rest; deciding what to do with them is yours.",
+        "caveat"));
+    }
     box.append(el("p", "These are the settings this project benches at, not "
       + "settings calibrated for your preparation. Tuning them is what the "
       + "simulate step is for — measure, simulate from what you measured, tune "
@@ -2142,6 +2479,7 @@ async function runDetect() {
   }
 }
 
+document.getElementById("dDet").onchange = paintDetectorChoice;
 document.getElementById("runDetect").onclick = runDetect;
 
 /* ---------- the sidebar: one section at a time ----------------------------- */
