@@ -172,7 +172,11 @@
     padding: 10px 14px; margin: 10px 0; font-size: 13px;
   }
   .note { color: var(--muted); font-size: 12.5px; margin-top: 14px; max-width: 70ch; }
-  #assessOut { margin: 16px 0 0; font-size: 12.5px; }
+  #assessOut, #detectOut { margin: 16px 0 0; font-size: 12.5px; }
+  #detectOut h4 { margin: 0 0 6px; font-size: 13px; font-weight: 600; }
+  #detectOut .sub { color: var(--muted); margin: 0 0 8px; }
+  #detectOut .caveat { color: var(--muted); max-width: 72ch; line-height: 1.5;
+                       margin: 0; }
   #assessOut h4 { margin: 0 0 6px; font-size: 13px; font-weight: 600; }
   #assessOut .sub { color: var(--muted); margin: 0 0 8px; }
   #assessOut table { border-collapse: collapse; }
@@ -334,6 +338,32 @@
       </div>
     </details>
 
+    <details class="acc" id="accDetect">
+      <summary>Detect events<span class="cnt">RateDetect</span></summary>
+      <div class="ctl">
+        <label for="dThr">excess threshold (Hz)</label>
+        <input id="dThr" type="number" min="0.1" max="50" step="0.5" value="5">
+        <label for="dRate">rate window (s)</label>
+        <input id="dRate" type="number" min="0.1" max="30" step="0.1" value="1">
+        <label for="dCtx">context window (s)</label>
+        <input id="dCtx" type="number" min="5" max="600" step="5" value="60">
+        <div class="span"><button id="runDetect">Detect</button></div>
+      </div>
+      <div class="fine">
+        <b>RateDetect, the same port the rest of this project cites.</b> It flags
+        moments when the population rate rises above its own local context, and it
+        draws no random numbers — so this browser copy is checked against the
+        Python one <b>exactly</b>, to 1e-9, on every event it finds. A mistake here
+        cannot pass as sampling noise.
+        <br><br>
+        <b>One of six, and the settings are not calibrated for your recordings.</b>
+        These are the values the project benches at. Finding the right ones for a
+        preparation is what the simulate step above is for: measure, simulate from
+        what you measured, tune against planted ground truth, then point the tuned
+        instrument at everything.
+      </div>
+    </details>
+
     <details class="acc" id="accList" hidden>
       <summary>Recordings<span class="cnt" id="cntList"></span></summary>
       <div id="checkbar" hidden></div>
@@ -371,6 +401,7 @@
       <p id="wins"></p>
       <canvas id="cv"></canvas>
       <div id="assessOut"></div>
+      <div id="detectOut"></div>
       <div class="note" id="note"></div>
     </div>
   </div>
@@ -607,7 +638,8 @@ function draw(rec, data) {
   const names = [...data.streams.keys()].sort();
   const padL = 62, padR = 14, padT = 23, padB = 40, gap = 16;
   const rowH = Math.max(110, Math.min(230, 26 + data.nRois * 5));
-  const H = padT + names.length * rowH + (names.length - 1) * gap + padB;
+  const H = padT + names.length * rowH + (names.length - 1) * gap + padB
+            + ((DETECT && DETECT.recId === rec.id) ? 14 : 0);
 
   cv.width = W * dpr; cv.height = H * dpr; cv.style.height = H + "px";
   const g = cv.getContext("2d");
@@ -622,8 +654,27 @@ function draw(rec, data) {
   // one lane order for every panel — see loadRecording
   const lanes = ORDER === "rate" ? data.byRate : data.order;
 
+  // A detector lane above the top panel — a bar per call, spanning what it
+  // called. Above the frame and never through the lanes: a bar drawn across the
+  // rows would be indistinguishable from the coincidence it is reporting.
+  const laneH = (DETECT && DETECT.recId === rec.id) ? 14 : 0;
+  if (laneH) {
+    const ly = padT + 2;
+    g.fillStyle = css.getPropertyValue("--accent").trim();
+    for (let i = 0; i < DETECT.starts.length; i++) {
+      const a = Math.max(padL, x(DETECT.starts[i]));
+      const b = Math.min(W - padR, x(DETECT.ends[i]));
+      if (b < padL || a > W - padR) continue;
+      g.fillRect(a, ly, Math.max(2, b - a), 7);   // min width: a call is visible
+    }
+    g.fillStyle = css.getPropertyValue("--muted").trim();
+    g.textAlign = "end";
+    g.fillText(DETECT.label + " · " + DETECT.starts.length, padL - 6, ly + 8);
+    g.textAlign = "start";
+  }
+
   names.forEach((name, si) => {
-    const top = padT + si * (rowH + gap), bot = top + rowH - 20;
+    const top = padT + laneH + si * (rowH + gap), bot = top + rowH - 20;
     const byRoi = data.streams.get(name);
 
     // treatment windows behind the marks — a raster whose periods are not
@@ -761,7 +812,7 @@ function draw(rec, data) {
 async function show(rec) {
   // an assessment is of ONE recording; carrying it to the next one would mark
   // this recording's clusters on somebody else's data
-  if (!current || current.id !== rec.id) clearAssess();
+  if (!current || current.id !== rec.id) { clearAssess(); clearDetect(); }
   current = rec;
   document.querySelectorAll("#list button").forEach(b =>
     b.setAttribute("aria-current", String(b.dataset.id === rec.id)));
@@ -1079,6 +1130,167 @@ async function open(fileList, opts) {
   document.getElementById("checkbar").textContent =
     "checking " + RECORDINGS.length + " recording(s)…";
   paintCheck(await checkFolder());
+}
+
+/* ---------- detectors, in the browser ----------------------------------------
+   The last two steps of the loop this page exists for: measure, simulate, tune,
+   DETECT. The six detectors are the project's citable artifacts — each matched
+   to its MATLAB original to 1e-9 on committed fixtures — so a second
+   implementation of one is not a thing to do casually.
+
+   WHAT MAKES THESE TWO SAFE TO PORT FIRST, and it is a stronger guarantee than
+   the assessment above already ships with: **RateDetect and SPIKE-synch draw no
+   random numbers at all.** The other four estimate a threshold from surrogates,
+   so a port of those agrees with Python only to sampling error, exactly like the
+   assessment. These two are pure functions of the data, so the port is either
+   bit-identical to the Python or it is wrong — and a differential test says
+   which, at 1e-9, with no tolerance to hide in.
+
+   Everything here is threshold mode, which is the operating point the bench
+   ships (`bench.OPERATING_POINTS["rate"]`). Peak mode needs `peak_gate` and is
+   not ported.
+*/
+
+/* MATLAB's colon, two-ended. The first half runs forward from lo and the second
+   half BACKWARD from the endpoint — Cleve Moler's colonop. A plain forward grid
+   differs from MATLAB in the last ulp for about a quarter of the elements, which
+   is enough to flip a >= comparison and move an event between bins. Ported
+   because the Python port carries it for the same reason. */
+function matlabColon(lo, step, hi) {
+  const EPS = Number.EPSILON;
+  const q = (hi - lo) / step;
+  const n = Math.floor(q * (1.0 + 4.0 * EPS)) + 1;
+  if (n < 1) return new Float64Array(0);
+  const out = new Float64Array(n);
+  const fwdLast = lo + (n - 1) * step;
+  // np.spacing(x) — the gap to the next double up from |x|
+  const big = Math.max(Math.abs(lo), Math.abs(hi));
+  const tol = 4.0 * (big === 0 ? Number.MIN_VALUE : Math.abs(nextUp(big) - big));
+  const endVal = Math.abs(fwdLast - hi) <= tol ? hi : fwdLast;
+  const mid = Math.floor(n / 2);
+  for (let k = 0; k < mid; k++) out[k] = lo + k * step;
+  for (let k = mid; k < n; k++) out[k] = endVal - (n - 1 - k) * step;
+  return out;
+}
+
+// the next representable double above x, for np.spacing
+const _u8 = new ArrayBuffer(8);
+const _f64 = new Float64Array(_u8), _i32 = new Int32Array(_u8);
+function nextUp(x) {
+  if (!isFinite(x)) return x;
+  if (x === 0) return Number.MIN_VALUE;
+  _f64[0] = x;
+  // little-endian: [0] is the low word
+  if (x > 0) { if (++_i32[0] === 0) _i32[1]++; }
+  else { if (_i32[0]-- === 0) _i32[1]--; }
+  return _f64[0];
+}
+
+/* Pooled sliding-window population rate on a grid_dt grid, edge-corrected: at
+   the boundaries the divisor is the truncated window span, so the rate does not
+   dip for a reason that is an artifact of where the recording stops. */
+function eventRate(trains, tRange, windowSec, dt) {
+  const rateX = matlabColon(tRange[0], dt, tRange[1]);
+  const m = rateX.length;
+  const pooled = [];
+  for (const v of trains) for (const x of v) pooled.push(x);
+  pooled.sort((a, b) => a - b);
+  const rateY = new Float64Array(m);
+  if (!pooled.length || !m) return { rateX, rateY };
+
+  // counts per grid bin, edges at rateX +/- dt/2
+  const counts = new Float64Array(m);
+  for (const x of pooled) {
+    // matching np.histogram on those edges: [lo, hi) with the last bin closed
+    let b = Math.floor((x - (rateX[0] - dt / 2)) / dt);
+    if (b < 0 || b > m) continue;
+    if (b === m) { if (x <= rateX[m - 1] + dt / 2) b = m - 1; else continue; }
+    counts[b] += 1;
+  }
+  const halfBins = Math.floor(windowSec / (2 * dt) + 0.5);      // MATLAB round
+  const cum = new Float64Array(m + 1);
+  for (let i = 0; i < m; i++) cum[i + 1] = cum[i] + counts[i];
+  for (let k = 0; k < m; k++) {
+    const lo = Math.max(0, k - halfBins), hi = Math.min(m - 1, k + halfBins);
+    const spk = cum[hi + 1] - cum[lo];
+    const tLo = Math.max(tRange[0], rateX[k] - windowSec / 2);
+    const tHi = Math.min(tRange[1], rateX[k] + windowSec / 2);
+    rateY[k] = spk / (tHi - tLo);
+  }
+  return { rateX, rateY };
+}
+
+/* The context window is clipped to 0.9x the recording, and the value actually
+   used travels with the result — a context wider than the recording is silently
+   a different detector. */
+function eventRateContext(trains, tRange, windowSec, contextSec, dt) {
+  const maxCtx = 0.9 * (tRange[1] - tRange[0]);
+  const ctxActual = contextSec >= maxCtx ? maxCtx : contextSec;
+  const { rateX, rateY } = eventRate(trains, tRange, windowSec, dt);
+  const ctx = eventRate(trains, tRange, ctxActual, dt);
+  return { rateX, rateY, ctxY: ctx.rateY, ctxActual };
+}
+
+const RATE_PAD_S = 0.5;   // CHARACTERIZATION_PAD_S
+
+/* RateDetect, threshold mode. Grid times whose rate excess over the local
+   context clears the threshold, merged when no more than merge_gap_s apart. */
+function rateDetect(trains, tRange, opts) {
+  const o = opts || {};
+  const thr = o.excessThresholdHz === undefined ? 5.0 : o.excessThresholdHz;
+  const mergeGap = o.mergeGapS === undefined ? 3.0 : o.mergeGapS;
+  const rateWin = o.rateWin === undefined ? 1.0 : o.rateWin;
+  const ctxWin = o.contextWin === undefined ? 60.0 : o.contextWin;
+  const dt = o.gridDt === undefined ? 0.1 : o.gridDt;
+
+  const { rateX, rateY, ctxY, ctxActual } =
+    eventRateContext(trains, tRange, rateWin, ctxWin, dt);
+  const m = rateX.length;
+  const excess = new Float64Array(m);
+  for (let i = 0; i < m; i++) excess[i] = rateY[i] - ctxY[i];
+
+  const cand = [];
+  for (let i = 0; i < m; i++) if (excess[i] >= thr) cand.push(rateX[i]);
+  let starts = [], ends = [];
+  if (cand.length) {
+    const brk = [];
+    for (let i = 1; i < cand.length; i++)
+      if (cand[i] - cand[i - 1] > mergeGap) brk.push(i - 1);
+    const s = [0].concat(brk.map(i => i + 1));
+    const e = brk.concat([cand.length - 1]);
+    for (let i = 0; i < s.length; i++) {
+      // a single-bin crossing is likely noise, and the Python drops it
+      if (cand[e[i]] - cand[s[i]] > 0) {
+        starts.push(cand[s[i]]); ends.push(cand[e[i]]);
+      }
+    }
+  }
+  // pad for characterization: onsets sit on a 0.1 s grid and the rate is
+  // window-smoothed, so the stats get a margin matching the kernel
+  starts = starts.map(x => x - RATE_PAD_S);
+  ends = ends.map(x => x + RATE_PAD_S);
+
+  const freqMax = [], freqMean = [];
+  for (let i = 0; i < starts.length; i++) {
+    let mx = 0, sum = 0, n = 0;
+    for (let k = 0; k < m; k++)
+      if (rateX[k] >= starts[i] && rateX[k] <= ends[i]) {
+        if (rateY[k] > mx) mx = rateY[k];
+        sum += rateY[k]; n++;
+      }
+    if (n) { freqMax.push(mx); freqMean.push(sum / n); }
+    else if (m) {
+      const mid = (starts[i] + ends[i]) / 2;
+      let j = 0, bd = Infinity;
+      for (let k = 0; k < m; k++) {
+        const d = Math.abs(rateX[k] - mid);
+        if (d < bd) { bd = d; j = k; }
+      }
+      freqMax.push(rateY[j]); freqMean.push(rateY[j]);
+    } else { freqMax.push(0); freqMean.push(0); }
+  }
+  return { starts, ends, freqMax, freqMean, rateX, rateY, ctxY, excess,
+           ctxActual, nEvents: starts.length };
 }
 
 /* ---------- the assessment, in the browser -----------------------------------
@@ -1673,8 +1885,61 @@ document.getElementById("aK").onchange = () => {
   runAssess();
 };
 
+/* ---------- running the detector, and drawing what it called --------------- */
+let DETECT = null;    // {recId, label, starts, ends}
+
+function clearDetect() {
+  DETECT = null;
+  const b = document.getElementById("detectOut");
+  if (b) b.textContent = "";
+}
+
+async function runDetect() {
+  if (!current) return;
+  const btn = document.getElementById("runDetect");
+  btn.textContent = "Detecting…"; btn.disabled = true;
+  await new Promise(r => setTimeout(r, 0));
+  try {
+    const data = await loadRecording(current);
+    const stream = [...data.streams.keys()].sort()[0];
+    const byRoi = data.streams.get(stream);
+    const trains = data.order.map(id => (byRoi.get(id) || []).slice());
+    const m = META.get(current.id) || {};
+    const dt = Number(m.frame_interval_sec) > 0 ? Number(m.frame_interval_sec) : 0.1;
+    const det = rateDetect(trains, [data.t0, Math.max(data.t1, data.t0 + 1)], {
+      excessThresholdHz: clamp(Number(document.getElementById("dThr").value), 0.1, 50),
+      rateWin: clamp(Number(document.getElementById("dRate").value), 0.1, 30),
+      contextWin: clamp(Number(document.getElementById("dCtx").value), 5, 600),
+      gridDt: dt,
+    });
+    DETECT = { recId: current.id, label: "RateDetect",
+               starts: det.starts, ends: det.ends };
+
+    const box = document.getElementById("detectOut");
+    box.textContent = "";
+    box.append(el("h4", "RateDetect on " + current.id));
+    box.append(el("p", det.nEvents + " event(s) called · threshold "
+      + document.getElementById("dThr").value + " Hz excess · rate window "
+      + document.getElementById("dRate").value + " s · context "
+      + det.ctxActual.toFixed(0) + " s"
+      + (det.ctxActual < Number(document.getElementById("dCtx").value)
+         ? " (clipped to 0.9x the recording)" : "")
+      + " · dt " + dt + " s", "sub"));
+    box.append(el("p", "These are the settings this project benches at, not "
+      + "settings calibrated for your preparation. Tuning them is what the "
+      + "simulate step is for — measure, simulate from what you measured, tune "
+      + "against planted events, then point the tuned instrument at everything.",
+      "caveat"));
+    draw(current, data);
+  } finally {
+    btn.textContent = "Detect"; btn.disabled = false;
+  }
+}
+
+document.getElementById("runDetect").onclick = runDetect;
+
 /* ---------- the sidebar: one section at a time ----------------------------- */
-const SECTIONS = ["accSim", "accOpen", "accAssess", "accList"];
+const SECTIONS = ["accSim", "accOpen", "accAssess", "accDetect", "accList"];
 function showSection(id) {
   for (const s of SECTIONS) {
     const n = document.getElementById(s);
