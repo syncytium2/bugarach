@@ -98,3 +98,86 @@ def test_both_nulls_find_a_mid_strength_assembly():
 def test_fisher_combination_is_defined_at_the_extremes():
     assert ap.fisher(np.ones(5)) == pytest.approx(1.0)
     assert ap.fisher(np.full(5, 1e-6)) < 1e-9
+
+
+# ---- the decision rule the corpus is actually scored by ---------------------
+#
+# Step 1 of the assembly handoff. The tables in the todo were computed at one
+# statistic, one null, alpha — and no recording was ever scored that way. These
+# lock the property that makes the negative quotable: the verdict rule is
+# strictly more conservative than the single-null rule it replaced, and it still
+# sits at its nominal size when nothing is planted.
+
+def _cell(rng, A, strength, n=60, n_surr=120):
+    acc = {k: [] for k in ("md", "me", "ud", "ue")}
+    for _ in range(n):
+        M = _slice(rng, A, strength)
+        a, b = ap.pvalues(rng, M, n_surr)
+        c, d = ap.pvalues_uniform(rng, M, n_surr)
+        acc["md"].append(a); acc["me"].append(b)
+        acc["ud"].append(c); acc["ue"].append(d)
+    return {k: np.array(v) for k, v in acc.items()}
+
+
+def test_verdict_rule_holds_its_size_with_nothing_planted():
+    """No assembly planted -> `no-assembly` for essentially every recording.
+
+    This is the number the whole negative rests on. Bonferroni over the two
+    statistics is what buys it; uncorrected, the same instrument called 2 of 8
+    uniformly generated recordings an assembly.
+    """
+    rng = np.random.RandomState(11)
+    cell = _cell(rng, 0, 0.0)
+    p = ap.powers_verdict(cell, GEO)
+    assert p["verdict_power"] <= 0.12, p
+
+
+def test_verdict_rule_is_more_conservative_than_a_single_null():
+    """It must never fire where the single-null rule at alpha would not.
+
+    `verdict()` tests each null at alpha/2, so its rejection region is contained
+    in the union the loose rule uses. If this inverts, the correction has been
+    lost and every `no-assembly` tally on the real corpus is overstated.
+    """
+    rng = np.random.RandomState(12)
+    cell = _cell(rng, 6, 0.25)
+    words = ap.verdicts_for(cell, GEO)
+    for i, w in enumerate(words):
+        fired_loose = (min(cell["md"][i], cell["me"][i]) < ap.ALPHA
+                       or min(cell["ud"][i], cell["ue"][i]) < ap.ALPHA)
+        if w != "no-assembly":
+            assert fired_loose, (i, w)
+
+
+def test_verdict_power_rises_with_assembly_strength():
+    """Monotone in the thing being measured — the positive control.
+
+    Not a tautology: the double-margin null on its own is famously NOT monotone
+    here (it goes blind at full strength), which is why the verdict reads both
+    nulls. If this fails, the pair has stopped covering that hole.
+    """
+    rng = np.random.RandomState(13)
+    weak = ap.powers_verdict(_cell(rng, 8, 0.10), GEO)["verdict_power"]
+    strong = ap.powers_verdict(_cell(rng, 8, 0.50), GEO)["verdict_power"]
+    assert strong > weak, (weak, strong)
+
+
+def test_corpus_geometry_drops_undefined_recordings(tmp_path):
+    """An undefined recording contributes no verdict, so it has no power.
+
+    Keeping it would let "we could not look" be counted as a recording we
+    looked at and found nothing in — the exact confusion `assess_assemblies`
+    returns `undefined` to prevent.
+    """
+    import json
+    j = tmp_path / "assessment_real.json"
+    j.write_text(json.dumps({"rows": [
+        {"K": 3, "stream": "fast", "n_roi": 30, "asm_defined": True,
+         "asm_n_events": 21, "part_n_obs": 4.5, "slice_id": "a"},
+        {"K": 3, "stream": "fast", "n_roi": 30, "asm_defined": False,
+         "asm_n_events": 1, "part_n_obs": 4.5, "slice_id": "b"},
+        {"K": 4, "stream": "fast", "n_roi": 30, "asm_defined": True,
+         "asm_n_events": 9, "part_n_obs": 4.5, "slice_id": "c"},
+    ]}))
+    got = ap.corpus_geometry(j, k=3, stream="fast")
+    assert [g["slice_id"] for g in got] == ["a"]

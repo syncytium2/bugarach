@@ -60,6 +60,25 @@ Template:
 
 ## Active
 
+### Mac/close-the-assembly-question — the three steps that close the assembly negative
+- **Status:** ACTIVE
+- **Started:** 2026-08-19
+- **Writes:** `<darkroom>/bugarach/` — `assembly_closed.{html,png}`, `assembly_summary.html`,
+  `assembly_report.html` (**overwrites** the 2026-08-18 report, deliberately: it is the same
+  document reframed to lead with the negative, per its own handoff). Nothing in
+  `<darkroom>/constellation/`, nothing in `murmuration/`, nothing under `$BUGARACH_DATA_ROOT`.
+- **Claims:** those four names in `<darkroom>/bugarach/` only. No claim on the rest of the
+  folder — another session may write other figures there concurrently.
+- **Reads:** `$BUGARACH_DATA_ROOT/processed_archive/event_store_onset_revised_2v` (88) and
+  `..._onset_pensub_revised_2v` (85, a strict subset) — **read-only**, both streams, baseline
+  regions only. No writes to any store.
+- **Notes:** `BUGARACH_DATA_ROOT` was **unset** in this session's environment and had to be
+  located; it resolves to `~/Library/CloudStorage/Dropbox-<org>/<person>/data` on this box.
+  The crosstalk comparison reads `.mat` on **both** sides because no export folder exists for
+  the penumbra-subtracted recordings — so its tallies (49/40 testable) differ slightly from
+  the export-folder run's (48/38), which honours the producer's analysis window. That is a
+  windowing difference, not a measurement one, and it is stated in the report.
+
 ### Mac/dt-required-at-load — FOUNDATIONS §6 reversed: dt is required, not defaulted
 - **Status:** DONE 2026-08-18 — merged. Opened 2026-08-16 and sat three days, during
   which `main` said the opposite of the decision and every session read the old rule.

@@ -1,4 +1,4 @@
-<!-- vendored from syncytium2/murderboard @ 57445b4 — canonical source; do NOT edit here, update upstream and re-copy -->
+<!-- vendored from syncytium2/murderboard @ 8bf89e5 — canonical source; do NOT edit here, update upstream and re-copy -->
 ---
 # canonical: syncytium2/murderboard skills/murderboard/SKILL.md
 # When vendoring, REPLACE this line with: vendored from https://github.com/syncytium2/murderboard @ <short-sha> — do NOT edit here; update by re-copying.
