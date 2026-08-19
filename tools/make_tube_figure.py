@@ -184,7 +184,8 @@ def build(gen=None, width=980, out_dir: Path | None = None):
 def main(argv=None):
     p = argparse.ArgumentParser(description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
-    p.add_argument("--out", type=Path, required=True)
+    p.add_argument("--out", type=Path, default=None,
+                   help="destination; default $BUGARACH_DARKROOM (sapper SAP006)")
     p.add_argument("--width", type=int, default=980)
     p.add_argument("--name", default="tube_view")
     p.add_argument("--spec", type=Path, default=None,
@@ -203,7 +204,12 @@ def main(argv=None):
     mgf = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mgf)
 
-    a.out.mkdir(parents=True, exist_ok=True)
+    from bugarach.paths import darkroom, unresolved_message
+    out_dir = a.out or darkroom()
+    if out_dir is None:
+        print(unresolved_message(), file=sys.stderr)
+        return 1
+    out_dir.mkdir(parents=True, exist_ok=True)
     # No title or standfirst baked into the raster — the HTML figcaption is the
     # single caption, where it is selectable, reflows, and follows the theme.
     gen = {}
@@ -212,8 +218,8 @@ def main(argv=None):
         gen = {k: v for k, v in doc["generator"].items() if k != "bg_rate_hz"}
         # bg_rate_hz stays with REGIME: this figure is drawn in the busy regime
         # on purpose, and the spec's fitted median would quietly replace it.
-    mgf._write(pn.Column(pn.pane.HoloViews(build(gen, a.width, out_dir=a.out))),
-               a.out, a.name, png=True)
+    mgf._write(pn.Column(pn.pane.HoloViews(build(gen, a.width, out_dir=out_dir))),
+               out_dir, a.name, png=True)
     return 0
 
 
