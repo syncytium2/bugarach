@@ -63,8 +63,19 @@ def test_the_viewer_carries_no_data():
     # Integers are not the tell — the tick-step table is `1, 2, 5, 10, 15, 30`
     # and a check that cannot separate those two fires on the wrong thing and
     # gets deleted by the next person, which is worse than not checking.
-    smuggled = re.search(r"(\d+\.\d+\s*,\s*){5}\d+\.\d+", body)
-    assert not smuggled, f"the page must not carry event times: {smuggled}"
+    #
+    # A PARAMETER GRID is the other thing that looks like this, and the warning
+    # above came true the first time one arrived: the sweep the tuning step runs
+    # over SPIKE-synch's threshold is `0.005, 0.01, 0.02, 0.04, 0.08, 0.12`, six
+    # decimals in a row and not a recording of anything. So the run has to be
+    # longer than any grid, and has to reach past a minute — a smuggled train is
+    # hundreds of onsets over a recording tens of minutes long, and a knob is
+    # neither. Sharpened rather than loosened: the run below still matches any
+    # real train.
+    for run in re.finditer(r"(\d+\.\d+\s*,\s*){7,}\d+\.\d+", body):
+        values = [float(v) for v in re.findall(r"\d+\.\d+", run.group(0))]
+        assert max(values) < 60.0, (
+            f"the page must not carry event times: {run.group(0)[:80]}…")
 
 
 def test_the_viewer_reads_the_contract_it_claims_to():

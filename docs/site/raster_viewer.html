@@ -176,18 +176,25 @@
     padding: 10px 14px; margin: 10px 0; font-size: 13px;
   }
   .note { color: var(--muted); font-size: 12.5px; margin-top: 14px; max-width: 70ch; }
-  #assessOut, #detectOut { margin: 16px 0 0; font-size: 12.5px; }
-  #detectOut h4 { margin: 0 0 6px; font-size: 13px; font-weight: 600; }
-  #detectOut .sub { color: var(--muted); margin: 0 0 8px; }
-  #detectOut .caveat { color: var(--muted); max-width: 72ch; line-height: 1.5;
-                       margin: 10px 0 0; }
-  #detectOut table { border-collapse: collapse; margin: 0 0 4px; }
-  #detectOut th, #detectOut td { padding: 4px 14px 4px 0; text-align: right;
+  #assessOut, #detectOut, #tuneOut { margin: 16px 0 0; font-size: 12.5px; }
+  #detectOut h4, #tuneOut h4 { margin: 0 0 6px; font-size: 13px; font-weight: 600; }
+  #detectOut .sub, #tuneOut .sub { color: var(--muted); margin: 0 0 8px; }
+  #detectOut .caveat, #tuneOut .caveat { color: var(--muted); max-width: 72ch;
+                       line-height: 1.5; margin: 10px 0 0; }
+  #detectOut table, #tuneOut table { border-collapse: collapse; margin: 0 0 4px; }
+  #detectOut th, #detectOut td, #tuneOut th, #tuneOut td {
+                                 padding: 4px 14px 4px 0; text-align: right;
                                  font-variant-numeric: tabular-nums; }
-  #detectOut th { color: var(--muted); font-weight: 500; }
-  #detectOut th:first-child, #detectOut td:first-child { text-align: left; }
+  #detectOut th, #tuneOut th { color: var(--muted); font-weight: 500; }
+  #detectOut th:first-child, #detectOut td:first-child,
+  #tuneOut th:first-child, #tuneOut td:first-child { text-align: left; }
   #detectOut td.state { text-align: left; color: var(--muted);
                         font-variant-numeric: normal; }
+  /* the row the sweep chose, so the table and the picture agree without the
+     reader having to find the maximum by eye */
+  #tuneOut tr.best td { font-weight: 600; color: var(--fg); }
+  #tuneOut .verdict { margin: 10px 0 0; max-width: 72ch; line-height: 1.5; }
+  #tuneOut canvas { width: 100%; display: block; margin: 2px 0 10px; }
   #assessOut h4 { margin: 0 0 6px; font-size: 13px; font-weight: 600; }
   #assessOut .sub { color: var(--muted); margin: 0 0 8px; }
   #assessOut table { border-collapse: collapse; }
@@ -417,6 +424,34 @@
       </div>
     </details>
 
+    <details class="acc" id="accTune">
+      <summary>Tune the settings<span class="cnt" id="cntTune">simulated only</span></summary>
+      <div class="ctl">
+        <label for="tTol">match tolerance (s)</label>
+        <input id="tTol" type="number" min="0.1" max="30" step="0.5" value="1.5">
+        <div class="span"><button id="runTune">Sweep</button></div>
+        <div class="note" id="tuneWhat"></div>
+      </div>
+      <div class="fine">
+        <b>The step that makes this a loop.</b> The other three ask what is in a
+        recording; this one asks whether the instrument reading it is any good.
+        It sweeps one setting of the detector chosen above, holds the rest where
+        you left them, and scores every result against the events that were
+        planted — so a number here is right or wrong rather than merely produced.
+        <br><br>
+        <b>Only on a folder this page invented, and that is the reason the
+        simulate step exists.</b> Your own recordings have no answer key: nobody
+        knows which moments in them were coordinated, which is what the detector
+        is for. Tune where the truth is known, then point the tuned instrument at
+        the recordings where it is not.
+        <br><br>
+        <b>A best value at the end of the range is not a best value.</b> It is
+        the sweep saying it stopped too early, and it is reported as that rather
+        than as an answer — a boundary value has been published as a calibrated
+        setting before.
+      </div>
+    </details>
+
     <details class="acc" id="accList" hidden>
       <summary>Recordings<span class="cnt" id="cntList"></span></summary>
       <div id="checkbar" hidden></div>
@@ -455,6 +490,7 @@
       <canvas id="cv"></canvas>
       <div id="assessOut"></div>
       <div id="detectOut"></div>
+      <div id="tuneOut"></div>
       <div class="note" id="note"></div>
     </div>
   </div>
@@ -471,6 +507,10 @@ let REGIONS = new Map();   // slice_id -> [{idx,label,start,end}]
 let META = new Map();      // slice_id -> {col: val}
 let current = null;
 let SIMULATED = false;     // did the open folder come out of the generator below
+// slice_id -> {times, fracs}: what the generator planted, and the only ground
+// truth this page can have. Empty for a folder read off disk, which is why
+// tuning is offered for a simulated folder and not for anybody's recordings.
+let TRUTH = new Map();
 let ORDER = "id";          // "id" | "rate" — sticky across recordings, because
                            // comparing two recordings means comparing them the
                            // same way, and re-picking per slice invites not
@@ -873,7 +913,7 @@ function draw(rec, data) {
 async function show(rec) {
   // an assessment is of ONE recording; carrying it to the next one would mark
   // this recording's clusters on somebody else's data
-  if (!current || current.id !== rec.id) { clearAssess(); clearDetect(); }
+  if (!current || current.id !== rec.id) { clearAssess(); clearDetect(); clearTune(); }
   current = rec;
   document.querySelectorAll("#list button").forEach(b =>
     b.setAttribute("aria-current", String(b.dataset.id === rec.id)));
@@ -955,6 +995,7 @@ async function show(rec) {
       + "recording of anything, and the treatment windows are labels over "
       + "identical statistics — the drug is a name on the axis, not an effect.");
   paintRegionChoices(rec);
+  paintTuneWhat();
   paintOrderNote(data);
   draw(rec, data);
 }
@@ -1121,6 +1162,10 @@ function paintOrderNote(data) {
 async function open(fileList, opts) {
   const files = [...fileList].filter(f => f.name.toLowerCase().endsWith(".csv"));
   SIMULATED = !!(opts && opts.simulated);
+  // Cleared here with everything else, and set here from what the caller was
+  // handed — so a folder opened from disk cannot inherit the last simulation's
+  // planted events and be tuned against them.
+  TRUTH = (opts && opts.truth) || new Map();
   RECORDINGS = []; REGIONS = new Map(); META = new Map();
   document.getElementById("panel").hidden = true;
   document.getElementById("checkbar").hidden = true;
@@ -1384,7 +1429,7 @@ function uniqSorted(v) {
 function clipSorted(trains, lo, hi) {
   return trains.map(v => {
     const out = [];
-    for (const x of v) if (isFinite(x) && x >= lo && x <= hi) out.push(x);
+    for (const x of v) if (Number.isFinite(x) && x >= lo && x <= hi) out.push(x);
     out.sort((a, b) => a - b);
     return Float64Array.from(out);
   });
@@ -1587,6 +1632,131 @@ function syncDetect(trains, tRange, opts) {
            nEvents: starts.length };
 }
 
+
+/* ---------- scoring, and the step that makes this a loop ----------------------
+   Measure, simulate from what you measured, DETECT — and then the question the
+   first three steps exist to answer: are these settings any good? On a real
+   recording that question has no answer, because nobody knows which moments were
+   coordinated. On a simulated one it does, because the page planted them.
+
+   So tuning is only offered for a folder this page invented, and that is not a
+   limitation to apologise for — it is the reason the simulate step is in the
+   workflow at all. Tune where the answer is known, then point the tuned
+   instrument at the recordings where it is not.
+
+   A port of `bugarach.score`, which is itself a port of interface2's
+   score_coord_detection.m. Like the two detectors above it draws no random
+   numbers, so it is checked against the Python exactly — see
+   `tests/test_webapp_tune_parity.py`. */
+
+/* Detections are INTERVALS, not points. The distance from a planted event to a
+   detection is zero when the event falls inside its span and the gap to the
+   nearer edge otherwise. Scoring a binned detector as if it claimed onset
+   resolution once read 0.00 recall on fourteen detections that each spanned a
+   planted event. */
+const spanGap = (t, lo, hi) => Math.max(0, Math.max(lo - t, t - hi));
+
+/* Matching is greedy CLOSEST PAIR FIRST, not planted-events-in-time-order.
+   Walking them in time can consume a detection that was a much better match for
+   the next event, which shows up as misses that are really bookkeeping. */
+function scoreDetections(times, fracs, onsets, widths, tolSec) {
+  // `Number.isFinite`, not the bare `isFinite`, which coerces first and so
+  // answers true for null, for "" and for a one-element array. A detection that
+  // arrived as null would be scored as one at time zero. Caught by a vector
+  // built for something else entirely.
+  const keep = [];
+  for (let i = 0; i < onsets.length; i++) if (Number.isFinite(onsets[i])) keep.push(i);
+  keep.sort((a, b) => (onsets[a] - onsets[b]) || (a - b));
+  const lo = keep.map(i => onsets[i]);
+  // widths are PER DETECTION, so they ride the same reordering — sorting the
+  // onsets alone would pair each span with its neighbour's width
+  const hi = keep.map((i, k) => {
+    const w = widths && Number.isFinite(widths[i]) ? Math.max(widths[i], 0) : 0;
+    return lo[k] + w;
+  });
+  const nP = times.length, nD = lo.length;
+  const matched = new Array(nP).fill(NaN);
+  const used = new Array(nD).fill(false);
+
+  const pairs = [];
+  for (let i = 0; i < nP; i++)
+    for (let j = 0; j < nD; j++) {
+      const d = spanGap(times[i], lo[j], hi[j]);
+      if (d > tolSec) continue;
+      // spans that all contain the same event tie at gap 0; the one CENTRED on
+      // it wins, rather than whichever happened to start first
+      pairs.push([d, Math.abs(times[i] - 0.5 * (lo[j] + hi[j])), i, j]);
+    }
+  pairs.sort((a, b) => (a[0] - b[0]) || (a[1] - b[1]));
+  for (const [, , i, j] of pairs)
+    if (Number.isNaN(matched[i]) && !used[j]) { matched[i] = lo[j]; used[j] = true; }
+
+  const hits = matched.map(v => !Number.isNaN(v));
+  const faLo = [], faHi = [];
+  for (let j = 0; j < nD; j++) if (!used[j]) { faLo.push(lo[j]); faHi.push(hi[j]); }
+
+  /* A false alarm sitting on a planted event that another detection already
+     claimed is a detector firing TWICE for one event, not firing at nothing.
+     Counted apart because they are different faults: fragmentation is a merge
+     gap, noise is a threshold. */
+  let nDup = 0;
+  for (let k = 0; k < faLo.length; k++)
+    for (let i = 0; i < nP; i++)
+      if (spanGap(times[i], faLo[k], faHi[k]) <= tolSec) { nDup++; break; }
+
+  /* Recall broken down by participation, because the headline hides the thing
+     worth knowing: a detector that finds every full-field event and nothing at
+     10% is a different instrument from one that degrades gracefully, and the
+     two can share an overall recall. */
+  const byFrac = new Map();
+  for (let i = 0; i < nP; i++) {
+    const f = fracs[i];
+    const [n, h] = byFrac.get(f) || [0, 0];
+    byFrac.set(f, [n + 1, h + (hits[i] ? 1 : 0)]);
+  }
+
+  const nHit = hits.filter(Boolean).length;
+  const recall = nP ? nHit / nP : NaN;
+  const precision = nD ? nHit / nD : NaN;
+  const f1 = (Number.isFinite(recall) && Number.isFinite(precision)
+              && recall + precision > 0)
+    ? 2 * recall * precision / (recall + precision) : NaN;
+  return { nPlanted: nP, nDetected: nD, nHit, nMiss: nP - nHit,
+           nFa: faLo.length, nDup, byFrac, recall, precision, f1 };
+}
+
+/* The sensitivity axis: one knob per detector, and the values the project's own
+   bench sweeps it over (`bench.OPERATING_POINTS`). Everything else is held at
+   whatever the Detect panel has, so the sweep answers "what does this one knob
+   do to THESE settings" rather than a question about some other settings. */
+const TUNE_KNOB = {
+  rate: { key: "excessThresholdHz", name: "excess threshold",
+          unit: "Hz", grid: [0.5, 1, 2, 3, 4, 5, 6, 8] },
+  sync: { key: "CThreshold", name: "C to start an event",
+          unit: "", grid: [0.005, 0.01, 0.02, 0.04, 0.08, 0.12] },
+};
+
+/* `bench.pick_operating_point`, and its refusal is the point of it. An optimum
+   at the end of the grid is not an optimum — it is the search saying it stopped
+   too early, and reporting it as a calibrated setting is how a boundary value
+   once got published upstream as one.
+
+   A PLATEAU reaching the edge is different, and is allowed: if any point sharing
+   the best F1 has neighbours on both sides, the grid bracketed the peak. */
+function pickOperatingPoint(curve) {
+  const scored = curve.filter(r => Number.isFinite(r.f1));
+  if (!scored.length) return { row: null, why: "no setting on this sweep has a defined F1" };
+  if (scored.length === 1) return { row: scored[0], why: "" };
+  const best = Math.max(...scored.map(r => r.f1));
+  const optimal = scored.filter(r => r.f1 >= best - 1e-9);
+  const interior = optimal.filter(r => r !== scored[0] && r !== scored[scored.length - 1]);
+  if (interior.length) return { row: interior[0], why: "" };
+  const end = optimal[0] === scored[0] ? "low" : "high";
+  return { row: null, edge: optimal[0], why:
+    "F1 peaks at the " + end + " end of the grid, so this sweep found no "
+    + "operating point — it was still climbing when it stopped. Widen the "
+    + "range before calling any of these a setting." };
+}
 /* ---------- the assessment, in the browser -----------------------------------
    A port of `bugarach.assess`, which is itself a port of interface2's
    measure_coordination_timescale.m. **Not a detector**: it emits no event times
@@ -2128,10 +2298,19 @@ function simulateRecording(p, seed) {
     const j = Math.floor(u() * (i + 1));
     const t = fracs[i]; fracs[i] = fracs[j]; fracs[j] = t;
   }
+  // The planted times are KEPT, not just used. They are the only ground truth
+  // this page will ever have, and the tuning step exists because they exist: a
+  // sweep of a detector's knob is scoreable here and nowhere else. Nominal
+  // times, as `simulate.GroundTruth.times` records them — the participants get
+  // jittered onsets around each one, and the event is the time it was planted
+  // at rather than any one participant's arrival.
+  const truth = { times: [], fracs: [] };
   plantTimes(u, fracs.length, T).forEach((t, i) => {
     const n = Math.max(1, mround(fracs[i] * nR));
     for (const r of pick(u, nR, n))
       trains[r].push(Math.min(Math.max(t + p.jitter * randn(u), 0), T));
+    truth.times.push(t);
+    truth.fracs.push(fracs[i]);
   });
 
   // ---- write it as the contract says ----------------------------------------
@@ -2144,11 +2323,12 @@ function simulateRecording(p, seed) {
     if (!v.length) { rows.push((r + 1) + ",NA"); continue; }
     for (const x of v) rows.push((r + 1) + "," + x.toFixed(1));
   }
-  return rows.join("\n") + "\n";
+  return { csv: rows.join("\n") + "\n", truth };
 }
 
 function simulateFolder(p) {
   const files = [];
+  const truth = new Map();
   const regions = ["slice_id,region_idx,label,start_sec,end_sec,"
                   + "analysis_start_sec,analysis_end_sec"];
   const slices = ["slice_id,frame_interval_sec,source"];
@@ -2157,7 +2337,9 @@ function simulateFolder(p) {
   for (let i = 0; i < p.n; i++) {
     const id = "simulated_" + String(i + 1).padStart(2, "0");
     // each recording its own seed, so they are siblings and not copies
-    files.push({ name: id + ".csv", text: simulateRecording(p, p.seed * 977 + i) });
+    const made = simulateRecording(p, p.seed * 977 + i);
+    files.push({ name: id + ".csv", text: made.csv });
+    truth.set(id, made.truth);
     slices.push(id + "," + GRID + ",simulated in this browser");
     scheme.forEach((w, k) => {
       const lo = w[1] * T, hi = w[2] * T;
@@ -2181,7 +2363,7 @@ function simulateFolder(p) {
   if (scheme.length)
     files.push({ name: "regions.csv", text: regions.join("\n") + "\n" });
   files.push({ name: "slices.csv", text: slices.join("\n") + "\n" });
-  return files;
+  return { files, truth };
 }
 
 const clamp = (v, lo, hi) =>
@@ -2211,7 +2393,8 @@ async function runSim() {
   // one frame, so the button repaints before the generator takes the thread
   await new Promise(r => setTimeout(r, 0));
   try {
-    await open(simulateFolder(readSim()), { simulated: true });
+    const made = simulateFolder(readSim());
+    await open(made.files, { simulated: true, truth: made.truth });
   } finally {
     btn.textContent = "Simulate";
     btn.disabled = false;
@@ -2377,6 +2560,10 @@ function paintDetectorChoice() {
   }
   document.getElementById("cntDetect").textContent = DETECTOR_UI[which].label;
   clearDetect();
+  // the sweep follows the chosen detector, so its own result stops being about
+  // the thing named on it the moment the choice moves
+  clearTune();
+  paintTuneWhat();
   if (current) loadRecording(current).then(d => draw(current, d));
 }
 
@@ -2480,10 +2667,257 @@ async function runDetect() {
 }
 
 document.getElementById("dDet").onchange = paintDetectorChoice;
+
+/* ---------- the sweep, and the picture of it -------------------------------- */
+
+function clearTune() {
+  const b = document.getElementById("tuneOut");
+  if (b) b.textContent = "";
+}
+
+/* What the Sweep button will do, said before it is pressed — which detector,
+   which of its settings moves, and whether there is anything to score against.
+   A button whose effect depends on a control in another section has to say so
+   where it sits. */
+function paintTuneWhat() {
+  const which = whichDetector();
+  const knob = TUNE_KNOB[which];
+  const chip = document.getElementById("cntTune");
+  const note = document.getElementById("tuneWhat");
+  const btn = document.getElementById("runTune");
+  const truth = current ? TRUTH.get(current.id) : null;
+  const ok = !!(truth && truth.times.length);
+  btn.disabled = !ok;
+  chip.textContent = ok ? DETECTOR_UI[which].label : "simulated only";
+  note.textContent = ok
+    ? "Sweeps " + DETECTOR_UI[which].label + "'s " + knob.name + " over "
+      + knob.grid.length + " values (" + knob.grid[0] + " to "
+      + knob.grid[knob.grid.length - 1] + "), holding its other settings at what "
+      + "the Detect section has, and scores each against the "
+      + truth.times.length + " events planted in this recording."
+    : "Nothing to score against. These recordings were read from a folder, so "
+      + "there is no record of which moments were coordinated — simulate a "
+      + "folder and the planted events become the answer key.";
+}
+
+const fmtKnob = v => (v >= 0.1 ? String(v) : v.toFixed(3));
+
+/* One point on the sweep: set the knob, run the detector, score what came back
+   against what was planted. Split out of the loop below so the parity test can
+   call exactly what the button calls, rather than a second copy of it that could
+   drift into agreeing with the Python while the page does not. */
+function sweepPoint(trains, range, which, base, knob, value, truth, tolSec) {
+  const cfg = { ...base, [knob.key]: value };
+  const d = which === "sync" ? syncDetect(trains, range, cfg)
+                             : rateDetect(trains, range, cfg);
+  const widths = d.widths || d.starts.map((s, i) => d.ends[i] - s);
+  return { knob: value,
+           ...scoreDetections(truth.times, truth.fracs, d.starts, widths, tolSec) };
+}
+
+async function runTune() {
+  if (!current) return;
+  const truth = TRUTH.get(current.id);
+  if (!truth || !truth.times.length) return;
+  const btn = document.getElementById("runTune");
+  btn.textContent = "Sweeping…"; btn.disabled = true;
+  await new Promise(r => setTimeout(r, 0));
+  try {
+    const which = whichDetector();
+    const knob = TUNE_KNOB[which];
+    const label = DETECTOR_UI[which].label;
+    const data = await loadRecording(current);
+    const stream = [...data.streams.keys()].sort()[0];
+    const byRoi = data.streams.get(stream);
+    const m = META.get(current.id) || {};
+    const dt = Number(m.frame_interval_sec) > 0 ? Number(m.frame_interval_sec) : 0.1;
+    const base = readDetector(dt);
+    const tol = clamp(Number(document.getElementById("tTol").value), 0.1, 30);
+
+    // ONE RUN OVER THE WHOLE RECORDING, not per region — unlike the Detect step
+    // beside it. Events were planted across the entire extent, including the
+    // stretches the analysis windows leave out, so scoring per-window detections
+    // against all of them would count the gaps as misses. The regions of a
+    // simulated folder are labels over identical statistics anyway.
+    const trains = data.order.map(id => byRoi.get(id) || []);
+    const range = [data.t0, Math.max(data.t1, data.t0 + 1)];
+    const levels = [...new Set(truth.fracs)].sort((a, b) => b - a);
+
+    const rows = [];
+    for (const v of knob.grid) {
+      rows.push(sweepPoint(trains, range, which, base, knob, v, truth, tol));
+      await new Promise(r => setTimeout(r, 0));   // let the button stay honest
+    }
+
+    const pick = pickOperatingPoint(rows);
+    const box = document.getElementById("tuneOut");
+    box.textContent = "";
+    box.append(el("h4", label + " swept on " + current.id));
+    box.append(el("p", knob.grid.length + " settings tried · " + knob.name
+      + " · matched within " + tol + " s of a planted event · "
+      + truth.times.length + " planted", "sub"));
+
+    const cv = document.createElement("canvas");
+    box.append(cv);
+    drawSweep(cv, rows, knob, pick.row);
+
+    const cols = ["" + knob.name + (knob.unit ? " (" + knob.unit + ")" : ""),
+                  "called", "hit", "missed", "false", "precision", "recall", "F1"]
+      .concat(levels.map(f => Math.round(f * 100) + "%"));
+    const tbl = document.createElement("table");
+    const hr = document.createElement("tr");
+    for (const h of cols) hr.append(el("th", h));
+    tbl.append(hr);
+    for (const r of rows) {
+      const tr = document.createElement("tr");
+      if (r === pick.row) tr.className = "best";
+      tr.append(el("td", fmtKnob(r.knob)));
+      tr.append(el("td", String(r.nDetected)));
+      tr.append(el("td", String(r.nHit)));
+      tr.append(el("td", String(r.nMiss)));
+      tr.append(el("td", r.nFa + (r.nDup ? " (" + r.nDup + " dup)" : "")));
+      tr.append(el("td", fmtNum(r.precision, 2)));
+      tr.append(el("td", fmtNum(r.recall, 2)));
+      tr.append(el("td", fmtNum(r.f1, 2)));
+      for (const f of levels) {
+        const [n, h] = r.byFrac.get(f) || [0, 0];
+        tr.append(el("td", n ? (h / n).toFixed(2) : "—"));
+      }
+      tbl.append(tr);
+    }
+    box.append(tbl);
+
+    /* A sweep that returned one answer at every setting is not a result about
+       the knob, and `pickOperatingPoint` will still hand back an interior row
+       with neighbours on both sides — technically true and thoroughly
+       misleading. Said plainly instead, because the reader's next move is to
+       change something else rather than to trust the value that came back. */
+    const scores = rows.map(r => Number.isFinite(r.f1) ? Math.round(r.f1 * 1e9) : "x");
+    const flat = new Set(scores).size === 1 && rows.length > 1;
+    if (flat) {
+      box.append(el("p", "Every setting on this grid gave the same result, so "
+        + "this sweep says nothing about " + knob.name + " — something else is "
+        + "deciding what " + label + " finds here. The detector's other settings "
+        + "in the Detect section are the place to look, and a recording with more "
+        + "events or more ROIs will separate the grid where this one cannot.",
+        "verdict"));
+    } else if (pick.row) {
+      box.append(el("p", "Best here: " + knob.name + " " + fmtKnob(pick.row.knob)
+        + (knob.unit ? " " + knob.unit : "") + ", F1 " + fmtNum(pick.row.f1, 2)
+        + " — " + pick.row.nHit + " of " + pick.row.nPlanted + " planted events "
+        + "found, " + pick.row.nFa + " call(s) on nothing. It has neighbours on "
+        + "both sides, so the sweep bracketed it rather than running out of "
+        + "range.", "verdict"));
+    } else {
+      box.append(el("p", pick.why, "verdict bad"));
+    }
+    box.append(el("p", "The last columns are recall at each participation level, "
+      + "and they are the part worth reading. A detector that finds every "
+      + "full-field event and nothing at the sparsest level is a different "
+      + "instrument from one that degrades gracefully, and the two can share an "
+      + "F1. Simulated events only — nothing here is a measurement of a "
+      + "preparation.", "caveat"));
+  } finally {
+    btn.textContent = "Sweep"; btn.disabled = false;
+    paintTuneWhat();
+  }
+}
+
+/* Three curves on one categorical axis: the grid values are spaced by decades in
+   places and by ones in others, so plotting them to scale would put four points
+   in a corner. The x axis is the sequence of settings tried, which is what a
+   reader is choosing between. */
+function drawSweep(cv, rows, knob, best) {
+  const css = getComputedStyle(document.documentElement);
+  const dpr = window.devicePixelRatio || 1;
+  const W = cv.clientWidth || 640, H = 190;
+  cv.width = W * dpr; cv.height = H * dpr; cv.style.height = H + "px";
+  const g = cv.getContext("2d");
+  g.scale(dpr, dpr);
+  g.clearRect(0, 0, W, H);
+  g.font = "11px -apple-system, system-ui, sans-serif";
+
+  const padL = 42, padR = 12, padT = 26, padB = 26;
+  const n = rows.length;
+  const x = i => n < 2 ? (padL + W - padR) / 2
+                       : padL + i * (W - padL - padR) / (n - 1);
+  const y = v => padT + (1 - v) * (H - padT - padB);
+  const hues = dark() ? HUES_DARK : HUES_LIGHT;
+  const series = [{ k: "f1", name: "F1", hue: hues[0] },
+                  { k: "precision", name: "precision", hue: hues[1] },
+                  { k: "recall", name: "recall", hue: hues[2] }];
+
+  // the chosen setting, marked behind everything as a band rather than a rule —
+  // a vertical line through a plot reads as a value, and this is a column
+  if (best) {
+    const i = rows.indexOf(best);
+    const half = n < 2 ? (W - padL - padR) / 2
+                       : (W - padL - padR) / (n - 1) / 2;
+    g.fillStyle = css.getPropertyValue("--band").trim();
+    g.fillRect(Math.max(padL, x(i) - half), padT,
+               Math.min(2 * half, W - padR - Math.max(padL, x(i) - half)),
+               H - padT - padB);
+  }
+
+  g.strokeStyle = css.getPropertyValue("--line").trim();
+  g.lineWidth = 1;
+  g.fillStyle = css.getPropertyValue("--muted").trim();
+  g.textAlign = "end";
+  for (const v of [0, 0.5, 1]) {
+    const yy = Math.round(y(v)) + 0.5;
+    g.beginPath(); g.moveTo(padL, yy); g.lineTo(W - padR, yy); g.stroke();
+    g.fillText(v.toFixed(1), padL - 6, yy + 4);
+  }
+
+  g.textAlign = "center";
+  for (let i = 0; i < n; i++) g.fillText(fmtKnob(rows[i].knob), x(i), H - 9);
+
+  for (const s of series) {
+    g.strokeStyle = s.hue; g.lineWidth = 1.6;
+    g.beginPath();
+    let started = false;
+    rows.forEach((r, i) => {
+      if (!Number.isFinite(r[s.k])) { started = false; return; }  // undefined ≠ 0
+      if (started) g.lineTo(x(i), y(r[s.k])); else g.moveTo(x(i), y(r[s.k]));
+      started = true;
+    });
+    g.stroke();
+    g.fillStyle = s.hue;
+    rows.forEach((r, i) => {
+      if (!Number.isFinite(r[s.k])) return;
+      g.beginPath(); g.arc(x(i), y(r[s.k]), 2.4, 0, 2 * Math.PI); g.fill();
+    });
+  }
+
+  // the identity rides in the picture: a screenshot loses the controls
+  g.textAlign = "start";
+  let lx = padL;
+  for (const s of series) {
+    g.fillStyle = s.hue;
+    g.fillRect(lx, padT - 17, 9, 9);
+    g.fillStyle = css.getPropertyValue("--fg").trim();
+    g.fillText(s.name, lx + 13, padT - 9);
+    lx += 13 + g.measureText(s.name).width + 16;
+  }
+  g.save();
+  g.translate(13, padT + (H - padT - padB) / 2);
+  g.rotate(-Math.PI / 2);
+  g.textAlign = "center";
+  g.fillStyle = css.getPropertyValue("--fg").trim();
+  g.fillText("score · " + rows[0].nPlanted + " planted", 0, 0);
+  g.restore();
+}
+
+document.getElementById("runTune").onclick = runTune;
+// before anything is open there is nothing to score against, and the panel says
+// that rather than offering a button that would do nothing
+paintTuneWhat();
+
 document.getElementById("runDetect").onclick = runDetect;
 
 /* ---------- the sidebar: one section at a time ----------------------------- */
-const SECTIONS = ["accSim", "accOpen", "accAssess", "accDetect", "accList"];
+const SECTIONS = ["accSim", "accOpen", "accAssess", "accDetect", "accTune",
+                  "accList"];
 function showSection(id) {
   for (const s of SECTIONS) {
     const n = document.getElementById(s);
