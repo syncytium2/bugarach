@@ -87,12 +87,22 @@ Template:
   actually shows. Run record in `docs/reviews/`.
 
 ### Mac/assembly-membership — the assembly question, answered on the real corpus
-- **Status:** ACTIVE
+- **Status:** DONE 2026-08-18 — **claims released**, everything landed on `main`
 - **Started:** 2026-08-18
 - **Writes:** `<darkroom>/bugarach/assembly_answer.{png,html,json}` (NEW). Nothing else
   under `<darkroom>/bugarach/`, nothing in `<darkroom>/constellation/`.
-- **Claims:** by name — `assembly_answer.*`, `assembly_membership.*` and
-  `assembly_report.html`. The earlier `assembly_power.*` claim from this machine is
+- **What the next session should know.** The corpus-level result stands: co-participation
+  beyond per-ROI rate in 27 of 48 fast recordings and 27 of 38 slow, against a measured
+  2.5% control rate. The **group difference is withdrawn** — identical planted assemblies
+  at each group's own event count reproduce it, so it was detection power. Do not restate
+  it without matching on coordinated-event count first.
+- **Two open leads, both filed as todos:** spatial adjacency is unchecked and is the most
+  likely alternative explanation for the surviving result; and synfire order is a distinct
+  question from assemblies with a cheaper port than PCA/ICA, blocked only on papers Tony
+  is fetching.
+- **Claims:** RELEASED. Held `assembly_answer.*`, `assembly_membership.*` and
+  `assembly_report.html` while writing them; all are written and nothing is pending on
+  those names. Regenerate with the four commands in the report's own reproduce block. The earlier `assembly_power.*` claim from this machine is
   released.
 - **The report is in the darkroom**, not only in the repo: `assembly_report.html`, one
   self-contained file with both figures embedded. It landed there late — the builder
