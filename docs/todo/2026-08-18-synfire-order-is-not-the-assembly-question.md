@@ -45,23 +45,33 @@ The same mistake the assembly work nearly shipped: reporting a synfire score aga
 corpus built to contain no order, and reading the zero as a fact about the method. See
 [`2026-08-18-do-real-slices-have-recurring-assemblies.md`](2026-08-18-do-real-slices-have-recurring-assemblies.md).
 
-## Papers needed — Tony has them or can fetch them at work
+## Papers — fetched 2026-08-19, in the library
 
-Searched the Dropbox on 2026-08-18: **no cSPIKE, PySpike, Kreuz or synfire PDFs**
-anywhere under `01-lit/`, `01-lit/_autofetch/` or the darkroom. `01-lit/_NEEDED.md` does
-not list them either. Nothing in this repo should characterise the method until someone
-reads them — the assembly report shipped a claim about PCA/ICA that a reviewer disproved
-by actually implementing it, and the lesson generalises.
+Kreuz publishes direct links; all three came from his own site, and the two PDFs are in
+`<dropbox>/01-lit/`.
 
-- [ ] **Kreuz et al., SPIKE-order / spike train order and the synfire indicator**
-  ("leaders and followers", quantifying consistency in spatio-temporal propagation
-  patterns). This is the one that defines the measure.
-- [ ] **cSPIKE documentation / manual** — the MATLAB suite's own description of the
-  SPIKE-order API, which is what a port would be written against.
-- [ ] **PySpike paper** (Mulansky & Kreuz) — already the reference for the ported
-  synchronization measure and cited in `detectors/sync.py`, but the PDF is not in the
-  library.
+- **Kreuz T, Satuvuori E, Pofahl M, Mulansky M (2017). "Leaders and followers:
+  quantifying consistency in spatio-temporal propagation patterns." *New J. Phys.* 19,
+  043028.** doi:10.1088/1367-2630/aa68c3 — open access.
+  → `01-lit/kreuz 2017 leaders and followers spike-order njp.pdf`.
+  This is the SPIKE-order / Spike Train Order source. Verified by opening the PDF: it
+  carries the title, both method names and the article number.
+- **Mulansky M, Kreuz T (2016). "PySpike — a Python library for analyzing spike train
+  synchrony." *SoftwareX* 5, 183.** → `01-lit/mulansky kreuz 2016 pyspike softwarex.pdf`
+  (arXiv 1603.03293v2). Already the reference behind the ported synchronization measure.
+- **Kreuz T, Satuvuori E, Mulansky M (2017). "SPIKE-order." *Scholarpedia* 12(7):42441**
+  — free at <http://www.scholarpedia.org/article/SPIKE-order>. Not downloaded; this is
+  the readable overview and the place the **Synfire Indicator** is described.
 
-⚠ The bibliographic details above are from memory and are deliberately incomplete: no
-year, journal or DOI is asserted here because none was verified this session. Fill them
-in from the PDFs rather than from a search result.
+⚠ **One thing to confirm when reading.** The Synfire Indicator is defined in the
+Scholarpedia article; a crude text extraction of the *New J. Phys.* PDF did not surface
+the word, which may be an artefact of the extraction rather than the paper. Establish
+from the PDF itself which of the two defines the indicator before citing either for it.
+
+**cSPIKE already implements it.** From Kreuz's own cSPIKE page: *"Version 1.3 also
+contains the complementary directional method SPIKE-order and Spike Train Order."*
+Download: <https://drive.google.com/file/d/1UQrsggj9MKXJqfVYKFuXOo9gws8XXOFE/view>.
+So the port is against a MATLAB reference we can run, exactly as the
+SPIKE-synchronization port was — which is the argument for it being the cheapest
+literature comparison available.
+

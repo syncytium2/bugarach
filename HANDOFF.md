@@ -78,10 +78,11 @@ the word "assembly"** unless the modularity result is overturned.
   them by design — merging is a manual decision. Two other PRs (#18, #20) are someone
   else's and touch the same file; whoever merges last needs a rebase and a re-run of
   `murderboard_roster.sh count`.
-- **Papers to fetch** — `docs/todo/2026-08-18-synfire-order-is-not-the-assembly-question.md`.
-  Synfire order is a *different* question from assemblies and a cheaper port than PCA/ICA,
-  since this repo already ships a cSPIKE-validated measure. The Kreuz/cSPIKE/PySpike PDFs
-  are not in the Dropbox library; the todo asserts no bibliographic detail nobody verified.
+- **Synfire order** — `docs/todo/2026-08-18-synfire-order-is-not-the-assembly-question.md`.
+  A *different* question from assemblies and a cheaper port than PCA/ICA. **The papers are
+  now in `01-lit/`** (fetched 2026-08-19 from Kreuz's own direct links) and cSPIKE v1.3
+  ships SPIKE-order itself, so the port would be against a runnable MATLAB reference —
+  the same footing the SPIKE-synchronization port had. Nothing blocks it but a decision.
 
 ## Two cautions for whoever picks this up
 
