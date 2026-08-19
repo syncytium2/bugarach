@@ -58,7 +58,7 @@ GROUP_ORDER = ("DI", "MALE", "OVX", "ORX")
 
 REAL_FAST = "#111111"
 REAL_SLOW = "#1f6fb4"
-CONTROL = "#c46a1e"
+CONTROL = "#a9540f"
 GUIDE = "#9a9a9a"
 
 
@@ -125,8 +125,15 @@ def tally(rows) -> dict:
     return t
 
 
-GROUP_COLOUR = {"DI": "#1a7f4b", "MALE": "#1f6fb4",
-                "OVX": "#8a6fb4", "ORX": "#c4451e"}
+# Two families, deliberately disjoint. Verdicts own the saturated hues; groups
+# own low-saturation earth tones. Before this, DI and "both nulls" were the same
+# green, MALE and real-SLOW the same blue, OVX and "margin only" the same purple —
+# three exact collisions between unrelated concepts inside one figure.
+GROUP_COLOUR = {"DI": "#20506b", "MALE": "#7a5c2e",
+                "OVX": "#5c5470", "ORX": "#8c3b3b"}
+#: Verdict colours, all at or above WCAG AA on white at 13 px bold.
+VERDICT_COLOUR = {"structure-beyond-rate": "#1a7f4b", "uniform-only": "#a35f10",
+                  "margin-only": "#6f52a0", "no-assembly": "#6a6a6a"}
 
 
 def animal_split(rows):
@@ -191,31 +198,32 @@ def group_test(split):
 def build(fast, slow, ctrl, per_k, splits, tests, width: int):
     import holoviews as hv
 
-    # ---- A: the answer, by group, at the animal level ----------------------
+    # ---- A: what detection actually tracks --------------------------------
+    # Not a group effect. The review established that planting the SAME assembly
+    # at each group's median cluster count reproduces the apparent gradient, so
+    # this panel plots the mechanism instead: whether a recording is called
+    # structured, against how many coordinated events it has to offer.
     items = []
-    xticks = []
-    for gi, g in enumerate(GROUP_ORDER):
-        xticks.append((gi, g))
-        for off, stream, marker in ((-0.16, "fast", "circle"),
-                                    (0.16, "slow", "square")):
-            sp = splits[stream].get(g)
-            if not sp or sp["animals"] == 0:
+    for g in GROUP_ORDER:
+        xs, ys = [], []
+        for r in fast:
+            if r.get("group_id") != g:
                 continue
-            k, n = sp["animals_hit"], sp["animals"]
-            lo, hi = jeffreys(k, n)
-            x = gi + off
-            items.append(hv.Segments([(x, lo, x, hi)]).opts(
-                color=GROUP_COLOUR[g], line_width=2, alpha=0.55))
-            items.append(hv.Scatter([(x, k / n)]).opts(
-                color=GROUP_COLOUR[g], size=13, marker=marker,
-                line_color="white", line_width=1.5))
+            xs.append(max(r["asm_n_events"], 1))
+            ys.append(1.0 if r["asm_verdict"] == "structure-beyond-rate" else 0.0)
+        if xs:
+            import numpy as _np
+            jitter = (_np.arange(len(ys)) % 5 - 2) * 0.016
+            items.append(hv.Scatter((xs, _np.array(ys) + jitter)).opts(
+                color=GROUP_COLOUR[g], size=9, marker="circle", alpha=0.85,
+                line_color="white", line_width=0.8))
     a = hv.Overlay(items).opts(
-        width=int(width * 0.95), height=430, ylim=(-0.05, 1.08),
-        xlim=(-0.6, len(GROUP_ORDER) - 0.4), xticks=xticks,
-        xlabel="group · circle FAST, square SLOW",
-        ylabel="A · animals showing structure beyond rate",
+        width=int(width * 0.95), height=430, logx=True, ylim=(-0.25, 1.25),
+        yticks=[(0, "not called\nstructured"), (1, "called\nstructured")],
+        xlabel="coordinated events in the recording (log)",
+        ylabel="A · verdict vs how much there was to see",
         title="", show_legend=False,
-        fontsize={"labels": "11pt", "ticks": "10pt"})
+        fontsize={"labels": "11pt", "ticks": "9pt"})
 
     # ---- B: the control, as the reason to believe A ------------------------
     a2 = ALPHA / 2.0
@@ -241,8 +249,7 @@ def build(fast, slow, ctrl, per_k, splits, tests, width: int):
     # ---- C: does it survive the arbitrary parameter ------------------------
     ks = sorted(per_k)
     order = ["structure-beyond-rate", "uniform-only", "margin-only", "no-assembly"]
-    cols = {"structure-beyond-rate": "#1a7f4b", "uniform-only": "#d98324",
-            "margin-only": "#8a6fb4", "no-assembly": "#7d7d7d"}
+    cols = VERDICT_COLOUR
     recs = [(f"K{k} {st}", v, per_k[k][st].get(v, 0))
             for k in ks for st in ("fast", "slow") for v in order]
     c = hv.Bars(recs, kdims=["cell", "verdict"], vdims=["slices"]).opts(
@@ -253,61 +260,14 @@ def build(fast, slow, ctrl, per_k, splits, tests, width: int):
         cmap=[cols[v] for v in order], line_color="white", line_width=1,
         fontsize={"labels": "11pt", "ticks": "9pt"})
 
-    def gsw(g):
-        return f'<span style="color:{GROUP_COLOUR[g]}"><b>{g}</b></span>'
+    # **No baked header.** It used to carry ~300 words — 29% of the image —
+    # rasterized at a size that rendered at 9 px beside 16.5 px body text and
+    # 3.4 px on a phone, duplicating the page's own words where no reader can
+    # select them and no screen reader can reach them. The caption now lives in
+    # the document, in the document's type. What stays in the figure is what
+    # labels the thing it sits next to.
+    header = ""
 
-    def sw(v, label):
-        return f'<span style="color:{cols[v]}"><b>{label}</b></span>'
-
-    def frac(stream, g):
-        sp = splits[stream].get(g)
-        return f"{sp['animals_hit']}/{sp['animals']}" if sp else "—"
-
-    n_animals = {st: sum(v["animals"] for v in splits[st].values())
-                 for st in ("fast", "slow")}
-    header = (
-        '<div style="font:13px/1.6 system-ui,sans-serif;color:#222;'
-        'max-width:1240px">'
-        '<b>Do the same cells take part in one coordinated event as in the next? '
-        'In most animals yes — but not in every group, and the pooled number hides '
-        'that.</b><br>'
-        'Baseline windows from every treatment arm, at coactivity floor '
-        f'K={K_SHOWN} — K is how many ROIs must be co-active for a cluster to '
-        'count. The corpus is exactly what the export folder holds: the '
-        'producer applied its own exclusions before writing it.<br>'
-        f'<b>A — the answer.</b> Animals, not slices: one mouse gives up to three '
-        'slices and they are not independent. '
-        + ' · '.join(f'{gsw(g)} {frac("fast", g)} FAST, {frac("slow", g)} SLOW'
-                     for g in GROUP_ORDER)
-        + f'. Bars are 95% intervals. Across the four groups at the animal level, '
-        f'FAST differs (chi-square p = {tests["fast"]:.3f}) and SLOW does not '
-        f'(p = {tests["slow"]:.3f}) — so this is a FAST-stream group effect, the '
-        'same axis on which FOUNDATIONS §9 records the streams splitting under '
-        'TTX.<br>'
-        f'<b>B — why A is believable.</b> Each recording at its two nulls: '
-        f'<span style="color:{REAL_FAST}"><b>circles</b></span> real FAST · '
-        f'<span style="color:{REAL_SLOW}"><b>squares</b></span> real SLOW · '
-        f'<span style="color:{CONTROL}"><b>diamonds</b></span> generated '
-        'recordings whose participants are drawn at random by construction, matched '
-        'to the real ROI and cluster counts. Lower-left rejects both nulls. The '
-        'generated cloud sits where "no recurring group" belongs; the real one does '
-        'not. Dotted lines are alpha/2; points on an axis edge are at the 1/1001 '
-        'resolution floor, and they overlap there, so B shows the separation and C '
-        'carries counts.<br>'
-        f'<b>C — does it survive the arbitrary parameter.</b> Every testable slice '
-        f'by verdict at each K: {sw("structure-beyond-rate", "both nulls")} · '
-        f'{sw("uniform-only", "uniform only")} · {sw("margin-only", "margin only")} '
-        f'· {sw("no-assembly", "neither")}.<br>'
-        '<b>Read with these.</b> The two nulls are <b>nested, not independent</b> — '
-        'uniform participation is the stronger assumption, so rejecting both is one '
-        'conclusion, not two. ORX rests on six animals in FAST and three in SLOW, so '
-        '"weak" and "absent" are not separable there. Slices with fewer than '
-        'four clusters have no permutation null: they appear nowhere here and are '
-        '<b>undefined, never negative</b>. And structure beyond rate is not by '
-        'itself one discrete recurring group.<br>'
-        f'Animals: {n_animals["fast"]} FAST, {n_animals["slow"]} SLOW. Every window '
-        'scored is the producer\'s own analysis window, not the raw period. '
-        'Run record in <i>docs/reviews/</i>.</div>')
     return (a + b + c).cols(3).opts(shared_axes=False, toolbar=None), header
 
 
@@ -320,8 +280,9 @@ def _render_png(html_path: Path, png_path: Path, *, wait_ms: int = 2500,
     try:
         with sync_playwright() as pw:
             b = pw.chromium.launch()
-            pg = b.new_page(viewport={"width": width, "height": height})
-            pg.goto(html_path.as_uri())
+            pg = b.new_page(viewport={"width": width, "height": height},
+                            device_scale_factor=2)
+            pg.goto(html_path.resolve().as_uri())
             pg.wait_for_timeout(wait_ms)
             with tempfile.TemporaryDirectory() as td:
                 tmp = Path(td) / "shot.png"
@@ -429,7 +390,9 @@ def main(argv=None):
     hv.extension("bokeh")
     layout, header = build(fast, slow, ctrl, per_k, splits, tests, args.width)
     html = dest / f"{FIGURE_ID}.html"
-    pn.panel(pn.Column(pn.pane.HTML(header), pn.pane.HoloViews(layout))).save(str(html))
+    pane = (pn.Column(pn.pane.HTML(header), pn.pane.HoloViews(layout))
+            if header else pn.Column(pn.pane.HoloViews(layout)))
+    pn.panel(pane).save(str(html))
     (dest / f"{FIGURE_ID}.json").write_text(json.dumps(
         {"k_shown": K_SHOWN, "alpha": ALPHA, "control_geometry": geo,
          "per_k": {str(k): v for k, v in per_k.items()},
