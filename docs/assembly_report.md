@@ -224,6 +224,8 @@ companion spreadsheet. The `--store` flag takes the export folder.
     python tools/make_assembly_figure.py --fast <dir> --slow <dir> --out <figdir>
     python tools/make_membership_example.py --folder <folder> --runs <dir> \
         --out <figdir>
+    python tools/build_assembly_report.py --src docs/assembly_report.md \
+        --figures <figdir> --also docs/learned
 
 Group and animal come from the folder's `slices.csv` as reserved columns; the window
 scored is the producer's own analysis window; recordings the producer excluded are

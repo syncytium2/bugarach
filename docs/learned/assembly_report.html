@@ -348,6 +348,8 @@ python tools/assess_archive.py --store &lt;folder&gt; --out &lt;dir&gt; \
 python tools/make_assembly_figure.py --fast &lt;dir&gt; --slow &lt;dir&gt; --out &lt;figdir&gt;
 python tools/make_membership_example.py --folder &lt;folder&gt; --runs &lt;dir&gt; \
     --out &lt;figdir&gt;
+python tools/build_assembly_report.py --src docs/assembly_report.md \
+    --figures &lt;figdir&gt; --also docs/learned
 </code></pre>
 <p>Group and animal come from the folder's <code>slices.csv</code> as reserved columns; the window
 scored is the producer's own analysis window; recordings the producer excluded are

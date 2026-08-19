@@ -91,8 +91,14 @@ Template:
 - **Started:** 2026-08-18
 - **Writes:** `<darkroom>/bugarach/assembly_answer.{png,html,json}` (NEW). Nothing else
   under `<darkroom>/bugarach/`, nothing in `<darkroom>/constellation/`.
-- **Claims:** the three `assembly_answer.*` files by that name, and nothing else. The
-  earlier `assembly_power.*` claim from this machine is released.
+- **Claims:** by name — `assembly_answer.*`, `assembly_membership.*` and
+  `assembly_report.html`. The earlier `assembly_power.*` claim from this machine is
+  released.
+- **The report is in the darkroom**, not only in the repo: `assembly_report.html`, one
+  self-contained file with both figures embedded. It landed there late — the builder
+  required `--out` and had no darkroom default, unlike every figure tool here, so the
+  first build reached `docs/learned/` alone and Tony had to ask where it was. The
+  builder now defaults to the darkroom and takes `--also` for the repo copy.
 - **Reads (no claim taken, recorded so the next session knows):**
   `<dropbox>/data/processed_archive/event_store_onset_revised_2v_alive_rescued` — 86 files,
   85 slices with a named baseline region. Interface2's rescued dead-ROI store, still
