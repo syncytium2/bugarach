@@ -176,7 +176,14 @@
   #detectOut h4 { margin: 0 0 6px; font-size: 13px; font-weight: 600; }
   #detectOut .sub { color: var(--muted); margin: 0 0 8px; }
   #detectOut .caveat { color: var(--muted); max-width: 72ch; line-height: 1.5;
-                       margin: 0; }
+                       margin: 10px 0 0; }
+  #detectOut table { border-collapse: collapse; margin: 0 0 4px; }
+  #detectOut th, #detectOut td { padding: 4px 14px 4px 0; text-align: right;
+                                 font-variant-numeric: tabular-nums; }
+  #detectOut th { color: var(--muted); font-weight: 500; }
+  #detectOut th:first-child, #detectOut td:first-child { text-align: left; }
+  #detectOut td.state { text-align: left; color: var(--muted);
+                        font-variant-numeric: normal; }
   #assessOut h4 { margin: 0 0 6px; font-size: 13px; font-weight: 600; }
   #assessOut .sub { color: var(--muted); margin: 0 0 8px; }
   #assessOut table { border-collapse: collapse; }
@@ -258,6 +265,7 @@
           <option value="measured" selected>30/18/10% — measured</option>
           <option value="mixed">100/75/50% — a guess</option>
           <option value="all">every ROI</option>
+          <option value="measured-here">from your recording</option>
         </select>
         <label for="sJit">jitter (ms)</label>
         <input id="sJit" type="number" min="0" max="3000" step="10" value="360">
@@ -272,6 +280,7 @@
         <input id="sSeed" type="number" min="0" max="99999" step="1" value="1">
         <div class="span"><button id="runSim">Simulate</button></div>
       </div>
+      <div class="fine" id="simProvenance" hidden></div>
       <div class="fine">
         <b>Nothing here is a recording of anything.</b> Event times are drawn from
         the model in <code>bugarach.simulate</code>, re-implemented for this page —
@@ -310,6 +319,8 @@
         <input id="aSurr" type="number" min="50" max="2000" step="50" value="1000">
         <label for="aBin">bin (s)</label>
         <input id="aBin" type="number" min="0.1" max="10" step="0.1" value="1">
+        <label for="aRegion">region</label>
+        <select id="aRegion"><option value="baseline">baseline (default)</option></select>
         <label for="aK">mark clusters at K</label>
         <select id="aK">
           <option value="0" selected>none</option>
@@ -893,6 +904,7 @@ async function show(rec) {
     say("Simulated. Every mark above was drawn from a model, no part of this is a "
       + "recording of anything, and the treatment windows are labels over "
       + "identical statistics — the drug is a name on the axis, not an effect.");
+  paintRegionChoices(rec);
   paintOrderNote(data);
   draw(rec, data);
 }
@@ -1489,21 +1501,162 @@ function assessCoactivity(trains, winDur, opts) {
   });
 }
 
-/* The window a recording may be assessed over, and why. Baseline only —
-   coordination properties are not taken from treatments, because a treatment is
-   what the instrument is pointed at and sourcing the properties from it assumes
-   the answer. A recording with no declared regions is assessed whole, and the
-   caller is told that is what happened. */
-function assessWindow(rec) {
-  const wins = REGIONS.get(rec.id) || [];
+/* The segments an analysis actually runs over. One per declared region, using
+   the folder's own analysis window wherever it states one and the whole period
+   where it does not; a recording with no regions gets one segment spanning it.
+
+   ASSESSMENT AND DETECTION USE THE SAME SEGMENTS AND DIFFER IN WHICH THEY TAKE,
+   and the difference is not a detail:
+
+     * the assessment reads only the BASELINE, because it is calibration —
+       coordination properties taken from a treatment assume the answer.
+     * detection runs on EVERY segment, treatments included. That is the point of
+       the loop: measure an untreated recording, simulate from it, tune on the
+       simulation, and only then point the finished instrument at everything. */
+function analysisSegments(rec, data) {
+  const wins = (REGIONS.get(rec.id) || []).slice().sort((a, b) => a.idx - b.idx);
   if (!wins.length)
-    return { window: null, source: "whole recording (no regions declared)" };
-  const base = wins.filter(w => isBaselineLabel(w.label));
-  if (!base.length)
-    return { window: null, blocked: wins.length + " region(s), none named as a "
-      + "baseline — coordination properties are not taken from treatments" };
-  const w = base.reduce((a, b) => (b.end - b.start > a.end - a.start ? b : a));
-  return { window: [w.start, w.end], source: "baseline region “" + w.label + "”" };
+    return [{ label: "whole recording", start: data.t0,
+              end: Math.max(data.t1, data.t0 + 1), stated: false, whole: true }];
+  return wins.map(w => {
+    const stated = Number.isFinite(w.aStart) && Number.isFinite(w.aEnd);
+    return { label: w.label, start: stated ? w.aStart : w.start,
+             end: stated ? w.aEnd : w.end, stated,
+             period: [w.start, w.end] };
+  });
+}
+
+/* The window an assessment runs over. ANY analysis region is measurable and the
+   user picks; baseline is the default because it is the one calibration may come
+   from. That split matters and used to be in the wrong place: FOUNDATIONS §9
+   forbids taking coordination PROPERTIES from a treatment, which is a rule about
+   parameterizing the generator, not about looking. Measuring TTX and comparing
+   it to baseline is a legitimate thing to want; feeding TTX into the simulator is
+   not. So this measures whatever you choose, and the calibration step below is
+   where the rule bites. */
+function assessWindow(rec, choice) {
+  const wins = (REGIONS.get(rec.id) || []).slice().sort((a, b) => a.idx - b.idx);
+  if (!wins.length || choice === "whole")
+    return { window: null,
+             source: wins.length ? "whole recording (your choice)"
+                                 : "whole recording (no regions declared)",
+             isBaseline: !wins.length };
+  let w = null;
+  if (choice === undefined || choice === "" || choice === "baseline") {
+    const base = wins.filter(q => isBaselineLabel(q.label));
+    if (!base.length)
+      return { window: null, source: "whole recording (no baseline declared)",
+               isBaseline: false, note: wins.length + " region(s) are declared and "
+                 + "none is named as a baseline — pick one to measure it" };
+    w = base.reduce((a, b) => (b.end - b.start > a.end - a.start ? b : a));
+  } else {
+    w = wins[Number(choice)] || wins[0];
+  }
+  const stated = Number.isFinite(w.aStart) && Number.isFinite(w.aEnd);
+  return {
+    window: stated ? [w.aStart, w.aEnd] : [w.start, w.end],
+    // the folder's own analysis window WINS where it states one — start/end are
+    // what happened, analysis_* is what to score, and the raster already shades
+    // the second. Measuring the first while showing the second is one picture
+    // disagreeing with its own number.
+    source: "“" + w.label + "”, " + (stated ? "analysis window as the folder "
+      + "states it" : "whole period (no analysis window sent)"),
+    isBaseline: isBaselineLabel(w.label),
+  };
+}
+
+/* The region list the assessment may be pointed at, rebuilt per recording. */
+function paintRegionChoices(rec) {
+  const sel = document.getElementById("aRegion");
+  if (!sel) return;
+  const wins = (REGIONS.get(rec.id) || []).slice().sort((a, b) => a.idx - b.idx);
+  const keep = sel.value;
+  sel.textContent = "";
+  const base = document.createElement("option");
+  base.value = "baseline";
+  base.textContent = wins.length ? "baseline (default)" : "whole recording";
+  sel.append(base);
+  wins.forEach((w, i) => {
+    const o = document.createElement("option");
+    o.value = String(i);
+    o.textContent = w.label + (isBaselineLabel(w.label) ? "" : " — not for calibration");
+    sel.append(o);
+  });
+  if (wins.length) {
+    const o = document.createElement("option");
+    o.value = "whole"; o.textContent = "whole recording";
+    sel.append(o);
+  }
+  if ([...sel.options].some(o => o.value === keep)) sel.value = keep;
+}
+
+/* ---------- measurement -> generator: the step that closes the loop ----------
+   The workflow this page is for: **assess the baseline, simulate from what you
+   measured, tune on the simulation, then detect over the analysis regions.**
+   Everything but this link existed — a reader could see the K scan and retype
+   the numbers into the simulator by hand, which is the point at which a workflow
+   stops being one.
+
+   The mapping is not invented here. `bugarach.assess` names each measure by the
+   generator knob it is for:
+
+     roi_rate_med    -> the background rate
+     clusters_permin -> how many coordinated events
+     part_n_obs      -> how many ROIs take part
+     jit_obs         -> how tight they are (the SD of participant onsets)
+
+   TWO THINGS IT REFUSES TO DO FOR YOU.
+
+   **It will not pick K.** K moves the headline by an order of magnitude, and the
+   whole scan is shown precisely so the choice is visible. Choosing it is the
+   accept step this project has been asking for — the moment a measurement
+   becomes a setting — so it is a click a person makes, and the K they picked is
+   stamped on the simulator afterwards.
+
+   **It will not spread participation for you silently.** The bench keeps a
+   spread around the measured median rather than collapsing to it, so recall
+   still resolves a participant floor; the same ratios are used here and the
+   levels are shown. */
+function simulateFromMeasurement(rec, a, source) {
+  // FOUNDATIONS §9. Measuring a treatment is legitimate; sourcing the
+  // generator's coordination properties from one is not.
+  if (LAST_ASSESS && LAST_ASSESS.isBaseline === false) {
+    const box = document.getElementById("assessOut");
+    box.append(el("p", "Refused: those numbers are from " + source + ", which is "
+      + "not a baseline. Assess a baseline region and set the simulator from "
+      + "that.", "caveat"));
+    return;
+  }
+  const nRoi = a.nRoi;
+  const mins = a.winDur / 60;
+  const frac = Math.min(1, Math.max(0.02, a.partNObs / nRoi));
+  // the bench's own spread around a measured median: 0.30 / 0.18 / 0.10
+  const levels = [frac * (0.30 / 0.18), frac, frac * (0.10 / 0.18)]
+    .map(v => Math.min(1, Math.max(0.02, v)));
+
+  const set = (id, v) => { document.getElementById(id).value = v; };
+  set("sRoi", Math.max(4, Math.min(150, Math.round(nRoi))));
+  set("sMin", Math.max(2, Math.min(90, Math.round(mins))));
+  set("sRate", Math.max(1, Math.min(500, Math.round(a.roiRateMed * 1000))));
+  set("sEv", Math.max(0, Math.min(60, Math.round(a.clustersPerMin * mins))));
+  set("sJit", Math.max(0, Math.min(3000, Math.round((a.jitObs || 0) * 1000))));
+  MEASURED_LEVELS = levels;
+  document.getElementById("sPart").value = "measured-here";
+
+  const note = document.getElementById("simProvenance");
+  note.textContent = "";
+  note.append(el("b", "Set from a measurement."));
+  note.append(document.createTextNode(
+    " " + rec.id + ", " + source + ", at K = " + a.K + " — your choice of K, and "
+    + "it is stamped here because the number these settings came from is "
+    + "meaningless without it. Participation is the measured median "
+    + (100 * frac).toFixed(0) + "% kept as a spread of "
+    + levels.map(v => (100 * v).toFixed(0) + "%").join(" / ")
+    + ", the way the bench keeps one, so a tuning run can still resolve a "
+    + "participant floor. Jitter is the observed onset SD, not the excess over "
+    + "the null."));
+  note.hidden = false;
+  showSection("accSim");
 }
 
 /* ---------- a folder that does not exist -------------------------------------
@@ -1553,6 +1706,9 @@ const MIN_SEP = 120;
 // separate, because a real coordinated event recruits about six of thirty-three
 // ROIs. The guess is kept on the switch so the difference can be looked at.
 const LEVELS = { measured: [0.3, 0.18, 0.1], mixed: [1, 0.75, 0.5], all: [1] };
+// filled in when a real measurement is carried into the simulator; null until
+// then, so the option cannot be chosen without a measurement behind it
+let MEASURED_LEVELS = null;
 // Labels a lab would actually write, because the contract asks for the real
 // treatment name and a positional placeholder ("region 2") makes an unreadable
 // axis. Here they name nothing that happened — see the second point above.
@@ -1682,7 +1838,8 @@ function simulateRecording(p, seed) {
   }
 
   // ---- planted events -------------------------------------------------------
-  const levels = LEVELS[p.part] || LEVELS.measured;
+  const levels = (p.part === "measured-here" && MEASURED_LEVELS)
+    ? MEASURED_LEVELS : (LEVELS[p.part] || LEVELS.measured);
   const fracs = [];
   for (let i = 0; i < p.events; i++) fracs.push(levels[i % levels.length]);
   for (let i = fracs.length - 1; i > 0; i--) {        // interleave levels in time
@@ -1781,6 +1938,7 @@ async function runSim() {
 
 /* ---------- running it, and saying what came back --------------------------- */
 let ASSESS = null;      // {recId, K, centres, winStart} — what the raster draws
+let LAST_ASSESS = null; // what the calibration step would be fed, if you accept a K
 
 // not `fmt` — the time axis already owns that name, and shadowing it turned the
 // whole page into a syntax error
@@ -1794,6 +1952,8 @@ function clearAssess() {
 }
 
 function paintAssess(rec, res, source, cfg) {
+  cfg = cfg || {};
+  cfg.source = source;
   const box = document.getElementById("assessOut");
   box.textContent = "";
 
@@ -1829,11 +1989,37 @@ function paintAssess(rec, res, source, cfg) {
   }
   box.append(tbl);
 
+  // the accept step: choosing K is the moment a measurement becomes a setting
+  const row = document.createElement("p");
+  row.className = "caveat";
+  row.append(document.createTextNode("Simulate from this measurement at K = "));
+  const ksel = document.createElement("select");
+  ksel.id = "accK";
+  for (const a of res) if (a.meetsFloor) {
+    const o = document.createElement("option");
+    o.value = String(a.K); o.textContent = String(a.K);
+    ksel.append(o);
+  }
+  row.append(ksel, document.createTextNode(" "));
+  const go = document.createElement("button");
+  go.textContent = "Set the simulator";
+  go.style.width = "auto";
+  go.onclick = () => {
+    const a = res.find(q => q.K === Number(ksel.value));
+    if (a) simulateFromMeasurement(rec, a, cfg.source || "");
+  };
+  row.append(go);
+  box.append(row);
+  if (cfg.isBaseline === false)
+    box.append(el("p", "⚠ This is not a baseline. Measuring it is fine and often "
+      + "the point; using it to set the simulator is not — coordination "
+      + "properties taken from a treatment assume the answer the experiment is "
+      + "asking. The button above will refuse.", "caveat"));
+  if (cfg.note) box.append(el("p", cfg.note, "caveat"));
+
   box.append(el("p", "K is a scan, not a choice: it moves the headline by an "
     + "order of magnitude, so quoting one of these numbers means naming the K it "
-    + "came from. Nothing here has picked one, and nothing here has turned a "
-    + "measurement into a setting — that needs somebody who has looked at the "
-    + "recording.", "caveat"));
+    + "came from. Nothing here has picked one for you.", "caveat"));
   box.append(el("p", "The excess and the tightness comparison are estimated from "
     + cfg.nSurr + " surrogates, so they carry sampling error and will move a "
     + "little between runs. The cluster count, the participants and the span do "
@@ -1848,14 +2034,8 @@ async function runAssess() {
   await new Promise(r => setTimeout(r, 0));
   try {
     const data = await loadRecording(current);
-    const w = assessWindow(current);
+    const w = assessWindow(current, document.getElementById("aRegion").value);
     const box = document.getElementById("assessOut");
-    if (w.blocked) {
-      clearAssess();
-      box.append(el("h4", "Coordination in " + current.id));
-      box.append(el("p", w.blocked, "caveat"));
-      return;
-    }
     const stream = [...data.streams.keys()].sort()[0];
     const byRoi = data.streams.get(stream);
     const [ws, we] = w.window || [data.t0, data.t1];
@@ -1865,7 +2045,9 @@ async function runAssess() {
     const nSurr = clamp(Number(document.getElementById("aSurr").value), 50, 2000);
     const bin = clamp(Number(document.getElementById("aBin").value), 0.1, 10);
     const res = assessCoactivity(trains, we - ws, { nSurrogates: nSurr, binWidth: bin });
-    paintAssess(current, res, w.source, { nSurr, bin, stream });
+    paintAssess(current, res, w.source, { nSurr, bin, stream,
+                                          isBaseline: w.isBaseline, note: w.note });
+    LAST_ASSESS = { rec: current, res, source: w.source, isBaseline: w.isBaseline };
 
     const wantK = Number(document.getElementById("aK").value);
     const hit = res.find(a => a.K === wantK && a.meetsFloor);
@@ -1903,15 +2085,28 @@ async function runDetect() {
     const data = await loadRecording(current);
     const stream = [...data.streams.keys()].sort()[0];
     const byRoi = data.streams.get(stream);
-    const trains = data.order.map(id => (byRoi.get(id) || []).slice());
     const m = META.get(current.id) || {};
     const dt = Number(m.frame_interval_sec) > 0 ? Number(m.frame_interval_sec) : 0.1;
-    const det = rateDetect(trains, [data.t0, Math.max(data.t1, data.t0 + 1)], {
+    const cfg = {
       excessThresholdHz: clamp(Number(document.getElementById("dThr").value), 0.1, 50),
       rateWin: clamp(Number(document.getElementById("dRate").value), 0.1, 30),
       contextWin: clamp(Number(document.getElementById("dCtx").value), 5, 600),
       gridDt: dt,
-    });
+    };
+    // one run per analysis segment, treatments included — a detector run across
+    // a boundary would take its context from a period that is not the one it is
+    // reporting on
+    const segs = analysisSegments(current, data);
+    const starts = [], ends = [], perRegion = [];
+    for (const seg of segs) {
+      const trains = data.order.map(id =>
+        (byRoi.get(id) || []).filter(x => x >= seg.start && x <= seg.end));
+      const d = rateDetect(trains, [seg.start, Math.max(seg.end, seg.start + 1)], cfg);
+      starts.push(...d.starts); ends.push(...d.ends);
+      perRegion.push({ label: seg.label, n: d.nEvents, stated: seg.stated,
+                       mins: (seg.end - seg.start) / 60 });
+    }
+    const det = { starts, ends, nEvents: starts.length, perRegion, segs };
     DETECT = { recId: current.id, label: "RateDetect",
                starts: det.starts, ends: det.ends };
 
@@ -1919,12 +2114,23 @@ async function runDetect() {
     box.textContent = "";
     box.append(el("h4", "RateDetect on " + current.id));
     box.append(el("p", det.nEvents + " event(s) called · threshold "
-      + document.getElementById("dThr").value + " Hz excess · rate window "
-      + document.getElementById("dRate").value + " s · context "
-      + det.ctxActual.toFixed(0) + " s"
-      + (det.ctxActual < Number(document.getElementById("dCtx").value)
-         ? " (clipped to 0.9x the recording)" : "")
-      + " · dt " + dt + " s", "sub"));
+      + cfg.excessThresholdHz + " Hz excess · rate window " + cfg.rateWin
+      + " s · context " + cfg.contextWin + " s · dt " + dt + " s", "sub"));
+
+    const tbl = document.createElement("table");
+    const hr = document.createElement("tr");
+    for (const h of ["region", "analysed", "window", "events"]) hr.append(el("th", h));
+    tbl.append(hr);
+    for (const r of det.perRegion) {
+      const tr = document.createElement("tr");
+      tr.append(el("td", r.label));
+      tr.append(el("td", r.mins.toFixed(1) + " min"));
+      tr.append(el("td", r.stated ? "as the folder states it"
+                                  : "whole period — none sent", "state"));
+      tr.append(el("td", String(r.n)));
+      tbl.append(tr);
+    }
+    box.append(tbl);
     box.append(el("p", "These are the settings this project benches at, not "
       + "settings calibrated for your preparation. Tuning them is what the "
       + "simulate step is for — measure, simulate from what you measured, tune "
