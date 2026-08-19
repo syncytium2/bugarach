@@ -144,6 +144,28 @@ window is a producer bug rather than a partial answer, and a recording scored ha
 your windows and half on ours is two policies inside one number — both are refused
 rather than guessed at.
 
+**Used as given is not the same as unchecked.** Four things are refused, and they are
+the ones that are wrong under anybody's protocol: a period that ends before it begins,
+an analysis window that ends before it begins, an analysis start that is not a finite
+time, and an analysis window falling outside the period it claims to be part of. That
+last one means the two pairs contradict each other, and the file cannot say which of
+them is right.
+
+Nothing else about your bounds is judged. In particular a period beginning somewhere
+other than 0 and a gap between two periods are both legal here, whatever this project's
+own stores would make of them — a lab that started recording before it started
+treating, or left the tissue alone between conditions, is describing its experiment
+rather than making a mistake.
+
+This paragraph is new because that path had no checks at all. Supplying these columns
+routes a folder past the guards on the raw bounds, so the producer who states their
+policy — the thing this contract asks for — was the one producer nothing validated. A
+recording whose baseline began at 500 s with an 8,899 s gap after it and an analysis
+window running `99999` to `-500` passed `bugarach check` and handed the detectors a
+window of **−100,499 seconds**, which every detector downstream would have reported as
+an absence of coordination. Found by interface2 on 2026-08-18, running our own gates
+against a folder they broke on purpose.
+
 **When they are absent, bugarach derives the analysis window itself**, applying this
 project's convention: the baseline measured backward from its end with a 20-minute
 cap, every non-high-K treatment starting 2 minutes late and capped at 20 minutes,

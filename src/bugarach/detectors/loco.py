@@ -208,6 +208,24 @@ def supplied_region_windows(s: Slice, t_hi_clamp: float, *,
     be scored under two policies at once, which is worse than either — so that
     raises. Returns ``None`` when no region supplies one, and the caller then
     derives them.
+
+    **Used as given is not the same as unchecked**, and this path had no checks
+    at all. Supplying the columns routes a folder past ``region_windows``, whose
+    guards were the only thing validating region bounds — so a producer who
+    states their policy, which the contract asks them to do, was the one producer
+    nobody validated. A baseline starting at 500 s with an 8,899 s gap after it,
+    and an analysis window running 99999 -> -500, both reached the detectors
+    while ``bugarach check`` printed CONFORMING (interface2, 2026-08-18; the
+    window handed to the detectors measured -100,499 s).
+
+    What is checked here is the **universal** subset only: bounds finite, bounds
+    ordered, and an analysis window lying inside the period it claims to be part
+    of. Not ``region_windows``' two HALT guards — a baseline beginning at 0 and
+    chronologically contiguous regions. Those encode this lab's protocol, and
+    FOUNDATIONS §4 is explicit that applying them to a conforming folder "would
+    reject a legal folder from a lab whose regions are neither contiguous nor
+    zero-based". A lab that recorded a gap between its periods is not making an
+    error; a lab whose window ends before it starts is.
     """
     regs = [r for r in s.regions if np.isfinite(r.start_sec)]
     if not regs:
@@ -224,12 +242,45 @@ def supplied_region_windows(s: Slice, t_hi_clamp: float, *,
             f"one for every region or for none — half the producer's windows and "
             f"half ours is two policies inside one number")
 
+    tol = 1e-6
     out = []
     for k, r in enumerate(regs):
         raw_end = r.end_sec if np.isfinite(r.end_sec) else t_hi_clamp
         win_start = float(r.analysis_start_sec)
         win_end = (float(r.analysis_end_sec)
                    if np.isfinite(r.analysis_end_sec) else t_hi_clamp)
+        where = f"slice {s.slice_id} region {k + 1}"
+
+        # The period. A non-finite end is legal and means "ran to the end of the
+        # recording" — that is why it is clamped above rather than refused. An
+        # end before its own start is not a protocol anybody has.
+        if raw_end <= r.start_sec + tol:
+            raise ValueError(
+                f"{where}: end_sec = {raw_end:.6f} is not after start_sec = "
+                f"{r.start_sec:.6f}. The period is when it began and ended, so "
+                f"it cannot end first")
+
+        # The analysis window — the pair that decides what actually gets scored,
+        # and until now the pair nothing on either side looked at.
+        if not np.isfinite(win_start):
+            raise ValueError(
+                f"{where}: analysis_start_sec = {r.analysis_start_sec!r} is not "
+                f"a finite time. It says where scoring begins, so there is no "
+                f"reading of a missing value that scores anything")
+        if win_end <= win_start + tol:
+            raise ValueError(
+                f"{where}: the analysis window runs {win_start:.6f} -> "
+                f"{win_end:.6f}, a span of {win_end - win_start:.6f} s. A window "
+                f"that ends before it starts scores nothing, and every detector "
+                f"downstream would report that as an absence of coordination")
+        if win_start < r.start_sec - tol or win_end > raw_end + tol:
+            raise ValueError(
+                f"{where}: the analysis window {win_start:.6f} -> {win_end:.6f} "
+                f"falls outside its own period {r.start_sec:.6f} -> "
+                f"{raw_end:.6f}. These columns are the part of the period to "
+                f"score; scoring outside it means one of the two pairs is wrong "
+                f"and the file cannot say which")
+
         name = r.name or ""
         is_baseline = k == 0
         is_hik = (not is_baseline) and ("hi" in name.lower())
