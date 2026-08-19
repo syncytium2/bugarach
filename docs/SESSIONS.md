@@ -60,6 +60,32 @@ Template:
 
 ## Active
 
+### Mac/park-infra-ideas — two infrastructure ideas parked in the darkroom
+- **Status:** DONE 2026-08-18 — **claim released**
+- **Writes:** `<darkroom>/ideas/` — **created it**. Two files, plus a README.
+- **Claims:** `<darkroom>/ideas/` only. Nothing in `bugarach/`, `constellation/`, `needs/`.
+- **Notes:** parked rather than built, at Tony's direction — the repo keeps a todo
+  pointing at them so they are findable without being work in flight.
+
+### Mac/needs-mechanism-gate — a cross-repo proposal in a NEW shared darkroom folder
+- **Status:** DONE 2026-08-18 — **claim released**, both files written
+- **Writes:** `<darkroom>/needs/` — **created it**. One file:
+  `mechanism-changes-need-a-gate.md`, plus a `README.md` saying what the folder is for.
+  Nothing in `<darkroom>/bugarach/`, nothing in `<darkroom>/constellation/`, nothing
+  under `$BUGARACH_DATA_ROOT`.
+- **Claims:** `<darkroom>/needs/` for the duration. It is a **new top-level folder in a
+  mount every repo on every machine can see**, which is a wider claim than a file inside
+  our own folder — if another estate is also inventing a cross-repo review convention,
+  this is where the collision happens. `0-REVIEW/` was checked first and is slice
+  submissions, not process proposals, so this does not duplicate it.
+- **Notes:** the document invites other repos to comment, so treat it as shared and
+  append rather than overwrite — the folder README says so too. Tony asked for it by
+  name after rejecting CLAUDE.md as the vehicle for the same rule.
+- **Done:** `needs/README.md` and `needs/mechanism-changes-need-a-gate.md`. The
+  proposal went through the murderboard first (11/11 roles, 2 blind rounds); its
+  headline claim did not survive role 1 and was replaced with one the commit history
+  actually shows. Run record in `docs/reviews/`.
+
 ### Mac/assembly-membership — the assembly question, answered on the real corpus
 - **Status:** ACTIVE
 - **Started:** 2026-08-18

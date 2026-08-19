@@ -53,7 +53,36 @@ def main(argv: list[str] | None = None) -> None:
     chk = sub.add_parser(
         "check", help="does an export folder conform to the import contract?")
     chk.add_argument("folder", help="the export folder to check")
+
+    asr = sub.add_parser(
+        "assess", help="how coordinated are these recordings? (no detector)")
+    asr.add_argument("folder", help="the export folder to assess")
+    asr.add_argument("--stream", default=None,
+                     help="which stream; default is the first in each recording")
+    asr.add_argument("--surrogates", type=int, default=1000,
+                     help="circular-shift surrogates per recording (default 1000, "
+                          "the value the reference numbers were produced at)")
+    asr.add_argument("--bin-width", type=float, default=None,
+                     help="coactivity bin in seconds; default 1.0. It interacts "
+                          "with what counts as one event — say which you used")
+    asr.add_argument("--limit", type=int, default=None,
+                     help="assess only the first N recordings")
     args = ap.parse_args(argv)
+
+    if args.cmd == "assess":
+        # importable without panel, for the same reason `check` is: a lab
+        # measuring its own folder should not need the viewer installed
+        from bugarach.assess_folder import assess_folder, format_assessment
+
+        fa = assess_folder(args.folder, stream=args.stream,
+                           n_surrogates=args.surrogates,
+                           bin_width_sec=args.bin_width, limit=args.limit)
+        print(format_assessment(fa))
+        # Exit 0 whether or not anything was assessable. This is a MEASUREMENT,
+        # not a gate: "no recording carried a baseline region" is an answer about
+        # the folder, and turning it into a non-zero exit would put it in a build
+        # where somebody would make it pass.
+        raise SystemExit(0)
 
     if args.cmd == "check":
         # deliberately importable without panel: a producer checking a folder

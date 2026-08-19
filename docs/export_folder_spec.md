@@ -374,6 +374,34 @@ Two kinds of line, and the difference between them is the point:
   from the population, every per-ROI figure computed from it is too high, and
   nothing downstream can tell those two cases apart.
 
+## Measure it, once it reads
+
+```
+bugarach assess my_export/
+```
+
+`check` answers *can this be read*. `assess` answers the next question: **how
+coordinated are these recordings** — measured with a rate-matched null and **no
+detector involved**, so the answer is not one instrument's opinion. Per recording it
+reports coactivity excess, coordinated-event rate, participants per event and onset
+spread.
+
+Three things it will not do, and each is a rule rather than a limitation:
+
+- **It does not choose `K`** — the floor for how many ROIs make an event. `K` moves
+  the headline by an order of magnitude, so every value in the scan is printed and
+  none is marked as the answer. Quoting one of these numbers means naming its `K`.
+- **It does not measure treatments.** Coordination properties come from untreated
+  recordings only; a region whose name is not a baseline is counted and skipped, and
+  the count is printed. A folder with no `regions.csv` at all is assessed over its
+  whole extent, and the report says that is what happened.
+- **It does not turn a measurement into a setting.** That step needs a person who
+  has looked at the recording.
+
+A recording whose baseline is shorter than the assessment's floor comes back with no
+numbers at all rather than with undefined ones, and the same is true of the tightness
+comparison when no cluster forms — it prints as *undefined*, never as a value.
+
 ## The rules that make it universal
 
 1. **One folder in, one folder out.** No path outside it is ever read.

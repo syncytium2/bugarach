@@ -3,6 +3,15 @@ status: open
 filed: 2026-08-13
 ---
 
+> **Two of the three options have landed.** The briefing checks `core.hooksPath`
+> at session start and says loudly when it is unset (option 1), and
+> `tests/test_hooks_installed.py` now fails the suite on any clone whose gates are
+> not wired, naming the one command that fixes it (option 2). What is left is
+> option 3, the bootstrap step, which still has nowhere to live: `pip install -e`
+> runs no hook of ours, so it needs a `tools/setup.sh` or a `make setup` to exist
+> first. Until then a fresh clone is caught on its first session or its first
+> `pytest`, whichever comes first — not before its first commit.
+
 # The commit gates are opt-in per clone, so a fresh clone has none
 
 `.githooks/pre-commit` runs the branch guard and sapper, and its own header says

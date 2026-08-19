@@ -73,7 +73,7 @@ this repo needs it to build, run or be tested.
 | **A detector-free assessment** | Measures how much coordination a recording holds against a rate-matched null, with no operating point to tune, so it can set the generator's priors without closing the circle (`bugarach.assess`). |
 | **Learned detectors** | A new architecture is one class and one `@register` line; it is then trained on the same data, scored by the same scorer, and placed on the same accuracy-versus-cost curve as everything else (`bugarach.learn`). |
 | **The viewer** | Panel/HoloViews: per-stream raster, one signal row per detector, x-linked, live recompute. Streams are generic — `fast`/`slow` is this project's convention, not the viewer's, and a one-stream recording is the default presentation. |
-| **The way in** | One folder of CSVs, [specified in full](docs/export_folder_spec.md): the event times of each ROI, the timing of each period, the acquisition frame interval, and no fourth fact. `bugarach check` tells a producer whether their folder conforms, and the [browser raster viewer](https://bugarach.tonydefazio.com/viewer.html) draws it without the files leaving their computer. |
+| **The way in** | One folder of CSVs, [specified in full](docs/export_folder_spec.md): the event times of each ROI, the timing of each period, the acquisition frame interval, and no fourth fact. `bugarach check` tells a producer whether their folder conforms, `bugarach assess` measures how coordinated the recordings are without any detector's opinion in the answer, and the [browser raster viewer](https://bugarach.tonydefazio.com/viewer.html) draws it without the files leaving their computer. |
 
 **What is not built: a result you can take away.** Point the viewer at a folder,
 tune the detectors, and the events stay on the screen — there is still no
@@ -239,6 +239,7 @@ than rejected. Full contract:
 
 ```bash
 bugarach check my_export/          # does this folder conform? exit 0 or 1
+bugarach assess my_export/         # how coordinated is it? no detector involved
 bugarach view  my_export/          # one recording per page, detectors on top
 bugarach view  my_export/ --raster-only    # just the events, nothing computed
 bugarach view  path/to/store.mat   # or an events CSV, or a directory of either
@@ -388,8 +389,16 @@ uncapped regime, where the two definitions agree.
 
 ```bash
 pip install -e ".[dev]"
+git config core.hooksPath .githooks     # once per clone — see below
 pytest
 ```
+
+**That middle line is not optional, and the suite will tell you so.** Git ignores
+`.githooks/` until a clone is pointed at it, the setting lives in `.git/config` and
+travels with nothing, and a clone without it looks exactly like a clone with it —
+commits simply stop being checked. That was this clone's state from the first
+commit until someone thought to look, and nothing failed in between. `pytest` now
+fails on a clone whose gates are not wired, and prints that command.
 
 The `[dev]` extra includes PySpike, used only as a cross-validation reference in the
 test suite — the detectors themselves have no PySpike dependency. The suite runs on

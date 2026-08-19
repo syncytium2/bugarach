@@ -172,6 +172,23 @@
     padding: 10px 14px; margin: 10px 0; font-size: 13px;
   }
   .note { color: var(--muted); font-size: 12.5px; margin-top: 14px; max-width: 70ch; }
+  #assessOut, #detectOut { margin: 16px 0 0; font-size: 12.5px; }
+  #detectOut h4 { margin: 0 0 6px; font-size: 13px; font-weight: 600; }
+  #detectOut .sub { color: var(--muted); margin: 0 0 8px; }
+  #detectOut .caveat { color: var(--muted); max-width: 72ch; line-height: 1.5;
+                       margin: 0; }
+  #assessOut h4 { margin: 0 0 6px; font-size: 13px; font-weight: 600; }
+  #assessOut .sub { color: var(--muted); margin: 0 0 8px; }
+  #assessOut table { border-collapse: collapse; }
+  #assessOut th, #assessOut td {
+    padding: 4px 12px 4px 0; text-align: right; font-variant-numeric: tabular-nums;
+  }
+  #assessOut th { color: var(--muted); font-weight: 500; text-align: right; }
+  #assessOut th:first-child, #assessOut td:first-child { text-align: left; }
+  #assessOut td.state { color: var(--muted); font-variant-numeric: normal;
+                        text-align: left; }
+  #assessOut .caveat { color: var(--muted); margin: 10px 0 0; max-width: 72ch;
+                       line-height: 1.5; }
   .note p { margin: 0 0 9px; }
   #checkbar { padding: 10px 16px; border-bottom: 1px solid var(--line); font-size: 12.5px; }
   #checkbar button {
@@ -286,6 +303,67 @@
       </div>
     </details>
 
+    <details class="acc" id="accAssess">
+      <summary>Assess coordination<span class="cnt">no detector involved</span></summary>
+      <div class="ctl">
+        <label for="aSurr">surrogates</label>
+        <input id="aSurr" type="number" min="50" max="2000" step="50" value="1000">
+        <label for="aBin">bin (s)</label>
+        <input id="aBin" type="number" min="0.1" max="10" step="0.1" value="1">
+        <label for="aK">mark clusters at K</label>
+        <select id="aK">
+          <option value="0" selected>none</option>
+          <option value="3">3</option>
+          <option value="4">4</option>
+          <option value="6">6</option>
+          <option value="8">8</option>
+        </select>
+        <div class="span"><button id="runAssess">Assess this recording</button></div>
+      </div>
+      <div class="fine">
+        <b>How much coordination is here, measured against a rate-matched null.</b>
+        Each ROI's own train is circularly shifted by its own random lag, which
+        holds its rate and its burstiness and destroys only cross-ROI phase — so
+        what survives is coordination beyond what the recording's rate explains.
+        <br><br>
+        <b>K is a scan, not a choice.</b> The floor for how many ROIs make an
+        event moves the headline by an order of magnitude, so every K is shown and
+        none is marked as the answer. Quoting one of these numbers means naming
+        its K.
+        <br><br>
+        <b>Baseline only.</b> Coordination properties are not taken from a
+        treatment — that is what the instrument is pointed at, and sourcing them
+        from it assumes the answer. A recording with no declared regions is
+        assessed whole, and it says so.
+      </div>
+    </details>
+
+    <details class="acc" id="accDetect">
+      <summary>Detect events<span class="cnt">RateDetect</span></summary>
+      <div class="ctl">
+        <label for="dThr">excess threshold (Hz)</label>
+        <input id="dThr" type="number" min="0.1" max="50" step="0.5" value="5">
+        <label for="dRate">rate window (s)</label>
+        <input id="dRate" type="number" min="0.1" max="30" step="0.1" value="1">
+        <label for="dCtx">context window (s)</label>
+        <input id="dCtx" type="number" min="5" max="600" step="5" value="60">
+        <div class="span"><button id="runDetect">Detect</button></div>
+      </div>
+      <div class="fine">
+        <b>RateDetect, the same port the rest of this project cites.</b> It flags
+        moments when the population rate rises above its own local context, and it
+        draws no random numbers — so this browser copy is checked against the
+        Python one <b>exactly</b>, to 1e-9, on every event it finds. A mistake here
+        cannot pass as sampling noise.
+        <br><br>
+        <b>One of six, and the settings are not calibrated for your recordings.</b>
+        These are the values the project benches at. Finding the right ones for a
+        preparation is what the simulate step above is for: measure, simulate from
+        what you measured, tune against planted ground truth, then point the tuned
+        instrument at everything.
+      </div>
+    </details>
+
     <details class="acc" id="accList" hidden>
       <summary>Recordings<span class="cnt" id="cntList"></span></summary>
       <div id="checkbar" hidden></div>
@@ -322,6 +400,8 @@
       </div>
       <p id="wins"></p>
       <canvas id="cv"></canvas>
+      <div id="assessOut"></div>
+      <div id="detectOut"></div>
       <div class="note" id="note"></div>
     </div>
   </div>
@@ -556,9 +636,10 @@ function draw(rec, data) {
   const dpr = window.devicePixelRatio || 1;
   const W = cv.clientWidth || 900;
   const names = [...data.streams.keys()].sort();
-  const padL = 62, padR = 14, padT = 23, padB = 34, gap = 16;
+  const padL = 62, padR = 14, padT = 23, padB = 40, gap = 16;
   const rowH = Math.max(110, Math.min(230, 26 + data.nRois * 5));
-  const H = padT + names.length * rowH + (names.length - 1) * gap + padB;
+  const H = padT + names.length * rowH + (names.length - 1) * gap + padB
+            + ((DETECT && DETECT.recId === rec.id) ? 14 : 0);
 
   cv.width = W * dpr; cv.height = H * dpr; cv.style.height = H + "px";
   const g = cv.getContext("2d");
@@ -573,8 +654,27 @@ function draw(rec, data) {
   // one lane order for every panel — see loadRecording
   const lanes = ORDER === "rate" ? data.byRate : data.order;
 
+  // A detector lane above the top panel — a bar per call, spanning what it
+  // called. Above the frame and never through the lanes: a bar drawn across the
+  // rows would be indistinguishable from the coincidence it is reporting.
+  const laneH = (DETECT && DETECT.recId === rec.id) ? 14 : 0;
+  if (laneH) {
+    const ly = padT + 2;
+    g.fillStyle = css.getPropertyValue("--accent").trim();
+    for (let i = 0; i < DETECT.starts.length; i++) {
+      const a = Math.max(padL, x(DETECT.starts[i]));
+      const b = Math.min(W - padR, x(DETECT.ends[i]));
+      if (b < padL || a > W - padR) continue;
+      g.fillRect(a, ly, Math.max(2, b - a), 7);   // min width: a call is visible
+    }
+    g.fillStyle = css.getPropertyValue("--muted").trim();
+    g.textAlign = "end";
+    g.fillText(DETECT.label + " · " + DETECT.starts.length, padL - 6, ly + 8);
+    g.textAlign = "start";
+  }
+
   names.forEach((name, si) => {
-    const top = padT + si * (rowH + gap), bot = top + rowH - 20;
+    const top = padT + laneH + si * (rowH + gap), bot = top + rowH - 20;
     const byRoi = data.streams.get(name);
 
     // treatment windows behind the marks — a raster whose periods are not
@@ -674,6 +774,26 @@ function draw(rec, data) {
     g.restore();
     g.textAlign = "start";
 
+    // The clusters the assessment found, marked BELOW the frame — never as a
+    // line across the lanes. In a raster a vertical line is a reading: many ROIs
+    // firing at once, which is the very thing being marked. Drawing the mark
+    // that way would put a synthetic event in the picture used to judge the real
+    // ones. A tick under the axis points at the time and claims nothing about
+    // any row.
+    if (ASSESS && ASSESS.recId === rec.id && si === names.length - 1) {
+      g.fillStyle = css.getPropertyValue("--accent").trim();
+      for (const c of ASSESS.centres) {
+        const px = Math.round(x(ASSESS.winStart + c)) + 0.5;
+        if (px < padL || px > W - padR) continue;
+        g.beginPath();
+        g.moveTo(px - 3.5, bot + 4);
+        g.lineTo(px + 3.5, bot + 4);
+        g.lineTo(px, bot + 10);
+        g.closePath();
+        g.fill();
+      }
+    }
+
     // one x-axis per group: bottom row only
     if (si === names.length - 1) {
       g.fillStyle = css.getPropertyValue("--muted").trim();
@@ -682,7 +802,7 @@ function draw(rec, data) {
         const px = Math.round(x(t)) + 0.5;
         g.beginPath(); g.moveTo(px, bot); g.lineTo(px, bot + 4); g.stroke();
         const lab = fmt(t);
-        g.fillText(lab, px - g.measureText(lab).width / 2, bot + 16);
+        g.fillText(lab, px - g.measureText(lab).width / 2, bot + 22);
       }
     }
   });
@@ -690,6 +810,9 @@ function draw(rec, data) {
 
 /* ---------- show ----------------------------------------------------------- */
 async function show(rec) {
+  // an assessment is of ONE recording; carrying it to the next one would mark
+  // this recording's clusters on somebody else's data
+  if (!current || current.id !== rec.id) { clearAssess(); clearDetect(); }
   current = rec;
   document.querySelectorAll("#list button").forEach(b =>
     b.setAttribute("aria-current", String(b.dataset.id === rec.id)));
@@ -1009,6 +1132,380 @@ async function open(fileList, opts) {
   paintCheck(await checkFolder());
 }
 
+/* ---------- detectors, in the browser ----------------------------------------
+   The last two steps of the loop this page exists for: measure, simulate, tune,
+   DETECT. The six detectors are the project's citable artifacts — each matched
+   to its MATLAB original to 1e-9 on committed fixtures — so a second
+   implementation of one is not a thing to do casually.
+
+   WHAT MAKES THESE TWO SAFE TO PORT FIRST, and it is a stronger guarantee than
+   the assessment above already ships with: **RateDetect and SPIKE-synch draw no
+   random numbers at all.** The other four estimate a threshold from surrogates,
+   so a port of those agrees with Python only to sampling error, exactly like the
+   assessment. These two are pure functions of the data, so the port is either
+   bit-identical to the Python or it is wrong — and a differential test says
+   which, at 1e-9, with no tolerance to hide in.
+
+   Everything here is threshold mode, which is the operating point the bench
+   ships (`bench.OPERATING_POINTS["rate"]`). Peak mode needs `peak_gate` and is
+   not ported.
+*/
+
+/* MATLAB's colon, two-ended. The first half runs forward from lo and the second
+   half BACKWARD from the endpoint — Cleve Moler's colonop. A plain forward grid
+   differs from MATLAB in the last ulp for about a quarter of the elements, which
+   is enough to flip a >= comparison and move an event between bins. Ported
+   because the Python port carries it for the same reason. */
+function matlabColon(lo, step, hi) {
+  const EPS = Number.EPSILON;
+  const q = (hi - lo) / step;
+  const n = Math.floor(q * (1.0 + 4.0 * EPS)) + 1;
+  if (n < 1) return new Float64Array(0);
+  const out = new Float64Array(n);
+  const fwdLast = lo + (n - 1) * step;
+  // np.spacing(x) — the gap to the next double up from |x|
+  const big = Math.max(Math.abs(lo), Math.abs(hi));
+  const tol = 4.0 * (big === 0 ? Number.MIN_VALUE : Math.abs(nextUp(big) - big));
+  const endVal = Math.abs(fwdLast - hi) <= tol ? hi : fwdLast;
+  const mid = Math.floor(n / 2);
+  for (let k = 0; k < mid; k++) out[k] = lo + k * step;
+  for (let k = mid; k < n; k++) out[k] = endVal - (n - 1 - k) * step;
+  return out;
+}
+
+// the next representable double above x, for np.spacing
+const _u8 = new ArrayBuffer(8);
+const _f64 = new Float64Array(_u8), _i32 = new Int32Array(_u8);
+function nextUp(x) {
+  if (!isFinite(x)) return x;
+  if (x === 0) return Number.MIN_VALUE;
+  _f64[0] = x;
+  // little-endian: [0] is the low word
+  if (x > 0) { if (++_i32[0] === 0) _i32[1]++; }
+  else { if (_i32[0]-- === 0) _i32[1]--; }
+  return _f64[0];
+}
+
+/* Pooled sliding-window population rate on a grid_dt grid, edge-corrected: at
+   the boundaries the divisor is the truncated window span, so the rate does not
+   dip for a reason that is an artifact of where the recording stops. */
+function eventRate(trains, tRange, windowSec, dt) {
+  const rateX = matlabColon(tRange[0], dt, tRange[1]);
+  const m = rateX.length;
+  const pooled = [];
+  for (const v of trains) for (const x of v) pooled.push(x);
+  pooled.sort((a, b) => a - b);
+  const rateY = new Float64Array(m);
+  if (!pooled.length || !m) return { rateX, rateY };
+
+  // counts per grid bin, edges at rateX +/- dt/2
+  const counts = new Float64Array(m);
+  for (const x of pooled) {
+    // matching np.histogram on those edges: [lo, hi) with the last bin closed
+    let b = Math.floor((x - (rateX[0] - dt / 2)) / dt);
+    if (b < 0 || b > m) continue;
+    if (b === m) { if (x <= rateX[m - 1] + dt / 2) b = m - 1; else continue; }
+    counts[b] += 1;
+  }
+  const halfBins = Math.floor(windowSec / (2 * dt) + 0.5);      // MATLAB round
+  const cum = new Float64Array(m + 1);
+  for (let i = 0; i < m; i++) cum[i + 1] = cum[i] + counts[i];
+  for (let k = 0; k < m; k++) {
+    const lo = Math.max(0, k - halfBins), hi = Math.min(m - 1, k + halfBins);
+    const spk = cum[hi + 1] - cum[lo];
+    const tLo = Math.max(tRange[0], rateX[k] - windowSec / 2);
+    const tHi = Math.min(tRange[1], rateX[k] + windowSec / 2);
+    rateY[k] = spk / (tHi - tLo);
+  }
+  return { rateX, rateY };
+}
+
+/* The context window is clipped to 0.9x the recording, and the value actually
+   used travels with the result — a context wider than the recording is silently
+   a different detector. */
+function eventRateContext(trains, tRange, windowSec, contextSec, dt) {
+  const maxCtx = 0.9 * (tRange[1] - tRange[0]);
+  const ctxActual = contextSec >= maxCtx ? maxCtx : contextSec;
+  const { rateX, rateY } = eventRate(trains, tRange, windowSec, dt);
+  const ctx = eventRate(trains, tRange, ctxActual, dt);
+  return { rateX, rateY, ctxY: ctx.rateY, ctxActual };
+}
+
+const RATE_PAD_S = 0.5;   // CHARACTERIZATION_PAD_S
+
+/* RateDetect, threshold mode. Grid times whose rate excess over the local
+   context clears the threshold, merged when no more than merge_gap_s apart. */
+function rateDetect(trains, tRange, opts) {
+  const o = opts || {};
+  const thr = o.excessThresholdHz === undefined ? 5.0 : o.excessThresholdHz;
+  const mergeGap = o.mergeGapS === undefined ? 3.0 : o.mergeGapS;
+  const rateWin = o.rateWin === undefined ? 1.0 : o.rateWin;
+  const ctxWin = o.contextWin === undefined ? 60.0 : o.contextWin;
+  const dt = o.gridDt === undefined ? 0.1 : o.gridDt;
+
+  const { rateX, rateY, ctxY, ctxActual } =
+    eventRateContext(trains, tRange, rateWin, ctxWin, dt);
+  const m = rateX.length;
+  const excess = new Float64Array(m);
+  for (let i = 0; i < m; i++) excess[i] = rateY[i] - ctxY[i];
+
+  const cand = [];
+  for (let i = 0; i < m; i++) if (excess[i] >= thr) cand.push(rateX[i]);
+  let starts = [], ends = [];
+  if (cand.length) {
+    const brk = [];
+    for (let i = 1; i < cand.length; i++)
+      if (cand[i] - cand[i - 1] > mergeGap) brk.push(i - 1);
+    const s = [0].concat(brk.map(i => i + 1));
+    const e = brk.concat([cand.length - 1]);
+    for (let i = 0; i < s.length; i++) {
+      // a single-bin crossing is likely noise, and the Python drops it
+      if (cand[e[i]] - cand[s[i]] > 0) {
+        starts.push(cand[s[i]]); ends.push(cand[e[i]]);
+      }
+    }
+  }
+  // pad for characterization: onsets sit on a 0.1 s grid and the rate is
+  // window-smoothed, so the stats get a margin matching the kernel
+  starts = starts.map(x => x - RATE_PAD_S);
+  ends = ends.map(x => x + RATE_PAD_S);
+
+  const freqMax = [], freqMean = [];
+  for (let i = 0; i < starts.length; i++) {
+    let mx = 0, sum = 0, n = 0;
+    for (let k = 0; k < m; k++)
+      if (rateX[k] >= starts[i] && rateX[k] <= ends[i]) {
+        if (rateY[k] > mx) mx = rateY[k];
+        sum += rateY[k]; n++;
+      }
+    if (n) { freqMax.push(mx); freqMean.push(sum / n); }
+    else if (m) {
+      const mid = (starts[i] + ends[i]) / 2;
+      let j = 0, bd = Infinity;
+      for (let k = 0; k < m; k++) {
+        const d = Math.abs(rateX[k] - mid);
+        if (d < bd) { bd = d; j = k; }
+      }
+      freqMax.push(rateY[j]); freqMean.push(rateY[j]);
+    } else { freqMax.push(0); freqMean.push(0); }
+  }
+  return { starts, ends, freqMax, freqMean, rateX, rateY, ctxY, excess,
+           ctxActual, nEvents: starts.length };
+}
+
+/* ---------- the assessment, in the browser -----------------------------------
+   A port of `bugarach.assess`, which is itself a port of interface2's
+   measure_coordination_timescale.m. **Not a detector**: it emits no event times
+   and has no operating point. It answers "how much coordination is in this
+   recording" against a rate-matched null, so the answer is not any one
+   instrument's opinion.
+
+   WHY IT IS HERE AND NOT ONLY IN PYTHON. The workflow this project is for —
+   measure your own recordings, simulate from what you measured, tune, detect —
+   is worth nothing to a lab that has to install a toolchain to start it. The
+   page already reads a folder and already simulates. This is the measuring step,
+   and putting it anywhere else makes the workflow two products.
+
+   WHAT PARITY MEANS HERE, because it is not the same claim the detectors make.
+   The measurement splits in two:
+
+     * DETERMINISTIC — the binned coactivity, the clusters, how many ROIs took
+       part, their onset span, the observed jitter. These depend on nothing but
+       the data, and they are expected to match Python EXACTLY. A differential
+       test drives this code and `bugarach.assess` over the same folder and
+       fails on any difference.
+     * MONTE CARLO — the null, and therefore the coactivity excess and the
+       tightness comparison. The null is an average over circular-shift
+       surrogates, and this PRNG is not MATLAB's, so these agree to sampling
+       error and not to 1e-9. That is a property of estimating a null by
+       sampling, not of the port, and it is the reason the page shows the
+       surrogate count next to the number.
+
+   Nothing below writes anything, and nothing turns a measurement into a
+   generator setting. That step needs a person who has looked at the recording.
+*/
+
+const K_SCAN = [3, 4, 6, 8];      // assess.DEFAULT_MIN_ROIS
+const MERGE_BINS = 2;             // runs of supra-K bins merge across this gap
+const WM_FACTOR = 1.5;            // gather window, in bin widths
+const REGION_MIN_SEC = 900;       // below this the assessment declines to answer
+// A lab's own word for an untreated period. Deliberately NOT "region 1 is the
+// baseline": the import contract calls that out as something producers must not
+// do, and this project's own exporter has done it.
+const BASELINE_TOKENS = ["baseline", "base", "pre", "control", "acsf"];
+
+const isBaselineLabel = s =>
+  BASELINE_TOKENS.some(tok => (s || "").trim().toLowerCase().startsWith(tok));
+
+/* Per-bin DISTINCT-ROI coactivity. An ROI contributes 1 to a bin if it has at
+   least one onset there — a count of ROIs, never of spikes. That distinction is
+   the whole reason one busy cell firing repeatedly is not read as coordination. */
+function coactCount(trains, winDur, binWidth, nBins, offsets) {
+  const counts = new Float64Array(nBins);
+  const seen = new Int32Array(nBins).fill(-1);
+  for (let r = 0; r < trains.length; r++) {
+    const v = trains[r];
+    if (!v.length) continue;
+    const off = offsets ? offsets[r] : 0;
+    for (let i = 0; i < v.length; i++) {
+      let x = v[i];
+      if (off) { x = (x + off) % winDur; if (x < 0) x += winDur; }
+      let b = Math.floor(x / binWidth);
+      if (b < 0) b = 0; else if (b >= nBins) b = nBins - 1;
+      if (seen[b] !== r) { seen[b] = r; counts[b] += 1; }   // once per ROI per bin
+    }
+  }
+  return counts;
+}
+
+/* Runs of supra-K bins, merged across gaps of at most MERGE_BINS, then each
+   run's participants gathered as every ROI's nearest onset within +/- wm of the
+   run's centre. A run can clear K on the binning and still make no cluster once
+   the onsets are gathered — which is why clustering runs identically on the
+   observed data and on every surrogate. */
+function clusters(trains, counts, K, binWidth, nBins, wm, wantMembers) {
+  const sds = [], parts = [], peaks = [], spans = [], members = [], centres = [];
+  const fire = [];
+  for (let b = 0; b < nBins; b++) if (counts[b] >= K) fire.push(b);
+  if (!fire.length) return { sds, parts, peaks, spans, members, centres };
+
+  const groups = [];
+  let cur = [fire[0]];
+  for (let q = 1; q < fire.length; q++) {
+    if (fire[q] - fire[q - 1] <= MERGE_BINS) cur.push(fire[q]);
+    else { groups.push(cur); cur = [fire[q]]; }
+  }
+  groups.push(cur);
+
+  for (const g of groups) {
+    let sum = 0, pk = 0;
+    for (const b of g) { sum += (b + 0.5) * binWidth; if (counts[b] > pk) pk = counts[b]; }
+    const tc = sum / g.length;
+    const gathered = [], who = [];
+    for (let r = 0; r < trains.length; r++) {
+      const v = trains[r];
+      if (!v.length) continue;
+      let best = null, bestD = Infinity;
+      for (let i = 0; i < v.length; i++) {
+        const d = Math.abs(v[i] - tc);
+        if (d <= wm && d < bestD) { bestD = d; best = v[i]; }   // first minimum wins
+      }
+      if (best !== null) { gathered.push(best); who.push(r); }
+    }
+    if (gathered.length >= K) {
+      const n = gathered.length;
+      const mean = gathered.reduce((a, b) => a + b, 0) / n;
+      // ddof=1 — the sample SD, because at 3-8 participants the difference from
+      // the population SD is large and MATLAB's std is the sample one
+      let ss = 0;
+      for (const x of gathered) ss += (x - mean) * (x - mean);
+      sds.push(n > 1 ? Math.sqrt(ss / (n - 1)) : 0);
+      parts.push(n);
+      peaks.push(pk);
+      spans.push(Math.max(...gathered) - Math.min(...gathered));
+      centres.push(tc);
+      if (wantMembers) members.push(who.slice());
+      else members.push(null);
+    }
+  }
+  return { sds, parts, peaks, spans, members, centres };
+}
+
+const median = a => {
+  if (!a.length) return NaN;
+  const v = [...a].sort((x, y) => x - y), m = v.length >> 1;
+  return v.length % 2 ? v[m] : (v[m - 1] + v[m]) / 2;
+};
+
+/* The measurement. `trains` are per-ROI onsets already clipped to the window and
+   expressed relative to its start. Returns one record per K, in scan order. */
+function assessCoactivity(trains, winDur, opts) {
+  const o = opts || {};
+  const binWidth = o.binWidth || 1.0;
+  const nSurr = o.nSurrogates || 1000;
+  const wm = WM_FACTOR * binWidth;
+  const nBins = Math.max(1, Math.ceil(winDur / binWidth));
+  const winMin = winDur / 60;
+  const nRoi = trains.length;
+  const nEvents = trains.reduce((a, v) => a + v.length, 0);
+
+  if (winDur < REGION_MIN_SEC)
+    return K_SCAN.map(K => ({ K, meetsFloor: false, winDur, nRoi, nEvents }));
+
+  const obs = coactCount(trains, winDur, binWidth, nBins, null);
+
+  // One offset draw per surrogate, one per ROI — the same draw order the Python
+  // and the MATLAB consume, even though the numbers themselves differ.
+  const u = rng32(o.seed || 20260722);
+  const nullSum = new Float64Array(nBins);
+  const sdsNull = new Map(K_SCAN.map(K => [K, []]));
+  for (let s = 0; s < nSurr; s++) {
+    const off = new Float64Array(nRoi);
+    for (let r = 0; r < nRoi; r++) off[r] = u() * winDur;
+    const cn = coactCount(trains, winDur, binWidth, nBins, off);
+    for (let b = 0; b < nBins; b++) nullSum[b] += cn[b];
+    // the surrogates need shifted trains for clustering, built once per surrogate
+    const shifted = trains.map((v, r) => {
+      if (!v.length) return v;
+      const out = new Float64Array(v.length);
+      for (let i = 0; i < v.length; i++) {
+        let x = (v[i] + off[r]) % winDur; if (x < 0) x += winDur;
+        out[i] = x;
+      }
+      return Array.prototype.slice.call(out).sort((a, b) => a - b);
+    });
+    for (const K of K_SCAN) {
+      const c = clusters(shifted, cn, K, binWidth, nBins, wm, false);
+      if (c.sds.length) sdsNull.get(K).push(...c.sds);
+    }
+  }
+  const nullMean = new Float64Array(nBins);
+  for (let b = 0; b < nBins; b++) nullMean[b] = nullSum[b] / nSurr;
+
+  const roiRate = trains.map(v => v.length / winDur);
+  return K_SCAN.map(K => {
+    let obsMass = 0, nullMass = 0, nCoactBins = 0;
+    for (let b = 0; b < nBins; b++)
+      if (obs[b] >= K) { obsMass += obs[b]; nullMass += nullMean[b]; nCoactBins++; }
+    obsMass /= winMin; nullMass /= winMin;
+    const c = clusters(trains, obs, K, binWidth, nBins, wm, true);
+    const jitObs = median(c.sds), jitNull = median(sdsNull.get(K));
+    // ⚠ A finite-looking jitObs with no surrogate cluster behind it is not a
+    // comparison. The flag is the thing to read, and the UI prints a state.
+    const defined = c.sds.length > 0 && sdsNull.get(K).length > 0;
+    return {
+      K, meetsFloor: true, winDur, nRoi, nEvents, binWidth, nSurrogates: nSurr,
+      coactExcess: obsMass - nullMass, obsMass, nullMass, nCoactBins,
+      jitObs, jitNull, jitExcess: jitObs - jitNull, jitDefined: defined,
+      partNObs: median(c.parts), peakMed: median(c.peaks),
+      spanMed: median(c.spans),
+      nClustersObs: c.sds.length, nClustersNull: sdsNull.get(K).length,
+      clustersPerMin: c.sds.length / winMin,
+      roiRateMed: median(roiRate),
+      evRatePerMin: nEvents / winMin,
+      // window-relative centres, so the caller can draw them back onto the raster
+      centres: c.centres, members: c.members,
+    };
+  });
+}
+
+/* The window a recording may be assessed over, and why. Baseline only —
+   coordination properties are not taken from treatments, because a treatment is
+   what the instrument is pointed at and sourcing the properties from it assumes
+   the answer. A recording with no declared regions is assessed whole, and the
+   caller is told that is what happened. */
+function assessWindow(rec) {
+  const wins = REGIONS.get(rec.id) || [];
+  if (!wins.length)
+    return { window: null, source: "whole recording (no regions declared)" };
+  const base = wins.filter(w => isBaselineLabel(w.label));
+  if (!base.length)
+    return { window: null, blocked: wins.length + " region(s), none named as a "
+      + "baseline — coordination properties are not taken from treatments" };
+  const w = base.reduce((a, b) => (b.end - b.start > a.end - a.start ? b : a));
+  return { window: [w.start, w.end], source: "baseline region “" + w.label + "”" };
+}
+
 /* ---------- a folder that does not exist -------------------------------------
    Most people who open this page have no export folder to point it at, and a
    viewer with nothing in it is a screenshot of a promise. So the page can write
@@ -1282,8 +1779,167 @@ async function runSim() {
   }
 }
 
+/* ---------- running it, and saying what came back --------------------------- */
+let ASSESS = null;      // {recId, K, centres, winStart} — what the raster draws
+
+// not `fmt` — the time axis already owns that name, and shadowing it turned the
+// whole page into a syntax error
+const fmtNum = (x, nd) =>
+  (x === null || x === undefined || x !== x) ? "—" : Number(x).toFixed(nd === undefined ? 3 : nd);
+
+function clearAssess() {
+  ASSESS = null;
+  const box = document.getElementById("assessOut");
+  if (box) box.textContent = "";
+}
+
+function paintAssess(rec, res, source, cfg) {
+  const box = document.getElementById("assessOut");
+  box.textContent = "";
+
+  box.append(el("h4", "Coordination in " + rec.id));
+  box.append(el("p", "window: " + source + " · " + cfg.nSurr
+    + " circular-shift surrogates · bin " + cfg.bin + " s · stream " + cfg.stream,
+    "sub"));
+
+  if (res.length && !res[0].meetsFloor) {
+    box.append(el("p", "That window is " + (res[0].winDur / 60).toFixed(1)
+      + " min, under the 15-minute floor this measurement holds itself to. Every "
+      + "measure would be undefined, so none is shown.", "caveat"));
+    return;
+  }
+
+  const tbl = document.createElement("table");
+  const hr = document.createElement("tr");
+  for (const h of ["K", "excess/min", "clusters/min", "participants", "span (s)",
+                   "tightness vs null"]) hr.append(el("th", h));
+  tbl.append(hr);
+  for (const a of res) {
+    const tr = document.createElement("tr");
+    tr.append(el("td", String(a.K)));
+    tr.append(el("td", fmtNum(a.coactExcess)));
+    tr.append(el("td", fmtNum(a.clustersPerMin)));
+    tr.append(el("td", fmtNum(a.partNObs, 1)));
+    tr.append(el("td", fmtNum(a.spanMed, 2)));
+    // ⚠ never the number when the comparison does not exist — a reader takes a
+    // finite-looking value and parameterizes tightness off nothing
+    if (a.jitDefined) tr.append(el("td", fmtNum(a.jitExcess)));
+    else tr.append(el("td", "undefined — no cluster in the surrogates", "state"));
+    tbl.append(tr);
+  }
+  box.append(tbl);
+
+  box.append(el("p", "K is a scan, not a choice: it moves the headline by an "
+    + "order of magnitude, so quoting one of these numbers means naming the K it "
+    + "came from. Nothing here has picked one, and nothing here has turned a "
+    + "measurement into a setting — that needs somebody who has looked at the "
+    + "recording.", "caveat"));
+  box.append(el("p", "The excess and the tightness comparison are estimated from "
+    + cfg.nSurr + " surrogates, so they carry sampling error and will move a "
+    + "little between runs. The cluster count, the participants and the span do "
+    + "not — they depend on nothing but your data.", "caveat"));
+}
+
+async function runAssess() {
+  if (!current) return;
+  const btn = document.getElementById("runAssess");
+  btn.textContent = "Assessing…";
+  btn.disabled = true;
+  await new Promise(r => setTimeout(r, 0));
+  try {
+    const data = await loadRecording(current);
+    const w = assessWindow(current);
+    const box = document.getElementById("assessOut");
+    if (w.blocked) {
+      clearAssess();
+      box.append(el("h4", "Coordination in " + current.id));
+      box.append(el("p", w.blocked, "caveat"));
+      return;
+    }
+    const stream = [...data.streams.keys()].sort()[0];
+    const byRoi = data.streams.get(stream);
+    const [ws, we] = w.window || [data.t0, data.t1];
+    const trains = data.order.map(id =>
+      (byRoi.get(id) || []).filter(x => x >= ws && x <= we).map(x => x - ws));
+
+    const nSurr = clamp(Number(document.getElementById("aSurr").value), 50, 2000);
+    const bin = clamp(Number(document.getElementById("aBin").value), 0.1, 10);
+    const res = assessCoactivity(trains, we - ws, { nSurrogates: nSurr, binWidth: bin });
+    paintAssess(current, res, w.source, { nSurr, bin, stream });
+
+    const wantK = Number(document.getElementById("aK").value);
+    const hit = res.find(a => a.K === wantK && a.meetsFloor);
+    ASSESS = hit ? { recId: current.id, K: wantK, centres: hit.centres, winStart: ws }
+                 : null;
+    draw(current, data);
+  } finally {
+    btn.textContent = "Assess this recording";
+    btn.disabled = false;
+  }
+}
+
+document.getElementById("runAssess").onclick = runAssess;
+document.getElementById("aK").onchange = () => {
+  // re-marking is free; re-measuring is not, so changing K only redraws
+  if (!ASSESS || !current || !current.loaded) return;
+  runAssess();
+};
+
+/* ---------- running the detector, and drawing what it called --------------- */
+let DETECT = null;    // {recId, label, starts, ends}
+
+function clearDetect() {
+  DETECT = null;
+  const b = document.getElementById("detectOut");
+  if (b) b.textContent = "";
+}
+
+async function runDetect() {
+  if (!current) return;
+  const btn = document.getElementById("runDetect");
+  btn.textContent = "Detecting…"; btn.disabled = true;
+  await new Promise(r => setTimeout(r, 0));
+  try {
+    const data = await loadRecording(current);
+    const stream = [...data.streams.keys()].sort()[0];
+    const byRoi = data.streams.get(stream);
+    const trains = data.order.map(id => (byRoi.get(id) || []).slice());
+    const m = META.get(current.id) || {};
+    const dt = Number(m.frame_interval_sec) > 0 ? Number(m.frame_interval_sec) : 0.1;
+    const det = rateDetect(trains, [data.t0, Math.max(data.t1, data.t0 + 1)], {
+      excessThresholdHz: clamp(Number(document.getElementById("dThr").value), 0.1, 50),
+      rateWin: clamp(Number(document.getElementById("dRate").value), 0.1, 30),
+      contextWin: clamp(Number(document.getElementById("dCtx").value), 5, 600),
+      gridDt: dt,
+    });
+    DETECT = { recId: current.id, label: "RateDetect",
+               starts: det.starts, ends: det.ends };
+
+    const box = document.getElementById("detectOut");
+    box.textContent = "";
+    box.append(el("h4", "RateDetect on " + current.id));
+    box.append(el("p", det.nEvents + " event(s) called · threshold "
+      + document.getElementById("dThr").value + " Hz excess · rate window "
+      + document.getElementById("dRate").value + " s · context "
+      + det.ctxActual.toFixed(0) + " s"
+      + (det.ctxActual < Number(document.getElementById("dCtx").value)
+         ? " (clipped to 0.9x the recording)" : "")
+      + " · dt " + dt + " s", "sub"));
+    box.append(el("p", "These are the settings this project benches at, not "
+      + "settings calibrated for your preparation. Tuning them is what the "
+      + "simulate step is for — measure, simulate from what you measured, tune "
+      + "against planted events, then point the tuned instrument at everything.",
+      "caveat"));
+    draw(current, data);
+  } finally {
+    btn.textContent = "Detect"; btn.disabled = false;
+  }
+}
+
+document.getElementById("runDetect").onclick = runDetect;
+
 /* ---------- the sidebar: one section at a time ----------------------------- */
-const SECTIONS = ["accOpen", "accSim", "accList"];
+const SECTIONS = ["accSim", "accOpen", "accAssess", "accDetect", "accList"];
 function showSection(id) {
   for (const s of SECTIONS) {
     const n = document.getElementById(s);
