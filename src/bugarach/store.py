@@ -15,16 +15,27 @@ is enough to mistime SLOW coincidence and change what a coactivity detector
 counts. That is why the store carries both, and why the ``_onset`` store
 exists at all.
 
-This docstring claimed the opposite until 2026-08-17 — *"``locs`` are onset
-times… the primary input to every detector"* — while the code around it had
-it right the whole time: every detector taking an ``onset_field`` defaults
-to ``t50rise``, and :mod:`bugarach.detectors.cicada` calls ``locs`` the peak
-in its own comment. Nothing computed the wrong answer; the prose was wrong
-on its own, which costs nothing until somebody builds from the prose.
-interface2 did, writing an export folder against
-``docs/export_folder_spec.md``, whose ``time_sec`` column asks for when the
-event *began* — they read the code rather than this paragraph and sent
-``t50rise``, which is correct.
+**The three detectors that take an ``onset_field`` do not agree, and that is
+deliberate.** ``sce_detect`` and ``loco_detect`` default to ``t50rise``;
+:func:`bugarach.detectors.cicada.cicada_detect` defaults to ``locs``, the
+peak. CICADA's MATLAB original anchors its raster on the peak, and §2 makes
+matching it the product — so the port keeps the peak rather than improving on
+it. The science agrees with the parity: a single-cell event runs 10-60+ s from
+half-rise to peak, and treating events that long as points would find almost
+any pair of them coincident. ``t50rise`` locates an event; ``locs`` closes it;
+the interval between them is its duration.
+
+**Do not "correct" cicada to ``t50rise``.** Two sentences claiming otherwise
+have already been written in this file. Until 2026-08-17 it said *"``locs`` are
+onset times… the primary input to every detector"*; the correction that
+replaced it asserted that *every* detector taking an ``onset_field`` defaults
+to ``t50rise``, which is false for exactly the one that matters. Neither
+sentence changed a number — the prose was wrong on its own, which costs
+nothing until somebody builds from it. Two have: interface2 read the first and
+raised it against ``docs/export_folder_spec.md``, and a bugarach session read
+the second and reported cicada's default as a bug. This paragraph is the third
+attempt, and it names the defaults one by one so there is no universal left to
+be wrong.
 
 Files exist in two MATLAB formats: v7 (scipy) and v7.3 (HDF5). v7 files pad
 the per-ROI arrays to a rectangle with NaN; the loader strips that padding
