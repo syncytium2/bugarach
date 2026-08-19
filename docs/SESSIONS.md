@@ -61,7 +61,7 @@ Template:
 ## Active
 
 ### Mac/modularity-on-fast — run the connectivity project's modularity instrument on the FAST stream
-- **Status:** ACTIVE
+- **Status:** DONE 2026-08-19 — **claim released**
 - **Started:** 2026-08-19
 - **Writes:** `<darkroom>/murmuration/bugarach-fast-modularity/` — **one new subfolder**,
   holding `eval_modularity_null_{fast,slow}.csv`. **Nothing at the root of `murmuration/` is
@@ -69,9 +69,11 @@ Template:
   (The original plan was to drop the fast CSV at their root under their naming convention;
   changed on finding that the slow re-check has to be written too, and overwriting their slow
   file is not mine to do.) Also `<darkroom>/bugarach/` for the bugarach-side copies.
-- **Claims:** that ONE subfolder. **`murmuration/` is the connectivity project's output
-  folder, not bugarach's**, so the claim is deliberately a new namespace inside it rather than
-  any existing name.
+- **Claims:** ~~that ONE subfolder~~ — **released**. Both CSVs are written and nothing is
+  regenerating them. `murmuration/` is the connectivity project's output folder, not
+  bugarach's, so the claim was deliberately a new namespace inside it rather than any existing
+  name; their `eval_modularity_null_slow.csv` was never touched and still carries its July
+  timestamp.
 - **Reads:** `$IF2_DATA_ROOT/processed_archive/event_store_onset_revised_2v` — read-only, the
   same 85 recordings the slow run used.
 - **interface2:** branches `bct-modularity-fast` **from** `bct-connectivity-cont`, in its own
@@ -98,6 +100,20 @@ Template:
   an additive `IF2_DROI_CSV` full-path override, leaves the stale default alone, and uses the
   current roster — and re-runs SLOW on it too, so the fast answer is compared against a slow
   number computed the same way rather than against the quarantined-roster one.
+- **RESULT, for anyone who needs it without reading the report:** no modular structure above
+  null in **either** stream — 3 of 78 fast recordings (3.8%), 2 of 77 slow (2.6%), against the
+  ~5% the 95th-percentile threshold gives by chance. Re-running slow on the current roster
+  reproduced the published file exactly, so **`eval_modularity_null_slow.csv` stands** despite
+  its roster having been quarantined since.
+- **FOR THE CONNECTIVITY PROJECT — a branch is waiting, not merged.** interface2
+  `bct-modularity-fast` (GitLab, pushed 2026-08-19) makes the channel an argument with the
+  default unmoved, and adds an `IF2_DROI_CSV` override because **your default dead-ROI roster
+  path now points into `2R/QUARANTINE/`** — the pipeline cannot run clean without it. Opening
+  the MR is yours; so is deciding whether to repoint the default.
+- **A finding that reaches every deliverable in this repo, not just this one:** the lab's
+  `exclude` column in `indiegroups_db4.xlsx` had never been read by anything here, and two
+  withdrawn recordings were inside every published assembly number. See
+  `docs/todo/2026-08-19-lab-exclusions-were-never-consulted.md`.
 
 ### Mac/close-the-assembly-question — the three steps that close the assembly negative
 - **Status:** DONE 2026-08-19 — **claim released**, merged as PR #135
