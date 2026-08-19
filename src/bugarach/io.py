@@ -221,6 +221,29 @@ def _read_table(path: Path, required: tuple[str, ...]) -> list[dict[str, str]]:
     return rows
 
 
+#: Spellings a producer may already use for the reserved subject column. Accepting
+#: them costs nothing and means a lab that has written `mouse_id` for years does not
+#: have to rename a column to be conforming (spec revision 4).
+SUBJECT_ALIASES = ("subject_id", "mouse_id", "animal_id")
+
+
+def _identity(row: dict) -> dict:
+    """Carry every column through, and make the reserved subject column findable.
+
+    The row keeps whatever the producer wrote — nothing is renamed away — and gains
+    ``subject_id`` when one of its accepted spellings is present. bugarach reads the
+    ROLE of this column and never its value: it learns that two recordings came from
+    one animal, not what the animal is.
+    """
+    if "subject_id" not in row or not str(row.get("subject_id", "")).strip():
+        for alias in SUBJECT_ALIASES[1:]:
+            v = row.get(alias)
+            if v not in (None, "") and str(v).strip():
+                row["subject_id"] = v
+                break
+    return row
+
+
 def load_folder(folder) -> list[Slice]:
     """Read an export folder — the contract in ``docs/export_folder_spec.md``.
 
@@ -276,7 +299,7 @@ def load_folder(folder) -> list[Slice]:
                    analysis_start_sec=float(a0) if a0 else None,
                    analysis_end_sec=float(a1) if a1 else None))
 
-    meta = {r.get("slice_id", ""): dict(r)
+    meta = {r.get("slice_id", ""): _identity(dict(r))
             for r in _read_table(folder / "slices.csv", ("slice_id",))}
 
     for name, table, present in (("regions.csv", regions,

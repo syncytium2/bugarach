@@ -316,3 +316,35 @@ def test_roi_ids_order_numerically_not_lexicographically(tmp_path: Path):
                 s1="roi,time_sec\n10,1.0\n2,2.0\n1,3.0\n")
     s, = load_folder(d)
     assert s.roi_ids == ["1", "2", "10"]
+
+
+# ---- reserved identity columns (spec revision 4) ---------------------------
+
+def test_subject_id_is_filled_from_the_spelling_the_producer_used(tmp_path):
+    """A lab that has written `mouse_id` for years is conforming and renames
+    nothing. The loader supplies `subject_id` beside it; both stay in meta."""
+    (tmp_path / "s1.csv").write_text("roi,time_sec\n1,1.0\n1,2.0\n", encoding="utf-8")
+    (tmp_path / "slices.csv").write_text(
+        "slice_id,frame_interval_sec,group_id,mouse_id\ns1,0.1,ORX,42\n",
+        encoding="utf-8")
+    s = load_folder(tmp_path)[0]
+    assert s.meta["subject_id"] == "42"
+    assert s.meta["mouse_id"] == "42"      # the producer's own column survives
+    assert s.meta["group_id"] == "ORX"
+
+
+def test_an_explicit_subject_id_is_not_overwritten(tmp_path):
+    (tmp_path / "s1.csv").write_text("roi,time_sec\n1,1.0\n", encoding="utf-8")
+    (tmp_path / "slices.csv").write_text(
+        "slice_id,frame_interval_sec,subject_id,mouse_id\ns1,0.1,A,42\n",
+        encoding="utf-8")
+    assert load_folder(tmp_path)[0].meta["subject_id"] == "A"
+
+
+def test_no_subject_column_leaves_it_absent(tmp_path):
+    """Absent means absent — the app reports what it cannot support rather than
+    inventing an independence unit."""
+    (tmp_path / "s1.csv").write_text("roi,time_sec\n1,1.0\n", encoding="utf-8")
+    (tmp_path / "slices.csv").write_text(
+        "slice_id,frame_interval_sec\ns1,0.1\n", encoding="utf-8")
+    assert not load_folder(tmp_path)[0].meta.get("subject_id")

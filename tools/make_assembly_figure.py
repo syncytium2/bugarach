@@ -144,7 +144,10 @@ def animal_split(rows):
     """
     per_mouse: dict = {}
     for r in rows:
-        g, m = r.get("group_id"), r.get("mouse_id")
+        # The contract's reserved names (spec revision 4). `subject_id` is
+        # supplied by the loader from whichever spelling the producer used, so a
+        # lab writing `mouse_id` needs to change nothing.
+        g, m = r.get("group_id"), r.get("subject_id") or r.get("mouse_id")
         if g in (None, "") or m in (None, ""):
             continue
         d = per_mouse.setdefault(str(m), {"group": str(g), "any": False,

@@ -14,6 +14,24 @@ Everything is CSV, UTF-8, newline-only endings, one header row. Times are
 this project's MATLAB exporter, another lab's Python, a spreadsheet exported by
 hand.
 
+> **Revision 4** (2026-08-18). **Group and subject are named, not merely allowed.**
+> `slices.csv` reserves `group_id` (which experimental group this recording belongs
+> to) and `subject_id` (which animal it came from). Both were already legal as
+> free-form identity columns; naming them is what lets an analysis *split by group*
+> and *stop counting two slices from one animal as two independent observations*.
+> A producer already writing `mouse_id` or `animal_id` is conforming and need change
+> nothing — those spellings are read as `subject_id`. Both columns stay optional.
+>
+> This revision also narrows one sentence that was too broad. Rev 1–3 said bugarach
+> "interprets not at all" and "does not know what a mouse is". That is right about
+> **values** and was wrong about **roles**: an app that may not know which column
+> says two recordings share an animal cannot produce a group-split result, which
+> FOUNDATIONS §9 requires before a corpus number is admissible. bugarach still never
+> interprets a *value* — `DI`, `ORX`, `wildtype`, `cohort-B` mean nothing to it — but
+> it now knows which column plays which *role*. Written after an analysis went to a
+> spreadsheet outside the folder for group membership that `slices.csv` was already
+> carrying.
+>
 > **Revision 3** (2026-08-17). `regions.csv` gains optional
 > `analysis_start_sec` / `analysis_end_sec`: a region now states what happened AND
 > what to score, so a producer with its own windowing policy is honoured instead of
@@ -234,7 +252,19 @@ cannot work without.
 |---|---|---|
 | `slice_id` | text | the join key; must match a recording file's name |
 | `frame_interval_sec` | number | the acquisition sampling interval, the mean time between imaged frames |
-| *anything else* | text or number | **an open set** — `group_id`, `mouse_id`, `sex`, `age`, `cohort`, whatever the lab records |
+| `group_id` | text | **optional, reserved** — which experimental group this recording belongs to. The values are yours; bugarach only needs to know which column names the grouping |
+| `subject_id` | text or number | **optional, reserved** — which animal this recording came from. Two recordings sharing one are siblings, never independent observations. `mouse_id` and `animal_id` are read as this |
+| *anything else* | text or number | **an open set** — `sex`, `age`, `cohort`, `slice_loc`, whatever the lab records |
+
+**Why those two are named when the rest are not.** Both are optional and neither is
+interpreted, but each answers a question an analysis cannot answer for itself.
+`group_id` says which comparison the study is about, so a result can be reported per
+group instead of pooled across groups that may run in opposite directions.
+`subject_id` says which recordings are siblings, so twenty slices from eight animals
+are not counted as twenty independent observations. Without them a corpus number is
+still computable and is quietly weaker than it looks — so when they are absent
+bugarach says which claims it cannot support, rather than refusing the folder or
+pretending it can.
 
 **The interval comes from the sidecar. If it is not there, the app asks for it at
 load, and will not proceed until it has one.** Three of the six detectors build
@@ -254,10 +284,17 @@ A caller with no interface — a script, a batch run — supplies the value the 
 the prompt would, and gets the same refusal if it does not.
 
 Everything else in this file bugarach **passes through to its output unchanged and
-interprets not at all.** It does not know what a mouse is. Every column present
-becomes a column in the results, so a statistician gets their own vocabulary back
-rather than ours; absent columns are reported as missing, and a lab with no metadata
-beyond the interval still gets a usable file.
+interprets not at all.** Every column present becomes a column in the results, so a
+statistician gets their own vocabulary back rather than ours; absent columns are
+reported as missing, and a lab with no metadata beyond the interval still gets a
+usable file.
+
+**The line between a column's role and its values.** bugarach reads the *role* of
+`group_id` and `subject_id` — which column groups, which column identifies the
+animal — and never their *values*. It does not know what `ORX` means, what a mouse
+is, or which group is a control. It knows only that rows sharing a `subject_id` came
+from one animal and that rows differing in `group_id` belong to different groups.
+Every other column, including the values in these two, is carried and not read.
 
 ### `metric_dictionary.csv` — optional
 
