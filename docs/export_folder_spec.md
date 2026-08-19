@@ -1,9 +1,13 @@
 # The export folder — bugarach's input contract
 
-**bugarach needs three facts and no fourth:** the event times of each ROI, the
-timing of each treatment period, and the acquisition frame interval. Nothing here
-is specific to a lab, a preparation, a drug or a pipeline. A producer that can
-state those three is a conforming producer.
+**bugarach needs three facts:** the event times of each ROI, the timing of each
+treatment period, and the acquisition frame interval. Nothing here is specific to a
+lab, a preparation, a drug or a pipeline. A producer that can state those three is a
+conforming producer.
+
+**A fourth is asked for and not required:** how big each event was. A producer that
+can state it should; one that cannot is still conforming, and every detector still
+runs. What it buys is in revision 5 below.
 
 **This is the whole input.** bugarach reads one folder and nothing else: no data
 store, no archive, no environment variable, no network, no companion database. If
@@ -14,6 +18,41 @@ Everything is CSV, UTF-8, newline-only endings, one header row. Times are
 this project's MATLAB exporter, another lab's Python, a spreadsheet exported by
 hand.
 
+> **Revision 5** (2026-08-18). **An event is located at its half-rise, and the
+> contract now asks how big it was.**
+>
+> `time_sec` is the **`t50rise`** — the time the transient reached half its rise.
+> Rev 1–4 said only "when the event began", which is the same thing said loosely, and
+> loosely was not enough: a store can hold both an onset and a peak, and they are not
+> close together — in **this project's own** stores the gap is roughly 0.3 s in a fast
+> stream and 2 s in a slow one. Another producer's gap will differ; that it exists at
+> all is the point. A producer reading "when it began" had no way to know which was
+> wanted. One rule, named, for every stream and every producer.
+>
+> `width_sec` is **new, optional, and requested.** With it, `amp` and `peak_sec` may
+> also be sent. **`width` is not one quantity** — it is defined differently for a
+> fast event than for a slow one, and defining it is the **producer's**
+> responsibility, not bugarach's. For this project's own exporter that is
+> interface2's call to make and to document; for anyone else it is theirs. So width
+> travels with a `width_def` naming the rule that produced it, exactly as `strength`
+> travels with `strength_unit` in the output — for the same reason, which is that a
+> column meaning two things without saying so yields a plausible wrong answer rather
+> than an error.
+>
+> **Why ask at all.** A coordinated event is currently described by how many cells
+> took part and how long the coordination lasted. Nothing says how big the events
+> *making it up* were — whether a coordinated event is many small transients or a few
+> large ones, and whether that changes under a treatment. That question cannot be
+> asked of onset times alone, and it is the reason this revision exists.
+>
+> ⚠ **Nothing in bugarach reads `width_sec` today** — not the loader, not the folder
+> check, not any detector. It is not validated, not carried through, and no result
+> changes by supplying it; it is an extra column like any other until code is written
+> for it. This is a
+> contract to build against, stated ahead of the code on purpose so producers can
+> begin emitting it — the same posture FOUNDATIONS §4 takes for the folder reader,
+> and it is written down here so nobody mistakes the column for a feature.
+>
 > **Revision 4** (2026-08-18). **Group and subject are named, not merely allowed.**
 > `slices.csv` reserves `group_id` (which experimental group this recording belongs
 > to) and `subject_id` (which animal it came from). Both were already legal as
@@ -79,16 +118,56 @@ recording silently gets nothing from it, which is almost always one typo in a
 
 One row per detected event, in one ROI.
 
-| column | type | meaning |
-|---|---|---|
-| `roi` | text | which ROI. Any string; the same string on every row of that ROI, and used by no other ROI in the recording. |
-| `time_sec` | number | when the event began, in seconds — **or `NA`**, see below. |
-| `stream` | text | which signal the event came from. Any name. A single-stream lab may omit the column entirely — every event is then one unnamed stream. |
+| column | type | required | meaning |
+|---|---|---|---|
+| `roi` | text | yes | which ROI. Any string; the same string on every row of that ROI, and used by no other ROI in the recording. |
+| `time_sec` | number | yes | **when the event reached half its rise** (`t50rise`), in seconds — **or `NA`**, see below. |
+| `stream` | text | no | which signal the event came from. Any name. A single-stream lab may omit the column entirely — every event is then one unnamed stream. |
+| `width_sec` | number | **asked for** | how long the event lasted. See below — this is not one quantity. |
+| `width_def` | text | with `width_sec` | the name of the rule that produced `width_sec`. Constant within a stream. |
+| `peak_sec` | number | no | when the transient peaked, if the producer has it |
+| `amp` | number | no | how large the transient was, in the producer's own units |
 
-Nothing else is read. **Event properties — amplitude, width, rise time — belong to
-a different project and are not consumed here.** The six detectors need onset times
-and nothing more. Extra columns are ignored rather than rejected, so a producer may
-ship one file that serves several consumers.
+#### An event is located at its half-rise, and that is not a matter of taste
+
+`time_sec` is the **`t50rise`**: the moment the transient reached half its rise.
+Not the peak, not the first sample above threshold, not the midpoint.
+
+It has to be named rather than described because a producer may have several
+candidates and they are far apart. In this project's own stores the peak lags the
+half-rise by roughly **0.3 s in a fast stream and 2 s in a slow one**. Two seconds is
+wider than the tolerance a detection is scored at, so a producer that sent peaks
+where onsets were meant would not merely shift the answer — it would change which
+events were found to coincide, with nothing anywhere failing.
+
+A producer whose signal has no meaningful half-rise sends the closest thing it has
+and says so in its own documentation. One rule, applied consistently, beats each
+producer choosing the field whose name it liked.
+
+#### Width is not one quantity, and the producer defines it
+
+A fast transient and a slow one are not the same shape, so "how long it lasted" is
+not the same measurement. **bugarach does not define width and will not infer it.**
+The producer chooses the rule, applies it consistently within a stream, and names it
+in `width_def` — `t50rise_to_peak`, `fwhm`, `above_threshold`, whatever it actually
+computed. The string is the producer's; bugarach carries it and never parses it.
+
+This mirrors `strength_unit` in the output, and for the same reason: **a column that
+means two things without saying which yields a plausible wrong answer rather than an
+error.** A consumer comparing widths across streams must read `width_def` first, and
+where the definitions differ the comparison is not available — which is a fact about
+the measurement, not a gap in the file.
+
+For this project's own exporter, defining fast and slow width is **interface2's**
+responsibility and belongs in their documentation, not here.
+
+#### Sending more than is asked for
+
+Extra columns are ignored rather than rejected, so a producer may ship one file that
+serves several consumers. A producer that already computes the full per-event set is
+encouraged to send it — `amp`, `peak_sec`, `t50rise` (as `time_sec`) and `width_sec`
+— because the questions those support are the ones nobody can ask today, and a folder
+is cheaper to write once than to regenerate.
 
 #### An ROI that fired nothing is a row with no time
 
@@ -440,5 +519,9 @@ comparison when no cluster forms — it prints as *undefined*, never as a value.
    is invented.
 5. **Extra columns are ignored, not rejected**, so one file can serve several
    consumers.
-6. **Missing is written as missing** — literally `NA`, never an empty field and
+6. **A quantity different producers define differently travels with its definition**
+   — `width_sec` with `width_def`, `strength` with `strength_unit` — and is never
+   pooled across definitions. The label is the producer's own string, to be matched
+   and carried, never parsed.
+7. **Missing is written as missing** — literally `NA`, never an empty field and
    never a plausible substitute.
