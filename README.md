@@ -95,8 +95,11 @@ Top row, the answer: ▲ a planted event some detector recovered, ▽ a distract
 correlated burst that is real coincidence and not a coordinated event. Then one
 lane per detector, each bar a call it made, ✗ a false alarm and ○ a second call on
 an event another detection had already claimed. Then the raster all six were
-reading, one row per ROI, and below it what each detector computes from that
-raster, with its own threshold drawn on.
+reading, one row per ROI, **every onset drawn the same** — which of them a
+detector gathered into an event is not marked, because none of them reports that:
+they report a window, and that is what the lanes above draw. Below the raster,
+what each detector computes from it, with its own threshold drawn on where it has
+one: four of the six do.
 
 **The shaded block is the trap.** It fires faster than the rest of the recording
 and contains no planted events at all, so every bar inside it is a false alarm by
@@ -114,8 +117,16 @@ rather than dressed up as a result.
 [**The annotated version**](docs/generator/coord_diagnostic_bench_quiet.png)
 carries the full legend and each detector's scores;
 [the interactive one](https://bugarach.tonydefazio.com/diagnostic.html) lets you
-zoom a false alarm. Both rebuild with
-`python tools/make_diagnostic.py --bench baseline_quiet --seed 3`.
+zoom a false alarm. Both rebuild with:
+
+```bash
+python tools/make_diagnostic.py --bench baseline_quiet --seed 3 --scale 2 \
+    --out docs/generator --tag bench_quiet \
+    --hero docs/generator/coord_diagnostic_bench_quiet_hero.png
+```
+
+The flags are not decoration — without them it renders at a different scale and
+writes to the darkroom rather than to the two files this page shows.
 
 ## The bake-off — same data, same scorer, held-out folds
 
@@ -168,6 +179,12 @@ caveats: [`docs/learned/bakeoff.md`](docs/learned/bakeoff.md).
 ## Where the imitation stops being convincing
 
 ![A real recording above, the generator's imitation below](docs/generator/reality_check.png)
+
+> ⚠ **The one figure here still using the old raster convention.** It inks the
+> onsets inside a window LoCo called and mutes the rest; every other raster in
+> this repo now draws each onset identically. It is also the only figure that
+> cannot be rebuilt without the real archive, so it lags on purpose rather than
+> by oversight.
 
 The ROI count, the duration, the per-ROI rate, the participation and the jitter
 are the same in both panels. The texture is not: a real field has a few ROIs
