@@ -1,10 +1,64 @@
 ---
 status: open
 filed: 2026-08-18
-revised: 2026-08-18
+revised: 2026-08-19
 ---
 
 # Do the real recordings have recurring assemblies, or random participation?
+
+> ## ANSWERED 2026-08-19, and the answer is a NEGATIVE that counts as a result
+>
+> Tony: *"the lack of assembly is a result, just like the lack of 'connectivity'."*
+> That is the frame this file should have had from the start, and it changes what
+> finishing the work means.
+>
+> **What two independent instruments say.**
+>
+> | | instrument | verdict |
+> |---|---|---|
+> | discrete recurring groups | BCT **modularity** on the STTC graph (`darkroom/murmuration`) | **no structure above null** — 3% on ROI, 1% on penumbra-subtracted |
+> | who participates, beyond rate | curveball + uniform nulls on membership (`bugarach.assembly`) | departure from uniform in 27/48 fast, 27/38 slow, vs 2.5% on matched controls |
+>
+> These do not conflict. Elevated co-participation variance with **no modular partition**
+> is what a **core–periphery** field looks like: a few cells in most events and a long tail
+> in few. That is a weaker and more mundane claim than "assemblies", and it is the one the
+> evidence supports. **The word "assembly" should be dropped from the vocabulary here**
+> unless the modularity result is overturned.
+>
+> **Why the negative is credible — and what it still needs.** The connectivity work earns
+> its null: the same pipeline separates intact from gonadectomized at p=4.2e-07, so the
+> instrument demonstrably fires, and *then* finds no topology. A test that could not have
+> failed is not evidence. Ours is not yet on that footing, for a reason the murderboard
+> found: the power numbers in the report were computed at α=0.05 on one statistic under
+> one null combined over 20 slices by Fisher, while recordings are actually scored at
+> α/2 over two statistics under both nulls, per recording. Same instrument, a much harsher
+> decision rule, and no published power figure for the rule that was used.
+>
+> **So the remaining work is small and specific**, and it is what turns this from "we
+> looked and saw little" into a statement someone can cite:
+>
+> 1. **Re-run `tools/assembly_power.py` with `AssemblyResult.verdict()` itself as the
+>    decision rule**, per recording, at this corpus's own cluster counts — not the older
+>    store's geometry. Then the sentence "no assembly above strength X is present" has a
+>    number behind it that matches how the corpus was scored.
+> 2. **Re-run the measurement on the penumbra-subtracted store.** It already exists —
+>    `darkroom/murmuration/pensub/`, 85/85 slices, three environment variables
+>    (`IF2_ONSET_STORE` / `IF2_DROI_SOURCE` / `IF2_OUT_SUB`). If the departure from uniform
+>    collapses there, the answer is optical crosstalk and the negative is complete. If it
+>    holds beside a null modularity, core–periphery is the honest description.
+> 3. **Say the negative plainly in the report**, which currently leads with the positive
+>    fragment and treats the absences as caveats and withdrawals. It is the other way
+>    round.
+>
+> **What is already settled and must not be re-derived:** the group difference is
+> withdrawn (identical planted assemblies at each group's event count reproduce it), and
+> it was a FAST-stream claim — the connectivity work independently treats FAST as a
+> negative control because it fails rate-, node- and Δt-matching. The group effect that
+> *is* real lives in SLOW and belongs to that project, not this one.
+>
+> **Do not run BCT graph metrics** to chase this: `decisions/0011` records them as
+> redundant with `meanSTTC` (strength ρ 0.995), and modularity — the one metric carrying
+> independent information — fails node-matching at p=0.098. That was tested, not argued.
 
 **A question about the preparation, small enough to answer in a day, and it gates a
 whole family of comparisons.**
