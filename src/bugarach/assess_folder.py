@@ -132,9 +132,23 @@ def assess_folder(folder, *, stream: str | None = None,
                     f"coordination properties are not taken from treatments")
                 continue
             r = max(base, key=lambda r: r.end_sec - r.start_sec)
-            window = (r.start_sec, r.end_sec)
+            # The producer's own analysis window WINS wherever the folder states
+            # one. `start_sec`/`end_sec` are what happened; `analysis_*` is what
+            # to score, and they are rarely the same once a wash-in delay or a
+            # cap has been applied. Measuring the raw period while calling the
+            # result the analysis is the defect this line exists to prevent —
+            # and it was live for a few hours on 2026-08-18, with the viewer
+            # shading the analysis window and both assessors measuring the raw
+            # one.
+            if r.has_analysis_window:
+                window = (float(r.analysis_start_sec), float(r.analysis_end_sec))
+                rec.window_source = (f"baseline region {r.name!r}, "
+                                     f"analysis window as the folder states it")
+            else:
+                window = (r.start_sec, r.end_sec)
+                rec.window_source = (f"baseline region {r.name!r}, whole period "
+                                     f"(no analysis window sent)")
             rec.window = window
-            rec.window_source = f"baseline region {r.name!r}"
 
         try:
             rec.results = assess_coactivity(
