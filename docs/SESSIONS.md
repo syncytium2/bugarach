@@ -60,6 +60,33 @@ Template:
 
 ## Active
 
+### Mac/windowing-design — the windowing decision, written down because two sessions collided
+- **Status:** DONE 2026-08-18 — nothing held, nothing claimed
+- **Writes:** repo only — ONE new file,
+  `docs/todo/2026-08-18-windowing-default-and-the-three-delta-interface.md`.
+  **`docs/export_folder_spec.md` was deliberately NOT touched**, because another session
+  was cleaning it up at the same time and a design note is not worth a conflict in the
+  document it describes.
+- **⚠ READ THAT TODO BEFORE EDITING THE EXPORT SPEC.** Tony decided the windowing default
+  on 2026-08-18 and it settles `2026-08-17-windowing-convention-is-not-optional.md`, which
+  had been open since the contract shipped: with no `analysis_*` columns bugarach applies
+  **no protocol at all** and uses the full-length baseline, rather than this project's
+  wash-in delay, caps and `"hi"`-substring exemption. A three-delta interface lets a user
+  state windows they did not send. None of it is built.
+- **For the spec cleanup specifically:** the todo says which 22 lines of the current spec
+  are mine and should be cut to their normative core without asking, gives the 260→444-line
+  growth table, and proposes splitting the revision-header stack into a `CHANGES` section.
+- **Also recorded there, and nowhere else in this repo:** interface2 replied to the export
+  request on 2026-08-17 (revised 2026-08-18) on their unmerged `bugarach-export-folder`
+  branch, with four spec corrections we have not applied — including that our `baseline`
+  overwrite mechanism is wrong and `chelerythrine` does not contain `hi`. Their todo still
+  cites spec revision 2; we are on 4.
+- **Landed separately:** PR #123, the guards on `supplied_region_windows`. A producer
+  supplying `analysis_*` was routed past every check on region bounds; a window of
+  −100,499 s passed `bugarach check` and reached the detectors. Universal checks only —
+  FOUNDATIONS §4 forbids applying this project's HALT guards to a conforming folder, and a
+  test asserts the non-contiguous, non-zero-based folder still loads.
+
 ### Mac/park-infra-ideas — two infrastructure ideas parked in the darkroom
 - **Status:** DONE 2026-08-18 — **claim released**
 - **Writes:** `<darkroom>/ideas/` — **created it**. Two files, plus a README.
