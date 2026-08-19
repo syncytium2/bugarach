@@ -1230,6 +1230,11 @@ async function open(fileList, opts) {
   // planted events and be tuned against them.
   TRUTH = (opts && opts.truth) || new Map();
   RECORDINGS = []; REGIONS = new Map(); META = new Map();
+  // A new folder has its own period kinds, so which of them wait for a solution
+  // is not a question the last folder's answer applies to. Cleared here with
+  // everything else, or a drug ticked off in one folder stays ticked off in the
+  // next one that happens to use the same name.
+  DELAY_OFF = new Set();
   document.getElementById("panel").hidden = true;
   document.getElementById("checkbar").hidden = true;
 
@@ -2946,8 +2951,12 @@ async function runDetect() {
       const flagged = (d.isArtifact || []).filter(Boolean).length;
       artifacts += flagged;
       starts.push(...d.starts); ends.push(...d.ends);
-      perRegion.push({ label: seg.label, n: d.nEvents, flagged, stated: seg.stated,
-                       mins: (seg.end - seg.start) / 60 });
+      perRegion.push({ label: seg.label, n: d.nEvents, flagged,
+                       // WHOSE window this run used, carried through to the row.
+                       // Reading `stated` here and `source` in the cell is how a
+                       // table ends up reporting "none sent" about a window it
+                       // just analysed.
+                       source: seg.source, mins: (seg.end - seg.start) / 60 });
     }
     DETECT = { recId: current.id, label, starts, ends };
 

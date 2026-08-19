@@ -62,6 +62,10 @@ SETUP = """async (v) => {
     cb.checked = false; cb.onchange();
   }
   if (v.run) runWindows();
+  if (v.detect) {
+    document.getElementById("dThr").value = "0.5";
+    await runDetect();
+  }
   const wins = REGIONS.get("s1").slice().sort((a, b) => a.idx - b.idx);
   return {
     chip: document.getElementById("cntWindows").textContent,
@@ -75,6 +79,8 @@ SETUP = """async (v) => {
       derived: !!w.derived, tooShort: !!w.tooShort})),
     segments: analysisSegments({id: "s1"}, {t0: 0, t1: 3960})
       .map(s => ({label: s.label, start: s.start, end: s.end, source: s.source})),
+    detectRows: [...document.querySelectorAll("#detectOut table tr")].slice(1)
+      .map(tr => [...tr.querySelectorAll("td")].map(td => td.textContent)),
   };
 }"""
 
@@ -101,12 +107,14 @@ def page():
             browser.close()
 
 
-def run(page, regions=REGIONS, controls=None, do_run=True, no_delay=()):
+def run(page, regions=REGIONS, controls=None, do_run=True, no_delay=(),
+        detect=False):
     pg, errs = page
     out = pg.evaluate(SETUP, {"events": EVENTS, "regions": regions,
                               "slices": SLICES,
                               "controls": {**BASE, **(controls or {})},
-                              "noDelay": list(no_delay), "run": do_run})
+                              "noDelay": list(no_delay), "run": do_run,
+                              "detect": detect})
     assert not errs, errs
     return out
 
@@ -270,3 +278,24 @@ def test_one_period_index_can_carry_several_drugs(page):
     period2 = [o for o in out["baseOptions"] if o.startswith("period 2")][0]
     assert "TTX" in period2 and "senktide" in period2, (
         f"the chooser names one drug and hides the other: {period2!r}")
+
+
+def test_a_detector_run_reports_whose_window_it_used_on_screen(page):
+    """The gap that let a real bug through: every check above reads
+    `analysisSegments` directly, and the screen is built from a copy of it. When
+    the copy carried `stated` and the cell read `source`, every row said "whole
+    period — none sent" about a window it had just analysed — the numbers were
+    right and the provenance beside them was wrong, which is the worse way round.
+
+    So this presses Detect for real and reads the rendered cell."""
+    out = run(page, detect=True)
+    rows = out["detectRows"]
+    assert rows, "no detector table was rendered"
+    assert all(r[2] == "as you specified it" for r in rows[:3]), (
+        f"the table disowns the windows it used: {[r[2] for r in rows]}")
+    # the period with no window falls back, and says THAT rather than claiming one
+    assert rows[3][2] == "whole period — none sent", rows[3]
+
+    folderish = run(page, do_run=False, detect=True)["detectRows"]
+    assert all(r[2] == "whole period — none sent" for r in folderish), (
+        f"claimed a window before any was set: {[r[2] for r in folderish]}")
