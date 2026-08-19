@@ -129,6 +129,16 @@
      a hidden .ctl stays on screen unless this says otherwise. Learned by
      switching detectors and watching both parameter sets sit there at once. */
   .ctl[hidden] { display: none; }
+  /* one row per period kind — which of them the solution delay applies to. A
+     list rather than a rule, because the rule this replaces keyed on a substring
+     of the name and changed behaviour when a drug was renamed. */
+  .ctl .toggles { margin: 2px 0 0; }
+  .ctl .toggles > div { display: flex; align-items: center; gap: 7px;
+                        padding: 2px 0; }
+  .ctl .toggles input[type="checkbox"] { width: auto; margin: 0; }
+  .ctl .toggles label { color: var(--fg); font-size: 12.5px; }
+  .ctl .toggles .n { color: var(--muted); font-variant-numeric: tabular-nums; }
+  .ctl .toggles .hd { color: var(--muted); font-size: 11.5px; margin: 6px 0 2px; }
   .fine { color: var(--muted); font-size: 11.5px; line-height: 1.45;
           padding: 0 16px 14px; }
   .fine b { color: var(--fg); font-weight: 600; }
@@ -176,18 +186,20 @@
     padding: 10px 14px; margin: 10px 0; font-size: 13px;
   }
   .note { color: var(--muted); font-size: 12.5px; margin-top: 14px; max-width: 70ch; }
-  #assessOut, #detectOut, #tuneOut { margin: 16px 0 0; font-size: 12.5px; }
-  #detectOut h4, #tuneOut h4 { margin: 0 0 6px; font-size: 13px; font-weight: 600; }
-  #detectOut .sub, #tuneOut .sub { color: var(--muted); margin: 0 0 8px; }
-  #detectOut .caveat, #tuneOut .caveat { color: var(--muted); max-width: 72ch;
+  #assessOut, #detectOut, #tuneOut, #windowOut { margin: 16px 0 0; font-size: 12.5px; }
+  #detectOut h4, #tuneOut h4, #windowOut h4 { margin: 0 0 6px; font-size: 13px; font-weight: 600; }
+  #detectOut .sub, #tuneOut .sub, #windowOut .sub { color: var(--muted); margin: 0 0 8px; }
+  #detectOut .caveat, #tuneOut .caveat, #windowOut .caveat { color: var(--muted); max-width: 72ch;
                        line-height: 1.5; margin: 10px 0 0; }
-  #detectOut table, #tuneOut table { border-collapse: collapse; margin: 0 0 4px; }
-  #detectOut th, #detectOut td, #tuneOut th, #tuneOut td {
+  #detectOut table, #tuneOut table, #windowOut table { border-collapse: collapse; margin: 0 0 4px; }
+  #detectOut th, #detectOut td, #tuneOut th, #tuneOut td,
+  #windowOut th, #windowOut td {
                                  padding: 4px 14px 4px 0; text-align: right;
                                  font-variant-numeric: tabular-nums; }
-  #detectOut th, #tuneOut th { color: var(--muted); font-weight: 500; }
+  #detectOut th, #tuneOut th, #windowOut th { color: var(--muted); font-weight: 500; }
   #detectOut th:first-child, #detectOut td:first-child,
-  #tuneOut th:first-child, #tuneOut td:first-child { text-align: left; }
+  #tuneOut th:first-child, #tuneOut td:first-child,
+  #windowOut th:first-child, #windowOut td:first-child { text-align: left; }
   #detectOut td.state { text-align: left; color: var(--muted);
                         font-variant-numeric: normal; }
   /* the row the sweep chose, so the table and the picture agree without the
@@ -320,6 +332,55 @@
         <input id="dir" type="file" webkitdirectory directory multiple hidden>
         <input id="files" type="file" accept=".csv" multiple hidden>
         <div class="hint">Nothing is uploaded. Reading happens in this tab.</div>
+      </div>
+    </details>
+
+    <details class="acc" id="accWindows" hidden>
+      <summary>Analysis windows<span class="cnt" id="cntWindows"></span></summary>
+      <div class="ctl">
+        <label for="wBase">the baseline period is</label>
+        <select id="wBase"></select>
+        <label for="wBaseDur">baseline: last N minutes</label>
+        <input id="wBaseDur" type="number" min="1" max="120" step="1" value="20">
+        <label for="wDelay">treatment: skip first N minutes</label>
+        <input id="wDelay" type="number" min="0" max="60" step="0.5" value="2">
+        <label for="wTreatDur">treatment: then N minutes</label>
+        <input id="wTreatDur" type="number" min="1" max="120" step="1" value="20">
+        <label for="wFloor">flag windows under (min)</label>
+        <input id="wFloor" type="number" min="0" max="60" step="0.5" value="4">
+        <div class="span toggles" id="wDelays"></div>
+        <div class="span"><button id="runWindows">Set the windows</button></div>
+        <div class="span"><button id="clearWindows" class="ghost">Use what the folder sent</button></div>
+        <div class="note" id="wWhat"></div>
+      </div>
+      <div class="fine">
+        <b>What happened, and what to score, are two different things.</b> A folder
+        states when each period ran. Which part of it to analyse is a decision about
+        your protocol — a solution takes time to arrive, and a period that ran forty
+        minutes is not forty minutes of the same thing. Where a producer sends that
+        decision, it is used and this section leaves it alone.
+        <br><br>
+ <b>Which periods wait for a solution is yours to say.</b> A drug has to arrive;
+        a depolarising challenge is already there. So the delay applies to the
+        period kinds you tick, listed above from what the folder actually
+        contains — a list somebody set, not a rule reading letters out of a name.
+        The convention this replaces exempted anything whose label contained
+        <i>hi</i>, which caught <code>histamine</code>, missed
+        <code>chelerythrine</code>, and would have silently begun trimming every
+        <code>high K+</code> window the day someone renamed it <code>KCl</code>.
+        <br><br>
+        <b>Three numbers, and nothing decided behind your back.</b> The baseline
+        is measured <i>backward</i> from its end, because the minutes just before
+        the treatment are the ones the treatment is compared against. Every other
+        period starts after the delay you gave it — the one above, or none — and
+        runs a fixed length. Periods do differ here; what has gone is the page
+        deciding which, from the letters in a name.
+        <br><br>
+        <b>A window too short to mean anything is flagged, not quietly used.</b>
+        Applying one delay to every period will leave some of them with almost
+        nothing — a brief challenge at the end of a recording is the usual case.
+        That is reported here rather than hidden, because the alternative is a
+        result computed over thirty seconds and labelled like the rest.
       </div>
     </details>
 
@@ -576,6 +637,7 @@
       <canvas id="cv"></canvas>
       <div id="assessOut"></div>
       <div id="detectOut"></div>
+      <div id="windowOut"></div>
       <div id="tuneOut"></div>
       <div class="note" id="note"></div>
     </div>
@@ -1081,6 +1143,7 @@ async function show(rec) {
       + "recording of anything, and the treatment windows are labels over "
       + "identical statistics — the drug is a name on the axis, not an effect.");
   paintRegionChoices(rec);
+  paintWindowPanel();
   paintTuneWhat();
   paintOrderNote(data);
   draw(rec, data);
@@ -2588,7 +2651,11 @@ function analysisSegments(rec, data) {
     const stated = Number.isFinite(w.aStart) && Number.isFinite(w.aEnd);
     return { label: w.label, start: stated ? w.aStart : w.start,
              end: stated ? w.aEnd : w.end, stated,
-             period: [w.start, w.end] };
+             // WHOSE window this is. A window derived in this browser is not a
+             // window the producer sent, and a result computed from one must not
+             // claim it was — three states, never two.
+             source: stated ? (w.derived ? "you" : "folder") : "none",
+             tooShort: !!w.tooShort, period: [w.start, w.end] };
   });
 }
 
@@ -2625,10 +2692,270 @@ function assessWindow(rec, choice) {
     // what happened, analysis_* is what to score, and the raster already shades
     // the second. Measuring the first while showing the second is one picture
     // disagreeing with its own number.
-    source: "“" + w.label + "”, " + (stated ? "analysis window as the folder "
-      + "states it" : "whole period (no analysis window sent)"),
+    source: "“" + w.label + "”, " + (!stated
+      ? "whole period (no analysis window sent)"
+      : w.derived ? "analysis window as you specified it"
+                  : "analysis window as the folder states it"),
     isBaseline: isBaselineLabel(w.label),
   };
+}
+
+
+/* ---------- the windows a folder did not send --------------------------------
+   A conforming folder states when each period ran and MAY state which part of it
+   to score. Where it does, that decision is the producer's and nothing here
+   touches it. Where it does not, somebody has to decide, and the person in front
+   of the page is better placed than a rule compiled into it — which is the whole
+   reason this exists rather than a default buried in the loader.
+
+   THREE NUMBERS, AND THE BASELINE RUNS BACKWARD:
+
+       baseline  = [baseline_end - base_dur, baseline_end]
+       treatment = [start + delay, start + delay + treat_dur]
+
+   Backward because the minutes immediately before the treatment are the ones the
+   treatment is compared against; the start of a long baseline is a different
+   preparation from its end. Forward for a treatment because the delay is the
+   solution arriving.
+
+   NO LABEL IS SPECIAL. An earlier convention in this project exempted any period
+   whose name contained the letters "hi" from both the delay and the length — so
+   `high K+` kept its whole period, and so would `histamine`, and renaming it
+   `KCl` would have silently begun trimming it with nothing failing anywhere. The
+   deltas apply to every period equally, and where that leaves too little to
+   analyse the answer is to say so. */
+
+let WINDOWS_ARE_MINE = false;   // did the deltas below produce what is in use
+
+const wnum = id => Number(document.getElementById(id).value);
+
+/* Which period kinds the solution delay applies to, BY THE USER'S SAY-SO.
+
+   This is not the substring rule coming back, and the difference is the whole
+   point. That rule read the letters "hi" out of a label and silently exempted
+   whatever matched — `high K+` and `histamine` yes, `chelerythrine` no, and a
+   drug renamed `KCl` would have started being trimmed with nothing failing. This
+   is a list of the period kinds actually present, each with a box, set by the
+   person who knows whether a solution had to arrive. Renaming a drug changes the
+   name on a row; it cannot change what happens behind anyone's back.
+
+   Default ON for everything, because the delay is the ordinary case and an
+   exemption should be a decision somebody made rather than one they inherited. */
+let DELAY_OFF = new Set();
+
+function paintDelayToggles(baseIdx) {
+  const box = document.getElementById("wDelays");
+  const kinds = windowKinds(baseIdx);
+  box.textContent = "";
+  if (!kinds.length) return;
+  box.append(el("div", "the solution delay applies to", "hd"));
+  const counts = new Map(kinds);
+  for (const [lab] of kinds) {
+    const row = document.createElement("div");
+    const cb = document.createElement("input");
+    cb.type = "checkbox";
+    cb.id = "wDelay_" + lab;
+    cb.checked = !DELAY_OFF.has(lab);
+    cb.onchange = () => {
+      if (cb.checked) DELAY_OFF.delete(lab); else DELAY_OFF.add(lab);
+    };
+    const lb = document.createElement("label");
+    lb.htmlFor = cb.id;
+    lb.textContent = lab;
+    row.append(cb, lb, el("span", "· " + (counts.get(lab) || 0), "n"));
+    box.append(row);
+  }
+}
+
+/* ONE INDEX IS NOT ONE LABEL. Across a folder, period 2 is whichever drug that
+   recording got — this corpus has TTX in 38 of them, senktide in 29 and SB222200
+   in 12, all at index 2. Keeping the first label seen per index and calling that
+   the list of periods hid three quarters of the drugs from the delay toggles, and
+   the interface offered a choice about two period kinds out of six.
+
+   So there are two lists, and they answer different questions: `windowIndices`
+   for "which period is the baseline", which is positional, and `windowKinds` for
+   "does the solution delay apply to this", which is about the kind of period and
+   therefore about the label. */
+function windowIndices() {
+  const byIdx = new Map();      // idx -> Set of labels seen at it
+  for (const wins of REGIONS.values())
+    for (const w of wins) {
+      if (!byIdx.has(w.idx)) byIdx.set(w.idx, new Set());
+      byIdx.get(w.idx).add(w.label);
+    }
+  return [...byIdx.entries()].sort((a, b) => a[0] - b[0])
+    .map(([idx, labs]) => [idx, [...labs]]);
+}
+
+/* Every distinct label, with how many periods carry it, minus any that only ever
+   appears at the designated baseline — that one is measured backward and consults
+   no delay. A label appearing BOTH at the baseline and elsewhere still gets a
+   row, because its other occurrences are treatments like any other. */
+function windowKinds(baseIdx) {
+  const n = new Map();
+  for (const wins of REGIONS.values())
+    for (const w of wins)
+      if (w.idx !== baseIdx) n.set(w.label, (n.get(w.label) || 0) + 1);
+  return [...n.entries()];
+}
+
+/* The baseline is DESIGNATED, not detected. A default is offered from the
+   labels, because guessing right most of the time is worth something, but the
+   guess is visible and changeable — three different rules for "which one is the
+   baseline" already disagree inside this project, and a fourth compiled into the
+   page would be the worst of them. */
+function paintWindowPanel() {
+  const acc = document.getElementById("accWindows");
+  const idxs = windowIndices();
+  acc.hidden = !idxs.length;
+  if (!idxs.length) return;
+
+  const sel = document.getElementById("wBase");
+  if (sel.options.length !== idxs.length ||
+      [...sel.options].some((o, i) => o.value !== String(idxs[i][0]))) {
+    sel.textContent = "";
+    for (const [idx, labs] of idxs) {
+      const o = document.createElement("option");
+      o.value = String(idx);
+      // every name this position goes by, because one of them is not the answer
+      o.textContent = "period " + idx + " — " + labs.slice(0, 3).join(" / ")
+                    + (labs.length > 3 ? " / …" : "");
+      sel.append(o);
+    }
+    const guess = idxs.find(([, labs]) => labs.some(isBaselineLabel));
+    sel.value = String(guess ? guess[0] : idxs[0][0]);
+  }
+  paintDelayToggles(Number(sel.value));
+
+  let folder = 0, mine = 0, none = 0;
+  for (const wins of REGIONS.values())
+    for (const w of wins) {
+      if (!(Number.isFinite(w.aStart) && Number.isFinite(w.aEnd))) none++;
+      else if (w.derived) mine++;
+      else folder++;
+    }
+  const chip = document.getElementById("cntWindows");
+  chip.textContent = folder ? "sent by the folder"
+                   : mine ? "set here" : "none sent";
+  const note = document.getElementById("wWhat");
+  const total = folder + mine + none;
+  note.textContent = folder
+    ? folder + " of " + total + " periods carry an analysis window from the "
+      + "folder. Those are the producer's decision and are left alone; setting "
+      + "windows here would overwrite them."
+    : mine
+    ? mine + " of " + total + " periods have a window set here. Every result "
+      + "below says so rather than implying the folder sent it."
+    : "No period in this folder states which part of it to analyse, so every "
+      + "detector is currently reading the whole period. Set the three numbers "
+      + "to say what to score.";
+  document.getElementById("runWindows").disabled = folder > 0;
+  document.getElementById("clearWindows").hidden = !mine;
+}
+
+/* Clamped, because both deltas can run off the end of a short period:
+   `end - base_dur` before its start, and `start + delay + dur` past its end. The
+   generator has to hold whatever the producer's periods turn out to be. */
+function deltaWindow(w, isBase, baseDur, delay, treatDur) {
+  if (!isBase && DELAY_OFF.has(w.label)) delay = 0;
+  const lo = w.start, hi = w.end;
+  if (!(hi > lo)) return null;
+  if (isBase) {
+    const s = Math.max(lo, hi - baseDur);
+    return s < hi ? [s, hi] : null;
+  }
+  const s = lo + delay;
+  if (s >= hi) return null;                 // the delay outlasts the period
+  return [s, Math.min(hi, s + treatDur)];
+}
+
+function runWindows() {
+  const baseIdx = Number(document.getElementById("wBase").value);
+  const baseDur = clamp(wnum("wBaseDur"), 1, 120) * 60;
+  const delay = clamp(wnum("wDelay"), 0, 60) * 60;
+  const treatDur = clamp(wnum("wTreatDur"), 1, 120) * 60;
+  const floor = clamp(wnum("wFloor"), 0, 60) * 60;
+
+  const per = new Map();        // label -> {n, set, short, empty, durs}
+  for (const wins of REGIONS.values())
+    for (const w of wins) {
+      const s = per.get(w.label) ||
+        { n: 0, set: 0, short: 0, empty: 0, durs: [] };
+      s.n++;
+      const win = deltaWindow(w, w.idx === baseIdx, baseDur, delay, treatDur);
+      s.noDelay = !!DELAY_OFF.has(w.label) && w.idx !== baseIdx;
+      if (!win) {
+        w.aStart = NaN; w.aEnd = NaN; w.derived = false; w.tooShort = true;
+        s.empty++;
+      } else {
+        w.aStart = win[0]; w.aEnd = win[1]; w.derived = true;
+        const d = win[1] - win[0];
+        w.tooShort = d < floor;
+        s.set++; s.durs.push(d);
+        if (w.tooShort) s.short++;
+      }
+      per.set(w.label, s);
+    }
+  WINDOWS_ARE_MINE = true;
+  paintWindowSummary(per, floor, baseIdx);
+  paintWindowPanel();
+  if (current) show(current);
+}
+
+function clearWindows() {
+  for (const wins of REGIONS.values())
+    for (const w of wins)
+      if (w.derived) { w.aStart = NaN; w.aEnd = NaN; w.derived = false; w.tooShort = false; }
+  WINDOWS_ARE_MINE = false;
+  const box = document.getElementById("windowOut");
+  if (box) box.textContent = "";
+  paintWindowPanel();
+  if (current) show(current);
+}
+
+function paintWindowSummary(per, floor, baseIdx) {
+  const box = document.getElementById("windowOut");
+  box.textContent = "";
+  const idxs = windowIndices();
+  const baseLabel = ((idxs.find(([i]) => i === baseIdx) || [0, ["?"]])[1]).join(" / ");
+  box.append(el("h4", "Analysis windows set here"));
+  box.append(el("p", "period " + baseIdx + " (“" + baseLabel + "”) treated as the "
+    + "baseline and measured backward from its end; every other period skips its "
+    + "first stretch and runs from there.", "sub"));
+
+  const tbl = document.createElement("table");
+  const hr = document.createElement("tr");
+  for (const h of ["period", "count", "window (median)", "too short", "no window"])
+    hr.append(el("th", h));
+  tbl.append(hr);
+  let short = 0, empty = 0;
+  for (const [lab, s] of per) {
+    const tr = document.createElement("tr");
+    tr.append(el("td", lab + (s.noDelay ? " — no delay" : "")));
+    tr.append(el("td", String(s.n)));
+    tr.append(el("td", s.durs.length ? (median(s.durs) / 60).toFixed(1) + " min" : "—"));
+    tr.append(el("td", s.short ? String(s.short) : "—"));
+    tr.append(el("td", s.empty ? String(s.empty) : "—"));
+    tbl.append(tr);
+    short += s.short; empty += s.empty;
+  }
+  box.append(tbl);
+
+  if (short || empty) {
+    box.append(el("p", (short + empty) + " period(s) came out too short to be "
+      + "worth analysing" + (empty ? " — " + empty + (empty === 1
+          ? " of them has no window at all, because the delay outlasts that period"
+          : " of them have no window at all, because the delay outlasts those "
+            + "periods") : "") + ". They are counted "
+      + "above and marked in every table below rather than being quietly used. "
+      + "A short period is usually a brief challenge at the end of a recording, "
+      + "and one delay does not fit both it and a drug wash-in — untick that "
+      + "period above and it keeps its whole length.", "caveat"));
+  }
+  box.append(el("p", "These windows are yours, not the producer's. Every result "
+    + "computed from them says so, and the folder on disk is unchanged — nothing "
+    + "here writes to it.", "caveat"));
 }
 
 /* The region list the assessment may be pointed at, rebuilt per recording. */
@@ -3325,8 +3652,9 @@ async function runDetect() {
       const tr = document.createElement("tr");
       tr.append(el("td", r.label));
       tr.append(el("td", r.mins.toFixed(1) + " min"));
-      tr.append(el("td", r.stated ? "as the folder states it"
-                                  : "whole period — none sent", "state"));
+      tr.append(el("td", r.source === "folder" ? "as the folder states it"
+                       : r.source === "you" ? "as you specified it"
+                       : "whole period — none sent", "state"));
       tr.append(el("td", String(r.n)));
       if (D.extra) tr.append(el("td", String(r.extra)));
       tbl.append(tr);
@@ -3603,6 +3931,8 @@ function drawSweep(cv, rows, knob, best) {
 }
 
 document.getElementById("runTune").onclick = runTune;
+document.getElementById("runWindows").onclick = runWindows;
+document.getElementById("clearWindows").onclick = clearWindows;
 // before anything is open there is nothing to score against, and the panel says
 // that rather than offering a button that would do nothing
 paintTuneWhat();
@@ -3610,8 +3940,8 @@ paintTuneWhat();
 document.getElementById("runDetect").onclick = runDetect;
 
 /* ---------- the sidebar: one section at a time ----------------------------- */
-const SECTIONS = ["accSim", "accOpen", "accAssess", "accDetect", "accTune",
-                  "accList"];
+const SECTIONS = ["accSim", "accOpen", "accWindows", "accAssess",
+                  "accDetect", "accTune", "accList"];
 function showSection(id) {
   for (const s of SECTIONS) {
     const n = document.getElementById(s);

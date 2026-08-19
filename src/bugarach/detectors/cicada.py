@@ -113,8 +113,13 @@ def cicada_detect(
 ) -> CicadaDetection:
     """Run the CICADA detector on every stream (declaration order, one RNG).
 
-    onset_field anchors the raster ("locs" peak = CICADA default; explore_sce
-    uses "t50rise"). active_duration_mode="per_event" reads per-event
+    onset_field anchors the raster, and the default is "locs" — the PEAK, not
+    the onset. That is CICADA's own convention, kept because §2 makes matching
+    the MATLAB original the product; explore_sce uses "t50rise" instead. It is
+    also the right anchor here: a single-cell event runs 10-60+ s from half-rise
+    to peak, so scoring coincidence on onsets alone would call nearly any two
+    events coordinated. sce_detect and loco_detect default to "t50rise" — the
+    three genuinely differ, and :mod:`bugarach.store` says why. active_duration_mode="per_event" reads per-event
     durations from duration_field on each Stream ("width"), or "rise_dur"
     (computed here as locs - t50rise, matching explore_sce's prep).
     sce_percentile and active_duration_sec take a scalar, a sequence in stream
