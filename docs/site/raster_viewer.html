@@ -1305,6 +1305,238 @@ function rateDetect(trains, tRange, opts) {
            ctxActual, nEvents: starts.length };
 }
 
+/* ---------- SPIKE-synch, in the browser --------------------------------------
+   The second detector that draws no random numbers, and therefore the second
+   one this page is allowed to carry: a port of `bugarach.detectors.sync`, which
+   is itself the port of cSPIKE's adaptive SPIKE-synchronization profile into
+   interface2's SpikyDetect3. Checked against the Python at 1e-9 on the profile,
+   the binned trace and every event field — `tests/test_webapp_sync_detect_parity.py`.
+
+   WHAT IT MEASURES, and it is a different question from RateDetect's. RateDetect
+   asks how FAST the population is firing; this asks how well-ALIGNED the spikes
+   are, whatever the rate. Each spike gets a coincidence value C in [0,1]: the
+   fraction of other ROIs with a spike inside an adaptive window tau, where tau
+   is the smallest of the four half-intervals around the pair and never wider
+   than the cap. The cap is what stops a densely firing ROI from looking
+   synchronous with everything by accident.
+
+   Threshold mode only, matching the rest of this file. Peak mode needs the
+   clean-room peak-extent kernel, which is not ported.
+*/
+
+// cSPIKE's SpikeTrainSet drops duplicate times WITHIN a train; np.unique here
+function uniqSorted(v) {
+  const out = [];
+  for (let i = 0; i < v.length; i++) if (i === 0 || v[i] !== v[i - 1]) out.push(v[i]);
+  return Float64Array.from(out);
+}
+
+function clipSorted(trains, lo, hi) {
+  return trains.map(v => {
+    const out = [];
+    for (const x of v) if (isFinite(x) && x >= lo && x <= hi) out.push(x);
+    out.sort((a, b) => a - b);
+    return Float64Array.from(out);
+  });
+}
+
+// first index with arr[i] >= x — np.searchsorted, side "left"
+function lowerBound(arr, x) {
+  let lo = 0, hi = arr.length;
+  while (lo < hi) { const m = (lo + hi) >> 1; if (arr[m] < x) lo = m + 1; else hi = m; }
+  return lo;
+}
+
+/* Half-intervals either side of every spike. A train's first and last spike have
+   no neighbour on one side, and the missing one defaults to the cap rather than
+   to zero — PySpike's convention, and the one cSPIKE was checked against. */
+function halfIsis(v, capHalf) {
+  const prev = new Float64Array(v.length).fill(capHalf);
+  const next = new Float64Array(v.length).fill(capHalf);
+  for (let k = 1; k < v.length; k++) {
+    const d = (v[k] - v[k - 1]) / 2;
+    prev[k] = d; next[k - 1] = d;
+  }
+  return { prev, next };
+}
+
+/* Coincidence indicators for one pair of trains: a spike counts its nearest
+   neighbour in the other train if the separation is strictly inside tau. The
+   exact-tie shortcut is carried because the Python carries it, and it is worth
+   saying that it changes no answer: tau is always positive, so the neighbour
+   test below already accepts a separation of zero. Deleting it is invisible to
+   the parity suite, which is a fact about the shortcut and not a gap in it. */
+function pairCoincidence(a, ah, b, bh, capHalf) {
+  const ca = new Float64Array(a.length), cb = new Float64Array(b.length);
+  for (const side of [[a, ah, b, bh, ca], [b, bh, a, ah, cb]]) {
+    const [s, sh, o, oh, cs] = side;
+    for (let k = 0; k < s.length; k++) {
+      const jn = lowerBound(o, s[k]);
+      if (jn < o.length && o[jn] === s[k]) { cs[k] = 1; continue; }
+      const own = Math.min(sh.prev[k], sh.next[k]);
+      let hit = false;
+      if (jn < o.length) {
+        const tau = Math.min(own, Math.min(oh.prev[jn], oh.next[jn]), capHalf);
+        hit = (o[jn] - s[k]) < tau;
+      }
+      if (!hit && jn > 0) {
+        const jp = jn - 1;
+        const tau = Math.min(own, Math.min(oh.prev[jp], oh.next[jp]), capHalf);
+        hit = (s[k] - o[jp]) < tau;
+      }
+      cs[k] = hit ? 1 : 0;
+    }
+  }
+  return { ca, cb };
+}
+
+/* The per-spike profile, pooled over ROIs and sorted in time. C is the count of
+   ROIs that answered, over the number that could have. */
+function adaptiveProfile(trains, tRange, tauMax) {
+  const ev = clipSorted(trains, tRange[0], tRange[1]).map(uniqSorted);
+  const n = ev.length;
+  const span = tRange[1] - tRange[0];
+  const trueMax = tauMax > 0 ? Math.min(span, 2 * tauMax) : span;
+  const capHalf = trueMax / 2;
+
+  const counts = ev.map(v => new Float64Array(v.length));
+  const halves = ev.map(v => halfIsis(v, capHalf));
+  for (let i = 0; i < n; i++) {
+    if (!ev[i].length) continue;
+    for (let j = i + 1; j < n; j++) {
+      if (!ev[j].length) continue;
+      const { ca, cb } = pairCoincidence(ev[i], halves[i], ev[j], halves[j], capHalf);
+      for (let k = 0; k < ca.length; k++) counts[i][k] += ca[k];
+      for (let k = 0; k < cb.length; k++) counts[j][k] += cb[k];
+    }
+  }
+
+  const denom = Math.max(n - 1, 1);
+  const xs = [], ys = [];
+  for (let i = 0; i < n; i++)
+    for (let k = 0; k < ev[i].length; k++) { xs.push(ev[i][k]); ys.push(counts[i][k] / denom); }
+  const ord = xs.map((_, i) => i);
+  ord.sort((p, q) => (xs[p] - xs[q]) || (p - q));      // stable, as np.argsort
+  return { x: Float64Array.from(ord, i => xs[i]),
+           y: Float64Array.from(ord, i => ys[i]) };
+}
+
+/* max/mean_synchrony's binning, quirks included. Spikes at the SAME time are
+   aggregated first; the group then writes to the first grid centre within dt of
+   it, OVERWRITING whatever an earlier time put there — so a bin holds its last
+   writer rather than a sum, and Cn is that writer's group size rather than the
+   bin's total. Faithful because the detection below counts on it. */
+function binnedSynchrony(x, y, dt, tRange, statistic) {
+  const cx = matlabColon(tRange[0], dt, tRange[1]);
+  const cy = new Float64Array(cx.length), cn = new Float64Array(cx.length);
+  let s = 0;
+  while (s < x.length) {
+    let e = s + 1;
+    while (e < x.length && x[e] === x[s]) e++;
+    let val;
+    if (statistic === "max") { val = -Infinity; for (let i = s; i < e; i++) if (y[i] > val) val = y[i]; }
+    else { let sum = 0; for (let i = s; i < e; i++) sum += y[i]; val = sum / (e - s); }
+    const i0 = Math.max(0, Math.floor((x[s] - tRange[0]) / dt) - 2);
+    for (let i = i0; i < Math.min(cx.length, i0 + 5); i++) {
+      if (Math.abs(cx[i] - x[s]) < dt) { cy[i] = val; cn[i] = e - s; break; }
+    }
+    s = e;
+  }
+  return { cx, cy, cn };
+}
+
+/* flagArtifactEvents: a near-total C spike that is also NARROW is the signature
+   of a stage knock, not of a coordinated event. All three have to hold. */
+function flagArtifacts(begins, ends, amps, cx, cy, ev, athr, afthr, aplat90) {
+  const n = begins.length, nTotal = ev.length;
+  const peakC = new Float64Array(n), plat90 = new Float64Array(n);
+  const nPart = new Float64Array(n), isArtifact = new Array(n).fill(false);
+  for (let ie = 0; ie < n; ie++) {
+    const t0 = begins[ie], t1 = ends[ie];
+    const bx = [], by = [];
+    for (let k = 0; k < cx.length; k++)
+      if (cx[k] >= t0 && cx[k] <= t1) { bx.push(cx[k]); by.push(cy[k]); }
+    if (bx.length) {
+      let pk = -Infinity;
+      for (const v of by) if (v > pk) pk = v;
+      peakC[ie] = pk;
+      const d = bx.length >= 2 ? bx[1] - bx[0]
+              : (cx.length >= 2 ? cx[1] - cx[0] : 0.1);
+      const above = [];
+      for (let k = 0; k < bx.length; k++) if (by[k] >= 0.9 * pk) above.push(bx[k]);
+      plat90[ie] = above.length >= 2 ? (above[above.length - 1] - above[0] + d) : d;
+    } else if (!Number.isNaN(amps[ie])) {
+      peakC[ie] = amps[ie];
+      plat90[ie] = cx.length >= 2 ? cx[1] - cx[0] : 0.1;
+    }
+    let c = 0;
+    for (const v of ev) {
+      for (let k = 0; k < v.length; k++)
+        if (v[k] >= t0 && v[k] <= t1) { c++; break; }
+    }
+    nPart[ie] = c;
+    isArtifact[ie] = peakC[ie] >= athr && (c / Math.max(nTotal, 1)) >= afthr
+                     && plat90[ie] <= aplat90;
+  }
+  return { peakC, plat90, nPart, isArtifact };
+}
+
+/* SpikyDetect3's hysteresis scan, transliterated rather than tidied. A bin over
+   C_threshold opens an event; bins over the lower C_min keep it open across gaps
+   shorter than max_gap, and empty bins are stepped over without closing it. The
+   control flow re-tests a gap it has not recomputed and lets the outer cursor
+   jump to the bin that ended the event; both are load-bearing, because the
+   Python they are checked against does the same and the MATLAB before it did. */
+function syncDetect(trains, tRange, opts) {
+  const o = opts || {};
+  const tauMax = o.tauMax === undefined ? 0.25 : o.tauMax;
+  const maxGap = o.maxGap === undefined ? 0.5 : o.maxGap;
+  const Cthr = o.CThreshold === undefined ? 0.1 : o.CThreshold;
+  const Cmin = o.CMin === undefined ? 0.1 : o.CMin;
+  const minN = o.minN === undefined ? 3 : o.minN;
+  const dt = o.gridDt === undefined ? 0.1 : o.gridDt;
+  const stat = o.statistic === undefined ? "mean" : o.statistic;
+  const athr = o.artifactThreshold === undefined ? 0.85 : o.artifactThreshold;
+  const afthr = o.artifactThresholdFraction === undefined ? 0.70 : o.artifactThresholdFraction;
+  const aplat = o.artifactThresholdPlat90 === undefined ? 0.8 : o.artifactThresholdPlat90;
+
+  const ev = clipSorted(trains, tRange[0], tRange[1]);
+  const prof = adaptiveProfile(trains, tRange, tauMax);
+  const { cx, cy, cn } = binnedSynchrony(prof.x, prof.y, dt, tRange, stat);
+  const n2 = cy.length;
+
+  const starts = [], ends = [], amps = [];
+  let i = -1;
+  while (i < n2 - 1) {
+    i += 1;
+    if (cy[i] > Cthr) {
+      let cmean = cy[i], ncmean = 1;
+      const evBegin = cx[i];
+      let evEnd = evBegin, evSum = cn[i];
+      let j = i + 1;
+      let gap = j < n2 ? cx[j] - cx[i] : Infinity;
+      while (j < n2 - 1 && gap < maxGap) {
+        while (j < n2 - 2 && cy[j] === 0 && gap < maxGap) { j += 1; gap = cx[j] - cx[i]; }
+        if (gap <= maxGap && cy[j] > Cmin) {
+          cmean += cy[j]; ncmean += 1; evSum += cn[j];
+          evEnd = cx[j]; i = j; j += 1;
+        } else { i = j; break; }
+      }
+      if (evBegin === evEnd) evEnd = evEnd + dt;
+      if (evSum >= minN) { starts.push(evBegin); ends.push(evEnd); amps.push(cmean / ncmean); }
+    }
+  }
+
+  const art = flagArtifacts(starts, ends, amps, cx, cy, ev, athr, afthr, aplat);
+  return { starts, ends, amps,
+           widths: starts.map((s, k) => ends[k] - s),
+           peakC: Array.from(art.peakC), plat90: Array.from(art.plat90),
+           nParticipatingRois: Array.from(art.nPart), isArtifact: art.isArtifact,
+           nTotalRois: trains.length,
+           profileX: prof.x, profileY: prof.y, cx, cy, cn,
+           nEvents: starts.length };
+}
+
 /* ---------- the assessment, in the browser -----------------------------------
    A port of `bugarach.assess`, which is itself a port of interface2's
    measure_coordination_timescale.m. **Not a detector**: it emits no event times
