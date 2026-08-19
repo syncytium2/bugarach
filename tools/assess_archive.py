@@ -38,16 +38,41 @@ from bugarach.assess_folder import BASELINE_TOKENS, is_baseline as _is_baseline 
 def assess_store(store: Path, *, stream: str | None, n_surrogates: int,
                  limit: int | None = None, assemblies: bool = False,
                  assembly_surrogates: int = 1000) -> dict:
+    """Assess every baseline recording under ``store``.
+
+    **Takes an export folder or a `.mat` store, and prefers the folder.** The
+    folder is this project's input contract: it carries the producer's own
+    identity columns (group, subject) and — the part that changes numbers — the
+    ANALYSIS window, which is the producer saying which part of a period to
+    score. A `.mat` store carries neither. Reading `.mat` when a conforming
+    folder exists beside it re-derives metadata that was already given and
+    scores windows the producer did not intend; that happened here on
+    2026-08-18 and is written up in
+    ``docs/todo/2026-08-18-experimental-groups-are-not-in-the-import-contract.md``.
+    """
     from bugarach.assess import DEFAULT_MIN_ROIS, assess_coactivity
     from bugarach.store import load_slice
     if assemblies:
         from bugarach.assembly import assess_assemblies
 
-    files = sorted(store.glob("*.mat"))
-    if limit:
-        files = files[:limit]
+    is_folder = (store / "slices.csv").is_file() or (store / "regions.csv").is_file()
+    if is_folder:
+        from bugarach.io import load_folder
+        slices = load_folder(store)
+        if limit:
+            slices = slices[:limit]
+        files = slices
+        print(f"reading EXPORT FOLDER: {len(files)} recordings, "
+              f"identity and analysis windows from the contract")
+    else:
+        files = sorted(store.glob("*.mat"))
+        if limit:
+            files = files[:limit]
+        print(f"reading .mat store: {len(files)} files. NOTE: a .mat store carries "
+              f"no identity columns and no analysis windows — prefer an export "
+              f"folder where one exists.")
     if not files:
-        raise SystemExit(f"no .mat slices under {store}")
+        raise SystemExit(f"no recordings under {store}")
 
     rows: list[dict] = []
     skipped = {"no_baseline_region": 0, "too_short": 0, "load_error": 0,
@@ -55,13 +80,17 @@ def assess_store(store: Path, *, stream: str | None, n_surrogates: int,
     seen_regions: dict[str, int] = {}
     t0 = time.time()
 
+    n_analysis_window = 0
     for i, f in enumerate(files):
-        try:
-            s = load_slice(f)
-        except Exception as e:                       # noqa: BLE001
-            skipped["load_error"] += 1
-            print(f"  ! {f.name}: {type(e).__name__}: {e}", file=sys.stderr)
-            continue
+        if is_folder:
+            s = f
+        else:
+            try:
+                s = load_slice(f)
+            except Exception as e:                   # noqa: BLE001
+                skipped["load_error"] += 1
+                print(f"  ! {f.name}: {type(e).__name__}: {e}", file=sys.stderr)
+                continue
 
         for r in (s.regions or []):
             nm = (getattr(r, "name", None) or "<unnamed>").strip().lower()
@@ -74,6 +103,18 @@ def assess_store(store: Path, *, stream: str | None, n_surrogates: int,
         # The longest baseline region; assess.py has its own floor and returns
         # NaN under it, which is reported rather than silently dropped.
         r = max(base, key=lambda r: r.end_sec - r.start_sec)
+        # **What to score, not what happened.** A producer that has already
+        # decided which part of a period is analysable says so in
+        # analysis_start_sec / analysis_end_sec, and that decision is theirs to
+        # make. Scoring the raw period instead silently analyses recording the
+        # producer excluded — on this corpus that was up to 660 s of extra window
+        # on 24 of 84 slices, which is more clusters and more power on some
+        # slices than others.
+        if getattr(r, "has_analysis_window", False):
+            win = (r.analysis_start_sec, r.analysis_end_sec)
+            n_analysis_window += 1
+        else:
+            win = (r.start_sec, r.end_sec)
 
         names = list(s.streams)
         want = stream if stream in names else (stream and None) or names[0]
@@ -82,8 +123,7 @@ def assess_store(store: Path, *, stream: str | None, n_surrogates: int,
             continue
 
         try:
-            res = assess_coactivity(s, stream=want,
-                                    window=(r.start_sec, r.end_sec),
+            res = assess_coactivity(s, stream=want, window=win,
                                     n_surrogates=n_surrogates)
         except Exception as e:                       # noqa: BLE001
             skipped["too_short"] += 1
@@ -108,11 +148,15 @@ def assess_store(store: Path, *, stream: str | None, n_surrogates: int,
                     asm_p_uniform_disp=float(q.p_uniform_disp),
                     asm_p_uniform_eig=float(q.p_uniform_eig),
                 )
+            ident = {k: v for k, v in (getattr(s, "meta", None) or {}).items()
+                     if k not in ("slice_id",)}
             rows.append(dict(
-                **asm,
+                **asm, **ident,
                 slice_id=s.slice_id, stream=want, n_roi=int(n_roi),
                 region=(getattr(r, "name", None) or ""),
-                window_sec=float(r.end_sec - r.start_sec),
+                window_sec=float(win[1] - win[0]),
+                raw_window_sec=float(r.end_sec - r.start_sec),
+                used_analysis_window=bool(getattr(r, "has_analysis_window", False)),
                 K=int(a.min_rois),
                 part_n_obs=float(a.part_n_obs), jit_obs=float(a.jit_obs),
                 jit_null=float(a.jit_null), jit_excess=float(a.jit_excess),
@@ -133,6 +177,8 @@ def assess_store(store: Path, *, stream: str | None, n_surrogates: int,
 
     if not rows:
         raise SystemExit("no slice yielded an assessment — nothing to report")
+    print(f"  scored the producer's ANALYSIS window on {n_analysis_window} "
+          f"recording(s); the raw period on {len(files) - n_analysis_window}")
 
     ks = sorted({r["K"] for r in rows})
 

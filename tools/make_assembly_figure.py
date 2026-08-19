@@ -1,32 +1,44 @@
 #!/usr/bin/env python3
-"""Do the same cells recur across coordinated events in the real recordings?
+"""Do the same cells recur across coordinated events — and does it depend on group?
 
-    python tools/make_assembly_figure.py --fast DIR --slow DIR      # -> $BUGARACH_DARKROOM
+    python tools/make_assembly_figure.py --fast DIR --slow DIR
     python tools/make_assembly_figure.py --fast DIR --slow DIR --numbers-only
 
 Figure id `assembly_answer`, the same on every machine.
 
-Takes the two ``assess_archive.py --assemblies`` runs (one per stream) and draws
-the answer beside its control. The control is not decoration: the generator draws
-every event's participants with ``rng.choice``, so recordings it produced contain
-coordinated events and **no** recurring group. Plotted on the same axes, they show
-where "no assembly" lands for this instrument at this corpus's geometry — which is
-the only thing that makes the real cloud's position mean anything.
+Takes the two `assess_archive.py --assemblies` runs (one per stream) and draws the
+answer the way it has to be read: **by group first**. FOUNDATIONS §9 does not admit a
+pooled across-group number on its own, and this corpus shows why — pooled, the FAST
+stream reads "structure in most slices"; split, it is most animals in DI and MALE and
+one animal in six in ORX.
 
-**Two nulls per slice, and the axes are the two of them.** Horizontal: uniform
-participation, which answers to any departure from ``rng.choice`` including plain
-rate heterogeneity. Vertical: both margins fixed, which can only answer to *which*
-cells co-occur. A slice in the lower-left rejects both — co-participation structure
-beyond what per-cell rates explain. Bottom-right rejects only the broader null and
-is not assembly evidence on its own. Thresholds are drawn at alpha/2 because each
-null is read through two statistics and the smaller of two p-values is a third
-test; see ``bugarach.assembly``.
+**Three panels, in the order the argument runs.**
 
-**Baseline windows only** (FOUNDATIONS §9), and the combination this figure's
-caption quotes is **pooled across groups** — slice group does not travel with the
-store, so a per-group split is not available here and a pooled number is not
-admissible on its own.
+- **A — the answer.** Fraction of ANIMALS whose slices show co-participation beyond
+  per-cell rate, by group, per stream, with 95% intervals. Animals rather than
+  slices because one mouse contributes up to three slices and they are not
+  independent.
+- **B — why the instrument is believable.** Each recording's two nulls as two axes,
+  against generated recordings whose participants are drawn at random by
+  construction. If the real cloud sat where the generated one sits, there would be
+  nothing to report.
+- **C — whether it survives the arbitrary parameter.** The verdict tally across every
+  coactivity floor K, both streams.
+
+**What is in the corpus.** Baseline windows only, every treatment arm pooled — the
+question is about the preparation, not about any drug. The corpus is exactly what the
+export folder holds: the producer applies its own exclusions before writing it, so
+nothing here decides who is in. The window scored is the producer's
+`analysis_start_sec` / `analysis_end_sec` where it gives one, which is *what to
+score* rather than *what happened* — reading the raw period instead analysed up to
+660 s the producer had excluded, on 24 of 84 recordings, before this was fixed.
+
+Reads an export folder and nothing else. Group and subject come from its
+`slices.csv`, exclusions are already applied by the producer, and the window scored is
+the producer's `analysis_start_sec` / `analysis_end_sec`. Nothing is side-loaded, so
+the result reproduces anywhere the folder goes.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -42,10 +54,11 @@ FIGURE_ID = "assembly_answer"
 ALPHA = 0.05
 FLOOR = 5e-4          # p-value floor for the log axes; 1/(1+1000) surrogates
 K_SHOWN = 3
+GROUP_ORDER = ("DI", "MALE", "OVX", "ORX")
 
 REAL_FAST = "#111111"
 REAL_SLOW = "#1f6fb4"
-CONTROL = "#c46a1e"
+CONTROL = "#a9540f"
 GUIDE = "#9a9a9a"
 
 
@@ -105,25 +118,6 @@ def _xy(rows):
     return np.maximum(x, FLOOR), np.maximum(y, FLOOR)
 
 
-def by_preparation(rows):
-    """Group testable slices by preparation, taken from the date in the slice id.
-
-    **The slices are not independent** — 85 of them come from 48 dates, up to three
-    per preparation — so a per-slice count overstates how many independent
-    observations stand behind it, and any combination of per-slice p-values
-    (Fisher) is anti-conservative for the same reason. Reported alongside the slice
-    count so the reader can see both units.
-    """
-    import re
-    from collections import defaultdict
-    out = defaultdict(list)
-    for r in rows:
-        m = re.match(r"(\d{8})", str(r.get("slice_id", "")))
-        out[m.group(1) if m else str(r.get("slice_id"))].append(r["asm_verdict"])
-    n_any = sum(1 for v in out.values() if "structure-beyond-rate" in v)
-    return n_any, len(out)
-
-
 def tally(rows) -> dict:
     t: dict[str, int] = {}
     for r in rows:
@@ -131,99 +125,150 @@ def tally(rows) -> dict:
     return t
 
 
-def build(fast, slow, ctrl, per_k, width: int):
+# Two families, deliberately disjoint. Verdicts own the saturated hues; groups
+# own low-saturation earth tones. Before this, DI and "both nulls" were the same
+# green, MALE and real-SLOW the same blue, OVX and "margin only" the same purple —
+# three exact collisions between unrelated concepts inside one figure.
+GROUP_COLOUR = {"DI": "#20506b", "MALE": "#7a5c2e",
+                "OVX": "#5c5470", "ORX": "#8c3b3b"}
+#: Verdict colours, all at or above WCAG AA on white at 13 px bold.
+VERDICT_COLOUR = {"structure-beyond-rate": "#1a7f4b", "uniform-only": "#a35f10",
+                  "margin-only": "#6f52a0", "no-assembly": "#6a6a6a"}
+
+
+def animal_split(rows):
+    """Per group: animals showing structure beyond rate, out of animals tested.
+
+    ``group_id`` and ``mouse_id`` come from the export folder's ``slices.csv``,
+    carried through by ``assess_archive``. They are the producer's own columns and
+    nothing here interprets their VALUES — only their role: which column names the
+    design factor, and which says two recordings came from one animal.
+
+    The animal is the unit because slices are not independent — one mouse gives up
+    to three. A mouse counts as showing the effect if ANY of its testable slices
+    does, which is the weakest defensible rule; the alternative would let one thin
+    slice veto an animal.
+    """
+    per_mouse: dict = {}
+    for r in rows:
+        # The contract's reserved names (spec revision 4). `subject_id` is
+        # supplied by the loader from whichever spelling the producer used, so a
+        # lab writing `mouse_id` needs to change nothing.
+        g, m = r.get("group_id"), r.get("subject_id") or r.get("mouse_id")
+        if g in (None, "") or m in (None, ""):
+            continue
+        d = per_mouse.setdefault(str(m), {"group": str(g), "any": False,
+                                          "slices": 0, "slice_hits": 0})
+        d["slices"] += 1
+        if r["asm_verdict"] == "structure-beyond-rate":
+            d["any"] = True
+            d["slice_hits"] += 1
+    out: dict = {}
+    for d in per_mouse.values():
+        g = out.setdefault(d["group"], {"animals": 0, "animals_hit": 0,
+                                        "slices": 0, "slice_hits": 0})
+        g["animals"] += 1
+        g["animals_hit"] += int(d["any"])
+        g["slices"] += d["slices"]
+        g["slice_hits"] += d["slice_hits"]
+    return out
+
+
+def jeffreys(k, n):
+    """95% interval for a proportion. Jeffreys rather than Wald: at 1 of 6 and 9 of
+    10 the normal approximation runs off the end of [0, 1] and would draw a whisker
+    into impossible territory."""
+    from scipy import stats
+    if n == 0:
+        return (float("nan"), float("nan"))
+    return tuple(stats.beta.ppf([0.025, 0.975], k + 0.5, n - k + 0.5))
+
+
+def group_test(split):
+    """Across-group difference at the animal level. Chi-square over the 4x2 table."""
+    import numpy as np
+    from scipy import stats
+    tab = np.array([[split[g]["animals_hit"], split[g]["animals"] - split[g]["animals_hit"]]
+                    for g in GROUP_ORDER if g in split], dtype=float)
+    if tab.shape[0] < 2 or tab.sum() == 0 or (tab.sum(axis=1) == 0).any():
+        return float("nan")
+    return float(stats.chi2_contingency(tab)[1])
+
+
+def build(fast, slow, ctrl, per_k, splits, tests, width: int):
     import holoviews as hv
 
+    # ---- A: what detection actually tracks --------------------------------
+    # Not a group effect. The review established that planting the SAME assembly
+    # at each group's median cluster count reproduces the apparent gradient, so
+    # this panel plots the mechanism instead: whether a recording is called
+    # structured, against how many coordinated events it has to offer.
+    items = []
+    for g in GROUP_ORDER:
+        xs, ys = [], []
+        for r in fast:
+            if r.get("group_id") != g:
+                continue
+            xs.append(max(r["asm_n_events"], 1))
+            ys.append(1.0 if r["asm_verdict"] == "structure-beyond-rate" else 0.0)
+        if xs:
+            import numpy as _np
+            jitter = (_np.arange(len(ys)) % 5 - 2) * 0.016
+            items.append(hv.Scatter((xs, _np.array(ys) + jitter)).opts(
+                color=GROUP_COLOUR[g], size=9, marker="circle", alpha=0.85,
+                line_color="white", line_width=0.8))
+    a = hv.Overlay(items).opts(
+        width=int(width * 0.95), height=430, logx=True, ylim=(-0.25, 1.25),
+        yticks=[(0, "not called\nstructured"), (1, "called\nstructured")],
+        xlabel="coordinated events in the recording (log)",
+        ylabel="A · verdict vs how much there was to see",
+        title="", show_legend=False,
+        fontsize={"labels": "11pt", "ticks": "9pt"})
+
+    # ---- B: the control, as the reason to believe A ------------------------
     a2 = ALPHA / 2.0
-    items = [
-        hv.VLine(a2).opts(color=GUIDE, line_width=1.5, line_dash="dotted"),
-        hv.HLine(a2).opts(color=GUIDE, line_width=1.5, line_dash="dotted"),
-    ]
-    for rows, colour, marker, size in ((ctrl, CONTROL, "diamond", 9),
-                                       (fast, REAL_FAST, "circle", 9),
-                                       (slow, REAL_SLOW, "square", 9)):
+    bits = [hv.VLine(a2).opts(color=GUIDE, line_width=1.5, line_dash="dotted"),
+            hv.HLine(a2).opts(color=GUIDE, line_width=1.5, line_dash="dotted")]
+    for rows, colour, marker in ((ctrl, CONTROL, "diamond"),
+                                 (fast, REAL_FAST, "circle"),
+                                 (slow, REAL_SLOW, "square")):
         if not rows:
             continue
         x, y = _xy(rows)
-        items.append(hv.Scatter((x, y)).opts(
-            color=colour, size=size, marker=marker, alpha=0.75,
+        bits.append(hv.Scatter((x, y)).opts(
+            color=colour, size=9, marker=marker, alpha=0.75,
             line_color="white", line_width=0.8))
-    left = hv.Overlay(items).opts(
-        width=width, height=470, logx=True, logy=True,
+    b = hv.Overlay(bits).opts(
+        width=int(width * 0.95), height=430, logx=True, logy=True,
         xlim=(FLOOR * 0.7, 1.4), ylim=(FLOOR * 0.7, 1.4),
         xlabel="p · uniform participation, 1000 surrogates",
-        ylabel="A · p · both margins fixed, 1000 surrogates",
+        ylabel="B · p · both margins fixed, 1000 surrogates",
         title="", show_legend=False,
         fontsize={"labels": "11pt", "ticks": "10pt"})
 
+    # ---- C: does it survive the arbitrary parameter ------------------------
     ks = sorted(per_k)
     order = ["structure-beyond-rate", "uniform-only", "margin-only", "no-assembly"]
-    cols = {"structure-beyond-rate": "#1a7f4b", "uniform-only": "#d98324",
-            "margin-only": "#8a6fb4", "no-assembly": "#7d7d7d"}
-    # Stacking is a Bars option over a second key dimension, not an Overlay of
-    # separate Bars — one element, two kdims.
+    cols = VERDICT_COLOUR
     recs = [(f"K{k} {st}", v, per_k[k][st].get(v, 0))
             for k in ks for st in ("fast", "slow") for v in order]
-    right = hv.Bars(recs, kdims=["cell", "verdict"], vdims=["slices"]).opts(
-        width=int(width * 0.95), height=470, xrotation=45,
+    c = hv.Bars(recs, kdims=["cell", "verdict"], vdims=["slices"]).opts(
+        width=int(width * 0.95), height=430, xrotation=45,
         xlabel="coactivity floor K · stream",
-        ylabel="B · slices with a testable answer",
+        ylabel="C · slices with a testable answer",
         title="", stacked=True, show_legend=False,
         cmap=[cols[v] for v in order], line_color="white", line_width=1,
         fontsize={"labels": "11pt", "ticks": "9pt"})
 
-    tf, ts, tc = tally(fast), tally(slow), tally(ctrl)
-    fp_any, fp_n = by_preparation(fast)
-    sp_any, sp_n = by_preparation(slow)
+    # **No baked header.** It used to carry ~300 words — 29% of the image —
+    # rasterized at a size that rendered at 9 px beside 16.5 px body text and
+    # 3.4 px on a phone, duplicating the page's own words where no reader can
+    # select them and no screen reader can reach them. The caption now lives in
+    # the document, in the document's type. What stays in the figure is what
+    # labels the thing it sits next to.
+    header = ""
 
-    def frac(t):
-        n = sum(t.values())
-        return f"{t.get('structure-beyond-rate', 0)}/{n}" if n else "0/0"
-
-    def sw(v, label):
-        return f'<span style="color:{cols[v]}"><b>{label}</b></span>'
-
-    header = (
-        '<div style="font:13px/1.6 system-ui,sans-serif;color:#222;'
-        'max-width:1240px">'
-        '<b>Do the same cells take part in one coordinated event as in the next? '
-        'In these recordings, yes — co-participation is structured beyond what '
-        'each cell\'s own rate explains.</b><br>'
-        f'85 baseline recordings, both streams, at coactivity floor '
-        f'K={K_SHOWN} — K is the number of ROIs that must be co-active for a '
-        'cluster to count.<br>'
-        f'<b>A</b> — one point per <i>testable</i> recording, its two nulls as the '
-        f'two axes. <span style="color:{REAL_FAST}"><b>circles</b></span> real '
-        f'FAST · <span style="color:{REAL_SLOW}"><b>squares</b></span> real SLOW · '
-        f'<span style="color:{CONTROL}"><b>diamonds</b></span> generated '
-        'recordings, whose participants are drawn at random by construction. '
-        'Dotted lines are alpha/2, the threshold each null is read at. Points '
-        'against an axis edge are at the resolution floor, 1/1001 — the smallest '
-        'p 1000 surrogates can return, not identical values. <b>Lower-left rejects '
-        'both</b>: co-participation beyond per-cell rate. Many slices sit exactly on the floor and overlap there, so A shows the <i>separation</i> and B carries the counts. Bottom-right rejects '
-        'only the broader null, which per-cell rate heterogeneity alone produces — '
-        'and this corpus has it, measured separately in figure '
-        '<i>roi_rate_distribution</i>.<br>'
-        f'<b>B</b> — every testable slice by verdict: {sw("structure-beyond-rate", "both nulls")} · '
-        f'{sw("uniform-only", "uniform null only")} · '
-        f'{sw("margin-only", "margin null only")} · '
-        f'{sw("no-assembly", "neither")}. At K={K_SHOWN}, FAST {frac(tf)} slices '
-        f'reject both and SLOW {frac(ts)}; the generated control gives {frac(tc)}.'
-        '<br>'
-        '<b>Read with these three.</b> The two nulls are <b>nested, not '
-        'independent</b> — uniform participation is the stronger assumption, so '
-        'rejecting both is one conclusion, not two agreeing ones. The slices are '
-        f'<b>not independent</b> either: these come from {fp_n} (FAST) and {sp_n} '
-        f'(SLOW) preparations, so counted by preparation it is {fp_any}/{fp_n} and '
-        f'{sp_any}/{sp_n} with at least one slice rejecting both. And slices with '
-        'fewer than four clusters have no permutation null — they appear nowhere '
-        'here and are <b>undefined, never negative</b>.<br>'
-        'Baseline windows only. What this shows is that participation is '
-        'structured, which does not by itself make it one discrete recurring '
-        'group. Group-split, per-slice power, and the pooled combination this '
-        'figure deliberately does not quote: see the run record in '
-        '<i>docs/reviews/</i> and FOUNDATIONS §9.</div>')
-    return (left + right).cols(2).opts(shared_axes=False, toolbar=None), header
+    return (a + b + c).cols(3).opts(shared_axes=False, toolbar=None), header
 
 
 def _render_png(html_path: Path, png_path: Path, *, wait_ms: int = 2500,
@@ -235,8 +280,9 @@ def _render_png(html_path: Path, png_path: Path, *, wait_ms: int = 2500,
     try:
         with sync_playwright() as pw:
             b = pw.chromium.launch()
-            pg = b.new_page(viewport={"width": width, "height": height})
-            pg.goto(html_path.as_uri())
+            pg = b.new_page(viewport={"width": width, "height": height},
+                            device_scale_factor=2)
+            pg.goto(html_path.resolve().as_uri())
             pg.wait_for_timeout(wait_ms)
             with tempfile.TemporaryDirectory() as td:
                 tmp = Path(td) / "shot.png"
@@ -263,6 +309,24 @@ def main(argv=None):
     p.add_argument("--numbers-only", action="store_true")
     p.add_argument("--no-png", dest="png", action="store_false", default=True)
     args = p.parse_args(argv)
+
+    # ---- the corpus is whatever the export folder contains --------------
+    # No side-loaded metadata. The producer decides what is in the folder: it
+    # applies its own exclusions before writing, and its slices.csv carries the
+    # identity columns. Anything this tool needed to reach outside for was a
+    # defect in the contract or in how it was read.
+    def _win_check(dirpath, label):
+        d = json.loads((dirpath / "assessment_real.json").read_text())
+        r3 = [r for r in d["rows"] if r["K"] == K_SHOWN]
+        used = sum(1 for r in r3 if r.get("used_analysis_window"))
+        raw_only = [r["slice_id"] for r in r3 if not r.get("used_analysis_window")]
+        print(f"{label}: {len(r3)} recordings · analysis window honoured on "
+              f"{used}" + (f"; RAW period on {len(raw_only)}: {raw_only[:6]}"
+                           if raw_only else ""))
+        return d
+
+    _win_check(args.fast, "FAST")
+    _win_check(args.slow, "SLOW")
 
     ks = (3, 4, 6, 8)
     per_k = {k: {"fast": tally(_rows(args.fast, k)),
@@ -292,16 +356,25 @@ def main(argv=None):
     print(f"control geometry from the real run: {geo}")
     ctrl = controls(args.controls, geo)
 
+    splits = {"fast": animal_split(fast), "slow": animal_split(slow)}
+    tests = {st: group_test(splits[st]) for st in ("fast", "slow")}
+    print("\nby group, at the ANIMAL level (a mouse counts if any of its slices does):")
+    for st in ("fast", "slow"):
+        parts = []
+        for g in GROUP_ORDER:
+            sp = splits[st].get(g)
+            if sp:
+                parts.append(f"{g} {sp['animals_hit']}/{sp['animals']}"
+                             f" ({sp['slice_hits']}/{sp['slices']} slices)")
+        print(f"  {st.upper():>5}: " + " · ".join(parts)
+              + f"   across-group chi-square p = {tests[st]:.3f}")
+
     for name, rows in (("real FAST", fast), ("real SLOW", slow),
                        ("generated control", ctrl)):
         t = tally(rows)
         n = sum(t.values())
         print(f"{name:>18}: {n:>3} testable · " + " · ".join(
             f"{c} {v}" for v, c in sorted(t.items(), key=lambda kv: -kv[1])))
-        if rows and rows[0].get("slice_id"):
-            a, b = by_preparation(rows)
-            print(f"{'':>18}  by preparation: {a}/{b} with at least one slice "
-                  f"rejecting both nulls (slices are NOT independent)")
     if args.numbers_only:
         return 0
 
@@ -315,13 +388,19 @@ def main(argv=None):
     import holoviews as hv
     import panel as pn
     hv.extension("bokeh")
-    layout, header = build(fast, slow, ctrl, per_k, args.width)
+    layout, header = build(fast, slow, ctrl, per_k, splits, tests, args.width)
     html = dest / f"{FIGURE_ID}.html"
-    pn.panel(pn.Column(pn.pane.HTML(header), pn.pane.HoloViews(layout))).save(str(html))
+    pane = (pn.Column(pn.pane.HTML(header), pn.pane.HoloViews(layout))
+            if header else pn.Column(pn.pane.HoloViews(layout)))
+    pn.panel(pane).save(str(html))
     (dest / f"{FIGURE_ID}.json").write_text(json.dumps(
         {"k_shown": K_SHOWN, "alpha": ALPHA, "control_geometry": geo,
          "per_k": {str(k): v for k, v in per_k.items()},
-         "n_controls": len(ctrl)}, indent=1))
+         "n_controls": len(ctrl),
+         "by_group_animal_level": splits,
+         "across_group_chi2_p": tests,
+         "source": "export folder (contract), analysis windows honoured"},
+        indent=1, default=str))
     print(f"\nwrote {html}")
     if args.png and _render_png(html, dest / f"{FIGURE_ID}.png"):
         print(f"wrote {dest / f'{FIGURE_ID}.png'}")
