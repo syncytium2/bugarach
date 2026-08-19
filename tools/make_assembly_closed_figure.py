@@ -122,9 +122,16 @@ def build(M, C, power, pensub, width: int, alpha: float = 0.05):
     sizes, strengths, cells = power
 
     # ---- A -----------------------------------------------------------------
-    a1 = panel(M, REAL, "A · real recording", int(width * 0.46), height=340)
+    # `panel` writes a long self-describing xlabel that suits a three-across
+    # figure; here the panels are half that width and it clips. The axis is
+    # relabelled, not redrawn — the ordering and the tile grammar are what stop
+    # this being misread as a spike raster, and both are `panel`'s.
+    n_cell = M.shape[1]
+    ax = f"cells, ordered by participation (1–{n_cell})  →"
+    a1 = panel(M, REAL, "A · real recording", int(width * 0.46),
+               height=330).opts(xlabel=ax)
     a2 = panel(C, CONTROL, "A · uniform control, same geometry",
-               int(width * 0.46), height=340)
+               int(width * 0.46), height=330).opts(xlabel=ax)
 
     # ---- B -----------------------------------------------------------------
     # The horizontal guide is the size of the test, not a target: with nothing
@@ -155,18 +162,27 @@ def build(M, C, power, pensub, width: int, alpha: float = 0.05):
     for d in pensub:
         st = d.get("stream") or "?"
         n = d["n_testable_both"]
-        recs.append((f"{st}\n({n} paired)", "fires · original", d["fired_main"]))
-        recs.append((f"{st}\n({n} paired)", "fires · penumbra-subtracted",
+        recs.append((f"{st} · {n} paired", "original", d["fired_main"]))
+        recs.append((f"{st} · {n} paired", "penumbra-subtracted",
                      d["fired_pensub"]))
-        recs.append((f"{st}\n({n} paired)", "no longer testable",
+        recs.append((f"{st} · {n} paired", "lost testability",
                      d["n_lost_testability"]))
-    c = hv.Bars(recs, kdims=["cell", "series"], vdims=["recordings"]).opts(
+    # Explicit category order. Left to default, holoviews sorts alphabetically
+    # and the bars read "lost testability, penumbra-subtracted, original" — the
+    # story backwards, with the colour ramp reassigned to match.
+    series = hv.Dimension("series", values=["original", "penumbra-subtracted",
+                                            "lost testability"])
+    c = hv.Bars(recs, kdims=["cell", series], vdims=["recordings"]).opts(
         width=int(width * 0.95), height=380, stacked=False,
         cmap=[BEFORE, AFTER, LOST], line_color="white", line_width=1,
-        xlabel="stream · recordings testable in BOTH stores",
-        ylabel="C · recordings", title="", show_legend=True,
-        legend_position="top_right",
-        fontsize={"labels": "11pt", "ticks": "9pt", "legend": "9pt"})
+        xlabel="recordings testable in BOTH stores",
+        # NOT "recordings where the test fires" — the third bar counts
+        # recordings that dropped below the testable floor, which is a different
+        # quantity sharing the axis. The category names carry the distinction.
+        ylabel="C · recordings", title="",
+        show_legend=True, legend_position="top_right", legend_cols=1,
+        xrotation=0, ylim=(0, 33),
+        fontsize={"labels": "11pt", "ticks": "8pt", "legend": "9pt"})
 
     # No baked header: the caption lives in the document, in the document's type.
     # A rasterized paragraph is unselectable, unreachable by a screen reader, and
@@ -176,7 +192,7 @@ def build(M, C, power, pensub, width: int, alpha: float = 0.05):
 
 
 def _render_png(html_path: Path, png_path: Path, *, wait_ms: int = 3000,
-                width: int = 1600, height: int = 1500) -> bool:
+                width: int = 1620, height: int = 810) -> bool:
     """Screenshot the built page with Playwright chromium, as the other tools do."""
     try:
         from playwright.sync_api import sync_playwright
@@ -190,7 +206,7 @@ def _render_png(html_path: Path, png_path: Path, *, wait_ms: int = 3000,
                             device_scale_factor=2)
             pg.goto(html_path.resolve().as_uri())
             pg.wait_for_timeout(wait_ms)
-            pg.screenshot(path=str(png_path), full_page=True)
+            pg.screenshot(path=str(png_path), full_page=False)
             b.close()
         return True
     except Exception as exc:                                  # noqa: BLE001
