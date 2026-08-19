@@ -8,6 +8,13 @@ filed: 2026-08-16
 FOUNDATIONS §6 was rewritten on 2026-08-16 to require dt at the load boundary.
 The code still does the old thing. This is the gap.
 
+**Read with [`2026-08-16-dt-does-not-travel-with-the-recording.md`](2026-08-16-dt-does-not-travel-with-the-recording.md).**
+Two sessions filed on this the same day and neither knew about the other. They are
+halves rather than duplicates: this one is the fallback that has to go, that one is
+why the interval has nowhere to live — it is not a field on `Slice`, so it arrives
+in `meta` as a string and only `conform.py` ever reads it, to validate it and print
+it. It also names the cheaper fix, which is upstream and not ours.
+
 > Tony, 2026-08-16: *"we cannot allow data loading without the user specifying a
 > dt."*
 
