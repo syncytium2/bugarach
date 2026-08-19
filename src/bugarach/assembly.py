@@ -298,6 +298,27 @@ def assess_assemblies(assessment, *, n_surrogates: int = 1000,
         n_surrogates=n_surrogates, mean_pair_count=mean_pair)
 
 
+def load_excluded(path) -> set[str]:
+    """Slice ids the lab has marked excluded, from `tools/lab_excluded.py`'s list.
+
+    **Selection is the producer's call.** The onset store is not a statement about
+    which recordings are analysable; that lives in the lab's own workbook, and an
+    analysis that never opens it can report a number over recordings its own lab
+    withdrew. Two recordings did exactly that here before a review went looking.
+
+    Blank lines and `#` comments are ignored, so the file can carry its provenance.
+    """
+    from pathlib import Path as _P
+    if path is None:
+        return set()
+    out = set()
+    for line in _P(path).read_text().splitlines():
+        line = line.strip()
+        if line and not line.startswith("#"):
+            out.add(line)
+    return out
+
+
 def fisher(ps) -> float:
     """Fisher's combination of per-recording p-values, as a p-value.
 

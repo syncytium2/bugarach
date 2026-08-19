@@ -8,23 +8,17 @@ we are studying and which published methods we may fairly compare ourselves agai
 **They are not.** Two instruments, pointed at the same preparation from different
 directions, agree:
 
-| what was asked | instrument | stream | verdict |
+| what was asked | instrument | fast | slow |
 |---|---|---|---|
-| are there groups of cells more coupled to each other than to the rest of the field | graph **modularity** on the spike-time-tiling graph | **slow only** | **no partition above its null** — 2 of 83 recordings, and 1 of 79 with the penumbra subtracted |
-| is *who participates* in each event explained by how often each cell fires | curveball and uniform nulls on the event × cell membership table | fast and slow | departure from uniform in **47 of 49** testable fast recordings and **38 of 40** slow, against a false-positive rate of **5.3%** (fast) and **6.6%** (slow) measured at this corpus's own geometry |
+| are there groups of cells more coupled to each other than to the rest of the field | graph **modularity** on the spike-time-tiling graph, each recording against its own jitter surrogates | **no** — 3 of 78 above null (3.8%) | **no** — 2 of 77 (2.6%) |
+| is *who participates* in each event explained by how often each cell fires | curveball and uniform nulls on the event × cell membership table | departure from uniform in **45 of 47** testable, against a 6.0% false-positive rate | **36 of 38**, against 9.1% |
 
-**The stream column is load-bearing, and it limits the headline.** Modularity was computed on
-the slow stream only — `eval_modularity_null_slow.csv` in the connectivity project's output,
-with no fast counterpart — so the *negative* half of this answer is a slow-stream result.
-FOUNDATIONS §9 forbids quoting it as though it covered the preparation. Stated exactly:
-
-- **Slow stream.** Both instruments have reported. Participation departs from uniform, no
-  modular partition sits above its null, and the core–periphery reading below is licensed.
-- **Fast stream.** Only the membership instrument has reported. Participation departs from
-  uniform there too, and **nothing has looked for modular structure at all.** The absence of
-  assemblies in the fast stream is therefore *not established here* — it is untested. The
-  fast-stream claim available from this work is the narrower one: co-participation exceeds
-  what per-cell rates explain, and whether that resolves into groups is open. ⚠
+**Both streams, both instruments.** The test calls a recording modular when its modularity
+clears the 95th percentile of its own surrogates, so **about 5% should clear it by chance** —
+and 3.8% and 2.5% are at or below that. There is no modular structure in either stream. The
+median recording is *less* modular than its own surrogates (z = −1.31 fast, −2.93 slow):
+holding the graph's node count, event counts and sparsity fixed and moving only the timing
+makes it score **higher**, which is the opposite of what a field of assemblies would do.
 
 Those do not conflict, and reading them together is the whole result. Participation is
 not uniform — some cells are in most events and many are in few — but that unevenness
@@ -33,14 +27,25 @@ partition is a **core–periphery** field: a busy core, a long tail, no membersh
 repeats as a unit. That is weaker and more ordinary than a cell assembly, and it is what
 the evidence supports.
 
-**So the word "assembly" should be dropped** for the slow stream unless the modularity result
-is overturned, and should not be *asserted* for the fast stream, where the question has not
-been asked.
+**So the word "assembly" should be dropped** for this preparation, in both streams, unless the
+modularity result is overturned.
 
 This report is written to be the last word on the question for our purposes. It states
 the answer, then spends most of its length on the two things that decide whether anyone
 should believe it: whether the test could have failed, and whether the largest alternative
 explanation has been removed.
+
+**Two recordings are absent from every number here, on the lab's instruction.** The lab's own
+record — `indiegroups_db4.xlsx`, sheet `indiegroups`, column `exclude` — marks six (date,
+mouse) rows unusable, and two recordings in this store fall on one of those dates. No part of
+this analysis had ever opened that workbook; the two were inside every number this report
+previously carried, and a review looking for the source of record a deliverable had *not*
+consulted is what found them. **Selection is the producer's call, not the analysis layer's**,
+so they are dropped. Every conclusion is unchanged and the counts move by a recording or two;
+the numbers that crossed a conventional line are named where they appear. The exclusion reason
+concerns a treatment period while this analysis is baseline-only, so there is a real argument
+that these two baselines are usable — that is Tony's call, and
+[the todo](todo/2026-08-19-lab-exclusions-were-never-consulted.md) records both readings. ⚠
 
 Two event streams are analysed separately throughout and never mixed. The upstream
 pipeline separates each ROI's calcium events into a **fast** and a **slow** stream; this
@@ -136,10 +141,14 @@ it with the rest would let "we could not look" pass as "we looked and found noth
 So the curve was recomputed under `verdict()`, planting assemblies at **each real
 recording's own geometry**. Two things come out of it.
 
-**The test sits at its nominal size.** With nothing planted it fired on 13 of 244 simulated
-fast recordings — **5.3%**, 95% interval 3.1–8.9% — and 13 of 197 slow, **6.6%**, interval
-3.9–11.0%, against a nominal 5%. A `no-assembly` verdict from this corpus means what it
-says.
+**The fast test sits at its nominal size; the slow test may not.** With nothing planted it
+fired on 14 of 234 simulated fast recordings — **6.0%**, 95% interval 3.6–9.8%, which covers
+the nominal 5% — and on 17 of 187 slow, **9.1%**, interval 5.8–14.1%, which does **not**. An
+earlier run of the same design at the un-excluded geometry gave 5.3% and 6.6%, so these are
+noisy estimates and the slow figure sits somewhere in the 6–9% range rather than pinned. ⚠
+Read conservatively, the slow test is **anti-conservative at its own geometry**, over-firing
+by perhaps half again. That costs the slow negative precision and does not touch its
+direction: 36 of 38 is 95%, against a null rate of at most 14% at the top of its interval.
 
 **The test has real power at strengths worth excluding.** Recruitment is the fraction of a
 recording's coordinated events drawn from the planted group; each figure is the fraction of
@@ -147,11 +156,11 @@ this corpus's *actual* recordings in which the test fires.
 
 | planted group | 1 in 20 · fast | 1 in 10 · fast | 1 in 4 · fast | 1 in 4 · slow |
 |---|---|---|---|---|
-| 4 cells | 0.31 | 0.59 | **0.90** | 0.55 |
-| 6 cells | 0.24 | 0.61 | 0.73 | 0.68 |
-| 8 cells | 0.29 | 0.43 | 0.84 | 0.62 |
-| 12 cells | 0.10 | 0.24 | 0.59 | 0.56 |
-| 16 cells — half the field | 0.12 | 0.29 | 0.50 | 0.53 |
+| 4 cells | 0.26 | 0.47 | **0.91** | 0.39 |
+| 6 cells | 0.23 | 0.49 | 0.81 | 0.53 |
+| 8 cells | 0.11 | 0.43 | 0.74 | 0.63 |
+| 12 cells | 0.15 | 0.26 | 0.64 | 0.57 |
+| 16 cells — half the field | 0.15 | 0.20 | 0.43 | 0.53 |
 
 The slow stream is uniformly less powered, because it carries fewer coordinated clusters;
 its column is shown at one recruitment level so the difference is visible rather than
@@ -164,7 +173,7 @@ uniform null and reported as `uniform-only`. The degeneracy shows up in *which w
 verdict returns, not in whether it returns one. This is the concrete payoff of running two
 nulls, and it is why the earlier single-null curve understated the instrument.
 
-Read against the observed 47 of 49, the corpus is not close to the boundary of what it can
+Read against the observed 45 of 47, the corpus is not close to the boundary of what it can
 see.
 
 ## The alternative the nulls cannot remove, and what happened when it was removed
@@ -188,15 +197,16 @@ At the standard coactivity floor K = 3:
 
 | stream | testable in both stores | fires, original | fires, penumbra-subtracted | discordant |
 |---|---|---|---|---|
-| fast | 28 | 28 | **22** | 6, all one direction |
-| slow | 26 | 26 | **22** | 4, all one direction |
+| fast | 26 | 26 | **21** | 5, all one direction |
+| slow | 25 | 25 | **21** | 4, all one direction |
 
-**The departure survives.** It is also genuinely attenuated: all ten discordant recordings
-move the same way (fires → does not), which under a sign test is p ≈ 0.002. Those ten are
-**ten distinct recordings** — no recording is discordant in both streams, and each carries a
-different imaging date — so the combined test does not count any preparation twice. Per
-stream the fast shift alone reaches p = 0.031 and the slow does not (p = 0.125). At K = 4 the same
-pattern is weaker still — 13 of 16 fast and 18 of 19 slow continue to fire.
+**The departure survives.** It is also genuinely attenuated: all nine discordant recordings
+move the same way (fires → does not), which under a sign test is p ≈ 0.004. Those nine come
+from **nine different animals** — checked against the lab record's `mouse_id`, not merely
+against the recording ids — so the combined test does not count one preparation twice.
+**Neither stream reaches significance on its own** (fast p = 0.063, slow p = 0.125); the
+attenuation is a claim about the pair, resting on the consistency of its direction rather
+than on either stream's count.
 
 The honest reading is therefore **not** "crosstalk explains it" and **not** "crosstalk is
 irrelevant". It is: **optical crosstalk inflates the effect and does not account for it.**
@@ -206,27 +216,61 @@ the overlap was subtracted.
 The cost in power bounds how hard this control could push, and is worth stating plainly.
 Penumbra subtraction retains 65% of fast events and 58% of slow, but it removes far more
 *coincidences* than events: coordinated clusters at K = 3 fall from 0.35 per minute to 0.05.
-Testability was lost on 21 of 49 fast recordings and 14 of 40 slow. Those are reported as
+Testability was lost on 21 of 47 fast recordings and 13 of 38 slow. Those are reported as
 undefined, never as negative.
 
 ## What the corpus says, in full
 
-Of 85 baseline recordings, **49 are testable** in the fast stream at K = 3 and 40 in the
-slow; the rest have fewer than four coordinated clusters, too few for any reshuffle test,
-and are **undefined, never negative**. Among the testable, co-participation beyond per-cell
-rate is near-universal: **47 of 49** fast and **38 of 40** slow, against the 5.3% and 6.6%
-false-positive rates above. The result is stable across the coactivity floor — at K = 4,
+Of the 83 baseline recordings the lab has not withdrawn, **47 are testable** in the fast
+stream at K = 3 and 38 in the slow; the rest have fewer than four coordinated clusters, too
+few for any reshuffle test, and are **undefined, never negative**. Among the testable,
+co-participation beyond per-cell rate is near-universal: **45 of 47** fast and **36 of 38**
+slow, against the 6.0% and 9.1% false-positive rates above. The result is stable across the coactivity floor — at K = 4,
 K = 6 and K = 8 the firing rate stays above 85% wherever enough recordings remain testable
 to say anything.
 
-The companion measurement is the one that makes this a negative, **and it exists only for the
-slow stream.** Graph modularity on the spike-time-tiling graph — the standard instrument for
-"are there groups here" — finds **no partition above its null** in 2 of 83 slow recordings
-(2.4%) and 1 of 79 with the penumbra subtracted (1.3%), recounted here from
-`eval_modularity_null_slow.csv` rather than quoted from the handoff, which rounds the first
-to 3%. In the slow stream, then, the cells that participate together are not the cells more
-connected to each other than to the field. **No equivalent file exists for the fast stream**,
-and none of this report's own measurements substitute for it. ⚠
+The companion measurement is the one that makes this a negative.
+
+![A · every recording's modularity against its own jitter surrogates, in null standard deviations; marks right of the dotted line at zero are more modular than timing alone predicts, and the highlighted marks are the ones clearing the 95th-percentile threshold the test actually uses. B · the rate of those, against the 5% that chance produces.](assembly_modularity)
+
+Graph modularity on the spike-time-tiling graph — the standard instrument for "are there
+groups here" — finds **no partition above its null in either stream**: 3 of 78 fast
+recordings (3.8%, 95% interval 1.3–10.7) and 2 of 77 slow (2.6%, 0.7–9.0), against the ~5%
+the threshold yields by chance. The cells that participate together are not the cells more
+connected to each other than to the field.
+
+**Three things about those numbers are worth stating, because none of them was true of the
+figure this report previously quoted.**
+
+*The fast stream had never been measured.* `eval_modularity_null` hardcoded the slow channel,
+for a stated reason — slow is the rate-independent marker, and fast is the connectivity
+project's negative control because it fails rate-, node- and Δt-matching. But that objection
+is about a **between-group** contrast, and this is a **within-recording** test: each Q is
+compared against surrogates of that same recording, holding node count, event counts and
+sparsity fixed. Nothing crosses a group boundary, so the matching failure does not reach it.
+The instrument was generalized to take a channel, its default left unchanged, and run.
+
+*The denominator was wrong, in the direction that flatters the result.* A recording too sparse
+for Louvain to score returns no modularity at all, and `above_null_Q` is computed as
+`Q_obs > q_hi` — which is false for a missing value, so those recordings entered the CSV as
+zeros and read as "tested, not modular". They were not tested. Excluding them — one fast
+recording, four slow, all with 3 to 5 active cells — is the same **undefined is not negative**
+rule this report applies to its own membership test.
+
+*And the crosstalk control agrees, where it exists.* The connectivity project's
+penumbra-subtracted modularity file — slow stream only — puts **1 of 69** recordings above
+null (1.4%) once the same undefined-is-not-negative correction is applied to it; it carries
+eight recordings with no computable modularity, against four in the unsubtracted slow file,
+which is the same loss of testable material penumbra subtraction costs the membership test.
+So removing the optical overlap does not reveal modular structure that was hiding under it.
+
+*The roster underneath had been quarantined.* The published slow file was built with a
+dead-ROI roster the R team has since moved to `2R/QUARANTINE/` as producing "plausible wrong
+answers". Re-running slow on the current roster changes **nothing at all** — the same 83
+recordings, the same active-cell counts, the same verdict on every one — so the published
+number stands. That is a check that could have failed and did not. ⚠ The connectivity
+pipeline's default roster path still points at the quarantined vintage, which is theirs to
+repoint.
 
 ## What this report previously claimed and no longer does
 
@@ -257,8 +301,8 @@ recovery**, because there is no stable membership to recover.
   coordinated clusters this project's own assessor found. A different clustering gives a
   different table, and nothing here validates the clustering against an external standard.
 - **One arbitrary threshold decides which recordings are in.** Fewer than four clusters means
-  no test; that rule excludes 36 of 85 fast recordings, and it excludes them unevenly across
-  groups.
+  no test; that rule excludes 36 of the 83 analysed fast recordings, and it excludes them unevenly
+  across groups.
 - **The dead-ROI store is cleaned asymmetrically** — 67 of 85 recordings carry a verdict and
   18 keep every ROI. A membership statistic is directly sensitive to which cells are in the
   matrix. ⚠
@@ -269,7 +313,11 @@ recovery**, because there is no stable membership to recover.
   core–periphery structure and tests it against alternatives; it is the reading that
   reconciles two measurements. ⚠
 - **Modularity is one instrument.** A field can carry assemblies a partition-based method
-  misses — overlapping groups in particular, which modularity handles badly.
+  misses — overlapping groups in particular, which modularity handles badly. This is now the
+  main route by which the negative could still be wrong, and it applies to both streams. ⚠
+- **The penumbra-subtracted modularity run covers slow only.** The published pensub file is a
+  slow-stream file, and this work did not rebuild it for fast. So the crosstalk control is
+  complete for the membership instrument in both streams, and for modularity in slow. ⚠
 
 ## What travels beyond this lab
 
@@ -288,8 +336,10 @@ disagreement with what we measure that is not resolved. ⚠
 
 ## What should happen next
 
-1. **Nothing, for the assembly question.** It is answered. Reopen it only if the modularity
-   result is overturned, or if a store arrives whose penumbra estimate is materially better.
+1. **Nothing, for the assembly question.** It is answered, now in both streams. Reopen it only
+   if the modularity result is overturned — the likeliest route being a method that finds
+   *overlapping* groups, which modularity cannot — or if a store arrives whose penumbra
+   estimate is materially better.
 2. **Do not plant assemblies in the generator.** An earlier version of this report
    recommended it; on this evidence the generator's uniform draw is a correct model of the
    preparation, and planting groups would make the benchmark *less* faithful.

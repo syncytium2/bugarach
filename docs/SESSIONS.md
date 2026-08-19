@@ -60,6 +60,45 @@ Template:
 
 ## Active
 
+### Mac/modularity-on-fast — run the connectivity project's modularity instrument on the FAST stream
+- **Status:** ACTIVE
+- **Started:** 2026-08-19
+- **Writes:** `<darkroom>/murmuration/bugarach-fast-modularity/` — **one new subfolder**,
+  holding `eval_modularity_null_{fast,slow}.csv`. **Nothing at the root of `murmuration/` is
+  written**, so the connectivity project's own `eval_modularity_null_slow.csv` is untouched.
+  (The original plan was to drop the fast CSV at their root under their naming convention;
+  changed on finding that the slow re-check has to be written too, and overwriting their slow
+  file is not mine to do.) Also `<darkroom>/bugarach/` for the bugarach-side copies.
+- **Claims:** that ONE subfolder. **`murmuration/` is the connectivity project's output
+  folder, not bugarach's**, so the claim is deliberately a new namespace inside it rather than
+  any existing name.
+- **Reads:** `$IF2_DATA_ROOT/processed_archive/event_store_onset_revised_2v` — read-only, the
+  same 85 recordings the slow run used.
+- **interface2:** branches `bct-modularity-fast` **from** `bct-connectivity-cont`, in its own
+  worktree. **Does not edit `bct-connectivity-cont`.** The change generalizes
+  `eval_modularity_null.m` to take a channel argument, **defaulting to `slow` so their
+  behaviour is unchanged**, and is offered back rather than pushed into their branch.
+- **Notes:** closes the open item from PR #135 — the assembly negative was established for
+  slow only because modularity had never been run on fast. The script hardcodes `slow` with
+  a stated reason ("the rate-independent marker", ADR 0011) and the connectivity handoff
+  treats FAST as a negative control — but **both of those are about the GROUP comparison**
+  (GDX vs intact), which fails rate-, node- and Δt-matching on fast. `above_null_Q` is a
+  WITHIN-slice test of Q against that slice's own jitter surrogates, which hold node count,
+  event counts and sparsity fixed, so the matching objection does not reach it. Run and
+  reported on that basis; if the connectivity project disagrees, the file is one CSV and
+  deleting it costs nothing.
+- **A blocker found on the way in, which belongs to interface2 rather than here.** The
+  connectivity pipeline's dead-ROI roster path is hardcoded to `2R/2026-07-13/`, and the R
+  team moved that entire vintage to `2R/QUARANTINE/` — unnormalised treatment labels, 33% of
+  rows beyond treat1, described as loading cleanly and producing plausible WRONG answers. So
+  **`eval_modularity_null` cannot currently run at all without restoring a quarantined
+  input**, and the published `eval_modularity_null_slow.csv` was built from it. The successor
+  chain is 2026-08-10 (itself superseded — zero high K+ rows, silently disabling the
+  depolarization safeguard that rescues 176 ROIs) then **2026-08-15**, current. This run adds
+  an additive `IF2_DROI_CSV` full-path override, leaves the stale default alone, and uses the
+  current roster — and re-runs SLOW on it too, so the fast answer is compared against a slow
+  number computed the same way rather than against the quarantined-roster one.
+
 ### Mac/close-the-assembly-question — the three steps that close the assembly negative
 - **Status:** DONE 2026-08-19 — **claim released**, merged as PR #135
 - **Started:** 2026-08-19
