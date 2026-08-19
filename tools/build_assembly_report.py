@@ -45,7 +45,16 @@ def main(argv=None):
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("--src", type=Path, required=True)
     p.add_argument("--figures", type=Path, required=True)
-    p.add_argument("--out", type=Path, required=True)
+    p.add_argument("--out", type=Path, default=None,
+                   help="destination; default $BUGARACH_DARKROOM. A report is a "
+                        "deliverable and belongs where Tony can open it, not only "
+                        "in the repo — this defaulted to nothing and the first "
+                        "report built with it reached the darkroom only after he "
+                        "asked where it was.")
+    p.add_argument("--also", type=Path, default=None,
+                   help="a second destination, written identically. The repo copy "
+                        "is what review and git history need; the darkroom copy is "
+                        "what a person opens.")
     p.add_argument("--css", type=Path, default=Path("docs/learned/report.css"))
     a = p.parse_args(argv)
 
@@ -86,12 +95,20 @@ def main(argv=None):
             f'</head>\n<body>\n<div class="wrap">\n{body}\n</div>\n'
             f'</body>\n</html>\n')
 
-    a.out.mkdir(parents=True, exist_ok=True)
-    dest = a.out / f"{a.src.stem}.html"
-    dest.write_text(page, encoding="utf-8")
-    kb = dest.stat().st_size / 1024
-    print(f"wrote {dest}  ({kb:.0f} KB, self-contained)")
-    return 0
+    from bugarach.paths import darkroom, unresolved_message
+    out = a.out or darkroom()
+    if out is None:
+        print(unresolved_message(), file=sys.stderr)
+        return 1
+
+    wrote = []
+    for d in [x for x in (out, a.also) if x is not None]:
+        d.mkdir(parents=True, exist_ok=True)
+        dest = d / f"{a.src.stem}.html"
+        dest.write_text(page, encoding="utf-8")
+        wrote.append(dest)
+        print(f"wrote {dest}  ({dest.stat().st_size / 1024:.0f} KB, self-contained)")
+    return 0 if wrote else 1
 
 
 if __name__ == "__main__":
