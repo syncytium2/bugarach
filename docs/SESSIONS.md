@@ -144,7 +144,8 @@ Template:
   actually shows. Run record in `docs/reviews/`.
 
 ### Mac/assembly-membership — the assembly question, answered on the real corpus
-- **Status:** DONE 2026-08-18 — **claims released**, everything landed on `main`
+- **Status:** DONE 2026-08-19 — **claims released**; `HANDOFF.md` on `main` carries the
+  answer and the three steps that close it. Delete that file when they are done.
 - **Started:** 2026-08-18
 - **Writes:** `<darkroom>/bugarach/assembly_answer.{png,html,json}` (NEW). Nothing else
   under `<darkroom>/bugarach/`, nothing in `<darkroom>/constellation/`.
