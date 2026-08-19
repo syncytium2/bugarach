@@ -136,7 +136,13 @@ def build(M, C, power, pensub, width: int, alpha: float = 0.05):
     # ---- B -----------------------------------------------------------------
     # The horizontal guide is the size of the test, not a target: with nothing
     # planted the curves must START there or the negative below is not quotable.
-    bits = [hv.HLine(alpha).opts(color=GUIDE, line_width=1.5, line_dash="dotted")]
+    # The guide is labelled ON the figure, not only in the caption: an
+    # unexplained line is a defect, and this one carries the whole claim that
+    # the curves start where a test with nothing planted should start.
+    bits = [hv.HLine(alpha).opts(color=GUIDE, line_width=1.5, line_dash="dotted"),
+            hv.Text(0.42, alpha + 0.055,
+                    f"{alpha:.0%} — size of the test, nothing planted").opts(
+                        color=GUIDE, text_font_size="8pt", text_align="left")]
     for i, A in enumerate(sizes):
         xs = [s for s in strengths if (A, s) in cells]
         ys = [cells[(A, s)]["verdict_power"] for s in xs]
@@ -148,7 +154,9 @@ def build(M, C, power, pensub, width: int, alpha: float = 0.05):
     b = hv.Overlay(bits).opts(
         width=int(width * 0.95), height=380, ylim=(-0.04, 1.06),
         xlabel="fraction of a recording's events drawn from the assembly",
-        ylabel="B · recordings where the test fires",
+        # A FRACTION, and the axis must say so — it runs 0-1 and "recordings
+        # where the test fires" reads as a count of them.
+        ylabel="B · fraction of recordings where the test fires",
         title="", show_legend=True, legend_position="bottom_right",
         fontsize={"labels": "11pt", "ticks": "9pt", "legend": "9pt"})
 
