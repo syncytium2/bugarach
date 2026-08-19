@@ -141,3 +141,123 @@ reproduction caveat and on the session board.
    panel A's two matrices share the letter "A" rather than being A1/A2; panel A illustrates a
    fast-stream recording only; panel C shares one y-axis between two "fires" counts and a
    "lost testability" count.
+
+---
+
+
+# Round 4 — the fast-stream modularity run, reviewed
+
+Appended 2026-08-19, after the deliverable changed materially: the open item this record
+named as residual #1 ("the fast stream's assembly negative is untested") was closed by
+running the instrument, and both documents were rewritten around the result.
+
+- upstream:  syncytium2/murderboard @ 729fb06
+- vendored:  77b70dc620a8bcccfc72fce2fd316d38da34c204 — **re-vendored again during this round**
+- freshness: current
+- artifact:  docs/learned/assembly_report.html   (a8662c6024b4efdf0b967a6139420c2964f0e6ad)
+             docs/learned/assembly_summary.html  (74c3be49f11bfd5928f3ad77aebf66b4ca4f9f69)
+             docs/learned/assembly_modularity.png (d5f6ac81b82bda31ea65c86f64e1fe32d5dbed40)
+             docs/learned/assembly_closed.png     (62a6e1354356e4ffcb7afd9356298839a7462495)
+- roles:     11 of 11 re-run (single-pass, same deviation as rounds 1–3)
+- stopping:  **severity floor** — the last blind pass produced no blocking and no major
+
+## The gate fired again, and it paid for itself twice
+
+At call-up the vendored process was **8bf89e5 against upstream 729fb06**. The two commits in
+between are the murderboard PRs this project's own handoff had listed as *open, waiting on a
+person* — and both landed rules that immediately found defects here:
+
+- **"The sources a deliverable did NOT consult are part of the check."** Applied, it found the
+  blocking item below within minutes. Without it, roles keep verifying claims against the
+  sources a document *names*, which is how the previous three rounds passed.
+- **"Name the chart type the image RESEMBLES before reading its axis labels."** Applied to the
+  new modularity figure, it identified the strip panel as reading like a **spike raster** —
+  the same idiom that already cost this project one figure.
+
+## Findings by severity, this round
+
+| round | blocking | major | minor | note |
+|---|---|---|---|---|
+| 4a — initial, on the new result | 1 | 4 | 2 | includes the lab-exclusion blocker |
+| 4b — blind, rebuilt render | 0 | 2 | 1 | figure defects only |
+| 4c — blind, rebuilt render | 0 | 0 | 2 | recorded as residual |
+
+## Findings and adjudications
+
+**B2 · BLOCKING · every number was computed over recordings the lab had withdrawn (role 1).**
+`indiegroups_db4.xlsx`, sheet `indiegroups`, column **`exclude`**, marks six (date, mouse)
+rows unusable. Two recordings in the store — `20250731_149` and `20250731_151`, "6 minute ttx
+treatment, too short" — fall on one of them, and were inside the membership tallies, both
+modularity runs, the crosstalk pairing **and the geometry the power curve was computed at**.
+One of them was one of the ten discordant recordings the crosstalk claim rested on. No part of
+this analysis had ever opened that workbook.
+**Fixed** — `tools/lab_excluded.py` derives the list from the workbook,
+`bugarach.assembly.load_excluded` reads it, and the power, crosstalk and modularity tools all
+take `--exclude-file`. Three tests lock it, including that a withdrawn recording is dropped
+*before* pairing. Every conclusion survived; the counts moved. Filed as
+`docs/todo/2026-08-19-lab-exclusions-were-never-consulted.md`, because the assembly work is
+only where it was noticed — every deliverable in this repo that counts recordings takes the
+store as its universe.
+
+**M6 · MAJOR · the modularity denominator counted untested recordings as negatives (role 1).**
+`above_null_Q` is `Q_obs > q_hi`, and a recording too sparse for Louvain to score has no
+`Q_obs` — so the comparison is false and it entered the CSV as a `0`, reading as "tested, not
+modular". One fast and four slow recordings, all with 3–5 active cells. This is the same
+**undefined is not negative** rule the report applies to its own membership test.
+**Fixed** — excluded and reported; the published handoff's "ROI 3%" becomes 2 of 77.
+
+**M7 · MAJOR · the roster underneath the published slow result is quarantined (role 6).**
+`if2_dead_roi_keep` hardcodes `2R/2026-07-13/`, which the R team moved to `2R/QUARANTINE/`
+("plausible WRONG answers"), so the pipeline could not run without restoring a known-bad
+input. Successor chain: 2026-08-10 (also superseded — zero high K+ rows, disabling the
+safeguard that rescues 176 ROIs) then 2026-08-15.
+**Fixed for this run** — an additive `IF2_DROI_CSV` override, default untouched, and slow
+re-run on the current roster as a check. It changed **nothing**: same 83 recordings, same
+active-cell counts, same verdict on every one. A check that could have failed and did not.
+Repointing the default is the connectivity project's call and is offered, not taken. ⚠
+
+**M8 · MAJOR · the strip panel read as a spike raster (role 10, new rule).** Two rows of marks
+on a horizontal axis, in a field where that means time-by-cell.
+**Fixed** — a per-row median diamond, which no raster carries.
+
+**M9 · MAJOR · the median marker was the same colour as its dots (role 10, round 4b).**
+Present and unreadable. **Fixed** — white fill, thick stream-coloured edge.
+
+**M10 · MAJOR · panel B invented a phantom category (role 10, round 4b).** A text annotation
+placed at a numeric x on a categorical axis added a "0.5" tick and shifted the bars; the
+per-bar colours also collapsed to one. **Fixed** — guide named in the axis label, explicit
+categorical colour mapping.
+
+**m3 · minor · the strip was coloured by the sign of z, not by the test's verdict (role 1).**
+About fifteen marks were highlighted against a stated count of three, because the threshold is
+the 95th percentile and not zero. **Fixed** — coloured by `above_null_Q`.
+
+**m4 · minor · the slow stream's size of test is elevated (role 4).** 17 of 187 = **9.1%**,
+interval 5.8–14.1, which does not cover the nominal 5%; an earlier run of the same design gave
+6.6%. **Adjudicated: stated, not fixed.** Both estimates are reported, the slow negative is
+described as the less precise of the two, and the direction is unaffected — 36 of 38 against a
+null of at most 14%.
+
+**m5 · minor · the fast McNemar crossed 0.05 (role 3).** Dropping the withdrawn recording took
+the fast crosstalk attenuation from p = 0.031 to **0.063**. **Stated** — neither stream reaches
+significance alone now, and both documents say so; the claim rests on the combined
+nine-recording sign test (p = 0.004) and the consistency of its direction.
+
+## Residual — updated
+
+Residual #1 from rounds 1–3 (**"the fast stream's assembly negative is untested"**) is
+**CLOSED**: 3 of 78 fast recordings above null, 3.8%, against ~5% by chance. The rest stand,
+with these changes:
+
+1. ~~The fast stream is untested~~ — **closed this round.**
+2. **Modularity cannot see overlapping groups**, in either stream. Now the main route by which
+   the negative could still be wrong. ⚠
+3. **The penumbra-subtracted modularity run covers slow only** (1 of 69 above null). ⚠
+4. **Core–periphery is an interpretation, not a fitted model.** ⚠
+5. **Penumbra subtraction is itself a model.** ⚠
+6. **The slow stream's test may be anti-conservative at its own geometry.** ⚠
+7. **Whether the lab's exclusion should bite at all** — its reason concerns a treatment period
+   and this analysis is baseline-only. Tony's call; both readings recorded. ⚠
+8. **The exclusion match is by date, not slice**, because the workbook carries no slice id. ⚠
+9. **The fast/slow kinetic boundary is undefined** in every document in this project. ⚠
+10. **The review remains single-pass, not independent.** ⚠

@@ -245,3 +245,56 @@ def test_assess_store_omits_the_assembly_answer_by_default(tmp_path, monkeypatch
     res = assess_archive.assess_store(tmp_path, stream="events", n_surrogates=20)
     assert res["rows"]
     assert "asm_verdict" not in res["rows"][0]
+
+
+# ---- the lab's own exclusions -----------------------------------------------
+#
+# These lock the rule that a recording the lab withdrew cannot reach a result.
+# It is here because it FAILED once: two recordings marked `exclude=1` in
+# `indiegroups_db4.xlsx` sat inside every reported number — the membership
+# tallies, both modularity runs, the crosstalk pairing and the geometry the
+# power curve was computed at — because no part of the analysis had ever opened
+# the workbook that says which recordings are analysable.
+
+def test_excluded_list_ignores_comments_and_blanks(tmp_path):
+    """The list carries its own provenance in `#` lines, so it must survive them."""
+    from bugarach.assembly import load_excluded
+    f = tmp_path / "excl.txt"
+    f.write_text("# source: indiegroups_db4.xlsx, column `exclude`\n"
+                 "# reason: 20250731 mouse 57 — ttx too short\n"
+                 "\n20250731_149\n20250731_151\n\n")
+    assert load_excluded(f) == {"20250731_149", "20250731_151"}
+
+
+def test_no_exclusion_file_excludes_nothing():
+    """Absent list must be an empty set, never a crash and never a silent all-drop."""
+    from bugarach.assembly import load_excluded
+    assert load_excluded(None) == set()
+
+
+def test_excluded_recording_cannot_contribute_a_pair(tmp_path):
+    """The crosstalk comparison must drop a withdrawn recording BEFORE pairing.
+
+    Dropping it afterwards would still let it set a denominator, and — worse —
+    contribute a discordance to the sign test. One of the ten discordant
+    recordings originally reported was a withdrawn one.
+    """
+    import json, sys
+    sys.path.insert(0, str(REPO / "tools")) if "REPO" in dir() else None
+    from pathlib import Path
+    import importlib.util
+    spec = importlib.util.spec_from_file_location(
+        "apc", Path(__file__).parent.parent / "tools" / "assembly_pensub_compare.py")
+    apc = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(apc)
+
+    rows = {"rows": [
+        {"K": 3, "stream": "fast", "slice_id": "keep_me",
+         "asm_defined": True, "asm_verdict": "structure-beyond-rate"},
+        {"K": 3, "stream": "fast", "slice_id": "20250731_149",
+         "asm_defined": True, "asm_verdict": "structure-beyond-rate"},
+    ]}
+    f = tmp_path / "a.json"
+    f.write_text(json.dumps(rows))
+    got = apc.rows_at(f, 3, "fast", {"20250731_149"})
+    assert set(got) == {"keep_me"}

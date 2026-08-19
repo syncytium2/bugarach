@@ -282,7 +282,8 @@ def powers_verdict(cell: dict, geo: dict) -> dict:
 
 # ---- the corpus's own geometry, not the median slice ------------------------
 
-def corpus_geometry(path: Path, k: int = 3, stream: str | None = None) -> list[dict]:
+def corpus_geometry(path: Path, k: int = 3, stream: str | None = None,
+                    exclude=()) -> list[dict]:
     """Per-recording geometry read from an `assess_archive.py` assessment.
 
     The median slice is enough to *size* the test and is what the tables above
@@ -296,6 +297,7 @@ def corpus_geometry(path: Path, k: int = 3, stream: str | None = None) -> list[d
     """
     d = json.loads(Path(path).read_text())
     rows = d["rows"] if isinstance(d, dict) and "rows" in d else d
+    exclude = set(exclude)
     out = []
     for r in rows:
         if int(r.get("K", -1)) != int(k):
@@ -303,6 +305,10 @@ def corpus_geometry(path: Path, k: int = 3, stream: str | None = None) -> list[d
         if stream and r.get("stream") != stream:
             continue
         if not r.get("asm_defined", False):
+            continue
+        # A recording the lab withdrew must not set the geometry a power claim is
+        # made at, any more than it may contribute a result.
+        if str(r.get("slice_id", "")) in exclude:
             continue
         ne = int(r.get("asm_n_events", 0))
         part = float(r.get("part_n_obs", float("nan")))
@@ -504,6 +510,8 @@ def main(argv=None):
                         "slice, and report power under AssemblyResult.verdict()")
     p.add_argument("--stream", default=None,
                    help="with --geometry-from: restrict to this stream (fast|slow)")
+    p.add_argument("--exclude-file", type=Path, default=None,
+                   help="slice ids the lab marked excluded (tools/lab_excluded.py)")
     p.add_argument("--verdict-only", action="store_true",
                    help="with --geometry-from: skip the median-slice grid and "
                         "write only the corpus-geometry verdict curve")
@@ -517,8 +525,13 @@ def main(argv=None):
     # the median-slice grid below, because this is the one a negative rests on.
     verdict_rows = None
     if args.geometry_from:
+        from bugarach.assembly import load_excluded
+        _excl = load_excluded(args.exclude_file)
+        if _excl:
+            print(f"excluding {len(_excl)} lab-withdrawn recording(s): "
+                  f"{', '.join(sorted(_excl))}")
         geos = corpus_geometry(Path(args.geometry_from), k=int(geo["k"]),
-                               stream=args.stream)
+                               stream=args.stream, exclude=_excl)
         if not geos:
             print(f"no testable recordings at K={geo['k']} in "
                   f"{args.geometry_from}", file=sys.stderr)
