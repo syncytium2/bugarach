@@ -198,3 +198,115 @@ def test_raw_contiguous_windows_pass(tmp_path: Path):
                        "s1,2,TTX,1260,2580\n")
     rep = check_folder(d)
     assert rep.ok, [e for r in rep.recordings for e in r.errors] + rep.errors
+
+
+# --- the gates a producer sending analysis windows used to fall straight through
+#
+# Supplying the columns routes a folder through `supplied_region_windows`, which
+# validated nothing at all, so the two pairs of bounds that decide what gets
+# scored were checked by neither side. Found by interface2 running our own gates
+# against a deliberately broken folder, 2026-08-18.
+
+
+BAD_WINDOW_FOLDER = ("slice_id,region_idx,label,start_sec,end_sec,"
+                     "analysis_start_sec,analysis_end_sec\n"
+                     "s1,1,baseline,500,1400,99999,-500\n"
+                     "s1,2,TTX,10300,12000,10400,11000\n")
+
+
+def test_the_folder_that_passed_while_scoring_minus_100499_seconds(tmp_path: Path):
+    """interface2's reproduction, verbatim. `bugarach check` printed CONFORMING
+    and `effective_region_windows` handed the detectors a window of -100,499 s."""
+    d = _write(tmp_path / "e", s1=GOOD, regions=BAD_WINDOW_FOLDER)
+    rep = check_folder(d)
+    assert not rep.ok
+    joined = " ".join(e for r in rep.recordings for e in r.errors)
+    assert "-100499" in joined.replace(",", "").replace(".000000", ""), joined
+    assert "scores nothing" in joined
+
+
+def test_an_analysis_window_that_ends_before_it_starts_is_refused(tmp_path: Path):
+    d = _write(tmp_path / "e", s1=GOOD,
+               regions="slice_id,region_idx,label,start_sec,end_sec,"
+                       "analysis_start_sec,analysis_end_sec\n"
+                       "s1,1,baseline,0,1260,900,300\n")
+    rep = check_folder(d)
+    assert not rep.ok
+    assert any("scores nothing" in e for r in rep.recordings for e in r.errors)
+
+
+def test_an_analysis_window_outside_its_own_period_is_refused(tmp_path: Path):
+    """The two pairs contradict each other and the file cannot say which is wrong."""
+    d = _write(tmp_path / "e", s1=GOOD,
+               regions="slice_id,region_idx,label,start_sec,end_sec,"
+                       "analysis_start_sec,analysis_end_sec\n"
+                       "s1,1,baseline,0,1260,60,1260\n"
+                       "s1,2,TTX,1260,2580,1380,9999\n")
+    rep = check_folder(d)
+    assert not rep.ok
+    assert any("outside its own period" in e
+               for r in rep.recordings for e in r.errors)
+
+
+def test_a_period_that_ends_before_it_starts_is_refused(tmp_path: Path):
+    d = _write(tmp_path / "e", s1=GOOD,
+               regions="slice_id,region_idx,label,start_sec,end_sec,"
+                       "analysis_start_sec,analysis_end_sec\n"
+                       "s1,1,baseline,1260,60,100,200\n")
+    rep = check_folder(d)
+    assert not rep.ok
+    assert any("cannot end first" in e for r in rep.recordings for e in r.errors)
+
+
+def test_a_non_finite_analysis_start_is_refused(tmp_path: Path):
+    d = _write(tmp_path / "e", s1=GOOD,
+               regions="slice_id,region_idx,label,start_sec,end_sec,"
+                       "analysis_start_sec,analysis_end_sec\n"
+                       "s1,1,baseline,0,1260,nan,1260\n")
+    rep = check_folder(d)
+    assert not rep.ok
+    assert any("finite time" in e for r in rep.recordings for e in r.errors)
+
+
+def test_a_foreign_folder_that_is_neither_contiguous_nor_zero_based_passes(tmp_path):
+    """FOUNDATIONS §4, and the reason these guards are the universal subset only.
+
+    interface2 asked for `region_windows`' two HALT guards on this path — baseline
+    at 0, regions contiguous. Both encode aCa5z's protocol. This folder violates
+    both and is perfectly legal: recording starts 500 s in, and 8,900 s of the
+    recording sit between the two periods because nothing was being applied then.
+    Its windows are sane, so it must load and score.
+    """
+    from bugarach.detectors.loco import effective_region_windows
+    from bugarach.detectors.rate import recording_extent
+    from bugarach.io import load_folder
+
+    d = _write(tmp_path / "e", s1=GOOD,
+               regions="slice_id,region_idx,label,start_sec,end_sec,"
+                       "analysis_start_sec,analysis_end_sec\n"
+                       "s1,1,pre-drug,500,1400,600,1400\n"
+                       "s1,2,TTX,10300,12000,10400,11000\n")
+    rep = check_folder(d)
+    assert rep.ok, [e for r in rep.recordings for e in r.errors] + rep.errors
+
+    s, = load_folder(d)
+    rw = effective_region_windows(s, recording_extent(s))
+    assert [(w.win_start, w.win_end) for w in rw] == [(600.0, 1400.0),
+                                                      (10400.0, 11000.0)]
+
+
+def test_a_period_running_to_the_end_of_the_recording_still_clamps(tmp_path: Path):
+    """A non-finite `end_sec` means "it ran to the end", which is legal and is
+    why the clamp exists. The new period guard must not refuse it."""
+    from bugarach.detectors.loco import supplied_region_windows
+    from bugarach.store import Region, Slice
+
+    s = Slice(slice_id="s1", streams={}, roi_ids=None, regions=[
+        Region(name="baseline", slot="1", start_sec=0.0, end_sec=600.0,
+               analysis_start_sec=0.0, analysis_end_sec=600.0),
+        Region(name="TTX", slot="2", start_sec=600.0, end_sec=float("inf"),
+               analysis_start_sec=700.0, analysis_end_sec=float("inf")),
+    ])
+    rw = supplied_region_windows(s, 1800.0)
+    assert [(w.win_start, w.win_end) for w in rw] == [(0.0, 600.0), (700.0, 1800.0)]
+    assert rw[1].raw_end == 1800.0
