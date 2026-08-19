@@ -117,6 +117,19 @@ The state on `origin` must always be enough to resume elsewhere (FOUNDATIONS
   otherwise finds the mount itself, and the briefing prints what it resolved.
   Rule and the incident behind it: FOUNDATIONS §5. Never hardcode the path: it
   carries a person's name and this repo is public (sapper SAP004).
+  **A report counts as output, and "in the repo" is not delivered.** The assembly
+  report reached `docs/learned/` and stopped there, because its builder took
+  `--out` as required while every figure tool defaults to the darkroom — so the
+  one artifact written for a person to read was the only one that could not find
+  its way to them, and Tony had to ask where it was (2026-08-18). A tool that
+  renders something to be read defaults its destination to `darkroom()` and takes
+  `--also` for the repo copy; sapper SAP006 blocks the required form in page and
+  report builders. Keep both copies: the repo one is what review and git history
+  need, the darkroom one is what a person opens.
+  Two paths, one directory: `~/Dropbox-<org>` is a **symlink** to
+  `~/Library/CloudStorage/Dropbox-<org>`. Seeing a tool print one while looking in
+  the other does not mean the file went somewhere else — check with `ls -ld`
+  before concluding anything is missing.
   `<darkroom>/constellation/` is the **MATLAB producer** team's folder —
   detector sweeps and calibrated operating points live there; don't write into
   it. The darkroom is mounted on **every** machine, so it is a cross-machine

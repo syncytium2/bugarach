@@ -86,15 +86,32 @@ def ordered(M):
 
 
 def panel(M, colour, label, width, height=330):
+    """One membership matrix, drawn as a MATRIX and not as a raster.
+
+    This mattered enough to be rebuilt. Drawn as scattered square markers on
+    continuous axes it read as a spike raster — the dominant idiom in this field
+    and in this project's own viewer — where the horizontal axis is TIME and each
+    row is a cell. Here the horizontal axis is a *cell* and each row is a
+    *coordinated event*, so a reader fluent in rasters read both axes wrong and
+    saw structure in the wrong dimension (Tony, 2026-08-18: "showing something
+    that looks like a raster when it is not a raster is really mind blowing").
+
+    So: bordered tiles on integer axes, one tile per (event, cell) pair, filled
+    when that cell took part. A gridded matrix cannot be mistaken for a raster,
+    and the empty tiles carry the same information as the filled ones — which a
+    scatter of markers never showed at all.
+    """
     import holoviews as hv
     Mo = ordered(M)
-    ev, cell = np.nonzero(Mo)
-    return hv.Scatter((cell, ev)).opts(
-        color=colour, size=4, marker="square", alpha=0.85,
-        width=width, height=height,
-        xlim=(-1, Mo.shape[1]), ylim=(-1, Mo.shape[0]),
-        xlabel="cells, ordered by how often they took part",
+    n_ev, n_cell = Mo.shape
+    tiles = [(int(c), int(e), float(Mo[e, c]))
+             for e in range(n_ev) for c in range(n_cell)]
+    return hv.HeatMap(tiles, kdims=["cell", "event"], vdims=["took part"]).opts(
+        cmap=["#f2f2f2", colour], line_color="white", line_width=0.6,
+        width=width, height=height, colorbar=False, tools=[],
+        xlabel=f"one column per cell, ordered by participation  (1–{n_cell});  one row per event",
         ylabel=label, title="", show_legend=False,
+        xticks=0, yticks=0,
         fontsize={"labels": "10pt", "ticks": "9pt"})
 
 

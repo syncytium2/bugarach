@@ -100,6 +100,27 @@ RULES = [
         fixture_bad='page = f"""<title>Report</title><style>...',
         fixture_good='page = f"""<meta charset="utf-8">\\n<title>Report</title>',
     ),
+    Rule(
+        id="SAP006", level="BLOCK",
+        pattern=r'add_argument\(\s*["\']--out["\'][^)]*required\s*=\s*True',
+        # Deliberately NARROW: page and report builders only. Tools that write
+        # data for a pipeline (derive_spec, assess_archive, fair_bakeoff) are
+        # right to require an explicit --out, and a rule that fires on correct
+        # code is a rule someone switches off. Figure tools that still require
+        # --out are listed in docs/todo/2026-08-18-figure-tools-require-out.md.
+        include=["tools/build_*.py", "tools/md_to_page.py"], exclude=[],
+        message="A deliverable's destination must DEFAULT to the darkroom, never "
+                "be required. Every figure tool here takes --out with "
+                "`default=None` and falls back to bugarach.paths.darkroom(); a "
+                "required --out means the output lands wherever the caller "
+                "happened to point it. The report builder had this and the one "
+                "deliverable meant for a person to read was the only one that "
+                "never reached the darkroom — it sat in docs/learned until Tony "
+                "asked where it was (2026-08-18). Use `default=None` plus "
+                "`out = args.out or darkroom()`.",
+        fixture_bad='p.add_argument("--out", type=Path, required=True)',
+        fixture_good='p.add_argument("--out", type=Path, default=None)',
+    ),
 ]
 
 

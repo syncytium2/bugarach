@@ -94,7 +94,13 @@ def main(argv=None) -> int:
     p = argparse.ArgumentParser(description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("source", type=Path)
-    p.add_argument("--out", type=Path, required=True)
+    p.add_argument("--out", type=Path, default=None,
+                   help="destination; default $BUGARACH_DARKROOM. A page built "
+                        "to be read has to reach the place people read from "
+                        "(sapper SAP006).")
+    p.add_argument("--also", type=Path, default=None,
+                   help="a second destination, written identically — usually the "
+                        "repo copy, which review and git history need")
     p.add_argument("--name", default=None, help="output stem (default: source stem)")
     p.add_argument("--title", default=None)
     a = p.parse_args(argv)
@@ -107,10 +113,18 @@ def main(argv=None) -> int:
         print(f"missing {css_path}", file=sys.stderr)
         return 1
 
-    a.out.mkdir(parents=True, exist_ok=True)
-    dest = a.out / f"{a.name or a.source.stem}.html"
-    dest.write_text(render(md, title=title, css=css_path.read_text()))
-    print(f"wrote {dest}  ({dest.stat().st_size/1024:.0f} KB, self-contained)")
+    from bugarach.paths import darkroom, unresolved_message
+    out = a.out or darkroom()
+    if out is None:
+        print(unresolved_message(), file=sys.stderr)
+        return 1
+
+    page = render(md, title=title, css=css_path.read_text())
+    for d in [x for x in (out, a.also) if x is not None]:
+        d.mkdir(parents=True, exist_ok=True)
+        dest = d / f"{a.name or a.source.stem}.html"
+        dest.write_text(page)
+        print(f"wrote {dest}  ({dest.stat().st_size/1024:.0f} KB, self-contained)")
     return 0
 
 
