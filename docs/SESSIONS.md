@@ -60,6 +60,36 @@ Template:
 
 ## Active
 
+### Mac/dt-required-at-load — FOUNDATIONS §6 reversed: dt is required, not defaulted
+- **Status:** DONE 2026-08-18 — merged. Opened 2026-08-16 and sat three days, during
+  which `main` said the opposite of the decision and every session read the old rule.
+  Brought up to date with `main` and landed by a later session at Tony's direction.
+- **Started:** 2026-08-16
+- **Writes:** repo only
+- **Claims:** none
+- **Notes:** **Read this before writing anything that loads data.** FOUNDATIONS §6 used
+  to say `grid_dt` is the caller's responsibility at detection time and that omitting it
+  falls back to 0.1 s with a warning. Tony, 2026-08-16: *"we cannot allow data loading
+  without the user specifying a dt."* §6 now requires it at the **load boundary**, and
+  refusing beats defaulting — a warning fires after the number already exists.
+
+  Doc-only so far; the code still falls back. The gap is
+  `docs/todo/2026-08-16-dt-must-be-required-at-load.md`. Until it closes,
+  `GridDtNotSetWarning` still fires and still must not be silenced. **The six ports keep
+  their seconds-valued MATLAB parameters — parity is untouched by this.**
+
+### Mac/— — lit folder in the darkroom
+- **Status:** DONE
+- **Started:** 2026-08-16
+- **Writes:** `<darkroom>/bugarach/lit/` (NEW), `<darkroom>/bugarach/lit/DL/` (NEW)
+- **Claims:** none — new namespace, nothing else writes there
+- **Notes:** A reference library for papers a bugarach design decision actually rests on,
+  each entry naming the decision. Seeded with Deep Sets (Zaheer 2017) and PointNet (Qi
+  2017), which bear on set-structured input and the distinct-ROI rule. Undated on purpose
+  — everything else in `bugarach/` is a dated review artifact; a citation does not expire.
+  Rule in `lit/README.md`: a PDF with no index entry is indistinguishable from one someone
+  downloaded and forgot. Fetch by hand — murderboard's `fetch_paper.py` is deliberately
+  not vendored (SAP004, personal paths).
 ### Mac/windowing-design — the windowing decision, written down because two sessions collided
 - **Status:** DONE 2026-08-18 — nothing held, nothing claimed
 - **Writes:** repo only — ONE new file,

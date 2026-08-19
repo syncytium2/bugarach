@@ -105,3 +105,9 @@ not exist to the next session or the next machine.
 
 Related: [`docs/export_folder_spec.md`](../export_folder_spec.md) makes the interval
 a required field refused at the door, which covers the loader half.
+
+**Read with [`2026-08-16-dt-must-be-required-at-load.md`](2026-08-16-dt-must-be-required-at-load.md).**
+Filed the same day by a different session, and neither knew about the other. That one
+carries the rule and the file/line inventory of the fallback to remove; this one carries
+why there is nowhere to put the answer. FOUNDATIONS §6 now states the rule — that
+landed 2026-08-18, three days after it was written.
