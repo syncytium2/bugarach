@@ -1,6 +1,6 @@
 """Reader for interface2 event_store_onset* slice files.
 
-Each ``<slice_id>.mat`` holds per-ROI event onsets for two streams::
+Each ``<slice_id>.mat`` holds per-ROI event times for two streams::
 
     slice_id : str
     fast     : struct with per-ROI cell arrays  locs / amp / width / t50rise
@@ -8,11 +8,28 @@ Each ``<slice_id>.mat`` holds per-ROI event onsets for two streams::
     regions  : struct array  name / slot / start_sec / end_sec
     roi_ids  : (optional) per-ROI identifiers
 
-``locs`` are onset times in seconds; they are the primary input to every
-detector. Files exist in two MATLAB formats: v7 (scipy) and v7.3 (HDF5).
-v7 files pad the per-ROI arrays to a rectangle with NaN; the loader strips
-that padding (masking every field by valid ``locs``). Unused region slots
-are stored with empty fields and are skipped.
+**``locs`` is the PEAK. ``t50rise`` is the onset — when the event began.**
+Both are seconds, both are per event, and they are not interchangeable: the
+peak lags the onset by roughly 0.3 s in FAST and roughly 2 s in SLOW, which
+is enough to mistime SLOW coincidence and change what a coactivity detector
+counts. That is why the store carries both, and why the ``_onset`` store
+exists at all.
+
+This docstring claimed the opposite until 2026-08-17 — *"``locs`` are onset
+times… the primary input to every detector"* — while the code around it had
+it right the whole time: every detector taking an ``onset_field`` defaults
+to ``t50rise``, and :mod:`bugarach.detectors.cicada` calls ``locs`` the peak
+in its own comment. Nothing computed the wrong answer; the prose was wrong
+on its own, which costs nothing until somebody builds from the prose.
+interface2 did, writing an export folder against
+``docs/export_folder_spec.md``, whose ``time_sec`` column asks for when the
+event *began* — they read the code rather than this paragraph and sent
+``t50rise``, which is correct.
+
+Files exist in two MATLAB formats: v7 (scipy) and v7.3 (HDF5). v7 files pad
+the per-ROI arrays to a rectangle with NaN; the loader strips that padding
+(masking every field by valid ``locs``). Unused region slots are stored with
+empty fields and are skipped.
 
 MATLAB ``string``-class values in v7.3 files are stored in the opaque MCOS
 subsystem and cannot be decoded portably; where one is hit, the field falls
@@ -56,10 +73,30 @@ class Stream:
 
 @dataclass
 class Region:
+    """A period of a recording, and optionally the part of it to analyse.
+
+    ``start_sec``/``end_sec`` are **what happened** — when the period began and
+    ended. ``analysis_start_sec``/``analysis_end_sec`` are **what to score**,
+    when the producer has already decided: a wash-in delay, a duration cap, a
+    window trimmed for any reason of their own.
+
+    The two are kept apart rather than collapsed because they answer different
+    questions and only the producer knows the second. When they are absent
+    bugarach derives the analysis window itself, applying this project's
+    convention — which is right for this project and an inherited assumption
+    for anybody else (see ``docs/export_folder_spec.md``)."""
+
     name: str | None
     slot: str | None
     start_sec: float
     end_sec: float
+    analysis_start_sec: float | None = None
+    analysis_end_sec: float | None = None
+
+    @property
+    def has_analysis_window(self) -> bool:
+        return (self.analysis_start_sec is not None
+                and self.analysis_end_sec is not None)
 
 
 @dataclass
@@ -71,12 +108,17 @@ class Slice:
     pairing is specific to this project; foreign data (see bugarach.io) may
     carry one stream or several under any names. Consumers should iterate
     ``streams`` rather than hardcoding .fast/.slow, which are conveniences
-    for the canonical two-stream stores."""
+    for the canonical two-stream stores.
+
+    ``meta`` holds the producer's own per-recording columns, verbatim and
+    uninterpreted — the frame interval, group, sex, cohort, whatever the lab
+    records. bugarach carries them to its output and reads none of them."""
 
     slice_id: str
     streams: dict[str, Stream]
     regions: list[Region] = field(default_factory=list)
     roi_ids: list[str] | None = None
+    meta: dict[str, str] = field(default_factory=dict)
 
     @property
     def fast(self) -> Stream:

@@ -1,0 +1,3054 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>bugarach — open a recording</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!--
+  The raster viewer, client side.
+
+  YOUR FILES NEVER LEAVE YOUR COMPUTER, and that is a property of how this page is
+  written rather than a promise: there is no fetch(), no XHR, no form action and no
+  analytics anywhere in it. The browser's file picker hands the page a local handle,
+  everything below runs on your machine, and the site itself is static assets on a
+  CDN with no server to receive anything.
+
+  That is also what makes it publishable. The repo may not ship real recordings
+  (FOUNDATIONS §5), and it does not: this page ships an empty reader, and the data
+  is whatever the person looking at it chose to open.
+
+  It reads the import contract in docs/export_folder_spec.md — one CSV per
+  recording (roi, time_sec[, stream]), plus optional slices.csv and regions.csv.
+  A time of NA means an ROI that was recorded and produced no event, and it is
+  counted rather than skipped: dropping it would shrink the population and inflate
+  every per-ROI rate, which is the defect the NA row exists to prevent.
+
+  It also SIMULATES a folder, for the reader who arrives without one. That
+  generator writes the same CSV text a lab would ship and hands it to the same
+  loader, so an explorer sees the real reading path over invented data — folder
+  check included, reporting on a simulated folder exactly as it reports on a real
+  one. Nothing in it is a recording of anything, and the page says so where the
+  numbers are, not only in a footnote.
+
+  No dependencies, deliberately. A chart library would be a CDN fetch, and the
+  whole point of the paragraph above is that this page reaches nothing.
+-->
+<style>
+  :root {
+    --bg: #ffffff; --fg: #1c1c1c; --muted: #6a6a6a; --line: #dcdcdc;
+    --accent: #4f6d7a; --panel: #f7f7f5; --mark: #111111; --band: #eef2f4;
+  }
+  :root:not([data-theme="light"]) { }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #16181a; --fg: #e8e8e6; --muted: #9aa0a6; --line: #33373b;
+      --accent: #7fa6b6; --panel: #1e2124; --mark: #e8e8e6; --band: #23282c;
+    }
+  }
+  * { box-sizing: border-box; }
+  /* Column layout rather than a magic number: the sidebar used to be sized
+     `calc(100vh - 96px)`, which encoded the header's height, and adding the nav
+     above it pushed 67px of the recording list off the bottom of the screen.
+     Now nav and header take what they need and `main` gets the rest, so the
+     next thing added up there cannot silently steal the list again. */
+  body {
+    margin: 0; background: var(--bg); color: var(--fg);
+    font: 15px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    display: flex; flex-direction: column; height: 100vh; overflow: hidden;
+  }
+  nav.site, header { flex: none; }
+  /* Site nav, first thing on the page. The viewer used to be reachable only by
+     scrolling the landing page past every paragraph, which is a good way to
+     publish a tool nobody finds. */
+  nav.site {
+    display: flex; align-items: center; gap: 4px; flex-wrap: wrap;
+    padding: 8px 24px; border-bottom: 1px solid var(--line);
+    background: var(--panel); font-size: 13px;
+  }
+  nav.site .brand { font-weight: 600; margin-right: 10px; letter-spacing: -.01em; }
+  nav.site a {
+    color: var(--muted); text-decoration: none; padding: 4px 9px;
+    border-radius: 6px;
+  }
+  nav.site a:hover { background: var(--band); color: var(--fg); }
+  nav.site a[aria-current="page"] { color: var(--fg); background: var(--band); }
+  header { padding: 22px 24px 14px; border-bottom: 1px solid var(--line); }
+  h1 { margin: 0 0 4px; font-size: 19px; font-weight: 600; letter-spacing: -.01em; }
+  .sub { color: var(--muted); font-size: 13.5px; max-width: 62ch; }
+  .sub a { color: var(--accent); }
+  main { display: flex; align-items: stretch; gap: 0;
+         flex: 1; min-height: 0; }
+  #side {
+    width: 322px; flex: none; border-right: 1px solid var(--line);
+    overflow-y: auto; background: var(--panel);
+  }
+  #stage { flex: 1; min-width: 0; padding: 16px 20px 40px;
+           overflow-y: auto; }
+  .pick { padding: 0 16px 14px; }
+  button {
+    font: inherit; font-size: 13.5px; padding: 7px 12px; border-radius: 6px;
+    border: 1px solid var(--accent); background: var(--accent); color: #fff;
+    cursor: pointer; width: 100%;
+  }
+  button.ghost { background: transparent; color: var(--accent); margin-top: 6px; }
+  .hint { color: var(--muted); font-size: 12px; margin-top: 8px; }
+
+  /* Accordion. Two ways in — a folder you have, a folder that does not exist —
+     and only one open at a time, because the recording list wants the height
+     and the controls want the reader's attention while they are being set. */
+  details.acc { border-bottom: 1px solid var(--line); }
+  details.acc > summary {
+    list-style: none; cursor: pointer; padding: 11px 16px; font-size: 13px;
+    font-weight: 600; display: flex; align-items: center; gap: 8px;
+    user-select: none;
+  }
+  details.acc > summary::-webkit-details-marker { display: none; }
+  details.acc > summary::before {
+    content: "›"; color: var(--muted); font-size: 15px; line-height: 1;
+    transition: transform .12s ease;
+  }
+  details.acc[open] > summary::before { transform: rotate(90deg); }
+  details.acc > summary:hover { background: var(--band); }
+  details.acc > summary .cnt {
+    margin-left: auto; color: var(--muted); font-weight: 400; font-size: 11.5px;
+  }
+
+  /* Simulation controls: label left, value right, one row each. */
+  .ctl { display: grid; grid-template-columns: 1fr auto; gap: 7px 10px;
+         align-items: center; font-size: 12.5px; padding: 0 16px 12px; }
+  .ctl label { color: var(--muted); }
+  .ctl input, .ctl select {
+    font: inherit; font-size: 12.5px; width: 162px; padding: 3px 6px;
+    border: 1px solid var(--line); border-radius: 5px;
+    background: var(--bg); color: var(--fg);
+  }
+  .ctl input[type="number"] { width: 68px; }
+  .ctl .span { grid-column: 1 / -1; }
+  .ctl .span button { margin-top: 2px; }
+  .ctl .note { color: var(--muted); font-size: 11.5px; line-height: 1.4;
+               margin: -3px 0 2px; max-width: none; }
+  /* `display` set on a class outranks the browser's own rule for [hidden], so
+     a hidden .ctl stays on screen unless this says otherwise. Learned by
+     switching detectors and watching both parameter sets sit there at once. */
+  .ctl[hidden] { display: none; }
+  .fine { color: var(--muted); font-size: 11.5px; line-height: 1.45;
+          padding: 0 16px 14px; }
+  .fine b { color: var(--fg); font-weight: 600; }
+  ul { list-style: none; margin: 0; padding: 0; }
+  li button {
+    all: unset; display: block; width: 100%; cursor: pointer;
+    padding: 7px 16px; font-size: 13px; border-left: 3px solid transparent;
+    /* `all: unset` takes box-sizing with it, so width:100% went content-box and
+       every row ran its event count 19px past the panel edge, where the sidebar
+       clipped it to a bare number */
+    box-sizing: border-box;
+  }
+  li button:hover { background: var(--band); }
+  li button[aria-current="true"] {
+    border-left-color: var(--accent); background: var(--band); font-weight: 600;
+  }
+  li .n { color: var(--muted); font-size: 11.5px; float: right; }
+  #bar { display: flex; align-items: baseline; gap: 10px; margin: 0 0 12px; }
+  #bar .lab { font-size: 12px; color: var(--muted); }
+  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+  .seg button {
+    all: unset; cursor: pointer; padding: 4px 11px; font-size: 12.5px;
+    color: var(--muted); background: transparent;
+  }
+  .seg button[aria-pressed="true"] { background: var(--accent); color: #fff; }
+  #meta { font-size: 13px; color: var(--muted); margin: 0 0 12px; }
+  #meta b { color: var(--fg); font-weight: 600; }
+  #meta .sep { margin-left: 12px; }
+  /* The legend. Every window on the raster is a colour, so the colour has to be
+     named somewhere the reader can see both at once — and the name is ink, never
+     the window's own colour, so a pale hue never has to carry text. */
+  #wins { font-size: 12.5px; color: var(--muted); margin: 0 0 14px; }
+  #wins span.win { display: inline-flex; align-items: center; gap: 6px;
+                   margin-right: 16px; }
+  #wins .sw { width: 11px; height: 11px; border-radius: 3px; flex: none;
+              display: inline-block; }
+  #wins .scored { opacity: .8; }
+  #wins .scored::before { content: "· "; }
+  #wins .chan { color: var(--muted); font-style: italic; }
+  #wins i { font-style: normal; color: var(--fg); }
+  canvas { width: 100%; display: block; }
+  .empty { color: var(--muted); padding: 48px 8px; max-width: 60ch; }
+  .err {
+    border-left: 3px solid #b4433a; background: var(--band);
+    padding: 10px 14px; margin: 10px 0; font-size: 13px;
+  }
+  .note { color: var(--muted); font-size: 12.5px; margin-top: 14px; max-width: 70ch; }
+  #assessOut, #detectOut, #tuneOut { margin: 16px 0 0; font-size: 12.5px; }
+  #detectOut h4, #tuneOut h4 { margin: 0 0 6px; font-size: 13px; font-weight: 600; }
+  #detectOut .sub, #tuneOut .sub { color: var(--muted); margin: 0 0 8px; }
+  #detectOut .caveat, #tuneOut .caveat { color: var(--muted); max-width: 72ch;
+                       line-height: 1.5; margin: 10px 0 0; }
+  #detectOut table, #tuneOut table { border-collapse: collapse; margin: 0 0 4px; }
+  #detectOut th, #detectOut td, #tuneOut th, #tuneOut td {
+                                 padding: 4px 14px 4px 0; text-align: right;
+                                 font-variant-numeric: tabular-nums; }
+  #detectOut th, #tuneOut th { color: var(--muted); font-weight: 500; }
+  #detectOut th:first-child, #detectOut td:first-child,
+  #tuneOut th:first-child, #tuneOut td:first-child { text-align: left; }
+  #detectOut td.state { text-align: left; color: var(--muted);
+                        font-variant-numeric: normal; }
+  /* the row the sweep chose, so the table and the picture agree without the
+     reader having to find the maximum by eye */
+  #tuneOut tr.best td { font-weight: 600; color: var(--fg); }
+  #tuneOut .verdict { margin: 10px 0 0; max-width: 72ch; line-height: 1.5; }
+  #tuneOut canvas { width: 100%; display: block; margin: 2px 0 10px; }
+  #assessOut h4 { margin: 0 0 6px; font-size: 13px; font-weight: 600; }
+  #assessOut .sub { color: var(--muted); margin: 0 0 8px; }
+  #assessOut table { border-collapse: collapse; }
+  #assessOut th, #assessOut td {
+    padding: 4px 12px 4px 0; text-align: right; font-variant-numeric: tabular-nums;
+  }
+  #assessOut th { color: var(--muted); font-weight: 500; text-align: right; }
+  #assessOut th:first-child, #assessOut td:first-child { text-align: left; }
+  #assessOut td.state { color: var(--muted); font-variant-numeric: normal;
+                        text-align: left; }
+  #assessOut .caveat { color: var(--muted); margin: 10px 0 0; max-width: 72ch;
+                       line-height: 1.5; }
+  .note p { margin: 0 0 9px; }
+  #checkbar { padding: 10px 16px; border-bottom: 1px solid var(--line); font-size: 12.5px; }
+  #checkbar button {
+    all: unset; cursor: pointer; color: var(--accent); text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+  .ok  { color: #2c7a4b; } :root:not([data-theme="light"]) .ok  { color: #6fbf8b; }
+  @media (prefers-color-scheme: dark) { .ok { color: #6fbf8b; } }
+  .bad { color: #b4433a; } @media (prefers-color-scheme: dark) { .bad { color: #e08078; } }
+  #panel {
+    border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px;
+    margin: 0 0 16px; background: var(--panel); font-size: 13px;
+  }
+  #panel h3 { margin: 0 0 8px; font-size: 13.5px; }
+  #panel ul { margin: 4px 0 10px; padding-left: 2px; }
+  #panel li { margin: 3px 0; line-height: 1.45; }
+  #panel .k { display: inline-block; width: 1.2em; font-weight: 700; }
+  #panel .who { font-weight: 600; }
+  #reopen { margin-top: 6px; }
+  code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px; }
+</style>
+
+<nav class="site">
+  <span class="brand">bugarach</span>
+  <a href="index.html">Overview</a>
+  <a href="viewer.html" aria-current="page">Raster viewer</a>
+  <a href="diagnostic.html">Detector diagnostic</a>
+  <a href="landscape.html">Landscape</a>
+</nav>
+
+<header>
+  <h1>Open a recording</h1>
+  <div class="sub">
+    Pick an export folder — one CSV per recording, as described in the
+    <a href="https://github.com/syncytium2/bugarach/blob/main/docs/export_folder_spec.md">import
+    contract</a>. <b>Your files never leave this computer:</b> the page has no
+    network calls in it, and the site is static files with no server to send
+    anything to. Arrived without a folder? Simulate one, and look at the viewer
+    with nothing of your own at stake.
+  </div>
+</header>
+
+<main>
+  <div id="side">
+    <details class="acc" id="accSim" open>
+      <summary>Simulate a folder<span class="cnt">no data needed</span></summary>
+      <div class="ctl">
+        <label for="sRec">recordings</label>
+        <input id="sRec" type="number" min="1" max="6" step="1" value="3">
+        <label for="sMin">minutes each</label>
+        <input id="sMin" type="number" min="2" max="90" step="1" value="45">
+        <label for="sRoi">ROIs</label>
+        <input id="sRoi" type="number" min="4" max="150" step="1" value="33">
+        <label for="sRate">mean rate (mHz/ROI)</label>
+        <input id="sRate" type="number" min="1" max="500" step="1" value="10">
+        <div class="span note">Baseline slices in this lab run 3.8–17.5 mHz per
+        ROI, interquartile.</div>
+        <label for="sBg">background</label>
+        <select id="sBg">
+          <option value="fitted" selected>uneven, bursty</option>
+          <option value="flat">flat</option>
+        </select>
+        <label for="sEv">coordinated events</label>
+        <input id="sEv" type="number" min="0" max="60" step="1" value="15">
+        <label for="sPart">participation</label>
+        <select id="sPart">
+          <option value="measured" selected>30/18/10% — measured</option>
+          <option value="mixed">100/75/50% — a guess</option>
+          <option value="all">every ROI</option>
+          <option value="measured-here">from your recording</option>
+        </select>
+        <label for="sJit">jitter (ms)</label>
+        <input id="sJit" type="number" min="0" max="3000" step="10" value="360">
+        <label for="sWin">windows</label>
+        <select id="sWin">
+          <option value="2" selected>2 — baseline, drug</option>
+          <option value="0">none</option>
+          <option value="3">3 — + washout</option>
+          <option value="4">4 — + high K</option>
+        </select>
+        <label for="sSeed">seed</label>
+        <input id="sSeed" type="number" min="0" max="99999" step="1" value="1">
+        <div class="span"><button id="runSim">Simulate</button></div>
+      </div>
+      <div class="fine" id="simProvenance" hidden></div>
+      <div class="fine">
+        <b>Nothing here is a recording of anything.</b> Event times are drawn from
+        the model in <code>bugarach.simulate</code>, re-implemented for this page —
+        same model, a different generator, so a seed reproduces in this browser and
+        does not match Python's numbers.
+        <br><br>
+        <b>The settings you land on are measured, not chosen.</b> Rate, ROI count,
+        participation and jitter come off 84 untreated slices, and every one of
+        them used to be a guess that made coordination easier than it is — six
+        ROIs with a third of a second of spread, not half the field firing
+        together. The old guesses are on the switches, and worth a look.
+        <br><br>
+        <b>The windows are labels, not effects.</b> The statistics are identical
+        inside and outside every one of them. Simulating a treatment would spend
+        the effect the experiment exists to measure — so the drug is a name on the
+        axis and nothing more.
+      </div>
+    </details>
+
+    <details class="acc" id="accOpen">
+      <summary>Open a folder<span class="cnt">your own recordings</span></summary>
+      <div class="pick">
+        <button id="pickDir">Choose folder…</button>
+        <button id="pickFiles" class="ghost">or choose CSV files…</button>
+        <button id="reopen" class="ghost" hidden></button>
+        <input id="dir" type="file" webkitdirectory directory multiple hidden>
+        <input id="files" type="file" accept=".csv" multiple hidden>
+        <div class="hint">Nothing is uploaded. Reading happens in this tab.</div>
+      </div>
+    </details>
+
+    <details class="acc" id="accAssess">
+      <summary>Assess coordination<span class="cnt">no detector involved</span></summary>
+      <div class="ctl">
+        <label for="aSurr">surrogates</label>
+        <input id="aSurr" type="number" min="50" max="2000" step="50" value="1000">
+        <label for="aBin">bin (s)</label>
+        <input id="aBin" type="number" min="0.1" max="10" step="0.1" value="1">
+        <label for="aRegion">region</label>
+        <select id="aRegion"><option value="baseline">baseline (default)</option></select>
+        <label for="aK">mark clusters at K</label>
+        <select id="aK">
+          <option value="0" selected>none</option>
+          <option value="3">3</option>
+          <option value="4">4</option>
+          <option value="6">6</option>
+          <option value="8">8</option>
+        </select>
+        <div class="span"><button id="runAssess">Assess this recording</button></div>
+      </div>
+      <div class="fine">
+        <b>How much coordination is here, measured against a rate-matched null.</b>
+        Each ROI's own train is circularly shifted by its own random lag, which
+        holds its rate and its burstiness and destroys only cross-ROI phase — so
+        what survives is coordination beyond what the recording's rate explains.
+        <br><br>
+        <b>K is a scan, not a choice.</b> The floor for how many ROIs make an
+        event moves the headline by an order of magnitude, so every K is shown and
+        none is marked as the answer. Quoting one of these numbers means naming
+        its K.
+        <br><br>
+        <b>Baseline only.</b> Coordination properties are not taken from a
+        treatment — that is what the instrument is pointed at, and sourcing them
+        from it assumes the answer. A recording with no declared regions is
+        assessed whole, and it says so.
+      </div>
+    </details>
+
+    <details class="acc" id="accDetect">
+      <summary>Detect events<span class="cnt" id="cntDetect">RateDetect</span></summary>
+      <div class="ctl">
+        <label for="dDet">detector</label>
+        <select id="dDet">
+          <option value="rate">RateDetect — how fast</option>
+          <option value="sync">SPIKE-synch — how aligned</option>
+        </select>
+      </div>
+      <div class="ctl" id="dRateCtl">
+        <label for="dThr">excess threshold (Hz)</label>
+        <input id="dThr" type="number" min="0.1" max="50" step="0.5" value="5">
+        <label for="dRate">rate window (s)</label>
+        <input id="dRate" type="number" min="0.1" max="30" step="0.1" value="1">
+        <label for="dCtx">context window (s)</label>
+        <input id="dCtx" type="number" min="5" max="600" step="5" value="60">
+      </div>
+      <div class="ctl" id="dSyncCtl" hidden>
+        <label for="dTau">coincidence cap (s)</label>
+        <input id="dTau" type="number" min="0.01" max="10" step="0.05" value="0.25">
+        <label for="dGap">max gap (s)</label>
+        <input id="dGap" type="number" min="0.1" max="30" step="0.1" value="0.5">
+        <label for="dC">C to start an event</label>
+        <input id="dC" type="number" min="0.001" max="1" step="0.01" value="0.1">
+        <label for="dCmin">C to sustain one</label>
+        <input id="dCmin" type="number" min="0.001" max="1" step="0.01" value="0.1">
+      </div>
+      <div class="ctl">
+        <div class="span"><button id="runDetect">Detect</button></div>
+      </div>
+      <div class="fine" id="dFineRate">
+        <b>RateDetect asks how fast the population is firing.</b> It flags moments
+        when the pooled rate rises above its own local context — so a slice that
+        fires steadily has no events, however tightly aligned it is.
+        <br><br>
+        <b>Checked against the Python exactly.</b> It draws no random numbers, so
+        this browser copy is compared to the port the rest of the project cites at
+        1e-9 on every event it finds. A mistake here cannot pass as sampling noise.
+        <br><br>
+        <b>The settings are what the project benches at, not what your preparation
+        needs.</b> Finding those is what the simulate step above is for: measure,
+        simulate from what you measured, tune against planted events, then point
+        the tuned instrument at everything.
+      </div>
+      <div class="fine" id="dFineSync" hidden>
+        <b>SPIKE-synch asks how aligned the spikes are, whatever the rate.</b>
+        Every spike gets a coincidence value between 0 and 1 — the fraction of
+        other ROIs with a spike inside a window that adapts to how densely each
+        one is firing. A slice that never speeds up but tightens its timing shows
+        here and not in RateDetect, which is the reason to run both.
+        <br><br>
+        <b>The cap is the part worth setting.</b> It is the widest the adaptive
+        window may ever open, so it decides what counts as "together": 0.25 s for
+        a fast stream, 0.5 s for a slow one. Without it a busy ROI would look
+        coincident with everything.
+        <br><br>
+        <b>Checked against the Python exactly</b>, at 1e-9, on the coincidence
+        profile and on every event — this is the second detector here that draws
+        no random numbers, and the same reasoning applies. Events whose C is
+        near-total <i>and</i> narrow <i>and</i> shared by most of the field are
+        reported separately: that combination is a stage knock, not coordination.
+      </div>
+    </details>
+
+    <details class="acc" id="accTune">
+      <summary>Tune the settings<span class="cnt" id="cntTune">simulated only</span></summary>
+      <div class="ctl">
+        <label for="tTol">match tolerance (s)</label>
+        <input id="tTol" type="number" min="0.1" max="30" step="0.5" value="1.5">
+        <div class="span"><button id="runTune">Sweep</button></div>
+        <div class="note" id="tuneWhat"></div>
+      </div>
+      <div class="fine">
+        <b>The step that makes this a loop.</b> The other three ask what is in a
+        recording; this one asks whether the instrument reading it is any good.
+        It sweeps one setting of the detector chosen above, holds the rest where
+        you left them, and scores every result against the events that were
+        planted — so a number here is right or wrong rather than merely produced.
+        <br><br>
+        <b>Only on a folder this page invented, and that is the reason the
+        simulate step exists.</b> Your own recordings have no answer key: nobody
+        knows which moments in them were coordinated, which is what the detector
+        is for. Tune where the truth is known, then point the tuned instrument at
+        the recordings where it is not.
+        <br><br>
+        <b>A best value at the end of the range is not a best value.</b> It is
+        the sweep saying it stopped too early, and it is reported as that rather
+        than as an answer — a boundary value has been published as a calibrated
+        setting before.
+      </div>
+    </details>
+
+    <details class="acc" id="accList" hidden>
+      <summary>Recordings<span class="cnt" id="cntList"></span></summary>
+      <div id="checkbar" hidden></div>
+      <ul id="list"></ul>
+    </details>
+  </div>
+
+  <div id="stage">
+    <div class="empty" id="empty">
+      <p>No recordings open yet.</p>
+      <p>A folder holds one <code>.csv</code> per recording with columns
+      <code>roi</code>, <code>time_sec</code> and optionally <code>stream</code>;
+      <code>slices.csv</code> and <code>regions.csv</code> are read for the frame
+      interval and the treatment windows if they are there.</p>
+      <p>A <code>time_sec</code> of <code>NA</code> means an ROI that was recorded
+      and produced no event. Those ROIs are counted here, not dropped — they are
+      the denominator of every per-ROI rate.</p>
+      <p><b>No folder to hand?</b> The page will invent one — recordings written
+      as the contract above describes and read back through the same loader, so
+      what you get is this page working rather than a picture of it.</p>
+      <p><button id="simCta" class="ghost" style="width:auto;margin:0">Simulate a
+      folder</button></p>
+    </div>
+    <div id="panel" hidden></div>
+    <div id="view" hidden>
+      <p id="meta"></p>
+      <div id="bar">
+        <span class="lab">ROI order</span>
+        <span class="seg">
+          <button data-order="id" aria-pressed="true">by id</button>
+          <button data-order="rate" aria-pressed="false">by events</button>
+        </span>
+        <span class="lab" id="orderNote"></span>
+      </div>
+      <p id="wins"></p>
+      <canvas id="cv"></canvas>
+      <div id="assessOut"></div>
+      <div id="detectOut"></div>
+      <div id="tuneOut"></div>
+      <div class="note" id="note"></div>
+    </div>
+  </div>
+</main>
+
+<script>
+"use strict";
+
+const RESERVED = new Set(["slices.csv", "regions.csv", "metric_dictionary.csv"]);
+const NO_EVENT = new Set(["", "na", "nan", "none", "null"]);
+
+let RECORDINGS = [];   // {id, file, loaded?}
+let REGIONS = new Map();   // slice_id -> [{idx,label,start,end}]
+let META = new Map();      // slice_id -> {col: val}
+let current = null;
+let SIMULATED = false;     // did the open folder come out of the generator below
+// slice_id -> {times, fracs}: what the generator planted, and the only ground
+// truth this page can have. Empty for a folder read off disk, which is why
+// tuning is offered for a simulated folder and not for anybody's recordings.
+let TRUTH = new Map();
+let ORDER = "id";          // "id" | "rate" — sticky across recordings, because
+                           // comparing two recordings means comparing them the
+                           // same way, and re-picking per slice invites not
+
+/* ---------- treatment windows are told apart by colour ---------------------
+   Every window used to be the same wash, so a baseline abutting a drug abutting
+   a washout was one grey block with three names floating above it — the reader
+   could see that periods existed and not which was which.
+
+   A window is an IDENTITY, so the colour is categorical: eight fixed hues taken
+   in order, never cycled and never generated. The order is the one validated for
+   colour-vision deficiency — adjacent pairs clear ΔE 8 under protanopia and
+   deuteranopia in both modes — and a ninth distinct label gets a neutral rather
+   than a ninth hue that would collide with one of the eight.
+
+   Two rules the palette does not enforce on its own, and both are load-bearing:
+   the hue is assigned to the LABEL and not to the position, so `TTX` is the same
+   colour in every recording of the folder and comparing two of them is a
+   comparison; and no text is ever painted in it — the wash is pale by design, so
+   names stay in ink and a colour chip beside them carries the identity. */
+const HUES_LIGHT = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100",
+                    "#e87ba4", "#008300", "#4a3aa7", "#e34948"];
+const HUES_DARK  = ["#3987e5", "#d95926", "#199e70", "#c98500",
+                    "#d55181", "#008300", "#9085e9", "#e66767"];
+const HUE_SPARE  = "#8a8f94";
+let SLOT = new Map();      // region label -> palette slot, in order of appearance
+
+const dark = () => window.matchMedia
+  && window.matchMedia("(prefers-color-scheme: dark)").matches;
+
+function ink(label) {
+  const i = SLOT.has(label) ? SLOT.get(label) : -1;
+  if (i < 0) return HUE_SPARE;
+  return (dark() ? HUES_DARK : HUES_LIGHT)[i];
+}
+
+/* The band behind the marks: the same hue, laid on thin enough that a mark over
+   it is still a mark. Thinner in dark mode, where the marks are pale and a fill
+   at the light-mode strength closes on them from the other side — the rail above
+   is what identifies the window, so the wash only has to say where it ends. */
+function wash(label) {
+  const h = ink(label);
+  const n = parseInt(h.slice(1), 16);
+  return "rgba(" + ((n >> 16) & 255) + "," + ((n >> 8) & 255) + "," + (n & 255)
+         + "," + (dark() ? 0.15 : 0.13) + ")";
+}
+
+/* Assigned once for the whole folder rather than per recording, and in
+   chronological order within each — so slot 1 is whatever every recording starts
+   with. A label already seen keeps its slot. */
+function assignHues() {
+  SLOT = new Map();
+  for (const rec of RECORDINGS)
+    for (const w of (REGIONS.get(rec.id) || []))
+      if (!SLOT.has(w.label))
+        SLOT.set(w.label, SLOT.size < HUES_LIGHT.length ? SLOT.size : -1);
+}
+
+/* ---------- CSV: minimal, and quoted fields are handled because a lab's
+   treatment label can legitimately contain a comma ("wash, 10 min"). --------- */
+function parseCSV(text) {
+  const rows = [];
+  let row = [], field = "", q = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (q) {
+      if (c === '"') { if (text[i + 1] === '"') { field += '"'; i++; } else q = false; }
+      else field += c;
+    } else if (c === '"') q = true;
+    else if (c === ",") { row.push(field); field = ""; }
+    else if (c === "\n") { row.push(field); rows.push(row); row = []; field = ""; }
+    else if (c !== "\r") field += c;
+  }
+  if (field.length || row.length) { row.push(field); rows.push(row); }
+  return rows.filter(r => r.length > 1 || (r.length === 1 && r[0] !== ""));
+}
+
+function asObjects(rows) {
+  if (!rows.length) return [];
+  const head = rows[0].map(h => h.trim());
+  return rows.slice(1).map(r => {
+    const o = {};
+    head.forEach((h, i) => o[h] = (r[i] ?? "").trim());
+    return o;
+  });
+}
+
+/* A simulated folder is CSV text with a name on it, and it arrives here as one:
+   the generator at the bottom of this file writes the same bytes a lab's exporter
+   would and everything downstream — the loader, the folder check, the raster —
+   cannot tell the two apart and is not told. That is the point of routing it
+   through the contract rather than building the internal structures directly:
+   what an explorer sees is this page reading a folder, not a demo of it. */
+const readText = file => typeof file.text === "string"
+  ? Promise.resolve(file.text)
+  : new Promise((res, rej) => {
+      const fr = new FileReader();
+      fr.onload = () => res(fr.result);
+      fr.onerror = () => rej(new Error("could not read " + file.name));
+      fr.readAsText(file);
+    });
+
+/* Nothing read from a file is ever concatenated into markup. These build the
+   node instead, so a region label of `<img src=x onerror=…>` is a label that
+   reads oddly rather than a script that runs — which it did, once, before the
+   page was written this way. `innerHTML` is left for literals only. */
+function el(tag, text, cls) {
+  const n = document.createElement(tag);
+  n.textContent = text;
+  if (cls) n.className = cls;
+  return n;
+}
+const sep = text => el("span", text, "sep");
+
+/* A cell that is absent or blank is "not sent"; anything else has to be a real
+   number or the check says so. Returns undefined rather than NaN, because
+   `undefined` flows through the drawing code as "no analysis window" while NaN
+   would quietly place a rectangle nowhere. */
+function num(v) {
+  const s = (v ?? "").trim();
+  if (!s) return undefined;
+  const n = Number(s);
+  return Number.isFinite(n) ? n : null;      // null = present and unreadable
+}
+
+/* ---------- ROI order: 2 before 10, like a lab numbers them --------------- */
+function natural(a, b) {
+  const re = /(\d+)|(\D+)/g;
+  const A = String(a).match(re) || [], B = String(b).match(re) || [];
+  for (let i = 0; i < Math.min(A.length, B.length); i++) {
+    const x = A[i], y = B[i], nx = /^\d/.test(x), ny = /^\d/.test(y);
+    if (nx && ny) { const d = (+x) - (+y); if (d) return d; }
+    else if (x !== y) return x < y ? -1 : 1;
+  }
+  return A.length - B.length;
+}
+
+/* ---------- one recording -------------------------------------------------- */
+async function loadRecording(rec) {
+  if (rec.loaded) return rec.loaded;
+  const rows = asObjects(parseCSV(await readText(rec.file)));
+  if (!rows.length) throw new Error(rec.file.name + " has no rows");
+  if (!("roi" in rows[0]) || !("time_sec" in rows[0]))
+    throw new Error(rec.file.name + " must have columns 'roi' and 'time_sec' (found "
+                    + Object.keys(rows[0]).join(", ") + ")");
+  const hasStream = "stream" in rows[0];
+  const streams = new Map();   // name -> Map(roi -> number[])
+  const rois = new Set();
+  rows.forEach((r, i) => {
+    const name = (hasStream && r.stream) ? r.stream : "events";
+    if (!streams.has(name)) streams.set(name, new Map());
+    const byRoi = streams.get(name);
+    if (!byRoi.has(r.roi)) byRoi.set(r.roi, []);
+    rois.add(r.roi);
+    const raw = (r.time_sec ?? "").trim();
+    if (NO_EVENT.has(raw.toLowerCase())) return;   // recorded, produced nothing
+    const t = Number(raw);
+    if (!Number.isFinite(t))
+      throw new Error(rec.file.name + " line " + (i + 2) + ": time_sec is \"" + raw
+                      + "\", which is neither a time in seconds nor a missing value");
+    byRoi.get(r.roi).push(t);
+  });
+  const order = [...rois].sort(natural);
+  let n = 0, tmax = 0, tmin = Infinity;
+  for (const byRoi of streams.values())
+    for (const v of byRoi.values()) {
+      v.sort((a, b) => a - b);
+      n += v.length;
+      if (v.length) { tmax = Math.max(tmax, v[v.length - 1]); tmin = Math.min(tmin, v[0]); }
+    }
+  // silent EVERYWHERE is the one a producer could have dropped; silent in one
+  // stream while firing in another was never at risk
+  const quiet = order.filter(id =>
+    [...streams.values()].every(m => !(m.get(id) || []).length)).length;
+
+  // Counts are summed ACROSS streams and the order is one list for the whole
+  // recording, never per panel: a lane has to mean the same ROI in FAST and in
+  // SLOW, or the two rows stop being comparable and the picture starts lying.
+  // Every ROI shares the recording's duration, so ordering by count and by rate
+  // give the same sequence — count is the honest thing to compute.
+  const counts = new Map(order.map(id => [id,
+    [...streams.values()].reduce((a, m) => a + (m.get(id) || []).length, 0)]));
+  // busiest first, silent ones falling to the bottom as a block, which is
+  // itself worth seeing; ties keep id order so the view stays deterministic
+  const byRate = [...order].sort((a, b) => counts.get(b) - counts.get(a)
+                                           || natural(a, b));
+  rec.loaded = {
+    streams, order, byRate, counts, nEvents: n, nRois: order.length, quiet,
+    t0: Number.isFinite(tmin) ? Math.min(0, tmin) : 0, t1: tmax,
+  };
+  return rec.loaded;
+}
+
+/* ---------- time axis: 60-base ticks, minutes-friendly, per the project's
+   plot conventions — 1/2/5/10/15/30 x 60^k seconds, never raw seconds ------- */
+function ticks(span, target) {
+  const steps = [1, 2, 5, 10, 15, 30];
+  const cands = [];
+  for (let k = 0; k < 3; k++)
+    for (const s of steps) cands.push(s * Math.pow(60, k));
+  const want = span / Math.max(2, target);
+  let best = cands[0];
+  for (const c of cands) if (Math.abs(c - want) < Math.abs(best - want)) best = c;
+  return best;
+}
+function fmt(sec) {
+  if (sec < 60) return Math.round(sec) + "s";
+  const m = Math.floor(sec / 60), s = Math.round(sec - m * 60);
+  return s ? m + "m" + s + "s" : m + "m";
+}
+
+/* ---------- draw ----------------------------------------------------------- */
+
+// The detector lane: a name line, a bar line, and clearance for the region
+// legend that hangs off the panel top at `top - 17`. All three numbers move
+// together — shrink this and the calls are drawn through the period chips.
+const LANE_H = 37;
+function draw(rec, data) {
+  const cv = document.getElementById("cv");
+  const css = getComputedStyle(document.documentElement);
+  const dpr = window.devicePixelRatio || 1;
+  const W = cv.clientWidth || 900;
+  const names = [...data.streams.keys()].sort();
+  const padL = 62, padR = 14, padT = 23, padB = 40, gap = 16;
+  const rowH = Math.max(110, Math.min(230, 26 + data.nRois * 5));
+  const H = padT + names.length * rowH + (names.length - 1) * gap + padB
+            + ((DETECT && DETECT.recId === rec.id) ? LANE_H : 0);
+
+  cv.width = W * dpr; cv.height = H * dpr; cv.style.height = H + "px";
+  const g = cv.getContext("2d");
+  g.scale(dpr, dpr);
+  g.clearRect(0, 0, W, H);
+  g.font = "11px -apple-system, system-ui, sans-serif";
+
+  const t0 = data.t0, t1 = Math.max(data.t1, t0 + 1);
+  const x = t => padL + (t - t0) / (t1 - t0) * (W - padL - padR);
+  const wins = REGIONS.get(rec.id) || [];
+  const step = ticks(t1 - t0, Math.max(4, Math.round((W - padL - padR) / 110)));
+  // one lane order for every panel — see loadRecording
+  const lanes = ORDER === "rate" ? data.byRate : data.order;
+
+  // A detector lane above the top panel — a bar per call, spanning what it
+  // called. Above the frame and never through the lanes: a bar drawn across the
+  // rows would be indistinguishable from the coincidence it is reporting.
+  const laneH = (DETECT && DETECT.recId === rec.id) ? LANE_H : 0;
+  if (laneH) {
+    // The name goes ABOVE the bars rather than in the left gutter, which is 56px
+    // wide and fits "RateDetect" only by luck — "SPIKE-synch · 4" ran off the
+    // canvas the first time a second detector was wired up. A lane that renames
+    // itself per detector cannot depend on the longest name being short.
+    g.fillStyle = css.getPropertyValue("--muted").trim();
+    g.fillText(DETECT.label + " · " + DETECT.starts.length + " called",
+               padL, padT + 8);
+    const ly = padT + 11;
+    g.fillStyle = css.getPropertyValue("--accent").trim();
+    for (let i = 0; i < DETECT.starts.length; i++) {
+      const a = Math.max(padL, x(DETECT.starts[i]));
+      const b = Math.min(W - padR, x(DETECT.ends[i]));
+      if (b < padL || a > W - padR) continue;
+      g.fillRect(a, ly, Math.max(2, b - a), 6);   // min width: a call is visible
+    }
+  }
+
+  names.forEach((name, si) => {
+    const top = padT + laneH + si * (rowH + gap), bot = top + rowH - 20;
+    const byRoi = data.streams.get(name);
+
+    // treatment windows behind the marks — a raster whose periods are not
+    // named is a wall of dots, and the bounds came with the folder
+    wins.forEach(w => {
+      // TWO WINDOWS, TWO CHANNELS, because the contract carries two and the
+      // difference between them is a decision somebody made:
+      //
+      //   the BAR above the frame = what happened — the raw period, drug on from
+      //     here to here, `start_sec`/`end_sec`;
+      //   the SHADING behind the marks = what gets scored — `analysis_*`, which
+      //     is the period minus a wash-in delay, minus a cap, minus anything the
+      //     producer dropped.
+      //
+      // Drawn one over the other they said the same thing twice. Split, the
+      // picture shows the trim: shading that stops short of its bar is time that
+      // happened and is not counted, and until now nothing in this project drew
+      // that at all. When a folder sends no analysis window the shading falls
+      // back to the whole period and the note under the plot says so — it is NOT
+      // derived here. That rule has been reimplemented five times in this
+      // ecosystem and drifted every time, and a sixth copy in a browser, out of
+      // reach of the tests that guard `region_windows`, is the worst place yet.
+      const x0 = x(w.start), x1 = x(w.end);
+      // The fills ABUT where they are the whole period: this axis is time, and a
+      // gap between two raw periods is a claim — it reads as time nobody
+      // declared. Regions are contiguous by contract and `region_windows` HALTS
+      // on a gap, because in these stores one means a data defect. A gap between
+      // two SHADINGS is different, and is the point: that is unscored time.
+      const hasA = Number.isFinite(w.aStart) && Number.isFinite(w.aEnd);
+      const s0 = x(hasA ? w.aStart : w.start), s1 = x(hasA ? w.aEnd : w.end);
+      const a = Math.max(padL, s0), b = Math.min(W - padR, s1);
+      const wide = Math.max(1, b - a);
+      g.fillStyle = wash(w.label);
+      g.fillRect(a, top, wide, bot - top);
+      // NOTHING VERTICAL IS DRAWN ACROSS THE LANES, and that is not a
+      // preference. In a raster a vertical line is a reading: many ROIs firing
+      // at once, which is the coordinated event this whole project exists to
+      // detect. A rule spanning every lane to mark a boundary draws a synthetic
+      // one, in the picture a lab uses to judge whether it has real ones.
+      //
+      // The boundary needs no help. The washes abut exactly and are different
+      // hues, so the colour changes at the boundary and nowhere else, and the
+      // rail above changes with them.
+      // A saturated rail marking the window's extent — the wash has to stay pale
+      // enough to keep the marks readable, which leaves it too pale to identify
+      // on its own. It sits ABOVE the frame, not inside it: drawn at `top` it
+      // painted over the first ROI's lane, and on a real recording ordered by
+      // events that lane is the busiest cell in the field. Chrome is never worth
+      // a row of data, least of all the densest one.
+      // the bar spans the RAW period, so it is the one that stays contiguous
+      const ra = Math.max(padL, x0), rb = Math.min(W - padR, x1);
+      g.fillStyle = ink(w.label);
+      g.fillRect(ra, top - 4, Math.max(1, rb - ra), 3);
+      if (si === 0) {
+        // clamp inside the plot: a window starting near the right edge ran its
+        // label off the canvas, and a treatment silently rendered as "hig" is
+        // worse than one rendered a few pixels from where it starts
+        const tw = g.measureText(w.label).width + 13;
+        const lx = Math.min(x0 + 1, W - padR - tw);
+        const at = Math.max(padL, lx);
+        g.fillRect(at, top - 17, 9, 9);                 // the chip carries hue…
+        g.fillStyle = css.getPropertyValue("--fg").trim();
+        g.fillText(w.label, at + 13, top - 9);          // …the name stays ink
+      }
+    });
+
+    g.strokeStyle = css.getPropertyValue("--line").trim();
+    g.lineWidth = 1;
+    g.strokeRect(padL, top, W - padL - padR, bot - top);
+
+    // marks: a short vertical dash per event, one lane per ROI
+    const lane = (bot - top) / Math.max(1, data.nRois);
+    const h = Math.max(1.5, Math.min(6, lane * 0.8));
+    g.strokeStyle = css.getPropertyValue("--mark").trim();
+    g.globalAlpha = 0.75;
+    g.beginPath();
+    lanes.forEach((id, i) => {
+      const yc = top + (i + 0.5) * lane;
+      for (const t of (byRoi.get(id) || [])) {
+        const px = Math.round(x(t)) + 0.5;
+        g.moveTo(px, yc - h / 2); g.lineTo(px, yc + h / 2);
+      }
+    });
+    g.stroke();
+    g.globalAlpha = 1;
+
+    // identity lives in the y-label, not a title — vertical space is precious
+    g.save();
+    g.translate(14, (top + bot) / 2); g.rotate(-Math.PI / 2);
+    g.fillStyle = css.getPropertyValue("--fg").trim();
+    g.textAlign = "center";
+    // the ordering rides in the label, not only in the control: once this is a
+    // screenshot in somebody's slide the control is gone and the lane order is
+    // no longer recoverable from the picture
+    g.fillText(name + " · " + data.nRois + " ROI"
+               + (ORDER === "rate" ? " · by events" : ""), 0, 0);
+    g.restore();
+    g.textAlign = "start";
+
+    // The clusters the assessment found, marked BELOW the frame — never as a
+    // line across the lanes. In a raster a vertical line is a reading: many ROIs
+    // firing at once, which is the very thing being marked. Drawing the mark
+    // that way would put a synthetic event in the picture used to judge the real
+    // ones. A tick under the axis points at the time and claims nothing about
+    // any row.
+    if (ASSESS && ASSESS.recId === rec.id && si === names.length - 1) {
+      g.fillStyle = css.getPropertyValue("--accent").trim();
+      for (const c of ASSESS.centres) {
+        const px = Math.round(x(ASSESS.winStart + c)) + 0.5;
+        if (px < padL || px > W - padR) continue;
+        g.beginPath();
+        g.moveTo(px - 3.5, bot + 4);
+        g.lineTo(px + 3.5, bot + 4);
+        g.lineTo(px, bot + 10);
+        g.closePath();
+        g.fill();
+      }
+    }
+
+    // one x-axis per group: bottom row only
+    if (si === names.length - 1) {
+      g.fillStyle = css.getPropertyValue("--muted").trim();
+      g.strokeStyle = css.getPropertyValue("--line").trim();
+      for (let t = Math.ceil(t0 / step) * step; t <= t1; t += step) {
+        const px = Math.round(x(t)) + 0.5;
+        g.beginPath(); g.moveTo(px, bot); g.lineTo(px, bot + 4); g.stroke();
+        const lab = fmt(t);
+        g.fillText(lab, px - g.measureText(lab).width / 2, bot + 22);
+      }
+    }
+  });
+}
+
+/* ---------- show ----------------------------------------------------------- */
+async function show(rec) {
+  // an assessment is of ONE recording; carrying it to the next one would mark
+  // this recording's clusters on somebody else's data
+  if (!current || current.id !== rec.id) { clearAssess(); clearDetect(); clearTune(); }
+  current = rec;
+  document.querySelectorAll("#list button").forEach(b =>
+    b.setAttribute("aria-current", String(b.dataset.id === rec.id)));
+  const view = document.getElementById("view");
+  const note = document.getElementById("note");
+  document.getElementById("empty").hidden = true;
+  view.hidden = false;
+  note.innerHTML = "";
+  let data;
+  try {
+    data = await loadRecording(rec);
+  } catch (e) {
+    view.innerHTML = '<div class="err"></div>';
+    view.firstChild.textContent = e.message;
+    return;
+  }
+  const mins = (data.t1 - data.t0) / 60;
+  const m = META.get(rec.id) || {};
+  const dt = m.frame_interval_sec;
+  // rec.id is a FILENAME and w.label below is a cell out of regions.csv —
+  // both are text somebody else wrote, and a folder gets shared like any file.
+  // So neither is concatenated into markup: these are nodes with textContent,
+  // which cannot be anything but text however hostile the value is.
+  const meta = document.getElementById("meta");
+  meta.textContent = "";
+  meta.append(el("b", rec.id),
+              sep(data.nRois + " ROI"
+                  + (data.quiet ? " (" + data.quiet + " with no events)" : "")),
+              sep(data.nEvents.toLocaleString() + " events"),
+              sep(mins.toFixed(1) + " min"));
+  // never append " s" to a value that is not seconds — the folder check
+  // rejects it, and printing "dt 30fps s" would dress it up as valid
+  if (dt !== undefined)
+    meta.append(Number(dt) > 0 ? sep("dt " + dt + " s")
+                               : el("span", "dt " + dt + " — not seconds", "bad sep"));
+
+  const wins = REGIONS.get(rec.id) || [];
+  const winbox = document.getElementById("wins");
+  winbox.textContent = "";
+  if (!wins.length)
+    winbox.append(el("span", "no treatment windows declared — shown as one recording"));
+  let anyAnalysis = false;
+  for (const w of wins) {
+    const s = document.createElement("span");
+    s.className = "win";
+    const sw = document.createElement("span");
+    sw.className = "sw";
+    sw.style.background = ink(w.label);
+    const span = (lo, hi) => (lo / 60).toFixed(0) + "–" + (hi / 60).toFixed(0) + "m";
+    s.append(sw, el("i", w.label), document.createTextNode(span(w.start, w.end)));
+    // only worth saying when it differs from the period — repeating the same
+    // two numbers in a second colour teaches the reader the channels are
+    // redundant, which is the opposite of the point
+    if (Number.isFinite(w.aStart) && Number.isFinite(w.aEnd)) {
+      anyAnalysis = true;
+      if (w.aStart !== w.start || w.aEnd !== w.end)
+        s.append(el("span", "scored " + span(w.aStart, w.aEnd), "scored"));
+    }
+    winbox.append(s);
+  }
+  if (wins.length)
+    winbox.append(el("span", anyAnalysis
+      ? "bar = the period · shading = the part scored"
+      : "bar = the period · shading = the same, no analysis window was sent",
+      "chan"));
+  const say = text => note.appendChild(el("p", text));
+  if (!data.quiet)
+    say("No ROI in this recording is declared with no events. If all "
+      + data.nRois + " fired, that is right; if some were quiet and were left out "
+      + "of the file, they are missing from the population and every per-ROI rate "
+      + "computed from it is too high.");
+  if (!dt)
+    say("No frame interval for this recording — the detectors need one; this page "
+      + "does not, because it only draws what it was given.");
+  // said at the picture and not only in the panel that produced it: a raster
+  // gets screenshotted, and a screenshot carries no sidebar
+  if (SIMULATED)
+    say("Simulated. Every mark above was drawn from a model, no part of this is a "
+      + "recording of anything, and the treatment windows are labels over "
+      + "identical statistics — the drug is a name on the axis, not an effect.");
+  paintRegionChoices(rec);
+  paintTuneWhat();
+  paintOrderNote(data);
+  draw(rec, data);
+}
+
+/* ---------- conformance: the same report `bugarach check` prints, in the
+   browser, for the people who will never install Python. Two tiers, and the
+   difference is the point: an ERROR means the folder cannot be read as
+   written; a NOTE means it read fine and may not be what you meant. Notes
+   never fail, because none of them is decidable from the folder alone. ----- */
+async function checkFolder() {
+  const errors = [], notes = [];
+  let okCount = 0;
+
+  for (const rec of RECORDINGS) {
+    try {
+      const d = await loadRecording(rec);
+      okCount++;
+      if (!d.quiet)
+        notes.push([rec.id, "no ROI declared with no events — right if all "
+          + d.nRois + " fired; if some were quiet and were left out, they are "
+          + "missing from the population and every per-ROI figure is too high"]);
+      const dt = (META.get(rec.id) || {}).frame_interval_sec;
+      if (dt === undefined)
+        notes.push([rec.id, "no frame interval — detectors need one, this page does not"]);
+      else if (!(Number(dt) > 0))
+        errors.push([rec.id, "frame_interval_sec is \"" + dt + "\", which is not "
+          + "a positive number of seconds (a frame RATE is the usual slip)"]);
+      const regs = REGIONS.get(rec.id) || [];
+      if (!regs.length)
+        notes.push([rec.id, "no treatment windows — analysed as one whole recording"]);
+      else {
+        // "Both bounds or neither, and all regions of a recording or none." Half
+        // an analysis window is a producer bug rather than a partial answer, and
+        // a recording scored half on your windows and half on ours is two
+        // policies inside one number — the contract refuses both, so this reports
+        // both rather than drawing whichever half arrived.
+        const bad = regs.filter(r => r.aStart === null || r.aEnd === null);
+        if (bad.length)
+          errors.push([rec.id, "analysis_start_sec/analysis_end_sec is present but "
+            + "not a number on " + bad.length + " region(s) (" 
+            + bad.map(r => r.label).join(", ") + ")"]);
+        const whole = regs.filter(r => Number.isFinite(r.aStart) && Number.isFinite(r.aEnd));
+        const half = regs.filter(r =>
+          Number.isFinite(r.aStart) !== Number.isFinite(r.aEnd));
+        if (half.length)
+          errors.push([rec.id, "half an analysis window on " + half.length
+            + " region(s) (" + half.map(r => r.label).join(", ") + ") — both bounds "
+            + "or neither"]);
+        if (whole.length && whole.length !== regs.length)
+          errors.push([rec.id, whole.length + " of " + regs.length + " regions carry "
+            + "an analysis window — all of a recording's regions or none, or the "
+            + "recording is scored half on your policy and half on ours"]);
+        if (!whole.length && !half.length)
+          notes.push([rec.id, "no analysis windows — bugarach will derive them with "
+            + "this project's convention (baseline backward from its end with a "
+            + "20-minute cap; other treatments starting 2 minutes late and capped "
+            + "at 20; high K exempt). Send analysis_start_sec/analysis_end_sec to "
+            + "use your own instead. The shading here is the whole period, because "
+            + "this page does not derive that rule"]);
+        for (const r of whole)
+          if (r.aStart < r.start || r.aEnd > r.end)
+            notes.push([rec.id, "the analysis window for \"" + r.label + "\" reaches "
+              + "outside the period it belongs to — legal, and usually a typo"]);
+      }
+    } catch (e) {
+      errors.push([rec.id, e.message]);
+    }
+    await new Promise(r => setTimeout(r, 0));   // keep the page answering
+  }
+
+  // a table that names a recording the folder does not hold is fine; one that
+  // MISSES a recording the folder does hold is almost always a typo
+  const ids = new Set(RECORDINGS.map(r => r.id));
+  for (const [name, table] of [["regions.csv", REGIONS], ["slices.csv", META]]) {
+    if (!table.size) continue;
+    const missed = [...ids].filter(id => !table.has(id));
+    if (missed.length)
+      notes.push([null, name + " has no row for " + missed.length + " of "
+        + ids.size + " recording(s) (" + missed.slice(0, 4).join(", ")
+        + (missed.length > 4 ? " …" : "") + ") — check the slice_id spelling "
+        + "against the file names"]);
+  }
+  return { okCount, total: RECORDINGS.length, errors, notes };
+}
+
+function paintCheck(rep) {
+  const bar = document.getElementById("checkbar");
+  const panel = document.getElementById("panel");
+  bar.hidden = false;
+  const good = rep.errors.length === 0;
+  bar.innerHTML = "";
+  const verdict = good
+    ? "✓ " + rep.okCount + " of " + rep.total + " conforming"
+    : "✕ " + rep.errors.length + " problem" + (rep.errors.length > 1 ? "s" : "");
+  // The verdict rides on the section header, because that section can be shut and
+  // a folder check nobody sees is a folder check nobody ran. It is repeated
+  // beside the details link only when it is bad news, which is when a reader
+  // wants it twice.
+  const cnt = document.getElementById("cntList");
+  cnt.textContent = verdict;
+  cnt.className = "cnt " + (good ? "ok" : "bad");
+  if (!good) {
+    const span = document.createElement("span");
+    span.className = "bad";
+    span.textContent = verdict;
+    bar.appendChild(span);
+    bar.appendChild(document.createTextNode(" "));
+  }
+  const btn = document.createElement("button");
+  const n = rep.errors.length + rep.notes.length;
+  btn.textContent = n ? "details (" + n + ")" : "details";
+  btn.onclick = () => { panel.hidden = !panel.hidden; };
+  bar.appendChild(btn);
+
+  panel.innerHTML = "";
+  const h = document.createElement("h3");
+  h.textContent = "Folder check";
+  panel.appendChild(h);
+  for (const [title, rows, mark, cls] of
+       [["Cannot be read as written", rep.errors, "!", "bad"],
+        ["Read fine — may not be what you meant", rep.notes, "·", ""]]) {
+    if (!rows.length) continue;
+    const t = document.createElement("p");
+    const strong = document.createElement("b");
+    strong.textContent = title;
+    t.appendChild(strong);
+    t.style.margin = "8px 0 2px";
+    panel.appendChild(t);
+    const ul = document.createElement("ul");
+    for (const [who, msg] of rows) {
+      const li = document.createElement("li");
+      const k = document.createElement("span");
+      k.className = "k " + cls; k.textContent = mark;
+      li.appendChild(k);
+      if (who) { const w = document.createElement("span");
+                 w.className = "who"; w.textContent = who + " — ";
+                 li.appendChild(w); }
+      li.appendChild(document.createTextNode(msg));
+      ul.appendChild(li);
+    }
+    panel.appendChild(ul);
+  }
+  if (!rep.errors.length && !rep.notes.length) {
+    const p = document.createElement("p");
+    p.textContent = "Nothing to report: every recording read, every ROI "
+      + "population declared, every recording covered by both tables.";
+    panel.appendChild(p);
+  }
+  panel.hidden = rep.errors.length === 0;   // problems open themselves
+}
+
+function paintOrderNote(data) {
+  const el = document.getElementById("orderNote");
+  if (ORDER !== "rate") { el.textContent = ""; return; }
+  // sorting rearranges the lanes, so say what a lane now means and what the
+  // spread is — otherwise "by events" is a picture whose y-axis is unlabelled
+  const c = data.byRate.map(id => data.counts.get(id));
+  el.textContent = "busiest first — " + c[0] + " events at the top, "
+    + c[c.length - 1] + " at the bottom"
+    + (data.quiet ? " (" + data.quiet + " silent, grouped there)" : "");
+}
+
+/* ---------- open ----------------------------------------------------------- */
+async function open(fileList, opts) {
+  const files = [...fileList].filter(f => f.name.toLowerCase().endsWith(".csv"));
+  SIMULATED = !!(opts && opts.simulated);
+  // Cleared here with everything else, and set here from what the caller was
+  // handed — so a folder opened from disk cannot inherit the last simulation's
+  // planted events and be tuned against them.
+  TRUTH = (opts && opts.truth) || new Map();
+  RECORDINGS = []; REGIONS = new Map(); META = new Map();
+  document.getElementById("panel").hidden = true;
+  document.getElementById("checkbar").hidden = true;
+
+  for (const f of files) {
+    if (f.name === "regions.csv") {
+      for (const r of asObjects(parseCSV(await readText(f)))) {
+        const id = r.slice_id || "";
+        if (!REGIONS.has(id)) REGIONS.set(id, []);
+        REGIONS.get(id).push({
+          idx: +r.region_idx, label: r.label || "(unnamed)",
+          start: +r.start_sec, end: +r.end_sec,
+          // The contract carries TWO windows per region because they answer
+          // different questions: start/end are what HAPPENED — the drug was on
+          // from here to here — and analysis_* is what to SCORE, which is rarely
+          // the same thing once a wash-in delay or a duration cap is applied.
+          // Optional, and read only when both bounds are there: half a window is
+          // a producer bug rather than a partial answer, and the check below says
+          // so rather than drawing half of it.
+          aStart: num(r.analysis_start_sec), aEnd: num(r.analysis_end_sec),
+        });
+      }
+      for (const v of REGIONS.values()) v.sort((a, b) => a.idx - b.idx);
+    } else if (f.name === "slices.csv") {
+      for (const r of asObjects(parseCSV(await readText(f))))
+        META.set(r.slice_id || "", r);
+    }
+  }
+  for (const f of files)
+    if (!RESERVED.has(f.name))
+      RECORDINGS.push({ id: f.name.replace(/\.csv$/i, ""), file: f });
+  RECORDINGS.sort((a, b) => natural(a.id, b.id));
+
+  assignHues();
+
+  const list = document.getElementById("list");
+  list.innerHTML = "";
+  document.getElementById("accList").hidden = !RECORDINGS.length;
+  const cnt = document.getElementById("cntList");
+  cnt.className = "cnt";
+  cnt.textContent = RECORDINGS.length
+    ? RECORDINGS.length + (SIMULATED ? " simulated" : " found") : "";
+  if (!RECORDINGS.length) {
+    document.getElementById("view").hidden = true;
+    const e = document.getElementById("empty");
+    e.hidden = false;
+    e.innerHTML = '<div class="err">No recordings in that selection. A folder holds '
+      + 'one CSV per recording; slices.csv and regions.csv are not recordings.</div>';
+    return;
+  }
+  for (const rec of RECORDINGS) {
+    const li = document.createElement("li");
+    const b = document.createElement("button");
+    b.dataset.id = rec.id;
+    b.textContent = rec.id;
+    const w = (REGIONS.get(rec.id) || []).length;
+    if (w) { const s = document.createElement("span"); s.className = "n";
+             s.textContent = w + " win"; b.appendChild(s); }
+    b.onclick = () => show(rec);
+    li.appendChild(b); list.appendChild(li);
+  }
+  // the sidebar follows the reader: a folder that opened is a list to pick from,
+  // and a folder that was simulated is a set of knobs to turn again
+  showSection(SIMULATED ? "accSim" : "accList");
+  await show(RECORDINGS[0]);
+  // the first raster goes up before the folder is checked: seeing something is
+  // the point of opening it, and the check walks every file
+  document.getElementById("checkbar").hidden = false;
+  document.getElementById("checkbar").textContent =
+    "checking " + RECORDINGS.length + " recording(s)…";
+  paintCheck(await checkFolder());
+}
+
+/* ---------- detectors, in the browser ----------------------------------------
+   The last two steps of the loop this page exists for: measure, simulate, tune,
+   DETECT. The six detectors are the project's citable artifacts — each matched
+   to its MATLAB original to 1e-9 on committed fixtures — so a second
+   implementation of one is not a thing to do casually.
+
+   WHAT MAKES THESE TWO SAFE TO PORT FIRST, and it is a stronger guarantee than
+   the assessment above already ships with: **RateDetect and SPIKE-synch draw no
+   random numbers at all.** The other four estimate a threshold from surrogates,
+   so a port of those agrees with Python only to sampling error, exactly like the
+   assessment. These two are pure functions of the data, so the port is either
+   bit-identical to the Python or it is wrong — and a differential test says
+   which, at 1e-9, with no tolerance to hide in.
+
+   Everything here is threshold mode, which is the operating point the bench
+   ships (`bench.OPERATING_POINTS["rate"]`). Peak mode needs `peak_gate` and is
+   not ported.
+*/
+
+/* MATLAB's colon, two-ended. The first half runs forward from lo and the second
+   half BACKWARD from the endpoint — Cleve Moler's colonop. A plain forward grid
+   differs from MATLAB in the last ulp for about a quarter of the elements, which
+   is enough to flip a >= comparison and move an event between bins. Ported
+   because the Python port carries it for the same reason. */
+function matlabColon(lo, step, hi) {
+  const EPS = Number.EPSILON;
+  const q = (hi - lo) / step;
+  const n = Math.floor(q * (1.0 + 4.0 * EPS)) + 1;
+  if (n < 1) return new Float64Array(0);
+  const out = new Float64Array(n);
+  const fwdLast = lo + (n - 1) * step;
+  // np.spacing(x) — the gap to the next double up from |x|
+  const big = Math.max(Math.abs(lo), Math.abs(hi));
+  const tol = 4.0 * (big === 0 ? Number.MIN_VALUE : Math.abs(nextUp(big) - big));
+  const endVal = Math.abs(fwdLast - hi) <= tol ? hi : fwdLast;
+  const mid = Math.floor(n / 2);
+  for (let k = 0; k < mid; k++) out[k] = lo + k * step;
+  for (let k = mid; k < n; k++) out[k] = endVal - (n - 1 - k) * step;
+  return out;
+}
+
+// the next representable double above x, for np.spacing
+const _u8 = new ArrayBuffer(8);
+const _f64 = new Float64Array(_u8), _i32 = new Int32Array(_u8);
+function nextUp(x) {
+  if (!isFinite(x)) return x;
+  if (x === 0) return Number.MIN_VALUE;
+  _f64[0] = x;
+  // little-endian: [0] is the low word
+  if (x > 0) { if (++_i32[0] === 0) _i32[1]++; }
+  else { if (_i32[0]-- === 0) _i32[1]--; }
+  return _f64[0];
+}
+
+/* Pooled sliding-window population rate on a grid_dt grid, edge-corrected: at
+   the boundaries the divisor is the truncated window span, so the rate does not
+   dip for a reason that is an artifact of where the recording stops. */
+function eventRate(trains, tRange, windowSec, dt) {
+  const rateX = matlabColon(tRange[0], dt, tRange[1]);
+  const m = rateX.length;
+  const pooled = [];
+  for (const v of trains) for (const x of v) pooled.push(x);
+  pooled.sort((a, b) => a - b);
+  const rateY = new Float64Array(m);
+  if (!pooled.length || !m) return { rateX, rateY };
+
+  // counts per grid bin, edges at rateX +/- dt/2
+  const counts = new Float64Array(m);
+  for (const x of pooled) {
+    // matching np.histogram on those edges: [lo, hi) with the last bin closed
+    let b = Math.floor((x - (rateX[0] - dt / 2)) / dt);
+    if (b < 0 || b > m) continue;
+    if (b === m) { if (x <= rateX[m - 1] + dt / 2) b = m - 1; else continue; }
+    counts[b] += 1;
+  }
+  const halfBins = Math.floor(windowSec / (2 * dt) + 0.5);      // MATLAB round
+  const cum = new Float64Array(m + 1);
+  for (let i = 0; i < m; i++) cum[i + 1] = cum[i] + counts[i];
+  for (let k = 0; k < m; k++) {
+    const lo = Math.max(0, k - halfBins), hi = Math.min(m - 1, k + halfBins);
+    const spk = cum[hi + 1] - cum[lo];
+    const tLo = Math.max(tRange[0], rateX[k] - windowSec / 2);
+    const tHi = Math.min(tRange[1], rateX[k] + windowSec / 2);
+    rateY[k] = spk / (tHi - tLo);
+  }
+  return { rateX, rateY };
+}
+
+/* The context window is clipped to 0.9x the recording, and the value actually
+   used travels with the result — a context wider than the recording is silently
+   a different detector. */
+function eventRateContext(trains, tRange, windowSec, contextSec, dt) {
+  const maxCtx = 0.9 * (tRange[1] - tRange[0]);
+  const ctxActual = contextSec >= maxCtx ? maxCtx : contextSec;
+  const { rateX, rateY } = eventRate(trains, tRange, windowSec, dt);
+  const ctx = eventRate(trains, tRange, ctxActual, dt);
+  return { rateX, rateY, ctxY: ctx.rateY, ctxActual };
+}
+
+const RATE_PAD_S = 0.5;   // CHARACTERIZATION_PAD_S
+
+/* RateDetect, threshold mode. Grid times whose rate excess over the local
+   context clears the threshold, merged when no more than merge_gap_s apart. */
+function rateDetect(trains, tRange, opts) {
+  const o = opts || {};
+  const thr = o.excessThresholdHz === undefined ? 5.0 : o.excessThresholdHz;
+  const mergeGap = o.mergeGapS === undefined ? 3.0 : o.mergeGapS;
+  const rateWin = o.rateWin === undefined ? 1.0 : o.rateWin;
+  const ctxWin = o.contextWin === undefined ? 60.0 : o.contextWin;
+  const dt = o.gridDt === undefined ? 0.1 : o.gridDt;
+
+  const { rateX, rateY, ctxY, ctxActual } =
+    eventRateContext(trains, tRange, rateWin, ctxWin, dt);
+  const m = rateX.length;
+  const excess = new Float64Array(m);
+  for (let i = 0; i < m; i++) excess[i] = rateY[i] - ctxY[i];
+
+  const cand = [];
+  for (let i = 0; i < m; i++) if (excess[i] >= thr) cand.push(rateX[i]);
+  let starts = [], ends = [];
+  if (cand.length) {
+    const brk = [];
+    for (let i = 1; i < cand.length; i++)
+      if (cand[i] - cand[i - 1] > mergeGap) brk.push(i - 1);
+    const s = [0].concat(brk.map(i => i + 1));
+    const e = brk.concat([cand.length - 1]);
+    for (let i = 0; i < s.length; i++) {
+      // a single-bin crossing is likely noise, and the Python drops it
+      if (cand[e[i]] - cand[s[i]] > 0) {
+        starts.push(cand[s[i]]); ends.push(cand[e[i]]);
+      }
+    }
+  }
+  // pad for characterization: onsets sit on a 0.1 s grid and the rate is
+  // window-smoothed, so the stats get a margin matching the kernel
+  starts = starts.map(x => x - RATE_PAD_S);
+  ends = ends.map(x => x + RATE_PAD_S);
+
+  const freqMax = [], freqMean = [];
+  for (let i = 0; i < starts.length; i++) {
+    let mx = 0, sum = 0, n = 0;
+    for (let k = 0; k < m; k++)
+      if (rateX[k] >= starts[i] && rateX[k] <= ends[i]) {
+        if (rateY[k] > mx) mx = rateY[k];
+        sum += rateY[k]; n++;
+      }
+    if (n) { freqMax.push(mx); freqMean.push(sum / n); }
+    else if (m) {
+      const mid = (starts[i] + ends[i]) / 2;
+      let j = 0, bd = Infinity;
+      for (let k = 0; k < m; k++) {
+        const d = Math.abs(rateX[k] - mid);
+        if (d < bd) { bd = d; j = k; }
+      }
+      freqMax.push(rateY[j]); freqMean.push(rateY[j]);
+    } else { freqMax.push(0); freqMean.push(0); }
+  }
+  return { starts, ends, freqMax, freqMean, rateX, rateY, ctxY, excess,
+           ctxActual, nEvents: starts.length };
+}
+
+/* ---------- SPIKE-synch, in the browser --------------------------------------
+   The second detector that draws no random numbers, and therefore the second
+   one this page is allowed to carry: a port of `bugarach.detectors.sync`, which
+   is itself the port of cSPIKE's adaptive SPIKE-synchronization profile into
+   interface2's SpikyDetect3. Checked against the Python at 1e-9 on the profile,
+   the binned trace and every event field — `tests/test_webapp_sync_detect_parity.py`.
+
+   WHAT IT MEASURES, and it is a different question from RateDetect's. RateDetect
+   asks how FAST the population is firing; this asks how well-ALIGNED the spikes
+   are, whatever the rate. Each spike gets a coincidence value C in [0,1]: the
+   fraction of other ROIs with a spike inside an adaptive window tau, where tau
+   is the smallest of the four half-intervals around the pair and never wider
+   than the cap. The cap is what stops a densely firing ROI from looking
+   synchronous with everything by accident.
+
+   Threshold mode only, matching the rest of this file. Peak mode needs the
+   clean-room peak-extent kernel, which is not ported.
+*/
+
+// cSPIKE's SpikeTrainSet drops duplicate times WITHIN a train; np.unique here
+function uniqSorted(v) {
+  const out = [];
+  for (let i = 0; i < v.length; i++) if (i === 0 || v[i] !== v[i - 1]) out.push(v[i]);
+  return Float64Array.from(out);
+}
+
+function clipSorted(trains, lo, hi) {
+  return trains.map(v => {
+    const out = [];
+    for (const x of v) if (Number.isFinite(x) && x >= lo && x <= hi) out.push(x);
+    out.sort((a, b) => a - b);
+    return Float64Array.from(out);
+  });
+}
+
+// first index with arr[i] >= x — np.searchsorted, side "left"
+function lowerBound(arr, x) {
+  let lo = 0, hi = arr.length;
+  while (lo < hi) { const m = (lo + hi) >> 1; if (arr[m] < x) lo = m + 1; else hi = m; }
+  return lo;
+}
+
+/* Half-intervals either side of every spike. A train's first and last spike have
+   no neighbour on one side, and the missing one defaults to the cap rather than
+   to zero — PySpike's convention, and the one cSPIKE was checked against. */
+function halfIsis(v, capHalf) {
+  const prev = new Float64Array(v.length).fill(capHalf);
+  const next = new Float64Array(v.length).fill(capHalf);
+  for (let k = 1; k < v.length; k++) {
+    const d = (v[k] - v[k - 1]) / 2;
+    prev[k] = d; next[k - 1] = d;
+  }
+  return { prev, next };
+}
+
+/* Coincidence indicators for one pair of trains: a spike counts its nearest
+   neighbour in the other train if the separation is strictly inside tau. The
+   exact-tie shortcut is carried because the Python carries it, and it is worth
+   saying that it changes no answer: tau is always positive, so the neighbour
+   test below already accepts a separation of zero. Deleting it is invisible to
+   the parity suite, which is a fact about the shortcut and not a gap in it. */
+function pairCoincidence(a, ah, b, bh, capHalf) {
+  const ca = new Float64Array(a.length), cb = new Float64Array(b.length);
+  for (const side of [[a, ah, b, bh, ca], [b, bh, a, ah, cb]]) {
+    const [s, sh, o, oh, cs] = side;
+    for (let k = 0; k < s.length; k++) {
+      const jn = lowerBound(o, s[k]);
+      if (jn < o.length && o[jn] === s[k]) { cs[k] = 1; continue; }
+      const own = Math.min(sh.prev[k], sh.next[k]);
+      let hit = false;
+      if (jn < o.length) {
+        const tau = Math.min(own, Math.min(oh.prev[jn], oh.next[jn]), capHalf);
+        hit = (o[jn] - s[k]) < tau;
+      }
+      if (!hit && jn > 0) {
+        const jp = jn - 1;
+        const tau = Math.min(own, Math.min(oh.prev[jp], oh.next[jp]), capHalf);
+        hit = (s[k] - o[jp]) < tau;
+      }
+      cs[k] = hit ? 1 : 0;
+    }
+  }
+  return { ca, cb };
+}
+
+/* The per-spike profile, pooled over ROIs and sorted in time. C is the count of
+   ROIs that answered, over the number that could have. */
+function adaptiveProfile(trains, tRange, tauMax) {
+  const ev = clipSorted(trains, tRange[0], tRange[1]).map(uniqSorted);
+  const n = ev.length;
+  const span = tRange[1] - tRange[0];
+  const trueMax = tauMax > 0 ? Math.min(span, 2 * tauMax) : span;
+  const capHalf = trueMax / 2;
+
+  const counts = ev.map(v => new Float64Array(v.length));
+  const halves = ev.map(v => halfIsis(v, capHalf));
+  for (let i = 0; i < n; i++) {
+    if (!ev[i].length) continue;
+    for (let j = i + 1; j < n; j++) {
+      if (!ev[j].length) continue;
+      const { ca, cb } = pairCoincidence(ev[i], halves[i], ev[j], halves[j], capHalf);
+      for (let k = 0; k < ca.length; k++) counts[i][k] += ca[k];
+      for (let k = 0; k < cb.length; k++) counts[j][k] += cb[k];
+    }
+  }
+
+  const denom = Math.max(n - 1, 1);
+  const xs = [], ys = [];
+  for (let i = 0; i < n; i++)
+    for (let k = 0; k < ev[i].length; k++) { xs.push(ev[i][k]); ys.push(counts[i][k] / denom); }
+  const ord = xs.map((_, i) => i);
+  ord.sort((p, q) => (xs[p] - xs[q]) || (p - q));      // stable, as np.argsort
+  return { x: Float64Array.from(ord, i => xs[i]),
+           y: Float64Array.from(ord, i => ys[i]) };
+}
+
+/* max/mean_synchrony's binning, quirks included. Spikes at the SAME time are
+   aggregated first; the group then writes to the first grid centre within dt of
+   it, OVERWRITING whatever an earlier time put there — so a bin holds its last
+   writer rather than a sum, and Cn is that writer's group size rather than the
+   bin's total. Faithful because the detection below counts on it. */
+function binnedSynchrony(x, y, dt, tRange, statistic) {
+  const cx = matlabColon(tRange[0], dt, tRange[1]);
+  const cy = new Float64Array(cx.length), cn = new Float64Array(cx.length);
+  let s = 0;
+  while (s < x.length) {
+    let e = s + 1;
+    while (e < x.length && x[e] === x[s]) e++;
+    let val;
+    if (statistic === "max") { val = -Infinity; for (let i = s; i < e; i++) if (y[i] > val) val = y[i]; }
+    else { let sum = 0; for (let i = s; i < e; i++) sum += y[i]; val = sum / (e - s); }
+    const i0 = Math.max(0, Math.floor((x[s] - tRange[0]) / dt) - 2);
+    for (let i = i0; i < Math.min(cx.length, i0 + 5); i++) {
+      if (Math.abs(cx[i] - x[s]) < dt) { cy[i] = val; cn[i] = e - s; break; }
+    }
+    s = e;
+  }
+  return { cx, cy, cn };
+}
+
+/* flagArtifactEvents: a near-total C spike that is also NARROW is the signature
+   of a stage knock, not of a coordinated event. All three have to hold. */
+function flagArtifacts(begins, ends, amps, cx, cy, ev, athr, afthr, aplat90) {
+  const n = begins.length, nTotal = ev.length;
+  const peakC = new Float64Array(n), plat90 = new Float64Array(n);
+  const nPart = new Float64Array(n), isArtifact = new Array(n).fill(false);
+  for (let ie = 0; ie < n; ie++) {
+    const t0 = begins[ie], t1 = ends[ie];
+    const bx = [], by = [];
+    for (let k = 0; k < cx.length; k++)
+      if (cx[k] >= t0 && cx[k] <= t1) { bx.push(cx[k]); by.push(cy[k]); }
+    if (bx.length) {
+      let pk = -Infinity;
+      for (const v of by) if (v > pk) pk = v;
+      peakC[ie] = pk;
+      const d = bx.length >= 2 ? bx[1] - bx[0]
+              : (cx.length >= 2 ? cx[1] - cx[0] : 0.1);
+      const above = [];
+      for (let k = 0; k < bx.length; k++) if (by[k] >= 0.9 * pk) above.push(bx[k]);
+      plat90[ie] = above.length >= 2 ? (above[above.length - 1] - above[0] + d) : d;
+    } else if (!Number.isNaN(amps[ie])) {
+      peakC[ie] = amps[ie];
+      plat90[ie] = cx.length >= 2 ? cx[1] - cx[0] : 0.1;
+    }
+    let c = 0;
+    for (const v of ev) {
+      for (let k = 0; k < v.length; k++)
+        if (v[k] >= t0 && v[k] <= t1) { c++; break; }
+    }
+    nPart[ie] = c;
+    isArtifact[ie] = peakC[ie] >= athr && (c / Math.max(nTotal, 1)) >= afthr
+                     && plat90[ie] <= aplat90;
+  }
+  return { peakC, plat90, nPart, isArtifact };
+}
+
+/* SpikyDetect3's hysteresis scan, transliterated rather than tidied. A bin over
+   C_threshold opens an event; bins over the lower C_min keep it open across gaps
+   shorter than max_gap, and empty bins are stepped over without closing it. The
+   control flow re-tests a gap it has not recomputed and lets the outer cursor
+   jump to the bin that ended the event; both are load-bearing, because the
+   Python they are checked against does the same and the MATLAB before it did. */
+function syncDetect(trains, tRange, opts) {
+  const o = opts || {};
+  const tauMax = o.tauMax === undefined ? 0.25 : o.tauMax;
+  const maxGap = o.maxGap === undefined ? 0.5 : o.maxGap;
+  const Cthr = o.CThreshold === undefined ? 0.1 : o.CThreshold;
+  const Cmin = o.CMin === undefined ? 0.1 : o.CMin;
+  const minN = o.minN === undefined ? 3 : o.minN;
+  const dt = o.gridDt === undefined ? 0.1 : o.gridDt;
+  const stat = o.statistic === undefined ? "mean" : o.statistic;
+  const athr = o.artifactThreshold === undefined ? 0.85 : o.artifactThreshold;
+  const afthr = o.artifactThresholdFraction === undefined ? 0.70 : o.artifactThresholdFraction;
+  const aplat = o.artifactThresholdPlat90 === undefined ? 0.8 : o.artifactThresholdPlat90;
+
+  const ev = clipSorted(trains, tRange[0], tRange[1]);
+  const prof = adaptiveProfile(trains, tRange, tauMax);
+  const { cx, cy, cn } = binnedSynchrony(prof.x, prof.y, dt, tRange, stat);
+  const n2 = cy.length;
+
+  const starts = [], ends = [], amps = [];
+  let i = -1;
+  while (i < n2 - 1) {
+    i += 1;
+    if (cy[i] > Cthr) {
+      let cmean = cy[i], ncmean = 1;
+      const evBegin = cx[i];
+      let evEnd = evBegin, evSum = cn[i];
+      let j = i + 1;
+      let gap = j < n2 ? cx[j] - cx[i] : Infinity;
+      while (j < n2 - 1 && gap < maxGap) {
+        while (j < n2 - 2 && cy[j] === 0 && gap < maxGap) { j += 1; gap = cx[j] - cx[i]; }
+        if (gap <= maxGap && cy[j] > Cmin) {
+          cmean += cy[j]; ncmean += 1; evSum += cn[j];
+          evEnd = cx[j]; i = j; j += 1;
+        } else { i = j; break; }
+      }
+      if (evBegin === evEnd) evEnd = evEnd + dt;
+      if (evSum >= minN) { starts.push(evBegin); ends.push(evEnd); amps.push(cmean / ncmean); }
+    }
+  }
+
+  const art = flagArtifacts(starts, ends, amps, cx, cy, ev, athr, afthr, aplat);
+  return { starts, ends, amps,
+           widths: starts.map((s, k) => ends[k] - s),
+           peakC: Array.from(art.peakC), plat90: Array.from(art.plat90),
+           nParticipatingRois: Array.from(art.nPart), isArtifact: art.isArtifact,
+           nTotalRois: trains.length,
+           profileX: prof.x, profileY: prof.y, cx, cy, cn,
+           nEvents: starts.length };
+}
+
+
+/* ---------- scoring, and the step that makes this a loop ----------------------
+   Measure, simulate from what you measured, DETECT — and then the question the
+   first three steps exist to answer: are these settings any good? On a real
+   recording that question has no answer, because nobody knows which moments were
+   coordinated. On a simulated one it does, because the page planted them.
+
+   So tuning is only offered for a folder this page invented, and that is not a
+   limitation to apologise for — it is the reason the simulate step is in the
+   workflow at all. Tune where the answer is known, then point the tuned
+   instrument at the recordings where it is not.
+
+   A port of `bugarach.score`, which is itself a port of interface2's
+   score_coord_detection.m. Like the two detectors above it draws no random
+   numbers, so it is checked against the Python exactly — see
+   `tests/test_webapp_tune_parity.py`. */
+
+/* Detections are INTERVALS, not points. The distance from a planted event to a
+   detection is zero when the event falls inside its span and the gap to the
+   nearer edge otherwise. Scoring a binned detector as if it claimed onset
+   resolution once read 0.00 recall on fourteen detections that each spanned a
+   planted event. */
+const spanGap = (t, lo, hi) => Math.max(0, Math.max(lo - t, t - hi));
+
+/* Matching is greedy CLOSEST PAIR FIRST, not planted-events-in-time-order.
+   Walking them in time can consume a detection that was a much better match for
+   the next event, which shows up as misses that are really bookkeeping. */
+function scoreDetections(times, fracs, onsets, widths, tolSec) {
+  // `Number.isFinite`, not the bare `isFinite`, which coerces first and so
+  // answers true for null, for "" and for a one-element array. A detection that
+  // arrived as null would be scored as one at time zero. Caught by a vector
+  // built for something else entirely.
+  const keep = [];
+  for (let i = 0; i < onsets.length; i++) if (Number.isFinite(onsets[i])) keep.push(i);
+  keep.sort((a, b) => (onsets[a] - onsets[b]) || (a - b));
+  const lo = keep.map(i => onsets[i]);
+  // widths are PER DETECTION, so they ride the same reordering — sorting the
+  // onsets alone would pair each span with its neighbour's width
+  const hi = keep.map((i, k) => {
+    const w = widths && Number.isFinite(widths[i]) ? Math.max(widths[i], 0) : 0;
+    return lo[k] + w;
+  });
+  const nP = times.length, nD = lo.length;
+  const matched = new Array(nP).fill(NaN);
+  const used = new Array(nD).fill(false);
+
+  const pairs = [];
+  for (let i = 0; i < nP; i++)
+    for (let j = 0; j < nD; j++) {
+      const d = spanGap(times[i], lo[j], hi[j]);
+      if (d > tolSec) continue;
+      // spans that all contain the same event tie at gap 0; the one CENTRED on
+      // it wins, rather than whichever happened to start first
+      pairs.push([d, Math.abs(times[i] - 0.5 * (lo[j] + hi[j])), i, j]);
+    }
+  pairs.sort((a, b) => (a[0] - b[0]) || (a[1] - b[1]));
+  for (const [, , i, j] of pairs)
+    if (Number.isNaN(matched[i]) && !used[j]) { matched[i] = lo[j]; used[j] = true; }
+
+  const hits = matched.map(v => !Number.isNaN(v));
+  const faLo = [], faHi = [];
+  for (let j = 0; j < nD; j++) if (!used[j]) { faLo.push(lo[j]); faHi.push(hi[j]); }
+
+  /* A false alarm sitting on a planted event that another detection already
+     claimed is a detector firing TWICE for one event, not firing at nothing.
+     Counted apart because they are different faults: fragmentation is a merge
+     gap, noise is a threshold. */
+  let nDup = 0;
+  for (let k = 0; k < faLo.length; k++)
+    for (let i = 0; i < nP; i++)
+      if (spanGap(times[i], faLo[k], faHi[k]) <= tolSec) { nDup++; break; }
+
+  /* Recall broken down by participation, because the headline hides the thing
+     worth knowing: a detector that finds every full-field event and nothing at
+     10% is a different instrument from one that degrades gracefully, and the
+     two can share an overall recall. */
+  const byFrac = new Map();
+  for (let i = 0; i < nP; i++) {
+    const f = fracs[i];
+    const [n, h] = byFrac.get(f) || [0, 0];
+    byFrac.set(f, [n + 1, h + (hits[i] ? 1 : 0)]);
+  }
+
+  const nHit = hits.filter(Boolean).length;
+  const recall = nP ? nHit / nP : NaN;
+  const precision = nD ? nHit / nD : NaN;
+  const f1 = (Number.isFinite(recall) && Number.isFinite(precision)
+              && recall + precision > 0)
+    ? 2 * recall * precision / (recall + precision) : NaN;
+  return { nPlanted: nP, nDetected: nD, nHit, nMiss: nP - nHit,
+           nFa: faLo.length, nDup, byFrac, recall, precision, f1 };
+}
+
+/* The sensitivity axis: one knob per detector, and the values the project's own
+   bench sweeps it over (`bench.OPERATING_POINTS`). Everything else is held at
+   whatever the Detect panel has, so the sweep answers "what does this one knob
+   do to THESE settings" rather than a question about some other settings. */
+const TUNE_KNOB = {
+  rate: { key: "excessThresholdHz", name: "excess threshold",
+          unit: "Hz", grid: [0.5, 1, 2, 3, 4, 5, 6, 8] },
+  sync: { key: "CThreshold", name: "C to start an event",
+          unit: "", grid: [0.005, 0.01, 0.02, 0.04, 0.08, 0.12] },
+};
+
+/* `bench.pick_operating_point`, and its refusal is the point of it. An optimum
+   at the end of the grid is not an optimum — it is the search saying it stopped
+   too early, and reporting it as a calibrated setting is how a boundary value
+   once got published upstream as one.
+
+   A PLATEAU reaching the edge is different, and is allowed: if any point sharing
+   the best F1 has neighbours on both sides, the grid bracketed the peak. */
+function pickOperatingPoint(curve) {
+  const scored = curve.filter(r => Number.isFinite(r.f1));
+  if (!scored.length) return { row: null, why: "no setting on this sweep has a defined F1" };
+  if (scored.length === 1) return { row: scored[0], why: "" };
+  const best = Math.max(...scored.map(r => r.f1));
+  const optimal = scored.filter(r => r.f1 >= best - 1e-9);
+  const interior = optimal.filter(r => r !== scored[0] && r !== scored[scored.length - 1]);
+  if (interior.length) return { row: interior[0], why: "" };
+  const end = optimal[0] === scored[0] ? "low" : "high";
+  return { row: null, edge: optimal[0], why:
+    "F1 peaks at the " + end + " end of the grid, so this sweep found no "
+    + "operating point — it was still climbing when it stopped. Widen the "
+    + "range before calling any of these a setting." };
+}
+/* ---------- the assessment, in the browser -----------------------------------
+   A port of `bugarach.assess`, which is itself a port of interface2's
+   measure_coordination_timescale.m. **Not a detector**: it emits no event times
+   and has no operating point. It answers "how much coordination is in this
+   recording" against a rate-matched null, so the answer is not any one
+   instrument's opinion.
+
+   WHY IT IS HERE AND NOT ONLY IN PYTHON. The workflow this project is for —
+   measure your own recordings, simulate from what you measured, tune, detect —
+   is worth nothing to a lab that has to install a toolchain to start it. The
+   page already reads a folder and already simulates. This is the measuring step,
+   and putting it anywhere else makes the workflow two products.
+
+   WHAT PARITY MEANS HERE, because it is not the same claim the detectors make.
+   The measurement splits in two:
+
+     * DETERMINISTIC — the binned coactivity, the clusters, how many ROIs took
+       part, their onset span, the observed jitter. These depend on nothing but
+       the data, and they are expected to match Python EXACTLY. A differential
+       test drives this code and `bugarach.assess` over the same folder and
+       fails on any difference.
+     * MONTE CARLO — the null, and therefore the coactivity excess and the
+       tightness comparison. The null is an average over circular-shift
+       surrogates, and this PRNG is not MATLAB's, so these agree to sampling
+       error and not to 1e-9. That is a property of estimating a null by
+       sampling, not of the port, and it is the reason the page shows the
+       surrogate count next to the number.
+
+   Nothing below writes anything, and nothing turns a measurement into a
+   generator setting. That step needs a person who has looked at the recording.
+*/
+
+const K_SCAN = [3, 4, 6, 8];      // assess.DEFAULT_MIN_ROIS
+const MERGE_BINS = 2;             // runs of supra-K bins merge across this gap
+const WM_FACTOR = 1.5;            // gather window, in bin widths
+const REGION_MIN_SEC = 900;       // below this the assessment declines to answer
+// A lab's own word for an untreated period. Deliberately NOT "region 1 is the
+// baseline": the import contract calls that out as something producers must not
+// do, and this project's own exporter has done it.
+const BASELINE_TOKENS = ["baseline", "base", "pre", "control", "acsf"];
+
+const isBaselineLabel = s =>
+  BASELINE_TOKENS.some(tok => (s || "").trim().toLowerCase().startsWith(tok));
+
+/* Per-bin DISTINCT-ROI coactivity. An ROI contributes 1 to a bin if it has at
+   least one onset there — a count of ROIs, never of spikes. That distinction is
+   the whole reason one busy cell firing repeatedly is not read as coordination. */
+function coactCount(trains, winDur, binWidth, nBins, offsets) {
+  const counts = new Float64Array(nBins);
+  const seen = new Int32Array(nBins).fill(-1);
+  for (let r = 0; r < trains.length; r++) {
+    const v = trains[r];
+    if (!v.length) continue;
+    const off = offsets ? offsets[r] : 0;
+    for (let i = 0; i < v.length; i++) {
+      let x = v[i];
+      if (off) { x = (x + off) % winDur; if (x < 0) x += winDur; }
+      let b = Math.floor(x / binWidth);
+      if (b < 0) b = 0; else if (b >= nBins) b = nBins - 1;
+      if (seen[b] !== r) { seen[b] = r; counts[b] += 1; }   // once per ROI per bin
+    }
+  }
+  return counts;
+}
+
+/* Runs of supra-K bins, merged across gaps of at most MERGE_BINS, then each
+   run's participants gathered as every ROI's nearest onset within +/- wm of the
+   run's centre. A run can clear K on the binning and still make no cluster once
+   the onsets are gathered — which is why clustering runs identically on the
+   observed data and on every surrogate. */
+function clusters(trains, counts, K, binWidth, nBins, wm, wantMembers) {
+  const sds = [], parts = [], peaks = [], spans = [], members = [], centres = [];
+  const fire = [];
+  for (let b = 0; b < nBins; b++) if (counts[b] >= K) fire.push(b);
+  if (!fire.length) return { sds, parts, peaks, spans, members, centres };
+
+  const groups = [];
+  let cur = [fire[0]];
+  for (let q = 1; q < fire.length; q++) {
+    if (fire[q] - fire[q - 1] <= MERGE_BINS) cur.push(fire[q]);
+    else { groups.push(cur); cur = [fire[q]]; }
+  }
+  groups.push(cur);
+
+  for (const g of groups) {
+    let sum = 0, pk = 0;
+    for (const b of g) { sum += (b + 0.5) * binWidth; if (counts[b] > pk) pk = counts[b]; }
+    const tc = sum / g.length;
+    const gathered = [], who = [];
+    for (let r = 0; r < trains.length; r++) {
+      const v = trains[r];
+      if (!v.length) continue;
+      let best = null, bestD = Infinity;
+      for (let i = 0; i < v.length; i++) {
+        const d = Math.abs(v[i] - tc);
+        if (d <= wm && d < bestD) { bestD = d; best = v[i]; }   // first minimum wins
+      }
+      if (best !== null) { gathered.push(best); who.push(r); }
+    }
+    if (gathered.length >= K) {
+      const n = gathered.length;
+      const mean = gathered.reduce((a, b) => a + b, 0) / n;
+      // ddof=1 — the sample SD, because at 3-8 participants the difference from
+      // the population SD is large and MATLAB's std is the sample one
+      let ss = 0;
+      for (const x of gathered) ss += (x - mean) * (x - mean);
+      sds.push(n > 1 ? Math.sqrt(ss / (n - 1)) : 0);
+      parts.push(n);
+      peaks.push(pk);
+      spans.push(Math.max(...gathered) - Math.min(...gathered));
+      centres.push(tc);
+      if (wantMembers) members.push(who.slice());
+      else members.push(null);
+    }
+  }
+  return { sds, parts, peaks, spans, members, centres };
+}
+
+const median = a => {
+  if (!a.length) return NaN;
+  const v = [...a].sort((x, y) => x - y), m = v.length >> 1;
+  return v.length % 2 ? v[m] : (v[m - 1] + v[m]) / 2;
+};
+
+/* The measurement. `trains` are per-ROI onsets already clipped to the window and
+   expressed relative to its start. Returns one record per K, in scan order. */
+function assessCoactivity(trains, winDur, opts) {
+  const o = opts || {};
+  const binWidth = o.binWidth || 1.0;
+  const nSurr = o.nSurrogates || 1000;
+  const wm = WM_FACTOR * binWidth;
+  const nBins = Math.max(1, Math.ceil(winDur / binWidth));
+  const winMin = winDur / 60;
+  const nRoi = trains.length;
+  const nEvents = trains.reduce((a, v) => a + v.length, 0);
+
+  if (winDur < REGION_MIN_SEC)
+    return K_SCAN.map(K => ({ K, meetsFloor: false, winDur, nRoi, nEvents }));
+
+  const obs = coactCount(trains, winDur, binWidth, nBins, null);
+
+  // One offset draw per surrogate, one per ROI — the same draw order the Python
+  // and the MATLAB consume, even though the numbers themselves differ.
+  const u = rng32(o.seed || 20260722);
+  const nullSum = new Float64Array(nBins);
+  const sdsNull = new Map(K_SCAN.map(K => [K, []]));
+  for (let s = 0; s < nSurr; s++) {
+    const off = new Float64Array(nRoi);
+    for (let r = 0; r < nRoi; r++) off[r] = u() * winDur;
+    const cn = coactCount(trains, winDur, binWidth, nBins, off);
+    for (let b = 0; b < nBins; b++) nullSum[b] += cn[b];
+    // the surrogates need shifted trains for clustering, built once per surrogate
+    const shifted = trains.map((v, r) => {
+      if (!v.length) return v;
+      const out = new Float64Array(v.length);
+      for (let i = 0; i < v.length; i++) {
+        let x = (v[i] + off[r]) % winDur; if (x < 0) x += winDur;
+        out[i] = x;
+      }
+      return Array.prototype.slice.call(out).sort((a, b) => a - b);
+    });
+    for (const K of K_SCAN) {
+      const c = clusters(shifted, cn, K, binWidth, nBins, wm, false);
+      if (c.sds.length) sdsNull.get(K).push(...c.sds);
+    }
+  }
+  const nullMean = new Float64Array(nBins);
+  for (let b = 0; b < nBins; b++) nullMean[b] = nullSum[b] / nSurr;
+
+  const roiRate = trains.map(v => v.length / winDur);
+  return K_SCAN.map(K => {
+    let obsMass = 0, nullMass = 0, nCoactBins = 0;
+    for (let b = 0; b < nBins; b++)
+      if (obs[b] >= K) { obsMass += obs[b]; nullMass += nullMean[b]; nCoactBins++; }
+    obsMass /= winMin; nullMass /= winMin;
+    const c = clusters(trains, obs, K, binWidth, nBins, wm, true);
+    const jitObs = median(c.sds), jitNull = median(sdsNull.get(K));
+    // ⚠ A finite-looking jitObs with no surrogate cluster behind it is not a
+    // comparison. The flag is the thing to read, and the UI prints a state.
+    const defined = c.sds.length > 0 && sdsNull.get(K).length > 0;
+    return {
+      K, meetsFloor: true, winDur, nRoi, nEvents, binWidth, nSurrogates: nSurr,
+      coactExcess: obsMass - nullMass, obsMass, nullMass, nCoactBins,
+      jitObs, jitNull, jitExcess: jitObs - jitNull, jitDefined: defined,
+      partNObs: median(c.parts), peakMed: median(c.peaks),
+      spanMed: median(c.spans),
+      nClustersObs: c.sds.length, nClustersNull: sdsNull.get(K).length,
+      clustersPerMin: c.sds.length / winMin,
+      roiRateMed: median(roiRate),
+      evRatePerMin: nEvents / winMin,
+      // window-relative centres, so the caller can draw them back onto the raster
+      centres: c.centres, members: c.members,
+    };
+  });
+}
+
+/* The segments an analysis actually runs over. One per declared region, using
+   the folder's own analysis window wherever it states one and the whole period
+   where it does not; a recording with no regions gets one segment spanning it.
+
+   ASSESSMENT AND DETECTION USE THE SAME SEGMENTS AND DIFFER IN WHICH THEY TAKE,
+   and the difference is not a detail:
+
+     * the assessment reads only the BASELINE, because it is calibration —
+       coordination properties taken from a treatment assume the answer.
+     * detection runs on EVERY segment, treatments included. That is the point of
+       the loop: measure an untreated recording, simulate from it, tune on the
+       simulation, and only then point the finished instrument at everything. */
+function analysisSegments(rec, data) {
+  const wins = (REGIONS.get(rec.id) || []).slice().sort((a, b) => a.idx - b.idx);
+  if (!wins.length)
+    return [{ label: "whole recording", start: data.t0,
+              end: Math.max(data.t1, data.t0 + 1), stated: false, whole: true }];
+  return wins.map(w => {
+    const stated = Number.isFinite(w.aStart) && Number.isFinite(w.aEnd);
+    return { label: w.label, start: stated ? w.aStart : w.start,
+             end: stated ? w.aEnd : w.end, stated,
+             period: [w.start, w.end] };
+  });
+}
+
+/* The window an assessment runs over. ANY analysis region is measurable and the
+   user picks; baseline is the default because it is the one calibration may come
+   from. That split matters and used to be in the wrong place: FOUNDATIONS §9
+   forbids taking coordination PROPERTIES from a treatment, which is a rule about
+   parameterizing the generator, not about looking. Measuring TTX and comparing
+   it to baseline is a legitimate thing to want; feeding TTX into the simulator is
+   not. So this measures whatever you choose, and the calibration step below is
+   where the rule bites. */
+function assessWindow(rec, choice) {
+  const wins = (REGIONS.get(rec.id) || []).slice().sort((a, b) => a.idx - b.idx);
+  if (!wins.length || choice === "whole")
+    return { window: null,
+             source: wins.length ? "whole recording (your choice)"
+                                 : "whole recording (no regions declared)",
+             isBaseline: !wins.length };
+  let w = null;
+  if (choice === undefined || choice === "" || choice === "baseline") {
+    const base = wins.filter(q => isBaselineLabel(q.label));
+    if (!base.length)
+      return { window: null, source: "whole recording (no baseline declared)",
+               isBaseline: false, note: wins.length + " region(s) are declared and "
+                 + "none is named as a baseline — pick one to measure it" };
+    w = base.reduce((a, b) => (b.end - b.start > a.end - a.start ? b : a));
+  } else {
+    w = wins[Number(choice)] || wins[0];
+  }
+  const stated = Number.isFinite(w.aStart) && Number.isFinite(w.aEnd);
+  return {
+    window: stated ? [w.aStart, w.aEnd] : [w.start, w.end],
+    // the folder's own analysis window WINS where it states one — start/end are
+    // what happened, analysis_* is what to score, and the raster already shades
+    // the second. Measuring the first while showing the second is one picture
+    // disagreeing with its own number.
+    source: "“" + w.label + "”, " + (stated ? "analysis window as the folder "
+      + "states it" : "whole period (no analysis window sent)"),
+    isBaseline: isBaselineLabel(w.label),
+  };
+}
+
+/* The region list the assessment may be pointed at, rebuilt per recording. */
+function paintRegionChoices(rec) {
+  const sel = document.getElementById("aRegion");
+  if (!sel) return;
+  const wins = (REGIONS.get(rec.id) || []).slice().sort((a, b) => a.idx - b.idx);
+  const keep = sel.value;
+  sel.textContent = "";
+  const base = document.createElement("option");
+  base.value = "baseline";
+  base.textContent = wins.length ? "baseline (default)" : "whole recording";
+  sel.append(base);
+  wins.forEach((w, i) => {
+    const o = document.createElement("option");
+    o.value = String(i);
+    o.textContent = w.label + (isBaselineLabel(w.label) ? "" : " — not for calibration");
+    sel.append(o);
+  });
+  if (wins.length) {
+    const o = document.createElement("option");
+    o.value = "whole"; o.textContent = "whole recording";
+    sel.append(o);
+  }
+  if ([...sel.options].some(o => o.value === keep)) sel.value = keep;
+}
+
+/* ---------- measurement -> generator: the step that closes the loop ----------
+   The workflow this page is for: **assess the baseline, simulate from what you
+   measured, tune on the simulation, then detect over the analysis regions.**
+   Everything but this link existed — a reader could see the K scan and retype
+   the numbers into the simulator by hand, which is the point at which a workflow
+   stops being one.
+
+   The mapping is not invented here. `bugarach.assess` names each measure by the
+   generator knob it is for:
+
+     roi_rate_med    -> the background rate
+     clusters_permin -> how many coordinated events
+     part_n_obs      -> how many ROIs take part
+     jit_obs         -> how tight they are (the SD of participant onsets)
+
+   TWO THINGS IT REFUSES TO DO FOR YOU.
+
+   **It will not pick K.** K moves the headline by an order of magnitude, and the
+   whole scan is shown precisely so the choice is visible. Choosing it is the
+   accept step this project has been asking for — the moment a measurement
+   becomes a setting — so it is a click a person makes, and the K they picked is
+   stamped on the simulator afterwards.
+
+   **It will not spread participation for you silently.** The bench keeps a
+   spread around the measured median rather than collapsing to it, so recall
+   still resolves a participant floor; the same ratios are used here and the
+   levels are shown. */
+function simulateFromMeasurement(rec, a, source) {
+  // FOUNDATIONS §9. Measuring a treatment is legitimate; sourcing the
+  // generator's coordination properties from one is not.
+  if (LAST_ASSESS && LAST_ASSESS.isBaseline === false) {
+    const box = document.getElementById("assessOut");
+    box.append(el("p", "Refused: those numbers are from " + source + ", which is "
+      + "not a baseline. Assess a baseline region and set the simulator from "
+      + "that.", "caveat"));
+    return;
+  }
+  const nRoi = a.nRoi;
+  const mins = a.winDur / 60;
+  const frac = Math.min(1, Math.max(0.02, a.partNObs / nRoi));
+  // the bench's own spread around a measured median: 0.30 / 0.18 / 0.10
+  const levels = [frac * (0.30 / 0.18), frac, frac * (0.10 / 0.18)]
+    .map(v => Math.min(1, Math.max(0.02, v)));
+
+  const set = (id, v) => { document.getElementById(id).value = v; };
+  set("sRoi", Math.max(4, Math.min(150, Math.round(nRoi))));
+  set("sMin", Math.max(2, Math.min(90, Math.round(mins))));
+  set("sRate", Math.max(1, Math.min(500, Math.round(a.roiRateMed * 1000))));
+  set("sEv", Math.max(0, Math.min(60, Math.round(a.clustersPerMin * mins))));
+  set("sJit", Math.max(0, Math.min(3000, Math.round((a.jitObs || 0) * 1000))));
+  MEASURED_LEVELS = levels;
+  document.getElementById("sPart").value = "measured-here";
+
+  const note = document.getElementById("simProvenance");
+  note.textContent = "";
+  note.append(el("b", "Set from a measurement."));
+  note.append(document.createTextNode(
+    " " + rec.id + ", " + source + ", at K = " + a.K + " — your choice of K, and "
+    + "it is stamped here because the number these settings came from is "
+    + "meaningless without it. Participation is the measured median "
+    + (100 * frac).toFixed(0) + "% kept as a spread of "
+    + levels.map(v => (100 * v).toFixed(0) + "%").join(" / ")
+    + ", the way the bench keeps one, so a tuning run can still resolve a "
+    + "participant floor. Jitter is the observed onset SD, not the excess over "
+    + "the null."));
+  note.hidden = false;
+  showSection("accSim");
+}
+
+/* ---------- a folder that does not exist -------------------------------------
+   Most people who open this page have no export folder to point it at, and a
+   viewer with nothing in it is a screenshot of a promise. So the page can write
+   one: invented recordings, emitted as the CSV text the import contract
+   describes and handed to the loader above, which is not told where they came
+   from. What an explorer drives is the real reading path — the same parser, the
+   same folder check, the same raster.
+
+   The model is the one in `bugarach.simulate`: a per-ROI Poisson background with
+   coordinated events planted into it at known times with a known participating
+   fraction and a jittered onset per participant. Two things it gets from the
+   lab's own measurements rather than from taste, both fitted on **baseline
+   recordings only** (`bugarach.bench`): the per-ROI rate is Gamma-distributed
+   with shape 0.275, because a real field has a few busy cells and many nearly
+   silent — 35% of real ROIs record no event at all — and each ROI's events clump
+   in time on two scales at once, since over-dispersion in real ROIs keeps growing
+   with the window and no single scale reproduces that. The `flat` option is the
+   older model kept on a switch, and it is worth a look: it leaves almost nobody
+   silent, which is the defect the fitted one exists to fix.
+
+   THREE THINGS IT IS NOT, and each has cost this project something:
+
+   * It is not the Python generator's numbers. Same model, a different random
+     source, so a seed reproduces in this browser and nowhere else. Chasing bit
+     parity here would be chasing it for a demonstration.
+   * It does not simulate a treatment. The windows are labels over statistics
+     that are identical inside and outside them, because simulating the effect
+     spends the effect the experiment exists to measure.
+   * It is not evidence of anything. Nothing drawn from it is a finding, and the
+     page says so on the picture, not only beside the controls.               */
+
+const RATE_SHAPE = 0.275;                  // bench.MEASURED_RATE_SHAPE
+const BURST_SHAPE = [1.547, 1.388];        // bench.MEASURED_BURST_SHAPE
+const BURST_BINS = [300, 60];              // …at these bin widths, seconds
+const GRID = 0.1, MARGIN = 5;
+// 120 s, not the 15 s the generator ships: the detectors estimate their null
+// over context windows up to 120 s wide, so events packed tighter than that put
+// coordination inside the null a threshold is derived from. That contaminated
+// null is what made an upstream benchmark unusable and cost two weeks.
+const MIN_SEP = 120;
+// The measured level is first because it is the one that is true. Participation
+// was a guess here until 2026-08-13, and every guess made coordination easier
+// than it is: on 100/75/50% every detector scored F1 0.9-1.0 and the bench could
+// not tell them apart; on the measured 30/18/10% they range 0.20-0.75 and
+// separate, because a real coordinated event recruits about six of thirty-three
+// ROIs. The guess is kept on the switch so the difference can be looked at.
+const LEVELS = { measured: [0.3, 0.18, 0.1], mixed: [1, 0.75, 0.5], all: [1] };
+// filled in when a real measurement is carried into the simulator; null until
+// then, so the option cannot be chosen without a measurement behind it
+let MEASURED_LEVELS = null;
+// Labels a lab would actually write, because the contract asks for the real
+// treatment name and a positional placeholder ("region 2") makes an unreadable
+// axis. Here they name nothing that happened — see the second point above.
+const SCHEMES = {
+  "0": [],
+  "2": [["baseline", 0, 0.5], ["drug", 0.5, 1]],
+  "3": [["baseline", 0, 0.4], ["drug", 0.4, 0.75], ["washout", 0.75, 1]],
+  "4": [["baseline", 0, 0.3], ["drug", 0.3, 0.55],
+        ["washout", 0.55, 0.8], ["high K", 0.8, 1]],
+};
+
+/* mulberry32 — small, fast, and seedable, which `Math.random` is not. A seed
+   that does not reproduce turns "look at this one" into "look at something
+   like this". */
+function rng32(seed) {
+  let a = ((seed >>> 0) + 0x9e3779b9) >>> 0;
+  return function () {
+    a = (a + 0x6d2b79f5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+// polar Box-Muller, second deviate discarded: caching it across calls would make
+// a draw depend on what was drawn before it, and a seed stop reproducing
+function randn(u) {
+  let a, b, r;
+  do { a = 2 * u() - 1; b = 2 * u() - 1; r = a * a + b * b; } while (!r || r >= 1);
+  return a * Math.sqrt(-2 * Math.log(r) / r);
+}
+function poissonSmall(u, lam) {
+  const L = Math.exp(-lam);
+  let k = 0, p = 1;
+  do { k++; p *= u(); } while (p > L);
+  return k - 1;
+}
+// a sum of Poissons is Poisson, so a large mean is drawn in chunks — exact, and
+// it keeps exp(-lambda) away from underflow, where the loop above never ends
+function poisson(u, lam) {
+  let k = 0;
+  while (lam > 12) { k += poissonSmall(u, 12); lam -= 12; }
+  return k + poissonSmall(u, lam);
+}
+// Marsaglia-Tsang, with the shape<1 boost — the fitted rate shape is 0.275
+function gammaDraw(u, shape) {
+  if (shape < 1) return gammaDraw(u, shape + 1) * Math.pow(u() || 1e-12, 1 / shape);
+  const d = shape - 1 / 3, c = 1 / Math.sqrt(9 * d);
+  for (;;) {
+    let x, v;
+    do { x = randn(u); v = 1 + c * x; } while (v <= 0);
+    v = v * v * v;
+    const w = u();
+    if (w < 1 - 0.0331 * x * x * x * x) return d * v;
+    if (Math.log(w) < 0.5 * x * x + d * (1 - v + Math.log(v))) return d * v;
+  }
+}
+// half away from zero, like MATLAB and unlike JS on negatives — a tie decides
+// which grid bin an event lands in, and the store rounds this way
+const mround = x => Math.sign(x) * Math.round(Math.abs(x));
+
+function pick(u, n, k) {
+  const a = [];
+  for (let i = 0; i < n; i++) a.push(i);
+  for (let i = 0; i < k; i++) {                       // partial Fisher-Yates
+    const j = i + Math.floor(u() * (n - i));
+    const t = a[i]; a[i] = a[j]; a[j] = t;
+  }
+  return a.slice(0, k).sort((p, q) => p - q);
+}
+
+/* Renewal placement with exponential excess above a floor: intervals vary.
+   Evenly spaced events are a cue in themselves — anything reading this could
+   learn "an event is due" from the clock rather than from the activity. */
+function plantTimes(u, m, T) {
+  if (!m) return [];
+  const lo = MARGIN, hi = T - MARGIN;
+  const mean = (hi - lo) / (m + 1);
+  const floor = Math.min(MIN_SEP, mean / 2);     // so m always fit
+  const excess = mean - floor;
+  const t = [];
+  let acc = lo;
+  for (let i = 0; i < m; i++) {
+    acc += floor - excess * Math.log(1 - u());
+    t.push(acc);
+  }
+  if (t[m - 1] > hi) {          // rescale the excess only: order and floor hold
+    const room = hi - lo - floor * m;
+    const ex = t.map((v, i) => v - lo - floor * (i + 1));
+    if (room > 0 && ex[m - 1] > 0)
+      for (let i = 0; i < m; i++)
+        t[i] = lo + floor * (i + 1) + ex[i] * (room / ex[m - 1]);
+  }
+  return t;
+}
+
+function simulateRecording(p, seed) {
+  const u = rng32(seed);
+  const T = p.minutes * 60, nR = p.rois;
+  const trains = [];
+  for (let r = 0; r < nR; r++) trains.push([]);
+
+  // ---- background, one ROI at a time ----------------------------------------
+  const rates = [];
+  for (let r = 0; r < nR; r++)
+    rates.push(p.fitted ? gammaDraw(u, RATE_SHAPE) * (p.rate / RATE_SHAPE)
+                        : p.rate);
+  const nC = Math.ceil(T / BURST_BINS[0]), nF = Math.ceil(T / BURST_BINS[1]);
+  for (let r = 0; r < nR; r++) {
+    if (!p.fitted) {
+      const k = poisson(u, rates[r] * T);
+      for (let i = 0; i < k; i++) trains[r].push(u() * T);
+      continue;
+    }
+    // two multiplier series per ROI, each Gamma(k, 1/k) so the mean is 1 and only
+    // the distribution over time moves — a busy stretch belongs to a cell, not
+    // to the field
+    const slow = [], fast = [];
+    for (let i = 0; i < nC; i++) slow.push(gammaDraw(u, BURST_SHAPE[0]) / BURST_SHAPE[0]);
+    for (let i = 0; i < nF; i++) fast.push(gammaDraw(u, BURST_SHAPE[1]) / BURST_SHAPE[1]);
+    for (let j = 0; j < nF; j++) {
+      const lo = j * BURST_BINS[1], w = Math.min(BURST_BINS[1], T - lo);
+      const mult = slow[Math.min(Math.floor(lo / BURST_BINS[0]), nC - 1)] * fast[j];
+      const k = poisson(u, rates[r] * mult * w);
+      for (let i = 0; i < k; i++) trains[r].push(lo + u() * w);
+    }
+  }
+
+  // ---- planted events -------------------------------------------------------
+  const levels = (p.part === "measured-here" && MEASURED_LEVELS)
+    ? MEASURED_LEVELS : (LEVELS[p.part] || LEVELS.measured);
+  const fracs = [];
+  for (let i = 0; i < p.events; i++) fracs.push(levels[i % levels.length]);
+  for (let i = fracs.length - 1; i > 0; i--) {        // interleave levels in time
+    const j = Math.floor(u() * (i + 1));
+    const t = fracs[i]; fracs[i] = fracs[j]; fracs[j] = t;
+  }
+  // The planted times are KEPT, not just used. They are the only ground truth
+  // this page will ever have, and the tuning step exists because they exist: a
+  // sweep of a detector's knob is scoreable here and nowhere else. Nominal
+  // times, as `simulate.GroundTruth.times` records them — the participants get
+  // jittered onsets around each one, and the event is the time it was planted
+  // at rather than any one participant's arrival.
+  const truth = { times: [], fracs: [] };
+  plantTimes(u, fracs.length, T).forEach((t, i) => {
+    const n = Math.max(1, mround(fracs[i] * nR));
+    for (const r of pick(u, nR, n))
+      trains[r].push(Math.min(Math.max(t + p.jitter * randn(u), 0), T));
+    truth.times.push(t);
+    truth.fracs.push(fracs[i]);
+  });
+
+  // ---- write it as the contract says ----------------------------------------
+  const rows = ["roi,time_sec"];
+  for (let r = 0; r < nR; r++) {
+    const v = trains[r].map(x => mround(x / GRID) * GRID).sort((a, b) => a - b);
+    // an ROI that was recorded and fired nothing is a row with no time. The
+    // fitted background produces these in quantity, which is the honest thing:
+    // dropping them would shrink the population and lift every per-ROI rate.
+    if (!v.length) { rows.push((r + 1) + ",NA"); continue; }
+    for (const x of v) rows.push((r + 1) + "," + x.toFixed(1));
+  }
+  return { csv: rows.join("\n") + "\n", truth };
+}
+
+function simulateFolder(p) {
+  const files = [];
+  const truth = new Map();
+  const regions = ["slice_id,region_idx,label,start_sec,end_sec,"
+                  + "analysis_start_sec,analysis_end_sec"];
+  const slices = ["slice_id,frame_interval_sec,source"];
+  const scheme = SCHEMES[p.windows] || [];
+  const T = p.minutes * 60;
+  for (let i = 0; i < p.n; i++) {
+    const id = "simulated_" + String(i + 1).padStart(2, "0");
+    // each recording its own seed, so they are siblings and not copies
+    const made = simulateRecording(p, p.seed * 977 + i);
+    files.push({ name: id + ".csv", text: made.csv });
+    truth.set(id, made.truth);
+    slices.push(id + "," + GRID + ",simulated in this browser");
+    scheme.forEach((w, k) => {
+      const lo = w[1] * T, hi = w[2] * T;
+      // The simulated folder SENDS its analysis windows rather than leaving them
+      // to be derived, which is what the contract asks a producer with a policy
+      // to do — and it is the only way this page can show the two channels
+      // apart. The policy imitated here is this project's own: a baseline
+      // measured backward from its end under a 20-minute cap, every other period
+      // starting 2 minutes late and capped at 20. Imitated, not shared code:
+      // deriving it for real is `region_windows`, and a second implementation is
+      // how that rule drifted five times already.
+      const CAP = 1200, DELAY = 120;
+      const [as, ae] = w[0] === "baseline"
+        ? [Math.max(lo, hi - CAP), hi]
+        : [Math.min(lo + DELAY, hi), Math.min(hi, Math.min(lo + DELAY, hi) + CAP)];
+      regions.push([id, k + 1, w[0], lo.toFixed(1), hi.toFixed(1),
+                    as.toFixed(1), ae.toFixed(1)].join(","));
+    });
+  }
+  // raw bounds, contiguous, region 1 starting at 0 — what the contract asks for
+  if (scheme.length)
+    files.push({ name: "regions.csv", text: regions.join("\n") + "\n" });
+  files.push({ name: "slices.csv", text: slices.join("\n") + "\n" });
+  return { files, truth };
+}
+
+const clamp = (v, lo, hi) =>
+  Number.isFinite(v) ? Math.min(Math.max(v, lo), hi) : lo;
+
+function readSim() {
+  const num = id => Number(document.getElementById(id).value);
+  const val = id => document.getElementById(id).value;
+  return {
+    n: clamp(num("sRec"), 1, 6),
+    minutes: clamp(num("sMin"), 2, 90),
+    rois: clamp(num("sRoi"), 4, 150),
+    rate: clamp(num("sRate"), 1, 500) / 1000,        // mHz in the box, Hz here
+    fitted: val("sBg") === "fitted",
+    events: clamp(num("sEv"), 0, 60),
+    part: val("sPart"),
+    jitter: clamp(num("sJit"), 0, 2000) / 1000,      // ms in the box, s here
+    windows: val("sWin"),
+    seed: clamp(num("sSeed"), 0, 99999),
+  };
+}
+
+async function runSim() {
+  const btn = document.getElementById("runSim");
+  btn.textContent = "Simulating…";
+  btn.disabled = true;
+  // one frame, so the button repaints before the generator takes the thread
+  await new Promise(r => setTimeout(r, 0));
+  try {
+    const made = simulateFolder(readSim());
+    await open(made.files, { simulated: true, truth: made.truth });
+  } finally {
+    btn.textContent = "Simulate";
+    btn.disabled = false;
+  }
+}
+
+/* ---------- running it, and saying what came back --------------------------- */
+let ASSESS = null;      // {recId, K, centres, winStart} — what the raster draws
+let LAST_ASSESS = null; // what the calibration step would be fed, if you accept a K
+
+// not `fmt` — the time axis already owns that name, and shadowing it turned the
+// whole page into a syntax error
+const fmtNum = (x, nd) =>
+  (x === null || x === undefined || x !== x) ? "—" : Number(x).toFixed(nd === undefined ? 3 : nd);
+
+function clearAssess() {
+  ASSESS = null;
+  const box = document.getElementById("assessOut");
+  if (box) box.textContent = "";
+}
+
+function paintAssess(rec, res, source, cfg) {
+  cfg = cfg || {};
+  cfg.source = source;
+  const box = document.getElementById("assessOut");
+  box.textContent = "";
+
+  box.append(el("h4", "Coordination in " + rec.id));
+  box.append(el("p", "window: " + source + " · " + cfg.nSurr
+    + " circular-shift surrogates · bin " + cfg.bin + " s · stream " + cfg.stream,
+    "sub"));
+
+  if (res.length && !res[0].meetsFloor) {
+    box.append(el("p", "That window is " + (res[0].winDur / 60).toFixed(1)
+      + " min, under the 15-minute floor this measurement holds itself to. Every "
+      + "measure would be undefined, so none is shown.", "caveat"));
+    return;
+  }
+
+  const tbl = document.createElement("table");
+  const hr = document.createElement("tr");
+  for (const h of ["K", "excess/min", "clusters/min", "participants", "span (s)",
+                   "tightness vs null"]) hr.append(el("th", h));
+  tbl.append(hr);
+  for (const a of res) {
+    const tr = document.createElement("tr");
+    tr.append(el("td", String(a.K)));
+    tr.append(el("td", fmtNum(a.coactExcess)));
+    tr.append(el("td", fmtNum(a.clustersPerMin)));
+    tr.append(el("td", fmtNum(a.partNObs, 1)));
+    tr.append(el("td", fmtNum(a.spanMed, 2)));
+    // ⚠ never the number when the comparison does not exist — a reader takes a
+    // finite-looking value and parameterizes tightness off nothing
+    if (a.jitDefined) tr.append(el("td", fmtNum(a.jitExcess)));
+    else tr.append(el("td", "undefined — no cluster in the surrogates", "state"));
+    tbl.append(tr);
+  }
+  box.append(tbl);
+
+  // the accept step: choosing K is the moment a measurement becomes a setting
+  const row = document.createElement("p");
+  row.className = "caveat";
+  row.append(document.createTextNode("Simulate from this measurement at K = "));
+  const ksel = document.createElement("select");
+  ksel.id = "accK";
+  for (const a of res) if (a.meetsFloor) {
+    const o = document.createElement("option");
+    o.value = String(a.K); o.textContent = String(a.K);
+    ksel.append(o);
+  }
+  row.append(ksel, document.createTextNode(" "));
+  const go = document.createElement("button");
+  go.textContent = "Set the simulator";
+  go.style.width = "auto";
+  go.onclick = () => {
+    const a = res.find(q => q.K === Number(ksel.value));
+    if (a) simulateFromMeasurement(rec, a, cfg.source || "");
+  };
+  row.append(go);
+  box.append(row);
+  if (cfg.isBaseline === false)
+    box.append(el("p", "⚠ This is not a baseline. Measuring it is fine and often "
+      + "the point; using it to set the simulator is not — coordination "
+      + "properties taken from a treatment assume the answer the experiment is "
+      + "asking. The button above will refuse.", "caveat"));
+  if (cfg.note) box.append(el("p", cfg.note, "caveat"));
+
+  box.append(el("p", "K is a scan, not a choice: it moves the headline by an "
+    + "order of magnitude, so quoting one of these numbers means naming the K it "
+    + "came from. Nothing here has picked one for you.", "caveat"));
+  box.append(el("p", "The excess and the tightness comparison are estimated from "
+    + cfg.nSurr + " surrogates, so they carry sampling error and will move a "
+    + "little between runs. The cluster count, the participants and the span do "
+    + "not — they depend on nothing but your data.", "caveat"));
+}
+
+async function runAssess() {
+  if (!current) return;
+  const btn = document.getElementById("runAssess");
+  btn.textContent = "Assessing…";
+  btn.disabled = true;
+  await new Promise(r => setTimeout(r, 0));
+  try {
+    const data = await loadRecording(current);
+    const w = assessWindow(current, document.getElementById("aRegion").value);
+    const box = document.getElementById("assessOut");
+    const stream = [...data.streams.keys()].sort()[0];
+    const byRoi = data.streams.get(stream);
+    const [ws, we] = w.window || [data.t0, data.t1];
+    const trains = data.order.map(id =>
+      (byRoi.get(id) || []).filter(x => x >= ws && x <= we).map(x => x - ws));
+
+    const nSurr = clamp(Number(document.getElementById("aSurr").value), 50, 2000);
+    const bin = clamp(Number(document.getElementById("aBin").value), 0.1, 10);
+    const res = assessCoactivity(trains, we - ws, { nSurrogates: nSurr, binWidth: bin });
+    paintAssess(current, res, w.source, { nSurr, bin, stream,
+                                          isBaseline: w.isBaseline, note: w.note });
+    LAST_ASSESS = { rec: current, res, source: w.source, isBaseline: w.isBaseline };
+
+    const wantK = Number(document.getElementById("aK").value);
+    const hit = res.find(a => a.K === wantK && a.meetsFloor);
+    ASSESS = hit ? { recId: current.id, K: wantK, centres: hit.centres, winStart: ws }
+                 : null;
+    draw(current, data);
+  } finally {
+    btn.textContent = "Assess this recording";
+    btn.disabled = false;
+  }
+}
+
+document.getElementById("runAssess").onclick = runAssess;
+document.getElementById("aK").onchange = () => {
+  // re-marking is free; re-measuring is not, so changing K only redraws
+  if (!ASSESS || !current || !current.loaded) return;
+  runAssess();
+};
+
+/* ---------- running the detector, and drawing what it called --------------- */
+let DETECT = null;    // {recId, label, starts, ends}
+
+function clearDetect() {
+  DETECT = null;
+  const b = document.getElementById("detectOut");
+  if (b) b.textContent = "";
+}
+
+/* Which instrument is pointed at the recording, and what each one needs. Two of
+   the six are here — the two that draw no random numbers and are therefore
+   checked against the Python exactly rather than to sampling error. */
+const DETECTOR_UI = {
+  rate: { label: "RateDetect", ctl: "dRateCtl", fine: "dFineRate" },
+  sync: { label: "SPIKE-synch", ctl: "dSyncCtl", fine: "dFineSync" },
+};
+
+const whichDetector = () =>
+  DETECTOR_UI[document.getElementById("dDet").value] ? document.getElementById("dDet").value : "rate";
+
+function paintDetectorChoice() {
+  const which = whichDetector();
+  for (const [k, d] of Object.entries(DETECTOR_UI)) {
+    document.getElementById(d.ctl).hidden = k !== which;
+    document.getElementById(d.fine).hidden = k !== which;
+  }
+  document.getElementById("cntDetect").textContent = DETECTOR_UI[which].label;
+  clearDetect();
+  // the sweep follows the chosen detector, so its own result stops being about
+  // the thing named on it the moment the choice moves
+  clearTune();
+  paintTuneWhat();
+  if (current) loadRecording(current).then(d => draw(current, d));
+}
+
+function readDetector(dt) {
+  if (whichDetector() === "sync") {
+    return { gridDt: dt,
+      tauMax: clamp(Number(document.getElementById("dTau").value), 0.01, 10),
+      maxGap: clamp(Number(document.getElementById("dGap").value), 0.1, 30),
+      CThreshold: clamp(Number(document.getElementById("dC").value), 0.001, 1),
+      CMin: clamp(Number(document.getElementById("dCmin").value), 0.001, 1) };
+  }
+  return { gridDt: dt,
+    excessThresholdHz: clamp(Number(document.getElementById("dThr").value), 0.1, 50),
+    rateWin: clamp(Number(document.getElementById("dRate").value), 0.1, 30),
+    contextWin: clamp(Number(document.getElementById("dCtx").value), 5, 600) };
+}
+
+// what the run was, in the words the settings file would use
+const detectorSettingsLine = (which, cfg) => which === "sync"
+  ? "coincidence cap " + cfg.tauMax + " s · max gap " + cfg.maxGap
+    + " s · C " + cfg.CThreshold + " to start, " + cfg.CMin + " to sustain"
+    + " · dt " + cfg.gridDt + " s"
+  : "threshold " + cfg.excessThresholdHz + " Hz excess · rate window "
+    + cfg.rateWin + " s · context " + cfg.contextWin + " s · dt "
+    + cfg.gridDt + " s";
+
+async function runDetect() {
+  if (!current) return;
+  const btn = document.getElementById("runDetect");
+  btn.textContent = "Detecting…"; btn.disabled = true;
+  await new Promise(r => setTimeout(r, 0));
+  try {
+    const which = whichDetector();
+    const label = DETECTOR_UI[which].label;
+    const data = await loadRecording(current);
+    const stream = [...data.streams.keys()].sort()[0];
+    const byRoi = data.streams.get(stream);
+    const m = META.get(current.id) || {};
+    const dt = Number(m.frame_interval_sec) > 0 ? Number(m.frame_interval_sec) : 0.1;
+    const cfg = readDetector(dt);
+    // one run per analysis segment, treatments included — a detector run across
+    // a boundary would take its context from a period that is not the one it is
+    // reporting on
+    const segs = analysisSegments(current, data);
+    const starts = [], ends = [], perRegion = [];
+    let artifacts = 0;
+    for (const seg of segs) {
+      const trains = data.order.map(id =>
+        (byRoi.get(id) || []).filter(x => x >= seg.start && x <= seg.end));
+      const range = [seg.start, Math.max(seg.end, seg.start + 1)];
+      const d = which === "sync" ? syncDetect(trains, range, cfg)
+                                 : rateDetect(trains, range, cfg);
+      const flagged = (d.isArtifact || []).filter(Boolean).length;
+      artifacts += flagged;
+      starts.push(...d.starts); ends.push(...d.ends);
+      perRegion.push({ label: seg.label, n: d.nEvents, flagged, stated: seg.stated,
+                       mins: (seg.end - seg.start) / 60 });
+    }
+    DETECT = { recId: current.id, label, starts, ends };
+
+    const box = document.getElementById("detectOut");
+    box.textContent = "";
+    box.append(el("h4", label + " on " + current.id));
+    box.append(el("p", starts.length + " event(s) called · "
+      + detectorSettingsLine(which, cfg), "sub"));
+
+    const cols = which === "sync"
+      ? ["region", "analysed", "window", "events", "of those, artifact"]
+      : ["region", "analysed", "window", "events"];
+    const tbl = document.createElement("table");
+    const hr = document.createElement("tr");
+    for (const h of cols) hr.append(el("th", h));
+    tbl.append(hr);
+    for (const r of perRegion) {
+      const tr = document.createElement("tr");
+      tr.append(el("td", r.label));
+      tr.append(el("td", r.mins.toFixed(1) + " min"));
+      tr.append(el("td", r.stated ? "as the folder states it"
+                                  : "whole period — none sent", "state"));
+      tr.append(el("td", String(r.n)));
+      if (which === "sync") tr.append(el("td", String(r.flagged)));
+      tbl.append(tr);
+    }
+    box.append(tbl);
+    if (which === "sync" && artifacts) {
+      box.append(el("p", artifacts + " of these are flagged as artifact — C is "
+        + "near-total, the event is narrow, and most of the field is in it. That "
+        + "combination is a stage knock rather than coordination. They are counted "
+        + "here and drawn like the rest; deciding what to do with them is yours.",
+        "caveat"));
+    }
+    box.append(el("p", "These are the settings this project benches at, not "
+      + "settings calibrated for your preparation. Tuning them is what the "
+      + "simulate step is for — measure, simulate from what you measured, tune "
+      + "against planted events, then point the tuned instrument at everything.",
+      "caveat"));
+    draw(current, data);
+  } finally {
+    btn.textContent = "Detect"; btn.disabled = false;
+  }
+}
+
+document.getElementById("dDet").onchange = paintDetectorChoice;
+
+/* ---------- the sweep, and the picture of it -------------------------------- */
+
+function clearTune() {
+  const b = document.getElementById("tuneOut");
+  if (b) b.textContent = "";
+}
+
+/* What the Sweep button will do, said before it is pressed — which detector,
+   which of its settings moves, and whether there is anything to score against.
+   A button whose effect depends on a control in another section has to say so
+   where it sits. */
+function paintTuneWhat() {
+  const which = whichDetector();
+  const knob = TUNE_KNOB[which];
+  const chip = document.getElementById("cntTune");
+  const note = document.getElementById("tuneWhat");
+  const btn = document.getElementById("runTune");
+  const truth = current ? TRUTH.get(current.id) : null;
+  const ok = !!(truth && truth.times.length);
+  btn.disabled = !ok;
+  chip.textContent = ok ? DETECTOR_UI[which].label : "simulated only";
+  note.textContent = ok
+    ? "Sweeps " + DETECTOR_UI[which].label + "'s " + knob.name + " over "
+      + knob.grid.length + " values (" + knob.grid[0] + " to "
+      + knob.grid[knob.grid.length - 1] + "), holding its other settings at what "
+      + "the Detect section has, and scores each against the "
+      + truth.times.length + " events planted in this recording."
+    : "Nothing to score against. These recordings were read from a folder, so "
+      + "there is no record of which moments were coordinated — simulate a "
+      + "folder and the planted events become the answer key.";
+}
+
+const fmtKnob = v => (v >= 0.1 ? String(v) : v.toFixed(3));
+
+/* One point on the sweep: set the knob, run the detector, score what came back
+   against what was planted. Split out of the loop below so the parity test can
+   call exactly what the button calls, rather than a second copy of it that could
+   drift into agreeing with the Python while the page does not. */
+function sweepPoint(trains, range, which, base, knob, value, truth, tolSec) {
+  const cfg = { ...base, [knob.key]: value };
+  const d = which === "sync" ? syncDetect(trains, range, cfg)
+                             : rateDetect(trains, range, cfg);
+  const widths = d.widths || d.starts.map((s, i) => d.ends[i] - s);
+  return { knob: value,
+           ...scoreDetections(truth.times, truth.fracs, d.starts, widths, tolSec) };
+}
+
+async function runTune() {
+  if (!current) return;
+  const truth = TRUTH.get(current.id);
+  if (!truth || !truth.times.length) return;
+  const btn = document.getElementById("runTune");
+  btn.textContent = "Sweeping…"; btn.disabled = true;
+  await new Promise(r => setTimeout(r, 0));
+  try {
+    const which = whichDetector();
+    const knob = TUNE_KNOB[which];
+    const label = DETECTOR_UI[which].label;
+    const data = await loadRecording(current);
+    const stream = [...data.streams.keys()].sort()[0];
+    const byRoi = data.streams.get(stream);
+    const m = META.get(current.id) || {};
+    const dt = Number(m.frame_interval_sec) > 0 ? Number(m.frame_interval_sec) : 0.1;
+    const base = readDetector(dt);
+    const tol = clamp(Number(document.getElementById("tTol").value), 0.1, 30);
+
+    // ONE RUN OVER THE WHOLE RECORDING, not per region — unlike the Detect step
+    // beside it. Events were planted across the entire extent, including the
+    // stretches the analysis windows leave out, so scoring per-window detections
+    // against all of them would count the gaps as misses. The regions of a
+    // simulated folder are labels over identical statistics anyway.
+    const trains = data.order.map(id => byRoi.get(id) || []);
+    const range = [data.t0, Math.max(data.t1, data.t0 + 1)];
+    const levels = [...new Set(truth.fracs)].sort((a, b) => b - a);
+
+    const rows = [];
+    for (const v of knob.grid) {
+      rows.push(sweepPoint(trains, range, which, base, knob, v, truth, tol));
+      await new Promise(r => setTimeout(r, 0));   // let the button stay honest
+    }
+
+    const pick = pickOperatingPoint(rows);
+    const box = document.getElementById("tuneOut");
+    box.textContent = "";
+    box.append(el("h4", label + " swept on " + current.id));
+    box.append(el("p", knob.grid.length + " settings tried · " + knob.name
+      + " · matched within " + tol + " s of a planted event · "
+      + truth.times.length + " planted", "sub"));
+
+    const cv = document.createElement("canvas");
+    box.append(cv);
+    drawSweep(cv, rows, knob, pick.row);
+
+    const cols = ["" + knob.name + (knob.unit ? " (" + knob.unit + ")" : ""),
+                  "called", "hit", "missed", "false", "precision", "recall", "F1"]
+      .concat(levels.map(f => Math.round(f * 100) + "%"));
+    const tbl = document.createElement("table");
+    const hr = document.createElement("tr");
+    for (const h of cols) hr.append(el("th", h));
+    tbl.append(hr);
+    for (const r of rows) {
+      const tr = document.createElement("tr");
+      if (r === pick.row) tr.className = "best";
+      tr.append(el("td", fmtKnob(r.knob)));
+      tr.append(el("td", String(r.nDetected)));
+      tr.append(el("td", String(r.nHit)));
+      tr.append(el("td", String(r.nMiss)));
+      tr.append(el("td", r.nFa + (r.nDup ? " (" + r.nDup + " dup)" : "")));
+      tr.append(el("td", fmtNum(r.precision, 2)));
+      tr.append(el("td", fmtNum(r.recall, 2)));
+      tr.append(el("td", fmtNum(r.f1, 2)));
+      for (const f of levels) {
+        const [n, h] = r.byFrac.get(f) || [0, 0];
+        tr.append(el("td", n ? (h / n).toFixed(2) : "—"));
+      }
+      tbl.append(tr);
+    }
+    box.append(tbl);
+
+    /* A sweep that returned one answer at every setting is not a result about
+       the knob, and `pickOperatingPoint` will still hand back an interior row
+       with neighbours on both sides — technically true and thoroughly
+       misleading. Said plainly instead, because the reader's next move is to
+       change something else rather than to trust the value that came back. */
+    const scores = rows.map(r => Number.isFinite(r.f1) ? Math.round(r.f1 * 1e9) : "x");
+    const flat = new Set(scores).size === 1 && rows.length > 1;
+    if (flat) {
+      box.append(el("p", "Every setting on this grid gave the same result, so "
+        + "this sweep says nothing about " + knob.name + " — something else is "
+        + "deciding what " + label + " finds here. The detector's other settings "
+        + "in the Detect section are the place to look, and a recording with more "
+        + "events or more ROIs will separate the grid where this one cannot.",
+        "verdict"));
+    } else if (pick.row) {
+      box.append(el("p", "Best here: " + knob.name + " " + fmtKnob(pick.row.knob)
+        + (knob.unit ? " " + knob.unit : "") + ", F1 " + fmtNum(pick.row.f1, 2)
+        + " — " + pick.row.nHit + " of " + pick.row.nPlanted + " planted events "
+        + "found, " + pick.row.nFa + " call(s) on nothing. It has neighbours on "
+        + "both sides, so the sweep bracketed it rather than running out of "
+        + "range.", "verdict"));
+    } else {
+      box.append(el("p", pick.why, "verdict bad"));
+    }
+    box.append(el("p", "The last columns are recall at each participation level, "
+      + "and they are the part worth reading. A detector that finds every "
+      + "full-field event and nothing at the sparsest level is a different "
+      + "instrument from one that degrades gracefully, and the two can share an "
+      + "F1. Simulated events only — nothing here is a measurement of a "
+      + "preparation.", "caveat"));
+  } finally {
+    btn.textContent = "Sweep"; btn.disabled = false;
+    paintTuneWhat();
+  }
+}
+
+/* Three curves on one categorical axis: the grid values are spaced by decades in
+   places and by ones in others, so plotting them to scale would put four points
+   in a corner. The x axis is the sequence of settings tried, which is what a
+   reader is choosing between. */
+function drawSweep(cv, rows, knob, best) {
+  const css = getComputedStyle(document.documentElement);
+  const dpr = window.devicePixelRatio || 1;
+  const W = cv.clientWidth || 640, H = 190;
+  cv.width = W * dpr; cv.height = H * dpr; cv.style.height = H + "px";
+  const g = cv.getContext("2d");
+  g.scale(dpr, dpr);
+  g.clearRect(0, 0, W, H);
+  g.font = "11px -apple-system, system-ui, sans-serif";
+
+  const padL = 42, padR = 12, padT = 26, padB = 26;
+  const n = rows.length;
+  const x = i => n < 2 ? (padL + W - padR) / 2
+                       : padL + i * (W - padL - padR) / (n - 1);
+  const y = v => padT + (1 - v) * (H - padT - padB);
+  const hues = dark() ? HUES_DARK : HUES_LIGHT;
+  const series = [{ k: "f1", name: "F1", hue: hues[0] },
+                  { k: "precision", name: "precision", hue: hues[1] },
+                  { k: "recall", name: "recall", hue: hues[2] }];
+
+  // the chosen setting, marked behind everything as a band rather than a rule —
+  // a vertical line through a plot reads as a value, and this is a column
+  if (best) {
+    const i = rows.indexOf(best);
+    const half = n < 2 ? (W - padL - padR) / 2
+                       : (W - padL - padR) / (n - 1) / 2;
+    g.fillStyle = css.getPropertyValue("--band").trim();
+    g.fillRect(Math.max(padL, x(i) - half), padT,
+               Math.min(2 * half, W - padR - Math.max(padL, x(i) - half)),
+               H - padT - padB);
+  }
+
+  g.strokeStyle = css.getPropertyValue("--line").trim();
+  g.lineWidth = 1;
+  g.fillStyle = css.getPropertyValue("--muted").trim();
+  g.textAlign = "end";
+  for (const v of [0, 0.5, 1]) {
+    const yy = Math.round(y(v)) + 0.5;
+    g.beginPath(); g.moveTo(padL, yy); g.lineTo(W - padR, yy); g.stroke();
+    g.fillText(v.toFixed(1), padL - 6, yy + 4);
+  }
+
+  g.textAlign = "center";
+  for (let i = 0; i < n; i++) g.fillText(fmtKnob(rows[i].knob), x(i), H - 9);
+
+  for (const s of series) {
+    g.strokeStyle = s.hue; g.lineWidth = 1.6;
+    g.beginPath();
+    let started = false;
+    rows.forEach((r, i) => {
+      if (!Number.isFinite(r[s.k])) { started = false; return; }  // undefined ≠ 0
+      if (started) g.lineTo(x(i), y(r[s.k])); else g.moveTo(x(i), y(r[s.k]));
+      started = true;
+    });
+    g.stroke();
+    g.fillStyle = s.hue;
+    rows.forEach((r, i) => {
+      if (!Number.isFinite(r[s.k])) return;
+      g.beginPath(); g.arc(x(i), y(r[s.k]), 2.4, 0, 2 * Math.PI); g.fill();
+    });
+  }
+
+  // the identity rides in the picture: a screenshot loses the controls
+  g.textAlign = "start";
+  let lx = padL;
+  for (const s of series) {
+    g.fillStyle = s.hue;
+    g.fillRect(lx, padT - 17, 9, 9);
+    g.fillStyle = css.getPropertyValue("--fg").trim();
+    g.fillText(s.name, lx + 13, padT - 9);
+    lx += 13 + g.measureText(s.name).width + 16;
+  }
+  g.save();
+  g.translate(13, padT + (H - padT - padB) / 2);
+  g.rotate(-Math.PI / 2);
+  g.textAlign = "center";
+  g.fillStyle = css.getPropertyValue("--fg").trim();
+  g.fillText("score · " + rows[0].nPlanted + " planted", 0, 0);
+  g.restore();
+}
+
+document.getElementById("runTune").onclick = runTune;
+// before anything is open there is nothing to score against, and the panel says
+// that rather than offering a button that would do nothing
+paintTuneWhat();
+
+document.getElementById("runDetect").onclick = runDetect;
+
+/* ---------- the sidebar: one section at a time ----------------------------- */
+const SECTIONS = ["accSim", "accOpen", "accAssess", "accDetect", "accTune",
+                  "accList"];
+function showSection(id) {
+  for (const s of SECTIONS) {
+    const n = document.getElementById(s);
+    n.open = s === id && !n.hidden;
+  }
+}
+SECTIONS.forEach(s => {
+  const n = document.getElementById(s);
+  // closing the others fires their toggle too, so only an OPENING one steers
+  n.addEventListener("toggle", () => { if (n.open) showSection(s); });
+});
+document.getElementById("runSim").onclick = runSim;
+document.getElementById("simCta").onclick = () => {
+  showSection("accSim");
+  runSim();
+};
+
+/* ---------- remember the folder, not the data --------------------------------
+   A FileSystemDirectoryHandle is a permission to read a place, not the bytes in
+   it, and IndexedDB is local storage in this browser. So this remembers WHERE
+   you pointed the page and never what it found — the recordings are re-read
+   from your disk each visit and are still never sent anywhere.
+
+   The browser will not let a page silently re-open a folder across visits, and
+   that is the right rule: reopening needs a click. Chrome and Edge have the
+   API; Safari and Firefox do not, and there the picker below is the whole
+   story, which is why it stays. ------------------------------------------- */
+const IDB = "bugarach", STORE = "handles", KEY = "lastDir";
+
+function idb(mode, fn) {
+  return new Promise((res, rej) => {
+    const req = indexedDB.open(IDB, 1);
+    req.onupgradeneeded = () => req.result.createObjectStore(STORE);
+    req.onerror = () => rej(req.error);
+    req.onsuccess = () => {
+      const db = req.result;
+      const tx = db.transaction(STORE, mode);
+      const out = fn(tx.objectStore(STORE));
+      tx.oncomplete = () => { db.close(); res(out && out.result); };
+      tx.onerror = () => { db.close(); rej(tx.error); };
+    };
+  });
+}
+const rememberDir = h => idb("readwrite", s => s.put(h, KEY)).catch(() => {});
+const recallDir = () => idb("readonly", s => s.get(KEY)).catch(() => null);
+
+async function filesFromHandle(dirHandle) {
+  const out = [];
+  for await (const [name, h] of dirHandle.entries())
+    if (h.kind === "file" && name.toLowerCase().endsWith(".csv"))
+      out.push(await h.getFile());
+  return out;
+}
+
+async function openHandle(dirHandle, {ask = true} = {}) {
+  const opts = { mode: "read" };
+  let perm = await dirHandle.queryPermission(opts);
+  if (perm !== "granted" && ask) perm = await dirHandle.requestPermission(opts);
+  if (perm !== "granted") return false;
+  await open(await filesFromHandle(dirHandle));
+  return true;
+}
+
+async function offerLastFolder() {
+  if (!window.showDirectoryPicker) return;         // not this browser
+  const h = await recallDir();
+  if (!h) return;
+  const b = document.getElementById("reopen");
+  b.hidden = false;
+  b.textContent = "Reopen “" + h.name + "”";
+  b.onclick = async () => {
+    // re-reads from disk; the handle stored nothing but the location
+    if (!await openHandle(h)) b.textContent = "Permission declined — choose folder…";
+  };
+}
+offerLastFolder();
+
+document.querySelectorAll(".seg button").forEach(b => {
+  b.onclick = () => {
+    if (ORDER === b.dataset.order) return;
+    ORDER = b.dataset.order;
+    document.querySelectorAll(".seg button").forEach(x =>
+      x.setAttribute("aria-pressed", String(x.dataset.order === ORDER)));
+    if (current?.loaded) { paintOrderNote(current.loaded); draw(current, current.loaded); }
+  };
+});
+
+document.getElementById("pickDir").onclick = async () => {
+  // the modern picker gives a handle we can offer back next visit; without it
+  // the input below does the same job for this visit only
+  if (window.showDirectoryPicker) {
+    let h;
+    try {
+      h = await window.showDirectoryPicker({ mode: "read" });
+    } catch (e) {
+      // AbortError is the user closing the dialog — nothing to do, and saying
+      // something would be noise. Anything else means the API is present but
+      // unusable here (an embedded frame, a blocking permissions policy), and
+      // silently doing nothing would read as a broken button
+      if (e && e.name === "AbortError") return;
+      document.getElementById("dir").click();
+      return;
+    }
+    await rememberDir(h);
+    await openHandle(h, { ask: false });
+    const b = document.getElementById("reopen");
+    b.hidden = false; b.textContent = "Reopen “" + h.name + "”";
+    b.onclick = () => openHandle(h);
+    return;
+  }
+  document.getElementById("dir").click();
+};
+document.getElementById("pickFiles").onclick = () => document.getElementById("files").click();
+document.getElementById("dir").onchange = e => open(e.target.files);
+document.getElementById("files").onchange = e => open(e.target.files);
+document.body.addEventListener("dragover", e => e.preventDefault());
+document.body.addEventListener("drop", e => {
+  e.preventDefault();
+  if (e.dataTransfer?.files?.length) open(e.dataTransfer.files);
+});
+let rt;
+window.addEventListener("resize", () => {
+  clearTimeout(rt);
+  rt = setTimeout(() => { if (current?.loaded) draw(current, current.loaded); }, 120);
+});
+// the window colours are picked for the surface they sit on, so a reader who
+// switches the OS to dark mid-session gets the dark steps rather than the light
+// ones washed out; the legend swatches are repainted with them
+if (window.matchMedia) {
+  const mq = window.matchMedia("(prefers-color-scheme: dark)");
+  const again = () => { if (current) show(current); };
+  if (mq.addEventListener) mq.addEventListener("change", again);
+}
+</script>

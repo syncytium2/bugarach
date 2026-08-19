@@ -63,3 +63,36 @@ the repo's own vendoring stamps (`vendored from interface2 @ 9df9a16`) are
 legitimate bare shas, as are the provenance lines in this file's neighbours, so
 the rule would have fired mostly on correct text. Filed as a thought rather than
 a rule — see `docs/sapper_feedback/` if that changes.
+
+## American English
+
+`center`, not `centre`; `labeled`, `traveled`, `modeling`, `analyze`. Tony's
+call, 2026-08-18, made after a README table shipped the model's name as
+"centre−surround" while the code that defines it — `learn/nets.py`'s own
+`@register("tube", note="center-surround …")` — had spelled it the American way
+all along.
+
+This bites hardest in **figure labels**, because a figure is regenerated from a
+script and a README is edited by hand, so the two drift apart silently and the
+mismatch is only visible to someone looking at the picture and the table at the
+same time. When a name changes, change it in the generator and re-render, rather
+than in the prose alone.
+
+Known drift, not yet swept: several figure generators under `tools/` and their
+committed renders still spell it `centre−surround` (the learned-detector report
+figures, the architecture and regime figures). They need a re-render to fix, and
+some of those re-renders retrain a model, which is why this is recorded here
+instead of being done in the same change.
+
+## Bold in a results table asserts a claim
+
+Bolding a cell says *this is the best one*, and a reader takes it from the table
+without reading the paragraph under it. The bake-off table bolded the learned
+model's detect time at 0.014 s while `rate+context` scanned the same fold in
+0.005 s, and bolded its F1 while the surrounding prose argued — correctly — that
+the top three are a tie. Both were caught by Tony reading the table, which is
+exactly the reader the bold was talking to.
+
+Emphasize the row a passage is *about* if you like. Do not emphasize a number
+unless it is the extreme of its column, and not even then when the document's own
+argument is that the differences are not separable.

@@ -16,6 +16,8 @@ channel of onset times per ROI.
 
 ![a real baseline recording above the generator asked to imitate it](generator/reality_check.png)
 
+> ⚠ **This figure predates the convention below and is pending a rebuild.** Every other raster in this project draws each onset identically; this one still inks the onsets inside a window LoCo called, and its own caption says so. It is the only figure here that cannot be re-rendered without the real archive. See [`docs/todo/2026-08-18-reality-check-figure-predates-the-uniform-raster.md`](todo/2026-08-18-reality-check-figure-predates-the-uniform-raster.md).
+
 Top is a real recording. Bottom is the generator given its ROI count, its
 duration and its per-ROI rate, with events planted at the measured participation
 and jitter. Same detector, same settings, on both.
@@ -58,12 +60,13 @@ repairs any of this, because that knob scales every ROI together. Reproduce with
 and writes no figure; both forms need `$BUGARACH_DATA_ROOT`, because the survey
 reads the real archive).
 
-⚠ **A zero-event ROI is not a dead ROI.** That verdict belongs to `fireflies`,
-whose spec requires silence at baseline *and* under drug *and*, where the slice
-has one, under a high-potassium positive control — rows the baseline-only
-restriction in [`FOUNDATIONS.md`](FOUNDATIONS.md) §9 puts out of reach here. The
-dead rate lands nearer 3%. The 35% above is a property of the window, not a
-judgement about the cell.
+⚠ **A zero-event ROI is not a dead ROI.** That verdict is made at export, in
+MATLAB, which sees every treatment of an ROI at once: it requires silence at
+baseline *and* under drug *and*, where the slice has one, under a high-potassium
+positive control — a record the baseline-only restriction in
+[`FOUNDATIONS.md`](FOUNDATIONS.md) §9 puts out of reach here. The dead rate lands
+nearer 3%. The 35% above is a property of the window, not a judgement about the
+cell.
 
 That matters for these detectors specifically. Four of the six count *distinct
 ROIs coactive* — CoactDetect, LoCo, binned SCE and CICADA; RateDetect scores a
@@ -158,12 +161,16 @@ detections **outside the probe block**; F1 is their harmonic mean.
 ## Parameters
 
 Each figure shows one recording re-rendered across several values of a single
-knob. **▲** marks planted event times, **▽** marks distractors, and onsets
-belonging to a planted event are drawn dark against a muted background.
+knob. **▲** marks planted event times along the top — unconditioned here, since
+these figures run no detector — and **▽** marks distractors where a sweep plants
+any. **Every raster onset is drawn the same.** Read the marks along the top
+against an unmarked raster: if the structure is not visible there, that is the
+finding, not a failure of the picture. (Why the rasters stopped being inked is in
+the corrections appendix.)
 
 ### `bg_rate_hz` — background rate (default 0.05; bench uses 0.0038–0.0175)
 
-![bg_rate_hz](generator/generator_bg_rate_hz.png)
+![five stacked rasters, background firing rising from nearly empty at the top to a solid wash at the bottom](generator/generator_bg_rate_hz.png)
 
 The planted structure is the same in every row; only how far it stands out
 changes. The middle three rows are the untreated interquartile range and its
@@ -174,7 +181,7 @@ so the schedule redraws with the knob. Compare structure, not event for event.*
 
 ### `bg_rate_shape` — how unevenly the background is spread (default `None`; bench still uses `None`)
 
-![bg_rate_shape](generator/generator_bg_rate_shape.png)
+![four rasters; at the bottom a few ROI rows carry most of the activity and many are almost empty](generator/generator_bg_rate_shape.png)
 
 `bg_rate_hz` sets the background's *level*; this sets its *spread*. `None` gives
 every ROI the same rate — the flat field, and what this generator did for its
@@ -207,7 +214,7 @@ exists here yet.
 
 ### `bg_burst_shape` / `bg_burst_bin_sec` — whether an ROI clumps in time (default `None`; bench still uses `None`)
 
-![bg_burst_shape](generator/generator_bg_burst_shape.png)
+![three rasters; towards the bottom the onsets gather into horizontal streaks instead of ticking steadily](generator/generator_bg_burst_shape.png)
 
 `bg_rate_shape` decides which ROIs are busy. This decides whether a busy ROI
 spends its events steadily or in bursts. `None` is a constant rate; a number
@@ -258,12 +265,14 @@ measured on a background that is constant in time.
 
 ### `participation` — fraction of ROIs recruited (default `(1.0, 0.75, 0.50)`; bench uses `(0.30, 0.18, 0.10)`)
 
-![participation](generator/generator_participation.png)
+![four rasters with planted-event triangles above; the vertical columns under them fade as participation drops from 0.45 to 0.10](generator/generator_participation.png)
 
 The **participant floor**. Recall is reported broken down by this, and the six
 detectors diverge sharply at the bottom of the range: in the **quiet regime** at
-~3 ROIs, CoactDetect still finds 93% while SCE, RateDetect and SPIKE-synch find
-none. ⚠ CoactDetect's 0.93 falls to 0.20 in the busy regime — the floor moves
+~3 ROIs, CoactDetect still finds 93% across the bench's three seeds while SCE,
+RateDetect and SPIKE-synch find none. (The single-seed diagnostic beside this
+page reports 80% for the same detector at the same setting — one seed is not a
+measurement, which is why the bench pools three.) ⚠ CoactDetect's 0.93 falls to 0.20 in the busy regime — the floor moves
 with the background.
 
 ⚠ The 10% level is ~3 ROIs, which is *below* the `min_rois=4` floor the
@@ -272,7 +281,7 @@ calibration.
 
 ### `jitter_sec` — how tightly participants fire together (default 0.05; bench uses 0.36)
 
-![jitter_sec](generator/generator_jitter_sec.png)
+![four rasters that look alike — the jitter knob moves onsets by less than a pixel at this width](generator/generator_jitter_sec.png)
 
 ⚠ **The figure cannot resolve this knob.** At 900 s across the panel, 0.36 s of
 jitter is under one pixel — the rows are indistinguishable, and that is a
@@ -288,7 +297,7 @@ resolution; real tightness is unresolved.
 
 ### `min_sep_sec` — the spacing floor (default 15.0; bench uses 120.0)
 
-![min_sep_sec](generator/generator_min_sep_sec.png)
+![four rasters with a shaded context window at the left; the number of planted events inside it falls from four to zero](generator/generator_min_sep_sec.png)
 
 **The contaminated-null axis, and the most consequential knob here.** The shaded
 band is one 120 s detector context window, drawn to scale. At a 15 s floor
@@ -304,7 +313,7 @@ from placement on top of that.
 
 ### `interval_cv` — irregularity of the gaps (default 1.0)
 
-![interval_cv](generator/generator_interval_cv.png)
+![four rasters whose planted-event triangles go from evenly spaced at the top to clumped at the bottom](generator/generator_interval_cv.png)
 
 0 is metronomic, which lets a model predict from the clock instead of from the
 activity — it would score well on synthetic data for a reason that does not
@@ -321,7 +330,7 @@ bases, and the 0.11 one is the one that answers "is the spacing irregular".
 
 ### `hot_window` / `hot_rate_hz` / `ramp_sec` — the promiscuity probe (off by default; bench uses 1200–1500 s at 0.06 Hz with a 30 s ramp)
 
-![hot_rate_hz](generator/generator_hot_rate_hz.png)
+![four rasters with a shaded block in the middle that goes from invisible to solid as its firing rate rises](generator/generator_hot_rate_hz.png)
 
 Extra background inside the shaded block, with **no planted events**, ramping in
 rather than stepping. In the **quiet regime** it separates one detector sharply:
@@ -337,7 +346,7 @@ converge, so the probe distinguishes them only where the background is thin.
 
 ### `n_distractors` / `distractor_frac` — correlated bursts (default 0; bench uses 6 at 0.18)
 
-![n_distractors](generator/generator_n_distractors.png)
+![four rasters where the open down-triangles marking distractors increase from none to twelve](generator/generator_n_distractors.png)
 
 Real cross-ROI coincidence that is not a coordinated event, marked **▽**. They
 recruit the same fraction of ROIs as a planted event, so they are genuinely
@@ -352,7 +361,7 @@ false alarms and do lower precision.
 
 ### `grid_sec` — imaging-grid quantization (default 0.1)
 
-![grid_sec](generator/generator_grid_sec.png)
+![four rasters that look alike — the sampling grid moves onsets by less than a pixel at this width](generator/generator_grid_sec.png)
 
 Coarse grids collapse jitter into lockstep, which flatters any detector binning
 at the same scale. Uses MATLAB rounding — halves away from zero — because numpy's
@@ -361,7 +370,7 @@ width; read the row labels, not the ink.
 
 ### `n_roi` — population size (default 30; bench uses 33)
 
-![n_roi](generator/generator_n_roi.png)
+![four rasters of increasing height as the ROI count rises from 10 to 120](generator/generator_n_roi.png)
 
 Participation is a fraction, so the absolute number of co-firing ROIs scales with
 this — and every detector with a `min_rois` floor has an implicit opinion about
@@ -509,7 +518,9 @@ their threshold as a dotted line; CoactDetect and RateDetect do not expose one t
 the viewer, so their rows show the statistic alone.
 
 ```bash
-python tools/make_diagnostic.py --bench baseline_quiet --tag bench_quiet --out docs/generator
+python tools/make_diagnostic.py --bench baseline_quiet --seed 3 --scale 2 \
+    --out docs/generator --tag bench_quiet \
+    --hero docs/generator/coord_diagnostic_bench_quiet_hero.png
 ```
 
 ![detector lanes, raster, and per-detector analysis traces](generator/coord_diagnostic_bench_quiet.png)
@@ -559,6 +570,17 @@ python tools/make_generator_figures.py --param jitter_sec --out docs/generator
 ```
 
 ## Appendix — corrections to earlier versions
+
+- **The rasters once inked the onsets inside an event.** Every raster in this
+  document used to draw the onsets falling inside a detected or planted window
+  dark and mute the rest. It read as the detector naming its participants, and it
+  was this figure's own rule — *is this onset inside the window* — applied to the
+  detector's output. No detector here returns that list; their results carry a
+  window, and for five of the six a participant count. Worse for these pages, the
+  ink in the knob sweeps was located by the **ground truth**, so a setting that
+  planted something no detector could recover still produced tidy inked columns.
+  Every onset now draws the same (Tony, 2026-08-18). One figure still shows the
+  old convention: `reality_check.png`, which needs the real archive to rebuild.
 
 - **TTX is not a silencing control.** An earlier version treated a TTX-rate
   recording as an empirical null on the premise that blocked action potentials

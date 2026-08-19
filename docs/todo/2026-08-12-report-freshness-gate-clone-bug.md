@@ -1,9 +1,9 @@
 ---
-status: open
+status: done
 filed: 2026-08-12
 ---
 
-# Report the freshness-gate cross-family bug upstream (murderboard)
+# DONE — freshness-gate cross-family bug, reported and fixed upstream (murderboard)
 
 `murderboard_freshness.sh` gives a **confident, wrong verdict** for any vendoring
 family whose slug `gh` cannot resolve. Found while wiring it here 2026-08-12;
@@ -72,3 +72,24 @@ its origin (`635c5a8` vs `b2b2ba2`), so the first vendoring attempt here pulled 
 stale copy. The gate caught it — working as designed. Re-vendored from
 `origin/main`. Worth a `git fetch` on that clone before anyone vendors from it
 again.
+
+
+---
+
+## Resolved 2026-08-17
+
+Fixed upstream in murderboard PR #13, vendored back here at `a46e255`.
+
+The fix splits one list in two. Paths somebody **asserted** are the upstream for the
+slug in play (`MURDERBOARD_REPO`, `--clone`) stay trusted — asserting them is what
+those knobs are for. The built-in **guesses** are murderboard paths and are now
+consulted only when the slug actually names murderboard. Any other family with an
+unreachable upstream gets *cannot determine* rather than a confident verdict computed
+from the wrong repository.
+
+The selftest gained `clone guesses are slug-scoped`, and it was verified to fire:
+reverting only the fix while keeping the case turns it red.
+
+What this does **not** fix: `syncytium2/interface2` is still a 404, so files vendored
+from it remain unverifiable — but they are now honestly unverifiable rather than
+falsely current. That is the whole difference, and it is the one worth having.

@@ -381,3 +381,35 @@ def test_the_distractors_can_actually_discriminate():
             for n in DETECTORS}
     assert max(hits.values()) - min(hits.values()) >= 5, (
         f"every detector answers the distractors the same way: {hits}")
+
+
+def test_pool_scores_is_the_one_place_pooling_happens():
+    """`evaluate` must be `pool_scores` plus a loop, and nothing else.
+
+    A murderboard on 2026-08-16 found two tools pooling by hand as
+    ``n_hit / n_detected`` while the six went through :func:`evaluate` and got
+    the promiscuity probe excluded from their denominator. The two halves of a
+    published comparison were on different metrics under a caption reading
+    "scored by the same rule" — SCE reads precision 0.91 one way and 0.11 the
+    other. Pooling is short enough to rewrite, which is exactly why it forked.
+    This asserts the shared path still produces the shared answer.
+    """
+    from bugarach.bench import pool_scores
+    from bugarach.score import score_stream
+
+    for name in ("rate", "sce"):
+        scores = []
+        for seed in SEEDS:
+            s, gt = make_recording("baseline_busy", seed)
+            scores.append(score_stream(gt, run_detector(name, s)))
+        pooled = pool_scores(scores, detector=name, regime="baseline_busy",
+                             seeds=SEEDS)
+        direct = evaluate(name, "baseline_busy", SEEDS)
+        assert pooled.n_detected == direct.n_detected
+        assert pooled.hot_fa == direct.hot_fa
+        assert pooled.n_scored == direct.n_scored
+        assert pooled.precision == pytest.approx(direct.precision)
+        assert pooled.by_frac == direct.by_frac
+        # and the probe really is being excluded, or this test proves nothing
+        assert pooled.hot_fa > 0
+        assert pooled.precision != pytest.approx(pooled.n_hit / pooled.n_detected)

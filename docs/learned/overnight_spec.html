@@ -1,0 +1,489 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Overnight work — what can run unattended, and what must not</title>
+<style>
+  :root {
+    --paper:   #f6f7f9;
+    --card:    #ffffff;
+    --ink:     #16202b;
+    --muted:   #5c6773;
+    --rule:    #d8dde3;
+    --accent:  #2f5d8a;
+    --learned: #7a1f22;
+    --hand:    #4c78a8;
+    --truth:   #1b7f3b;
+    --ok-bg:   #e4efe6;  --ok-fg:   #1b6b34;
+    --bad-bg:  #f7e4e3;  --bad-fg:  #97362f;
+    --serif: Charter, "Bitstream Charter", "Sitka Text", Cambria, Georgia, serif;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #11151a; --card: #171c23; --ink: #e4e8ec; --muted: #97a2ae;
+      --rule: #2a323c; --accent: #7aa8d4; --learned: #e0796f; --hand: #7aa8d4;
+      --truth: #59b37c;
+      --ok-bg: #17301f; --ok-fg: #7fc796;
+      --bad-bg: #331c1a; --bad-fg: #e08c84;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #11151a; --card: #171c23; --ink: #e4e8ec; --muted: #97a2ae;
+    --rule: #2a323c; --accent: #7aa8d4; --learned: #e0796f; --hand: #7aa8d4;
+    --truth: #59b37c;
+    --ok-bg: #17301f; --ok-fg: #7fc796;
+    --bad-bg: #331c1a; --bad-fg: #e08c84;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--paper); color: var(--ink);
+    font-family: var(--sans); font-size: 16.5px; line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 960px; margin: 0 auto; padding: 4rem 1.5rem 6rem; }
+  .col { max-width: 66ch; }
+
+  h1 {
+    font-family: var(--serif); font-weight: 600; font-size: clamp(2rem, 5vw, 2.9rem);
+    line-height: 1.12; letter-spacing: -0.015em; margin: 0 0 .6rem;
+    text-wrap: balance;
+  }
+  h2 {
+    font-family: var(--serif); font-weight: 600; font-size: 1.5rem;
+    line-height: 1.25; margin: 3.5rem 0 .9rem; text-wrap: balance;
+  }
+  h3 {
+    font-family: var(--sans); font-weight: 640; font-size: 1.02rem;
+    margin: 2rem 0 .5rem; letter-spacing: -0.005em;
+  }
+  p, li { margin: 0 0 1rem; }
+  a { color: var(--accent); }
+  strong { font-weight: 640; }
+  code, .num { font-family: var(--mono); font-size: .89em; font-variant-numeric: tabular-nums; }
+
+  .eyebrow {
+    font-family: var(--sans); font-size: .74rem; font-weight: 660;
+    letter-spacing: .13em; text-transform: uppercase; color: var(--muted);
+    margin: 0 0 1.1rem;
+  }
+  .byline { font-size: .9rem; color: var(--muted); margin: 0 0 1.6rem; }
+  .standfirst {
+    font-family: var(--serif); font-size: 1.24rem; line-height: 1.5;
+    color: var(--muted); margin: 0 0 2.5rem; max-width: 62ch;
+  }
+
+  .verdict {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: 1px; background: var(--rule); border: 1px solid var(--rule);
+    border-radius: 3px; overflow: hidden; margin: 0 0 1rem;
+  }
+  .verdict div { background: var(--card); padding: 1.15rem 1.25rem; }
+  .verdict .k {
+    font-family: var(--mono); font-size: 1.85rem; font-variant-numeric: tabular-nums;
+    line-height: 1; letter-spacing: -0.02em;
+  }
+  .verdict .l { font-size: .82rem; color: var(--muted); margin-top: .45rem; line-height: 1.45; }
+  .k.six { color: var(--hand); }
+  .k.learned { color: var(--learned); }
+
+  figure { margin: 2.2rem 0; }
+  figure img {
+    width: 100%; height: auto; display: block;
+    border: 1px solid var(--rule); border-radius: 3px; background: #fff;
+    padding: 10px;
+  }
+  figcaption {
+    font-size: .87rem; color: var(--muted); margin-top: .7rem;
+    max-width: 72ch; line-height: 1.55;
+  }
+  /* A colour key must render IN its colours, next to what it explains, at body
+     size. Naming a colour in grey caption text is a key that exists and is
+     functionally absent. */
+  .key { font-weight: 640; }
+  .key.hand { color: var(--hand); }
+  .key.learned { color: var(--learned); }
+  .key.truth { color: var(--truth); }
+
+  .tablewrap { overflow-x: auto; margin: 1.5rem 0; }
+  table { border-collapse: collapse; width: 100%; font-size: .92rem; }
+  th, td { text-align: left; padding: .5rem .8rem; border-bottom: 1px solid var(--rule); }
+  th { font-size: .76rem; text-transform: uppercase; letter-spacing: .07em;
+       color: var(--muted); font-weight: 660; }
+  td.n, th.n { text-align: right; font-family: var(--mono);
+               font-variant-numeric: tabular-nums; }
+  tr.hl td { background: color-mix(in srgb, var(--learned) 8%, transparent); }
+
+  .note {
+    border-left: 2px solid var(--accent); padding: .1rem 0 .1rem 1.1rem;
+    margin: 1.6rem 0; color: var(--muted); max-width: 64ch;
+  }
+  .note.warn { border-left-color: var(--learned); }
+  .note strong { color: var(--ink); }
+
+  /* A page that is accurate for the bench it measured, and wrong for the
+     question a reader arrives with, needs to say so before its first sentence
+     — not in a footnote under the conclusion. */
+  .superseded {
+    background: var(--bad-bg); color: var(--bad-fg);
+    border: 1px solid color-mix(in srgb, var(--bad-fg) 35%, transparent);
+    border-radius: 3px; padding: 1.1rem 1.3rem; margin: 0 0 2.5rem;
+    font-size: .95rem; line-height: 1.55;
+  }
+  .superseded p { margin: 0 0 .7rem; max-width: 72ch; }
+  .superseded p:last-child { margin-bottom: 0; }
+  .superseded strong { color: var(--bad-fg); font-weight: 700; }
+  .superseded code { background: color-mix(in srgb, var(--bad-fg) 10%, transparent);
+                     padding: .06em .3em; border-radius: 2px; }
+
+  .arch { margin: 2rem 0; }
+  .arch svg { width: 100%; height: auto; display: block; }
+  .arch text { font-family: var(--mono); font-size: 12px; fill: var(--ink); }
+  .arch text.lbl { font-family: var(--sans); font-size: 12.5px; fill: var(--muted); }
+  .arch text.hi { fill: var(--learned); font-weight: 700; }
+  .arch rect { fill: var(--card); stroke: var(--rule); }
+  .arch rect.act { stroke: var(--learned); stroke-width: 1.6; }
+  .arch line, .arch path { stroke: var(--muted); }
+
+  hr { border: 0; border-top: 1px solid var(--rule); margin: 3.5rem 0; }
+  footer { color: var(--muted); font-size: .85rem; margin-top: 4rem; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+
+  /* markdown lands as one flow rather than the reports' hand-set columns */
+  .doc { max-width: 74ch; }
+  .doc h1 { font-size: clamp(1.8rem, 4.5vw, 2.4rem); margin-bottom: 1.4rem; }
+  .doc h2 { border-top: 1px solid var(--rule); padding-top: 1.6rem; }
+  .doc h3 { font-size: 1.05rem; margin-top: 2.2rem; }
+  .doc table { margin: 1.4rem 0; }
+  .doc td, .doc th { vertical-align: top; }
+  .doc blockquote { border-left: 2px solid var(--rule); margin: 1.6rem 0;
+                    padding: .1rem 0 .1rem 1.1rem; color: var(--muted); }
+  .doc blockquote.gate { border-left: 4px solid var(--learned);
+                         background: var(--bad-bg); color: var(--bad-fg);
+                         padding: .2rem 1.3rem 1rem; border-radius: 3px; }
+  .doc blockquote.gate h2 { border-top: 0; padding-top: 1.2rem;
+                            color: var(--bad-fg); }
+  .doc blockquote.gate strong { color: var(--bad-fg); }
+  .doc code { background: color-mix(in srgb, var(--ink) 7%, transparent);
+              padding: .08em .32em; border-radius: 2px; }
+  .doc li { margin-bottom: .5rem; }
+
+</style>
+<div class="wrap"><div class="doc">
+<h1>Overnight work — what can run unattended, and what must not</h1>
+<blockquote class="gate">
+<h2>⛔ NOT APPROVED. Nothing here is authorised to run.</h2>
+<p><strong>Status: proposal, awaiting Tony.</strong> Written 2026-08-17 at his request —
+<em>"prepare the spec but do not run"</em> — while he was going to sleep and explicitly
+not in a position to approve anything.</p>
+<p>If you are a session that found this file through the briefing or a todo scan:
+<strong>this is not a work order.</strong> It reads like one on purpose, because it is meant to
+be executable the moment it is approved, and that is exactly what makes it
+dangerous to leave unmarked. Track B spends real compute, Track C touches an
+external dataset, and Track A changes the app's entry point. None of it has been
+agreed.</p>
+<p><strong>What you may do without approval:</strong> read it, and correct it — every quantity in
+it is checkable and four were wrong in the first draft.
+<strong>What needs Tony first:</strong> running any of it.</p>
+</blockquote>
+<p><strong>Read <a href="workflow_plan.md"><code>docs/workflow_plan.md</code></a> first.</strong> That plan already specifies
+the app's milestones — folder reader, uniform yardstick, fitting stage, writers, batch,
+comparison — and it has been through the murderboard. This file does not restate it. It
+answers a different question: <em>which work can proceed with nobody watching, and in what
+order.</em></p>
+<h2>The constraint that shapes everything</h2>
+<p><strong>Overnight means no human, and the pipeline has a decision in the middle of it.</strong>
+Choosing K — the cluster size the assessment runs at — moves the corpus materially
+(K=3 was chosen; K=4 drops the cluster rate to roughly a quarter of it) and <code>derive_spec.py</code> refuses to choose,
+deliberately. So any track that runs through that point either stops at it or fabricates
+the judgement.</p>
+<p>Everything below is sorted by that test, not by importance:</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>can run unattended</th>
+<th>why</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>compute sweeps on an existing spec</strong></td>
+<td>✅ yes</td>
+<td>no decision inside; every output is a JSON that a human reads in the morning</td>
+</tr>
+<tr>
+<td><strong>infrastructure with tests</strong></td>
+<td>✅ yes</td>
+<td>correctness is checkable by the suite, not by taste</td>
+</tr>
+<tr>
+<td><strong>choosing K, approving a corpus</strong></td>
+<td>❌ no</td>
+<td>a judgement, and the whole apparatus exists to keep it visible</td>
+</tr>
+<tr>
+<td><strong>shipping a document</strong></td>
+<td>❌ no</td>
+<td>the murderboard's blind rounds need a reader; drafting is fine, shipping is not</td>
+</tr>
+<tr>
+<td><strong>writing to the darkroom</strong></td>
+<td>⚠ with a board claim</td>
+<td>shared across machines; see the collision note at the end</td>
+</tr>
+</tbody>
+</table>
+<h2>Track A — infrastructure, unattended-safe subset</h2>
+<p>Milestones from <code>workflow_plan.md</code> Part II, marked for overnight suitability. Do these
+first; the model work in Track B is more interesting and less useful, because a model
+refined on a pipeline nobody can run is a result nobody can reproduce.</p>
+<ol>
+<li><strong>The folder reader</strong> — ✅ safe. It is mechanical and the plan names its traps: a
+   conforming folder is <em>one</em> input rather than a pile of CSVs, the <code>slice_id</code> and
+   <code>stream</code> columns are currently ignored, and <code>frame_interval_sec</code> must reach <strong>all
+   three</strong> detectors that assume it, not just the one that warns. That last item is the
+   one to verify with a test rather than by reading — a lab imaging at 20 Hz currently
+   gets one warning and two quietly wrong answers.</li>
+<li><strong>The uniform yardstick</strong> — ✅ safe. Build the synthetic oracle through
+   <code>tools/matlab_ref/</code> so it travels; the per-event export is the local second check and
+   cannot be committed.</li>
+<li><strong>The writers</strong> — ✅ safe. This is what makes the app finish rather than display: a
+   table a statistician can open. Nothing in the tree writes a data file today.</li>
+<li><strong>Batch</strong> — ✅ safe, and it is the multiplier for everything in Track B.</li>
+<li><strong>The fitting stage</strong> — ⚠ <strong>build up to the decision and stop.</strong> Everything before
+   "choose K" is unattended-safe; the choice is not. Leave the run parked with the scan
+   written out, and have the morning session pick.</li>
+<li><strong>Screens and the seam</strong> — ❌ not overnight work. The plan leaves them unspecified
+   deliberately.</li>
+</ol>
+<h2>Track B — model refinement, and what today's results imply</h2>
+<p>All five are compute-bound, none contains a judgement, and each writes a JSON whose
+shape a human can check in a minute. <strong>They are also embarrassingly parallel</strong>, which is
+what makes them the right use of an unattended night.</p>
+<h3>B1 · Close the seed gap — highest value, least interesting</h3>
+<p>Every learned number in this project is <strong>one training run per fold</strong>. Fold spread
+therefore confounds data variation with training variation, and this caveat has been
+carried, unresolved, through every report. It is the cheapest thing that could change a
+conclusion and it has never been done for one reason: it needs compute and patience,
+which is precisely what an unattended night is.</p>
+<ul>
+<li><strong>Run:</strong> <code>tools/fair_bakeoff.py</code> with <strong>≥5 seeds per fold</strong> rather than one, for every
+  learned model, and re-emit <code>bakeoff.json</code> with a seed axis alongside the fold axis.</li>
+<li><strong>What it settles:</strong> whether the tie at the top is a tie. Currently 0.668 ± 0.061
+  against 0.651 ± 0.044 with n=4 and no seed replication.</li>
+<li><strong>What would change a conclusion:</strong> if seed variance is comparable to fold spread,
+  every interval in every report is wider than stated and the "ties" language must get
+  stronger, not weaker.</li>
+<li><strong>Cost, and a choice inside it.</strong> Centre−surround and pooled trace fit in 5.6 and
+  8.0 s, so 5 seeds × 4 folds of both is about five minutes. The per-cell bank costs
+  <strong>236 s a fit</strong> — the same sweep for it is 80 minutes on its own, for a model that
+  sits at the floor and whose threshold lands on the edge of its grid. Run it anyway
+  <em>once</em> overnight, because "it does not train" is currently a single-seed claim about a
+  model we have already written off, and writing something off on n=1 is how it stays
+  written off.</li>
+<li><strong>Do this one first.</strong> Every other result below inherits its error bars from it.</li>
+</ul>
+<h3>B2 · The event-rate ceiling — the falsifiable prediction</h3>
+<p>The fitted surround runs 21–59× the centre, i.e. <strong>97–181 samples, 9.7–18.1 s
+wide</strong> at this corpus's frame interval, and that surround <em>is</em> the model's background estimate. If coordinated events
+arrive faster than the surround is wide, the surround averages neighbouring events into
+"background" and the model subtracts signal from itself.</p>
+<ul>
+<li><strong>Predicts:</strong> performance degrades as inter-event interval approaches surround width,
+  and the degradation is specific to centre−surround — the six should not show the same
+  knee at the same place.</li>
+<li><strong>Run:</strong> raise the <strong>event count</strong>, not the separation floor. The corpus plants
+  <code>n_per_level = (5, 5, 5)</code> — 15 events in 3,525 s, a mean interval of <strong>235 s</strong> — and
+  <code>min_sep_sec</code> is 171. Lowering <code>min_sep_sec</code> alone <em>permits</em> closer pairs without
+  producing them: the mean interval is set by count over duration and would not move,
+  so the sweep would have run and shown nothing, for a reason having nothing to do with
+  the model. <strong>Sweep <code>n_per_level</code> up</strong> — (5,5,5), (10,10,10), (20,20,20), (40,40,40),
+  (80,80,80) — giving mean intervals of about 235, 118, 59, 29 and 15 s, and lower
+  <code>min_sep_sec</code> at each step so it never binds before the interval you are targeting.
+  Score all nine detectors per point, and plot F1 and precision against <strong>mean
+  inter-event interval</strong> with the fitted surround width drawn on the axis.</li>
+<li><strong>Reuse:</strong> <code>tools/ablate_tube.py</code> is the closest template — it already runs variants
+  through the bake-off's folds and scorer. A <code>--sweep min_sep_sec</code> mode is a smaller
+  change than a new tool.</li>
+<li><strong>Check the control before believing the result:</strong> more events per recording also
+  means more chances to fire, so recall can rise for reasons unrelated to the mechanism.
+  The mechanism-specific signature is <strong>precision</strong> falling as the interval crosses the
+  surround width, and it falling <strong>for centre−surround and not for the six</strong>.</li>
+<li><strong>What would change a conclusion:</strong> a knee near the surround width converts "the model
+  transfers badly to busier backgrounds" from a puzzle into a mechanism, and makes the
+  surround width an operating constraint the app must expose. <strong>No knee</strong> is equally
+  useful and would retire the hypothesis.</li>
+</ul>
+<h3>B3 · The width ceiling</h3>
+<p><code>max_center_frames=128</code> clamps the centre to k/2 = <strong>64 samples, about 6.4 s</strong>. Events
+wider than that cannot be fitted; the model will sit at the clamp and report a width
+that is a wall rather than an answer — the exact pattern the surround-ratio chase just
+followed.</p>
+<ul>
+<li><strong>Run:</strong> sweep the generator's event width (jitter, currently 0.31 s) upward through
+  roughly 0.5, 1, 2, 4, 8, 16 s, re-fitting each time, and plot <strong>fitted centre against
+  planted width</strong> with the clamp drawn as a line.</li>
+<li><strong>What good looks like:</strong> fitted width tracks planted width, then flattens at the
+  clamp. Where it flattens is the model's usable range and belongs in the app's
+  documentation.</li>
+<li><strong>Cheap dependency:</strong> raise <code>max_center_frames</code> in a second arm so the clamp is not
+  confounded with the capability.</li>
+</ul>
+<h3>B4 · The corpus that could vindicate the multi-scale bank</h3>
+<p>The bank collapsed to one scale and one scale scored identically — <strong>on a corpus that
+plants a single event width</strong>. That is a property of the generator, not a verdict on the
+design.</p>
+<ul>
+<li><strong>Run:</strong> a corpus with <strong>two or three distinct event widths present simultaneously</strong>
+  (e.g. 0.3 s and 3 s events interleaved), then the same 1-vs-2-vs-4-scale ablation.</li>
+<li><strong>What would change a conclusion:</strong> scales that separate and a four-scale model that
+  beats one-scale would restore the multi-scale design. Scales that still collapse would
+  retire it for good, and 81 parameters come out of the shipped model.</li>
+<li>⚠ <strong>This one needs a generator change</strong>, not just a parameter — the generator plants
+  one participation/jitter set per recording. Check whether interleaving widths is a
+  config change or a code change before scheduling it; if it is code, it is a morning
+  task with a review, not an overnight one.</li>
+</ul>
+<h3>B5 · Drop the raw brightness channel</h3>
+<p>Carried unresolved from the 16 August handoff. The centre−surround head takes the raw
+brightness trace as a fifth channel alongside the four filtered ones. That channel never
+had its background subtracted, so it is a candidate explanation for the transfer
+asymmetry that the clamp hypothesis failed to explain.</p>
+<ul>
+<li><strong>Run:</strong> one arm with the bypass removed, through the bake-off folds and the transfer
+  test.</li>
+<li><strong>One line of code</strong>, and it either explains section 5 or eliminates the last cheap
+  explanation.</li>
+</ul>
+<h2>Track C — a second corpus from DANDI</h2>
+<p><strong>Worth doing, and worth being precise about what it buys.</strong> A DANDI dataset carries no
+coordination ground truth, so it <strong>cannot score a detector</strong>. What it can do is supply a
+<em>second set of statistics</em> to fit a generator to, which answers a question nothing here
+has touched: do these conclusions survive a corpus that is not ours?</p>
+<p>Ordered, with the human checkpoints marked:</p>
+<ol>
+<li>❌ <strong>A human picks the dandiset.</strong> Preparation, indicator, frame rate and species all
+   change what the numbers mean, and a wrong pick produces a confidently fitted generator
+   for a preparation nobody intended. Name it, with the DOI, on the board.</li>
+<li>✅ <strong>Read it.</strong> NWB, so a reader is needed; check whether the events are onsets or
+   fluorescence, because this project's whole pipeline consumes <strong>onsets</strong> and a
+   fluorescence set needs an event-extraction step that is somebody else's method and a
+   confound in every downstream number.</li>
+<li>⚠ <strong>Frame interval — verify, do not infer.</strong> It sets the grid for three detectors and
+   two of them fail silently. This is the single most likely way a foreign dataset
+   produces plausible wrong answers.</li>
+<li>✅ <strong>Run the assessor</strong> (<code>tools/assess_archive.py</code>) and compare the resulting
+   participation, jitter, cluster rate and background against
+   <code>docs/learned/assessment_real.json</code>. <strong>The comparison is the deliverable</strong>, not the
+   corpus — if the statistics land close to ours, our conclusions travel further than one
+   lab; if they are far apart, we have found the axis along which they do not.</li>
+<li>❌ <strong>Choosing K for the new set</strong> is a human decision, same as before.</li>
+<li>✅ Only then generate a corpus and re-run the bake-off on it.</li>
+</ol>
+<p><strong>If the DANDI set has wider or more variable events than ours, it supersedes B4</strong> — a
+real distribution of widths beats a synthetic one, and it would make the multi-scale
+question answerable on data rather than on a construction.</p>
+<h2>What must not run overnight, restated so it cannot be missed</h2>
+<ul>
+<li><strong>Choosing K</strong>, or approving any generator spec.</li>
+<li><strong>Shipping a document.</strong> Draft freely; the murderboard's blind rounds need a reader
+  who did not write the draft, and this session has already demonstrated what
+  self-review misses — four domain-level defects reached a shipped page after eleven
+  roles reported clean.</li>
+<li><strong>Any claim that a detector is right about a real slice.</strong> Nothing in Track B or C
+  establishes that; the corpora are simulated and DANDI has no ground truth.</li>
+<li><strong>Rewriting git history</strong>, per <code>CLAUDE.md</code>.</li>
+</ul>
+<h2>Running several of these at once</h2>
+<p>They are independent, and the point of an unattended night is to run them in parallel.
+Three rules make that safe:</p>
+<ol>
+<li><strong>One worktree and one branch per item</strong>, off <code>origin/main</code>, landing by green PR.
+   Never share a HEAD.</li>
+<li><strong>Claim shared external outputs on <a href="SESSIONS.md"><code>docs/SESSIONS.md</code></a> before writing</strong> —
+   the darkroom is visible from every machine and both workstations are live. Claim
+   before the write, and <strong>release only when the writing stops</strong>, not when the first
+   deliverable ships.</li>
+<li><strong>Namespace your outputs, including data-store keys.</strong> <code>tools/build_learned_report.py</code>
+   addresses its JSON stores by name, and a session adding <code>"t"</code> for a tolerance sweep
+   silently shadowed another session's <code>"t"</code> — a dict literal does not error on a
+   duplicate key, so the tokens resolved against the wrong file and reported as
+   <em>unresolved paths</em>. Store names are words now; use a distinctive one and check
+   <code>DATA</code> before adding.</li>
+</ol>
+<h2>Expected wall clock, from measured runs</h2>
+<p>Everything here is cheap by overnight standards, which is why the seed gap in B1 is
+embarrassing rather than expensive.</p>
+<table>
+<thead>
+<tr>
+<th>item</th>
+<th>measured basis</th>
+<th>estimate</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>one model fit</td>
+<td>5.6 s (centre−surround)</td>
+<td>—</td>
+</tr>
+<tr>
+<td>one ablation arm, 4 folds</td>
+<td>2.5 min for 5 arms</td>
+<td>~30 s</td>
+</tr>
+<tr>
+<td>full regime-shift, all detectors</td>
+<td>measured</td>
+<td>~9 min</td>
+</tr>
+<tr>
+<td>assessor, 85 slices, 1,000 surrogates</td>
+<td>measured</td>
+<td>~2 min</td>
+</tr>
+<tr>
+<td><strong>B1, centre−surround + pooled trace, 5 seeds × 4 folds</strong></td>
+<td>40 fits at 5.6–8.0 s</td>
+<td><strong>~5 min</strong></td>
+</tr>
+<tr>
+<td><strong>B1 including the per-cell bank</strong></td>
+<td>20 more fits at <strong>236 s each</strong></td>
+<td><strong>+80 min</strong></td>
+</tr>
+<tr>
+<td><strong>B2, 8 rate points × 9 detectors × 4 folds</strong></td>
+<td></td>
+<td><strong>~1–2 h</strong></td>
+</tr>
+<tr>
+<td><strong>B3, 6 width points × 2 clamp arms</strong></td>
+<td></td>
+<td><strong>~20 min</strong></td>
+</tr>
+</tbody>
+</table>
+<p><strong>The whole of Track B fits in a night with hours to spare.</strong> The binding constraint is
+not compute; it is that each result needs a human to read it in the morning, so prefer
+<strong>fewer, better-instrumented runs that write clear JSON</strong> over a sweep so broad nobody
+opens it.</p>
+<h2>The order I would run them</h2>
+<ol>
+<li><strong>B1</strong> (seed gap) — everything else inherits its error bars.</li>
+<li><strong>Track A 1–4</strong> in parallel on separate branches — the app has to finish before the
+   model matters.</li>
+<li><strong>B2</strong> (rate ceiling) — the one falsifiable prediction on the table.</li>
+<li><strong>B5</strong> (brightness channel) — one line, closes the last cheap explanation.</li>
+<li><strong>B3</strong> (width ceiling) — bounds the claim rather than testing it.</li>
+<li><strong>C1–C4</strong> — the second corpus, up to the human checkpoint.</li>
+<li><strong>B4</strong> last, or never, if DANDI supersedes it.</li>
+</ol>
+</div></div>
+</html>

@@ -7,6 +7,17 @@ import sys
 from pathlib import Path
 
 
+def _is_export_folder(p: Path) -> bool:
+    """A folder written to ``docs/export_folder_spec.md``, rather than a pile
+    of files that happen to be CSVs. Decided by the reserved names, because
+    that is exactly what separates the two — without this check `slices.csv`
+    and `regions.csv` load as if they were recordings, and a folder of 85
+    recordings opens as 87 with two of them nonsense."""
+    from bugarach.io import RESERVED
+
+    return p.is_dir() and any((p / n).is_file() for n in RESERVED)
+
+
 def _collect(paths: list[str]) -> list[Path]:
     files = []
     for p in paths:
@@ -35,22 +46,82 @@ def main(argv: list[str] | None = None) -> None:
     view.add_argument("--port", type=int, default=5006)
     view.add_argument("--no-show", action="store_true",
                       help="don't open a browser tab")
+    view.add_argument("--raster-only", action="store_true",
+                      help="show the recordings and nothing else — no "
+                           "detectors, no parameters. The first look at a "
+                           "folder somebody just sent you.")
+    chk = sub.add_parser(
+        "check", help="does an export folder conform to the import contract?")
+    chk.add_argument("folder", help="the export folder to check")
+
+    asr = sub.add_parser(
+        "assess", help="how coordinated are these recordings? (no detector)")
+    asr.add_argument("folder", help="the export folder to assess")
+    asr.add_argument("--stream", default=None,
+                     help="which stream; default is the first in each recording")
+    asr.add_argument("--surrogates", type=int, default=1000,
+                     help="circular-shift surrogates per recording (default 1000, "
+                          "the value the reference numbers were produced at)")
+    asr.add_argument("--bin-width", type=float, default=None,
+                     help="coactivity bin in seconds; default 1.0. It interacts "
+                          "with what counts as one event — say which you used")
+    asr.add_argument("--limit", type=int, default=None,
+                     help="assess only the first N recordings")
     args = ap.parse_args(argv)
+
+    if args.cmd == "assess":
+        # importable without panel, for the same reason `check` is: a lab
+        # measuring its own folder should not need the viewer installed
+        from bugarach.assess_folder import assess_folder, format_assessment
+
+        fa = assess_folder(args.folder, stream=args.stream,
+                           n_surrogates=args.surrogates,
+                           bin_width_sec=args.bin_width, limit=args.limit)
+        print(format_assessment(fa))
+        # Exit 0 whether or not anything was assessable. This is a MEASUREMENT,
+        # not a gate: "no recording carried a baseline region" is an answer about
+        # the folder, and turning it into a non-zero exit would put it in a build
+        # where somebody would make it pass.
+        raise SystemExit(0)
+
+    if args.cmd == "check":
+        # deliberately importable without panel: a producer checking a folder
+        # should not need the viewer's dependencies installed
+        from bugarach.conform import check_folder, format_report
+
+        rep = check_folder(args.folder)
+        print(format_report(rep))
+        raise SystemExit(0 if rep.ok else 1)
 
     import panel as pn
 
+    from bugarach.io import load_folder
     from bugarach.ui.app import build_viewer, load_any
 
     slices = {}
-    for f in _collect(args.paths):
-        sid, s = load_any(f)
-        name = sid
-        k = 2
+
+    def add(sid, s):
+        name, k = sid, 2
         while name in slices:            # disambiguate duplicate slice ids
             name = f"{sid} ({k})"
             k += 1
         slices[name] = s
-    app = build_viewer(slices)
+
+    plain = []
+    for p in args.paths:
+        # an export folder is read as one thing, by the contract's own reader,
+        # rather than swept for files — see _is_export_folder
+        if _is_export_folder(Path(p)):
+            for s in load_folder(p):
+                add(s.slice_id, s)
+        else:
+            plain.append(p)
+    for f in _collect(plain) if plain else []:
+        add(*load_any(f))
+
+    if not slices:
+        sys.exit("bugarach: nothing to view")
+    app = build_viewer(slices, raster_only=args.raster_only)
     pn.serve(app, port=args.port, show=not args.no_show)
 
 

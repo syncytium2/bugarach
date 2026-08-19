@@ -27,10 +27,22 @@ Reading it
   some detector recovered and ▼ one every detector missed, with ▽ distractors
   riding above.
 * **Raster** — one row per ROI, sorted quietest at the bottom, so coordination
-  reads as a vertical stripe rather than being lost in store order. Onsets that
-  fall inside a detected window are **highlighted**; everything else is muted
-  grey. The highlight answers "what did this detector actually claim", and the
-  grey around it answers "what did it leave".
+  can be found as a vertical stripe when you zoom, rather than being scattered by
+  store order — at page width the stripe is faint, and the interactive version is
+  where that sort pays off. **Every onset
+  is drawn the same.** An earlier version inked the onsets inside a detected
+  window and muted the rest, which showed a per-onset verdict none of the six
+  *returns*. Their results carry a window, and for five of them how many ROIs
+  were in it; not one carries which ones. Three — CICADA, binned SCE and LoCo —
+  build the participating set internally and hand back only its size. So the ink
+  was located by this figure's own rule (*is this onset inside the window*), and
+  a reader had no way to tell that apart from the detector's own answer. What was
+  claimed is in the lanes and markers above, at the resolution it was claimed at.
+
+  What that costs is worth stating: the participant count five of them do report
+  is now drawn nowhere. Removing a wrong proxy for a real quantity is not the
+  same as showing the quantity —
+  ``docs/todo/2026-08-18-the-participant-count-is-reported-and-never-drawn.md``.
 * **Shaded band** — a dense-but-random block containing **no** planted events by
   construction. Detections inside it are false alarms, and a detector that keys
   on rate rather than coordination lights it up. That is the promiscuity probe.
@@ -54,8 +66,9 @@ from bugarach.ui.app import COLORS, TITLES, _signal_row, _time_axis_hook
 FOUND = "#1b7f3b"
 MISSED = "#b3261e"
 FALSE_ALARM = "#b3261e"
-RASTER_MUTED = "#c9c9c9"
-RASTER_HIT = "#1f1f1f"
+#: One ink for every onset. The raster shows what the recording did; what a
+#: detector made of it belongs to the lanes above it.
+RASTER_INK = "#2b2b2b"
 PROBE_BAND = "#e8a33d"
 
 
@@ -82,15 +95,6 @@ def _spans(onsets, widths, ext):
         ww = b if np.isfinite(b) and b > 0 else 0.0
         out.append((max(a, ext[0]), min(a + max(ww, floor), ext[1])))
     return out
-
-
-def _is_member(t, spans):
-    """Per onset: does it fall inside any detected window?"""
-    if not spans or t.size == 0:
-        return np.zeros(t.size, dtype=bool)
-    lo = np.array([s[0] for s in spans])
-    hi = np.array([s[1] for s in spans])
-    return np.any((t[:, None] >= lo[None, :]) & (t[:, None] <= hi[None, :]), axis=1)
 
 
 def _base(ext, ydim: str):
@@ -203,10 +207,15 @@ def lane_panel(lanes: dict, *, ext, gt=None, tol_sec: float = 1.5,
     )
 
 
-def raster_panel(stream, *, ext, member_spans=None, gt=None, name="events",
+def raster_panel(stream, *, ext, gt=None, name="events",
                  width: int = 1000, height: int | None = None):
-    """ROI raster, quietest ROI at the bottom, onsets inside a detected window
-    highlighted against a muted background."""
+    """ROI raster, quietest ROI at the bottom, every onset drawn identically.
+
+    Takes no detection spans on purpose. Inking the onsets inside a detected
+    window asserts which events a detector *recruited*, and none of the six
+    reports that — they report a window, and membership was the figure's own
+    inference. Detections belong to the lanes and the top markers.
+    """
     n_roi = stream.n_rois
     counts = [int(np.sum(np.isfinite(np.asarray(v, dtype=float))))
               for v in stream.t50rise]
@@ -221,7 +230,6 @@ def raster_panel(stream, *, ext, member_spans=None, gt=None, name="events",
             ys.append(np.full(v.size, row))
     t = np.concatenate(ts) if ts else np.zeros(0)
     y = np.concatenate(ys) if ys else np.zeros(0)
-    mem = _is_member(t, member_spans or [])
 
     items = [_base(ext, "roi")]
     if gt is not None:
@@ -229,13 +237,9 @@ def raster_panel(stream, *, ext, member_spans=None, gt=None, name="events",
         if hw is not None:
             items.append(hv.VSpan(float(hw[0]), float(hw[1])).opts(
                 color=PROBE_BAND, alpha=0.16))
-    # muted first, highlighted on top, so a claimed event is never hidden
-    for mask, colour, alpha, size in ((~mem, RASTER_MUTED, 0.85, 4),
-                                      (mem, RASTER_HIT, 0.95, 6)):
-        if np.any(mask):
-            items.append(hv.Scatter((t[mask], y[mask]),
-                                    kdims=["t"], vdims=["roi"]).opts(
-                marker="dash", angle=90, size=size, color=colour, alpha=alpha))
+    if t.size:
+        items.append(hv.Scatter((t, y), kdims=["t"], vdims=["roi"]).opts(
+            marker="dash", angle=90, size=5, color=RASTER_INK, alpha=0.9))
 
     if height is None:
         height = int(np.clip(30 + 9 * n_roi, 200, 640))
@@ -304,7 +308,6 @@ def trace_panel(traces: dict, *, ext, width: int = 1000, height: int = 112):
 
 
 def coordination_diagnostic(stream, *, ext, lanes=None, gt=None,
-                            member_source: str | None = None,
                             tol_sec: float = 1.5, name: str = "events",
                             traces=None,
                             width: int = 1000, height: int | None = None):
@@ -315,10 +318,8 @@ def coordination_diagnostic(stream, *, ext, lanes=None, gt=None,
     figure.
     """
     lanes = lanes or {}
-    src = member_source or (next(iter(lanes)) if lanes else None)
-    spans = _spans(lanes[src][0], lanes[src][1], ext) if src in lanes else []
     top = lane_panel(lanes, ext=ext, gt=gt, tol_sec=tol_sec, width=width)
-    bottom = raster_panel(stream, ext=ext, member_spans=spans, gt=gt, name=name,
+    bottom = raster_panel(stream, ext=ext, gt=gt, name=name,
                           width=width, height=height)
     # shared_axes links by DIMENSION NAME: both panels use "t" for x, and their
     # y dimensions are deliberately named differently ("lane" vs "roi") so only
@@ -388,7 +389,6 @@ def legend_html(lanes: dict, gt=None, member_source: str | None = None) -> str:
     reading a paragraph to locate it (Tony, 2026-08-15).
     """
     src = member_source or (next(iter(lanes)) if lanes else None)
-    src_name = TITLES.get(src, src) if src else "—"
 
     def row(key: str, text: str) -> str:
         return (f'<div style="display:flex;gap:9px;align-items:flex-start;'
@@ -400,6 +400,17 @@ def legend_html(lanes: dict, gt=None, member_source: str | None = None) -> str:
         f'<span style="display:inline-flex;align-items:center;gap:4px;'
         f'margin-right:11px">{_key("bar", COLORS.get(k, "#555"), 12)}'
         f'{TITLES.get(k, k)}</span>' for k in lanes)
+
+    # ▼ is listed only when some planted event was missed by every detector. A key
+    # entry for a glyph that is not in the picture sends a reader hunting for it.
+    any_missed = False
+    if gt is not None and len(getattr(gt, "times", [])) and lanes:
+        from bugarach.score import score_detections
+        found = np.zeros(len(gt.times), dtype=bool)
+        for ev in lanes.values():
+            sc = score_detections(gt, ev[0], widths=ev[1] if len(ev) > 1 else None)
+            found |= np.asarray(sc.hits, dtype=bool)   # per planted event, gt order
+        any_missed = not found.all()
 
     entries = [
         (_key("bar", COLORS.get(src, "#555")),
@@ -414,17 +425,17 @@ def legend_html(lanes: dict, gt=None, member_source: str | None = None) -> str:
          "Fragmentation, not hallucination."),
         (_key("triangle", FOUND),
          "<b>Planted event, recovered</b> by at least one detector."),
-        (_key("inverted", MISSED),
-         "<b>Planted event, missed</b> by all of them."),
+        *([(_key("inverted", MISSED),
+            "<b>Planted event, missed</b> by all of them.")] if any_missed else []),
         (_key("inverted_open", "#5a5a5a"),
          "<b>Distractor</b> — a correlated burst that is real coincidence but "
          "<b>not</b> a coordinated event."),
-        (_key("tick", RASTER_HIT),
-         f"<b>Raster onset, claimed</b> — it falls inside a window claimed by "
-         f"<b>{src_name}</b>. One raster row per ROI, quietest at the bottom."),
-        (_key("tick", "#9a9a9a"),
-         "<b>Raster onset, unclaimed</b> — outside every window that detector "
-         "reported."),
+        (_key("tick", RASTER_INK),
+         "<b>Raster onset</b> — one event, drawn the same wherever it falls. One "
+         "raster row per ROI, quietest at the bottom. Which onsets a detector "
+         "gathered into an event is deliberately not drawn — no detector here "
+         "returns that list, so shading it would be this figure's inference "
+         "wearing the detector's authority."),
         (_key("dotted", "#333"),
          "<b>Threshold</b> — a detector's own cut on its own trace (four of the "
          "six expose one)."),

@@ -113,9 +113,23 @@ The state on `origin` must always be enough to resume elsewhere (FOUNDATIONS
   [`docs/todo/2026-08-12-port-coordination-benchmark.md`](docs/todo/2026-08-12-port-coordination-benchmark.md).
 - **Figure/report output goes to the Dropbox darkroom**, not the repo and not
   local disk. bugarach owns `<darkroom>/bugarach/` — resolve it with
-  `bugarach.paths.darkroom()`, which reads `$BUGARACH_DARKROOM` and returns
-  `None` (skip the export) when unset. Never hardcode it: the path carries a
-  person's name and this repo is public (sapper SAP004).
+  `bugarach.paths.darkroom()` — it takes `$BUGARACH_DARKROOM` when set and
+  otherwise finds the mount itself, and the briefing prints what it resolved.
+  Rule and the incident behind it: FOUNDATIONS §5. Never hardcode the path: it
+  carries a person's name and this repo is public (sapper SAP004).
+  **A report counts as output, and "in the repo" is not delivered.** The assembly
+  report reached `docs/learned/` and stopped there, because its builder took
+  `--out` as required while every figure tool defaults to the darkroom — so the
+  one artifact written for a person to read was the only one that could not find
+  its way to them, and Tony had to ask where it was (2026-08-18). A tool that
+  renders something to be read defaults its destination to `darkroom()` and takes
+  `--also` for the repo copy; sapper SAP006 blocks the required form in page and
+  report builders. Keep both copies: the repo one is what review and git history
+  need, the darkroom one is what a person opens.
+  Two paths, one directory: `~/Dropbox-<org>` is a **symlink** to
+  `~/Library/CloudStorage/Dropbox-<org>`. Seeing a tool print one while looking in
+  the other does not mean the file went somewhere else — check with `ls -ld`
+  before concluding anything is missing.
   `<darkroom>/constellation/` is the **MATLAB producer** team's folder —
   detector sweeps and calibrated operating points live there; don't write into
   it. The darkroom is mounted on **every** machine, so it is a cross-machine
@@ -137,6 +151,20 @@ external outputs on [`docs/SESSIONS.md`](docs/SESSIONS.md) before writing them.
 The `SessionStart` hook (`.claude/hooks/session-start.sh`) prints the briefing
 automatically — if it ever stops firing, that is a bug worth fixing, not an
 inconvenience to route around.
+
+**There are two boards and they answer different questions.** `docs/SESSIONS.md`
+is in git and covers what another *machine* can see — the darkroom, the public
+site, a remote store. The machine-local `../bugarach-worktrees/SESSIONS.md`
+covers what this *machine* shares: which session holds the primary checkout, a
+MATLAB process, the venv, a port. **Claiming on the local board is a
+precondition for working, not a courtesy**, and it is mechanized both ways: the
+briefing creates the board if it is missing, and `tools/guard_local_board.sh`
+refuses a commit from a worktree that has no block on it (override, one-shot:
+`ALLOW_UNCLAIMED_BOARD=1`). Prose did not hold — a session on 2026-08-18 read
+"(no board yet — create it)" at startup, worked all day across two worktrees and
+wrote to the shared darkroom without ever creating it, while four other sessions
+ran on the same machine. This is a bugarach-local addition; the vendored
+protocol does not require it, which is why the gate lives here and not upstream.
 
 **Vendored copies** (`docs/session_protocol.md` and the hook, from interface2;
 `tools/murderboard_freshness.sh`, from syncytium2/murderboard) carry a

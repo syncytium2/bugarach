@@ -126,8 +126,7 @@ def build(args):
     rows = []
     for label, sl in series:
         d = det[label]
-        spans = [(o, o + max(w, 1.0)) for o, w in zip(d.onset_sec, d.width_sec)]
-        panel = raster_panel(sl.streams["events"], ext=ext, member_spans=spans,
+        panel = raster_panel(sl.streams["events"], ext=ext,
                              name=label, width=args.width, height=250)
         # LoCo's calls, marked the same way in both panels — the comparison the
         # figure exists to make is "does a detector behave the same on each".
@@ -189,7 +188,9 @@ def build(args):
         f'<span style="color:#7b4a9c">◆</span> LoCo\'s coordinated-event calls, '
         f'the same detector and settings on both · '
         f'<span style="color:#1b7f3b">▲</span> planted truth, which exists only '
-        f'below · onsets inside a called window are dark, the rest muted.<br>'
+        f'below. Every raster onset is drawn the same; each ◆ marks the ONSET '
+        f'of a LoCo call, and the extent of the window it called is not '
+        f'drawn.<br>'
         f'<span style="color:#555">LoCo finds <b>{det["real"].onset_sec.size}</b> '
         f'in the real recording and <b>{det["synthetic"].onset_sec.size}</b> in '
         f'the generated one, where <b>{len(gt.times)}</b> were planted.</span>'
@@ -227,7 +228,7 @@ def main(argv=None):
     p.add_argument("--no-png", dest="png", action="store_false", default=True)
     args = p.parse_args(argv)
 
-    from bugarach.paths import ENV_VAR, darkroom
+    from bugarach.paths import darkroom, unresolved_message
 
     if args.out:
         dest = Path(args.out).expanduser()
@@ -235,8 +236,7 @@ def main(argv=None):
     else:
         dest = darkroom(create=True)
         if dest is None:
-            print(f"{ENV_VAR} is not set and --out was not given — writing "
-                  "nothing rather than guessing.", file=sys.stderr)
+            print(unresolved_message(), file=sys.stderr)
             return 2
 
     import panel as pn

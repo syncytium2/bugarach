@@ -109,6 +109,36 @@ def test_profile_cross_validates_against_pyspike_uncapped():
     assert checked > 2000  # essentially every spike cross-checked
 
 
+def test_pyspike_max_tau_is_still_inert():
+    # The reason the cross-check above must run uncapped, pinned so it cannot
+    # rot: PySpike's max_tau is a default for missing edge-neighbor ISIs, never
+    # a bound on the window, so a finite cap changes nothing except through the
+    # spikes at each train's edge. This test asserts the BUG, and is meant to
+    # fail the day upstream fixes it — at which point the cross-check can be
+    # extended to the capped regime and every warning about this comes down.
+    # The full list of places to update, and the upstream report itself, live in
+    # docs/todo/2026-08-11-file-pyspike-max-tau-issue.md — keep it the one
+    # inventory, so a copy here cannot go stale behind it.
+    # Regression landed in 0.8.0 (0.7.0 still capped).
+    pyspike = pytest.importorskip("pyspike")
+    rng = np.random.default_rng(0)
+    edges = (0.0, 600.0)
+    a, b = (pyspike.SpikeTrain(np.sort(rng.uniform(*edges, 60)), edges)
+            for _ in range(2))                       # mean ISI ~10 s
+    capped = [pyspike.spike_sync(a, b, max_tau=t) for t in (1.0, 0.25, 1e-6)]
+    assert capped[0] == capped[1] == capped[2], \
+        f"PySpike's max_tau appears to bound the window again: {capped}"
+    # A 1 us window on 10 s ISIs should score 0; it scores the uncapped answer.
+    assert capped[-1] > 0.3
+
+    # The hand-checkable case quoted in the upstream report: 7.7 s apart,
+    # coincident under a 0.25 s cap.
+    a2 = pyspike.SpikeTrain([40.4, 77.3, 534.4], edges)
+    b2 = pyspike.SpikeTrain([58.8, 85.0, 300.0], edges)
+    x, y = pyspike.spike_sync_profile(a2, b2, max_tau=0.25).get_plottable_data()
+    assert dict(zip(np.round(x, 1), y))[77.3] == 1.0
+
+
 def test_bad_params_raise():
     with pytest.raises(ValueError):
         sync_detect([np.array([1.0])], (0.0, 10.0), tau_max=0.25,

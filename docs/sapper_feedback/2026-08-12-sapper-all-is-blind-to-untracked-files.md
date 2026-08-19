@@ -6,6 +6,10 @@ filed: 2026-08-12
 
 # `sapper --all` reported clear on a file it never read, and a personal path reached a public `main`
 
+**Recurred 2026-08-18** — see *It happened again* at the foot of this file. Still open,
+still the natural workflow, and this time the only thing that caught it was a gate that
+is opt-in per clone.
+
 ## What happened
 
 Installing the murderboard harness (2026-08-12) I vendored four files, then ran
@@ -77,3 +81,36 @@ so this specific blindness cannot come back silently.
 pushed to a public remote. Removing it from history is a rewrite, which
 `CLAUDE.md` requires explicit confirmation in words to perform. Flagged for
 Tony — see the todo above.
+
+
+## It happened again, 2026-08-18
+
+Writing `src/bugarach/assembly.py` (new file, not yet added), I ran
+`python tools/sapper.py --all` as the check before committing. **`sapper: clear`.**
+The commit then failed at the pre-commit hook:
+
+```
+BLOCK SAP002 src/bugarach/assembly.py:287: rng = np.random.default_rng(seed)
+```
+
+Confirmed deliberately afterwards: drop a file containing `np.random.default_rng(7)`
+into `src/bugarach/`, leave it untracked, and `--all` still reports `clear`.
+
+Two things this second instance adds:
+
+- **It is not vendoring-specific.** The 2026-08-12 report reasonably framed this
+  around bulk-vendored files nobody reads. This was a file I had just written
+  myself, in the ordinary write → check → commit order. Any new module is exposed.
+- **What caught it was the opt-in gate.** `--staged` fired only because
+  `core.hooksPath` happens to be set in this worktree. The 2026-08-12 report already
+  says a BLOCK rule should not depend on a per-clone config; a second incident caught
+  *only* by that config is the evidence for it. There is a standing todo on the
+  config itself: [`../todo/2026-08-13-hookspath-is-opt-in-per-clone.md`](../todo/2026-08-13-hookspath-is-opt-in-per-clone.md).
+
+Suggested fix 2 from above — printing the file count — would have been enough on its
+own here. `sapper: clear (0 files)` immediately after writing a new module is
+self-evidently wrong; bare `clear` read as confirmation.
+
+No violation reached `main` this time: the hook blocked the commit, the RNG was
+switched to `RandomState` per FOUNDATIONS §2, and the tree is clear on both `--all`
+and `--staged`.

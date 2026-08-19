@@ -442,16 +442,26 @@ class BenchResult:
                 f"distractor {self.distractor_hits}   [{by}]")
 
 
-def evaluate(name: str, regime: str, seeds=(1, 2, 3), *, tol_sec: float = 1.5,
-             **overrides) -> BenchResult:
-    """Run one detector over several seeds and pool the outcome."""
-    out = BenchResult(detector=name, regime=regime,
-                      knob_value=overrides.get(OPERATING_POINTS[name].knob),
+def pool_scores(scores, *, detector: str, regime: str, seeds=(),
+                knob_value=None) -> BenchResult:
+    """Pool per-seed :class:`~bugarach.score.Score` objects into one result.
+
+    **Anything scored against this bench pools through here** — including
+    detectors that are not in :data:`OPERATING_POINTS`: a learned model, a
+    candidate, a one-off. That is the point of it being a function.
+
+    A review on 2026-08-16 found the learned models pooled by hand in two tools
+    as ``n_hit / n_detected``, while the six went through :func:`evaluate` and
+    got :attr:`BenchResult.precision`, which excludes the promiscuity probe. The
+    two halves of that report's central comparison sat on different
+    denominators under a caption reading *"scored by the same rule"*, and the
+    gap is not small — SCE reads precision 0.91 one way and 0.11 the other.
+    Pooling is six lines, so it was rewritten instead of imported, and the rule
+    for what counts forked in silence. Import this.
+    """
+    out = BenchResult(detector=detector, regime=regime, knob_value=knob_value,
                       seeds=tuple(seeds))
-    for seed in seeds:
-        s, gt = make_recording(regime, seed)
-        det = run_detector(name, s, **overrides)
-        sc = score_stream(gt, det, tol_sec=tol_sec)
+    for sc in scores:
         out.n_planted += sc.n_planted
         out.n_detected += sc.n_detected
         out.n_hit += sc.n_hit
@@ -464,11 +474,33 @@ def evaluate(name: str, regime: str, seeds=(1, 2, 3), *, tol_sec: float = 1.5,
     return out
 
 
-def sweep(name: str, regime: str, seeds=(1, 2, 3), values=None) -> list[BenchResult]:
+def evaluate(name: str, regime: str, seeds=(1, 2, 3), *, tol_sec: float = 1.5,
+             gen: dict | None = None, **overrides) -> BenchResult:
+    """Run one detector over several seeds and pool the outcome.
+
+    ``gen`` passes generator settings through to :func:`make_recording`, so a
+    caller can hold the difficulty axis (``regime``) fixed while changing the
+    recording it runs on — the fitted background out of
+    ``docs/learned/generator_spec.json``, say, instead of the bench's flat one.
+    Separate from ``**overrides``, which are the *detector's* knobs: the two used
+    to be impossible to tell apart because only one of them existed.
+    """
+    scores = []
+    for seed in seeds:
+        s, gt = make_recording(regime, seed, **(gen or {}))
+        det = run_detector(name, s, **overrides)
+        scores.append(score_stream(gt, det, tol_sec=tol_sec))
+    return pool_scores(scores, detector=name, regime=regime, seeds=seeds,
+                       knob_value=overrides.get(OPERATING_POINTS[name].knob))
+
+
+def sweep(name: str, regime: str, seeds=(1, 2, 3), values=None, *,
+          gen: dict | None = None) -> list[BenchResult]:
     """The sensitivity curve: one :class:`BenchResult` per knob value."""
     op = OPERATING_POINTS[name]
     values = op.grid if values is None else values
-    return [evaluate(name, regime, seeds, **{op.knob: v}) for v in values]
+    return [evaluate(name, regime, seeds, gen=gen, **{op.knob: v})
+            for v in values]
 
 
 class EdgeOfRange(ValueError):

@@ -22,11 +22,12 @@ the flat render in the same command is that rule mechanized: the picture a
 reader will see is now an artifact of the build, previewable in Dropbox without
 opening anything.
 
-Destination is ``$BUGARACH_DARKROOM`` (see ``bugarach.paths``). It is never
-hardcoded: that path carries a person's name and this repo is public. With the
-variable unset the script says so and writes nothing, rather than guessing —
-the darkroom is mounted on every machine, so a wrong guess scatters files into
-another project's folder instead of failing locally.
+Destination is the darkroom, resolved by ``bugarach.paths`` — from
+``$BUGARACH_DARKROOM``, or from Dropbox's own record of where it mounted itself.
+It is never hardcoded: that path carries a person's name and this repo is
+public. When neither route answers the script says so and writes nothing, rather
+than guessing — the darkroom is mounted on every machine, so a wrong path
+scatters files into another project's folder instead of failing locally.
 
 Files are written to a temporary name and moved into place. The darkroom README
 records 188 MB of hash-named orphans created by writing into Dropbox in place;
@@ -179,7 +180,7 @@ def main(argv=None):
                         "picture and carry the explanation in their own words.")
     args = p.parse_args(argv)
 
-    from bugarach.paths import ENV_VAR, darkroom
+    from bugarach.paths import darkroom, unresolved_message
 
     if args.out:
         dest = Path(args.out).expanduser()
@@ -187,11 +188,7 @@ def main(argv=None):
     else:
         dest = darkroom(create=True)
         if dest is None:
-            print(f"{ENV_VAR} is not set, so there is nowhere agreed to write.\n"
-                  f"Set it to this repo's darkroom folder, or pass --out DIR.\n"
-                  f"Not guessing: the darkroom is visible from every machine, so "
-                  f"a wrong guess lands files in another project's folder.",
-                  file=sys.stderr)
+            print(unresolved_message(), file=sys.stderr)
             return 2
 
     fig, legend, header, report, pn = build(args)
