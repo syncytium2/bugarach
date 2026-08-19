@@ -56,11 +56,18 @@ SETUP = """async (v) => {
               f("slices.csv", v.slices)]);
   for (const [id, val] of Object.entries(v.controls))
     document.getElementById(id).value = String(val);
+  for (const lab of (v.noDelay || [])) {
+    const cb = document.getElementById("wDelay_" + lab);
+    if (!cb) throw new Error("no delay toggle for " + lab);
+    cb.checked = false; cb.onchange();
+  }
   if (v.run) runWindows();
   const wins = REGIONS.get("s1").slice().sort((a, b) => a.idx - b.idx);
   return {
     chip: document.getElementById("cntWindows").textContent,
     runDisabled: document.getElementById("runWindows").disabled,
+    toggles: [...document.querySelectorAll("#wDelays label")].map(l => l.textContent),
+    baseOptions: [...document.getElementById("wBase").options].map(o => o.textContent),
     windows: wins.map(w => ({
       idx: w.idx, label: w.label, start: w.start, end: w.end,
       aStart: Number.isFinite(w.aStart) ? w.aStart : null,
@@ -94,12 +101,12 @@ def page():
             browser.close()
 
 
-def run(page, regions=REGIONS, controls=None, do_run=True):
+def run(page, regions=REGIONS, controls=None, do_run=True, no_delay=()):
     pg, errs = page
     out = pg.evaluate(SETUP, {"events": EVENTS, "regions": regions,
                               "slices": SLICES,
                               "controls": {**BASE, **(controls or {})},
-                              "run": do_run})
+                              "noDelay": list(no_delay), "run": do_run})
     assert not errs, errs
     return out
 
@@ -178,3 +185,88 @@ def test_every_result_says_whose_window_it_used(page):
     # the period with no window falls back to its whole extent, and says so
     assert after[3]["source"] == "none"
     assert (after[3]["start"], after[3]["end"]) == (3900.0, 3960.0)
+
+
+def test_a_period_kind_can_be_told_it_waits_for_no_solution(page):
+    """A drug has to arrive; a depolarising challenge is already there. Ticking
+    `high K+` off gives it its whole period back — 60:00 to 65:00 rather than
+    62:00 to 65:00 — and it clears the four-minute floor it was failing."""
+    out = run(page, no_delay=["high K+"])
+    w = out["windows"][2]
+    assert (w["aStart"], w["aEnd"]) == (3600.0, 3900.0), w
+    assert not w["tooShort"], "five minutes should clear a four-minute floor"
+
+    # and the one the delay outlasted now has a window at all
+    assert run(page, no_delay=["washout"])["windows"][3]["aStart"] == 3900.0
+
+
+def test_the_toggle_moves_only_the_kind_it_names(page):
+    """Turning the delay off for one period kind must not touch the others —
+    otherwise it is a global switch wearing a label."""
+    out = run(page, no_delay=["high K+"])
+    assert (out["windows"][1]["aStart"], out["windows"][1]["aEnd"]) \
+        == (1920.0, 3120.0), "TTX lost its delay along with high K+"
+    assert out["windows"][0]["aStart"] == 600.0, "the baseline moved"
+
+
+def test_the_toggle_is_the_users_list_not_a_rule_about_names(page):
+    """The distinction from the convention this replaces. `chelerythrine` does
+    not contain `hi` and `histamine` does, so a substring rule treats them
+    differently and this must not: ticking one off leaves the other delayed,
+    whatever either is called."""
+    regions = REGIONS.replace("high K+", "histamine")
+    out = run(page, regions=regions, no_delay=["histamine"])
+    assert out["windows"][2]["aStart"] == 3600.0, "histamine kept a delay"
+
+    regions = REGIONS.replace("high K+", "chelerythrine")
+    out = run(page, regions=regions)
+    assert out["windows"][2]["aStart"] == 3720.0, (
+        "chelerythrine was exempted without anyone asking for it")
+
+
+def test_the_baseline_keeps_its_backward_window_even_if_its_label_repeats(page):
+    """A label can appear twice — a control period at the start and again at the
+    end is an ordinary design. The designation is by POSITION, so the first is
+    the baseline and runs backward from its end, while the second is a treatment
+    like any other and answers to the toggle. Unticking that shared label must
+    move the second and leave the first alone."""
+    regions = REGIONS.replace("s1,4,washout,3900,3960",
+                              "s1,4,baseline,3900,5100")
+    out = run(page, regions=regions, no_delay=["baseline"])
+    base, repeat = out["windows"][0], out["windows"][3]
+    assert (base["aStart"], base["aEnd"]) == (600.0, 1800.0), (
+        f"the designated baseline stopped running backward: {base}")
+    assert (repeat["aStart"], repeat["aEnd"]) == (3900.0, 5100.0), (
+        f"the repeat should start at its own start with no delay: {repeat}")
+
+
+# two recordings whose period 2 is a DIFFERENT drug — the ordinary shape of a
+# real folder, and the one a single-recording fixture cannot express
+TWO_SLICES = """slice_id,region_idx,label,start_sec,end_sec
+s1,1,baseline,0,1800
+s1,2,TTX,1800,3600
+s1,3,high K+,3600,3900
+s2,1,baseline,0,1800
+s2,2,senktide,1800,3600
+s2,3,high K+,3600,3900
+"""
+
+
+def test_one_period_index_can_carry_several_drugs(page):
+    """Across a folder, period 2 is whichever drug that recording got. A list
+    that keeps the first label seen per index hides the rest — on this project's
+    own corpus that meant the delay toggles offered two period kinds out of six,
+    with TTX and senktide silently absent and undeleayable.
+
+    Both drugs must get a row, and the baseline chooser must name both rather
+    than picking one and implying it is the period."""
+    pg, errs = page
+    out = pg.evaluate(SETUP, {
+        "events": EVENTS, "regions": TWO_SLICES, "slices":
+            "slice_id,frame_interval_sec\ns1,0.1\ns2,0.1\n",
+        "controls": BASE, "noDelay": [], "run": False})
+    assert not errs, errs
+    assert set(out["toggles"]) == {"TTX", "senktide", "high K+"}, out["toggles"]
+    period2 = [o for o in out["baseOptions"] if o.startswith("period 2")][0]
+    assert "TTX" in period2 and "senktide" in period2, (
+        f"the chooser names one drug and hides the other: {period2!r}")
