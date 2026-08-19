@@ -61,14 +61,14 @@ Template:
 ## Active
 
 ### Mac/close-the-assembly-question — the three steps that close the assembly negative
-- **Status:** ACTIVE
+- **Status:** DONE 2026-08-19 — **claim released**, merged as PR #135
 - **Started:** 2026-08-19
 - **Writes:** `<darkroom>/bugarach/` — `assembly_closed.{html,png}`, `assembly_summary.html`,
   `assembly_report.html` (**overwrites** the 2026-08-18 report, deliberately: it is the same
   document reframed to lead with the negative, per its own handoff). Nothing in
   `<darkroom>/constellation/`, nothing in `murmuration/`, nothing under `$BUGARACH_DATA_ROOT`.
-- **Claims:** those four names in `<darkroom>/bugarach/` only. No claim on the rest of the
-  folder — another session may write other figures there concurrently.
+- **Claims:** ~~those four names in `<darkroom>/bugarach/`~~ — **released**; all four are
+  written and nothing is regenerating them. No claim was ever held on the rest of the folder.
 - **Reads:** `$BUGARACH_DATA_ROOT/processed_archive/event_store_onset_revised_2v` (88) and
   `..._onset_pensub_revised_2v` (85, a strict subset) — **read-only**, both streams, baseline
   regions only. No writes to any store.
@@ -78,6 +78,10 @@ Template:
   the penumbra-subtracted recordings — so its tallies (49/40 testable) differ slightly from
   the export-folder run's (48/38), which honours the producer's analysis window. That is a
   windowing difference, not a measurement one, and it is stated in the report.
+- **Left open for whoever picks this up:** the **fast stream has no modularity measurement**
+  (`eval_modularity_null_slow.csv` has no fast counterpart), so the assembly negative is
+  established for slow only. The murderboard caught the report asserting it for both. Full
+  list of residual flags: `docs/reviews/assembly_summary_2026-08-19.md`.
 
 ### Mac/dt-required-at-load — FOUNDATIONS §6 reversed: dt is required, not defaulted
 - **Status:** DONE 2026-08-18 — merged. Opened 2026-08-16 and sat three days, during
