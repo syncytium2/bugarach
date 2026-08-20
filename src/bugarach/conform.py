@@ -194,7 +194,9 @@ def format_report(rep: FolderReport) -> str:
         for e in rep.errors:
             out.append(f"  FAIL  {e}")
         out.append("")
-        out.append("NOT CONFORMING — see docs/export_folder_spec.md")
+        out.append(("NOT CONFORMING — see the export contract: docs/export_folder_spec.md in "
+         "the bugarach repo, or export_folder_spec.html beside the one-page "
+         "producer guide wherever that was sent to you"))
         return "\n".join(out)
 
     out.append(f"{len(rep.recordings)} recording(s), {rep.n_ok} conforming")
@@ -218,7 +220,9 @@ def format_report(rep: FolderReport) -> str:
         for n in rep.notes:
             out.append(f"       · {n}")
     out.append("")
-    out.append("CONFORMING" if rep.ok else "NOT CONFORMING — see docs/export_folder_spec.md")
+    out.append("CONFORMING" if rep.ok else ("NOT CONFORMING — see the export contract: docs/export_folder_spec.md in "
+         "the bugarach repo, or export_folder_spec.html beside the one-page "
+         "producer guide wherever that was sent to you"))
     if rep.ok:
         out.append("Lines marked · read fine and may still not be what you meant.")
     return "\n".join(out)

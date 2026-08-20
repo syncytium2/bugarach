@@ -4,7 +4,8 @@
 
 This is the short version, addressed to whoever writes the exporter. The full
 contract — every optional column, every reason — is
-[`export_folder_spec.md`](export_folder_spec.md). Nothing here contradicts it.
+[`export_folder_spec.html`](export_folder_spec.html), rendered beside this page so the
+link works wherever you are reading it. Nothing here contradicts it.
 
 ---
 
@@ -57,10 +58,28 @@ default here is a guess about your microscope.
 | `region_idx` | **yes** | 1-based, chronological |
 | `label` | **yes** | `baseline`, `TTX`, `senktide`, `washout` — what the period was |
 | `start_sec`, `end_sec` | **yes** | when it began and ended, **raw** |
-| `analysis_start_sec`, `analysis_end_sec` | optional | the part of it worth scoring |
+| `analysis_start_sec`, `analysis_end_sec` | optional — **usually leave them out** | the part of it worth scoring |
 
-If you have both, send both. The raw pair says what happened; the analysis pair says
-what to measure, and it is the one that gets used.
+**Send the raw periods. Leave the analysis pair out unless you specifically mean it** —
+and if you leave it out, omit the columns rather than writing `NA` or `NaN` in them. A
+non-finite bound is refused with a named error rather than scored, but the refusal comes
+from the detector rather than the loader, so you see it at `bugarach check` or at run
+time and not at import.
+
+An earlier version of this page said "if you have both, send both". interface2 pushed
+back and was right. Two reasons, and the second is the one that bites:
+
+- **An analysis window is a named paradigm, not a rule.** Two columns express exactly one
+  at a time and cannot say which, so a folder that pins one has quietly chosen the
+  analysis on the consumer's behalf. Raw periods keep every paradigm reachable from a
+  single export.
+- **Supplying it switches a check off.** The raw bounds are validated — baseline starting
+  at zero, regions contiguous — and supplying `analysis_*` short-circuits that validation.
+  The same corrupted folder passes clean *with* the columns and is caught *without* them.
+  So sending an analysis window costs you the structural gate on the raw one.
+
+If you do have a window worth stating, send it **and** keep the raw bounds correct — the
+check you give up is exactly the one that would have caught them being wrong.
 
 ---
 
@@ -135,18 +154,31 @@ published number was then computed over one recording fewer than intended.
 If a folder looks like it holds something it should not, that is a conversation with
 you — not a filter on our side.
 
-## 4. `width_def` names your rule, and we never parse it
+## 4. `width_sec` is a coincidence duration — pick the rule knowing that
 
 Width is not one quantity. A fast transient and a slow one are not the same shape, so
-"how long it lasted" is not the same measurement.
+"how long it lasted" is not the same measurement, and **we do not define it for you.**
 
-**We do not define width and will not infer it.** Pick the rule, apply it
-consistently within a stream, and name it: `t50rise_to_peak`, `fwhm`,
-`above_threshold` — whatever you actually computed. We carry the string and never
-read it.
+But you cannot choose well without knowing what it feeds, and an earlier version of this
+page did not say. **`width_def` is carried and never parsed. `width_sec` is read.** It
+becomes the per-event duration one detector uses to decide how long an event stays
+"on" — that is, **how much of a window two cells must share before they count as
+coincident**.
 
-A column meaning two things without saying which yields a plausible wrong answer
-rather than an error.
+So the rule has to produce something on the scale of a coincidence, not on the scale of
+the whole transient. In this project's own recordings, `fwhm` on the slow stream has a
+median of **4.7 s** and a maximum of **186.9 s**, against a rise interval of 2 s. A
+187-second "event duration" is not a coincidence unit — it makes one cell overlap
+essentially everything. A folder built that way **conforms, loads, and gives a wrong
+answer**, which is this page's whole failure class.
+
+Rules that behave: `t50rise_to_peak`, `above_threshold`, or anything else bounded by the
+event's rise rather than its decay. `fwhm` is fine on a fast stream and wrong on a slow
+one — which is exactly why the definition is per stream and travels in `width_def`.
+
+If the natural output of your pipeline is a decay-dominated width, send it and say so —
+but tell us, because the consumer has to decide whether to use it rather than discovering
+the scale later.
 
 ---
 
@@ -161,22 +193,30 @@ It reads the folder with **the same loader the analysis uses** — a pass means 
 analysis will read what you meant, not that a second implementation agreed with the
 first.
 
-Real output, from the current export:
+Real output, from the current export (`2026-08-18_revised_2v_periods`):
 
 ```
-export folder: .../exports/bugarach/2026-08-17_revised_2v_v2
 84 recording(s), 84 conforming
 
   ok   20240708_13      34 ROI (0 with no events)    4494 events  streams fast+slow  dt 0.1  windows baseline, SB222200
-       · analysis windows supplied — scored as given, and this project's wash-in delay and caps are not applied
        · no ROI declared with no events. If every one of the 34 ROIs fired, this is right; if some were quiet, they are missing from the population and every per-ROI figure is too high (write them as time_sec = NA)
+
+CONFORMING
+Lines marked · read fine and may still not be what you meant.
 ```
 
-**Errors name the file and the line.** Lines beginning `·` are notes — legal, but worth
-a look. The silent-ROI note above fires on any recording where every ROI fired at least
-once, which is often simply true; it is asking you to confirm, not reporting a fault.
-The current export passes: 84 of 84 conforming, and the ROI counts match
-`n_roi_recorded` on every recording checked.
+**Errors name the file and the line.** Lines beginning `·` are notes — legal, but worth a
+look.
+
+**The silent-ROI note is noisier than it should be**, and it is worth saying so rather
+than letting you learn to skip it: it fires on **59 of the 84** recordings in the current
+export, because in most of them every ROI really did fire at least once across the whole
+recording. A note that fires on 70% of a folder trains the reader to ignore it, which is
+the opposite of its purpose. It is asking you to confirm, not reporting a fault, and
+sharpening it is on our side rather than yours.
+
+The current export passes: 84 of 84 conforming, ROI counts matching `n_roi_recorded` on
+**all 84**.
 
 ---
 
