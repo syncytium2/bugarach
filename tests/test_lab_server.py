@@ -429,10 +429,15 @@ def test_the_server_reproduces_the_published_bakeoff():
                      lambda **kw: None)
 
     want = ref["learned"]["tube"]
-    assert model.report["seeds"] == ref["seeds"]
+    assert model.report["seeds"] == ref["seeds"], (
+        "the corpus split must be `bench.fold_split`'s, the same call "
+        "`tools/fair_bakeoff.py` makes — a second derivation of the split "
+        "agrees right up until somebody changes one of them")
     assert model.n_params == want["n_params"]
     for ours, theirs in zip(model.report["per_fold"], want["per_fold"]):
         where = f"fold {theirs['fold']}"
+        # the tolerance is the F1's units and has to come back with it
+        assert ours["tol_sec"] is not None, where
         assert ours["n_planted"] == theirs["n_planted"], where
         assert ours["n_detected"] == theirs["n_detected"], where
         assert ours["n_hit"] == theirs["n_hit"], where
