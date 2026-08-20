@@ -261,3 +261,85 @@ with these changes:
 8. **The exclusion match is by date, not slice**, because the workbook carries no slice id. ⚠
 9. **The fast/slow kinetic boundary is undefined** in every document in this project. ⚠
 10. **The review remains single-pass, not independent.** ⚠
+
+---
+
+# Round 5 — the modularity instrument moved into this repo
+
+Appended 2026-08-19. The deliverable changed again: the modularity half of the answer is no
+longer computed by an unmaintained MATLAB pipeline, and both documents were rewritten around
+the in-repo instrument.
+
+- upstream:  syncytium2/murderboard @ 729fb06
+- vendored:  77b70dc620a8bcccfc72fce2fd316d38da34c204
+- freshness: current
+- artifact:  docs/learned/assembly_report.html   (b1e47a5a428fef922af450fb0adec8cfc7949190)
+             docs/learned/assembly_summary.html  (8341adc76fa3e695257f639c7f6345e9218d0884)
+             docs/learned/assembly_modularity.png (5dc753a4b7401b71429e1d13f8dc90ed12e137a3)
+- roles:     11 of 11 re-run (single-pass, same deviation as earlier rounds)
+- stopping:  **severity floor** — the last blind pass produced no blocking and no major
+
+## Findings by severity, this round
+
+| round | blocking | major | minor | note |
+|---|---|---|---|---|
+| 5a — initial, on the ported result | 0 | 3 | 1 | two were defects in my own new code |
+| 5b — blind, rebuilt render | 0 | 1 | 1 | the attribution error below |
+| 5c — blind, rebuilt render | 0 | 0 | 1 | recorded as residual |
+
+## Findings and adjudications
+
+**M11 · MAJOR · the port analysed cells the producer had rejected (role 1, new rule).**
+Applying *"the sources a deliverable did NOT consult are part of the check"* to my own work:
+the MATLAB applies the R team's dead-ROI roster before computing and `tools/modularity_null.py`
+did not. The signature was unmistakable — `n_active` higher on 10 recordings and **never
+lower**. **Fixed** — the roster's verdicts are vendored to
+`docs/learned/dead_roi_verdicts.csv` and consumed by the tool (consumed, not recomputed: the
+rule needs drug and high-K rows FOUNDATIONS §9 keeps out of this repo's reach).
+
+**M12 · MAJOR · I then blamed the wrong thing, and checking caught it (role 1, round 5b).**
+Having found the roster gap I attributed the `n_active` difference to it. Applying the roster
+changed **nothing** — every count identical. The reason is structural: the rejection rule is
+`base_empty AND drug_empty AND hik_empty`, so a rejected cell is silent in baseline by
+definition, and this measurement already drops cells with no events. Verified: **all 66
+rejected ROIs have zero baseline events.** The real cause is the window — bugarach scores
+1740–1800 s where interface2 caps at 1200 s, so more cells clear "at least one event", which
+is exactly *higher, never lower*. **Fixed** — the report now names the window, states the
+roster as a demonstrated no-op, and keeps the roster wired because it is the producer's
+selection and a future store may not have the same property.
+
+**M13 · MAJOR · a NaN corrupted a median in my own figure tool (role 10).** Three recordings
+are scored but have no finite z, because their surrogates had zero spread. They were being
+sorted into the strip, and NaN in the sort put the *minimum* where the median belonged —
+the figure reported −13.48 against a true −3.45. **Fixed** — the rate's denominator and the
+plottable set are now two populations, and the tool reports how many it could not draw.
+
+**m6 · minor · the figure tool's NA check was case-sensitive (role 10).** It tested for
+`"NaN"` and the port writes lowercase `nan`, so an untestable recording would have entered
+the denominator as a number. **Fixed** — a finite-float check, and the explicit `defined`
+column preferred where present.
+
+**m7 · minor · the corpus-level agreement is not re-checked by CI (role 10).** It needs the
+store. Only the fixture comparison runs on CI. **Stated, not fixed** — the fixture is what
+certifies the coefficient; the corpus run is evidence, recorded here and in the report.
+
+## What this round did NOT find
+
+Role 2 (citations): the two references added — Cutts & Eglen 2014 for the coefficient,
+Blondel 2008 and Newman 2004 for the modularity — are real, correctly attributed, and are
+the works the methods actually come from. Role 4: the claim "does not depend on which
+windowing convention is used" is supported by the 98.7% agreement rather than asserted, and
+the two disagreements are named individually. Role 11: the new material sits inside the
+existing argument order — instrument, then validation, then result — and does not reopen the
+lead.
+
+## Residual — updated
+
+The ten from round 4 stand, with one closed and two added:
+
+- **CLOSED:** ~~the modularity half depends on an unmaintained pipeline~~ — ported, validated
+  two ways, and running here.
+- **NEW:** the corpus-level agreement is not exercised by CI (m7). ⚠
+- **NEW:** the port is a **port, not a clean-room** — the MATLAB driver was read while chasing
+  the quarantined roster, so only the coefficient is independently derived. The module says
+  so and the fixture only certifies the part that can be certified. ⚠

@@ -257,11 +257,26 @@ carries those vectors so CI re-checks it without a store or MATLAB.
 
 *Across the corpus it agrees on the verdict while disagreeing on the window.* This repo
 scores the producer's analysis window where there is one and the baseline region otherwise;
-interface2 applies its own solution delay and duration floors. So the two see slightly
-different windows — `n_active` matches on 68 of 78 fast and 66 of 77 slow — and yet the
-verdicts agree on **98.7%** of recordings in both streams. Where the window *does* match,
-the median difference in z is **0.03**. Both disagreements (one per stream) are recordings
-where the window changed the active-cell count.
+interface2 caps at 1200 s after a 120 s solution delay. On the recordings where the two
+differ, bugarach's window runs **1740–1800 s** against interface2's 1200 s, so more cells
+clear the "at least one event" bar — `n_active` is higher on 10 of 78 fast recordings and 8
+of 77 slow, and **never lower**, which is the signature a longer window predicts. It matches
+exactly on the rest.
+
+Even so the verdicts agree on **98.7%** of recordings in both streams (77 of 78, 76 of 77),
+and the median difference in z is **0.03** whether or not the window matched. Each stream's
+single disagreement is a recording whose active-cell count moved.
+
+**The producer's dead-ROI roster is applied, and it provably changes nothing here.** The R
+team's rejection rule is `rejected = base_empty AND drug_empty AND (hik_empty)`, so a
+rejected cell is *by definition* silent in baseline — and this measurement already drops any
+cell with no events in the window. Checked rather than assumed: **all 66 rejected ROIs have
+zero baseline events**, and re-running the whole corpus with the roster applied reproduces
+every count. So the roster is a no-op for any baseline-only analysis that requires events,
+which is why FOUNDATIONS §9's point that the *rule* is not computable here costs this
+measurement nothing. The verdicts are vendored in `docs/learned/dead_roi_verdicts.csv` and
+consumed rather than recomputed, so the no-op is a demonstrated fact rather than an
+assumption.
 
 **That is a stronger result than exact reproduction would have been.** The answer does not
 depend on which of two defensible windowing conventions is used.

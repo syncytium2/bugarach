@@ -146,3 +146,24 @@ def test_a_planted_module_is_found_and_a_uniform_field_is_not():
     flat = [np.sort(rng.uniform(T0, T1, 60)) for _ in range(10)]
     none = modularity_vs_null(flat, t0=T0, t1=T1, n_surrogates=40, n_restarts=5, seed=2)
     assert none.defined and not none.above_null, none
+
+
+# ---- the producer's ROI selection -------------------------------------------
+
+def test_dead_roi_verdicts_load_and_a_missing_slice_keeps_everything(tmp_path):
+    """A slice with no verdict keeps every ROI — the spec, not a silent pass.
+
+    The R team's rule only judges slices whose second treatment is senktide or TTX;
+    18 of 85 are ineligible and get no verdict at all. Treating "absent from the
+    roster" as "reject everything" would empty them, and treating it as an error
+    would refuse to score them.
+    """
+    from bugarach.assembly import load_dead_roi_keep
+    f = tmp_path / "verdicts.csv"
+    f.write_text("# a comment the loader must skip\n"
+                 "slice_id,roi_index,keep\n"
+                 "s1,1,1\ns1,2,0\ns1,3,1\n")
+    got = load_dead_roi_keep(f)
+    assert got == {"s1": [True, False, True]}
+    assert got.get("not_in_roster") is None      # caller keeps everything
+    assert load_dead_roi_keep(None) == {}

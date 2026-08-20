@@ -61,16 +61,24 @@ def main(argv=None) -> int:
     p.add_argument("--seed", type=int, default=7)
     p.add_argument("--limit", type=int, default=None)
     p.add_argument("--exclude-file", type=Path, default=None)
+    p.add_argument("--dead-roi-file", type=Path, default=None,
+                   help="dead_roi_verdicts.csv — the R team's ROI rejections, applied "
+                        "before anything is computed. Omitting it analyses cells the "
+                        "producer rejected.")
     p.add_argument("--out", type=Path, default=None,
                    help="destination directory; default $BUGARACH_DARKROOM")
     p.add_argument("--also", type=Path, default=None)
     a = p.parse_args(argv)
 
-    from bugarach.assembly import load_excluded
+    from bugarach.assembly import load_dead_roi_keep, load_excluded
     from bugarach.graph import modularity_vs_null
     from bugarach.store import load_slice
 
     excl = load_excluded(a.exclude_file)
+    droi = load_dead_roi_keep(a.dead_roi_file)
+    if droi:
+        nrej = sum(m.count(False) for m in droi.values())
+        print(f"dead-ROI roster: {len(droi)} slices, {nrej} ROIs rejected")
     if excl:
         print(f"excluding {len(excl)} lab-withdrawn recording(s): {', '.join(sorted(excl))}")
 
@@ -103,6 +111,15 @@ def main(argv=None) -> int:
         # event by its own rise time and quietly change which cells look coincident.
         trains = [np.asarray(t, dtype=float) for t in tr.t50rise]
         trains = [t[np.isfinite(t)] for t in trains]
+        # Producer's ROI selection, applied BEFORE the graph is built — a rejected
+        # cell must not contribute an edge, a node, or a denominator.
+        mask = droi.get(str(sl.slice_id))
+        if mask is not None:
+            if len(mask) != len(trains):
+                print(f"  ~ {sl.slice_id}: roster has {len(mask)} ROIs, stream has "
+                      f"{len(trains)} — roster NOT applied", file=sys.stderr)
+            else:
+                trains = [t for t, k in zip(trains, mask) if k]
         res = modularity_vs_null(trains, dt=a.dt, t0=win[0], t1=win[1],
                                  n_surrogates=a.surrogates, n_restarts=a.restarts,
                                  jitter=a.jitter, pctl=a.pctl, seed=a.seed)
