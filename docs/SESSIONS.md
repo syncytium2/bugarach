@@ -73,7 +73,18 @@ Template:
   quote. Overwriting them would silently restate a published result, which is a decision
   and not a cleanup. **Whoever owns that todo should decide whether the root files are
   superseded**; until then both are on disk and the new README says how they differ.
-- **Reads:** `$BUGARACH_DATA_ROOT/exports/bugarach/2026-08-18_revised_2v_periods`, read-only.
+- **Reads:** BOTH export folders, read-only —
+  `exports/bugarach/2026-08-17_revised_2v_v2` and `..._2026-08-18_revised_2v_periods`.
+- **A windowing trap found on the way in, which anyone comparing synfire numbers must know.**
+  The two exports do not score the same window. `2026-08-17_revised_2v_v2` carries
+  `analysis_start_sec`/`analysis_end_sec`, so the scan uses the producer's analysis window;
+  `2026-08-18_revised_2v_periods` carries **no `analysis_*` columns at all** (deliberately,
+  per the windowing decision), so the scan falls back to the raw baseline period. The root
+  `synfire_*_relabel.json` files were built from the **v2** export. A first pass here used
+  the periods export, which made the corrected numbers non-comparable to the ones they
+  correct — on the slow stream one shared recording differs by 0.377 in the indicator from
+  windowing alone, larger than anything the ROI fix does. Everything published in this
+  subfolder is therefore run on **both** exports, and the README says which is which.
 - **Notes:** the defect and its size are in PR #152, merged (`main` @ `bf15b50`). Short
   version: PySpike scores a pair of silent trains as a perfectly ordered pair, the scan fed
   it every ROI, and 34-35% of ROIs are silent. The verdict tallies move by one recording
