@@ -1,5 +1,8 @@
 # The webapp — the full pipeline, end to end
 
+> **Working a lane?** [`docs/lanes.md`](lanes.md) says which worktree is yours and what
+> to read first.
+>
 > **Building it? The route is
 > [`docs/webapp_completion_plan.md`](webapp_completion_plan.md)** — phase order, what
 > already exists for each of the seven stages, and the lane table saying which pieces can
