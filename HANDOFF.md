@@ -48,6 +48,14 @@ first, with the same null answering the same wrong question. **Assume any new me
 this corpus needs an event-preserving null until shown otherwise**, and run the order-free
 generated control *before* believing any number.
 
+**A second instance of the same class, found by the session that closed the assembly
+half:** the modularity instrument was hardcoded to the `slow` stream, and a report had been
+asserting a fast-stream absence that nobody had ever measured. Different mechanism, same
+shape — the number was not measuring what the sentence above it claimed. Before quoting an
+absence, check which stream, which recordings and which parameter the instrument actually
+ran on. Both failures this week were invisible in the output and visible only in the
+control or the call site.
+
 ## The group question — open, and the honest status is "not established"
 
 - **fast:** does **not** survive the corrected null. chi-square p = 0.40.
