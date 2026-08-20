@@ -64,16 +64,72 @@ def test_the_scan_still_fires_on_a_real_call(needle):
 
 
 def test_prose_about_the_network_is_not_a_leak():
-    """The specific thing that froze the site for a day.
+    """The specific thing that froze the site for a day: the page *discusses*
+    network primitives it does not use, and the scan must tell those apart.
 
-    Both of the page's `fetch(` occurrences are prose: the promise in the header
-    and the ADR comment telling the next author not to add one. Zero call sites.
+    **This asserts that some primitive is discussed, not how many times.** The
+    first version required ``body.count("fetch(") >= 2`` — the header promise plus
+    an ADR comment reading "contains no ``fetch(`` and must not grow one". That
+    comment arrived in ``6c37e0a``; the guard pinning the count landed in
+    ``dc33bb7`` while it happened to be there; ``2b4da41`` reworded it to "a page
+    that fetches" three commits later. `main` went red and nothing about the page's
+    safety had changed — a comment had been rephrased.
+
+    The count was a property of the prose. The property worth guarding is that
+    **the comment-stripping path is exercised by the real page at all**: if nothing
+    is ever discussed, ``viewer_network_leaks`` could stop stripping comments and
+    every test in this file would still pass. That vacuum is what the original was
+    reaching for and missed by naming a number.
+
+    Written over the whole ``NETWORK`` tuple rather than ``fetch(`` alone, so
+    rewording one comment cannot empty it while another still carries prose. Two do
+    today: ``fetch(`` in the header promise and ``<img`` in a note about why the
+    page builds nodes instead of markup.
     """
-    body = VIEWER.read_text(encoding="utf-8")
-    assert body.count("fetch(") >= 2, (
-        "the page no longer discusses fetch — if the promise and the ADR comment "
-        "were removed, this test is guarding nothing and should be re-aimed")
-    assert "fetch(" not in viewer_network_leaks(body)
+    raw = VIEWER.read_text(encoding="utf-8")
+    leaks = viewer_network_leaks(raw)
+
+    discussed = [n for n in NETWORK if n in raw and n not in leaks]
+    assert discussed, (
+        "no network primitive is mentioned anywhere in the page, so the "
+        "comment-stripping in viewer_network_leaks is never exercised by the real "
+        "file and could break silently. Either the page lost the prose explaining "
+        "what it deliberately does not do — worth restoring — or this test should "
+        "be re-aimed at whatever now carries that explanation.")
+    assert not leaks, (
+        f"{VIEWER.name} reaches the network via {leaks}. The page tells the reader "
+        f"their files never leave their computer; that is only true while it "
+        f"reaches nothing.")
+
+
+def _discussed_but_unused(body: str) -> list[str]:
+    """What the test above asserts, factored out so it can be checked adversarially."""
+    leaks = viewer_network_leaks(body)
+    return [n for n in NETWORK if n in body and n not in leaks]
+
+
+def test_the_prose_check_notices_a_page_that_stopped_explaining_itself():
+    """The vacuum the previous version aimed at and could not express.
+
+    Strip every comment out of the real page and nothing is discussed any more —
+    which is exactly the state where `viewer_network_leaks` could stop stripping
+    and no test here would notice. The old form tried to catch this by requiring
+    two `fetch(` occurrences and instead caught a rewording.
+    """
+    gutted = strip_comments(VIEWER.read_text(encoding="utf-8"))
+    assert not _discussed_but_unused(gutted)
+
+
+def test_the_prose_check_notices_stripping_being_switched_off(monkeypatch):
+    """If comment-stripping regresses, the prose stops reading as prose.
+
+    This is the failure the whole file exists around, from the other direction:
+    with stripping disabled the page's own explanations are reported as leaks.
+    """
+    import build_site
+    monkeypatch.setattr(build_site, "strip_comments", lambda b: b)
+    leaks = build_site.viewer_network_leaks(VIEWER.read_text(encoding="utf-8"))
+    assert leaks, "stripping is disabled and the page's prose is no longer flagged"
 
 
 def test_a_comment_cannot_hide_a_call_on_the_same_line():

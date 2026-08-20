@@ -47,9 +47,16 @@ def viewer_network_leaks(body: str) -> list[str]:
 
     COMMENTS ARE STRIPPED FIRST, and that is the whole point of this function.
     The viewer's header promises the reader "there is no fetch(), no XHR", and a
-    comment in its script tells the next author the file "contains no `fetch(` and
-    must not grow one". Both are prose. A scan that reads them as code fires on the
-    explanation of why it will never fire.
+    note further down explains why the page builds nodes instead of markup, quoting
+    an `<img` injection to show what it is avoiding. Both are prose. A scan that
+    reads them as code fires on the explanation of why it will never fire.
+
+    **Do not cite a particular comment here.** This paragraph used to quote one
+    reading "contains no `fetch(` and must not grow one". It was reworded three
+    commits later, and both this docstring and the test that counted its occurrences
+    went stale together — `main` turned red over a rephrasing, with nothing about
+    the page's safety changed. The property is that prose about network primitives
+    exists and gets stripped, never which sentence happens to carry it.
 
     That is not hypothetical. The old scan neutralised exactly one phrase — the
     promise in the header — and missed the comment beside the lab panel. From the
