@@ -60,6 +60,20 @@ Template:
 
 ## Active
 
+### ANY SESSION touching the export contract — interface2 is reviewing it RIGHT NOW
+- **Status:** ACTIVE — this block is a message, not a claim
+- **Posted:** 2026-08-20
+- **Notes:** `docs/export_for_producers.md` — the one-page contract addressed to the
+  producer, rendered to `<darkroom>/bugarach/export_for_producers.html` — is **with
+  interface2 for review**. Do not revise it unilaterally while that is open: a producer
+  reading one version while this repo edits another is how a contract stops being one.
+  **Expect it to come back changed**, and expect the change to be right — they know things
+  about their pipeline the document assumes. Whatever returns needs a round appended to
+  `docs/reviews/export_for_producers_2026-08-20.md`.
+  The full spec `docs/export_folder_spec.md` is **not** what was sent, and its revision 6
+  stands regardless: the folder is the whole input, selection is the producer's, and no
+  exclusion filter goes in this repo.
+
 ### Mac/contract-trusts-the-folder — a dedicated home for the source exports
 - **Status:** ACTIVE
 - **Started:** 2026-08-20

@@ -79,10 +79,16 @@ documentation.
 
 ## Residual ⚠
 
-1. **The document is addressed to a team that has not read it yet.** Its own thesis is that a
-   contract nobody on the producing side has read is not a contract; delivering it is the
-   step that closes that, and it is not done by writing it. ⚠
+1. ~~**The document is addressed to a team that has not read it yet.**~~ **CLOSED
+   2026-08-20 — interface2 is reviewing it.** It is a proposal in front of the producer now
+   rather than a file, which is the state its own thesis said it had to reach. **Expect the
+   contract to change**: the producer knows things about their pipeline this document
+   assumes, and a revision coming back from them is the process working, not a defect in it.
+   Whatever returns needs a round 2 appended here.
 2. **`width_sec` is asked for and not supplied** by the current export. The document requests
-   it; whether it arrives is the producer's call.
+   it; whether it arrives is the producer's call, and is exactly the sort of thing their
+   review should answer.
 3. **The review was single-pass**, not independent — the standing deviation recorded in
-   `assembly_summary_2026-08-19.md`.
+   `assembly_summary_2026-08-19.md`. Note that interface2's review is the independent pass
+   this one lacked, and a better one: they can check the document against a pipeline nobody
+   here can see.
