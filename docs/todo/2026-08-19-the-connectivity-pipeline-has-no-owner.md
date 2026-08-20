@@ -31,6 +31,44 @@ finding does not move**, and nothing below should be read as casting doubt on it
   on a known-bad roster; not restoring it errors.
 - **Modularity had never been run on the fast stream.** Now done (3 of 78 above null, 3.8%).
 
+## The audit: was "little more to do" right?
+
+**On the conclusions, essentially yes. On the reporting, no — there is a systematic bias, and
+for the negative claims it points the wrong way.**
+
+Every `above_null`-style verdict column in `murmuration/` was checked for the pattern: a
+recording whose statistic could not be computed enters the file as a **0**, because
+`obs > threshold` is false for a missing value. It is in **13 verdict columns across 8
+files** — not confined to modularity.
+
+| file | verdict | fires / scored | fires / all rows | untested read as 0 |
+|---|---|---|---|---|
+| `archive_sttc_slow_with_group` | `above_null` | 202/234 = **86.3%** | 202/240 = 84.2% | 6 |
+| `archive_sttc_fast_with_group` | `above_null` | 189/236 = **80.1%** | 189/240 = 78.8% | 4 |
+| `eval_modularity_null_slow` | `above_null_Q` | 2/79 = **2.5%** | 2/83 = 2.4% | 4 |
+| `eval_centrality_slow` | `above_null_3` | 33/78 = **42.3%** | 33/83 = 39.8% | 5 |
+| `eval_centrality_slow` | `above_null_4` | 5/72 = **6.9%** | 5/83 = 6.0% | 11 |
+| `eval_bct_treatment_null_slow` | `above_null_b` | 3/70 = **4.3%** | 3/74 = 4.1% | 4 |
+
+Corrections are one to three points and **no claim flips**. But the direction is not neutral:
+
+- Where the claim is a **positive** ("coordination is above null in most slices"), the bias
+  **understates** it — the real rate is higher.
+- Where the claim is a **negative** ("no modular structure", "no centrality structure"), the
+  bias **flatters** it. Counting a recording nobody could test as one that was tested and
+  found nothing makes an absence look better established than it is. That is
+  anti-conservative in exactly the place a negative result can least afford it.
+
+So the finding is not "their results are wrong". It is that **every negative in this project
+is quoted over a denominator that includes recordings it could not test**, and any of them
+that gets written up should be recounted first. The recount is arithmetic, not re-analysis.
+
+**The `include` column, separately, is inert** — `1` on all 240 rows of both stream files, so
+the mechanism for honouring the lab's exclusions was never wired to a source of record.
+`20250731_151`, which the lab marks `exclude=1`, is in the headline dataset. Dropping it moves
+the headline from n=39 / median 0.365 to n=38 / 0.373, p = 1.6e-10. **It does not matter for
+that result**, and it was not checked for any other.
+
 ## What is waiting, and on whom
 
 - **interface2 branch `bct-modularity-fast`** (GitLab, pushed 2026-08-19) — makes the channel
