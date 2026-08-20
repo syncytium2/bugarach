@@ -13,11 +13,48 @@ runs. What it buys is in revision 5 below.
 store, no archive, no environment variable, no network, no companion database. If
 a fact is not in the folder, bugarach does not know it and does not guess it.
 
+**And the folder is the corpus.** Every recording in it is to be analysed; a
+recording that should not be analysed is not in it. Deciding which is the
+producer's, made before the folder is written, from records bugarach has never
+seen and must never look for. See revision 6.
+
 Everything is CSV, UTF-8, newline-only endings, one header row. Times are
 **seconds** on the recording's own clock. Any producer can write these files —
 this project's MATLAB exporter, another lab's Python, a spreadsheet exported by
 hand.
 
+> **Revision 6** (2026-08-20). **The folder is the corpus. Nothing re-filters it,
+> and nothing reads around it.**
+>
+> A recording present in the folder is a recording to analyse. bugarach applies no
+> inclusion rule of its own, consults no source of record outside the folder, and
+> has no opinion about which recordings a lab considers usable. **A producer that
+> excludes a recording excludes it by not writing it.** There is no `excluded`
+> column and there will not be one: a flag invites a consumer to decide whether to
+> honour it, and two consumers will decide differently.
+>
+> **This revision fixes nothing on the producer's side.** It is written because two
+> recordings a lab had marked unusable reached published numbers, and the
+> investigation ended somewhere unexpected: the exporter had honoured the flag
+> correctly and said so, and the numbers came from analyses that read the source
+> stores directly and never opened the folder at all. The contract was not being
+> broken; it was being bypassed. So the sentence that was missing is the one about
+> what happens when you go around it.
+>
+> **A consumer that reads anything other than this folder inherits none of the
+> contract.** Not the exclusions, not the region bounds, not the frame interval,
+> not the onset convention — a store is a store, and it carries whatever it
+> carries. That is not a caveat about performance or convenience. It is the
+> difference between a number computed on the corpus a lab approved and a number
+> computed on everything that happened to be on disk.
+>
+> **The producer's own statement travels with the folder** — see *"What the
+> producer says about the folder"* below. It is where the exclusions applied, the
+> per-stream meaning of `width_sec`, and any known contamination are written down.
+> Optional, because a lab shipping four CSVs by hand cannot be required to write
+> prose; expected, because without it a consumer cannot tell a complete corpus
+> from a truncated one.
+>
 > **Revision 5** (2026-08-18). **An event is located at its half-rise, and the
 > contract now asks how big it was.**
 >
@@ -403,6 +440,35 @@ The column contract for the results, shipped alongside the batch so the folder
 stays self-describing. When present, bugarach validates its output against it and
 refuses to write a frame that does not conform. When absent, it writes the same
 frame and says the check was skipped.
+
+### What the producer says about the folder — optional, and expected
+
+A folder can carry a prose statement about how it was made. Nothing reads it and
+nothing validates it; it is written for the person deciding whether a number
+computed from this folder means what they think it means. This project's exporter
+writes `PROVENANCE.md`; the name is not part of the contract and any file that
+says these things serves.
+
+**What is worth stating, and why each earns its place:**
+
+- **Which recordings were left out, and under what rule.** This is the one that
+  makes a corpus checkable. "84 recordings" is unverifiable on its own — it cannot
+  distinguish a complete export from one that lost twelve. Naming the rule and the
+  count makes the same number auditable, and naming the recordings makes it
+  reproducible.
+- **What `width_sec` means in each stream**, where the producer sends it. The
+  column travels with `width_def` per row, but a reader deciding whether two
+  streams are comparable wants it in one place.
+- **Known contamination.** A recording can be in the corpus and still have a
+  defect the producer knows about and the consumer cannot see — motion artefacts
+  pinning a trace, a period whose end is a clamp rather than a measurement. A
+  consumer that cannot be told will discover it as a result.
+- **What the identifiers mean.** Whether `roi` is a fresh numbering or the source
+  store's index decides whether a gap in the ids is missing data or a removed cell.
+
+**It is not a substitute for the CSVs.** Anything a detector needs is a column, in
+the contract, validated. This is the part a machine cannot use and a person cannot
+do without.
 
 ## What bugarach emits back
 
