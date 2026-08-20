@@ -127,8 +127,12 @@ OPERATING_POINTS: dict[str, OperatingPoint] = {
         source="measured-regime F1 optimum, FAST (loco_detect docstring)",
         knob="threshold_pctile", grid=(99.0, 99.5, 99.9, 99.99, 99.999, 99.9999)),
     "cicada": OperatingPoint(
-        params=dict(sce_percentile=99.99, active_duration_sec=1.0, n_surrogates=100),
-        source="calibrated FAST pair (cicada_detect docstring)",
+        params=dict(sce_percentile=99.999, active_duration_sec=1.0, n_surrogates=100),
+        source="calibrated FAST pair (cicada_detect docstring); FAST percentile "
+               "retuned 99.99 -> 99.999 on 2026-08-20 with REGIMES — see cicada.py "
+               "for the measurement. Kept in step with the detector default on "
+               "purpose: a bench grading a configuration nobody deploys grades "
+               "nothing.",
         # Extended 2026-08-20 when REGIMES moved to the approved corpus: at the
         # corrected (busier) quiet endpoint the old top, 99.99999, was still the
         # peak and the search was still climbing. A busier background needs a

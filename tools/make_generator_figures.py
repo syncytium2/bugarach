@@ -36,10 +36,13 @@ import numpy as np
 # and any base-recording overrides that value range needs to be legible.
 SWEEPS: dict[str, dict] = {
     "bg_rate_hz": dict(
-        values=(0.0019, 0.0038, 0.0096, 0.0175, 0.0350),
+        # Re-derived 2026-08-20 with bench.REGIMES: the middle three are p25,
+        # median and p75 of slice-mean per-ROI rate on the EXPORT FOLDER, the
+        # corpus the lab approved. The outer two stay at half p25 and twice p75.
+        values=(0.0026, 0.0052, 0.0102, 0.0190, 0.0380),
         note="per-ROI background rate, in Hz. The middle three are the "
              "untreated interquartile range and its median — the bench runs "
-             "from 0.0038 to 0.0175. The same planted structure is in every "
+             "from 0.0052 to 0.0190. The same planted structure is in every "
              "row; only how far it stands out changes. (Event TIMES do shift "
              "between rows: the background draw consumes RNG, so the schedule "
              "redraws. Compare structure, not event for event.)",
