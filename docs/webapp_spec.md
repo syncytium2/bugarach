@@ -47,28 +47,37 @@ that makes stage 6 the point of the exercise rather than an afterthought.
 
 ## The output contract — what ships first
 
-**Fireflies-compatible: a list of event times, by slice id and treatment.** One row per
-detected event. This is deliberately narrower than what the detectors produce, and the
-narrowness is the feature: it is the smallest thing the downstream consumer can use, so
-it can exist before anything else is settled.
+**The columns are [`docs/export_folder_spec.md`](export_folder_spec.md)'s**, under *"What
+bugarach emits back"*, and that document is the only place they are written down. It is
+implemented in [`src/bugarach/emit.py`](../src/bugarach/emit.py).
 
-```
-slice_id,treatment,detector,t_start_sec,t_end_sec,n_participating_rois
-2026-05-14_s3,baseline,coact,412.30,413.10,7
-2026-05-14_s3,baseline,coact,988.70,989.40,5
-2026-05-14_s3,ttx,coact,133.20,134.05,4
-```
+> **This section used to restate the schema, and the two came apart** (2026-08-19). It
+> showed a narrower "fireflies-compatible" row keyed on a **`treatment`** column, which
+> the export contract forbids in terms — *no privileged region, and no protocol
+> vocabulary*. The word came from the original request quoted above, so it was a faithful
+> transcription rather than a careless draft, and it survived because a schema written in
+> two places drifts in one of them.
+>
+> **It is superseded, and the consumers settled it before we did.** `fireflies` reads
+> `region_idx` straight out of the export and builds its own `treatment` factor at its own
+> boundary — *"for this call only"*, in its words (`td/fig-auc-beforeafter.R`) — and its
+> old `region_idx <= 2` filter is now a no-op tripwire, so it has already restructured
+> around the export's indexing. `interface2` answered the same question in its contract
+> reply: *"region 1 always reads `baseline` because that is its name … the baseline is a
+> fixed period in the protocol, not a treatment slot."* Neither consumer wants a
+> `treatment` column from us, and neither needs a narrower file. **Do not add one.**
 
-Rules that are not negotiable, each because of an existing decision in this tree:
+What that shape carries, and why, is argued there rather than here. The rules below are
+about the *pipeline*, and they hold whatever the columns are called:
 
 - **`slice_id` comes from the data, never from a filename or a code argument.** The
   loader currently takes the slice name as an argument and ignores the `slice_id`
   column the export contract requires. Two slices that differ only by folder name
   would collide.
-- **`treatment` is carried through, never inferred.** It is a region label on the
-  input (`baseline`, `ttx`, `senktide`, `hik`, `wash`, …). The app must not guess it
-  from a filename, and must not merge regions — **effects run in opposite directions
-  by group**, so a pooled row is not admissible (FOUNDATIONS §9).
+- **The period is carried through, never inferred.** It arrives as the producer's own
+  `region_idx` and `region_label` and is passed on unchanged. The app must not guess a
+  period from a filename, must not rename one, and must not merge regions — **effects run
+  in opposite directions by group**, so a pooled row is not admissible (FOUNDATIONS §9).
 - **One row per event per detector.** Do not pre-merge detectors into a consensus;
   that is a downstream decision and merging discards which detector fired.
 - **Times in seconds, on the recording's own clock**, with the frame interval recorded

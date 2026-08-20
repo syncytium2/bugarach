@@ -1,9 +1,36 @@
 ---
-status: open
+status: closed
 filed: 2026-08-19
+closed: 2026-08-20
 ---
 
 # Two documents specify `detections.csv`, and they do not agree
+
+> ## Closed 2026-08-20 — superseded, and the consumers had already settled it
+>
+> Tony: *"pretty sure fireflies and matlab have already fixed this."* They had, and
+> checking beat both of the readings this file offered.
+>
+> **`fireflies`** reads `region_idx` and `treat1` out of the export and builds its own
+> `treatment` factor **at its own boundary** — `td/fig-auc-beforeafter.R`, whose comment
+> says it maps them *"for this call only"*. Its former `region_idx <= 2` filter is
+> annotated there as a **no-op tripwire**, so it has already restructured around the
+> export's region indexing rather than waiting on a column from us.
+>
+> **`interface2`** answered the same question in
+> `docs/exports/2026-08-17_bugarach_import_contract_reply.md`: *"region 1 always reads
+> `baseline` because that is its name. Nothing is overwritten and nothing is missing —
+> the baseline is a fixed period in the protocol, not a treatment slot."*
+>
+> So the narrow row is **superseded**, not a second deliverable, and the projection this
+> file proposed adding to `emit.py` **must not be built**: it already exists, on the
+> consumer side, which is where `workflow_plan.md` said it belonged — *"our R side
+> adapts; it does not get a private dialect."*
+>
+> Fixed by deleting the restated schema from `docs/webapp_spec.md` and pointing it at
+> `docs/export_folder_spec.md`, now the only place the columns are written down. The
+> general lesson is the one that caused it: **a schema written in two places drifts in
+> one of them.**
 
 Found while building the writer (lane D1). Both are current, both are cited by the
 lane's own todo as the source of the columns, and they describe different files.
