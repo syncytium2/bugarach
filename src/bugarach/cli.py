@@ -67,7 +67,34 @@ def main(argv: list[str] | None = None) -> None:
                           "with what counts as one event — say which you used")
     asr.add_argument("--limit", type=int, default=None,
                      help="assess only the first N recordings")
+
+    # Imported at module scope below rather than lazily: the help text quotes
+    # the default port, so a reader of `bugarach lab --help` sees the number
+    # this server actually binds instead of one written twice.
+    from bugarach import lab as lab_mod
+
+    lab = sub.add_parser(
+        "lab", help="serve the viewer locally, with training enabled")
+    lab.add_argument("--port", type=int, default=lab_mod.DEFAULT_PORT,
+                     help=f"loopback port (default {lab_mod.DEFAULT_PORT}); "
+                          f"0 picks a free one")
+    lab.add_argument("--no-show", action="store_true",
+                     help="don't open a browser tab")
+    lab.add_argument("--stub", action="store_true",
+                     help="serve the endpoints against a trainer that fits "
+                          "nothing and calls an event a minute — for driving "
+                          "the page against the seam without paying for a fit")
     args = ap.parse_args(argv)
+
+    if args.cmd == "lab":
+        # The published page is untouched by this. The server appends the
+        # `window.__lab` shim to the copy it hands out; the copy on disk — the
+        # one `build_site.py` publishes — never grows a transport.
+        # docs/adr/0001-the-lab-server.md.
+        raise SystemExit(lab_mod.serve(
+            port=args.port,
+            trainer=lab_mod.StubTrainer() if args.stub else None,
+            open_browser=not args.no_show))
 
     if args.cmd == "assess":
         # importable without panel, for the same reason `check` is: a lab

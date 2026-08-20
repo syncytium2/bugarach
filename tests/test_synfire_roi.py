@@ -1,11 +1,17 @@
-"""Silent ROIs are not evidence of order, and PySpike scores them as if they were.
+"""An empty train is not evidence of order, and PySpike scores it as if it were.
 
 These lock a *defect and its fix*, not an implementation choice. PySpike's
 `spike_train_order` averages a per-pair ratio, and it scores a pair of trains that
 are **both empty** as `(e=1, m=1)` — the value a perfectly ordered pair gets. So
-handing the sorter every ROI in a recording, silent ones included, adds one
-maximal-order term per silent pair: quadratic in the number of cells that never
-fired, and entirely unrelated to whether anything fires in order.
+handing the sorter every ROI in a recording, empty ones included, adds one
+maximal-order term per empty pair: quadratic in the number of cells with nothing in
+the window, and entirely unrelated to whether anything fires in order.
+
+**"Empty in this window" is not "dead".** Of the 5260 (ROI, stream) pairs in the v2
+export, 122 produce no event anywhere in the recording — matching that export's own
+`PROVENANCE.md` — while 1819 fire somewhere and not in the baseline window. Both are
+dropped, because the question is scoped to the window; only the first are quiet cells,
+and the dead-ROI verdict is the producer's, applied upstream by the choice of store.
 
 On this corpus that is not a rounding error. `20240723_22` carries 17 events across
 3 active ROIs and 21 silent ones — 210 silent pairs against 3 real ones — and scored
@@ -93,9 +99,50 @@ def test_keep_silent_restores_the_pre_fix_behaviour():
 
 
 def test_events_outside_the_window_do_not_make_an_roi_active():
-    """A cell that fired only outside the analysis window is silent *for this test*,
-    and must be dropped like any other silent cell rather than entering as an empty
-    train."""
+    """A cell that fired only outside the analysis window is empty *for this test*, and
+    must be dropped like any other empty train.
+
+    This is the 1819-against-122 case from the module docstring: the cell is not dead,
+    it simply has no latency inside the window the question is scoped to."""
     stream = _Stream([[10.0, 20.0], [999.0], [11.0, 21.0]])
     trains = ss._trains(stream, WIN, stream.n_rois)
     assert len(trains) == 2
+
+
+def test_the_per_recording_seed_survives_a_new_process():
+    """The reproducibility promise, which was false until 2026-08-19.
+
+    The scan seeded numpy with ``abs(hash(slice_id))``. Python salts string hashing per
+    process unless ``PYTHONHASHSEED`` is set, so every run drew different surrogates and
+    two runs of the same corpus disagreed on the verdict tally by a recording or two —
+    noise that is easy to read as the effect of a code change. The seed is now a CRC,
+    and this asserts it in a **subprocess with hash randomisation on**, because an
+    in-process check cannot see the bug at all.
+    """
+    import subprocess
+    import zlib
+
+    sid = "20240708_13"
+    expected = zlib.crc32(sid.encode()) % (2 ** 31)
+
+    seen = set()
+    for _ in range(3):
+        out = subprocess.run(
+            [sys.executable, "-c",
+             f"import zlib; print(zlib.crc32({sid!r}.encode()) % (2**31))"],
+            capture_output=True, text=True, check=True,
+            env={**__import__("os").environ, "PYTHONHASHSEED": "random"})
+        seen.add(out.stdout.strip())
+    assert seen == {str(expected)}, f"seed is not stable across processes: {seen}"
+
+    # And the thing it replaced genuinely is unstable, so this test is not vacuous.
+    hashes = set()
+    for _ in range(5):
+        out = subprocess.run(
+            [sys.executable, "-c", f"print(abs(hash({sid!r})) % (2**31))"],
+            capture_output=True, text=True, check=True,
+            env={**__import__("os").environ, "PYTHONHASHSEED": "random"})
+        hashes.add(out.stdout.strip())
+    assert len(hashes) > 1, (
+        "hash() looks stable here — PYTHONHASHSEED may be pinned in this environment, "
+        "which would hide the bug this test exists for")

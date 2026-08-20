@@ -23,38 +23,31 @@ Everything is CSV, UTF-8, newline-only endings, one header row. Times are
 this project's MATLAB exporter, another lab's Python, a spreadsheet exported by
 hand.
 
-> **Revision 6** (2026-08-20). **The folder is the corpus. Nothing re-filters it,
-> and nothing reads around it.**
+> **Revision 6** (2026-08-20). **Selection is the producer's, and the consumer may
+> not second-guess it.**
 >
-> A recording present in the folder is a recording to analyse. bugarach applies no
-> inclusion rule of its own, consults no source of record outside the folder, and
-> has no opinion about which recordings a lab considers usable. **A producer that
-> excludes a recording excludes it by not writing it.** There is no `excluded`
-> column and there will not be one: a flag invites a consumer to decide whether to
-> honour it, and two consumers will decide differently.
+> "bugarach reads one folder and nothing else" was stated from revision 1 and was
+> read as a *convenience* — the folder is enough — rather than as the *rule* it is.
+> It is the rule. **Which recordings are analysable, and which ROIs are alive, are
+> expressed by what the folder contains.** A recording the producer withdrew is
+> absent. A dead ROI is not exported. There is nothing for the consumer to filter,
+> and filtering anyway is a defect rather than a precaution.
 >
-> **This revision fixes nothing on the producer's side.** It is written because two
-> recordings a lab had marked unusable reached published numbers, and the
-> investigation ended somewhere unexpected: the exporter had honoured the flag
-> correctly and said so, and the numbers came from analyses that read the source
-> stores directly and never opened the folder at all. The contract was not being
-> broken; it was being bypassed. So the sentence that was missing is the one about
-> what happens when you go around it.
+> **The incident.** An analysis in this repo read the `.mat` store directly, noticed
+> it therefore contained recordings the lab had withdrawn, and "fixed" that by
+> reading the lab's workbook to re-derive the exclusions. The workbook keys them on
+> (date, mouse, **`slice_order`**). bugarach has no `slice_order`, so it matched on
+> date and dropped **a recording the lab had not withdrawn** — one mouse had two
+> slices that day and only the first was excluded. The producer's export had it
+> right. Every number in a published report was then computed over a corpus one
+> recording smaller than the producer intended, by machinery built to be careful.
 >
-> **A consumer that reads anything other than this folder inherits none of the
-> contract.** Not the exclusions, not the region bounds, not the frame interval,
-> not the onset convention — a store is a store, and it carries whatever it
-> carries. That is not a caveat about performance or convenience. It is the
-> difference between a number computed on the corpus a lab approved and a number
-> computed on everything that happened to be on disk.
->
-> **The producer's own statement travels with the folder** — see *"What the
-> producer says about the folder"* below. It is where the exclusions applied, the
-> per-stream meaning of `width_sec`, and any known contamination are written down.
-> Optional, because a lab shipping four CSVs by hand cannot be required to write
-> prose; expected, because without it a consumer cannot tell a complete corpus
-> from a truncated one.
->
+> **The generalisation.** A consumer re-deriving a producer's decision is working
+> from strictly less information than the producer had. It will sometimes agree, and
+> when it disagrees it will be wrong. If a folder looks like it contains something it
+> should not, that is a **conversation with the producer**, not a filter in the
+> consumer. `bugarach.assembly` carries the same note where the deleted code was.
+
 > **Revision 5** (2026-08-18). **An event is located at its half-rise, and the
 > contract now asks how big it was.**
 >

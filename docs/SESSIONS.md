@@ -75,6 +75,109 @@ Template:
   `PROVENANCE.md`; the numbers came from analyses that opened `.mat` stores and never
   read the folder at all. This gives the exported corpus one address so a tool has no
   excuse, and a repo-wide gate follows.
+### Mac/darkroom-corrected-synfire — the corrected synfire numbers, in their own folder
+- **Status:** DONE 2026-08-20 — **written, claim released**
+- **Started:** 2026-08-19
+- **Writes:** `<darkroom>/bugarach/2026-08-19-synfire-roi-corrected/` — **one new subfolder.**
+  Both `--keep-silent-rois` (pre-fix) and corrected runs of each stream, both figures, and
+  a README saying which is which. **Plus ONE new file at the root of `bugarach/`**:
+  `synfire_README.md`, a signpost beside the synfire session's two JSONs — see below.
+- **Claims:** ~~that ONE subfolder~~ — **released.** Written and not being regenerated. It
+  holds `README.md`, `v2_analysis_window/` and `periods_raw_baseline/` (pre-fix and
+  corrected, both streams, all seeded), and both figures.
+- **Tony's decision, 2026-08-20: both sets stay, side by side, with a README.** The two
+  root files are NOT superseded and NOT deleted. The only thing added beside them is
+  `synfire_README.md`, because a reader opening `bugarach/` would otherwise see the old
+  JSONs with nothing to say a corrected set exists one folder down. It adds a signpost and
+  changes no result.
+- **DOES NOT TOUCH** `<darkroom>/bugarach/synfire_{fast,slow}_relabel.json` at the root
+  (2026-08-19 19:51). Those are the synfire session's output and carry the **pre-fix**
+  numbers — the ones the handoff and `docs/todo/2026-08-19-synfire-measured-and-what-it-cost.md`
+  quote. Overwriting them would silently restate a published result, which is a decision
+  and not a cleanup. **Whoever owns that todo should decide whether the root files are
+  superseded**; until then both are on disk and the new README says how they differ.
+- **Reads:** BOTH export folders, read-only —
+  `exports/bugarach/2026-08-17_revised_2v_v2` and `..._2026-08-18_revised_2v_periods`.
+- **A windowing trap found on the way in, which anyone comparing synfire numbers must know.**
+  The two exports do not score the same window. `2026-08-17_revised_2v_v2` carries
+  `analysis_start_sec`/`analysis_end_sec`, so the scan uses the producer's analysis window;
+  `2026-08-18_revised_2v_periods` carries **no `analysis_*` columns at all** (deliberately,
+  per the windowing decision), so the scan falls back to the raw baseline period. The root
+  `synfire_*_relabel.json` files were built from the **v2** export. A first pass here used
+  the periods export, which made the corrected numbers non-comparable to the ones they
+  correct — on the slow stream one shared recording differs by 0.377 in the indicator from
+  windowing alone, larger than anything the ROI fix does. Everything published in this
+  subfolder is therefore run on **both** exports, and the README says which is which.
+- **THREE defects, not one, and two of them reached published numbers.** PR #152 carries
+  the first; the follow-ups on `roi-and-synfire` carry the rest.
+  1. PySpike returns `(e=1, m=1)` — a *perfectly ordered* pair — for two EMPTY trains, and
+     the scan fed it every ROI: 1941 of 5260 (ROI, stream) pairs, 37%. Note that "empty
+     here" is not "dead". Only **122** are silent across the whole recording — matching the
+     export's own `PROVENANCE.md` exactly — and the other **1819** fire outside the
+     baseline window.
+  2. **Nothing reproduced.** The seed was `abs(hash(slice_id))`, and Python salts string
+     hashing per process, so every run drew different surrogates while the docstring
+     promised otherwise. Now `zlib.crc32`; a rerun is field-for-field identical, asserted
+     in subprocesses with hash randomisation forced on. **The synfire session's published
+     files predate this, so they are not re-derivable** — not wrong, but not reproducible.
+  3. `20240723_22` slow — 3 events across 3 trains — has no surrogate spread and was
+     reported as the corpus maximum: 0.774 **before** the ROI fix and 1.000 after. Rows now
+     carry `defined` and summaries exclude them. Honest maxima 0.414 and 0.625.
+- **What the fix does to the answer.** The tally moves +3 / -1 / -2 / +1 across the four
+  (export x stream) combinations — no consistent direction, every flip a recording on the
+  alpha=0.05 line, and the conclusion untouched. Two effects ARE consistent across both
+  exports and are the quotable ones: the upper tail of the indicator (p90 |change| 0.04
+  fast / 0.09 slow, against medians of 0.03 / 0.08), and `rho(indicator, spikes)` weakening
+  from -0.74/-0.39 to -0.57/-0.19 — which is the synfire handoff's **third reason** for not
+  quoting the slow group result.
+
+### Mac/deploy-record — the webapp merge train landed, and the site now serves it
+- **Status:** DONE 2026-08-19 — deployed and verified; **claim released.**
+- **Started:** 2026-08-19
+- **Writes:** **the PUBLIC SITE** — `bugarach.tonydefazio.com`. Nothing to the darkroom,
+  nothing under `$BUGARACH_DATA_ROOT`.
+- **Claims:** the site deploy, taken from released and **released again on the way out**.
+
+**What landed.** PRs **#128 → #129 → #130 → #131**, `main` @ `19a320b`. The browser now
+runs **five of the six** detectors — rate, SCE, coact, LoCo, sync — leaving CICADA. On
+merged `main`: 655 passed, 1 skipped, including all **97** browser parity tests, which
+actually ran here because this Mac has chromium (CI still skips them; PR #148 is fixing
+that). #133 was left alone — another session owns it.
+
+**They were a stack, and that has a trap.** #129 was based on #128's branch, #130 on
+#129's, #131 on #130's. **GitHub does not retarget a stacked PR when its base merges**, so
+every one after the first needed `gh pr edit <n> --base main` or it would have merged into
+a feature branch while reporting success. Worth knowing before the next stack.
+
+**Deployed, and the live page was checked rather than assumed.** `tools/build_site.py` ran
+from `19a320b`; the publish gate passed and `site/viewer.html` is **byte-identical** to
+`docs/site/raster_viewer.html` — copied, not transformed. Tony ran `npx wrangler deploy`
+and `tools/audit_deployed_page.py`, and **the served page fetched nothing but itself** —
+the privacy promise holds as served, not merely as written. That audit is the only check
+positioned to see what Cloudflare adds after the upload, which is how the injected Web
+Analytics beacon was caught; it fires on the live URL in chromium, and `curl` cannot
+replace it because the injection was UA-gated.
+
+**Separately confirmed on the live page: five detectors are being offered** — RateDetect,
+SCE, LoCo, CoactDetect, SPIKE-synch. The audit proves the page is quiet; it says nothing
+about *which* page shipped, and those are different questions. So `main` and
+`bugarach.tonydefazio.com` now agree.
+
+**⚠ A standing instruction on this board is now obsolete.** Two blocks below say deploys
+run from `bugarach-worktrees/deploy-site` and warn to *"check what it is checked out at
+before deploying, every time"*, because it was a **detached HEAD** that did not follow
+`main`. That worktree was merged and clean and this session removed it in the Phase-0
+sweep. **Deploys now run from the primary checkout, which does follow `main`** — which is
+the safer arrangement and removes the republish-the-wrong-commit hazard the warning
+existed for. `docs/deploy.md` never mentioned the pinned worktree, so nothing there needs
+changing; the warning lived only here.
+
+**Also swept**, so nobody hunts for them: worktrees `detector-table`, `webapp-loco`,
+`webapp-coact`, `webapp-sce`, `contract-check` and `deploy-site` removed — all merged,
+clean, and unclaimed on either board — and those four remote branches deleted.
+`preview-everything` was **pushed to origin first**; it had four commits on no remote, and
+its worktree and two uncommitted files were left untouched, because discarding another
+session's work is not a sweep.
 
 ### Mac/modularity-on-fast — run the connectivity project's modularity instrument on the FAST stream
 - **Status:** DONE 2026-08-19 — **claim released**

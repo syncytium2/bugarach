@@ -380,6 +380,17 @@ class BenchResult:
     distractor_hits: int = 0
     by_frac: dict = field(default_factory=dict)
     seeds: tuple = ()
+    tol_sec: float | None = None
+    """The match tolerance every pooled score was measured at.
+
+    It travels with the number because it is the number's units. A hit is
+    counted at a 1.5 s edge gap against a median realized event 0.80 s wide
+    (``docs/learned/tolerance_sweep.png``), so this F1 cannot tell landing on an
+    event from landing a second away from it. The *ranking* survives that and
+    any comparison drawn from it is safe; a bare F1 implying timing accuracy is
+    not. ``None`` where nothing was pooled — a result assembled by hand has no
+    tolerance to claim.
+    """
 
     @property
     def n_scored(self) -> int:
@@ -436,10 +447,77 @@ class BenchResult:
         knob = "" if self.knob_value is None else f" @{self.knob_value:g}"
         by = " ".join(f"{int(f * 100)}%:{self.recall_at(f):.2f}"
                       for f in sorted(self.by_frac, reverse=True))
+        # The tolerance rides beside F1, not in a footnote: it is what the F1
+        # was measured with, and the two are only meaningful together.
+        tol = "" if self.tol_sec is None else f"@{self.tol_sec:g}s"
         return (f"{self.detector:6}/{self.regime:6}{knob}  recall {self.recall:.2f}  "
-                f"precision {self.precision:.2f}  F1 {self.f1:.2f}  "
+                f"precision {self.precision:.2f}  F1 {self.f1:.2f}{tol}  "
                 f"FA {self.n_fa - self.hot_fa}  |  probe {self.hot_fa_per_min:5.1f}/min  "
                 f"distractor {self.distractor_hits}   [{by}]")
+
+
+@dataclass(frozen=True)
+class FoldSplit:
+    """The corpus, divided once, so every detector is asked the same question.
+
+    A fold split is only worth anything if it is the *same* split for everyone
+    being compared. Derive it here and hand it around; deriving it twice invites
+    two detectors to be scored on different held-out sets under one heading.
+
+    It is fully determined by ``base_seed``, ``n_folds`` and ``seeds_per_fold``:
+    recording seeds run consecutively from the base and are dealt out in
+    contiguous blocks. There is no shuffle, so there is no random source for two
+    languages to agree about — which is what lets the browser reproduce a split
+    the command line made.
+    """
+
+    seeds: tuple[int, ...]
+    n_folds: int
+    seeds_per_fold: int
+    base_seed: int
+
+    def fold_of(self, seed: int) -> int:
+        """Which fold a recording seed belongs to."""
+        i = seed - self.base_seed
+        if not 0 <= i < len(self.seeds):
+            last = self.base_seed + len(self.seeds) - 1
+            raise KeyError(f"seed {seed} is not in this corpus "
+                           f"({self.base_seed}..{last})")
+        return i // self.seeds_per_fold
+
+    def train(self, held: int) -> tuple[int, ...]:
+        """Everything outside the held-out fold — what a knob may be fitted on."""
+        self._check(held)
+        return tuple(s for s in self.seeds if self.fold_of(s) != held)
+
+    def test(self, held: int) -> tuple[int, ...]:
+        """The held-out fold — what the reported number is scored on, and the
+        only recordings nothing was fitted on."""
+        self._check(held)
+        return tuple(s for s in self.seeds if self.fold_of(s) == held)
+
+    def _check(self, held: int) -> None:
+        if not 0 <= held < self.n_folds:
+            raise IndexError(f"fold {held} is outside 0..{self.n_folds - 1}")
+
+
+def fold_split(*, n_folds: int = 4, seeds_per_fold: int = 3,
+               base_seed: int = 1000) -> FoldSplit:
+    """Deal ``n_folds * seeds_per_fold`` recording seeds into contiguous folds.
+
+    One fold is refused rather than allowed to degenerate: with a single fold
+    there is nothing left to fit on, and what comes back is a held-out score with
+    no training set behind it — the exact claim this split exists to make true.
+    """
+    if n_folds < 2:
+        raise ValueError(
+            f"n_folds={n_folds} leaves no training data — fitting on three and "
+            "scoring on the fourth needs at least two folds")
+    if seeds_per_fold < 1:
+        raise ValueError(f"seeds_per_fold={seeds_per_fold} makes an empty fold")
+    seeds = tuple(base_seed + i for i in range(n_folds * seeds_per_fold))
+    return FoldSplit(seeds=seeds, n_folds=n_folds,
+                     seeds_per_fold=seeds_per_fold, base_seed=base_seed)
 
 
 def pool_scores(scores, *, detector: str, regime: str, seeds=(),
@@ -458,9 +536,21 @@ def pool_scores(scores, *, detector: str, regime: str, seeds=(),
     gap is not small — SCE reads precision 0.91 one way and 0.11 the other.
     Pooling is six lines, so it was rewritten instead of imported, and the rule
     for what counts forked in silence. Import this.
+
+    The pooled result carries the tolerance its inputs were scored at. Scores
+    measured at different tolerances are not poolable and are refused here
+    rather than summed into a number whose units are a mixture — the failure
+    would be invisible, since counts add whatever they were counted against.
     """
     out = BenchResult(detector=detector, regime=regime, knob_value=knob_value,
                       seeds=tuple(seeds))
+    tols = {float(sc.tol_sec) for sc in scores if sc.tol_sec is not None}
+    if len(tols) > 1:
+        raise ValueError(
+            f"cannot pool scores measured at different tolerances: "
+            f"{sorted(tols)} s. A pooled count is only meaningful against one "
+            "matching rule.")
+    out.tol_sec = tols.pop() if tols else None
     for sc in scores:
         out.n_planted += sc.n_planted
         out.n_detected += sc.n_detected

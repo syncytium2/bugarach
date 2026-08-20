@@ -343,3 +343,89 @@ The ten from round 4 stand, with one closed and two added:
 - **NEW:** the port is a **port, not a clean-room** — the MATLAB driver was read while chasing
   the quarantined roster, so only the coefficient is independently derived. The module says
   so and the fixture only certifies the part that can be certified. ⚠
+
+---
+
+# Round 6 — the input moved, and the numbers moved with it
+
+Appended 2026-08-20. Store access was closed and both documents were recomputed from the
+export folder. This round is short because the change is one thing, but that thing reaches
+every number.
+
+- upstream:  syncytium2/murderboard @ 729fb06
+- vendored:  77b70dc620a8bcccfc72fce2fd316d38da34c204
+- freshness: current
+- artifact:  docs/learned/assembly_report.html   (9cbf3f6e51939318a7b8c727122d62b39b598165)
+             docs/learned/assembly_summary.html  (a0a92b4b708b88fb3c1d1baf1f1eede60c2a22f5)
+- roles:     11 of 11 re-run (single-pass, same deviation as earlier rounds)
+- stopping:  **severity floor** — the last blind pass produced no blocking and no major
+
+## Findings by severity, this round
+
+| round | blocking | major | minor | note |
+|---|---|---|---|---|
+| 6a — initial, on the folder rerun | 1 | 2 | 1 | the blocking one was in the previous round's fix |
+| 6b — blind, rebuilt render | 0 | 1 | 1 | provenance of the crosstalk claim |
+| 6c — blind, rebuilt render | 0 | 0 | 1 | recorded as residual |
+
+## Findings and adjudications
+
+**B3 · BLOCKING · the exclusion layer added in round 4 was itself the defect (role 1, role 6).**
+Round 4 recorded, as a fix, that this analysis now reads the lab's workbook and drops the
+recordings it marks excluded. That was a contract violation
+(`docs/export_folder_spec.md`: *"one folder and nothing else … no companion database"*) and it
+produced a **wrong answer**: the workbook keys exclusions on (date, mouse, `slice_order`), this
+project has no `slice_order`, date-matching dropped `20250731_151` which the lab had **not**
+withdrawn, and the producer's own export dropped exactly one. Every number in rounds 4 and 5
+was computed over 83 recordings where the producer intended 84.
+**Fixed** — the whole layer is deleted rather than corrected, the analysis reads the export
+folder, and tests assert the loaders and flags cannot return. Recorded as contract revision 6,
+in `CLAUDE.md`, and in `bugarach.assembly` where the deleted code was.
+
+**M14 · MAJOR · the slow stream's size of test is not "possibly" elevated (role 4).** Round 5
+hedged it as two noisy estimates in a 6–9% range. The folder rerun gives a **third**: 9.6%,
+interval 6.2–14.7. Three runs at three geometries — 6.6%, 9.1%, 9.6% — all above nominal, the
+last two with intervals excluding 5%. **Fixed** — both documents now state it as settled and
+put the slow false-positive rate at roughly **twice** nominal, with the direction of the slow
+negative explicitly unaffected.
+
+**M15 · MAJOR · the crosstalk control cannot be reproduced under the new policy (role 1,
+round 6b).** Its numbers came from `.mat`-against-`.mat`, and no penumbra-subtracted export
+folder exists. Left unstated, a reader would assume the reproduction recipe covers it.
+**Fixed** — the reproduction section names it as the one claim that cannot be re-derived, with
+its date and provenance, and
+`docs/todo/2026-08-20-the-crosstalk-control-needs-a-pensub-export.md` states what would close
+it and the honest alternative if no export is coming.
+
+**m8 · minor · the previous round's todo pointed the wrong way (role 3).**
+`2026-08-19-lab-exclusions-were-never-consulted.md` recommended reading the workbook more
+carefully. **Fixed** — withdrawn in place, with the diagnosis kept and the prescription
+reversed, because the file would otherwise send the next session down the same path.
+
+## What this round did NOT find
+
+Role 1: every folder number was recomputed rather than carried over, and the membership
+tallies **reproduce exactly** what this project had before the store detour — 27/19/2 fast and
+27/7/4 slow. That agreement is the strongest evidence the contract path was right. Role 10:
+both figures rebuilt from the folder outputs; the modularity counts match the highlighted
+marks and the strip's medians are drawn from finite z only. Role 11: the argument order is
+unchanged; only the inputs and the numbers moved.
+
+## Residual — updated
+
+The list from round 5 stands, with one closed and one added:
+
+- **CLOSED:** ~~the port is a dependency on an unmaintained pipeline~~ — and now also not a
+  dependency on a store.
+- **NEW:** the crosstalk control is **historical** — measured 2026-08-19 against `.mat`
+  stores, not reproducible from current inputs, awaiting a pensub export folder. ⚠
+- Modularity cannot see overlapping groups (still the main route the negative could be
+  wrong). ⚠
+- The penumbra-subtracted modularity run covers slow only. ⚠
+- Core–periphery is an interpretation, not a fitted model. ⚠
+- The slow stream's test is anti-conservative at its own geometry — now measured three
+  times. ⚠
+- The corpus-level port agreement is not exercised by CI. ⚠
+- The port is a port, not a clean-room. ⚠
+- The fast/slow kinetic boundary is undefined in every document in this project. ⚠
+- The review remains single-pass, not independent. ⚠
