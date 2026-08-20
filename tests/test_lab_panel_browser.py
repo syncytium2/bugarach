@@ -10,9 +10,11 @@ So this drives the actual page in chromium, served by the actual
 `bugarach lab`, with the stub trainer standing in for the fit. The stub is what
 makes it affordable: the seam is what is under test, not the numerics.
 
-⚠ **CI does not run this** — it needs a chromium CI does not install. Run it
-locally before landing anything that touches the panel. (`ci-runs-the-browser`
-is the branch that intends to change that.)
+**CI runs this now**, on the GitHub runner, since the workflow started installing
+chromium. That is what makes a green tick say something about the webapp — and it
+also means a race in here blocks every pull request, not just the ones that touch
+the panel. Wait for the thing you are about to assert on, never for a proxy that
+happens to appear first.
 """
 
 from __future__ import annotations
@@ -87,10 +89,66 @@ def test_the_panel_appears_when_the_server_serves_it(page_ctx, served):
         page.wait_for_selector("#accLab:not([hidden])", timeout=15000)
         assert page.evaluate("() => typeof window.__lab.train === 'function'")
         # The chip reports what the server said it can do, rather than assuming.
+        #
+        # Wait for the CHIP, not for the panel. The panel un-hides as soon as the
+        # shim defines the capability; the chip is filled later, by an async
+        # capabilities() roundtrip the un-hide does not wait for. Reading it
+        # straight afterwards is a race, and on 2026-08-20 it lost — CI failed on
+        # 3.13 while the same commit passed on 3.11 and 3.14, on the first day
+        # these tests ran in CI at all.
+        page.wait_for_function(
+            "() => { const el = document.getElementById('cntLab');"
+            " const t = el && el.textContent.trim();"
+            " return !!t && t !== 'local only'; }", timeout=15000)
         chip = page.locator("#cntLab").inner_text().strip()
         assert chip and chip != "local only", (
             "the chip still reads its published-page placeholder, so "
             "capabilities() never came back")
+    finally:
+        page.close()
+
+
+# Delay the capabilities roundtrip inside the page. Doing it from a Playwright
+# route handler instead stalls goto() as well, which closes the very window this
+# is trying to hold open — 40 unthrottled loads reproduced nothing.
+_SLOW_CAPABILITIES = """
+const _f = window.fetch;
+window.fetch = function (...a) {
+  if (String(a[0]).includes('capabilities')) {
+    return new Promise(r => setTimeout(() => r(_f.apply(window, a)), 1500));
+  }
+  return _f.apply(window, a);
+};
+"""
+
+
+def test_the_chip_survives_a_slow_capabilities_roundtrip(page_ctx, served):
+    """The regression guard for the flake above, made deterministic.
+
+    `wireLab()` sets `acc.hidden = false` and only then awaits
+    `api.capabilities()`, so there is a window where the panel is up and the chip
+    still reads its published-page placeholder. On this machine the roundtrip beats
+    Playwright's own latency and the window never shows; on a loaded CI runner it
+    did, and the assertion read `'local only'` — the placeholder itself, not the
+    `'unreachable'` that a failed capabilities() would have written. That is what
+    identifies it as a race rather than a broken server.
+
+    Slowing the fetch holds the window open on any machine. What is asserted is
+    that waiting for the chip still yields the server's answer; the window itself
+    is the page's current behaviour, not a contract, so nothing here forbids
+    fixing `wireLab()` to await before it un-hides.
+    """
+    page = page_ctx.new_page()
+    page.add_init_script(_SLOW_CAPABILITIES)
+    page.goto(served + "/", wait_until="load")
+    try:
+        page.wait_for_selector("#accLab:not([hidden])", timeout=15000)
+        page.wait_for_function(
+            "() => { const el = document.getElementById('cntLab');"
+            " const t = el && el.textContent.trim();"
+            " return !!t && t !== 'local only'; }", timeout=15000)
+        assert page.locator("#cntLab").inner_text().strip() == "stub", (
+            "the chip should report the stub trainer the server actually has")
     finally:
         page.close()
 
