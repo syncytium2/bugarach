@@ -1,5 +1,8 @@
 # Handoff — synfire order, 2026-08-19
 
+> The modularity port that shared this file is **done** — landed, validated, and its
+> section removed. Only synfire is still in flight.
+
 **Everything is landed on `main`. Nothing uncommitted, no branch waiting.** This exists
 because one measurement is finished and its interpretation is not.
 
@@ -111,3 +114,5 @@ carries group structure is worth something; neither is evidence about the other'
   SPIKE-order if a MATLAB cross-check is wanted.
 - **syncytium2/murderboard #19 and #21** — two process changes still open and waiting on a
   person; that repo has no CI, so merging is a manual act.
+
+---

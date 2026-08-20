@@ -28,7 +28,11 @@ read off that optimal sorting: 0 for no consistent order, 1 for a perfect synfir
    interface2 already found the MATLAB equivalent lands on different local optima when the
    RNG path shifts (``SYNCHRO_PROGRESS.md``). Every optimisation below is therefore
    repeated ``--restarts`` times and the best F kept, and the numpy seed is fixed per
-   recording so a rerun reproduces.
+   recording so a rerun reproduces. **That seed is a CRC of the recording id, not
+   ``hash()``** — Python salts string hashing per process unless ``PYTHONHASHSEED`` is
+   set, so the original form reseeded differently on every run and this promise was
+   false. Two runs of the same corpus disagreed by a recording or two on the verdict
+   tally, which is the size of effect one might otherwise credit to a change in the code.
 
 **The null.** Per-ROI circular shift inside the analysis window — this project's standing
 surrogate (FOUNDATIONS §2), which preserves each ROI's own event count and destroys every
@@ -45,6 +49,7 @@ import argparse
 import json
 import sys
 import time
+import zlib
 from pathlib import Path
 
 import numpy as np
@@ -53,14 +58,41 @@ K_MIN_ACTIVE = 3
 """Fewer than three active ROIs cannot express a leader-follower order."""
 
 
-def _trains(stream, window, n_rois):
-    """Per-ROI onset trains inside the window, as PySpike SpikeTrains."""
+def _trains(stream, window, n_rois, *, keep_silent: bool = False):
+    """Per-ROI onset trains inside the window, as PySpike SpikeTrains.
+
+    **ROIs with no events IN THE WINDOW are dropped, and that is load-bearing.**
+    PySpike scores a pair of empty trains as ``(e=1, m=1)`` — a *perfectly ordered*
+    pair — so every pair of empty trains adds a maximal-order term to the totals that
+    ``spike_train_order`` averages. A recording with 21 empty trains of 24 contributes
+    210 such pairs against a handful of real ones, and its indicator is then mostly a
+    count of cells with nothing in the window. Measured on this corpus: the top of the
+    fast distribution is the emptiest recordings, and ``20240723_22`` (17 events, 21 of
+    24 trains empty) scores 0.353 with them and 0.059 without.
+
+    **"Empty here" is not "dead", and the difference is most of them.** Of the 5260
+    (ROI, stream) pairs in the v2 export, **122** produce no event anywhere in the
+    recording — the count that export's own ``PROVENANCE.md`` reports, which this reader
+    reproduces exactly — while **1819** fire somewhere and simply not in the baseline
+    window. Both arrive here as an empty train and both are dropped, because the
+    question is scoped to the window: a cell with no event in it has no latency to be
+    ordered by, whatever it does later under drug. Do not read the drop count as a
+    dead-cell count. The dead-ROI verdict is the producer's and was applied upstream by
+    the choice of store (``event_store_onset_revised_2v_alive``).
+
+    This matches ``bugarach.graph.modularity_vs_null``, which drops cells with no events
+    in its own window for the same reason on the other instrument.
+
+    ``keep_silent=True`` restores the padded behaviour, for reproducing pre-fix numbers.
+    """
     import pyspike as spk
     out = []
     for i in range(n_rois):
         v = np.asarray(stream.locs[i], dtype=float)
         v = v[np.isfinite(v)]
         v = v[(v >= window[0]) & (v <= window[1])]
+        if v.size == 0 and not keep_silent:
+            continue
         out.append(spk.SpikeTrain(np.sort(v), edges=[window[0], window[1]]))
     return out
 
@@ -124,13 +156,15 @@ def _shift(trains, rng, window):
 
 
 def scan(store: Path, *, stream: str, n_surrogates: int, restarts: int,
-         null: str = "relabel", limit: int | None = None) -> dict:
+         null: str = "relabel", limit: int | None = None,
+         keep_silent: bool = False) -> dict:
     from bugarach.io import load_folder
 
     slices = load_folder(store)
     if limit:
         slices = slices[:limit]
     rows, skipped = [], {"no_baseline": 0, "no_stream": 0, "too_few_active": 0}
+    degenerate = 0
     t0 = time.time()
 
     for n, s in enumerate(slices):
@@ -147,16 +181,20 @@ def scan(store: Path, *, stream: str, n_surrogates: int, restarts: int,
             skipped["no_stream"] += 1
             continue
         st = s.streams[stream]
-        trains = _trains(st, win, st.n_rois)
+        trains = _trains(st, win, st.n_rois, keep_silent=keep_silent)
         active = sum(1 for t in trains if t.spikes.size)
         if active < K_MIN_ACTIVE:
             skipped["too_few_active"] += 1
             continue
 
-        # Seeded per recording: the annealing is unseeded internally, so this is what
-        # makes a rerun reproduce.
-        np.random.seed(abs(hash(s.slice_id)) % (2 ** 31))
-        rng = np.random.RandomState(abs(hash(s.slice_id)) % (2 ** 31))
+        # Seeded per recording, by CRC of the id and NOT by `hash()`. Python salts
+        # `hash(str)` per process unless PYTHONHASHSEED is set, so the previous form
+        # drew a different seed on every run and the docstring's promise that a rerun
+        # reproduces was false. It is why two runs of the same corpus disagreed by a
+        # recording or two on the verdict tally.
+        seed = zlib.crc32(str(s.slice_id).encode()) % (2 ** 31)
+        np.random.seed(seed)
+        rng = np.random.RandomState(seed)
 
         f_obs, raw_obs = _indicator(trains, restarts)
         surro = _relabel if null == "relabel" else _shift
@@ -164,23 +202,41 @@ def scan(store: Path, *, stream: str, n_surrogates: int, restarts: int,
                           for _ in range(n_surrogates)], dtype=float)
         # Phipson & Smyth: never a zero p-value from a finite surrogate set.
         p = float((1 + int((nulls >= f_obs).sum())) / (1 + n_surrogates))
-        z = float((f_obs - nulls.mean()) / nulls.std()) if nulls.std() > 0 \
-            else float("nan")
+        sd = float(nulls.std())
+        z = float((f_obs - nulls.mean()) / sd) if sd > 0 else float("nan")
+
+        # A surrogate set with no spread has no distribution to test against, so the
+        # indicator is not a measurement however extreme it looks. `20240723_22` slow
+        # is the case: 3 events across 3 trains, every relabelling identical, observed
+        # AND null both exactly 1.0. Reported as undefined rather than as the corpus
+        # maximum — the same "undefined is not a result" rule the assembly and
+        # modularity work apply.
+        defined = bool(sd > 0)
+        if not defined:
+            degenerate += 1
 
         ident = {k: v for k, v in (getattr(s, "meta", None) or {}).items()
                  if k != "slice_id"}
         rows.append(dict(
             **ident, slice_id=s.slice_id, stream=stream,
             n_roi=int(st.n_rois), n_active=int(active),
+            n_trains_scored=int(len(trains)),
             n_spikes=int(sum(t.spikes.size for t in trains)),
             window_sec=float(win[1] - win[0]),
             synfire=f_obs, synfire_raw_unnormalized=raw_obs,
-            null_mean=float(nulls.mean()), null_sd=float(nulls.std()),
-            p=p, z=z))
-        if (n + 1) % 20 == 0:
-            print(f"  ... {n + 1}/{len(slices)}  {time.time() - t0:.0f}s")
+            null_mean=float(nulls.mean()), null_sd=sd,
+            defined=defined, p=p, z=z))
+        # Flushed, and every recording rather than every twentieth. Redirected
+        # stdout is block-buffered, so the old form emitted nothing at all until the
+        # run ended — four silent minutes that read as a hang rather than as work.
+        done, el = n + 1, time.time() - t0
+        print(f"  {done}/{len(slices)}  {el:.0f}s elapsed, "
+              f"~{el / max(1, len(rows)) * (len(slices) - done):.0f}s left "
+              f"({s.slice_id}: {len(trains)} trains scored)", flush=True)
 
     return {"store": store.name, "stream": stream, "null": null,
+            "silent_rois_kept": bool(keep_silent),
+            "n_degenerate": degenerate,
             "n_surrogates": n_surrogates,
             "restarts": restarts, "skipped": skipped,
             "n_recordings": len(rows), "elapsed_sec": round(time.time() - t0, 1),
@@ -204,11 +260,18 @@ def main(argv=None):
                         "rate")
     p.add_argument("--restarts", type=int, default=3,
                    help="annealing restarts per optimisation; the sort is stochastic")
+    p.add_argument("--keep-silent-rois", action="store_true",
+                   help="hand silent ROIs to the sorter, as this tool did before "
+                        "2026-08-19. PySpike scores a pair of empty trains as a "
+                        "perfectly ordered pair, so this inflates the indicator in "
+                        "proportion to how many cells never fired. Kept only to "
+                        "reproduce the pre-fix numbers.")
     p.add_argument("--limit", type=int, default=None)
     a = p.parse_args(argv)
 
     res = scan(a.store, stream=a.stream, n_surrogates=a.n_surrogates,
-               restarts=a.restarts, null=a.null, limit=a.limit)
+               restarts=a.restarts, null=a.null, limit=a.limit,
+               keep_silent=a.keep_silent_rois)
 
     from bugarach.paths import darkroom, unresolved_message
     out = a.out or darkroom()
@@ -216,17 +279,31 @@ def main(argv=None):
         print(unresolved_message(), file=sys.stderr)
         return 1
     out.mkdir(parents=True, exist_ok=True)
-    dest = out / f"synfire_{a.stream}_{a.null}.json"
+    suffix = "_silentkept" if a.keep_silent_rois else ""
+    dest = out / f"synfire_{a.stream}_{a.null}{suffix}.json"
     dest.write_text(json.dumps(res, indent=1))
 
-    f = np.array([r["synfire"] for r in res["rows"]], dtype=float)
-    pv = np.array([r["p"] for r in res["rows"]], dtype=float)
+    # Summarise over DEFINED rows only. A recording whose surrogates all score the same
+    # has no distribution, and its indicator is not a measurement however extreme — but
+    # it is extreme, so an unfiltered summary hands it to the reader as the corpus
+    # maximum. On the v2 slow stream that is exactly what happened in both directions:
+    # `20240723_22` is 3 events across 3 trains and topped the corpus at 0.774 before
+    # this fix and 1.000 after. The defined maxima are 0.414 and 0.625.
+    defined = [r for r in res["rows"] if r.get("defined", True)]
+    f = np.array([r["synfire"] for r in defined], dtype=float)
+    pv = np.array([r["p"] for r in defined], dtype=float)
     print(f"\n{res['n_recordings']} recordings, {a.stream}, "
           f"{a.n_surrogates} surrogates x {a.restarts} restarts "
           f"({res['elapsed_sec']}s)")
     print(f"  skipped: {res['skipped']}")
+    if res["n_degenerate"]:
+        ids = ", ".join(r["slice_id"] for r in res["rows"]
+                        if not r.get("defined", True))
+        print(f"  UNDEFINED (surrogates have no spread, so no test): "
+              f"{res['n_degenerate']} — {ids}. Excluded from the summary below and "
+              f"reported as undefined, never as a negative.")
     if f.size:
-        print(f"  synfire indicator: median {np.median(f):.4f}  "
+        print(f"  synfire indicator over {f.size} defined: median {np.median(f):.4f}  "
               f"IQR {np.percentile(f, 25):.4f}-{np.percentile(f, 75):.4f}  "
               f"max {f.max():.4f}")
         print(f"  above its own null at p<0.05: {int((pv < 0.05).sum())}/{pv.size}")

@@ -66,8 +66,8 @@ EXTRACT = """async (sim) => {
   for (const which of ["rate", "sync"]) {
     document.getElementById("dDet").value = which;
     paintDetectorChoice();
-    const base = readDetector(dt);
-    const knob = TUNE_KNOB[which];
+    const base = DETECTORS[which].read(dt);
+    const knob = DETECTORS[which].knob;
     out.sweeps[which] = {
       knob: knob.key, base,
       rows: knob.grid.map(v => {

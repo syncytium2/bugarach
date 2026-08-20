@@ -1,7 +1,32 @@
 ---
 status: open
 filed: 2026-08-19
+revised: 2026-08-20
 ---
+
+> ## The dependency is GONE — the instrument was ported (PR #151, 2026-08-20)
+>
+> This file was written to force a decision. It was made and executed: `bugarach.graph` and
+> `tools/modularity_null.py` compute modularity here now, validated to **2.2e-16** against
+> the reference on identical inputs and agreeing on **98.7%** of corpus verdicts under a
+> different window rule. **bugarach no longer depends on the unmaintained pipeline for
+> anything**, and the modularity numbers in the assembly report are its own.
+>
+> Two corrections this file's own investigation produced, recorded because they read as open
+> questions below and are not:
+>
+> - **The dead-ROI roster is a no-op for baseline-only work.** The rejection rule implies
+>   `base_empty`, and any measurement that drops eventless cells has already dropped every
+>   rejected one. Verified: all 66 have zero baseline events. The verdicts are vendored to
+>   `docs/learned/dead_roi_verdicts.csv` and consumed anyway, because a future store may not
+>   have that property.
+> - **It is a PORT, not a clean-room.** The MATLAB driver was read while chasing the
+>   quarantined roster, so only the coefficient — written from Cutts & Eglen with
+>   `if2_sttc.m` unread — is independently derived, and only that is what the fixture
+>   certifies.
+>
+> **What is still open is the rest of this file, not the dependency:** nobody will merge the
+> interface2 branch, and nobody will recount that project's negatives.
 
 # bugarach's assembly negative rests on a pipeline nobody maintains
 
@@ -79,13 +104,16 @@ that result**, and it was not checked for any other.
   the inert `include` column are both the kind that survive a review of the numbers a document
   *names*.
 
-## The decision this actually forces
+## The decision this forced — resolved
 
-Either bugarach **takes the instrument** — clean-rooming the Louvain-against-jitter-surrogates
-test into this repo, so the assembly negative stops depending on an unmaintained MATLAB
-pipeline that does not run out of the box — or it **keeps the dependency and documents it**,
-in which case this file is the documentation and the assembly report should say so where it
-quotes the modularity numbers.
+bugarach **took the instrument** (PR #151). See the box at the top.
 
-Doing neither is the option that fails silently: the next person to re-run the assembly work
-will hit the quarantined-roster error and have nobody to ask.
+What did not get resolved, and cannot be from inside this repo:
+
+- **The interface2 branch `bct-modularity-fast` will not be merged**, because the team that
+  owns that repo no longer exists. It carries the channel argument, the two dump scripts this
+  repo's vendored data cites as its provenance, and the `IF2_DROI_CSV` override **without
+  which `eval_modularity_null` cannot run at all**. Anyone reviving that pipeline needs it.
+- **That project's published negatives are still quoted over denominators including
+  recordings they could not test.** The recount is arithmetic, not re-analysis, and it should
+  happen before any of them is written up. Nobody is going to do it unasked.
