@@ -397,6 +397,16 @@
         <label for="lSur">surrogates</label>
         <input id="lSur" type="number" min="20" max="1000" step="20" value="100">
       </div>
+      <div class="ctl" id="dCoactCtl" hidden>
+        <label for="cWin">integration window (s)</label>
+        <input id="cWin" type="number" min="0.1" max="60" step="0.1" value="2">
+        <label for="cCtx">context window (s)</label>
+        <input id="cCtx" type="number" min="10" max="1200" step="10" value="60">
+        <label for="cAlpha">alpha</label>
+        <input id="cAlpha" type="number" min="0.0000001" max="0.5" step="0.0001" value="0.0001">
+        <label for="cSur">surrogates</label>
+        <input id="cSur" type="number" min="20" max="1000" step="20" value="100">
+      </div>
       <div class="ctl">
         <div class="span"><button id="runDetect">Detect</button></div>
       </div>
@@ -413,6 +423,25 @@
         needs.</b> Finding those is what the simulate step above is for: measure,
         simulate from what you measured, tune against planted events, then point
         the tuned instrument at everything.
+      </div>
+      <div class="fine" id="dFineCoact" hidden>
+        <b>CoactDetect asks the same question as LoCo and answers it with
+        different arithmetic.</b> Both count distinct ROIs per bin and both build
+        a local null by shuffling. LoCo keeps bins above a high percentile of the
+        shuffles; this turns each bin into a z-score against the shuffles' mean
+        and spread, and keeps the ones whose p clears alpha. They part company in
+        the tails, which is where coordinated events live — so running both and
+        comparing is worth more than picking one.
+        <br><br>
+        <b>Alpha is per bin, not per recording.</b> At 1e-4 and a two-second bin,
+        a forty-minute recording tests twelve hundred bins, so a handful of false
+        positives is the expected behaviour of the setting rather than a fault.
+        The simulate step is where you find out how many.
+        <br><br>
+        <b>Sampled, and checked accordingly</b> — the coactivity is compared to
+        the Python exactly, the episodes are compared exactly once significance
+        is fixed, and the p-value arithmetic and its erfc are checked on their own
+        rather than through a hundred random draws.
       </div>
       <div class="fine" id="dFineLoco" hidden>
         <b>LoCo asks how many cells fired together, against what this recording
@@ -1871,6 +1900,191 @@ function locoDetect(trains, range, opts) {
            bc, sObs, thrBin, nEvents: starts.length };
 }
 
+
+/* ---------- CoactDetect, in the browser --------------------------------------
+   The same question LoCo asks — how many cells fired together — answered with a
+   different instrument. LoCo compares the count to a rolling percentile of the
+   shuffles; CoactDetect turns each bin into a z-score against the shuffles' mean
+   and spread and keeps the bins whose p clears alpha. So LoCo asks "is this
+   higher than almost anything the shuffles produced" and CoactDetect asks "how
+   many standard deviations out is it", and they disagree in the tails.
+
+   Checked the same three ways LoCo is, because it has the same shape: the
+   coactivity is exact, the null is sampled, and the episodes are exact once the
+   significance is fixed — so the test injects p-values and compares events at
+   1e-9. `tests/test_webapp_coact_detect_parity.py`. */
+
+/* erfc, to full double precision — Chebyshev, Numerical Recipes 3rd ed. The
+   browser has no erfc and the p-value is the whole decision, so this is checked
+   against Python's `math.erfc` directly rather than through the detector. */
+const ERFC_COF = [-1.3026537197817094, 6.4196979235649026e-1,
+  1.9476473204185836e-2, -9.561514786808631e-3, -9.46595344482036e-4,
+  3.66839497852761e-4, 4.2523324806907e-5, -2.0278578112534e-5,
+  -1.624290004647e-6, 1.303655835580e-6, 1.5626441722e-8, -8.5238095915e-8,
+  6.529054439e-9, 5.059343495e-9, -9.91364156e-10, -2.27365122e-10,
+  9.6467911e-11, 2.394038e-12, -6.886027e-12, 8.94487e-13, 3.13092e-13,
+  -1.12708e-13, 3.81e-16, 7.106e-15];
+
+function erfc(x) {
+  if (!Number.isFinite(x)) return x > 0 ? 0 : (x < 0 ? 2 : NaN);
+  const z = Math.abs(x);
+  const t = 2 / (2 + z);
+  const ty = 4 * t - 2;
+  let d = 0, dd = 0;
+  for (let j = ERFC_COF.length - 1; j > 0; j--) {
+    const tmp = d;
+    d = ty * d - dd + ERFC_COF[j];
+    dd = tmp;
+  }
+  const ans = t * Math.exp(-z * z + 0.5 * (ERFC_COF[0] + ty * d) - dd);
+  return x >= 0 ? ans : 2 - ans;
+}
+
+/* Observed against the shuffles: a z-score and its one-sided p. Split out
+   because everything here is deterministic once the shuffles have been counted,
+   and it is the arithmetic most easily got slightly wrong — the spread is the
+   SAMPLE standard deviation (n-1), a degenerate null with no spread at all is a
+   verdict rather than a division, and the p is one-tailed. Tested directly
+   against the Python formula rather than through a hundred random draws, which
+   would hide a 0.5% error in the divisor completely. */
+function coactStats(observed, counts) {
+  const n = counts.length;
+  let sum = 0;
+  for (let s = 0; s < n; s++) sum += counts[s];
+  const mu = sum / n;
+  let ss = 0;
+  for (let s = 0; s < n; s++) ss += (counts[s] - mu) * (counts[s] - mu);
+  const sd = n > 1 ? Math.sqrt(ss / (n - 1)) : 0;          // ddof = 1
+  if (sd > 0) {
+    const z = (observed - mu) / sd;
+    return { mu, sd, z, p: 0.5 * erfc(z / Math.SQRT2) };
+  }
+  if (observed > mu) return { mu, sd, z: Infinity, p: 0.0 };
+  return { mu, sd, z: 0.0, p: 1.0 };
+}
+
+/* CoactDetect, threshold mode.
+
+   NOTE THE GRID IS NOT MATLAB'S COLON HERE. CoactDetect builds a plain forward
+   grid `t0 + k*bw` and assigns an event by `clip(floor((t - t0)/bw), 0, nb-1)`,
+   so the last bin swallows anything at or past the end. LoCo and SPIKE-synch use
+   the two-ended colon and `discretize`. Both are ported as they are, because
+   matching each original is the product — do not unify them.
+
+   `pvals` may be supplied to bypass the sampling, which is how the parity test
+   compares episodes exactly against a Python run that drew different numbers. */
+function coactDetect(trains, range, opts) {
+  const o = opts || {};
+  const bw = o.intWinSec === undefined ? 0.5 : o.intWinSec;
+  const C = o.contextWinSec === undefined ? 60.0 : o.contextWinSec;
+  const minRois = o.minRois === undefined ? 3 : o.minRois;
+  const nSur = o.nSurrogates === undefined ? 200 : o.nSurrogates;
+  const alpha = o.alpha === undefined ? 0.01 : o.alpha;
+  const mgap = o.mergeGapSec === undefined ? 3.0 : o.mergeGapSec;
+  const u = rng32(o.seed === undefined ? 20260706 : o.seed);
+
+  const t0 = range[0], t1 = range[1];
+  const ev = clipSorted(trains, t0, t1);
+  const nb = Math.max(1, Math.ceil((t1 - t0) / bw));
+  const edges = new Float64Array(nb + 1);
+  for (let k = 0; k <= nb; k++) edges[k] = t0 + k * bw;
+  const ctr = new Float64Array(nb);
+  for (let k = 0; k < nb; k++) ctr[k] = t0 + (k + 0.5) * bw;
+
+  // distinct ROIs per bin — one per ROI per bin, however often it fired
+  const obs = new Float64Array(nb);
+  for (const e of ev) {
+    if (!e.length) continue;
+    const seen = new Set();
+    for (const x of e) {
+      let b = Math.floor((x - t0) / bw);
+      if (b < 0) b = 0; else if (b > nb - 1) b = nb - 1;
+      seen.add(b);
+    }
+    for (const b of seen) obs[b] += 1;
+  }
+
+  const z = new Float64Array(nb).fill(NaN);
+  const pval = new Float64Array(nb).fill(NaN);
+  const nullmean = new Float64Array(nb).fill(NaN);
+  const cand = [];
+  for (let b = 0; b < nb; b++) if (obs[b] >= minRois) cand.push(b);
+
+  if (o.pvals) {
+    for (let b = 0; b < nb; b++) pval[b] = o.pvals[b];
+  } else {
+    for (const b of cand) {
+      const blo = edges[b], bhi = edges[b + 1];
+      const cLo = Math.max(t0, ctr[b] - C / 2);
+      const cHi = Math.min(t1, ctr[b] + C / 2);
+      const cw = cHi - cLo;
+      const tlo = blo - cLo, thi = bhi - cLo;
+      const ctx = [];
+      for (const e of ev) {
+        if (!e.length) continue;
+        const vv = [];
+        for (const x of e) if (x >= cLo && x <= cHi) vv.push(x - cLo);
+        if (vv.length) ctx.push(vv);
+      }
+      // one draw per (surrogate, context ROI), surrogate-major — the same stream
+      // shape the MATLAB scalar-rand loops consume
+      const counts = new Float64Array(nSur);
+      const draws = new Float64Array(nSur * ctx.length);
+      for (let i = 0; i < draws.length; i++) draws[i] = u();
+      for (let j = 0; j < ctx.length; j++) {
+        for (let s = 0; s < nSur; s++) {
+          const d = draws[s * ctx.length + j];
+          let hit = false;
+          for (const x of ctx[j]) {
+            let sh = (x + d * cw) % cw;
+            if (sh < 0) sh += cw;
+            if (sh >= tlo && sh < thi) { hit = true; break; }
+          }
+          if (hit) counts[s] += 1;
+        }
+      }
+      const st = coactStats(obs[b], counts);
+      nullmean[b] = st.mu; z[b] = st.z; pval[b] = st.p;
+    }
+  }
+
+  // a NaN p-value is not significant — the bin was never a candidate
+  const sig = [];
+  for (const b of cand) if (pval[b] <= alpha) sig.push(b);
+
+  const startsB = [], endsB = [];
+  if (sig.length) {
+    let sCur = sig[0], prev = sig[0];
+    for (let k = 1; k < sig.length; k++) {
+      const b = sig[k];
+      // gap measured from the END of the previous significant bin, not its start
+      if (edges[b] - edges[prev + 1] <= mgap) prev = b;
+      else { startsB.push(sCur); endsB.push(prev); sCur = prev = b; }
+    }
+    startsB.push(sCur); endsB.push(prev);
+  }
+
+  const starts = [], widths = [], ends = [], nrois = [], evZ = [], evP = [];
+  for (let k = 0; k < startsB.length; k++) {
+    const s = startsB[k], e = endsB[k];
+    starts.push(edges[s]);
+    widths.push(edges[e + 1] - edges[s]);
+    ends.push(edges[e + 1]);
+    let mx = -Infinity, zmax = NaN, pmin = NaN;
+    for (let b = s; b <= e; b++) {
+      if (obs[b] > mx) mx = obs[b];
+      // merged episodes span non-candidate bins whose z/p are NaN, and MATLAB's
+      // max/min ignore NaN — so these are the nan-variants, not the plain ones
+      if (!Number.isNaN(z[b])) zmax = Number.isNaN(zmax) ? z[b] : Math.max(zmax, z[b]);
+      if (!Number.isNaN(pval[b])) pmin = Number.isNaN(pmin) ? pval[b] : Math.min(pmin, pval[b]);
+    }
+    nrois.push(mx); evZ.push(zmax); evP.push(pmin);
+  }
+  return { starts, ends, widths, nrois, z: evZ, p: evP,
+           ctr, obs, zProf: z, pvalProf: pval, nullmean,
+           nEvents: starts.length };
+}
+
 /* ---------- scoring, and the step that makes this a loop ----------------------
    Measure, simulate from what you measured, DETECT — and then the question the
    first three steps exist to answer: are these settings any good? On a real
@@ -2806,6 +3020,22 @@ const DETECTORS = {
     knob: { key: "excessThresholdHz", name: "excess threshold", unit: "Hz",
             grid: [0.5, 1, 2, 3, 4, 5, 6, 8] },
   },
+  coact: {
+    label: "CoactDetect",
+    blurb: "how unlikely",
+    ctl: "dCoactCtl", fine: "dFineCoact",
+    read: dt => ({ gridDt: dt,
+      intWinSec: clamp(numById("cWin"), 0.1, 60),
+      contextWinSec: clamp(numById("cCtx"), 10, 1200),
+      alpha: clamp(numById("cAlpha"), 1e-7, 0.5),
+      nSurrogates: Math.round(clamp(numById("cSur"), 20, 1000)) }),
+    run: (trains, range, cfg) => coactDetect(trains, range, cfg),
+    settings: cfg => "bin " + cfg.intWinSec + " s · context " + cfg.contextWinSec
+      + " s · alpha " + cfg.alpha + " per bin · " + cfg.nSurrogates
+      + " shuffles · floor 3 ROIs",
+    knob: { key: "alpha", name: "alpha", unit: "per bin",
+            grid: [1e-2, 1e-3, 1e-4, 1e-5, 1e-6, 1e-7] },
+  },
   loco: {
     label: "LoCo",
     blurb: "how many together",
@@ -2979,7 +3209,12 @@ function paintTuneWhat() {
       + "folder and the planted events become the answer key.";
 }
 
-const fmtKnob = v => (v >= 0.1 ? String(v) : v.toFixed(3));
+/* Knob values span decades — 99.9999 for a percentile, 1e-7 for an alpha — and
+   a fixed three decimals renders every alpha below a thousandth as "0.000",
+   which makes a sweep table that exists to tell settings apart show six
+   identical rows. */
+const fmtKnob = v => v >= 0.1 ? String(v)
+                   : (v >= 0.001 ? v.toFixed(3) : v.toExponential(0));
 
 /* One point on the sweep: set the knob, run the detector, score what came back
    against what was planted. Split out of the loop below so the parity test can
