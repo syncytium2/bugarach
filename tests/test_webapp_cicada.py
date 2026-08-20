@@ -160,7 +160,11 @@ def test_it_refuses_a_width_that_does_not_reach_the_peak(page):
     assert out["bad"], "it ran anyway"
     why = out["bad"][0]
     assert "fwhm" in why, why
-    assert "peak_sec" in why and "t50rise_to_peak" in why, why
+    # names the two real routes: the column every current export sends, and the
+    # width_def interface2 actually emits -- not the spec's illustration, which
+    # would read as "rename your correct column"
+    assert "peak_sec" in why, why
+    assert "rise_interval_peak_minus_t50rise" in why, why
 
 
 def test_the_refusal_survives_on_screen(page):
@@ -204,6 +208,57 @@ def test_it_does_not_quietly_fall_back_to_the_onsets(page):
     out = page.evaluate(DETECT)
     assert out["rows"] is None
     assert "onsets" in out["bad"][0], out["bad"][0]
+
+
+# ------------------------------------- the producer's vocabulary, not the spec's
+
+# `export_folder_spec.md` offers `t50rise_to_peak` as an ILLUSTRATION, and says the
+# string is the producer's, carried and never parsed. These are the names really in
+# use, audited across 164,527 events in
+# `docs/reviews/pensub_export_validation_2026-08-20.md`:
+#
+#   slow  rise_interval_peak_minus_t50rise   peak_sec - time_sec == width_sec for
+#                                            55,168 of 55,174 events
+#   fast  halfprom_width_findpeaks_w         holds for 21 of 109,353 — coincidence
+#
+# The first version of this matched only the spec's example, so an export sending
+# the slow width and no `peak_sec` would have been refused for carrying exactly
+# the right column.
+REAL_WIDTH_DEFS = [
+    ("rise_interval_peak_minus_t50rise", True),
+    ("halfprom_width_findpeaks_w", False),
+    ("t50rise_to_peak", True),          # the spec's illustration still works
+    ("fwhm", False),
+    ("above_threshold", False),
+    ("", False),
+]
+
+
+@pytest.mark.parametrize("width_def,reaches", REAL_WIDTH_DEFS)
+def test_only_a_width_that_reaches_the_peak_may_stand_in_for_one(
+        viewer, width_def, reaches):
+    page, errs = viewer
+    errs.clear()
+    got = page.evaluate("(wd) => WIDTH_REACHES_PEAK.has(wd)", width_def)
+    assert not errs, errs
+    assert got is reaches, f"{width_def!r} classified wrong"
+
+
+def test_the_name_interface2_actually_sends_is_recognised(viewer):
+    """The one that matters: this is the string in every export on disk."""
+    page, _ = viewer
+    assert page.evaluate(
+        """() => WIDTH_REACHES_PEAK.has("rise_interval_peak_minus_t50rise")""")
+
+
+def test_the_refusal_names_a_string_a_producer_would_recognise(page):
+    """Telling a producer to send `t50rise_to_peak` when their exporter already
+    emits `rise_interval_peak_minus_t50rise` invites them to rename a correct
+    column."""
+    spoil(page, width_def=["fwhm"], drop_peaks=True)
+    why = page.evaluate(DETECT)["bad"][0]
+    assert "peak_sec" in why, why
+    assert "rise_interval_peak_minus_t50rise" in why, why
 
 
 # ------------------------------------------------- the port agrees with the Python

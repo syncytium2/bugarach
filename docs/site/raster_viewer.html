@@ -821,6 +821,15 @@ function natural(a, b) {
   return A.length - B.length;
 }
 
+/* Which `width_def` values name a width that reaches the peak, so that
+   `time_sec + width_sec` locates one. Top level rather than inside the loader
+   because it is a statement about the contract, not a detail of parsing, and
+   because the tests check it directly. See the note in `loadRecording`. */
+const WIDTH_REACHES_PEAK = new Set([
+  "rise_interval_peak_minus_t50rise",   // interface2, `slow`
+  "t50rise_to_peak",                    // the spec's illustration
+]);
+
 /* ---------- one recording -------------------------------------------------- */
 async function loadRecording(rec) {
   if (rec.loaded) return rec.loaded;
@@ -840,13 +849,32 @@ async function loadRecording(rec) {
      the only input — no store, no companion file.
 
      Two routes, in this order:
-       * `peak_sec`, when the producer sends it. Optional in the contract, and
-         unambiguous when present.
-       * `time_sec + width_sec`, but ONLY where `width_def` is `t50rise_to_peak`,
-         because that width IS `locs - t50rise` — the same quantity `cicada.py`
-         calls `rise_dur`. Under `fwhm` or `above_threshold` the sum is not a peak
-         and never was, and adding them anyway produces exactly what the spec
-         warns about: a plausible wrong answer rather than an error.
+       * `peak_sec`, when the producer sends it. Optional in the contract,
+         unambiguous when present, and present in every current export — the
+         validation of 2026-08-20 checked all 84 recordings and found no
+         `peak_sec` before its own `time_sec`.
+       * `time_sec + width_sec`, but ONLY where `width_def` names a width that
+         actually reaches the peak. That sum IS `locs - t50rise`, the quantity
+         `cicada.py` calls `rise_dur`. Under a half-prominence or
+         above-threshold width it is not a peak and never was, and adding them
+         anyway produces exactly what the spec warns about: a plausible wrong
+         answer rather than an error.
+
+     THE NAMES BELOW ARE THE PRODUCER'S, NOT THE SPEC'S. `export_folder_spec.md`
+     offers `t50rise_to_peak` as an illustration and says in terms that the string
+     is the producer's and that bugarach carries it without parsing. This is the
+     one place that has to look, so it matches the vocabulary really in use rather
+     than the example: interface2 sends `rise_interval_peak_minus_t50rise` on
+     `slow` and `halfprom_width_findpeaks_w` on `fast`. Both are legitimate and
+     only the first reaches the peak — `docs/reviews/pensub_export_validation_2026-08-20.md`
+     audited it across 164,527 events and found `peak_sec - time_sec` reproduces
+     `width_sec` for 55,168 of 55,174 slow events (the six differ by 1e-6 s, the
+     printed precision) and for 21 of 109,353 fast ones, which is coincidence.
+
+     A name not in that list is not refused for being unknown — `peak_sec` still
+     carries it, and that is the route every current export takes. The list only
+     decides whether the WIDTH may stand in when no peak was sent. Anything
+     unrecognised simply does not, which is the safe direction.
 
      Parallel arrays, index-aligned with the times, so they are sorted together
      below. Sorting the times alone would silently shuffle each event's width onto
@@ -884,7 +912,7 @@ async function loadRecording(rec) {
     const sent = numOrNaN(r.peak_sec);
     // the sum is only a peak where the producer says the width reaches one
     const p = Number.isFinite(sent) ? sent
-            : (wd === "t50rise_to_peak" && Number.isFinite(w) ? t + w : NaN);
+            : (WIDTH_REACHES_PEAK.has(wd) && Number.isFinite(w) ? t + w : NaN);
     hold.get(r.roi).push({ t, w, p });
   });
   const order = [...rois].sort(natural);
@@ -2446,10 +2474,11 @@ function cicadaTrains(data, stream, order, lo, hi) {
   }
   if (total && !have)
     return { why: "CICADA anchors on the PEAK of each transient, and this folder "
-                  + "does not carry one. Send `peak_sec`, or send `width_sec` with "
-                  + "`width_def: t50rise_to_peak` — that width is the peak minus "
-                  + "the half-rise, so the two together locate it. `time_sec` "
-                  + "alone is the half-rise"
+                  + "does not carry one. Send `peak_sec` — every current export "
+                  + "does, and it is the unambiguous route — or send `width_sec` "
+                  + "with a `width_def` naming a width that reaches the peak, "
+                  + "such as `rise_interval_peak_minus_t50rise`. `time_sec` alone "
+                  + "is the half-rise"
                   + (defs.length ? ", and this folder's width is '" + defs[0]
                      + "', which does not reach the peak" : "")
                   + ". Running on onsets instead would call almost any two events "
