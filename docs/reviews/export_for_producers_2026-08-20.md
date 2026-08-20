@@ -156,3 +156,48 @@ be learned.
 4. **The review here remains single-pass.** interface2's was the independent pass, and it
    found two blocking defects — which is the argument for making that the norm rather than
    the exception. ⚠
+
+---
+
+# Round 3 — interface2 corrects their own finding, 2026-08-20
+
+**Their round-2 finding B2 was half wrong, and this repo published the wrong half.**
+
+They reported that `width_sec` **is** read, citing `io.py`'s `from_arrays` docstring
+("stored as the width field for CICADA per_event mode"). Round 2 accepted that and rewrote
+§4 to say so. They then corrected themselves: it is not read on any current path.
+
+**Traced rather than argued.** `_read_event_rows` returns `(time | None, roi, stream)`
+and reads no other column; `Stream.width` is populated only through
+`from_arrays(durations=...)`, the programmatic path. A folder carrying `width_sec` loads
+with `width` all `NaN` — confirmed on the live export, which has shipped
+`width_sec,width_def,peak_sec,amp` since `2026-08-18_revised_2v_periods`.
+
+So the correct statement, now in §4: **asked for, not yet consumed**, with the
+coincidence-scale guidance kept because it governs the rule to pick for when it *is*
+consumed. The `fwhm` warning stands on its own merits — 4.7 s median, 186.9 s max on the
+slow stream — as advice about the rule rather than about today's behaviour.
+
+**The gap underneath is ours and is now filed**
+(`docs/todo/2026-08-20-the-contract-asks-for-width-and-drops-it.md`): the contract asks for
+four columns in bold, the producer built them, and the reader discards them. One detector
+mode is unreachable through the project's own input contract as a result.
+
+## The pattern this makes twice
+
+Round 2 also applied a reviewer claim without tracing it — that a `NaN` analysis window was
+still live — and the test suite refused it, because the guard already existed in
+`detectors/loco.py`. Now a docstring about a *parameter* was read as evidence about a
+*column*.
+
+Both were caught, one by a test and one by the reviewer's own correction. Neither would have
+been caught by reading more carefully; both would have been caught by **running the path**.
+That is the cheap habit, and it belongs in this record because the review process here is
+otherwise good at exactly this and lapsed twice under a reviewer's confidence.
+
+## Residual — updated
+
+3. **The silent-ROI note is too noisy to be useful.** ⚠ (unchanged)
+4. **The review here remains single-pass.** ⚠ (unchanged)
+5. **NEW: `width_sec`, `width_def`, `peak_sec` and `amp` are requested and discarded.**
+   Filed; the producer is already sending them. ⚠
