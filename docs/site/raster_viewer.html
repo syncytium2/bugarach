@@ -2311,6 +2311,222 @@ function sceDetect(trains, range, opts) {
    numbers, so it is checked against the Python exactly — see
    `tests/test_webapp_tune_parity.py`. */
 
+/* ---- folds and pooling, spliced from docs/site/scoring.js -------------
+   The single scoring path: divide the corpus once, fit on the training
+   folds, report what came back from the fold nothing was fitted on. */
+
+/* bugarach — folds and pooling, in the browser
+   =============================================
+
+   BEGIN bugarach-scoring (splice marker — see the note at the foot of this file)
+
+   Two pure functions, no DOM and no state. They are the half of
+   `tools/fair_bakeoff.py` that makes a number on screen mean something: divide
+   the corpus once, fit on the training folds, and report what came back from
+   the fold nothing was fitted on.
+
+   Without them the page sweeps one detector's one knob on one recording and
+   scores it against that recording's own planted events. Every number that
+   comes out is in-sample. It is a demonstration of the sweep, not a measurement
+   of the detector, and nothing on the screen distinguishes the two.
+
+   Ports of `bugarach.bench.fold_split` and `bugarach.bench.pool_scores`. Neither
+   draws a random number, so they are checked against the Python exactly rather
+   than statistically — `tests/test_webapp_scoring_parity.py`, at 1e-9, the same
+   bar the browser detectors hold.
+
+   The rule these exist to obey, from `docs/learned/README_for_the_webapp.md`:
+   *"`pool_scores` is the single scoring path … Do not compute F1 in the UI
+   layer — an earlier version of the regime-shift tool did its own arithmetic
+   and put the two halves of a comparison on different metrics."* That is the
+   whole reason this is a function and not six lines at the call site. It has
+   already gone wrong once at full scale: a review found the learned models
+   pooled by hand as hits/detections while the six detectors went through
+   `pool_scores`, which excludes the promiscuity probe, and the two halves of a
+   comparison captioned "scored by the same rule" sat on different denominators.
+   SCE reads precision 0.91 one way and 0.11 the other. */
+
+
+/* ---- the corpus, divided once ------------------------------------------- */
+
+/* A fold split is worth something only if it is the SAME split for everyone
+   being compared. Derive it here and pass it around; deriving it twice invites
+   two detectors to be scored on different held-out sets under one heading.
+
+   Fully determined by the base seed and the two counts: recording seeds run
+   consecutively from the base and are dealt out in contiguous blocks. No
+   shuffle, so there is no random source for the browser and the command line to
+   agree about — which is what lets a run here reproduce a split made there. */
+function foldSplit({ nFolds = 4, seedsPerFold = 3, baseSeed = 1000 } = {}) {
+  // One fold is refused rather than allowed to degenerate: with a single fold
+  // there is nothing left to fit on, and what comes back is a held-out score
+  // with no training set behind it — the exact claim this split exists to make
+  // true.
+  if (!Number.isInteger(nFolds) || nFolds < 2)
+    throw new Error(`nFolds=${nFolds} leaves no training data — fitting on ` +
+                    `three and scoring on the fourth needs at least two folds`);
+  if (!Number.isInteger(seedsPerFold) || seedsPerFold < 1)
+    throw new Error(`seedsPerFold=${seedsPerFold} makes an empty fold`);
+  if (!Number.isInteger(baseSeed))
+    throw new Error(`baseSeed=${baseSeed} is not an integer, so the corpus ` +
+                    `it names is not reproducible`);
+
+  const seeds = [];
+  for (let i = 0; i < nFolds * seedsPerFold; i++) seeds.push(baseSeed + i);
+
+  const checkFold = (held) => {
+    if (!Number.isInteger(held) || held < 0 || held >= nFolds)
+      throw new Error(`fold ${held} is outside 0..${nFolds - 1}`);
+  };
+  const foldOf = (seed) => {
+    const i = seed - baseSeed;
+    if (!Number.isInteger(i) || i < 0 || i >= seeds.length)
+      throw new Error(`seed ${seed} is not in this corpus ` +
+                      `(${baseSeed}..${baseSeed + seeds.length - 1})`);
+    return Math.floor(i / seedsPerFold);
+  };
+
+  return {
+    seeds, nFolds, seedsPerFold, baseSeed, foldOf,
+    /* everything outside the held-out fold — what a knob may be fitted on */
+    train: (held) => { checkFold(held); return seeds.filter(s => foldOf(s) !== held); },
+    /* the held-out fold — what the reported number is scored on, and the only
+       recordings nothing was fitted on */
+    test: (held) => { checkFold(held); return seeds.filter(s => foldOf(s) === held); },
+  };
+}
+
+
+/* ---- pooling ------------------------------------------------------------- */
+
+/* Pool per-recording scores into one result.
+
+   POOLED COUNTS, NOT THE MEAN OF PER-RECORDING RATIOS. A recording that happens
+   to plant fewer events should not carry the same weight as a fuller one, and a
+   recording with no detections at all makes precision undefined rather than
+   zero. Averaging the ratios gets both wrong and looks identical on screen.
+
+   `scores` are the objects the page's `scoreDetections` returns — nPlanted,
+   nDetected, nHit, nFa, byFrac — plus, where a probe exists, hotFa and
+   distractorHits. Anything scored against this corpus pools through here,
+   including a learned model or a one-off candidate. That is the point of it
+   being a function. */
+function poolScores(scores, { detector, regime, seeds = [], knobValue = null,
+                              tolSec = null } = {}) {
+  const list = [...scores];
+
+  /* The tolerance is the number's units, so it travels with it. Scores measured
+     at different tolerances are not poolable: counts add whatever they were
+     counted against, so mixing them produces a plausible number whose matching
+     rule is a blend of two — invisible in the result and invisible on screen. */
+  const tols = new Set();
+  for (const sc of list) {
+    const t = sc.tolSec != null ? sc.tolSec : tolSec;
+    if (t == null)
+      throw new Error(
+        "a pooled score must carry the tolerance it was matched at — pass " +
+        "tolSec, or set it on each score. A bare F1 with no tolerance beside " +
+        "it reads as timing accuracy, which this bench does not measure.");
+    if (!Number.isFinite(t))
+      throw new Error(`tolSec=${t} is not a finite number of seconds`);
+    tols.add(t);
+  }
+  if (tols.size > 1)
+    throw new Error(
+      `cannot pool scores measured at different tolerances: ` +
+      `${[...tols].sort((a, b) => a - b).join(", ")} s. A pooled count is ` +
+      `only meaningful against one matching rule.`);
+
+  const out = {
+    detector, regime, knobValue,
+    nPlanted: 0, nDetected: 0, nHit: 0, nFa: 0,
+    hotFa: 0, distractorHits: 0,
+    byFrac: new Map(),
+    seeds: [...seeds],
+    /* null only when nothing was pooled — an empty result has no tolerance to
+       claim, and neither does the Python it is checked against */
+    tolSec: tols.size ? [...tols][0] : null,
+  };
+
+  for (const sc of list) {
+    out.nPlanted += sc.nPlanted;
+    out.nDetected += sc.nDetected;
+    out.nHit += sc.nHit;
+    out.nFa += sc.nFa;
+    out.hotFa += sc.hotFa || 0;
+    out.distractorHits += sc.distractorHits || 0;
+    const by = sc.byFrac instanceof Map ? sc.byFrac : new Map(sc.byFrac || []);
+    for (const [frac, [n, h]] of by) {
+      const [pn, ph] = out.byFrac.get(frac) || [0, 0];
+      out.byFrac.set(frac, [pn + n, ph + h]);
+    }
+  }
+
+  /* Detections the headline numbers are computed over — everything outside the
+     promiscuity probe. The probe plants no events, so it contributes no hits
+     and its firings would otherwise land entirely in the precision denominator.
+     The browser's generator plants no probe, so today this equals nDetected and
+     the distinction costs nothing; it stops being free the day one is added,
+     which is exactly when a page computing its own precision would quietly
+     disagree with the Python. */
+  out.nScored = out.nDetected - out.hotFa;
+
+  out.recall = out.nPlanted ? out.nHit / out.nPlanted : NaN;
+
+  /* Precision OUTSIDE the probe. Fold the probe in and the headline stops
+     measuring the detector and starts measuring how hard the probe was set:
+     CICADA reads F1 0.09 that way against 0.68 in the upstream campaign, on 599
+     hot-window detections out of 601 false alarms. That is this project's own
+     cautionary tale — the benchmark, not the detectors, was the original
+     problem — reached by turning one knob too far. */
+  out.precision = out.nScored ? out.nHit / out.nScored : NaN;
+
+  out.f1 = (Number.isFinite(out.recall) && Number.isFinite(out.precision)
+            && out.recall + out.precision > 0)
+    ? 2 * out.recall * out.precision / (out.recall + out.precision)
+    : NaN;
+
+  /* Recall at one participation level. The headline hides the thing worth
+     knowing: a detector that finds every full-field event and nothing at 10% is
+     a different instrument from one that degrades gracefully, and the two can
+     share an overall recall. */
+  out.recallAt = (frac) => {
+    const [n, h] = out.byFrac.get(frac) || [0, 0];
+    return n ? h / n : NaN;
+  };
+
+  /* The probe's own number, gated separately from precision: firings per minute
+     inside the dense-but-random block, where by construction there is nothing
+     to find. Takes the window because only the generator knows whether it
+     planted one — the browser's does not, and NaN is the honest answer there
+     rather than a rate computed against a window that does not exist. */
+  out.hotFaPerMin = (hotWindow) => {
+    if (!hotWindow) return NaN;
+    const minutes = (hotWindow[1] - hotWindow[0]) / 60 *
+                    Math.max(1, out.seeds.length);
+    return minutes ? out.hotFa / minutes : NaN;
+  };
+
+  return out;
+}
+
+
+/* END bugarach-scoring
+   Everything above this line is a verbatim copy of `docs/site/scoring.js`,
+   compared character for character by `test_the_page_has_not_forked_the_
+   scorer`. Edit that file and re-splice; repairing this copy is how one
+   scorer silently becomes two.
+
+   The copy exists because the viewer is one self-contained file that may
+   not load anything at runtime -- the publish gate refuses a page with a
+   dynamic module load in it, since a page that fetches is a page that could
+   send, and this one promises the reader their recordings never leave their
+   computer. That gate is also why this trailing note is written here rather
+   than copied along with the rest: the original spells out the very syntax
+   the gate forbids, so copying it would fail the build while explaining
+   why it should not. */
+
+
 /* Detections are INTERVALS, not points. The distance from a planted event to a
    detection is zero when the event falls inside its span and the gap to the
    nearer edge otherwise. Scoring a binned detector as if it claimed onset
@@ -3453,6 +3669,77 @@ function sweepPoint(trains, range, which, base, knob, value, truth, tolSec) {
            ...scoreDetections(truth.times, truth.fracs, d.starts, widths, tolSec) };
 }
 
+/* Everything the sweep needs from one recording, read once. The sweep visits
+   every recording at every setting on the grid, so loading inside that loop
+   would re-parse the same CSV a dozen times over. */
+async function tuneLoad(rec) {
+  const data = await loadRecording(rec);
+  const stream = [...data.streams.keys()].sort()[0];
+  const byRoi = data.streams.get(stream);
+  const m = META.get(rec.id) || {};
+  const dt = Number(m.frame_interval_sec) > 0 ? Number(m.frame_interval_sec) : 0.1;
+  return {
+    id: rec.id, truth: TRUTH.get(rec.id), dt,
+    // ONE RUN OVER THE WHOLE RECORDING, not per region — unlike the Detect step
+    // beside it. Events were planted across the entire extent, including the
+    // stretches the analysis windows leave out, so scoring per-window detections
+    // against all of them would count the gaps as misses. The regions of a
+    // simulated folder are labels over identical statistics anyway.
+    trains: data.order.map(id => byRoi.get(id) || []),
+    range: [data.t0, Math.max(data.t1, data.t0 + 1)],
+  };
+}
+
+/* How to divide this corpus, or null when it cannot be divided.
+
+   `foldSplit` refuses a single fold and is right to: fitting and scoring on the
+   same recording answers a different question from the one being asked. So a
+   one-recording folder gets no split, and the verdict says the number is
+   in-sample instead of quietly presenting it as though it were not.
+
+   Folds use EVERY recording — the largest coverage available, breaking ties
+   towards four, the split the published comparison used. Dropping recordings to
+   make the arithmetic tidy would be a silent cap, and a silent cap reads as
+   "covered everything" when it did not. */
+function tunePlan(nRec) {
+  if (nRec < 2) return null;
+  let best = null;
+  for (let nFolds = 2; nFolds <= nRec; nFolds++) {
+    const seedsPerFold = Math.floor(nRec / nFolds);
+    if (seedsPerFold < 1) break;
+    const covered = nFolds * seedsPerFold;
+    const tie = -Math.abs(nFolds - 4);
+    if (!best || covered > best.covered
+        || (covered === best.covered && tie > best.tie))
+      best = { nFolds, seedsPerFold, covered, tie };
+  }
+  // baseSeed 0, so a recording's seed is its position in the folder listing.
+  return best ? foldSplit({ nFolds: best.nFolds, seedsPerFold: best.seedsPerFold,
+                            baseSeed: 0 }) : null;
+}
+
+/* Pool per-recording scores into one row of the sweep.
+
+   THROUGH `poolScores`, NOT ARITHMETIC HERE — pooled counts rather than the mean
+   of per-recording ratios, with the rule in one function so the table, the fold
+   picks and the held-out numbers cannot drift onto different metrics. That has
+   already happened once at full scale: a comparison captioned "scored by the
+   same rule" had its halves on different denominators, and SCE read precision
+   0.91 one way and 0.11 the other.
+
+   `nMiss` and `nDup` are attached alongside rather than computed inside.
+   Neither belongs to the scoring rule — one is a subtraction of two pooled
+   counts, the other a fragmentation tally the table prints in brackets — and
+   adding them to `poolScores` would fork the browser's copy from the Python it
+   is checked against. */
+function tunePool(scores, opts) {
+  const pooled = poolScores(scores, opts);
+  pooled.nMiss = pooled.nPlanted - pooled.nHit;
+  pooled.nDup = scores.reduce((a, s) => a + (s.nDup || 0), 0);
+  pooled.knob = pooled.knobValue;
+  return pooled;
+}
+
 async function runTune() {
   if (!current) return;
   const truth = TRUTH.get(current.id);
@@ -3464,36 +3751,73 @@ async function runTune() {
     const which = whichDetector();
     const knob = DETECTORS[which].knob;
     const label = DETECTORS[which].label;
-    const data = await loadRecording(current);
-    const stream = [...data.streams.keys()].sort()[0];
-    const byRoi = data.streams.get(stream);
-    const m = META.get(current.id) || {};
-    const dt = Number(m.frame_interval_sec) > 0 ? Number(m.frame_interval_sec) : 0.1;
-    const base = DETECTORS[which].read(dt);
     const tol = clamp(Number(document.getElementById("tTol").value), 0.1, 30);
 
-    // ONE RUN OVER THE WHOLE RECORDING, not per region — unlike the Detect step
-    // beside it. Events were planted across the entire extent, including the
-    // stretches the analysis windows leave out, so scoring per-window detections
-    // against all of them would count the gaps as misses. The regions of a
-    // simulated folder are labels over identical statistics anyway.
-    const trains = data.order.map(id => byRoi.get(id) || []);
-    const range = [data.t0, Math.max(data.t1, data.t0 + 1)];
-    const levels = [...new Set(truth.fracs)].sort((a, b) => b - a);
+    /* The corpus is every simulated recording in the folder, not the one on
+       screen. A knob fitted to one recording is fitted to that recording's
+       noise, and nothing on the screen used to show the difference. */
+    const corpus = [];
+    for (const rec of RECORDINGS) {
+      const t = TRUTH.get(rec.id);
+      if (t && t.times.length) corpus.push(await tuneLoad(rec));
+    }
+    if (!corpus.length) return;
+    const base = DETECTORS[which].read(corpus[0].dt);
+    const levels = [...new Set(corpus.flatMap(c => c.truth.fracs))]
+      .sort((a, b) => b - a);
 
+    /* Score every recording at every setting ONCE, then reuse. The folds below
+       re-pool these same per-recording scores rather than re-running anything,
+       so the held-out number and the curve on screen cannot come from two
+       different runs of the same detector. */
+    const scored = new Map();          // knob value -> per-recording scores
     const rows = [];
     for (const v of knob.grid) {
-      rows.push(sweepPoint(trains, range, which, base, knob, v, truth, tol));
+      const per = corpus.map(c =>
+        sweepPoint(c.trains, c.range, which, base, knob, v, c.truth, tol));
+      scored.set(v, per);
+      rows.push(tunePool(per, { detector: which, knobValue: v, tolSec: tol,
+                                seeds: corpus.map((c, i) => i) }));
       await new Promise(r => setTimeout(r, 0));   // let the button stay honest
+    }
+
+    /* The held-out half. Per fold: choose the knob on the folds it may see, then
+       score that choice on the fold it may not. Nothing is fitted on a recording
+       it is later scored against — the claim the training panel beside this one
+       makes, and which this sweep could not make until now. */
+    const split = tunePlan(corpus.length);
+    const folds = [];
+    if (split) {
+      for (let f = 0; f < split.nFolds; f++) {
+        const tr = split.train(f), te = split.test(f);
+        const trainRows = knob.grid.map(v =>
+          tunePool(tr.map(i => scored.get(v)[i]),
+                   { detector: which, knobValue: v, tolSec: tol, seeds: tr }));
+        const chosen = pickOperatingPoint(trainRows);
+        if (!chosen.row) {
+          folds.push({ fold: f, chosen: null, why: chosen.why }); continue;
+        }
+        folds.push({
+          fold: f, chosen: chosen.row.knob, nTrain: tr.length, nTest: te.length,
+          held: tunePool(te.map(i => scored.get(chosen.row.knob)[i]),
+                         { detector: which, knobValue: chosen.row.knob,
+                           tolSec: tol, seeds: te }),
+        });
+        await new Promise(r => setTimeout(r, 0));
+      }
     }
 
     const pick = pickOperatingPoint(rows);
     const box = document.getElementById("tuneOut");
     box.textContent = "";
-    box.append(el("h4", label + " swept on " + current.id));
+    const nPlanted = rows.length ? rows[0].nPlanted : 0;
+    box.append(el("h4", label + " swept on "
+      + (corpus.length === 1 ? corpus[0].id
+                             : corpus.length + " simulated recordings")));
     box.append(el("p", knob.grid.length + " settings tried · " + knob.name
       + " · matched within " + tol + " s of a planted event · "
-      + truth.times.length + " planted", "sub"));
+      + nPlanted + " planted"
+      + (split ? " · " + split.nFolds + " folds" : ""), "sub"));
 
     const cv = document.createElement("canvas");
     box.append(cv);
@@ -3549,6 +3873,56 @@ async function runTune() {
     } else {
       box.append(el("p", pick.why, "verdict bad"));
     }
+
+    /* THE TABLE ABOVE IS IN-SAMPLE AND HAS TO SAY SO. Every row of it chose its
+       own knob and scored it on the same recordings, which is what a sweep is
+       for — but a number arrived at that way is an upper bound, not a
+       measurement, and the two look identical printed side by side. So the
+       held-out result is reported separately rather than folded in. */
+    if (!split) {
+      box.append(el("p", "One recording, so there is nothing to hold out: the "
+        + "F1 above was chosen and scored on the same data, which makes it an "
+        + "upper bound rather than a measurement of " + label + ". Simulate a "
+        + "folder with two or more recordings and this sweep will fit on some "
+        + "and report on the rest.", "verdict bad"));
+    } else {
+      const got = folds.filter(f => f.held && Number.isFinite(f.held.f1));
+      if (!got.length) {
+        box.append(el("p", "No fold produced an operating point to score — the "
+          + "grid ran out before F1 peaked on the training folds, so there is "
+          + "no held-out number to report.", "verdict bad"));
+      } else {
+        const f1s = got.map(f => f.held.f1);
+        const mean = f1s.reduce((a, b) => a + b, 0) / f1s.length;
+        // spread across folds, n−1: with n folds these are a sample, and n is
+        // small enough that the difference is not cosmetic
+        const sd = f1s.length > 1
+          ? Math.sqrt(f1s.reduce((a, b) => a + (b - mean) ** 2, 0) / (f1s.length - 1))
+          : NaN;
+        const knobs = [...new Set(got.map(f => fmtKnob(f.chosen)))];
+        box.append(el("p", "Held out: F1 " + fmtNum(mean, 2)
+          + (Number.isFinite(sd) ? " ± " + fmtNum(sd, 2) : "")
+          + " across " + got.length + " fold" + (got.length > 1 ? "s" : "")
+          + ", each fitted on " + got[0].nTrain + " recording"
+          + (got[0].nTrain > 1 ? "s" : "") + " and scored on "
+          + got[0].nTest + " it never saw. "
+          + (knobs.length === 1
+              ? "Every fold chose " + knob.name + " " + knobs[0]
+                + (knob.unit ? " " + knob.unit : "") + ", so the setting is "
+                + "stable across the corpus."
+              : "The folds chose " + knobs.join(", ") + " — the setting moves "
+                + "with the training data, so no single value here is calibrated.")
+          + " This is the number to quote; the table above is not.", "verdict"));
+
+        if (Number.isFinite(pick.row?.f1) && mean < pick.row.f1 - 1e-9)
+          box.append(el("p", "The in-sample best reads "
+            + fmtNum(pick.row.f1 - mean, 2) + " higher than the held-out mean. "
+            + "That gap is what fitting and reporting on the same recordings "
+            + "buys you, and it is why the table above is not the result.",
+            "caveat"));
+      }
+    }
+
     box.append(el("p", "The last columns are recall at each participation level, "
       + "and they are the part worth reading. A detector that finds every "
       + "full-field event and nothing at the sparsest level is a different "
@@ -3661,9 +4035,16 @@ document.getElementById("runDetect").onclick = runDetect;
    removal: nothing is stripped at build time, so nothing can fail to be
    stripped. docs/adr/0001-the-lab-server.md.
 
-   Everything that talks to the server lives in the shim. This file contains no
-   `fetch(` and must not grow one, or the promise the page makes stops being a
-   property of the file and goes back to being a paragraph.               ------ */
+   Everything that talks to the server lives in the shim. This file makes no
+   network call of any kind and must not grow one, or the promise the page makes
+   stops being a property of the file and goes back to being a paragraph.
+
+   THE NAME OF THE CALL IS NOT WRITTEN HERE ON PURPOSE. `build_site.py` greps the
+   page for the forbidden spellings, so a comment that quotes one fails the
+   publish gate while explaining why it should not — which is exactly what this
+   line used to do, and `main` has been unpublishable ever since. The gate
+   carries an exemption for one such comment near the top of this file; a second
+   one has nowhere to live. Describe the rule, do not spell it.          ------ */
 
 const lab = () => window.__lab || null;
 
