@@ -407,6 +407,14 @@
         <label for="cSur">surrogates</label>
         <input id="cSur" type="number" min="20" max="1000" step="20" value="100">
       </div>
+      <div class="ctl" id="dSceCtl" hidden>
+        <label for="sBin">bin width (s)</label>
+        <input id="sBin" type="number" min="1" max="120" step="1" value="10">
+        <label for="sPct">threshold percentile</label>
+        <input id="sPct" type="number" min="80" max="99.99" step="0.1" value="99">
+        <label for="sSur">surrogates</label>
+        <input id="sSur" type="number" min="20" max="2000" step="20" value="200">
+      </div>
       <div class="ctl">
         <div class="span"><button id="runDetect">Detect</button></div>
       </div>
@@ -423,6 +431,24 @@
         needs.</b> Finding those is what the simulate step above is for: measure,
         simulate from what you measured, tune against planted events, then point
         the tuned instrument at everything.
+      </div>
+      <div class="fine" id="dFineSce" hidden>
+        <b>SCE is the blunt one, and that is the point of having it.</b> It bins
+        ten seconds at a time — against LoCo's one and CoactDetect's two — and
+        asks whether a stretch of recording was busier than this recording
+        usually gets. Not "did these cells fire together" so much as "was
+        something happening here".
+        <br><br>
+        <b>One bar for the whole window.</b> The other two re-estimate their
+        threshold as they go; this compares every bin to the same number. That
+        makes it slower to be fooled by a local rate change and worse at finding
+        a small event inside a busy stretch.
+        <br><br>
+        <b>It reports where the BIN started, not where the first cell fired.</b>
+        A ten-second bin is a ten-second answer, and the width travels with it so
+        nothing downstream mistakes the left edge for an onset. That convention
+        once read zero recall against a scorer treating detections as points, and
+        it is kept rather than quietly improved.
       </div>
       <div class="fine" id="dFineCoact" hidden>
         <b>CoactDetect asks the same question as LoCo and answers it with
@@ -2085,6 +2111,146 @@ function coactDetect(trains, range, opts) {
            nEvents: starts.length };
 }
 
+
+/* ---------- SCE, in the browser ----------------------------------------------
+   The third detector counting distinct ROIs per bin, and the one that bins
+   COARSELY — ten seconds by default, against LoCo's one and CoactDetect's two.
+   At that width it is not asking "did these cells fire together", it is asking
+   "was this stretch of the recording busier than this recording gets", and it
+   reports the bin's left edge rather than an onset. The scorer knows: a
+   detection is an interval, and SCE's spans its whole bin.
+
+   ONE THRESHOLD PER WINDOW, not a rolling one. Every bin in the window is
+   compared to the same number — the percentile of a null built by wrapping the
+   window's own events inside it. LoCo re-estimates its bar every fifteen
+   seconds; this does not, which is what makes it the blunt instrument of the
+   three and also the one least able to be fooled by a local rate change.
+
+   AND THE MERGE IS ON EVENT TIMES, NOT BINS. Two significant bins join when the
+   first observed event of the second is within merge_gap of the last observed
+   event of the first — not when the bins are adjacent. With ten-second bins
+   those are very different questions. The default gap is NaN, which merges
+   nothing, because every comparison against NaN is false. Ported as it is.
+
+   Checked the way the other two sampling detectors are: coactivity exact,
+   threshold sampled, episodes exact once the threshold is fixed. */
+function sceDetect(trains, range, opts) {
+  const o = opts || {};
+  const bw = o.binWidthSec === undefined ? 10.0 : o.binWidthSec;
+  const pctile = o.thresholdPctile === undefined ? 99.0 : o.thresholdPctile;
+  const nSur = o.nSurrogates === undefined ? 200 : o.nSurrogates;
+  const minRois = o.minRois === undefined ? 3 : o.minRois;
+  const mgap = o.mergeGapSec === undefined ? NaN : o.mergeGapSec;
+  const u = rng32(o.seed === undefined ? 20260706 : o.seed);
+
+  const wLo = range[0], wHi = range[1];
+  const empty = { starts: [], ends: [], widths: [], magnitude: [],
+                  magTotal: [], threshold: NaN, obs: new Float64Array(0),
+                  bctr: new Float64Array(0), nEvents: 0 };
+  if (wHi <= wLo) return empty;
+
+  const lw = wHi - wLo;
+  const ev = clipSorted(trains, wLo, wHi);
+  const nRoi = ev.length;
+  const nBins = Math.max(1, Math.ceil(lw / bw));
+  const bctr = new Float64Array(nBins);
+  for (let i = 0; i < nBins; i++) bctr[i] = wLo + (i + 0.5) * bw;
+  // the bin index is CLIPPED into range rather than dropped, so the last bin
+  // takes the window's final instant — same rule CoactDetect uses, and not the
+  // `discretize` rule LoCo uses
+  const binOf = t => {
+    let i = Math.floor((t - wLo) / bw);
+    return i < 0 ? 0 : (i > nBins - 1 ? nBins - 1 : i);
+  };
+
+  const obs = new Float64Array(nBins);
+  for (const v of ev) {
+    if (!v.length) continue;
+    const seen = new Set();
+    for (const x of v) seen.add(binOf(x));
+    for (const i of seen) obs[i] += 1;
+  }
+
+  let thr;
+  if (o.threshold !== undefined) {
+    thr = o.threshold;
+  } else {
+    // one offset per ROI per surrogate, and EMPTY ROIs ARE DRAWN FOR — they
+    // consume their place in the stream even though they contribute nothing
+    const draws = new Float64Array(nSur * nRoi);
+    for (let i = 0; i < draws.length; i++) draws[i] = u() * lw;
+    const nullCounts = new Float64Array(nSur * nBins);
+    for (let r = 0; r < nRoi; r++) {
+      if (!ev[r].length) continue;
+      for (let s = 0; s < nSur; s++) {
+        const d = draws[s * nRoi + r];
+        const act = new Set();
+        for (const x of ev[r]) {
+          let sh = (x - wLo + d) % lw;
+          if (sh < 0) sh += lw;
+          act.add(binOf(wLo + sh));
+        }
+        for (const i of act) nullCounts[s * nBins + i] += 1;
+      }
+    }
+    thr = matlabPrctile(nullCounts, pctile);
+  }
+
+  const sig = [];
+  for (let i = 0; i < nBins; i++) if (obs[i] > thr && obs[i] >= minRois) sig.push(i);
+  if (!sig.length) {
+    return { ...empty, threshold: thr, obs, bctr };
+  }
+
+  // every in-window event with its bin and its ROI — the merge and the episode
+  // statistics are both computed from these rather than from the bins
+  const evTimes = [], evBin = [], evRoi = [];
+  for (let r = 0; r < nRoi; r++)
+    for (const x of ev[r]) { evTimes.push(x); evBin.push(binOf(x)); evRoi.push(r); }
+  const binFirst = new Float64Array(nBins).fill(NaN);
+  const binLast = new Float64Array(nBins).fill(NaN);
+  for (let k = 0; k < evTimes.length; k++) {
+    const b = evBin[k];
+    if (Number.isNaN(binFirst[b]) || evTimes[k] < binFirst[b]) binFirst[b] = evTimes[k];
+    if (Number.isNaN(binLast[b]) || evTimes[k] > binLast[b]) binLast[b] = evTimes[k];
+  }
+
+  const runs = [];
+  let cs = sig[0], ce = sig[0], runLast = binLast[sig[0]];
+  for (let k = 1; k < sig.length; k++) {
+    const b = sig[k];
+    // NaN gap compares false and therefore never merges — which is also what
+    // the default merge_gap of NaN means
+    if (binFirst[b] - runLast <= mgap) { ce = b; runLast = binLast[b]; }
+    else { runs.push([cs, ce]); cs = ce = b; runLast = binLast[b]; }
+  }
+  runs.push([cs, ce]);
+
+  const starts = [], ends = [], widths = [], mag = [], magTotal = [];
+  for (const [fb, lb] of runs) {
+    let mx = -Infinity;
+    for (let b = fb; b <= lb; b++) if (obs[b] > mx) mx = obs[b];
+    const rois = new Set();
+    let tfirst = Infinity, tlast = -Infinity;
+    for (let k = 0; k < evTimes.length; k++) {
+      if (evBin[k] >= fb && evBin[k] <= lb) {
+        rois.add(evRoi[k]);
+        if (evTimes[k] < tfirst) tfirst = evTimes[k];
+        if (evTimes[k] > tlast) tlast = evTimes[k];
+      }
+    }
+    const w = rois.size ? tlast - tfirst : NaN;
+    // the reported onset is the BIN's start, not the first event in it
+    starts.push(wLo + fb * bw);
+    widths.push(w);
+    ends.push(wLo + fb * bw + (Number.isNaN(w) ? 0 : w));
+    mag.push(mx);
+    magTotal.push(rois.size);
+  }
+  return { starts, ends, widths, magnitude: mag, magTotal, threshold: thr,
+           obs, bctr, nEvents: starts.length };
+}
+
 /* ---------- scoring, and the step that makes this a loop ----------------------
    Measure, simulate from what you measured, DETECT — and then the question the
    first three steps exist to answer: are these settings any good? On a real
@@ -3019,6 +3185,21 @@ const DETECTORS = {
       + cfg.rateWin + " s · context " + cfg.contextWin + " s · dt " + cfg.gridDt + " s",
     knob: { key: "excessThresholdHz", name: "excess threshold", unit: "Hz",
             grid: [0.5, 1, 2, 3, 4, 5, 6, 8] },
+  },
+  sce: {
+    label: "SCE",
+    blurb: "was anything happening",
+    ctl: "dSceCtl", fine: "dFineSce",
+    read: dt => ({ gridDt: dt,
+      binWidthSec: clamp(numById("sBin"), 1, 120),
+      thresholdPctile: clamp(numById("sPct"), 80, 99.99),
+      nSurrogates: Math.round(clamp(numById("sSur"), 20, 2000)) }),
+    run: (trains, range, cfg) => sceDetect(trains, range, cfg),
+    settings: cfg => "bin " + cfg.binWidthSec + " s · "
+      + cfg.thresholdPctile + "th percentile of " + cfg.nSurrogates
+      + " shuffles · one bar per window · floor 3 ROIs",
+    knob: { key: "thresholdPctile", name: "threshold percentile", unit: "",
+            grid: [90.0, 95.0, 98.0, 99.0, 99.5, 99.9] },
   },
   coact: {
     label: "CoactDetect",
