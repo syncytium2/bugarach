@@ -161,6 +161,25 @@ def is_v73(path: str | Path) -> bool:
         return False
 
 
+def store_recordings(directory: str | Path) -> list[Path]:
+    """The ``.mat`` recordings in a directory, sorted. Opens none of them.
+
+    **Here so that recognising a store does not require reading one.** SAP007 blocks
+    ``.mat`` access outside this module precisely because analyses kept going around
+    the export folder, and two lab-withdrawn recordings ended up inside published
+    numbers. But `bugarach.dataset` has to be able to say "that is a store, and this
+    analysis reads folders" — refusing a store is the rule's purpose, not an exception
+    to it. Keeping the knowledge in the store reader also keeps SAP007's exclusion list
+    what its own comment says it is: a shrinking backlog of analyses, not a standing
+    list of helpers.
+
+    Returns ``[]`` for anything that is not a directory, so a caller can ask without
+    checking first.
+    """
+    p = Path(directory)
+    return sorted(p.glob("*.mat")) if p.is_dir() else []
+
+
 def load_slice(path: str | Path) -> Slice:
     """Load one event_store_onset slice file (MATLAB v7 or v7.3)."""
     path = Path(path)

@@ -54,6 +54,9 @@ from pathlib import Path
 
 import numpy as np
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import _dataset_arg  # noqa: E402
+
 K_MIN_ACTIVE = 3
 """Fewer than three active ROIs cannot express a leader-follower order."""
 
@@ -246,8 +249,12 @@ def scan(store: Path, *, stream: str, n_surrogates: int, restarts: int,
 def main(argv=None):
     p = argparse.ArgumentParser(description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
-    p.add_argument("--store", type=Path, required=True,
-                   help="an export folder (data in, not a deliverable out)")
+    # No `--store` alias, though that WAS this tool's flag name until today. It reads
+    # export folders only, and the name invited the opposite: pointing it at a real
+    # .mat store used to fail with a column error about `detector_settings.csv`. The
+    # old spelling is dropped rather than kept as an alias, because keeping it is
+    # keeping the thing that misled.
+    _dataset_arg.add(p, want="export_folder")
     p.add_argument("--out", type=Path, default=None,
                    help="destination; default $BUGARACH_DARKROOM")
     p.add_argument("--stream", default="fast")
@@ -269,7 +276,8 @@ def main(argv=None):
     p.add_argument("--limit", type=int, default=None)
     a = p.parse_args(argv)
 
-    res = scan(a.store, stream=a.stream, n_surrogates=a.n_surrogates,
+    res = scan(_dataset_arg.get(a, want="export_folder"),
+               stream=a.stream, n_surrogates=a.n_surrogates,
                restarts=a.restarts, null=a.null, limit=a.limit,
                keep_silent=a.keep_silent_rois)
 
