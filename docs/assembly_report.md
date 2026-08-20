@@ -10,13 +10,13 @@ directions, agree:
 
 | what was asked | instrument | fast | slow |
 |---|---|---|---|
-| are there groups of cells more coupled to each other than to the rest of the field | graph **modularity** on the spike-time-tiling graph, each recording against its own jitter surrogates | **no** — 3 of 78 above null (3.8%) | **no** — 2 of 77 (2.6%) |
+| are there groups of cells more coupled to each other than to the rest of the field | graph **modularity** on the spike-time-tiling graph, each recording against its own jitter surrogates | **no** — 2 of 78 above null (2.6%) | **no** — 1 of 77 (1.3%) |
 | is *who participates* in each event explained by how often each cell fires | curveball and uniform nulls on the event × cell membership table | departure from uniform in **45 of 47** testable, against a 6.0% false-positive rate | **36 of 38**, against 9.1% |
 
 **Both streams, both instruments.** The test calls a recording modular when its modularity
 clears the 95th percentile of its own surrogates, so **about 5% should clear it by chance** —
-and 3.8% and 2.5% are at or below that. There is no modular structure in either stream. The
-median recording is *less* modular than its own surrogates (z = −1.31 fast, −2.93 slow):
+and 2.6% and 1.3% are below that. There is no modular structure in either stream. The
+median recording is *less* modular than its own surrogates (z = −1.17 fast, −3.45 slow):
 holding the graph's node count, event counts and sparsity fixed and moving only the timing
 makes it score **higher**, which is the opposite of what a field of assemblies would do.
 
@@ -234,10 +234,52 @@ The companion measurement is the one that makes this a negative.
 ![A · every recording's modularity against its own jitter surrogates, in null standard deviations; marks right of the dotted line at zero are more modular than timing alone predicts, and the highlighted marks are the ones clearing the 95th-percentile threshold the test actually uses. B · the rate of those, against the 5% that chance produces.](assembly_modularity)
 
 Graph modularity on the spike-time-tiling graph — the standard instrument for "are there
-groups here" — finds **no partition above its null in either stream**: 3 of 78 fast
-recordings (3.8%, 95% interval 1.3–10.7) and 2 of 77 slow (2.6%, 0.7–9.0), against the ~5%
+groups here" — finds **no partition above its null in either stream**: 2 of 78 fast
+recordings (2.6%, 95% interval 0.7–8.9) and 1 of 77 slow (1.3%, 0.2–7.0), against the ~5%
 the threshold yields by chance. The cells that participate together are not the cells more
 connected to each other than to the field.
+
+**Those numbers are this repo's own, and that is new.** They were computed by
+`bugarach.graph` and `tools/modularity_null.py`, not by the interface2 pipeline that
+produced the earlier version of this section. The pipeline has no maintainer and does not
+run out of the box — its dead-ROI roster path resolves into a quarantined export — and a
+published negative should not rest on something nobody can execute
+([the todo](todo/2026-08-19-the-connectivity-pipeline-has-no-owner.md)).
+
+**The port is validated two ways, and the second is the interesting one.**
+
+*On identical inputs it reproduces the reference exactly.* The coefficient was written from
+Cutts & Eglen (2014) with the MATLAB `if2_sttc.m` deliberately unread, so the comparison is
+a real check rather than a diff of two transcriptions: across five recordings and several
+thousand pairs the worst disagreement is **2.2 × 10⁻¹⁶**, the NaN pattern matches, and
+Louvain lands on the same partitions (Q agreeing to 10⁻¹⁶). `tests/fixtures/ref_sttc_matlab.json`
+carries those vectors so CI re-checks it without a store or MATLAB.
+
+*Across the corpus it agrees on the verdict while disagreeing on the window.* This repo
+scores the producer's analysis window where there is one and the baseline region otherwise;
+interface2 caps at 1200 s after a 120 s solution delay. On the recordings where the two
+differ, bugarach's window runs **1740–1800 s** against interface2's 1200 s, so more cells
+clear the "at least one event" bar — `n_active` is higher on 10 of 78 fast recordings and 8
+of 77 slow, and **never lower**, which is the signature a longer window predicts. It matches
+exactly on the rest.
+
+Even so the verdicts agree on **98.7%** of recordings in both streams (77 of 78, 76 of 77),
+and the median difference in z is **0.03** whether or not the window matched. Each stream's
+single disagreement is a recording whose active-cell count moved.
+
+**The producer's dead-ROI roster is applied, and it provably changes nothing here.** The R
+team's rejection rule is `rejected = base_empty AND drug_empty AND (hik_empty)`, so a
+rejected cell is *by definition* silent in baseline — and this measurement already drops any
+cell with no events in the window. Checked rather than assumed: **all 66 rejected ROIs have
+zero baseline events**, and re-running the whole corpus with the roster applied reproduces
+every count. So the roster is a no-op for any baseline-only analysis that requires events,
+which is why FOUNDATIONS §9's point that the *rule* is not computable here costs this
+measurement nothing. The verdicts are vendored in `docs/learned/dead_roi_verdicts.csv` and
+consumed rather than recomputed, so the no-op is a demonstrated fact rather than an
+assumption.
+
+**That is a stronger result than exact reproduction would have been.** The answer does not
+depend on which of two defensible windowing conventions is used.
 
 **Three things about those numbers are worth stating, because none of them was true of the
 figure this report previously quoted.**
@@ -258,7 +300,7 @@ recording, four slow, all with 3 to 5 active cells — is the same **undefined i
 rule this report applies to its own membership test.
 
 *And the crosstalk control agrees, where it exists.* The connectivity project's
-penumbra-subtracted modularity file — slow stream only — puts **1 of 69** recordings above
+penumbra-subtracted modularity file — slow stream only, and still the interface2 one — puts **1 of 69** recordings above
 null (1.4%) once the same undefined-is-not-negative correction is applied to it; it carries
 eight recordings with no computable modularity, against four in the unsubtracted slow file,
 which is the same loss of testable material penumbra subtraction costs the membership test.

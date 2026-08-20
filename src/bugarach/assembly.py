@@ -319,6 +319,29 @@ def load_excluded(path) -> set[str]:
     return out
 
 
+def load_dead_roi_keep(path):
+    """Per-slice keep-masks from `docs/learned/dead_roi_verdicts.csv`.
+
+    **Consumed, never recomputed.** The R team's rejection rule needs drug and
+    high-K rows, which FOUNDATIONS §9 keeps outside this repo's baseline-only
+    reach — so the verdicts are vendored and the rule is not ported. A slice
+    absent from the file has no verdict and **keeps every ROI**, which is the
+    spec (18 of 85 are ineligible), not a silent pass.
+
+    Returns ``{slice_id: [bool, ...]}`` indexed from ROI 1 in file order.
+    """
+    from pathlib import Path as _P
+    import csv as _csv
+    if path is None:
+        return {}
+    out = {}
+    with open(_P(path)) as fh:
+        rows = [ln for ln in fh if not ln.lstrip().startswith("#")]
+    for r in _csv.DictReader(rows):
+        out.setdefault(r["slice_id"], {})[int(r["roi_index"])] = r["keep"].strip() == "1"
+    return {k: [v[i] for i in sorted(v)] for k, v in out.items()}
+
+
 def fisher(ps) -> float:
     """Fisher's combination of per-recording p-values, as a p-value.
 
