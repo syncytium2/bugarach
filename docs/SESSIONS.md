@@ -60,6 +60,23 @@ Template:
 
 ## Active
 
+### Mac/synfire-folder — gather the synfire material into `<darkroom>/bugarach/synfire/`
+- **Status:** ACTIVE
+- **Started:** 2026-08-20
+- **Writes:** `<darkroom>/bugarach/synfire/` — a new folder, into which four existing
+  top-level entries are **moved**: `synfire_README.md`, `synfire_fast_relabel.json`,
+  `synfire_slow_relabel.json` and `2026-08-19-synfire-roi-corrected/`.
+- **Claims:** those four paths and the new folder. Nothing else in `bugarach/`.
+- **Why:** Tony, 2026-08-20 — `bugarach/` has **41 top-level entries** and is hard to read.
+  This groups one subject. **Nothing is deleted and no result changes**, but two of the
+  moved files are the synfire session's output, so their path changes: they are now at
+  `bugarach/synfire/2026-08-19-original/`. Anything quoting the old path needs updating —
+  the repo references are updated in the same commit.
+- **The other obvious cluster is `assembly_*`, thirteen more top-level entries.** Left
+  alone: it was not asked for, and the assembly report and its figure tools point at those
+  paths.
+- **Notes:** repo-only otherwise; nothing read from `$BUGARACH_DATA_ROOT`.
+
 ### Mac/darkroom-corrected-synfire — the corrected synfire numbers, in their own folder
 - **Status:** DONE 2026-08-20 — **written, claim released**
 - **Started:** 2026-08-19
