@@ -44,6 +44,27 @@ merely encodes it.
 Frontmatter dates, provenance stamps, and session-board entries are exempt —
 there the date *is* the content.
 
+## A finding about an environment names the environment
+
+"CI has no chromium" was repeated across sessions for days without ever saying
+*which machine*. One session read it the only way it could be read from where it
+sat — as this laptop — and installed the browser locally. Another read the same
+sentence and changed the workflow. Both then reported "chromium is in", truthfully,
+about different machines, and the duplicated work was invisible to both.
+
+A laptop, a linked worktree, a Dropbox mount and a GitHub runner are four different
+places. A sentence that omits which one it means gets resolved by whoever reads it
+next, in favour of wherever they happen to be standing.
+
+> ✗ "chromium is installed now"
+>
+> ✓ "chromium is installed on the GitHub runner, as a workflow step; this laptop
+> still has none"
+
+This is the same failure the two session boards exist to prevent — one for what
+another *machine* can see, one for what this *machine* shares — and it is the half
+no board catches, because it lives in the wording rather than the filing.
+
 ## Prefer the consequence to the label
 
 > ✗ "the adoption had a large effect"  ✓ "81 events become 28 on a real recording"
