@@ -387,6 +387,16 @@
         <label for="dCmin">C to sustain one</label>
         <input id="dCmin" type="number" min="0.001" max="1" step="0.01" value="0.1">
       </div>
+      <div class="ctl" id="dLocoCtl" hidden>
+        <label for="lBin">bin width (s)</label>
+        <input id="lBin" type="number" min="0.1" max="60" step="0.1" value="1">
+        <label for="lCtx">context window (s)</label>
+        <input id="lCtx" type="number" min="10" max="1200" step="10" value="120">
+        <label for="lPct">threshold percentile</label>
+        <input id="lPct" type="number" min="90" max="99.9999" step="0.1" value="99.9">
+        <label for="lSur">surrogates</label>
+        <input id="lSur" type="number" min="20" max="1000" step="20" value="100">
+      </div>
       <div class="ctl">
         <div class="span"><button id="runDetect">Detect</button></div>
       </div>
@@ -403,6 +413,27 @@
         needs.</b> Finding those is what the simulate step above is for: measure,
         simulate from what you measured, tune against planted events, then point
         the tuned instrument at everything.
+      </div>
+      <div class="fine" id="dFineLoco" hidden>
+        <b>LoCo asks how many cells fired together, against what this recording
+        does the rest of the time.</b> It counts distinct ROIs per bin — one count
+        per cell however often it fired, because one busy cell is not
+        coordination — and compares that to a bar estimated locally by shuffling
+        this recording's own events.
+        <br><br>
+        <b>This is the first detector here that guesses.</b> The bar comes from a
+        hundred shuffles, and this page's random numbers are not the Python's, so
+        the two agree on the bar only to sampling error. What is checked exactly
+        is everything either side of it: the counts are identical, and given the
+        same bar the events are identical to 1e-9. The bar itself is checked by
+        sampling harder and confirming the disagreement shrinks — which it does,
+        and which a wrong answer would not.
+        <br><br>
+        <b>The floor is three ROIs and is not adjustable.</b> Coordination found
+        in a treatment window is evidence about the preparation, not a false-alarm
+        rate to raise the floor until it disappears — this project has talked
+        itself into that once and the setting is fixed here so it cannot happen
+        by accident.
       </div>
       <div class="fine" id="dFineSync" hidden>
         <b>SPIKE-synch asks how aligned the spikes are, whatever the rate.</b>
@@ -1633,6 +1664,213 @@ function syncDetect(trains, tRange, opts) {
 }
 
 
+
+/* ---------- LoCo, in the browser — the first detector here that guesses -------
+   RateDetect and SPIKE-synch are pure functions of the data, so their ports are
+   checked against the Python bit for bit. **LoCo is not.** It estimates its
+   threshold by shuffling the data a hundred times and taking a high percentile
+   of what the shuffles produced, and this page's random source is not numpy's.
+   Two honest implementations therefore disagree, by sampling error, for ever.
+
+   That does NOT mean the port is checked loosely. It splits three ways:
+
+     * the observed statistic — distinct ROIs per bin — depends on nothing but
+       the data. Exact, 1e-9.
+     * the threshold — sampled. Compared loosely and reported, never asserted.
+     * the detections — deterministic GIVEN a threshold. So the test injects the
+       same threshold into both implementations and compares the events exactly.
+
+   Only the middle line is soft, and it is the only line that has any business
+   being soft. `tests/test_webapp_loco_detect_parity.py` does all three.
+
+   ONE SEGMENT AT A TIME, and it matters here more than for the others. Python's
+   LoCo runs across a whole recording and clamps each anchor's null to the RAW
+   region containing it, so the null never borrows across a treatment boundary.
+   This page runs one analysis segment per call, so the region containing every
+   anchor *is* the segment and the clamp has nothing left to do. The consequence
+   is real and worth stating: the null comes from the analysis window, not from
+   the whole period it was cut out of. Where a producer sent a window narrower
+   than its region, that is a smaller pool than Python would use. */
+
+// MATLAB's prctile: sorted sample i sits at percentile 100*(i-0.5)/n, linear
+// between, clamped at the ends. This matches no numpy percentile mode, which is
+// why `_shared.py` carries its own and why this does too.
+function matlabPrctile(x, p) {
+  const v = Float64Array.from(x); v.sort();
+  const n = v.length;
+  if (!n) return NaN;
+  const q = i => (i + 0.5) * (100 / n);
+  if (p <= q(0)) return v[0];
+  if (p >= q(n - 1)) return v[n - 1];
+  let i = 0;
+  while (i < n - 2 && q(i + 1) < p) i++;
+  const a = q(i), b = q(i + 1);
+  return v[i] + (v[i + 1] - v[i]) * (p - a) / (b - a);
+}
+
+/* MATLAB's discretize: bin i covers [edges[i], edges[i+1]), the LAST bin closes
+   on the right, and anything outside is not in a bin at all. Returns -1 for
+   outside, which is MATLAB's NaN. */
+function discretizeIdx(x, edges) {
+  const m = edges.length - 1;
+  if (!(x >= edges[0]) || x > edges[m]) return -1;
+  if (x === edges[m]) return m - 1;
+  let lo = 0, hi = edges.length;
+  while (lo < hi) { const mid = (lo + hi) >> 1; if (edges[mid] <= x) lo = mid + 1; else hi = mid; }
+  return lo - 1;
+}
+
+/* LoCo's statistic, and SCE's: how many DISTINCT ROIs fired in each bin. One
+   count per ROI per bin however often it fired — an ROI bursting alone is not
+   coordination, and counting its events would say it was. */
+function distinctCoact(evs, edges) {
+  const c = new Float64Array(edges.length - 1);
+  for (const v of evs) {
+    if (!v.length) continue;
+    const seen = new Set();
+    for (const x of v) { const i = discretizeIdx(x, edges); if (i >= 0) seen.add(i); }
+    for (const i of seen) c[i] += 1;
+  }
+  return c;
+}
+
+/* The local null: circularly shift every ROI's events WITHIN this window, bin
+   the distinct-ROI coactivity, and pool every bin of every surrogate. The
+   percentile of that pool is the bar. Shifting inside the window is what makes
+   it rate-local — a shuffled ROI keeps its own rate and loses only its timing
+   relative to the others.
+
+   One draw per non-empty ROI per surrogate, surrogate-major: the same shape the
+   Python and the MATLAB consume, though not the same numbers. */
+function thresholdPool(ev, lo, hi, binw, nSur, pctile, u) {
+  if (hi <= lo) return Infinity;
+  let ledges = matlabColon(lo, binw, hi);
+  if (ledges.length < 2) ledges = Float64Array.from([lo, hi]);
+  const m = ledges.length - 1;
+  const lc = hi - lo;
+  const nonempty = [];
+  for (const v of ev) {
+    const c = [];
+    for (const x of v) if (x >= lo && x <= hi) c.push(x);
+    if (c.length) nonempty.push(c);
+  }
+  const counts = new Float64Array(nSur * m);
+  for (let s = 0; s < nSur; s++) {
+    for (let j = 0; j < nonempty.length; j++) {
+      const d = u();
+      const active = new Set();
+      for (const x of nonempty[j]) {
+        let sh = (x - lo + d * lc) % lc;
+        if (sh < 0) sh += lc;
+        const i = discretizeIdx(sh + lo, ledges);
+        if (i >= 0) active.add(i);
+      }
+      for (const i of active) counts[s * m + i] += 1;
+    }
+  }
+  return matlabPrctile(counts, pctile);
+}
+
+// first/last participating event and how many distinct ROIs took part, across
+// the episode's bin span [wlo, whi)
+function spanOf(ev, wlo, whi) {
+  let tfirst = Infinity, tlast = -Infinity, nrec = 0;
+  for (const v of ev) {
+    let f = null, l = null;
+    for (const x of v) if (x >= wlo && x < whi) { if (f === null) f = x; l = x; }
+    if (f !== null) { nrec++; if (f < tfirst) tfirst = f; if (l > tlast) tlast = l; }
+  }
+  if (!nrec) { tfirst = tlast = wlo; }
+  return { tfirst, tlast, nrec };
+}
+
+const matlabRound = x => Math.floor(x + 0.5);
+
+/* LoCo, threshold mode. A rolling bar is estimated at anchors every thr_step
+   seconds — for each, the null over the half-context behind it and the half
+   ahead, and the bar is the HIGHER of the two. That asymmetry is the point: a
+   rate edge cannot lower the bar and let the detector fire on the step. Bins
+   clearing their own local bar, and carrying at least min_rois ROIs, merge into
+   episodes across gaps no wider than merge_gap.
+
+   `thresholds` may be supplied to bypass the sampling entirely — that is how
+   the parity test compares detections exactly against a Python run that drew
+   different random numbers. Nothing in the interface passes it. */
+function locoDetect(trains, range, opts) {
+  const o = opts || {};
+  const binw = o.binWidthSec === undefined ? 1.0 : o.binWidthSec;
+  const mgap = o.mergeGapSec === undefined ? 2.0 : o.mergeGapSec;
+  const ctx = o.contextWinSec === undefined ? 120.0 : o.contextWinSec;
+  const pctile = o.thresholdPctile === undefined ? 99.9 : o.thresholdPctile;
+  const tstep = o.thrStepSec === undefined ? 15.0 : o.thrStepSec;
+  const nSur = o.nSurrogates === undefined ? 100 : o.nSurrogates;
+  // min_rois is NOT a knob and is not exposed. FOUNDATIONS §9: a nonzero
+  // coactivity excess is evidence about the preparation, not a false-alarm floor
+  // to raise until it goes away.
+  const minRois = o.minRois === undefined ? 3 : o.minRois;
+  const u = rng32(o.seed === undefined ? 20260706 : o.seed);
+
+  const tLo = range[0], tHi = range[1];
+  const halfCtx = ctx / 2;
+  const ev = clipSorted(trains, tLo, tHi);
+
+  let edges = matlabColon(tLo, binw, tHi);
+  if (edges.length < 2) edges = Float64Array.from([tLo, tHi]);
+  const nb = edges.length - 1;
+  const bc = new Float64Array(nb);
+  for (let i = 0; i < nb; i++) bc[i] = edges[i] + binw / 2;
+  const sObs = distinctCoact(ev, edges);
+
+  const anchors = matlabColon(tLo, tstep, tHi);
+  const thrA = new Float64Array(anchors.length);
+  for (let ai = 0; ai < anchors.length; ai++) {
+    const a = anchors[ai];
+    // the segment IS the region here — see the note at the top of this block
+    const tl = thresholdPool(ev, Math.max(a - halfCtx, tLo), a, binw, nSur, pctile, u);
+    const tr = thresholdPool(ev, a, Math.min(a + halfCtx, tHi), binw, nSur, pctile, u);
+    thrA[ai] = Math.max(tl, tr);
+  }
+  const thrBin = new Float64Array(nb);
+  for (let i = 0; i < nb; i++) {
+    let best = 0, bd = Infinity;
+    for (let k = 0; k < anchors.length; k++) {
+      const d = Math.abs(bc[i] - anchors[k]);
+      if (d < bd) { bd = d; best = k; }          // np.argmin takes the FIRST
+    }
+    thrBin[i] = thrA[best];
+  }
+  if (o.thresholds) for (let i = 0; i < nb; i++) thrBin[i] = o.thresholds[i];
+
+  const fb = [];
+  for (let i = 0; i < nb; i++) if (sObs[i] > thrBin[i] && sObs[i] >= minRois) fb.push(i);
+  const runs = [];
+  if (fb.length) {
+    const gapB = Math.max(1, matlabRound(mgap / binw));
+    let cur = [fb[0]];
+    for (let k = 1; k < fb.length; k++) {
+      if (fb[k] - cur[cur.length - 1] <= gapB) cur.push(fb[k]);
+      else { runs.push(cur); cur = [fb[k]]; }
+    }
+    runs.push(cur);
+  }
+
+  const starts = [], ends = [], mag = [], magTotal = [], thr = [], widths = [];
+  for (const gi of runs) {
+    const b0 = gi[0], b1 = gi[gi.length - 1];
+    const sp = spanOf(ev, edges[b0], edges[b1 + 1]);
+    let pk = 0;
+    for (let k = 1; k < gi.length; k++) if (sObs[gi[k]] > sObs[gi[pk]]) pk = k;  // first max
+    starts.push(sp.tfirst);
+    ends.push(sp.tlast);
+    widths.push(sp.tlast - sp.tfirst);
+    mag.push(sObs[gi[pk]]);
+    magTotal.push(sp.nrec);
+    thr.push(thrBin[gi[pk]]);
+  }
+  return { starts, ends, widths, magnitude: mag, magTotal, threshold: thr,
+           bc, sObs, thrBin, nEvents: starts.length };
+}
+
 /* ---------- scoring, and the step that makes this a loop ----------------------
    Measure, simulate from what you measured, DETECT — and then the question the
    first three steps exist to answer: are these settings any good? On a real
@@ -2567,6 +2805,22 @@ const DETECTORS = {
       + cfg.rateWin + " s · context " + cfg.contextWin + " s · dt " + cfg.gridDt + " s",
     knob: { key: "excessThresholdHz", name: "excess threshold", unit: "Hz",
             grid: [0.5, 1, 2, 3, 4, 5, 6, 8] },
+  },
+  loco: {
+    label: "LoCo",
+    blurb: "how many together",
+    ctl: "dLocoCtl", fine: "dFineLoco",
+    read: dt => ({ gridDt: dt,
+      binWidthSec: clamp(numById("lBin"), 0.1, 60),
+      contextWinSec: clamp(numById("lCtx"), 10, 1200),
+      thresholdPctile: clamp(numById("lPct"), 90, 99.9999),
+      nSurrogates: Math.round(clamp(numById("lSur"), 20, 1000)) }),
+    run: (trains, range, cfg) => locoDetect(trains, range, cfg),
+    settings: cfg => "bin " + cfg.binWidthSec + " s · context "
+      + cfg.contextWinSec + " s · " + cfg.thresholdPctile + "th percentile of "
+      + cfg.nSurrogates + " shuffles · floor 3 ROIs",
+    knob: { key: "thresholdPctile", name: "threshold percentile", unit: "",
+            grid: [99.0, 99.5, 99.9, 99.99, 99.999, 99.9999] },
   },
   sync: {
     label: "SPIKE-synch",
