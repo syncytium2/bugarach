@@ -930,7 +930,7 @@ session's work is not a sweep.
   project folder. Resolve the path via `$BUGARACH_DARKROOM` — never hardcode it (SAP004).
 
 ### Mac/pensub-validation — check and validate the new pensub export
-- **Status:** ACTIVE
+- **Status:** DONE 2026-08-20 — **written, claim released.** Landed as PR #188.
 - **Started:** 2026-08-20
 - **Doing:** Tony: "pensub export is complete. check, validate, report." Conformance,
   differential against the export it must pair with, and the coordination measurement
@@ -938,7 +938,8 @@ session's work is not a sweep.
 - **Writes:** `<darkroom>/bugarach/2026-08-20-pensub-validation/` — **ONE new subfolder**,
   holding the validation report and its figure. Nothing else in the darkroom; nothing in
   `constellation/`; nothing near `bugarach/synfire*` (claimed by another session).
-- **Claims:** that one subfolder only, for the duration of this session.
+- **Claims:** ~~that one subfolder only~~ — **released.** Written and not being regenerated;
+  it holds the report, its figure, the murderboard run record and a `README.md`.
 - **Reads, read-only:** `<dropbox>/data/exports/bugarach/2026-08-20_pensub_revised_2v` and
   `..._2026-08-18_revised_2v_periods`. **No `.mat` store was opened** — the folder is the
   whole input, and this review had no reason to go around it.
