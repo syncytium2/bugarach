@@ -129,11 +129,22 @@ OPERATING_POINTS: dict[str, OperatingPoint] = {
     "cicada": OperatingPoint(
         params=dict(sce_percentile=99.99, active_duration_sec=1.0, n_surrogates=100),
         source="calibrated FAST pair (cicada_detect docstring)",
-        knob="sce_percentile", grid=(90.0, 99.0, 99.9, 99.99, 99.999, 99.9999, 99.99999)),
+        # Extended 2026-08-20 when REGIMES moved to the approved corpus: at the
+        # corrected (busier) quiet endpoint the old top, 99.99999, was still the
+        # peak and the search was still climbing. A busier background needs a
+        # stricter percentile, so the grid needs room above the operating point
+        # rather than ending at it.
+        knob="sce_percentile", grid=(90.0, 99.0, 99.9, 99.99, 99.999, 99.9999,
+                                     99.99999, 99.999999, 99.9999999)),
     "sce": OperatingPoint(
         params=dict(bin_width_sec=10.0, threshold_pctile=99.0, n_surrogates=200),
         source="sce_detect defaults (generate_sce contract)",
-        knob="threshold_pctile", grid=(90.0, 95.0, 98.0, 99.0, 99.5, 99.9)),
+        # Extended downward for the same reason and in the opposite direction:
+        # on the approved corpus SCE's F1 peaked at the old floor of 90 and was
+        # still climbing, so it wants a LOOSER threshold where cicada wants a
+        # stricter one. Two detectors, one corpus correction, opposite responses.
+        knob="threshold_pctile", grid=(75.0, 80.0, 85.0, 90.0, 95.0, 98.0, 99.0,
+                                       99.5, 99.9)),
     "coact": OperatingPoint(
         params=dict(int_win_sec=2.0, context_win_sec=60.0, alpha=1e-4,
                     n_surrogates=100),
@@ -157,15 +168,43 @@ DETECTORS = tuple(OPERATING_POINTS)
 
 
 REGIMES: dict[str, dict] = {
-    "baseline_quiet": dict(bg_rate_hz=0.0038),
-    "baseline_busy": dict(bg_rate_hz=0.0175),
+    "baseline_quiet": dict(bg_rate_hz=0.0052),
+    "baseline_busy": dict(bg_rate_hz=0.0190),
 }
 """The difficulty axis, and **every value on it comes from untreated recordings.**
 
-Both endpoints are the interquartile spread of the `all-baseline` flavour itself
-(fast stream, `min_rois=4`): per-ROI rates of 0.0038 Hz at p25 and 0.0175 Hz at
-p75, around a median of 0.0096. Untreated slices vary 4.6-fold among themselves,
-and that variation is the axis an operating point has to survive.
+Both endpoints are the interquartile spread of slice-mean per-ROI rate across
+baseline windows, fast stream: 0.0052 Hz at p25 and 0.0190 Hz at p75, around a
+median of 0.0102. Untreated slices vary 3.7-fold among themselves, and that
+variation is the axis an operating point has to survive.
+
+**Re-derived 2026-08-20 from the export folder, which is the corpus the lab
+approved.** The previous endpoints — 0.0038 and 0.0175, a 4.6-fold span — were
+fitted against the `.mat` store, which carries every recording ever processed
+including the two the lab withdrew (SAP007, and
+`docs/todo/2026-08-20-six-tools-still-read-stores.md`). The folder is smaller and
+different, so the axis moved: both ends up, and the span narrower.
+
+**Moving it changes no detector's score beyond seed noise, and reorders nothing.**
+Measured before the change rather than assumed — every detector at its calibrated
+operating point, nothing re-tuned, 12 seeds at the quiet endpoint:
+
+===========  =========  =========  ==========  =======
+detector     F1 old     F1 new     mean dF1    sd(dF1)
+===========  =========  =========  ==========  =======
+coact            0.743      0.688      -0.055    0.078
+loco             0.731      0.649      -0.083    0.102
+rate             0.601      0.625      +0.023    0.085
+cicada           0.521      0.547      +0.026    0.076
+sync             0.377      0.473      +0.095    0.128
+sce              0.284      0.360      +0.075    0.095
+===========  =========  =========  ==========  =======
+
+**No detector moves by more than its own seed-to-seed spread**, and the ranking is
+identical either way: coact > loco > rate > cicada > sync > sce. A first pass at
+three seeds appeared to drop loco from first to third; that was noise, and it is
+recorded because three seeds is the bench default and is not enough to support a
+claim of this kind.
 
 **No treatment appears here, as a source or as an endpoint.** Tony, 2026-08-14:
 *"everything should be based on baseline recordings. do not use senk or ttx as
@@ -178,10 +217,17 @@ group** (ORX up, male unchanged, diestrus down). The global foundations doc
 forbids exactly that pooling: *"a TTX result on one group does not generalise to
 the arm."*
 
-The correction costs nothing, which is the part worth noticing: baseline's own
-p25 (0.0038) lands within 5% of the TTX median (0.0040). The quiet end of the
-range was reachable from untreated data the whole time, and reaching for a drug
-to justify it added a confound in exchange for no information.
+**The old justification for the quiet end is withdrawn, not restated.** It used to
+read: "the correction costs nothing — baseline's own p25 (0.0038) lands within 5%
+of the TTX median (0.0040)". On the approved corpus p25 is 0.0052, which is 30%
+above that TTX median, so the coincidence is gone.
+
+Losing it costs nothing, because the argument was never load-bearing and should not
+have been offered as reassurance. The reason to take the quiet end from untreated
+p25 is that treatments are not a source of coordination properties at all — Tony,
+2026-08-14. That a drug-derived number happened to sit nearby was a curiosity, and
+had the two disagreed from the start the untreated value would still have been
+correct. An argument that only works when the numbers agree is not an argument.
 
 Senktide is absent entirely rather than held out. Holding it out still requires
 generating a recording at senktide's rate, which is using a treatment as a source
@@ -189,7 +235,7 @@ of a coordination property. If a senktide evaluation is wanted it is a separate,
 explicit decision, not a default of this module.
 """
 
-NULL_RECORDING = dict(bg_rate_hz=0.0038, n_per_level=(0, 0, 0),
+NULL_RECORDING = dict(bg_rate_hz=0.0052, n_per_level=(0, 0, 0),
                       hot_window=None, hot_rate_hz=0.0, ramp_sec=0.0,
                       n_distractors=0)
 """A **synthetic** recording with no planted coordination — Poisson background at
