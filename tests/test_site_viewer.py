@@ -10,6 +10,7 @@ the same reason `tools/build_site.py` refuses to publish it otherwise.
 from __future__ import annotations
 
 import re
+import sys
 from pathlib import Path
 
 import pytest
@@ -17,30 +18,24 @@ import pytest
 ROOT = Path(__file__).resolve().parents[1]
 VIEWER = ROOT / "docs" / "site" / "raster_viewer.html"
 
-# every way a page can talk to a host, including the ones that do not look
-# like a request: a script/style/img/iframe src is a fetch the browser makes
-# on the page's behalf
-NETWORK = (
-    "fetch(", "XMLHttpRequest", "sendBeacon", "WebSocket(", "EventSource(",
-    "import(", "<script src", "<link rel=\"stylesheet\"", "<iframe", "<img",
-    "@import",
-)
+# The scan lives in the build, and this imports it rather than restating it.
+# Restating it is what went wrong: this file already stripped comments before
+# scanning, and said in its docstring why, while the build neutralised a single
+# hard-coded phrase. The build was the copy that mattered and it was the wrong
+# one, so the site sat 233 lines stale behind a guard tripping on a comment.
+sys.path.insert(0, str(ROOT / "tools"))
+from build_site import NETWORK, strip_comments, viewer_network_leaks  # noqa: E402
 
 
 def _body() -> str:
     """The page with every comment removed.
 
-    Comments are stripped because they NAME the things the page must not do —
-    the header explains there is no `fetch(`, and a note in the script quotes
-    the injection that motivated building nodes instead of markup. A check that
-    reads those as code fires on the explanation of why it will never fire,
-    which is the fastest way to get a real check deleted.
+    Comments NAME the things the page must not do — the header explains there is
+    no `fetch(`, and a note in the script quotes the injection that motivated
+    building nodes instead of markup. A check that reads those as code fires on
+    the explanation of why it will never fire.
     """
-    text = VIEWER.read_text(encoding="utf-8")
-    text = re.sub(r"<!--.*?-->", " ", text, flags=re.S)       # HTML
-    text = re.sub(r"/\*.*?\*/", " ", text, flags=re.S)        # JS block
-    return re.sub(r"^\s*//[^\n]*", " ", text, flags=re.M)     # JS line
-
+    return strip_comments(VIEWER.read_text(encoding="utf-8"))
 
 def test_the_viewer_page_exists():
     assert VIEWER.is_file(), f"{VIEWER} is what the site publishes as viewer.html"
@@ -48,10 +43,42 @@ def test_the_viewer_page_exists():
 
 @pytest.mark.parametrize("needle", NETWORK)
 def test_the_viewer_cannot_reach_the_network(needle):
-    assert needle not in _body(), (
+    assert needle not in viewer_network_leaks(
+        VIEWER.read_text(encoding="utf-8")), (
         f"{VIEWER.name} contains {needle!r}. The page tells the reader their "
         f"files never leave their computer; that is only true while it reaches "
         f"nothing. Draw it inline or drop the claim — do not keep both.")
+
+
+@pytest.mark.parametrize("needle", NETWORK)
+def test_the_scan_still_fires_on_a_real_call(needle):
+    """Prove it can fire, for every primitive, on the real page plus one line.
+
+    Making the scan ignore comments is a loosening, and a loosened guard has to
+    show it still catches the thing it was loosened around. Without this, the
+    change that unblocked the build would be indistinguishable from one that
+    quietly stopped checking.
+    """
+    poisoned = VIEWER.read_text(encoding="utf-8") + f"\n<script>{needle}</script>\n"
+    assert needle in viewer_network_leaks(poisoned)
+
+
+def test_prose_about_the_network_is_not_a_leak():
+    """The specific thing that froze the site for a day.
+
+    Both of the page's `fetch(` occurrences are prose: the promise in the header
+    and the ADR comment telling the next author not to add one. Zero call sites.
+    """
+    body = VIEWER.read_text(encoding="utf-8")
+    assert body.count("fetch(") >= 2, (
+        "the page no longer discusses fetch — if the promise and the ADR comment "
+        "were removed, this test is guarding nothing and should be re-aimed")
+    assert "fetch(" not in viewer_network_leaks(body)
+
+
+def test_a_comment_cannot_hide_a_call_on_the_same_line():
+    """Stripping JS line comments must not swallow code that precedes them."""
+    assert "fetch(" in viewer_network_leaks("<script>fetch(x); // and a note</script>")
 
 
 def test_the_viewer_carries_no_data():
