@@ -44,7 +44,13 @@ done
 cd "$(git rev-parse --show-toplevel)"
 git fetch -q origin 2>/dev/null || echo "note: could not fetch; judging against the origin/main you have" >&2
 
-PRIMARY="$(git rev-parse --show-toplevel)"
+# THE PRIMARY CHECKOUT IS THE FIRST ROW OF `git worktree list`, ALWAYS — not
+# `rev-parse --show-toplevel`, which answers "the worktree I am standing in".
+# Run from a worktree, that mistake identifies the wrong thing to protect and
+# the sweep offers to delete the main checkout. Caught by the dry-run default
+# on the first run from anywhere but the primary, which is the ordinary case:
+# a session lives in its own worktree.
+PRIMARY="$(git worktree list --porcelain | awk '/^worktree /{print $2; exit}')"
 removed=0
 kept=0
 
