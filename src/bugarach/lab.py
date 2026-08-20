@@ -321,7 +321,7 @@ def _train_tube(trainer: TubeTrainer, req: dict, emit) -> Model:
 
     import numpy as np
 
-    from bugarach.bench import pool_scores
+    from bugarach.bench import fold_split, pool_scores
     from bugarach.learn.train import train
     from bugarach.score import score_stream
     from bugarach.simulate import simulate_coordination
@@ -336,13 +336,21 @@ def _train_tube(trainer: TubeTrainer, req: dict, emit) -> Model:
     folds = int(req.get("folds", 4))
     per_fold_seeds = int(req.get("seeds_per_fold", 2))
     steps = int(req.get("steps", 900))
-    if folds < 2:
+    # The split comes from `bench`, the same call `tools/fair_bakeoff.py` makes,
+    # so the corpus this server divides and the corpus the published comparison
+    # divided cannot come apart. Deriving it here instead would be a second
+    # dialect of the one thing that has to be identical for a held-out number to
+    # mean anything — and it would agree right up until somebody changed one.
+    # `fold_split` refuses a single fold; translated into the refusal the caller
+    # can act on, since a ValueError out of a library reads to the page as a
+    # crash rather than as a bad request.
+    try:
+        split = fold_split(n_folds=folds, seeds_per_fold=per_fold_seeds)
+    except ValueError as exc:
         raise BadRequest(
-            f"folds={folds}: with fewer than two folds there is no held-out "
-            f"fold, and an in-sample score is not a result.")
-
-    seeds = [1000 + i for i in range(folds * per_fold_seeds)]
-    fold_of = {s: i // per_fold_seeds for i, s in enumerate(seeds)}
+            f"{exc} — with fewer than two folds there is no held-out fold, and "
+            f"an in-sample score is not a result.") from exc
+    seeds = list(split.seeds)
 
     cache: dict[int, tuple] = {}
 
@@ -359,8 +367,8 @@ def _train_tube(trainer: TubeTrainer, req: dict, emit) -> Model:
 
     per_fold, last = [], None
     for held in range(folds):
-        tr_seeds = [s for s in seeds if fold_of[s] != held]
-        te_seeds = [s for s in seeds if fold_of[s] == held]
+        tr_seeds = list(split.train(held))
+        te_seeds = list(split.test(held))
         emit(stage="fit", fold=held, of=folds,
              message=f"fitting {arch} on fold {held + 1}/{folds}")
 
@@ -382,10 +390,16 @@ def _train_tube(trainer: TubeTrainer, req: dict, emit) -> Model:
         detect_sec = time.perf_counter() - t1
         scs = [score_stream(gt, d) for (sl, gt), d in zip(te, dets)]
         p = pool_scores(scs, detector=arch, regime="heldout", seeds=te_seeds)
+        # `tol_sec` travels with the F1 because it is the F1's units. A hit is
+        # counted at a 1.5 s edge gap against a median realized event 0.80 s
+        # wide, so this number cannot tell landing ON an event from landing a
+        # second away from it. The ranking survives that; a bare F1 implying
+        # timing accuracy does not, and Phase 4's scoreboard is where that
+        # caveat has to be visible rather than looked up.
         per_fold.append(dict(
             fold=held, f1=p.f1, recall=p.recall, precision=p.precision,
             n_planted=p.n_planted, n_hit=p.n_hit, n_detected=p.n_detected,
-            hot_fa=p.hot_fa, threshold=float(tr.threshold),
+            hot_fa=p.hot_fa, tol_sec=p.tol_sec, threshold=float(tr.threshold),
             train_sec=train_sec, detect_sec=detect_sec,
             n_params=int(tr.n_params)))
         emit(stage="scored", fold=held, of=folds, f1=float(p.f1),
