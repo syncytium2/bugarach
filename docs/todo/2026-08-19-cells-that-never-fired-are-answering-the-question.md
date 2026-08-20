@@ -3,22 +3,44 @@ status: open
 filed: 2026-08-19
 ---
 
-# A cell that never fired is being counted as evidence, in two instruments
+# A cell that contributed nothing is being counted as evidence, in two instruments
 
-Two of this project's measures hand **cells with no activity** to a statistic and let
-them contribute to the answer. One is an outright defect and is fixed; the other is a
-defensible choice nobody has measured the size of. They are the same shape, which is why
-they are filed together.
+Two of this project's measures hand **cells that contributed nothing to the data being
+tested** to a statistic and let them shape the answer. One is an outright defect and is
+fixed; the other is a defensible choice nobody has measured the size of. They are the
+same shape, which is why they are filed together.
 
-## Fixed: the synfire indicator counted silence as perfect order
+**The title of this file said "never fired" when it was written, and that was wrong** —
+see the census below. It is kept so the link does not rot, but the accurate phrase is
+"contributed nothing to the observed data being tested", and what that means differs
+between the two instruments: for synfire, no event **in the analysis window**; for
+assembly, never a member of **any coordinated cluster**. Neither means dead.
 
-`tools/synfire_scan.py` passed every ROI to `optimal_spike_train_sorting`, silent ones
-included — **36% of ROIs in the fast corpus, 940 of 2630.**
+## Fixed: the synfire indicator counted an empty train as perfect order
+
+`tools/synfire_scan.py` passed every ROI to `optimal_spike_train_sorting`, including
+those with nothing in the window — **1941 of 5260 (ROI, stream) pairs, 37%.**
 
 PySpike's `spike_train_order` averages a per-pair ratio and scores a pair of trains that
 are **both empty** as `(e=1, m=1)` — the value it gives a *perfectly ordered* pair. So
-every pair of silent ROIs added a maximal-order term, quadratic in the number of cells
-that never fired.
+every pair of empty trains added a maximal-order term, quadratic in the number of cells
+with nothing to say in that window.
+
+### The census, because "empty" was doing too much work
+
+Of those 5260 (ROI, stream) pairs in the v2 export:
+
+- **122** produce no event anywhere in the recording. This is exactly the count the
+  export's own `PROVENANCE.md` reports under "silent (roi, stream) pairs", which is a
+  clean cross-check that this reader agrees with the producer.
+- **1819** fire somewhere in the recording and simply not in the **baseline analysis
+  window** — the window the synfire question is scoped to.
+
+Both arrive at the sorter as an empty train, and both should be dropped: a cell with no
+event in the window has no latency to be ordered by, whatever it does later under drug.
+But **94% of them are not quiet cells**, and the first version of this note called them
+that. The dead-ROI verdict is the producer's and was already applied upstream by the
+choice of store — `event_store_onset_revised_2v_alive` — not by anything here.
 
 Measured on the export corpus, the effect is concentrated exactly where it does most
 damage — the sparse recordings at the top of the distribution:
