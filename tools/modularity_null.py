@@ -38,6 +38,9 @@ from pathlib import Path
 
 import numpy as np
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import _dataset_arg  # noqa: E402
+
 
 def baseline_window(sl):
     """The window this repo scores: the producer's analysis window, else the region."""
@@ -54,8 +57,10 @@ def baseline_window(sl):
 def main(argv=None) -> int:
     p = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    p.add_argument("--folder", type=Path, required=True,
-                   help="an export folder — the input contract, and the whole input")
+    # `--folder` stays and `--store` must never appear: the export folder is this
+    # analysis's whole input contract, and `test_the_tool_takes_a_folder_and_not_a_store`
+    # guards it. `_dataset_arg.add` refuses a --store alias on a folder-only tool.
+    _dataset_arg.add(p, want="export_folder", aliases=("--folder",))
     p.add_argument("--stream", default="fast")
     p.add_argument("--dt", type=float, default=2.0)
     p.add_argument("--jitter", type=float, default=20.0)
@@ -72,10 +77,11 @@ def main(argv=None) -> int:
     from bugarach.graph import modularity_vs_null
     from bugarach.io import load_folder
 
-    slices = load_folder(a.folder)
+    folder = _dataset_arg.get(a, want="export_folder")
+    slices = load_folder(folder)
     if a.limit:
         slices = slices[: a.limit]
-    print(f"{a.folder}: {len(slices)} recordings")
+    print(f"         {len(slices)} recordings loaded")
     rows, skipped = [], {"no_baseline": 0, "no_stream": 0}
 
     for i, sl in enumerate(slices):
