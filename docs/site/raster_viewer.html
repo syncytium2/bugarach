@@ -416,7 +416,8 @@
         <input id="sSur" type="number" min="20" max="2000" step="20" value="200">
       </div>
       <div class="ctl">
-        <div class="span"><button id="runDetect">Detect</button></div>
+        <div class="span"><button id="runDetect">Detect</button>
+          <button id="saveDetections" disabled>Save detections.csv</button></div>
       </div>
       <div class="fine" id="dFineRate">
         <b>RateDetect asks how fast the population is firing.</b> It flags moments
@@ -2846,7 +2847,10 @@ function analysisSegments(rec, data) {
               end: Math.max(data.t1, data.t0 + 1), stated: false, whole: true }];
   return wins.map(w => {
     const stated = Number.isFinite(w.aStart) && Number.isFinite(w.aEnd);
-    return { label: w.label, start: stated ? w.aStart : w.start,
+    // `idx` travels because detections.csv reports which region a row came from,
+    // and a segment that has forgotten its index cannot say.
+    return { label: w.label, idx: w.idx,
+             start: stated ? w.aStart : w.start,
              end: stated ? w.aEnd : w.end, stated,
              period: [w.start, w.end] };
   });
@@ -3413,6 +3417,31 @@ function clearDetect() {
   DETECT = null;
   const b = document.getElementById("detectOut");
   if (b) b.textContent = "";
+  paintSaveDetections();
+}
+
+/* The save button follows the result, not the click. It is enabled only while
+   DETECT holds something this recording actually produced, so it cannot hand
+   over a file describing the previous detector or the previous recording —
+   changing either clears DETECT, and this follows it down. */
+function paintSaveDetections() {
+  const b = document.getElementById("saveDetections");
+  if (!b) return;
+  const live = DETECT && DETECT.rows;
+  b.disabled = !live;
+  b.textContent = live
+    ? "Save detections.csv (" + DETECT.rows.length + " row"
+      + (DETECT.rows.length === 1 ? "" : "s") + ")"
+    : "Save detections.csv";
+}
+
+/* AN EMPTY RESULT IS A FINDING AND AN ABSENT ONE IS A BUG, so a detector that
+   called nothing still writes a real file with its header. `emit.write_detections`
+   says so in as many words, and a browser that quietly declined to download
+   would put the two back on the same footing. */
+function saveDetections() {
+  if (!DETECT || !DETECT.rows) return;
+  offerDownload(DETECT.recId + "_detections.csv", detectionsCsv(DETECT.rows));
 }
 
 /* Which instrument is pointed at the recording, and what each one needs. Two of
@@ -3430,6 +3459,143 @@ function clearDetect() {
    and the one knob the tuning sweep turns. Adding a detector is adding a row and
    a `<div class="ctl">`; the select, the sweep and the results table follow. */
 const numById = id => Number(document.getElementById(id).value);
+
+/* ---- detections.csv, out of the browser --------------------------------------
+
+   The page detects, draws, and until now wrote nothing anybody could keep. This
+   is the one table it emits, and the shape is not this file's to invent: it is
+   `docs/export_folder_spec.md`, already implemented by `src/bugarach/emit.py`.
+   A row written here and a row written there have to be the same row.
+
+   MIRRORED FROM `emit.DETECTOR_FIELDS`, WHICH IS THE SOURCE OF TRUTH. The six
+   detectors disagree about their own field names and about what "strength"
+   means, so reading one detector's spelling and assuming the rest match is how a
+   second dialect of one table begins. Each line below was checked against the
+   Python rather than inferred from the JavaScript beside it — and that mattered
+   at least once: RateDetect's strength is `amps`, and `rate.py` defines
+   `amps = freq_mean`, so it is `freqMean` here. `freqMax` is right there in the
+   same returned object, is the more obvious-looking choice, and is wrong.
+
+   `n_roi` is null for `rate` alone. That is a fact about RateDetect rather than
+   an omission: it measures how fast the population is firing and reports no
+   participation quantity at all.
+
+   MODE IS ALWAYS `threshold` HERE, and that is a fact about this page rather
+   than a default. `_mode` in the Python reads `width_kind == "half_prominence"`
+   to say `peak`; no detector in this file has a peak branch to take, so none can
+   produce that width. `width_def` follows the same rule — it is whatever the
+   threshold branch of that detector actually returns, and null where the
+   detector defines no such quantity. The day a peak mode is ported, both of
+   these stop being constants. */
+const NA = "NA";
+
+const DETECTION_COLUMNS = ["slice_id", "stream", "detector", "mode", "region_idx",
+  "region_label", "onset_sec", "width_sec", "width_def", "n_roi", "strength",
+  "strength_unit"];
+
+/* Which columns are integers and which are floats, split exactly as
+   `emit.read_detections` splits them, so a file written here reads back there
+   with the types it was written with. */
+const DETECTION_INTS = new Set(["region_idx", "n_roi"]);
+const DETECTION_FLOATS = new Set(["onset_sec", "width_sec", "strength"]);
+
+const DETECTION_FIELDS = {
+  rate:  { strength: d => d.freqMean,  nRoi: null,                     // see above
+           unit: "intra_event_event_rate_hz",       widthDef: null },
+  sce:   { strength: d => d.magnitude, nRoi: d => d.magTotal,
+           unit: "binned_coactivity_roi_count",     widthDef: "tightness" },
+  coact: { strength: d => d.z,         nRoi: d => d.nrois,
+           unit: "coactivity_z",                    widthDef: "episode_span" },
+  loco:  { strength: d => d.magnitude, nRoi: d => d.magTotal,
+           unit: "local_coincidence_coactivity",    widthDef: "tightness" },
+  sync:  { strength: d => d.amps,      nRoi: d => d.nParticipatingRois,
+           unit: "spike_synchronization_c",         widthDef: null },
+};
+
+/* One detector result over one analysis segment, as rows. */
+function detectionRows(which, d, ctx) {
+  const F = DETECTION_FIELDS[which];
+  if (!F) throw new Error("no detections.csv mapping for '" + which
+    + "' — add one here and in emit.DETECTOR_FIELDS, not in one of them");
+  const strength = F.strength(d) || [];
+  const nRoi = F.nRoi ? (F.nRoi(d) || []) : null;
+  const widths = d.widths || d.starts.map((s, i) => d.ends[i] - s);
+  return d.starts.map((s, i) => ({
+    slice_id: ctx.sliceId, stream: ctx.stream, detector: which,
+    mode: "threshold",
+    region_idx: ctx.regionIdx, region_label: ctx.regionLabel,
+    onset_sec: s, width_sec: widths[i], width_def: F.widthDef,
+    n_roi: nRoi ? nRoi[i] : null,
+    strength: strength[i], strength_unit: F.unit,
+    identity: ctx.identity || {},
+  }));
+}
+
+/* A value as the file spells it.
+
+   A REAL ZERO SURVIVES AS A ZERO; only genuine absence becomes NA, and NaN
+   counts as absence because that is how the detectors spell "not applicable in
+   this mode". Conflating the two is the round-trip bug `emit._fmt` was written
+   to avoid, and it is just as available here.
+
+   Floats carry `.0` when they are integral, so the column reads as the
+   continuous quantity it is rather than flickering between `3` and `3.5` down a
+   column of seconds. `String()` gives the shortest representation that reads
+   back to the same double, which is what full precision means here. */
+function detCell(v, col) {
+  if (v === null || v === undefined) return NA;
+  if (typeof v === "number") {
+    if (!Number.isFinite(v)) return NA;
+    if (DETECTION_INTS.has(col)) return String(Math.round(v));
+    if (DETECTION_FLOATS.has(col)) {
+      const s = String(v);
+      return /[.eE]/.test(s) ? s : s + ".0";
+    }
+    return String(v);
+  }
+  const s = String(v);
+  return s === "" ? NA : s;
+}
+
+/* Minimal quoting, matching Python's csv writer: quote only when the value
+   contains a delimiter, a quote or a newline, and double any quote inside. */
+function csvField(s) {
+  return /[",\r\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+}
+
+/* The file. Identity columns are appended in first-seen order and can never
+   overwrite a computed one — a producer whose slices.csv happens to carry a
+   `detector` column must not be able to silently replace which detector fired.
+
+   LINE ENDINGS ARE NEWLINE ONLY, including the last one. */
+function detectionsCsv(rows) {
+  const cols = DETECTION_COLUMNS.slice();
+  for (const r of rows)
+    for (const k of Object.keys(r.identity || {}))
+      if (!cols.includes(k)) cols.push(k);
+  const out = [cols.map(csvField).join(",")];
+  for (const r of rows) {
+    const cells = cols.map(c => {
+      if (Object.prototype.hasOwnProperty.call(r, c)) return detCell(r[c], c);
+      return detCell((r.identity || {})[c], c);
+    });
+    out.push(cells.map(csvField).join(","));
+  }
+  return out.join("\n") + "\n";
+}
+
+/* Hand the file to the reader. A Blob and an object URL, which reach nothing:
+   the page's promise is that the recordings never leave the computer, and a
+   download is the one direction that is always safe. */
+function offerDownload(name, text) {
+  const url = URL.createObjectURL(new Blob([text], { type: "text/csv" }));
+  const a = document.createElement("a");
+  a.href = url; a.download = name;
+  document.body.append(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 0);
+}
 
 const DETECTORS = {
   rate: {
@@ -3555,7 +3721,14 @@ async function runDetect() {
     // a boundary would take its context from a period that is not the one it is
     // reporting on
     const segs = analysisSegments(current, data);
-    const starts = [], ends = [], perRegion = [];
+    const starts = [], ends = [], perRegion = [], rows = [];
+    /* Every column of the producer's slices.csv rides along untouched. This page
+       reads exactly one field of that file — the frame interval — and carrying
+       the rest without interpreting it is what lets a detections.csv be joined
+       back to whatever the producer keyed their own records on. */
+    const identity = {};
+    for (const [k, v] of Object.entries(META.get(current.id) || {}))
+      if (!DETECTION_COLUMNS.includes(k)) identity[k] = v;
     let extraTotal = 0;
     for (const seg of segs) {
       const trains = data.order.map(id =>
@@ -3565,10 +3738,19 @@ async function runDetect() {
       const extra = D.extra ? D.extra.count(d) : 0;
       extraTotal += extra;
       starts.push(...d.starts); ends.push(...d.ends);
+      rows.push(...detectionRows(which, d, {
+        sliceId: current.id, stream,
+        // a recording with no regions.csv is one unnamed whole, and NA is the
+        // honest region for it rather than a fabricated index 1
+        regionIdx: seg.whole ? null : seg.idx,
+        regionLabel: seg.whole ? null : seg.label,
+        identity,
+      }));
       perRegion.push({ label: seg.label, n: d.nEvents, extra, stated: seg.stated,
                        mins: (seg.end - seg.start) / 60 });
     }
-    DETECT = { recId: current.id, label: D.label, starts, ends };
+    DETECT = { recId: current.id, label: D.label, starts, ends, rows, which };
+    paintSaveDetections();
 
     const box = document.getElementById("detectOut");
     box.textContent = "";
@@ -4026,6 +4208,7 @@ document.getElementById("runTune").onclick = runTune;
 paintTuneWhat();
 
 document.getElementById("runDetect").onclick = runDetect;
+document.getElementById("saveDetections").onclick = saveDetections;
 
 /* ---------- training, which is the one step that is not in this page ---------
    The panel above is INERT unless something has defined `window.__lab`. Only the
@@ -4035,16 +4218,20 @@ document.getElementById("runDetect").onclick = runDetect;
    removal: nothing is stripped at build time, so nothing can fail to be
    stripped. docs/adr/0001-the-lab-server.md.
 
-   Everything that talks to the server lives in the shim. This file makes no
-   network call of any kind and must not grow one, or the promise the page makes
-   stops being a property of the file and goes back to being a paragraph.
+   Everything that talks to the server lives in the shim. This file contains no
+   `fetch(` and must not grow one, or the promise the page makes stops being a
+   property of the file and goes back to being a paragraph.
 
-   THE NAME OF THE CALL IS NOT WRITTEN HERE ON PURPOSE. `build_site.py` greps the
-   page for the forbidden spellings, so a comment that quotes one fails the
-   publish gate while explaining why it should not — which is exactly what this
-   line used to do, and `main` has been unpublishable ever since. The gate
-   carries an exemption for one such comment near the top of this file; a second
-   one has nowhere to live. Describe the rule, do not spell it.          ------ */
+   NAMING THE CALL HERE IS SAFE AGAIN, AND THAT TOOK TWO GOES. The publish gate
+   used to grep the page for the forbidden spellings, so this comment failed the
+   build while explaining why it should not, and the viewer was unpublishable
+   until someone noticed. Two sessions then fixed it the same afternoon and did
+   not fix the same thing: one reworded this comment to avoid the word, the other
+   taught `build_site.py` to read the page as code and ignore prose. Both merged
+   green, against bases that did not contain each other, and `main` went red —
+   the reword removed the very prose the new guard test asserts is still here.
+   The guard is the right fix and the reword is gone. Say `fetch(` freely; the
+   gate now looks at call sites.                                         ------ */
 
 const lab = () => window.__lab || null;
 
