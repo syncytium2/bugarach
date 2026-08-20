@@ -17,6 +17,7 @@ instead of passing an empty briefing off as a trimmed one.
 """
 
 import json
+import re
 import shutil
 import subprocess
 from pathlib import Path
@@ -97,13 +98,48 @@ def test_a_missing_board_is_reported_not_fatal(tmp_path):
     assert "no board yet" in r.stdout
 
 
-def test_the_trim_is_large_enough_to_matter():
-    """The real briefing, both ways. Pinning the ratio rather than a byte count,
-    because the board grows daily and the point is proportional, not absolute."""
+def test_the_trim_is_large_enough_to_matter(tmp_path):
+    """The property, on a board big enough to have it. 60 blocks of which 5 are
+    live is roughly the shape that broke: the digest must cost a small fraction
+    of the file, not a slightly smaller version of it.
+
+    Stated against a synthetic board rather than the machine's own, because CI
+    checks out a bare clone with no `-worktrees/` beside it — and a first draft
+    of this test asserted the ratio there, where there is no board to trim and
+    the trimmed output is *larger* by the size-canary line. The trim is only
+    meaningful where a board exists; asserting it elsewhere tested nothing and
+    failed honestly."""
+    blocks = []
+    for i in range(60):
+        live = i % 12 == 0
+        blocks.append(
+            f"### Mac/task-{i} — a task\n"
+            f"- **Status:** {'ACTIVE' if live else 'DONE 2026-08-19 — merged'}\n"
+            f"- **Worktree:** wt-{i}\n"
+            f"- **Touches:** src/mod_{i}.py\n"
+            f"- **Notes:** " + ("history. " * 40) + "\n"
+        )
+    b = tmp_path / "SESSIONS.md"
+    b.write_text("# board\n\n" + "\n".join(blocks), encoding="utf-8")
+
+    digest = sh(DIGEST, str(b)).stdout
+    assert "5 ACTIVE of 60" in digest
+    assert len(digest) < len(b.read_text(encoding="utf-8")) / 8, (
+        f"digest {len(digest)}B of a {b.stat().st_size}B board — not enough of a trim"
+    )
+
+
+def test_the_trim_fires_on_this_machines_own_board():
+    """The same property end to end, where a real board exists. Skipped rather
+    than asserted where it does not — see the note above."""
     full = sh(VENDORED).stdout
+    m = re.search(r"^--- session board: (.*) ---$", full, re.M)
+    if not m:
+        pytest.skip("vendored hook printed no board marker")
+    board = Path(m.group(1))
+    if not board.is_file() or board.stat().st_size < 4000:
+        pytest.skip(f"no substantial machine-local board here ({board})")
     trimmed = sh(WRAPPER).stdout
-    if "--- session board:" not in full:
-        pytest.skip("no machine-local board on this machine — nothing to trim")
     assert len(trimmed) < len(full) / 2, (
         f"trimmed {len(trimmed)}B vs full {len(full)}B — the trim is not doing its job"
     )
