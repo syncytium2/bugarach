@@ -3,17 +3,31 @@ status: open
 filed: 2026-08-19
 ---
 
-# Lane C — the tube trains in the browser, and this is the long pole
+# Lane C — the tube trains in the browser, with no install at all
 
-Plan: [`docs/webapp_completion_plan.md`](../webapp_completion_plan.md). This is the one
-lane on it worth starting immediately, because it is the largest piece of new code and
-it **touches nothing anybody else is holding**.
+> **Resequenced 2026-08-19, and not cancelled.** Tony chose the lab server first
+> ([`ADR-0001`](../adr/0001-the-lab-server.md), lane H1): training moves to a loopback
+> process calling `learn.train` directly, which reaches a working end-to-end demo in a few
+> hundred lines rather than a thousand lines of new numerics.
+>
+> **What changed for this lane is that it now has an answer key.** Written blind, it had
+> to invent what correct looks like; written after H1, it is checked against an
+> implementation that already agrees with `bakeoff.json`.
+>
+> **What it is still for**: the lab that will not install Python. H1 makes training work;
+> this makes it work for everybody, and it is the only route back to the no-install
+> promise for stage 6b.
+
+Plan: [`docs/webapp_completion_plan.md`](../webapp_completion_plan.md). It touches nothing
+another lane holds until the final splice.
 
 ## Why it has to be hand-written
 
 The published page may not reach the network — `tests/test_site_viewer.py` bans `fetch(`,
 `<script src` and `import(`, and `tools/build_site.py` refuses to publish it otherwise.
-So no backend and no CDN-hosted ML library. The trainer goes inline, in JS.
+So no CDN-hosted ML library, and **no calling H1's server from the published page** — the
+lab server serves its own copy and the published one stays deaf. This trainer goes inline,
+in JS, or it does not exist.
 
 ## What that actually costs
 
