@@ -221,8 +221,19 @@ Template:
   headline claim did not survive role 1 and was replaced with one the commit history
   actually shows. Run record in `docs/reviews/`.
 
-### Mac/assembly-membership — the assembly question, answered on the real corpus
-- **Status:** DONE 2026-08-19 — **claims released**; `HANDOFF.md` on `main` carries the
+### Mac/assembly-membership — synfire order measured; the assembly half is closed elsewhere
+- **Status:** DONE 2026-08-19 — claims released. `HANDOFF.md` on `main` covers the live
+  half (synfire). The assembly half was **closed by another session** — its record is
+  `docs/assembly_report.md` + `docs/reviews/assembly_summary_2026-08-19.md`, and the
+  numbers this block once carried are superseded.
+- **Wrote (darkroom, claim released):** `synfire_fast_relabel.json`,
+  `synfire_slow_relabel.json`, alongside the earlier `assembly_*` files.
+- **The one thing worth carrying to any new measure here:** the standing per-ROI
+  circular-shift null answered the wrong question for BOTH measures attempted this week.
+  It calls 60% of order-free generated recordings synfire-significant, because it destroys
+  the coordinated events and so is beaten by any recording that has them. Run the
+  order-free generated control before believing a number, and prefer an event-preserving
+  null.
   answer and the three steps that close it. Delete that file when they are done.
 - **Started:** 2026-08-18
 - **Writes:** `<darkroom>/bugarach/assembly_answer.{png,html,json}` (NEW). Nothing else
