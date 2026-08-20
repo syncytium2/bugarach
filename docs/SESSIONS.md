@@ -61,7 +61,9 @@ Template:
 ## Active
 
 ### Mac/synfire-folder — gather the synfire material into `<darkroom>/bugarach/synfire/`
-- **Status:** ACTIVE
+- **Status:** DONE 2026-08-20 — merged as PR #171; **claim released**, holds nothing.
+  Session ended here; its handoff is `HANDOFF-difficulty-axis-and-synfire.md` on `main`,
+  which also covers the bench recalibration (#184) and the synfire defects (#152, #163).
 - **Started:** 2026-08-20
 - **Writes:** `<darkroom>/bugarach/synfire/` — a new folder, into which four existing
   top-level entries are **moved**: `synfire_README.md`, `synfire_fast_relabel.json`,
