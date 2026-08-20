@@ -168,7 +168,7 @@ against an unmarked raster: if the structure is not visible there, that is the
 finding, not a failure of the picture. (Why the rasters stopped being inked is in
 the corrections appendix.)
 
-### `bg_rate_hz` — background rate (default 0.05; bench uses 0.0038–0.0175)
+### `bg_rate_hz` — background rate (default 0.05; bench uses 0.0052–0.0190)
 
 ![five stacked rasters, background firing rising from nearly empty at the top to a solid wash at the bottom](generator/generator_bg_rate_hz.png)
 
@@ -395,9 +395,12 @@ the population size you set.
 **Baseline recordings only.** Treatments are what these instruments are pointed
 at; taking the properties of coordination from them assumes the answer. Both
 bench regimes are the interquartile spread of the untreated flavour itself —
-0.0038 Hz/ROI at p25 and 0.0175 at p75, around a median of 0.0096. Untreated
-slices vary 4.6-fold among themselves, and that variation is the axis an
-operating point has to survive.
+0.0052 Hz/ROI at p25 and 0.0190 at p75, around a median of 0.0102. Untreated
+slices vary 3.7-fold among themselves, and that variation is the axis an
+operating point has to survive. Re-derived 2026-08-20 from the export folder,
+the corpus the lab approved; the previous endpoints (0.0038 / 0.0175, a 4.6-fold
+span) were fitted against the `.mat` store, which carries every recording ever
+processed including the two the lab withdrew.
 
 Source: `constellation/coordination_timescale_summary.csv`, flavour
 `all-baseline`, fast stream, `min_rois=4`. **The denominators differ by row:**
@@ -485,7 +488,11 @@ and this document would mislead a reader who stopped before here.
   includes the coordinated events, the probe and the distractors. Realized totals
   are **0.0114 Hz/ROI in the quiet regime against a nominal 0.0038** (3.0×) and
   0.0255 against 0.0175 (1.5×) — so the regime named for the untreated p25 is in
-  fact busier than the untreated *median* it was cut from.
+  fact busier than the untreated *median* it was cut from. ⚠ **Those realized
+  totals were measured against the pre-2026-08-20 endpoints and have not been
+  re-measured** since the axis moved to 0.0052 / 0.0190. The direction of the
+  point survives — a nominal background rate is not the realized total — but the
+  three ratios above are stale until someone re-runs them.
 - **The background model now has both axes, and neither is switched on.**
   `bg_rate_shape` makes ROIs differ from each other — reproducing the 35% that
   record nothing, without modelling silence directly — and `bg_burst_shape` makes

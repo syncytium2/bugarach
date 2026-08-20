@@ -32,6 +32,9 @@ from pathlib import Path
 
 import numpy as np
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
+from bugarach.bench import REGIMES as _REGIMES  # noqa: E402
+
 
 def build(assessment: dict, k: int, *, events_per_level: int = 5,
           n_levels: int = 3) -> dict:
@@ -91,7 +94,9 @@ def build(assessment: dict, k: int, *, events_per_level: int = 5,
     notes.append(
         f"bg_rate_hz derived from the population event rate / ROI count: median "
         f"{roi_rate:.5f} Hz, IQR {rate_iqr[0]:.5f}-{rate_iqr[1]:.5f}. The tree's "
-        f"own measured regime endpoints are 0.0038 and 0.0175, so this store "
+        f"own measured regime endpoints are "
+        f"{_REGIMES['baseline_quiet']['bg_rate_hz']:g} and "
+        f"{_REGIMES['baseline_busy']['bg_rate_hz']:g}, so this store "
         f"independently reproduces the interquartile band the bench was built on. "
         f"The MEDIAN ROI rate is not used: {frac_median_silent:.0%} of slices have "
         f"a median ROI with no events in baseline")
