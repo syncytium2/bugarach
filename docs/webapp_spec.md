@@ -1,5 +1,11 @@
 # The webapp — the full pipeline, end to end
 
+> **Building it? The route is
+> [`docs/webapp_completion_plan.md`](webapp_completion_plan.md)** — phase order, what
+> already exists for each of the seven stages, and the lane table saying which pieces can
+> be worked at the same time and which queue on one file. This document is the
+> requirement; that one is how it gets built.
+>
 > **This is the WEBSITE track.** The model track — refining the detectors, the seed
 > gap, the rate ceiling, a second corpus — is [`docs/model_track.md`](model_track.md),
 > and the two are deliberately separated: Tony, 2026-08-18, *"separate out the two main
