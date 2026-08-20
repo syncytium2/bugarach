@@ -6,17 +6,23 @@ they the **same** cells each time — recurring cell assemblies — or a fresh d
 **Answer. No recurring assemblies, in either stream, and the absence is the result.** Two
 instruments agree, and both have now reported on both streams. Graph modularity on the
 spike-time-tiling graph — each recording against its own jitter surrogates — finds **no
-partition above its null**: 3 of 78 fast recordings and 2 of 77 slow, against the ~5% the
+partition above its null**: 2 of 78 fast recordings and 1 of 77 slow, against the ~5% the
 test's own threshold yields by chance. The membership test finds participation is **not
 uniform** — some cells are in most events, many in few — in 45 of 47 testable fast recordings
 and 36 of 38 slow. Uneven participation with no modular partition is a **core–periphery**
 field, not an assembly: a busy core and a long tail, with no membership that repeats as a unit.
 
-The median recording is in fact *less* modular than its own surrogates (z = −1.31 fast, −2.93
+The median recording is in fact *less* modular than its own surrogates (z = −1.17 fast, −3.45
 slow): scramble the timing while holding the graph's size, event counts and sparsity fixed and
 it scores **higher**. That is the opposite of what a field of assemblies would do.
 
 **Drop the word "assembly"** for this preparation unless the modularity result is overturned.
+
+Both instruments now run **in this repo**. The modularity half used to be computed by an
+interface2 pipeline that has no maintainer and does not run out of the box; it was ported
+here and validated two ways — exact reproduction of the reference on identical inputs
+(worst disagreement 2 × 10⁻¹⁶), and **98.7% verdict agreement across the corpus under a
+different windowing convention**, which is the more reassuring of the two.
 
 ![A · a real recording's membership table beside a generated one at the same geometry with participants drawn uniformly at random — the question cannot be settled by eye. B · power under the decision rule the corpus is actually scored by, at each real recording's own geometry, one curve per planted group size; the dotted line marks the 5% size of the test, where every curve begins when nothing is planted. C · the verdict before and after optical crosstalk is removed, paired on the fast and slow recordings testable in both stores; the grey bar counts recordings that fell below the testable floor, which is lost power and not a negative.](assembly_closed)
 
