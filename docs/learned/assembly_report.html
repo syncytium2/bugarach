@@ -467,16 +467,15 @@ exactly on the rest.</p>
 <p>Even so the verdicts agree on <strong>98.7%</strong> of recordings in both streams (77 of 78, 76 of 77),
 and the median difference in z is <strong>0.03</strong> whether or not the window matched. Each stream's
 single disagreement is a recording whose active-cell count moved.</p>
-<p><strong>The producer's dead-ROI roster is applied, and it provably changes nothing here.</strong> The R
-team's rejection rule is <code>rejected = base_empty AND drug_empty AND (hik_empty)</code>, so a
-rejected cell is <em>by definition</em> silent in baseline — and this measurement already drops any
-cell with no events in the window. Checked rather than assumed: <strong>all 66 rejected ROIs have
-zero baseline events</strong>, and re-running the whole corpus with the roster applied reproduces
-every count. So the roster is a no-op for any baseline-only analysis that requires events,
-which is why FOUNDATIONS §9's point that the <em>rule</em> is not computable here costs this
-measurement nothing. The verdicts are vendored in <code>docs/learned/dead_roi_verdicts.csv</code> and
-consumed rather than recomputed, so the no-op is a demonstrated fact rather than an
-assumption.</p>
+<p><strong>Dead ROIs need no handling here, and that is a finding rather than an omission.</strong> The
+producer decides which cells are alive and exports accordingly, so there is nothing for this
+analysis to filter. It is <em>also</em> provably moot: the R team's rejection rule is
+<code>rejected = base_empty AND drug_empty AND hik_empty</code>, so a rejected cell is <strong>by definition</strong>
+silent in baseline, and this measurement already drops any cell with no events in the window.
+Checked rather than assumed, while a roster was briefly being applied here: <strong>all 66 rejected
+ROIs had zero baseline events</strong>, and running the corpus with and without it reproduced every
+count. So FOUNDATIONS §9's point — that the <em>rule</em> is not computable inside this repo, needing
+drug and high-K rows — costs this measurement nothing either way.</p>
 <p><strong>That is a stronger result than exact reproduction would have been.</strong> The answer does not
 depend on which of two defensible windowing conventions is used.</p>
 <p><strong>Three things about those numbers are worth stating, because none of them was true of the

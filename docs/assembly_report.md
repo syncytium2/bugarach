@@ -275,16 +275,15 @@ Even so the verdicts agree on **98.7%** of recordings in both streams (77 of 78,
 and the median difference in z is **0.03** whether or not the window matched. Each stream's
 single disagreement is a recording whose active-cell count moved.
 
-**The producer's dead-ROI roster is applied, and it provably changes nothing here.** The R
-team's rejection rule is `rejected = base_empty AND drug_empty AND (hik_empty)`, so a
-rejected cell is *by definition* silent in baseline — and this measurement already drops any
-cell with no events in the window. Checked rather than assumed: **all 66 rejected ROIs have
-zero baseline events**, and re-running the whole corpus with the roster applied reproduces
-every count. So the roster is a no-op for any baseline-only analysis that requires events,
-which is why FOUNDATIONS §9's point that the *rule* is not computable here costs this
-measurement nothing. The verdicts are vendored in `docs/learned/dead_roi_verdicts.csv` and
-consumed rather than recomputed, so the no-op is a demonstrated fact rather than an
-assumption.
+**Dead ROIs need no handling here, and that is a finding rather than an omission.** The
+producer decides which cells are alive and exports accordingly, so there is nothing for this
+analysis to filter. It is *also* provably moot: the R team's rejection rule is
+`rejected = base_empty AND drug_empty AND hik_empty`, so a rejected cell is **by definition**
+silent in baseline, and this measurement already drops any cell with no events in the window.
+Checked rather than assumed, while a roster was briefly being applied here: **all 66 rejected
+ROIs had zero baseline events**, and running the corpus with and without it reproduced every
+count. So FOUNDATIONS §9's point — that the *rule* is not computable inside this repo, needing
+drug and high-K rows — costs this measurement nothing either way.
 
 **That is a stronger result than exact reproduction would have been.** The answer does not
 depend on which of two defensible windowing conventions is used.
