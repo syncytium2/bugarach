@@ -24,7 +24,7 @@ somebody else wrote releases the gate without that session ever having read the 
 
 | lane | worktree + branch | read this first | what it is |
 |---|---|---|---|
-| **server** | `bugarach-worktrees/lane-server` | [`todo/2026-08-19-lane-h1-the-lab-server.md`](todo/2026-08-19-lane-h1-the-lab-server.md) | `bugarach lab` on loopback, the `window.__lab` shim, the publish gate. **The long pole.** |
+| ~~**server**~~ | ~~`bugarach-worktrees/lane-server`~~ | [`todo/2026-08-19-lane-h1-the-lab-server.md`](todo/2026-08-19-lane-h1-the-lab-server.md) | ✅ **LANDED** 2026-08-20 — `main` @ `9ed4140`, PR #159. `bugarach lab`, the shim and the publish gate are in, and the server reproduces `bakeoff.json` per fold. **Do not start this lane.** Its todo now carries the request/response shapes, which is what **H2 was blocked on**. |
 | **scoring** | `bugarach-worktrees/lane-scoring` | [`todo/2026-08-19-lane-e-folds-and-scoring-in-the-browser.md`](todo/2026-08-19-lane-e-folds-and-scoring-in-the-browser.md) | fold split + `bench.pool_scores` in JS, so held-out scoring exists at all |
 | **writer** | `bugarach-worktrees/lane-writer` | [`todo/2026-08-19-lane-d1-the-detections-writer.md`](todo/2026-08-19-lane-d1-the-detections-writer.md) | `detections.csv` + `run.json` in the library. **Nothing in this tree writes a data file yet.** |
 | **model** | `bugarach-worktrees/lane-model` | [`model_track.md`](model_track.md) queue, items 1 and 4 | close the seed gap; drop the raw brightness channel. **Needs Tony's go — see below.** |
@@ -56,6 +56,9 @@ permission because they are code, not experiments.
   metrics, which has already happened here once.
 - **server** defines what a correct trained model looks like, which is what turns the
   in-browser trainer (lane C, later) from *invent the numerics* into *match this*.
+  **It has landed, so lane C is now unblocked** — the thing to match is
+  `bugarach.lab` calling `learn.train`, and the number to match is the per-fold
+  agreement with `bakeoff.json` that its test asserts.
 - **model** decides whether *"the tube outperforms"* is a claim this project owns. Today it
   **ties** CoactDetect — 0.668 ± 0.061 against 0.651 ± 0.044 — with no seed error bars
   anywhere.
@@ -64,8 +67,9 @@ permission because they are code, not experiments.
 
 No lane blocks another, so land whichever is green. The only sequencing that matters is
 that **writer** should land before the browser download button is written, and **server**
-before lane C starts. If two PRs touch the same file, the one that merges second rebases —
-do not rebase somebody else's branch for them.
+before lane C starts — ✅ server landed 2026-08-20, so that one is discharged. If two PRs
+touch the same file, the one that merges second rebases — do not rebase somebody else's
+branch for them.
 
 ## Not in flight, deliberately
 
