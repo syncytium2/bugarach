@@ -76,14 +76,25 @@ RULES = [
     ),
     Rule(
         id="SAP004", level="BLOCK",
-        pattern=r"(" + _UM + r"|DeFazio/|Dropbox/)",
+        # The last alternative is the one that was missing. This rule matched
+        # `DeFazio/` and `Dropbox/` and was believed to cover personal paths, but
+        # a home directory spelled in lowercase — `/Users/tonydefazio/Developer/…`
+        # — matched none of them, and `tools/matlab_ref/prep_ref_input.py` carried
+        # two of those in a PUBLIC repo from the day it was written until
+        # 2026-08-20. A rule that covers the shape you thought of is worth less
+        # than it looks; this one now matches any absolute home-directory path.
+        pattern=r"(" + _UM + r"|DeFazio/|Dropbox/|/(?:Users|home)/[A-Za-z0-9._-]+/)",
         include=["**"],
-        exclude=["tools/sapper.py"],
+        # test_paths.py is the path-RESOLVER's own test: inventing
+        # `/Users/rd/Dropbox-UM/Someone` is precisely its job, and the strings are
+        # synthetic. Excluding the test that exercises a rule's subject matter is
+        # not a backlog entry, it is the rule staying out of its own way.
+        exclude=["tools/sapper.py", "tests/test_paths.py"],
         message="Machine-local personal path in a tracked file — real data "
                 "stays behind BUGARACH_DATA_ROOT (FOUNDATIONS §5; public-repo "
                 "scrub incident 2026-08-11).",
-        fixture_bad='ROOT = Path.home() / "' + _UM + ' Dropbox/name/data"',
-        fixture_good='ROOT = os.environ.get("BUGARACH_DATA_ROOT")',
+        fixture_bad='sys.path.insert(0, "/Users/somebody/Developer/bugarach/src")',
+        fixture_good='sys.path.insert(0, str(Path(__file__).parents[2] / "src"))',
     ),
     Rule(
         id="SAP005", level="BLOCK",

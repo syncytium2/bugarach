@@ -1,14 +1,21 @@
-"""Export bugarach store slices to plain v7 .mat for the MATLAB reference generator."""
+"""Export bugarach store slices to plain v7 .mat for the MATLAB reference generator.
+
+Paths are derived from this file's own location, never written down. The two that
+used to be absolute named one person's home directory in a public repo, and were
+invisible to SAP004 because it excludes `tools/matlab_ref/**` — an exclusion meant
+for the MATLAB sources beside it, which quietly covered this Python too.
+"""
 import sys
 from pathlib import Path
 
 import numpy as np
 import scipy.io as sio
 
-sys.path.insert(0, "/Users/tonydefazio/Developer/bugarach/src")
-from bugarach.store import load_slice  # noqa: E402
+SCRATCH = Path(__file__).resolve().parent
+REPO = SCRATCH.parents[1]
 
-SCRATCH = Path(__file__).parent
+sys.path.insert(0, str(REPO / "src"))
+from bugarach.store import load_slice  # noqa: E402
 
 
 def export(src, dst):
@@ -46,7 +53,7 @@ def export(src, dst):
             print(f"{Path(src).stem} {name}: empty")
 
 
-export("/Users/tonydefazio/Developer/bugarach/tests/fixtures/synth_fastcal_s1.mat",
+export(REPO / "tests" / "fixtures" / "synth_fastcal_s1.mat",
        SCRATCH / "ref_input_synth.mat")
 
 import os  # noqa: E402
