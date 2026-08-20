@@ -60,6 +60,21 @@ Template:
 
 ## Active
 
+### Mac/contract-trusts-the-folder — a dedicated home for the source exports
+- **Status:** ACTIVE
+- **Started:** 2026-08-20
+- **Writes:** `<dropbox>/data/bugarach/` — **creating it.** A COPY of the three export
+  folders now under `<dropbox>/data/exports/bugarach/` (30 MB of CSV). The originals
+  stay exactly where they are, because interface2's `generate_export_folder.m` writes
+  there and moving its target would break their next export silently.
+- **Claims:** `<dropbox>/data/bugarach/` for the duration. Nothing in `darkroom/` —
+  **source data does not belong there**, that folder is review artefacts and figures.
+  Nothing under any store path, nothing written to `exports/`.
+- **Notes:** Tony, 2026-08-20, after two recordings the lab had marked unusable
+  reached published numbers. The exporter had honoured the flag and said so in its
+  `PROVENANCE.md`; the numbers came from analyses that opened `.mat` stores and never
+  read the folder at all. This gives the exported corpus one address so a tool has no
+  excuse, and a repo-wide gate follows.
 ### Mac/darkroom-corrected-synfire — the corrected synfire numbers, in their own folder
 - **Status:** DONE 2026-08-20 — **written, claim released**
 - **Started:** 2026-08-19

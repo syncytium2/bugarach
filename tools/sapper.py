@@ -121,6 +121,53 @@ RULES = [
         fixture_bad='p.add_argument("--out", type=Path, required=True)',
         fixture_good='p.add_argument("--out", type=Path, default=None)',
     ),
+    Rule(
+        id="SAP007", level="BLOCK",
+        pattern=r"(load_slice\s*\(|load_store\s*\(|[\"'][^\"']*\.mat[\"']|\*\.mat)",
+        # The store READER is allowed to read stores; that is what it is for, and
+        # FOUNDATIONS §4 keeps the two input paths deliberately separate. So are
+        # the tests that prove it works and the parity chain that regenerates
+        # fixtures from MATLAB. Every ANALYSIS goes through the export folder.
+        include=["src/bugarach/**", "tools/**"],
+        # THE EXCLUSION LIST IS THE BACKLOG. store.py is the store reader and
+        # stays; matlab_ref regenerates parity fixtures from MATLAB and stays;
+        # lab_excluded.py reads the spreadsheet on purpose, to answer what the
+        # lab withdrew. The six below are the tools that were reading stores
+        # when this rule was written, and every one of them is a defect —
+        # `make_assembly_closed_figure.py` and `modularity_null.py` are the two
+        # that produced the numbers containing withdrawn recordings. They are
+        # named rather than pattern-matched so that fixing one means DELETING A
+        # LINE HERE, and the list shrinking is the progress.
+        # docs/todo/2026-08-20-six-tools-still-read-stores.md
+        # `cli.py` and `ui/app.py` are the STORE PATH'S OWN ENTRY POINTS — the
+        # half of FOUNDATIONS §4 that exists to browse a store, as against the
+        # webapp which reads folders. They are not analyses. Whether that path
+        # should survive at all is a product question, not a gate's.
+        exclude=["src/bugarach/store.py", "src/bugarach/cli.py",
+                 "src/bugarach/ui/app.py", "tools/matlab_ref/**",
+                 "tools/sapper.py", "tools/lab_excluded.py",
+                 "tools/fit_background_shape.py",
+                 "tools/make_assembly_closed_figure.py",
+                 "tools/make_reality_check.py",
+                 "tools/make_roi_rate_distribution.py",
+                 "tools/modularity_null.py",
+                 # different case: this one already PREFERS the folder and keeps
+                 # the store as a documented fallback. Whether the fallback
+                 # should exist at all is the open question in the todo.
+                 "tools/assess_archive.py"],
+        message="Analysis must read the EXPORT FOLDER, never a .mat store. The "
+                "folder is the corpus the lab approved: the exporter honours "
+                "db4's `exclude` flag, drops what was withdrawn, and records it "
+                "in PROVENANCE.md. A store carries every recording ever "
+                "processed and cannot say which are usable. On 2026-08-20 two "
+                "withdrawn recordings were found inside every number this "
+                "project had published about the assembly question — the export "
+                "was correct and the analyses had gone around it. Read the "
+                "folder (bugarach.io.load_folder); if you genuinely need the "
+                "store reader, it is store.py and it is excluded here.",
+        fixture_bad='s = load_slice(root / "recording.mat")',
+        fixture_good='slices = load_folder(export_dir)',
+    ),
 ]
 
 
