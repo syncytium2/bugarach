@@ -15,7 +15,7 @@ closed: 2026-08-19
 >
 > | | instrument | fast | slow |
 > |---|---|---|---|
-> | discrete recurring groups | **modularity** on the STTC graph, each recording against its own jitter surrogates | **3 of 78** above null (3.8%) | **2 of 77** (2.6%) |
+> | discrete recurring groups | **modularity** on the STTC graph, each recording against its own jitter surrogates | **2 of 78** above null (2.6%) | **1 of 77** (1.3%) |
 > | who participates, beyond rate | curveball + uniform nulls on membership (`bugarach.assembly`) | departure from uniform in **45 of 47** testable | **36 of 38** |
 >
 > Against the ~5% the modularity threshold gives by chance, and a measured false-positive
@@ -35,6 +35,13 @@ closed: 2026-08-19
 >    for it.
 > 3. **Modularity on the fast stream**, which had never been run — the instrument hardcoded
 >    `slow`, and this report had been asserting an absence on a stream nobody had measured.
+>
+> **And a fourth thing that was not on the list.** The instrument itself moved into this repo
+> (PR #151). The modularity numbers above are now `bugarach.graph`'s, not interface2's: the
+> pipeline that produced the originals has no maintainer and does not run out of the box. The
+> port reproduces it to 2.2e-16 on identical inputs and agrees on 98.7% of corpus verdicts
+> under a different window rule. **The interface2 figures — 3 of 78 and 2 of 77 — are the
+> cross-check, not the result**, which is why the row above changed.
 >
 > **Numbers in the body below this box predate all of that and are superseded.** In
 > particular the earlier "3% ROI / 1% pensub" modularity figures counted recordings too

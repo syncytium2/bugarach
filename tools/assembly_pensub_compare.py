@@ -32,27 +32,22 @@ from pathlib import Path
 FIRED = ("structure-beyond-rate", "uniform-only", "margin-only")
 
 
-def rows_at(path: Path, k: int, stream: str | None, exclude=()) -> dict:
+def rows_at(path: Path, k: int, stream: str | None) -> dict:
     """Assembly rows keyed by slice, at one coactivity floor K.
 
-    ``exclude`` drops recordings the lab has withdrawn — see
-    ``bugarach.assembly.load_excluded``. Dropping them here rather than at the end
-    keeps the pairing honest: an excluded recording must not contribute a pair,
-    a discordance, or a denominator.
+    **No exclusion argument.** Which recordings are analysable is the producer's
+    call, expressed by what the export folder contains — see the note in
+    ``bugarach.assembly``.
     """
     d = json.loads(Path(path).read_text())
     rows = d["rows"] if isinstance(d, dict) and "rows" in d else d
-    exclude = set(exclude)
     out = {}
     for r in rows:
         if int(r.get("K", -1)) != int(k):
             continue
         if stream and r.get("stream") != stream:
             continue
-        sid = str(r.get("slice_id", ""))
-        if sid in exclude:
-            continue
-        out[sid] = r
+        out[str(r.get("slice_id", ""))] = r
     return out
 
 
@@ -120,22 +115,13 @@ def main(argv=None) -> int:
     ap.add_argument("--k", type=int, default=3)
     ap.add_argument("--stream", default=None)
     ap.add_argument("--json-out", type=Path, default=None)
-    ap.add_argument("--exclude-file", type=Path, default=None,
-                    help="slice ids the lab marked excluded "
-                         "(tools/lab_excluded.py); dropped before pairing")
     a = ap.parse_args(argv)
 
-    from bugarach.assembly import load_excluded
-    excl = load_excluded(a.exclude_file)
-    if excl:
-        print(f"excluding {len(excl)} lab-withdrawn recording(s): "
-              f"{', '.join(sorted(excl))}\n")
-    m = rows_at(a.main, a.k, a.stream, excl)
-    p = rows_at(a.pensub, a.k, a.stream, excl)
+    m = rows_at(a.main, a.k, a.stream)
+    p = rows_at(a.pensub, a.k, a.stream)
     res = compare(m, p)
     res["k"] = a.k
     res["stream"] = a.stream
-    res["excluded"] = sorted(excl)
 
     print(f"K={a.k}" + (f"  stream={a.stream}" if a.stream else ""))
     print(f"  shared recordings            {res['n_shared']}")

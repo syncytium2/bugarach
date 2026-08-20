@@ -1,9 +1,68 @@
 ---
-status: open
+status: done
 filed: 2026-08-19
+closed: 2026-08-20
 ---
 
-# Lane H1 — the lab server, so the tube trains without the page learning to talk
+# DONE — Lane H1, the lab server, so the tube trains without the page learning to talk
+
+Landed on `main` at `9ed4140` (PR #159): `src/bugarach/lab.py`, `bugarach lab`, and
+`tests/test_lab_server.py`. **The "done means" below was met exactly** — the server's
+train path reproduces `docs/learned/bakeoff.json` per fold, not approximately:
+
+| fold | F1 ours | F1 published | threshold | hit / planted | detected |
+|---|---|---|---|---|---|
+| 0 | 0.6933 | 0.6933 | 0.9970 | 26 / 30 | 71 |
+| 1 | 0.6667 | 0.6667 | 0.9908 | 24 / 30 | 47 |
+| 2 | 0.7273 | 0.7273 | 0.9716 | 24 / 30 | 58 |
+| 3 | 0.5846 | 0.5846 | 0.9983 | 19 / 30 | 45 |
+
+Mean **0.668 ± 0.061** either way, 1,149 parameters, 25 s for four folds. That equality
+is the evidence there is one training path rather than two — it is
+`tests/test_lab_server.py::test_the_server_reproduces_the_published_bakeoff`, and it
+**skips where torch is absent**, which includes CI (`.github/workflows/ci.yml` installs
+`[ui]`, not `[dl]`). Said plainly rather than implied to be covered.
+
+## What lane H2 needs from here: the shapes are settled
+
+H2 — the inert `if (window.__lab)` panel in `docs/site/raster_viewer.html` — was waiting
+on exactly this. Claim that file on the machine-local board first; it is the
+single-holder resource.
+
+- `window.__lab.capabilities()` → `{trains, reason, torch, trainer, models, viewer}`.
+  **torch's absence is an answer, not an error**: `trains: false` with `reason` carrying
+  the `pip install bugarach[dl]` line. The panel says so and every other stage of the
+  page keeps working.
+- `window.__lab.train({spec, arch, folds, seeds_per_fold, steps}, onProgress)` →
+  `{model, arch, threshold, dt, n_params, per_fold, f1, recall, precision, train_sec,
+  detect_sec}`, the spreads shaped like `fair_bakeoff.py`'s. `spec` is the **generator
+  settings measured from the user's own untreated recordings** — the corpus is simulated
+  from those, and the recordings being analysed are never the training set. Absent, the
+  server refuses rather than defaulting.
+- `window.__lab.detect({model, recordings: [{slice_id, rois}]}, onProgress)` →
+  `{model, arch, detections: [{slice_id, onset_sec, width_sec, threshold, dt}]}`.
+  `slice_id` comes from the data and is never a filename.
+- `onProgress` receives `{stage, fold, of, done, message}` as the fit runs —
+  `corpus` → `fit` → `scored`. The transport is chunked NDJSON, so this arrives during
+  a multi-minute fit rather than after it.
+- **`threshold` is refused, not ignored.** So are `retune`, `calibrate` and `min_rois`.
+  The panel must not offer that control; the server will throw with the reason if it does.
+
+`bugarach lab --stub` serves all of it against a trainer that fits nothing and calls an
+event a minute — drive the panel against the seam without paying 25 s per reload.
+
+## What is NOT done here, deliberately
+
+- **The panel itself** is lane H2, and it holds `raster_viewer.html`.
+- **The JS trainer** is lane C / Phase 3b. It is not cancelled; it now has a reference
+  implementation to be checked against, which was the point of sequencing it after this.
+- **Multi-architecture progress in one call.** `arch` is one per request (`tube`,
+  `trace`, `tiny`); a scoreboard over all three is three calls. Phase 4's row-per-detector
+  screen may want them batched — that is a small addition, not a redesign.
+
+---
+
+*Original todo, kept because the traps below still bind whoever builds on this:*
 
 Decision: [`docs/adr/0001-the-lab-server.md`](../adr/0001-the-lab-server.md).
 Plan: [`docs/webapp_completion_plan.md`](../webapp_completion_plan.md).
