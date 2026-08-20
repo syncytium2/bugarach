@@ -8,6 +8,28 @@ filed: 2026-08-20
 **`docs/export_folder_spec.md` asks for `width_sec` and `width_def` in bold — "asked for",
 revision 5's headline addition. The producer built it. `load_folder` throws it away.**
 
+> ## Do NOT ask for a re-export. The data is already there and it is good.
+>
+> Measured on `2026-08-18_revised_2v_periods`, not assumed:
+>
+> | stream | `width_def` | median | p95 | max |
+> |---|---|---|---|---|
+> | fast | `halfprom_width_findpeaks_w` | 0.90 s | 2.5 s | 50.8 s |
+> | slow | `rise_interval_peak_minus_t50rise` | 2.00 s | 4.1 s | **5.5 s** |
+>
+> **Coverage is complete: 0 of 69,223 real events lack a width.** And the slow rule is
+> rise-bounded — exactly the choice that keeps the number on a coincidence scale. The
+> 186.9 s `fwhm` figure that appears in the producer page is what fwhm *would* have given
+> on slow; it is the reason interface2 did not use it, not something they shipped.
+>
+> So this is **entirely a consumer-side gap**. Re-exporting would produce the same four
+> columns this reader still discards. What is needed is the reader, below.
+>
+> One thing worth a producer's eye, not a re-export: fast width has a long tail — p95 2.5 s
+> against a 50.8 s max. The median is a fine coincidence scale, so it is not a defect, but
+> whether that tail is real events or an artifact of the half-prominence fit is cheaper for
+> them to judge than for us.
+
 ## What actually happens
 
 `_read_event_rows` in `src/bugarach/io.py` returns `(time | None, roi, stream)` per row and
