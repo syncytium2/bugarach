@@ -59,23 +59,29 @@ def build(args):
     hv.extension("bokeh")
 
     from bugarach.detectors.loco import loco_detect
-    from bugarach.io import slice_from_events
+    from bugarach.io import load_folder, slice_from_events
     from bugarach.simulate import simulate_coordination
-    from bugarach.store import load_slice
     from bugarach.ui.app import _time_axis_hook
     from bugarach.ui.diagnostic import raster_panel
 
-    root = os.environ.get("BUGARACH_DATA_ROOT", "").strip()
-    if not root:
+    if not args.folder:
         raise SystemExit(
-            "BUGARACH_DATA_ROOT is not set — this figure needs a real recording, "
-            "and real stores are machine-local. Nothing written.")
+            "--folder is required: this figure draws a real recording, and the "
+            "corpus is an export folder (docs/export_folder_spec.md). It used "
+            "to open a .mat store, which holds every recording ever processed "
+            "including the ones the lab withdrew. This figure is PUBLISHED "
+            "(FOUNDATIONS §5), so that is the last place to draw from a corpus "
+            "nobody approved. Nothing written.")
 
-    path = Path(root).expanduser() / ARCHIVE / f"{args.slice}.mat"
-    if not path.exists():
-        raise SystemExit(f"no such slice: {path}")
+    hit = [s for s in load_folder(Path(args.folder).expanduser())
+           if str(s.slice_id) == str(args.slice)]
+    if not hit:
+        raise SystemExit(
+            f"{args.slice} is not in {args.folder}. If the lab withdrew it, that "
+            f"is the answer, and it certainly must not be published — the "
+            f"folder is the corpus and its PROVENANCE.md says what was dropped.")
 
-    real = load_slice(path)
+    real = hit[0]
     names = [(r.name or "").strip().lower() for r in real.regions]
     if set(names) != {"baseline"}:
         # The publishability argument rests entirely on this, so it is a guard,
@@ -213,6 +219,9 @@ def main(argv=None):
     p = argparse.ArgumentParser(
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter)
+    p.add_argument("--folder", default=None,
+                   help="export folder holding the recording to draw "
+                        "(docs/export_folder_spec.md)")
     p.add_argument("--slice", default=DEFAULT_SLICE)
     p.add_argument("--seed", type=int, default=5)
     p.add_argument("--per-level", type=int, default=4)

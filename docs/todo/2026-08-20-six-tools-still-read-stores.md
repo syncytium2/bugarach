@@ -1,64 +1,78 @@
 ---
-status: open
+status: done
 filed: 2026-08-20
+closed: 2026-08-20
 rule: SAP007
 ---
 
-# Six tools still read `.mat` stores instead of the export folder
+# Six tools read `.mat` stores instead of the export folder — done
 
-SAP007 blocks reading a store from anywhere in `src/` or `tools/`. Six files are
-excluded by name because they were doing it when the rule was written. **Each
-exclusion is a defect, not a dispensation.** Fixing one means deleting a line from
-the rule's `exclude` list, and the list shrinking to nothing is what done looks
-like.
+All six now take `--folder` and read the export folder through
+`bugarach.io.load_folder`. **SAP007's exclusion list no longer names any of them**,
+which is what done looks like here: fixing one meant deleting a line, and there are
+no lines left.
 
-| tool | why it matters |
+| tool | what changed |
 |---|---|
-| `tools/make_assembly_closed_figure.py` | **produced numbers containing withdrawn recordings** |
-| `tools/modularity_null.py` | **the other analysis in that incident** |
-| `tools/fit_background_shape.py` | fits the generator's background from real slices — those constants are in `bench.py` |
-| `tools/make_roi_rate_distribution.py` | the per-ROI rate figure, and the interquartile range quoted as the difficulty axis |
-| `tools/make_reality_check.py` | renders the one released real raster (FOUNDATIONS §5) |
-| *(the store reader, `matlab_ref`, `lab_excluded.py`)* | legitimately read stores; not on this list |
+| `modularity_null.py` | reads the folder — and its spreadsheet-reading exclusion workaround is **deleted**, see below |
+| `make_assembly_closed_figure.py` | takes `--folder`; refuses by name if the recording is not in the corpus |
+| `make_roi_rate_distribution.py` | `--folder` required, with the reason in the error |
+| `make_reality_check.py` | `--folder` required; the guard is loudest here because the figure is published |
+| `fit_background_shape.py` | `--folder` required; it fits the generator constants |
+| `assess_archive.py` | unchanged — it already preferred the folder; see the open question below |
 
-## One that is not like the others
+## The workaround that went away
 
-`tools/assess_archive.py` is also excluded, and it is **not** a defect of the same
-kind — it takes either input and its docstring says it prefers the folder, warning
-when handed a store. The open question there is narrower: should the store fallback
-exist at all? A fallback that is silently taken when someone passes the wrong path
-is how this whole class of failure keeps happening, and "prefers" is a weaker
-guarantee than "only".
+`modularity_null.py` had grown a `--exclude-file` and a `load_excluded()` call
+reading the lab's spreadsheet directly, added after the incident. That is the wrong
+shape twice over: it re-derives downstream what the producer already decided, and
+it only ever protected the one tool somebody remembered to patch. The folder
+excludes by not containing, so the flag, the loader and the `skipped["excluded"]`
+counter are all gone.
 
-## Why this is worth doing rather than grandfathering
+## What moved, and it is the export doing its job
 
-The export folder is the corpus the lab approved. `generate_export_folder.m`
-honours db4's `exclude` flag, drops what was withdrawn, and records the fact in
-`PROVENANCE.md`. A store carries every recording ever processed and has no idea
-which ones are usable.
+Reading the approved corpus instead of the store changes numbers, because the
+corpus is smaller and different. **Tony, 2026-08-20: "axis shift is expected. the
+export has done it's job."** Recorded so nobody reads a moved constant as a
+regression:
 
-On 2026-08-20 two withdrawn recordings were found inside every number this project
-had published about the assembly question. The export was correct and had been for
-days; the analyses simply never opened it. Anything on the list above can repeat
-that, silently, because reading a store is not an error and produces a plausible
-answer.
+| quantity | on the store | on the folder |
+|---|---|---|
+| recordings surveyed | 85 | **84 (80 usable baseline windows)** |
+| per-ROI rate p25 (`baseline_quiet`) | 3.8 mHz | **5.2 mHz** |
+| per-ROI rate p75 (`baseline_busy`) | 17.5 mHz | **19.0 mHz** |
+| difficulty span | 4.61× | **3.65×** |
+| `MEASURED_RATE_SHAPE` | 0.275 | **0.277** |
+| `MEASURED_BURST_SHAPE` at 60 s | 1.388 | **1.429** |
 
-## What each one needs
+**None of these were applied.** `bench.REGIMES` and the measured shapes are
+untouched, because changing them re-scores every detector's operating point, and
+that is a calibration decision under FOUNDATIONS §9 rather than a side effect of a
+refactor. The two shape constants barely move and would change little. The
+difficulty axis moves a lot, and `bench.py` currently argues that p25 "lands within
+5% of the TTX median (0.0040)" — an argument that does not survive the shift.
 
-Mostly the same change: take a folder rather than a store root, and call
-`bugarach.io.load_folder` instead of `load_slice` per file. Two need more thought:
+**Open: decide whether to re-derive `bench.REGIMES` from the folder.** Every bench
+number in the repo was computed against a range fitted to a corpus that included
+recordings the lab withdrew.
 
-- **`make_reality_check.py`** renders a single real recording that is deliberately
-  published (FOUNDATIONS §5 names it as the one exception). It needs one recording
-  by id, which the folder can supply — but check the released PNG still matches
-  after the switch, because the committed file is on the public site.
-- **`fit_background_shape.py`** produced `MEASURED_RATE_SHAPE` and
-  `MEASURED_BURST_SHAPE` in `bench.py`. Re-running it against the folder will
-  change those constants if the folder's corpus differs from the store's — which
-  is the point, since the folder excludes withdrawn recordings. **Expect the
-  numbers to move, and treat that as the finding rather than an error.**
+## The published figure was checked, not assumed
 
-## The order to do them in
+`make_reality_check.py` draws the one real recording that is committed and on the
+public site (FOUNDATIONS §5). Its data is identical from both sources — 37 ROIs,
+633 fast events, one region — so the recording is unaffected. The rendered PNG
+differs in bytes because the local chromium moved 1228 → 1234 the same day, and
+the committed file was **deliberately not regenerated**: that diff would look like
+a data change and is not one.
 
-The two from the incident first, because they are the ones whose published numbers
-are known to be affected and which someone may re-run before this is finished.
+## Still open
+
+**Should `assess_archive.py` keep its store fallback?** It prefers the folder and
+warns when handed a store, which is better than the six were. But "prefers" is a
+weaker guarantee than "only", and a fallback silently taken when somebody passes
+the wrong path is how this class of failure keeps happening.
+
+**`cli.py` and `ui/app.py`** stay excluded from SAP007 as the store path's own
+entry points under FOUNDATIONS §4. Whether that path should exist at all is a
+product question rather than a gate's.

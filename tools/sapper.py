@@ -146,11 +146,6 @@ RULES = [
         exclude=["src/bugarach/store.py", "src/bugarach/cli.py",
                  "src/bugarach/ui/app.py", "tools/matlab_ref/**",
                  "tools/sapper.py", "tools/lab_excluded.py",
-                 "tools/fit_background_shape.py",
-                 "tools/make_assembly_closed_figure.py",
-                 "tools/make_reality_check.py",
-                 "tools/make_roi_rate_distribution.py",
-                 "tools/modularity_null.py",
                  # different case: this one already PREFERS the folder and keeps
                  # the store as a documented fallback. Whether the fallback
                  # should exist at all is the open question in the todo.
