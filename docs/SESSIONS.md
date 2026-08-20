@@ -60,6 +60,27 @@ Template:
 
 ## Active
 
+### Mac/darkroom-corrected-synfire — the corrected synfire numbers, in their own folder
+- **Status:** ACTIVE
+- **Started:** 2026-08-19
+- **Writes:** `<darkroom>/bugarach/2026-08-19-synfire-roi-corrected/` — **one new subfolder.**
+  Both `--keep-silent-rois` (pre-fix) and corrected runs of each stream, both figures, and
+  a README saying which is which.
+- **Claims:** that ONE subfolder, and nothing else in `bugarach/`.
+- **DOES NOT TOUCH** `<darkroom>/bugarach/synfire_{fast,slow}_relabel.json` at the root
+  (2026-08-19 19:51). Those are the synfire session's output and carry the **pre-fix**
+  numbers — the ones the handoff and `docs/todo/2026-08-19-synfire-measured-and-what-it-cost.md`
+  quote. Overwriting them would silently restate a published result, which is a decision
+  and not a cleanup. **Whoever owns that todo should decide whether the root files are
+  superseded**; until then both are on disk and the new README says how they differ.
+- **Reads:** `$BUGARACH_DATA_ROOT/exports/bugarach/2026-08-18_revised_2v_periods`, read-only.
+- **Notes:** the defect and its size are in PR #152, merged (`main` @ `bf15b50`). Short
+  version: PySpike scores a pair of silent trains as a perfectly ordered pair, the scan fed
+  it every ROI, and 34-35% of ROIs are silent. The verdict tallies move by one recording
+  per stream (fast 22->23 of 81, slow 43->44 of 82) and the conclusion is unchanged; the
+  per-recording magnitudes in the upper tail move a lot, and `rho(indicator, spikes)` goes
+  from -0.76/-0.40 to -0.60/-0.18.
+
 ### Mac/modularity-on-fast — run the connectivity project's modularity instrument on the FAST stream
 - **Status:** DONE 2026-08-19 — **claim released**
 - **Started:** 2026-08-19
