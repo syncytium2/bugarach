@@ -60,12 +60,12 @@ Template:
 
 ## Active
 
-### Mac/deploy-record — the webapp merge train landed; the site is built and NOT uploaded
-- **Status:** DONE — **the site claim was never taken and remains released.** The build is
-  local; nothing was published.
+### Mac/deploy-record — the webapp merge train landed, and the site now serves it
+- **Status:** DONE 2026-08-19 — deployed and verified; **claim released.**
 - **Started:** 2026-08-19
-- **Writes:** repo only. The local `site/` payload is gitignored and machine-local.
-- **Claims:** none.
+- **Writes:** **the PUBLIC SITE** — `bugarach.tonydefazio.com`. Nothing to the darkroom,
+  nothing under `$BUGARACH_DATA_ROOT`.
+- **Claims:** the site deploy, taken from released and **released again on the way out**.
 
 **What landed.** PRs **#128 → #129 → #130 → #131**, `main` @ `19a320b`. The browser now
 runs **five of the six** detectors — rate, SCE, coact, LoCo, sync — leaving CICADA. On
@@ -78,12 +78,19 @@ that). #133 was left alone — another session owns it.
 every one after the first needed `gh pr edit <n> --base main` or it would have merged into
 a feature branch while reporting success. Worth knowing before the next stack.
 
-**The site is built but not uploaded.** `tools/build_site.py` ran from `19a320b`; the
-publish gate passed and `site/viewer.html` is **byte-identical** to
-`docs/site/raster_viewer.html` — copied, not transformed. The upload was refused by this
-session's sandbox, which treats publishing as needing the human's approval. So **`main`
-carries five detectors and `bugarach.tonydefazio.com` still serves two** until someone
-runs `npx wrangler deploy` and then `python tools/audit_deployed_page.py`.
+**Deployed, and the live page was checked rather than assumed.** `tools/build_site.py` ran
+from `19a320b`; the publish gate passed and `site/viewer.html` is **byte-identical** to
+`docs/site/raster_viewer.html` — copied, not transformed. Tony ran `npx wrangler deploy`
+and `tools/audit_deployed_page.py`, and **the served page fetched nothing but itself** —
+the privacy promise holds as served, not merely as written. That audit is the only check
+positioned to see what Cloudflare adds after the upload, which is how the injected Web
+Analytics beacon was caught; it fires on the live URL in chromium, and `curl` cannot
+replace it because the injection was UA-gated.
+
+**Separately confirmed on the live page: five detectors are being offered** — RateDetect,
+SCE, LoCo, CoactDetect, SPIKE-synch. The audit proves the page is quiet; it says nothing
+about *which* page shipped, and those are different questions. So `main` and
+`bugarach.tonydefazio.com` now agree.
 
 **⚠ A standing instruction on this board is now obsolete.** Two blocks below say deploys
 run from `bugarach-worktrees/deploy-site` and warn to *"check what it is checked out at
