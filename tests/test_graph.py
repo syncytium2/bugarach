@@ -172,3 +172,37 @@ def test_the_tool_takes_a_folder_and_not_a_store():
     assert '"--folder"' in src
     for banned in ('"--store"', '"--exclude-file"', '"--dead-roi-file"'):
         assert banned not in src, f"{banned} is back — the folder is the whole input"
+
+    # The flag now arrives via tools/_dataset_arg.py, so assert it at the parser too
+    # rather than only in the source text. Two things: --store is not an advertised
+    # option, and passing it exits rather than being absorbed as an alias.
+    assert "--store" not in buf.getvalue(), (
+        "--store appears in --help, so this tool is advertising a store input")
+    err = io.StringIO()
+    with contextlib.redirect_stderr(err), pytest.raises(SystemExit):
+        mn.main(["--store", "anything"])
+    assert "--store" not in err.getvalue().split("error:")[0], (
+        "--store must not be an accepted option")
+
+
+def test_a_store_alias_cannot_be_added_to_a_folder_only_analysis():
+    """The guard above, enforced once for every tool instead of one file's text.
+
+    `_dataset_arg.add` raises rather than let a folder-only analysis advertise
+    `--store`, so the next tool to adopt the shared flag cannot reintroduce the input
+    the folder contract exists to exclude.
+    """
+    import argparse
+    import importlib.util
+    from pathlib import Path
+    spec = importlib.util.spec_from_file_location(
+        "_da", Path(__file__).parent.parent / "tools" / "_dataset_arg.py")
+    da = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(da)
+
+    with pytest.raises(ValueError, match="folder-only"):
+        da.add(argparse.ArgumentParser(), want="export_folder", aliases=("--store",))
+
+    # ...and it is allowed where a .mat store is genuinely readable, so the check
+    # discriminates rather than banning the word.
+    da.add(argparse.ArgumentParser(), want="any", aliases=("--store",))
