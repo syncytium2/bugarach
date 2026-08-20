@@ -65,12 +65,33 @@ def test_the_published_page_defines_no_transport():
 
 def test_the_shim_is_not_on_disk_under_the_site_source():
     """The shim's only home is `bugarach.lab`. If a file under `docs/site/`
-    carries it, the build will publish it whatever the page itself says."""
+    carries it, the build will publish it whatever the page itself says.
+
+    **What counts as carrying it is the assignment and the transport, not the
+    name.** This test first rejected the bare substring ``window.__lab``
+    anywhere under `docs/site/`, which contradicted the test directly above —
+    that one's own failure message says *"The page reads it
+    (`if (window.__lab)`)"* — and made ADR-0001's design unbuildable: the panel
+    is inert on the published page precisely **because** it reads a capability
+    object nobody defined there. A page forbidden to name the thing it checks
+    for cannot check for it.
+
+    So the check is: no definition, and no ``fetch(``. Those are what would
+    actually turn a published file into one that can talk to something.
+    """
     for p in sorted((ROOT / "docs" / "site").rglob("*")):
-        if p.is_file():
-            assert "window.__lab" not in p.read_text(encoding="utf-8", errors="ignore"), (
-                f"{p.relative_to(ROOT)} carries the lab shim. `docs/site/` is "
-                f"what `build_site.py` publishes.")
+        if not p.is_file():
+            continue
+        body = _uncommented(p.read_text(encoding="utf-8", errors="ignore"))
+        for defining in (r"window\.__lab\s*=", r"__lab\s*=\s*\{",
+                         r"globalThis\.__lab\s*="):
+            assert not re.search(defining, body), (
+                f"{p.relative_to(ROOT)} DEFINES the lab shim. `docs/site/` is "
+                f"what `build_site.py` publishes, and the shim exists only in "
+                f"the copy `bugarach lab` hands out.")
+        assert "fetch(" not in body, (
+            f"{p.relative_to(ROOT)} contains a fetch. `docs/site/` is published, "
+            f"and the transport belongs to the shim alone.")
 
 
 def test_the_build_copies_the_viewer_rather_than_transforming_it():
