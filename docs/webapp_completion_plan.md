@@ -23,8 +23,11 @@ its rasters, measures coordination without a detector, generates a simulated cor
 that measurement, runs detectors and sweeps one knob against planted truth. What it
 cannot do is **train the tube network**, **fit anything across folds**, and **write a
 file**. Five green PRs waiting to merge take it from two of the six detectors to five.
-The long pole is a hand-written trainer in JS, and it is the one piece that can start
-today without touching anything anybody else is holding.
+Training arrives first through a **loopback lab server** that calls the functions which
+produced the published numbers ([ADR-0001](adr/0001-the-lab-server.md)), and the
+no-install JS trainer follows it with a reference to check against. The server is the long
+pole, and it is the one piece that can start today without touching anything anybody else
+is holding.
 
 ## Where each stage stands
 
@@ -60,11 +63,31 @@ file rather than a paragraph: no `fetch(`, no `XMLHttpRequest`, no `<script src`
 `import(`. `tools/build_site.py` refuses to publish it otherwise, and a Cloudflare
 beacon injection already proved the check earns its keep.
 
-So **there is no backend and no CDN-hosted ML library**. Training the tube in the app
-means writing the trainer inline, in JS.
+So **the published page reaches nothing**, and no CDN-hosted ML library is available to
+it. Training happens either in hand-written JS inside the page, or in a process beside it
+that the published page does not know about.
 
-That is smaller than it sounds. The model is 1,149 parameters and the operation list is
-closed and short:
+**Settled 2026-08-19 — the local server first, the JS trainer after it.**
+[`ADR-0001`](adr/0001-the-lab-server.md) has the reasoning; the shape in one paragraph:
+the page owns the training panel, inert, behind `if (window.__lab)`; `bugarach lab` serves
+that same file from disk with a shim appended that defines `window.__lab` and holds the
+only `fetch(` in the system. The published page is unchanged and dead by **absence**
+rather than by stripping, so `test_site_viewer.py` and `build_site.py` need no edit. The
+server binds loopback, touches no file — the page already holds the folder through the
+File System Access API and posts trains as JSON — and calls the same
+`bugarach.learn.train` and `bench.pool_scores` that produced `bakeoff.json`. Descends from
+`colonel_kernel` ADR-0048.
+
+**What that buys and what it costs.** A working end-to-end demo in a few hundred lines
+over code that already has parity tests, instead of a thousand lines of new numerics
+before anything runs at all. The cost is that training stops being installable-free:
+stages 1–5 and detection stay pure-browser, and *"train the tube on my folder"* becomes
+the one step that wants `pip install bugarach[dl]`.
+
+**The JS trainer is resequenced, not cancelled.** It is still the route to training with
+no install, and the server makes it cheaper — it turns lane C from *invent the numerics*
+into *match this*. The model is 1,149 parameters and the operation list is closed and
+short:
 
 - dilated `conv1d` (k=3, dilation doubling) ×6, plus a 1×1 — forward and backward
 - GELU
@@ -80,10 +103,9 @@ fast enough to be a demo. Parity against PyTorch will be **behavioural, not 1e-9
 [`docs/testing_a_sampling_port.md`](testing_a_sampling_port.md) already sets that bar
 for ports that cannot be exact.
 
-**The two alternatives, and why they are not recommended.** A local Python server is
-fastest to a working demo and deletes the promise, the test gate and the no-install
-story in one move. Shipping pretrained weights for browser inference is cheap and
-removes the very thing being demonstrated — training to *this lab's* dataset.
+**The route not taken.** Shipping pretrained weights for browser inference is the cheapest
+option and removes the very thing being demonstrated — training to *this lab's* dataset.
+It is not on this plan at any phase.
 
 ## Phase order
 
@@ -107,9 +129,17 @@ decision with the corpus it produced — then generation of N recordings, a fold
 and fit-on-three-score-on-the-held-out-fourth. This is what makes *"optimized to the
 same ground truth"* a true statement rather than a slogan.
 
-**Phase 3 — the tube in the browser.** The autodiff, the model, Adam, threshold
-selection on held-out training-regime data (**never** re-picked on the recording being
-analysed), a Web Worker so the page stays alive, and the parity harness.
+**Phase 3 — the tube trains, through the lab server.** [`ADR-0001`](adr/0001-the-lab-server.md).
+The inert panel in the page, the `bugarach lab` server and its shim, and the gate that
+asserts the published page carries no transport and ships byte-identical to its source.
+The threshold is picked on held-out training-regime data and **never** re-picked on the
+recording being analysed — moving training to a process with more room does not make that
+button acceptable.
+
+**Phase 3b — the same training with no install.** The JS trainer: autodiff, the model,
+Adam, a Web Worker so the page stays alive, and a parity harness that now has Phase 3's
+implementation to check against rather than an open question. Off the critical path to a
+working demo, and it is what makes the demo reach a lab that will not install Python.
 
 **Phase 4 — the scoreboard.** One row per detector: F1 with fold spread, recall,
 precision, fit seconds, detect seconds, parameter count. With the caveat the numbers
@@ -139,18 +169,21 @@ Lanes below are ordered by how much they are worth starting **now**.
 
 | lane | what it is | touches the viewer? | blocked by | notes |
 |---|---|---|---|---|
-| **A · merge train** | Phase 0 | **holds it** | nothing | one session, fast, must finish before B or D2 |
-| **C · tube trainer** | Phase 3's engine: autodiff, model, Adam, parity vs PyTorch | **no** — new file, spliced later | nothing | **the long pole, and the best parallel lane.** Develop as a standalone JS block plus `tests/test_webapp_tube_parity.py`; splice into the page in one commit at the end |
+| **A · merge train** | Phase 0 | **holds it** | nothing | one session, fast, must finish before B, D2 or H2 |
+| **H1 · the lab server** | Phase 3's engine: `bugarach lab`, the shim, the publish gate | **no** — new module, `src/` and `tools/` | nothing | **now the long pole, and the best parallel lane.** [ADR-0001](adr/0001-the-lab-server.md). A few hundred lines over `learn.train` and `bench.pool_scores`, which already have parity tests |
 | **E · fold scoring** | port `bugarach.bench.pool_scores` and the fold split to JS | **no** — pure functions | nothing | tested against Python on fixed inputs; Phase 2 and 4 both consume it |
 | **D1 · the writer, Python side** | `detections.csv` + `run.json` writer in the library, with a round-trip test | **no** | nothing | both callers must agree, so the shape gets settled once here rather than twice |
 | **F · model track** | multi-seed, drop the raw brightness channel | **no** — `learn/`, `tools/` | nothing | decides whether *"the tube outperforms"* is a claim we own; see below |
 | **G · housekeeping** | prune ~25 merged worktrees, push or drop `preview-everything` | **no** | nothing | ten minutes, removes most of the confusion |
 | **B · CICADA port** | Phase 1's detector | **holds it** | lane A | one registry row once #128 lands |
 | **D2 · the writer, browser side** | download button + the same CSV shape | **holds it** | lanes A, D1 | small once D1 fixed the shape |
+| **H2 · the training panel** | the inert `if (window.__lab)` panel in the page | **holds it** | lanes A, H1 | H1 settles the request and response shapes first |
+| **C · JS tube trainer** | Phase 3b: autodiff, the model, Adam, Web Worker | **no** — standalone block, spliced later | lane H1 (for the reference it checks against) | **resequenced, not cancelled.** Start it once H1 answers what correct looks like |
 
-So **five lanes (C, E, D1, F, G) can start immediately and in parallel**, none of them
-touching the viewer or each other. Lanes A, B and D2 are one serial queue on the one
-file.
+So **five lanes (H1, E, D1, F, G) start immediately and in parallel**, none of them
+touching the viewer or each other. Lanes A, B, D2 and H2 are one serial queue on the one
+file. Lane C waits on H1 by choice rather than necessity — it *can* be written blind, and
+writing it after H1 replaces guesswork with a reference implementation.
 
 ## Before anyone writes app copy: the claim is not yet ours
 
