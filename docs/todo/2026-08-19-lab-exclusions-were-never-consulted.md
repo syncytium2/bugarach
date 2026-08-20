@@ -1,7 +1,41 @@
 ---
-status: open
+status: done
 filed: 2026-08-19
+closed: 2026-08-20
 ---
+
+> ## WITHDRAWN 2026-08-20. This file recommended the wrong fix, and the fix was worse than the bug.
+>
+> Tony, 2026-08-20: *"the app should not concern itself with excludes, etc. we spent quite a
+> bit of time on an export contract to handle all this, and ended up going to the full data
+> store anyways."*
+>
+> **The diagnosis below is right and the prescription is backwards.** Two recordings the lab
+> had withdrawn really were inside every number. But the cause was not that bugarach failed
+> to read the lab's workbook — it was that bugarach was reading the **`.mat` store at all**,
+> going around an input contract written precisely so that selection arrives already applied.
+>
+> `docs/export_folder_spec.md`: *"bugarach reads one folder and nothing else: no data store,
+> no archive, no environment variable, no network, no companion database."*
+>
+> **And the fix this file proposed made things worse, measurably.** The workbook keys
+> exclusions on (date, mouse, **`slice_order`**); bugarach has no `slice_order`, so
+> `tools/lab_excluded.py` matched on date and dropped **`20250731_151`, which the lab had not
+> withdrawn** — mouse 57 has two slices that day and only `slice_order=1` is excluded. The
+> producer's own export got this right and dropped exactly one. A second opinion computed
+> from less information than the producer had is not a safety net; it is a worse answer
+> sitting next to a better one.
+>
+> **What was actually done** (PR: *the folder is the input*): `tools/lab_excluded.py`,
+> `docs/learned/lab_excluded_slices.txt` and `docs/learned/dead_roi_verdicts.csv` are deleted;
+> `load_excluded` and `load_dead_roi_keep` are out of `bugarach.assembly`; the
+> `--exclude-file` / `--dead-roi-file` flags are gone from every tool; and
+> `tools/modularity_null.py` takes `--folder`, not `--store`. Tests assert none of them come
+> back.
+>
+> **The generalisation worth keeping** is the opposite of the one below: where a producer has
+> already made a call, consume it — do not reconstruct it from a source the producer had more
+> context on than you do.
 
 # The lab says which recordings are analysable, and nothing here was asking
 

@@ -68,6 +68,10 @@ LOST = "#c9c9c9"
 def real_and_control(folder: Path, slice_id: str, stream: str, seed: int = 3):
     """One real recording's membership matrix, and a uniform control beside it.
 
+    Reads an **export folder** — the input contract, and the whole input. This
+    took a `.mat` store until 2026-08-20; see the note in `bugarach.assembly` for
+    what going around the contract cost.
+
     The control is drawn at the real recording's **own** geometry — same number
     of events, same event sizes, same ROI count — because a top-five
     participation share means different things in recordings of different size.
@@ -78,16 +82,12 @@ def real_and_control(folder: Path, slice_id: str, stream: str, seed: int = 3):
     from make_membership_example import membership
     from bugarach.io import load_folder
 
-    # One recording out of the export folder. Reading a store here is what put
-    # withdrawn recordings into this figure's own numbers: a store holds every
-    # recording ever processed and cannot say which the lab kept.
-    hit = [s for s in load_folder(folder) if str(s.slice_id) == str(slice_id)]
-    if not hit:
-        raise SystemExit(
-            f"{slice_id} is not in {folder}. If the lab withdrew it, that is the "
-            f"answer — the folder is the corpus and PROVENANCE.md says what was "
-            f"dropped.")
-    M, a = membership(hit[0], stream)
+    by_id = {s.slice_id: s for s in load_folder(folder)}
+    if slice_id not in by_id:
+        raise SystemExit(f"{slice_id} is not in {folder} — "
+                         f"{len(by_id)} recordings there. A recording the producer "
+                         f"withdrew is simply absent; pick one that is present.")
+    M, a = membership(by_id[slice_id], stream)
     if M is None:
         raise SystemExit(f"{slice_id}: no testable {stream} clusters at K")
 

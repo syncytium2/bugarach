@@ -538,6 +538,50 @@
       </div>
     </details>
 
+    <!-- The training panel. INERT ON THE PUBLISHED PAGE, and hidden by default:
+         it appears only where something has defined `window.__lab`, which only
+         the local `bugarach lab` server does, by appending a shim to the copy it
+         serves. Nothing is stripped at build time, so nothing can fail to be
+         stripped — docs/adr/0001-the-lab-server.md. -->
+    <details class="acc" id="accLab" hidden>
+      <summary>Train a detector<span class="cnt" id="cntLab">local only</span></summary>
+      <div class="ctl">
+        <label for="lArch">architecture</label>
+        <select id="lArch"><option value="tube">tube (center−surround)</option></select>
+        <label for="lFolds">folds</label>
+        <input id="lFolds" type="number" min="2" max="8" step="1" value="4">
+        <label for="lSeeds">recordings per fold</label>
+        <input id="lSeeds" type="number" min="1" max="6" step="1" value="2">
+        <div class="span"><button id="runLab">Train</button></div>
+        <div class="note" id="labWhat"></div>
+      </div>
+      <div id="labOut"></div>
+      <div class="fine">
+        <b>This is the only step that does not run in your browser.</b> Everything
+        else on this page runs where you are standing and reaches nothing.
+        Training a network needs more than a page can carry, so it runs in a
+        process on this machine — reachable only from this machine, reading no
+        file, and given nothing but the numbers shown above. The published page
+        cannot reach it and does not show this panel at all.
+        <br><br>
+        <b>It fits on a simulation, never on your recordings.</b> The corpus is
+        generated from the statistics measured in the assess step, so its events
+        have known times and a score means something. Fitting on the recordings
+        you are about to analyse would spend the very effect the experiment
+        exists to measure.
+        <br><br>
+        <b>Every score here is on a fold the model never saw.</b> The corpus is
+        split first, the model is fitted on the rest, and the held-out fold is
+        scored — the same procedure the published comparison used, reported
+        across folds with its spread rather than as one number.
+        <br><br>
+        <b>There is no re-tune button, and that is deliberate.</b> The operating
+        point is chosen on held-out data and travels with the model. Re-picking it
+        on the recording being analysed would hide exactly the failure this is
+        measured against.
+      </div>
+    </details>
+
     <details class="acc" id="accList" hidden>
       <summary>Recordings<span class="cnt" id="cntList"></span></summary>
       <div id="checkbar" hidden></div>
@@ -3609,9 +3653,196 @@ paintTuneWhat();
 
 document.getElementById("runDetect").onclick = runDetect;
 
+/* ---------- training, which is the one step that is not in this page ---------
+   The panel above is INERT unless something has defined `window.__lab`. Only the
+   local `bugarach lab` server does, by appending a shim to the copy it serves —
+   so on the published page the capability object is simply absent, the panel
+   stays hidden, and this code never runs. Dead by absence rather than by
+   removal: nothing is stripped at build time, so nothing can fail to be
+   stripped. docs/adr/0001-the-lab-server.md.
+
+   Everything that talks to the server lives in the shim. This file contains no
+   `fetch(` and must not grow one, or the promise the page makes stops being a
+   property of the file and goes back to being a paragraph.               ------ */
+
+const lab = () => window.__lab || null;
+
+/* The page's simulate form speaks its own vocabulary; `simulate_coordination`
+   speaks another, and the server passes the spec straight to it. Translate here,
+   once, rather than letting the two drift — `docs/learned/generator_spec.json`
+   is the shape being targeted.
+
+   ⚠ Only the fields the assess step actually measures are carried from the form.
+   The rest take the values the published corpus was built with, and the panel
+   SAYS SO rather than letting a default read as a measurement. */
+const LAB_SPEC_DEFAULTS = {
+  grid_sec: 0.1, min_sep_sec: 120.0, hot_rate_hz: 0.06, ramp_sec: 30.0,
+  n_distractors: 6, distractor_frac: 0.18, bg_rate_shape: 0.275,
+};
+const LAB_MEASURED = ["duration_sec", "n_roi", "bg_rate_hz", "jitter_sec"];
+
+function labSpec() {
+  const p = readSim();
+  return {
+    ...LAB_SPEC_DEFAULTS,
+    duration_sec: p.minutes * 60,
+    n_roi: p.rois,
+    bg_rate_hz: p.rate,
+    jitter_sec: p.jitter,
+  };
+}
+
+function paintLabWhat() {
+  const note = document.getElementById("labWhat");
+  const spec = labSpec();
+  const carried = LAB_MEASURED.map(k => k + " " + spec[k]).join(", ");
+  note.textContent =
+    "Generates a corpus from the simulate settings (" + carried + "), splits it "
+    + "into folds, fits " + document.getElementById("lArch").value + " on all but "
+    + "one and scores the one it never saw. The remaining generator settings ("
+    + Object.keys(LAB_SPEC_DEFAULTS).join(", ") + ") are the values the published "
+    + "corpus used — they are not measured from your recordings.";
+}
+
+function paintFolds(res) {
+  const box = document.getElementById("labOut");
+  box.textContent = "";
+  // `per_fold` is the LIST of held-out scores; `folds` beside it is the COUNT.
+  // Reading the count as a list is a silent empty render, which is how this was
+  // wrong the first time — the stub trainer reports the count and no scores,
+  // and the panel has to say that rather than draw an empty table.
+  const folds = Array.isArray(res.per_fold) ? res.per_fold : [];
+  if (!folds.length) {
+    box.textContent = "";
+    box.appendChild(el("p", "Trained, and this trainer reported no per-fold "
+      + "scores — so there is nothing here to read as performance.", "note"));
+    return;
+  }
+  const t = el("table");
+  const head = el("tr");
+  ["fold", "F1", "recall", "precision"].forEach(h => head.appendChild(el("th", h)));
+  t.appendChild(head);
+  for (const f of folds) {
+    const tr = el("tr");
+    [String(f.fold + 1), fmtNum(f.f1), fmtNum(f.recall), fmtNum(f.precision)]
+      .forEach(v => tr.appendChild(el("td", v)));
+    t.appendChild(tr);
+  }
+  box.appendChild(t);
+
+  // The spread is the point, not decoration: one training run per fold means
+  // fold-to-fold variation confounds the data with the training, and a single
+  // averaged number would hide that it does.
+  const f1 = folds.map(f => f.f1).filter(Number.isFinite);
+  if (f1.length > 1) {
+    const m = f1.reduce((a, b) => a + b, 0) / f1.length;
+    const sd = Math.sqrt(f1.reduce((a, b) => a + (b - m) ** 2, 0) / (f1.length - 1));
+    box.appendChild(el("p", "F1 " + fmtNum(m) + " ± " + fmtNum(sd) + " across "
+      + f1.length + " held-out folds · " + (res.n_params ?? "?") + " parameters"
+      + " · threshold " + fmtNum(res.threshold)
+      + ", chosen on held-out data and not re-picked here.", "note"));
+  }
+  box.appendChild(el("p", "Measured on a simulation. Nothing here says this "
+    + "model is right about a real recording.", "note"));
+}
+
+async function runLab() {
+  const api = lab();
+  if (!api) return;
+  const btn = document.getElementById("runLab");
+  const box = document.getElementById("labOut");
+  btn.disabled = true;
+  const was = btn.textContent;
+  btn.textContent = "Training…";
+  box.textContent = "starting…";
+  try {
+    const res = await api.train({
+      spec: labSpec(),
+      arch: document.getElementById("lArch").value,
+      folds: clamp(Number(document.getElementById("lFolds").value), 2, 8),
+      seeds_per_fold: clamp(Number(document.getElementById("lSeeds").value), 1, 6),
+    }, m => {
+      // One line, replaced — a training run emits far more progress than a
+      // sidebar can hold, and a growing log would push the result off screen.
+      box.textContent = m.message
+        || (m.stage + (m.of ? " " + (m.done ?? 0) + "/" + m.of : ""));
+    });
+    LAB_MODEL = res.model || null;
+    paintFolds(res);
+  } catch (err) {
+    box.textContent = "";
+    // The server's refusals carry the reason, and they are worth reading rather
+    // than flattening into "something went wrong" — it declines a threshold in
+    // the detect request on purpose, and says why.
+    box.appendChild(el("p", String(err && err.message || err), "note"));
+  } finally {
+    btn.disabled = false;
+    btn.textContent = was;
+  }
+}
+
+let LAB_MODEL = null;   // handle of the last fitted model, for the detect step
+
+/* Show the panel only where the capability exists, and say plainly what the
+   server can do — torch is an optional extra and its ABSENCE IS AN ANSWER, not
+   an error to route around. Every other stage keeps working without it. */
+async function wireLab() {
+  const api = lab();
+  const acc = document.getElementById("accLab");
+  if (!api || !acc) return;
+  acc.hidden = false;
+  document.getElementById("runLab").onclick = runLab;
+  ["lArch", "lFolds", "lSeeds"].forEach(id =>
+    document.getElementById(id).addEventListener("input", paintLabWhat));
+  paintLabWhat();
+  const chip = document.getElementById("cntLab");
+  try {
+    const caps = await api.capabilities();
+    const arches = caps.architectures || [];
+    if (arches.length) {
+      const sel = document.getElementById("lArch");
+      sel.textContent = "";
+      arches.forEach(a => {
+        const o = el("option", a);
+        o.value = a;
+        sel.appendChild(o);
+      });
+    }
+    if (caps.can_train === false) {
+      chip.textContent = "no trainer";
+      document.getElementById("runLab").disabled = true;
+      document.getElementById("labOut").appendChild(el("p",
+        caps.why || "This server cannot train — `pip install bugarach[dl]` adds "
+        + "the trainer. Everything else on this page is unaffected.", "note"));
+    } else {
+      chip.textContent = caps.trainer || "ready";
+    }
+    paintLabWhat();
+  } catch (err) {
+    chip.textContent = "unreachable";
+    document.getElementById("runLab").disabled = true;
+  }
+}
+
+/* WAIT FOR THE DOCUMENT, and the reason is the whole shape of ADR-0001.
+   The shim is **appended after** this script — `page_with_shim` returns the page
+   plus the shim, in that order — so at the moment this line is reached
+   `window.__lab` does not exist yet, even when the lab server is the one
+   serving. Calling `wireLab()` here directly leaves the panel hidden on exactly
+   the page that should show it, and hidden is also its correct published-page
+   behaviour, so the bug looks like success. Inline scripts run in document
+   order during parsing, so DOMContentLoaded is after the shim either way. */
+if (document.readyState === "loading")
+  document.addEventListener("DOMContentLoaded", wireLab);
+else
+  wireLab();
+
 /* ---------- the sidebar: one section at a time ----------------------------- */
+// `accLab` is in the list even though it is hidden on the published page:
+// `showSection` already refuses to open a hidden node, so listing it costs
+// nothing there and means the accordion behaves normally where it does appear.
 const SECTIONS = ["accSim", "accOpen", "accAssess", "accDetect", "accTune",
-                  "accList"];
+                  "accLab", "accList"];
 function showSection(id) {
   for (const s of SECTIONS) {
     const n = document.getElementById(s);

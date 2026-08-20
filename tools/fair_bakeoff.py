@@ -82,14 +82,17 @@ def _timed_detect(fn, slices) -> tuple[list, float]:
 
 
 def run(spec: dict, *, folds: int, seeds_per_fold: int, quick: bool) -> dict:
-    from bugarach.bench import DETECTORS, OPERATING_POINTS, pool_scores, run_detector
+    from bugarach.bench import (DETECTORS, OPERATING_POINTS, fold_split,
+                                pool_scores, run_detector)
     from bugarach.learn.train import train
     from bugarach.score import score_stream
 
     # ---- the corpus: one set of recordings, split into folds ----------------
+    # The split comes from bench so that the browser, which runs the same
+    # comparison on its own generated corpus, divides it the same way.
     n_folds = folds
-    all_seeds = [1000 + i for i in range(n_folds * seeds_per_fold)]
-    fold_of = {s: i // seeds_per_fold for i, s in enumerate(all_seeds)}
+    split = fold_split(n_folds=n_folds, seeds_per_fold=seeds_per_fold)
+    all_seeds = list(split.seeds)
     print(f"corpus: {len(all_seeds)} recordings, {n_folds} folds "
           f"({seeds_per_fold} each)")
 
@@ -120,8 +123,8 @@ def run(spec: dict, *, folds: int, seeds_per_fold: int, quick: bool) -> dict:
         per_fold = []
         cal_sec_total = 0.0
         for held in range(n_folds):
-            tr_seeds = [s for s in all_seeds if fold_of[s] != held]
-            te_seeds = [s for s in all_seeds if fold_of[s] == held]
+            tr_seeds = list(split.train(held))
+            te_seeds = list(split.test(held))
 
             # calibrate: F1-optimal knob on the training folds only
             t0 = time.perf_counter()
@@ -171,8 +174,8 @@ def run(spec: dict, *, folds: int, seeds_per_fold: int, quick: bool) -> dict:
     for name in LEARNED:
         per_fold = []
         for held in range(n_folds):
-            tr_seeds = [s for s in all_seeds if fold_of[s] != held]
-            te_seeds = [s for s in all_seeds if fold_of[s] == held]
+            tr_seeds = list(split.train(held))
+            te_seeds = list(split.test(held))
 
             mk = lambda seed, _t=tuple(tr_seeds): rec(_t[seed % len(_t)])  # noqa: E731
             t0 = time.perf_counter()
