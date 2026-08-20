@@ -51,7 +51,10 @@ def baseline_window(sl):
 def main(argv=None) -> int:
     p = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    p.add_argument("--store", type=Path, required=True)
+    p.add_argument("--folder", type=Path, required=True,
+                   help="an export folder (docs/export_folder_spec.md). It is the "
+                        "corpus: the producer already dropped what the lab "
+                        "withdrew, so nothing here re-filters it.")
     p.add_argument("--stream", default="fast")
     p.add_argument("--dt", type=float, default=2.0)
     p.add_argument("--jitter", type=float, default=20.0)
@@ -60,7 +63,6 @@ def main(argv=None) -> int:
     p.add_argument("--pctl", type=float, default=95.0)
     p.add_argument("--seed", type=int, default=7)
     p.add_argument("--limit", type=int, default=None)
-    p.add_argument("--exclude-file", type=Path, default=None)
     p.add_argument("--dead-roi-file", type=Path, default=None,
                    help="dead_roi_verdicts.csv — the R team's ROI rejections, applied "
                         "before anything is computed. Omitting it analyses cells the "
@@ -70,33 +72,28 @@ def main(argv=None) -> int:
     p.add_argument("--also", type=Path, default=None)
     a = p.parse_args(argv)
 
-    from bugarach.assembly import load_dead_roi_keep, load_excluded
+    from bugarach.assembly import load_dead_roi_keep
     from bugarach.graph import modularity_vs_null
-    from bugarach.store import load_slice
+    from bugarach.io import load_folder
 
-    excl = load_excluded(a.exclude_file)
     droi = load_dead_roi_keep(a.dead_roi_file)
     if droi:
         nrej = sum(m.count(False) for m in droi.values())
         print(f"dead-ROI roster: {len(droi)} slices, {nrej} ROIs rejected")
-    if excl:
-        print(f"excluding {len(excl)} lab-withdrawn recording(s): {', '.join(sorted(excl))}")
 
-    files = sorted(Path(a.store).glob("*.mat"))
+    # THE FOLDER IS THE CORPUS. This used to walk a store directory and then
+    # re-derive the exclusions from the lab's spreadsheet, which is the
+    # arrangement that let two withdrawn recordings into every published number
+    # here — the spreadsheet read was added after the fact, and only ever
+    # covered the tool that got patched. The producer has already dropped them,
+    # and PROVENANCE.md in the folder says which and why.
+    slices = load_folder(a.folder)
     if a.limit:
-        files = files[: a.limit]
-    rows, skipped = [], {"excluded": 0, "no_baseline": 0, "no_stream": 0, "load_error": 0}
+        slices = slices[: a.limit]
+    print(f"{len(slices)} recording(s) from {a.folder}")
+    rows, skipped = [], {"no_baseline": 0, "no_stream": 0}
 
-    for i, f in enumerate(files):
-        if f.stem in excl:
-            skipped["excluded"] += 1
-            continue
-        try:
-            sl = load_slice(f)
-        except Exception as e:                                   # noqa: BLE001
-            skipped["load_error"] += 1
-            print(f"  ~ {f.name}: {type(e).__name__}: {e}", file=sys.stderr)
-            continue
+    for i, sl in enumerate(slices):
         win = baseline_window(sl)
         if win is None:
             skipped["no_baseline"] += 1

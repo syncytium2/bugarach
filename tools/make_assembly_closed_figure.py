@@ -4,7 +4,7 @@
     python tools/make_assembly_closed_figure.py \\
         --power   <dir>/power_verdict_fast.json \\
         --pensub  <dir>/pensub_cmp_fast_k3.json <dir>/pensub_cmp_slow_k3.json \\
-        --store   <archive> --slice 20240708_13
+        --folder  <export folder> --slice 20240708_13
 
 Figure id `assembly_closed`, the same on every machine.
 
@@ -65,7 +65,7 @@ LOST = "#c9c9c9"
 
 # ---- panel A: the data, before any statistic -------------------------------
 
-def real_and_control(store: Path, slice_id: str, stream: str, seed: int = 3):
+def real_and_control(folder: Path, slice_id: str, stream: str, seed: int = 3):
     """One real recording's membership matrix, and a uniform control beside it.
 
     The control is drawn at the real recording's **own** geometry — same number
@@ -76,9 +76,18 @@ def real_and_control(store: Path, slice_id: str, stream: str, seed: int = 3):
     real one; it was a denominator, not a finding.
     """
     from make_membership_example import membership
-    from bugarach.store import load_slice
+    from bugarach.io import load_folder
 
-    M, a = membership(load_slice(Path(store) / f"{slice_id}.mat"), stream)
+    # One recording out of the export folder. Reading a store here is what put
+    # withdrawn recordings into this figure's own numbers: a store holds every
+    # recording ever processed and cannot say which the lab kept.
+    hit = [s for s in load_folder(folder) if str(s.slice_id) == str(slice_id)]
+    if not hit:
+        raise SystemExit(
+            f"{slice_id} is not in {folder}. If the lab withdrew it, that is the "
+            f"answer — the folder is the corpus and PROVENANCE.md says what was "
+            f"dropped.")
+    M, a = membership(hit[0], stream)
     if M is None:
         raise SystemExit(f"{slice_id}: no testable {stream} clusters at K")
 
@@ -230,8 +239,8 @@ def main(argv=None):
                    help="assembly_power.py --geometry-from JSON (has verdict_rows)")
     p.add_argument("--pensub", type=Path, nargs="+", required=True,
                    help="assembly_pensub_compare.py --json-out, one per stream")
-    p.add_argument("--store", type=Path, required=True,
-                   help=".mat store holding the recording drawn in panel A")
+    p.add_argument("--folder", type=Path, required=True,
+                   help="export folder holding the recording drawn in panel A")
     p.add_argument("--slice", required=True, help="slice id for panel A")
     p.add_argument("--stream", default="fast")
     p.add_argument("--width", type=int, default=760)
@@ -245,7 +254,7 @@ def main(argv=None):
     p.add_argument("--no-png", dest="png", action="store_false", default=True)
     a = p.parse_args(argv)
 
-    M, C, ass = real_and_control(a.store, a.slice, a.stream, seed=a.seed)
+    M, C, ass = real_and_control(a.folder, a.slice, a.stream, seed=a.seed)
     power = power_curves(a.power)
     pensub = pensub_bars(a.pensub)
 
