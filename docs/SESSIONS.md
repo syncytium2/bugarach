@@ -61,14 +61,20 @@ Template:
 ## Active
 
 ### Mac/darkroom-corrected-synfire — the corrected synfire numbers, in their own folder
-- **Status:** DONE 2026-08-19 — **written, claim released**
+- **Status:** DONE 2026-08-20 — **written, claim released**
 - **Started:** 2026-08-19
 - **Writes:** `<darkroom>/bugarach/2026-08-19-synfire-roi-corrected/` — **one new subfolder.**
   Both `--keep-silent-rois` (pre-fix) and corrected runs of each stream, both figures, and
-  a README saying which is which.
+  a README saying which is which. **Plus ONE new file at the root of `bugarach/`**:
+  `synfire_README.md`, a signpost beside the synfire session's two JSONs — see below.
 - **Claims:** ~~that ONE subfolder~~ — **released.** Written and not being regenerated. It
   holds `README.md`, `v2_analysis_window/` and `periods_raw_baseline/` (pre-fix and
   corrected, both streams, all seeded), and both figures.
+- **Tony's decision, 2026-08-20: both sets stay, side by side, with a README.** The two
+  root files are NOT superseded and NOT deleted. The only thing added beside them is
+  `synfire_README.md`, because a reader opening `bugarach/` would otherwise see the old
+  JSONs with nothing to say a corrected set exists one folder down. It adds a signpost and
+  changes no result.
 - **DOES NOT TOUCH** `<darkroom>/bugarach/synfire_{fast,slow}_relabel.json` at the root
   (2026-08-19 19:51). Those are the synfire session's output and carry the **pre-fix**
   numbers — the ones the handoff and `docs/todo/2026-08-19-synfire-measured-and-what-it-cost.md`
