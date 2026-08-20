@@ -154,31 +154,35 @@ published number was then computed over one recording fewer than intended.
 If a folder looks like it holds something it should not, that is a conversation with
 you — not a filter on our side.
 
-## 4. `width_sec` is a coincidence duration — pick the rule knowing that
+## 4. `width_sec` is asked for and not yet consumed — and the rule still matters
 
 Width is not one quantity. A fast transient and a slow one are not the same shape, so
-"how long it lasted" is not the same measurement, and **we do not define it for you.**
+"how long it lasted" is not the same measurement, and **we do not define it for you.** Pick
+a rule, apply it consistently within a stream, and name it in `width_def`.
 
-But you cannot choose well without knowing what it feeds, and an earlier version of this
-page did not say. **`width_def` is carried and never parsed. `width_sec` is read.** It
-becomes the per-event duration one detector uses to decide how long an event stays
-"on" — that is, **how much of a window two cells must share before they count as
-coincident**.
+**What happens to it today: nothing.** The folder reader takes `time_sec`, `roi` and
+`stream`, and drops every other column — so `width_sec` you send is read from the file and
+discarded, and any `Stream.width` on our side is `NaN`. **`width_def` is carried and never
+parsed; `width_sec` is currently not even carried.** This page said the opposite in an
+earlier version and that was wrong. If you have already wired up width, it is not lost work
+— it is just not doing anything on our side yet, and closing that is on us
+(`docs/todo/2026-08-20-the-contract-asks-for-width-and-drops-it.md`).
 
-So the rule has to produce something on the scale of a coincidence, not on the scale of
-the whole transient. In this project's own recordings, `fwhm` on the slow stream has a
-median of **4.7 s** and a maximum of **186.9 s**, against a rise interval of 2 s. A
-187-second "event duration" is not a coincidence unit — it makes one cell overlap
-essentially everything. A folder built that way **conforms, loads, and gives a wrong
-answer**, which is this page's whole failure class.
+**Pick the rule as though it were consumed, because when it is, it will be as a coincidence
+duration** — how long an event counts as "on", and therefore how much of a window two cells
+must share before they count as coincident. That is the one detector mode that reads a
+per-event width.
 
-Rules that behave: `t50rise_to_peak`, `above_threshold`, or anything else bounded by the
-event's rise rather than its decay. `fwhm` is fine on a fast stream and wrong on a slow
-one — which is exactly why the definition is per stream and travels in `width_def`.
+On that scale, some rules break. In this project's own recordings `fwhm` on the **slow**
+stream has a median of **4.7 s** and a maximum of **186.9 s**, against a rise interval of
+2 s. A 187-second "event duration" is not a coincidence unit — it makes one cell overlap
+essentially everything. Rules that behave: `t50rise_to_peak`, `above_threshold`, anything
+bounded by the event's rise rather than its decay. `fwhm` is reasonable on a fast stream and
+wrong on a slow one, which is exactly why the definition is per stream.
 
-If the natural output of your pipeline is a decay-dominated width, send it and say so —
-but tell us, because the consumer has to decide whether to use it rather than discovering
-the scale later.
+If the natural output of your pipeline is a decay-dominated width, send it and say so in
+`width_def` — the string is what lets a consumer notice the scale before using it rather
+than after.
 
 ---
 

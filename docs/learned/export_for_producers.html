@@ -382,26 +382,30 @@ slices that day and only the first was excluded. Your export had it right. Every
 published number was then computed over one recording fewer than intended.</p>
 <p>If a folder looks like it holds something it should not, that is a conversation with
 you — not a filter on our side.</p>
-<h2>4. <code>width_sec</code> is a coincidence duration — pick the rule knowing that</h2>
+<h2>4. <code>width_sec</code> is asked for and not yet consumed — and the rule still matters</h2>
 <p>Width is not one quantity. A fast transient and a slow one are not the same shape, so
-"how long it lasted" is not the same measurement, and <strong>we do not define it for you.</strong></p>
-<p>But you cannot choose well without knowing what it feeds, and an earlier version of this
-page did not say. <strong><code>width_def</code> is carried and never parsed. <code>width_sec</code> is read.</strong> It
-becomes the per-event duration one detector uses to decide how long an event stays
-"on" — that is, <strong>how much of a window two cells must share before they count as
-coincident</strong>.</p>
-<p>So the rule has to produce something on the scale of a coincidence, not on the scale of
-the whole transient. In this project's own recordings, <code>fwhm</code> on the slow stream has a
-median of <strong>4.7 s</strong> and a maximum of <strong>186.9 s</strong>, against a rise interval of 2 s. A
-187-second "event duration" is not a coincidence unit — it makes one cell overlap
-essentially everything. A folder built that way <strong>conforms, loads, and gives a wrong
-answer</strong>, which is this page's whole failure class.</p>
-<p>Rules that behave: <code>t50rise_to_peak</code>, <code>above_threshold</code>, or anything else bounded by the
-event's rise rather than its decay. <code>fwhm</code> is fine on a fast stream and wrong on a slow
-one — which is exactly why the definition is per stream and travels in <code>width_def</code>.</p>
-<p>If the natural output of your pipeline is a decay-dominated width, send it and say so —
-but tell us, because the consumer has to decide whether to use it rather than discovering
-the scale later.</p>
+"how long it lasted" is not the same measurement, and <strong>we do not define it for you.</strong> Pick
+a rule, apply it consistently within a stream, and name it in <code>width_def</code>.</p>
+<p><strong>What happens to it today: nothing.</strong> The folder reader takes <code>time_sec</code>, <code>roi</code> and
+<code>stream</code>, and drops every other column — so <code>width_sec</code> you send is read from the file and
+discarded, and any <code>Stream.width</code> on our side is <code>NaN</code>. <strong><code>width_def</code> is carried and never
+parsed; <code>width_sec</code> is currently not even carried.</strong> This page said the opposite in an
+earlier version and that was wrong. If you have already wired up width, it is not lost work
+— it is just not doing anything on our side yet, and closing that is on us
+(<code>docs/todo/2026-08-20-the-contract-asks-for-width-and-drops-it.md</code>).</p>
+<p><strong>Pick the rule as though it were consumed, because when it is, it will be as a coincidence
+duration</strong> — how long an event counts as "on", and therefore how much of a window two cells
+must share before they count as coincident. That is the one detector mode that reads a
+per-event width.</p>
+<p>On that scale, some rules break. In this project's own recordings <code>fwhm</code> on the <strong>slow</strong>
+stream has a median of <strong>4.7 s</strong> and a maximum of <strong>186.9 s</strong>, against a rise interval of
+2 s. A 187-second "event duration" is not a coincidence unit — it makes one cell overlap
+essentially everything. Rules that behave: <code>t50rise_to_peak</code>, <code>above_threshold</code>, anything
+bounded by the event's rise rather than its decay. <code>fwhm</code> is reasonable on a fast stream and
+wrong on a slow one, which is exactly why the definition is per stream.</p>
+<p>If the natural output of your pipeline is a decay-dominated width, send it and say so in
+<code>width_def</code> — the string is what lets a consumer notice the scale before using it rather
+than after.</p>
 <hr />
 <h1>Check it before you send it</h1>
 <pre><code>bugarach check my_export/
