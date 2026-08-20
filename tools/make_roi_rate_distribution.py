@@ -73,18 +73,18 @@ MIN_ROIS = 8
 ZERO_FLOOR_MHZ = 0.05
 
 
-def baseline_rates(path: Path):
+def baseline_rates(sl):
     """(slice id, per-ROI roiRate in Hz) inside the baseline region, or None.
 
-    Returns None rather than raising for every reason a slice is unusable, so
-    one bad file cannot end a survey of eighty.
-    """
-    from bugarach.store import load_slice
+    Returns None rather than raising for every reason a recording is unusable,
+    so one bad file cannot end a survey of eighty.
 
-    try:
-        sl = load_slice(path)
-    except Exception:                                    # noqa: BLE001
-        return None
+    Takes a loaded recording rather than a path, because the caller now reads an
+    export folder in one go. That folder is the corpus the lab approved; a store
+    holds every recording ever processed, withdrawn ones included. The
+    interquartile range this figure reports is quoted as the project's
+    difficulty axis, so which recordings are in it is not a detail.
+    """
     reg = next((r for r in sl.regions
                 if (r.name or "").strip().lower() == "baseline"), None)
     if reg is None or STREAM not in sl.streams:
@@ -119,19 +119,17 @@ def generator_rates(regime: str, seeds=(1, 2, 3)):
     return np.asarray(out, dtype=float)
 
 
-def survey(root: Path, seeds):
+def survey(folder: Path, seeds):
     from bugarach.bench import REGIMES
+    from bugarach.io import load_folder
 
-    arc = root / ARCHIVE
-    if not arc.is_dir():
-        raise SystemExit(f"no archive at {arc}")
     per_slice = []
-    for p in sorted(arc.glob("*.mat")):
-        r = baseline_rates(p)
+    for sl in load_folder(folder):
+        r = baseline_rates(sl)
         if r is not None:
-            per_slice.append((p.stem, r))
+            per_slice.append((str(sl.slice_id), r))
     if not per_slice:
-        raise SystemExit(f"no usable baseline windows under {arc}")
+        raise SystemExit(f"no usable baseline windows in {folder}")
     gen = [(name, generator_rates(name, seeds)) for name in REGIMES]
     return per_slice, gen
 
@@ -254,6 +252,9 @@ def main(argv=None):
     p.add_argument("--seeds", type=int, nargs="+", default=[1, 2, 3],
                    help="seeds for the generator recordings compared against")
     p.add_argument("--width", type=int, default=640)
+    p.add_argument("--folder", default=None,
+                   help="export folder holding the real corpus "
+                        "(docs/export_folder_spec.md)")
     p.add_argument("--out", default=None,
                    help="destination directory; default $BUGARACH_DARKROOM")
     p.add_argument("--numbers-only", action="store_true",
@@ -262,13 +263,16 @@ def main(argv=None):
                    help="skip the flat render (needs playwright chromium)")
     args = p.parse_args(argv)
 
-    root = os.environ.get("BUGARACH_DATA_ROOT", "").strip()
-    if not root:
+    if not args.folder:
         raise SystemExit(
-            "BUGARACH_DATA_ROOT is not set — this survey needs the real "
-            "archive, and real stores are machine-local. Nothing written.")
+            "--folder is required: this survey needs the real corpus, and the "
+            "corpus is an export folder (docs/export_folder_spec.md). It used "
+            "to walk a .mat archive under BUGARACH_DATA_ROOT, which is every "
+            "recording ever processed rather than the ones the lab kept — and "
+            "the interquartile range printed below is quoted as this project's "
+            "difficulty axis. Nothing written.")
 
-    per_slice, gen = survey(Path(root).expanduser(), tuple(args.seeds))
+    per_slice, gen = survey(Path(args.folder).expanduser(), tuple(args.seeds))
     table = summarise(per_slice, gen)
     print(table)
     if args.numbers_only:

@@ -1,7 +1,21 @@
-# Handoff — synfire order, 2026-08-19
+---
+status: open
+filed: 2026-08-19
+kind: measurement done, interpretation open — needs a person
+---
+
+# SPIKE-order is measured; what it means is not settled
+
+> **This was `HANDOFF.md` at the repo root until 2026-08-20**, moved here without a word
+> changed below it. A handoff file on `main` means *work is in flight and a session
+> stopped mid-task* — the signal CLAUDE.md asks the next session to read. This file says
+> the opposite in its own second line: everything landed, nothing uncommitted, no branch
+> waiting. It was a finished measurement waiting on a judgement, which is what
+> `docs/todo/` is for. Left at the root it made the in-flight signal permanently true and
+> therefore worthless, and opened a public repository's file list with the word "Handoff".
 
 > The modularity port that shared this file is **done** — landed, validated, and its
-> section removed. Only synfire is still in flight.
+> section removed. Only synfire is still open.
 
 **Everything is landed on `main`. Nothing uncommitted, no branch waiting.** This exists
 because one measurement is finished and its interpretation is not.

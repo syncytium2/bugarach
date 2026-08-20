@@ -178,7 +178,8 @@
 <p><strong>bugarach reads one folder. Write these files and you are done.</strong></p>
 <p>This is the short version, addressed to whoever writes the exporter. The full
 contract — every optional column, every reason — is
-<a href="export_folder_spec.md"><code>export_folder_spec.md</code></a>. Nothing here contradicts it.</p>
+<a href="export_folder_spec.html"><code>export_folder_spec.html</code></a>, rendered beside this page so the
+link works wherever you are reading it. Nothing here contradicts it.</p>
 <hr />
 <h2>The folder</h2>
 <pre><code>my_export/
@@ -305,13 +306,30 @@ default here is a guess about your microscope.</p>
 </tr>
 <tr>
 <td><code>analysis_start_sec</code>, <code>analysis_end_sec</code></td>
-<td>optional</td>
+<td>optional — <strong>usually leave them out</strong></td>
 <td>the part of it worth scoring</td>
 </tr>
 </tbody>
 </table>
-<p>If you have both, send both. The raw pair says what happened; the analysis pair says
-what to measure, and it is the one that gets used.</p>
+<p><strong>Send the raw periods. Leave the analysis pair out unless you specifically mean it</strong> —
+and if you leave it out, omit the columns rather than writing <code>NA</code> or <code>NaN</code> in them. A
+non-finite bound is refused with a named error rather than scored, but the refusal comes
+from the detector rather than the loader, so you see it at <code>bugarach check</code> or at run
+time and not at import.</p>
+<p>An earlier version of this page said "if you have both, send both". interface2 pushed
+back and was right. Two reasons, and the second is the one that bites:</p>
+<ul>
+<li><strong>An analysis window is a named paradigm, not a rule.</strong> Two columns express exactly one
+  at a time and cannot say which, so a folder that pins one has quietly chosen the
+  analysis on the consumer's behalf. Raw periods keep every paradigm reachable from a
+  single export.</li>
+<li><strong>Supplying it switches a check off.</strong> The raw bounds are validated — baseline starting
+  at zero, regions contiguous — and supplying <code>analysis_*</code> short-circuits that validation.
+  The same corrupted folder passes clean <em>with</em> the columns and is caught <em>without</em> them.
+  So sending an analysis window costs you the structural gate on the raw one.</li>
+</ul>
+<p>If you do have a window worth stating, send it <strong>and</strong> keep the raw bounds correct — the
+check you give up is exactly the one that would have caught them being wrong.</p>
 <hr />
 <h1>The four things that actually go wrong</h1>
 <p>Everything above is mechanical. These four are where a folder that loads cleanly
@@ -364,15 +382,30 @@ slices that day and only the first was excluded. Your export had it right. Every
 published number was then computed over one recording fewer than intended.</p>
 <p>If a folder looks like it holds something it should not, that is a conversation with
 you — not a filter on our side.</p>
-<h2>4. <code>width_def</code> names your rule, and we never parse it</h2>
+<h2>4. <code>width_sec</code> is asked for and not yet consumed — and the rule still matters</h2>
 <p>Width is not one quantity. A fast transient and a slow one are not the same shape, so
-"how long it lasted" is not the same measurement.</p>
-<p><strong>We do not define width and will not infer it.</strong> Pick the rule, apply it
-consistently within a stream, and name it: <code>t50rise_to_peak</code>, <code>fwhm</code>,
-<code>above_threshold</code> — whatever you actually computed. We carry the string and never
-read it.</p>
-<p>A column meaning two things without saying which yields a plausible wrong answer
-rather than an error.</p>
+"how long it lasted" is not the same measurement, and <strong>we do not define it for you.</strong> Pick
+a rule, apply it consistently within a stream, and name it in <code>width_def</code>.</p>
+<p><strong>What happens to it today: nothing.</strong> The folder reader takes <code>time_sec</code>, <code>roi</code> and
+<code>stream</code>, and drops every other column — so <code>width_sec</code> you send is read from the file and
+discarded, and any <code>Stream.width</code> on our side is <code>NaN</code>. <strong><code>width_def</code> is carried and never
+parsed; <code>width_sec</code> is currently not even carried.</strong> This page said the opposite in an
+earlier version and that was wrong. If you have already wired up width, it is not lost work
+— it is just not doing anything on our side yet, and closing that is on us
+(<code>docs/todo/2026-08-20-the-contract-asks-for-width-and-drops-it.md</code>).</p>
+<p><strong>Pick the rule as though it were consumed, because when it is, it will be as a coincidence
+duration</strong> — how long an event counts as "on", and therefore how much of a window two cells
+must share before they count as coincident. That is the one detector mode that reads a
+per-event width.</p>
+<p>On that scale, some rules break. In this project's own recordings <code>fwhm</code> on the <strong>slow</strong>
+stream has a median of <strong>4.7 s</strong> and a maximum of <strong>186.9 s</strong>, against a rise interval of
+2 s. A 187-second "event duration" is not a coincidence unit — it makes one cell overlap
+essentially everything. Rules that behave: <code>t50rise_to_peak</code>, <code>above_threshold</code>, anything
+bounded by the event's rise rather than its decay. <code>fwhm</code> is reasonable on a fast stream and
+wrong on a slow one, which is exactly why the definition is per stream.</p>
+<p>If the natural output of your pipeline is a decay-dominated width, send it and say so in
+<code>width_def</code> — the string is what lets a consumer notice the scale before using it rather
+than after.</p>
 <hr />
 <h1>Check it before you send it</h1>
 <pre><code>bugarach check my_export/
@@ -381,19 +414,25 @@ rather than an error.</p>
 It reads the folder with <strong>the same loader the analysis uses</strong> — a pass means the
 analysis will read what you meant, not that a second implementation agreed with the
 first.</p>
-<p>Real output, from the current export:</p>
-<pre><code>export folder: .../exports/bugarach/2026-08-17_revised_2v_v2
-84 recording(s), 84 conforming
+<p>Real output, from the current export (<code>2026-08-18_revised_2v_periods</code>):</p>
+<pre><code>84 recording(s), 84 conforming
 
   ok   20240708_13      34 ROI (0 with no events)    4494 events  streams fast+slow  dt 0.1  windows baseline, SB222200
-       · analysis windows supplied — scored as given, and this project's wash-in delay and caps are not applied
        · no ROI declared with no events. If every one of the 34 ROIs fired, this is right; if some were quiet, they are missing from the population and every per-ROI figure is too high (write them as time_sec = NA)
+
+CONFORMING
+Lines marked · read fine and may still not be what you meant.
 </code></pre>
-<p><strong>Errors name the file and the line.</strong> Lines beginning <code>·</code> are notes — legal, but worth
-a look. The silent-ROI note above fires on any recording where every ROI fired at least
-once, which is often simply true; it is asking you to confirm, not reporting a fault.
-The current export passes: 84 of 84 conforming, and the ROI counts match
-<code>n_roi_recorded</code> on every recording checked.</p>
+<p><strong>Errors name the file and the line.</strong> Lines beginning <code>·</code> are notes — legal, but worth a
+look.</p>
+<p><strong>The silent-ROI note is noisier than it should be</strong>, and it is worth saying so rather
+than letting you learn to skip it: it fires on <strong>59 of the 84</strong> recordings in the current
+export, because in most of them every ROI really did fire at least once across the whole
+recording. A note that fires on 70% of a folder trains the reader to ignore it, which is
+the opposite of its purpose. It is asking you to confirm, not reporting a fault, and
+sharpening it is on our side rather than yours.</p>
+<p>The current export passes: 84 of 84 conforming, ROI counts matching <code>n_roi_recorded</code> on
+<strong>all 84</strong>.</p>
 <hr />
 <h1>A complete tiny example</h1>
 <p><code>my_export/rec_1.csv</code></p>

@@ -10,6 +10,7 @@ the same reason `tools/build_site.py` refuses to publish it otherwise.
 from __future__ import annotations
 
 import re
+import sys
 from pathlib import Path
 
 import pytest
@@ -17,30 +18,24 @@ import pytest
 ROOT = Path(__file__).resolve().parents[1]
 VIEWER = ROOT / "docs" / "site" / "raster_viewer.html"
 
-# every way a page can talk to a host, including the ones that do not look
-# like a request: a script/style/img/iframe src is a fetch the browser makes
-# on the page's behalf
-NETWORK = (
-    "fetch(", "XMLHttpRequest", "sendBeacon", "WebSocket(", "EventSource(",
-    "import(", "<script src", "<link rel=\"stylesheet\"", "<iframe", "<img",
-    "@import",
-)
+# The scan lives in the build, and this imports it rather than restating it.
+# Restating it is what went wrong: this file already stripped comments before
+# scanning, and said in its docstring why, while the build neutralised a single
+# hard-coded phrase. The build was the copy that mattered and it was the wrong
+# one, so the site sat 233 lines stale behind a guard tripping on a comment.
+sys.path.insert(0, str(ROOT / "tools"))
+from build_site import NETWORK, strip_comments, viewer_network_leaks  # noqa: E402
 
 
 def _body() -> str:
     """The page with every comment removed.
 
-    Comments are stripped because they NAME the things the page must not do —
-    the header explains there is no `fetch(`, and a note in the script quotes
-    the injection that motivated building nodes instead of markup. A check that
-    reads those as code fires on the explanation of why it will never fire,
-    which is the fastest way to get a real check deleted.
+    Comments NAME the things the page must not do — the header explains there is
+    no `fetch(`, and a note in the script quotes the injection that motivated
+    building nodes instead of markup. A check that reads those as code fires on
+    the explanation of why it will never fire.
     """
-    text = VIEWER.read_text(encoding="utf-8")
-    text = re.sub(r"<!--.*?-->", " ", text, flags=re.S)       # HTML
-    text = re.sub(r"/\*.*?\*/", " ", text, flags=re.S)        # JS block
-    return re.sub(r"^\s*//[^\n]*", " ", text, flags=re.M)     # JS line
-
+    return strip_comments(VIEWER.read_text(encoding="utf-8"))
 
 def test_the_viewer_page_exists():
     assert VIEWER.is_file(), f"{VIEWER} is what the site publishes as viewer.html"
@@ -48,10 +43,98 @@ def test_the_viewer_page_exists():
 
 @pytest.mark.parametrize("needle", NETWORK)
 def test_the_viewer_cannot_reach_the_network(needle):
-    assert needle not in _body(), (
+    assert needle not in viewer_network_leaks(
+        VIEWER.read_text(encoding="utf-8")), (
         f"{VIEWER.name} contains {needle!r}. The page tells the reader their "
         f"files never leave their computer; that is only true while it reaches "
         f"nothing. Draw it inline or drop the claim — do not keep both.")
+
+
+@pytest.mark.parametrize("needle", NETWORK)
+def test_the_scan_still_fires_on_a_real_call(needle):
+    """Prove it can fire, for every primitive, on the real page plus one line.
+
+    Making the scan ignore comments is a loosening, and a loosened guard has to
+    show it still catches the thing it was loosened around. Without this, the
+    change that unblocked the build would be indistinguishable from one that
+    quietly stopped checking.
+    """
+    poisoned = VIEWER.read_text(encoding="utf-8") + f"\n<script>{needle}</script>\n"
+    assert needle in viewer_network_leaks(poisoned)
+
+
+def test_prose_about_the_network_is_not_a_leak():
+    """The specific thing that froze the site for a day: the page *discusses*
+    network primitives it does not use, and the scan must tell those apart.
+
+    **This asserts that some primitive is discussed, not how many times.** The
+    first version required ``body.count("fetch(") >= 2`` — the header promise plus
+    an ADR comment reading "contains no ``fetch(`` and must not grow one". That
+    comment arrived in ``6c37e0a``; the guard pinning the count landed in
+    ``dc33bb7`` while it happened to be there; ``2b4da41`` reworded it to "a page
+    that fetches" three commits later. `main` went red and nothing about the page's
+    safety had changed — a comment had been rephrased.
+
+    The count was a property of the prose. The property worth guarding is that
+    **the comment-stripping path is exercised by the real page at all**: if nothing
+    is ever discussed, ``viewer_network_leaks`` could stop stripping comments and
+    every test in this file would still pass. That vacuum is what the original was
+    reaching for and missed by naming a number.
+
+    Written over the whole ``NETWORK`` tuple rather than ``fetch(`` alone, so
+    rewording one comment cannot empty it while another still carries prose. Two do
+    today: ``fetch(`` in the header promise and ``<img`` in a note about why the
+    page builds nodes instead of markup.
+    """
+    raw = VIEWER.read_text(encoding="utf-8")
+    leaks = viewer_network_leaks(raw)
+
+    discussed = [n for n in NETWORK if n in raw and n not in leaks]
+    assert discussed, (
+        "no network primitive is mentioned anywhere in the page, so the "
+        "comment-stripping in viewer_network_leaks is never exercised by the real "
+        "file and could break silently. Either the page lost the prose explaining "
+        "what it deliberately does not do — worth restoring — or this test should "
+        "be re-aimed at whatever now carries that explanation.")
+    assert not leaks, (
+        f"{VIEWER.name} reaches the network via {leaks}. The page tells the reader "
+        f"their files never leave their computer; that is only true while it "
+        f"reaches nothing.")
+
+
+def _discussed_but_unused(body: str) -> list[str]:
+    """What the test above asserts, factored out so it can be checked adversarially."""
+    leaks = viewer_network_leaks(body)
+    return [n for n in NETWORK if n in body and n not in leaks]
+
+
+def test_the_prose_check_notices_a_page_that_stopped_explaining_itself():
+    """The vacuum the previous version aimed at and could not express.
+
+    Strip every comment out of the real page and nothing is discussed any more —
+    which is exactly the state where `viewer_network_leaks` could stop stripping
+    and no test here would notice. The old form tried to catch this by requiring
+    two `fetch(` occurrences and instead caught a rewording.
+    """
+    gutted = strip_comments(VIEWER.read_text(encoding="utf-8"))
+    assert not _discussed_but_unused(gutted)
+
+
+def test_the_prose_check_notices_stripping_being_switched_off(monkeypatch):
+    """If comment-stripping regresses, the prose stops reading as prose.
+
+    This is the failure the whole file exists around, from the other direction:
+    with stripping disabled the page's own explanations are reported as leaks.
+    """
+    import build_site
+    monkeypatch.setattr(build_site, "strip_comments", lambda b: b)
+    leaks = build_site.viewer_network_leaks(VIEWER.read_text(encoding="utf-8"))
+    assert leaks, "stripping is disabled and the page's prose is no longer flagged"
+
+
+def test_a_comment_cannot_hide_a_call_on_the_same_line():
+    """Stripping JS line comments must not swallow code that precedes them."""
+    assert "fetch(" in viewer_network_leaks("<script>fetch(x); // and a note</script>")
 
 
 def test_the_viewer_carries_no_data():

@@ -76,14 +76,25 @@ RULES = [
     ),
     Rule(
         id="SAP004", level="BLOCK",
-        pattern=r"(" + _UM + r"|DeFazio/|Dropbox/)",
+        # The last alternative is the one that was missing. This rule matched
+        # `DeFazio/` and `Dropbox/` and was believed to cover personal paths, but
+        # a home directory spelled in lowercase — `/Users/tonydefazio/Developer/…`
+        # — matched none of them, and `tools/matlab_ref/prep_ref_input.py` carried
+        # two of those in a PUBLIC repo from the day it was written until
+        # 2026-08-20. A rule that covers the shape you thought of is worth less
+        # than it looks; this one now matches any absolute home-directory path.
+        pattern=r"(" + _UM + r"|DeFazio/|Dropbox/|/(?:Users|home)/[A-Za-z0-9._-]+/)",
         include=["**"],
-        exclude=["tools/sapper.py"],
+        # test_paths.py is the path-RESOLVER's own test: inventing
+        # `/Users/rd/Dropbox-UM/Someone` is precisely its job, and the strings are
+        # synthetic. Excluding the test that exercises a rule's subject matter is
+        # not a backlog entry, it is the rule staying out of its own way.
+        exclude=["tools/sapper.py", "tests/test_paths.py"],
         message="Machine-local personal path in a tracked file — real data "
                 "stays behind BUGARACH_DATA_ROOT (FOUNDATIONS §5; public-repo "
                 "scrub incident 2026-08-11).",
-        fixture_bad='ROOT = Path.home() / "' + _UM + ' Dropbox/name/data"',
-        fixture_good='ROOT = os.environ.get("BUGARACH_DATA_ROOT")',
+        fixture_bad='sys.path.insert(0, "/Users/somebody/Developer/bugarach/src")',
+        fixture_good='sys.path.insert(0, str(Path(__file__).parents[2] / "src"))',
     ),
     Rule(
         id="SAP005", level="BLOCK",
@@ -120,6 +131,48 @@ RULES = [
                 "`out = args.out or darkroom()`.",
         fixture_bad='p.add_argument("--out", type=Path, required=True)',
         fixture_good='p.add_argument("--out", type=Path, default=None)',
+    ),
+    Rule(
+        id="SAP007", level="BLOCK",
+        pattern=r"(load_slice\s*\(|load_store\s*\(|[\"'][^\"']*\.mat[\"']|\*\.mat)",
+        # The store READER is allowed to read stores; that is what it is for, and
+        # FOUNDATIONS §4 keeps the two input paths deliberately separate. So are
+        # the tests that prove it works and the parity chain that regenerates
+        # fixtures from MATLAB. Every ANALYSIS goes through the export folder.
+        include=["src/bugarach/**", "tools/**"],
+        # THE EXCLUSION LIST IS THE BACKLOG. store.py is the store reader and
+        # stays; matlab_ref regenerates parity fixtures from MATLAB and stays;
+        # lab_excluded.py reads the spreadsheet on purpose, to answer what the
+        # lab withdrew. The six below are the tools that were reading stores
+        # when this rule was written, and every one of them is a defect —
+        # `make_assembly_closed_figure.py` and `modularity_null.py` are the two
+        # that produced the numbers containing withdrawn recordings. They are
+        # named rather than pattern-matched so that fixing one means DELETING A
+        # LINE HERE, and the list shrinking is the progress.
+        # docs/todo/2026-08-20-six-tools-still-read-stores.md
+        # `cli.py` and `ui/app.py` are the STORE PATH'S OWN ENTRY POINTS — the
+        # half of FOUNDATIONS §4 that exists to browse a store, as against the
+        # webapp which reads folders. They are not analyses. Whether that path
+        # should survive at all is a product question, not a gate's.
+        exclude=["src/bugarach/store.py", "src/bugarach/cli.py",
+                 "src/bugarach/ui/app.py", "tools/matlab_ref/**",
+                 "tools/sapper.py", "tools/lab_excluded.py",
+                 # different case: this one already PREFERS the folder and keeps
+                 # the store as a documented fallback. Whether the fallback
+                 # should exist at all is the open question in the todo.
+                 "tools/assess_archive.py"],
+        message="Analysis must read the EXPORT FOLDER, never a .mat store. The "
+                "folder is the corpus the lab approved: the exporter honours "
+                "db4's `exclude` flag, drops what was withdrawn, and records it "
+                "in PROVENANCE.md. A store carries every recording ever "
+                "processed and cannot say which are usable. On 2026-08-20 two "
+                "withdrawn recordings were found inside every number this "
+                "project had published about the assembly question — the export "
+                "was correct and the analyses had gone around it. Read the "
+                "folder (bugarach.io.load_folder); if you genuinely need the "
+                "store reader, it is store.py and it is excluded here.",
+        fixture_bad='s = load_slice(root / "recording.mat")',
+        fixture_good='slices = load_folder(export_dir)',
     ),
 ]
 

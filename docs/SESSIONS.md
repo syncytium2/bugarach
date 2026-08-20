@@ -77,6 +77,36 @@ Template:
   paths.
 - **Notes:** repo-only otherwise; nothing read from `$BUGARACH_DATA_ROOT`.
 
+### ANY SESSION touching the export contract — their review is IN, and applied
+- **Status:** ACTIVE — this block is a message, not a claim
+- **Posted:** 2026-08-20, updated same day
+- **Notes:** interface2 reviewed `docs/export_for_producers.md` and found **two blocking
+  defects**; round 2 of `docs/reviews/export_for_producers_2026-08-20.md` records them and
+  both are fixed. **The freeze is over — normal editing resumes.**
+  Worth knowing before touching that page again: the advice on `analysis_start_sec` /
+  `analysis_end_sec` had been backwards AND contradicted interface2's own decision
+  `a1409d1d`, which this repo could have read and did not. Supplying those columns
+  short-circuits the raw-bounds validation. Send raw periods.
+  The full spec `docs/export_folder_spec.md` is **not** what was sent, and its revision 6
+  stands regardless: the folder is the whole input, selection is the producer's, and no
+  exclusion filter goes in this repo.
+
+### Mac/contract-trusts-the-folder — a dedicated home for the source exports
+- **Status:** ACTIVE
+- **Started:** 2026-08-20
+- **Writes:** `<dropbox>/data/bugarach/` — **creating it.** A COPY of the three export
+  folders now under `<dropbox>/data/exports/bugarach/` (30 MB of CSV). The originals
+  stay exactly where they are, because interface2's `generate_export_folder.m` writes
+  there and moving its target would break their next export silently.
+- **Claims:** `<dropbox>/data/bugarach/` for the duration. Nothing in `darkroom/` —
+  **source data does not belong there**, that folder is review artefacts and figures.
+  Nothing under any store path, nothing written to `exports/`.
+- **Notes:** Tony, 2026-08-20, after two recordings the lab had marked unusable
+  reached published numbers. The exporter had honoured the flag and said so in its
+  `PROVENANCE.md`; the numbers came from analyses that opened `.mat` stores and never
+  read the folder at all. This gives the exported corpus one address so a tool has no
+  excuse, and a repo-wide gate follows.
+
 ### Mac/darkroom-corrected-synfire — the corrected synfire numbers, in their own folder
 - **Status:** DONE 2026-08-20 — **written, claim released**
 - **Started:** 2026-08-19
@@ -921,3 +951,22 @@ session's work is not a sweep.
   (Tony, 2026-08-12): constellation is the MATLAB **producer**, bugarach is the Python port
   + viewer that consumes the same contract. Did NOT touch `constellation/` or any other
   project folder. Resolve the path via `$BUGARACH_DARKROOM` — never hardcode it (SAP004).
+
+### Mac/pensub-validation — check and validate the new pensub export
+- **Status:** DONE 2026-08-20 — **written, claim released.** Landed as PR #188.
+- **Started:** 2026-08-20
+- **Doing:** Tony: "pensub export is complete. check, validate, report." Conformance,
+  differential against the export it must pair with, and the coordination measurement
+  that says whether the subtraction did anything. Report + murderboard run record.
+- **Writes:** `<darkroom>/bugarach/2026-08-20-pensub-validation/` — **ONE new subfolder**,
+  holding the validation report and its figure. Nothing else in the darkroom; nothing in
+  `constellation/`; nothing near `bugarach/synfire*` (claimed by another session).
+- **Claims:** ~~that one subfolder only~~ — **released.** Written and not being regenerated;
+  it holds the report, its figure, the murderboard run record and a `README.md`.
+- **Reads, read-only:** `<dropbox>/data/exports/bugarach/2026-08-20_pensub_revised_2v` and
+  `..._2026-08-18_revised_2v_periods`. **No `.mat` store was opened** — the folder is the
+  whole input, and this review had no reason to go around it.
+- **Finding another session should know:** the pensub export **pairs with the periods
+  export, not `_v2`**. `_v2` ships `analysis_*` columns and pensub does not, so pairing
+  across them scores two different windows. Both hold 84 recordings; the historical
+  crosstalk control's denominators are quoted out of 85.

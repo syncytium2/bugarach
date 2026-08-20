@@ -229,8 +229,15 @@ a wrong conclusion in this repo. The authority is the global
   the properties of coordination."* Treatments are what the instruments are
   pointed at; taking coordination properties from them assumes the answer. Where a
   difficulty range is wanted, use the spread among untreated slices — baseline's
-  own interquartile per-ROI rate is 0.0038–0.0175 Hz. `bugarach.bench` follows
+  own interquartile per-ROI rate is **0.0052–0.0190 Hz**. `bugarach.bench` follows
   this; two earlier versions of it did not, in opposite directions.
+  **Re-derived 2026-08-20 from the export folder**, the corpus the lab approved.
+  The previous figures — 0.0038–0.0175 — came from the `.mat` store, which carries
+  every recording ever processed including two the lab withdrew, which is the
+  defect SAP007 exists to stop. Moving the axis changed no detector's F1 beyond
+  seed noise and reordered nothing, but it exposed that CICADA's FAST percentile
+  was a notch too loose (7.3 false events/hour on a null with nothing planted,
+  against a ceiling of 6); that was retuned to 99.999 with it, on Tony's call.
 - **Senktide is not one effect.** It raises event frequency *and* the GCaMP6f
   background over time, so "more activity" conflates a frequency change with a
   baseline shift. Any claim that a detector finds more under senktide must say
