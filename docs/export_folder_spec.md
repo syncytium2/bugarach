@@ -186,6 +186,16 @@ the measurement, not a gap in the file.
 For this project's own exporter, defining fast and slow width is **interface2's**
 responsibility and belongs in their documentation, not here.
 
+> **Confirmed 2026-08-20 (Tony): width really is different for fast and slow, and the
+> current export is right to send two definitions.** The exporter's `PROVENANCE.md`
+> raises this itself as `⚠ CONFIRM: width_sec is not the same quantity in both
+> streams` — fast carries the real transient width (findpeaks half-prominence), slow
+> carries the rise interval `peak_sec − time_sec`, because slow widths run to a median
+> of 4.7 s and a maximum of 186.9 s and would swamp any coincidence window. **That ⚠
+> is answered: intended behaviour, not a defect.** Nothing in bugarach reads
+> `width_sec` yet, so no code changes; recorded so the question is not reopened and so
+> interface2 can clear its flag.
+
 #### Sending more than is asked for
 
 Extra columns are ignored rather than rejected, so a producer may ship one file that
