@@ -9,8 +9,8 @@ picture.** Upstream tuned detectors on a dense benchmark, deployed them on a
 sparse one, and precision fell from 90 to 45, 74 to 10, 58 to 10. That was a
 figure in a deck. Here it is an assertion.
 
-The two regimes are both **untreated** and both measured: 0.0038 Hz and 0.0175
-Hz per ROI, a 4.6-fold change real slices show among themselves. No drug is
+The two regimes are both **untreated** and both measured: 0.0052 Hz and 0.0190
+Hz per ROI, a 3.7-fold change real slices show among themselves. No drug is
 involved, which matters, because a treatment regime would make the test a
 question about pharmacology instead of about generalization.
 
@@ -167,7 +167,11 @@ def report(res) -> str:
     lines = []
     q, b = REGIMES
     lines.append("REGIME SHIFT — threshold carried over, never re-picked")
-    lines.append(f"  quiet = {q} (0.0038 Hz/ROI)   busy = {b} (0.0175 Hz/ROI)")
+    # Read off bench.REGIMES rather than transcribed: these were literals until
+    # 2026-08-20, when the axis was re-derived from the export folder.
+    from bugarach.bench import REGIMES as _R
+    lines.append(f"  quiet = {q} ({_R[q]['bg_rate_hz']:g} Hz/ROI)   "
+                 f"busy = {b} ({_R[b]['bg_rate_hz']:g} Hz/ROI)")
     lines.append("")
     lines.append(f"{'model':>8} {'trained':>6} | {'F1 same':>8} {'F1 shift':>9}"
                  f" {'dF1':>7} | {'prec same':>10} {'prec shift':>11} {'dprec':>7}")
