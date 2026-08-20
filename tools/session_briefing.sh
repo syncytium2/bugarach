@@ -133,7 +133,15 @@ if [ -n "$board" ]; then
       echo "\`docs/SESSIONS.md\` instead."
       echo
       echo "Claiming is enforced: \`.githooks/pre-commit\` refuses a commit from a worktree"
-      echo "with no block here. Add yours before you start, and mark it DONE on the way out."
+      echo "with no block here. But that gate fires at your FIRST COMMIT, which is after"
+      echo "the work exists — so write your block when you pick up the task, and mark it"
+      echo "DONE on the way out. Blocks carry a \`Touches:\` line naming the paths they"
+      echo "expect to write: on 2026-08-20 three sessions duplicated each other's work and"
+      echo "no two of them shared a branch name, but all three overlapped in paths."
+      echo
+      echo "The session briefing shows only ACTIVE blocks (\`tools/board_digest.sh\`)."
+      echo "Finished ones stay here as the record; move them under \`## Archive\` when the"
+      echo "live list gets long."
       echo
       echo "---"
       echo

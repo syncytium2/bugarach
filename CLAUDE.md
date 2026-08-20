@@ -164,9 +164,16 @@ Several stateless sessions may run against this repo at once, on this machine
 and others; a session learns what another did **only** from durable artifacts.
 Read [`docs/session_protocol.md`](docs/session_protocol.md) and claim shared
 external outputs on [`docs/SESSIONS.md`](docs/SESSIONS.md) before writing them.
-The `SessionStart` hook (`.claude/hooks/session-start.sh`) prints the briefing
-automatically — if it ever stops firing, that is a bug worth fixing, not an
-inconvenience to route around.
+The `SessionStart` hook prints the briefing automatically — if it ever stops
+firing, that is a bug worth fixing, not an inconvenience to route around. It is
+wired to `tools/session_start_trimmed.sh`, which runs the vendored
+`.claude/hooks/session-start.sh` unchanged and replaces its whole-board dump with
+`tools/board_digest.sh` — the **ACTIVE blocks only**. The vendored hook `cat`s the
+board, which on 2026-08-20 made the briefing 60,235 bytes; the harness refused an
+injection that size, spilled it to a file and delivered a 2KB preview, so the board
+(line 32) reached nobody and took the worktree list and the unpushed-work alarm
+with it. The wrapper prints a size canary — `briefing delivered: N lines, NB` —
+so the next regression is visible rather than silent. **Watch that number.**
 
 **There are two boards and they answer different questions.** `docs/SESSIONS.md`
 is in git and covers what another *machine* can see — the darkroom, the public
@@ -181,6 +188,16 @@ refuses a commit from a worktree that has no block on it (override, one-shot:
 wrote to the shared darkroom without ever creating it, while four other sessions
 ran on the same machine. This is a bugarach-local addition; the vendored
 protocol does not require it, which is why the gate lives here and not upstream.
+
+**Claim as the first act of the session, not at your first commit, and give the
+block a `Touches:` line.** The gate fires at the commit, which is hours after the
+work exists: on 2026-08-20 three sessions each did good work twice — two tool
+conversions, a spec revision, a CI change — and every one of them had claimed
+correctly, just afterwards. No two shared a branch name and all three overlapped in
+**paths**, which is what `Touches:` is for and why the digest puts it in front of
+you at startup. Whether the machine should insist at the first *file write* rather
+than the first commit is an open decision in
+[`docs/todo/2026-08-20-claim-before-starting-not-before-committing.md`](docs/todo/2026-08-20-claim-before-starting-not-before-committing.md).
 
 **Vendored copies** (`docs/session_protocol.md` and the hook, from interface2;
 `tools/murderboard_freshness.sh`, from syncytium2/murderboard) carry a
