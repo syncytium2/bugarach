@@ -30,9 +30,18 @@ damage — the sparse recordings at the top of the distribution:
 | `20240723_22` slow | 13 | 24 (20) | 0.397 | 0.103 |
 | `20250904_211` slow | 53 | 45 (39) | 0.247 | 0.098 |
 
-Corpus medians barely move (fast 0.033, slow 0.100 → 0.032, 0.082) because most
+Corpus medians barely move (fast 0.033, slow 0.100 → 0.032, 0.081) because most
 recordings have few silent ROIs. **The upper tail is where the silence lives**, and the
-upper tail is what a "there is order here" claim is made of.
+upper tail is what a "there is order here" claim is made of: median |change| is 0.004
+fast and 0.007 slow, but p90 is 0.038 and 0.086 — comparable to the median indicator
+itself.
+
+**The verdict tally moves by one in each stream and the conclusion stands**: fast 22 of
+81 above null pre-fix against 23 of 81 corrected, slow 43 of 82 against 44 of 82. The
+relabel null preserves each ROI's event count, so silent ROIs stay silent in the
+surrogates and the inflation lands on both sides; every flip is a recording sitting on
+the α = 0.05 line. Figures: `synfire_roi_{fast,slow}` from
+`tools/make_synfire_roi_figure.py`.
 
 It also inflates the correlation the synfire handoff cites as its third reason for not
 quoting the group result: `rho(indicator, spike count)` is −0.76 fast / −0.40 slow as
