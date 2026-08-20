@@ -5,6 +5,23 @@ filed: 2026-08-20
 
 # The crosstalk control has no export folder, so it can no longer be run
 
+> **The export arrived the same day, and it checks out — but this stays open until the
+> control is actually re-run.** `2026-08-20_pensub_revised_2v`, 84 recordings, conforming,
+> and it pairs with `2026-08-18_revised_2v_periods` (**not** `_v2`, which ships
+> `analysis_*` columns pensub does not). Two quantities the historical control published
+> come back out of it — event retention 64.7% / 57.7% against the report's "65% of fast
+> and 58% of slow", and clusters per minute at K = 3 falling 0.379 → 0.050 against its
+> "0.35 per minute to 0.05". The full check, the four questions it raises for the
+> producer, and the command to run:
+> [`docs/reviews/pensub_export_validation_2026-08-20.md`](../reviews/pensub_export_validation_2026-08-20.md).
+>
+> What closes this item is the re-run and the `⚠` coming off `docs/assembly_report.md`.
+> Expect **84** recordings, not the 85 the historical denominators are quoted out of.
+>
+> The store question raised below is answered: the folder was written from
+> `event_store_onset_pensub_revised_2v_alive` and honours db4's `exclude`, which is why it
+> holds 84 where the store holds 85. The producer resolved it, as this item asked.
+
 **A request to the producer, not a gap in the analysis.** Store access is closed and the
 export folder is the whole input (`docs/export_folder_spec.md` rev 6). Every part of the
 assembly work has been moved onto that footing **except one**, because the data it needs
