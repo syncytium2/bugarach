@@ -61,12 +61,14 @@ Template:
 ## Active
 
 ### Mac/darkroom-corrected-synfire — the corrected synfire numbers, in their own folder
-- **Status:** ACTIVE
+- **Status:** DONE 2026-08-19 — **written, claim released**
 - **Started:** 2026-08-19
 - **Writes:** `<darkroom>/bugarach/2026-08-19-synfire-roi-corrected/` — **one new subfolder.**
   Both `--keep-silent-rois` (pre-fix) and corrected runs of each stream, both figures, and
   a README saying which is which.
-- **Claims:** that ONE subfolder, and nothing else in `bugarach/`.
+- **Claims:** ~~that ONE subfolder~~ — **released.** Written and not being regenerated. It
+  holds `README.md`, `v2_analysis_window/` and `periods_raw_baseline/` (pre-fix and
+  corrected, both streams, all seeded), and both figures.
 - **DOES NOT TOUCH** `<darkroom>/bugarach/synfire_{fast,slow}_relabel.json` at the root
   (2026-08-19 19:51). Those are the synfire session's output and carry the **pre-fix**
   numbers — the ones the handoff and `docs/todo/2026-08-19-synfire-measured-and-what-it-cost.md`
@@ -85,12 +87,28 @@ Template:
   correct — on the slow stream one shared recording differs by 0.377 in the indicator from
   windowing alone, larger than anything the ROI fix does. Everything published in this
   subfolder is therefore run on **both** exports, and the README says which is which.
-- **Notes:** the defect and its size are in PR #152, merged (`main` @ `bf15b50`). Short
-  version: PySpike scores a pair of silent trains as a perfectly ordered pair, the scan fed
-  it every ROI, and 34-35% of ROIs are silent. The verdict tallies move by one recording
-  per stream (fast 22->23 of 81, slow 43->44 of 82) and the conclusion is unchanged; the
-  per-recording magnitudes in the upper tail move a lot, and `rho(indicator, spikes)` goes
-  from -0.76/-0.40 to -0.60/-0.18.
+- **THREE defects, not one, and two of them reached published numbers.** PR #152 carries
+  the first; the follow-ups on `roi-and-synfire` carry the rest.
+  1. PySpike returns `(e=1, m=1)` — a *perfectly ordered* pair — for two EMPTY trains, and
+     the scan fed it every ROI: 1941 of 5260 (ROI, stream) pairs, 37%. Note that "empty
+     here" is not "dead". Only **122** are silent across the whole recording — matching the
+     export's own `PROVENANCE.md` exactly — and the other **1819** fire outside the
+     baseline window.
+  2. **Nothing reproduced.** The seed was `abs(hash(slice_id))`, and Python salts string
+     hashing per process, so every run drew different surrogates while the docstring
+     promised otherwise. Now `zlib.crc32`; a rerun is field-for-field identical, asserted
+     in subprocesses with hash randomisation forced on. **The synfire session's published
+     files predate this, so they are not re-derivable** — not wrong, but not reproducible.
+  3. `20240723_22` slow — 3 events across 3 trains — has no surrogate spread and was
+     reported as the corpus maximum: 0.774 **before** the ROI fix and 1.000 after. Rows now
+     carry `defined` and summaries exclude them. Honest maxima 0.414 and 0.625.
+- **What the fix does to the answer.** The tally moves +3 / -1 / -2 / +1 across the four
+  (export x stream) combinations — no consistent direction, every flip a recording on the
+  alpha=0.05 line, and the conclusion untouched. Two effects ARE consistent across both
+  exports and are the quotable ones: the upper tail of the indicator (p90 |change| 0.04
+  fast / 0.09 slow, against medians of 0.03 / 0.08), and `rho(indicator, spikes)` weakening
+  from -0.74/-0.39 to -0.57/-0.19 — which is the synfire handoff's **third reason** for not
+  quoting the slow group result.
 
 ### Mac/modularity-on-fast — run the connectivity project's modularity instrument on the FAST stream
 - **Status:** DONE 2026-08-19 — **claim released**
