@@ -21,6 +21,13 @@ build/
 # node is here only to run wrangler (see docs/deploy.md)
 node_modules/
 
+# wrangler's local state. It caches the logged-in Cloudflare account — the account
+# id and its display name, which is a person's email address — into a file that is
+# trivially caught by `git add -A`, and this repo is public. Nothing in it is a
+# credential and nothing in it is needed to deploy: wrangler rewrites it at the next
+# login. It was tracked for a day before anyone looked.
+.wrangler/
+
 # figure tools write an interactive .html beside each .png; only the PNG is
 # a documentation artifact, the HTML is regenerable build output
 docs/generator/*.html
