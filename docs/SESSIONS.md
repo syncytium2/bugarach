@@ -80,18 +80,21 @@ Template:
 ### Mac/darkroom-corrected-synfire — the corrected synfire numbers, in their own folder
 - **Status:** DONE 2026-08-20 — **written, claim released**
 - **Started:** 2026-08-19
-- **Writes:** `<darkroom>/bugarach/2026-08-19-synfire-roi-corrected/` — **one new subfolder.**
-  Both `--keep-silent-rois` (pre-fix) and corrected runs of each stream, both figures, and
-  a README saying which is which. **Plus ONE new file at the root of `bugarach/`**:
-  `synfire_README.md`, a signpost beside the synfire session's two JSONs — see below.
+- ⚠ **PATHS IN THIS BLOCK ARE SUPERSEDED.** Everything it wrote was moved on 2026-08-20
+  into `<darkroom>/bugarach/synfire/` — see the `Mac/synfire-folder` block above for the
+  current layout. The block is kept as written because it is the record of what was done;
+  only the locations changed.
+- **Wrote (originally):** `<darkroom>/bugarach/2026-08-19-synfire-roi-corrected/` —
+  both `--keep-silent-rois` (pre-fix) and corrected runs of each stream, both figures, and
+  a README saying which is which. Plus `bugarach/synfire_README.md`, a signpost beside the
+  synfire session's two JSONs. **Now** `synfire/2026-08-19-corrected/` and
+  `synfire/README.md`.
 - **Claims:** ~~that ONE subfolder~~ — **released.** Written and not being regenerated. It
   holds `README.md`, `v2_analysis_window/` and `periods_raw_baseline/` (pre-fix and
   corrected, both streams, all seeded), and both figures.
-- **Tony's decision, 2026-08-20: both sets stay, side by side, with a README.** The two
-  root files are NOT superseded and NOT deleted. The only thing added beside them is
-  `synfire_README.md`, because a reader opening `bugarach/` would otherwise see the old
-  JSONs with nothing to say a corrected set exists one folder down. It adds a signpost and
-  changes no result.
+- **Tony's decision, 2026-08-20: both sets stay, side by side, with a README.** The
+  original files are NOT superseded and NOT deleted — they are now
+  `synfire/2026-08-19-original/`, beside `synfire/2026-08-19-corrected/`.
 - **DOES NOT TOUCH** `<darkroom>/bugarach/synfire_{fast,slow}_relabel.json` at the root
   (2026-08-19 19:51). Those are the synfire session's output and carry the **pre-fix**
   numbers — the ones the handoff and `docs/todo/2026-08-19-synfire-measured-and-what-it-cost.md`
@@ -348,7 +351,9 @@ session's work is not a sweep.
   `docs/assembly_report.md` + `docs/reviews/assembly_summary_2026-08-19.md`, and the
   numbers this block once carried are superseded.
 - **Wrote (darkroom, claim released):** `synfire_fast_relabel.json`,
-  `synfire_slow_relabel.json`, alongside the earlier `assembly_*` files.
+  `synfire_slow_relabel.json`, alongside the earlier `assembly_*` files. **Both were moved
+  on 2026-08-20** and now live at `<darkroom>/bugarach/synfire/2026-08-19-original/`,
+  beside a corrected set. Unchanged, and still what this block's numbers refer to.
 - **The one thing worth carrying to any new measure here:** the standing per-ROI
   circular-shift null answered the wrong question for BOTH measures attempted this week.
   It calls 60% of order-free generated recordings synfire-significant, because it destroys

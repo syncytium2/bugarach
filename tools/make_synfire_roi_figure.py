@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""How much of the synfire indicator was cells that never fired?
+"""How much of the synfire indicator was cells with nothing in the window?
 
     python tools/make_synfire_roi_figure.py \
         --published <dir>/synfire_fast_relabel_silentkept.json \

@@ -76,7 +76,8 @@ of the comparison. Every flip is a recording sitting on the line.
   artifact: sparse recordings scored high partly *because* they were sparse.
 
 Figures `synfire_roi_{fast,slow}` from `tools/make_synfire_roi_figure.py`; runs and a
-fuller write-up in `<darkroom>/bugarach/2026-08-19-synfire-roi-corrected/`.
+fuller write-up in `<darkroom>/bugarach/synfire/`, which holds `2026-08-19-corrected/`
+beside `2026-08-19-original/` with the explanation in its `README.md`.
 
 ## Two defects found while re-running, both of which reached published numbers
 
