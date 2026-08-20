@@ -60,6 +60,47 @@ Template:
 
 ## Active
 
+### Mac/deploy-record — the webapp merge train landed; the site is built and NOT uploaded
+- **Status:** DONE — **the site claim was never taken and remains released.** The build is
+  local; nothing was published.
+- **Started:** 2026-08-19
+- **Writes:** repo only. The local `site/` payload is gitignored and machine-local.
+- **Claims:** none.
+
+**What landed.** PRs **#128 → #129 → #130 → #131**, `main` @ `19a320b`. The browser now
+runs **five of the six** detectors — rate, SCE, coact, LoCo, sync — leaving CICADA. On
+merged `main`: 655 passed, 1 skipped, including all **97** browser parity tests, which
+actually ran here because this Mac has chromium (CI still skips them; PR #148 is fixing
+that). #133 was left alone — another session owns it.
+
+**They were a stack, and that has a trap.** #129 was based on #128's branch, #130 on
+#129's, #131 on #130's. **GitHub does not retarget a stacked PR when its base merges**, so
+every one after the first needed `gh pr edit <n> --base main` or it would have merged into
+a feature branch while reporting success. Worth knowing before the next stack.
+
+**The site is built but not uploaded.** `tools/build_site.py` ran from `19a320b`; the
+publish gate passed and `site/viewer.html` is **byte-identical** to
+`docs/site/raster_viewer.html` — copied, not transformed. The upload was refused by this
+session's sandbox, which treats publishing as needing the human's approval. So **`main`
+carries five detectors and `bugarach.tonydefazio.com` still serves two** until someone
+runs `npx wrangler deploy` and then `python tools/audit_deployed_page.py`.
+
+**⚠ A standing instruction on this board is now obsolete.** Two blocks below say deploys
+run from `bugarach-worktrees/deploy-site` and warn to *"check what it is checked out at
+before deploying, every time"*, because it was a **detached HEAD** that did not follow
+`main`. That worktree was merged and clean and this session removed it in the Phase-0
+sweep. **Deploys now run from the primary checkout, which does follow `main`** — which is
+the safer arrangement and removes the republish-the-wrong-commit hazard the warning
+existed for. `docs/deploy.md` never mentioned the pinned worktree, so nothing there needs
+changing; the warning lived only here.
+
+**Also swept**, so nobody hunts for them: worktrees `detector-table`, `webapp-loco`,
+`webapp-coact`, `webapp-sce`, `contract-check` and `deploy-site` removed — all merged,
+clean, and unclaimed on either board — and those four remote branches deleted.
+`preview-everything` was **pushed to origin first**; it had four commits on no remote, and
+its worktree and two uncommitted files were left untouched, because discarding another
+session's work is not a sweep.
+
 ### Mac/modularity-on-fast — run the connectivity project's modularity instrument on the FAST stream
 - **Status:** DONE 2026-08-19 — **claim released**
 - **Started:** 2026-08-19
