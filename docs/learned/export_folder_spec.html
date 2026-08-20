@@ -1,0 +1,781 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The export folder — full contract</title>
+<style>
+  :root {
+    --paper:   #f6f7f9;
+    --card:    #ffffff;
+    --ink:     #16202b;
+    --muted:   #5c6773;
+    --rule:    #d8dde3;
+    --accent:  #2f5d8a;
+    --learned: #7a1f22;
+    --hand:    #4c78a8;
+    --truth:   #1b7f3b;
+    --ok-bg:   #e4efe6;  --ok-fg:   #1b6b34;
+    --bad-bg:  #f7e4e3;  --bad-fg:  #97362f;
+    --serif: Charter, "Bitstream Charter", "Sitka Text", Cambria, Georgia, serif;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #11151a; --card: #171c23; --ink: #e4e8ec; --muted: #97a2ae;
+      --rule: #2a323c; --accent: #7aa8d4; --learned: #e0796f; --hand: #7aa8d4;
+      --truth: #59b37c;
+      --ok-bg: #17301f; --ok-fg: #7fc796;
+      --bad-bg: #331c1a; --bad-fg: #e08c84;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #11151a; --card: #171c23; --ink: #e4e8ec; --muted: #97a2ae;
+    --rule: #2a323c; --accent: #7aa8d4; --learned: #e0796f; --hand: #7aa8d4;
+    --truth: #59b37c;
+    --ok-bg: #17301f; --ok-fg: #7fc796;
+    --bad-bg: #331c1a; --bad-fg: #e08c84;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--paper); color: var(--ink);
+    font-family: var(--sans); font-size: 16.5px; line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 960px; margin: 0 auto; padding: 4rem 1.5rem 6rem; }
+  .col { max-width: 66ch; }
+
+  h1 {
+    font-family: var(--serif); font-weight: 600; font-size: clamp(2rem, 5vw, 2.9rem);
+    line-height: 1.12; letter-spacing: -0.015em; margin: 0 0 .6rem;
+    text-wrap: balance;
+  }
+  h2 {
+    font-family: var(--serif); font-weight: 600; font-size: 1.5rem;
+    line-height: 1.25; margin: 3.5rem 0 .9rem; text-wrap: balance;
+  }
+  h3 {
+    font-family: var(--sans); font-weight: 640; font-size: 1.02rem;
+    margin: 2rem 0 .5rem; letter-spacing: -0.005em;
+  }
+  p, li { margin: 0 0 1rem; }
+  a { color: var(--accent); }
+  strong { font-weight: 640; }
+  code, .num { font-family: var(--mono); font-size: .89em; font-variant-numeric: tabular-nums; }
+
+  .eyebrow {
+    font-family: var(--sans); font-size: .74rem; font-weight: 660;
+    letter-spacing: .13em; text-transform: uppercase; color: var(--muted);
+    margin: 0 0 1.1rem;
+  }
+  .byline { font-size: .9rem; color: var(--muted); margin: 0 0 1.6rem; }
+  .standfirst {
+    font-family: var(--serif); font-size: 1.24rem; line-height: 1.5;
+    color: var(--muted); margin: 0 0 2.5rem; max-width: 62ch;
+  }
+
+  .verdict {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: 1px; background: var(--rule); border: 1px solid var(--rule);
+    border-radius: 3px; overflow: hidden; margin: 0 0 1rem;
+  }
+  .verdict div { background: var(--card); padding: 1.15rem 1.25rem; }
+  .verdict .k {
+    font-family: var(--mono); font-size: 1.85rem; font-variant-numeric: tabular-nums;
+    line-height: 1; letter-spacing: -0.02em;
+  }
+  .verdict .l { font-size: .82rem; color: var(--muted); margin-top: .45rem; line-height: 1.45; }
+  .k.six { color: var(--hand); }
+  .k.learned { color: var(--learned); }
+
+  figure { margin: 2.2rem 0; }
+  figure img {
+    width: 100%; height: auto; display: block;
+    border: 1px solid var(--rule); border-radius: 3px; background: #fff;
+    padding: 10px;
+  }
+  figcaption {
+    font-size: .87rem; color: var(--muted); margin-top: .7rem;
+    max-width: 72ch; line-height: 1.55;
+  }
+  /* A colour key must render IN its colours, next to what it explains, at body
+     size. Naming a colour in grey caption text is a key that exists and is
+     functionally absent. */
+  .key { font-weight: 640; }
+  .key.hand { color: var(--hand); }
+  .key.learned { color: var(--learned); }
+  .key.truth { color: var(--truth); }
+
+  .tablewrap { overflow-x: auto; margin: 1.5rem 0; }
+  table { border-collapse: collapse; width: 100%; font-size: .92rem; }
+  th, td { text-align: left; padding: .5rem .8rem; border-bottom: 1px solid var(--rule); }
+  th { font-size: .76rem; text-transform: uppercase; letter-spacing: .07em;
+       color: var(--muted); font-weight: 660; }
+  td.n, th.n { text-align: right; font-family: var(--mono);
+               font-variant-numeric: tabular-nums; }
+  tr.hl td { background: color-mix(in srgb, var(--learned) 8%, transparent); }
+
+  .note {
+    border-left: 2px solid var(--accent); padding: .1rem 0 .1rem 1.1rem;
+    margin: 1.6rem 0; color: var(--muted); max-width: 64ch;
+  }
+  .note.warn { border-left-color: var(--learned); }
+  .note strong { color: var(--ink); }
+
+  /* A page that is accurate for the bench it measured, and wrong for the
+     question a reader arrives with, needs to say so before its first sentence
+     — not in a footnote under the conclusion. */
+  .superseded {
+    background: var(--bad-bg); color: var(--bad-fg);
+    border: 1px solid color-mix(in srgb, var(--bad-fg) 35%, transparent);
+    border-radius: 3px; padding: 1.1rem 1.3rem; margin: 0 0 2.5rem;
+    font-size: .95rem; line-height: 1.55;
+  }
+  .superseded p { margin: 0 0 .7rem; max-width: 72ch; }
+  .superseded p:last-child { margin-bottom: 0; }
+  .superseded strong { color: var(--bad-fg); font-weight: 700; }
+  .superseded code { background: color-mix(in srgb, var(--bad-fg) 10%, transparent);
+                     padding: .06em .3em; border-radius: 2px; }
+
+  .arch { margin: 2rem 0; }
+  .arch svg { width: 100%; height: auto; display: block; }
+  .arch text { font-family: var(--mono); font-size: 12px; fill: var(--ink); }
+  .arch text.lbl { font-family: var(--sans); font-size: 12.5px; fill: var(--muted); }
+  .arch text.hi { fill: var(--learned); font-weight: 700; }
+  .arch rect { fill: var(--card); stroke: var(--rule); }
+  .arch rect.act { stroke: var(--learned); stroke-width: 1.6; }
+  .arch line, .arch path { stroke: var(--muted); }
+
+  hr { border: 0; border-top: 1px solid var(--rule); margin: 3.5rem 0; }
+  footer { color: var(--muted); font-size: .85rem; margin-top: 4rem; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+
+  /* markdown lands as one flow rather than the reports' hand-set columns */
+  .doc { max-width: 74ch; }
+  .doc h1 { font-size: clamp(1.8rem, 4.5vw, 2.4rem); margin-bottom: 1.4rem; }
+  .doc h2 { border-top: 1px solid var(--rule); padding-top: 1.6rem; }
+  .doc h3 { font-size: 1.05rem; margin-top: 2.2rem; }
+  .doc table { margin: 1.4rem 0; }
+  .doc td, .doc th { vertical-align: top; }
+  .doc blockquote { border-left: 2px solid var(--rule); margin: 1.6rem 0;
+                    padding: .1rem 0 .1rem 1.1rem; color: var(--muted); }
+  .doc blockquote.gate { border-left: 4px solid var(--learned);
+                         background: var(--bad-bg); color: var(--bad-fg);
+                         padding: .2rem 1.3rem 1rem; border-radius: 3px; }
+  .doc blockquote.gate h2 { border-top: 0; padding-top: 1.2rem;
+                            color: var(--bad-fg); }
+  .doc blockquote.gate strong { color: var(--bad-fg); }
+  .doc code { background: color-mix(in srgb, var(--ink) 7%, transparent);
+              padding: .08em .32em; border-radius: 2px; }
+  .doc li { margin-bottom: .5rem; }
+
+</style>
+<div class="wrap"><div class="doc">
+<h1>The export folder — bugarach's input contract</h1>
+<p><strong>bugarach needs three facts:</strong> the event times of each ROI, the timing of each
+treatment period, and the acquisition frame interval. Nothing here is specific to a
+lab, a preparation, a drug or a pipeline. A producer that can state those three is a
+conforming producer.</p>
+<p><strong>A fourth is asked for and not required:</strong> how big each event was. A producer that
+can state it should; one that cannot is still conforming, and every detector still
+runs. What it buys is in revision 5 below.</p>
+<p><strong>This is the whole input.</strong> bugarach reads one folder and nothing else: no data
+store, no archive, no environment variable, no network, no companion database. If
+a fact is not in the folder, bugarach does not know it and does not guess it.</p>
+<p>Everything is CSV, UTF-8, newline-only endings, one header row. Times are
+<strong>seconds</strong> on the recording's own clock. Any producer can write these files —
+this project's MATLAB exporter, another lab's Python, a spreadsheet exported by
+hand.</p>
+<blockquote>
+<p><strong>Revision 6</strong> (2026-08-20). <strong>Selection is the producer's, and the consumer may
+not second-guess it.</strong></p>
+<p>"bugarach reads one folder and nothing else" was stated from revision 1 and was
+read as a <em>convenience</em> — the folder is enough — rather than as the <em>rule</em> it is.
+It is the rule. <strong>Which recordings are analysable, and which ROIs are alive, are
+expressed by what the folder contains.</strong> A recording the producer withdrew is
+absent. A dead ROI is not exported. There is nothing for the consumer to filter,
+and filtering anyway is a defect rather than a precaution.</p>
+<p><strong>The incident.</strong> An analysis in this repo read the <code>.mat</code> store directly, noticed
+it therefore contained recordings the lab had withdrawn, and "fixed" that by
+reading the lab's workbook to re-derive the exclusions. The workbook keys them on
+(date, mouse, <strong><code>slice_order</code></strong>). bugarach has no <code>slice_order</code>, so it matched on
+date and dropped <strong>a recording the lab had not withdrawn</strong> — one mouse had two
+slices that day and only the first was excluded. The producer's export had it
+right. Every number in a published report was then computed over a corpus one
+recording smaller than the producer intended, by machinery built to be careful.</p>
+<p><strong>The generalisation.</strong> A consumer re-deriving a producer's decision is working
+from strictly less information than the producer had. It will sometimes agree, and
+when it disagrees it will be wrong. If a folder looks like it contains something it
+should not, that is a <strong>conversation with the producer</strong>, not a filter in the
+consumer. <code>bugarach.assembly</code> carries the same note where the deleted code was.</p>
+<p><strong>Revision 5</strong> (2026-08-18). <strong>An event is located at its half-rise, and the
+contract now asks how big it was.</strong></p>
+<p><code>time_sec</code> is the <strong><code>t50rise</code></strong> — the time the transient reached half its rise.
+Rev 1–4 said only "when the event began", which is the same thing said loosely, and
+loosely was not enough: a store can hold both an onset and a peak, and they are not
+close together — in <strong>this project's own</strong> stores the gap is roughly 0.3 s in a fast
+stream and 2 s in a slow one. Another producer's gap will differ; that it exists at
+all is the point. A producer reading "when it began" had no way to know which was
+wanted. One rule, named, for every stream and every producer.</p>
+<p><code>width_sec</code> is <strong>new, optional, and requested.</strong> With it, <code>amp</code> and <code>peak_sec</code> may
+also be sent. <strong><code>width</code> is not one quantity</strong> — it is defined differently for a
+fast event than for a slow one, and defining it is the <strong>producer's</strong>
+responsibility, not bugarach's. For this project's own exporter that is
+interface2's call to make and to document; for anyone else it is theirs. So width
+travels with a <code>width_def</code> naming the rule that produced it, exactly as <code>strength</code>
+travels with <code>strength_unit</code> in the output — for the same reason, which is that a
+column meaning two things without saying so yields a plausible wrong answer rather
+than an error.</p>
+<p><strong>Why ask at all.</strong> A coordinated event is currently described by how many cells
+took part and how long the coordination lasted. Nothing says how big the events
+<em>making it up</em> were — whether a coordinated event is many small transients or a few
+large ones, and whether that changes under a treatment. That question cannot be
+asked of onset times alone, and it is the reason this revision exists.</p>
+<p>⚠ <strong>Nothing in bugarach reads <code>width_sec</code> today</strong> — not the loader, not the folder
+check, not any detector. It is not validated, not carried through, and no result
+changes by supplying it; it is an extra column like any other until code is written
+for it. This is a
+contract to build against, stated ahead of the code on purpose so producers can
+begin emitting it — the same posture FOUNDATIONS §4 takes for the folder reader,
+and it is written down here so nobody mistakes the column for a feature.</p>
+<p><strong>Revision 4</strong> (2026-08-18). <strong>Group and subject are named, not merely allowed.</strong>
+<code>slices.csv</code> reserves <code>group_id</code> (which experimental group this recording belongs
+to) and <code>subject_id</code> (which animal it came from). Both were already legal as
+free-form identity columns; naming them is what lets an analysis <em>split by group</em>
+and <em>stop counting two slices from one animal as two independent observations</em>.
+A producer already writing <code>mouse_id</code> or <code>animal_id</code> is conforming and need change
+nothing — those spellings are read as <code>subject_id</code>. Both columns stay optional.</p>
+<p>This revision also narrows one sentence that was too broad. Rev 1–3 said bugarach
+"interprets not at all" and "does not know what a mouse is". That is right about
+<strong>values</strong> and was wrong about <strong>roles</strong>: an app that may not know which column
+says two recordings share an animal cannot produce a group-split result, which
+FOUNDATIONS §9 requires before a corpus number is admissible. bugarach still never
+interprets a <em>value</em> — <code>DI</code>, <code>ORX</code>, <code>wildtype</code>, <code>cohort-B</code> mean nothing to it — but
+it now knows which column plays which <em>role</em>. Written after an analysis went to a
+spreadsheet outside the folder for group membership that <code>slices.csv</code> was already
+carrying.</p>
+<p><strong>Revision 3</strong> (2026-08-17). <code>regions.csv</code> gains optional
+<code>analysis_start_sec</code> / <code>analysis_end_sec</code>: a region now states what happened AND
+what to score, so a producer with its own windowing policy is honoured instead of
+re-windowed. Rev 2's instruction to send raw bounds still holds — that is what
+<code>start_sec</code> / <code>end_sec</code> are — and the paragraph below records why sending analysis
+windows in their place halted 83 of 85 recordings.</p>
+<p><strong>Revision 2</strong> (2026-08-17). <strong>One file per recording</strong>, rather than one table
+holding every recording. A lab's pipeline runs per recording and writes per
+recording, so a batch table made them concatenate before they could start.
+<code>slices.csv</code> and <code>regions.csv</code> stay, as the two small tables a lab keeps like a
+notebook: one row per recording, one row per window. And an ROI that was imaged
+and fired nothing is now expressible — one row with no time — which rev 1 could
+not say at all.</p>
+</blockquote>
+<h2>The folder</h2>
+<pre><code>my_export/
+  20240708_13.csv     one recording — its ROIs and their event times
+  20240708_17.csv
+  20240723_22.csv
+  ...
+  slices.csv          one row per recording: the frame interval, plus identity
+  regions.csv         one row per treatment window
+</code></pre>
+<p><strong>Every <code>.csv</code> is a recording except three reserved names</strong>: <code>slices.csv</code> and
+<code>regions.csv</code>, the two input tables shown above, and <code>metric_dictionary.csv</code> — not
+shown, because it belongs to the <em>output</em> contract further down. It is reserved
+anyway, so that shipping it alongside the input does not read as a recording called
+"metric_dictionary".</p>
+<p>The file's name is the recording's id — no column declares it and nothing parses
+the name further. A folder of recording files and nothing else is a valid input;
+each input table buys exactly one thing.</p>
+<p><strong>A table that names a recording the folder does not hold is fine</strong> — one batch
+table may cover more recordings than any given folder. <strong>The reverse is reported:</strong>
+if a table is present and has no row for a recording that <em>is</em> in the folder, that
+recording silently gets nothing from it, which is almost always one typo in a
+<code>slice_id</code>. bugarach warns and names the recordings it could not match.</p>
+<h3><code>&lt;slice_id&gt;.csv</code> — one per recording, at least one required</h3>
+<p>One row per detected event, in one ROI.</p>
+<table>
+<thead>
+<tr>
+<th>column</th>
+<th>type</th>
+<th>required</th>
+<th>meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>roi</code></td>
+<td>text</td>
+<td>yes</td>
+<td>which ROI. Any string; the same string on every row of that ROI, and used by no other ROI in the recording.</td>
+</tr>
+<tr>
+<td><code>time_sec</code></td>
+<td>number</td>
+<td>yes</td>
+<td><strong>when the event reached half its rise</strong> (<code>t50rise</code>), in seconds — <strong>or <code>NA</code></strong>, see below.</td>
+</tr>
+<tr>
+<td><code>stream</code></td>
+<td>text</td>
+<td>no</td>
+<td>which signal the event came from. Any name. A single-stream lab may omit the column entirely — every event is then one unnamed stream.</td>
+</tr>
+<tr>
+<td><code>width_sec</code></td>
+<td>number</td>
+<td><strong>asked for</strong></td>
+<td>how long the event lasted. See below — this is not one quantity.</td>
+</tr>
+<tr>
+<td><code>width_def</code></td>
+<td>text</td>
+<td>with <code>width_sec</code></td>
+<td>the name of the rule that produced <code>width_sec</code>. Constant within a stream.</td>
+</tr>
+<tr>
+<td><code>peak_sec</code></td>
+<td>number</td>
+<td>no</td>
+<td>when the transient peaked, if the producer has it</td>
+</tr>
+<tr>
+<td><code>amp</code></td>
+<td>number</td>
+<td>no</td>
+<td>how large the transient was, in the producer's own units</td>
+</tr>
+</tbody>
+</table>
+<h4>An event is located at its half-rise, and that is not a matter of taste</h4>
+<p><code>time_sec</code> is the <strong><code>t50rise</code></strong>: the moment the transient reached half its rise.
+Not the peak, not the first sample above threshold, not the midpoint.</p>
+<p>It has to be named rather than described because a producer may have several
+candidates and they are far apart. In this project's own stores the peak lags the
+half-rise by roughly <strong>0.3 s in a fast stream and 2 s in a slow one</strong>. Two seconds is
+wider than the tolerance a detection is scored at, so a producer that sent peaks
+where onsets were meant would not merely shift the answer — it would change which
+events were found to coincide, with nothing anywhere failing.</p>
+<p>A producer whose signal has no meaningful half-rise sends the closest thing it has
+and says so in its own documentation. One rule, applied consistently, beats each
+producer choosing the field whose name it liked.</p>
+<h4>Width is not one quantity, and the producer defines it</h4>
+<p>A fast transient and a slow one are not the same shape, so "how long it lasted" is
+not the same measurement. <strong>bugarach does not define width and will not infer it.</strong>
+The producer chooses the rule, applies it consistently within a stream, and names it
+in <code>width_def</code> — <code>t50rise_to_peak</code>, <code>fwhm</code>, <code>above_threshold</code>, whatever it actually
+computed. The string is the producer's; bugarach carries it and never parses it.</p>
+<p>This mirrors <code>strength_unit</code> in the output, and for the same reason: <strong>a column that
+means two things without saying which yields a plausible wrong answer rather than an
+error.</strong> A consumer comparing widths across streams must read <code>width_def</code> first, and
+where the definitions differ the comparison is not available — which is a fact about
+the measurement, not a gap in the file.</p>
+<p>For this project's own exporter, defining fast and slow width is <strong>interface2's</strong>
+responsibility and belongs in their documentation, not here.</p>
+<h4>Sending more than is asked for</h4>
+<p>Extra columns are ignored rather than rejected, so a producer may ship one file that
+serves several consumers. A producer that already computes the full per-event set is
+encouraged to send it — <code>amp</code>, <code>peak_sec</code>, <code>t50rise</code> (as <code>time_sec</code>) and <code>width_sec</code>
+— because the questions those support are the ones nobody can ask today, and a folder
+is cheaper to write once than to regenerate.</p>
+<h4>An ROI that fired nothing is a row with no time</h4>
+<p><code>roi = 7</code>, <code>time_sec = NA</code> says <em>ROI 7 was recorded here and produced no event</em>. An
+empty field means the same thing, because that is what a spreadsheet writes.</p>
+<p>This is the only way to say it, and it has to be said. One row per event means a
+silent ROI otherwise has no rows at all — and <em>absent</em> is indistinguishable from
+<em>never imaged</em>, so the ROI drops out of the population. Every per-ROI quantity
+divides by that population: five ROIs recorded with two quiet, counted over three,
+comes out <strong>1.67× too high</strong>. The error is largest in the quietest recordings,
+which is exactly where quiet is the result.</p>
+<p>So <code>rate == 0</code> is a measurement, not a gap. bugarach reports the ROIs it was given
+and never infers the ones it wasn't — a producer that omits its silent ROIs has
+chosen the denominator on the analyst's behalf, and nothing downstream can tell.</p>
+<p><strong>No verdict, no viability, no quality flag.</strong> These files say which ROIs were
+recorded and nothing about whether any of them was worth keeping. That judgement
+belongs to the producer, who has evidence bugarach does not, and it is applied
+before the folder is written. What arrives is simply the population the producer
+chose.</p>
+<h3><code>regions.csv</code> — optional</h3>
+<p>One row per region of a recording. <strong>This is how a recording says it has periods.</strong></p>
+<table>
+<thead>
+<tr>
+<th>column</th>
+<th>type</th>
+<th>meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>slice_id</code></td>
+<td>text</td>
+<td>which recording</td>
+</tr>
+<tr>
+<td><code>region_idx</code></td>
+<td>integer</td>
+<td><strong>1-based, chronological.</strong> This is the ordering, and the only ordering.</td>
+</tr>
+<tr>
+<td><code>label</code></td>
+<td>text</td>
+<td><strong>the treatment name</strong> — <code>baseline</code>, <code>TTX</code>, <code>senktide</code>, <code>washout</code>, <code>pre-drug</code>, whatever the period actually was.</td>
+</tr>
+<tr>
+<td><code>start_sec</code></td>
+<td>number</td>
+<td>when the period <strong>began</strong> — raw, untrimmed</td>
+</tr>
+<tr>
+<td><code>end_sec</code></td>
+<td>number</td>
+<td>when the period <strong>ended</strong> — raw, untrimmed</td>
+</tr>
+<tr>
+<td><code>analysis_start_sec</code></td>
+<td>number</td>
+<td><em>optional</em> — the part of it to <strong>score</strong></td>
+</tr>
+<tr>
+<td><code>analysis_end_sec</code></td>
+<td>number</td>
+<td><em>optional</em> — as above</td>
+</tr>
+</tbody>
+</table>
+<h3>Two windows, because they answer different questions</h3>
+<p><code>start_sec</code>/<code>end_sec</code> are <strong>what happened</strong>: the drug was on from here to here.
+<code>analysis_start_sec</code>/<code>analysis_end_sec</code> are <strong>what to score</strong>, and they exist because
+those are rarely the same thing — a wash-in delay before the drug reaches the tissue,
+a cap so a long application does not outweigh a short one, a stretch dropped for a
+reason only the producer knows.</p>
+<p><strong>Send both when you have a windowing policy.</strong> They are used exactly as given: no
+delay, no cap, and no guard on where the baseline starts, because none of that is
+bugarach's to apply to your protocol. The raw period travels alongside, so how much
+was trimmed stays visible in the output rather than being absorbed into the number.</p>
+<p><strong>Both bounds or neither, and all regions of a recording or none.</strong> Half an analysis
+window is a producer bug rather than a partial answer, and a recording scored half on
+your windows and half on ours is two policies inside one number — both are refused
+rather than guessed at.</p>
+<p><strong>Used as given is not the same as unchecked.</strong> Four things are refused, and they are
+the ones that are wrong under anybody's protocol: a period that ends before it begins,
+an analysis window that ends before it begins, an analysis start that is not a finite
+time, and an analysis window falling outside the period it claims to be part of. That
+last one means the two pairs contradict each other, and the file cannot say which of
+them is right.</p>
+<p>Nothing else about your bounds is judged. In particular a period beginning somewhere
+other than 0 and a gap between two periods are both legal here, whatever this project's
+own stores would make of them — a lab that started recording before it started
+treating, or left the tissue alone between conditions, is describing its experiment
+rather than making a mistake.</p>
+<p>This paragraph is new because that path had no checks at all. Supplying these columns
+routes a folder past the guards on the raw bounds, so the producer who states their
+policy — the thing this contract asks for — was the one producer nothing validated. A
+recording whose baseline began at 500 s with an 8,899 s gap after it and an analysis
+window running <code>99999</code> to <code>-500</code> passed <code>bugarach check</code> and handed the detectors a
+window of <strong>−100,499 seconds</strong>, which every detector downstream would have reported as
+an absence of coordination. Found by interface2 on 2026-08-18, running our own gates
+against a folder they broke on purpose.</p>
+<p><strong>When they are absent, bugarach derives the analysis window itself</strong>, applying this
+project's convention: the baseline measured backward from its end with a 20-minute
+cap, every non-high-K treatment starting 2 minutes late and capped at 20 minutes,
+high K⁺ exempt from both. For this project that is correct and matches its own
+analysis. For anybody else it is an assumption you did not make, which is the reason
+these two columns exist —
+<a href="todo/2026-08-17-windowing-convention-is-not-optional.md"><code>docs/todo/2026-08-17-windowing-convention-is-not-optional.md</code></a>.</p>
+<p><strong>This is not a derived column of the kind the section above refuses.</strong> A duration
+judgement is recomputable from the row and so does not belong in it; an analysis
+window is not — it encodes a decision about the preparation that nothing in the file
+implies. Send the bounds and the policy; keep the verdicts out.</p>
+<p><strong><code>label</code> is required whenever this file is present, and it must be the real
+treatment name.</strong> It is not decoration. Every figure axis, every legend, and every
+row of the results is named by it — a region with no name yields a plot nobody can
+read and a table nobody can group. Two things a producer must not do: send a
+positional placeholder (<code>region 2</code>, <code>treatment 1</code>), and overwrite the first region's
+real name with <code>baseline</code>. This project's own MATLAB exporter currently does the
+second, discarding whatever the lab actually called that period.</p>
+<p><strong>Five columns, and none of them derived.</strong> A producer may want to send its
+judgement that a window is long enough to analyse. It should not: that judgement is
+<code>end_sec - start_sec</code> compared against a threshold, the duration is already in the
+row, and the threshold is <strong>policy, not fact</strong> — one lab's floor is not another's.
+Sending it would put two records of one quantity in the same file, which is exactly
+what this contract avoids elsewhere by deriving the treatment index at write time
+instead of storing it. Send the bounds; let whoever is deciding decide.</p>
+<p><strong>⚠ Send the RAW bounds, not analysis windows.</strong> <code>start_sec</code> and <code>end_sec</code> are when
+the period <em>began and ended</em> on the recording's clock: <strong>region 1 starts at 0, and
+each region starts where the previous one ended.</strong> No trimming, no caps, no wash-in
+delay, no gaps.</p>
+<p><strong>This paragraph said the opposite until 2026-08-17, and it cost a whole export.</strong> It
+promised bugarach "uses the bounds as given and never adjusts them". It does not:
+<code>region_windows</code> in <code>src/bugarach/detectors/loco.py</code> re-applies this project's
+windowing convention — a backward cap on the baseline, a two-minute wash-in delay and
+a cap on each treatment — and it <strong>halts</strong> on a baseline that does not begin at 0 or a
+gap between regions, because in these stores either means a data defect.</p>
+<p>So a producer who did the trimming, exactly as this text asked, shipped a folder that
+loaded cleanly and then halted <strong>83 of 85</strong> recordings. That happened: interface2 read
+this paragraph, sent pre-trimmed windows, and every detector refused them. <code>bugarach
+check</code> now runs <code>region_windows</code> over every recording, so a folder that cannot be
+analysed fails at the door rather than at the first detector.</p>
+<p>The case for raw bounds is the one the old text made, pointing the other way: this
+windowing rule has been reimplemented five times in this ecosystem and drifted every
+time, so it is applied <strong>once</strong>, here, to bounds nobody has already adjusted. Two
+consumers handed the same raw folder compute the same windows; two consumers handed
+pre-trimmed folders get whatever each producer decided.</p>
+<p><strong>⚠ If your lab has no wash-in and no cap, that convention is applied anyway</strong>, and it
+is not currently optional: a treatment window will start two minutes after your
+<code>start_sec</code> and end twenty minutes later. For this project that is correct and matches
+its own analysis. For anyone else it is an inherited assumption, and making it a
+parameter is open work —
+<a href="todo/2026-08-17-windowing-convention-is-not-optional.md"><code>docs/todo/2026-08-17-windowing-convention-is-not-optional.md</code></a>.</p>
+<p><strong>How this handles any number of treatments.</strong> It carries no notion of a treatment
+<em>slot</em>, so there is nothing to run out of. One region is a recording with no
+protocol. Two is a before and an after. Six is a baseline and five conditions.
+Ordering is <code>region_idx</code>; naming is <code>label</code>; neither is a controlled vocabulary and
+neither is capped. A lab that runs a wash-in, three doses and a washout writes six
+rows and changes nothing else.</p>
+<p><strong>No region is privileged.</strong> bugarach does not assume region 1 is a baseline, does
+not treat any label as special, and does not decide which pair of regions is a
+comparison. It reports every region separately and the contrast is chosen
+downstream, by the person who knows the experiment.</p>
+<p><strong>⚠ A label may be load-bearing upstream, even though it is inert here.</strong> bugarach
+interprets no label — but the producer that wrote the bounds may have. This
+project's own MATLAB exporter decides a region's treatment by <strong>substring match on
+the label</strong>: a name containing <code>hi</code> is taken to be a high-potassium condition and
+is given raw, untrimmed bounds, while every other treatment gets a two-minute
+wash-in delay and a twenty-minute cap. So <code>high K</code> and <code>elevated potassium</code>
+describe the same experiment and produce different windows, and any label
+containing those two letters — <code>chelerythrine</code>, <code>histamine</code>, <code>washin</code> — trips the
+same rule.</p>
+<p>The consequence for a producer: <strong>renaming a region can silently change its
+bounds.</strong> The consequence for a reader: the label tells you what a period was
+called, not that the bounds were computed the way a similar name elsewhere implies.
+That is a reason to receive windows rather than derive them, not a reason to
+re-derive them here.</p>
+<p><strong>A label of <code>baseline</code> is not evidence of a baseline.</strong> This project's exporter
+overwrites the first region's real name with the literal string <code>baseline</code> on every
+run, so a period the lab called <code>pre-drug</code>, <code>control</code> or <code>aCSF</code> arrives labelled
+<code>baseline</code> and its original name is lost. Read such a label as <em>"whatever region 1
+was called"</em>. A producer conforming to this spec should send the real name.</p>
+<p><strong>When the file is absent</strong>, the recording has one region spanning its own extent,
+with <code>region_idx = 1</code> and <strong>no label</strong>. It is emitted as missing, never as
+<code>baseline</code> — an unlabelled recording is one nobody has told us about, and calling
+it a baseline manufactures a claim about a possibly-treated preparation.</p>
+<h3><code>slices.csv</code> — the sidecar</h3>
+<p>One row per recording. Identity, carried through — plus the one field bugarach
+cannot work without.</p>
+<table>
+<thead>
+<tr>
+<th>column</th>
+<th>type</th>
+<th>meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>slice_id</code></td>
+<td>text</td>
+<td>the join key; must match a recording file's name</td>
+</tr>
+<tr>
+<td><code>frame_interval_sec</code></td>
+<td>number</td>
+<td>the acquisition sampling interval, the mean time between imaged frames</td>
+</tr>
+<tr>
+<td><code>group_id</code></td>
+<td>text</td>
+<td><strong>optional, reserved</strong> — which experimental group this recording belongs to. The values are yours; bugarach only needs to know which column names the grouping</td>
+</tr>
+<tr>
+<td><code>subject_id</code></td>
+<td>text or number</td>
+<td><strong>optional, reserved</strong> — which animal this recording came from. Two recordings sharing one are siblings, never independent observations. <code>mouse_id</code> and <code>animal_id</code> are read as this</td>
+</tr>
+<tr>
+<td><em>anything else</em></td>
+<td>text or number</td>
+<td><strong>an open set</strong> — <code>sex</code>, <code>age</code>, <code>cohort</code>, <code>slice_loc</code>, whatever the lab records</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Why those two are named when the rest are not.</strong> Both are optional and neither is
+interpreted, but each answers a question an analysis cannot answer for itself.
+<code>group_id</code> says which comparison the study is about, so a result can be reported per
+group instead of pooled across groups that may run in opposite directions.
+<code>subject_id</code> says which recordings are siblings, so twenty slices from eight animals
+are not counted as twenty independent observations. Without them a corpus number is
+still computable and is quietly weaker than it looks — so when they are absent
+bugarach says which claims it cannot support, rather than refusing the folder or
+pretending it can.</p>
+<p><strong>The interval comes from the sidecar. If it is not there, the app asks for it at
+load, and will not proceed until it has one.</strong> Three of the six detectors build
+their analysis grid from it, so a wrong or guessed value silently changes what they
+count. It is a property of the microscope, it cannot be recovered from onset times,
+and it can only be told to us.</p>
+<p>Asking is deliberate, and it replaces both a warning and a bare refusal. A warning
+fires <em>after</em> the number exists — by then the trace is computed, the figure may be
+drawn and the file may be on disk, and anyone whose rig genuinely runs at the
+default learns to filter the warning away. A bare refusal is honest but useless: it
+turns a lab away at the door over a number they know perfectly well. Asking is the
+version that is both a gate and a way through. <strong>There is no default</strong>, because a
+default here is a guess about somebody else's microscope.</p>
+<p>A caller with no interface — a script, a batch run — supplies the value the same way
+the prompt would, and gets the same refusal if it does not.</p>
+<p>Everything else in this file bugarach <strong>passes through to its output unchanged and
+interprets not at all.</strong> Every column present becomes a column in the results, so a
+statistician gets their own vocabulary back rather than ours; absent columns are
+reported as missing, and a lab with no metadata beyond the interval still gets a
+usable file.</p>
+<p><strong>The line between a column's role and its values.</strong> bugarach reads the <em>role</em> of
+<code>group_id</code> and <code>subject_id</code> — which column groups, which column identifies the
+animal — and never their <em>values</em>. It does not know what <code>ORX</code> means, what a mouse
+is, or which group is a control. It knows only that rows sharing a <code>subject_id</code> came
+from one animal and that rows differing in <code>group_id</code> belong to different groups.
+Every other column, including the values in these two, is carried and not read.</p>
+<h3><code>metric_dictionary.csv</code> — optional</h3>
+<p>The column contract for the results, shipped alongside the batch so the folder
+stays self-describing. When present, bugarach validates its output against it and
+refuses to write a frame that does not conform. When absent, it writes the same
+frame and says the check was skipped.</p>
+<h2>What bugarach emits back</h2>
+<p>Into the same folder or one the user picks, from <strong>one computation</strong>. <strong>One output
+shape, carrying nothing specific to any lab</strong> — including ours. Our own analysis
+adapts to read this; it does not get a private dialect.</p>
+<h3><code>detections.csv</code> — one row per detected coordinated event</h3>
+<table>
+<thead>
+<tr>
+<th>column</th>
+<th>meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>slice_id</code> · <code>stream</code></td>
+<td>which recording, which signal — the strings you sent</td>
+</tr>
+<tr>
+<td><code>detector</code></td>
+<td>which detector called it, by its plain name</td>
+</tr>
+<tr>
+<td><code>mode</code></td>
+<td><code>threshold</code> or <code>peak</code> — how it was called, as a value rather than folded into the detector name</td>
+</tr>
+<tr>
+<td><code>region_idx</code> · <code>region_label</code></td>
+<td>which period it fell in — <strong>your</strong> index and <strong>your</strong> name, unchanged</td>
+</tr>
+<tr>
+<td><code>onset_sec</code> · <code>width_sec</code></td>
+<td>when it started and how long it lasted</td>
+</tr>
+<tr>
+<td><code>n_roi</code></td>
+<td>how many cells took part</td>
+</tr>
+<tr>
+<td><code>strength</code> · <code>strength_unit</code></td>
+<td>how strong, and <strong>in what units</strong> — because the six detectors do not measure strength in the same thing, the unit travels in the row rather than in a lookup table</td>
+</tr>
+<tr>
+<td><em>identity columns</em></td>
+<td>every column from <code>slices.csv</code>, carried through unchanged</td>
+</tr>
+</tbody>
+</table>
+<h3><code>detector_settings.csv</code> — one row per parameter</h3>
+<p><code>detector, stream, parameter, value</code>. Every setting each detector ran with, so a
+result can be reproduced from the folder alone.</p>
+<h3>What this deliberately does not do</h3>
+<ul>
+<li><strong>No column means different things in different rows.</strong> A single column holding a
+  count for one detector and a dimensionless index for another cannot be read
+  without a decoder, and a reader who lacks the decoder gets a plausible wrong
+  answer rather than an error. Where the meaning varies, the unit is in the row.</li>
+<li><strong>No name has to be parsed.</strong> Detector, stream and mode are their own columns.
+  Nothing is packed into an identifier for a consumer to split apart later.</li>
+<li><strong>No privileged region, and no protocol vocabulary.</strong> There is no "treatment
+  index" and no reserved <code>baseline</code>; there is the index you sent and the name you
+  gave it. A consumer that needs a baseline-versus-drug contrast picks the two rows
+  it wants — it knows which they are and we do not.</li>
+<li><strong>No lookup file is required to read the output.</strong> Every column is self-describing
+  from its header and its unit column.</li>
+</ul>
+<h2>Check it yourself</h2>
+<pre><code>bugarach check my_export/
+</code></pre>
+<p>Exits 0 when the folder conforms and 1 when it does not, so it drops into a build.
+It reads the folder with <strong>the same loader the analysis uses</strong>, so a pass means the
+analysis will read what you meant — not that a second implementation agreed with
+the first.</p>
+<pre><code>export folder: my_export
+2 recording(s), 2 conforming
+
+  ok   20240708_13     3 ROI (1 with no events)     3 events  streams fast+slow  dt 0.05  windows baseline, TTX
+  ok   20240708_17     2 ROI (1 with no events)     1 events  streams events     dt 0.1   windows —
+       · no treatment windows — analysed as one whole-recording window
+</code></pre>
+<p>Two kinds of line, and the difference between them is the point:</p>
+<ul>
+<li><strong><code>!</code> is an error.</strong> The folder cannot be read as written, and the message names
+  the file and the line — a label in the <code>region_idx</code> column, a time that is not a
+  time, a frame interval given as a frame <em>rate</em>.</li>
+<li><strong><code>·</code> is a note.</strong> It read fine and may not be what you meant. Notes never fail
+  the check, because none of them is decidable from the folder alone. The one worth
+  reading every time is <strong>"no ROI declared with no events"</strong>: if every ROI in that
+  recording really did fire, ignore it — but if some were quiet, they are missing
+  from the population, every per-ROI figure computed from it is too high, and
+  nothing downstream can tell those two cases apart.</li>
+</ul>
+<h2>Measure it, once it reads</h2>
+<pre><code>bugarach assess my_export/
+</code></pre>
+<p><code>check</code> answers <em>can this be read</em>. <code>assess</code> answers the next question: <strong>how
+coordinated are these recordings</strong> — measured with a rate-matched null and <strong>no
+detector involved</strong>, so the answer is not one instrument's opinion. Per recording it
+reports coactivity excess, coordinated-event rate, participants per event and onset
+spread.</p>
+<p>Three things it will not do, and each is a rule rather than a limitation:</p>
+<ul>
+<li><strong>It does not choose <code>K</code></strong> — the floor for how many ROIs make an event. <code>K</code> moves
+  the headline by an order of magnitude, so every value in the scan is printed and
+  none is marked as the answer. Quoting one of these numbers means naming its <code>K</code>.</li>
+<li><strong>It does not measure treatments.</strong> Coordination properties come from untreated
+  recordings only; a region whose name is not a baseline is counted and skipped, and
+  the count is printed. A folder with no <code>regions.csv</code> at all is assessed over its
+  whole extent, and the report says that is what happened.</li>
+<li><strong>It does not turn a measurement into a setting.</strong> That step needs a person who
+  has looked at the recording.</li>
+</ul>
+<p>A recording whose baseline is shorter than the assessment's floor comes back with no
+numbers at all rather than with undefined ones, and the same is true of the tightness
+comparison when no cluster forms — it prints as <em>undefined</em>, never as a value.</p>
+<h2>The rules that make it universal</h2>
+<ol>
+<li><strong>One folder in, one folder out.</strong> No path outside it is ever read.</li>
+<li><strong>Only the recording files are required.</strong> The two tables add fidelity; neither
+   is a precondition. A folder holding one CSV of onset times is a valid input —
+   bugarach then asks for the frame interval and analyses the recording as one
+   unlabelled window. Add <code>slices.csv</code> and it stops asking; add <code>regions.csv</code> and
+   the results split by treatment.</li>
+<li><strong>No controlled vocabularies.</strong> Stream names, region labels, ROI ids and slice
+   ids are the lab's own strings. bugarach matches them, counts them, and hands
+   them back.</li>
+<li><strong>Nothing is inferred that was not given.</strong> No window is derived, no region is
+   assumed to be a baseline, no viability verdict is computed, no missing metadata
+   is invented.</li>
+<li><strong>Extra columns are ignored, not rejected</strong>, so one file can serve several
+   consumers.</li>
+<li><strong>A quantity different producers define differently travels with its definition</strong>
+   — <code>width_sec</code> with <code>width_def</code>, <code>strength</code> with <code>strength_unit</code> — and is never
+   pooled across definitions. The label is the producer's own string, to be matched
+   and carried, never parsed.</li>
+<li><strong>Missing is written as missing</strong> — literally <code>NA</code>, never an empty field and
+   never a plausible substitute.</li>
+</ol>
+</div></div>
+</html>

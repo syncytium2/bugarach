@@ -92,3 +92,67 @@ documentation.
    `assembly_summary_2026-08-19.md`. Note that interface2's review is the independent pass
    this one lacked, and a better one: they can check the document against a pipeline nobody
    here can see.
+
+---
+
+# Round 2 — interface2's review, 2026-08-20
+
+**The producer reviewed the contract and found four things.** This is the round residual #1
+said had to happen, and it is worth recording that it worked: their review checked the page
+against a pipeline and a decision log this repo cannot see, and found defects an
+eleven-role pass here did not.
+
+| finding | severity | outcome |
+|---|---|---|
+| "If you have both, send both" recommends switching off the raw-bounds check | **blocking** | fixed — advice reversed |
+| §4 never says what `width_sec` feeds, and suggests `fwhm`, which breaks it | **blocking** | fixed — states the use and the scale |
+| the link to the full contract is unreachable for the reader it addresses | major | fixed — spec rendered beside the page |
+| "the current export" is one folder stale | major | fixed — requoted from `2026-08-18_revised_2v_periods` |
+
+## The two that matter
+
+**B1 · the analysis-window advice was backwards, and contradicted its own producer.**
+Supplying `analysis_start_sec`/`analysis_end_sec` short-circuits the raw-bounds validation,
+so the same corrupted folder passes clean with the columns and is caught without them.
+interface2 demonstrated it both ways on this page's own example. Worse, they had **decided
+this two days before the page was written** (`a1409d1d`, 2026-08-18: *"RAW-ONLY ALSO
+RESTORES THEIR GATE"*), for exactly this reason — so the page recommended the practice its
+largest producer had deliberately dropped. **Reading their decision log before writing would
+have caught it.** Fixed: raw periods are the default advice, with both reasons stated.
+
+**B2 · `width_sec` is read, and the page implied it was not.** "We carry the string and
+never read it" is true of `width_def` and false of `width_sec`, which becomes the per-event
+duration CICADA uses as a coincidence window. The page offered `fwhm` as an example rule; on
+this project's slow stream `fwhm` runs to a median of 4.7 s and a maximum of 186.9 s against
+a 2 s rise interval, so a producer following the page ships a conforming folder and a wrong
+answer. Fixed: §4 now says what the number feeds and what scale it has to be on, so "pick
+your rule" is an informed choice.
+
+## A claim of mine that did not survive checking
+
+Reading their finding 1, I concluded from `a1409d1d` that bugarach still had the
+`NaN`-is-truthy bug they described — `load_folder` does return `has_analysis_window=True`
+with `nan..nan` — and added a guard to `io.py`. **The existing test suite refused it**,
+correctly: the guard already exists at `detectors/loco.py:268`, which rejects a non-finite
+analysis start with a named error, and `bugarach check` reports it as *"loads, but no
+detector can run on it"*. The loader is permissive by design and the window resolver is
+strict; nothing scores `nan..nan`. My change was reverted. The page now says where the
+refusal comes from, since it arrives later than a producer might expect.
+
+## Not fixed, recorded
+
+**The silent-ROI note fires on 59 of 84 recordings.** A note that fires on 70% of a folder
+trains the reader to skip it, which inverts its purpose. That is bugarach's checker to
+sharpen, not the producer's export to change; the page now says so rather than leaving it to
+be learned.
+
+## Residual — updated
+
+1. ~~addressed to a team that has not read it~~ — **closed**; they reviewed it, and this
+   round is the result.
+2. ~~`width_sec` asked for and not supplied~~ — **closed**; the current export carries
+   `width_sec`, `width_def`, `peak_sec` and `amp`.
+3. **The silent-ROI note is too noisy to be useful.** ⚠
+4. **The review here remains single-pass.** interface2's was the independent pass, and it
+   found two blocking defects — which is the argument for making that the norm rather than
+   the exception. ⚠
