@@ -247,54 +247,41 @@ def test_assess_store_omits_the_assembly_answer_by_default(tmp_path, monkeypatch
     assert "asm_verdict" not in res["rows"][0]
 
 
-# ---- the lab's own exclusions -----------------------------------------------
+# ---- the exclusion layer that must NOT come back ----------------------------
 #
-# These lock the rule that a recording the lab withdrew cannot reach a result.
-# It is here because it FAILED once: two recordings marked `exclude=1` in
-# `indiegroups_db4.xlsx` sat inside every reported number — the membership
-# tallies, both modularity runs, the crosstalk pairing and the geometry the
-# power curve was computed at — because no part of the analysis had ever opened
-# the workbook that says which recordings are analysable.
+# This module briefly grew `load_excluded` and `load_dead_roi_keep`, reading a lab
+# workbook and a vendored ROI roster so the analysis could apply the producer's
+# selection itself. Both were removed on 2026-08-20, and this test is here so the
+# reason survives the deletion rather than being rediscovered.
+#
+# The export contract says bugarach reads one folder and *nothing else* — no store,
+# no companion database. The producer expresses selection by what it exports. When
+# this repo re-derived it instead, the workbook keyed exclusions on
+# (date, mouse, slice_order), bugarach had no slice_order, date-matching dropped a
+# recording the lab had NOT withdrawn, and the producer's own export was correct.
+# A second opinion computed from less information is not a safety net.
 
-def test_excluded_list_ignores_comments_and_blanks(tmp_path):
-    """The list carries its own provenance in `#` lines, so it must survive them."""
-    from bugarach.assembly import load_excluded
-    f = tmp_path / "excl.txt"
-    f.write_text("# source: indiegroups_db4.xlsx, column `exclude`\n"
-                 "# reason: 20250731 mouse 57 — ttx too short\n"
-                 "\n20250731_149\n20250731_151\n\n")
-    assert load_excluded(f) == {"20250731_149", "20250731_151"}
+def test_no_exclusion_or_roster_loader_exists():
+    """The contract-violating loaders must stay gone.
 
-
-def test_no_exclusion_file_excludes_nothing():
-    """Absent list must be an empty set, never a crash and never a silent all-drop."""
-    from bugarach.assembly import load_excluded
-    assert load_excluded(None) == set()
-
-
-def test_excluded_recording_cannot_contribute_a_pair(tmp_path):
-    """The crosstalk comparison must drop a withdrawn recording BEFORE pairing.
-
-    Dropping it afterwards would still let it set a denominator, and — worse —
-    contribute a discordance to the sign test. One of the ten discordant
-    recordings originally reported was a withdrawn one.
+    Re-adding one is not a small convenience: it puts a second, worse answer about
+    which recordings count next to the producer's own, and the two will disagree.
     """
-    import json, sys
-    sys.path.insert(0, str(REPO / "tools")) if "REPO" in dir() else None
-    from pathlib import Path
+    import bugarach.assembly as A
+    for gone in ("load_excluded", "load_dead_roi_keep"):
+        assert not hasattr(A, gone), (
+            f"{gone} is back — see docs/export_folder_spec.md: the folder is the "
+            f"whole input, and selection is the producer's call")
+
+
+def test_pairing_takes_no_exclusion_argument():
+    """`rows_at` must not grow an exclude parameter again."""
     import importlib.util
+    import inspect
+    from pathlib import Path
     spec = importlib.util.spec_from_file_location(
         "apc", Path(__file__).parent.parent / "tools" / "assembly_pensub_compare.py")
     apc = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(apc)
-
-    rows = {"rows": [
-        {"K": 3, "stream": "fast", "slice_id": "keep_me",
-         "asm_defined": True, "asm_verdict": "structure-beyond-rate"},
-        {"K": 3, "stream": "fast", "slice_id": "20250731_149",
-         "asm_defined": True, "asm_verdict": "structure-beyond-rate"},
-    ]}
-    f = tmp_path / "a.json"
-    f.write_text(json.dumps(rows))
-    got = apc.rows_at(f, 3, "fast", {"20250731_149"})
-    assert set(got) == {"keep_me"}
+    params = inspect.signature(apc.rows_at).parameters
+    assert "exclude" not in params, params

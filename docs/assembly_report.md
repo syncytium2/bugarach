@@ -10,13 +10,13 @@ directions, agree:
 
 | what was asked | instrument | fast | slow |
 |---|---|---|---|
-| are there groups of cells more coupled to each other than to the rest of the field | graph **modularity** on the spike-time-tiling graph, each recording against its own jitter surrogates | **no** — 2 of 78 above null (2.6%) | **no** — 1 of 77 (1.3%) |
-| is *who participates* in each event explained by how often each cell fires | curveball and uniform nulls on the event × cell membership table | departure from uniform in **45 of 47** testable, against a 6.0% false-positive rate | **36 of 38**, against 9.1% |
+| are there groups of cells more coupled to each other than to the rest of the field | graph **modularity** on the spike-time-tiling graph, each recording against its own jitter surrogates | **no** — 2 of 79 above null (2.5%) | **no** — 2 of 78 (2.6%) |
+| is *who participates* in each event explained by how often each cell fires | curveball and uniform nulls on the event × cell membership table | departure from uniform in **46 of 48** testable, against a 5.0% false-positive rate | **34 of 38**, against 9.6% |
 
 **Both streams, both instruments.** The test calls a recording modular when its modularity
 clears the 95th percentile of its own surrogates, so **about 5% should clear it by chance** —
-and 2.6% and 1.3% are below that. There is no modular structure in either stream. The
-median recording is *less* modular than its own surrogates (z = −1.17 fast, −3.45 slow):
+and 2.5% and 2.6% are below that. There is no modular structure in either stream. The
+median recording is *less* modular than its own surrogates (z = −1.38 fast, −3.58 slow):
 holding the graph's node count, event counts and sparsity fixed and moving only the timing
 makes it score **higher**, which is the opposite of what a field of assemblies would do.
 
@@ -35,17 +35,21 @@ the answer, then spends most of its length on the two things that decide whether
 should believe it: whether the test could have failed, and whether the largest alternative
 explanation has been removed.
 
-**Two recordings are absent from every number here, on the lab's instruction.** The lab's own
-record — `indiegroups_db4.xlsx`, sheet `indiegroups`, column `exclude` — marks six (date,
-mouse) rows unusable, and two recordings in this store fall on one of those dates. No part of
-this analysis had ever opened that workbook; the two were inside every number this report
-previously carried, and a review looking for the source of record a deliverable had *not*
-consulted is what found them. **Selection is the producer's call, not the analysis layer's**,
-so they are dropped. Every conclusion is unchanged and the counts move by a recording or two;
-the numbers that crossed a conventional line are named where they appear. The exclusion reason
-concerns a treatment period while this analysis is baseline-only, so there is a real argument
-that these two baselines are usable — that is Tony's call, and
-[the todo](todo/2026-08-19-lab-exclusions-were-never-consulted.md) records both readings. ⚠
+**Every number here is read from an export folder, and that is the whole input.** The contract
+(`docs/export_folder_spec.md`) states it plainly: bugarach reads one folder and nothing else —
+no data store, no archive, no companion database. Which recordings are analysable and which
+cells are alive are the producer's calls, **already applied to what the folder contains**.
+There is no exclusion step in this analysis and there must not be one.
+
+An earlier version of this report was computed the other way, and it is worth saying what that
+cost. It read the `.mat` store directly, found it therefore held recordings the lab had
+withdrawn, and re-derived the exclusions from the lab's workbook. The workbook keys them on
+(date, mouse, **`slice_order`**); this project has no `slice_order`, so it matched on date and
+**dropped a recording the lab had not withdrawn** — one mouse contributed two slices that day
+and only the first was excluded. The producer's own export had it right. The counts below are
+therefore over **84 recordings**, not the 83 the previous version reported, and they reproduce
+exactly the folder-based tallies this project had before the detour. ⚠ Contract revision 6
+records the incident.
 
 Two event streams are analysed separately throughout and never mixed. The upstream
 pipeline separates each ROI's calcium events into a **fast** and a **slow** stream; this
@@ -142,13 +146,17 @@ So the curve was recomputed under `verdict()`, planting assemblies at **each rea
 recording's own geometry**. Two things come out of it.
 
 **The fast test sits at its nominal size; the slow test may not.** With nothing planted it
-fired on 14 of 234 simulated fast recordings — **6.0%**, 95% interval 3.6–9.8%, which covers
-the nominal 5% — and on 17 of 187 slow, **9.1%**, interval 5.8–14.1%, which does **not**. An
-earlier run of the same design at the un-excluded geometry gave 5.3% and 6.6%, so these are
-noisy estimates and the slow figure sits somewhere in the 6–9% range rather than pinned. ⚠
-Read conservatively, the slow test is **anti-conservative at its own geometry**, over-firing
-by perhaps half again. That costs the slow negative precision and does not touch its
-direction: 36 of 38 is 95%, against a null rate of at most 14% at the top of its interval.
+fired on 12 of 238 simulated fast recordings — **5.0%**, 95% interval 2.9–8.6%, which is the
+nominal rate almost exactly — and on 18 of 187 slow, **9.6%**, interval 6.2–14.7%, which does
+**not** cover 5%.
+
+**The slow stream's test is anti-conservative at its own geometry, and that is now settled
+rather than suspected.** Three independent runs of the same design, at three slightly
+different geometries, put it at 6.6%, 9.1% and **9.6%** — every one above nominal and the last
+two with intervals excluding it. Treat the slow false-positive rate as roughly **twice**
+nominal. It costs the slow negative precision and does not touch its direction: 34 of 38 is
+89%, against a null rate of at most 15% at the top of its interval. The fast test needs no
+such discount.
 
 **The test has real power at strengths worth excluding.** Recruitment is the fraction of a
 recording's coordinated events drawn from the planted group; each figure is the fraction of
@@ -156,11 +164,11 @@ this corpus's *actual* recordings in which the test fires.
 
 | planted group | 1 in 20 · fast | 1 in 10 · fast | 1 in 4 · fast | 1 in 4 · slow |
 |---|---|---|---|---|
-| 4 cells | 0.26 | 0.47 | **0.91** | 0.39 |
-| 6 cells | 0.23 | 0.49 | 0.81 | 0.53 |
-| 8 cells | 0.11 | 0.43 | 0.74 | 0.63 |
-| 12 cells | 0.15 | 0.26 | 0.64 | 0.57 |
-| 16 cells — half the field | 0.15 | 0.20 | 0.43 | 0.53 |
+| 4 cells | 0.21 | 0.54 | **0.85** | 0.61 |
+| 6 cells | 0.29 | 0.56 | 0.79 | 0.61 |
+| 8 cells | 0.19 | 0.46 | 0.60 | 0.58 |
+| 12 cells | 0.08 | 0.27 | 0.62 | 0.54 |
+| 16 cells — half the field | 0.07 | 0.15 | 0.41 | 0.44 |
 
 The slow stream is uniformly less powered, because it carries fewer coordinated clusters;
 its column is shown at one recruitment level so the difference is visible rather than
@@ -173,7 +181,7 @@ uniform null and reported as `uniform-only`. The degeneracy shows up in *which w
 verdict returns, not in whether it returns one. This is the concrete payoff of running two
 nulls, and it is why the earlier single-null curve understated the instrument.
 
-Read against the observed 45 of 47, the corpus is not close to the boundary of what it can
+Read against the observed 46 of 48, the corpus is not close to the boundary of what it can
 see.
 
 ## The alternative the nulls cannot remove, and what happened when it was removed
@@ -221,11 +229,11 @@ undefined, never as negative.
 
 ## What the corpus says, in full
 
-Of the 83 baseline recordings the lab has not withdrawn, **47 are testable** in the fast
-stream at K = 3 and 38 in the slow; the rest have fewer than four coordinated clusters, too
-few for any reshuffle test, and are **undefined, never negative**. Among the testable,
-co-participation beyond per-cell rate is near-universal: **45 of 47** fast and **36 of 38**
-slow, against the 6.0% and 9.1% false-positive rates above. The result is stable across the coactivity floor — at K = 4,
+Of the 84 recordings the export folder contains, **48 are testable** in the fast stream at
+K = 3 and 38 in the slow; the rest have fewer than four coordinated clusters, too few for any
+reshuffle test, and are **undefined, never negative**. Among the testable, co-participation
+beyond per-cell rate is near-universal: **46 of 48** fast and **34 of 38** slow, against the
+5.0% and 9.6% false-positive rates above. The result is stable across the coactivity floor — at K = 4,
 K = 6 and K = 8 the firing rate stays above 85% wherever enough recordings remain testable
 to say anything.
 
@@ -234,8 +242,8 @@ The companion measurement is the one that makes this a negative.
 ![A · every recording's modularity against its own jitter surrogates, in null standard deviations; marks right of the dotted line at zero are more modular than timing alone predicts, and the highlighted marks are the ones clearing the 95th-percentile threshold the test actually uses. B · the rate of those, against the 5% that chance produces.](assembly_modularity)
 
 Graph modularity on the spike-time-tiling graph — the standard instrument for "are there
-groups here" — finds **no partition above its null in either stream**: 2 of 78 fast
-recordings (2.6%, 95% interval 0.7–8.9) and 1 of 77 slow (1.3%, 0.2–7.0), against the ~5%
+groups here" — finds **no partition above its null in either stream**: 2 of 79 fast
+recordings (2.5%, 95% interval 0.7–8.8) and 2 of 78 slow (2.6%, 0.7–8.9), against the ~5%
 the threshold yields by chance. The cells that participate together are not the cells more
 connected to each other than to the field.
 
@@ -343,7 +351,7 @@ recovery**, because there is no stable membership to recover.
   coordinated clusters this project's own assessor found. A different clustering gives a
   different table, and nothing here validates the clustering against an external standard.
 - **One arbitrary threshold decides which recordings are in.** Fewer than four clusters means
-  no test; that rule excludes 36 of the 83 analysed fast recordings, and it excludes them unevenly
+  no test; that rule excludes 36 of the 84 fast recordings, and it excludes them unevenly
   across groups.
 - **The dead-ROI store is cleaned asymmetrically** — 67 of 85 recordings carry a verdict and
   18 keep every ROI. A membership statistic is directly sensitive to which cells are in the
@@ -393,41 +401,45 @@ disagreement with what we measure that is not resolved. ⚠
 
 ## How to reproduce this
 
-The assembly measurement and the crosstalk control both need the real recordings behind
-`BUGARACH_DATA_ROOT`; the power analysis needs nothing but the repo.
+**Everything takes an export folder.** That is the input contract and the whole input — no
+store, no environment variable, no companion database. The power analysis needs nothing but
+the repo.
 
-    # the measurement, on each store
-    python tools/assess_archive.py --store <store> --out <dir> \
+    # the membership measurement
+    python tools/assess_archive.py --store <export folder> --out <dir> \
         --stream fast --assemblies
 
-    # the crosstalk control: paired, on recordings testable in both
-    python tools/assembly_pensub_compare.py --main <dir>/assessment_real.json \
-        --pensub <pendir>/assessment_real.json --k 3 --stream fast \
-        --json-out <dir>/pensub_cmp_fast_k3.json
+    # modularity, in this repo, no MATLAB
+    python tools/modularity_null.py --folder <export folder> --stream fast \
+        --out <dir>
 
     # power under the rule the corpus is actually scored by
     python tools/assembly_power.py \
         --geometry-from <dir>/assessment_real.json --stream fast \
         --verdict-only --out <figdir>
 
-    # the figure, then the report
+    # the figures, then the report
     python tools/make_assembly_closed_figure.py --power <figdir>/assembly_power.json \
         --pensub <dir>/pensub_cmp_fast_k3.json <dir>/pensub_cmp_slow_k3.json \
-        --store <store> --slice <id> --also docs/learned
+        --folder <export folder> --slice <id> --also docs/learned
+    python tools/make_modularity_figure.py \
+        --fast <dir>/modularity_null_fast.csv --slow <dir>/modularity_null_slow.csv \
+        --also docs/learned
     python tools/build_assembly_report.py --src docs/assembly_report.md \
         --figures <figdir> --also docs/learned
 
-The measurement is in `bugarach.assembly`, the power analysis in `tools/assembly_power.py`,
-and both are exercised by the test suite.
+The membership test is in `bugarach.assembly`, modularity in `bugarach.graph`, the power
+analysis in `tools/assembly_power.py`; all three are exercised by the test suite, and
+`tests/test_graph.py` checks the modularity port against MATLAB vectors without needing
+either a store or MATLAB.
 
-**One caveat on the numbers above.** The crosstalk comparison reads `.mat` stores on both
-sides, because no export folder exists for the penumbra-subtracted recordings. A `.mat`
-store carries no producer analysis window, so those runs score the raw baseline period. The
-export-folder tallies quoted in the previous version of this report — 48 testable fast, 38
-slow — differ slightly from the `.mat` tallies here (49 and 40) for that reason and no
-other — the export folder carries 87 recordings of which 84 have a baseline region, while
-both `.mat` stores carry exactly the same 85. The comparison is `.mat`-against-`.mat`
-throughout, so the crosstalk contrast is unaffected by any of it. ⚠
+**One exception, and it is the only claim here you cannot re-derive.** The crosstalk
+control was computed on **2026-08-19 against `.mat` stores, before store access was
+closed**, because no penumbra-subtracted export folder exists — `exports/bugarach/` holds
+three folders and none of them is pensub. Its numbers (21 of 26 fast, 21 of 25 slow, sign
+test p ≈ 0.004) are not withdrawn and nothing suggests they are wrong, but **nothing in the
+current inputs can reproduce them.** Closing that needs one export folder from the producer:
+[`2026-08-20-the-crosstalk-control-needs-a-pensub-export.md`](todo/2026-08-20-the-crosstalk-control-needs-a-pensub-export.md). ⚠
 
 ## References
 

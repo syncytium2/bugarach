@@ -57,10 +57,9 @@ def _finite(v) -> bool:
         return False
 
 
-def load(path: Path, exclude=()) -> list[dict]:
-    exclude = set(exclude)
+def load(path: Path) -> list[dict]:
     with open(path) as fh:
-        return [r for r in csv.DictReader(fh) if r.get("slice") not in exclude]
+        return [r for r in csv.DictReader(fh)]
 
 
 def summarise(rows: list[dict]) -> dict:
@@ -204,18 +203,10 @@ def main(argv=None):
                    help="destination directory; default $BUGARACH_DARKROOM")
     p.add_argument("--also", type=Path, default=None)
     p.add_argument("--no-png", dest="png", action="store_false", default=True)
-    p.add_argument("--exclude-file", type=Path, default=None,
-                   help="slice ids the lab marked excluded (tools/lab_excluded.py)")
     a = p.parse_args(argv)
 
-    from bugarach.assembly import load_excluded
-    excl = load_excluded(a.exclude_file)
-    if excl:
-        print(f"excluding {len(excl)} lab-withdrawn recording(s): "
-              f"{', '.join(sorted(excl))}")
-
     for label, path in (("fast", a.fast), ("slow", a.slow)):
-        rows = load(path, excl)
+        rows = load(path)
         dropped = [r for r in rows if not _finite(r.get("Q_obs"))]
         if dropped:
             # `above_null_Q` is `double(Q_obs > q_hi)`, and NaN > x is false — so a
@@ -226,7 +217,7 @@ def main(argv=None):
             print(f"{label}: excluding {len(dropped)} recording(s) with no computable "
                   f"Q (n_active "
                   f"{', '.join(r['n_active'] for r in dropped)}) — undefined, not negative")
-    fast, slow = summarise(load(a.fast, excl)), summarise(load(a.slow, excl))
+    fast, slow = summarise(load(a.fast)), summarise(load(a.slow))
     for label, s in (("fast", fast), ("slow", slow)):
         extra = ("" if s["n_plotted"] == s["n"] else
                  f"  [{s['n'] - s['n_plotted']} scored but z undefined, not drawn]")
