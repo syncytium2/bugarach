@@ -150,20 +150,25 @@ def test_a_planted_module_is_found_and_a_uniform_field_is_not():
 
 # ---- the producer's ROI selection -------------------------------------------
 
-def test_dead_roi_verdicts_load_and_a_missing_slice_keeps_everything(tmp_path):
-    """A slice with no verdict keeps every ROI — the spec, not a silent pass.
+def test_the_tool_takes_a_folder_and_not_a_store():
+    """The input is an export folder — the contract, and the whole input.
 
-    The R team's rule only judges slices whose second treatment is senktide or TTX;
-    18 of 85 are ineligible and get no verdict at all. Treating "absent from the
-    roster" as "reject everything" would empty them, and treating it as an error
-    would refuse to score them.
+    This tool briefly read a `.mat` store plus a lab workbook plus a vendored ROI
+    roster. `docs/export_folder_spec.md` forbids all three, and the detour cost a
+    wrongly-excluded recording. A `--store` flag reappearing here is that mistake
+    coming back.
     """
-    from bugarach.assembly import load_dead_roi_keep
-    f = tmp_path / "verdicts.csv"
-    f.write_text("# a comment the loader must skip\n"
-                 "slice_id,roi_index,keep\n"
-                 "s1,1,1\ns1,2,0\ns1,3,1\n")
-    got = load_dead_roi_keep(f)
-    assert got == {"s1": [True, False, True]}
-    assert got.get("not_in_roster") is None      # caller keeps everything
-    assert load_dead_roi_keep(None) == {}
+    import importlib.util
+    from pathlib import Path
+    spec = importlib.util.spec_from_file_location(
+        "mn", Path(__file__).parent.parent / "tools" / "modularity_null.py")
+    mn = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mn)
+    import contextlib, io
+    buf = io.StringIO()
+    with contextlib.redirect_stderr(buf), pytest.raises(SystemExit):
+        mn.main(["--help"])
+    src = (Path(__file__).parent.parent / "tools" / "modularity_null.py").read_text()
+    assert '"--folder"' in src
+    for banned in ('"--store"', '"--exclude-file"', '"--dead-roi-file"'):
+        assert banned not in src, f"{banned} is back — the folder is the whole input"

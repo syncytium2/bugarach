@@ -96,11 +96,27 @@ The state on `origin` must always be enough to resume elsewhere (FOUNDATIONS
 - **Stopping mid-task**: push a `wip/<slug>` branch AND a root `HANDOFF.md`, then
   push that too; delete it when done. No handoff file on `main` == nothing in
   flight.
+- **The export folder is the input. The store is closed.** (Tony, 2026-08-20.)
+  Analysis reads an **export folder** — `docs/export_folder_spec.md` — and nothing
+  else: no `.mat` store, no lab workbook, no roster, no companion database. **Do not
+  add an exclusion or dead-ROI filter to anything here.** Which recordings are
+  analysable and which ROIs are alive are the producer's calls, already applied; a
+  withdrawn recording is simply absent from the folder.
+  The rule was there from revision 1 and got read as a convenience. Going around it
+  cost a real error: an analysis read the store, noticed it held recordings the lab
+  had withdrawn, re-derived the exclusions from the lab's workbook — which keys them
+  on (date, mouse, `slice_order`) — matched on date because bugarach has no
+  `slice_order`, and **dropped a recording the lab had not withdrawn**, while the
+  producer's own export had it right. Contract revision 6 records it.
+  If a folder looks like it contains something it should not, that is a
+  **conversation with the producer**, not a filter in the consumer.
 - **Machine-local inventory** (everything else lives in the repo): the
   `.venv` (rebuild: `python3 -m venv .venv && pip install -e ".[dev]"`),
-  `BUGARACH_DATA_ROOT` (real stores; optional — everything but the
-  real-slice smoke tests runs without it), MATLAB + interface2 checkout,
-  Playwright chromium (screenshots only).
+  the export folders under `<data>/exports/bugarach/`, MATLAB + interface2
+  checkout, Playwright chromium (screenshots only). `BUGARACH_DATA_ROOT` still
+  resolves the older `.mat` stores and a few legacy tools still read them
+  (`bench.py`, `fit_background_shape.py`, the parity fixtures) — that is
+  migration debt, not licence.
 - **What the interface2 checkout actually holds** (this line used to say
   "ONLY needed to regenerate parity references" — that was wrong, and a
   session acting on it concluded bugarach had no simulator and proposed

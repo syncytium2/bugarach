@@ -1,30 +1,33 @@
 #!/usr/bin/env python3
-"""Are the coupled cells a module? Run it here, without MATLAB.
+"""Are the coupled cells a module? From the export folder, without MATLAB.
 
-    python tools/modularity_null.py --store <onset store> --stream fast \
-        --exclude-file docs/learned/lab_excluded_slices.txt --out docs/learned
+    python tools/modularity_null.py --folder <export folder> --stream fast \
+        --out docs/learned
 
 Writes `modularity_null_<stream>.csv` with the same column names the interface2
 pipeline used, so `tools/make_modularity_figure.py` reads either without change.
 
+**The folder is the whole input.** `docs/export_folder_spec.md`: *"bugarach reads one
+folder and nothing else: no data store, no archive, no environment variable, no
+network, no companion database."* Which recordings are analysable and which ROIs are
+alive are the producer's calls, already applied — a withdrawn recording is absent and a
+dead ROI is not exported. **There is no `--exclude-file` and no `--dead-roi-file`, and
+adding one back would be a bug**: an earlier version of this tool re-derived the lab's
+exclusions from its workbook, matched on date where the workbook keys on
+(date, mouse, slice_order), and dropped a recording the lab had not withdrawn while the
+producer's own export had it right.
+
 **Why this exists.** The modularity half of the assembly negative was computed by
 `eval_modularity_null` in interface2. That project has no maintainer and its pipeline
-does not run out of the box — its dead-ROI roster path resolves into a quarantined
-export. See `docs/todo/2026-08-19-the-connectivity-pipeline-has-no-owner.md`.
+does not run out of the box. See
+`docs/todo/2026-08-19-the-connectivity-pipeline-has-no-owner.md`.
 
-**Two differences from the reference, both deliberate.**
-
-- **`defined` is a column, and an untestable recording is not a zero.** The reference
-  computed `above_null_Q` as `Q_obs > q_hi`, which is false for a missing value, so a
-  recording too sparse to score was written out as `0` and read as tested-and-not-modular.
-  That defect is in 13 verdict columns across 8 of its output files and it flatters every
-  negative. Here such a recording gets `defined=0` and is excluded from any rate.
-- **The window is bugarach's, not interface2's.** This uses the producer's analysis window
-  where the export folder supplies one, and the baseline region otherwise — the same rule
-  every other measurement in this repo uses. interface2 applies its own solution delay and
-  floors. So per-recording numbers are **close but not identical** to the reference by
-  construction, and the comparison that certifies the port is
-  `tests/test_graph.py`, which holds the window fixed.
+**One deliberate difference from the reference.** `defined` is a column, and an
+untestable recording is not a zero. The reference computed `above_null_Q` as
+`Q_obs > q_hi`, which is false for a missing value, so a recording too sparse to score
+was written out as `0` and read as tested-and-not-modular. That defect is in 13 verdict
+columns across 8 of its output files and it flatters every negative. Here such a
+recording gets `defined=0` and is excluded from any rate.
 """
 from __future__ import annotations
 
@@ -51,7 +54,8 @@ def baseline_window(sl):
 def main(argv=None) -> int:
     p = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    p.add_argument("--store", type=Path, required=True)
+    p.add_argument("--folder", type=Path, required=True,
+                   help="an export folder — the input contract, and the whole input")
     p.add_argument("--stream", default="fast")
     p.add_argument("--dt", type=float, default=2.0)
     p.add_argument("--jitter", type=float, default=20.0)
@@ -60,43 +64,21 @@ def main(argv=None) -> int:
     p.add_argument("--pctl", type=float, default=95.0)
     p.add_argument("--seed", type=int, default=7)
     p.add_argument("--limit", type=int, default=None)
-    p.add_argument("--exclude-file", type=Path, default=None)
-    p.add_argument("--dead-roi-file", type=Path, default=None,
-                   help="dead_roi_verdicts.csv — the R team's ROI rejections, applied "
-                        "before anything is computed. Omitting it analyses cells the "
-                        "producer rejected.")
     p.add_argument("--out", type=Path, default=None,
                    help="destination directory; default $BUGARACH_DARKROOM")
     p.add_argument("--also", type=Path, default=None)
     a = p.parse_args(argv)
 
-    from bugarach.assembly import load_dead_roi_keep, load_excluded
     from bugarach.graph import modularity_vs_null
-    from bugarach.store import load_slice
+    from bugarach.io import load_folder
 
-    excl = load_excluded(a.exclude_file)
-    droi = load_dead_roi_keep(a.dead_roi_file)
-    if droi:
-        nrej = sum(m.count(False) for m in droi.values())
-        print(f"dead-ROI roster: {len(droi)} slices, {nrej} ROIs rejected")
-    if excl:
-        print(f"excluding {len(excl)} lab-withdrawn recording(s): {', '.join(sorted(excl))}")
-
-    files = sorted(Path(a.store).glob("*.mat"))
+    slices = load_folder(a.folder)
     if a.limit:
-        files = files[: a.limit]
-    rows, skipped = [], {"excluded": 0, "no_baseline": 0, "no_stream": 0, "load_error": 0}
+        slices = slices[: a.limit]
+    print(f"{a.folder}: {len(slices)} recordings")
+    rows, skipped = [], {"no_baseline": 0, "no_stream": 0}
 
-    for i, f in enumerate(files):
-        if f.stem in excl:
-            skipped["excluded"] += 1
-            continue
-        try:
-            sl = load_slice(f)
-        except Exception as e:                                   # noqa: BLE001
-            skipped["load_error"] += 1
-            print(f"  ~ {f.name}: {type(e).__name__}: {e}", file=sys.stderr)
-            continue
+    for i, sl in enumerate(slices):
         win = baseline_window(sl)
         if win is None:
             skipped["no_baseline"] += 1
@@ -106,20 +88,11 @@ def main(argv=None) -> int:
             continue
         tr = sl.streams[a.stream]
         # **t50rise, not locs.** An event is located at its half-rise in this project
-        # (`docs/export_folder_spec.md`; PRs #126/#127), `locs` is the peak, and the
-        # MATLAB this ports reads `t50rise` too. Taking the peak would shift every
-        # event by its own rise time and quietly change which cells look coincident.
+        # (`docs/export_folder_spec.md` rev 5), and `locs` is the peak — roughly 0.3 s
+        # apart in a fast stream and 2 s in a slow one. Taking the peak would shift
+        # every event by its own rise time and change which cells look coincident.
         trains = [np.asarray(t, dtype=float) for t in tr.t50rise]
         trains = [t[np.isfinite(t)] for t in trains]
-        # Producer's ROI selection, applied BEFORE the graph is built — a rejected
-        # cell must not contribute an edge, a node, or a denominator.
-        mask = droi.get(str(sl.slice_id))
-        if mask is not None:
-            if len(mask) != len(trains):
-                print(f"  ~ {sl.slice_id}: roster has {len(mask)} ROIs, stream has "
-                      f"{len(trains)} — roster NOT applied", file=sys.stderr)
-            else:
-                trains = [t for t, k in zip(trains, mask) if k]
         res = modularity_vs_null(trains, dt=a.dt, t0=win[0], t1=win[1],
                                  n_surrogates=a.surrogates, n_restarts=a.restarts,
                                  jitter=a.jitter, pctl=a.pctl, seed=a.seed)
@@ -134,7 +107,7 @@ def main(argv=None) -> int:
             "above_null_Q": int(res.above_null),
         })
         if (i + 1) % 20 == 0:
-            print(f"  ... {i + 1}/{len(files)}")
+            print(f"  ... {i + 1}/{len(slices)}")
 
     scored = [r for r in rows if r["defined"] == 1]
     k = sum(1 for r in scored if r["above_null_Q"] == 1)

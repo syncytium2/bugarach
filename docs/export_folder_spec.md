@@ -18,6 +18,31 @@ Everything is CSV, UTF-8, newline-only endings, one header row. Times are
 this project's MATLAB exporter, another lab's Python, a spreadsheet exported by
 hand.
 
+> **Revision 6** (2026-08-20). **Selection is the producer's, and the consumer may
+> not second-guess it.**
+>
+> "bugarach reads one folder and nothing else" was stated from revision 1 and was
+> read as a *convenience* — the folder is enough — rather than as the *rule* it is.
+> It is the rule. **Which recordings are analysable, and which ROIs are alive, are
+> expressed by what the folder contains.** A recording the producer withdrew is
+> absent. A dead ROI is not exported. There is nothing for the consumer to filter,
+> and filtering anyway is a defect rather than a precaution.
+>
+> **The incident.** An analysis in this repo read the `.mat` store directly, noticed
+> it therefore contained recordings the lab had withdrawn, and "fixed" that by
+> reading the lab's workbook to re-derive the exclusions. The workbook keys them on
+> (date, mouse, **`slice_order`**). bugarach has no `slice_order`, so it matched on
+> date and dropped **a recording the lab had not withdrawn** — one mouse had two
+> slices that day and only the first was excluded. The producer's export had it
+> right. Every number in a published report was then computed over a corpus one
+> recording smaller than the producer intended, by machinery built to be careful.
+>
+> **The generalisation.** A consumer re-deriving a producer's decision is working
+> from strictly less information than the producer had. It will sometimes agree, and
+> when it disagrees it will be wrong. If a folder looks like it contains something it
+> should not, that is a **conversation with the producer**, not a filter in the
+> consumer. `bugarach.assembly` carries the same note where the deleted code was.
+
 > **Revision 5** (2026-08-18). **An event is located at its half-rise, and the
 > contract now asks how big it was.**
 >
