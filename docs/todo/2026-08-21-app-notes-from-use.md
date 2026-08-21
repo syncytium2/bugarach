@@ -511,6 +511,65 @@ which reads as the sentence the project describes itself with. Worth doing as
 **one** move rather than three, since `SECTIONS` and the DOM have to stay in step
 and each reorder re-tests the same accordion behaviour.
 
+## 12 · Tune should let you pick which detectors to sweep
+
+> *"tune panel should have a selector for which detectors to tune. most users
+> will have a favorite or two and wont even look at the weirdos we created"*
+
+**Today the page offers one or six and nothing between.** `runTune` sweeps
+`whichDetector()` — a single detector, borrowed from the Detect panel's chooser.
+`scoreAllDetectors` sweeps all six on one corpus and one fold split. A subset is
+not expressible.
+
+### This is a merge, not a new feature
+
+The two functions are the same loop at different widths, and a multi-select in
+Tune subsumes both: **one selected is today's Tune, all six selected is today's
+scoreboard.** Worth building it that way rather than adding a third path —
+especially since the scoreboard is still gated off the public page pending its
+copy review, so it is the cheapest moment to fold it in rather than the most
+expensive.
+
+### The timings argue for it harder than preference does
+
+Measured on the scoreboard run, fit seconds per detector over the same corpus:
+
+| detector | fit | detect |
+|---|---|---|
+| SPIKE-synch | 0.06 s | 0.001 s |
+| CoactDetect | 0.08 s | 0.001 s |
+| RateDetect | 0.10 s | 0.000 s |
+| SCE | 0.17 s | 0.003 s |
+| **LoCo** | **2.69 s** | 0.073 s |
+| **CICADA** | **7.06 s** | 0.302 s |
+
+Two detectors are **97% of the wall clock**. Deselecting them is not a
+convenience, it is the difference between a sweep that returns while you are
+looking at it and one you wait out. On a bigger corpus, or the folder assessment
+of note 8, that gap grows with the work.
+
+### One correction worth making, because it will end up in app copy
+
+*"the weirdos we created"* — we did not create them, and the page should not
+imply we did. Of the six:
+
+- **CICADA** is a faithful port of the **Cossart lab's** `cossartlab/cicada`
+  (`get_sce_threshold` + `detect_sce`);
+- **SPIKE-synch** is the PySpike / cSPIKE measure;
+- **RateDetect** is RateViewer's `computeEventRate` / `computeEventRateContext`;
+- **SCE**, **LoCo** and **CoactDetect** are this project's, and LoCo and
+  CoactDetect are the two that lead the comparison.
+
+That matters beyond credit: a selector that reads as *"the ones we made up"*
+would be wrong about four of six, and the scoreboard's honesty rules already
+forbid overclaiming in the other direction. A neutral list, with the two costly
+ones marked as costly, does both jobs.
+
+**Open:** whether the selector lives in Tune with the detector chooser moved up
+from Detect (note 7 already moves it), and whether a detector deselected here
+should also drop out of the Detect step's "all" (note 9) — one preference, or
+two?
+
 ---
 
 ## Related, and worth doing in the same pass
