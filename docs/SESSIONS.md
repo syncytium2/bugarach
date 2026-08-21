@@ -60,6 +60,39 @@ Template:
 
 ## Active
 
+### Mac/webapp-overnight — four webapp gaps closed, and the site republished
+- **Status:** ACTIVE 2026-08-20 — **claims the site deploy**, taken from released.
+- **Started:** 2026-08-20
+- **Writes:** **the PUBLIC SITE** — `bugarach.tonydefazio.com`. Nothing to the darkroom,
+  nothing under `$BUGARACH_DATA_ROOT`, no export folder touched.
+- **Claims:** the site deploy only. Released on the way out, in this same block.
+- **Doing:** Tony asked what blocks the website showing the full workflow, then for the
+  answerable ones overnight. Landed as five PRs: **#133** (rebased off 154 commits behind
+  and merged before it rotted), **#194** the stream bug, **#195** the folder-wide export
+  and `run.json`, **#196** the stage-5 comparison, **#197** a draft scoreboard.
+- **The live page was three features stale** — it was published when it served five
+  detectors, before CICADA, the fold-based sweep, the training panel and the CSV export.
+  There is no deploy job in CI; publishing is a manual `wrangler` run somebody remembers.
+- **Deployed from `bugarach-worktrees/webapp-overnight`**, not the primary checkout, with
+  `node_modules` installed there. The wrangler login is per-MACHINE
+  (`~/Library/Preferences/.wrangler`) rather than per-clone, so any clone can deploy; what
+  matters is the standing rule — **check what the deploy checkout is pointed at** — and
+  this one was reset to `origin/main` immediately before the build.
+- **Two findings another session should know**, both filed rather than fixed:
+  - `run.json` recorded ONE recording's frame interval for a whole folder, because the
+    settings string it kept embeds `dt` and the loop overwrote it per recording. Fixed in
+    #195; the sidecar now keeps parameters rather than prose.
+  - **The generator is set from a median and its rate knob behaves as a mean.** At a knob
+    of 15 mHz/ROI the `fitted` background — the default — gives a median of 3.3/8.7/3.7
+    and a mean of 9.4/14.3/11.8; `flat` gives ~16.8 either way. End to end that reads
+    0.45x. Every operating point in the tuning step is fitted on that corpus.
+    `docs/todo/2026-08-20-the-generator-is-set-from-a-median-and-fed-as-a-mean.md` —
+    **Tony's call**, because all three fixes change what every previous corpus meant.
+- **The scoreboard's copy has NOT been reviewed** and the panel is gated on `window.__lab`,
+  hidden on the published page. Its sentences are in the published file's source, inert and
+  marked draft; they do not render. Un-hiding is one line, after
+  `docs/todo/2026-08-20-the-scoreboard-copy-needs-review.md` is worked.
+
 ### Mac/synfire-folder — gather the synfire material into `<darkroom>/bugarach/synfire/`
 - **Status:** DONE 2026-08-20 — merged as PR #171; **claim released**, holds nothing.
   Session ended here; its handoff is `HANDOFF-difficulty-axis-and-synfire.md` on `main`,
