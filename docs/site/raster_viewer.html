@@ -278,10 +278,18 @@
         <input id="sMin" type="number" min="2" max="90" step="1" value="45">
         <label for="sRoi">ROIs</label>
         <input id="sRoi" type="number" min="4" max="150" step="1" value="33">
-        <label for="sRate">mean rate (mHz/ROI)</label>
+        <label for="sRate">rate (mHz/ROI)</label>
         <input id="sRate" type="number" min="1" max="500" step="1" value="10">
-        <div class="span note">Baseline slices in this lab run 3.8–17.5 mHz per
-        ROI, interquartile.</div>
+        <label for="sRateStat">…as the field's</label>
+        <select id="sRateStat">
+          <option value="mean" selected>mean</option>
+          <option value="median">median (typical ROI)</option>
+        </select>
+        <div class="span note">Baseline slices in this lab run 5.2–19.0 mHz per
+        ROI, interquartile — and those are <b>means</b>. On an uneven background
+        the typical ROI fires at about a fifth of the field's mean, so the two
+        readings of this box are a factor of five apart and it has to say which
+        it is.</div>
         <label for="sBg">background</label>
         <select id="sBg">
           <option value="fitted" selected>uneven, bursty</option>
@@ -3288,7 +3296,16 @@ function assessCoactivity(trains, winDur, opts) {
       spanMed: median(c.spans),
       nClustersObs: c.sds.length, nClustersNull: sdsNull.get(K).length,
       clustersPerMin: c.sds.length / winMin,
+      /* BOTH, because they are different numbers and the generator has to be
+         told which it is being handed. On a real field the per-ROI rate is
+         heavily skewed — a few busy ROIs, a third recording nothing — so the
+         median sits at about a fifth of the mean and neither is "the" rate.
+         `bugarach.assess` has reported both for its whole life; this reported
+         only the median, and the calibration step fed it to a knob that means
+         the mean. */
       roiRateMed: median(roiRate),
+      roiRateMean: roiRate.length
+        ? roiRate.reduce((a, b) => a + b, 0) / roiRate.length : NaN,
       evRatePerMin: nEvents / winMin,
       // window-relative centres, so the caller can draw them back onto the raster
       centres: c.centres, members: c.members,
@@ -3721,7 +3738,27 @@ function simulateFromMeasurement(rec, a, source, stream) {
   const set = (id, v) => { document.getElementById(id).value = v; };
   set("sRoi", Math.max(4, Math.min(150, Math.round(nRoi))));
   set("sMin", Math.max(2, Math.min(90, Math.round(mins))));
-  set("sRate", Math.max(1, Math.min(500, Math.round(a.roiRateMed * 1000))));
+  /* THE MEAN, AND IT SAYS SO — this line was the whole defect.
+
+     It used to hand `roiRateMed` to a box that means the field's mean, so on an
+     uneven background the generated field came out about five times quieter in
+     the mean than the recording it was measured from. Nothing said which
+     statistic either side was, so nothing could catch it.
+
+     The mean rather than the median now that both travel, and not only because
+     the knob wants one: at a realistic 33 ROIs the SAMPLE median of this
+     distribution spans 0.56 to 5.56 mHz between its 5th and 95th percentiles
+     around a population value of 2.14, and comes back exactly zero about one run
+     in a hundred. It is a tenfold-noisy estimator of the quantity it names. The
+     mean is steady, and the box will still take a median from anyone who has one.
+
+     Falls back to the median where a mean is absent — an assessment made before
+     this reported one — converted rather than mislabelled. */
+  const haveMean = Number.isFinite(a.roiRateMean);
+  const rateHz = haveMean ? a.roiRateMean
+                          : a.roiRateMed / RATE_MEDIAN_OVER_MEAN;
+  set("sRateStat", "mean");
+  set("sRate", Math.max(1, Math.min(500, Math.round(rateHz * 1000))));
   set("sEv", Math.max(0, Math.min(60, Math.round(a.clustersPerMin * mins))));
   set("sJit", Math.max(0, Math.min(3000, Math.round((a.jitObs || 0) * 1000))));
   MEASURED_LEVELS = levels;
@@ -3739,6 +3776,10 @@ function simulateFromMeasurement(rec, a, source, stream) {
      a different folder is about to replace it. */
   SIM_TARGET = { recId: rec.id, source, stream: stream || null, K: a.K,
                  nRoi: a.nRoi, winDur: a.winDur,
+                 // both, because the comparison should show the statistic that
+                 // was aimed at AND the one that was not — a generator can hit
+                 // the mean and miss the shape, and only the pair says so
+                 roiRateMean: haveMean ? a.roiRateMean : rateHz,
                  roiRateMed: a.roiRateMed, clustersPerMin: a.clustersPerMin,
                  partNObs: a.partNObs, jitObs: a.jitObs };
   document.getElementById("sPart").value = "measured-here";
@@ -3792,6 +3833,41 @@ function simulateFromMeasurement(rec, a, source, stream) {
      page says so on the picture, not only beside the controls.               */
 
 const RATE_SHAPE = 0.275;                  // bench.MEASURED_RATE_SHAPE
+
+/* THE RATE KNOB IS A MEAN, AND A MEASUREMENT MAY BE A MEDIAN.
+
+   Per-ROI rates are drawn `Gamma(RATE_SHAPE, rate / RATE_SHAPE)`, whose mean is
+   exactly `rate` — so `simulate.py` is right to call `bg_rate_hz` the mean per-ROI
+   rate, and `bench.REGIMES` is right to state its endpoints as slice MEANS.
+
+   The median of that distribution is a fixed multiple of the mean, because the
+   shape is fixed and only the scale moves:
+
+       median = (rate / k) * median(Gamma(k, 1))   =>   median / mean = m(k) / k
+
+   For k = 0.275 that is 0.209838 — the typical ROI fires at about a FIFTH of the
+   field's mean rate, which is what a field with a few busy cells and a third
+   silent looks like. Checked against scipy in
+   `tests/test_rate_statistic.py`, which recomputes it from `RATE_SHAPE` so the
+   two cannot drift.
+
+   On a FLAT background every ROI gets the same rate, so the two coincide and no
+   conversion happens — which is why this went unnoticed while the generator was
+   flat, and why `adapt.py` can still hand a median to Python today without
+   visible harm. */
+const RATE_MEDIAN_OVER_MEAN = 0.209838;
+
+/* A rate, and which statistic of the field it is, converted to the mean the
+   generator wants. `stat` is "mean" or "median"; anything else is a caller that
+   did not say, and the honest response is to refuse rather than to guess — this
+   is the exact ambiguity the export spec warns about, where a value that means
+   two things without saying which yields a plausible wrong answer. */
+function rateAsMean(rate, stat, fitted) {
+  if (stat !== "mean" && stat !== "median")
+    throw new Error("rate statistic must be 'mean' or 'median', got " + stat);
+  if (stat === "mean" || !fitted) return rate;
+  return rate / RATE_MEDIAN_OVER_MEAN;
+}
 const BURST_SHAPE = [1.547, 1.388];        // bench.MEASURED_BURST_SHAPE
 const BURST_BINS = [300, 60];              // …at these bin widths, seconds
 const GRID = 0.1, MARGIN = 5;
@@ -3918,10 +3994,13 @@ function simulateRecording(p, seed) {
   for (let r = 0; r < nR; r++) trains.push([]);
 
   // ---- background, one ROI at a time ----------------------------------------
+  // The knob may arrive as either statistic and says which; the draw below wants
+  // the mean, and that conversion happens once, here.
+  const meanRate = rateAsMean(p.rate, p.rateStat, p.fitted);
   const rates = [];
   for (let r = 0; r < nR; r++)
-    rates.push(p.fitted ? gammaDraw(u, RATE_SHAPE) * (p.rate / RATE_SHAPE)
-                        : p.rate);
+    rates.push(p.fitted ? gammaDraw(u, RATE_SHAPE) * (meanRate / RATE_SHAPE)
+                        : meanRate);
   const nC = Math.ceil(T / BURST_BINS[0]), nF = Math.ceil(T / BURST_BINS[1]);
   for (let r = 0; r < nR; r++) {
     if (!p.fitted) {
@@ -4046,6 +4125,9 @@ function readSim() {
     minutes: clamp(num("sMin"), 2, 90),
     rois: clamp(num("sRoi"), 4, 150),
     rate: clamp(num("sRate"), 1, 500) / 1000,        // mHz in the box, Hz here
+    // which statistic of the field that rate is — it travels with the number
+    // into the generator and into run.json's generator_spec
+    rateStat: val("sRateStat") === "median" ? "median" : "mean",
     fitted: val("sBg") === "fitted",
     events: clamp(num("sEv"), 0, 60),
     part: val("sPart"),
@@ -4093,8 +4175,13 @@ async function runSim() {
    with a number taken at another would be the K mistake the assess panel spends
    a paragraph warning about, made inside the tool that warns about it. */
 const VERIFY_ROWS = [
-  { key: "roiRateMed", label: "background rate", unit: "mHz/ROI",
+  // The mean is what the generator was set from, so it is the row that says
+  // whether the knob did its job. The median is the row that says whether the
+  // SHAPE matches — hit the mean with the wrong spread and only this one moves.
+  { key: "roiRateMean", label: "background rate (mean)", unit: "mHz/ROI",
     scale: 1000, nd: 1 },
+  { key: "roiRateMed", label: "background rate (typical ROI)", unit: "mHz/ROI",
+    scale: 1000, nd: 2 },
   { key: "clustersPerMin", label: "coordinated events", unit: "clusters/min",
     scale: 1, nd: 3 },
   { key: "partNObs", label: "participants", unit: "ROIs", scale: 1, nd: 1 },

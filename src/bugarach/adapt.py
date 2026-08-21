@@ -17,7 +17,7 @@ What maps to what
 assessment              generator                   note
 ======================  =========================  ===============================
 ``n_roi``               ``n_roi``                   direct
-``roi_rate_med``        ``bg_rate_hz``              ⚠ total rate, not background
+``roi_rate_mean``       ``bg_rate_hz``              ⚠ total rate, not background
 ``part_n_obs``          ``participation``           as a fraction of ``n_roi``
 ``jit_obs``             ``jitter_sec``              **only when ``jit_defined``**
 ``clusters_permin``     event count + ``min_sep``   floored by the null window
@@ -26,7 +26,18 @@ assessment              generator                   note
 
 Two of those rows carry a trap.
 
-**``roi_rate_med`` is the total per-ROI rate, coordinated events included**, and
+**That row used to read ``roi_rate_med``, and that was a third trap** — a median
+handed to a parameter ``simulate.py`` documents as the **mean**. It was invisible
+because nothing here sets ``bg_rate_shape``, so the generated field is flat and
+its two statistics are one number; wiring in
+:data:`~bugarach.bench.MEASURED_RATE_SHAPE` would have made it wrong by about a
+factor of five, silently. The statistic now travels with the number as
+``bg_rate_stat`` and the generator refuses a rate that does not say which it is.
+The mean is also the steadier estimator: at a realistic 33 ROIs the sample median
+of a ``Gamma(0.275)`` field spans 0.56 to 5.56 mHz between its 5th and 95th
+percentiles around a population value of 2.14.
+
+**``roi_rate_mean`` is the total per-ROI rate, coordinated events included**, and
 the generator's ``bg_rate_hz`` is background *only*. Handing one to the other
 double-counts the coordination: the events get planted on top of a background
 that already contains them. The over-count is small at measured rates — a
@@ -162,7 +173,28 @@ def generator_params(a, *, context_win_sec: float = CONTEXT_WIN_SEC,
     n_roi = int(a.n_roi)
 
     # --- background rate ------------------------------------------------------
-    bg = float(a.roi_rate_med)
+    # THE MEAN, AND IT TRAVELS WITH A FLAG SAYING SO.
+    #
+    # This used to hand `roi_rate_med` — a median — to `bg_rate_hz`, which
+    # `simulate.py` documents as the mean. It has been harmless only because
+    # nothing here sets `bg_rate_shape`, so the field is flat and its mean and
+    # median are the same number. The day `MEASURED_RATE_SHAPE` is wired in,
+    # that line becomes wrong by about a factor of five with nothing to catch it.
+    #
+    # The mean is also the better estimator rather than merely the matching one:
+    # at a realistic 33 ROIs the sample median of a Gamma(0.275) field spans
+    # 0.56 to 5.56 mHz between its 5th and 95th percentiles around a population
+    # value of 2.14, and comes back exactly zero about one run in a hundred.
+    bg = float(a.roi_rate_mean)
+    bg_stat = "mean"
+    if not np.isfinite(bg):
+        # An assessment from before `roi_rate_mean` existed. Convert rather than
+        # mislabel, and say so.
+        bg = float(a.roi_rate_med)
+        bg_stat = "median"
+        notes.append(
+            "roi_rate_mean is absent, so bg_rate_hz comes from the median and "
+            "is flagged as one; the generator converts it")
     notes.append(
         f"bg_rate_hz={bg:.4g} is the assessment's TOTAL per-ROI rate, which "
         "includes coordinated events; the generator treats it as background "
@@ -229,7 +261,7 @@ def generator_params(a, *, context_win_sec: float = CONTEXT_WIN_SEC,
             "measured — the spacing floor needs the room")
 
     kwargs = dict(
-        n_roi=n_roi, bg_rate_hz=bg, participation=levels,
+        n_roi=n_roi, bg_rate_hz=bg, bg_rate_stat=bg_stat, participation=levels,
         n_per_level=tuple([events_per_level] * len(levels)),
         jitter_sec=jitter, min_sep_sec=min_sep, duration_sec=dur,
         grid_sec=grid_sec,
