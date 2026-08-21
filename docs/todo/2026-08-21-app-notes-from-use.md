@@ -260,6 +260,119 @@ fold; that is the part not to lose while reclaiming the room.
 
 ---
 
+## 6 · "Nothing happens when I click Assess" — it ran, and showed you nothing
+
+> *"nothing happens when i click 'assess this recording'? need progress bar or
+> assessed check box plus indicators on raster that something happened"*
+
+**It is not broken and it is not slow.** Driven against a real recording out of
+the current export — `20240708_13`, 34 ROIs, 4,494 events, two streams, 1,000
+surrogates:
+
+    open + draw   44 ms
+    runAssess    185 ms      <-- the click
+    errors       none
+    assessOut    1,413 characters of table
+
+So the work is done before a spinner could render. Three separate things
+conspire to make that look like nothing at all:
+
+**a. The raster is marked only if you already chose a K, and the default is
+"none".** `mark clusters at K` defaults to `0`
+([:414](../site/raster_viewer.html)) and `K_SCAN` is `[3, 4, 6, 8]`, so
+`res.find(a => a.K === wantK)` at [:4501](../site/raster_viewer.html) never
+matches, `ASSESS` is set to `null`, and the tick marks are not drawn. **By
+default, assessing a recording changes the raster in no way whatsoever.** That is
+the whole of Tony's "indicators on raster that something happened", and it is a
+default rather than a missing feature.
+
+**b. The result renders in the other column.** `#assessOut` is at
+[:798](../site/raster_viewer.html), inside `#view` — the right-hand stage,
+*below the canvas*. The button is in the left accordion. On a tall raster the
+table lands below the fold, so the click is in one place and its consequence is
+in another, off screen.
+
+**c. The button's own feedback is too fast to see.** It sets
+`"Assessing…"` and restores in 185 ms.
+
+**So a progress bar is the wrong fix** — there is nothing to wait for. What is
+missing is *persistence*: something that still says "this recording has been
+assessed" a second later. Tony's "assessed check box" is the right shape.
+
+Worth deciding together:
+- whether marking the raster should default to **on** at some K rather than
+  `none` — which collides with *"K is a scan, not a choice"* and the panel's
+  refusal to pick one for you. A tick layer at every K, or a neutral "clusters
+  found" mark independent of K, may thread it;
+- whether the chip on the accordion head should carry the state, the way
+  `cntDetect` names the current detector.
+
+## 7 · Tune belongs between Assess and Detect
+
+> *"tune the settings should come after assess. then detect events"*
+
+**Where.** DOM order is Simulate, Open, Analysis windows, Assess, **Detect**,
+**Tune**, Lab, Compare, Recordings; `SECTIONS` at
+[:6203](../site/raster_viewer.html) repeats it and the accordion behaviour
+follows that array.
+
+Tony wants **Assess → Tune → Detect**, which is the order the workflow actually
+runs in and the order the plan states: measure, simulate from the measurement,
+tune against planted truth, then point the tuned instrument at everything.
+
+**One dependency to fix in the same move.** The Tune panel's own copy says it
+sweeps *"one setting of the detector chosen above"* — the chooser lives in the
+Detect panel. Put Tune first and "above" is false. Either the sentence changes,
+or the detector chooser moves up with it. The second is probably right: the
+chooser governs both panels, and after the *use this setting* button landed it is
+the Tune panel that acts on it first.
+
+Also worth checking on the move: `showSection` opens one panel at a time, and the
+apply button calls `showSection("accDetect")` — reordering must not leave that
+jumping backwards past the panel the reader just used.
+
+## 8 · Assess the whole folder
+
+> *"assessor should have assess whole folder option?"*
+
+**Yes, and Python already has it** — this is a port, not a design.
+[`src/bugarach/assess_folder.py`](../../src/bugarach/assess_folder.py) is
+`bugarach assess my_export/`: it walks the folder, measures every recording's
+baseline region, and prints the scan as a table. It landed 2026-08-18 and the
+browser never got it, which is why the page still assesses one recording at a
+time while the CLI assesses a corpus.
+
+It also already carries the three rules the browser would otherwise have to
+re-derive, and getting any of them wrong is the kind of error this repo files
+todos about:
+
+* **K is a scan, never a choice** — every K printed, none picked;
+* **`jit_defined` is a state, not a NaN** — the tightness comparison can be
+  undefined while a finite-looking number sits in the field;
+* **baseline regions only**, and **non-baseline regions are counted and the
+  count is printed**, so the skip is visible rather than silent (FOUNDATIONS §9).
+
+That last one answers note 4 from the other direction: the folder assessor
+already decided that treatments are skipped and *said how many*, which is the
+behaviour the per-recording selector is being asked for.
+
+**What it is worth beyond convenience.** The webapp's completion plan calls this
+Phase 2, *"a corpus, not a recording"*, and the reason is not batching: the
+generator is parameterised from **one** recording's measurement today, so the
+simulated corpus inherits whichever recording happened to be on screen. A folder
+assessment is what makes "typical of this lab" a measurable statement rather than
+a choice of file.
+
+**Cost check before building.** 185 ms per recording measured above, two streams,
+1,000 surrogates — so 84 recordings is roughly **15 seconds**, single-threaded, in
+the page. That is genuinely a progress-bar job, unlike note 6.
+
+**Open:** whether the folder assessment feeds the simulator directly (a corpus
+median rather than one recording's numbers), which is a real change to what the
+accept step means and is Tony's call, not a port detail.
+
+---
+
 ## Related, and worth doing in the same pass
 
 `docs/todo/2026-08-20-the-scoreboard-copy-needs-review.md` is the other open copy
