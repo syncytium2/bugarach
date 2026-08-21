@@ -63,3 +63,34 @@ bash tools/session_briefing.sh                          # time it directly
 
 CI (ubuntu) passes, so `main` is genuinely green — this is a cross-OS gap, not a
 regression.
+
+---
+
+## Update 2026-08-17 — the gap is wider than one timing assertion
+
+Re-checked at session close. CI on `main` is green (Linux); on native Windows
+**11 tests fail across two files**, five distinct cases:
+
+```
+tests/test_session_briefing.py::test_it_is_fast_enough_to_be_unconditional
+tests/test_session_briefing.py::test_with_no_variable_and_no_dropbox_it_says_exports_are_skipped
+tests/test_session_briefing.py::test_it_distinguishes_a_set_variable_from_a_usable_one[...]  (x2)
+tests/test_session_briefing.py::test_foundations_still_has_the_section_the_briefing_extracts
+tests/test_paths.py::test_windows_path_is_translated_for_wsl
+```
+
+So this is no longer "one performance budget does not survive the port". The
+briefing's *behaviour* tests fail on Windows too, and a **WSL path-translation
+test fails on native Windows** — plausibly because it assumes a WSL environment
+that a plain Windows shell is not.
+
+Worth noting what this means about the guard: every one of these passes in CI, so
+nothing warns before a Windows session hits them. The repo is worked from a
+Windows box in the rotation (FOUNDATIONS §8), so "green" currently means "green
+on Linux".
+
+**The cheapest thing that would have caught it:** add Windows to the CI matrix,
+even as a non-blocking job to start. `.github/workflows/ci.yml` runs
+`ubuntu-latest` across three Pythons — three Linuxes and no other OS. A single
+`windows-latest` entry converts this whole class of finding from "somebody
+notices while doing something else" into a build signal.

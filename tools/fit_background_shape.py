@@ -49,30 +49,30 @@ MIN_EVENTS = 20
 MIN_ROIS = 5
 
 
-def baseline_trains(path: Path):
+def baseline_trains(sl):
     """``(per-ROI event times re-zeroed, window duration)`` for the baseline region.
 
     The temporal fit needs the times, not just the totals.
     """
-    got = _baseline(path)
+    got = _baseline(sl)
     if got is None:
         return None
     trains, dur = got
     return trains, dur
 
 
-def baseline_counts(path: Path):
-    """``(counts per ROI, window duration)`` for a slice's baseline region.
+def baseline_counts(sl):
+    """``(counts per ROI, window duration)`` for a recording's baseline region.
 
-    Returns ``None`` for every reason a slice is unusable, so one bad file cannot
-    end a survey of eighty.
+    Returns ``None`` for every reason a recording is unusable, so one bad file
+    cannot end a survey of eighty.
+
+    Takes a loaded recording: the caller reads the export folder, which is the
+    corpus the lab approved. The constants this file fits — ``MEASURED_RATE_SHAPE``
+    and ``MEASURED_BURST_SHAPE`` — parameterise the generator every session uses,
+    so fitting them on recordings the lab withdrew propagates further than any
+    single figure.
     """
-    from bugarach.store import load_slice
-
-    try:
-        sl = load_slice(path)
-    except Exception:                                        # noqa: BLE001
-        return None
     reg = next((r for r in sl.regions
                 if (r.name or "").strip().lower() == "baseline"), None)
     if reg is None or STREAM not in sl.streams:
@@ -93,14 +93,8 @@ def baseline_counts(path: Path):
     return c, dur
 
 
-def _baseline(path: Path):
+def _baseline(sl):
     """``(per-ROI times re-zeroed to the window, duration)`` or ``None``."""
-    from bugarach.store import load_slice
-
-    try:
-        sl = load_slice(path)
-    except Exception:                                        # noqa: BLE001
-        return None
     reg = next((r for r in sl.regions
                 if (r.name or "").strip().lower() == "baseline"), None)
     if reg is None or STREAM not in sl.streams:
@@ -203,10 +197,13 @@ def _diagnostics(windows, shape, seed=0):
 
 
 DEAD_ROI_RATE = 0.030
-"""ADR 0002 §7.1: 66 of 2185 ROIs rejected as dead in `ROI_revised_2v`.
+"""66 of 2185 eligible ROIs rejected as dead — the rule's own rate.
 
-⚠ Whether bugarach's archive is that corpus is unverified — see
-`docs/todo/2026-08-15-zero-event-rois-are-not-dead-rois.md`.
+Verified against this archive rather than assumed: the exporter applied its
+2026-08-15 roster to `event_store_onset_revised_2v` by `(slice_id, ROI)`,
+matching all 2185 keys with no disagreements, and rejected 66. The denominator
+is the *eligible* population — 67 of 85 slices — not the store's 2738 ROIs.
+See `docs/todo/2026-08-15-zero-event-rois-are-not-dead-rois.md`.
 """
 
 
@@ -214,10 +211,12 @@ def dead_roi_sensitivity(n_win=81, n_roi=33, mean_count=8.0, reps=20,
                          dead=DEAD_ROI_RATE, seed=20260816):
     """How far do structural zeros bend the fitted shape?
 
-    Tony, 2026-08-16: the exporter should remove dead ROIs, and **the rule has not
-    been applied to the data this repo reads**. So the fit above was taken over a
-    population containing rows that are zero by construction rather than by
-    biology, and a Gamma shape MLE is most sensitive in exactly that tail.
+    The fits in this tool were taken over a population that had not been through
+    the dead-ROI rule, so it carried rows that are zero by construction rather
+    than by biology — and a Gamma shape MLE is most sensitive in exactly that
+    tail. The rule has since been applied at export, but the question stays
+    live: it is what any fit over an unfiltered population is worth, and 18 of
+    85 slices are ineligible for the verdict and so remain unfiltered.
 
     Answers it by simulation rather than argument: draw Gamma-Poisson counts at a
     known shape with the real fit's geometry, force `dead` of them to zero, and
@@ -259,6 +258,9 @@ def main(argv=None) -> int:
     p.add_argument("--tol", type=float, default=0.05,
                    help="relative drift allowed against bench.MEASURED_RATE_SHAPE "
                         "before this exits 1 (default 0.05)")
+    p.add_argument("--folder", default=None,
+                   help="export folder holding the real corpus "
+                        "(docs/export_folder_spec.md)")
     p.add_argument("--seed", type=int, default=0,
                    help="seed for the diagnostic draws (default 0)")
     args = p.parse_args(argv)
@@ -274,23 +276,25 @@ def main(argv=None) -> int:
               "\napplying the dead-ROI rule should not strand any bench number.")
         return 0
 
-    root = os.environ.get("BUGARACH_DATA_ROOT", "").strip()
-    if not root:
-        print("BUGARACH_DATA_ROOT is not set — this fit needs the real archive, "
-              "and real stores are machine-local. Nothing written.", file=sys.stderr)
-        return 2
-    arc = Path(root).expanduser() / ARCHIVE
-    if not arc.is_dir():
-        print(f"no archive at {arc}", file=sys.stderr)
+    if not args.folder:
+        print("--folder is required: this fit needs the real corpus, and the "
+              "corpus is an export folder (docs/export_folder_spec.md). It used "
+              "to walk a .mat archive, which holds every recording ever "
+              "processed rather than the ones the lab kept — and the constants "
+              "fitted here parameterise the generator every session uses. "
+              "Nothing written.", file=sys.stderr)
         return 2
 
+    from bugarach.io import load_folder
+
+    slices = load_folder(Path(args.folder).expanduser())
     windows = []
-    for path in sorted(arc.glob("*.mat")):
-        got = baseline_counts(path)
+    for sl in slices:
+        got = baseline_counts(sl)
         if got is not None:
             windows.append(got)
     if not windows:
-        print(f"no usable baseline windows under {arc}", file=sys.stderr)
+        print(f"no usable baseline windows in {args.folder}", file=sys.stderr)
         return 2
 
     n_roi = sum(len(c) for c, _ in windows)
@@ -313,8 +317,8 @@ def main(argv=None) -> int:
     from bugarach.bench import MEASURED_BURST_BINS, MEASURED_BURST_SHAPE
 
     windows_t = []
-    for path in sorted(arc.glob("*.mat")):
-        got = baseline_trains(path)
+    for sl in slices:
+        got = baseline_trains(sl)
         if got is not None:
             windows_t.append(got)
 

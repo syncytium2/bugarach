@@ -17,7 +17,10 @@ dependencies = [
 
 [project.optional-dependencies]
 ui = ["panel>=1.4", "holoviews>=1.18"]
-dev = ["pytest>=8", "pyspike", "panel>=1.4", "holoviews>=1.18"]
+docs = ["markdown>=3.5"]
+dl = ["torch>=2.0"]
+dev = ["pytest>=8", "pyspike", "panel>=1.4", "holoviews>=1.18", "markdown>=3.5",
+       "playwright>=1.40"]
 
 [project.scripts]
 bugarach = "bugarach.cli:main"

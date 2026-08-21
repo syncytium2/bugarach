@@ -14,7 +14,7 @@ hv = pytest.importorskip("holoviews")
 from bugarach.detectors.rate import recording_extent  # noqa: E402
 from bugarach.simulate import simulate_coordination  # noqa: E402
 from bugarach.ui.diagnostic import (  # noqa: E402
-    _is_member, _spans, coordination_diagnostic, lane_panel, legend_html,
+    RASTER_INK, _spans, coordination_diagnostic, lane_panel, legend_html,
     raster_panel, score_table,
 )
 
@@ -43,14 +43,33 @@ def test_non_finite_width_still_draws():
     assert len(sp) == 1 and sp[0][1] > sp[0][0]
 
 
-def test_membership():
-    t = np.array([1.0, 5.0, 50.0])
-    m = _is_member(t, [(0.0, 6.0)])
-    assert list(m) == [True, True, False]
+def test_every_raster_onset_is_drawn_identically(sim):
+    """The raster shows the recording, not a detector's reading of it.
+
+    It used to ink onsets inside a detected window and mute the rest, which
+    asserts which events a detector RECRUITED — a per-onset claim none of the six
+    makes, since they report a window. One Scatter, one colour, one size is the
+    property; more than one would mean some onset is being privileged again.
+    """
+    s, gt, ext = sim
+    panel = raster_panel(s.streams["events"], ext=ext, gt=gt)
+    # `_base` contributes an invisible Scatter to own the x-dimension, so the
+    # property is one VISIBLE onset layer, not one Scatter.
+    visible = [e for e in panel.values()
+               if isinstance(e, hv.Scatter)
+               and e.opts.get("style").kwargs.get("alpha", 1) > 0]
+    assert len(visible) == 1, (
+        f"{len(visible)} visible onset layers — the raster is grading its own "
+        "events again")
+    style = visible[0].opts.get("style").kwargs
+    assert style["color"] == RASTER_INK
+    assert {style["color"]} == {RASTER_INK}, "one ink, whatever a detector said"
 
 
-def test_membership_with_no_windows_is_all_isolated():
-    assert not _is_member(np.array([1.0, 2.0]), []).any()
+def test_raster_takes_no_detection_spans():
+    """A caller cannot re-introduce the highlight by passing spans."""
+    import inspect
+    assert "member_spans" not in inspect.signature(raster_panel).parameters
 
 
 def test_builds_with_lanes_and_ground_truth(sim):

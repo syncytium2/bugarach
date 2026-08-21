@@ -13,7 +13,9 @@ import pytest
 
 from bugarach.detectors.coact import coact_detect
 from bugarach.detectors.rate import recording_extent
-from bugarach.simulate import GroundTruth, simulate_coordination
+from bugarach.simulate import (  # noqa: E402
+    _SIGNATURE_DEFAULTS, GroundTruth, simulate_coordination,
+)
 
 
 def trains_of(slice_, name="events"):
@@ -441,3 +443,194 @@ def test_a_sequence_of_shapes_needs_a_sequence_of_bins():
     with pytest.raises(ValueError, match="bg_burst_bin_sec"):
         simulate_coordination(seed=1, bg_burst_shape=(1.5, 1.4),
                               bg_burst_bin_sec=60.0)
+
+
+# ------------------------------------------------- the label matches the data
+
+# `PlantedEvent.onsets` records the onset each participant actually got. Its
+# whole value is that it agrees with the train it describes, and the agreement
+# rests on _quantize applying exactly the same rounding the trains get. Nothing
+# enforced that when the field landed, so these tests are the enforcement:
+# if the two quantization paths ever diverge, a label drifts one grid step from
+# the data it labels — wrong in the one place nothing would look.
+
+
+def _all_events(gt):
+    return list(gt.events) + list(gt.distractors)
+
+
+def test_every_recorded_onset_is_in_the_train_it_labels():
+    s, gt = simulate_coordination(seed=1, duration_sec=1200, n_roi=20,
+                                  n_per_level=(3, 3, 3), n_distractors=3,
+                                  distractor_window=(100.0, 1000.0))
+    trains = trains_of(s)
+    checked = 0
+    for e in _all_events(gt):
+        assert len(e.onsets) == len(e.rois), "onsets must align with rois"
+        for roi, onset in zip(e.rois, e.onsets):
+            assert np.any(np.isclose(trains[roi], onset, atol=1e-9)), (
+                f"onset {onset} recorded for ROI {roi} is not in its train")
+            checked += 1
+    assert checked > 0, "no onsets checked — the test would pass vacuously"
+
+
+def test_observed_span_is_first_to_last_onset():
+    _, gt = simulate_coordination(seed=2, duration_sec=1200, n_roi=20,
+                                  n_per_level=(3, 3, 3))
+    for e in gt.events:
+        assert e.observed_span == (min(e.onsets), max(e.onsets))
+
+
+@pytest.mark.parametrize("grid_sec", [0.0, 0.1, 2.0])
+def test_recorded_onsets_carry_the_grid_the_trains_carry(grid_sec):
+    """The two quantization paths must not drift apart.
+
+    Checked by asserting the recorded onset is ON the grid whenever the trains
+    are, which is the property that fails if either side changes rounding.
+    """
+    s, gt = simulate_coordination(seed=3, duration_sec=1200, n_roi=20,
+                                  n_per_level=(3, 3, 3), grid_sec=grid_sec)
+    onsets = np.array([o for e in _all_events(gt) for o in e.onsets])
+    assert onsets.size
+    if grid_sec > 0:
+        steps = onsets / grid_sec
+        np.testing.assert_allclose(steps, np.round(steps), atol=1e-9)
+    trains = np.concatenate([t for t in trains_of(s) if t.size])
+    assert np.isin(np.round(onsets, 9), np.round(trains, 9)).all()
+
+
+def test_a_half_grid_tie_lands_the_same_way_in_both():
+    """MATLAB rounds halves away from zero and numpy rounds them to even, so a
+    tie is exactly where a label and its data would part company."""
+    from bugarach.detectors._shared import matlab_round
+    from bugarach.simulate import _quantize
+
+    ties = [0.05, 0.15, 0.25, 1.05, 2.35]
+    got = _quantize(ties, 0.1)
+    want = tuple(float(matlab_round(v / 0.1) * 0.1) for v in ties)
+    assert got == want
+
+
+def test_nominal_and_realized_spans_are_not_interchangeable():
+    """`span` is what was requested and `observed_span` is what happened.
+
+    Pinned so nobody can quietly treat the plain name as the real one: on a bench
+    recording the nominal window is one width for every event while the realized
+    footprints differ from it and from each other.
+    """
+    from bugarach import bench
+
+    _, gt = bench.make_recording("baseline_quiet", seed=1)
+    nominal = {round(e.span[1] - e.span[0], 6) for e in gt.events}
+    realized = [e.observed_span[1] - e.observed_span[0] for e in gt.events]
+    assert len(nominal) == 1, "nominal width is parametric — one value throughout"
+    assert len(set(np.round(realized, 6))) > 1, "realized widths should vary"
+    assert max(realized) < nominal.pop(), "nominal should bracket what happened"
+
+
+def test_a_single_participant_event_has_no_width():
+    """Reachable from ordinary settings, and a label pipeline meets it first.
+
+    ``max(1, matlab_round(frac * n_roi))`` guarantees a participant, so a small
+    population with a small fraction plants one-ROI events whose realized
+    footprint is a point. Documented rather than padded — one onset genuinely
+    has no spread — but a consumer using observed_span as a mask needs to know.
+    """
+    _, gt = simulate_coordination(seed=1, n_roi=8, participation=(0.10,),
+                                  n_per_level=(4,), duration_sec=600,
+                                  min_sep_sec=60, jitter_sec=0.36)
+    assert all(e.n_part == 1 for e in gt.events)
+    assert all(e.observed_span[1] - e.observed_span[0] == 0.0 for e in gt.events)
+
+
+# ------------------------------------------------------------ RecordingSpec
+
+# The spec exists so a background axis can be added without touching a caller.
+# What has to be true for that to be worth anything: the spec path and the
+# keyword path must produce the SAME recording, or migrating a call site changes
+# results while looking like a refactor.
+
+SPEC_KW = dict(duration_sec=1800.0, n_roi=37, bg_rate_hz=0.0095,
+               bg_rate_shape=0.275, bg_burst_shape=[1.547, 1.388],
+               bg_burst_bin_sec=[300.0, 60.0], participation=(0.30, 0.18, 0.10),
+               n_per_level=(4, 4, 4), jitter_sec=0.36, min_sep_sec=120.0,
+               interval_cv=1.0, grid_sec=0.1)
+
+
+def test_a_spec_produces_the_same_recording_as_the_keywords():
+    """The migration's acceptance test. If this fails, moving a call site to the
+    spec form silently changes the data it generates."""
+    from bugarach.spec import RecordingSpec
+
+    a, ga = simulate_coordination(seed=5, **SPEC_KW)
+    b, gb = simulate_coordination(RecordingSpec.from_kwargs(**SPEC_KW), seed=5)
+    for x, y in zip(trains_of(a), trains_of(b)):
+        np.testing.assert_array_equal(x, y)
+    np.testing.assert_array_equal(ga.times, gb.times)
+    assert [e.rois for e in ga.events] == [e.rois for e in gb.events]
+    assert [e.onsets for e in ga.events] == [e.onsets for e in gb.events]
+
+
+def test_the_flat_default_round_trips_too():
+    from bugarach.spec import RecordingSpec
+
+    a, _ = simulate_coordination(seed=2)
+    defaults = {k: v for k, v in _SIGNATURE_DEFAULTS.items()
+                if k in RecordingSpec.from_kwargs(
+                    **{**_SIGNATURE_DEFAULTS}).as_kwargs()}
+    b, _ = simulate_coordination(RecordingSpec.from_kwargs(**defaults), seed=2)
+    for x, y in zip(trains_of(a), trains_of(b)):
+        np.testing.assert_array_equal(x, y)
+
+
+def test_kwargs_round_trip_through_the_spec():
+    from bugarach.spec import RecordingSpec
+
+    spec = RecordingSpec.from_kwargs(**SPEC_KW)
+    assert RecordingSpec.from_kwargs(**spec.as_kwargs()).as_kwargs() == \
+        spec.as_kwargs()
+
+
+def test_a_spec_and_a_field_it_owns_is_refused():
+    """Merging them silently is how a figure gets labelled with settings it was
+    not drawn at."""
+    from bugarach.spec import RecordingSpec
+
+    spec = RecordingSpec.from_kwargs(**SPEC_KW)
+    with pytest.raises(TypeError, match="bg_rate_hz"):
+        simulate_coordination(spec, bg_rate_hz=0.5, seed=1)
+
+
+def test_a_spec_alongside_a_field_it_does_not_own_is_fine():
+    """seed, streams, slice_id and regions describe the CALL, not the recording,
+    and the probe and distractors belong to the bench."""
+    from bugarach.spec import RecordingSpec
+
+    spec = RecordingSpec.from_kwargs(**SPEC_KW)
+    s, gt = simulate_coordination(spec, seed=1, streams=("fast", "slow"),
+                                  slice_id="x", n_distractors=2,
+                                  distractor_window=(100.0, 900.0))
+    assert set(s.streams) == {"fast", "slow"}
+    assert len(gt.distractors) == 2
+
+
+def test_the_wrong_type_says_so():
+    with pytest.raises(TypeError, match="RecordingSpec"):
+        simulate_coordination({"n_roi": 30}, seed=1)
+
+
+def test_burst_scales_must_pair_up():
+    from bugarach.spec import BackgroundModel
+
+    with pytest.raises(ValueError, match="same number of scales"):
+        BackgroundModel(rate_hz=0.01, burst_shape=(1.5, 1.4),
+                        burst_bin_sec=(300.0,))
+
+
+def test_is_flat_names_the_generator_that_shipped():
+    from bugarach.spec import BackgroundModel
+
+    assert BackgroundModel(rate_hz=0.01).is_flat
+    assert not BackgroundModel(rate_hz=0.01, rate_shape=0.275).is_flat
+    assert not BackgroundModel(rate_hz=0.01, burst_shape=(1.4,),
+                               burst_bin_sec=(60.0,)).is_flat

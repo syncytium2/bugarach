@@ -61,12 +61,32 @@ parameters broadcast from scalar / ordered sequence / name-keyed dict. Most
 outside labs have ONE stream; the viewer treats single-stream as the default
 presentation.
 
-## 4. Regions are optional
+## 4. Regions are optional, and windows come from one of two places
 
-Region annotations drive the aCa5z windowing (`region_windows`; guards HALT
-on malformed real data). Un-annotated recordings get **one implicit
-whole-recording window** (`effective_region_windows`) so region-scoped
-detection analyzes the full extent instead of nothing.
+**Store input derives its windows.** Region annotations on a `.mat` store drive
+the aCa5z windowing (`region_windows`; guards HALT on malformed real data).
+Un-annotated recordings get **one implicit whole-recording window**
+(`effective_region_windows`) so region-scoped detection analyzes the full extent
+instead of nothing.
+
+**Export-folder input will not — and this half is specified, not yet built.** A
+folder conforming to [`docs/export_folder_spec.md`](export_folder_spec.md) carries
+`regions.csv`, whose bounds were computed by whatever produced the folder —
+trimming, caps, wash-in delays and exclusions already applied. Those bounds are to
+be used **verbatim**: no cap, no delay, no floor, no baseline privilege, no label
+special-casing, and none of the HALT guards. Those rules encode this lab's protocol,
+not a universal one. Re-deriving them would trim twice, and the guards would reject
+a legal folder from a lab whose regions are neither contiguous nor zero-based.
+
+**No code reads that folder today.** The reader is the first milestone of
+[`docs/workflow_plan.md`](workflow_plan.md). Until it lands, this paragraph is a
+contract to build against and not a description of behaviour — anything relying on
+it must check that the reader exists first.
+
+**The two paths must not be merged.** The aCa5z rule is right for the stores it was
+written for and wrong as a condition of entry for everybody else. It has been
+reimplemented five times across this ecosystem and drifted every time, which is why
+a conforming folder is trusted rather than re-checked.
 
 ## 5. Data policy
 
@@ -74,6 +94,21 @@ Only **synthetic** fixtures and synthetic-derived references are committed.
 Real stores (and anything derived from real data) stay machine-local behind
 `BUGARACH_DATA_ROOT` — no personal paths, slice ids, or institution names in
 code. The repo is public; history has been audited on this basis.
+
+**The darkroom's location is resolved, never known.** Figures and reports go to
+`<dropbox>/darkroom/bugarach/` — a folder shared with every other project in the
+ecosystem and mounted on every machine — so its absolute path, which carries a
+person's name, is never written down in this repo.
+`bugarach.paths.darkroom()` takes `$BUGARACH_DARKROOM` when set and otherwise
+reads Dropbox's own `info.json` to find the mount, accepting a location only when
+the directory is already there and declining when several accounts have one.
+**An unset variable is not evidence that the darkroom is unavailable.** On
+2026-08-17 a session reported it missing and skipped its export while Dropbox sat
+mounted and visible in Finder: the variable was exported from a `~/.zshrc`, which
+zsh reads for interactive shells only, and nothing the session ran was
+interactive. The briefing now prints the resolved path unprompted and
+`python -m bugarach.paths` answers on demand — check one of those before
+concluding there is nowhere to write.
 
 **Released by name — the one exception.**
 `docs/generator/reality_check.png` contains a real baseline recording and is
@@ -92,12 +127,50 @@ The **build stays clean** regardless: `tools/build_site.py` copies that
 committed file and has no code path that opens a store, so the public site is
 reproducible from a clone with no data.
 
-## 6. grid_dt is the caller's responsibility
+## 6. dt is required at load. There is no default sampling interval.
 
-The rate-trace grid must be the **acquisition sampling interval** (mean
-acquired frame interval). The onset stores don't carry it (filed with the
-pipeline team in interface2's todo map); omitting `grid_dt` falls back to
-0.1 s and raises `GridDtNotSetWarning` **on purpose** — do not silence it.
+The sampling interval is a **property of the recording**, and nothing
+downstream can recover it. So it is supplied by the person who knows it, at the
+moment data enters, and **loading without it is refused rather than defaulted**.
+
+> Tony, 2026-08-16: *"we cannot allow data loading without the user specifying a
+> dt."*
+
+This **supersedes** the older arrangement, under which `grid_dt` was the
+caller's responsibility at *detection* time and omitting it fell back to 0.1 s
+with a `GridDtNotSetWarning`. That fallback is the MATLAB original's hardcoded
+10 Hz MLspike grid: correct for this lab's stores and silently wrong for
+everyone else's. A warning is not a gate — it is discovered after the fact, by
+whoever happens to be reading stderr, and the result it qualifies has already
+been computed and may already have been exported.
+
+The load boundary is the right place because it is the only one that fails
+*before* a number exists. A detector that warns has already produced output; a
+loader that refuses has not.
+
+Consequences that bind code here:
+
+- Every path that admits data — store readers, `bugarach.io` constructors, the
+  viewer's file intake, foreign-data adapters — takes the sampling interval as a
+  **required** input. No default, no inference from the data, no fallback
+  constant.
+- The stores still do not carry it (filed with the pipeline team in interface2's
+  todo map). That is exactly why it is asked for rather than read; it is not a
+  reason to guess.
+- Because dt is known at the boundary, the seconds↔samples conversion is total
+  and exact there. Code downstream is free to work in **samples** where samples
+  are the honest unit — a learned detector's receptive field is a number of
+  frames, not a number of seconds, and expressing it in seconds bakes in one
+  lab's imaging rate.
+- **The six ports keep their seconds-valued MATLAB-facing parameters.** Those are
+  part of the parity contract (§2) and are not up for reinterpretation. This
+  section governs the *load boundary* and new code, not the ports' signatures.
+
+Implementation is outstanding, and the gap between this rule and the code is
+tracked in
+[`todo/2026-08-16-dt-must-be-required-at-load.md`](todo/2026-08-16-dt-must-be-required-at-load.md).
+Until it closes, `GridDtNotSetWarning` still fires and still must not be
+silenced.
 
 ## 7. Licensing & provenance posture
 
@@ -156,30 +229,47 @@ a wrong conclusion in this repo. The authority is the global
   the properties of coordination."* Treatments are what the instruments are
   pointed at; taking coordination properties from them assumes the answer. Where a
   difficulty range is wanted, use the spread among untreated slices — baseline's
-  own interquartile per-ROI rate is 0.0038–0.0175 Hz. `bugarach.bench` follows
+  own interquartile per-ROI rate is **0.0052–0.0190 Hz**. `bugarach.bench` follows
   this; two earlier versions of it did not, in opposite directions.
+  **Re-derived 2026-08-20 from the export folder**, the corpus the lab approved.
+  The previous figures — 0.0038–0.0175 — came from the `.mat` store, which carries
+  every recording ever processed including two the lab withdrew, which is the
+  defect SAP007 exists to stop. Moving the axis changed no detector's F1 beyond
+  seed noise and reordered nothing, but it exposed that CICADA's FAST percentile
+  was a notch too loose (7.3 false events/hour on a null with nothing planted,
+  against a ceiling of 6); that was retuned to 99.999 with it, on Tony's call.
 - **Senktide is not one effect.** It raises event frequency *and* the GCaMP6f
   background over time, so "more activity" conflates a frequency change with a
   baseline shift. Any claim that a detector finds more under senktide must say
   which.
 - **A ZERO-EVENT ROI IS NOT A DEAD ROI, and the verdict is not this repo's to
-  compute.** `fireflies` owns it, spec'd normatively in its `decisions/0002` (@
-  `691ae62`): an ROI is dead only if silent at baseline **and** at drug **and**,
-  where a high-K⁺ test exists for its slice, under that too — high K⁺ being the
-  positive control that proves the ROI *can* fire. Baseline silence is one of
-  three conjuncts, and the two rates are an order of magnitude apart: **3.0%
-  rejected as dead** against roughly **35% with no events in a baseline window**.
-  That rule needs drug and high-K⁺ rows, which the baseline-only restriction above
-  puts out of reach, so there is nothing here to port and no activity threshold to
-  invent — selection is the exporter's decision, not the analysis layer's (Tony to
-  fireflies, 2026-08-10). Consequences that bind code here: report *"no events in
-  this window"* and never "silent", "dead", or any viability claim; do **not**
-  drop zero-event ROIs to tidy a distribution, because `freq == 0` is a valid
-  value and conditioning on having fired is group-dependent; and do **not**
-  recompute an ROI verdict per stream — fireflies computes it once on the combined
-  signal precisely so an ROI alive in SLOW is not rejected on FAST alone. Full
-  write-up, with what it does and does not cost the generator work:
+  compute. It is decided at export, in MATLAB, by the only stage holding the full
+  record of every ROI.** An ROI is dead only if silent at baseline **and** at drug
+  **and**, where a high-K⁺ test exists for its slice, under that too — high K⁺
+  being the positive control that proves the ROI *can* fire. Baseline silence is
+  one of three conjuncts, and the two rates are an order of magnitude apart:
+  **3.0% rejected as dead** against roughly **35% with no events in a baseline
+  window**. The rule needs every treatment of an ROI at once, which the
+  baseline-only restriction above puts out of reach here, so there is nothing to
+  port and no activity threshold to invent — selection is the exporter's decision,
+  not the analysis layer's (Tony, 2026-08-10; ownership settled on the exporter
+  2026-08-15). Consequences that bind code here: report *"no events in this
+  window"* and never "silent", "dead", or any viability claim; do **not** drop
+  zero-event ROIs to tidy a distribution, because `freq == 0` is a valid value and
+  conditioning on having fired is group-dependent; and do **not** recompute an ROI
+  verdict per stream — it is computed once on the combined signal precisely so an
+  ROI alive in SLOW is not rejected on FAST alone. Full write-up:
   [`docs/todo/2026-08-15-zero-event-rois-are-not-dead-rois.md`](todo/2026-08-15-zero-event-rois-are-not-dead-rois.md).
+- **The rule has been applied, and a cleaned store is cleaned asymmetrically.**
+  The exporter ships `event_store[_onset]_revised_2v_alive` and a strictly more
+  lenient `_alive_rescued`, each `.mat` carrying a `dead_roi` record of what was
+  removed and under which rule. Only slices eligible under the rule get a verdict;
+  on `revised_2v` that is **67 of 85 slices**, and the other 18 keep every ROI. So
+  *"this store has been through the dead-ROI rule"* is true of most of its ROIs and
+  false of the rest. What binds work here: a population drawn from one of these
+  stores is not uniformly cleaned, so a rate quoted over it either says which
+  slices were judged or says nothing about viability at all. Never infer a verdict
+  from the store's name.
 - **Group-dependence is not optional.** Effects run in opposite directions by
   group (ORX up, male unchanged, diestrus down under TTX), so a pooled
   across-group number hides sign changes and is not admissible on its own.

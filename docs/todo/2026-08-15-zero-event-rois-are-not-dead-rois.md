@@ -1,5 +1,5 @@
 ---
-status: open
+status: done
 filed: 2026-08-15
 ---
 
@@ -9,10 +9,29 @@ filed: 2026-08-15
 stop and read this.** Two sessions reached this question on 2026-08-15 and one of
 them got it wrong twice in a row before finding the answer, which already existed.
 
+> **Closed 2026-08-17.** The guidance below stands and has moved into
+> [`FOUNDATIONS.md`](../FOUNDATIONS.md) §9, which is where it binds. Two things
+> changed since filing and both are settled:
+>
+> - **The verdict is made at export, in MATLAB** — the stage that holds every
+>   treatment of an ROI at once, which is what the rule requires. Ownership was
+>   settled there on 2026-08-15; earlier drafts of this note put it with
+>   `fireflies`, which never had the full record to judge from.
+> - **The corpus question below is answered**, and the answer is yes. It was the
+>   one open item here.
+>
+> The rule is also now *applied*: the exporter ships
+> `event_store[_onset]_revised_2v_alive` (and a strictly more lenient
+> `_alive_rescued`), each `.mat` carrying a `dead_roi` record of what it removed.
+> **It is applied asymmetrically** — only eligible slices get a verdict, which on
+> `revised_2v` is 67 of 85, the other 18 keeping every ROI. A cleaned store is
+> therefore not uniformly cleaned, and its name is not a viability claim.
+
 ## The lab has a normative spec, and it is not "silent in baseline"
 
-`fireflies` [`decisions/0002-dead-roi-rejection-spec-for-matlab-port.md`][adr2]
-(@ `691ae62`, 2026-07-16, status ACTIVE). The criterion, §4.3:
+The criterion, ported to MATLAB as interface2's `decisions/0010` from the R-side
+spec [`decisions/0002-dead-roi-rejection-spec-for-matlab-port.md`][adr2]
+(@ `691ae62`, 2026-07-16):
 
 ```
 rejected = base_empty AND drug_empty AND (hik_present ? hik_empty : TRUE)
@@ -34,11 +53,20 @@ authoritative R, **identical on every row and column**.
 | ROIs **rejected as dead**, `ROI_revised_2v` (ADR 0002 §7.1) | **66 of 2185 = 3.0%** |
 | ROIs with **no events in a baseline window**, measured here | **~35%** |
 
-These answer different questions and must never be swapped. ⚠ Whether bugarach's
-`processed_archive/event_store_onset_revised_2v` is the same corpus as fireflies'
-`ROI_revised_2v` is **not verified** — the `revised_2v` vintage matches, the
-extraction path may not. Do not quote the 3.0% as bugarach's number without
-checking that first.
+These answer different questions and must never be swapped.
+
+**The corpus correspondence is now verified, so the 3.0% is quotable here.** It
+was filed as an open ⚠ — the `revised_2v` vintage matched but the extraction path
+might not have. It was settled by the exporter doing the join itself rather than
+by anyone arguing about vintages: `generate_event_store_alive.m` applied the
+2026-08-15 roster to `event_store_onset_revised_2v` by `(slice_id, ROI)` and
+matched **2185 keys with 0 disagreements**, rejecting **66** of them — 3.02%
+within the slices eligible for a verdict, which is the 3.0% above landing on the
+same population. Two different stacks, one number.
+
+⚠ The remaining care needed is the *denominator*, not the rate: 2185 is the
+eligible population, not the store's 2738 ROIs. Quote 3.0% of judged slices, never
+of the deck.
 
 ## The rule exists and has NOT been applied to the data bugarach reads
 
@@ -139,11 +167,14 @@ precisely so that the wait is cheap — the expected correction is under 1%.
    hypothesis they asked others not to build on* — so treat it as a live risk, not
    an established effect. Either way FOUNDATIONS §9 already forbids a pooled
    number that hides a group-dependent sign change.
-3. **Selection is not the analysis layer's decision.** Tony to fireflies,
-   2026-08-10: *"the CSVs do not carry enough information for fireflies to do the
-   filtering"* — selection belongs upstream, with the exporter. bugarach inventing
-   an activity threshold would repeat, one repo over, the thing fireflies is
-   being told to stop doing.
+3. **Selection is not the analysis layer's decision.** Tony, 2026-08-10: *"the CSVs
+   do not carry enough information for fireflies to do the filtering"* — and that
+   is the whole argument, applied consistently. The rule needs baseline, drug and
+   high-K⁺ for one ROI at once; whoever holds only some of that cannot judge, no
+   matter how the rule is written. MATLAB holds all of it at export, which is why
+   the verdict is made there and nowhere downstream. An analysis layer inventing an
+   activity threshold would be reaching a verdict from an impoverished record —
+   exactly the error, one repo over.
 
 ## What bugarach should do instead
 
@@ -152,8 +183,14 @@ precisely so that the wait is cheap — the expected correction is under 1%.
 the cell. Never "silent ROIs", never "dead", never a viability claim.
 
 The dead-ROI verdict is **not computable here at all**: it needs drug and high-K⁺
-rows, and FOUNDATIONS §9 restricts this repo to baseline windows. So there is
-nothing to port and no threshold to pick.
+for the same ROI, and FOUNDATIONS §9 restricts this repo to baseline windows. So
+there is nothing to port and no threshold to pick.
+
+**Where a store has been cleaned, read its own record rather than its name.** The
+`_alive` stores carry a `dead_roi` struct per slice — what was removed, under which
+rule, and whether that slice was eligible at all. Eighteen of 85 are not, and keep
+every ROI. A claim about a population from these stores says which slices were
+judged, or says nothing about viability.
 
 **This costs the generator critique nothing**, which is worth knowing before
 anyone tries to rescue it. The six detectors count *distinct coactive ROIs out of
