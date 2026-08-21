@@ -503,6 +503,38 @@
         <div class="span"><button id="runDetect">Detect</button>
           <button id="saveDetections" disabled>Save detections.csv</button></div>
       </div>
+      <div class="ctl">
+        <div class="span"><button id="runFolder">Analyse the whole folder</button>
+          <button id="saveFolder" disabled>Save detections.csv</button>
+          <button id="saveRun" disabled>Save run.json</button></div>
+        <div class="note" id="folderWhat"></div>
+      </div>
+      <div class="fine">
+        <b>The step above answers one question; this one produces the file.</b>
+        Every recording in the folder, every detector, every stream and every
+        region the folder declared — one row per event per detector, with no
+        consensus merging, because which detector fired is the information a
+        merged row throws away.
+        <br><br>
+        <b>A recording that produced nothing still appears.</b> Not as a row —
+        it has no events to write — but in the roster inside
+        <code>run.json</code>. Absent rows are a finding and an absent recording
+        is a bug, and a file where those two look alike cannot tell you which
+        you are holding.
+        <br><br>
+        <b>The sidecar is why this is usable in six months.</b> Times alone do
+        not say what produced them, so <code>run.json</code> carries the roster,
+        the frame interval of each recording, and every detector's settings. It
+        says <code>null</code> for the generator spec, the chosen K and the
+        corpus seeds when a folder came off disk rather than out of the simulate
+        step — a question that was asked and had no answer, rather than one
+        never asked.
+        <br><br>
+        <b>These are detections, not events.</b> The file records what six
+        instruments called on your recordings at the settings currently set
+        above. Nothing here has been scored against a known answer, because your
+        recordings do not have one.
+      </div>
       <div class="fine" id="dFineRate">
         <b>RateDetect asks how fast the population is firing.</b> It flags moments
         when the pooled rate rises above its own local context — so a slice that
@@ -748,6 +780,12 @@ let REGIONS = new Map();   // slice_id -> [{idx,label,start,end}]
 let META = new Map();      // slice_id -> {col: val}
 let current = null;
 let SIMULATED = false;     // did the open folder come out of the generator below
+// The generator's own settings, and the K a person accepted to produce them.
+// Both are null for a folder read off disk — it had no generator and nobody
+// chose a K for it — and `run.json` writes that null rather than omitting the
+// key, so a reader can tell "asked, no answer" from "never asked".
+let SIM_SPEC = null;
+let SIM_K = null;
 // slice_id -> {times, fracs}: what the generator planted, and the only ground
 // truth this page can have. Empty for a folder read off disk, which is why
 // tuning is offered for a simulated folder and not for anybody's recordings.
@@ -1492,6 +1530,11 @@ async function open(fileList, opts) {
   // handed — so a folder opened from disk cannot inherit the last simulation's
   // planted events and be tuned against them.
   TRUTH = (opts && opts.truth) || new Map();
+  // Cleared with everything else. `runSim` sets these again straight afterwards
+  // for a folder it generated; a folder opened from disk must not inherit the
+  // last simulation's spec and report it as its own provenance.
+  SIM_SPEC = null; SIM_K = null;
+  FOLDER_RUN = null;
   RECORDINGS = []; REGIONS = new Map(); META = new Map();
   // A new folder has its own period kinds, so which of them wait for a solution
   // is not a question the last folder's answer applies to. Cleared here with
@@ -3646,6 +3689,10 @@ function simulateFromMeasurement(rec, a, source, stream) {
   set("sEv", Math.max(0, Math.min(60, Math.round(a.clustersPerMin * mins))));
   set("sJit", Math.max(0, Math.min(3000, Math.round((a.jitObs || 0) * 1000))));
   MEASURED_LEVELS = levels;
+  // The accept step, recorded. K is the choice a person made and the one number
+  // these settings are meaningless without, so it travels into `run.json` with
+  // the corpus it produced rather than living only in the note below.
+  SIM_K = a.K;
   document.getElementById("sPart").value = "measured-here";
 
   const note = document.getElementById("simProvenance");
@@ -3967,8 +4014,14 @@ async function runSim() {
   // one frame, so the button repaints before the generator takes the thread
   await new Promise(r => setTimeout(r, 0));
   try {
-    const made = simulateFolder(readSim());
+    const spec = readSim();
+    const made = simulateFolder(spec);
     await open(made.files, { simulated: true, truth: made.truth });
+    // Kept for the sidecar: a generated corpus can say what generated it, and
+    // that is the difference between a reproducible run and a folder of times.
+    // Set AFTER `open`, which clears the last run's provenance along with
+    // everything else.
+    SIM_SPEC = spec;
   } finally {
     btn.textContent = "Simulate";
     btn.disabled = false;
@@ -4185,6 +4238,227 @@ function saveDetections() {
   offerDownload(DETECT.recId + "_detections.csv", detectionsCsv(DETECT.rows));
 }
 
+/* ---------- the whole folder, as a file -------------------------------------
+
+   The Detect step above answers one question — this detector, this recording,
+   the stream(s) it carries. This runs the grid: every recording × every detector
+   × every stream × every region the folder declared, and hands back the two
+   files the output contract asks for.
+
+   WHY THE GRID IS NOT COLLAPSED ANYWHERE IN IT. One row per event per detector,
+   with no consensus merging: which detector fired is exactly what a merged row
+   discards, and whether to merge is downstream's call. Regions stay separate for
+   a harder reason — FOUNDATIONS §9, effects run in OPPOSITE directions by group,
+   so a row pooled across baseline and drug is not a weaker answer, it is an
+   inadmissible one. Streams stay separate for the same reason (§9 again: fast
+   0.46, slow 2.50 under TTX).
+
+   The roster is the other half of the contract. `run.json` lists every recording
+   that was ANALYSED, whether or not it produced a row, because a recording with
+   no detections and a recording that was never opened must not look alike in the
+   output — the first is a finding and the second is a bug. */
+let FOLDER_RUN = null;   // {rows, slices, frameIntervals, thresholds, failures}
+
+/* What the page can honestly say about its own provenance.
+
+   NOT the code version: `tests/test_lab_server.py` pins `site/viewer.html`
+   byte-identical to `docs/site/raster_viewer.html`, so a build cannot stamp one
+   in, and a hand-maintained constant here would go stale silently — which is
+   worse than absent, because it would be believed. `write_run` already treats a
+   null as "asked and had no answer". */
+function runJson(run) {
+  return {
+    slices: run.slices.slice(),
+    frame_interval_sec: Object.assign({}, run.frameIntervals),
+    code_version: null,
+    // Present only for a folder this page invented; a folder off disk had no
+    // generator, no K was chosen for it and it has no seeds.
+    generator_spec: run.generatorSpec ?? null,
+    chosen_k: run.chosenK ?? null,
+    corpus_seeds: run.corpusSeeds ?? null,
+    thresholds: Object.assign({}, run.thresholds),
+    produced_by: "bugarach raster viewer (in-browser)",
+  };
+}
+
+async function analyseFolder() {
+  if (!RECORDINGS.length) return;
+  const btn = document.getElementById("runFolder");
+  const was = btn ? btn.textContent : null;
+  if (btn) btn.disabled = true;
+  const say = msg => {
+    const n = document.getElementById("folderWhat");
+    if (n) n.textContent = msg;
+    if (btn) btn.textContent = msg;
+  };
+  try {
+    const rows = [], slices = [], frameIntervals = {}, thresholds = {};
+    const failures = [];
+    const which = Object.keys(DETECTORS);
+    let done = 0;
+    for (const rec of RECORDINGS) {
+      say("Analysing " + rec.id + " (" + (++done) + " of "
+          + RECORDINGS.length + ")…");
+      await new Promise(r => setTimeout(r, 0));
+      const data = await loadRecording(rec);
+      const m = META.get(rec.id) || {};
+      const dt = Number(m.frame_interval_sec) > 0 ? Number(m.frame_interval_sec)
+                                                  : 0.1;
+      // The roster records that this recording was analysed. It is appended
+      // BEFORE any detector runs, so a recording that yields nothing — or that
+      // every detector refuses — is still in it.
+      slices.push(rec.id);
+      frameIntervals[rec.id] = dt;
+      const identity = {};
+      for (const [k, v] of Object.entries(m))
+        if (!DETECTION_COLUMNS.includes(k)) identity[k] = v;
+      const segs = analysisSegments(rec, data);
+      for (const key of which) {
+        const D = DETECTORS[key];
+        const cfg = D.read(dt);
+        /* THE PARAMETERS, NOT THE SENTENCE — and without `gridDt`.
+
+           `D.settings(cfg)` is prose written for the panel, and it embeds the
+           frame interval, which is per RECORDING. Recording that string once
+           per detector meant the sidecar kept whichever recording happened to
+           be last: a two-recording folder at 0.1 s and 0.05 s reported
+           `dt 0.05 s` for the whole run, silently.
+
+           So the sidecar keeps the parameter object, the way
+           `emit.detector_settings_rows` does, and drops `gridDt` — it is the one
+           field that varies per recording and `frame_interval_sec` above already
+           carries it per slice, correctly. Nothing else in `cfg` is read from
+           the recording, so one copy per detector is the truth. */
+        const params = {};
+        for (const [k, v] of Object.entries(cfg)) if (k !== "gridDt") params[k] = v;
+        thresholds[key] = params;
+        for (const stream of analysisStreams(data)) {
+          const byRoi = data.streams.get(stream);
+          for (const seg of segs) {
+            const trains = data.order.map(id =>
+              (byRoi.get(id) || []).filter(x => x >= seg.start && x <= seg.end));
+            const range = [seg.start, Math.max(seg.end, seg.start + 1)];
+            /* A detector that cannot run on this folder is RECORDED AS SUCH and
+               skipped — CICADA on a folder with no peak is the case that exists
+               today. Dropping it silently would leave a table that reads as
+               "CICADA found nothing here", which is a different and false claim
+               about the recording. */
+            let peakCtx = null;
+            if (D.peaks) {
+              peakCtx = cicadaTrains(data, stream, data.order, seg.start, seg.end);
+              if (peakCtx.why) {
+                failures.push({ slice: rec.id, stream, detector: key,
+                                why: peakCtx.why });
+                continue;
+              }
+            }
+            const d = D.run(trains, range, cfg, peakCtx);
+            rows.push(...detectionRows(key, d, {
+              sliceId: rec.id, stream,
+              regionIdx: seg.whole ? null : seg.idx,
+              regionLabel: seg.whole ? null : seg.label,
+              identity,
+            }));
+          }
+          await new Promise(r => setTimeout(r, 0));
+        }
+      }
+    }
+    /* The simulate step's provenance, when there is any. `TRUTH` is non-empty
+       only for a folder this page generated, which is exactly when a generator
+       spec and seeds exist to record. */
+    const simulated = SIMULATED && TRUTH.size > 0;
+    FOLDER_RUN = {
+      rows, slices, frameIntervals, thresholds, failures,
+      generatorSpec: simulated ? (SIM_SPEC || null) : null,
+      chosenK: simulated ? (SIM_K ?? null) : null,
+      corpusSeeds: simulated ? RECORDINGS.map((_, i) => i) : null,
+    };
+    paintFolderRun();
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = was; }
+  }
+}
+
+function paintFolderRun() {
+  const run = FOLDER_RUN;
+  const box = document.getElementById("detectOut");
+  const saveB = document.getElementById("saveFolder");
+  const runB = document.getElementById("saveRun");
+  if (saveB) {
+    saveB.disabled = !run;
+    saveB.textContent = run
+      ? "Save detections.csv (" + run.rows.length + " row"
+        + (run.rows.length === 1 ? "" : "s") + ")"
+      : "Save detections.csv";
+  }
+  if (runB) runB.disabled = !run;
+  const note = document.getElementById("folderWhat");
+  if (note && run)
+    note.textContent = run.rows.length + " row(s) from " + run.slices.length
+      + " recording(s).";
+  if (!run || !box) return;
+
+  box.textContent = "";
+  box.append(el("h4", "The folder, all detectors"));
+  box.append(el("p", run.slices.length + " recording(s) · "
+    + Object.keys(DETECTORS).length + " detectors · " + run.rows.length
+    + " row(s)", "sub"));
+
+  const tbl = document.createElement("table");
+  const hr = document.createElement("tr");
+  for (const h of ["recording", "rows"].concat(Object.keys(DETECTORS)))
+    hr.append(el("th", h));
+  tbl.append(hr);
+  for (const id of run.slices) {
+    const mine = run.rows.filter(r => r.slice_id === id);
+    const tr = document.createElement("tr");
+    tr.append(el("td", id));
+    tr.append(el("td", String(mine.length)));
+    for (const key of Object.keys(DETECTORS)) {
+      const n = mine.filter(r => r.detector === key).length;
+      const refused = run.failures.some(f => f.slice === id && f.detector === key);
+      // A refusal and a zero are different answers and are never drawn the
+      // same. "—" is "this detector could not run here"; 0 is "it ran and
+      // called nothing", which is a result.
+      tr.append(el("td", refused ? "—" : String(n), refused ? "state" : ""));
+    }
+    tbl.append(tr);
+  }
+  box.append(tbl);
+
+  if (run.failures.length) {
+    const seen = new Set();
+    for (const f of run.failures) {
+      const k = f.detector + "|" + f.why;
+      if (seen.has(k)) continue;
+      seen.add(k);
+      box.append(el("p", DETECTORS[f.detector].label + " could not run: " + f.why,
+                    "verdict bad"));
+    }
+    box.append(el("p", "A dash above is a detector that could not run on that "
+      + "recording, which is not the same as one that ran and found nothing. "
+      + "Neither appears as a row, and the difference is in this panel rather "
+      + "than in the file.", "caveat"));
+  }
+
+  box.append(el("p", "These are detections, not events. Six instruments at the "
+    + "settings above called these moments on your recordings; nothing here has "
+    + "been scored, because your recordings have no answer key.", "caveat"));
+}
+
+function saveFolderDetections() {
+  if (!FOLDER_RUN) return;
+  offerDownload("detections.csv", detectionsCsv(FOLDER_RUN.rows));
+}
+
+function saveRunJson() {
+  if (!FOLDER_RUN) return;
+  offerDownload("run.json",
+                JSON.stringify(runJson(FOLDER_RUN), null, 2) + "\n",
+                "application/json");
+}
+
 /* Which instrument is pointed at the recording, and what each one needs. Two of
    the six are here — the two that draw no random numbers and are therefore
    checked against the Python exactly rather than to sampling error. */
@@ -4330,8 +4604,8 @@ function detectionsCsv(rows) {
 /* Hand the file to the reader. A Blob and an object URL, which reach nothing:
    the page's promise is that the recordings never leave the computer, and a
    download is the one direction that is always safe. */
-function offerDownload(name, text) {
-  const url = URL.createObjectURL(new Blob([text], { type: "text/csv" }));
+function offerDownload(name, text, type) {
+  const url = URL.createObjectURL(new Blob([text], { type: type || "text/csv" }));
   const a = document.createElement("a");
   a.href = url; a.download = name;
   document.body.append(a);
@@ -5092,6 +5366,9 @@ paintTuneWhat();
 
 document.getElementById("runDetect").onclick = runDetect;
 document.getElementById("saveDetections").onclick = saveDetections;
+document.getElementById("runFolder").onclick = analyseFolder;
+document.getElementById("saveFolder").onclick = saveFolderDetections;
+document.getElementById("saveRun").onclick = saveRunJson;
 
 /* ---------- training, which is the one step that is not in this page ---------
    The panel above is INERT unless something has defined `window.__lab`. Only the
