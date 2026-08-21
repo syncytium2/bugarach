@@ -22,6 +22,7 @@ Output is an assets-only Cloudflare Worker payload (``wrangler.jsonc`` points at
 from __future__ import annotations
 
 import argparse
+import re
 import shutil
 import subprocess
 import sys
@@ -29,6 +30,60 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 SITE = ROOT / "site"
+
+# Every way a page can talk to a host, including the ones that do not look like a
+# request. Kept here, next to the build that refuses on them, and imported by
+# tests/test_site_viewer.py so the two can never drift into disagreeing about what
+# counts as reaching the network.
+NETWORK = (
+    "fetch(", "XMLHttpRequest", "sendBeacon", "WebSocket(", "EventSource(",
+    "import(", '<script src', '<link rel="stylesheet"', "<iframe", "<img",
+    "@import",
+)
+
+
+def viewer_network_leaks(body: str) -> list[str]:
+    """The network primitives a page actually uses, ignoring the ones it discusses.
+
+    COMMENTS ARE STRIPPED FIRST, and that is the whole point of this function.
+    The viewer's header promises the reader "there is no fetch(), no XHR", and a
+    note further down explains why the page builds nodes instead of markup, quoting
+    an `<img` injection to show what it is avoiding. Both are prose. A scan that
+    reads them as code fires on the explanation of why it will never fire.
+
+    **Do not cite a particular comment here.** This paragraph used to quote one
+    reading "contains no `fetch(` and must not grow one". It was reworded three
+    commits later, and both this docstring and the test that counted its occurrences
+    went stale together — `main` turned red over a rephrasing, with nothing about
+    the page's safety changed. The property is that prose about network primitives
+    exists and gets stripped, never which sentence happens to carry it.
+
+    That is not hypothetical. The old scan neutralised exactly one phrase — the
+    promise in the header — and missed the comment beside the lab panel. From the
+    day that comment was written the build refused every run, so the published site
+    froze 233 lines behind `main`, missing SCE and CoactDetect in the browser, and
+    nothing said so out loud: a build that exits 1 in a terminal nobody is watching
+    looks exactly like a build nobody ran. The guard was correct about the property
+    and wrong about the evidence, which is the failure mode that gets real guards
+    deleted rather than fixed.
+
+    Stripping comments cannot hide a real call: a call outside a comment is still
+    there afterwards, and one inside a comment does not run.
+    """
+    return [w for w in NETWORK if w in strip_comments(body)]
+
+
+def strip_comments(text: str) -> str:
+    """The page with HTML and JS comments blanked, for any check that reads code.
+
+    The line-comment pattern is anchored to the start of a line on purpose: an
+    unanchored `//` would eat the rest of a line containing a URL, and with it any
+    real call sitting after it. Blanking to a space rather than deleting keeps
+    tokens from being glued together across the removal.
+    """
+    text = re.sub(r"<!--.*?-->", " ", text, flags=re.S)        # HTML
+    text = re.sub(r"/\*.*?\*/", " ", text, flags=re.S)         # JS block
+    return re.sub(r"^\s*//[^\n]*", " ", text, flags=re.M)      # JS line
 
 INDEX = """<!doctype html>
 <meta charset="utf-8">
@@ -332,9 +387,7 @@ def main(argv=None):
     body = viewer.read_text(encoding="utf-8")
     # The privacy line on that page is a property of its code, so it is checked
     # here rather than believed. A page that fetches is a page that could send.
-    leaks = [w for w in ("fetch(", "XMLHttpRequest", "navigator.sendBeacon",
-                         "WebSocket", "EventSource", "import(")
-             if w in body.replace("no fetch(), no XHR", "")]
+    leaks = viewer_network_leaks(body)
     if leaks:
         print(f"build_site: the viewer page contains {', '.join(leaks)}. It tells "
               f"the reader their files never leave their computer, and that is "

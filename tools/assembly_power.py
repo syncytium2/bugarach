@@ -217,6 +217,156 @@ def powers2(cell: dict, group_n: int = GROUP_N) -> dict:
     return out
 
 
+# ---- the decision rule recordings are ACTUALLY scored by -------------------
+#
+# Everything above reports power for ONE statistic under ONE null at `alpha`,
+# and combines a group of 20 by Fisher. **No recording was ever scored that
+# way.** `tools/assess_archive.py --assemblies` builds an `AssemblyResult` per
+# recording and reads `verdict()`, which Bonferroni-corrects across the two
+# statistics *within* each null and then reads the two nulls together. That is a
+# different, and strictly more conservative, test: alpha/2 twice over.
+#
+# A negative result is only a result if the test that produced it could have
+# failed, so the power curve has to be computed under the rule that produced it.
+# That is what this section adds, and it is step 1 of the handoff that closes
+# the assembly question.
+
+from bugarach.assembly import AssemblyResult  # noqa: E402
+
+
+#: The four verdict words `AssemblyResult.verdict()` can return for a defined
+#: recording. "no-assembly" is the only one that is a miss when something was
+#: planted; the other three all mean the instrument fired.
+VERDICTS = ("structure-beyond-rate", "uniform-only", "margin-only", "no-assembly")
+
+
+def verdicts_for(cell: dict, geo: dict) -> list[str]:
+    """One verdict per simulated slice, from the package's own decision rule.
+
+    Deliberately constructs the real `AssemblyResult` rather than re-deriving
+    the comparison here — same reason the statistics and nulls are imported
+    rather than copied. If `verdict()` changes, this curve changes with it.
+    """
+    out = []
+    for md, me, ud, ue in zip(cell["md"], cell["me"], cell["ud"], cell["ue"]):
+        r = AssemblyResult(
+            min_rois=int(geo.get("k", 3)), n_events=int(geo["n_events"]),
+            n_roi=int(geo["n_roi"]), defined=True,
+            p_margin_disp=float(md), p_margin_eig=float(me),
+            p_uniform_disp=float(ud), p_uniform_eig=float(ue),
+        )
+        out.append(r.verdict(ALPHA))
+    return out
+
+
+def powers_verdict(cell: dict, geo: dict) -> dict:
+    """Per-recording rejection rate under `verdict()`, plus the word breakdown.
+
+    `power` is the fraction of simulated recordings the instrument called
+    something other than `no-assembly` — the quantity a reader needs to know
+    before believing a `no-assembly` tally from the real corpus. The breakdown
+    is reported alongside because *which* word it fires with is itself
+    interpretable: at high assembly strength the double-margin null goes blind
+    and the verdict degrades to `uniform-only`, which is the documented failure
+    mode rather than a bug.
+    """
+    words = verdicts_for(cell, geo)
+    n = len(words)
+    counts = {w: sum(1 for x in words if x == w) for w in VERDICTS}
+    return {
+        "verdict_power": (n - counts["no-assembly"]) / n if n else float("nan"),
+        "verdict_both": counts["structure-beyond-rate"] / n if n else float("nan"),
+        **{f"n_{w}": counts[w] for w in VERDICTS},
+    }
+
+
+# ---- the corpus's own geometry, not the median slice ------------------------
+
+def corpus_geometry(path: Path, k: int = 3, stream: str | None = None) -> list[dict]:
+    """Per-recording geometry read from an `assess_archive.py` assessment.
+
+    The median slice is enough to *size* the test and is what the tables above
+    use. It is not enough to report a negative on: a recording well below the
+    median may be individually unpowered, and pooling it with the rest would let
+    "we could not look" pass as "we looked and found nothing" — the distinction
+    `assess_assemblies` refuses to blur by returning `undefined`.
+
+    Only rows the assembly test could actually define are returned, because an
+    undefined recording contributes no verdict and so has no power to report.
+    """
+    d = json.loads(Path(path).read_text())
+    rows = d["rows"] if isinstance(d, dict) and "rows" in d else d
+    out = []
+    for r in rows:
+        if int(r.get("K", -1)) != int(k):
+            continue
+        if stream and r.get("stream") != stream:
+            continue
+        if not r.get("asm_defined", False):
+            continue
+        ne = int(r.get("asm_n_events", 0))
+        part = float(r.get("part_n_obs", float("nan")))
+        nr = int(r.get("n_roi", 0))
+        if ne < 2 or nr < 2 or not np.isfinite(part):
+            continue
+        out.append({"k": int(k), "n_roi": nr, "n_events": ne, "part": part,
+                    "slice_id": r.get("slice_id", ""), "stream": r.get("stream", "")})
+    return out
+
+
+def sweep_corpus(geos: list[dict], sizes, strengths, n_surr: int,
+                 seed: int = 7) -> dict:
+    """The grid run at each real recording's OWN geometry, one slice each.
+
+    So `verdict_power` below is the fraction of *this corpus's actual
+    recordings* at which an assembly of that size and strength would have been
+    found — not the fraction of hypothetical median slices.
+    """
+    rng = np.random.RandomState(seed)
+    out = {}
+    for A in sizes:
+        for s in strengths:
+            acc = {kk: [] for kk in ("md", "me", "ud", "ue")}
+            per_slice = []
+            n_too_small = 0
+            for g in geos:
+                # An assembly cannot be larger than the recording it lives in.
+                # Skip rather than clamp: clamping would silently relabel a
+                # 16-cell assembly as a 14-cell one and report its power under
+                # the wrong heading. The count is carried out so the denominator
+                # is visible — this is exactly the "no silent caps" rule.
+                if g["n_roi"] < A:
+                    n_too_small += 1
+                    continue
+                M = simulate_slice(rng, g["n_roi"], g["n_events"], g["part"], A, s)
+                a, b = pvalues(rng, M, n_surr)
+                c, d = pvalues_uniform(rng, M, n_surr)
+                acc["md"].append(a); acc["me"].append(b)
+                acc["ud"].append(c); acc["ue"].append(d)
+                per_slice.append(g)
+            out[(A, s)] = ({kk: np.array(v) for kk, v in acc.items()},
+                           per_slice, n_too_small)
+    return out
+
+
+def powers_verdict_corpus(cell) -> dict:
+    """`powers_verdict` where every simulated recording has its own geometry."""
+    arrs, per_slice, n_too_small = cell
+    words = []
+    for i, g in enumerate(per_slice):
+        one = {kk: arrs[kk][i:i + 1] for kk in ("md", "me", "ud", "ue")}
+        words.extend(verdicts_for(one, g))
+    n = len(words)
+    counts = {w: sum(1 for x in words if x == w) for w in VERDICTS}
+    return {
+        "verdict_power": (n - counts["no-assembly"]) / n if n else float("nan"),
+        "verdict_both": counts["structure-beyond-rate"] / n if n else float("nan"),
+        "n_slices": n,
+        "n_too_small_for_assembly": n_too_small,
+        **{f"n_{w}": counts[w] for w in VERDICTS},
+    }
+
+
 # ---- figure ----------------------------------------------------------------
 
 #: One colour per assembly size, dark to light as the assembly gets more diffuse.
@@ -301,6 +451,36 @@ def _render_png(html_path: Path, png_path: Path, *, wait_ms: int = 2500,
         return False
 
 
+def _payload(args, geo, rows, verdict_rows) -> dict:
+    """Everything a downstream figure or report needs, in one place.
+
+    Shared by the full run and by ``--verdict-only`` so the two cannot drift on
+    what a result file contains — a figure built from one and a claim quoted
+    from the other must be the same numbers.
+    """
+    return {"geometry": geo, "alpha": ALPHA, "group_n": GROUP_N,
+            "slices": args.slices, "surrogates": args.surrogates,
+            "seed": args.seed, "rows": rows,
+            "verdict_rule": "AssemblyResult.verdict",
+            "verdict_geometry_from": args.geometry_from,
+            "verdict_stream": args.stream,
+            "verdict_rows": verdict_rows}
+
+
+def _write_json(args, geo, rows, verdict_rows) -> int:
+    """Write the result file only — no figure. The ``--verdict-only`` path."""
+    from bugarach.paths import darkroom, unresolved_message
+    dest = Path(args.out) if args.out else darkroom()
+    if dest is None:
+        print(unresolved_message(), file=sys.stderr)
+        return 1
+    dest.mkdir(parents=True, exist_ok=True)
+    out = dest / f"{FIGURE_ID}.json"
+    out.write_text(json.dumps(_payload(args, geo, rows, verdict_rows), indent=1))
+    print(f"wrote {out}")
+    return 0
+
+
 def main(argv=None):
     p = argparse.ArgumentParser(
         description=__doc__,
@@ -318,14 +498,71 @@ def main(argv=None):
     p.add_argument("--out", default=None,
                    help="destination directory; default $BUGARACH_DARKROOM")
     p.add_argument("--numbers-only", action="store_true")
+    p.add_argument("--geometry-from", default=None, metavar="ASSESSMENT_JSON",
+                   help="an assess_archive.py assessment_real.json; run the grid at "
+                        "each real recording's OWN geometry instead of the median "
+                        "slice, and report power under AssemblyResult.verdict()")
+    p.add_argument("--stream", default=None,
+                   help="with --geometry-from: restrict to this stream (fast|slow)")
+    p.add_argument("--verdict-only", action="store_true",
+                   help="with --geometry-from: skip the median-slice grid and "
+                        "write only the corpus-geometry verdict curve")
     p.add_argument("--no-png", dest="png", action="store_false", default=True)
     args = p.parse_args(argv)
 
     geo = geometry(k=args.k)
-    res = sweep2(geo, args.sizes, args.strengths, args.slices, args.surrogates,
-                 seed=args.seed)
-    rows = [dict(A=A, strength=s, **powers2(res[(A, s)]))
-            for A in args.sizes for s in args.strengths]
+
+    # ---- step 1 of the assembly handoff: the corpus's own geometry, scored by
+    # the rule the corpus is actually scored by. Reported and returned before
+    # the median-slice grid below, because this is the one a negative rests on.
+    verdict_rows = None
+    if args.geometry_from:
+        geos = corpus_geometry(Path(args.geometry_from), k=int(geo["k"]),
+                               stream=args.stream)
+        if not geos:
+            print(f"no testable recordings at K={geo['k']} in "
+                  f"{args.geometry_from}", file=sys.stderr)
+            return 1
+        cres = sweep_corpus(geos, args.sizes, args.strengths, args.surrogates,
+                            seed=args.seed)
+        verdict_rows = [dict(A=A, strength=s_, **powers_verdict_corpus(cres[(A, s_)]))
+                        for A in args.sizes for s_ in args.strengths]
+        nr = sorted(g["n_roi"] for g in geos)
+        ne = sorted(g["n_events"] for g in geos)
+        mid = len(geos) // 2
+        print(f"corpus geometry: {len(geos)} testable recordings"
+              + (f" (stream {args.stream})" if args.stream else "")
+              + f" at K={geo['k']}")
+        print(f"  ROIs     median {nr[mid]}  range {nr[0]}-{nr[-1]}")
+        print(f"  clusters median {ne[mid]}  range {ne[0]}-{ne[-1]}")
+        print(f"  decision rule: AssemblyResult.verdict(alpha={ALPHA}) "
+              f"— Bonferroni over 2 statistics within each null, both nulls read "
+              f"together, ONE decision per recording\n")
+        print(f"{'A':>3} {'str':>5} | {'fires':>6} {'both':>6} | "
+              f"{'sbr':>4} {'uni':>4} {'mar':>4} {'none':>5} | {'n':>3} {'skip':>4}")
+        for r in verdict_rows:
+            print(f"{r['A']:>3} {r['strength']:>5.2f} | "
+                  f"{r['verdict_power']:>6.2f} {r['verdict_both']:>6.2f} | "
+                  f"{r['n_structure-beyond-rate']:>4} {r['n_uniform-only']:>4} "
+                  f"{r['n_margin-only']:>4} {r['n_no-assembly']:>5} | "
+                  f"{r['n_slices']:>3} {r['n_too_small_for_assembly']:>4}")
+        print("  skip = recordings with fewer ROIs than the assembly size; "
+              "they cannot host it and are excluded from that row's denominator")
+        print()
+
+    if args.verdict_only:
+        if verdict_rows is None:
+            print("--verdict-only requires --geometry-from", file=sys.stderr)
+            return 1
+        rows = []
+    else:
+        res = sweep2(geo, args.sizes, args.strengths, args.slices, args.surrogates,
+                     seed=args.seed)
+        rows = [dict(A=A, strength=s, **powers2(res[(A, s)]))
+                for A in args.sizes for s in args.strengths]
+
+    if args.verdict_only:
+        return _write_json(args, geo, rows, verdict_rows)
 
     print(f"geometry (median of 85 baseline slices, K={geo['k']}): "
           f"{geo['n_roi']} ROIs, {geo['n_events']} clusters, "
@@ -354,9 +591,7 @@ def main(argv=None):
     html = dest / f"{FIGURE_ID}.html"
     pn.panel(pn.Column(pn.pane.HTML(header), pn.pane.HoloViews(layout))).save(str(html))
     (dest / f"{FIGURE_ID}.json").write_text(
-        json.dumps({"geometry": geo, "alpha": ALPHA, "group_n": GROUP_N,
-                    "slices": args.slices, "surrogates": args.surrogates,
-                    "seed": args.seed, "rows": rows}, indent=1))
+        json.dumps(_payload(args, geo, rows, verdict_rows), indent=1))
     print(f"\nwrote {html}")
     if args.png:
         shot = dest / f"{FIGURE_ID}.png"

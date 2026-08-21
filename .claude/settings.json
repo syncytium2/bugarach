@@ -11,7 +11,7 @@
           },
           {
             "type": "command",
-            "command": "bash .claude/hooks/session-start.sh",
+            "command": "bash tools/session_start_trimmed.sh",
             "timeout": 45
           }
         ]
@@ -26,7 +26,7 @@
           },
           {
             "type": "command",
-            "command": "bash .claude/hooks/session-start.sh",
+            "command": "bash tools/session_start_trimmed.sh",
             "timeout": 45
           }
         ]
@@ -40,7 +40,17 @@
             "type": "command",
             "command": "bash .claude/hooks/require-commit-before-message.sh",
             "timeout": 10,
-            "statusMessage": "Checking the work is committed before messaging…"
+            "statusMessage": "Checking the work is committed before messaging\u2026"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/no-heredoc-source.sh",
+            "timeout": 10
           }
         ]
       }

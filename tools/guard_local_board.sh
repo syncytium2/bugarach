@@ -129,10 +129,19 @@ esac
   echo "  ### $(hostname -s 2>/dev/null || echo Mac)/${BRANCH:-<branch>} — <what you are doing>"
   echo "  - **Status:** ACTIVE"
   echo "  - **Worktree:** ${NAME:-<dir>}"
+  echo "  - **Touches:** <the paths you expect to write — globs are fine>"
   echo "  - **Holds:** <local resources, or none>"
   echo "  - **Notes:** <anything a session on this machine must not stomp>"
   echo
   echo "One-off escape: ALLOW_UNCLAIMED_BOARD=1 git commit ..."
+  echo
+  echo "AND YOU ARE READING THIS TOO LATE — by construction, not by accident. This"
+  echo "gate fires at your first commit, so the work already exists. On 2026-08-20"
+  echo "three sessions each did good work twice: two tool conversions, one spec"
+  echo "revision, one CI change. Every one of them had claimed correctly — just"
+  echo "afterwards. None of the three shared a branch name and all three overlapped"
+  echo "in PATHS, which is what the Touches line is for. Next session: write the"
+  echo "block when you pick up the task, not when the machine finally insists."
   echo
 } >&2
 exit 1

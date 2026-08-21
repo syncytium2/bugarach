@@ -245,3 +245,43 @@ def test_assess_store_omits_the_assembly_answer_by_default(tmp_path, monkeypatch
     res = assess_archive.assess_store(tmp_path, stream="events", n_surrogates=20)
     assert res["rows"]
     assert "asm_verdict" not in res["rows"][0]
+
+
+# ---- the exclusion layer that must NOT come back ----------------------------
+#
+# This module briefly grew `load_excluded` and `load_dead_roi_keep`, reading a lab
+# workbook and a vendored ROI roster so the analysis could apply the producer's
+# selection itself. Both were removed on 2026-08-20, and this test is here so the
+# reason survives the deletion rather than being rediscovered.
+#
+# The export contract says bugarach reads one folder and *nothing else* — no store,
+# no companion database. The producer expresses selection by what it exports. When
+# this repo re-derived it instead, the workbook keyed exclusions on
+# (date, mouse, slice_order), bugarach had no slice_order, date-matching dropped a
+# recording the lab had NOT withdrawn, and the producer's own export was correct.
+# A second opinion computed from less information is not a safety net.
+
+def test_no_exclusion_or_roster_loader_exists():
+    """The contract-violating loaders must stay gone.
+
+    Re-adding one is not a small convenience: it puts a second, worse answer about
+    which recordings count next to the producer's own, and the two will disagree.
+    """
+    import bugarach.assembly as A
+    for gone in ("load_excluded", "load_dead_roi_keep"):
+        assert not hasattr(A, gone), (
+            f"{gone} is back — see docs/export_folder_spec.md: the folder is the "
+            f"whole input, and selection is the producer's call")
+
+
+def test_pairing_takes_no_exclusion_argument():
+    """`rows_at` must not grow an exclude parameter again."""
+    import importlib.util
+    import inspect
+    from pathlib import Path
+    spec = importlib.util.spec_from_file_location(
+        "apc", Path(__file__).parent.parent / "tools" / "assembly_pensub_compare.py")
+    apc = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(apc)
+    params = inspect.signature(apc.rows_at).parameters
+    assert "exclude" not in params, params

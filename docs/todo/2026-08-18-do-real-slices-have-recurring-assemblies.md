@@ -1,10 +1,55 @@
 ---
-status: open
+status: done
 filed: 2026-08-18
-revised: 2026-08-18
+revised: 2026-08-19
+closed: 2026-08-19
 ---
 
 # Do the real recordings have recurring assemblies, or random participation?
+
+> ## CLOSED 2026-08-19. The absence is the result, and every step it needed is done.
+>
+> Tony: *"the lack of assembly is a result, just like the lack of 'connectivity'."*
+>
+> **There are no recurring cell assemblies in this preparation, in either stream.**
+>
+> | | instrument | fast | slow |
+> |---|---|---|---|
+> | discrete recurring groups | **modularity** on the STTC graph, each recording against its own jitter surrogates | **2 of 78** above null (2.6%) | **1 of 77** (1.3%) |
+> | who participates, beyond rate | curveball + uniform nulls on membership (`bugarach.assembly`) | departure from uniform in **45 of 47** testable | **36 of 38** |
+>
+> Against the ~5% the modularity threshold gives by chance, and a measured false-positive
+> rate of 6.0% (fast) / 9.1% (slow) for the membership test at this corpus's own geometry.
+> The median recording is *less* modular than its own surrogates. Co-participation above
+> rate with **no modular partition** is a **core–periphery** field — a busy core, a long
+> tail, no membership repeating as a unit. **Drop the word "assembly"** unless the
+> modularity result is overturned; the likeliest route is a method that finds *overlapping*
+> groups, which modularity cannot see.
+>
+> **All three closing steps are done** (PRs #135, #139):
+>
+> 1. **Power under the real decision rule**, at each recording's own geometry — the earlier
+>    curve scored a looser test than the one that produced the answer.
+> 2. **The penumbra-subtracted store**, paired on recordings testable in both: the departure
+>    survives in 21 of 26 fast and 21 of 25 slow. Crosstalk inflates it without accounting
+>    for it.
+> 3. **Modularity on the fast stream**, which had never been run — the instrument hardcoded
+>    `slow`, and this report had been asserting an absence on a stream nobody had measured.
+>
+> **And a fourth thing that was not on the list.** The instrument itself moved into this repo
+> (PR #151). The modularity numbers above are now `bugarach.graph`'s, not interface2's: the
+> pipeline that produced the originals has no maintainer and does not run out of the box. The
+> port reproduces it to 2.2e-16 on identical inputs and agrees on 98.7% of corpus verdicts
+> under a different window rule. **The interface2 figures — 3 of 78 and 2 of 77 — are the
+> cross-check, not the result**, which is why the row above changed.
+>
+> **Numbers in the body below this box predate all of that and are superseded.** In
+> particular the earlier "3% ROI / 1% pensub" modularity figures counted recordings too
+> sparse to score as negatives, and the earlier membership tallies included two recordings
+> the lab had marked `exclude=1` — see
+> [`2026-08-19-lab-exclusions-were-never-consulted.md`](2026-08-19-lab-exclusions-were-never-consulted.md).
+> The current statement of record is `docs/assembly_report.md`, with its run record at
+> `docs/reviews/assembly_summary_2026-08-19.md`.
 
 **A question about the preparation, small enough to answer in a day, and it gates a
 whole family of comparisons.**

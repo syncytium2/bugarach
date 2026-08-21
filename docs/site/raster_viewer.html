@@ -448,8 +448,54 @@
         <label for="dCmin">C to sustain one</label>
         <input id="dCmin" type="number" min="0.001" max="1" step="0.01" value="0.1">
       </div>
+      <div class="ctl" id="dLocoCtl" hidden>
+        <label for="lBin">bin width (s)</label>
+        <input id="lBin" type="number" min="0.1" max="60" step="0.1" value="1">
+        <label for="lCtx">context window (s)</label>
+        <input id="lCtx" type="number" min="10" max="1200" step="10" value="120">
+        <label for="lPct">threshold percentile</label>
+        <input id="lPct" type="number" min="90" max="99.9999" step="0.1" value="99.9">
+        <label for="lSur">surrogates</label>
+        <input id="lSur" type="number" min="20" max="1000" step="20" value="100">
+      </div>
+      <div class="ctl" id="dCoactCtl" hidden>
+        <label for="cWin">integration window (s)</label>
+        <input id="cWin" type="number" min="0.1" max="60" step="0.1" value="2">
+        <label for="cCtx">context window (s)</label>
+        <input id="cCtx" type="number" min="10" max="1200" step="10" value="60">
+        <label for="cAlpha">alpha</label>
+        <input id="cAlpha" type="number" min="0.0000001" max="0.5" step="0.0001" value="0.0001">
+        <label for="cSur">surrogates</label>
+        <input id="cSur" type="number" min="20" max="1000" step="20" value="100">
+      </div>
+      <div class="ctl" id="dSceCtl" hidden>
+        <label for="sBin">bin width (s)</label>
+        <input id="sBin" type="number" min="1" max="120" step="1" value="10">
+        <label for="sPct">threshold percentile</label>
+        <input id="sPct" type="number" min="80" max="99.99" step="0.1" value="99">
+        <label for="sSur">surrogates</label>
+        <input id="sSur" type="number" min="20" max="2000" step="20" value="200">
+      </div>
+      <div class="ctl" id="dCicCtl" hidden>
+        <label for="cPct">SCE percentile</label>
+        <input id="cPct" type="number" min="80" max="99.99" step="0.1" value="99">
+        <label for="cSur">surrogates</label>
+        <input id="cSur" type="number" min="20" max="2000" step="20" value="100">
+        <label for="cSync">frames in a window</label>
+        <input id="cSync" type="number" min="1" max="50" step="1" value="1">
+        <label for="cDist">peaks at least (frames) apart</label>
+        <input id="cDist" type="number" min="1" max="200" step="1" value="4">
+        <label for="cPer">how long a cell counts as active</label>
+        <select id="cPer">
+          <option value="per_event">each event's own t50rise→peak</option>
+          <option value="fixed">a fixed duration</option>
+        </select>
+        <label for="cDur">that fixed duration (s)</label>
+        <input id="cDur" type="number" min="0.1" max="60" step="0.1" value="1">
+      </div>
       <div class="ctl">
-        <div class="span"><button id="runDetect">Detect</button></div>
+        <div class="span"><button id="runDetect">Detect</button>
+          <button id="saveDetections" disabled>Save detections.csv</button></div>
       </div>
       <div class="fine" id="dFineRate">
         <b>RateDetect asks how fast the population is firing.</b> It flags moments
@@ -464,6 +510,89 @@
         needs.</b> Finding those is what the simulate step above is for: measure,
         simulate from what you measured, tune against planted events, then point
         the tuned instrument at everything.
+      </div>
+      <div class="fine" id="dFineSce" hidden>
+        <b>SCE is the blunt one, and that is the point of having it.</b> It bins
+        ten seconds at a time — against LoCo's one and CoactDetect's two — and
+        asks whether a stretch of recording was busier than this recording
+        usually gets. Not "did these cells fire together" so much as "was
+        something happening here".
+        <br><br>
+        <b>One bar for the whole window.</b> The other two re-estimate their
+        threshold as they go; this compares every bin to the same number. That
+        makes it slower to be fooled by a local rate change and worse at finding
+        a small event inside a busy stretch.
+        <br><br>
+        <b>It reports where the BIN started, not where the first cell fired.</b>
+        A ten-second bin is a ten-second answer, and the width travels with it so
+        nothing downstream mistakes the left edge for an onset. That convention
+        once read zero recall against a scorer treating detections as points, and
+        it is kept rather than quietly improved.
+      </div>
+      <div class="fine" id="dFineCoact" hidden>
+        <b>CoactDetect asks the same question as LoCo and answers it with
+        different arithmetic.</b> Both count distinct ROIs per bin and both build
+        a local null by shuffling. LoCo keeps bins above a high percentile of the
+        shuffles; this turns each bin into a z-score against the shuffles' mean
+        and spread, and keeps the ones whose p clears alpha. They part company in
+        the tails, which is where coordinated events live — so running both and
+        comparing is worth more than picking one.
+        <br><br>
+        <b>Alpha is per bin, not per recording.</b> At 1e-4 and a two-second bin,
+        a forty-minute recording tests twelve hundred bins, so a handful of false
+        positives is the expected behaviour of the setting rather than a fault.
+        The simulate step is where you find out how many.
+        <br><br>
+        <b>Sampled, and checked accordingly</b> — the coactivity is compared to
+        the Python exactly, the episodes are compared exactly once significance
+        is fixed, and the p-value arithmetic and its erfc are checked on their own
+        rather than through a hundred random draws.
+      </div>
+      <div class="fine" id="dFineLoco" hidden>
+        <b>LoCo asks how many cells fired together, against what this recording
+        does the rest of the time.</b> It counts distinct ROIs per bin — one count
+        per cell however often it fired, because one busy cell is not
+        coordination — and compares that to a bar estimated locally by shuffling
+        this recording's own events.
+        <br><br>
+        <b>This is the first detector here that guesses.</b> The bar comes from a
+        hundred shuffles, and this page's random numbers are not the Python's, so
+        the two agree on the bar only to sampling error. What is checked exactly
+        is everything either side of it: the counts are identical, and given the
+        same bar the events are identical to 1e-9. The bar itself is checked by
+        sampling harder and confirming the disagreement shrinks — which it does,
+        and which a wrong answer would not.
+        <br><br>
+        <b>The floor is three ROIs and is not adjustable.</b> Coordination found
+        in a treatment window is evidence about the preparation, not a false-alarm
+        rate to raise the floor until it disappears — this project has talked
+        itself into that once and the setting is fixed here so it cannot happen
+        by accident.
+      </div>
+      <div class="fine" id="dFineCicada" hidden>
+        <b>CICADA counts how many cells are active at once.</b> Each event marks
+        its cell active for as long as the transient lasted, and the detector
+        looks for moments when an unusual number of those stretches overlap. The
+        threshold comes from rolling every cell to a random offset and asking how
+        high the count goes when nothing is coordinated by construction.
+        <br><br>
+        <b>It is the one detector anchored on the PEAK, not the onset.</b> The
+        other five locate an event at its half-rise. CICADA's original anchors on
+        the peak, and on this preparation that is also the right choice: a single
+        transient runs from half-rise to peak over roughly 0.3 s in a fast stream
+        and 2 s in a slow one, and 2 s is wider than the tolerance a detection is
+        scored at. Anchored on onsets, almost any two events look simultaneous.
+        <br><br>
+        <b>So your folder has to carry the peak, and most of the columns that
+        could are optional.</b> Either send <code>peak_sec</code>, or send
+        <code>width_sec</code> with <code>width_def</code> set to
+        <code>t50rise_to_peak</code> — that width is the peak minus the half-rise,
+        so the two together locate it. A width measured any other way
+        (<code>fwhm</code>, <code>above_threshold</code>) does not reach the peak
+        and cannot be added to the onset to find one. Where the folder carries
+        neither, this detector declines to run and says so, rather than falling
+        back to the onsets and returning a confident answer to a different
+        question.
       </div>
       <div class="fine" id="dFineSync" hidden>
         <b>SPIKE-synch asks how aligned the spikes are, whatever the rate.</b>
@@ -510,6 +639,50 @@
         the sweep saying it stopped too early, and it is reported as that rather
         than as an answer — a boundary value has been published as a calibrated
         setting before.
+      </div>
+    </details>
+
+    <!-- The training panel. INERT ON THE PUBLISHED PAGE, and hidden by default:
+         it appears only where something has defined `window.__lab`, which only
+         the local `bugarach lab` server does, by appending a shim to the copy it
+         serves. Nothing is stripped at build time, so nothing can fail to be
+         stripped — docs/adr/0001-the-lab-server.md. -->
+    <details class="acc" id="accLab" hidden>
+      <summary>Train a detector<span class="cnt" id="cntLab">local only</span></summary>
+      <div class="ctl">
+        <label for="lArch">architecture</label>
+        <select id="lArch"><option value="tube">tube (center−surround)</option></select>
+        <label for="lFolds">folds</label>
+        <input id="lFolds" type="number" min="2" max="8" step="1" value="4">
+        <label for="lSeeds">recordings per fold</label>
+        <input id="lSeeds" type="number" min="1" max="6" step="1" value="2">
+        <div class="span"><button id="runLab">Train</button></div>
+        <div class="note" id="labWhat"></div>
+      </div>
+      <div id="labOut"></div>
+      <div class="fine">
+        <b>This is the only step that does not run in your browser.</b> Everything
+        else on this page runs where you are standing and reaches nothing.
+        Training a network needs more than a page can carry, so it runs in a
+        process on this machine — reachable only from this machine, reading no
+        file, and given nothing but the numbers shown above. The published page
+        cannot reach it and does not show this panel at all.
+        <br><br>
+        <b>It fits on a simulation, never on your recordings.</b> The corpus is
+        generated from the statistics measured in the assess step, so its events
+        have known times and a score means something. Fitting on the recordings
+        you are about to analyse would spend the very effect the experiment
+        exists to measure.
+        <br><br>
+        <b>Every score here is on a fold the model never saw.</b> The corpus is
+        split first, the model is fitted on the rest, and the held-out fold is
+        scored — the same procedure the published comparison used, reported
+        across folds with its spread rather than as one number.
+        <br><br>
+        <b>There is no re-tune button, and that is deliberate.</b> The operating
+        point is chosen on held-out data and travels with the model. Re-picking it
+        on the recording being analysed would hide exactly the failure this is
+        measured against.
       </div>
     </details>
 
@@ -710,6 +883,15 @@ function natural(a, b) {
   return A.length - B.length;
 }
 
+/* Which `width_def` values name a width that reaches the peak, so that
+   `time_sec + width_sec` locates one. Top level rather than inside the loader
+   because it is a statement about the contract, not a detail of parsing, and
+   because the tests check it directly. See the note in `loadRecording`. */
+const WIDTH_REACHES_PEAK = new Set([
+  "rise_interval_peak_minus_t50rise",   // interface2, `slow`
+  "t50rise_to_peak",                    // the spec's illustration
+]);
+
 /* ---------- one recording -------------------------------------------------- */
 async function loadRecording(rec) {
   if (rec.loaded) return rec.loaded;
@@ -719,13 +901,66 @@ async function loadRecording(rec) {
     throw new Error(rec.file.name + " must have columns 'roi' and 'time_sec' (found "
                     + Object.keys(rows[0]).join(", ") + ")");
   const hasStream = "stream" in rows[0];
-  const streams = new Map();   // name -> Map(roi -> number[])
+  const streams = new Map();   // name -> Map(roi -> number[])  — t50rise, as before
+  /* THE THREE OPTIONAL COLUMNS, CARRIED RATHER THAN DISCARDED.
+
+     `time_sec` is the half-rise and five of the six detectors want nothing else,
+     which is why this loader read three columns and dropped the rest. CICADA is
+     the exception: it anchors on the PEAK, and the peak is not in `time_sec`. It
+     has to be recovered from what the folder actually sent, because the folder is
+     the only input — no store, no companion file.
+
+     Two routes, in this order:
+       * `peak_sec`, when the producer sends it. Optional in the contract,
+         unambiguous when present, and present in every current export — the
+         validation of 2026-08-20 checked all 84 recordings and found no
+         `peak_sec` before its own `time_sec`.
+       * `time_sec + width_sec`, but ONLY where `width_def` names a width that
+         actually reaches the peak. That sum IS `locs - t50rise`, the quantity
+         `cicada.py` calls `rise_dur`. Under a half-prominence or
+         above-threshold width it is not a peak and never was, and adding them
+         anyway produces exactly what the spec warns about: a plausible wrong
+         answer rather than an error.
+
+     THE NAMES BELOW ARE THE PRODUCER'S, NOT THE SPEC'S. `export_folder_spec.md`
+     offers `t50rise_to_peak` as an illustration and says in terms that the string
+     is the producer's and that bugarach carries it without parsing. This is the
+     one place that has to look, so it matches the vocabulary really in use rather
+     than the example: interface2 sends `rise_interval_peak_minus_t50rise` on
+     `slow` and `halfprom_width_findpeaks_w` on `fast`. Both are legitimate and
+     only the first reaches the peak — `docs/reviews/pensub_export_validation_2026-08-20.md`
+     audited it across 164,527 events and found `peak_sec - time_sec` reproduces
+     `width_sec` for 55,168 of 55,174 slow events (the six differ by 1e-6 s, the
+     printed precision) and for 21 of 109,353 fast ones, which is coincidence.
+
+     A name not in that list is not refused for being unknown — `peak_sec` still
+     carries it, and that is the route every current export takes. The list only
+     decides whether the WIDTH may stand in when no peak was sent. Anything
+     unrecognised simply does not, which is the safe direction.
+
+     Parallel arrays, index-aligned with the times, so they are sorted together
+     below. Sorting the times alone would silently shuffle each event's width onto
+     a different event. */
+  const rise = new Map();      // name -> Map(roi -> number[])  — width_sec
+  const peaks = new Map();     // name -> Map(roi -> number[])  — peak, or NaN
+  const widthDefs = new Map(); // name -> Set(width_def seen)
   const rois = new Set();
+  const pending = new Map();   // name -> Map(roi -> {t,w,p}[])
+  const numOrNaN = v => {
+    const s = (v ?? "").trim();
+    if (!s || NO_EVENT.has(s.toLowerCase())) return NaN;
+    const x = Number(s);
+    return Number.isFinite(x) ? x : NaN;
+  };
   rows.forEach((r, i) => {
     const name = (hasStream && r.stream) ? r.stream : "events";
-    if (!streams.has(name)) streams.set(name, new Map());
-    const byRoi = streams.get(name);
-    if (!byRoi.has(r.roi)) byRoi.set(r.roi, []);
+    if (!streams.has(name)) {
+      streams.set(name, new Map()); rise.set(name, new Map());
+      peaks.set(name, new Map()); widthDefs.set(name, new Set());
+      pending.set(name, new Map());
+    }
+    const byRoi = streams.get(name), hold = pending.get(name);
+    if (!byRoi.has(r.roi)) { byRoi.set(r.roi, []); hold.set(r.roi, []); }
     rois.add(r.roi);
     const raw = (r.time_sec ?? "").trim();
     if (NO_EVENT.has(raw.toLowerCase())) return;   // recorded, produced nothing
@@ -733,16 +968,30 @@ async function loadRecording(rec) {
     if (!Number.isFinite(t))
       throw new Error(rec.file.name + " line " + (i + 2) + ": time_sec is \"" + raw
                       + "\", which is neither a time in seconds nor a missing value");
-    byRoi.get(r.roi).push(t);
+    const wd = (r.width_def ?? "").trim();
+    if (wd) widthDefs.get(name).add(wd);
+    const w = numOrNaN(r.width_sec);
+    const sent = numOrNaN(r.peak_sec);
+    // the sum is only a peak where the producer says the width reaches one
+    const p = Number.isFinite(sent) ? sent
+            : (WIDTH_REACHES_PEAK.has(wd) && Number.isFinite(w) ? t + w : NaN);
+    hold.get(r.roi).push({ t, w, p });
   });
   const order = [...rois].sort(natural);
   let n = 0, tmax = 0, tmin = Infinity;
-  for (const byRoi of streams.values())
+  for (const [name, byRoi] of streams) {
+    const hold = pending.get(name);
+    for (const [id, recs] of hold) {
+      recs.sort((a, b) => a.t - b.t);
+      byRoi.set(id, recs.map(e => e.t));
+      rise.get(name).set(id, recs.map(e => e.w));
+      peaks.get(name).set(id, recs.map(e => e.p));
+    }
     for (const v of byRoi.values()) {
-      v.sort((a, b) => a - b);
       n += v.length;
       if (v.length) { tmax = Math.max(tmax, v[v.length - 1]); tmin = Math.min(tmin, v[0]); }
     }
+  }
   // silent EVERYWHERE is the one a producer could have dropped; silent in one
   // stream while firing in another was never at risk
   const quiet = order.filter(id =>
@@ -762,6 +1011,7 @@ async function loadRecording(rec) {
   rec.loaded = {
     streams, order, byRate, counts, nEvents: n, nRois: order.length, quiet,
     t0: Number.isFinite(tmin) ? Math.min(0, tmin) : 0, t1: tmax,
+    rise, peaks, widthDefs,
   };
   return rec.loaded;
 }
@@ -1701,6 +1951,727 @@ function syncDetect(trains, tRange, opts) {
 }
 
 
+
+/* ---------- LoCo, in the browser — the first detector here that guesses -------
+   RateDetect and SPIKE-synch are pure functions of the data, so their ports are
+   checked against the Python bit for bit. **LoCo is not.** It estimates its
+   threshold by shuffling the data a hundred times and taking a high percentile
+   of what the shuffles produced, and this page's random source is not numpy's.
+   Two honest implementations therefore disagree, by sampling error, for ever.
+
+   That does NOT mean the port is checked loosely. It splits three ways:
+
+     * the observed statistic — distinct ROIs per bin — depends on nothing but
+       the data. Exact, 1e-9.
+     * the threshold — sampled. Compared loosely and reported, never asserted.
+     * the detections — deterministic GIVEN a threshold. So the test injects the
+       same threshold into both implementations and compares the events exactly.
+
+   Only the middle line is soft, and it is the only line that has any business
+   being soft. `tests/test_webapp_loco_detect_parity.py` does all three.
+
+   ONE SEGMENT AT A TIME, and it matters here more than for the others. Python's
+   LoCo runs across a whole recording and clamps each anchor's null to the RAW
+   region containing it, so the null never borrows across a treatment boundary.
+   This page runs one analysis segment per call, so the region containing every
+   anchor *is* the segment and the clamp has nothing left to do. The consequence
+   is real and worth stating: the null comes from the analysis window, not from
+   the whole period it was cut out of. Where a producer sent a window narrower
+   than its region, that is a smaller pool than Python would use. */
+
+// MATLAB's prctile: sorted sample i sits at percentile 100*(i-0.5)/n, linear
+// between, clamped at the ends. This matches no numpy percentile mode, which is
+// why `_shared.py` carries its own and why this does too.
+function matlabPrctile(x, p) {
+  const v = Float64Array.from(x); v.sort();
+  const n = v.length;
+  if (!n) return NaN;
+  const q = i => (i + 0.5) * (100 / n);
+  if (p <= q(0)) return v[0];
+  if (p >= q(n - 1)) return v[n - 1];
+  let i = 0;
+  while (i < n - 2 && q(i + 1) < p) i++;
+  const a = q(i), b = q(i + 1);
+  return v[i] + (v[i + 1] - v[i]) * (p - a) / (b - a);
+}
+
+/* MATLAB's discretize: bin i covers [edges[i], edges[i+1]), the LAST bin closes
+   on the right, and anything outside is not in a bin at all. Returns -1 for
+   outside, which is MATLAB's NaN. */
+function discretizeIdx(x, edges) {
+  const m = edges.length - 1;
+  if (!(x >= edges[0]) || x > edges[m]) return -1;
+  if (x === edges[m]) return m - 1;
+  let lo = 0, hi = edges.length;
+  while (lo < hi) { const mid = (lo + hi) >> 1; if (edges[mid] <= x) lo = mid + 1; else hi = mid; }
+  return lo - 1;
+}
+
+/* LoCo's statistic, and SCE's: how many DISTINCT ROIs fired in each bin. One
+   count per ROI per bin however often it fired — an ROI bursting alone is not
+   coordination, and counting its events would say it was. */
+function distinctCoact(evs, edges) {
+  const c = new Float64Array(edges.length - 1);
+  for (const v of evs) {
+    if (!v.length) continue;
+    const seen = new Set();
+    for (const x of v) { const i = discretizeIdx(x, edges); if (i >= 0) seen.add(i); }
+    for (const i of seen) c[i] += 1;
+  }
+  return c;
+}
+
+/* The local null: circularly shift every ROI's events WITHIN this window, bin
+   the distinct-ROI coactivity, and pool every bin of every surrogate. The
+   percentile of that pool is the bar. Shifting inside the window is what makes
+   it rate-local — a shuffled ROI keeps its own rate and loses only its timing
+   relative to the others.
+
+   One draw per non-empty ROI per surrogate, surrogate-major: the same shape the
+   Python and the MATLAB consume, though not the same numbers. */
+function thresholdPool(ev, lo, hi, binw, nSur, pctile, u) {
+  if (hi <= lo) return Infinity;
+  let ledges = matlabColon(lo, binw, hi);
+  if (ledges.length < 2) ledges = Float64Array.from([lo, hi]);
+  const m = ledges.length - 1;
+  const lc = hi - lo;
+  const nonempty = [];
+  for (const v of ev) {
+    const c = [];
+    for (const x of v) if (x >= lo && x <= hi) c.push(x);
+    if (c.length) nonempty.push(c);
+  }
+  const counts = new Float64Array(nSur * m);
+  for (let s = 0; s < nSur; s++) {
+    for (let j = 0; j < nonempty.length; j++) {
+      const d = u();
+      const active = new Set();
+      for (const x of nonempty[j]) {
+        let sh = (x - lo + d * lc) % lc;
+        if (sh < 0) sh += lc;
+        const i = discretizeIdx(sh + lo, ledges);
+        if (i >= 0) active.add(i);
+      }
+      for (const i of active) counts[s * m + i] += 1;
+    }
+  }
+  return matlabPrctile(counts, pctile);
+}
+
+// first/last participating event and how many distinct ROIs took part, across
+// the episode's bin span [wlo, whi)
+function spanOf(ev, wlo, whi) {
+  let tfirst = Infinity, tlast = -Infinity, nrec = 0;
+  for (const v of ev) {
+    let f = null, l = null;
+    for (const x of v) if (x >= wlo && x < whi) { if (f === null) f = x; l = x; }
+    if (f !== null) { nrec++; if (f < tfirst) tfirst = f; if (l > tlast) tlast = l; }
+  }
+  if (!nrec) { tfirst = tlast = wlo; }
+  return { tfirst, tlast, nrec };
+}
+
+const matlabRound = x => Math.floor(x + 0.5);
+
+/* LoCo, threshold mode. A rolling bar is estimated at anchors every thr_step
+   seconds — for each, the null over the half-context behind it and the half
+   ahead, and the bar is the HIGHER of the two. That asymmetry is the point: a
+   rate edge cannot lower the bar and let the detector fire on the step. Bins
+   clearing their own local bar, and carrying at least min_rois ROIs, merge into
+   episodes across gaps no wider than merge_gap.
+
+   `thresholds` may be supplied to bypass the sampling entirely — that is how
+   the parity test compares detections exactly against a Python run that drew
+   different random numbers. Nothing in the interface passes it. */
+function locoDetect(trains, range, opts) {
+  const o = opts || {};
+  const binw = o.binWidthSec === undefined ? 1.0 : o.binWidthSec;
+  const mgap = o.mergeGapSec === undefined ? 2.0 : o.mergeGapSec;
+  const ctx = o.contextWinSec === undefined ? 120.0 : o.contextWinSec;
+  const pctile = o.thresholdPctile === undefined ? 99.9 : o.thresholdPctile;
+  const tstep = o.thrStepSec === undefined ? 15.0 : o.thrStepSec;
+  const nSur = o.nSurrogates === undefined ? 100 : o.nSurrogates;
+  // min_rois is NOT a knob and is not exposed. FOUNDATIONS §9: a nonzero
+  // coactivity excess is evidence about the preparation, not a false-alarm floor
+  // to raise until it goes away.
+  const minRois = o.minRois === undefined ? 3 : o.minRois;
+  const u = rng32(o.seed === undefined ? 20260706 : o.seed);
+
+  const tLo = range[0], tHi = range[1];
+  const halfCtx = ctx / 2;
+  const ev = clipSorted(trains, tLo, tHi);
+
+  let edges = matlabColon(tLo, binw, tHi);
+  if (edges.length < 2) edges = Float64Array.from([tLo, tHi]);
+  const nb = edges.length - 1;
+  const bc = new Float64Array(nb);
+  for (let i = 0; i < nb; i++) bc[i] = edges[i] + binw / 2;
+  const sObs = distinctCoact(ev, edges);
+
+  const anchors = matlabColon(tLo, tstep, tHi);
+  const thrA = new Float64Array(anchors.length);
+  for (let ai = 0; ai < anchors.length; ai++) {
+    const a = anchors[ai];
+    // the segment IS the region here — see the note at the top of this block
+    const tl = thresholdPool(ev, Math.max(a - halfCtx, tLo), a, binw, nSur, pctile, u);
+    const tr = thresholdPool(ev, a, Math.min(a + halfCtx, tHi), binw, nSur, pctile, u);
+    thrA[ai] = Math.max(tl, tr);
+  }
+  const thrBin = new Float64Array(nb);
+  for (let i = 0; i < nb; i++) {
+    let best = 0, bd = Infinity;
+    for (let k = 0; k < anchors.length; k++) {
+      const d = Math.abs(bc[i] - anchors[k]);
+      if (d < bd) { bd = d; best = k; }          // np.argmin takes the FIRST
+    }
+    thrBin[i] = thrA[best];
+  }
+  if (o.thresholds) for (let i = 0; i < nb; i++) thrBin[i] = o.thresholds[i];
+
+  const fb = [];
+  for (let i = 0; i < nb; i++) if (sObs[i] > thrBin[i] && sObs[i] >= minRois) fb.push(i);
+  const runs = [];
+  if (fb.length) {
+    const gapB = Math.max(1, matlabRound(mgap / binw));
+    let cur = [fb[0]];
+    for (let k = 1; k < fb.length; k++) {
+      if (fb[k] - cur[cur.length - 1] <= gapB) cur.push(fb[k]);
+      else { runs.push(cur); cur = [fb[k]]; }
+    }
+    runs.push(cur);
+  }
+
+  const starts = [], ends = [], mag = [], magTotal = [], thr = [], widths = [];
+  for (const gi of runs) {
+    const b0 = gi[0], b1 = gi[gi.length - 1];
+    const sp = spanOf(ev, edges[b0], edges[b1 + 1]);
+    let pk = 0;
+    for (let k = 1; k < gi.length; k++) if (sObs[gi[k]] > sObs[gi[pk]]) pk = k;  // first max
+    starts.push(sp.tfirst);
+    ends.push(sp.tlast);
+    widths.push(sp.tlast - sp.tfirst);
+    mag.push(sObs[gi[pk]]);
+    magTotal.push(sp.nrec);
+    thr.push(thrBin[gi[pk]]);
+  }
+  return { starts, ends, widths, magnitude: mag, magTotal, threshold: thr,
+           bc, sObs, thrBin, nEvents: starts.length };
+}
+
+
+/* ---------- CoactDetect, in the browser --------------------------------------
+   The same question LoCo asks — how many cells fired together — answered with a
+   different instrument. LoCo compares the count to a rolling percentile of the
+   shuffles; CoactDetect turns each bin into a z-score against the shuffles' mean
+   and spread and keeps the bins whose p clears alpha. So LoCo asks "is this
+   higher than almost anything the shuffles produced" and CoactDetect asks "how
+   many standard deviations out is it", and they disagree in the tails.
+
+   Checked the same three ways LoCo is, because it has the same shape: the
+   coactivity is exact, the null is sampled, and the episodes are exact once the
+   significance is fixed — so the test injects p-values and compares events at
+   1e-9. `tests/test_webapp_coact_detect_parity.py`. */
+
+/* erfc, to full double precision — Chebyshev, Numerical Recipes 3rd ed. The
+   browser has no erfc and the p-value is the whole decision, so this is checked
+   against Python's `math.erfc` directly rather than through the detector. */
+const ERFC_COF = [-1.3026537197817094, 6.4196979235649026e-1,
+  1.9476473204185836e-2, -9.561514786808631e-3, -9.46595344482036e-4,
+  3.66839497852761e-4, 4.2523324806907e-5, -2.0278578112534e-5,
+  -1.624290004647e-6, 1.303655835580e-6, 1.5626441722e-8, -8.5238095915e-8,
+  6.529054439e-9, 5.059343495e-9, -9.91364156e-10, -2.27365122e-10,
+  9.6467911e-11, 2.394038e-12, -6.886027e-12, 8.94487e-13, 3.13092e-13,
+  -1.12708e-13, 3.81e-16, 7.106e-15];
+
+function erfc(x) {
+  if (!Number.isFinite(x)) return x > 0 ? 0 : (x < 0 ? 2 : NaN);
+  const z = Math.abs(x);
+  const t = 2 / (2 + z);
+  const ty = 4 * t - 2;
+  let d = 0, dd = 0;
+  for (let j = ERFC_COF.length - 1; j > 0; j--) {
+    const tmp = d;
+    d = ty * d - dd + ERFC_COF[j];
+    dd = tmp;
+  }
+  const ans = t * Math.exp(-z * z + 0.5 * (ERFC_COF[0] + ty * d) - dd);
+  return x >= 0 ? ans : 2 - ans;
+}
+
+/* Observed against the shuffles: a z-score and its one-sided p. Split out
+   because everything here is deterministic once the shuffles have been counted,
+   and it is the arithmetic most easily got slightly wrong — the spread is the
+   SAMPLE standard deviation (n-1), a degenerate null with no spread at all is a
+   verdict rather than a division, and the p is one-tailed. Tested directly
+   against the Python formula rather than through a hundred random draws, which
+   would hide a 0.5% error in the divisor completely. */
+function coactStats(observed, counts) {
+  const n = counts.length;
+  let sum = 0;
+  for (let s = 0; s < n; s++) sum += counts[s];
+  const mu = sum / n;
+  let ss = 0;
+  for (let s = 0; s < n; s++) ss += (counts[s] - mu) * (counts[s] - mu);
+  const sd = n > 1 ? Math.sqrt(ss / (n - 1)) : 0;          // ddof = 1
+  if (sd > 0) {
+    const z = (observed - mu) / sd;
+    return { mu, sd, z, p: 0.5 * erfc(z / Math.SQRT2) };
+  }
+  if (observed > mu) return { mu, sd, z: Infinity, p: 0.0 };
+  return { mu, sd, z: 0.0, p: 1.0 };
+}
+
+/* CoactDetect, threshold mode.
+
+   NOTE THE GRID IS NOT MATLAB'S COLON HERE. CoactDetect builds a plain forward
+   grid `t0 + k*bw` and assigns an event by `clip(floor((t - t0)/bw), 0, nb-1)`,
+   so the last bin swallows anything at or past the end. LoCo and SPIKE-synch use
+   the two-ended colon and `discretize`. Both are ported as they are, because
+   matching each original is the product — do not unify them.
+
+   `pvals` may be supplied to bypass the sampling, which is how the parity test
+   compares episodes exactly against a Python run that drew different numbers. */
+function coactDetect(trains, range, opts) {
+  const o = opts || {};
+  const bw = o.intWinSec === undefined ? 0.5 : o.intWinSec;
+  const C = o.contextWinSec === undefined ? 60.0 : o.contextWinSec;
+  const minRois = o.minRois === undefined ? 3 : o.minRois;
+  const nSur = o.nSurrogates === undefined ? 200 : o.nSurrogates;
+  const alpha = o.alpha === undefined ? 0.01 : o.alpha;
+  const mgap = o.mergeGapSec === undefined ? 3.0 : o.mergeGapSec;
+  const u = rng32(o.seed === undefined ? 20260706 : o.seed);
+
+  const t0 = range[0], t1 = range[1];
+  const ev = clipSorted(trains, t0, t1);
+  const nb = Math.max(1, Math.ceil((t1 - t0) / bw));
+  const edges = new Float64Array(nb + 1);
+  for (let k = 0; k <= nb; k++) edges[k] = t0 + k * bw;
+  const ctr = new Float64Array(nb);
+  for (let k = 0; k < nb; k++) ctr[k] = t0 + (k + 0.5) * bw;
+
+  // distinct ROIs per bin — one per ROI per bin, however often it fired
+  const obs = new Float64Array(nb);
+  for (const e of ev) {
+    if (!e.length) continue;
+    const seen = new Set();
+    for (const x of e) {
+      let b = Math.floor((x - t0) / bw);
+      if (b < 0) b = 0; else if (b > nb - 1) b = nb - 1;
+      seen.add(b);
+    }
+    for (const b of seen) obs[b] += 1;
+  }
+
+  const z = new Float64Array(nb).fill(NaN);
+  const pval = new Float64Array(nb).fill(NaN);
+  const nullmean = new Float64Array(nb).fill(NaN);
+  const cand = [];
+  for (let b = 0; b < nb; b++) if (obs[b] >= minRois) cand.push(b);
+
+  if (o.pvals) {
+    for (let b = 0; b < nb; b++) pval[b] = o.pvals[b];
+  } else {
+    for (const b of cand) {
+      const blo = edges[b], bhi = edges[b + 1];
+      const cLo = Math.max(t0, ctr[b] - C / 2);
+      const cHi = Math.min(t1, ctr[b] + C / 2);
+      const cw = cHi - cLo;
+      const tlo = blo - cLo, thi = bhi - cLo;
+      const ctx = [];
+      for (const e of ev) {
+        if (!e.length) continue;
+        const vv = [];
+        for (const x of e) if (x >= cLo && x <= cHi) vv.push(x - cLo);
+        if (vv.length) ctx.push(vv);
+      }
+      // one draw per (surrogate, context ROI), surrogate-major — the same stream
+      // shape the MATLAB scalar-rand loops consume
+      const counts = new Float64Array(nSur);
+      const draws = new Float64Array(nSur * ctx.length);
+      for (let i = 0; i < draws.length; i++) draws[i] = u();
+      for (let j = 0; j < ctx.length; j++) {
+        for (let s = 0; s < nSur; s++) {
+          const d = draws[s * ctx.length + j];
+          let hit = false;
+          for (const x of ctx[j]) {
+            let sh = (x + d * cw) % cw;
+            if (sh < 0) sh += cw;
+            if (sh >= tlo && sh < thi) { hit = true; break; }
+          }
+          if (hit) counts[s] += 1;
+        }
+      }
+      const st = coactStats(obs[b], counts);
+      nullmean[b] = st.mu; z[b] = st.z; pval[b] = st.p;
+    }
+  }
+
+  // a NaN p-value is not significant — the bin was never a candidate
+  const sig = [];
+  for (const b of cand) if (pval[b] <= alpha) sig.push(b);
+
+  const startsB = [], endsB = [];
+  if (sig.length) {
+    let sCur = sig[0], prev = sig[0];
+    for (let k = 1; k < sig.length; k++) {
+      const b = sig[k];
+      // gap measured from the END of the previous significant bin, not its start
+      if (edges[b] - edges[prev + 1] <= mgap) prev = b;
+      else { startsB.push(sCur); endsB.push(prev); sCur = prev = b; }
+    }
+    startsB.push(sCur); endsB.push(prev);
+  }
+
+  const starts = [], widths = [], ends = [], nrois = [], evZ = [], evP = [];
+  for (let k = 0; k < startsB.length; k++) {
+    const s = startsB[k], e = endsB[k];
+    starts.push(edges[s]);
+    widths.push(edges[e + 1] - edges[s]);
+    ends.push(edges[e + 1]);
+    let mx = -Infinity, zmax = NaN, pmin = NaN;
+    for (let b = s; b <= e; b++) {
+      if (obs[b] > mx) mx = obs[b];
+      // merged episodes span non-candidate bins whose z/p are NaN, and MATLAB's
+      // max/min ignore NaN — so these are the nan-variants, not the plain ones
+      if (!Number.isNaN(z[b])) zmax = Number.isNaN(zmax) ? z[b] : Math.max(zmax, z[b]);
+      if (!Number.isNaN(pval[b])) pmin = Number.isNaN(pmin) ? pval[b] : Math.min(pmin, pval[b]);
+    }
+    nrois.push(mx); evZ.push(zmax); evP.push(pmin);
+  }
+  return { starts, ends, widths, nrois, z: evZ, p: evP,
+           ctr, obs, zProf: z, pvalProf: pval, nullmean,
+           nEvents: starts.length };
+}
+
+
+/* ---------- SCE, in the browser ----------------------------------------------
+   The third detector counting distinct ROIs per bin, and the one that bins
+   COARSELY — ten seconds by default, against LoCo's one and CoactDetect's two.
+   At that width it is not asking "did these cells fire together", it is asking
+   "was this stretch of the recording busier than this recording gets", and it
+   reports the bin's left edge rather than an onset. The scorer knows: a
+   detection is an interval, and SCE's spans its whole bin.
+
+   ONE THRESHOLD PER WINDOW, not a rolling one. Every bin in the window is
+   compared to the same number — the percentile of a null built by wrapping the
+   window's own events inside it. LoCo re-estimates its bar every fifteen
+   seconds; this does not, which is what makes it the blunt instrument of the
+   three and also the one least able to be fooled by a local rate change.
+
+   AND THE MERGE IS ON EVENT TIMES, NOT BINS. Two significant bins join when the
+   first observed event of the second is within merge_gap of the last observed
+   event of the first — not when the bins are adjacent. With ten-second bins
+   those are very different questions. The default gap is NaN, which merges
+   nothing, because every comparison against NaN is false. Ported as it is.
+
+   Checked the way the other two sampling detectors are: coactivity exact,
+   threshold sampled, episodes exact once the threshold is fixed. */
+/* ---------- CICADA ------------------------------------------------------------
+   A port of `bugarach.detectors.cicada.cicada_detect`, which is itself a port of
+   the CICADA original. It is the sixth detector and the only one that does not
+   anchor on the half-rise.
+
+   IT ANCHORS ON THE PEAK, AND THAT IS NOT A BUG TO FIX. `src/bugarach/store.py`
+   says so in terms — *"do not 'correct' cicada to t50rise"* — and records that two
+   sentences claiming otherwise have already been written in that file and misled
+   two readers. The reason is not deference to the original: a single-cell event
+   runs from half-rise to peak over ~0.3 s in a fast stream and ~2 s in a slow one,
+   and 2 s is wider than the tolerance a detection is scored at. Treating events
+   that long as points anchored at their onsets would find almost any two of them
+   coincident. `t50rise` locates an event; `locs` closes it.
+
+   WHICH MAKES THE FOLDER THE PROBLEM, not the algorithm. The contract sends
+   `time_sec` as the half-rise. The peak is either sent as `peak_sec` or recovered
+   as `time_sec + width_sec` where `width_def` is `t50rise_to_peak` — that width is
+   `locs - t50rise`, the same quantity `cicada.py` computes as `rise_dur`. Where
+   neither is available this detector does not run, and says why. It does not fall
+   back to the half-rise, which would produce a full page of coordinated events
+   from a stream where the onsets merely arrive close together.
+
+   The raster marks a cell active FROM ITS PEAK forward for the transient
+   duration, so an event contributes its own length rather than a single frame.
+   Everything after that is the sliding coactivity count, a surrogate threshold
+   from circularly rolled cells, and peak-picking with a minimum separation. */
+function cicadaDetect(peakTrains, durTrains, range, opts) {
+  const o = opts || {};
+  const dt = o.gridDt === undefined ? 0.1 : o.gridDt;
+  const nsync = Math.max(1, Math.round(o.nSynchronousFrames === undefined
+                                       ? 1 : o.nSynchronousFrames));
+  const pctile = o.scePercentile === undefined ? 99.0 : o.scePercentile;
+  const nSur = o.nSurrogates === undefined ? 100 : o.nSurrogates;
+  const minDist = Math.max(1, Math.round(o.sceMinDistanceFrames === undefined
+                                         ? 4 : o.sceMinDistanceFrames));
+  const adur = o.activeDurationSec === undefined ? 1.0 : o.activeDurationSec;
+  const perEvent = !!o.perEventDuration;
+  const u = rng32(o.seed === undefined ? 20260706 : o.seed);
+
+  const wLo = range[0], wHi = range[1];
+  const empty = { starts: [], ends: [], widths: [], magnitude: [], magTotal: [],
+                  threshold: NaN, obs: new Float64Array(0),
+                  bctr: new Float64Array(0), nEvents: 0 };
+  if (wHi <= wLo) return empty;
+
+  const nf = Math.max(1, Math.floor((wHi - wLo) / dt));
+  const nc = peakTrains.length;
+  if (nc < 1) return empty;
+  const dframes = Math.max(1, Math.floor(adur / dt + 0.5));
+
+  /* logical [nc x nf], each event active from its own frame for its own length.
+     A frame outside the window is SKIPPED, not clamped to an edge: clamping
+     would pile every out-of-range event onto frame 0 and invent a synchrony
+     there. */
+  const raster = [];
+  for (let c = 0; c < nc; c++) {
+    const row = new Uint8Array(nf);
+    const v = peakTrains[c] || [], d = (durTrains && durTrains[c]) || null;
+    for (let k = 0; k < v.length; k++) {
+      const t = v[k];
+      if (!Number.isFinite(t)) continue;
+      const f = Math.floor((t - wLo) / dt);
+      if (f < 0 || f >= nf) continue;
+      let df = dframes;
+      if (perEvent && d) {
+        const dv = d[k];
+        df = Number.isFinite(dv) ? Math.max(1, Math.floor(dv / dt + 0.5)) : 1;
+      }
+      const hi = Math.min(nf, f + df);
+      for (let j = f; j < hi; j++) row[j] = 1;
+    }
+    raster.push(row);
+  }
+
+  // distinct cells active in each nsync-frame sliding window
+  const m = nf - nsync;
+  if (m < 1) return empty;
+  const obs = new Float64Array(m);
+  for (let c = 0; c < nc; c++) {
+    const row = raster[c];
+    let inWin = 0;
+    for (let j = 0; j < nsync; j++) inWin += row[j];
+    for (let i = 0; i < m; i++) {
+      if (inWin > 0) obs[i] += 1;
+      inWin -= row[i];
+      if (i + nsync < nf) inWin += row[i + nsync];
+    }
+  }
+
+  /* CICADA's get_sce_threshold: roll each cell by randi(nf-1), sum active cells
+     PER FRAME, pool every surrogate together, take the percentile of the pool.
+     Pooled rather than per-surrogate — the threshold is one number about the
+     whole recording, and taking a percentile per surrogate and averaging is a
+     different statistic that looks just as reasonable. */
+  let threshold = 0;
+  if (nf >= 2) {
+    const pool = new Float64Array(nSur * nf);
+    for (let s = 0; s < nSur; s++) {
+      const off = s * nf;
+      for (let c = 0; c < nc; c++) {
+        const row = raster[c];
+        const k = Math.floor(u() * (nf - 1)) + 1;      // MATLAB randi(nf-1)
+        for (let j = 0; j < nf; j++) {
+          // np.roll(row, k)[j] === row[(j - k) mod nf]
+          let src = j - k; if (src < 0) src += nf;
+          pool[off + j] += row[src];
+        }
+      }
+    }
+    threshold = matlabPrctile(Array.from(pool), pctile);
+  }
+
+  /* local maxima >= threshold, plateau taking its LEFT edge (> left, >= right),
+     thinned tallest-first to at least minDist apart with earlier winning ties */
+  const cand = [];
+  for (let i = 0; i < m; i++) {
+    if (!(obs[i] >= threshold) || obs[i] <= 0) continue;
+    const l = i > 0 ? obs[i - 1] : -Infinity;
+    const r = i < m - 1 ? obs[i + 1] : -Infinity;
+    if (obs[i] > l && obs[i] >= r) cand.push(i);
+  }
+  cand.sort((a, b) => obs[b] - obs[a] || a - b);
+  const kept = [];
+  for (const i of cand)
+    if (kept.every(j => Math.abs(i - j) >= minDist)) kept.push(i);
+  kept.sort((a, b) => a - b);
+
+  const starts = [], ends = [], widths = [], magnitude = [], magTotal = [];
+  for (const i of kept) {
+    const s = wLo + i * dt, e = wLo + (i + nsync) * dt;
+    starts.push(s); ends.push(e); widths.push(e - s);
+    magnitude.push(obs[i]);
+    magTotal.push(obs[i]);
+  }
+  const bctr = new Float64Array(m);
+  for (let i = 0; i < m; i++) bctr[i] = wLo + (i + nsync / 2) * dt;
+  return { starts, ends, widths, magnitude, magTotal, threshold, obs, bctr,
+           nEvents: starts.length };
+}
+
+/* Can this recording answer CICADA at all?
+
+   Returns the per-ROI peak and duration trains, or a refusal naming what the
+   folder would have to carry. Refusing is the correct outcome rather than a
+   degraded one: falling back to `time_sec` would run the detector on onsets and
+   return a confident answer to a different question. */
+function cicadaTrains(data, stream, order, lo, hi) {
+  const defs = [...((data.widthDefs && data.widthDefs.get(stream)) || [])];
+  const peaksBy = data.peaks && data.peaks.get(stream);
+  const riseBy = data.rise && data.rise.get(stream);
+  if (!peaksBy)
+    return { why: "this recording was loaded before the folder carried widths — "
+                  + "reopen it" };
+  if (defs.length > 1)
+    return { why: "the folder sends more than one width_def in the '" + stream
+                  + "' stream (" + defs.join(", ") + "). The contract asks for one "
+                  + "rule per stream, and widths measured two ways cannot be "
+                  + "compared, let alone added to an onset." };
+
+  const peakTrains = [], durTrains = [];
+  let have = 0, total = 0;
+  for (const id of order) {
+    const p = (peaksBy.get(id) || []), w = (riseBy.get(id) || []);
+    const times = data.streams.get(stream).get(id) || [];
+    const pk = [], du = [];
+    for (let k = 0; k < times.length; k++) {
+      if (times[k] < lo || times[k] > hi) continue;
+      total++;
+      if (!Number.isFinite(p[k])) continue;
+      have++;
+      pk.push(p[k]); du.push(w[k]);
+    }
+    peakTrains.push(pk); durTrains.push(du);
+  }
+  if (total && !have)
+    return { why: "CICADA anchors on the PEAK of each transient, and this folder "
+                  + "does not carry one. Send `peak_sec` — every current export "
+                  + "does, and it is the unambiguous route — or send `width_sec` "
+                  + "with a `width_def` naming a width that reaches the peak, "
+                  + "such as `rise_interval_peak_minus_t50rise`. `time_sec` alone "
+                  + "is the half-rise"
+                  + (defs.length ? ", and this folder's width is '" + defs[0]
+                     + "', which does not reach the peak" : "")
+                  + ". Running on onsets instead would call almost any two events "
+                  + "coincident, which is why this refuses rather than guesses." };
+  return { peakTrains, durTrains, nWithPeak: have, nEvents: total,
+           widthDef: defs[0] || null };
+}
+
+function sceDetect(trains, range, opts) {
+  const o = opts || {};
+  const bw = o.binWidthSec === undefined ? 10.0 : o.binWidthSec;
+  const pctile = o.thresholdPctile === undefined ? 99.0 : o.thresholdPctile;
+  const nSur = o.nSurrogates === undefined ? 200 : o.nSurrogates;
+  const minRois = o.minRois === undefined ? 3 : o.minRois;
+  const mgap = o.mergeGapSec === undefined ? NaN : o.mergeGapSec;
+  const u = rng32(o.seed === undefined ? 20260706 : o.seed);
+
+  const wLo = range[0], wHi = range[1];
+  const empty = { starts: [], ends: [], widths: [], magnitude: [],
+                  magTotal: [], threshold: NaN, obs: new Float64Array(0),
+                  bctr: new Float64Array(0), nEvents: 0 };
+  if (wHi <= wLo) return empty;
+
+  const lw = wHi - wLo;
+  const ev = clipSorted(trains, wLo, wHi);
+  const nRoi = ev.length;
+  const nBins = Math.max(1, Math.ceil(lw / bw));
+  const bctr = new Float64Array(nBins);
+  for (let i = 0; i < nBins; i++) bctr[i] = wLo + (i + 0.5) * bw;
+  // the bin index is CLIPPED into range rather than dropped, so the last bin
+  // takes the window's final instant — same rule CoactDetect uses, and not the
+  // `discretize` rule LoCo uses
+  const binOf = t => {
+    let i = Math.floor((t - wLo) / bw);
+    return i < 0 ? 0 : (i > nBins - 1 ? nBins - 1 : i);
+  };
+
+  const obs = new Float64Array(nBins);
+  for (const v of ev) {
+    if (!v.length) continue;
+    const seen = new Set();
+    for (const x of v) seen.add(binOf(x));
+    for (const i of seen) obs[i] += 1;
+  }
+
+  let thr;
+  if (o.threshold !== undefined) {
+    thr = o.threshold;
+  } else {
+    // one offset per ROI per surrogate, and EMPTY ROIs ARE DRAWN FOR — they
+    // consume their place in the stream even though they contribute nothing
+    const draws = new Float64Array(nSur * nRoi);
+    for (let i = 0; i < draws.length; i++) draws[i] = u() * lw;
+    const nullCounts = new Float64Array(nSur * nBins);
+    for (let r = 0; r < nRoi; r++) {
+      if (!ev[r].length) continue;
+      for (let s = 0; s < nSur; s++) {
+        const d = draws[s * nRoi + r];
+        const act = new Set();
+        for (const x of ev[r]) {
+          let sh = (x - wLo + d) % lw;
+          if (sh < 0) sh += lw;
+          act.add(binOf(wLo + sh));
+        }
+        for (const i of act) nullCounts[s * nBins + i] += 1;
+      }
+    }
+    thr = matlabPrctile(nullCounts, pctile);
+  }
+
+  const sig = [];
+  for (let i = 0; i < nBins; i++) if (obs[i] > thr && obs[i] >= minRois) sig.push(i);
+  if (!sig.length) {
+    return { ...empty, threshold: thr, obs, bctr };
+  }
+
+  // every in-window event with its bin and its ROI — the merge and the episode
+  // statistics are both computed from these rather than from the bins
+  const evTimes = [], evBin = [], evRoi = [];
+  for (let r = 0; r < nRoi; r++)
+    for (const x of ev[r]) { evTimes.push(x); evBin.push(binOf(x)); evRoi.push(r); }
+  const binFirst = new Float64Array(nBins).fill(NaN);
+  const binLast = new Float64Array(nBins).fill(NaN);
+  for (let k = 0; k < evTimes.length; k++) {
+    const b = evBin[k];
+    if (Number.isNaN(binFirst[b]) || evTimes[k] < binFirst[b]) binFirst[b] = evTimes[k];
+    if (Number.isNaN(binLast[b]) || evTimes[k] > binLast[b]) binLast[b] = evTimes[k];
+  }
+
+  const runs = [];
+  let cs = sig[0], ce = sig[0], runLast = binLast[sig[0]];
+  for (let k = 1; k < sig.length; k++) {
+    const b = sig[k];
+    // NaN gap compares false and therefore never merges — which is also what
+    // the default merge_gap of NaN means
+    if (binFirst[b] - runLast <= mgap) { ce = b; runLast = binLast[b]; }
+    else { runs.push([cs, ce]); cs = ce = b; runLast = binLast[b]; }
+  }
+  runs.push([cs, ce]);
+
+  const starts = [], ends = [], widths = [], mag = [], magTotal = [];
+  for (const [fb, lb] of runs) {
+    let mx = -Infinity;
+    for (let b = fb; b <= lb; b++) if (obs[b] > mx) mx = obs[b];
+    const rois = new Set();
+    let tfirst = Infinity, tlast = -Infinity;
+    for (let k = 0; k < evTimes.length; k++) {
+      if (evBin[k] >= fb && evBin[k] <= lb) {
+        rois.add(evRoi[k]);
+        if (evTimes[k] < tfirst) tfirst = evTimes[k];
+        if (evTimes[k] > tlast) tlast = evTimes[k];
+      }
+    }
+    const w = rois.size ? tlast - tfirst : NaN;
+    // the reported onset is the BIN's start, not the first event in it
+    starts.push(wLo + fb * bw);
+    widths.push(w);
+    ends.push(wLo + fb * bw + (Number.isNaN(w) ? 0 : w));
+    mag.push(mx);
+    magTotal.push(rois.size);
+  }
+  return { starts, ends, widths, magnitude: mag, magTotal, threshold: thr,
+           obs, bctr, nEvents: starts.length };
+}
+
 /* ---------- scoring, and the step that makes this a loop ----------------------
    Measure, simulate from what you measured, DETECT — and then the question the
    first three steps exist to answer: are these settings any good? On a real
@@ -1716,6 +2687,222 @@ function syncDetect(trains, tRange, opts) {
    score_coord_detection.m. Like the two detectors above it draws no random
    numbers, so it is checked against the Python exactly — see
    `tests/test_webapp_tune_parity.py`. */
+
+/* ---- folds and pooling, spliced from docs/site/scoring.js -------------
+   The single scoring path: divide the corpus once, fit on the training
+   folds, report what came back from the fold nothing was fitted on. */
+
+/* bugarach — folds and pooling, in the browser
+   =============================================
+
+   BEGIN bugarach-scoring (splice marker — see the note at the foot of this file)
+
+   Two pure functions, no DOM and no state. They are the half of
+   `tools/fair_bakeoff.py` that makes a number on screen mean something: divide
+   the corpus once, fit on the training folds, and report what came back from
+   the fold nothing was fitted on.
+
+   Without them the page sweeps one detector's one knob on one recording and
+   scores it against that recording's own planted events. Every number that
+   comes out is in-sample. It is a demonstration of the sweep, not a measurement
+   of the detector, and nothing on the screen distinguishes the two.
+
+   Ports of `bugarach.bench.fold_split` and `bugarach.bench.pool_scores`. Neither
+   draws a random number, so they are checked against the Python exactly rather
+   than statistically — `tests/test_webapp_scoring_parity.py`, at 1e-9, the same
+   bar the browser detectors hold.
+
+   The rule these exist to obey, from `docs/learned/README_for_the_webapp.md`:
+   *"`pool_scores` is the single scoring path … Do not compute F1 in the UI
+   layer — an earlier version of the regime-shift tool did its own arithmetic
+   and put the two halves of a comparison on different metrics."* That is the
+   whole reason this is a function and not six lines at the call site. It has
+   already gone wrong once at full scale: a review found the learned models
+   pooled by hand as hits/detections while the six detectors went through
+   `pool_scores`, which excludes the promiscuity probe, and the two halves of a
+   comparison captioned "scored by the same rule" sat on different denominators.
+   SCE reads precision 0.91 one way and 0.11 the other. */
+
+
+/* ---- the corpus, divided once ------------------------------------------- */
+
+/* A fold split is worth something only if it is the SAME split for everyone
+   being compared. Derive it here and pass it around; deriving it twice invites
+   two detectors to be scored on different held-out sets under one heading.
+
+   Fully determined by the base seed and the two counts: recording seeds run
+   consecutively from the base and are dealt out in contiguous blocks. No
+   shuffle, so there is no random source for the browser and the command line to
+   agree about — which is what lets a run here reproduce a split made there. */
+function foldSplit({ nFolds = 4, seedsPerFold = 3, baseSeed = 1000 } = {}) {
+  // One fold is refused rather than allowed to degenerate: with a single fold
+  // there is nothing left to fit on, and what comes back is a held-out score
+  // with no training set behind it — the exact claim this split exists to make
+  // true.
+  if (!Number.isInteger(nFolds) || nFolds < 2)
+    throw new Error(`nFolds=${nFolds} leaves no training data — fitting on ` +
+                    `three and scoring on the fourth needs at least two folds`);
+  if (!Number.isInteger(seedsPerFold) || seedsPerFold < 1)
+    throw new Error(`seedsPerFold=${seedsPerFold} makes an empty fold`);
+  if (!Number.isInteger(baseSeed))
+    throw new Error(`baseSeed=${baseSeed} is not an integer, so the corpus ` +
+                    `it names is not reproducible`);
+
+  const seeds = [];
+  for (let i = 0; i < nFolds * seedsPerFold; i++) seeds.push(baseSeed + i);
+
+  const checkFold = (held) => {
+    if (!Number.isInteger(held) || held < 0 || held >= nFolds)
+      throw new Error(`fold ${held} is outside 0..${nFolds - 1}`);
+  };
+  const foldOf = (seed) => {
+    const i = seed - baseSeed;
+    if (!Number.isInteger(i) || i < 0 || i >= seeds.length)
+      throw new Error(`seed ${seed} is not in this corpus ` +
+                      `(${baseSeed}..${baseSeed + seeds.length - 1})`);
+    return Math.floor(i / seedsPerFold);
+  };
+
+  return {
+    seeds, nFolds, seedsPerFold, baseSeed, foldOf,
+    /* everything outside the held-out fold — what a knob may be fitted on */
+    train: (held) => { checkFold(held); return seeds.filter(s => foldOf(s) !== held); },
+    /* the held-out fold — what the reported number is scored on, and the only
+       recordings nothing was fitted on */
+    test: (held) => { checkFold(held); return seeds.filter(s => foldOf(s) === held); },
+  };
+}
+
+
+/* ---- pooling ------------------------------------------------------------- */
+
+/* Pool per-recording scores into one result.
+
+   POOLED COUNTS, NOT THE MEAN OF PER-RECORDING RATIOS. A recording that happens
+   to plant fewer events should not carry the same weight as a fuller one, and a
+   recording with no detections at all makes precision undefined rather than
+   zero. Averaging the ratios gets both wrong and looks identical on screen.
+
+   `scores` are the objects the page's `scoreDetections` returns — nPlanted,
+   nDetected, nHit, nFa, byFrac — plus, where a probe exists, hotFa and
+   distractorHits. Anything scored against this corpus pools through here,
+   including a learned model or a one-off candidate. That is the point of it
+   being a function. */
+function poolScores(scores, { detector, regime, seeds = [], knobValue = null,
+                              tolSec = null } = {}) {
+  const list = [...scores];
+
+  /* The tolerance is the number's units, so it travels with it. Scores measured
+     at different tolerances are not poolable: counts add whatever they were
+     counted against, so mixing them produces a plausible number whose matching
+     rule is a blend of two — invisible in the result and invisible on screen. */
+  const tols = new Set();
+  for (const sc of list) {
+    const t = sc.tolSec != null ? sc.tolSec : tolSec;
+    if (t == null)
+      throw new Error(
+        "a pooled score must carry the tolerance it was matched at — pass " +
+        "tolSec, or set it on each score. A bare F1 with no tolerance beside " +
+        "it reads as timing accuracy, which this bench does not measure.");
+    if (!Number.isFinite(t))
+      throw new Error(`tolSec=${t} is not a finite number of seconds`);
+    tols.add(t);
+  }
+  if (tols.size > 1)
+    throw new Error(
+      `cannot pool scores measured at different tolerances: ` +
+      `${[...tols].sort((a, b) => a - b).join(", ")} s. A pooled count is ` +
+      `only meaningful against one matching rule.`);
+
+  const out = {
+    detector, regime, knobValue,
+    nPlanted: 0, nDetected: 0, nHit: 0, nFa: 0,
+    hotFa: 0, distractorHits: 0,
+    byFrac: new Map(),
+    seeds: [...seeds],
+    /* null only when nothing was pooled — an empty result has no tolerance to
+       claim, and neither does the Python it is checked against */
+    tolSec: tols.size ? [...tols][0] : null,
+  };
+
+  for (const sc of list) {
+    out.nPlanted += sc.nPlanted;
+    out.nDetected += sc.nDetected;
+    out.nHit += sc.nHit;
+    out.nFa += sc.nFa;
+    out.hotFa += sc.hotFa || 0;
+    out.distractorHits += sc.distractorHits || 0;
+    const by = sc.byFrac instanceof Map ? sc.byFrac : new Map(sc.byFrac || []);
+    for (const [frac, [n, h]] of by) {
+      const [pn, ph] = out.byFrac.get(frac) || [0, 0];
+      out.byFrac.set(frac, [pn + n, ph + h]);
+    }
+  }
+
+  /* Detections the headline numbers are computed over — everything outside the
+     promiscuity probe. The probe plants no events, so it contributes no hits
+     and its firings would otherwise land entirely in the precision denominator.
+     The browser's generator plants no probe, so today this equals nDetected and
+     the distinction costs nothing; it stops being free the day one is added,
+     which is exactly when a page computing its own precision would quietly
+     disagree with the Python. */
+  out.nScored = out.nDetected - out.hotFa;
+
+  out.recall = out.nPlanted ? out.nHit / out.nPlanted : NaN;
+
+  /* Precision OUTSIDE the probe. Fold the probe in and the headline stops
+     measuring the detector and starts measuring how hard the probe was set:
+     CICADA reads F1 0.09 that way against 0.68 in the upstream campaign, on 599
+     hot-window detections out of 601 false alarms. That is this project's own
+     cautionary tale — the benchmark, not the detectors, was the original
+     problem — reached by turning one knob too far. */
+  out.precision = out.nScored ? out.nHit / out.nScored : NaN;
+
+  out.f1 = (Number.isFinite(out.recall) && Number.isFinite(out.precision)
+            && out.recall + out.precision > 0)
+    ? 2 * out.recall * out.precision / (out.recall + out.precision)
+    : NaN;
+
+  /* Recall at one participation level. The headline hides the thing worth
+     knowing: a detector that finds every full-field event and nothing at 10% is
+     a different instrument from one that degrades gracefully, and the two can
+     share an overall recall. */
+  out.recallAt = (frac) => {
+    const [n, h] = out.byFrac.get(frac) || [0, 0];
+    return n ? h / n : NaN;
+  };
+
+  /* The probe's own number, gated separately from precision: firings per minute
+     inside the dense-but-random block, where by construction there is nothing
+     to find. Takes the window because only the generator knows whether it
+     planted one — the browser's does not, and NaN is the honest answer there
+     rather than a rate computed against a window that does not exist. */
+  out.hotFaPerMin = (hotWindow) => {
+    if (!hotWindow) return NaN;
+    const minutes = (hotWindow[1] - hotWindow[0]) / 60 *
+                    Math.max(1, out.seeds.length);
+    return minutes ? out.hotFa / minutes : NaN;
+  };
+
+  return out;
+}
+
+
+/* END bugarach-scoring
+   Everything above this line is a verbatim copy of `docs/site/scoring.js`,
+   compared character for character by `test_the_page_has_not_forked_the_
+   scorer`. Edit that file and re-splice; repairing this copy is how one
+   scorer silently becomes two.
+
+   The copy exists because the viewer is one self-contained file that may
+   not load anything at runtime -- the publish gate refuses a page with a
+   dynamic module load in it, since a page that fetches is a page that could
+   send, and this one promises the reader their recordings never leave their
+   computer. That gate is also why this trailing note is written here rather
+   than copied along with the rest: the original spells out the very syntax
+   the gate forbids, so copying it would fail the build while explaining
+   why it should not. */
+
 
 /* Detections are INTERVALS, not points. The distance from a planted event to a
    detection is zero when the event falls inside its span and the gap to the
@@ -1793,16 +2980,12 @@ function scoreDetections(times, fracs, onsets, widths, tolSec) {
            nFa: faLo.length, nDup, byFrac, recall, precision, f1 };
 }
 
-/* The sensitivity axis: one knob per detector, and the values the project's own
-   bench sweeps it over (`bench.OPERATING_POINTS`). Everything else is held at
-   whatever the Detect panel has, so the sweep answers "what does this one knob
-   do to THESE settings" rather than a question about some other settings. */
-const TUNE_KNOB = {
-  rate: { key: "excessThresholdHz", name: "excess threshold",
-          unit: "Hz", grid: [0.5, 1, 2, 3, 4, 5, 6, 8] },
-  sync: { key: "CThreshold", name: "C to start an event",
-          unit: "", grid: [0.005, 0.01, 0.02, 0.04, 0.08, 0.12] },
-};
+/* The sensitivity axis — one knob per detector, and it lives in the DETECTORS
+   table beside everything else that detector owns. Values are the ones the
+   project's own bench sweeps (`bench.OPERATING_POINTS`). Everything not being
+   swept is held at whatever the Detect panel has, so the sweep answers "what
+   does this one knob do to THESE settings" rather than a question about some
+   other settings. */
 
 /* `bench.pick_operating_point`, and its refusal is the point of it. An optimum
    at the end of the grid is not an optimum — it is the search saying it stopped
@@ -2040,7 +3223,10 @@ function analysisSegments(rec, data) {
               end: Math.max(data.t1, data.t0 + 1), stated: false, whole: true }];
   return wins.map(w => {
     const stated = Number.isFinite(w.aStart) && Number.isFinite(w.aEnd);
-    return { label: w.label, start: stated ? w.aStart : w.start,
+    // `idx` travels because detections.csv reports which region a row came from,
+    // and a segment that has forgotten its index cannot say.
+    return { label: w.label, idx: w.idx,
+             start: stated ? w.aStart : w.start,
              end: stated ? w.aEnd : w.end, stated,
              // WHOSE window this is. A window derived in this browser is not a
              // window the producer sent, and a result computed from one must not
@@ -2478,6 +3664,11 @@ const RATE_SHAPE = 0.275;                  // bench.MEASURED_RATE_SHAPE
 const BURST_SHAPE = [1.547, 1.388];        // bench.MEASURED_BURST_SHAPE
 const BURST_BINS = [300, 60];              // …at these bin widths, seconds
 const GRID = 0.1, MARGIN = 5;
+/* How far the peak trails the half-rise in the simulated (fast) stream. The
+   store's own figure is ~0.3 s fast, ~2 s slow; this folder is a fast one.
+   Drawn per event rather than fixed, so `width_sec` is a distribution a reader
+   can see rather than a constant that would make the column look decorative. */
+const RISE_MEAN_SEC = 0.3;
 // 120 s, not the 15 s the generator ships: the detectors estimate their null
 // over context windows up to 120 s wide, so events packed tighter than that put
 // coordination inside the null a threshold is derived from. That contaminated
@@ -2646,14 +3837,29 @@ function simulateRecording(p, seed) {
   });
 
   // ---- write it as the contract says ----------------------------------------
-  const rows = ["roi,time_sec"];
+  /* THE SIMULATED FOLDER SENDS A WIDTH, because the contract asks for one and
+     because a folder that omits it cannot answer CICADA at all — the peak is
+     `time_sec + width_sec` under `t50rise_to_peak`, and with no width there is
+     nothing to add. A simulate step that quietly produced the one folder shape
+     the sixth detector cannot read would make the refusal look like a bug in the
+     detector rather than a fact about the file.
+
+     `width_def` is stated rather than assumed, exactly as a producer must state
+     it. The rise is drawn per event around a fast-stream figure — this project's
+     own stores put the peak about 0.3 s after the half-rise in a fast stream and
+     about 2 s in a slow one, and this folder is a fast one. */
+  const rows = ["roi,time_sec,width_sec,width_def"];
   for (let r = 0; r < nR; r++) {
     const v = trains[r].map(x => mround(x / GRID) * GRID).sort((a, b) => a - b);
     // an ROI that was recorded and fired nothing is a row with no time. The
     // fitted background produces these in quantity, which is the honest thing:
     // dropping them would shrink the population and lift every per-ROI rate.
-    if (!v.length) { rows.push((r + 1) + ",NA"); continue; }
-    for (const x of v) rows.push((r + 1) + "," + x.toFixed(1));
+    if (!v.length) { rows.push((r + 1) + ",NA,NA,t50rise_to_peak"); continue; }
+    for (const x of v) {
+      const rise = mround((RISE_MEAN_SEC * (0.5 + u())) / GRID) * GRID;
+      rows.push((r + 1) + "," + x.toFixed(1) + "," + rise.toFixed(1)
+                + ",t50rise_to_peak");
+    }
   }
   return { csv: rows.join("\n") + "\n", truth };
 }
@@ -2871,26 +4077,334 @@ function clearDetect() {
   DETECT = null;
   const b = document.getElementById("detectOut");
   if (b) b.textContent = "";
+  paintSaveDetections();
+}
+
+/* The save button follows the result, not the click. It is enabled only while
+   DETECT holds something this recording actually produced, so it cannot hand
+   over a file describing the previous detector or the previous recording —
+   changing either clears DETECT, and this follows it down. */
+function paintSaveDetections() {
+  const b = document.getElementById("saveDetections");
+  if (!b) return;
+  const live = DETECT && DETECT.rows;
+  b.disabled = !live;
+  b.textContent = live
+    ? "Save detections.csv (" + DETECT.rows.length + " row"
+      + (DETECT.rows.length === 1 ? "" : "s") + ")"
+    : "Save detections.csv";
+}
+
+/* AN EMPTY RESULT IS A FINDING AND AN ABSENT ONE IS A BUG, so a detector that
+   called nothing still writes a real file with its header. `emit.write_detections`
+   says so in as many words, and a browser that quietly declined to download
+   would put the two back on the same footing. */
+function saveDetections() {
+  if (!DETECT || !DETECT.rows) return;
+  offerDownload(DETECT.recId + "_detections.csv", detectionsCsv(DETECT.rows));
 }
 
 /* Which instrument is pointed at the recording, and what each one needs. Two of
    the six are here — the two that draw no random numbers and are therefore
    checked against the Python exactly rather than to sampling error. */
-const DETECTOR_UI = {
-  rate: { label: "RateDetect", ctl: "dRateCtl", fine: "dFineRate" },
-  sync: { label: "SPIKE-synch", ctl: "dSyncCtl", fine: "dFineSync" },
+/* ---------- one table row per detector -----------------------------------
+   Everything that differs between detectors lives HERE, and nothing anywhere
+   else branches on which one is running. Before this there were five
+   `which === "sync"` tests strewn through the run and render paths plus four
+   more places listing detectors, and the sixth detector would have needed an
+   edit in every one of them.
+
+   A row supplies: what it is called, which controls it owns, how to read them,
+   how to run it, how to say what it ran with, any extra result column it wants,
+   and the one knob the tuning sweep turns. Adding a detector is adding a row and
+   a `<div class="ctl">`; the select, the sweep and the results table follow. */
+const numById = id => Number(document.getElementById(id).value);
+
+/* ---- detections.csv, out of the browser --------------------------------------
+
+   The page detects, draws, and until now wrote nothing anybody could keep. This
+   is the one table it emits, and the shape is not this file's to invent: it is
+   `docs/export_folder_spec.md`, already implemented by `src/bugarach/emit.py`.
+   A row written here and a row written there have to be the same row.
+
+   MIRRORED FROM `emit.DETECTOR_FIELDS`, WHICH IS THE SOURCE OF TRUTH. The six
+   detectors disagree about their own field names and about what "strength"
+   means, so reading one detector's spelling and assuming the rest match is how a
+   second dialect of one table begins. Each line below was checked against the
+   Python rather than inferred from the JavaScript beside it — and that mattered
+   at least once: RateDetect's strength is `amps`, and `rate.py` defines
+   `amps = freq_mean`, so it is `freqMean` here. `freqMax` is right there in the
+   same returned object, is the more obvious-looking choice, and is wrong.
+
+   `n_roi` is null for `rate` alone. That is a fact about RateDetect rather than
+   an omission: it measures how fast the population is firing and reports no
+   participation quantity at all.
+
+   MODE IS ALWAYS `threshold` HERE, and that is a fact about this page rather
+   than a default. `_mode` in the Python reads `width_kind == "half_prominence"`
+   to say `peak`; no detector in this file has a peak branch to take, so none can
+   produce that width. `width_def` follows the same rule — it is whatever the
+   threshold branch of that detector actually returns, and null where the
+   detector defines no such quantity. The day a peak mode is ported, both of
+   these stop being constants. */
+const NA = "NA";
+
+const DETECTION_COLUMNS = ["slice_id", "stream", "detector", "mode", "region_idx",
+  "region_label", "onset_sec", "width_sec", "width_def", "n_roi", "strength",
+  "strength_unit"];
+
+/* Which columns are integers and which are floats, split exactly as
+   `emit.read_detections` splits them, so a file written here reads back there
+   with the types it was written with. */
+const DETECTION_INTS = new Set(["region_idx", "n_roi"]);
+const DETECTION_FLOATS = new Set(["onset_sec", "width_sec", "strength"]);
+
+const DETECTION_FIELDS = {
+  rate:  { strength: d => d.freqMean,  nRoi: null,                     // see above
+           unit: "intra_event_event_rate_hz",       widthDef: null },
+  sce:   { strength: d => d.magnitude, nRoi: d => d.magTotal,
+           unit: "binned_coactivity_roi_count",     widthDef: "tightness" },
+  coact: { strength: d => d.z,         nRoi: d => d.nrois,
+           unit: "coactivity_z",                    widthDef: "episode_span" },
+  loco:  { strength: d => d.magnitude, nRoi: d => d.magTotal,
+           unit: "local_coincidence_coactivity",    widthDef: "tightness" },
+  sync:  { strength: d => d.amps,      nRoi: d => d.nParticipatingRois,
+           unit: "spike_synchronization_c",         widthDef: null },
+  cicada:{ strength: d => d.magnitude, nRoi: d => d.magTotal,
+           unit: "synchronous_cell_count",          widthDef: "tightness" },
+};
+
+/* One detector result over one analysis segment, as rows. */
+function detectionRows(which, d, ctx) {
+  const F = DETECTION_FIELDS[which];
+  if (!F) throw new Error("no detections.csv mapping for '" + which
+    + "' — add one here and in emit.DETECTOR_FIELDS, not in one of them");
+  const strength = F.strength(d) || [];
+  const nRoi = F.nRoi ? (F.nRoi(d) || []) : null;
+  const widths = d.widths || d.starts.map((s, i) => d.ends[i] - s);
+  return d.starts.map((s, i) => ({
+    slice_id: ctx.sliceId, stream: ctx.stream, detector: which,
+    mode: "threshold",
+    region_idx: ctx.regionIdx, region_label: ctx.regionLabel,
+    onset_sec: s, width_sec: widths[i], width_def: F.widthDef,
+    n_roi: nRoi ? nRoi[i] : null,
+    strength: strength[i], strength_unit: F.unit,
+    identity: ctx.identity || {},
+  }));
+}
+
+/* A value as the file spells it.
+
+   A REAL ZERO SURVIVES AS A ZERO; only genuine absence becomes NA, and NaN
+   counts as absence because that is how the detectors spell "not applicable in
+   this mode". Conflating the two is the round-trip bug `emit._fmt` was written
+   to avoid, and it is just as available here.
+
+   Floats carry `.0` when they are integral, so the column reads as the
+   continuous quantity it is rather than flickering between `3` and `3.5` down a
+   column of seconds. `String()` gives the shortest representation that reads
+   back to the same double, which is what full precision means here. */
+function detCell(v, col) {
+  if (v === null || v === undefined) return NA;
+  if (typeof v === "number") {
+    if (!Number.isFinite(v)) return NA;
+    if (DETECTION_INTS.has(col)) return String(Math.round(v));
+    if (DETECTION_FLOATS.has(col)) {
+      const s = String(v);
+      return /[.eE]/.test(s) ? s : s + ".0";
+    }
+    return String(v);
+  }
+  const s = String(v);
+  return s === "" ? NA : s;
+}
+
+/* Minimal quoting, matching Python's csv writer: quote only when the value
+   contains a delimiter, a quote or a newline, and double any quote inside. */
+function csvField(s) {
+  return /[",\r\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+}
+
+/* The file. Identity columns are appended in first-seen order and can never
+   overwrite a computed one — a producer whose slices.csv happens to carry a
+   `detector` column must not be able to silently replace which detector fired.
+
+   LINE ENDINGS ARE NEWLINE ONLY, including the last one. */
+function detectionsCsv(rows) {
+  const cols = DETECTION_COLUMNS.slice();
+  for (const r of rows)
+    for (const k of Object.keys(r.identity || {}))
+      if (!cols.includes(k)) cols.push(k);
+  const out = [cols.map(csvField).join(",")];
+  for (const r of rows) {
+    const cells = cols.map(c => {
+      if (Object.prototype.hasOwnProperty.call(r, c)) return detCell(r[c], c);
+      return detCell((r.identity || {})[c], c);
+    });
+    out.push(cells.map(csvField).join(","));
+  }
+  return out.join("\n") + "\n";
+}
+
+/* Hand the file to the reader. A Blob and an object URL, which reach nothing:
+   the page's promise is that the recordings never leave the computer, and a
+   download is the one direction that is always safe. */
+function offerDownload(name, text) {
+  const url = URL.createObjectURL(new Blob([text], { type: "text/csv" }));
+  const a = document.createElement("a");
+  a.href = url; a.download = name;
+  document.body.append(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 0);
+}
+
+const DETECTORS = {
+  rate: {
+    label: "RateDetect",
+    blurb: "how fast",
+    ctl: "dRateCtl", fine: "dFineRate",
+    read: dt => ({ gridDt: dt,
+      excessThresholdHz: clamp(numById("dThr"), 0.1, 50),
+      rateWin: clamp(numById("dRate"), 0.1, 30),
+      contextWin: clamp(numById("dCtx"), 5, 600) }),
+    run: (trains, range, cfg) => rateDetect(trains, range, cfg),
+    settings: cfg => "threshold " + cfg.excessThresholdHz + " Hz excess · rate window "
+      + cfg.rateWin + " s · context " + cfg.contextWin + " s · dt " + cfg.gridDt + " s",
+    knob: { key: "excessThresholdHz", name: "excess threshold", unit: "Hz",
+            grid: [0.5, 1, 2, 3, 4, 5, 6, 8] },
+  },
+  sce: {
+    label: "SCE",
+    blurb: "was anything happening",
+    ctl: "dSceCtl", fine: "dFineSce",
+    read: dt => ({ gridDt: dt,
+      binWidthSec: clamp(numById("sBin"), 1, 120),
+      thresholdPctile: clamp(numById("sPct"), 80, 99.99),
+      nSurrogates: Math.round(clamp(numById("sSur"), 20, 2000)) }),
+    run: (trains, range, cfg) => sceDetect(trains, range, cfg),
+    settings: cfg => "bin " + cfg.binWidthSec + " s · "
+      + cfg.thresholdPctile + "th percentile of " + cfg.nSurrogates
+      + " shuffles · one bar per window · floor 3 ROIs",
+    knob: { key: "thresholdPctile", name: "threshold percentile", unit: "",
+            grid: [90.0, 95.0, 98.0, 99.0, 99.5, 99.9] },
+  },
+  coact: {
+    label: "CoactDetect",
+    blurb: "how unlikely",
+    ctl: "dCoactCtl", fine: "dFineCoact",
+    read: dt => ({ gridDt: dt,
+      intWinSec: clamp(numById("cWin"), 0.1, 60),
+      contextWinSec: clamp(numById("cCtx"), 10, 1200),
+      alpha: clamp(numById("cAlpha"), 1e-7, 0.5),
+      nSurrogates: Math.round(clamp(numById("cSur"), 20, 1000)) }),
+    run: (trains, range, cfg) => coactDetect(trains, range, cfg),
+    settings: cfg => "bin " + cfg.intWinSec + " s · context " + cfg.contextWinSec
+      + " s · alpha " + cfg.alpha + " per bin · " + cfg.nSurrogates
+      + " shuffles · floor 3 ROIs",
+    knob: { key: "alpha", name: "alpha", unit: "per bin",
+            grid: [1e-2, 1e-3, 1e-4, 1e-5, 1e-6, 1e-7] },
+  },
+  loco: {
+    label: "LoCo",
+    blurb: "how many together",
+    ctl: "dLocoCtl", fine: "dFineLoco",
+    read: dt => ({ gridDt: dt,
+      binWidthSec: clamp(numById("lBin"), 0.1, 60),
+      contextWinSec: clamp(numById("lCtx"), 10, 1200),
+      thresholdPctile: clamp(numById("lPct"), 90, 99.9999),
+      nSurrogates: Math.round(clamp(numById("lSur"), 20, 1000)) }),
+    run: (trains, range, cfg) => locoDetect(trains, range, cfg),
+    settings: cfg => "bin " + cfg.binWidthSec + " s · context "
+      + cfg.contextWinSec + " s · " + cfg.thresholdPctile + "th percentile of "
+      + cfg.nSurrogates + " shuffles · floor 3 ROIs",
+    knob: { key: "thresholdPctile", name: "threshold percentile", unit: "",
+            grid: [99.0, 99.5, 99.9, 99.99, 99.999, 99.9999] },
+  },
+  cicada: {
+    label: "CICADA",
+    blurb: "how many cells at once",
+    ctl: "dCicCtl", fine: "dFineCicada",
+    // NEEDS THE PEAK, which is why it carries a flag the other five do not: its
+    // raster is anchored on `locs`, and the folder has to have sent enough to
+    // locate one. `cicadaTrains` decides that and refuses in words when it cannot.
+    peaks: true,
+    read: dt => ({ gridDt: dt,
+      scePercentile: clamp(numById("cPct"), 80, 99.99),
+      nSurrogates: Math.round(clamp(numById("cSur"), 20, 2000)),
+      nSynchronousFrames: Math.round(clamp(numById("cSync"), 1, 50)),
+      sceMinDistanceFrames: Math.round(clamp(numById("cDist"), 1, 200)),
+      activeDurationSec: clamp(numById("cDur"), 0.1, 60),
+      perEventDuration: document.getElementById("cPer").value === "per_event" }),
+    run: (trains, range, cfg, extra) =>
+      cicadaDetect(extra.peakTrains, extra.durTrains, range, cfg),
+    settings: cfg => cfg.scePercentile + "th percentile of " + cfg.nSurrogates
+      + " rolls · " + cfg.nSynchronousFrames + " frame window · peaks "
+      + cfg.sceMinDistanceFrames + " frames apart · active "
+      + (cfg.perEventDuration ? "per event (t50rise→peak)"
+                              : cfg.activeDurationSec + " s")
+      + " · dt " + cfg.gridDt + " s",
+    /* A SINGLE CELL IS NOT A COINCIDENCE, and on a sparse folder CICADA will
+       report a great many of them. The threshold comes from rolled surrogates,
+       and where the raster is nearly empty the 99th percentile of that pool
+       lands at one active cell — so every isolated transient clears it. Checked
+       against the Python rather than assumed: on the same sparse input its own
+       coactivity trace is identical frame for frame and it picks the same kind
+       of peaks. The port is faithful; the operating point is degenerate.
+
+       Counted and said out loud rather than filtered away. Raising a floor until
+       the awkward rows disappear is the move FOUNDATIONS §9 forbids in terms,
+       and the reader deciding whether CICADA suits their preparation needs to
+       see this rather than have it tidied. */
+    extra: { head: "of those, one cell only",
+             count: d => (d.magnitude || []).filter(m => m <= 1).length },
+    note: n => n ? n + " of these are single-cell moments. CICADA's threshold "
+      + "comes from rolling the raster, and where the recording is sparse that "
+      + "threshold lands at one active cell — so an isolated transient clears it "
+      + "and is reported as a coincidence. The detector is doing what it does; "
+      + "the recording is too sparse for the answer to be about coordination. "
+      + "CICADA was built for imaging where many cells are active at once. Look "
+      + "at how many cells the strongest events actually carry before reading "
+      + "anything into the count." : null,
+    knob: { key: "scePercentile", name: "SCE percentile", unit: "",
+            grid: [90.0, 95.0, 98.0, 99.0, 99.5, 99.9] },
+  },
+  sync: {
+    label: "SPIKE-synch",
+    blurb: "how aligned",
+    ctl: "dSyncCtl", fine: "dFineSync",
+    read: dt => ({ gridDt: dt,
+      tauMax: clamp(numById("dTau"), 0.01, 10),
+      maxGap: clamp(numById("dGap"), 0.1, 30),
+      CThreshold: clamp(numById("dC"), 0.001, 1),
+      CMin: clamp(numById("dCmin"), 0.001, 1) }),
+    run: (trains, range, cfg) => syncDetect(trains, range, cfg),
+    settings: cfg => "coincidence cap " + cfg.tauMax + " s · max gap " + cfg.maxGap
+      + " s · C " + cfg.CThreshold + " to start, " + cfg.CMin + " to sustain"
+      + " · dt " + cfg.gridDt + " s",
+    // an extra per-region column, and the sentence that explains it once the run
+    // is over — both optional, both owned by the detector that needs them
+    extra: { head: "of those, artifact",
+             count: d => (d.isArtifact || []).filter(Boolean).length },
+    note: n => n ? n + " of these are flagged as artifact — C is near-total, the "
+      + "event is narrow, and most of the field is in it. That combination is a "
+      + "stage knock rather than coordination. They are counted here and drawn "
+      + "like the rest; deciding what to do with them is yours." : null,
+    knob: { key: "CThreshold", name: "C to start an event", unit: "",
+            grid: [0.005, 0.01, 0.02, 0.04, 0.08, 0.12] },
+  },
 };
 
 const whichDetector = () =>
-  DETECTOR_UI[document.getElementById("dDet").value] ? document.getElementById("dDet").value : "rate";
+  DETECTORS[document.getElementById("dDet").value] ? document.getElementById("dDet").value : "rate";
 
 function paintDetectorChoice() {
   const which = whichDetector();
-  for (const [k, d] of Object.entries(DETECTOR_UI)) {
+  for (const [k, d] of Object.entries(DETECTORS)) {
     document.getElementById(d.ctl).hidden = k !== which;
     document.getElementById(d.fine).hidden = k !== which;
   }
-  document.getElementById("cntDetect").textContent = DETECTOR_UI[which].label;
+  document.getElementById("cntDetect").textContent = DETECTORS[which].label;
   clearDetect();
   // the sweep follows the chosen detector, so its own result stops being about
   // the thing named on it the moment the choice moves
@@ -2899,29 +4413,6 @@ function paintDetectorChoice() {
   if (current) loadRecording(current).then(d => draw(current, d));
 }
 
-function readDetector(dt) {
-  if (whichDetector() === "sync") {
-    return { gridDt: dt,
-      tauMax: clamp(Number(document.getElementById("dTau").value), 0.01, 10),
-      maxGap: clamp(Number(document.getElementById("dGap").value), 0.1, 30),
-      CThreshold: clamp(Number(document.getElementById("dC").value), 0.001, 1),
-      CMin: clamp(Number(document.getElementById("dCmin").value), 0.001, 1) };
-  }
-  return { gridDt: dt,
-    excessThresholdHz: clamp(Number(document.getElementById("dThr").value), 0.1, 50),
-    rateWin: clamp(Number(document.getElementById("dRate").value), 0.1, 30),
-    contextWin: clamp(Number(document.getElementById("dCtx").value), 5, 600) };
-}
-
-// what the run was, in the words the settings file would use
-const detectorSettingsLine = (which, cfg) => which === "sync"
-  ? "coincidence cap " + cfg.tauMax + " s · max gap " + cfg.maxGap
-    + " s · C " + cfg.CThreshold + " to start, " + cfg.CMin + " to sustain"
-    + " · dt " + cfg.gridDt + " s"
-  : "threshold " + cfg.excessThresholdHz + " Hz excess · rate window "
-    + cfg.rateWin + " s · context " + cfg.contextWin + " s · dt "
-    + cfg.gridDt + " s";
-
 async function runDetect() {
   if (!current) return;
   const btn = document.getElementById("runDetect");
@@ -2929,46 +4420,79 @@ async function runDetect() {
   await new Promise(r => setTimeout(r, 0));
   try {
     const which = whichDetector();
-    const label = DETECTOR_UI[which].label;
+    const D = DETECTORS[which];
     const data = await loadRecording(current);
     const stream = [...data.streams.keys()].sort()[0];
     const byRoi = data.streams.get(stream);
     const m = META.get(current.id) || {};
     const dt = Number(m.frame_interval_sec) > 0 ? Number(m.frame_interval_sec) : 0.1;
-    const cfg = readDetector(dt);
+    const cfg = D.read(dt);
     // one run per analysis segment, treatments included — a detector run across
     // a boundary would take its context from a period that is not the one it is
     // reporting on
     const segs = analysisSegments(current, data);
-    const starts = [], ends = [], perRegion = [];
-    let artifacts = 0;
+    const starts = [], ends = [], perRegion = [], rows = [];
+    /* Every column of the producer's slices.csv rides along untouched. This page
+       reads exactly one field of that file — the frame interval — and carrying
+       the rest without interpreting it is what lets a detections.csv be joined
+       back to whatever the producer keyed their own records on. */
+    const identity = {};
+    for (const [k, v] of Object.entries(META.get(current.id) || {}))
+      if (!DETECTION_COLUMNS.includes(k)) identity[k] = v;
+    let extraTotal = 0;
     for (const seg of segs) {
       const trains = data.order.map(id =>
         (byRoi.get(id) || []).filter(x => x >= seg.start && x <= seg.end));
       const range = [seg.start, Math.max(seg.end, seg.start + 1)];
-      const d = which === "sync" ? syncDetect(trains, range, cfg)
-                                 : rateDetect(trains, range, cfg);
-      const flagged = (d.isArtifact || []).filter(Boolean).length;
-      artifacts += flagged;
+      /* CICADA needs the peak of each transient, which the folder either sent or
+         did not. A refusal stops the run and is reported as a sentence, because
+         the honest answer here is "this folder cannot answer that question" — not
+         an empty result, which would read as "nothing was coordinated". */
+      let peakCtx = null;
+      if (D.peaks) {
+        peakCtx = cicadaTrains(data, stream, data.order, seg.start, seg.end);
+        if (peakCtx.why) {
+          // clear FIRST: clearDetect empties this box, so appending before it
+          // erases the explanation and leaves the reader an empty panel that
+          // looks like the detector found nothing.
+          clearDetect();
+          const box = document.getElementById("detectOut");
+          box.append(el("h4", D.label + " did not run on " + current.id));
+          box.append(el("p", peakCtx.why, "verdict bad"));
+          return;
+        }
+      }
+      const d = D.run(trains, range, cfg, peakCtx);
+      const extra = D.extra ? D.extra.count(d) : 0;
+      extraTotal += extra;
       starts.push(...d.starts); ends.push(...d.ends);
-      perRegion.push({ label: seg.label, n: d.nEvents, flagged,
+      rows.push(...detectionRows(which, d, {
+        sliceId: current.id, stream,
+        // a recording with no regions.csv is one unnamed whole, and NA is the
+        // honest region for it rather than a fabricated index 1
+        regionIdx: seg.whole ? null : seg.idx,
+        regionLabel: seg.whole ? null : seg.label,
+        identity,
+      }));
+      perRegion.push({ label: seg.label, n: d.nEvents, extra, stated: seg.stated,
                        // WHOSE window this run used, carried through to the row.
                        // Reading `stated` here and `source` in the cell is how a
                        // table ends up reporting "none sent" about a window it
-                       // just analysed.
+                       // just analysed. `extra` is what this branch called
+                       // `flagged` before main generalised it to a per-detector
+                       // count with its own column head.
                        source: seg.source, mins: (seg.end - seg.start) / 60 });
     }
-    DETECT = { recId: current.id, label, starts, ends };
+    DETECT = { recId: current.id, label: D.label, starts, ends, rows, which };
+    paintSaveDetections();
 
     const box = document.getElementById("detectOut");
     box.textContent = "";
-    box.append(el("h4", label + " on " + current.id));
-    box.append(el("p", starts.length + " event(s) called · "
-      + detectorSettingsLine(which, cfg), "sub"));
+    box.append(el("h4", D.label + " on " + current.id));
+    box.append(el("p", starts.length + " event(s) called · " + D.settings(cfg), "sub"));
 
-    const cols = which === "sync"
-      ? ["region", "analysed", "window", "events", "of those, artifact"]
-      : ["region", "analysed", "window", "events"];
+    const cols = ["region", "analysed", "window", "events"]
+      .concat(D.extra ? [D.extra.head] : []);
     const tbl = document.createElement("table");
     const hr = document.createElement("tr");
     for (const h of cols) hr.append(el("th", h));
@@ -2981,17 +4505,12 @@ async function runDetect() {
                        : r.source === "you" ? "as you specified it"
                        : "whole period — none sent", "state"));
       tr.append(el("td", String(r.n)));
-      if (which === "sync") tr.append(el("td", String(r.flagged)));
+      if (D.extra) tr.append(el("td", String(r.extra)));
       tbl.append(tr);
     }
     box.append(tbl);
-    if (which === "sync" && artifacts) {
-      box.append(el("p", artifacts + " of these are flagged as artifact — C is "
-        + "near-total, the event is narrow, and most of the field is in it. That "
-        + "combination is a stage knock rather than coordination. They are counted "
-        + "here and drawn like the rest; deciding what to do with them is yours.",
-        "caveat"));
-    }
+    const note = D.note ? D.note(extraTotal) : null;
+    if (note) box.append(el("p", note, "caveat"));
     box.append(el("p", "These are the settings this project benches at, not "
       + "settings calibrated for your preparation. Tuning them is what the "
       + "simulate step is for — measure, simulate from what you measured, tune "
@@ -3000,6 +4519,17 @@ async function runDetect() {
     draw(current, data);
   } finally {
     btn.textContent = "Detect"; btn.disabled = false;
+  }
+}
+
+// the chooser is built from the table, so a new row appears in it for free
+{
+  const sel = document.getElementById("dDet");
+  sel.textContent = "";
+  for (const [k, d] of Object.entries(DETECTORS)) {
+    const o = document.createElement("option");
+    o.value = k; o.textContent = d.label + " — " + d.blurb;
+    sel.append(o);
   }
 }
 
@@ -3018,16 +4548,16 @@ function clearTune() {
    where it sits. */
 function paintTuneWhat() {
   const which = whichDetector();
-  const knob = TUNE_KNOB[which];
+  const knob = DETECTORS[which].knob;
   const chip = document.getElementById("cntTune");
   const note = document.getElementById("tuneWhat");
   const btn = document.getElementById("runTune");
   const truth = current ? TRUTH.get(current.id) : null;
   const ok = !!(truth && truth.times.length);
   btn.disabled = !ok;
-  chip.textContent = ok ? DETECTOR_UI[which].label : "simulated only";
+  chip.textContent = ok ? DETECTORS[which].label : "simulated only";
   note.textContent = ok
-    ? "Sweeps " + DETECTOR_UI[which].label + "'s " + knob.name + " over "
+    ? "Sweeps " + DETECTORS[which].label + "'s " + knob.name + " over "
       + knob.grid.length + " values (" + knob.grid[0] + " to "
       + knob.grid[knob.grid.length - 1] + "), holding its other settings at what "
       + "the Detect section has, and scores each against the "
@@ -3037,19 +4567,99 @@ function paintTuneWhat() {
       + "folder and the planted events become the answer key.";
 }
 
-const fmtKnob = v => (v >= 0.1 ? String(v) : v.toFixed(3));
+/* Knob values span decades — 99.9999 for a percentile, 1e-7 for an alpha — and
+   a fixed three decimals renders every alpha below a thousandth as "0.000",
+   which makes a sweep table that exists to tell settings apart show six
+   identical rows. */
+const fmtKnob = v => v >= 0.1 ? String(v)
+                   : (v >= 0.001 ? v.toFixed(3) : v.toExponential(0));
 
 /* One point on the sweep: set the knob, run the detector, score what came back
    against what was planted. Split out of the loop below so the parity test can
    call exactly what the button calls, rather than a second copy of it that could
    drift into agreeing with the Python while the page does not. */
-function sweepPoint(trains, range, which, base, knob, value, truth, tolSec) {
+function sweepPoint(trains, range, which, base, knob, value, truth, tolSec, extra) {
   const cfg = { ...base, [knob.key]: value };
-  const d = which === "sync" ? syncDetect(trains, range, cfg)
-                             : rateDetect(trains, range, cfg);
+  const d = DETECTORS[which].run(trains, range, cfg, extra);
   const widths = d.widths || d.starts.map((s, i) => d.ends[i] - s);
   return { knob: value,
            ...scoreDetections(truth.times, truth.fracs, d.starts, widths, tolSec) };
+}
+
+/* Everything the sweep needs from one recording, read once. The sweep visits
+   every recording at every setting on the grid, so loading inside that loop
+   would re-parse the same CSV a dozen times over. */
+async function tuneLoad(rec) {
+  const data = await loadRecording(rec);
+  const stream = [...data.streams.keys()].sort()[0];
+  const byRoi = data.streams.get(stream);
+  const m = META.get(rec.id) || {};
+  const dt = Number(m.frame_interval_sec) > 0 ? Number(m.frame_interval_sec) : 0.1;
+  return {
+    id: rec.id, truth: TRUTH.get(rec.id), dt,
+    // the peak trains, for the one detector that needs them; `why` when the
+    // folder cannot supply them, so the sweep can refuse instead of returning
+    // a curve about a question it did not answer
+    peaks: cicadaTrains(data, stream, data.order, data.t0,
+                        Math.max(data.t1, data.t0 + 1)),
+    // ONE RUN OVER THE WHOLE RECORDING, not per region — unlike the Detect step
+    // beside it. Events were planted across the entire extent, including the
+    // stretches the analysis windows leave out, so scoring per-window detections
+    // against all of them would count the gaps as misses. The regions of a
+    // simulated folder are labels over identical statistics anyway.
+    trains: data.order.map(id => byRoi.get(id) || []),
+    range: [data.t0, Math.max(data.t1, data.t0 + 1)],
+  };
+}
+
+/* How to divide this corpus, or null when it cannot be divided.
+
+   `foldSplit` refuses a single fold and is right to: fitting and scoring on the
+   same recording answers a different question from the one being asked. So a
+   one-recording folder gets no split, and the verdict says the number is
+   in-sample instead of quietly presenting it as though it were not.
+
+   Folds use EVERY recording — the largest coverage available, breaking ties
+   towards four, the split the published comparison used. Dropping recordings to
+   make the arithmetic tidy would be a silent cap, and a silent cap reads as
+   "covered everything" when it did not. */
+function tunePlan(nRec) {
+  if (nRec < 2) return null;
+  let best = null;
+  for (let nFolds = 2; nFolds <= nRec; nFolds++) {
+    const seedsPerFold = Math.floor(nRec / nFolds);
+    if (seedsPerFold < 1) break;
+    const covered = nFolds * seedsPerFold;
+    const tie = -Math.abs(nFolds - 4);
+    if (!best || covered > best.covered
+        || (covered === best.covered && tie > best.tie))
+      best = { nFolds, seedsPerFold, covered, tie };
+  }
+  // baseSeed 0, so a recording's seed is its position in the folder listing.
+  return best ? foldSplit({ nFolds: best.nFolds, seedsPerFold: best.seedsPerFold,
+                            baseSeed: 0 }) : null;
+}
+
+/* Pool per-recording scores into one row of the sweep.
+
+   THROUGH `poolScores`, NOT ARITHMETIC HERE — pooled counts rather than the mean
+   of per-recording ratios, with the rule in one function so the table, the fold
+   picks and the held-out numbers cannot drift onto different metrics. That has
+   already happened once at full scale: a comparison captioned "scored by the
+   same rule" had its halves on different denominators, and SCE read precision
+   0.91 one way and 0.11 the other.
+
+   `nMiss` and `nDup` are attached alongside rather than computed inside.
+   Neither belongs to the scoring rule — one is a subtraction of two pooled
+   counts, the other a fragmentation tally the table prints in brackets — and
+   adding them to `poolScores` would fork the browser's copy from the Python it
+   is checked against. */
+function tunePool(scores, opts) {
+  const pooled = poolScores(scores, opts);
+  pooled.nMiss = pooled.nPlanted - pooled.nHit;
+  pooled.nDup = scores.reduce((a, s) => a + (s.nDup || 0), 0);
+  pooled.knob = pooled.knobValue;
+  return pooled;
 }
 
 async function runTune() {
@@ -3061,38 +4671,88 @@ async function runTune() {
   await new Promise(r => setTimeout(r, 0));
   try {
     const which = whichDetector();
-    const knob = TUNE_KNOB[which];
-    const label = DETECTOR_UI[which].label;
-    const data = await loadRecording(current);
-    const stream = [...data.streams.keys()].sort()[0];
-    const byRoi = data.streams.get(stream);
-    const m = META.get(current.id) || {};
-    const dt = Number(m.frame_interval_sec) > 0 ? Number(m.frame_interval_sec) : 0.1;
-    const base = readDetector(dt);
+    const knob = DETECTORS[which].knob;
+    const label = DETECTORS[which].label;
     const tol = clamp(Number(document.getElementById("tTol").value), 0.1, 30);
 
-    // ONE RUN OVER THE WHOLE RECORDING, not per region — unlike the Detect step
-    // beside it. Events were planted across the entire extent, including the
-    // stretches the analysis windows leave out, so scoring per-window detections
-    // against all of them would count the gaps as misses. The regions of a
-    // simulated folder are labels over identical statistics anyway.
-    const trains = data.order.map(id => byRoi.get(id) || []);
-    const range = [data.t0, Math.max(data.t1, data.t0 + 1)];
-    const levels = [...new Set(truth.fracs)].sort((a, b) => b - a);
+    /* The corpus is every simulated recording in the folder, not the one on
+       screen. A knob fitted to one recording is fitted to that recording's
+       noise, and nothing on the screen used to show the difference. */
+    const corpus = [];
+    for (const rec of RECORDINGS) {
+      const t = TRUTH.get(rec.id);
+      if (t && t.times.length) corpus.push(await tuneLoad(rec));
+    }
+    if (!corpus.length) return;
+    /* A detector anchored on the peak cannot be swept on a folder that did not
+       send one. Said once, before any work, rather than returning a flat curve
+       that looks like a knob with no effect. */
+    if (DETECTORS[which].peaks) {
+      const bad = corpus.find(c => c.peaks && c.peaks.why);
+      if (bad) {
+        const box = document.getElementById("tuneOut");
+        box.textContent = "";
+        box.append(el("h4", label + " cannot be swept on this folder"));
+        box.append(el("p", bad.peaks.why, "verdict bad"));
+        return;
+      }
+    }
+    const base = DETECTORS[which].read(corpus[0].dt);
+    const levels = [...new Set(corpus.flatMap(c => c.truth.fracs))]
+      .sort((a, b) => b - a);
 
+    /* Score every recording at every setting ONCE, then reuse. The folds below
+       re-pool these same per-recording scores rather than re-running anything,
+       so the held-out number and the curve on screen cannot come from two
+       different runs of the same detector. */
+    const scored = new Map();          // knob value -> per-recording scores
     const rows = [];
     for (const v of knob.grid) {
-      rows.push(sweepPoint(trains, range, which, base, knob, v, truth, tol));
+      const per = corpus.map(c =>
+        sweepPoint(c.trains, c.range, which, base, knob, v, c.truth, tol, c.peaks));
+      scored.set(v, per);
+      rows.push(tunePool(per, { detector: which, knobValue: v, tolSec: tol,
+                                seeds: corpus.map((c, i) => i) }));
       await new Promise(r => setTimeout(r, 0));   // let the button stay honest
+    }
+
+    /* The held-out half. Per fold: choose the knob on the folds it may see, then
+       score that choice on the fold it may not. Nothing is fitted on a recording
+       it is later scored against — the claim the training panel beside this one
+       makes, and which this sweep could not make until now. */
+    const split = tunePlan(corpus.length);
+    const folds = [];
+    if (split) {
+      for (let f = 0; f < split.nFolds; f++) {
+        const tr = split.train(f), te = split.test(f);
+        const trainRows = knob.grid.map(v =>
+          tunePool(tr.map(i => scored.get(v)[i]),
+                   { detector: which, knobValue: v, tolSec: tol, seeds: tr }));
+        const chosen = pickOperatingPoint(trainRows);
+        if (!chosen.row) {
+          folds.push({ fold: f, chosen: null, why: chosen.why }); continue;
+        }
+        folds.push({
+          fold: f, chosen: chosen.row.knob, nTrain: tr.length, nTest: te.length,
+          held: tunePool(te.map(i => scored.get(chosen.row.knob)[i]),
+                         { detector: which, knobValue: chosen.row.knob,
+                           tolSec: tol, seeds: te }),
+        });
+        await new Promise(r => setTimeout(r, 0));
+      }
     }
 
     const pick = pickOperatingPoint(rows);
     const box = document.getElementById("tuneOut");
     box.textContent = "";
-    box.append(el("h4", label + " swept on " + current.id));
+    const nPlanted = rows.length ? rows[0].nPlanted : 0;
+    box.append(el("h4", label + " swept on "
+      + (corpus.length === 1 ? corpus[0].id
+                             : corpus.length + " simulated recordings")));
     box.append(el("p", knob.grid.length + " settings tried · " + knob.name
       + " · matched within " + tol + " s of a planted event · "
-      + truth.times.length + " planted", "sub"));
+      + nPlanted + " planted"
+      + (split ? " · " + split.nFolds + " folds" : ""), "sub"));
 
     const cv = document.createElement("canvas");
     box.append(cv);
@@ -3148,6 +4808,56 @@ async function runTune() {
     } else {
       box.append(el("p", pick.why, "verdict bad"));
     }
+
+    /* THE TABLE ABOVE IS IN-SAMPLE AND HAS TO SAY SO. Every row of it chose its
+       own knob and scored it on the same recordings, which is what a sweep is
+       for — but a number arrived at that way is an upper bound, not a
+       measurement, and the two look identical printed side by side. So the
+       held-out result is reported separately rather than folded in. */
+    if (!split) {
+      box.append(el("p", "One recording, so there is nothing to hold out: the "
+        + "F1 above was chosen and scored on the same data, which makes it an "
+        + "upper bound rather than a measurement of " + label + ". Simulate a "
+        + "folder with two or more recordings and this sweep will fit on some "
+        + "and report on the rest.", "verdict bad"));
+    } else {
+      const got = folds.filter(f => f.held && Number.isFinite(f.held.f1));
+      if (!got.length) {
+        box.append(el("p", "No fold produced an operating point to score — the "
+          + "grid ran out before F1 peaked on the training folds, so there is "
+          + "no held-out number to report.", "verdict bad"));
+      } else {
+        const f1s = got.map(f => f.held.f1);
+        const mean = f1s.reduce((a, b) => a + b, 0) / f1s.length;
+        // spread across folds, n−1: with n folds these are a sample, and n is
+        // small enough that the difference is not cosmetic
+        const sd = f1s.length > 1
+          ? Math.sqrt(f1s.reduce((a, b) => a + (b - mean) ** 2, 0) / (f1s.length - 1))
+          : NaN;
+        const knobs = [...new Set(got.map(f => fmtKnob(f.chosen)))];
+        box.append(el("p", "Held out: F1 " + fmtNum(mean, 2)
+          + (Number.isFinite(sd) ? " ± " + fmtNum(sd, 2) : "")
+          + " across " + got.length + " fold" + (got.length > 1 ? "s" : "")
+          + ", each fitted on " + got[0].nTrain + " recording"
+          + (got[0].nTrain > 1 ? "s" : "") + " and scored on "
+          + got[0].nTest + " it never saw. "
+          + (knobs.length === 1
+              ? "Every fold chose " + knob.name + " " + knobs[0]
+                + (knob.unit ? " " + knob.unit : "") + ", so the setting is "
+                + "stable across the corpus."
+              : "The folds chose " + knobs.join(", ") + " — the setting moves "
+                + "with the training data, so no single value here is calibrated.")
+          + " This is the number to quote; the table above is not.", "verdict"));
+
+        if (Number.isFinite(pick.row?.f1) && mean < pick.row.f1 - 1e-9)
+          box.append(el("p", "The in-sample best reads "
+            + fmtNum(pick.row.f1 - mean, 2) + " higher than the held-out mean. "
+            + "That gap is what fitting and reporting on the same recordings "
+            + "buys you, and it is why the table above is not the result.",
+            "caveat"));
+      }
+    }
+
     box.append(el("p", "The last columns are recall at each participation level, "
       + "and they are the part worth reading. A detector that finds every "
       + "full-field event and nothing at the sparsest level is a different "
@@ -3253,10 +4963,209 @@ document.getElementById("clearWindows").onclick = clearWindows;
 paintTuneWhat();
 
 document.getElementById("runDetect").onclick = runDetect;
+document.getElementById("saveDetections").onclick = saveDetections;
+
+/* ---------- training, which is the one step that is not in this page ---------
+   The panel above is INERT unless something has defined `window.__lab`. Only the
+   local `bugarach lab` server does, by appending a shim to the copy it serves —
+   so on the published page the capability object is simply absent, the panel
+   stays hidden, and this code never runs. Dead by absence rather than by
+   removal: nothing is stripped at build time, so nothing can fail to be
+   stripped. docs/adr/0001-the-lab-server.md.
+
+   Everything that talks to the server lives in the shim. This file contains no
+   `fetch(` and must not grow one, or the promise the page makes stops being a
+   property of the file and goes back to being a paragraph.
+
+   NAMING THE CALL HERE IS SAFE AGAIN, AND THAT TOOK TWO GOES. The publish gate
+   used to grep the page for the forbidden spellings, so this comment failed the
+   build while explaining why it should not, and the viewer was unpublishable
+   until someone noticed. Two sessions then fixed it the same afternoon and did
+   not fix the same thing: one reworded this comment to avoid the word, the other
+   taught `build_site.py` to read the page as code and ignore prose. Both merged
+   green, against bases that did not contain each other, and `main` went red —
+   the reword removed the very prose the new guard test asserts is still here.
+   The guard is the right fix and the reword is gone. Say `fetch(` freely; the
+   gate now looks at call sites.                                         ------ */
+
+const lab = () => window.__lab || null;
+
+/* The page's simulate form speaks its own vocabulary; `simulate_coordination`
+   speaks another, and the server passes the spec straight to it. Translate here,
+   once, rather than letting the two drift — `docs/learned/generator_spec.json`
+   is the shape being targeted.
+
+   ⚠ Only the fields the assess step actually measures are carried from the form.
+   The rest take the values the published corpus was built with, and the panel
+   SAYS SO rather than letting a default read as a measurement. */
+const LAB_SPEC_DEFAULTS = {
+  grid_sec: 0.1, min_sep_sec: 120.0, hot_rate_hz: 0.06, ramp_sec: 30.0,
+  n_distractors: 6, distractor_frac: 0.18, bg_rate_shape: 0.275,
+};
+const LAB_MEASURED = ["duration_sec", "n_roi", "bg_rate_hz", "jitter_sec"];
+
+function labSpec() {
+  const p = readSim();
+  return {
+    ...LAB_SPEC_DEFAULTS,
+    duration_sec: p.minutes * 60,
+    n_roi: p.rois,
+    bg_rate_hz: p.rate,
+    jitter_sec: p.jitter,
+  };
+}
+
+function paintLabWhat() {
+  const note = document.getElementById("labWhat");
+  const spec = labSpec();
+  const carried = LAB_MEASURED.map(k => k + " " + spec[k]).join(", ");
+  note.textContent =
+    "Generates a corpus from the simulate settings (" + carried + "), splits it "
+    + "into folds, fits " + document.getElementById("lArch").value + " on all but "
+    + "one and scores the one it never saw. The remaining generator settings ("
+    + Object.keys(LAB_SPEC_DEFAULTS).join(", ") + ") are the values the published "
+    + "corpus used — they are not measured from your recordings.";
+}
+
+function paintFolds(res) {
+  const box = document.getElementById("labOut");
+  box.textContent = "";
+  // `per_fold` is the LIST of held-out scores; `folds` beside it is the COUNT.
+  // Reading the count as a list is a silent empty render, which is how this was
+  // wrong the first time — the stub trainer reports the count and no scores,
+  // and the panel has to say that rather than draw an empty table.
+  const folds = Array.isArray(res.per_fold) ? res.per_fold : [];
+  if (!folds.length) {
+    box.textContent = "";
+    box.appendChild(el("p", "Trained, and this trainer reported no per-fold "
+      + "scores — so there is nothing here to read as performance.", "note"));
+    return;
+  }
+  const t = el("table");
+  const head = el("tr");
+  ["fold", "F1", "recall", "precision"].forEach(h => head.appendChild(el("th", h)));
+  t.appendChild(head);
+  for (const f of folds) {
+    const tr = el("tr");
+    [String(f.fold + 1), fmtNum(f.f1), fmtNum(f.recall), fmtNum(f.precision)]
+      .forEach(v => tr.appendChild(el("td", v)));
+    t.appendChild(tr);
+  }
+  box.appendChild(t);
+
+  // The spread is the point, not decoration: one training run per fold means
+  // fold-to-fold variation confounds the data with the training, and a single
+  // averaged number would hide that it does.
+  const f1 = folds.map(f => f.f1).filter(Number.isFinite);
+  if (f1.length > 1) {
+    const m = f1.reduce((a, b) => a + b, 0) / f1.length;
+    const sd = Math.sqrt(f1.reduce((a, b) => a + (b - m) ** 2, 0) / (f1.length - 1));
+    box.appendChild(el("p", "F1 " + fmtNum(m) + " ± " + fmtNum(sd) + " across "
+      + f1.length + " held-out folds · " + (res.n_params ?? "?") + " parameters"
+      + " · threshold " + fmtNum(res.threshold)
+      + ", chosen on held-out data and not re-picked here.", "note"));
+  }
+  box.appendChild(el("p", "Measured on a simulation. Nothing here says this "
+    + "model is right about a real recording.", "note"));
+}
+
+async function runLab() {
+  const api = lab();
+  if (!api) return;
+  const btn = document.getElementById("runLab");
+  const box = document.getElementById("labOut");
+  btn.disabled = true;
+  const was = btn.textContent;
+  btn.textContent = "Training…";
+  box.textContent = "starting…";
+  try {
+    const res = await api.train({
+      spec: labSpec(),
+      arch: document.getElementById("lArch").value,
+      folds: clamp(Number(document.getElementById("lFolds").value), 2, 8),
+      seeds_per_fold: clamp(Number(document.getElementById("lSeeds").value), 1, 6),
+    }, m => {
+      // One line, replaced — a training run emits far more progress than a
+      // sidebar can hold, and a growing log would push the result off screen.
+      box.textContent = m.message
+        || (m.stage + (m.of ? " " + (m.done ?? 0) + "/" + m.of : ""));
+    });
+    LAB_MODEL = res.model || null;
+    paintFolds(res);
+  } catch (err) {
+    box.textContent = "";
+    // The server's refusals carry the reason, and they are worth reading rather
+    // than flattening into "something went wrong" — it declines a threshold in
+    // the detect request on purpose, and says why.
+    box.appendChild(el("p", String(err && err.message || err), "note"));
+  } finally {
+    btn.disabled = false;
+    btn.textContent = was;
+  }
+}
+
+let LAB_MODEL = null;   // handle of the last fitted model, for the detect step
+
+/* Show the panel only where the capability exists, and say plainly what the
+   server can do — torch is an optional extra and its ABSENCE IS AN ANSWER, not
+   an error to route around. Every other stage keeps working without it. */
+async function wireLab() {
+  const api = lab();
+  const acc = document.getElementById("accLab");
+  if (!api || !acc) return;
+  acc.hidden = false;
+  document.getElementById("runLab").onclick = runLab;
+  ["lArch", "lFolds", "lSeeds"].forEach(id =>
+    document.getElementById(id).addEventListener("input", paintLabWhat));
+  paintLabWhat();
+  const chip = document.getElementById("cntLab");
+  try {
+    const caps = await api.capabilities();
+    const arches = caps.architectures || [];
+    if (arches.length) {
+      const sel = document.getElementById("lArch");
+      sel.textContent = "";
+      arches.forEach(a => {
+        const o = el("option", a);
+        o.value = a;
+        sel.appendChild(o);
+      });
+    }
+    if (caps.can_train === false) {
+      chip.textContent = "no trainer";
+      document.getElementById("runLab").disabled = true;
+      document.getElementById("labOut").appendChild(el("p",
+        caps.why || "This server cannot train — `pip install bugarach[dl]` adds "
+        + "the trainer. Everything else on this page is unaffected.", "note"));
+    } else {
+      chip.textContent = caps.trainer || "ready";
+    }
+    paintLabWhat();
+  } catch (err) {
+    chip.textContent = "unreachable";
+    document.getElementById("runLab").disabled = true;
+  }
+}
+
+/* WAIT FOR THE DOCUMENT, and the reason is the whole shape of ADR-0001.
+   The shim is **appended after** this script — `page_with_shim` returns the page
+   plus the shim, in that order — so at the moment this line is reached
+   `window.__lab` does not exist yet, even when the lab server is the one
+   serving. Calling `wireLab()` here directly leaves the panel hidden on exactly
+   the page that should show it, and hidden is also its correct published-page
+   behaviour, so the bug looks like success. Inline scripts run in document
+   order during parsing, so DOMContentLoaded is after the shim either way. */
+if (document.readyState === "loading")
+  document.addEventListener("DOMContentLoaded", wireLab);
+else
+  wireLab();
 
 /* ---------- the sidebar: one section at a time ----------------------------- */
-const SECTIONS = ["accSim", "accOpen", "accWindows", "accAssess",
-                  "accDetect", "accTune", "accList"];
+// `accLab` is in the list even though it is hidden on the published page:
+// `showSection` already refuses to open a hidden node, so listing it costs
+// nothing there and means the accordion behaves normally where it does appear.
+const SECTIONS = ["accSim", "accOpen", "accWindows", "accAssess", "accDetect",
+                  "accTune", "accLab", "accList"];
 function showSection(id) {
   for (const s of SECTIONS) {
     const n = document.getElementById(s);

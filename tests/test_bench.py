@@ -118,10 +118,31 @@ def test_the_probe_actually_separates_the_detectors(bench):
     """A probe everything passes is not a probe. The point of the block is that
     rate-keyed and coordination-keyed detectors answer it differently, so the
     spread across the six has to stay wide — if it narrows, the block stopped
-    being dense enough to ask the question."""
+    being dense enough to ask the question.
+
+    **The "fooled" bound was 10.0/min and is 5.0 since 2026-08-20, because CICADA
+    got stricter — not because the probe got weaker.** Retuning its FAST percentile
+    99.99 -> 99.999 (the measurement is in `cicada.py`) cut its probe response from
+    over 10/min to 6.9, and CICADA was most of what the old bound was measuring.
+
+    **Raising `hot_rate_hz` instead was rejected**, though it would have restored the
+    old number exactly — 0.08 puts the maximum back at 16.7/min.
+    `bench.BENCH_RECORDING` justifies 0.06 as *6x measured baseline and 1.6x
+    senktide: busier than any real condition in the table, which is the point,
+    without leaving the physical world*, and warns in the same breath that a probe
+    much more severe "stops asking whether a detector keys on rate and starts asking
+    whether it survives an impossible surge". Turning the probe up until a
+    better-tuned detector fails it again is that warning coming true.
+
+    The spread is still asserted and still real: 0.0/min for LoCo and CoactDetect
+    against 6.9 for CICADA. The bound now tracks the detectors instead of the
+    detectors being held to a bound. If a later change pushes the top back above 10
+    that is worth noticing, which is why this is lowered to what the probe actually
+    separates rather than removed.
+    """
     rates = [bench[(n, "baseline_quiet")].hot_fa_per_min for n in DETECTORS]
     assert min(rates) < 1.0, "no detector resists the probe — it is too severe"
-    assert max(rates) > 10.0, "no detector is fooled by it — it is too mild"
+    assert max(rates) > 5.0, "no detector is fooled by it — it is too mild"
 
 
 def test_the_probe_stays_out_of_the_headline_numbers(bench):

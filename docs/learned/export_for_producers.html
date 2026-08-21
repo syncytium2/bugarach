@@ -1,0 +1,468 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Writing an export folder</title>
+<style>
+  :root {
+    --paper:   #f6f7f9;
+    --card:    #ffffff;
+    --ink:     #16202b;
+    --muted:   #5c6773;
+    --rule:    #d8dde3;
+    --accent:  #2f5d8a;
+    --learned: #7a1f22;
+    --hand:    #4c78a8;
+    --truth:   #1b7f3b;
+    --ok-bg:   #e4efe6;  --ok-fg:   #1b6b34;
+    --bad-bg:  #f7e4e3;  --bad-fg:  #97362f;
+    --serif: Charter, "Bitstream Charter", "Sitka Text", Cambria, Georgia, serif;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #11151a; --card: #171c23; --ink: #e4e8ec; --muted: #97a2ae;
+      --rule: #2a323c; --accent: #7aa8d4; --learned: #e0796f; --hand: #7aa8d4;
+      --truth: #59b37c;
+      --ok-bg: #17301f; --ok-fg: #7fc796;
+      --bad-bg: #331c1a; --bad-fg: #e08c84;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #11151a; --card: #171c23; --ink: #e4e8ec; --muted: #97a2ae;
+    --rule: #2a323c; --accent: #7aa8d4; --learned: #e0796f; --hand: #7aa8d4;
+    --truth: #59b37c;
+    --ok-bg: #17301f; --ok-fg: #7fc796;
+    --bad-bg: #331c1a; --bad-fg: #e08c84;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--paper); color: var(--ink);
+    font-family: var(--sans); font-size: 16.5px; line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 960px; margin: 0 auto; padding: 4rem 1.5rem 6rem; }
+  .col { max-width: 66ch; }
+
+  h1 {
+    font-family: var(--serif); font-weight: 600; font-size: clamp(2rem, 5vw, 2.9rem);
+    line-height: 1.12; letter-spacing: -0.015em; margin: 0 0 .6rem;
+    text-wrap: balance;
+  }
+  h2 {
+    font-family: var(--serif); font-weight: 600; font-size: 1.5rem;
+    line-height: 1.25; margin: 3.5rem 0 .9rem; text-wrap: balance;
+  }
+  h3 {
+    font-family: var(--sans); font-weight: 640; font-size: 1.02rem;
+    margin: 2rem 0 .5rem; letter-spacing: -0.005em;
+  }
+  p, li { margin: 0 0 1rem; }
+  a { color: var(--accent); }
+  strong { font-weight: 640; }
+  code, .num { font-family: var(--mono); font-size: .89em; font-variant-numeric: tabular-nums; }
+
+  .eyebrow {
+    font-family: var(--sans); font-size: .74rem; font-weight: 660;
+    letter-spacing: .13em; text-transform: uppercase; color: var(--muted);
+    margin: 0 0 1.1rem;
+  }
+  .byline { font-size: .9rem; color: var(--muted); margin: 0 0 1.6rem; }
+  .standfirst {
+    font-family: var(--serif); font-size: 1.24rem; line-height: 1.5;
+    color: var(--muted); margin: 0 0 2.5rem; max-width: 62ch;
+  }
+
+  .verdict {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: 1px; background: var(--rule); border: 1px solid var(--rule);
+    border-radius: 3px; overflow: hidden; margin: 0 0 1rem;
+  }
+  .verdict div { background: var(--card); padding: 1.15rem 1.25rem; }
+  .verdict .k {
+    font-family: var(--mono); font-size: 1.85rem; font-variant-numeric: tabular-nums;
+    line-height: 1; letter-spacing: -0.02em;
+  }
+  .verdict .l { font-size: .82rem; color: var(--muted); margin-top: .45rem; line-height: 1.45; }
+  .k.six { color: var(--hand); }
+  .k.learned { color: var(--learned); }
+
+  figure { margin: 2.2rem 0; }
+  figure img {
+    width: 100%; height: auto; display: block;
+    border: 1px solid var(--rule); border-radius: 3px; background: #fff;
+    padding: 10px;
+  }
+  figcaption {
+    font-size: .87rem; color: var(--muted); margin-top: .7rem;
+    max-width: 72ch; line-height: 1.55;
+  }
+  /* A colour key must render IN its colours, next to what it explains, at body
+     size. Naming a colour in grey caption text is a key that exists and is
+     functionally absent. */
+  .key { font-weight: 640; }
+  .key.hand { color: var(--hand); }
+  .key.learned { color: var(--learned); }
+  .key.truth { color: var(--truth); }
+
+  .tablewrap { overflow-x: auto; margin: 1.5rem 0; }
+  table { border-collapse: collapse; width: 100%; font-size: .92rem; }
+  th, td { text-align: left; padding: .5rem .8rem; border-bottom: 1px solid var(--rule); }
+  th { font-size: .76rem; text-transform: uppercase; letter-spacing: .07em;
+       color: var(--muted); font-weight: 660; }
+  td.n, th.n { text-align: right; font-family: var(--mono);
+               font-variant-numeric: tabular-nums; }
+  tr.hl td { background: color-mix(in srgb, var(--learned) 8%, transparent); }
+
+  .note {
+    border-left: 2px solid var(--accent); padding: .1rem 0 .1rem 1.1rem;
+    margin: 1.6rem 0; color: var(--muted); max-width: 64ch;
+  }
+  .note.warn { border-left-color: var(--learned); }
+  .note strong { color: var(--ink); }
+
+  /* A page that is accurate for the bench it measured, and wrong for the
+     question a reader arrives with, needs to say so before its first sentence
+     — not in a footnote under the conclusion. */
+  .superseded {
+    background: var(--bad-bg); color: var(--bad-fg);
+    border: 1px solid color-mix(in srgb, var(--bad-fg) 35%, transparent);
+    border-radius: 3px; padding: 1.1rem 1.3rem; margin: 0 0 2.5rem;
+    font-size: .95rem; line-height: 1.55;
+  }
+  .superseded p { margin: 0 0 .7rem; max-width: 72ch; }
+  .superseded p:last-child { margin-bottom: 0; }
+  .superseded strong { color: var(--bad-fg); font-weight: 700; }
+  .superseded code { background: color-mix(in srgb, var(--bad-fg) 10%, transparent);
+                     padding: .06em .3em; border-radius: 2px; }
+
+  .arch { margin: 2rem 0; }
+  .arch svg { width: 100%; height: auto; display: block; }
+  .arch text { font-family: var(--mono); font-size: 12px; fill: var(--ink); }
+  .arch text.lbl { font-family: var(--sans); font-size: 12.5px; fill: var(--muted); }
+  .arch text.hi { fill: var(--learned); font-weight: 700; }
+  .arch rect { fill: var(--card); stroke: var(--rule); }
+  .arch rect.act { stroke: var(--learned); stroke-width: 1.6; }
+  .arch line, .arch path { stroke: var(--muted); }
+
+  hr { border: 0; border-top: 1px solid var(--rule); margin: 3.5rem 0; }
+  footer { color: var(--muted); font-size: .85rem; margin-top: 4rem; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+
+  /* markdown lands as one flow rather than the reports' hand-set columns */
+  .doc { max-width: 74ch; }
+  .doc h1 { font-size: clamp(1.8rem, 4.5vw, 2.4rem); margin-bottom: 1.4rem; }
+  .doc h2 { border-top: 1px solid var(--rule); padding-top: 1.6rem; }
+  .doc h3 { font-size: 1.05rem; margin-top: 2.2rem; }
+  .doc table { margin: 1.4rem 0; }
+  .doc td, .doc th { vertical-align: top; }
+  .doc blockquote { border-left: 2px solid var(--rule); margin: 1.6rem 0;
+                    padding: .1rem 0 .1rem 1.1rem; color: var(--muted); }
+  .doc blockquote.gate { border-left: 4px solid var(--learned);
+                         background: var(--bad-bg); color: var(--bad-fg);
+                         padding: .2rem 1.3rem 1rem; border-radius: 3px; }
+  .doc blockquote.gate h2 { border-top: 0; padding-top: 1.2rem;
+                            color: var(--bad-fg); }
+  .doc blockquote.gate strong { color: var(--bad-fg); }
+  .doc code { background: color-mix(in srgb, var(--ink) 7%, transparent);
+              padding: .08em .32em; border-radius: 2px; }
+  .doc li { margin-bottom: .5rem; }
+
+</style>
+<div class="wrap"><div class="doc">
+<h1>Writing an export folder — a page for the producer</h1>
+<p><strong>bugarach reads one folder. Write these files and you are done.</strong></p>
+<p>This is the short version, addressed to whoever writes the exporter. The full
+contract — every optional column, every reason — is
+<a href="export_folder_spec.html"><code>export_folder_spec.html</code></a>, rendered beside this page so the
+link works wherever you are reading it. Nothing here contradicts it.</p>
+<hr />
+<h2>The folder</h2>
+<pre><code>my_export/
+  20240708_13.csv     one file per recording, named by its id
+  20240708_17.csv
+  ...
+  slices.csv          one row per recording — the frame interval, plus identity
+  regions.csv         one row per treatment period
+</code></pre>
+<p>Everything is CSV, UTF-8, one header row. <strong>All times are seconds</strong> on the
+recording's own clock. Extra columns are ignored, never rejected, so one file can
+serve several consumers.</p>
+<p>The file's name is the recording's id. Nothing parses it further.</p>
+<h2><code>&lt;slice_id&gt;.csv</code> — one row per event</h2>
+<table>
+<thead>
+<tr>
+<th>column</th>
+<th>required</th>
+<th>what it is</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>roi</code></td>
+<td><strong>yes</strong></td>
+<td>which ROI. Any string, used consistently, unique within the recording.</td>
+</tr>
+<tr>
+<td><code>time_sec</code></td>
+<td><strong>yes</strong></td>
+<td>when the event reached <strong>half its rise</strong> — or <code>NA</code>, see below</td>
+</tr>
+<tr>
+<td><code>stream</code></td>
+<td>no</td>
+<td><code>fast</code>, <code>slow</code>, whatever you call them. Omit if you have one stream.</td>
+</tr>
+<tr>
+<td><code>width_sec</code></td>
+<td><em>asked for</em></td>
+<td>how long the event lasted</td>
+</tr>
+<tr>
+<td><code>width_def</code></td>
+<td>with <code>width_sec</code></td>
+<td>the name of <strong>your</strong> rule for width</td>
+</tr>
+<tr>
+<td><code>peak_sec</code>, <code>amp</code></td>
+<td>no</td>
+<td>send them if you have them</td>
+</tr>
+</tbody>
+</table>
+<h2><code>slices.csv</code></h2>
+<table>
+<thead>
+<tr>
+<th>column</th>
+<th>required</th>
+<th>what it is</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>slice_id</code></td>
+<td><strong>yes</strong></td>
+<td>matches the recording's file name</td>
+</tr>
+<tr>
+<td><code>frame_interval_sec</code></td>
+<td><strong>yes</strong></td>
+<td>seconds between imaged frames</td>
+</tr>
+<tr>
+<td><code>group_id</code></td>
+<td>reserved</td>
+<td>which experimental group</td>
+</tr>
+<tr>
+<td><code>subject_id</code></td>
+<td>reserved</td>
+<td>which animal — recordings sharing one are <strong>not</strong> independent. <code>mouse_id</code> and <code>animal_id</code> are read as this, so keep whichever you already write.</td>
+</tr>
+<tr>
+<td>anything else</td>
+<td>—</td>
+<td>carried through to the results untouched</td>
+</tr>
+</tbody>
+</table>
+<p>Without <code>frame_interval_sec</code> the app stops and asks. There is no default, because a
+default here is a guess about your microscope.</p>
+<h2><code>regions.csv</code></h2>
+<table>
+<thead>
+<tr>
+<th>column</th>
+<th>required</th>
+<th>what it is</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>slice_id</code></td>
+<td><strong>yes</strong></td>
+<td>which recording</td>
+</tr>
+<tr>
+<td><code>region_idx</code></td>
+<td><strong>yes</strong></td>
+<td>1-based, chronological</td>
+</tr>
+<tr>
+<td><code>label</code></td>
+<td><strong>yes</strong></td>
+<td><code>baseline</code>, <code>TTX</code>, <code>senktide</code>, <code>washout</code> — what the period was</td>
+</tr>
+<tr>
+<td><code>start_sec</code>, <code>end_sec</code></td>
+<td><strong>yes</strong></td>
+<td>when it began and ended, <strong>raw</strong></td>
+</tr>
+<tr>
+<td><code>analysis_start_sec</code>, <code>analysis_end_sec</code></td>
+<td>optional — <strong>usually leave them out</strong></td>
+<td>the part of it worth scoring</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Send the raw periods. Leave the analysis pair out unless you specifically mean it</strong> —
+and if you leave it out, omit the columns rather than writing <code>NA</code> or <code>NaN</code> in them. A
+non-finite bound is refused with a named error rather than scored, but the refusal comes
+from the detector rather than the loader, so you see it at <code>bugarach check</code> or at run
+time and not at import.</p>
+<p>An earlier version of this page said "if you have both, send both". interface2 pushed
+back and was right. Two reasons, and the second is the one that bites:</p>
+<ul>
+<li><strong>An analysis window is a named paradigm, not a rule.</strong> Two columns express exactly one
+  at a time and cannot say which, so a folder that pins one has quietly chosen the
+  analysis on the consumer's behalf. Raw periods keep every paradigm reachable from a
+  single export.</li>
+<li><strong>Supplying it switches a check off.</strong> The raw bounds are validated — baseline starting
+  at zero, regions contiguous — and supplying <code>analysis_*</code> short-circuits that validation.
+  The same corrupted folder passes clean <em>with</em> the columns and is caught <em>without</em> them.
+  So sending an analysis window costs you the structural gate on the raw one.</li>
+</ul>
+<p>If you do have a window worth stating, send it <strong>and</strong> keep the raw bounds correct — the
+check you give up is exactly the one that would have caught them being wrong.</p>
+<hr />
+<h1>The four things that actually go wrong</h1>
+<p>Everything above is mechanical. These four are where a folder that loads cleanly
+still produces a wrong answer, and all four have happened.</p>
+<h2>1. <code>time_sec</code> is the half-rise, not the peak</h2>
+<p>The moment the transient reached <strong>half its rise</strong> — not the peak, not the first
+sample over threshold.</p>
+<p>It has to be named because your pipeline probably has several candidates and they are
+far apart: in this project's own data the peak lags the half-rise by about <strong>0.3 s in
+a fast stream and 2 s in a slow one</strong>. Two seconds is wider than the window
+coincidence is judged in, so sending peaks where onsets were meant does not shift the
+answer slightly — it <strong>changes which events are found to coincide</strong>, and nothing
+anywhere fails.</p>
+<p>If your signal has no meaningful half-rise, send the closest thing and say so in your
+own documentation.</p>
+<h2>2. An ROI that fired nothing still needs a row</h2>
+<pre><code>roi,time_sec
+7,NA
+</code></pre>
+<p>That says <em>ROI 7 was recorded and produced no events</em>. An empty field means the same.</p>
+<p>One row per event means a silent ROI otherwise has <strong>no rows at all</strong>, and absent is
+indistinguishable from never-imaged — so it drops out of the population. Every
+per-ROI rate divides by that population: five ROIs recorded with two silent, counted
+over three, comes out <strong>1.67× too high</strong>. The error is worst in the quietest
+recordings, which is exactly where quiet is the result.</p>
+<p><code>rate == 0</code> is a measurement. Omitting silent ROIs picks the denominator on the
+analyst's behalf and nothing downstream can tell.</p>
+<p><strong>And it is per (roi, stream), not per roi</strong> — which is the part that is easy to miss
+and which your exporter already gets right. From <code>20240726_34</code> in the current export:</p>
+<pre><code>roi,time_sec,stream
+10,NA,fast          &lt;- ROI 10 was recorded and fired nothing in the FAST stream
+10,612.35,slow         ... while firing four times in the slow one
+</code></pre>
+<p>ROIs 10 and 16 each have four slow events and no fast ones, and each carries an <code>NA</code>
+row naming the fast stream. That is exactly right: a fast-stream analysis needs them
+in its population with a rate of zero. An ROI silent in <em>both</em> streams needs a row for
+each.</p>
+<h2>3. Export what should be analysed — the selection is yours</h2>
+<p><strong>Send the recordings and ROIs you consider analysable, and only those.</strong> A recording
+you have withdrawn is simply absent from the folder. A dead ROI is not exported.
+There is no exclusion flag, no quality column, no <code>keep</code> field — and there will not
+be one.</p>
+<p>That judgement is yours because you have evidence the analysis does not. <strong>When the
+analysis has tried to make it instead, it got it wrong.</strong> In August 2026 an analysis
+here read the raw store, found it therefore contained recordings the lab had
+withdrawn, and re-derived the exclusions from the lab's workbook. That workbook keys
+them on (date, mouse, <strong>slice order</strong>); the analysis had no slice order, matched on
+date, and <strong>dropped a recording the lab had not withdrawn</strong> — one mouse had two
+slices that day and only the first was excluded. Your export had it right. Every
+published number was then computed over one recording fewer than intended.</p>
+<p>If a folder looks like it holds something it should not, that is a conversation with
+you — not a filter on our side.</p>
+<h2>4. <code>width_sec</code> is asked for and not yet consumed — and the rule still matters</h2>
+<p>Width is not one quantity. A fast transient and a slow one are not the same shape, so
+"how long it lasted" is not the same measurement, and <strong>we do not define it for you.</strong> Pick
+a rule, apply it consistently within a stream, and name it in <code>width_def</code>.</p>
+<p><strong>What happens to it today: nothing.</strong> The folder reader takes <code>time_sec</code>, <code>roi</code> and
+<code>stream</code>, and drops every other column — so <code>width_sec</code> you send is read from the file and
+discarded, and any <code>Stream.width</code> on our side is <code>NaN</code>. <strong><code>width_def</code> is carried and never
+parsed; <code>width_sec</code> is currently not even carried.</strong> This page said the opposite in an
+earlier version and that was wrong. If you have already wired up width, it is not lost work
+— it is just not doing anything on our side yet, and closing that is on us
+(<code>docs/todo/2026-08-20-the-contract-asks-for-width-and-drops-it.md</code>).</p>
+<p><strong>Pick the rule as though it were consumed, because when it is, it will be as a coincidence
+duration</strong> — how long an event counts as "on", and therefore how much of a window two cells
+must share before they count as coincident. That is the one detector mode that reads a
+per-event width.</p>
+<p>On that scale, some rules break. In this project's own recordings <code>fwhm</code> on the <strong>slow</strong>
+stream has a median of <strong>4.7 s</strong> and a maximum of <strong>186.9 s</strong>, against a rise interval of
+2 s. A 187-second "event duration" is not a coincidence unit — it makes one cell overlap
+essentially everything. Rules that behave: <code>t50rise_to_peak</code>, <code>above_threshold</code>, anything
+bounded by the event's rise rather than its decay. <code>fwhm</code> is reasonable on a fast stream and
+wrong on a slow one, which is exactly why the definition is per stream.</p>
+<p>If the natural output of your pipeline is a decay-dominated width, send it and say so in
+<code>width_def</code> — the string is what lets a consumer notice the scale before using it rather
+than after.</p>
+<hr />
+<h1>Check it before you send it</h1>
+<pre><code>bugarach check my_export/
+</code></pre>
+<p>Exits 0 if the folder conforms, 1 if it does not, so it drops straight into a build.
+It reads the folder with <strong>the same loader the analysis uses</strong> — a pass means the
+analysis will read what you meant, not that a second implementation agreed with the
+first.</p>
+<p>Real output, from the current export (<code>2026-08-18_revised_2v_periods</code>):</p>
+<pre><code>84 recording(s), 84 conforming
+
+  ok   20240708_13      34 ROI (0 with no events)    4494 events  streams fast+slow  dt 0.1  windows baseline, SB222200
+       · no ROI declared with no events. If every one of the 34 ROIs fired, this is right; if some were quiet, they are missing from the population and every per-ROI figure is too high (write them as time_sec = NA)
+
+CONFORMING
+Lines marked · read fine and may still not be what you meant.
+</code></pre>
+<p><strong>Errors name the file and the line.</strong> Lines beginning <code>·</code> are notes — legal, but worth a
+look.</p>
+<p><strong>The silent-ROI note is noisier than it should be</strong>, and it is worth saying so rather
+than letting you learn to skip it: it fires on <strong>59 of the 84</strong> recordings in the current
+export, because in most of them every ROI really did fire at least once across the whole
+recording. A note that fires on 70% of a folder trains the reader to ignore it, which is
+the opposite of its purpose. It is asking you to confirm, not reporting a fault, and
+sharpening it is on our side rather than yours.</p>
+<p>The current export passes: 84 of 84 conforming, ROI counts matching <code>n_roi_recorded</code> on
+<strong>all 84</strong>.</p>
+<hr />
+<h1>A complete tiny example</h1>
+<p><code>my_export/rec_1.csv</code></p>
+<pre><code>roi,time_sec,stream,width_sec,width_def
+1,12.40,fast,0.32,t50rise_to_peak
+1,88.10,fast,0.29,t50rise_to_peak
+2,12.55,fast,0.35,t50rise_to_peak
+3,NA,fast,,
+</code></pre>
+<p><code>my_export/slices.csv</code></p>
+<pre><code>slice_id,frame_interval_sec,group_id,mouse_id
+rec_1,0.05,control,m17
+</code></pre>
+<p><code>my_export/regions.csv</code></p>
+<pre><code>slice_id,region_idx,label,start_sec,end_sec,analysis_start_sec,analysis_end_sec
+rec_1,1,baseline,0,600,60,600
+rec_1,2,TTX,600,1200,660,1200
+</code></pre>
+<p>Three ROIs, one of which was silent and says so. One stream. Widths with the rule
+named. A baseline and a drug period, each with the first minute trimmed off for
+analysis but the raw bounds still recorded.</p>
+<p><strong>This example is checked, not illustrative.</strong> Written to disk exactly as above and
+run through the validator:</p>
+<pre><code>1 recording(s), 1 conforming
+
+  ok   rec_1     3 ROI (1 with no events)       3 events  streams fast  dt 0.05  windows baseline, TTX
+       · analysis windows supplied — scored as given, and this project's wash-in delay and caps are not applied
+
+CONFORMING
+</code></pre>
+<p>That is the whole contract.</p>
+</div></div>
+</html>
