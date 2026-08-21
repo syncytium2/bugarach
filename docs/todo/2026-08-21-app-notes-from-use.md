@@ -371,6 +371,66 @@ the page. That is genuinely a progress-bar job, unlike note 6.
 median rather than one recording's numbers), which is a real change to what the
 accept step means and is Tony's call, not a port detail.
 
+## 9 · Detect should offer "all", and the settings should be visible together
+
+> *"detect should have the option to select all. maybe a popup window with all of
+> the settings for all of the detectors in one panel"*
+
+### The running-all-six half is nearly free
+
+`analyseFolder` ([:4322](../site/raster_viewer.html)) **already** runs every
+detector — across every recording, stream and region — and it was written this
+week. What does not exist is the same thing scoped to the recording on screen:
+`runDetect` takes `whichDetector()` and draws one.
+
+So *"detect with all six, here, now"* is a loop that already exists in another
+function, and the honest version is probably to factor the per-recording body out
+of `runDetect` so the two cannot drift into disagreeing about what a detection
+run is.
+
+### The settings-in-one-panel half is also cheap
+
+Each detector's controls are already a separate block —
+`dRateCtl`, `dSyncCtl`, `dLocoCtl`, `dCoactCtl`, `dSceCtl`, `dCicCtl`
+([:449-495](../site/raster_viewer.html)) — and `paintDetectorChoice` does nothing
+but hide five and show one. Showing all six is removing that filter.
+
+**On "popup window":** the page has no dialog or modal anywhere today (zero
+`<dialog>`, zero `showModal`). A `<dialog>` element is self-contained and needs
+no network, so it costs nothing against the no-network promise — it would just be
+the page's first one, and worth deciding deliberately rather than by accident.
+
+### What is NOT free: the raster
+
+This is the part to think about before building the easy parts.
+
+- **There is one lane.** `LANE_H = 37`, drawn once, in one colour (`--accent`),
+  labelled with the single detector's name
+  ([:1155-1170](../site/raster_viewer.html)). Six detectors need six lanes or one
+  lane that distinguishes them.
+- **They must stay distinguishable — this is a rule, not a preference.** The
+  output contract is *one row per event per detector, no consensus merging*,
+  because merging discards which detector fired. A raster that stacks six
+  detectors into one bar has done exactly the merge the file format forbids, in
+  the picture that gets screenshotted into a slide.
+- **Colour is already spent.** The eight categorical window hues are fixed and
+  validated for colour-vision deficiency ([:863](../site/raster_viewer.html)),
+  and they are an *identity* encoding for periods. Six detector colours would
+  either collide with that vocabulary or need their own, and the raster would
+  then carry two categorical scales meaning different things.
+
+Six stacked lanes at 37px is 222px of vertical, on the page Tony just asked to
+reclaim vertical space from (note 5). A thinner per-detector lane, or lanes only
+for the detectors that fired, are the obvious levers.
+
+### Worth settling at the same time
+
+Whether "all" changes what the **save** button writes. `saveDetections` currently
+writes `DETECT.rows` for the one run; with six detectors live it becomes the same
+shape `analyseFolder` already emits for the folder, which would make the two
+buttons the same file at different scopes — a simplification rather than a new
+format.
+
 ---
 
 ## Related, and worth doing in the same pass
