@@ -512,6 +512,10 @@
       <div class="ctl">
         <div class="span"><button id="runDetect">Detect</button>
           <button id="saveDetections" disabled>Save detections.csv</button></div>
+        <!-- Where this detector's setting came from, when a sweep chose it.
+             Empty when nobody tuned, and emptied again the moment the control is
+             edited by hand. -->
+        <div class="note" id="tunedWhat"></div>
       </div>
       <div class="ctl">
         <div class="span"><button id="runFolder">Analyse the whole folder</button>
@@ -826,6 +830,23 @@ let SIM_K = null;
 // the corpus can be compared with it. Null until somebody accepts a K.
 let SIM_TARGET = null;
 let VERIFY = null;      // {target, got, per} — the comparison, once it is made
+
+/* THE SETTINGS A SWEEP CHOSE, per detector, and why they outlive the folder.
+
+   Tuning happens on a simulation, because that is the only place with an answer
+   key. Detecting happens on your recordings, where there is none. Those are two
+   different folders and the second replaces the first — so an operating point
+   that did not survive `open` could never reach the recordings it was chosen
+   for. You would read the number off the sweep and type it in, and a transcribed
+   number is a thing this project has already got wrong in the other direction
+   (`docs/todo/2026-08-14-generator-doc-numbers-are-transcribed.md`).
+
+   Keyed by detector, so tuning several does not make each forget the last.
+   DROPPED THE MOMENT ITS CONTROL IS EDITED BY HAND: a raster lane claiming a
+   setting was tuned, about a number somebody typed, is worse than one that says
+   nothing at all. */
+let TUNED = {};   // which -> {value, knobName, unit, f1, nFolds, corpusN, tolSec, from}
+
 // slice_id -> {times, fracs}: what the generator planted, and the only ground
 // truth this page can have. Empty for a folder read off disk, which is why
 // tuning is offered for a simulated folder and not for anybody's recordings.
@@ -1158,7 +1179,17 @@ function draw(rec, data) {
     // canvas the first time a second detector was wired up. A lane that renames
     // itself per detector cannot depend on the longest name being short.
     g.fillStyle = css.getPropertyValue("--muted").trim();
-    g.fillText(DETECT.label + " · " + DETECT.starts.length + " called",
+    /* The lane says whether its setting was CHOSEN or merely current. A picture
+       leaves the page — into a slide, into a figure — and arrives without the
+       panel that explained it, so the one thing it cannot afford to lose is
+       whether these calls came from a tuned instrument or from whatever was in
+       the boxes. `TUNED` is dropped when the control is hand-edited, so this
+       cannot outlive the fact it asserts. */
+    const tu = TUNED[DETECT.which];
+    g.fillText(DETECT.label + " · " + DETECT.starts.length + " called"
+               + (tu ? " · " + tu.knobName + " " + fmtKnob(tu.value)
+                       + (tu.unit ? " " + tu.unit : "") + " tuned"
+                     : ""),
                padL, padT + 8);
     const ly = padT + 11;
     g.fillStyle = css.getPropertyValue("--accent").trim();
@@ -4907,7 +4938,7 @@ const DETECTORS = {
     run: (trains, range, cfg) => rateDetect(trains, range, cfg),
     settings: cfg => "threshold " + cfg.excessThresholdHz + " Hz excess · rate window "
       + cfg.rateWin + " s · context " + cfg.contextWin + " s · dt " + cfg.gridDt + " s",
-    knob: { key: "excessThresholdHz", name: "excess threshold", unit: "Hz",
+    knob: { key: "excessThresholdHz", input: "dThr", name: "excess threshold", unit: "Hz",
             grid: [0.5, 1, 2, 3, 4, 5, 6, 8] },
   },
   sce: {
@@ -4922,7 +4953,7 @@ const DETECTORS = {
     settings: cfg => "bin " + cfg.binWidthSec + " s · "
       + cfg.thresholdPctile + "th percentile of " + cfg.nSurrogates
       + " shuffles · one bar per window · floor 3 ROIs",
-    knob: { key: "thresholdPctile", name: "threshold percentile", unit: "",
+    knob: { key: "thresholdPctile", input: "sPct", name: "threshold percentile", unit: "",
             grid: [90.0, 95.0, 98.0, 99.0, 99.5, 99.9] },
   },
   coact: {
@@ -4938,7 +4969,7 @@ const DETECTORS = {
     settings: cfg => "bin " + cfg.intWinSec + " s · context " + cfg.contextWinSec
       + " s · alpha " + cfg.alpha + " per bin · " + cfg.nSurrogates
       + " shuffles · floor 3 ROIs",
-    knob: { key: "alpha", name: "alpha", unit: "per bin",
+    knob: { key: "alpha", input: "cAlpha", name: "alpha", unit: "per bin",
             grid: [1e-2, 1e-3, 1e-4, 1e-5, 1e-6, 1e-7] },
   },
   loco: {
@@ -4954,7 +4985,7 @@ const DETECTORS = {
     settings: cfg => "bin " + cfg.binWidthSec + " s · context "
       + cfg.contextWinSec + " s · " + cfg.thresholdPctile + "th percentile of "
       + cfg.nSurrogates + " shuffles · floor 3 ROIs",
-    knob: { key: "thresholdPctile", name: "threshold percentile", unit: "",
+    knob: { key: "thresholdPctile", input: "lPct", name: "threshold percentile", unit: "",
             grid: [99.0, 99.5, 99.9, 99.99, 99.999, 99.9999] },
   },
   cicada: {
@@ -5002,7 +5033,7 @@ const DETECTORS = {
       + "CICADA was built for imaging where many cells are active at once. Look "
       + "at how many cells the strongest events actually carry before reading "
       + "anything into the count." : null,
-    knob: { key: "scePercentile", name: "SCE percentile", unit: "",
+    knob: { key: "scePercentile", input: "cPct", name: "SCE percentile", unit: "",
             grid: [90.0, 95.0, 98.0, 99.0, 99.5, 99.9] },
   },
   sync: {
@@ -5026,7 +5057,7 @@ const DETECTORS = {
       + "event is narrow, and most of the field is in it. That combination is a "
       + "stage knock rather than coordination. They are counted here and drawn "
       + "like the rest; deciding what to do with them is yours." : null,
-    knob: { key: "CThreshold", name: "C to start an event", unit: "",
+    knob: { key: "CThreshold", input: "dC", name: "C to start an event", unit: "",
             grid: [0.005, 0.01, 0.02, 0.04, 0.08, 0.12] },
   },
 };
@@ -5041,6 +5072,7 @@ function paintDetectorChoice() {
     document.getElementById(d.fine).hidden = k !== which;
   }
   document.getElementById("cntDetect").textContent = DETECTORS[which].label;
+  paintTunedChip();
   clearDetect();
   // the sweep follows the chosen detector, so its own result stops being about
   // the thing named on it the moment the choice moves
@@ -5196,6 +5228,16 @@ async function runDetect() {
 }
 
 document.getElementById("dDet").onchange = paintDetectorChoice;
+
+/* Every knob control watches itself. A setting the sweep chose stops being the
+   sweep's answer the moment somebody types over it, and the chip and the raster
+   lane both stop claiming it — checked on `input`, so it happens while the
+   reader is still looking at the box they changed. */
+for (const [key, D] of Object.entries(DETECTORS)) {
+  const n = D.knob && D.knob.input && document.getElementById(D.knob.input);
+  if (n) n.addEventListener("input", () => dropTunedIfEdited(key));
+}
+paintTunedChip();
 
 /* ---------- the sweep, and the picture of it -------------------------------- */
 
@@ -5549,6 +5591,65 @@ function paintScoreboard() {
     box.append(el("p", r.label + ": " + r.refused, "verdict bad"));
 }
 
+/* Take the sweep's answer into the detector, and remember where it came from.
+
+   `TUNED` is what lets the raster lane say the setting was chosen rather than
+   typed. It is deliberately NOT cleared by `open` — the whole workflow is tune
+   on a simulation, then open your own folder and point the tuned instrument at
+   it — and it IS cleared the moment somebody edits the control by hand. */
+function useTunedSetting(which, value, meta) {
+  const D = DETECTORS[which];
+  const input = document.getElementById(D.knob.input);
+  if (!input) return;
+  input.value = String(value);
+  TUNED[which] = Object.assign({ value: Number(value) }, meta);
+  // Follow the setting with the chooser, or the reader applies a threshold to
+  // one detector and watches a different one draw.
+  document.getElementById("dDet").value = which;
+  paintDetectorChoice();
+  paintTunedChip();
+  showSection("accDetect");
+  if (current && current.loaded) runDetect();
+}
+
+/* A control edited by hand is no longer the sweep's answer, and everything that
+   says otherwise has to stop saying it. Compared as NUMBERS: "3" and "3.0" are
+   the same setting, and a string comparison would drop the provenance every time
+   the box was reformatted. */
+function dropTunedIfEdited(which) {
+  const t = TUNED[which];
+  if (!t) return;
+  const input = document.getElementById(DETECTORS[which].knob.input);
+  if (!input) return;
+  if (Number(input.value) !== t.value) {
+    delete TUNED[which];
+    paintTunedChip();
+    // The lane carries the provenance, so it has to be repainted without it.
+    if (current && current.loaded && DETECT && DETECT.which === which)
+      loadRecording(current).then(d => draw(current, d));
+  }
+}
+
+function tunedNote(which) {
+  const t = TUNED[which];
+  if (!t) return null;
+  return DETECTORS[which].label + " · " + t.knobName + " " + fmtKnob(t.value)
+    + (t.unit ? " " + t.unit : "") + " — chosen by the sweep on " + t.corpusN
+    + " simulated recording(s), " + (t.heldOut ? "held-out " : "")
+    + "F1 " + fmtNum(t.f1, 2)
+    + (t.nFolds ? " across " + t.nFolds + " fold(s)" : "")
+    + ", matched within " + t.tolSec + " s";
+}
+
+function paintTunedChip() {
+  const n = document.getElementById("tunedWhat");
+  if (!n) return;
+  const note = tunedNote(whichDetector());
+  n.textContent = note
+    ? note + ". Edit the setting by hand and this stops claiming it."
+    : "";
+}
+
 async function runTune() {
   if (!current) return;
   const truth = TRUTH.get(current.id);
@@ -5702,6 +5803,33 @@ async function runTune() {
         + "found, " + pick.row.nFa + " call(s) on nothing. It has neighbours on "
         + "both sides, so the sweep bracketed it rather than running out of "
         + "range.", "verdict"));
+      /* THE STEP THAT CLOSES THE LOOP, and the reason it is a button rather than
+         a sentence to copy from. The number above is the whole product of this
+         panel, and until now the only way to get it into the detector was to
+         read it and type it — across a folder change, because the sweep runs on
+         a simulation and the detector runs on your recordings. A transcribed
+         number is a defect this project has already paid for once. */
+      const held = folds.filter(f => f.held && Number.isFinite(f.held.f1));
+      const heldMean = held.length
+        ? held.reduce((a, f) => a + f.held.f1, 0) / held.length : null;
+      const apply = document.createElement("p");
+      apply.className = "caveat";
+      const go = document.createElement("button");
+      go.textContent = "Use this setting and detect";
+      go.style.width = "auto";
+      go.onclick = () => useTunedSetting(which, pick.row.knob, {
+        knobName: knob.name, unit: knob.unit,
+        f1: heldMean === null ? pick.row.f1 : heldMean,
+        heldOut: heldMean !== null,
+        nFolds: held.length, corpusN: corpus.length, tolSec: tol,
+      });
+      apply.append(go, document.createTextNode(
+        " — sets " + knob.name + " to " + fmtKnob(pick.row.knob)
+        + " in the Detect step above and runs it on the recording on screen. "
+        + "The setting survives opening another folder, which is the point: it "
+        + "was chosen where the answer was known so it can be used where it is "
+        + "not."));
+      box.append(apply);
     } else {
       box.append(el("p", pick.why, "verdict bad"));
     }
