@@ -208,6 +208,12 @@
   #tuneOut .verdict { margin: 10px 0 0; max-width: 72ch; line-height: 1.5; }
   #tuneOut canvas { width: 100%; display: block; margin: 2px 0 10px; }
   #assessOut h4 { margin: 0 0 6px; font-size: 13px; font-weight: 600; }
+  /* One per stream, above that stream's own table. Set apart from the h4 above
+     it — this is a divider inside one measurement, not a second measurement. */
+  #assessOut h5, #detectOut h5 {
+    margin: 14px 0 4px; font-size: 12px; font-weight: 600;
+    letter-spacing: .04em; text-transform: uppercase; color: var(--muted);
+  }
   #assessOut .sub { color: var(--muted); margin: 0 0 8px; }
   #assessOut table { border-collapse: collapse; }
   #assessOut th, #assessOut td {
@@ -1193,7 +1199,14 @@ function draw(rec, data) {
     // that way would put a synthetic event in the picture used to judge the real
     // ones. A tick under the axis points at the time and claims nothing about
     // any row.
-    if (ASSESS && ASSESS.recId === rec.id && si === names.length - 1) {
+    // Under the lane the measurement was MADE on, not simply the bottom one.
+    // With two streams assessed separately, ticks parked under whichever lane
+    // happened to be last would attribute one stream's clusters to the other.
+    // `stream` is absent on an assessment made before this carried one, and on
+    // a single-stream folder there is only one lane to be under either way.
+    if (ASSESS && ASSESS.recId === rec.id
+        && (ASSESS.stream ? names[si] === ASSESS.stream
+                          : si === names.length - 1)) {
       g.fillStyle = css.getPropertyValue("--accent").trim();
       for (const c of ASSESS.centres) {
         const px = Math.round(x(ASSESS.winStart + c)) + 0.5;
@@ -3216,6 +3229,28 @@ function assessCoactivity(trains, winDur, opts) {
      * detection runs on EVERY segment, treatments included. That is the point of
        the loop: measure an untreated recording, simulate from it, tune on the
        simulation, and only then point the finished instrument at everything. */
+/* WHICH STREAMS AN ANALYSIS RUNS ON: every one of them, in a stable order.
+
+   This used to be `[...data.streams.keys()].sort()[0]` in three places — the
+   assessment, the detector and the sweep — which on this lab's folders is
+   `fast`, silently. The raster drew both lanes the whole time, so the screen
+   showed two streams and reported on one.
+
+   FOUNDATIONS §9 is why that is a wrong answer rather than a partial one:
+   coordination under TTX SPLITS BY STREAM — fast falls to 0.46 of its own
+   baseline while slow sits at 2.50, with 44% of slices at or above it. A table
+   that means `fast` without saying so is a claim that cannot be checked, and
+   pooling the two would be worse.
+
+   FOUNDATIONS §3 is why the presentation stays quiet: streams are generic, most
+   outside labs have exactly one, and single-stream is this viewer's default
+   presentation. So `oneStream` below is what the display code asks — a column
+   that always reads the same value is furniture. */
+function analysisStreams(data) {
+  return [...data.streams.keys()].sort();
+}
+const oneStream = data => analysisStreams(data).length < 2;
+
 function analysisSegments(rec, data) {
   const wins = (REGIONS.get(rec.id) || []).slice().sort((a, b) => a.idx - b.idx);
   if (!wins.length)
@@ -3587,7 +3622,7 @@ function paintRegionChoices(rec) {
    spread around the measured median rather than collapsing to it, so recall
    still resolves a participant floor; the same ratios are used here and the
    levels are shown. */
-function simulateFromMeasurement(rec, a, source) {
+function simulateFromMeasurement(rec, a, source, stream) {
   // FOUNDATIONS §9. Measuring a treatment is legitimate; sourcing the
   // generator's coordination properties from one is not.
   if (LAST_ASSESS && LAST_ASSESS.isBaseline === false) {
@@ -3617,7 +3652,8 @@ function simulateFromMeasurement(rec, a, source) {
   note.textContent = "";
   note.append(el("b", "Set from a measurement."));
   note.append(document.createTextNode(
-    " " + rec.id + ", " + source + ", at K = " + a.K + " — your choice of K, and "
+    " " + rec.id + ", " + source + (stream ? ", stream " + stream : "")
+    + ", at K = " + a.K + " — your choice of K, and "
     + "it is stamped here because the number these settings came from is "
     + "meaningless without it. Participation is the measured median "
     + (100 * frac).toFixed(0) + "% kept as a spread of "
@@ -3954,16 +3990,46 @@ function clearAssess() {
   if (box) box.textContent = "";
 }
 
-function paintAssess(rec, res, source, cfg) {
+/* ONE BLOCK PER STREAM. `blocks` is [{stream, res}] — every stream the folder
+   sent, measured separately, never pooled.
+
+   Pooling would be the tempting simplification and it is the one thing this
+   cannot do: FOUNDATIONS §9 measures fast and slow coordination moving in
+   OPPOSITE directions under the same drug, so an average over streams is a
+   number about nothing. Each block therefore carries its own K chooser and its
+   own accept button, because the parameters that reach the generator come from
+   one stream and have to say which. */
+function paintAssess(rec, blocks, source, cfg) {
   cfg = cfg || {};
   cfg.source = source;
   const box = document.getElementById("assessOut");
   box.textContent = "";
+  const named = blocks.length > 1;
 
   box.append(el("h4", "Coordination in " + rec.id));
   box.append(el("p", "window: " + source + " · " + cfg.nSurr
-    + " circular-shift surrogates · bin " + cfg.bin + " s · stream " + cfg.stream,
-    "sub"));
+    + " circular-shift surrogates · bin " + cfg.bin + " s · stream "
+    + blocks.map(b => b.stream).join(", "), "sub"));
+  if (named)
+    box.append(el("p", "Measured separately on " + blocks.length + " streams and "
+      + "reported separately. These respond differently to the same treatment, "
+      + "so there is no average over them worth taking — and the simulator takes "
+      + "its parameters from one of them, named below.", "caveat"));
+
+  for (const b of blocks) paintAssessBlock(box, rec, b, cfg, named);
+
+  box.append(el("p", "K is a scan, not a choice: it moves the headline by an "
+    + "order of magnitude, so quoting one of these numbers means naming the K it "
+    + "came from. Nothing here has picked one for you.", "caveat"));
+  box.append(el("p", "The excess and the tightness comparison are estimated from "
+    + cfg.nSurr + " surrogates, so they carry sampling error and will move a "
+    + "little between runs. The cluster count, the participants and the span do "
+    + "not — they depend on nothing but your data.", "caveat"));
+}
+
+function paintAssessBlock(box, rec, block, cfg, named) {
+  const res = block.res;
+  if (named) box.append(el("h5", "stream " + block.stream));
 
   if (res.length && !res[0].meetsFloor) {
     box.append(el("p", "That window is " + (res[0].winDur / 60).toFixed(1)
@@ -3997,7 +4063,11 @@ function paintAssess(rec, res, source, cfg) {
   row.className = "caveat";
   row.append(document.createTextNode("Simulate from this measurement at K = "));
   const ksel = document.createElement("select");
-  ksel.id = "accK";
+  // The first stream keeps the bare id so everything that already reaches for
+  // `accK` still finds a chooser; the rest are suffixed. Two nodes sharing one
+  // id would make `getElementById` return whichever came first, which is how a
+  // second stream's button silently sets the simulator from the first.
+  ksel.id = block.first ? "accK" : "accK__" + block.stream;
   for (const a of res) if (a.meetsFloor) {
     const o = document.createElement("option");
     o.value = String(a.K); o.textContent = String(a.K);
@@ -4005,11 +4075,16 @@ function paintAssess(rec, res, source, cfg) {
   }
   row.append(ksel, document.createTextNode(" "));
   const go = document.createElement("button");
-  go.textContent = "Set the simulator";
+  go.textContent = named ? "Set the simulator from " + block.stream
+                         : "Set the simulator";
   go.style.width = "auto";
   go.onclick = () => {
     const a = res.find(q => q.K === Number(ksel.value));
-    if (a) simulateFromMeasurement(rec, a, cfg.source || "");
+    // The stream travels with the measurement. `simulateFromMeasurement` stamps
+    // a provenance line naming the recording, the region and the K it came
+    // from; on a two-stream folder that line was true and still incomplete,
+    // because the same recording gives two different answers.
+    if (a) simulateFromMeasurement(rec, a, cfg.source || "", block.stream);
   };
   row.append(go);
   box.append(row);
@@ -4019,14 +4094,6 @@ function paintAssess(rec, res, source, cfg) {
       + "properties taken from a treatment assume the answer the experiment is "
       + "asking. The button above will refuse.", "caveat"));
   if (cfg.note) box.append(el("p", cfg.note, "caveat"));
-
-  box.append(el("p", "K is a scan, not a choice: it moves the headline by an "
-    + "order of magnitude, so quoting one of these numbers means naming the K it "
-    + "came from. Nothing here has picked one for you.", "caveat"));
-  box.append(el("p", "The excess and the tightness comparison are estimated from "
-    + cfg.nSurr + " surrogates, so they carry sampling error and will move a "
-    + "little between runs. The cluster count, the participants and the span do "
-    + "not — they depend on nothing but your data.", "caveat"));
 }
 
 async function runAssess() {
@@ -4038,23 +4105,37 @@ async function runAssess() {
   try {
     const data = await loadRecording(current);
     const w = assessWindow(current, document.getElementById("aRegion").value);
-    const box = document.getElementById("assessOut");
-    const stream = [...data.streams.keys()].sort()[0];
-    const byRoi = data.streams.get(stream);
     const [ws, we] = w.window || [data.t0, data.t1];
-    const trains = data.order.map(id =>
-      (byRoi.get(id) || []).filter(x => x >= ws && x <= we).map(x => x - ws));
-
     const nSurr = clamp(Number(document.getElementById("aSurr").value), 50, 2000);
     const bin = clamp(Number(document.getElementById("aBin").value), 0.1, 10);
-    const res = assessCoactivity(trains, we - ws, { nSurrogates: nSurr, binWidth: bin });
-    paintAssess(current, res, w.source, { nSurr, bin, stream,
-                                          isBaseline: w.isBaseline, note: w.note });
-    LAST_ASSESS = { rec: current, res, source: w.source, isBaseline: w.isBaseline };
 
+    /* Every stream, measured on its own. This is the expensive loop on the page
+       — `nSurr` circular shifts per stream — and it is not optional: a folder
+       that sent two streams asked two questions, and answering the alphabetically
+       first one is answering neither. */
+    const blocks = analysisStreams(data).map((stream, i) => {
+      const byRoi = data.streams.get(stream);
+      const trains = data.order.map(id =>
+        (byRoi.get(id) || []).filter(x => x >= ws && x <= we).map(x => x - ws));
+      return { stream, first: i === 0,
+               res: assessCoactivity(trains, we - ws,
+                                     { nSurrogates: nSurr, binWidth: bin }) };
+    });
+
+    paintAssess(current, blocks, w.source, { nSurr, bin,
+                                             isBaseline: w.isBaseline, note: w.note });
+    // The calibration step is fed from ONE stream and has to know which; the
+    // accept button in each block overrides this with its own.
+    LAST_ASSESS = { rec: current, res: blocks[0].res, stream: blocks[0].stream,
+                    blocks, source: w.source, isBaseline: w.isBaseline };
+
+    /* The raster's cluster ticks belong to one stream's measurement, and are
+       drawn under that stream's lane. The first stream is what an unprompted
+       "Assess" marks, matching which block's chooser keeps the bare `accK`. */
     const wantK = Number(document.getElementById("aK").value);
-    const hit = res.find(a => a.K === wantK && a.meetsFloor);
-    ASSESS = hit ? { recId: current.id, K: wantK, centres: hit.centres, winStart: ws }
+    const hit = blocks[0].res.find(a => a.K === wantK && a.meetsFloor);
+    ASSESS = hit ? { recId: current.id, K: wantK, centres: hit.centres,
+                     winStart: ws, stream: blocks[0].stream }
                  : null;
     draw(current, data);
   } finally {
@@ -4422,8 +4503,7 @@ async function runDetect() {
     const which = whichDetector();
     const D = DETECTORS[which];
     const data = await loadRecording(current);
-    const stream = [...data.streams.keys()].sort()[0];
-    const byRoi = data.streams.get(stream);
+    const streams = analysisStreams(data);
     const m = META.get(current.id) || {};
     const dt = Number(m.frame_interval_sec) > 0 ? Number(m.frame_interval_sec) : 0.1;
     const cfg = D.read(dt);
@@ -4440,48 +4520,59 @@ async function runDetect() {
     for (const [k, v] of Object.entries(META.get(current.id) || {}))
       if (!DETECTION_COLUMNS.includes(k)) identity[k] = v;
     let extraTotal = 0;
-    for (const seg of segs) {
-      const trains = data.order.map(id =>
-        (byRoi.get(id) || []).filter(x => x >= seg.start && x <= seg.end));
-      const range = [seg.start, Math.max(seg.end, seg.start + 1)];
-      /* CICADA needs the peak of each transient, which the folder either sent or
-         did not. A refusal stops the run and is reported as a sentence, because
-         the honest answer here is "this folder cannot answer that question" — not
-         an empty result, which would read as "nothing was coordinated". */
-      let peakCtx = null;
-      if (D.peaks) {
-        peakCtx = cicadaTrains(data, stream, data.order, seg.start, seg.end);
-        if (peakCtx.why) {
-          // clear FIRST: clearDetect empties this box, so appending before it
-          // erases the explanation and leaves the reader an empty panel that
-          // looks like the detector found nothing.
-          clearDetect();
-          const box = document.getElementById("detectOut");
-          box.append(el("h4", D.label + " did not run on " + current.id));
-          box.append(el("p", peakCtx.why, "verdict bad"));
-          return;
+    /* STREAM OUTSIDE, SEGMENT INSIDE. Each stream is a separate detection
+       problem — its own trains, its own context, its own null — and the two are
+       never pooled into one number. The rows already carried a `stream` column;
+       what changed is that more than one value can now appear in it. */
+    for (const stream of streams) {
+      const byRoi = data.streams.get(stream);
+      for (const seg of segs) {
+        const trains = data.order.map(id =>
+          (byRoi.get(id) || []).filter(x => x >= seg.start && x <= seg.end));
+        const range = [seg.start, Math.max(seg.end, seg.start + 1)];
+        /* CICADA needs the peak of each transient, which the folder either sent or
+           did not. A refusal stops the run and is reported as a sentence, because
+           the honest answer here is "this folder cannot answer that question" — not
+           an empty result, which would read as "nothing was coordinated".
+           It names the stream now, because a folder can carry the peak for one
+           stream and not the other, and "this folder cannot" would then be false. */
+        let peakCtx = null;
+        if (D.peaks) {
+          peakCtx = cicadaTrains(data, stream, data.order, seg.start, seg.end);
+          if (peakCtx.why) {
+            // clear FIRST: clearDetect empties this box, so appending before it
+            // erases the explanation and leaves the reader an empty panel that
+            // looks like the detector found nothing.
+            clearDetect();
+            const box = document.getElementById("detectOut");
+            box.append(el("h4", D.label + " did not run on " + current.id
+              + (oneStream(data) ? "" : " · stream " + stream)));
+            box.append(el("p", peakCtx.why, "verdict bad"));
+            return;
+          }
         }
+        const d = D.run(trains, range, cfg, peakCtx);
+        const extra = D.extra ? D.extra.count(d) : 0;
+        extraTotal += extra;
+        starts.push(...d.starts); ends.push(...d.ends);
+        rows.push(...detectionRows(which, d, {
+          sliceId: current.id, stream,
+          // a recording with no regions.csv is one unnamed whole, and NA is the
+          // honest region for it rather than a fabricated index 1
+          regionIdx: seg.whole ? null : seg.idx,
+          regionLabel: seg.whole ? null : seg.label,
+          identity,
+        }));
+        perRegion.push({ label: seg.label, n: d.nEvents, extra, stated: seg.stated,
+                         stream,
+                         // WHOSE window this run used, carried through to the row.
+                         // Reading `stated` here and `source` in the cell is how a
+                         // table ends up reporting "none sent" about a window it
+                         // just analysed. `extra` is what this branch called
+                         // `flagged` before main generalised it to a per-detector
+                         // count with its own column head.
+                         source: seg.source, mins: (seg.end - seg.start) / 60 });
       }
-      const d = D.run(trains, range, cfg, peakCtx);
-      const extra = D.extra ? D.extra.count(d) : 0;
-      extraTotal += extra;
-      starts.push(...d.starts); ends.push(...d.ends);
-      rows.push(...detectionRows(which, d, {
-        sliceId: current.id, stream,
-        // a recording with no regions.csv is one unnamed whole, and NA is the
-        // honest region for it rather than a fabricated index 1
-        regionIdx: seg.whole ? null : seg.idx,
-        regionLabel: seg.whole ? null : seg.label,
-        identity,
-      }));
-      perRegion.push({ label: seg.label, n: d.nEvents, extra, stated: seg.stated,
-                       // WHOSE window this run used, carried through to the row.
-                       // Reading `stated` here and `source` in the cell is how a
-                       // table ends up reporting "none sent" about a window it
-                       // just analysed. `extra` is what this branch called
-                       // `flagged` before main generalised it to a per-detector
-                       // count with its own column head.
-                       source: seg.source, mins: (seg.end - seg.start) / 60 });
     }
     DETECT = { recId: current.id, label: D.label, starts, ends, rows, which };
     paintSaveDetections();
@@ -4491,7 +4582,13 @@ async function runDetect() {
     box.append(el("h4", D.label + " on " + current.id));
     box.append(el("p", starts.length + " event(s) called · " + D.settings(cfg), "sub"));
 
-    const cols = ["region", "analysed", "window", "events"]
+    /* The stream column appears only when there is a second stream to tell it
+       from — FOUNDATIONS §3, single-stream is the default presentation, and a
+       column that always reads `fast` is furniture. Where it does appear it is
+       FIRST, because it is the coarser grouping: the rows run stream-major. */
+    const named = !oneStream(data);
+    const cols = (named ? ["stream"] : [])
+      .concat(["region", "analysed", "window", "events"])
       .concat(D.extra ? [D.extra.head] : []);
     const tbl = document.createElement("table");
     const hr = document.createElement("tr");
@@ -4499,6 +4596,7 @@ async function runDetect() {
     tbl.append(hr);
     for (const r of perRegion) {
       const tr = document.createElement("tr");
+      if (named) tr.append(el("td", r.stream));
       tr.append(el("td", r.label));
       tr.append(el("td", r.mins.toFixed(1) + " min"));
       tr.append(el("td", r.source === "folder" ? "as the folder states it"
@@ -4509,6 +4607,15 @@ async function runDetect() {
       tbl.append(tr);
     }
     box.append(tbl);
+    /* Said in words as well as in a column, because the two streams are not two
+       samples of one thing. FOUNDATIONS §9: under TTX the fast stream falls to
+       0.46 of its own baseline while the slow one sits at 2.50 — so a reader who
+       sums this table has produced a number about nothing. */
+    if (named)
+      box.append(el("p", "Run separately on " + streams.join(" and ")
+        + ", and reported separately. These streams respond differently to the "
+        + "same treatment, so the rows are not two measurements of one thing and "
+        + "adding them together does not give a recording-level count.", "caveat"));
     const note = D.note ? D.note(extraTotal) : null;
     if (note) box.append(el("p", note, "caveat"));
     box.append(el("p", "These are the settings this project benches at, not "
@@ -4591,12 +4698,23 @@ function sweepPoint(trains, range, which, base, knob, value, truth, tolSec, extr
    would re-parse the same CSV a dozen times over. */
 async function tuneLoad(rec) {
   const data = await loadRecording(rec);
-  const stream = [...data.streams.keys()].sort()[0];
+  /* ONE STREAM HERE, DELIBERATELY, AND IT SAYS WHICH.
+
+     Unlike assess and detect, the sweep is not silently dropping half a folder:
+     the ground truth it scores against is planted per RECORDING, not per stream,
+     and the page's own generator writes one stream. Sweeping a second stream
+     would score it against another stream's planted times.
+
+     So this takes the first stream and reports it, rather than taking the first
+     stream and looking like it took all of them. A folder that arrives here with
+     two streams is outside what the generator makes, and the heading says so. */
+  const streams = analysisStreams(data);
+  const stream = streams[0];
   const byRoi = data.streams.get(stream);
   const m = META.get(rec.id) || {};
   const dt = Number(m.frame_interval_sec) > 0 ? Number(m.frame_interval_sec) : 0.1;
   return {
-    id: rec.id, truth: TRUTH.get(rec.id), dt,
+    id: rec.id, truth: TRUTH.get(rec.id), dt, stream, nStreams: streams.length,
     // the peak trains, for the one detector that needs them; `why` when the
     // folder cannot supply them, so the sweep can refuse instead of returning
     // a curve about a question it did not answer
@@ -4752,7 +4870,17 @@ async function runTune() {
     box.append(el("p", knob.grid.length + " settings tried · " + knob.name
       + " · matched within " + tol + " s of a planted event · "
       + nPlanted + " planted"
-      + (split ? " · " + split.nFolds + " folds" : ""), "sub"));
+      + (split ? " · " + split.nFolds + " folds" : "")
+      + " · stream " + corpus[0].stream, "sub"));
+    /* A corpus with more than one stream is not what the generator writes, and
+       the truth it is scored against is per recording rather than per stream. So
+       say plainly that the sweep looked at one of them, rather than leaving a
+       reader to assume a number covers a stream it never touched. */
+    if (corpus.some(c => c.nStreams > 1))
+      box.append(el("p", "This folder carries more than one stream. The sweep ran "
+        + "on " + corpus[0].stream + " only: the planted events it scores against "
+        + "belong to the recording rather than to a stream, so there is nothing "
+        + "here to score a second one on. Detect reports every stream.", "caveat"));
 
     const cv = document.createElement("canvas");
     box.append(cv);
