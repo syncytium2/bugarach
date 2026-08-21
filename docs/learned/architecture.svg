@@ -1,0 +1,93 @@
+<svg viewBox="0 0 900 268" xmlns="http://www.w3.org/2000/svg" role="img"
+     aria-label="Signal path of the centre-surround model: a rate-sorted raster of onsets is capped per cell inside the centre window, summed across cells into a single brightness trace, convolved with four difference-of-Gaussian centre-minus-surround kernels, and passed to a dilated convolution stack and a final one-by-one layer that emits a score per frame. The raw brightness trace also bypasses the centre-surround stage and enters the stack directly as a fifth channel.">
+  <defs>
+    <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7"
+            orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor" stroke="none"/>
+    </marker>
+  </defs>
+
+  <!-- stage boxes -->
+  <rect x="6"   y="72" width="126" height="72" rx="3"/>
+  <rect x="156" y="72" width="126" height="72" rx="3"/>
+  <rect x="306" y="72" width="126" height="72" rx="3"/>
+  <rect x="456" y="72" width="140" height="72" rx="3" class="act"/>
+  <rect x="620" y="72" width="126" height="72" rx="3"/>
+  <rect x="770" y="72" width="124" height="72" rx="3"/>
+
+  <!-- stage titles -->
+  <text x="69"  y="104" text-anchor="middle">raster</text>
+  <text x="69"  y="123" text-anchor="middle">cells &#215; time</text>
+
+  <text x="219" y="104" text-anchor="middle">cap per cell</text>
+  <text x="219" y="123" text-anchor="middle">max in window</text>
+
+  <text x="369" y="104" text-anchor="middle">sum over cells</text>
+  <text x="369" y="123" text-anchor="middle">one trace</text>
+
+  <text x="526" y="104" text-anchor="middle" class="hi">centre &#8722; surround</text>
+  <text x="526" y="123" text-anchor="middle">4 DoG kernels</text>
+
+  <text x="683" y="104" text-anchor="middle">dilated stack</text>
+  <text x="683" y="123" text-anchor="middle">6 conv, 8 ch</text>
+
+  <text x="832" y="104" text-anchor="middle">1&#215;1</text>
+  <text x="832" y="123" text-anchor="middle">score per frame</text>
+
+  <!-- what each stage buys, above -->
+  <text x="69"  y="54" text-anchor="middle" class="lbl">sorted by rate</text>
+  <text x="219" y="54" text-anchor="middle" class="lbl">one cell, one vote</text>
+  <text x="369" y="54" text-anchor="middle" class="lbl">space invariance</text>
+  <text x="526" y="54" text-anchor="middle" class="lbl hi">rate invariance, by construction</text>
+  <text x="683" y="54" text-anchor="middle" class="lbl">an event is a run</text>
+  <text x="832" y="54" text-anchor="middle" class="lbl">the six&#8217;s own contract</text>
+
+  <!-- shapes, below -->
+  <text x="69"  y="167" text-anchor="middle" class="lbl">N &#215; T</text>
+  <text x="219" y="167" text-anchor="middle" class="lbl">N &#215; T</text>
+  <text x="369" y="167" text-anchor="middle" class="lbl">1 &#215; T</text>
+  <text x="526" y="167" text-anchor="middle" class="lbl">4 &#215; T</text>
+  <text x="683" y="167" text-anchor="middle" class="lbl">8 &#215; T</text>
+  <text x="832" y="167" text-anchor="middle" class="lbl">T</text>
+
+  <!-- params, below the shapes -->
+  <text x="219" y="184" text-anchor="middle" class="lbl">0 params</text>
+  <text x="369" y="184" text-anchor="middle" class="lbl">0 params</text>
+  <text x="526" y="184" text-anchor="middle" class="lbl">12 params</text>
+  <text x="683" y="184" text-anchor="middle" class="lbl">1,128 params</text>
+  <text x="832" y="184" text-anchor="middle" class="lbl">9 params</text>
+
+  <!-- flow -->
+  <g fill="none" stroke-width="1.4" marker-end="url(#ah)" color="inherit">
+    <line x1="134" y1="108" x2="152" y2="108"/>
+    <line x1="284" y1="108" x2="302" y2="108"/>
+    <line x1="434" y1="108" x2="452" y2="108"/>
+    <line x1="598" y1="108" x2="616" y2="108"/>
+    <line x1="748" y1="108" x2="766" y2="108"/>
+  </g>
+
+  <!-- The brightness trace also skips the centre-surround stage.
+       Routed BELOW the boxes, not over them: run across the top it passed
+       straight through the "space invariance" label and its arrowhead landed on
+       "an event is a run", striking out two of the six annotations. -->
+  <g fill="none" stroke-width="1.4" stroke-dasharray="4 3"
+     marker-end="url(#ah)" color="inherit">
+    <path d="M 400 144 L 400 196 L 660 196 L 660 148"/>
+  </g>
+  <text x="530" y="212" text-anchor="middle" class="lbl">
+    &#8230; and the untouched trace goes straight in as a 5th channel
+  </text>
+
+  <!-- The span the cell axis survives. Anchored at the start rather than
+       centred: centred at x=176 the string is wider than the space to its left,
+       so the viewBox clipped its first letter and it rendered as "he cell". -->
+  <g stroke-width="1.1" fill="none" stroke-dasharray="3 3">
+    <path d="M 69 200 L 69 214 L 282 214 L 282 200"/>
+  </g>
+  <text x="12" y="233" text-anchor="start" class="lbl">
+    the cell dimension survives to here, then the sum consumes it
+  </text>
+  <text x="450" y="253" text-anchor="middle" class="lbl">
+    N = cells (any number) &#183; T = samples, 0.1 s each &#183; DoG = difference of Gaussians, area-matched so a flat field integrates to zero
+  </text>
+</svg>

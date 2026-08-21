@@ -59,23 +59,29 @@ def build(args):
     hv.extension("bokeh")
 
     from bugarach.detectors.loco import loco_detect
-    from bugarach.io import slice_from_events
+    from bugarach.io import load_folder, slice_from_events
     from bugarach.simulate import simulate_coordination
-    from bugarach.store import load_slice
     from bugarach.ui.app import _time_axis_hook
     from bugarach.ui.diagnostic import raster_panel
 
-    root = os.environ.get("BUGARACH_DATA_ROOT", "").strip()
-    if not root:
+    if not args.folder:
         raise SystemExit(
-            "BUGARACH_DATA_ROOT is not set — this figure needs a real recording, "
-            "and real stores are machine-local. Nothing written.")
+            "--folder is required: this figure draws a real recording, and the "
+            "corpus is an export folder (docs/export_folder_spec.md). It used "
+            "to open a .mat store, which holds every recording ever processed "
+            "including the ones the lab withdrew. This figure is PUBLISHED "
+            "(FOUNDATIONS §5), so that is the last place to draw from a corpus "
+            "nobody approved. Nothing written.")
 
-    path = Path(root).expanduser() / ARCHIVE / f"{args.slice}.mat"
-    if not path.exists():
-        raise SystemExit(f"no such slice: {path}")
+    hit = [s for s in load_folder(Path(args.folder).expanduser())
+           if str(s.slice_id) == str(args.slice)]
+    if not hit:
+        raise SystemExit(
+            f"{args.slice} is not in {args.folder}. If the lab withdrew it, that "
+            f"is the answer, and it certainly must not be published — the "
+            f"folder is the corpus and its PROVENANCE.md says what was dropped.")
 
-    real = load_slice(path)
+    real = hit[0]
     names = [(r.name or "").strip().lower() for r in real.regions]
     if set(names) != {"baseline"}:
         # The publishability argument rests entirely on this, so it is a guard,
@@ -126,8 +132,7 @@ def build(args):
     rows = []
     for label, sl in series:
         d = det[label]
-        spans = [(o, o + max(w, 1.0)) for o, w in zip(d.onset_sec, d.width_sec)]
-        panel = raster_panel(sl.streams["events"], ext=ext, member_spans=spans,
+        panel = raster_panel(sl.streams["events"], ext=ext,
                              name=label, width=args.width, height=250)
         # LoCo's calls, marked the same way in both panels — the comparison the
         # figure exists to make is "does a detector behave the same on each".
@@ -189,7 +194,9 @@ def build(args):
         f'<span style="color:#7b4a9c">◆</span> LoCo\'s coordinated-event calls, '
         f'the same detector and settings on both · '
         f'<span style="color:#1b7f3b">▲</span> planted truth, which exists only '
-        f'below · onsets inside a called window are dark, the rest muted.<br>'
+        f'below. Every raster onset is drawn the same; each ◆ marks the ONSET '
+        f'of a LoCo call, and the extent of the window it called is not '
+        f'drawn.<br>'
         f'<span style="color:#555">LoCo finds <b>{det["real"].onset_sec.size}</b> '
         f'in the real recording and <b>{det["synthetic"].onset_sec.size}</b> in '
         f'the generated one, where <b>{len(gt.times)}</b> were planted.</span>'
@@ -212,6 +219,9 @@ def main(argv=None):
     p = argparse.ArgumentParser(
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter)
+    p.add_argument("--folder", default=None,
+                   help="export folder holding the recording to draw "
+                        "(docs/export_folder_spec.md)")
     p.add_argument("--slice", default=DEFAULT_SLICE)
     p.add_argument("--seed", type=int, default=5)
     p.add_argument("--per-level", type=int, default=4)
@@ -227,7 +237,7 @@ def main(argv=None):
     p.add_argument("--no-png", dest="png", action="store_false", default=True)
     args = p.parse_args(argv)
 
-    from bugarach.paths import ENV_VAR, darkroom
+    from bugarach.paths import darkroom, unresolved_message
 
     if args.out:
         dest = Path(args.out).expanduser()
@@ -235,8 +245,7 @@ def main(argv=None):
     else:
         dest = darkroom(create=True)
         if dest is None:
-            print(f"{ENV_VAR} is not set and --out was not given — writing "
-                  "nothing rather than guessing.", file=sys.stderr)
+            print(unresolved_message(), file=sys.stderr)
             return 2
 
     import panel as pn

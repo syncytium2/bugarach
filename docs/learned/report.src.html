@@ -1,0 +1,755 @@
+<title>Learned Detector Review</title>
+<style>
+{{CSS:report}}</style>
+
+<div class="wrap">
+<div class="superseded">
+  <p>
+    <strong>Superseded &mdash; this is the earlier bench, and the comparison that
+    stands now is in <code>docs/learned/bakeoff.md</code>.</strong>
+  </p>
+  <p>
+    Everything below was measured on three simulated recordings from a generator
+    with a <em>flat</em> background, with each detector at a declared operating
+    point rather than one fitted and scored on separate data. It is accurate for
+    that bench and is kept as the record of it.
+  </p>
+  <p>
+    What replaced it, on 2026-08-16: a corpus whose settings were measured from
+    <strong>85 real recordings</strong> and whose background is heterogeneous and
+    bursty, with every detector &mdash; hand-written and learned alike &mdash;
+    fitted on three folds and scored on a held-out fourth. On that footing the
+    learned model <strong>ties</strong> the best hand-written detectors
+    ({{N:b:learned.tube.f1.mean|.3f}}&nbsp;&plusmn;&nbsp;{{N:b:learned.tube.f1.sd|.3f}}
+    against CoactDetect&rsquo;s
+    {{N:b:hand_written.coact.f1.mean|.3f}}&nbsp;&plusmn;&nbsp;{{N:b:hand_written.coact.f1.sd|.3f}}),
+    and the difference that survives is cost:
+    <strong>{{N:b:learned.tube.detect_sec.mean|.3f}}&nbsp;s</strong> to scan a
+    held-out fold against CoactDetect&rsquo;s
+    {{N:b:hand_written.coact.detect_sec.mean|.3f}} and LoCo&rsquo;s
+    {{N:b:hand_written.loco.detect_sec.mean|.3f}}, at
+    {{N:b:learned.tube.n_params|,d}} parameters and
+    {{N:b:learned.tube.train_sec.mean|.1f}}&nbsp;s to train.
+    Take the participant floor, the architecture story and the failure modes
+    below as still standing; take no ranking or number here as current.
+  </p>
+</div>
+<div class="col">
+  <p class="eyebrow">bugarach &middot; 16 August 2026</p>
+  <h1>Six cells fire together in a third of a second. Finding that is harder than it sounds.</h1>
+  <p class="standfirst">
+    The problem first, on simulated data where the answer is known: the events
+    are there, and almost nothing about the raw record says so.
+  </p>
+</div>
+
+<figure>
+  <img src="{{FIG:tube_view}}" alt="Three stacked panels, A to C, over twenty-one minutes of one simulated recording. A: a raster of onsets as small dark specks, with green triangles marking planted events and open grey triangles marking planted distractors; the shaded band on the right is the dense-but-random probe window. B: a trace of the fraction of cells active, where planted events appear as tall spikes but so do the distractors and part of the probe window. C: the same trace with its local level subtracted, where the planted events stand out more cleanly but several unplanted excursions remain comparable in height.">
+  <figcaption>
+    <strong>Twenty-one minutes out of one 45-minute simulated recording.</strong>
+    <span class="key truth">Green triangles</span> are events the generator
+    planted; <span class="key" style="color:var(--muted)">open grey triangles</span>
+    are <em>distractors</em> &mdash; correlated bursts it plants on purpose as
+    negatives &mdash; and the shaded band is a dense-but-random block planted to
+    tempt anything that merely counts activity. Panel B is the fraction of cells
+    active at each instant. Panel C subtracts that trace&rsquo;s own local level.
+    C sharpens the events; it does not cleanly separate them, and the tallest
+    unplanted excursion is comparable to the smaller planted ones &mdash; which is
+    the honest version of what one convolution buys you.
+  </figcaption>
+</figure>
+
+<h2>How everything here is scored</h2>
+<div class="col">
+  <p>
+    Every number below comes from <strong>simulated</strong> recordings. A
+    generator plants coordinated events at times it records, so each detection
+    can be checked against truth rather than against another detector&rsquo;s
+    opinion. Nothing here is measured on a real slice.
+  </p>
+  <p>
+    Three recordings, forty-five planted events, at three recruitment levels
+    &mdash; about <strong>10, 6 and 3</strong> of the 33 cells. A detection is an
+    interval, not an instant: it counts as a hit if the planted event falls
+    inside its span, or within <strong>1.5&nbsp;s</strong> of the nearer edge.
+    Matching is nearest-pair and one-to-one, so a detector that splits one event
+    into three is charged two false alarms rather than credited twice. Detectors
+    reporting wide spans get a wider effective window &mdash; binned SCE reports
+    roughly 9-second bins &mdash; which is deliberate, because scoring a correct
+    10-second bin as a miss would be worse, but it does mean the tolerance is not
+    identical across the nine.
+    <em>Recall</em> is the share of planted events found; <em>precision</em> the
+    share of detections that were real; <em>F1</em> their harmonic mean.
+  </p>
+  <p>
+    Each recording also contains a five-minute <strong>probe</strong> &mdash; a
+    stretch of dense, random activity with no planted event anywhere in it.
+    Firings inside it are kept out of every precision figure, for all nine
+    detectors alike; folding them in would stop the number measuring the
+    detector and start it measuring how dense the probe was made. It is not a
+    small exclusion, and it is not evenly distributed: of binned SCE&rsquo;s
+    {{N:r:six.sce.n_detected|d}} detections
+    <strong>{{N:r:six.sce.hot_fa|d}}</strong> are probe firings, and of
+    CICADA&rsquo;s {{N:r:six.cicada.n_detected|d}},
+    <strong>{{N:r:six.cicada.hot_fa|d}}</strong> are. The learned model fires
+    {{N:r:learned.tube.hot_fa|d}} times in there. Precision below is computed
+    over what is left &mdash; which means <strong>the probe cannot lower any
+    score on this page.</strong> Firings inside it leave both the numerator and
+    the denominator, so a detector that fired five hundred times in there would
+    read exactly like one that never fired at all. It is a diagnostic, not a
+    control, and the counts above are the whole of what it tells you.
+  </p>
+  <div class="note warn">
+    <strong>Every learned number is a single training run at a single seed.</strong>
+    Six runs in total. Nothing here carries an error bar, and with
+    45 planted events one event is 0.022 of recall &mdash; so <strong>no
+    comparison on this page, learned or hand-written, has been shown to be a
+    difference.</strong> Where the text ranks things, read it as an ordering of
+    point estimates. The gap between an
+    architecture that learns and one that does not is far too large to be seed
+    noise; the gaps between operating points of the same model are not obviously
+    so, and are not treated here as if they were.
+  </div>
+</div>
+
+<h2>Where the six run out</h2>
+<div class="col">
+  <p>
+    Six hand-written detectors already exist in this repo, each computing
+    &ldquo;more coincidence than the local background explains&rdquo; by a
+    different rule: <strong>rate+context</strong>, <strong>CoactDetect</strong>,
+    <strong>LoCo</strong>, <strong>binned SCE</strong>, <strong>CICADA</strong>
+    and <strong>SPIKE-synchronization</strong>. They are ports, held to 1e&#8209;9
+    against a MATLAB original; CICADA derives from the Cossart lab&rsquo;s
+    <a href="https://gitlab.com/cossartlab/cicada">CICADA</a> (MIT, &copy; 2019
+    Cossart Lab) and the synchrony <em>profile</em> follows cSPIKE/PySpike&rsquo;s
+    adaptive SPIKE-synchronization semantics (Kreuz lab) &mdash; the detector that
+    finds coordination events in that time-varying profile is this project&rsquo;s
+    own, not PySpike&rsquo;s. They are not mine, and the comparison below
+    is against other people&rsquo;s work.
+  </p>
+  <p>
+    Pooled across all three recruitment levels they look similar. Split by level,
+    they do not: five of the six find nearly every event where ten cells take
+    part &mdash; binned SCE finds three fifths &mdash; and almost none where
+    three do. Call that collapse the <em>participant floor</em>.
+  </p>
+</div>
+
+<figure>
+  <img src="{{FIG:learned_floor}}" alt="Recall against the fraction of cells taking part, at the three planted levels. All detectors reach near-perfect recall at the highest level and collapse towards zero at the lowest. The learned model's line sits inside the spread of the others.">
+  <figcaption>
+    <strong>The pooled number hides the whole problem.</strong> Recall against
+    how many cells took part, at the three levels the generator plants, for the
+    <span class="key hand">six hand-written detectors</span> and the
+    <span class="key learned">learned model</span>, each at its own declared
+    operating point. At three cells the best of the six finds
+    <strong>{{N:r:six.coact.by_frac.0.1|.0%}}</strong> of events, the other
+    five find under a tenth, and two of them find none at all. Segments between the three levels are interpolation
+    &mdash; only the three marked points were measured.
+  </figcaption>
+</figure>
+
+<div class="col">
+  <p>
+    That floor is the interesting part of the problem, and it is what made a
+    learned detector worth trying: a model with the invariance built in might
+    hold on further down.
+  </p>
+</div>
+
+<h2>Three architectures, and what each one taught</h2>
+<div class="col">
+  <p>
+    Three were built. The first two never learned anything, and finding out why
+    is the result here.
+  </p>
+</div>
+
+<div class="tablewrap">
+<table>
+  <thead><tr><th>#</th><th>Model</th><th>Idea</th><th class="n">Params</th>
+    <th class="n">Train</th><th class="n">F1</th><th>What it settled</th></tr></thead>
+  <tbody>
+    <tr><td class="n">1</td><td>pooled trace</td>
+        <td>pool the cells away first, then filter in time</td>
+        <td class="n">{{N:r:learned.trace.params|,}}</td>
+        <td class="n">{{N:r:learned.trace.train_seconds|.0f}} s</td>
+        <td class="n">{{N:r:learned.trace.f1|.2f}}</td>
+        <td>cheapest possible; gives up distinctness. Never learned &mdash; so the problem was not how cells are pooled.</td></tr>
+    <tr><td class="n">2</td><td>per-cell filter bank</td>
+        <td>keep the cells, filter each, cap softly, pool by firing-rate band</td>
+        <td class="n">{{N:r:learned.tiny.params|,}}</td>
+        <td class="n">{{N:r:learned.tiny.train_seconds|.0f}} s</td>
+        <td class="n">{{N:r:learned.tiny.f1|.2f}}&thinsp;&dagger;</td>
+        <td>a 2,000-sample receptive field, left to <em>discover</em> that activity should be judged against local background. It did not.</td></tr>
+    <tr class="hl"><td class="n">3</td><td>centre &minus; surround</td>
+        <td>subtract the local level from the brightness trace, by construction</td>
+        <td class="n">{{N:r:learned.tube.params|,}}</td>
+        <td class="n">{{N:r:learned.tube.train_seconds|.0f}} s</td>
+        <td class="n">{{N:r:learned.tube.f1|.2f}}</td>
+        <td>the same invariant, <strong>built in rather than hoped for</strong>. Half the size, forty times faster, and its loss descends.</td></tr>
+  </tbody>
+</table>
+</div>
+
+<figure>
+  <img src="{{FIG:learned_loss}}" alt="Training loss against step for the three architectures. Two oscillate in a band between roughly 0.8 and 1.9 for the whole run without descending. The third drops sharply within the first fifty steps and settles near 0.15.">
+  <figcaption>
+    <strong>Two of them never descend.</strong> Training loss over nine hundred
+    steps. The <span class="key learned">centre&minus;surround model</span> falls
+    within the first sampled interval and settles; the other two oscillate for
+    the whole run. Neither was broken &mdash; given a single window containing an
+    event, both fit it &mdash; and four other explanations were tested and ruled
+    out. What separated them was never capacity.
+  </figcaption>
+</figure>
+
+<div class="col">
+  <div class="note warn">
+    <strong>Two things this comparison does not control.</strong> The
+    centre&minus;surround model was trained at ten times the step size of the
+    other two &mdash; a per-architecture learning rate, so that one rate would
+    not report a tuning artifact as an architecture difference, but it does mean
+    the three curves above are not a controlled experiment. And the project&rsquo;s
+    own diagnostic ranks the positive-class weight and the batch size as the
+    leading <em>untested</em> causes of the other two failing to descend. The
+    conclusion below survives a retrain of the pooled trace at the higher rate
+    (its loss still does not settle), but &ldquo;never capacity&rdquo; is not
+    established by what is on this page.
+    <br>&dagger; The per-cell filter bank&rsquo;s threshold landed on the very
+    edge of the searched grid, which this project treats elsewhere as a search
+    that stopped too early rather than an answer. Its F1 is reported for
+    completeness and is not an operating point.
+  </div>
+  <p>
+    The difference is where rate invariance comes from. The first two were given
+    a long receptive field and left to <em>discover</em> that activity should be
+    judged against its local background. Centre&minus;surround does not discover
+    it; it is that operation. <strong>Building the invariant in beat hoping for
+    it</strong>, at half the parameters of either and forty times the training
+    speed of the per-cell filter bank &mdash; though only 1.5 times the
+    pooled trace&rsquo;s, which trains in eight seconds. That is the one claim
+    on this page that does not depend on beating anybody.
+  </p>
+</div>
+
+<h2>The network, layer by layer</h2>
+<div class="col">
+  <p>
+    The design is Tony DeFazio&rsquo;s, and it started as a picture rather than
+    an architecture: <em>look down a tube as the recording slides past; when
+    cells align, a bright spot crosses the centre.</em> Every row below exists to
+    force a property the detector must have.
+  </p>
+</div>
+
+<div class="tablewrap">
+<table>
+  <thead><tr>
+    <th>#</th><th>Layer</th><th>What it does</th><th>Why it is there</th>
+    <th class="n">Output</th><th class="n">Params</th>
+  </tr></thead>
+  <tbody>
+    <tr><td class="n">0</td><td>input</td><td>onsets on a sample grid, cells ordered by firing rate</td>
+        <td>inherited from the shared encoder; this model sums the cells away, so order never reaches it &mdash; it is load-bearing for the filter bank</td>
+        <td class="n">N &times; T</td><td class="n">0</td></tr>
+    <tr><td class="n">1</td><td>cap per cell</td><td>max over &plusmn;1 sample, so a cell firing repeatedly within 0.2&nbsp;s counts once</td>
+        <td><strong>one cell, one vote</strong> &mdash; stops one busy cell imitating a crowd</td>
+        <td class="n">N &times; T</td><td class="n">0</td></tr>
+    <tr><td class="n">2</td><td>sum over cells</td><td>fraction of cells active near each instant</td>
+        <td><strong>space invariance</strong> &mdash; runs at any cell count, never sees identity</td>
+        <td class="n">1 &times; T</td><td class="n">0</td></tr>
+    <tr class="hl"><td class="n">3</td><td>centre &minus; surround</td>
+        <td>4 difference-of-Gaussian kernels; each centre width, its surround ratio and its gain are free</td>
+        <td><strong>rate invariance, by construction</strong> &mdash; a flat field integrates to zero, so a uniform background cancels</td>
+        <td class="n">4 &times; T</td><td class="n">12</td></tr>
+    <tr><td class="n">3b</td><td>&hellip;and the raw trace</td><td>the un-subtracted brightness trace is carried forward unchanged</td>
+        <td>so the head sees the absolute level too &mdash; which is the part the invariance does <em>not</em> cover</td>
+        <td class="n">+1 &times; T</td><td class="n">0</td></tr>
+    <tr><td class="n">4</td><td>dilated stack</td><td>6 convolutions on those 5 channels, dilation doubling, 8 wide</td>
+        <td>combines the scales and enforces that an event is a run, not a blip</td>
+        <td class="n">8 &times; T</td><td class="n">1,128</td></tr>
+    <tr><td class="n">5</td><td>pointwise mix</td><td>one score per sample</td>
+        <td>thresholded into episodes and widths &mdash; what the six return</td>
+        <td class="n">T</td><td class="n">9</td></tr>
+  </tbody>
+</table>
+</div>
+
+<div class="arch">
+{{ARCH_SVG}}
+</div>
+
+<div class="col">
+  <p>
+    <strong>Layer 3 is the idea.</strong> A difference of Gaussians is positive
+    in the middle and negative around it, area-matched so a uniform field sums to
+    zero. Raise the background everywhere and the response does not move;
+    concentrate the same activity into a moment and it jumps. That is
+    &ldquo;observed minus local context&rdquo; &mdash; the quantity every one of
+    the six computes by hand &mdash; written as one convolution and then fitted
+    rather than configured. Centre&minus;surround itself is an old idea from
+    vision; what is new here is pointing it at a population coactivity trace in
+    time rather than at an image in space.
+  </p>
+  <div class="note warn">
+    <strong>Four of the head&rsquo;s five inputs cancel a uniform background. The
+    fifth does not.</strong> Row 3b is the brightness trace passed through
+    unfiltered, and it swings roughly eightfold between a sparse and a busy
+    stretch. So the invariance is built into most of the model rather than all of
+    it &mdash; which is also a live alternative explanation for the transfer
+    asymmetry further down, and one this page has not ruled out. Dropping that
+    channel is a one-line change and would settle it.
+  </div>
+</div>
+
+<h2>What it scores</h2>
+<div class="col">
+  <p>
+    F1 reports one operating point out of a range a threshold moves through, and
+    quoting it alone would flatter whichever detector happened to be tuned
+    nearest its own optimum. Each of the six carries a declared sensitivity knob
+    for exactly this reason, so all seven are shown as curves.
+  </p>
+</div>
+
+<figure>
+  <img src="{{FIG:learned_curve}}" alt="Precision against recall. Six faint blue curves, one per hand-written detector swept along its own knob, each with a filled circle at its declared operating point. One thick dark red curve for the learned model swept along its threshold, with a diamond at its chosen point. The red curve runs through the middle of the blue ones rather than above them.">
+  <figcaption>
+    <strong>The learned curve is ahead at high precision and behind at high recall.</strong>
+    Precision against recall on the same three recordings, scored by the same
+    rule. Each <span class="key hand">hand-written detector</span> is swept along
+    its own declared knob, with a filled circle at the operating point it ships
+    with; the <span class="key learned">learned model</span> is swept along its
+    threshold, diamond at the one chosen on held-out recordings. Swept, the best
+    F1 anyone reaches is <strong>{{N:r:six_sweep.rate.4.f1|.3f}}</strong>
+    (rate+context, at <span class="num">excess
+    {{N:r:six_sweep.rate.4.knob_value|g}}</span>) against the learned
+    model&rsquo;s <strong>{{N:r:learned.tube.curve.2.f1|.3f}}</strong> &mdash;
+    third of seven.
+  </figcaption>
+</figure>
+
+<div class="col">
+  <p>
+    <strong>It wins one end of the curve and loses the other.</strong> Above
+    precision 0.8 it is ahead of all six; below about 0.65 rate+context is ahead
+    of it. And the participant floor the whole exercise was aimed at turns out to
+    be a knob rather than a limit: turned up to three times the local background
+    (<span class="num">excess&nbsp;3</span>), rate+context finds
+    <strong>{{N:r:six_sweep.rate.3.by_frac.0.1|.0%}}</strong> of three-cell
+    events at precision {{N:r:six_sweep.rate.3.precision|.2f}}, while the learned
+    model at precision {{N:r:learned.tube.curve.1.precision|.2f}} finds
+    <strong>{{N:r:learned.tube.curve.1.by_frac.0.1|.0%}}</strong>. The six were
+    missing three-cell events because nobody had turned their knobs, not because
+    they could not reach them &mdash; which retires the motivation this project
+    started from.
+  </p>
+  <div class="note warn">
+    <strong>Those two sentences are an ordering of point estimates, not a
+    result.</strong> Every figure here rests on 45 planted events and one
+    training run. The whole spread across the top three swept detectors is 0.011
+    of F1, which is about half of one event. Read the ranking as &ldquo;these are
+    the same to within what this benchmark can see&rdquo;.
+  </div>
+  <p>
+    What is left is worth saying plainly. A model specified in one sentence, with
+    <strong>{{N:r:learned.tube.params|,}}</strong> parameters and
+    <strong>{{N:r:learned.tube.train_seconds|.0f}} seconds</strong> of training
+    and no tuning against this benchmark, lands among six detectors that were
+    hand-built and calibrated over an upstream campaign. That is a statement
+    about how much of a detector is structure rather than tuning, and it does not
+    require the model to be better than anything.
+  </p>
+  <p>
+    A score at a tuned operating point is also not what a lab is buying. The
+    question that decides whether a detector is usable is what happens to that
+    score when the next slice is busier than the one it was calibrated on
+    &mdash; and that is the next section, where this model does worse than most of them.
+  </p>
+</div>
+
+<div class="tablewrap">
+<table>
+  <thead><tr><th>Threshold</th><th class="n">Recall</th><th class="n">Precision</th>
+    <th class="n">F1</th><th class="n">Recall at 3 cells</th><th>&nbsp;</th></tr></thead>
+  <tbody>
+    <tr><td class="n">0.500</td><td class="n">{{N:r:learned.tube.curve.0.recall|.2f}}</td><td class="n">{{N:r:learned.tube.curve.0.precision|.2f}}</td><td class="n">{{N:r:learned.tube.curve.0.f1|.2f}}</td><td class="n">{{N:r:learned.tube.curve.0.by_frac.0.1|.2f}}</td><td>finds nearly everything, buried in false alarms</td></tr>
+    <tr><td class="n">0.900</td><td class="n">{{N:r:learned.tube.curve.1.recall|.2f}}</td><td class="n">{{N:r:learned.tube.curve.1.precision|.2f}}</td><td class="n">{{N:r:learned.tube.curve.1.f1|.2f}}</td><td class="n">{{N:r:learned.tube.curve.1.by_frac.0.1|.2f}}</td><td>&nbsp;</td></tr>
+    <tr class="hl"><td class="n">0.990</td><td class="n">{{N:r:learned.tube.curve.2.recall|.2f}}</td><td class="n">{{N:r:learned.tube.curve.2.precision|.2f}}</td><td class="n">{{N:r:learned.tube.curve.2.f1|.2f}}</td><td class="n">{{N:r:learned.tube.curve.2.by_frac.0.1|.2f}}</td><td>this table&rsquo;s best F1</td></tr>
+    <tr><td class="n">0.997</td><td class="n">{{N:r:learned.tube.curve.3.recall|.2f}}</td><td class="n">{{N:r:learned.tube.curve.3.precision|.2f}}</td><td class="n">{{N:r:learned.tube.curve.3.f1|.2f}}</td><td class="n">{{N:r:learned.tube.curve.3.by_frac.0.1|.2f}}</td><td>the shipped point, chosen on held-out recordings</td></tr>
+    <tr><td class="n">0.999</td><td class="n">{{N:r:learned.tube.curve.4.recall|.2f}}</td><td class="n">{{N:r:learned.tube.curve.4.precision|.2f}}</td><td class="n">{{N:r:learned.tube.curve.4.f1|.2f}}</td><td class="n">{{N:r:learned.tube.curve.4.by_frac.0.1|.2f}}</td><td>never wrong here, on 16 detections</td></tr>
+  </tbody>
+</table>
+</div>
+
+<div class="col">
+  <div class="note">
+    <strong>Only the shipped threshold was chosen honestly.</strong> It comes
+    from four recordings the model never trained on and is never scored on. Every
+    other row of this table was computed on the three recordings it is scored
+    against, so any point read off it is selected on the evaluation set &mdash;
+    including the 0.990 row that happens to be the best F1 here.
+  </div>
+</div>
+
+<figure>
+  <img src="{{FIG:learned_scoreboard}}" alt="Three stacked bar charts, A to C, showing F1, recall and precision for six hand-written detectors and three learned models at their declared operating points.">
+  <figcaption>
+    <strong>All nine at their declared operating points.</strong> Panels A, B and
+    C are F1, recall and precision on the same three recordings.
+    <span class="key hand">Hand-written</span> and
+    <span class="key learned">learned</span>. In panel C the tallest bar belongs
+    to the per-cell filter bank, on <strong>three detections in total</strong>
+    &mdash; a precision of 1.00 from a model that fired almost never, which is
+    why precision alone is not a ranking.
+  </figcaption>
+</figure>
+
+<h2>Does it survive a change of background?</h2>
+<div class="col">
+  <p>
+    The claim behind centre&minus;surround is that a uniform change in background
+    cancels. That is testable: fit in one background, deploy in the other, carry
+    the threshold over unchanged. Re-picking it on arrival would hide the failure
+    this tests for.
+  </p>
+  <p>
+    Both backgrounds are untreated and both are measured &mdash; 0.0038 and
+    0.0175&nbsp;Hz per cell, a 4.6-fold spread real slices show among themselves.
+  </p>
+  <div class="note warn">
+    <strong>That spread is narrower than it sounds.</strong> Those two endpoints
+    are the quarter and three-quarter points of the <em>slice-population</em>
+    rate; as per-cell rates they sit at roughly the 60th and 83rd percentiles, so
+    this is a 23-percentile band rather than an interquartile range. Any null
+    result on such an axis is weak by construction, and this one is reported
+    knowing that.
+  </div>
+</div>
+
+<div class="tablewrap">
+<div class="tablewrap">
+<table>
+  <thead><tr><th>Fitted on</th><th>Tested on</th><th class="n">F1</th>
+    <th class="n">Recall</th><th class="n">Precision</th><th>&nbsp;</th></tr></thead>
+  <tbody>
+    <tr class="hl"><td>quiet</td><td>quiet</td>
+        <td class="n">{{N:s:learned.tube.baseline_quiet.baseline_quiet.f1|.2f}}</td>
+        <td class="n">{{N:s:learned.tube.baseline_quiet.baseline_quiet.recall|.2f}}</td>
+        <td class="n">{{N:s:learned.tube.baseline_quiet.baseline_quiet.precision|.2f}}</td>
+        <td>at home</td></tr>
+    <tr><td>quiet</td><td>busy</td>
+        <td class="n">{{N:s:learned.tube.baseline_quiet.baseline_busy.f1|.2f}}</td>
+        <td class="n">{{N:s:learned.tube.baseline_quiet.baseline_busy.recall|.2f}}</td>
+        <td class="n">{{N:s:learned.tube.baseline_quiet.baseline_busy.precision|.2f}}</td>
+        <td>deployed into a busier background</td></tr>
+    <tr class="hl"><td>busy</td><td>busy</td>
+        <td class="n">{{N:s:learned.tube.baseline_busy.baseline_busy.f1|.2f}}</td>
+        <td class="n">{{N:s:learned.tube.baseline_busy.baseline_busy.recall|.2f}}</td>
+        <td class="n">{{N:s:learned.tube.baseline_busy.baseline_busy.precision|.2f}}</td>
+        <td>at home</td></tr>
+    <tr><td>busy</td><td>quiet</td>
+        <td class="n">{{N:s:learned.tube.baseline_busy.baseline_quiet.f1|.2f}}</td>
+        <td class="n">{{N:s:learned.tube.baseline_busy.baseline_quiet.recall|.2f}}</td>
+        <td class="n">{{N:s:learned.tube.baseline_busy.baseline_quiet.precision|.2f}}</td>
+        <td>deployed into a quieter one</td></tr>
+  </tbody>
+</table>
+</div>
+
+<div class="col">
+  <p>
+    <strong>The claim does not survive.</strong> Deploying downward &mdash;
+    fitted busy, run quiet &mdash; costs nothing. Deploying upward costs
+    <strong>{{N:s:learned.tube.baseline_quiet.baseline_quiet.precision|.2f}} to
+    {{N:s:learned.tube.baseline_quiet.baseline_busy.precision|.2f}}</strong> of
+    precision and F1
+    {{N:s:learned.tube.baseline_quiet.baseline_quiet.f1|.2f}} to
+    {{N:s:learned.tube.baseline_quiet.baseline_busy.f1|.2f}}. A model whose whole
+    architectural argument is that a uniform change in background cancels loses a
+    third of its precision to a 4.6-fold change in background.
+  </p>
+  <p>
+    Why it should: <strong>centre&minus;surround cancels the mean, not the
+    variance.</strong> A uniform rise subtracts out in expectation, but the
+    fluctuations around it grow with the rate and produce chance alignments no
+    surround removes. The uncancelled brightness channel is an equally good
+    explanation and has not been ruled out.
+  </p>
+
+  <h3>The six, calibrated once and carried across</h3>
+  <p>
+    Evaluating a fixed detector in two backgrounds is not a transfer test:
+    nothing is carried over, so nothing can collapse. The matched experiment is
+    to calibrate each detector on one background and carry its knob over
+    unchanged &mdash; on recordings held out from the ones it is then scored on,
+    which is what the learned model&rsquo;s threshold already gets. Every
+    available result, both directions, no selection:
+  </p>
+</div>
+
+<div class="tablewrap">
+<table>
+  <thead><tr><th>Detector</th><th class="n">Precision at home</th>
+    <th class="n">After the move</th><th class="n">Change</th></tr></thead>
+  <tbody>
+    <tr><td colspan="4"><strong>Calibrated quiet, deployed busy</strong> &mdash; the direction that costs</td></tr>
+    <tr><td>rate+context</td>
+        <td class="n">{{N:s:six_transfer.rate.baseline_quiet.baseline_quiet.precision|.2f}}</td>
+        <td class="n">{{N:s:six_transfer.rate.baseline_quiet.baseline_busy.precision|.2f}}</td>
+        <td class="n">&minus;0.49</td></tr>
+    <tr class="hl"><td>centre&minus;surround (learned)</td>
+        <td class="n">{{N:s:learned.tube.baseline_quiet.baseline_quiet.precision|.2f}}</td>
+        <td class="n">{{N:s:learned.tube.baseline_quiet.baseline_busy.precision|.2f}}</td>
+        <td class="n">&minus;0.34</td></tr>
+    <tr><td>LoCo</td>
+        <td class="n">{{N:s:six_transfer.loco.baseline_quiet.baseline_quiet.precision|.2f}}</td>
+        <td class="n">{{N:s:six_transfer.loco.baseline_quiet.baseline_busy.precision|.2f}}</td>
+        <td class="n">&minus;0.05</td></tr>
+    <tr><td>CICADA</td>
+        <td class="n">{{N:s:six_transfer.cicada.baseline_quiet.baseline_quiet.precision|.2f}}</td>
+        <td class="n">{{N:s:six_transfer.cicada.baseline_quiet.baseline_busy.precision|.2f}}</td>
+        <td class="n">+0.02</td></tr>
+    <tr><td>SPIKE-synch</td>
+        <td class="n">{{N:s:six_transfer.sync.baseline_quiet.baseline_quiet.precision|.2f}}</td>
+        <td class="n">{{N:s:six_transfer.sync.baseline_quiet.baseline_busy.precision|.2f}}</td>
+        <td class="n">+0.06</td></tr>
+    <tr><td colspan="4"><strong>Calibrated busy, deployed quiet</strong> &mdash; the direction that does not</td></tr>
+    <tr><td>SPIKE-synch</td>
+        <td class="n">{{N:s:six_transfer.sync.baseline_busy.baseline_busy.precision|.2f}}</td>
+        <td class="n">{{N:s:six_transfer.sync.baseline_busy.baseline_quiet.precision|.2f}}</td>
+        <td class="n">+0.04</td></tr>
+    <tr><td>CoactDetect</td>
+        <td class="n">{{N:s:six_transfer.coact.baseline_busy.baseline_busy.precision|.2f}}</td>
+        <td class="n">{{N:s:six_transfer.coact.baseline_busy.baseline_quiet.precision|.2f}}</td>
+        <td class="n">+0.01</td></tr>
+    <tr><td>rate+context</td>
+        <td class="n">{{N:s:six_transfer.rate.baseline_busy.baseline_busy.precision|.2f}}</td>
+        <td class="n">{{N:s:six_transfer.rate.baseline_busy.baseline_quiet.precision|.2f}}</td>
+        <td class="n">+0.01</td></tr>
+    <tr class="hl"><td>centre&minus;surround (learned)</td>
+        <td class="n">{{N:s:learned.tube.baseline_busy.baseline_busy.precision|.2f}}</td>
+        <td class="n">{{N:s:learned.tube.baseline_busy.baseline_quiet.precision|.2f}}</td>
+        <td class="n">+0.01</td></tr>
+    <tr><td>LoCo</td>
+        <td class="n">{{N:s:six_transfer.loco.baseline_busy.baseline_busy.precision|.2f}}</td>
+        <td class="n">{{N:s:six_transfer.loco.baseline_busy.baseline_quiet.precision|.2f}}</td>
+        <td class="n">&minus;0.01</td></tr>
+    <tr><td>CICADA</td>
+        <td class="n">{{N:s:six_transfer.cicada.baseline_busy.baseline_busy.precision|.2f}}</td>
+        <td class="n">{{N:s:six_transfer.cicada.baseline_busy.baseline_quiet.precision|.2f}}</td>
+        <td class="n">&minus;0.06</td></tr>
+  </tbody>
+</table>
+</div>
+
+<div class="col">
+  <p>
+    <strong>Going up, the learned model is second-worst of five.</strong> Only
+    rate+context loses more, and three of the four hand-written calibrations lose
+    almost nothing or improve. Going down, everything is flat and the model sits
+    in the middle. So the honest reading is that this test <em>falsifies the
+    architectural claim it was built to check</em>: rate invariance by
+    construction should have shown up here as a flat line, and it did not.
+  </p>
+  <p>
+    The failure this test exists to catch does reproduce &mdash; rate+context
+    calibrated on the quieter background and carried up loses
+    <strong>{{N:s:six_transfer.rate.baseline_quiet.baseline_quiet.precision|.2f}}
+    to {{N:s:six_transfer.rate.baseline_quiet.baseline_busy.precision|.2f}}</strong>
+    of precision, the same shape as the historical collapse this whole benchmark
+    was built after. It just does not spare the model that was supposed to be
+    immune to it.
+  </p>
+  <div class="note warn">
+    <strong>What this still cannot show.</strong> The background span is the
+    narrow band described above, so a larger shift is untested. Binned SCE
+    produced no usable operating point in either direction, and CoactDetect none
+    in the quiet-calibrated direction: their F1 peaked at the end of the searched
+    grid, which this project treats as a search that stopped too early rather
+    than an answer, so they are absent rather than scored at a boundary. And
+    every learned row is one training run.
+  </div>
+</div>
+
+<h2>What the model learned about the data</h2>
+<div class="col">
+  <p>
+    The four centre widths are free parameters. They were initialised as a
+    geometric ladder &mdash; 1, 2, 4 and 8 samples, starting at the finest
+    interval the recording resolves &mdash; and then trained. Where they ended up
+    is the model&rsquo;s own estimate of how wide a coordinated event is:
+  </p>
+</div>
+
+<div class="tablewrap">
+<table>
+  <thead><tr><th>Scale</th><th class="n">Started (samples)</th><th class="n">Learned (samples)</th><th class="n">In seconds</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td class="n">1</td><td class="n">{{N:r:learned.tube.centres.0|.2f}}</td><td class="n">0.18</td></tr>
+    <tr class="hl"><td>2</td><td class="n">2</td><td class="n">{{N:r:learned.tube.centres.1|.2f}}</td><td class="n">0.42</td></tr>
+    <tr class="hl"><td>3</td><td class="n">4</td><td class="n">{{N:r:learned.tube.centres.2|.2f}}</td><td class="n">0.65</td></tr>
+    <tr><td>4</td><td class="n">8</td><td class="n">{{N:r:learned.tube.centres.3|.2f}}</td><td class="n">0.99</td></tr>
+  </tbody>
+</table>
+</div>
+
+<div class="col">
+  <p>
+    One sample is 0.1&nbsp;s at this recording&rsquo;s 10&nbsp;Hz grid. For
+    comparison, the planted onset spread is 0.36&nbsp;s and the generator&rsquo;s
+    own record puts a planted event&rsquo;s realized footprint at a median of
+    <strong>{{N:r:planted_span_sec.baseline_busy.median|.2f}}&nbsp;s</strong> on
+    these recordings. The two middle scales landed at 0.42&nbsp;s and
+    0.65&nbsp;s.
+  </p>
+  <div class="note warn">
+    <strong>That agreement is weaker than it looks, in three ways.</strong> The
+    ladder started at 1&ndash;8 samples, which already brackets the answer, so
+    the fitted widths moved 1.2&ndash;2.1&times; inside a range that contained
+    the target before training began. Retraining on a quieter background &mdash;
+    same generator settings, only the background rate changed &mdash; moved the
+    second scale by 30%, while the events it measures moved 11% &mdash; about a
+    third of that, not a match. And the footprint above is the generator&rsquo;s ground truth,
+    not an independent instrument. The honest claim is that the widths land in a
+    plausible range, not that they recover the timescale.
+  </div>
+  <div class="note">
+    It is still worth leaving them free. An earlier draft handed the model a bank
+    of <em>fixed</em> time-scales centred on a width already measured &mdash; the
+    answer written into the input. Making every width trainable is what makes the
+    fitted value a measurement of anything at all.
+  </div>
+</div>
+
+<h2>The measurement this rests on</h2>
+<div class="col">
+  <p>
+    Every number here comes from simulated recordings, so the generator&rsquo;s
+    settings have to come from a real one. Measuring them with the six would make
+    each simulated recording a restatement of whichever detector measured it.
+  </p>
+  <p>
+    The assessor avoids that: it has no operating point, only a comparison
+    against a null built by circularly shifting each cell within the window
+    &mdash; which holds every cell&rsquo;s own firing rate and destroys only
+    cross-cell timing. It was MATLAB-only, which broke the per-lab loop at its
+    first step. A Python port now reproduces interface2&rsquo;s
+    <code>measure_coordination_timescale.m</code> to a relative 1e&#8209;9 on
+    every quantity it emits, across four parameter settings of one synthetic
+    reference fixture.
+  </p>
+</div>
+
+<figure>
+  <img src="{{FIG:learned_round_trip}}" alt="Three bar panels, A to C, showing participants, onset spread and events per minute recovered at K equals 3, 4 and 6, each against a dashed green line marking the planted value. Panel B additionally carries a dotted line marking the surrogate null, which sits very close to the observed bars.">
+  <figcaption>
+    <strong>What the measurement recovers, and where it is measuring itself.</strong>
+    Median over eight simulated recordings with known planted coordination;
+    <span class="key truth">dashed green</span> is the planted value. K is the
+    minimum number of co-active cells counted as an event &mdash; a convention,
+    so it is scanned rather than chosen. Panel C carries the verdict: K=4 is the
+    only value where the event <em>rate</em> is close, K=3 over-counts events by
+    60% and K=6 misses three quarters. But K=3 recovers the participant count
+    almost exactly where K=4 over-counts it by 18%, so no K is right on both.
+    In panel B the <span class="key" style="color:var(--muted)">dotted null</span>
+    sits almost on the bars: at K=3 the measured onset spread exceeds its own
+    surrogate by <strong>{{N:r:round_trip.by_k.3.jitter_excess|.3f}}&nbsp;s</strong>,
+    so that statistic is largely reporting the width of the assessor&rsquo;s own
+    gather window rather than the event. The method&rsquo;s default scan also
+    includes K=8, dropped here because it is undefined on every one of the eight
+    recordings.
+  </figcaption>
+</figure>
+
+<h2>What I would do next</h2>
+<div class="col">
+  <ol>
+    <li>
+      <strong>Multi-seed everything.</strong> Every <em>learned</em> number on this
+      page is one training run. This is the cheapest thing that could change a conclusion,
+      and until it is done no two learned numbers here have been shown to differ.
+    </li>
+    <li>
+      <strong>Drop the raw brightness channel and re-run.</strong> One line. It
+      would settle whether the transfer asymmetry is the variance story this page
+      tells or simply the one channel that never had the background subtracted.
+    </li>
+    <li>
+      <strong>Sweep the rate-band split.</strong> How many firing-rate bands the
+      cells are pooled into was the question the exercise was built to answer,
+      and it was unaskable while no model scored above
+      {{N:r:learned.trace.f1|.2f}}. The one that finally did pools every
+      cell into a single band.
+    </li>
+    <li>
+      <strong>Vary the sampling rate across training recordings.</strong> Every
+      recording here shares one imaging rate, so a model that quietly learned
+      this rig&rsquo;s sampling rate instead of the event timescale would pass
+      every test on this page.
+    </li>
+    <li>
+      <strong>Then the per-lab loop end to end</strong> &mdash; assess a real
+      recording, parameterize the generator from it, train, and compare what the
+      model finds against what the assessor measured on the same slice.
+    </li>
+  </ol>
+</div>
+
+<h2>What would change these numbers</h2>
+<div class="col">
+  <ul>
+    <li><strong>One seed.</strong> Stated above and repeated here because it
+      conditions everything: no learned comparison on this page is tested.</li>
+    <li><strong>A generator revision is in flight</strong> and moves the
+      distribution this whole loop is fitted to. Every number would need
+      re-running.</li>
+    <li><strong>The background model is flat.</strong> The bench gives every cell
+      the same background rate; the fitted heterogeneous model is not wired in
+      yet. Real recordings have 35% of ROIs recording no events in a baseline
+      window, against 2% here. So these
+      recordings are easier than real ones in a way that is known and not yet
+      corrected.</li>
+    <li><strong>The architecture's central claim is falsified on this bench.</strong>
+      Rate invariance by construction should have shown up in the transfer test as
+      a flat line; the model lost a third of its precision deploying upward, worse
+      than three of the four hand-written calibrations. Either the mechanism does
+      less than the design says, or the uncancelled brightness channel is doing
+      the damage &mdash; one line of code separates those two, and it has not been
+      run.</li>
+    <li><strong>The background span is narrow</strong> &mdash; the band described
+      above &mdash; so a larger shift is untested in both directions.</li>
+    <li><strong>Two of the six are not at their upstream-calibrated settings.</strong>
+      Binned SCE in particular runs here at a 10-second bin against a calibrated
+      2-second one, which is most of why it sits last.</li>
+    <li><strong>Nobody has decided who picks K</strong>, and it changes the
+      derived event rate about sevenfold across its scan.</li>
+  </ul>
+</div>
+
+<hr>
+<div class="col">
+  <footer>
+    <p>
+      Numbers and figures regenerated by <code>tools/make_learned_figures.py</code>,
+      <code>tools/regime_shift.py</code> and <code>tools/make_tube_figure.py</code>;
+      this page is built from <code>report.src.html</code> by
+      <code>tools/build_learned_report.py</code>, which resolves every quoted
+      number out of <code>learned_results.json</code> and
+      <code>regime_shift.json</code> at build time rather than letting it be
+      typed. The assessor port, the parameterization loop, the three
+      architectures and their tests are in
+      <a href="https://github.com/syncytium2/bugarach/pull/52">PR&nbsp;#52</a>.
+    </p>
+    <p>
+      Scored on synthetic recordings with planted ground truth. <strong>No result
+      here is measured on real data</strong>, and none of it establishes that any
+      detector, learned or hand-written, is right about a real slice. The
+      generator&rsquo;s parameters, including the two background rates, are
+      measured from real baseline recordings; the results are not.
+    </p>
+  </footer>
+</div>
+</div>

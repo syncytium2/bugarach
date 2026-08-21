@@ -12,6 +12,10 @@ rule here can fire by itself, it does — those are named inline.
 2. Open a PR.
 3. Land it with **`bash tools/merge_when_green.sh <pr>`**.
 4. Never commit directly on `main`.
+5. **Clean up after yourself**: when your work has merged, remove your worktree
+   and delete the branch. `bash tools/worktree_sweep.sh --apply` does it for
+   every worktree that is finished, and refuses to touch one that is not — see
+   "Worktrees rot" below.
 
 ## What is mechanized, and what is still prose
 
@@ -80,3 +84,37 @@ Never rewrite pushed history (filter-repo, rebase of pushed commits, force-push)
 without restating what will be destroyed and getting explicit confirmation in
 words. A bare menu-choice reply is not consent (near-miss 2026-08-11). Merging a
 PR is not a rewrite; merging your own feature branch is fine.
+
+
+## Worktrees rot, and the cost is not disk
+
+Several sessions run at once and each takes its own worktree, which is right.
+Nobody removes them afterwards, which is understandable: the session that could is
+the one that has just finished and is closing down. On 2026-08-20 the count
+reached **39 worktrees and 81 local branches**, of which 22 and 66 were finished
+work.
+
+**A live worktree and an abandoned one look identical.** That is the whole cost. A
+session scanning the list to find out who else is working cannot tell last week's
+merged branch from a colleague mid-edit, so it either stomps or freezes. Both
+happened in a single day: one session read a worktree that was being written to as
+"unpushed and at risk", and another concluded nobody was working on CI while
+somebody was.
+
+The list is only worth reading if presence *means* something. After a sweep it
+means **not yet merged**.
+
+```
+bash tools/worktree_sweep.sh            # report; changes nothing
+bash tools/worktree_sweep.sh --apply    # remove the finished ones
+```
+
+It refuses to touch a worktree with uncommitted changes, one touched in the last
+two hours (`--hours` to widen), one on a detached HEAD, or one whose branch is not
+yet an ancestor of `origin/main`. Every one of those guards has caught something
+real — the first sweep skipped two worktrees that had been created in the minutes
+it took to write the script.
+
+**Run it when you finish a piece of work, not as a chore later.** The branch you
+are best placed to remove is your own, and you are the only session that knows it
+is done.
