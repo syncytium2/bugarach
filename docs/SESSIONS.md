@@ -61,11 +61,22 @@ Template:
 ## Active
 
 ### Mac/webapp-overnight — four webapp gaps closed, and the site republished
-- **Status:** ACTIVE 2026-08-20 — **claims the site deploy**, taken from released.
+- **Status:** DONE 2026-08-20 — deployed and **checked rather than assumed**;
+  **claim released.**
 - **Started:** 2026-08-20
 - **Writes:** **the PUBLIC SITE** — `bugarach.tonydefazio.com`. Nothing to the darkroom,
   nothing under `$BUGARACH_DATA_ROOT`, no export folder touched.
-- **Claims:** the site deploy only. Released on the way out, in this same block.
+- **Claims:** ~~the site deploy~~ — **released.** Deployed from `3368b1b`, version
+  `40898b9e-39aa-4193-a35d-a23845933539`, six assets uploaded.
+- **What the live page serves now, driven in chromium rather than inferred:** all six
+  detectors in the chooser (`rate, sce, coact, loco, cicada, sync`), the folder-wide
+  export with its two save buttons, the stage-5 comparison, and no page errors — with
+  `accLab` and `accScore` both **hidden**, which is the draft copy staying off the page.
+  `tools/audit_deployed_page.py` passed: *the page fetched nothing but itself.*
+  The served bytes are **identical** to `docs/site/raster_viewer.html` (`dae959b3…`,
+  293,978 bytes) — copied, not transformed.
+  Note for whoever checks by hand next: `/viewer.html` **307s to `/viewer`**, so a `curl`
+  without `-L` returns zero bytes and reads as a failed deploy when nothing is wrong.
 - **Doing:** Tony asked what blocks the website showing the full workflow, then for the
   answerable ones overnight. Landed as five PRs: **#133** (rebased off 154 commits behind
   and merged before it rotted), **#194** the stream bug, **#195** the folder-wide export
