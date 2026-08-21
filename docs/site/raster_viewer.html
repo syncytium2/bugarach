@@ -307,7 +307,9 @@
         </select>
         <label for="sSeed">seed</label>
         <input id="sSeed" type="number" min="0" max="99999" step="1" value="1">
-        <div class="span"><button id="runSim">Simulate</button></div>
+        <div class="span"><button id="runSim">Simulate</button>
+          <button id="verifySim" disabled>Compare with the real folder</button></div>
+        <div class="note" id="verifyWhat"></div>
       </div>
       <div class="fine" id="simProvenance" hidden></div>
       <div class="fine">
@@ -764,6 +766,7 @@
       <div id="detectOut"></div>
       <div id="windowOut"></div>
       <div id="tuneOut"></div>
+      <div id="verifyOut"></div>
       <div class="note" id="note"></div>
     </div>
   </div>
@@ -786,6 +789,10 @@ let SIMULATED = false;     // did the open folder come out of the generator belo
 // key, so a reader can tell "asked, no answer" from "never asked".
 let SIM_SPEC = null;
 let SIM_K = null;
+// The measurement the generator was set from, kept across the folder swap so
+// the corpus can be compared with it. Null until somebody accepts a K.
+let SIM_TARGET = null;
+let VERIFY = null;      // {target, got, per} — the comparison, once it is made
 // slice_id -> {times, fracs}: what the generator planted, and the only ground
 // truth this page can have. Empty for a folder read off disk, which is why
 // tuning is offered for a simulated folder and not for anybody's recordings.
@@ -1535,6 +1542,10 @@ async function open(fileList, opts) {
   // last simulation's spec and report it as its own provenance.
   SIM_SPEC = null; SIM_K = null;
   FOLDER_RUN = null;
+  // `SIM_TARGET` deliberately SURVIVES this: it is the measurement of the folder
+  // being replaced, and comparing the incoming corpus with it is the entire
+  // point. The comparison itself does not survive — it was about the last one.
+  VERIFY = null;
   RECORDINGS = []; REGIONS = new Map(); META = new Map();
   // A new folder has its own period kinds, so which of them wait for a solution
   // is not a question the last folder's answer applies to. Cleared here with
@@ -3693,6 +3704,18 @@ function simulateFromMeasurement(rec, a, source, stream) {
   // these settings are meaningless without, so it travels into `run.json` with
   // the corpus it produced rather than living only in the note below.
   SIM_K = a.K;
+  /* WHAT THE GENERATOR WAS ASKED TO REPRODUCE, kept so the corpus that comes out
+     can be measured against it. These four are not a summary of the assessment —
+     they are precisely the quantities mapped onto knobs a few lines below, so a
+     comparison over them is a comparison of what was promised.
+
+     Stashed here rather than read back off `LAST_ASSESS` later: that holds a
+     recording object from the folder currently open, and the whole point is that
+     a different folder is about to replace it. */
+  SIM_TARGET = { recId: rec.id, source, stream: stream || null, K: a.K,
+                 nRoi: a.nRoi, winDur: a.winDur,
+                 roiRateMed: a.roiRateMed, clustersPerMin: a.clustersPerMin,
+                 partNObs: a.partNObs, jitObs: a.jitObs };
   document.getElementById("sPart").value = "measured-here";
 
   const note = document.getElementById("simProvenance");
@@ -4022,10 +4045,156 @@ async function runSim() {
     // Set AFTER `open`, which clears the last run's provenance along with
     // everything else.
     SIM_SPEC = spec;
+    paintVerifyButton();
   } finally {
     btn.textContent = "Simulate";
     btn.disabled = false;
   }
+}
+
+/* ---------- stage 5: did the corpus come out like the folder? ----------------
+
+   The generator is set from four measured quantities, and until now nothing
+   measured the corpus that came out. A generator can be wrong in ways a raster
+   hides and a number does not, and every operating point tuned downstream is
+   fitted on this corpus — so an unchecked generator is an unchecked result.
+
+   WHAT THIS DOES NOT DO IS DECIDE. It reports the real folder's measurement, the
+   simulation's measurement and the gap; it does not rule on whether the gap is
+   acceptable, because that depends on what the corpus is for. The assessment
+   refuses to pick K for the same reason, and this is the same kind of refusal.
+
+   The corpus is measured AT THE TARGET'S K. Comparing a number taken at one K
+   with a number taken at another would be the K mistake the assess panel spends
+   a paragraph warning about, made inside the tool that warns about it. */
+const VERIFY_ROWS = [
+  { key: "roiRateMed", label: "background rate", unit: "mHz/ROI",
+    scale: 1000, nd: 1 },
+  { key: "clustersPerMin", label: "coordinated events", unit: "clusters/min",
+    scale: 1, nd: 3 },
+  { key: "partNObs", label: "participants", unit: "ROIs", scale: 1, nd: 1 },
+  { key: "jitObs", label: "jitter", unit: "s (onset SD)", scale: 1, nd: 3 },
+];
+
+/* NOT the `median` above, deliberately. That one is the assessment's own and
+   takes a clean array; this pools ACROSS RECORDINGS, where a quantity can be
+   genuinely undefined for some of them — `jitObs` is undefined wherever the
+   surrogates contained no cluster, and the assess panel already refuses to print
+   a number there. Dropping those before taking a median is the difference
+   between "the recordings that could answer said this" and a NaN. */
+const medianFinite = xs => {
+  const v = xs.filter(x => Number.isFinite(x)).sort((a, b) => a - b);
+  if (!v.length) return null;
+  const h = v.length >> 1;
+  return v.length % 2 ? v[h] : (v[h - 1] + v[h]) / 2;
+};
+
+function paintVerifyButton() {
+  const b = document.getElementById("verifySim");
+  const n = document.getElementById("verifyWhat");
+  if (!b) return;
+  const ready = SIMULATED && !!SIM_TARGET && RECORDINGS.length > 0;
+  b.disabled = !ready;
+  if (!n) return;
+  n.textContent = ready
+    ? "against " + SIM_TARGET.recId + " at K = " + SIM_TARGET.K
+    : SIMULATED
+      ? "Set the simulator from a measurement first — there is nothing to "
+        + "compare a corpus with until one was aimed at something."
+      : "";
+}
+
+async function verifySimulation() {
+  if (!SIMULATED || !SIM_TARGET || !RECORDINGS.length) return;
+  const btn = document.getElementById("verifySim");
+  const was = btn ? btn.textContent : null;
+  if (btn) { btn.disabled = true; btn.textContent = "Measuring…"; }
+  await new Promise(r => setTimeout(r, 0));
+  try {
+    const nSurr = clamp(Number(document.getElementById("aSurr").value), 50, 2000);
+    const bin = clamp(Number(document.getElementById("aBin").value), 0.1, 10);
+    const per = [];
+    const short = [];
+    for (const rec of RECORDINGS) {
+      const data = await loadRecording(rec);
+      // The generator writes one stream; taking the first is exact here rather
+      // than a choice, and `analysisStreams` keeps that visible.
+      const stream = analysisStreams(data)[0];
+      const byRoi = data.streams.get(stream);
+      const dur = Math.max(data.t1 - data.t0, 1);
+      const trains = data.order.map(id =>
+        (byRoi.get(id) || []).map(x => x - data.t0));
+      const res = assessCoactivity(trains, dur,
+                                   { nSurrogates: nSurr, binWidth: bin });
+      const hit = res.find(a => a.K === SIM_TARGET.K);
+      // A generated recording under the assessment's own 15-minute floor is not
+      // measurable, and averaging it in anyway would be the floor quietly
+      // ignored by the one screen whose job is checking.
+      if (!hit || !hit.meetsFloor) { short.push(rec.id); continue; }
+      per.push(hit);
+      await new Promise(r => setTimeout(r, 0));
+    }
+    const got = {};
+    for (const r of VERIFY_ROWS) got[r.key] = medianFinite(per.map(a => a[r.key]));
+    got.nRoi = medianFinite(per.map(a => a.nRoi));
+    VERIFY = { target: SIM_TARGET, got, per, short, n: per.length,
+               nSurr, bin };
+    paintVerify();
+  } finally {
+    if (btn) { btn.textContent = was; btn.disabled = false; }
+  }
+}
+
+function paintVerify() {
+  const box = document.getElementById("verifyOut");
+  if (!box || !VERIFY) return;
+  const { target, got, n, short } = VERIFY;
+  box.textContent = "";
+  box.append(el("h4", "The simulation beside " + target.recId));
+  box.append(el("p", n + " generated recording(s) measured the same way, at "
+    + "K = " + target.K + " — the K this corpus was generated at, because a "
+    + "number taken at one K does not compare with a number taken at another. "
+    + "Target from " + target.source
+    + (target.stream ? ", stream " + target.stream : "") + ".", "sub"));
+
+  if (!n) {
+    box.append(el("p", "None of the generated recordings could be measured: "
+      + "every one is under the 15-minute floor the assessment holds itself to. "
+      + "Generate longer recordings and this can say something.", "verdict bad"));
+    return;
+  }
+
+  const tbl = document.createElement("table");
+  const hr = document.createElement("tr");
+  for (const h of ["quantity", target.recId + " (real)", "simulated", "ratio"])
+    hr.append(el("th", h));
+  tbl.append(hr);
+  for (const r of VERIFY_ROWS) {
+    const a = target[r.key], b = got[r.key];
+    const tr = document.createElement("tr");
+    tr.append(el("td", r.label));
+    tr.append(el("td", fmtNum(a * r.scale, r.nd) + " " + r.unit));
+    tr.append(el("td", b === null ? "—" : fmtNum(b * r.scale, r.nd) + " " + r.unit));
+    // A ratio, not a verdict and not a percentage error — the reader is being
+    // shown how far off it is, and deciding what that means is theirs.
+    tr.append(el("td", (b === null || !a) ? "—" : fmtNum(b / a, 2) + "x"));
+    tbl.append(tr);
+  }
+  box.append(tbl);
+
+  if (short.length)
+    box.append(el("p", short.length + " generated recording(s) were under the "
+      + "15-minute floor and are not in these numbers: " + short.join(", ")
+      + ".", "caveat"));
+
+  box.append(el("p", "These four are the quantities the generator is SET from, "
+    + "so this is a comparison of what it was asked for against what it "
+    + "produced. It is not a comparison of everything that differs — a "
+    + "background whose shape is wrong can still land on the right median rate, "
+    + "and this table would not show it.", "caveat"));
+  box.append(el("p", "Nothing here passes or fails. What counts as close enough "
+    + "depends on what the corpus is for, and the same rule applies as to K: "
+    + "the number is shown, the choice is yours.", "caveat"));
 }
 
 /* ---------- running it, and saying what came back --------------------------- */
@@ -5367,6 +5536,7 @@ paintTuneWhat();
 document.getElementById("runDetect").onclick = runDetect;
 document.getElementById("saveDetections").onclick = saveDetections;
 document.getElementById("runFolder").onclick = analyseFolder;
+document.getElementById("verifySim").onclick = verifySimulation;
 document.getElementById("saveFolder").onclick = saveFolderDetections;
 document.getElementById("saveRun").onclick = saveRunJson;
 
