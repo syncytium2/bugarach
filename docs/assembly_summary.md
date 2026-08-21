@@ -6,17 +6,23 @@ they the **same** cells each time — recurring cell assemblies — or a fresh d
 **Answer. No recurring assemblies, in either stream, and the absence is the result.** Two
 instruments agree, and both have now reported on both streams. Graph modularity on the
 spike-time-tiling graph — each recording against its own jitter surrogates — finds **no
-partition above its null**: 3 of 78 fast recordings and 2 of 77 slow, against the ~5% the
+partition above its null**: 2 of 79 fast recordings and 2 of 78 slow, against the ~5% the
 test's own threshold yields by chance. The membership test finds participation is **not
-uniform** — some cells are in most events, many in few — in 45 of 47 testable fast recordings
-and 36 of 38 slow. Uneven participation with no modular partition is a **core–periphery**
+uniform** — some cells are in most events, many in few — in 46 of 48 testable fast recordings
+and 34 of 38 slow. Uneven participation with no modular partition is a **core–periphery**
 field, not an assembly: a busy core and a long tail, with no membership that repeats as a unit.
 
-The median recording is in fact *less* modular than its own surrogates (z = −1.31 fast, −2.93
+The median recording is in fact *less* modular than its own surrogates (z = −1.38 fast, −3.58
 slow): scramble the timing while holding the graph's size, event counts and sparsity fixed and
 it scores **higher**. That is the opposite of what a field of assemblies would do.
 
 **Drop the word "assembly"** for this preparation unless the modularity result is overturned.
+
+Both instruments now run **in this repo**. The modularity half used to be computed by an
+interface2 pipeline that has no maintainer and does not run out of the box; it was ported
+here and validated two ways — exact reproduction of the reference on identical inputs
+(worst disagreement 2 × 10⁻¹⁶), and **98.7% verdict agreement across the corpus under a
+different windowing convention**, which is the more reassuring of the two.
 
 ![A · a real recording's membership table beside a generated one at the same geometry with participants drawn uniformly at random — the question cannot be settled by eye. B · power under the decision rule the corpus is actually scored by, at each real recording's own geometry, one curve per planted group size; the dotted line marks the 5% size of the test, where every curve begins when nothing is planted. C · the verdict before and after optical crosstalk is removed, paired on the fast and slow recordings testable in both stores; the grey bar counts recordings that fell below the testable floor, which is lost power and not a negative.](assembly_closed)
 
@@ -31,11 +37,12 @@ Two objections decide this, and both were tested rather than argued.
 **Could the test have failed?** Yes. Scored under the exact rule the recordings are scored
 by — two statistics Bonferroni-corrected within each of two nulls, one decision per
 recording — and evaluated at **each real recording's own geometry** rather than at a median
-slice, the test fires on **6.0%** of fast recordings when nothing is planted (95% interval
-3.6–9.8%) and **9.1%** of slow (5.8–14.1%), against a nominal 5% — the fast figure covers it,
-the slow one does not, so the slow test looks mildly over-eager and its negative is the less
-precise of the two. ⚠ Plant a four-cell group recruiting one event in four and it fires on
-**91%** of fast recordings. So a negative here is a measurement, not a shrug. An earlier power curve had scored
+slice, the test fires on **5.0%** of fast recordings when nothing is planted (95% interval
+2.9–8.6%) — the nominal rate almost exactly — and on **9.6%** of slow (6.2–14.7%), which does
+not cover 5%. Three runs now put the slow rate at 6.6%, 9.1% and 9.6%, so treat it as roughly
+**twice** nominal; the slow negative is the less precise of the two and the fast needs no such
+discount. ⚠ Plant a four-cell group recruiting one event in four and it fires on **85%** of
+fast recordings. So a negative here is a measurement, not a shrug. An earlier power curve had scored
 a *looser* test than the one that produced the answer; correcting that is what closed this
 question.
 
@@ -48,9 +55,11 @@ they come from nine different animals rather than one preparation counted twice 
 p ≈ 0.004; neither stream reaches significance alone) — so crosstalk **inflates the effect
 without accounting for it**.
 
-**Two recordings the lab had marked unusable were inside every number this work previously
-reported**, in a workbook column no part of the analysis had ever opened. They are dropped
-here. Nothing about the answer changed; several counts did. ⚠
+**Every number here is read from an export folder, which is the whole input** — no data store,
+no lab workbook. An earlier version read the store and then re-derived the lab's exclusions
+from its workbook, which keys them on (date, mouse, slice_order); with no slice_order it
+matched on date and dropped a recording the lab had not withdrawn. The producer's export had
+it right. Nothing about the answer changed; several counts did. ⚠
 
 ## What this changes
 
@@ -73,8 +82,7 @@ slow only. Core–periphery is the reading that reconciles two measurements, **n
 model**; nothing here tests it against alternatives. Penumbra subtraction removes an *estimate* of
 optical overlap, so a residual is evidence the estimate was incomplete as much as evidence
 the coordination is real. Modularity handles overlapping groups badly, so a field of
-overlapping assemblies could evade it. And 36 of the 83 analysed recordings never reached the
-test at all — too few coordinated clusters — and are reported as **undefined, never
-negative**.
+overlapping assemblies could evade it. And 36 of the 84 recordings never reached the test at
+all — too few coordinated clusters — and are reported as **undefined, never negative**.
 
 Full detail, every number and every caveat: **the assembly report**, beside this file.

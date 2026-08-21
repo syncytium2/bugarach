@@ -358,8 +358,9 @@ trace archive that nothing here opens.
   by `tools/matlab_ref/` and compared at 1e-9. The MATLAB-semantics helpers in
   `detectors/_shared.py` are deliberately un-numpy-ish — two-ended colon
   construction, mid-point percentiles — and must never be "fixed" toward numpy.
-- **482 tests**, all green (one skips without a real store), including the
-  clean-room harnesses and the sapper self-test.
+- **781 tests**, all green — 778 pass and 3 skip where this machine cannot answer
+  (no `.mat` store), including the clean-room harnesses, the browser-driven webapp
+  checks and the sapper self-test.
 - **[Sapper](tools/sapper.py)** turns incidents into checks that fire by
   themselves — a personal path in a public repo, `default_rng` in `src/`, a
   PySpike runtime import. A rule must prove it can fire before it exists;

@@ -1,4 +1,21 @@
-# Handoff — synfire order, 2026-08-19
+---
+status: open
+filed: 2026-08-19
+kind: measurement done, interpretation open — needs a person
+---
+
+# SPIKE-order is measured; what it means is not settled
+
+> **This was `HANDOFF.md` at the repo root until 2026-08-20**, moved here without a word
+> changed below it. A handoff file on `main` means *work is in flight and a session
+> stopped mid-task* — the signal CLAUDE.md asks the next session to read. This file says
+> the opposite in its own second line: everything landed, nothing uncommitted, no branch
+> waiting. It was a finished measurement waiting on a judgement, which is what
+> `docs/todo/` is for. Left at the root it made the in-flight signal permanently true and
+> therefore worthless, and opened a public repository's file list with the word "Handoff".
+
+> The modularity port that shared this file is **done** — landed, validated, and its
+> section removed. Only synfire is still open.
 
 **Everything is landed on `main`. Nothing uncommitted, no branch waiting.** This exists
 because one measurement is finished and its interpretation is not.
@@ -47,6 +64,14 @@ False-positive rate 8%.
 first, with the same null answering the same wrong question. **Assume any new measure on
 this corpus needs an event-preserving null until shown otherwise**, and run the order-free
 generated control *before* believing any number.
+
+**A second instance of the same class, found by the session that closed the assembly
+half:** the modularity instrument was hardcoded to the `slow` stream, and a report had been
+asserting a fast-stream absence that nobody had ever measured. Different mechanism, same
+shape — the number was not measuring what the sentence above it claimed. Before quoting an
+absence, check which stream, which recordings and which parameter the instrument actually
+ran on. Both failures this week were invisible in the output and visible only in the
+control or the call site.
 
 ## The group question — open, and the honest status is "not established"
 
@@ -103,3 +128,5 @@ carries group structure is worth something; neither is evidence about the other'
   SPIKE-order if a MATLAB cross-check is wanted.
 - **syncytium2/murderboard #19 and #21** — two process changes still open and waiting on a
   person; that repo has no CI, so merging is a manual act.
+
+---

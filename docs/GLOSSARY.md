@@ -84,9 +84,11 @@ Terms used by `bugarach.bench`, `bugarach.simulate` and
 load-bearing terms with no glossary entry.
 
 - **regime** — a named background-activity level the bench runs at. Both are
-  derived from untreated recordings: `baseline_quiet` (0.0038 Hz/ROI, the p25 of
-  baseline slices) and `baseline_busy` (0.0175, the p75). Treatments are never
-  regimes.
+  derived from untreated recordings: `baseline_quiet` (0.0052 Hz/ROI, the p25 of
+  baseline slices) and `baseline_busy` (0.0190, the p75). Treatments are never
+  regimes. Re-derived 2026-08-20 from the export folder — the corpus the lab
+  approved — having been fitted against the `.mat` store, which carries the two
+  recordings the lab withdrew.
 - **operating point** — the parameter set a detector is benched at, declared with
   its provenance in `bench.OPERATING_POINTS`. Not the same as its signature
   defaults, which are not all calibrated.

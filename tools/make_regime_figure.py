@@ -35,7 +35,15 @@ import sys
 from pathlib import Path
 
 QUIET, BUSY = "baseline_quiet", "baseline_busy"
-RATES = {QUIET: "0.0038", BUSY: "0.0175"}
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
+from bugarach.bench import REGIMES as _REGIMES  # noqa: E402
+
+#: Read off `bench.REGIMES`, not transcribed. These were typed as "0.0038"/"0.0175"
+#: and went stale the moment the axis was re-derived from the export folder on
+#: 2026-08-20 — a figure captioned with the old endpoints while drawing the new ones
+#: is worse than one with no caption at all.
+RATES = {k: f"{_REGIMES[k]['bg_rate_hz']:g}" for k in (QUIET, BUSY)}
 
 
 def _bakeoff_module():

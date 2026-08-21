@@ -33,6 +33,8 @@ import argparse
 import csv
 import math
 import sys
+
+import numpy as np
 from pathlib import Path
 
 FIGURE_ID = "assembly_modularity"
@@ -47,10 +49,17 @@ ABOVE = "#b03a48"
 NOMINAL = 0.05
 
 
-def load(path: Path, exclude=()) -> list[dict]:
-    exclude = set(exclude)
+def _finite(v) -> bool:
+    """True only for a real number — `nan`, `NaN`, `` and None all mean untestable."""
+    try:
+        return np.isfinite(float(v))
+    except (TypeError, ValueError):
+        return False
+
+
+def load(path: Path) -> list[dict]:
     with open(path) as fh:
-        return [r for r in csv.DictReader(fh) if r.get("slice") not in exclude]
+        return [r for r in csv.DictReader(fh)]
 
 
 def summarise(rows: list[dict]) -> dict:
@@ -61,14 +70,32 @@ def summarise(rows: list[dict]) -> dict:
     the sign of z would mark ~5x as many points as the count in the label. An
     earlier draft of this figure did exactly that.
     """
-    pairs = [(float(r["z_Q"]), float(r["above_null_Q"]))
-             for r in rows
-             if r["z_Q"] not in ("", "NaN") and r["above_null_Q"] not in ("", "NaN")]
-    pairs.sort()
+    def _testable(r) -> bool:
+        # Prefer the explicit column where the producer supplies one; fall back to
+        # "is the statistic finite". The string check alone was case-sensitive and
+        # let a lowercase `nan` through as a number — which would have put NaNs in
+        # the median and counted an untestable recording in the denominator, the
+        # exact defect this figure exists to correct.
+        if "defined" in r:
+            return str(r["defined"]).strip() in ("1", "True", "true")
+        try:
+            return np.isfinite(float(r["z_Q"])) and np.isfinite(float(r["above_null_Q"]))
+        except (TypeError, ValueError):
+            return False
+
+    # TWO populations, and conflating them put NaN into a sort and corrupted the
+    # median. `scored` is every recording the test could decide — that is the
+    # denominator of the RATE. `pairs` is the subset with a finite z, which is what
+    # can be drawn: z is undefined when the surrogates have no spread, and the
+    # recording still has a verdict.
+    scored = [r for r in rows if _testable(r)]
+    pairs = sorted((float(r["z_Q"]), float(r["above_null_Q"]))
+                   for r in scored if _finite(r.get("z_Q")))
     z = [p_[0] for p_ in pairs]
-    k = sum(1 for p_ in pairs if p_[1] == 1)
-    n = len(pairs)
+    k = sum(1 for r in scored if float(r["above_null_Q"]) == 1)
+    n = len(scored)
     return {"pairs": pairs, "z": z, "k": k, "n": n,
+            "n_plotted": len(pairs),
             "rate": (k / n) if n else float("nan"),
             "median_z": z[len(z) // 2] if z else float("nan"),
             "ci": wilson(k, n)}
@@ -176,19 +203,11 @@ def main(argv=None):
                    help="destination directory; default $BUGARACH_DARKROOM")
     p.add_argument("--also", type=Path, default=None)
     p.add_argument("--no-png", dest="png", action="store_false", default=True)
-    p.add_argument("--exclude-file", type=Path, default=None,
-                   help="slice ids the lab marked excluded (tools/lab_excluded.py)")
     a = p.parse_args(argv)
 
-    from bugarach.assembly import load_excluded
-    excl = load_excluded(a.exclude_file)
-    if excl:
-        print(f"excluding {len(excl)} lab-withdrawn recording(s): "
-              f"{', '.join(sorted(excl))}")
-
     for label, path in (("fast", a.fast), ("slow", a.slow)):
-        rows = load(path, excl)
-        dropped = [r for r in rows if r["Q_obs"] in ("", "NaN")]
+        rows = load(path)
+        dropped = [r for r in rows if not _finite(r.get("Q_obs"))]
         if dropped:
             # `above_null_Q` is `double(Q_obs > q_hi)`, and NaN > x is false — so a
             # slice too sparse for Louvain to score lands in the CSV as a 0 and reads
@@ -198,11 +217,13 @@ def main(argv=None):
             print(f"{label}: excluding {len(dropped)} recording(s) with no computable "
                   f"Q (n_active "
                   f"{', '.join(r['n_active'] for r in dropped)}) — undefined, not negative")
-    fast, slow = summarise(load(a.fast, excl)), summarise(load(a.slow, excl))
+    fast, slow = summarise(load(a.fast)), summarise(load(a.slow))
     for label, s in (("fast", fast), ("slow", slow)):
+        extra = ("" if s["n_plotted"] == s["n"] else
+                 f"  [{s['n'] - s['n_plotted']} scored but z undefined, not drawn]")
         print(f"{label}: {s['k']}/{s['n']} above null = {s['rate']*100:.1f}% "
               f"(95% CI {s['ci'][0]*100:.1f}-{s['ci'][1]*100:.1f}), "
-              f"median z {s['median_z']:+.2f}")
+              f"median z {s['median_z']:+.2f}{extra}")
 
     from bugarach.paths import darkroom, unresolved_message
     dest = Path(a.out) if a.out else darkroom()

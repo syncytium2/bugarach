@@ -30,6 +30,9 @@ from pathlib import Path
 
 import numpy as np
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import _dataset_arg  # noqa: E402
+
 # The baseline rule lives in the library now, so this driver and `bugarach assess`
 # cannot drift apart on which regions may source coordination properties.
 from bugarach.assess_folder import BASELINE_TOKENS, is_baseline as _is_baseline  # noqa: E402,F401
@@ -225,8 +228,9 @@ def assess_store(store: Path, *, stream: str | None, n_surrogates: int,
 def main(argv=None) -> int:
     p = argparse.ArgumentParser(description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
-    p.add_argument("--store", type=Path, required=True,
-                   help="directory of *.mat event stores")
+    # "any": this one genuinely reads both shapes — `assess_store` dispatches on
+    # whether the directory holds .mat files or an export folder.
+    _dataset_arg.add(p, want="any", aliases=("--store",))
     p.add_argument("--out", type=Path, required=True)
     p.add_argument("--stream", default="fast")
     p.add_argument("--n-surrogates", type=int, default=1000)
@@ -239,7 +243,8 @@ def main(argv=None) -> int:
     a = p.parse_args(argv)
 
     a.out.mkdir(parents=True, exist_ok=True)
-    res = assess_store(a.store, stream=a.stream, n_surrogates=a.n_surrogates,
+    res = assess_store(_dataset_arg.get(a, want="any"),
+                       stream=a.stream, n_surrogates=a.n_surrogates,
                        limit=a.limit, assemblies=a.assemblies,
                        assembly_surrogates=a.assembly_surrogates)
 

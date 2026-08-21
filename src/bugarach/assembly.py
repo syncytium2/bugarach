@@ -46,6 +46,21 @@ both nulls here are permutation nulls rather than analytic ones.
 **Baseline windows only** (FOUNDATIONS §9), and group-dependence applies: an
 assembly statistic pooled across groups can hide a sign change, so combine within
 group and say which.
+
+**There is no exclusion layer here, and that is the contract.**
+``docs/export_folder_spec.md``: *"bugarach reads one folder and nothing else: no
+data store, no archive, no environment variable, no network, no companion
+database."* Which recordings are analysable, and which ROIs are alive, are the
+producer's calls, expressed by what the folder contains — a withdrawn recording
+is simply absent and a dead ROI is simply not exported.
+
+This module briefly carried ``load_excluded`` and ``load_dead_roi_keep``, reading
+a lab workbook and a vendored roster. They were removed on 2026-08-20 and the
+reason is worth keeping: the workbook keys exclusions on (date, mouse,
+**slice_order**), bugarach had no slice_order, and matching on date alone
+**over-excluded a recording the lab had not withdrawn**. The producer's own export
+got it right. Re-deriving a producer's selection from a companion source is not a
+safety net — it is a second, worse answer.
 """
 from __future__ import annotations
 
@@ -296,27 +311,6 @@ def assess_assemblies(assessment, *, n_surrogates: int = 1000,
         p_margin_disp=md, p_margin_eig=me,
         p_uniform_disp=ud, p_uniform_eig=ue,
         n_surrogates=n_surrogates, mean_pair_count=mean_pair)
-
-
-def load_excluded(path) -> set[str]:
-    """Slice ids the lab has marked excluded, from `tools/lab_excluded.py`'s list.
-
-    **Selection is the producer's call.** The onset store is not a statement about
-    which recordings are analysable; that lives in the lab's own workbook, and an
-    analysis that never opens it can report a number over recordings its own lab
-    withdrew. Two recordings did exactly that here before a review went looking.
-
-    Blank lines and `#` comments are ignored, so the file can carry its provenance.
-    """
-    from pathlib import Path as _P
-    if path is None:
-        return set()
-    out = set()
-    for line in _P(path).read_text().splitlines():
-        line = line.strip()
-        if line and not line.startswith("#"):
-            out.add(line)
-    return out
 
 
 def fisher(ps) -> float:
