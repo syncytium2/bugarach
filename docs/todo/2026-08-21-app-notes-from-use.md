@@ -75,6 +75,89 @@ the rest of the copy pass rather than being guessed at here.
 
 ---
 
+## 3 · Define K in the control, and the count-versus-percent question
+
+> *"assessor controls, define K as the min number of ROIs participating in a
+> coordinated event. i wonder if this should be toggled to percent, as we have
+> some with 10 rois or less maybe"*
+
+**Where.** [`raster_viewer.html:412`](../site/raster_viewer.html) — the control is
+labelled `mark clusters at K` and offers `none / 3 / 4 / 6 / 8` with no statement
+of what K counts. `K_SCAN = [3, 4, 6, 8]` at :3174, tracking
+`assess.DEFAULT_MIN_ROIS`. The panel's fine print calls K *"the floor for how many
+ROIs make an event"* — which is the definition Tony wants, sitting two paragraphs
+below the control instead of on it.
+
+### The easy half
+
+Label it as what it is: **the minimum number of ROIs participating in a
+coordinated event.** No argument here, and it is the one place a reader meets K
+before any of the prose.
+
+### The harder half, and it is a real question — measured
+
+Read-only over `2026-08-18_revised_2v_periods`, 84 recordings:
+
+| | ROIs |
+|---|---|
+| min | **9** |
+| p25 / median / p75 | 23 / 32 / 37 |
+| max | **61** |
+
+So the field size spans about **7x**, and the same K is a different question on
+each end:
+
+| K | on the smallest (9) | at the median (32) | on the largest (61) |
+|---|---|---|---|
+| 3 | 33% | 9% | 5% |
+| 4 | 44% | 12% | 7% |
+| 6 | 67% | 19% | 10% |
+| 8 | **89%** | 25% | **13%** |
+
+**Tony's instinct is right about the effect and slightly off about the cause.**
+Recordings with ≤10 ROIs are **2 of 84 (2%)** — 9 and 10 ROIs, `20241004_80` and
+`20260707_346`. The problem is not those two; it is that K is an absolute count
+across a corpus whose field size varies 7-fold, so *"coordination at K=8"* is a
+claim about a quarter of the field in one recording and nearly all of it in
+another. That bites at the median too.
+
+### What blocks a straight swap to percent
+
+**The 3-ROI floor.** `minRois` is fixed at 3 in the detectors
+([:2228](../site/raster_viewer.html)) and is deliberately **not a knob** —
+FOUNDATIONS §9, because raising it until false alarms disappear is the exact
+error this project has already refused once. A percentage lands under it on small
+fields:
+
+| asked | smallest (9) | median (32) | largest (61) |
+|---|---|---|---|
+| 10% | **1 ROI** ⚠ | 3 | 6 |
+| 18% | **2 ROI** ⚠ | 6 | 11 |
+| 30% | 3 ROI | 10 | 18 |
+
+So on the 9-ROI recording every sensible percentage clamps to the floor and
+becomes K=3 — the count behaviour, wearing a percent label. A toggle must **show
+that clamp** rather than silently honour a number it did not use.
+
+**And it would fork from Python.** `K_SCAN` tracks `assess.DEFAULT_MIN_ROIS`,
+which is a count. A browser scanning percentages is scanning different Ks than
+`bugarach.assess` does, and the two stop being comparable unless Python moves
+with it.
+
+### Worth noting: the app is already inconsistent about this
+
+The **simulate** side already speaks in percent — participation is
+`30/18/10% — measured` ([:302](../site/raster_viewer.html)) — while the
+**assess** side speaks in counts. The same quantity, two units, two panels. So
+this is not only a convenience question; it is the one place the page contradicts
+itself about how participation is expressed.
+
+**Undecided, and Tony's call:** whether to toggle, or to show both (`K = 6 · 19%
+of this field`) and keep the scan in counts. The second is cheaper, forks nothing,
+and answers the comparability complaint without inventing a clamp to explain.
+
+---
+
 ## Related, and worth doing in the same pass
 
 `docs/todo/2026-08-20-the-scoreboard-copy-needs-review.md` is the other open copy
