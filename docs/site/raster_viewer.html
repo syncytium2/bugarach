@@ -726,6 +726,27 @@
       </div>
     </details>
 
+    <!-- The scoreboard. HIDDEN ON THE PUBLISHED PAGE, on the same `window.__lab`
+         gate as the training panel above and for two reasons rather than one.
+
+         The wording in it has not been through the review this repo requires of
+         anything a stranger reads, so it must not ship until it has —
+         docs/todo/2026-08-20-the-scoreboard-copy-needs-review.md carries the
+         sentences and what each has to survive.
+
+         And it belongs here anyway: the comparison is only complete with the
+         tube in it, the tube trains through `bugarach lab`, so the one place
+         the full table can exist is the one place the server is running. -->
+    <details class="acc" id="accScore" hidden>
+      <summary>Compare the detectors<span class="cnt" id="cntScore">draft</span></summary>
+      <div class="ctl">
+        <label for="scTol">match tolerance (s)</label>
+        <input id="scTol" type="number" min="0.1" max="30" step="0.5" value="1.5">
+        <div class="span"><button id="runScore">Score every detector</button></div>
+        <div class="note" id="scoreWhat"></div>
+      </div>
+    </details>
+
     <details class="acc" id="accList" hidden>
       <summary>Recordings<span class="cnt" id="cntList"></span></summary>
       <div id="checkbar" hidden></div>
@@ -767,6 +788,10 @@
       <div id="windowOut"></div>
       <div id="tuneOut"></div>
       <div id="verifyOut"></div>
+      <!-- On the stage with the other results rather than in the sidebar: it is
+           an eight-column table, and in a 320px column every row wraps to four
+           lines and the ranking stops being readable at a glance. -->
+      <div id="scoreOut"></div>
       <div class="note" id="note"></div>
     </div>
   </div>
@@ -5223,6 +5248,220 @@ function tunePool(scores, opts) {
   return pooled;
 }
 
+/* ---------- the scoreboard: every detector, one corpus, one fold split -------
+
+   DRAFT. The numbers are real; the sentences around them have not been through
+   the review this repo requires of anything an outside reader sees, which is why
+   the whole panel sits behind `window.__lab` and off the published page. The
+   copy is collected in `SCORE_COPY` below so a reviewer reads it in one place
+   instead of hunting it through the render code.
+
+   ONE CORPUS AND ONE SPLIT FOR ALL OF THEM, which is the entire point. The tune
+   panel beside this sweeps whichever detector is selected; comparing two of its
+   runs would compare detectors scored on different fold assignments. Here the
+   corpus is loaded once and `tunePlan` is called once, and every detector is
+   fitted on the same three folds and scored on the same held-out fourth.
+
+   WHAT THE COLUMNS MAY AND MAY NOT BE READ AS. The bench scores a hit at a 1.5 s
+   edge gap against a median realised event about 0.80 s wide, so the RANKING is
+   safe and a bare F1 implying timing accuracy is not — see
+   `docs/learned/tolerance_sweep.png`. `knobs` is the count of settings the
+   detector exposes, which is what makes the tube's 1,149 parameters a
+   comparison rather than a boast; it is not a complexity measure. */
+const SCORE_COPY = {
+  draft: "Draft — the wording on this panel has not been reviewed, which is why "
+       + "it does not appear on the published page.",
+  simulatedOnly: "Every number here is measured on simulated recordings. None of "
+       + "it says a detector is right about a real slice, because no real slice "
+       + "has an answer key to be right against.",
+  tolerance: "F1 counts a hit within the match tolerance above. Against events "
+       + "this wide that makes the ORDER of these rows meaningful and a single "
+       + "number's decimal places not — read the ranking, not the gap.",
+  noTube: "The learned detector is not in this table. It trains through the "
+       + "server rather than in the page, and a row scored on a different corpus "
+       + "than the rest would be the one comparison this table exists to avoid.",
+  heldOut: "Each detector's setting is chosen on the folds it may see and scored "
+       + "on the fold it may not. The spread is across folds.",
+};
+
+let SCOREBOARD = null;   // {rows, nFolds, corpusN, tol}
+
+async function scoreAllDetectors() {
+  const btn = document.getElementById("runScore");
+  const was = btn ? btn.textContent : null;
+  const say = m => {
+    const n = document.getElementById("scoreWhat");
+    if (n) n.textContent = m;
+  };
+  if (btn) btn.disabled = true;
+  try {
+    const tol = clamp(Number(document.getElementById("scTol").value), 0.1, 30);
+    /* The corpus, loaded ONCE for all six. Only recordings with planted events
+       are in it — a recording with no answer key cannot score anything, and
+       including it would put a zero in every row for the same reason. */
+    const corpus = [];
+    for (const rec of RECORDINGS) {
+      const t = TRUTH.get(rec.id);
+      if (t && t.times.length) corpus.push(await tuneLoad(rec));
+    }
+    if (!corpus.length) {
+      say("No simulated recordings are open, so there is nothing with a known "
+          + "answer to score against.");
+      SCOREBOARD = null;
+      paintScoreboard();
+      return;
+    }
+    const split = tunePlan(corpus.length);
+    const rows = [];
+    for (const which of Object.keys(DETECTORS)) {
+      const D = DETECTORS[which];
+      say("Scoring " + D.label + "…");
+      await new Promise(r => setTimeout(r, 0));
+      // A detector that cannot run on this corpus gets a row saying so rather
+      // than a blank one or, worse, a zero that reads as a poor score.
+      if (D.peaks && corpus.some(c => c.peaks && c.peaks.why)) {
+        rows.push({ which, label: D.label, refused: corpus.find(
+          c => c.peaks && c.peaks.why).peaks.why });
+        continue;
+      }
+      const knob = D.knob;
+      const base = D.read(corpus[0].dt);
+      const t0 = performance.now();
+      const scored = new Map();
+      for (const v of knob.grid) {
+        scored.set(v, corpus.map(c =>
+          sweepPoint(c.trains, c.range, which, base, knob, v, c.truth, tol,
+                     c.peaks)));
+        await new Promise(r => setTimeout(r, 0));
+      }
+      const fitMs = performance.now() - t0;
+
+      // One detect pass at the whole-grid midpoint, timed on its own, so the
+      // cost column is a detect cost rather than a share of the sweep.
+      const mid = knob.grid[knob.grid.length >> 1];
+      const d0 = performance.now();
+      sweepPoint(corpus[0].trains, corpus[0].range, which, base, knob, mid,
+                 corpus[0].truth, tol, corpus[0].peaks);
+      const detectMs = performance.now() - d0;
+
+      /* A FOLD WHERE THE OPERATING POINT CANNOT BE PICKED IS REPORTED, NOT
+         DROPPED. `pickOperatingPoint` refuses a boundary answer — a best value
+         at the end of the grid is the sweep saying it stopped too early — and
+         the first version of this loop skipped those folds and averaged what
+         was left. Every detector then had its own denominator, and the one
+         thing this panel exists to guarantee is that they share one.
+
+         Worse, it was invisible: a detector scored on one fold of three showed
+         a confident-looking F1 with no spread, which reads as agreement rather
+         than as almost no evidence. So both counts travel to the table. */
+      const held = [];
+      const refusedFolds = [];
+      const attempted = split ? split.nFolds : 0;
+      if (split) {
+        for (let f = 0; f < split.nFolds; f++) {
+          const tr = split.train(f), te = split.test(f);
+          const trainRows = knob.grid.map(v =>
+            tunePool(tr.map(i => scored.get(v)[i]),
+                     { detector: which, knobValue: v, tolSec: tol, seeds: tr }));
+          const chosen = pickOperatingPoint(trainRows);
+          if (!chosen.row) { refusedFolds.push({ fold: f, why: chosen.why }); continue; }
+          held.push(tunePool(te.map(i => scored.get(chosen.row.knob)[i]),
+                             { detector: which, knobValue: chosen.row.knob,
+                               tolSec: tol, seeds: te }));
+        }
+      }
+      const f1s = held.map(h => h.f1).filter(Number.isFinite);
+      const mean = f1s.length ? f1s.reduce((a, b) => a + b, 0) / f1s.length : null;
+      // Population SD across folds, matching how `bakeoff.md` states its spread.
+      const sd = f1s.length > 1
+        ? Math.sqrt(f1s.reduce((a, b) => a + (b - mean) ** 2, 0) / f1s.length)
+        : null;
+      rows.push({
+        which, label: D.label,
+        nFolds: attempted,        // what every detector was offered — the same
+        nScored: held.length,     // what this one could actually answer
+        refusedFolds, f1: mean, sd,
+        precision: held.length
+          ? held.reduce((a, h) => a + h.precision, 0) / held.length : null,
+        recall: held.length
+          ? held.reduce((a, h) => a + h.recall, 0) / held.length : null,
+        knobs: Object.keys(base).filter(k => k !== "gridDt").length,
+        fitMs, detectMs,
+      });
+    }
+    SCOREBOARD = { rows, nFolds: split ? split.nFolds : 0,
+                   corpusN: corpus.length, tol };
+    say("");
+    paintScoreboard();
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = was; }
+  }
+}
+
+function paintScoreboard() {
+  const box = document.getElementById("scoreOut");
+  if (!box) return;
+  box.textContent = "";
+  if (!SCOREBOARD) return;
+  const { rows, nFolds, corpusN, tol } = SCOREBOARD;
+
+  box.append(el("p", SCORE_COPY.draft, "verdict bad"));
+  box.append(el("h4", "Every detector on the same corpus"));
+  box.append(el("p", corpusN + " simulated recording(s) · " + nFolds
+    + " fold(s) · matched within " + tol + " s", "sub"));
+
+  const ranked = rows.slice().sort((a, b) =>
+    (b.f1 ?? -1) - (a.f1 ?? -1));
+  const tbl = document.createElement("table");
+  const hr = document.createElement("tr");
+  for (const h of ["detector", "F1 (held out)", "folds", "precision", "recall",
+                   "knobs", "fit", "detect"]) hr.append(el("th", h));
+  tbl.append(hr);
+  for (const r of ranked) {
+    const tr = document.createElement("tr");
+    tr.append(el("td", r.label));
+    if (r.refused) {
+      const td = el("td", "could not run on this corpus", "state");
+      td.colSpan = 7;
+      tr.append(td);
+      tbl.append(tr);
+      continue;
+    }
+    tr.append(el("td", r.f1 === null ? "—"
+      : fmtNum(r.f1, 3) + (r.sd === null ? "" : " ± " + fmtNum(r.sd, 3))));
+    // n of N, always — a detector that could answer one fold of three is not
+    // more certain than one that answered all three, and a bare F1 with no
+    // spread reads as though it were.
+    tr.append(el("td", r.nScored + " of " + r.nFolds,
+                 r.nScored < r.nFolds ? "state" : ""));
+    tr.append(el("td", fmtNum(r.precision, 2)));
+    tr.append(el("td", fmtNum(r.recall, 2)));
+    tr.append(el("td", String(r.knobs)));
+    tr.append(el("td", (r.fitMs / 1000).toFixed(2) + " s"));
+    tr.append(el("td", (r.detectMs / 1000).toFixed(3) + " s"));
+    tbl.append(tr);
+  }
+  box.append(tbl);
+
+  for (const key of ["heldOut", "tolerance", "noTube", "simulatedOnly"])
+    box.append(el("p", SCORE_COPY[key], "caveat"));
+
+  // Named, never merely counted in a column. A sweep that ran out of range is a
+  // fact about the grid rather than about the detector, and the reader's next
+  // move is to widen it.
+  const partial = rows.filter(r => !r.refused && r.nScored < r.nFolds);
+  if (partial.length)
+    box.append(el("p", partial.map(r => r.label + " (" + r.nScored + " of "
+      + r.nFolds + ")").join(", ") + " could not have a setting chosen on every "
+      + "fold: the best value on those folds sat at the end of the grid, which "
+      + "the sweep reports rather than returns. Those rows rest on less "
+      + "evidence than the others and their spread is not comparable.",
+      "verdict"));
+
+  for (const r of rows) if (r.refused)
+    box.append(el("p", r.label + ": " + r.refused, "verdict bad"));
+}
+
 async function runTune() {
   if (!current) return;
   const truth = TRUTH.get(current.id);
@@ -5689,6 +5928,13 @@ async function wireLab() {
   const acc = document.getElementById("accLab");
   if (!api || !acc) return;
   acc.hidden = false;
+  // The scoreboard rides the same gate: draft copy, and the comparison is only
+  // whole where the server that trains the tube is running.
+  const score = document.getElementById("accScore");
+  if (score) {
+    score.hidden = false;
+    document.getElementById("runScore").onclick = scoreAllDetectors;
+  }
   document.getElementById("runLab").onclick = runLab;
   ["lArch", "lFolds", "lSeeds"].forEach(id =>
     document.getElementById(id).addEventListener("input", paintLabWhat));
@@ -5740,7 +5986,7 @@ else
 // `showSection` already refuses to open a hidden node, so listing it costs
 // nothing there and means the accordion behaves normally where it does appear.
 const SECTIONS = ["accSim", "accOpen", "accWindows", "accAssess", "accDetect",
-                  "accTune", "accLab", "accList"];
+                  "accTune", "accLab", "accScore", "accList"];
 function showSection(id) {
   for (const s of SECTIONS) {
     const n = document.getElementById(s);
