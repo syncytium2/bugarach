@@ -46,6 +46,7 @@ reproducibly. So what is guaranteed instead:
 from __future__ import annotations
 
 import inspect
+import math
 from dataclasses import dataclass, field
 
 import numpy as np
@@ -158,6 +159,100 @@ class GroundTruth:
         for i, e in enumerate(self.events):
             m[i, list(e.rois)] = True
         return m
+
+
+def median_over_mean(shape: float) -> float:
+    """``median / mean`` of ``Gamma(shape, ·)`` — the scale cancels.
+
+    The per-ROI background is ``Gamma(shape, bg_rate_hz / shape)``, whose mean is
+    exactly ``bg_rate_hz``. Its median has no closed form, but it is proportional
+    to the same scale, so the ratio depends on ``shape`` alone:
+    ``median(Gamma(shape, 1)) / shape``.
+
+    At the fitted :data:`~bugarach.bench.MEASURED_RATE_SHAPE` of 0.275 this is
+    about **0.21** — the typical ROI fires at a fifth of the field's mean rate,
+    which is what a field with a few busy cells and a third of them silent looks
+    like.
+
+    SciPy is not a hard dependency of this package, so the ratio is computed by
+    bisection on the regularized lower incomplete gamma, which ``math.lgamma``
+    and a short series give without it.
+    """
+    if shape <= 0:
+        raise ValueError(f"shape must be positive, got {shape}")
+
+    def _gammainc_lower(a: float, x: float) -> float:
+        """P(a, x), by the series that converges for x < a+1 and the continued
+        fraction elsewhere — Numerical Recipes 6.2, the standard pair."""
+        if x <= 0:
+            return 0.0
+        if x < a + 1.0:
+            term = 1.0 / a
+            total = term
+            n = a
+            for _ in range(1000):
+                n += 1.0
+                term *= x / n
+                total += term
+                if abs(term) < abs(total) * 1e-15:
+                    break
+            return total * math.exp(-x + a * math.log(x) - math.lgamma(a))
+        # continued fraction for Q(a, x), then P = 1 - Q
+        tiny = 1e-300
+        b = x + 1.0 - a
+        c = 1.0 / tiny
+        d = 1.0 / b
+        h = d
+        for i in range(1, 1000):
+            an = -i * (i - a)
+            b += 2.0
+            d = an * d + b
+            if abs(d) < tiny:
+                d = tiny
+            c = b + an / c
+            if abs(c) < tiny:
+                c = tiny
+            d = 1.0 / d
+            delta = d * c
+            h *= delta
+            if abs(delta - 1.0) < 1e-15:
+                break
+        q = math.exp(-x + a * math.log(x) - math.lgamma(a)) * h
+        return 1.0 - q
+
+    lo, hi = 0.0, max(1.0, shape) * 10.0
+    while _gammainc_lower(shape, hi) < 0.5:
+        hi *= 2.0
+    for _ in range(200):
+        mid = 0.5 * (lo + hi)
+        if _gammainc_lower(shape, mid) < 0.5:
+            lo = mid
+        else:
+            hi = mid
+    return 0.5 * (lo + hi) / shape
+
+
+def rate_as_mean(rate: float, stat: str, *, shape: float | None) -> float:
+    """A per-ROI rate and WHICH STATISTIC OF THE FIELD IT IS, as the mean.
+
+    ``bg_rate_hz`` is the mean, always — but a caller measuring a real recording
+    usually has the median, because that is what ``assess`` puts in front of
+    them, and the two are a factor of five apart on an uneven field. A number
+    that means two things without saying which yields a plausible wrong answer
+    rather than an error, which is the trap
+    :doc:`the export contract <export_folder_spec>` names in as many words.
+
+    ``shape`` is ``None`` for a flat field, where every ROI carries the same rate
+    and the two statistics coincide, so nothing converts.
+    """
+    if stat not in ("mean", "median"):
+        raise ValueError(
+            f"bg_rate_stat must be 'mean' or 'median', got {stat!r} — the "
+            "generator cannot guess which statistic a rate is, and guessing "
+            "wrong is a factor of five on an uneven background")
+    if stat == "mean" or shape is None:
+        return float(rate)
+    return float(rate) / median_over_mean(shape)
 
 
 def _quantize(values, grid_sec: float) -> tuple[float, ...]:
@@ -275,6 +370,7 @@ def simulate_coordination(
     duration_sec: float = 600.0,
     n_roi: int = 30,
     bg_rate_hz: float = 0.05,
+    bg_rate_stat: str = "mean",
     bg_rate_shape: float | None = None,
     bg_burst_shape: float | None = None,
     bg_burst_bin_sec: float = 60.0,
@@ -302,6 +398,15 @@ def simulate_coordination(
 
     duration_sec, n_roi, bg_rate_hz: the background. ``bg_rate_hz`` is the
       **mean** per-ROI rate.
+    bg_rate_stat: which statistic of the field ``bg_rate_hz`` is —
+      ``"mean"`` (the default, and what this generator has always meant) or
+      ``"median"``. A caller measuring a real recording usually holds the
+      median, because that is what ``assess`` puts in front of them, and on an
+      uneven field the two are a factor of five apart. Saying which is what
+      stops a plausible wrong answer: ``rate_as_mean`` converts, and refuses
+      anything it was not told. On a flat field (``bg_rate_shape=None``) the two
+      statistics coincide and nothing converts, which is why handing over a
+      median has been harmless here so far.
     bg_rate_shape: heterogeneity of the background across ROIs. ``None`` (the
       default) gives every ROI exactly ``bg_rate_hz`` — a flat field, and what
       this generator did for its whole life. A positive number draws each ROI's
@@ -415,6 +520,16 @@ def simulate_coordination(
             raise TypeError(
                 f"simulate_coordination() got both a spec and {clashes} — "
                 f"the spec owns those. Use spec.replace(...) to vary one.")
+        # A spec's `bg_rate_hz` is a mean by construction — `bench.REGIMES`
+        # states its endpoints as the interquartile spread of slice-MEAN per-ROI
+        # rate — so a spec settles the question and a caller who also passed a
+        # statistic is asserting something the spec already answers.
+        if bg_rate_stat != _SIGNATURE_DEFAULTS["bg_rate_stat"]:
+            raise TypeError(
+                "simulate_coordination() got both a spec and bg_rate_stat — a "
+                "spec's bg_rate_hz is a mean by construction, so there is "
+                "nothing for the flag to say. Convert before building the spec.")
+        bg_rate_stat = "mean"
         duration_sec = owned["duration_sec"]
         n_roi = owned["n_roi"]
         grid_sec = owned["grid_sec"]
@@ -447,6 +562,12 @@ def simulate_coordination(
     trains: list[list[float]] = [[] for _ in range(nR)]
 
     # ---- background: per-ROI Poisson, homogeneous or Gamma-heterogeneous ------
+    # Whatever statistic the caller holds, resolved to the mean this draw wants.
+    # A flat field has one rate for every ROI, so its mean and its median are the
+    # same number and nothing converts — which is exactly why a caller handing
+    # over a median has been harmless here, and would stop being harmless the
+    # moment `bg_rate_shape` is wired in.
+    bg_rate_hz = rate_as_mean(bg_rate_hz, bg_rate_stat, shape=bg_rate_shape)
     # When bg_rate_shape is None every ROI gets bg_rate_hz and NO random numbers
     # are drawn here, so the stream — and every existing seed — is unchanged.
     if bg_rate_shape is None:
