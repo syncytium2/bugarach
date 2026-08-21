@@ -71,7 +71,13 @@
   nav.site a:hover { background: var(--band); color: var(--fg); }
   nav.site a[aria-current="page"] { color: var(--fg); background: var(--band); }
   header { padding: 22px 24px 14px; border-bottom: 1px solid var(--line); }
-  h1 { margin: 0 0 4px; font-size: 19px; font-weight: 600; letter-spacing: -.01em; }
+  /* Medium, one line, and the promise rides on the same line as an inline run
+     rather than a block under it. Wraps on a narrow window instead of forcing a
+     horizontal scroll. */
+  h1 { margin: 0; font-size: 15px; font-weight: 600; letter-spacing: -.01em;
+       display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  h1 .promise { font-size: 12px; font-weight: 400; color: var(--muted); }
+  h1 .promise b { color: var(--fg); font-weight: 600; }
   .sub { color: var(--muted); font-size: 13.5px; max-width: 62ch; }
   .sub a { color: var(--accent); }
   main { display: flex; align-items: stretch; gap: 0;
@@ -256,19 +262,119 @@
 </nav>
 
 <header>
-  <h1>Open a recording</h1>
-  <div class="sub">
-    Pick an export folder — one CSV per recording, as described in the
-    <a href="https://github.com/syncytium2/bugarach/blob/main/docs/export_folder_spec.md">import
-    contract</a>. <b>Your files never leave this computer:</b> the page has no
-    network calls in it, and the site is static files with no server to send
-    anything to. Arrived without a folder? Simulate one, and look at the viewer
-    with nothing of your own at stake.
-  </div>
+  <!-- ONE LINE. The header spans both columns, so every line of it is charged
+       to the accordion column, which has nine panels to fit and is where the
+       work happens. What survives the trim is the promise — it is the page's
+       central claim and belongs above the fold. The import-contract link and
+       the invitation to simulate both still appear in the empty state below,
+       which is where a reader with no folder is looking anyway. -->
+  <h1>Open a recording<span class="promise"><b>Your files never leave this
+    computer</b> — no network calls, static files, no server to send them
+    to.</span></h1>
 </header>
 
 <main>
   <div id="side">
+    <details class="acc" id="accOpen">
+      <summary>Open a folder<span class="cnt">your own recordings</span></summary>
+      <div class="pick">
+        <button id="pickDir">Choose folder…</button>
+        <button id="pickFiles" class="ghost">or choose CSV files…</button>
+        <button id="reopen" class="ghost" hidden></button>
+        <input id="dir" type="file" webkitdirectory directory multiple hidden>
+        <input id="files" type="file" accept=".csv" multiple hidden>
+        <div class="hint">Nothing is uploaded. Reading happens in this tab.</div>
+      </div>
+    </details>
+    <details class="acc" id="accList" hidden>
+      <summary>Recordings<span class="cnt" id="cntList"></span></summary>
+      <div id="checkbar" hidden></div>
+      <ul id="list"></ul>
+    </details>
+    <details class="acc" id="accWindows" hidden>
+      <summary>Analysis windows<span class="cnt" id="cntWindows"></span></summary>
+      <div class="ctl">
+        <label for="wBase">the baseline period is</label>
+        <select id="wBase"></select>
+        <label for="wBaseDur">baseline: last N minutes</label>
+        <input id="wBaseDur" type="number" min="1" max="120" step="1" value="20">
+        <label for="wDelay">treatment: skip first N minutes</label>
+        <input id="wDelay" type="number" min="0" max="60" step="0.5" value="2">
+        <label for="wTreatDur">treatment: then N minutes</label>
+        <input id="wTreatDur" type="number" min="1" max="120" step="1" value="20">
+        <label for="wFloor">flag windows under (min)</label>
+        <input id="wFloor" type="number" min="0" max="60" step="0.5" value="4">
+        <div class="span toggles" id="wDelays"></div>
+        <div class="span"><button id="runWindows">Set the windows</button></div>
+        <div class="span"><button id="clearWindows" class="ghost">Use what the folder sent</button></div>
+        <div class="note" id="wWhat"></div>
+      </div>
+      <div class="fine">
+        <b>What happened, and what to score, are two different things.</b> A folder
+        states when each period ran. Which part of it to analyse is a decision about
+        your protocol — a solution takes time to arrive, and a period that ran forty
+        minutes is not forty minutes of the same thing. Where a producer sends that
+        decision, it is used and this section leaves it alone.
+        <br><br>
+ <b>Which periods wait for a solution is yours to say.</b> A drug has to arrive;
+        a depolarising challenge is already there. So the delay applies to the
+        period kinds you tick, listed above from what the folder actually
+        contains — a list somebody set, not a rule reading letters out of a name.
+        The convention this replaces exempted anything whose label contained
+        <i>hi</i>, which caught <code>histamine</code>, missed
+        <code>chelerythrine</code>, and would have silently begun trimming every
+        <code>high K+</code> window the day someone renamed it <code>KCl</code>.
+        <br><br>
+        <b>Three numbers, and nothing decided behind your back.</b> The baseline
+        is measured <i>backward</i> from its end, because the minutes just before
+        the treatment are the ones the treatment is compared against. Every other
+        period starts after the delay you gave it — the one above, or none — and
+        runs a fixed length. Periods do differ here; what has gone is the page
+        deciding which, from the letters in a name.
+        <br><br>
+        <b>A window too short to mean anything is flagged, not quietly used.</b>
+        Applying one delay to every period will leave some of them with almost
+        nothing — a brief challenge at the end of a recording is the usual case.
+        That is reported here rather than hidden, because the alternative is a
+        result computed over thirty seconds and labelled like the rest.
+      </div>
+    </details>
+    <details class="acc" id="accAssess">
+      <summary>Assess coordination<span class="cnt">no detector involved</span></summary>
+      <div class="ctl">
+        <label for="aSurr">surrogates</label>
+        <input id="aSurr" type="number" min="50" max="2000" step="50" value="1000">
+        <label for="aBin">bin (s)</label>
+        <input id="aBin" type="number" min="0.1" max="10" step="0.1" value="1">
+        <label for="aRegion">region</label>
+        <select id="aRegion"><option value="baseline">baseline (default)</option></select>
+        <label for="aK">mark clusters at K</label>
+        <select id="aK">
+          <option value="0" selected>none</option>
+          <option value="3">3</option>
+          <option value="4">4</option>
+          <option value="6">6</option>
+          <option value="8">8</option>
+        </select>
+        <div class="span"><button id="runAssess">Assess this recording</button></div>
+      </div>
+      <div class="fine">
+        <b>How much coordination is here, measured against a rate-matched null.</b>
+        Each ROI's own train is circularly shifted by its own random lag, which
+        holds its rate and its burstiness and destroys only cross-ROI phase — so
+        what survives is coordination beyond what the recording's rate explains.
+        <br><br>
+        <b>K is a scan, not a choice.</b> The floor for how many ROIs make an
+        event moves the headline by an order of magnitude, so every K is shown and
+        none is marked as the answer. Quoting one of these numbers means naming
+        its K.
+        <br><br>
+        <b>Baseline only.</b> Coordination properties are not taken from a
+        treatment — that is what the instrument is pointed at, and sourcing them
+        from it assumes the answer. A recording with no declared regions is
+        assessed whole, and it says so.
+      </div>
+    </details>
     <details class="acc" id="accSim" open>
       <summary>Simulate a folder<span class="cnt">no data needed</span></summary>
       <div class="ctl">
@@ -318,6 +424,12 @@
         <div class="span"><button id="runSim">Simulate</button>
           <button id="verifySim" disabled>Compare with the real folder</button></div>
         <div class="note" id="verifyWhat"></div>
+        <!-- The step order reads as a pipeline that accumulates, and this one
+             does not: `runSim` calls `open`, which clears RECORDINGS, REGIONS,
+             META and TRUTH. The measurement and the tuned setting cross the gap
+             on purpose — SIM_TARGET and TUNED both survive `open` — but your
+             recordings do not, and nothing said so before. -->
+        <div class="note" id="simSwapWarn" hidden></div>
       </div>
       <div class="fine" id="simProvenance" hidden></div>
       <div class="fine">
@@ -338,105 +450,34 @@
         axis and nothing more.
       </div>
     </details>
-
-    <details class="acc" id="accOpen">
-      <summary>Open a folder<span class="cnt">your own recordings</span></summary>
-      <div class="pick">
-        <button id="pickDir">Choose folder…</button>
-        <button id="pickFiles" class="ghost">or choose CSV files…</button>
-        <button id="reopen" class="ghost" hidden></button>
-        <input id="dir" type="file" webkitdirectory directory multiple hidden>
-        <input id="files" type="file" accept=".csv" multiple hidden>
-        <div class="hint">Nothing is uploaded. Reading happens in this tab.</div>
-      </div>
-    </details>
-
-    <details class="acc" id="accWindows" hidden>
-      <summary>Analysis windows<span class="cnt" id="cntWindows"></span></summary>
+    <details class="acc" id="accTune">
+      <summary>Tune the settings<span class="cnt" id="cntTune">simulated only</span></summary>
       <div class="ctl">
-        <label for="wBase">the baseline period is</label>
-        <select id="wBase"></select>
-        <label for="wBaseDur">baseline: last N minutes</label>
-        <input id="wBaseDur" type="number" min="1" max="120" step="1" value="20">
-        <label for="wDelay">treatment: skip first N minutes</label>
-        <input id="wDelay" type="number" min="0" max="60" step="0.5" value="2">
-        <label for="wTreatDur">treatment: then N minutes</label>
-        <input id="wTreatDur" type="number" min="1" max="120" step="1" value="20">
-        <label for="wFloor">flag windows under (min)</label>
-        <input id="wFloor" type="number" min="0" max="60" step="0.5" value="4">
-        <div class="span toggles" id="wDelays"></div>
-        <div class="span"><button id="runWindows">Set the windows</button></div>
-        <div class="span"><button id="clearWindows" class="ghost">Use what the folder sent</button></div>
-        <div class="note" id="wWhat"></div>
+        <label for="tTol">match tolerance (s)</label>
+        <input id="tTol" type="number" min="0.1" max="30" step="0.5" value="1.5">
+        <div class="span"><button id="runTune">Sweep</button></div>
+        <div class="note" id="tuneWhat"></div>
       </div>
       <div class="fine">
-        <b>What happened, and what to score, are two different things.</b> A folder
-        states when each period ran. Which part of it to analyse is a decision about
-        your protocol — a solution takes time to arrive, and a period that ran forty
-        minutes is not forty minutes of the same thing. Where a producer sends that
-        decision, it is used and this section leaves it alone.
+        <b>The step that makes this a loop.</b> The other three ask what is in a
+        recording; this one asks whether the instrument reading it is any good.
+        It sweeps one setting of the detector chosen in Detect events below,
+        holds the rest where
+        you left them, and scores every result against the events that were
+        planted — so a number here is right or wrong rather than merely produced.
         <br><br>
- <b>Which periods wait for a solution is yours to say.</b> A drug has to arrive;
-        a depolarising challenge is already there. So the delay applies to the
-        period kinds you tick, listed above from what the folder actually
-        contains — a list somebody set, not a rule reading letters out of a name.
-        The convention this replaces exempted anything whose label contained
-        <i>hi</i>, which caught <code>histamine</code>, missed
-        <code>chelerythrine</code>, and would have silently begun trimming every
-        <code>high K+</code> window the day someone renamed it <code>KCl</code>.
+        <b>Only on a folder this page invented, and that is the reason the
+        simulate step exists.</b> Your own recordings have no answer key: nobody
+        knows which moments in them were coordinated, which is what the detector
+        is for. Tune where the truth is known, then point the tuned instrument at
+        the recordings where it is not.
         <br><br>
-        <b>Three numbers, and nothing decided behind your back.</b> The baseline
-        is measured <i>backward</i> from its end, because the minutes just before
-        the treatment are the ones the treatment is compared against. Every other
-        period starts after the delay you gave it — the one above, or none — and
-        runs a fixed length. Periods do differ here; what has gone is the page
-        deciding which, from the letters in a name.
-        <br><br>
-        <b>A window too short to mean anything is flagged, not quietly used.</b>
-        Applying one delay to every period will leave some of them with almost
-        nothing — a brief challenge at the end of a recording is the usual case.
-        That is reported here rather than hidden, because the alternative is a
-        result computed over thirty seconds and labelled like the rest.
+        <b>A best value at the end of the range is not a best value.</b> It is
+        the sweep saying it stopped too early, and it is reported as that rather
+        than as an answer — a boundary value has been published as a calibrated
+        setting before.
       </div>
     </details>
-
-    <details class="acc" id="accAssess">
-      <summary>Assess coordination<span class="cnt">no detector involved</span></summary>
-      <div class="ctl">
-        <label for="aSurr">surrogates</label>
-        <input id="aSurr" type="number" min="50" max="2000" step="50" value="1000">
-        <label for="aBin">bin (s)</label>
-        <input id="aBin" type="number" min="0.1" max="10" step="0.1" value="1">
-        <label for="aRegion">region</label>
-        <select id="aRegion"><option value="baseline">baseline (default)</option></select>
-        <label for="aK">mark clusters at K</label>
-        <select id="aK">
-          <option value="0" selected>none</option>
-          <option value="3">3</option>
-          <option value="4">4</option>
-          <option value="6">6</option>
-          <option value="8">8</option>
-        </select>
-        <div class="span"><button id="runAssess">Assess this recording</button></div>
-      </div>
-      <div class="fine">
-        <b>How much coordination is here, measured against a rate-matched null.</b>
-        Each ROI's own train is circularly shifted by its own random lag, which
-        holds its rate and its burstiness and destroys only cross-ROI phase — so
-        what survives is coordination beyond what the recording's rate explains.
-        <br><br>
-        <b>K is a scan, not a choice.</b> The floor for how many ROIs make an
-        event moves the headline by an order of magnitude, so every K is shown and
-        none is marked as the answer. Quoting one of these numbers means naming
-        its K.
-        <br><br>
-        <b>Baseline only.</b> Coordination properties are not taken from a
-        treatment — that is what the instrument is pointed at, and sourcing them
-        from it assumes the answer. A recording with no declared regions is
-        assessed whole, and it says so.
-      </div>
-    </details>
-
     <details class="acc" id="accDetect">
       <summary>Detect events<span class="cnt" id="cntDetect">RateDetect</span></summary>
       <div class="ctl">
@@ -665,35 +706,6 @@
         reported separately: that combination is a stage knock, not coordination.
       </div>
     </details>
-
-    <details class="acc" id="accTune">
-      <summary>Tune the settings<span class="cnt" id="cntTune">simulated only</span></summary>
-      <div class="ctl">
-        <label for="tTol">match tolerance (s)</label>
-        <input id="tTol" type="number" min="0.1" max="30" step="0.5" value="1.5">
-        <div class="span"><button id="runTune">Sweep</button></div>
-        <div class="note" id="tuneWhat"></div>
-      </div>
-      <div class="fine">
-        <b>The step that makes this a loop.</b> The other three ask what is in a
-        recording; this one asks whether the instrument reading it is any good.
-        It sweeps one setting of the detector chosen above, holds the rest where
-        you left them, and scores every result against the events that were
-        planted — so a number here is right or wrong rather than merely produced.
-        <br><br>
-        <b>Only on a folder this page invented, and that is the reason the
-        simulate step exists.</b> Your own recordings have no answer key: nobody
-        knows which moments in them were coordinated, which is what the detector
-        is for. Tune where the truth is known, then point the tuned instrument at
-        the recordings where it is not.
-        <br><br>
-        <b>A best value at the end of the range is not a best value.</b> It is
-        the sweep saying it stopped too early, and it is reported as that rather
-        than as an answer — a boundary value has been published as a calibrated
-        setting before.
-      </div>
-    </details>
-
     <!-- The training panel. INERT ON THE PUBLISHED PAGE, and hidden by default:
          it appears only where something has defined `window.__lab`, which only
          the local `bugarach lab` server does, by appending a shim to the copy it
@@ -737,7 +749,6 @@
         measured against.
       </div>
     </details>
-
     <!-- The scoreboard. HIDDEN ON THE PUBLISHED PAGE, on the same `window.__lab`
          gate as the training panel above and for two reasons rather than one.
 
@@ -758,12 +769,6 @@
         <div class="note" id="scoreWhat"></div>
       </div>
     </details>
-
-    <details class="acc" id="accList" hidden>
-      <summary>Recordings<span class="cnt" id="cntList"></span></summary>
-      <div id="checkbar" hidden></div>
-      <ul id="list"></ul>
-    </details>
   </div>
 
   <div id="stage">
@@ -772,12 +777,14 @@
       <p>A folder holds one <code>.csv</code> per recording with columns
       <code>roi</code>, <code>time_sec</code> and optionally <code>stream</code>;
       <code>slices.csv</code> and <code>regions.csv</code> are read for the frame
-      interval and the treatment windows if they are there.</p>
+      interval and the treatment windows if they are there — the
+      <a href="https://github.com/syncytium2/bugarach/blob/main/docs/export_folder_spec.md">import
+      contract</a> has the whole of it.</p>
       <p>A <code>time_sec</code> of <code>NA</code> means an ROI that was recorded
       and produced no event. Those ROIs are counted here, not dropped — they are
       the denominator of every per-ROI rate.</p>
       <p><b>No folder to hand?</b> The page will invent one — recordings written
-      as the contract above describes and read back through the same loader, so
+      as that contract describes and read back through the same loader, so
       what you get is this page working rather than a picture of it.</p>
       <p><button id="simCta" class="ghost" style="width:auto;margin:0">Simulate a
       folder</button></p>
@@ -1431,6 +1438,7 @@ async function show(rec) {
   paintRegionChoices(rec);
   paintWindowPanel();
   paintTuneWhat();
+  paintSimSwapWarning();
   paintOrderNote(data);
   draw(rec, data);
 }
@@ -4232,6 +4240,22 @@ const medianFinite = xs => {
   return v.length % 2 ? v[h] : (v[h - 1] + v[h]) / 2;
 };
 
+/* Say that simulating will replace what is open, and say it only when there is
+   something to lose. Shown before the click rather than after, because after is
+   when the folder is already gone. */
+function paintSimSwapWarning() {
+  const n = document.getElementById("simSwapWarn");
+  if (!n) return;
+  const live = RECORDINGS.length && !SIMULATED;
+  n.hidden = !live;
+  if (!live) return;
+  n.textContent = "Simulating replaces the " + RECORDINGS.length
+    + " recording(s) now open — the page holds one folder at a time. Your "
+    + "measurement and any tuned setting survive it; the recordings do not, so "
+    + "open the folder again when you come back to Detect. The Open panel "
+    + "remembers where it was.";
+}
+
 function paintVerifyButton() {
   const b = document.getElementById("verifySim");
   const n = document.getElementById("verifyWhat");
@@ -6200,8 +6224,12 @@ else
 // `accLab` is in the list even though it is hidden on the published page:
 // `showSection` already refuses to open a hidden node, so listing it costs
 // nothing there and means the accordion behaves normally where it does appear.
-const SECTIONS = ["accSim", "accOpen", "accWindows", "accAssess", "accDetect",
-                  "accTune", "accLab", "accScore", "accList"];
+/* THE ORDER THE WORKFLOW RUNS IN, and it must match the DOM above.
+   Open your folder, see what is in it, state the windows the folder did not
+   send, measure it, simulate from that measurement, tune against the planted
+   truth, then point the tuned instrument at everything. */
+const SECTIONS = ["accOpen", "accList", "accWindows", "accAssess", "accSim",
+                  "accTune", "accDetect", "accLab", "accScore"];
 function showSection(id) {
   for (const s of SECTIONS) {
     const n = document.getElementById(s);
