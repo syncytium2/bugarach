@@ -158,6 +158,108 @@ and answers the comparability complaint without inventing a clamp to explain.
 
 ---
 
+## 4 · The assessor's region selector offers every period, including the wrong ones
+
+> *"the region selector for the assessor should be simply baseline (or first
+> region if not called baseline?) or full trace. i could be convinced to allow
+> the user to select one additional region, but sb222200 should not be on this
+> list. why is it present and not ttx or senk?"*
+
+**Where.** `paintRegionChoices` at
+[`raster_viewer.html:3701`](../site/raster_viewer.html) — it lists **every**
+region the recording declares, appending *"— not for calibration"* to any whose
+label is not baseline, plus a `whole recording` entry.
+
+### Answering the question first: it is not a bug, and TTX is not missing
+
+The list is **per recording**, not a vocabulary for the folder. The export carries
+all of these:
+
+| label | regions |
+|---|---|
+| baseline | 84 |
+| high K+ | 60 |
+| TTX | 38 |
+| senktide | 35 |
+| SB222200 | 12 |
+| wash | 9 |
+
+`SB222200` appeared because the recording open at the time has one. The twelve
+that carry it are, in full — and note the first four are the first files in the
+folder, so this is what anyone sees on opening it:
+
+    20240708_13     baseline, SB222200
+    20240708_17     baseline, SB222200, high K+
+    20240723_22     baseline, SB222200, high K+
+    20240726_34     baseline, SB222200, wash, high K+
+    …
+    20241216_135    baseline, SB222200, senktide
+    20241216_137    baseline, SB222200, senktide
+
+`20240708_13` has **only** baseline and SB222200 — no TTX, no senktide — so on
+that recording the selector is showing exactly what the folder declared.
+
+**But the confusion is itself the finding.** If a reader cannot tell that the list
+is *this recording's own periods*, an unexpected drug in it reads as a bug in the
+app. It cost this exchange; it will cost the next reader too. Whatever the list
+becomes, it should say whose periods it is showing.
+
+### What Tony asked for
+
+- **baseline**, or the **first region** when nothing is called baseline;
+- **full trace**;
+- possibly **one** additional region, chosen by the user;
+- and `SB222200` — a treatment — off the default list.
+
+**Every recording in the current export has a region labelled `baseline`** (84 of
+84), so the "first region if not called baseline" fallback is for other labs
+rather than for this corpus. Worth keeping anyway: `isBaselineLabel`
+([:3183](../site/raster_viewer.html)) matches on a token prefix, so a lab whose
+baseline is called something else already falls through it.
+
+### The tension to resolve before building it
+
+Measuring a treatment **is legitimate** and the code says so in terms
+([:3410](../site/raster_viewer.html)): *"Measuring TTX and comparing it to
+baseline is a legitimate thing to want; feeding TTX into the simulator is not."*
+FOUNDATIONS §9 forbids taking coordination **properties** from a treatment, which
+is a rule about parameterising the generator, not about looking.
+
+So the panel is serving two jobs with one menu — *pick the calibration source*
+and *look at this period* — and the guard already exists on the dangerous one:
+`simulateFromMeasurement` refuses a non-baseline measurement outright. The menu
+just does not reflect that only one entry is for the job the panel is named
+after.
+
+Tony's "one additional region" is exactly the second job. The open choice is
+whether that is a second control, or a menu that separates the two groups
+visually rather than tagging each entry with a disclaimer.
+
+---
+
+## 5 · The header wastes the vertical space the sidebar needs
+
+> *"huge waste of white space at the top when we need max verticality on the
+> left. make 'open a recording' one line and medium sized"*
+
+**Where.** [`raster_viewer.html:259`](../site/raster_viewer.html) — `<h1>Open a
+recording</h1>` at 19px ([:74](../site/raster_viewer.html)), followed by a
+`div.sub` running six lines: the import-contract link, the no-network promise,
+and the invitation to simulate a folder.
+
+The header sits above **both** columns, so every line of it costs the accordion
+column — which is the one that has nine panels to fit and is where the work
+happens.
+
+**What Tony asked for:** the title one line, medium sized. The `div.sub`
+underneath is the larger consumer of the space and he did not mention it — worth
+asking whether it should shrink, move into the empty-state panel (which already
+repeats much of it), or stay as the page's one statement of the promise. The
+no-network sentence is the page's central claim and it is deliberately above the
+fold; that is the part not to lose while reclaiming the room.
+
+---
+
 ## Related, and worth doing in the same pass
 
 `docs/todo/2026-08-20-the-scoreboard-copy-needs-review.md` is the other open copy
