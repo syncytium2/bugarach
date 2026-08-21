@@ -20,7 +20,16 @@ jobs:
       - name: Install
         run: |
           python -m pip install --upgrade pip
-          pip install -e ".[ui]" pytest
+          pip install -e ".[ui]" pytest playwright
+      - name: Install the browser the webapp tests drive
+        # The viewer is JavaScript, so checking it means running it. Without a
+        # browser here those tests SKIP rather than fail, which is the worst of
+        # both: a green tick that has not looked at the webapp at all. The guard
+        # in tests/test_browser_available.py fails loudly if this step stops
+        # working, so it cannot go quiet again.
+        run: python -m playwright install --with-deps chromium
+      - name: Require the browser tests to actually run here
+        run: echo "BUGARACH_REQUIRE_BROWSER=1" >> "$GITHUB_ENV"
       - name: Install PySpike (optional cross-check dependency)
         # source build; if unavailable on this Python the cross-check test skips
         run: pip install pyspike || echo "pyspike unavailable — cross-check test will skip"

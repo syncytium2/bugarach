@@ -1,4 +1,4 @@
-<!-- vendored from syncytium2/murderboard @ f43a07b — canonical source; do NOT edit here, update upstream and re-copy -->
+<!-- vendored from syncytium2/murderboard @ 729fb06 — canonical source; do NOT edit here, update upstream and re-copy -->
 # The murderboard — critical review process for document deliverables (anti-slop)
 
 A standing, project-neutral review process. Its purpose is to stop **slop** — unsourced
@@ -140,14 +140,53 @@ No fabricated or approximate citation. No internal contradiction. No filler.
      - Role **10 re-runs in full in the blind pass**, always — it is the cheapest role, and every
        repair to a rendering deliverable changes the file it inspects. Its table must name the NEW
        render.
-     - Iterate until a **blind** pass produces no new findings. **Report the number of rounds** — a
-       deliverable that needed three is a different object from one that needed none, and the reader
-       should know which they are holding.
+     - **Stop on SEVERITY, not on silence, and cap the rounds.** Stop when a blind round produces
+       **no blocking and no major** findings, **or after 3 blind rounds**, whichever comes first.
+       Minors surviving the final round are **recorded as residual `⚠`, not fixed** — fixing them
+       starts a round you have already decided not to run.
+     - **"Iterate until a blind pass produces no new findings" was the rule here until 2026-08-18,
+       and it does not terminate.** This process states two things that together make it
+       unbounded: *"a repaired deliverable has not been reviewed"*, and every fix is new text. So
+       each round manufactures the surface the next round reviews, and on a complex artifact the
+       generation rate can exceed the retirement rate indefinitely. A reviewer told to find
+       problems in unreviewed text will find some; that is the role working, not the artifact
+       failing. Measured on the run that produced this rule — a cross-project reply resting on new
+       code and a generated data folder — findings ran ~60 / 10 / 20 / 15 across four rounds while
+       blocking findings ran 6 / 0 / 3 / 0. It was stopped by a human at round 3, still producing.
+     - **Report findings by severity per round, as a table.** That table is the convergence
+       evidence and it replaces the bare round count: a run whose blocking findings go 6 → 0 → 3 → 0
+       has converged in the way that matters even if minors keep arriving. State the stopping
+       reason explicitly — *severity floor reached* or *round cap reached* — and never present a
+       capped run as a clean one.
+     - **If severity is NOT falling across rounds, stop and escalate to the human.** A flat or
+       rising blocking count after two rounds does not mean review harder; it means the artifact
+       has a structural problem that patching will not retire, and continuing to patch converts a
+       fixable draft into a long tail of edits nobody has reviewed together.
 5. **Deliver** — the corrected document **plus a short review report**: which dimensions
-   were checked, how many issues found and fixed, the verify-pass result, and any residual `⚠` flags
-   the human must resolve before release. For a generated deliverable, state that the shipped file
+   were checked, the **per-round findings-by-severity table** and the stopping reason (severity
+   floor, or round cap), the verify-pass result, and any residual `⚠` flags the human must resolve
+   before release. **A run stopped at the cap is delivered as unconverged**, with the open items
+   named — a capped run and a clean run must not read alike. For a generated deliverable, state that the shipped file
    was **rebuilt after the last fix** and verified in that state. A document with unresolved `⚠`
    flags is **not "done."**
+
+### The run record is a deliverable, and this process applies to it
+
+The record this process produces is a document, and it is the one document nobody
+reviews. Its prescribed shape — header, role ledger, finding list — is ordered by
+**process** rather than by **argument**: it can prove every role ran and cannot tell a
+reader what was found out. Roles 9 and 11 would catch that in any other document and are
+never pointed at this one.
+
+So the record **opens with the problem**, shown as a figure wherever the subject is
+visual, then places the work — where it fits and why it was worth doing — then states
+what would validate it and how it generalises beyond the project that produced it. The
+ledger and the finding list move to an appendix, where a reader who wants to audit
+coverage can still find every role.
+
+This is not a style preference. A record organised by process is read once by its author
+and never again, so the findings it contains stop being available to the next person —
+which is the same failure the murderboard exists to prevent, one level up.
 
 ## The review team
 
@@ -191,6 +230,19 @@ defect a role whose unit matches it (11, 9), or it will be found by the reader i
      computed. It was caught only because an OLDER export of the same data disagreed — so
      when a deliverable is a REGENERATION, diff it against what it replaces and account for
      every difference, including a changed row count.
+   - **The sources a deliverable did NOT consult are part of the check.** Verifying every
+     claim against the sources a document *names* still passes a document that never opened
+     the one it should have. Most projects keep a **record of experimental design and unit
+     membership** separately from the measurements: which condition, group, or subject each
+     unit belongs to, which units share a subject, and which units have been withdrawn.
+     Locate that record before reviewing, then check the deliverable against it — were
+     withdrawn units included, does the unit count reconcile, and are units sharing a subject
+     counted as independent? If the project appears to have **no** such record, report that
+     as a finding: *"there is no source of record for group membership"* is a serious claim
+     about a project, not a default. (Incident: a corpus result was reviewed by eleven roles
+     and shipped including a recording its own lab had marked excluded, in a column no role
+     knew existed. The same review reported a pooled across-group number as unavoidable
+     while the grouping sat in a column of the file the analysis had already loaded.)
    - **A retracted claim stays retracted.** When a source document carries a correction, read the
      **retraction together with the original** — a draft written from the original brief silently
      re-inherits the claim the project already measured and withdrew. And **verify the REPLACEMENT
@@ -252,6 +304,23 @@ defect a role whose unit matches it (11, 9), or it will be found by the reader i
      factors the study manipulates (group, condition, timepoint, region) **hides the structure** and
      invites "…in which condition?". Demand the breakdown (e.g. one panel per condition, bars by
      group) — a single pooled headline number is a defect for a results claim.
+   - **"The breakdown is unavailable" is a claim, and it is checked like any other.** When a
+     deliverable pools across a design factor and explains that the factor is not available in
+     the data, do not accept it and file a caveat — that is how a pooled result ships with a
+     flag nobody can act on. Establish whether a source of record exists *before* the caveat
+     is written. Unverified unavailability is the most comfortable finding in a review and the
+     least often true. (Boundary with Prove It: that role locates the record and reconciles
+     against it; this one refuses to let its absence be assumed.)
+   - **A check that cannot fail is not a check — and the danger is that it PASSES.** Distinct
+     from the alarm-ring rule below, which is about a null *result*: this is about a
+     *verification step* the deliverable performed. When a document says a quantity was
+     validated against a reference, establish that the reference is independent of the thing
+     being validated. A check comparing a value against the same value obtained by a second
+     route reports agreement forever and cannot detect the error it was written to catch.
+     (Incident: an analysis verified its time windows against a lab workbook and reported
+     agreement on every recording. Both sides were the raw recording period; the defect was
+     that the analysis should have used a *different* column — the producer's analysis window
+     — and the check had no visibility of it at all.)
    - **"Can the alarm ring?" — a null result needs a test with the power to fail.** The most
      dangerous sentence in an analysis deliverable is *"we checked for X and it did not happen"*: it
      reads as evidence while resting on nothing if the check could never have registered X. For
@@ -343,6 +412,38 @@ defect a role whose unit matches it (11, 9), or it will be found by the reader i
      there), a validation / example-grid panel must name **the archetype or category it shows**
      ("sustained", "non-oscillator control", "rejected: noise") so the reader knows why it is there
      without hunting in the body text.
+   - **Name the chart type the image RESEMBLES before reading its axis labels.** Every
+     field has a few dominant visual idioms — a raster, a heatmap, a spectrogram, a
+     Manhattan plot, a volcano plot, a phylogeny, a piano roll — and each carries fixed
+     axis conventions its readers apply automatically. A plot that borrows an idiom's
+     visual grammar while assigning **different meaning to its axes** is a false friend:
+     it is misread by exactly the expert audience it was drawn for, and the more fluent
+     the reader, the more confidently they misread it. Labels do not save it, because the
+     idiom is recognised before a label is read.
+     Ask three questions, in this order, with the render open and the caption covered:
+     *what does this resemble · in that idiom what do the axes mean · do they mean the
+     same thing here?* If the answer to the third is no, the finding is **not** "clarify
+     the label". Redraw it so it cannot be confused — gridded tiles rather than scattered
+     marks, explicit cell borders, a different mark shape, transposed axes — or show the
+     familiar chart beside it so the reader can see the correspondence instead of
+     assuming it.
+     **This defect is invisible to everyone who already knows what the figure is**, which
+     is every reviewer by the time they have read the caption and the generator. It is
+     the one figure check that must be made from ignorance, and it is why this role holds
+     it. (Boundary with Ship It: that role asks whether the panel is present, labeled and
+     legible — a false friend passes every one of those rows. Boundary with the
+     phantom-structure rule below: that one is about spurious structure *inside* a
+     correctly-read chart; this one is about the chart being read as the wrong kind of
+     chart entirely.)
+     *Incident:* a report on which cells participate in which events drew its membership
+     matrix as square marks scattered on continuous axes — horizontal axis a cell,
+     vertical axis an event ordinal. That is the visual grammar of a spike raster, where
+     the horizontal axis is **time** and each row is a **cell**. Eleven roles reviewed the
+     figure, wrote per-panel "what a cold reader sees" sentences, and passed it. The PI's
+     first reaction: *"the first figure is very confusing. showing something that looks
+     like a raster when it is not a raster is really mind blowing"* — followed by the fix
+     this rule prescribes: *"i think you should show a proper raster (or two if you need).
+     something simple to illustrate your point."*
    - **Every panel must be READABLE, not merely present.** With the render open, write one sentence
      per panel saying **what a cold reader sees** ("a bright blob with a red outline inside it").
      If you cannot write that sentence, the panel is a defect — say so. The panel you could not

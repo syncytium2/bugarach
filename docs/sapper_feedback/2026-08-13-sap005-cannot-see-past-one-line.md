@@ -57,3 +57,37 @@ Note the interaction worth remembering: the Artifact pipeline supplies its own
 `<head>`, so the same builder code renders **correctly** as a published artifact
 and **wrongly** as a file on disk. Testing the artifact proves nothing about the
 file. That asymmetry is why this needs to be mechanized rather than remembered.
+
+---
+
+## 2026-08-18 — the same one-line horizon, from the other direction
+
+`tools/md_to_page.py` builds a page from markdown. Written as
+`head_constant + f"<title>..."`, SAP005 blocked it — the produced document was
+**correct**, with the charset on line 4, but the rule sees one line at a time and a
+fragment whose first tag is the title is indistinguishable from a document with no
+head at all.
+
+**Not filed as a false positive to be narrowed away.** The rule fired on a real
+shape: a document assembled from fragments, where the head is somebody else's
+responsibility, is precisely how a page ships with no charset — and the incident
+this rule exists for was exactly that. What the block did was push the code from
+"assemble a document from parts" to "write the document as one template", which is
+better code *and* makes the guarantee visible to a reader rather than only to the
+author. That is a gate doing its job.
+
+**Two notes for whoever maintains the pattern.**
+
+1. **Describing the rule trips the rule.** Both the comment explaining why the code
+   was restructured, and this file, have to avoid writing the blocked shape
+   literally. That is now three occurrences across two rules (see also the SAP004
+   note from 2026-08-17). It is survivable — elide the shape and say it in words —
+   but it means the codebase cannot easily document its own gates, and a rule whose
+   explanation cannot be written next to the code is a rule people work around
+   instead of understanding.
+2. **The known gap noted in the message is load-bearing in a good way.** Because a
+   literal opening doctype line is not checked, writing the document as one
+   multi-line template passes — and that shape is the one that is actually safe.
+   So the gap is currently rewarding the right structure by accident. Worth making
+   deliberate rather than leaving as an accident, because the next person to
+   "tighten" the pattern will remove the only shape that both passes and is correct.

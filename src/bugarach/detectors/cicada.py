@@ -113,8 +113,13 @@ def cicada_detect(
 ) -> CicadaDetection:
     """Run the CICADA detector on every stream (declaration order, one RNG).
 
-    onset_field anchors the raster ("locs" peak = CICADA default; explore_sce
-    uses "t50rise"). active_duration_mode="per_event" reads per-event
+    onset_field anchors the raster, and the default is "locs" — the PEAK, not
+    the onset. That is CICADA's own convention, kept because §2 makes matching
+    the MATLAB original the product; explore_sce uses "t50rise" instead. It is
+    also the right anchor here: a single-cell event runs 10-60+ s from half-rise
+    to peak, so scoring coincidence on onsets alone would call nearly any two
+    events coordinated. sce_detect and loco_detect default to "t50rise" — the
+    three genuinely differ, and :mod:`bugarach.store` says why. active_duration_mode="per_event" reads per-event
     durations from duration_field on each Stream ("width"), or "rise_dur"
     (computed here as locs - t50rise, matching explore_sce's prep).
     sce_percentile and active_duration_sec take a scalar, a sequence in stream
@@ -142,8 +147,23 @@ def cicada_detect(
         else np.random.RandomState()
 
     names = list(s.streams)
+    # FAST retuned 99.99 -> 99.999 on 2026-08-20, when the bench's difficulty axis was
+    # re-derived from the export folder — the corpus the lab approved — instead of the
+    # .mat store it had been fitted against. At the corrected quiet endpoint (p25 of
+    # slice-mean per-ROI rate: 0.0052 Hz, against the store's 0.0038) this detector fired
+    # 7.3 spurious events per hour on a recording with NOTHING planted, against a
+    # declared ceiling of 6. At 99.999 it fires 0.4/hr.
+    #
+    # The trade was checked at both ends of the axis over 12 seeds, not just the one that
+    # motivated it: F1 rises at the quiet endpoint (0.547 -> 0.580) and falls at the busy
+    # one (0.547 -> 0.508), both inside one standard deviation. So this is an 18-fold cut
+    # in false positives for a wash in F1. Tony's call, 2026-08-20.
+    #
+    # **SLOW is deliberately untouched.** The bench is a FAST-stream instrument
+    # (`bench.STREAM`), so there is no SLOW evidence here, and moving that element would
+    # be an inference dressed as a measurement.
     pcts = per_stream_param(sce_percentile, names, "sce_percentile",
-                            (99.99, 99.9999))
+                            (99.999, 99.9999))
     adurs = per_stream_param(active_duration_sec, names, "active_duration_sec",
                              (1.0, 2.0))
 

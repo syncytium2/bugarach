@@ -12,6 +12,38 @@ npm run deploy     # build (Python) + upload (wrangler), every time
 `npm run deploy` runs `tools/build_site.py` first via `predeploy`, so the site is
 never uploaded stale. `npm run dry` does everything except the upload.
 
+**After deploying, check what actually got served:**
+
+```bash
+python tools/audit_deployed_page.py
+```
+
+It is a step you run, not one that runs itself. It was briefly wired as a
+`postdeploy` script, and unwiring it is the point: a step that can fail somebody
+else's deploy on every machine is a rule, and rules here are Tony's to install,
+not a passing session's.
+
+**Why there is a check on the far side of the upload.** Everything else guards the
+file we wrote: `tests/test_site_viewer.py` greps the viewer's source for `fetch(`
+and friends, and `build_site.py` refuses to publish it otherwise. On 2026-08-18 the
+*served* page had two network calls anyway — Cloudflare Web Analytics rewrites HTML
+at the edge and injected a beacon into the one page that promises it makes none.
+Nothing before the upload can see what a CDN adds after it. The audit above drives
+the live URL in chromium and fails on any request to anywhere but the site itself. Do not swap it for a `curl`: the injection was conditional on the request
+looking like a browser, so `curl` got the file we wrote and reported clean.
+
+**On this Mac, deploys need the venv on PATH.** `predeploy` calls `python` and
+macOS has only `python3`, so run
+`PATH=<repo>/.venv/bin:$PATH npm run deploy`. Do **not** change `package.json` to
+say `python3` — the Windows box this document was written on has `python` and not
+`python3`.
+
+**Check what the deploy checkout is pointed at.** Deploys run from whichever clone
+holds `node_modules` and the wrangler login, and on the Mac that is a worktree on a
+**detached HEAD** which does not follow `main`. It sat at a twelve-commit-old
+commit and faithfully republished it, which reads as a failed deploy and is a stale
+checkout. `git -C <that worktree> log --oneline -1` before every deploy.
+
 **Node lives in the user profile, not system-wide.** This is a managed Windows
 box with no winget/choco/scoop, so node is a checksum-verified portable zip
 extracted to `%USERPROFILE%	ools

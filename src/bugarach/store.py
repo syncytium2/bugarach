@@ -1,6 +1,6 @@
 """Reader for interface2 event_store_onset* slice files.
 
-Each ``<slice_id>.mat`` holds per-ROI event onsets for two streams::
+Each ``<slice_id>.mat`` holds per-ROI event times for two streams::
 
     slice_id : str
     fast     : struct with per-ROI cell arrays  locs / amp / width / t50rise
@@ -8,11 +8,39 @@ Each ``<slice_id>.mat`` holds per-ROI event onsets for two streams::
     regions  : struct array  name / slot / start_sec / end_sec
     roi_ids  : (optional) per-ROI identifiers
 
-``locs`` are onset times in seconds; they are the primary input to every
-detector. Files exist in two MATLAB formats: v7 (scipy) and v7.3 (HDF5).
-v7 files pad the per-ROI arrays to a rectangle with NaN; the loader strips
-that padding (masking every field by valid ``locs``). Unused region slots
-are stored with empty fields and are skipped.
+**``locs`` is the PEAK. ``t50rise`` is the onset — when the event began.**
+Both are seconds, both are per event, and they are not interchangeable: the
+peak lags the onset by roughly 0.3 s in FAST and roughly 2 s in SLOW, which
+is enough to mistime SLOW coincidence and change what a coactivity detector
+counts. That is why the store carries both, and why the ``_onset`` store
+exists at all.
+
+**The three detectors that take an ``onset_field`` do not agree, and that is
+deliberate.** ``sce_detect`` and ``loco_detect`` default to ``t50rise``;
+:func:`bugarach.detectors.cicada.cicada_detect` defaults to ``locs``, the
+peak. CICADA's MATLAB original anchors its raster on the peak, and §2 makes
+matching it the product — so the port keeps the peak rather than improving on
+it. The science agrees with the parity: a single-cell event runs 10-60+ s from
+half-rise to peak, and treating events that long as points would find almost
+any pair of them coincident. ``t50rise`` locates an event; ``locs`` closes it;
+the interval between them is its duration.
+
+**Do not "correct" cicada to ``t50rise``.** Two sentences claiming otherwise
+have already been written in this file. Until 2026-08-17 it said *"``locs`` are
+onset times… the primary input to every detector"*; the correction that
+replaced it asserted that *every* detector taking an ``onset_field`` defaults
+to ``t50rise``, which is false for exactly the one that matters. Neither
+sentence changed a number — the prose was wrong on its own, which costs
+nothing until somebody builds from it. Two have: interface2 read the first and
+raised it against ``docs/export_folder_spec.md``, and a bugarach session read
+the second and reported cicada's default as a bug. This paragraph is the third
+attempt, and it names the defaults one by one so there is no universal left to
+be wrong.
+
+Files exist in two MATLAB formats: v7 (scipy) and v7.3 (HDF5). v7 files pad
+the per-ROI arrays to a rectangle with NaN; the loader strips that padding
+(masking every field by valid ``locs``). Unused region slots are stored with
+empty fields and are skipped.
 
 MATLAB ``string``-class values in v7.3 files are stored in the opaque MCOS
 subsystem and cannot be decoded portably; where one is hit, the field falls
@@ -56,10 +84,30 @@ class Stream:
 
 @dataclass
 class Region:
+    """A period of a recording, and optionally the part of it to analyse.
+
+    ``start_sec``/``end_sec`` are **what happened** — when the period began and
+    ended. ``analysis_start_sec``/``analysis_end_sec`` are **what to score**,
+    when the producer has already decided: a wash-in delay, a duration cap, a
+    window trimmed for any reason of their own.
+
+    The two are kept apart rather than collapsed because they answer different
+    questions and only the producer knows the second. When they are absent
+    bugarach derives the analysis window itself, applying this project's
+    convention — which is right for this project and an inherited assumption
+    for anybody else (see ``docs/export_folder_spec.md``)."""
+
     name: str | None
     slot: str | None
     start_sec: float
     end_sec: float
+    analysis_start_sec: float | None = None
+    analysis_end_sec: float | None = None
+
+    @property
+    def has_analysis_window(self) -> bool:
+        return (self.analysis_start_sec is not None
+                and self.analysis_end_sec is not None)
 
 
 @dataclass
@@ -71,12 +119,17 @@ class Slice:
     pairing is specific to this project; foreign data (see bugarach.io) may
     carry one stream or several under any names. Consumers should iterate
     ``streams`` rather than hardcoding .fast/.slow, which are conveniences
-    for the canonical two-stream stores."""
+    for the canonical two-stream stores.
+
+    ``meta`` holds the producer's own per-recording columns, verbatim and
+    uninterpreted — the frame interval, group, sex, cohort, whatever the lab
+    records. bugarach carries them to its output and reads none of them."""
 
     slice_id: str
     streams: dict[str, Stream]
     regions: list[Region] = field(default_factory=list)
     roi_ids: list[str] | None = None
+    meta: dict[str, str] = field(default_factory=dict)
 
     @property
     def fast(self) -> Stream:
@@ -106,6 +159,25 @@ def is_v73(path: str | Path) -> bool:
         return bool(_h5py().is_hdf5(Path(path)))
     except ImportError:
         return False
+
+
+def store_recordings(directory: str | Path) -> list[Path]:
+    """The ``.mat`` recordings in a directory, sorted. Opens none of them.
+
+    **Here so that recognising a store does not require reading one.** SAP007 blocks
+    ``.mat`` access outside this module precisely because analyses kept going around
+    the export folder, and two lab-withdrawn recordings ended up inside published
+    numbers. But `bugarach.dataset` has to be able to say "that is a store, and this
+    analysis reads folders" — refusing a store is the rule's purpose, not an exception
+    to it. Keeping the knowledge in the store reader also keeps SAP007's exclusion list
+    what its own comment says it is: a shrinking backlog of analyses, not a standing
+    list of helpers.
+
+    Returns ``[]`` for anything that is not a directory, so a caller can ask without
+    checking first.
+    """
+    p = Path(directory)
+    return sorted(p.glob("*.mat")) if p.is_dir() else []
 
 
 def load_slice(path: str | Path) -> Slice:

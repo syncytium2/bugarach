@@ -36,10 +36,13 @@ import numpy as np
 # and any base-recording overrides that value range needs to be legible.
 SWEEPS: dict[str, dict] = {
     "bg_rate_hz": dict(
-        values=(0.0019, 0.0038, 0.0096, 0.0175, 0.0350),
+        # Re-derived 2026-08-20 with bench.REGIMES: the middle three are p25,
+        # median and p75 of slice-mean per-ROI rate on the EXPORT FOLDER, the
+        # corpus the lab approved. The outer two stay at half p25 and twice p75.
+        values=(0.0026, 0.0052, 0.0102, 0.0190, 0.0380),
         note="per-ROI background rate, in Hz. The middle three are the "
              "untreated interquartile range and its median — the bench runs "
-             "from 0.0038 to 0.0175. The same planted structure is in every "
+             "from 0.0052 to 0.0190. The same planted structure is in every "
              "row; only how far it stands out changes. (Event TIMES do shift "
              "between rows: the background draw consumes RNG, so the schedule "
              "redraws. Compare structure, not event for event.)",
@@ -236,15 +239,15 @@ def build(param: str, seed: int, width: int):
         s, gt = _row(param, value, spec.get("base", {}), seed)
         n_roi = s.streams["events"].n_rois
         ext = (0.0, {**BASE, **spec.get("base", {})}["duration_sec"])
-        # highlight the onsets belonging to planted events. raster_panel's
-        # member highlighting normally answers "what did this detector claim";
-        # here there is no detector, and the question is "what did the generator
-        # plant" — without this every onset renders muted grey and the figure
-        # shows a uniform wash whatever the knob is set to.
-        pad = max(3.0 * float(gt.params.get("jitter_sec", 0.05)), 0.5)
-        planted_spans = [(t - pad, t + pad) for t in gt.times]
+        # Every onset draws the same. This used to ink the ones inside a planted
+        # event, which made the structure easy to see and also drew it for the
+        # reader: the ink came from the ground truth, so a setting that planted
+        # something no detector could recover still produced tidy inked columns.
+        # The participation figure is the case in point — at 0.10 the bottom row
+        # now looks nearly structureless, which is the honest rendering of a
+        # stress point below the detectors' own min_rois floor. Planted times are
+        # ticked along the top, to be compared against an unmarked raster.
         panel = raster_panel(s.streams["events"], ext=ext, gt=gt,
-                             member_spans=planted_spans,
                              name=_vlabel(param, value),
                              width=width, height=170)
         # planted times ticked along the top: the structure, separate from the
@@ -308,7 +311,7 @@ def main(argv=None):
     p.add_argument("--no-png", dest="png", action="store_false", default=True)
     args = p.parse_args(argv)
 
-    from bugarach.paths import ENV_VAR, darkroom
+    from bugarach.paths import darkroom, unresolved_message
 
     if args.out:
         dest = Path(args.out).expanduser()
@@ -316,8 +319,7 @@ def main(argv=None):
     else:
         dest = darkroom()
         if dest is None:
-            print(f"{ENV_VAR} is not set and --out was not given — writing "
-                  "nothing rather than guessing a destination.", file=sys.stderr)
+            print(unresolved_message(), file=sys.stderr)
             return 2
         dest = dest / "generator"
         dest.mkdir(parents=True, exist_ok=True)
@@ -331,12 +333,21 @@ def main(argv=None):
     for param in params:
         fig = build(param, args.seed, args.width)
         note = SWEEPS[param]["note"]
+        # ▽ is drawn only where the sweep plants distractors, so the key names it
+        # only there. A glyph defined in a caption and absent from the figure
+        # sends a reader hunting for something that is not in the picture.
+        has_distractors = param == "n_distractors" or bool(
+            SWEEPS[param].get("base", {}).get("n_distractors"))
+        distractor_key = ('<span style="color:#5a5a5a">▽</span> distractors · '
+                          if has_distractors else "")
         page = pn.Column(
             pn.pane.HTML(
                 f'<div style="font:13px/1.6 system-ui,sans-serif;max-width:1000px">'
                 f'<b style="font-size:15px">{param}</b> — {note}<br>'
                 f'<span style="color:#555">Everything else held. '
                 f'<span style="color:#1b7f3b">▲</span> planted event times · '
+                f'{distractor_key}'
+                f'every raster onset drawn the same · '
                 f'seed {args.seed}.</span></div>'),
             pn.pane.HoloViews(fig))
         _write(page, dest, f"generator_{param}", args.png)

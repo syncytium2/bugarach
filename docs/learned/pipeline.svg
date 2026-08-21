@@ -1,0 +1,138 @@
+<svg viewBox="0 0 900 470" xmlns="http://www.w3.org/2000/svg" role="img"
+     aria-label="The coordination pipeline, left to right in four stages. First, real recordings from one lab are measured without any detector: onset times from eighty-five baseline slices go through a clustering assessor with a thousand circular-shift surrogates, which reports participation, jitter and cluster rate. Second, that measurement becomes generator settings; a human chooses the cluster size K from a published scan, and the fitted heterogeneous bursty background is turned on. Third, the generator plants coordinated events at times it records, producing a corpus split into four folds, with distractors and a dense random probe block as negatives. Fourth, every detector is fitted on three folds and scored on the held-out fourth: the six hand-written detectors sweep their one declared knob, the learned models train and pick a threshold, and both go through the same scorer. Ground truth flows from the generator to the scorer, never to a detector. The report and the operating points come out at the end.">
+  <defs>
+    <marker id="pa" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7"
+            orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor" stroke="none"/>
+    </marker>
+  </defs>
+
+  <!-- ============ stage bands ============ -->
+  <text x="16"  y="26" class="lbl">1 &#183; MEASURE the real thing</text>
+  <text x="246" y="26" class="lbl">2 &#183; PARAMETERIZE</text>
+  <text x="466" y="26" class="lbl">3 &#183; GENERATE, with truth</text>
+  <text x="700" y="26" class="lbl">4 &#183; FIT and SCORE</text>
+
+  <g stroke-width="1" fill="none" stroke-dasharray="2 4" opacity="0.55">
+    <line x1="232" y1="34" x2="232" y2="392"/>
+    <line x1="452" y1="34" x2="452" y2="392"/>
+    <line x1="680" y1="34" x2="680" y2="392"/>
+  </g>
+
+  <!-- ============ stage 1 ============ -->
+  <rect x="16" y="48" width="200" height="58" rx="3"/>
+  <text x="116" y="72" text-anchor="middle">85 real recordings</text>
+  <text x="116" y="91" text-anchor="middle" class="lbl">baseline windows only</text>
+
+  <rect x="16" y="132" width="200" height="72" rx="3" class="act"/>
+  <text x="116" y="156" text-anchor="middle" class="hi">assessor</text>
+  <text x="116" y="175" text-anchor="middle" class="lbl">cluster onsets, then</text>
+  <text x="116" y="192" text-anchor="middle" class="lbl">1,000 circular shifts</text>
+
+  <rect x="16" y="230" width="200" height="76" rx="3"/>
+  <text x="116" y="253" text-anchor="middle">what it measures</text>
+  <text x="116" y="272" text-anchor="middle" class="lbl">participation &#183; jitter</text>
+  <text x="116" y="289" text-anchor="middle" class="lbl">cluster rate &#183; background</text>
+
+  <text x="116" y="332" text-anchor="middle" class="lbl">no detector is involved,</text>
+  <text x="116" y="348" text-anchor="middle" class="lbl">so nothing here is</text>
+  <text x="116" y="364" text-anchor="middle" class="lbl">circular</text>
+
+  <!-- ============ stage 2 ============ -->
+  <rect x="246" y="132" width="192" height="72" rx="3"/>
+  <text x="342" y="156" text-anchor="middle">generator settings</text>
+  <text x="342" y="175" text-anchor="middle" class="lbl">heterogeneous, bursty</text>
+  <text x="342" y="192" text-anchor="middle" class="lbl">background &#8212; fitted</text>
+
+  <rect x="246" y="230" width="192" height="76" rx="3" class="act"/>
+  <text x="342" y="253" text-anchor="middle" class="hi">a human picks K</text>
+  <text x="342" y="272" text-anchor="middle" class="lbl">cluster size. K=3 chosen;</text>
+  <text x="342" y="289" text-anchor="middle" class="lbl">K=4 &#8594; a quarter the rate</text>
+
+  <text x="342" y="332" text-anchor="middle" class="lbl">the whole scan ships</text>
+  <text x="342" y="348" text-anchor="middle" class="lbl">beside the choice, so the</text>
+  <text x="342" y="364" text-anchor="middle" class="lbl">judgement is reviewable</text>
+
+  <!-- ============ stage 3 ============ -->
+  <rect x="466" y="48" width="204" height="58" rx="3"/>
+  <text x="568" y="72" text-anchor="middle">generator</text>
+  <text x="568" y="91" text-anchor="middle" class="lbl">plants events at known times</text>
+
+  <rect x="466" y="132" width="204" height="72" rx="3"/>
+  <text x="568" y="156" text-anchor="middle">corpus</text>
+  <text x="568" y="175" text-anchor="middle" class="lbl">8 recordings, 470 min</text>
+  <text x="568" y="192" text-anchor="middle" class="lbl">4 folds of 2</text>
+
+  <rect x="466" y="230" width="204" height="76" rx="3"/>
+  <text x="568" y="253" text-anchor="middle">planted negatives</text>
+  <text x="568" y="272" text-anchor="middle" class="lbl">distractors: real coincidence,</text>
+  <text x="568" y="289" text-anchor="middle" class="lbl">not coordination &#183; + a probe</text>
+
+  <text x="568" y="332" text-anchor="middle" class="lbl">a detector can be charged</text>
+  <text x="568" y="348" text-anchor="middle" class="lbl">for firing on something,</text>
+  <text x="568" y="364" text-anchor="middle" class="lbl">not only for missing one</text>
+
+  <!-- ============ stage 4 ============ -->
+  <rect x="700" y="48" width="184" height="76" rx="3"/>
+  <text x="792" y="72" text-anchor="middle">the six, hand-written</text>
+  <text x="792" y="91" text-anchor="middle" class="lbl">sweep one declared knob</text>
+  <text x="792" y="108" text-anchor="middle" class="lbl">on 3 folds</text>
+
+  <rect x="700" y="146" width="184" height="76" rx="3" class="act"/>
+  <text x="792" y="170" text-anchor="middle" class="hi">the learned models</text>
+  <text x="792" y="189" text-anchor="middle" class="lbl">train, then pick a threshold</text>
+  <text x="792" y="206" text-anchor="middle" class="lbl">on 3 folds</text>
+
+  <rect x="700" y="244" width="184" height="62" rx="3"/>
+  <text x="792" y="268" text-anchor="middle">one scorer</text>
+  <text x="792" y="287" text-anchor="middle" class="lbl">held-out 4th fold</text>
+
+  <text x="792" y="332" text-anchor="middle" class="lbl">one corpus, one</text>
+  <text x="792" y="348" text-anchor="middle" class="lbl">procedure, one metric</text>
+  <text x="792" y="364" text-anchor="middle" class="lbl">&#8212; which is what makes</text>
+  <text x="792" y="380" text-anchor="middle" class="lbl">it a comparison</text>
+
+  <!-- ============ flow ============ -->
+  <g fill="none" stroke-width="1.4" marker-end="url(#pa)" color="inherit">
+    <!-- down the first column -->
+    <line x1="116" y1="108" x2="116" y2="128"/>
+    <line x1="116" y1="206" x2="116" y2="226"/>
+    <!-- measurement becomes settings -->
+    <line x1="218" y1="264" x2="243" y2="200"/>
+    <!-- K feeds the settings above it -->
+    <line x1="342" y1="228" x2="342" y2="208"/>
+    <!-- settings drive the generator -->
+    <path d="M 440 150 L 452 150 L 452 77 L 463 77"/>
+    <!-- generator makes the corpus and the negatives -->
+    <line x1="568" y1="108" x2="568" y2="128"/>
+    <line x1="568" y1="206" x2="568" y2="226"/>
+    <!-- corpus to both fitting paths -->
+    <path d="M 672 150 L 686 150 L 686 86 L 697 86"/>
+    <line x1="672" y1="172" x2="697" y2="180"/>
+    <!-- Both fitted things into the scorer, SEPARATELY. Routed six -> down the
+         outside -> back in, because a line from the six's box to the learned
+         models' box read as the six feeding the learned models, which is the
+         opposite of the independence this whole figure is about. -->
+    <path d="M 884 86 L 892 86 L 892 275 L 886 275"/>
+    <line x1="792" y1="224" x2="792" y2="240"/>
+  </g>
+
+  <!-- Ground truth: to the scorer, never to a detector. It gets its own lane
+       along the bottom. Routed beside the corpus->detector arrow it sat 6 px from
+       a solid line and the two read as one thick one, which is the opposite of
+       the point: this path exists to be visibly separate from the signal path. -->
+  <g fill="none" stroke-width="1.4" stroke-dasharray="5 3" marker-end="url(#pa)"
+     color="inherit">
+    <path d="M 672 268 L 676 268 L 676 396 L 710 396 L 710 310"/>
+  </g>
+  <text x="450" y="418" text-anchor="middle" class="lbl">
+    the dashed line is ground truth &#8212; it reaches the SCORER and nothing else. No detector, learned or hand-written, ever sees it.
+  </text>
+
+  <text x="450" y="444" text-anchor="middle" class="lbl">
+    Every stage is a script and every output a file: assess_archive.py &#183; derive_spec.py &#183; fair_bakeoff.py &#183; make_bakeoff_figures.py
+  </text>
+  <text x="450" y="462" text-anchor="middle" class="lbl">
+    The corpus is simulated. The settings are measured. Nothing here says any detector is right about a real slice.
+  </text>
+</svg>

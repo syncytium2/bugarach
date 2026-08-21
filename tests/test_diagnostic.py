@@ -14,7 +14,7 @@ hv = pytest.importorskip("holoviews")
 from bugarach.detectors.rate import recording_extent  # noqa: E402
 from bugarach.simulate import simulate_coordination  # noqa: E402
 from bugarach.ui.diagnostic import (  # noqa: E402
-    _is_member, _spans, coordination_diagnostic, lane_panel, legend_html,
+    RASTER_INK, _spans, coordination_diagnostic, lane_panel, legend_html,
     raster_panel, score_table,
 )
 
@@ -43,14 +43,33 @@ def test_non_finite_width_still_draws():
     assert len(sp) == 1 and sp[0][1] > sp[0][0]
 
 
-def test_membership():
-    t = np.array([1.0, 5.0, 50.0])
-    m = _is_member(t, [(0.0, 6.0)])
-    assert list(m) == [True, True, False]
+def test_every_raster_onset_is_drawn_identically(sim):
+    """The raster shows the recording, not a detector's reading of it.
+
+    It used to ink onsets inside a detected window and mute the rest, which
+    asserts which events a detector RECRUITED — a per-onset claim none of the six
+    makes, since they report a window. One Scatter, one colour, one size is the
+    property; more than one would mean some onset is being privileged again.
+    """
+    s, gt, ext = sim
+    panel = raster_panel(s.streams["events"], ext=ext, gt=gt)
+    # `_base` contributes an invisible Scatter to own the x-dimension, so the
+    # property is one VISIBLE onset layer, not one Scatter.
+    visible = [e for e in panel.values()
+               if isinstance(e, hv.Scatter)
+               and e.opts.get("style").kwargs.get("alpha", 1) > 0]
+    assert len(visible) == 1, (
+        f"{len(visible)} visible onset layers — the raster is grading its own "
+        "events again")
+    style = visible[0].opts.get("style").kwargs
+    assert style["color"] == RASTER_INK
+    assert {style["color"]} == {RASTER_INK}, "one ink, whatever a detector said"
 
 
-def test_membership_with_no_windows_is_all_isolated():
-    assert not _is_member(np.array([1.0, 2.0]), []).any()
+def test_raster_takes_no_detection_spans():
+    """A caller cannot re-introduce the highlight by passing spans."""
+    import inspect
+    assert "member_spans" not in inspect.signature(raster_panel).parameters
 
 
 def test_builds_with_lanes_and_ground_truth(sim):
@@ -154,8 +173,35 @@ def test_every_zoom_is_constrained_to_the_time_axis(sim):
     fig = coordination_diagnostic(s.streams["events"], ext=ext, gt=gt)
     doc = hv.renderer("bokeh").get_plot(fig).state
 
-    zooms = list(doc.select({"type": BoxZoomTool})) + \
-            list(doc.select({"type": WheelZoomTool}))
-    assert zooms, "no zoom tools found — the check would pass vacuously"
-    offenders = [type(z).__name__ for z in zooms if z.dimensions != "width"]
-    assert not offenders, f"zoom not constrained to x: {offenders}"
+    from bokeh.models import PanTool
+
+    movers = (list(doc.select({"type": BoxZoomTool}))
+              + list(doc.select({"type": WheelZoomTool}))
+              + list(doc.select({"type": PanTool})))
+    assert movers, "no zoom or pan tools found — the check would pass vacuously"
+    offenders = [type(z).__name__ for z in movers if z.dimensions != "width"]
+    assert not offenders, f"not constrained to x: {sorted(set(offenders))}"
+
+
+def test_the_wheel_actually_zooms(sim):
+    """Constraining the wheel is not the same as connecting it.
+
+    bokeh leaves ``active_scroll`` on "auto" and nothing claims the wheel, so the
+    first version of this fix produced x-constrained tools that did nothing when
+    you scrolled — zooming meant finding the box-zoom button first. The tool has
+    to be x-only AND be the active scroll tool.
+    """
+    from bokeh.models import WheelZoomTool
+    from bokeh.plotting import figure as _figure
+
+    s, gt, ext = sim
+    fig = coordination_diagnostic(s.streams["events"], ext=ext, gt=gt)
+    doc = hv.renderer("bokeh").get_plot(fig).state
+
+    panels = list(doc.select({"type": _figure}))
+    assert panels, "no panels found — the check would pass vacuously"
+    for p in panels:
+        scroll = p.toolbar.active_scroll
+        assert isinstance(scroll, WheelZoomTool), (
+            f"active_scroll is {scroll!r} — the wheel does nothing")
+        assert scroll.dimensions == "width"
