@@ -68,29 +68,32 @@ same population. Two different stacks, one number.
 eligible population, not the store's 2738 ROIs. Quote 3.0% of judged slices, never
 of the deck.
 
-## The rule exists and has NOT been applied to the data bugarach reads
+## What the unfiltered fits were worth — asked while the rule was still pending
 
-Tony, 2026-08-16, asked directly:
+**This section is history, and it is kept for the measurement in it.** When it was
+written the rule had not reached the data bugarach reads; it has since been applied
+at export, and the roster was verified against this archive by `(slice_id, ROI)` —
+all 2185 keys matched, 66 rejected. The premise below is therefore closed. What is
+*not* closed, and is the reason these numbers stay, is the question they answer:
+**what is a fit over an unfiltered population worth?** That still binds, because 18
+of 85 slices are ineligible for the verdict and so remain unfiltered.
+
+The prompt was Tony, 2026-08-16:
 
 > *"the exporter (the data to be read by the webapp and detectors) should remove
 > DEAD rois. We have a rule for that, but it has not been applied to the data you
 > have access to."*
 
-Two things follow, and they point in opposite directions — which is why this
-section exists rather than a one-line note.
-
-**The direction of travel is settled.** Dead-ROI removal belongs to the
+**The direction of travel was settled even then.** Dead-ROI removal belongs to the
 **exporter**, not to bugarach, and the rule to apply is ADR 0002's, not an
-activity threshold invented here. Nothing in the section below changes; this is
-that principle being exercised by the person who owns it, not overturned.
+activity threshold invented here — the principle being exercised by the person who
+owns it, not overturned.
 
-**But the corpus in hand still carries them.** So every measurement this repo has
-taken off `processed_archive/event_store_onset_revised_2v` was taken over a
-population that includes ~3% of rows which are zero **by construction rather than
-by biology**. That includes `bench.MEASURED_RATE_SHAPE` and
-`bench.MEASURED_BURST_SHAPE`. The ⚠ above about corpus correspondence is now
-*more* load-bearing, not less: if that archive is the `ROI_revised_2v` corpus,
-3.0% is the contamination; if it is not, the rate is unknown.
+**And the corpus in hand still carried them.** So every measurement taken off
+`processed_archive/event_store_onset_revised_2v` before the export was rebuilt was
+taken over a population including ~3% of rows that are zero **by construction rather
+than by biology** — `bench.MEASURED_RATE_SHAPE` and `bench.MEASURED_BURST_SHAPE`
+among them. The question was how much that mattered.
 
 ### How much does that bend the fitted shape? Measured: almost none.
 
@@ -138,17 +141,20 @@ than the dead-ROI effect at the operating point and is nobody's fault — it is 
 an 81 × 33 sample buys. Worth knowing before `--tol 0.05` is read as a drift
 alarm: the estimator's own noise floor is about that size.
 
-### Open, and with the people who can close it
+### Both unknowns closed, and the prediction held
 
-**Tony is confirming the export function with the MATLAB team (2026-08-16).**
-Until that lands, two things stay unknown and neither should be guessed here:
-whether `processed_archive/event_store_onset_revised_2v` is the `ROI_revised_2v`
-corpus, and whether the exporter that produced it will apply ADR 0002. When the
-answer arrives, the actions are: re-run `tools/fit_background_shape.py` against
-the filtered export and check the drift gate, and strike the ⚠ above.
+Two things were open here: whether `processed_archive/event_store_onset_revised_2v`
+is the `ROI_revised_2v` corpus, and whether the exporter would apply ADR 0002. Both
+are answered — the exporter applied the 2026-08-15 roster to that store by
+`(slice_id, ROI)`, matched all 2185 keys with no disagreements, and rejected 66. The
+rate is 3.0% **of the eligible population**, 67 of 85 slices, and the export folders
+carry the filtered deck.
 
-Nothing in bugarach should change before then. The measurement above exists
-precisely so that the wait is cheap — the expected correction is under 1%.
+The measurement above was made so the wait would be cheap, and that is how it turned
+out: the expected correction was under 1%, so nothing computed against the unfiltered
+population was stranded. It is kept because 18 of 85 slices remain ineligible and so
+unfiltered, and because the estimator's own 5% small-sample bias — the separate
+finding above — is a standing fact about `--tol`, not a fact about dead ROIs.
 
 ## Three traps, all of them already documented upstream
 
