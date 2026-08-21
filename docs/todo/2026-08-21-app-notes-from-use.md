@@ -548,22 +548,34 @@ convenience, it is the difference between a sweep that returns while you are
 looking at it and one you wait out. On a bigger corpus, or the folder assessment
 of note 8, that gap grows with the work.
 
-### One correction worth making, because it will end up in app copy
+### Who actually wrote the six — corrected by Tony, 2026-08-21
 
-*"the weirdos we created"* — we did not create them, and the page should not
-imply we did. Of the six:
+An earlier draft of this note claimed four of the six came from outside. **That
+was wrong**, and the mistake is instructive enough to record rather than quietly
+fix — see the todo it produced,
+[`the word "port" is doing two jobs`](2026-08-21-port-means-two-things-in-the-detector-docstrings.md).
 
-- **CICADA** is a faithful port of the **Cossart lab's** `cossartlab/cicada`
-  (`get_sce_threshold` + `detect_sce`);
-- **SPIKE-synch** is the PySpike / cSPIKE measure;
-- **RateDetect** is RateViewer's `computeEventRate` / `computeEventRateContext`;
-- **SCE**, **LoCo** and **CoactDetect** are this project's, and LoCo and
-  CoactDetect are the two that lead the comparison.
+The actual provenance, per Tony and confirmed against the README's licensing
+table:
 
-That matters beyond credit: a selector that reads as *"the ones we made up"*
-would be wrong about four of six, and the scoreboard's honesty rules already
-forbid overclaiming in the other direction. A neutral list, with the two costly
-ones marked as costly, does both jobs.
+| detector | whose method |
+|---|---|
+| **CICADA** | **the only ported one** — Cossart lab, `cossartlab/cicada`, MIT, carries the upstream copyright |
+| **SPIKE-synch** | the *synchrony profile* is the Kreuz-lab measure (PySpike semantics, BSD). **The detector run on that series is ours** — hysteresis detection and artifact flagging |
+| **RateDetect** | ours |
+| **SCE** | ours, derived from ideas in CICADA |
+| **LoCo** | ours |
+| **CoactDetect** | ours |
+
+So **five of six are this project's own**, one is ported, and one of the five
+builds its detector on a third-party measure. LoCo and CoactDetect — the two that
+**lead the comparison** — came out of Tony working the problem directly.
+
+That matters beyond credit. A selector labelled *"the ones we made up"* would be
+wrong in the direction of underselling, and the page's honesty rules are written
+against overclaiming, so nothing currently catches an understatement. A neutral
+list with the two **costly** ones marked as costly does both jobs and asserts
+nothing about authorship.
 
 **Open:** whether the selector lives in Tune with the detector chooser moved up
 from Detect (note 7 already moves it), and whether a detector deselected here
