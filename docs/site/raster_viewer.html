@@ -179,11 +179,20 @@
   #wins { font-size: 12.5px; color: var(--muted); margin: 0 0 14px; }
   #wins span.win { display: inline-flex; align-items: center; gap: 6px;
                    margin-right: 16px; }
-  #wins .sw { width: 11px; height: 11px; border-radius: 3px; flex: none;
-              display: inline-block; }
+  /* THE SWATCH IS A MINIATURE OF THE PICTURE, not one of its two channels.
+     The legend's own sentence names a bar AND a shading; the swatch used to be
+     a solid block of the bar's colour, so it explained a shading it never
+     showed. It now carries both the way the raster does: a pale `wash` field
+     with the saturated `ink` rail across its top. */
+  #wins .sw { width: 16px; height: 11px; border-radius: 3px; flex: none;
+              display: inline-block; position: relative; overflow: hidden; }
+  #wins .sw .rail { position: absolute; left: 0; right: 0; top: 0; height: 3px; }
   #wins .scored { opacity: .8; }
   #wins .scored::before { content: "· "; }
   #wins .chan { color: var(--muted); font-style: italic; }
+  /* Named with the panel head's own words, so the picture and the control that
+     governs it say the same thing. */
+  #wins .chan b { font-style: normal; color: var(--fg); font-weight: 600; }
   #wins i { font-style: normal; color: var(--fg); }
   canvas { width: 100%; display: block; }
   .empty { color: var(--muted); padding: 48px 8px; max-width: 60ch; }
@@ -340,7 +349,13 @@
       </div>
     </details>
     <details class="acc" id="accAssess">
-      <summary>Assess coordination<span class="cnt">no detector involved</span></summary>
+      <!-- The chip used to read "no detector involved". It is not true: the
+           assessor finds coordinated clusters and returns their times, their
+           participants and their spread, which is detection. What it does NOT
+           have is an operating point — every one of the six commits to a
+           setting, and this scans K and commits to none. That is the
+           distinction the old wording was reaching for. -->
+      <summary>Assess coordination<span class="cnt" id="cntAssess">no operating point</span></summary>
       <div class="ctl">
         <label for="aSurr">surrogates</label>
         <input id="aSurr" type="number" min="50" max="2000" step="50" value="1000">
@@ -348,7 +363,7 @@
         <input id="aBin" type="number" min="0.1" max="10" step="0.1" value="1">
         <label for="aRegion">region</label>
         <select id="aRegion"><option value="baseline">baseline (default)</option></select>
-        <label for="aK">mark clusters at K</label>
+        <label for="aK">mark clusters at K — the fewest ROIs that count as one event</label>
         <select id="aK">
           <option value="0" selected>none</option>
           <option value="3">3</option>
@@ -1336,6 +1351,26 @@ function draw(rec, data) {
       }
     }
 
+    /* THAT THE MEASUREMENT HAPPENED, on the picture, without picking a K.
+
+       A 185 ms job that renders its table in the other column looked, from
+       here, exactly like a dead button. This is the persistent half: it names
+       the stream it measured and says the ticks are available rather than
+       drawing them, so the reader learns both that it ran AND that choosing a K
+       is the next move — which is the panel's own rule rather than a default
+       this could quietly supply. */
+    if (ASSESSED && ASSESSED.recId === rec.id && si === names.length - 1) {
+      const marked = ASSESS && ASSESS.recId === rec.id;
+      g.fillStyle = css.getPropertyValue("--muted").trim();
+      g.textAlign = "end";
+      g.fillText(!ASSESSED.measured
+        ? "assessed · window too short to measure"
+        : marked ? "assessed · clusters marked at K " + ASSESS.K
+                 : "assessed · choose a K to mark clusters",
+        W - padR, bot + 12);
+      g.textAlign = "start";
+    }
+
     // one x-axis per group: bottom row only
     if (si === names.length - 1) {
       g.fillStyle = css.getPropertyValue("--muted").trim();
@@ -1400,9 +1435,15 @@ async function show(rec) {
   for (const w of wins) {
     const s = document.createElement("span");
     s.className = "win";
+    // Both channels, as the raster draws them: the pale field is the shading
+    // (what gets scored) and the rail across its top is the bar (the period).
     const sw = document.createElement("span");
     sw.className = "sw";
-    sw.style.background = ink(w.label);
+    sw.style.background = wash(w.label);
+    const rail = document.createElement("span");
+    rail.className = "rail";
+    rail.style.background = ink(w.label);
+    sw.append(rail);
     const span = (lo, hi) => (lo / 60).toFixed(0) + "–" + (hi / 60).toFixed(0) + "m";
     s.append(sw, el("i", w.label), document.createTextNode(span(w.start, w.end)));
     // only worth saying when it differs from the period — repeating the same
@@ -1415,11 +1456,17 @@ async function show(rec) {
     }
     winbox.append(s);
   }
-  if (wins.length)
-    winbox.append(el("span", anyAnalysis
-      ? "bar = the period · shading = the part scored"
-      : "bar = the period · shading = the same, no analysis window was sent",
-      "chan"));
+  if (wins.length) {
+    // Labelled with the accordion head's own words. The panel that governs
+    // these windows is called "Analysis windows"; a legend that explains them
+    // under a different name makes the reader join two things up by inference.
+    const chan = el("span", "", "chan");
+    chan.append(el("b", "Analysis windows"), document.createTextNode(" — "
+      + (anyAnalysis
+         ? "bar = the period · shading = the part scored"
+         : "bar = the period · shading = the same, no analysis window was sent")));
+    winbox.append(chan);
+  }
   const say = text => note.appendChild(el("p", text));
   if (!data.quiet)
     say("No ROI in this recording is declared with no events. If all "
@@ -1438,6 +1485,7 @@ async function show(rec) {
   paintRegionChoices(rec);
   paintWindowPanel();
   paintTuneWhat();
+  paintAssessChip();
   paintSimSwapWarning();
   paintOrderNote(data);
   draw(rec, data);
@@ -4365,6 +4413,23 @@ function paintVerify() {
 }
 
 /* ---------- running it, and saying what came back --------------------------- */
+/* THAT AN ASSESSMENT RAN, which is a different fact from what it found.
+
+   Reported as "nothing happens when I click Assess" (Tony, 2026-08-21) and the
+   click was fine: 185 ms on a real 34-ROI recording, full table, no errors.
+   Three things hid it. The table renders in the other column, below the canvas.
+   The button restores itself faster than a spinner would appear. And the raster
+   is marked only when a K has been chosen, which defaults to `none` — so by
+   default assessing changed the picture in no way at all.
+
+   A progress bar is the wrong instrument for a 185 ms job. What was missing is
+   PERSISTENCE: something that still says "this was assessed" a second later.
+
+   `ASSESSED` names no K, deliberately. Defaulting one would make the page pick
+   the number the panel spends a paragraph refusing to pick — "K is a scan, not
+   a choice". So the raster gets a neutral mark saying the measurement happened,
+   and the cluster ticks stay opt-in through `ASSESS` below. */
+let ASSESSED = null;    // {recId, streams, nStreams, region}
 let ASSESS = null;      // {recId, K, centres, winStart} — what the raster draws
 let LAST_ASSESS = null; // what the calibration step would be fed, if you accept a K
 
@@ -4375,8 +4440,36 @@ const fmtNum = (x, nd) =>
 
 function clearAssess() {
   ASSESS = null;
+  ASSESSED = null;
+  paintAssessChip();
   const box = document.getElementById("assessOut");
   if (box) box.textContent = "";
+}
+
+/* The chip on the panel head, which is what still says "assessed" after the
+   table has scrolled out of sight. Falls back to the standing description —
+   what the step IS — when nothing has been measured yet. */
+function paintAssessChip() {
+  const n = document.getElementById("cntAssess");
+  if (!n) return;
+  // `cnt ok` is the page's existing idiom for a chip reporting a good state —
+  // the folder check writes exactly this on its own head.
+  if (!ASSESSED || !current || ASSESSED.recId !== current.id) {
+    n.textContent = "no operating point";
+    n.className = "cnt";
+    return;
+  }
+  if (!ASSESSED.measured) {
+    // It ran and declined. Saying so is the whole point of a persistent chip —
+    // "nothing happened" and "nothing could be measured" look identical from
+    // the button, and only one of them is a reason to change the window.
+    n.textContent = "ran · window too short";
+    n.className = "cnt";
+    return;
+  }
+  n.textContent = "✓ assessed"
+    + (ASSESSED.nStreams > 1 ? " · " + ASSESSED.nStreams + " streams" : "");
+  n.className = "cnt ok";
 }
 
 /* ONE BLOCK PER STREAM. `blocks` is [{stream, res}] — every stream the folder
@@ -4521,6 +4614,17 @@ async function runAssess() {
     /* The raster's cluster ticks belong to one stream's measurement, and are
        drawn under that stream's lane. The first stream is what an unprompted
        "Assess" marks, matching which block's chooser keeps the bare `accK`. */
+    /* That it ran, which outlives whether a K was picked to mark — and WHETHER
+       IT MEASURED ANYTHING, which is not the same thing. A window under the
+       15-minute floor produces no measures at all and says so in the panel; a
+       chip reading "✓ assessed" over that would be claiming a result the run
+       explicitly declined to give. Caught by looking at the picture: an 8.8 min
+       baseline refused, and the first version of this chip called it done. */
+    const measured = blocks.some(b => b.res.length && b.res[0].meetsFloor);
+    ASSESSED = { recId: current.id, nStreams: blocks.length, measured,
+                 streams: blocks.map(b => b.stream), region: w.source };
+    paintAssessChip();
+
     const wantK = Number(document.getElementById("aK").value);
     const hit = blocks[0].res.find(a => a.K === wantK && a.meetsFloor);
     ASSESS = hit ? { recId: current.id, K: wantK, centres: hit.centres,
