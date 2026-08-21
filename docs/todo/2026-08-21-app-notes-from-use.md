@@ -431,6 +431,86 @@ shape `analyseFolder` already emits for the folder, which would make the two
 buttons the same file at different scopes — a simplification rather than a new
 format.
 
+## 10 · Simulate belongs next to Tune
+
+> *"simulate a folder and tune should be combined i think. or move simulate to
+> just before tune"*
+
+**The argument is already written in the app.** The Tune panel's own copy says
+it: *"Only on a folder this page invented, and that is the reason the simulate
+step exists."* The simulation is not a feature beside tuning, it is tuning's
+answer key — and it sits four panels away from it, at the very top.
+
+### Where this lands with note 7
+
+Taking both notes together the order becomes:
+
+    Open a folder → Analysis windows → Assess → Simulate → Tune → Detect → …
+
+which is the workflow sentence the plan opens with: measure your recordings,
+simulate from what you measured, tune against planted truth, then point the
+tuned instrument at everything.
+
+### The thing that order hides, and it is not cosmetic
+
+**Simulating REPLACES the open folder.** `runSim` calls `open(made.files, …)`,
+and `open` clears `RECORDINGS`, `REGIONS`, `META` and `TRUTH` and repopulates
+them ([:1550](../site/raster_viewer.html)). So in the order above, step 4
+destroys the folder loaded in step 1 — your own recordings are gone from the page
+and must be re-opened before step 6 can run on them.
+
+That is **already true today**, and it is why `SIM_TARGET` and `TUNED` were
+deliberately written to survive `open`: the measurement and the operating point
+cross the gap even though the recordings do not. But a linear top-to-bottom
+panel order *implies a pipeline that accumulates*, and this one has a step in the
+middle that throws away the input. Today's order half-hides that by putting
+Simulate at the top, before anything is open.
+
+So the reorder is right and it makes an existing sharp edge more visible, which
+is an argument for doing it **with** a word about the swap rather than before
+one. Nothing warns about this at present.
+
+### Combined, or adjacent?
+
+**Adjacent looks better than combined**, for two reasons rather than taste:
+
+- the simulate step has a **second** consumer — note 5's stage-5 comparison
+  (`Compare with the real folder`) lives on it, and that is about the generator's
+  fidelity, not about tuning;
+- it is also the **entry point for a visitor with no folder**, which is what the
+  empty state's `Simulate a folder` button is for
+  ([:782](../site/raster_viewer.html), wired at :6217). Moving the panel down
+  does not hurt that visitor — the CTA jumps them straight to it — but folding it
+  *into* Tune would put the no-data path inside a panel that requires data.
+
+Ten-plus controls in one panel is also a lot next to the four Tune has.
+
+**Open:** whether the reorder should come with a line on the Simulate panel
+saying it replaces what is open, and whether re-opening the real folder afterwards
+deserves a shortcut (the Open panel already remembers the directory).
+
+## 11 · The recordings list belongs under Open a folder
+
+> *"recordings nav should be under open folder"*
+
+**Where.** `accList` is **last** in the DOM ([:763](../site/raster_viewer.html))
+and last in `SECTIONS` ([:6203](../site/raster_viewer.html)), below the training
+panel and the comparison table. It is the navigation for the folder you just
+opened, sitting nine panels below the button that opened it.
+
+Cheapest of the eleven and no argument against it.
+
+### The order all three ordering notes add up to
+
+Notes 7, 10 and 11 together:
+
+    Open a folder → Recordings → Analysis windows → Assess
+                  → Simulate → Tune → Detect → Train → Compare
+
+which reads as the sentence the project describes itself with. Worth doing as
+**one** move rather than three, since `SECTIONS` and the DOM have to stay in step
+and each reorder re-tests the same accordion behaviour.
+
 ---
 
 ## Related, and worth doing in the same pass
