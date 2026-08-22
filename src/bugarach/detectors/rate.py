@@ -175,17 +175,56 @@ def event_rate_context(
     window_sec: float = 1.0,
     context_sec: float = 60.0,
     grid_dt: float | None = None,
+    guard_sec: float = 0.0,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray, float]:
     """Primary and contextual rates on the shared grid; context window is
     clipped to 0.9 x recording duration (the actual value used is returned).
-    See event_rate for the grid_dt contract."""
+    See event_rate for the grid_dt contract.
+
+    ``guard_sec`` excludes a band of that width, centred on each grid point,
+    from the **context** — the guard cells of a CFAR detector. Without it the
+    1 s primary window sits inside its own 60 s context, so an event raises the
+    bar it must clear (self-masking) and a second event nearby raises it further
+    (mutual masking). Finn & Johnson quantified the second in 1968 as a ~1 dB
+    detectability loss; this project met it as the regime-shift incident, where
+    four planted events inside every 60 s context drove binned SCE's precision
+    from 74% to 10%. See ``docs/detector_history.md`` §5.1.
+
+    **Defaults to 0.0, which is the MATLAB original and the shipped behaviour.**
+    The zero case returns before any of the arithmetic below — parity by
+    construction rather than by a subtraction happening to cancel, since a naive
+    guard band of width 0 would still remove the centre bin.
+    """
     grid_dt = _resolve_grid_dt(grid_dt, stacklevel=3)
     duration = t_range[1] - t_range[0]
     max_ctx = 0.9 * duration
     ctx_actual = max_ctx if context_sec >= max_ctx else context_sec
     rate_x, rate_y = event_rate(trains, t_range, window_sec, grid_dt)
     _, ctx_y = event_rate(trains, t_range, ctx_actual, grid_dt)
-    return rate_x, rate_y, ctx_y, ctx_actual
+    if guard_sec <= 0:
+        return rate_x, rate_y, ctx_y, ctx_actual
+    if guard_sec >= ctx_actual:
+        raise ValueError(
+            f"guard_sec {guard_sec:g} is not smaller than the context window "
+            f"{ctx_actual:g} — the guard would consume every reference cell and "
+            "leave nothing to estimate the background from")
+    # The guarded context is the full window minus the guard band, in COUNTS and
+    # in SPAN. Both rates are already counts/span, so recover the counts,
+    # subtract, and divide by what is left. Edge truncation carries through from
+    # event_rate, so a guard at a recording boundary shrinks the span rather
+    # than producing a negative one.
+    _, guard_y = event_rate(trains, t_range, guard_sec, grid_dt)
+    tmin, tmax = t_range
+    ctx_span = (np.minimum(tmax, rate_x + ctx_actual / 2)
+                - np.maximum(tmin, rate_x - ctx_actual / 2))
+    guard_span = (np.minimum(tmax, rate_x + guard_sec / 2)
+                  - np.maximum(tmin, rate_x - guard_sec / 2))
+    left_span = ctx_span - guard_span
+    with np.errstate(invalid="ignore", divide="ignore"):
+        guarded = np.where(left_span > 0,
+                           (ctx_y * ctx_span - guard_y * guard_span) / left_span,
+                           ctx_y)
+    return rate_x, rate_y, guarded, ctx_actual
 
 
 def rate_detect(
@@ -200,6 +239,9 @@ def rate_detect(
     peak_prominence: float = 0.0,
     peak_min_distance_sec: float = 0.0,
     grid_dt: float | None = None,
+    guard_sec: float = 0.0,
+    threshold_mode: str = "additive",
+    threshold_alpha: float = 2.0,
 ) -> RateDetection:
     """Detect synchronous events from spike-rate excess (RateDetect port).
 
@@ -207,12 +249,47 @@ def rate_detect(
     of the underlying recording (mean acquired frame interval). Omitting it
     falls back to the MATLAB original's nominal 0.1 s grid and raises
     GridDtNotSetWarning — silence it only when 10 Hz genuinely is the
-    acquisition rate."""
+    acquisition rate.
+
+    Two options exist that the MATLAB original does not have, **both defaulting
+    to the original's behaviour** so parity is unaffected (FOUNDATIONS §2).
+
+    ``guard_sec`` excludes a band around each grid point from the context — see
+    :func:`event_rate_context`.
+
+    ``threshold_mode`` chooses how the bar relates to the context:
+
+    * ``"additive"`` (default, the original): fire where
+      ``rate - context >= excess_threshold_hz``. The bar is a fixed **offset**,
+      so the ratio it represents is ``1 + excess/context`` — enormous when the
+      tissue is quiet and approaching 1 when it is busy. That is a rolling
+      reference window with **no constant-false-alarm property**, which is why
+      this detector fires 34.8 times in a bench block containing nothing planted
+      while its recall stays near the leaders'.
+    * ``"multiplicative"``: fire where ``rate >= threshold_alpha * context``,
+      which is how cell-averaging CFAR sets a threshold. Finn & Johnson make it
+      *"proportional to the square root of this estimate of the output
+      variance"*; Rohling's processor *"multiplies this estimation Z by a
+      scaling factor T"*. Implemented as ``rate - alpha*context >= 0`` so the
+      trace, the hilite spans and the peak path stay one code path.
+
+    ``threshold_alpha`` is only read in multiplicative mode. Its default of 2.0
+    is a placeholder, **not a calibrated value** — deriving it from a stated
+    false-alarm probability is Phase 2 of the revision plan.
+    """
+    if threshold_mode not in ("additive", "multiplicative"):
+        raise ValueError(
+            'threshold_mode must be "additive" or "multiplicative", '
+            f"got {threshold_mode!r}")
     grid_dt = _resolve_grid_dt(grid_dt, stacklevel=2)
     rate_x, rate_y, ctx_y, ctx_actual = event_rate_context(
-        trains, t_range, rate_win, context_win, grid_dt
+        trains, t_range, rate_win, context_win, grid_dt, guard_sec=guard_sec
     )
-    excess = rate_y - ctx_y
+    if threshold_mode == "multiplicative":
+        excess = rate_y - threshold_alpha * ctx_y
+        excess_threshold_hz = 0.0
+    else:
+        excess = rate_y - ctx_y
 
     if detection_mode == "peak":
         # Each prominence-qualified local maximum of excess clearing the
@@ -275,6 +352,12 @@ def rate_detect(
         "detection_mode": detection_mode,
         "peak_prominence": peak_prominence,
         "peak_min_distance_sec": peak_min_distance_sec,
+        # recorded so a result carries which mechanism produced it — a detection
+        # made with a guard is not the same instrument as one made without
+        "guard_sec": guard_sec,
+        "threshold_mode": threshold_mode,
+        "threshold_alpha": threshold_alpha if threshold_mode == "multiplicative"
+                           else None,
     }
     return RateDetection(
         locs=starts,
