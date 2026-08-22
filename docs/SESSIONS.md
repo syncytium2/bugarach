@@ -60,6 +60,24 @@ Template:
 
 ## Active
 
+### Mac/deploy-site-0822 — publishing the site, because the lead figure on it was the old render
+- **Status:** ACTIVE 2026-08-22 — **claims the site deploy** (`bugarach.tonydefazio.com`),
+  taken from released. Will be released on the way out.
+- **Why:** Tony opened the page and found the reality-check figure still inking
+  LoCo-window onsets and carrying its markers on the raster. That was fixed in the repo by
+  PR #217; **only a deploy puts it in front of a reader.** The live `viewer.html` is stale
+  too — it matches `c42d343` and is three viewer commits behind (`95d94ec`, `dd69538`,
+  `6d2ca65`, the all-detectors work from #209).
+- **Deploying from:** the PRIMARY checkout, fast-forwarded to `main`. The old
+  `deploy-site` worktree with the pinned detached HEAD is gone, and this is deliberately
+  a clone that follows `main` — the pinned one republished a twelve-commit-old build once
+  and it read as a failed deploy.
+- **Holds:** the deploy, and `node_modules` + the wrangler login in the primary checkout.
+  Writes nothing in the darkroom.
+- **Verified with:** `tools/audit_deployed_page.py` — it drives the live URL in chromium
+  and fails on a request to anywhere but the site. `curl` does not substitute: the
+  Cloudflare beacon injection on 2026-08-18 was conditional on looking like a browser.
+
 ### Mac/app-notes — Tony's notes from using the app, and the review folder for them
 - **Status:** ACTIVE 2026-08-22 — **claims `<darkroom>/bugarach/2026-08-22-app-notes/`**,
   a NEW subfolder, so it collides with nothing existing.
