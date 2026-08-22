@@ -90,7 +90,10 @@ APPLY = """async () => {
     chip: document.getElementById("tunedWhat").textContent,
     detected: DETECT ? DETECT.rows.length : null,
     which: DETECT ? DETECT.which : null,
-    open: document.getElementById("accDetect").open,
+    // Every panel is `open` now; the rail decides which one is IN the column,
+    // and `.on` is that. Left as `.open`, this assertion would have gone on
+    // passing while testing nothing.
+    open: document.getElementById("accDetect").classList.contains("on"),
   };
 }"""
 
