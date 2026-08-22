@@ -61,19 +61,27 @@ Template:
 ## Active
 
 ### Mac/deploy-site-0822 — publishing the site, because the lead figure on it was the old render
-- **Status:** ACTIVE 2026-08-22 — **claims the site deploy** (`bugarach.tonydefazio.com`),
-  taken from released. Will be released on the way out.
+- **Status:** DONE 2026-08-22 — deployed and verified; **claim released.** Version
+  `11b82863`. Four assets changed: `index.html`, `diagnostic.html`, `reality.png`,
+  `viewer.html`. The live `reality.png` now hashes to the committed
+  `docs/generator/reality_check.png`, and the live `viewer.html` is byte-identical to
+  `docs/site/raster_viewer.html` on `main` — both checked by fetching them back, not by
+  trusting the upload log.
+- **What the audit said:** *"The page fetched nothing but itself."* The Cloudflare beacon
+  that was injected at the edge on 2026-08-18 did not come back.
 - **Why:** Tony opened the page and found the reality-check figure still inking
   LoCo-window onsets and carrying its markers on the raster. That was fixed in the repo by
   PR #217; **only a deploy puts it in front of a reader.** The live `viewer.html` is stale
   too — it matches `c42d343` and is three viewer commits behind (`95d94ec`, `dd69538`,
   `6d2ca65`, the all-detectors work from #209).
-- **Deploying from:** the PRIMARY checkout, fast-forwarded to `main`. The old
-  `deploy-site` worktree with the pinned detached HEAD is gone, and this is deliberately
-  a clone that follows `main` — the pinned one republished a twelve-commit-old build once
-  and it read as a failed deploy.
-- **Holds:** the deploy, and `node_modules` + the wrangler login in the primary checkout.
-  Writes nothing in the darkroom.
+- **Deployed from:** the PRIMARY checkout, fast-forwarded to `main` — it was **55 commits
+  behind** when this started, which is the same failure mode as the old pinned
+  `deploy-site` worktree, just in a different clone. Check `git log -1` before every
+  deploy, wherever you run it from.
+- **`node_modules` now exists in the primary checkout** (`npm install`, 39 packages,
+  wrangler 4.122.0 pinned). It is gitignored. The wrangler OAuth login on this Mac was
+  already good — no browser flow was needed.
+- **Held:** the deploy and those two. Wrote nothing in the darkroom.
 - **Verified with:** `tools/audit_deployed_page.py` — it drives the live URL in chromium
   and fails on a request to anywhere but the site. `curl` does not substitute: the
   Cloudflare beacon injection on 2026-08-18 was conditional on looking like a browser.
