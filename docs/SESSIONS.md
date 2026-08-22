@@ -64,10 +64,15 @@ Template:
 - **Status:** ACTIVE 2026-08-22 — **claims `<darkroom>/bugarach/2026-08-22-app-notes/`**,
   a NEW subfolder, so it collides with nothing existing.
 - **Started:** 2026-08-21
-- **Writes:** that one darkroom subfolder and nothing else in `darkroom/`; nothing in
+- **Writes:** that one darkroom subfolder, **plus one appended row** to
+  `<darkroom>/bugarach/README.md`'s "dated subfolders" table so the folder is findable
+  from the index — additive, nothing rewritten. Nothing else in `darkroom/`; nothing in
   `constellation/`; nothing under `$BUGARACH_DATA_ROOT` (the export folder is **read**,
   read-only, for ROI counts and one real recording's timings).
-- **Claims:** that subfolder only. Released here when the notes are worked through.
+- **Claims:** that subfolder, and the one table row. Released when the notes are done.
+- **Noticed while there:** that index table has drifted — `2026-08-20-pensub-validation/`
+  exists on disk and is not in it. Not fixed here: describing another session's folder
+  from the outside is how an index starts lying. Its owner should add a row.
 - **Why it exists:** Tony, 2026-08-22 — *"everything for my review goes into dropbox
   darkroom bugarach"*. The figures backing each note were going to a session scratchpad
   and reaching him only as chat attachments, which is the failure `CLAUDE.md` already
