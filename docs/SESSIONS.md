@@ -74,6 +74,9 @@ Template:
   3 SD and 1000 shuffles live in the **supplementary Materials and Methods**, a
   separate download (`science.org/content/353/6305/1280/suppl/DC1`) that is **NOT
   held** — the one thing still owed on this paper.
+  **Movie S1 also added** (`..._movieS1.mp4`, 27 s, 34 MB, not watched). It is a
+  *different* supplementary file and does not close the gap above; kept because it
+  is the published visual of an SCE, which bears on the human-calls todo.
 
 ### Mac/cfar-primaries — fetch the CFAR primary sources onto the lit shelf
 - **Status:** DONE 2026-08-22 — merged as PR #205, **claim released**

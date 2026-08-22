@@ -649,6 +649,8 @@ provenance note; 2, 4 and 5 follow from §4.
    proper lives and where the 3 SD and 1000 shuffles would be confirmed or struck.
    Not urgent, because the correct move meanwhile is to stop quoting the constants
    at all rather than to quote better ones.
+   *(Movie S1 arrived on 2026-08-22 and is shelved beside the paper. It is a
+   different supplementary file — the Materials and Methods is still outstanding.)*
 4. **Soften the "empty cell" sentence in the manuscript** — §2.2 and the abstract.
    **No longer pending: (2) is done and the sentence is now the exposed one.** The
    claim that the distinct-ROI × rate-local cell "was empty" is defensible only
