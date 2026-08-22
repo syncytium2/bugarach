@@ -241,17 +241,17 @@ named for exactly the choices bugarach made by benchmark.
 | --- | --- | --- | --- | --- |
 | rate+context | test window vs the mean of a surrounding window | cell-averaging (CA-CFAR) | Finn & Johnson, *RCA Review* **29**(3), Sept 1968, 414–464 | **read in full** |
 | CoactDetect | bin vs a null built from a window **centred on that bin** | cell-averaging, per-cell test | — | — |
-| LoCo, `maxlt` | **max** of a trailing and a leading half-window | greatest-of (CAGO-CFAR) | Hansen & Sawyers, *IEEE T-AES* **AES-16**(1), Jan 1980, 115–118 | cite verified, **text not read** |
+| LoCo, `maxlt` | **max** of a trailing and a leading half-window | greatest-of (CAGO-CFAR) | Hansen & Sawyers, *IEEE T-AES* **AES-16**(1), Jan 1980, 115–118 | **read in full** |
 | LoCo, `symmetric` | one window spanning both sides | cell-averaging again | — | — |
 | LoCo's 99.9th percentile of the pooled null | a high order statistic, not a mean | kin to ordered-statistic (OS-CFAR) | Rohling, *IEEE T-AES* **AES-19**(4), July 1983, 608–621 | **read in full** |
-| censoring the largest reference cells | discard the interferers before estimating | trimmed-mean / censored CFAR | Weiss 1982 and Rickard & Dillard, *per Rohling*; Gandhi & Kassam, *IEEE T-AES* **24**(4), 1988, 427–445 | cite verified, **text not read** |
+| censoring the largest reference cells | discard the interferers before estimating | trimmed-mean / censored CFAR | Weiss 1982 and Rickard & Dillard, *per Rohling*; Gandhi & Kassam, *IEEE T-AES* **24**(4), 1988, 427–445 | **read in full** |
 | `min_rois` floor on top of the significance test | a second, absolute threshold | second-threshold / binary integration | — | — |
 | binned SCE, CICADA | one bar per region | pre-CFAR fixed threshold | — | — |
 
-The two held papers are on the shelf at `<darkroom>/bugarach/lit/radar/`, with a
-read-status entry each. The two unheld ones have their bibliographic record
-confirmed from **Rohling's own printed reference list** — a primary citing them —
-so the metadata is not in doubt; the text is. §7.2.
+**All four primaries are now held and read**, on the shelf at
+`<darkroom>/bugarach/lit/radar/` with a read-status entry each — Tony supplied the
+two IEEE papers on 2026-08-22, closing the last of §7.2. Every radar quotation in
+this document is matched mechanically against a PDF on that shelf.
 
 One correction the retrieval forced: an earlier draft said the censoring fix was
 Gandhi & Kassam's. Rohling, writing in 1983, already credits Weiss and Rickard &
@@ -392,8 +392,20 @@ the CA CFAR"*, at a small sensitivity loss in stationary clutter.
 **And he says what it does not buy.** For two targets close together, *"due to
 symmetry, the splitting of the reference window of the CAGO CFAR does not help in
 this situation"* — the split is the whole mechanism, and against an interferer in
-the reference window it contributes nothing. Greatest-of is the edge-robust member
-of the family and the multiple-target-blind one.
+the reference window it contributes nothing.
+
+Gandhi & Kassam's systematic comparison of five schemes puts both halves in one
+sentence: *"Although the false alarm rate performance of the GO-CFAR processor in
+regions of clutter transition is **better than that of any other mean-level CFAR
+scheme**, the detection performance in the **multiple target environment is quite
+poor**."*
+
+**The price of the split is now a number, and it is small.** Hansen & Sawyers
+measured exactly this: *"This additional loss is seen to be quite small; typically
+it falls in the range of **0.1 to 0.3 dB**."* ⚠ That magnitude does **not** transfer
+— it is a signal-to-noise loss under a radar target model, and our statistic is a
+count of distinct ROIs, not a power ratio. What transfers is the shape: greatest-of
+is cheap.
 
 Translated: LoCo should be expected to **miss the second of two coordinated events
 falling within one half-context** — 60 s FAST, 30 s SLOW at the shipped defaults —
@@ -401,11 +413,24 @@ and to miss it *because* of the mechanism that makes it good at drug onsets.
 Nothing in either tree tests this. The bench can: plant event pairs at a swept
 separation and measure recall of the second.
 
-Ordered-statistic selection was designed to get both properties at once — Rohling's
-abstract claims exactly that, advantages *"especially in cases where more than one
-target is present within the reference window ... or where this reference window is
-crossing clutter edges"* — which makes it the obvious next detector to try, and a
-cheaper one (§5.5).
+**Which does not mean replace it — and this is where retrieving the primaries
+changed the recommendation.** An earlier draft of this document said
+ordered-statistic selection "was designed to get both properties at once", citing
+Rohling's abstract. Gandhi & Kassam do not sustain that: *"although the OS-CFAR
+processor may resolve multiple targets quite well, it lacks effectiveness in
+preventing excessive false alarms during clutter"* transitions — while their
+conclusion still finds ordered-cell schemes have *"in general better overall
+performance than the mean-level CFAR schemes."* Both are true, and they are
+different claims: **ordered statistics win on balance; greatest-of wins
+specifically at edges.**
+
+**bugarach's dominant nonhomogeneity is the drug-onset rate transition — an edge.**
+On this paper's own scoring, that is precisely where greatest-of beats every other
+mean-level scheme. So `maxlt` is **well chosen for this preparation**, and swapping
+it for an order statistic would trade away the property that matters most here. The
+upgrade path for the multiple-target blind spot is **censoring / trimming** —
+discard the largest reference cells before estimating, which is what trimmed-mean
+CFAR does — not replacement.
 
 ### 5.5 The surrogate pool may be an expensive way to compute an order statistic
 
@@ -421,6 +446,15 @@ with cross-ROI timing destroyed"*, a raw order statistic answers *"what coactivi
 is normal around here."* The first is a stronger null and the difference is real.
 The second is essentially free, and **whether the stronger null buys accuracy
 proportional to its 17× cost is a measurement nobody has made.**
+
+**Try it as a cheaper estimator inside the greatest-of rule, not as a replacement
+for it.** §5.4's correction applies here: an order statistic is the better
+*estimator* on balance, but it is weaker than greatest-of at exactly the clutter
+edge this preparation is full of. The two are separable — `maxlt` is a combination
+rule and the percentile-of-surrogates is an estimator — so the cheap experiment is
+to keep the max-of-two-halves and swap only what each half computes. That also
+makes the trimming fix of §5.4 natural: an order statistic is one sort away from a
+trimmed mean.
 
 ---
 
@@ -628,19 +662,18 @@ provenance note; 2, 4 and 5 follow from §4.
    analysis. A web search had also returned the wrong initials for Finn; the
    journal's contents page settled it.
 
-   **Two remain, and they need ordering — both IEEE T-AES, neither open access.**
-   The bibliographic record for each is confirmed from Rohling's printed reference
-   list, so this is a request for the *text*, not the citation:
+   **The last two arrived the same day**, supplied by Tony, and between them they
+   changed a recommendation rather than merely confirming one:
 
-   - **Hansen & Sawyers 1980**, AES-16(1), 115–118 — four pages. Puts curves on
-     the greatest-of penalty that §5.4 currently describes only qualitatively.
-   - **Gandhi & Kassam 1988**, 24(4), 427–445 — five CFAR schemes scored in both
-     multiple-target and clutter-transition backgrounds, which is the structure of
-     bugarach's own bench. The standard trimmed-mean CFAR citation.
+   - **Hansen & Sawyers 1980** put the number on greatest-of — *"typically it falls
+     in the range of 0.1 to 0.3 dB"* — which argues **for** `maxlt`, not against it.
+   - **Gandhi & Kassam 1988** confirmed both halves of §5.4 in one sentence, and
+     **corrected §5.5**: ordered statistics are not the both-at-once answer this
+     document claimed. They win overall; greatest-of wins specifically at clutter
+     edges, which is the nonhomogeneity this preparation actually has.
 
-   UM's IEEE Xplore subscription should reach both directly; interlibrary loan
-   otherwise. `fetch_paper.py` is deliberately not vendored here, so these are hand
-   fetches.
+   Net effect: **stop proposing to replace `maxlt`, start proposing to censor inside
+   it.** All four primaries are read; nothing on this item is outstanding.
 3. ~~**Fetch Malvache et al. 2016 by hand.**~~ **Done 2026-08-22**, from Tony's own
    copy, and it was the highest-value fetch of the three: **two of the four constants
    this project attributes to it are wrong** (§2). What remains is narrower and now
