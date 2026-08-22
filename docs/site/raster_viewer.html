@@ -3276,6 +3276,21 @@ function pickOperatingPoint(curve) {
   if (!scored.length) return { row: null, why: "no setting on this sweep has a defined F1" };
   if (scored.length === 1) return { row: scored[0], why: "" };
   const best = Math.max(...scored.map(r => r.f1));
+  // Before asking WHERE the optimum sits, ask whether the sweep found one at
+  // all. A grid whose every point ties has not measured the knob: the swept
+  // parameter is not deciding the answer, and widening only produces more
+  // identical rows. Checked FIRST because such a curve also passes the interior
+  // test below — which is exactly how it went unnoticed, with SPIKE-synch
+  // answering every fold on the scoreboard while measuring nothing.
+  // Python twin: bench.DegenerateSweep.
+  const worst = Math.min(...scored.map(r => r.f1));
+  if (best - worst <= 1e-9) {
+    return { row: null, degenerate: true, why:
+      "every setting on this sweep scores the same F1 (" + best.toFixed(3)
+      + "), so the knob being swept is not what decides the answer here. "
+      + "Widening the range will not help — sweep the parameter that is "
+      + "binding, or sweep them together." };
+  }
   const optimal = scored.filter(r => r.f1 >= best - 1e-9);
   const interior = optimal.filter(r => r !== scored[0] && r !== scored[scored.length - 1]);
   if (interior.length) return { row: interior[0], why: "" };

@@ -22,6 +22,7 @@ from bugarach.bench import (
     REGIMES,
     OPERATING_POINTS,
     BenchResult,
+    DegenerateSweep,
     EdgeOfRange,
     evaluate,
     false_positives_per_hour,
@@ -205,6 +206,66 @@ def test_a_plateau_reaching_the_edge_is_not_an_edge_optimum():
     some optimal point has neighbours on both sides."""
     best = pick_operating_point(_curve([0.4, 0.6, 0.9, 1.0, 1.0, 1.0]))
     assert best.knob_value == 3, "the first optimal point with both neighbours"
+
+
+def test_a_sweep_where_every_point_ties_is_refused():
+    """The gap the plateau rule left open, and the one SPIKE-synch fell through.
+
+    A totally flat curve passes the interior test — every point is "optimal", so
+    interior points exist and the first is returned as a calibrated setting. But
+    a knob that changes nothing has not been measured, and that is a different
+    failure from a grid too narrow: widening produces more identical rows.
+    `docs/todo/2026-08-18-spike-synch-knob-may-not-be-the-knob.md`."""
+    with pytest.raises(DegenerateSweep, match="not what is deciding"):
+        pick_operating_point(_curve([0.42, 0.42, 0.42, 0.42, 0.42, 0.42]))
+
+
+def test_the_degenerate_refusal_says_to_sweep_something_else_not_to_widen():
+    """The two refusals prescribe opposite remedies, so they must not be
+    confused. EdgeOfRange says widen; this one says the range is irrelevant."""
+    with pytest.raises(DegenerateSweep) as e:
+        pick_operating_point(_curve([0.6] * 5))
+    assert "widening this grid will not help" in str(e.value).lower(), str(e.value)
+    assert "sweep the binding parameter" in str(e.value).lower(), str(e.value)
+
+
+def test_a_partial_tie_is_still_an_answer():
+    """Deliberately narrower than "flat within noise". Partial ties are real and
+    carry information — the bench's own sync sweep on baseline_busy moves 0.58
+    to 0.48 with its bottom three tied — so only a TOTAL tie is refused. Anything
+    looser needs a noise model this project does not have."""
+    best = pick_operating_point(_curve([0.48, 0.48, 0.48, 0.55, 0.58, 0.52]))
+    assert best.f1 == pytest.approx(0.58), "the real peak, on a curve with ties"
+
+
+def test_syncs_grid_is_mostly_degenerate_and_the_gate_does_not_catch_it():
+    """Recorded as a measurement, because the gate above is narrower than the
+    disease and that should be visible rather than implied.
+
+    `DegenerateSweep` refuses a TOTAL tie, which cannot be a measurement of
+    anything. SPIKE-synch's shipped grid on this regime is not a total tie — it
+    is `[0.400, 0.400, 0.400, 0.400, 0.476, 0.316]`, so **four of six points are
+    identical** and only the top two carry information. The gate stays silent and
+    `pick_operating_point` returns a setting off a curve that is two-thirds flat.
+
+    The cause is not the grid's width. `C_threshold` is swept from 0.005 while
+    `C_min` sits pinned at 0.1, so below that every value opens events the
+    sustain rule then throws away; and the synchrony profile is quantised at
+    `k/(n-1)`, so on a 33-ROI field the low end is all one threshold.
+    `docs/todo/2026-08-18-spike-synch-knob-may-not-be-the-knob.md`.
+
+    **This test is expected to fail when that is fixed**, which is the point: the
+    fix is to sweep `(C_threshold, C_min)` together on a grid scaled to ROI
+    count, and when it lands, this assertion should be updated to record the new
+    spread rather than deleted."""
+    f1s = [r.f1 for r in sweep("sync", "baseline_quiet", seeds=(1,))]
+    ties = max(sum(1 for x in f1s if abs(x - v) <= 1e-9) for v in f1s)
+    assert ties >= 4, (
+        f"sync's grid now has at most {ties} tied points, not the 4 recorded "
+        f"here — if the grid was fixed, update this measurement: {f1s}")
+    assert len({round(x, 9) for x in f1s}) > 1, (
+        "a TOTAL tie would be caught by pick_operating_point; this records the "
+        "partial case that is not")
 
 
 @pytest.mark.parametrize("name", DETECTORS)
