@@ -1,0 +1,606 @@
+# Where the six detectors came from, and what a different field already knows
+
+*Written 2026-08-22 from two interface2 reports, the bugarach tree, and the
+darkroom literature shelf.*
+
+> ⚠ **One class of claim in this document is unverified, and it is the
+> load-bearing one.** Sections 3–7 argue that these detectors have been
+> re-deriving the radar community's **CFAR** (constant false alarm rate) design
+> space. The *structural* correspondences are checked against bugarach's own
+> source and are as solid as anything here. The *attributions* — who first
+> published each CFAR variant, and when — are from working knowledge and **no
+> primary source was retrieved.** This repository has already caught a fabricated
+> author list in review, and its literature shelf exists because of it. Treat
+> every name and date in §4's table as a fetch request, not a citation. §7.2
+> lists them, and says which findings do not depend on them.
+
+---
+
+## The finding, first
+
+Six detectors were built here over two years, by two teams, in two languages.
+Three of them place a threshold by measuring the background **around** the moment
+they are testing. **None of the three excludes that moment from its own
+measurement**, so a coordinated event contributes to the estimate of the
+background it is judged against, and raises the bar it has to clear.
+
+The radar community named this decades ago, fixed it with **guard cells**, and has
+not shipped a detector without them since. This project derived the same failure
+from scratch, in a two-week debugging session, and wrote it into the README as its
+most expensive mistake:
+
+> Detector settings tuned on a dense benchmark — a coordinated event every 14 s —
+> collapsed when the same settings met sparse data, because **four planted events
+> sat inside every 60 s context window and contaminated the null the detectors
+> depend on.** Binned SCE's precision fell from 74% to 10%, and finding out cost
+> two weeks.
+
+![Panel A, the six hand-written detectors plotted as F1 against firings inside a block containing no planted events, on a log axis, coloured by where each one's threshold comes from: the two rate-local detectors sit at 1 and 2 firings, the two stationary-threshold ones at 59 and 215. Panel B, three horizontal lanes showing each rolling detector's reference window centred on a red bar marking the moment under test, with the bar inside every window](learned/cfar_map.png)
+
+**Panel A is the evidence for everything that follows.** The block contains no
+planted events, so every firing inside it is a false alarm by construction. The
+six separate by **where the threshold comes from**, not by what statistic they
+compute: one bar per region gives 59 and 215 firings; a bar that follows local
+density gives 1 and 2. That is a hundredfold separation along the axis CFAR is
+organised around, measured on this project's own corpus, and it is the reason to
+take the rest of this seriously. (The two learned models are omitted — the panel
+is about where a *hand-placed* threshold comes from.)
+
+**Panel B is the defect.** Each lane draws one detector's reference window at its
+shipped default, with the moment under test in red. In all three the red bar is
+*inside* the window. Read off the source:
+
+- `loco.py` builds the trailing half as `[max(a - half_ctx, rs), a]` and the
+  leading half as `[a, min(a + half_ctx, re)]` — both abutting the anchor.
+- `coact.py` builds the context as `c_lo = ctr[b] - C/2`, `c_hi = ctr[b] + C/2`,
+  so the bin under test sits dead centre of the window that judges it, and the
+  circular shift runs *within* that window, preserving the bin's own events in
+  the null pool.
+- `rate.py` computes rate and context as **centred** sliding-window counts, so
+  the 1 s test window is inside its own 60 s reference.
+
+A guard interval is one parameter in three files. `tools/regime_shift.py` already
+turned the incident into a failing assertion, which was the right response to a
+mystery; it is the wrong response to a known one.
+
+Everything below is the history that explains how six detectors arrived here, and
+what to do about each of them.
+
+---
+
+## 1. The two reports, and the one place they disagree
+
+interface2 holds two documents that account for the detectors' origins. They were
+written a day apart, for different readers, and neither supersedes the other.
+
+**`docs/coordination_detectors_methods.md`** (2026-07-14) is the engineering
+account: one section per detector, statistic and threshold spelled out, and — for
+the two detectors that carry outside DNA — a block headed *"Provenance
+(important)"* saying exactly what was taken and what was changed.
+
+**`docs/manuscript_coordination_full.md`** (2026-07-15) is the reviewer-facing
+account: the same detectors arranged into a **two-axis taxonomy** and pointed at a
+claim. §2.3 gives the lineages, §2.5 gives the new detector, §4.2 pre-argues the
+critiques. It makes an argument the methods document deliberately does not.
+
+They disagree about **how many detectors there are**, and the disagreement is
+substantive. The methods document treats CoactDetect and LoCo as one detector —
+*"detector #5"* — noting only that *"two teams built it independently and
+converged on the same mechanism."* The manuscript splits them into **variant A
+(CoactDetect** — per-bin z / Gaussian-tail p ≤ α**)** and **variant B (LoCo** — a
+high percentile of the pooled local null**)**, then resolves the split by
+benchmark: the per-bin-α form has a multiplicity problem — thousands of bins in a
+dense block, so ~1% fire by chance — that the pooled-percentile form avoids.
+Measured, it was 4 false alarms against 0, at identical recall.
+
+**The manuscript decided against CoactDetect. bugarach ships both, and
+CoactDetect now leads the hand-written detectors in the bake-off.** Nothing in
+either repository records that the decision was revisited. §6.5 returns to it.
+
+---
+
+## 2. The lineage of each of the six
+
+Three tiers, and the tier matters more than the name.
+
+### Tier 1 — a published method, ported
+
+**CICADA.** Cossart lab, `gitlab.com/cossartlab/cicada`, MIT, upstream copyright
+carried in the module. The only one of the six whose *idea* has a settled external
+owner. It is also **not a drop-in**, and both reports say so: we feed our own
+upstream-detected events instead of running CICADA's transient detection, and we
+replace its active-duration model — the original paints each cell active for its
+detected transient *duration*, which over-detects catastrophically on SLOW
+transients (median ~4.6 s of duration-overlap swamps onset-synchrony), so we paint
+the brief rise interval (~2 s) instead. A regional-scope option was added; the
+original thresholds over the whole recording.
+
+### Tier 2 — a published *measure*, with our detector on top
+
+**SPIKE-synch.** The SPIKE-synchronization profile is Kreuz and colleagues'
+(cSPIKE/SPIKY, BSD). It is a self-normalising, parameter-free **characterization**
+of moment-to-moment coincidence and was never intended to emit discrete events.
+The methods report is unambiguous: *"The detection layer here is ours."* Threshold
+`C(t)`, extend at a lower level, require a minimum number of trains, merge. The
+τ-cap that keeps it from inflating at high density is also ours — and necessarily
+so, since bugarach computes its own τ rather than PySpike's: `max_tau` is **inert
+upstream**, a library defect this project verified, filed, and pinned with a
+regression test (`test_pyspike_max_tau_is_still_inert`).
+
+Worth knowing before anyone writes this up: dual-threshold hysteresis detection is
+ordinary signal-processing practice. This is ours as an *implementation* without
+being a novel method — no claim to defend, and none to make.
+
+### Tier 3 — our constructions on common ideas
+
+**binned SCE.** Distinct-ROI coactivity per bin against a circular-shift surrogate
+percentile. The canonical rule — onsets within 250 ms exceeding 3 SD over 1000
+shuffles, minimum 5 cells — is attributed to Malvache, Cossart et al. **and it
+reached this project through a secondary description.** The literature shelf's own
+gaps section says so and says what to do: *"Get the primary before quoting it."*
+Malvache et al. 2016 is in *Science*, is not open access, and has never been
+retrieved here. Independently, the same construction turns up inside Mölter's
+assembly benchmark as a *precondition* rather than a result. The shape exists in
+at least two other places, so **interface2 can say what interface2 did; it cannot
+say whether Malvache got there first.**
+
+**rate+context (RateDetect).** Pooled population rate in a 1 s window minus a 60 s
+rolling context; fire where the excess clears a fixed level. Authorship is not
+contested. Priority has never been examined, and *"threshold the pooled population
+rate against a rolling local context"* is a common construction. The cheapest
+check in this document is already on the shelf and half-read:
+`cotterill_2016_burst_detector_comparison.pdf` is a comparison of burst detectors,
+which is precisely where a rate-threshold method would appear.
+
+**CoactDetect and LoCo.** The distinct-ROI statistic against a rate-local, rolling
+null. Authorship is not in doubt. Circular-shift surrogates over distinct-ROI
+coactivity are standard — this project's own detector-free assessor uses them.
+What would be distinctive is the **rate-local rolling null**. Nothing in either
+tree examines whether that construction is published.
+
+**§4 is the answer to that question, and it is not the answer the manuscript
+assumes.**
+
+---
+
+## 3. The wider history: four traditions, and we have cited three
+
+**Cell assemblies (neuroscience, 1949–).** Hebb's assembly, made measurable when
+population recording arrived. The synchronous-calcium-event rule is this
+tradition's calcium-imaging expression; CICADA and the assembly benchmarks
+(Mölter, Russo, Romano's PROMAX toolbox — all on the shelf) are its current tools.
+**Cited here.**
+
+**Spike-train synchrony measures (1990s–).** A parallel effort to measure
+coincidence *continuously* rather than declare events: SPIKE-distance,
+SPIKE-synchronization, the Kreuz-lab family. Deliberately not detectors, which is
+why bugarach had to build a detection layer on top of one. **Cited here.**
+
+**Learned event detectors (2018–).** Networks whose output is the event itself —
+DOSED on sleep EEG, cnn-ripple on hippocampal LFP, SEED on spindles. The shelf
+makes the correction bluntly: this is *an established genre with a standard
+architecture family*, single-shot object detectors transplanted from vision to 1D,
+and **any claim that the idea is new is wrong.** DOSED's δ-swept IoU scoring is
+also, in the shelf's words, *"bugarach's open question, answered."* **Cited here,
+and the shelf was built specifically to stop a novelty claim that four web
+searches had failed to check.**
+
+**Adaptive-threshold detection in radar.** A target return must be declared
+against a background whose power is unknown, non-stationary, and rises sharply at
+**clutter edges** — coastlines, weather fronts, the boundary of a rain cell. A
+fixed threshold fails there for the reason a fixed coactivity threshold fails: the
+false-alarm rate tracks the background instead of staying put. The field's answer
+is **CFAR — constant false alarm rate** — detectors that estimate the background
+from neighbouring **reference cells** and set the threshold from that estimate, so
+the probability of false alarm stays put as the background moves. The cell being
+tested is the **cell under test**; the reference cells are the ones around it; the
+excluded ones in between are the **guard cells**.
+
+**This tradition is not cited anywhere in either repository.** `radar`, `CFAR`,
+`clutter` and `guard cell` return nothing across interface2 and bugarach. It is
+the tradition whose design space these six detectors have been re-deriving.
+
+---
+
+## 4. The 2×2 is a corner of the CFAR design space
+
+The manuscript's contribution rests on a taxonomy: *statistic* (pooled rate vs
+distinct-ROI coactivity) × *null locality* (stationary vs rate-local rolling). The
+fourth cell — distinct-ROI × rate-local — *"was empty and motivated detector #5."*
+
+The **statistic** axis is this project's own and has no CFAR analogue worth
+claiming. The **locality** axis is CFAR's founding axis, and its variants are
+named for exactly the choices bugarach made by benchmark.
+
+| bugarach | mechanism | CFAR analogue | attribution ⚠ *(unverified)* |
+| --- | --- | --- | --- |
+| rate+context | test window vs the mean of a surrounding window | cell-averaging (CA-CFAR) | Finn & Johnson, 1968 |
+| CoactDetect | bin vs a null built from a window **centred on that bin** | cell-averaging, per-cell test | — |
+| LoCo, `maxlt` | **max** of a trailing and a leading half-window | greatest-of (GO-CFAR) | Hansen & Sawyers, 1980 |
+| LoCo, `symmetric` | one window spanning both sides | cell-averaging again | — |
+| LoCo's 99.9th percentile of the pooled null | a high order statistic, not a mean | kin to ordered-statistic (OS-CFAR) | Rohling, 1983 |
+| `min_rois` floor on top of the significance test | a second, absolute threshold | second-threshold / binary integration | — |
+| binned SCE, CICADA | one bar per region | pre-CFAR fixed threshold | — |
+
+⚠ **Every name and date in the right-hand column is unverified.** See the banner
+at the top, and §7.2 for which findings survive regardless.
+
+**`maxlt` is greatest-of selection.** Precisely: LoCo matches greatest-of CFAR in
+its **combination rule** — take the larger of the two half-window estimates —
+while its **estimator** is a percentile of a circular-shift surrogate pool rather
+than a mean of reference cells. The rule is the same; the thing being combined is
+not. And the reasoning recorded for it in the methods report is the reasoning
+greatest-of selection exists for: taking the greater half means a background
+transition straddling the test point cannot *lower* the bar, so a clutter edge — a
+drug-onset ramp — stops manufacturing false alarms. interface2 validated it the
+same way, on a synthetic ramp: symmetric context gave 3 boundary false alarms,
+`maxlt` gave 0.
+
+This is a **convergent rediscovery, and a good one.** It is not a warning about
+the work; it is a warning about one sentence in the manuscript. The empty cell was
+empty *in the calcium-imaging literature*. In detection theory it has been
+occupied for a long time, and a methods reviewer from a signal-processing
+background will know that.
+
+---
+
+## 5. Five things radar knows that this project does not
+
+### 5.1 Guard cells — the finding at the top of this document
+
+Every CFAR detector excludes the cells immediately around the one under test. The
+reason is one sentence: if the target's own energy leaks into the estimate of the
+background it is tested against, the target raises its own threshold and masks
+itself. bugarach's three rolling detectors have no such exclusion (panel B), and
+the two named consequences are both live here — **self-masking** (an event raises
+the bar it must clear) and **mutual masking** (a *second* event inside the
+reference window raises it further, which is worse in dense data than sparse).
+The regime-shift incident is mutual masking, derived the hard way.
+
+**It is not free, and the cost runs the other way in sparse data.** A guard
+interval removes reference cells, so the background estimate is built from less
+data and its variance rises — radar calls the resulting sensitivity penalty *CFAR
+loss*. On a sparse recording the reference window is already thin. There is a
+second subtlety specific to this implementation: the null is a circular shift
+*within* the window, so excising a middle chunk changes the wrap length and each
+ROI's rate inside the reference. The shift has to be defined on the retained
+reference span, not on a window with a hole in it.
+
+**Cost to try: one parameter, `guard_sec`, in three detectors, defaulting to 0 so
+parity with the MATLAB originals is preserved.** The bench already scores it.
+
+### 5.2 rate+context is a cell-averaging detector whose CFAR property was removed
+
+Cell-averaging CFAR sets the threshold **multiplicatively**: `θ = α · μ̂`, where
+`μ̂` is the reference-window mean and `α` comes from the design false-alarm
+probability and the window size. The multiplication is the whole point — it is
+what holds the false-alarm rate constant as the background moves.
+
+RateDetect fires where `rate − context ≥ excess_threshold_hz` (default 5 Hz). The
+threshold is **additive**. The effective ratio `θ/μ̂ = 1 + 5/μ̂` is enormous when
+the tissue is quiet and approaches 1 when it is busy: over-conservative in sparse
+recordings, over-permissive in dense ones. It has a rolling reference window and
+no constant-false-alarm property.
+
+**The bake-off measures exactly that.** rate+context fires **34.8** times in a
+block containing nothing — third most promiscuous of the six, an order of
+magnitude above the two rate-local detectors — while its recall (0.700) is close
+to the leaders'. That is the signature of a bar that is too low where the tissue
+is busy, which is what an additive offset does.
+
+It is also **the fastest thing in the repository at 0.005 s per fold**, roughly
+three times quicker than the learned model. A detector that cheap, 0.08 of F1
+below the leaders, with a one-line-fixable defect in its threshold rule, is the
+best return on effort in the suite.
+
+### 5.3 Nobody here has stated a design false-alarm probability
+
+CFAR's organising idea is that you **choose the false-alarm probability first**
+and derive the threshold multiplier from it analytically, given the reference
+size. The operating point becomes a stated design decision, and the gap between
+design and measured false-alarm rate becomes a diagnostic.
+
+bugarach picks operating points by sweeping a benchmark, and the bench refuses an
+optimum sitting on its grid edge — more discipline than most papers show. But
+these are **tuned constants, not derived ones**, and they promise nothing about a
+recording unlike the benchmark.
+
+**This does not license grid-shopping, and the repo is right to forbid it.**
+`bench`'s own docstring and the SPIKE-synch note are explicit that operating
+points come from baseline recordings and measured coordination properties, *"not
+from whatever makes a curve look like a curve."* A design false-alarm probability
+is the opposite of that: it fixes the target **before** the sweep and makes the
+sweep answerable to something outside itself.
+
+It would also give the promiscuity probe its missing teeth. The probe's firings
+are already **reported** — the `probe firings` column, and panel A — but they
+[cannot fail](todo/2026-08-16-promiscuity-probe-cannot-fail.md): they leave both
+the numerator and the denominator of F1, so CICADA's 215 firings in an empty block
+cost it nothing. Measured false-alarm rate against a stated design target is a
+score the probe could actually fail.
+
+### 5.4 Greatest-of selection is edge-robust and target-blind, and LoCo inherits both halves
+
+`maxlt` buys clutter-edge robustness. Radar's analysis of greatest-of selection
+says what it costs: taking the maximum of the two halves means **a second target
+in either half raises the bar for the one under test.** It is the edge-robust
+member of the family and the multiple-target-blind one.
+
+Translated: LoCo should be expected to **miss the second of two coordinated events
+falling within one half-context** — 60 s FAST, 30 s SLOW at the shipped defaults —
+and to miss it *because* of the mechanism that makes it good at drug onsets.
+Nothing in either tree tests this. The bench can: plant event pairs at a swept
+separation and measure recall of the second.
+
+Ordered-statistic selection was designed to get both properties at once, which
+makes it the obvious next detector to try — and a cheaper one (§5.5).
+
+### 5.5 The surrogate pool may be an expensive way to compute an order statistic
+
+LoCo is the slowest classical detector in the bake-off: 0.245 s per fold, 4×
+CoactDetect and 17× the 1,149-parameter learned model. The cost is structural — at
+each anchor, for each half, it circular-shifts every ROI's events and pools the
+resulting coactivity, then takes the 99.9th percentile of that pool.
+
+Ordered-statistic CFAR takes its threshold as the *k*-th order statistic of the
+**reference cells themselves** — one sort, no shuffling. The two are not
+equivalent: the surrogate pool answers *"what coactivity would these rates give
+with cross-ROI timing destroyed"*, a raw order statistic answers *"what coactivity
+is normal around here."* The first is a stronger null and the difference is real.
+The second is essentially free, and **whether the stronger null buys accuracy
+proportional to its 17× cost is a measurement nobody has made.**
+
+---
+
+## 6. Keep or modify, detector by detector
+
+### The confound that has to be read first
+
+interface2's MATLAB benchmark reports F1 per stream from a generic ramp benchmark,
+marked **provisional** upstream, with its own warning that *"anything below ~0.6
+is a weak optimum on a flat/noisy surface"* and that RateDetect's and SCE's optima
+sit on the swept **grid edge**. bugarach's bake-off reports F1 over four held-out
+folds of a simulated corpus fitted to 85 real baseline recordings. They answer
+different questions and are not averaged here.
+
+**But the bake-off carries a confound of its own, visible in `bench.py`'s own
+`source` fields.** Each detector sweeps exactly one declared knob per fold; every
+*other* parameter is fixed, and where those fixed values came from differs:
+
+| detector | fixed parameters come from | bake-off F1 |
+| --- | --- | --- |
+| CoactDetect | calibrated viewer point | 0.651 |
+| LoCo | measured-regime F1 optimum | 0.638 |
+| CICADA | calibrated pair, retuned 2026-08-20 | 0.541 |
+| rate+context | **`rate_detect` defaults** | 0.571 |
+| binned SCE | **`sce_detect` defaults** | 0.422 |
+| SPIKE-synch | **viewer FAST defaults** | 0.254 |
+
+The three calibrated detectors place 1st, 2nd and 4th; the three uncalibrated ones
+place 3rd, 5th and 6th. **The bake-off's ranking tracks calibration status almost
+exactly, and reading it as a ranking of detectors reads that confound as a
+result.** Two of the three are worse than merely uncalibrated: SCE's own bench note
+says its F1 peaked at the old grid floor of 90 and was still climbing while it
+ships at 99.0, and SPIKE-synch's swept knob is demonstrably not the binding one
+(§6.6).
+
+With that stated, the verdicts.
+
+### 6.1 rate+context — keep, and fix the threshold rule first
+
+The cheapest thing in the repository, with a defect one flag wide (§5.2) and a
+measured symptom (34.8 probe firings). Make the threshold multiplicative, add a
+guard interval, sweep the multiplier, re-run. If it moves even halfway to the
+leaders it becomes the default detector for large corpora on cost alone. If it
+does not, that is a real result about pooled-rate statistics rather than an
+artifact of a threshold rule nobody examined.
+
+**Do not retire it for its low F1 before doing this.** Its score is partly a
+measurement of a fixable bug and partly a measurement of untuned defaults.
+
+### 6.2 binned SCE — keep, and stop scoring it as a competitor
+
+SCE is second-to-last (0.422) and fires 58.8 times in an empty block. The
+promiscuity is expected — a stationary bar is what §4 predicts fails at rate
+transitions. **The low recall (0.400) is not**; that is the signature of a bar set
+too high, and its own bench note says the measured optimum lies at or below the
+grid floor while it ships at the 99th percentile.
+
+**Its value is not accuracy. It is comparability.** SCE is the rule the
+calcium-imaging field actually uses, so it is the row that lets an outside lab
+place its numbers next to these. Tuning it to compete destroys the only thing it
+is for.
+
+Two consequences. Report it as a **reference row**, visually distinct from the
+competitors, at the canonical settings rather than a tuned point. And **settle its
+provenance before publishing a sentence containing the words "our SCE"** — the
+canonical rule reached this project second-hand, the primary was never retrieved,
+and the same construction appears inside Mölter's benchmark. Tony's own framing —
+*derived from ideas in CICADA, but essentially ours* — is the honest landing
+place, and it is a lineage claim, not an independence claim.
+
+### 6.3 CICADA — keep unmodified, and always carry both active-duration modes
+
+The only detector whose method has a settled external owner, and the port's parity
+to 1e-9 is what makes it citable in the original's place. That citability is the
+asset, and every modification spends some of it.
+
+It is already modified — rise-interval active duration replaces the original's
+transient duration, for a stated and good reason. But a reader who sees "CICADA"
+in a figure legend assumes the published method.
+
+**Ship both modes, name them in every output, and default to the faithful one for
+any comparison against published work.** Its 214.8 probe firings — 180× the
+rate-local detectors — then become a property of the published method under this
+benchmark, which is a *finding*, rather than a property of our variant, which is a
+much weaker thing to have measured.
+
+### 6.4 LoCo — keep as the flagship, and change three things
+
+LoCo is the detector the manuscript is built around and it deserves the position:
+top MATLAB performer on FAST, second among the hand-written detectors in the
+bake-off, and 2.5 probe firings against CICADA's 215.
+
+1. **Add a guard interval** (§5.1). Highest-value change here.
+2. **Test the greatest-of blind spot** (§5.4): plant event pairs at swept
+   separations inside one half-context and measure recall of the second. If LoCo
+   misses them, that is a documented limitation rather than a surprise in
+   somebody's data.
+3. **Measure whether the surrogate pool earns its 17× cost** (§5.5).
+
+On the FAST/SLOW asymmetry — LoCo's MATLAB SLOW F1 is 0.466 against CoactDetect's
+0.757 — **do not treat that as an unexplained gap.** The same handoff says
+anything below ~0.6 there is a weak optimum on a flat surface, so 0.466 is
+plausibly a statement about the optimisation surface rather than about LoCo. Worth
+re-running on the approved corpus before anyone quotes it either way.
+
+### 6.5 CoactDetect — keep, and resolve the contradiction it is carrying
+
+CoactDetect leads the hand-written detectors (0.651; the top three including the
+learned model are a statistical tie) and fires **1.2** times in an empty block —
+the cleanest of the six. It is also the variant **the manuscript decided
+against**, for a stated and measured reason: a per-bin α has a multiplicity
+problem that the pooled-percentile form avoids (4 false alarms against 0, at
+identical recall).
+
+Two documents say opposite things, and shipping both detectors is not a decision —
+it is the absence of one. The resolution is measurable, not editorial: run the
+promiscuity probe with §5.3's stated target and a false-alarm rate that enters the
+score. Either the multiplicity problem appears in bugarach's corpus, and the
+manuscript was right; or it does not, and §2.5 needs revising before submission.
+
+Note that bugarach's own probe **already points the other way** — 1.2 firings for
+the per-bin-α form against 2.5 for the pooled-percentile one, the reverse of the
+MATLAB result, though on a different corpus and at a different operating point.
+That is one more reason not to submit with this open.
+
+### 6.6 SPIKE-synch — the number measures the operating point, not the detector
+
+SPIKE-synch scores 0.816 | 0.735 in the MATLAB benchmark and **0.254** here. That
+looks like the largest unexplained discrepancy in the project. **It is not
+unexplained — the tree located it four days before this was written**
+(`docs/todo/2026-08-18-spike-synch-knob-may-not-be-the-knob.md`), and the cause is
+in `bench.py` in plain sight:
+
+- The swept knob is `C_threshold`, over `(0.005 … 0.12)`, while `C_min` is
+  **pinned at 0.1**. Most of the grid sits below the parameter that actually gates
+  an event, so the sweep *measures `C_min` while reporting `C_threshold`*.
+- The synchrony profile is quantised at `k/(n−1)`, so on a 30-ROI field every
+  threshold below 1/29 is the same threshold.
+- The todo records the consequence directly: on a default simulation **every value
+  on the grid returns the identical result** — four detections, eleven misses.
+
+The bake-off's numbers confirm it from the other side. SPIKE-synch's precision is
+**0.538** — mid-pack, better than CICADA or SCE — while its recall is **0.167**.
+It is not firing wrongly; it is barely firing at all. That is a detector held shut
+by a pinned parameter, not a broken port.
+
+**So the verdict is narrower and more actionable than "demote an unexplained
+result":**
+
+- **The 0.254 must not be quoted as SPIKE-synch's accuracy.** It is the score of a
+  detector whose sensitivity axis was degenerate. Mark it as such wherever the
+  bake-off table appears — a correction to a published table, not a research task.
+- **Re-run with `(C_threshold, C_min)` swept together**, on a grid scaled to the
+  ROI count rather than fixed in absolute `C`, since the quantum depends on *n*.
+  The todo's own warning applies: do not widen the grid until something moves —
+  derive it from the quantum.
+- **Keep the measure regardless.** `C(t)` is a useful per-event characterization
+  channel and is what Kreuz built it for. RateDetect already carries mean
+  synchrony as characterization that never enters detection; that is the right
+  role.
+- **The τ-cap is not the suspect.** bugarach computes its own τ, and PySpike's
+  inert `max_tau` is already pinned by a regression test.
+
+### 6.7 The meta-verdict: keep all six, and relabel what they are
+
+Six is the right number. But presenting them as six competitors invites *which one
+wins*, and the honest answer — the top three are a tie across four folds of thirty
+planted events, and the ranking below them tracks calibration status — reads as an
+evasion.
+
+The suite is better described as **one published method, one canonical reference
+rule, one published measure with our detector on it, and three points in a design
+space detection theory already has names for**:
+
+- **Reference rows** — binned SCE (the field's rule), CICADA (the published
+  method). Not tuned, not competing, present so outside numbers can be placed.
+- **Characterization** — SPIKE-synch's profile. Not a detector row until §6.6 is
+  done.
+- **The adaptive-threshold family** — rate+context (cell-averaging, pooled
+  statistic), CoactDetect (cell-averaging, distinct-ROI, per-cell test), LoCo
+  (greatest-of, distinct-ROI, order statistic).
+
+That framing is stronger than "we invented the sixth", not weaker. It says the
+suite is a **factorial over a known design space, ported to a substrate where
+nobody had run it, and scored against planted ground truth** — a contribution that
+survives a reviewer who knows CFAR. "The fourth cell was empty" does not.
+
+---
+
+## 7. What to do before any of this is quoted
+
+Ordered cheapest first. Items 1 and 3 are outstanding from the 2026-08-21
+provenance note; 2, 4 and 5 follow from §4.
+
+1. **Read the body of `cotterill_2016_burst_detector_comparison.pdf`.** On the
+   shelf, abstract and methods opening already read. Settles or complicates
+   rate+context's priority. An hour, no fetching.
+2. **Verify §4's CFAR attributions against primary sources.** ⚠ They are from
+   working knowledge and are unchecked; this repository has already caught a
+   fabricated author list, and the shelf exists because of it. Retrieve or strike:
+   Finn & Johnson 1968 (cell-averaging), Hansen & Sawyers 1980 (greatest-of),
+   Rohling 1983 (ordered-statistic), Gandhi & Kassam 1988 (censored/trimmed-mean
+   and the multiple-target analysis). One standard radar-detection textbook would
+   settle all four.
+   **What does not depend on this:** the guard-cell finding (§5.1), the
+   additive-threshold finding (§5.2), the calibration confound (§6), the
+   SPIKE-synch diagnosis (§6.6) and panel A are all checked against bugarach's own
+   source and data. They stand whatever the citations say. What falls if the
+   attributions are wrong is only the *positioning* argument — §4's last paragraph
+   and item 4 below.
+3. **Fetch Malvache et al. 2016 by hand.** *Science*, not open access, never
+   retrieved. Settles SCE. `fetch_paper.py` is deliberately not vendored here.
+4. **Soften the "empty cell" sentence in the manuscript** — §2.2 and the abstract
+   — pending (2).
+5. **Search for a rate-local surrogate-null coactivity detector in the calcium /
+   electrophysiology literature.** Now better targeted: the query is no longer
+   *"has anyone done this"* but *"has anyone brought CFAR to population event
+   detection"* — and if the answer is nobody, that is the sentence the manuscript
+   should be making.
+
+**Nothing currently published depends on the provenance questions.** The
+scoreboard's rules already forbid "competes with state-of-the-art", the bake-off
+reports a tie rather than a win, and no method from the literature has been run on
+this corpus at all — so the positioning is argued from absence, which is safe. The
+exposure there is future: a manuscript sentence or an app string that says *"we
+developed"* without this settled.
+
+**One thing here is not future.** §6.6: a table in the README and on the site
+currently reports 0.254 as SPIKE-synch's accuracy, and that number is a
+measurement of a degenerate sweep.
+
+---
+
+## Sources
+
+- `interface2:docs/coordination_detectors_methods.md` (2026-07-14) — per-detector
+  mechanics and the two "Provenance (important)" blocks.
+- `interface2:docs/manuscript_coordination_full.md` (2026-07-15) — the two-axis
+  taxonomy, §2.3 lineages, §2.5 the A/B variant split and its resolution.
+- `interface2:docs/handoffs/coordination.md` (2026-08-05) — the calibrated
+  per-stream MATLAB F1 table, its PROVISIONAL marking, and the weak-optimum and
+  grid-edge caveats §6 leans on.
+- `<darkroom>/bugarach/lit/coordination/README.md` (2026-08-17) — the prior-art
+  shelf, its read-status discipline, and the SCE-primary gap.
+- `docs/todo/2026-08-21-which-detector-origins-are-actually-settled.md` — the
+  settled/unsettled split §2 and §7 build on.
+- `docs/todo/2026-08-18-spike-synch-knob-may-not-be-the-knob.md` and
+  `docs/todo/2026-08-11-file-pyspike-max-tau-issue.md` — §6.6.
+- `docs/learned/bakeoff.md`, `docs/learned/bakeoff.json` — the bake-off table and
+  the probe-firings column plotted in panel A.
+- `src/bugarach/bench.py` — the `source` field of every operating point, which is
+  where §6's calibration confound is visible.
+- `src/bugarach/detectors/{rate,coact,loco}.py` — read for §5.1 and panel B; the
+  absence of a guard interval is from the source, not from the reports.
+- Figure: `tools/make_cfar_figures.py`.

@@ -52,18 +52,62 @@ DOC = """<!doctype html>
 """
 
 
-def render(md: str, *, title: str, css: str) -> str:
+def _inline_images(body: str, base: Path) -> str:
+    """Embed every local ``<img src>`` as a data URI.
+
+    Without this the page says "self-contained" and is not: a markdown source
+    lives in ``docs/`` and writes ``learned/fig.png``, correct on GitHub, while
+    the page it renders to lands in ``docs/learned/`` and in the darkroom root,
+    where that path resolves to nothing. The figure is the one element whose
+    absence is invisible in the source and total in the render — the document
+    still reads as though it had one. Caught by a craft pass on a document whose
+    lead evidence was the broken image.
+
+    Remote sources are left alone, and so is a missing local file: the caller
+    gets a warning and a broken link rather than a silently dropped figure.
+    """
+    import base64
+    import mimetypes
+
+    def sub(m):
+        src = m.group(1)
+        if "://" in src or src.startswith("data:"):
+            return m.group(0)
+        p = (base / src).resolve()
+        if not p.is_file():
+            print(f"  ! image not found, left as a link: {src}", file=sys.stderr)
+            return m.group(0)
+        mime = mimetypes.guess_type(p.name)[0] or "application/octet-stream"
+        b64 = base64.b64encode(p.read_bytes()).decode("ascii")
+        return m.group(0).replace(f'src="{src}"',
+                                  f'src="data:{mime};base64,{b64}"')
+
+    return re.sub(r'<img [^>]*src="([^"]+)"[^>]*>', sub, body)
+
+
+def render(md: str, *, title: str, css: str, base: Path | None = None) -> str:
     """A complete, self-contained document — head, styles and body."""
     import markdown
 
     body = markdown.markdown(
         md, extensions=["tables", "fenced_code", "sane_lists", "attr_list"])
+    if base is not None:
+        body = _inline_images(body, base)
 
     # A blockquote that opens with a stop sign is a gate, not an aside. Give it the
     # warning treatment so it cannot be skimmed past — the whole point of the block
     # is that a reader who skims runs unapproved work.
     body = body.replace("<blockquote>\n<h2>\u26d4",
                         '<blockquote class="gate">\n<h2>\u26d4')
+
+    # Same reasoning one notch down: a blockquote opening with a warning sign is
+    # a caveat the author hoisted to the top ON PURPOSE. Left as a plain
+    # blockquote it renders in the muted aside colour, which makes the most
+    # important sentence in the document the faintest text on the page \u2014 the
+    # failure this project has already recorded once, for a colour key demoted
+    # into gray footer text.
+    body = body.replace("<blockquote>\n<p>\u26a0",
+                        '<blockquote class="warn">\n<p>\u26a0')
 
     return DOC.format(title=title, css=css, extra=EXTRA, body=body)
 
@@ -84,6 +128,17 @@ EXTRA = """
   .doc blockquote.gate h2 { border-top: 0; padding-top: 1.2rem;
                             color: var(--bad-fg); }
   .doc blockquote.gate strong { color: var(--bad-fg); }
+  /* a hoisted caveat reads at body weight, not aside-gray */
+  .doc blockquote.warn { border-left: 4px solid var(--learned);
+                         color: var(--ink); padding: .2rem 1.3rem;
+                         background: color-mix(in srgb, var(--learned) 7%,
+                                               transparent);
+                         border-radius: 3px; }
+  /* A figure wider than the 74ch column silently overflows it and the page
+     ships with its evidence cropped. Caught on a document whose lead figure
+     ran off the right edge. */
+  .doc img { max-width: 100%; height: auto; display: block;
+             margin: 1.6rem auto; }
   .doc code { background: color-mix(in srgb, var(--ink) 7%, transparent);
               padding: .08em .32em; border-radius: 2px; }
   .doc li { margin-bottom: .5rem; }
@@ -119,7 +174,8 @@ def main(argv=None) -> int:
         print(unresolved_message(), file=sys.stderr)
         return 1
 
-    page = render(md, title=title, css=css_path.read_text())
+    page = render(md, title=title, css=css_path.read_text(),
+                  base=a.source.resolve().parent)
     for d in [x for x in (out, a.also) if x is not None]:
         d.mkdir(parents=True, exist_ok=True)
         dest = d / f"{a.name or a.source.stem}.html"
