@@ -88,7 +88,7 @@ APPLY = """async () => {
     control: document.getElementById("dThr").value,
     tuned: TUNED.rate || null,
     chip: document.getElementById("tunedWhat").textContent,
-    detected: DETECT ? DETECT.starts.length : null,
+    detected: DETECT ? DETECT.rows.length : null,
     which: DETECT ? DETECT.which : null,
     open: document.getElementById("accDetect").open,
   };
@@ -132,10 +132,14 @@ def test_the_chip_says_where_the_setting_came_from(applied):
 LANE = """() => {
   // the lane label is drawn onto the canvas, so read the string the drawing
   // code builds rather than pixels
-  const tu = TUNED[DETECT.which];
-  return DETECT.label + " · " + DETECT.starts.length + " called"
-    + (tu ? " · " + tu.knobName + " " + fmtKnob(tu.value)
-            + (tu.unit ? " " + tu.unit : "") + " tuned" : "");
+  // one row per detector that fired; rebuild the string the lane draws
+  const lanes = detectLanes(RECORDINGS[0]);
+  return lanes.map(run => {
+    const tu = TUNED[run.which];
+    return DET_SHORT[run.which] + " " + run.starts.length + " called"
+      + (tu ? " · " + tu.knobName + " " + fmtKnob(tu.value)
+              + (tu.unit ? " " + tu.unit : "") + " tuned" : "");
+  }).join(" | ");
 }"""
 
 
@@ -152,7 +156,7 @@ SURVIVE = """async (files) => {
   const t = TUNED.rate;
   await runDetect();
   return {tuned: t || null, control: document.getElementById("dThr").value,
-          truth: TRUTH.size, detected: DETECT ? DETECT.starts.length : null,
+          truth: TRUTH.size, detected: DETECT ? DETECT.rows.length : null,
           chip: document.getElementById("tunedWhat").textContent};
 }"""
 
@@ -176,11 +180,11 @@ EDIT = """async () => {
   n.value = String(Number(n.value) + 1.5);
   n.dispatchEvent(new Event("input", {bubbles: true}));
   await new Promise(r => setTimeout(r, 50));
-  const tu = TUNED[DETECT.which];
+  const lanes = detectLanes(RECORDINGS[0]);
   return {tuned: TUNED.rate || null,
           chip: document.getElementById("tunedWhat").textContent,
-          lane: DETECT.label + " · " + DETECT.starts.length + " called"
-            + (tu ? " · tuned" : "")};
+          lane: lanes.map(run => DET_SHORT[run.which]
+            + (TUNED[run.which] ? " tuned" : "")).join(" | ")};
 }"""
 
 

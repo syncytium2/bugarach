@@ -193,6 +193,15 @@
   /* Named with the panel head's own words, so the picture and the control that
      governs it say the same thing. */
   #wins .chan b { font-style: normal; color: var(--fg); font-weight: 600; }
+  /* The detector picker: a tick per detector, each in its own lane colour so
+     the list, the table and the raster name the same thing three times. */
+  label.inline { display: inline-flex; align-items: center; gap: 6px;
+                 font-size: 12.5px; color: var(--fg); }
+  .picks { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-top: 2px; }
+  .picks label { display: inline-flex; align-items: center; gap: 5px;
+                 font-size: 12.5px; }
+  .picks .dot { width: 9px; height: 9px; border-radius: 2px; flex: none; }
+  .picks .cost { color: var(--muted); font-size: 11px; }
   #wins i { font-style: normal; color: var(--fg); }
   canvas { width: 100%; display: block; }
   .empty { color: var(--muted); padding: 48px 8px; max-width: 60ch; }
@@ -501,6 +510,13 @@
           <option value="rate">RateDetect — how fast</option>
           <option value="sync">SPIKE-synch — how aligned</option>
         </select>
+        <!-- Ticking this runs every detector still checked below, each on its
+             own lane and its own rows. The list is built from the registry, so
+             a seventh detector appears here without being remembered. -->
+        <label for="dAll">run several</label>
+        <div class="span"><label class="inline"><input type="checkbox" id="dAll">
+          all the ticked detectors</label></div>
+        <div class="span picks" id="dPicks" hidden></div>
       </div>
       <div class="ctl" id="dRateCtl">
         <label for="dThr">excess threshold (Hz)</label>
@@ -1166,7 +1182,58 @@ function fmt(sec) {
 // The detector lane: a name line, a bar line, and clearance for the region
 // legend that hangs off the panel top at `top - 17`. All three numbers move
 // together — shrink this and the calls are drawn through the period chips.
-const LANE_H = 37;
+/* DETECTOR IDENTITY, taken from `bugarach.ui.app` rather than invented here.
+
+   `COLORS` and `SHORT` are that module's, and the diagnostic figure
+   (`bugarach.ui.diagnostic`) already draws detector lanes with them. Two views
+   of the same six detectors that coloured them differently would be two
+   vocabularies for one thing, and the figure is the one that ends up in a
+   slide beside this page.
+
+   `SHORT` also solves a problem this file hit on its own: the left gutter is
+   56px and fits "RateDetect" only by luck — "SPIKE-synch · 4" ran off the
+   canvas the first time a second detector was wired up, which is why the single
+   lane put its name above the bars instead. The short labels fit the gutter,
+   which is what makes six stacked lanes legible. */
+const DET_COLORS = {
+  rate: "#1f77b4", sce: "#2ca02c", cicada: "#9467bd",
+  sync: "#d62728", coact: "#e69d00", loco: "#8c564b",
+};
+const DET_SHORT = {
+  rate: "rate", sce: "SCE", cicada: "CIC",
+  sync: "sync", coact: "coact", loco: "LoCo",
+};
+
+const LANE_H = 37;            // one detector, the old single-lane height
+const LANE_ROW = 13;          // a row in the multi-detector strip
+/* Clearance under the strip. NOT arbitrary: the treatment-window chip and its
+   label are drawn from `top - 17` to `top - 9`, so anything less than 18 puts
+   the last lane underneath "baseline". Found by drawing it. */
+const LANE_PAD = 22;
+
+/* What the lane strip draws, derived FROM THE ROWS rather than kept beside
+   them. The rows are the thing that gets written to `detections.csv`, so a lane
+   built from anything else could disagree with the file the reader downloads —
+   which is the one disagreement this page cannot afford, since the picture is
+   what they screenshot and the file is what they analyse.
+
+   Detectors appear in registry order rather than call order, so the strip does
+   not reshuffle itself between runs on the same recording. */
+function detectLanes(rec) {
+  if (!DETECT || !rec || DETECT.recId !== rec.id || !DETECT.rows) return [];
+  const out = [];
+  for (const which of Object.keys(DETECTORS)) {
+    const mine = DETECT.rows.filter(r => r.detector === which);
+    if (!mine.length) continue;
+    out.push({
+      which,
+      starts: mine.map(r => r.onset_sec),
+      ends: mine.map(r => r.onset_sec
+        + (Number.isFinite(r.width_sec) && r.width_sec > 0 ? r.width_sec : 0)),
+    });
+  }
+  return out;
+}
 function draw(rec, data) {
   const cv = document.getElementById("cv");
   const css = getComputedStyle(document.documentElement);
@@ -1194,32 +1261,55 @@ function draw(rec, data) {
   // A detector lane above the top panel — a bar per call, spanning what it
   // called. Above the frame and never through the lanes: a bar drawn across the
   // rows would be indistinguishable from the coincidence it is reporting.
-  const laneH = (DETECT && DETECT.recId === rec.id) ? LANE_H : 0;
+  const laneRuns = detectLanes(rec);
+  const laneH = laneRuns.length ? laneRuns.length * LANE_ROW + LANE_PAD : 0;
   if (laneH) {
-    // The name goes ABOVE the bars rather than in the left gutter, which is 56px
-    // wide and fits "RateDetect" only by luck — "SPIKE-synch · 4" ran off the
-    // canvas the first time a second detector was wired up. A lane that renames
-    // itself per detector cannot depend on the longest name being short.
-    g.fillStyle = css.getPropertyValue("--muted").trim();
-    /* The lane says whether its setting was CHOSEN or merely current. A picture
-       leaves the page — into a slide, into a figure — and arrives without the
-       panel that explained it, so the one thing it cannot afford to lose is
-       whether these calls came from a tuned instrument or from whatever was in
-       the boxes. `TUNED` is dropped when the control is hand-edited, so this
+    /* ONE ROW PER DETECTOR, AND THEY ARE NEVER MERGED. The output contract is
+       one row per event per detector with no consensus merging, because merging
+       discards which detector fired. A raster that stacked six into one bar
+       would perform exactly that merge, in the artifact most likely to end up
+       in a slide.
+
+       Only detectors that CALLED something get a row: a lane of empty track
+       costs vertical and says the same thing as its absence from the list under
+       the plot. The panel below names who ran and found nothing, which is where
+       a count belongs.
+
+       Colour is `DET_COLORS`, shared with the diagnostic figure. The raster
+       below stays monochrome so it never competes with these. */
+    /* THE NAME IS THE ONLY TEXT ON A LANE, which is the diagnostic figure's own
+       rule and it earns it here for the same reason: any count or note placed
+       over the plot collides with a dense lane, and CICADA at default settings
+       calls hundreds. Counts live in the table below, where a number can sit in
+       a column instead of on top of the data it describes.
+
+       A tuned lane is marked with `*` and explained once under the strip.
+       Whether a setting was CHOSEN or merely current is the one fact a picture
+       cannot afford to lose when it leaves the page without its panel, and
+       `TUNED` is dropped the moment its control is hand-edited, so the marker
        cannot outlive the fact it asserts. */
-    const tu = TUNED[DETECT.which];
-    g.fillText(DETECT.label + " · " + DETECT.starts.length + " called"
-               + (tu ? " · " + tu.knobName + " " + fmtKnob(tu.value)
-                       + (tu.unit ? " " + tu.unit : "") + " tuned"
-                     : ""),
-               padL, padT + 8);
-    const ly = padT + 11;
-    g.fillStyle = css.getPropertyValue("--accent").trim();
-    for (let i = 0; i < DETECT.starts.length; i++) {
-      const a = Math.max(padL, x(DETECT.starts[i]));
-      const b = Math.min(W - padR, x(DETECT.ends[i]));
-      if (b < padL || a > W - padR) continue;
-      g.fillRect(a, ly, Math.max(2, b - a), 6);   // min width: a call is visible
+    let anyTuned = false;
+    laneRuns.forEach((run, i) => {
+      const ly = padT + i * LANE_ROW;
+      const tu = TUNED[run.which];
+      if (tu) anyTuned = true;
+      g.fillStyle = css.getPropertyValue("--muted").trim();
+      g.textAlign = "end";
+      g.fillText((DET_SHORT[run.which] || run.which) + (tu ? "*" : ""),
+                 padL - 6, ly + 8);
+      g.textAlign = "start";
+      g.fillStyle = DET_COLORS[run.which] || css.getPropertyValue("--accent").trim();
+      for (let k = 0; k < run.starts.length; k++) {
+        const a = Math.max(padL, x(run.starts[k]));
+        const b = Math.min(W - padR, x(run.ends[k]));
+        if (b < padL || a > W - padR) continue;
+        g.fillRect(a, ly + 2, Math.max(2, b - a), 6);  // min width: a call shows
+      }
+    });
+    if (anyTuned) {
+      g.fillStyle = css.getPropertyValue("--muted").trim();
+      g.fillText("* setting chosen by the sweep",
+                 padL, padT + laneRuns.length * LANE_ROW + 8);
     }
   }
 
@@ -5195,11 +5285,27 @@ const whichDetector = () =>
 
 function paintDetectorChoice() {
   const which = whichDetector();
+  const all = document.getElementById("dAll");
+  const many = !!(all && all.checked);
+  const picks = chosenDetectors();
+  document.getElementById("dPicks").hidden = !many;
+  document.getElementById("dDet").disabled = many;
+
+  /* WITH SEVERAL RUNNING, EVERY PICKED DETECTOR'S SETTINGS ARE SHOWN AT ONCE —
+     Tony's "all of the settings for all of the detectors in one panel". The
+     blocks were always separate divs and this filter was the only thing hiding
+     five of them, so showing them is removing the filter rather than building a
+     panel. */
   for (const [k, d] of Object.entries(DETECTORS)) {
-    document.getElementById(d.ctl).hidden = k !== which;
-    document.getElementById(d.fine).hidden = k !== which;
+    const on = many ? picks.includes(k) : k === which;
+    document.getElementById(d.ctl).hidden = !on;
+    // The prose stays single-detector: six fine-print blocks at once is a wall,
+    // and with several running the reader is comparing rather than learning one.
+    document.getElementById(d.fine).hidden = many || k !== which;
   }
-  document.getElementById("cntDetect").textContent = DETECTORS[which].label;
+  document.getElementById("cntDetect").textContent = many
+    ? (picks.length ? picks.length + " detectors" : "none ticked")
+    : DETECTORS[which].label;
   paintTunedChip();
   clearDetect();
   // the sweep follows the chosen detector, so its own result stops being about
@@ -5209,108 +5315,183 @@ function paintDetectorChoice() {
   if (current) loadRecording(current).then(d => draw(current, d));
 }
 
+/* ONE DETECTOR OVER ONE RECORDING — the body `runDetect` used to inline and
+   `analyseFolder` wrote a second time.
+
+   Pulled out because two copies of "what a detection run is" is exactly the
+   drift the output contract exists to prevent: the folder export and the
+   on-screen run must produce the same rows for the same recording, or the
+   picture and the file disagree.
+
+   Returns a refusal rather than throwing. CICADA on a folder with no peak is
+   the case that exists today, and it is a fact about the folder rather than an
+   error — reported as a sentence, never as an empty result, which would read as
+   "nothing was coordinated". */
+function detectOne(which, data, segs, dt, identity, sliceId) {
+  const D = DETECTORS[which];
+  const cfg = D.read(dt);
+  const rows = [], perRegion = [];
+  let extraTotal = 0;
+  /* STREAM OUTSIDE, SEGMENT INSIDE. Each stream is a separate detection
+     problem — its own trains, its own context, its own null — and the two are
+     never pooled into one number. */
+  for (const stream of analysisStreams(data)) {
+    const byRoi = data.streams.get(stream);
+    for (const seg of segs) {
+      const trains = data.order.map(id =>
+        (byRoi.get(id) || []).filter(x => x >= seg.start && x <= seg.end));
+      const range = [seg.start, Math.max(seg.end, seg.start + 1)];
+      let peakCtx = null;
+      if (D.peaks) {
+        peakCtx = cicadaTrains(data, stream, data.order, seg.start, seg.end);
+        // A folder can carry the peak for one stream and not the other, so the
+        // refusal names the stream — "this folder cannot" would otherwise be
+        // false about half of it.
+        if (peakCtx.why)
+          return { which, cfg, refusal: peakCtx.why,
+                   stream: oneStream(data) ? null : stream };
+      }
+      const d = D.run(trains, range, cfg, peakCtx);
+      const extra = D.extra ? D.extra.count(d) : 0;
+      extraTotal += extra;
+      rows.push(...detectionRows(which, d, {
+        sliceId, stream,
+        // a recording with no regions.csv is one unnamed whole, and NA is the
+        // honest region for it rather than a fabricated index 1
+        regionIdx: seg.whole ? null : seg.idx,
+        regionLabel: seg.whole ? null : seg.label,
+        identity,
+      }));
+      perRegion.push({ label: seg.label, n: d.nEvents, extra, stated: seg.stated,
+                       stream,
+                       // WHOSE window this run used, carried through to the row.
+                       // Reading `stated` here and `source` in the cell is how a
+                       // table ends up reporting "none sent" about a window it
+                       // just analysed.
+                       source: seg.source, mins: (seg.end - seg.start) / 60 });
+    }
+  }
+  return { which, cfg, rows, perRegion, extraTotal, refusal: null };
+}
+
+/* Which detectors the Detect step runs. One, or every one ticked — and the
+   registry order rather than the tick order, so a rerun does not reshuffle the
+   lanes on the raster. */
+function chosenDetectors() {
+  const all = document.getElementById("dAll");
+  if (all && all.checked)
+    return Object.keys(DETECTORS).filter(k => {
+      const box = document.getElementById("dPick_" + k);
+      return !box || box.checked;
+    });
+  return [whichDetector()];
+}
+
 async function runDetect() {
   if (!current) return;
   const btn = document.getElementById("runDetect");
-  btn.textContent = "Detecting…"; btn.disabled = true;
+  const was = btn.textContent;
+  btn.disabled = true;
   await new Promise(r => setTimeout(r, 0));
   try {
-    const which = whichDetector();
-    const D = DETECTORS[which];
+    const picks = chosenDetectors();
+    if (!picks.length) return;
     const data = await loadRecording(current);
     const streams = analysisStreams(data);
     const m = META.get(current.id) || {};
     const dt = Number(m.frame_interval_sec) > 0 ? Number(m.frame_interval_sec) : 0.1;
-    const cfg = D.read(dt);
     // one run per analysis segment, treatments included — a detector run across
     // a boundary would take its context from a period that is not the one it is
     // reporting on
     const segs = analysisSegments(current, data);
-    const starts = [], ends = [], perRegion = [], rows = [];
     /* Every column of the producer's slices.csv rides along untouched. This page
        reads exactly one field of that file — the frame interval — and carrying
        the rest without interpreting it is what lets a detections.csv be joined
        back to whatever the producer keyed their own records on. */
     const identity = {};
-    for (const [k, v] of Object.entries(META.get(current.id) || {}))
+    for (const [k, v] of Object.entries(m))
       if (!DETECTION_COLUMNS.includes(k)) identity[k] = v;
-    let extraTotal = 0;
-    /* STREAM OUTSIDE, SEGMENT INSIDE. Each stream is a separate detection
-       problem — its own trains, its own context, its own null — and the two are
-       never pooled into one number. The rows already carried a `stream` column;
-       what changed is that more than one value can now appear in it. */
-    for (const stream of streams) {
-      const byRoi = data.streams.get(stream);
-      for (const seg of segs) {
-        const trains = data.order.map(id =>
-          (byRoi.get(id) || []).filter(x => x >= seg.start && x <= seg.end));
-        const range = [seg.start, Math.max(seg.end, seg.start + 1)];
-        /* CICADA needs the peak of each transient, which the folder either sent or
-           did not. A refusal stops the run and is reported as a sentence, because
-           the honest answer here is "this folder cannot answer that question" — not
-           an empty result, which would read as "nothing was coordinated".
-           It names the stream now, because a folder can carry the peak for one
-           stream and not the other, and "this folder cannot" would then be false. */
-        let peakCtx = null;
-        if (D.peaks) {
-          peakCtx = cicadaTrains(data, stream, data.order, seg.start, seg.end);
-          if (peakCtx.why) {
-            // clear FIRST: clearDetect empties this box, so appending before it
-            // erases the explanation and leaves the reader an empty panel that
-            // looks like the detector found nothing.
-            clearDetect();
-            const box = document.getElementById("detectOut");
-            box.append(el("h4", D.label + " did not run on " + current.id
-              + (oneStream(data) ? "" : " · stream " + stream)));
-            box.append(el("p", peakCtx.why, "verdict bad"));
-            return;
-          }
-        }
-        const d = D.run(trains, range, cfg, peakCtx);
-        const extra = D.extra ? D.extra.count(d) : 0;
-        extraTotal += extra;
-        starts.push(...d.starts); ends.push(...d.ends);
-        rows.push(...detectionRows(which, d, {
-          sliceId: current.id, stream,
-          // a recording with no regions.csv is one unnamed whole, and NA is the
-          // honest region for it rather than a fabricated index 1
-          regionIdx: seg.whole ? null : seg.idx,
-          regionLabel: seg.whole ? null : seg.label,
-          identity,
-        }));
-        perRegion.push({ label: seg.label, n: d.nEvents, extra, stated: seg.stated,
-                         stream,
-                         // WHOSE window this run used, carried through to the row.
-                         // Reading `stated` here and `source` in the cell is how a
-                         // table ends up reporting "none sent" about a window it
-                         // just analysed. `extra` is what this branch called
-                         // `flagged` before main generalised it to a per-detector
-                         // count with its own column head.
-                         source: seg.source, mins: (seg.end - seg.start) / 60 });
-      }
+
+    const runs = [];
+    for (const which of picks) {
+      btn.textContent = picks.length > 1
+        ? "Detecting… " + DETECTORS[which].label : "Detecting…";
+      await new Promise(r => setTimeout(r, 0));
+      runs.push(detectOne(which, data, segs, dt, identity, current.id));
     }
-    DETECT = { recId: current.id, label: D.label, starts, ends, rows, which };
+
+    const ok = runs.filter(r => !r.refusal);
+    const rows = ok.flatMap(r => r.rows);
+    /* NOTHING RAN IS NOT AN EMPTY RESULT. If every picked detector refused,
+       `DETECT` stays null rather than becoming a run with no rows — an empty
+       result reads as "they ran and found nothing", and the save button would
+       offer a file asserting exactly that. The panel says which refused and
+       why. */
+    DETECT = ok.length
+      ? { recId: current.id, rows, runs,
+          which: ok.length === 1 ? ok[0].which : null,
+          label: ok.length === 1 ? DETECTORS[ok[0].which].label : null }
+      : null;
     paintSaveDetections();
+    paintDetectPanel(data, runs, streams);
+    draw(current, data);
+  } finally {
+    btn.textContent = was; btn.disabled = false;
+  }
+}
 
-    const box = document.getElementById("detectOut");
-    box.textContent = "";
-    box.append(el("h4", D.label + " on " + current.id));
-    box.append(el("p", starts.length + " event(s) called · " + D.settings(cfg), "sub"));
+function paintDetectPanel(data, runs, streams) {
+  const box = document.getElementById("detectOut");
+  box.textContent = "";
+  const ok = runs.filter(r => !r.refusal);
+  const refused = runs.filter(r => r.refusal);
+  const total = ok.reduce((a, r) => a + r.rows.length, 0);
 
-    /* The stream column appears only when there is a second stream to tell it
-       from — FOUNDATIONS §3, single-stream is the default presentation, and a
-       column that always reads `fast` is furniture. Where it does appear it is
-       FIRST, because it is the coarser grouping: the rows run stream-major. */
-    const named = !oneStream(data);
-    const cols = (named ? ["stream"] : [])
-      .concat(["region", "analysed", "window", "events"])
-      .concat(D.extra ? [D.extra.head] : []);
-    const tbl = document.createElement("table");
-    const hr = document.createElement("tr");
-    for (const h of cols) hr.append(el("th", h));
-    tbl.append(hr);
-    for (const r of perRegion) {
+  if (!ok.length) {
+    // Phrased as "did not run", the same words a single refusal always used:
+    // the reader has to be able to tell this from a run that found nothing, and
+    // the verb is what carries that.
+    box.append(el("h4", (refused.length === 1
+      ? DETECTORS[refused[0].which].label
+      : refused.length + " detectors") + " did not run on " + current.id));
+    for (const r of refused)
+      box.append(el("p", (refused.length === 1 ? "" : DETECTORS[r.which].label
+                          + ": ") + r.refusal, "verdict bad"));
+    return;
+  }
+
+  box.append(el("h4", (ok.length === 1 ? DETECTORS[ok[0].which].label
+                                       : ok.length + " detectors")
+    + " on " + current.id));
+  box.append(el("p", total + " event(s) called"
+    + (ok.length === 1 ? " · " + DETECTORS[ok[0].which].settings(ok[0].cfg) : ""),
+    "sub"));
+
+  /* The stream column appears only when there is a second stream to tell it
+     from — FOUNDATIONS §3, single-stream is the default presentation, and a
+     column that always reads `fast` is furniture. A DETECTOR column appears on
+     the same rule: it is furniture when only one ran. */
+  const named = !oneStream(data);
+  const many = ok.length > 1;
+  // `extra` is per-detector (SPIKE-synch's artifact flag is the only one today),
+  // so the column only makes sense when a single detector is in the table.
+  const D0 = ok.length === 1 ? DETECTORS[ok[0].which] : null;
+  const cols = (many ? ["detector"] : []).concat(named ? ["stream"] : [])
+    .concat(["region", "analysed", "window", "events"])
+    .concat(D0 && D0.extra ? [D0.extra.head] : []);
+  const tbl = document.createElement("table");
+  const hr = document.createElement("tr");
+  for (const h of cols) hr.append(el("th", h));
+  tbl.append(hr);
+  for (const run of ok) {
+    for (const r of run.perRegion) {
       const tr = document.createElement("tr");
+      if (many) {
+        const td = el("td", DETECTORS[run.which].label);
+        // the lane colour, so the table and the picture name the same thing
+        td.style.color = DET_COLORS[run.which] || "";
+        tr.append(td);
+      }
       if (named) tr.append(el("td", r.stream));
       tr.append(el("td", r.label));
       tr.append(el("td", r.mins.toFixed(1) + " min"));
@@ -5318,30 +5499,43 @@ async function runDetect() {
                        : r.source === "you" ? "as you specified it"
                        : "whole period — none sent", "state"));
       tr.append(el("td", String(r.n)));
-      if (D.extra) tr.append(el("td", String(r.extra)));
+      if (D0 && D0.extra) tr.append(el("td", String(r.extra)));
       tbl.append(tr);
     }
-    box.append(tbl);
-    /* Said in words as well as in a column, because the two streams are not two
-       samples of one thing. FOUNDATIONS §9: under TTX the fast stream falls to
-       0.46 of its own baseline while the slow one sits at 2.50 — so a reader who
-       sums this table has produced a number about nothing. */
-    if (named)
-      box.append(el("p", "Run separately on " + streams.join(" and ")
-        + ", and reported separately. These streams respond differently to the "
-        + "same treatment, so the rows are not two measurements of one thing and "
-        + "adding them together does not give a recording-level count.", "caveat"));
-    const note = D.note ? D.note(extraTotal) : null;
-    if (note) box.append(el("p", note, "caveat"));
-    box.append(el("p", "These are the settings this project benches at, not "
-      + "settings calibrated for your preparation. Tuning them is what the "
-      + "simulate step is for — measure, simulate from what you measured, tune "
-      + "against planted events, then point the tuned instrument at everything.",
-      "caveat"));
-    draw(current, data);
-  } finally {
-    btn.textContent = "Detect"; btn.disabled = false;
   }
+  box.append(tbl);
+
+  // A detector that could not run is NAMED, never folded into a zero. "It found
+  // nothing" and "it could not run here" are different answers.
+  for (const r of refused)
+    box.append(el("p", DETECTORS[r.which].label + " did not run"
+      + (r.stream ? " on stream " + r.stream : "") + ": " + r.refusal,
+      "verdict bad"));
+
+  /* Said in words as well as in a column, because the two streams are not two
+     samples of one thing. FOUNDATIONS §9: under TTX the fast stream falls to
+     0.46 of its own baseline while the slow one sits at 2.50 — so a reader who
+     sums this table has produced a number about nothing. */
+  if (named)
+    box.append(el("p", "Run separately on " + streams.join(" and ")
+      + ", and reported separately. These streams respond differently to the "
+      + "same treatment, so the rows are not two measurements of one thing and "
+      + "adding them together does not give a recording-level count.", "caveat"));
+  if (many)
+    box.append(el("p", "Each detector is reported on its own row and its own "
+      + "lane. They are not combined into a verdict: which detector fired is "
+      + "the thing a merged answer throws away, and whether to merge them is a "
+      + "decision for whoever reads the file.", "caveat"));
+  if (ok.length === 1) {
+    const note = DETECTORS[ok[0].which].note
+      ? DETECTORS[ok[0].which].note(ok[0].extraTotal) : null;
+    if (note) box.append(el("p", note, "caveat"));
+  }
+  box.append(el("p", "These are the settings this project benches at, not "
+    + "settings calibrated for your preparation. Tuning them is what the "
+    + "simulate step is for — measure, simulate from what you measured, tune "
+    + "against planted events, then point the tuned instrument at everything.",
+    "caveat"));
 }
 
 // the chooser is built from the table, so a new row appears in it for free
@@ -5355,7 +5549,37 @@ async function runDetect() {
   }
 }
 
+/* THE MULTI-PICK, also built from the registry.
+
+   Two detectors are 97% of the wall clock — measured on one corpus, fit
+   seconds: sync 0.06, coact 0.08, rate 0.10, SCE 0.17, LoCo 2.69, CICADA 7.06.
+   So the cost marker is not decoration: it is the difference between a run that
+   returns while you are looking at it and one you wait out, and it is why being
+   able to untick two of six matters more than preference.
+
+   Defaults come from `bugarach.ui.app`'s `DEFAULT_ON` — rate, coact, loco — the
+   same trio that module starts with, rather than a new opinion invented here. */
+const DET_DEFAULT_ON = ["rate", "coact", "loco"];
+const DET_SLOW = new Set(["loco", "cicada"]);
+{
+  const box = document.getElementById("dPicks");
+  for (const [k, d] of Object.entries(DETECTORS)) {
+    const lab = document.createElement("label");
+    const cb = document.createElement("input");
+    cb.type = "checkbox"; cb.id = "dPick_" + k;
+    cb.checked = DET_DEFAULT_ON.includes(k);
+    cb.addEventListener("change", paintDetectorChoice);
+    const dot = document.createElement("span");
+    dot.className = "dot";
+    dot.style.background = DET_COLORS[k] || "";
+    lab.append(cb, dot, document.createTextNode(d.label));
+    if (DET_SLOW.has(k)) lab.append(el("span", "slow", "cost"));
+    box.append(lab);
+  }
+}
+
 document.getElementById("dDet").onchange = paintDetectorChoice;
+document.getElementById("dAll").onchange = paintDetectorChoice;
 
 /* Every knob control watches itself. A setting the sweep chose stops being the
    sweep's answer the moment somebody types over it, and the chip and the raster
