@@ -188,17 +188,20 @@
 <h1>Where the six detectors came from, and what a different field already knows</h1>
 <p><em>Written 2026-08-22 from two interface2 reports, the bugarach tree, and the
 darkroom literature shelf.</em></p>
-<blockquote class="warn">
-<p>⚠ <strong>One class of claim in this document is unverified, and it is the
-load-bearing one.</strong> Sections 3–7 argue that these detectors have been
-re-deriving the radar community's <strong>CFAR</strong> (constant false alarm rate) design
-space. The <em>structural</em> correspondences are checked against bugarach's own
-source and are as solid as anything here. The <em>attributions</em> — who first
-published each CFAR variant, and when — are from working knowledge and <strong>no
-primary source was retrieved.</strong> This repository has already caught a fabricated
-author list in review, and its literature shelf exists because of it. Treat
-every name and date in §4's table as a fetch request, not a citation. §7.2
-lists them, and says which findings do not depend on them.</p>
+<blockquote>
+<p><strong>Revised 2026-08-22: the radar primaries have been retrieved, and they were
+worth retrieving.</strong> This document first shipped with every attribution in §4
+flagged unverified. Two of the four are now <strong>read in full</strong> and shelved at
+<code>&lt;darkroom&gt;/bugarach/lit/radar/</code>; the other two are confirmed from Rohling's
+printed reference list but <strong>not read</strong>, and §7.2 says what they would settle
+and how to get them.</p>
+<p>The retrieval strengthened the argument rather than qualifying it. <strong>Finn &amp;
+Johnson's 1968 abstract already names the failure this project spent two weeks
+debugging</strong> — <em>"the introduction of a second target in one of the threshold
+control cells introduces a masking effect"</em> — and the multiplicative threshold
+that §5.2 says rate+context is missing is stated outright in both primaries. It
+also corrected one claim of mine, in §5.1: guard cells are documented as routine
+by 1983, not by 1968.</p>
 </blockquote>
 <hr />
 <h2>The finding, first</h2>
@@ -366,7 +369,8 @@ named for exactly the choices bugarach made by benchmark.</p>
 <th>bugarach</th>
 <th>mechanism</th>
 <th>CFAR analogue</th>
-<th>attribution ⚠ <em>(unverified)</em></th>
+<th>attribution</th>
+<th>held?</th>
 </tr>
 </thead>
 <tbody>
@@ -374,36 +378,49 @@ named for exactly the choices bugarach made by benchmark.</p>
 <td>rate+context</td>
 <td>test window vs the mean of a surrounding window</td>
 <td>cell-averaging (CA-CFAR)</td>
-<td>Finn &amp; Johnson, 1968</td>
+<td>Finn &amp; Johnson, <em>RCA Review</em> <strong>29</strong>(3), Sept 1968, 414–464</td>
+<td><strong>read in full</strong></td>
 </tr>
 <tr>
 <td>CoactDetect</td>
 <td>bin vs a null built from a window <strong>centred on that bin</strong></td>
 <td>cell-averaging, per-cell test</td>
 <td>—</td>
+<td>—</td>
 </tr>
 <tr>
 <td>LoCo, <code>maxlt</code></td>
 <td><strong>max</strong> of a trailing and a leading half-window</td>
-<td>greatest-of (GO-CFAR)</td>
-<td>Hansen &amp; Sawyers, 1980</td>
+<td>greatest-of (CAGO-CFAR)</td>
+<td>Hansen &amp; Sawyers, <em>IEEE T-AES</em> <strong>AES-16</strong>(1), Jan 1980, 115–118</td>
+<td>cite verified, <strong>text not read</strong></td>
 </tr>
 <tr>
 <td>LoCo, <code>symmetric</code></td>
 <td>one window spanning both sides</td>
 <td>cell-averaging again</td>
 <td>—</td>
+<td>—</td>
 </tr>
 <tr>
 <td>LoCo's 99.9th percentile of the pooled null</td>
 <td>a high order statistic, not a mean</td>
 <td>kin to ordered-statistic (OS-CFAR)</td>
-<td>Rohling, 1983</td>
+<td>Rohling, <em>IEEE T-AES</em> <strong>AES-19</strong>(4), July 1983, 608–621</td>
+<td><strong>read in full</strong></td>
+</tr>
+<tr>
+<td>censoring the largest reference cells</td>
+<td>discard the interferers before estimating</td>
+<td>trimmed-mean / censored CFAR</td>
+<td>Weiss 1982 and Rickard &amp; Dillard, <em>per Rohling</em>; Gandhi &amp; Kassam, <em>IEEE T-AES</em> <strong>24</strong>(4), 1988, 427–445</td>
+<td>cite verified, <strong>text not read</strong></td>
 </tr>
 <tr>
 <td><code>min_rois</code> floor on top of the significance test</td>
 <td>a second, absolute threshold</td>
 <td>second-threshold / binary integration</td>
+<td>—</td>
 <td>—</td>
 </tr>
 <tr>
@@ -411,11 +428,18 @@ named for exactly the choices bugarach made by benchmark.</p>
 <td>one bar per region</td>
 <td>pre-CFAR fixed threshold</td>
 <td>—</td>
+<td>—</td>
 </tr>
 </tbody>
 </table>
-<p>⚠ <strong>Every name and date in the right-hand column is unverified.</strong> See the banner
-at the top, and §7.2 for which findings survive regardless.</p>
+<p>The two held papers are on the shelf at <code>&lt;darkroom&gt;/bugarach/lit/radar/</code>, with a
+read-status entry each. The two unheld ones have their bibliographic record
+confirmed from <strong>Rohling's own printed reference list</strong> — a primary citing them —
+so the metadata is not in doubt; the text is. §7.2.</p>
+<p>One correction the retrieval forced: an earlier draft said the censoring fix was
+Gandhi &amp; Kassam's. Rohling, writing in 1983, already credits Weiss and Rickard &amp;
+Dillard with <em>"eliminating the maximum amplitude(s) from the reference window"</em>,
+so Gandhi &amp; Kassam is the standard <strong>analysis</strong>, not the origin.</p>
 <p><strong><code>maxlt</code> is greatest-of selection.</strong> Precisely: LoCo matches greatest-of CFAR in
 its <strong>combination rule</strong> — take the larger of the two half-window estimates —
 while its <strong>estimator</strong> is a percentile of a circular-shift surrogate pool rather
@@ -434,14 +458,34 @@ background will know that.</p>
 <hr />
 <h2>5. Five things radar knows that this project does not</h2>
 <h3>5.1 Guard cells — the finding at the top of this document</h3>
-<p>Every CFAR detector excludes the cells immediately around the one under test. The
-reason is one sentence: if the target's own energy leaks into the estimate of the
-background it is tested against, the target raises its own threshold and masks
-itself. bugarach's three rolling detectors have no such exclusion (panel B), and
-the two named consequences are both live here — <strong>self-masking</strong> (an event raises
-the bar it must clear) and <strong>mutual masking</strong> (a <em>second</em> event inside the
-reference window raises it further, which is worse in dense data than sparse).
-The regime-shift incident is mutual masking, derived the hard way.</p>
+<p>CFAR detectors exclude the cells immediately around the one under test — the
+<strong>guard cells</strong>. The reason is one sentence: if the target's own energy leaks into
+the estimate of the background it is tested against, the target raises its own
+threshold and masks itself. Weinberg's survey states the purpose plainly — the
+reference cells <em>"are separated from the CUT by a number of guard cells, whose
+purpose is to limit the effects of a range spread target"</em> — and by 1983 the
+practice is so settled that Rohling's Fig. 3(b) specifies a reference window
+<em>"with two guard cells directly adjacent to the test cell"</em> as a setup detail, with
+no argument for it.</p>
+<p><em>(Correction, from retrieving the primary: an earlier version of this document said
+guard cells were standard "since the first CA-CFAR papers". Finn &amp; Johnson 1968
+excludes the cell under test from its own estimate — the delay-line </em><em>centre tap</em><em>
+is the test cell and the surrounding taps form the estimate — but no guard band
+around it appears in the text. </em><em>Standard by 1983</em><em> is the claim the sources
+support.)</em></p>
+<p>bugarach's three rolling detectors have no exclusion at all (panel B) — not even
+the 1968 baseline, since CoactDetect's context is centred on the bin under test and
+the shift runs inside it, so the test bin's own events sit in the null pool that
+judges them. Both named consequences are live here: <strong>self-masking</strong> (an event
+raises the bar it must clear) and <strong>mutual masking</strong> (a <em>second</em> event inside the
+reference window raises it further, which is worse in dense data than sparse).</p>
+<p><strong>Mutual masking is in the founding paper's abstract, quantified.</strong> Finn &amp; Johnson,
+1968: <em>"The introduction of a second target in one of the threshold control cells
+introduces a masking effect equivalent to a 1-dB loss in detection efficiency for a
+worst-case analysis where 100 resolution cells are employed in the threshold-control
+system."</em> The regime-shift incident — four planted events inside every 60 s context
+window, binned SCE's precision from 74% to 10% — is that effect, at a magnitude the
+radar case never had to consider, derived here the hard way fifty-eight years later.</p>
 <p><strong>It is not free, and the cost runs the other way in sparse data.</strong> A guard
 interval removes reference cells, so the background estimate is built from less
 data and its variance rises — radar calls the resulting sensitivity penalty <em>CFAR
@@ -454,9 +498,15 @@ reference span, not on a window with a hole in it.</p>
 parity with the MATLAB originals is preserved.</strong> The bench already scores it.</p>
 <h3>5.2 rate+context is a cell-averaging detector whose CFAR property was removed</h3>
 <p>Cell-averaging CFAR sets the threshold <strong>multiplicatively</strong>: <code>θ = α · μ̂</code>, where
-<code>μ̂</code> is the reference-window mean and <code>α</code> comes from the design false-alarm
-probability and the window size. The multiplication is the whole point — it is
-what holds the false-alarm rate constant as the background moves.</p>
+<code>μ̂</code> is the reference-window estimate and <code>α</code> comes from the design false-alarm
+probability and the window size. The multiplication is the whole point — it is what
+holds the false-alarm rate constant as the background moves.</p>
+<p>This is the one claim here that rests on the primaries rather than on structure,
+and both state it outright. Finn &amp; Johnson make the threshold <em>"proportional to the
+square root of this estimate of the output variance: D₀ = K√(E{|MF|²})"</em>. Rohling's
+general CFAR processor is two steps: <em>"the first step is to measure the mean clutter
+power level Z. The second step is to </em><em>multiply</em><em> this estimation Z by a scaling
+factor T."</em></p>
 <p>RateDetect fires where <code>rate − context ≥ excess_threshold_hz</code> (default 5 Hz). The
 threshold is <strong>additive</strong>. The effective ratio <code>θ/μ̂ = 1 + 5/μ̂</code> is enormous when
 the tissue is quiet and approaches 1 when it is busy: over-conservative in sparse
@@ -493,17 +543,25 @@ the numerator and the denominator of F1, so CICADA's 215 firings in an empty blo
 cost it nothing. Measured false-alarm rate against a stated design target is a
 score the probe could actually fail.</p>
 <h3>5.4 Greatest-of selection is edge-robust and target-blind, and LoCo inherits both halves</h3>
-<p><code>maxlt</code> buys clutter-edge robustness. Radar's analysis of greatest-of selection
-says what it costs: taking the maximum of the two halves means <strong>a second target
-in either half raises the bar for the one under test.</strong> It is the edge-robust
-member of the family and the multiple-target-blind one.</p>
+<p><code>maxlt</code> buys clutter-edge robustness, and Rohling says so in as many words: the
+greatest-of variant <em>"makes allowance for clutter edges occurring within the
+reference area"</em>, and its transient behaviour at an edge is <em>"superior to that of
+the CA CFAR"</em>, at a small sensitivity loss in stationary clutter.</p>
+<p><strong>And he says what it does not buy.</strong> For two targets close together, <em>"due to
+symmetry, the splitting of the reference window of the CAGO CFAR does not help in
+this situation"</em> — the split is the whole mechanism, and against an interferer in
+the reference window it contributes nothing. Greatest-of is the edge-robust member
+of the family and the multiple-target-blind one.</p>
 <p>Translated: LoCo should be expected to <strong>miss the second of two coordinated events
 falling within one half-context</strong> — 60 s FAST, 30 s SLOW at the shipped defaults —
 and to miss it <em>because</em> of the mechanism that makes it good at drug onsets.
 Nothing in either tree tests this. The bench can: plant event pairs at a swept
 separation and measure recall of the second.</p>
-<p>Ordered-statistic selection was designed to get both properties at once, which
-makes it the obvious next detector to try — and a cheaper one (§5.5).</p>
+<p>Ordered-statistic selection was designed to get both properties at once — Rohling's
+abstract claims exactly that, advantages <em>"especially in cases where more than one
+target is present within the reference window ... or where this reference window is
+crossing clutter edges"</em> — which makes it the obvious next detector to try, and a
+cheaper one (§5.5).</p>
 <h3>5.5 The surrogate pool may be an expensive way to compute an order statistic</h3>
 <p>LoCo is the slowest classical detector in the bake-off: 0.245 s per fold, 4×
 CoactDetect and 17× the 1,149-parameter learned model. The cost is structural — at
@@ -713,38 +771,53 @@ provenance note; 2, 4 and 5 follow from §4.</p>
 <li><strong>Read the body of <code>cotterill_2016_burst_detector_comparison.pdf</code>.</strong> On the
    shelf, abstract and methods opening already read. Settles or complicates
    rate+context's priority. An hour, no fetching.</li>
-<li><strong>Verify §4's CFAR attributions against primary sources.</strong> ⚠ They are from
-   working knowledge and are unchecked; this repository has already caught a
-   fabricated author list, and the shelf exists because of it. Retrieve or strike:
-   Finn &amp; Johnson 1968 (cell-averaging), Hansen &amp; Sawyers 1980 (greatest-of),
-   Rohling 1983 (ordered-statistic), Gandhi &amp; Kassam 1988 (censored/trimmed-mean
-   and the multiple-target analysis). One standard radar-detection textbook would
-   settle all four.
-   <strong>What does not depend on this:</strong> the guard-cell finding (§5.1), the
-   additive-threshold finding (§5.2), the calibration confound (§6), the
-   SPIKE-synch diagnosis (§6.6) and panel A are all checked against bugarach's own
-   source and data. They stand whatever the citations say. What falls if the
-   attributions are wrong is only the <em>positioning</em> argument — §4's last paragraph
-   and item 4 below.</li>
-<li><strong>Fetch Malvache et al. 2016 by hand.</strong> <em>Science</em>, not open access, never
-   retrieved. Settles SCE. <code>fetch_paper.py</code> is deliberately not vendored here.</li>
-<li><strong>Soften the "empty cell" sentence in the manuscript</strong> — §2.2 and the abstract
-   — pending (2).</li>
-<li><strong>Search for a rate-local surrogate-null coactivity detector in the calcium /
+<li>~~<strong>Verify §4's CFAR attributions against primary sources.</strong>~~ <strong>Done
+   2026-08-22</strong>, and the shelf is at <code>&lt;darkroom&gt;/bugarach/lit/radar/</code> with a
+   read-status entry per work. Finn &amp; Johnson 1968 and Rohling 1983 are <strong>read in
+   full</strong>; both support the claims made of them, and Finn &amp; Johnson turned out to
+   quantify the masking failure in its own abstract (§5.1). One claim was corrected
+   — guard cells are routine by 1983, not 1968 — and one attribution moved: the
+   censoring fix is Weiss / Rickard &amp; Dillard's, with Gandhi &amp; Kassam the standard
+   analysis. A web search had also returned the wrong initials for Finn; the
+   journal's contents page settled it.</li>
+</ol>
+<p><strong>Two remain, and they need ordering — both IEEE T-AES, neither open access.</strong>
+   The bibliographic record for each is confirmed from Rohling's printed reference
+   list, so this is a request for the <em>text</em>, not the citation:</p>
+<ul>
+<li><strong>Hansen &amp; Sawyers 1980</strong>, AES-16(1), 115–118 — four pages. Puts curves on
+     the greatest-of penalty that §5.4 currently describes only qualitatively.</li>
+<li><strong>Gandhi &amp; Kassam 1988</strong>, 24(4), 427–445 — five CFAR schemes scored in both
+     multiple-target and clutter-transition backgrounds, which is the structure of
+     bugarach's own bench. The standard trimmed-mean CFAR citation.</li>
+</ul>
+<p>UM's IEEE Xplore subscription should reach both directly; interlibrary loan
+   otherwise. <code>fetch_paper.py</code> is deliberately not vendored here, so these are hand
+   fetches.
+3. <strong>Fetch Malvache et al. 2016 by hand.</strong> <em>Science</em>, not open access, never
+   retrieved. Settles SCE. <code>fetch_paper.py</code> is deliberately not vendored here.
+4. <strong>Soften the "empty cell" sentence in the manuscript</strong> — §2.2 and the abstract.
+   <strong>No longer pending: (2) is done and the sentence is now the exposed one.</strong> The
+   claim that the distinct-ROI × rate-local cell "was empty" is defensible only
+   about the calcium-imaging literature. Rohling 1983 is a rate-local rolling null
+   with a greatest-of combination rule and an order-statistic estimator, in print,
+   forty-three years earlier — and it is on the shelf downstairs. A methods
+   reviewer from signal processing will not need to look it up.
+5. <strong>Search for a rate-local surrogate-null coactivity detector in the calcium /
    electrophysiology literature.</strong> Now better targeted: the query is no longer
    <em>"has anyone done this"</em> but <em>"has anyone brought CFAR to population event
    detection"</em> — and if the answer is nobody, that is the sentence the manuscript
-   should be making.</li>
-</ol>
+   should be making.</p>
 <p><strong>Nothing currently published depends on the provenance questions.</strong> The
 scoreboard's rules already forbid "competes with state-of-the-art", the bake-off
 reports a tie rather than a win, and no method from the literature has been run on
-this corpus at all — so the positioning is argued from absence, which is safe. The
-exposure there is future: a manuscript sentence or an app string that says <em>"we
-developed"</em> without this settled.</p>
-<p><strong>One thing here is not future.</strong> §6.6: a table in the README and on the site
-currently reports 0.254 as SPIKE-synch's accuracy, and that number is a
-measurement of a degenerate sweep.</p>
+this corpus at all — so the positioning is argued from absence, which is safe.</p>
+<p><strong>Two things are no longer future, and one of them changed today.</strong> The manuscript
+is unpublished, so its "empty cell" sentence costs nothing yet — but after the
+retrieval it is no longer a <em>risk</em> that a reviewer knows the prior art. Rohling
+1983 is on the shelf downstairs, and the sentence is wrong as written (§7.4). And
+§6.6 stands where it did: a table in the README and on the site reports 0.254 as
+SPIKE-synch's accuracy, and that number measures a degenerate sweep.</p>
 <hr />
 <h2>Sources</h2>
 <ul>
@@ -757,6 +830,9 @@ measurement of a degenerate sweep.</p>
   grid-edge caveats §6 leans on.</li>
 <li><code>&lt;darkroom&gt;/bugarach/lit/coordination/README.md</code> (2026-08-17) — the prior-art
   shelf, its read-status discipline, and the SCE-primary gap.</li>
+<li><code>&lt;darkroom&gt;/bugarach/lit/radar/README.md</code> (2026-08-22) — the CFAR shelf built to
+  close §7.2, with read status per work and the two outstanding library orders.
+  Every radar quotation in this document is from a PDF on that shelf.</li>
 <li><code>docs/todo/2026-08-21-which-detector-origins-are-actually-settled.md</code> — the
   settled/unsettled split §2 and §7 build on.</li>
 <li><code>docs/todo/2026-08-18-spike-synch-knob-may-not-be-the-knob.md</code> and

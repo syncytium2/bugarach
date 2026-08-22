@@ -148,3 +148,71 @@ was a broken link in both shipped copies.
    the score of a degenerate sweep. Correcting those two surfaces is a separate
    change and is not in this branch.
 3. **Cosmetic:** the double rule under the rendered banner.
+
+---
+
+## Revision round — 2026-08-22, later: the primaries were retrieved
+
+Tony asked for the primary sources on the shelf. The residual ⚠ from the run above
+is now closed for two of the four works and converted into a library order for the
+other two. This is a **round 4** against the same artifact, scoped to the claims the
+sources touch, and it produced findings — which is the argument for having fetched.
+
+| | |
+|---|---|
+| artifact | `docs/detector_history.md` (4d030cbe -> revised; rebuilt to both copies) |
+| roles re-run | **1** (Prove It), **2** (DOI or Die), **3** (Cross-Examiner), **6** (RTFM), **10** (Ship It) |
+| roles not re-run | 4, 5, 7, 8, 9, 11 — the revision changed sourcing and two sentences, not the argument's shape, its order, or anything that renders beyond one table |
+| findings | 1 blocking, 2 major, 1 minor |
+| shelf | `<darkroom>/bugarach/lit/radar/` — 3 PDFs + README, and one row added to `lit/README.md` |
+
+### Findings
+
+**BLOCKING — a claim was wrong, and only the primary could show it.** The document
+said guard cells have been standard *"since the first CA-CFAR papers"*. Finn &
+Johnson 1968 excludes the cell under test from its own estimate (the delay-line
+centre tap is the test cell) but **no guard band around it appears in the text**.
+Explicit guard cells are routine by Rohling 1983, whose Fig. 3(b) specifies *"two
+guard cells directly adjacent to the test cell"* as an unargued setup detail.
+Corrected to **standard by 1983**, with the correction shown rather than silently
+applied.
+
+**MAJOR — a misattribution.** The censoring fix was credited to Gandhi & Kassam
+1988. Rohling, in 1983, already credits Weiss (1982) and Rickard & Dillard with
+*"eliminating the maximum amplitude(s) from the reference window"*. Gandhi & Kassam
+is the standard **analysis**, not the origin. §4's table now says so.
+
+**MAJOR — the argument got stronger, and leaving that out would have been a defect
+of its own.** Finn & Johnson's own abstract quantifies the failure this project
+spent two weeks debugging: *"the introduction of a second target in one of the
+threshold control cells introduces a masking effect equivalent to a 1-dB loss in
+detection efficiency."* And the multiplicative threshold — §5.2's claim that
+rate+context lacks the constant-false-alarm property — is stated outright in both
+primaries (`D₀ = K√(·)`; *"multiply this estimation Z by a scaling factor T"*).
+That claim went from the weakest-sourced in the document to the best-sourced.
+
+**MINOR — a web search returned the wrong author.** It gave "R. S. Finn"; the
+journal's own contents page gives **H. M. Finn**. Nothing in the document had
+carried initials, so nothing shipped wrong — but it is the exact failure mode the
+shelf exists to prevent, and it is recorded on the shelf entry.
+
+### How the quotations were verified
+
+Every radar quotation in the document was matched **mechanically against the shelf
+PDFs** — extract text, normalise whitespace, grep. Seven quotations, seven hits,
+each to a named file. A quotation that cannot be found in a PDF on the shelf is a
+build failure, not a judgement call.
+
+### Residual ⚠ after this round
+
+1. **Two papers still unread**, both IEEE T-AES, neither open access:
+   **Hansen & Sawyers 1980** (AES-16(1), 115–118 — puts curves on the greatest-of
+   penalty §5.4 describes qualitatively) and **Gandhi & Kassam 1988** (24(4),
+   427–445 — five schemes in multiple-target *and* clutter-transition backgrounds,
+   the structure of bugarach's own bench). Bibliographic records confirmed from
+   Rohling's printed reference list. **For Tony to order.**
+2. **`rohling_1983_os_cfar.pdf` is a found copy** from a course page, carrying an
+   IEEE Xplore licence stamp. Fine as a reading copy; pull a clean library copy
+   before quoting it in anything that ships. Recorded on the shelf entry.
+3. **§6.6's correction is still unapplied** — the README and the site still report
+   0.254 as SPIKE-synch's accuracy. Unchanged by this round.

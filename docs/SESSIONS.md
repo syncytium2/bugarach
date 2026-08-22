@@ -60,6 +60,18 @@ Template:
 
 ## Active
 
+### Mac/cfar-primaries — fetch the CFAR primary sources onto the lit shelf
+- **Status:** ACTIVE
+- **Started:** 2026-08-22
+- **Writes:** the Dropbox **darkroom** — creating `<darkroom>/bugarach/lit/radar/`
+  (3 PDFs + a README) and appending one row to `<darkroom>/bugarach/lit/README.md`'s
+  subfolder table. Nothing else in the darkroom; nothing under `$BUGARACH_DATA_ROOT`.
+- **Claims:** `<darkroom>/bugarach/lit/` for the duration. New subfolder, so no
+  collision with `lit/coordination/` or `lit/DL/`.
+- **Notes:** closes the residual on `docs/detector_history.md`, whose radar attributions
+  shipped flagged unverified. Two of four are now read in full; two are verified
+  bibliographically but need a library order for the text.
+
 ### Mac/webapp-overnight — four webapp gaps closed, and the site republished
 - **Status:** DONE 2026-08-20 — deployed and **checked rather than assumed**;
   **claim released.**
