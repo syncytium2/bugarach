@@ -33,7 +33,8 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from bugarach.bench import (BenchResult, EdgeOfRange, OPERATING_POINTS,
+from bugarach.bench import (BenchResult, DegenerateSweep, EdgeOfRange,
+                            OPERATING_POINTS,
                             pick_operating_point)
 from bugarach.detectors.rate import rate_detect
 from bugarach.detectors.sync import sync_detect
@@ -468,3 +469,22 @@ def test_the_real_python_rule_refuses_an_edge_and_so_does_the_browser(
     assert got["knob"] is None, "the browser named a boundary value as best"
     assert "high end" in got["why"], got["why"]
     assert "widen" in got["why"].lower(), got["why"]
+
+
+def test_a_knob_that_changes_nothing_is_refused_on_both_sides(pick_in_browser):
+    """The other refusal, and it must not be confused with the edge one — the
+    remedies are opposite. A grid whose every point ties has not measured the
+    knob, so widening produces more identical rows; the answer is to sweep
+    whatever is actually binding. SPIKE-synch fell through this gap and answered
+    every fold on the scoreboard while measuring nothing.
+
+    Both sides must refuse, and the browser must not tell a reader to widen."""
+    curve = _bench_curve([(50, 30)] * 5)
+    assert len({round(r.f1, 9) for r in curve}) == 1, "the curve must be flat"
+    with pytest.raises(DegenerateSweep):
+        pick_operating_point(curve)
+
+    got = pick_in_browser(_curve([r.f1 for r in curve]))
+    assert got["knob"] is None, "the browser named a setting on a flat sweep"
+    assert "same f1" in got["why"].lower(), got["why"]
+    assert "widening the range will not help" in got["why"].lower(), got["why"]

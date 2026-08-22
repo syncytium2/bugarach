@@ -652,6 +652,42 @@ class EdgeOfRange(ValueError):
     """
 
 
+class DegenerateSweep(ValueError):
+    """Every point on the grid scored identically — the knob did nothing.
+
+    Distinct from :class:`EdgeOfRange` because the remedy is the opposite. There
+    the grid was too narrow and the answer is to widen it; here the grid is
+    irrelevant, because the parameter being swept is **not the one deciding the
+    answer**, and widening it only produces more identical rows.
+
+    The case this was written for is SPIKE-synch, recorded in
+    ``docs/todo/2026-08-18-spike-synch-knob-may-not-be-the-knob.md``: the sweep
+    moves ``C_threshold`` over ``(0.005 … 0.12)`` while ``C_min`` sits pinned at
+    0.1 above most of that range, so the bin that *opens* an event gets cheaper
+    while every bin that *sustains* one must still clear 0.1. The synchrony
+    profile is also quantised at ``k/(n-1)``, so on a 30-ROI field every
+    threshold below 1/29 is the same threshold. On a default simulation every
+    value on the grid returned four detections and eleven misses.
+
+    :func:`pick_operating_point` could not see it. Its plateau rule — an optimum
+    is trustworthy if *some* optimal point has neighbours on both sides — is
+    right for a **saturating** plateau (LoCo at F1 1.00 from 99.99 upward) and
+    cannot distinguish that from a curve flat because nothing is happening: when
+    every point ties, the whole grid is "optimal", interior points exist, and the
+    first is returned as a calibrated setting. A boundary answer wearing a
+    plateau's clothes. That is how SPIKE-synch answered 3 of 3 folds on the
+    scoreboard while measuring nothing.
+
+    **The test is a total tie, not "flat within noise"** — a stricter rule than
+    first proposed, and deliberately. Partial ties are real and informative: the
+    bench's own ``sweep("sync", "baseline_busy")`` moves F1 from 0.58 to 0.48
+    across the upper half with the bottom three tied. Refusing "nearly flat"
+    would need a noise model nobody has, and would refuse curves that carry
+    information. An exact tie across every point cannot be a measurement of
+    anything, so it is the case that can be refused without one.
+    """
+
+
 def pick_operating_point(curve: list[BenchResult]) -> BenchResult:
     """The F1-optimal point on a sweep, refusing a boundary answer.
 
@@ -672,6 +708,20 @@ def pick_operating_point(curve: list[BenchResult]) -> BenchResult:
         return scored[0]
 
     best_f1 = max(r.f1 for r in scored)
+    # Before asking WHERE the optimum sits, ask whether the sweep found one at
+    # all. A grid whose every point ties has not measured the knob; see
+    # DegenerateSweep. Checked first because such a curve also passes the
+    # interior test below, which is exactly how it went unnoticed.
+    if best_f1 - min(r.f1 for r in scored) <= 1e-9:
+        d = scored[0]
+        raise DegenerateSweep(
+            f"{d.detector}/{d.regime}: every point on the "
+            f"{OPERATING_POINTS[d.detector].knob} grid scores F1 {best_f1:.4f} "
+            f"({len(scored)} values, {scored[0].knob_value:g}–"
+            f"{scored[-1].knob_value:g}) — the swept parameter is not what is "
+            "deciding the answer, so no value of it is an operating point. "
+            "Widening this grid will not help; sweep the binding parameter "
+            "instead, or sweep them together")
     optimal = [r for r in scored if r.f1 >= best_f1 - 1e-9]
     interior = [r for r in optimal if r is not scored[0] and r is not scored[-1]]
     if interior:
