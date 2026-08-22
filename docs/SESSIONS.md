@@ -60,6 +60,29 @@ Template:
 
 ## Active
 
+### Mac/app-notes — Tony's notes from using the app, and the review folder for them
+- **Status:** ACTIVE 2026-08-22 — **claims `<darkroom>/bugarach/2026-08-22-app-notes/`**,
+  a NEW subfolder, so it collides with nothing existing.
+- **Started:** 2026-08-21
+- **Writes:** that one darkroom subfolder, **plus one appended row** to
+  `<darkroom>/bugarach/README.md`'s "dated subfolders" table so the folder is findable
+  from the index — additive, nothing rewritten. Nothing else in `darkroom/`; nothing in
+  `constellation/`; nothing under `$BUGARACH_DATA_ROOT` (the export folder is **read**,
+  read-only, for ROI counts and one real recording's timings).
+- **Claims:** that subfolder, and the one table row. Released when the notes are done.
+- **Noticed while there:** that index table has drifted — `2026-08-20-pensub-validation/`
+  exists on disk and is not in it. Not fixed here: describing another session's folder
+  from the outside is how an index starts lying. Its owner should add a row.
+- **Why it exists:** Tony, 2026-08-22 — *"everything for my review goes into dropbox
+  darkroom bugarach"*. The figures backing each note were going to a session scratchpad
+  and reaching him only as chat attachments, which is the failure `CLAUDE.md` already
+  names: a thing built to be looked at that cannot be found again is not delivered.
+- **Doing:** the twelve notes in `docs/todo/2026-08-21-app-notes-from-use.md`. Landed so
+  far: **#201** the panel reorder and header trim (notes 5, 7, 10, 11), **#202** the
+  assess feedback, the legend and the "no detector involved" correction (1, 2, 3a, 6),
+  **#209** several detectors at once with one lane each (9). Open: 12, 8, 4, 3b.
+- **Holds `docs/site/raster_viewer.html`** on the machine-local board.
+
 ### Mac/malvache-primary — file the retrieved SCE primary, correct what it disproves
 - **Status:** DONE 2026-08-22 — **claim released.**
 - **Started:** 2026-08-22
