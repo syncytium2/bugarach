@@ -234,6 +234,45 @@ mean.
 
 ### Phase 1 · Mechanism, behind flags, defaults unchanged
 
+> **Started 2026-08-22, and the first measurement corrected the plan.** `rate.py`
+> now carries both flags. Reproduce with `tools/probe_rate_mechanism.py` and
+> `tools/probe_guard_vs_spacing.py`. On `baseline_quiet`, 3 seeds, best knob on an
+> interior grid point:
+>
+> | | F1 | recall | probe firings |
+> |---|---|---|---|
+> | additive, no guard — **shipped** | 0.636 | 0.622 | 2.0 |
+> | additive + guard 5 s | 0.615 | 0.622 | 3.0 |
+> | **multiplicative, no guard** | 0.667 | 0.800 | **0.0** |
+> | **multiplicative + guard 5 s** | **0.686** | 0.800 | **0.0** |
+>
+> **The multiplicative bar works, and item 8 is confirmed** — F1 +0.050 and the
+> promiscuity signature goes to **zero**, which is the specific thing an additive
+> offset was predicted to cause.
+>
+> **The guard alone does nothing here, and the arithmetic says why.** At a planted
+> event the 1 s rate is **9.00 Hz** while the 60 s context is **0.283 Hz** — 3.1%
+> of the peak. A 10 s guard halves the context to 0.140, exactly as designed, and
+> so moves the threshold crossing by **0.143 Hz against a 2–5 Hz bar**.
+> Self-masking is real, measured, and 20–35× smaller than the constant it competes
+> with. Swept across event spacings from 120 s down to 14 s — well inside the ±30 s
+> reference window — the guard changes F1 by −0.006 to +0.000 at every spacing.
+>
+> **Two consequences for the rest of the plan.**
+>
+> 1. **The guard's value is coupled to the threshold rule.** It only helps once the
+>    bar is multiplicative (+0.019 on top), because then a contaminated context
+>    *multiplies* into the threshold instead of adding 0.14 Hz to a constant. Do
+>    not evaluate the two independently.
+> 2. **Item 7 should be tested on `loco` and `coact` next, not on `rate`.** Their
+>    bar is a percentile of a null pool built from the events *inside* the window,
+>    so contamination scales the threshold directly — which is also the shape of
+>    the regime-shift incident, whose victim was binned SCE's surrogate null rather
+>    than this detector.
+>
+> ⚠ One regime, three seeds, no held-out fold. A probe to decide where Phase 4
+> should spend its time, **not** a calibration.
+
 Each is small, each is independently testable, and none breaks parity.
 
 - **`guard_sec` in `rate.py`, `coact.py`, `loco.py`.** Default `0.0`. Note the
