@@ -97,22 +97,87 @@
   button.ghost { background: transparent; color: var(--accent); margin-top: 6px; }
   .hint { color: var(--muted); font-size: 12px; margin-top: 8px; }
 
+  /* THE PIPELINE RAIL — full width, above both columns.
+
+     The panels below used to BE the navigation: nine of them stacked in the
+     order the work runs, one open at a time. That reads as a ladder you climb,
+     and the thing it describes is not a ladder. There are two ways in and they
+     are exclusive — `runSim` calls `open()`, which clears RECORDINGS, REGIONS,
+     META and TRUTH, so simulating THROWS AWAY the folder you opened — and after
+     that the two middle steps are both optional. A visitor with no data and a
+     researcher with a folder want opposite halves of it.
+
+     So the shape goes across the top where a shape can be seen, the fork is
+     drawn rather than implied, and the left column stops being a menu and
+     becomes what it always wanted to be: the settings for the one thing you are
+     doing. (Tony, 2026-08-22.) */
+  #rail {
+    flex: none; display: flex; align-items: stretch; gap: 0;
+    padding: 10px 24px 11px; border-bottom: 1px solid var(--line);
+    background: var(--panel); overflow-x: auto;
+  }
+  .railgroup { display: flex; flex-direction: column; gap: 5px; }
+  .railgroup > .glabel {
+    font-size: 10px; letter-spacing: .07em; text-transform: uppercase;
+    color: var(--muted); padding-left: 2px;
+  }
+  .railrow { display: flex; gap: 6px; }
+  /* the arrow between groups, vertically centred on the chips rather than on
+     the group label above them */
+  .railarrow {
+    display: flex; align-items: center; color: var(--muted);
+    padding: 14px 9px 0; font-size: 15px; user-select: none;
+  }
+  /* "or", between the two entries. Smaller and quieter than the arrows between
+     groups, because it separates a choice rather than a sequence. */
+  .railjoin {
+    display: flex; align-items: center; color: var(--muted);
+    padding: 0 5px; font-size: 11px; font-style: italic; user-select: none;
+  }
+  .step {
+    all: unset; box-sizing: border-box; cursor: pointer;
+    display: flex; flex-direction: column; justify-content: center;
+    min-width: 104px; padding: 5px 11px; border-radius: 7px;
+    border: 1px solid var(--line); background: var(--bg);
+    font-size: 12.5px; font-weight: 600; line-height: 1.3;
+  }
+  .step .need {
+    font-size: 10.5px; font-weight: 400; color: var(--muted);
+    margin-top: 1px; white-space: nowrap;
+  }
+  .step:hover { border-color: var(--accent); }
+  .step[aria-current="true"] {
+    border-color: var(--accent); background: var(--accent); color: #fff;
+  }
+  .step[aria-current="true"] .need { color: #ffffffc0; }
+  /* A STAGE YOU CANNOT RUN YET IS SHOWN, NOT HIDDEN, and it says what it wants.
+     Hiding it is how the old accordion taught the reader that Tune did not
+     exist — it appeared once a simulated folder was open, by which point the
+     reader had already decided the page did not do that. */
+  .step:disabled, .step[disabled] {
+    cursor: default; opacity: .45; border-style: dashed;
+  }
+  .step:disabled:hover { border-color: var(--line); }
+  .step .tick { color: var(--ok, #2c7a4b); font-weight: 700; }
+  .step[aria-current="true"] .tick { color: #fff; }
+
   /* Accordion. Two ways in — a folder you have, a folder that does not exist —
      and only one open at a time, because the recording list wants the height
-     and the controls want the reader's attention while they are being set. */
-  details.acc { border-bottom: 1px solid var(--line); }
+     and the controls want the reader's attention while they are being set.
+
+     Only-one-at-a-time is now enforced by the rail rather than by `<details>`:
+     the unselected panels are not collapsed, they are not in the column at all.
+     The elements stay `<details open>` so every `getElementById(...)` in the
+     script below still finds its controls, and so a panel that is off screen
+     still has real widths for anything that measures one. */
+  details.acc { border-bottom: 1px solid var(--line); display: none; }
+  details.acc.on { display: block; }
   details.acc > summary {
-    list-style: none; cursor: pointer; padding: 11px 16px; font-size: 13px;
+    list-style: none; cursor: default; padding: 11px 16px; font-size: 13px;
     font-weight: 600; display: flex; align-items: center; gap: 8px;
-    user-select: none;
+    user-select: none; border-bottom: 1px solid var(--line);
   }
   details.acc > summary::-webkit-details-marker { display: none; }
-  details.acc > summary::before {
-    content: "›"; color: var(--muted); font-size: 15px; line-height: 1;
-    transition: transform .12s ease;
-  }
-  details.acc[open] > summary::before { transform: rotate(90deg); }
-  details.acc > summary:hover { background: var(--band); }
   details.acc > summary .cnt {
     margin-left: auto; color: var(--muted); font-weight: 400; font-size: 11.5px;
   }
@@ -127,6 +192,9 @@
     background: var(--bg); color: var(--fg);
   }
   .ctl input[type="number"] { width: 68px; }
+  /* A checkbox is not a value box. Without this it takes the 162px above, which
+     leaves its own label a third of the column and wrapping mid-phrase. */
+  .ctl input[type="checkbox"] { width: auto; padding: 0; }
   .ctl .span { grid-column: 1 / -1; }
   .ctl .span button { margin-top: 2px; }
   .ctl .note { color: var(--muted); font-size: 11.5px; line-height: 1.4;
@@ -205,6 +273,25 @@
   #wins i { font-style: normal; color: var(--fg); }
   canvas { width: 100%; display: block; }
   .empty { color: var(--muted); padding: 48px 8px; max-width: 60ch; }
+  #demoNote {
+    display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap;
+    font-size: 12.5px; color: var(--muted); margin: 0 0 12px;
+    padding: 7px 11px; border: 1px solid var(--line); border-radius: 7px;
+    background: var(--panel);
+  }
+  #demoNote b { color: var(--fg); font-weight: 600; }
+  /* `display: flex` on the id beats the UA's `[hidden] { display: none }`, so
+     without this the note is merely EMPTIED when it is dismissed and its border
+     stays — an empty bar above a real recording, which is worse than the note.
+     Seen in a screenshot, not in a test. */
+  #demoNote[hidden] { display: none; }
+  /* A button that reads as a link, for a choice that is not the panel's main
+     action. Same shape `#checkbar` grew for itself; named here so the next one
+     does not grow a third copy. */
+  button.linkish {
+    all: unset; cursor: pointer; color: var(--accent); text-decoration: underline;
+    text-underline-offset: 2px; font-size: 12.5px;
+  }
   .err {
     border-left: 3px solid #b4433a; background: var(--band);
     padding: 10px 14px; margin: 10px 0; font-size: 13px;
@@ -290,6 +377,16 @@
     computer</b> — no network calls, static files, no server to send them
     to.</span></h1>
 </header>
+
+<!-- THE RAIL IS BUILT, NOT WRITTEN. Every chip takes its label from its panel's
+     own `<summary>`, so the two cannot drift: rename a panel and the rail
+     renames with it. What is declared here in markup is only the SHAPE — which
+     groups exist and in what order — and the shape is the thing a reader is
+     supposed to learn from it.
+
+     `nav`, not a row of buttons in `<main>`: it is the page's primary
+     navigation now, and a screen reader should be told so. -->
+<nav id="rail" aria-label="pipeline"></nav>
 
 <main>
   <div id="side">
@@ -447,6 +544,12 @@
         <input id="sSeed" type="number" min="0" max="99999" step="1" value="1">
         <div class="span"><button id="runSim">Simulate</button>
           <button id="verifySim" disabled>Compare with the real folder</button></div>
+        <!-- The same switch the line above the raster offers, kept somewhere it
+             can be found after that line is gone. A reader who turned the
+             landing demo off six months ago and now wants it back has no other
+             way to say so short of clearing site data. -->
+        <div class="span"><label class="inline"><input type="checkbox" id="demoPref">
+          simulate a folder on load</label></div>
         <div class="note" id="verifyWhat"></div>
         <!-- The step order reads as a pipeline that accumulates, and this one
              does not: `runSim` calls `open`, which clears RECORDINGS, REGIONS,
@@ -803,6 +906,13 @@
   </div>
 
   <div id="stage">
+    <!-- Where the page owns up to having invented the data on screen. It sits
+         ABOVE the raster, because by the time a reader has scrolled past a
+         raster to a footnote they have already believed it. The opt-out is in
+         the same line as the admission: the reader who most objects to being
+         shown made-up data is the one who needs the switch, and they are
+         looking right here. -->
+    <div id="demoNote" hidden></div>
     <div class="empty" id="empty">
       <p>No recordings open yet.</p>
       <p>A folder holds one <code>.csv</code> per recording with columns
@@ -1762,6 +1872,16 @@ async function open(fileList, opts) {
   // everything else, or a drug ticked off in one folder stays ticked off in the
   // next one that happens to use the same name.
   DELAY_OFF = new Set();
+  // The rail's ticks are claims about THIS data — "assessed", "tuned" — and this
+  // is the line where that data stops existing. They go with it. Missing this
+  // would leave a folder read from disk wearing the ✓ a simulated one earned.
+  DONE.clear();
+  // The landing note describes the folder the page invented on load. This line
+  // is where that folder stops being what is on screen — including when the
+  // replacement is another simulated one, because "simulated ON LOAD" is then
+  // no longer true either.
+  DEMO_SHOWING = false;
+  paintDemoNote();
   document.getElementById("panel").hidden = true;
   document.getElementById("checkbar").hidden = true;
 
@@ -1823,7 +1943,10 @@ async function open(fileList, opts) {
     li.appendChild(b); list.appendChild(li);
   }
   // the sidebar follows the reader: a folder that opened is a list to pick from,
-  // and a folder that was simulated is a set of knobs to turn again
+  // and a folder that was simulated is a set of knobs to turn again.
+  // `showSection` repaints the rail, which is what turns the stages that were
+  // waiting on data — assess, detect, and tune if this folder was planted —
+  // from dashed to live.
   showSection(SIMULATED ? "accSim" : "accList");
   await show(RECORDINGS[0]);
   // the first raster goes up before the folder is checked: seeing something is
@@ -4329,7 +4452,9 @@ function readSim() {
   };
 }
 
-async function runSim() {
+// queued: see `serial` — two of these in flight at once rewrite the same globals
+const runSim = () => serial(runSimOnce);
+async function runSimOnce() {
   const btn = document.getElementById("runSim");
   btn.textContent = "Simulating…";
   btn.disabled = true;
@@ -4729,6 +4854,7 @@ async function runAssess() {
     ASSESSED = { recId: current.id, nStreams: blocks.length, measured,
                  streams: blocks.map(b => b.stream), region: w.source };
     paintAssessChip();
+    markDone("accAssess");
 
     const wantK = Number(document.getElementById("aK").value);
     const hit = blocks[0].res.find(a => a.K === wantK && a.meetsFloor);
@@ -5402,7 +5528,10 @@ function chosenDetectors() {
   return [whichDetector()];
 }
 
-async function runDetect() {
+// queued, and re-entrant: the Tune panel's "use this setting" calls it from
+// inside the chain, where it runs inline rather than waiting for itself
+const runDetect = () => serial(runDetectOnce);
+async function runDetectOnce() {
   if (!current) return;
   const btn = document.getElementById("runDetect");
   const was = btn.textContent;
@@ -5450,6 +5579,9 @@ async function runDetect() {
     paintSaveDetections();
     paintDetectPanel(data, runs, streams);
     draw(current, data);
+    // the ✓ tracks the RESULT, not the click: every picked detector refusing
+    // leaves DETECT null, and that is not a stage that produced something
+    if (DETECT) markDone("accDetect");
   } finally {
     btn.textContent = was; btn.disabled = false;
   }
@@ -5975,6 +6107,7 @@ function useTunedSetting(which, value, meta) {
   document.getElementById("dDet").value = which;
   paintDetectorChoice();
   paintTunedChip();
+  markDone("accTune");
   showSection("accDetect");
   if (current && current.loaded) runDetect();
 }
@@ -6563,27 +6696,203 @@ if (document.readyState === "loading")
 else
   wireLab();
 
-/* ---------- the sidebar: one section at a time ----------------------------- */
-// `accLab` is in the list even though it is hidden on the published page:
-// `showSection` already refuses to open a hidden node, so listing it costs
-// nothing there and means the accordion behaves normally where it does appear.
-/* THE ORDER THE WORKFLOW RUNS IN, and it must match the DOM above.
-   Open your folder, see what is in it, state the windows the folder did not
-   send, measure it, simulate from that measurement, tune against the planted
-   truth, then point the tuned instrument at everything. */
-const SECTIONS = ["accOpen", "accList", "accWindows", "accAssess", "accSim",
-                  "accTune", "accDetect", "accLab", "accScore"];
+/* ---------- the rail: the pipeline, and where you are in it -----------------
+
+   THE SHAPE, and it is a fork rather than a line.
+
+     start        your data          if you like         the answer
+     ┌────────┐
+     │ open   │─┐   ┌───────────┐   ┌──────────┐   ┌────────┐
+     │ folder │ ├──►│ recordings│──►│  assess  │──►│ detect │
+     └────────┘ │   │  windows  │   │   tune   │   └────────┘
+     ┌────────┐ │   └───────────┘   └──────────┘
+     │simulate│─┘
+     └────────┘
+
+   The two entries are EXCLUSIVE, not sequential: `runSim` calls `open()`, which
+   clears RECORDINGS, REGIONS, META and TRUTH, so simulating throws away the
+   folder you opened. Drawn as a ladder — which is what nine stacked panels
+   are — that read as a pipeline which accumulates, and a reader who opened a
+   folder and then pressed Simulate lost it without being told first.
+
+   `groups` is the only thing declared here. Labels come from each panel's own
+   `<summary>`, so renaming a panel renames its chip and the two cannot drift.
+
+   `need` is what the stage wants before it can run, said in the chip rather
+   than discovered by clicking. `ready` decides whether it can run NOW. A stage
+   that is not ready is DIMMED AND STILL DRAWN — the old accordion hid Tune
+   until a simulated folder existed, which taught every reader without one that
+   the page could not tune. */
+const RAIL = [
+  // `join` is drawn BETWEEN the chips of a group. Only the entries have one,
+  // and it says the one thing the old stacked panels could not: these two are
+  // alternatives. Everything downstream of here is an "and".
+  { group: "start", join: "or", steps: [
+    { id: "accOpen", need: "your recordings", ready: () => true },
+    { id: "accSim",  need: "no data needed",  ready: () => true },
+  ]},
+  /* These two panels carry `hidden` when there are no recordings, which is right
+     for the PANEL — a recording list with no recordings is nothing to look at —
+     and wrong for the rail. Leaving them off it took the whole "your data" group
+     off the page for the reader who has not opened anything, which is precisely
+     the reader who needs to be told the group is there. `gated` below is for the
+     other kind of absence. */
+  { group: "your data", steps: [
+    { id: "accList",    need: "open something first",
+      ready: () => RECORDINGS.length > 0 },
+    { id: "accWindows", need: "open something first",
+      ready: () => RECORDINGS.length > 0 },
+  ]},
+  { group: "if you like", steps: [
+    { id: "accAssess", need: "open something first",
+      ready: () => RECORDINGS.length > 0 },
+    // Tune scores against planted events, so it is real only on the simulate
+    // side of the fork. Saying that in the chip is the whole point of drawing a
+    // stage you cannot run.
+    { id: "accTune",   need: "simulated only",
+      ready: () => RECORDINGS.some(r => (TRUTH.get(r.id) || {times: []}).times.length) },
+  ]},
+  { group: "the answer", steps: [
+    { id: "accDetect", need: "open something first",
+      ready: () => RECORDINGS.length > 0 },
+    /* `gated`: NOT ON THIS BUILD AT ALL, as opposed to not ready yet. The two
+       look the same to a reader and are opposite facts — "you have not given me
+       data" is an instruction, "this page cannot do that" is not — so they get
+       different treatment. A not-ready stage is drawn dashed with what it wants;
+       a gated one is not drawn, because there is nothing the reader can do.
+
+       TRAIN IS LAB-ONLY TODAY AND THAT IS TEMPORARY (Tony, 2026-08-22).
+       Publishing it is exactly two edits and neither is here: drop `hidden` from
+       `accLab` in the markup, and drop `gated` from this line. Everything else —
+       the chip, the position in the rail, the "local server" requirement — is
+       already written and already correct for a public Train stage. */
+    { id: "accLab",   need: "local server", gated: true, ready: () => !!lab() },
+    { id: "accScore", need: "open something first", gated: true,
+      ready: () => RECORDINGS.length > 0 },
+  ]},
+];
+const SECTIONS = RAIL.flatMap(g => g.steps.map(s => s.id));
+const stepOf = id => RAIL.flatMap(g => g.steps).find(s => s.id === id);
+
+/** The chip's own label, read off the panel it opens. */
+function stepLabel(id) {
+  const sum = document.getElementById(id).querySelector("summary");
+  return (sum.firstChild.textContent || id).trim();
+}
+
+/** The panel's live status line — "no operating point", "3 of 3 conforming".
+
+    THE RAIL CARRIES IT, because the panel no longer can. Eight of the nine
+    panels are out of the column at any moment, and their status chips went with
+    them: a reader used to learn from the sidebar that the folder conformed and
+    that no operating point had been chosen, without opening anything. Read from
+    the `.cnt` node rather than restated, so a chip and its rail entry cannot
+    disagree, and repainted by the observer below when one changes. */
+function stepStatus(id) {
+  const c = document.getElementById(id).querySelector("summary .cnt");
+  return c ? c.textContent.trim() : "";
+}
+
+let SECTION = "accSim";
+
+/** Stages that have produced something. Cleared by `open()`, which is the same
+    event that clears the data they were about. */
+const DONE = new Set();
+function markDone(id) { DONE.add(id); paintRail(); }
+
 function showSection(id) {
+  const node = document.getElementById(id);
+  if (!node || node.hidden) return;
+  SECTION = id;
   for (const s of SECTIONS) {
     const n = document.getElementById(s);
-    n.open = s === id && !n.hidden;
+    n.classList.toggle("on", s === id);
+    // kept OPEN whether or not it is the visible one: everything below reaches
+    // into these panels by id, and a collapsed `<details>` has no layout, so a
+    // control measured while its panel was closed measured zero
+    n.open = true;
+  }
+  paintRail();
+}
+
+/** Rebuild the rail from RAIL + whatever the page currently holds. */
+function paintRail() {
+  const rail = document.getElementById("rail");
+  rail.textContent = "";
+  let first = true;
+  for (const g of RAIL) {
+    // `gated` stages drop out where the build does not carry them; everything
+    // else stays on the rail whether or not it can run yet
+    const live = g.steps.filter(s =>
+      !s.gated || !document.getElementById(s.id).hidden);
+    if (!live.length) continue;              // a group with nothing in it says nothing
+    if (!first) {
+      const a = document.createElement("div");
+      a.className = "railarrow";
+      a.textContent = "→";
+      a.setAttribute("aria-hidden", "true");
+      rail.appendChild(a);
+    }
+    first = false;
+    const box = document.createElement("div");
+    box.className = "railgroup";
+    const lab = document.createElement("div");
+    lab.className = "glabel";
+    lab.textContent = g.group;
+    box.appendChild(lab);
+    const row = document.createElement("div");
+    row.className = "railrow";
+    let firstInRow = true;
+    for (const s of live) {
+      if (g.join && !firstInRow) {
+        const j = document.createElement("span");
+        j.className = "railjoin";
+        j.textContent = g.join;
+        row.appendChild(j);
+      }
+      firstInRow = false;
+      const b = document.createElement("button");
+      b.className = "step";
+      b.dataset.step = s.id;
+      b.type = "button";
+      const ok = s.ready();
+      const name = document.createElement("span");
+      name.textContent = stepLabel(s.id);
+      // A DONE MARK, not a progress bar: it says a stage produced something,
+      // which on a page where two of the stages are optional is the only
+      // honest kind of progress there is.
+      if (DONE.has(s.id)) {
+        const t = document.createElement("span");
+        t.className = "tick";
+        t.textContent = " ✓";
+        name.appendChild(t);
+      }
+      b.appendChild(name);
+      const need = document.createElement("span");
+      need.className = "need";
+      // Ready: say what the stage currently holds. Not ready: say what it wants.
+      // The requirement is the more useful of the two exactly when it cannot run,
+      // and the status is the more useful one the rest of the time.
+      need.textContent = ok ? (stepStatus(s.id) || "ready") : s.need;
+      b.appendChild(need);
+      if (!ok && s.id !== SECTION) b.disabled = true;
+      if (s.id === SECTION) b.setAttribute("aria-current", "true");
+      b.onclick = () => showSection(s.id);
+      row.appendChild(b);
+    }
+    box.appendChild(row);
+    rail.appendChild(box);
   }
 }
-SECTIONS.forEach(s => {
-  const n = document.getElementById(s);
-  // closing the others fires their toggle too, so only an OPENING one steers
-  n.addEventListener("toggle", () => { if (n.open) showSection(s); });
-});
+
+/* The status lines are written by a dozen `paint…Chip()` calls scattered across
+   the page, and chasing every one of them to add a `paintRail()` is the kind of
+   list that is complete on the day it is written. Watching the nodes instead
+   means a chip added next year is carried without anybody remembering to. */
+const RAIL_WATCH = new MutationObserver(() => paintRail());
+document.querySelectorAll("#side details.acc > summary .cnt").forEach(n =>
+  RAIL_WATCH.observe(n, { childList: true, characterData: true, subtree: true }));
+
 document.getElementById("runSim").onclick = runSim;
 document.getElementById("simCta").onclick = () => {
   showSection("accSim");
@@ -6649,6 +6958,127 @@ async function offerLastFolder() {
   };
 }
 offerLastFolder();
+
+/* ---------- what a stranger meets ------------------------------------------
+
+   A VISITOR WITH NO DATA USED TO GET A WALL OF PROSE ABOUT A CSV CONTRACT THEY
+   DO NOT HAVE, and a button. The tool detects coordinated events, and the way
+   to say so is to have detected some by the time they finish reading the title.
+   So the page simulates a folder and runs a detector on it before anyone
+   clicks, and admits both in one line above the raster (Tony, 2026-08-22).
+
+   THE OPT-OUT IS THE OTHER HALF and it is not a nicety: a researcher who opens
+   this page daily to read their own folder does not want a generator burning a
+   second of their CPU every load, and — worse — does not want invented data on
+   screen when they are about to look at real data. The switch is sticky, it is
+   in the line that admits the invention, and it is in the Simulate panel too so
+   it can be found again after the line is gone.
+
+   Storage is `localStorage`, which is this browser and nothing else. It stores
+   the string "off" and never anything about a recording, so it does not touch
+   the promise in the header. It is wrapped because a browser in a privacy mode
+   throws on the property access itself rather than returning null. */
+const DEMO_KEY = "bugarach.demo";
+function demoWanted() {
+  try { return localStorage.getItem(DEMO_KEY) !== "off"; } catch (e) { return true; }
+}
+function setDemo(on) {
+  try {
+    if (on) localStorage.removeItem(DEMO_KEY);
+    else localStorage.setItem(DEMO_KEY, "off");
+  } catch (e) { /* private mode: the setting is this visit only, and that is fine */ }
+  const box = document.getElementById("demoPref");
+  if (box) box.checked = on;
+  paintDemoNote();
+}
+
+/** The line above the raster: what was invented, and how well it was found. */
+function paintDemoNote() {
+  const el = document.getElementById("demoNote");
+  if (!el) return;
+  el.textContent = "";
+  // The note belongs to the demo folder and to nothing else. Open a real folder
+  // and it goes: leaving it up would caption a real recording with the sentence
+  // "nothing here is a recording of anything".
+  if (!DEMO_SHOWING) { el.hidden = true; return; }
+  el.hidden = false;
+  const b = document.createElement("b");
+  b.textContent = "Simulated on load.";
+  el.appendChild(b);
+  const said = document.createElement("span");
+  said.textContent = demoScoreLine();
+  el.appendChild(said);
+  const btn = document.createElement("button");
+  btn.className = "linkish";
+  btn.type = "button";
+  btn.textContent = "Start empty next time";
+  btn.onclick = () => { setDemo(false); DEMO_SHOWING = false; paintDemoNote(); };
+  el.appendChild(btn);
+}
+let DEMO_SHOWING = false;
+
+/** "15 events planted, RateDetect found 13." — or the honest shorter version.
+
+    Scored at the same tolerance the Tune panel uses, read from its control
+    rather than restated, so the sentence on the landing page and the sweep
+    below it cannot disagree about what counts as finding an event. */
+function demoScoreLine() {
+  const t = current ? TRUTH.get(current.id) : null;
+  if (!t || !t.times.length) return " Nothing here is a recording of anything.";
+  const n = t.times.length;
+  if (!DETECT || DETECT.recId !== current.id || !DETECT.rows.length)
+    return " Nothing here is a recording of anything — "
+      + n + " coordinated events were planted in this one.";
+  const tol = clamp(Number(document.getElementById("tTol").value), 0.1, 30);
+  const which = DETECT.rows[0].detector;
+  const mine = DETECT.rows.filter(r => r.detector === which);
+  const sc = scoreDetections(t.times, t.fracs, mine.map(r => r.onset_sec),
+                             mine.map(r => r.width_sec), tol);
+  return " Nothing here is a recording of anything: " + n
+    + " coordinated events were planted and "
+    + (DETECTORS[which] ? DETECTORS[which].label : which)
+    + " found " + sc.nHit + " of them.";
+}
+
+/* ONE FOLDER-CHANGING JOB AT A TIME. `runSim` and `runDetect` are both async and
+   both rewrite the same globals, and until now nothing stopped a second one
+   starting while the first was mid-flight — two clicks on Simulate raced, and so
+   did anything that drove the page from outside. Starting work on load makes
+   that ordinary rather than rare, so the two entry points queue.
+
+   The guard is re-entrant: `runDetect` is called from inside `runSim`'s
+   successors and from the Tune panel's "use this setting", and a plain queue
+   would have those wait for the job they are already inside of. Depth > 0 means
+   we are already on the chain, so run inline. */
+let CHAIN = Promise.resolve(), CHAIN_DEPTH = 0;
+function serial(fn) {
+  if (CHAIN_DEPTH > 0) return fn();
+  const run = async () => {
+    CHAIN_DEPTH++;
+    try { return await fn(); } finally { CHAIN_DEPTH--; }
+  };
+  const next = CHAIN.then(run, run);
+  CHAIN = next.then(() => {}, () => {});
+  return next;
+}
+
+async function bootDemo() {
+  const box = document.getElementById("demoPref");
+  if (box) {
+    box.checked = demoWanted();
+    box.onchange = () => setDemo(box.checked);
+  }
+  if (!demoWanted()) { showSection("accSim"); return; }
+  showSection("accSim");
+  await runSim();
+  if (!RECORDINGS.length) return;              // the generator refused; say nothing
+  DEMO_SHOWING = true;
+  // The detector is the point. A raster alone shows a reader what data looks
+  // like; a raster with a lane over it shows them what this page is for.
+  await runDetect();
+  paintDemoNote();
+}
+bootDemo();
 
 document.querySelectorAll(".seg button").forEach(b => {
   b.onclick = () => {

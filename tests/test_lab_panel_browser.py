@@ -65,6 +65,22 @@ def _open(browser, url):
     return page
 
 
+def _reveal_lab(page, timeout: int = 15_000):
+    """Wait for the shim to publish the stage, then go to it.
+
+    Two steps now, and they mean different things. Dropping `hidden` is the
+    SERVER's doing — the capability arrived, so the stage exists. Putting the
+    panel on screen is the READER's, and since the panels became a rail rather
+    than an accordion it is a navigation act: exactly one panel is in the column
+    at a time, so an un-hidden panel is available, not visible. These tests used
+    to wait for visibility and get both at once.
+    """
+    page.wait_for_selector("#accLab:not([hidden])", state="attached",
+                           timeout=timeout)
+    page.evaluate("() => showSection('accLab')")
+    page.wait_for_selector("#accLab.on", timeout=timeout)
+
+
 def test_the_panel_is_absent_from_the_page_as_published(page_ctx):
     """The file on disk, opened directly — nobody defined the capability, so the
     panel must stay hidden. This is the published site's behaviour, checked
@@ -86,7 +102,7 @@ def test_the_panel_appears_when_the_server_serves_it(page_ctx, served):
     the panel wires itself up."""
     page = _open(page_ctx, served + "/")
     try:
-        page.wait_for_selector("#accLab:not([hidden])", timeout=15000)
+        _reveal_lab(page)
         assert page.evaluate("() => typeof window.__lab.train === 'function'")
         # The chip reports what the server said it can do, rather than assuming.
         #
@@ -142,7 +158,7 @@ def test_the_chip_survives_a_slow_capabilities_roundtrip(page_ctx, served):
     page.add_init_script(_SLOW_CAPABILITIES)
     page.goto(served + "/", wait_until="load")
     try:
-        page.wait_for_selector("#accLab:not([hidden])", timeout=15000)
+        _reveal_lab(page)
         page.wait_for_function(
             "() => { const el = document.getElementById('cntLab');"
             " const t = el && el.textContent.trim();"
@@ -166,8 +182,7 @@ def test_training_through_the_panel_reaches_the_server_and_comes_back(
     """
     page = _open(page_ctx, served + "/")
     try:
-        page.wait_for_selector("#accLab:not([hidden])", timeout=15000)
-        page.evaluate("() => { document.getElementById('accLab').open = true; }")
+        _reveal_lab(page)
         page.locator("#runLab").click()
         page.wait_for_function(
             "() => /no per-fold|F1/.test("
@@ -190,9 +205,8 @@ def test_the_fold_table_draws_the_spread_and_the_caveat(page_ctx, served):
     """
     page = _open(page_ctx, served + "/")
     try:
-        page.wait_for_selector("#accLab:not([hidden])", timeout=15000)
+        _reveal_lab(page)
         page.evaluate("""() => {
-            document.getElementById('accLab').open = true;
             paintFolds({ threshold: 0.5, n_params: 1149, per_fold: [
                 {fold: 0, f1: 0.60, recall: 0.7, precision: 0.55},
                 {fold: 1, f1: 0.70, recall: 0.8, precision: 0.62},
@@ -219,7 +233,7 @@ def test_the_panel_names_which_settings_were_measured_and_which_were_not(
     """
     page = _open(page_ctx, served + "/")
     try:
-        page.wait_for_selector("#accLab:not([hidden])", timeout=15000)
+        _reveal_lab(page)
         note = page.locator("#labWhat").text_content()
         assert "not measured from your recordings" in note
         for measured in ("duration_sec", "n_roi", "bg_rate_hz", "jitter_sec"):
@@ -240,7 +254,7 @@ def test_the_panel_offers_no_control_that_re_picks_the_threshold(page_ctx, serve
     """
     page = _open(page_ctx, served + "/")
     try:
-        page.wait_for_selector("#accLab:not([hidden])", timeout=15000)
+        _reveal_lab(page)
         controls = page.locator("#accLab .ctl").inner_html().lower()
         for offered in ("thr", "threshold", "retune", "re-tune", "calibrate"):
             assert offered not in controls, (
