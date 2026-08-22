@@ -60,6 +60,67 @@ Template:
 
 ## Active
 
+### Mac/app-notes — Tony's notes from using the app, and the review folder for them
+- **Status:** ACTIVE 2026-08-22 — **claims `<darkroom>/bugarach/2026-08-22-app-notes/`**,
+  a NEW subfolder, so it collides with nothing existing.
+- **Started:** 2026-08-21
+- **Writes:** that one darkroom subfolder, **plus one appended row** to
+  `<darkroom>/bugarach/README.md`'s "dated subfolders" table so the folder is findable
+  from the index — additive, nothing rewritten. Nothing else in `darkroom/`; nothing in
+  `constellation/`; nothing under `$BUGARACH_DATA_ROOT` (the export folder is **read**,
+  read-only, for ROI counts and one real recording's timings).
+- **Claims:** that subfolder, and the one table row. Released when the notes are done.
+- **Noticed while there:** that index table has drifted — `2026-08-20-pensub-validation/`
+  exists on disk and is not in it. Not fixed here: describing another session's folder
+  from the outside is how an index starts lying. Its owner should add a row.
+- **Why it exists:** Tony, 2026-08-22 — *"everything for my review goes into dropbox
+  darkroom bugarach"*. The figures backing each note were going to a session scratchpad
+  and reaching him only as chat attachments, which is the failure `CLAUDE.md` already
+  names: a thing built to be looked at that cannot be found again is not delivered.
+- **Doing:** the twelve notes in `docs/todo/2026-08-21-app-notes-from-use.md`. Landed so
+  far: **#201** the panel reorder and header trim (notes 5, 7, 10, 11), **#202** the
+  assess feedback, the legend and the "no detector involved" correction (1, 2, 3a, 6),
+  **#209** several detectors at once with one lane each (9). Open: 12, 8, 4, 3b.
+- **Holds `docs/site/raster_viewer.html`** on the machine-local board.
+
+### Mac/malvache-primary — file the retrieved SCE primary, correct what it disproves
+- **Status:** DONE 2026-08-22 — **claim released.**
+- **Started:** 2026-08-22
+- **Writes:** the Dropbox **darkroom** — added
+  `<darkroom>/bugarach/lit/coordination/malvache_2016_awake_reactivations.pdf` and
+  edited that folder's `README.md` (gaps section + one new entry). Nothing else.
+- **Claims:** ~~`<darkroom>/bugarach/lit/coordination/`~~ — released.
+- **Notes:** Tony supplied the paper, closing the shelf's longest-standing gap.
+  **The Report contradicts the formulation this project carries** — a **200 ms**
+  window, not 250, and *"five cells in this example"* is an example value rather
+  than a rule constant, so a fixed floor of 5 was a misread figure caption. The
+  3 SD and 1000 shuffles live in the **supplementary Materials and Methods**, a
+  separate download (`science.org/content/353/6305/1280/suppl/DC1`) that is **NOT
+  held** — the one thing still owed on this paper.
+  **Movie S1 also added** (`..._movieS1.mp4`, 27 s, 34 MB, not watched). It is a
+  *different* supplementary file and does not close the gap above; kept because it
+  is the published visual of an SCE, which bears on the human-calls todo.
+
+### Mac/cfar-primaries — fetch the CFAR primary sources onto the lit shelf
+- **Status:** DONE 2026-08-22 — merged as PR #205, **claim released**
+- **Started:** 2026-08-22
+- **Writes:** the Dropbox **darkroom** — creating `<darkroom>/bugarach/lit/radar/`
+  (3 PDFs + a README) and appending one row to `<darkroom>/bugarach/lit/README.md`'s
+  subfolder table. Nothing else in the darkroom; nothing under `$BUGARACH_DATA_ROOT`.
+- **Claims:** ~~`<darkroom>/bugarach/lit/`~~ — **released.** New subfolder, so it never
+  collided with `lit/coordination/` or `lit/DL/`.
+- **Notes:** closed the residual on `docs/detector_history.md`. The shelf now holds
+  **Finn & Johnson 1968** (CA-CFAR, read in full, free via World Radio History),
+  **Rohling 1983** (OS-CFAR, read in full) and **Weinberg 2017** (OA survey, read in
+  part), each with a read-status entry; one row was added to `lit/README.md`.
+  **Two are still owed and need a LIBRARY ORDER rather than a fetch** — Hansen &
+  Sawyers 1980 (AES-16(1) 115–118) and Gandhi & Kassam 1988 (24(4) 427–445). Both
+  citations are verified from Rohling's printed reference list; neither text is held,
+  and neither is open access.
+  ⚠ `rohling_1983_os_cfar.pdf` is a **found copy** carrying an IEEE Xplore licence
+  stamp — a reading copy, not a redistributable one. Pull a clean library copy before
+  quoting it in anything that ships.
+
 ### Mac/webapp-overnight — four webapp gaps closed, and the site republished
 - **Status:** DONE 2026-08-20 — deployed and **checked rather than assumed**;
   **claim released.**

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# vendored from syncytium2/murderboard @ 729fb06 — do NOT edit here; update upstream and re-copy.
+# vendored from syncytium2/murderboard @ f26414a — do NOT edit here; update upstream and re-copy.
 # require_commit_before_message.sh — a session may tell another session something
 # once that something exists in git.
 #
