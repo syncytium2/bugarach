@@ -60,6 +60,21 @@ Template:
 
 ## Active
 
+### Mac/malvache-primary — file the retrieved SCE primary, correct what it disproves
+- **Status:** DONE 2026-08-22 — **claim released.**
+- **Started:** 2026-08-22
+- **Writes:** the Dropbox **darkroom** — added
+  `<darkroom>/bugarach/lit/coordination/malvache_2016_awake_reactivations.pdf` and
+  edited that folder's `README.md` (gaps section + one new entry). Nothing else.
+- **Claims:** ~~`<darkroom>/bugarach/lit/coordination/`~~ — released.
+- **Notes:** Tony supplied the paper, closing the shelf's longest-standing gap.
+  **The Report contradicts the formulation this project carries** — a **200 ms**
+  window, not 250, and *"five cells in this example"* is an example value rather
+  than a rule constant, so a fixed floor of 5 was a misread figure caption. The
+  3 SD and 1000 shuffles live in the **supplementary Materials and Methods**, a
+  separate download (`science.org/content/353/6305/1280/suppl/DC1`) that is **NOT
+  held** — the one thing still owed on this paper.
+
 ### Mac/cfar-primaries — fetch the CFAR primary sources onto the lit shelf
 - **Status:** DONE 2026-08-22 — merged as PR #205, **claim released**
 - **Started:** 2026-08-22
