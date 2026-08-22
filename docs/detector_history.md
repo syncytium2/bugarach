@@ -138,15 +138,36 @@ being a novel method — no claim to defend, and none to make.
 ### Tier 3 — our constructions on common ideas
 
 **binned SCE.** Distinct-ROI coactivity per bin against a circular-shift surrogate
-percentile. The canonical rule — onsets within 250 ms exceeding 3 SD over 1000
-shuffles, minimum 5 cells — is attributed to Malvache, Cossart et al. **and it
-reached this project through a secondary description.** The literature shelf's own
-gaps section says so and says what to do: *"Get the primary before quoting it."*
-Malvache et al. 2016 is in *Science*, is not open access, and has never been
-retrieved here. Independently, the same construction turns up inside Mölter's
-assembly benchmark as a *precondition* rather than a result. The shape exists in
-at least two other places, so **interface2 can say what interface2 did; it cannot
-say whether Malvache got there first.**
+percentile. The rule was carried here as *"onsets within 250 ms exceeding 3 SD over
+1000 shuffles, minimum 5 cells"*, attributed to Malvache, Cossart et al. — and it
+had reached this project **through a secondary description**, which the literature
+shelf flagged with an instruction: *"Get the primary before quoting it."*
+
+**The primary was retrieved on 2026-08-22, and two of those four constants do not
+survive it.** Malvache et al. 2016, *Science* **353**(6305):1280–1283, now on the
+shelf as `malvache_2016_awake_reactivations.pdf`:
+
+- **The window is 200 ms, not 250.** Fig. 1A: *"summed activity of cells (over a
+  200-ms window)"*.
+- **"Five cells" is an example, not a constant.** Same caption: *"significance
+  threshold for synchronous activity detection (**five cells in this example**)"* —
+  the threshold is derived per recording, and five was its value in that one figure.
+  Carrying it as a fixed floor is a misread caption.
+- **The 3 SD and the 1000 shuffles are still unverified.** The Report gives
+  detection as *"(P < 0.01, supplementary methods)"*, and the supplement is a
+  separate download. Plausible, unread, not to be quoted yet.
+
+**On priority, the retrieval cuts against the premise rather than settling it.** The
+Report does not present SCE detection as a contribution — it is a methods step,
+deferred to the supplement in a single parenthesis. A paper introducing a canonical
+rule does not usually bury it, which weakens the idea that this is where the rule
+*originates* rather than where this project happened to meet it. That the same
+construction turns up inside Mölter's assembly benchmark as a *precondition* rather
+than a result points the same way.
+
+So the position is unchanged in shape and much better grounded: **cite this paper
+for the SCE phenomenon, which is what it establishes and what it is known for; do
+not attribute the constants to it.** interface2 can say what interface2 did.
 
 **rate+context (RateDetect).** Pooled population rate in a 1 s window minus a 60 s
 rolling context; fire where the excess clears a fixed level. Authorship is not
@@ -620,8 +641,14 @@ provenance note; 2, 4 and 5 follow from §4.
    UM's IEEE Xplore subscription should reach both directly; interlibrary loan
    otherwise. `fetch_paper.py` is deliberately not vendored here, so these are hand
    fetches.
-3. **Fetch Malvache et al. 2016 by hand.** *Science*, not open access, never
-   retrieved. Settles SCE. `fetch_paper.py` is deliberately not vendored here.
+3. ~~**Fetch Malvache et al. 2016 by hand.**~~ **Done 2026-08-22**, from Tony's own
+   copy, and it was the highest-value fetch of the three: **two of the four constants
+   this project attributes to it are wrong** (§2). What remains is narrower and now
+   named — the **supplementary Materials and Methods**, a separate download at
+   `science.org/content/353/6305/1280/suppl/DC1`, which is where the detection rule
+   proper lives and where the 3 SD and 1000 shuffles would be confirmed or struck.
+   Not urgent, because the correct move meanwhile is to stop quoting the constants
+   at all rather than to quote better ones.
 4. **Soften the "empty cell" sentence in the manuscript** — §2.2 and the abstract.
    **No longer pending: (2) is done and the sentence is now the exposed one.** The
    claim that the distinct-ROI × rate-local cell "was empty" is defensible only
@@ -658,8 +685,11 @@ SPIKE-synch's accuracy, and that number measures a degenerate sweep.
 - `interface2:docs/handoffs/coordination.md` (2026-08-05) — the calibrated
   per-stream MATLAB F1 table, its PROVISIONAL marking, and the weak-optimum and
   grid-edge caveats §6 leans on.
-- `<darkroom>/bugarach/lit/coordination/README.md` (2026-08-17) — the prior-art
-  shelf, its read-status discipline, and the SCE-primary gap.
+- `<darkroom>/bugarach/lit/coordination/README.md` (2026-08-17, updated 2026-08-22)
+  — the prior-art shelf and its read-status discipline. The SCE-primary gap it
+  recorded is now closed: `malvache_2016_awake_reactivations.pdf`, *Science*
+  353(6305):1280–1283. Every Malvache quotation in §2 is from that PDF; the
+  supplementary methods are still outstanding and the entry says so.
 - `<darkroom>/bugarach/lit/radar/README.md` (2026-08-22) — the CFAR shelf built to
   close §7.2, with read status per work and the two outstanding library orders.
   Every radar quotation in this document is from a PDF on that shelf.
