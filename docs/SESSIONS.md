@@ -61,16 +61,24 @@ Template:
 ## Active
 
 ### Mac/cfar-primaries — fetch the CFAR primary sources onto the lit shelf
-- **Status:** ACTIVE
+- **Status:** DONE 2026-08-22 — merged as PR #205, **claim released**
 - **Started:** 2026-08-22
 - **Writes:** the Dropbox **darkroom** — creating `<darkroom>/bugarach/lit/radar/`
   (3 PDFs + a README) and appending one row to `<darkroom>/bugarach/lit/README.md`'s
   subfolder table. Nothing else in the darkroom; nothing under `$BUGARACH_DATA_ROOT`.
-- **Claims:** `<darkroom>/bugarach/lit/` for the duration. New subfolder, so no
-  collision with `lit/coordination/` or `lit/DL/`.
-- **Notes:** closes the residual on `docs/detector_history.md`, whose radar attributions
-  shipped flagged unverified. Two of four are now read in full; two are verified
-  bibliographically but need a library order for the text.
+- **Claims:** ~~`<darkroom>/bugarach/lit/`~~ — **released.** New subfolder, so it never
+  collided with `lit/coordination/` or `lit/DL/`.
+- **Notes:** closed the residual on `docs/detector_history.md`. The shelf now holds
+  **Finn & Johnson 1968** (CA-CFAR, read in full, free via World Radio History),
+  **Rohling 1983** (OS-CFAR, read in full) and **Weinberg 2017** (OA survey, read in
+  part), each with a read-status entry; one row was added to `lit/README.md`.
+  **Two are still owed and need a LIBRARY ORDER rather than a fetch** — Hansen &
+  Sawyers 1980 (AES-16(1) 115–118) and Gandhi & Kassam 1988 (24(4) 427–445). Both
+  citations are verified from Rohling's printed reference list; neither text is held,
+  and neither is open access.
+  ⚠ `rohling_1983_os_cfar.pdf` is a **found copy** carrying an IEEE Xplore licence
+  stamp — a reading copy, not a redistributable one. Pull a clean library copy before
+  quoting it in anything that ships.
 
 ### Mac/webapp-overnight — four webapp gaps closed, and the site republished
 - **Status:** DONE 2026-08-20 — deployed and **checked rather than assumed**;
