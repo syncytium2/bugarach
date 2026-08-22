@@ -16,8 +16,6 @@ channel of onset times per ROI.
 
 ![a real baseline recording above the generator asked to imitate it](generator/reality_check.png)
 
-> ⚠ **This figure predates the convention below and is pending a rebuild.** Every other raster in this project draws each onset identically; this one still inks the onsets inside a window LoCo called, and its own caption says so. It is the only figure here that cannot be re-rendered without the real archive. See [`docs/todo/2026-08-18-reality-check-figure-predates-the-uniform-raster.md`](todo/2026-08-18-reality-check-figure-predates-the-uniform-raster.md).
-
 Top is a real recording. Bottom is the generator given its ROI count, its
 duration and its per-ROI rate, with events planted at the measured participation
 and jitter. Same detector, same settings, on both.
@@ -586,8 +584,12 @@ python tools/make_generator_figures.py --param jitter_sec --out docs/generator
   window, and for five of the six a participant count. Worse for these pages, the
   ink in the knob sweeps was located by the **ground truth**, so a setting that
   planted something no detector could recover still produced tidy inked columns.
-  Every onset now draws the same (Tony, 2026-08-18). One figure still shows the
-  old convention: `reality_check.png`, which needs the real archive to rebuild.
+  Every onset now draws the same (Tony, 2026-08-18). `reality_check.png` held out
+  longest — it is the one figure here that cannot be drawn without a real
+  recording — and was rebuilt on 2026-08-22, the same day Tony opened the site and
+  found it still carrying the old ink. Its detections moved to a lane above each
+  raster at the same time, which is the other half of the same rule: the recording
+  below, what a detector made of it above.
 
 - **TTX is not a silencing control.** An earlier version treated a TTX-rate
   recording as an empirical null on the premise that blocked action potentials

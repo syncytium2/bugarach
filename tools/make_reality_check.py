@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Put a real baseline recording next to what the generator makes.
 
-    python tools/make_reality_check.py --out docs/generator
+    python tools/make_reality_check.py --folder <export folder> --out docs/generator
 
 The one figure this project's synthetic-data story most needed and did not have.
 Everything else in `docs/generator.md` argues about parameters; this shows the
@@ -15,8 +15,12 @@ and its raster can sit in a public repo (Tony, 2026-08-14). Four slices in the
 archive qualify; the default is the one whose per-ROI rate lands nearest the
 measured baseline median, which is also the rate the generator is calibrated to.
 
-Needs `$BUGARACH_DATA_ROOT`; without it the script says so and writes nothing,
-because real stores are machine-local (FOUNDATIONS §5) and guessing a path is
+Needs `--folder`, an export folder (`docs/export_folder_spec.md`); without one the
+script says so and writes nothing. It used to read a `.mat` store, and this line
+used to say `$BUGARACH_DATA_ROOT` — a store holds every recording ever processed,
+including the ones the lab withdrew, and this is the one figure here that gets
+published. The folder is the corpus, and its `PROVENANCE.md` says what was left
+out. Export folders are machine-local (FOUNDATIONS §5), so guessing a path is
 worse than not drawing.
 """
 
@@ -31,7 +35,6 @@ from pathlib import Path
 import numpy as np
 
 DEFAULT_SLICE = "20240813_39"
-ARCHIVE = "processed_archive/event_store_onset_revised_2v"
 
 
 def _window(stream, lo, hi):
@@ -62,7 +65,7 @@ def build(args):
     from bugarach.io import load_folder, slice_from_events
     from bugarach.simulate import simulate_coordination
     from bugarach.ui.app import _time_axis_hook
-    from bugarach.ui.diagnostic import raster_panel
+    from bugarach.ui.diagnostic import lane_panel, raster_panel
 
     if not args.folder:
         raise SystemExit(
@@ -132,24 +135,29 @@ def build(args):
     rows = []
     for label, sl in series:
         d = det[label]
-        panel = raster_panel(sl.streams["events"], ext=ext,
-                             name=label, width=args.width, height=250)
-        # LoCo's calls, marked the same way in both panels — the comparison the
-        # figure exists to make is "does a detector behave the same on each".
-        if d.onset_sec.size:
-            panel = panel * hv.Scatter(
-                (d.onset_sec, np.full(d.onset_sec.size, n_roi - 0.6)),
-                kdims=["t"], vdims=["roi"]).opts(
-                marker="diamond", size=9, color="#7b4a9c", alpha=0.95)
+        # WHAT A DETECTOR MADE OF THE RECORDING RIDES IN A LANE ABOVE IT, never
+        # on it. Drawn into the raster the marks land on the busiest ROI rows and
+        # cover them; worse, sitting among the onsets they invite the reader to
+        # take the ones beneath as the events LoCo recruited, which is a
+        # per-onset claim LoCo does not make. This is the convention the
+        # six-detector figure and the viewer already hold to — the recording
+        # below, the reading above — and this figure was the last one out of step
+        # with it (Tony, opening the site, 2026-08-22).
+        #
         # Planted truth exists in every generated panel and in none of the real
         # one — and each panel gets ITS OWN, because the two generated runs do
-        # not share a schedule.
+        # not share a schedule. `lane_panel` drops the "planted" row when there is
+        # no truth to draw, so the real panel gets a LoCo lane and nothing else.
         own = truth.get(label)
-        if own is not None and len(own.times):
-            panel = panel * hv.Scatter(
-                (own.times, np.full(own.times.size, n_roi - 2.4)),
-                kdims=["t"], vdims=["roi"]).opts(
-                marker="triangle", size=8, color="#1b7f3b", alpha=0.95)
+        # A SPAN, NOT A POINT: LoCo reports a window, and the diamond marking its
+        # onset alone was all that remained of the extent once the inked onsets
+        # went. `lane_panel` draws `onset → onset + width`, which is what the
+        # detector actually returns.
+        rows.append(lane_panel({"loco": (d.onset_sec,
+                                         getattr(d, "width_sec", None))},
+                               ext=ext, gt=own, width=args.width))
+        panel = raster_panel(sl.streams["events"], ext=ext,
+                             name=label, width=args.width, height=250)
         # Keep this SHORT. The bottom panel spends part of its 250 px on an
         # x-axis the top one does not have, so its rotated y-label has less room
         # to run in and a long string is clipped with no error — the figure read
@@ -191,12 +199,18 @@ def build(args):
         + f'same ROI count, duration and per-ROI rate '
         f'({rate*1000:.1f} mHz), with events planted at the measured '
         f'participation and jitter.<br>'
-        f'<span style="color:#7b4a9c">◆</span> LoCo\'s coordinated-event calls, '
-        f'the same detector and settings on both · '
-        f'<span style="color:#1b7f3b">▲</span> planted truth, which exists only '
-        f'below. Every raster onset is drawn the same; each ◆ marks the ONSET '
-        f'of a LoCo call, and the extent of the window it called is not '
-        f'drawn.<br>'
+        f'Each raster carries a lane above it, and nothing is drawn on the '
+        f'raster itself: every onset is the same mark, whatever a detector made '
+        f'of it. '
+        f'<span style="color:#8c564b">▮</span> <b>LoCo</b> — one bar per '
+        f'coordinated-event call, same detector and settings on both. The bar '
+        f'spans the window called; these run under a second, which is thinner '
+        f'than a pixel at 30 minutes across, so they are drawn at a minimum '
+        f'visible width. '
+        f'<span style="color:#1b7f3b">▲</span> <b>planted</b> — the truth, '
+        f'which exists only below; <span style="color:#b3261e">▼</span> is one '
+        f'LoCo did not call and <span style="color:#b3261e">✕</span> a call '
+        f'with nothing planted within 1.5 s.<br>'
         f'<span style="color:#555">LoCo finds <b>{det["real"].onset_sec.size}</b> '
         f'in the real recording and <b>{det["synthetic"].onset_sec.size}</b> in '
         f'the generated one, where <b>{len(gt.times)}</b> were planted.</span>'

@@ -1,9 +1,30 @@
 ---
-status: open
+status: done
 filed: 2026-08-18
+closed: 2026-08-22
 ---
 
 # The one real-data figure still grades its own raster
+
+> **Closed 2026-08-22, by Tony opening the site and saying so.** He asked for the
+> markers above the rasters and for the rasters to stop being bold, which is this
+> item and the one thing it had not asked for. Both are done. The store was never
+> the obstacle it is described as below: `data_root()` learned to find the corpus
+> beside the darkroom, and the figure now reads an **export folder** anyway, so
+> the render took seven seconds on the Mac.
+>
+> What shipped: LoCo's calls and the planted truth moved out of the raster and
+> into a `lane_panel` above it — the same lane the six-detector figure and the
+> viewer use — so the diamonds no longer sit on the top ROI rows, and a call is
+> drawn as a span rather than as its onset alone. Both rasters draw every onset
+> identically. `docs/generator/reality_check.png` was re-rendered from
+> `2026-08-18_revised_2v_periods`, and `docs/generator.md` lost the ⚠ notice that
+> stood over the figure.
+>
+> One honesty note the rebuild forced into the caption: LoCo's windows here run
+> 0.2–0.7 s, which is under a pixel at thirty minutes across, so the bars are
+> drawn at a minimum visible width and the caption says so. The extent is now
+> *reported*; it is still not legible at this zoom, and only a zoom would fix it.
 
 `docs/generator/reality_check.png` is the figure that puts a real baseline
 recording above the generator's imitation of it, and it is published in four

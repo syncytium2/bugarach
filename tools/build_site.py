@@ -284,9 +284,11 @@ LEAD_FIGURE = """<figure class="lead">
 # image itself, so quoting them in the caption cannot drift away from the figure.
 LEAD_REAL = """<figure class="lead">
   <img src="reality.png" width="{w}" height="{h}"
-       alt="Two rasters stacked. Top, a real recording: most rows nearly empty,
-            a few dense, activity arriving in bursts. Bottom, the generated
-            imitation: events spread evenly across every row and all 30 minutes.">
+       alt="Two rasters stacked, each with a lane above it carrying LoCo's calls.
+            Top, a real recording: most rows nearly empty, a few dense, activity
+            arriving in bursts. Bottom, the generated imitation: events spread
+            evenly across every row and all 30 minutes, with the planted events
+            marked in its lane.">
   <figcaption><b>The match is in the numbers, not in the shape.</b> The ROI
   count, the duration, the per-ROI rate, the participation and the jitter are
   the same above and below. The texture is not: a real field has a few ROIs
