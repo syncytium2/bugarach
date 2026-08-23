@@ -87,8 +87,8 @@ Template:
   Cloudflare beacon injection on 2026-08-18 was conditional on looking like a browser.
 
 ### Mac/app-notes — Tony's notes from using the app, and the review folder for them
-- **Status:** ACTIVE 2026-08-22 — **claims `<darkroom>/bugarach/2026-08-22-app-notes/`**,
-  a NEW subfolder, so it collides with nothing existing.
+- **Status:** DONE 2026-08-22 — **claim released.** `<darkroom>/bugarach/2026-08-22-app-notes/`
+  is written and indexed; nothing there is being regenerated.
 - **Started:** 2026-08-21
 - **Writes:** that one darkroom subfolder, **plus one appended row** to
   `<darkroom>/bugarach/README.md`'s "dated subfolders" table so the folder is findable
@@ -103,6 +103,10 @@ Template:
   darkroom bugarach"*. The figures backing each note were going to a session scratchpad
   and reaching him only as chat attachments, which is the failure `CLAUDE.md` already
   names: a thing built to be looked at that cannot be found again is not delivered.
+- **Left for whoever picks this up:** four notes (12, 8, 4, 3b) and, more importantly,
+  `docs/todo/2026-08-22-the-case-for-revising-the-detectors.md` — six observations that
+  the operating points were fitted on a flat field while real fields are not. Its item A
+  is a fork that decides whether the rest is one campaign or three patches.
 - **Doing:** the twelve notes in `docs/todo/2026-08-21-app-notes-from-use.md`. Landed so
   far: **#201** the panel reorder and header trim (notes 5, 7, 10, 11), **#202** the
   assess feedback, the legend and the "no detector involved" correction (1, 2, 3a, 6),
