@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""How strong must a cell assembly be before this corpus could see it?
+"""How strong must a cell assembly be before these recordings could show it?
 
     python tools/assembly_power.py --numbers-only     # the table
     python tools/assembly_power.py --out DIR          # + figure
@@ -9,7 +9,7 @@ Figure id `assembly_power`, the same on every machine.
 **Why this runs before the measurement.** `docs/todo/2026-08-18-do-real-slices-
 have-recurring-assemblies.md` asks whether the same cells recur across coordinated
 events in the 85 baseline recordings. A negative answer is only worth publishing
-if a positive one was reachable, and the corpus geometry is thin: the derived
+if a positive one was reachable, and the folder's geometry is thin: the derived
 spec (`docs/learned/generator_spec.json`, medians over all 85 slices) gives the
 median slice **32 ROIs** and, at K=3, **0.35 clusters/min over a 3525 s window ~
 21 clusters** of **4.5 participants**. That is ~206 co-participation observations
@@ -33,7 +33,7 @@ below measures.
 **Two statistics, so a null result cannot be blamed on one bad choice.** Pair-count
 dispersion (variance of the co-participation counts) and the leading eigenvalue of
 the ROI correlation matrix, which is the classical assembly instrument. Power is
-reported for both; the better one is the corpus's best case, not the average case.
+reported for both; the better one is the folder's best case, not the average case.
 
 **The positive control is the point of the strength=1.0 column.** There every
 event draws from the assembly, so a test that cannot fire there is broken rather
@@ -88,7 +88,7 @@ def _sizes(rng, n_events: int, part: float, n_roi: int) -> np.ndarray:
 
     The spec records a median participant count, not a distribution. Splitting
     the fractional part between the two neighbouring integers reproduces that
-    median without inventing a spread the corpus has not been measured for.
+    median without inventing a spread the recordings have not been measured for.
     """
     lo = int(np.floor(part))
     frac = part - lo
@@ -127,7 +127,7 @@ def simulate_slice(rng, n_roi: int, n_events: int, part: float,
 # ---- the statistics and both nulls come from the package -------------------
 #
 # Deliberately NOT re-implemented here. The whole value of this power curve is
-# that it validates the instrument the corpus will actually be measured with; a
+# that it validates the instrument the recordings will actually be measured with; a
 # second copy would let the two drift and quietly invalidate the curve.
 from bugarach.assembly import (          # noqa: E402
     stat_dispersion, stat_eigen, pvalues_margin, pvalues_uniform,
@@ -264,7 +264,7 @@ def powers_verdict(cell: dict, geo: dict) -> dict:
 
     `power` is the fraction of simulated recordings the instrument called
     something other than `no-assembly` — the quantity a reader needs to know
-    before believing a `no-assembly` tally from the real corpus. The breakdown
+    before believing a `no-assembly` tally from the real recordings. The breakdown
     is reported alongside because *which* word it fires with is itself
     interpretable: at high assembly strength the double-margin null goes blind
     and the verdict degrades to `uniform-only`, which is the documented failure
@@ -280,9 +280,9 @@ def powers_verdict(cell: dict, geo: dict) -> dict:
     }
 
 
-# ---- the corpus's own geometry, not the median slice ------------------------
+# ---- the folder's own geometry, not the median slice ------------------------
 
-def corpus_geometry(path: Path, k: int = 3, stream: str | None = None) -> list[dict]:
+def folder_geometry(path: Path, k: int = 3, stream: str | None = None) -> list[dict]:
     """Per-recording geometry read from an `assess_archive.py` assessment.
 
     The median slice is enough to *size* the test and is what the tables above
@@ -314,11 +314,11 @@ def corpus_geometry(path: Path, k: int = 3, stream: str | None = None) -> list[d
     return out
 
 
-def sweep_corpus(geos: list[dict], sizes, strengths, n_surr: int,
+def sweep_folder(geos: list[dict], sizes, strengths, n_surr: int,
                  seed: int = 7) -> dict:
     """The grid run at each real recording's OWN geometry, one slice each.
 
-    So `verdict_power` below is the fraction of *this corpus's actual
+    So `verdict_power` below is the fraction of *this folder's actual
     recordings* at which an assembly of that size and strength would have been
     found — not the fraction of hypothetical median slices.
     """
@@ -349,7 +349,7 @@ def sweep_corpus(geos: list[dict], sizes, strengths, n_surr: int,
     return out
 
 
-def powers_verdict_corpus(cell) -> dict:
+def powers_verdict_folder(cell) -> dict:
     """`powers_verdict` where every simulated recording has its own geometry."""
     arrs, per_slice, n_too_small = cell
     words = []
@@ -403,7 +403,7 @@ def build(rows, geo, sizes, strengths, width: int):
     header = (
         '<div style="font:13px/1.6 system-ui,sans-serif;color:#222;'
         'max-width:1240px">'
-        '<b>How strong an assembly would have to be before this corpus could '
+        '<b>How strong an assembly would have to be before these recordings could '
         'see it</b><br>'
         f'Median baseline slice from the derived spec: <b>{geo["n_roi"]} ROIs</b>, '
         f'<b>{geo["n_events"]} clusters</b> at K={geo["k"]} over '
@@ -506,31 +506,31 @@ def main(argv=None):
                    help="with --geometry-from: restrict to this stream (fast|slow)")
     p.add_argument("--verdict-only", action="store_true",
                    help="with --geometry-from: skip the median-slice grid and "
-                        "write only the corpus-geometry verdict curve")
+                        "write only the folder-geometry verdict curve")
     p.add_argument("--no-png", dest="png", action="store_false", default=True)
     args = p.parse_args(argv)
 
     geo = geometry(k=args.k)
 
-    # ---- step 1 of the assembly handoff: the corpus's own geometry, scored by
-    # the rule the corpus is actually scored by. Reported and returned before
+    # ---- step 1 of the assembly handoff: the folder's own geometry, scored by
+    # the rule the folder is actually scored by. Reported and returned before
     # the median-slice grid below, because this is the one a negative rests on.
     verdict_rows = None
     if args.geometry_from:
-        geos = corpus_geometry(Path(args.geometry_from), k=int(geo["k"]),
+        geos = folder_geometry(Path(args.geometry_from), k=int(geo["k"]),
                                stream=args.stream)
         if not geos:
             print(f"no testable recordings at K={geo['k']} in "
                   f"{args.geometry_from}", file=sys.stderr)
             return 1
-        cres = sweep_corpus(geos, args.sizes, args.strengths, args.surrogates,
+        cres = sweep_folder(geos, args.sizes, args.strengths, args.surrogates,
                             seed=args.seed)
-        verdict_rows = [dict(A=A, strength=s_, **powers_verdict_corpus(cres[(A, s_)]))
+        verdict_rows = [dict(A=A, strength=s_, **powers_verdict_folder(cres[(A, s_)]))
                         for A in args.sizes for s_ in args.strengths]
         nr = sorted(g["n_roi"] for g in geos)
         ne = sorted(g["n_events"] for g in geos)
         mid = len(geos) // 2
-        print(f"corpus geometry: {len(geos)} testable recordings"
+        print(f"folder geometry: {len(geos)} testable recordings"
               + (f" (stream {args.stream})" if args.stream else "")
               + f" at K={geo['k']}")
         print(f"  ROIs     median {nr[mid]}  range {nr[0]}-{nr[-1]}")

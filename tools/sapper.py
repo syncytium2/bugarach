@@ -68,7 +68,8 @@ RULES = [
         id="SAP003", level="BLOCK",
         pattern=r"^\s*(import|from)\s+pyspike",
         include=["src/bugarach/**"], exclude=[],
-        message="PySpike 0.9.0's max_tau cap is broken (see detectors/sync.py)"
+        message="PySpike's max_tau cap has been broken since 0.8.0"
+                " (see detectors/sync.py)"
                 " — PySpike is a TEST-ONLY cross-check in the uncapped regime,"
                 " never a runtime dependency.",
         fixture_bad="import pyspike",
@@ -162,7 +163,7 @@ RULES = [
                  # should exist at all is the open question in the todo.
                  "tools/assess_archive.py"],
         message="Analysis must read the EXPORT FOLDER, never a .mat store. The "
-                "folder is the corpus the lab approved: the exporter honours "
+                "folder is what the lab approved: the exporter honours "
                 "db4's `exclude` flag, drops what was withdrawn, and records it "
                 "in PROVENANCE.md. A store carries every recording ever "
                 "processed and cannot say which are usable. On 2026-08-20 two "

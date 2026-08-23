@@ -5,7 +5,7 @@
 
    Two pure functions, no DOM and no state. They are the half of
    `tools/fair_bakeoff.py` that makes a number on screen mean something: divide
-   the corpus once, fit on the training folds, and report what came back from
+   the data set once, fit on the training folds, and report what came back from
    the fold nothing was fitted on.
 
    Without them the page sweeps one detector's one knob on one recording and
@@ -30,7 +30,7 @@
    SCE reads precision 0.91 one way and 0.11 the other. */
 
 
-/* ---- the corpus, divided once ------------------------------------------- */
+/* ---- the data set, divided once ----------------------------------------- */
 
 /* A fold split is worth something only if it is the SAME split for everyone
    being compared. Derive it here and pass it around; deriving it twice invites
@@ -51,7 +51,7 @@ function foldSplit({ nFolds = 4, seedsPerFold = 3, baseSeed = 1000 } = {}) {
   if (!Number.isInteger(seedsPerFold) || seedsPerFold < 1)
     throw new Error(`seedsPerFold=${seedsPerFold} makes an empty fold`);
   if (!Number.isInteger(baseSeed))
-    throw new Error(`baseSeed=${baseSeed} is not an integer, so the corpus ` +
+    throw new Error(`baseSeed=${baseSeed} is not an integer, so the data set ` +
                     `it names is not reproducible`);
 
   const seeds = [];
@@ -64,7 +64,7 @@ function foldSplit({ nFolds = 4, seedsPerFold = 3, baseSeed = 1000 } = {}) {
   const foldOf = (seed) => {
     const i = seed - baseSeed;
     if (!Number.isInteger(i) || i < 0 || i >= seeds.length)
-      throw new Error(`seed ${seed} is not in this corpus ` +
+      throw new Error(`seed ${seed} is not in this data set ` +
                       `(${baseSeed}..${baseSeed + seeds.length - 1})`);
     return Math.floor(i / seedsPerFold);
   };
@@ -91,7 +91,7 @@ function foldSplit({ nFolds = 4, seedsPerFold = 3, baseSeed = 1000 } = {}) {
 
    `scores` are the objects the page's `scoreDetections` returns — nPlanted,
    nDetected, nHit, nFa, byFrac — plus, where a probe exists, hotFa and
-   distractorHits. Anything scored against this corpus pools through here,
+   distractorHits. Anything scored against this data set pools through here,
    including a learned model or a one-off candidate. That is the point of it
    being a function. */
 function poolScores(scores, { detector, regime, seeds = [], knobValue = null,

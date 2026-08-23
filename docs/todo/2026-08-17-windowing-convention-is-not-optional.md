@@ -5,6 +5,48 @@ filed: 2026-08-17
 
 # This project's windowing convention is applied to everybody's data, and cannot be turned off
 
+> **Settled for detection, 2026-08-23.** The default is fixed where it was doing
+> the damage. `bugarach detect <folder>` settles a recording's windows before any
+> detector sees it: the producer's `analysis_*` where the folder states them, and
+> **the raw period bounds verbatim where it does not** — no wash-in delay, no cap,
+> no backward-measured baseline, no `"hi"` substring, and no HALT on a baseline
+> beginning at 500 s or a gap after it. That is option 2 below, resolved the way
+> FOUNDATIONS §4 always said it should be: the store path derives, the folder path
+> does not, and the folder no longer falls *through* into the store path.
+> `region_windows` is unchanged and still halts on the data it was written for;
+> `tests/test_detect_folder.py` asserts both halves on the same folder, because
+> either one alone is the bug.
+>
+> **Two fall-throughs remain, and they are why this stays open.** `bugarach check`
+> runs `effective_region_windows` on every recording (`conform.py:163`), so a legal
+> foreign folder with no analysis windows still **fails at the door** even though
+> detection would now score it happily. And `assess_coactivity`'s `window=None`
+> path still derives (`assess.py:267`) — right for the `.mat` store it is
+> parity-tested against, wrong for a folder. Nothing is wrong today, because
+> `assess_folder` passes explicit windows and never takes that path; the trap is
+> live for the next caller. Both belong to a lane that owns `conform.py`.
+
+> **The door agrees now, 2026-08-23 (appended by the `conform.py` lane).** The first
+> of those two fall-throughs is closed. `bugarach check` no longer derives windows of
+> its own — it calls `detect_folder.folder_analysis_windows`, the **same** function
+> `bugarach detect` calls, so the pair can no longer reach different verdicts about
+> one folder. The synthetic case in the block above — baseline at 500 s, a gap after
+> it — went from `NOT CONFORMING` plus 212 detections on the same run to `CONFORMING`
+> plus 212 detections. Both real export folders: 84 of 84 conforming, 84 of 84 scored,
+> nothing skipped.
+>
+> Patching one call site restores agreement and does not keep it, so the durable half
+> is `tests/test_check_detect_agree.py`: fourteen folders — eight legal, six wrong
+> under anybody's protocol — through both public entry points, asserting the same
+> verdict per recording **and the same reason for a refusal**, plus an AST check that
+> `conform.py` names no window function at all. A second copy fails the suite rather
+> than shipping.
+>
+> **Still open, and unchanged:** `assess_coactivity`'s `window=None` path
+> (`assess.py`) still derives. Nothing reaches it today; it is the next caller's trap,
+> and it belongs to a lane that owns `assess.py`. That is the only reason this todo is
+> not closed.
+
 The import contract asks any lab for raw region bounds, and then
 `region_windows` ([`src/bugarach/detectors/loco.py`](../../src/bugarach/detectors/loco.py))
 applies **aCa5z's** convention to them with no way to decline:

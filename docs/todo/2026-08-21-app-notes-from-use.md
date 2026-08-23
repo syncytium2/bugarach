@@ -117,7 +117,7 @@ each end:
 **Tony's instinct is right about the effect and slightly off about the cause.**
 Recordings with ≤10 ROIs are **2 of 84 (2%)** — 9 and 10 ROIs, `20241004_80` and
 `20260707_346`. The problem is not those two; it is that K is an absolute count
-across a corpus whose field size varies 7-fold, so *"coordination at K=8"* is a
+across a folder whose field size varies 7-fold, so *"coordination at K=8"* is a
 claim about a quarter of the field in one recording and nearly all of it in
 another. That bites at the median too.
 
@@ -213,7 +213,7 @@ becomes, it should say whose periods it is showing.
 
 **Every recording in the current export has a region labelled `baseline`** (84 of
 84), so the "first region if not called baseline" fallback is for other labs
-rather than for this corpus. Worth keeping anyway: `isBaselineLabel`
+rather than for this folder. Worth keeping anyway: `isBaselineLabel`
 ([:3183](../site/raster_viewer.html)) matches on a token prefix, so a lab whose
 baseline is called something else already falls through it.
 
@@ -340,7 +340,7 @@ jumping backwards past the panel the reader just used.
 `bugarach assess my_export/`: it walks the folder, measures every recording's
 baseline region, and prints the scan as a table. It landed 2026-08-18 and the
 browser never got it, which is why the page still assesses one recording at a
-time while the CLI assesses a corpus.
+time while the CLI assesses a folder.
 
 It also already carries the three rules the browser would otherwise have to
 re-derive, and getting any of them wrong is the kind of error this repo files
@@ -357,9 +357,9 @@ already decided that treatments are skipped and *said how many*, which is the
 behaviour the per-recording selector is being asked for.
 
 **What it is worth beyond convenience.** The webapp's completion plan calls this
-Phase 2, *"a corpus, not a recording"*, and the reason is not batching: the
+Phase 2, *"a data set, not a recording"*, and the reason is not batching: the
 generator is parameterised from **one** recording's measurement today, so the
-simulated corpus inherits whichever recording happened to be on screen. A folder
+simulated data set inherits whichever recording happened to be on screen. A folder
 assessment is what makes "typical of this lab" a measurable statement rather than
 a choice of file.
 
@@ -367,7 +367,7 @@ a choice of file.
 1,000 surrogates — so 84 recordings is roughly **15 seconds**, single-threaded, in
 the page. That is genuinely a progress-bar job, unlike note 6.
 
-**Open:** whether the folder assessment feeds the simulator directly (a corpus
+**Open:** whether the folder assessment feeds the simulator directly (a data set
 median rather than one recording's numbers), which is a real change to what the
 accept step means and is Tony's call, not a port detail.
 
@@ -518,7 +518,7 @@ and each reorder re-tests the same accordion behaviour.
 
 **Today the page offers one or six and nothing between.** `runTune` sweeps
 `whichDetector()` — a single detector, borrowed from the Detect panel's chooser.
-`scoreAllDetectors` sweeps all six on one corpus and one fold split. A subset is
+`scoreAllDetectors` sweeps all six on one data set and one fold split. A subset is
 not expressible.
 
 ### This is a merge, not a new feature
@@ -532,7 +532,7 @@ expensive.
 
 ### The timings argue for it harder than preference does
 
-Measured on the scoreboard run, fit seconds per detector over the same corpus:
+Measured on the scoreboard run, fit seconds per detector over the same data set:
 
 | detector | fit | detect |
 |---|---|---|
@@ -545,7 +545,7 @@ Measured on the scoreboard run, fit seconds per detector over the same corpus:
 
 Two detectors are **97% of the wall clock**. Deselecting them is not a
 convenience, it is the difference between a sweep that returns while you are
-looking at it and one you wait out. On a bigger corpus, or the folder assessment
+looking at it and one you wait out. On a bigger data set, or the folder assessment
 of note 8, that gap grows with the work.
 
 ### Who actually wrote the six — corrected by Tony, 2026-08-21

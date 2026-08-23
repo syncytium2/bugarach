@@ -209,7 +209,7 @@ def build_tube(*, n_scales=4, width=8, depth=6, max_center_frames=128,
     runs to the end of its range the model is telling you the range was wrong.
 
     ``max_ratio`` caps how much wider the surround may be than the centre, and it
-    is a **parameter rather than a constant** because a fit on the corpus put one
+    is a **parameter rather than a constant** because a fit on the training data put one
     of the four ratios at 38 against a ceiling of 40 — which by the rule above is
     the search reporting that the range was wrong, not an answer. Raising it is
     how that gets tested; the default is the value everything published so far

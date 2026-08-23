@@ -396,7 +396,7 @@ bench regimes are the interquartile spread of the untreated flavour itself —
 0.0052 Hz/ROI at p25 and 0.0190 at p75, around a median of 0.0102. Untreated
 slices vary 3.7-fold among themselves, and that variation is the axis an
 operating point has to survive. Re-derived 2026-08-20 from the export folder,
-the corpus the lab approved; the previous endpoints (0.0038 / 0.0175, a 4.6-fold
+the export folder the lab approved; the previous endpoints (0.0038 / 0.0175, a 4.6-fold
 span) were fitted against the `.mat` store, which carries every recording ever
 processed including the two the lab withdrew.
 

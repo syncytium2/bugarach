@@ -10,7 +10,7 @@
 > requirement; that one is how it gets built.
 >
 > **This is the WEBSITE track.** The model track — refining the detectors, the seed
-> gap, the rate ceiling, a second corpus — is [`docs/model_track.md`](model_track.md),
+> gap, the rate ceiling, a second data set — is [`docs/model_track.md`](model_track.md),
 > and the two are deliberately separated: Tony, 2026-08-18, *"separate out the two main
 > tasks (model and website)"*. Nothing here waits on a model result, and nothing there
 > blocks a screen.
@@ -37,7 +37,7 @@ tries to read `regions.csv` as a recording and raises.
 |---|---|---|---|
 | 1 | **Import** | ⚠ half — reads a folder, wrong unit | one slice object per slice id, with regions, streams and the frame interval attached |
 | 2 | **Assess** | ✅ library, no UI | participation, jitter, cluster rate, background — plus the K scan, unchosen |
-| 3 | **Simulate** | ✅ library, no UI | a corpus with planted truth, split into folds |
+| 3 | **Simulate** | ✅ library, no UI | a data set with planted truth, split into folds |
 | 4 | **Train & optimize** | ✅ library, no UI | for each of 9 detectors: a fitted knob or a trained model + threshold |
 | 5 | **Display detection** | ⚠ raster only | detections on the existing lanes, per detector, per slice |
 | 6 | **Output** | ❌ nothing | the contract below |
@@ -92,7 +92,7 @@ about the *pipeline*, and they hold whatever the columns are called:
 
 **Sidecar** (`run.json`), because a table of times with no provenance is unusable in
 six months: the generator spec, the chosen K, each detector's fitted knob or threshold,
-the corpus seeds, the code version, and the frame interval per slice.
+the seeds, the code version, and the frame interval per slice.
 
 ## Build order, and why this one
 
@@ -140,7 +140,7 @@ they finish together. Two consequences for the design:
 
 ## How we will know it works
 
-The corpus in `docs/learned/` has published numbers. **Point the app at a generated
-corpus and its exported table must agree with `bakeoff.json`** — same detections, same
+The data set in `docs/learned/` has published numbers. **Point the app at a generated
+data set and its exported table must agree with `bakeoff.json`** — same detections, same
 counts. If it disagrees, the app is wrong, and that check exists on day one rather than
 after the UI is built.

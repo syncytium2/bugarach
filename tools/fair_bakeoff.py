@@ -9,7 +9,7 @@ Every complaint the 2026-08-16 murderboard made about the previous comparison wa
 a fairness complaint, and each one is answered by construction here rather than by
 a caveat in the prose.
 
-**One corpus.** Every detector sees recordings generated from one spec at one set
+**One data set.** Every detector sees recordings generated from one spec at one set
 of seeds. Nothing is tuned on one distribution and scored on another.
 
 **One selection procedure.** Each detector — hand-written or learned — gets its
@@ -87,13 +87,13 @@ def run(spec: dict, *, folds: int, seeds_per_fold: int, quick: bool) -> dict:
     from bugarach.learn.train import train
     from bugarach.score import score_stream
 
-    # ---- the corpus: one set of recordings, split into folds ----------------
+    # ---- the data: one set of recordings, split into folds ------------------
     # The split comes from bench so that the browser, which runs the same
-    # comparison on its own generated corpus, divides it the same way.
+    # comparison on its own generated data, divides it the same way.
     n_folds = folds
     split = fold_split(n_folds=n_folds, seeds_per_fold=seeds_per_fold)
     all_seeds = list(split.seeds)
-    print(f"corpus: {len(all_seeds)} recordings, {n_folds} folds "
+    print(f"data set: {len(all_seeds)} recordings, {n_folds} folds "
           f"({seeds_per_fold} each)")
 
     cache: dict[int, tuple] = {}

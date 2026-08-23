@@ -31,7 +31,7 @@
   the six and the cost figures were run on 16 August and are reproduced. The
   <strong>regime shift on the fitted background &mdash; section 5 &mdash; was run for
   this report</strong> and had never been measured: the earlier version of that test
-  ran on a flat background, which is not the corpus anything else here is scored on.
+  ran on a flat background, which is not the data anything else here is scored on.
   It changes a conclusion, and not in the direction the architecture predicted.
 </div>
 
@@ -41,7 +41,7 @@
     A handful of cells fire together inside a third of a second. That is the event
     every detector here is trying to find, and the difficulty is not subtle: on the
     raw record it is almost invisible. Below is one simulated recording from the
-    corpus this report scores on &mdash; twenty-one minutes of it &mdash; with the
+    data set this report scores on &mdash; twenty-one minutes of it &mdash; with the
     answer marked, because the generator planted it.
   </p>
 </div>
@@ -59,7 +59,7 @@
     active at each instant, the quantity most of the six threshold.
     <strong>C</strong> subtracts that trace&rsquo;s own local level: it sharpens the
     events without separating them, and the tallest unplanted excursion is
-    comparable to the smaller planted ones. Drawn on the fitted corpus described in
+    comparable to the smaller planted ones. Drawn on the fitted data set described in
     section 1, in its busier background.
   </figcaption>
 </figure>
@@ -104,7 +104,7 @@
   <p>
     The place a human is required is marked in red, and it is not the modelling:
     it is <strong>choosing K</strong>.
-    K=3 was chosen for this corpus; K=4 drops the cluster rate to roughly a quarter of
+    K=3 was chosen for this data set; K=4 drops the cluster rate to roughly a quarter of
     it &mdash; {{N:spec:k_scan.4.clusters_permin|.3f}} per minute against
     {{N:spec:k_scan.3.clusters_permin|.3f}}. The
     whole scan ships beside the choice so that the judgement is visible rather
@@ -258,10 +258,10 @@
     <strong>Where seconds do legitimately appear</strong>, and they must be read as
     conversions rather than as anything the model used: the 1.5&nbsp;s matching
     tolerance and the <code>Hz/ROI</code> rates are properties of the
-    <em>scorer</em> and the <em>corpus</em>, not of any network. An earlier draft of
+    <em>scorer</em> and the <em>data set</em>, not of any network. An earlier draft of
     this page glossed a receptive field as &ldquo;about three and a half
     minutes&rdquo;, which reads as if the model were reasoning in time. It is
-    2,047&nbsp;samples; at this corpus&rsquo;s 0.1&nbsp;s frame interval that
+    2,047&nbsp;samples; at this data set&rsquo;s 0.1&nbsp;s frame interval that
     happens to be 204.7&nbsp;s, and the model is indifferent to that fact.
   </div>
 </div>
@@ -316,10 +316,10 @@
     the same number, {{N:ablation:by_key.s1_c40.n_params|,d}} parameters
     instead of {{N:ablation:by_key.s4_c40.n_params|,d}}. It does
     not help the transfer test either: one scale loses 0.25 of F1 from quiet to busy
-    where four lose 0.24. <strong>On this corpus the multi-scale design buys
-    nothing</strong>, and the reason is probably the corpus rather than the idea — the
+    where four lose 0.24. <strong>On this data set the multi-scale design buys
+    nothing</strong>, and the reason is probably the data rather than the idea — the
     generator plants a single event width, so there is no scale structure to find.
-    A corpus with varying event widths would be the test that could still vindicate
+    A data set with varying event widths would be the test that could still vindicate
     the bank, and it has not been built.
   </p>
   <p>
@@ -462,7 +462,7 @@
   <p>
     <strong>The honest verdict.</strong> No prior work was found that trains a
     network to emit coordinated population events, scored against planted ground
-    truth, on a corpus parameterised from the lab&rsquo;s own recordings. That
+    truth, on a data set parameterised from the lab&rsquo;s own recordings. That
     combination appears to be new. Two qualifications belong with the claim, and
     the first is the serious one: <strong>a survey is not a proof of absence</strong>
     &mdash; this is four searches and a reading of the neighbours, not a systematic
@@ -500,10 +500,10 @@
     are not mine, and this comparison is against other people&rsquo;s work.
   </p>
   <p>
-    All nine went through one procedure: fitted on three folds of the corpus,
+    All nine went through one procedure: fitted on three folds of the data set,
     scored on the held-out fourth, all four rotations. Hand-written detectors sweep
     their one declared knob; learned models train and pick a threshold. Same
-    corpus, same scorer.
+    data set, same scorer.
   </p>
 </div>
 
@@ -653,8 +653,8 @@
     in another, because untreated slices vary <strong>4.6-fold among
     themselves</strong> &mdash; 0.0038&nbsp;Hz and 0.0175&nbsp;Hz per cell, both
     measured, both untreated, taken from the same assessment of
-    {{N:g:corpus.provenance.n_slices_assessed|d}} slices with
-    {{N:g:corpus.provenance.n_surrogates|,d}} surrogates that set the corpus.
+    {{N:g:source_recordings.provenance.n_slices_assessed|d}} slices with
+    {{N:g:source_recordings.provenance.n_surrogates|,d}} surrogates that set it.
     Those endpoints are the 25th and 75th percentiles of the <em>slice-population</em>
     rate; read as per-cell rates they sit nearer the 60th and 83rd, which narrows the
     axis and is caveat 4 in section 6. No
@@ -671,7 +671,7 @@
   <div class="note">
     <strong>This run is why the report exists.</strong> The earlier version of this
     test used the bench&rsquo;s <em>flat</em> background, so it did not sit on the
-    corpus everything else is scored on. Re-run on the fitted background &mdash;
+    data everything else is scored on. Re-run on the fitted background &mdash;
     heterogeneous across cells, bursty in time, measured from 85 real recordings
     &mdash; it says something different.
   </div>
@@ -741,7 +741,7 @@
 <h2>6 &middot; What this does not establish</h2>
 <div class="col">
   <ol>
-    <li><strong>The corpus is simulated.</strong> Its settings are measured from 85
+    <li><strong>The data set is simulated.</strong> Its settings are measured from 85
       real recordings; the recordings the detectors are scored on are generated.
       Nothing here says any detector is right about a real slice.</li>
     <li><strong>One training run per fold.</strong> No learned number here has a
@@ -763,7 +763,7 @@
       random block leave both the numerator and the denominator of precision, so it
       reports promiscuity rather than penalising it. No &ldquo;does not fire on
       dense random activity&rdquo; claim is supported.</li>
-    <li><strong>K=3 was chosen by a human</strong> and the choice moves the corpus;
+    <li><strong>K=3 was chosen by a human</strong> and the choice moves the data set;
       K=4 drops the cluster rate to roughly a quarter and would build a different
       benchmark.</li>
     <li><strong>The novelty survey is a survey.</strong> Four searches and a reading

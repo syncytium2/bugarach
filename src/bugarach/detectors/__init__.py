@@ -7,8 +7,9 @@ Port order (each lands only with a MATLAB parity test):
   sce       binned SCE                         -- landed (see sce.py)
   cicada    CICADA (native peak detection)     -- landed (see cicada.py)
   sync      SPIKE-synchronization              -- landed (see sync.py; native
-            port bit-exact vs cSPIKE — PySpike 0.9.0's max_tau cap is broken,
-            so it is a test-suite cross-check only, in the uncapped regime)
+            port bit-exact vs cSPIKE — PySpike's max_tau cap has been
+            broken since 0.8.0, so it is a test-suite cross-check only,
+            in the uncapped regime)
 
 The output contract mirrors interface2's docs/specs/detector_output_spec.md:
 each detector returns its statistic trace plus detected events (onset, width),

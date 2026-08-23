@@ -44,7 +44,7 @@ rather than preferences, each with a reason already in the tree:
 
 **Sidecar `run.json`**, because a table of times with no provenance is unusable in six
 months: the generator spec, the chosen K, each detector's fitted knob or threshold, the
-corpus seeds, the code version, and the frame interval per slice.
+the seeds, the code version, and the frame interval per slice.
 
 ## How to check it
 
@@ -52,6 +52,6 @@ Round-trip: write it, read it back, compare. `NA` spelled literally, newline-onl
 endings, and **a real zero preserved as zero rather than becoming missing**.
 
 Then the acceptance test the plan is built around: point the pipeline at a generated
-corpus and the exported table must agree with `docs/learned/bakeoff.json` — same
+data set and the exported table must agree with `docs/learned/bakeoff.json` — same
 detections, same counts. If it disagrees, the writer is wrong, and that is known on day
 one rather than after the UI is built.

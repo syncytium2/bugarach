@@ -10,8 +10,9 @@ import pytest
 from bugarach.detectors.loco import effective_region_windows, loco_detect
 from bugarach.detectors.rate import recording_extent
 from bugarach.detectors.sce import sce_detect
-from bugarach.io import (TableMissesARecordingWarning, load_events_csv,
-                         load_folder, slice_from_events)
+from bugarach.io import (WIDTH_REACHES_PEAK, TableMissesARecordingWarning,
+                         WidthNotSuppliedError, load_events_csv, load_folder,
+                         slice_from_events)
 
 
 def _single_stream_events(n_rois=6, seed=11):
@@ -348,3 +349,195 @@ def test_no_subject_column_leaves_it_absent(tmp_path):
     (tmp_path / "slices.csv").write_text(
         "slice_id,frame_interval_sec\ns1,0.1\n", encoding="utf-8")
     assert not load_folder(tmp_path)[0].meta.get("subject_id")
+
+
+# ------------------------------------- the four per-event columns the spec asks for
+
+WIDE = ("roi,time_sec,stream,width_sec,width_def,peak_sec,amp\n"
+        "1,1.0,fast,0.6,halfprom_width_findpeaks_w,1.6,0.02\n"
+        "1,4.0,fast,0.8,halfprom_width_findpeaks_w,4.8,0.05\n"
+        "2,NA,fast,,halfprom_width_findpeaks_w,,\n"
+        "1,2.0,slow,3.0,rise_interval_peak_minus_t50rise,5.0,0.11\n")
+
+
+def test_the_asked_for_columns_reach_the_stream(tmp_path: Path):
+    """`width_sec`, `width_def`, `peak_sec` and `amp` were requested by the
+    contract and read by the browser; for a year this reader dropped all four."""
+    s, = load_folder(_folder(tmp_path, s1=WIDE))
+    fast, slow = s.streams["fast"], s.streams["slow"]
+
+    assert fast.width_def == "halfprom_width_findpeaks_w"
+    assert slow.width_def == "rise_interval_peak_minus_t50rise"
+    assert fast.has_width and slow.has_width
+    np.testing.assert_allclose(fast.width[0], [0.6, 0.8])
+    np.testing.assert_allclose(fast.amp[0], [0.02, 0.05])
+    np.testing.assert_allclose(fast.peak[0], [1.6, 4.8])
+    np.testing.assert_allclose(slow.width[0], [3.0])
+    # the silent ROI is still a member of the population, with nothing against it
+    assert fast.n_rois == 2 and fast.locs[1].size == 0
+
+
+def test_two_width_rules_in_two_streams_are_the_expected_shape(tmp_path: Path):
+    """A fast transient and a slow one are not measured the same way, and the
+    spec says so in terms. Per stream is the granularity; do not compare them."""
+    s, = load_folder(_folder(tmp_path, s1=WIDE))
+    assert (s.streams["fast"].width_def != s.streams["slow"].width_def)
+
+
+def test_two_width_rules_inside_one_stream_are_refused(tmp_path: Path):
+    """Once two definitions are in one array nothing downstream can separate
+    them, so the refusal has to happen at the read."""
+    d = _folder(tmp_path,
+                s1="roi,time_sec,stream,width_sec,width_def\n"
+                   "1,1.0,fast,0.6,fwhm\n"
+                   "1,2.0,fast,0.8,above_threshold\n")
+    with pytest.raises(ValueError, match="different width_def"):
+        load_folder(d)
+
+
+def test_a_width_with_no_rule_is_refused_at_its_line(tmp_path: Path):
+    """A number whose definition did not travel is worse than no number."""
+    d = _folder(tmp_path,
+                s1="roi,time_sec,width_sec\n1,1.0,0.6\n")
+    with pytest.raises(ValueError, match="line 2.*no width_def"):
+        load_folder(d)
+
+
+def test_a_folder_with_no_width_loads_and_says_which_happened(tmp_path: Path):
+    """The contract asks for width and does not require it, so refusing a
+    conforming folder would be the consumer overruling the producer. What the
+    caller gets instead is an unambiguous tell."""
+    s, = load_folder(_folder(tmp_path, s1="roi,time_sec\n1,1.0\n1,2.0\n"))
+    st = s.streams["events"]
+    assert st.width_def is None and not st.has_width
+    assert not st.has_peak and st.peak is None
+    assert np.isnan(st.width[0]).all()      # shaped, but asserting nothing
+
+
+def test_require_width_refuses_and_names_the_streams(tmp_path: Path):
+    """Refusal belongs where the need is known. An analysis that cannot score
+    without a width asks for it at load, before any number exists."""
+    d = _folder(tmp_path, s1="roi,time_sec\n1,1.0\n")
+    load_folder(d)                                   # the default still loads
+    with pytest.raises(WidthNotSuppliedError, match="s1/events"):
+        load_folder(d, require_width=True)
+
+
+def test_require_width_is_satisfied_by_a_folder_that_has_one(tmp_path: Path):
+    assert len(load_folder(_folder(tmp_path, s1=WIDE), require_width=True)) == 1
+
+
+def test_a_width_travels_with_its_own_event_when_rows_arrive_out_of_order(
+        tmp_path: Path):
+    """Events are sorted by time. Sorting the times ALONE — which this reader
+    did before it read any other column — would move each width onto a
+    different event, which is a wrong number rather than a missing one."""
+    d = _folder(tmp_path,
+                s1="roi,time_sec,width_sec,width_def,peak_sec,amp\n"
+                   "1,9.0,0.9,fwhm,9.9,0.9\n"
+                   "1,1.0,0.1,fwhm,1.1,0.1\n"
+                   "1,5.0,0.5,fwhm,5.5,0.5\n")
+    st = load_folder(d)[0].streams["events"]
+    np.testing.assert_allclose(st.locs[0], [1.0, 5.0, 9.0])
+    np.testing.assert_allclose(st.width[0], [0.1, 0.5, 0.9])
+    np.testing.assert_allclose(st.peak[0], [1.1, 5.5, 9.9])
+    np.testing.assert_allclose(st.amp[0], [0.1, 0.5, 0.9])
+
+
+def test_a_peak_is_recovered_only_from_a_width_that_reaches_one(tmp_path: Path):
+    """`time_sec + width_sec` is a peak under `rise_interval_peak_minus_t50rise`
+    and is not one under a half-prominence width. Adding the second anyway is
+    the spec's own failure mode: a plausible wrong answer rather than an error.
+    Same rule, same two names, as WIDTH_REACHES_PEAK in the browser viewer."""
+    d = _folder(tmp_path,
+                s1="roi,time_sec,stream,width_sec,width_def\n"
+                   "1,1.0,slow,3.0,rise_interval_peak_minus_t50rise\n"
+                   "1,1.0,fast,0.6,halfprom_width_findpeaks_w\n")
+    s, = load_folder(d)
+    assert "rise_interval_peak_minus_t50rise" in WIDTH_REACHES_PEAK
+    np.testing.assert_allclose(s.streams["slow"].peak[0], [4.0])
+    assert not s.streams["fast"].has_peak     # a width, but not one to a peak
+
+
+def test_a_sent_peak_beats_a_recoverable_one(tmp_path: Path):
+    """`peak_sec` is unambiguous when present; the sum is only a fallback."""
+    d = _folder(tmp_path,
+                s1="roi,time_sec,width_sec,width_def,peak_sec\n"
+                   "1,1.0,3.0,rise_interval_peak_minus_t50rise,7.5\n")
+    np.testing.assert_allclose(
+        load_folder(d)[0].streams["events"].peak[0], [7.5])
+
+
+def test_the_four_columns_round_trip_through_the_contract(tmp_path: Path):
+    """Write a slice out as the contract writes it, read it back, and require
+    every per-event column to survive — the width WITH the rule that made it."""
+    import csv as _csv
+
+    rng = np.random.RandomState(3)
+    times = [np.sort(rng.uniform(0, 100, 7)), np.sort(rng.uniform(0, 100, 4))]
+    widths = [rng.uniform(0.2, 3.0, v.size) for v in times]
+    amps = [rng.uniform(0.01, 0.2, v.size) for v in times]
+    peaks = [t + w for t, w in zip(times, widths)]
+
+    d = tmp_path / "export"
+    d.mkdir()
+    with (d / "s1.csv").open("w", newline="") as f:
+        w = _csv.writer(f)
+        w.writerow(["roi", "time_sec", "width_sec", "width_def", "peak_sec", "amp"])
+        for i in range(2):
+            for k in range(times[i].size):
+                w.writerow([i + 1, f"{times[i][k]:.6f}", f"{widths[i][k]:.6f}",
+                            "t50rise_to_peak", f"{peaks[i][k]:.6f}",
+                            f"{amps[i][k]:.6f}"])
+
+    st = load_folder(d)[0].streams["events"]
+    assert st.width_def == "t50rise_to_peak"
+    for i in range(2):
+        np.testing.assert_allclose(st.locs[i], times[i], atol=1e-6)
+        np.testing.assert_allclose(st.width[i], widths[i], atol=1e-6)
+        np.testing.assert_allclose(st.peak[i], peaks[i], atol=1e-6)
+        np.testing.assert_allclose(st.amp[i], amps[i], atol=1e-6)
+
+
+def test_slice_from_events_carries_a_width_definition():
+    """The programmatic path says what its durations are, for the same reason
+    the folder does: pooling two rules is the failure the spec names."""
+    s = slice_from_events({"a": [[1.0, 2.0]]},
+                          durations={"a": [[0.5, 0.5]]}, width_def="fwhm")
+    assert s.streams["a"].width_def == "fwhm" and s.streams["a"].has_width
+    assert not slice_from_events([[1.0]]).streams["events"].has_width
+
+
+# ------------------------------------------------------------- on the real export
+
+def _real_export():
+    from bugarach import dataset
+    try:
+        return dataset.resolve("2026-08-18_revised_2v_periods")
+    except Exception:                                    # not this machine
+        return None
+
+
+@pytest.mark.skipif(_real_export() is None,
+                    reason="no real export folder on this machine")
+def test_the_real_export_carries_finite_widths_with_their_rule():
+    """The producer shipped these four columns in August 2026 because the
+    contract asked for them, and until now nothing on this side read them."""
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        slices = load_folder(_real_export())
+    assert len(slices) > 1
+    seen = {}
+    for s in slices:
+        for name, st in s.streams.items():
+            assert st.has_width, f"{s.slice_id}/{name} lost its width"
+            assert st.has_peak, f"{s.slice_id}/{name} lost its peak"
+            w = np.concatenate(st.width) if st.n_rois else np.empty(0)
+            assert w.size == st.n_events
+            assert np.isfinite(w).all(), f"{s.slice_id}/{name} has a NaN width"
+            assert (w > 0).all(), f"{s.slice_id}/{name} has a width <= 0"
+            seen.setdefault(name, set()).add(st.width_def)
+    # one rule per stream, and the two streams genuinely differ — the exporter's
+    # own choice, confirmed 2026-08-20 as intended rather than a defect
+    assert all(len(v) == 1 for v in seen.values()), seen
+    assert len({next(iter(v)) for v in seen.values()}) == len(seen)

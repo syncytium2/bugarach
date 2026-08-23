@@ -15,7 +15,7 @@ no lines left.
 | tool | what changed |
 |---|---|
 | `modularity_null.py` | reads the folder — and its spreadsheet-reading exclusion workaround is **deleted**, see below |
-| `make_assembly_closed_figure.py` | takes `--folder`; refuses by name if the recording is not in the corpus |
+| `make_assembly_closed_figure.py` | takes `--folder`; refuses by name if the recording is not in the folder |
 | `make_roi_rate_distribution.py` | `--folder` required, with the reason in the error |
 | `make_reality_check.py` | `--folder` required; the guard is loudest here because the figure is published |
 | `fit_background_shape.py` | `--folder` required; it fits the generator constants |
@@ -32,8 +32,8 @@ counter are all gone.
 
 ## What moved, and it is the export doing its job
 
-Reading the approved corpus instead of the store changes numbers, because the
-corpus is smaller and different. **Tony, 2026-08-20: "axis shift is expected. the
+Reading the approved folder instead of the store changes numbers, because the
+folder is smaller and different. **Tony, 2026-08-20: "axis shift is expected. the
 export has done it's job."** Recorded so nobody reads a moved constant as a
 regression:
 
@@ -54,7 +54,7 @@ difficulty axis moves a lot, and `bench.py` currently argues that p25 "lands wit
 5% of the TTX median (0.0040)" — an argument that does not survive the shift.
 
 **Open: decide whether to re-derive `bench.REGIMES` from the folder.** Every bench
-number in the repo was computed against a range fitted to a corpus that included
+number in the repo was computed against a range fitted to a folder that included
 recordings the lab withdrew.
 
 ## The published figure was checked, not assumed

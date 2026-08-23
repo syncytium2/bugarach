@@ -110,7 +110,7 @@ def assess_store(store: Path, *, stream: str | None, n_surrogates: int,
         # decided which part of a period is analysable says so in
         # analysis_start_sec / analysis_end_sec, and that decision is theirs to
         # make. Scoring the raw period instead silently analyses recording the
-        # producer excluded — on this corpus that was up to 660 s of extra window
+        # producer excluded — on this folder that was up to 660 s of extra window
         # on 24 of 84 slices, which is more clusters and more power on some
         # slices than others.
         if getattr(r, "has_analysis_window", False):
@@ -227,7 +227,7 @@ def assess_store(store: Path, *, stream: str | None, n_surrogates: int,
 
 
 def _fit_background(slices):
-    """The per-ROI heterogeneity of THIS corpus, measured rather than inherited.
+    """The per-ROI heterogeneity of THIS folder, measured rather than inherited.
 
     The generator needs a background shape, and until now the only one available
     was ``bench.MEASURED_RATE_SHAPE`` — a maximum-likelihood fit over *this
@@ -260,7 +260,7 @@ def _fit_background(slices):
     else:
         # A genuinely uniform field drives the shape to the fitter's ceiling,
         # which is the right answer and an unreadable one — "9998" is a bound,
-        # not a measurement. Say which of the two the corpus is.
+        # not a measurement. Say which of the two the folder is.
         out["reads_as"] = "flat" if shape > 100 else "heterogeneous"
         shown = "flat (shape -> infinity)" if shape > 100 else f"{shape:.3f}"
         print(f"background: per-ROI heterogeneity {shown} from "
@@ -328,7 +328,7 @@ def main(argv=None) -> int:
             print(f"  K={k}: {len(ok)}/{len(sub)} slices testable · "
                   + " · ".join(f"{n} {v}" for v, n in
                                sorted(tally.items(), key=lambda kv: -kv[1])))
-            # Two independence assumptions this combination makes and the corpus
+            # Two independence assumptions this combination makes and the folder
             # does not honour, so it is printed with them attached rather than as
             # a headline. Group: FOUNDATIONS §9. Preparation: 85 slices come from
             # 48 dates, up to three apiece, so per-slice p-values are correlated

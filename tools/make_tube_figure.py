@@ -189,9 +189,9 @@ def main(argv=None):
     p.add_argument("--width", type=int, default=980)
     p.add_argument("--name", default="tube_view")
     p.add_argument("--spec", type=Path, default=None,
-                   help="generator_spec.json — draw the corpus fitted from real "
+                   help="generator_spec.json — draw the simulated data set fitted from real "
                         "recordings rather than the bench's flat background. A "
-                        "figure of the problem must show the corpus the report "
+                        "figure of the problem must show the simulated data set the report "
                         "scores on, or it illustrates a different problem.")
     a = p.parse_args(argv)
 

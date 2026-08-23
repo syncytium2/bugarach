@@ -52,6 +52,13 @@ around it.
 
 ## Related
 
+- **`tools/merge_when_green.sh` now reaps its own worktree on a green merge**
+  (2026-08-23). That removes the *reason* most of these worktrees exist to be
+  swept, but it does not close this item: it only ever touches the worktree the
+  caller is standing in, so anything that leaked before it existed, or that a
+  crashed session left behind, still needs a collector — and that collector is
+  still the one that must not be `--apply`ed. What changed is the backlog's
+  growth rate, not its safety.
 - `docs/todo/2026-08-20-claim-before-starting-not-before-committing.md` — the
   other end of the same problem: claims arriving after the work rather than
   before it. A sweep that reads the board is worth more once claims are reliably

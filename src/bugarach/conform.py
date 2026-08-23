@@ -10,18 +10,78 @@ than the microscope saw.
 It reports rather than judges. Every check names the file and the line, counts
 what it found, and separates **can't read this** from **read it, and here is what
 you may not have meant** — because most conformance failures parse perfectly.
+
+**Its verdict is binding on the rest of the app.** A folder this says is
+conforming is one ``bugarach detect`` will score, and a recording it refuses is
+one ``detect`` refuses for the same stated reason — because both ask
+:func:`bugarach.detect_folder.folder_analysis_windows`, the one resolver, rather
+than each deriving windows from the same rules read twice.
 """
 
 from __future__ import annotations
 
 import csv
+import textwrap
 import warnings
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from bugarach.detectors.loco import effective_region_windows
-from bugarach.detectors.rate import recording_extent
+import numpy as np
+
+from bugarach.detect_folder import folder_analysis_windows
 from bugarach.io import NO_EVENT, RESERVED, load_folder
+
+
+#: The notes a recording can carry, as fixed strings.
+#:
+#: **Fixed because they repeat, and repetition is what made this report
+#: unreadable.** On the lab's own 84-recording export, `bugarach check` printed
+#: 166 lines of which 76 were byte-identical copies of one 40-word advisory,
+#: and the verdict — the answer to the question the command asks — was the last
+#: line of the file. A folder that is fine read like a fault log. So a note is
+#: now a short invariant sentence, its explanation lives once in
+#: ``NOTE_DETAIL``, and ``format_report`` says it once and names how many
+#: recordings it covers.
+NO_FRAME_INTERVAL = "no frame interval — bugarach will ask for it"
+NO_WINDOWS = "no treatment windows — analysed as one whole-recording window"
+ANALYSIS_WINDOWS_SUPPLIED = "analysis windows supplied — scored as given"
+RAW_BOUNDS_SCORED = "no analysis windows — the raw period bounds are scored as given"
+NO_SILENCE_DECLARED = "no ROI declared with no events"
+NO_WIDTH = "no per-event width"
+PART_WIDTH = "some streams carry no per-event width"
+
+#: The long half of each note, said once per folder rather than once per
+#: recording. Keyed by the note itself.
+NOTE_DETAIL = {
+    NO_SILENCE_DECLARED: (
+        f"If every ROI in those recordings fired, this is right. If some were "
+        f"quiet they are missing from the population, every per-ROI figure "
+        f"computed from it is too high, and nothing downstream can tell — "
+        f"write them as time_sec = {NO_EVENT[1].upper()}."),
+    ANALYSIS_WINDOWS_SUPPLIED: (
+        "This project's wash-in delay and duration caps are not applied to "
+        "them; your bounds are used exactly as sent."),
+    RAW_BOUNDS_SCORED: (
+        "start_sec and end_sec are scored verbatim — no wash-in delay, no "
+        "duration cap, no baseline measured backward from its end, and no "
+        "exemption for a label containing \"hi\". Those encode this project's "
+        "protocol and are not applied to yours. If the part of a period you "
+        "want scored is narrower than the period itself, say so in "
+        "analysis_start_sec / analysis_end_sec."),
+    NO_WIDTH: (
+        "width_sec is asked for and not required, so this folder conforms and "
+        "every detector runs. What it cannot do is score per-event durations: "
+        "CICADA's per_event mode has nothing to read, and no other column "
+        "implies a width. Send width_sec with the width_def naming the rule "
+        "that produced it."),
+    PART_WIDTH: (
+        "Width is per stream, so a stream without one is simply not available "
+        "to per-event duration scoring while the others are."),
+    NO_FRAME_INTERVAL: (
+        "Three of the six detectors build their analysis grid from it, it is a "
+        "property of the microscope, and there is no default — so bugarach "
+        "asks rather than guessing. Put it in slices.csv to stop being asked."),
+}
 
 
 @dataclass
@@ -35,6 +95,8 @@ class RecordingReport:
     streams: list[str] = field(default_factory=list)
     windows: list[str] = field(default_factory=list)
     frame_interval: str | None = None
+    #: the producer's own name(s) for the rule behind width_sec, one per stream
+    width_defs: list[str] = field(default_factory=list)
     errors: list[str] = field(default_factory=list)
     notes: list[str] = field(default_factory=list)
 
@@ -136,7 +198,7 @@ def check_folder(folder) -> FolderReport:
         r.frame_interval = s.meta.get("frame_interval_sec")
 
         if r.frame_interval is None:
-            r.notes.append("no frame interval — bugarach will ask for it")
+            r.notes.append(NO_FRAME_INTERVAL)
         else:
             try:
                 if float(r.frame_interval) <= 0:
@@ -148,59 +210,113 @@ def check_folder(folder) -> FolderReport:
                     f"frame_interval_sec is {r.frame_interval!r}, which is not a "
                     f"number of seconds")
         if not r.windows:
-            r.notes.append("no treatment windows — analysed as one whole-recording window")
+            r.notes.append(NO_WINDOWS)
         else:
-            # THE CHECK THAT WAS MISSING. Loading a folder is not the same as
-            # being able to analyse it: `region_windows` re-applies this
-            # project's windowing convention and HALTS on a baseline that does
-            # not start at 0 or a gap between regions. A folder that shipped
-            # pre-trimmed windows loads perfectly and then halts every
-            # detector — and this check passed it, so a green result was taken
-            # as evidence the folder was usable. It was not.
+            # Loading a folder is not the same as being able to analyse it, so
+            # the check resolves the windows too — through
+            # `folder_analysis_windows`, which is the SAME function `bugarach
+            # detect` calls and not a second reading of the same rules. The
+            # second reading is what went wrong: this call site used to derive
+            # its own with `effective_region_windows`, which falls through into
+            # `region_windows` and halts on a baseline that does not begin at 0
+            # or a gap between periods. Those two guards are aCa5z's protocol,
+            # correct for a `.mat` store and wrong as a condition of entry for
+            # anybody else (FOUNDATIONS §4) — so a lab that started recording
+            # before it started treating was told at the door that its legal
+            # folder was malformed, and then watched `detect` score it without
+            # complaint. Conforming is conforming, and one resolver is how the
+            # two commands stay unable to disagree.
+            finite = [rg for rg in s.regions if np.isfinite(rg.start_sec)]
+            supplied = bool(finite) and all(
+                rg.has_analysis_window for rg in finite)
             try:
-                # exactly what a detector calls, so the check fails on what the
-                # detectors would fail on rather than on a near-enough proxy
-                effective_region_windows(s, recording_extent(s))
+                folder_analysis_windows(s)
             except ValueError as exc:
                 r.errors.append(
                     f"loads, but no detector can run on it: {exc}")
-                if "does not match" in str(exc) or "expected 0" in str(exc):
-                    r.errors.append(
-                        "these look like analysis windows sent as region bounds. "
-                        "Either send the RAW period — region 1 at 0, each region "
-                        "starting where the last ended — or keep the raw bounds "
-                        "and put your windows in analysis_start_sec / "
-                        "analysis_end_sec, which are used as given")
-            if all(rg.has_analysis_window for rg in s.regions if s.regions):
-                r.notes.append(
-                    "analysis windows supplied — scored as given, and this "
-                    "project's wash-in delay and caps are not applied")
+            else:
+                # what will actually be scored, said plainly, because the two
+                # answers are different numbers and the file does not show which
+                r.notes.append(ANALYSIS_WINDOWS_SUPPLIED if supplied
+                               else RAW_BOUNDS_SCORED)
         if r.n_silent == 0:
-            r.notes.append(
-                f"no ROI declared with no events. If every one of the {r.n_rois} "
-                f"ROIs fired, this is right; if some were quiet, they are missing "
-                f"from the population and every per-ROI figure is too high "
-                f"(write them as time_sec = {NO_EVENT[1].upper()})")
+            r.notes.append(NO_SILENCE_DECLARED)
+        # width is asked for and not required, so its absence is a note. What it
+        # costs is real and invisible from the file: CICADA's per-event duration
+        # mode has nothing to run on, and no other column implies the width.
+        bare = [n for n, st in s.streams.items() if not st.has_width]
+        if bare and len(bare) == len(s.streams):
+            r.notes.append(NO_WIDTH)
+        elif bare:
+            r.notes.append(f"{PART_WIDTH} ({', '.join(sorted(bare))})")
+        r.width_defs = sorted({st.width_def for st in s.streams.values()
+                               if st.width_def})
         rep.recordings.append(r)
 
     return rep
 
 
+NOT_CONFORMING = (
+    "NOT CONFORMING — see the export contract: docs/export_folder_spec.md in "
+    "the bugarach repo, or export_folder_spec.html beside the one-page "
+    "producer guide wherever that was sent to you")
+
+
+def _wrap(text: str, width: int = 76, indent: str = " " * 9) -> list[str]:
+    """Fold one explanation to terminal width. Only used for the folder notes,
+    which are said once and can therefore afford to be a sentence."""
+    return [indent + line for line in textwrap.wrap(text, width) or [""]]
+
+
+def _shared_notes(rep: FolderReport) -> tuple[list[tuple[str, list[str]]], set[str]]:
+    """Notes that more than one recording carries, and the set of them.
+
+    A note repeated 76 times is not 76 findings; it is one finding about 76
+    recordings, and printing it per recording buries the ones that are not.
+    """
+    order: list[str] = []
+    who: dict[str, list[str]] = {}
+    for r in rep.recordings:
+        for n in r.notes:
+            if n not in who:
+                order.append(n)
+                who[n] = []
+            who[n].append(r.slice_id)
+    shared = [(n, who[n]) for n in order if len(who[n]) > 1]
+    return shared, {n for n, _ in shared}
+
+
 def format_report(rep: FolderReport) -> str:
-    """The report a producer reads in a terminal."""
-    out = [f"export folder: {rep.folder}"]
+    """The report a producer reads in a terminal.
+
+    **The verdict is the second line, not the last.** This is the first command
+    a lab runs against its own folder, so what it prints is the app's first
+    impression — and the answer to "does my folder conform" should not be at
+    the bottom of ninety lines of detail that only matter if it does not.
+    """
     if rep.errors:
-        out.append("")
+        out = [f"export folder: {rep.folder}", "", NOT_CONFORMING, ""]
         for e in rep.errors:
             out.append(f"  FAIL  {e}")
-        out.append("")
-        out.append(("NOT CONFORMING — see the export contract: docs/export_folder_spec.md in "
-         "the bugarach repo, or export_folder_spec.html beside the one-page "
-         "producer guide wherever that was sent to you"))
         return "\n".join(out)
 
-    out.append(f"{len(rep.recordings)} recording(s), {rep.n_ok} conforming")
+    verdict = "CONFORMING" if rep.ok else NOT_CONFORMING
+    out = [f"export folder: {rep.folder}",
+           f"{verdict} — {len(rep.recordings)} recording(s), "
+           f"{rep.n_ok} conforming"]
+
+    # Which width rules arrived, named rather than counted: width is defined by
+    # the producer and the definition is the only thing that says what the
+    # number means. Two rules across two streams is the expected shape, not a
+    # warning — a fast transient and a slow one are not measured the same way.
+    widths = sorted({d for r in rep.recordings for d in r.width_defs})
+    if widths:
+        n_with = sum(1 for r in rep.recordings if r.width_defs)
+        out.append(f"per-event width: {', '.join(widths)} "
+                   f"({n_with} of {len(rep.recordings)} recordings)")
     out.append("")
+
+    shared, collapsed = _shared_notes(rep)
     w = max((len(r.slice_id) for r in rep.recordings), default=10)
     for r in rep.recordings:
         flag = "ok  " if r.ok else "FAIL"
@@ -212,17 +328,25 @@ def format_report(rep: FolderReport) -> str:
             f"windows {', '.join(r.windows) or '—'}")
         for e in r.errors:
             out.append(f"       ! {e}")
+        # a note the whole folder shares is said once, below, with its count —
+        # here we keep only what is true of THIS recording and not the others
         for n in r.notes:
+            if n in collapsed:
+                continue
             out.append(f"       · {n}")
-    if rep.notes:
+            out.extend(_wrap(NOTE_DETAIL[n]) if n in NOTE_DETAIL else [])
+
+    total = len(rep.recordings)
+    if shared or rep.notes:
         out.append("")
-        out.append("  folder:")
-        for n in rep.notes:
-            out.append(f"       · {n}")
-    out.append("")
-    out.append("CONFORMING" if rep.ok else ("NOT CONFORMING — see the export contract: docs/export_folder_spec.md in "
-         "the bugarach repo, or export_folder_spec.html beside the one-page "
-         "producer guide wherever that was sent to you"))
-    if rep.ok:
-        out.append("Lines marked · read fine and may still not be what you meant.")
+        out.append("  notes — these read fine and may still not be what you meant:")
+    for n, ids in shared:
+        scope = ("every recording" if len(ids) == total
+                 else f"{len(ids)} of {total} recordings")
+        named = "" if len(ids) == total else \
+            f" ({', '.join(ids[:4])}{' …' if len(ids) > 4 else ''})"
+        out.append(f"       · {n} — {scope}{named}")
+        out.extend(_wrap(NOTE_DETAIL[n]) if n in NOTE_DETAIL else [])
+    for n in rep.notes:
+        out.append(f"       · {n}")
     return "\n".join(out)

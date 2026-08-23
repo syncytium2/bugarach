@@ -46,7 +46,7 @@ planted events, so every firing inside it is a false alarm by construction. The
 six separate by **where the threshold comes from**, not by what statistic they
 compute: one bar per region gives 59 and 215 firings; a bar that follows local
 density gives 1 and 2. That is a hundredfold separation along the axis CFAR is
-organised around, measured on this project's own corpus, and it is the reason to
+organised around, measured on this project's own recordings, and it is the reason to
 take the rest of this seriously. (The two learned models are omitted — the panel
 is about where a *hand-placed* threshold comes from.)
 
@@ -466,7 +466,7 @@ interface2's MATLAB benchmark reports F1 per stream from a generic ramp benchmar
 marked **provisional** upstream, with its own warning that *"anything below ~0.6
 is a weak optimum on a flat/noisy surface"* and that RateDetect's and SCE's optima
 sit on the swept **grid edge**. bugarach's bake-off reports F1 over four held-out
-folds of a simulated corpus fitted to 85 real baseline recordings. They answer
+folds of a simulated data set fitted to 85 real baseline recordings. They answer
 different questions and are not averaged here.
 
 **But the bake-off carries a confound of its own, visible in `bench.py`'s own
@@ -558,7 +558,7 @@ On the FAST/SLOW asymmetry — LoCo's MATLAB SLOW F1 is 0.466 against CoactDetec
 0.757 — **do not treat that as an unexplained gap.** The same handoff says
 anything below ~0.6 there is a weak optimum on a flat surface, so 0.466 is
 plausibly a statement about the optimisation surface rather than about LoCo. Worth
-re-running on the approved corpus before anyone quotes it either way.
+re-running on the approved folder before anyone quotes it either way.
 
 ### 6.5 CoactDetect — keep, and resolve the contradiction it is carrying
 
@@ -572,12 +572,12 @@ identical recall).
 Two documents say opposite things, and shipping both detectors is not a decision —
 it is the absence of one. The resolution is measurable, not editorial: run the
 promiscuity probe with §5.3's stated target and a false-alarm rate that enters the
-score. Either the multiplicity problem appears in bugarach's corpus, and the
+score. Either the multiplicity problem appears in bugarach's recordings, and the
 manuscript was right; or it does not, and §2.5 needs revising before submission.
 
 Note that bugarach's own probe **already points the other way** — 1.2 firings for
 the per-bin-α form against 2.5 for the pooled-percentile one, the reverse of the
-MATLAB result, though on a different corpus and at a different operating point.
+MATLAB result, though on different recordings and at a different operating point.
 That is one more reason not to submit with this open.
 
 ### 6.6 SPIKE-synch — the number measures the operating point, not the detector
@@ -700,7 +700,7 @@ provenance note; 2, 4 and 5 follow from §4.
 **Nothing currently published depends on the provenance questions.** The
 scoreboard's rules already forbid "competes with state-of-the-art", the bake-off
 reports a tie rather than a win, and no method from the literature has been run on
-this corpus at all — so the positioning is argued from absence, which is safe.
+these recordings at all — so the positioning is argued from absence, which is safe.
 
 **Two things are no longer future, and one of them changed today.** The manuscript
 is unpublished, so its "empty cell" sentence costs nothing yet — but after the

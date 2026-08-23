@@ -170,4 +170,4 @@ width (1000 px). Narrow-viewport reflow of the licence table was not tested.
    reporting temporal agreement would overturn it. No exhaustive search was done.
 4. **⚠ Nothing from the page has been run on this project's corpus.** Section 5 says so.
    The route that removes this is
-   `docs/todo/2026-08-17-run-a-literature-method-on-our-corpus.md`.
+   `docs/todo/2026-08-17-run-a-literature-method-on-our-recordings.md`.

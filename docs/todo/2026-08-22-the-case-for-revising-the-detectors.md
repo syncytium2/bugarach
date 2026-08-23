@@ -79,7 +79,7 @@ resuming a paused process, not overturning a settled one.
 
 ### 3 · Two detectors cannot choose a setting on most folds — their grids do not bracket the answer
 
-From the scoreboard (`05-scoreboard-draft.png`), six detectors on one corpus and
+From the scoreboard (`05-scoreboard-draft.png`), six detectors on one data set and
 one fold split. The **folds** column:
 
 | detector | folds answered | F1 (held out) |
@@ -94,13 +94,13 @@ one fold split. The **folds** column:
 `pickOperatingPoint` refuses a best value sitting at the end of the grid — the
 sweep saying it stopped too early. Half the detectors hit that on most folds.
 **That is a direct measurement that their sweep grids are wrong for this
-corpus**, and the grids are where the operating points came from.
+data set**, and the grids are where the operating points came from.
 
 Note the second-order finding: a detector that answers one fold also has **no
 spread**, so its single F1 looks more confident than the ones measured three
 times. The column exists because of that.
 
-### 4 · CICADA at its shipped settings is not usable on a simulated corpus
+### 4 · CICADA at its shipped settings is not usable on a simulated data set
 
 From the lane figure (`09-six-detector-lanes.png`), one 20-minute recording:
 
@@ -136,7 +136,7 @@ require rather than inherit one permissive constant —
 
 Two fixes landed that were affecting tuning while nobody could see them.
 
-**The browser was tuning against a corpus ~4.8× too quiet in the mean.**
+**The browser was tuning against a data set ~4.8× too quiet in the mean.**
 `simulateFromMeasurement` handed `roi_rate_med` — a median — to a knob that means
 the field's mean. On the fitted background those differ by a factor of 4.8
 (`median/mean = median(Gamma(0.275,1))/0.275 = 0.2098`, exact). Fixed in PR #199:
@@ -200,8 +200,13 @@ Not blocked on any of the above; the record is
   (fit seconds: sync 0.06, coact 0.08, rate 0.10, SCE 0.17, **LoCo 2.69, CICADA
   7.06**), so being able to sweep a subset is what makes iterating on grids bearable.
 - **8 · assess the whole folder.** A port, not a design — `bugarach assess
-  <folder>` exists in Python with the three rules already encoded. ~15 s for 84
-  recordings, so it needs a real progress bar.
+  <folder>` exists in Python with the three rules already encoded. **117 s for 84
+  recordings** at the default thousand surrogates — measured 2026-08-23 on
+  `2026-08-18_revised_2v_periods`, and 39 s on `2026-08-20_pensub_revised_2v`.
+  The `~15 s` this line carried was wrong by 8x and was being quoted elsewhere as
+  a budget. The CLI now prints per-recording progress with an estimate of what is
+  left, which is the floor of what two minutes of silence needs; a browser-side
+  version still needs its own.
 - **4 · the region selector.** Needs Tony. The panel does two jobs with one menu.
 - **3b · K as count or share of the field.** Needs Tony. Recommendation is to show
   both and keep the scan in counts.

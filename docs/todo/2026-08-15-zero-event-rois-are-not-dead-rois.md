@@ -17,7 +17,7 @@ them got it wrong twice in a row before finding the answer, which already existe
 >   treatment of an ROI at once, which is what the rule requires. Ownership was
 >   settled there on 2026-08-15; earlier drafts of this note put it with
 >   `fireflies`, which never had the full record to judge from.
-> - **The corpus question below is answered**, and the answer is yes. It was the
+> - **The folder question below is answered**, and the answer is yes. It was the
 >   one open item here.
 >
 > The rule is also now *applied*: the exporter ships
@@ -55,7 +55,7 @@ authoritative R, **identical on every row and column**.
 
 These answer different questions and must never be swapped.
 
-**The corpus correspondence is now verified, so the 3.0% is quotable here.** It
+**The folder correspondence is now verified, so the 3.0% is quotable here.** It
 was filed as an open ⚠ — the `revised_2v` vintage matched but the extraction path
 might not have. It was settled by the exporter doing the join itself rather than
 by anyone arguing about vintages: `generate_event_store_alive.m` applied the
@@ -89,7 +89,7 @@ The prompt was Tony, 2026-08-16:
 activity threshold invented here — the principle being exercised by the person who
 owns it, not overturned.
 
-**And the corpus in hand still carried them.** So every measurement taken off
+**And the folder in hand still carried them.** So every measurement taken off
 `processed_archive/event_store_onset_revised_2v` before the export was rebuilt was
 taken over a population including ~3% of rows that are zero **by construction rather
 than by biology** — `bench.MEASURED_RATE_SHAPE` and `bench.MEASURED_BURST_SHAPE`
@@ -130,7 +130,7 @@ the assumption was more alarming than the truth.
 ⚠ Two limits on that result. It assumes dead ROIs are **missing-at-random with
 respect to rate**, which is what a structural zero means — if dead ROIs are
 preferentially segmented from dim or marginal fields, the contamination is not
-random and this simulation does not cover it. And it assumes ~3.0%; the corpus
+random and this simulation does not cover it. And it assumes ~3.0%; the folder
 question above has to close before that rate can be relied on.
 
 ### A separate finding, free from the same run
@@ -144,7 +144,7 @@ alarm: the estimator's own noise floor is about that size.
 ### Both unknowns closed, and the prediction held
 
 Two things were open here: whether `processed_archive/event_store_onset_revised_2v`
-is the `ROI_revised_2v` corpus, and whether the exporter would apply ADR 0002. Both
+is the `ROI_revised_2v` archive, and whether the exporter would apply ADR 0002. Both
 are answered — the exporter applied the 2026-08-15 roster to that store by
 `(slice_id, ROI)`, matched all 2185 keys with no disagreements, and rejected 66. The
 rate is 3.0% **of the eligible population**, 67 of 85 slices, and the export folders

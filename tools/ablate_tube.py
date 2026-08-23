@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Two questions the fitted kernels raised, put to the corpus.
+"""Two questions the fitted kernels raised, put to the simulated data.
 
     python tools/ablate_tube.py --spec docs/learned/generator_spec.json \
         --out docs/learned

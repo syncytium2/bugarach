@@ -12,16 +12,16 @@ onto four knobs, and `simulateFromMeasurement` says which:
     part_n_obs      -> how many ROIs take part
     jit_obs         -> how tight they are (the SD of participant onsets)
 
-Nothing checked that the corpus that came out matches the folder that went in.
+Nothing checked that the data that came out matches the folder that went in.
 A generator can be wrong in ways that are invisible in a raster and obvious in a
 number — `docs/todo/2026-08-14-generator-background-model-is-flat.md` is one
 already on file — and every tuned operating point downstream is fitted on this
-corpus.
+data set.
 
 **What this screen must not become.** A verdict. It reports the measurement of
 the real folder beside the measurement of the simulation and the gap between
 them; it does not decide whether the gap is acceptable, because that depends on
-what the corpus is for. The assessment already refuses to pick K for the same
+what the data set is for. The assessment already refuses to pick K for the same
 reason.
 """
 
@@ -83,7 +83,7 @@ def page():
 
 
 # The whole loop, in the page: measure a real recording, accept a K, generate a
-# corpus from that measurement, then measure the corpus and compare.
+# a data set from that measurement, then measure it and compare.
 FLOW = """async (files) => {
   await open(files, {quiet: true});
   await show(RECORDINGS[0]);
@@ -118,7 +118,7 @@ def compared(page):
 def test_the_comparison_has_both_sides(compared):
     """The premise: a real measurement and a simulated one, both present."""
     assert compared["target"], "nothing recorded what the generator was aiming at"
-    assert compared["got"], "the generated corpus was never measured"
+    assert compared["got"], "the generated data set was never measured"
 
 
 def test_it_reports_the_four_quantities_the_generator_is_set_from(compared):

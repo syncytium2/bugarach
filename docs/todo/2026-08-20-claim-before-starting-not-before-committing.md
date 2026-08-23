@@ -12,7 +12,7 @@ boards prevented none of them.
 | collision | cost |
 |---|---|
 | `modularity_null.py` + `make_assembly_closed_figure.py` converted to read the export folder | two independent conversions, hours apart. Theirs was better and mine was discarded |
-| export spec **revision 6**, "the folder is the corpus" | two revisions written the same day, same conclusion. Theirs carried the sharper incident; mine was dropped in the merge |
+| export spec **revision 6**, "the folder is the whole input" | two revisions written the same day, same conclusion. Theirs carried the sharper incident; mine was dropped in the merge |
 | chromium | one session installed the browser on this laptop, one added a workflow step, each correctly reporting "chromium is in" about a different machine |
 
 None of these was carelessness. Each session claimed properly, on the right board,

@@ -14,12 +14,12 @@ parallel with everything else.
 The webapp's tuning step sweeps **one** detector's **one** knob on **one** recording and
 scores it against that recording's own planted events. That is a demonstration, not a
 fit: there is no held-out data, so nothing on screen can be called performance on new
-ground truth. `tools/fair_bakeoff.py` already does the real thing — generate a corpus,
+ground truth. `tools/fair_bakeoff.py` already does the real thing — generate a data set,
 split it into folds, fit or train every detector on three, score on the fourth, rotate.
 
 This lane ports the two pieces that makes that possible in the browser:
 
-- **the fold split** — deterministic from the corpus seed, so a run reproduces
+- **the fold split** — deterministic from the data set seed, so a run reproduces
 - **`bugarach.bench.pool_scores`**, and nothing else
 
 ## The rule that motivates it
@@ -50,7 +50,7 @@ because the page does not call them yet.
 - `bugarach.bench.fold_split` — the split was six lines inside
   `tools/fair_bakeoff.py`, which left the browser nothing to reproduce. It is now
   importable, `fair_bakeoff` uses it, and both languages refuse a single-fold
-  corpus rather than returning a held-out score with no training set behind it.
+  data set rather than returning a held-out score with no training set behind it.
 - `bugarach.bench.BenchResult.tol_sec` — the pooled result carries the tolerance
   it was measured at, `pool_scores` derives it from the scores and **refuses to
   pool across two tolerances**, and `summary()` prints F1 with the tolerance

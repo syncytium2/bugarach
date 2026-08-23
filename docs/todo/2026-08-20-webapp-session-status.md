@@ -27,7 +27,7 @@ a boundary answer came over with the rule.
 
 **Spec revisions 5 and 6.** An event is located at its `t50rise`; the contract asks
 for width, producer-defined, travelling with `width_def`; and the folder is the
-corpus, with nothing reading around it.
+folder, with nothing reading around it.
 
 ## Open pull requests
 
@@ -42,7 +42,7 @@ corpus, with nothing reading around it.
 
 ## Decisions waiting on a person
 
-**Re-derive `bench.REGIMES` from the folder?** On the approved corpus the per-ROI
+**Re-derive `bench.REGIMES` from the folder?** On the approved folder the per-ROI
 rate quartiles are 5.2 and 19.0 mHz against the 3.8 and 17.5 currently in the file;
 the difficulty span narrows from 4.61× to 3.65×. Every bench number in the repo was
 computed against the old range. `bench.py` also argues that p25 "lands within 5% of

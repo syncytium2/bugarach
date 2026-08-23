@@ -38,8 +38,8 @@ neither              no assembly above the strengths the power curve tables
 ===================  ==========================================================
 
 **Statistics, also two.** Pair-count dispersion, and the leading eigenvalue of
-the ROI correlation matrix — the classical assembly instrument. At this corpus's
-geometry the correlation matrix is rank-deficient (fewer events than ROIs), which
+the ROI correlation matrix — the classical assembly instrument. At the geometry
+of these recordings the correlation matrix is rank-deficient (fewer events than ROIs), which
 is the regime where the Marchenko-Pastur bound stops being available; that is why
 both nulls here are permutation nulls rather than analytic ones.
 
@@ -102,7 +102,7 @@ class AssemblyResult:
     mean_pair_count: float = float("nan")
     """Co-participation observations per ROI pair. Small is expected and is not
     itself evidence of anything — an assembly concentrates counts rather than
-    spreading them, which is why this corpus is better powered than this number
+    spreading them, which is why these recordings are better powered than this number
     suggests."""
 
     def verdict(self, alpha: float = 0.05) -> str:
@@ -317,7 +317,7 @@ def fisher(ps) -> float:
     """Fisher's combination of per-recording p-values, as a p-value.
 
     Recordings cannot be pooled cell by cell — the ROIs are different cells — so
-    a corpus-level statement combines per-slice evidence, not per-slice data.
+    a folder-level statement combines per-slice evidence, not per-slice data.
     Combine **within group**: FOUNDATIONS §9 records effects running in opposite
     directions by group, and a pooled number hides a sign change.
     """

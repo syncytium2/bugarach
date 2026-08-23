@@ -751,7 +751,7 @@
         not say what produced them, so <code>run.json</code> carries the roster,
         the frame interval of each recording, and every detector's settings. It
         says <code>null</code> for the generator spec, the chosen K and the
-        corpus seeds when a folder came off disk rather than out of the simulate
+        seeds when a folder came off disk rather than out of the simulate
         step — a question that was asked and had no answer, rather than one
         never asked.
         <br><br>
@@ -902,13 +902,13 @@
         file, and given nothing but the numbers shown above. The published page
         cannot reach it and does not show this panel at all.
         <br><br>
-        <b>It fits on a simulation, never on your recordings.</b> The corpus is
+        <b>It fits on a simulation, never on your recordings.</b> The data set is
         generated from the statistics measured in the assess step, so its events
         have known times and a score means something. Fitting on the recordings
         you are about to analyse would spend the very effect the experiment
         exists to measure.
         <br><br>
-        <b>Every score here is on a fold the model never saw.</b> The corpus is
+        <b>Every score here is on a fold the model never saw.</b> The data set is
         split first, the model is fitted on the rest, and the held-out fold is
         scored — the same procedure the published comparison used, reported
         across folds with its spread rather than as one number.
@@ -1011,7 +1011,7 @@ let SIMULATED = false;     // did the open folder come out of the generator belo
 let SIM_SPEC = null;
 let SIM_K = null;
 // The measurement the generator was set from, kept across the folder swap so
-// the corpus can be compared with it. Null until somebody accepts a K.
+// the simulated data can be compared with it. Null until somebody accepts a K.
 let SIM_TARGET = null;
 let VERIFY = null;      // {target, got, per} — the comparison, once it is made
 
@@ -1029,7 +1029,7 @@ let VERIFY = null;      // {target, got, per} — the comparison, once it is mad
    DROPPED THE MOMENT ITS CONTROL IS EDITED BY HAND: a raster lane claiming a
    setting was tuned, about a number somebody typed, is worse than one that says
    nothing at all. */
-let TUNED = {};   // which -> {value, knobName, unit, f1, nFolds, corpusN, tolSec, from}
+let TUNED = {};   // which -> {value, knobName, unit, f1, nFolds, dataSetN, tolSec, from}
 
 // slice_id -> {times, fracs}: what the generator planted, and the only ground
 // truth this page can have. Empty for a folder read off disk, which is why
@@ -2066,7 +2066,7 @@ async function open(fileList, opts) {
   SIM_SPEC = null; SIM_K = null;
   FOLDER_RUN = null;
   // `SIM_TARGET` deliberately SURVIVES this: it is the measurement of the folder
-  // being replaced, and comparing the incoming corpus with it is the entire
+  // being replaced, and comparing the incoming data set with it is the entire
   // point. The comparison itself does not survive — it was about the last one.
   VERIFY = null;
   RECORDINGS = []; REGIONS = new Map(); META = new Map();
@@ -3306,7 +3306,7 @@ function sceDetect(trains, range, opts) {
    `tests/test_webapp_tune_parity.py`. */
 
 /* ---- folds and pooling, spliced from docs/site/scoring.js -------------
-   The single scoring path: divide the corpus once, fit on the training
+   The single scoring path: divide the data set once, fit on the training
    folds, report what came back from the fold nothing was fitted on. */
 
 /* bugarach — folds and pooling, in the browser
@@ -3316,7 +3316,7 @@ function sceDetect(trains, range, opts) {
 
    Two pure functions, no DOM and no state. They are the half of
    `tools/fair_bakeoff.py` that makes a number on screen mean something: divide
-   the corpus once, fit on the training folds, and report what came back from
+   the data set once, fit on the training folds, and report what came back from
    the fold nothing was fitted on.
 
    Without them the page sweeps one detector's one knob on one recording and
@@ -3341,7 +3341,7 @@ function sceDetect(trains, range, opts) {
    SCE reads precision 0.91 one way and 0.11 the other. */
 
 
-/* ---- the corpus, divided once ------------------------------------------- */
+/* ---- the data set, divided once ----------------------------------------- */
 
 /* A fold split is worth something only if it is the SAME split for everyone
    being compared. Derive it here and pass it around; deriving it twice invites
@@ -3362,7 +3362,7 @@ function foldSplit({ nFolds = 4, seedsPerFold = 3, baseSeed = 1000 } = {}) {
   if (!Number.isInteger(seedsPerFold) || seedsPerFold < 1)
     throw new Error(`seedsPerFold=${seedsPerFold} makes an empty fold`);
   if (!Number.isInteger(baseSeed))
-    throw new Error(`baseSeed=${baseSeed} is not an integer, so the corpus ` +
+    throw new Error(`baseSeed=${baseSeed} is not an integer, so the data set ` +
                     `it names is not reproducible`);
 
   const seeds = [];
@@ -3375,7 +3375,7 @@ function foldSplit({ nFolds = 4, seedsPerFold = 3, baseSeed = 1000 } = {}) {
   const foldOf = (seed) => {
     const i = seed - baseSeed;
     if (!Number.isInteger(i) || i < 0 || i >= seeds.length)
-      throw new Error(`seed ${seed} is not in this corpus ` +
+      throw new Error(`seed ${seed} is not in this data set ` +
                       `(${baseSeed}..${baseSeed + seeds.length - 1})`);
     return Math.floor(i / seedsPerFold);
   };
@@ -3402,7 +3402,7 @@ function foldSplit({ nFolds = 4, seedsPerFold = 3, baseSeed = 1000 } = {}) {
 
    `scores` are the objects the page's `scoreDetections` returns — nPlanted,
    nDetected, nHit, nFa, byFrac — plus, where a probe exists, hotFa and
-   distractorHits. Anything scored against this corpus pools through here,
+   distractorHits. Anything scored against this data set pools through here,
    including a learned model or a one-off candidate. That is the point of it
    being a function. */
 function poolScores(scores, { detector, regime, seeds = [], knobValue = null,
@@ -4008,7 +4008,7 @@ function paintDelayToggles(baseIdx) {
 }
 
 /* ONE INDEX IS NOT ONE LABEL. Across a folder, period 2 is whichever drug that
-   recording got — this corpus has TTX in 38 of them, senktide in 29 and SB222200
+   recording got — this folder has TTX in 38 of them, senktide in 29 and SB222200
    in 12, all at index 2. Keeping the first label seen per index and calling that
    the list of periods hid three quarters of the drugs from the delay toggles, and
    the interface offered a choice about two period kinds out of six.
@@ -4312,9 +4312,9 @@ function simulateFromMeasurement(rec, a, source, stream) {
   MEASURED_LEVELS = levels;
   // The accept step, recorded. K is the choice a person made and the one number
   // these settings are meaningless without, so it travels into `run.json` with
-  // the corpus it produced rather than living only in the note below.
+  // the data set it produced rather than living only in the note below.
   SIM_K = a.K;
-  /* WHAT THE GENERATOR WAS ASKED TO REPRODUCE, kept so the corpus that comes out
+  /* WHAT THE GENERATOR WAS ASKED TO REPRODUCE, kept so the data that comes out
      can be measured against it. These four are not a summary of the assessment —
      they are precisely the quantities mapped onto knobs a few lines below, so a
      comparison over them is a comparison of what was promised.
@@ -4697,7 +4697,7 @@ async function runSimOnce() {
     const spec = readSim();
     const made = simulateFolder(spec);
     await open(made.files, { simulated: true, truth: made.truth });
-    // Kept for the sidecar: a generated corpus can say what generated it, and
+    // Kept for the sidecar: a generated data set can say what generated it, and
     // that is the difference between a reproducible run and a folder of times.
     // Set AFTER `open`, which clears the last run's provenance along with
     // everything else.
@@ -4709,19 +4709,19 @@ async function runSimOnce() {
   }
 }
 
-/* ---------- stage 5: did the corpus come out like the folder? ----------------
+/* ---------- stage 5: did the simulation come out like the folder? -----------
 
    The generator is set from four measured quantities, and until now nothing
-   measured the corpus that came out. A generator can be wrong in ways a raster
+   measured the data set that came out. A generator can be wrong in ways a raster
    hides and a number does not, and every operating point tuned downstream is
-   fitted on this corpus — so an unchecked generator is an unchecked result.
+   fitted on this data set — so an unchecked generator is an unchecked result.
 
    WHAT THIS DOES NOT DO IS DECIDE. It reports the real folder's measurement, the
    simulation's measurement and the gap; it does not rule on whether the gap is
-   acceptable, because that depends on what the corpus is for. The assessment
+   acceptable, because that depends on what the data set is for. The assessment
    refuses to pick K for the same reason, and this is the same kind of refusal.
 
-   The corpus is measured AT THE TARGET'S K. Comparing a number taken at one K
+   The data set is measured AT THE TARGET'S K. Comparing a number taken at one K
    with a number taken at another would be the K mistake the assess panel spends
    a paragraph warning about, made inside the tool that warns about it. */
 const VERIFY_ROWS = [
@@ -4778,7 +4778,7 @@ function paintVerifyButton() {
     ? "against " + SIM_TARGET.recId + " at K = " + SIM_TARGET.K
     : SIMULATED
       ? "Set the simulator from a measurement first — there is nothing to "
-        + "compare a corpus with until one was aimed at something."
+        + "compare a data set with until one was aimed at something."
       : "";
 }
 
@@ -4830,7 +4830,7 @@ function paintVerify() {
   box.textContent = "";
   box.append(el("h4", "The simulation beside " + target.recId));
   box.append(el("p", n + " generated recording(s) measured the same way, at "
-    + "K = " + target.K + " — the K this corpus was generated at, because a "
+    + "K = " + target.K + " — the K this data set was generated at, because a "
     + "number taken at one K does not compare with a number taken at another. "
     + "Target from " + target.source
     + (target.stream ? ", stream " + target.stream : "") + ".", "sub"));
@@ -4871,7 +4871,7 @@ function paintVerify() {
     + "background whose shape is wrong can still land on the right median rate, "
     + "and this table would not show it.", "caveat"));
   box.append(el("p", "Nothing here passes or fails. What counts as close enough "
-    + "depends on what the corpus is for, and the same rule applies as to K: "
+    + "depends on what the data set is for, and the same rule applies as to K: "
     + "the number is shown, the choice is yours.", "caveat"));
 }
 
@@ -5191,7 +5191,7 @@ function runJson(run) {
     // generator, no K was chosen for it and it has no seeds.
     generator_spec: run.generatorSpec ?? null,
     chosen_k: run.chosenK ?? null,
-    corpus_seeds: run.corpusSeeds ?? null,
+    simulated_data_seeds: run.simulatedDataSeeds ?? null,
     thresholds: Object.assign({}, run.thresholds),
     produced_by: "bugarach raster viewer (in-browser)",
   };
@@ -5325,7 +5325,7 @@ async function analyseFolder() {
       extras, sliceExtras,
       generatorSpec: simulated ? (SIM_SPEC || null) : null,
       chosenK: simulated ? (SIM_K ?? null) : null,
-      corpusSeeds: simulated ? RECORDINGS.map((_, i) => i) : null,
+      simulatedDataSeeds: simulated ? RECORDINGS.map((_, i) => i) : null,
     };
     paintFolderRun();
   } finally {
@@ -6018,7 +6018,7 @@ function paintDetectPanel(data, runs, streams) {
 
 /* THE MULTI-PICK, also built from the registry.
 
-   Two detectors are 97% of the wall clock — measured on one corpus, fit
+   Two detectors are 97% of the wall clock — measured on one data set, fit
    seconds: sync 0.06, coact 0.08, rate 0.10, SCE 0.17, LoCo 2.69, CICADA 7.06.
    So the cost marker is not decoration: it is the difference between a run that
    returns while you are looking at it and one you wait out, and it is why being
@@ -6155,18 +6155,18 @@ async function tuneLoad(rec) {
    frame interval, plus the names of any that had the first and not the second.
    Both sweeps ask for the same thing, and asking for it in one place is what
    stops one of them growing a fallback the other does not have. */
-async function tuneCorpus() {
-  const corpus = [], noDt = [];
+async function tuneDataSet() {
+  const dataSet = [], noDt = [];
   for (const rec of RECORDINGS) {
     const t = TRUTH.get(rec.id);
     if (!(t && t.times.length)) continue;      // no answer key, nothing to score
     if (!dtFor(rec.id)) { noDt.push(rec.id); continue; }
-    corpus.push(await tuneLoad(rec));
+    dataSet.push(await tuneLoad(rec));
   }
-  return { corpus, noDt };
+  return { dataSet, noDt };
 }
 
-/* How to divide this corpus, or null when it cannot be divided.
+/* How to divide this data set, or null when it cannot be divided.
 
    `foldSplit` refuses a single fold and is right to: fitting and scoring on the
    same recording answers a different question from the one being asked. So a
@@ -6216,7 +6216,7 @@ function tunePool(scores, opts) {
   return pooled;
 }
 
-/* ---------- the scoreboard: every detector, one corpus, one fold split -------
+/* ---------- the scoreboard: every detector, one data set, one fold split ----
 
    DRAFT. The numbers are real; the sentences around them have not been through
    the review this repo requires of anything an outside reader sees, which is why
@@ -6227,7 +6227,7 @@ function tunePool(scores, opts) {
    ONE CORPUS AND ONE SPLIT FOR ALL OF THEM, which is the entire point. The tune
    panel beside this sweeps whichever detector is selected; comparing two of its
    runs would compare detectors scored on different fold assignments. Here the
-   corpus is loaded once and `tunePlan` is called once, and every detector is
+   data set is loaded once and `tunePlan` is called once, and every detector is
    fitted on the same three folds and scored on the same held-out fourth.
 
    WHAT THE COLUMNS MAY AND MAY NOT BE READ AS. The bench scores a hit at a 1.5 s
@@ -6246,13 +6246,13 @@ const SCORE_COPY = {
        + "this wide that makes the ORDER of these rows meaningful and a single "
        + "number's decimal places not — read the ranking, not the gap.",
   noTube: "The learned detector is not in this table. It trains through the "
-       + "server rather than in the page, and a row scored on a different corpus "
+       + "server rather than in the page, and a row scored on a different data set "
        + "than the rest would be the one comparison this table exists to avoid.",
   heldOut: "Each detector's setting is chosen on the folds it may see and scored "
        + "on the fold it may not. The spread is across folds.",
 };
 
-let SCOREBOARD = null;   // {rows, nFolds, corpusN, tol}
+let SCOREBOARD = null;   // {rows, nFolds, dataSetN, tol}
 
 async function scoreAllDetectors() {
   const btn = document.getElementById("runScore");
@@ -6264,10 +6264,10 @@ async function scoreAllDetectors() {
   if (btn) btn.disabled = true;
   try {
     const tol = clamp(Number(document.getElementById("scTol").value), 0.1, 30);
-    /* The corpus, loaded ONCE for all six. Only recordings with planted events
+    /* The data set, loaded ONCE for all six. Only recordings with planted events
        are in it — a recording with no answer key cannot score anything, and
        including it would put a zero in every row for the same reason. */
-    const { corpus, noDt } = await tuneCorpus();
+    const { dataSet, noDt } = await tuneDataSet();
     if (noDt.length) {
       say(noDt.length + " recording(s) with planted events carry no frame "
           + "interval, so there is no grid to score them on. Supply one in "
@@ -6276,32 +6276,32 @@ async function scoreAllDetectors() {
       paintScoreboard();
       return;
     }
-    if (!corpus.length) {
+    if (!dataSet.length) {
       say("No simulated recordings are open, so there is nothing with a known "
           + "answer to score against.");
       SCOREBOARD = null;
       paintScoreboard();
       return;
     }
-    const split = tunePlan(corpus.length);
+    const split = tunePlan(dataSet.length);
     const rows = [];
     for (const which of Object.keys(DETECTORS)) {
       const D = DETECTORS[which];
       say("Scoring " + D.label + "…");
       await new Promise(r => setTimeout(r, 0));
-      // A detector that cannot run on this corpus gets a row saying so rather
+      // A detector that cannot run on this data set gets a row saying so rather
       // than a blank one or, worse, a zero that reads as a poor score.
-      if (D.peaks && corpus.some(c => c.peaks && c.peaks.why)) {
-        rows.push({ which, label: D.label, refused: corpus.find(
+      if (D.peaks && dataSet.some(c => c.peaks && c.peaks.why)) {
+        rows.push({ which, label: D.label, refused: dataSet.find(
           c => c.peaks && c.peaks.why).peaks.why });
         continue;
       }
       const knob = D.knob;
-      const base = D.read(corpus[0].dt);
+      const base = D.read(dataSet[0].dt);
       const t0 = performance.now();
       const scored = new Map();
       for (const v of knob.grid) {
-        scored.set(v, corpus.map(c =>
+        scored.set(v, dataSet.map(c =>
           sweepPoint(c.trains, c.range, which, base, knob, v, c.truth, tol,
                      c.peaks)));
         await new Promise(r => setTimeout(r, 0));
@@ -6312,8 +6312,8 @@ async function scoreAllDetectors() {
       // cost column is a detect cost rather than a share of the sweep.
       const mid = knob.grid[knob.grid.length >> 1];
       const d0 = performance.now();
-      sweepPoint(corpus[0].trains, corpus[0].range, which, base, knob, mid,
-                 corpus[0].truth, tol, corpus[0].peaks);
+      sweepPoint(dataSet[0].trains, dataSet[0].range, which, base, knob, mid,
+                 dataSet[0].truth, tol, dataSet[0].peaks);
       const detectMs = performance.now() - d0;
 
       /* A FOLD WHERE THE OPERATING POINT CANNOT BE PICKED IS REPORTED, NOT
@@ -6362,7 +6362,7 @@ async function scoreAllDetectors() {
       });
     }
     SCOREBOARD = { rows, nFolds: split ? split.nFolds : 0,
-                   corpusN: corpus.length, tol };
+                   dataSetN: dataSet.length, tol };
     say("");
     paintScoreboard();
   } finally {
@@ -6375,11 +6375,11 @@ function paintScoreboard() {
   if (!box) return;
   box.textContent = "";
   if (!SCOREBOARD) return;
-  const { rows, nFolds, corpusN, tol } = SCOREBOARD;
+  const { rows, nFolds, dataSetN, tol } = SCOREBOARD;
 
   box.append(el("p", SCORE_COPY.draft, "verdict bad"));
-  box.append(el("h4", "Every detector on the same corpus"));
-  box.append(el("p", corpusN + " simulated recording(s) · " + nFolds
+  box.append(el("h4", "Every detector on the same data set"));
+  box.append(el("p", dataSetN + " simulated recording(s) · " + nFolds
     + " fold(s) · matched within " + tol + " s", "sub"));
 
   const ranked = rows.slice().sort((a, b) =>
@@ -6393,7 +6393,7 @@ function paintScoreboard() {
     const tr = document.createElement("tr");
     tr.append(el("td", r.label));
     if (r.refused) {
-      const td = el("td", "could not run on this corpus", "state");
+      const td = el("td", "could not run on this data set", "state");
       td.colSpan = 7;
       tr.append(td);
       tbl.append(tr);
@@ -6478,7 +6478,7 @@ function tunedNote(which) {
   const t = TUNED[which];
   if (!t) return null;
   return DETECTORS[which].label + " · " + t.knobName + " " + fmtKnob(t.value)
-    + (t.unit ? " " + t.unit : "") + " — chosen by the sweep on " + t.corpusN
+    + (t.unit ? " " + t.unit : "") + " — chosen by the sweep on " + t.dataSetN
     + " simulated recording(s), " + (t.heldOut ? "held-out " : "")
     + "F1 " + fmtNum(t.f1, 2)
     + (t.nFolds ? " across " + t.nFolds + " fold(s)" : "")
@@ -6507,20 +6507,20 @@ async function runTune() {
     const label = DETECTORS[which].label;
     const tol = clamp(Number(document.getElementById("tTol").value), 0.1, 30);
 
-    /* The corpus is every simulated recording in the folder, not the one on
+    /* The data set is every simulated recording in the folder, not the one on
        screen. A knob fitted to one recording is fitted to that recording's
        noise, and nothing on the screen used to show the difference. */
-    const { corpus, noDt } = await tuneCorpus();
+    const { dataSet, noDt } = await tuneDataSet();
     if (noDt.length) {
       sayNoDt(document.getElementById("tuneOut"), noDt);
       return;
     }
-    if (!corpus.length) return;
+    if (!dataSet.length) return;
     /* A detector anchored on the peak cannot be swept on a folder that did not
        send one. Said once, before any work, rather than returning a flat curve
        that looks like a knob with no effect. */
     if (DETECTORS[which].peaks) {
-      const bad = corpus.find(c => c.peaks && c.peaks.why);
+      const bad = dataSet.find(c => c.peaks && c.peaks.why);
       if (bad) {
         const box = document.getElementById("tuneOut");
         box.textContent = "";
@@ -6529,8 +6529,8 @@ async function runTune() {
         return;
       }
     }
-    const base = DETECTORS[which].read(corpus[0].dt);
-    const levels = [...new Set(corpus.flatMap(c => c.truth.fracs))]
+    const base = DETECTORS[which].read(dataSet[0].dt);
+    const levels = [...new Set(dataSet.flatMap(c => c.truth.fracs))]
       .sort((a, b) => b - a);
 
     /* Score every recording at every setting ONCE, then reuse. The folds below
@@ -6540,11 +6540,11 @@ async function runTune() {
     const scored = new Map();          // knob value -> per-recording scores
     const rows = [];
     for (const v of knob.grid) {
-      const per = corpus.map(c =>
+      const per = dataSet.map(c =>
         sweepPoint(c.trains, c.range, which, base, knob, v, c.truth, tol, c.peaks));
       scored.set(v, per);
       rows.push(tunePool(per, { detector: which, knobValue: v, tolSec: tol,
-                                seeds: corpus.map((c, i) => i) }));
+                                seeds: dataSet.map((c, i) => i) }));
       await new Promise(r => setTimeout(r, 0));   // let the button stay honest
     }
 
@@ -6552,7 +6552,7 @@ async function runTune() {
        score that choice on the fold it may not. Nothing is fitted on a recording
        it is later scored against — the claim the training panel beside this one
        makes, and which this sweep could not make until now. */
-    const split = tunePlan(corpus.length);
+    const split = tunePlan(dataSet.length);
     const folds = [];
     if (split) {
       for (let f = 0; f < split.nFolds; f++) {
@@ -6579,20 +6579,20 @@ async function runTune() {
     box.textContent = "";
     const nPlanted = rows.length ? rows[0].nPlanted : 0;
     box.append(el("h4", label + " swept on "
-      + (corpus.length === 1 ? corpus[0].id
-                             : corpus.length + " simulated recordings")));
+      + (dataSet.length === 1 ? dataSet[0].id
+                             : dataSet.length + " simulated recordings")));
     box.append(el("p", knob.grid.length + " settings tried · " + knob.name
       + " · matched within " + tol + " s of a planted event · "
       + nPlanted + " planted"
       + (split ? " · " + split.nFolds + " folds" : "")
-      + " · stream " + corpus[0].stream, "sub"));
-    /* A corpus with more than one stream is not what the generator writes, and
+      + " · stream " + dataSet[0].stream, "sub"));
+    /* A data set with more than one stream is not what the generator writes, and
        the truth it is scored against is per recording rather than per stream. So
        say plainly that the sweep looked at one of them, rather than leaving a
        reader to assume a number covers a stream it never touched. */
-    if (corpus.some(c => c.nStreams > 1))
+    if (dataSet.some(c => c.nStreams > 1))
       box.append(el("p", "This folder carries more than one stream. The sweep ran "
-        + "on " + corpus[0].stream + " only: the planted events it scores against "
+        + "on " + dataSet[0].stream + " only: the planted events it scores against "
         + "belong to the recording rather than to a stream, so there is nothing "
         + "here to score a second one on. Detect reports every stream.", "caveat"));
 
@@ -6665,7 +6665,7 @@ async function runTune() {
         knobName: knob.name, unit: knob.unit,
         f1: heldMean === null ? pick.row.f1 : heldMean,
         heldOut: heldMean !== null,
-        nFolds: held.length, corpusN: corpus.length, tolSec: tol,
+        nFolds: held.length, dataSetN: dataSet.length, tolSec: tol,
       });
       apply.append(go, document.createTextNode(
         " — sets " + knob.name + " to " + fmtKnob(pick.row.knob)
@@ -6713,7 +6713,7 @@ async function runTune() {
           + (knobs.length === 1
               ? "Every fold chose " + knob.name + " " + knobs[0]
                 + (knob.unit ? " " + knob.unit : "") + ", so the setting is "
-                + "stable across the corpus."
+                + "stable across the data set."
               : "The folds chose " + knobs.join(", ") + " — the setting moves "
                 + "with the training data, so no single value here is calibrated.")
           + " This is the number to quote; the table above is not.", "verdict"));
@@ -6871,7 +6871,7 @@ const lab = () => window.__lab || null;
    is the shape being targeted.
 
    ⚠ Only the fields the assess step actually measures are carried from the form.
-   The rest take the values the published corpus was built with, and the panel
+   The rest take the values the published data set was built with, and the panel
    SAYS SO rather than letting a default read as a measurement. */
 const LAB_SPEC_DEFAULTS = {
   grid_sec: 0.1, min_sep_sec: 120.0, hot_rate_hz: 0.06, ramp_sec: 30.0,
@@ -6895,11 +6895,11 @@ function paintLabWhat() {
   const spec = labSpec();
   const carried = LAB_MEASURED.map(k => k + " " + spec[k]).join(", ");
   note.textContent =
-    "Generates a corpus from the simulate settings (" + carried + "), splits it "
+    "Generates a data set from the simulate settings (" + carried + "), splits it "
     + "into folds, fits " + document.getElementById("lArch").value + " on all but "
     + "one and scores the one it never saw. The remaining generator settings ("
     + Object.keys(LAB_SPEC_DEFAULTS).join(", ") + ") are the values the published "
-    + "corpus used — they are not measured from your recordings.";
+    + "data set used — they are not measured from your recordings.";
 }
 
 function paintFolds(res) {

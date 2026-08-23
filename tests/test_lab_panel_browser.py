@@ -200,7 +200,7 @@ def test_the_fold_table_draws_the_spread_and_the_caveat(page_ctx, served):
     Two things it must not omit. The **spread**, because every learned number is
     one training run per fold, so fold-to-fold variation confounds the data with
     the training and a lone mean would hide that. And the **caveat**, because the
-    corpus is simulated and nothing measured on it says the model is right about
+    data is simulated and nothing measured on it says the model is right about
     a real recording.
     """
     page = _open(page_ctx, served + "/")
@@ -224,7 +224,7 @@ def test_the_fold_table_draws_the_spread_and_the_caveat(page_ctx, served):
 
 def test_the_panel_names_which_settings_were_measured_and_which_were_not(
         page_ctx, served):
-    """A default must not read as a measurement. The corpus comes from a handful
+    """A default must not read as a measurement. The data comes from a handful
     of measured statistics and a larger handful of published defaults, and the
     panel says which are which before it is run.
 

@@ -132,7 +132,7 @@ writes to the darkroom rather than to the two files this page shows.
 
 Eighty-five real baseline recordings were measured without a detector; one
 generator spec was derived from that measurement; every detector was then
-calibrated or trained on three quarters of the resulting simulated corpus and
+calibrated or trained on three quarters of the resulting simulated data set and
 scored on the quarter it had never seen, all four rotations. **F1** is the usual
 harmonic mean of recall (what fraction of planted events were found) and precision
 (what fraction of calls were real), so 1.0 is perfect and a detector can reach it
@@ -169,7 +169,7 @@ quicker again, and sits 0.10 of F1 below.
 each — the intervals above are fold ranges, not confidence intervals, and seed
 variance within a fold was never measured. The two learned models at the floor land
 their threshold on the low edge of the searched grid, which this project treats
-elsewhere as a search that stopped too early. The corpus rests on one human choice
+elsewhere as a search that stopped too early. The data set rests on one human choice
 — how many clusters the assessment was read at — and a different choice halves the
 event rate and builds a different benchmark. And the recordings are simulated:
 their settings were measured from real ones, but **nothing here says any detector
@@ -217,7 +217,7 @@ The classical side of the same problem is
 [CICADA](https://gitlab.com/cossartlab/cicada) and the coactivity-versus-shuffle
 rule it comes from — both among the six ported here.
 
-**No method from the literature has been run on this project's corpus**, so
+**No method from the literature has been run on this project's recordings**, so
 nothing here claims to beat one. The reading behind that paragraph — which papers
 were read closely and which were deliberately not opened — is on the site as
 [the landscape](https://bugarach.tonydefazio.com/landscape.html), built from
@@ -385,12 +385,12 @@ code from cSPIKE's MATLAB source.
 
 | Upstream | License | Role here |
 | --- | --- | --- |
-| [PySpike](https://github.com/mariomulansky/PySpike) | BSD | SPIKE-synchronization semantics ported from its (BSD) source; test-suite cross-check (0.9.0 `max_tau` bug limits it to the uncapped regime) |
+| [PySpike](https://github.com/mariomulansky/PySpike) | BSD | SPIKE-synchronization semantics ported from its (BSD) source; test-suite cross-check (its `max_tau` bug, live since 0.8.0, limits it to the uncapped regime) |
 | [CICADA](https://gitlab.com/cossartlab/cicada) | MIT | CICADA detection method (ported; carries upstream copyright notice) |
 | cSPIKE (MATLAB) | research/education only — **no code used** | reference outputs for parity tests only (research use, via interface2) |
 
 ⚠ SPIKE-synchronization is a **native port** rather than a PySpike wrapper because
-**PySpike 0.9.0's `max_tau` cap is broken**: the cap is applied only as the default
+**PySpike's `max_tau` cap has been broken since 0.8.0**: the cap is applied only as the default
 for missing edge-neighbour ISIs, so spikes seconds apart "coincide" under a 0.25 s
 cap (see `detectors/sync.py`). PySpike stays a test-suite cross-check in the
 uncapped regime, where the two definitions agree.

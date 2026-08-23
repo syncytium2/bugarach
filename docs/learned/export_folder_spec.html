@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>The export folder — full contract</title>
+<title>The export folder — bugarach's input contract</title>
 <style>
   :root {
     --paper:   #f6f7f9;
@@ -168,6 +168,17 @@
   .doc blockquote.gate h2 { border-top: 0; padding-top: 1.2rem;
                             color: var(--bad-fg); }
   .doc blockquote.gate strong { color: var(--bad-fg); }
+  /* a hoisted caveat reads at body weight, not aside-gray */
+  .doc blockquote.warn { border-left: 4px solid var(--learned);
+                         color: var(--ink); padding: .2rem 1.3rem;
+                         background: color-mix(in srgb, var(--learned) 7%,
+                                               transparent);
+                         border-radius: 3px; }
+  /* A figure wider than the 74ch column silently overflows it and the page
+     ships with its evidence cropped. Caught on a document whose lead figure
+     ran off the right edge. */
+  .doc img { max-width: 100%; height: auto; display: block;
+             margin: 1.6rem auto; }
   .doc code { background: color-mix(in srgb, var(--ink) 7%, transparent);
               padding: .08em .32em; border-radius: 2px; }
   .doc li { margin-bottom: .5rem; }
@@ -204,7 +215,7 @@ reading the lab's workbook to re-derive the exclusions. The workbook keys them o
 (date, mouse, <strong><code>slice_order</code></strong>). bugarach has no <code>slice_order</code>, so it matched on
 date and dropped <strong>a recording the lab had not withdrawn</strong> — one mouse had two
 slices that day and only the first was excluded. The producer's export had it
-right. Every number in a published report was then computed over a corpus one
+right. Every number in a published report was then computed over a set one
 recording smaller than the producer intended, by machinery built to be careful.</p>
 <p><strong>The generalisation.</strong> A consumer re-deriving a producer's decision is working
 from strictly less information than the producer had. It will sometimes agree, and
@@ -252,7 +263,7 @@ nothing — those spellings are read as <code>subject_id</code>. Both columns st
 "interprets not at all" and "does not know what a mouse is". That is right about
 <strong>values</strong> and was wrong about <strong>roles</strong>: an app that may not know which column
 says two recordings share an animal cannot produce a group-split result, which
-FOUNDATIONS §9 requires before a corpus number is admissible. bugarach still never
+FOUNDATIONS §9 requires before a folder-level number is admissible. bugarach still never
 interprets a <em>value</em> — <code>DI</code>, <code>ORX</code>, <code>wildtype</code>, <code>cohort-B</code> mean nothing to it — but
 it now knows which column plays which <em>role</em>. Written after an analysis went to a
 spreadsheet outside the folder for group membership that <code>slices.csv</code> was already
@@ -374,6 +385,17 @@ where the definitions differ the comparison is not available — which is a fact
 the measurement, not a gap in the file.</p>
 <p>For this project's own exporter, defining fast and slow width is <strong>interface2's</strong>
 responsibility and belongs in their documentation, not here.</p>
+<blockquote>
+<p><strong>Confirmed 2026-08-20 (Tony): width really is different for fast and slow, and the
+current export is right to send two definitions.</strong> The exporter's <code>PROVENANCE.md</code>
+raises this itself as <code>⚠ CONFIRM: width_sec is not the same quantity in both
+streams</code> — fast carries the real transient width (findpeaks half-prominence), slow
+carries the rise interval <code>peak_sec − time_sec</code>, because slow widths run to a median
+of 4.7 s and a maximum of 186.9 s and would swamp any coincidence window. <strong>That ⚠
+is answered: intended behaviour, not a defect.</strong> Nothing in bugarach reads
+<code>width_sec</code> yet, so no code changes; recorded so the question is not reopened and so
+interface2 can clear its flag.</p>
+</blockquote>
 <h4>Sending more than is asked for</h4>
 <p>Extra columns are ignored rather than rejected, so a producer may ship one file that
 serves several consumers. A producer that already computes the full per-event set is
@@ -606,7 +628,7 @@ interpreted, but each answers a question an analysis cannot answer for itself.
 <code>group_id</code> says which comparison the study is about, so a result can be reported per
 group instead of pooled across groups that may run in opposite directions.
 <code>subject_id</code> says which recordings are siblings, so twenty slices from eight animals
-are not counted as twenty independent observations. Without them a corpus number is
+are not counted as twenty independent observations. Without them a folder-level number is
 still computable and is quietly weaker than it looks — so when they are absent
 bugarach says which claims it cannot support, rather than refusing the folder or
 pretending it can.</p>

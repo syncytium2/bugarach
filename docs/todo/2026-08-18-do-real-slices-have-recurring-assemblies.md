@@ -19,7 +19,7 @@ closed: 2026-08-19
 > | who participates, beyond rate | curveball + uniform nulls on membership (`bugarach.assembly`) | departure from uniform in **45 of 47** testable | **36 of 38** |
 >
 > Against the ~5% the modularity threshold gives by chance, and a measured false-positive
-> rate of 6.0% (fast) / 9.1% (slow) for the membership test at this corpus's own geometry.
+> rate of 6.0% (fast) / 9.1% (slow) for the membership test at this folder's own geometry.
 > The median recording is *less* modular than its own surrogates. Co-participation above
 > rate with **no modular partition** is a **core–periphery** field — a busy core, a long
 > tail, no membership repeating as a unit. **Drop the word "assembly"** unless the
@@ -39,7 +39,7 @@ closed: 2026-08-19
 > **And a fourth thing that was not on the list.** The instrument itself moved into this repo
 > (PR #151). The modularity numbers above are now `bugarach.graph`'s, not interface2's: the
 > pipeline that produced the originals has no maintainer and does not run out of the box. The
-> port reproduces it to 2.2e-16 on identical inputs and agrees on 98.7% of corpus verdicts
+> port reproduces it to 2.2e-16 on identical inputs and agrees on 98.7% of folder verdicts
 > under a different window rule. **The interface2 figures — 3 of 78 and 2 of 77 — are the
 > cross-check, not the result**, which is why the row above changed.
 >
@@ -55,12 +55,12 @@ closed: 2026-08-19
 whole family of comparisons.**
 
 > **Revision 2 — the power question is now measured, not argued.**
-> `tools/assembly_power.py` plants assemblies of known strength at this corpus's own
+> `tools/assembly_power.py` plants assemblies of known strength at this folder's own
 > geometry and reports how often the test finds them. Two results change what follows.
 > **The event-conditioned null cannot be run alone**: it goes blind exactly where the
-> signal is purest. And **the corpus is well powered after all** — the arithmetic in
+> signal is purest. And **the folder is well powered after all** — the arithmetic in
 > revision 1 that made it look hopeless was the wrong intuition. Read
-> *What the corpus can actually see* before writing any measurement code.
+> *What the folder can actually see* before writing any measurement code.
 >
 > *Revision 1 replaced the original method, which tested co-participation against the
 > assessor's circular-shift null and called the work free. Both were wrong, and the first
@@ -74,10 +74,10 @@ synchrony profile. The question that followed — *which detector would you add*
 prerequisite nobody had noticed.
 
 **Our generator draws every planted event's participants at random**
-(`simulate.py`: `rois = rng.choice(nR, size=np_, replace=False)`). So the corpus has
+(`simulate.py`: `rois = rng.choice(nR, size=np_, replace=False)`). So the folder has
 coordinated *events* and no cell *assemblies* — no group that recurs. The entire
 assembly-detection literature (ICA/PCA, CAD, graph methods, item-set mining) finds
-recurring co-activation patterns, so on this corpus it finds nothing, and the zero would
+recurring co-activation patterns, so on this folder it finds nothing, and the zero would
 be a fact about our generator rather than about those methods.
 
 ## The question
@@ -127,7 +127,7 @@ both counts.
   randomization over a new matrix. The clustering is what gets reused, not the null.
 - **Done.** `bugarach.assembly` holds both nulls, both statistics and the two-null
   verdict; `tools/assembly_power.py` imports them rather than keeping a copy, so the
-  instrument the power curve validated is the one the corpus is measured with. The
+  instrument the power curve validated is the one the folder is measured with. The
   assessor records `Assessment.members` (observed clusters only) at unchanged 1e-9 MATLAB
   parity, and `tools/assess_archive.py --assemblies` runs the question over a store.
 - **One thing the build caught that the design had not.** The verdict takes the smaller
@@ -136,7 +136,7 @@ both counts.
   the two statistics fixed it — 22 of 24 now read `no-assembly`, and a test pins that rate,
   because the negative result is the thing this exercise exists to be able to publish.
 
-## What the corpus can actually see
+## What the folder can actually see
 
 **Measured, not estimated** — `tools/assembly_power.py`, figure `assembly_power` in the
 darkroom. It plants an assembly of known size and known strength at the median slice
@@ -146,7 +146,7 @@ over all 85 baseline slices: **32 ROIs**, **21 clusters** at K=3 over a 59-minut
 directly — no onsets, no detector, no operating point — so it runs on a bare clone with no
 `BUGARACH_DATA_ROOT`.
 
-### The corpus is well powered, and revision 1's arithmetic was misleading
+### The folder is well powered, and revision 1's arithmetic was misleading
 
 496 pairs share about 165 co-participation observations, a third of an observation per
 pair, and revision 1 read that as fatal. It is not. **An assembly concentrates counts
@@ -165,7 +165,7 @@ surrogates each.
 | 12 cells | 1 event in 2 (0.93) | **1 event in 4 (1.00)** |
 | 16 cells — half the field | 1 event in 2 (0.82) | 1 event in 4 (0.90) |
 
-So a negative result from this corpus would be worth publishing. Stated the way it would
+So a negative result from this folder would be worth publishing. Stated the way it would
 have to be written up: **a group of twenty slices excludes a recurring group of four to
 six cells that takes part in more than a tenth of coordinated events**, and a compact
 assembly is excluded well below the level a single slice could reach. A diffuse group
@@ -226,7 +226,7 @@ plumbing job rather than a measurement one.
 
 ## What must not happen
 
-Do not port an assembly detector first and report its score. On today's corpus it will
+Do not port an assembly detector first and report its score. On today's folder it will
 lose, we will have "beaten" a respected method by testing it on data built to contain
 nothing it looks for, and the first reviewer to notice will be right.
 
@@ -251,6 +251,6 @@ Two more that bite this measurement specifically:
 
 It gates the assembly family only. The nearest neighbouring item — clean-rooming the
 Molter coactivity frame gate, recommended in
-[`2026-08-17-run-a-literature-method-on-our-corpus.md`](2026-08-17-run-a-literature-method-on-our-corpus.md)
+[`2026-08-17-run-a-literature-method-on-our-recordings.md`](2026-08-17-run-a-literature-method-on-our-recordings.md)
 — detects population *events*, not assemblies, so it is unaffected by how this falls and
 remains the better move if a published-method comparison is wanted sooner.

@@ -18,6 +18,27 @@ Everything is CSV, UTF-8, newline-only endings, one header row. Times are
 this project's MATLAB exporter, another lab's Python, a spreadsheet exported by
 hand.
 
+> **Revision 7** (2026-08-23). **Your bounds are scored as sent, and the two folder
+> commands cannot disagree about them.**
+>
+> A region with no `analysis_start_sec`/`analysis_end_sec` used to have this project's
+> convention applied to it — baseline backward off a 20-minute cap, a 2-minute wash-in
+> delay on every treatment, an exemption for any label containing `hi`. It no longer
+> is: **the period is scored whole**, `start_sec` to `end_sec`, and the guards
+> requiring a baseline at 0 and contiguous periods are gone from this path. A lab that
+> started recording before it started treating, or left the tissue alone between
+> conditions, is describing its experiment.
+>
+> `bugarach detect` was taught that on 2026-08-23 and `bugarach check` was not, so for
+> one afternoon a folder whose baseline began at 500 s **failed at the door** and was
+> then scored happily by the very next command — the tool contradicting itself, with
+> nothing to say which answer was true. Both now ask one resolver, and a test pins the
+> two verdicts together rather than trusting them to stay aligned.
+>
+> The four refusals in "Used as given is not the same as unchecked" below are
+> unchanged, and they are now the whole of what "not conforming" means about your
+> bounds.
+
 > **Revision 6** (2026-08-20). **Selection is the producer's, and the consumer may
 > not second-guess it.**
 >
@@ -34,7 +55,7 @@ hand.
 > (date, mouse, **`slice_order`**). bugarach has no `slice_order`, so it matched on
 > date and dropped **a recording the lab had not withdrawn** — one mouse had two
 > slices that day and only the first was excluded. The producer's export had it
-> right. Every number in a published report was then computed over a corpus one
+> right. Every number in a published report was then computed over a set one
 > recording smaller than the producer intended, by machinery built to be careful.
 >
 > **The generalisation.** A consumer re-deriving a producer's decision is working
@@ -90,7 +111,7 @@ hand.
 > "interprets not at all" and "does not know what a mouse is". That is right about
 > **values** and was wrong about **roles**: an app that may not know which column
 > says two recordings share an animal cannot produce a group-split result, which
-> FOUNDATIONS §9 requires before a corpus number is admissible. bugarach still never
+> FOUNDATIONS §9 requires before a folder-level number is admissible. bugarach still never
 > interprets a *value* — `DI`, `ORX`, `wildtype`, `cohort-B` mean nothing to it — but
 > it now knows which column plays which *role*. Written after an analysis went to a
 > spreadsheet outside the folder for group membership that `slices.csv` was already
@@ -280,13 +301,11 @@ window of **−100,499 seconds**, which every detector downstream would have rep
 an absence of coordination. Found by interface2 on 2026-08-18, running our own gates
 against a folder they broke on purpose.
 
-**When they are absent, bugarach derives the analysis window itself**, applying this
-project's convention: the baseline measured backward from its end with a 20-minute
-cap, every non-high-K treatment starting 2 minutes late and capped at 20 minutes,
-high K⁺ exempt from both. For this project that is correct and matches its own
-analysis. For anybody else it is an assumption you did not make, which is the reason
-these two columns exist —
-[`docs/todo/2026-08-17-windowing-convention-is-not-optional.md`](todo/2026-08-17-windowing-convention-is-not-optional.md).
+**When they are absent, your period is scored whole.** `start_sec` to `end_sec`,
+verbatim: no wash-in delay, no duration cap, no baseline measured backward from its
+end, no exemption for a label containing `hi`. Those are this project's protocol and
+they are no longer applied to yours — send the two columns above if the part you want
+scored is narrower than the period itself.
 
 **This is not a derived column of the kind the section above refuses.** A duration
 judgement is recomputable from the row and so does not belong in it; an analysis
@@ -309,36 +328,36 @@ Sending it would put two records of one quantity in the same file, which is exac
 what this contract avoids elsewhere by deriving the treatment index at write time
 instead of storing it. Send the bounds; let whoever is deciding decide.
 
-**⚠ Send the RAW bounds, not analysis windows.** `start_sec` and `end_sec` are when
-the period *began and ended* on the recording's clock: **region 1 starts at 0, and
-each region starts where the previous one ended.** No trimming, no caps, no wash-in
-delay, no gaps.
+**Send the RAW bounds — and if the only bounds you have are already trimmed, send
+those.** `start_sec` and `end_sec` are when the period began and ended on the
+recording's clock. Raw is better, because the raw period travels alongside the scored
+one and how much was trimmed then stays visible in the output instead of being
+absorbed into the number. But a producer who has only trimmed bounds is no longer
+turned away for it: what you send is what gets scored, so the worst case is a
+narrower window and a `raw_*` column that repeats it.
 
-**This paragraph said the opposite until 2026-08-17, and it cost a whole export.** It
-promised bugarach "uses the bounds as given and never adjusts them". It does not:
-`region_windows` in `src/bugarach/detectors/loco.py` re-applies this project's
-windowing convention — a backward cap on the baseline, a two-minute wash-in delay and
-a cap on each treatment — and it **halts** on a baseline that does not begin at 0 or a
-gap between regions, because in these stores either means a data defect.
+**Two paragraphs here said the opposite of the truth, in turn, and each cost
+something.** Until 2026-08-17 this promised bugarach "uses the bounds as given and
+never adjusts them", which was false — `region_windows` re-applied this project's
+convention and **halted** on a baseline that did not begin at 0 or a gap between
+regions. interface2 read that promise, sent pre-trimmed windows, and **83 of 85**
+recordings refused to run. The correction went too far the other way: it told
+producers their bounds must be zero-based and contiguous, which is aCa5z's protocol
+and not a property of a well-formed export, and `bugarach check` was taught to refuse
+anything else at the door. A lab that started recording before it started treating
+was then told its legal folder was malformed.
 
-So a producer who did the trimming, exactly as this text asked, shipped a folder that
-loaded cleanly and then halted **83 of 85** recordings. That happened: interface2 read
-this paragraph, sent pre-trimmed windows, and every detector refused them. `bugarach
-check` now runs `region_windows` over every recording, so a folder that cannot be
-analysed fails at the door rather than at the first detector.
+Both are settled by scoring what you sent. `region_windows` is unchanged and still
+halts on the data it was written for — a `.mat` store, where a baseline not beginning
+at 0 really is a defect — and the folder no longer routes into it.
 
-The case for raw bounds is the one the old text made, pointing the other way: this
-windowing rule has been reimplemented five times in this ecosystem and drifted every
-time, so it is applied **once**, here, to bounds nobody has already adjusted. Two
-consumers handed the same raw folder compute the same windows; two consumers handed
-pre-trimmed folders get whatever each producer decided.
-
-**⚠ If your lab has no wash-in and no cap, that convention is applied anyway**, and it
-is not currently optional: a treatment window will start two minutes after your
-`start_sec` and end twenty minutes later. For this project that is correct and matches
-its own analysis. For anyone else it is an inherited assumption, and making it a
-parameter is open work —
-[`docs/todo/2026-08-17-windowing-convention-is-not-optional.md`](todo/2026-08-17-windowing-convention-is-not-optional.md).
+**What bugarach still refuses** is the universal subset, the four things that are
+wrong under anybody's protocol: a period that ends before it begins, an analysis
+window that ends before it begins, an analysis start that is not a finite time, and
+an analysis window falling outside the period it claims to be part of. **`bugarach
+check` and `bugarach detect` ask one resolver and cannot disagree** — a folder the
+check passes is one detection scores, and a recording it refuses is one detection
+refuses for the same stated reason.
 
 **How this handles any number of treatments.** It carries no notion of a treatment
 *slot*, so there is nothing to run out of. One region is a recording with no
@@ -397,7 +416,7 @@ interpreted, but each answers a question an analysis cannot answer for itself.
 `group_id` says which comparison the study is about, so a result can be reported per
 group instead of pooled across groups that may run in opposite directions.
 `subject_id` says which recordings are siblings, so twenty slices from eight animals
-are not counted as twenty independent observations. Without them a corpus number is
+are not counted as twenty independent observations. Without them a folder-level number is
 still computable and is quietly weaker than it looks — so when they are absent
 bugarach says which claims it cannot support, rather than refusing the folder or
 pretending it can.

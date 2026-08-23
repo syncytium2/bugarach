@@ -33,9 +33,9 @@ Three consequences, in increasing order of how much they cost:
   excluded slice would never have appeared.
 - **The wrong window was scored on 24 of 84 recordings.** `regions.csv` separates
   `start_sec`/`end_sec` — what happened — from `analysis_start_sec`/`analysis_end_sec`
-  — what to score. `assess_archive.py` used the raw period, which on this corpus ran up
+  — what to score. `assess_archive.py` used the raw period, which on this folder ran up
   to **660 s longer**. More window is more clusters and more power, unevenly across the
-  corpus. Fixed: the tool now honours the analysis window and reports how many
+  folder. Fixed: the tool now honours the analysis window and reports how many
   recordings had one.
 
 The check that was supposed to catch the third one passed. It compared the analysed
@@ -56,7 +56,7 @@ bugarach
 > know what a mouse is.
 
 FOUNDATIONS §9 says a pooled across-group number is not admissible on its own. An app
-forbidden to interpret group cannot produce an admissible corpus result. The resolution
+forbidden to interpret group cannot produce an admissible folder-level result. The resolution
 keeps what that sentence protects: **interpret the ROLE of a column, never the meaning
 of its values.** Reserve `group_id` as *the design factor to split by* and `subject_id`
 as *the independence unit*; values stay the lab's own and uninterpreted. bugarach still
@@ -65,7 +65,7 @@ one.
 
 **2. Exclusion and provisional status are producer-side only.** This producer drops
 excluded recordings before writing, which is a clean answer. But the contract has no
-way to *say* a recording was withdrawn, so a folder cannot distinguish "this corpus is
+way to *say* a recording was withdrawn, so a folder cannot distinguish "this set is
 complete" from "someone silently dropped 12". A count in `PROVENANCE.md` is prose, not
 a column. Likewise the lab marks some rows provisional; nothing in the folder can carry
 that, so a caveat that belongs on a result is unavailable to the tool computing it.
@@ -76,7 +76,7 @@ that, so a caveat that belongs on a result is unavailable to the tool computing 
   pass-through exactly as today.
 - Add an optional `excluded` column, so a folder can be self-describing about what it
   omits rather than relying on a prose note.
-- A corpus result that had no `group_id` available should say so on its face — a sapper
+- A folder-level result that had no `group_id` available should say so on its face — a sapper
   rule can catch a result written from a folder that lacked it.
 
 ## The one that has no todo yet

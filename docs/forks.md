@@ -43,7 +43,7 @@ flags.
 
 ---
 
-## 2 · The background shape is measured per corpus, not chosen
+## 2 · The background shape is measured per folder, not chosen
 
 **Live:** `assess` fits the per-ROI heterogeneity from the folder it was handed
 and emits it; `derive_spec` prefers that over any constant.
@@ -58,12 +58,12 @@ exactly as flat does. Tony: *"This should be a toggle not a decision."*
 
 **To flip:**
 - **flat, deliberately** — pass `bg_rate_shape=None` to the generator. A flat
-  field is `shape → ∞`, and a genuinely uniform corpus already fits that way
+  field is `shape → ∞`, and a genuinely uniform folder already fits that way
   (the estimator saturates and the assessment reports *flat*), so this is only
   for a diagnostic, never a default.
 - **inherit this lab's shape** — it is still in `bench.MEASURED_RATE_SHAPE`,
   labelled as this lab's reference. `derive_spec` falls back to it, loudly and
-  with the reason, when a corpus has too little baseline to fit its own.
+  with the reason, when a folder has too little baseline to fit its own.
 - **Cost: low.** One parameter; nothing is baked in.
 
 **Still open (Phase 2, not a decision):** `BENCH_RECORDING` runs flat, so the
@@ -407,8 +407,8 @@ And 14 s is the spacing of the historical dense benchmark whose settings
 collapsed.
 
 **To flip:** opt-in already, and deliberately **not** in `REGIMES` so nothing can
-be calibrated on it — a corpus assembled to hold crowded and isolated events in
-useful proportions is not a corpus anything resembles.
+be calibrated on it — a set assembled to hold crowded and isolated events in
+useful proportions is not one that anything resembles.
 
 ⚠ **It is a second axis crossing the difficulty axis, not a replacement for it**,
 and treating it as a self-contained condition is what went wrong in §4b: the

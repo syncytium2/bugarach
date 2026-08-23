@@ -357,7 +357,7 @@ SPLITS = [
 @needs_node
 @pytest.mark.parametrize("cfg", SPLITS, ids=lambda c: f"{c['nFolds']}x{c['seedsPerFold']}")
 def test_fold_split_matches_python(cfg):
-    """Same corpus, same folds, same held-out set — with no random source in it,
+    """Same data set, same folds, same held-out set — with no random source in it,
     so the browser reproduces a split the command line made."""
     py = fold_split(n_folds=cfg["nFolds"], seeds_per_fold=cfg["seedsPerFold"],
                     base_seed=cfg["baseSeed"])
@@ -390,7 +390,7 @@ def test_a_split_with_nothing_to_fit_on_is_refused_by_both(cfg):
 
 
 def test_fair_bakeoff_uses_the_shared_split():
-    """The corpus division the browser reproduces has to be the one the command
+    """The data-set division the browser reproduces has to be the one the command
     line ran, so the tool imports it rather than keeping its own copy."""
     src = (ROOT / "tools" / "fair_bakeoff.py").read_text(encoding="utf-8")
     assert "fold_split" in src, "fair_bakeoff no longer uses the shared split"

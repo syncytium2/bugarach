@@ -100,7 +100,7 @@ def real_and_control(folder: Path, slice_id: str, stream: str, seed: int = 3):
     return M, C, a
 
 
-# ---- panel B: power under the rule the corpus is scored by -----------------
+# ---- panel B: power under the rule the folder is scored by -----------------
 
 def power_curves(power_json: Path) -> tuple[list, list, dict]:
     """`verdict_rows` from `assembly_power.py --geometry-from`."""

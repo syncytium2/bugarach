@@ -1,0 +1,60 @@
+# Report how far bugarach.tonydefazio.com is behind `main`. It does not deploy.
+#
+# Deploying from CI needs a Cloudflare API token in repository secrets, which is
+# Tony's call and not a chore — this repo is public, and a token here is publish
+# rights for anything that can run an Action. Until that call is made the page
+# advances only when a person runs `npm run deploy`, and the gap is invisible
+# because a stale page looks exactly like a current one. This job makes the gap
+# say its own name on a schedule.
+#
+# **It never fails the build.** A red tick for something no automation here can
+# fix teaches people that red means nothing, and then a real failure gets waved
+# through too. The verdict goes in the run summary, where it is read, and the job
+# stays green.
+name: Site staleness
+
+on:
+  schedule:
+    # 13:10 UTC daily — morning in the timezone this repo is worked in, and off
+    # the hour, where GitHub's scheduler queues are longest.
+    - cron: "10 13 * * *"
+  push:
+    branches: [main]
+    # Only when something that reaches the page moves. A doc edit does not make
+    # the site stale, and a notice on every push is a notice nobody reads.
+    paths:
+      - "docs/site/**"
+      - "docs/learned/landscape.html"
+      - "docs/generator/reality_check.png"
+      - "tools/build_site.py"
+      - "tools/make_diagnostic.py"
+      - "tools/site_staleness.py"
+      - ".github/workflows/site-staleness.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  staleness:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # The check names the deployed commit by hashing the served viewer
+          # against every committed version of docs/site/raster_viewer.html, so a
+          # shallow clone would find no match and report "unknown" forever.
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: How far behind is the published page?
+        # Standard library only — no install step, and nothing to go stale here.
+        # --ref HEAD compares against exactly what was checked out rather than
+        # whatever origin/main happens to be inside the runner.
+        run: |
+          python tools/site_staleness.py --ref HEAD --exit-zero | tee staleness.txt
+          python tools/site_staleness.py --ref HEAD --format github --exit-zero \
+            >> "$GITHUB_STEP_SUMMARY"
+          brief=$(python tools/site_staleness.py --brief --ref HEAD --cache-ttl 0 --exit-zero)
+          echo "::notice title=Site staleness::${brief}"
