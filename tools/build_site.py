@@ -250,6 +250,98 @@ the experiment exists to measure.</p>
 </div>
 """
 
+SITE_BORN = "2026-08-13"
+"""The day this site first existed, and it does not move.
+
+`f84e8d2`, *"Static site for bugarach.tonydefazio.com, on the existing Worker
+pattern"*. Written down rather than derived at build time on purpose: a born-on
+date computed from `git log --reverse` over a path silently resets the day
+somebody renames a directory, and a first-published date that quietly becomes
+last Tuesday is worse than none — it is the same class of error as a fabricated
+frame interval, which this project has already been bitten by.
+
+A reader uses the pair. The born-on date says how long the thing has existed;
+the version date says whether what they are reading is current. Either alone
+invites the wrong inference.
+"""
+
+
+def _stamp_dates(commit: str) -> tuple[str, str]:
+    """(born, version) as ISO dates, for the footer of every page.
+
+    The version date is the **committer date of the commit being built**, not
+    the wall clock. Two builds of one commit must produce identical bytes:
+    `tests/test_lab_server.py` pins the viewer copy that way, the site-staleness
+    check identifies the deployed version by hashing what is served, and a
+    timestamp that advances on every rebuild would break both while telling a
+    reader nothing they did not already know from the sha.
+    """
+    out = subprocess.run(["git", "log", "-1", "--format=%cs", commit], cwd=ROOT,
+                         capture_output=True, text=True)
+    version = out.stdout.strip() if out.returncode == 0 else ""
+    if not version:
+        # Degrade loudly. A stamp reading "unknown" is honest; one silently
+        # showing the born-on date twice would say the page had never changed.
+        print("build_site: could not read the commit date — the pages will say "
+              "so rather than guess. A shallow clone does this.", file=sys.stderr)
+        version = "unknown"
+    return SITE_BORN, version
+
+
+STAMP_MARKER = "data-bugarach-born"
+"""What proves a page carries its dates.
+
+It lives on the visible element, not on a `<meta>`, because half this site's
+pages have no `<head>` to put a meta in — `index.html` and `landscape.html` are
+HTML5 without explicit `html`/`head`/`body` tags. The first version of this check
+looked for the meta and reported those two pages unstamped when they were fine,
+which is the right failure to have had: a marker that only exists on some page
+shapes cannot verify all of them.
+"""
+
+
+def date_stamp(commit: str) -> str:
+    """The visible footer line, identical on every page, and self-describing.
+
+    Carries the three facts as data attributes as well as prose. Anything asking
+    whether a deployed page is current — `tools/site_staleness.py` today — can
+    then read them off any page instead of parsing English out of the one footer
+    that happened to be hand-written.
+    """
+    born, version = _stamp_dates(commit)
+    return (f'<p class="site-dates" {STAMP_MARKER}="{born}"'
+            f' data-bugarach-version-date="{version}"'
+            f' data-bugarach-commit="{commit}"'
+            f' style="margin:1.5rem max(1.2rem, calc(50% - 23rem));'
+            f'color:#666;font-size:.85rem">\n'
+            f'  First published {born} · this version {version}'
+            f' (<code>{commit}</code>)\n</p>\n')
+
+
+def meta_stamp(commit: str) -> str:
+    """The same three facts in `<head>`, for the pages that have one."""
+    born, version = _stamp_dates(commit)
+    return (f'<meta name="bugarach:born" content="{born}">\n'
+            f'<meta name="bugarach:version-date" content="{version}">\n'
+            f'<meta name="bugarach:commit" content="{commit}">\n')
+
+
+def stamp_html(body: str, commit: str) -> str:
+    """Put the dates into a finished page, whatever shape it is.
+
+    Insertion is by anchor with a fallback rather than by assuming a shape:
+    `landscape.html` and `diagnostic.html` are produced by other tools and their
+    structure is not this file's to guarantee. Re-stamping is a no-op, so a
+    rebuild over an existing `site/` does not accumulate footers.
+    """
+    if STAMP_MARKER in body:
+        return body
+    if "</head>" in body:
+        body = body.replace("</head>", meta_stamp(commit) + "</head>", 1)
+    if "</body>" in body:
+        return body.replace("</body>", date_stamp(commit) + "</body>", 1)
+    return body + "\n" + date_stamp(commit)
+
 # The page leads with the figure. If the flat render could not be made — no
 # playwright chromium — it leads with a link to the interactive one instead of
 # a broken image, and says so on stderr. A public page with a missing <img> is
@@ -416,7 +508,36 @@ def main(argv=None):
     commit = subprocess.run(["git", "rev-parse", "--short", "HEAD"], cwd=ROOT,
                             capture_output=True, text=True).stdout.strip() or "unknown"
     (SITE / "index.html").write_text(
-        INDEX.format(commit=commit, lead=lead, real=real), encoding="utf-8")
+        stamp_html(INDEX.format(commit=commit, lead=lead, real=real), commit),
+        encoding="utf-8")
+
+    # EVERY page carries the pair, not just the one with a hand-written footer.
+    # A reader who arrives on the viewer — which is the page the README sends
+    # people to — was previously given no way at all to tell whether they were
+    # looking at this month's build or February's.
+    #
+    # `viewer.html` is the exception and it is deliberate: it is a byte-for-byte
+    # copy of a hand-written page, pinned that way by
+    # `tests/test_lab_server.py::test_the_built_viewer_is_the_source_viewer` so
+    # that the build cannot quietly transform a page that promises the reader it
+    # reaches nothing. Its stamp belongs in the source page, where a reader can
+    # audit it, not injected here where the guard would have to be loosened to
+    # allow it.
+    for page in ("landscape.html", "diagnostic.html"):
+        p = SITE / page
+        if not p.is_file():
+            continue
+        p.write_text(stamp_html(p.read_text(encoding="utf-8"), commit),
+                     encoding="utf-8")
+
+    unstamped = [p.name for p in sorted(SITE.glob("*.html"))
+                 if p.name != "viewer.html"
+                 and STAMP_MARKER not in p.read_text(encoding="utf-8")]
+    if unstamped:
+        print(f"build_site: no date stamp reached {', '.join(unstamped)} — a "
+              f"published page with no born-on date and no version date is the "
+              f"thing this stamp exists to prevent. Check the insertion anchors "
+              f"in stamp_html().", file=sys.stderr)
 
     total = sum(f.stat().st_size for f in SITE.rglob("*") if f.is_file())
     print(f"\nsite/ built — {total/1024:.0f} KB")
