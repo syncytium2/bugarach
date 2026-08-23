@@ -350,10 +350,11 @@ def make_recording(regime: str, seed: int, **overrides):
         seed=seed, **{**BENCH_RECORDING, **REGIMES[regime], **overrides})
 
 
-CROWDED_RECORDING = dict(BENCH_RECORDING, min_sep_sec=14.0,
+CROWDED_RECORDING = dict(BENCH_RECORDING, min_sep_sec=14.0, duration_sec=10800.0,
                          n_per_level=(40, 40, 40), hot_window=None,
                          hot_rate_hz=0.0, ramp_sec=0.0, n_distractors=0)
-"""Events packed close enough to sit inside one another's reference window.
+"""Some events sit inside one another's reference window and some do not — so the
+recording is its own control.
 
 **The bench cannot exhibit reference-window contamination, and that is why the
 regime-shift incident was found by hand rather than by the suite.**
@@ -392,21 +393,88 @@ closes by itself.
 measurement to find. ``min_sep_sec`` is a *floor* under a renewal process, not a
 target: at the bench's own event count it changes almost nothing, because the
 median gap stays near 70 s and only 5 of 35 gaps land inside a reference window.
-120 events over 45 minutes puts the median gap at **19.4 s** and **97 of 119**
-gaps inside ±30 s, which is the condition the guard is supposed to address.
+**The count is what crowds.**
+
+⚠ **It runs three hours, and the length is the design.** Tony, 2026-08-23:
+*"shouldn't the two tests have the same number of events so F1 can be compared.
+who cares how long the recording has to be?"* Both halves were right and the
+second one is what fixed this.
+
+The first version planted the same 120 events in 45 minutes, which put **every**
+event inside a neighbour's reference window — 97 of 119 gaps under 30 s, none
+over 60. So there was no uncontaminated group anywhere in it, and the only
+available comparison was against ``BENCH_RECORDING``, which differs in event
+count, duration and therefore false-alarm opportunity all at once. Two things
+followed, both bad. F1 could not be compared across the pair at all, because
+eight times the events raises precision on density alone — CoactDetect reads a
+*higher* F1 crowded than on the bench while recalling a fifth less. And matching
+the count by lengthening the sparse side cannot fix that, because false-alarm
+opportunity scales with duration: the bench's own 15 events over 6 h hold recall
+at 0.85 and drop precision from 0.633 to 0.250. **Crowding is events per unit
+time, so no two recordings can differ in it and match on both count and
+duration.**
+
+Three hours dissolves the problem instead of balancing it. At the bench's own
+``interval_cv`` the gap distribution spans both regimes in **one** recording:
+about **38%** of events have a neighbour inside their own ±30 s reference window
+and about **31%** have nothing within 60 s. Recall is per-event, so splitting it
+by each event's own nearest-neighbour gap (:func:`nearest_neighbour_gaps`) holds
+the count, the duration, the background *and* the false-alarm opportunity fixed
+by construction — there is only one recording. See
+``test_the_crowded_recording_contains_its_own_control``.
+
+That contrast immediately paid for itself. Between recordings, a guard interval
+looked like the masking fix §4a predicted. Within one, its recall gain is **flat
+across the gap** — CoactDetect +0.045 at a 15–30 s gap and +0.046 at over 60 s,
+where there is no neighbour to unmask — while precision falls 0.889 → 0.867. It
+was lowering the bar everywhere, not relieving masking. `docs/forks.md` §4a.
 
 Use it through :func:`make_crowded_recording`. It is a **diagnostic, not a
-regime**: nothing should be calibrated on it, because a corpus where every event
-has a neighbour is as unrepresentative as one where none does.
+regime**: nothing should be calibrated on it, because a corpus assembled to hold
+both populations in useful proportions is not a corpus anything resembles.
 """
 
 CROWDING_GAP_SEC = 30.0
 """Half the shipped 60 s context — a gap below this puts two planted events in
-one another's reference window, which is what makes the recording above crowded.
+one another's reference window, which is what makes an event crowded.
 
 Named rather than written as a literal because it is a *consequence* of
 ``context_win``: change the context and this moves with it.
 """
+
+
+def nearest_neighbour_gaps(gt) -> "np.ndarray":
+    """Seconds to each planted event's closest neighbour, in ``gt.times`` order.
+
+    The companion to :data:`CROWDED_RECORDING`, and the reason that recording is
+    three hours long. **Crowding is a property of an event, not of a recording**,
+    so it is measurable within one: score as usual, then split recall by this.
+    Everything a between-recording comparison cannot hold fixed — event count,
+    duration, background rate, false-alarm opportunity — is fixed here because
+    there is only one recording.
+
+    A lone event gets ``inf``. Compare against :data:`CROWDING_GAP_SEC`::
+
+        sl, gt = make_crowded_recording("baseline_quiet", 1)
+        gaps = nearest_neighbour_gaps(gt)
+        crowded = gaps < CROWDING_GAP_SEC        # has a neighbour in its context
+        isolated = gaps >= 2 * CROWDING_GAP_SEC  # has none, and is the control
+
+    The order is ``gt.events``' — ``gt.times`` is derived from it and
+    :attr:`~bugarach.score.Score.hits` is in it — so ``gaps`` and ``score.hits``
+    are column-aligned and ``score.hits[gaps < CROWDING_GAP_SEC].mean()`` is the
+    crowded group's recall. Do not sort one without the other.
+    """
+    t = np.asarray(gt.times, dtype=float)
+    order = np.argsort(t)
+    gaps = np.full(t.size, np.inf)
+    if t.size > 1:
+        d = np.diff(t[order])
+        by_time = np.full(t.size, np.inf)
+        by_time[:-1] = np.minimum(by_time[:-1], d)
+        by_time[1:] = np.minimum(by_time[1:], d)
+        gaps[order] = by_time
+    return gaps
 
 
 def make_crowded_recording(regime: str, seed: int, **overrides):
