@@ -61,6 +61,16 @@ def _detector_params():
     return {name: dict(op.params) for name, op in OPERATING_POINTS.items()}
 
 
+class NoFigure(RuntimeError):
+    """What would be written is not the figure it claims to be, so nothing is.
+
+    Distinct from a detector failing, which is a finding this tool prints and
+    keeps going through. This is the tool being unable to produce its own output,
+    and it exists because for one day the two were indistinguishable from outside
+    — see the `if not lanes` refusal below for what that cost.
+    """
+
+
 def build(args):
     import holoviews as hv
     import panel as pn
@@ -98,16 +108,42 @@ def build(args):
         )
     ext = recording_extent(slice_)
 
+    # The interval comes off the recording, through the one accessor every
+    # consumer uses. FOUNDATIONS §6 is about exactly this, and a fourth hardcoded
+    # `0.1` in this tree would have been the one nobody found.
+    dt = slice_.require_dt("the diagnostic figure")
+
     lanes, traces, failed = {}, {}, {}
     for det, params in _detector_params().items():
         try:
-            t, y, events, extra = _compute(det, slice_, ext, params)["events"]
-            lanes[det] = events
-            traces[det] = (t, y, events, extra)
+            # BY NAME, not by position. `StreamResult` is a NamedTuple and it
+            # gained a fifth field (`result`, so emit can read the detector's own
+            # object) on 2026-08-23; `t, y, events, extra = ...` then raised
+            # "too many values to unpack" for every detector at once. Naming the
+            # fields means the next one added is not this tool's problem.
+            r = _compute(det, slice_, ext, params, dt=dt)["events"]
+            lanes[det] = r.events
+            traces[det] = (r.t, r.y, r.events, r.extra)
         except Exception as exc:                      # noqa: BLE001
             # A detector that cannot run on this slice is a finding, not a crash
             # — record it in the sidecar instead of losing the whole figure.
             failed[det] = f"{type(exc).__name__}: {exc}"
+
+    # ONE detector failing is the finding above. ALL SIX failing is this tool
+    # being broken, and from outside the two looked identical.
+    #
+    # They were, for a day. `_compute` gained a required keyword-only `dt` and
+    # this call site did not, so every detector raised TypeError, the figure was
+    # written with no detector lanes on it, and the process exited 0 — so
+    # `build_site.py`, which judges this step by its return code alone, published
+    # a blank-lane figure to the front of the site with six stderr lines as the
+    # only warning. A green build of a broken figure is worse than a red one,
+    # because only the red one gets fixed.
+    if not lanes:
+        raise NoFigure(
+            "NO detector ran, so this is not the figure — it is an empty raster "
+            "under a caption describing lanes nobody can see.\n  "
+            + "\n  ".join(f"{d}: {why}" for d, why in failed.items()))
 
     fig = coordination_diagnostic(slice_.streams["events"], ext=ext, lanes=lanes,
                                   gt=gt, traces=traces, height=args.height)
@@ -191,7 +227,13 @@ def main(argv=None):
             print(unresolved_message(), file=sys.stderr)
             return 2
 
-    fig, legend, header, report, pn = build(args)
+    try:
+        fig, legend, header, report, pn = build(args)
+    except NoFigure as exc:
+        # Nonzero, so `build_site.py` — which judges this step by its return code
+        # and nothing else — stops instead of publishing what it did not get.
+        print(f"make_diagnostic: refusing to write a figure. {exc}", file=sys.stderr)
+        return 1
     tag = args.tag or f"seed{args.seed}"
     html, txt = dest / f"coord_diagnostic_{tag}.html", dest / f"coord_diagnostic_{tag}.txt"
 
