@@ -456,6 +456,62 @@ def stamp_html(body: str, commit: str) -> str:
         return body.replace("</body>", date_stamp(commit) + "</body>", 1)
     return body + "\n" + date_stamp(commit)
 
+
+COMMIT_ATTR = "data-bugarach-commit"
+
+
+def built_from(site: Path | None = None) -> str | None:
+    """The commit a `site/` was built from, read off its own stamp.
+
+    `None` when there is no built index, or when it carries no stamp — which is
+    a build from before PR #242 and is equally a reason not to accuse anybody of
+    anything.
+    """
+    index = (site or SITE) / "index.html"
+    if not index.is_file():
+        return None
+    m = re.search(rf'{COMMIT_ATTR}="([^"]+)"', index.read_text(encoding="utf-8"))
+    return m.group(1) if m else None
+
+
+def stale_build_note(site: Path | None = None) -> str:
+    """Why this `site/` cannot be evidence about the build — or `""` if it can.
+
+    **This exists so a guard stops crying wolf.** `site/` is gitignored, so any
+    machine that has built the site once and then pulled has a stale payload; the
+    byte-identity guards on `viewer.html` then fail saying *"the build started
+    transforming the page"*, which is a serious accusation — that guard is what
+    stops the build quietly altering a page promising its reader it reaches
+    nothing — and in the routine case it is simply false. The build transformed
+    nothing. The artifact is an hour old.
+
+    This file's own docstring for `viewer_network_leaks` already carries the
+    lesson, from the scan that fired on a comment explaining why it never would:
+    *"the guard was correct about the property and wrong about the evidence,
+    which is the failure mode that gets real guards deleted rather than fixed."*
+
+    The two cases are distinguishable and the information is already on the page.
+    Only when the stamp matches `HEAD` **and** the bytes still differ has the
+    build actually started transforming anything, and that is when the accusation
+    is the right one to make.
+    """
+    was = built_from(site)
+    if was is None:
+        return ("this site/ carries no commit stamp, so it predates the stamp or "
+                "was not written by tools/build_site.py — rebuild before reading "
+                "anything into it")
+    head = subprocess.run(["git", "rev-parse", "--short", "HEAD"], cwd=ROOT,
+                          capture_output=True, text=True)
+    if head.returncode != 0 or not head.stdout.strip():
+        return ""            # no git here; nothing to compare against
+    now = head.stdout.strip()
+    if was == now:
+        return ""
+    return (f"your site/ was built from {was}, HEAD is {now} — rerun "
+            f"tools/build_site.py. Nothing is wrong with the build; the payload "
+            f"is stale, and site/ is gitignored so pulling does not update it")
+
+
 # The page leads with the figure. If the flat render could not be made — no
 # playwright chromium — it leads with a link to the interactive one instead of
 # a broken image, and says so on stderr. A public page with a missing <img> is
