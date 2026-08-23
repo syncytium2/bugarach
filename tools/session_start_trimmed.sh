@@ -36,12 +36,13 @@ VENDORED="${ROOT}/.claude/hooks/session-start.sh"
 DIGEST="${HERE}/board_digest.sh"
 BUDGET_BYTES="${BUGARACH_BRIEFING_BUDGET_BYTES:-8000}"
 
-# Replace the board dump with the digest.
-#   $1 vendored stdout   $2 rendered digest   -> filtered text on stdout
+# Replace the board dump with the digest, and slot the site line in above RULES.
+#   $1 vendored stdout   $2 rendered digest   $3 site line (optional)
+#   -> filtered text on stdout
 #   exit 0 replaced   3 no board marker found   4 marker found but no tail marker
 filter() {
-  awk -v digest="$2" '
-    BEGIN { seen = 0; skip = 0 }
+  awk -v digest="$2" -v siteline="${3:-}" '
+    BEGIN { seen = 0; skip = 0; said = 0 }
     /^--- session board: .* ---$/ && !seen {
       seen = 1; skip = 1
       while ((getline line < digest) > 0) print line
@@ -49,6 +50,9 @@ filter() {
       next
     }
     skip && /^RULES:/ { skip = 0 }
+    # Inside the banner, beside the other standing reminders — not trailing after
+    # the closing rule where it reads as debris that escaped the briefing.
+    /^RULES:/ && !said && siteline != "" { print siteline; said = 1 }
     skip { next }
     { print }
     END {
@@ -58,8 +62,40 @@ filter() {
   ' "$1"
 }
 
+# THE SITE LINE. Nothing in this repo publishes bugarach.tonydefazio.com, so the
+# page advances only when a person remembers `npm run deploy` — and a stale page
+# looks exactly like a current one. On 2026-08-20 it had been three features behind
+# for weeks and the way that got noticed was somebody opening it. So the distance
+# is printed to whoever starts work, which is the earliest moment anybody is in a
+# position to fix it.
+#
+# It must not cost the session anything: the tool caches its observation for hours,
+# takes a 3-second network timeout, and exits 0 whatever it finds. If it is missing,
+# slow, or offline this prints nothing at all rather than delaying the briefing.
+# BUGARACH_SKIP_SITE_CHECK=1 turns it off; BUGARACH_SITE_STALENESS_CMD replaces the
+# command, which is how the selftest drives this without a network.
+site_line() {
+  [ "${BUGARACH_SKIP_SITE_CHECK:-0}" = "1" ] && return 0
+  # Never from a test run. tests/test_board_digest.py drives this whole wrapper,
+  # and a suite that reaches the public internet fails for reasons that have
+  # nothing to do with this repo — slowly, on an offline machine. A stub in
+  # BUGARACH_SITE_STALENESS_CMD is how a test exercises the wiring instead.
+  [ -n "${PYTEST_CURRENT_TEST:-}" ] && [ -z "${BUGARACH_SITE_STALENESS_CMD:-}" ] && return 0
+  local cmd="${BUGARACH_SITE_STALENESS_CMD:-}" py out
+  if [ -z "$cmd" ]; then
+    [ -f "${HERE}/site_staleness.py" ] || return 0
+    py="${ROOT}/.venv/bin/python"
+    [ -x "$py" ] || py=$(command -v python3 2>/dev/null)
+    [ -n "$py" ] || return 0
+    cmd="\"$py\" \"${HERE}/site_staleness.py\" --brief --exit-zero"
+  fi
+  out=$(bash -c "$cmd" 2>/dev/null | head -1)
+  [ -n "$out" ] && printf '%s\n' "$out"
+  return 0
+}
+
 run() {
-  local raw filtered board rendered rc
+  local raw filtered board rendered rc siteline
   if [ ! -x "$VENDORED" ] && [ ! -f "$VENDORED" ]; then
     echo "[session-start-trimmed] vendored hook missing: $VENDORED"
     return 0
@@ -77,7 +113,8 @@ run() {
     bash "$DIGEST" "$board" > "$rendered" 2>/dev/null
   fi
 
-  filter "$raw" "$rendered" > "$filtered"; rc=$?
+  siteline=$(site_line)
+  filter "$raw" "$rendered" "$siteline" > "$filtered"; rc=$?
 
   # SIZE CANARY, and the reason there is one. The harness spills an oversized hook
   # to a file and injects a 2KB preview instead; the two hooks measured here on
@@ -90,7 +127,7 @@ run() {
     local bytes; bytes=$(wc -c < "$filtered" | tr -d ' ')
     if [ "${bytes:-0}" -gt "$BUDGET_BYTES" ] 2>/dev/null && [ -n "$board" ]; then
       bash "$DIGEST" --terse "$board" > "$rendered" 2>/dev/null
-      filter "$raw" "$rendered" > "$filtered"
+      filter "$raw" "$rendered" "$siteline" > "$filtered"
       bytes=$(wc -c < "$filtered" | tr -d ' ')
       echo "!! [session-start-trimmed] over ${BUDGET_BYTES}B — board digest re-rendered terse." >&2
     fi
@@ -161,6 +198,33 @@ selftest() {
   grep -v '^RULES:' "$tmp/raw.txt" > "$tmp/notail.txt"
   out=$(filter "$tmp/notail.txt" "$tmp/digest.txt"); rc=$?
   n "marker but no tail refuses (4)"             "$rc" 4
+
+  # The site line — the whole point of which is that it reaches the briefing.
+  out=$(BUGARACH_SITE_STALENESS_CMD='echo "site: 2 commits behind"' site_line)
+  t "site line is produced"    "$out" "2 commits behind"  yes
+  out=$(BUGARACH_SKIP_SITE_CHECK=1 \
+        BUGARACH_SITE_STALENESS_CMD='echo "site: 2 commits behind"' site_line)
+  t "opt-out silences it"      "$out" "site:"             no
+  out=$(BUGARACH_SITE_STALENESS_CMD='exit 9' site_line)
+  t "a broken checker prints nothing" "$out" "site:"      no
+  out=$(BUGARACH_SITE_STALENESS_CMD='printf "one\ntwo\n"' site_line)
+  t "only one line ever reaches the budget" "$out" "two"  no
+
+  out=$(filter "$tmp/raw.txt" "$tmp/digest.txt" "site: 2 commits behind"); rc=$?
+  n "a briefing carrying the site line still filters" "$rc" 0
+  t "site line lands in the briefing"   "$out" "2 commits behind"  yes
+  t "and the briefing is otherwise intact" "$out" "RULES: your own" yes
+  # It goes ABOVE the standing reminders, not after the closing rule where a
+  # trailing line reads as debris rather than as part of the briefing.
+  printf '%s' "$out" | awk '/^site: /{s=NR} /^RULES:/{r=NR} END{exit !(s && r && s < r)}'
+  n "and above RULES, not trailing off the end" "$?" 0
+
+  out=$(filter "$tmp/raw.txt" "$tmp/digest.txt" ""); rc=$?
+  n "no site line is not an error"           "$rc" 0
+  t "and nothing is inserted"          "$out" "site: "            no
+
+  out=$(filter "$tmp/nomarker.txt" "$tmp/digest.txt" "site: 2 commits behind"); rc=$?
+  n "a refused filter is still a refusal"    "$rc" 3
 
   rm -rf "$tmp"
   echo
