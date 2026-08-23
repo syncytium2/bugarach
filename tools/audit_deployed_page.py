@@ -48,12 +48,27 @@ def audit(url: str, *, timeout_ms: int = 30000):
         page.on("request", lambda r: seen.append(r.url))
         page.goto(url, timeout=timeout_ms)
         page.wait_for_timeout(2500)
-        # exercise it too: an injected script can be lazy, and the simulator is
-        # the one path that runs a lot of code after load
+        # Exercise it too: an injected script can be lazy, and the simulator is
+        # the one path that runs a lot of code after load.
+        #
+        # THE PAGE MAY HAVE RUN IT ALREADY. Since the viewer began simulating on
+        # load, `#simCta` — the button in the empty state — is not there to
+        # click, so this reached for it, timed out, and printed a worried note
+        # after every successful deploy about a path that had in fact just run.
+        # A check that cries wolf on every clean run is one the next person stops
+        # reading, which is the whole value of it gone. So ask what the page did
+        # before deciding there is anything left to do.
         try:
-            page.click("#simCta", timeout=5000)
-            page.wait_for_selector("#view:not([hidden])", timeout=timeout_ms)
-            page.wait_for_timeout(1500)
+            ran_on_load = page.evaluate(
+                "() => { const v = document.getElementById('view');"
+                "        return !!v && !v.hidden; }")
+            if ran_on_load:
+                print("note: the page simulated on load, so the generator ran "
+                      "without a click", file=sys.stderr)
+            else:
+                page.click("#simCta", timeout=5000)
+                page.wait_for_selector("#view:not([hidden])", timeout=timeout_ms)
+                page.wait_for_timeout(1500)
         except Exception as exc:                    # noqa: BLE001 — reported, not raised
             print(f"note: could not drive the simulator ({exc.__class__.__name__}); "
                   f"the load-time audit below still stands", file=sys.stderr)
