@@ -96,6 +96,42 @@ If he answers that 0.8.0 dropped the clamp deliberately, the issue changes shape
 before it is ever filed: it becomes a docs bug, and most of what follows comes
 out.
 
+### Is PySpike stale because the group moved to another stack? No (checked 2026-08-23)
+
+Tony asked before sending, which was the right question. It is not stale, and the
+evidence says so four ways:
+
+- **Kreuz published a sole-author review of exactly these measures on 2025-10-08
+  and revised it on 2026-07-28** — three weeks before this check
+  ([arXiv:2510.07140](https://arxiv.org/abs/2510.07140)). Live work, not a closed
+  chapter.
+- **That review names SPIKY, PySpike and cSPIKE as the three implementations**,
+  each with a footnote URL, and says all three "will soon also include the various
+  algorithms for latency correction". PySpike is in his forward plans, so there is
+  no successor stack the conversation should be aimed at instead.
+- **Mulansky is still maintainer and still active**: he authored and merged both
+  the packaging modernization (#86) and the v0.9.0 release (#87) himself on
+  2026-05-11. PyPI independently confirms the two dates the report leans on —
+  0.8.0 on 2023-07-14, 0.9.0 on 2026-05-11.
+- **Kreuz commits to the PySpike repo directly** (docs and website updates,
+  2023-06). He is not an outsider asking a favour there; he can act on his own
+  answer.
+
+**The check turned up a real complication, and the note now carries it.** That
+review defines the coincidence window as the minimum of the four surrounding
+half-ISIs with **no upper bound**, and mentions neither τmax nor the MRTS
+anywhere — verified by grepping the paper's own text, not by trusting a summary of
+it. That is not a retraction: a review of the measures need not carry the
+software's optional parameters, and MRTS is missing from it too while nobody
+thinks MRTS was withdrawn. But it does mean the note cannot treat "τmax is the
+intended semantics" as settled, and the version that goes out says so in as many
+words. Raising it ourselves is stronger than having it raised back at us, and it
+turns a leading question into a real one.
+
+**A later session revisiting this should re-read that paper first.** It is the most
+recent statement of what these measures are, it postdates every other source the
+report cites, and it is the reason the note asks rather than asserts.
+
 ---
 
 ## Draft issue text (for review — not yet posted)
