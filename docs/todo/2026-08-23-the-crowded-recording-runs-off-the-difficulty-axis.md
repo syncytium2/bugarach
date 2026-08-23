@@ -1,9 +1,18 @@
 ---
-status: open
+status: done
 filed: 2026-08-23
+closed: 2026-08-23
 ---
 
 # The crowded recording runs off the difficulty axis, and two thirds of its finding is that
+
+> **Closed the same day it was filed.** `make_crowded_recording(regime, seed)`
+> now takes a required regime, `test_the_crowded_recording_stays_on_the_difficulty_axis`
+> asserts the realised background against it, and `docs/forks.md` §4a is the
+> re-measurement rather than the off-axis run. §4b records the error and what
+> survived it. **The residual — why crowding still costs 0.14–0.18 of recall, and
+> why censoring rather than a wider guard is the instrument — is now the standing
+> open item in `forks.md`**, not this file. What follows is the diagnosis as filed.
 
 `CROWDED_RECORDING` was added so the bench could exhibit reference-window
 contamination, which `BENCH_RECORDING` makes impossible by construction. It
@@ -72,8 +81,13 @@ matching nor episode merging contributes anything. Detection spans are 2.0 s
 
 1. **Give the crowded recording a regime**, the way `make_recording` has one —
    `make_crowded_recording(regime, seed, **overrides)`, same signature, same
-   merge order. A default of `"baseline_quiet"` keeps the call sites short and
-   puts the recording back on the axis. This is the fix; the rest follows from it.
+   merge order.
+
+   ⚠ **Done without the default this line originally proposed.** The filed
+   version suggested defaulting to `"baseline_quiet"` to keep call sites short.
+   That is the same shape as the bug: a background nobody typed. `regime` is
+   required, exactly as in `make_recording`. Five call sites is a cheap price for
+   a background that can only arrive on purpose.
 2. **Assert the background in `tests/test_bench.py`.** The existing crowding
    tests pin the spacing, the absent hot window and the zero distractors — every
    knob the author set deliberately — and none of them pins the one that came

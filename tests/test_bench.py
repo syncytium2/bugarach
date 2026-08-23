@@ -37,6 +37,7 @@ from bugarach.bench import (
     run_detector,
     sweep,
 )
+from bugarach.detectors.rate import recording_extent, stream_trains
 
 SEEDS = (1, 2)
 
@@ -369,7 +370,7 @@ def test_the_crowded_recording_actually_crowds():
     """And the diagnostic that fills the gap. A floor on the spacing is not a
     target: at the bench's own event count, `min_sep_sec=14` still leaves a
     median gap near 70 s. The count is what crowds."""
-    _, gt = make_crowded_recording(1)
+    _, gt = make_crowded_recording("baseline_quiet", 1)
     t = np.sort([e.time for e in gt.events])
     gaps = np.diff(t)
     assert gaps.min() >= CROWDED_RECORDING["min_sep_sec"] - 1e-6
@@ -388,6 +389,34 @@ def test_the_crowded_recording_is_not_a_regime_anyone_can_calibrate_on():
         "the crowded recording is a diagnostic, not a difficulty axis — a corpus "
         "where every event has a neighbour is as unrepresentative as one where "
         "none does")
+
+
+@pytest.mark.parametrize("regime", sorted(REGIMES))
+def test_the_crowded_recording_stays_on_the_difficulty_axis(regime):
+    """The door the docstring thought it had already shut.
+
+    Every knob the author of `CROWDED_RECORDING` set deliberately is asserted
+    above — the spacing, the absent hot window, the zero distractors. The one
+    that came from a *default* was not, and it was the one that was wrong:
+    `make_crowded_recording` merged no regime, so `bg_rate_hz` fell through to
+    `simulate_coordination`'s 0.05 Hz — the pre-2026-08-13 invented value, ~10×
+    `REGIMES`' quiet endpoint. Two thirds of the recall collapse the recording
+    was said to demonstrate was that, not crowding
+    (`docs/forks.md` §4b, and the todo it links).
+
+    So this asserts the realised rate, not the keyword: a background that comes
+    from anywhere other than the chosen regime fails here regardless of how it
+    got in."""
+    sl, gt = make_crowded_recording(regime, 1)
+    trains = stream_trains(sl.streams["events"], recording_extent(sl))
+    n_planted = sum(len(e.rois) for e in gt.events)
+    realised = ((sum(len(t) for t in trains) - n_planted)
+                / (CROWDED_RECORDING["duration_sec"] * CROWDED_RECORDING["n_roi"]))
+    want = REGIMES[regime]["bg_rate_hz"]
+    assert 0.6 * want < realised < 1.6 * want, (
+        f"crowded recording at {regime!r} realises {realised:.4f} Hz/ROI of "
+        f"background against the regime's {want:.4f} — it is off the difficulty "
+        "axis, and any masking it appears to show is confounded with rate")
 
 
 def test_a_curve_with_no_defined_f1_says_so():

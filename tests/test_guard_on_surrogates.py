@@ -31,7 +31,7 @@ LOCO = dict(rng_seed=7, bin_width_sec=1.0, context_win_sec=120.0,
 
 @pytest.fixture(scope="module")
 def crowded():
-    sl, gt = make_crowded_recording(1)
+    sl, gt = make_crowded_recording("baseline_quiet", 1)
     ext = recording_extent(sl)
     return sl, gt, ext, stream_trains(sl.streams[STREAM], ext)
 

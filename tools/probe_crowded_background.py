@@ -1,42 +1,49 @@
 #!/usr/bin/env python3
-"""How much of the crowded recording's recall collapse is crowding, and how much
-is a background it was never meant to have?
+"""How much of the crowded recording's recall loss is crowding, and how much is
+the background it is measured against?
 
     python tools/probe_crowded_background.py
 
 `docs/forks.md` §4a measured the guard on `loco` and `coact` and flagged something
 larger it could not explain: both detectors lose most of their recall on
-``CROWDED_RECORDING`` — 0.70–0.83 down to 0.25–0.29 — and a guard recovers only a
-slice. Three candidates were named and none separated: masking the guard does not
-reach, the detectors' own episode merging, or the scorer's greedy one-to-one
-matching on closely spaced events.
-
-This separates them, and finds a fourth that dominates all three.
+``CROWDED_RECORDING`` and a guard recovers only a slice. Three candidates were
+named and none separated — masking the guard does not reach, the detectors' own
+episode merging, or the scorer's greedy one-to-one matching on closely spaced
+events. This separates them, and found a fourth that dominated all three.
 
 **The scorer and the merging are innocent.** An oracle emitting the exact planted
-times scores F1 1.000 on the crowded recording, and no emitted span ever covers two
-planted events — detection spans are 2.0 s and 0.70 s against a 19.4 s median gap.
-Precision *rises* to 0.98–0.99 while the detection count falls below the planted
-count: the detectors are not firing wrongly, they are silent, which is a bar that
-went up.
+times scores F1 1.000 on the crowded recording, and no emitted span ever covers
+two planted events — detection spans are 2.0 s and 0.70 s against a 19.4 s median
+gap. Precision *rises* to 0.98–0.99 while the detection count falls below the
+planted count: the detectors are not firing wrongly, they are silent, which is a
+bar that went up.
 
-**Most of what raised it is the background.** ``BENCH_RECORDING`` carries no
-``bg_rate_hz`` — the rate always arrives from ``REGIMES[regime]``, which
-:func:`~bugarach.bench.make_recording` merges in. :func:`make_crowded_recording`
-merges no regime, so ``bg_rate_hz`` falls through to
-:func:`~bugarach.simulate.simulate_coordination`'s own default of **0.05 Hz**, the
-pre-2026-08-13 invented value ``BENCH_RECORDING``'s docstring names as "5× too
-busy". Re-running the same recording at the quiet endpoint splits the collapse
-roughly two-thirds background, one-third crowding.
+**Most of what raised it was the background, and that was a bug.** Until
+2026-08-23 :func:`~bugarach.bench.make_crowded_recording` merged no regime, so
+``bg_rate_hz`` fell through to
+:func:`~bugarach.simulate.simulate_coordination`'s default of 0.05 Hz — the
+pre-2026-08-13 invented value, roughly 10× :data:`~bugarach.bench.REGIMES`' quiet
+endpoint. It takes a regime now. The ``OFF-AXIS`` row below reconstructs the old
+condition so the size of the error stays checkable, and so this tool keeps
+answering the question it was written for: crowding and the background are
+separate axes, and only one of them is what the recording is for.
 
-See ``docs/todo/2026-08-23-the-crowded-recording-runs-off-the-difficulty-axis.md``.
+**Read recall, not F1, across these rows.** The crowded recording plants eight
+times as many events, so a detector firing at a similar rate hits far more often
+and its precision rises — coact reads a *higher* F1 on the crowded recording than
+on the bench while recalling a fifth less. Only the recall column compares.
+
+The ``bg`` column subtracts planted coordinated spikes, not the promiscuity probe
+block or the distractors, so the bench row reads above its nominal regime rate and
+the crowded rows — which carry neither — read exactly at it.
 """
 
 from __future__ import annotations
 
 import numpy as np
 
-from bugarach.bench import BENCH_RECORDING, CROWDED_RECORDING, REGIMES
+from bugarach.bench import (BENCH_RECORDING, CROWDED_RECORDING, REGIMES,
+                            make_crowded_recording, make_recording)
 from bugarach.detectors.coact import coact_detect
 from bugarach.detectors.loco import loco_detect
 from bugarach.detectors.rate import recording_extent, stream_trains
@@ -45,8 +52,11 @@ from bugarach.simulate import simulate_coordination
 
 SEEDS = (1, 2, 3, 4)
 TOL = 1.5
-QUIET = REGIMES["baseline_quiet"]
 STREAM = "events"
+
+#: The pre-2026-08-23 crowded recording: no regime merged, so the simulator's own
+#: ``bg_rate_hz`` default. A labelled control, never a call site.
+OFF_AXIS = dict(CROWDED_RECORDING)
 
 
 def coact(sl, guard=0.0):
@@ -63,11 +73,11 @@ def loco(sl, guard=0.0):
                        n_surrogates=100, guard_sec=guard).streams[STREAM]
 
 
-DETECTORS = {"coact": coact, "loco ": loco}
+DETECTORS = {"coact": coact, "loco": loco}
 
 
 def spans(r):
-    """(lo, hi) for either field convention — see score_stream."""
+    """(lo, hi) for either field convention — see :func:`score_stream`."""
     for onset, width in (("onset_sec", "width_sec"), ("locs", "widths")):
         if hasattr(r, onset):
             lo = np.asarray(getattr(r, onset), dtype=float)
@@ -81,19 +91,22 @@ def _gap(t, lo, hi):
     return np.maximum(0.0, np.maximum(lo - t, t - hi))
 
 
-def background_hz(sl, cfg):
-    """Realised per-ROI rate, including planted events — the honest comparison."""
+def background_hz(sl, gt, cfg):
+    """Realised per-ROI *background* rate — planted spikes removed."""
     trains = stream_trains(sl.streams[STREAM], recording_extent(sl))
-    return sum(len(t) for t in trains) / (cfg["duration_sec"] * cfg["n_roi"])
+    planted = sum(len(e.rois) for e in gt.events)
+    return ((sum(len(t) for t in trains) - planted)
+            / (cfg["duration_sec"] * cfg["n_roi"]))
 
 
-def measure(cfg, det, guard=0.0):
+def measure(recordings, det, guard=0.0):
+    """``recordings`` maps a seed to ``(slice, ground_truth, config)``."""
     tot, hit = {}, {}
     n_det = n_hit = n_plant = covered = multi = 0
     rates = []
     for seed in SEEDS:
-        sl, gt = simulate_coordination(seed=seed, **cfg)
-        rates.append(background_hz(sl, cfg))
+        sl, gt, cfg = recordings(seed)
+        rates.append(background_hz(sl, gt, cfg))
         r = det(sl, guard)
         sc = score_stream(gt, r, tol_sec=TOL)
         n_det += sc.n_detected
@@ -117,40 +130,57 @@ def measure(cfg, det, guard=0.0):
 def show(label, m):
     per = "  ".join(f"{f:.2f}: {m['by_frac'][f]:.2f}"
                     for f in sorted(m["by_frac"], reverse=True))
-    print(f"{label:38s} bg {m['bg']:.4f} Hz/ROI  planted {m['planted']:4d}  "
+    print(f"  {label:32s} bg {m['bg']:.4f} Hz/ROI  planted {m['planted']:4d}  "
           f"det {m['detected']:4d}  recall {m['recall']:5.3f}  "
-          f"precision {m['precision']:5.3f}  |  by participation  {per}")
+          f"prec {m['precision']:5.3f}  |  by participation  {per}")
+    if m["multi"]:
+        print(f"      {m['multi']} span(s) covered >=2 planted events — "
+              f"one-to-one matching cost {m['covered'] - m['recall']:+.3f} recall")
+
+
+def bench_at(regime):
+    def make(seed):
+        sl, gt = make_recording(regime, seed)
+        return sl, gt, dict(BENCH_RECORDING, **REGIMES[regime])
+    return make
+
+
+def crowded_at(regime):
+    def make(seed):
+        sl, gt = make_crowded_recording(regime, seed)
+        return sl, gt, dict(CROWDED_RECORDING, **REGIMES[regime])
+    return make
+
+
+def crowded_off_axis(seed):
+    return (*simulate_coordination(seed=seed, **OFF_AXIS), OFF_AXIS)
 
 
 def oracle():
     """Can the scorer score a perfect detector on 120 events at a 14 s floor?"""
-    for name, cfg in (("bench, quiet", dict(BENCH_RECORDING, **QUIET)),
-                      ("crowded, as shipped", CROWDED_RECORDING)):
+    for name, make in (("bench, quiet", bench_at("baseline_quiet")),
+                       ("crowded, quiet", crowded_at("baseline_quiet"))):
         f1 = [score_detections(gt, np.asarray(gt.times, float), tol_sec=TOL).f1
-              for gt in (simulate_coordination(seed=s, **cfg)[1] for s in SEEDS)]
-        print(f"  oracle (exact planted times) on {name:22s} F1 {np.mean(f1):.3f}")
+              for gt in (make(s)[1] for s in SEEDS)]
+        print(f"  oracle (exact planted times) on {name:16s} F1 {np.mean(f1):.3f}")
 
 
-def main():
+def main() -> int:
+    print(f"{len(SEEDS)} seeds, shipped operating points, tol {TOL} s\n")
     print("== is the scorer the ceiling? ==")
     oracle()
 
-    crowded_quiet = dict(CROWDED_RECORDING, **QUIET)
     for name, det in DETECTORS.items():
-        print(f"\n== {name.strip()} ==")
-        for label, cfg, guard in (
-                ("bench, quiet (as scored)", dict(BENCH_RECORDING, **QUIET), 0.0),
-                ("crowded, at quiet", crowded_quiet, 0.0),
-                ("crowded, at quiet, guard 10 s", crowded_quiet, 10.0),
-                ("crowded, AS SHIPPED (no regime)", CROWDED_RECORDING, 0.0),
-                ("crowded, as shipped, guard 10 s", CROWDED_RECORDING, 10.0)):
-            m = measure(cfg, det, guard)
-            show(f"  {label}", m)
-            if m["multi"]:
-                print(f"      {m['multi']} spans covered >=2 planted events "
-                      f"(one-to-one matching cost "
-                      f"{m['covered'] - m['recall']:+.3f} recall)")
+        print(f"\n== {name} ==")
+        for label, make, guard in (
+                ("bench, quiet (as scored)", bench_at("baseline_quiet"), 0.0),
+                ("crowded, quiet", crowded_at("baseline_quiet"), 0.0),
+                ("crowded, quiet, guard 5 s", crowded_at("baseline_quiet"), 5.0),
+                ("crowded, busy", crowded_at("baseline_busy"), 0.0),
+                ("crowded, OFF-AXIS (pre-fix)", crowded_off_axis, 0.0)):
+            show(label, measure(make, det, guard))
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())
