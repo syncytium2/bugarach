@@ -1,9 +1,22 @@
 ---
-status: open
+status: done
 filed: 2026-08-19
+closed: 2026-08-23
 ---
 
 # Lane E — folds and one scorer in the browser, so "optimized to the same ground truth" is true
+
+**Done.** The block was pasted into the page and the sweep pools through it, so the
+page splits folds and computes F1 with the same arithmetic the published numbers were
+computed with rather than a second copy that drifts into agreeing. The byte-for-byte
+guard did what it was built to do: it sat skipped in the parity test until the splice
+markers appeared in the viewer, then started enforcing without anybody having to
+remember it.
+
+*Everything below is as filed. The "Left for whoever holds `raster_viewer.html`"
+paragraph is the part that has been discharged; the rest — how to test it, and what a
+score at a 1.5 s tolerance may and may not be read as — still binds whoever touches the
+scoreboard.*
 
 Plan: [`docs/webapp_completion_plan.md`](../webapp_completion_plan.md). Pure functions,
 no UI, **does not touch `docs/site/raster_viewer.html`** until the splice — so it runs in

@@ -16,44 +16,68 @@
 > named at the point of use, so it is checkable. If any of it goes to an outside
 > reader, run `/murderboard` on that artifact first.
 
+> ## Where this stands, 2026-08-23
+>
+> **The merge queue is empty and most of the plan is built.** All six detectors run
+> in the browser, folds and pooled scoring were spliced into the page, the page
+> writes files, and the simulation's measured statistics sit beside the real
+> folder's on one screen. What is left is the no-install JS trainer, the scoreboard,
+> and one defect described under the corrected table below.
+>
+> A route the plan never anticipated also exists: **`bugarach detect <folder>`**
+> writes the same output contract with no browser involved, which is how a lab
+> analyses eighty-four recordings while somebody has lunch rather than by clicking
+> through them one at a time.
+>
+> The stage table and the two paragraphs under it are corrected in place. The phase
+> list further down is left standing: its reasoning is what makes a finished phase
+> checkable, and striking it would leave nothing to check the work against.
+
 ## The one-paragraph version
 
-The webapp is a single zero-network HTML file that already opens a lab's folder, draws
-its rasters, measures coordination without a detector, generates a simulated data set from
-that measurement, runs detectors and sweeps one knob against planted truth. What it
-cannot do is **train the tube network**, **fit anything across folds**, and **write a
-file**. Five green PRs waiting to merge take it from two of the six detectors to five.
-Training arrives first through a **loopback lab server** that calls the functions which
-produced the published numbers ([ADR-0001](adr/0001-the-lab-server.md)), and the
-no-install JS trainer follows it with a reference to check against. The server is the long
-pole, and it is the one piece that can start today without touching anything anybody else
-is holding.
+The webapp is a single zero-network HTML file that opens a lab's folder, draws its
+rasters, measures coordination without a detector, generates a simulated data set from
+that measurement, runs all six detectors, sweeps one knob against planted truth across
+held-out folds, and writes the result out as files. What it still cannot do without
+help is **train the tube network**: training arrives through a **loopback lab server**
+that calls the functions which produced the published numbers
+([ADR-0001](adr/0001-the-lab-server.md)), so the published page shows no training panel
+at all and the one that appears under `bugarach lab` says in as many words that it is
+the only step not running in your browser. The no-install JS trainer is the remaining
+piece, and it now has a reference implementation to check against rather than an open
+question.
 
 ## Where each stage stands
 
+*Rechecked against the tree 2026-08-23.*
+
 | # | the stage Tony asked for | in the browser today | in Python today |
 |---|---|---|---|
-| 1 | scan a folder of files | ✅ folder reader, conformance report, remembers the directory | ✅ `bugarach check` / `assess` |
+| 1 | scan a folder of files | ✅ folder reader, conformance report, remembers the directory | ✅ `bugarach check` |
 | 2 | visualize the rasters | ✅ lanes, treatment windows, ROI ordering | ✅ `bugarach.ui.app` |
-| 3 | run the assessor | ✅ ported, parity-tested against `bugarach.assess` | ✅ `bugarach.assess` |
+| 3 | run the assessor | ✅ ported, parity-tested against `bugarach.assess` | ✅ `bugarach assess` |
 | 4 | simulate from the real data | ✅ generator ported to JS, writes a conforming folder | ✅ `simulate.py` + `adapt.py` |
-| 5 | view the simulation and verify its qualities | ⚠️ you can look at it; nothing puts its measured statistics **beside** the real folder's | ⚠️ split across `tools/` |
-| 6a | optimize the six detectors | ⚠️ sweeps **one** detector's **one** knob on **one** recording — no folds, no held-out set | ✅ `tools/fair_bakeoff.py`, four folds, nine detectors |
-| 6b | train the tube network | ❌ **nothing** | ✅ `bugarach.learn.train` (PyTorch) |
-| 7 | performance on new ground truth, with parameters | ⚠️ one F1 for one recording | ✅ published in `docs/learned/bakeoff.json` |
-| 8 | process the real data, show the results | ⚠️ detections draw on the lanes; **nothing is ever written to a file** | ✅ CLI |
+| 5 | view the simulation and verify its qualities | ✅ "Compare with the real folder" puts the two sets of measured statistics side by side | ⚠️ split across `tools/` |
+| 6a | optimize the six detectors | ✅ all six; the sweep splits folds and pools through the same scorer as the Python, checked against it in CI | ✅ `tools/fair_bakeoff.py`, four folds, nine detectors |
+| 6b | train the tube network | ⚠️ only under `bugarach lab`, which appends a shim the published page never sees. No in-browser trainer | ✅ `bugarach.learn.train` (PyTorch) |
+| 7 | performance on new ground truth, with parameters | ⚠️ a scoreboard panel exists, hidden behind the same lab gate, held until its copy is reviewed | ✅ published in `docs/learned/bakeoff.json` |
+| 8 | process the real data, show the results | ✅ every recording × six detectors × every stream × every period, drawn and downloadable | ✅ `bugarach detect`, and the Panel viewer's Save button |
 
 Two facts behind that table are worth stating on their own.
 
-**The app writes no file.** There is no `Blob(`, no download, anywhere in
-`docs/site/raster_viewer.html`. `docs/webapp_spec.md` calls the output contract the
-point of the exercise rather than an afterthought, and it is still unbuilt.
+**The page writes files, and it writes one fewer than the contract asks for.**
+`detections.csv` and `run.json` come out of it; `detector_settings.csv` does not. The
+parameters go into `run.json` under `thresholds`, **keyed by detector alone**, while
+the contract and both Python routes key them by **detector and stream** — so a
+two-stream folder analysed in the browser produces a settings record that cannot say
+which stream a value belonged to. That is the same gap the tuned-settings decision
+([`todo/2026-08-22-tuned-settings-are-a-file-not-a-survivor.md`](todo/2026-08-22-tuned-settings-are-a-file-not-a-survivor.md))
+identifies, and it should be closed once rather than twice.
 
-**Five green PRs are unmerged**, and they are the difference between two detectors and
-five: **#128** (one registry row per detector — the seam every later phase plugs into),
-**#129** LoCo, **#130** CoactDetect, **#131** SCE, **#133** the user-stated analysis
-windows. All three CI jobs pass on each. Roughly 25 of the 35 worktrees on this machine
-are fully merged into `origin/main` and can be pruned.
+**A fitted setting is a variable and not a file.** The sweep's chosen operating point
+survives a folder change by design, so the sequence this plan is built on — tune on
+the simulation, then reopen your own recordings — rests on something no second session
+could reproduce and nothing wrote down.
 
 ## The constraint that decides the architecture
 
@@ -109,56 +133,74 @@ It is not on this plan at any phase.
 
 ## Phase order
 
-**Phase 0 — land the green work.** Merge #128 → #129 → #130 → #131 in that order
+*Status as of 2026-08-23: **0, 1, 2, 3, 5 and 6 are done**; 3b and 4 are not. The
+descriptions below are kept as written, because what a phase said it would buy is
+how you tell whether it bought it.*
+
+**Phase 0 — land the green work.** ✅ **Done.** Every PR named here merged.
+Merge #128 → #129 → #130 → #131 in that order
 through `tools/merge_when_green.sh`; #133 only with its session's say-so (it is ACTIVE
 on the local board). Push or discard `preview-everything`, which carries the stack
 locally on **no remote**. Prune the merged worktrees. *Hours, no risk, five of six
 detectors live.*
 
-**Phase 1 — the sixth detector, and a file that comes out.** CICADA as one more
+**Phase 1 — the sixth detector, and a file that comes out.** ✅ **Done**, with one
+omission: `detector_settings.csv` is still not among the files the page writes.
+CICADA as one more
 registry row. Then `detections.csv` and `run.json` to the contract already written in
 `docs/webapp_spec.md`: `slice_id` from the data and never a filename, `treatment`
 carried and never inferred, one row per event per detector with no consensus merging,
 seconds on the recording's own clock, a slice with no detections emitting no rows but
 still listed in the roster, and no viability column of any kind.
 
-**Phase 2 — a data set, not a recording.** Today assess, simulate and tune each act on one
+**Phase 2 — a data set, not a recording.** ✅ **Done.** Today assess, simulate and tune each act on one
 recording. This phase adds folder-level assessment, **the K screen** — the one screen
 that cannot be a spinner: it shows the scan, takes the decision, and records the
 decision with the data set it produced — then generation of N recordings, a fold split,
 and fit-on-three-score-on-the-held-out-fourth. This is what makes *"optimized to the
 same ground truth"* a true statement rather than a slogan.
 
-**Phase 3 — the tube trains, through the lab server.** [`ADR-0001`](adr/0001-the-lab-server.md).
+**Phase 3 — the tube trains, through the lab server.** ✅ **Done.** [`ADR-0001`](adr/0001-the-lab-server.md).
 The inert panel in the page, the `bugarach lab` server and its shim, and the gate that
 asserts the published page carries no transport and ships byte-identical to its source.
 The threshold is picked on held-out training-regime data and **never** re-picked on the
 recording being analysed — moving training to a process with more room does not make that
 button acceptable.
 
-**Phase 3b — the same training with no install.** The JS trainer: autodiff, the model,
+**Phase 3b — the same training with no install.** ❌ **Not started**, and now the
+largest remaining piece. The JS trainer: autodiff, the model,
 Adam, a Web Worker so the page stays alive, and a parity harness that now has Phase 3's
 implementation to check against rather than an open question. Off the critical path to a
 working demo, and it is what makes the demo reach a lab that will not install Python.
 
-**Phase 4 — the scoreboard.** One row per detector: F1 with fold spread, recall,
+**Phase 4 — the scoreboard.** ⚠️ **Drafted and withheld** — the panel exists, hidden
+behind the same lab gate as training, because its copy has not been through the
+review this repo requires of anything a stranger reads. One row per detector: F1 with fold spread, recall,
 precision, fit seconds, detect seconds, parameter count. With the caveat the numbers
 require — the bench scores a hit at a 1.5 s edge gap against a median realized event
 0.80 s wide, so the *ranking* is safe and a bare number implying timing accuracy is
 not (`docs/learned/tolerance_sweep.png`).
 
-**Phase 5 — the real folder.** Every detector across every slice and every region,
+**Phase 5 — the real folder.** ✅ **Done**, and done twice: in the page, and headless
+through `bugarach detect`. Every detector across every slice and every region,
 drawn on the existing lanes and exported. The app may say *these are the detections*;
 it may not say *these are the events*.
 
-**Phase 6 — verify the simulation.** Re-run the assessor on the generated data set and
+**Phase 6 — verify the simulation.** ✅ **Done.** Re-run the assessor on the generated data set and
 put its statistics beside the real folder's on one screen. Cheapest phase in the plan,
 and it is Tony's stage 5.
 
 ## What can run at the same time
 
-**The binding constraint is one file.** `docs/site/raster_viewer.html` is ~3,000 lines
-and every UI phase edits it. Five PRs already queue on it. So:
+> **The fan-out is over; nine of the ten lanes below have landed.** Only **C · the JS
+> tube trainer** is unstarted, and **F · the model track** still needs Tony's go
+> because it is compute rather than code. The table is kept because the rule above it
+> is what made the parallel phase survivable and still binds every viewer change.
+> [`docs/lanes.md`](lanes.md) carries the current queue.
+
+**The binding constraint is one file.** `docs/site/raster_viewer.html` is now 7,485
+lines and every UI phase edits it — it has more than doubled since this sentence was
+written, which makes the rule stronger rather than weaker. So:
 
 > **`docs/site/raster_viewer.html` is a single-holder resource.** Claim it by name on
 > the machine-local board before editing, the way a MATLAB process or the darkroom is
@@ -192,7 +234,7 @@ detector fitted on three folds and scored on a held-out fourth:
 
 | detector | F1 (mean of 4 folds) |
 |---|---|
-| tube / centre−surround (learned) | **0.668 ± 0.061** |
+| tube / center−surround (learned) | **0.668 ± 0.061** |
 | CoactDetect | **0.651 ± 0.044** |
 | LoCo | 0.638 ± 0.053 |
 | rate+context | 0.571 ± 0.085 |
@@ -225,3 +267,14 @@ Point the app at a generated data set and **its exported table must agree with
 `bakeoff.json`** — same detections, same counts. That check exists from Phase 1
 onward rather than after the UI is built, which is the whole reason the writer comes
 before the screens.
+
+> **⚠ That acceptance test is wrong for half the browser, and the tests say so
+> rather than quietly weakening it.** Three of the six browser detectors sample, and
+> this project's own bar for a port that guesses is behavioural agreement, not 1e-9
+> — so row-for-row equality with `bakeoff.json` is a claim about the Python pipeline
+> that a sampled port cannot honour. What is actually checked, in
+> `tests/test_webapp_folder_export.py`: the browser's table reads back through the
+> library's reader unchanged, and the two detectors that draw no random numbers agree
+> with the library exactly. The row-for-row claim **is** made where it can be — the
+> lab server reproduces the published bake-off per fold, in
+> `tests/test_lab_server.py`.

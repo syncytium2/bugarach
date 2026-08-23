@@ -1,9 +1,35 @@
 ---
-status: open
+status: done
 filed: 2026-08-19
+closed: 2026-08-23
 ---
 
 # Lane D1 — the writer, in the library first, so two callers cannot disagree
+
+**Done, and the bet paid off.** `bugarach.emit` settled the shape once, and it now has
+**three** callers rather than the two this lane anticipated: the browser's download,
+the Panel viewer's Save button, and `bugarach detect` over a whole folder. None of them
+invented a column. The browser writes its table in JavaScript, so a test pins its
+header to the library's column list — the mechanized version of what this page argued
+for in prose.
+
+**One thing the writer has that the browser does not use.**
+`write_detector_settings` exists and both Python routes call it; the page writes only
+`detections.csv` and `run.json`, and records its parameters keyed by detector where the
+contract keys them by **detector and stream**. That is carried by
+[`2026-08-22-tuned-settings-are-a-file-not-a-survivor.md`](2026-08-22-tuned-settings-are-a-file-not-a-survivor.md),
+which wants the same fix for its own reasons — so it is one job rather than two.
+
+**The acceptance test below was not the one that could be run.** Agreeing with
+`bakeoff.json` row for row is a claim about the Python pipeline; three of the six
+browser detectors sample, and this project's bar for a port that guesses is behavioural
+agreement rather than 1e-9. What was built instead: the browser's table reads back
+through the library's reader unchanged, the two detectors that draw no random numbers
+match exactly, and the row-for-row claim is made where it holds — the lab server
+reproduces the published bake-off per fold.
+
+*Everything below is as filed, kept because it is the reasoning the writer was built
+from and the contract it was held to.*
 
 Plan: [`docs/webapp_completion_plan.md`](../webapp_completion_plan.md). Python only,
 **does not touch `docs/site/raster_viewer.html`** — runs in parallel with the merge

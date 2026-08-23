@@ -1,9 +1,43 @@
 ---
-status: open
+status: done
 filed: 2026-08-20
+closed: 2026-08-23
 ---
 
 # Where the webapp work stands, and what to do next
+
+**Closed 2026-08-23. Every "what to do next" on this page is done and every open pull
+request on it has merged** — chromium is on the CI runner, CICADA is the sixth browser
+detector, and the stack was rebased and landed. A status page is only useful while its
+status is current, and a stale one is worse than none: this one still said the sixth
+detector was missing on a day the page ran all six.
+
+**What was carried out of it before it closed**, because a status page is the wrong
+place for anything that outlives the status:
+
+- *Test the screen, not the function*, and the Playwright trap that came with it, are
+  now a section in
+  [`docs/testing_a_sampling_port.md`](../testing_a_sampling_port.md).
+- *Deterministic arithmetic reached only through a sampled path is untested* was
+  **already** a named section in that same file — it is the one that cost the most,
+  and it is written up there at more length than here.
+- *LoCo's null and the region-blind question* became
+  [`2026-08-23-locos-null-is-blind-to-the-region-it-was-cut-from.md`](2026-08-23-locos-null-is-blind-to-the-region-it-was-cut-from.md),
+  where it also gets what it never had: a test that could fail.
+- *Should `assess_archive.py` keep its store fallback?* and *should `bench.REGIMES` be
+  re-derived from the folder?* are both open under "Still open" in
+  [`2026-08-20-six-tools-still-read-stores.md`](2026-08-20-six-tools-still-read-stores.md),
+  which is the page that measured the shift and is where a reader would look.
+- *`high K+` and the solution delay* is the label-substring hazard in
+  [`2026-08-18-windowing-default-and-the-three-delta-interface.md`](2026-08-18-windowing-default-and-the-three-delta-interface.md).
+  Contract revision 7 has since removed the wash-in delay from the folder path
+  entirely, so what survives is the question about the viewer's window panel rather
+  than about detection.
+- The closing note about two sessions duplicating each other's work became a rule:
+  claim on the machine-local board when you **pick up** the task, with a `Touches:`
+  line, and a commit gate enforces it.
+
+*Everything below is the session record as filed, kept as history.*
 
 One session, 2026-08-18 to 2026-08-20. Everything below is pushed; nothing is
 uncommitted and nothing is half-done. **No `HANDOFF.md` from this session** — that
