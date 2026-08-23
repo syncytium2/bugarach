@@ -82,11 +82,19 @@ class FolderAssessment:
 
 def assess_folder(folder, *, stream: str | None = None,
                   n_surrogates: int = 1000, bin_width_sec: float | None = None,
-                  limit: int | None = None) -> FolderAssessment:
+                  limit: int | None = None, progress=None) -> FolderAssessment:
     """Assess every recording in an export folder that may be assessed.
 
     Reads the folder with the same loader the rest of bugarach uses, so a folder
     that passes ``bugarach check`` is a folder this can read.
+
+    ``progress`` is called as ``progress(done, total, slice_id)`` before each
+    recording, and once more with ``None`` when the last one finishes. It exists
+    because this runs for **two minutes** on a real folder — 117 s over 84
+    recordings at a thousand circular-shift surrogates each — and printed
+    nothing whatever until the report arrived complete at the end. A user cannot
+    tell that from a hang, and on the flagship folder command that is a defect
+    rather than a missing nicety.
     """
     from bugarach.assess import assess_coactivity
     from bugarach.io import load_folder
@@ -99,7 +107,9 @@ def assess_folder(folder, *, stream: str | None = None,
     if limit is not None:
         slices = slices[:limit]
 
-    for s in slices:
+    for i, s in enumerate(slices):
+        if progress is not None:
+            progress(i, len(slices), s.slice_id)
         rec = RecordingAssessment(slice_id=s.slice_id)
         out.records.append(rec)
 
@@ -161,6 +171,8 @@ def assess_folder(folder, *, stream: str | None = None,
             a = rec.results[0]
             rec.window = (0.0, float(a.win_dur))
 
+    if progress is not None:
+        progress(len(slices), len(slices), None)
     return out
 
 
