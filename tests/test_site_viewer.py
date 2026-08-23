@@ -279,32 +279,52 @@ def test_the_version_date_is_the_date_this_page_last_changed():
     """The whole risk of a hand-written date, closed.
 
     A date somebody has to remember to bump is a date that stops being true and
-    goes on looking exactly as authoritative — the same defect class as the
+    goes on reading exactly as authoritative — the same defect class as the
     fabricated frame interval this page was just fixed for. So it is derived
-    from git and compared: the last commit that touched this file, or today if
-    the file is currently modified, which is the case while somebody is editing
-    it.
+    from git and compared against what the page says.
+
+    TWO THINGS THIS DELIBERATELY DOES NOT ASK GIT, because either would make the
+    answer depend on when the test ran rather than on when the page changed —
+    and a gate that goes red on a rerun of an unchanged commit is a gate the next
+    lane learns to ignore:
+
+    * **Merge commits are skipped.** A `pull_request` build runs against a merge
+      ref GitHub creates *at test time*, so that commit's date is today and is
+      not when anybody edited this page. `--no-merges` names the commit that
+      actually wrote the content, and its date does not move.
+    * **A shallow checkout is skipped, not guessed.** `actions/checkout` clones
+      one commit deep by default, which leaves nothing to attribute a change to.
+      Saying so is honest; comparing would compare against the boundary commit.
     """
+    import datetime  # noqa: PLC0415
     import subprocess  # noqa: PLC0415
 
     rel = str(VIEWER.relative_to(ROOT))
-    dirty = subprocess.run(["git", "status", "--porcelain", "--", rel],
-                           cwd=ROOT, capture_output=True, text=True)
-    last = subprocess.run(["git", "log", "-1", "--format=%cs", "--", rel],
-                          cwd=ROOT, capture_output=True, text=True)
-    if last.returncode != 0 or not last.stdout.strip():
-        pytest.skip("no git history for the page here (a shallow clone does this)")
+
+    def git(*args: str) -> str:
+        r = subprocess.run(("git", *args), cwd=ROOT, capture_output=True,
+                           text=True)
+        return r.stdout.strip() if r.returncode == 0 else ""
+
     said = _stamp_attr("data-bugarach-version-date")
-    if dirty.stdout.strip():
-        import datetime  # noqa: PLC0415
+
+    # Being edited right now — the one moment the date is easy to get right and
+    # easy to forget.
+    if git("status", "--porcelain", "--", rel):
         today = datetime.date.today().isoformat()
         assert said == today, (
-            f"this page has uncommitted changes, so its version date should be "
-            f"today ({today}) and it says {said}")
+            f"this page has uncommitted changes, so its version date is being "
+            f"set today ({today}) and it says {said}")
         return
-    assert said == last.stdout.strip(), (
-        f"the page says it was last revised {said}; git says the last commit to "
-        f"touch it was {last.stdout.strip()}. Bump the date at the bottom of "
+
+    when = git("log", "-1", "--no-merges", "--format=%cs", "--", rel)
+    if not when:
+        pytest.skip("no non-merge history for the page here — a depth-1 "
+                    "checkout does this, and guessing would be worse")
+    assert said == when, (
+        f"the page says it was last revised {said}; the last commit to write it "
+        f"was dated {when}. Bump data-bugarach-version-date, the "
+        f"bugarach:version-date meta and the readable line at the bottom of "
         f"docs/site/raster_viewer.html when you edit the page — a version date "
         f"nobody maintains is worse than none, because it still reads as a fact.")
 
