@@ -7,9 +7,32 @@ filed: 2026-08-18
 
 **Read this before editing `docs/export_folder_spec.md`.** Two sessions were working on
 that file at once on 2026-08-18. This is the design half, written down so the cleanup
-half does not have to reconstruct it from a conversation it cannot see. Nothing here has
-been applied to the spec yet; **no code in this document is written**, apart from the
-guards noted at the bottom, which are on `main`.
+half does not have to reconstruct it from a conversation it cannot see.
+
+> **Point 4 is built, 2026-08-23 — for detection.** `bugarach detect <folder>` is the
+> first consumer to have it: `detect_folder.with_folder_windows` settles a recording's
+> windows **once, before any detector sees it**, writing the raw period bounds into the
+> region rows as analysis windows where the producer stated none. Every detector then
+> reads them through `supplied_region_windows`, so no protocol is applied and the two
+> HALT guards never fire — and that reaches `sce_detect` and `cicada_detect` too, which
+> derive their own windows internally and have no argument to divert. `region_windows`
+> is untouched, as the constraint below requires. A baseline at 500 s with a 900 s gap
+> after it is detected on; the same slice still raises out of `region_windows`. Both are
+> asserted in `tests/test_detect_folder.py`.
+>
+> **Also confirmed while building it:** the design's safety argument — *"it moves no
+> number this project has already measured"* — **does not hold for the two folders on
+> this machine.** Neither `2026-08-18_revised_2v_periods` nor
+> `2026-08-20_pensub_revised_2v` carries `analysis_start_sec`/`analysis_end_sec` on any
+> of its regions, so both take the new default rather than the corrected export's. The
+> claim was true of `2026-08-17_revised_2v_v2`, which is not what is in the exports
+> directory now. Anything comparing a detection run against a MATLAB campaign has to
+> reckon with that, and the fix is a producer conversation, not a consumer default.
+>
+> **Still not built:** the three-delta interface (point 5), the baseline *designation*
+> that the open question below asks for, and the same default for assessment,
+> simulation and optimization — `assess_coactivity`'s `window=None` path still derives,
+> which is correct for the `.mat` store it is parity-tested against.
 
 Tony's decision, 2026-08-18. It settles
 [`2026-08-17-windowing-convention-is-not-optional.md`](2026-08-17-windowing-convention-is-not-optional.md),
@@ -65,6 +88,12 @@ existing rule to the two consumers that lack it.
 `effective_region_windows` and therefore falls through to `region_windows` — this
 project's convention — whenever the folder states nothing. That fall-through **is** the
 bug this decision fixes.
+
+**Detection has it as of 2026-08-23**, and it is the consumer where the fall-through was
+fatal rather than merely wrong: `sce_detect` and `cicada_detect` derive their windows
+inside themselves and take no argument that could divert them, so the only place the
+decision *can* be applied for all six is on the recording, before the call.
+`detect_folder.with_folder_windows` does exactly that and nothing else.
 
 **The interface does not exist in any form.**
 
