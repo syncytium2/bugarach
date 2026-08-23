@@ -100,7 +100,7 @@ def test_fisher_combination_is_defined_at_the_extremes():
     assert ap.fisher(np.full(5, 1e-6)) < 1e-9
 
 
-# ---- the decision rule the corpus is actually scored by ---------------------
+# ---- the decision rule the folder is actually scored by ---------------------
 #
 # Step 1 of the assembly handoff. The tables in the todo were computed at one
 # statistic, one null, alpha — and no recording was ever scored that way. These
@@ -137,7 +137,7 @@ def test_verdict_rule_is_more_conservative_than_a_single_null():
 
     `verdict()` tests each null at alpha/2, so its rejection region is contained
     in the union the loose rule uses. If this inverts, the correction has been
-    lost and every `no-assembly` tally on the real corpus is overstated.
+    lost and every `no-assembly` tally on the real recordings is overstated.
     """
     rng = np.random.RandomState(12)
     cell = _cell(rng, 6, 0.25)
@@ -162,7 +162,7 @@ def test_verdict_power_rises_with_assembly_strength():
     assert strong > weak, (weak, strong)
 
 
-def test_corpus_geometry_drops_undefined_recordings(tmp_path):
+def test_folder_geometry_drops_undefined_recordings(tmp_path):
     """An undefined recording contributes no verdict, so it has no power.
 
     Keeping it would let "we could not look" be counted as a recording we
@@ -179,5 +179,5 @@ def test_corpus_geometry_drops_undefined_recordings(tmp_path):
         {"K": 4, "stream": "fast", "n_roi": 30, "asm_defined": True,
          "asm_n_events": 9, "part_n_obs": 4.5, "slice_id": "c"},
     ]}))
-    got = ap.corpus_geometry(j, k=3, stream="fast")
+    got = ap.folder_geometry(j, k=3, stream="fast")
     assert [g["slice_id"] for g in got] == ["a"]

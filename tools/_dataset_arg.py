@@ -57,7 +57,7 @@ def add(parser, *, want: str = "any", aliases: tuple[str, ...] = (),
 def get(args, *, want: str = "any", quiet: bool = False) -> Path:
     """Resolve `--dataset`, check its shape, and print what was resolved.
 
-    Printing is the point as much as resolving: a run that read the wrong corpus
+    Printing is the point as much as resolving: a run that read the wrong data
     should be visible in its own log, not reconstructed afterwards from the numbers.
     Exits 2 with the reason rather than raising, because these are user errors at the
     command line and a traceback buries the sentence that helps.

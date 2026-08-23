@@ -16,7 +16,7 @@ filed: 2026-08-16
 >
 > **Superseded numbers.** Everything below is scoped to the earlier bench: three
 > simulated recordings, flat-background generator, each detector at a declared
-> operating point. `F1 0.68 / recall 0.91` belongs to that bench. On the corpus
+> operating point. `F1 0.68 / recall 0.91` belongs to that bench. On the data set
 > measured from 85 real recordings, with every detector fitted on three folds and
 > scored on a held-out fourth, `tube` scores **0.668 ± 0.061 at recall 0.775** and
 > **ties** CoactDetect's 0.651 ± 0.044 rather than leading anything. Its case is
@@ -28,7 +28,7 @@ filed: 2026-08-16
 > 1. **Multi-seed within a fold.** Still one training run per fold, so fold spread
 >    confounds data variation with training variation. Cheapest thing that could
 >    change a conclusion — this is item 1 below, unmoved by the bake-off.
-> 2. **K=3 was chosen by a human and moves the corpus.** The scan ships in
+> 2. **K=3 was chosen by a human and moves the data set.** The scan ships in
 >    `docs/learned/generator_spec.json`; K=4 cuts the cluster rate to roughly a quarter
 >    (0.095 against 0.350 per minute) — an earlier draft said "halves" and nobody had
 >    divided the two numbers. Review surface:
@@ -149,7 +149,7 @@ range and should not be quoted as recovering the timescale.
 - **The dead-ROI rule has landed** — the exporter ships
   `event_store[_onset]_revised_2v_alive` (2026-08-16), the verdict made in MATLAB
   where the full record of each ROI is. It reaches 67 of 85 slices; the other 18
-  are not eligible and keep every ROI, so the corpus is cleaned unevenly rather
+  are not eligible and keep every ROI, so the recordings are cleaned unevenly rather
   than cleaned. The ~3% structural zeros moved the fitted background under 1%, so
   nothing fitted before this needs redoing.
 - **The regime-shift guard does not reproduce the failure it exists to catch.**

@@ -24,25 +24,25 @@ half of them:
 **The assembly measurement is order-blind by construction.** It collapses each
 coordinated cluster to a set of participating ROIs and discards the onsets — even though
 `assess._clusters` already gathers each participant's onset and computes their spread.
-Any leader/follower structure in this corpus is untouched and has never been looked for.
+Any leader/follower structure in this folder is untouched and has never been looked for.
 
 **We already ported the sibling measure.** `detectors/sync.py` is a cSPIKE port validated
 to 1e-9. SPIKE-order is the same lab, the same suite, and the same input representation
 this project already produces — plausibly the cheapest published-method comparison
 available, and cheaper than the PCA/ICA port
-([`2026-08-17-run-a-literature-method-on-our-corpus.md`](2026-08-17-run-a-literature-method-on-our-corpus.md))
+([`2026-08-17-run-a-literature-method-on-our-recordings.md`](2026-08-17-run-a-literature-method-on-our-recordings.md))
 that has been the assumed candidate.
 
 **And the benchmark cannot reward it either.** The generator plants each event's onsets
 as jitter around a common time with no systematic order, so a synfire measure scores
-nothing on our corpus — the same structural gap the assembly work found, on a second
+nothing on our recordings — the same structural gap the assembly work found, on a second
 axis. Whatever is decided about planting assemblies in the generator should decide about
 planting order at the same time, or the second port hits the same wall as the first.
 
 ## What must not happen
 
 The same mistake the assembly work nearly shipped: reporting a synfire score against a
-corpus built to contain no order, and reading the zero as a fact about the method. See
+data set built to contain no order, and reading the zero as a fact about the method. See
 [`2026-08-18-do-real-slices-have-recurring-assemblies.md`](2026-08-18-do-real-slices-have-recurring-assemblies.md).
 
 ## Papers — fetched 2026-08-19, in the library

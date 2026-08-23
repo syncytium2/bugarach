@@ -156,7 +156,7 @@ def test_a_bare_name_with_nowhere_to_look_says_so(tmp_path, monkeypatch):
 def test_env_var_wins_and_a_bad_one_does_not_silently_fall_back(tmp_path, monkeypatch):
     """A wrong BUGARACH_DATA_ROOT must not be papered over by autodiscovery.
 
-    Falling through to the Dropbox mount would run the analysis on a different corpus
+    Falling through to the Dropbox mount would run the analysis on different data
     than the operator asked for and say nothing.
     """
     monkeypatch.setenv(ds.ENV_VAR, str(tmp_path / "nonexistent"))

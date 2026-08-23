@@ -14,7 +14,7 @@ says that gap costs something: fitted quiet and run busy, `tube` loses 0.24 of F
 
 **SEED (Tapia-Rivas et al. 2024) solves the neighbouring problem and the method
 transfers.** Sleep spindles have expert labels but not many. So they ran **A7**,
-a classical rule-based spindle detector, over a large *unlabelled* corpus, treated
+a classical rule-based spindle detector, over a large *unlabelled* data set, treated
 its output as labels, pretrained on that, and fine-tuned on a small amount of
 expert-labelled data. Verified from the paper: the artificial set (CAP-A7) held
 51,597 events; after pretraining on it and fine-tuning on **10% of MODA**, SEED
@@ -30,7 +30,7 @@ hand-written detectors** that play A7's role exactly. So:
 
 1. Run `sce_detect` / `loco_detect` / CoactDetect over the real archive.
 2. Pretrain `tube` on those labels.
-3. Fine-tune on the simulated corpus, where the truth is planted and exact.
+3. Fine-tune on the simulated data set, where the truth is planted and exact.
 
 **Be clear about what this buys, because it is not what SEED bought.** Their
 constraint was label scarcity; ours is not — simulated labels are unlimited and
@@ -45,7 +45,7 @@ is fitted from real recordings, but fitted is not sampled.
 ceiling on that data is agreement with them, not correctness. If it then
 fine-tunes toward planted truth, the question is whether pretraining left it
 better positioned or merely biased toward its teachers' failure modes — and our
-teachers disagree with each other (F1 0.32 to 0.78 on the same corpus).
+teachers disagree with each other (F1 0.32 to 0.78 on the same data set).
 
 Two guards, both cheap:
 - **Score against planted truth only.** Agreement with the six is a training
@@ -58,7 +58,7 @@ Two guards, both cheap:
 ## Where this sits against the alternative
 
 SEED's transfer story is a **different answer to the same goal** as this project's
-per-lab loop. We adapt by re-simulating a corpus from a new lab's measured
+per-lab loop. We adapt by re-simulating a data set from a new lab's measured
 statistics; they adapt by fine-tuning on a little of the new lab's data. Neither
 is obviously better and the two compose — assess, simulate, pretrain on the lab's
 own unlabelled recordings, fine-tune on the simulation. Worth stating in any

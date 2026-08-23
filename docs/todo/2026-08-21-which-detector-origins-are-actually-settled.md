@@ -89,7 +89,7 @@ rather than merely unretrieved.
 Nothing yet, and that is the useful part: **no current claim depends on any of
 this**. The scoreboard's rules already forbid "competes with state-of-the-art",
 `bakeoff.md` reports a tie rather than a win, and
-`2026-08-17-run-a-literature-method-on-our-corpus.md` records that nothing from
+`2026-08-17-run-a-literature-method-on-our-recordings.md` records that nothing from
 the literature has been run here at all — so the positioning is already argued
 from absence rather than from priority.
 

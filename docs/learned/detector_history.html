@@ -227,7 +227,7 @@ planted events, so every firing inside it is a false alarm by construction. The
 six separate by <strong>where the threshold comes from</strong>, not by what statistic they
 compute: one bar per region gives 59 and 215 firings; a bar that follows local
 density gives 1 and 2. That is a hundredfold separation along the axis CFAR is
-organised around, measured on this project's own corpus, and it is the reason to
+organised around, measured on this project's own recordings, and it is the reason to
 take the rest of this seriously. (The two learned models are omitted — the panel
 is about where a <em>hand-placed</em> threshold comes from.)</p>
 <p><strong>Panel B is the defect.</strong> Each lane draws one detector's reference window at its
@@ -630,7 +630,7 @@ trimmed mean.</p>
 marked <strong>provisional</strong> upstream, with its own warning that <em>"anything below ~0.6
 is a weak optimum on a flat/noisy surface"</em> and that RateDetect's and SCE's optima
 sit on the swept <strong>grid edge</strong>. bugarach's bake-off reports F1 over four held-out
-folds of a simulated corpus fitted to 85 real baseline recordings. They answer
+folds of a simulated data set fitted to 85 real baseline recordings. They answer
 different questions and are not averaged here.</p>
 <p><strong>But the bake-off carries a confound of its own, visible in <code>bench.py</code>'s own
 <code>source</code> fields.</strong> Each detector sweeps exactly one declared knob per fold; every
@@ -738,7 +738,7 @@ bake-off, and 2.5 probe firings against CICADA's 215.</p>
 0.757 — <strong>do not treat that as an unexplained gap.</strong> The same handoff says
 anything below ~0.6 there is a weak optimum on a flat surface, so 0.466 is
 plausibly a statement about the optimisation surface rather than about LoCo. Worth
-re-running on the approved corpus before anyone quotes it either way.</p>
+re-running on the approved folder before anyone quotes it either way.</p>
 <h3>6.5 CoactDetect — keep, and resolve the contradiction it is carrying</h3>
 <p>CoactDetect leads the hand-written detectors (0.651; the top three including the
 learned model are a statistical tie) and fires <strong>1.2</strong> times in an empty block —
@@ -749,11 +749,11 @@ identical recall).</p>
 <p>Two documents say opposite things, and shipping both detectors is not a decision —
 it is the absence of one. The resolution is measurable, not editorial: run the
 promiscuity probe with §5.3's stated target and a false-alarm rate that enters the
-score. Either the multiplicity problem appears in bugarach's corpus, and the
+score. Either the multiplicity problem appears in bugarach's recordings, and the
 manuscript was right; or it does not, and §2.5 needs revising before submission.</p>
 <p>Note that bugarach's own probe <strong>already points the other way</strong> — 1.2 firings for
 the per-bin-α form against 2.5 for the pooled-percentile one, the reverse of the
-MATLAB result, though on a different corpus and at a different operating point.
+MATLAB result, though on different recordings and at a different operating point.
 That is one more reason not to submit with this open.</p>
 <h3>6.6 SPIKE-synch — the number measures the operating point, not the detector</h3>
 <p>SPIKE-synch scores 0.816 | 0.735 in the MATLAB benchmark and <strong>0.254</strong> here. That
@@ -867,7 +867,7 @@ provenance note; 2, 4 and 5 follow from §4.</p>
 <p><strong>Nothing currently published depends on the provenance questions.</strong> The
 scoreboard's rules already forbid "competes with state-of-the-art", the bake-off
 reports a tie rather than a win, and no method from the literature has been run on
-this corpus at all — so the positioning is argued from absence, which is safe.</p>
+these recordings at all — so the positioning is argued from absence, which is safe.</p>
 <p><strong>Two things are no longer future, and one of them changed today.</strong> The manuscript
 is unpublished, so its "empty cell" sentence costs nothing yet — but after the
 retrieval it is no longer a <em>risk</em> that a reviewer knows the prior art. Rohling

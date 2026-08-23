@@ -1,4 +1,4 @@
-# The fair bake-off — real recordings in, one corpus, one rule
+# The fair bake-off — real recordings in, one data set, one rule
 
 **Run 2026-08-16.** Everything below is regenerable:
 `tools/assess_archive.py` → `tools/derive_spec.py` → `tools/fair_bakeoff.py` →
@@ -14,11 +14,11 @@
 2. **One generator spec derived** from that assessment at **K=3** — chosen by hand
    because the assessor reports a scan and a human signs off, with the whole scan
    shipped beside the choice. Heterogeneous and bursty background turned on.
-3. **One corpus generated**: 8 recordings, 470 recording-minutes, split into 4
+3. **One data set generated**: 8 recordings, 470 recording-minutes, split into 4
    folds of 2.
 4. **Every detector calibrated or trained on 3 folds and scored on the 4th**, all
    four rotations. Hand-written detectors sweep their declared knob; learned
-   models pick a threshold. Same corpus, same procedure, same scorer
+   models pick a threshold. Same data set, same procedure, same scorer
    (`bench.pool_scores`).
 
 ## The result
@@ -103,7 +103,7 @@ coordination should show.
    (`docs/todo/2026-08-16-promiscuity-probe-cannot-fail.md`). Read it as a
    promiscuity *report*: CICADA fires 215 times in a block containing nothing;
    center−surround fires 16; CoactDetect fires 1.
-4. **K=3 was chosen by a human and the choice moves the corpus.** The scan is in
+4. **K=3 was chosen by a human and the choice moves the data set.** The scan is in
    `generator_spec.json`; K=4 cuts the cluster rate to roughly a quarter of K=3's
    (0.095 against 0.350 per minute) and would build a different
    benchmark.

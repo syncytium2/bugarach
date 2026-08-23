@@ -85,7 +85,7 @@ def baseline_counts(sl):
     cannot end a survey of eighty.
 
     Takes a loaded recording: the caller reads the export folder, which is the
-    corpus the lab approved. The constants this file fits — ``MEASURED_RATE_SHAPE``
+    export folder the lab approved. The constants this file fits — ``MEASURED_RATE_SHAPE``
     and ``MEASURED_BURST_SHAPE`` — parameterise the generator every session uses,
     so fitting them on recordings the lab withdrew propagates further than any
     single figure.
@@ -207,14 +207,14 @@ def _this_labs_reference() -> float:
     Re-exported here so a caller that already has the fitter open does not also
     have to reach into ``bench`` for the number it is comparing against. It is
     **not** a default: the whole point of :func:`fit_shape_from_slices` is that a
-    corpus supplies its own.
+    folder supplies its own.
     """
     from bugarach.bench import MEASURED_RATE_SHAPE
     return MEASURED_RATE_SHAPE
 
 
 def fit_shape_from_slices(slices):
-    """The per-ROI heterogeneity of whatever corpus is handed in.
+    """The per-ROI heterogeneity of whatever folder is handed in.
 
     ``MEASURED_RATE_SHAPE`` is a **measurement of this lab's recordings**, not a
     property of calcium imaging, and the difference bites as soon as a second lab
@@ -225,7 +225,7 @@ def fit_shape_from_slices(slices):
 
     Returns ``(shape, n_windows, n_rois)``, or ``(None, n, r)`` when there is not
     enough baseline to fit. The caller decides what to do about that, because
-    silently falling back to another corpus's constant is the failure this
+    silently falling back to another folder's constant is the failure this
     function exists to prevent.
     """
     windows = [got for got in (baseline_counts(sl) for sl in slices)
@@ -322,7 +322,7 @@ def main(argv=None) -> int:
                    help="relative drift allowed against bench.MEASURED_RATE_SHAPE "
                         "before this exits 1 (default 0.05)")
     p.add_argument("--folder", default=None,
-                   help="export folder holding the real corpus "
+                   help="export folder holding the real recordings "
                         "(docs/export_folder_spec.md)")
     p.add_argument("--seed", type=int, default=0,
                    help="seed for the diagnostic draws (default 0)")
@@ -340,8 +340,8 @@ def main(argv=None) -> int:
         return 0
 
     if not args.folder:
-        print("--folder is required: this fit needs the real corpus, and the "
-              "corpus is an export folder (docs/export_folder_spec.md). It used "
+        print("--folder is required: this fit needs real recordings, and they "
+              "arrive as an export folder (docs/export_folder_spec.md). It used "
               "to walk a .mat archive, which holds every recording ever "
               "processed rather than the ones the lab kept — and the constants "
               "fitted here parameterise the generator every session uses. "

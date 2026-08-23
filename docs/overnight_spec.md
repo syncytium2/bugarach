@@ -26,7 +26,7 @@ order.*
 ## The constraint that shapes everything
 
 **Overnight means no human, and the pipeline has a decision in the middle of it.**
-Choosing K — the cluster size the assessment runs at — moves the corpus materially
+Choosing K — the cluster size the assessment runs at — moves the data set materially
 (K=3 was chosen; K=4 drops the cluster rate to roughly a quarter of it) and `derive_spec.py` refuses to choose,
 deliberately. So any track that runs through that point either stops at it or fabricates
 the judgement.
@@ -37,7 +37,7 @@ Everything below is sorted by that test, not by importance:
 |---|---|---|
 | **compute sweeps on an existing spec** | ✅ yes | no decision inside; every output is a JSON that a human reads in the morning |
 | **infrastructure with tests** | ✅ yes | correctness is checkable by the suite, not by taste |
-| **choosing K, approving a corpus** | ❌ no | a judgement, and the whole apparatus exists to keep it visible |
+| **choosing K, approving a data set** | ❌ no | a judgement, and the whole apparatus exists to keep it visible |
 | **shipping a document** | ❌ no | the murderboard's blind rounds need a reader; drafting is fine, shipping is not |
 | **writing to the darkroom** | ⚠ with a board claim | shared across machines; see the collision note at the end |
 
@@ -98,14 +98,14 @@ which is precisely what an unattended night is.
 ### B2 · The event-rate ceiling — the falsifiable prediction
 
 The fitted surround runs 21–59× the centre, i.e. **97–181 samples, 9.7–18.1 s
-wide** at this corpus's frame interval, and that surround *is* the model's background estimate. If coordinated events
+wide** at this data set's frame interval, and that surround *is* the model's background estimate. If coordinated events
 arrive faster than the surround is wide, the surround averages neighbouring events into
 "background" and the model subtracts signal from itself.
 
 - **Predicts:** performance degrades as inter-event interval approaches surround width,
   and the degradation is specific to centre−surround — the six should not show the same
   knee at the same place.
-- **Run:** raise the **event count**, not the separation floor. The corpus plants
+- **Run:** raise the **event count**, not the separation floor. The generator plants
   `n_per_level = (5, 5, 5)` — 15 events in 3,525 s, a mean interval of **235 s** — and
   `min_sep_sec` is 171. Lowering `min_sep_sec` alone *permits* closer pairs without
   producing them: the mean interval is set by count over duration and would not move,
@@ -143,13 +143,13 @@ followed.
 - **Cheap dependency:** raise `max_center_frames` in a second arm so the clamp is not
   confounded with the capability.
 
-### B4 · The corpus that could vindicate the multi-scale bank
+### B4 · The data set that could vindicate the multi-scale bank
 
-The bank collapsed to one scale and one scale scored identically — **on a corpus that
+The bank collapsed to one scale and one scale scored identically — **on a data set that
 plants a single event width**. That is a property of the generator, not a verdict on the
 design.
 
-- **Run:** a corpus with **two or three distinct event widths present simultaneously**
+- **Run:** a data set with **two or three distinct event widths present simultaneously**
   (e.g. 0.3 s and 3 s events interleaved), then the same 1-vs-2-vs-4-scale ablation.
 - **What would change a conclusion:** scales that separate and a four-scale model that
   beats one-scale would restore the multi-scale design. Scales that still collapse would
@@ -171,12 +171,12 @@ asymmetry that the clamp hypothesis failed to explain.
 - **One line of code**, and it either explains section 5 or eliminates the last cheap
   explanation.
 
-## Track C — a second corpus from DANDI
+## Track C — a second set of recordings from DANDI
 
 **Worth doing, and worth being precise about what it buys.** A DANDI dataset carries no
 coordination ground truth, so it **cannot score a detector**. What it can do is supply a
 *second set of statistics* to fit a generator to, which answers a question nothing here
-has touched: do these conclusions survive a corpus that is not ours?
+has touched: do these conclusions survive recordings that are not ours?
 
 Ordered, with the human checkpoints marked:
 
@@ -193,10 +193,10 @@ Ordered, with the human checkpoints marked:
 4. ✅ **Run the assessor** (`tools/assess_archive.py`) and compare the resulting
    participation, jitter, cluster rate and background against
    `docs/learned/assessment_real.json`. **The comparison is the deliverable**, not the
-   corpus — if the statistics land close to ours, our conclusions travel further than one
+   recordings — if the statistics land close to ours, our conclusions travel further than one
    lab; if they are far apart, we have found the axis along which they do not.
 5. ❌ **Choosing K for the new set** is a human decision, same as before.
-6. ✅ Only then generate a corpus and re-run the bake-off on it.
+6. ✅ Only then generate a data set and re-run the bake-off on it.
 
 **If the DANDI set has wider or more variable events than ours, it supersedes B4** — a
 real distribution of widths beats a synthetic one, and it would make the multi-scale
@@ -260,5 +260,5 @@ opens it.
 3. **B2** (rate ceiling) — the one falsifiable prediction on the table.
 4. **B5** (brightness channel) — one line, closes the last cheap explanation.
 5. **B3** (width ceiling) — bounds the claim rather than testing it.
-6. **C1–C4** — the second corpus, up to the human checkpoint.
+6. **C1–C4** — the second set of recordings, up to the human checkpoint.
 7. **B4** last, or never, if DANDI supersedes it.

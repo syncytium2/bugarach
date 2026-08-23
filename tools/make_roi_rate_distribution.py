@@ -80,7 +80,7 @@ def baseline_rates(sl):
     so one bad file cannot end a survey of eighty.
 
     Takes a loaded recording rather than a path, because the caller now reads an
-    export folder in one go. That folder is the corpus the lab approved; a store
+    export folder in one go. That folder is what the lab approved; a store
     holds every recording ever processed, withdrawn ones included. The
     interquartile range this figure reports is quoted as the project's
     difficulty axis, so which recordings are in it is not a detail.
@@ -253,7 +253,7 @@ def main(argv=None):
                    help="seeds for the generator recordings compared against")
     p.add_argument("--width", type=int, default=640)
     p.add_argument("--folder", default=None,
-                   help="export folder holding the real corpus "
+                   help="export folder holding the real recordings "
                         "(docs/export_folder_spec.md)")
     p.add_argument("--out", default=None,
                    help="destination directory; default $BUGARACH_DARKROOM")
@@ -265,8 +265,8 @@ def main(argv=None):
 
     if not args.folder:
         raise SystemExit(
-            "--folder is required: this survey needs the real corpus, and the "
-            "corpus is an export folder (docs/export_folder_spec.md). It used "
+            "--folder is required: this survey needs real recordings, and they "
+            "arrive as an export folder (docs/export_folder_spec.md). It used "
             "to walk a .mat archive under BUGARACH_DATA_ROOT, which is every "
             "recording ever processed rather than the ones the lab kept — and "
             "the interquartile range printed below is quoted as this project's "

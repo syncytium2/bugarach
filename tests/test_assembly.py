@@ -1,7 +1,7 @@
 """The assembly measurement: membership capture, both nulls, and the verdict.
 
 The power analysis (`tools/assembly_power.py`, `tests/test_assembly_power.py`)
-establishes what the statistics can see at this corpus's geometry. This pins the
+establishes what the statistics can see at this folder's geometry. This pins the
 path from a real recording to an answer: that the assessor now carries which ROIs
 made up each cluster, that the membership matrix is faithful to it, and that the
 two nulls behave on data whose truth is known — including the case where the

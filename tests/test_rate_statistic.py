@@ -224,7 +224,7 @@ def test_the_viewer_no_longer_feeds_a_median_to_the_rate_box():
 
 def test_the_panel_quotes_the_current_regime_endpoints():
     """The note under the rate box quoted 3.8-17.5 mHz, which `bench.REGIMES`
-    moved off on 2026-08-20 when it was re-derived from the approved corpus."""
+    moved off on 2026-08-20 when it was re-derived from the approved folder."""
     html = VIEWER.read_text(encoding="utf-8")
     lo = bench.REGIMES["baseline_quiet"]["bg_rate_hz"] * 1000
     hi = bench.REGIMES["baseline_busy"]["bg_rate_hz"] * 1000

@@ -65,7 +65,7 @@ ports that cannot be exact. What *can* be checked tightly, and should be, in thi
 2. **Analytic gradients against finite differences**, per parameter group.
 3. **One optimiser step from a fixed init on a fixed batch** — parameters must agree to
    tight tolerance.
-4. **End to end**: train on a seeded corpus in both, compare F1 on the same held-out
+4. **End to end**: train on a seeded data set in both, compare F1 on the same held-out
    fold. Agreement within fold spread, not to a digit.
 
 ## Two rules that are not the trainer's to relax
@@ -80,7 +80,7 @@ ports that cannot be exact. What *can* be checked tightly, and should be, in thi
 
 ## The honest framing this lane serves
 
-On the published corpus the tube **ties** CoactDetect (0.668 ± 0.061 against
+On the published data set the tube **ties** CoactDetect (0.668 ± 0.061 against
 0.651 ± 0.044) rather than leading, and every learned number is one training run per
 fold. Building this lane does not make the claim true; it makes the comparison visible.
 Moving the result is the model track.

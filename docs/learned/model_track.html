@@ -168,6 +168,17 @@
   .doc blockquote.gate h2 { border-top: 0; padding-top: 1.2rem;
                             color: var(--bad-fg); }
   .doc blockquote.gate strong { color: var(--bad-fg); }
+  /* a hoisted caveat reads at body weight, not aside-gray */
+  .doc blockquote.warn { border-left: 4px solid var(--learned);
+                         color: var(--ink); padding: .2rem 1.3rem;
+                         background: color-mix(in srgb, var(--learned) 7%,
+                                               transparent);
+                         border-radius: 3px; }
+  /* A figure wider than the 74ch column silently overflows it and the page
+     ships with its evidence cropped. Caught on a document whose lead figure
+     ran off the right edge. */
+  .doc img { max-width: 100%; height: auto; display: block;
+             margin: 1.6rem auto; }
   .doc code { background: color-mix(in srgb, var(--ink) 7%, transparent);
               padding: .08em .32em; border-radius: 2px; }
   .doc li { margin-bottom: .5rem; }
@@ -191,8 +202,8 @@ block.</p>
   1,149 parameters, 5.6 s to train.</li>
 <li><strong>It transfers worse than two of the six</strong> from a quiet background to a busy one,
   which is a negative result about its own central claim. Fit busy, deploy quiet.</li>
-<li><strong>The multi-scale bank is redundant on this corpus</strong> — one kernel scores the same for
-  81 fewer parameters. Probably the corpus, which plants one event width.</li>
+<li><strong>The multi-scale bank is redundant on this data set</strong> — one kernel scores the same for
+  81 fewer parameters. Probably the data set, which plants one event width.</li>
 <li><strong>The surround clamp is a wart, not a cause</strong> — raising it changes nothing.</li>
 <li><strong>The per-cell architecture does not train</strong>, and why is unresolved; it also trains at
   a tenth the learning rate of the model that works, so the comparison is uncontrolled.</li>
@@ -200,7 +211,7 @@ block.</p>
 </ul>
 <h2>What is not established, and must not be claimed</h2>
 <ul>
-<li><strong>Nothing here says any detector is right about a real slice.</strong> The corpus is
+<li><strong>Nothing here says any detector is right about a real slice.</strong> The data set is
   simulated; its settings are measured.</li>
 <li><strong>"Competes with state-of-the-art models from the literature" is not supported —
   but the earlier phrasing of this was wrong and Tony corrected it.</strong> <em>Published
@@ -221,7 +232,7 @@ has a different random subset of cells and no group ever recurs.</p>
 <p>That matters more than it looks. The whole assembly-detection literature works by
 finding <strong>recurring co-activation patterns</strong>: ICA/PCA assembly detection projects onto
 patterns that repeat, CAD finds groups with consistent lag constellations, item-set
-mining counts sets that appear often. Run any of them on this corpus and they find
+mining counts sets that appear often. Run any of them on this data set and they find
 nothing — <strong>and the zero would be about our generator, not about the method.</strong> Porting
 one today would produce a comparison we win meaninglessly, which is worse than not
 running it.</p>
@@ -261,9 +272,9 @@ disappointment.</p>
 <li><strong>The width ceiling</strong> — the centre clamps at 64 samples, ~6.4 s.</li>
 <li><strong>Drop the raw brightness channel</strong> — one line, closes the last cheap explanation
    for the transfer asymmetry.</li>
-<li><strong>A second corpus</strong> from DANDI: it cannot score a detector, and it can say whether
+<li><strong>A second data set</strong> from DANDI: it cannot score a detector, and it can say whether
    any of this survives statistics that are not ours.</li>
-<li><strong>A corpus with varying event widths</strong>, or DANDI instead of it, to settle whether
+<li><strong>A data set with varying event widths</strong>, or DANDI instead of it, to settle whether
    multi-scale is worth keeping.</li>
 </ol>
 <h2>The seam with the website</h2>

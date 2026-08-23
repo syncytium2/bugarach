@@ -229,13 +229,13 @@ mean.
    question. This should be a toggle not a decision."*
 
    Right on both halves. Flat is settled *against* by measurement — real windows
-   leave ~35% of ROIs silent against a flat field's 2% — so for this corpus there
+   leave ~35% of ROIs silent against a flat field's 2% — so for this folder there
    is nothing to choose. And hardcoding **our** shape instead is the same category
    of error one level up: 0.275 is a maximum-likelihood fit over *this lab's* 81
    baseline windows, and handing it to another lab's folder substitutes a constant
    for a measurement exactly as flat does.
 
-   So the background became a **measured per-corpus property**, and the toggle
+   So the background became a **measured per-folder property**, and the toggle
    toggles itself: `assess` fits the shape from the recordings it was handed and
    emits it in the assessment; `derive_spec` prefers that over the reference
    constant and says loudly when it had to fall back. A heterogeneous folder fits

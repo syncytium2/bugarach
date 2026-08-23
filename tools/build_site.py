@@ -218,7 +218,7 @@ the benchmark is rebuilt per lab.</p>
 <a href="https://gitlab.com/cossartlab/cicada">CICADA</a> and the coactivity-vs-shuffle
 rule it comes from, both of which are among the six detectors this project ports
 and scores against.
-<b>No method from the literature has yet been run on this project's corpus</b>, so
+<b>No method from the literature has yet been run on this project's recordings</b>, so
 nothing here claims to beat one.</p>
 <p><a href="landscape.html">The full landscape &rarr;</a> — what a dozen methods
 emit, whether they learned it, and what that leaves this work entitled to claim.</p>

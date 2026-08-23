@@ -400,7 +400,7 @@ def test_the_tube_trainer_says_so_plainly_when_torch_is_absent():
 
 
 def test_train_refuses_without_a_spec():
-    """The training corpus is SIMULATED from measured statistics. Training on
+    """The training data is SIMULATED from measured statistics. Training on
     the recordings being analysed is the mistake the whole design avoids, so
     the absence of a spec is a refusal rather than a default."""
     tr = lab_mod.TubeTrainer()
@@ -423,7 +423,7 @@ def test_train_refuses_a_single_fold():
 def test_the_server_reproduces_the_published_bakeoff():
     """**This is the one that says the server has no second training path.**
 
-    Point it at the corpus `docs/learned/bakeoff.json` was made from and the
+    Point it at the data set `docs/learned/bakeoff.json` was made from and the
     numbers must come back identical — not close, identical, because the same
     seeds through the same functions on the same machine are deterministic. A
     server that merely *resembled* `fair_bakeoff.py` would pass every other test
@@ -451,7 +451,7 @@ def test_the_server_reproduces_the_published_bakeoff():
 
     want = ref["learned"]["tube"]
     assert model.report["seeds"] == ref["seeds"], (
-        "the corpus split must be `bench.fold_split`'s, the same call "
+        "the data-set split must be `bench.fold_split`'s, the same call "
         "`tools/fair_bakeoff.py` makes — a second derivation of the split "
         "agrees right up until somebody changes one of them")
     assert model.n_params == want["n_params"]

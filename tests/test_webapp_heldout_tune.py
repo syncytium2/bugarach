@@ -150,7 +150,7 @@ def test_the_single_recording_header_names_the_recording(one):
 def test_the_in_sample_gap_is_shown_when_there_is_one(many):
     """Optional by construction — it appears only when the in-sample best beats
     the held-out mean, which is the usual direction but not guaranteed on a
-    small simulated corpus. When it is there it must be labelled."""
+    small simulated data set. When it is there it must be labelled."""
     gap = [c for c in many["caveats"] if "higher than the held-out mean" in c]
     if gap:
         assert "fitting and reporting on the same recordings" in gap[0], gap[0]

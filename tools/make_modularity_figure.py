@@ -45,7 +45,7 @@ GUIDE = "#9a9a9a"
 ABOVE = "#b03a48"
 
 #: The test calls a slice modular when its Q clears the 95th percentile of its own
-#: surrogates, so this is the rate a structureless corpus produces.
+#: surrogates, so this is the rate structureless data produces.
 NOMINAL = 0.05
 
 

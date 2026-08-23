@@ -133,7 +133,7 @@ OPERATING_POINTS: dict[str, OperatingPoint] = {
                "for the measurement. Kept in step with the detector default on "
                "purpose: a bench grading a configuration nobody deploys grades "
                "nothing.",
-        # Extended 2026-08-20 when REGIMES moved to the approved corpus: at the
+        # Extended 2026-08-20 when REGIMES moved to the approved export folder: at the
         # corrected (busier) quiet endpoint the old top, 99.99999, was still the
         # peak and the search was still climbing. A busier background needs a
         # stricter percentile, so the grid needs room above the operating point
@@ -144,9 +144,9 @@ OPERATING_POINTS: dict[str, OperatingPoint] = {
         params=dict(bin_width_sec=10.0, threshold_pctile=99.0, n_surrogates=200),
         source="sce_detect defaults (generate_sce contract)",
         # Extended downward for the same reason and in the opposite direction:
-        # on the approved corpus SCE's F1 peaked at the old floor of 90 and was
+        # on the approved recordings SCE's F1 peaked at the old floor of 90 and was
         # still climbing, so it wants a LOOSER threshold where cicada wants a
-        # stricter one. Two detectors, one corpus correction, opposite responses.
+        # stricter one. Two detectors, one change of source recordings, opposite responses.
         knob="threshold_pctile", grid=(75.0, 80.0, 85.0, 90.0, 95.0, 98.0, 99.0,
                                        99.5, 99.9)),
     "coact": OperatingPoint(
@@ -182,7 +182,7 @@ baseline windows, fast stream: 0.0052 Hz at p25 and 0.0190 Hz at p75, around a
 median of 0.0102. Untreated slices vary 3.7-fold among themselves, and that
 variation is the axis an operating point has to survive.
 
-**Re-derived 2026-08-20 from the export folder, which is the corpus the lab
+**Re-derived 2026-08-20 from the export folder, which is what the lab
 approved.** The previous endpoints — 0.0038 and 0.0175, a 4.6-fold span — were
 fitted against the `.mat` store, which carries every recording ever processed
 including the two the lab withdrew (SAP007, and
@@ -223,7 +223,7 @@ the arm."*
 
 **The old justification for the quiet end is withdrawn, not restated.** It used to
 read: "the correction costs nothing — baseline's own p25 (0.0038) lands within 5%
-of the TTX median (0.0040)". On the approved corpus p25 is 0.0052, which is 30%
+of the TTX median (0.0040)". On the approved recordings p25 is 0.0052, which is 30%
 above that TTX median, so the coincidence is gone.
 
 Losing it costs nothing, because the argument was never load-bearing and should not
@@ -430,8 +430,8 @@ where there is no neighbour to unmask — while precision falls 0.889 → 0.867.
 was lowering the bar everywhere, not relieving masking. `docs/forks.md` §4a.
 
 Use it through :func:`make_crowded_recording`. It is a **diagnostic, not a
-regime**: nothing should be calibrated on it, because a corpus assembled to hold
-both populations in useful proportions is not a corpus anything resembles.
+regime**: nothing should be calibrated on it, because a set assembled to hold
+both populations in useful proportions is not one that anything resembles.
 """
 
 CROWDING_GAP_SEC = 30.0
@@ -655,7 +655,7 @@ class BenchResult:
 
 @dataclass(frozen=True)
 class FoldSplit:
-    """The corpus, divided once, so every detector is asked the same question.
+    """The simulated data set, divided once, so every detector is asked the same question.
 
     A fold split is only worth anything if it is the *same* split for everyone
     being compared. Derive it here and hand it around; deriving it twice invites
@@ -678,7 +678,7 @@ class FoldSplit:
         i = seed - self.base_seed
         if not 0 <= i < len(self.seeds):
             last = self.base_seed + len(self.seeds) - 1
-            raise KeyError(f"seed {seed} is not in this corpus "
+            raise KeyError(f"seed {seed} is not in this simulated data set "
                            f"({self.base_seed}..{last})")
         return i // self.seeds_per_fold
 

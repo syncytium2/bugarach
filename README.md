@@ -132,7 +132,7 @@ writes to the darkroom rather than to the two files this page shows.
 
 Eighty-five real baseline recordings were measured without a detector; one
 generator spec was derived from that measurement; every detector was then
-calibrated or trained on three quarters of the resulting simulated corpus and
+calibrated or trained on three quarters of the resulting simulated data set and
 scored on the quarter it had never seen, all four rotations. **F1** is the usual
 harmonic mean of recall (what fraction of planted events were found) and precision
 (what fraction of calls were real), so 1.0 is perfect and a detector can reach it
@@ -169,7 +169,7 @@ quicker again, and sits 0.10 of F1 below.
 each — the intervals above are fold ranges, not confidence intervals, and seed
 variance within a fold was never measured. The two learned models at the floor land
 their threshold on the low edge of the searched grid, which this project treats
-elsewhere as a search that stopped too early. The corpus rests on one human choice
+elsewhere as a search that stopped too early. The data set rests on one human choice
 — how many clusters the assessment was read at — and a different choice halves the
 event rate and builds a different benchmark. And the recordings are simulated:
 their settings were measured from real ones, but **nothing here says any detector
@@ -217,7 +217,7 @@ The classical side of the same problem is
 [CICADA](https://gitlab.com/cossartlab/cicada) and the coactivity-versus-shuffle
 rule it comes from — both among the six ported here.
 
-**No method from the literature has been run on this project's corpus**, so
+**No method from the literature has been run on this project's recordings**, so
 nothing here claims to beat one. The reading behind that paragraph — which papers
 were read closely and which were deliberately not opened — is on the site as
 [the landscape](https://bugarach.tonydefazio.com/landscape.html), built from

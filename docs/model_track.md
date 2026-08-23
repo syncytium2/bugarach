@@ -16,8 +16,8 @@
   1,149 parameters, 5.6 s to train.
 - **It transfers worse than two of the six** from a quiet background to a busy one,
   which is a negative result about its own central claim. Fit busy, deploy quiet.
-- **The multi-scale bank is redundant on this corpus** — one kernel scores the same for
-  81 fewer parameters. Probably the corpus, which plants one event width.
+- **The multi-scale bank is redundant on this data set** — one kernel scores the same for
+  81 fewer parameters. Probably the data set, which plants one event width.
 - **The surround clamp is a wart, not a cause** — raising it changes nothing.
 - **The per-cell architecture does not train**, and why is unresolved; it also trains at
   a tenth the learning rate of the model that works, so the comparison is uncontrolled.
@@ -25,7 +25,7 @@
 
 ## What is not established, and must not be claimed
 
-- **Nothing here says any detector is right about a real slice.** The corpus is
+- **Nothing here says any detector is right about a real slice.** The data set is
   simulated; its settings are measured.
 - **"Competes with state-of-the-art models from the literature" is not supported —
   but the earlier phrasing of this was wrong and Tony corrected it.** *Published
@@ -48,7 +48,7 @@ has a different random subset of cells and no group ever recurs.
 That matters more than it looks. The whole assembly-detection literature works by
 finding **recurring co-activation patterns**: ICA/PCA assembly detection projects onto
 patterns that repeat, CAD finds groups with consistent lag constellations, item-set
-mining counts sets that appear often. Run any of them on this corpus and they find
+mining counts sets that appear often. Run any of them on this data set and they find
 nothing — **and the zero would be about our generator, not about the method.** Porting
 one today would produce a comparison we win meaninglessly, which is worse than not
 running it.
@@ -91,9 +91,9 @@ disappointment.
 3. **The width ceiling** — the centre clamps at 64 samples, ~6.4 s.
 4. **Drop the raw brightness channel** — one line, closes the last cheap explanation
    for the transfer asymmetry.
-5. **A second corpus** from DANDI: it cannot score a detector, and it can say whether
+5. **A second data set** from DANDI: it cannot score a detector, and it can say whether
    any of this survives statistics that are not ours.
-6. **A corpus with varying event widths**, or DANDI instead of it, to settle whether
+6. **A data set with varying event widths**, or DANDI instead of it, to settle whether
    multi-scale is worth keeping.
 
 ## The seam with the website

@@ -262,7 +262,7 @@ def test_a_run_with_no_generator_says_null_rather_than_omitting_the_key(tmp_path
     doc = json.loads(p.read_text(encoding="utf-8"))
     assert doc["generator_spec"] is None
     assert doc["chosen_k"] is None
-    assert "corpus_seeds" in doc
+    assert "simulated_data_seeds" in doc
 
 
 def test_emit_reads_nothing_from_outside_the_values_it_was_given(tmp_path):

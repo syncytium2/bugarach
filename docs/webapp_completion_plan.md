@@ -19,7 +19,7 @@
 ## The one-paragraph version
 
 The webapp is a single zero-network HTML file that already opens a lab's folder, draws
-its rasters, measures coordination without a detector, generates a simulated corpus from
+its rasters, measures coordination without a detector, generates a simulated data set from
 that measurement, runs detectors and sweeps one knob against planted truth. What it
 cannot do is **train the tube network**, **fit anything across folds**, and **write a
 file**. Five green PRs waiting to merge take it from two of the six detectors to five.
@@ -122,10 +122,10 @@ carried and never inferred, one row per event per detector with no consensus mer
 seconds on the recording's own clock, a slice with no detections emitting no rows but
 still listed in the roster, and no viability column of any kind.
 
-**Phase 2 — a corpus, not a recording.** Today assess, simulate and tune each act on one
+**Phase 2 — a data set, not a recording.** Today assess, simulate and tune each act on one
 recording. This phase adds folder-level assessment, **the K screen** — the one screen
 that cannot be a spinner: it shows the scan, takes the decision, and records the
-decision with the corpus it produced — then generation of N recordings, a fold split,
+decision with the data set it produced — then generation of N recordings, a fold split,
 and fit-on-three-score-on-the-held-out-fourth. This is what makes *"optimized to the
 same ground truth"* a true statement rather than a slogan.
 
@@ -151,7 +151,7 @@ not (`docs/learned/tolerance_sweep.png`).
 drawn on the existing lanes and exported. The app may say *these are the detections*;
 it may not say *these are the events*.
 
-**Phase 6 — verify the simulation.** Re-run the assessor on the generated corpus and
+**Phase 6 — verify the simulation.** Re-run the assessor on the generated data set and
 put its statistics beside the real folder's on one screen. Cheapest phase in the plan,
 and it is Tony's stage 5.
 
@@ -187,7 +187,7 @@ writing it after H1 replaces guesswork with a reference implementation.
 
 ## Before anyone writes app copy: the claim is not yet ours
 
-`docs/learned/bakeoff.md`, on the corpus measured from 85 real recordings with every
+`docs/learned/bakeoff.md`, on the data set measured from 85 real recordings with every
 detector fitted on three folds and scored on a held-out fourth:
 
 | detector | F1 (mean of 4 folds) |
@@ -221,7 +221,7 @@ simulated data.
 
 ## How we will know it worked
 
-Point the app at a generated corpus and **its exported table must agree with
+Point the app at a generated data set and **its exported table must agree with
 `bakeoff.json`** — same detections, same counts. That check exists from Phase 1
 onward rather than after the UI is built, which is the whole reason the writer comes
 before the screens.

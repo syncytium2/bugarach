@@ -34,7 +34,7 @@ hand.
 > (date, mouse, **`slice_order`**). bugarach has no `slice_order`, so it matched on
 > date and dropped **a recording the lab had not withdrawn** — one mouse had two
 > slices that day and only the first was excluded. The producer's export had it
-> right. Every number in a published report was then computed over a corpus one
+> right. Every number in a published report was then computed over a set one
 > recording smaller than the producer intended, by machinery built to be careful.
 >
 > **The generalisation.** A consumer re-deriving a producer's decision is working
@@ -90,7 +90,7 @@ hand.
 > "interprets not at all" and "does not know what a mouse is". That is right about
 > **values** and was wrong about **roles**: an app that may not know which column
 > says two recordings share an animal cannot produce a group-split result, which
-> FOUNDATIONS §9 requires before a corpus number is admissible. bugarach still never
+> FOUNDATIONS §9 requires before a folder-level number is admissible. bugarach still never
 > interprets a *value* — `DI`, `ORX`, `wildtype`, `cohort-B` mean nothing to it — but
 > it now knows which column plays which *role*. Written after an analysis went to a
 > spreadsheet outside the folder for group membership that `slices.csv` was already
@@ -397,7 +397,7 @@ interpreted, but each answers a question an analysis cannot answer for itself.
 `group_id` says which comparison the study is about, so a result can be reported per
 group instead of pooled across groups that may run in opposite directions.
 `subject_id` says which recordings are siblings, so twenty slices from eight animals
-are not counted as twenty independent observations. Without them a corpus number is
+are not counted as twenty independent observations. Without them a folder-level number is
 still computable and is quietly weaker than it looks — so when they are absent
 bugarach says which claims it cannot support, rather than refusing the folder or
 pretending it can.
