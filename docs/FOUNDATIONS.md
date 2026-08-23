@@ -46,7 +46,7 @@ originals. Consequences:
   - MATLAB `jsonencode` maps NaN/Inf to `null`.
   - interface2 has duplicate `computeEventRate.m` (RateViewer 0.1 s vs
     SpikyViewer 0.05 s) shadowed by path order; production is 0.1 s.
-  - **PySpike 0.9.0's `max_tau` cap is broken** (applied only as the default
+  - **PySpike's `max_tau` cap has been broken since 0.8.0** (applied only as the default
     for missing edge ISIs). PySpike is a test-only cross-check in the
     uncapped regime; never a runtime dependency (sapper SAP003).
 

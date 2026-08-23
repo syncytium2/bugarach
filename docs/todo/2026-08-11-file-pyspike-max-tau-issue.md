@@ -39,11 +39,22 @@ Draft the issue text below; **Tony reviews before anything is posted**
 showing the tree the report describes, including
 `test_pyspike_max_tau_is_still_inert`.
 
-**When pasting**: the `**Title:**` line is the issue title, not body. Unwrap every
-wrapped run of prose first — every paragraph, both bulleted lists, and the
-docstring blockquote — because this file is hard-wrapped near 80 columns and
-GitHub treats each newline in an issue body as a line break, so wrapped text ships
-as a stack of short ragged lines. Leave the fenced blocks and the tables exactly as they are.
+**When pasting**: don't. `tools/pyspike_issue_body.py` emits the title and the
+body separately, unwrapping the prose runs and leaving the fenced blocks and
+tables alone — this file is hard-wrapped near 80 columns and GitHub turns every
+newline in an issue body into a line break, so pasting the source ships each
+paragraph as a stack of short ragged lines. Posting is then one command:
+
+```bash
+python tools/pyspike_issue_body.py > /tmp/pyspike_issue.md
+gh issue create --repo mariomulansky/PySpike \
+  --title "$(python tools/pyspike_issue_body.py --title)" \
+  --body-file /tmp/pyspike_issue.md
+```
+
+Rendered through GitHub's own markdown API, the body comes out as 2 tables (12
+rows, all three cells wide), 13 code blocks, 7 links and no stray backslashes —
+the same numbers the murderboard's final render check recorded.
 
 ---
 
@@ -353,7 +364,7 @@ exceed the recording span, and today's code returns it while the patch bounds it
 half the span. That is a behavior change against 0.9.0 and a restoration of 0.7.0,
 not a new hazard — but it is yours to sign off on.
 
-Running the sweep above against a patched pure-Python backend:
+Running the sweep above against a patched build:
 
 ```
  max_tau   as shipped   with the patch
@@ -365,6 +376,15 @@ Running the sweep above against a patched pure-Python backend:
 
 Finite caps become monotone in `max_tau`, a 1 µs window reaches 0 — the smallest
 cross-train gap in these data is 0.027 s — and the `None` row is unchanged.
+
+**Your own test suite stays green under it.** I built the `v0.9.0` tree with both
+diffs applied and ran `test/` against it: 50 tests across all 13 files pass,
+patched and unpatched alike — including `test_reconcile.py` (the one I would
+expect to feel the `Reconcile=False` change above), `test_distance.py`, which
+holds the suite's only `max_tau` assertion, and `test_directionality.py`. That is
+against the **compiled** Cython extension, rebuilt from the patched `.pyx`, and it
+reproduces the patched column above to the digit — so the two backends still agree
+under the patch, as they do without it.
 
 One design question I did not want to decide for you: with `MRTS > 0` this lets
 `max_tau` override the MRTS-raised window. That seems right for a hard cap, but
@@ -382,7 +402,7 @@ times, 2670 events at 2362 distinct times after dropping within-train duplicates
 median ISI 31 s — from
 [our committed test fixture](https://github.com/syncytium2/bugarach/blob/6eafdb69cd3c3ed4694dcdddcf5978aa84af6636/tests/fixtures/synth_fastcal_s1.mat).
 Both columns are `pyspike.spike_sync`, so this is PySpike against itself; the
-patched column comes from the pure-Python backend with the diff above applied:
+patched column comes from a `v0.9.0` build with the diff above applied:
 
 | `max_tau` | as shipped | with the patch |
 | --- | --- | --- |
@@ -403,11 +423,14 @@ and
 ### Environment
 
 PySpike 0.9.0 (pip, compiled Cython backend), NumPy 2.5.2, Python 3.14.5, macOS.
-The pure-Python backend gives the same results; I checked that the two
-`Interpolate` implementations agree on 200k random triples, so this is not a
-build artifact.
+The pure-Python backend gives the same results, as-shipped and patched both; I
+checked that the two `Interpolate` implementations agree on 200k random triples,
+so this is not a build artifact. The patched numbers throughout come from the
+`v0.9.0` source tree rebuilt with the diff, Cython extension and all.
 
-Happy to send the fix as a PR with a regression test if that is useful.
+Happy to open this as a PR with a regression test — the patch is written, both
+backends are built and your suite is green against it, so it is yours whenever
+you want it.
 
 ---
 
@@ -475,20 +498,33 @@ Happy to send the fix as a PR with a regression test if that is useful.
   `tests/test_sync_detect.py`, `docs/sapper_feedback/2026-08-12-sap-id-namespace-collides-with-interface2.md`,
   and — the one an outside reader meets —
   `docs/todo/2026-08-11-methodology-narrative-doc.md`. All **eight** assert the bug
-  today with no upstream reference, **and all eight call it "PySpike 0.9.0's" bug,
-  which this report now shows is wrong: it broke in 0.8.0.** Fix the version in the
-  same pass as the URL. `test_pyspike_max_tau_is_still_inert` is a ninth mention
-  but already names 0.8.0 correctly; it now points back here instead of keeping
-  its own copy of this list, which had already drifted to three entries.
-- **Unverified here** ⚠: whether upstream's own test suite stays green under the
-  patch. The one `max_tau` assertion does — I ran it, patched and unpatched, and
-  the issue says so. The other 11 test files were not executed against a patched
-  build — 13 test files ship in the 0.9.0 sdist and one assertion in one of them
-  has been exercised, leaving 12 files, so this is a small concrete job
-  before offering the PR, and `test_reconcile.py` is the one to watch given the
-  `Reconcile=False` behavior change the issue now discloses. Note also that every
-  "with the patch" number was produced by the pure-Python backend; nothing has been
-  run through a patched *compiled* extension.
+  today with no upstream reference. **The version half of this is already done**
+  (2026-08-23): every one of the eight used to call it "PySpike 0.9.0's" bug, which
+  this report shows is wrong, and all eight now date it to 0.8.0. What is left for
+  the day the issue exists is the URL. `test_pyspike_max_tau_is_still_inert` is a
+  ninth mention but already named 0.8.0 correctly; it points back here instead of
+  keeping its own copy of this list, which had already drifted to three entries.
+- **The three ⚠ flags the murderboard left are now cleared** (2026-08-23), which
+  is what turns "here is a bug" into "here is a fix you can merge":
+  - *Upstream's suite under the patch* — **green**. The `v0.9.0` tarball, both
+    diffs applied, `pytest test`: **50 tests over all 13 files pass**, patched and
+    unpatched alike. `test_reconcile.py` — the one to watch, given the
+    `Reconcile=False` behavior change — is among them, as are `test_distance.py`
+    (the suite's only `max_tau` assertion) and `test_directionality.py`.
+  - *A patched **compiled** extension* — **built and run**. Cython rebuild of the
+    patched `.pyx`, and it reproduces every patched number the report quotes: the
+    sweep to 0.3500/0.1833/0.0500/0.0000 and the fixture table to
+    0.3235/0.0696/0.0156. It also flips the smallest reproduction — the 7.7 s pair
+    at a 0.25 s cap goes from coincident to not. So the two backends agree under
+    the patch exactly as they do without it, and no claim in the report now rests
+    on the pure-Python path alone.
+  - *The 0.9.0 misdating* — **fixed in the tree**, in the same pass that added
+    this note. See the bullet above; what is left there is the URL, not the
+    version.
+  Reproduce any of it with the recipe in `tools/pyspike_patch_check.sh`.
+- **Still unverified** ⚠: nothing blocking, but worth saying — the patched build
+  was exercised by upstream's suite and by this report's own numbers, not by a
+  wider corpus, and it was built on macOS/CPython 3.14 only.
 - SPIKY, the MATLAB GUI, is not in this tree at all, so it cannot be checked from
   here — the issue claims the cap only for cSPIKE and PySpike, both read directly.
 - The repo links assume bugarach stays public at that path.

@@ -385,12 +385,12 @@ code from cSPIKE's MATLAB source.
 
 | Upstream | License | Role here |
 | --- | --- | --- |
-| [PySpike](https://github.com/mariomulansky/PySpike) | BSD | SPIKE-synchronization semantics ported from its (BSD) source; test-suite cross-check (0.9.0 `max_tau` bug limits it to the uncapped regime) |
+| [PySpike](https://github.com/mariomulansky/PySpike) | BSD | SPIKE-synchronization semantics ported from its (BSD) source; test-suite cross-check (its `max_tau` bug, live since 0.8.0, limits it to the uncapped regime) |
 | [CICADA](https://gitlab.com/cossartlab/cicada) | MIT | CICADA detection method (ported; carries upstream copyright notice) |
 | cSPIKE (MATLAB) | research/education only — **no code used** | reference outputs for parity tests only (research use, via interface2) |
 
 ⚠ SPIKE-synchronization is a **native port** rather than a PySpike wrapper because
-**PySpike 0.9.0's `max_tau` cap is broken**: the cap is applied only as the default
+**PySpike's `max_tau` cap has been broken since 0.8.0**: the cap is applied only as the default
 for missing edge-neighbour ISIs, so spikes seconds apart "coincide" under a 0.25 s
 cap (see `detectors/sync.py`). PySpike stays a test-suite cross-check in the
 uncapped regime, where the two definitions agree.
