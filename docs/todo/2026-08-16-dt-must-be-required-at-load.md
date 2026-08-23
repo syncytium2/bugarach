@@ -45,10 +45,38 @@ argument: the warning is not merely late, it is also outnumbered two to one by
 paths that do not raise it.
 
 Nothing at the **load** boundary asks for it at all: `bugarach.store` readers and
-`bugarach.io.slice_from_events` construct a `Slice` with no sampling interval,
-and the viewer exposes `grid_dt` as a detector widget
-([`src/bugarach/ui/app.py:85`](../../src/bugarach/ui/app.py#L85)) — a per-run
-knob, defaulted, rather than a property the recording arrived with.
+`bugarach.io.slice_from_events` construct a `Slice` with no sampling interval.
+
+## Step 5 has landed. The loader half has not, and it is the half that matters
+
+The Panel viewer no longer carries a defaulted `grid_dt` widget or a hardcoded
+`imaging_rate_hz`. It reads `frame_interval_sec` out of `Slice.meta`, shows the
+value and where it came from, derives rate+context's `grid_dt` and CICADA's
+imaging rate from it, and **refuses to run any detector on a recording that does
+not state one** — the rasters still draw, because they need no interval. A person
+who knows the interval types it into the one field that asks for it.
+
+That closes item 5 below and nothing else:
+
+- **`Slice` still has no `dt` field.** The interval arrives as a *string* in
+  `meta`, because that is where `load_folder` parks the whole `slices.csv` row, so
+  every consumer that wants it has to know the column name and parse it. The
+  viewer now does; nothing else does.
+- **`slice_from_events` and the store readers still admit data with no interval
+  at all**, which is exactly what §6 says must be refused. The viewer's refusal
+  fires one boundary too late — at analysis, not at load — and it is the only one
+  that fires.
+- **`GRID_DT_FALLBACK` and `GridDtNotSetWarning` remain reachable** from every
+  caller that is not the viewer.
+- **`sync_detect`'s `dt: float = 0.1` is deliberately untouched.** The viewer does
+  not hand it the recording's interval: `bench.OPERATING_POINTS["sync"]` does not
+  declare `dt`, so the calibrated SPIKE-synch point *is* the 0.1 s profile grid,
+  and rescaling it from the viewer would move a detector off its measured
+  operating point rather than fix a bug. It belongs with this work, where the
+  interval can be threaded through and the point re-measured in one go.
+
+The remaining work is owned by whoever holds `src/bugarach/io.py`,
+`src/bugarach/store.py` and the three detector signatures — not the viewer.
 
 ## Why a warning is the wrong instrument
 
@@ -83,7 +111,8 @@ here without checking PR #45 first.**
    where that does not disturb parity — see the constraint below.
 4. **Retire `GRID_DT_FALLBACK` and `GridDtNotSetWarning`** once nothing can reach
    them. Leaving a dead fallback in place invites its reuse.
-5. **The viewer asks once, at file intake**, not per detector run.
+5. ~~**The viewer asks once, at file intake**, not per detector run.~~ **Done** —
+   see "Step 5 has landed" above.
 
 ## Constraints a fix must respect
 
