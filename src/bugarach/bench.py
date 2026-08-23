@@ -350,6 +350,61 @@ def make_recording(regime: str, seed: int, **overrides):
         seed=seed, **{**BENCH_RECORDING, **REGIMES[regime], **overrides})
 
 
+CROWDED_RECORDING = dict(BENCH_RECORDING, min_sep_sec=14.0,
+                         n_per_level=(40, 40, 40), hot_window=None,
+                         hot_rate_hz=0.0, ramp_sec=0.0, n_distractors=0)
+"""Events packed close enough to sit inside one another's reference window.
+
+**The bench cannot exhibit reference-window contamination, and that is why the
+regime-shift incident was found by hand rather than by the suite.**
+``BENCH_RECORDING`` plants events at least **120 s** apart while a rolling
+detector's reference window spans **±30 s**, so a second planted event can never
+land in the first one's context. The failure mode every CFAR detector uses guard
+cells against — Finn & Johnson quantified it in 1968, and this project met it as
+binned SCE's precision falling 74% → 10% — is *impossible by construction* on the
+recording the detectors are scored on.
+
+So it gets its own recording rather than a change to the shared one. Moving
+``BENCH_RECORDING``'s spacing would re-derive every operating point and invalidate
+every published number for a reason unrelated to why they were derived; this adds
+a condition instead of moving the goalposts.
+
+**14 s** is not arbitrary: it is the spacing of the dense benchmark whose settings
+collapsed on sparse data, recorded in the README as the incident that cost two
+weeks. The probe and distractors are off because this recording asks one question
+— what happens when events crowd each other's context — and a dense-but-random
+block would confound it with rate-keying.
+
+**The count matters as much as the floor**, which is not obvious and cost a
+measurement to find. ``min_sep_sec`` is a *floor* under a renewal process, not a
+target: at the bench's own event count it changes almost nothing, because the
+median gap stays near 70 s and only 5 of 35 gaps land inside a reference window.
+120 events over 45 minutes puts the median gap at **19.4 s** and **97 of 119**
+gaps inside ±30 s, which is the condition the guard is supposed to address.
+
+Use it through :func:`make_crowded_recording`. It is a **diagnostic, not a
+regime**: nothing should be calibrated on it, because a corpus where every event
+has a neighbour is as unrepresentative as one where none does.
+"""
+
+CROWDING_GAP_SEC = 30.0
+"""Half the shipped 60 s context — a gap below this puts two planted events in
+one another's reference window, which is what makes the recording above crowded.
+
+Named rather than written as a literal because it is a *consequence* of
+``context_win``: change the context and this moves with it.
+"""
+
+
+def make_crowded_recording(seed: int, **overrides):
+    """A recording whose planted events crowd each other's reference window.
+
+    Same ``(slice, ground_truth)`` pair as :func:`make_recording`. See
+    :data:`CROWDED_RECORDING` for what it is for and what it must not be used for.
+    """
+    return simulate_coordination(seed=seed, **{**CROWDED_RECORDING, **overrides})
+
+
 def make_null_recording(seed: int, **overrides):
     """A recording with no planted coordination — background only.
 
@@ -723,6 +778,46 @@ class EdgeOfRange(ValueError):
     """
 
 
+MAX_PROBE_PER_MIN = {
+    "coact": 1.0,      # measured: 0.0
+    "loco": 1.0,       # measured: 0.1
+    "sync": 1.0,       # measured: 0.2
+    "rate": 2.0,       # measured: 0.6
+    "sce": 9.0,        # measured: 5.6
+    "cicada": 25.0,    # measured: 17.3 — still the most rate-fooled of the six
+}
+"""Firings per minute each detector may make inside a block containing nothing.
+
+**Measured baselines, not aspirations** — the convention the regime-shift budgets
+use. A detector that improves past its ceiling should have the ceiling tightened
+in the commit that improves it.
+
+**These lived in `tests/test_bench.py` until 2026-08-22, and that was the defect.**
+The test caught a regression at the *shipped* operating point, but
+:func:`pick_operating_point` — the thing that *chooses* the shipped operating
+point — had no notion of an acceptable probe rate. So a sweep could select a
+promiscuous setting and nothing objected: the probe could fail a detector, but it
+could not fail a **calibration**, which is where operating points come from.
+
+What is deliberately still true: the probe stays **out of F1**. Folding it in makes
+the headline measure how hard the probe was set rather than how good the detector
+is — CICADA reads F1 0.09 that way against 0.68 upstream, on 599 hot-window
+detections out of 601 false alarms. The fix for "the alarm cannot ring" is to give
+the probe a gate at selection time, not to corrupt the score.
+`docs/todo/2026-08-16-promiscuity-probe-cannot-fail.md`.
+"""
+
+
+class TooPromiscuous(ValueError):
+    """The best-scoring point on the sweep fires too often on nothing.
+
+    Raised by :func:`pick_operating_point` when the F1-optimum exceeds that
+    detector's :data:`MAX_PROBE_PER_MIN` ceiling. A third refusal for a third
+    remedy: the grid is fine and the knob is binding, but the value that wins on
+    F1 wins by firing into a block where nothing was planted.
+    """
+
+
 class DegenerateSweep(ValueError):
     """Every point on the grid scored identically — the knob did nothing.
 
@@ -759,7 +854,34 @@ class DegenerateSweep(ValueError):
     """
 
 
-def pick_operating_point(curve: list[BenchResult]) -> BenchResult:
+def _gate_on_probe(best: BenchResult, ceiling: float | None) -> BenchResult:
+    """Refuse a winner that got there by firing where nothing was planted.
+
+    ``-1.0`` is the sentinel for "look it up"; ``None`` disables the gate. The
+    lookup is by detector name, so a curve for something not in
+    :data:`MAX_PROBE_PER_MIN` passes rather than crashing — a new detector should
+    not be un-calibratable until someone writes it a budget.
+    """
+    if ceiling is None:
+        return best
+    if ceiling == -1.0:
+        ceiling = MAX_PROBE_PER_MIN.get(best.detector)
+        if ceiling is None:
+            return best
+    rate = best.hot_fa_per_min
+    if not np.isfinite(rate) or rate <= ceiling:
+        return best
+    raise TooPromiscuous(
+        f"{best.detector}/{best.regime}: the best F1 on this sweep "
+        f"({best.f1:.2f} at {best.knob_value:g}) fires {rate:.1f} times/min "
+        f"inside a block containing no planted events, against a ceiling of "
+        f"{ceiling:g}. That setting wins on F1 by keying on rate, so it is not "
+        "an operating point. Tighten the detector or raise the ceiling "
+        "deliberately — do not take the runner-up silently")
+
+
+def pick_operating_point(curve: list[BenchResult], *,
+                         max_probe_per_min: float | None = -1.0) -> BenchResult:
     """The F1-optimal point on a sweep, refusing a boundary answer.
 
     A *plateau* that reaches the edge is not a boundary answer. LoCo saturates
@@ -771,12 +893,25 @@ def pick_operating_point(curve: list[BenchResult]) -> BenchResult:
     achieving the best F1 is interior, the grid bracketed the optimum and the
     first such point is returned; only when *every* optimal point is at an end
     is the search still climbing when it stopped.
+
+    ``max_probe_per_min`` gates the choice on the **promiscuity probe**, which is
+    what makes that probe able to fail a calibration rather than only a shipped
+    setting. Default ``-1.0`` means *look the detector up in*
+    :data:`MAX_PROBE_PER_MIN`; pass a number to override, or ``None`` to select on
+    F1 alone the way this did before 2026-08-22.
+
+    The gate is applied **after** the edge and degeneracy checks and **before**
+    the answer is returned, so a sweep whose winner fires into a block containing
+    nothing raises :class:`TooPromiscuous` instead of quietly becoming an
+    operating point. It does not re-rank: a promiscuous winner is a refusal, not
+    an invitation to take second place, because silently accepting a worse point
+    is how a calibration stops being reproducible.
     """
     scored = [r for r in curve if np.isfinite(r.f1)]
     if not scored:
         raise ValueError("no point on the curve has a defined F1")
     if len(scored) == 1:
-        return scored[0]
+        return _gate_on_probe(scored[0], max_probe_per_min)
 
     best_f1 = max(r.f1 for r in scored)
     # Before asking WHERE the optimum sits, ask whether the sweep found one at
@@ -796,7 +931,7 @@ def pick_operating_point(curve: list[BenchResult]) -> BenchResult:
     optimal = [r for r in scored if r.f1 >= best_f1 - 1e-9]
     interior = [r for r in optimal if r is not scored[0] and r is not scored[-1]]
     if interior:
-        return interior[0]
+        return _gate_on_probe(interior[0], max_probe_per_min)
 
     end = "low" if optimal[0] is scored[0] else "high"
     best = optimal[0]
