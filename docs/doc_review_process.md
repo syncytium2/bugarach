@@ -1,4 +1,4 @@
-<!-- vendored from syncytium2/murderboard @ f26414a — canonical source; do NOT edit here, update upstream and re-copy -->
+<!-- vendored from syncytium2/murderboard @ fae0eca — canonical source; do NOT edit here, update upstream and re-copy -->
 # The murderboard — critical review process for document deliverables (anti-slop)
 
 A standing, project-neutral review process. Its purpose is to stop **slop** — unsourced
@@ -239,7 +239,7 @@ defect a role whose unit matches it (11, 9), or it will be found by the reader i
      withdrawn units included, does the unit count reconcile, and are units sharing a subject
      counted as independent? If the project appears to have **no** such record, report that
      as a finding: *"there is no source of record for group membership"* is a serious claim
-     about a project, not a default. (Incident: a folder-level result was reviewed by eleven roles
+     about a project, not a default. (Incident: a corpus result was reviewed by eleven roles
      and shipped including a recording its own lab had marked excluded, in a column no role
      knew existed. The same review reported a pooled across-group number as unavoidable
      while the grouping sat in a column of the file the analysis had already loaded.)
