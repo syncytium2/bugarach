@@ -10,6 +10,12 @@ than the microscope saw.
 It reports rather than judges. Every check names the file and the line, counts
 what it found, and separates **can't read this** from **read it, and here is what
 you may not have meant** — because most conformance failures parse perfectly.
+
+**Its verdict is binding on the rest of the app.** A folder this says is
+conforming is one ``bugarach detect`` will score, and a recording it refuses is
+one ``detect`` refuses for the same stated reason — because both ask
+:func:`bugarach.detect_folder.folder_analysis_windows`, the one resolver, rather
+than each deriving windows from the same rules read twice.
 """
 
 from __future__ import annotations
@@ -20,8 +26,9 @@ import warnings
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from bugarach.detectors.loco import effective_region_windows
-from bugarach.detectors.rate import recording_extent
+import numpy as np
+
+from bugarach.detect_folder import folder_analysis_windows
 from bugarach.io import NO_EVENT, RESERVED, load_folder
 
 
@@ -38,6 +45,7 @@ from bugarach.io import NO_EVENT, RESERVED, load_folder
 NO_FRAME_INTERVAL = "no frame interval — bugarach will ask for it"
 NO_WINDOWS = "no treatment windows — analysed as one whole-recording window"
 ANALYSIS_WINDOWS_SUPPLIED = "analysis windows supplied — scored as given"
+RAW_BOUNDS_SCORED = "no analysis windows — the raw period bounds are scored as given"
 NO_SILENCE_DECLARED = "no ROI declared with no events"
 NO_WIDTH = "no per-event width"
 PART_WIDTH = "some streams carry no per-event width"
@@ -53,6 +61,13 @@ NOTE_DETAIL = {
     ANALYSIS_WINDOWS_SUPPLIED: (
         "This project's wash-in delay and duration caps are not applied to "
         "them; your bounds are used exactly as sent."),
+    RAW_BOUNDS_SCORED: (
+        "start_sec and end_sec are scored verbatim — no wash-in delay, no "
+        "duration cap, no baseline measured backward from its end, and no "
+        "exemption for a label containing \"hi\". Those encode this project's "
+        "protocol and are not applied to yours. If the part of a period you "
+        "want scored is narrower than the period itself, say so in "
+        "analysis_start_sec / analysis_end_sec."),
     NO_WIDTH: (
         "width_sec is asked for and not required, so this folder conforms and "
         "every detector runs. What it cannot do is score per-event durations: "
@@ -197,29 +212,33 @@ def check_folder(folder) -> FolderReport:
         if not r.windows:
             r.notes.append(NO_WINDOWS)
         else:
-            # THE CHECK THAT WAS MISSING. Loading a folder is not the same as
-            # being able to analyse it: `region_windows` re-applies this
-            # project's windowing convention and HALTS on a baseline that does
-            # not start at 0 or a gap between regions. A folder that shipped
-            # pre-trimmed windows loads perfectly and then halts every
-            # detector — and this check passed it, so a green result was taken
-            # as evidence the folder was usable. It was not.
+            # Loading a folder is not the same as being able to analyse it, so
+            # the check resolves the windows too — through
+            # `folder_analysis_windows`, which is the SAME function `bugarach
+            # detect` calls and not a second reading of the same rules. The
+            # second reading is what went wrong: this call site used to derive
+            # its own with `effective_region_windows`, which falls through into
+            # `region_windows` and halts on a baseline that does not begin at 0
+            # or a gap between periods. Those two guards are aCa5z's protocol,
+            # correct for a `.mat` store and wrong as a condition of entry for
+            # anybody else (FOUNDATIONS §4) — so a lab that started recording
+            # before it started treating was told at the door that its legal
+            # folder was malformed, and then watched `detect` score it without
+            # complaint. Conforming is conforming, and one resolver is how the
+            # two commands stay unable to disagree.
+            finite = [rg for rg in s.regions if np.isfinite(rg.start_sec)]
+            supplied = bool(finite) and all(
+                rg.has_analysis_window for rg in finite)
             try:
-                # exactly what a detector calls, so the check fails on what the
-                # detectors would fail on rather than on a near-enough proxy
-                effective_region_windows(s, recording_extent(s))
+                folder_analysis_windows(s)
             except ValueError as exc:
                 r.errors.append(
                     f"loads, but no detector can run on it: {exc}")
-                if "does not match" in str(exc) or "expected 0" in str(exc):
-                    r.errors.append(
-                        "these look like analysis windows sent as region bounds. "
-                        "Either send the RAW period — region 1 at 0, each region "
-                        "starting where the last ended — or keep the raw bounds "
-                        "and put your windows in analysis_start_sec / "
-                        "analysis_end_sec, which are used as given")
-            if all(rg.has_analysis_window for rg in s.regions if s.regions):
-                r.notes.append(ANALYSIS_WINDOWS_SUPPLIED)
+            else:
+                # what will actually be scored, said plainly, because the two
+                # answers are different numbers and the file does not show which
+                r.notes.append(ANALYSIS_WINDOWS_SUPPLIED if supplied
+                               else RAW_BOUNDS_SCORED)
         if r.n_silent == 0:
             r.notes.append(NO_SILENCE_DECLARED)
         # width is asked for and not required, so its absence is a note. What it

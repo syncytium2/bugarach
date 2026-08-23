@@ -165,6 +165,33 @@ def with_folder_windows(s: Slice) -> Slice:
         for r in s.regions])
 
 
+def folder_analysis_windows(s: Slice):
+    """A folder recording, settled, and the windows it will be scored on.
+
+    **The one place the folder path answers this question**, and the reason it
+    is a function rather than three lines repeated at each call site: ``detect``
+    and ``check`` had a copy each, the copies disagreed, and the answer a lab
+    got depended on which command they ran. A folder that is legal under the
+    contract — a baseline beginning at 500 s, a gap after it — was refused at
+    the door by ``check`` and then scored happily by ``detect``, which is worse
+    than either behaviour alone because nothing tells the lab which answer is
+    true. ``tests/test_check_detect_agree.py`` pins the two together.
+
+    Returns ``(slice, windows)`` and **both halves matter**. ``loco``, ``sce``
+    and ``cicada`` take the whole recording and re-derive their own windows from
+    its regions, with no argument that could divert them — so a caller that kept
+    the unsettled slice would resolve one policy here and hand a different one
+    to three of the six detectors. The settled slice is the thing to pass on.
+
+    Idempotent: settling an already-settled recording changes nothing.
+    """
+    from bugarach.detectors.loco import effective_region_windows
+    from bugarach.detectors.rate import recording_extent
+
+    s = with_folder_windows(s)
+    return s, effective_region_windows(s, recording_extent(s))
+
+
 def _region_index(window) -> int | None:
     """The producer's own ``region_idx``, carried through the window.
 
@@ -291,12 +318,7 @@ def detect_slice(s: Slice, *, detectors=DETECTORS, stream: str | None = None,
     ``s`` is taken as it came out of :func:`bugarach.io.load_folder`; the
     windowing is settled here, so a caller cannot forget to.
     """
-    from bugarach.detectors.loco import effective_region_windows
-    from bugarach.detectors.rate import recording_extent
-
-    s = with_folder_windows(s)
-    ext = recording_extent(s)
-    windows = effective_region_windows(s, ext)
+    s, windows = folder_analysis_windows(s)
 
     names = list(s.streams)
     want = [n for n in names if stream is None or n == stream]

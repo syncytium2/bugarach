@@ -9,8 +9,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from bugarach.conform import (NO_SILENCE_DECLARED, NO_WIDTH, check_folder,
-                              format_report)
+from bugarach.conform import (NO_SILENCE_DECLARED, NO_WIDTH,
+                              RAW_BOUNDS_SCORED, check_folder, format_report)
 
 
 def _write(d: Path, **files) -> Path:
@@ -127,24 +127,32 @@ def test_not_a_folder(tmp_path: Path):
     assert not rep.ok and "not a folder" in format_report(rep)
 
 
-def test_pretrimmed_windows_fail_the_check_even_though_they_load(tmp_path: Path):
-    """The blind spot that cost an export. A folder whose regions are already
-    analysis windows — baseline capped backward off zero, a wash-in gap at each
-    boundary — parses perfectly and then halts every detector. Loading is not
-    the same as being analysable, and the check has to know the difference."""
+def test_bounds_that_are_not_zero_based_or_contiguous_pass(tmp_path: Path):
+    """The export this used to cost, and the reason the answer went the other way.
+
+    interface2 read the contract, trimmed their windows into `start_sec`/`end_sec`
+    exactly as it then asked, and every detector halted on 83 of 85 recordings:
+    `region_windows` requires a baseline beginning at 0 and periods that touch,
+    and those are **aCa5z's protocol**, not a property of a well-formed export.
+    The check learned to fail such a folder at the door, which stopped the silent
+    halt and kept the wrong verdict.
+
+    A folder whose baseline begins at 60 s with a two-minute gap after it is a lab
+    that started recording before it started treating and left the tissue alone in
+    between. It conforms, `bugarach detect` scores it on those bounds verbatim, and
+    so the door has to let it through.
+    """
     d = _write(tmp_path / "e", s1=GOOD,
                regions="slice_id,region_idx,label,start_sec,end_sec\n"
                        "s1,1,baseline,60,1260\n"        # does not start at 0
-                       "s1,2,TTX,1380,2580\n")          # 2-minute wash-in gap
+                       "s1,2,TTX,1380,2580\n")          # 120 s gap after it
     rep = check_folder(d)
-    assert not rep.ok, "a folder no detector can run on must not pass"
+    assert rep.ok, [e for r in rep.recordings for e in r.errors] + rep.errors
     r, = rep.recordings
-    joined = " ".join(r.errors)
-    assert "no detector can run on it" in joined
-    # both ways out are offered, because either is a valid fix and the producer
-    # knows which one their pipeline can actually do
-    assert "RAW period" in joined, "say what to send instead"
-    assert "analysis_start_sec" in joined, "offer the analysis-window column too"
+    # and it says what it will score, because "used as given" is a different
+    # number from what this project's own convention would have produced
+    assert RAW_BOUNDS_SCORED in r.notes
+    assert "verbatim" in format_report(rep)
 
 
 def test_supplied_analysis_windows_are_used_as_given(tmp_path: Path):
