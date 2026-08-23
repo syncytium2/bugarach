@@ -9,7 +9,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from bugarach.conform import check_folder, format_report
+from bugarach.conform import (NO_SILENCE_DECLARED, NO_WIDTH, check_folder,
+                              format_report)
 
 
 def _write(d: Path, **files) -> Path:
@@ -52,7 +53,9 @@ def test_no_declared_silence_is_a_note_not_a_failure(tmp_path: Path):
     rep = check_folder(d)
     assert rep.ok                                   # conforming: it may be true
     r, = rep.recordings
-    assert any("no events" in n and "too high" in n for n in r.notes)
+    assert NO_SILENCE_DECLARED in r.notes
+    # the short note carries the finding; the reason is said once in the report
+    assert "too high" in format_report(rep)
 
 
 def test_a_folder_with_no_recordings_says_what_it_found(tmp_path: Path):
@@ -310,3 +313,62 @@ def test_a_period_running_to_the_end_of_the_recording_still_clamps(tmp_path: Pat
     rw = supplied_region_windows(s, 1800.0)
     assert [(w.win_start, w.win_end) for w in rw] == [(0.0, 600.0), (700.0, 1800.0)]
     assert rw[1].raw_end == 1800.0
+
+
+# ------------------------------------------------- width, and saying it only once
+
+WIDE = ("roi,time_sec,stream,width_sec,width_def,peak_sec,amp\n"
+        "1,1.0,fast,0.6,halfprom_width_findpeaks_w,1.6,0.02\n"
+        "2,NA,fast,,halfprom_width_findpeaks_w,,\n"
+        "1,2.0,slow,3.0,rise_interval_peak_minus_t50rise,5.0,0.11\n")
+
+
+def test_the_report_names_the_width_rules_the_folder_carries(tmp_path: Path):
+    """Width is defined by the producer, so the definition is the only thing
+    that says what the number means. Two rules across two streams is the
+    expected shape and is reported as fact, not as a warning."""
+    rep = check_folder(_write(tmp_path / "e", s1=WIDE))
+    r, = rep.recordings
+    assert r.width_defs == ["halfprom_width_findpeaks_w",
+                            "rise_interval_peak_minus_t50rise"]
+    msg = format_report(rep)
+    assert "per-event width: halfprom_width_findpeaks_w" in msg
+    assert NO_WIDTH not in msg
+
+
+def test_a_folder_with_no_width_is_a_note_and_still_conforms(tmp_path: Path):
+    """`width_sec` is asked for and not required, so its absence cannot fail a
+    folder — but it costs CICADA's per-event mode, which the file cannot show."""
+    rep = check_folder(_write(tmp_path / "e", s1="roi,time_sec\n1,1.0\n2,NA\n"))
+    assert rep.ok
+    r, = rep.recordings
+    assert NO_WIDTH in r.notes
+    assert "per_event" in format_report(rep)
+
+
+def test_one_advisory_about_eighty_recordings_is_printed_once(tmp_path: Path):
+    """A note repeated eighty times is not eighty findings; it is one finding
+    about eighty recordings. On the lab's own export this printed 76 identical
+    copies of a 40-word paragraph and buried the verdict under them."""
+    def report(n):
+        d = tmp_path / f"e{n}"
+        return format_report(check_folder(_write(
+            d, **{f"s{i:02d}": "roi,time_sec\n1,1.0\n" for i in range(n)})))
+
+    big = report(20)
+    assert big.count(NO_SILENCE_DECLARED) == 1
+    assert "20 of 20" in big or "every recording" in big
+    # the verdict is where the eye lands, not at the bottom of the detail
+    assert big.splitlines()[1].startswith("CONFORMING")
+    # the report grows one line per recording; the advice does not grow at all
+    assert (len(big.splitlines()) - len(report(5).splitlines())) == 15
+
+
+def test_a_note_only_one_recording_has_stays_on_that_recording(tmp_path: Path):
+    """Collapsing must not hide the recording that differs from the rest."""
+    files = {f"s{i:02d}": "roi,time_sec\n1,1.0\n2,NA\n" for i in range(3)}
+    files["s99"] = WIDE                      # this one has a width; the others do not
+    rep = check_folder(_write(tmp_path / "e", **files))
+    msg = format_report(rep)
+    assert msg.count(NO_WIDTH) == 1
+    assert "3 of 4 recordings" in msg and "s00" in msg
