@@ -49,6 +49,23 @@ MIN_EVENTS = 20
 MIN_ROIS = 5
 
 
+def stream_name(sl):
+    """Which stream to fit on, or ``None`` if it cannot be decided.
+
+    This lab's stores carry ``fast`` and ``slow``; a foreign export folder with
+    one unnamed stream is loaded as ``events`` (``io.load_folder``). Insisting on
+    ``fast`` skipped every such recording **silently**, and then reported "too
+    little baseline to fit a shape" — the wrong answer to give a lab whose data
+    is fine, and precisely the lab this fit exists to serve.
+
+    A folder with several named streams and no ``fast`` is ambiguous rather than
+    broken, so it returns ``None`` and the caller says so.
+    """
+    if STREAM in sl.streams:
+        return STREAM
+    return next(iter(sl.streams)) if len(sl.streams) == 1 else None
+
+
 def baseline_trains(sl):
     """``(per-ROI event times re-zeroed, window duration)`` for the baseline region.
 
@@ -75,13 +92,16 @@ def baseline_counts(sl):
     """
     reg = next((r for r in sl.regions
                 if (r.name or "").strip().lower() == "baseline"), None)
-    if reg is None or STREAM not in sl.streams:
+    if reg is None:
+        return None
+    name = stream_name(sl)
+    if name is None:
         return None
     lo, hi = float(reg.start_sec), float(reg.end_sec)
     dur = hi - lo
     if dur < MIN_DURATION_SEC:
         return None
-    stream = sl.streams[STREAM]
+    stream = sl.streams[name]
     counts = []
     for v in (stream.t50rise or stream.locs):
         v = np.asarray(v, dtype=float)
@@ -97,13 +117,16 @@ def _baseline(sl):
     """``(per-ROI times re-zeroed to the window, duration)`` or ``None``."""
     reg = next((r for r in sl.regions
                 if (r.name or "").strip().lower() == "baseline"), None)
-    if reg is None or STREAM not in sl.streams:
+    if reg is None:
+        return None
+    name = stream_name(sl)
+    if name is None:
         return None
     lo, hi = float(reg.start_sec), float(reg.end_sec)
     dur = hi - lo
     if dur < MIN_DURATION_SEC:
         return None
-    stream = sl.streams[STREAM]
+    stream = sl.streams[name]
     trains = []
     for v in (stream.t50rise or stream.locs):
         v = np.asarray(v, dtype=float)
@@ -171,6 +194,46 @@ def fit(rows) -> float:
     res = minimize_scalar(negative_log_likelihood, args=(rows,),
                           bounds=(np.log(1e-3), np.log(1e4)), method="bounded")
     return float(np.exp(res.x))
+
+
+#: below this many usable baseline windows a shape is not worth reporting — the
+#: constant in the tree rests on 81, and a handful of windows fits noise
+MIN_WINDOWS_FOR_SHAPE = 8
+
+
+def _this_labs_reference() -> float:
+    """``bench.MEASURED_RATE_SHAPE`` — this lab's fit, for comparison only.
+
+    Re-exported here so a caller that already has the fitter open does not also
+    have to reach into ``bench`` for the number it is comparing against. It is
+    **not** a default: the whole point of :func:`fit_shape_from_slices` is that a
+    corpus supplies its own.
+    """
+    from bugarach.bench import MEASURED_RATE_SHAPE
+    return MEASURED_RATE_SHAPE
+
+
+def fit_shape_from_slices(slices):
+    """The per-ROI heterogeneity of whatever corpus is handed in.
+
+    ``MEASURED_RATE_SHAPE`` is a **measurement of this lab's recordings**, not a
+    property of calcium imaging, and the difference bites as soon as a second lab
+    points the tool at its own folder: applying our 0.275 to their field is the
+    same category of error as applying a flat field to ours — a constant standing
+    in for a measurement. Whether a field is flat is *their* empirical question,
+    and this is what answers it for them.
+
+    Returns ``(shape, n_windows, n_rois)``, or ``(None, n, r)`` when there is not
+    enough baseline to fit. The caller decides what to do about that, because
+    silently falling back to another corpus's constant is the failure this
+    function exists to prevent.
+    """
+    windows = [got for got in (baseline_counts(sl) for sl in slices)
+               if got is not None]
+    n_roi = int(sum(c.size for c, _ in windows))
+    if len(windows) < MIN_WINDOWS_FOR_SHAPE:
+        return None, len(windows), n_roi
+    return fit([c for c, _ in windows]), len(windows), n_roi
 
 
 def _diagnostics(windows, shape, seed=0):

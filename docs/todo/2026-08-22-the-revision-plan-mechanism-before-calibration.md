@@ -222,9 +222,36 @@ for in order.
 Nothing below starts until these are answered, because each changes what the others
 mean.
 
-1. **Does the bench move to the fitted background?** (case item A, unchanged). The
-   fork. If yes, B and C are one campaign; if no, the browser should default to flat
-   so the two generators agree.
+1. ~~**Does the bench move to the fitted background?**~~ **Withdrawn 2026-08-22 —
+   this was never a decision, and framing it as one was inherited from the case
+   document without being questioned.** Tony: *"Chosing flat clearly fails to match
+   our data. Whether or not another users data has this property is another
+   question. This should be a toggle not a decision."*
+
+   Right on both halves. Flat is settled *against* by measurement — real windows
+   leave ~35% of ROIs silent against a flat field's 2% — so for this corpus there
+   is nothing to choose. And hardcoding **our** shape instead is the same category
+   of error one level up: 0.275 is a maximum-likelihood fit over *this lab's* 81
+   baseline windows, and handing it to another lab's folder substitutes a constant
+   for a measurement exactly as flat does.
+
+   So the background became a **measured per-corpus property**, and the toggle
+   toggles itself: `assess` fits the shape from the recordings it was handed and
+   emits it in the assessment; `derive_spec` prefers that over the reference
+   constant and says loudly when it had to fall back. A heterogeneous folder fits
+   0.34; a genuinely flat one saturates the estimator and is reported as *flat*.
+   Neither is chosen.
+
+   Two portability bugs fell out of building it, both of which would have hit the
+   first outside lab: the fitter hardcoded `STREAM = "fast"`, so a foreign
+   single-stream folder (loaded as `events`) had **every** recording skipped
+   silently and was then told it had too little baseline; and nothing carried the
+   fit to the export-folder path at all.
+
+   **What remains is narrower and is Phase 2 work, not a decision:**
+   `bench.BENCH_RECORDING` still runs flat, so the bench and `derive_spec` still
+   disagree about what a recording looks like. The bench's field should come from
+   the same measurement everything else now uses.
 2. **What overlap should count as a hit?** (case item D). Currently 1.5 s against a
    median realized event 0.80 s wide.
 3. **New: is the revision allowed to change mechanism, or only settings?** If only

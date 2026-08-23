@@ -101,16 +101,40 @@ def build(assessment: dict, k: int, *, events_per_level: int = 5,
         f"The MEDIAN ROI rate is not used: {frac_median_silent:.0%} of slices have "
         f"a median ROI with no events in baseline")
 
-    # --- the background the bench does not have -------------------------------
-    kwargs["bg_rate_shape"] = MEASURED_RATE_SHAPE
+    # --- the background, measured on THIS corpus where possible ---------------
+    #
+    # Flat has not been a live option since the shape was fitted: real windows
+    # leave ~35% of ROIs silent against a flat field's 2%. But the fix is not to
+    # hardcode OUR shape either — 0.275 is a measurement of this lab's 81
+    # baseline windows, and applying it to another lab's folder is the same
+    # category of error one level up. So the assessment fits a shape from the
+    # recordings it was handed, and this prefers that over the reference.
+    bg = assessment.get("background") or {}
+    measured = bg.get("rate_shape")
+    if measured is not None:
+        kwargs["bg_rate_shape"] = measured
+        notes.append(
+            f"bg_rate_shape={measured:.4f} was MEASURED on this corpus "
+            f"({bg.get('n_windows')} baseline windows / {bg.get('n_rois')} "
+            f"ROIs), not inherited. This lab's reference is "
+            f"{MEASURED_RATE_SHAPE}; a flat field would be shape -> infinity, "
+            "which no real recording resembles — real windows leave roughly a "
+            "third of ROIs with no events against a fiftieth on a flat field")
+    else:
+        kwargs["bg_rate_shape"] = MEASURED_RATE_SHAPE
+        why = bg.get("why", "the assessment carried no background fit")
+        notes.append(
+            f"⚠ bg_rate_shape={MEASURED_RATE_SHAPE} is INHERITED from this "
+            f"lab's corpus rather than measured on this one — {why}. Far better "
+            "than a flat field, which no real recording resembles, and still a "
+            "constant standing in for a measurement. Re-run the assessment on an "
+            "export folder with enough baseline to fit one")
     kwargs["bg_burst_shape"] = MEASURED_BURST_SHAPE
     kwargs["bg_burst_bin_sec"] = MEASURED_BURST_BINS
     notes.append(
-        f"bg_rate_shape={MEASURED_RATE_SHAPE} and bg_burst_shape="
-        f"{MEASURED_BURST_SHAPE} at bins {MEASURED_BURST_BINS} turn on the "
-        "fitted per-ROI heterogeneity and burstiness. The bench's flat field is "
-        "documented in the tree as easier than real data; leaving it flat would "
-        "calibrate every detector for a recording nobody has")
+        f"bg_burst_shape={MEASURED_BURST_SHAPE} at bins {MEASURED_BURST_BINS} "
+        "turns on fitted temporal burstiness. Still inherited — the assessment "
+        "does not yet fit this one per corpus")
 
     # --- the negatives, carried over from the bench ---------------------------
     for key in ("hot_window", "hot_rate_hz", "ramp_sec", "n_distractors",
