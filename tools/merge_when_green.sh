@@ -128,6 +128,29 @@ reap_verdict() {
   echo REAP
 }
 
+# The reaped-ignored line, written for the person who reads it. The first live
+# run of the reaper printed eight `__pycache__/` entries in full — true, and
+# nobody reads to the end of it, which makes the one line whose job is "did that
+# just delete something you wanted?" the line most likely to be skipped. So the
+# caches nobody grieves are counted and everything else is named.
+summarise_ignored() {   # stdin: one path per line. One clause on stdout, or nothing.
+  awk '
+    /__pycache__|\.pytest_cache|\.ruff_cache|\.mypy_cache/ { caches++; next }
+    { if (shown < 4) named[shown++] = $0; else extra++ }
+    END {
+      n = shown + extra + caches
+      if (n == 0) exit
+      if (shown == 0 && extra == 0) {
+        printf "%d ignored path(s) went with it, all build/test caches\n", n; exit
+      }
+      s = ""
+      for (i = 0; i < shown; i++) s = s (i ? ", " : "") named[i]
+      if (extra)  s = s ", +" extra " more"
+      if (caches) s = s ", " caches " cache dir" (caches > 1 ? "s" : "")
+      printf "%d ignored path(s) went with it: %s\n", n, s
+    }'
+}
+
 # The doing. Takes the PR's head branch as an argument rather than asking gh
 # itself, which is what keeps it drivable from a test against a scratch repo.
 # Returns 0 whatever it decides: the merge already happened, and this script's
@@ -153,7 +176,7 @@ reap_worktree() {
     SKIP:not-merged)   echo "merge_when_green: worktree kept — '$branch' is not on origin/main, so the merge did not land here." ;;
     SKIP:dirty)        echo "merge_when_green: worktree kept — $dirty uncommitted file(s) in $name." ;;
     REAP)
-      ignored="$(git -C "$self" status --porcelain --ignored 2>/dev/null | awk '/^!! /{print $2}' | tr '\n' ' ')"
+      ignored="$(git -C "$self" status --porcelain --ignored 2>/dev/null | awk '/^!! /{print $2}' | summarise_ignored)"
       if ! cd "$primary" 2>/dev/null; then
         echo "merge_when_green: worktree kept — cannot reach the primary checkout to remove it from."; return 0
       fi
@@ -162,7 +185,7 @@ reap_worktree() {
       fi
       git branch -d "$branch" >/dev/null 2>&1 || true
       echo "merge_when_green: reaped $name — '$branch' is on main and held nothing uncommitted."
-      [ -n "$ignored" ] && echo "  ignored paths removed with it: $ignored"
+      [ -n "$ignored" ] && echo "  $ignored"
       echo "  YOUR SHELL IS STILL POINTED AT THE DELETED DIRECTORY.  cd $primary"
       ;;
   esac
@@ -204,6 +227,24 @@ selftest() {
   r "merge did not land here"       SKIP:not-merged    /w /p feat feat no 0
   r "uncommitted work"              SKIP:dirty         /w /p feat feat yes 3
   r "identity beats state"          SKIP:other-branch  /w /p feat other yes 3
+
+  # The line a person actually reads after a reap.
+  echo
+  s() { # name expected input
+    local got; got=$(printf '%s' "$3" | summarise_ignored)
+    if [ "$got" = "$2" ]; then printf '  ok   %-40s\n' "$1"
+    else printf '  FAIL %-40s (got %s, want %s)\n' "$1" "$got" "$2"; fails=$((fails+1)); fi
+  }
+  s "nothing ignored -> say nothing" "" ""
+  s "caches only -> counted, not listed" \
+    "2 ignored path(s) went with it, all build/test caches" \
+    $'src/__pycache__/\n.pytest_cache/'
+  s "a real artifact is named" \
+    "3 ignored path(s) went with it: site/, 2 cache dirs" \
+    $'site/\n.pytest_cache/\nsrc/__pycache__/'
+  s "too many to name -> the rest counted" \
+    "6 ignored path(s) went with it: a/, b/, c/, d/, +2 more" \
+    $'a/\nb/\nc/\nd/\ne/\nf/'
 
   echo
   [ "$fails" -eq 0 ] && { echo "all checks pass"; return 0; }
