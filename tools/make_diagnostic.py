@@ -61,6 +61,41 @@ def _detector_params():
     return {name: dict(op.params) for name, op in OPERATING_POINTS.items()}
 
 
+class NoDetectorRan(RuntimeError):
+    """Every detector failed, so there is no figure to write — only an empty one.
+
+    **The `except` below is right and this is not a retreat from it.** A detector
+    that cannot run on a particular slice is a finding: record it in the sidecar,
+    draw the other five, and let whoever is troubleshooting see both. That is what
+    this tool is for.
+
+    *Every* detector failing at once is a different animal. It has never once
+    meant six independent findings; both times it happened it was this file
+    calling `_compute` the old way after its signature changed — `dt` becoming
+    required, then `StreamResult` growing a fifth field — and each time the six
+    identical tracebacks went into the sidecar, the figure was drawn with six
+    blank lanes, and the process exited 0.
+
+    An empty figure is worse than no figure, and worse than the text fallback the
+    site can use, because both of those announce themselves. This one looked like
+    a figure: a raster, six labelled lanes, a valid 196 KB PNG that a person would
+    put on a front page. The threshold is therefore *all*, not *any* — the site
+    build applies the stricter `any` at publish time, where the page promises six.
+    """
+
+
+def _dt_for(slice_) -> float:
+    """The recording's sampling interval, from the one accessor that has it.
+
+    `Slice.dt` became a real typed field in PR #250 and `require_dt` is the single
+    place a number can come from, with the refusal message already written
+    (FOUNDATIONS §6). This used to read `gt.params["grid_sec"]` — the generator's
+    imaging grid, which is the same number by construction — and one path is
+    better than two that agree.
+    """
+    return float(slice_.require_dt("the diagnostic figure"))
+
+
 def build(args):
     import holoviews as hv
     import panel as pn
@@ -98,13 +133,7 @@ def build(args):
         )
     ext = recording_extent(slice_)
 
-    # The sampling interval, read off the generator that produced this recording
-    # rather than assumed. Both branches above quantize their onsets onto
-    # ``grid_sec``, so it IS this recording's imaging grid — and the generator is
-    # the stage that knows it, which is exactly who FOUNDATIONS §6 says must be
-    # the one to say. Nothing here defaults: a generator that stopped recording
-    # its grid would raise a KeyError, which is the refusal §6 asks for.
-    dt = float(gt.params["grid_sec"])
+    dt = _dt_for(slice_)
 
     lanes, traces, failed = {}, {}, {}
     for det, params in _detector_params().items():
@@ -120,6 +149,16 @@ def build(args):
             # A detector that cannot run on this slice is a finding, not a crash
             # — record it in the sidecar instead of losing the whole figure.
             failed[det] = f"{type(exc).__name__}: {exc}"
+
+    if failed and not lanes:
+        raise NoDetectorRan(
+            "not one of the "
+            f"{len(failed)} detectors ran, so there is no figure to draw — only "
+            "a raster with blank lanes, which looks like a result and is not "
+            "one. This is the call site being wrong, not six findings; the two "
+            "times it has happened, _compute's signature had changed under it. "
+            "What each raised:\n  "
+            + "\n  ".join(f"{k}: {v}" for k, v in failed.items()))
 
     fig = coordination_diagnostic(slice_.streams["events"], ext=ext, lanes=lanes,
                                   gt=gt, traces=traces, height=args.height)
@@ -203,7 +242,16 @@ def main(argv=None):
             print(unresolved_message(), file=sys.stderr)
             return 2
 
-    fig, legend, header, report, pn = build(args)
+    # The refusal has to reach the EXIT CODE, because that is the only thing
+    # `build_site.py` reads from this process. A refusal that printed to stderr
+    # and still returned 0 would be the original bug wearing a different hat.
+    # Nothing has been written at this point — `build` returns before `main`
+    # opens a file — so an empty figure cannot be left behind either.
+    try:
+        fig, legend, header, report, pn = build(args)
+    except NoDetectorRan as exc:
+        print(f"make_diagnostic: {exc}", file=sys.stderr)
+        return 1
     tag = args.tag or f"seed{args.seed}"
     html, txt = dest / f"coord_diagnostic_{tag}.html", dest / f"coord_diagnostic_{tag}.txt"
 
