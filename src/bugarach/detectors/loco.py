@@ -330,6 +330,7 @@ def loco_detect(
     thr_step_sec=None,
     merge_gap_sec=None,
     null_context_mode: str = "maxlt",
+    guard_sec: float = 0.0,
     onset_field: str = "t50rise",
     clamp_context_to_region: bool = True,
     solution_delay_sec: float = 120.0,
@@ -353,6 +354,19 @@ def loco_detect(
     """
     if null_context_mode not in ("maxlt", "symmetric"):
         raise ValueError('null_context_mode must be "maxlt" or "symmetric"')
+    if guard_sec and null_context_mode == "symmetric":
+        # A guard in symmetric mode punches a hole in the middle of one window,
+        # so the circular shift would wrap across the excised span and the null
+        # would no longer be built from the reference cells that remain. It is
+        # implementable (coact.py compacts the retained span) and it is not worth
+        # it here: symmetric is the documented-inferior mode — on a synthetic
+        # ramp it gave 3 boundary false alarms against maxlt's 0 — so refusing is
+        # better than shipping a second, subtly different guard nobody uses.
+        raise ValueError(
+            "guard_sec is only supported with null_context_mode='maxlt', whose "
+            "halves are one-sided and stay contiguous when a guard shrinks them. "
+            "In 'symmetric' the guard would hole the middle of the window and the "
+            "wrap would cross it")
     if detection_mode not in ("threshold", "peak"):
         raise ValueError('detection_mode must be "threshold" or "peak"')
 
@@ -388,6 +402,7 @@ def loco_detect(
             clamp_context_to_region=clamp_context_to_region,
             detection_mode=detection_mode, peak_prominence=peak_prominence,
             peak_min_distance_sec=peak_min_distance_sec,
+            guard_sec=guard_sec,
         )
 
     params = {
@@ -395,6 +410,7 @@ def loco_detect(
         "threshold_pctile": pcti, "min_rois": min_rois,
         "n_surrogates": n_surrogates, "thr_step_sec": tstp,
         "merge_gap_sec": mgap, "null_context_mode": null_context_mode,
+        "guard_sec": guard_sec,
         "onset_field": onset_field,
         "clamp_context_to_region": clamp_context_to_region,
         "rng_seed": rng_seed, "detection_mode": detection_mode,
@@ -469,7 +485,8 @@ def _tag_region(onset: float, rw: list[RegionWindow]):
 def _detect_stream(trains, rw, ext, rng, *, binw, mgap, ctx, pctile, tstep,
                    min_rois, n_surrogates, null_context_mode,
                    clamp_context_to_region, detection_mode,
-                   peak_prominence, peak_min_distance_sec) -> LocoStream:
+                   peak_prominence, peak_min_distance_sec,
+                   guard_sec=0.0) -> LocoStream:
     t_lo, t_hi = ext
     half_ctx = ctx / 2
     ev = clip_sorted(trains, t_lo, t_hi)
@@ -487,10 +504,17 @@ def _detect_stream(trains, rw, ext, rng, *, binw, mgap, ctx, pctile, tstep,
     for ai, a in enumerate(anchors):
         rs, re = _region_of(a, rw, ext, clamp_context_to_region)
         if null_context_mode == "maxlt":
-            tl = _threshold_pool(ev, max(a - half_ctx, rs), a, binw,
-                                 n_surrogates, pctile, rng)
-            tr = _threshold_pool(ev, a, min(a + half_ctx, re), binw,
-                                 n_surrogates, pctile, rng)
+            # A guard pulls each half AWAY from the anchor. LoCo's halves are
+            # already one-sided, so this needs no compaction and no change to the
+            # wrap: each half stays contiguous and simply gets shorter. (Compare
+            # coact.py, whose window is centred on the bin under test and so
+            # develops a hole.) `_threshold_pool` returns inf for an empty span
+            # and inf survives the max, which is the honest answer — with no
+            # reference cells left there is no level anything could clear.
+            tl = _threshold_pool(ev, max(a - half_ctx, rs), a - guard_sec / 2,
+                                 binw, n_surrogates, pctile, rng)
+            tr = _threshold_pool(ev, a + guard_sec / 2, min(a + half_ctx, re),
+                                 binw, n_surrogates, pctile, rng)
             thr_a[ai] = max(tl, tr)
         else:
             thr_a[ai] = _threshold_pool(ev, max(a - half_ctx, rs),
