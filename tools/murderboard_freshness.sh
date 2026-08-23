@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# vendored from syncytium2/murderboard @ f26414a — do NOT edit here; update upstream and re-copy.
+# vendored from syncytium2/murderboard @ fae0eca — do NOT edit here; update upstream and re-copy.
 # murderboard_freshness.sh — is this repo's VENDORED murderboard current with upstream?
 #
 # THE GAP THIS CLOSES. `doc_review_process.md` step 0 tells a reviewer to confirm the
