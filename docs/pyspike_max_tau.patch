@@ -1,0 +1,46 @@
+Restore the max_tau coincidence-window cap
+
+Since 0.8.0 consolidated three per-file copies of get_tau into one shared
+implementation, the final clamp went missing: max_tau now seeds the four
+neighboring-ISI slots and every one of them is overwritten as soon as that
+neighbor exists, so a spike interior to both trains never sees the cap. The
+window returned is the minimum of the interpolated half-ISIs and max_tau is
+never compared against it.
+
+Inside get_tau the parameter named max_tau carries true_max -- the recording
+span, or twice the user's cap when one was given and it is smaller -- so the
+bound to apply is half of it. No max_tau > 0 guard is needed: when the user
+passes 0 or None the callers set true_max to the recording span, and bounding
+the window at half the span is what 0.7.0 did, since it seeded m with interval
+before halving.
+
+Reported at: docs/todo/2026-08-11-file-pyspike-max-tau-issue.md (bugarach)
+Verified against PySpike v0.9.0: 50 tests over all 13 files in test/ pass with
+this applied, on both the compiled Cython and the pure-Python backend.
+
+--- a/pyspike/cython/cython_get_tau.pyx
++++ b/pyspike/cython/cython_get_tau.pyx
+@@ -43,8 +43,8 @@
+     if i<0 or j<0 or spikes1[i] <= spikes2[j]:
+         s1F = Interpolate(mP1, mF1, MRTS)
+         s2P = Interpolate(mF2, mP2, MRTS)
+-        return fmin(s1F, s2P)
++        return fmin(fmin(s1F, s2P), max_tau/2.)
+     else:
+         s1P = Interpolate(mF1, mP1, MRTS)
+         s2F = Interpolate(mP2, mF2, MRTS)
+-        return fmin(s1P, s2F)
++        return fmin(fmin(s1P, s2F), max_tau/2.)
+--- a/pyspike/cython/python_backend.py
++++ b/pyspike/cython/python_backend.py
+@@ -361,11 +361,11 @@
+     if i<0 or j<0 or spikes1[i] <= spikes2[j]:
+         s1F = Interpolate(mP1, mF1, MRTS)
+         s2P = Interpolate(mF2, mP2, MRTS)
+-        return min(s1F, s2P)
++        return min(min(s1F, s2P), max_tau/2.)
+     else:
+         s1P = Interpolate(mF1, mP1, MRTS)
+         s2F = Interpolate(mP2, mF2, MRTS)
+-        return min(s1P, s2F)
++        return min(min(s1P, s2F), max_tau/2.)

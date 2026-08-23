@@ -80,7 +80,8 @@ def test_sync_parity(stream, ci):
 
 
 def test_profile_cross_validates_against_pyspike_uncapped():
-    # NOTE: PySpike 0.9.0's max_tau is BROKEN for finite caps — its get_tau
+    # NOTE: PySpike's max_tau is BROKEN for finite caps (since 0.8.0, which
+    # dropped the clamp 0.7.0 had) — its get_tau
     # applies the cap only as the default for missing edge-neighbors, so
     # spikes seconds apart "coincide" whenever all four surrounding ISIs
     # exist (verified: [40.4, 77.3, 534.4] vs [58.8, 85.0, 300.0] at

@@ -18,7 +18,7 @@ things by the same IDs:
 |---|---|---|
 | SAP001 | MATLAB `prctile` matches no `np.percentile` mode | workspace clobber (`load(f)` into caller scope) |
 | SAP002 | `default_rng` banned — parity needs `RandomState` | `getenv('HOME'\|'USERPROFILE')` |
-| SAP003 | PySpike 0.9.0's `max_tau` cap is broken | hardcoded `/mnt/c/` |
+| SAP003 | PySpike's `max_tau` cap is broken (since 0.8.0) | hardcoded `/mnt/c/` |
 | SAP004 | personal absolute path in a tracked file | `apv_dataDir` |
 
 interface2 goes up to SAP020; bugarach has four.
