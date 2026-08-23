@@ -35,8 +35,13 @@
 # same sentence, and nothing used to say the second half.
 #
 # The cost of that silence, measured 2026-08-23: 28 worktrees on one machine, 17
-# of them merged-clean-idle, median useful life TEN MINUTES — made for one task,
-# one PR, never touched again. Across seven hours that afternoon the count went
+# of them merged-clean-idle, and HALF USED FOR UNDER TWENTY MINUTES — made for one
+# task, one PR, never touched again. (Median 37 min across the 27 non-primary
+# worktrees, but the distribution is bimodal — 13 under 20 min, 11 over four hours,
+# almost nothing between — so no single number describes it. This comment claimed
+# "median TEN MINUTES" until a murderboard recomputation showed that was the median
+# of the short mode quoted as the median of the whole.)
+# Across seven hours that afternoon the count went
 # 21 -> 28 while ACTIVE claims on the session board went 8 -> 3. Same sessions,
 # same load, opposite directions: the board is gated (`.githooks/pre-commit`
 # refuses a commit from an unclaimed worktree) and it held; worktree removal was

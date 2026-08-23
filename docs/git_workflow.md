@@ -129,7 +129,13 @@ them: uncommitted changes, a detached HEAD, a branch not yet an ancestor of
 `origin/main`, and — the one the reaper checks first — a branch that is not the
 thing that just merged.
 
-**Why the moment matters.** Median worktree life on this machine is ten minutes:
-made for one task, one PR, never touched again. Anything deferred to "session
-end" is deferred past the end of the only thing that knew about it, which is why
-step 5 used to be prose and why the tree filled up anyway.
+**Why the moment matters.** Half the worktrees on this machine were used for under
+twenty minutes — made for one task, one PR, never touched again. Anything deferred
+to "session end" is deferred past the end of the only thing that knew about it,
+which is why step 5 used to be prose and why the tree filled up anyway.
+
+The full shape, measured 2026-08-23 over the 27 non-primary worktrees (creation to
+last write, in minutes): 13 under 20, 1 between 20 and 60, 2 from 1–4 h, 7 from
+4–24 h, 4 over a day. Median 37, mean 825 — **the mean describes no worktree that
+existed**, and this document said "median ten minutes" until a murderboard
+recomputation showed that was the short mode quoted as the whole.
