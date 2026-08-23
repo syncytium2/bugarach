@@ -1,10 +1,34 @@
 ---
-status: open
+status: done
 opened: 2026-08-23
 found-by: viewer-page-dates (reporting; the files belong to other lanes)
+closed-by: built-site-works
 ---
 
 # The front page ships a degraded figure, and says so only on stderr
+
+> **DONE 2026-08-23** by `built-site-works`, which holds `tools/build_site.py`.
+> The call passes `dt`, taken from the generator's own `grid_sec` — the imaging
+> grid it quantized the onsets onto — so nothing is assumed and FOUNDATIONS §6
+> is answered by the stage that actually knows. A second break was hiding behind
+> the first: `StreamResult` had grown a fifth field and the call unpacked four
+> positionally, so fixing `dt` alone only changed the exception. Fields are read
+> by name now, and a sixth will not break it.
+>
+> **Both halves of the recommendation below are in.** The build reads the
+> diagnostic's sidecar and **refuses** when any detector did not run, and a
+> missing hero is a hard failure too rather than the one asset that could go
+> quiet; `--allow-degraded` prints what is wrong and ships it, for a local look
+> and not for a deploy. `tests/test_site_coherence.py` covers the sidecar parser
+> and asserts the published payload scored every detector.
+>
+> **One correction to the diagnosis below**, because it matters to anyone reading
+> this as a worked example: the page did **not** fall back to `LEAD_FALLBACK`.
+> Playwright was working, `hero.png` rendered, and it was a valid 196 KB PNG. It
+> was a picture of a raster with six blank detector lanes. That is worse than the
+> text fallback, which at least announces that it is standing in for something —
+> the published figure looked like a figure, and read as six detectors finding
+> nothing. Rebuilt, it is 974 KB.
 
 `tools/build_site.py` renders the hero and the detector diagnostic through
 `tools/make_diagnostic.py`. Every run of it now prints six lines like

@@ -1,8 +1,14 @@
 #!/usr/bin/env python3
 """Build the static site served at bugarach.tonydefazio.com.
 
-    python tools/build_site.py            # -> ./site
-    python tools/build_site.py --open     # ...and print the file:// URL
+    python tools/build_site.py            # -> ./site, and print what it wrote
+
+Then **serve it and look at it**, because `file://` is not what visitors get and
+has hidden real defects here — two pages with no nav bar, a hero figure with no
+detections in it. `docs/deploy.md` has the walkthrough and the table of what a
+local server can and cannot tell you:
+
+    python -m http.server 5096 --bind 127.0.0.1 --directory site
 
 **The build still reads no store.** Every figure it generates comes from a seed,
 and there is no code path here that opens ``BUGARACH_DATA_ROOT`` — FOUNDATIONS §5
@@ -113,30 +119,11 @@ INDEX = """<!doctype html>
   .card b {{ display:block; font-size:1.05rem; }}
   .card span {{ color:#666; font-size:.92rem; }}
   code {{ background:#8881; padding:.1rem .35rem; border-radius:4px; }}
-  /* Site nav, first thing on the page — the viewer used to be reachable only by
-     scrolling past every paragraph below, which is a good way to publish a tool
-     nobody finds. */
-  /* full-bleed bar, links still starting at the text column's left edge — the
-     body is a 46rem column and a nav indented with it reads as a paragraph */
-  nav.site {{ display:flex; align-items:center; gap:4px; flex-wrap:wrap;
-              padding:.55rem max(1.2rem, calc(50% - 23rem));
-              border-bottom:1px solid #8883; font-size:.88rem; }}
-  nav.site .brand {{ font-weight:600; margin-right:.6rem; }}
-  nav.site a {{ color:#666; text-decoration:none; padding:.25rem .55rem;
-                border-radius:6px; }}
-  nav.site a:hover {{ background:#8881; color:inherit; }}
-  nav.site a[aria-current="page"] {{ color:inherit; background:#8881; }}
   .note {{ border-left:3px solid #e8a33d; padding:.4rem 0 .4rem .9rem;
            color:#555; font-size:.94rem; }}
 </style>
 
-<nav class="site">
-  <span class="brand">bugarach</span>
-  <a href="index.html" aria-current="page">Overview</a>
-  <a href="viewer.html">Raster viewer</a>
-  <a href="diagnostic.html">Detector diagnostic</a>
-  <a href="landscape.html">Landscape</a>
-</nav>
+{nav}
 
 <div class="col">
 <h1>bugarach</h1>
@@ -250,6 +237,133 @@ the experiment exists to measure.</p>
 </div>
 """
 
+PAGES = (
+    ("index.html", "Overview"),
+    ("viewer.html", "Raster viewer"),
+    ("diagnostic.html", "Detector diagnostic"),
+    ("landscape.html", "Landscape"),
+)
+"""What the site is, declared once, in nav order.
+
+The nav bar, the coherence check and the manifest below all read this, so
+"the site has four pages" is stated in one place instead of agreeing in three
+by hand.
+"""
+
+PUBLISHED = frozenset(
+    {name for name, _ in PAGES}
+    | {"hero.png", "reality.png", "diagnostic.png", "diagnostic.txt"})
+"""Exactly the files a finished build leaves in `site/`, checked at the end.
+
+Two failures this closes, both of which have happened in this tree. A **missing**
+file is a dead link on a public page — the reason `tests/test_site_coherence.py`
+resolves every href against this set instead of against a list it keeps of its
+own, which would drift the first time a page was added. A **stray** file is the
+quieter one: the diagnostic writes `coord_diagnostic_site.*` and the build renames
+them, so a rename that stopped matching would publish both the old name and the
+new, and nothing would say so.
+"""
+
+NAV_CSS = """  nav.site { display:flex; align-items:center; gap:4px; flex-wrap:wrap;
+              font: .88rem/1.5 system-ui, sans-serif;
+              padding:.55rem max(1.2rem, calc(50% - 23rem));
+              border-bottom:1px solid #8883; margin:0 0 1rem; }
+  nav.site .brand { font-weight:600; margin-right:.6rem; }
+  nav.site a { color:#666; text-decoration:none; padding:.25rem .55rem;
+                border-radius:6px; }
+  nav.site a:hover { background:#8881; color:inherit; }
+  nav.site a[aria-current="page"] { color:inherit; background:#8881; }"""
+"""Full-bleed bar, links still starting at the text column's left edge.
+
+The body of the index is a 46rem column, and a nav indented to match it reads as
+a paragraph. `font` is set explicitly rather than inherited because two of the
+pages this is injected into set their own — `landscape.html` is a serif document
+and `diagnostic.html` is Bokeh's output — and a nav that changes typeface per
+page does not read as one bar.
+"""
+
+
+def nav_html(current: str) -> str:
+    """The site nav, with `current` marked, for any page.
+
+    It was on the index and on the viewer, and on neither of the other two. So
+    the two pages the index sends a reader to — the diagnostic and the landscape
+    — were dead ends: no way back to anything except the browser's back button,
+    on the public front door of a portfolio artifact (FOUNDATIONS §8). They are
+    generated by other tools, which is *why* they had no nav and is not a reason
+    for a visitor to get stranded on one; the build already post-processes both
+    to stamp their dates, so it puts the bar on them at the same moment.
+    """
+    # No backslash inside an f-string expression: that is PEP 701 and this
+    # project supports Python 3.11, where it is a SyntaxError rather than a
+    # nicety. CI runs 3.11, 3.13 and 3.14.
+    here = ' aria-current="page"'
+    links = "".join(
+        '  <a href="%s"%s>%s</a>\n' % (href, here if href == current else "", label)
+        for href, label in PAGES)
+    return f'<nav class="site">\n  <span class="brand">bugarach</span>\n{links}</nav>'
+
+
+def add_nav(body: str, current: str) -> str:
+    """Put the bar on a finished page, whatever shape it is.
+
+    Anchored with fallbacks for the same reason `stamp_html` is: these pages come
+    from other tools and their structure is not this file's to guarantee.
+    `diagnostic.html` is a full document with `<body>`; `landscape.html` is HTML5
+    with an unclosed `<head>` and no `<body>` at all, so the anchor there is the
+    end of its first style block — a `<nav>` appearing at that point auto-closes
+    the head, which is exactly what the parser is specified to do. The style
+    travels with the markup rather than going into `<head>` separately, so there
+    is one insertion to get right instead of two.
+
+    Re-running is a no-op, so a rebuild over an existing `site/` cannot stack
+    two bars on one page.
+    """
+    if 'nav class="site"' in body:
+        return body
+    block = f"<style>\n{NAV_CSS}\n</style>\n{nav_html(current)}\n"
+    m = re.search(r"<body[^>]*>", body, flags=re.I)
+    if m:
+        return body[:m.end()] + "\n" + block + body[m.end():]
+    end = body.lower().find("</style>")
+    if end != -1:
+        cut = end + len("</style>")
+        return body[:cut] + "\n" + block + body[cut:]
+    return block + body
+
+
+TITLES = {
+    "diagnostic.html": "bugarach — detector diagnostic",
+}
+"""Pages whose generator names them after the tool that made them.
+
+`make_diagnostic.py` renders through Panel, and Panel titles its output
+`<title>Panel</title>`. That is the text in the browser tab, in a bookmark, in a
+shared link's preview and in a search result, on a page reached from the front
+door of a portfolio artifact (FOUNDATIONS §8). `landscape.html` titles itself
+properly and is deliberately not in here — this renames what is wrong rather
+than imposing a scheme on what is not.
+"""
+
+
+def retitle(body: str, page: str) -> str:
+    """Give a page a title that names the page, if its generator did not.
+
+    Only the text between the tags is rewritten, never the tags themselves —
+    which keeps this from being the one place in the build that constructs a
+    fragment of `<head>` out of a string literal, and keeps sapper's SAP005 (a
+    page literal must OPEN with its charset) reading true rather than merely
+    silenced. A page with no `<title>` at all is left alone;
+    `tests/test_site_coherence.py` is what notices that, and a page with no title
+    is a different problem from a page with the wrong one.
+    """
+    want = TITLES.get(page)
+    if not want:
+        return body
+    return re.sub(r"(?<=<title>).*?(?=</title>)", want, body,
+                  count=1, flags=re.S | re.I)
+
+
 SITE_BORN = "2026-08-13"
 """The day this site first existed, and it does not move.
 
@@ -342,6 +456,62 @@ def stamp_html(body: str, commit: str) -> str:
         return body.replace("</body>", date_stamp(commit) + "</body>", 1)
     return body + "\n" + date_stamp(commit)
 
+
+COMMIT_ATTR = "data-bugarach-commit"
+
+
+def built_from(site: Path | None = None) -> str | None:
+    """The commit a `site/` was built from, read off its own stamp.
+
+    `None` when there is no built index, or when it carries no stamp — which is
+    a build from before PR #242 and is equally a reason not to accuse anybody of
+    anything.
+    """
+    index = (site or SITE) / "index.html"
+    if not index.is_file():
+        return None
+    m = re.search(rf'{COMMIT_ATTR}="([^"]+)"', index.read_text(encoding="utf-8"))
+    return m.group(1) if m else None
+
+
+def stale_build_note(site: Path | None = None) -> str:
+    """Why this `site/` cannot be evidence about the build — or `""` if it can.
+
+    **This exists so a guard stops crying wolf.** `site/` is gitignored, so any
+    machine that has built the site once and then pulled has a stale payload; the
+    byte-identity guards on `viewer.html` then fail saying *"the build started
+    transforming the page"*, which is a serious accusation — that guard is what
+    stops the build quietly altering a page promising its reader it reaches
+    nothing — and in the routine case it is simply false. The build transformed
+    nothing. The artifact is an hour old.
+
+    This file's own docstring for `viewer_network_leaks` already carries the
+    lesson, from the scan that fired on a comment explaining why it never would:
+    *"the guard was correct about the property and wrong about the evidence,
+    which is the failure mode that gets real guards deleted rather than fixed."*
+
+    The two cases are distinguishable and the information is already on the page.
+    Only when the stamp matches `HEAD` **and** the bytes still differ has the
+    build actually started transforming anything, and that is when the accusation
+    is the right one to make.
+    """
+    was = built_from(site)
+    if was is None:
+        return ("this site/ carries no commit stamp, so it predates the stamp or "
+                "was not written by tools/build_site.py — rebuild before reading "
+                "anything into it")
+    head = subprocess.run(["git", "rev-parse", "--short", "HEAD"], cwd=ROOT,
+                          capture_output=True, text=True)
+    if head.returncode != 0 or not head.stdout.strip():
+        return ""            # no git here; nothing to compare against
+    now = head.stdout.strip()
+    if was == now:
+        return ""
+    return (f"your site/ was built from {was}, HEAD is {now} — rerun "
+            f"tools/build_site.py. Nothing is wrong with the build; the payload "
+            f"is stale, and site/ is gitignored so pulling does not update it")
+
+
 # The page leads with the figure. If the flat render could not be made — no
 # playwright chromium — it leads with a link to the interactive one instead of
 # a broken image, and says so on stderr. A public page with a missing <img> is
@@ -395,6 +565,48 @@ LEAD_FALLBACK = """<a class="card" href="diagnostic.html">
   Hits, misses and false alarms are drawn, not inferred.</span>
 </a>"""
 
+DEGRADED_ESCAPE = "--allow-degraded"
+"""The one way to publish a page that is missing part of itself.
+
+Every refusal below has one, for the reason `guard_branch.sh` has
+`ALLOW_MAIN_COMMIT=1`: a guard with no escape hatch gets deleted the first time
+it is genuinely in the way, and then it protects nothing. The difference between
+the flag and the old behaviour is that the flag is a decision somebody typed.
+"""
+
+
+def detectors_that_did_not_run(sidecar: str) -> list[str]:
+    """The detectors `make_diagnostic.py` recorded as unable to run, by name.
+
+    The diagnostic scores what it can and lists the rest under `did not run:`,
+    which is right — one detector that cannot handle one slice is a finding, and
+    losing the whole figure over it would be worse. But the figure is the lead of
+    the front page and the paragraph above it promises "what six detectors made
+    of it", so the *build* has to read that list rather than inherit the
+    diagnostic's tolerance for it.
+
+    **This is not hypothetical.** On 2026-08-23 `origin/main` built a site whose
+    hero and diagnostic contained no detections at all: PR #243 made `_compute`
+    require the sampling interval and `make_diagnostic.py` was never updated, so
+    all six raised `TypeError` into the same per-detector `except` that exists
+    for a detector meeting an awkward slice. The list was printed, the figure was
+    drawn empty, both processes exited 0 and **stderr was completely clean** — the
+    published front page would have argued for six detectors above a picture of
+    none of them, and nothing in the chain would have said a word.
+    """
+    out, collecting = [], False
+    for line in sidecar.splitlines():
+        if line.strip() == "did not run:":
+            collecting = True
+            continue
+        if collecting:
+            # The block is indented "  name: Error"; the first line that is not
+            # ends it (the sidecar continues with a blank line and a paragraph).
+            if not line.startswith("  ") or ":" not in line:
+                break
+            out.append(line.strip().split(":", 1)[0])
+    return out
+
 
 def _png_size(path: Path) -> tuple[int, int] | None:
     """Width/height straight out of the IHDR chunk.
@@ -417,7 +629,12 @@ def main(argv=None):
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--seed", type=int, default=3)
     ap.add_argument("--duration", type=float, default=1800.0)
+    ap.add_argument(DEGRADED_ESCAPE, action="store_true",
+                    help="publish even if the front page is missing its figure "
+                         "or its detections. Prints what is wrong and ships it "
+                         "anyway — for looking at a local build, not for deploys.")
     args = ap.parse_args(argv)
+    degraded: list[str] = []
 
     if SITE.exists():
         shutil.rmtree(SITE)
@@ -441,6 +658,20 @@ def main(argv=None):
         p = SITE / stray
         if p.exists():
             p.rename(SITE / stray.replace("coord_diagnostic_site", "diagnostic"))
+
+    # The diagnostic exits 0 whether it scored six detectors or none, because
+    # per-detector tolerance is the right behaviour for a troubleshooting tool.
+    # It is the wrong behaviour for a publish step: the front page's lead figure
+    # and the paragraph introducing it both claim six.
+    sidecar = SITE / "diagnostic.txt"
+    silent = detectors_that_did_not_run(sidecar.read_text(encoding="utf-8")
+                                        if sidecar.is_file() else "")
+    if silent:
+        degraded.append(
+            f"{len(silent)} of the six detectors did not run ({', '.join(silent)}), "
+            f"so the hero figure and the diagnostic page carry that many fewer "
+            f"lanes than the text beside them promises. See site/diagnostic.txt "
+            f"for what each one raised.")
 
     # The real-recording figure is committed, so this is a copy and not a build —
     # which is what lets a clone with no data store build the whole page. Its
@@ -496,19 +727,47 @@ def main(argv=None):
         return 1
     real = LEAD_REAL.format(w=real_size[0], h=real_size[1])
 
+    # THE HERO IS NOT OPTIONAL, and it used to be the only asset here that was.
+    # Missing reality.png, landscape.html and viewer.html each return 1 above;
+    # a missing hero alone swapped in a link card, said so on stderr and exited
+    # 0. That inconsistency is the defect: the two paragraphs immediately before
+    # `{lead}` describe the figure — "Every coordinated event below was planted,
+    # so a miss and a false alarm are drawn, not inferred" — and the fallback
+    # leaves that sentence pointing at a link. It is the same "prose about a
+    # picture that is not there" this file already refuses to publish for
+    # reality.png, and FOUNDATIONS §8 makes the front page of a portfolio
+    # artifact the most expensive place to have it.
+    #
+    # Nor does stderr carry it. This file's own history says so: a build that
+    # writes to a terminal nobody is watching looks exactly like a build nobody
+    # ran, which is how the published site once froze 233 commits behind. CI
+    # installs chromium, so refusing costs a correct build nothing.
     size = _png_size(SITE / "hero.png")
     if size:
         lead = LEAD_FIGURE.format(w=size[0], h=size[1])
     else:
         lead = LEAD_FALLBACK
-        print("build_site: no hero.png — the page falls back to a link instead "
-              "of leading with the figure. Install playwright chromium to get "
-              "the picture back.", file=sys.stderr)
+        degraded.append(
+            "there is no hero.png, so the page leads with a link card where its "
+            "own text says a figure is. Install playwright chromium "
+            "(`python -m playwright install chromium`) to get the picture back.")
+
+    if degraded:
+        for i, why in enumerate(degraded, 1):
+            print(f"build_site: [{i}/{len(degraded)}] {why}", file=sys.stderr)
+        if not args.allow_degraded:
+            print(f"build_site: refusing to write a front page that is missing "
+                  f"part of itself. Fix the above, or pass {DEGRADED_ESCAPE} to "
+                  f"publish it anyway.", file=sys.stderr)
+            return 1
+        print(f"build_site: {DEGRADED_ESCAPE} given — building it anyway.",
+              file=sys.stderr)
 
     commit = subprocess.run(["git", "rev-parse", "--short", "HEAD"], cwd=ROOT,
                             capture_output=True, text=True).stdout.strip() or "unknown"
     (SITE / "index.html").write_text(
-        stamp_html(INDEX.format(commit=commit, lead=lead, real=real), commit),
+        stamp_html(INDEX.format(commit=commit, lead=lead, real=real,
+                                nav=nav_html("index.html")), commit),
         encoding="utf-8")
 
     # EVERY page carries the pair, not just the one with a hand-written footer.
@@ -523,12 +782,29 @@ def main(argv=None):
     # reaches nothing. Its stamp belongs in the source page, where a reader can
     # audit it, not injected here where the guard would have to be loosened to
     # allow it.
+    #
+    # The nav goes on in the same pass and for a related reason. These two pages
+    # are generated by other tools and arrived with no bar at all, so the index
+    # sent readers to two dead ends; the build is the only stage that knows they
+    # are part of one site. `viewer.html` is again the exception, and again
+    # because it is copied byte-for-byte — its bar is written into the source
+    # page by hand, and `nav_html` matches it.
     for page in ("landscape.html", "diagnostic.html"):
         p = SITE / page
         if not p.is_file():
             continue
-        p.write_text(stamp_html(p.read_text(encoding="utf-8"), commit),
+        p.write_text(stamp_html(add_nav(retitle(p.read_text(encoding="utf-8"),
+                                                page), page), commit),
                      encoding="utf-8")
+
+    navless = [name for name, _ in PAGES
+               if (SITE / name).is_file()
+               and 'nav class="site"' not in (SITE / name).read_text(encoding="utf-8")]
+    if navless:
+        print(f"build_site: the nav bar did not reach {', '.join(navless)}, so a "
+              f"visitor landing there has no way back to the rest of the site. "
+              f"Check the anchors in add_nav().", file=sys.stderr)
+        return 1
 
     unstamped = [p.name for p in sorted(SITE.glob("*.html"))
                  if p.name != "viewer.html"
@@ -538,6 +814,17 @@ def main(argv=None):
               f"published page with no born-on date and no version date is the "
               f"thing this stamp exists to prevent. Check the insertion anchors "
               f"in stamp_html().", file=sys.stderr)
+
+    got = {str(f.relative_to(SITE)) for f in SITE.rglob("*") if f.is_file()}
+    if got != set(PUBLISHED):
+        for name in sorted(set(PUBLISHED) - got):
+            print(f"build_site: {name} was declared in PUBLISHED and not written.",
+                  file=sys.stderr)
+        for name in sorted(got - set(PUBLISHED)):
+            print(f"build_site: {name} was written and is not in PUBLISHED — "
+                  f"either it is a stray to clean up or the manifest needs it.",
+                  file=sys.stderr)
+        return 1
 
     total = sum(f.stat().st_size for f in SITE.rglob("*") if f.is_file())
     print(f"\nsite/ built — {total/1024:.0f} KB")

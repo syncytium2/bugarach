@@ -158,7 +158,16 @@ def test_the_viewer_is_the_one_page_the_build_does_not_stamp():
     if not p.is_file():
         pytest.skip("no built site/ here — run tools/build_site.py")
     src = (ROOT / "docs" / "site" / "raster_viewer.html").read_bytes()
-    assert p.read_bytes() == src, (
-        "the build has started transforming viewer.html — if that is deliberate, "
-        "this test and test_lab_server.py's byte-identity guard both need to say "
-        "what transformation is allowed")
+    if p.read_bytes() == src:
+        return
+    # The bytes differ, and there are two very different reasons they might.
+    # `site/` is gitignored, so anybody who built it once and then pulled has a
+    # stale payload — and accusing the build of transforming a page it copied
+    # verbatim is how a guard that matters ends up deleted. Say which happened.
+    stale = bs.stale_build_note(SITE)
+    assert not stale, stale
+    pytest.fail(
+        "the build has started transforming viewer.html — this site/ was built "
+        "from HEAD, so a stale payload does not explain it. If the transform is "
+        "deliberate, this test and test_lab_server.py's byte-identity guard both "
+        "need to say what transformation is allowed.")
