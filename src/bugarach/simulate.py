@@ -725,7 +725,14 @@ def simulate_coordination(
                          dtype=float) * grid_sec
         per_roi.append(np.sort(a))
 
+    # The generator knows its own imaging grid, so a simulated recording
+    # carries the interval for free and nobody has to be prompted for one
+    # (FOUNDATIONS §6). `grid_sec = 0` disables quantization — a continuous-time
+    # simulation no camera could have produced — and that recording honestly
+    # has no sampling interval, which is a state the loader already has a name
+    # for rather than a reason to invent 0.1.
     slice_ = slice_from_events({name: per_roi for name in streams},
+                               dt=grid_sec if grid_sec > 0 else None,
                                slice_id=slice_id, regions=regions)
     gt = GroundTruth(
         events=events,

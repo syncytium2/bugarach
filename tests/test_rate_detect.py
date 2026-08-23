@@ -7,7 +7,6 @@ regions + locs, rate_win=1 / context_win=60 on the RateViewer 0.1 s grid).
 """
 
 import json
-import warnings
 from pathlib import Path
 
 import numpy as np
@@ -16,7 +15,6 @@ from conftest import as1d, as2d
 
 from bugarach.detectors.peaks import peak_gate
 from bugarach.detectors.rate import (
-    GridDtNotSetWarning,
     event_rate_context,
     rate_detect,
     recording_extent,
@@ -61,7 +59,7 @@ def test_peak_gate_parity(case):
 # ---------------------------------------------------------------- rate detect
 
 RATE_REF = json.loads((FIXTURES / "ref_ratedetect_synth.json").read_text())
-SLICE = load_slice(FIXTURES / "synth_fastcal_s1.mat")
+SLICE = load_slice(FIXTURES / "synth_fastcal_s1.mat", dt=0.1)
 
 
 def _detect(stream_name, params):
@@ -140,18 +138,24 @@ def test_grid_dt_is_parameterized():
     np.testing.assert_allclose(np.diff(det_20hz.signal.t), 0.05)
 
 
-def test_omitted_grid_dt_warns_and_falls_back():
+def test_omitting_the_grid_refuses_instead_of_assuming_ten_hertz():
+    """The fallback and its warning are gone; this is what replaced them.
+
+    A warning fires after the trace exists. A missing argument fires before
+    it — which is the whole of FOUNDATIONS §6 in one line of behaviour.
+    """
     trains = [np.array([1.0, 2.0]), np.array([1.5])]
-    with pytest.warns(GridDtNotSetWarning, match="sampling interval"):
-        det = rate_detect(trains, (0.0, 100.0))
-    assert det.settings["dt_grid"] == 0.1
+    with pytest.raises(TypeError, match="grid_dt"):
+        rate_detect(trains, (0.0, 100.0))
 
 
-def test_explicit_grid_dt_does_not_warn():
+def test_the_lower_level_rate_functions_refuse_a_grid_of_none():
+    """``event_rate_context`` keeps ``grid_dt`` in its positional slot for the
+    two parity suites that call it by position, so its refusal is a raise
+    rather than a signature the interpreter enforces. It still refuses."""
     trains = [np.array([1.0, 2.0]), np.array([1.5])]
-    with warnings.catch_warnings():
-        warnings.simplefilter("error", GridDtNotSetWarning)
-        rate_detect(trains, (0.0, 100.0), grid_dt=0.1)
+    with pytest.raises(ValueError, match="grid_dt is required"):
+        event_rate_context(trains, (0.0, 100.0), 1.0, 60.0, None)
 
 
 def test_threshold_too_high_yields_no_events():

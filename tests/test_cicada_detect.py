@@ -16,7 +16,7 @@ from bugarach.store import load_slice
 
 FIXTURES = Path(__file__).parent / "fixtures"
 REF = json.loads((FIXTURES / "ref_cicada_synth.json").read_text())
-SLICE = load_slice(FIXTURES / "synth_fastcal_s1.mat")
+SLICE = load_slice(FIXTURES / "synth_fastcal_s1.mat", dt=0.1)
 
 
 def as_strs(v):
@@ -107,6 +107,34 @@ def test_bad_params_raise():
     with pytest.raises(ValueError, match="duration_field"):
         cicada_detect(SLICE, active_duration_mode="per_event",
                       duration_field="nonexistent", n_surrogates=2, rng_seed=1)
+
+
+def test_the_imaging_rate_comes_off_the_recording_and_changes_nothing():
+    """It used to default to 10.0 Hz — this lab's rate, stated as everybody's.
+
+    Two halves, and the second is why this could land at all: unset, the rate
+    is now ``1 / Slice.dt``, and on a recording declaring 0.1 s that is the
+    same 10 Hz the fixture was measured at, event for event.
+    """
+    kw = dict(n_surrogates=10, rng_seed=7, n_synchronous_frames=2)
+    derived = cicada_detect(SLICE, **kw)
+    stated = cicada_detect(SLICE, imaging_rate_hz=10.0, **kw)
+    np.testing.assert_array_equal(derived.fast.onset_sec, stated.fast.onset_sec)
+    np.testing.assert_array_equal(derived.slow.threshold, stated.slow.threshold)
+    # and the settings row records the rate that ran, not the argument
+    assert derived.params["imaging_rate_hz"] == 10.0
+
+
+def test_cicada_refuses_a_recording_that_never_stated_its_interval():
+    """One boundary, one refusal. The detector has no number of its own to
+    fall back on any more, so the recording's silence is what stops the run."""
+    from dataclasses import replace
+
+    from bugarach.store import FrameIntervalNotDeclaredError
+
+    quiet = replace(SLICE, dt=None)
+    with pytest.raises(FrameIntervalNotDeclaredError, match="frame_interval_sec"):
+        cicada_detect(quiet, n_surrogates=2, rng_seed=1)
 
 
 def test_same_seed_reproducible():

@@ -197,7 +197,18 @@ def slice_from_request(rec: dict, *, index: int):
         raise BadRequest(
             f"recording {index} needs a 'slice_id' — it comes from the data and "
             f"is never a filename (docs/webapp_spec.md)")
-    return slice_from_events(trains, slice_id=slice_id)
+    # The import contract sends onset times and no interval, so the recording
+    # says so rather than being given one. The page states its own frame
+    # interval where it has one; what must never happen is this server picking
+    # a number on the page's behalf (FOUNDATIONS §6).
+    raw_dt = rec.get("frame_interval_sec")
+    try:
+        dt = None if raw_dt in (None, "") else float(raw_dt)
+    except (TypeError, ValueError) as exc:
+        raise BadRequest(
+            f"recording {index} has frame_interval_sec {raw_dt!r}, which is "
+            f"not a number of seconds") from exc
+    return slice_from_events(trains, dt=dt, slice_id=slice_id)
 
 
 # ---------------------------------------------------------------------------

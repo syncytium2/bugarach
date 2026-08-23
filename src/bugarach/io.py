@@ -57,6 +57,11 @@ import numpy as np
 
 from bugarach.store import Region, Slice, Stream
 
+#: Column of ``slices.csv`` that states the acquisition sampling interval, per
+#: ``docs/export_folder_spec.md``. This module is the only one that turns it
+#: into a number; everywhere else it is a string the producer wrote.
+FRAME_INTERVAL_COL = "frame_interval_sec"
+
 #: Filenames in an export folder that are not recordings. Everything else is.
 #: ``metric_dictionary.csv`` is here because it belongs to the OUTPUT contract:
 #: unreserved it would be read as a recording called "metric_dictionary" and
@@ -173,6 +178,7 @@ def _by_stream(value, events: dict, what: str) -> dict:
 def slice_from_events(
     events,
     *,
+    dt: float | None,
     slice_id: str = "events",
     regions=None,
     roi_ids: list[str] | None = None,
@@ -184,6 +190,13 @@ def slice_from_events(
 ) -> Slice:
     """Build a Slice from per-ROI event-onset times.
 
+    dt: **required, no default** — the acquisition sampling interval in seconds
+    (FOUNDATIONS §6). Whoever hands this function arrays of times is the
+    producer of the recording, so they are the one person who knows; ``None``
+    is available for a caller that genuinely does not, and buys a recording
+    that draws and cannot be measured. Omitting the argument is a TypeError,
+    which is the point: the interval used to be a thing three detectors made
+    up, and the reason they could is that nothing ever asked.
     events: dict of stream name -> list of per-ROI time arrays (seconds), or
     a bare list of per-ROI arrays for the common single-stream case (stream
     named "events"). All streams must have the same ROI count (index-aligned).
@@ -222,13 +235,15 @@ def slice_from_events(
             region_objs.append(Region(name=name, slot=None,
                                       start_sec=float(start),
                                       end_sec=float(end)))
-    return Slice(slice_id=slice_id, streams=streams, regions=region_objs,
+    return Slice(slice_id=slice_id, streams=streams, dt=dt,
+                 regions=region_objs,
                  roi_ids=roi_ids, meta=dict(meta or {}))
 
 
 def load_events_csv(
     path,
     *,
+    dt: float | None,
     time_col: str = "time_sec",
     roi_col: str = "roi",
     stream_col: str | None = None,
@@ -241,12 +256,18 @@ def load_events_csv(
     ROIs are index-aligned across streams by their sorted union of ids.
 
     A row whose time is empty or ``NA`` declares that its ROI was recorded and
-    produced no event — the ROI is present, with no times against it."""
+    produced no event — the ROI is present, with no times against it.
+
+    ``dt`` is **required and has no default**. A bare event CSV carries times
+    and nothing else — no header field, no sidecar, nowhere for the frame
+    interval to have travelled — which makes this the case FOUNDATIONS §6
+    exists for. Pass the interval, or ``None`` to state that it is unknown and
+    accept a recording that draws and cannot be measured."""
     path = Path(path)
     rows = _read_event_rows(path, time_col=time_col, roi_col=roi_col,
                             stream_col=stream_col)
     return _assemble(rows, slice_id=slice_id or path.stem, regions=regions,
-                     meta=meta)
+                     meta=meta, dt=dt)
 
 
 class EventRow(NamedTuple):
@@ -344,8 +365,8 @@ def _natural(s: str) -> tuple:
     return tuple(out)
 
 
-def _assemble(rows: list[EventRow], *, slice_id: str, regions=None,
-             meta: dict[str, str] | None = None) -> Slice:
+def _assemble(rows: list[EventRow], *, slice_id: str, dt: float | None,
+             regions=None, meta: dict[str, str] | None = None) -> Slice:
     """Build one Slice from the rows of a recording file.
 
     Every ROI named by any row is present, whether or not it has a time, so a
@@ -405,7 +426,7 @@ def _assemble(rows: list[EventRow], *, slice_id: str, regions=None,
                   if any(np.isfinite(v).any() for v in peaks[n])}
     with_amps = {n: amps[n] for n in names
                  if any(np.isfinite(v).any() for v in amps[n])}
-    return slice_from_events(events, slice_id=slice_id, roi_ids=roi_ids,
+    return slice_from_events(events, dt=dt, slice_id=slice_id, roi_ids=roi_ids,
                              regions=regions, meta=meta,
                              durations=durations or None,
                              peaks=with_peaks or None,
@@ -449,7 +470,27 @@ def _identity(row: dict) -> dict:
     return row
 
 
-def load_folder(folder, *, require_width: bool = False) -> list[Slice]:
+def _declared_interval(row: dict | None, supplied: float | None) -> float | None:
+    """One recording's sampling interval: the producer's, else the caller's.
+
+    The producer's declaration wins where there is one — a caller-supplied
+    interval answers the question ``slices.csv`` did not, it does not overrule
+    the answer it did give. A declared value that will not read as a positive
+    number of seconds is left for ``bugarach check`` to name; it becomes
+    ``None`` here, never a substitute number and never the caller's.
+    """
+    raw = (row or {}).get(FRAME_INTERVAL_COL)
+    if raw is None or str(raw).strip() == "":
+        return supplied
+    try:
+        v = float(str(raw).strip())
+    except ValueError:
+        return None
+    return v if np.isfinite(v) and v > 0 else None
+
+
+def load_folder(folder, *, dt: float | None = None,
+                require_width: bool = False) -> list[Slice]:
     """Read an export folder — the contract in ``docs/export_folder_spec.md``.
 
     One CSV per recording, named by its slice id, holding that recording's
@@ -457,6 +498,27 @@ def load_folder(folder, *, require_width: bool = False) -> list[Slice]:
     ``slices.csv`` (frame interval + identity columns) and ``regions.csv``
     (treatment windows). Both are optional; each buys one thing, so a folder
     of nothing but event files is a valid input.
+
+    **This is the one loader that does not have to be told the interval**,
+    because it is the one whose input format carries it: ``slices.csv``'s
+    ``frame_interval_sec`` becomes ``Slice.dt``, a float, read once here rather
+    than re-parsed out of ``meta`` by every consumer that needs it. That is
+    what the string in ``meta`` used to cost — the browser page, the Panel
+    viewer and ``bugarach detect`` each wrote their own parse, and two of the
+    three had a 0.1 s fallback behind it.
+
+    ``dt`` is the script's version of the prompt the spec describes: it fills
+    in for recordings whose row does not state one, which is legal — only the
+    recording files are required. A recording with neither gets ``dt=None``,
+    which draws and does not measure; ``Slice.require_dt`` is what refuses,
+    naming the column and this argument.
+
+    **A stated interval that is not a number of seconds is not silently
+    downgraded to "unstated".** ``30fps`` or ``0`` is a producer's typo, and
+    ``bugarach check`` is what names it — so the raw string stays in ``meta``
+    for the check to report while ``dt`` stays ``None``. The loader's guarantee
+    is narrower and is the one that matters: no unreadable value ever becomes a
+    number.
 
     Per-event ``width_sec`` / ``width_def`` / ``peak_sec`` / ``amp`` are read
     where the producer sent them, onto ``Stream.width`` / ``.width_def`` /
@@ -536,7 +598,8 @@ def load_folder(folder, *, require_width: bool = False) -> list[Slice]:
                 f"file names.", TableMissesARecordingWarning, stacklevel=2)
 
     slices = [
-        load_events_csv(p, slice_id=p.stem, regions=regions.get(p.stem),
+        load_events_csv(p, dt=_declared_interval(meta.get(p.stem), dt),
+                        slice_id=p.stem, regions=regions.get(p.stem),
                         meta=meta.get(p.stem))
         for p in files
     ]

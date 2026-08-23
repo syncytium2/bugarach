@@ -103,7 +103,7 @@ def build(args):
     total = sum(v.size for v in ev)
     rate = total / (n_roi * dur)
 
-    real_win = slice_from_events(ev, slice_id="real")
+    real_win = slice_from_events(ev, dt=None, slice_id="real")
 
     def generated(shape):
         return simulate_coordination(

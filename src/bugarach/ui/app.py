@@ -814,9 +814,16 @@ def _build_raster_viewer(slices: dict[str, Slice], *, title: str):
     )
 
 
-def load_any(path) -> tuple[str, Slice]:
-    """Load a slice from a store .mat or an events CSV."""
+def load_any(path, *, dt: float | None = None) -> tuple[str, Slice]:
+    """Load a slice from a store .mat or an events CSV.
+
+    Neither format carries the sampling interval — a store does not have the
+    field and a bare event CSV is only times — so ``dt`` is how a caller who
+    knows it states it, and ``None`` says nobody has. Such a recording draws
+    and does not analyse, which is already this viewer's answer: the rasters
+    need no interval and the detectors refuse without one.
+    """
     path = Path(path)
-    s = load_events_csv(path) if path.suffix.lower() == ".csv" \
-        else load_slice(path)
+    s = load_events_csv(path, dt=dt) if path.suffix.lower() == ".csv" \
+        else load_slice(path, dt=dt)
     return s.slice_id, s

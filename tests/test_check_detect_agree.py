@@ -197,7 +197,7 @@ def test_the_store_path_still_halts_on_the_data_it_was_written_for():
     from bugarach.detectors.loco import region_windows
     from bugarach.store import Region, Slice
 
-    s = Slice(slice_id="s1", streams={}, roi_ids=None, regions=[
+    s = Slice(slice_id="s1", streams={}, dt=None, roi_ids=None, regions=[
         Region(name="baseline", slot="1", start_sec=500.0, end_sec=1400.0),
         Region(name="TTX", slot="2", start_sec=10300.0, end_sec=12000.0),
     ])

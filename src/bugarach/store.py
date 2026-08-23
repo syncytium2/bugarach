@@ -136,6 +136,46 @@ class Region:
                 and self.analysis_end_sec is not None)
 
 
+class FrameIntervalNotDeclaredError(ValueError):
+    """Something asked a recording for its sampling interval and it has none.
+
+    The interval is a property of the microscope, no arithmetic on onset times
+    recovers it, and there is no default — FOUNDATIONS §6. So a recording that
+    was never told one cannot be measured, and this is what says so instead of
+    a number appearing from a constant somewhere.
+
+    It is raised by :meth:`Slice.require_dt`, which is the only way anything in
+    this project reads the interval off a recording. Nothing catches it to
+    substitute a value; the caller's answer is to supply the interval.
+    """
+
+
+def validated_dt(dt, *, what: str) -> float | None:
+    """A sampling interval, or ``None`` for "nobody has said".
+
+    ``what`` names the thing being constructed so the message points at the
+    caller rather than at this function. A value that is present and unusable
+    is refused here rather than carried: a negative, zero, NaN or unparseable
+    interval is a mistake at the source, and the whole point of §6 is that a
+    bad interval must not become a silent one.
+    """
+    if dt is None:
+        return None
+    try:
+        v = float(dt)
+    except (TypeError, ValueError):
+        raise FrameIntervalNotDeclaredError(
+            f"{what}: dt is {dt!r}, which is not a number of seconds. Pass the "
+            f"acquisition sampling interval, or None to say it is unknown — "
+            f"and then nothing may be computed from it (FOUNDATIONS §6)."
+        ) from None
+    if not (np.isfinite(v) and v > 0):
+        raise FrameIntervalNotDeclaredError(
+            f"{what}: dt is {v!r}, which is not a positive number of seconds. "
+            f"An interval of zero or less is not a slower rig, it is a typo.")
+    return v
+
+
 @dataclass
 class Slice:
     """A recording: N named event streams + optional region annotations.
@@ -147,15 +187,68 @@ class Slice:
     ``streams`` rather than hardcoding .fast/.slow, which are conveniences
     for the canonical two-stream stores.
 
+    ``dt`` is the acquisition sampling interval in seconds and **has no
+    default: every construction path has to state it** (FOUNDATIONS §6). It is
+    third in the signature, before the optional fields, so that forgetting it
+    is a ``TypeError`` at the line that forgot rather than a wrong number three
+    layers down.
+
+    **What a recording with no interval is.** ``dt=None`` is a legal *answer*
+    and it means one thing: nobody has said. It is not a default and it is not
+    unknown-but-probably-0.1 — a folder may legally omit ``slices.csv``
+    entirely (``docs/export_folder_spec.md``: only the recording files are
+    required), and the spec's own instruction for that case is that bugarach
+    **asks**. Such a recording draws — a raster needs no interval — and cannot
+    be measured: :meth:`require_dt` refuses, and no detector carries a fallback
+    to fill the hole any more. What is *not* legal is silence: omitting the
+    argument raises, so "we never thought about it" and "we know we do not
+    know" are different states of the program rather than the same one.
+
+    **Read it through :meth:`require_dt`, never off the attribute.** The
+    attribute can be ``None``; the accessor cannot return one.
+
     ``meta`` holds the producer's own per-recording columns, verbatim and
-    uninterpreted — the frame interval, group, sex, cohort, whatever the lab
-    records. bugarach carries them to its output and reads none of them."""
+    uninterpreted — including ``frame_interval_sec`` as the raw string the
+    producer wrote, which is what ``bugarach check`` reports on. ``dt`` is that
+    column *read*; ``meta`` is that column *carried*. The two are kept apart so
+    a conformance check can still name a producer's typo after the loader has
+    declined to turn it into a number."""
 
     slice_id: str
     streams: dict[str, Stream]
+    dt: float | None
     regions: list[Region] = field(default_factory=list)
     roi_ids: list[str] | None = None
     meta: dict[str, str] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        self.dt = validated_dt(self.dt, what=f"slice {self.slice_id!r}")
+
+    @property
+    def has_dt(self) -> bool:
+        """Can this recording be measured at all? Ask before offering to."""
+        return self.dt is not None
+
+    def require_dt(self, what: str = "this analysis") -> float:
+        """The sampling interval, or a refusal naming how to supply one.
+
+        Every consumer of the interval goes through here, which is what makes
+        "no default, no inference, no fallback constant" checkable rather than
+        aspirational: there is one place a number can come from, and it either
+        has one or it stops.
+        """
+        if self.dt is None:
+            raise FrameIntervalNotDeclaredError(
+                f"{self.slice_id}: {what} needs the acquisition sampling "
+                f"interval and this recording never stated one. It is a "
+                f"property of the microscope, it cannot be recovered from "
+                f"onset times, and there is no default because a default here "
+                f"is a guess about somebody else's rig (FOUNDATIONS §6). "
+                f"Declare frame_interval_sec in the folder's slices.csv, or "
+                f"pass dt= to the loader — load_folder(folder, dt=...) is the "
+                f"script's version of the prompt "
+                f"docs/export_folder_spec.md describes.")
+        return self.dt
 
     @property
     def fast(self) -> Stream:
@@ -206,12 +299,23 @@ def store_recordings(directory: str | Path) -> list[Path]:
     return sorted(p.glob("*.mat")) if p.is_dir() else []
 
 
-def load_slice(path: str | Path) -> Slice:
-    """Load one event_store_onset slice file (MATLAB v7 or v7.3)."""
+def load_slice(path: str | Path, *, dt: float | None) -> Slice:
+    """Load one event_store_onset slice file (MATLAB v7 or v7.3).
+
+    ``dt`` is required and has no default. **The store does not carry the
+    sampling interval** — that is recorded in FOUNDATIONS §6 and filed with the
+    pipeline team, and it is exactly why the reader asks for it instead of
+    reading it. Pass the interval the recording was acquired at, or ``None`` to
+    say it is not known here; ``None`` produces a recording that can be drawn
+    and not measured, and omitting the argument produces a ``TypeError``.
+
+    A reader that defaulted this would be answering, for every store and every
+    lab, a question only the person who ran the microscope can answer.
+    """
     path = Path(path)
     if is_v73(path):
-        return _load_v73(path)
-    return _load_v7(path)
+        return _load_v73(path, dt)
+    return _load_v7(path, dt)
 
 
 def _finalize_stream(cols: dict[str, list[np.ndarray]]) -> Stream:
@@ -244,7 +348,7 @@ def _stream_v7(s) -> Stream:
     return _finalize_stream(cols)
 
 
-def _load_v7(path: Path) -> Slice:
+def _load_v7(path: Path, dt: float | None) -> Slice:
     m = sio.loadmat(path, squeeze_me=True, struct_as_record=False)
     regions = []
     for r in np.atleast_1d(m.get("regions", np.array([]))):
@@ -265,6 +369,7 @@ def _load_v7(path: Path) -> Slice:
     return Slice(
         slice_id=str(m["slice_id"]),
         streams={"fast": _stream_v7(m["fast"]), "slow": _stream_v7(m["slow"])},
+        dt=dt,
         regions=regions,
         roi_ids=roi_ids,
     )
@@ -294,7 +399,7 @@ def _maybe_str(node) -> str | None:
     return None
 
 
-def _load_v73(path: Path) -> Slice:
+def _load_v73(path: Path, dt: float | None) -> Slice:
     h5py = _h5py()
     with h5py.File(path, "r") as f:
         fast = _stream_v73(f, f["fast"])
@@ -319,5 +424,6 @@ def _load_v73(path: Path) -> Slice:
     return Slice(
         slice_id=slice_id or path.stem,
         streams={"fast": fast, "slow": slow},
+        dt=dt,
         regions=regions,
     )

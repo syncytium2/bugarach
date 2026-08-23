@@ -89,7 +89,10 @@ def assess_store(store: Path, *, stream: str | None, n_surrogates: int,
             s = f
         else:
             try:
-                s = load_slice(f)
+                # dt=None: this pass counts windows and ROIs and builds no
+                # sampling grid, so the store's silence about its interval is
+                # carried rather than filled in.
+                s = load_slice(f, dt=None)
             except Exception as e:                   # noqa: BLE001
                 skipped["load_error"] += 1
                 print(f"  ! {f.name}: {type(e).__name__}: {e}", file=sys.stderr)
