@@ -221,8 +221,52 @@ def assess_store(store: Path, *, stream: str | None, n_surrogates: int,
                            float(np.percentile(n_roi, 75))],
                       min=float(n_roi.min()), max=float(n_roi.max())),
         "by_k": by_k,
+        "background": _fit_background(files if is_folder else None),
         "rows": rows,
     }
+
+
+def _fit_background(slices):
+    """The per-ROI heterogeneity of THIS corpus, measured rather than inherited.
+
+    The generator needs a background shape, and until now the only one available
+    was ``bench.MEASURED_RATE_SHAPE`` — a maximum-likelihood fit over *this
+    lab's* 81 baseline windows. Handing that number to another lab's folder is
+    the same category of error as handing them a flat field: a constant standing
+    in for a measurement. Whether their field is flat is their empirical
+    question, so the assessment answers it while it already has the recordings
+    open.
+
+    Returns ``None`` for a ``.mat`` store, which carries no analysis windows to
+    take a baseline from — the export folder is the input (FOUNDATIONS §5).
+    """
+    if slices is None:
+        return None
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    try:
+        from fit_background_shape import (_this_labs_reference,
+                                          fit_shape_from_slices)
+    except ImportError as e:                              # noqa: BLE001
+        return {"rate_shape": None, "why": f"fitter unavailable: {e}"}
+
+    shape, n_win, n_roi = fit_shape_from_slices(slices)
+    out = {"rate_shape": shape, "n_windows": n_win, "n_rois": n_roi,
+           "this_lab_reference": _this_labs_reference()}
+    if shape is None:
+        out["why"] = (
+            f"only {n_win} usable baseline windows — too few to fit a shape. "
+            "The consumer must choose a background explicitly rather than "
+            "inherit one")
+    else:
+        # A genuinely uniform field drives the shape to the fitter's ceiling,
+        # which is the right answer and an unreadable one — "9998" is a bound,
+        # not a measurement. Say which of the two the corpus is.
+        out["reads_as"] = "flat" if shape > 100 else "heterogeneous"
+        shown = "flat (shape -> infinity)" if shape > 100 else f"{shape:.3f}"
+        print(f"background: per-ROI heterogeneity {shown} from "
+              f"{n_win} baseline windows / {n_roi} ROIs "
+              f"(this lab's reference: {_this_labs_reference()})")
+    return out
 
 
 def main(argv=None) -> int:
