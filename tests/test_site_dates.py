@@ -17,17 +17,37 @@ commit, not the clock.
 
 from __future__ import annotations
 
+import importlib.util
 import re
 import subprocess
 from pathlib import Path
 
 import pytest
 
-from tools.build_site import (SITE_BORN, STAMP_MARKER, date_stamp, meta_stamp,
-                              stamp_html)
-
 ROOT = Path(__file__).resolve().parents[1]
 SITE = ROOT / "site"
+
+
+def _build_site():
+    """Load the tool by path, the way `test_site_staleness.py` does.
+
+    `tools/` is not a package and is not on the path in CI — importing it as one
+    passes locally and fails on the runner, which is how this test first went
+    red.
+    """
+    spec = importlib.util.spec_from_file_location(
+        "build_site", ROOT / "tools" / "build_site.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+bs = _build_site()
+SITE_BORN = bs.SITE_BORN
+STAMP_MARKER = bs.STAMP_MARKER
+date_stamp = bs.date_stamp
+meta_stamp = bs.meta_stamp
+stamp_html = bs.stamp_html
 
 #: Built pages that must carry the stamp. `viewer.html` is deliberately absent —
 #: it is a byte-for-byte copy of the hand-written source page, pinned that way by
