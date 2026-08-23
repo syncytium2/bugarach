@@ -204,17 +204,23 @@ def test_a_refusal_is_never_a_failure(tree):
 def test_the_reaper_counts_the_ignored_files_it_destroys(tree):
     """`git worktree remove` deletes ignored files and `git status --porcelain`
     cannot see them, so no dirty-check could have caught them. Here that is the
-    built `site/` — regenerable, but reported rather than discovered."""
+    built `site/` — regenerable, but reported rather than discovered.
+
+    The build cache alongside it is counted, not named: the first live run listed
+    eight `__pycache__/` entries in full, which made the one line whose job is
+    "did that just delete something you wanted?" the one nobody finishes."""
     primary, work = tree
-    (work / ".gitignore").write_text("/site/\n")
+    (work / ".gitignore").write_text("/site/\n__pycache__/\n")
     git("add", "-A", cwd=work)
     git("commit", "-qm", "ignore site", cwd=work)
     git("push", "-q", "origin", "feat:main", cwd=work)
     (work / "site").mkdir()
     (work / "site" / "bundle.js").write_text("// built\n")
+    (work / "__pycache__").mkdir()
+    (work / "__pycache__" / "x.pyc").write_text("")
     r = reap(work, "feat")
     assert not work.exists(), r.stdout + r.stderr
-    assert "ignored paths removed" in r.stdout and "site/" in r.stdout, r.stdout
+    assert "2 ignored path(s) went with it: site/, 1 cache dir" in r.stdout, r.stdout
 
 
 def test_every_refusal_the_reaper_can_make_is_fired_by_selftest():
