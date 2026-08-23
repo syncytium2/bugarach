@@ -33,6 +33,7 @@ from bugarach.bench import (
     make_crowded_recording,
     make_null_recording,
     make_recording,
+    nearest_neighbour_gaps,
     pick_operating_point,
     run_detector,
     sweep,
@@ -374,10 +375,50 @@ def test_the_crowded_recording_actually_crowds():
     t = np.sort([e.time for e in gt.events])
     gaps = np.diff(t)
     assert gaps.min() >= CROWDED_RECORDING["min_sep_sec"] - 1e-6
-    inside = int((gaps < CROWDING_GAP_SEC).sum())
-    assert inside > 0.6 * gaps.size, (
-        f"only {inside} of {gaps.size} gaps put two events in one reference "
-        "window — this recording is not crowded and cannot test masking")
+    crowded = nearest_neighbour_gaps(gt) < CROWDING_GAP_SEC
+    assert crowded.mean() > 0.25, (
+        f"only {crowded.sum()} of {crowded.size} events have a neighbour inside "
+        "their own reference window — this recording cannot test masking")
+
+
+def test_the_crowded_recording_contains_its_own_control():
+    """The half of the design that was missing, and the reason it runs three hours.
+
+    Crowding is a property of an **event**, not of a recording, so it is
+    measurable within one — but only if the recording holds both populations. The
+    first version planted the same 120 events in 45 minutes, which put every one
+    of them inside a neighbour's reference window: no uncontaminated group
+    anywhere in it, so the only available comparison was against a different
+    recording, differing in event count and duration and therefore false-alarm
+    opportunity all at once.
+
+    Tony, 2026-08-23: *"shouldn't the two tests have the same number of events so
+    F1 can be compared. who cares how long the recording has to be?"* Nobody does,
+    and the length is what buys the control group.
+
+    Both groups must stay large enough to compare — when the guard's recall gain
+    turned out to be **flat across the gap**, which is the finding that killed the
+    masking reading, the isolated group is what made it visible."""
+    gaps = nearest_neighbour_gaps(make_crowded_recording("baseline_quiet", 1)[1])
+    crowded = gaps < CROWDING_GAP_SEC
+    isolated = gaps >= 2 * CROWDING_GAP_SEC
+    assert crowded.mean() > 0.25 and isolated.mean() > 0.20, (
+        f"{crowded.mean():.0%} crowded / {isolated.mean():.0%} isolated — this "
+        "recording no longer carries its own control, and any crowding effect "
+        "measured on it is confounded with whatever else differs from the bench")
+
+
+def test_nearest_neighbour_gaps_are_column_aligned_with_the_score():
+    """The one way to misuse it. `Score.hits` is in `gt.events` order and the
+    planted times are not sorted, so sorting one without the other silently pairs
+    each event's outcome with a different event's gap."""
+    _, gt = make_crowded_recording("baseline_quiet", 1)
+    gaps = nearest_neighbour_gaps(gt)
+    assert gaps.shape == (len(gt.events),)
+    t = np.asarray(gt.times)
+    for i in (0, len(t) // 2, len(t) - 1):
+        others = np.delete(t, i)
+        assert gaps[i] == pytest.approx(np.abs(others - t[i]).min())
 
 
 def test_the_crowded_recording_is_not_a_regime_anyone_can_calibrate_on():

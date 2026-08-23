@@ -31,7 +31,15 @@ separate axes, and only one of them is what the recording is for.
 **Read recall, not F1, across these rows.** The crowded recording plants eight
 times as many events, so a detector firing at a similar rate hits far more often
 and its precision rises — coact reads a *higher* F1 on the crowded recording than
-on the bench while recalling a fifth less. Only the recall column compares.
+on the bench while recalling less. Only the recall column compares, and even that
+compares two recordings differing in more than one thing.
+
+**For the crowding effect itself, do not use this tool** — use
+`tools/probe_guard_on_surrogates.py`, which splits recall by each event's own
+nearest-neighbour gap *within* the crowded recording and so holds count, duration,
+background and false-alarm opportunity fixed by construction. This tool answers
+the narrower question it was written for: how much the background alone moves the
+answer. That question is still worth a tool, because it moves it a lot.
 
 The ``bg`` column subtracts planted coordinated spikes, not the promiscuity probe
 block or the distractors, so the bench row reads above its nominal regime rate and
@@ -54,9 +62,12 @@ SEEDS = (1, 2, 3, 4)
 TOL = 1.5
 STREAM = "events"
 
-#: The pre-2026-08-23 crowded recording: no regime merged, so the simulator's own
-#: ``bg_rate_hz`` default. A labelled control, never a call site.
-OFF_AXIS = dict(CROWDED_RECORDING)
+#: The crowded recording **as it shipped before 2026-08-23**: 45 minutes, and no
+#: regime merged, so the background came from the simulator's own ``bg_rate_hz``
+#: default. Spelled out rather than derived from the live dict, so it keeps
+#: reconstructing the historical condition as the live one moves on. A labelled
+#: control, never a call site.
+OFF_AXIS = dict(CROWDED_RECORDING, duration_sec=2700.0)
 
 
 def coact(sl, guard=0.0):
