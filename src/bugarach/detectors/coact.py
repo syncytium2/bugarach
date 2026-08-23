@@ -76,6 +76,7 @@ def coact_detect(
     detection_mode: str = "threshold",
     peak_prominence: float = 0.0,
     peak_min_distance_sec: float = 0.0,
+    guard_sec: float = 0.0,
 ) -> CoactDetection:
     """Distinct-ROI coincidence vs a rolling rate-local circular-shift null.
 
@@ -110,10 +111,67 @@ def coact_detect(
     nullmean = np.full(nb, np.nan)
     n_sur = int(n_surrogates)
 
+    def _guarded_pool(ctx, cw, tlo, thi, n_sur, rng, b, obs, z, pval, nullmean):
+        """Shift, count, and score one bin — the guarded path's tail.
+
+        Identical arithmetic to the unguarded branch below; factored out so the
+        two cannot drift apart, which is how a flag ends up meaning something
+        different from what its docstring says.
+        """
+        draws = rng.random_sample((n_sur, len(ctx)))
+        counts = np.zeros(n_sur)
+        for j, e in enumerate(ctx):
+            shifted = np.mod(e[None, :] + draws[:, j:j + 1] * cw, cw)
+            counts += ((shifted >= tlo) & (shifted < thi)).any(axis=1)
+        mu = counts.mean()
+        sd = counts.std(ddof=1)
+        nullmean[b] = mu
+        if sd > 0:
+            z[b] = (obs[b] - mu) / sd
+            pval[b] = 0.5 * erfc(z[b] / sqrt(2))
+        elif obs[b] > mu:
+            z[b], pval[b] = np.inf, 0.0
+        else:
+            z[b], pval[b] = 0.0, 1.0
+
     for b in cand:
         blo, bhi = edges[b], edges[b + 1]
         c_lo = max(t0, ctr[b] - C / 2)
         c_hi = min(t1, ctr[b] + C / 2)
+        if guard_sec > 0:
+            # THE GUARD, and the one place in this project that needs real care.
+            # The context window is CENTRED on the bin under test, so excising a
+            # guard band leaves a HOLE — and the null is a circular shift *within
+            # the window*, which would then wrap across the excised span and
+            # re-import the very events the guard removed.
+            #
+            # So the retained reference is COMPACTED onto one contiguous line
+            # before shifting: the two side-pieces are laid end to end, total
+            # length `cw`, and each ROI is shifted uniformly on that. The test
+            # window is a WIDTH, not a position — a uniform circular shift is
+            # translation-invariant, so counting landings in [0, bw) asks the same
+            # question as counting them where the bin sits, and after compaction
+            # the bin's own location no longer exists in the reference.
+            g_lo, g_hi = ctr[b] - guard_sec / 2, ctr[b] + guard_sec / 2
+            left = max(c_lo, min(g_lo, c_hi))
+            right = min(c_hi, max(g_hi, c_lo))
+            cw = (left - c_lo) + (c_hi - right)
+            tlo, thi = 0.0, bhi - blo
+            if cw <= thi:
+                nullmean[b] = np.nan      # no reference cells left to estimate from
+                continue
+            ctx = []
+            for e in ev:
+                if e.size == 0:
+                    continue
+                lo_part = e[(e >= c_lo) & (e < left)] - c_lo
+                hi_part = e[(e > right) & (e <= c_hi)] - right + (left - c_lo)
+                vv = np.concatenate((lo_part, hi_part))
+                if vv.size:
+                    ctx.append(vv)
+            _guarded_pool(ctx, cw, tlo, thi, n_sur, rng, b, obs, z, pval, nullmean)
+            continue
+
         cw = c_hi - c_lo
         tlo, thi = blo - c_lo, bhi - c_lo
         ctx = []
@@ -191,6 +249,7 @@ def coact_detect(
     opts = {
         "int_win_sec": int_win_sec, "context_win_sec": context_win_sec,
         "min_rois": min_rois, "n_surrogates": n_surrogates, "alpha": alpha,
+        "guard_sec": guard_sec,
         "merge_gap_sec": merge_gap_sec, "rng_seed": rng_seed,
         "detection_mode": detection_mode, "peak_prominence": peak_prominence,
         "peak_min_distance_sec": peak_min_distance_sec,

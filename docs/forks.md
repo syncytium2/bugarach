@@ -117,9 +117,49 @@ F1 moves −0.006 to +0.000 (`tools/probe_guard_vs_spacing.py`).
   threshold directly. That is also the shape of the regime-shift incident, whose
   victim was SCE's surrogate null rather than `rate`.
 
-**To flip:** `guard_sec=<seconds>`. On the two surrogate detectors, note the wrap
-subtlety — the null is a circular shift *within* the window, so the shift must be
-defined on the retained span, not on a window with a hole in it.
+**To flip:** `guard_sec=<seconds>`, now on all three.
+
+### 4a · Measured on `loco` and `coact`, 2026-08-23 — the prediction held
+
+`tools/probe_guard_on_surrogates.py`, 4 seeds, shipped operating points. On
+`baseline_quiet`, where contamination is **impossible by construction**, both move
+−0.021 to +0.021 with no direction — the null result the geometry demands. On
+`CROWDED_RECORDING` (#10), where it is likely:
+
+| detector | guard 0 | 5 s | 10 s | 20 s |
+|---|---|---|---|---|
+| CoactDetect | 0.404 | **0.445** | **0.451** | 0.430 |
+| LoCo | 0.423 | 0.433 | 0.415 | 0.436 |
+
+**CoactDetect gains +0.047, entirely through recall** (0.254 → 0.292) — the
+predicted mechanism in the predicted place: crowding masks events, and removing
+an event from its own null recovers some. Confirmed on the statistic rather than
+only through F1: over 891 candidate bins the mean null falls 3.689 → 3.645 with a
+10 s guard.
+
+**LoCo shows no clear effect, and the reason is structural rather than
+disappointing.** Its halves are *already one-sided* — the anchor is a boundary of
+each half, not its centre — so an event at the anchor sits at the edge of the
+reference and contributes far less than one at the centre of a centred window.
+**LoCo was partly guarded by its own geometry all along**, which is also why its
+guard needed no compaction while CoactDetect's did.
+
+⚠ **The larger finding in that table is not the guard.** Both detectors lose most
+of their recall on the crowded recording — 0.70–0.83 down to 0.25–0.29 — and a
+guard recovers a slice, not the bulk. Crowding is not isolated there (more events,
+closer together, different scoring dynamics), so this is not a clean measurement
+of masking alone. It is a signpost that the crowded regime is hard in ways nothing
+has yet taken apart.
+
+**Implementation note worth not re-deriving:** the two guards are *not* the same
+change. LoCo's halves stay contiguous when a guard shrinks them, so it is two
+bounds. CoactDetect's window is centred, so a guard holes it — and because the
+null is a circular shift *within* the window, shifting on the original width would
+wrap events across the excised span and re-import exactly what the guard removed.
+Its retained span is therefore **compacted** onto one line before shifting, using
+the fact that a uniform circular shift is translation-invariant so the test window
+is a width rather than a position. `guard_sec` with
+`null_context_mode="symmetric"` is refused rather than given a third variant.
 
 ---
 
@@ -284,5 +324,8 @@ unrepresentative as one where none does.
 Not forks — nobody has taken a side.
 
 - **`BENCH_RECORDING` runs flat** while `derive_spec` measures (#2).
-- **`guard_sec` is not implemented on `loco`/`coact`**, which is where #4 says the
-  evidence points, and where `CROWDED_RECORDING` (#10) now makes it measurable.
+- **Why crowding costs 60% of recall.** #4a measured it; a guard explains only a
+  slice. Nothing has taken the rest apart — whether it is masking the guard does
+  not reach, the detectors' own episode merging, or the scorer's greedy matching
+  on closely spaced events. Until that is separated, the crowded recording is a
+  diagnostic that shows a problem rather than one that names it.
