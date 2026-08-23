@@ -634,6 +634,77 @@ def evaluate(name: str, regime: str, seeds=(1, 2, 3), *, tol_sec: float = 1.5,
                        knob_value=overrides.get(OPERATING_POINTS[name].knob))
 
 
+TOLERANCE_GRID = (0.1, 0.15, 0.25, 0.4, 0.5, 0.75, 1.0, 1.25, 1.5, 2.0, 2.5, 3.0)
+"""Edge gaps to score at, spanning well under and well over the shipped 1.5 s.
+
+**Reported as a curve rather than chosen as a constant** — the practice DOSED
+uses (Chambon et al. 2019, on the coordination shelf, recorded there as
+*"bugarach's open question, answered"*): report precision, recall and F1 across a
+swept matching tolerance, so how much timing slack a score was granted is a
+**visible axis** instead of a hidden constant.
+
+Measured here, that costs almost nothing and settles an argument. Five of the six
+detectors are flat from **0.75 s** upward and the ranking does not change between
+0.4 s and 2.0 s, so the shipped 1.5 s sits deep in the plateau and no comparison
+rests on it. The exception is **binned SCE**, still climbing at 1.5 s because its
+10 s bins make its detections coarse and only a loose tolerance credits them —
+which is exactly what a single number hides and a curve shows.
+
+Same grid as ``docs/learned/tolerance_sweep.json``, so figures and bench runs
+describe one sweep rather than two.
+"""
+
+
+def evaluate_curve(name: str, regime: str, seeds=(1, 2, 3), *,
+                   tols=TOLERANCE_GRID, gen: dict | None = None,
+                   **overrides) -> dict[float, BenchResult]:
+    """One :class:`BenchResult` per matching tolerance — the curve, not a point.
+
+    Detection runs **once per seed** and every tolerance scores those same
+    detections, so the curve isolates the scoring rule. Re-detecting per
+    tolerance would fold detector RNG into what is meant to be a property of the
+    scorer.
+    """
+    per_tol: dict[float, list] = {float(t): [] for t in tols}
+    for seed in seeds:
+        s, gt = make_recording(regime, seed, **(gen or {}))
+        det = run_detector(name, s, **overrides)
+        for t in tols:
+            per_tol[float(t)].append(score_stream(gt, det, tol_sec=float(t)))
+    return {t: pool_scores(v, detector=name, regime=regime, seeds=seeds,
+                           knob_value=overrides.get(OPERATING_POINTS[name].knob))
+            for t, v in per_tol.items()}
+
+
+def plateau_tol(curve: dict[float, BenchResult], *, eps: float = 1e-9):
+    """The smallest tolerance whose F1 already equals the curve's best, or None.
+
+    ``None`` means the detector was **still climbing at the widest tolerance
+    scored**: its score depends on how much slack it was granted, so quoting one
+    F1 for it asserts a timing accuracy it does not have. That is not a defect to
+    fix by widening the grid — it is a fact about the detector, and the honest
+    report names it rather than averaging it away.
+    """
+    tols = sorted(curve)
+    best = max(curve[t].f1 for t in tols)
+    if curve[tols[-1]].f1 < best - eps:
+        return None                    # non-monotone: the widest is not the best
+    if len(tols) > 1 and curve[tols[-1]].f1 - curve[tols[-2]].f1 > eps:
+        return None                    # still rising where the grid stopped
+    return next(t for t in tols if curve[t].f1 >= best - eps)
+
+
+def describe_curve(curve: dict[float, BenchResult]) -> str:
+    """An F1 that carries the tolerance it needed — for anything human-facing."""
+    tols = sorted(curve)
+    best = max(curve[t].f1 for t in tols)
+    flat = plateau_tol(curve)
+    if flat is None:
+        return (f"F1 {curve[tols[-1]].f1:.3f} at {tols[-1]:g}s and STILL "
+                "CLIMBING — this score depends on the matching tolerance")
+    return f"F1 {best:.3f}, flat from {flat:g}s"
+
+
 def sweep(name: str, regime: str, seeds=(1, 2, 3), values=None, *,
           gen: dict | None = None) -> list[BenchResult]:
     """The sensitivity curve: one :class:`BenchResult` per knob value."""
