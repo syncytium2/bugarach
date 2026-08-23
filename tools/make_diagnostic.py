@@ -98,12 +98,24 @@ def build(args):
         )
     ext = recording_extent(slice_)
 
+    # The sampling interval, read off the generator that produced this recording
+    # rather than assumed. Both branches above quantize their onsets onto
+    # ``grid_sec``, so it IS this recording's imaging grid — and the generator is
+    # the stage that knows it, which is exactly who FOUNDATIONS §6 says must be
+    # the one to say. Nothing here defaults: a generator that stopped recording
+    # its grid would raise a KeyError, which is the refusal §6 asks for.
+    dt = float(gt.params["grid_sec"])
+
     lanes, traces, failed = {}, {}, {}
     for det, params in _detector_params().items():
         try:
-            t, y, events, extra = _compute(det, slice_, ext, params)["events"]
-            lanes[det] = events
-            traces[det] = (t, y, events, extra)
+            # Read the fields by name. This used to unpack the tuple positionally
+            # and broke silently the day `StreamResult` grew a fifth field for
+            # the emit writer — the figure has never needed that field and still
+            # does not, and it should not have to be edited when a sixth arrives.
+            r = _compute(det, slice_, ext, params, dt=dt)["events"]
+            lanes[det] = r.events
+            traces[det] = (r.t, r.y, r.events, r.extra)
         except Exception as exc:                      # noqa: BLE001
             # A detector that cannot run on this slice is a finding, not a crash
             # — record it in the sidecar instead of losing the whole figure.
