@@ -1,5 +1,31 @@
 # From viewer to workflow — the plan
 
+> ## The critical path is walked. Read this before Part I.
+>
+> **Updated 2026-08-23.** The three things this plan asked to have approved — the
+> folder reader, the yardstick, the writers — are built, and **a folder now goes in
+> and a file comes out by three routes**: `bugarach detect` over a whole folder,
+> the Panel viewer's Save button over the recording on screen, and the browser
+> page's downloads. On this lab's 84-recording export, `bugarach detect` writes
+> 34,124 detections in about 45 seconds.
+>
+> **So Part I's "The problem" is history, and is kept as history.** It described a
+> tree in which nothing wrote a data file, which was true when it was written and
+> is the reason the rest of the plan exists. Two sentences in it read as present
+> tense and are no longer true; they are struck rather than deleted, because a plan
+> whose motivating problem has vanished from it cannot be judged on whether it
+> solved the right one.
+>
+> **One correction rather than an update.** Part I says `events.csv` is the only
+> file that must exist. The input contract has not said that since its second
+> revision: a recording is `<slice_id>.csv`, **one file per recording**, and at
+> least one of them is required. Nothing was ever built to the older spelling — the
+> sentence was simply left behind — but it is the kind of error that costs a
+> producer an afternoon, so it is fixed in place below.
+>
+> What is genuinely left, and where each is written down, is at the foot of this
+> page under **What is left**.
+
 > **Building the learned-detector stage?** Read
 > [`docs/learned/README_for_the_webapp.md`](learned/README_for_the_webapp.md) first.
 > That loop already runs end to end as four scripts with published numbers, so the
@@ -12,12 +38,15 @@
 
 ### The problem
 
+*As of 2026-08-19, when this plan was approved. Struck text is what has since been
+built; see the header.*
+
 bugarach can already run six coordination detectors and draw them, and the viewer
 already opens a whole directory. What it cannot do is finish: there is no way to
-tune the generator to the recordings you loaded, and **no way to get a result out
+tune the generator to the recordings you loaded, and ~~**no way to get a result out
 of it** — every number stays on screen. Nothing in the tree writes a data file. It
 writes pictures, and a page, and one text report; it has never written a table a
-statistician could open.
+statistician could open.~~
 
 Most of what is missing already exists as capability, locked inside command-line
 scripts in `tools/` that take flags and write images to a shared folder. **A screen
@@ -35,10 +64,13 @@ different project and are not read here: the detectors need per-ROI **event onse
 times** and nothing more, which is what `src/bugarach/io.py` already says.
 
 The contract is written in full in
-[`docs/export_folder_spec.md`](export_folder_spec.md). In short: four CSVs, of which
-**`events.csv` is the only one that must exist.** The sidecar carries identity and
-the frame interval; without the interval the app asks for it at load rather than
-guessing. The rest add fidelity and none is a precondition.
+[`docs/export_folder_spec.md`](export_folder_spec.md). In short: **one CSV per
+recording, named for the recording — `<slice_id>.csv` — and at least one of them
+must exist.** Two optional tables sit beside them and each buys one thing:
+`slices.csv` carries identity and the frame interval, `regions.csv` carries the
+periods. Without the frame interval the app asks for it at load rather than
+guessing. (`metric_dictionary.csv` is a reserved name in the same folder, but it
+describes the columns of the **output** rather than of the input.)
 
 Periods are carried by `regions.csv`, one row per region, ordered by a plain
 `region_idx` and named by the lab's own `label`. There is no notion of a treatment
@@ -295,7 +327,7 @@ previously named one:
 - the **collection pad** is 0 in production, and the MATLAB test file's last case is
   entirely about it.
 - the **collection aperture** belongs to the caller, not to this function — one
-  second either side of the event centre. It is what Part I's ⚠ is actually about,
+  second either side of the event center. It is what Part I's ⚠ is actually about,
   and it is a different parameter in a different function.
 
 **Amplitude: port it, and know it will be empty here.** Five of the function's
@@ -516,3 +548,68 @@ curve to the maximum-likelihood estimator already in the tree. The parity target
 changed from the golden files to synthetic fixtures, because the goldens cannot
 exercise the ported function. Four quantities that could not be traced to any source
 were removed.
+
+---
+
+## What is left
+
+*Added 2026-08-23, when the critical path finished. Everything here was checked
+against the tree that day; anything not listed is either built or written down
+somewhere else, and the point of this section is that the difference is visible.*
+
+**Three routes write the file, and they do not write the same set of files.** The
+CLI and the Panel viewer write `detections.csv`, `detector_settings.csv` and
+`run.json`; the browser page writes the first and the last, and records its
+parameters inside `run.json` keyed by detector where the contract keys them by
+**detector and stream**. A two-stream folder analysed in the browser therefore has
+a settings record that cannot say which stream a value belonged to. The fix is the
+same one the tuned-settings decision asks for, so it should be done once —
+[`todo/2026-08-22-tuned-settings-are-a-file-not-a-survivor.md`](todo/2026-08-22-tuned-settings-are-a-file-not-a-survivor.md).
+
+**A fitted setting still has nowhere to live.** The sweep chooses an operating
+point and keeps it in a variable that survives a folder change, so the sequence the
+whole per-lab loop rests on — tune on the simulation, reopen your own recordings —
+depends on a value nothing wrote down and no second session could reproduce.
+Detect takes two inputs, a folder and the settings to run on it; today it can only
+be handed the first.
+
+**SPIKE-synch never learns the frame interval.** `bugarach detect` passes the
+folder's stated interval to rate+context and CICADA, and refuses — one **recording**
+at a time, recording the refusal in `run.json` and still exiting 0 — any recording
+whose folder states none. `bugarach check` exits 1 on the same folder, so it is the
+one to gate a script on. The
+third detector that needs one is not reached, so it runs on the 0.1 s grid in its
+signature and its rows in `detector_settings.csv` name no grid at all — the file
+written so a result reproduces from the folder alone cannot, for that one detector,
+say what it ran on. Tracked with the rest of the load-boundary work in
+[`todo/2026-08-16-dt-must-be-required-at-load.md`](todo/2026-08-16-dt-must-be-required-at-load.md).
+
+**Comparison is still a button.** "Compare with the real folder" puts the
+simulation's measured statistics beside the folder's on screen, which was the
+cheapest thing in the plan and is done. What has not happened is the rest of this
+page's Comparison section: the tools are not in the library, and the do-not-ship
+fix list named there is still unapplied, so lifting them now would import its
+defects into an interface.
+
+**The fitting stage is still off the critical path**, for the reason it always was:
+it is blocked on a decision rather than on work.
+
+**Four more, found by the murderboard on the README** and recorded here so the two
+lists are the same list. **Peak-gated mode is unreachable** from every route, while
+`detections.csv` carries a `mode` column that has only ever said `threshold` — the
+clean-room half-prominence kernel is a built thing no route can produce a result
+from. **A recording with no stated frame interval is refused one at a time and the
+run still exits 0**, so a script gating on exit status is told it succeeded. **The
+published page carries neither the trainer nor the scoreboard** — training needs
+`bugarach lab`, and the scoreboard is held until its wording is reviewed. And
+**nothing measures a detector against a real recording**: every error rate this
+project publishes is measured on simulated data, which is the design rather than an
+oversight, and is still the thing a reader most wants and cannot have.
+
+**Nothing publishes the site.** Deploying is a person running `npm run deploy`. A
+daily job measures the distance and reports it without ever failing a build, on the
+argument that a red tick nothing in this repo can clear teaches people to ignore
+red. That is the right call for the reporting and does not make the gap smaller: it
+has run dozens of commits behind, and `tools/site_staleness.py` says what it is
+now — a number worth reading rather than quoting, since it moves hourly. Closing it needs a deploy
+credential, which is Tony's to give.

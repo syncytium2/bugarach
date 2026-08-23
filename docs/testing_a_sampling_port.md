@@ -96,3 +96,23 @@ Two outcomes need naming rather than fixing:
 Two SCE mutants were caught by LoCo's and CoactDetect's test files. Sweeping one
 file at a time overstates what is missing and sends you writing vectors that
 already exist somewhere else.
+
+## Test the screen, not the function
+
+Not about sampling, and kept here because this is where the browser ports are
+tested and it is what they got wrong.
+
+A window-provenance bug shipped in the browser page because every test called
+`analysisSegments` directly and none of them pressed the button. The numbers were
+right — the function returned exactly the window the detector then used — and the
+sentence rendered beside them said *"whole period — none sent"* about that same
+window. Both halves were individually defensible. Only the screen showed them
+contradicting each other, and only the screen goes in a slide.
+
+A test that reaches past the interface certifies the arithmetic and says nothing
+about what a reader will be told. Drive at least one path per feature the way a
+person drives it, all the way to the rendered text.
+
+*(Playwright trap, paid for by the same lane: `inner_text()` returns empty for
+content inside a collapsed `<details>`. Use `text_content()`, or open the accordion
+first.)*

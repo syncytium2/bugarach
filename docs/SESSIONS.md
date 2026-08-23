@@ -1133,3 +1133,20 @@ session's work is not a sweep.
   export, not `_v2`**. `_v2` ships `analysis_*` columns and pensub does not, so pairing
   across them scores two different windows. Both hold 84 recordings; the historical
   crosstalk control's denominators are quoted out of 85.
+
+
+### Tonys-MacBook-Pro/documents-stop-lying — the outward-facing docs stop describing a tool two milestones behind
+- **Status:** ACTIVE 2026-08-23.
+- **Writes:** `<darkroom>/bugarach/reviews/README_2026-08-23.md` — **one file**, the
+  murderboard run record for the README, whose repo copy is `docs/reviews/`. Nothing
+  else in the darkroom, nothing in `constellation/`, no other subfolder touched.
+- **Claims:** that one file only. Written; not being regenerated. Claim released on merge.
+- **Reads, read-only:** `<dropbox>/data/exports/bugarach/2026-08-18_revised_2v_periods`
+  to re-measure the detection counts the README quotes. No `.mat` store opened.
+- **Finding another session should know:** two claims in the tree contradict each other
+  about how many recordings the lab withdrew — the folder count says one, FOUNDATIONS
+  says two. The README declines to give a number until somebody reconciles them
+  (`docs/todo/2026-08-23-the-store-and-the-folder-disagree-about-how-many-were-withdrawn.md`).
+  Separately, `tools/make_diagnostic.py` is **broken on `main`** and fails soft: every
+  detector raises inside it, the failures are filed to a sidecar, and it still exits 0
+  having drawn a figure with no detector lanes. Nothing in the suite covers it.
