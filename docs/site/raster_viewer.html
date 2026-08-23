@@ -2,6 +2,15 @@
 <meta charset="utf-8">
 <title>bugarach — open a recording</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- The same three facts the visible line at the bottom carries, in the form
+     anything reading this page mechanically can take. Names match the ones
+     `tools/build_site.py` writes into every other page, so one reader serves
+     the whole site. `bugarach:commit` says which identification scheme applies
+     rather than naming a sha this page could not know — the reasoning is at the
+     visible stamp. -->
+<meta name="bugarach:born" content="2026-08-13">
+<meta name="bugarach:version-date" content="2026-08-23">
+<meta name="bugarach:commit" content="content-addressed">
 <!--
   The raster viewer, client side.
 
@@ -992,6 +1001,40 @@
     </div>
   </div>
 </main>
+
+<!-- WHEN THIS PAGE WAS BORN AND WHEN THIS VERSION WAS MADE.
+
+     Tony, 2026-08-23: "all our websites need a born on date and the date of the
+     current version." Every other page on the site gets this line injected by
+     `tools/build_site.py`; this one is hand-written into the source, and it has
+     to be, because `site/viewer.html` is a BYTE-FOR-BYTE copy of this file —
+     pinned by `tests/test_lab_server.py` so the build cannot quietly transform a
+     page whose whole promise is that it reaches nothing. A build that may not
+     touch the page cannot stamp it, so the stamp lives where a reader auditing
+     that promise can see it.
+
+     THE COMMIT IS NOT WRITTEN HERE, AND THAT IS THE HONEST ANSWER RATHER THAN A
+     GAP. A hand-written page cannot name the commit that contains it: the sha
+     does not exist until the commit is made, and writing the previous one would
+     have every published copy naming the revision before itself. It is not
+     needed either — `tools/site_staleness.py` identifies a served viewer by
+     hashing its bytes against every committed `raster_viewer.html` and reporting
+     the newest exact match, which is a stronger identification than a
+     self-declared sha because it cannot disagree with the file it describes.
+     So the attribute says which scheme is in use rather than carrying a number
+     nobody could check.
+
+     The version date IS checkable, and is checked: `tests/test_site_viewer.py`
+     requires it to equal the date of the last commit that touched this file, so
+     a page edited without bumping it turns CI red instead of shipping a date
+     that has quietly become a lie. Bump it when you edit this page. -->
+<p class="site-dates" data-bugarach-born="2026-08-13"
+   data-bugarach-version-date="2026-08-23"
+   data-bugarach-commit="content-addressed"
+   style="margin:1.5rem max(1.2rem, calc(50% - 23rem));color:#666;font-size:.85rem">
+  First published 2026-08-13 · this version 2026-08-23 · identified by its own
+  bytes rather than by a build stamp
+</p>
 
 <script>
 "use strict";
