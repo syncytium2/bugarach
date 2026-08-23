@@ -23,6 +23,39 @@ It is a step you run, not one that runs itself. It was briefly wired as a
 else's deploy on every machine is a rule, and rules here are Tony's to install,
 not a passing session's.
 
+## Is the live page still current?
+
+```bash
+python tools/site_staleness.py            # the full report
+python tools/site_staleness.py --brief    # the line the session briefing prints
+```
+
+**Nothing publishes this site**, so the page advances only when a person runs the
+three commands above, and it drifts silently in between — a stale page looks
+exactly like a current one. On 2026-08-20 the live site had been three features
+behind for weeks and the way that was discovered was somebody opening it. So the
+distance is now measured and put in front of whoever starts a session:
+`tools/session_start_trimmed.sh` prints one line of it in the briefing (cached for
+six hours, three-second timeout, `BUGARACH_SKIP_SITE_CHECK=1` to silence), and
+`.github/workflows/site-staleness.yml` reports it daily in the run summary.
+**That workflow never fails**: a red tick for something no automation here can fix
+teaches people that red means nothing.
+
+It names the deployed version two ways and reports both. `build_site.py` already
+writes the building checkout's short sha into the index footer — "built from
+`a189d5e`" — and `site/viewer.html` is a byte-for-byte copy of
+`docs/site/raster_viewer.html`, so hashing the served viewer against every
+committed version of that file names the same commit independently. When they
+disagree, the disagreement is the finding: a served page matching no commit is a
+hand deploy from an unpushed tree, or the edge rewriting HTML, and neither is
+fixed by deploying. **Unreachable is its own answer** — the check reports "could
+not look" and never "up to date", because this repo works offline regularly.
+
+Two things it deliberately does not do: it does not deploy (that needs a
+Cloudflare credential, and holding none is what let it ship without waiting for
+one), and it does not audit what the page reaches — that is the browser-driven
+check below, and a plain GET cannot do that job.
+
 **Why there is a check on the far side of the upload.** Everything else guards the
 file we wrote: `tests/test_site_viewer.py` greps the viewer's source for `fetch(`
 and friends, and `build_site.py` refuses to publish it otherwise. On 2026-08-18 the
