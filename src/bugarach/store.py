@@ -66,12 +66,38 @@ EVENT_FIELDS = ("locs", "amp", "width", "t50rise")
 
 @dataclass
 class Stream:
-    """Per-ROI event data for one stream (FAST or SLOW)."""
+    """Per-ROI event data for one stream (FAST or SLOW).
+
+    ``width_def`` and ``peak`` are for **folder** input and stay ``None`` for a
+    store, which carries neither: a store's peak IS ``locs``, and its ``width``
+    is whatever the MATLAB pipeline put there under no stated rule. An export
+    folder is the other way round — ``locs`` there is the half-rise, the only
+    time ``docs/export_folder_spec.md`` guarantees, so a peak the producer sent
+    has nowhere else to go, and the width arrives with the producer's own name
+    for the rule that made it. ``bugarach.io`` fills both; nothing else should.
+
+    **A width whose rule did not travel is worse than no width** (spec rule 6),
+    so the two move together: a folder stream with real widths has a
+    ``width_def``, and ``width_def is None`` means there is no width worth
+    reading, whatever ``width`` holds.
+    """
 
     locs: list[np.ndarray]
     amp: list[np.ndarray]
     width: list[np.ndarray]
     t50rise: list[np.ndarray]
+    width_def: str | None = None
+    peak: list[np.ndarray] | None = None
+
+    @property
+    def has_width(self) -> bool:
+        """Did a producer-defined width arrive, with the rule that produced it?"""
+        return self.width_def is not None
+
+    @property
+    def has_peak(self) -> bool:
+        """Is a peak time available apart from ``locs``?"""
+        return self.peak is not None
 
     @property
     def n_rois(self) -> int:
