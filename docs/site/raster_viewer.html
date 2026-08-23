@@ -120,28 +120,60 @@
      drawn rather than implied, and the left column stops being a menu and
      becomes what it always wanted to be: the settings for the one thing you are
      doing. (Tony, 2026-08-22.) */
+  /* A GRID, NOT A ROW, because the shape is two tracks: the top one on row 1,
+     the "or" on row 2, the bottom one on row 3, and the merge and the tail
+     spanning all three so they sit centred between them. `align-items: start`
+     keeps a track's steps at the top of their row instead of stretching to the
+     height of the merge. */
   #rail {
-    flex: none; display: flex; align-items: stretch; gap: 0;
+    flex: none; display: grid; justify-content: start; align-items: start;
+    column-gap: 0; row-gap: 3px;
     padding: 10px 24px 11px; border-bottom: 1px solid var(--line);
     background: var(--panel); overflow-x: auto;
   }
   .railgroup { display: flex; flex-direction: column; gap: 5px; }
   .railgroup > .glabel {
     font-size: 10px; letter-spacing: .07em; text-transform: uppercase;
-    color: var(--muted); padding-left: 2px;
+    color: var(--muted); padding-left: 2px; min-height: 13px; white-space: nowrap;
   }
-  .railrow { display: flex; gap: 6px; }
-  /* the arrow between groups, vertically centred on the chips rather than on
-     the group label above them */
+  /* the arrow between steps, on the line of the steps rather than the label
+     above them */
   .railarrow {
-    display: flex; align-items: center; color: var(--muted);
-    padding: 14px 9px 0; font-size: 15px; user-select: none;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--muted); padding: 15px 8px 0; font-size: 15px; user-select: none;
   }
-  /* "or", between the two entries. Smaller and quieter than the arrows between
-     groups, because it separates a choice rather than a sequence. */
+  /* An arrow in the tail spans all three rows, so it centres itself instead of
+     hanging below a group label that is not on its row. */
+  .railarrow.mid { align-self: center; padding: 0 8px; }
+  /* "or", under the first entry and above the second. Quieter than the arrows,
+     because it separates a choice rather than a sequence. */
   .railjoin {
-    display: flex; align-items: center; color: var(--muted);
-    padding: 0 5px; font-size: 11px; font-style: italic; user-select: none;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--muted); font-size: 11px; font-style: italic; user-select: none;
+    min-width: 104px;
+  }
+  /* The bottom track's run to the merge: it reaches the tail without any of the
+     top track's steps, and dashed says "nothing happens along here" rather than
+     "something is missing". */
+  .railbypass {
+    align-self: center; height: 0; margin-top: 8px;
+    border-top: 1px dashed var(--line);
+  }
+  /* Two lines in, one out. Drawn with borders rather than an SVG so it inherits
+     the theme's line colour with everything else. */
+  .railmerge {
+    position: relative; width: 30px; align-self: stretch;
+    margin: 22px 0 6px;
+  }
+  .railmerge::before {
+    content: ""; position: absolute; left: 0; right: 13px; top: 0; bottom: 6px;
+    border: 1px solid var(--line); border-right: 0;
+    border-radius: 6px 0 0 6px;
+  }
+  .railmerge::after {
+    content: "→"; position: absolute; right: -3px; top: 50%;
+    transform: translateY(-56%); color: var(--muted); font-size: 15px;
+    line-height: 1;
   }
   .step {
     all: unset; box-sizing: border-box; cursor: pointer;
@@ -150,6 +182,19 @@
     border: 1px solid var(--line); background: var(--bg);
     font-size: 12.5px; font-weight: 600; line-height: 1.3;
   }
+  /* THE GRUMBLE. Not an error state — nothing is wrong, and nothing is blocked.
+     It is the one line on the rail that asks for something, and it keeps asking
+     until the reader looks. */
+  .step .need.nag { color: #b4433a; font-weight: 600; }
+  /* the same complaint where the cost lands, in the panel that would carry it */
+  .note.nagnote {
+    color: #b4433a; border-left: 2px solid #b4433a; padding-left: 8px;
+  }
+  @media (prefers-color-scheme: dark) {
+    .note.nagnote { color: #e08078; border-left-color: #e08078; }
+  }
+  @media (prefers-color-scheme: dark) { .step .need.nag { color: #e08078; } }
+  .step[aria-current="true"] .need.nag { color: #ffe0dc; }
   .step .need {
     font-size: 10.5px; font-weight: 400; color: var(--muted);
     margin-top: 1px; white-space: nowrap;
@@ -206,8 +251,11 @@
   .ctl input[type="checkbox"] { width: auto; padding: 0; }
   .ctl .span { grid-column: 1 / -1; }
   .ctl .span button { margin-top: 2px; }
+  /* A note is prose about the whole control block, so it takes the full width
+     rather than a grid cell. Without this it lands in whichever column comes
+     next and wraps at about seven characters. */
   .ctl .note { color: var(--muted); font-size: 11.5px; line-height: 1.4;
-               margin: -3px 0 2px; max-width: none; }
+               margin: -3px 0 2px; max-width: none; grid-column: 1 / -1; }
   /* `display` set on a class outranks the browser's own rule for [hidden], so
      a hidden .ctl stays on screen unless this says otherwise. Learned by
      switching detectors and watching both parameter sets sit there at once. */
@@ -580,15 +628,13 @@
         </select>
         <label for="sSeed">seed</label>
         <input id="sSeed" type="number" min="0" max="99999" step="1" value="1">
-        <div class="span"><button id="runSim">Simulate</button>
-          <button id="verifySim" disabled>Compare with the real folder</button></div>
+        <div class="span"><button id="runSim">Simulate</button></div>
         <!-- The same switch the line above the raster offers, kept somewhere it
              can be found after that line is gone. A reader who turned the
              landing demo off six months ago and now wants it back has no other
              way to say so short of clearing site data. -->
         <div class="span"><label class="inline"><input type="checkbox" id="demoPref">
           simulate a folder on load</label></div>
-        <div class="note" id="verifyWhat"></div>
         <!-- The step order reads as a pipeline that accumulates, and this one
              does not: `runSim` calls `open`, which clears RECORDINGS, REGIONS,
              META and TRUTH. The measurement and the tuned setting cross the gap
@@ -615,6 +661,31 @@
         axis and nothing more.
       </div>
     </details>
+
+    <!-- COMPARE IS A STEP, NOT A BUTTON (Tony, 2026-08-22: "compare is a step.
+         that's my philosophy and it should force the user to at minimum click
+         through with grumpy comments").
+
+         It used to be a disabled button inside Simulate, explaining in a note
+         nobody read why it could not run. Every operating point fitted below is
+         fitted on the data this checks, so an unchecked generator is an
+         unchecked result — that earns a place in the rail rather than a place
+         two panels deep.
+
+         What it must NOT become is a verdict. It reports the folder's
+         measurement, the simulation's, and the gap; it refuses to rule on
+         whether the gap is acceptable, because that depends on what the data is
+         for. The assessment refuses to pick K for the same reason. Grumpy is the
+         posture that keeps both: insist the reader looks, then decline to
+         decide for them. -->
+    <details class="acc" id="accVerify">
+      <summary>Compare with the folder<span class="cnt" id="cntVerify">nothing simulated yet</span></summary>
+      <div class="ctl">
+        <div class="span"><button id="verifySim" disabled>Compare</button></div>
+        <div class="note" id="verifyWhat"></div>
+      </div>
+    </details>
+
     <details class="acc" id="accTune">
       <summary>Tune the settings<span class="cnt" id="cntTune">simulated only</span></summary>
       <div class="ctl">
@@ -622,6 +693,7 @@
         <input id="tTol" type="number" min="0.1" max="30" step="0.5" value="1.5">
         <div class="span"><button id="runTune">Sweep</button></div>
         <div class="note" id="tuneWhat"></div>
+        <div class="note nagnote" id="tuneUnchecked" hidden></div>
       </div>
       <div class="fine">
         <b>The step that makes this a loop.</b> The other three ask what is in a
@@ -4389,7 +4461,8 @@ function simulateFromMeasurement(rec, a, source, stream) {
     + "participant floor. Jitter is the observed onset SD, not the excess over "
     + "the null."));
   note.hidden = false;
-  showSection("accSim");
+  markDone("simFrom");
+  showSection("simFrom");
 }
 
 /* ---------- a folder that does not exist -------------------------------------
@@ -4816,13 +4889,30 @@ function paintVerifyButton() {
   if (!b) return;
   const ready = SIMULATED && !!SIM_TARGET && RECORDINGS.length > 0;
   b.disabled = !ready;
+  /* The step's own chip. The rail reads it through the observer, so this is the
+     only place the sentence is written — a status restated on the step could
+     disagree with the panel it describes. */
+  const chip = document.getElementById("cntVerify");
+  if (chip)
+    chip.textContent = VERIFY ? "checked against " + VERIFY.target.recId
+      : ready ? "not checked yet"
+      : SIMULATED ? "nothing aimed yet"
+      : "simulated only";
   if (!n) return;
-  n.textContent = ready
-    ? "against " + SIM_TARGET.recId + " at K = " + SIM_TARGET.K
-    : SIMULATED
-      ? "Set the simulator from a measurement first — there is nothing to "
-        + "compare a data set with until one was aimed at something."
-      : "";
+  n.textContent = VERIFY
+    ? "Checked against " + VERIFY.target.recId + " at K = " + VERIFY.target.K
+      + ". Re-run it after changing the generator: the numbers below are about "
+      + "the data set that existed when they were taken."
+    : ready
+      ? "Measures what came out and reports the gap against "
+        + SIM_TARGET.recId + " at K = " + SIM_TARGET.K + ". It will not tell you "
+        + "whether the gap is acceptable — that depends on what the data set is "
+        + "for, and it is your call, the same as K."
+      : SIMULATED
+        ? "Set the simulator from a measurement first — there is nothing to "
+          + "compare a data set with until one was aimed at something."
+        : "This checks a simulated data set against the recording it was aimed "
+          + "at, so it needs one of each.";
 }
 
 async function verifySimulation() {
@@ -4861,6 +4951,13 @@ async function verifySimulation() {
     VERIFY = { target: SIM_TARGET, got, per, short, n: per.length,
                nSurr, bin };
     paintVerify();
+    // the step stops nagging here, and only here: the ✓ tracks a comparison
+    // that was actually made, not a panel that was visited
+    markDone("accVerify");
+    paintVerifyButton();
+    // …and so does Tune's half of it. Nothing else repaints that note, so
+    // without this the complaint outlived the thing it was complaining about.
+    paintTuneWhat();
   } finally {
     if (btn) { btn.textContent = was; btn.disabled = false; }
   }
@@ -6131,6 +6228,22 @@ function paintTuneWhat() {
     : "Nothing to score against. These recordings were read from a folder, so "
       + "there is no record of which moments were coordinated — simulate a "
       + "folder and the planted events become the answer key.";
+  /* THE GRUMBLE, ITS SECOND HALF. The rail's Compare step says "not checked
+     yet"; this says what that costs, where the cost lands. A setting fitted on a
+     data set nobody compared with the recording it was aimed at is a setting
+     fitted on an unchecked generator, and the sweep will hand it over without
+     mentioning that unless it is written here. It does not disable anything —
+     the check has no verdict, so there is nothing to enforce. */
+  const nag = document.getElementById("tuneUnchecked");
+  if (nag) {
+    const owed = ok && awaitingCompare();
+    nag.hidden = !owed;
+    if (owed)
+      nag.textContent = "This data set was aimed at " + SIM_TARGET.recId
+        + " and never compared with it. Whatever this sweep chooses is fitted on "
+        + "a generator nobody has checked — the Compare step above takes a few "
+        + "seconds.";
+  }
 }
 
 /* Knob values span decades — 99.9999 for a percentile, 1e-7 for an alpha — and
@@ -7085,117 +7198,135 @@ if (document.readyState === "loading")
 else
   wireLab();
 
-/* ---------- the rail: the pipeline, and where you are in it -----------------
+/* ---------- the rail: two tracks, one tail ----------------------------------
 
-   THE SHAPE, and it is a fork rather than a line.
+   THE SHAPE, and it is two tracks rather than one line (Tony, 2026-08-22).
 
-     start        your data          if you like         the answer
-     ┌────────┐
-     │ open   │─┐   ┌───────────┐   ┌──────────┐   ┌────────┐
-     │ folder │ ├──►│ recordings│──►│  assess  │──►│ detect │
-     └────────┘ │   │  windows  │   │   tune   │   └────────┘
-     ┌────────┐ │   └───────────┘   └──────────┘
-     │simulate│─┘
-     └────────┘
+    source — choose one     measurement      simulated data       check
+    ┌──────────────┐      ┌────────┐    ┌────────────────┐   ┌─────────┐
+    │ open a folder│─────▶│ assess │───▶│ simulate from  │──▶│ compare │──┐
+    └──────────────┘      └────────┘    │ the measurement│   └─────────┘  │
+           or                           └────────────────┘                │
+    ┌──────────────┐                                                      │
+    │ simulate a   │──────────────────────────────────────────────────────┤
+    │ data set     │                                                      │
+    └──────────────┘                                    your data · operating point · detections
+                                                        recordings ─▶ tune ─▶ detect
 
-   The two entries are EXCLUSIVE, not sequential: `runSim` calls `open()`, which
-   clears RECORDINGS, REGIONS, META and TRUTH, so simulating throws away the
-   folder you opened. Drawn as a ladder — which is what nine stacked panels
-   are — that read as a pipeline which accumulates, and a reader who opened a
-   folder and then pressed Simulate lost it without being told first.
+   Why two tracks and not one row of steps. The two sources are EXCLUSIVE:
+   `runSim` calls `open()`, which clears RECORDINGS, REGIONS, META and TRUTH, so
+   simulating throws away the folder you opened. And what follows each source
+   differs — measuring a recording and aiming the generator at that measurement
+   are only reachable when there is a real recording to measure, which is the
+   top track and nothing else. Drawn as one line, that read as a sequence
+   everyone walks; drawn as two, the choice is the first thing on the page.
 
-   `groups` is the only thing declared here. Labels come from each panel's own
-   `<summary>`, so renaming a panel renames its chip and the two cannot drift.
+   A step is not a panel. `simulate from it` and `simulate a data set` are the
+   SAME panel reached two ways — calibrated from a measurement, or from
+   defaults — so a step carries `panel` separately from its own `key`, and may
+   override the label it would otherwise inherit.
 
-   `need` is what the stage wants before it can run, said in the chip rather
-   than discovered by clicking. `ready` decides whether it can run NOW. A stage
-   that is not ready is DIMMED AND STILL DRAWN — the old accordion hid Tune
-   until a simulated folder existed, which taught every reader without one that
-   the page could not tune. */
-const RAIL = [
-  // `join` is drawn BETWEEN the chips of a group. Only the entries have one,
-  // and it says the one thing the old stacked panels could not: these two are
-  // alternatives. Everything downstream of here is an "and".
-  { group: "start", join: "or", steps: [
-    { id: "accOpen", need: "your recordings", ready: () => true },
-    { id: "accSim",  need: "no data needed",  ready: () => true },
-  ]},
-  /* These two panels carry `hidden` when there are no recordings, which is right
-     for the PANEL — a recording list with no recordings is nothing to look at —
-     and wrong for the rail. Leaving them off it took the whole "your data" group
-     off the page for the reader who has not opened anything, which is precisely
-     the reader who needs to be told the group is there. `gated` below is for the
-     other kind of absence. */
-  { group: "your data", steps: [
-    { id: "accList",    need: "open something first",
-      ready: () => RECORDINGS.length > 0 },
-    { id: "accWindows", need: "open something first",
-      ready: () => RECORDINGS.length > 0 },
-  ]},
-  { group: "if you like", steps: [
-    { id: "accAssess", need: "open something first",
-      ready: () => RECORDINGS.length > 0 },
-    // Tune scores against planted events, so it is real only on the simulate
-    // side of the fork. Saying that in the chip is the whole point of drawing a
-    // stage you cannot run.
-    { id: "accTune",   need: "simulated only",
-      ready: () => RECORDINGS.some(r => (TRUTH.get(r.id) || {times: []}).times.length) },
-  ]},
-  { group: "the answer", steps: [
-    { id: "accDetect", need: "open something first",
-      ready: () => RECORDINGS.length > 0 },
-    /* `gated`: NOT ON THIS BUILD AT ALL, as opposed to not ready yet. The two
-       look the same to a reader and are opposite facts — "you have not given me
-       data" is an instruction, "this page cannot do that" is not — so they get
-       different treatment. A not-ready stage is drawn dashed with what it wants;
-       a gated one is not drawn, because there is nothing the reader can do.
+   Labels come from each panel's `<summary>` unless overridden, so renaming a
+   panel renames its step and the two cannot drift. Status comes from the
+   panel's `.cnt`, watched below. `need` is what a step wants before it can run,
+   said on the step rather than discovered by clicking; `ready` decides whether
+   it can run now. A step that is not ready is DIMMED AND STILL DRAWN — hiding
+   Tune until a simulated data set existed is how every reader without one
+   learned this page could not tune. `gated` is the other kind of absence:
+   not in this build at all, so there is nothing a reader could do about it. */
 
-       TRAIN IS LAB-ONLY TODAY AND THAT IS TEMPORARY (Tony, 2026-08-22).
-       Publishing it is exactly two edits and neither is here: drop `hidden` from
-       `accLab` in the markup, and drop `gated` from this line. Everything else —
-       the chip, the position in the rail, the "local server" requirement — is
-       already written and already correct for a public Train stage. */
-    { id: "accLab",   need: "local server", gated: true, ready: () => !!lab() },
-    { id: "accScore", need: "open something first", gated: true,
-      ready: () => RECORDINGS.length > 0 },
-  ]},
+const anyPlanted = () =>
+  RECORDINGS.some(r => (TRUTH.get(r.id) || { times: [] }).times.length);
+
+/** Aimed at a real measurement, and not yet checked against it. */
+const awaitingCompare = () => SIMULATED && !!SIM_TARGET && !VERIFY;
+
+const TRACK_TOP = [
+  { key: "accOpen", panel: "accOpen", group: "source",
+    need: "your recordings", ready: () => true },
+  { key: "accAssess", panel: "accAssess", group: "measurement",
+    need: "open something first", ready: () => RECORDINGS.length > 0 },
+  // The calibrated half of the Simulate panel. It is the ONLY route to
+  // `SIM_TARGET`, and `simulateFromMeasurement` refuses on a region that is not
+  // a baseline, so the requirement says baseline rather than just "assess".
+  { key: "simFrom", panel: "accSim", group: "simulated data",
+    label: "Simulate from it",
+    need: "assess a baseline first", ready: () => !!SIM_TARGET,
+    status: () => SIM_TARGET
+      ? "from " + SIM_TARGET.recId + " at K = " + SIM_TARGET.K : "" },
+  { key: "accVerify", panel: "accVerify", group: "check",
+    need: "nothing aimed yet", ready: () => SIMULATED && !!SIM_TARGET },
 ];
-const SECTIONS = RAIL.flatMap(g => g.steps.map(s => s.id));
-const stepOf = id => RAIL.flatMap(g => g.steps).find(s => s.id === id);
 
-/** The chip's own label, read off the panel it opens. */
-function stepLabel(id) {
-  const sum = document.getElementById(id).querySelector("summary");
-  return (sum.firstChild.textContent || id).trim();
+const TRACK_BOTTOM = [
+  { key: "accSim", panel: "accSim", group: "source",
+    label: "Simulate a data set",
+    need: "no data needed", ready: () => true },
+];
+
+/* After the merge. Recordings and the analysis windows sit here rather than on
+   a track because they are about whatever is open, whichever way it arrived. */
+const TAIL = [
+  { key: "accList", panel: "accList", group: "your data",
+    need: "open something first", ready: () => RECORDINGS.length > 0 },
+  { key: "accWindows", panel: "accWindows", group: "your data",
+    need: "open something first", ready: () => RECORDINGS.length > 0 },
+  { key: "accTune", panel: "accTune", group: "operating point",
+    need: "simulated only", ready: anyPlanted },
+  { key: "accDetect", panel: "accDetect", group: "detections",
+    need: "open something first", ready: () => RECORDINGS.length > 0 },
+  /* TRAIN IS LAB-ONLY TODAY AND THAT IS TEMPORARY (Tony, 2026-08-22).
+     Publishing it is two edits and neither is here: drop `hidden` from `accLab`
+     in the markup, and drop `gated` from this line. */
+  { key: "accLab", panel: "accLab", group: "detections",
+    need: "local server", gated: true, ready: () => !!lab() },
+  { key: "accScore", panel: "accScore", group: "detections",
+    need: "open something first", gated: true,
+    ready: () => RECORDINGS.length > 0 },
+];
+
+const ALL_STEPS = [...TRACK_TOP, ...TRACK_BOTTOM, ...TAIL];
+const SECTIONS = [...new Set(ALL_STEPS.map(s => s.panel))];
+const stepByKey = k => ALL_STEPS.find(s => s.key === k);
+
+function stepLabel(s) {
+  if (s.label) return s.label;
+  const sum = document.getElementById(s.panel).querySelector("summary");
+  return (sum.firstChild.textContent || s.panel).trim();
 }
 
 /** The panel's live status line — "no operating point", "3 of 3 conforming".
 
-    THE RAIL CARRIES IT, because the panel no longer can. Eight of the nine
-    panels are out of the column at any moment, and their status chips went with
-    them: a reader used to learn from the sidebar that the folder conformed and
-    that no operating point had been chosen, without opening anything. Read from
-    the `.cnt` node rather than restated, so a chip and its rail entry cannot
-    disagree, and repainted by the observer below when one changes. */
-function stepStatus(id) {
-  const c = document.getElementById(id).querySelector("summary .cnt");
+    THE RAIL CARRIES IT, because the panel no longer can: every panel but one is
+    out of the column at any moment, and their status chips went with them. Read
+    from the `.cnt` node rather than restated, so a chip and its step cannot
+    disagree. */
+function stepStatus(s) {
+  // A step that had to override its label has to own its status too: two steps
+  // on one panel share that panel's `.cnt`, and the calibrated route read "no
+  // data needed" off the panel the uncalibrated one had written.
+  if (s.status) return s.status();
+  const c = document.getElementById(s.panel).querySelector("summary .cnt");
   return c ? c.textContent.trim() : "";
 }
 
 let SECTION = "accSim";
 
-/** Stages that have produced something. Cleared by `open()`, which is the same
-    event that clears the data they were about. */
+/** Steps that have produced something. Cleared by `open()`, with the data. */
 const DONE = new Set();
-function markDone(id) { DONE.add(id); paintRail(); }
+function markDone(key) { DONE.add(key); paintRail(); }
 
 function showSection(id) {
-  const node = document.getElementById(id);
+  // takes a step key or a panel id, because most callers name the panel and two
+  // steps share one
+  const step = stepByKey(id) || ALL_STEPS.find(s => s.panel === id);
+  if (!step) return;
+  const node = document.getElementById(step.panel);
   if (!node || node.hidden) return;
-  SECTION = id;
-  for (const s of SECTIONS) {
-    const n = document.getElementById(s);
-    n.classList.toggle("on", s === id);
+  SECTION = step.key;
+  for (const p of SECTIONS) {
+    const n = document.getElementById(p);
+    n.classList.toggle("on", p === step.panel);
     // kept OPEN whether or not it is the visible one: everything below reaches
     // into these panels by id, and a collapsed `<details>` has no layout, so a
     // control measured while its panel was closed measured zero
@@ -7204,74 +7335,130 @@ function showSection(id) {
   paintRail();
 }
 
-/** Rebuild the rail from RAIL + whatever the page currently holds. */
+function railStep(s) {
+  const b = document.createElement("button");
+  b.className = "step";
+  b.dataset.step = s.key;
+  b.type = "button";
+  const ok = s.ready();
+  const name = document.createElement("span");
+  name.textContent = stepLabel(s);
+  if (DONE.has(s.key)) {
+    const t = document.createElement("span");
+    t.className = "tick";
+    t.textContent = " ✓";
+    name.appendChild(t);
+  }
+  b.appendChild(name);
+  const need = document.createElement("span");
+  need.className = "need";
+  /* THE GRUMBLE. A data set aimed at a real measurement and never checked
+     against it says so on the step, every time the rail paints, until somebody
+     looks. It does not block — Tune stays reachable — because the check has no
+     verdict to enforce. */
+  if (s.key === "accVerify" && ok && !DONE.has(s.key)) {
+    need.textContent = "not checked yet";
+    need.classList.add("nag");
+  } else {
+    need.textContent = ok ? (stepStatus(s) || "ready") : s.need;
+  }
+  b.appendChild(need);
+  if (!ok && s.key !== SECTION) b.disabled = true;
+  if (s.key === SECTION) b.setAttribute("aria-current", "true");
+  b.onclick = () => showSection(s.key);
+  return b;
+}
+
+const railArrow = () => {
+  const a = document.createElement("div");
+  a.className = "railarrow";
+  a.textContent = "→";
+  a.setAttribute("aria-hidden", "true");
+  return a;
+};
+
+/** One labelled cell of the rail: the group name over its step. */
+function railCell(s, col, row) {
+  const box = document.createElement("div");
+  box.className = "railgroup";
+  box.style.gridColumn = String(col);
+  box.style.gridRow = String(row);
+  const lab = document.createElement("div");
+  lab.className = "glabel";
+  // the label belongs to the first step of a run of same-group steps
+  lab.textContent = s.showGroup ? s.group : "";
+  box.appendChild(lab);
+  box.appendChild(railStep(s));
+  return box;
+}
+
+/** Rebuild the rail from the two tracks, the tail, and what the page holds. */
 function paintRail() {
   const rail = document.getElementById("rail");
   rail.textContent = "";
-  let first = true;
-  for (const g of RAIL) {
-    // `gated` stages drop out where the build does not carry them; everything
-    // else stays on the rail whether or not it can run yet
-    const live = g.steps.filter(s =>
-      !s.gated || !document.getElementById(s.id).hidden);
-    if (!live.length) continue;              // a group with nothing in it says nothing
-    if (!first) {
-      const a = document.createElement("div");
-      a.className = "railarrow";
-      a.textContent = "→";
-      a.setAttribute("aria-hidden", "true");
-      rail.appendChild(a);
-    }
-    first = false;
-    const box = document.createElement("div");
-    box.className = "railgroup";
-    const lab = document.createElement("div");
-    lab.className = "glabel";
-    lab.textContent = g.group;
-    box.appendChild(lab);
-    const row = document.createElement("div");
-    row.className = "railrow";
-    let firstInRow = true;
-    for (const s of live) {
-      if (g.join && !firstInRow) {
-        const j = document.createElement("span");
-        j.className = "railjoin";
-        j.textContent = g.join;
-        row.appendChild(j);
-      }
-      firstInRow = false;
-      const b = document.createElement("button");
-      b.className = "step";
-      b.dataset.step = s.id;
-      b.type = "button";
-      const ok = s.ready();
-      const name = document.createElement("span");
-      name.textContent = stepLabel(s.id);
-      // A DONE MARK, not a progress bar: it says a stage produced something,
-      // which on a page where two of the stages are optional is the only
-      // honest kind of progress there is.
-      if (DONE.has(s.id)) {
-        const t = document.createElement("span");
-        t.className = "tick";
-        t.textContent = " ✓";
-        name.appendChild(t);
-      }
-      b.appendChild(name);
-      const need = document.createElement("span");
-      need.className = "need";
-      // Ready: say what the stage currently holds. Not ready: say what it wants.
-      // The requirement is the more useful of the two exactly when it cannot run,
-      // and the status is the more useful one the rest of the time.
-      need.textContent = ok ? (stepStatus(s.id) || "ready") : s.need;
-      b.appendChild(need);
-      if (!ok && s.id !== SECTION) b.disabled = true;
-      if (s.id === SECTION) b.setAttribute("aria-current", "true");
-      b.onclick = () => showSection(s.id);
-      row.appendChild(b);
-    }
-    box.appendChild(row);
-    rail.appendChild(box);
+
+  const live = xs => xs.filter(s =>
+    !s.gated || !document.getElementById(s.panel).hidden);
+  const top = live(TRACK_TOP), bottom = live(TRACK_BOTTOM), tail = live(TAIL);
+
+  // group labels print once per run, on the first step that carries the group
+  let seen = null;
+  for (const s of [...top, ...bottom, ...tail]) {
+    s.showGroup = s.group !== seen;
+    seen = s.group;
   }
+  // the bottom track restarts the top track's first group, so it never repeats
+  // the label above it
+  if (bottom.length) bottom[0].showGroup = false;
+  if (tail.length) { tail[0].showGroup = true; seen = tail[0].group; }
+  for (const s of tail.slice(1)) { s.showGroup = s.group !== seen; seen = s.group; }
+
+  /* One grid, four rows: labels ride inside each cell, the top track on row 1,
+     the "or" on row 2, the bottom track on row 3. The merge and the tail span
+     all three so they sit centred between the tracks. */
+  const cols = Math.max(top.length * 2 - 1, 1);
+  top.forEach((s, i) => {
+    if (i) { const a = railArrow(); a.style.gridColumn = String(i * 2);
+             a.style.gridRow = "1"; rail.appendChild(a); }
+    rail.appendChild(railCell(s, i * 2 + 1, 1));
+  });
+
+  const or = document.createElement("div");
+  or.className = "railjoin";
+  or.style.gridColumn = "1";
+  or.style.gridRow = "2";
+  or.textContent = "or";
+  rail.appendChild(or);
+
+  bottom.forEach(s => rail.appendChild(railCell(s, 1, 3)));
+
+  // the bypass: the bottom track reaches the merge without any of the top's steps
+  if (cols > 1) {
+    const run = document.createElement("div");
+    run.className = "railbypass";
+    run.style.gridColumn = "2 / " + (cols + 1);
+    run.style.gridRow = "3";
+    run.setAttribute("aria-hidden", "true");
+    rail.appendChild(run);
+  }
+
+  const merge = document.createElement("div");
+  merge.className = "railmerge";
+  merge.style.gridColumn = String(cols + 1);
+  merge.style.gridRow = "1 / 4";
+  merge.setAttribute("aria-hidden", "true");
+  rail.appendChild(merge);
+
+  tail.forEach((s, i) => {
+    const col = cols + 2 + i * 2;
+    if (i) { const a = railArrow(); a.className = "railarrow mid";
+             a.style.gridColumn = String(col - 1);
+             a.style.gridRow = "1 / 4"; rail.appendChild(a); }
+    const cell = railCell(s, col, "1 / 4");
+    cell.style.gridRow = "1 / 4";
+    cell.style.alignSelf = "center";
+    rail.appendChild(cell);
+  });
 }
 
 /* The status lines are written by a dozen `paint…Chip()` calls scattered across
