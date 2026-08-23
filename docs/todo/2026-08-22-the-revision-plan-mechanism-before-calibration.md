@@ -252,8 +252,21 @@ mean.
    `bench.BENCH_RECORDING` still runs flat, so the bench and `derive_spec` still
    disagree about what a recording looks like. The bench's field should come from
    the same measurement everything else now uses.
-2. **What overlap should count as a hit?** (case item D). Currently 1.5 s against a
-   median realized event 0.80 s wide.
+2. ~~**What overlap should count as a hit?**~~ **Dissolved 2026-08-22 — the bench
+   reports the curve instead of picking a constant.** DOSED's practice, and it
+   costs nothing here. `bench.evaluate_curve` scores across `TOLERANCE_GRID`;
+   `describe_curve` refuses to hand over a bare F1 for a detector whose score
+   still depends on the slack. Five of six are flat well below the inherited
+   1.5 s; **binned SCE is still climbing at 3 s**, because 10 s bins make its
+   detections coarse and only a loose tolerance credits them.
+
+   ⚠ Correcting a claim of mine that is still in a shipped figure:
+   `docs/learned/two_decisions.png` panel C says the ranking is unchanged from
+   0.4 s to 2.0 s. True of the archived sweep, **not** true at the shipped
+   operating points, where `sce` and `sync` swap between 0.4 s and 0.5 s. The
+   robust version — the top of the table never moves and every reordering
+   involves the tolerance-dependent detector — is pinned by a test and recorded
+   in [`forks.md`](../forks.md) §5.
 3. **New: is the revision allowed to change mechanism, or only settings?** If only
    settings, items 7–9 become documented limitations and the campaign is smaller —
    but it will need repeating. My recommendation is mechanism-inclusive, with the
