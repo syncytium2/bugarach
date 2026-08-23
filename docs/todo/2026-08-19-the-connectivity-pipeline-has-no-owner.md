@@ -8,7 +8,7 @@ revised: 2026-08-20
 >
 > This file was written to force a decision. It was made and executed: `bugarach.graph` and
 > `tools/modularity_null.py` compute modularity here now, validated to **2.2e-16** against
-> the reference on identical inputs and agreeing on **98.7%** of corpus verdicts under a
+> the reference on identical inputs and agreeing on **98.7%** of folder verdicts under a
 > different window rule. **bugarach no longer depends on the unmaintained pipeline for
 > anything**, and the modularity numbers in the assembly report are its own.
 >

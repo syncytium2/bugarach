@@ -45,7 +45,7 @@ special-casing**.
 **It moves no number this project has already measured.** interface2's corrected export
 (`2026-08-17_revised_2v_v2`) supplies `analysis_start_sec`/`analysis_end_sec` on **all
 240 regions** of all 84 recordings, so the no-windows default never fires for our own
-corpus. The default only ever applies to a producer who had no policy of ours to inherit
+folder. The default only ever applies to a producer who had no policy of ours to inherit
 — which is exactly the population it is wrong for today.
 
 That sentence belongs in the spec, because "we changed the windowing default" otherwise
@@ -140,7 +140,7 @@ rather than implied.
 
 Producer-side inclusion is right and is what the contract already asks for. But **the
 folder has no way to say a recording was withdrawn**, so it cannot distinguish "this
-corpus is complete" from "someone dropped twelve". Leaning more weight on producer-side
+folder is complete" from "someone dropped twelve". Leaning more weight on producer-side
 inclusion makes that gap more load-bearing, not less. interface2 raised it independently.
 An optional `excluded` column, or a count the folder can state, would close it — see
 [`2026-08-18-experimental-groups-are-not-in-the-import-contract.md`](2026-08-18-experimental-groups-are-not-in-the-import-contract.md).

@@ -32,13 +32,13 @@ and 2.45 s to detect for a fifth of the F1 — do not put it in a default path.
 ## Where a human is required, and it is not the modelling
 
 **Stage 2 needs a person to choose K**, the cluster size the assessment runs at. K=3
-was chosen for the published corpus; **K=4 cuts the cluster rate to roughly a quarter**
+was chosen for the published data set; **K=4 cuts the cluster rate to roughly a quarter**
 (0.095 against 0.350 per minute) and builds
 a materially different benchmark. `derive_spec.py` refuses to choose and ships the whole
 scan beside the choice, deliberately.
 
 For the app this is the one screen that cannot be a spinner. It needs to show the scan
-and take a decision, and the decision needs to be recorded with the corpus it produced
+and take a decision, and the decision needs to be recorded with the data set it produced
 — otherwise two labs get different benchmarks and nothing says why. There is an open
 item on exactly this: `docs/todo/2026-08-16-assessment-needs-a-human-in-the-loop.md`.
 
@@ -96,24 +96,24 @@ item on exactly this: `docs/todo/2026-08-16-assessment-needs-a-human-in-the-loop
    as a pass/fail badge. `docs/todo/2026-08-16-promiscuity-probe-cannot-fail.md`.
 9. **Every learned number is one training run per fold.** No seed error bars exist. If
    the app shows a model's score, it must not imply a precision it does not have.
-10. **The corpus is simulated.** Nothing measured here says any detector is right about
+10. **The data set is simulated.** Nothing measured here says any detector is right about
     a real slice, and app copy must not blur that.
 
 ## What is honestly not ready
 
-- **The per-cell architecture does not train** on this corpus and its threshold lands
+- **The per-cell architecture does not train** on this data set and its threshold lands
   on the edge of the searched grid. Its number is not an operating point. Why it fails
   is unresolved — it also trains at a tenth the learning rate of the model that works,
   so the architecture comparison is uncontrolled.
-- **The four-scale kernel bank is redundant on this corpus — measured.** One kernel
+- **The four-scale kernel bank is redundant on this data set — measured.** One kernel
   scores 0.670 ± 0.043 against four at 0.668 ± 0.061 on the same folds, for 81 fewer
-  parameters, and transfers no better or worse. Ship one scale unless a corpus with
-  varying event widths says otherwise; that corpus does not exist yet.
+  parameters, and transfers no better or worse. Ship one scale unless a data set with
+  varying event widths says otherwise; that data set does not exist yet.
 - **The surround clamp is a bookkeeping wart, not a cause — measured.** Raising it from
   40 to 200 changes fold scores and the transfer penalty not at all; the ratio only
   presses the ceiling when training on the busy background, which is the direction that
   already works. Do not spend time on it.
-- **No literature method has been run on this corpus**, so "competes with
+- **No literature method has been run on these recordings**, so "competes with
   state-of-the-art" is not a supported claim and must not appear in app copy. See
   `docs/todo/2026-08-17-literature-deep-dive-handoff.md`.
 
@@ -157,7 +157,7 @@ None of these change `train()`'s signature, the registry, or the scoring path.
 ## Suggested first slice of work
 
 Do not start with the whole loop. Start with **stage 3 on a spec that already exists**:
-load `docs/learned/generator_spec.json`, generate a corpus, train `tube`, and show its
+load `docs/learned/generator_spec.json`, generate a data set, train `tube`, and show its
 detections on the viewer's existing lanes beside two of the six. That exercises
 training, thresholding, scoring and display in one screen, on a path where every number
 already has a published value to check against — so if the app disagrees with

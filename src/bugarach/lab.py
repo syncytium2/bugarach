@@ -130,7 +130,7 @@ SHIM = """
       return r.json();
     },
 
-    /* Fit on a corpus GENERATED FROM `spec` -- the measured statistics of the
+    /* Fit on a data set GENERATED FROM `spec` -- the measured statistics of the
      * user's own untreated recordings, which the page derived upstairs. The
      * user's recordings are not the training set: simulating a treatment would
      * spend the effect the experiment exists to measure. Returns held-out
@@ -312,7 +312,7 @@ def _train_tube(trainer: TubeTrainer, req: dict, emit) -> Model:
     """Fold split, fit, score on the held-out fold — `fair_bakeoff.py`'s shape.
 
     Deliberately the same procedure, because ``bakeoff.json`` is what this is
-    checked against: one corpus, one selection procedure, one scoring rule, and
+    checked against: one simulated data set, one selection procedure, one scoring rule, and
     every number reported across folds with its spread. Divergence here would
     make agreement with that file impossible to interpret.
     """
@@ -330,14 +330,14 @@ def _train_tube(trainer: TubeTrainer, req: dict, emit) -> Model:
     if not isinstance(spec, dict) or not spec:
         raise BadRequest(
             "train needs a 'spec' — the generator settings measured from the "
-            "user's own untreated recordings. The training corpus is simulated "
+            "user's own untreated recordings. The training data is simulated "
             "from those, never from the recordings being analysed.")
     arch = str(req.get("arch", "tube"))
     folds = int(req.get("folds", 4))
     per_fold_seeds = int(req.get("seeds_per_fold", 2))
     steps = int(req.get("steps", 900))
     # The split comes from `bench`, the same call `tools/fair_bakeoff.py` makes,
-    # so the corpus this server divides and the corpus the published comparison
+    # so the simulated data this server divides and the data the published comparison
     # divided cannot come apart. Deriving it here instead would be a second
     # dialect of the one thing that has to be identical for a held-out number to
     # mean anything — and it would agree right up until somebody changed one.
@@ -359,10 +359,10 @@ def _train_tube(trainer: TubeTrainer, req: dict, emit) -> Model:
             cache[seed] = simulate_coordination(seed=seed, **spec)
         return cache[seed]
 
-    emit(stage="corpus", message=f"generating {len(seeds)} recordings", of=len(seeds))
+    emit(stage="simulating", message=f"generating {len(seeds)} recordings", of=len(seeds))
     for i, s in enumerate(seeds):
         rec(s)
-        emit(stage="corpus", fold=None, done=i + 1, of=len(seeds),
+        emit(stage="simulating", fold=None, done=i + 1, of=len(seeds),
              message=f"recording {i + 1}/{len(seeds)}")
 
     per_fold, last = [], None

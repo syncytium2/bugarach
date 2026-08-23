@@ -148,7 +148,7 @@ def cicada_detect(
 
     names = list(s.streams)
     # FAST retuned 99.99 -> 99.999 on 2026-08-20, when the bench's difficulty axis was
-    # re-derived from the export folder — the corpus the lab approved — instead of the
+    # re-derived from the export folder — the recordings the lab approved — instead of the
     # .mat store it had been fitted against. At the corrected quiet endpoint (p25 of
     # slice-mean per-ROI rate: 0.0052 Hz, against the store's 0.0038) this detector fired
     # 7.3 spurious events per hour on a recording with NOTHING planted, against a

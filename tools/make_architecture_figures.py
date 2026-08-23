@@ -16,7 +16,7 @@ So every panel here is **measured off a trained model or computed from the layer
 stack**, never asserted:
 
 * **A — the kernels the model actually fitted.** Centre, surround and their
-  difference, at each of the four scales, in samples. Trained on the corpus, then
+  difference, at each of the four scales, in samples. Trained on the simulated data, then
   read out of `log_center` / `log_ratio` / `gain`. The initialisation is drawn
   underneath so a reader can see how far training moved each one.
 * **B — the cancellation, demonstrated.** Feed a step change in background through

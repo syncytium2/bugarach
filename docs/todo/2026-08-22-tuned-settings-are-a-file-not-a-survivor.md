@@ -37,7 +37,7 @@ One row per **detector and stream**, which is what
 `run.json` writes `thresholds` keyed by detector alone — that is the gap.
 
 Beyond the values: which data set it was fitted on, at what tolerance, and the
-provenance the page already tracks (`from`, `f1`, `nFolds`, `corpusN`, `tolSec`).
+provenance the page already tracks (`from`, `f1`, `nFolds`, `dataSetN`, `tolSec`).
 The chip that currently says "chosen by the sweep" is asserting exactly this, from
 memory, for as long as the tab is open.
 

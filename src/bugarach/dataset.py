@@ -111,7 +111,7 @@ def kind(path) -> Kind:
 def describe(path) -> str:
     """One line naming what was resolved, for a tool to print before it works.
 
-    Tools print this so a run that read the wrong corpus is visible in its own log
+    Tools print this so a run that read the wrong data is visible in its own log
     rather than inferred afterwards from the numbers.
     """
     k = kind(path)

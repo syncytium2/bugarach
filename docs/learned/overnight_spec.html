@@ -168,6 +168,17 @@
   .doc blockquote.gate h2 { border-top: 0; padding-top: 1.2rem;
                             color: var(--bad-fg); }
   .doc blockquote.gate strong { color: var(--bad-fg); }
+  /* a hoisted caveat reads at body weight, not aside-gray */
+  .doc blockquote.warn { border-left: 4px solid var(--learned);
+                         color: var(--ink); padding: .2rem 1.3rem;
+                         background: color-mix(in srgb, var(--learned) 7%,
+                                               transparent);
+                         border-radius: 3px; }
+  /* A figure wider than the 74ch column silently overflows it and the page
+     ships with its evidence cropped. Caught on a document whose lead figure
+     ran off the right edge. */
+  .doc img { max-width: 100%; height: auto; display: block;
+             margin: 1.6rem auto; }
   .doc code { background: color-mix(in srgb, var(--ink) 7%, transparent);
               padding: .08em .32em; border-radius: 2px; }
   .doc li { margin-bottom: .5rem; }
@@ -197,7 +208,7 @@ answers a different question: <em>which work can proceed with nobody watching, a
 order.</em></p>
 <h2>The constraint that shapes everything</h2>
 <p><strong>Overnight means no human, and the pipeline has a decision in the middle of it.</strong>
-Choosing K — the cluster size the assessment runs at — moves the corpus materially
+Choosing K — the cluster size the assessment runs at — moves the data set materially
 (K=3 was chosen; K=4 drops the cluster rate to roughly a quarter of it) and <code>derive_spec.py</code> refuses to choose,
 deliberately. So any track that runs through that point either stops at it or fabricates
 the judgement.</p>
@@ -222,7 +233,7 @@ the judgement.</p>
 <td>correctness is checkable by the suite, not by taste</td>
 </tr>
 <tr>
-<td><strong>choosing K, approving a corpus</strong></td>
+<td><strong>choosing K, approving a data set</strong></td>
 <td>❌ no</td>
 <td>a judgement, and the whole apparatus exists to keep it visible</td>
 </tr>
@@ -290,14 +301,14 @@ which is precisely what an unattended night is.</p>
 </ul>
 <h3>B2 · The event-rate ceiling — the falsifiable prediction</h3>
 <p>The fitted surround runs 21–59× the centre, i.e. <strong>97–181 samples, 9.7–18.1 s
-wide</strong> at this corpus's frame interval, and that surround <em>is</em> the model's background estimate. If coordinated events
+wide</strong> at this data set's frame interval, and that surround <em>is</em> the model's background estimate. If coordinated events
 arrive faster than the surround is wide, the surround averages neighbouring events into
 "background" and the model subtracts signal from itself.</p>
 <ul>
 <li><strong>Predicts:</strong> performance degrades as inter-event interval approaches surround width,
   and the degradation is specific to centre−surround — the six should not show the same
   knee at the same place.</li>
-<li><strong>Run:</strong> raise the <strong>event count</strong>, not the separation floor. The corpus plants
+<li><strong>Run:</strong> raise the <strong>event count</strong>, not the separation floor. The generator plants
   <code>n_per_level = (5, 5, 5)</code> — 15 events in 3,525 s, a mean interval of <strong>235 s</strong> — and
   <code>min_sep_sec</code> is 171. Lowering <code>min_sep_sec</code> alone <em>permits</em> closer pairs without
   producing them: the mean interval is set by count over duration and would not move,
@@ -334,12 +345,12 @@ followed.</p>
 <li><strong>Cheap dependency:</strong> raise <code>max_center_frames</code> in a second arm so the clamp is not
   confounded with the capability.</li>
 </ul>
-<h3>B4 · The corpus that could vindicate the multi-scale bank</h3>
-<p>The bank collapsed to one scale and one scale scored identically — <strong>on a corpus that
+<h3>B4 · The data set that could vindicate the multi-scale bank</h3>
+<p>The bank collapsed to one scale and one scale scored identically — <strong>on a data set that
 plants a single event width</strong>. That is a property of the generator, not a verdict on the
 design.</p>
 <ul>
-<li><strong>Run:</strong> a corpus with <strong>two or three distinct event widths present simultaneously</strong>
+<li><strong>Run:</strong> a data set with <strong>two or three distinct event widths present simultaneously</strong>
   (e.g. 0.3 s and 3 s events interleaved), then the same 1-vs-2-vs-4-scale ablation.</li>
 <li><strong>What would change a conclusion:</strong> scales that separate and a four-scale model that
   beats one-scale would restore the multi-scale design. Scales that still collapse would
@@ -360,11 +371,11 @@ asymmetry that the clamp hypothesis failed to explain.</p>
 <li><strong>One line of code</strong>, and it either explains section 5 or eliminates the last cheap
   explanation.</li>
 </ul>
-<h2>Track C — a second corpus from DANDI</h2>
+<h2>Track C — a second set of recordings from DANDI</h2>
 <p><strong>Worth doing, and worth being precise about what it buys.</strong> A DANDI dataset carries no
 coordination ground truth, so it <strong>cannot score a detector</strong>. What it can do is supply a
 <em>second set of statistics</em> to fit a generator to, which answers a question nothing here
-has touched: do these conclusions survive a corpus that is not ours?</p>
+has touched: do these conclusions survive recordings that are not ours?</p>
 <p>Ordered, with the human checkpoints marked:</p>
 <ol>
 <li>❌ <strong>A human picks the dandiset.</strong> Preparation, indicator, frame rate and species all
@@ -380,10 +391,10 @@ has touched: do these conclusions survive a corpus that is not ours?</p>
 <li>✅ <strong>Run the assessor</strong> (<code>tools/assess_archive.py</code>) and compare the resulting
    participation, jitter, cluster rate and background against
    <code>docs/learned/assessment_real.json</code>. <strong>The comparison is the deliverable</strong>, not the
-   corpus — if the statistics land close to ours, our conclusions travel further than one
+   recordings — if the statistics land close to ours, our conclusions travel further than one
    lab; if they are far apart, we have found the axis along which they do not.</li>
 <li>❌ <strong>Choosing K for the new set</strong> is a human decision, same as before.</li>
-<li>✅ Only then generate a corpus and re-run the bake-off on it.</li>
+<li>✅ Only then generate a data set and re-run the bake-off on it.</li>
 </ol>
 <p><strong>If the DANDI set has wider or more variable events than ours, it supersedes B4</strong> — a
 real distribution of widths beats a synthetic one, and it would make the multi-scale
@@ -482,7 +493,7 @@ opens it.</p>
 <li><strong>B2</strong> (rate ceiling) — the one falsifiable prediction on the table.</li>
 <li><strong>B5</strong> (brightness channel) — one line, closes the last cheap explanation.</li>
 <li><strong>B3</strong> (width ceiling) — bounds the claim rather than testing it.</li>
-<li><strong>C1–C4</strong> — the second corpus, up to the human checkpoint.</li>
+<li><strong>C1–C4</strong> — the second set of recordings, up to the human checkpoint.</li>
 <li><strong>B4</strong> last, or never, if DANDI supersedes it.</li>
 </ol>
 </div></div>

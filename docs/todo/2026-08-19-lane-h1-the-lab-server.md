@@ -36,14 +36,14 @@ single-holder resource.
 - `window.__lab.train({spec, arch, folds, seeds_per_fold, steps}, onProgress)` →
   `{model, arch, threshold, dt, n_params, per_fold, f1, recall, precision, train_sec,
   detect_sec}`, the spreads shaped like `fair_bakeoff.py`'s. `spec` is the **generator
-  settings measured from the user's own untreated recordings** — the corpus is simulated
+  settings measured from the user's own untreated recordings** — the data set is simulated
   from those, and the recordings being analysed are never the training set. Absent, the
   server refuses rather than defaulting.
 - `window.__lab.detect({model, recordings: [{slice_id, rois}]}, onProgress)` →
   `{model, arch, detections: [{slice_id, onset_sec, width_sec, threshold, dt}]}`.
   `slice_id` comes from the data and is never a filename.
 - `onProgress` receives `{stage, fold, of, done, message}` as the fit runs —
-  `corpus` → `fit` → `scored`. The transport is chunked NDJSON, so this arrives during
+  `simulating` → `fit` → `scored`. The transport is chunked NDJSON, so this arrives during
   a multi-minute fit rather than after it.
 - **`threshold` is refused, not ignored.** So are `retune`, `calibrate` and `min_rois`.
   The panel must not offer that control; the server will throw with the reason if it does.
@@ -113,6 +113,6 @@ now; it is the long pole.
 
 ## Done means
 
-Point it at a generated corpus and the numbers it returns agree with
+Point it at a generated data set and the numbers it returns agree with
 `docs/learned/bakeoff.json` — same detections, same counts. That check is available from
 the first endpoint onward, which is why it comes before any screen.

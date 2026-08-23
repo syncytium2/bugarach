@@ -21,7 +21,7 @@ here:
   * no viability column, ever.
 
 The sidecar exists for the last of those and for the six-months-later reader:
-generator spec, chosen K, each detector's setting, the corpus seeds, the code
+generator spec, chosen K, each detector's setting, the seeds, the code
 version, and the frame interval per slice.
 
 **What is NOT claimed here.** `docs/webapp_completion_plan.md` proposes agreeing
@@ -215,7 +215,7 @@ def test_the_sidecar_says_null_rather_than_omitting_what_this_run_lacked(exporte
     same as never having been asked — `emit.write_run` makes that distinction and
     the browser must not lose it."""
     run = exported["run"]
-    for k in ("generator_spec", "chosen_k", "corpus_seeds"):
+    for k in ("generator_spec", "chosen_k", "simulated_data_seeds"):
         assert k in run, f"{k} is missing from run.json rather than null"
         assert run[k] is None, f"{k} was invented for a folder read off disk"
 

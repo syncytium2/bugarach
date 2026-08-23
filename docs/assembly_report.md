@@ -62,19 +62,19 @@ A negative is only a result if a positive was reachable. Three things follow fro
 one, and each costs real work if the answer is wrong:
 
 - **Our event generator is right as it stands.** It draws every planted event's
-  participants uniformly at random (`simulate.py`, `rng.choice`), so the benchmark corpus
+  participants uniformly at random (`simulate.py`, `rng.choice`), so the benchmark data set
   contains coordinated *events* and no cell *assemblies*. If membership recurred in the
   tissue, the generator would be missing a feature of the preparation, and every detector
-  score earned on it would have been earned on a corpus easier than reality.
+  score earned on it would have been earned on a data set easier than reality.
 - **The assembly-detection literature is not the right comparison for this preparation.**
   Not because those methods would score zero — they would not, see below — but because our
-  corpus cannot reward the thing they exist to do.
+  data set cannot reward the thing they exist to do.
 - **A family of downstream comparisons is closed rather than merely unattempted**, which is
   a different and more defensible position to write up.
 
 ## The problem is that you cannot settle it by looking
 
-![A · one real recording's membership table beside a generated recording at the same geometry, whose participants are drawn uniformly at random by construction. B · power under the decision rule the corpus is actually scored by, evaluated at each real recording's own geometry, one curve per planted group size; the dotted line marks the 5% size of the test, where every curve begins when nothing is planted. C · the verdict before and after optical crosstalk is removed, paired on the fast and slow recordings testable in both stores; the grey bar counts recordings that fell below the testable floor, which is lost power and not a negative.](assembly_closed)
+![A · one real recording's membership table beside a generated recording at the same geometry, whose participants are drawn uniformly at random by construction. B · power under the decision rule the folder is actually scored by, evaluated at each real recording's own geometry, one curve per planted group size; the dotted line marks the 5% size of the test, where every curve begins when nothing is planted. C · the verdict before and after optical crosstalk is removed, paired on the fast and slow recordings testable in both stores; the grey bar counts recordings that fell below the testable floor, which is lost power and not a negative.](assembly_closed)
 
 Panel A is the data before any statistic touches it: one row per coordinated event, one
 column per cell, a mark where that cell took part, cells ordered by how often they
@@ -137,7 +137,7 @@ Fisher. No recording was ever scored that way. Recordings are scored by
 each null and then reads both nulls together — a strictly more conservative rule, α/2 twice
 over, and one decision per recording.
 
-It was also computed at a **median slice**. The corpus is not median: across the 49 testable
+It was also computed at a **median slice**. The folder is not median: across the 49 testable
 fast recordings the cell count runs 14 to 55 and the coordinated-event count runs **4 to
 235**. A recording near the bottom of that range may be individually unpowered, and pooling
 it with the rest would let "we could not look" pass as "we looked and found nothing".
@@ -160,7 +160,7 @@ such discount.
 
 **The test has real power at strengths worth excluding.** Recruitment is the fraction of a
 recording's coordinated events drawn from the planted group; each figure is the fraction of
-this corpus's *actual* recordings in which the test fires.
+this folder's *actual* recordings in which the test fires.
 
 | planted group | 1 in 20 · fast | 1 in 10 · fast | 1 in 4 · fast | 1 in 4 · slow |
 |---|---|---|---|---|
@@ -181,7 +181,7 @@ uniform null and reported as `uniform-only`. The degeneracy shows up in *which w
 verdict returns, not in whether it returns one. This is the concrete payoff of running two
 nulls, and it is why the earlier single-null curve understated the instrument.
 
-Read against the observed 46 of 48, the corpus is not close to the boundary of what it can
+Read against the observed 46 of 48, the folder is not close to the boundary of what it can
 see.
 
 ## The alternative the nulls cannot remove, and what happened when it was removed
@@ -227,7 +227,7 @@ Penumbra subtraction retains 65% of fast events and 58% of slow, but it removes 
 Testability was lost on 21 of 47 fast recordings and 13 of 38 slow. Those are reported as
 undefined, never as negative.
 
-## What the corpus says, in full
+## What the recordings say, in full
 
 Of the 84 recordings the export folder contains, **48 are testable** in the fast stream at
 K = 3 and 38 in the slow; the rest have fewer than four coordinated clusters, too few for any
@@ -263,7 +263,7 @@ thousand pairs the worst disagreement is **2.2 × 10⁻¹⁶**, the NaN pattern 
 Louvain lands on the same partitions (Q agreeing to 10⁻¹⁶). `tests/fixtures/ref_sttc_matlab.json`
 carries those vectors so CI re-checks it without a store or MATLAB.
 
-*Across the corpus it agrees on the verdict while disagreeing on the window.* This repo
+*Across the folder it agrees on the verdict while disagreeing on the window.* This repo
 scores the producer's analysis window where there is one and the baseline region otherwise;
 interface2 caps at 1200 s after a 120 s solution delay. On the recordings where the two
 differ, bugarach's window runs **1740–1800 s** against interface2's 1200 s, so more cells
@@ -281,7 +281,7 @@ analysis to filter. It is *also* provably moot: the R team's rejection rule is
 `rejected = base_empty AND drug_empty AND hik_empty`, so a rejected cell is **by definition**
 silent in baseline, and this measurement already drops any cell with no events in the window.
 Checked rather than assumed, while a roster was briefly being applied here: **all 66 rejected
-ROIs had zero baseline events**, and running the corpus with and without it reproduced every
+ROIs had zero baseline events**, and running the folder with and without it reproduced every
 count. So FOUNDATIONS §9's point — that the *rule* is not computable inside this repo, needing
 drug and high-K rows — costs this measurement nothing either way.
 
@@ -335,13 +335,13 @@ The ORX result in particular must not be read as absence: a compact assembly pre
 *every* ORX animal at one event in ten predicts 1.7 of 6 animals flagged, and one was
 observed. The number could not have moved.
 
-**"PCA/ICA would score nothing on our corpus" is also withdrawn**, as simply false. Cell
+**"PCA/ICA would score nothing on our recordings" is also withdrawn**, as simply false. Cell
 assemblies in that literature are defined as subsets of neurons with significant
 co-activation (Lopes-dos-Santos et al. 2013), with membership read off the recovered patterns
 afterwards — recurrence is an interpretation step, not part of the definition. Run at our
 geometry, PCA against a Marchenko–Pastur bound flags essentially every simulated recording,
 because the coordinated events themselves violate its independent-neurons null. The real
-reason not to port one is narrower, and it holds: our corpus cannot reward **membership
+reason not to port one is narrower, and it holds: our recordings cannot reward **membership
 recovery**, because there is no stable membership to recover.
 
 ## What would still have to be true for this to be wrong
@@ -392,7 +392,7 @@ disagreement with what we measure that is not resolved. ⚠
 2. **Do not plant assemblies in the generator.** An earlier version of this report
    recommended it; on this evidence the generator's uniform draw is a correct model of the
    preparation, and planting groups would make the benchmark *less* faithful.
-3. **Do not port an assembly detector to score it on our corpus.** It would lose on
+3. **Do not port an assembly detector to score it on our recordings.** It would lose on
    membership recovery, and it would lose because the tissue has no membership to recover —
    a fact about the preparation, not a result about the method.
 4. **If the core–periphery reading is to be used for anything**, fit it and test it against
@@ -412,7 +412,7 @@ the repo.
     python tools/modularity_null.py --folder <export folder> --stream fast \
         --out <dir>
 
-    # power under the rule the corpus is actually scored by
+    # power under the rule the folder is actually scored by
     python tools/assembly_power.py \
         --geometry-from <dir>/assessment_real.json --stream fast \
         --verdict-only --out <figdir>

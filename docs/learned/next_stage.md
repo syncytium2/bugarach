@@ -67,9 +67,9 @@ fine-tuned-alone at the same budget. Without the control this produces a number
 nobody can interpret, and the paper it is borrowed from reported exactly that
 comparison.
 
-## 4 · Run one published method on our corpus
+## 4 · Run one published method on our recordings
 
-[`2026-08-17-run-a-literature-method-on-our-corpus.md`](../todo/2026-08-17-run-a-literature-method-on-our-corpus.md)
+[`2026-08-17-run-a-literature-method-on-our-recordings.md`](../todo/2026-08-17-run-a-literature-method-on-our-recordings.md)
 
 Do the **coactivity frame gate** from Mölter's SGC/CORE/SVD, via
 [`docs/clean_room/`](../clean_room/WORKFLOW.md). It is about five sentences of
@@ -102,7 +102,7 @@ Item 4 is the whole answer, and it is a week rather than a project.
 
 **One genuine broadening worth considering later:** the per-lab loop is
 substrate-agnostic in a way the architecture is not. Assess a lab's recordings,
-simulate a corpus with planted truth, fit and score — that procedure would work on
+simulate a data set with planted truth, fit and score — that procedure would work on
 MEA network bursts with nothing changed but the generator, and MEA is the field where
 detector parameters are most notoriously arbitrary (autoMEA exists because of it).
 That is a second product, not a second detector, and it should not start until item 4

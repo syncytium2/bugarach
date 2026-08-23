@@ -8,7 +8,7 @@ Figure id `assembly_answer`, the same on every machine.
 
 Takes the two `assess_archive.py --assemblies` runs (one per stream) and draws the
 answer the way it has to be read: **by group first**. FOUNDATIONS §9 does not admit a
-pooled across-group number on its own, and this corpus shows why — pooled, the FAST
+pooled across-group number on its own, and this folder shows why — pooled, the FAST
 stream reads "structure in most slices"; split, it is most animals in DI and MALE and
 one animal in six in ORX.
 
@@ -25,8 +25,8 @@ one animal in six in ORX.
 - **C — whether it survives the arbitrary parameter.** The verdict tally across every
   coactivity floor K, both streams.
 
-**What is in the corpus.** Baseline windows only, every treatment arm pooled — the
-question is about the preparation, not about any drug. The corpus is exactly what the
+**What is in the folder.** Baseline windows only, every treatment arm pooled — the
+question is about the preparation, not about any drug. The set is exactly what the
 export folder holds: the producer applies its own exclusions before writing it, so
 nothing here decides who is in. The window scored is the producer's
 `analysis_start_sec` / `analysis_end_sec` where it gives one, which is *what to
@@ -69,7 +69,7 @@ def _rows(path: Path, k: int) -> list[dict]:
 
 
 def controls(n: int, geometry: dict, *, seed0: int = 500) -> list[dict]:
-    """Generated recordings at the real corpus's geometry: no assembly, by
+    """Generated recordings at the real folder's geometry: no assembly, by
     construction. Assessed and tested through exactly the same code path."""
     from bugarach.assess import assess_coactivity
     from bugarach.assembly import assess_assemblies
@@ -310,7 +310,7 @@ def main(argv=None):
     p.add_argument("--no-png", dest="png", action="store_false", default=True)
     args = p.parse_args(argv)
 
-    # ---- the corpus is whatever the export folder contains --------------
+    # ---- the input is whatever the export folder contains --------------
     # No side-loaded metadata. The producer decides what is in the folder: it
     # applies its own exclusions before writing, and its slices.csv carries the
     # identity columns. Anything this tool needed to reach outside for was a
@@ -334,13 +334,13 @@ def main(argv=None):
     fast, slow = _rows(args.fast, K_SHOWN), _rows(args.slow, K_SHOWN)
 
     # Control geometry: read from the real FAST run, so the comparison is at this
-    # corpus's own numbers rather than remembered ones.
+    # folder's own numbers rather than remembered ones.
     d = json.loads((args.fast / "assessment_real.json").read_text())
     bk = d["by_k"][str(K_SHOWN)]
     win = float(np.median([r["window_sec"] for r in d["rows"]
                            if r["K"] == K_SHOWN]))
     # Cluster count is matched to the slices that actually GOT an answer, not to
-    # the corpus median. `clusters_permin` is a median over all 85 slices and most
+    # the folder median. `clusters_permin` is a median over all 85 slices and most
     # of the way down it are the ones with too few clusters to test at all, so
     # using it would build a control three times thinner than the data it is meant
     # to stand beside. A control must be at least as informative as the real thing

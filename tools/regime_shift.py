@@ -220,12 +220,12 @@ def main(argv=None):
     p.add_argument("--spec", type=Path, default=None,
                    help="generator_spec.json — run the shift on the background "
                         "fitted from real recordings instead of the bench's flat "
-                        "one. Without it, the corpus is the flat bench and the "
+                        "one. Without it, the input is the flat bench and the "
                         "result does not sit on the same footing as the bake-off.")
     a = p.parse_args(argv)
     gen, prov = load_spec(a.spec) if a.spec else ({}, {"spec": None})
     res = run(gen)
-    res["corpus"] = prov
+    res["source_recordings"] = prov
     print(report(res))
     if a.out:
         a.out.mkdir(parents=True, exist_ok=True)

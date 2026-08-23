@@ -19,7 +19,7 @@ Needs `--folder`, an export folder (`docs/export_folder_spec.md`); without one t
 script says so and writes nothing. It used to read a `.mat` store, and this line
 used to say `$BUGARACH_DATA_ROOT` — a store holds every recording ever processed,
 including the ones the lab withdrew, and this is the one figure here that gets
-published. The folder is the corpus, and its `PROVENANCE.md` says what was left
+published. The folder is the whole input, and its `PROVENANCE.md` says what was left
 out. Export folders are machine-local (FOUNDATIONS §5), so guessing a path is
 worse than not drawing.
 """
@@ -70,10 +70,10 @@ def build(args):
     if not args.folder:
         raise SystemExit(
             "--folder is required: this figure draws a real recording, and the "
-            "corpus is an export folder (docs/export_folder_spec.md). It used "
+            "arrive as an export folder (docs/export_folder_spec.md). It used "
             "to open a .mat store, which holds every recording ever processed "
             "including the ones the lab withdrew. This figure is PUBLISHED "
-            "(FOUNDATIONS §5), so that is the last place to draw from a corpus "
+            "(FOUNDATIONS §5), so that is the last place to draw from a set "
             "nobody approved. Nothing written.")
 
     hit = [s for s in load_folder(Path(args.folder).expanduser())
@@ -82,7 +82,7 @@ def build(args):
         raise SystemExit(
             f"{args.slice} is not in {args.folder}. If the lab withdrew it, that "
             f"is the answer, and it certainly must not be published — the "
-            f"folder is the corpus and its PROVENANCE.md says what was dropped.")
+            f"folder is the input and its PROVENANCE.md says what was dropped.")
 
     real = hit[0]
     names = [(r.name or "").strip().lower() for r in real.regions]

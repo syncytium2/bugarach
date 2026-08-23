@@ -1,4 +1,4 @@
-"""The background shape is a measurement of a corpus, not a constant.
+"""The background shape is a measurement of a folder, not a constant.
 
 `bench.MEASURED_RATE_SHAPE` (0.275) is the maximum-likelihood fit over **this
 lab's** 81 baseline windows. That number is right about this lab and says nothing
@@ -91,7 +91,7 @@ def test_a_flat_field_fits_a_large_shape(tmp_path, fitter):
     assert shape > 5.0, (
         f"fitted {shape:.3f} on a genuinely flat field — a flat field is "
         "shape -> infinity, and reporting a small one would impose this lab's "
-        "heterogeneity on a corpus that does not have it")
+        "heterogeneity on a folder that does not have it")
 
 
 def test_the_two_fields_are_told_apart_by_a_wide_margin(tmp_path, fitter):
@@ -107,7 +107,7 @@ def test_the_two_fields_are_told_apart_by_a_wide_margin(tmp_path, fitter):
 
 def test_too_little_baseline_refuses_rather_than_inheriting(tmp_path, fitter):
     """The failure that matters. With too few windows to fit, the honest answer
-    is None and a reason — silently falling back to another corpus's constant is
+    is None and a reason — silently falling back to another folder's constant is
     the error this whole path exists to prevent."""
     folder = _folder(tmp_path / "thin",
                      lambda rng: rng.gamma(0.3, 0.02 / 0.3, 40), n_rec=3, seed=5)
@@ -116,12 +116,12 @@ def test_too_little_baseline_refuses_rather_than_inheriting(tmp_path, fitter):
 
 
 def test_this_labs_constant_is_labelled_as_this_labs(fitter):
-    """It is a measurement of one corpus and the source has to say so, or the
+    """It is a measurement of one folder and the source has to say so, or the
     next reader takes it for a property of calcium imaging."""
     src = (TOOLS.parent / "src" / "bugarach" / "bench.py").read_text()
     i = src.index("MEASURED_RATE_SHAPE = ")
     block = src[i:i + 1400]
     assert "81 baseline windows" in block, (
-        "the constant must carry the corpus it was fitted on, or the next "
+        "the constant must carry the folder it was fitted on, or the next "
         "reader takes it for a property of calcium imaging")
     assert fitter._this_labs_reference() == pytest.approx(0.275)

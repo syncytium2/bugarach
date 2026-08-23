@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Turn the corpus assessment into one generator spec, and say what it assumed.
+"""Turn the folder assessment into one generator spec, and say what it assumed.
 
     python tools/derive_spec.py --assessment docs/learned/assessment_real.json \
         --out docs/learned --k 3
@@ -59,7 +59,7 @@ def build(assessment: dict, k: int, *, events_per_level: int = 5,
     # divided by the ROI count — the same construction the tree's own measured
     # regime endpoints came from.
     #
-    # Not `roi_rate_med`. The median ROI's rate on this corpus is 0.00083 Hz with
+    # Not `roi_rate_med`. The median ROI's rate on this folder is 0.00083 Hz with
     # an interquartile range starting at zero: in 38% of slices the median ROI
     # fires not once in baseline, which is FOUNDATIONS §9's "roughly 35% with no
     # events in a baseline window" reproduced on a store it was not measured on.
@@ -101,7 +101,7 @@ def build(assessment: dict, k: int, *, events_per_level: int = 5,
         f"The MEDIAN ROI rate is not used: {frac_median_silent:.0%} of slices have "
         f"a median ROI with no events in baseline")
 
-    # --- the background, measured on THIS corpus where possible ---------------
+    # --- the background, measured on THIS folder where possible ---------------
     #
     # Flat has not been a live option since the shape was fitted: real windows
     # leave ~35% of ROIs silent against a flat field's 2%. But the fix is not to
@@ -114,7 +114,7 @@ def build(assessment: dict, k: int, *, events_per_level: int = 5,
     if measured is not None:
         kwargs["bg_rate_shape"] = measured
         notes.append(
-            f"bg_rate_shape={measured:.4f} was MEASURED on this corpus "
+            f"bg_rate_shape={measured:.4f} was MEASURED on this folder "
             f"({bg.get('n_windows')} baseline windows / {bg.get('n_rois')} "
             f"ROIs), not inherited. This lab's reference is "
             f"{MEASURED_RATE_SHAPE}; a flat field would be shape -> infinity, "
@@ -125,7 +125,7 @@ def build(assessment: dict, k: int, *, events_per_level: int = 5,
         why = bg.get("why", "the assessment carried no background fit")
         notes.append(
             f"⚠ bg_rate_shape={MEASURED_RATE_SHAPE} is INHERITED from this "
-            f"lab's corpus rather than measured on this one — {why}. Far better "
+            f"lab's own recordings rather than measured on this folder — {why}. Far better "
             "than a flat field, which no real recording resembles, and still a "
             "constant standing in for a measurement. Re-run the assessment on an "
             "export folder with enough baseline to fit one")
@@ -134,7 +134,7 @@ def build(assessment: dict, k: int, *, events_per_level: int = 5,
     notes.append(
         f"bg_burst_shape={MEASURED_BURST_SHAPE} at bins {MEASURED_BURST_BINS} "
         "turns on fitted temporal burstiness. Still inherited — the assessment "
-        "does not yet fit this one per corpus")
+        "does not yet fit this one per folder")
 
     # --- the negatives, carried over from the bench ---------------------------
     for key in ("hot_window", "hot_rate_hz", "ramp_sec", "n_distractors",

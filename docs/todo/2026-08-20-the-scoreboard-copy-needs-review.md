@@ -6,7 +6,7 @@ filed: 2026-08-20
 # The scoreboard's numbers are built; its sentences have not been reviewed
 
 Phase 4 of [`the completion plan`](../webapp_completion_plan.md) landed as a
-panel that scores every detector on one corpus and one fold split. **The panel
+panel that scores every detector on one data set and one fold split. **The panel
 is gated on `window.__lab` and hidden on the published page**, on purpose: the
 wording below has not been through
 [`the document review process`](../doc_review_process.md), and this repo does not
@@ -25,7 +25,7 @@ reviewer reads it in one place rather than hunting it through the render code.
 | `draft` | *Draft — the wording on this panel has not been reviewed, which is why it does not appear on the published page.* |
 | `simulatedOnly` | *Every number here is measured on simulated recordings. None of it says a detector is right about a real slice, because no real slice has an answer key to be right against.* |
 | `tolerance` | *F1 counts a hit within the match tolerance above. Against events this wide that makes the ORDER of these rows meaningful and a single number's decimal places not — read the ranking, not the gap.* |
-| `noTube` | *The learned detector is not in this table. It trains through the server rather than in the page, and a row scored on a different corpus than the rest would be the one comparison this table exists to avoid.* |
+| `noTube` | *The learned detector is not in this table. It trains through the server rather than in the page, and a row scored on a different data set than the rest would be the one comparison this table exists to avoid.* |
 | `heldOut` | *Each detector's setting is chosen on the folds it may see and scored on the fold it may not. The spread is across folds.* |
 
 Plus one sentence generated per run, when a detector could not have a setting

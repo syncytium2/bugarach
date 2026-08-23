@@ -43,10 +43,10 @@ a null of at most 14% — but the estimate should be pinned rather than left as 
 current design gives one simulated recording per real recording per cell, so the strength-0
 row is only ~190 draws.
 
-## 4. The corpus-level port agreement is not exercised by CI
+## 4. The folder-level port agreement is not exercised by CI
 
 `tests/test_graph.py` certifies the coefficient against a committed fixture, which needs no
-store. The **98.7% corpus agreement** is evidence recorded in the report and the run record,
+store. The **98.7% folder agreement** is evidence recorded in the report and the run record,
 and nothing re-checks it. If the port drifts in a way the fixture does not cover — the window
 rule, the active-cell filter, the surrogate scheme — CI stays green.
 

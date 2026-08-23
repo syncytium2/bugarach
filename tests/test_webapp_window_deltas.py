@@ -9,7 +9,7 @@ this checks that what they get is what they asked for.
 Every case here is hand-derived: the windows are simple arithmetic on period
 bounds, so the right answer can be written down rather than compared against
 another implementation. Synthetic folders only — FOUNDATIONS §5, and the real
-corpus that motivated this is machine-local.
+folder that motivated this is machine-local.
 
 **The rules under test, and each has a way of being wrong that this catches:**
 
@@ -263,7 +263,7 @@ s2,3,high K+,3600,3900
 def test_one_period_index_can_carry_several_drugs(page):
     """Across a folder, period 2 is whichever drug that recording got. A list
     that keeps the first label seen per index hides the rest — on this project's
-    own corpus that meant the delay toggles offered two period kinds out of six,
+    own folder that meant the delay toggles offered two period kinds out of six,
     with TTX and senktide silently absent and undeleayable.
 
     Both drugs must get a row, and the baseline chooser must name both rather

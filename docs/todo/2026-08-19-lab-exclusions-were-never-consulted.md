@@ -87,7 +87,7 @@ the combined nine-recording sign test is p = 0.0039 and unchanged in direction.
 ## What is still open
 
 - **The match is by DATE, not slice.** The workbook keys on (date, mouse) and carries no
-  slice id, so a date with several slices excludes all of them. On this corpus that is the
+  slice id, so a date with several slices excludes all of them. On this folder that is the
   same two recordings either way, but the bluntness should be fixed at the source rather
   than lived with.
 - **The exclusion reason here is about the TREATMENT** — "6 minute ttx treatment, too short"
@@ -98,7 +98,7 @@ the combined nine-recording sign test is p = 0.0039 and unchanged in direction.
   Both sets of numbers are reported so the decision is reversible.
 - **Every other deliverable in this repo that counts recordings should be re-checked**
   against this column. The assembly work is simply where it was noticed. The generator's
-  derived spec, the bake-off corpus and the coordination report all take the store as their
+  derived spec, the bake-off data set and the coordination report all take the store as their
   universe.
 - **`exclude` is not the only column nobody read.** The workbook also carries `study`,
   `surgery`, `age`, `postsurgery` and `intensity`. Nothing here establishes that none of

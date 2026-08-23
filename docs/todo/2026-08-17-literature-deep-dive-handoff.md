@@ -28,7 +28,7 @@ for: a session doing nothing but literature
 > Learned event detection over physiological time series is a genre, not a gap, and no
 > architecture-novelty claim survives.
 >
-> **Also weakened: the per-lab corpus loop is not unprecedented.** CASCADE's stated
+> **Also weakened: the per-lab data set loop is not unprecedented.** CASCADE's stated
 > central idea is resampling its ground-truth database to match the noise level and
 > sampling rate of the unseen recording — our argument, made in 2021 one level down.
 > Cite it as precedent.
@@ -69,7 +69,7 @@ for: a session doing nothing but literature
 >    annotation needed. Our six ports are exactly such a teacher.
 >
 > **Still open, and the body's ranking of them still holds:** nothing has been run on our
-> corpus, so "competes with state-of-the-art from the literature" remains unsupported —
+> recordings, so "competes with state-of-the-art from the literature" remains unsupported —
 > the frame gate, `cnn-ripple` and DOSED all have public code. Malvache et al. 2016 is
 > not open access and the canonical SCE rule is still second-hand. SpikeNet (Jing et al.
 > 2020) is indexed but outside the OA subset and needs fetching by hand.
@@ -102,7 +102,7 @@ Four sub-questions, each independently answerable:
 1. **Output type.** Does the method emit discrete population events with times?
 2. **Supervision.** Is it trained, and on what ground truth — electrophysiology,
    human labels, or simulation?
-3. **The corpus.** Is the training data parameterised from the lab's own recordings,
+3. **The training data.** Is it parameterised from the lab's own recordings,
    or is it a generic benchmark?
 4. **The comparison.** Is it scored against hand-written coordination detectors on
    the same data?
@@ -141,7 +141,7 @@ cite it and position against it.
 
 Two things, in order of value:
 
-1. **Run a literature method on our corpus.** The report's comparison is against six
+1. **Run a literature method on our recordings.** The report's comparison is against six
    detectors ported *here* plus our own networks. Tony's reading — "competes with
    state-of-the-art models from the literature" — **is not currently supported**,
    though the first draft of this line overstated it: **published methods are in the
@@ -149,16 +149,16 @@ Two things, in order of value:
    What is absent is any published *learned* method and the whole assembly-detection
    family. ⚠ **And that family cannot be ported until the generator plants recurring
    assemblies** — it currently draws each event's participants at random, so
-   membership-based methods would score zero for a reason about our corpus. See
+   membership-based methods would score zero for a reason about our recordings. See
    `docs/model_track.md`. CICADA is the one published detector in
-   the field of play, and beating a port of it on our own simulated corpus is a
+   the field of play, and beating a port of it on our own simulated data is a
    weaker claim than it sounds. Pick two or three from Mölter's benchmark set (ICA
    and a graph or item-set method are the obvious picks; several have reference
    implementations) and put them through `tools/fair_bakeoff.py` under the same
    fit-and-score procedure. **That converts an absence-of-evidence claim into a
    measured one**, and it is the single highest-value item on this page.
 2. **Then** decide whether the remaining novelty is the architecture, the
-   per-lab-corpus loop, or only the combination. The report's own verdict is that no
+   per-lab-data-set loop, or only the combination. The report's own verdict is that no
    individual component is novel — centre−surround is a difference-of-Gaussians,
    dilated convolutions are standard, training-on-simulation is what CASCADE does one
    level down. If the deep dive holds, what is new is putting them at this level of

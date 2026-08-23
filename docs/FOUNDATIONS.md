@@ -231,7 +231,7 @@ a wrong conclusion in this repo. The authority is the global
   difficulty range is wanted, use the spread among untreated slices — baseline's
   own interquartile per-ROI rate is **0.0052–0.0190 Hz**. `bugarach.bench` follows
   this; two earlier versions of it did not, in opposite directions.
-  **Re-derived 2026-08-20 from the export folder**, the corpus the lab approved.
+  **Re-derived 2026-08-20 from the export folder**, which is what the lab approved.
   The previous figures — 0.0038–0.0175 — came from the `.mat` store, which carries
   every recording ever processed including two the lab withdrew, which is the
   defect SAP007 exists to stop. Moving the axis changed no detector's F1 beyond

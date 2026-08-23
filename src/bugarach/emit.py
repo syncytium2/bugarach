@@ -330,7 +330,7 @@ def write_detector_settings(settings, path) -> Path:
 
 
 def write_run(path, *, slices, frame_interval_sec, code_version=None,
-              generator_spec=None, chosen_k=None, corpus_seeds=None,
+              generator_spec=None, chosen_k=None, simulated_data_seeds=None,
               thresholds=None, extra=None) -> Path:
     """Write ``run.json`` — the provenance a table of times cannot carry itself.
 
@@ -340,7 +340,7 @@ def write_run(path, *, slices, frame_interval_sec, code_version=None,
 
     Everything else is optional because a run may not have had it — a straight
     detection pass over a real folder has no generator spec, no chosen K and no
-    corpus seeds, and writing ``null`` for those says so honestly rather than
+    seeds, and writing ``null`` for those says so honestly rather than
     implying the question was never asked.
     """
     doc = {
@@ -350,7 +350,8 @@ def write_run(path, *, slices, frame_interval_sec, code_version=None,
         "code_version": code_version,
         "generator_spec": generator_spec,
         "chosen_k": chosen_k,
-        "corpus_seeds": None if corpus_seeds is None else list(corpus_seeds),
+        "simulated_data_seeds":
+            None if simulated_data_seeds is None else list(simulated_data_seeds),
         "thresholds": thresholds,
     }
     if extra:

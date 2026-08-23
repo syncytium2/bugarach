@@ -5,7 +5,7 @@ filed: 2026-08-19
 
 # Synfire order, measured — and the null that had to be replaced first
 
-Ran SPIKE-order over the 84-recording baseline corpus, both streams, via PySpike's
+Ran SPIKE-order over the 84-recording baseline folder, both streams, via PySpike's
 implementation (same authors as the method). Results in
 `<darkroom>/bugarach/synfire_{fast,slow}_relabel.json`; tool is `tools/synfire_scan.py`.
 
@@ -37,7 +37,7 @@ assignment of cells to latencies. Control false-positive rate: 8% (95% 2–19%).
 
 This is the second time in two days the same error shape has appeared — the assembly work
 made it first, with the same circular-shift null answering the same wrong question. **Any
-new measure on this corpus should be assumed to need an event-preserving null until shown
+new measure on this folder should be assumed to need an event-preserving null until shown
 otherwise.**
 
 ## Two traps in PySpike worth knowing

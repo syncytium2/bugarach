@@ -42,13 +42,13 @@ But **94% of them are not quiet cells**, and the first version of this note call
 that. The dead-ROI verdict is the producer's and was already applied upstream by the
 choice of store — `event_store_onset_revised_2v_alive` — not by anything here.
 
-Measured on the export corpus (numbers below from the **periods** export; the same
+Measured on the export folder (numbers below from the **periods** export; the same
 recordings on the v2 export differ, see the windowing note), the effect is concentrated
 exactly where it does most damage — the sparse recordings at the top of the distribution:
 
 | recording | events | trains (empty) | indicator, pre-fix | empty trains dropped |
 |---|---|---|---|---|
-| `20240723_22` fast | 17 | 24 (21) | **0.353** — top of the corpus | 0.059 |
+| `20240723_22` fast | 17 | 24 (21) | **0.353** — top of the folder | 0.059 |
 | `20260225_275` fast | 29 | 29 (25) | 0.273 | 0.046 |
 | `20250904_211` slow | 53 | 45 (39) | 0.247 | 0.098 |
 
@@ -89,7 +89,7 @@ beside `2026-08-19-original/` with the explanation in its `README.md`.
   identical, asserted in subprocesses with hash randomisation forced on. **The synfire
   session's published files predate this**, so they are not re-derivable — not wrong, but
   not reproducible.
-- **Three events were reported as the most ordered recording in the corpus.**
+- **Three events were reported as the most ordered recording in the folder.**
   `20240723_22` slow is 3 events across 3 trains; every relabelling is identical, so
   observed and null are both exactly 1.0 and there is no distribution. Rows now carry
   `defined` and summaries exclude them. This was wrong **before** the ROI fix too — the
@@ -130,7 +130,7 @@ standing, the claim is unaffected and this is closed with a sentence. If it does
 phrase is doing more work than the statistic supports.
 
 **The check is bounded**: re-run `assess_assemblies` with the uniform null drawing from
-participating cells only, on the same corpus, and compare verdicts. It changes no
+participating cells only, on the same folder, and compare verdicts. It changes no
 published number unless it changes the answer.
 
 ⚠ **Not run here.** The assembly report and its instrument were another session's work

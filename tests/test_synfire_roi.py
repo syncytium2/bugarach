@@ -13,7 +13,7 @@ export, 122 produce no event anywhere in the recording — matching that export'
 dropped, because the question is scoped to the window; only the first are quiet cells,
 and the dead-ROI verdict is the producer's, applied upstream by the choice of store.
 
-On this corpus that is not a rounding error. `20240723_22` carries 17 events across
+On this folder that is not a rounding error. `20240723_22` carries 17 events across
 3 active ROIs and 21 silent ones — 210 silent pairs against 3 real ones — and scored
 **0.353**, the top of the fast distribution, against **0.059** once the silent ROIs
 are dropped. The recordings that moved most were the emptiest ones, so the upper tail
@@ -114,7 +114,7 @@ def test_the_per_recording_seed_survives_a_new_process():
 
     The scan seeded numpy with ``abs(hash(slice_id))``. Python salts string hashing per
     process unless ``PYTHONHASHSEED`` is set, so every run drew different surrogates and
-    two runs of the same corpus disagreed on the verdict tally by a recording or two —
+    two runs of the same folder disagreed on the verdict tally by a recording or two —
     noise that is easy to read as the effect of a code change. The seed is now a CRC,
     and this asserts it in a **subprocess with hash randomisation on**, because an
     in-process check cannot see the bug at all.

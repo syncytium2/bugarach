@@ -1,5 +1,5 @@
 <svg viewBox="0 0 900 470" xmlns="http://www.w3.org/2000/svg" role="img"
-     aria-label="The coordination pipeline, left to right in four stages. First, real recordings from one lab are measured without any detector: onset times from eighty-five baseline slices go through a clustering assessor with a thousand circular-shift surrogates, which reports participation, jitter and cluster rate. Second, that measurement becomes generator settings; a human chooses the cluster size K from a published scan, and the fitted heterogeneous bursty background is turned on. Third, the generator plants coordinated events at times it records, producing a corpus split into four folds, with distractors and a dense random probe block as negatives. Fourth, every detector is fitted on three folds and scored on the held-out fourth: the six hand-written detectors sweep their one declared knob, the learned models train and pick a threshold, and both go through the same scorer. Ground truth flows from the generator to the scorer, never to a detector. The report and the operating points come out at the end.">
+     aria-label="The coordination pipeline, left to right in four stages. First, real recordings from one lab are measured without any detector: onset times from eighty-five baseline slices go through a clustering assessor with a thousand circular-shift surrogates, which reports participation, jitter and cluster rate. Second, that measurement becomes generator settings; a human chooses the cluster size K from a published scan, and the fitted heterogeneous bursty background is turned on. Third, the generator plants coordinated events at times it records, producing a data set split into four folds, with distractors and a dense random probe block as negatives. Fourth, every detector is fitted on three folds and scored on the held-out fourth: the six hand-written detectors sweep their one declared knob, the learned models train and pick a threshold, and both go through the same scorer. Ground truth flows from the generator to the scorer, never to a detector. The report and the operating points come out at the end.">
   <defs>
     <marker id="pa" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7"
             orient="auto-start-reverse">
@@ -59,7 +59,7 @@
   <text x="568" y="91" text-anchor="middle" class="lbl">plants events at known times</text>
 
   <rect x="466" y="132" width="204" height="72" rx="3"/>
-  <text x="568" y="156" text-anchor="middle">corpus</text>
+  <text x="568" y="156" text-anchor="middle">data set</text>
   <text x="568" y="175" text-anchor="middle" class="lbl">8 recordings, 470 min</text>
   <text x="568" y="192" text-anchor="middle" class="lbl">4 folds of 2</text>
 
@@ -87,7 +87,7 @@
   <text x="792" y="268" text-anchor="middle">one scorer</text>
   <text x="792" y="287" text-anchor="middle" class="lbl">held-out 4th fold</text>
 
-  <text x="792" y="332" text-anchor="middle" class="lbl">one corpus, one</text>
+  <text x="792" y="332" text-anchor="middle" class="lbl">one data set, one</text>
   <text x="792" y="348" text-anchor="middle" class="lbl">procedure, one metric</text>
   <text x="792" y="364" text-anchor="middle" class="lbl">&#8212; which is what makes</text>
   <text x="792" y="380" text-anchor="middle" class="lbl">it a comparison</text>
@@ -103,10 +103,10 @@
     <line x1="342" y1="228" x2="342" y2="208"/>
     <!-- settings drive the generator -->
     <path d="M 440 150 L 452 150 L 452 77 L 463 77"/>
-    <!-- generator makes the corpus and the negatives -->
+    <!-- generator makes the data set and the negatives -->
     <line x1="568" y1="108" x2="568" y2="128"/>
     <line x1="568" y1="206" x2="568" y2="226"/>
-    <!-- corpus to both fitting paths -->
+    <!-- data set to both fitting paths -->
     <path d="M 672 150 L 686 150 L 686 86 L 697 86"/>
     <line x1="672" y1="172" x2="697" y2="180"/>
     <!-- Both fitted things into the scorer, SEPARATELY. Routed six -> down the
@@ -118,7 +118,7 @@
   </g>
 
   <!-- Ground truth: to the scorer, never to a detector. It gets its own lane
-       along the bottom. Routed beside the corpus->detector arrow it sat 6 px from
+       along the bottom. Routed beside the data-set->detector arrow it sat 6 px from
        a solid line and the two read as one thick one, which is the opposite of
        the point: this path exists to be visibly separate from the signal path. -->
   <g fill="none" stroke-width="1.4" stroke-dasharray="5 3" marker-end="url(#pa)"
@@ -133,6 +133,6 @@
     Every stage is a script and every output a file: assess_archive.py &#183; derive_spec.py &#183; fair_bakeoff.py &#183; make_bakeoff_figures.py
   </text>
   <text x="450" y="462" text-anchor="middle" class="lbl">
-    The corpus is simulated. The settings are measured. Nothing here says any detector is right about a real slice.
+    The data set is simulated. The settings are measured. Nothing here says any detector is right about a real slice.
   </text>
 </svg>

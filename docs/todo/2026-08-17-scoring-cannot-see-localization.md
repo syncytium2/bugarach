@@ -57,7 +57,7 @@ Two changes, the first small.
 Note the unit difference before copying either: **their criterion is IoU, a
 ratio; ours is an absolute gap in seconds.** A ratio is scale-free and an
 absolute tolerance is not, which matters here because event width varies
-by a factor of seven across the corpus (0.20–1.50 s, measured above). Adopting IoU is the bigger change and the more defensible one; a
+by a factor of seven across the folder (0.20–1.50 s, measured above). Adopting IoU is the bigger change and the more defensible one; a
 swept `tol_sec` is the cheap version and worth doing first.
 
 ## What this is not

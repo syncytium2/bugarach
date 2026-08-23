@@ -31,7 +31,7 @@ read off that optimal sorting: 0 for no consistent order, 1 for a perfect synfir
    recording so a rerun reproduces. **That seed is a CRC of the recording id, not
    ``hash()``** — Python salts string hashing per process unless ``PYTHONHASHSEED`` is
    set, so the original form reseeded differently on every run and this promise was
-   false. Two runs of the same corpus disagreed by a recording or two on the verdict
+   false. Two runs of the same folder disagreed by a recording or two on the verdict
    tally, which is the size of effect one might otherwise credit to a change in the code.
 
 **The null.** Per-ROI circular shift inside the analysis window — this project's standing
@@ -69,7 +69,7 @@ def _trains(stream, window, n_rois, *, keep_silent: bool = False):
     pair — so every pair of empty trains adds a maximal-order term to the totals that
     ``spike_train_order`` averages. A recording with 21 empty trains of 24 contributes
     210 such pairs against a handful of real ones, and its indicator is then mostly a
-    count of cells with nothing in the window. Measured on this corpus: the top of the
+    count of cells with nothing in the window. Measured on this folder: the top of the
     fast distribution is the emptiest recordings, and ``20240723_22`` (17 events, 21 of
     24 trains empty) scores 0.353 with them and 0.059 without.
 
@@ -193,7 +193,7 @@ def scan(store: Path, *, stream: str, n_surrogates: int, restarts: int,
         # Seeded per recording, by CRC of the id and NOT by `hash()`. Python salts
         # `hash(str)` per process unless PYTHONHASHSEED is set, so the previous form
         # drew a different seed on every run and the docstring's promise that a rerun
-        # reproduces was false. It is why two runs of the same corpus disagreed by a
+        # reproduces was false. It is why two runs of the same folder disagreed by a
         # recording or two on the verdict tally.
         seed = zlib.crc32(str(s.slice_id).encode()) % (2 ** 31)
         np.random.seed(seed)
@@ -211,7 +211,7 @@ def scan(store: Path, *, stream: str, n_surrogates: int, restarts: int,
         # A surrogate set with no spread has no distribution to test against, so the
         # indicator is not a measurement however extreme it looks. `20240723_22` slow
         # is the case: 3 events across 3 trains, every relabelling identical, observed
-        # AND null both exactly 1.0. Reported as undefined rather than as the corpus
+        # AND null both exactly 1.0. Reported as undefined rather than as the folder
         # maximum — the same "undefined is not a result" rule the assembly and
         # modularity work apply.
         defined = bool(sd > 0)
@@ -293,9 +293,9 @@ def main(argv=None):
 
     # Summarise over DEFINED rows only. A recording whose surrogates all score the same
     # has no distribution, and its indicator is not a measurement however extreme — but
-    # it is extreme, so an unfiltered summary hands it to the reader as the corpus
+    # it is extreme, so an unfiltered summary hands it to the reader as the folder
     # maximum. On the v2 slow stream that is exactly what happened in both directions:
-    # `20240723_22` is 3 events across 3 trains and topped the corpus at 0.774 before
+    # `20240723_22` is 3 events across 3 trains and topped the folder at 0.774 before
     # this fix and 1.000 after. The defined maxima are 0.414 and 0.625.
     defined = [r for r in res["rows"] if r.get("defined", True)]
     f = np.array([r["synfire"] for r in defined], dtype=float)

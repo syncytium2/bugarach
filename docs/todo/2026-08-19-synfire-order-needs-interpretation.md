@@ -31,7 +31,7 @@ because one measurement is finished and its interpretation is not.
 ## What was measured
 
 **SPIKE-order** (Kreuz, Satuvuori, Pofahl & Mulansky 2017, *New J. Phys.* 19:043028) over
-the 84-recording baseline corpus, both streams, via PySpike's implementation by the same
+the 84-recording baseline folder, both streams, via PySpike's implementation by the same
 authors. Tool: `tools/synfire_scan.py`. Results:
 `<darkroom>/bugarach/synfire_{fast,slow}_relabel.json`.
 
@@ -62,7 +62,7 @@ False-positive rate 8%.
 
 **This is the second measure in two days to need that fix**, the assembly work being the
 first, with the same null answering the same wrong question. **Assume any new measure on
-this corpus needs an event-preserving null until shown otherwise**, and run the order-free
+this folder needs an event-preserving null until shown otherwise**, and run the order-free
 generated control *before* believing any number.
 
 **A second instance of the same class, found by the session that closed the assembly

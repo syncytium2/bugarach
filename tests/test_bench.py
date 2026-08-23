@@ -427,7 +427,7 @@ def test_the_crowded_recording_is_not_a_regime_anyone_can_calibrate_on():
     assert CROWDED_RECORDING["hot_window"] is None
     assert CROWDED_RECORDING["n_distractors"] == 0
     assert "crowded" not in REGIMES, (
-        "the crowded recording is a diagnostic, not a difficulty axis — a corpus "
+        "the crowded recording is a diagnostic, not a difficulty axis — a set "
         "where every event has a neighbour is as unrepresentative as one where "
         "none does")
 

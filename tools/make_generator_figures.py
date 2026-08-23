@@ -38,7 +38,7 @@ SWEEPS: dict[str, dict] = {
     "bg_rate_hz": dict(
         # Re-derived 2026-08-20 with bench.REGIMES: the middle three are p25,
         # median and p75 of slice-mean per-ROI rate on the EXPORT FOLDER, the
-        # corpus the lab approved. The outer two stay at half p25 and twice p75.
+        # export folder the lab approved. The outer two stay at half p25 and twice p75.
         values=(0.0026, 0.0052, 0.0102, 0.0190, 0.0380),
         note="per-ROI background rate, in Hz. The middle three are the "
              "untreated interquartile range and its median — the bench runs "

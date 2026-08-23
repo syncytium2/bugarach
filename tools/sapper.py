@@ -162,7 +162,7 @@ RULES = [
                  # should exist at all is the open question in the todo.
                  "tools/assess_archive.py"],
         message="Analysis must read the EXPORT FOLDER, never a .mat store. The "
-                "folder is the corpus the lab approved: the exporter honours "
+                "folder is what the lab approved: the exporter honours "
                 "db4's `exclude` flag, drops what was withdrawn, and records it "
                 "in PROVENANCE.md. A store carries every recording ever "
                 "processed and cannot say which are usable. On 2026-08-20 two "

@@ -1,12 +1,12 @@
-"""Every detector on one corpus and one fold split — and off the published page.
+"""Every detector on one data set and one fold split — and off the published page.
 
 Phase 4 of `docs/webapp_completion_plan.md`: one row per detector, F1 with fold
 spread, recall, precision, fit seconds, detect seconds, parameter count.
 
-The tune panel already sweeps a detector properly — corpus-wide, fold split,
+The tune panel already sweeps a detector properly — across the whole data set, fold split,
 setting chosen on train and scored on held-out. What it cannot do is compare,
 because two of its runs are two fold assignments. So the value here is not new
-scoring, it is **one corpus and one split for all of them**.
+scoring, it is **one data set and one split for all of them**.
 
 TWO THINGS THIS PANEL MUST NOT DO, both already recorded:
 

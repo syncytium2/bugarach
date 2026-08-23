@@ -9,7 +9,7 @@ closed: 2026-08-22
 > **Closed 2026-08-22, by Tony opening the site and saying so.** He asked for the
 > markers above the rasters and for the rasters to stop being bold, which is this
 > item and the one thing it had not asked for. Both are done. The store was never
-> the obstacle it is described as below: `data_root()` learned to find the corpus
+> the obstacle it is described as below: `data_root()` learned to find the folder
 > beside the darkroom, and the figure now reads an **export folder** anyway, so
 > the render took seven seconds on the Mac.
 >
