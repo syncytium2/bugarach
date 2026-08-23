@@ -33,6 +33,52 @@ always by proper name:
 A sentence must pick its axis: "all six detectors, both streams" — never
 "multimodal".
 
+## Parameter vocabulary — four things, four owners
+
+Four groups of numbers in this project get called "settings" in conversation, and
+they are four different things belonging to four different parts of it. Each
+already has a specific name in the code; the vagueness was only ever in the prose
+around it (Tony, 2026-08-22: *"settings can mean a ton of things even in this
+app… let's start trying to be specific"*).
+
+- **detector settings** — the parameter set one detector runs with. Keyed by
+  **(detector, stream)**, because a detector may run differently on fast and slow
+  and a record that could not say so makes one of the two unreproducible:
+  `emit.detector_settings_rows`, `detector_settings.csv` in the export contract,
+  `cfg` in the viewer. This is a **record of what a run used**, written as output
+  so a result reproduces from the folder alone.
+- **operating point** — a detector setting that was **chosen**, carrying the
+  provenance of the choice: what it was fitted or benched on, at what tolerance,
+  and what it scored. `bench.OPERATING_POINTS` declares the benched ones; the
+  viewer's sweep fits new ones. An operating point *becomes* detector settings the
+  moment a run uses it — the difference is that an operating point can say where
+  it came from, and detector settings only say what was used.
+- **generator spec** — the simulator's inputs: recording count, duration, ROI
+  count, background rate and its shape, coordinated-event count, participation,
+  jitter, windows, seed. `SIM_SPEC`, `run.json`'s `generator_spec`,
+  `docs/learned/generator_spec.json`. Never "simulation settings".
+- **training spec** — the trainer's inputs, on the lab server. `labSpec()`. It
+  configures a fit; it is neither a detector's parameters nor a generator's.
+
+Two more that are decisions rather than parameters, and should not be called
+settings at all:
+
+- **K** — the minimum number of participating ROIs an assessment reports at. A
+  **scan, not a setting**: the assessor reports every K that clears the floor and
+  refuses to pick one, because picking it is the analyst's call.
+- **tolerance** — the match window scoring uses to pair a detection with a planted
+  event. One word; it needs no qualifier and should not acquire one.
+
+**RETIRED: bare "settings".** It spans all four of the above and resolves to none
+of them, so a sentence using it cannot be checked. Name which. The word is fine
+inside a phrase that has already said which — "the detector settings above" — and
+useless on its own.
+
+**RETIRED: "corpus"** (Tony, 2026-08-22). The replacement depends on which one is
+meant, and that ambiguity is half the reason it goes: a set of generated
+recordings is a **simulated data set**; the real recordings the lab approved are
+**the export folder**, which is what the input contract already calls them.
+
 ## Data objects
 
 - **slice** — one recording: N named streams + optional regions
@@ -110,12 +156,14 @@ load-bearing terms with no glossary entry.
 - **regime** — a named background-activity level the bench runs at. Both are
   derived from untreated recordings: `baseline_quiet` (0.0052 Hz/ROI, the p25 of
   baseline slices) and `baseline_busy` (0.0190, the p75). Treatments are never
-  regimes. Re-derived 2026-08-20 from the export folder — the corpus the lab
+  regimes. Re-derived 2026-08-20 from the export folder — the recordings the lab
   approved — having been fitted against the `.mat` store, which carries the two
   recordings the lab withdrew.
 - **operating point** — the parameter set a detector is benched at, declared with
   its provenance in `bench.OPERATING_POINTS`. Not the same as its signature
-  defaults, which are not all calibrated.
+  defaults, which are not all calibrated. The general sense — a *chosen* detector
+  setting that carries where the choice came from, benched or freshly fitted — is
+  under **Parameter vocabulary** above, with the three terms it is confused with.
 - **promiscuity probe** — a stretch of the synthetic recording with elevated
   background and *no* planted events, used to see whether a detector keys on
   rate rather than on coordination. Its firings are reported separately and kept
