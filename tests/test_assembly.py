@@ -213,7 +213,7 @@ def test_assess_store_carries_the_assembly_answer(tmp_path, monkeypatch):
     region = bstore.Region(name="baseline", slot=None, start_sec=0.0, end_sec=1200.0)
     s.regions = (region,)
 
-    monkeypatch.setattr(bstore, "load_slice", lambda p: s)
+    monkeypatch.setattr(bstore, "load_slice", lambda p, **kw: s)
     (tmp_path / "one.mat").write_bytes(b"")
 
     res = assess_archive.assess_store(
@@ -239,7 +239,7 @@ def test_assess_store_omits_the_assembly_answer_by_default(tmp_path, monkeypatch
     s = _sim(seed=11)
     region = bstore.Region(name="baseline", slot=None, start_sec=0.0, end_sec=1200.0)
     s.regions = (region,)
-    monkeypatch.setattr(bstore, "load_slice", lambda p: s)
+    monkeypatch.setattr(bstore, "load_slice", lambda p, **kw: s)
     (tmp_path / "one.mat").write_bytes(b"")
 
     res = assess_archive.assess_store(tmp_path, stream="events", n_surrogates=20)

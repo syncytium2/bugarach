@@ -100,7 +100,7 @@ def cicada_detect(
     sce_percentile=None,
     n_surrogates: int = 100,
     sce_min_distance_frames: int = 4,
-    imaging_rate_hz: float = 10.0,
+    imaging_rate_hz: float | None = None,
     solution_delay_sec: float = 120.0,
     baseline_window_max_sec: float = 1200.0,
     treatment_window_sec: float = 1200.0,
@@ -127,11 +127,22 @@ def cicada_detect(
     (FAST, SLOW) pair for a two-stream store and its FAST element otherwise —
     SLOW transients are wider and need a stricter percentile, and a
     single-stream slice has no SLOW (see ``per_stream_param``).
+
+    **imaging_rate_hz comes off the recording now.** It used to default to
+    ``10.0`` — this lab's rate, stated as everybody's, silently — which is one
+    of the three places FOUNDATIONS §6 was being broken. Left unset it is
+    ``1 / s.require_dt()``, so a recording that never declared its interval
+    stops here with a message naming the contract rather than being scored on a
+    grid nobody chose. Passing it explicitly still works and still wins: it is
+    a rate where the rest of the project keeps an interval, and inverting it in
+    one place is why there is no second place for the two to disagree.
     """
     if threshold_scope not in ("global", "regional"):
         raise ValueError('threshold_scope must be "global" or "regional"')
     if active_duration_mode not in ("fixed", "per_event"):
         raise ValueError('active_duration_mode must be "fixed" or "per_event"')
+    dt = (1.0 / imaging_rate_hz if imaging_rate_hz is not None
+          else s.require_dt("CICADA's sliding-window raster"))
 
     ext = recording_extent(s)
     t_lo, t_hi = ext
@@ -184,7 +195,7 @@ def cicada_detect(
             dur = None
         results[name] = _detect_stream(
             trains, dur, t_lo, L, rw, rng,
-            dt=1.0 / imaging_rate_hz,
+            dt=dt,
             nsync=int(n_synchronous_frames),
             pct=pcts[name],
             adur=adurs[name],
@@ -201,7 +212,9 @@ def cicada_detect(
         "n_synchronous_frames": n_synchronous_frames,
         "sce_percentile": sce_percentile, "n_surrogates": n_surrogates,
         "sce_min_distance_frames": sce_min_distance_frames,
-        "imaging_rate_hz": imaging_rate_hz, "rng_seed": rng_seed,
+        # the rate actually used, not the argument: a settings row that says
+        # None is a row nobody can reproduce a run from
+        "imaging_rate_hz": 1.0 / dt, "rng_seed": rng_seed,
         "recording_extent": ext,
         "n_roi": next(iter(s.streams.values())).n_rois,
     }

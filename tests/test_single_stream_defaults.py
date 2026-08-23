@@ -38,11 +38,11 @@ def _events(seed, n_roi=6, n=40, dur=600.0):
 
 def _single_stream():
     """A foreign recording: one stream, no region annotations."""
-    return slice_from_events(_events(4), slice_id="foreign")
+    return slice_from_events(_events(4), dt=0.1, slice_id="foreign")
 
 
 def _two_stream():
-    return slice_from_events({"fast": _events(4), "slow": _events(5)},
+    return slice_from_events({"fast": _events(4), "slow": _events(5)}, dt=0.1,
                              slice_id="canonical")
 
 
@@ -62,12 +62,36 @@ def test_slice_detector_runs_on_one_stream_with_defaults(name):
     assert set(det.streams) == {"events"}
 
 
+#: What a train-taking detector needs that no default can supply. ``rate_detect``
+#: wants the recording's sampling interval — not a tuned knob with a
+#: regime-optimum but a fact about the microscope — so it comes off the slice
+#: (FOUNDATIONS §6) rather than out of the signature.
+TRAIN_FROM_RECORDING = {"rate": lambda s: {"grid_dt": s.require_dt()},
+                        "coact": lambda s: {}}
+
+
 @pytest.mark.parametrize("name", sorted(TRAIN_DETECTORS))
 def test_train_detector_runs_on_one_stream_with_defaults(name):
     s = _single_stream()
     ext = recording_extent(s)
-    out = TRAIN_DETECTORS[name](stream_trains(s.streams["events"], ext), ext)
+    out = TRAIN_DETECTORS[name](stream_trains(s.streams["events"], ext), ext,
+                                **TRAIN_FROM_RECORDING[name](s))
     assert out is not None
+
+
+def test_the_rate_grid_is_required_and_is_not_a_default():
+    """``rate_detect`` used to fill this in with 0.1 s and a warning.
+
+    It belongs in this file because "runs on pure defaults" is exactly the
+    property that had to stop being true of the sampling interval: 0.1 s is
+    this lab's rate and nobody else's, and a detector supplying it answers a
+    question about somebody's microscope on their behalf.
+    """
+    s = _single_stream()
+    ext = recording_extent(s)
+    trains = stream_trains(s.streams["events"], ext)
+    with pytest.raises(TypeError, match="grid_dt"):
+        rate_detect(trains, ext)
 
 
 def test_spike_sync_is_the_deliberate_exception():

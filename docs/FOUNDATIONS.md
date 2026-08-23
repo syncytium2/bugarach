@@ -138,7 +138,9 @@ moment data enters, and **loading without it is refused rather than defaulted**.
 
 This **supersedes** the older arrangement, under which `grid_dt` was the
 caller's responsibility at *detection* time and omitting it fell back to 0.1 s
-with a `GridDtNotSetWarning`. That fallback is the MATLAB original's hardcoded
+with a `GridDtNotSetWarning`. **Both were retired on 2026-08-23**; the paragraph
+stays because the case against them is the case for what replaced them. That
+fallback was the MATLAB original's hardcoded
 10 Hz MLspike grid: correct for this lab's stores and silently wrong for
 everyone else's. A warning is not a gate — it is discovered after the fact, by
 whoever happens to be reading stderr, and the result it qualifies has already
@@ -166,11 +168,28 @@ Consequences that bind code here:
   part of the parity contract (§2) and are not up for reinterpretation. This
   section governs the *load boundary* and new code, not the ports' signatures.
 
-Implementation is outstanding, and the gap between this rule and the code is
-tracked in
-[`todo/2026-08-16-dt-must-be-required-at-load.md`](todo/2026-08-16-dt-must-be-required-at-load.md).
-Until it closes, `GridDtNotSetWarning` still fires and still must not be
-silenced.
+**Implemented 2026-08-23.** `Slice` carries `dt` as a typed field with no
+default; `slice_from_events`, `load_events_csv` and the store reader take it as
+a required argument; `load_folder` reads `frame_interval_sec` out of
+`slices.csv` once, so no consumer parses that string again; and
+`GRID_DT_FALLBACK`, `GridDtNotSetWarning` and CICADA's `imaging_rate_hz = 10.0`
+are gone. Every parity fixture still matches.
+
+Two details of the implementation are the rule's edges, and both are argued in
+[`todo/2026-08-16-dt-must-be-required-at-load.md`](todo/2026-08-16-dt-must-be-required-at-load.md):
+
+- **`dt=None` is an answer, and omitting the argument is not.** A folder may
+  legally ship without `slices.csv` (`docs/export_folder_spec.md`: only the
+  recording files are required), and the spec's instruction for that case is
+  that bugarach *asks*. So a recording may hold "nobody has said" — it draws
+  and it cannot be measured, because `Slice.require_dt()` is the only way to
+  read the interval and it refuses. What no longer exists anywhere is a number
+  chosen by the code.
+- **SPIKE-synch's `dt` is not this quantity.** It is the bin width its
+  hysteresis thresholds were calibrated at, named `PROFILE_BIN_SEC` for that
+  reason; wiring the recording's interval into it would move a detector off its
+  measured operating point. Three hardcoded 0.1 s values, two of them the
+  acquisition interval in disguise and one of them not.
 
 ## 7. Licensing & provenance posture
 

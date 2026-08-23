@@ -16,7 +16,7 @@ from bugarach.store import load_slice
 
 FIXTURES = Path(__file__).parent / "fixtures"
 REF = json.loads((FIXTURES / "ref_sce_synth.json").read_text())
-SLICE = load_slice(FIXTURES / "synth_fastcal_s1.mat")
+SLICE = load_slice(FIXTURES / "synth_fastcal_s1.mat", dt=0.1)
 
 
 def as_strs(v):

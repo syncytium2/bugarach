@@ -1,12 +1,19 @@
 ---
-status: open
+status: done
 filed: 2026-08-16
+closed: 2026-08-23
 ---
 
 # Data must not load without a sampling interval — the 0.1 s fallback has to go
 
+**CLOSED 2026-08-23.** Everything below is the record of the defect and the
+reasoning that shaped the fix; what shipped, and the two questions it had to
+settle on the way, are in "How it closed" at the foot of the file. One thing is
+NOT closed and is filed separately there: SPIKE-synch's operating point has only
+ever been measured at a 10 Hz bin.
+
 FOUNDATIONS §6 was rewritten on 2026-08-16 to require dt at the load boundary.
-The code still does the old thing. This is the gap.
+The code still did the old thing. This was the gap.
 
 **Read with [`2026-08-16-dt-does-not-travel-with-the-recording.md`](2026-08-16-dt-does-not-travel-with-the-recording.md).**
 Two sessions filed on this the same day and neither knew about the other. They are
@@ -137,3 +144,97 @@ imaging rate, and **nothing on our bench would show it** — every recording on 
 bench shares one grid. Guaranteeing dt at the boundary is what makes the
 seconds↔samples conversion total, and therefore what makes it safe for downstream
 code to work in samples, which is the unit that actually generalizes.
+
+---
+
+## How it closed, 2026-08-23
+
+The interval is a typed field on the recording, every construction path has to
+state it, and no code anywhere chooses a number. `GRID_DT_FALLBACK`,
+`GridDtNotSetWarning` and CICADA's `imaging_rate_hz = 10.0` are gone; `Slice.dt`
+is a float read once out of `slices.csv` instead of a string in `meta` that four
+consumers each re-parsed. Every parity fixture still matches to 1e-9, which is
+the whole constraint: this moved where the number comes from and changed no
+detector's arithmetic.
+
+### The two questions it had to settle
+
+**1. What is a recording with no interval?** Not a `TypeError` at the folder
+reader, which was the first instinct and is wrong. `docs/export_folder_spec.md`
+makes `slices.csv` optional — *"only the recording files are required"* — so a
+folder with no sidecar is **conforming**, and a loader that refused one would be
+the consumer overruling a conforming producer, which is the defect class
+contract revision 6 exists for. The spec also says what to do instead: *"if it
+is not there, the app asks for it at load, and will not proceed until it has
+one… a caller with no interface supplies the value the same way the prompt
+would, and gets the same refusal if it does not."*
+
+So the answer separates **silence** from **"we do not know"**, which used to be
+the same state of the program:
+
+- `dt` is a required argument everywhere. Omitting it is a `TypeError` at the
+  line that omitted it. This is the gate, and it is the thing that was missing.
+- `None` is a legal *value* meaning nobody has said. It is reachable from
+  `load_folder` on a conforming sidecar-less folder, and from a caller who
+  genuinely does not know. Such a recording draws — a raster needs no interval —
+  and cannot be measured.
+- `Slice.require_dt()` is the only way anything reads the interval, and it
+  cannot return `None`. The refusal names `frame_interval_sec`, `slices.csv`,
+  `load_folder(folder, dt=...)` and this section.
+- `load_folder(folder, dt=...)` is the script's version of the spec's prompt. A
+  producer's declaration beats it: `dt=` fills a gap, it does not overrule an
+  answer the folder gave, because a caller who could overwrite a declared
+  interval could silently rescale somebody else's recording.
+
+One deliberate narrowing: a declared value that will not read as a positive
+number of seconds — `30fps`, `0` — does **not** raise in the loader. It becomes
+`None` while the producer's raw string stays in `meta`, because `bugarach check`
+is what names a producer's typo and it has to be able to read the folder in
+order to say so. The loader's guarantee is the narrow one that matters: no
+unreadable value ever becomes a number.
+
+**2. Is SPIKE-synch's `dt` an acquisition property?** No — it is a detection
+resolution, and the reasoning is written at `sync.PROFILE_BIN_SEC` where the
+next person to grep for a hardcoded 0.1 will find it. In short: nothing upstream
+of the binning touches a grid at all (`adaptive_profile` works on continuous
+event times and ISI-derived windows), and the bin is not a display choice
+because the hysteresis rule counts **in bins** — `min_n` floors a sum of `Cn`,
+`max_gap` compares bin-centre separations, `peak_min_distance_sec` is divided by
+it. `C_threshold`, `C_min`, `max_gap` and `min_n` were all fitted at this bin
+width. Wiring `Slice.dt` in would move the detector off its measured operating
+point silently, one recording at a time, while the bench went on reporting the
+old F1. So the deliverable was the argument and a named constant, not a change:
+the parameter keeps its default, the default is now `PROFILE_BIN_SEC` rather
+than a literal, and `tests/test_sync_detect.py` pins both the constant and the
+fact that rebinning changes the answer.
+
+### Still open, and now separable
+
+**SPIKE-synch's operating point has only ever been measured at a 10 Hz bin.** At
+10 Hz the calibrated 0.1 s bin is exactly one frame. A lab imaging at 1 Hz would
+be running a grid finer than its own data and this detector's four thresholds
+are not calibrated for that. The fix is a bench campaign — re-measure the point
+per imaging rate — not a rescale from a caller. Nothing in this repo can show
+the problem today, because every recording on the bench shares one grid, which
+is the same blind spot the section above describes for learned models.
+
+**`detect_folder` still parses `frame_interval_sec` out of `meta`.** It gets the
+right answer from the right column, so this is redundancy rather than a defect,
+but it is one of the four hand-written parses this work existed to delete and it
+belongs to whoever holds that file.
+
+### Where the mechanism lives now
+
+- `src/bugarach/store.py` — `Slice.dt`, `Slice.has_dt`, `Slice.require_dt`,
+  `FrameIntervalNotDeclaredError`, `validated_dt`, and `load_slice(path, dt=)`.
+- `src/bugarach/io.py` — `slice_from_events(dt=)`, `load_events_csv(dt=)`,
+  `load_folder(dt=)` and `_declared_interval`, which is the one place the
+  producer's column becomes a number.
+- `src/bugarach/detectors/rate.py` — no fallback, no warning, `grid_dt` required
+  and moved to the front of the keyword arguments to say so.
+- `src/bugarach/detectors/cicada.py` — `imaging_rate_hz` defaults to the
+  recording's own interval.
+- `src/bugarach/detectors/sync.py` — `PROFILE_BIN_SEC` and why it stays.
+- `tests/test_store.py`, `tests/test_io.py`, `tests/test_cicada_detect.py`,
+  `tests/test_sync_detect.py`, `tests/test_rate_detect.py`,
+  `tests/test_single_stream_defaults.py` — the rule, mechanized.

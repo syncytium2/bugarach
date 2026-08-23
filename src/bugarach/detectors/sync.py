@@ -22,6 +22,11 @@ overwrite earlier ones, faithfully ported); threshold mode is a hysteresis
 scan (C_threshold starts an event, C_min sustains it across gaps < max_gap,
 zero bins skipped) with a min_n total-event floor; peak mode gates the
 binned trace through the shared peak-gate kernel. Deterministic — no RNG.
+
+``dt`` here is **a detection resolution, not the acquisition interval**, and it
+must not be wired to ``Slice.dt``. The reasoning is at
+:data:`PROFILE_BIN_SEC`, because that is where the next person to read
+FOUNDATIONS §6 and grep for a hardcoded 0.1 will land.
 """
 
 from __future__ import annotations
@@ -33,6 +38,48 @@ import numpy as np
 from bugarach.detectors._shared import clip_sorted, matlab_colon, matlab_round
 from bugarach.detectors.peaks import peak_gate
 from bugarach.detectors.rate import DetectorSignal
+
+#: The bin width the synchronization profile is thresholded at, in seconds.
+#:
+#: **This is a calibrated constant, not a sampling interval, and that is a
+#: finding rather than an oversight.** Three places in this project hardcoded
+#: 0.1 s and two of them were the acquisition interval wearing a disguise —
+#: ``rate_detect``'s grid and CICADA's imaging rate, both now taken from the
+#: recording. This one stayed, and it stayed for a reason.
+#:
+#: What separates it from the other two: **nothing upstream of the binning
+#: touches a grid.** ``adaptive_profile`` computes each spike's coincidence
+#: value C from continuous event times and adaptive ISI-derived windows; there
+#: is no raster, no resampling, and no place where the frame interval could
+#: enter. The bin width appears for the first time in ``binned_synchrony``,
+#: which exists to turn a scatter of per-spike values into something a
+#: threshold can be scanned across. It is the resolution of the *detector*, in
+#: the way a spectrogram's window length is the analyst's and not the
+#: microphone's.
+#:
+#: What makes it load-bearing: **the hysteresis rule counts in bins.**
+#: ``min_n`` is a floor on ``Cn`` summed over an event's bins, and ``Cn`` is
+#: the size of the same-time group that last wrote to a bin — so halving the
+#: bin width redistributes the same events over twice as many bins and changes
+#: which candidates clear ``min_n``. ``max_gap`` is compared against bin-centre
+#: separations, and ``peak_min_distance_sec`` is divided by it. Every one of
+#: ``C_threshold``, ``C_min``, ``max_gap`` and ``min_n`` was measured against
+#: this bin width; ``bench.OPERATING_POINTS["sync"]`` declares the four and not
+#: this, which does not mean the point is free of it — it means the point
+#: assumes it. Feeding the recording's interval in from a caller would move
+#: SPIKE-synch off its measured operating point silently, one recording at a
+#: time, and the bench would go on reporting the old F1.
+#:
+#: The honest limit, so nobody reads this as "rig-independent": a bin finer
+#: than the frame interval buys nothing real, and one much coarser discards
+#: timing the camera actually resolved. At 10 Hz — where the four thresholds
+#: were fitted — 0.1 s is exactly one frame. **A lab imaging at 1 Hz is
+#: therefore running a grid finer than its own data, and this detector's
+#: operating point is not calibrated for that.** The fix is to re-measure the
+#: point per rate, not to rescale the bin from a caller; that is a bench
+#: campaign, and it is filed as such in
+#: ``docs/todo/2026-08-16-dt-must-be-required-at-load.md``.
+PROFILE_BIN_SEC = 0.1
 
 
 @dataclass
@@ -180,7 +227,7 @@ def sync_detect(
     C_threshold: float = 0.1,
     C_min: float = 0.1,
     min_n: int = 3,
-    dt: float = 0.1,
+    dt: float = PROFILE_BIN_SEC,
     synchrony_statistic: str = "mean",
     detection_mode: str = "threshold",
     peak_prominence: float = 0.0,
@@ -191,7 +238,13 @@ def sync_detect(
 ) -> SyncDetection:
     """Detect synchrony events on the tau-capped SPIKE-synchronization
     profile (viewer defaults: tau FAST 0.25 / SLOW 0.5, max_gap 0.5 / 2,
-    C_threshold = C_min = 0.1, min_n 3, statistic "mean")."""
+    C_threshold = C_min = 0.1, min_n 3, statistic "mean").
+
+    ``dt`` is the bin width the profile is thresholded at — **the detector's
+    resolution, not the recording's frame interval**. It keeps a default where
+    ``rate_detect``'s ``grid_dt`` and CICADA's ``imaging_rate_hz`` lost theirs,
+    and :data:`PROFILE_BIN_SEC` is where that difference is argued rather than
+    asserted. Do not pass ``Slice.dt`` here."""
     if detection_mode not in ("threshold", "peak"):
         raise ValueError('detection_mode must be "threshold" or "peak"')
     if synchrony_statistic not in ("max", "mean"):

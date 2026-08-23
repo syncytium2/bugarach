@@ -24,7 +24,7 @@ def _single_stream_events(n_rois=6, seed=11):
 
 
 def test_single_stream_region_less_slice():
-    s = slice_from_events(_single_stream_events(), slice_id="foreign")
+    s = slice_from_events(_single_stream_events(), dt=0.1, slice_id="foreign")
     assert list(s.streams) == ["events"]
     assert s.regions == []
     assert s.streams["events"].n_rois == 6
@@ -33,7 +33,7 @@ def test_single_stream_region_less_slice():
 
 
 def test_effective_region_windows_fallback():
-    s = slice_from_events(_single_stream_events())
+    s = slice_from_events(_single_stream_events(), dt=0.1)
     ext = recording_extent(s)
     rw = effective_region_windows(s, ext)
     assert len(rw) == 1
@@ -42,7 +42,7 @@ def test_effective_region_windows_fallback():
 
 
 def test_region_less_sce_analyzes_whole_recording():
-    s = slice_from_events(_single_stream_events())
+    s = slice_from_events(_single_stream_events(), dt=0.1)
     det = sce_detect(s, bin_width_sec=1.0, n_surrogates=50, min_rois=4,
                      rng_seed=5, emit_signal=True)
     res = det.streams["events"]
@@ -53,7 +53,7 @@ def test_region_less_sce_analyzes_whole_recording():
 
 
 def test_region_less_loco_runs_generically():
-    s = slice_from_events(_single_stream_events())
+    s = slice_from_events(_single_stream_events(), dt=0.1)
     det = loco_detect(s, bin_width_sec=1.0, context_win_sec=60.0,
                       thr_step_sec=30.0, merge_gap_sec=2.0,
                       n_surrogates=30, min_rois=4, rng_seed=5)
@@ -64,7 +64,7 @@ def test_region_less_loco_runs_generically():
 
 
 def test_per_stream_param_dict_and_errors():
-    s = slice_from_events({"a": [[1.0, 2.0]] * 3, "b": [[1.5]] * 3})
+    s = slice_from_events({"a": [[1.0, 2.0]] * 3, "b": [[1.5]] * 3}, dt=0.1)
     det = loco_detect(s, bin_width_sec={"a": 1.0, "b": 2.0},
                       context_win_sec=30.0, thr_step_sec=15.0,
                       merge_gap_sec=2.0, n_surrogates=5, min_rois=2,
@@ -79,7 +79,7 @@ def test_per_stream_param_dict_and_errors():
 
 def test_streams_must_be_index_aligned():
     with pytest.raises(ValueError, match="index-aligned"):
-        slice_from_events({"a": [[1.0]], "b": [[1.0], [2.0]]})
+        slice_from_events({"a": [[1.0]], "b": [[1.0], [2.0]]}, dt=0.1)
 
 
 def test_csv_roundtrip(tmp_path: Path):
@@ -90,7 +90,7 @@ def test_csv_roundtrip(tmp_path: Path):
         "0.5,cell_a\n"
         "2.5,cell_a\n"
         "3.5,cell_b\n")
-    s = load_events_csv(p)
+    s = load_events_csv(p, dt=0.1)
     assert s.slice_id == "events"
     assert list(s.streams) == ["events"]
     assert s.roi_ids == ["cell_a", "cell_b"]
@@ -105,7 +105,7 @@ def test_csv_multistream(tmp_path: Path):
         "1.0,r1,alpha\n"
         "2.0,r1,beta\n"
         "3.0,r2,alpha\n")
-    s = load_events_csv(p, stream_col="stream")
+    s = load_events_csv(p, dt=0.1, stream_col="stream")
     assert sorted(s.streams) == ["alpha", "beta"]
     assert s.streams["alpha"].n_rois == 2      # index-aligned union of ROIs
     assert s.streams["beta"].locs[0].size == 1
@@ -116,7 +116,7 @@ def test_csv_missing_columns(tmp_path: Path):
     p = tmp_path / "bad.csv"
     p.write_text("a,b\n1,2\n")
     with pytest.raises(ValueError, match="must have columns"):
-        load_events_csv(p)
+        load_events_csv(p, dt=0.1)
 
 
 # ------------------- a recorded ROI that fired nothing (the denominator)
@@ -131,7 +131,7 @@ def test_na_time_declares_a_recorded_roi_with_no_events(tmp_path: Path):
                  "3,5.0\n"
                  "4,7.0\n4,8.5\n4,9.0\n"
                  "5,\n")                     # recorded, silent (spreadsheet style)
-    s = load_events_csv(p)
+    s = load_events_csv(p, dt=0.1)
     assert s.streams["events"].n_rois == 5
     assert s.roi_ids == ["1", "2", "3", "4", "5"]
     assert s.streams["events"].locs[1].size == 0
@@ -142,7 +142,7 @@ def test_na_time_declares_a_recorded_roi_with_no_events(tmp_path: Path):
 def test_a_recording_where_nothing_fired_still_loads(tmp_path: Path):
     p = tmp_path / "quiet.csv"
     p.write_text("roi,time_sec,stream\n1,NA,fast\n2,NA,fast\n3,NA,fast\n")
-    s = load_events_csv(p)
+    s = load_events_csv(p, dt=0.1)
     assert s.streams["fast"].n_rois == 3
     assert s.streams["fast"].n_events == 0
 
@@ -151,7 +151,7 @@ def test_unparseable_time_is_an_error_naming_the_line(tmp_path: Path):
     p = tmp_path / "s1.csv"
     p.write_text("roi,time_sec\n1,1.0\n2,about noon\n")
     with pytest.raises(ValueError, match="line 3"):
-        load_events_csv(p)
+        load_events_csv(p, dt=0.1)
 
 
 # ------------------------------------------------- the folder, one file per slice
@@ -249,7 +249,8 @@ def test_a_store_round_trips_through_the_folder_contract(tmp_path: Path):
 
     from bugarach import load_slice
 
-    ref = load_slice(Path(__file__).parent / "fixtures" / "synth_fastcal_s1.mat")
+    ref = load_slice(Path(__file__).parent / "fixtures" / "synth_fastcal_s1.mat",
+                     dt=0.1)
     d = tmp_path / "export"
     d.mkdir()
     with (d / f"{ref.slice_id}.csv").open("w", newline="") as f:
@@ -502,10 +503,81 @@ def test_the_four_columns_round_trip_through_the_contract(tmp_path: Path):
 def test_slice_from_events_carries_a_width_definition():
     """The programmatic path says what its durations are, for the same reason
     the folder does: pooling two rules is the failure the spec names."""
-    s = slice_from_events({"a": [[1.0, 2.0]]},
+    s = slice_from_events({"a": [[1.0, 2.0]]}, dt=0.1,
                           durations={"a": [[0.5, 0.5]]}, width_def="fwhm")
     assert s.streams["a"].width_def == "fwhm" and s.streams["a"].has_width
-    assert not slice_from_events([[1.0]]).streams["events"].has_width
+    assert not slice_from_events([[1.0]], dt=0.1).streams["events"].has_width
+
+
+# ---------------------------------------- the interval, read once, at the door
+#
+# FOUNDATIONS §6. The interval used to arrive as a string in ``meta``, so every
+# consumer that wanted it wrote its own parse, and two of the three wrote a
+# 0.1 s fallback behind theirs. These pin the single reading.
+
+def test_the_declared_interval_becomes_a_float_field_on_the_recording(tmp_path):
+    d = _folder(tmp_path,
+                s1="roi,time_sec\n1,1.0\n", s2="roi,time_sec\n1,2.0\n",
+                slices="slice_id,frame_interval_sec\ns1,0.05\ns2,0.1\n")
+    a, b = load_folder(d)
+    assert (a.dt, b.dt) == (0.05, 0.1)
+    assert a.require_dt() == 0.05
+    # and the producer's own string is still there for `bugarach check` to quote
+    assert a.meta["frame_interval_sec"] == "0.05"
+
+
+def test_a_folder_that_declares_no_interval_loads_and_cannot_be_measured(
+        tmp_path):
+    """A folder of nothing but event files is CONFORMING — only the recording
+    files are required. Refusing it at the reader would be the consumer
+    overruling a conforming producer, the defect class contract revision 6
+    exists for. So it loads, and no number can be got out of it."""
+    d = _folder(tmp_path, s1="roi,time_sec\n1,1.0\n")
+    s, = load_folder(d)
+    assert not s.has_dt
+    with pytest.raises(Exception) as exc:
+        s.require_dt()
+    assert "frame_interval_sec" in str(exc.value)
+
+
+def test_the_caller_can_answer_the_question_the_folder_did_not(tmp_path):
+    """``load_folder(folder, dt=...)`` is the script's version of the prompt
+    ``docs/export_folder_spec.md`` describes for a folder with no sidecar."""
+    d = _folder(tmp_path, s1="roi,time_sec\n1,1.0\n")
+    s, = load_folder(d, dt=0.02)
+    assert s.dt == 0.02
+
+
+def test_the_producers_declaration_wins_over_the_callers(tmp_path):
+    """``dt=`` fills a gap; it does not overrule an answer the folder gave.
+    A caller able to overwrite a declared interval could silently rescale
+    somebody else's recording."""
+    d = _folder(tmp_path,
+                s1="roi,time_sec\n1,1.0\n", s2="roi,time_sec\n1,2.0\n",
+                slices="slice_id,frame_interval_sec\ns1,0.05\ns2,\n")
+    a, b = load_folder(d, dt=0.2)
+    assert (a.dt, b.dt) == (0.05, 0.2)
+
+
+@pytest.mark.parametrize("bad", ["30fps", "0", "-0.1", "NaN"])
+def test_an_unreadable_interval_never_becomes_a_number(tmp_path, bad):
+    """The loader does not judge the producer's string — ``bugarach check``
+    does, and it has to be able to read the folder in order to say so. What
+    the loader guarantees is narrower and is the one that matters."""
+    d = _folder(tmp_path, s1="roi,time_sec\n1,1.0\n",
+                slices=f"slice_id,frame_interval_sec\ns1,{bad}\n")
+    s, = load_folder(d)
+    assert s.dt is None
+    assert s.meta["frame_interval_sec"] == bad     # still there to be reported
+
+
+def test_the_csv_readers_will_not_be_called_without_an_answer(tmp_path):
+    p = tmp_path / "s1.csv"
+    p.write_text("roi,time_sec\n1,1.0\n")
+    with pytest.raises(TypeError, match="dt"):
+        load_events_csv(p)
+    with pytest.raises(TypeError, match="dt"):
+        slice_from_events([[1.0]])
 
 
 # ------------------------------------------------------------- on the real export

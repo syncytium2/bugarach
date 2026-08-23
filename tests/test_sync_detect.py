@@ -17,7 +17,7 @@ from bugarach.store import load_slice
 
 FIXTURES = Path(__file__).parent / "fixtures"
 REF = json.loads((FIXTURES / "ref_sync_synth.json").read_text())
-SLICE = load_slice(FIXTURES / "synth_fastcal_s1.mat")
+SLICE = load_slice(FIXTURES / "synth_fastcal_s1.mat", dt=0.1)
 EXT = recording_extent(SLICE)
 TAU = {"fast": 0.25, "slow": 0.5}
 GAP = {"fast": 0.5, "slow": 2.0}
@@ -147,6 +147,34 @@ def test_bad_params_raise():
     with pytest.raises(ValueError):
         sync_detect([np.array([1.0])], (0.0, 10.0), tau_max=0.25,
                     max_gap=0.5, synchrony_statistic="bogus")
+
+
+def test_the_profile_bin_is_a_calibrated_constant_not_the_frame_interval():
+    """The one hardcoded 0.1 s in this project that is NOT an acquisition
+    interval.
+
+    ``rate_detect``'s grid and CICADA's imaging rate both moved onto the
+    recording when FOUNDATIONS §6 landed; this one deliberately did not, and
+    the argument is at ``sync.PROFILE_BIN_SEC``. Two things hold it in place:
+    the default is that named constant rather than a literal, and the bin is
+    not a display choice — the hysteresis rule counts in bins, so rebinning
+    the same recording gives a different set of events. That is what makes
+    wiring ``Slice.dt`` in here a move off a calibrated operating point rather
+    than a bug fix, and this test is where somebody removing the default finds
+    out it was load-bearing.
+    """
+    from bugarach.detectors import sync as sync_mod
+
+    assert sync_mod.PROFILE_BIN_SEC == 0.1
+    trains = [np.array([10.0, 10.4, 20.0, 20.6, 30.0]),
+              np.array([10.05, 10.5, 20.1, 30.05, 40.0]),
+              np.array([10.02, 20.05, 30.02, 30.5, 50.0])]
+    kw = dict(tau_max=0.25, max_gap=0.5, C_threshold=0.1, C_min=0.1, min_n=3)
+    at_default = sync_detect(trains, (0.0, 60.0), **kw)
+    assert at_default.settings["dt"] == sync_mod.PROFILE_BIN_SEC
+    finer = sync_detect(trains, (0.0, 60.0), dt=0.025, **kw)
+    assert (finer.n_events != at_default.n_events
+            or not np.array_equal(finer.locs, at_default.locs))
 
 
 def test_planted_synchrony_detected():

@@ -42,7 +42,6 @@ from bugarach.detectors.sync import (
 )
 from bugarach.detectors.rate import (
     DetectorSignal,
-    GridDtNotSetWarning,
     RateDetection,
     event_rate,
     event_rate_context,
@@ -56,7 +55,6 @@ __all__ = [
     "CicadaStream",
     "CoactDetection",
     "DetectorSignal",
-    "GridDtNotSetWarning",
     "LocoDetection",
     "LocoStream",
     "PeakGateResult",
