@@ -15,8 +15,16 @@ This tests that prediction on two recordings:
 * ``baseline_quiet`` — events >=120 s apart against a +/-30 s reference window, so
   a second event can never contaminate the first one's context. The guard should
   do nothing here **by construction**, and if it appears to, something else moved.
-* ``CROWDED_RECORDING`` — 120 events, median gap 19.4 s, 97 of 119 gaps inside one
-  reference window. This is the condition the guard exists for.
+* ``CROWDED_RECORDING`` at ``baseline_quiet`` — 120 events, median gap 19.4 s, 97
+  of 119 gaps inside one reference window. This is the condition the guard exists
+  for.
+
+⚠ **The first run of this probe, 2026-08-23, was taken off the difficulty axis.**
+``make_crowded_recording`` then merged no regime, so its background came from
+``simulate_coordination``'s 0.05 Hz default — ~10× the quiet endpoint — and two
+thirds of the recall collapse the run reported was that rather than crowding. It
+takes a regime now, and the numbers below are the re-measurement. `docs/forks.md`
+§4a/§4b.
 """
 
 from __future__ import annotations
@@ -70,8 +78,9 @@ def main(argv=None) -> int:
     for label, maker in (("baseline_quiet — events >=120 s apart, "
                           "contamination IMPOSSIBLE",
                           lambda s: make_recording("baseline_quiet", s)),
-                         ("CROWDED — median gap 19.4 s, contamination LIKELY",
-                          make_crowded_recording)):
+                         ("CROWDED at baseline_quiet — median gap 19.4 s, "
+                          "contamination LIKELY",
+                          lambda s: make_crowded_recording("baseline_quiet", s))):
         print(label)
         print(f"  {'detector':8s} {'guard':>6s} {'F1':>6s} {'prec':>6s} {'rec':>6s}")
         for which in ("loco", "coact"):

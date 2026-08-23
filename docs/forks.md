@@ -125,18 +125,19 @@ F1 moves −0.006 to +0.000 (`tools/probe_guard_vs_spacing.py`).
 `tools/probe_guard_on_surrogates.py`, 4 seeds, shipped operating points. On
 `baseline_quiet`, where contamination is **impossible by construction**, both move
 −0.021 to +0.021 with no direction — the null result the geometry demands. On
-`CROWDED_RECORDING` (#10), where it is likely:
+`CROWDED_RECORDING` (#10) at `baseline_quiet`, where it is likely:
 
 | detector | guard 0 | 5 s | 10 s | 20 s |
 |---|---|---|---|---|
-| CoactDetect | 0.404 | **0.445** | **0.451** | 0.430 |
-| LoCo | 0.423 | 0.433 | 0.415 | 0.436 |
+| CoactDetect | 0.786 | **0.820** | 0.815 | 0.786 |
+| LoCo | 0.716 | 0.717 | 0.710 | 0.717 |
 
-**CoactDetect gains +0.047, entirely through recall** (0.254 → 0.292) — the
-predicted mechanism in the predicted place: crowding masks events, and removing
-an event from its own null recovers some. Confirmed on the statistic rather than
-only through F1: over 891 candidate bins the mean null falls 3.689 → 3.645 with a
-10 s guard.
+**CoactDetect gains +0.034, entirely through recall** (0.652 → 0.702) — the
+predicted mechanism in the predicted place: crowding masks events, and removing an
+event from its own null recovers some. The gain lands where it matters most:
+at **0.18 participation — the measured real value, about six of thirty-three
+ROIs** — recall goes **0.82 → 0.89**. Confirmed on the statistic rather than only
+through the score: the mean null across candidate bins falls when the guard is on.
 
 **LoCo shows no clear effect, and the reason is structural rather than
 disappointing.** Its halves are *already one-sided* — the anchor is a boundary of
@@ -145,64 +146,68 @@ reference and contributes far less than one at the centre of a centred window.
 **LoCo was partly guarded by its own geometry all along**, which is also why its
 guard needed no compaction while CoactDetect's did.
 
-⚠ **The larger finding in that table is not the guard.** Both detectors lose most
-of their recall on the crowded recording — 0.70–0.83 down to 0.25–0.29 — and a
-guard recovers a slice, not the bulk. Crowding is not isolated there (more events,
-closer together, different scoring dynamics), so this is not a clean measurement
-of masking alone. It is a signpost that the crowded regime is hard in ways nothing
-has yet taken apart.
+⚠ **Do not compare F1 across the two recordings.** The crowded one plants eight
+times as many events, so a detector firing at a similar rate hits far more often
+and its precision rises — CoactDetect reads a *higher* F1 crowded (0.786) than on
+the bench (0.719) while recalling a fifth less. Only recall compares:
+**0.833 → 0.652** for CoactDetect, **0.700 → 0.558** for LoCo.
 
-### 4b · Taken apart, 2026-08-23 — two thirds of that collapse is a background the recording never meant to have
+### 4b · The first version of §4a was measured off the difficulty axis — what that cost, and what is left
 
-§4a's warning was right to be a warning and understated the cause. Isolating the
-three candidates it named, four seeds, CoactDetect and LoCo at shipped points:
+**Corrected in place; §4a's table above is the re-measurement.** Kept because the
+error is instructive and because anything quoting the old numbers needs to find
+this.
 
-- **The scorer is innocent.** An oracle emitting the exact planted times scores
-  **F1 1.000** on `CROWDED_RECORDING`, and across every run above **zero** emitted
-  spans covered two planted events — so the one-to-one matching in
-  `score_detections` never refused a hit. Detection spans are 2.0 s (coact) and
-  0.70 s (loco) against a 19.4 s median gap; episode merging is not happening
-  either.
-- **The detectors are not firing wrongly. They are silent.** Precision *rises*
-  0.63 → 0.98 (coact) and 0.67 → 0.99 (loco) on the crowded recording, and the
-  detection count falls below the planted count. That is a bar that went up.
-- **And most of what raised it is the background.** `BENCH_RECORDING` carries no
-  `bg_rate_hz` — the rate always arrives from `REGIMES[regime]`, which
-  `make_recording` merges in. **`make_crowded_recording` merges no regime**, so
-  `bg_rate_hz` falls through to `simulate_coordination`'s own default of
-  **0.05 Hz** — the pre-2026-08-13 invented value that `BENCH_RECORDING`'s own
-  docstring names as *"5× too busy"*, roughly 10× the quiet endpoint and 2.6×
-  the busy one. Realised per-ROI rate on the shipped crowded recording is
-  **0.0590 Hz** against the bench's 0.0129.
+`BENCH_RECORDING` carries no `bg_rate_hz` — the rate always arrives from
+`REGIMES[regime]`, which `make_recording` merges in. **`make_crowded_recording`
+merged no regime**, so `bg_rate_hz` fell through to `simulate_coordination`'s own
+default of **0.05 Hz**: the pre-2026-08-13 invented value that
+`BENCH_RECORDING`'s correction table names *"5× too busy"*, roughly 10× the quiet
+endpoint. The recording built to isolate crowding was running off the axis.
 
-Re-running the crowded recording at the quiet endpoint separates the two:
+`CROWDED_RECORDING`'s docstring shuts the probe and the distractors off
+*"because a dense-but-random block would confound it with rate-keying"* — the
+author saw the confound coming and closed the doors they knew about. It came in
+through a keyword default. Every knob set deliberately was asserted in
+`tests/test_bench.py`; the one that came from a default was not. It is now:
+`test_the_crowded_recording_stays_on_the_difficulty_axis` checks the **realised**
+rate against the chosen regime, so a background arriving from anywhere else fails
+regardless of how it got in.
 
-| CoactDetect | bg Hz/ROI | recall | 0.30 | 0.18 | 0.10 |
+The recording is steeply sensitive to the thing that was wrong, which is why this
+mattered — CoactDetect recall on the same 120 crowded events:
+
+| background | bg Hz/ROI | recall | 0.30 | 0.18 | 0.10 |
 |---|---|---|---|---|---|
-| bench, quiet | 0.0129 | 0.833 | 1.00 | 1.00 | 0.50 |
-| **crowded, at quiet** | 0.0137 | **0.652** | 0.98 | 0.82 | 0.15 |
-| crowded, as shipped | 0.0590 | 0.254 | 0.64 | 0.11 | 0.01 |
+| bench, 15 events, quiet | 0.0052 | 0.833 | 1.00 | 1.00 | 0.50 |
+| crowded, `baseline_quiet` | 0.0052 | **0.652** | 0.98 | 0.82 | 0.15 |
+| crowded, `baseline_busy` | 0.0190 | 0.460 | 0.94 | 0.42 | 0.02 |
+| crowded, off-axis (pre-fix) | 0.0505 | 0.254 | 0.64 | 0.11 | 0.01 |
 
-**Crowding costs 0.181 of coact's recall and 0.142 of LoCo's. The unintended
-background costs 0.398 and 0.289** — roughly two thirds of a collapse that was
-being read as a property of crowding. The docstring explicitly excludes the probe
-and the distractors *"because a dense-but-random block would confound it with
-rate-keying"*; the rate-keying confound arrived through the default instead.
+So the collapse §4a reported as *"most of their recall"* was **two thirds
+background, one third crowding**: crowding costs CoactDetect 0.181 and LoCo 0.142;
+the off-axis background cost another 0.398 and 0.289 on top.
 
-**Two consequences.**
+**Two of the three candidates §4a named are dead, and should not be re-opened.**
+An oracle emitting the exact planted times scores **F1 1.000** on the crowded
+recording, and across every condition **zero** emitted spans cover two planted
+events — so neither the greedy one-to-one matching in `score_detections` nor
+episode merging contributes anything. Spans are 2.0 s (coact) and 0.70 s (loco)
+against a 19.4 s median gap. Precision *rises* to 0.98–1.00 while the detection
+count falls below the planted count: **the detectors are not firing wrongly, they
+are silent**, which is a bar that went up.
 
-1. **§4a's guard table was measured off the difficulty axis** and should not be
-   carried into a calibration. The direction survives — at the quiet endpoint a
-   10 s guard takes coact 0.652 → **0.696**, a *larger* gain than the +0.047 in
-   §4a — and it lands where it matters: at **0.18 participation, the measured real
-   value**, recall goes 0.82 → **0.89**. LoCo stays flat, as §4a's geometry
-   argument predicts. The aggregate F1 hid both.
-2. **`CROWDED_RECORDING` needs a regime**, the way `make_recording` has one.
-   Filed: [`the crowded recording runs off the difficulty
-   axis`](todo/2026-08-23-the-crowded-recording-runs-off-the-difficulty-axis.md).
-   Until it does, its numbers describe a background this preparation does not have.
+**What is left is the real open item, and a guard is probably the wrong
+instrument for it.** With the background held right, crowding still costs
+0.14–0.18 of recall, concentrated in realistically-sized events, and the guard
+recovers about a quarter of CoactDetect's loss and none of LoCo's. A guard excises
+a span *adjacent to the anchor*; at a 19.4 s median gap the interference is spread
+across the whole ±30 s reference. That is the **multiple-target** case, and
+[`detector_history.md`](detector_history.md) §5.4 and §6.4 prescribe **censoring
+inside the estimator** for it — which §5.5 wants tried on LoCo anyway, for the 17×
+cost. Same experiment, two payoffs.
 
-Reproduce: `tools/probe_crowded_background.py`.
+Reproduce both: `tools/probe_crowded_background.py`.
 
 **Implementation note worth not re-deriving:** the two guards are *not* the same
 change. LoCo's halves stay contiguous when a guard shrinks them, so it is two
@@ -344,9 +349,10 @@ a refusal, not an invitation to take second place silently.
 
 ## 10 · Crowding is a separate recording, not a change to the bench
 
-**Live:** `CROWDED_RECORDING` / `make_crowded_recording` — 120 events at a 14 s
-floor, median gap 19.4 s, 97 of 119 gaps putting two events inside one ±30 s
-reference window.
+**Live:** `CROWDED_RECORDING` / `make_crowded_recording(regime, seed)` — 120
+events at a 14 s floor, median gap 19.4 s, 97 of 119 gaps putting two events
+inside one ±30 s reference window, on a background chosen from `REGIMES` exactly
+as `make_recording`'s is.
 
 **Alternative:** lower `BENCH_RECORDING["min_sep_sec"]`.
 
@@ -370,6 +376,11 @@ collapsed.
 be calibrated on it — a corpus where every event has a neighbour is as
 unrepresentative as one where none does.
 
+⚠ **It is a second axis crossing the difficulty axis, not a replacement for it**,
+and treating it as a self-contained condition is what went wrong in §4b: the
+`regime` argument is required precisely because the recording's answer moves more
+with the background than with the crowding it exists to measure.
+
 ---
 
 ## What is still genuinely open
@@ -377,8 +388,16 @@ unrepresentative as one where none does.
 Not forks — nobody has taken a side.
 
 - **`BENCH_RECORDING` runs flat** while `derive_spec` measures (#2).
-- **Why crowding costs 60% of recall.** #4a measured it; a guard explains only a
-  slice. Nothing has taken the rest apart — whether it is masking the guard does
-  not reach, the detectors' own episode merging, or the scorer's greedy matching
-  on closely spaced events. Until that is separated, the crowded recording is a
-  diagnostic that shows a problem rather than one that names it.
+- **Why crowding costs 0.14–0.18 of recall** once the background is held right
+  (#4b). Two of the three candidates are dead — the scorer and episode merging
+  both contribute exactly nothing — and a guard recovers only about a quarter of
+  CoactDetect's loss and none of LoCo's. The remedy the primaries prescribe for a
+  *multiple-target* environment is **censoring inside the estimator**
+  ([`detector_history.md`](detector_history.md) §5.4, §6.4), which §5.5 wants
+  tried on LoCo anyway for the 17× cost. Nobody has run it.
+- **The detectors are steeply background-sensitive and nothing measures that
+  directly.** On the same 120 crowded events, CoactDetect recalls 0.652 at
+  `baseline_quiet` and 0.460 at `baseline_busy` — a 3.7-fold rate change costing
+  0.19 of recall, and 0.40 at the 0.18 participation level. Operating points are
+  chosen at one point on that axis and quoted as though they held across it.
+  Adjacent to #2 and to the re-fit, but not the same question.

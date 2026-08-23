@@ -375,6 +375,19 @@ weeks. The probe and distractors are off because this recording asks one questio
 — what happens when events crowd each other's context — and a dense-but-random
 block would confound it with rate-keying.
 
+⚠ **It carries no background rate, and that is deliberate — it takes a regime,
+like every other recording here.** Until 2026-08-23 :func:`make_crowded_recording`
+merged no regime at all, so ``bg_rate_hz`` fell through to
+:func:`~bugarach.simulate.simulate_coordination`'s own default of **0.05 Hz** — the
+pre-2026-08-13 invented value the correction table above names *"5× too busy"*,
+roughly 10× :data:`REGIMES`' quiet endpoint. The recording built to isolate
+crowding was running off the difficulty axis, and two thirds of the recall
+collapse attributed to crowding was that instead: CoactDetect recalls **0.652**
+at ``baseline_quiet`` against **0.254** as it had been shipped. The rate-keying
+confound this docstring shuts the door on arrived through a keyword default.
+``test_the_crowded_recording_stays_on_the_difficulty_axis`` is the door that
+closes by itself.
+
 **The count matters as much as the floor**, which is not obvious and cost a
 measurement to find. ``min_sep_sec`` is a *floor* under a renewal process, not a
 target: at the bench's own event count it changes almost nothing, because the
@@ -396,13 +409,24 @@ Named rather than written as a literal because it is a *consequence* of
 """
 
 
-def make_crowded_recording(seed: int, **overrides):
+def make_crowded_recording(regime: str, seed: int, **overrides):
     """A recording whose planted events crowd each other's reference window.
 
-    Same ``(slice, ground_truth)`` pair as :func:`make_recording`. See
-    :data:`CROWDED_RECORDING` for what it is for and what it must not be used for.
+    Same signature and same ``(slice, ground_truth)`` pair as
+    :func:`make_recording` — ``regime`` selects the background rate from
+    :data:`REGIMES` and is **required**, because this function once defaulted it
+    and the default was wrong for eight months of nobody noticing. See
+    :data:`CROWDED_RECORDING` for what the recording is for, what it must not be
+    used for, and what the missing regime cost.
+
+    Crowding and the background are separate axes and both matter: at
+    ``baseline_quiet`` crowding costs CoactDetect 0.181 of its recall, and moving
+    the background off the axis cost another 0.398 on top.
     """
-    return simulate_coordination(seed=seed, **{**CROWDED_RECORDING, **overrides})
+    if regime not in REGIMES:
+        raise ValueError(f"unknown regime {regime!r} — have {sorted(REGIMES)}")
+    return simulate_coordination(
+        seed=seed, **{**CROWDED_RECORDING, **REGIMES[regime], **overrides})
 
 
 def make_null_recording(seed: int, **overrides):
