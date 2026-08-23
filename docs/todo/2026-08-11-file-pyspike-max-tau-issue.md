@@ -525,7 +525,7 @@ backends are built and your suite is green against it.
   Reproduce any of it with the recipe in `tools/pyspike_patch_check.sh`.
 - **Still unverified** ⚠: nothing blocking, but worth saying — the patched build
   was exercised by upstream's suite and by this report's own numbers, not by a
-  wider corpus, and it was built on macOS/CPython 3.14 only.
+  wider set of inputs, and it was built on macOS/CPython 3.14 only.
 - SPIKY, the MATLAB GUI, is not in this tree at all, so it cannot be checked from
   here — the issue claims the cap only for cSPIKE and PySpike, both read directly.
 - The repo links assume bugarach stays public at that path.
