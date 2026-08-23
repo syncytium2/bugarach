@@ -10,11 +10,10 @@ draw, mechanized so nobody has to redraw it by hand.
 
     python tools/pyspike_issue_body.py            # issue body to stdout
     python tools/pyspike_issue_body.py --title    # the issue title, alone
-    python tools/pyspike_issue_body.py --note     # the note to Kreuz, unwrapped
 
-The note is the shorter, personal route -- Kreuz is senior author on the measure
-papers and maintains cSPIKE, and Mulansky is his collaborator -- so it unwraps
-the same way, for pasting into mail.
+Only the issue goes through here. The note to Kreuz is docs/kreuz_note.md, which
+is already unwrapped and meant to be opened and copied -- a script in front of
+one page of mail is friction, not a feature.
 """
 from __future__ import annotations
 
@@ -28,22 +27,18 @@ SOURCE = (pathlib.Path(__file__).resolve().parent.parent
 
 START = "## Draft issue text"
 END = "## Notes for the reviewer"
-NOTE_START = "**Subject:**"          # the guidance above it is not the note
-NOTE_END = "## Draft issue text"
 TITLE = re.compile(r"^\*\*Title:\*\*\s*(.+)$")
 
 
-def _slice(text: str, first_marker: str = START,
-           last_marker: str = END, keep_first: bool = False) -> list[str]:
+def _slice(text: str) -> list[str]:
     lines = text.splitlines()
     try:
-        first = next(i for i, ln in enumerate(lines)
-                     if ln.startswith(first_marker))
+        first = next(i for i, ln in enumerate(lines) if ln.startswith(START))
         last = next(i for i, ln in enumerate(lines)
-                    if i > first and ln.startswith(last_marker))
+                    if i > first and ln.startswith(END))
     except StopIteration:  # pragma: no cover - the file would have to be gutted
-        sys.exit("%s: cannot find %r .. %r" % (SOURCE, first_marker, last_marker))
-    return lines[first if keep_first else first + 1:last]
+        sys.exit("%s: cannot find the draft section" % SOURCE)
+    return lines[first + 1:last]
 
 
 def title(text: str) -> str:
@@ -55,8 +50,8 @@ def title(text: str) -> str:
     sys.exit("%s: the draft has no **Title:** line" % SOURCE)
 
 
-def body(text: str, lines: list[str] | None = None) -> str:
-    lines = _slice(text) if lines is None else lines
+def body(text: str) -> str:
+    lines = _slice(text)
     out: list[str] = []
     para: list[str] = []
     fenced = False
@@ -98,22 +93,11 @@ def body(text: str, lines: list[str] | None = None) -> str:
 
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
-    what = ap.add_mutually_exclusive_group()
-    what.add_argument("--title", action="store_true",
-                      help="print the issue title instead of the body")
-    what.add_argument("--note", action="store_true",
-                      help="print the note to Kreuz instead of the issue")
+    ap.add_argument("--title", action="store_true",
+                    help="print the issue title instead of the body")
     args = ap.parse_args()
     text = SOURCE.read_text(encoding="utf-8")
-    if args.title:
-        sys.stdout.write(title(text) + "\n")
-    elif args.note:
-        note = _slice(text, NOTE_START, NOTE_END, keep_first=True)
-        while note and note[-1].strip() in ("", "---"):   # drop the section rule
-            note.pop()
-        sys.stdout.write(body(text, note))
-    else:
-        sys.stdout.write(body(text))
+    sys.stdout.write(title(text) + "\n" if args.title else body(text))
 
 
 if __name__ == "__main__":

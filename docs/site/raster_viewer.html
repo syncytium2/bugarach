@@ -2,6 +2,15 @@
 <meta charset="utf-8">
 <title>bugarach — open a recording</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- The same three facts the visible line at the bottom carries, in the form
+     anything reading this page mechanically can take. Names match the ones
+     `tools/build_site.py` writes into every other page, so one reader serves
+     the whole site. `bugarach:commit` says which identification scheme applies
+     rather than naming a sha this page could not know — the reasoning is at the
+     visible stamp. -->
+<meta name="bugarach:born" content="2026-08-13">
+<meta name="bugarach:version-date" content="2026-08-23">
+<meta name="bugarach:commit" content="content-addressed">
 <!--
   The raster viewer, client side.
 
@@ -313,6 +322,10 @@
   #windowOut th:first-child, #windowOut td:first-child { text-align: left; }
   #detectOut td.state { text-align: left; color: var(--muted);
                         font-variant-numeric: normal; }
+  /* the qualified part of a count, in the cell beside it — a detector's own
+     caveat (CICADA's single-cell moments, SPIKE-synch's artifacts) rather than
+     a second result */
+  #detectOut td .qual { color: var(--muted); }
   /* the row the sweep chose, so the table and the picture agree without the
      reader having to find the maximum by eye */
   #tuneOut tr.best td { font-weight: 600; color: var(--fg); }
@@ -338,6 +351,14 @@
                        line-height: 1.5; }
   .note p { margin: 0 0 9px; }
   #checkbar { padding: 10px 16px; border-bottom: 1px solid var(--line); font-size: 12.5px; }
+  /* The frame-interval prompt reads as a stop rather than as one more control:
+     nothing downstream of it will run until it is answered. */
+  #dtAsk { padding: 10px 16px 4px; border-bottom: 1px solid var(--line);
+           border-left: 3px solid #b4433a; background: var(--band);
+           font-size: 12.5px; line-height: 1.5; }
+  #dtAsk[hidden] { display: none; }
+  #dtWho { color: var(--muted); margin: 4px 0 2px; }
+  #dtAsk .ctl { padding: 6px 0 8px; }
   #checkbar button {
     all: unset; cursor: pointer; color: var(--accent); text-decoration: underline;
     text-underline-offset: 2px;
@@ -404,6 +425,23 @@
     <details class="acc" id="accList" hidden>
       <summary>Recordings<span class="cnt" id="cntList"></span></summary>
       <div id="checkbar" hidden></div>
+      <!-- THE FRAME INTERVAL, ASKED FOR AT THE DOOR. FOUNDATIONS §6: the
+           sampling interval is a property of the recording, nothing downstream
+           can recover it, and loading without it is refused rather than
+           defaulted. This block is the way forward when a folder did not send
+           one — and what is typed here is recorded in run.json as
+           user-supplied, never as though the folder had said it. -->
+      <div id="dtAsk" hidden>
+        <b>This folder did not say how fast it was imaged.</b>
+        <div id="dtWho"></div>
+        <div class="ctl">
+          <label for="dtSec">frame interval (s)</label>
+          <input id="dtSec" type="number" min="0.0001" max="10" step="0.001">
+          <div class="span"><button id="dtUse">Use this frame interval</button>
+            <button id="dtDrop" class="ghost" hidden>Withdraw it</button></div>
+          <div class="note" id="dtWhat"></div>
+        </div>
+      </div>
       <ul id="list"></ul>
     </details>
     <details class="acc" id="accWindows" hidden>
@@ -670,8 +708,15 @@
       <div class="ctl" id="dCicCtl" hidden>
         <label for="cPct">SCE percentile</label>
         <input id="cPct" type="number" min="80" max="99.99" step="0.1" value="99">
-        <label for="cSur">surrogates</label>
-        <input id="cSur" type="number" min="20" max="2000" step="20" value="100">
+        <!-- `ciSur`, and not `cSur`, because CoactDetect's surrogate box above
+             already owns that id. While both existed `getElementById("cSur")`
+             returned CoactDetect's, so this control moved nothing and turning
+             CoactDetect's surrogate count moved CICADA with it — two detectors
+             coupled, in silence, whenever "run several" was ticked. A duplicate
+             id is not a tidiness point; `test_webapp_panel_hygiene.py` now
+             refuses any of them anywhere on the page. -->
+        <label for="ciSur">surrogates</label>
+        <input id="ciSur" type="number" min="20" max="2000" step="20" value="100">
         <label for="cSync">frames in a window</label>
         <input id="cSync" type="number" min="1" max="50" step="1" value="1">
         <label for="cDist">peaks at least (frames) apart</label>
@@ -956,6 +1001,40 @@
     </div>
   </div>
 </main>
+
+<!-- WHEN THIS PAGE WAS BORN AND WHEN THIS VERSION WAS MADE.
+
+     Tony, 2026-08-23: "all our websites need a born on date and the date of the
+     current version." Every other page on the site gets this line injected by
+     `tools/build_site.py`; this one is hand-written into the source, and it has
+     to be, because `site/viewer.html` is a BYTE-FOR-BYTE copy of this file —
+     pinned by `tests/test_lab_server.py` so the build cannot quietly transform a
+     page whose whole promise is that it reaches nothing. A build that may not
+     touch the page cannot stamp it, so the stamp lives where a reader auditing
+     that promise can see it.
+
+     THE COMMIT IS NOT WRITTEN HERE, AND THAT IS THE HONEST ANSWER RATHER THAN A
+     GAP. A hand-written page cannot name the commit that contains it: the sha
+     does not exist until the commit is made, and writing the previous one would
+     have every published copy naming the revision before itself. It is not
+     needed either — `tools/site_staleness.py` identifies a served viewer by
+     hashing its bytes against every committed `raster_viewer.html` and reporting
+     the newest exact match, which is a stronger identification than a
+     self-declared sha because it cannot disagree with the file it describes.
+     So the attribute says which scheme is in use rather than carrying a number
+     nobody could check.
+
+     The version date IS checkable, and is checked: `tests/test_site_viewer.py`
+     requires it to equal the date of the last commit that touched this file, so
+     a page edited without bumping it turns CI red instead of shipping a date
+     that has quietly become a lie. Bump it when you edit this page. -->
+<p class="site-dates" data-bugarach-born="2026-08-13"
+   data-bugarach-version-date="2026-08-23"
+   data-bugarach-commit="content-addressed"
+   style="margin:1.5rem max(1.2rem, calc(50% - 23rem));color:#666;font-size:.85rem">
+  First published 2026-08-13 · this version 2026-08-23 · identified by its own
+  bytes rather than by a build stamp
+</p>
 
 <script>
 "use strict";
@@ -1585,6 +1664,149 @@ function draw(rec, data) {
   });
 }
 
+/* ---------- the frame interval, and where it came from -----------------------
+
+   FOUNDATIONS §6, in as many words: "Every path that admits data … takes the
+   sampling interval as a REQUIRED input. No default, no inference from the
+   data, no fallback constant."
+
+   THIS PAGE USED TO HAVE THE FALLBACK CONSTANT, THREE TIMES OVER. Each of the
+   detect paths read `Number(m.frame_interval_sec) > 0 ? … : 0.1`, and the folder
+   check filed a missing frame interval as a NOTE — "detectors need one, this
+   page does not" — which was true of the raster and false of everything the
+   reader came here to do. A conforming folder with no `frame_interval_sec`
+   therefore reported "✓ 2 of 2 conforming", ran all six detectors on a 10 Hz
+   grid, and wrote a run.json saying `"frame_interval_sec": {"rec_a": 0.1}`. That
+   number was invented by this file. It sat in the provenance sidecar next to
+   measured ones, in a file that outlives the session, with nothing anywhere
+   saying which was which — and a lab imaging at 20 Hz would have got a full
+   detections.csv computed on somebody else's clock.
+
+   So: the check calls it an error, the detect paths refuse, and this block is
+   the way forward. What the reader types here is used and is recorded AS THEIRS
+   — `frame_interval_source` in run.json says `you` for it and `folder` for a
+   value the producer sent. The distinction is the point. A number a person
+   stated and a number a producer measured are both usable and are not the same
+   claim, and the sidecar is the only place the difference can still be read six
+   months later. */
+
+let DT_SUPPLIED = null;    // seconds the reader typed for this folder, or null
+
+/* What the FOLDER said, as a usable number of seconds — or null. Absent and
+   unreadable ("30fps" is the usual slip) collapse to the same answer here on
+   purpose: in both cases the producer has not told us, and the folder check
+   reports the difference between them. */
+function folderDt(recId) {
+  const v = (META.get(recId) || {}).frame_interval_sec;
+  if (v === undefined) return null;
+  const n = Number(v);
+  return n > 0 ? n : null;
+}
+
+/* The interval to run this recording at, with its provenance — or null, which
+   means REFUSE. Never a number this page chose. */
+function dtFor(recId) {
+  const f = folderDt(recId);
+  if (f !== null) return { sec: f, source: "folder" };
+  if (DT_SUPPLIED !== null) return { sec: DT_SUPPLIED, source: "you" };
+  return null;
+}
+
+const recordingsWithoutDt = () =>
+  RECORDINGS.filter(r => folderDt(r.id) === null).map(r => r.id);
+
+const namedFew = (ids, n) => ids.slice(0, n).join(", ")
+  + (ids.length > n ? " and " + (ids.length - n) + " more" : "");
+
+/* The refusal itself, written into whichever results panel was about to run.
+   Phrased as a stop with a way forward: a bare "cannot" would send the reader
+   looking for a bug in their folder, and the missing fact is one they have. */
+function sayNoDt(box, ids) {
+  box.textContent = "";
+  box.append(el("h4", ids.length === 1
+    ? "No frame interval for " + ids[0]
+    : "No frame interval for " + ids.length + " of these recordings"));
+  box.append(el("p", "The detectors work on a grid, and the grid spacing is the "
+    + "acquisition frame interval. Nothing in the folder can be used to recover "
+    + "it and this page will not guess: a result computed on an invented "
+    + "sampling interval is wrong in a way that leaves no trace in the file. "
+    + (ids.length === 1 ? "" : "Missing for " + namedFew(ids, 3) + ". "),
+    "verdict bad"));
+  box.append(el("p", "Two ways on. Ask the producer to send "
+    + "frame_interval_sec in slices.csv, which is where it belongs — or type it "
+    + "into “Recordings” above, where it is used for this session and recorded "
+    + "in run.json as yours rather than as the folder's.", "caveat"));
+}
+
+/* The prompt. Shown when, and only when, the folder left the question open. */
+function paintDtAsk() {
+  const box = document.getElementById("dtAsk");
+  const missing = recordingsWithoutDt();
+  box.hidden = !missing.length;
+  if (!missing.length) return;
+  const who = document.getElementById("dtWho");
+  who.textContent = missing.length === RECORDINGS.length
+    ? "None of the " + RECORDINGS.length + " recordings carries a frame "
+      + "interval. The detectors need one; nothing here can work it out."
+    : missing.length + " of " + RECORDINGS.length + " recordings carry no frame "
+      + "interval (" + namedFew(missing, 3) + "). The rest run on what the "
+      + "folder sent them.";
+  const what = document.getElementById("dtWhat");
+  what.textContent = DT_SUPPLIED !== null
+    ? "Running those " + missing.length + " at " + DT_SUPPLIED + " s, on your "
+      + "say-so. run.json records it as yours, not as a measurement — the "
+      + "folder still says nothing."
+    : "Applied to every recording above that is missing one, and recorded as "
+      + "user-supplied. If they were not all imaged at the same rate, the "
+      + "folder has to say so — this is one number for the ones it left out.";
+  document.getElementById("dtDrop").hidden = DT_SUPPLIED === null;
+}
+
+/* EVERY RESULT BELOW IS ABOUT A GRID, so changing the grid retires all of them
+   — including the refusal that was true a second ago.
+
+   The same shape as the window table that outlived its folder, and found in
+   this file's own new work: supply an interval and the panel still read "No
+   frame interval for rec_a" while the note under the raster said the detectors
+   were running on the 0.05 s you had just given it. Two claims, on one screen,
+   about the same recording. A panel is cleared when what produced it stops
+   being the case, not when something happens to overwrite it. */
+function dtChanged() {
+  DETECT = null;
+  FOLDER_RUN = null;
+  document.getElementById("detectOut").textContent = "";
+  document.getElementById("folderWhat").textContent = "";
+  document.getElementById("tuneOut").textContent = "";
+  paintSaveDetections();
+  paintFolderRun();
+  // and the rail's ✓ with them: it says a stage produced something, and what it
+  // produced was computed on the interval that just changed
+  DONE.delete("accDetect");
+  paintRail();
+  paintDtAsk();
+  if (current) show(current);
+}
+
+function useSuppliedDt() {
+  const v = Number(document.getElementById("dtSec").value);
+  const what = document.getElementById("dtWhat");
+  // Clamped nowhere and refused instead: clamping a mistyped sampling interval
+  // into range would produce a plausible number nobody stated.
+  if (!(v > 0) || !Number.isFinite(v)) {
+    what.textContent = "A frame interval is a positive number of SECONDS "
+      + "between frames — 0.05 for 20 Hz imaging. A frame rate is the usual "
+      + "slip and it is not what goes here.";
+    return;
+  }
+  DT_SUPPLIED = v;
+  dtChanged();
+}
+
+function dropSuppliedDt() {
+  DT_SUPPLIED = null;
+  dtChanged();
+}
+
 /* ---------- show ----------------------------------------------------------- */
 async function show(rec) {
   // an assessment is of ONE recording; carrying it to the next one would mark
@@ -1625,6 +1847,11 @@ async function show(rec) {
   if (dt !== undefined)
     meta.append(Number(dt) > 0 ? sep("dt " + dt + " s")
                                : el("span", "dt " + dt + " — not seconds", "bad sep"));
+  // A supplied interval is shown WITH ITS PROVENANCE, in the same line as a
+  // measured one and never spelled the same. The reader looking at a raster
+  // has to be able to see which of the two they are working from.
+  else if (DT_SUPPLIED !== null)
+    meta.append(sep("dt " + DT_SUPPLIED + " s — yours, not the folder's"));
 
   const wins = REGIONS.get(rec.id) || [];
   const winbox = document.getElementById("wins");
@@ -1673,9 +1900,17 @@ async function show(rec) {
       + data.nRois + " fired, that is right; if some were quiet and were left out "
       + "of the file, they are missing from the population and every per-ROI rate "
       + "computed from it is too high.");
-  if (!dt)
-    say("No frame interval for this recording — the detectors need one; this page "
-      + "does not, because it only draws what it was given.");
+  // Was: "the detectors need one; this page does not". True of the raster and
+  // false of the page, which then ran all six on a made-up 0.1 s.
+  if (folderDt(rec.id) === null)
+    say(DT_SUPPLIED !== null
+      ? "No frame interval for this recording. The detectors below are running "
+        + "on the " + DT_SUPPLIED + " s you supplied — that is your statement "
+        + "about this recording, not the folder's, and run.json says so."
+      : "No frame interval for this recording. The raster above is drawn from "
+        + "event times alone and is unaffected, but no detector will run on it "
+        + "until one is supplied: the folder did not send one, and a sampling "
+        + "interval cannot be recovered from the data it sampled.");
   // said at the picture and not only in the panel that produced it: a raster
   // gets screenshotted, and a screenshot carries no sidebar
   if (SIMULATED)
@@ -1709,8 +1944,19 @@ async function checkFolder() {
           + d.nRois + " fired; if some were quiet and were left out, they are "
           + "missing from the population and every per-ROI figure is too high"]);
       const dt = (META.get(rec.id) || {}).frame_interval_sec;
+      /* AN ERROR, NOT A NOTE — and the two tiers mean what the header says they
+         mean, so this had to move. A note is "read fine, may not be what you
+         meant"; a folder with no frame interval has not been read fine, because
+         one of the three facts the contract asks for is absent and no detector
+         can run without it. Filed as a note, it let a folder report "✓ 2 of 2
+         conforming" and then produce a full detections.csv on an invented
+         10 Hz grid. The supplied-dt prompt beside this list is the way on; it
+         does not make the FOLDER conforming, which is why this line stays. */
       if (dt === undefined)
-        notes.push([rec.id, "no frame interval — detectors need one, this page does not"]);
+        errors.push([rec.id, "no frame_interval_sec in slices.csv — the "
+          + "detectors work on a grid and its spacing is the acquisition frame "
+          + "interval, which nothing in the folder can recover. Send it, or "
+          + "state it in Recordings and it is recorded as yours"]);
       else if (!(Number(dt) > 0))
         errors.push([rec.id, "frame_interval_sec is \"" + dt + "\", which is not "
           + "a positive number of seconds (a frame RATE is the usual slip)"]);
@@ -1882,6 +2128,15 @@ async function open(fileList, opts) {
   // no longer true either.
   DEMO_SHOWING = false;
   paintDemoNote();
+  // The window table is a claim about the folder being replaced — its period
+  // names, its counts, how many of its periods came out too short. It goes with
+  // it, or it sits under the next folder's chip contradicting it.
+  resetWindowState();
+  // And the frame interval somebody stated for the LAST folder is not a fact
+  // about this one. Carrying it would be the fabrication this page just stopped
+  // doing, with an extra step.
+  DT_SUPPLIED = null;
+  document.getElementById("dtAsk").hidden = true;
   document.getElementById("panel").hidden = true;
   document.getElementById("checkbar").hidden = true;
 
@@ -1947,6 +2202,11 @@ async function open(fileList, opts) {
   // `showSection` repaints the rail, which is what turns the stages that were
   // waiting on data — assess, detect, and tune if this folder was planted —
   // from dashed to live.
+  // Asked at the door, before the first raster and long before anything is
+  // computed: this is the one moment at which refusing costs nothing, because
+  // no number exists yet to be wrong (FOUNDATIONS §6 — "a loader that refuses
+  // has not" produced output).
+  paintDtAsk();
   showSection(SIMULATED ? "accSim" : "accList");
   await show(RECORDINGS[0]);
   // the first raster goes up before the folder is checked: seeing something is
@@ -3926,13 +4186,29 @@ function runWindows() {
   if (current) show(current);
 }
 
-function clearWindows() {
+/* The state half of "use what the folder sent", separated from the repaint so
+   `open()` can call it too.
+
+   IT DID NOT, AND THE PANEL OUTLIVED ITS FOLDER. Set windows on an 84-recording
+   folder, then Simulate — which replaces those 84 with 3 — and `#windowOut`
+   still read "Analysis windows set here · baseline 84 / high K+ 60 / SB222200
+   12 · 24 period(s) came out too short" while the chip two inches away said
+   "sent by the folder". Both were on screen at once and they were about
+   different folders. `open()` clears TRUTH, the simulator spec, the folder run,
+   the verification, the recordings, the regions, the roster, the delay
+   exemptions, the rail's ✓ marks and both check panels — this was the one piece
+   of folder-shaped state it walked past. */
+function resetWindowState() {
   for (const wins of REGIONS.values())
     for (const w of wins)
       if (w.derived) { w.aStart = NaN; w.aEnd = NaN; w.derived = false; w.tooShort = false; }
   WINDOWS_ARE_MINE = false;
   const box = document.getElementById("windowOut");
   if (box) box.textContent = "";
+}
+
+function clearWindows() {
+  resetWindowState();
   paintWindowPanel();
   if (current) show(current);
 }
@@ -4928,7 +5204,8 @@ function saveDetections() {
    that was ANALYSED, whether or not it produced a row, because a recording with
    no detections and a recording that was never opened must not look alike in the
    output — the first is a finding and the second is a bug. */
-let FOLDER_RUN = null;   // {rows, slices, frameIntervals, thresholds, failures}
+let FOLDER_RUN = null;   // {rows, slices, frameIntervals, frameSources,
+                         //  thresholds, failures, extras, sliceExtras}
 
 /* What the page can honestly say about its own provenance.
 
@@ -4941,6 +5218,17 @@ function runJson(run) {
   return {
     slices: run.slices.slice(),
     frame_interval_sec: Object.assign({}, run.frameIntervals),
+    /* WHERE EACH OF THOSE NUMBERS CAME FROM — `folder` for one the producer
+       sent in slices.csv, `you` for one the reader typed at the door because
+       the folder sent none.
+
+       A sidecar that records only the value cannot tell a measurement from a
+       statement, and six months later nobody can. That is not a hypothetical:
+       this page used to write 0.1 for a folder that declared nothing, into this
+       exact field, indistinguishable from the 0.1 of a folder that meant it.
+       An extra key rather than a changed one, so `emit.write_run`'s shape is
+       untouched and every existing reader of `frame_interval_sec` still works. */
+    frame_interval_source: Object.assign({}, run.frameSources),
     code_version: null,
     // Present only for a folder this page invented; a folder off disk had no
     // generator, no K was chosen for it and it has no seeds.
@@ -4954,6 +5242,20 @@ function runJson(run) {
 
 async function analyseFolder() {
   if (!RECORDINGS.length) return;
+  /* REFUSED WHOLE, BEFORE ANYTHING RUNS, and not per recording. A run that
+     skipped the recordings with no frame interval would write a roster that
+     silently omits them — and the roster's entire job is that a recording which
+     was never analysed cannot look like one that produced nothing. */
+  const noDt = recordingsWithoutDt().filter(id => dtFor(id) === null);
+  if (noDt.length) {
+    FOLDER_RUN = null;
+    paintFolderRun();
+    sayNoDt(document.getElementById("detectOut"), noDt);
+    const n = document.getElementById("folderWhat");
+    if (n) n.textContent = "Refused: " + noDt.length + " recording(s) have no "
+      + "frame interval.";
+    return;
+  }
   const btn = document.getElementById("runFolder");
   const was = btn ? btn.textContent : null;
   if (btn) btn.disabled = true;
@@ -4964,6 +5266,7 @@ async function analyseFolder() {
   };
   try {
     const rows = [], slices = [], frameIntervals = {}, thresholds = {};
+    const frameSources = {}, extras = {}, sliceExtras = {};
     const failures = [];
     const which = Object.keys(DETECTORS);
     let done = 0;
@@ -4973,13 +5276,15 @@ async function analyseFolder() {
       await new Promise(r => setTimeout(r, 0));
       const data = await loadRecording(rec);
       const m = META.get(rec.id) || {};
-      const dt = Number(m.frame_interval_sec) > 0 ? Number(m.frame_interval_sec)
-                                                  : 0.1;
+      // Never `… : 0.1`. The refusal above guarantees this resolves.
+      const grid = dtFor(rec.id);
+      const dt = grid.sec;
       // The roster records that this recording was analysed. It is appended
       // BEFORE any detector runs, so a recording that yields nothing — or that
       // every detector refuses — is still in it.
       slices.push(rec.id);
       frameIntervals[rec.id] = dt;
+      frameSources[rec.id] = grid.source;
       const identity = {};
       for (const [k, v] of Object.entries(m))
         if (!DETECTION_COLUMNS.includes(k)) identity[k] = v;
@@ -5024,6 +5329,25 @@ async function analyseFolder() {
               }
             }
             const d = D.run(trains, range, cfg, peakCtx);
+            /* THE CAVEAT TRAVELS WITH THE COUNT. Each detector that has one
+               declares it as `extra` — SPIKE-synch's artifact flag, CICADA's
+               single-cell moments — and the single-recording panel has always
+               shown it. The folder table did not, so the headline number
+               overstated what was found and said nothing about it. Measured on
+               this lab's 84 recordings, analysed whole-period at the shipped
+               settings: CICADA contributes 38,266 of the 60,417 rows and 7,064
+               of those are one cell on its own — not a coincidence, and not
+               coordination. Counted here and said out loud below, never
+               filtered: raising a floor until the awkward rows disappear is
+               what FOUNDATIONS §9 forbids in terms. */
+            if (D.extra) {
+              const c = D.extra.count(d);
+              const e = extras[key] || { n: 0, of: 0 };
+              e.n += c; e.of += d.starts.length;
+              extras[key] = e;
+              const sk = rec.id + "|" + key;
+              sliceExtras[sk] = (sliceExtras[sk] || 0) + c;
+            }
             rows.push(...detectionRows(key, d, {
               sliceId: rec.id, stream,
               regionIdx: seg.whole ? null : seg.idx,
@@ -5040,7 +5364,8 @@ async function analyseFolder() {
        spec and seeds exist to record. */
     const simulated = SIMULATED && TRUTH.size > 0;
     FOLDER_RUN = {
-      rows, slices, frameIntervals, thresholds, failures,
+      rows, slices, frameIntervals, frameSources, thresholds, failures,
+      extras, sliceExtras,
       generatorSpec: simulated ? (SIM_SPEC || null) : null,
       chosenK: simulated ? (SIM_K ?? null) : null,
       simulatedDataSeeds: simulated ? RECORDINGS.map((_, i) => i) : null,
@@ -5092,11 +5417,38 @@ function paintFolderRun() {
       // A refusal and a zero are different answers and are never drawn the
       // same. "—" is "this detector could not run here"; 0 is "it ran and
       // called nothing", which is a result.
-      tr.append(el("td", refused ? "—" : String(n), refused ? "state" : ""));
+      if (refused) { tr.append(el("td", "—", "state")); continue; }
+      const td = el("td", String(n));
+      // The qualified part of the count, in the cell rather than only in a
+      // paragraph under the table: the number a reader copies out is this one.
+      const ex = (run.sliceExtras || {})[id + "|" + key] || 0;
+      if (ex) td.append(el("span", " (" + ex + ")", "qual"));
+      tr.append(td);
     }
     tbl.append(tr);
   }
   box.append(tbl);
+
+  /* WHAT THE HEADLINE COUNT DOES NOT SAY. The single-recording panel has always
+     printed each detector's caveat and this table dropped it, so the folder
+     view — the one that produces the file people keep — was the less honest of
+     the two. Same text, same source: the detector's own `note`. */
+  const withExtra = Object.keys(DETECTORS)
+    .filter(k => DETECTORS[k].extra && (run.extras || {})[k]
+                 && run.extras[k].n > 0);
+  if (withExtra.length) {
+    box.append(el("p", "A number in brackets is the qualified part of the count "
+      + "beside it — " + withExtra.map(k => DETECTORS[k].label + ": "
+          + DETECTORS[k].extra.head + ", "
+          + run.extras[k].n.toLocaleString() + " of "
+          + run.extras[k].of.toLocaleString()).join(" · ") + ".", "caveat"));
+    for (const k of withExtra) {
+      const note = DETECTORS[k].note ? DETECTORS[k].note(run.extras[k].n) : null;
+      if (note)
+        box.append(el("p", DETECTORS[k].label + ", over the whole folder — "
+          + note, "caveat"));
+    }
+  }
 
   if (run.failures.length) {
     const seen = new Set();
@@ -5357,7 +5709,7 @@ const DETECTORS = {
     peaks: true,
     read: dt => ({ gridDt: dt,
       scePercentile: clamp(numById("cPct"), 80, 99.99),
-      nSurrogates: Math.round(clamp(numById("cSur"), 20, 2000)),
+      nSurrogates: Math.round(clamp(numById("ciSur"), 20, 2000)),
       nSynchronousFrames: Math.round(clamp(numById("cSync"), 1, 50)),
       sceMinDistanceFrames: Math.round(clamp(numById("cDist"), 1, 200)),
       activeDurationSec: clamp(numById("cDur"), 0.1, 60),
@@ -5543,7 +5895,18 @@ async function runDetectOnce() {
     const data = await loadRecording(current);
     const streams = analysisStreams(data);
     const m = META.get(current.id) || {};
-    const dt = Number(m.frame_interval_sec) > 0 ? Number(m.frame_interval_sec) : 0.1;
+    /* No fallback constant here either. A detector that ran on a made-up grid
+       produced a picture as well as a file, and the picture is the more
+       persuasive of the two. */
+    const grid = dtFor(current.id);
+    if (!grid) {
+      DETECT = null;
+      paintSaveDetections();
+      sayNoDt(document.getElementById("detectOut"), [current.id]);
+      draw(current, data);
+      return;
+    }
+    const dt = grid.sec;
     // one run per analysis segment, treatments included — a detector run across
     // a boundary would take its context from a period that is not the one it is
     // reporting on
@@ -5807,8 +6170,13 @@ async function tuneLoad(rec) {
   const streams = analysisStreams(data);
   const stream = streams[0];
   const byRoi = data.streams.get(stream);
-  const m = META.get(rec.id) || {};
-  const dt = Number(m.frame_interval_sec) > 0 ? Number(m.frame_interval_sec) : 0.1;
+  /* The third fallback that was here. The sweep's callers filter this folder
+     down to recordings that have a frame interval before they get here — so
+     this throw is the backstop rather than the message, and it says what went
+     wrong rather than quietly fitting a knob on a grid nobody chose. */
+  const grid = dtFor(rec.id);
+  if (!grid) throw new Error("no frame interval for " + rec.id);
+  const dt = grid.sec;
   return {
     id: rec.id, truth: TRUTH.get(rec.id), dt, stream, nStreams: streams.length,
     // the peak trains, for the one detector that needs them; `why` when the
@@ -5824,6 +6192,21 @@ async function tuneLoad(rec) {
     trains: data.order.map(id => byRoi.get(id) || []),
     range: [data.t0, Math.max(data.t1, data.t0 + 1)],
   };
+}
+
+/* Everything a sweep scores against: the recordings with planted events AND a
+   frame interval, plus the names of any that had the first and not the second.
+   Both sweeps ask for the same thing, and asking for it in one place is what
+   stops one of them growing a fallback the other does not have. */
+async function tuneDataSet() {
+  const dataSet = [], noDt = [];
+  for (const rec of RECORDINGS) {
+    const t = TRUTH.get(rec.id);
+    if (!(t && t.times.length)) continue;      // no answer key, nothing to score
+    if (!dtFor(rec.id)) { noDt.push(rec.id); continue; }
+    dataSet.push(await tuneLoad(rec));
+  }
+  return { dataSet, noDt };
 }
 
 /* How to divide this data set, or null when it cannot be divided.
@@ -5927,10 +6310,14 @@ async function scoreAllDetectors() {
     /* The data set, loaded ONCE for all six. Only recordings with planted events
        are in it — a recording with no answer key cannot score anything, and
        including it would put a zero in every row for the same reason. */
-    const dataSet = [];
-    for (const rec of RECORDINGS) {
-      const t = TRUTH.get(rec.id);
-      if (t && t.times.length) dataSet.push(await tuneLoad(rec));
+    const { dataSet, noDt } = await tuneDataSet();
+    if (noDt.length) {
+      say(noDt.length + " recording(s) with planted events carry no frame "
+          + "interval, so there is no grid to score them on. Supply one in "
+          + "Recordings, or leave them out of the folder.");
+      SCOREBOARD = null;
+      paintScoreboard();
+      return;
     }
     if (!dataSet.length) {
       say("No simulated recordings are open, so there is nothing with a known "
@@ -6166,10 +6553,10 @@ async function runTune() {
     /* The data set is every simulated recording in the folder, not the one on
        screen. A knob fitted to one recording is fitted to that recording's
        noise, and nothing on the screen used to show the difference. */
-    const dataSet = [];
-    for (const rec of RECORDINGS) {
-      const t = TRUTH.get(rec.id);
-      if (t && t.times.length) dataSet.push(await tuneLoad(rec));
+    const { dataSet, noDt } = await tuneDataSet();
+    if (noDt.length) {
+      sayNoDt(document.getElementById("tuneOut"), noDt);
+      return;
     }
     if (!dataSet.length) return;
     /* A detector anchored on the peak cannot be swept on a folder that did not
@@ -6483,6 +6870,8 @@ function drawSweep(cv, rows, knob, best) {
 document.getElementById("runTune").onclick = runTune;
 document.getElementById("runWindows").onclick = runWindows;
 document.getElementById("clearWindows").onclick = clearWindows;
+document.getElementById("dtUse").onclick = useSuppliedDt;
+document.getElementById("dtDrop").onclick = dropSuppliedDt;
 // before anything is open there is nothing to score against, and the panel says
 // that rather than offering a button that would do nothing
 paintTuneWhat();

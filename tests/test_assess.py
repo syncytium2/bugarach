@@ -54,7 +54,7 @@ def _baseline_slice():
     1200 s, and a port that skipped the trim would analyse 3.8x the data and still
     match nothing.
     """
-    s = load_slice(FIX / "synth_fastcal_s1.mat")
+    s = load_slice(FIX / "synth_fastcal_s1.mat", dt=0.1)
     s = deepcopy(s)
     for r in s.regions:
         r.name = "baseline"

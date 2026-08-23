@@ -268,7 +268,10 @@ def _all_six(s):
         "cicada": cicada_detect(s).streams["events"],
         "sce": sce_detect(s).streams["events"],
         "coact": coact_detect(tr, ext),
-        "rate": rate_detect(tr, ext),
+        # the recording's own grid, read off the recording: the generator
+        # quantized its onsets to it, so there is nothing here for a caller
+        # to choose and nothing for a detector to assume
+        "rate": rate_detect(tr, ext, grid_dt=s.require_dt()),
         "sync": sync_detect(tr, ext, tau_max=0.25, max_gap=0.5),
     }
 

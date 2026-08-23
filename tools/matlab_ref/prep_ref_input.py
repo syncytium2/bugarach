@@ -19,7 +19,10 @@ from bugarach.store import load_slice  # noqa: E402
 
 
 def export(src, dst):
-    s = load_slice(src)
+    # dt=None: this hands event times back to MATLAB and touches no sampling
+    # grid, so saying "the store never carried one" is the true answer and an
+    # invented interval would travel into a reference file.
+    s = load_slice(src, dt=None)
     def cells(stream, f):
         return np.array([getattr(stream, f)[i] for i in range(stream.n_rois)],
                         dtype=object).reshape(1, -1)

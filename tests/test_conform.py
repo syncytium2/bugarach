@@ -312,7 +312,7 @@ def test_a_period_running_to_the_end_of_the_recording_still_clamps(tmp_path: Pat
     from bugarach.detectors.loco import supplied_region_windows
     from bugarach.store import Region, Slice
 
-    s = Slice(slice_id="s1", streams={}, roi_ids=None, regions=[
+    s = Slice(slice_id="s1", streams={}, dt=None, roi_ids=None, regions=[
         Region(name="baseline", slot="1", start_sec=0.0, end_sec=600.0,
                analysis_start_sec=0.0, analysis_end_sec=600.0),
         Region(name="TTX", slot="2", start_sec=600.0, end_sec=float("inf"),

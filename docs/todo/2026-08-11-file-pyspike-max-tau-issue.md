@@ -51,14 +51,18 @@ rather than in public.
 showing the tree the report describes, including
 `test_pyspike_max_tau_is_still_inert`.
 
-**When pasting**: don't. `tools/pyspike_issue_body.py` emits each piece already
-unwrapped, leaving the fenced blocks and tables alone — this file is hard-wrapped
-near 80 columns, and both GitHub and most mail clients turn those newlines into
-line breaks, so pasting the source ships every paragraph as a stack of short
-ragged lines.
+**The note is a file you open and copy**: [`docs/kreuz_note.md`](../kreuz_note.md),
+written unwrapped and without backticks so it goes straight into a mail client.
+No tool, no command — it is one page a person edits in the mail anyway, and
+putting a script in front of it was friction invented for no reason (Tony,
+2026-08-23).
+
+**The issue body does need the tool**, because it is 12 KB of fenced blocks and
+tables, and this file is hard-wrapped near 80 columns while GitHub turns every
+newline in an issue body into a line break — so pasting the source ships each
+paragraph as a stack of ragged lines. `gh` wants a file anyway:
 
 ```bash
-python tools/pyspike_issue_body.py --note      # the note to Kreuz -> mail
 python tools/pyspike_issue_body.py > /tmp/pyspike_issue.md
 gh issue create --repo mariomulansky/PySpike \
   --title "$(python tools/pyspike_issue_body.py --title)" \
@@ -73,53 +77,24 @@ cut three listings.
 
 ---
 
-## Note for Thomas Kreuz (for review — not yet sent)
+## Note for Thomas Kreuz
 
-Tony has direct correspondence with Kreuz, which is a better route than the
-tracker: he is senior author on the measure papers, he maintains cSPIKE, and
-Mulansky is his long-time collaborator. Keep it short — the mechanism belongs in
-the issue, and the only thing this note has to establish is that the cap is a
-real parameter and that PySpike lost it. Send in Tony's voice; the bracketed
-opener is his to replace.
+**The note itself lives in [`docs/kreuz_note.md`](../kreuz_note.md)** -- one copy,
+paste-ready, no second version here to drift out of step with it.
 
-**Subject:** PySpike's `max_tau` has been inert since 0.8.0
+Why it exists and what it deliberately leaves out: Kreuz is senior author on the
+measure papers, he maintains cSPIKE, and Mulansky is his long-time collaborator,
+so a mail to him reaches the people who can settle this faster than a tracker
+that has gone three months without a maintainer comment. The note stays short on
+purpose. It establishes only that the cap is a real parameter and that PySpike
+lost it, then asks the one question that is genuinely his: is a hard tau_max
+still the semantics PySpike should have? The mechanism -- the reproduction, the
+arithmetic, the provenance table, the patch -- belongs in the issue below, and
+would bury the question if it went in the mail.
 
-[opener]
-
-We have been porting the cSPIKE SPIKE-synchronization stack to Python for a
-calcium-imaging project, and validating the port against cSPIKE reference output.
-That turned up something in PySpike you will probably want to know about, since
-it touches your measures rather than just the packaging.
-
-PySpike's `max_tau` — the maximum coincidence window, `max_dist` in cSPIKE — has
-had no effect since 0.8.0 on any spike interior to its own train. In the shared
-`get_tau` that 0.8.0 introduced, `max_tau` survives only as the initial value of
-the four surrounding ISIs, and every one of them is overwritten when that
-neighbor exists, so the returned window is the minimum of the interpolated
-half-ISIs and the cap is never consulted. 0.7.0 ended the same function with
-`if max_tau > 0.0: m = fmin(m, max_tau)`; the consolidation dropped that clamp
-from all three copies at once. The docstring still promises the bound.
-
-It is not a small numerical difference. On two trains with a mean ISI around 10 s,
-`max_tau` of 1.0, 0.25 and 1e-6 all return SPIKE-Sync 0.3333 — a 1 µs window
-should return nothing. On a 30-train synthetic recording of ours at a 0.25 s cap,
-PySpike reports 0.3133 where the capped definition gives 0.0696. Anything that
-took `max_tau` at its word in the last three years has been reading uncapped
-numbers, and `get_tau` feeds spike-directionality and spike-train-order too, not
-only SPIKE-Sync.
-
-I have a two-line fix — bound the returned window by `max_tau/2`, since `get_tau`
-receives the already-doubled `true_max` — which restores exactly what 0.7.0 did
-at MRTS=0 and leaves all 50 tests in PySpike's own suite passing on both
-backends. Happy to send it to Mario as a PR. Before I file anything I wanted to
-ask you the part only you can settle: is a hard `τmax` still the semantics you
-want PySpike to have? Your 2017 New J Phys paper introduces it as an optional
-extension and cSPIKE has carried `max_dist` all along, so I have written this up
-as a regression rather than a design change — but if 0.8.0 dropped it on purpose,
-then it is the docstring that should move, and I would rather hear that from you
-than guess at it in public.
-
-[sign-off]
+If he answers that 0.8.0 dropped the clamp deliberately, the issue changes shape
+before it is ever filed: it becomes a docs bug, and most of what follows comes
+out.
 
 ---
 

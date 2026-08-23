@@ -1,9 +1,34 @@
 ---
-status: open
+status: done
 filed: 2026-08-16
+closed: 2026-08-23
 ---
 
 # The frame interval does not travel with the recording, so gating the loader only covers half the paths
+
+**CLOSED 2026-08-23.** It travels now: `Slice.dt`, a typed field with no
+default, set by every producer of a recording — the simulator included, which
+passes its own `grid_sec`, so `bench.py`'s hand-maintained coupling is no longer
+the only thing holding the generator and the detectors on one grid. "The
+direction, not yet a recommendation" below is what got built, and the naming
+complaint it opens with was the sharpest observation in it: the rule really was
+scoped by one detector's parameter name, and the two silent defaults really were
+the cost. Both are gone.
+
+One of the three turned out not to be this quantity at all. SPIKE-synch's `dt`
+is the bin width its hysteresis thresholds were calibrated at, not an
+acquisition interval, and it keeps its default on purpose. The full record — the
+loader contract, why a conforming folder with no sidecar is not refused, and the
+SPIKE-synch argument — is in
+[`2026-08-16-dt-must-be-required-at-load.md`](2026-08-16-dt-must-be-required-at-load.md),
+"How it closed".
+
+The upstream fix this file argues for at the end — the stores carrying their own
+interval — **is still worth having and is still interface2's to make.** What
+changed is that it is an improvement rather than a prerequisite: a store that
+declared its interval would let `load_slice` read it instead of being told, and
+would spare this lab typing a number it already knows. Everything downstream is
+built to receive it.
 
 ## The finding
 

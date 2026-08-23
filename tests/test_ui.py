@@ -56,7 +56,7 @@ TEST_DT = 0.1
 def _foreign_slice():
     rng = np.random.RandomState(4)
     events = [np.sort(rng.uniform(0, 120, 15)) for _ in range(5)]
-    return slice_from_events(events, slice_id="foreign")
+    return slice_from_events(events, dt=0.1, slice_id="foreign")
 
 
 def _walk(obj):
@@ -108,7 +108,7 @@ def _folder(tmp_path, *, dt="0.05", rows="1,10.0\n1,10.4\n2,10.2\n3,10.3\n"):
 
 
 def test_viewer_builds_on_two_stream_store():
-    s = load_slice(FIXTURE)
+    s = load_slice(FIXTURE, dt=0.1)
     app = build_viewer({s.slice_id: s})
     assert app is not None  # FastListTemplate assembled without serving
 
