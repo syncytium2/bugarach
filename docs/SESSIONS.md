@@ -60,6 +60,23 @@ Template:
 
 ## Active
 
+### Mac/deploy-two-track — publishing the two-track rail
+- **Status:** ACTIVE 2026-08-23 — **claims the site deploy** (`bugarach.tonydefazio.com`),
+  taken from released. Released on the way out.
+- **Why now, and not yesterday.** The site has sat at `95d94ec` since 2026-08-22 on
+  purpose: #224 shipped a single-track rail that Tony superseded the same day, and
+  publishing it would have put a ruled-out shape in front of readers. #251 landed the
+  two-track version, so `main` and the design agree again and the hold is over.
+- **Carries three viewer commits**: the two-track rail with Compare as its own step
+  (#251), the "corpus" retirement (#244), and a sweep refusal (`ab82ccd`).
+- **Deploying from:** the PRIMARY checkout, fast-forwarded to `main`. It holds
+  `node_modules` and the wrangler login from the 2026-08-22 deploy. **Check `git log -1`
+  before deploying from anywhere** — the primary was 55 commits behind when yesterday's
+  deploy started.
+- **Verified with:** `tools/audit_deployed_page.py`, which drives the live URL in chromium
+  and fails on a request to anywhere but the site. `curl` does not substitute — the
+  Cloudflare beacon injection was conditional on looking like a browser.
+
 ### Mac/deploy-site-0822 — publishing the site, because the lead figure on it was the old render
 - **Status:** DONE 2026-08-22 — deployed and verified; **claim released.** Version
   `11b82863`. Four assets changed: `index.html`, `diagnostic.html`, `reality.png`,
