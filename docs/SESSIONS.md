@@ -61,8 +61,17 @@ Template:
 ## Active
 
 ### Mac/deploy-two-track — publishing the two-track rail
-- **Status:** ACTIVE 2026-08-23 — **claims the site deploy** (`bugarach.tonydefazio.com`),
-  taken from released. Released on the way out.
+- **Status:** DONE 2026-08-23 — deployed and verified; **claim released.** Cloudflare
+  version `97c20b04`. Four assets changed: `index.html`, `diagnostic.html`,
+  `landscape.html`, `viewer.html`. The live `viewer.html` was fetched back and is
+  **byte-identical to `docs/site/raster_viewer.html` on `main`** — checked that way, not
+  by reading the upload log. All nine rail steps present on the served page.
+- **What the audit said:** *"The page fetched nothing but itself."* The Cloudflare beacon
+  from 2026-08-18 has not returned.
+- **One thing the deploy found and fixed:** the audit clicks the empty state's simulate
+  button to exercise the generator, and the viewer has simulated on load since #224 — so
+  the button was not there and every deploy since ended with a TimeoutError note about a
+  path that had just run unprompted. PR #257. The network verdict was never in doubt.
 - **Why now, and not yesterday.** The site has sat at `95d94ec` since 2026-08-22 on
   purpose: #224 shipped a single-track rail that Tony superseded the same day, and
   publishing it would have put a ruled-out shape in front of readers. #251 landed the
