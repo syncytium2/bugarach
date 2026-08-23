@@ -228,6 +228,31 @@ def test_a_supplied_interval_is_used_and_says_on_screen_that_it_is_yours(
     assert not errs, errs
 
 
+def test_supplying_one_retires_the_refusal_it_answers(opened_without_dt):
+    """Found in this fix's own first draft, and it is item 2 again.
+
+    Supply an interval and the results panel still read "No frame interval for
+    rec_a" while the note under the raster said the detectors were running on
+    the 0.05 s just given. Two claims about one recording, on one screen. A
+    panel goes when what produced it stops being the case.
+    """
+    pg, errs = opened_without_dt
+    _go(pg, "accDetect")
+    pg.click("#runDetect")
+    pg.wait_for_timeout(500)
+    assert "No frame interval" in pg.eval_on_selector("#detectOut",
+                                                      "e => e.innerText")
+    _go(pg, "accList")
+    pg.fill("#dtSec", "0.05")
+    pg.click("#dtUse")
+    pg.wait_for_timeout(400)
+    _go(pg, "accDetect")
+    assert pg.eval_on_selector("#detectOut", "e => e.innerText").strip() == "", (
+        "the refusal is still on screen after the thing it refused over was "
+        "supplied")
+    assert not errs, errs
+
+
 def test_what_the_reader_typed_is_recorded_as_theirs_in_run_json(
         opened_without_dt):
     """The provenance distinction, which is the point of the whole fix.

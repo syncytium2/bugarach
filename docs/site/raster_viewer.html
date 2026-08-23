@@ -1719,6 +1719,31 @@ function paintDtAsk() {
   document.getElementById("dtDrop").hidden = DT_SUPPLIED === null;
 }
 
+/* EVERY RESULT BELOW IS ABOUT A GRID, so changing the grid retires all of them
+   — including the refusal that was true a second ago.
+
+   The same shape as the window table that outlived its folder, and found in
+   this file's own new work: supply an interval and the panel still read "No
+   frame interval for rec_a" while the note under the raster said the detectors
+   were running on the 0.05 s you had just given it. Two claims, on one screen,
+   about the same recording. A panel is cleared when what produced it stops
+   being the case, not when something happens to overwrite it. */
+function dtChanged() {
+  DETECT = null;
+  FOLDER_RUN = null;
+  document.getElementById("detectOut").textContent = "";
+  document.getElementById("folderWhat").textContent = "";
+  document.getElementById("tuneOut").textContent = "";
+  paintSaveDetections();
+  paintFolderRun();
+  // and the rail's ✓ with them: it says a stage produced something, and what it
+  // produced was computed on the interval that just changed
+  DONE.delete("accDetect");
+  paintRail();
+  paintDtAsk();
+  if (current) show(current);
+}
+
 function useSuppliedDt() {
   const v = Number(document.getElementById("dtSec").value);
   const what = document.getElementById("dtWhat");
@@ -1731,14 +1756,12 @@ function useSuppliedDt() {
     return;
   }
   DT_SUPPLIED = v;
-  paintDtAsk();
-  if (current) show(current);
+  dtChanged();
 }
 
 function dropSuppliedDt() {
   DT_SUPPLIED = null;
-  paintDtAsk();
-  if (current) show(current);
+  dtChanged();
 }
 
 /* ---------- show ----------------------------------------------------------- */
