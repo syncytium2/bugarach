@@ -22,10 +22,15 @@ from bugarach.bench import (
     REGIMES,
     OPERATING_POINTS,
     BenchResult,
+    CROWDED_RECORDING,
+    CROWDING_GAP_SEC,
+    MAX_PROBE_PER_MIN,
     DegenerateSweep,
     EdgeOfRange,
+    TooPromiscuous,
     evaluate,
     false_positives_per_hour,
+    make_crowded_recording,
     make_null_recording,
     make_recording,
     pick_operating_point,
@@ -97,14 +102,10 @@ def test_sce_is_the_one_that_does_not_transfer():
 # every firing there is a detector keying on rate. The distractors are real
 # cross-ROI coincidence that is not a coordinated event.
 
-MAX_PROBE_PER_MIN = {
-    "coact": 1.0,      # measured: 0.0
-    "loco": 1.0,       # measured: 0.1
-    "sync": 1.0,       # measured: 0.2
-    "rate": 2.0,       # measured: 0.6
-    "sce": 9.0,        # measured: 5.6
-    "cicada": 25.0,    # measured: 17.3 — still the most rate-fooled of the six
-}
+# The budgets moved into `bench.MAX_PROBE_PER_MIN` on 2026-08-22 and are imported
+# rather than restated here. They had to move: while they lived only in this file
+# the probe could fail a shipped setting but not the SWEEP that chooses one, and
+# `pick_operating_point` selected on F1 alone.
 
 
 @pytest.mark.parametrize("name", DETECTORS)
@@ -272,8 +273,121 @@ def test_syncs_grid_is_mostly_degenerate_and_the_gate_does_not_catch_it():
 def test_the_declared_grid_brackets_its_own_optimum(name):
     """The edge-of-range guard against the grids actually shipped, not a
     synthetic curve. This is the check that caught LoCo's original grid, whose
-    top value was still the best one."""
-    pick_operating_point(sweep(name, "baseline_quiet", seeds=(1,)))
+    top value was still the best one.
+
+    The promiscuity gate is disabled here on purpose: this test is about whether
+    the grid BRACKETS its optimum, and `rate`'s optimum is separately known to be
+    over its probe budget (see the test below). Leaving the gate on would make
+    this fail for a reason it is not testing."""
+    pick_operating_point(sweep(name, "baseline_quiet", seeds=(1,)),
+                         max_probe_per_min=None)
+
+
+# --- the probe can now fail a CALIBRATION, not just a shipped setting --------
+
+def _probe_curve(f1s, probes):
+    """A curve carrying a probe rate per point, for the selection gate.
+
+    Probe firings are part of ``n_detected`` and are then excluded from the
+    scored set (``n_scored = n_detected - hot_fa``), which is the whole shape of
+    the defect: they leave both halves of precision. Building them as an extra on
+    top instead pushes precision above 1."""
+    out = []
+    for i, (f, hot) in enumerate(zip(f1s, probes)):
+        r = BenchResult(detector="rate", regime="baseline_quiet",
+                        knob_value=float(i), n_planted=100,
+                        n_detected=100 + hot, n_hit=int(round(f * 100)))
+        r.hot_fa = hot
+        out.append(r)
+    return out
+
+
+def test_a_promiscuous_winner_is_refused_rather_than_calibrated():
+    """The hole this closes. A budget test catches a regression at the SHIPPED
+    point; nothing watched the sweep that chooses one, so a calibration could
+    select a setting that wins on F1 by firing where nothing was planted."""
+    probe_min = BENCH_RECORDING["hot_window"]
+    span = (probe_min[1] - probe_min[0]) / 60.0
+    over = int((MAX_PROBE_PER_MIN["rate"] + 5) * span)
+    with pytest.raises(TooPromiscuous, match="keying on rate"):
+        pick_operating_point(
+            _probe_curve([0.5, 0.9, 0.6], [0, over, 0]))
+
+
+def test_the_gate_can_be_turned_off_for_a_check_that_is_not_about_it():
+    """`None` restores the pre-2026-08-22 behaviour, so a test about bracketing
+    can isolate bracketing."""
+    probe_min = BENCH_RECORDING["hot_window"]
+    span = (probe_min[1] - probe_min[0]) / 60.0
+    over = int((MAX_PROBE_PER_MIN["rate"] + 5) * span)
+    got = pick_operating_point(_probe_curve([0.5, 0.9, 0.6], [0, over, 0]),
+                               max_probe_per_min=None)
+    assert got.f1 == pytest.approx(0.9)
+
+
+def test_a_clean_winner_still_passes():
+    got = pick_operating_point(_probe_curve([0.5, 0.9, 0.6], [0, 0, 0]))
+    assert got.f1 == pytest.approx(0.9)
+
+
+def test_rates_own_f1_optimum_is_over_its_probe_budget():
+    """Recorded as a measurement, because it is the case that proves the gate was
+    needed rather than hypothetical.
+
+    On `baseline_quiet`, `rate`'s best-F1 setting is `excess_threshold_hz=3`
+    (F1 0.79), which fires ~3.6 times/min into a block containing no planted
+    events, against its budget of 2.0. The SHIPPED value is 5.0 and is within
+    budget — so nothing was broken in what ships, and a re-calibration would have
+    chosen the promiscuous point and called it an operating point.
+
+    **Expected to change when rate+context's threshold rule is fixed** (see
+    `docs/forks.md` §3): a multiplicative bar drops its probe firings to zero. Update
+    the measurement then rather than deleting the test."""
+    curve = sweep("rate", "baseline_quiet", seeds=(1,))
+    with pytest.raises(TooPromiscuous):
+        pick_operating_point(curve)
+    winner = pick_operating_point(curve, max_probe_per_min=None)
+    assert winner.hot_fa_per_min > MAX_PROBE_PER_MIN["rate"]
+
+
+# --- the bench can now exhibit reference-window contamination ---------------
+
+def test_the_bench_recording_cannot_crowd_a_reference_window():
+    """The gap, asserted so it cannot be forgotten again.
+
+    `BENCH_RECORDING` plants events at least 120 s apart while a rolling
+    detector's reference window spans ±30 s, so a second planted event can never
+    land in the first one's context. The failure guard cells exist for is
+    **impossible by construction** on the recording the six are scored on — which
+    is why the regime-shift incident was found by hand and not by this suite."""
+    assert BENCH_RECORDING["min_sep_sec"] > 2 * CROWDING_GAP_SEC, (
+        "the bench recording can now crowd a reference window — if that is "
+        "deliberate, every operating point derived on it needs re-deriving")
+
+
+def test_the_crowded_recording_actually_crowds():
+    """And the diagnostic that fills the gap. A floor on the spacing is not a
+    target: at the bench's own event count, `min_sep_sec=14` still leaves a
+    median gap near 70 s. The count is what crowds."""
+    _, gt = make_crowded_recording(1)
+    t = np.sort([e.time for e in gt.events])
+    gaps = np.diff(t)
+    assert gaps.min() >= CROWDED_RECORDING["min_sep_sec"] - 1e-6
+    inside = int((gaps < CROWDING_GAP_SEC).sum())
+    assert inside > 0.6 * gaps.size, (
+        f"only {inside} of {gaps.size} gaps put two events in one reference "
+        "window — this recording is not crowded and cannot test masking")
+
+
+def test_the_crowded_recording_is_not_a_regime_anyone_can_calibrate_on():
+    """It carries no promiscuity probe and no distractors on purpose: it asks one
+    question. Keeping it out of REGIMES is what stops it being swept."""
+    assert CROWDED_RECORDING["hot_window"] is None
+    assert CROWDED_RECORDING["n_distractors"] == 0
+    assert "crowded" not in REGIMES, (
+        "the crowded recording is a diagnostic, not a difficulty axis — a corpus "
+        "where every event has a neighbour is as unrepresentative as one where "
+        "none does")
 
 
 def test_a_curve_with_no_defined_f1_says_so():

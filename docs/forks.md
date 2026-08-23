@@ -220,14 +220,69 @@ at `<darkroom>/bugarach/lit/radar/`.
 
 ---
 
+## 9 · The probe gates the calibration, not the score
+
+**Live:** `pick_operating_point` raises `TooPromiscuous` when the F1-optimum
+exceeds that detector's `MAX_PROBE_PER_MIN` ceiling.
+
+**Alternatives:** fold the probe into F1 — **rejected, and it stays rejected**,
+because the headline then measures how hard the probe was set, and CICADA reads
+F1 0.09 that way against a true 0.68. Or leave it a diagnostic column nobody
+reads, which is what it was.
+
+**Why this shape:** the budgets already existed, but only in `tests/test_bench.py`.
+So the probe could fail a **shipped setting** and not the **sweep that chooses
+one** — and operating points come from sweeps. Moving the budgets into `bench.py`
+and gating selection on them closes that without touching F1.
+
+**It fires on a real case immediately:** `rate`'s best-F1 setting on
+`baseline_quiet` (0.79 at `excess_threshold_hz=3`) fires 3.6/min into a block
+containing nothing, against a ceiling of 2.0. The *shipped* value is 5.0 and is
+within budget — so nothing broken shipped, and a re-calibration would have chosen
+the promiscuous point. Recorded by
+`tests/test_bench.py::test_rates_own_f1_optimum_is_over_its_probe_budget`, which
+is expected to change when #3 lands.
+
+**To flip:** `max_probe_per_min=None` restores F1-only selection; a number
+overrides the ceiling. **Deliberately does not re-rank** — a promiscuous winner is
+a refusal, not an invitation to take second place silently.
+
+---
+
+## 10 · Crowding is a separate recording, not a change to the bench
+
+**Live:** `CROWDED_RECORDING` / `make_crowded_recording` — 120 events at a 14 s
+floor, median gap 19.4 s, 97 of 119 gaps putting two events inside one ±30 s
+reference window.
+
+**Alternative:** lower `BENCH_RECORDING["min_sep_sec"]`.
+
+**Why not that:** it would re-derive every operating point and invalidate every
+published number, for a reason unrelated to why they were derived. Adding a
+condition is cheaper than moving the goalposts.
+
+**What it fixes:** the bench plants events **≥120 s apart** against a ±30 s
+reference window, so reference-window contamination — the failure guard cells
+exist for, and the shape of the regime-shift incident — was **impossible by
+construction** on the recording the six are scored on. That is why the incident
+was found by hand rather than by the suite.
+
+**Two things worth not re-deriving:** `min_sep_sec` is a *floor under a renewal
+process*, not a target — at the bench's own event count it changes almost nothing
+(median gap ~70 s, 5 of 35 gaps inside a window). **The count is what crowds.**
+And 14 s is the spacing of the historical dense benchmark whose settings
+collapsed.
+
+**To flip:** opt-in already, and deliberately **not** in `REGIMES` so nothing can
+be calibrated on it — a corpus where every event has a neighbour is as
+unrepresentative as one where none does.
+
+---
+
 ## What is still genuinely open
 
 Not forks — nobody has taken a side.
 
 - **`BENCH_RECORDING` runs flat** while `derive_spec` measures (#2).
-- **The promiscuity probe cannot fail** — its firings leave both halves of F1, so
-  CICADA's 215 in an empty block cost it nothing. Must land before the re-fit, or
-  the campaign re-selects against a score that cannot see promiscuity.
-- **The bench cannot exhibit reference-window contamination at all**: it plants
-  events ≥120 s apart against a ±30 s reference window, so a second event can
-  never contaminate the first one's context.
+- **`guard_sec` is not implemented on `loco`/`coact`**, which is where #4 says the
+  evidence points, and where `CROWDED_RECORDING` (#10) now makes it measurable.
