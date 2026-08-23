@@ -12,10 +12,11 @@ rule here can fire by itself, it does — those are named inline.
 2. Open a PR.
 3. Land it with **`bash tools/merge_when_green.sh <pr>`**.
 4. Never commit directly on `main`.
-5. **Clean up after yourself**: when your work has merged, remove your worktree
-   and delete the branch. `bash tools/worktree_sweep.sh --apply` does it for
-   every worktree that is finished, and refuses to touch one that is not — see
-   "Worktrees rot" below.
+5. **Cleaning up after yourself is step 3's job now.** `merge_when_green.sh`
+   removes the worktree it just merged, so an ordinary landing leaves nothing
+   behind; `--no-reap` opts out. See "Worktrees rot" below for the ones that
+   leaked before this existed — and note that `worktree_sweep.sh --apply` is
+   **not** the way to collect them today.
 
 ## What is mechanized, and what is still prose
 
@@ -23,6 +24,7 @@ rule here can fire by itself, it does — those are named inline.
 |---|---|---|
 | never commit on `main` | `tools/guard_branch.sh`, run from `.githooks/pre-commit` | `tests/test_branch_guard.py` fails |
 | don't merge a PR whose checks have not passed | `tools/merge_when_green.sh` | `tests/test_merge_gate.py` fails |
+| remove your worktree once its PR has landed | `tools/merge_when_green.sh` reaps it on the way out | `tests/test_merge_gate.py` fails |
 | **one PR per theme** | *nothing — still prose* | — |
 | content rules (personal paths, RNG, …) | `tools/sapper.py`, hook + CI | `tests/test_sapper.py` fails |
 
@@ -101,20 +103,33 @@ happened in a single day: one session read a worktree that was being written to 
 "unpushed and at risk", and another concluded nobody was working on CI while
 somebody was.
 
-The list is only worth reading if presence *means* something. After a sweep it
-means **not yet merged**.
+The list is only worth reading if presence *means* something.
+
+**The leak is fixed at the source, not swept up afterwards.** `merge_when_green.sh`
+blocks until the PR lands, which makes it the only process awake at the second a
+worktree becomes garbage — so it removes that worktree itself, on the way out. It
+removes exactly one: the one you are standing in, on the branch you just merged,
+verified merged and clean. It asks nobody's intent but yours.
+
+That matters because the alternative cannot. `worktree_sweep.sh` judges *other
+people's* directories, by git state alone, and it reads neither session board — so
+a worktree that is merged, clean and idle may still carry an ACTIVE claim from a
+session about to open its next PR from it. On 2026-08-23 its dry run offered 27,
+at least three of them claimed. **Do not `--apply` it** until it reads the board
+(`docs/todo/2026-08-23-the-worktree-sweep-does-not-read-the-board.md`); to collect
+the backlog, remove your own by name.
 
 ```
 bash tools/worktree_sweep.sh            # report; changes nothing
-bash tools/worktree_sweep.sh --apply    # remove the finished ones
+bash tools/worktree_sweep.sh --live     # who is in a worktree RIGHT NOW
 ```
 
-It refuses to touch a worktree with uncommitted changes, one touched in the last
-two hours (`--hours` to widen), one on a detached HEAD, or one whose branch is not
-yet an ancestor of `origin/main`. Every one of those guards has caught something
-real — the first sweep skipped two worktrees that had been created in the minutes
-it took to write the script.
+Its refusals are still worth knowing, because the reaper shares the shape of
+them: uncommitted changes, a detached HEAD, a branch not yet an ancestor of
+`origin/main`, and — the one the reaper checks first — a branch that is not the
+thing that just merged.
 
-**Run it when you finish a piece of work, not as a chore later.** The branch you
-are best placed to remove is your own, and you are the only session that knows it
-is done.
+**Why the moment matters.** Median worktree life on this machine is ten minutes:
+made for one task, one PR, never touched again. Anything deferred to "session
+end" is deferred past the end of the only thing that knew about it, which is why
+step 5 used to be prose and why the tree filled up anyway.
