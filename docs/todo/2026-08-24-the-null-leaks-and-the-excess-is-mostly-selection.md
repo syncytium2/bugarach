@@ -5,6 +5,8 @@ filed: 2026-08-24
 
 # The null leaks: plant nothing and the assessor reports coordination
 
+waiting: Decide whether the assessor's excess gets a fork or a caveat — parity says the same bias is in the MATLAB. The K decision is read off this number and is blocked behind the answer.
+
 > **Not murderboarded** — a finding for sessions in this tree, same standing as
 > the revision plan it feeds. Every number is reproducible from
 > `tests/test_assess_null.py` and `tools/make_null_leak_figure.py`. **If any of it
