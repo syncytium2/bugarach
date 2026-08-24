@@ -175,22 +175,36 @@ def test_the_stamp_prefix_is_the_one_the_viewer_page_writes_by_hand():
     born, version = bs._stamp_dates(head)
     assert f"First published {born} · this version {version}" in date_stamp(head)
 
-    # The page's own version date is the day THAT FILE last changed, not HEAD's.
-    # Comparing it against HEAD made the test true only on the day the page was
-    # last edited: every commit on a later calendar day failed it, whatever the
-    # commit contained, and the first one to cross midnight did (2026-08-24).
-    # What the two sides actually owe each other is the phrasing.
+    # What the two sides owe each other is the PHRASING, and that is all this can
+    # check unconditionally. Comparing the page's date to HEAD's made the test true
+    # only on the day the page was last edited — every commit on a later calendar
+    # day failed it, whatever it contained, and the first one across midnight did
+    # (2026-08-24). Comparing it to the page's own last-commit date is right but
+    # unanswerable in CI, whose checkout is shallow: with one commit in the clone
+    # every file looks like it changed at the tip.
     viewer = ROOT / "docs" / "site" / "raster_viewer.html"
+    page = viewer.read_text(encoding="utf-8")
+    stamp = re.search(
+        rf"First published {re.escape(born)} · this version (\d{{4}}-\d{{2}}-\d{{2}})",
+        page)
+    assert stamp, (
+        "the viewer page no longer phrases its stamp the way build_site does — "
+        "change both together or neither")
+
+    # Staleness is the other half, and it needs real history. Where there is some,
+    # the page's date must be the day that file last changed.
+    shallow = subprocess.run(["git", "rev-parse", "--is-shallow-repository"],
+                             cwd=ROOT, capture_output=True, text=True).stdout.strip()
+    if shallow != "false":
+        pytest.skip("shallow clone: cannot tell when the page last changed")
     page_changed = subprocess.run(
         ["git", "log", "-1", "--format=%cs", "--", str(viewer.relative_to(ROOT))],
         cwd=ROOT, capture_output=True, text=True).stdout.strip()
     if not page_changed:
         pytest.skip("no history for the viewer page here")
-    page = viewer.read_text(encoding="utf-8")
-    assert f"First published {born} · this version {page_changed}" in page, (
-        "the viewer page no longer phrases its stamp the way build_site does, or "
-        "its version date is not the day the page last changed — change the page "
-        "and its stamp together, or neither")
+    assert stamp.group(1) == page_changed, (
+        f"the viewer page says it was last changed on {stamp.group(1)}, but git "
+        f"says {page_changed} — edit the page and its stamp in the same commit")
 
 
 @pytest.mark.parametrize("page", STAMPED)
