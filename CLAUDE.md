@@ -94,8 +94,15 @@ The state on `origin` must always be enough to resume elsewhere (FOUNDATIONS
   have not passed (including when there are none). Enable the hook once per
   clone: `git config core.hooksPath .githooks`.
 - **Stopping mid-task**: push a `wip/<slug>` branch AND a root `HANDOFF.md`, then
-  push that too; delete it when done. No handoff file on `main` == nothing in
-  flight.
+  push that too. **No handoff file on `main` == nothing in flight**, so the root is
+  a signal and it has to stay honest. When the work lands, the file leaves the
+  root — **delete it if it is spent, move it to
+  [`docs/handoffs/`](docs/handoffs/README.md) if anything in it is still worth
+  reading.** That third option was missing until 2026-08-24, and its absence cost
+  four days of a false positive: `HANDOFF-difficulty-axis-and-synfire.md` sat at
+  the root saying *"nothing is half-done"* in its own second paragraph, because
+  the only alternative on offer was deleting content that three open items still
+  depend on.
 - **The export folder is the input. The store is closed.** (Tony, 2026-08-20.)
   Analysis reads an **export folder** — `docs/export_folder_spec.md` — and nothing
   else: no `.mat` store, no lab workbook, no roster, no companion database. **Do not

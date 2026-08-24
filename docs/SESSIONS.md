@@ -225,6 +225,8 @@ Template:
 - **Status:** DONE 2026-08-20 — merged as PR #171; **claim released**, holds nothing.
   Session ended here; its handoff is `HANDOFF-difficulty-axis-and-synfire.md` on `main`,
   which also covers the bench recalibration (#184) and the synfire defects (#152, #163).
+  **Moved 2026-08-24** off the root, where it was still reading as work-in-flight, to
+  [`docs/handoffs/2026-08-20-difficulty-axis-and-synfire.md`](handoffs/2026-08-20-difficulty-axis-and-synfire.md).
 - **Started:** 2026-08-20
 - **Writes:** `<darkroom>/bugarach/synfire/` — a new folder, into which four existing
   top-level entries are **moved**: `synfire_README.md`, `synfire_fast_relabel.json`,
