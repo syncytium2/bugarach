@@ -217,6 +217,18 @@ def test_every_page_with_a_nav_bar_also_carries_the_style_for_it():
             unstyled.append(
                 f"{name}: nav markup {'present' if has_markup else 'absent'}, "
                 f"its CSS {'present' if has_css else 'absent'}")
+    if unstyled:
+        # Say WHICH failure this is before accusing anybody of anything. `site/`
+        # is gitignored, so a checkout that built it once and then pulled holds a
+        # payload describing an older tree, and the honest answer there is
+        # "rebuild" rather than a report of a defect that was fixed commits ago.
+        #
+        # This test exists because a guard was right about the property and wrong
+        # about the evidence — and it then shipped with the same fault, naming on
+        # a stale payload the exact defect it was written to detect. Two other
+        # tests in this suite already had the answer.
+        stale = bs.stale_build_note(SITE)
+        assert not stale, stale
     assert not unstyled, "; ".join(unstyled)
 
 
