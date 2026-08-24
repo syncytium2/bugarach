@@ -117,7 +117,10 @@ settings at all:
 
 - **K** — the minimum number of participating ROIs an assessment reports at. A
   **scan, not a setting**: the assessor reports every K that clears the floor and
-  refuses to pick one, because picking it is the analyst's call.
+  refuses to pick one, because picking it is the analyst's call. It is the
+  clearest case of why the instrument is [MAHDCE](#the-instrument-that-finds-coordination)
+  rather than the machine alone — K moves the headline by an order of magnitude
+  across the range the assessor scans, and no arithmetic chooses it.
 - **tolerance** — the match window scoring uses to pair a detection with a planted
   event. One word; it needs no qualifier and should not acquire one.
 
@@ -130,6 +133,37 @@ useless on its own.
 meant, and that ambiguity is half the reason it goes: a set of generated
 recordings is a **simulated data set**; the real recordings the lab approved are
 **the export folder**, which is what the input contract already calls them.
+
+## The instrument that finds coordination
+
+> **MAHDCE is this project's own coinage** — Tony, 2026-08-24, and he said in the
+> same breath that he had just made it up. It is **not** a term of art, not a
+> published method, and not something a reader will find in the literature. It is
+> written down here because the thing it names is real and had no name, and
+> because an acronym loose in a public repo without this paragraph beside it reads
+> like a citation. **Anything outward-facing spells it out on first use and says
+> whose word it is** — the same rule the detector attributions live under.
+
+- **MAHDCE** — *machine-assisted human detection of coordinated events.* The
+  instrument, and it is a **person and a program together**. The machine proposes
+  candidate coordinated events and the statistics behind them; a person judges
+  them; **neither half is the instrument on its own.** This is the reset's §1
+  reversal given a name: there is no autonomous assessor, and a coordination
+  number produced without anybody having looked at the recording is not a weaker
+  result of the same kind — it is not a result.
+- **the assessor** — the **machine half** of MAHDCE: `bugarach assess`,
+  `assess_coactivity`, the browser's ported copy. It proposes; it does not
+  conclude. Never *"the assessment says"* — an assessment is a record containing
+  a judgement, and the judgement and the **view it was made in** travel with it
+  (`annotations.csv`, `bugarach.annotate`).
+- **the verdict** — a person's call on one candidate, carrying the recording, the
+  rendering (`view_t0`/`view_t1`, ROI ordering, stream) and the observer. A row
+  missing the view is **refused at write time**, because a judgement is a property
+  of (recording × rendering × observer) rather than of the recording.
+
+**The code keeps its names on purpose.** `assess.py` and `bugarach assess` are the
+machine half and are correctly named for it; renaming them MAHDCE would give one
+half the name of the pair and undo the distinction the term exists to draw.
 
 ## Data objects
 
