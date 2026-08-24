@@ -54,16 +54,21 @@ REGIMES = ("baseline_quiet", "baseline_busy")
 
 def measure(regime: str, seeds=SEEDS) -> dict:
     """Per detected event: what the floor gated on, and how many ROIs took part."""
-    from bugarach.bench import OPERATING_POINTS, make_recording
-    from bugarach.detectors.sync import sync_detect
+    from bugarach.bench import OPERATING_POINTS, make_recording, run_detector
 
     gated, distinct = [], []
     for seed in seeds:
         sl, _gt = make_recording(regime, seed)
         trains = [np.asarray(v) for v in sl.streams["events"].t50rise]
-        ext = (0.0, 2700.0)
-        det = sync_detect(trains, ext, min_n=MIN_N,
-                          **OPERATING_POINTS["sync"].params)
+        # THROUGH `run_detector`, not by hand. The first version of this tool
+        # passed `ext=(0.0, 2700.0)` — the nominal duration — where the detector
+        # is given `recording_extent(s)`, which is the span of the events
+        # themselves and on seed 1 is (0.3, 2692.8). Close enough to look right
+        # and different enough to move the counts: 5 events below the floor
+        # became 7. The bench has one way to run a detector at its operating
+        # point; a figure about the bench uses it.
+        det = run_detector("sync", sl, min_n=MIN_N)
+        assert det.settings["tau_max"] == OPERATING_POINTS["sync"].params["tau_max"]
         # the quantity the floor gated on, recomputed from the bins it kept
         gated.append(np.array([det.Cn[(det.Cx >= b) & (det.Cx <= e)].sum()
                                for b, e in zip(det.locs, det.ends)]))

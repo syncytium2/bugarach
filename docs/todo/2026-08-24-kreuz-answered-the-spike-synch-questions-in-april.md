@@ -110,17 +110,26 @@ SPIKE-synch at its benched operating point:
 
 | regime | events | gated > participants | **below the floor** | single-ROI |
 | --- | --- | --- | --- | --- |
-| `baseline_quiet` | 78 | 34 (44%) | **5 (6%)** | 2 |
-| `baseline_busy` | 88 | 33 (38%) | **12 (14%)** | 2 |
+| `baseline_quiet` | 78 | 43 (55%) | **7 (9%)** | 2 |
+| `baseline_busy` | 91 | 48 (53%) | **12 (13%)** | 3 |
 
-**Four events across the two regimes were reported as synchrony events with one
+> ⚠ **These numbers were wrong when first published, by a little.** The first
+> version of the figure passed `ext=(0.0, 2700.0)` — the nominal duration — where
+> the bench gives the detector `recording_extent(s)`, the span of the events
+> themselves, which on seed 1 is `(0.3, 2692.8)`. Close enough to look right and
+> different enough to move the counts: 5 below the floor became 7, and 44% became
+> 55%. The tool now goes through `bench.run_detector` like everything else. **The
+> conclusion did not change; the digits did**, and the digits were in `docs/learned/`
+> for an hour.
+
+**Five events across the two regimes were reported as synchrony events with one
 participating ROI**, having cleared a floor whose purpose is to require three.
-Seventeen cleared it with fewer than three. On roughly **40% of all events** the
+Nineteen cleared it with fewer than three. On **more than half of all events** the
 gating number exceeds the participant count, so the two disagree routinely rather
 than in a tail.
 
-**The rate is background-dependent — 6% quiet, 14% busy** — and that matters more
-than either number on its own: the defect grows exactly where activity rises, so a
+**The rate is background-dependent — 9% quiet, 13% busy** — and that matters more
+than either number on its own: the defect grows where activity rises, so a
 treatment that raises firing manufactures low-participation "events" by itself.
 That is [`RESET.md`](../RESET.md) §6's confound arriving through a second door.
 
@@ -133,6 +142,66 @@ defaulting to current behaviour, recorded in [`forks.md`](../forks.md), per
 [`RESET.md`](../RESET.md) §7 step 4. Parity is the product; `min_n` as it stands is
 what MATLAB does and must stay reachable. **Not done here**: this file measures,
 and the flag is its own decision with a re-fit behind it.
+
+### Which of the six are affected — only this one
+
+Asked directly, and answered by asking each detector for the participant count it
+already publishes rather than by inventing a common rule. Bench recording, 12 seeds
+per regime, both regimes pooled:
+
+| detector | its own count | events | median ROIs | below 3 |
+| --- | --- | --- | --- | --- |
+| rate+context | *none — a pooled rate has no participants* | 408 | — | — |
+| CoactDetect | `nrois` | 413 | 6–7 | **0** |
+| LoCo | `magnitude` | 327 | 6 | **0** |
+| binned SCE | `magnitude` | 789 | 15–18 | **0** |
+| locust | `magnitude` | 954 | 5–7 | **0** |
+| **SPIKE-synch** | `n_participating_rois` | 169 | 4–5 | **19 (11%)** |
+
+**The difference is structural, not incidental.** SCE, LoCo and CoactDetect apply
+`min_rois` **per bin** to a genuine distinct-ROI count (`obs[np.unique(bi)] += 1`,
+*"1 per ROI per bin"*), and an episode is a merge of bins that each cleared it — so
+every bin in the event independently had three. SPIKE-synch is the only one that
+**sums across bins**, and summing is what lets one ROI count more than once.
+
+⚠ **Two wrong measurements were made getting here, and both looked plausible.**
+A first pass applied one span rule — *distinct ROIs with an onset inside
+`[onset, onset+width]`* — to all six, and reported `rate` finding **0 ROIs in 94%
+of its events** and locust in **83%**. Both were artifacts of the rule, not
+findings: `rate` has no `ends` field, so the span collapsed to zero width; and
+locust's `magnitude` counts cells **active** across its sliding window — painted
+active for the rise interval — not onsets inside its 0.3 s reported width, so
+counting onsets asked a question the detector was not answering. **Six detectors do
+not share onset semantics, and a uniform rule over them produces a confident wrong
+answer.** The check that caught it was reading one event: SCE onset 1060.30, width
+1.30, nearest event 1064.90, own magnitude 10 — its `onset_sec` is the *bin edge*.
+
+### locust on the real folder: present, and much smaller than reported
+
+interface2's §4 says locust has no `min_rois` floor and that on quiet slices the
+surrogate percentile lands at about one cell, *"compressing a ~29–40× group
+contrast to ~2.7×"*. **Simulation cannot test that claim** — on the bench, on a null
+recording, and on a null with the fitted background shape (`bg_rate_shape` 0.45),
+no detector reports an event below three, because planted events always carry three
+or more participants and the flat field leaves the surrogate null enough spread.
+
+So it was run on the approved export folder — 84 recordings, read-only, aggregates
+only:
+
+| detector | stream | events | median | below 3 | 2-cell | 1-cell |
+| --- | --- | --- | --- | --- | --- | --- |
+| locust | fast | 6775 | 8 | 22 (0.3%) | 22 | **0** |
+| locust | slow | 5165 | 8 | 23 (0.4%) | 23 | **0** |
+| binned SCE | fast / slow | 1438 / 1894 | 16 / 17 | 0 | 0 | 0 |
+| LoCo | fast / slow | 1371 / 2454 | 7 / 10 | 0 | 0 | 0 |
+
+**The floor is genuinely missing and it costs 45 events in 11,940 — 0.4%, all of
+them two cells, none of them one.** That is a real defect worth closing and it is
+not the one described: nothing here could compress a group contrast by an order of
+magnitude. Their number presumably comes from a different data set — the store
+holds recordings this folder does not, and the dead-ROI rule has been applied here.
+**Worth telling them**, because the report's §4 currently reads as a reason to put
+locust behind a caveat in the UI, and on this folder that is not proportionate.
 
 This also bears on RESET §4's *"SPIKE-synch's 0.254 is not its accuracy"* — that
 is about a swept knob that could not bind. This is a second reason the number is
@@ -152,9 +221,12 @@ reference list as lineage rather than as the algorithm.
 
 ## What to do, cheapest first
 
-1. ~~**Measure the `min_n` gap** (§4).~~ **Done 2026-08-24** — 6% of events in the
-   quiet regime and 14% in the busy one clear the floor with fewer than three
-   participating ROIs; four have one. The figure and the table are in §4.
+1. ~~**Measure the `min_n` gap** (§4).~~ **Done 2026-08-24** — 9% of events in the
+   quiet regime and 13% in the busy one clear the floor with fewer than three
+   participating ROIs; five have one. **SPIKE-synch is the only one of the six**
+   where this happens, because it is the only floor that sums across bins. On the
+   real folder locust's missing floor costs 45 events in 11,940, all two-cell.
+   Figure and tables in §4.
 2. **Ask Kreuz the "adaptive" question while the line is open.** interface2 reports
    that their cSPIKE wrapper passed Satuvuori's adaptive time-scale argument as
    **0** — disabled — while calling the code path "adaptive"; our `sync.py`
