@@ -473,6 +473,21 @@
     <details class="acc" id="accList" hidden>
       <summary>Recordings<span class="cnt" id="cntList"></span></summary>
       <div id="checkbar" hidden></div>
+      <!-- WHICH STREAM IS BEING ANALYSED, CHOSEN HERE AND NOWHERE ELSE.
+           Tony, 2026-08-22: "treat fast and slow as separate folders (or build
+           this into the folder selector if there are more than one streams in
+           the folder/files)". A folder holding one stream never sees this
+           block, which is most of them (FOUNDATIONS §3). A folder holding more
+           picks one, and from here down exactly one stream is in play — so a
+           setting cannot belong to a stream it was not fitted on, because there
+           is only ever one for it to belong to. -->
+      <div id="streamPick" hidden>
+        <div class="ctl">
+          <label for="sStream">stream to analyse</label>
+          <select id="sStream"></select>
+          <div class="note" id="streamWhat"></div>
+        </div>
+      </div>
       <!-- THE FRAME INTERVAL, ASKED FOR AT THE DOOR. FOUNDATIONS §6: the
            sampling interval is a property of the recording, nothing downstream
            can recover it, and loading without it is refused rather than
@@ -637,9 +652,11 @@
           simulate a folder on load</label></div>
         <!-- The step order reads as a pipeline that accumulates, and this one
              does not: `runSim` calls `open`, which clears RECORDINGS, REGIONS,
-             META and TRUTH. The measurement and the tuned setting cross the gap
-             on purpose — SIM_TARGET and TUNED both survive `open` — but your
-             recordings do not, and nothing said so before. -->
+             META, TRUTH and the settings in the boxes. The MEASUREMENT crosses
+             the gap on purpose — `SIM_TARGET` survives `open`, because comparing
+             the incoming data set with it is the whole point. A tuned setting no
+             longer does: it is a file you save and load, so the step is visible
+             instead of happening in a variable. -->
         <div class="note" id="simSwapWarn" hidden></div>
       </div>
       <div class="fine" id="simProvenance" hidden></div>
@@ -809,9 +826,27 @@
              edited by hand. -->
         <div class="note" id="tunedWhat"></div>
       </div>
+      <!-- SETTINGS ARE A FILE, NOT A VARIABLE THAT OUTLIVED THE FOLDER.
+           `TUNED` used to be deliberately kept across `open`, so the sequence
+           the whole page is built around — tune on invented data, reopen your
+           own recordings, detect — happened in a module variable and appeared
+           nowhere on screen. Now it is two buttons and a file with a name, and
+           the file says what it was fitted on. Nothing survives a folder
+           change; what crosses the gap is the file you saved. -->
+      <div class="ctl">
+        <div class="span"><button id="saveSettings" disabled>Save these settings</button>
+          <button id="loadSettings" class="ghost">Load settings…</button>
+          <input id="settingsFile" type="file" accept=".csv" hidden></div>
+        <div class="note" id="settingsWhat"></div>
+      </div>
       <div class="ctl">
         <div class="span"><button id="runFolder">Analyse the whole folder</button>
           <button id="saveFolder" disabled>Save detections.csv</button>
+          <!-- The third file the output contract asks for, and the one this
+               page did not write. Without it a table of times cannot be
+               reproduced from the folder it came out of, which is the whole
+               reason the sidecar exists. -->
+          <button id="saveSettingsCsv" disabled>Save detector_settings.csv</button>
           <button id="saveRun" disabled>Save run.json</button></div>
         <div class="note" id="folderWhat"></div>
       </div>
@@ -840,6 +875,24 @@
         instruments called on your recordings at the settings currently set
         above. Nothing here has been scored against a known answer, because your
         recordings do not have one.
+        <br><br>
+        <b>The loop, in the order you actually walk it.</b> Assess a baseline →
+        simulate from what you measured → compare the simulation with the
+        recording → sweep a setting against the planted events →
+        <i>Save these settings</i> → open your own folder →
+        <i>Load settings…</i> → Detect. The two middle steps used to be a
+        variable this page kept alive behind your back; they are a file now, and
+        the file's name and its own rows say which data set it was fitted on.
+        Opening a folder clears what was in the boxes, because a number fitted on
+        one data set is not a fact about the next one.
+        <br><br>
+        <b>A settings file names its stream, and will not be applied to
+        another.</b> The stream is chosen when the folder opens and one is in
+        play at a time. Loading a file fitted on <code>fast</code> while
+        <code>slow</code> is in play is refused with the reason, rather than
+        quietly running a threshold on the signal it was not fitted for —
+        FOUNDATIONS §9: coordination under TTX moves in opposite directions in
+        the two streams, so this is a different answer and not a rougher one.
       </div>
       <div class="fine" id="dFineRate">
         <b>RateDetect asks how fast the population is firing.</b> It flags moments
@@ -1130,21 +1183,61 @@ let SIM_K = null;
 let SIM_TARGET = null;
 let VERIFY = null;      // {target, got, per} — the comparison, once it is made
 
-/* THE SETTINGS A SWEEP CHOSE, per detector, and why they outlive the folder.
+/* WHICH STREAM THE ANALYSIS IS ABOUT, decided when the folder opens.
+
+   A recording may carry several named event streams; this lab's carry `fast`
+   and `slow`, most other labs' carry one (FOUNDATIONS §3). The raster draws
+   every one of them. The ANALYSIS runs on exactly one, and which one is a
+   choice made at the door rather than a thing the code picks alphabetically.
+
+   Why the door and not a stream key threaded through every call site: the page
+   used to sweep `streams[0]`, key its tuned settings by detector alone, and read
+   one `cfg` before the stream loop — so a threshold fitted on `fast` was applied
+   to `slow` with nothing anywhere saying so. Fixing that by carrying a stream
+   into six functions leaves the same mistake available on the seventh. Fixing it
+   at the selector removes the two-stream state entirely: with one stream in play
+   there is no other stream for a setting to leak onto, and every settings row is
+   per-stream by construction. `docs/todo/2026-08-22-the-stream-is-chosen-at-the-
+   door.md` has the argument; the words are Tony's — treat them as separate
+   folders.
+
+   `STREAM` is null before a folder is open and whenever the folder holds one
+   stream, which is the case the selector never appears for. */
+let STREAMS_SEEN = [];   // every stream name anywhere in the open folder
+let STREAM = null;       // the one in play
+// The folder's own name, when the browser was told it — a directory pick knows
+// it, a multi-file pick does not. It goes into the name of a saved settings
+// file, because a settings file that cannot say what it was fitted on is a
+// number with no provenance.
+let FOLDER_NAME = null;
+
+/* THE SETTINGS A SWEEP CHOSE — keyed by detector AND stream, and NOT kept
+   across a folder change.
 
    Tuning happens on a simulation, because that is the only place with an answer
    key. Detecting happens on your recordings, where there is none. Those are two
-   different folders and the second replaces the first — so an operating point
-   that did not survive `open` could never reach the recordings it was chosen
-   for. You would read the number off the sweep and type it in, and a transcribed
-   number is a thing this project has already got wrong in the other direction
-   (`docs/todo/2026-08-14-generator-doc-numbers-are-transcribed.md`).
+   different folders and the second replaces the first. This object used to be
+   kept alive across `open` for exactly that reason, which made the sequence the
+   page exists for — measure, simulate, tune, then point the tuned instrument at
+   your own recordings — happen inside a variable and appear nowhere on screen.
 
-   Keyed by detector, so tuning several does not make each forget the last.
+   It is a file now (`saveSettings` / `loadSettings` below), so nothing needs to
+   survive `open` and nothing does. What crosses the gap is a document with a
+   name, whose rows say which data set the value was fitted on and which stream
+   it was fitted for.
+
    DROPPED THE MOMENT ITS CONTROL IS EDITED BY HAND: a raster lane claiming a
    setting was tuned, about a number somebody typed, is worse than one that says
    nothing at all. */
-let TUNED = {};   // which -> {value, knobName, unit, f1, nFolds, dataSetN, tolSec, from}
+let TUNED = {};   // "detector stream" -> {value, knobName, unit, f1, nFolds,
+                  //                            dataSetN, tolSec, from, stream}
+
+/* One key, one place. The stream is part of it because a value fitted on `fast`
+   is not a claim about `slow`; the empty string stands for a folder that has
+   only one stream and therefore never named it. */
+const tunedKey = (which, stream) =>
+  which + " " + (stream === undefined ? (STREAM || "") : (stream || ""));
+const tunedFor = which => TUNED[tunedKey(which)] || null;
 
 // slice_id -> {times, fracs}: what the generator planted, and the only ground
 // truth this page can have. Empty for a folder read off disk, which is why
@@ -1417,6 +1510,15 @@ async function loadRecording(rec) {
     t0: Number.isFinite(tmin) ? Math.min(0, tmin) : 0, t1: tmax,
     rise, peaks, widthDefs,
   };
+  /* Every recording that gets read tells the door what streams the folder has.
+     Done here rather than in the folder check so the selector is on screen with
+     the first raster, before the walk of every file finishes.
+
+     ONLY IF IT IS STILL THIS FOLDER'S RECORDING. Reads are async and `open`
+     replaces `RECORDINGS` wholesale, so a load in flight when the reader picks
+     a new folder lands afterwards — and a stale one adding its stream to the
+     door would offer a choice belonging to the folder that just went away. */
+  if (RECORDINGS.includes(rec)) noteStreams(rec.loaded);
   return rec.loaded;
 }
 
@@ -1552,7 +1654,7 @@ function draw(rec, data) {
     let anyTuned = false;
     laneRuns.forEach((run, i) => {
       const ly = padT + i * LANE_ROW;
-      const tu = TUNED[run.which];
+      const tu = tunedFor(run.which);
       if (tu) anyTuned = true;
       g.fillStyle = css.getPropertyValue("--muted").trim();
       g.textAlign = "end";
@@ -2185,6 +2287,29 @@ async function open(fileList, opts) {
   // point. The comparison itself does not survive — it was about the last one.
   VERIFY = null;
   RECORDINGS = []; REGIONS = new Map(); META = new Map();
+  /* THE STREAM IN PLAY IS A PROPERTY OF THE FOLDER, so it goes with it. A
+     folder holding one stream never names one; a folder holding two is asked,
+     at the door, before anything is computed. */
+  STREAMS_SEEN = []; STREAM = null;
+  paintStreamPick();
+  /* AND THE SETTINGS GO TOO — this is the line that used to be the exception.
+     `TUNED` was deliberately kept across `open` so a value fitted on invented
+     data could reach your own recordings; the price was that the one step the
+     whole page is built around happened invisibly, in a variable, and a value
+     fitted on one folder's `fast` stream could end up running on another
+     folder's `slow`. Settings are a file now. What crosses the gap is the file
+     you saved, and it says what it was fitted on
+     (`docs/todo/2026-08-22-tuned-settings-are-a-file-not-a-survivor.md`). */
+  TUNED = {};
+  paintTunedChip();
+  /* The folder's own name, when the browser was told it. A directory pick fills
+     `webkitRelativePath`; picking loose files does not, and the saved settings
+     file says so rather than inventing a name. */
+  FOLDER_NAME = null;
+  for (const f of files) {
+    const rel = f.webkitRelativePath || "";
+    if (rel.includes("/")) { FOLDER_NAME = rel.split("/")[0]; break; }
+  }
   // A new folder has its own period kinds, so which of them wait for a solution
   // is not a question the last folder's answer applies to. Cleared here with
   // everything else, or a drug ticked off in one folder stays ticked off in the
@@ -2279,6 +2404,11 @@ async function open(fileList, opts) {
   // no number exists yet to be wrong (FOUNDATIONS §6 — "a loader that refuses
   // has not" produced output).
   paintDtAsk();
+  // The settings note holds the last save or load, which was about the folder
+  // that just went away. Cleared so it goes back to describing the buttons.
+  const sw = document.getElementById("settingsWhat");
+  if (sw) delete sw.dataset.said;
+  paintSaveSettings();
   showSection(SIMULATED ? "accSim" : "accList");
   await show(RECORDINGS[0]);
   // the first raster goes up before the folder is checked: seeing something is
@@ -2535,6 +2665,31 @@ function pairCoincidence(a, ah, b, bh, capHalf) {
   return { ca, cb };
 }
 
+/* THE ONE 0.1 IN THIS PROJECT THAT IS NOT A SAMPLING INTERVAL.
+
+   `sync.py`'s `PROFILE_BIN_SEC`, mirrored. FOUNDATIONS §6 retired every default
+   frame interval in this tree, and three hardcoded 0.1s went with it — two of
+   them the acquisition interval in disguise (RateDetect's grid, CICADA's
+   imaging rate, both now taken from the recording) and one of them not. This is
+   the one that is not.
+
+   Nothing upstream of the binning touches a grid: the adaptive profile computes
+   each event's coincidence value C from continuous times and ISI-derived
+   windows, with no raster and no place a frame interval could enter. The bin
+   width appears for the first time when that scatter is turned into something a
+   threshold can be scanned across, and it is the width the hysteresis
+   thresholds (`CThreshold`, `CMin`) were calibrated at.
+
+   This page used to pass the recording's frame interval here, along with the
+   five detectors that genuinely need it, so a lab imaging at 20 Hz got
+   SPIKE-synch running at 0.05 s bins against thresholds measured at 0.1 —
+   quietly off its operating point, and identical on this lab's own folders,
+   which is why it survived. Re-pointing it costs nothing at 10 Hz and stops the
+   browser and the port disagreeing anywhere else. It travels in
+   `detector_settings.csv` under its own name, because a parameter that shapes
+   the answer and is recorded nowhere is the sidecar failing at its one job. */
+const SYNC_PROFILE_BIN_SEC = 0.1;
+
 /* The per-spike profile, pooled over ROIs and sorted in time. C is the count of
    ROIs that answered, over the number that could have. */
 function adaptiveProfile(trains, tRange, tauMax) {
@@ -2639,7 +2794,16 @@ function syncDetect(trains, tRange, opts) {
   const Cthr = o.CThreshold === undefined ? 0.1 : o.CThreshold;
   const Cmin = o.CMin === undefined ? 0.1 : o.CMin;
   const minN = o.minN === undefined ? 3 : o.minN;
-  const dt = o.gridDt === undefined ? 0.1 : o.gridDt;
+  /* THE PROFILE BIN, WHICH IS NOT THE FRAME INTERVAL. `sync.py` names this
+     `PROFILE_BIN_SEC` and argues it at length: nothing upstream of the binning
+     touches a grid, so this is the resolution of the DETECTOR — the way a
+     spectrogram's window length belongs to the analyst and not the microphone —
+     and it is the width the hysteresis thresholds were calibrated at. Wiring
+     the recording's interval into it moves the detector off its operating
+     point, which is exactly what this page did until now. `gridDt` is still
+     honoured because the parity tests pass it by that name. */
+  const dt = o.profileBinSec !== undefined ? o.profileBinSec
+           : (o.gridDt === undefined ? SYNC_PROFILE_BIN_SEC : o.gridDt);
   const stat = o.statistic === undefined ? "mean" : o.statistic;
   const athr = o.artifactThreshold === undefined ? 0.85 : o.artifactThreshold;
   const afthr = o.artifactThresholdFraction === undefined ? 0.70 : o.artifactThresholdFraction;
@@ -3994,6 +4158,94 @@ function analysisStreams(data) {
 }
 const oneStream = data => analysisStreams(data).length < 2;
 
+/* THE ONE STREAM AN ANALYSIS RUNS ON — the choice made at the door, applied.
+
+   `analysisStreams` above is what the recording HOLDS and what the raster
+   draws. This is what the assessment, the detector and the sweep are ABOUT, and
+   there is exactly one of it. A recording that does not hold the stream in play
+   gets `null` rather than its other stream: analysing `fast` because `slow` was
+   asked for and is missing would be a different answer wearing the right label,
+   and FOUNDATIONS §9 is explicit that the two are not interchangeable. */
+function analysisStream(data) {
+  const have = analysisStreams(data);
+  if (!have.length) return null;
+  if (!STREAM) return have[0];
+  return have.includes(STREAM) ? STREAM : null;
+}
+
+/* Remember every stream this folder has shown us, and settle the choice the
+   first time there is one to make. Called from the raster and from the folder
+   check, so the selector appears as soon as anything has been read rather than
+   waiting for the whole folder to be walked. */
+function noteStreams(data) {
+  let added = false;
+  for (const s of data.streams.keys())
+    if (!STREAMS_SEEN.includes(s)) { STREAMS_SEEN.push(s); added = true; }
+  if (!added) return;
+  STREAMS_SEEN.sort();
+  /* SET EVEN WHEN THERE IS ONLY ONE, and that is not the same as asking. A
+     recording with no `stream` column is loaded under the name `events`, which
+     is a real name and belongs in the settings file — the contract keys by
+     (detector, stream) and an empty cell there would be this page declining to
+     answer a question it knows the answer to. The SELECTOR is what a
+     one-stream folder never sees (FOUNDATIONS §3); the name is recorded
+     either way. */
+  if (!STREAM || !STREAMS_SEEN.includes(STREAM)) STREAM = STREAMS_SEEN[0];
+  paintStreamPick();
+}
+
+function paintStreamPick() {
+  const box = document.getElementById("streamPick");
+  const sel = document.getElementById("sStream");
+  const note = document.getElementById("streamWhat");
+  if (!box || !sel) return;
+  // FOUNDATIONS §3: single-stream is this viewer's default presentation, and a
+  // control with one option is furniture. Most labs never see this.
+  box.hidden = STREAMS_SEEN.length < 2;
+  // `have` is emptied with the options it describes. Leaving it behind was a
+  // live bug: opening a second two-stream folder found the cache still saying
+  // "fast slow", skipped the rebuild, and showed an empty selector.
+  if (box.hidden) { sel.innerHTML = ""; delete sel.dataset.have; return; }
+  const want = STREAMS_SEEN.join(" ");
+  if (sel.dataset.have !== want) {
+    sel.innerHTML = "";
+    for (const s of STREAMS_SEEN) {
+      const o = document.createElement("option");
+      o.value = s; o.textContent = s;
+      sel.append(o);
+    }
+    sel.dataset.have = want;
+  }
+  sel.value = STREAM || STREAMS_SEEN[0];
+  const others = STREAMS_SEEN.filter(s => s !== sel.value);
+  note.textContent = "This folder holds " + STREAMS_SEEN.join(" and ")
+    + ". One is analysed at a time — they are separate experiments, not two "
+    + "views of one. Everything below is about " + sel.value + ": the settings "
+    + "you tune, the file you save, the table you download. Switch here and run "
+    + "again for " + others.join(" or ") + ". The raster keeps drawing all of "
+    + "them.";
+}
+
+/* Switching the stream throws away every result about the last one, because
+   none of them is a claim about this one. What it does NOT do is silently reset
+   the numbers in the boxes — it says which of them were fitted on the stream
+   you just left, and stops them claiming to be tuned. */
+function chooseStream(name) {
+  if (name === STREAM) return;
+  STREAM = name;
+  DETECT = null; FOLDER_RUN = null; ASSESS = null; ASSESSED = null;
+  const sw = document.getElementById("settingsWhat");
+  if (sw) delete sw.dataset.said;
+  paintSaveDetections(); paintFolderRun(); paintSaveSettings();
+  clearTune(); paintTuneWhat(); paintTunedChip();
+  for (const id of ["detectOut", "assessOut", "folderWhat"]) {
+    const n = document.getElementById(id);
+    if (n) n.textContent = "";
+  }
+  paintStreamPick();
+  if (current && current.loaded) loadRecording(current).then(d => draw(current, d));
+}
+
 function analysisSegments(rec, data) {
   const wins = (REGIONS.get(rec.id) || []).slice().sort((a, b) => a.idx - b.idx);
   if (!wins.length)
@@ -4878,9 +5130,10 @@ function paintSimSwapWarning() {
   if (!live) return;
   n.textContent = "Simulating replaces the " + RECORDINGS.length
     + " recording(s) now open — the page holds one folder at a time. Your "
-    + "measurement and any tuned setting survive it; the recordings do not, so "
-    + "open the folder again when you come back to Detect. The Open panel "
-    + "remembers where it was.";
+    + "measurement survives it. Your recordings and your detector settings do "
+    + "not: save the settings first if you want them back, and open the folder "
+    + "again when you come back to Detect. The Open panel remembers where it "
+    + "was.";
 }
 
 function paintVerifyButton() {
@@ -4928,9 +5181,12 @@ async function verifySimulation() {
     const short = [];
     for (const rec of RECORDINGS) {
       const data = await loadRecording(rec);
-      // The generator writes one stream; taking the first is exact here rather
-      // than a choice, and `analysisStreams` keeps that visible.
-      const stream = analysisStreams(data)[0];
+      // The stream chosen at the door, like everywhere else that analyses. The
+      // generator writes one stream, so on a simulated folder this is exact
+      // rather than a choice — but reading it through the same accessor is what
+      // stops a fifth place growing its own opinion about which stream to take.
+      const stream = analysisStream(data);
+      if (!stream) continue;
       const byRoi = data.streams.get(stream);
       const dur = Math.max(data.t1 - data.t0, 1);
       const trains = data.order.map(id =>
@@ -5194,11 +5450,29 @@ async function runAssess() {
     const nSurr = clamp(Number(document.getElementById("aSurr").value), 50, 2000);
     const bin = clamp(Number(document.getElementById("aBin").value), 0.1, 10);
 
-    /* Every stream, measured on its own. This is the expensive loop on the page
-       — `nSurr` circular shifts per stream — and it is not optional: a folder
-       that sent two streams asked two questions, and answering the alphabetically
-       first one is answering neither. */
-    const blocks = analysisStreams(data).map((stream, i) => {
+    /* ONE STREAM, THE ONE CHOSEN AT THE DOOR — and it is named on screen.
+
+       This used to measure every stream a folder sent, which was the fix for an
+       older bug where it silently measured the alphabetically first one. The
+       stream selector is the same fix made once, at the door, rather than
+       repeated in each of the four places that analyse: a folder that sent two
+       streams asked two questions, and this answers the one you picked, by
+       name, with the other still drawn on the raster and one click away. */
+    const only = analysisStream(data);
+    if (!only) {
+      const box = document.getElementById("assessOut");
+      box.textContent = "";
+      box.append(el("h4", "Not measured"));
+      box.append(el("p", current.id + " holds "
+        + analysisStreams(data).join(" and ") + " and this run is about "
+        + STREAM + ". Measuring the other stream instead would be a different "
+        + "answer under the wrong name.", "verdict bad"));
+      ASSESSED = null; ASSESS = null;
+      paintAssessChip();
+      draw(current, data);
+      return;
+    }
+    const blocks = [only].map((stream, i) => {
       const byRoi = data.streams.get(stream);
       const trains = data.order.map(id =>
         (byRoi.get(id) || []).filter(x => x >= ws && x <= we).map(x => x - ws));
@@ -5332,7 +5606,20 @@ function runJson(run) {
     generator_spec: run.generatorSpec ?? null,
     chosen_k: run.chosenK ?? null,
     simulated_data_seeds: run.simulatedDataSeeds ?? null,
-    thresholds: Object.assign({}, run.thresholds),
+    /* KEYED BY DETECTOR AND THEN BY STREAM. It used to be keyed by detector
+       alone, with a comment saying so — which meant the sidecar could not
+       express the one thing the export contract insists on, that a detector may
+       run differently on two streams. `emit.detector_settings_rows`' docstring
+       gives the reason in a line: a table that could not say so would make one
+       of the two unreproducible.
+
+       The same numbers go out as `detector_settings.csv` in the contract's own
+       four-column shape; this is the JSON view of them, kept because a sidecar
+       a person opens should not need a second file to be read. */
+    thresholds: run.thresholds,
+    // Which stream this whole run is about, matching `detect_folder`'s own
+    // run.json. Null when the folder holds one stream and never named it.
+    stream: run.stream ?? null,
     produced_by: "bugarach raster viewer (in-browser)",
   };
 }
@@ -5386,6 +5673,16 @@ async function analyseFolder() {
       for (const [k, v] of Object.entries(m))
         if (!DETECTION_COLUMNS.includes(k)) identity[k] = v;
       const segs = analysisSegments(rec, data);
+      /* ONE STREAM, THE ONE CHOSEN AT THE DOOR — and a recording that does not
+         hold it is a named failure rather than a silent substitution. */
+      const only = analysisStream(data);
+      if (!only) {
+        for (const key of which)
+          failures.push({ slice: rec.id, stream: STREAM, detector: key,
+            why: "this recording holds " + analysisStreams(data).join(" and ")
+                 + " and the run is about " + STREAM });
+        continue;
+      }
       for (const key of which) {
         const D = DETECTORS[key];
         const cfg = D.read(dt);
@@ -5401,11 +5698,19 @@ async function analyseFolder() {
            `emit.detector_settings_rows` does, and drops `gridDt` — it is the one
            field that varies per recording and `frame_interval_sec` above already
            carries it per slice, correctly. Nothing else in `cfg` is read from
-           the recording, so one copy per detector is the truth. */
+           the recording, so one copy per detector is the truth.
+
+           KEYED BY DETECTOR AND STREAM, which is what the export contract asks
+           for and what `emit.detector_settings_rows` writes. It used to be
+           keyed by detector alone, and that was not a formatting difference: it
+           made the file structurally unable to say that fast and slow ran at
+           different settings, which is precisely the thing FOUNDATIONS §9 says
+           a claim must be able to say. */
         const params = {};
         for (const [k, v] of Object.entries(cfg)) if (k !== "gridDt") params[k] = v;
-        thresholds[key] = params;
-        for (const stream of analysisStreams(data)) {
+        if (!thresholds[key]) thresholds[key] = {};
+        thresholds[key][only] = params;
+        for (const stream of [only]) {
           const byRoi = data.streams.get(stream);
           for (const seg of segs) {
             const trains = data.order.map(id =>
@@ -5462,7 +5767,7 @@ async function analyseFolder() {
     const simulated = SIMULATED && TRUTH.size > 0;
     FOLDER_RUN = {
       rows, slices, frameIntervals, frameSources, thresholds, failures,
-      extras, sliceExtras,
+      extras, sliceExtras, stream: STREAM,
       generatorSpec: simulated ? (SIM_SPEC || null) : null,
       chosenK: simulated ? (SIM_K ?? null) : null,
       simulatedDataSeeds: simulated ? RECORDINGS.map((_, i) => i) : null,
@@ -5486,6 +5791,8 @@ function paintFolderRun() {
       : "Save detections.csv";
   }
   if (runB) runB.disabled = !run;
+  const setB = document.getElementById("saveSettingsCsv");
+  if (setB) setB.disabled = !run;
   const note = document.getElementById("folderWhat");
   if (note && run)
     note.textContent = run.rows.length + " row(s) from " + run.slices.length
@@ -5577,6 +5884,14 @@ function saveRunJson() {
   offerDownload("run.json",
                 JSON.stringify(runJson(FOLDER_RUN), null, 2) + "\n",
                 "application/json");
+}
+
+/* The third file of the output contract, which this page did not write until
+   now. Same four columns as the Python's, keyed by detector AND stream. */
+function saveRunSettings() {
+  if (!FOLDER_RUN) return;
+  offerDownload("detector_settings.csv",
+                settingsCsv(runSettingsRows(FOLDER_RUN.thresholds)));
 }
 
 /* Which instrument is pointed at the recording, and what each one needs. Two of
@@ -5734,6 +6049,270 @@ function offerDownload(name, text, type) {
   setTimeout(() => URL.revokeObjectURL(url), 0);
 }
 
+/* ---- detector settings, as a file ---------------------------------------------
+
+   TWO FILES, ONE SHAPE. `detector, stream, parameter, value` is the export
+   contract's `detector_settings.csv` and what `emit.detector_settings_rows`
+   writes, and both files below are exactly that — so one reader
+   (`emit.read_detector_settings`) parses either.
+
+   What they are FOR is different, and the difference is the whole point:
+
+     * `detector_settings.csv` is a RECORD OF A RUN. It is written beside
+       `detections.csv` and says what each detector ran with, so a result
+       reproduces from the folder alone. Parameters only.
+     * `bugarach_settings_<data set>.csv` is a SETTING YOU CHOSE. It is saved on
+       purpose, carried to another folder and loaded there, and it carries
+       provenance rows saying what it was fitted on — which is what makes it an
+       operating point rather than four numbers (`docs/GLOSSARY.md`,
+       "Parameter vocabulary").
+
+   Provenance rides in the SAME four columns, under parameter names beginning
+   `fitted_`. A separate header block would have made a second dialect of a file
+   this project already has one reader for, and the prefix is self-describing:
+   a consumer feeding these back into a detector skips them, and a person
+   reading the file learns where the number came from without a decoder. */
+
+const SETTINGS_COLUMNS = ["detector", "stream", "parameter", "value"];
+const FITTED = "fitted_";
+
+/* One value as this file spells it, matching `emit._fmt`: a real zero survives,
+   only genuine absence becomes NA, and a non-finite number counts as absence
+   because that is how the detectors spell "not applicable". */
+function setCell(v) {
+  if (v === null || v === undefined) return NA;
+  if (typeof v === "number") return Number.isFinite(v) ? String(v) : NA;
+  const s = String(v);
+  return s === "" ? NA : s;
+}
+
+/* What one detector is currently set to, as the settings file records it.
+
+   `gridDt` is dropped for the five that take it, and only for them: it is the
+   acquisition frame interval, it varies per recording, and `run.json` carries
+   it per slice under `frame_interval_sec` where it is correct. SPIKE-synch's
+   `profileBinSec` is NOT that quantity and is kept — see SYNC_PROFILE_BIN_SEC. */
+function readParams(which) {
+  const cfg = DETECTORS[which].read(null);
+  const out = {};
+  for (const [k, v] of Object.entries(cfg)) if (k !== "gridDt") out[k] = v;
+  return out;
+}
+
+/* The data set these settings belong to, in words. A settings file that cannot
+   say what it was fitted on is a number with no provenance, and this is the
+   sentence that stops that being true. */
+function dataSetName() {
+  const n = RECORDINGS.length;
+  if (SIMULATED) {
+    const s = SIM_SPEC || {};
+    return "simulated · " + n + " recording(s)"
+      + (s.seed === undefined ? "" : " · seed " + s.seed)
+      + (s.minutes === undefined ? "" : " · " + s.minutes + " min each")
+      + (SIM_TARGET ? " · aimed at " + SIM_TARGET.recId + " at K " + SIM_TARGET.K
+                    : " · not aimed at any recording");
+  }
+  return (FOLDER_NAME || "a folder whose name the browser was not told")
+    + " · " + n + " recording(s)";
+}
+
+/* A file name that says which data set, per Tony: "tuned settings should be
+   saved with a file name associated with the simulated folder or the user
+   folder". Two of these on a disk are told apart by reading their names. */
+function settingsFileName() {
+  const base = SIMULATED
+    ? "simulated_seed" + ((SIM_SPEC && SIM_SPEC.seed) ?? 0)
+    : (FOLDER_NAME || "folder");
+  const slug = base.replace(/[^A-Za-z0-9._-]+/g, "_").replace(/^_+|_+$/g, "")
+    || "folder";
+  return "bugarach_settings_" + slug + (STREAM ? "_" + STREAM : "") + ".csv";
+}
+
+/* Every detector's current settings plus the provenance of each, as rows.
+   Detector order is the registry's, so a diff between two saved files lines up
+   row for row; parameter order is alphabetical, matching `emit`'s `sorted`. */
+function savedSettingsRows() {
+  const stream = STREAM || "";
+  const where = dataSetName();
+  const rows = [];
+  for (const which of Object.keys(DETECTORS)) {
+    const params = readParams(which);
+    for (const name of Object.keys(params).sort())
+      rows.push({ detector: which, stream, parameter: name,
+                  value: setCell(params[name]) });
+    const t = tunedFor(which);
+    const prov = { fitted_on: where, fitted_by: t ? "sweep" : "hand" };
+    if (t) {
+      prov.fitted_knob = DETECTORS[which].knob.key;
+      prov.fitted_f1 = t.f1;
+      prov.fitted_tolerance_sec = t.tolSec;
+      prov.fitted_n_folds = t.nFolds ?? null;
+      prov.fitted_n_recordings = t.dataSetN ?? null;
+      prov.fitted_held_out = t.heldOut ? "yes" : "no";
+    }
+    for (const name of Object.keys(prov).sort())
+      rows.push({ detector: which, stream, parameter: name,
+                  value: setCell(prov[name]) });
+  }
+  return rows;
+}
+
+/* The contract file, out of a finished folder run. `thresholds` is
+   `{detector: {stream: params}}` — keyed by BOTH, which is what the contract
+   asks for and what the browser could not say until now. */
+function runSettingsRows(thresholds) {
+  const rows = [];
+  for (const which of Object.keys(DETECTORS)) {
+    const byStream = thresholds[which];
+    if (!byStream) continue;
+    for (const stream of Object.keys(byStream).sort()) {
+      const params = byStream[stream];
+      for (const name of Object.keys(params).sort())
+        rows.push({ detector: which, stream, parameter: name,
+                    value: setCell(params[name]) });
+    }
+  }
+  return rows;
+}
+
+/* Newline endings including the last, minimal quoting — the same rules
+   `detectionsCsv` follows, because a consumer opens both with one reader. */
+function settingsCsv(rows) {
+  const out = [SETTINGS_COLUMNS.join(",")];
+  for (const r of rows)
+    out.push(SETTINGS_COLUMNS.map(c => csvField(String(r[c]))).join(","));
+  return out.join("\n") + "\n";
+}
+
+/* Read one back. Returns {rows, byDetector, streams, fittedOn} — or a `why`
+   when the file is not one of these, because a folder CSV picked by mistake
+   must say so rather than silently setting nothing. */
+function parseSettingsCsv(text) {
+  const rows = asObjects(parseCSV(text));
+  if (!rows.length) return { why: "that file has no rows" };
+  for (const c of SETTINGS_COLUMNS)
+    if (!(c in rows[0]))
+      return { why: "that is not a settings file — it has no '" + c
+               + "' column. A settings file has " + SETTINGS_COLUMNS.join(", ")
+               + ", one row per parameter." };
+  const byDetector = {}, provenance = {}, streams = new Set();
+  for (const r of rows) {
+    const d = r.detector, p = r.parameter;
+    if (!DETECTORS[d]) continue;
+    streams.add(r.stream || "");
+    if (p.startsWith(FITTED)) {
+      (provenance[d] = provenance[d] || {})[p] = r.value;
+    } else {
+      (byDetector[d] = byDetector[d] || {})[p] = r.value;
+    }
+  }
+  if (!Object.keys(byDetector).length)
+    return { why: "that file names no detector this page runs — it lists "
+             + [...new Set(rows.map(r => r.detector))].join(", ") };
+  const fittedOn = Object.values(provenance)
+    .map(p => p.fitted_on).find(Boolean) || null;
+  return { rows, byDetector, provenance, fittedOn,
+           streams: [...streams].sort() };
+}
+
+/* Put a settings file into the controls.
+
+   REFUSES A STREAM MISMATCH RATHER THAN APPLYING IT. This is the gate the whole
+   stream-at-the-door change exists to make possible: a file fitted on `fast`
+   loaded while `slow` is in play is the exact failure — a threshold running on
+   a signal it was not fitted for — and FOUNDATIONS §9 says the two streams move
+   in opposite directions under the same drug, so it is a different answer and
+   not a rougher one. The way through is the selector at the door, which is one
+   click and is named in the refusal. */
+function applySettings(parsed) {
+  const here = STREAM || "";
+  const theirs = parsed.streams.filter(s => s !== here);
+  if (theirs.length && !parsed.streams.includes(here))
+    return { why: "these settings were fitted on " + theirs.join(" and ")
+             + " and this folder is being analysed as "
+             + (here || "a single unnamed stream")
+             + ". Applying them would run a threshold on a signal it was not "
+             + "fitted for. Change the stream at the door and load this again." };
+  const set = [], skipped = [], pinned = [];
+  for (const [which, params] of Object.entries(parsed.byDetector)) {
+    const map = DETECTORS[which].params || {};
+    const fixed = DETECTORS[which].fixed || [];
+    for (const [name, raw] of Object.entries(params)) {
+      /* A parameter this page PINS rather than exposes — SPIKE-synch's profile
+         bin is the only one. It is written into the file so the record is
+         complete, and it is not settable from one, which is a different fact
+         from "unrecognised" and is reported as a different fact. */
+      if (fixed.includes(name)) { pinned.push(which + "." + name); continue; }
+      const spec = map[name];
+      if (!spec) { skipped.push(which + "." + name); continue; }
+      const id = typeof spec === "string" ? spec : spec.input;
+      const node = document.getElementById(id);
+      if (!node) { skipped.push(which + "." + name); continue; }
+      node.value = typeof spec === "string" ? raw
+        : (raw === "true" || raw === spec.on ? spec.on : spec.off);
+      node.dispatchEvent(new Event("input", { bubbles: true }));
+      set.push(which + "." + name);
+    }
+  }
+  return { set, skipped, pinned, fittedOn: parsed.fittedOn };
+}
+
+function paintSaveSettings() {
+  const b = document.getElementById("saveSettings");
+  if (b) b.disabled = !RECORDINGS.length;
+  const n = document.getElementById("settingsWhat");
+  if (!n || n.dataset.said === "1") return;
+  n.textContent = RECORDINGS.length
+    ? "Saving writes what every detector is set to right now, for "
+      + (STREAM ? "the " + STREAM + " stream" : "this folder")
+      + ", with a row saying what each value was fitted on. Loading puts a saved "
+      + "file back into these boxes — that is how a setting reaches a folder it "
+      + "was not fitted on, now that nothing carries over by itself."
+    : "";
+}
+
+function saveSettingsFile() {
+  if (!RECORDINGS.length) return;
+  offerDownload(settingsFileName(), settingsCsv(savedSettingsRows()));
+  const n = document.getElementById("settingsWhat");
+  if (n) {
+    n.dataset.said = "1";
+    n.textContent = "Saved " + settingsFileName() + " — fitted on "
+      + dataSetName() + ". Open your own folder and load it there.";
+  }
+}
+
+async function loadSettingsFile(file) {
+  const n = document.getElementById("settingsWhat");
+  const say = (msg, bad) => {
+    if (!n) return;
+    n.dataset.said = "1";
+    n.textContent = (bad ? "⚠ " : "") + msg;
+  };
+  const parsed = parseSettingsCsv(await readText(file));
+  if (parsed.why) { say(parsed.why, true); return parsed; }
+  const got = applySettings(parsed);
+  if (got.why) { say(got.why, true); return got; }
+  /* THE VALUES ARE NOW SOMEBODY ELSE'S, so nothing may go on claiming this
+     page's sweep chose them. `dispatchEvent` above already dropped each tuned
+     claim through the hand-edit path; this repaints what says so. */
+  paintTunedChip();
+  paintDetectorChoice();
+  say("Loaded " + file.name + " — " + got.set.length + " setting(s) across "
+      + Object.keys(parsed.byDetector).length + " detector(s)"
+      + (parsed.streams.filter(Boolean).length
+         ? ", fitted on the " + parsed.streams.filter(Boolean).join("/")
+           + " stream" : "")
+      + ". Fitted on: " + (got.fittedOn || "not stated in the file") + "."
+      + (got.pinned.length
+         ? " " + got.pinned.join(", ") + " is calibrated rather than adjustable "
+           + "and was read but not applied." : "")
+      + (got.skipped.length
+         ? " " + got.skipped.length + " row(s) named no control on this page ("
+           + got.skipped.slice(0, 4).join(", ") + ") and were left alone." : ""));
+  return got;
+}
+
 const DETECTORS = {
   rate: {
     label: "RateDetect",
@@ -5746,6 +6325,14 @@ const DETECTORS = {
     run: (trains, range, cfg) => rateDetect(trains, range, cfg),
     settings: cfg => "threshold " + cfg.excessThresholdHz + " Hz excess · rate window "
       + cfg.rateWin + " s · context " + cfg.contextWin + " s · dt " + cfg.gridDt + " s",
+    /* WHICH CONTROL HOLDS WHICH PARAMETER — the map a saved settings file is
+       read back through. `read` above is one direction only; without this, a
+       file could be written and never loaded, which is provenance that looks
+       like provenance and is not. Kept honest by
+       `test_webapp_settings_file.py`, which derives the check from this
+       registry: every key `read` produces is either in here with a control that
+       exists, or declared `fixed`. */
+    params: { excessThresholdHz: "dThr", rateWin: "dRate", contextWin: "dCtx" },
     knob: { key: "excessThresholdHz", input: "dThr", name: "excess threshold", unit: "Hz",
             grid: [0.5, 1, 2, 3, 4, 5, 6, 8] },
   },
@@ -5761,6 +6348,7 @@ const DETECTORS = {
     settings: cfg => "bin " + cfg.binWidthSec + " s · "
       + cfg.thresholdPctile + "th percentile of " + cfg.nSurrogates
       + " shuffles · one bar per window · floor 3 ROIs",
+    params: { binWidthSec: "sBin", thresholdPctile: "sPct", nSurrogates: "sSur" },
     knob: { key: "thresholdPctile", input: "sPct", name: "threshold percentile", unit: "",
             grid: [90.0, 95.0, 98.0, 99.0, 99.5, 99.9] },
   },
@@ -5777,6 +6365,8 @@ const DETECTORS = {
     settings: cfg => "bin " + cfg.intWinSec + " s · context " + cfg.contextWinSec
       + " s · alpha " + cfg.alpha + " per bin · " + cfg.nSurrogates
       + " shuffles · floor 3 ROIs",
+    params: { intWinSec: "cWin", contextWinSec: "cCtx", alpha: "cAlpha",
+              nSurrogates: "cSur" },
     knob: { key: "alpha", input: "cAlpha", name: "alpha", unit: "per bin",
             grid: [1e-2, 1e-3, 1e-4, 1e-5, 1e-6, 1e-7] },
   },
@@ -5793,6 +6383,8 @@ const DETECTORS = {
     settings: cfg => "bin " + cfg.binWidthSec + " s · context "
       + cfg.contextWinSec + " s · " + cfg.thresholdPctile + "th percentile of "
       + cfg.nSurrogates + " shuffles · floor 3 ROIs",
+    params: { binWidthSec: "lBin", contextWinSec: "lCtx",
+              thresholdPctile: "lPct", nSurrogates: "lSur" },
     knob: { key: "thresholdPctile", input: "lPct", name: "threshold percentile", unit: "",
             grid: [99.0, 99.5, 99.9, 99.99, 99.999, 99.9999] },
   },
@@ -5819,6 +6411,13 @@ const DETECTORS = {
       + (cfg.perEventDuration ? "per event (t50rise→peak)"
                               : cfg.activeDurationSec + " s")
       + " · dt " + cfg.gridDt + " s",
+    /* `perEventDuration` is a boolean in `cfg` and a two-valued select on the
+       page, so the map says which control and which value means true — a
+       settings file has to be able to write it and read it back. */
+    params: { scePercentile: "cPct", nSurrogates: "ciSur",
+              nSynchronousFrames: "cSync", sceMinDistanceFrames: "cDist",
+              activeDurationSec: "cDur",
+              perEventDuration: { input: "cPer", on: "per_event", off: "fixed" } },
     /* A SINGLE CELL IS NOT A COINCIDENCE, and on a sparse folder CICADA will
        report a great many of them. The threshold comes from rolled surrogates,
        and where the raster is nearly empty the 99th percentile of that pool
@@ -5848,7 +6447,13 @@ const DETECTORS = {
     label: "SPIKE-synch",
     blurb: "how aligned",
     ctl: "dSyncCtl", fine: "dFineSync",
-    read: dt => ({ gridDt: dt,
+    /* THE ONLY `read` WITH NO `gridDt`, and the only one that needs none: its
+       bin width is the detector's own calibrated resolution rather than the
+       recording's frame interval. See SYNC_PROFILE_BIN_SEC. Because it is a
+       parameter of the detector it goes into `detector_settings.csv` like any
+       other, where the five grid-building detectors' interval is carried per
+       recording in `frame_interval_sec` instead. */
+    read: () => ({ profileBinSec: SYNC_PROFILE_BIN_SEC,
       tauMax: clamp(numById("dTau"), 0.01, 10),
       maxGap: clamp(numById("dGap"), 0.1, 30),
       CThreshold: clamp(numById("dC"), 0.001, 1),
@@ -5856,7 +6461,10 @@ const DETECTORS = {
     run: (trains, range, cfg) => syncDetect(trains, range, cfg),
     settings: cfg => "coincidence cap " + cfg.tauMax + " s · max gap " + cfg.maxGap
       + " s · C " + cfg.CThreshold + " to start, " + cfg.CMin + " to sustain"
-      + " · dt " + cfg.gridDt + " s",
+      + " · profile bin " + cfg.profileBinSec + " s (calibrated, not the frame "
+      + "interval)",
+    params: { tauMax: "dTau", maxGap: "dGap", CThreshold: "dC", CMin: "dCmin" },
+    fixed: ["profileBinSec"],
     // an extra per-region column, and the sentence that explains it once the run
     // is over — both optional, both owned by the detector that needs them
     extra: { head: "of those, artifact",
@@ -5922,10 +6530,18 @@ function detectOne(which, data, segs, dt, identity, sliceId) {
   const cfg = D.read(dt);
   const rows = [], perRegion = [];
   let extraTotal = 0;
-  /* STREAM OUTSIDE, SEGMENT INSIDE. Each stream is a separate detection
-     problem — its own trains, its own context, its own null — and the two are
-     never pooled into one number. */
-  for (const stream of analysisStreams(data)) {
+  /* ONE STREAM, THE ONE CHOSEN AT THE DOOR. `cfg` above is read once, and that
+     used to be the defect: with both streams running under it, a threshold
+     fitted on `fast` was applied to `slow` and nothing said so. With one stream
+     in play there is no second stream for it to reach, so reading the settings
+     once is now the correct thing rather than the convenient one. */
+  const only = analysisStream(data);
+  if (!only)
+    return { which, cfg, refusal: "this recording does not hold the "
+             + STREAM + " stream — it has " + analysisStreams(data).join(" and ")
+             + ". Analysing the other one instead would be a different answer "
+             + "under the wrong name.", stream: STREAM };
+  for (const stream of [only]) {
     const byRoi = data.streams.get(stream);
     for (const seg of segs) {
       const trains = data.order.map(id =>
@@ -6270,18 +6886,22 @@ function sweepPoint(trains, range, which, base, knob, value, truth, tolSec, extr
    would re-parse the same CSV a dozen times over. */
 async function tuneLoad(rec) {
   const data = await loadRecording(rec);
-  /* ONE STREAM HERE, DELIBERATELY, AND IT SAYS WHICH.
+  /* THE STREAM CHOSEN AT THE DOOR — the same one detect and assess use.
 
-     Unlike assess and detect, the sweep is not silently dropping half a folder:
-     the ground truth it scores against is planted per RECORDING, not per stream,
-     and the page's own generator writes one stream. Sweeping a second stream
-     would score it against another stream's planted times.
+     This used to be `streams[0]`, which was honest about being one stream and
+     silent about which one it would be on somebody else's folder. It was also
+     the last of the three places that disagreed about whether a setting belongs
+     to a stream: the sweep fitted on `fast`, `TUNED` had no stream in its key,
+     and `detectOne` read one `cfg` for both — so a value fitted here ran on
+     `slow` with nothing saying so. All three now read the same choice.
 
-     So this takes the first stream and reports it, rather than taking the first
-     stream and looking like it took all of them. A folder that arrives here with
-     two streams is outside what the generator makes, and the heading says so. */
+     The ground truth is still planted per RECORDING rather than per stream, and
+     the page's own generator writes one stream, so a simulated folder never
+     reaches the two-stream branch at all. */
   const streams = analysisStreams(data);
-  const stream = streams[0];
+  const stream = analysisStream(data);
+  if (!stream)
+    throw new Error(rec.id + " does not hold the " + STREAM + " stream");
   const byRoi = data.streams.get(stream);
   /* The third fallback that was here. The sweep's callers filter this folder
      down to recordings that have a frame interval before they get here — so
@@ -6593,20 +7213,23 @@ function paintScoreboard() {
 /* Take the sweep's answer into the detector, and remember where it came from.
 
    `TUNED` is what lets the raster lane say the setting was chosen rather than
-   typed. It is deliberately NOT cleared by `open` — the whole workflow is tune
-   on a simulation, then open your own folder and point the tuned instrument at
-   it — and it IS cleared the moment somebody edits the control by hand. */
+   typed. It is keyed by detector AND stream — a value fitted on `fast` is not a
+   claim about `slow` — and it is cleared the moment somebody edits the control
+   by hand, and again the moment a different folder is opened. Getting it to the
+   next folder is what the settings file is for. */
 function useTunedSetting(which, value, meta) {
   const D = DETECTORS[which];
   const input = document.getElementById(D.knob.input);
   if (!input) return;
   input.value = String(value);
-  TUNED[which] = Object.assign({ value: Number(value) }, meta);
+  TUNED[tunedKey(which)] = Object.assign(
+    { value: Number(value), stream: STREAM || null }, meta);
   // Follow the setting with the chooser, or the reader applies a threshold to
   // one detector and watches a different one draw.
   document.getElementById("dDet").value = which;
   paintDetectorChoice();
   paintTunedChip();
+  paintSaveSettings();
   markDone("accTune");
   showSection("accDetect");
   if (current && current.loaded) runDetect();
@@ -6617,13 +7240,14 @@ function useTunedSetting(which, value, meta) {
    the same setting, and a string comparison would drop the provenance every time
    the box was reformatted. */
 function dropTunedIfEdited(which) {
-  const t = TUNED[which];
+  const t = tunedFor(which);
   if (!t) return;
   const input = document.getElementById(DETECTORS[which].knob.input);
   if (!input) return;
   if (Number(input.value) !== t.value) {
-    delete TUNED[which];
+    delete TUNED[tunedKey(which)];
     paintTunedChip();
+    paintSaveSettings();
     // The lane carries the provenance, so it has to be repainted without it.
     if (current && current.loaded && DETECT && DETECT.which === which)
       loadRecording(current).then(d => draw(current, d));
@@ -6631,23 +7255,55 @@ function dropTunedIfEdited(which) {
 }
 
 function tunedNote(which) {
-  const t = TUNED[which];
+  const t = tunedFor(which);
   if (!t) return null;
   return DETECTORS[which].label + " · " + t.knobName + " " + fmtKnob(t.value)
-    + (t.unit ? " " + t.unit : "") + " — chosen by the sweep on " + t.dataSetN
+    + (t.unit ? " " + t.unit : "")
+    + (t.stream ? " · stream " + t.stream : "")
+    + " — chosen by the sweep on " + t.dataSetN
     + " simulated recording(s), " + (t.heldOut ? "held-out " : "")
     + "F1 " + fmtNum(t.f1, 2)
     + (t.nFolds ? " across " + t.nFolds + " fold(s)" : "")
     + ", matched within " + t.tolSec + " s";
 }
 
+/* WHAT IS IN THE BOXES THAT WAS FITTED SOMEWHERE ELSE.
+
+   Switching the stream does not reset the controls — silently rewriting numbers
+   somebody chose would be worse than leaving them. What it does is say which of
+   them were fitted on the stream you just left, so nothing in the boxes can
+   quietly pass as a value chosen for the signal now in play. This is the
+   on-screen half of "a threshold fitted on fast cannot run on slow": the
+   provenance is keyed by stream, so it simply is not there for the new one, and
+   this sentence is what makes that visible rather than merely true. */
+function strandedTuned() {
+  const out = [];
+  for (const [k, t] of Object.entries(TUNED)) {
+    if ((t.stream || null) === (STREAM || null)) continue;
+    const which = k.slice(0, k.lastIndexOf(" "));
+    if (DETECTORS[which]) out.push({ which, t });
+  }
+  return out;
+}
+
 function paintTunedChip() {
   const n = document.getElementById("tunedWhat");
   if (!n) return;
   const note = tunedNote(whichDetector());
-  n.textContent = note
-    ? note + ". Edit the setting by hand and this stops claiming it."
+  const stranded = strandedTuned();
+  const warn = stranded.length
+    ? "⚠ " + stranded.map(s => DETECTORS[s.which].label + "'s " + s.t.knobName
+        + " " + fmtKnob(s.t.value)).join(", ")
+      + " " + (stranded.length > 1 ? "were" : "was") + " fitted on "
+      + stranded.map(s => s.t.stream || "another data set").join(" / ")
+      + " and you are analysing " + (STREAM || "this folder")
+      + ". The number is still in the box; nothing here claims it was chosen "
+      + "for what is being analysed now. Sweep again, or load the settings file "
+      + "for this stream."
     : "";
+  n.textContent = [note ? note + ". Edit the setting by hand and this stops "
+                          + "claiming it." : "", warn]
+    .filter(Boolean).join("  ");
 }
 
 async function runTune() {
@@ -6995,6 +7651,24 @@ document.getElementById("runFolder").onclick = analyseFolder;
 document.getElementById("verifySim").onclick = verifySimulation;
 document.getElementById("saveFolder").onclick = saveFolderDetections;
 document.getElementById("saveRun").onclick = saveRunJson;
+document.getElementById("saveSettingsCsv").onclick = saveRunSettings;
+
+/* Settings as a file: save what is in the boxes, load it back somewhere else.
+   The load goes through a file input like the folder pickers do — the page
+   reaches nothing, and a settings file is read on this machine like everything
+   else it opens. */
+document.getElementById("saveSettings").onclick = saveSettingsFile;
+document.getElementById("loadSettings").onclick =
+  () => document.getElementById("settingsFile").click();
+document.getElementById("settingsFile").onchange = async e => {
+  const f = e.target.files && e.target.files[0];
+  // Cleared so picking the same file twice fires again — a reader who loads,
+  // changes their mind, and reloads the same file should not meet silence.
+  e.target.value = "";
+  if (f) await loadSettingsFile(f);
+};
+document.getElementById("sStream").onchange =
+  e => chooseStream(e.target.value);
 
 /* ---------- training, which is the one step that is not in this page ---------
    The panel above is INERT unless something has defined `window.__lab`. Only the

@@ -1,9 +1,34 @@
 ---
-status: open
+status: done
 filed: 2026-08-22
+closed: 2026-08-23
 ---
 
 # Tuned settings are a saved file, not a variable that outlives the folder
+
+> **Done 2026-08-23.** Two buttons in the Detect step — *Save these settings* and
+> *Load settings…* — and `TUNED` no longer survives `open`; the survive-the-folder
+> machinery went with it, exactly as predicted below. The workflow is written
+> where the buttons are, in the order it is walked.
+>
+> **The file is the export contract's own four columns**, `detector, stream,
+> parameter, value`, so `emit.read_detector_settings` — added as the sibling of
+> `read_detections` — parses it and the run's `detector_settings.csv` alike.
+> Provenance rides in the same columns under a `fitted_` prefix rather than in a
+> header block, because a second shape would be a second dialect of a file this
+> project already has one reader for: `fitted_on`, `fitted_by`, and for a swept
+> value `fitted_knob`, `fitted_f1`, `fitted_tolerance_sec`, `fitted_n_folds`,
+> `fitted_n_recordings`, `fitted_held_out`.
+>
+> **The name says which data set**, per Tony: `bugarach_settings_<folder or
+> simulated_seedN>_<stream>.csv`. A directory pick knows the folder's own name; a
+> loose-file pick does not, and the `fitted_on` row says so rather than inventing
+> one.
+>
+> The stream half landed with it. A file fitted on `fast` loaded while `slow` is
+> in play is **refused with the reason**, and a value still sitting in a control
+> after the door moves says on screen which stream it came from instead of
+> quietly passing as chosen for the one now being analysed.
 
 Tony, 2026-08-22:
 

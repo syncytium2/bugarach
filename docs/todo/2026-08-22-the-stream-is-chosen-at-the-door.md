@@ -1,9 +1,33 @@
 ---
-status: open
+status: done
 filed: 2026-08-22
+closed: 2026-08-23
 ---
 
 # One stream in play, chosen when the folder opens
+
+> **Done 2026-08-23, at the selector rather than through the call sites** — which
+> is what this file argued for, and it held. `STREAM` is settled when the folder
+> opens and read through one accessor, `analysisStream(data)`. The selector
+> appears only when a folder holds more than one, and the note beside it says one
+> is analysed at a time and where the other went. All three of the disagreeing
+> places below now read that single choice, and `detectOne` reading one `cfg`
+> before the stream loop stops being a defect the moment there is no second
+> stream for it to reach.
+>
+> A recording that does not hold the stream in play is a **named refusal**, not a
+> quiet substitution: analysing its other stream would be a different answer
+> under the right label, which FOUNDATIONS §9 rules out in terms.
+>
+> The lane worry at the bottom was answered by the same move — with one stream in
+> play `detectLanes` cannot mix two, and the detect table names the stream
+> whenever the folder holds more than one to tell apart.
+>
+> **What it costs, measured rather than guessed.** A folder run covers one
+> stream. The lab's 84 recordings gave 32,640 rows in 55 s against 51,968 in
+> 98.8 s for both — the split is exact, the other 19,328 rows are one click and a
+> second run away, and both files name which stream they are about. That is what
+> "separate folders" means.
 
 Tony, 2026-08-22, working through the viewer's navigation:
 

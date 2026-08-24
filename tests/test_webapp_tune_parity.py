@@ -141,10 +141,15 @@ def _py_detect(which, trains, rng, base, knob_key, value):
                            rate_win=params["rateWin"],
                            context_win=params["contextWin"],
                            grid_dt=params["gridDt"])
+    # `profileBinSec`, not `gridDt`. SPIKE-synch's bin is the resolution of the
+    # DETECTOR rather than the acquisition interval — `sync.PROFILE_BIN_SEC` has
+    # the argument — and the page stopped calling it a grid when it stopped
+    # feeding it the recording's frame interval. The two names met the same 0.1
+    # on this lab's folders, which is why the divergence survived so long.
     return sync_detect(trains, rng, tau_max=params["tauMax"],
                        max_gap=params["maxGap"],
                        C_threshold=params["CThreshold"],
-                       C_min=params["CMin"], dt=params["gridDt"])
+                       C_min=params["CMin"], dt=params["profileBinSec"])
 
 
 # ------------------------------------------------ the answer key itself

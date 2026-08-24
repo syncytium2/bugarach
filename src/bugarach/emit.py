@@ -51,6 +51,7 @@ __all__ = [
     "detector_settings_rows",
     "events_from",
     "read_detections",
+    "read_detector_settings",
     "write_detections",
     "write_detector_settings",
     "write_run",
@@ -327,6 +328,40 @@ def write_detector_settings(settings, path) -> Path:
         w.writeheader()
         w.writerows(detector_settings_rows(settings))
     return path
+
+
+def read_detector_settings(path) -> dict[tuple[str, str], dict[str, str]]:
+    """Read one back, keyed the way it was written: ``(detector, stream)``.
+
+    The sibling of :func:`read_detections`, and it exists for the same reason:
+    two writers produce this file — :func:`write_detector_settings` here and the
+    browser page, which has no Python to call — and a file only one of them can
+    parse is a second dialect of one table.
+
+    **Values come back as the strings they were written as, deliberately.** A
+    parameter column holds a threshold, a count, a percentile, a boolean and a
+    free-text provenance note, in different rows of the same column. Guessing a
+    type per row is the "no column means different things in different rows"
+    rule broken from the reading end; the caller knows which parameter it asked
+    for and can convert it. :data:`NA` still becomes ``None``, so absence and a
+    value that happens to look like it cannot be confused.
+    """
+    out: dict[tuple[str, str], dict[str, str]] = {}
+    with Path(path).open(encoding="utf-8", newline="") as fh:
+        reader = csv.DictReader(fh)
+        missing = [c for c in ("detector", "stream", "parameter", "value")
+                   if c not in (reader.fieldnames or [])]
+        if missing:
+            raise ValueError(
+                f"{path}: not a detector settings file — no {missing} column(s). "
+                f"The shape is detector,stream,parameter,value, one row per "
+                f"parameter (docs/export_folder_spec.md).")
+        for row in reader:
+            key = (row["detector"], row["stream"])
+            value = row["value"]
+            out.setdefault(key, {})[row["parameter"]] = (
+                None if value == NA else value)
+    return out
 
 
 def write_run(path, *, slices, frame_interval_sec, code_version=None,

@@ -10,8 +10,19 @@ A transcribed number is a defect this project has already paid for:
 whose subject is *"stop transcribing the endpoints"*.
 
 So the operating point now travels: a button applies it, `TUNED` remembers where
-it came from, it survives `open`, and the raster lane says the setting was
-**chosen** rather than merely current.
+it came from, and the raster lane says the setting was **chosen** rather than
+merely current.
+
+**How it crosses the folder change has been replaced, and this file records the
+swap.** `TUNED` used to be kept alive across `open` for exactly that trip. The
+price was that the one step the whole page is built around happened inside a
+variable and appeared nowhere on screen — and a value fitted on one folder's
+`fast` stream could end up running on another folder's `slow`, because the key
+had no stream in it. Settings are a file now
+(`docs/todo/2026-08-22-tuned-settings-are-a-file-not-a-survivor.md`,
+`tests/test_webapp_settings_file.py`): nothing survives `open`, and what crosses
+the gap is a document that says what it was fitted on. The assertion below is
+therefore the opposite of the one it replaces, deliberately.
 
 **Why the lane matters more than the panel.** A picture leaves the page — into a
 slide, into a figure — and arrives without the panel that explained it. The one
@@ -86,7 +97,7 @@ APPLY = """async () => {
     await new Promise(r => setTimeout(r, 25));
   return {
     control: document.getElementById("dThr").value,
-    tuned: TUNED.rate || null,
+    tuned: tunedFor("rate"),
     chip: document.getElementById("tunedWhat").textContent,
     detected: DETECT ? DETECT.rows.length : null,
     which: DETECT ? DETECT.which : null,
@@ -138,7 +149,7 @@ LANE = """() => {
   // one row per detector that fired; rebuild the string the lane draws
   const lanes = detectLanes(RECORDINGS[0]);
   return lanes.map(run => {
-    const tu = TUNED[run.which];
+    const tu = tunedFor(run.which);
     return DET_SHORT[run.which] + " " + run.starts.length + " called"
       + (tu ? " · " + tu.knobName + " " + fmtKnob(tu.value)
               + (tu.unit ? " " + tu.unit : "") + " tuned" : "");
@@ -153,29 +164,57 @@ def test_the_raster_lane_says_the_setting_was_tuned(page, applied):
         "the boxes, and a picture leaves the page without its panel")
 
 
-SURVIVE = """async (files) => {
+CROSS = """async (files) => {
+  const saved = settingsCsv(savedSettingsRows());
   await open(files, {quiet: true});
   await show(RECORDINGS[0]);
-  const t = TUNED.rate;
+  const stranded = {tuned: tunedFor("rate"),
+                    control: document.getElementById("dThr").value,
+                    chip: document.getElementById("tunedWhat").textContent,
+                    truth: TRUTH.size};
+  const got = applySettings(parseSettingsCsv(saved));
   await runDetect();
-  return {tuned: t || null, control: document.getElementById("dThr").value,
-          truth: TRUTH.size, detected: DETECT ? DETECT.rows.length : null,
-          chip: document.getElementById("tunedWhat").textContent};
+  return {stranded, loaded: {why: got.why || null, fittedOn: got.fittedOn,
+            tuned: tunedFor("rate"),
+            control: document.getElementById("dThr").value,
+            detected: DETECT ? DETECT.rows.length : null}};
 }"""
 
 
-def test_the_setting_survives_opening_your_own_folder(page, applied):
-    """The whole point. Tune where the answer is known, then open the recordings
-    where it is not — a different folder, which replaces the first."""
+def test_the_setting_reaches_your_own_folder_as_a_file_rather_than_a_survivor(
+        page, applied):
+    """The trip the sweep exists to make, and how it is made now.
+
+    Tune where the answer is known, then open the recordings where it is not — a
+    different folder, which replaces the first. What crosses that gap used to be
+    `TUNED` itself, kept alive through `open` by an explicit exception. Two
+    halves are checked here and they are inseparable: opening a folder leaves
+    NOTHING behind, and the saved file puts the value back.
+
+    Dropping the survivor without the file would make the sweep unusable; adding
+    the file without dropping the survivor would leave a value fitted on one
+    folder quietly in force on the next, which is the same defect one step
+    along.
+    """
     pg, errs = page
-    got = pg.evaluate(SURVIVE, REAL)
+    got = pg.evaluate(CROSS, REAL)
     assert not errs, errs
-    assert got["truth"] == 0, "the fixture folder should carry no planted truth"
-    assert got["tuned"], "the tuned setting did not survive the folder change"
-    assert float(got["control"]) == pytest.approx(applied["tuned"]["value"])
-    assert "sweep" in got["chip"].lower(), (
-        "the provenance was lost when the folder changed, so the reader can no "
-        "longer tell where the setting came from")
+    stranded, loaded = got["stranded"], got["loaded"]
+    assert stranded["truth"] == 0, "the fixture folder should carry no planted truth"
+    assert stranded["tuned"] is None, (
+        "a fitted setting survived the folder change on its own — that is the "
+        "invisible step the settings file replaces")
+    assert stranded["chip"] == "", (
+        f"something still claims a sweep after the folder changed: "
+        f"{stranded['chip']!r}")
+    assert not loaded["why"], loaded
+    assert float(loaded["control"]) == pytest.approx(applied["tuned"]["value"]), (
+        "loading the settings file did not put the swept value back in the "
+        "control, so the number would have to be transcribed after all")
+    assert loaded["fittedOn"], (
+        "the file carried the value and not what it was fitted on, which is a "
+        "number with no provenance")
+    assert loaded["detected"] is not None
 
 
 EDIT = """async () => {
@@ -184,10 +223,10 @@ EDIT = """async () => {
   n.dispatchEvent(new Event("input", {bubbles: true}));
   await new Promise(r => setTimeout(r, 50));
   const lanes = detectLanes(RECORDINGS[0]);
-  return {tuned: TUNED.rate || null,
+  return {tuned: tunedFor("rate"),
           chip: document.getElementById("tunedWhat").textContent,
           lane: lanes.map(run => DET_SHORT[run.which]
-            + (TUNED[run.which] ? " tuned" : "")).join(" | ")};
+            + (tunedFor(run.which) ? " tuned" : "")).join(" | ")};
 }"""
 
 

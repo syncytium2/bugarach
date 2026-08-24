@@ -295,6 +295,19 @@ def test_the_version_date_is_the_date_this_page_last_changed():
     * **A shallow checkout is skipped, not guessed.** `actions/checkout` clones
       one commit deep by default, which leaves nothing to attribute a change to.
       Saying so is honest; comparing would compare against the boundary commit.
+
+    **The second of those has to be asked directly, and leaving `--no-merges` to
+    imply it was wrong.** A depth-1 clone of a merge ref is *grafted*: the
+    parents are cut off, so the merge commit has none, git does not consider it
+    a merge, and `--no-merges` let it straight through. The test then compared
+    the page's stamp against the moment GitHub built the merge ref — a clock
+    reading, not a fact about the page. It looked like a strict gate and was a
+    coin toss on the committer's timezone: green while the merge ref happened to
+    land on the same UTC date as the stamp, red the first time the page was
+    committed in the evening in New York, which is already tomorrow in UTC. That
+    is what it did on PR #262, on a commit whose date was correct.
+    `--is-shallow-repository` is the question the bullet above was always
+    asking, so it is now the question that gets asked.
     """
     import datetime  # noqa: PLC0415
     import subprocess  # noqa: PLC0415
@@ -316,6 +329,12 @@ def test_the_version_date_is_the_date_this_page_last_changed():
             f"this page has uncommitted changes, so its version date is being "
             f"set today ({today}) and it says {said}")
         return
+
+    if git("rev-parse", "--is-shallow-repository") == "true":
+        pytest.skip("shallow checkout — there is no history here to attribute "
+                    "the page's last change to, and the one commit present is "
+                    "a merge ref built at test time whose date is a clock "
+                    "reading rather than a fact about the page")
 
     when = git("log", "-1", "--no-merges", "--format=%cs", "--", rel)
     if not when:
