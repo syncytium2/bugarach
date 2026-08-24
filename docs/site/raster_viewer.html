@@ -338,6 +338,18 @@
   .picks .cost { color: var(--muted); font-size: 11px; }
   #wins i { font-style: normal; color: var(--fg); }
   canvas { width: 100%; display: block; }
+  /* the annotation stage: a header line, the candidate, then the verdict row */
+  .anhead { display: flex; justify-content: space-between; align-items: baseline;
+            gap: 12px; margin: 4px 0 2px; }
+  .anbtns { display: flex; gap: 6px; flex-wrap: wrap; margin: 8px 0 4px; }
+  /* The three verdicts share the row and the Back button rides at its own
+     width: at the column widths this panel actually gets, a 9rem minimum put
+     one button per line and pushed the agreement table off the screen. */
+  .anbtns button { flex: 1 1 0; min-width: 6.5rem; white-space: nowrap; }
+  .anbtns button.ghost { flex: 0 0 auto; min-width: 0; }
+  kbd { font: 11px ui-monospace, SFMono-Regular, Menlo, monospace;
+        border: 1px solid var(--line); border-radius: 3px; padding: 0 4px;
+        margin-left: 6px; color: var(--muted); }
   .empty { color: var(--muted); padding: 48px 8px; max-width: 60ch; }
   #demoNote {
     display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap;
@@ -623,6 +635,71 @@
         treatment — that is what the instrument is pointed at, and sourcing them
         from it assumes the answer. A recording with no declared regions is
         assessed whole, and it says so.
+      </div>
+    </details>
+    <!-- BETWEEN ASSESS AND SIMULATE, WHICH IS THE WHOLE POINT OF IT. The
+         simulation is parameterised from the assessment, and until this panel
+         existed nothing between them recorded whether a person believed any of
+         the candidates the parameters were computed from. docs/RESET.md section
+         1: an assessment is a record containing a judgement, not a number with a
+         caveat beside it. -->
+    <details class="acc" id="accAnnotate">
+      <summary>Confirm the events<span class="cnt" id="cntAnnot">assess first</span></summary>
+      <div class="ctl">
+        <label for="anWho">your name</label>
+        <input id="anWho" type="text" placeholder="who is judging" size="12">
+        <label for="anBudget">how many to judge</label>
+        <input id="anBudget" type="number" min="5" max="400" step="5" value="60">
+        <label for="anCap">at most, per recording</label>
+        <input id="anCap" type="number" min="1" max="50" step="1" value="8">
+        <label for="anSeed">draw seed</label>
+        <input id="anSeed" type="number" min="0" step="1" value="20260824">
+        <div class="span"><button id="anStart" disabled>Draw a sample and
+          start</button></div>
+        <div class="span note" id="anWhat"></div>
+      </div>
+      <div id="anStage" hidden>
+        <div class="anhead">
+          <span id="anWhere" class="sub"></span>
+          <span id="anProg" class="sub"></span>
+        </div>
+        <canvas id="anCv"></canvas>
+        <div class="anbtns">
+          <button id="anYes">Coordinated <kbd>y</kbd></button>
+          <button id="anNo">Not coordinated <kbd>n</kbd></button>
+          <button id="anIdk">Can't tell <kbd>u</kbd></button>
+          <button id="anBack" class="ghost">Back <kbd>&larr;</kbd></button>
+        </div>
+        <div class="note" id="anCand"></div>
+      </div>
+      <div id="anOut"></div>
+      <div class="fine">
+        <b>The machine proposes; you dispose.</b> The assessment found moments
+        where more ROIs fired together than its rate-matched null explains. Those
+        are candidates, not findings — and every number the simulator is
+        parameterised with is currently a median over candidates nobody looked at.
+        <br><br>
+        <b>You are judging a sample, and that is deliberate.</b> On this lab's own
+        84-recording folder there are 3,567 candidates at K=3 and still 641 at
+        K=8, so nobody annotates them all. What a sample buys is an
+        <b>agreement rate</b>: how much of what the machine proposed you believed.
+        That rate scales the event frequency the simulator plants, and it is
+        reported per K — so you read K off what you confirmed rather than picking
+        it before looking.
+        <br><br>
+        <b>At most a few per recording.</b> One recording in this lab's folder
+        carries 200 candidates where the median is 8. Uncapped, a sample spends
+        your whole session on whichever recording is busiest and the agreement
+        rate becomes a statement about that one slice.
+        <br><br>
+        <b>Every verdict records what you were looking at</b> — the time window,
+        the ROI ordering, the stream — because a judgement is a property of the
+        recording, the rendering and the observer together. A verdict without its
+        view cannot be reproduced or disputed, and the file refuses to hold one.
+        <br><br>
+        <b>"Can't tell" is a real answer.</b> It is kept out of both sides of the
+        agreement rate: a candidate you could not judge is evidence about the
+        rendering, not about the candidate.
       </div>
     </details>
     <details class="acc" id="accSim" open>
@@ -4221,6 +4298,13 @@ function assessCoactivity(trains, winDur, opts) {
       evRatePerMin: nEvents / winMin,
       // window-relative centres, so the caller can draw them back onto the raster
       centres: c.centres, members: c.members,
+      /* PER-CLUSTER span and onset SD, beside the medians of them above.
+         `annotations.csv` has to be able to parameterise a simulation on its
+         own — the generator wants participation, span and jitter — and a
+         verdict carrying only yes-or-no would force a later step to re-run this
+         and re-match candidates to verdicts BY TIME, a join nobody should have
+         to get right twice. */
+      spans: c.spans, sds: c.sds,
     };
   });
 }
@@ -5693,8 +5777,12 @@ async function runAssess() {
                                              isBaseline: w.isBaseline, note: w.note });
     // The calibration step is fed from ONE stream and has to know which; the
     // accept button in each block overrides this with its own.
+    // `winStart` because the assessor's centres are window-relative and the
+    // annotation step writes ABSOLUTE seconds on the recording's own clock —
+    // the same rule the export contract holds every other time field to.
     LAST_ASSESS = { rec: current, res: blocks[0].res, stream: blocks[0].stream,
-                    blocks, source: w.source, isBaseline: w.isBaseline };
+                    blocks, source: w.source, isBaseline: w.isBaseline,
+                    winStart: ws };
 
     /* The raster's cluster ticks belong to one stream's measurement, and are
        drawn under that stream's lane. The first stream is what an unprompted
@@ -5973,7 +6061,414 @@ function paintFolderAssess() {
     + "span do not.", "caveat"));
 }
 
+
+/* ---------- confirming the events ---------------------------------------------
+
+   THE STEP BETWEEN ASSESS AND SIMULATE. The assessor proposes candidate
+   coordinated events — `centres` and `members`, per K — and until this existed
+   nothing recorded whether a person believed any of them. Every number the
+   simulator is parameterised with was a median over candidates nobody looked at,
+   which docs/RESET.md section 1 calls "not a weaker result of the same kind — it
+   is not a result".
+
+   The Python half is `src/bugarach/annotate.py`, and the CSV written here has to
+   match its COLUMNS exactly — `read_annotations` re-validates every row and
+   refuses one whose view is missing.
+
+   WHY A SAMPLE. Measured on this lab's 84-recording folder: 3,567 candidates at
+   K=3 across both streams, 641 even at K=8. Nobody annotates that. What a sample
+   buys is an agreement rate, which scales the event frequency the simulator
+   plants and is reported per K.
+
+   ⚠ THE DRAW IS NOT BIT-IDENTICAL TO THE PYTHON'S. `annotate.draw_sample` uses
+   numpy's RandomState; this uses the page's `rng32`. Both are seeded and both
+   record the seed, so either is reproducible on its own terms — but a sample
+   drawn here will not match one drawn there, and neither is the "real" one. The
+   same rule the surrogate draws already follow. */
+
+let ANNOT = null;   // {cands, i, verdicts, seed, budget, cap, population, recs}
+
+/* Every candidate the assessment left on the table, flattened.
+
+   Reads FOLDER_ASSESS when a folder has been assessed and LAST_ASSESS otherwise,
+   because the sample is meant to span the folder and one recording is what you
+   get when that is all anybody ran. `k_survived` is the HIGHEST K a candidate
+   still exists at — candidates nest, so one verdict answers every K at or below
+   it, and that is what makes the per-K table computable from a single pass. */
+function collectCandidates() {
+  const out = [];
+  const push = (recId, stream, winStart, res) => {
+    // walk K descending so the first list a centre appears in is the highest K
+    // it survives; a Map keyed on the centre keeps that first sighting
+    const seen = new Map();
+    [...res].filter(a => a.meetsFloor)
+      .sort((a, b) => b.K - a.K)
+      .forEach(a => (a.centres || []).forEach((c, j) => {
+        const key = c.toFixed(3);
+        if (seen.has(key)) return;
+        const mem = (a.members && a.members[j]) || [];
+        seen.set(key, true);
+        out.push({
+          recId, stream, centre: winStart + c, kSurvived: a.K,
+          members: mem, nMembers: mem.length,
+          span: (a.spans || [])[j], jitterSd: (a.sds || [])[j],
+          winStart, winEnd: winStart + a.winDur,
+          bin: a.binWidth, nSurr: a.nSurrogates,
+        });
+      }));
+  };
+  if (FOLDER_ASSESS && FOLDER_ASSESS.records) {
+    for (const r of FOLDER_ASSESS.records)
+      if (r.res && r.window) push(r.id, r.stream, r.window[0], r.res);
+  } else if (LAST_ASSESS && LAST_ASSESS.blocks) {
+    for (const b of LAST_ASSESS.blocks)
+      push(LAST_ASSESS.rec.id, b.stream, (LAST_ASSESS.winStart || 0), b.res);
+  }
+  return out;
+}
+
+/* Capped per recording, shuffled, seeded. The cap is the design: one recording
+   in this lab's folder carries 200 candidates where the median is 8, so an
+   uncapped draw reports an agreement rate for that slice and calls it the
+   folder's. Mirrors `annotate.draw_sample`. */
+function drawAnnotSample(cands, seed, budget, cap) {
+  const u = rng32(seed);
+  const byRec = new Map();
+  for (const c of cands) {
+    const k = c.recId + " " + c.stream;
+    if (!byRec.has(k)) byRec.set(k, []);
+    byRec.get(k).push(c);
+  }
+  const keys = [...byRec.keys()].sort();
+  for (let i = keys.length - 1; i > 0; i--) {     // Fisher-Yates on the sorted
+    const j = Math.floor(u() * (i + 1));          // keys, so the shuffle is the
+    [keys[i], keys[j]] = [keys[j], keys[i]];      // only source of order
+  }
+  const picked = [];
+  let drawn = 0;
+  for (const k of keys) {
+    if (picked.length >= budget) break;
+    const pool = byRec.get(k).slice();
+    const take = Math.min(cap, pool.length, budget - picked.length);
+    if (take <= 0) continue;
+    for (let i = pool.length - 1; i > 0; i--) {
+      const j = Math.floor(u() * (i + 1));
+      [pool[i], pool[j]] = [pool[j], pool[i]];
+    }
+    picked.push(...pool.slice(0, take).sort((a, b) => a.centre - b.centre));
+    drawn++;
+  }
+  return { picked, population: cands.length, recordings: byRec.size, drawn };
+}
+
+function paintAnnotChip() {
+  const chip = document.getElementById("cntAnnot");
+  const btn = document.getElementById("anStart");
+  if (!chip || !btn) return;
+  const cands = collectCandidates();
+  if (ANNOT && ANNOT.verdicts.length) {
+    chip.textContent = ANNOT.verdicts.length + " of " + ANNOT.cands.length
+      + " judged";
+    btn.disabled = false;
+  } else if (cands.length) {
+    chip.textContent = cands.length + " candidate"
+      + (cands.length === 1 ? "" : "s") + " to draw from";
+    btn.disabled = false;
+  } else {
+    chip.textContent = "assess first";
+    btn.disabled = true;
+  }
+  const what = document.getElementById("anWhat");
+  if (what) {
+    what.textContent = cands.length
+      ? ("The assessment left " + cands.length + " candidate moments across "
+         + new Set(cands.map(c => c.recId)).size + " recording(s). You will be "
+         + "shown a sample of them, one at a time.")
+      : "Run the assessment first — this judges what it proposes.";
+  }
+}
+
+/* One candidate, drawn on its own canvas.
+
+   NO VERTICAL LINE THROUGH THE ROWS, and that is not a style choice. In a raster
+   a vertical line reads as many ROIs firing at once, which is exactly the thing
+   being judged — drawing the marker that way puts a synthetic event into the
+   picture used to decide whether the real one is there. The centre is a tick
+   BELOW the frame, the same rule the main raster's cluster ticks follow.
+
+   EVERY ROI IS DRAWN, not only the members. Whether a moment is coordinated is a
+   claim about the field: you cannot judge it without seeing who did not fire.
+   Members are inked, everyone else is muted. */
+function drawCandidate(cv, byRoi, order, cand, t0, t1) {
+  const css = getComputedStyle(document.documentElement);
+  const dpr = window.devicePixelRatio || 1;
+  const W = cv.clientWidth || 900;
+  const padL = 54, padR = 14, padT = 10, padB = 30;
+  const H = padT + Math.max(120, Math.min(320, 20 + order.length * 7)) + padB;
+  cv.width = W * dpr; cv.height = H * dpr; cv.style.height = H + "px";
+  const g = cv.getContext("2d");
+  g.scale(dpr, dpr);
+  g.clearRect(0, 0, W, H);
+  g.font = "11px -apple-system, system-ui, sans-serif";
+
+  const x = t => padL + (t - t0) / (t1 - t0) * (W - padL - padR);
+  const top = padT, bot = H - padB;
+  const member = new Set(cand.members.map(i => order[i]));
+
+  g.strokeStyle = css.getPropertyValue("--line").trim();
+  g.lineWidth = 1;
+  g.strokeRect(padL, top, W - padL - padR, bot - top);
+
+  const lane = (bot - top) / Math.max(1, order.length);
+  const h = Math.max(2, Math.min(7, lane * 0.8));
+  order.forEach((id, i) => {
+    const yc = top + (i + 0.5) * lane;
+    const isMem = member.has(id);
+    g.strokeStyle = isMem ? css.getPropertyValue("--accent").trim()
+                          : css.getPropertyValue("--mark").trim();
+    g.lineWidth = isMem ? 2 : 1;
+    g.globalAlpha = isMem ? 1 : 0.45;
+    g.beginPath();
+    for (const t of (byRoi.get(id) || [])) {
+      if (t < t0 || t > t1) continue;
+      const px = Math.round(x(t)) + 0.5;
+      g.moveTo(px, yc - h / 2); g.lineTo(px, yc + h / 2);
+    }
+    g.stroke();
+  });
+  g.globalAlpha = 1;
+  g.lineWidth = 1;
+
+  // the candidate's time, marked under the frame and claiming nothing about any
+  // row above it
+  g.fillStyle = css.getPropertyValue("--accent").trim();
+  const cx = Math.round(x(cand.centre)) + 0.5;
+  g.beginPath();
+  g.moveTo(cx - 5, bot + 4); g.lineTo(cx + 5, bot + 4); g.lineTo(cx, bot + 11);
+  g.closePath(); g.fill();
+
+  g.fillStyle = css.getPropertyValue("--muted").trim();
+  g.textAlign = "center";
+  const dur = t1 - t0;
+  for (let f = 0; f <= 4; f++) {
+    const t = t0 + dur * f / 4;
+    g.fillText(fmt(t), x(t), H - 8);
+  }
+  g.save();
+  g.translate(13, (top + bot) / 2); g.rotate(-Math.PI / 2);
+  g.fillStyle = css.getPropertyValue("--fg").trim();
+  g.fillText(cand.stream + " · " + order.length + " ROI", 0, 0);
+  g.restore();
+  g.textAlign = "start";
+}
+
+const ANNOT_PAD_SEC = 20;   // seconds either side of the candidate
+
+async function showCandidate() {
+  const a = ANNOT;
+  if (!a) return;
+  if (a.i >= a.cands.length) return finishAnnotation();
+  const cand = a.cands[a.i];
+  const rec = RECORDINGS.find(r => r.id === cand.recId);
+  document.getElementById("anWhere").textContent =
+    cand.recId + " · " + cand.stream + " · " + fmt(cand.centre);
+  document.getElementById("anProg").textContent =
+    (a.i + 1) + " of " + a.cands.length;
+  const d = await loadRecording(rec);
+  const byRoi = d.streams.get(cand.stream) || d.streams.get([...d.streams.keys()][0]);
+  const order = ORDER === "rate" ? d.byRate : d.order;
+  const t0 = Math.max(cand.winStart, cand.centre - ANNOT_PAD_SEC);
+  const t1 = Math.min(cand.winEnd, cand.centre + ANNOT_PAD_SEC);
+  drawCandidate(document.getElementById("anCv"), byRoi, order, cand, t0, t1);
+  // THE VIEW AS SHOWN, captured here rather than at export: a person who
+  // changes the ordering between judgements and gets one view stamped on every
+  // row has a record that is wrong in a way nobody can detect afterwards.
+  a.view = { t0, t1, order: ORDER === "rate" ? "by_events" : "file",
+             stream: cand.stream };
+  document.getElementById("anCand").textContent =
+    cand.nMembers + " ROIs in this candidate · survives to K=" + cand.kSurvived
+    + " · window " + fmt(t0) + "–" + fmt(t1);
+  document.getElementById("anBack").disabled = a.i === 0;
+}
+
+function recordVerdict(v) {
+  const a = ANNOT;
+  if (!a || a.i >= a.cands.length) return;
+  const cand = a.cands[a.i];
+  a.verdicts[a.i] = {
+    cand, verdict: v, at: new Date().toISOString().replace(/\.\d+Z$/, "Z"),
+    view: a.view,
+  };
+  a.i++;
+  paintAnnotChip();
+  paintAgreement();
+  showCandidate();
+}
+
+/* The per-K table, live. Candidates nest, so one verdict counts at every K at or
+   below the one it survived — which is what lets somebody judge a single list
+   and read a whole scan off it. Mirrors `annotate.agreement_by_k`.
+
+   "Can't tell" is in neither column of the rate: a candidate a person could not
+   judge is evidence about the rendering, not about the candidate. */
+function agreementScan(verdicts) {
+  const out = new Map(K_SCAN.map(K => [K, { c: 0, r: 0, u: 0 }]));
+  for (const v of verdicts) {
+    if (!v) continue;
+    for (const K of K_SCAN) {
+      if (v.cand.kSurvived < K) continue;
+      const cell = out.get(K);
+      if (v.verdict === "confirmed") cell.c++;
+      else if (v.verdict === "rejected") cell.r++;
+      else cell.u++;
+    }
+  }
+  return out;
+}
+
+function paintAgreement() {
+  const box = document.getElementById("anOut");
+  if (!box) return;
+  box.textContent = "";
+  const a = ANNOT;
+  if (!a || !a.verdicts.filter(Boolean).length) return;
+  const scan = agreementScan(a.verdicts);
+  box.append(el("h4", "What you have confirmed"));
+  const tbl = document.createElement("table");
+  const hr = document.createElement("tr");
+  for (const h of ["K", "confirmed", "judged", "agreement", "can't tell"])
+    hr.append(el("th", h));
+  tbl.append(hr);
+  for (const K of K_SCAN) {
+    const s = scan.get(K);
+    const judged = s.c + s.r;
+    const tr = document.createElement("tr");
+    tr.append(el("td", String(K)));
+    tr.append(el("td", String(s.c)));
+    tr.append(el("td", String(judged)));
+    tr.append(el("td", judged ? (100 * s.c / judged).toFixed(0) + "%" : "—"));
+    tr.append(el("td", String(s.u)));
+    tbl.append(tr);
+  }
+  box.append(tbl);
+  box.append(el("p", "One verdict counts at every K at or below the one that "
+    + "candidate survives to, because a moment with eight co-active ROIs also "
+    + "has three. Read K off this table rather than choosing it beforehand — a "
+    + "row where you believed most of what you were shown is a K this folder "
+    + "supports.", "caveat"));
+  box.append(el("p", "A dash means nothing was judged at that K, which is not "
+    + "the same as agreeing with nothing there.", "caveat"));
+  const done = a.verdicts.filter(Boolean).length;
+  const btn = el("button", "Download annotations.csv (" + done + " verdict"
+    + (done === 1 ? "" : "s") + ")");
+  btn.onclick = downloadAnnotations;
+  const wrap = el("div", "", "span");
+  wrap.append(btn);
+  box.append(wrap);
+}
+
+/* The file, in `annotate.COLUMNS` order. The Python re-validates every row and
+   refuses one whose view is missing, so the view columns are written from what
+   was captured at the moment of the verdict and never reconstructed here. */
+const ANNOT_COLUMNS = ["slice_id", "stream", "centre_sec", "k_survived",
+  "n_members", "members", "span_sec", "jitter_sd_sec", "verdict", "annotator",
+  "decided_at", "view_t0_sec", "view_t1_sec", "view_roi_order", "view_stream",
+  "assess_bin_sec", "assess_surrogates", "assess_seed"];
+
+/* Split from the download so the file's CONTENT can be checked against the
+   Python that has to read it. `tests/test_webapp_annotate.py` builds this text
+   in the page and parses it with `annotate.read_annotations`, which is the only
+   thing that can prove two halves in two languages still agree. */
+function annotationsCsv() {
+  const a = ANNOT;
+  const rows = (a ? a.verdicts : []).filter(Boolean);
+  if (!rows.length) return "";
+  const who = (document.getElementById("anWho").value || "").trim() || "unnamed";
+  const num = v => (v === undefined || v === null || !isFinite(v))
+    ? "NA" : String(Number(v.toPrecision(6)));
+  const lines = [ANNOT_COLUMNS.join(",")];
+  for (const r of rows) {
+    const c = r.cand;
+    lines.push([
+      c.recId, c.stream, num(c.centre), c.kSurvived, c.nMembers,
+      c.members.length ? c.members.join(";") : "NA",
+      num(c.span), num(c.jitterSd), r.verdict, who, r.at,
+      num(r.view.t0), num(r.view.t1), r.view.order, r.view.stream,
+      num(c.bin), c.nSurr === undefined ? "NA" : c.nSurr, "NA",
+    ].join(","));
+  }
+  return lines.join("\n") + "\n";
+}
+
+function downloadAnnotations() {
+  const text = annotationsCsv();
+  if (text) offerDownload("annotations.csv", text);
+}
+
+function finishAnnotation() {
+  document.getElementById("anWhere").textContent = "every drawn candidate judged";
+  document.getElementById("anProg").textContent =
+    ANNOT.verdicts.filter(Boolean).length + " verdicts";
+  document.getElementById("anCand").textContent =
+    "Download the file and pass it to `derive_spec --annotations`, which builds "
+    + "the simulator's settings from what you confirmed rather than from every "
+    + "candidate the assessor proposed.";
+  for (const id of ["anYes", "anNo", "anIdk"])
+    document.getElementById(id).disabled = true;
+  markDone("accAnnotate");
+}
+
+function startAnnotation() {
+  const cands = collectCandidates();
+  if (!cands.length) return;
+  const seed = Number(document.getElementById("anSeed").value) || 0;
+  const budget = Number(document.getElementById("anBudget").value) || 60;
+  const cap = Number(document.getElementById("anCap").value) || 8;
+  const s = drawAnnotSample(cands, seed, budget, cap);
+  ANNOT = { cands: s.picked, i: 0, verdicts: [], seed, budget, cap,
+            population: s.population, recordings: s.recordings,
+            drawn: s.drawn, view: null };
+  document.getElementById("anStage").hidden = false;
+  for (const id of ["anYes", "anNo", "anIdk"])
+    document.getElementById(id).disabled = false;
+  paintAnnotChip();
+  paintAgreement();
+  showCandidate();
+}
+
+function wireAnnotate() {
+  const start = document.getElementById("anStart");
+  if (!start) return;
+  start.onclick = startAnnotation;
+  document.getElementById("anYes").onclick = () => recordVerdict("confirmed");
+  document.getElementById("anNo").onclick = () => recordVerdict("rejected");
+  document.getElementById("anIdk").onclick = () => recordVerdict("unsure");
+  document.getElementById("anBack").onclick = () => {
+    if (ANNOT && ANNOT.i > 0) {
+      ANNOT.i--;
+      ANNOT.verdicts[ANNOT.i] = undefined;
+      for (const id of ["anYes", "anNo", "anIdk"])
+        document.getElementById(id).disabled = false;
+      paintAnnotChip(); paintAgreement(); showCandidate();
+    }
+  };
+  // Keys, because this is the one screen in the app somebody uses dozens of
+  // times in a row. Ignored while a text box has focus so typing a name does
+  // not cast votes.
+  document.addEventListener("keydown", ev => {
+    if (!ANNOT || document.getElementById("anStage").hidden) return;
+    const t = ev.target && ev.target.tagName;
+    if (t === "INPUT" || t === "TEXTAREA" || t === "SELECT") return;
+    const k = ev.key.toLowerCase();
+    if (k === "y") recordVerdict("confirmed");
+    else if (k === "n") recordVerdict("rejected");
+    else if (k === "u") recordVerdict("unsure");
+    else if (ev.key === "ArrowLeft") document.getElementById("anBack").click();
+  });
+}
+
 document.getElementById("assessFolder").onclick = assessFolderRun;
+wireAnnotate();
 document.getElementById("runAssess").onclick = runAssess;
 document.getElementById("aK").onchange = () => {
   // re-marking is free; re-measuring is not, so changing K only redraws
@@ -8605,6 +9100,15 @@ const TRACK_TOP = [
     need: "your recordings", ready: () => true },
   { key: "accAssess", panel: "accAssess", group: "measurement",
     need: "open something first", ready: () => RECORDINGS.length > 0 },
+  // BETWEEN MEASURING AND SIMULATING, because that is the order the pipeline
+  // runs in and the reason this step exists: the simulation is parameterised
+  // from the assessment, and nothing between them used to record whether a
+  // person believed any of the candidates the parameters came from.
+  { key: "accAnnotate", panel: "accAnnotate", group: "measurement",
+    label: "Confirm the events",
+    need: "assess something first",
+    ready: () => typeof collectCandidates === "function"
+                 && collectCandidates().length > 0 },
   // The calibrated half of the Simulate panel. It is the ONLY route to
   // `SIM_TARGET`, and `simulateFromMeasurement` refuses on a region that is not
   // a baseline, so the requirement says baseline rather than just "assess".
