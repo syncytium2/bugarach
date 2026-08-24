@@ -22,6 +22,36 @@ and every generator spec derived afterwards inherits it."*
 
 ![Panel A: excess against background rate on recordings with nothing planted, K=3, 4 and 6, all rising steeply away from the zero line rather than sitting on it. Panel B: at each of three backgrounds, the excess computed on the recording beside the excess computed on a draw from the null itself — the two bars are nearly the same height at the busy and crowded backgrounds](../learned/assess_null_leak.png)
 
+## What is new here, and what is not
+
+**None of this is a discovery about statistics** (Tony, 2026-08-24: *"I'd be
+surprised if this isn't a known issue in neuroscience and outside fields. That's
+why we have these fancy detectors. The assessor is a simple tool for a
+challenging problem."*). Comparing a selected extremum against an ensemble
+*mean* is a textbook selection bias, and the textbook remedy — compare against
+the ensemble *distribution* instead — is exactly what the surrogate literature on
+synchrony testing does. The assessor is a deliberately simple instrument, chosen
+because it is not one of the six detectors and therefore cannot make the
+benchmark a restatement of whichever detector measured it. Simple was the point.
+
+**What is new is the size of it, here, at this project's own background rates**,
+and the fact that nothing downstream knows. The excess is used as an absolute
+per-minute magnitude — to choose K, to size the generator, and (if the treatment
+contrast is ever built) to compare two windows. Those uses need the number to
+mean something on its own, and at 19.0 mHz/ROI 96% of it does not. That is worth
+a measurement rather than an assumption, which is what this file is.
+
+## What it looks like
+
+![Three rasters, one per row, each with a lane above it holding the assessor's calls. Top: quiet background, nothing planted, a single call. Middle: busy background, nothing planted, fifteen calls in the six minutes shown, all spurious. Bottom: busy background with twelve real events planted — green calls sit on the blue triangles marking planted events, and red spurious calls outnumber them](../learned/assess_calls.png)
+
+Same 40 ROIs, same window, same generator; only the background rate and whether
+anything was planted differ. **The assessor is not blind** — in the bottom panel
+it found all 12 planted events. It also made **77 calls that were not on one**,
+in the same recording, at the same K. The instrument detects real coordination
+and cannot tell you which of its calls that was, which is the argument for the
+person in MAHDCE rather than against the tool.
+
 ## What was measured
 
 Independent Poisson ROIs — every train drawn on its own, no shared process, no
