@@ -116,3 +116,45 @@ person drives it, all the way to the rendered text.
 *(Playwright trap, paid for by the same lane: `inner_text()` returns empty for
 content inside a collapsed `<details>`. Use `text_content()`, or open the accordion
 first.)*
+
+## A degraded result and an exit code that says success
+
+Four defects found separately on 2026-08-23 were one failure mode, and naming it is
+worth more than any of the four.
+
+- A folder declaring no frame interval was reported **conforming**, run on an
+  assumed 10 Hz grid, and its assumed value written into `run.json` as though
+  measured.
+- The site's lead figure lost every detector lane when `_compute` gained a required
+  argument its caller did not pass. All six raised into a per-detector `except`
+  written for one, and the tool exited 0 — shipping a valid PNG of a raster with six
+  blank lanes, which is worse than the link card it could have fallen back to,
+  because a fallback announces itself and this looked like a figure.
+- `bugarach detect` wrote a `detections.csv` containing only a header and exited 0.
+- The front page shipped its nav as unstyled links after the CSS was lifted out for
+  injection into other pages and the injector skipped the one page that already had
+  the markup.
+
+**In every case a check existed and passed.** The conformance report called the
+missing interval a note. The `except` was correct for one detector and wrong for
+six. The nav had a suite asserting markup, reachability and link resolution, and all
+of it passed while the page looked broken.
+
+Two rules come out of it.
+
+**Put the refusal in the exit code.** It is the only thing a caller reads. A script
+testing `$?` cannot tell a stderr complaint from a clean run, and `build_site.py`
+judges its figure step by nothing else. Scope it correctly, though: refuse at the
+point of *measurement*, not the point of *loading* — `load_folder` still accepts a
+folder that declares no interval, because such a folder is conforming and refusing
+it would be the consumer overruling the producer.
+
+**Distinguish "some failed" from "all failed."** One detector failing on an awkward
+slice is a finding worth printing and carrying on through; all six failing has never
+once meant six independent findings — both times it happened it was a caller left
+behind by a signature change. The same split applies one level up, to recordings in
+a folder. Whichever tool you are writing, the two cases must not look identical from
+outside, and the boundary is the exit code.
+
+**And the fourth had no exit code in it at all.** No check caught it; opening a
+screenshot did. That is the section above, and it is why it is above.
