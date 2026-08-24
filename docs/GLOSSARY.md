@@ -135,8 +135,20 @@ recordings is a **simulated data set**; the real recordings the lab approved are
 
 Introduced by [`detector_history.md`](detector_history.md), which argues that
 three of the six detectors are re-derivations of this design space. Listed here
-so the words mean one thing; the *attributions* in that document are flagged
-unverified and nothing below depends on them.
+so the words mean one thing.
+
+**That argument is no longer a reading — it is the attribution.** This paragraph
+used to say the attributions were "flagged unverified and nothing below depends
+on them", which was true when it was written and stopped being true twice: two of
+the radar primaries were retrieved and read on 2026-08-22, and an interface2 audit
+on 2026-08-24 closed every lineage row — `rate_detect` is cell-averaging CFAR
+(Finn & Johnson 1968), `loco_detect`'s `maxlt` is GO-CFAR (Hansen 1973), and its
+percentile-of-pool is kin to OS-CFAR (Rohling 1983). **The words below name what
+these detectors are, not what they resemble.** None of it is a problem — priority
+is closed (Tony, 2026-08-24) and the reason to care is the engineering the radar
+literature is offering, which
+[the attribution note](todo/2026-08-24-the-methods-are-not-ours-and-the-app-says-otherwise.md)
+sets out.
 
 - **CFAR** — constant false alarm rate: set the threshold from an estimate of
   the local background so the false-alarm probability stays put as the
