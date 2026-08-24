@@ -124,38 +124,60 @@ class SyncDetection:
 #:    ``mean_C_nonadaptive``, which is the MATLAB agreeing with that reading in
 #:    one field name while its function name says the opposite.
 #:
-#: So "adaptive" without a qualifier is unanswerable, and the honest label for
-#: what runs by default is **ISI-adaptive**. Kreuz is being asked which the
-#: software should say; see
+#: **So the bare word is banned here.** Tony, 2026-08-24: *"lots of things can be
+#: adaptive, so include a word before or after for clarity."* The mode is
+#: ``"isi_adaptive"`` — adaptive *to what* is the whole question — and
+#: ``"adaptive"`` on its own is refused rather than resolved, because guessing
+#: which of the two a caller meant is the confusion becoming a number. Kreuz is
+#: being asked what the software should call it; see
 #: ``docs/todo/2026-08-24-kreuz-answered-the-spike-synch-questions-in-april.md``.
-TAU_MODES = ("adaptive", "fixed")
+TAU_MODES = ("isi_adaptive", "fixed")
+
+#: Values that name a real thing this code does not do, refused with an
+#: explanation instead of a generic "unknown mode". ``adaptive`` is ambiguous;
+#: ``satuvuori``/``mrts`` is the extension that has never been on here.
+_TAU_MODE_HINTS = {
+    "adaptive": ('"adaptive" is ambiguous here — the ISI-derived coincidence '
+                 'window and the Satuvuori MRTS are both called that. Say '
+                 '"isi_adaptive" if you mean the window tau_max caps.'),
+    "satuvuori": ("the Satuvuori 2017 minimum relevant time scale is not "
+                  "implemented here; it has never been on in this lineage."),
+    "mrts": ("the Satuvuori 2017 minimum relevant time scale is not implemented "
+             "here; it has never been on in this lineage."),
+}
 
 
 def adaptive_profile(
     trains: list[np.ndarray], t_range: tuple[float, float], tau_max: float,
-    tau_mode: str = "adaptive",
+    tau_mode: str = "isi_adaptive",
 ) -> tuple[np.ndarray, np.ndarray]:
     """Per-spike tau-capped SPIKE-synchronization profile (x, C), pooled over
     all trains and sorted ascending in time. C = coincident-pair count /
     (n_trains - 1).
 
-    ``tau_mode="adaptive"`` (default, and the only behaviour before 2026-08-24)
-    derives τ from the surrounding half-ISIs, capped. ``"fixed"`` uses the cap
-    for every spike, which is ordinary fixed-window coincidence detection: a
-    dense stretch no longer tightens its own window, so a busy ROI looks
-    coincident with more of what surrounds it. **The default is not up for
+    ``tau_mode="isi_adaptive"`` (default, and the only behaviour before
+    2026-08-24) derives τ from the surrounding half-ISIs, capped. ``"fixed"``
+    uses the cap for every spike, which is ordinary fixed-window coincidence
+    detection: a dense stretch no longer tightens its own window, so a busy ROI
+    looks coincident with more of what surrounds it. **The default is not up for
     quiet revision** — every committed fixture and
-    ``bench.OPERATING_POINTS["sync"]`` was measured with the adaptive window.
+    ``bench.OPERATING_POINTS["sync"]`` was measured at the ISI-adaptive window.
+
+    The function keeps its name for import compatibility; *which* adaptivity it
+    computes is ``tau_mode``'s job to say, which is the point of the rename.
     """
     if tau_mode not in TAU_MODES:
-        raise ValueError(f'tau_mode must be one of {TAU_MODES}, got "{tau_mode}"')
+        hint = _TAU_MODE_HINTS.get(str(tau_mode).lower())
+        raise ValueError(
+            f'tau_mode must be one of {TAU_MODES}, got "{tau_mode}"'
+            + (f" — {hint}" if hint else ""))
     # cSPIKE's SpikeTrainSet drops duplicate spike times WITHIN a train
     ev = [np.unique(v) for v in clip_sorted(trains, t_range[0], t_range[1])]
     n = len(ev)
     span = t_range[1] - t_range[0]
     true_max = min(span, 2.0 * tau_max) if tau_max > 0 else span
     cap_half = true_max / 2.0
-    adaptive = tau_mode == "adaptive"
+    adaptive = tau_mode == "isi_adaptive"
 
     counts = [np.zeros(v.size) for v in ev]
     for i in range(n):
@@ -261,7 +283,7 @@ def sync_detect(
     *,
     tau_max: float,
     max_gap: float,
-    tau_mode: str = "adaptive",
+    tau_mode: str = "isi_adaptive",
     C_threshold: float = 0.1,
     C_min: float = 0.1,
     min_n: int = 3,
@@ -370,7 +392,11 @@ def sync_detect(
         profile_x=px, profile_y=py, Cx=cx, Cy=cy, Cn=cn,
         signal=DetectorSignal(t=cx, y=cy, ref=np.full(n2, np.nan),
                               threshold=C_threshold, hilite=np.empty((0, 2)),
-                              name="SPIKE-synch C (adaptive)",
+                              # names the window that produced it, because the
+                              # two modes draw different curves
+                              name=("SPIKE-synch C (ISI-adaptive)"
+                                    if tau_mode == "isi_adaptive"
+                                    else "SPIKE-synch C (fixed window)"),
                               kind="spike_sync"),
         settings=settings,
     )
