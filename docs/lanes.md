@@ -11,14 +11,19 @@
 >
 > **What replaced the queue is not a fan-out either.** The webapp's remaining work is
 > the in-browser trainer and the scoreboard's copy review, both in
-> [`webapp_completion_plan.md`](webapp_completion_plan.md). One defect outlived the
-> queue and belongs to whoever next holds the page: **the browser writes no
-> `detector_settings.csv`**, and the parameters it does record sit in `run.json`
-> keyed by detector, where the contract keys them by **detector and stream** — so a
-> two-stream folder analyzed in the browser gets a settings record that cannot say
-> which stream a value belonged to. The decision covering it is
-> [`todo/2026-08-22-tuned-settings-are-a-file-not-a-survivor.md`](todo/2026-08-22-tuned-settings-are-a-file-not-a-survivor.md),
-> and it should be fixed once for both halves rather than twice.
+> [`webapp_completion_plan.md`](webapp_completion_plan.md).
+>
+> **The defect this banner used to name is fixed** (2026-08-24, PR #262): the browser
+> writes `detector_settings.csv`, `run.json` keys parameters by **detector and
+> stream**, the stream is chosen at the door, and a tuned setting saves and loads as
+> a file that names the data set it was fitted on. What is still open is one step
+> further along — nothing hands that file to `bugarach detect`, so the per-lab loop
+> ends before the command that would consume its answer.
+>
+> **And a new one, bigger than the old:** the browser and `bugarach detect` do not
+> agree on how many detections one folder contains
+> ([the routes disagree](todo/2026-08-24-two-routes-two-answers-on-one-folder.md)).
+> Whoever next holds the page should read that before trusting either total.
 >
 > **Claim `docs/site/raster_viewer.html` by name** on `../bugarach-worktrees/SESSIONS.md`
 > before editing it. That is the one rule on this page that has never gone stale, and

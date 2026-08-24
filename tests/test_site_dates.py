@@ -164,31 +164,47 @@ def test_the_stamp_prefix_is_the_one_the_viewer_page_writes_by_hand():
     The prefix is the contract. `tests/test_site_viewer.py` asserts it from the
     page's side; this asserts it from the build's, so a change to either is
     caught wherever it is made.
-
-    ⚠ It is the PHRASING that is shared, not the date. The viewer's version date
-    is the day **that page** last changed; the generated pages carry the day the
-    commit being built was made. Those are different numbers whenever the viewer
-    is not the most recent edit, which is almost always.
-
-    The first version of this test compared the two dates for equality. It passed
-    on the day the viewer page was last touched and went red at the next midnight
-    — in CI before locally, because `%cs` reads the commit's own timezone and the
-    runner is UTC. A sibling lane had fixed exactly that coin-toss in the
-    version-date gate hours earlier, and this test shipped with it anyway.
     """
-    # A real commit: `_stamp_dates` of an invented sha has no date to read and
-    # degrades to "unknown", which is correct and useless to compare against.
+    # A real commit, because `_stamp_dates` of an invented sha has no date to
+    # read and degrades to "unknown" — which is correct behaviour and a useless
+    # thing to compare the page against.
     head = subprocess.run(["git", "rev-parse", "--short", "HEAD"], cwd=ROOT,
                           capture_output=True, text=True).stdout.strip()
     if not head:
         pytest.skip("no git history here")
-    shape = re.compile(
-        rf"First published {re.escape(SITE_BORN)} · this version \d{{4}}-\d\d-\d\d")
-    assert shape.search(date_stamp(head)), "the build stopped phrasing it this way"
-    page = (ROOT / "docs" / "site" / "raster_viewer.html").read_text(encoding="utf-8")
-    assert shape.search(page), (
+    born, version = bs._stamp_dates(head)
+    assert f"First published {born} · this version {version}" in date_stamp(head)
+
+    # What the two sides owe each other is the PHRASING, and that is all this can
+    # check unconditionally. Comparing the page's date to HEAD's made the test true
+    # only on the day the page was last edited — every commit on a later calendar
+    # day failed it, whatever it contained, and the first one across midnight did
+    # (2026-08-24). Comparing it to the page's own last-commit date is right but
+    # unanswerable in CI, whose checkout is shallow: with one commit in the clone
+    # every file looks like it changed at the tip.
+    viewer = ROOT / "docs" / "site" / "raster_viewer.html"
+    page = viewer.read_text(encoding="utf-8")
+    stamp = re.search(
+        rf"First published {re.escape(born)} · this version (\d{{4}}-\d{{2}}-\d{{2}})",
+        page)
+    assert stamp, (
         "the viewer page no longer phrases its stamp the way build_site does — "
         "change both together or neither")
+
+    # Staleness is the other half, and it needs real history. Where there is some,
+    # the page's date must be the day that file last changed.
+    shallow = subprocess.run(["git", "rev-parse", "--is-shallow-repository"],
+                             cwd=ROOT, capture_output=True, text=True).stdout.strip()
+    if shallow != "false":
+        pytest.skip("shallow clone: cannot tell when the page last changed")
+    page_changed = subprocess.run(
+        ["git", "log", "-1", "--format=%cs", "--", str(viewer.relative_to(ROOT))],
+        cwd=ROOT, capture_output=True, text=True).stdout.strip()
+    if not page_changed:
+        pytest.skip("no history for the viewer page here")
+    assert stamp.group(1) == page_changed, (
+        f"the viewer page says it was last changed on {stamp.group(1)}, but git "
+        f"says {page_changed} — edit the page and its stamp in the same commit")
 
 
 @pytest.mark.parametrize("page", STAMPED)

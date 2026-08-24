@@ -98,3 +98,35 @@ this problem — and the reason it drives a browser rather than curling is
 recorded in `docs/deploy.md`: the Cloudflare beacon injection of 2026-08-18 was
 conditional on the request looking like a browser, so `curl` reported clean while
 the served page had two network calls in it.
+
+---
+
+## 2026-08-24 — three things a person deciding option 1 needs, and none were here
+
+Gathered while option 1 was declined again. Recorded here rather than in a session
+note, because this is the file somebody will open when they finally decide.
+
+- **A Cloudflare Workers token cannot be scoped to one script.** Its permissions are
+  account-scoped, so the blast radius of a leaked or misused token is *every* Worker
+  on the account, not just `bugarach`. `wrangler.jsonc` also binds a custom domain,
+  which likely pulls in a Zone permission as well. Verify against the current
+  Cloudflare dashboard before deciding — if per-script scoping now exists, most of
+  the objection goes away.
+- **The public-repo exposure is narrower than it sounds, and concentrated in one
+  place.** GitHub does not expose secrets to `pull_request` workflows from forks, so
+  a drive-by PR cannot read the token; pushes to `main` need write access. The real
+  risk is supply chain — any third-party action in the deploy job runs with the
+  secret in scope. Pin actions to full commit SHAs and keep the token out of the
+  *build* step's environment.
+- **Automating the deploy also automates the silent-degradation path**, which is why
+  the hero guard had to land first. `build_site.py` used to substitute a fallback
+  and return 0 when the figure failed; a person sees that on stderr, and CI does not.
+  That is fixed, and it is the shape of thing to check for before adding any more
+  automation on this path.
+
+**Recommended shape, if it is done at all: deploy on tag, behind a GitHub Environment
+with a required reviewer** — not deploy-on-merge. The secret is then only exposed to
+a job a human approved, publishing becomes a deliberate act, and the version history
+matches what is actually live, which pairs with the release stamp the pages now
+carry. Deploy-on-merge would have republished the site a dozen times on 2026-08-23,
+several of those in states where `main` was internally inconsistent for hours.

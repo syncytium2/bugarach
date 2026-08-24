@@ -1136,7 +1136,7 @@ session's work is not a sweep.
 
 
 ### Tonys-MacBook-Pro/documents-stop-lying — the outward-facing docs stop describing a tool two milestones behind
-- **Status:** ACTIVE 2026-08-23.
+- **Status:** DONE 2026-08-23 — merged as PR #260; run record at `docs/reviews/README_2026-08-23.md`. Claim released 2026-08-24 by the session that noticed it was still ACTIVE, which is the habit that note itself confesses to.
 - **Writes:** `<darkroom>/bugarach/reviews/README_2026-08-23.md` — **one file**, the
   murderboard run record for the README, whose repo copy is `docs/reviews/`. Nothing
   else in the darkroom, nothing in `constellation/`, no other subfolder touched.

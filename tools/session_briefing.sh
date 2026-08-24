@@ -45,6 +45,30 @@ echo "For facts about the PREPARATION that it does not cover, the authority is"
 echo "syncytium2/foundations FOUNDATIONS §15 — check it before assuming what a"
 echo "condition does. Do not reason from textbook priors where the lab has a finding."
 
+# --- 1b. finished work that only Tony can move ---------------------------------
+# `status: open` means somebody should do this. It does not distinguish "nobody has
+# started" from "it is DONE and waiting on a human to press send" -- and the second
+# kind drowns in a list of fifty. The PySpike report sat written-but-unfiled for
+# twelve days partly because nothing told anyone it was ready (2026-08-24). These
+# print first, loudly, and name the one action left.
+# README.md documents the format, so it carries the frontmatter as an EXAMPLE and
+# would otherwise report itself as a waiting item -- it did, first run.
+waiting=$(grep -l '^status: waiting-on-tony[[:space:]]*$' docs/todo/*.md 2>/dev/null \
+          | grep -v '/README\.md$' | wc -l | tr -d ' ')
+if [ "${waiting:-0}" -gt 0 ]; then
+  echo
+  echo ">> ${waiting} item(s) FINISHED and waiting on Tony — nothing else unblocks these:"
+  for f in docs/todo/*.md; do
+    [ -r "$f" ] || continue
+    [ "$(basename "$f")" = "README.md" ] && continue
+    grep -q '^status: waiting-on-tony[[:space:]]*$' "$f" 2>/dev/null || continue
+    echo "   $(sed -n 's/^# //p' "$f" | head -1 | cut -c1-70)"
+    echo "     $f"
+    # The action line is the item's own one-sentence answer to "what do I do?".
+    sed -n 's/^waiting: //p' "$f" | head -1 | sed 's/^/     -> /'
+  done
+fi
+
 # --- 2. open threads: filed-but-unread is luck, not a channel -----------------
 opens=$(grep -l '^status: open[[:space:]]*$' docs/todo/*.md 2>/dev/null | wc -l | tr -d ' ')
 feedback=$(grep -l '^status: open[[:space:]]*$' docs/sapper_feedback/*.md 2>/dev/null | wc -l | tr -d ' ')
