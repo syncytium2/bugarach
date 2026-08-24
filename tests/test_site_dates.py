@@ -173,12 +173,24 @@ def test_the_stamp_prefix_is_the_one_the_viewer_page_writes_by_hand():
     if not head:
         pytest.skip("no git history here")
     born, version = bs._stamp_dates(head)
-    prefix = f"First published {born} · this version {version}"
-    assert prefix in date_stamp(head)
-    page = (ROOT / "docs" / "site" / "raster_viewer.html").read_text(encoding="utf-8")
-    assert prefix in page, (
-        "the viewer page no longer phrases its stamp the way build_site does — "
-        "change both together or neither")
+    assert f"First published {born} · this version {version}" in date_stamp(head)
+
+    # The page's own version date is the day THAT FILE last changed, not HEAD's.
+    # Comparing it against HEAD made the test true only on the day the page was
+    # last edited: every commit on a later calendar day failed it, whatever the
+    # commit contained, and the first one to cross midnight did (2026-08-24).
+    # What the two sides actually owe each other is the phrasing.
+    viewer = ROOT / "docs" / "site" / "raster_viewer.html"
+    page_changed = subprocess.run(
+        ["git", "log", "-1", "--format=%cs", "--", str(viewer.relative_to(ROOT))],
+        cwd=ROOT, capture_output=True, text=True).stdout.strip()
+    if not page_changed:
+        pytest.skip("no history for the viewer page here")
+    page = viewer.read_text(encoding="utf-8")
+    assert f"First published {born} · this version {page_changed}" in page, (
+        "the viewer page no longer phrases its stamp the way build_site does, or "
+        "its version date is not the day the page last changed — change the page "
+        "and its stamp together, or neither")
 
 
 @pytest.mark.parametrize("page", STAMPED)
