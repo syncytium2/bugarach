@@ -33,15 +33,48 @@ always by proper name:
     modified port does not carry the original's name in a public UI (Tony's
     call, on interface2's ADR-0016: *"we can't say we used it if we turned off
     half of it"*).
-  - **SPIKE-synch** — tau-capped adaptive SPIKE-synchronization profile
-    (Kreuz lab) with hysteresis detection. ⚠ *"adaptive"* is inherited and
-    ambiguous — τ here is ISI-adaptive, but cSPIKE's
-    `AdaptiveSPIKESynchroProfile` means the Satuvuori 2017 extension, which the
-    MATLAB wrapper passed as 0. Kreuz is being asked;
-    [the note](todo/2026-08-24-kreuz-answered-the-spike-synch-questions-in-april.md).
+  - **SPIKE-synch** — tau-capped **ISI-adaptive** SPIKE-synchronization profile
+    (Kreuz lab) with hysteresis detection. The window is switchable:
+    `tau_mode="isi_adaptive"` (default) or `"fixed"`. See **"adaptive" — never
+    on its own** below.
 
 A sentence must pick its axis: "all six detectors, both streams" — never
 "multimodal".
+
+## "adaptive" — never on its own
+
+**RETIRED: bare "adaptive".** Tony, 2026-08-24: *"lots of things can be adaptive,
+so include a word before or after for clarity."* In this project it has named at
+least four unrelated things — a coincidence window, a time-scale floor, a rolling
+detector threshold, and a plot's tick spacing — so a sentence using it alone
+cannot be checked. `tau_mode="adaptive"` is **refused by the code**, with a
+message naming the two candidates.
+
+- **ISI-adaptive** — the coincidence window in SPIKE-synch. τ for a spike pair is
+  the minimum of the four surrounding half-ISIs, capped at `tau_max`, so a dense
+  stretch **tightens its own window** and the measure does not reward firing
+  faster. This is core SPIKE-synchronization (Kreuz 2015), not an option on it,
+  and it is what `adaptive_profile` computes by default. Its opposite here is
+  `tau_mode="fixed"` — the cap for every spike, ordinary fixed-window coincidence
+  detection, which makes the measure rate-dependent again.
+- **MRTS — minimum relevant time scale** (Satuvuori et al. 2017). A **floor**
+  under that adaptive window: time differences below it are not treated as
+  resolvable, so the window cannot shrink past the scale you declare meaningful.
+  It is cSPIKE's `threshold` argument to `AdaptiveSPIKESynchroProfile` — **which
+  is where the word "adaptive" in that function name comes from**, and
+  interface2's wrapper passed it as **0**, i.e. off. **Never on in this lineage
+  and not implemented here**; `tau_mode="mrts"` says so rather than failing as a
+  typo. ⚠ *Read from cSPIKE's API and interface2's wrapper, not from the
+  Satuvuori paper — nobody here has read it.*
+  **Why it is worth knowing rather than trivia:** with no floor, a burst of
+  fast events drives τ below the frame interval, and the measure starts
+  resolving differences the camera never recorded. An MRTS at the frame interval
+  is the standard remedy. Nobody has checked whether our recordings do this —
+  [filed](todo/2026-08-24-does-the-isi-window-go-below-the-frame-interval.md).
+- **Adaptive threshold** (radar sense) — CFAR, an entirely separate axis with its
+  own vocabulary further down this file. Nothing to do with either of the above.
+- **`AdaptiveTicker`** — Bokeh's axis tick spacing in `ui/app.py`. Named here only
+  so a grep for "adaptive" does not leave anyone wondering.
 
 **locust versus CICADA, and it is one word apart.** *CICADA* in this repo means
 the **upstream tool** — the Cossart lab's software, the thing we cite. *locust*

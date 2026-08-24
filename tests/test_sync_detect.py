@@ -238,22 +238,46 @@ def test_adaptive_is_the_default_and_the_settings_say_which_ran():
     trains = _burst_and_pair()
     _, y = adaptive_profile(trains, (0.0, 60.0), 0.25)
     _, y_explicit = adaptive_profile(trains, (0.0, 60.0), 0.25,
-                                     tau_mode="adaptive")
+                                     tau_mode="isi_adaptive")
     assert np.array_equal(y, y_explicit)
 
     kw = dict(tau_max=0.25, max_gap=0.5, C_threshold=0.1, C_min=0.1, min_n=1)
-    assert sync_detect(trains, (0.0, 60.0), **kw).settings["tau_mode"] == "adaptive"
+    assert sync_detect(trains, (0.0, 60.0), **kw).settings["tau_mode"] == "isi_adaptive"
     assert sync_detect(trains, (0.0, 60.0), tau_mode="fixed",
                        **kw).settings["tau_mode"] == "fixed"
 
 
-def test_an_unknown_tau_mode_is_refused_rather_than_guessed():
-    """`satuvuori` is the plausible wrong guess: it is the OTHER thing called
-    adaptive here, it is not implemented, and silently returning the ISI window
-    for it would be the naming confusion becoming a number."""
-    with pytest.raises(ValueError, match="tau_mode"):
+def test_the_bare_word_adaptive_is_refused_and_says_why():
+    """Tony, 2026-08-24: *"lots of things can be adaptive, so include a word
+    before or after for clarity."* The bare word is the likeliest thing a caller
+    reaches for and the one that cannot be resolved, so it fails loudly with the
+    disambiguation rather than quietly picking one."""
+    with pytest.raises(ValueError, match="ambiguous"):
         adaptive_profile(_burst_and_pair(), (0.0, 60.0), 0.25,
-                         tau_mode="satuvuori")
-    with pytest.raises(ValueError, match="tau_mode"):
+                         tau_mode="adaptive")
+    with pytest.raises(ValueError, match="isi_adaptive"):
         sync_detect(_burst_and_pair(), (0.0, 60.0), tau_max=0.25, max_gap=0.5,
-                    tau_mode="satuvuori")
+                    tau_mode="adaptive")
+
+
+def test_the_satuvuori_time_scale_is_named_as_missing_not_as_a_typo():
+    """`satuvuori`/`mrts` is the OTHER thing called adaptive: a real method,
+    never on in this lineage, not implemented here. Silently returning the ISI
+    window for it would be the naming confusion becoming a number, and a generic
+    "unknown mode" would read as a typo."""
+    for name in ("satuvuori", "mrts", "MRTS"):
+        with pytest.raises(ValueError, match="not implemented"):
+            adaptive_profile(_burst_and_pair(), (0.0, 60.0), 0.25, tau_mode=name)
+    with pytest.raises(ValueError, match="not implemented"):
+        sync_detect(_burst_and_pair(), (0.0, 60.0), tau_max=0.25, max_gap=0.5,
+                    tau_mode="mrts")
+
+
+def test_the_signal_label_names_the_window_that_drew_it():
+    """Two modes draw different curves; a plot legend saying only "adaptive"
+    was the ambiguity in its most public form."""
+    trains = _burst_and_pair()
+    kw = dict(tau_max=0.25, max_gap=0.5, C_threshold=0.1, C_min=0.1, min_n=1)
+    assert "ISI-adaptive" in sync_detect(trains, (0.0, 60.0), **kw).signal.name
+    fixed = sync_detect(trains, (0.0, 60.0), tau_mode="fixed", **kw)
+    assert "fixed window" in fixed.signal.name

@@ -433,7 +433,7 @@ thought (§4a), and it is the instrument for whatever replaces it.
 
 ## 11 · SPIKE-synch's coincidence window: ISI-adaptive (live) vs fixed
 
-**Live:** `sync_detect(..., tau_mode="adaptive")`, the only behaviour before
+**Live:** `sync_detect(..., tau_mode="isi_adaptive")`, the only behaviour before
 2026-08-24. τ for a spike pair is the minimum of the four surrounding half-ISIs,
 capped at `tau_max`, so a dense stretch tightens its own window.
 
@@ -442,7 +442,13 @@ fixed-window coincidence detection: a busy ROI looks coincident with more of wha
 surrounds it, which is the promiscuity the cap bounds and the adaptive window
 removes.
 
-**Why it exists at all:** *"the adaptive should be toggleable"* (Tony,
+**The bare word is refused.** `tau_mode="adaptive"` raises, naming the two
+candidates — *"lots of things can be adaptive, so include a word before or after
+for clarity"* (Tony, 2026-08-24). The four things this project has called adaptive
+are listed in [`GLOSSARY.md`](GLOSSARY.md).
+
+**Why it exists at all:** *"the sync profile we use for the cSPIKE/PySpike-based
+detector should be toggleable between adaptive and non-adaptive"* (Tony,
 2026-08-24), after an interface2 audit found their cSPIKE wrapper passing
 **Satuvuori 2017's adaptive time-scale argument as 0** — disabled — while calling
 that code path "adaptive". **Two different things are called adaptive here**, and
@@ -466,19 +472,35 @@ have. **Tony has said he can be argued either way**, so this is a default held o
 evidence, not a closed question.
 
 **To flip:** change the `tau_mode` default in `adaptive_profile` and
-`sync_detect`. The parity fixtures come from cSPIKE output at the adaptive
-window, so flipping the default **breaks parity** and needs them regenerated —
-MATLAB, an interface2 checkout, fork #1's cost. Flipping it per call costs
-nothing, which is what the toggle is for.
+`sync_detect`. Flipping it **per call** costs nothing, which is what the toggle is
+for. Flipping the **default** puts the shipped configuration somewhere the parity
+fixtures were not generated — they come from cSPIKE output at the ISI-adaptive
+window.
+
+⚠ **And that cost is smaller than fork #1 makes it sound, on Tony's own reading**
+(2026-08-24): *"at this time I'm not too worried about the MATLAB version and
+divergence. If necessary both ours and MATLAB should have the toggle."* So the
+answer to a divergence here is **not** automatically "regenerate the fixtures" —
+it is **ask interface2 to add the same switch**, after which both sides can run
+either window and parity is checkable in both. Requested from them 2026-08-24.
+Fork #1 still governs *mechanism* changes; a mode that reproduces the original at
+its default is not one, and this entry should not be read as making the toggle
+expensive.
 
 **Watch for:** a `tau_mode` reaching a *result* without reaching
-`detector_settings.csv`. `sync_detect` puts it in `settings` and
-`test_adaptive_is_the_default_and_the_settings_say_which_ran` pins it, because a
-run whose window nobody recorded is not reproducible.
+`detector_settings.csv`. `sync_detect` puts it in `settings`,
+`test_adaptive_is_the_default_and_the_settings_say_which_ran` pins that, and the
+emitted signal's own label names the window that drew it — a legend reading only
+"adaptive" was this ambiguity in its most public form.
+
+**A third window exists in the literature and not here.** The Satuvuori MRTS is a
+*floor* under the adaptive window, never on in this lineage. Whether it would
+change anything is a measurement nobody has taken:
+[`does the ISI window go below the frame interval`](todo/2026-08-24-does-the-isi-window-go-below-the-frame-interval.md).
 
 **Not yet in the browser.** The viewer carries its own JS profile
 (`adaptiveProfile` in `raster_viewer.html`) which still computes only the
-adaptive window, under a curve labelled *"SPIKE-synch C (adaptive)"*. Filed:
+ISI-adaptive window, under a curve labelled *"SPIKE-synch C (adaptive)"*. Filed:
 [`todo/2026-08-24-the-browser-cannot-toggle-tau-mode.md`](todo/2026-08-24-the-browser-cannot-toggle-tau-mode.md).
 
 ---

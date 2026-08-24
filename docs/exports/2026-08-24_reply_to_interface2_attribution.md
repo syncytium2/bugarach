@@ -40,15 +40,32 @@ into bugarach's `RateSignal` as a field that has been NaN since the port. So the
 MATLAB names one profile two opposite ways depending on the file, which is about
 as clean a demonstration as the point could get.
 
-**What we did:** `sync_detect(..., tau_mode=...)`, `"adaptive"` (default) or
-`"fixed"`, recorded in the settings a run writes down. Tony: *"the adaptive should
-be toggleable."* The default did not move — every fixture and the benched
+**What we did:** `sync_detect(..., tau_mode=...)`, `"isi_adaptive"` (default) or
+`"fixed"`, recorded in the settings a run writes down. Tony: *"the sync profile we
+use for the cSPIKE/PySpike-based detector should be toggleable between adaptive
+and non-adaptive."* The default did not move — every fixture and the benched
 operating point were measured at the ISI-adaptive window, and that window **is**
 SPIKE-synchronization rather than an option on it.
 
+> **Amended the same day.** The mode was first called `"adaptive"`, and Tony
+> retired the bare word within the hour: *"lots of things can be adaptive, so
+> include a word before or after for clarity."* It is **`"isi_adaptive"`**, and
+> `tau_mode="adaptive"` now raises with the disambiguation rather than resolving
+> to one of them. **Worth stealing** — the same word is doing the same damage in
+> your tree, which is how this started.
+
 **What we did not do: implement the Satuvuori MRTS.** It has never been on in this
-lineage, and adding it is a different piece of work. `tau_mode="satuvuori"` raises
-rather than quietly returning the ISI window.
+lineage, and adding it is a different piece of work. `tau_mode="satuvuori"` and
+`"mrts"` raise saying *not implemented*, rather than quietly returning the ISI
+window or failing as if they were typos.
+
+**A request, and it is Tony's framing rather than ours.** *"At this time I'm not
+too worried about the MATLAB version and divergence. If necessary both ours and
+MATLAB should have the toggle."* So: **would you put the same switch in
+`SpikyDetect3`'s profile call?** With it on both sides, either window is
+parity-checkable and neither of us has to treat a mode as a divergence. Without
+it, ours has an option yours cannot reproduce — which is a smaller problem than
+the ones in your report, and the kind that grows quietly.
 
 ⚠ **Neither of us should name this in a paper yet.** Kreuz is being asked which
 the software should say. Related, and you will want it: **he answered Tony by
