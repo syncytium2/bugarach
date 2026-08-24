@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "bugarach"
-version = "0.0.1"
+version = "0.1.0"
 description = "Web port of interface2's explore_sce coordination viewer"
 license = "BSD-3-Clause"
 license-files = ["LICENSE"]
