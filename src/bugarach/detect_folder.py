@@ -42,6 +42,29 @@ which derive their own windows internally and have no argument to divert. One
 resolution, one policy, and the producer's bounds are validated by the same door
 a producer's own windows go through.
 
+A run that scored nothing is a failed run
+------------------------------------------
+**Some recordings skipped is a finding; every recording skipped is a broken
+run.** That split is the one ``tools/make_diagnostic.py`` was given in PR #255,
+and it is deliberately the same split, because somebody who learns the rule from
+one tool should not be surprised by the other. One malformed region in a folder
+of 85 must not cost the other 84 — that recording is named in the roster, named
+again in a block of its own at the foot of the report, and named in
+``run.json``. Nothing at all being scored has never once meant 85 independent
+findings; it means the folder could not be run, and it is answered with
+:class:`NoRecordingDetectedOn`, a non-zero exit, and no ``detections.csv``.
+
+Whether to write the empty file was the real question here. A ``detections.csv``
+holding a header and no rows is honest about **nothing found** — a quiet slice
+is a result, and ``emit.write_detections`` writing that header is how "we looked
+and there was nothing" stays different from "we never looked". It is a lie about
+**nothing ran**, and on disk the two are the same byte for byte. So the file is
+written whenever at least one recording was scored, however few events came out
+of it, and is not written when none was: the result file exists only where there
+is a result. ``run.json`` is written either way and says which happened in as
+many words, with counts beside it — the record of a failed attempt is worth
+keeping, and a record is not a result.
+
 Two detector families, and they see different spans
 ----------------------------------------------------
 ``loco``, ``sce`` and ``cicada`` take the whole recording and window it
@@ -69,7 +92,7 @@ from bugarach.emit import (
     write_detector_settings,
     write_run,
 )
-from bugarach.store import Slice
+from bugarach.store import Slice, validated_dt
 
 #: Seed for every detector that draws surrogates, so a run reproduces. Written
 #: into ``detector_settings.csv`` beside the parameters rather than left as a
@@ -93,6 +116,37 @@ DETECTORS = ("rate", "coact", "loco", "sce", "cicada", "sync")
 #: including why cicada's is not to be "corrected".
 ONSET_FIELD = {"rate": "t50rise", "coact": "t50rise", "sync": "t50rise",
                "loco": "t50rise", "sce": "t50rise", "cicada": "locs"}
+
+
+class NoRecordingDetectedOn(RuntimeError):
+    """The whole folder was skipped, so there is no result — only an empty file.
+
+    **The per-recording ``except`` is right and this is not a retreat from it.**
+    A recording the detectors cannot run on is a finding: name it, score the
+    other 84, and let whoever is troubleshooting see both. That is what a folder
+    command is for, and one bad region must not cost a morning's export.
+
+    *Every* recording failing at once is a different animal. It has not once
+    meant 85 independent findings; it means one fact the whole folder needed was
+    missing — most often the acquisition frame interval, which no recording can
+    be measured without and none of them will ever have on its own. The run
+    reported success anyway, and handed back a ``detections.csv`` of one line:
+    a header, no rows, and a zero exit status that a pipeline reads as done.
+
+    That file is the harm. Header-and-no-rows is the honest shape of **nothing
+    found** and is written for it; letting it also stand for **nothing ran**
+    makes the one file a lab takes away unable to tell a quiet preparation from
+    a broken run. So no ``detections.csv`` is written here at all, ``run.json``
+    is, and the refusal reaches the exit code.
+
+    Carries the :class:`DetectionRun` as ``.run`` so the caller can still print
+    the per-recording reasons — the refusal says the folder failed, and the
+    roster says what each recording raised.
+    """
+
+    def __init__(self, message: str, run: "DetectionRun | None" = None) -> None:
+        super().__init__(message)
+        self.run = run
 
 
 @dataclass
@@ -317,6 +371,14 @@ def detect_slice(s: Slice, *, detectors=DETECTORS, stream: str | None = None,
 
     ``s`` is taken as it came out of :func:`bugarach.io.load_folder`; the
     windowing is settled here, so a caller cannot forget to.
+
+    ``frame_interval_sec`` overrides what the folder declared, for a folder that
+    legally declared nothing. Omit it and the recording is asked, through
+    :meth:`~bugarach.store.Slice.require_dt` — the one accessor in the tree that
+    can return an interval, with the refusal already written (FOUNDATIONS §6).
+    This used to hand-parse ``meta["frame_interval_sec"]`` and phrase its own
+    refusal, which made three sentences in the tree saying the same thing to the
+    same producer; the todo behind PR #250 asked for exactly this deletion.
     """
     s, windows = folder_analysis_windows(s)
 
@@ -328,18 +390,14 @@ def detect_slice(s: Slice, *, detectors=DETECTORS, stream: str | None = None,
             f"{', '.join(names)}. Stream names are the lab's own strings and "
             f"bugarach does not translate them")
 
-    if frame_interval_sec is None:
-        raise ValueError(
-            f"{s.slice_id}: no frame interval. Three detectors build their "
-            f"analysis grid from it, it cannot be recovered from onset times, "
-            f"and there is no default because a default here is a guess about "
-            f"somebody else's microscope (FOUNDATIONS §6). Put "
-            f"frame_interval_sec in slices.csv, or pass --frame-interval")
+    dt = (s.require_dt("detecting")
+          if frame_interval_sec is None
+          else validated_dt(frame_interval_sec, what=f"slice {s.slice_id!r}"))
 
     identity = dict(s.meta)
     events = []
     for name in detectors:
-        params = detector_params(name, frame_interval_sec=frame_interval_sec)
+        params = detector_params(name, frame_interval_sec=dt)
         runner = _run_flat if name in FLAT else _run_nested
         events.extend(runner(name, s, windows, want, params, identity))
     return events, windows
@@ -394,13 +452,13 @@ def detect_folder(folder, *, out_dir, detectors=DETECTORS,
         if s.streams:
             rec.n_roi = s.streams[next(iter(s.streams))].n_rois
 
-        dt = frame_interval_sec
-        if dt is None:
-            raw = s.meta.get("frame_interval_sec")
-            try:
-                dt = float(raw) if raw not in (None, "") else None
-            except (TypeError, ValueError):
-                dt = None
+        # `Slice.dt` is the producer's column already read, once, by the loader.
+        # This used to re-parse `meta["frame_interval_sec"]` itself and swallow a
+        # typo into None — the last of the four hand-written parses PR #250's
+        # todo listed. A caller's override still wins, for a folder that legally
+        # ships no slices.csv.
+        dt = (validated_dt(frame_interval_sec, what=f"slice {s.slice_id!r}")
+              if frame_interval_sec is not None else s.dt)
         rec.frame_interval_sec = dt
         intervals[s.slice_id] = dt
 
@@ -444,10 +502,16 @@ def detect_folder(folder, *, out_dir, detectors=DETECTORS,
     run.n_events = len(all_events)
 
     out_dir.mkdir(parents=True, exist_ok=True)
-    run.paths["detections"] = write_detections(all_events,
-                                               out_dir / "detections.csv")
-    run.paths["settings"] = write_detector_settings(
-        settings, out_dir / "detector_settings.csv")
+    # The result files exist only where there is a result. Scored nothing means
+    # no detections.csv and no detector_settings.csv — a header with no rows
+    # under it is what "nothing found" looks like, and letting it also be what
+    # "nothing ran" looks like is the whole defect.
+    scored = bool(run.detected)
+    if scored:
+        run.paths["detections"] = write_detections(all_events,
+                                                   out_dir / "detections.csv")
+        run.paths["settings"] = write_detector_settings(
+            settings, out_dir / "detector_settings.csv")
     run.paths["run"] = write_run(
         out_dir / "run.json",
         slices=[r.slice_id for r in run.records],
@@ -466,8 +530,55 @@ def detect_folder(folder, *, out_dir, detectors=DETECTORS,
             "windows": windows_by_slice,
             "not_detected": {r.slice_id: r.skipped for r in run.skipped},
             "elapsed_sec": round(run.seconds, 3),
+            # The four numbers that separate an empty result from an absent one,
+            # so a reader does not have to infer it from a file's line count.
+            "n_recordings": len(run.records),
+            "n_detected_on": len(run.detected),
+            "n_not_detected": len(run.skipped),
+            "n_detections": run.n_events,
+            "detections_written": scored,
+            "outcome": (
+                f"detected on {len(run.detected)} of {len(run.records)} "
+                f"recording(s); {run.n_events} detection(s) in detections.csv"
+                if scored else
+                f"NO recording was detected on — all {len(run.records)} were "
+                f"skipped, this run produced no result, and no detections.csv "
+                f"was written. See not_detected for what each one raised."),
         })
+    if not scored:
+        raise NoRecordingDetectedOn(_nothing_detected_message(run), run=run)
     return run
+
+
+def _nothing_detected_message(run: DetectionRun) -> str:
+    """Why the folder failed, and the one thing most likely to fix it.
+
+    Names the column, the file and the flag — the three facts
+    :meth:`~bugarach.store.Slice.require_dt` names — rather than inventing a
+    third phrasing of them. The per-recording reasons above it are that
+    accessor's own words, carried through verbatim.
+    """
+    lines = [
+        f"not one of the {len(run.records)} recording(s) in {run.folder} could "
+        f"be detected on, so this run has no result to write. A detections.csv "
+        f"with a header and no rows would say \"nothing found\"; what happened "
+        f"is \"nothing ran\". None was written; run.json was, and says so."]
+    # The first few reasons, not all 85 of them — every one is in the roster and
+    # in run.json, and a refusal nobody reads to the end is a refusal that did
+    # not land.
+    for r in run.skipped[:3]:
+        lines.append(f"  {r.slice_id}: {r.skipped}")
+    if len(run.skipped) > 3:
+        lines.append(f"  … and {len(run.skipped) - 3} more, all named in "
+                     f"run.json under not_detected.")
+    if run.skipped and all("sampling interval" in r.skipped
+                           for r in run.skipped):
+        lines.append(
+            "Every one of them is missing the acquisition frame interval, which "
+            "is one fact about the folder rather than 85 findings about "
+            "recordings. Declare frame_interval_sec in the folder's slices.csv, "
+            "or pass --frame-interval to supply it for this run.")
+    return "\n".join(lines)
 
 
 def _code_version() -> str | None:
@@ -501,6 +612,19 @@ def format_run(run: DetectionRun) -> str:
                  f"{len(rec.windows)} window(s)  "
                  f"{rec.n_events} detection(s){outside}  {rec.seconds:.1f}s")
     L.append("")
+    if run.skipped and run.detected:
+        # Loud, and a second time. The roster above already names every skipped
+        # recording, and in a folder of 85 those four lines scroll past between
+        # eighty that worked — which is how "some of your export is missing from
+        # this file" gets read as a successful run. Counts first, because the
+        # number is what a reader checks against what they sent.
+        L.append(f"  ** {len(run.skipped)} of {len(run.records)} recording(s) "
+                 f"produced NOTHING and are absent from detections.csv:")
+        for rec in run.skipped:
+            L.append(f"     {rec.slice_id}: {rec.skipped}")
+        L.append(f"  ** every number below is over the {len(run.detected)} "
+                 f"recording(s) that were detected on, not over the folder.")
+        L.append("")
     L.append(f"  {run.n_events} detection(s) in {run.seconds:.1f}s")
     n_out = sum(r.n_outside for r in run.records)
     if n_out:
@@ -513,6 +637,9 @@ def format_run(run: DetectionRun) -> str:
     for key in ("detections", "settings", "run"):
         if key in run.paths:
             L.append(f"  wrote {run.paths[key]}")
+    if "detections" not in run.paths:
+        L.append("  no detections.csv — nothing was detected on, so there is no "
+                 "result to write.")
     L.append("")
     L.append("  Windows: the producer's analysis windows where the folder states")
     L.append("  them, and otherwise the raw period bounds as sent — no wash-in")
