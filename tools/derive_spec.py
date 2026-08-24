@@ -37,7 +37,7 @@ from bugarach.bench import REGIMES as _REGIMES  # noqa: E402
 
 
 def build(assessment: dict, k: int, *, events_per_level: int = 5,
-          n_levels: int = 3) -> dict:
+          n_levels: int = 3, annotations=None) -> dict:
     from bugarach.adapt import generator_params
     from bugarach.assess import Assessment
     from bugarach.bench import (BENCH_RECORDING, MEASURED_BURST_BINS,
@@ -75,22 +75,75 @@ def build(assessment: dict, k: int, *, events_per_level: int = 5,
     rate_iqr = [float(np.percentile(rates, 25)), float(np.percentile(rates, 75))]
     frac_median_silent = float(np.mean([r["roi_rate_med"] == 0 for r in rows]))
 
+    # --- what a person believed, where a person has said ----------------------
+    #
+    # THE MACHINE PROPOSES AND THIS IS WHERE THE HUMAN DISPOSES. Without
+    # annotations every number below is a median over candidates nobody looked
+    # at; with them, participation, span and tightness are taken over the
+    # confirmed subset and the event FREQUENCY is scaled by the confirm rate —
+    # the last one being the number that decides how much coordination the
+    # simulator plants.
+    part_n, span, jit_o = med("part_n_obs"), med("span_med"), med("jit_obs")
+    clusters = med("clusters_permin")
+    ann_block = None
+    if annotations is not None:
+        from bugarach.annotate import confirmed_summary
+        cs = confirmed_summary(annotations, k)
+        ann_block = dict(cs)
+        if cs["n_judged"] == 0:
+            notes_pre = [
+                f"⚠ annotations were supplied and NONE of them reach K={k}: "
+                f"every verdict was made on a candidate that does not exist at "
+                f"this K. The spec below is built from unreviewed candidates. "
+                f"Judge at a lower K, or derive at one the sample covers"]
+        elif cs["n_confirmed"] == 0:
+            notes_pre = [
+                f"⚠ a person judged {cs['n_judged']} candidates at K={k} and "
+                f"confirmed NONE. This spec is NOT built from that verdict — "
+                f"there is nothing to build from. Either K is too strict for "
+                f"this folder or the folder has no agreed coordination, and "
+                f"those are different conversations. The numbers below are the "
+                f"machine's, unreviewed"]
+        else:
+            part_n, span, jit_o = (cs["part_n_med"], cs["span_med"],
+                                   cs["jitter_sd_med"])
+            clusters = clusters * cs["confirm_rate"]
+            notes_pre = [
+                f"participation, span and tightness are medians over the "
+                f"{cs['n_confirmed']} candidates a person CONFIRMED at K={k}, "
+                f"not over every candidate the assessor proposed",
+                f"clusters_permin scaled by the confirm rate "
+                f"{cs['confirm_rate']:.0%} ({cs['n_confirmed']} confirmed of "
+                f"{cs['n_judged']} judged, {cs['n_unsure']} unsure and counted "
+                f"in neither): a simulator handed the unfiltered rate plants "
+                f"roughly {1 / max(cs['confirm_rate'], 1e-9):.1f}x the "
+                f"coordination this folder is agreed to contain"]
+    else:
+        notes_pre = [
+            "⚠ NOBODY HAS LOOKED. Every number in this spec is a median over "
+            "candidates the assessor proposed and no person judged. That is the "
+            "state docs/RESET.md section 1 calls 'not a weaker result of the "
+            "same kind — not a result'. Pass --annotations to fix it; this spec "
+            "was produced with --unreviewed, deliberately"]
+
     a = Assessment(
         min_rois=k, meets_floor=True, win_dur=win, n_roi=n_roi,
         n_events_win=0,
         roi_rate_med=roi_rate, roi_rate_mean=roi_rate,
-        part_n_obs=med("part_n_obs"),
-        jit_obs=med("jit_obs"), jit_null=med("jit_null"),
+        part_n_obs=part_n,
+        jit_obs=jit_o, jit_null=med("jit_null"),
         jit_excess=med("jit_excess"),
         jit_defined=v["n_jit_defined"] > 0,
-        span_med=med("span_med"),
-        clusters_permin=med("clusters_permin"),
+        span_med=span,
+        clusters_permin=clusters,
         coact_excess=med("coact_excess"),
     )
     gp = generator_params(a, n_levels=n_levels,
                           events_per_level=events_per_level)
     kwargs = dict(gp.kwargs)
-    notes = list(gp.notes)
+    # The review status leads the notes, because it governs how every number
+    # under it should be read.
+    notes = notes_pre + list(gp.notes)
     notes.append(
         f"bg_rate_hz derived from the population event rate / ROI count: median "
         f"{roi_rate:.5f} Hz, IQR {rate_iqr[0]:.5f}-{rate_iqr[1]:.5f}. The tree's "
@@ -174,6 +227,10 @@ def build(assessment: dict, k: int, *, events_per_level: int = 5,
                    for kk in sorted(by_k, key=int)},
         "roi_rate": {"median": roi_rate, "iqr": rate_iqr,
                      "frac_slices_median_roi_silent": frac_median_silent},
+        # Present and null-valued rather than absent when nobody looked: a
+        # consumer checking `spec["review"]` gets an answer either way, where a
+        # missing key reads as an older spec format.
+        "review": ann_block,
         "provenance": {
             "store": assessment["store"],
             "n_slices_assessed": assessment["n_slices_assessed"],
@@ -191,9 +248,37 @@ def main(argv=None) -> int:
     p.add_argument("--out", type=Path, required=True)
     p.add_argument("--k", type=int, required=True,
                    help="which K from the scan — a human's choice, not a default")
+    p.add_argument("--annotations", type=Path, default=None,
+                   help="annotations.csv — the verdicts a person gave on the "
+                        "assessor's candidates. Participation, span and "
+                        "tightness are then taken over confirmed candidates and "
+                        "the event rate is scaled by the confirm rate")
+    p.add_argument("--unreviewed", action="store_true",
+                   help="derive from candidates nobody judged. Deliberate and "
+                        "recorded in the spec's notes; required when "
+                        "--annotations is absent")
     a = p.parse_args(argv)
 
-    spec = build(json.loads(a.assessment.read_text()), a.k)
+    # REFUSE RATHER THAN DEFAULT, the same shape as FOUNDATIONS §6's dt: a step
+    # that warns has already produced the output, and a spec quietly built from
+    # unjudged candidates is the state RESET §1 says is not a result. Both flags
+    # are answers; omitting them is not.
+    if a.annotations is None and not a.unreviewed:
+        p.error(
+            "no --annotations. A generator spec built from candidates nobody "
+            "judged is what docs/RESET.md section 1 calls 'not a weaker result "
+            "of the same kind — not a result'. Pass --annotations "
+            "<annotations.csv>, or --unreviewed to say so on purpose (it is "
+            "written into the spec's notes either way).")
+    if a.annotations is not None and a.unreviewed:
+        p.error("--annotations and --unreviewed contradict each other")
+
+    verdicts = None
+    if a.annotations is not None:
+        from bugarach.annotate import read_annotations
+        verdicts = read_annotations(a.annotations)
+
+    spec = build(json.loads(a.assessment.read_text()), a.k, annotations=verdicts)
     a.out.mkdir(parents=True, exist_ok=True)
     f = a.out / "generator_spec.json"
     f.write_text(json.dumps(spec, indent=1, sort_keys=True))
