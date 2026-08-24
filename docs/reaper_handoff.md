@@ -10,7 +10,7 @@ pull requests; interface2 is on GitLab and shows no pull-request merge in the su
 its last 300 commits. Copying the file would give you a script that cannot run.
 
 **From:** `syncytium2/bugarach` @ `7813613` (2026-08-23). The implementation landed as
-PRs #240 and #241. bugarach's package version string is `0.0.1` and has never moved, so
+PRs #240 and #241. bugarach's package version string was `0.0.1` when this was written (0.1.0 was cut the same day), so
 the sha is the only provenance worth quoting.
 
 ---
