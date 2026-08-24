@@ -1,9 +1,30 @@
 ---
-status: open
+status: waiting-on-tony
 filed: 2026-08-11
 ---
 
 # File the PySpike max_tau bug upstream
+
+waiting: Send `docs/kreuz_note.md` to Thomas Kreuz. Everything else is done.
+
+**Nothing here needs more work — it needs one mail.** As of 2026-08-24 the
+report is written, shortened, and verified end to end; the patch passes PySpike's
+own test suite on both backends; the note to Kreuz is drafted and reviewed. The
+one remaining action is a person sending a mail, which is not a session's to take.
+
+1. **Send the note** — [`docs/kreuz_note.md`](../kreuz_note.md). Open it, replace
+   the two bracketed lines, send. It asks Kreuz the one question that decides the
+   shape of everything below: is a hard τmax still the semantics PySpike should
+   have?
+2. **Then file the issue**, with his answer behind it —
+   `python tools/pyspike_issue_body.py`, per **Process** below.
+3. **Then** put the issue URL in the eight places listed at the bottom of this
+   file. The version half of that pass is already done.
+
+If Kreuz answers that 0.8.0 dropped the clamp deliberately, stop and re-read
+before filing: the report becomes a docs bug and most of it comes out.
+
+---
 
 Report to PySpike (`mariomulansky/PySpike`) that its `max_tau` coincidence-window
 cap has no effect: in the MRTS-era `get_tau`, the cap enters only as the default
