@@ -18,6 +18,23 @@ darkroom literature shelf.*
 > also corrected one claim of mine, in §5.1: guard cells are documented as routine
 > by 1983, not by 1968.
 
+> **Revised 2026-08-24: §2 has been overtaken, and §5 was right all along.** An
+> interface2 audit closed every lineage row in §2, including the three filed below
+> under *"Tier 3 — our constructions on common ideas"*. The SCE rule's root is
+> **Cossart, Aronov & Yuste 2003, *Nature* 423:283–288**, whose Methods state the
+> whole algorithm — not Malvache 2016, not the Cossart lab, and crediting Mao 2001,
+> which nobody has reached. `rate_detect` is cell-averaging CFAR, **which §5.2 of
+> this document already names** while §2 still files the detector as ours; where the
+> two halves disagree, §5 wins. `loco_detect`'s `maxlt` is GO-CFAR (Hansen 1973) and
+> its percentile-of-pool is kin to OS-CFAR — so §4's argument that three of these
+> are re-derivations of CFAR has stopped being a reading of the design space and
+> become the attribution. Separately, Kreuz's own lab has published detection layers
+> on the synchronization profile, which weakens the Tier 2 framing.
+>
+> The corrections, what they expose in the app, and what is still second-hand:
+> [the methods are not ours](todo/2026-08-24-the-methods-are-not-ours-and-the-app-says-otherwise.md)
+> and [what Kreuz answered in April](todo/2026-08-24-kreuz-answered-the-spike-synch-questions-in-april.md).
+
 ---
 
 ## The finding, first
@@ -168,6 +185,19 @@ than a result points the same way.
 So the position is unchanged in shape and much better grounded: **cite this paper
 for the SCE phenomenon, which is what it establishes and what it is known for; do
 not attribute the constants to it.** interface2 can say what interface2 did.
+
+> **The root was found on 2026-08-24, and this paragraph's suspicion was
+> justified.** *"A paper introducing a canonical rule does not usually bury it"* —
+> and Malvache 2016 was not introducing it. **Cossart, Aronov & Yuste 2003** was,
+> in its Methods, in full: coactive cells per frame, a rate-preserving per-cell
+> surrogate, 1,000 iterations, pooled histogram, percentile cut. The rule is a
+> **Yuste-lab** method that travelled to Marseille with its first author and
+> eventually became CICADA, and the 1,000 shuffles this document lists as unverified
+> are in the 2003 Methods — matched here by coincidence, since the default was
+> carried from MATLAB that cited nothing. One divergence to know: 2003 resamples by
+> **interval reshuffling**, where CICADA, Bocchio 2020, Dard 2022 and `sce_detect`
+> all circular-shift.
+> [The full correction](todo/2026-08-24-the-methods-are-not-ours-and-the-app-says-otherwise.md).
 
 **rate+context (RateDetect).** Pooled population rate in a 1 s window minus a 60 s
 rolling context; fire where the excess clears a fixed level. Authorship is not

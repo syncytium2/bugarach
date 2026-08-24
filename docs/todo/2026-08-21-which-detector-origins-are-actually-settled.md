@@ -1,7 +1,20 @@
 ---
-status: open
+status: superseded
 filed: 2026-08-21
+superseded: 2026-08-24
 ---
+
+> **Superseded 2026-08-24 — every row here has been closed, and not the way this
+> file predicted.** interface2 audited all six and none survived as ours. The SCE
+> origin it sends you to fetch, Malvache 2016, is not the root: the root is
+> **Cossart, Aronov & Yuste 2003**, which credits Mao 2001, which nobody has
+> reached. The RateDetect row it calls "priority unexamined" is cell-averaging
+> CFAR, 1968. And the Cotterill body-read it puts first as the cheapest check is
+> no longer the cheapest anything. Read
+> [the methods are not ours](2026-08-24-the-methods-are-not-ours-and-the-app-says-otherwise.md)
+> instead. What still holds is this file's opening distinction — between who wrote
+> the code and whose idea the method is — which is why it is kept rather than
+> deleted.
 
 # Which detector origins are settled, and which are only assumed
 
