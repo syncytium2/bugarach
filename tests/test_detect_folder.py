@@ -25,7 +25,9 @@ import pytest
 
 from bugarach.detect_folder import (
     DETECTORS,
+    NoRecordingDetectedOn,
     detect_folder,
+    format_run,
     with_folder_windows,
 )
 from bugarach.emit import read_detections
@@ -160,9 +162,12 @@ def test_half_a_policy_is_reported_rather_than_completed(tmp_path: Path):
         "analysis_start_sec,analysis_end_sec\n"
         "s1,1,pre-drug,500,1500,600,1500\n"
         "s1,2,TTX,2400,3400,,\n"))
-    run = detect_folder(d, out_dir=tmp_path / "out", detectors=("coact",))
-    assert len(run.skipped) == 1
-    assert "two policies" in run.records[0].skipped
+    # the only recording in the folder, so the run has nothing left to score and
+    # says so rather than handing back an empty file
+    with pytest.raises(NoRecordingDetectedOn) as e:
+        detect_folder(d, out_dir=tmp_path / "out", detectors=("coact",))
+    assert len(e.value.run.skipped) == 1
+    assert "two policies" in e.value.run.records[0].skipped
 
 
 def test_with_folder_windows_leaves_the_callers_slice_alone(tmp_path: Path):
@@ -273,27 +278,116 @@ def test_the_run_sidecar_carries_the_roster_and_the_windowing_policy(tmp_path: P
 
 
 def test_an_empty_result_still_writes_a_real_file(tmp_path: Path):
-    """An empty result and an absent one must not look alike."""
+    """An empty result and an absent one must not look alike.
+
+    This is the half of the distinction that keeps the header-only file: the
+    recording WAS scored and the tissue was quiet. `detections_written` is true,
+    the roster holds the recording, and the count of detections is zero because
+    zero is the answer.
+    """
     d = _folder(tmp_path, recording="roi,time_sec,stream\n1,600.0,fast\n2,NA,fast\n")
     run = detect_folder(d, out_dir=tmp_path / "out", detectors=("coact",))
     assert run.n_events == 0
     assert run.paths["detections"].is_file()
     assert read_detections(run.paths["detections"]) == []
-    assert json.loads(run.paths["run"].read_text())["slices"] == ["s1"]
+    doc = json.loads(run.paths["run"].read_text())
+    assert doc["slices"] == ["s1"]
+    assert (doc["detections_written"], doc["n_detected_on"],
+            doc["n_detections"]) == (True, 1, 0)
 
 
-# --- refusals, and what they say
+# --- a run that scored nothing is a failed run, not an empty result
+
+
+def test_scoring_no_recording_at_all_is_refused_not_reported(tmp_path: Path):
+    """The defect: `check` refused this folder and `detect` called it a success.
+
+    A folder whose `slices.csv` declares no frame interval cannot be measured —
+    FOUNDATIONS §6, and `check` says so with a non-zero exit. `detect` used to
+    print its ordinary closing summary, write a one-line `detections.csv`, and
+    exit 0, so a lab got a success code and a file containing nothing.
+    """
+    d = _folder(tmp_path, slices="slice_id,source\ns1,bench\n")
+    with pytest.raises(NoRecordingDetectedOn) as e:
+        detect_folder(d, out_dir=tmp_path / "out", detectors=("coact",))
+
+    # the refusal names the column, the file and the flag — the three facts
+    # `Slice.require_dt` names, not a fourth phrasing of them
+    msg = str(e.value)
+    assert "frame_interval_sec" in msg and "slices.csv" in msg
+    assert "--frame-interval" in msg
+    # and it hands back the roster, so the caller can still say which failed
+    assert [r.slice_id for r in e.value.run.skipped] == ["s1"]
+
+
+def test_a_failed_run_leaves_no_result_file_behind(tmp_path: Path):
+    """A header with no rows under it must never mean "nothing ran".
+
+    It is the honest shape of "nothing found", which is why the test above keeps
+    it. Writing the same bytes for a run that never happened is what made the
+    two indistinguishable on disk.
+    """
+    out = tmp_path / "out"
+    d = _folder(tmp_path, slices="slice_id,source\ns1,bench\n")
+    with pytest.raises(NoRecordingDetectedOn):
+        detect_folder(d, out_dir=out, detectors=("coact",))
+
+    assert sorted(p.name for p in out.iterdir()) == ["run.json"]
+    doc = json.loads((out / "run.json").read_text())
+    assert doc["detections_written"] is False
+    assert (doc["n_recordings"], doc["n_detected_on"],
+            doc["n_not_detected"]) == (1, 0, 1)
+    assert "NO recording was detected on" in doc["outcome"]
+    # and the record of the failed attempt is complete enough to act on
+    assert "sampling interval" in doc["not_detected"]["s1"]
+
+
+def test_some_recordings_skipped_is_a_finding_and_the_rest_are_scored(tmp_path):
+    """The other side of the split, and the reason it is not `any`.
+
+    `tools/make_diagnostic.py` was given exactly this threshold in PR #255: one
+    detector failing on one slice is a finding to record and carry on with, all
+    of them failing is the call site being broken. Same rule here, one level up
+    — one malformed recording in a folder of 85 must not cost the other 84.
+    """
+    d = _folder(tmp_path)
+    (d / "s2.csv").write_text(_recording())
+    (d / "slices.csv").write_text(SLICES + "s2,,ORX\n")
+    (d / "regions.csv").write_text(
+        FOREIGN_REGIONS + "s2,1,pre-drug,500,1500\ns2,2,TTX,2400,3400\n")
+
+    run = detect_folder(d, out_dir=tmp_path / "out", detectors=("coact",))
+    assert [r.slice_id for r in run.detected] == ["s1"]
+    assert [r.slice_id for r in run.skipped] == ["s2"]
+    assert run.n_events > 0
+    assert run.paths["detections"].is_file()
+
+    doc = json.loads(run.paths["run"].read_text())
+    assert (doc["n_recordings"], doc["n_detected_on"],
+            doc["n_not_detected"]) == (2, 1, 1)
+    assert doc["detections_written"] is True
+
+    # loudly: the roster names it once, and a block of its own names it again,
+    # because four lines among eighty is how a partial run reads as a whole one
+    report = format_run(run)
+    assert "1 of 2 recording(s) produced NOTHING" in report
+    assert report.count("s2") >= 2
 
 
 def test_no_frame_interval_is_refused_rather_than_defaulted(tmp_path: Path):
     """FOUNDATIONS §6. Three detectors build their grid from it, nothing
     downstream can recover it, and a default here is a guess about somebody
-    else's microscope."""
+    else's microscope.
+
+    The per-recording reason is `Slice.require_dt`'s own sentence, carried
+    verbatim — one refusal in the tree rather than a hand-written copy here.
+    """
     d = _folder(tmp_path, slices=None)
-    run = detect_folder(d, out_dir=tmp_path / "out", detectors=("coact",))
-    assert len(run.skipped) == 1
-    assert "no frame interval" in run.records[0].skipped
-    assert "--frame-interval" in run.records[0].skipped
+    with pytest.raises(NoRecordingDetectedOn) as e:
+        detect_folder(d, out_dir=tmp_path / "out", detectors=("coact",))
+    why = e.value.run.records[0].skipped
+    assert "FrameIntervalNotDeclaredError" in why
+    assert "never stated one" in why and "frame_interval_sec" in why
 
 
 def test_the_interval_can_be_supplied_the_way_the_prompt_would(tmp_path: Path):
@@ -329,10 +423,11 @@ def test_an_unknown_detector_names_the_ones_there_are(tmp_path: Path):
 
 def test_a_stream_this_recording_does_not_have_says_which_it_has(tmp_path: Path):
     d = _folder(tmp_path)
-    run = detect_folder(d, out_dir=tmp_path / "out", detectors=("coact",),
-                        stream="slow")
-    assert "no stream named 'slow'" in run.records[0].skipped
-    assert "fast" in run.records[0].skipped
+    with pytest.raises(NoRecordingDetectedOn) as e:
+        detect_folder(d, out_dir=tmp_path / "out", detectors=("coact",),
+                      stream="slow")
+    why = e.value.run.records[0].skipped
+    assert "no stream named 'slow'" in why and "fast" in why
 
 
 def test_progress_is_reported_per_recording(tmp_path: Path):
@@ -357,6 +452,47 @@ def test_the_cli_writes_the_three_files(tmp_path: Path):
     assert e.value.code == 0
     assert sorted(p.name for p in out.iterdir()) == [
         "detections.csv", "detector_settings.csv", "run.json"]
+
+
+def test_the_cli_exit_code_says_the_folder_was_not_detected_on(tmp_path: Path):
+    """A pipeline reads the exit status and nothing else.
+
+    The report and the sidecar can be as clear as they like; if the process
+    exits 0 the next step runs on a file with a header and no rows. Zero is what
+    made this defect expensive — four times in one day, a degraded result and a
+    green exit.
+    """
+    from bugarach.cli import main
+
+    d = _folder(tmp_path, slices="slice_id,source\ns1,bench\n")
+    out = tmp_path / "cli"
+    with pytest.raises(SystemExit) as e:
+        main(["detect", str(d), "--out", str(out), "--detectors", "coact"])
+
+    assert e.value.code != 0
+    assert "--frame-interval" in str(e.value.code)
+    assert not (out / "detections.csv").exists()
+
+
+def test_the_flag_the_refusal_names_is_the_flag_that_fixes_it(tmp_path: Path):
+    """Naming a fix that does not work is worse than naming none.
+
+    Same folder, same command, plus the one option the refusal above pointed at
+    — and now there are detections and a zero exit.
+    """
+    from bugarach.cli import main
+
+    d = _folder(tmp_path, slices="slice_id,source\ns1,bench\n")
+    out = tmp_path / "cli"
+    with pytest.raises(SystemExit) as e:
+        main(["detect", str(d), "--out", str(out), "--detectors", "coact",
+              "--frame-interval", "0.05"])
+
+    assert e.value.code == 0
+    assert len(read_detections(out / "detections.csv")) > 0
+    doc = json.loads((out / "run.json").read_text())
+    assert doc["frame_interval_sec"] == {"s1": 0.05}
+    assert doc["detections_written"] is True
 
 
 def test_the_cli_refuses_an_unknown_detector_by_name(tmp_path: Path):

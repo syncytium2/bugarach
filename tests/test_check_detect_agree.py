@@ -15,6 +15,15 @@ scored happily by `detect`. Each command had its own copy of the question.
 recurring hazard, so the agreement is pinned rather than assumed: every folder
 below goes through both public entry points and the two verdicts must match, per
 recording, for the same stated reason.
+
+It then drifted a second time, in the opposite direction and on a different
+question. A folder whose `slices.csv` declares no `frame_interval_sec` cannot be
+measured at all (FOUNDATIONS §6); `check` said NOT CONFORMING and exited 1, and
+`detect` printed its ordinary closing summary, wrote a `detections.csv` of one
+header line, and exited 0. Agreeing about a recording is not enough when the
+**exit status** says the opposite, because the exit status is the half a
+pipeline reads — so the second section below pins the codes as well as the
+verdicts.
 """
 
 from __future__ import annotations
@@ -24,7 +33,7 @@ from pathlib import Path
 import pytest
 
 from bugarach.conform import check_folder
-from bugarach.detect_folder import detect_folder
+from bugarach.detect_folder import NoRecordingDetectedOn, detect_folder
 
 #: One cheap detector. Window resolution happens in `detect_slice` before any
 #: detector runs, so which of the six is asked for cannot change the verdict —
@@ -102,6 +111,11 @@ def _detect_says(folder: Path, out: Path) -> dict[str, str]:
     """
     try:
         run = detect_folder(folder, out_dir=out, detectors=ONE)
+    except NoRecordingDetectedOn as exc:
+        # Every recording was skipped, so the run as a whole failed — but the
+        # per-recording verdicts are exactly what this file compares, and they
+        # survive on the roster the refusal carries.
+        run = exc.run
     except (ValueError, OSError) as exc:
         return {"": str(exc)}
     return {r.slice_id: r.skipped for r in run.records}
@@ -203,3 +217,101 @@ def test_the_store_path_still_halts_on_the_data_it_was_written_for():
     ])
     with pytest.raises(ValueError, match="expected 0"):
         region_windows(s, 12000.0)
+
+
+# --- the frame interval, where the two commands disagreed the other way round
+
+
+#: what slices.csv says -> can this folder be detected on?
+#:
+#: `check` has always been right about all five. `detect` agreed about the
+#: verdict per recording and then contradicted it with an exit status: it
+#: printed its ordinary closing summary, wrote a one-line `detections.csv`, and
+#: exited 0, so a lab that had just been told NOT CONFORMING was handed a
+#: success code and an empty result file for the same folder.
+INTERVALS: dict[str, tuple[str, bool]] = {
+    "the interval declared":
+        ("slice_id,frame_interval_sec\ns1,0.1\n", True),
+    "slices.csv with no frame_interval_sec column":
+        ("slice_id,source\ns1,bench\n", False),
+    "the column present and the cell empty":
+        ("slice_id,frame_interval_sec\ns1,\n", False),
+    "an interval that is not a number":
+        ("slice_id,frame_interval_sec\ns1,soon\n", False),
+    "an interval of zero seconds":
+        ("slice_id,frame_interval_sec\ns1,0\n", False),
+}
+
+
+def _interval_folder(tmp_path: Path, slices: str | None) -> Path:
+    d = tmp_path / "e"
+    d.mkdir(parents=True, exist_ok=True)
+    (d / "s1.csv").write_text(EVENTS)
+    if slices is not None:
+        (d / "slices.csv").write_text(slices)
+    return d
+
+
+@pytest.mark.parametrize("name", list(INTERVALS))
+def test_the_two_commands_agree_about_the_frame_interval(name, tmp_path: Path):
+    slices, runnable = INTERVALS[name]
+    d = _interval_folder(tmp_path, slices)
+
+    assert check_folder(d).ok is runnable
+    if runnable:
+        run = detect_folder(d, out_dir=tmp_path / "out", detectors=ONE)
+        assert run.detected and run.paths["detections"].is_file()
+    else:
+        with pytest.raises(NoRecordingDetectedOn):
+            detect_folder(d, out_dir=tmp_path / "out", detectors=ONE)
+
+
+@pytest.mark.parametrize("name", list(INTERVALS))
+def test_the_two_commands_agree_about_the_exit_code(name, tmp_path: Path):
+    """The verdicts matching is not enough — the exit status is what a pipeline
+    reads, and it is the half that was wrong.
+
+    `check` exited 1 on a folder with no declared interval and `detect` exited 0
+    on the same folder in the next breath. Whichever a lab believed, the tool had
+    contradicted itself with nothing to say which answer was true.
+    """
+    from bugarach.cli import main
+
+    slices, runnable = INTERVALS[name]
+    d = _interval_folder(tmp_path, slices)
+
+    codes = {}
+    for argv in (["check", str(d)],
+                 ["detect", str(d), "--out", str(tmp_path / "out"),
+                  "--detectors", "coact"]):
+        with pytest.raises(SystemExit) as e:
+            main(argv)
+        codes[argv[0]] = 0 if e.value.code in (0, None) else 1
+
+    assert codes["check"] == codes["detect"] == (0 if runnable else 1), codes
+    assert (tmp_path / "out" / "detections.csv").exists() is runnable
+
+
+def test_a_folder_may_conform_and_still_need_the_interval_supplied(tmp_path):
+    """The one place the two answer differently, and they are not in conflict.
+
+    `slices.csv` is optional under the contract, so a folder without it
+    **conforms** — and `check` says in the same breath that bugarach will ask
+    for the frame interval and cannot proceed without it. `detect` refusing is
+    that sentence arriving. Conforming is a statement about the folder;
+    runnable needs one fact the folder may legally omit, and the fix is the
+    option the refusal names rather than a change to either verdict.
+    """
+    d = _interval_folder(tmp_path, None)
+
+    rep = check_folder(d)
+    assert rep.ok
+    assert any("frame interval" in n for r in rep.recordings for n in r.notes)
+
+    with pytest.raises(NoRecordingDetectedOn) as e:
+        detect_folder(d, out_dir=tmp_path / "out", detectors=ONE)
+    assert "--frame-interval" in str(e.value)
+
+    run = detect_folder(d, out_dir=tmp_path / "out", detectors=ONE,
+                        frame_interval_sec=0.05)
+    assert run.detected and run.paths["detections"].is_file()

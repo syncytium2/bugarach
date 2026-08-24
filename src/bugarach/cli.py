@@ -201,7 +201,11 @@ def main(argv: list[str] | None = None) -> None:
     if args.cmd == "detect":
         # importable without panel, like `check` and `assess`: a lab running its
         # own folder through the ports should not need the viewer installed
-        from bugarach.detect_folder import detect_folder, format_run
+        from bugarach.detect_folder import (
+            NoRecordingDetectedOn,
+            detect_folder,
+            format_run,
+        )
         from bugarach.paths import darkroom
 
         folder = _folder_or_exit(args.folder)
@@ -222,15 +226,32 @@ def main(argv: list[str] | None = None) -> None:
                     "`python -m bugarach.paths` says what it looked at")
             out = dark / "detect" / folder.name
 
-        run = _load_or_exit(
-            detect_folder, folder, out_dir=out, detectors=names,
-            stream=args.stream, frame_interval_sec=args.frame_interval,
-            limit=args.limit, progress=_progress("detecting"))
+        try:
+            run = _load_or_exit(
+                detect_folder, folder, out_dir=out, detectors=names,
+                stream=args.stream, frame_interval_sec=args.frame_interval,
+                limit=args.limit, progress=_progress("detecting"))
+        except NoRecordingDetectedOn as exc:
+            # The refusal has to reach the EXIT CODE, because that is the only
+            # thing a pipeline reads from this process — the same reasoning
+            # `tools/make_diagnostic.py` was given in PR #255, and the same
+            # threshold, so the two tools cannot teach a user opposite rules.
+            # The roster still prints: the refusal says the folder failed, and
+            # the roster says what each recording raised.
+            if exc.run is not None:
+                print(format_run(exc.run))
+                # stdout is block-buffered when redirected and stderr is not, so
+                # without this the refusal lands above the report it explains.
+                sys.stdout.flush()
+            sys.exit(f"bugarach: {exc}")
         print(format_run(run))
-        # Exit 0 when the folder was read, whatever the detectors found. Zero
-        # detections is a finding about the recordings; a recording that could
-        # not be detected on is named in the roster and in run.json. Neither is
-        # a build failure, and making them one invites somebody to make it pass.
+        # Exit 0 once at least one recording was scored, whatever the detectors
+        # then found. Zero detections across scored recordings is a finding
+        # about the tissue, and a folder where SOME recordings were skipped is a
+        # finding about those recordings — both are named in the report and in
+        # run.json, and turning either into a failure invites somebody to make
+        # it pass. Scoring nothing at all is not a finding: it is this command
+        # not having run, and it exits above.
         raise SystemExit(0)
 
     if args.cmd == "assess":
