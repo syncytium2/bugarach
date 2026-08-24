@@ -30,3 +30,4 @@ two never disagree, and cross-reference them.
 | ADR | Title | Status |
 |-----|-------|--------|
 | [0001](0001-the-lab-server.md) | The lab server — training off the page, without changing what ships | Accepted |
+| [0002](0002-the-sixth-detector-is-called-locust.md) | The sixth detector is called locust, not CICADA | Accepted |

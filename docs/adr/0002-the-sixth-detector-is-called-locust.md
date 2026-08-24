@@ -1,0 +1,74 @@
+# ADR-0002: The sixth detector is called locust, not CICADA
+
+## Status
+
+Accepted, 2026-08-24, by Tony. Changes **the name a person sees** and nothing a
+file contains — the `cicada` key survives everywhere it is an identifier,
+including the `detector` column of `detections.csv`, which is output contract.
+The split and its cost are in
+[`docs/todo/2026-08-24-the-identifier-still-says-cicada.md`](../todo/2026-08-24-the-identifier-still-says-cicada.md).
+
+## Context
+
+An attribution audit from interface2 arrived on 2026-08-24 and closed the
+lineage of all six detectors. Tony ruled on the general question the same day:
+
+> *"I don't think anyone is going to jump on us for a technique used in radar
+> analysis from 1968. In fact I feel most researchers would be kind of thrilled
+> with the link. We acknowledge its origins, don't worry about finding the lit
+> after we built it, it's a tool and it's useful."*
+
+**That ruling closes priority, and it does not reach this one.** The other five
+detectors are cases of *arriving somewhere the literature already was* — a good
+story, a citation, and no further obligation. The sixth is different in kind:
+
+- It is a **port of a specific, living lab's named software** — the Cossart lab's
+  CICADA, MIT-licensed, whose copyright notice this repo already carries.
+- It is a **modified** port, in two ways that change what it detects. It is fed
+  the events the folder already contains rather than running CICADA's own
+  transient detection, and it paints each cell active for the **rise interval**
+  where the original paints the whole transient duration — because on slow
+  transients a median ~4.6 s of duration-overlap swamps onset synchrony.
+- The name was **on a public website**, in a lane label, a scoreboard column, a
+  help panel and every figure legend.
+
+interface2 states the principle as its ADR-0016 — *"we can't say we used it if we
+turned off half of it"* — and asked for `"CICADA-derived (modified)"`.
+
+## Decision
+
+**The detector is called `locust`.**
+
+Tony chose it over `CICADA-derived (modified)`, which keeps the original's name
+as the root of ours and which readers compress back to "CICADA" in speech, and
+over `cicada-like`, for the same reason. A distinct name cannot be misread as a
+claim to be the other lab's tool, and the citation goes where a citation belongs
+— in the help panel, the README and the methods text, all of which now carry
+Denis et al. 2020 with the two deviations stated.
+
+It also fits: syncytium2's projects are already named this way (fireflies,
+glowworm, murmuration, muster), and it retires `"CIC"`, the short row label Tony
+noted on 2026-08-15 *"is not CICADA to anyone who has met the other CIC"*.
+
+## What this is not
+
+- **Not a claim that the method is ours.** The opposite: the rename exists so the
+  citation can be unambiguous instead of implied by a borrowed label.
+- **Not a code change.** No detector behaviour moves, no parity fixture changes,
+  no operating point is touched. `cicada_detect` still computes what
+  `generate_sce_cicada.m` computes, to 1e-9.
+- **Not a contract change.** `detections.csv` still says `cicada`. A file written
+  before this ADR and a file written after it are byte-identical.
+
+## Consequences
+
+- **The glossary carries the mapping**, because the split is the part that will
+  confuse someone: *CICADA* means the upstream tool, *locust* means the detector
+  here, and `cicada` is the key.
+- **Every committed figure still draws the old label** until the regeneration
+  pass in [RESET §5](../RESET.md) runs. The README says so under the hero figure
+  rather than letting page and picture disagree silently.
+- **interface2 asked to be told which way this went** so their docs and ours cite
+  identically. That reply is owed and has not been sent.
+- **`docs/FOUNDATIONS.md` names CICADA in §2 and §9** and was not edited — a
+  session does not edit FOUNDATIONS (CLAUDE.md). Folding the rename in is Tony's.

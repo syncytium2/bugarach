@@ -158,7 +158,7 @@ function poolScores(scores, { detector, regime, seeds = [], knobValue = null,
 
   /* Precision OUTSIDE the probe. Fold the probe in and the headline stops
      measuring the detector and starts measuring how hard the probe was set:
-     CICADA reads F1 0.09 that way against 0.68 in the upstream campaign, on 599
+     locust reads F1 0.09 that way against 0.68 in the upstream campaign, on 599
      hot-window detections out of 601 false alarms. That is this project's own
      cautionary tale — the benchmark, not the detectors, was the original
      problem — reached by turning one knob too far. */

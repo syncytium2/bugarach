@@ -90,7 +90,7 @@ def test_the_tune_panel_has_a_tick_per_detector_and_marks_the_costly_two(page):
     })""")
     assert got["boxes"] == ["tPick_" + k for k in
                            pg.evaluate("() => Object.keys(DETECTORS)")]
-    assert sorted(got["slow"]) == ["CICADA", "LoCo"], got["slow"]
+    assert sorted(got["slow"]) == ["LoCo", "locust"], got["slow"]
 
 
 def test_it_says_which_before_the_click_and_names_the_slow_ones(page):
@@ -100,7 +100,7 @@ def test_it_says_which_before_the_click_and_names_the_slow_ones(page):
     _tick(pg, "tPick_", ALL)
     both = pg.evaluate("() => document.getElementById('tuneWhat').textContent")
     assert "costly" in cheap, cheap
-    assert "LoCo and CICADA" in both, both
+    assert "LoCo and locust" in both, both
     assert "97%" in both, both
 
 
@@ -227,7 +227,7 @@ def test_a_detector_that_did_not_run_gets_no_column_at_all(page):
     it is not one this page is entitled to give."""
     pg, _ = page
     got = pg.evaluate(FOLDER, ["rate", "sce"])
-    for absent in ("LoCo", "CICADA", "CoactDetect", "SPIKE-synch"):
+    for absent in ("LoCo", "locust", "CoactDetect", "SPIKE-synch"):
         assert absent not in got["head"], got["head"]
 
 
