@@ -31,7 +31,14 @@ darkroom literature shelf.*
 > become the attribution. Separately, Kreuz's own lab has published detection layers
 > on the synchronization profile, which weakens the Tier 2 framing.
 >
-> The corrections, what they expose in the app, and what is still second-hand:
+> **None of this is a problem, and Tony has ruled on that** — *"most researchers
+> would be kind of thrilled with the link … it's a tool and it's useful."* Priority
+> is closed: acknowledge the origins, say we arrived independently, and take the
+> engineering the radar literature is offering. **This document's own thesis is what
+> survives** — §5 lists five things radar knows that this project does not, and
+> being right about the lineage is the reason to trust that list.
+>
+> The corrections, what they change in the app, and what is still second-hand:
 > [the methods are not ours](todo/2026-08-24-the-methods-are-not-ours-and-the-app-says-otherwise.md)
 > and [what Kreuz answered in April](todo/2026-08-24-kreuz-answered-the-spike-synch-questions-in-april.md).
 

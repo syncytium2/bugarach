@@ -39,7 +39,7 @@ would return only the events following the predominant order.
 Nothing to change. It is worth a sentence in whatever methods surface this app
 grows, because it converts an inherited default into a defended one.
 
-## 2. "The detection layer here is ours" is weaker than this repo has been saying
+## 2. The measure's own author built the same detection layer we did
 
 [`detector_history.md`](../detector_history.md) files SPIKE-synch as *"Tier 2 — a
 published measure, with our detector on top"*, quoting interface2's *"The
@@ -50,9 +50,15 @@ implementation without being a novel method.
 **Kreuz's own lab has published detection layers on this profile**, and two of the
 three components match ours: a threshold on the profile, and a **maximum allowed
 gap** for spikes belonging to the same event — which is `max_gap` in `sync.py`,
-arrived at independently. So the tier is right and the sentence around it is not:
-the construction is not merely *ordinary*, it is *published by the measure's own
-author*, and the papers are named.
+arrived at independently.
+
+**Read that as reassurance, not as a debt.** The author of the measure, building a
+detector on it, reached for the same two knobs we did; that is evidence the design
+is right. What it costs is one word — *ours* becomes *ours, and the same as his* —
+and what it buys is the third component we do **not** have, in §4, which he calls
+essential. Per Tony's ruling in
+[the attribution note](2026-08-24-the-methods-are-not-ours-and-the-app-says-otherwise.md),
+cite it and move on.
 
 ⚠ **Citations as Kreuz gave them, not resolved against PubMed here.** Cecchini
 et al., *PLoS Comput Biol*, 2022 (see SM1); Kreuz et al., *J Neurosci Methods*,
