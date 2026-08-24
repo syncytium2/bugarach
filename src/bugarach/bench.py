@@ -852,6 +852,110 @@ def describe_curve(curve: dict[float, BenchResult]) -> str:
     return f"F1 {best:.3f}, flat from {flat:g}s"
 
 
+BACKGROUND_GRID = (0.0026, 0.0052, 0.0080, 0.0120, 0.0190, 0.0280, 0.0400)
+"""Per-ROI background rates to score across — the SECOND hidden constant.
+
+:data:`TOLERANCE_GRID` above dissolved the first one: how much timing slack a
+score was granted became a visible axis instead of an inherited number. **The
+background rate is the same defect and a larger one.** An operating point is
+chosen at one point on this axis and quoted as though it held across it, and it
+does not: on the same 120 events CoactDetect recalls **0.817** at the quiet
+endpoint and **0.560** at the busy one — 0.26 of recall across a 3.7-fold rate
+change that is only the interquartile spread of *untreated* slices
+(``docs/RESET.md`` §6).
+
+The grid brackets :data:`REGIMES` rather than reproducing it: p25 (0.0052) and
+p75 (0.0190) are both on it, with a point below the quiet endpoint and two above
+the busy one, because a curve that stops at the endpoints cannot show whether it
+was about to fall off one. **``REGIMES`` is not changed by this** — moving the
+axis is a recalibration; this reports across the axis that already exists.
+
+**Why this matters more than the tolerance did.** Five of six detectors turned
+out flat across the tolerance grid, so that constant was granting slack nobody
+used and no comparison rested on it. Nothing is flat across this one. And the
+treatment contrast the whole loop builds toward compares two windows at
+*different* backgrounds, so a detector's sensitivity to this axis is confounded
+with the effect being measured — and until now nothing reported it.
+"""
+
+
+def evaluate_background_curve(name: str, regime: str, seeds=(1, 2, 3), *,
+                              rates=BACKGROUND_GRID, tol_sec: float = 1.5,
+                              gen: dict | None = None,
+                              **overrides) -> dict[float, BenchResult]:
+    """One :class:`BenchResult` per background rate — the curve, not a point.
+
+    **Unlike :func:`evaluate_curve` this re-generates the recording at every
+    point, and it has to.** The tolerance curve scores one set of detections
+    several ways, so it isolates the scoring rule. The background is a property
+    of the *recording*, so changing it means a different recording. The planted
+    events are held fixed by the seed — same count, same times, same recruitment
+    — so what moves across the curve is the field they sit in and nothing else.
+
+    ``regime`` still selects the base recording and ``gen`` still passes generator
+    settings through, so a caller can put a fitted background *shape* underneath
+    and sweep its level. ``bg_rate_hz`` from either is overridden per point, which
+    is the whole operation.
+    """
+    out: dict[float, BenchResult] = {}
+    for rate in rates:
+        g = dict(gen or {})
+        g["bg_rate_hz"] = float(rate)
+        scores = []
+        for seed in seeds:
+            s, gt = make_recording(regime, seed, **g)
+            det = run_detector(name, s, **overrides)
+            scores.append(score_stream(gt, det, tol_sec=float(tol_sec)))
+        out[float(rate)] = pool_scores(
+            scores, detector=name, regime=regime, seeds=seeds,
+            knob_value=overrides.get(OPERATING_POINTS[name].knob))
+    return out
+
+
+def background_spread(curve: dict[float, BenchResult]) -> float:
+    """How much F1 moves across the axis — the number a bare F1 hides.
+
+    Deliberately the full range rather than a slope or a fitted coefficient: the
+    question a reader actually has is *"how wrong is this number if my slices are
+    busier than the ones it was measured on"*, and the range answers it without
+    assuming the curve has a shape.
+    """
+    f1s = [curve[r].f1 for r in sorted(curve)]
+    return max(f1s) - min(f1s)
+
+
+BACKGROUND_TOLERABLE_SPREAD = 0.05
+"""Above this much movement across the grid, one F1 is not reportable alone.
+
+Set at the scale of the differences the bake-off asks readers to believe: the top
+two detectors there are **0.017** apart, so a score that swings several times that
+with the background cannot be compared against its neighbour without naming where
+on the axis both were measured.
+"""
+
+
+def describe_background(curve: dict[float, BenchResult]) -> str:
+    """An F1 that carries the background it was measured at — human-facing.
+
+    The counterpart of :func:`describe_curve`, refusing on the same principle:
+    when the score still depends on the axis, say so rather than hand over a
+    number that reads like a property of the detector.
+
+    In practice this refuses for nearly every detector, and **that is the finding
+    rather than a threshold set too tight** — the tolerance version usually
+    settles, which is exactly the contrast worth seeing.
+    """
+    rates = sorted(curve)
+    lo, hi = curve[rates[0]].f1, curve[rates[-1]].f1
+    spread = background_spread(curve)
+    if spread > BACKGROUND_TOLERABLE_SPREAD:
+        return (f"F1 {lo:.3f} at {rates[0]*1000:g} mHz/ROI to {hi:.3f} at "
+                f"{rates[-1]*1000:g} — spread {spread:.3f}, so this score "
+                "depends on the background rate and is NOT one number")
+    return (f"F1 {max(curve[r].f1 for r in rates):.3f}, flat across "
+            f"{rates[0]*1000:g}–{rates[-1]*1000:g} mHz/ROI (spread {spread:.3f})")
+
+
 def sweep(name: str, regime: str, seeds=(1, 2, 3), values=None, *,
           gen: dict | None = None) -> list[BenchResult]:
     """The sensitivity curve: one :class:`BenchResult` per knob value."""
