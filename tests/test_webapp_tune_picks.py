@@ -34,8 +34,14 @@ VIEWER = Path(__file__).resolve().parents[1] / "docs/site/raster_viewer.html"
 
 SIM = {"sRec": "2", "sMin": "22", "sRoi": "22", "sRate": "45", "sEv": "14",
        "sJit": "300", "sSeed": "5", "sWin": "0"}
-ALL = ["rate", "sync", "loco", "coact", "sce", "cicada"]
-CHEAP = ["rate", "sync", "coact", "sce"]
+# WHAT THE PAGE CAN RUN, which since 2026-08-24 is not the same as what it
+# carries. The `sync` row is still in the registry and carries `unavailable`, so
+# it draws, it reads an older file back, and `syncDetect` stays callable — but
+# nothing on the page can tick it. These two lists are the SELECTABLE set, so
+# `ALL` is five. When the field comes off the registry row, put "sync" back in
+# both and the counts below move with it.
+ALL = ["rate", "loco", "coact", "sce", "cicada"]
+CHEAP = ["rate", "coact", "sce"]
 
 
 @pytest.fixture(scope="module")
@@ -141,7 +147,10 @@ def test_a_subset_sweeps_exactly_that_subset_and_says_so(page):
     for lab in labels:
         assert lab in got["scope"], got["scope"]
     assert "The rest were not ticked and are not in this run." in got["scope"]
-    assert got["note"].startswith("swept 4 detectors"), got["note"]
+    # The off detector is named apart from the ones the reader declined: a sweep
+    # that folded it into "not ticked" would look narrower by choice than it was.
+    assert "off in this build and could not be swept" in got["scope"], got["scope"]
+    assert got["note"].startswith(f"swept {len(CHEAP)} detectors"), got["note"]
 
 
 def test_the_progress_line_moves_through_the_detectors(page):
@@ -165,8 +174,8 @@ def test_the_progress_line_moves_through_the_detectors(page):
     assert not errs, errs
     moving = [s for s in seen if s.startswith("sweeping: ")]
     assert moving, seen
-    assert any("1/4" in s for s in moving), moving[:4]
-    assert any("4/4" in s for s in moving), moving[-4:]
+    assert any(f"1/{len(CHEAP)}" in s for s in moving), moving[:4]
+    assert any(f"{len(CHEAP)}/{len(CHEAP)}" in s for s in moving), moving[-4:]
     assert any("setting " in s for s in moving), moving[:4]
 
 
@@ -179,11 +188,11 @@ def test_the_two_tick_lists_are_independent(page):
                            paintDetectorChoice(); }""")
     _tick(pg, "dPick_", ALL)
     _tick(pg, "tPick_", ["rate"])
-    assert pg.evaluate("() => chosenDetectors().length") == 6
+    assert pg.evaluate("() => chosenDetectors().length") == len(ALL)
     assert pg.evaluate("() => sweptDetectors()") == ["rate"]
     _tick(pg, "tPick_", ALL)
     _tick(pg, "dPick_", ["rate"])
-    assert pg.evaluate("() => sweptDetectors().length") == 6
+    assert pg.evaluate("() => sweptDetectors().length") == len(ALL)
     assert pg.evaluate("() => chosenDetectors()") == ["rate"]
 
 

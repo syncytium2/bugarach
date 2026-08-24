@@ -72,6 +72,11 @@ RUN_ALL = """async (sim) => {
   const box = document.getElementById("detectOut");
   return {
     picks: chosenDetectors(),
+    // What the page can RUN, asked of the page rather than written down here: a
+    // registry row carrying `unavailable` is present and not selectable, so the
+    // counts below move with the field instead of with a literal six.
+    runnable: runnableDetectors(),
+    carried: Object.keys(DETECTORS),
     detectors: DETECT ? [...new Set(DETECT.rows.map(r => r.detector))].sort() : [],
     lanes: detectLanes(RECORDINGS[0]).map(r => r.which),
     laneColours: detectLanes(RECORDINGS[0]).map(r => DET_COLORS[r.which]),
@@ -94,7 +99,15 @@ def ran(page):
 
 
 def test_every_ticked_detector_actually_ran(ran):
-    assert len(ran["picks"]) == 6, ran["picks"]
+    """Every detector the page can run — which since 2026-08-24 is fewer than it
+    carries. Ticking a box for a detector the build withholds must not put it in
+    the run, and the check is against the page's own runnable list so that
+    turning one back on needs no edit here."""
+    assert ran["picks"] == ran["runnable"], (ran["picks"], ran["runnable"])
+    off = set(ran["carried"]) - set(ran["runnable"])
+    assert not (off & set(ran["picks"])), (
+        f"{sorted(off & set(ran['picks']))} is off in this build and was run "
+        "anyway — a disabled tick that still selects is worse than no tick")
     # CICADA refuses on a folder with no peak, so it may be absent from the rows
     assert len(ran["detectors"]) >= 4, ran["detectors"]
 
@@ -147,8 +160,9 @@ def test_it_says_in_words_that_the_detectors_are_not_combined(ran):
 
 
 def test_all_the_ticked_detectors_settings_are_shown_at_once(ran):
-    assert ran["visibleCtls"] == 6, (
-        f"only {ran['visibleCtls']} settings blocks are visible with six ticked")
+    n = len(ran["runnable"])
+    assert ran["visibleCtls"] == n, (
+        f"only {ran['visibleCtls']} settings blocks are visible with {n} ticked")
 
 
 ONE = """async () => {
