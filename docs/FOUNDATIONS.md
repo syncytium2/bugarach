@@ -172,7 +172,7 @@ Consequences that bind code here:
 default; `slice_from_events`, `load_events_csv` and the store reader take it as
 a required argument; `load_folder` reads `frame_interval_sec` out of
 `slices.csv` once, so no consumer parses that string again; and
-`GRID_DT_FALLBACK`, `GridDtNotSetWarning` and CICADA's `imaging_rate_hz = 10.0`
+`GRID_DT_FALLBACK`, `GridDtNotSetWarning` and locust's `imaging_rate_hz = 10.0`
 are gone. Every parity fixture still matches.
 
 Two details of the implementation are the rule's edges, and both are argued in
@@ -199,6 +199,16 @@ research-use-only and contributes **reference outputs for tests, never
 code**. The peak-extent kernel is a **clean-room implementation** — spec +
 adversarial differential validation under `docs/clean_room/` (process:
 `docs/clean_room/WORKFLOW.md`). Cite per README "Licensing & citations".
+
+**CICADA is the upstream tool; `locust` is the detector here**, and the
+distinction is a provenance decision rather than a label. The sixth detector is a
+**modified** port — fed the events the folder already carries instead of running
+CICADA's own transient detection, and painting each cell active for the rise
+interval where the original paints the whole transient duration — so it ships
+under its own name with CICADA cited (2026-08-24, ADR-0002). The **code key
+stays `cicada`**, including the `detector` column of `detections.csv`, which is
+output contract. So `which == "cicada"` in a file and *locust* on a screen are
+the same detector, deliberately.
 
 ## 8. Team & operations
 
@@ -254,7 +264,7 @@ a wrong conclusion in this repo. The authority is the global
   The previous figures — 0.0038–0.0175 — came from the `.mat` store, which carries
   every recording ever processed including two the lab withdrew, which is the
   defect SAP007 exists to stop. Moving the axis changed no detector's F1 beyond
-  seed noise and reordered nothing, but it exposed that CICADA's FAST percentile
+  seed noise and reordered nothing, but it exposed that locust's FAST percentile
   was a notch too loose (7.3 false events/hour on a null with nothing planted,
   against a ceiling of 6); that was retuned to 99.999 with it, on Tony's call.
 - **Senktide is not one effect.** It raises event frequency *and* the GCaMP6f

@@ -1,13 +1,22 @@
 ---
-status: waiting-on-tony
+status: done
 filed: 2026-08-24
+closed: 2026-08-24
 ---
 
 # FOUNDATIONS still says CICADA in two places, and one of them should stay
 
-waiting: Two words in `docs/FOUNDATIONS.md` — §6 line 175 and §9 line 257, CICADA
-→ locust. **§7 line 197 stays as it is**, because that one is the upstream tool in
-a licensing sentence. Exact before/after below; nothing else is asked.
+> **Done 2026-08-24.** Tony authorised the edit — *"fix foundations"* — which is
+> the decision this was waiting for, since a session does not edit FOUNDATIONS on
+> its own. §6 and §9 now say **locust**; §7's mention stayed, because that one is
+> the Cossart lab's software in a licensing sentence and is correct as written.
+>
+> **The optional half was taken too**, and it is the part to strike if you
+> disagree: §7 gained a paragraph saying that CICADA is the upstream tool and
+> `locust` is the detector here, that the key stays `cicada` in
+> `detections.csv`, and why. Without it the canonical document used two names for
+> one thing with nothing connecting them, which is worse than a sentence that can
+> be deleted.
 
 The sixth detector was renamed to `locust` on 2026-08-24
 ([ADR-0002](../adr/0002-the-sixth-detector-is-called-locust.md)). The glossary,
