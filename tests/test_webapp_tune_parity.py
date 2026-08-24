@@ -262,6 +262,11 @@ def test_the_table_on_screen_is_the_sweep_that_was_run(viewer, page_out):
       await runSim();
       document.getElementById("dDet").value = "rate";
       paintDetectorChoice();
+      // The sweep has its own tick list now and no longer borrows the Detect
+      // panel's chooser, so ONE detector is asked for — otherwise the table
+      // read back below is three detectors' rows stacked.
+      for (const k of Object.keys(DETECTORS))
+        document.getElementById("tPick_" + k).checked = (k === "rate");
       document.getElementById("tTol").value = "1.5";
       await runTune();
       return [...document.querySelectorAll("#tuneOut table tr")].slice(1).map(

@@ -308,10 +308,19 @@
      The legend's own sentence names a bar AND a shading; the swatch used to be
      a solid block of the bar's colour, so it explained a shading it never
      showed. It now carries both the way the raster does: a pale `wash` field
-     with the saturated `ink` rail across its top. */
-  #wins .sw { width: 16px; height: 11px; border-radius: 3px; flex: none;
+     with the saturated `ink` rail across its top.
+
+     AND IT DRAWS THE TRIM, WHICH IS THE ONLY THING THE TWO CHANNELS EVER
+     DISAGREE ABOUT. A rail and a field of the same width say the period and the
+     scored part are one extent; a field inset under a full-width rail says time
+     happened and is not counted. The field is its own box for exactly that
+     reason — while the wash was painted on the swatch itself there was nowhere
+     to draw the gap, so the key showed the same two-channel picture over every
+     folder, including the ones that never made the distinction. */
+  #wins .sw { width: 18px; height: 11px; border-radius: 3px; flex: none;
               display: inline-block; position: relative; overflow: hidden; }
   #wins .sw .rail { position: absolute; left: 0; right: 0; top: 0; height: 3px; }
+  #wins .sw .field { position: absolute; top: 3px; bottom: 0; left: 0; right: 0; }
   #wins .scored { opacity: .8; }
   #wins .scored::before { content: "· "; }
   #wins .chan { color: var(--muted); font-style: italic; }
@@ -570,6 +579,17 @@
         <input id="aBin" type="number" min="0.1" max="10" step="0.1" value="1">
         <label for="aRegion">region</label>
         <select id="aRegion"><option value="baseline">baseline (default)</option></select>
+        <!-- WHOSE PERIODS THESE ARE, said next to the menu that lists them.
+             Reported as a bug (Tony, 2026-08-21): "sb222200 should not be on
+             this list. why is it present and not ttx or senk?" It was neither a
+             bug nor a missing entry — the menu is the OPEN RECORDING's own
+             periods, and the recording open at the time declares baseline and
+             SB222200 and nothing else. Twelve of the folder's 84 carry SB222200
+             and the first four files in it are among them, so this is what
+             anybody sees on opening the folder. Nothing said the list was
+             per recording, so an unexpected drug in it read as the app being
+             wrong about the folder. -->
+        <div class="span note" id="aRegionWhat"></div>
         <label for="aK">mark clusters at K — the fewest ROIs that count as one event</label>
         <select id="aK">
           <option value="0" selected>none</option>
@@ -579,6 +599,14 @@
           <option value="8">8</option>
         </select>
         <div class="span"><button id="runAssess">Assess this recording</button></div>
+        <!-- THE FOLDER, NOT THE FILE ON SCREEN. `bugarach assess my_export/` has
+             done this since 2026-08-18 and the browser assessed one recording at
+             a time, so the generator was parameterised from whichever file
+             happened to be open. This is that command, ported — same three rules,
+             same skips, same refusal to pick K. -->
+        <div class="span"><button id="assessFolder" disabled>Assess the whole
+          folder</button></div>
+        <div class="span note" id="assessFolderWhat"></div>
       </div>
       <div class="fine">
         <b>How much coordination is here, measured against a rate-matched null.</b>
@@ -708,6 +736,15 @@
       <div class="ctl">
         <label for="tTol">match tolerance (s)</label>
         <input id="tTol" type="number" min="0.1" max="30" step="0.5" value="1.5">
+        <!-- WHICH INSTRUMENTS TO SWEEP, which the panel could not express until
+             now: it took the Detect step's single chooser, so the page offered
+             one detector or six and nothing between. Tony, 2026-08-21: "most
+             users will have a favorite or two and wont even look at the weirdos
+             we created." The two marked slow are ~97% of a six-detector sweep's
+             wall clock, so unticking them is the difference between a sweep that
+             returns while you watch and one you wait out. -->
+        <label>detectors</label>
+        <div class="span picks" id="tPicks"></div>
         <div class="span"><button id="runTune">Sweep</button></div>
         <div class="note" id="tuneWhat"></div>
         <div class="note nagnote" id="tuneUnchecked" hidden></div>
@@ -715,10 +752,15 @@
       <div class="fine">
         <b>The step that makes this a loop.</b> The other three ask what is in a
         recording; this one asks whether the instrument reading it is any good.
-        It sweeps one setting of the detector chosen in Detect events below,
-        holds the rest where
-        you left them, and scores every result against the events that were
+        It sweeps one setting of each detector ticked above, holds the rest of
+        their settings where the Detect step below has them, and scores every
+        result against the events that were
         planted — so a number here is right or wrong rather than merely produced.
+        <br><br>
+        <b>The tick list is this panel's own.</b> Unticking a detector here does
+        not remove it from what Detect runs, and vice versa: fitting an operating
+        point and using one are separate decisions, and a sweep you skipped for
+        cost is not a detector you stopped believing in.
         <br><br>
         <b>Only on a folder this page invented, and that is the reason the
         simulate step exists.</b> Your own recordings have no answer key: nobody
@@ -852,10 +894,13 @@
       </div>
       <div class="fine">
         <b>The step above answers one question; this one produces the file.</b>
-        Every recording in the folder, every detector, every stream and every
-        region the folder declared — one row per event per detector, with no
+        Every recording in the folder, every stream and every
+        region the folder declared, with <b>the detectors ticked above</b> — one
+        row per event per detector, with no
         consensus merging, because which detector fired is the information a
-        merged row throws away.
+        merged row throws away. Until 2026-08-23 this ran all six whatever the
+        tick list said, so the one control on the panel governed the picture and
+        not the file.
         <br><br>
         <b>A recording that produced nothing still appears.</b> Not as a row —
         it has no events to write — but in the roster inside
@@ -2032,7 +2077,7 @@ async function show(rec) {
   winbox.textContent = "";
   if (!wins.length)
     winbox.append(el("span", "no treatment windows declared — shown as one recording"));
-  let anyAnalysis = false;
+  let anyAnalysis = false, anyTrim = false;
   for (const w of wins) {
     const s = document.createElement("span");
     s.className = "win";
@@ -2040,11 +2085,30 @@ async function show(rec) {
     // (what gets scored) and the rail across its top is the bar (the period).
     const sw = document.createElement("span");
     sw.className = "sw";
-    sw.style.background = wash(w.label);
+    const field = document.createElement("span");
+    field.className = "field";
+    field.style.background = wash(w.label);
     const rail = document.createElement("span");
     rail.className = "rail";
     rail.style.background = ink(w.label);
-    sw.append(rail);
+    /* THE SWATCH SHOWS THIS WINDOW'S OWN TRIM, and shows none where there is
+       none. One folder can send an analysis window for one period and not the
+       next, so the key is decided per window rather than for the recording:
+       a single "the folder sent windows" flag would draw a trim on the period
+       that has none, in the picture explaining what a trim looks like.
+
+       The inset is floored so a two-second trim off a twenty-minute period is
+       still visible at 18 pixels wide, and capped so it never eats the field it
+       is qualifying. It is a key, not a scale drawing — the numbers beside it
+       are the measurement. */
+    const dur = Math.max(w.end - w.start, 1e-9);
+    const inset = v => v <= 0 ? "0"
+      : Math.min(32, Math.max(18, (v / dur) * 100)) + "%";
+    if (Number.isFinite(w.aStart) && Number.isFinite(w.aEnd)) {
+      field.style.left = inset(w.aStart - w.start);
+      field.style.right = inset(w.end - w.aEnd);
+    }
+    sw.append(field, rail);
     const span = (lo, hi) => (lo / 60).toFixed(0) + "–" + (hi / 60).toFixed(0) + "m";
     s.append(sw, el("i", w.label), document.createTextNode(span(w.start, w.end)));
     // only worth saying when it differs from the period — repeating the same
@@ -2052,8 +2116,10 @@ async function show(rec) {
     // redundant, which is the opposite of the point
     if (Number.isFinite(w.aStart) && Number.isFinite(w.aEnd)) {
       anyAnalysis = true;
-      if (w.aStart !== w.start || w.aEnd !== w.end)
+      if (w.aStart !== w.start || w.aEnd !== w.end) {
+        anyTrim = true;
         s.append(el("span", "scored " + span(w.aStart, w.aEnd), "scored"));
+      }
     }
     winbox.append(s);
   }
@@ -2061,11 +2127,20 @@ async function show(rec) {
     // Labelled with the accordion head's own words. The panel that governs
     // these windows is called "Analysis windows"; a legend that explains them
     // under a different name makes the reader join two things up by inference.
+    /* THREE STATES, BECAUSE THERE ARE THREE. "No analysis window was sent" and
+       "one was sent and trims nothing" are different facts about the folder and
+       used to share a sentence — and the swatches beside them now differ, so a
+       key that could not tell them apart would be contradicted by its own
+       picture. This lab's export is the middle case's opposite: 238 regions,
+       not one analysis window among them. */
     const chan = el("span", "", "chan");
     chan.append(el("b", "Analysis windows"), document.createTextNode(" — "
-      + (anyAnalysis
+      + (anyTrim
          ? "bar = the period · shading = the part scored"
-         : "bar = the period · shading = the same, no analysis window was sent")));
+         : anyAnalysis
+           ? "bar = the period · shading = the part scored, which here is all "
+             + "of it"
+           : "bar = the period · shading = the same, no analysis window was sent")));
     winbox.append(chan);
   }
   const say = text => note.appendChild(el("p", text));
@@ -2286,6 +2361,9 @@ async function open(fileList, opts) {
   // being replaced, and comparing the incoming data set with it is the entire
   // point. The comparison itself does not survive — it was about the last one.
   VERIFY = null;
+  // …and neither does the folder assessment, which is a statement about the
+  // recordings that are about to be replaced.
+  FOLDER_ASSESS = null;
   RECORDINGS = []; REGIONS = new Map(); META = new Map();
   /* THE STREAM IN PLAY IS A PROPERTY OF THE FOLDER, so it goes with it. A
      folder holding one stream never names one; a folder holding two is asked,
@@ -4234,6 +4312,8 @@ function chooseStream(name) {
   if (name === STREAM) return;
   STREAM = name;
   DETECT = null; FOLDER_RUN = null; ASSESS = null; ASSESSED = null;
+  // the folder walk is a measurement OF one stream, so it goes with the rest
+  FOLDER_ASSESS = null;
   const sw = document.getElementById("settingsWhat");
   if (sw) delete sw.dataset.said;
   paintSaveDetections(); paintFolderRun(); paintSaveSettings();
@@ -4582,6 +4662,23 @@ function paintWindowSummary(per, floor, baseIdx) {
 }
 
 /* The region list the assessment may be pointed at, rebuilt per recording. */
+/* The region menu, and the sentence that says whose regions they are.
+
+   THE LIST IS ONE RECORDING'S, NOT THE FOLDER'S VOCABULARY, and it never said
+   so. That cost a bug report: SB222200 on the menu read as the app offering a
+   drug it should not, when it was the open recording declaring the only two
+   periods it has. The folder's own tally is baseline 84, high K+ 60, TTX 38,
+   senktide 35, SB222200 12, wash 9 — so which drugs appear changes with every
+   file, and a reader who does not know the list is per recording has no way to
+   tell a legitimate entry from a defect.
+
+   Two fixes, both of them naming rather than filtering. The periods sit in an
+   `<optgroup>` carrying the recording's own id, so the menu says whose they are
+   in the menu; and the note below says the same in a sentence, for the reader
+   who never opens the dropdown. NOTHING IS REMOVED — measuring a treatment is
+   legitimate and the code says so in terms two functions down; the guard that
+   matters is on `simulateFromMeasurement`, which refuses a non-baseline
+   outright, and it is already there. */
 function paintRegionChoices(rec) {
   const sel = document.getElementById("aRegion");
   if (!sel) return;
@@ -4592,18 +4689,42 @@ function paintRegionChoices(rec) {
   base.value = "baseline";
   base.textContent = wins.length ? "baseline (default)" : "whole recording";
   sel.append(base);
-  wins.forEach((w, i) => {
-    const o = document.createElement("option");
-    o.value = String(i);
-    o.textContent = w.label + (isBaselineLabel(w.label) ? "" : " — not for calibration");
-    sel.append(o);
-  });
   if (wins.length) {
+    const grp = document.createElement("optgroup");
+    grp.label = "declared by " + rec.id;
+    wins.forEach((w, i) => {
+      const o = document.createElement("option");
+      o.value = String(i);
+      o.textContent = w.label
+        + (isBaselineLabel(w.label) ? "" : " — not for calibration");
+      grp.append(o);
+    });
+    sel.append(grp);
     const o = document.createElement("option");
     o.value = "whole"; o.textContent = "whole recording";
     sel.append(o);
   }
   if ([...sel.options].some(o => o.value === keep)) sel.value = keep;
+
+  const note = document.getElementById("aRegionWhat");
+  if (!note) return;
+  if (!wins.length) {
+    note.textContent = rec.id + " declares no periods, so there is nothing to "
+      + "choose between: it is assessed whole, and the report says so.";
+    return;
+  }
+  const drugs = wins.filter(w => !isBaselineLabel(w.label)).map(w => w.label);
+  note.textContent = "The middle group is " + rec.id + "'s own periods — "
+    + wins.map(w => w.label).join(", ") + ". Another recording in this folder "
+    + "declares different ones"
+    + (drugs.length
+        ? "; " + (drugs.length === 1 ? drugs[0] + " is" : drugs.join(", ") + " are")
+          + " on the menu because this recording has "
+          + (drugs.length === 1 ? "it" : "them") + ", not because the folder "
+          + "offers " + (drugs.length === 1 ? "it" : "them") + " everywhere. "
+        : ". ")
+    + "Any of them can be measured. Only a baseline can set the simulator, and "
+    + "the rest say so.";
 }
 
 /* ---------- measurement -> generator: the step that closes the loop ----------
@@ -5092,19 +5213,66 @@ async function runSimOnce() {
    The data set is measured AT THE TARGET'S K. Comparing a number taken at one K
    with a number taken at another would be the K mistake the assess panel spends
    a paragraph warning about, made inside the tool that warns about it. */
+/* `json` is the name each quantity carries in `bugarach.assess`, so the ratio
+   written into run.json below is keyed the way every other tool in this project
+   spells it rather than by this file's camel case. */
 const VERIFY_ROWS = [
   // The mean is what the generator was set from, so it is the row that says
   // whether the knob did its job. The median is the row that says whether the
   // SHAPE matches — hit the mean with the wrong spread and only this one moves.
-  { key: "roiRateMean", label: "background rate (mean)", unit: "mHz/ROI",
-    scale: 1000, nd: 1 },
-  { key: "roiRateMed", label: "background rate (typical ROI)", unit: "mHz/ROI",
-    scale: 1000, nd: 2 },
-  { key: "clustersPerMin", label: "coordinated events", unit: "clusters/min",
-    scale: 1, nd: 3 },
-  { key: "partNObs", label: "participants", unit: "ROIs", scale: 1, nd: 1 },
-  { key: "jitObs", label: "jitter", unit: "s (onset SD)", scale: 1, nd: 3 },
+  { key: "roiRateMean", json: "roi_rate_mean",
+    label: "background rate (mean)", unit: "mHz/ROI", scale: 1000, nd: 1 },
+  { key: "roiRateMed", json: "roi_rate_med",
+    label: "background rate (typical ROI)", unit: "mHz/ROI", scale: 1000, nd: 2 },
+  { key: "clustersPerMin", json: "clusters_permin",
+    label: "coordinated events", unit: "clusters/min", scale: 1, nd: 3 },
+  { key: "partNObs", json: "part_n_obs",
+    label: "participants", unit: "ROIs", scale: 1, nd: 1 },
+  { key: "jitObs", json: "jit_obs",
+    label: "jitter", unit: "s (onset SD)", scale: 1, nd: 3 },
 ];
+
+/* WHETHER ANYBODY CHECKED THE GENERATOR, written into the file rather than only
+   complained about on screen. The open question in
+   `docs/todo/2026-08-22-compare-is-a-step-you-click-through.md` — a mark on the
+   run, or a complaint that dies with the tab — answered YES, for the reason the
+   todo itself gives: the file outlives the complaint, and a setting fitted on
+   unverified data is exactly what a reader six months later wants flagged.
+
+   The precedent is `frame_interval_source` two fields down. That was added
+   because a sidecar recording only a value cannot tell a measurement from a
+   statement, so a 0.1 the page invented looked exactly like a 0.1 the producer
+   meant. `generator_spec` had the same hole: a spec with nothing said about
+   whether it was ever compared with the recording it was aimed at reads as
+   checked, because absent and fine are indistinguishable.
+
+   AND IT STILL DOES NOT JUDGE. There is no `ok`, no threshold, no pass. It
+   records what happened — aimed at whom, at which K, compared or not — and where
+   a comparison exists it carries the same ratios the panel prints, which the
+   panel introduces as "not a verdict and not a percentage error". Reading them
+   is the reader's job, here as on screen. */
+function generatorCheckRecord() {
+  if (!SIM_TARGET)
+    return { aimed_at: null, compared: false,
+             note: "this data set was never aimed at a measurement, so there "
+                   + "was nothing to compare it with" };
+  if (!VERIFY || VERIFY.target !== SIM_TARGET)
+    return { aimed_at: SIM_TARGET.recId, at_k: SIM_TARGET.K, compared: false,
+             note: "the Compare step was not run against this data set, so "
+                   + "nothing here says the generator produced what it was "
+                   + "asked for" };
+  const ratios = {};
+  for (const r of VERIFY_ROWS) {
+    const a = VERIFY.target[r.key], b = VERIFY.got[r.key];
+    ratios[r.json] = (b === null || !Number.isFinite(a) || !a) ? null : b / a;
+  }
+  return { aimed_at: VERIFY.target.recId, at_k: VERIFY.target.K,
+           compared: true, n_recordings_measured: VERIFY.n,
+           n_surrogates: VERIFY.nSurr, bin_sec: VERIFY.bin,
+           // simulated ÷ real, per quantity the generator is SET from. 1.0 is
+           // exact agreement; nothing here says which departures matter.
+           simulated_over_real: ratios };
+}
 
 /* NOT the `median` above, deliberately. That one is the assessment's own and
    takes a clean array; this pools ACROSS RECORDINGS, where a quantity can be
@@ -5309,6 +5477,9 @@ function clearAssess() {
    table has scrolled out of sight. Falls back to the standing description —
    what the step IS — when nothing has been measured yet. */
 function paintAssessChip() {
+  // the folder button lives in the same panel and answers to the folder rather
+  // than to the recording, so it is repainted from the same call
+  paintAssessFolderButton();
   const n = document.getElementById("cntAssess");
   if (!n) return;
   // `cnt ok` is the page's existing idiom for a chip reporting a good state —
@@ -5329,6 +5500,20 @@ function paintAssessChip() {
   n.textContent = "✓ assessed"
     + (ASSESSED.nStreams > 1 ? " · " + ASSESSED.nStreams + " streams" : "");
   n.className = "cnt ok";
+}
+
+let FOLDER_ASSESS = null;   // the folder walk's result — see assessFolderRun
+let ASSESS_RUNNING = false;
+
+/* The folder button follows the folder, not the recording — it is the one
+   control in this panel that does not care which file is on screen. */
+function paintAssessFolderButton() {
+  const b = document.getElementById("assessFolder");
+  if (!b) return;
+  b.disabled = RECORDINGS.length < 1 || ASSESS_RUNNING;
+  b.textContent = RECORDINGS.length > 1
+    ? "Assess all " + RECORDINGS.length + " recordings"
+    : "Assess the whole folder";
 }
 
 /* ONE BLOCK PER STREAM. `blocks` is [{stream, res}] — every stream the folder
@@ -5515,6 +5700,257 @@ async function runAssess() {
   }
 }
 
+/* ---------- the folder, measured -------------------------------------------
+
+   PORTED FROM `src/bugarach/assess_folder.py`, NOT DESIGNED HERE. `bugarach
+   assess my_export/` has walked a folder, measured each recording's baseline and
+   printed the scan since 2026-08-18; the browser never got it, so the page
+   assessed one recording at a time while the command line assessed a folder.
+
+   What that costs is not convenience. The generator is parameterised from ONE
+   measurement, so until now the simulated data set inherited whichever file
+   happened to be on screen when somebody pressed the button. A folder
+   assessment is what makes "typical of this lab" a measurable statement instead
+   of a choice of file.
+
+   Three rules come with it, and they are the Python's rather than this file's:
+
+     * K IS A SCAN, NEVER A CHOICE. Every K is reported and none is picked.
+     * `jitDefined` IS A STATE, NOT A NaN. The tightness comparison can be
+       undefined while a finite-looking number sits in the field, so the count of
+       recordings that could answer travels beside the median of those that did.
+     * BASELINE REGIONS ONLY, and a recording skipped for want of one is COUNTED
+       AND NAMED (FOUNDATIONS §9). A silent skip would make a folder of
+       treatments look like a quiet folder.
+
+   And it does NOT set the simulator. Whether a folder median should feed the
+   generator in place of one recording's numbers changes what the accept step
+   means, and that is Tony's call — recorded in
+   `docs/todo/2026-08-21-app-notes-from-use.md` rather than guessed at here. */
+
+/* The window one recording is measured over, by the Python's rule rather than
+   the panel's. `assessWindow` above answers a DIFFERENT question — it honours a
+   menu choice and falls back to the whole recording when no baseline is named,
+   because a person picked. Nobody picks 84 times, so the folder walk skips what
+   it cannot source from a baseline and says how many. */
+function folderAssessWindow(rec) {
+  const wins = (REGIONS.get(rec.id) || []).slice().sort((a, b) => a.idx - b.idx);
+  if (!wins.length)
+    return { window: null, source: "whole recording (no regions declared)" };
+  const base = wins.filter(w => isBaselineLabel(w.label));
+  if (!base.length)
+    return { skipped: wins.length + " region(s), none named as a baseline — "
+             + "coordination properties are not taken from treatments" };
+  const w = base.reduce((a, b) => (b.end - b.start > a.end - a.start ? b : a));
+  // The producer's own analysis window WINS wherever one is stated: `start`/
+  // `end` are what happened, `aStart`/`aEnd` are what to score. Measuring the
+  // first while calling the result the analysis is the defect the Python's
+  // equivalent line exists to prevent, and it was live here for a few hours.
+  const stated = Number.isFinite(w.aStart) && Number.isFinite(w.aEnd);
+  return {
+    window: stated ? [w.aStart, w.aEnd] : [w.start, w.end],
+    source: "baseline “" + w.label + "”, " + (!stated
+      ? "whole period (no analysis window sent)"
+      : w.derived ? "analysis window as you specified it"
+                  : "analysis window as the folder states it"),
+  };
+}
+
+/* Progress, in the CLI's own shape and for the CLI's own reason.
+
+   `cli._progress` prints `assessing: 12/84 · 20240708_13 (3s, ~11s left)`
+   because the folder commands went blind for two minutes and a user cannot tell
+   working from hung. In the page the walk is quicker — 185 ms a recording, so
+   about 15 s over 84 — and quicker is still far too long for a button that
+   greys out and says nothing. Same words, so the two read as one tool. */
+function sayAssessProgress(done, total, id, startedAt) {
+  const n = document.getElementById("assessFolderWhat");
+  const b = document.getElementById("assessFolder");
+  const el0 = (performance.now() - startedAt) / 1000;
+  const msg = id === null
+    ? "assessing: " + total + "/" + total + " in " + el0.toFixed(0) + "s"
+    : "assessing: " + done + "/" + total + " · " + id + " ("
+      + el0.toFixed(0) + "s"
+      + (done ? ", ~" + ((el0 / done) * (total - done)).toFixed(0) + "s left" : "")
+      + ")";
+  if (n) n.textContent = msg;
+  if (b) b.textContent = id === null ? "Assess the whole folder"
+                                     : done + " of " + total + "…";
+}
+
+async function assessFolderRun() {
+  if (!RECORDINGS.length || ASSESS_RUNNING) return;
+  ASSESS_RUNNING = true;
+  paintAssessFolderButton();
+  const startedAt = performance.now();
+  try {
+    const nSurr = clamp(Number(document.getElementById("aSurr").value), 50, 2000);
+    const bin = clamp(Number(document.getElementById("aBin").value), 0.1, 10);
+    const records = [], regionCounts = {};
+    const total = RECORDINGS.length;
+    for (let i = 0; i < total; i++) {
+      const rec = RECORDINGS[i];
+      sayAssessProgress(i, total, rec.id, startedAt);
+      await new Promise(r => setTimeout(r, 0));
+      // The folder's whole vocabulary, tallied whether or not the recording is
+      // measurable — that tally is what tells a reader the skips are treatments
+      // rather than a bug.
+      for (const w of (REGIONS.get(rec.id) || []))
+        regionCounts[w.label] = (regionCounts[w.label] || 0) + 1;
+      const data = await loadRecording(rec);
+      const only = analysisStream(data);
+      if (!only) {
+        records.push({ id: rec.id, skipped: "holds "
+          + analysisStreams(data).join(" and ") + ", and this run is about "
+          + STREAM });
+        continue;
+      }
+      const w = folderAssessWindow(rec);
+      if (w.skipped) { records.push({ id: rec.id, skipped: w.skipped }); continue; }
+      const [ws, we] = w.window || [data.t0, data.t1];
+      const byRoi = data.streams.get(only);
+      const trains = data.order.map(id =>
+        (byRoi.get(id) || []).filter(x => x >= ws && x <= we).map(x => x - ws));
+      const res = assessCoactivity(trains, we - ws,
+                                   { nSurrogates: nSurr, binWidth: bin });
+      records.push({ id: rec.id, stream: only, nRoi: trains.length,
+                     window: [ws, we], source: w.source, res });
+      await new Promise(r => setTimeout(r, 0));
+    }
+    sayAssessProgress(total, total, null, startedAt);
+    FOLDER_ASSESS = { records, regionCounts, nSurr, bin, stream: STREAM,
+                      elapsedSec: (performance.now() - startedAt) / 1000 };
+    paintFolderAssess();
+    markDone("accAssess");
+  } finally {
+    ASSESS_RUNNING = false;
+    paintAssessFolderButton();
+  }
+}
+
+function paintFolderAssess() {
+  const fa = FOLDER_ASSESS;
+  const box = document.getElementById("assessOut");
+  if (!fa || !box) return;
+  const measured = fa.records.filter(r => r.res && r.res[0] && r.res[0].meetsFloor);
+  const skipped = fa.records.filter(r => r.skipped);
+  const short = fa.records.filter(r => r.res && r.res[0] && !r.res[0].meetsFloor);
+
+  box.textContent = "";
+  box.append(el("h4", "The folder, recording by recording"));
+  box.append(el("p", fa.records.length + " recording(s) · " + measured.length
+    + " measured · " + skipped.length + " not assessable · " + short.length
+    + " under the floor · " + fa.nSurr + " surrogates · bin " + fa.bin + " s · "
+    + "stream " + (fa.stream || "the only one") + " · "
+    + fa.elapsedSec.toFixed(1) + " s", "sub"));
+
+  if (!measured.length) {
+    box.append(el("p", "Nothing in this folder could be measured. The rows below "
+      + "say why for each recording.", "verdict bad"));
+  } else {
+    /* THE FOLDER'S OWN NUMBERS, which is the thing one recording cannot give
+       you. Medians across recordings, one row per K — never a mean, because a
+       single very busy recording would carry it, and never pooled across K,
+       because K is the scan. */
+    const tbl = document.createElement("table");
+    const hr = document.createElement("tr");
+    for (const h of ["K", "recordings", "excess/min", "clusters/min",
+                     "participants", "span (s)", "tightness vs null"])
+      hr.append(el("th", h));
+    tbl.append(hr);
+    for (const K of K_SCAN) {
+      const at = measured.map(r => r.res.find(a => a.K === K)).filter(Boolean);
+      const tr = document.createElement("tr");
+      tr.append(el("td", String(K)));
+      tr.append(el("td", String(at.length)));
+      tr.append(el("td", fmtNum(medianFinite(at.map(a => a.coactExcess)))));
+      tr.append(el("td", fmtNum(medianFinite(at.map(a => a.clustersPerMin)))));
+      tr.append(el("td", fmtNum(medianFinite(at.map(a => a.partNObs)), 1)));
+      tr.append(el("td", fmtNum(medianFinite(at.map(a => a.spanMed)), 2)));
+      // ⚠ The count of recordings that could answer travels with the number.
+      // A median over the four that had a surrogate cluster, printed bare
+      // beside a K where seventy could not, is a number about almost nothing.
+      const def = at.filter(a => a.jitDefined);
+      tr.append(def.length
+        ? el("td", fmtNum(medianFinite(def.map(a => a.jitExcess)))
+            + " (" + def.length + " of " + at.length + " defined)")
+        : el("td", "undefined in all " + at.length
+            + " — no cluster in the surrogates", "state"));
+      tbl.append(tr);
+    }
+    box.append(tbl);
+
+    /* The one number this whole walk exists to produce, and the reason it is
+       the MEAN that is medianed: the simulator's rate box means the field's
+       mean, and handing it a median of medians was the defect the single
+       recording path already paid for. */
+    const rates = measured.map(r => r.res[0].roiRateMean);
+    const rois = measured.map(r => r.nRoi);
+    box.append(el("p", "Across the " + measured.length + " that could be "
+      + "measured, the typical recording runs at "
+      + fmtNum(medianFinite(rates) * 1000, 1) + " mHz per ROI (the median of "
+      + "each recording's field MEAN, which is the statistic the simulator's "
+      + "rate box takes) over " + fmtNum(medianFinite(rois), 0) + " ROIs. "
+      + "That is the folder's number; the panel above still sets the simulator "
+      + "from one recording, and which of the two should aim it is not this "
+      + "port's decision to make.", "caveat"));
+  }
+
+  const tbl2 = document.createElement("table");
+  const hr2 = document.createElement("tr");
+  for (const h of ["recording", "ROI", "min", "window"]
+                    .concat(K_SCAN.map(K => "excess/min at K=" + K)))
+    hr2.append(el("th", h));
+  tbl2.append(hr2);
+  for (const r of fa.records) {
+    const tr = document.createElement("tr");
+    tr.append(el("td", r.id));
+    if (r.skipped) {
+      const td = el("td", "not assessed: " + r.skipped, "state");
+      td.colSpan = 3 + K_SCAN.length;
+      tr.append(td);
+      tbl2.append(tr);
+      continue;
+    }
+    tr.append(el("td", String(r.nRoi)));
+    tr.append(el("td", ((r.window[1] - r.window[0]) / 60).toFixed(1)));
+    tr.append(el("td", r.source));
+    if (!r.res[0].meetsFloor) {
+      const td = el("td", "under the 15-minute floor — every measure would be "
+        + "undefined, so none is shown", "state");
+      td.colSpan = K_SCAN.length;
+      tr.append(td);
+    } else {
+      for (const K of K_SCAN) {
+        const a = r.res.find(q => q.K === K);
+        tr.append(el("td", a ? fmtNum(a.coactExcess) : "—"));
+      }
+    }
+    tbl2.append(tr);
+  }
+  box.append(el("h5", "Every recording, and why any was skipped"));
+  box.append(tbl2);
+
+  const labels = Object.keys(fa.regionCounts).sort();
+  if (labels.length)
+    box.append(el("p", "Periods declared across the folder: "
+      + labels.map(k => k + " (" + fa.regionCounts[k] + ")").join(", ")
+      + ". A recording is skipped above when none of its own periods is named "
+      + "as a baseline — the count is printed so the skip is visible rather "
+      + "than silent.", "caveat"));
+
+  box.append(el("p", "K is a scan, not a choice: it moves the headline by an "
+    + "order of magnitude, so quoting one of these numbers means naming the K "
+    + "it came from. Nothing here has picked one for you, and nothing here has "
+    + "turned a measurement into a setting — that needs somebody who has looked "
+    + "at the recording.", "caveat"));
+  box.append(el("p", "The excess and the tightness comparison are estimated "
+    + "from " + fa.nSurr + " surrogates, so they carry sampling error and will "
+    + "move a little between runs. The cluster count, the participants and the "
+    + "span do not.", "caveat"));
+}
+
+document.getElementById("assessFolder").onclick = assessFolderRun;
 document.getElementById("runAssess").onclick = runAssess;
 document.getElementById("aK").onchange = () => {
   // re-marking is free; re-measuring is not, so changing K only redraws
@@ -5604,6 +6040,11 @@ function runJson(run) {
     // Present only for a folder this page invented; a folder off disk had no
     // generator, no K was chosen for it and it has no seeds.
     generator_spec: run.generatorSpec ?? null,
+    /* The spec above and whether anybody checked it, side by side, because they
+       are one fact split in two. Null for a folder off disk, on the same rule
+       as the spec: there was no generator, so there is nothing to have
+       checked. See `generatorCheckRecord`. */
+    generator_checked: run.generatorChecked ?? null,
     chosen_k: run.chosenK ?? null,
     simulated_data_seeds: run.simulatedDataSeeds ?? null,
     /* KEYED BY DETECTOR AND THEN BY STREAM. It used to be keyed by detector
@@ -5640,6 +6081,18 @@ async function analyseFolder() {
       + "frame interval.";
     return;
   }
+  /* An empty tick list is a question with no subject, not a run that found
+     nothing. Said out loud rather than writing a header-only file — the same
+     split `bugarach detect` makes between "nothing was scored" and "nothing was
+     found", and for the same reason. */
+  if (!chosenDetectors().length) {
+    FOLDER_RUN = null;
+    paintFolderRun();
+    const n = document.getElementById("folderWhat");
+    if (n) n.textContent = "No detector is ticked, so there is nothing to run "
+      + "over the folder. Tick at least one above.";
+    return;
+  }
   const btn = document.getElementById("runFolder");
   const was = btn ? btn.textContent : null;
   if (btn) btn.disabled = true;
@@ -5652,7 +6105,13 @@ async function analyseFolder() {
     const rows = [], slices = [], frameIntervals = {}, thresholds = {};
     const frameSources = {}, extras = {}, sliceExtras = {};
     const failures = [];
-    const which = Object.keys(DETECTORS);
+    /* THE TICK LIST, WHICH THIS RUN USED TO IGNORE. `chosenDetectors()` is what
+       the Detect step above runs; this ran `Object.keys(DETECTORS)` regardless,
+       so the panel's one control governed the raster and not the file, and the
+       ~minute-long folder run was the one thing on the page a reader could not
+       scope. Same accessor as the single-recording run, so the picture and the
+       export cannot disagree about what "all the ticked detectors" means. */
+    const which = chosenDetectors();
     let done = 0;
     for (const rec of RECORDINGS) {
       say("Analysing " + rec.id + " (" + (++done) + " of "
@@ -5767,8 +6226,9 @@ async function analyseFolder() {
     const simulated = SIMULATED && TRUTH.size > 0;
     FOLDER_RUN = {
       rows, slices, frameIntervals, frameSources, thresholds, failures,
-      extras, sliceExtras, stream: STREAM,
+      extras, sliceExtras, stream: STREAM, detectors: which,
       generatorSpec: simulated ? (SIM_SPEC || null) : null,
+      generatorChecked: simulated ? generatorCheckRecord() : null,
       chosenK: simulated ? (SIM_K ?? null) : null,
       simulatedDataSeeds: simulated ? RECORDINGS.map((_, i) => i) : null,
     };
@@ -5778,8 +6238,25 @@ async function analyseFolder() {
   }
 }
 
+/** The standing line under the folder button: what it will run, and over how
+    much. Overwritten by the progress messages while a run is going and by its
+    result afterwards — this is the state in between, which used to be blank. */
+function paintFolderWhat() {
+  const n = document.getElementById("folderWhat");
+  if (!n || FOLDER_RUN) return;
+  const picks = chosenDetectors();
+  n.textContent = !RECORDINGS.length ? ""
+    : !picks.length
+      ? "No detector is ticked, so there is nothing to run over the folder."
+      : "Will run " + picks.map(k => DETECTORS[k].label).join(", ") + " over "
+        + RECORDINGS.length + " recording(s)"
+        + (picks.length === 1 && !document.getElementById("dAll").checked
+            ? " — tick “run several” above for more than the one chosen." : ".");
+}
+
 function paintFolderRun() {
   const run = FOLDER_RUN;
+  if (!run) paintFolderWhat();
   const box = document.getElementById("detectOut");
   const saveB = document.getElementById("saveFolder");
   const runB = document.getElementById("saveRun");
@@ -5799,15 +6276,27 @@ function paintFolderRun() {
       + " recording(s).";
   if (!run || !box) return;
 
+  /* THE RUN'S OWN DETECTOR LIST, not the registry's. A table headed with six
+     columns over a run of three does not merely look odd — the three it never
+     ran show as blank, which is a third answer beside "found nothing" and
+     "could not run", and it is not one this page is entitled to give. */
+  const ran = run.detectors || Object.keys(DETECTORS);
   box.textContent = "";
-  box.append(el("h4", "The folder, all detectors"));
+  box.append(el("h4", ran.length === Object.keys(DETECTORS).length
+    ? "The folder, all detectors" : "The folder, " + ran.length + " detectors"));
   box.append(el("p", run.slices.length + " recording(s) · "
-    + Object.keys(DETECTORS).length + " detectors · " + run.rows.length
-    + " row(s)", "sub"));
+    + ran.map(k => DETECTORS[k].label).join(", ") + " · " + run.rows.length
+    + " row(s)"
+    + (ran.length < Object.keys(DETECTORS).length
+        ? " — the unticked "
+          + Object.keys(DETECTORS).filter(k => !ran.includes(k))
+              .map(k => DETECTORS[k].label).join(", ")
+          + " did not run and are not in the file"
+        : ""), "sub"));
 
   const tbl = document.createElement("table");
   const hr = document.createElement("tr");
-  for (const h of ["recording", "rows"].concat(Object.keys(DETECTORS)))
+  for (const h of ["recording", "rows"].concat(ran.map(k => DETECTORS[k].label)))
     hr.append(el("th", h));
   tbl.append(hr);
   for (const id of run.slices) {
@@ -5815,7 +6304,7 @@ function paintFolderRun() {
     const tr = document.createElement("tr");
     tr.append(el("td", id));
     tr.append(el("td", String(mine.length)));
-    for (const key of Object.keys(DETECTORS)) {
+    for (const key of ran) {
       const n = mine.filter(r => r.detector === key).length;
       const refused = run.failures.some(f => f.slice === id && f.detector === key);
       // A refusal and a zero are different answers and are never drawn the
@@ -5837,7 +6326,7 @@ function paintFolderRun() {
      printed each detector's caveat and this table dropped it, so the folder
      view — the one that produces the file people keep — was the less honest of
      the two. Same text, same source: the detector's own `note`. */
-  const withExtra = Object.keys(DETECTORS)
+  const withExtra = ran
     .filter(k => DETECTORS[k].extra && (run.extras || {})[k]
                  && run.extras[k].n > 0);
   if (withExtra.length) {
@@ -5869,7 +6358,8 @@ function paintFolderRun() {
       + "than in the file.", "caveat"));
   }
 
-  box.append(el("p", "These are detections, not events. Six instruments at the "
+  box.append(el("p", "These are detections, not events. " + ran.length
+    + " instrument" + (ran.length === 1 ? "" : "s") + " at the "
     + "settings above called these moments on your recordings; nothing here has "
     + "been scored, because your recordings have no answer key.", "caveat"));
 }
@@ -6149,6 +6639,20 @@ function savedSettingsRows() {
       prov.fitted_n_folds = t.nFolds ?? null;
       prov.fitted_n_recordings = t.dataSetN ?? null;
       prov.fitted_held_out = t.heldOut ? "yes" : "no";
+      /* AND WHETHER THE GENERATOR IT WAS FITTED ON WAS EVER CHECKED. This is the
+         file that crosses the gap: the sweep runs on invented recordings and the
+         detector runs on real ones, and this row is the only thing that travels
+         with the number. `fitted_on` already says which data set; without this
+         it cannot say whether that data set came out like the recording it was
+         aimed at.
+
+         Computed here rather than stamped at sweep time on purpose — comparing
+         after sweeping still checks the generator, and a flag frozen at the
+         click would call that unchecked. `TUNED` and `VERIFY` are both cleared
+         by `open`, so they always describe the same folder. */
+      if (SIMULATED)
+        prov.fitted_generator_checked = !SIM_TARGET ? "not aimed"
+          : (VERIFY && VERIFY.target === SIM_TARGET) ? "yes" : "no";
     }
     for (const name of Object.keys(prov).sort())
       rows.push({ detector: which, stream, parameter: name,
@@ -6506,10 +7010,14 @@ function paintDetectorChoice() {
     : DETECTORS[which].label;
   paintTunedChip();
   clearDetect();
-  // the sweep follows the chosen detector, so its own result stops being about
-  // the thing named on it the moment the choice moves
-  clearTune();
   paintTuneWhat();
+  /* WHAT THE FOLDER BUTTON WILL RUN, BEFORE IT IS PRESSED. That run used to
+     ignore this control entirely and always take all six; now that it obeys,
+     the default — one detector, because "run several" is unticked — is a
+     different file from the one the button produced yesterday. A minute-long
+     button whose scope is only discoverable afterwards is how somebody exports
+     the wrong thing and does not find out until the table is in a slide. */
+  paintFolderWhat();
   if (current) loadRecording(current).then(d => draw(current, d));
 }
 
@@ -6801,6 +7309,47 @@ const DET_SLOW = new Set(["loco", "cicada"]);
   }
 }
 
+/* THE SAME LIST AGAIN, FOR THE SWEEP — and deliberately a second list rather
+   than a shared one.
+
+   Tune and Detect ask different questions of the same six. Fitting an operating
+   point is expensive and you skip the expensive ones while you are iterating;
+   running a detector is cheap and you want everything you believe in. Wiring
+   one tick to both would mean unticking CICADA to get a sweep back in ten
+   seconds silently dropped it from the folder export an hour later.
+
+   That coupling is the open half of Tony's note — "one preference, or two?" —
+   and two is the answer that cannot lose data. If he wants them linked, linking
+   them is one line and this comment is the argument against it.
+
+   Defaults match Detect's, so the page has ONE opinion about which detectors a
+   reader meets first, stated in one place. */
+{
+  const box = document.getElementById("tPicks");
+  for (const [k, d] of Object.entries(DETECTORS)) {
+    const lab = document.createElement("label");
+    const cb = document.createElement("input");
+    cb.type = "checkbox"; cb.id = "tPick_" + k;
+    cb.checked = DET_DEFAULT_ON.includes(k);
+    cb.addEventListener("change", () => { clearTune(); paintTuneWhat(); });
+    const dot = document.createElement("span");
+    dot.className = "dot";
+    dot.style.background = DET_COLORS[k] || "";
+    lab.append(cb, dot, document.createTextNode(d.label));
+    if (DET_SLOW.has(k)) lab.append(el("span", "slow", "cost"));
+    box.append(lab);
+  }
+}
+
+/** Which detectors the sweep will visit — registry order, never tick order, so
+    two runs of the same selection print their blocks in the same sequence. */
+function sweptDetectors() {
+  return Object.keys(DETECTORS).filter(k => {
+    const box = document.getElementById("tPick_" + k);
+    return box && box.checked;
+  });
+}
+
 document.getElementById("dDet").onchange = paintDetectorChoice;
 document.getElementById("dAll").onchange = paintDetectorChoice;
 
@@ -6816,6 +7365,8 @@ paintTunedChip();
 
 /* ---------- the sweep, and the picture of it -------------------------------- */
 
+let TUNE_RUNNING = false;
+
 function clearTune() {
   const b = document.getElementById("tuneOut");
   if (b) b.textContent = "";
@@ -6826,24 +7377,48 @@ function clearTune() {
    A button whose effect depends on a control in another section has to say so
    where it sits. */
 function paintTuneWhat() {
-  const which = whichDetector();
-  const knob = DETECTORS[which].knob;
+  if (TUNE_RUNNING) return;    // the progress line owns these nodes mid-sweep
+  const picks = sweptDetectors();
   const chip = document.getElementById("cntTune");
   const note = document.getElementById("tuneWhat");
   const btn = document.getElementById("runTune");
   const truth = current ? TRUTH.get(current.id) : null;
-  const ok = !!(truth && truth.times.length);
+  const havePlanted = !!(truth && truth.times.length);
+  const ok = havePlanted && picks.length > 0;
   btn.disabled = !ok;
-  chip.textContent = ok ? DETECTORS[which].label : "simulated only";
-  note.textContent = ok
-    ? "Sweeps " + DETECTORS[which].label + "'s " + knob.name + " over "
-      + knob.grid.length + " values (" + knob.grid[0] + " to "
-      + knob.grid[knob.grid.length - 1] + "), holding its other settings at what "
-      + "the Detect section has, and scores each against the "
-      + truth.times.length + " events planted in this recording."
-    : "Nothing to score against. These recordings were read from a folder, so "
+  btn.textContent = "Sweep";
+  chip.textContent = !havePlanted ? "simulated only"
+    : !picks.length ? "none ticked"
+    : picks.length === 1 ? DETECTORS[picks[0]].label
+    : picks.length + " detectors";
+  const slow = picks.filter(k => DET_SLOW.has(k));
+  note.textContent = !havePlanted
+    ? "Nothing to score against. These recordings were read from a folder, so "
       + "there is no record of which moments were coordinated — simulate a "
-      + "folder and the planted events become the answer key.";
+      + "folder and the planted events become the answer key."
+    : !picks.length
+      ? "No detector is ticked, so there is nothing to sweep. Tick at least one "
+        + "above."
+      : "Sweeps " + picks.map(k => DETECTORS[k].label + "'s "
+            + DETECTORS[k].knob.name + " over " + DETECTORS[k].knob.grid.length
+            + " values").join(", ")
+        + ", holding their other settings at what the Detect section has, and "
+        + "scores each against the " + truth.times.length + " events planted in "
+        + "this recording."
+        /* THE COST, BEFORE THE CLICK RATHER THAN DURING IT. Measured over one
+           data set, fit seconds: SPIKE-synch 0.06, CoactDetect 0.08, RateDetect
+           0.10, SCE 0.17, LoCo 2.69, CICADA 7.06. Naming the two costly ones
+           where the tick is is what turns "why is this taking so long" into a
+           decision somebody made. */
+        + (slow.length
+            ? " " + slow.map(k => DETECTORS[k].label).join(" and ")
+              + (slow.length > 1 ? " are" : " is")
+              + " the slow part — those two are about 97% of a six-detector "
+              + "sweep's wall clock, so unticking "
+              + (slow.length > 1 ? "them" : "it")
+              + " is what makes this return while you are looking at it."
+            : " None of these is one of the two costly detectors, so this "
+              + "should return in about a second.");
   /* THE GRUMBLE, ITS SECOND HALF. The rail's Compare step says "not checked
      yet"; this says what that costs, where the cost lands. A setting fitted on a
      data set nobody compared with the recording it was aimed at is a setting
@@ -7306,17 +7881,82 @@ function paintTunedChip() {
     .filter(Boolean).join("  ");
 }
 
+/* ONE DETECTOR'S SWEEP, computed. Split out of `runTune` when the panel grew a
+   tick list: the loop that used to run once now runs up to six times, and a
+   body inlined in the orchestrator would have made "score everything once and
+   re-pool the folds" a rule that held for the first detector and was retyped for
+   the rest. `onPoint` is the progress hook — the sweep is the only thing that
+   knows how far through the grid it is. */
+async function sweepDetector(which, dataSet, tol, onPoint) {
+  const D = DETECTORS[which];
+  const knob = D.knob;
+  /* A detector anchored on the peak cannot be swept on a folder that did not
+     send one. Said once, before any work, rather than returning a flat curve
+     that looks like a knob with no effect. */
+  if (D.peaks) {
+    const bad = dataSet.find(c => c.peaks && c.peaks.why);
+    if (bad) return { which, refusal: bad.peaks.why };
+  }
+  const base = D.read(dataSet[0].dt);
+
+  /* Score every recording at every setting ONCE, then reuse. The folds below
+     re-pool these same per-recording scores rather than re-running anything,
+     so the held-out number and the curve on screen cannot come from two
+     different runs of the same detector. */
+  const scored = new Map();          // knob value -> per-recording scores
+  const rows = [];
+  for (let i = 0; i < knob.grid.length; i++) {
+    const v = knob.grid[i];
+    if (onPoint) onPoint(i, knob.grid.length);
+    const per = dataSet.map(c =>
+      sweepPoint(c.trains, c.range, which, base, knob, v, c.truth, tol, c.peaks));
+    scored.set(v, per);
+    rows.push(tunePool(per, { detector: which, knobValue: v, tolSec: tol,
+                              seeds: dataSet.map((c, i2) => i2) }));
+    await new Promise(r => setTimeout(r, 0));   // let the button stay honest
+  }
+
+  /* The held-out half. Per fold: choose the knob on the folds it may see, then
+     score that choice on the fold it may not. Nothing is fitted on a recording
+     it is later scored against — the claim the training panel beside this one
+     makes, and which this sweep could not make until now. */
+  const split = tunePlan(dataSet.length);
+  const folds = [];
+  if (split) {
+    for (let f = 0; f < split.nFolds; f++) {
+      const tr = split.train(f), te = split.test(f);
+      const trainRows = knob.grid.map(v =>
+        tunePool(tr.map(i => scored.get(v)[i]),
+                 { detector: which, knobValue: v, tolSec: tol, seeds: tr }));
+      const chosen = pickOperatingPoint(trainRows);
+      if (!chosen.row) {
+        folds.push({ fold: f, chosen: null, why: chosen.why }); continue;
+      }
+      folds.push({
+        fold: f, chosen: chosen.row.knob, nTrain: tr.length, nTest: te.length,
+        held: tunePool(te.map(i => scored.get(chosen.row.knob)[i]),
+                       { detector: which, knobValue: chosen.row.knob,
+                         tolSec: tol, seeds: te }),
+      });
+      await new Promise(r => setTimeout(r, 0));
+    }
+  }
+  return { which, rows, folds, split, pick: pickOperatingPoint(rows) };
+}
+
 async function runTune() {
   if (!current) return;
   const truth = TRUTH.get(current.id);
   if (!truth || !truth.times.length) return;
+  const picks = sweptDetectors();
+  if (!picks.length) return;
   const btn = document.getElementById("runTune");
-  btn.textContent = "Sweeping…"; btn.disabled = true;
+  const note = document.getElementById("tuneWhat");
+  TUNE_RUNNING = true;
+  btn.disabled = true;
   await new Promise(r => setTimeout(r, 0));
+  const startedAt = performance.now();
   try {
-    const which = whichDetector();
-    const knob = DETECTORS[which].knob;
-    const label = DETECTORS[which].label;
     const tol = clamp(Number(document.getElementById("tTol").value), 0.1, 30);
 
     /* The data set is every simulated recording in the folder, not the one on
@@ -7328,71 +7968,95 @@ async function runTune() {
       return;
     }
     if (!dataSet.length) return;
-    /* A detector anchored on the peak cannot be swept on a folder that did not
-       send one. Said once, before any work, rather than returning a flat curve
-       that looks like a knob with no effect. */
-    if (DETECTORS[which].peaks) {
-      const bad = dataSet.find(c => c.peaks && c.peaks.why);
-      if (bad) {
-        const box = document.getElementById("tuneOut");
-        box.textContent = "";
-        box.append(el("h4", label + " cannot be swept on this folder"));
-        box.append(el("p", bad.peaks.why, "verdict bad"));
-        return;
-      }
-    }
-    const base = DETECTORS[which].read(dataSet[0].dt);
-    const levels = [...new Set(dataSet.flatMap(c => c.truth.fracs))]
-      .sort((a, b) => b - a);
 
-    /* Score every recording at every setting ONCE, then reuse. The folds below
-       re-pool these same per-recording scores rather than re-running anything,
-       so the held-out number and the curve on screen cannot come from two
-       different runs of the same detector. */
-    const scored = new Map();          // knob value -> per-recording scores
-    const rows = [];
-    for (const v of knob.grid) {
-      const per = dataSet.map(c =>
-        sweepPoint(c.trains, c.range, which, base, knob, v, c.truth, tol, c.peaks));
-      scored.set(v, per);
-      rows.push(tunePool(per, { detector: which, knobValue: v, tolSec: tol,
-                                seeds: dataSet.map((c, i) => i) }));
-      await new Promise(r => setTimeout(r, 0));   // let the button stay honest
-    }
-
-    /* The held-out half. Per fold: choose the knob on the folds it may see, then
-       score that choice on the fold it may not. Nothing is fitted on a recording
-       it is later scored against — the claim the training panel beside this one
-       makes, and which this sweep could not make until now. */
-    const split = tunePlan(dataSet.length);
-    const folds = [];
-    if (split) {
-      for (let f = 0; f < split.nFolds; f++) {
-        const tr = split.train(f), te = split.test(f);
-        const trainRows = knob.grid.map(v =>
-          tunePool(tr.map(i => scored.get(v)[i]),
-                   { detector: which, knobValue: v, tolSec: tol, seeds: tr }));
-        const chosen = pickOperatingPoint(trainRows);
-        if (!chosen.row) {
-          folds.push({ fold: f, chosen: null, why: chosen.why }); continue;
-        }
-        folds.push({
-          fold: f, chosen: chosen.row.knob, nTrain: tr.length, nTest: te.length,
-          held: tunePool(te.map(i => scored.get(chosen.row.knob)[i]),
-                         { detector: which, knobValue: chosen.row.knob,
-                           tolSec: tol, seeds: te }),
-        });
-        await new Promise(r => setTimeout(r, 0));
-      }
-    }
-
-    const pick = pickOperatingPoint(rows);
     const box = document.getElementById("tuneOut");
     box.textContent = "";
+    box.append(el("h4", picks.length === 1
+      ? DETECTORS[picks[0]].label + " swept on "
+        + (dataSet.length === 1 ? dataSet[0].id
+                                : dataSet.length + " simulated recordings")
+      : picks.length + " detectors swept on "
+        + (dataSet.length === 1 ? dataSet[0].id
+                                : dataSet.length + " simulated recordings")));
+    /* THE SWEEP SAYS WHICH DETECTORS IT RAN, at the top, before any of them.
+       With a tick list the answer is no longer implied by the panel's chip, and
+       a table of results whose scope the reader has to reconstruct from the
+       block headings is a table that gets quoted with the wrong scope. */
+    const scope = el("p", "", "sub");
+    scope.append(document.createTextNode(picks.map(k => DETECTORS[k].label)
+      .join(" · ") + " — of the " + Object.keys(DETECTORS).length
+      + " this page carries."
+      + (picks.length < Object.keys(DETECTORS).length
+          ? " The rest were not ticked and are not in this run."
+          : "")));
+    box.append(scope);
+
+    /* PROGRESS WITH NO INVENTED ETA, and that is deliberate. The CLI's folder
+       walk can divide elapsed by recordings done because recordings cost about
+       the same. These do not: LoCo and CICADA are ~97% of a six-detector sweep,
+       so a remaining-time figure taken before CICADA starts would be wrong by an
+       order of magnitude and would be believed. Position and elapsed are true;
+       the cost warning beside the tick list is where the reader learns the shape
+       of what is left. */
+    const say = (i, k, pt, nPt) => {
+      const el0 = ((performance.now() - startedAt) / 1000).toFixed(0);
+      const msg = "sweeping: " + (i + 1) + "/" + picks.length + " · "
+        + DETECTORS[k].label
+        + (nPt ? " · setting " + (pt + 1) + "/" + nPt : "")
+        + " (" + el0 + "s)";
+      if (note) note.textContent = msg;
+      btn.textContent = (i + 1) + " of " + picks.length + "…";
+    };
+
+    const levels = [...new Set(dataSet.flatMap(c => c.truth.fracs))]
+      .sort((a, b) => b - a);
+    for (let i = 0; i < picks.length; i++) {
+      const which = picks[i];
+      say(i, which, 0, 0);
+      await new Promise(r => setTimeout(r, 0));
+      const out = await sweepDetector(which, dataSet, tol,
+                                      (pt, nPt) => say(i, which, pt, nPt));
+      paintSweepBlock(box, out, dataSet, tol, levels, picks.length > 1);
+    }
+    if (note)
+      note.textContent = "swept " + picks.length + " detector"
+        + (picks.length > 1 ? "s" : "") + " — "
+        + picks.map(k => DETECTORS[k].label).join(", ") + " — in "
+        + ((performance.now() - startedAt) / 1000).toFixed(1) + " s.";
+  } finally {
+    TUNE_RUNNING = false;
+    btn.textContent = "Sweep"; btn.disabled = false;
+    const said = note ? note.textContent : "";
+    paintTuneWhat();
+    // the timing line is the one thing `paintTuneWhat` would overwrite and the
+    // one thing worth keeping — it is the answer to "was unticking those two
+    // worth it"
+    if (note && said.startsWith("swept ")) note.textContent = said;
+  }
+}
+
+/* ONE DETECTOR'S SWEEP, drawn. Everything below was `runTune`'s tail; it moved
+   out unchanged so that a run of six prints six of exactly what a run of one
+   used to print, rather than a summary that has quietly dropped the caveats. */
+function paintSweepBlock(box, out, dataSet, tol, levels, several) {
+  const which = out.which;
+  const D = DETECTORS[which], knob = D.knob, label = D.label;
+  if (out.refusal) {
+    box.append(el("h5", label + " cannot be swept on this folder"));
+    box.append(el("p", out.refusal, "verdict bad"));
+    return;
+  }
+  const { rows, folds, split, pick } = out;
+  {
     const nPlanted = rows.length ? rows[0].nPlanted : 0;
-    box.append(el("h4", label + " swept on "
-      + (dataSet.length === 1 ? dataSet[0].id
-                             : dataSet.length + " simulated recordings")));
+    if (several) {
+      const h = el("h5", "");
+      const dot = document.createElement("span");
+      dot.className = "dot";
+      dot.style.background = DET_COLORS[which] || "";
+      h.append(dot, document.createTextNode(" " + label));
+      box.append(h);
+    }
     box.append(el("p", knob.grid.length + " settings tried · " + knob.name
       + " · matched within " + tol + " s of a planted event · "
       + nPlanted + " planted"
@@ -7545,9 +8209,6 @@ async function runTune() {
       + "instrument from one that degrades gracefully, and the two can share an "
       + "F1. Simulated events only — nothing here is a measurement of a "
       + "preparation.", "caveat"));
-  } finally {
-    btn.textContent = "Sweep"; btn.disabled = false;
-    paintTuneWhat();
   }
 }
 

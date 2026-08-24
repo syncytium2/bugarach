@@ -8,8 +8,39 @@ filed: 2026-08-21
 Tony, 2026-08-21, while driving the deployed page: *"hold until I say go. these
 are notes while using the app … store these, then wait for my go."*
 
-**Nothing here is implemented.** The list is open and more may arrive; the call
-sites are recorded so acting on it later does not start with a hunt.
+The list is open and more may arrive; the call sites are recorded so acting on it
+later does not start with a hunt.
+
+## Where each one stands, 2026-08-23
+
+Every note has been built. What is left is not code: it is four choices that
+change what a step MEANS, and each of them is Tony's. They are listed here
+rather than guessed at, and each is argued under its own note below.
+
+| | note | state |
+|---|---|---|
+| 1 | window legend | **done** — the swatch carries both channels, is labelled `Analysis windows`, and now draws the trim or shows there is none |
+| 2 | "no detector involved" | **done** — the chip no longer claims it |
+| 3 | define K in the control | **half** — the control defines K; count-versus-percent is open |
+| 4 | region selector | **half** — the menu says whose periods it lists; what the menu should BE is open |
+| 5 | header wastes vertical | **done** |
+| 6 | nothing happens on Assess | **done** — the chip persists, and says "ran · window too short" where nothing could be measured |
+| 7 · 10 · 11 | panel order | **done** — one move, `SECTIONS` and the DOM in step |
+| 8 | assess the whole folder | **done** — 84 of 84 in 10.2 s with the CLI's own progress line; whether it should aim the simulator is open |
+| 9 | detect "all" + settings together | **done** — including the folder run, which ignored the tick list until 2026-08-23 |
+| 12 | tune selector | **done** — its own tick list, LoCo and CICADA marked costly; whether the two lists are linked is open |
+
+**The four open choices, gathered.** Each needs a person who knows what the tool
+is for; none of them is blocked on anything but that.
+
+- **K as a count or a percent** (note 3). Measured. A straight swap clamps to the
+  3-ROI floor on small fields and forks from `assess.DEFAULT_MIN_ROIS`.
+- **What the assessor's region menu should be** (note 4). It serves two jobs with
+  one control; naming the list is all that has been done.
+- **Whether the folder assessment aims the simulator** (note 8). A data set median
+  in place of one recording's numbers changes what the accept step means.
+- **Whether Tune's tick list and Detect's are one preference or two** (note 12).
+  Built as two, because two cannot lose data; linking them is one line.
 
 ---
 
@@ -43,6 +74,24 @@ same, no analysis window was sent"* — a key drawn for the first branch has to
 stay honest under the second, where the shading and the bar are deliberately the
 same extent. Whatever the swatch shows must not imply a distinction the folder
 did not make.
+
+### Landed 2026-08-23 — and the watch-out was the harder half
+
+The swatch carries both channels and the legend takes the accordion head's own
+words. What that left, and what this pass fixed, is the warning above: the
+swatch drew a saturated rail over a pale field on **every** folder, including
+the ones that never made the distinction — and this lab's export is exactly that
+case, 238 regions with not one analysis window among them. So the picture
+asserted a trim the folder had not sent, in the key explaining what a trim looks
+like.
+
+The shading is its own box now, so it can stop short of the rail above it, and
+that gap *is* the trim. Three states rather than two, because there are three:
+no analysis window sent · one sent that trims nothing · one sent that trims. The
+first two draw one extent and say which of the two they are; only the third
+insets. Decided per window, not per recording — one folder can trim one period
+and not the next, and a single flag would draw a trim on the period that has
+none.
 
 ---
 
@@ -235,6 +284,43 @@ Tony's "one additional region" is exactly the second job. The open choice is
 whether that is a second control, or a menu that separates the two groups
 visually rather than tagging each entry with a disclaimer.
 
+### Half of it landed 2026-08-23: the list says whose periods it is
+
+The unambiguous half — *"whatever the list becomes, it should say whose periods
+it is showing"* — is built, and it is built by **naming, not filtering**. The
+recording's own periods sit in an `<optgroup>` labelled `declared by
+20240708_13`, and a line under the control says the same in a sentence for the
+reader who never opens the dropdown: which periods this recording declares, that
+another recording declares different ones, that any of them can be measured, and
+that only a baseline can set the simulator.
+
+Nothing was removed. Measuring TTX and comparing it to baseline is legitimate,
+the code says so in terms, and the guard that matters — `simulateFromMeasurement`
+refusing a non-baseline outright — was already there.
+
+### Still open, and it needs Tony: what the menu should BE
+
+The panel does two jobs with one control and this pass did not change that. Four
+questions, none of them answerable from the code:
+
+1. **Should the default list be baseline + full trace only**, as Tony first
+   asked, with everything else behind a second control? That is a smaller menu
+   and a second thing to find.
+2. **Or one menu in two groups** — the calibration source, then "or look at one
+   of these" — which is what the `<optgroup>` split above is one step away from
+   and needs no second control.
+3. **Is "one additional region" a limit or an example?** A limit of one needs a
+   reason; the panel measures one region at a time either way.
+4. **Does the "first region if not called baseline" fallback ever fire?** All 84
+   recordings in this export declare a `baseline`, so it is for other labs, and
+   `isBaselineLabel` already matches on a token prefix. Worth keeping — but
+   whether an unnamed first region should be *offered as* the baseline, rather
+   than merely measurable, is the same two-jobs question in miniature.
+
+The reason to stop here rather than pick one: every option changes what the
+panel is FOR, and the panel is named after the job it might stop doing by
+default.
+
 ---
 
 ## 5 · The header wastes the vertical space the sidebar needs
@@ -371,6 +457,38 @@ the page. That is genuinely a progress-bar job, unlike note 6.
 median rather than one recording's numbers), which is a real change to what the
 accept step means and is Tony's call, not a port detail.
 
+### Landed 2026-08-23 — and it is faster than the arithmetic said
+
+`Assess all 84 recordings` sits under `Assess this recording`, and it is the
+Python's rule rather than the panel's: baseline regions only, the producer's
+analysis window where one is stated, a recording with regions and no baseline
+**skipped and named**, and the folder's whole vocabulary tallied and printed so
+the skip is visible.
+
+Driven on `2026-08-18_revised_2v_periods`, served: **10.2 s, 84 of 84 measured,
+none skipped, none under the floor** — against the ~15 s the 185 ms figure
+predicted. Still far too long for a button that greys out and says nothing, so
+the progress line is `cli._progress`'s own, word for word:
+
+    assessing: 17/84 · 20241120_94 (1s, ~5s left)
+    assessing: 84/84 in 10s
+
+The tally it prints is the same one this note recorded by hand — baseline 84,
+high K+ 60, TTX 38, senktide 35, SB222200 12, wash 9 — which is the check that
+the port reads the folder the same way the command does.
+
+**What it reports that one recording cannot.** A per-K median across the folder,
+and the field's typical background rate as the *median of each recording's
+MEAN* — 9.9 mHz per ROI over 32 ROIs — because the simulator's rate box means the
+mean and handing it a median of medians is the defect the single-recording path
+already paid for.
+
+**The open question is still open, deliberately.** The panel prints the folder's
+number and says in as many words that the accept step still aims the simulator
+from one recording, and that which of the two should aim it is not the port's
+decision. A port that quietly rewired the accept step would have made the call
+this note reserves.
+
 ## 9 · Detect should offer "all", and the settings should be visible together
 
 > *"detect should have the option to select all. maybe a popup window with all of
@@ -430,6 +548,27 @@ writes `DETECT.rows` for the one run; with six detectors live it becomes the sam
 shape `analyseFolder` already emits for the folder, which would make the two
 buttons the same file at different scopes — a simplification rather than a new
 format.
+
+### The half that was missed the first time, landed 2026-08-23
+
+Running several here landed with `chosenDetectors()` and a lane each. **The
+folder run did not read it.** `analyseFolder` took `Object.keys(DETECTORS)`
+whatever the tick list said, so the one control on the panel governed the raster
+and not the file — and the file is the artifact people keep. A minute of work
+that cannot be scoped is also a minute nobody can shorten.
+
+It reads the same accessor now, so the picture and the export cannot disagree
+about what "all the ticked detectors" means. Three consequences worth knowing:
+
+- **the default changed.** With "run several" unticked the folder run does one
+  detector, where it used to do six. So the button says what it will run
+  *before* it is pressed — a minute-long button whose scope is discoverable only
+  afterwards is how somebody exports the wrong thing and finds out from a slide.
+- **a detector that did not run gets no column.** Blank is a third answer beside
+  "found nothing" and "could not run", and not one this page is entitled to give.
+- **an empty tick list is refused**, in the words `bugarach detect` uses: nothing
+  scored is a failed run, nothing found is a result, and a header-only file blurs
+  them.
 
 ## 10 · Simulate belongs next to Tune
 
@@ -581,6 +720,44 @@ nothing about authorship.
 from Detect (note 7 already moves it), and whether a detector deselected here
 should also drop out of the Detect step's "all" (note 9) — one preference, or
 two?
+
+### Landed 2026-08-23, and the timings came out steeper than the estimate
+
+Tune has its own tick list, built from the registry with LoCo and CICADA marked
+`slow` — a neutral list with the costly ones named, which is what this note
+argued for and what avoids a label that would understate the authorship. The
+sweep runs each ticked detector in turn, prints one block per detector under a
+line naming the scope, and reports elapsed at the end.
+
+Measured on four simulated 45-minute recordings, in the served page: **the cheap
+four in 0.8 s, all six in 6.2 s.** So unticking two of six is not a preference,
+it is 7.5x, and the panel used to show one static "Sweeping…" over the whole of
+it.
+
+**The progress line reports position and elapsed and no ETA, deliberately.** The
+folder walk of note 8 can divide elapsed by recordings done because recordings
+cost about the same. Detectors do not — a remaining-time figure taken before
+CICADA starts would be wrong by an order of magnitude and would be believed. The
+cost markers beside the ticks are where the reader learns the shape of what is
+left, and the panel names the slow ones in the sentence under the button, before
+the click.
+
+**One preference, or two? Built as two.** Unticking CICADA to get a sweep back in
+a second must not silently drop it from the folder export an hour later. Fitting
+an operating point and using one are different decisions, and two lists cannot
+lose data where one can. The defaults are shared, so the page still has one
+opinion about which detectors a reader meets first. **If Tony wants them linked,
+linking them is one line** — the argument against is a comment beside the second
+list rather than a thing to rediscover.
+
+**Not folded into the scoreboard, and that is a deferral rather than a
+disagreement.** This note is right that the multi-select subsumes
+`scoreAllDetectors`, and the merge is easier now than it will be later. But the
+scoreboard is still hidden behind its own copy review
+(`2026-08-20-the-scoreboard-copy-needs-review.md`), and folding it into a live
+panel would publish copy that review has not seen. `sweepDetector` is split out
+of the orchestrator with that merge in mind: the scoreboard's loop is the same
+one at a different width.
 
 ---
 

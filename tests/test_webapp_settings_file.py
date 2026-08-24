@@ -134,7 +134,11 @@ PICK = """async (name) => {
 }"""
 
 RUN_FOLDER = """async () => {
+  // Every detector, asked for rather than assumed: the folder run reads the
+  // tick list now, and three of the six are unticked by default.
   document.getElementById("dAll").checked = true;
+  for (const k of Object.keys(DETECTORS))
+    document.getElementById("dPick_" + k).checked = true;
   paintDetectorChoice();
   await analyseFolder();
   return {settings: settingsCsv(runSettingsRows(FOLDER_RUN.thresholds)),
