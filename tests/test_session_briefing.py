@@ -130,6 +130,40 @@ def test_with_no_variable_and_no_dropbox_it_says_exports_are_skipped(tmp_path):
     assert "python -m bugarach.paths" in out.stdout, "say how to look into it"
 
 
+def test_it_surfaces_work_that_is_finished_and_waiting_on_a_person(briefing):
+    """`open` cannot say "done, awaiting a human" -- so that kind drowned.
+
+    The PySpike report was finished, verified and correct for twelve days while
+    nothing in the repo said it was ready to go out. `waiting-on-tony` is the
+    status for work no session can advance, and this asserts it reaches the top
+    of the briefing with its one action attached, rather than sitting at line 31
+    of fifty open threads.
+    """
+    out, _ = briefing
+    waiting = [p for p in sorted((ROOT / "docs" / "todo").glob("*.md"))
+               if p.name != "README.md" and "status: waiting-on-tony" in p.read_text()]
+    assert waiting, "no waiting-on-tony items -- if that is real, delete this test"
+    assert "waiting on Tony" in out.stdout
+    # README documents the format, so it carries the frontmatter as an example and
+    # reported itself as a waiting item on the first run. It must not come back.
+    assert "docs/todo/README.md" not in out.stdout
+    for item in waiting:
+        assert item.name in out.stdout, f"{item.name} never reached the briefing"
+        action = [ln for ln in item.read_text().splitlines()
+                  if ln.startswith("waiting: ")]
+        assert action, f"{item.name} has no `waiting:` line saying what to do"
+        assert action[0][len("waiting: "):][:40] in out.stdout, \
+            f"{item.name}'s action line never printed"
+
+
+def test_waiting_items_come_before_the_fifty_open_ones(briefing):
+    """Position is the whole point: a loud line after fifty quiet ones is quiet."""
+    out, _ = briefing
+    if "waiting on Tony" not in out.stdout:
+        pytest.skip("no waiting-on-tony items right now")
+    assert out.stdout.index("waiting on Tony") < out.stdout.index("open threads:")
+
+
 def test_it_is_wired_into_both_session_start_matchers():
     """Wired as its own entry so the vendored generic hook stays byte-identical
     and re-copyable, and placed FIRST so the binding facts land even if the
