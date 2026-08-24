@@ -109,28 +109,65 @@ class SyncDetection:
         return self.locs.size
 
 
+#: The two things called "adaptive" here, because they are not the same thing
+#: and this project has already shipped the confusion (2026-08-24).
+#:
+#: 1. **The ISI-adaptive coincidence window.** τ for a spike pair is the minimum
+#:    of the four surrounding half-ISIs, capped at ``tau_max``. This is core
+#:    SPIKE-synchronization — the thing that makes the measure rate-free — and it
+#:    is what :func:`adaptive_profile` computes. ``tau_mode`` toggles it.
+#: 2. **The Satuvuori 2017 adaptive time scale (MRTS).** A separate extension,
+#:    passed to cSPIKE's ``AdaptiveSPIKESynchroProfile`` as its ``threshold``
+#:    argument. **interface2's wrapper passed it as 0 — disabled — while calling
+#:    the code path "adaptive"**, so it has never been on in this lineage and is
+#:    not implemented here. ``RateDetect.m`` names the same profile
+#:    ``mean_C_nonadaptive``, which is the MATLAB agreeing with that reading in
+#:    one field name while its function name says the opposite.
+#:
+#: So "adaptive" without a qualifier is unanswerable, and the honest label for
+#: what runs by default is **ISI-adaptive**. Kreuz is being asked which the
+#: software should say; see
+#: ``docs/todo/2026-08-24-kreuz-answered-the-spike-synch-questions-in-april.md``.
+TAU_MODES = ("adaptive", "fixed")
+
+
 def adaptive_profile(
-    trains: list[np.ndarray], t_range: tuple[float, float], tau_max: float
+    trains: list[np.ndarray], t_range: tuple[float, float], tau_max: float,
+    tau_mode: str = "adaptive",
 ) -> tuple[np.ndarray, np.ndarray]:
     """Per-spike tau-capped SPIKE-synchronization profile (x, C), pooled over
     all trains and sorted ascending in time. C = coincident-pair count /
-    (n_trains - 1)."""
+    (n_trains - 1).
+
+    ``tau_mode="adaptive"`` (default, and the only behaviour before 2026-08-24)
+    derives τ from the surrounding half-ISIs, capped. ``"fixed"`` uses the cap
+    for every spike, which is ordinary fixed-window coincidence detection: a
+    dense stretch no longer tightens its own window, so a busy ROI looks
+    coincident with more of what surrounds it. **The default is not up for
+    quiet revision** — every committed fixture and
+    ``bench.OPERATING_POINTS["sync"]`` was measured with the adaptive window.
+    """
+    if tau_mode not in TAU_MODES:
+        raise ValueError(f'tau_mode must be one of {TAU_MODES}, got "{tau_mode}"')
     # cSPIKE's SpikeTrainSet drops duplicate spike times WITHIN a train
     ev = [np.unique(v) for v in clip_sorted(trains, t_range[0], t_range[1])]
     n = len(ev)
     span = t_range[1] - t_range[0]
     true_max = min(span, 2.0 * tau_max) if tau_max > 0 else span
     cap_half = true_max / 2.0
+    adaptive = tau_mode == "adaptive"
 
     counts = [np.zeros(v.size) for v in ev]
     for i in range(n):
         a = ev[i]
         if a.size == 0:
             continue
-        # half-ISIs around each spike of a (edge neighbors default to the cap)
+        # half-ISIs around each spike of a (edge neighbors default to the cap).
+        # In "fixed" mode they stay at the cap, which is what a single-spike
+        # train already gets — the window stops responding to local density.
         a_prev = np.full(a.size, cap_half)
         a_next = np.full(a.size, cap_half)
-        if a.size > 1:
+        if adaptive and a.size > 1:
             d = np.diff(a) / 2.0
             a_prev[1:] = d
             a_next[:-1] = d
@@ -140,7 +177,7 @@ def adaptive_profile(
                 continue
             b_prev = np.full(b.size, cap_half)
             b_next = np.full(b.size, cap_half)
-            if b.size > 1:
+            if adaptive and b.size > 1:
                 d = np.diff(b) / 2.0
                 b_prev[1:] = d
                 b_next[:-1] = d
@@ -224,6 +261,7 @@ def sync_detect(
     *,
     tau_max: float,
     max_gap: float,
+    tau_mode: str = "adaptive",
     C_threshold: float = 0.1,
     C_min: float = 0.1,
     min_n: int = 3,
@@ -251,7 +289,7 @@ def sync_detect(
         raise ValueError('synchrony_statistic must be "max" or "mean"')
 
     ev = clip_sorted(trains, t_range[0], t_range[1])
-    px, py = adaptive_profile(trains, t_range, tau_max)
+    px, py = adaptive_profile(trains, t_range, tau_max, tau_mode=tau_mode)
     cx, cy, cn = binned_synchrony(px, py, dt, t_range, synchrony_statistic)
     n2 = cy.size
 
@@ -318,6 +356,7 @@ def sync_detect(
 
     settings = {
         "tau_max": tau_max, "max_gap": max_gap, "dt": dt,
+        "tau_mode": tau_mode,
         "C_threshold": C_threshold, "C_min": C_min, "min_n": min_n,
         "synchrony_statistic": synchrony_statistic,
         "detection_mode": detection_mode,

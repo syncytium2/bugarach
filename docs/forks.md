@@ -431,6 +431,58 @@ thought (§4a), and it is the instrument for whatever replaces it.
 
 ---
 
+## 11 · SPIKE-synch's coincidence window: ISI-adaptive (live) vs fixed
+
+**Live:** `sync_detect(..., tau_mode="adaptive")`, the only behaviour before
+2026-08-24. τ for a spike pair is the minimum of the four surrounding half-ISIs,
+capped at `tau_max`, so a dense stretch tightens its own window.
+
+**Alternative:** `tau_mode="fixed"` — every spike uses the cap. Ordinary
+fixed-window coincidence detection: a busy ROI looks coincident with more of what
+surrounds it, which is the promiscuity the cap bounds and the adaptive window
+removes.
+
+**Why it exists at all:** *"the adaptive should be toggleable"* (Tony,
+2026-08-24), after an interface2 audit found their cSPIKE wrapper passing
+**Satuvuori 2017's adaptive time-scale argument as 0** — disabled — while calling
+that code path "adaptive". **Two different things are called adaptive here**, and
+only one has ever run:
+
+| the name | what it is | state |
+| --- | --- | --- |
+| ISI-adaptive window | core SPIKE-synchronization; τ from local half-ISIs | **live**, and now toggleable |
+| Satuvuori MRTS | a separate extension, cSPIKE's `threshold` argument | **never on**, not implemented here |
+
+`RateDetect.m` calls the very same profile `mean_C_nonadaptive`, so the MATLAB
+agrees with that reading in a field name while its function name says the
+opposite. The toggle exists so the app can state which window produced a number
+instead of inheriting a word that resolves to neither.
+
+**Why the default did not move:** every committed fixture and
+`bench.OPERATING_POINTS["sync"]` was measured with the adaptive window, and the
+ISI-adaptive window *is* the measure rather than an option on it — a fixed window
+makes SPIKE-synchronization rate-dependent, which is the property it exists not to
+have. **Tony has said he can be argued either way**, so this is a default held on
+evidence, not a closed question.
+
+**To flip:** change the `tau_mode` default in `adaptive_profile` and
+`sync_detect`. The parity fixtures come from cSPIKE output at the adaptive
+window, so flipping the default **breaks parity** and needs them regenerated —
+MATLAB, an interface2 checkout, fork #1's cost. Flipping it per call costs
+nothing, which is what the toggle is for.
+
+**Watch for:** a `tau_mode` reaching a *result* without reaching
+`detector_settings.csv`. `sync_detect` puts it in `settings` and
+`test_adaptive_is_the_default_and_the_settings_say_which_ran` pins it, because a
+run whose window nobody recorded is not reproducible.
+
+**Not yet in the browser.** The viewer carries its own JS profile
+(`adaptiveProfile` in `raster_viewer.html`) which still computes only the
+adaptive window, under a curve labelled *"SPIKE-synch C (adaptive)"*. Filed:
+[`todo/2026-08-24-the-browser-cannot-toggle-tau-mode.md`](todo/2026-08-24-the-browser-cannot-toggle-tau-mode.md).
+
+---
+
 ## What is still genuinely open
 
 Not forks — nobody has taken a side.
