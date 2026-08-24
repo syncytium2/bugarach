@@ -142,6 +142,11 @@ RUN_FOLDER = """async () => {
   paintDetectorChoice();
   await analyseFolder();
   return {settings: settingsCsv(runSettingsRows(FOLDER_RUN.thresholds)),
+          // THE OTHER SETTINGS ROUTE — what the reader has typed, over the whole
+          // registry, rather than what this run happened to execute. It is where
+          // a detector the build withholds can still be checked for the shape of
+          // its rows, which is why the SPIKE-synch grid guard below reads it.
+          saved: settingsCsv(savedSettingsRows()),
           run: runJson(FOLDER_RUN),
           rows: FOLDER_RUN.rows.length,
           saveEnabled: !document.getElementById("saveSettingsCsv").disabled};
@@ -181,9 +186,16 @@ def test_the_settings_read_back_through_the_library_keyed_by_detector_and_stream
     downstream uses; a file it cannot parse is a second dialect of one table."""
     got = _settings(ran["settings"], tmp_path)
     assert got, "read_detector_settings got nothing out of the browser's file"
+    # FIVE, NOT SIX. `sync` carries `unavailable` since 2026-08-24, so nothing on
+    # the page can tick it and no run produces settings rows for it. A row here
+    # would say a detector ran when it did not — the settings file records what
+    # this run executed, not what the registry holds.
     assert set(got) == {("rate", "slow"), ("sce", "slow"), ("coact", "slow"),
-                        ("loco", "slow"), ("cicada", "slow"), ("sync", "slow")}, (
+                        ("loco", "slow"), ("cicada", "slow")}, (
         f"the keys are not (detector, stream) pairs for the run: {sorted(got)}")
+    assert ("sync", "slow") not in got, (
+        "SPIKE-synch is off in this build and must not appear in a settings "
+        "file describing a run it could not take part in")
 
 
 def test_every_detector_that_ran_records_the_parameters_it_ran_with(ran, tmp_path):
@@ -214,8 +226,15 @@ def test_spike_synch_records_the_grid_it_actually_used(ran, tmp_path):
     the detector and the width its hysteresis thresholds were calibrated at.
     Dropping it left SPIKE-synch the one detector whose settings rows named no
     grid at all.
+
+    **Read off the saved-settings route rather than the run**, since 2026-08-24:
+    the detector is off in this build, so no run produces rows for it, and the
+    guard would otherwise vanish with the thing it guards — waiting to be
+    rediscovered the day somebody turns it back on. `savedSettingsRows()` covers
+    the whole registry, which is what makes it the right place for a fact about
+    the shape of a detector's rows rather than about a particular run.
     """
-    got = _settings(ran["settings"], tmp_path)
+    got = _settings(ran["saved"], tmp_path)
     sync = got[("sync", "slow")]
     assert "profileBinSec" in sync, (
         "SPIKE-synch's settings rows name no grid, and its grid is a parameter "

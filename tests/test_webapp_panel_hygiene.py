@@ -43,10 +43,25 @@ def _go(pg, step: str):
 def _show_every_detector(pg):
     """Tick "run several" and every detector in it, which is what puts all six
     parameter blocks on the screen at once — and the only way the two surrogate
-    boxes are both reachable."""
+    boxes are both reachable.
+
+    A DETECTOR THIS BUILD WITHHOLDS IS UNHIDDEN DIRECTLY rather than ticked. Its
+    box is disabled, so ``pg.check`` waits for it to become checkable and times
+    out — which is the disable working, and is asserted properly in
+    ``test_webapp_sync_unavailable.py``. But hygiene is a property of the DOM
+    rather than of what a reader may select: a duplicate id inside a block
+    nobody can currently reach is still a duplicate id, and it becomes reachable
+    again the day the field comes off the registry row. Dropping the block from
+    the scan would retire that coverage silently, so it is shown the short way.
+    """
     _go(pg, "accDetect")
     pg.check("#dAll")
     for k in ("rate", "sce", "coact", "loco", "cicada", "sync"):
+        if pg.evaluate("k => !!offReason(k)", k):
+            pg.evaluate(
+                "k => { document.getElementById(DETECTORS[k].ctl).hidden = false; }",
+                k)
+            continue
         pg.check(f"#dPick_{k}")
 
 

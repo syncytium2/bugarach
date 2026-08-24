@@ -336,6 +336,11 @@
                  font-size: 12.5px; }
   .picks .dot { width: 9px; height: 9px; border-radius: 2px; flex: none; }
   .picks .cost { color: var(--muted); font-size: 11px; }
+  /* A SEPARATE CLASS FROM `.cost`, because they answer different questions: one
+     is what a detector will cost you, the other is that you cannot have it. A
+     reader scanning for the slow ones must not find this in the same list. */
+  .picks .off { color: var(--muted); font-size: 11px; font-style: italic; }
+  .picks label:has(input:disabled) { opacity: 0.55; cursor: not-allowed; }
   #wins i { font-style: normal; color: var(--fg); }
   canvas { width: 100%; display: block; }
   /* the annotation stage: a header line, the candidate, then the verdict row */
@@ -6798,18 +6803,27 @@ function paintFolderRun() {
      columns over a run of three does not merely look odd — the three it never
      ran show as blank, which is a third answer beside "found nothing" and
      "could not run", and it is not one this page is entitled to give. */
-  const ran = run.detectors || Object.keys(DETECTORS);
+  const ran = run.detectors || runnableDetectors();
   box.textContent = "";
-  box.append(el("h4", ran.length === Object.keys(DETECTORS).length
+  /* "ALL" MEANS ALL THE ONES THIS BUILD CAN RUN, and the off ones are named
+     separately rather than folded into "unticked". A reader who left everything
+     ticked and got five columns is owed the difference between a detector they
+     declined and one the build withheld — the second is not their doing and not
+     something a tick could undo. */
+  const off = Object.keys(DETECTORS).filter(k => offReason(k));
+  const unticked = runnableDetectors().filter(k => !ran.includes(k));
+  box.append(el("h4", ran.length === runnableDetectors().length
     ? "The folder, all detectors" : "The folder, " + ran.length + " detectors"));
   box.append(el("p", run.slices.length + " recording(s) · "
     + ran.map(k => DETECTORS[k].label).join(", ") + " · " + run.rows.length
     + " row(s)"
-    + (ran.length < Object.keys(DETECTORS).length
-        ? " — the unticked "
-          + Object.keys(DETECTORS).filter(k => !ran.includes(k))
-              .map(k => DETECTORS[k].label).join(", ")
+    + (unticked.length
+        ? " — the unticked " + unticked.map(k => DETECTORS[k].label).join(", ")
           + " did not run and are not in the file"
+        : "")
+    + (off.length
+        ? " — " + off.map(k => DETECTORS[k].label).join(", ")
+          + " is off in this build and could not be ticked"
         : ""), "sub"));
 
   const tbl = document.createElement("table");
@@ -7470,6 +7484,26 @@ const DETECTORS = {
     label: "SPIKE-synch",
     blurb: "how aligned",
     ctl: "dSyncCtl", fine: "dFineSync",
+    /* OFF IN THIS BUILD (Tony, 2026-08-24). The page keeps the whole detector —
+       `syncDetect` still runs, its parity test still calls it, and a
+       `detections.csv` that already holds sync rows still draws — but nothing on
+       the page can SELECT it, so no new run produces one.
+
+       Why it is a field and not a deletion. Removing the row would take the
+       parity harness, the ability to read back an older file, and the reason
+       with it, leaving a page that is silently missing a detector nobody can
+       ask about. `unavailable` says which detector, and why, on the control
+       that would otherwise offer it. Same principle as the rail's `gated`: not
+       in this build, drawn anyway, with the absence explained rather than
+       hidden. Deleting the row is a different change and wants its own argument.
+
+       To turn it back on, delete this one field. */
+    unavailable: "The Python gained a fixed-window mode for the coincidence "
+      + "window and this page did not, so 'adaptive' on the page means one of "
+      + "two things. The page's profile is a second implementation rather than "
+      + "a copy of the Python's, and unlike the scorer nothing pins the two "
+      + "together — so they could already have drifted and no test would say "
+      + "so. Off until a profile parity test exists.",
     /* THE ONLY `read` WITH NO `gridDt`, and the only one that needs none: its
        bin width is the detector's own calibrated resolution rather than the
        recording's frame interval. See SYNC_PROFILE_BIN_SEC. Because it is a
@@ -7501,8 +7535,21 @@ const DETECTORS = {
   },
 };
 
-const whichDetector = () =>
-  DETECTORS[document.getElementById("dDet").value] ? document.getElementById("dDet").value : "rate";
+/* SELECTABLE, which is not the same as present. A row carrying `unavailable` is
+   still in the registry — it draws old rows, it answers `DETECTORS[k].label`,
+   and its detect function is still callable — but nothing may choose it to run.
+   Every site below that picks detectors goes through here rather than reading
+   the registry directly, so turning one back on is deleting one field. */
+const offReason = k => (DETECTORS[k] || {}).unavailable || null;
+const runnableDetectors = () => Object.keys(DETECTORS).filter(k => !offReason(k));
+
+const whichDetector = () => {
+  const v = document.getElementById("dDet").value;
+  // Falls back to `rate` for an unavailable value the same way it does for an
+  // unknown one: the select should never hold one — its option is disabled —
+  // but a stale saved value must not be able to start a run either.
+  return DETECTORS[v] && !offReason(v) ? v : "rate";
+};
 
 function paintDetectorChoice() {
   const which = whichDetector();
@@ -7613,7 +7660,7 @@ function detectOne(which, data, segs, dt, identity, sliceId) {
 function chosenDetectors() {
   const all = document.getElementById("dAll");
   if (all && all.checked)
-    return Object.keys(DETECTORS).filter(k => {
+    return runnableDetectors().filter(k => {
       const box = document.getElementById("dPick_" + k);
       return !box || box.checked;
     });
@@ -7795,6 +7842,14 @@ function paintDetectPanel(data, runs, streams) {
   for (const [k, d] of Object.entries(DETECTORS)) {
     const o = document.createElement("option");
     o.value = k; o.textContent = d.label + " — " + d.blurb;
+    // Listed, disabled, and saying so in the option itself — a reader who came
+    // looking for this detector finds it and finds out why, instead of finding
+    // a shorter list and wondering whether they misremembered.
+    if (offReason(k)) {
+      o.disabled = true;
+      o.textContent += " — off in this build";
+      o.title = offReason(k);
+    }
     sel.append(o);
   }
 }
@@ -7817,13 +7872,15 @@ const DET_SLOW = new Set(["loco", "cicada"]);
     const lab = document.createElement("label");
     const cb = document.createElement("input");
     cb.type = "checkbox"; cb.id = "dPick_" + k;
-    cb.checked = DET_DEFAULT_ON.includes(k);
+    cb.checked = DET_DEFAULT_ON.includes(k) && !offReason(k);
+    if (offReason(k)) { cb.disabled = true; lab.title = offReason(k); }
     cb.addEventListener("change", paintDetectorChoice);
     const dot = document.createElement("span");
     dot.className = "dot";
     dot.style.background = DET_COLORS[k] || "";
     lab.append(cb, dot, document.createTextNode(d.label));
     if (DET_SLOW.has(k)) lab.append(el("span", "slow", "cost"));
+    if (offReason(k)) lab.append(el("span", "off in this build", "off"));
     box.append(lab);
   }
 }
@@ -7849,13 +7906,15 @@ const DET_SLOW = new Set(["loco", "cicada"]);
     const lab = document.createElement("label");
     const cb = document.createElement("input");
     cb.type = "checkbox"; cb.id = "tPick_" + k;
-    cb.checked = DET_DEFAULT_ON.includes(k);
+    cb.checked = DET_DEFAULT_ON.includes(k) && !offReason(k);
+    if (offReason(k)) { cb.disabled = true; lab.title = offReason(k); }
     cb.addEventListener("change", () => { clearTune(); paintTuneWhat(); });
     const dot = document.createElement("span");
     dot.className = "dot";
     dot.style.background = DET_COLORS[k] || "";
     lab.append(cb, dot, document.createTextNode(d.label));
     if (DET_SLOW.has(k)) lab.append(el("span", "slow", "cost"));
+    if (offReason(k)) lab.append(el("span", "off in this build", "off"));
     box.append(lab);
   }
 }
@@ -7863,7 +7922,7 @@ const DET_SLOW = new Set(["loco", "cicada"]);
 /** Which detectors the sweep will visit — registry order, never tick order, so
     two runs of the same selection print their blocks in the same sequence. */
 function sweptDetectors() {
-  return Object.keys(DETECTORS).filter(k => {
+  return runnableDetectors().filter(k => {
     const box = document.getElementById("tPick_" + k);
     return box && box.checked;
   });
@@ -8159,6 +8218,15 @@ async function scoreAllDetectors() {
       const D = DETECTORS[which];
       say("Scoring " + D.label + "…");
       await new Promise(r => setTimeout(r, 0));
+      /* A detector this build withholds gets a refused row too, and for the
+         same reason the peaks case does: a comparison table that silently drops
+         a row invites the reading that the missing detector lost. It did not
+         compete. The reason travels with the row. */
+      if (offReason(which)) {
+        rows.push({ which, label: D.label,
+                    refused: "off in this build — " + offReason(which) });
+        continue;
+      }
       // A detector that cannot run on this data set gets a row saying so rather
       // than a blank one or, worse, a zero that reads as a poor score.
       if (D.peaks && dataSet.some(c => c.peaks && c.peaks.why)) {
@@ -8502,11 +8570,20 @@ async function runTune() {
        a table of results whose scope the reader has to reconstruct from the
        block headings is a table that gets quoted with the wrong scope. */
     const scope = el("p", "", "sub");
+    /* "CARRIES" AND "CAN RUN" ARE NOW DIFFERENT NUMBERS, so the scope line says
+       both. Counting the off detector among the ones the reader declined to
+       tick would make the sweep look narrower by choice than it was. */
+    const runnable = runnableDetectors();
+    const offHere = Object.keys(DETECTORS).filter(k => offReason(k));
     scope.append(document.createTextNode(picks.map(k => DETECTORS[k].label)
-      .join(" · ") + " — of the " + Object.keys(DETECTORS).length
-      + " this page carries."
-      + (picks.length < Object.keys(DETECTORS).length
+      .join(" · ") + " — of the " + runnable.length
+      + " this page can run."
+      + (picks.length < runnable.length
           ? " The rest were not ticked and are not in this run."
+          : "")
+      + (offHere.length
+          ? " " + offHere.map(k => DETECTORS[k].label).join(", ")
+            + " is off in this build and could not be swept."
           : "")));
     box.append(scope);
 
