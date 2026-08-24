@@ -5181,9 +5181,12 @@ async function verifySimulation() {
     const short = [];
     for (const rec of RECORDINGS) {
       const data = await loadRecording(rec);
-      // The generator writes one stream; taking the first is exact here rather
-      // than a choice, and `analysisStreams` keeps that visible.
-      const stream = analysisStreams(data)[0];
+      // The stream chosen at the door, like everywhere else that analyses. The
+      // generator writes one stream, so on a simulated folder this is exact
+      // rather than a choice — but reading it through the same accessor is what
+      // stops a fifth place growing its own opinion about which stream to take.
+      const stream = analysisStream(data);
+      if (!stream) continue;
       const byRoi = data.streams.get(stream);
       const dur = Math.max(data.t1 - data.t0, 1);
       const trains = data.order.map(id =>
