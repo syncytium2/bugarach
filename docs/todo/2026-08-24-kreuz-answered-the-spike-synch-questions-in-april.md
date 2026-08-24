@@ -127,6 +127,12 @@ reference list as lineage rather than as the algorithm.
    ambiguous rather than plainly wrong: τ here really is ISI-adaptive, but
    `AdaptiveSPIKESynchroProfile`'s "Adaptive" means the Satuvuori extension that
    was off. **He answers email.** One question settles what the app should call it.
+   **A mail to him is already drafted and waiting** — [`docs/kreuz_note.md`](../kreuz_note.md),
+   paste-ready since 2026-08-11, asking whether a hard τmax is still PySpike's
+   intended semantics. **These are one email, not two.** That draft was reviewed as
+   it stands, so the "adaptive" paragraph needs writing and reviewing before it goes
+   in; [the filing todo](2026-08-11-file-pyspike-max-tau-issue.md) carries the note
+   for whoever sends it.
 3. **Resolve the three Kreuz-lab citations** (§2) before quoting any of them.
 4. **Fold C-over-E into the methods surface** (§1), whenever that surface exists —
    see question 3 of [the attribution note](2026-08-24-the-methods-are-not-ours-and-the-app-says-otherwise.md).
