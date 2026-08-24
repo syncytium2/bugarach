@@ -1,9 +1,23 @@
 # Handoff — the difficulty axis moved, and three guards fired — 2026-08-20
 
-**Filename is deliberately unique.** Several sessions are ending at once and a shared
+> **Archived 2026-08-24. This was `HANDOFF-difficulty-axis-and-synfire.md` at the
+> repo root** — where a handoff means *work is in flight* — and it sat there for
+> four days while its own next line said nothing was. The in-flight check was
+> returning a false positive. Nothing below is edited: it is what one session knew
+> on 2026-08-20, and correcting a dated account in place would turn it into an
+> undated claim. **Its open items are still open**, which is why it was moved
+> rather than deleted; see [the README](README.md).
+>
+> Since it was written: `bench.REGIMES` at the new endpoints is now canon
+> (FOUNDATIONS §9), and the detector this file calls **CICADA is called
+> [locust](../adr/0002-the-sixth-detector-is-called-locust.md)** — same detector,
+> same key, renamed 2026-08-24.
+
+**Filename was deliberately unique.** Several sessions were ending at once and a shared
 `HANDOFF.md` is a merge conflict per session; the last one to write also silently wins.
-If you are ending too, add `HANDOFF-<your-slug>.md` beside this rather than editing this
-file. **`ls HANDOFF*.md` is the check for "is anything in flight", not `cat HANDOFF.md`.**
+If you are ending too, add `HANDOFF-<your-slug>.md` **at the root** rather than beside
+this one. **`ls HANDOFF*.md` is the check for "is anything in flight", not
+`cat HANDOFF.md`** — which is exactly why this file is no longer up there.
 
 **Everything below is merged on `main`. No branch is waiting, nothing is half-done.**
 This exists because two things changed that a later session will otherwise trip over, and
