@@ -428,29 +428,61 @@ shapes cannot verify all of them.
 """
 
 
+def _version_name(commit: str) -> str:
+    """What to call this version to a reader: the release, not the sha.
+
+    `v0.1.0` on the tagged commit, `v0.1.0-8-g48db5f4` eight commits past it, and
+    the bare short sha in a repository with no tags at all. All three are honest
+    and the middle one is the most useful of them — it says which release the
+    page is near and how far past, which a sha alone cannot.
+
+    Until 2026-08-23 this repo had no tags, so the stamp showed a sha because a
+    sha was all there was. `git describe` needs no change when the next tag lands.
+
+    Deterministic for a commit **given the tags present**. Tagging an older commit
+    can change what a rebuild calls the same page, and that is right: the position
+    of a commit relative to releases is a fact about the repository, not about the
+    commit. Nothing depends on the string being stable —
+    `tools/site_staleness.py` reads the separate `built from <code>…</code>`
+    footer and the served bytes, never this.
+    """
+    out = subprocess.run(["git", "describe", "--tags", "--always", commit],
+                         cwd=ROOT, capture_output=True, text=True)
+    return out.stdout.strip() if out.returncode == 0 and out.stdout.strip() else commit
+
+
 def date_stamp(commit: str) -> str:
     """The visible footer line, identical on every page, and self-describing.
 
-    Carries the three facts as data attributes as well as prose. Anything asking
-    whether a deployed page is current — `tools/site_staleness.py` today — can
-    then read them off any page instead of parsing English out of the one footer
-    that happened to be hand-written.
+    Carries the facts as data attributes as well as prose. Anything asking whether
+    a deployed page is current — `tools/site_staleness.py` today — can then read
+    them off any page instead of parsing English out of the one footer that
+    happened to be hand-written.
+
+    ⚠ The text up to and including the version date is a **shared prefix**:
+    `docs/site/raster_viewer.html` writes its own stamp (it is copied
+    byte-for-byte and cannot be injected into) and `tests/test_site_viewer.py`
+    asserts the two phrase it the same way. Change the prefix and that page must
+    change with it; the tail after it is per-page and free.
     """
     born, version = _stamp_dates(commit)
+    name = _version_name(commit)
     return (f'<p class="site-dates" {STAMP_MARKER}="{born}"'
             f' data-bugarach-version-date="{version}"'
+            f' data-bugarach-version="{name}"'
             f' data-bugarach-commit="{commit}"'
             f' style="margin:1.5rem max(1.2rem, calc(50% - 23rem));'
             f'color:#666;font-size:.85rem">\n'
             f'  First published {born} · this version {version}'
-            f' (<code>{commit}</code>)\n</p>\n')
+            f' (<code>{name}</code>)\n</p>\n')
 
 
 def meta_stamp(commit: str) -> str:
-    """The same three facts in `<head>`, for the pages that have one."""
+    """The same facts in `<head>`, for the pages that have one."""
     born, version = _stamp_dates(commit)
     return (f'<meta name="bugarach:born" content="{born}">\n'
             f'<meta name="bugarach:version-date" content="{version}">\n'
+            f'<meta name="bugarach:version" content="{_version_name(commit)}">\n'
             f'<meta name="bugarach:commit" content="{commit}">\n')
 
 
