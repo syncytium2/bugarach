@@ -109,6 +109,14 @@ def page():
 
 RUN_FOLDER = """async (files) => {
   await open(files, {quiet: true});
+  /* THE FOLDER RUN OBEYS THE TICK LIST NOW (2026-08-23). It used to take every
+     detector whatever the Detect panel said, which made the one control on that
+     panel govern the raster and not the file. So a test that wants all six asks
+     for all six, the way a reader does. */
+  document.getElementById("dAll").checked = true;
+  for (const k of Object.keys(DETECTORS))
+    document.getElementById("dPick_" + k).checked = true;
+  paintDetectorChoice();
   await analyseFolder();
   return {csv: FOLDER_RUN ? detectionsCsv(FOLDER_RUN.rows) : null,
           run: FOLDER_RUN ? runJson(FOLDER_RUN) : null,

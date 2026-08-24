@@ -40,12 +40,19 @@ RUN = """async (sim) => {
   await runSim();
   document.getElementById("dDet").value = "rate";
   paintDetectorChoice();
+  /* THE SWEEP HAS ITS OWN TICK LIST NOW (2026-08-23) and no longer borrows the
+     Detect panel's chooser, so one detector is asked for rather than implied.
+     The first `p.sub` is the run's scope line — which detectors it covered —
+     and each block's own sub is the one after it. */
+  for (const k of Object.keys(DETECTORS))
+    document.getElementById("tPick_" + k).checked = (k === "rate");
   document.getElementById("tTol").value = "1.5";
   await runTune();
   const box = document.getElementById("tuneOut");
   return {
     head: box.querySelector("h4")?.textContent ?? "",
-    sub: box.querySelector("p.sub")?.textContent ?? "",
+    scope: box.querySelector("p.sub")?.textContent ?? "",
+    sub: [...box.querySelectorAll("p.sub")][1]?.textContent ?? "",
     verdicts: [...box.querySelectorAll("p.verdict")].map(p => p.textContent),
     bad: [...box.querySelectorAll("p.verdict.bad")].map(p => p.textContent),
     caveats: [...box.querySelectorAll("p.caveat")].map(p => p.textContent),
