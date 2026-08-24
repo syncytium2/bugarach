@@ -505,6 +505,60 @@ ISI-adaptive window, under a curve labelled *"SPIKE-synch C (adaptive)"*. Filed:
 
 ---
 
+## 12 · The background rate: a curve (live) vs a point
+
+**Live:** `bench.evaluate_background_curve` scores across `BACKGROUND_GRID` and
+`describe_background` reports *"F1 x at a mHz/ROI to y at b — spread s, so this
+score depends on the background rate and is NOT one number"*, or gives a bare F1
+when the curve really is flat. Nothing existing changed: `REGIMES` is untouched,
+no operating point moved, `evaluate` is unchanged.
+
+**Alternative:** keep quoting one number measured at one regime, as every
+published figure in `docs/learned/` still does.
+
+**Why the curve.** The same argument as #5, one axis over, and it lands in the
+opposite place. Five of six detectors were flat across `TOLERANCE_GRID`, so that
+inherited constant was granting slack nobody used — reassuring, and it made the
+curve cheap. **Across the background grid nothing is flat, and the ranking does
+not survive it:**
+
+| detector | F1 at quiet | F1 at busy | spread across the grid | vs the bake-off's top gap |
+|---|---|---|---|---|
+| CoactDetect | 0.710 | 0.628 | **0.307** | 18× |
+| LoCo | 0.681 | 0.659 | 0.248 | 15× |
+| binned SCE | 0.353 | 0.373 | 0.233 | 14× |
+| SPIKE-synch | 0.379 | 0.444 | 0.209 | 12× |
+| rate+context | 0.683 | 0.682 | 0.115 | 7× |
+| locust | 0.600 | 0.557 | 0.092 | 5× |
+
+The published bake-off asks readers to believe a **0.017** gap between its top two
+rows. The *smallest* background spread here is five times that.
+
+**And the winner changes between the two named endpoints** — CoactDetect at
+`baseline_quiet`, rate+context at `baseline_busy` — which are the interquartile
+spread of *untreated* slices rather than any treatment effect. CoactDetect goes
+from first to fifth across the grid. Compare #5's careful claim that the top of
+the tolerance table never moves: here it does, at rates this project fits and
+reports at.
+
+![Panel A, every detector's F1 against background rate on a log axis with the two REGIMES endpoints dashed: all six curves slope and several cross. Panel B, the same detectors' rank at each rate, with CoactDetect falling from first to fifth and rate+context rising to first](learned/background_curve.png)
+
+**Threshold:** `BACKGROUND_TOLERABLE_SPREAD = 0.05`, set at the scale of the
+differences the bake-off asks about. It refuses for all six today, and that is the
+finding rather than a threshold set too tight.
+
+**To flip:** call `evaluate(..., regime=...)` and quote one number —
+`describe_background` exists so nothing has to. Pinned by
+[`tests/test_background_curve.py`](../tests/test_background_curve.py), which also
+ties the curve to `evaluate` where the grid meets a regime, so the two cannot
+drift into being different measurements.
+
+**What this does not do:** move `REGIMES`, re-fit anything, or regenerate the
+stale numbers in `docs/learned/` — that is one pass and RESET §5 governs it.
+`docs/RESET.md` §7 item 2.
+
+---
+
 ## What is still genuinely open
 
 Not forks — nobody has taken a side.
