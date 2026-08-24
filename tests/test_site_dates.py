@@ -164,19 +164,29 @@ def test_the_stamp_prefix_is_the_one_the_viewer_page_writes_by_hand():
     The prefix is the contract. `tests/test_site_viewer.py` asserts it from the
     page's side; this asserts it from the build's, so a change to either is
     caught wherever it is made.
+
+    ⚠ It is the PHRASING that is shared, not the date. The viewer's version date
+    is the day **that page** last changed; the generated pages carry the day the
+    commit being built was made. Those are different numbers whenever the viewer
+    is not the most recent edit, which is almost always.
+
+    The first version of this test compared the two dates for equality. It passed
+    on the day the viewer page was last touched and went red at the next midnight
+    — in CI before locally, because `%cs` reads the commit's own timezone and the
+    runner is UTC. A sibling lane had fixed exactly that coin-toss in the
+    version-date gate hours earlier, and this test shipped with it anyway.
     """
-    # A real commit, because `_stamp_dates` of an invented sha has no date to
-    # read and degrades to "unknown" — which is correct behaviour and a useless
-    # thing to compare the page against.
+    # A real commit: `_stamp_dates` of an invented sha has no date to read and
+    # degrades to "unknown", which is correct and useless to compare against.
     head = subprocess.run(["git", "rev-parse", "--short", "HEAD"], cwd=ROOT,
                           capture_output=True, text=True).stdout.strip()
     if not head:
         pytest.skip("no git history here")
-    born, version = bs._stamp_dates(head)
-    prefix = f"First published {born} · this version {version}"
-    assert prefix in date_stamp(head)
+    shape = re.compile(
+        rf"First published {re.escape(SITE_BORN)} · this version \d{{4}}-\d\d-\d\d")
+    assert shape.search(date_stamp(head)), "the build stopped phrasing it this way"
     page = (ROOT / "docs" / "site" / "raster_viewer.html").read_text(encoding="utf-8")
-    assert prefix in page, (
+    assert shape.search(page), (
         "the viewer page no longer phrases its stamp the way build_site does — "
         "change both together or neither")
 
