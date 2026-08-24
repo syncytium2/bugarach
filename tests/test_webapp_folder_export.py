@@ -112,6 +112,8 @@ RUN_FOLDER = """async (files) => {
   await analyseFolder();
   return {csv: FOLDER_RUN ? detectionsCsv(FOLDER_RUN.rows) : null,
           run: FOLDER_RUN ? runJson(FOLDER_RUN) : null,
+          settings: FOLDER_RUN
+            ? settingsCsv(runSettingsRows(FOLDER_RUN.thresholds)) : null,
           text: document.getElementById("detectOut").innerText};
 }"""
 
@@ -178,10 +180,25 @@ def test_the_sidecar_carries_the_frame_interval_per_slice(exported):
         "a single frame interval was applied to a folder that sent two")
 
 
-def test_the_sidecar_records_each_detectors_settings(exported):
+def test_the_sidecar_records_each_detectors_settings_by_detector_and_stream(
+        exported):
+    """Keyed by BOTH, which is what the export contract asks for.
+
+    It used to be keyed by detector alone — a comment in the page said so — and
+    that was not a formatting difference. `emit.detector_settings_rows` gives the
+    reason in a line: a detector may run differently on the fast and slow
+    streams, and a table that could not say so makes one of the two
+    unreproducible.
+    """
     th = exported["run"]["thresholds"]
     assert set(th) >= {"rate", "sce", "coact", "loco"}, sorted(th)
-    assert th["rate"], "the rate detector's settings came out empty"
+    for name, by_stream in th.items():
+        assert isinstance(by_stream, dict) and by_stream, (
+            f"{name} recorded no settings at all: {by_stream!r}")
+        assert all(isinstance(v, dict) for v in by_stream.values()), (
+            f"{name}'s settings are not keyed by stream: {sorted(by_stream)}")
+    assert exported["run"]["stream"], (
+        "the sidecar does not name the stream the run was about")
 
 
 def test_the_settings_do_not_smuggle_in_one_recordings_frame_interval(exported):
@@ -197,17 +214,34 @@ def test_the_settings_do_not_smuggle_in_one_recordings_frame_interval(exported):
     settings are parameters rather than prose.
     """
     th = exported["run"]["thresholds"]
-    for name, params in th.items():
-        assert isinstance(params, dict), (
-            f"{name} recorded a rendered sentence rather than its parameters; "
-            "a sentence cannot be read back and this one carried a per-recording "
-            f"value: {params!r}")
-        assert "gridDt" not in params, (
-            f"{name} carries a frame interval, which varies per recording — "
-            "run.json records that per slice and must not also imply one "
-            "applied to the whole run")
-        flat = json.dumps(params)
-        assert "0.05" not in flat or "0.1" not in flat, flat
+    for name, by_stream in th.items():
+        for stream, params in by_stream.items():
+            assert isinstance(params, dict), (
+                f"{name}/{stream} recorded a rendered sentence rather than its "
+                "parameters; a sentence cannot be read back and this one "
+                f"carried a per-recording value: {params!r}")
+            assert "gridDt" not in params, (
+                f"{name}/{stream} carries a frame interval, which varies per "
+                "recording — run.json records that per slice and must not also "
+                "imply one applied to the whole run")
+            flat = json.dumps(params)
+            assert "0.05" not in flat or "0.1" not in flat, flat
+
+
+def test_the_run_also_writes_the_settings_file_the_contract_asks_for(exported,
+                                                                     tmp_path):
+    """`detections.csv` and `run.json` were the whole output. The contract asks
+    for three files, and the third is the one that makes a result reproducible
+    from the folder alone."""
+    from bugarach import emit
+
+    p = tmp_path / "detector_settings.csv"
+    p.write_text(exported["settings"], encoding="utf-8")
+    got = emit.read_detector_settings(p)
+    assert got, "the folder run produced no settings file"
+    assert all(isinstance(k, tuple) and len(k) == 2 for k in got), sorted(got)
+    detectors = {d for d, _ in got}
+    assert detectors >= {"rate", "sce", "coact", "loco"}, sorted(detectors)
 
 
 def test_the_sidecar_says_null_rather_than_omitting_what_this_run_lacked(exported):

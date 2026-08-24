@@ -21,6 +21,7 @@ from bugarach.emit import (
     DetectedEvent,
     events_from,
     read_detections,
+    read_detector_settings,
     write_detections,
     write_detector_settings,
     write_run,
@@ -242,6 +243,37 @@ def test_settings_are_keyed_by_detector_and_stream(tmp_path):
     rows = list(p.read_text(encoding="utf-8").splitlines())
     assert "sce,fast,bin_width_sec,10.0" in rows
     assert "sce,slow,bin_width_sec,60.0" in rows
+
+
+def test_settings_round_trip_through_their_own_reader(tmp_path):
+    """The sibling of `read_detections`, and it exists for the same reason.
+
+    Two writers produce this file — `write_detector_settings` and the browser
+    page, which has no Python to call — so a file only one of them can parse is
+    a second dialect of one table. The keys have to come back as the
+    `(detector, stream)` pairs they went in as, or a consumer cannot tell the
+    fast settings from the slow ones.
+    """
+    written = {("sce", "fast"): {"bin_width_sec": 10.0, "n_surrogates": 200},
+               ("sce", "slow"): {"bin_width_sec": 60.0, "n_surrogates": 200},
+               ("sync", "fast"): {"tau_max": 0.25, "note": None}}
+    p = write_detector_settings(written, tmp_path / "detector_settings.csv")
+    got = read_detector_settings(p)
+    assert set(got) == set(written)
+    assert float(got[("sce", "slow")]["bin_width_sec"]) == 60.0
+    # NA comes back as absence rather than as the string "NA" — the same
+    # distinction `read_detections` keeps, for the same reason.
+    assert got[("sync", "fast")]["note"] is None
+
+
+def test_a_file_that_is_not_a_settings_file_says_so(tmp_path):
+    """A recording opened as a settings file is the obvious slip, and it has to
+    name the missing column rather than returning an empty dict — which would
+    read as "this run used no settings"."""
+    p = tmp_path / "notsettings.csv"
+    p.write_text("roi,time_sec\nr01,1.0\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="detector settings"):
+        read_detector_settings(p)
 
 
 def test_the_run_roster_lists_a_slice_that_produced_no_rows(tmp_path):

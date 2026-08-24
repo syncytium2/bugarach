@@ -1,25 +1,33 @@
-"""Every stream gets analysed, and every result says which stream it came from.
+"""One stream is analysed at a time, and the reader is the one who picked it.
 
-The page drew both lanes of a two-stream recording from the beginning, and then
-handed exactly one of them to the assessor, the detector and the sweep:
+The page drew both lanes of a two-stream recording from the beginning and handed
+the alphabetically first one to the assessor, the detector and the sweep:
 
     const stream = [...data.streams.keys()].sort()[0];
 
-Alphabetically first, which for this lab's folders is `fast`. Nothing on screen
-said so outside the assess panel, and the other stream was not analysed at all —
-so a reader watching the raster draw two lanes got a detection table about one of
-them, unlabelled.
+`fast`, on this lab's folders. Nothing on screen said so, and the other stream
+was not analysed at all — so a reader watching two lanes draw got a table about
+one of them, unlabelled. FOUNDATIONS §9 is why that is a wrong answer rather than
+a partial one: coordination under TTX **splits by stream**, FAST at 0.46 of its
+own baseline against SLOW at 2.50, so a table that silently means `fast` is a
+claim that cannot be checked.
 
-That is not a cosmetic gap. FOUNDATIONS §9 records that coordination under TTX
-**splits by stream** — FAST at 0.46 of its own baseline, SLOW at 2.50 with 44% of
-slices at or above it — and says in terms that a claim must name the stream.
-A detection table that silently means `fast` is a claim that does not.
+The first repair ran every stream. It closed the silence and left the harder
+half open: `tuneLoad` still swept one stream, `TUNED` had no stream in its key,
+and `detectOne` read one `cfg` before the stream loop — so a threshold fitted on
+`fast` was applied to `slow`, and `run.json` wrote a `thresholds` object with no
+stream in it while `emit.detector_settings_rows` keys by `(detector, stream)`
+precisely so that cannot happen.
 
-The other half of the rule is FOUNDATIONS §3: streams are generic, most outside
-labs have exactly one, and the viewer treats single-stream as the default
-presentation. So the fix is not "always show a stream column". It is: never drop
-a stream, always name it **when there is more than one to tell apart**, and leave
-the one-stream folder looking exactly as it did.
+**The repair that holds is the one at the door** (Tony, 2026-08-22: *"treat fast
+and slow as separate folders"* — `docs/todo/2026-08-22-the-stream-is-chosen-at-
+the-door.md`). A folder with more than one stream is asked which, once, when it
+opens; from there exactly one is in play, and every setting is per-stream by
+construction because there is no second stream for one to leak onto. What this
+file checks is therefore: the choice is offered and visible, the analysis obeys
+it, the OTHER stream is reachable rather than dropped, a value fitted on one
+stops claiming the other, and a one-stream folder still never sees any of it
+(FOUNDATIONS §3 — single-stream is the default presentation).
 """
 
 from __future__ import annotations
@@ -120,6 +128,12 @@ def viewer():
             errs: list[str] = []
             page.on("pageerror", lambda e: errs.append(str(e)))
             page.goto(VIEWER.as_uri(), wait_until="load")
+            # The page simulates a folder on load, asynchronously. Opening one
+            # of ours before that settles races it, and the stream selector is
+            # exactly the thing a stale load would repaint.
+            page.wait_for_function(
+                "() => document.getElementById('demoNote') && "
+                "!document.getElementById('demoNote').hidden", timeout=120000)
             yield page, errs
         finally:
             browser.close()
@@ -128,6 +142,22 @@ def viewer():
 OPEN = """async (files) => {
   await open(files, {quiet: true});
   return RECORDINGS.map(r => r.id);
+}"""
+
+DOOR = """() => ({
+  seen: STREAMS_SEEN,
+  stream: STREAM,
+  shown: !document.getElementById("streamPick").hidden,
+  options: [...document.getElementById("sStream").options].map(o => o.value),
+  note: document.getElementById("streamWhat").textContent,
+})"""
+
+PICK = """async (name) => {
+  const sel = document.getElementById("sStream");
+  sel.value = name;
+  sel.dispatchEvent(new Event("change", {bubbles: true}));
+  await new Promise(r => setTimeout(r, 50));
+  return STREAM;
 }"""
 
 SELECT = """async (id) => {
@@ -174,22 +204,46 @@ def test_a_two_stream_folder_loads_both_streams(viewer):
     assert not errs, errs
 
 
-@pytest.mark.parametrize("which", ["rate", "coact", "loco", "sce"])
-def test_every_stream_is_detected_on_not_just_the_first(viewer, which):
-    """The bug, stated as a test.
+def test_the_door_asks_which_stream_and_offers_every_one(viewer):
+    """The choice is on screen, not in the code.
 
-    `sort()[0]` is `fast`, so a page with the old behaviour returns rows whose
-    stream column is uniformly `fast` and never mentions `slow` at all.
+    Test the screen: the selector is visible, it lists both streams, and the
+    note beside it says in words that one is analysed at a time and where the
+    other went. A choice a reader cannot see is the old silent `sort()[0]` with
+    a variable in front of it.
+    """
+    page, errs = viewer
+    _open(page, _folder(two_stream_csv()))
+    door = page.evaluate(DOOR)
+    assert door["shown"], "a two-stream folder opened with no stream selector"
+    assert door["options"] == ["fast", "slow"], door["options"]
+    assert door["stream"] == "fast", door
+    text = door["note"].lower()
+    assert "fast" in text and "slow" in text, door["note"]
+    assert "one is analysed at a time" in text, door["note"]
+    assert not errs, errs
+
+
+@pytest.mark.parametrize("which", ["rate", "coact", "loco", "sce"])
+def test_the_analysis_runs_on_the_stream_the_door_chose(viewer, which):
+    """Not the alphabetically first one — the chosen one, whichever that is.
+
+    Run each detector under each choice and check the rows say so. With the old
+    `sort()[0]` the `slow` half of this returns `fast` rows; with the version
+    that ran everything it returns both, which is the answer to a question
+    nobody asked once the door exists.
     """
     page, errs = viewer
     _open(page, _folder(two_stream_csv()))
     page.evaluate(SELECT, "s1")
-    got = page.evaluate(DETECT, which)
-    assert got["streams"] == ["fast", "slow"], (
-        f"{which} reported rows for {got['streams']} — a stream the page drew a "
-        "lane for was never analysed. FOUNDATIONS §9: the streams move in "
-        "opposite directions under TTX, so dropping one is not a subset of the "
-        "answer, it is a different answer.")
+    for want in ("fast", "slow"):
+        assert page.evaluate(PICK, want) == want
+        got = page.evaluate(DETECT, which)
+        assert got["streams"] == [want], (
+            f"{which} with {want} chosen at the door reported rows for "
+            f"{got['streams']}. FOUNDATIONS §9: the streams move in opposite "
+            "directions under TTX, so analysing the other one is not a rougher "
+            "answer, it is a different one.")
     assert not errs, errs
 
 
@@ -197,65 +251,116 @@ def test_the_detect_table_names_the_stream_when_there_are_two(viewer):
     """Test the screen, not the function.
 
     The rows carried a `stream` column all along — what the reader saw did not.
+    One stream is in play, so the table names that one; the column stays because
+    a folder that HOLDS two has something to tell apart.
     """
     page, errs = viewer
     _open(page, _folder(two_stream_csv()))
     page.evaluate(SELECT, "s1")
+    page.evaluate(PICK, "slow")
     got = page.evaluate(DETECT, "rate")
     assert "stream" in [h.lower() for h in got["headers"]], (
         f"no stream column on screen; headers were {got['headers']}")
-    assert "fast" in got["text"] and "slow" in got["text"], (
-        "the table does not name either stream in its cells")
+    assert "slow" in got["text"], (
+        "the table does not name the stream it is about")
     assert not errs, errs
 
 
-def test_a_single_stream_folder_gains_no_stream_column(viewer):
+def test_a_single_stream_folder_is_never_asked_and_gains_no_column(viewer):
     """FOUNDATIONS §3: single-stream is the default presentation.
 
-    Most outside labs have one stream. A column that always reads the same value
-    is furniture, and this page's whole layout convention is against it.
+    Most outside labs have one stream. A selector with one option and a column
+    that always reads the same value are both furniture, and this page's whole
+    layout convention is against both. The stream is still RECORDED — `STREAM`
+    holds the name the loader gave it — because the settings file keys on it and
+    an empty cell there would be declining to answer a known question.
     """
     page, errs = viewer
     _open(page, _folder(one_stream_csv()))
     page.evaluate(SELECT, "s1")
+    door = page.evaluate(DOOR)
+    assert not door["shown"], "a one-stream folder was asked to choose a stream"
+    assert door["stream"] == "events", door
     got = page.evaluate(DETECT, "rate")
     assert "stream" not in [h.lower() for h in got["headers"]], (
         f"a one-stream folder got a stream column: {got['headers']}")
     assert not errs, errs
 
 
-def test_the_two_streams_do_not_report_the_same_events(viewer):
-    """A guard against the cheapest wrong fix.
+def test_the_other_stream_is_a_click_away_and_gives_a_different_answer(viewer):
+    """A guard against the cheapest wrong fix, and against the worst one.
 
-    Running one stream and relabelling the rows twice would satisfy every
+    Answering with one stream and relabelling the rows would satisfy every
     assertion above. The folder plants six coordinated events in `fast` and
-    three in `slow`, so identical per-stream counts mean the second stream was
-    copied rather than analysed.
+    three in `slow`, so identical counts under the two choices mean the door
+    moves a label rather than the analysis. It also pins the thing choosing at
+    the door must not cost: the second stream is still reachable, so nothing was
+    dropped — it was deferred to a click.
     """
     page, errs = viewer
     _open(page, _folder(two_stream_csv()))
     page.evaluate(SELECT, "s1")
-    got = page.evaluate(DETECT, "coact")
-    counts = got["perStreamCounts"]
-    assert set(counts) == {"fast", "slow"}, counts
+    counts = {}
+    for want in ("fast", "slow"):
+        page.evaluate(PICK, want)
+        got = page.evaluate(DETECT, "coact")
+        assert set(got["perStreamCounts"]) == {want}, got["perStreamCounts"]
+        counts[want] = got["perStreamCounts"][want]
     assert counts["fast"] != counts["slow"], (
-        f"both streams reported {counts['fast']} events from a folder that "
-        "plants six in fast and three in slow — the second stream looks copied, "
-        "not analysed.")
+        f"both choices reported {counts['fast']} events from a folder that "
+        "plants six in fast and three in slow — the door moves a label, not the "
+        "analysis.")
     assert not errs, errs
 
 
-def test_assess_reports_every_stream(viewer):
+def test_a_recording_without_the_chosen_stream_is_refused_by_name(viewer):
+    """The one thing choosing at the door must not be allowed to do quietly.
+
+    A folder can hold `fast` and `slow` in one recording and only `fast` in
+    another. Falling back to whatever that recording does have would answer with
+    the other signal under the right label — the exact substitution FOUNDATIONS
+    §9 rules out — so it is a refusal that names the recording, the stream asked
+    for and the streams present.
+    """
+    page, errs = viewer
+    mixed = [{"name": "both.csv", "text": two_stream_csv()},
+             {"name": "fastonly.csv",
+              "text": "roi,time_sec,stream\n" + "".join(
+                  f"r{r:02d},{round(30.0 * k + 0.02 * r, 3)},fast\n"
+                  for k in range(1, 20) for r in range(1, 12))},
+             {"name": "slices.csv",
+              "text": ("slice_id,frame_interval_sec\n"
+                       "both,0.1\nfastonly,0.1\n")}]
+    _open(page, mixed)
+    page.evaluate(PICK, "slow")
+    got = page.evaluate("""async () => {
+      const rec = RECORDINGS.find(r => r.id === "fastonly");
+      await show(rec);
+      await runDetect();
+      return {text: document.getElementById("detectOut").innerText,
+              detect: DETECT ? DETECT.rows.length : null};
+    }""")
+    assert got["detect"] is None, (
+        "a recording with no `slow` stream produced rows anyway — from `fast`, "
+        f"under the wrong name. Panel read:\n{got['text'][:400]}")
+    text = got["text"].lower()
+    assert "slow" in text and "fast" in text, got["text"][:400]
+    assert not errs, errs
+
+
+def test_assess_measures_the_chosen_stream_and_names_it(viewer):
     """Assess already printed `stream <name>` — and measured only one of them.
 
     Naming the stream you did not analyse is worse than not naming it, so this
-    one is about the measurement, not the label.
+    is about the measurement rather than the label: pick `slow` and the panel
+    has to be about `slow`.
     """
     page, errs = viewer
     _open(page, _folder(two_stream_csv()))
     page.evaluate(SELECT, "s1")
+    page.evaluate(PICK, "slow")
     got = page.evaluate(ASSESS)
-    assert "fast" in got["text"] and "slow" in got["text"], (
-        "the assessment covers one stream and names it; the other was not "
-        f"measured. Panel read:\n{got['text'][:400]}")
+    assert "slow" in got["text"], (
+        "the assessment does not name the stream it measured. Panel read:\n"
+        f"{got['text'][:400]}")
     assert not errs, errs
