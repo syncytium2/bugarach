@@ -188,3 +188,72 @@ def test_planted_synchrony_detected():
                       C_threshold=0.5, C_min=0.3, min_n=1)
     hits = (det.locs <= 150.1) & (det.ends >= 149.9)
     assert hits.any(), "planted synchronous burst at t=150 not detected"
+
+
+# ---------------------------------------------------------------------------
+# tau_mode — the window either responds to local density or it does not
+# ---------------------------------------------------------------------------
+
+def _burst_and_pair():
+    """Two trains that meet twice, at gaps the cap would accept both times.
+
+    Around t=10 each train fires at 0.04 s intervals — half-ISI 0.02 — and the
+    two bursts sit 0.08-0.20 s apart. Around t=50 a single pair sits 0.12 s
+    apart with nothing near it. Every cross-train gap here is inside the 0.25 s
+    cap, so a fixed window calls all of it coincident; only the local density
+    differs, which is the whole of what the adaptive window reacts to.
+    """
+    a = np.array([10.00, 10.04, 10.08, 10.12, 50.00])
+    b = np.array([10.20, 10.24, 10.28, 10.32, 50.12])
+    return [a, b]
+
+
+def test_the_adaptive_window_tightens_where_the_fixed_one_does_not():
+    """The toggle's finding, as a difference you can see.
+
+    In the burst the half-ISIs are 0.02 s, so adaptive tau is 0.02 and a
+    neighbour 0.08 s away is NOT coincident. At t=50 the pair sits alone, tau
+    falls back to the cap, and a WIDER 0.12 s gap IS coincident — the same
+    measure calling the closer pair unsynchronised and the further one
+    synchronised, which is the point of a rate-free measure. Fixed mode uses
+    the cap throughout and calls all of it coincident.
+    """
+    trains = _burst_and_pair()
+    xa, ya = adaptive_profile(trains, (0.0, 60.0), 0.25)
+    xf, yf = adaptive_profile(trains, (0.0, 60.0), 0.25, tau_mode="fixed")
+
+    assert np.array_equal(xa, xf), "the spike times themselves must not move"
+    burst = xa < 20.0
+    assert ya[burst].max() == 0.0, "adaptive tau should reject the 0.12 s burst pairs"
+    assert yf[burst].min() == 1.0, "fixed tau should accept every one of them"
+    lonely = xa >= 20.0
+    assert ya[lonely].min() == 1.0, "the isolated 0.12 s pair is inside the cap"
+    assert yf[lonely].min() == 1.0
+
+
+def test_adaptive_is_the_default_and_the_settings_say_which_ran():
+    """Parity is the product: every fixture and the benched operating point were
+    measured with the adaptive window, so the default is load-bearing — and a
+    run has to record which window produced it."""
+    trains = _burst_and_pair()
+    _, y = adaptive_profile(trains, (0.0, 60.0), 0.25)
+    _, y_explicit = adaptive_profile(trains, (0.0, 60.0), 0.25,
+                                     tau_mode="adaptive")
+    assert np.array_equal(y, y_explicit)
+
+    kw = dict(tau_max=0.25, max_gap=0.5, C_threshold=0.1, C_min=0.1, min_n=1)
+    assert sync_detect(trains, (0.0, 60.0), **kw).settings["tau_mode"] == "adaptive"
+    assert sync_detect(trains, (0.0, 60.0), tau_mode="fixed",
+                       **kw).settings["tau_mode"] == "fixed"
+
+
+def test_an_unknown_tau_mode_is_refused_rather_than_guessed():
+    """`satuvuori` is the plausible wrong guess: it is the OTHER thing called
+    adaptive here, it is not implemented, and silently returning the ISI window
+    for it would be the naming confusion becoming a number."""
+    with pytest.raises(ValueError, match="tau_mode"):
+        adaptive_profile(_burst_and_pair(), (0.0, 60.0), 0.25,
+                         tau_mode="satuvuori")
+    with pytest.raises(ValueError, match="tau_mode"):
+        sync_detect(_burst_and_pair(), (0.0, 60.0), tau_max=0.25, max_gap=0.5,
+                    tau_mode="satuvuori")
