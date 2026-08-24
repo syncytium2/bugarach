@@ -157,18 +157,11 @@ measured at all, and it is measured on simulated recordings.
 Each of these costs something today, and none is a tidy-up waiting for a spare
 afternoon.
 
-- **Nothing can hand tuned settings to any of the three routes.** `bugarach detect`
-  takes a folder and no settings, so it runs this lab's calibrated operating points
-  for every lab; the browser's sweep chooses a point and keeps it in a variable that
-  dies with the tab. The per-lab loop above ends in a number that nothing can carry
-  to the next step
-  ([the decision](docs/todo/2026-08-22-tuned-settings-are-a-file-not-a-survivor.md)).
-- **The browser route writes no `detector_settings.csv`.** Its `run.json` records
-  the parameters keyed by detector alone, while the contract and both Python routes
-  key them by **detector and stream**, because a detector may run differently on
-  fast and slow. A browser run over a two-stream folder gets a settings record that
-  cannot say which stream a value belonged to. The same fix closes this and the
-  bullet above.
+- **Nothing hands a tuned setting to the headless route.** The browser can now save
+  one to a file and load it back, and the file names the data set it was fitted on;
+  `bugarach detect` still takes a folder and no settings, so it runs this lab's
+  calibrated operating points for every lab. The per-lab loop ends one step short of
+  the command that would consume its answer.
 - **`detector_settings.csv` cannot say what grid SPIKE-synch ran on.** The two other
   detectors that need the acquisition interval are handed it; this one runs at the
   0.1 s in its own signature, and its rows name no grid at all — so for one detector
@@ -177,14 +170,15 @@ afternoon.
 - **Peak-gated mode is unreachable.** `detections.csv` carries a `mode` column, and
   every row any route has ever written says `threshold`. The peak-gated half of the
   detector contract is real in the library and exposed by nothing.
-- **A folder that states no acquisition interval is refused per recording, not at
-  the door.** `bugarach detect` names the refusal, records it in `run.json`, writes
-  an empty `detections.csv` and **exits 0** — so a script reading the exit status is
-  told the run succeeded and finds no coordinated events. `bugarach check` catches a `slices.csv`
-  whose interval is missing, blank or `NA` and exits 1 — but a folder with **no
-  `slices.csv` at all**, or one with no row for that recording, passes `check` at exit
-  0 and then detects nothing. Neither exit status is safe to gate on yet, so pass
-  `--frame-interval` to `detect` and let it fail loudly instead.
+- **A folder with no `slices.csv` at all passes `check` and detects nothing.** That
+  folder is *conforming* — only the recording files are required — so `check` is
+  right to pass it and says in its notes that the interval will have to be supplied.
+  `bugarach detect` then refuses it: every recording is skipped, nothing is written,
+  and the exit status is non-zero. The two answers are consistent and still surprise
+  a reader, because "conforming" and "runnable" are different questions and only one
+  of them is about the folder. Pass `--frame-interval` and it runs. (A `slices.csv`
+  whose interval is missing, blank or `NA` is a different case: `check` exits 1 and
+  names the column.)
 - **Nothing publishes the site.** Deploying means a person typing `npm run deploy`,
   and a stale page looks exactly like a current one. So the gap is measured and
   reported rather than enforced — a failing check that nothing in this repo can
@@ -532,11 +526,13 @@ and it is the reason its rows in `detector_settings.csv` name no grid: nothing h
 it one, so there is nothing to record.
 
 A recording whose folder states no interval is **refused, one recording at a time**:
-`detect` names the refusal, records it in `run.json`, writes an empty
-`detections.csv` and still exits 0, so run `bugarach check` first — it exits 1 on the
-same folder. Requiring the interval at load was
-[the fix](docs/todo/2026-08-16-dt-must-be-required-at-load.md), closed the day this
-was written; SPIKE-synch is the one caller it did not reach.
+`detect` names the refusal and records it in `run.json`, scores the rest, and exits
+0 — a folder where some recordings are unusable still yields the ones that are. If
+*every* recording is skipped it writes no `detections.csv` at all and exits
+non-zero, because a run that scored nothing is not a result. Requiring the interval
+at load was [the fix](docs/todo/2026-08-16-dt-must-be-required-at-load.md); SPIKE-synch
+is the one caller it did not reach, and deliberately so — its 0.1 s is a calibrated
+bin, not an acquisition property.
 
 The per-lab loop runs as four scripts, each writing what the next one reads:
 
