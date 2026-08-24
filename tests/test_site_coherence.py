@@ -93,10 +93,8 @@ def test_the_index_template_links_only_to_files_the_build_writes():
     the lead figure and the real-recording figure carry `hero.png` and
     `reality.png`, which are exactly the two references most likely to be wrong.
     """
-    page = bs.INDEX.format(
-        commit="abc1234", nav=bs.nav_html("index.html"),
-        lead=bs.LEAD_FIGURE.format(w=1, h=1),
-        real=bs.LEAD_REAL.format(w=1, h=1))
+    page = bs.render_index("abc1234", bs.LEAD_FIGURE.format(w=1, h=1),
+                           bs.LEAD_REAL.format(w=1, h=1))
     unresolved = sorted(local_refs(page) - set(bs.PUBLISHED))
     assert not unresolved, (
         f"the front page points at {unresolved}, which the build does not "
@@ -109,9 +107,8 @@ def test_the_fallback_front_page_also_links_only_to_real_files():
     """`--allow-degraded` swaps the lead figure for a link card, and that card is
     a link like any other. A path that only appears in the fallback is a path
     nothing normally renders, which is exactly where a dead one survives."""
-    page = bs.INDEX.format(
-        commit="abc1234", nav=bs.nav_html("index.html"),
-        lead=bs.LEAD_FALLBACK, real=bs.LEAD_REAL.format(w=1, h=1))
+    page = bs.render_index("abc1234", bs.LEAD_FALLBACK,
+                           bs.LEAD_REAL.format(w=1, h=1))
     assert not sorted(local_refs(page) - set(bs.PUBLISHED))
 
 
@@ -195,6 +192,32 @@ def test_a_visitor_can_get_from_any_page_to_every_other_page():
             if other != name and other not in refs:
                 stranded.append(f"{name} offers no way to {other}")
     assert not stranded, "; ".join(stranded)
+
+
+def test_every_page_with_a_nav_bar_also_carries_the_style_for_it():
+    """Markup and styling went missing separately, and only one was checked.
+
+    The fix for the two navless pages factored the rules into `NAV_CSS` and
+    injected them alongside the markup — but `add_nav` returns early on a page
+    that already has a bar, and the index has its bar written into its own
+    template. So the index kept the markup, lost the rules, and the site's front
+    door shipped as a row of default-blue underlined links.
+
+    Every structural check passed while it did: the bar was present, every link
+    resolved, every page was reachable from every other. It took opening a
+    screenshot. This asserts the pair instead — a page carrying one and not the
+    other is that bug, in either direction.
+    """
+    unstyled = []
+    for name, path in built_pages():
+        body = path.read_text(encoding="utf-8")
+        has_markup = 'nav class="site"' in body
+        has_css = "nav.site" in body
+        if has_markup != has_css:
+            unstyled.append(
+                f"{name}: nav markup {'present' if has_markup else 'absent'}, "
+                f"its CSS {'present' if has_css else 'absent'}")
+    assert not unstyled, "; ".join(unstyled)
 
 
 def test_no_published_page_is_titled_after_the_tool_that_made_it():

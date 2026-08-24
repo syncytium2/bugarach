@@ -121,6 +121,7 @@ INDEX = """<!doctype html>
   code {{ background:#8881; padding:.1rem .35rem; border-radius:4px; }}
   .note {{ border-left:3px solid #e8a33d; padding:.4rem 0 .4rem .9rem;
            color:#555; font-size:.94rem; }}
+{nav_css}
 </style>
 
 {nav}
@@ -302,6 +303,19 @@ def nav_html(current: str) -> str:
         '  <a href="%s"%s>%s</a>\n' % (href, here if href == current else "", label)
         for href, label in PAGES)
     return f'<nav class="site">\n  <span class="brand">bugarach</span>\n{links}</nav>'
+
+
+def render_index(commit: str, lead: str, real: str) -> str:
+    """The front page, with every placeholder filled in one place.
+
+    There is a function here rather than three `INDEX.format(...)` calls because
+    adding `nav_css` broke the two in the tests and not the one in the build: a
+    new placeholder is a `KeyError` at every call site that has not been updated,
+    and the build's own site looked fine while the suite went red. One caller
+    knows the template's shape; everybody else asks for a page.
+    """
+    return INDEX.format(commit=commit, lead=lead, real=real,
+                        nav=nav_html("index.html"), nav_css=NAV_CSS)
 
 
 def add_nav(body: str, current: str) -> str:
@@ -766,8 +780,7 @@ def main(argv=None):
     commit = subprocess.run(["git", "rev-parse", "--short", "HEAD"], cwd=ROOT,
                             capture_output=True, text=True).stdout.strip() or "unknown"
     (SITE / "index.html").write_text(
-        stamp_html(INDEX.format(commit=commit, lead=lead, real=real,
-                                nav=nav_html("index.html")), commit),
+        stamp_html(render_index(commit, lead, real), commit),
         encoding="utf-8")
 
     # EVERY page carries the pair, not just the one with a hand-written footer.
