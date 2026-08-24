@@ -3,10 +3,36 @@ status: open
 filed: 2026-08-24
 ---
 
-# None of the six methods is ours to claim, and the public app still says otherwise
+# None of the six methods is ours to claim, and that turns out to be fine
 
 Two things arrived from outside this repo on 2026-08-24 and neither is a
-bugarach finding. This file is what they cost here.
+bugarach finding. This file is what they change here.
+
+> **Tony settled the tone of this on 2026-08-24, and it binds the rest of the
+> file:** *"I don't think anyone is going to jump on us for a technique used in
+> radar analysis from 1968. In fact I feel most researchers would be kind of
+> thrilled with the link. We acknowledge its origins, don't worry about finding
+> the lit after we built it, it's a tool and it's useful."*
+>
+> **So priority is closed, and it was never the interesting part.** Deriving
+> cell-averaging CFAR from a calcium-imaging problem is evidence the design space
+> is real, not a debt — and it is the kind of link a reader enjoys. Cite the
+> origins, say plainly that we arrived independently, and stop there. **Nothing in
+> this file is a reason to be anxious about credit.**
+>
+> **What survives the decision is engineering.** The radar literature spent fifty
+> years on these detectors and its results transfer whoever published first:
+> GO-CFAR masks a real target shortly after a high-rate stretch, and an additive
+> threshold does not hold a false-alarm rate as the background moves. Those are
+> testable predictions about `loco_detect` and `rate_detect` on wash-in data,
+> arriving free. Read §3 and §4 below as findings about the instrument, which is
+> what they are — not as an attribution problem.
+>
+> **One item is not covered by this decision and must not be filed under it:** the
+> **CICADA label**. That is not "we built it and later found the literature" — we
+> knowingly ported a living lab's named tool, changed two things about it, and put
+> their name on the result in a public UI. Still Tony's call; just a different
+> question.
 
 **The first is a root citation.** The SCE rule — the one `sce_detect` implements
 and the one this repo has spent three documents trying to source — is
@@ -53,11 +79,14 @@ that did read it, and the shelf discipline in
 *read*, until `cossart_2003_attractor_dynamics.pdf` sits on the darkroom shelf
 next to `malvache_2016_awake_reactivations.pdf`. **Shelving it is step one.**
 
-## The ledger, and it has no row left standing
+## The ledger — six rows, six citations to add
 
-interface2 audited all six and closed every row. Two of the closures were their
-own second pass reversing their own first, and one of them — `rate_detect` — was
-held back as "ours as far as we know" until it wasn't.
+interface2 audited all six and found published prior art for every one. Two of
+the closures were their own second pass reversing their own first, and one of
+them — `rate_detect` — was held back as "ours as far as we know" until it wasn't.
+**This is a list of citations to add, not of claims to withdraw**, because no
+shipped claim rests on priority: the scoreboard already forbids
+"competes with state-of-the-art" and `bakeoff.md` already reports a tie.
 
 | detector here | the **method** is | must cite |
 |---|---|---|
@@ -74,7 +103,11 @@ primaries, and named Finn & Johnson 1968 in its own §5 — while §2 still file
 ideas"*. The two halves of this repo's own document disagree, and the audit
 settles it in favour of §5.
 
-## What is exposed here, checked against this tree today
+## What to change here, checked against this tree today
+
+Item 1 is about a name. Items 2 through 5 are about **behaviour** and would be
+worth acting on with no citation attached to any of them — which is the useful
+half of finding the literature after the fact.
 
 1. **`cicada_detect` is labelled "CICADA" on a public website, and it is a
    modified CICADA.** We feed our own upstream-detected events instead of running
