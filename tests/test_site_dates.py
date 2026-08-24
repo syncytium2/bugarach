@@ -131,6 +131,56 @@ def test_the_commit_is_shown_beside_the_dates():
     assert "abc1234" in meta_stamp("abc1234")
 
 
+def test_the_version_a_reader_sees_is_the_release_not_the_sha():
+    """`v0.1.0-8-g48db5f4` tells a reader something; `48db5f4` does not.
+
+    This repo had no tags at all until 2026-08-23, so the stamp showed a sha
+    because a sha was the only name a commit had. Now that releases exist, the
+    page says which one it is near and how far past.
+    """
+    head = subprocess.run(["git", "rev-parse", "--short", "HEAD"], cwd=ROOT,
+                          capture_output=True, text=True).stdout.strip()
+    described = subprocess.run(["git", "describe", "--tags", "--always", head],
+                               cwd=ROOT, capture_output=True, text=True)
+    if not head or described.returncode != 0 or not described.stdout.strip():
+        pytest.skip("no git history here")
+    want = described.stdout.strip()
+    assert f"<code>{want}</code>" in date_stamp(head)
+    assert f'content="{want}"' in meta_stamp(head)
+
+
+def test_a_repository_with_no_tags_still_names_a_version():
+    """`--always` falls back to the sha. A tagless or shallow clone — CI uses one
+    — must still stamp a page rather than an empty pair of code tags."""
+    assert bs._version_name("deadbee").strip(), "no version name at all"
+
+
+def test_the_stamp_prefix_is_the_one_the_viewer_page_writes_by_hand():
+    """`site/viewer.html` is copied byte-for-byte and cannot be injected into, so
+    that page writes its own stamp and the two must phrase it identically.
+
+    The tail after the version date is per-page and free — the generated pages
+    put the release there, the viewer says it is identified by its own bytes.
+    The prefix is the contract. `tests/test_site_viewer.py` asserts it from the
+    page's side; this asserts it from the build's, so a change to either is
+    caught wherever it is made.
+    """
+    # A real commit, because `_stamp_dates` of an invented sha has no date to
+    # read and degrades to "unknown" — which is correct behaviour and a useless
+    # thing to compare the page against.
+    head = subprocess.run(["git", "rev-parse", "--short", "HEAD"], cwd=ROOT,
+                          capture_output=True, text=True).stdout.strip()
+    if not head:
+        pytest.skip("no git history here")
+    born, version = bs._stamp_dates(head)
+    prefix = f"First published {born} · this version {version}"
+    assert prefix in date_stamp(head)
+    page = (ROOT / "docs" / "site" / "raster_viewer.html").read_text(encoding="utf-8")
+    assert prefix in page, (
+        "the viewer page no longer phrases its stamp the way build_site does — "
+        "change both together or neither")
+
+
 @pytest.mark.parametrize("page", STAMPED)
 def test_every_built_page_carries_both_dates(page):
     p = SITE / page
