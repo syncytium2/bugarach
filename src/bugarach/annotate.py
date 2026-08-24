@@ -66,6 +66,7 @@ VERDICTS = ("confirmed", "rejected", "unsure")
 #: Column order of `annotations.csv`.
 COLUMNS = (
     "slice_id", "stream", "centre_sec", "k_survived", "n_members", "members",
+    "span_sec", "jitter_sd_sec",
     "verdict", "annotator", "decided_at",
     "view_t0_sec", "view_t1_sec", "view_roi_order", "view_stream",
     "assess_bin_sec", "assess_surrogates", "assess_seed",
@@ -97,6 +98,18 @@ class Verdict:
     single pass."""
     n_members: int
     members: tuple[int, ...]
+    span_sec: float
+    """First-to-last participating event time in this candidate."""
+    jitter_sd_sec: float
+    """SD of the participating onsets — the assessor's tightness measure for this
+    one cluster.
+
+    **This and `span_sec` and `n_members` are here so the file can parameterise a
+    simulation on its own.** The generator needs participation, span and jitter;
+    if a verdict carried only yes-or-no, a later step would have to re-run the
+    assessor and re-match candidates to verdicts by time, which is a join nobody
+    should have to get right twice. Carrying the three numbers beside the verdict
+    makes `annotations.csv` sufficient."""
     verdict: str
     annotator: str
     decided_at: str
@@ -204,6 +217,8 @@ def read_annotations(path: Path | str) -> list[Verdict]:
                     centre_sec=float(r["centre_sec"]),
                     k_survived=int(r["k_survived"]),
                     n_members=int(r["n_members"]), members=members,
+                    span_sec=float(r["span_sec"]),
+                    jitter_sd_sec=float(r["jitter_sd_sec"]),
                     verdict=r["verdict"], annotator=r["annotator"],
                     decided_at=r["decided_at"],
                     view_t0_sec=float(r["view_t0_sec"]),
@@ -248,6 +263,41 @@ def confirmed_at(verdicts, k: int) -> list[Verdict]:
     from, in place of every candidate the machine proposed."""
     return [v for v in verdicts
             if v.verdict == "confirmed" and v.k_survived >= k]
+
+
+def confirmed_summary(verdicts, k: int) -> dict:
+    """The numbers a generator spec needs, over confirmed candidates only.
+
+    **This is what annotation is for.** `tools/derive_spec.py` currently takes
+    the medians over every candidate the assessor proposed; with a person's
+    verdicts in hand it should take them over the ones that survived a look.
+
+    `confirm_rate` is the multiplier for the event *frequency*: if a person
+    believed 45% of what the machine proposed, the confirmed event rate is 45% of
+    the machine's, and a simulator told the unfiltered rate plants roughly twice
+    the coordination the recording is agreed to contain.
+
+    Returns NaN medians rather than raising when nothing was confirmed at `k` —
+    the caller has to decide whether that is "K is too strict" or "this folder has
+    no agreed coordination", and those are different conversations.
+    """
+    conf = confirmed_at(verdicts, k)
+    ag = agreement_by_k(verdicts, ks=(k,))[k]
+
+    def _med(vals):
+        vals = [v for v in vals if np.isfinite(v)]
+        return float(np.median(vals)) if vals else float("nan")
+
+    return dict(
+        k=k,
+        n_confirmed=len(conf),
+        n_judged=ag.judged,
+        n_unsure=ag.unsure,
+        confirm_rate=ag.rate,
+        part_n_med=_med([v.n_members for v in conf]),
+        span_med=_med([v.span_sec for v in conf]),
+        jitter_sd_med=_med([v.jitter_sd_sec for v in conf]),
+    )
 
 
 @dataclass

@@ -11,14 +11,15 @@ import pytest
 
 from bugarach.annotate import (
     Agreement, Verdict, ViewNotRecorded, agreement_by_k, confirmed_at,
-    draw_sample, read_annotations, write_annotations,
+    confirmed_summary, draw_sample, read_annotations, write_annotations,
 )
 
 
 def mk(**kw):
     base = dict(
         slice_id="s1", stream="fast", centre_sec=120.5, k_survived=4,
-        n_members=5, members=(1, 4, 7, 9, 11), verdict="confirmed",
+        n_members=5, members=(1, 4, 7, 9, 11),
+        span_sec=1.4, jitter_sd_sec=0.36, verdict="confirmed",
         annotator="tony", decided_at="2026-08-24T14:02:11Z",
         view_t0_sec=100.0, view_t1_sec=140.0, view_roi_order="file",
         view_stream="fast", assess_bin_sec=1.0, assess_surrogates=1000,
@@ -153,6 +154,47 @@ def test_confirmed_at_is_what_a_spec_should_be_built_from():
     assert len(confirmed_at(verdicts, 3)) == 2
     assert len(confirmed_at(verdicts, 6)) == 1
     assert confirmed_at(verdicts, 6)[0].k_survived == 8
+
+
+# ---------------------------------------------------------------------------
+# what a spec should be built from
+# ---------------------------------------------------------------------------
+
+def test_the_summary_is_taken_over_confirmed_candidates_only():
+    """The point of annotating: `derive_spec` takes medians over everything the
+    assessor proposed, and should take them over what survived a look."""
+    verdicts = [
+        mk(k_survived=6, verdict="confirmed", n_members=9, span_sec=1.0,
+           jitter_sd_sec=0.20),
+        mk(k_survived=6, verdict="confirmed", n_members=7, span_sec=1.4,
+           jitter_sd_sec=0.30),
+        # believed by nobody, and 40 ROIs wide — it would drag every median
+        mk(k_survived=6, verdict="rejected", n_members=40, span_sec=9.0,
+           jitter_sd_sec=3.0),
+    ]
+    s = confirmed_summary(verdicts, 6)
+    assert s["n_confirmed"] == 2
+    assert s["part_n_med"] == 8.0        # 9 and 7, not 9, 7 and 40
+    assert s["span_med"] == 1.2
+    assert round(s["jitter_sd_med"], 3) == 0.25
+    assert round(s["confirm_rate"], 3) == 0.667
+
+
+def test_the_confirm_rate_is_the_multiplier_on_event_frequency():
+    """A simulator told the unfiltered rate plants roughly twice the
+    coordination the recording is agreed to contain."""
+    verdicts = ([mk(verdict="confirmed") for _ in range(5)]
+                + [mk(verdict="rejected") for _ in range(5)])
+    assert confirmed_summary(verdicts, 3)["confirm_rate"] == 0.5
+
+
+def test_nothing_confirmed_gives_nan_medians_rather_than_raising():
+    """"K is too strict" and "this folder has no agreed coordination" are
+    different conversations, and this is not the layer that decides which."""
+    s = confirmed_summary([mk(verdict="rejected")], 3)
+    assert s["n_confirmed"] == 0
+    assert np.isnan(s["part_n_med"])
+    assert s["confirm_rate"] == 0.0
 
 
 # ---------------------------------------------------------------------------
