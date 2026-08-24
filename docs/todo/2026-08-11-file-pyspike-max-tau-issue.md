@@ -7,6 +7,18 @@ filed: 2026-08-11
 
 waiting: Send `docs/kreuz_note.md` to Thomas Kreuz. Everything else is done.
 
+> **A second question for the same mail appeared on 2026-08-24, and it is not
+> drafted.** Kreuz replied to Tony in April on a different subject, and that reply
+> raised one thing only he can settle: **whether this port should keep calling its
+> profile "adaptive"**, given that interface2's cSPIKE wrapper passed Satuvuori's
+> adaptive time-scale argument as 0 while calling the code path adaptive — the
+> word is now in `sync.py`, the glossary and the served viewer page. The argument
+> is in [what Kreuz answered in April](2026-08-24-kreuz-answered-the-spike-synch-questions-in-april.md).
+> **Deliberately not written into the note here**: that draft was reviewed as it
+> stands, and a paragraph added without review is the failure this repo's document
+> process exists to stop. Whoever sends the mail decides whether to fold it in, and
+> drafting it is its own reviewable act.
+
 **Nothing here needs more work — it needs one mail.** As of 2026-08-24 the
 report is written, shortened, and verified end to end; the patch passes PySpike's
 own test suite on both backends; the note to Kreuz is drafted and reviewed. The
