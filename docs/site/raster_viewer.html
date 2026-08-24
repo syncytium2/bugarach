@@ -9,7 +9,7 @@
      rather than naming a sha this page could not know — the reasoning is at the
      visible stamp. -->
 <meta name="bugarach:born" content="2026-08-13">
-<meta name="bugarach:version-date" content="2026-08-23">
+<meta name="bugarach:version-date" content="2026-08-24">
 <meta name="bugarach:commit" content="content-addressed">
 <!--
   The raster viewer, client side.
@@ -1012,14 +1012,15 @@
         by accident.
       </div>
       <div class="fine" id="dFineCicada" hidden>
-        <b>CICADA counts how many cells are active at once.</b> Each event marks
+        <b>locust counts how many cells are active at once.</b> Each event marks
         its cell active for as long as the transient lasted, and the detector
         looks for moments when an unusual number of those stretches overlap. The
         threshold comes from rolling every cell to a random offset and asking how
         high the count goes when nothing is coordinated by construction.
         <br><br>
         <b>It is the one detector anchored on the PEAK, not the onset.</b> The
-        other five locate an event at its half-rise. CICADA's original anchors on
+        other five locate an event at its half-rise. The CICADA rule it derives
+        from anchors on
         the peak, and on this preparation that is also the right choice: a single
         transient runs from half-rise to peak over roughly 0.3 s in a fast stream
         and 2 s in a slow one, and 2 s is wider than the tolerance a detection is
@@ -1035,6 +1036,19 @@
         neither, this detector declines to run and says so, rather than falling
         back to the onsets and returning a confident answer to a different
         question.
+        <br><br>
+        <b>Where it comes from, and why it is not called CICADA.</b> The rule is
+        the Cossart lab's — <i>CICADA (Calcium Imaging Complete Automated Data
+        Analysis)</i>, Denis, Dard, Quiroli, Cossart &amp; Picardo (2020),
+        <a href="https://doi.org/10.5281/zenodo.10041434">doi:10.5281/zenodo.10041434</a>,
+        MIT-licensed, and described in Dard et al., <i>eLife</i> 11:e78116 (2022).
+        This implementation changes two things, so it carries its own name rather
+        than theirs: it is fed the events your folder already contains instead of
+        running CICADA's own transient detection, and it paints each cell active
+        for the <b>rise interval</b> where the original paints the whole transient
+        duration — which on slow transients would otherwise swamp onset synchrony
+        with duration overlap. Same idea, different detector; cite CICADA for the
+        method.
       </div>
       <div class="fine" id="dFineSync" hidden>
         <b>SPIKE-synch asks how aligned the spikes are, whatever the rate.</b>
@@ -1199,10 +1213,10 @@
      a page edited without bumping it turns CI red instead of shipping a date
      that has quietly become a lie. Bump it when you edit this page. -->
 <p class="site-dates" data-bugarach-born="2026-08-13"
-   data-bugarach-version-date="2026-08-23"
+   data-bugarach-version-date="2026-08-24"
    data-bugarach-commit="content-addressed"
    style="margin:1.5rem max(1.2rem, calc(50% - 23rem));color:#666;font-size:.85rem">
-  First published 2026-08-13 · this version 2026-08-23 · identified by its own
+  First published 2026-08-13 · this version 2026-08-24 · identified by its own
   bytes rather than by a build stamp
 </p>
 
@@ -1608,7 +1622,7 @@ const DET_COLORS = {
   sync: "#d62728", coact: "#e69d00", loco: "#8c564b",
 };
 const DET_SHORT = {
-  rate: "rate", sce: "SCE", cicada: "CIC",
+  rate: "rate", sce: "SCE", cicada: "locust",
   sync: "sync", coact: "coact", loco: "LoCo",
 };
 
@@ -3340,10 +3354,19 @@ function coactDetect(trains, range, opts) {
 
    Checked the way the other two sampling detectors are: coactivity exact,
    threshold sampled, episodes exact once the threshold is fixed. */
-/* ---------- CICADA ------------------------------------------------------------
-   A port of `bugarach.detectors.cicada.cicada_detect`, which is itself a port of
-   the CICADA original. It is the sixth detector and the only one that does not
-   anchor on the half-rise.
+/* ---------- locust (key `cicada`) ---------------------------------------------
+   SHOWN TO USERS AS "locust". A port of `bugarach.detectors.cicada.cicada_detect`,
+   which is itself a port of the Cossart lab's CICADA — and a MODIFIED one: it is
+   fed our own detected events, and paints each cell active for the rise interval
+   where the original paints the whole transient duration. Putting another lab's
+   tool name on a modified port, in a public UI, was the one attribution item Tony
+   did not wave off (2026-08-24); the name is his.
+
+   THE KEY STAYS `cicada`, because it is the value in `detections.csv`'s
+   `detector` column, which is output contract and not ours alone to change.
+
+   It is the sixth detector and the only one that does not anchor on the
+   half-rise.
 
    IT ANCHORS ON THE PEAK, AND THAT IS NOT A BUG TO FIX. `src/bugarach/store.py`
    says so in terms — *"do not 'correct' cicada to t50rise"* — and records that two
@@ -3515,7 +3538,7 @@ function cicadaTrains(data, stream, order, lo, hi) {
     peakTrains.push(pk); durTrains.push(du);
   }
   if (total && !have)
-    return { why: "CICADA anchors on the PEAK of each transient, and this folder "
+    return { why: "locust anchors on the PEAK of each transient, and this folder "
                   + "does not carry one. Send `peak_sec` — every current export "
                   + "does, and it is the unambiguous route — or send `width_sec` "
                   + "with a `width_def` naming a width that reaches the peak, "
@@ -3826,7 +3849,7 @@ function poolScores(scores, { detector, regime, seeds = [], knobValue = null,
 
   /* Precision OUTSIDE the probe. Fold the probe in and the headline stops
      measuring the detector and starts measuring how hard the probe was set:
-     CICADA reads F1 0.09 that way against 0.68 in the upstream campaign, on 599
+     locust reads F1 0.09 that way against 0.68 in the upstream campaign, on 599
      hot-window detections out of 601 false alarms. That is this project's own
      cautionary tale — the benchmark, not the detectors, was the original
      problem — reached by turning one knob too far. */
@@ -6893,7 +6916,7 @@ const DETECTORS = {
             grid: [99.0, 99.5, 99.9, 99.99, 99.999, 99.9999] },
   },
   cicada: {
-    label: "CICADA",
+    label: "locust",
     blurb: "how many cells at once",
     ctl: "dCicCtl", fine: "dFineCicada",
     // NEEDS THE PEAK, which is why it carries a flag the other five do not: its
@@ -6932,16 +6955,17 @@ const DETECTORS = {
 
        Counted and said out loud rather than filtered away. Raising a floor until
        the awkward rows disappear is the move FOUNDATIONS §9 forbids in terms,
-       and the reader deciding whether CICADA suits their preparation needs to
+       and the reader deciding whether locust suits their preparation needs to
        see this rather than have it tidied. */
     extra: { head: "of those, one cell only",
              count: d => (d.magnitude || []).filter(m => m <= 1).length },
-    note: n => n ? n + " of these are single-cell moments. CICADA's threshold "
+    note: n => n ? n + " of these are single-cell moments. locust's threshold "
       + "comes from rolling the raster, and where the recording is sparse that "
       + "threshold lands at one active cell — so an isolated transient clears it "
       + "and is reported as a coincidence. The detector is doing what it does; "
       + "the recording is too sparse for the answer to be about coordination. "
-      + "CICADA was built for imaging where many cells are active at once. Look "
+      + "The CICADA rule it implements was built for imaging where many cells "
+      + "are active at once. Look "
       + "at how many cells the strongest events actually carry before reading "
       + "anything into the count." : null,
     knob: { key: "scePercentile", input: "cPct", name: "SCE percentile", unit: "",

@@ -29,6 +29,25 @@ The same session then rebuilt the site's hero figure from that worktree and got
 `main`'s render, and nearly rewrote the caption to match a figure the branch does
 not produce.
 
+**It cost again on 2026-08-24, on the same map, in both directions.** Renaming the
+sixth detector's label (`TITLES["cicada"]`, CICADA → locust, ADR-0002) was checked
+with a full local suite that came back green — and could not have come back
+anything else, because `bugarach.ui.app` resolved to the primary checkout, where
+the label still said `CICADA`. So `test_make_diagnostic_refuses.py` asserted
+CICADA against a report built from `main`'s `TITLES`, agreed with itself, and
+passed. **CI, running one checkout, failed both of its label assertions**, and the
+branch went red after a session had said it was green.
+
+Then the mirror image: after fixing the tests to expect `locust`, they **fail
+locally** — the report still says CICADA — and are correct. So in this worktree
+the label tests are green when wrong and red when right, and neither result means
+anything. Any branch that touches a display string is in this position and cannot
+tell from a local run.
+
+Worth noting what caught it in 2026-08-15 and what caught it now: the first time,
+lane labels showing `CIC` where `TITLES` said `CICADA`. The second time, the same
+dictionary. **This trap has now fired twice on the same three lines of code.**
+
 ## The workaround that works today
 
 ```bash

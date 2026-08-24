@@ -154,7 +154,7 @@ the plan, not yet the practice</b>.</p>
 
 <p>Each row above is one <b>ROI</b> — one cell's worth of signal pulled out of a
 2-photon calcium recording. Detectors flag the moments when many of them fire
-together. There are six here — LoCo, CICADA, SCE, CoactDetect, RateDetect and
+together. There are six here — LoCo, locust, SCE, CoactDetect, RateDetect and
 SPIKE-synch — each asking a different question, and each matched to its MATLAB
 original to 1e-9 on committed fixtures, so it can be cited in its place.</p>
 

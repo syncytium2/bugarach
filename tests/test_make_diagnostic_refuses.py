@@ -88,7 +88,7 @@ def test_all_six_detectors_reach_the_score_table():
     _, _, _, report, _ = md.build(args())
     assert "did not run" not in report, (
         "a detector failed to run in the default figure:\n" + report)
-    for name in ("LoCo", "CICADA", "binned SCE", "CoactDetect", "rate+context",
+    for name in ("LoCo", "locust", "binned SCE", "CoactDetect", "rate+context",
                  "SPIKE-synch"):
         assert name in report, f"{name} is missing from the score table:\n{report}"
 
@@ -184,7 +184,7 @@ def test_one_detector_failing_still_draws_the_other_five(monkeypatch):
     _, _, _, report, _ = md.build(args())
     assert "did not run" in report and "sync" in report, (
         "the failure was not recorded in the sidecar:\n" + report)
-    assert "LoCo" in report and "CICADA" in report, (
+    assert "LoCo" in report and "locust" in report, (
         "the surviving detectors were not drawn:\n" + report)
 
 

@@ -76,7 +76,7 @@ this repo needs it to build, run or be tested.
 
 | what exists | what it means |
 | --- | --- |
-| **Six detector ports** | rate+context, CoactDetect, LoCo, binned SCE, CICADA and SPIKE-synch — each agreeing with its MATLAB original to within 1e-9 on every returned number, in every detection mode, on committed synthetic fixtures. That is a port-fidelity claim and it is the whole of what is checkable from a clone: it says the Python computes what the MATLAB computed, which is what lets the ports be cited in the originals' place. It says nothing about either being right. |
+| **Six detector ports** | rate+context, CoactDetect, LoCo, binned SCE, locust and SPIKE-synch — each agreeing with its MATLAB original to within 1e-9 on every returned number, in every detection mode, on committed synthetic fixtures. That is a port-fidelity claim and it is the whole of what is checkable from a clone: it says the Python computes what the MATLAB computed, which is what lets the ports be cited in the originals' place. It says nothing about either being right. |
 | **Peak gating** | The half-prominence extent kernel the peak-gated mode needs, written **clean-room** from a spec and validated against an independently built adversary implementation. |
 | **A generator with ground truth** | Coordinated events planted at known times in per-ROI background activity, so a miss and a false alarm are counted rather than argued about (`bugarach.simulate`, from interface2's `generate_synth_coord.m`). |
 | **A scorer that reads intervals** | Binned detectors report a bin's left edge; matching that edge against a planted onset scored a correct detector at **0.00 recall on fourteen detections that each spanned a planted event**. Detections are matched as intervals, greedily, closest pair first (`bugarach.score`). |
@@ -206,7 +206,7 @@ The build order these sit in, and the one stage that is blocked, are in
 rate+context looks for the population firing faster than its own slow background;
 CoactDetect counts distinct ROIs coinciding against a rolling shuffled null; LoCo
 compares local coactivity against a percentile envelope of that null; binned SCE
-thresholds coactivity per fixed bin over a whole period; CICADA slides a window and
+thresholds coactivity per fixed bin over a whole period; locust slides a window and
 shuffles each cell independently; SPIKE-synch measures how tightly event times line
 up, without binning at all.
 
@@ -233,11 +233,13 @@ one: four of the six do.
 **The shaded block is the trap.** It fires faster than the rest of the recording
 and contains no planted events at all, so every bar inside it is a false alarm by
 construction — it is there to catch a detector that keys on how much is happening
-rather than on how much of it is together. Two take the bait plainly: CICADA fires
+rather than on how much of it is together. Two take the bait plainly: locust fires
 85 times inside it and binned SCE 28, while LoCo and CoactDetect fire not once.
 
-> ⚠ **This figure and those two counts predate CICADA's recalibration.** Re-running
-> the same seed today gives CICADA **35** probe firings and binned SCE **29**, with
+> ⚠ **This figure and those two counts predate locust's recalibration — and its
+> rename**, so the lane the text calls *locust* is still drawn *CICADA* in the
+> picture above. Re-running
+> the same seed today gives locust **35** probe firings and binned SCE **29**, with
 > LoCo and CoactDetect still at zero. The shape of the finding survives and the
 > numbers printed above it do not — they are quoted from the figure, so that the page
 > and the picture cannot disagree, and the figure is
@@ -267,7 +269,7 @@ scale and writes to the darkroom instead of to the two files this page shows.
 (`--seed 3` is already the default.)
 
 > ⚠ **Rebuilding gives different numbers from the ones on this page** — the committed
-> figures predate CICADA's recalibration, as the note under the figure above says.
+> figures predate locust's recalibration, as the note under the figure above says.
 
 ## The bake-off — same data, same scorer, held-out folds
 
@@ -291,7 +293,7 @@ cost of any claim about timing accuracy, and it helps the imprecise detectors mo
 | CoactDetect | 0.651 ± 0.044 | 0.61–0.71 | 1.2 | 0.060 | — |
 | LoCo | 0.638 ± 0.053 | 0.57–0.70 | 2.5 | 0.245 | — |
 | rate+context | 0.571 ± 0.085 | 0.46–0.65 | 34.8 | 0.005 | — |
-| CICADA | 0.541 ± 0.070 | 0.47–0.63 | 214.8 | 0.114 | — |
+| locust | 0.541 ± 0.070 | 0.47–0.63 | 214.8 | 0.114 | — |
 | binned SCE | 0.422 ± 0.083 | 0.31–0.49 | 58.8 | 0.011 | — |
 | SPIKE-synch | 0.254 ± 0.065 | 0.21–0.34 | 8.8 | 0.094 | — |
 | pooled trace (learned) | 0.131 ± 0.012 | 0.12–0.15 | 0.0 | 0.015 | 2,065 |
@@ -479,7 +481,7 @@ fast.onset_sec, fast.width_sec, fast.width_kind    # width_kind says what width 
 **All six answer in the same shape** — the point of the port, not a coincidence of
 it: a statistic trace, and the events found in it as an onset and a width. Two
 exceptions are worth knowing before you rely on the uniformity. Five of the six take
-a detection mode, supra-threshold or peak-gated; CICADA has one mode and no such
+a detection mode, supra-threshold or peak-gated; locust has one mode and no such
 argument. And `width_kind` — the field that says what a width measures — is carried
 by three of the six, so `width_def` is `NA` in the output for the other three. That contract is
 interface2's `detector_output_spec.md`, and it is what lets one scorer, one bench
@@ -498,7 +500,7 @@ for name in ("rate", "coact", "loco", "sce", "cicada", "sync"):
 ```
 
 Two differences survive underneath the contract, and each has something that
-absorbs it. LoCo, binned SCE and CICADA take a whole slice because they window by
+absorbs it. LoCo, binned SCE and locust take a whole slice because they window by
 region, while rate+context, CoactDetect and SPIKE-synch take one stream's trains
 and an extent — `run_detector` hides that split, though only for a recording whose one
 stream is named `events`, as the generator's is, so the viewer keeps its own
@@ -517,7 +519,7 @@ three now refuse outright when it is missing. The third does not:
 | detector | its parameter | called directly, with no interval | through `bugarach detect` |
 | --- | --- | --- | --- |
 | rate+context | `grid_dt` | **refuses** — the argument is required | handed the folder's interval |
-| CICADA | `imaging_rate_hz` | **refuses**, and names the recording | handed the folder's interval |
+| locust | `imaging_rate_hz` | **refuses**, and names the recording | handed the folder's interval |
 | SPIKE-synch | `dt` | **silently uses 0.1 s** | **still 0.1 s — not reached** |
 
 So a lab imaging at 20 Hz gets two refusals and one quietly wrong answer, where it
@@ -604,7 +606,7 @@ code from cSPIKE's MATLAB source.
 | Upstream | License | Role here |
 | --- | --- | --- |
 | [PySpike](https://github.com/mariomulansky/PySpike) | BSD | SPIKE-synchronization semantics ported from its (BSD) source; test-suite cross-check (its `max_tau` bug, live since 0.8.0, limits it to the uncapped regime) |
-| [CICADA](https://gitlab.com/cossartlab/cicada) | MIT | CICADA detection method (ported; carries upstream copyright notice) |
+| [CICADA](https://gitlab.com/cossartlab/cicada) | MIT | the detection method behind **locust** (ported and modified; carries upstream copyright notice) |
 | cSPIKE (MATLAB) | research/education only — **no code used** | reference outputs for parity tests only (research use, via interface2) |
 
 ⚠ SPIKE-synchronization is a **native port** rather than a PySpike wrapper because
@@ -620,10 +622,25 @@ cross-check in the uncapped regime, where the two definitions agree.
 
 - **PySpike** — Mulansky M., Kreuz T., *PySpike — A Python library for analyzing
   spike train synchrony*, SoftwareX 5, 183–189 (2016).
-- **CICADA** — the [Cossart-lab repo](https://gitlab.com/cossartlab/cicada) carries
-  no citation file; the lab's own pointer is its bioRxiv preprint for the packages
-  that superseded it. The port here is of the older `sce_stats_utils`.
-- Method papers for the remaining detectors will be added here as each is confirmed.
+- **CICADA**, for the detector this repo calls **locust** — Denis J, Dard R, Quiroli
+  E, Cossart R, Picardo M (2020). *CICADA (Calcium Imaging Complete Automated Data
+  Analysis)*, v1.0.3. Zenodo. doi:10.5281/zenodo.10041434. Source:
+  [`gitlab.com/cossartlab/cicada`](https://gitlab.com/cossartlab/cicada); the port
+  here is of the older `sce_stats_utils`. **It is named apart from CICADA because it
+  is modified** — fed our own detected events, and painting the rise interval where
+  the original paints the transient duration.
+- **binned SCE** — the rule's root is Cossart R, Aronov D, Yuste R (2003). *Attractor
+  dynamics of network UP states in the neocortex*. Nature 423(6937):283–288.
+  doi:10.1038/nature01614, whose Methods state it in full; the modern circular-shift
+  form is Dard et al. 2022 (eLife 11:e78116) and Bocchio et al. 2020 (Nat Commun
+  11:4559).
+- ⚠ **The remaining rows are being rewritten.** An attribution audit closed all six
+  origins on 2026-08-24 — `rate_detect` is cell-averaging CFAR (Finn & Johnson 1968),
+  `loco_detect`'s `maxlt` is GO-CFAR (Hansen 1973), and LoCo/CoactDetect sit on
+  Unitary Events (Grün et al. 2002). None of it changes a claim this tool makes, and
+  the full list with DOIs is in
+  [the attribution note](docs/todo/2026-08-24-the-methods-are-not-ours-and-the-app-says-otherwise.md)
+  until this section is rebuilt properly.
 
 ## Dev
 

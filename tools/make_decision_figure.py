@@ -36,7 +36,7 @@ from pathlib import Path
 
 FLAT, FITTED = "#a03623", "#2f6f9f"
 INK, MUTED, RULE = "#16202b", "#5c6773", "#c8d6e4"
-TITLES = {"rate": "rate+context", "sce": "binned SCE", "cicada": "CICADA",
+TITLES = {"rate": "rate+context", "sce": "binned SCE", "cicada": "locust",
           "sync": "SPIKE-synch", "coact": "CoactDetect", "loco": "LoCo"}
 
 

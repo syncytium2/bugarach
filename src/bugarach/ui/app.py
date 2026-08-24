@@ -129,12 +129,22 @@ COLORS = {
     "coact":  "#e69d00",
     "loco":   "#8c564b",
 }
+#: Display names. **`cicada` is the key; `locust` is the name.** The detector is
+#: derived from the Cossart lab's CICADA and is not CICADA — it is fed our own
+#: detected events, and paints each cell active for the rise interval where the
+#: original paints the whole transient duration. Showing a user another lab's
+#: tool name for a modified port was the one attribution item Tony did not wave
+#: off (2026-08-24). The **key** stays `cicada` because it is the value in
+#: `detections.csv`'s `detector` column, which is output contract — see
+#: `docs/todo/2026-08-24-the-identifier-still-says-cicada.md`.
 TITLES = {
-    "rate": "rate+context", "sce": "binned SCE", "cicada": "CICADA",
+    "rate": "rate+context", "sce": "binned SCE", "cicada": "locust",
     "sync": "SPIKE-synch", "coact": "CoactDetect", "loco": "LoCo",
 }
-# short row labels — the full titles overflow the slim signal rows
-SHORT = {"rate": "rate", "sce": "SCE", "cicada": "CIC",
+# short row labels — the full titles overflow the slim signal rows.
+# "locust" fits the 75px row, and retires "CIC", which Tony noted on 2026-08-15
+# is not CICADA to anyone who has met the other CIC.
+SHORT = {"rate": "rate", "sce": "SCE", "cicada": "locust",
          "sync": "sync", "coact": "coact", "loco": "LoCo"}
 DEFAULT_ON = ["rate", "coact", "loco"]
 
@@ -574,8 +584,9 @@ def _signal_row(det, t, y, events, extra, ext, label: str | None = None) -> hv.O
     n_ev = int(np.size(onsets)) if onsets is not None else 0
     # identity + event count live on the y-label; titles are redundant rows.
     # The viewer's 75px rows only fit the abbreviation; a caller with taller
-    # rows passes `label` and gets the real name — "CIC" is not CICADA to
-    # anyone who has met the other CIC (Tony, 2026-08-15).
+    # rows passes `label` and gets the real name. (This is where "CIC" used to
+    # be, which Tony noted on 2026-08-15 is not CICADA to anyone who has met the
+    # other CIC; "locust" fits the row and the problem went with it.)
     return hv.Overlay(items).opts(
         width=950, height=75, xlim=ext, xlabel="", title="",
         ylabel=f"{label or SHORT[det]} ({n_ev})", yticks=2,

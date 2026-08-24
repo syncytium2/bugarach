@@ -36,7 +36,7 @@ from pathlib import Path
 # Null locality is the axis the figure exists to show, so it is the colour.
 STATIONARY, BROKEN, LOCAL, INTRINSIC = "#a03623", "#d6883a", "#2f6f9f", "#6b6b6b"
 FAMILY = {
-    "cicada": ("CICADA", STATIONARY),
+    "cicada": ("locust", STATIONARY),
     "sce": ("binned SCE", STATIONARY),
     "rate": ("rate+context", BROKEN),
     "sync": ("SPIKE-synch", INTRINSIC),

@@ -25,13 +25,32 @@ always by proper name:
     threshold envelope.
   - **binned SCE** — surrogate-thresholded coactivity per trimmed region
     window (generate_sce port).
-  - **CICADA** — sliding-window coactivity with per-cell roll null (Cossart
-    lab method).
+  - **locust** — sliding-window coactivity with per-cell roll null. Derived
+    from the Cossart lab's **CICADA** (Denis et al. 2020) and **modified**: fed
+    the events already in the folder rather than running CICADA's own transient
+    detection, and painting each cell active for the *rise interval* where the
+    original paints the whole transient duration. **RENAMED 2026-08-24** — a
+    modified port does not carry the original's name in a public UI (Tony's
+    call, on interface2's ADR-0016: *"we can't say we used it if we turned off
+    half of it"*).
   - **SPIKE-synch** — tau-capped adaptive SPIKE-synchronization profile
-    (Kreuz lab) with hysteresis detection.
+    (Kreuz lab) with hysteresis detection. ⚠ *"adaptive"* is inherited and
+    ambiguous — τ here is ISI-adaptive, but cSPIKE's
+    `AdaptiveSPIKESynchroProfile` means the Satuvuori 2017 extension, which the
+    MATLAB wrapper passed as 0. Kreuz is being asked;
+    [the note](todo/2026-08-24-kreuz-answered-the-spike-synch-questions-in-april.md).
 
 A sentence must pick its axis: "all six detectors, both streams" — never
 "multimodal".
+
+**locust versus CICADA, and it is one word apart.** *CICADA* in this repo means
+the **upstream tool** — the Cossart lab's software, the thing we cite. *locust*
+means **the detector here**. The **code key is still `cicada`** everywhere it is
+an identifier: the module, `cicada_detect`, the fixtures, and the `detector`
+column value in `detections.csv`, which is output contract and not this repo's
+alone to change ([the identifier
+todo](todo/2026-08-24-the-identifier-still-says-cicada.md)). So `which ==
+"cicada"` in a file and *locust* on a screen are the same detector, deliberately.
 
 ## Parameter vocabulary — four things, four owners
 
