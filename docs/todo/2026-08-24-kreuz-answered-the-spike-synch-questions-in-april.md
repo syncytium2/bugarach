@@ -30,8 +30,8 @@ Quoted where it matters, because the wording carries the conditions:
 
 ## 1. C over E — the choice was right, and now it has an author behind it
 
-`sync_detect` thresholds **C**, the symmetric profile; the served viewer plots it
-as *"SPIKE-synch C (adaptive)"* and E appears nowhere in this tree. That was a
+`sync_detect` thresholds **C**, the symmetric profile; it is plotted as
+*"SPIKE-synch C (ISI-adaptive)"* and E appears nowhere in this tree. That was a
 port decision inherited from interface2's stack rather than an argued one, and
 Kreuz gives the argument: **identification should not depend on order**, and E
 would return only the events following the predominant order.
@@ -95,16 +95,44 @@ every bin of a candidate event** — so an ROI firing in three bins of one event
 contributes three times to a floor that reads as *"how many ROIs took part"*.
 A single busy ROI can help clear it.
 
-⚠ **Predicted from the code, not measured.** Nothing here has counted how often
-a detected event's summed `Cn` exceeds its distinct-ROI count, and the effect
-could be small at the shipped operating point. **The measurement is cheap and
-comes first**: report distinct participating ROIs alongside summed `Cn` for every
-`sync_detect` event on the bench recording, and see how far apart they are.
+### Measured 2026-08-24, and the shape is worse than the prediction
 
-If they are far apart, the fix is a distinct-ROI floor — which is a **mechanism
-change**, so it lands behind a flag defaulting to current behaviour, recorded in
-[`forks.md`](../forks.md), per [`RESET.md`](../RESET.md) §7 step 4. Parity is the
-product; `min_n` as it stands is what MATLAB does and must stay reachable.
+**The detector already computes the honest number.** `n_participating_rois` — the
+distinct ROIs with an event inside the detected span — is right there in
+`SyncDetection`, computed by `_flag_artifacts` for the artifact criterion. **The
+floor does not consult it.** This is not a missing capability: it is two numbers
+in one object, and the gate reading the wrong one.
+
+`tools/make_min_n_figure.py`, 12 seeds per regime, the bench recording,
+SPIKE-synch at its benched operating point:
+
+![Two scatter panels, what min_n gated on against distinct participating ROIs, with the floor drawn as a dashed horizontal line and unity dotted. Most points sit above the floor and scatter around the diagonal; dark red points sit below it, including events at one and two distinct ROIs](../learned/sync_min_n.png)
+
+| regime | events | gated > participants | **below the floor** | single-ROI |
+| --- | --- | --- | --- | --- |
+| `baseline_quiet` | 78 | 34 (44%) | **5 (6%)** | 2 |
+| `baseline_busy` | 88 | 33 (38%) | **12 (14%)** | 2 |
+
+**Four events across the two regimes were reported as synchrony events with one
+participating ROI**, having cleared a floor whose purpose is to require three.
+Seventeen cleared it with fewer than three. On roughly **40% of all events** the
+gating number exceeds the participant count, so the two disagree routinely rather
+than in a tail.
+
+**The rate is background-dependent — 6% quiet, 14% busy** — and that matters more
+than either number on its own: the defect grows exactly where activity rises, so a
+treatment that raises firing manufactures low-participation "events" by itself.
+That is [`RESET.md`](../RESET.md) §6's confound arriving through a second door.
+
+**What it does not change:** any published figure. These events are already inside
+what SPIKE-synch reports, so its scores include them; the numbers move only if the
+floor does.
+
+The fix is a distinct-ROI floor — a **mechanism change**, so it lands behind a flag
+defaulting to current behaviour, recorded in [`forks.md`](../forks.md), per
+[`RESET.md`](../RESET.md) §7 step 4. Parity is the product; `min_n` as it stands is
+what MATLAB does and must stay reachable. **Not done here**: this file measures,
+and the flag is its own decision with a re-fit behind it.
 
 This also bears on RESET §4's *"SPIKE-synch's 0.254 is not its accuracy"* — that
 is about a swept knob that could not bind. This is a second reason the number is
@@ -124,8 +152,9 @@ reference list as lineage rather than as the algorithm.
 
 ## What to do, cheapest first
 
-1. **Measure the `min_n` gap** (§4). One bench run, no fetching, and it is the
-   only item here that could change a number.
+1. ~~**Measure the `min_n` gap** (§4).~~ **Done 2026-08-24** — 6% of events in the
+   quiet regime and 14% in the busy one clear the floor with fewer than three
+   participating ROIs; four have one. The figure and the table are in §4.
 2. **Ask Kreuz the "adaptive" question while the line is open.** interface2 reports
    that their cSPIKE wrapper passed Satuvuori's adaptive time-scale argument as
    **0** — disabled — while calling the code path "adaptive"; our `sync.py`
