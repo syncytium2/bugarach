@@ -141,8 +141,13 @@ back".
 The browser writes its table in JavaScript rather than through the library, so a
 test suite pins it to the library's contract: the column list and its order, the
 strength unit each detector declares, and that the numbers survive the round trip. The
-Panel viewer's zip is pinned to the same list. What nothing does is compare a browser
-run and a `bugarach detect` run on the same folder, row for row.
+Panel viewer's zip is pinned to the same list. And the two routes have now been
+compared on the same folder, row for row: across 84 recordings with the roster and
+the stream pinned on both sides, **`rate` — the detector that draws no random
+numbers — matched 1613 of 1613**, while the two that draw surrogates agreed with
+each other as closely as each agrees with *itself* on a different draw (`coact`
+88.9%, against an 89.4% self-agreement floor). `tools/compare_routes.py`, with the
+control in `tools/sampling_floor.py`.
 
 The headless route is the one that scales: this lab's 84-recording
 `revised_2v_periods` export goes through all six detectors in about 45 to 50 seconds
