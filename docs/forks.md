@@ -574,6 +574,63 @@ stale numbers in `docs/learned/` — that is one pass and RESET §5 governs it.
 
 ---
 
+## 13 · The coactivity excess: selection-corrected (live) vs raw
+
+**Live:** `assess_coactivity(..., excess_mode="corrected")`, the default since
+2026-08-25, and the same arithmetic in the browser's `assessCoactivity`. Every
+surrogate is scored the way the observation is — the bins where *that surrogate*
+reaches K, summed against the ensemble mean — and the median of that is
+subtracted.
+
+**Alternative:** `excess_mode="raw"`, `obs_mass − null_mass`, which is exactly
+what `measure_coordination_timescale.m` computes. Always available, always
+returned as `Assessment.coact_excess_raw`, and it is the mode the MATLAB parity
+fixtures are checked against.
+
+**Why.** Selecting bins where the *observed* count reaches K and then comparing
+against the null's *mean* in those bins is positive by construction: the bins were
+chosen for being high, the mean was not. On independent Poisson ROIs — nothing
+planted, so the true answer is zero — the raw statistic read **6.15** excess
+co-active ROI·events/min at the busy background, and **96%** of that survived
+replacing the data with a draw from its own null. It was measuring the selection
+rule.
+
+| nothing planted, K=3 | raw | surrogate median | corrected |
+|---|---|---|---|
+| quiet, 5.2 mHz/ROI | 0.28 | 0.27 | **0.01** |
+| busy, 19.0 mHz/ROI | 6.14 | 5.75 | **0.39** |
+| crowded, 50 mHz/ROI | 30.09 | 30.06 | **0.04** |
+
+**Three things it buys**, all measured before the choice was made
+([the decision figure](learned/assess_fork_decision.png)):
+
+- the null reads zero;
+- **K stops moving the answer** — on planted data the raw excess falls 75% from
+  K=3 to K=6 and the corrected one 19%, and the raw fall has the same shape on
+  data with nothing in it, so most of it was the bias dying out;
+- **two windows at different backgrounds become comparable** — the same twelve
+  planted events read 2.80× larger at the busy background than the quiet one under
+  the raw statistic and 0.83× under the corrected one, which is what a treatment
+  contrast needs and RESET §6 said was established nowhere.
+
+**Cost:** it is a fork from the MATLAB, so bugarach's headline excess is no longer
+the quantity `darkroom/constellation/` was computed with. That stopped being an
+obstacle at ADR-0003 and is Tony's decision, taken 2026-08-25.
+
+**No parity exemption was needed**, which is the part worth copying. `raw` is still
+computed on every call and `tests/test_assess.py` still holds it to the fixtures at
+1e-9, so the inheritance stayed *verified* rather than waived — ADR-0003's
+"fixtures are the baseline, not a gate", made literal.
+
+**To flip:** `excess_mode="raw"`. Pinned by `tests/test_assess_null.py`, whose
+strict xfail — *plant nothing, expect zero* — passes now.
+
+**What this does not do:** regenerate `docs/learned/`, `generator_spec.json`, or
+the bake-off, all of which were derived from the raw number. That is RESET §5's
+one pass and it wants doing together.
+
+---
+
 ## What is still genuinely open
 
 Not forks — nobody has taken a side.

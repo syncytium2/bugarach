@@ -83,6 +83,14 @@ def test_assessment_matches_matlab(ci):
         merge_bins=int(o["merge_bins"]),
         n_surrogates=int(o["n_surr"]),
         rng_seed=int(o["rng_seed"]),
+        # RAW, because that is what the MATLAB computes and this test is the
+        # record of the inheritance. `coact_excess` carries the
+        # selection-corrected quantity by default now (forks §13); the
+        # uncorrected one is still computed, still returned and still checked
+        # here — which is why taking that correction needed no parity exemption.
+        # ADR-0003 calls these fixtures the baseline rather than a gate, and a
+        # baseline that stopped being verified would not be one.
+        excess_mode="raw",
     )
 
     assert len(got) == len(case["recs"])
