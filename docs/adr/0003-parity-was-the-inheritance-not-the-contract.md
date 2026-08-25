@@ -85,32 +85,64 @@ worth paying.
 inheritance. It is not a constraint on what bugarach may compute next, and holding
 it is not current work.**
 
+**The MATLAB is the stale copy now.** Tony, 2026-08-25, asked for this in terms:
+
+> *"To be clear, we are modifying the six detectors at will to improve
+> performance. We are no longer concerned about matching MATLAB performance.
+> Consider the MATLAB versions stale."*
+
+That inverts which implementation is authoritative. The MATLAB was the oracle;
+bugarach was the port being checked against it. **bugarach is now the live
+implementation and the MATLAB is a snapshot of where it started.** A difference
+between them is no longer evidence that bugarach is wrong.
+
 **Deferred, not abandoned.** A move back to MATLAB is explicitly on the table for
 some later time. Nothing here forecloses it, and consequence 3 is what keeps it
 affordable.
 
 Three consequences, and the second and third are what make this reversible.
 
-1. **A correction no longer needs permission from the MATLAB.** Where bugarach
-   finds a defect, it may fix it. The question becomes *"is this right"* rather
-   than *"does this match"*.
-2. **The parity tests stay, and they keep running.** They are not the contract any
-   more; they are the **provenance record**, and deleting them would throw away
-   the evidence for a claim this project should keep making — that the port was
-   faithful when it was handed over. They are also plain regression tests for
-   everything nobody has deliberately changed.
-3. **Divergence is enumerated, never ambient — and this is the route back.** When
-   a fork is taken, the parity test for that quantity gets an explicit, named
-   exemption pointing at the `forks.md` entry that authorised it. Two reasons, and
-   the second is the one that makes it non-negotiable:
-   - A parity test that starts failing because somebody edited arithmetic *without
-     deciding to* is still a bug, and must still look like one. "We don't do
-     parity any more" must not become "a failing parity test is nothing to worry
-     about."
-   - **If returning to MATLAB is ever interesting, the enumeration is the map.**
-     A short list of named, argued divergences is a tractable afternoon. Ambient
-     drift discovered later is an audit of every line of six detectors, and it is
-     the difference between a door and a wall.
+1. **The six detectors may be modified at will, to improve performance.** Not only
+   to correct defects — that was the first draft of this ADR and it was too narrow.
+   The question is *"is this better"*, measured, and neither *"does this match"*
+   nor *"was the old one wrong"*. The revision work that was waiting on permission
+   to change mechanism — [the case for revising the
+   detectors](../todo/2026-08-22-the-case-for-revising-the-detectors.md), [the
+   revision plan](../todo/2026-08-22-the-revision-plan-mechanism-before-calibration.md),
+   [the four variants of the tube](../todo/2026-08-23-four-variants-of-the-tube.md)
+   — is unblocked by this line. **Each change still owes evidence that it helped**;
+   that is a standard about measurement, not about MATLAB.
+2. **The parity fixtures stop being a gate and become the baseline.** They are not
+   the contract any more, and they are worth more than the contract was:
+   - They are the **provenance record** — evidence for a claim this project should
+     keep making, that the port was faithful when it was handed over. Deleting
+     them throws that away and it cannot be reconstructed.
+   - They are the **before** in every "I improved this" claim. Modifying detectors
+     at will makes the interesting statement *"here is the change and here is the
+     measurement showing it helped"*, and that statement needs a fixed point to
+     measure from. The inherited behaviour is the natural one. This serves the
+     portfolio purpose directly: a faithful port **and then** a measured
+     improvement is a better story than either alone, and it is only legible if
+     the starting point survives.
+   - They remain plain regression tests for everything nobody has deliberately
+     changed, which is most of the tree on most days.
+3. **Know what changed. Do not ask permission to change it.** A deliberate
+   improvement that makes a parity test fail is **expected**, not a problem — the
+   fixture is a snapshot of the old behaviour and it did its job. What is still
+   worth having is the record: the fork gets a [`forks.md`](../forks.md) entry
+   saying what moved and what it bought, and the test is exempted by name pointing
+   at that entry.
+
+   Two reasons, neither of them owed to interface2:
+   - **A parity test failing because somebody edited arithmetic without deciding
+     to is still a bug**, and must still look like one. "We modify at will" must
+     not become "a red test is nothing to worry about" — that is how an accident
+     ships as an improvement.
+   - **The enumeration is the map back**, if a return to MATLAB ever gets
+     interesting. A short list of argued divergences is an afternoon; ambient
+     drift discovered later is an audit of six detectors line by line.
+
+   **This is a note, not a gate.** Nothing here says a change waits for paperwork.
 
 **bugarach does not update interface2's code to match, for now.** One repo for
 this aspect, at this time.
@@ -141,11 +173,17 @@ this aspect, at this time.
 
 **May be said**, and should be, because it is the credential: *six MATLAB
 detectors and the coactivity assessment were ported and matched to 1e-9 on
-committed fixtures.* True, evidenced, and unaffected by anything after it.
+committed fixtures.* True, evidenced, and unaffected by anything after it. Note
+the tense — **were**, at the point of inheritance.
 
-**May not be said** once a fork lands: *"bugarach computes the same thing as the
-MATLAB."* It will compute something deliberately different in named places, and
-those places are `forks.md`.
+**May not be said** once anything is modified: *"bugarach computes the same thing
+as the MATLAB"*, or any present-tense parity claim. It will compute something
+deliberately different in named places, and those places are `forks.md`.
+
+**The claim worth building toward** is the one the modifications make available,
+and it is stronger than parity ever was: *ported faithfully, then measurably
+improved on.* It needs both halves to be legible, which is consequence 2's whole
+argument for keeping the fixtures.
 
 ## Consequences for what is open right now
 
@@ -157,3 +195,23 @@ regeneration for other reasons.
 
 **The K decision** (RESET §7 item 3) is downstream of decision 1 and stays blocked
 on it, not on this.
+
+**The detector revision work is unblocked, and it is the largest thing this ADR
+releases.** Three open items were written under the assumption that mechanism
+changes must land behind parity-preserving flags:
+[the case for revising the detectors](../todo/2026-08-22-the-case-for-revising-the-detectors.md),
+[the revision plan](../todo/2026-08-22-the-revision-plan-mechanism-before-calibration.md)
+and [the four variants of the tube](../todo/2026-08-23-four-variants-of-the-tube.md).
+Their sequencing argument — *mechanism before calibration*, because re-fitting a
+detector whose mechanism is wrong bakes the defect into the new operating point at
+full price — is untouched and still right. What changes is that the mechanism half
+no longer needs anybody's permission.
+
+**Four of the six operating points are inherited defaults** rather than measured
+optima (`bench.OPERATING_POINTS`, read the `source` fields), which is why the
+bake-off ranking partly tracks calibration status rather than detector quality.
+Re-fitting them is now an ordinary piece of work.
+
+**RESET §7's order still holds.** Steps 4 and 5 are exactly this work, and they sit
+behind step 3 — a fresh assessment and a K decision — for reasons that have nothing
+to do with parity.

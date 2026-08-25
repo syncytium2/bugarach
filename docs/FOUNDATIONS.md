@@ -40,12 +40,20 @@ every mode**, and the tests that prove it stay and keep running. That is the
 **provenance record** — it is what makes the ports citable in place of the
 originals, and it stays true whatever bugarach does next.
 
-**What it is not, since ADR-0003:** permission bugarach must ask before correcting
-something. Where a defect is found here it may be fixed, and the question is *"is
-this right"* rather than *"does this match"*. Divergence is **enumerated, never
-ambient** — a fork gets a [`forks.md`](forks.md) entry and the parity test for that
-quantity gets a named exemption pointing at it, so a parity test that fails because
-somebody edited arithmetic without deciding to still looks like the bug it is.
+**What it is not, since ADR-0003:** permission bugarach must ask before changing
+something. **The six detectors may be modified at will to improve performance, and
+the MATLAB versions are stale** — bugarach is the live implementation and they are
+a snapshot of where it started, so a difference between them is no longer evidence
+that bugarach is wrong. The question is *"is this better"*, measured; each change
+still owes evidence that it helped, which is a standard about measurement rather
+than about MATLAB.
+
+The fixtures stop being a gate and become the **baseline**: the before in every
+"I improved this" claim, and the provenance record for the port itself. So a
+deliberate change that reddens a parity test is expected — give the fork a
+[`forks.md`](forks.md) entry and exempt the test by name pointing at it. That is a
+note, not a gate: it exists so a test that goes red *without* anyone deciding to
+still looks like the bug it is.
 
 Consequences, all unchanged:
 
