@@ -1,0 +1,900 @@
+<title>The CFAR Reference Window</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+:root{
+  --ground:#e9ecf0; --surface:#fbfcfe; --surface-2:#f1f4f8; --rule:#d3dae2; --grid:#dfe5ec;
+  --ink:#141a21; --ink-2:#4c5762; --ink-3:#7d8894;
+  --signal:#2f6f9f; --bar:#b96c22; --alarm:#a03623; --hit:#26705a; --quiet:#9aa4ae;
+  --wash-signal:rgba(47,111,159,.13); --wash-guard:rgba(125,136,148,.16); --wash-cut:rgba(185,108,34,.22);
+  --shadow:0 1px 2px rgba(20,26,33,.06), 0 8px 24px -18px rgba(20,26,33,.5);
+}
+:root:not([data-theme="light"]) { }
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ground:#0c1015; --surface:#131920; --surface-2:#19212a; --rule:#25303a; --grid:#1d262f;
+    --ink:#e7edf3; --ink-2:#9fabb7; --ink-3:#6b7783;
+    --signal:#63aadb; --bar:#e0a15c; --alarm:#d76b52; --hit:#4dbd97; --quiet:#59636d;
+    --wash-signal:rgba(99,170,219,.15); --wash-guard:rgba(107,119,131,.20); --wash-cut:rgba(224,161,92,.24);
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 30px -20px #000;
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0c1015; --surface:#131920; --surface-2:#19212a; --rule:#25303a; --grid:#1d262f;
+  --ink:#e7edf3; --ink-2:#9fabb7; --ink-3:#6b7783;
+  --signal:#63aadb; --bar:#e0a15c; --alarm:#d76b52; --hit:#4dbd97; --quiet:#59636d;
+  --wash-signal:rgba(99,170,219,.15); --wash-guard:rgba(107,119,131,.20); --wash-cut:rgba(224,161,92,.24);
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 30px -20px #000;
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--ground); color:var(--ink);
+  font-family:"IBM Plex Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+  font-size:16px; line-height:1.6; -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:1160px; margin:0 auto; padding:clamp(28px,5vw,64px) clamp(16px,4vw,32px) 96px}
+.eyebrow{
+  font-family:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  font-size:.7rem; letter-spacing:.19em; text-transform:uppercase; color:var(--ink-3); margin:0 0 14px;
+}
+h1{
+  font-family:"Bricolage Grotesque","IBM Plex Sans",sans-serif; font-weight:800;
+  font-size:clamp(2.1rem,5.2vw,3.35rem); line-height:1.02; letter-spacing:-.025em;
+  margin:0 0 18px; text-wrap:balance;
+}
+h1 em{font-style:normal; color:var(--bar)}
+.stand{max-width:64ch; color:var(--ink-2); font-size:1.06rem; margin:0}
+.stand strong{color:var(--ink); font-weight:600}
+
+h2{
+  font-family:"Bricolage Grotesque","IBM Plex Sans",sans-serif; font-weight:600;
+  font-size:1.42rem; letter-spacing:-.015em; margin:0 0 6px; text-wrap:balance;
+}
+h3{font-family:"Bricolage Grotesque","IBM Plex Sans",sans-serif; font-weight:600; font-size:1.02rem; margin:0 0 8px; letter-spacing:-.01em}
+p{margin:0 0 14px}
+.lede{color:var(--ink-2); max-width:70ch; margin:0 0 22px}
+
+section{margin-top:clamp(38px,6vw,66px)}
+.card{
+  background:var(--surface); border:1px solid var(--rule); border-radius:6px;
+  box-shadow:var(--shadow);
+}
+.pad{padding:clamp(14px,2.2vw,22px)}
+
+/* ---- scope ---- */
+.scope-shell{padding:14px 14px 10px}
+canvas{display:block; width:100%; touch-action:pan-y}
+#scope{height:352px}
+#combo{height:172px}
+.mini{height:104px}
+
+.legend{
+  display:flex; flex-wrap:wrap; gap:6px 20px; padding:10px 6px 2px;
+  font-family:"IBM Plex Mono",monospace; font-size:.72rem; color:var(--ink-2); letter-spacing:.01em;
+}
+.key{display:inline-flex; align-items:center; gap:7px}
+.sw{width:11px; height:11px; border-radius:2px; flex:0 0 auto}
+.sw.line{height:3px; border-radius:1px}
+
+/* ---- controls ---- */
+.controls{
+  display:grid; gap:18px 26px; grid-template-columns:repeat(auto-fit,minmax(215px,1fr));
+  margin-top:14px;
+}
+.ctl-label{
+  font-family:"IBM Plex Mono",monospace; font-size:.68rem; letter-spacing:.16em;
+  text-transform:uppercase; color:var(--ink-3); display:flex; justify-content:space-between;
+  align-items:baseline; gap:10px; margin-bottom:9px;
+}
+.ctl-label b{color:var(--ink); font-weight:600; letter-spacing:.04em; font-size:.78rem; font-variant-numeric:tabular-nums}
+.chips{display:flex; flex-wrap:wrap; gap:6px}
+button{font:inherit; color:inherit; cursor:pointer}
+.chip{
+  font-family:"IBM Plex Mono",monospace; font-size:.75rem; letter-spacing:.02em;
+  padding:6px 11px; border-radius:4px; border:1px solid var(--rule);
+  background:var(--surface-2); color:var(--ink-2); transition:background .12s, color .12s, border-color .12s;
+}
+.chip:hover{border-color:var(--ink-3); color:var(--ink)}
+.chip[aria-pressed="true"]{background:var(--ink); border-color:var(--ink); color:var(--surface); font-weight:500}
+.chip.act{background:transparent}
+.chip.act[aria-pressed="true"]{background:var(--bar); border-color:var(--bar); color:#fff}
+:focus-visible{outline:2px solid var(--bar); outline-offset:2px; border-radius:3px}
+
+input[type=range]{
+  -webkit-appearance:none; appearance:none; width:100%; background:transparent; margin:0; height:18px;
+}
+input[type=range]::-webkit-slider-runnable-track{height:3px; background:var(--rule); border-radius:2px}
+input[type=range]::-moz-range-track{height:3px; background:var(--rule); border-radius:2px}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none; width:15px; height:15px; border-radius:50%; background:var(--bar);
+  border:2px solid var(--surface); margin-top:-6px; box-shadow:0 0 0 1px var(--rule);
+}
+input[type=range]::-moz-range-thumb{
+  width:15px; height:15px; border-radius:50%; background:var(--bar);
+  border:2px solid var(--surface); box-shadow:0 0 0 1px var(--rule);
+}
+
+/* ---- tables / tallies ---- */
+.split{display:grid; gap:18px; grid-template-columns:1.35fr 1fr; align-items:start}
+@media (max-width:860px){.split{grid-template-columns:1fr}}
+.tally{width:100%; border-collapse:collapse; font-variant-numeric:tabular-nums}
+.tally th, .tally td{padding:7px 8px; text-align:right; border-bottom:1px solid var(--rule)}
+.tally th:first-child, .tally td:first-child{text-align:left}
+.tally thead th{
+  font-family:"IBM Plex Mono",monospace; font-size:.66rem; letter-spacing:.13em;
+  text-transform:uppercase; color:var(--ink-3); font-weight:500; border-bottom:1px solid var(--ink-3);
+}
+.tally td{font-family:"IBM Plex Mono",monospace; font-size:.82rem}
+.tally tbody tr:last-child td{border-bottom:none}
+.tally tr.on td{background:var(--surface-2)}
+.tally td.name{font-family:"IBM Plex Sans",sans-serif; font-size:.9rem; color:var(--ink)}
+.bad{color:var(--alarm); font-weight:600}
+.good{color:var(--hit); font-weight:600}
+.meterwrap{position:relative; height:6px; background:var(--surface-2); border-radius:3px; overflow:hidden; min-width:54px}
+.meter{position:absolute; inset:0 auto 0 0; background:var(--signal); border-radius:3px}
+.meter.warn{background:var(--alarm)}
+
+.minis{display:grid; gap:12px; grid-template-columns:repeat(auto-fit,minmax(206px,1fr))}
+.mini-card{background:var(--surface); border:1px solid var(--rule); border-radius:5px; padding:9px 9px 4px}
+.mini-head{display:flex; justify-content:space-between; align-items:baseline; gap:8px; margin-bottom:2px}
+.mini-name{font-family:"Bricolage Grotesque",sans-serif; font-weight:600; font-size:.92rem}
+.mini-stat{font-family:"IBM Plex Mono",monospace; font-size:.7rem; color:var(--ink-3); font-variant-numeric:tabular-nums}
+.mini-rule{font-family:"IBM Plex Mono",monospace; font-size:.66rem; color:var(--ink-3); line-height:1.45; padding:0 1px 4px}
+
+.note{
+  font-family:"IBM Plex Mono",monospace; font-size:.72rem; line-height:1.6; color:var(--ink-3);
+  border-left:2px solid var(--rule); padding-left:12px; margin:16px 0 0; max-width:78ch;
+}
+.readout{
+  font-family:"IBM Plex Mono",monospace; font-size:.78rem; color:var(--ink-2);
+  background:var(--surface-2); border:1px solid var(--rule); border-radius:4px;
+  padding:10px 12px; line-height:1.55;
+}
+.readout b{color:var(--ink); font-weight:600}
+.readout .z{color:var(--bar); font-weight:600}
+
+.cards{display:grid; gap:16px; grid-template-columns:repeat(auto-fit,minmax(270px,1fr))}
+.cards .card{padding:20px}
+.cards p{font-size:.94rem; color:var(--ink-2); margin-bottom:10px}
+.cards p:last-child{margin-bottom:0}
+blockquote{
+  margin:0 0 12px; padding:0 0 0 13px; border-left:2px solid var(--bar);
+  font-size:.93rem; color:var(--ink); line-height:1.55;
+}
+cite{display:block; font-style:normal; font-family:"IBM Plex Mono",monospace;
+  font-size:.68rem; letter-spacing:.06em; color:var(--ink-3); margin-top:7px}
+.map{width:100%; border-collapse:collapse; font-size:.88rem}
+.map th,.map td{text-align:left; padding:8px 10px 8px 0; border-bottom:1px solid var(--rule); vertical-align:top}
+.map thead th{font-family:"IBM Plex Mono",monospace; font-size:.65rem; letter-spacing:.13em;
+  text-transform:uppercase; color:var(--ink-3); font-weight:500}
+.map td.code{font-family:"IBM Plex Mono",monospace; font-size:.8rem; color:var(--signal)}
+.map tbody tr:last-child td{border-bottom:none}
+.scrollx{overflow-x:auto}
+hr.div{border:0; border-top:1px solid var(--rule); margin:0}
+footer{margin-top:56px; color:var(--ink-3); font-size:.8rem; font-family:"IBM Plex Mono",monospace; line-height:1.7}
+@media (prefers-reduced-motion:reduce){*{animation:none!important; transition:none!important}}
+</style>
+
+<div class="wrap">
+
+<header>
+  <p class="eyebrow">detection theory · live instrument</p>
+  <h1>Every cell is judged against<br>the cells <em>beside</em> it</h1>
+  <p class="stand">A fixed threshold cannot survive a background that moves. CFAR detectors throw the fixed
+  bar away and rebuild it at every cell from that cell's own neighbours — so the false alarm rate stays put
+  while the background does not. <strong>The variants differ in one thing only: how the neighbouring cells
+  are combined into a single number.</strong> Average them and you get CA. Take the greater of the two
+  halves and you get GO. That one choice is the whole design space, and below it is running.</p>
+</header>
+
+<section>
+  <div class="card scope-shell">
+    <canvas id="scope" aria-label="A-scope: amplitude per cell, with the sliding CFAR reference window and its threshold"></canvas>
+    <div class="legend">
+      <span class="key"><span class="sw" style="background:var(--signal)"></span>cell amplitude</span>
+      <span class="key"><span class="sw line" style="background:var(--bar)"></span>threshold</span>
+      <span class="key"><span class="sw" style="background:var(--wash-signal); border:1px solid var(--signal)"></span>reference cells</span>
+      <span class="key"><span class="sw" style="background:var(--wash-guard); border:1px dashed var(--ink-3)"></span>guard cells</span>
+      <span class="key"><span class="sw" style="background:var(--wash-cut); border:1px solid var(--bar)"></span>cell under test</span>
+      <span class="key"><span class="sw" style="background:var(--hit); border-radius:50%"></span>detection</span>
+      <span class="key"><span class="sw" style="background:var(--alarm); border-radius:50%"></span>false alarm</span>
+      <span class="key"><span class="sw" style="background:transparent; border:1.5px solid var(--ink-3); border-radius:50%"></span>missed target</span>
+    </div>
+  </div>
+
+  <div class="controls pad">
+    <div>
+      <div class="ctl-label"><span>environment</span></div>
+      <div class="chips" id="scenarios"></div>
+    </div>
+    <div>
+      <div class="ctl-label"><span>combination rule</span></div>
+      <div class="chips" id="variants"></div>
+    </div>
+    <div>
+      <div class="ctl-label"><span>reference cells / side</span><b id="lblR">8</b></div>
+      <input type="range" id="R" min="3" max="16" step="1" value="8" aria-label="reference cells per side">
+    </div>
+    <div>
+      <div class="ctl-label"><span>guard cells / side</span><b id="lblG">2</b></div>
+      <input type="range" id="G" min="0" max="6" step="1" value="2" aria-label="guard cells per side">
+    </div>
+    <div>
+      <div class="ctl-label"><span>design P<sub>fa</sub></span><b id="lblP">1e-2</b></div>
+      <input type="range" id="P" min="0" max="100" step="1" value="50" aria-label="design false alarm probability">
+    </div>
+    <div>
+      <div class="ctl-label"><span>target strength</span><b id="lblS">13 dB</b></div>
+      <input type="range" id="S" min="4" max="24" step="1" value="13" aria-label="target strength in decibels">
+    </div>
+    <div>
+      <div class="ctl-label"><span>sweep</span></div>
+      <div class="chips">
+        <button class="chip act" id="play" aria-pressed="true">pause</button>
+        <button class="chip" id="reroll">new noise</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>How the reference cells combine</h2>
+  <p class="lede">The window slides; at each stop its cells collapse to one number <b>Z</b>, and the bar is
+  <b>&alpha;&middot;Z</b>. Watch what each rule does when a strong cell wanders into the window.</p>
+  <div class="split">
+    <div class="card scope-shell">
+      <canvas id="combo" aria-label="Reference cell values on an amplitude axis, showing which value the current rule selects"></canvas>
+    </div>
+    <div style="display:grid; gap:12px">
+      <div class="readout" id="readout"></div>
+      <div class="card pad">
+        <h3 style="margin-bottom:10px">This sweep, same noise, all five</h3>
+        <table class="tally">
+          <thead><tr><th>rule</th><th>hits</th><th>false alarms</th></tr></thead>
+          <tbody id="live"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>Five bars over one record</h2>
+  <p class="lede">Each multiplier <b>&alpha;</b> was calibrated by Monte&nbsp;Carlo so that all five rules
+  hit the same false alarm rate in <em>homogeneous</em> noise. Any difference you see below is the
+  environment breaking that promise — which is exactly what the variants were invented to argue about.</p>
+  <div class="minis" id="minis"></div>
+</section>
+
+<section>
+  <h2>What it costs, measured</h2>
+  <p class="lede">400 independent records of the current environment, scored against planted truth.
+  P<sub>d</sub> is the fraction of targets found; the achieved P<sub>fa</sub> is what the design number
+  actually turned into once the background stopped being flat.</p>
+  <div class="card pad">
+    <div class="chips" style="margin-bottom:14px">
+      <button class="chip act" id="runtrials" aria-pressed="false">run 400 records</button>
+      <span class="mini-stat" id="trialstatus" style="align-self:center">not run yet</span>
+    </div>
+    <div class="scrollx">
+      <table class="tally" id="trials">
+        <thead><tr><th>rule</th><th>P<sub>d</sub></th><th></th><th>achieved P<sub>fa</sub></th><th>&times; design</th><th>in the transition</th></tr></thead>
+        <tbody id="trialbody"></tbody>
+      </table>
+    </div>
+    <p class="note" id="verdict">Run it on <b>homogeneous</b> first to see the five agree, then switch
+    environment and run it again. The interesting numbers are the ratios in the last two columns.</p>
+  </div>
+</section>
+
+<section>
+  <h2>Three things the picture is showing</h2>
+  <div class="cards">
+    <div class="card">
+      <h3>Guard cells stop a target masking itself</h3>
+      <p>Drag <b>guard cells</b> to 0 and watch the threshold grow a bump exactly where each target is.
+      The target's own energy is sitting in the estimate of the background it is being judged against, so
+      it raises its own bar. Strong targets vanish first.</p>
+      <blockquote>reference cells &ldquo;are separated from the CUT by a number of guard cells, whose
+      purpose is to limit the effects of a range spread target&rdquo;
+      <cite>Weinberg, on the standard CFAR layout</cite></blockquote>
+      <p>By 1983 the practice was settled enough that Rohling specifies &ldquo;two guard cells directly
+      adjacent to the test cell&rdquo; as a setup detail, with no argument for it.</p>
+    </div>
+    <div class="card">
+      <h3>Greatest-of is edge-robust and target-blind</h3>
+      <p>On <b>clutter edge</b>, CA and SO drag half a window of quiet cells across the step and fire a
+      burst of false alarms on the loud side. GO takes the greater half, so a transition straddling the
+      test cell can never <em>lower</em> the bar.</p>
+      <blockquote>&ldquo;Although the false alarm rate performance of the GO-CFAR processor in regions of
+      clutter transition is better than that of any other mean-level CFAR scheme, the detection
+      performance in the multiple target environment is quite poor.&rdquo;
+      <cite>Gandhi &amp; Kassam, IEEE T-AES 24(4), 1988</cite></blockquote>
+      <p>Switch to <b>two close targets</b> and watch GO come last. Rohling is blunt about why: &ldquo;due
+      to symmetry, the splitting of the reference window of the CAGO CFAR does not help in this
+      situation&rdquo;. The split is the entire mechanism, and against an interferer it contributes nothing.</p>
+    </div>
+    <div class="card">
+      <h3>Every rule is somebody's worst case</h3>
+      <p>Smallest-of is GO read backwards, and it inherits the mirror image: it resolves close targets
+      better than anything else here and it is the <em>worst</em> detector on the page at a clutter edge,
+      by an order of magnitude. Nobody deploys it by accident.</p>
+      <p>The ordered-cell rules split the difference. OS reads off the <i>k</i>-th smallest, so an
+      interferer high in the window never reaches the bar; TM throws the two loudest away and averages the
+      rest. Both handle a neighbour well and an edge only tolerably — which is Gandhi &amp; Kassam's
+      finding, that ordered-cell schemes have &ldquo;in general better overall performance&rdquo; while GO
+      still owns the transition.</p>
+      <p>And GO's split, when it loses, loses cheaply: Hansen &amp; Sawyers measured the extra loss in
+      stationary clutter at &ldquo;0.1 to 0.3 dB&rdquo;.</p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>Where this repo already lives in that space</h2>
+  <p class="lede">bugarach's coordination detectors were tuned by benchmark, not by reading radar — and
+  they landed on named CFAR variants anyway. The mapping is
+  <b>docs/detector_history.md</b> &sect;4; every primary behind it is on the shelf and read.</p>
+  <div class="card pad scrollx">
+    <table class="map">
+      <thead><tr><th>bugarach detector</th><th>mechanism</th><th>CFAR name</th><th>source</th></tr></thead>
+      <tbody>
+        <tr><td class="code">rate+context</td><td>test window vs the mean of a surrounding window</td><td>cell-averaging (CA)</td><td>Finn &amp; Johnson 1968</td></tr>
+        <tr><td class="code">LoCo · maxlt</td><td><b>max</b> of a trailing and a leading half-window</td><td>greatest-of (GO)</td><td>Hansen &amp; Sawyers 1980</td></tr>
+        <tr><td class="code">LoCo · symmetric</td><td>one window spanning both sides</td><td>cell-averaging again</td><td>—</td></tr>
+        <tr><td class="code">LoCo · 99.9th pct</td><td>a high order statistic of the surrogate pool</td><td>kin to ordered-statistic (OS)</td><td>Rohling 1983</td></tr>
+        <tr><td class="code">CoactDetect</td><td>bin vs a null centred on that bin</td><td>cell-averaging, per-cell test</td><td>—</td></tr>
+        <tr><td class="code">binned SCE, CICADA</td><td>one bar per region</td><td>pre-CFAR fixed threshold</td><td>—</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="note">Two live consequences. <b>All three rolling detectors now take a <code>guard_sec</code>,
+  and all three default it to 0</b> — so the shipped bar is still the unguarded one, and the slider above
+  is the shape of what that costs. And <code>maxlt</code> should be expected to
+  miss the second of two coordinated events falling inside one half-context (60&nbsp;s FAST, 30&nbsp;s
+  SLOW at shipped defaults), <i>because</i> of the mechanism that makes it good at drug onsets — the
+  <b>two close targets</b> environment above, in the units this preparation actually uses. Nothing in
+  either tree tests it yet.</p>
+</section>
+
+<footer>
+  <p>The model here is radar's, not this lab's: square-law envelope, exponential cell statistics, a
+  Swerling-style target that multiplies local clutter power and spreads over &plusmn;2 cells the way a
+  matched filter output does. Those skirt cells are scored as neither hit nor false alarm — they are the
+  reason a guard interval exists. It reproduces the <i>shapes</i> of the CFAR argument; the decibels do
+  not transfer to a count of distinct ROIs. That caveat is detector_history &sect;5.4's, and it applies
+  to this page too.</p>
+  <p>Quotations are the ones already matched against the primaries on the lit shelf. &alpha; is solved
+  numerically at load for the current window size and design P<sub>fa</sub>.</p>
+</footer>
+
+</div>
+
+<script>
+(function(){
+"use strict";
+var $=function(s){return document.querySelector(s)};
+
+var VARIANTS=[
+ {id:"CA",name:"CA-CFAR",rule:"mean of every reference cell",cite:"Finn & Johnson 1968"},
+ {id:"GO",name:"GO-CFAR",rule:"greater of the two half-means",cite:"Hansen & Sawyers 1980"},
+ {id:"SO",name:"SO-CFAR",rule:"lesser of the two half-means",cite:"Trunk 1978"},
+ {id:"OS",name:"OS-CFAR",rule:"k-th smallest reference cell",cite:"Rohling 1983"},
+ {id:"TM",name:"TM-CFAR",rule:"mean, two largest censored",cite:"Weiss 1982; Rickard & Dillard"}
+];
+var VIDS=VARIANTS.map(function(v){return v.id});
+var SCENARIOS=[
+ {id:"flat",name:"homogeneous",n:220},
+ {id:"edge",name:"clutter edge",n:220},
+ {id:"pair",name:"two close targets",n:220},
+ {id:"ramp",name:"onset ramp",n:220}
+];
+var PFAS=[3e-4,1e-3,3e-3,1e-2,3e-2,1e-1];
+
+var state={scenario:"flat",variant:"GO",R:8,G:2,pfa:1e-2,snr:13,seed:20260824,playing:true,cut:null,userCut:false};
+var reduced=window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/* ---------- model ---------- */
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;var t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return ((t^t>>>14)>>>0)/4294967296}}
+function dB(v){return 10*Math.log10(Math.max(v,1e-9))}
+function osK(R){return Math.max(1,Math.round(1.5*R))}
+
+/* A target is not one cell. A matched filter smears it over its own impulse
+   response, and those skirt cells are what a guard interval exists to exclude —
+   Weinberg's "range spread target". SPREAD is the power fraction at each offset. */
+var SPREAD=[1,0.45,0.15];
+function makeScene(){
+ var n=220,lam=new Float64Array(n),i,f,targets,zone=null;
+ for(i=0;i<n;i++)lam[i]=1;
+ var w=state.R+state.G;
+ var sep=Math.max(5,state.G+Math.max(3,Math.round(state.R*0.6)));
+ if(state.scenario==="flat"){targets=[62,152];}
+ else if(state.scenario==="edge"){for(i=124;i<n;i++)lam[i]=12;targets=[70,178];zone=[124-w-2,124+w+2];}
+ else if(state.scenario==="pair"){targets=[46,108,108+sep];}
+ else{for(i=0;i<n;i++){f=Math.min(1,Math.max(0,(i-100)/40));lam[i]=1+11*f;}targets=[46,196];zone=[100-w,140+w];}
+ var tset=new Set(targets),skirt=new Set();
+ targets.forEach(function(t){for(var d=-2;d<=2;d++){if(d&&!tset.has(t+d))skirt.add(t+d);}});
+ return {n:n,lam:lam,targets:targets,tset:tset,skirt:skirt,zone:zone};
+}
+function realize(sc,rng){
+ var x=new Float64Array(sc.n),g=Math.pow(10,state.snr/10),gain=new Float64Array(sc.n),i,d;
+ sc.targets.forEach(function(t){
+  for(d=-2;d<=2;d++){var j=t+d;if(j>=0&&j<sc.n)gain[j]+=g*SPREAD[Math.abs(d)];}
+ });
+ for(i=0;i<sc.n;i++)x[i]=-(sc.lam[i]*(1+gain[i]))*Math.log(1-rng());
+ return x;
+}
+function refStats(x,i,R,G){
+ var sL=0,sG=0,all=new Array(2*R),j,a,b;
+ for(j=0;j<R;j++){a=x[i-G-1-j];b=x[i+G+1+j];sL+=a;sG+=b;all[j]=a;all[R+j]=b;}
+ return {lead:sL/R,lag:sG/R,all:all,sorted:all.slice().sort(function(p,q){return p-q})};
+}
+function zOf(v,st,R){
+ if(v==="CA")return (st.lead+st.lag)/2;
+ if(v==="GO")return Math.max(st.lead,st.lag);
+ if(v==="SO")return Math.min(st.lead,st.lag);
+ if(v==="OS")return st.sorted[osK(R)-1];
+ var t=0,j,m=2*R-2;for(j=0;j<m;j++)t+=st.sorted[j];return t/m;
+}
+
+var cal={R:-1,pfa:-1,a:null};
+function alphas(){
+ if(cal.R===state.R&&cal.pfa===state.pfa)return cal.a;
+ var R=state.R,K=6000,rng=mulberry32(913377),Z={},v,k,j,buf=new Float64Array(2*R),sL,sG,s,t,m=2*R-2;
+ for(j=0;j<VIDS.length;j++)Z[VIDS[j]]=new Float64Array(K);
+ for(k=0;k<K;k++){
+  sL=0;sG=0;
+  for(j=0;j<2*R;j++)buf[j]=-Math.log(1-rng());
+  for(j=0;j<R;j++)sL+=buf[j];
+  for(j=R;j<2*R;j++)sG+=buf[j];
+  sL/=R;sG/=R;
+  s=Array.prototype.slice.call(buf).sort(function(p,q){return p-q});
+  Z.CA[k]=(sL+sG)/2;Z.GO[k]=Math.max(sL,sG);Z.SO[k]=Math.min(sL,sG);Z.OS[k]=s[osK(R)-1];
+  t=0;for(j=0;j<m;j++)t+=s[j];Z.TM[k]=t/m;
+ }
+ var out={};
+ for(j=0;j<VIDS.length;j++){
+  v=VIDS[j];var lo=1e-4,hi=1e5,it,mid,acc,z=Z[v];
+  for(it=0;it<48;it++){
+   mid=Math.sqrt(lo*hi);acc=0;
+   for(k=0;k<K;k++)acc+=Math.exp(-mid*z[k]);
+   if(acc/K>state.pfa)lo=mid;else hi=mid;
+  }
+  out[v]=Math.sqrt(lo*hi);
+ }
+ cal={R:state.R,pfa:state.pfa,a:out};
+ return out;
+}
+
+var sc,x,T,Z,A,lo,hi,yMin=-18,yMax=30;
+function compute(){
+ sc=makeScene();
+ x=realize(sc,mulberry32(state.seed));
+ A=alphas();
+ lo=state.R+state.G;hi=sc.n-1-state.R-state.G;
+ T={};Z={};
+ var i,j,v,st,z;
+ for(j=0;j<VIDS.length;j++){T[VIDS[j]]=new Float64Array(sc.n).fill(NaN);Z[VIDS[j]]=new Float64Array(sc.n).fill(NaN);}
+ for(i=lo;i<=hi;i++){
+  st=refStats(x,i,state.R,state.G);
+  for(j=0;j<VIDS.length;j++){v=VIDS[j];z=zOf(v,st,state.R);Z[v][i]=z;T[v][i]=A[v]*z;}
+ }
+ var mx=-99;
+ for(i=0;i<sc.n;i++)mx=Math.max(mx,dB(x[i]));
+ for(j=0;j<VIDS.length;j++)for(i=lo;i<=hi;i++)mx=Math.max(mx,dB(T[VIDS[j]][i]));
+ yMax=Math.ceil((mx+3)/5)*5;
+ if(state.cut===null||state.cut<lo||state.cut>hi)state.cut=lo;
+}
+function tally(v){
+ var i,hits=0,fa=0,miss=0,tot=0,tested=0;
+ for(i=lo;i<=hi;i++){
+  var det=x[i]>T[v][i];
+  if(sc.tset.has(i)){tot++;if(det)hits++;else miss++;}
+  else if(sc.skirt.has(i)){/* target energy, neither a hit nor an alarm */}
+  else {tested++;if(det)fa++;}
+ }
+ return {hits:hits,fa:fa,miss:miss,tot:tot,tested:tested};
+}
+function inZone(i){return sc.zone&&i>=sc.zone[0]&&i<=sc.zone[1]}
+
+/* ---------- canvas helpers ---------- */
+function fit(cv){
+ var dpr=Math.min(window.devicePixelRatio||1,2),r=cv.getBoundingClientRect();
+ var w=Math.max(1,Math.round(r.width)),h=Math.max(1,Math.round(r.height));
+ if(cv.width!==Math.round(w*dpr)||cv.height!==Math.round(h*dpr)){cv.width=Math.round(w*dpr);cv.height=Math.round(h*dpr);}
+ var c=cv.getContext("2d");c.setTransform(dpr,0,0,dpr,0,0);c.clearRect(0,0,w,h);
+ return {c:c,w:w,h:h};
+}
+function C(){
+ var s=getComputedStyle(document.documentElement),g=function(n){return s.getPropertyValue(n).trim()};
+ return {ink:g("--ink"),ink2:g("--ink-2"),ink3:g("--ink-3"),signal:g("--signal"),bar:g("--bar"),
+  alarm:g("--alarm"),hit:g("--hit"),quiet:g("--quiet"),grid:g("--grid"),rule:g("--rule"),
+  surf:g("--surface"),surf2:g("--surface-2"),wsig:g("--wash-signal"),wgu:g("--wash-guard"),wcut:g("--wash-cut")};
+}
+var MONO='"IBM Plex Mono",monospace';
+
+/* ---------- main scope ---------- */
+function drawScope(){
+ var cv=$("#scope"),f=fit(cv),c=f.c,w=f.w,h=f.h,col=C();
+ var P={l:44,r:10,t:12,b:24},pw=w-P.l-P.r,ph=h-P.t-P.b,cw=pw/sc.n;
+ var X=function(i){return P.l+(i+0.5)*cw};
+ var Y=function(d){return P.t+(yMax-Math.max(yMin,Math.min(yMax,d)))/(yMax-yMin)*ph};
+ var v=state.variant,i,cut=state.cut;
+
+ c.fillStyle=col.surf;c.fillRect(0,0,w,h);
+ /* blind margins */
+ c.fillStyle=col.surf2;
+ c.fillRect(P.l,P.t,X(lo)-P.l,ph);c.fillRect(X(hi),P.t,P.l+pw-X(hi),ph);
+ /* grid */
+ c.strokeStyle=col.grid;c.lineWidth=1;c.font="10px "+MONO;c.fillStyle=col.ink3;c.textAlign="right";c.textBaseline="middle";
+ for(var d=Math.ceil(yMin/10)*10;d<=yMax;d+=10){
+  var y=Math.round(Y(d))+0.5;c.beginPath();c.moveTo(P.l,y);c.lineTo(P.l+pw,y);c.stroke();
+  c.fillText(d+" dB",P.l-7,y);
+ }
+ c.textAlign="center";c.textBaseline="top";
+ for(i=20;i<sc.n-8;i+=20)c.fillText(String(i),X(i),P.t+ph+6);
+ c.textAlign="left";c.fillText("cell",P.l+1,P.t+ph+6);
+
+ /* the background transition this environment contains */
+ if(sc.zone){
+  c.fillStyle=col.ink3;c.globalAlpha=.08;
+  c.fillRect(X(sc.zone[0]),P.t,X(sc.zone[1])-X(sc.zone[0]),ph);c.globalAlpha=1;
+  c.fillStyle=col.ink3;c.font="9px "+MONO;c.textAlign="center";c.textBaseline="bottom";
+  c.fillText("transition",(X(sc.zone[0])+X(sc.zone[1]))/2,P.t+ph-4);
+ }
+ /* truth bands */
+ c.fillStyle=col.hit;c.globalAlpha=.10;
+ sc.targets.forEach(function(t){c.fillRect(X(t)-cw*2.5,P.t,cw*5,ph)});
+ c.globalAlpha=1;
+
+ /* window washes */
+ if(cut>=lo&&cut<=hi){
+  var R=state.R,G=state.G;
+  c.fillStyle=col.wsig;
+  c.fillRect(X(cut-G-R)-cw/2,P.t,cw*R,ph);
+  c.fillRect(X(cut+G+1)-cw/2,P.t,cw*R,ph);
+  if(G>0){c.fillStyle=col.wgu;
+   c.fillRect(X(cut-G)-cw/2,P.t,cw*G,ph);c.fillRect(X(cut+1)-cw/2,P.t,cw*G,ph);}
+  c.fillStyle=col.wcut;c.fillRect(X(cut)-cw/2,P.t,cw,ph);
+ }
+
+ /* stems */
+ c.lineWidth=Math.max(1,Math.min(2.2,cw*0.5));
+ for(i=0;i<sc.n;i++){
+  var isT=sc.tset.has(i);
+  c.strokeStyle=col.signal;c.globalAlpha=isT?1:.55;
+  c.beginPath();c.moveTo(X(i),Y(yMin));c.lineTo(X(i),Y(dB(x[i])));c.stroke();
+ }
+ c.globalAlpha=1;
+
+ /* threshold */
+ var drawT=function(upto,alpha,wid){
+  c.strokeStyle=col.bar;c.globalAlpha=alpha;c.lineWidth=wid;c.beginPath();
+  var started=false;
+  for(i=lo;i<=Math.min(upto,hi);i++){
+   var y=Y(dB(T[v][i]));
+   if(!started){c.moveTo(X(i),y);started=true}else c.lineTo(X(i),y);
+  }
+  c.stroke();c.globalAlpha=1;
+ };
+ drawT(hi,.32,1.4);
+ drawT(cut,1,2.2);
+
+ /* outcomes */
+ for(i=lo;i<=hi;i++){
+  var det=x[i]>T[v][i],isT=sc.tset.has(i);
+  if(!isT&&sc.skirt.has(i))continue;
+  if(!det&&!isT)continue;
+  var px=X(i),py=Y(dB(x[i]));
+  if(isT&&det){c.fillStyle=col.hit;c.beginPath();c.arc(px,py,4.2,0,6.284);c.fill();
+   c.strokeStyle=col.surf;c.lineWidth=1.2;c.stroke();}
+  else if(isT&&!det){c.strokeStyle=col.ink3;c.lineWidth=1.6;c.beginPath();c.arc(px,py,4.2,0,6.284);c.stroke();}
+  else {c.fillStyle=col.alarm;c.beginPath();c.arc(px,py,3.4,0,6.284);c.fill();}
+ }
+
+ /* cut marker */
+ if(cut>=lo&&cut<=hi){
+  c.strokeStyle=col.bar;c.lineWidth=1;c.setLineDash([3,3]);
+  c.beginPath();c.moveTo(X(cut),P.t);c.lineTo(X(cut),P.t+ph);c.stroke();c.setLineDash([]);
+  c.fillStyle=col.bar;c.font="10px "+MONO;c.textAlign="center";c.textBaseline="bottom";
+  c.fillText("CUT "+cut,Math.max(P.l+22,Math.min(P.l+pw-22,X(cut))),P.t+11);
+ }
+ c.strokeStyle=col.rule;c.lineWidth=1;c.strokeRect(P.l+.5,P.t+.5,pw-1,ph-1);
+}
+
+/* ---------- combination inset ---------- */
+function drawCombo(){
+ var cv=$("#combo"),f=fit(cv),c=f.c,w=f.w,h=f.h,col=C();
+ c.fillStyle=col.surf;c.fillRect(0,0,w,h);
+ var cut=state.cut;if(!(cut>=lo&&cut<=hi))return;
+ var st=refStats(x,cut,state.R,state.G),v=state.variant,z=zOf(v,st,state.R),th=A[v]*z;
+ var P={l:52,r:16,t:16,b:26},pw=w-P.l-P.r;
+ /* a local amplitude scale: the whole point of this panel is the spread WITHIN
+    one window, which the scope's 50 dB range flattens to a smudge. */
+ var vals=st.all.map(dB).concat([dB(z),dB(th),dB(x[cut])]);
+ var vlo=Math.floor((Math.min.apply(null,vals)-3)/5)*5;
+ var vhi=Math.ceil((Math.max.apply(null,vals)+3)/5)*5;
+ if(vhi-vlo<15)vhi=vlo+15;
+ var step=(vhi-vlo)>44?20:((vhi-vlo)>22?10:5);
+ var X=function(d){return P.l+(Math.max(vlo,Math.min(vhi,d))-vlo)/(vhi-vlo)*pw};
+ var rowLead=P.t+16,rowLag=P.t+46,rowBar=h-P.b-14;
+
+ c.font="10px "+MONO;c.textAlign="right";c.textBaseline="middle";c.fillStyle=col.ink3;
+ c.fillText("lead",P.l-9,rowLead);c.fillText("lag",P.l-9,rowLag);c.fillText("bar",P.l-9,rowBar);
+
+ c.strokeStyle=col.grid;c.lineWidth=1;
+ [rowLead,rowLag].forEach(function(y){c.beginPath();c.moveTo(P.l,y);c.lineTo(P.l+pw,y);c.stroke()});
+ for(var d=Math.ceil(vlo/step)*step;d<=vhi;d+=step){
+  var xx=Math.round(X(d))+.5;c.strokeStyle=col.grid;c.beginPath();c.moveTo(xx,P.t);c.lineTo(xx,h-P.b+2);c.stroke();
+  c.fillStyle=col.ink3;c.textAlign="center";c.textBaseline="top";c.fillText(d+" dB",xx,h-P.b+5);
+ }
+
+ var kSel=osK(state.R),sortedIdx=st.all.map(function(val,i){return i}).sort(function(p,q){return st.all[p]-st.all[q]});
+ var osPick=sortedIdx[kSel-1],censored={};
+ if(v==="TM"){censored[sortedIdx[2*state.R-1]]=1;censored[sortedIdx[2*state.R-2]]=1;}
+ st.all.forEach(function(val,i){
+  var lead=i<state.R,y=lead?rowLead:rowLag,px=X(dB(val));
+  c.beginPath();c.arc(px,y,4,0,6.284);
+  if(v==="OS"&&i===osPick){c.fillStyle=col.bar;c.fill();c.strokeStyle=col.bar;c.lineWidth=1.2;
+   c.beginPath();c.arc(px,y,7.5,0,6.284);c.stroke();}
+  else if(v==="TM"&&censored[i]){c.strokeStyle=col.ink3;c.lineWidth=1.2;c.stroke();
+   c.beginPath();c.moveTo(px-4,y-4);c.lineTo(px+4,y+4);c.moveTo(px+4,y-4);c.lineTo(px-4,y+4);c.stroke();}
+  else {c.fillStyle=col.signal;c.globalAlpha=lead?.9:.55;c.fill();c.globalAlpha=1;}
+ });
+
+ function tri(d,y,fill,label){
+  var px=X(d);c.fillStyle=fill;c.beginPath();c.moveTo(px,y-9);c.lineTo(px-5,y-17);c.lineTo(px+5,y-17);c.closePath();c.fill();
+  if(label){c.font="9px "+MONO;c.textAlign="center";c.textBaseline="bottom";c.fillText(label,px,y-18);}
+ }
+ var chosenLead=(v==="GO")?(st.lead>=st.lag):(v==="SO")?(st.lead<=st.lag):null;
+ tri(dB(st.lead),rowLead,(chosenLead===null)?col.ink3:(chosenLead?col.bar:col.quiet),"mean");
+ tri(dB(st.lag),rowLag,(chosenLead===null)?col.ink3:(!chosenLead?col.bar:col.quiet),"mean");
+
+ /* bar row: Z, threshold, cell under test */
+ c.strokeStyle=col.rule;c.lineWidth=1;c.beginPath();c.moveTo(P.l,rowBar);c.lineTo(P.l+pw,rowBar);c.stroke();
+ var zx=X(dB(z)),tx=X(dB(th)),ux=X(dB(x[cut]));
+ c.strokeStyle=col.bar;c.lineWidth=2;c.beginPath();c.moveTo(zx,rowBar-9);c.lineTo(zx,rowBar+9);c.stroke();
+ c.font="9px "+MONO;c.fillStyle=col.bar;c.textAlign="center";c.textBaseline="bottom";c.fillText("Z",zx,rowBar-11);
+ c.setLineDash([3,3]);c.beginPath();c.moveTo(tx,rowBar-9);c.lineTo(tx,rowBar+9);c.stroke();c.setLineDash([]);
+ c.fillText("α·Z",tx,rowBar-11);
+ var det=x[cut]>th;
+ c.fillStyle=det?(sc.tset.has(cut)?col.hit:col.alarm):col.signal;
+ c.beginPath();c.arc(ux,rowBar,5.5,0,6.284);c.fill();
+ c.strokeStyle=col.surf;c.lineWidth=1.3;c.stroke();
+ c.fillStyle=col.ink3;c.font="9px "+MONO;c.textAlign="center";c.textBaseline="top";c.fillText("cell",ux,rowBar+9);
+}
+
+/* ---------- minis ---------- */
+function drawMini(cv,v){
+ var f=fit(cv),c=f.c,w=f.w,h=f.h,col=C();
+ var P={l:6,r:6,t:8,b:8},pw=w-P.l-P.r,ph=h-P.t-P.b,cw=pw/sc.n,i;
+ var X=function(i){return P.l+(i+0.5)*cw};
+ var Y=function(d){return P.t+(yMax-Math.max(yMin,Math.min(yMax,d)))/(yMax-yMin)*ph};
+ c.fillStyle=col.surf;c.fillRect(0,0,w,h);
+ if(sc.zone){c.fillStyle=col.ink3;c.globalAlpha=.08;
+  c.fillRect(X(sc.zone[0]),P.t,X(sc.zone[1])-X(sc.zone[0]),ph);c.globalAlpha=1;}
+ c.fillStyle=col.hit;c.globalAlpha=.10;
+ sc.targets.forEach(function(t){c.fillRect(X(t)-cw*2.5,P.t,cw*5,ph)});
+ c.globalAlpha=1;
+ c.strokeStyle=col.signal;c.globalAlpha=.45;c.lineWidth=Math.max(.7,cw*.42);
+ for(i=0;i<sc.n;i++){c.beginPath();c.moveTo(X(i),Y(yMin));c.lineTo(X(i),Y(dB(x[i])));c.stroke();}
+ c.globalAlpha=1;
+ c.strokeStyle=col.bar;c.lineWidth=1.6;c.beginPath();
+ for(i=lo;i<=hi;i++){var y=Y(dB(T[v][i]));if(i===lo)c.moveTo(X(i),y);else c.lineTo(X(i),y);}
+ c.stroke();
+ for(i=lo;i<=hi;i++){
+  var det=x[i]>T[v][i],isT=sc.tset.has(i);
+  if(!det||(!isT&&sc.skirt.has(i)))continue;
+  c.fillStyle=isT?col.hit:col.alarm;c.beginPath();c.arc(X(i),Y(dB(x[i])),isT?3.2:2.6,0,6.284);c.fill();
+ }
+ c.strokeStyle=col.rule;c.lineWidth=1;c.strokeRect(.5,.5,w-1,h-1);
+}
+
+/* ---------- text panels ---------- */
+function fmtP(p){
+ if(p>=0.01)return String(Math.round(p*1000)/1000);
+ var e=Math.floor(Math.log10(p)),m=p/Math.pow(10,e);
+ return (Math.abs(m-1)<0.05?"1":m.toFixed(1))+"e"+e;
+}
+function readout(){
+ var cut=state.cut,v=state.variant,el=$("#readout");
+ if(!(cut>=lo&&cut<=hi)){el.textContent="";return}
+ var st=refStats(x,cut,state.R,state.G),z=zOf(v,st,state.R),th=A[v]*z,cell=x[cut];
+ var meta=VARIANTS.filter(function(q){return q.id===v})[0];
+ var pick;
+ if(v==="CA")pick="averages all "+(2*state.R)+" reference cells";
+ else if(v==="GO")pick="takes the <b>"+(st.lead>=st.lag?"lead":"lag")+"</b> half — the greater of "+dB(st.lead).toFixed(1)+" and "+dB(st.lag).toFixed(1)+" dB";
+ else if(v==="SO")pick="takes the <b>"+(st.lead<=st.lag?"lead":"lag")+"</b> half — the lesser of "+dB(st.lead).toFixed(1)+" and "+dB(st.lag).toFixed(1)+" dB";
+ else if(v==="OS")pick="reads off cell <b>"+osK(state.R)+"</b> of "+(2*state.R)+", smallest first";
+ else pick="censors the two loudest, then averages the remaining "+(2*state.R-2);
+ var det=cell>th,isT=sc.tset.has(cut);
+ var call=det?(isT?'<span style="color:var(--hit);font-weight:600">detection</span>':'<span style="color:var(--alarm);font-weight:600">false alarm</span>')
+              :(isT?'<span style="color:var(--ink-3);font-weight:600">missed target</span>':"below the bar");
+ el.innerHTML="<b>cell "+cut+"</b> · "+meta.name+" "+pick+
+  '<br>Z = <span class="z">'+dB(z).toFixed(1)+" dB</span> &nbsp; bar = α·Z = <b>"+dB(th).toFixed(1)+
+  " dB</b> &nbsp;(α = "+A[v].toFixed(2)+")<br>this cell = <b>"+dB(cell).toFixed(1)+" dB</b> → "+call;
+}
+function liveTable(){
+ var rows="";
+ VARIANTS.forEach(function(m){
+  var t=tally(m.id);
+  rows+='<tr class="'+(m.id===state.variant?"on":"")+'"><td class="name">'+m.name+
+   '</td><td>'+t.hits+"/"+t.tot+'</td><td class="'+(t.fa>0?"bad":"")+'">'+t.fa+"</td></tr>";
+ });
+ $("#live").innerHTML=rows;
+}
+
+/* ---------- trials ---------- */
+var trialRun=null;
+function runTrials(){
+ if(trialRun)return;
+ var M=400,acc={},seed=(state.seed*7+13)|0,done=0;
+ VIDS.forEach(function(v){acc[v]={hit:0,tot:0,fa:0,tested:0,zfa:0,ztested:0}});
+ $("#runtrials").setAttribute("aria-pressed","true");
+ var batch=function(){
+  var end=Math.min(done+40,M),k,i,j,v,st,z,th,det,isT,zn,xr;
+  for(k=done;k<end;k++){
+   xr=realize(sc,mulberry32(seed+k*1013));
+   for(i=lo;i<=hi;i++){
+    isT=sc.tset.has(i);
+    if(!isT&&sc.skirt.has(i))continue;
+    st=refStats(xr,i,state.R,state.G);zn=inZone(i);
+    for(j=0;j<VIDS.length;j++){
+     v=VIDS[j];z=zOf(v,st,state.R);th=A[v]*z;det=xr[i]>th;
+     if(isT){acc[v].tot++;if(det)acc[v].hit++;}
+     else{acc[v].tested++;if(det)acc[v].fa++;
+      if(zn){acc[v].ztested++;if(det)acc[v].zfa++;}}
+    }
+   }
+  }
+  done=end;
+  $("#trialstatus").textContent=done<M?(done+" / "+M+" records"):(M+" records · "+scenarioName());
+  if(done<M){trialRun=requestAnimationFrame(batch);return}
+  trialRun=null;$("#runtrials").setAttribute("aria-pressed","false");
+  paintTrials(acc);
+ };
+ trialRun=requestAnimationFrame(batch);
+}
+function scenarioName(){
+ return SCENARIOS.filter(function(s){return s.id===state.scenario})[0].name;
+}
+function paintTrials(acc){
+ var rows="",bestPd=null,worstPd=null,bestZ=null,worstZ=null,hasZone=!!sc.zone;
+ VARIANTS.forEach(function(m){
+  var a=acc[m.id],pd=a.hit/Math.max(1,a.tot),pf=a.fa/Math.max(1,a.tested),ratio=pf/state.pfa;
+  var zr=a.ztested?(a.zfa/a.ztested)/state.pfa:null;
+  if(bestPd===null||pd>bestPd.v)bestPd={n:m.name,v:pd};
+  if(worstPd===null||pd<worstPd.v)worstPd={n:m.name,v:pd};
+  if(zr!==null){
+   if(bestZ===null||zr<bestZ.v)bestZ={n:m.name,v:zr};
+   if(worstZ===null||zr>worstZ.v)worstZ={n:m.name,v:zr};
+  }
+  var over=ratio>1.6,zover=zr!==null&&zr>1.6;
+  rows+='<tr class="'+(m.id===state.variant?"on":"")+'"><td class="name">'+m.name+"</td>"+
+   "<td>"+(100*pd).toFixed(1)+"%</td>"+
+   '<td style="width:86px"><div class="meterwrap"><div class="meter" style="width:'+(100*pd).toFixed(1)+'%"></div></div></td>'+
+   "<td>"+fmtP(Math.max(pf,1e-6))+"</td>"+
+   '<td class="'+(over?"bad":(ratio<0.6?"good":""))+'">'+ratio.toFixed(1)+"×</td>"+
+   (zr===null?'<td style="color:var(--ink-3)">—</td>'
+    :'<td class="'+(zover?"bad":(zr<1.1?"good":""))+'">'+zr.toFixed(1)+"×</td>")+
+   "</tr>";
+ });
+ $("#trialbody").innerHTML=rows;
+ var v="In <b>"+scenarioName()+"</b>, "+bestPd.n+" found <b>"+(100*bestPd.v).toFixed(1)+
+  "%</b> of targets and "+worstPd.n+" found <b>"+(100*worstPd.v).toFixed(1)+"%</b>. ";
+ if(hasZone)v+="Across the whole record the false alarm rates look tame — the damage is local, and the "+
+  "last column is where it lives: inside the transition, "+worstZ.n+" runs <b>"+worstZ.v.toFixed(1)+
+  "×</b> its design rate while "+bestZ.n+" holds at <b>"+bestZ.v.toFixed(1)+"×</b>.";
+ else v+="With no background transition anywhere, the last column has nothing to report — this is the "+
+  "environment every one of them was calibrated for, so the false alarm rates agree and only the "+
+  "detection rates separate.";
+ $("#verdict").innerHTML=v;
+}
+
+/* ---------- wiring ---------- */
+function chip(label,pressed,cls){
+ var b=document.createElement("button");
+ b.className="chip"+(cls?" "+cls:"");b.type="button";b.textContent=label;
+ b.setAttribute("aria-pressed",pressed?"true":"false");return b;
+}
+function buildChips(){
+ var sEl=$("#scenarios"),vEl=$("#variants");
+ SCENARIOS.forEach(function(s){
+  var b=chip(s.name,s.id===state.scenario);
+  b.onclick=function(){state.scenario=s.id;
+   [].forEach.call(sEl.children,function(c){c.setAttribute("aria-pressed","false")});
+   b.setAttribute("aria-pressed","true");
+   state.cut=null;compute();redraw();stale("not run for this environment");};
+  sEl.appendChild(b);
+ });
+ VARIANTS.forEach(function(m){
+  var b=chip(m.id,m.id===state.variant,"act");b.title=m.name+" — "+m.rule+" ("+m.cite+")";
+  b.onclick=function(){state.variant=m.id;
+   [].forEach.call(vEl.children,function(c){c.setAttribute("aria-pressed","false")});
+   b.setAttribute("aria-pressed","true");redraw();};
+  vEl.appendChild(b);
+ });
+ var minis=$("#minis");
+ VARIANTS.forEach(function(m){
+  var d=document.createElement("div");d.className="mini-card";
+  d.innerHTML='<div class="mini-head"><span class="mini-name">'+m.name+'</span><span class="mini-stat" id="ms-'+m.id+'"></span></div>'+
+   '<canvas class="mini" id="mc-'+m.id+'"></canvas><div class="mini-rule">'+m.rule+"<br>"+m.cite+"</div>";
+  minis.appendChild(d);
+ });
+}
+function redraw(){
+ drawScope();drawCombo();readout();liveTable();
+ VARIANTS.forEach(function(m){
+  var cv=$("#mc-"+m.id);if(cv)drawMini(cv,m.id);
+  var t=tally(m.id),el=$("#ms-"+m.id);
+  if(el)el.innerHTML=t.hits+"/"+t.tot+" hits · "+'<span class="'+(t.fa?"bad":"")+'">'+t.fa+" fa</span>";
+ });
+}
+/* Numbers measured under settings that no longer hold are worse than no numbers:
+   clear them rather than leave a stale table under a changed environment. */
+function stale(msg){
+ $("#trialstatus").textContent=msg||"settings changed — run again";
+ $("#trialbody").innerHTML="";
+ $("#verdict").innerHTML="Run it on <b>homogeneous</b> first to see the five agree, then switch "+
+  "environment and run it again. The interesting numbers are the ratios in the last two columns.";
+}
+
+buildChips();
+compute();
+
+$("#R").addEventListener("input",function(){state.R=+this.value;$("#lblR").textContent=state.R;
+ state.cut=null;compute();redraw();stale();});
+$("#G").addEventListener("input",function(){state.G=+this.value;$("#lblG").textContent=state.G;
+ state.cut=null;compute();redraw();stale();});
+$("#P").addEventListener("input",function(){
+ var idx=Math.round(+this.value/100*(PFAS.length-1));state.pfa=PFAS[idx];
+ $("#lblP").textContent=fmtP(state.pfa);compute();redraw();stale();});
+$("#S").addEventListener("input",function(){state.snr=+this.value;$("#lblS").textContent=state.snr+" dB";
+ compute();redraw();stale();});
+$("#reroll").addEventListener("click",function(){state.seed=(state.seed*16807+7)%2147483647;compute();redraw();});
+$("#runtrials").addEventListener("click",runTrials);
+
+var playBtn=$("#play");
+function setPlay(p){state.playing=p;playBtn.textContent=p?"pause":"play";playBtn.setAttribute("aria-pressed",p?"true":"false");}
+playBtn.addEventListener("click",function(){setPlay(!state.playing)});
+
+/* drag the cell under test */
+var scopeEl=$("#scope");
+function pick(ev){
+ var r=scopeEl.getBoundingClientRect(),pw=r.width-44-10;
+ var i=Math.round((ev.clientX-r.left-44)/pw*sc.n-0.5);
+ state.cut=Math.max(lo,Math.min(hi,i));redraw();
+}
+scopeEl.addEventListener("pointerdown",function(ev){setPlay(false);
+ try{scopeEl.setPointerCapture(ev.pointerId)}catch(e){}
+ pick(ev);ev.preventDefault();});
+scopeEl.addEventListener("pointermove",function(ev){if(ev.buttons)pick(ev)});
+scopeEl.style.cursor="ew-resize";
+
+/* sweep */
+var last=0;
+function frame(ts){
+ if(state.playing&&!reduced){
+  if(!last)last=ts;
+  var dt=(ts-last)/1000;last=ts;
+  if(dt<0.4){
+   state.cut+=Math.max(1,Math.round(dt*58));
+   if(state.cut>hi)state.cut=lo;
+   redraw();
+  }
+ } else last=0;
+ requestAnimationFrame(frame);
+}
+if(reduced){setPlay(false);state.cut=Math.max(lo,Math.min(hi,sc.targets[0]));}
+redraw();
+requestAnimationFrame(frame);
+
+var ro=new ResizeObserver(function(){redraw()});
+ro.observe($("#scope").parentNode);
+ro.observe($("#minis"));
+window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change",redraw);
+new MutationObserver(redraw).observe(document.documentElement,{attributes:true,attributeFilter:["data-theme"]});
+})();
+</script>
