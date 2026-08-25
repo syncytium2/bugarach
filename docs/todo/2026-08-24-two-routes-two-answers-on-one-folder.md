@@ -1,9 +1,54 @@
 ---
-status: open
+status: done
 filed: 2026-08-24
+closed: 2026-08-25
 ---
 
-# Nobody has compared the browser run and `bugarach detect` on one folder
+# The browser run and `bugarach detect` agree
+
+> ## ✅ Measured 2026-08-25, and they agree
+>
+> `tools/compare_routes.py` on `2026-08-18_revised_2v_periods` — 84 recordings,
+> stream `fast`, detectors pinned to `rate,coact,sce` on both sides, **both output
+> files kept** this time (`<darkroom>/bugarach/two_routes/`):
+>
+> | detector | CLI rows | browser rows | agreed | CLI only | browser only |
+> |---|---|---|---|---|---|
+> | `rate` | 1613 | 1613 | **1613** | **0** | **0** |
+> | `sce` | 1692 | 1701 | 1681 | 11 | 20 |
+> | `coact` | 1376 | 1345 | 1224 | 152 | 121 |
+>
+> **`rate` draws no random numbers and matches row for row across all 84
+> recordings.** That is the claim the README said nothing tested, and it now holds.
+>
+> **The sampled two agree as well as they agree with themselves** — the control
+> this needed. `tools/sampling_floor.py` reruns the *same* route changing only the
+> surrogate seed:
+>
+> | detector | browser vs CLI | the same route vs itself, different seed |
+> |---|---|---|
+> | `sce` | 99.3% | **99.6%** |
+> | `coact` | 88.9% | **89.4%** |
+>
+> Browser-vs-CLI disagreement is **indistinguishable from the detector disagreeing
+> with itself on a different draw**. Two implementations with unshared RNGs cannot
+> do better than that without sharing one.
+>
+> **So the "52%" was never a discrepancy in the analysis.** It was two unpinned runs
+> — different rosters, different stream counts — compared as totals. Pin the roster
+> and the stream and the deterministic half is exact.
+>
+> **Two things this turned up, filed rather than fixed here:**
+> - **`coact` disagrees with itself 11% of the time on the same data**, which is a
+>   property of the detector rather than of either route: any single `coact` event
+>   list is about a tenth arbitrary. Larger than anything the route comparison found.
+> - **Disabling SPIKE-synch in the browser cost this comparison an anchor.** `rate`
+>   and `sync` are the only detectors drawing no random numbers — the only ones where
+>   *"agrees exactly"* is a meaningful claim. One anchor is thinner than two, and
+>   that cost was not visible when the disabling landed.
+>
+> Everything below is the original file, kept because its reasoning about why a
+> total is not the measurement is what made the comparison worth designing properly.
 
 > **Revised 2026-08-24, the same day it was filed.** The first version led with a
 > **52% gap** between two detection totals. That number is withdrawn from the summary,
