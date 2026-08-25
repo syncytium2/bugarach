@@ -1,0 +1,27 @@
+{
+  "_comment_scope": "bugarach's murderboard vendor set. tools/fetch_paper.py is DELIBERATELY absent: it hardcodes a personal/institutional library path, sapper SAP004 blocks that, and this repo is public. See docs/todo/2026-08-12-vendored-lit-tool-carries-personal-paths.md and the deviation note in CLAUDE.md. Do not add it back without reading that file first.",
+  "_comment_hook": ".claude/hooks/session-start.sh is vendored from interface2, not from here, and bugarach wraps it in tools/session_start_trimmed.sh because the upstream hook cats the whole board. It is left out of this family on purpose so a murderboard bump cannot silently change the briefing.",
+  "families": [
+    {
+      "label": "murderboard",
+      "slug": "syncytium2/murderboard",
+      "clone": "~/Developer/murderboard",
+      "ref": "origin/main",
+      "files": [
+        "docs/doc_review_process.md",
+        "tools/murderboard_freshness.sh",
+        "tools/murderboard_roster.sh",
+        "tools/murderboard_revendor.py",
+        ".claude/skills/murderboard/SKILL.md"
+      ],
+      "remap": {
+        "docs/doc_review_process.md": "doc_review_process.md",
+        "tools/murderboard_freshness.sh": "murderboard_freshness.sh",
+        "tools/murderboard_roster.sh": "murderboard_roster.sh",
+        "tools/murderboard_revendor.py": "murderboard_revendor.py",
+        ".claude/skills/murderboard/SKILL.md": "skills/murderboard/SKILL.md"
+      },
+      "adapted": []
+    }
+  ]
+}
