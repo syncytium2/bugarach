@@ -5,7 +5,7 @@ filed: 2026-08-24
 
 # The null leaks: plant nothing and the assessor reports coordination
 
-waiting: Decide whether the assessor's excess gets a fork or a caveat — parity says the same bias is in the MATLAB. The K decision is read off this number and is blocked behind the answer.
+waiting: Take the corrected excess, or keep the current one and caveat it? Parity stopped being the obstacle (ADR-0003) and both outcomes are measured, so this is now just the choice. K is read off this number and is blocked behind it.
 
 > **Not murderboarded** — a finding for sessions in this tree, same standing as
 > the revision plan it feeds. Every number is reproducible from
@@ -133,13 +133,25 @@ Three consequences, in the order they bite.
 ## What was NOT done, and why
 
 **The arithmetic is untouched.** `assess_coactivity` is held to 1e-9 against
-`measure_coordination_timescale.m` and parity is the product (FOUNDATIONS §2), so
-the same bias is in the MATLAB and in every number the constellation campaign
-produced. Correcting it here would break the one property the port exists to
-have, and would silently put this repo and the producer's numbers on different
-definitions. That is Tony's call, and if it is taken it lands as a named fork
-(`docs/forks.md`) defaulting to current behaviour, like every other mechanism
-change.
+`measure_coordination_timescale.m`, so the same bias is in the MATLAB and in every
+number the constellation campaign produced.
+
+> ⚠ **Written 2026-08-24, and the reason has since changed.** This paragraph went
+> on to say that correcting it *"would break the one property the port exists to
+> have"* — parity, FOUNDATIONS §2. **That is no longer an obstacle**
+> ([ADR-0003](../adr/0003-parity-was-the-inheritance-not-the-contract.md),
+> 2026-08-25): parity is the record of the inheritance, not a standing constraint,
+> and a correction no longer needs permission from the MATLAB.
+>
+> What survives of the caution: divergence is **enumerated, never ambient**. If the
+> correction is taken it gets a [`forks.md`](../forks.md) entry and the parity test
+> for the excess gets a named exemption pointing at it — because a return to MATLAB
+> is deferred rather than closed, and the enumeration is what keeps that
+> affordable. Whether it *also* wants a flag defaulting to current behaviour is the
+> open question in ADR-0003.
+
+Still Tony's call, and the choice is now between two measured outcomes rather than
+between a defect and a principle.
 
 **The tests pin the leak rather than forbid it** (`tests/test_assess_null.py`),
 so the suite stays green and the measurement is available to act on. The property
@@ -193,9 +205,14 @@ generator spec and everything derived from it would need regenerating in one pas
 
 ## Decisions this needs from Tony
 
-1. **Fork the assessor's excess, or keep parity and caveat the number?**
+1. **Take the corrected excess, or keep the current one and caveat it?** No longer
+   a question about parity — ADR-0003 settled that — and both outcomes are
+   measured. What remains is the choice, and the cost of the one-pass regeneration
+   RESET §5 already requires for other reasons.
 2. **Does the K decision (RESET §7 item 3) wait for that?** It is currently the
-   thing everything downstream is blocked on, and it is read off this statistic.
-3. **Does the producer team need telling?** The same arithmetic is in
+   thing everything downstream is blocked on, and it is read off this statistic —
+   whose curve *against K* is one of the things the correction changes.
+3. **Does anyone at constellation need telling?** The same arithmetic is in
    `measure_coordination_timescale.m`, and `darkroom/constellation/` holds numbers
-   computed with it.
+   computed with it. bugarach does not update their code (ADR-0003), which is not
+   the same as not mentioning it.
