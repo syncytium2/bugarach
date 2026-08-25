@@ -19,11 +19,31 @@ MATLAB**. Two deliverables, in order of primacy:
 1. **The detector ports** — trusted stand-ins for the MATLAB originals.
 2. **The viewer** — Panel/HoloViews, launched with `bugarach view`.
 
-## 2. Parity is the product
+## 2. Parity was the inheritance
 
-Every detector matches its MATLAB original **to 1e-9 on committed fixtures,
-in every mode** — that is what makes the ports citable in place of the
-originals. Consequences:
+> **Amended 2026-08-25 by [ADR-0003](adr/0003-parity-was-the-inheritance-not-the-contract.md).**
+> This section was titled *"Parity is the product"* and read as a standing
+> constraint on what bugarach may compute. It is now a statement about the **point
+> of inheritance**. Tony: *"it is unlikely constellation will work further on this
+> project. bugarach is the inheritor of their efforts and we matched their output
+> when it was crucial … we should no longer be concerned about matching their
+> output."* Everything below is unchanged and still binding — the MATLAB-semantics
+> helpers, the RNG facts and the upstream hazards are how these ports work, not a
+> courtesy to a counterparty.
+
+Every detector matched its MATLAB original **to 1e-9 on committed fixtures, in
+every mode**, and the tests that prove it stay and keep running. That is the
+**provenance record** — it is what makes the ports citable in place of the
+originals, and it stays true whatever bugarach does next.
+
+**What it is not, since ADR-0003:** permission bugarach must ask before correcting
+something. Where a defect is found here it may be fixed, and the question is *"is
+this right"* rather than *"does this match"*. Divergence is **enumerated, never
+ambient** — a fork gets a [`forks.md`](forks.md) entry and the parity test for that
+quantity gets a named exemption pointing at it, so a parity test that fails because
+somebody edited arithmetic without deciding to still looks like the bug it is.
+
+Consequences, all unchanged:
 
 - `src/bugarach/detectors/_shared.py` holds MATLAB-semantics helpers
   (`matlab_colon` two-ended element construction, `matlab_prctile` mid-point

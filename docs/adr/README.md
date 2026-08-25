@@ -31,3 +31,4 @@ two never disagree, and cross-reference them.
 |-----|-------|--------|
 | [0001](0001-the-lab-server.md) | The lab server — training off the page, without changing what ships | Accepted |
 | [0002](0002-the-sixth-detector-is-called-locust.md) | The sixth detector is called locust, not CICADA | Accepted |
+| [0003](0003-parity-was-the-inheritance-not-the-contract.md) | Parity was the inheritance, not a standing contract | Accepted |
