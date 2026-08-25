@@ -1,0 +1,237 @@
+<title>LoCo and CoactDetect as CFAR</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+:root{
+  --ground:#e9ecf0; --surface:#fbfcfe; --surface-2:#f1f4f8; --rule:#d3dae2; --grid:#dfe5ec;
+  --ink:#141a21; --ink-2:#4c5762; --ink-3:#7d8894;
+  --signal:#2f6f9f; --bar:#b96c22; --alarm:#a03623; --hit:#26705a;
+  --ref:rgba(47,111,159,.20); --refline:#2f6f9f; --guard:rgba(125,136,148,.30);
+  --shadow:0 1px 2px rgba(20,26,33,.06), 0 8px 24px -18px rgba(20,26,33,.5);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ground:#0c1015; --surface:#131920; --surface-2:#19212a; --rule:#25303a; --grid:#1d262f;
+    --ink:#e7edf3; --ink-2:#9fabb7; --ink-3:#6b7783;
+    --signal:#63aadb; --bar:#e0a15c; --alarm:#d76b52; --hit:#4dbd97;
+    --ref:rgba(99,170,219,.22); --refline:#63aadb; --guard:rgba(120,133,146,.34);
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 30px -20px #000;
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0c1015; --surface:#131920; --surface-2:#19212a; --rule:#25303a; --grid:#1d262f;
+  --ink:#e7edf3; --ink-2:#9fabb7; --ink-3:#6b7783;
+  --signal:#63aadb; --bar:#e0a15c; --alarm:#d76b52; --hit:#4dbd97;
+  --ref:rgba(99,170,219,.22); --refline:#63aadb; --guard:rgba(120,133,146,.34);
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 30px -20px #000;
+}
+*{box-sizing:border-box}
+body{margin:0; background:var(--ground); color:var(--ink);
+  font-family:"IBM Plex Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+  font-size:16px; line-height:1.6; -webkit-font-smoothing:antialiased}
+.wrap{max-width:1000px; margin:0 auto; padding:clamp(28px,5vw,60px) clamp(16px,4vw,32px) 88px}
+.eyebrow{font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace; font-size:.7rem;
+  letter-spacing:.19em; text-transform:uppercase; color:var(--ink-3); margin:0 0 14px}
+h1{font-family:"Bricolage Grotesque","IBM Plex Sans",sans-serif; font-weight:800;
+  font-size:clamp(2rem,5vw,3rem); line-height:1.04; letter-spacing:-.025em; margin:0 0 18px;
+  text-wrap:balance}
+h1 em{font-style:normal; color:var(--bar)}
+h2{font-family:"Bricolage Grotesque","IBM Plex Sans",sans-serif; font-weight:600;
+  font-size:1.36rem; letter-spacing:-.015em; margin:0 0 8px; text-wrap:balance}
+h3{font-family:"Bricolage Grotesque","IBM Plex Sans",sans-serif; font-weight:600;
+  font-size:1rem; margin:0 0 6px}
+p{margin:0 0 14px}
+.stand{max-width:66ch; color:var(--ink-2); font-size:1.05rem; margin:0}
+.stand strong{color:var(--ink); font-weight:600}
+.lede{color:var(--ink-2); max-width:70ch; margin:0 0 20px}
+section{margin-top:clamp(36px,5.5vw,58px)}
+.card{background:var(--surface); border:1px solid var(--rule); border-radius:6px;
+  box-shadow:var(--shadow); padding:clamp(14px,2.2vw,22px)}
+figure{margin:0}
+figure svg{display:block; width:100%; height:auto; max-width:100%}
+figcaption{font-family:"IBM Plex Mono",monospace; font-size:.72rem; line-height:1.6;
+  color:var(--ink-3); margin-top:14px; border-left:2px solid var(--rule); padding-left:12px}
+.scrollx{overflow-x:auto}
+table{width:100%; border-collapse:collapse; font-size:.9rem; min-width:640px}
+th,td{text-align:left; padding:9px 12px 9px 0; border-bottom:1px solid var(--rule); vertical-align:top}
+thead th{font-family:"IBM Plex Mono",monospace; font-size:.64rem; letter-spacing:.13em;
+  text-transform:uppercase; color:var(--ink-3); font-weight:500}
+tbody tr:last-child td{border-bottom:none}
+td.k{font-family:"IBM Plex Mono",monospace; font-size:.78rem; color:var(--ink-2); white-space:nowrap}
+td.loco{color:var(--ink)}
+.tag{font-family:"IBM Plex Mono",monospace; font-size:.7rem; padding:2px 7px; border-radius:3px;
+  background:var(--surface-2); border:1px solid var(--rule); color:var(--ink-2); white-space:nowrap}
+.tag.win{border-color:var(--hit); color:var(--hit)}
+.cards{display:grid; gap:16px; grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+.cards p{font-size:.93rem; color:var(--ink-2); margin-bottom:10px}
+.cards p:last-child{margin-bottom:0}
+.note{font-family:"IBM Plex Mono",monospace; font-size:.72rem; line-height:1.65; color:var(--ink-3);
+  border-left:2px solid var(--rule); padding-left:12px; margin:18px 0 0; max-width:80ch}
+.num{font-family:"IBM Plex Mono",monospace; font-variant-numeric:tabular-nums}
+code{font-family:"IBM Plex Mono",monospace; font-size:.86em; color:var(--signal)}
+</style>
+
+<div class="wrap">
+
+<header>
+  <p class="eyebrow">detector geometry · bugarach</p>
+  <h1>Same statistic, same null,<br><em>different window</em></h1>
+  <p class="stand">LoCo and CoactDetect count the same thing — distinct ROIs coactive in a bin —
+  and build their nulls the same way, by circular-shifting each ROI inside a rolling context.
+  <strong>Everything that separates them is the shape of the reference window and how it collapses
+  to one number</strong>, which is the axis the CFAR literature is organised around. It also
+  decides what a guard interval can and cannot do to each.</p>
+</header>
+
+<section>
+  <div class="card">
+  <figure>
+    <svg viewBox="0 0 900 470" role="img" aria-label="Four reference-window layouts on a shared time axis centred on the cell under test: canonical CFAR with guard cells either side, LoCo maxlt with two one-sided half-contexts meeting at the anchor, LoCo symmetric with one window centred on the anchor, and CoactDetect with a 60-second window centred on the bin whose guard leaves a hole that must be compacted before shifting.">
+      <defs>
+        <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+        </marker>
+        <pattern id="hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+          <line x1="0" y1="0" x2="0" y2="6" stroke="currentColor" stroke-width="2.5" opacity=".30"/>
+        </pattern>
+      </defs>
+
+      <!-- shared anchor line -->
+      <line x1="440" y1="34" x2="440" y2="452" stroke="var(--bar)" stroke-width="1.2" stroke-dasharray="3 4" opacity=".45"/>
+      <text x="440" y="26" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="12" fill="var(--bar)">cell / bin under test</text>
+
+      <!-- ============ lane 1: canonical CFAR ============ -->
+      <text x="60" y="60" font-family="IBM Plex Mono, monospace" font-size="12" fill="currentColor">canonical CFAR</text>
+      <rect x="114" y="70" width="295" height="22" fill="var(--ref)" stroke="var(--refline)" stroke-width="1"/>
+      <rect x="409" y="70" width="26" height="22" fill="url(#hatch)" stroke="currentColor" stroke-width="1" stroke-dasharray="2 2" opacity=".8"/>
+      <rect x="435" y="70" width="10" height="22" fill="var(--bar)" opacity=".85"/>
+      <rect x="445" y="70" width="26" height="22" fill="url(#hatch)" stroke="currentColor" stroke-width="1" stroke-dasharray="2 2" opacity=".8"/>
+      <rect x="471" y="70" width="295" height="22" fill="var(--ref)" stroke="var(--refline)" stroke-width="1"/>
+      <text x="261" y="85" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--refline)">lead reference</text>
+      <text x="618" y="85" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--refline)">lag reference</text>
+      <text x="422" y="108" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--ink-3)">guard</text>
+      <text x="892" y="85" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--ink-3)">CA · GO</text>
+
+      <!-- ============ lane 2: LoCo maxlt ============ -->
+      <text x="60" y="150" font-family="IBM Plex Mono, monospace" font-size="12" fill="currentColor">LoCo · maxlt <tspan fill="var(--ink-3)">(shipped, FAST)</tspan></text>
+      <rect x="114" y="160" width="324" height="22" fill="var(--ref)" stroke="var(--refline)" stroke-width="1"/>
+      <rect x="442" y="160" width="324" height="22" fill="var(--ref)" stroke="var(--refline)" stroke-width="1"/>
+      <text x="276" y="175" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--refline)">trailing half · 60 s</text>
+      <text x="604" y="175" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--refline)">leading half · 60 s</text>
+      <!-- the max -->
+      <line x1="276" y1="160" x2="404" y2="134" stroke="currentColor" stroke-width="1" marker-end="url(#ar)" opacity=".65"/>
+      <line x1="604" y1="160" x2="476" y2="134" stroke="currentColor" stroke-width="1" marker-end="url(#ar)" opacity=".65"/>
+      <rect x="404" y="122" width="72" height="20" rx="3" fill="var(--surface-2)" stroke="var(--bar)" stroke-width="1.2"/>
+      <text x="440" y="136" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--bar)">max</text>
+      <text x="892" y="175" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--bar)">greatest-of</text>
+      <!-- guard behaviour -->
+      <line x1="414" y1="192" x2="414" y2="204" stroke="currentColor" stroke-width="1" opacity=".5"/>
+      <line x1="466" y1="192" x2="466" y2="204" stroke="currentColor" stroke-width="1" opacity=".5"/>
+      <line x1="414" y1="198" x2="466" y2="198" stroke="currentColor" stroke-width="1" opacity=".5"/>
+      <text x="440" y="216" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--ink-3)">a guard just shortens each half — still contiguous, no wrap to fix</text>
+
+      <!-- ============ lane 3: LoCo symmetric ============ -->
+      <text x="60" y="256" font-family="IBM Plex Mono, monospace" font-size="12" fill="currentColor">LoCo · symmetric</text>
+      <rect x="114" y="266" width="652" height="22" fill="var(--ref)" stroke="var(--refline)" stroke-width="1"/>
+      <text x="440" y="281" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--refline)">one window, anchor at its centre</text>
+      <text x="892" y="281" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--ink-3)">cell-averaging</text>
+      <text x="440" y="304" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--alarm)">guard_sec is refused in this mode</text>
+
+      <!-- ============ lane 4: CoactDetect ============ -->
+      <text x="60" y="344" font-family="IBM Plex Mono, monospace" font-size="12" fill="currentColor">CoactDetect <tspan fill="var(--ink-3)">(shipped, FAST)</tspan></text>
+      <rect x="277" y="354" width="326" height="22" fill="var(--ref)" stroke="var(--refline)" stroke-width="1"/>
+      <rect x="435" y="354" width="10" height="22" fill="var(--bar)" opacity=".85"/>
+      <text x="345" y="369" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--refline)">60 s context</text>
+      <text x="892" y="369" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--ink-3)">per-bin test</text>
+
+      <!-- the hole and the compaction -->
+      <rect x="426" y="354" width="28" height="22" fill="none" stroke="var(--alarm)" stroke-width="1.3" stroke-dasharray="3 3"/>
+      <text x="470" y="394" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--alarm)">a guard leaves a hole — and the shift wraps across it</text>
+      <line x1="440" y1="400" x2="440" y2="416" stroke="currentColor" stroke-width="1" marker-end="url(#ar)" opacity=".7"/>
+      <rect x="277" y="422" width="149" height="20" fill="var(--ref)" stroke="var(--refline)" stroke-width="1"/>
+      <rect x="426" y="422" width="149" height="20" fill="var(--ref)" stroke="var(--refline)" stroke-width="1"/>
+      <line x1="426" y1="418" x2="426" y2="446" stroke="var(--surface)" stroke-width="2"/>
+      <text x="426" y="459" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--ink-3)">so the two side-pieces are compacted end to end before shifting</text>
+    </svg>
+    <figcaption>Four reference layouts on one time axis, anchored on the cell under test. LoCo's
+    halves are <b>one-sided</b> — the anchor is a boundary of each, not its centre — so a guard
+    shortens them and nothing else. CoactDetect's window is centred on the bin, so a guard opens a
+    hole that the circular shift would wrap across, re-importing the events the guard just removed;
+    the retained span has to be compacted onto one contiguous line first. Spans are the shipped
+    <b>FAST</b> defaults: LoCo a 120 s context split into two 60 s halves, CoactDetect one 60 s
+    window centred on the bin. On SLOW the relationship inverts — LoCo's halves drop to 30 s
+    while the viewer runs CoactDetect at 120 s.</figcaption>
+  </figure>
+  </div>
+</section>
+
+<section>
+  <h2>Where each one sits</h2>
+  <p class="lede">Read down the middle two columns: everything they share is above the line that
+  CFAR does not care about, and everything CFAR <em>is</em> organised around is where they split.</p>
+  <div class="card scrollx">
+  <table>
+    <thead><tr><th></th><th>LoCo · maxlt</th><th>CoactDetect</th><th>CFAR reading</th></tr></thead>
+    <tbody>
+      <tr><td class="k">statistic</td><td>distinct-ROI coactivity per bin</td><td>distinct-ROI coactivity per bin</td><td class="k">shared — no analogue</td></tr>
+      <tr><td class="k">null</td><td>circular shift within the context</td><td>circular shift within the context</td><td class="k">shared — no analogue</td></tr>
+      <tr><td class="k">reference shape</td><td class="loco">two one-sided halves, anchor at the boundary of each</td><td>one window centred on the bin</td><td class="k">split window vs single</td></tr>
+      <tr><td class="k">combination rule</td><td class="loco"><b>max</b> of the two half-thresholds</td><td>none — there is one estimate</td><td class="k"><span class="tag win">greatest-of</span> vs <span class="tag">cell-averaging</span></td></tr>
+      <tr><td class="k">bar read off as</td><td class="loco">99.9th percentile of the pooled surrogate coactivity</td><td>Gaussian tail on the surrogate mean and sd, at a stated α</td><td class="k"><span class="tag">order statistic</span> vs <span class="tag">parametric tail</span></td></tr>
+      <tr><td class="k">threshold is</td><td class="loco">a level the statistic must exceed</td><td>a p-value the bin must beat</td><td class="k">both scale with the local background</td></tr>
+      <tr><td class="k">stated false-alarm rate</td><td class="loco">none — a percentile, not a design point</td><td><b>yes</b>: <code>alpha</code>, per bin tested</td><td class="k">the CFAR promise, only one has it</td></tr>
+      <tr><td class="k">second, absolute bar</td><td class="loco"><code>min_rois</code> floor</td><td><code>min_rois</code> gate on candidacy</td><td class="k">binary integration / second threshold</td></tr>
+      <tr><td class="k">guard interval</td><td class="loco">shortens each half; contiguous</td><td>opens a hole; needs compaction</td><td class="k">geometry decides the cost</td></tr>
+      <tr><td class="k">cost per fold</td><td class="loco num">0.245 s</td><td class="num">0.061 s</td><td class="k">4× — the surrogate pool</td></tr>
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<section>
+  <h2>Three things that follow</h2>
+  <div class="cards">
+    <div class="card">
+      <h3>CoactDetect is the only one with the CFAR promise</h3>
+      <p>Radar chooses a false-alarm probability first and derives the multiplier from it.
+      CoactDetect is the one detector here that <em>states</em> one — a per-bin <code>alpha</code>,
+      with the viewer running 1e-4 on FAST and 1e-6 on SLOW, which is the range radar actually
+      uses. LoCo's 99.9th percentile is a tuned constant, not a design point.</p>
+      <p>The manuscript decided <em>against</em> the per-bin form for a multiplicity problem —
+      thousands of bins at one α. That is not a defect radar would recognise as disqualifying:
+      CFAR's P<sub>fa</sub> is per-cell too, and the answer is to set it from the total rate you
+      will tolerate. The function's own default of <span class="num">0.01</span> is what makes it
+      look broken.</p>
+    </div>
+    <div class="card">
+      <h3>The surrogate null is partly immune to interferers</h3>
+      <p>In radar, a second target in the reference window raises the estimate by its full
+      amplitude — that is mutual masking, and it is why greatest-of loses to a neighbour. Here the
+      null is built by <em>destroying cross-ROI timing</em>, so a neighbouring coordinated event
+      contributes its <b>rate</b> to the null and not its coincidence.</p>
+      <p><b>Inference, not a measured result:</b> both detectors should therefore be structurally
+      more neighbour-resistant than a mean-level CFAR — and the crowding measurement shows a real
+      cost anyway, so rate contamination alone is enough to do the damage. It predicts something
+      cheap to test: the recall cost should scale with a neighbour's event <em>count</em>, not with
+      how coordinated it is.</p>
+    </div>
+    <div class="card">
+      <h3>Neither guard is doing guard-cell work</h3>
+      <p>Measured on a crowded recording with an internal control, the guard's recall gain is
+      <b>flat across the neighbour gap</b> — CoactDetect +0.045 crowded against +0.046 isolated —
+      and on the sparse bench, where nothing can be masked, it raises recall anyway.</p>
+      <p>It is <b>lowering the bar</b>, and precision pays: excising a span shrinks the null pool,
+      and a fixed high percentile of a smaller sample underestimates the tail. A threshold knob
+      spelled in seconds. The CFAR-shaped fix is censoring <em>inside</em> the estimator — drop the
+      largest reference cells wherever they sit — not a span beside the anchor.</p>
+    </div>
+  </div>
+  <p class="note">Numbers are from <b>forks.md</b> §4a (the corrected measurement — two earlier
+  versions of that section reported the opposite and are retracted), <b>detector_history.md</b> §5
+  and §6, and the detector signatures. Crowding costs recall in both: CoactDetect −0.144 for a
+  neighbour inside 15–30 s, LoCo −0.104. Do not compare F1 between the crowded and sparse
+  recordings — §4a's warning, and it applies to every number on this page.</p>
+</section>
+
+</div>

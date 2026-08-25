@@ -32,6 +32,14 @@ cause.
 *"None of bugarach's three rolling detectors has one"* — and draws panel B from that
 premise, so the figure and its caption inherit it.
 
+**And `docs/GLOSSARY.md`, which is the one that should have been right.** Its *guard cells /
+guard interval* entry reads **"bugarach has none; that absence is the finding."** That makes
+three documents — and the glossary is the authority the other two defer to for vocabulary, so a
+reader checking the term against the canonical definition gets the stale answer with the most
+weight behind it. Found during the murderboard on `loco_coact_as_cfar`
+([run record](../reviews/loco_coact_as_cfar_2026-08-25.md) §E3), where a page that depicts and
+measures guard intervals cited a glossary saying they do not exist.
+
 ## The trap in fixing this
 
 **Do not repair these sections from the commit messages.** `a15f5e3` is titled *"and
