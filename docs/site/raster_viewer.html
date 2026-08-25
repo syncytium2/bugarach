@@ -9,7 +9,7 @@
      rather than naming a sha this page could not know — the reasoning is at the
      visible stamp. -->
 <meta name="bugarach:born" content="2026-08-13">
-<meta name="bugarach:version-date" content="2026-08-24">
+<meta name="bugarach:version-date" content="2026-08-25">
 <meta name="bugarach:commit" content="content-addressed">
 <!--
   The raster viewer, client side.
@@ -1295,10 +1295,10 @@
      a page edited without bumping it turns CI red instead of shipping a date
      that has quietly become a lie. Bump it when you edit this page. -->
 <p class="site-dates" data-bugarach-born="2026-08-13"
-   data-bugarach-version-date="2026-08-24"
+   data-bugarach-version-date="2026-08-25"
    data-bugarach-commit="content-addressed"
    style="margin:1.5rem max(1.2rem, calc(50% - 23rem));color:#666;font-size:.85rem">
-  First published 2026-08-13 · this version 2026-08-24 · identified by its own
+  First published 2026-08-13 · this version 2026-08-25 · identified by its own
   bytes rather than by a build stamp
 </p>
 
@@ -4248,11 +4248,18 @@ function assessCoactivity(trains, winDur, opts) {
   const u = rng32(o.seed || 20260722);
   const nullSum = new Float64Array(nBins);
   const sdsNull = new Map(K_SCAN.map(K => [K, []]));
+  /* THE PER-SURROGATE COUNTS ARE KEPT NOW, where they used to be summed and
+     dropped. The selection correction below scores every surrogate the way the
+     observation is scored — its OWN bins at K, against the ensemble mean — and
+     the mean is not known until this loop ends, so one of the two has to be
+     stored. Float32 halves the footprint and these are small integers. */
+  const surCounts = [];
   for (let s = 0; s < nSurr; s++) {
     const off = new Float64Array(nRoi);
     for (let r = 0; r < nRoi; r++) off[r] = u() * winDur;
     const cn = coactCount(trains, winDur, binWidth, nBins, off);
     for (let b = 0; b < nBins; b++) nullSum[b] += cn[b];
+    surCounts.push(Float32Array.from(cn));
     // the surrogates need shifted trains for clustering, built once per surrogate
     const shifted = trains.map((v, r) => {
       if (!v.length) return v;
@@ -4277,6 +4284,32 @@ function assessCoactivity(trains, winDur, opts) {
     for (let b = 0; b < nBins; b++)
       if (obs[b] >= K) { obsMass += obs[b]; nullMass += nullMean[b]; nCoactBins++; }
     obsMass /= winMin; nullMass /= winMin;
+    const rawExcess = obsMass - nullMass;
+
+    /* THE SELECTION CORRECTION (2026-08-25, forks §13, and it must stay in step
+       with `assess.py`'s `excess_mode="corrected"` — these are two
+       implementations of one measurement and `test_webapp_assessment_parity.py`
+       is what says so).
+
+       Selecting the bins where the OBSERVED count reaches K and then comparing
+       against the null's MEAN in those bins is positive by construction: the
+       bins were chosen for being high and the mean was not. Score every
+       surrogate the same way — its own bins, against the same ensemble mean —
+       and subtract the median. A surrogate holds no coordination, so whatever it
+       scores is the selection rule rather than the data. Measured on independent
+       Poisson ROIs at the busy background it was 6.15 of an 8.95 headline. */
+    const surEx = new Float64Array(nSurr);
+    for (let s = 0; s < nSurr; s++) {
+      const cn = surCounts[s];
+      let m = 0;
+      for (let b = 0; b < nBins; b++) if (cn[b] >= K) m += cn[b] - nullMean[b];
+      surEx[s] = m / winMin;
+    }
+    const surExcessMed = median(Array.from(surEx));
+    // NaN only if there are no surrogates at all; median() of an empty list is
+    // what would produce it, and a run with none is not a measurement.
+    const corrected = rawExcess - (Number.isFinite(surExcessMed)
+                                   ? surExcessMed : 0);
     const c = clusters(trains, obs, K, binWidth, nBins, wm, true);
     const jitObs = median(c.sds), jitNull = median(sdsNull.get(K));
     // ⚠ A finite-looking jitObs with no surrogate cluster behind it is not a
@@ -4284,7 +4317,8 @@ function assessCoactivity(trains, winDur, opts) {
     const defined = c.sds.length > 0 && sdsNull.get(K).length > 0;
     return {
       K, meetsFloor: true, winDur, nRoi, nEvents, binWidth, nSurrogates: nSurr,
-      coactExcess: obsMass - nullMass, obsMass, nullMass, nCoactBins,
+      coactExcess: corrected, coactExcessRaw: rawExcess, surExcessMed,
+      obsMass, nullMass, nCoactBins,
       jitObs, jitNull, jitExcess: jitObs - jitNull, jitDefined: defined,
       partNObs: median(c.parts), peakMed: median(c.peaks),
       spanMed: median(c.spans),

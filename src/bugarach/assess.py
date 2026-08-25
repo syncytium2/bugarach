@@ -96,10 +96,32 @@ class Assessment:
 
     coact_excess: float = float("nan")
     """The headline: excess co-active ROI·events per minute over the rate-matched
-    null. Defined at every rate, which the jitter measure is not."""
+    null. Defined at every rate, which the jitter measure is not.
+
+    **Selection-corrected since 2026-08-25** — ``excess_mode="corrected"``, the
+    default. See :attr:`sur_excess_med` and ``docs/forks.md`` §13. The uncorrected
+    quantity, which is what the MATLAB computes, is :attr:`coact_excess_raw`.
+    """
     obs_mass: float = float("nan")
     null_mass: float = float("nan")
     n_coact_bins: int = 0
+
+    coact_excess_raw: float = float("nan")
+    """``obs_mass - null_mass``: the excess before the selection correction, and
+    exactly what ``measure_coordination_timescale.m`` reports.
+
+    Kept as a field rather than dropped. It is the baseline any claim of
+    improvement is measured against (ADR-0003), and the parity fixtures still
+    check it — which is why taking the correction needed no parity exemption."""
+    sur_excess_med: float = float("nan")
+    """The median surrogate's OWN selected-bin excess — what the correction
+    subtracts, and the size of the selection bias at this K and this background.
+
+    Every surrogate is scored exactly the way the observation is: take the bins
+    where *that surrogate* reaches K, sum its counts there against the ensemble
+    mean. A surrogate holds no coordination by construction, so whatever this
+    reports is the selection rule rather than the data. Measured on independent
+    Poisson ROIs at the busy endpoint it is ~6.15 of an 8.95 headline at K=3."""
 
     jit_obs: float = float("nan")
     jit_null: float = float("nan")
@@ -241,6 +263,7 @@ def assess_coactivity(
     rng_seed: int = 20260722,
     region_min_sec: float = 900.0,
     onset_field: str = "t50rise",
+    excess_mode: str = "corrected",
 ) -> list[Assessment]:
     """Assess one stream of one recording. Returns one record per K in ``min_rois``.
 
@@ -255,10 +278,26 @@ def assess_coactivity(
       one event** — say which was used when quoting a result.
     n_surrogates: circular-shift surrogates. 1000 is the MATLAB default and is
       what the reference numbers were produced at.
+    excess_mode: how :attr:`Assessment.coact_excess` is computed.
+
+      * ``"corrected"`` (default since 2026-08-25) — subtract the median
+        surrogate's own selected-bin excess. **This is a fork from the MATLAB**;
+        ``docs/forks.md`` §13 and the decision behind it.
+      * ``"raw"`` — ``obs_mass - null_mass``, exactly what
+        ``measure_coordination_timescale.m`` computes. The parity fixtures are
+        checked against this, so the inherited arithmetic stays verified rather
+        than exempted.
+
+      Both are always computed and both are always returned
+      (:attr:`Assessment.coact_excess_raw`, :attr:`Assessment.sur_excess_med`);
+      this only chooses which one the headline field carries.
 
     Measurement only. Writes nothing, and returns NaN measures with
     ``meets_floor=False`` rather than a number when the window is too short.
     """
+    if excess_mode not in ("corrected", "raw"):
+        raise ValueError(
+            f'excess_mode must be "corrected" or "raw", got {excess_mode!r}')
     name = stream if stream is not None else next(iter(s.streams))
     st = s.streams[name]
     ext = recording_extent(s)
@@ -319,16 +358,26 @@ def assess_coactivity(
     obs = _coact_count(trains, win_dur, bin_width, n_bins)
 
     # One RNG stream, one rand(1, n_roi) per surrogate, in surrogate order —
-    # the draw order the MATLAB consumes, which is what parity rests on.
+    # the draw order the MATLAB consumes, which is what the parity fixtures rest
+    # on. Unchanged by the selection correction below: that reuses these same
+    # draws and adds none of its own.
     rng = np.random.RandomState(rng_seed)
     null_sum = np.zeros(n_bins, dtype=np.float64)
     sds_null: dict[int, list[float]] = {int(K): [] for K in min_rois}
-    for _ in range(int(n_surrogates)):
+    # The per-surrogate counts are KEPT now, where they used to be summed and
+    # dropped. The correction needs each surrogate scored the way the observation
+    # is — its own bins at K, against the ensemble mean — and the ensemble mean is
+    # not known until the loop ends, so one of the two has to be stored. float32
+    # halves the footprint and the counts are small integers: at 1000 surrogates
+    # over a 75-minute window at 1 s bins this is 18 MB rather than 36.
+    sur_counts = np.empty((int(n_surrogates), n_bins), dtype=np.float32)
+    for i in range(int(n_surrogates)):
         off = rng.random_sample(n_roi) * win_dur
         shifted = [np.mod(v + off[r], win_dur) if v.size else v
                    for r, v in enumerate(trains)]
         cn = _coact_count(shifted, win_dur, bin_width, n_bins)
         null_sum += cn
+        sur_counts[i] = cn
         for K in min_rois:
             sd, _, _, _ = _clusters(shifted, cn, int(K), bin_width, n_bins,
                                     merge_bins, wm)
@@ -343,6 +392,18 @@ def assess_coactivity(
         bk = np.flatnonzero(obs >= K)
         obs_mass = float(obs[bk].sum()) / win_min
         null_mass = float(null_mean[bk].sum()) / win_min
+        raw = obs_mass - null_mass
+
+        # THE SELECTION CORRECTION. Every surrogate scored the way the
+        # observation just was — its OWN bins at K, summed against the ensemble
+        # mean — and the median of that is what the observation is measured
+        # against. Vectorised over the whole ensemble at once because the
+        # per-surrogate loop is already the expensive part of this function.
+        sel = sur_counts >= K
+        sur_ex = ((np.where(sel, sur_counts, 0.0).sum(axis=1)
+                   - (sel * null_mean[None, :]).sum(axis=1)) / win_min)
+        sur_med = float(np.median(sur_ex)) if sur_ex.size else 0.0
+
         sd_obs, prt, pk, span, memb = _clusters(trains, obs, K, bin_width, n_bins,
                                                 merge_bins, wm, with_members=True)
         jit_obs, jit_null = _med(sd_obs), _med(sds_null[K])
@@ -354,7 +415,9 @@ def assess_coactivity(
             roi_rate_mean=float(np.mean(roi_rate)) if roi_rate.size else float("nan"),
             ev_rate_permin=float(sum(n_in_win)) / win_min,
             width_med=width_med, width_iqr=width_iqr,
-            coact_excess=obs_mass - null_mass, obs_mass=obs_mass,
+            coact_excess=(raw - sur_med if excess_mode == "corrected" else raw),
+            coact_excess_raw=raw, sur_excess_med=sur_med,
+            obs_mass=obs_mass,
             null_mass=null_mass, n_coact_bins=int(bk.size),
             jit_obs=jit_obs, jit_null=jit_null, jit_excess=jit_obs - jit_null,
             jit_defined=defined,
