@@ -84,6 +84,21 @@ seeds): additive F1 **0.636** with **2.0** probe firings; multiplicative
 **0.667** with **0.0**; multiplicative + a 5 s guard **0.686**. The promiscuity
 signature an additive offset was predicted to cause goes to zero.
 
+⚠ **Those F1s are not `bench.evaluate` F1s, and the comparison flips under the
+other rule** (2026-08-25 —
+[two scorers, two winners](todo/2026-08-25-two-scorers-two-winners-and-nothing-decides.md)).
+`probe_rate_mechanism.py` pools by hand as `n_hit / n_detected`, which **includes**
+the promiscuity probe, under a docstring saying it mirrors `bench.evaluate` — which
+excludes it. Swept across `BACKGROUND_GRID` with **both** mechanisms given their own
+knob sweep, **multiplicative wins 1 of 7 points with the probe excluded and 5 of 7
+with it included.** The probe firings above are real and the promiscuity claim
+stands; what does not stand is reading 0.636 → 0.667 as a like-for-like F1 gain.
+
+**What survives cleanly:** multiplicative's F1 is the **same number under both
+rules**, because it never fires in the empty block, while additive's moves by up to
+0.256. Whichever way the scoring question is settled, the multiplicative bar's
+score does not move — weaker than *"it wins"*, and far more robust.
+
 **Why not switched already:** the campaign that would re-fit `α` has not run, and
 `threshold_alpha=2.0` is a placeholder, not a calibrated value. Switching the
 default before Phase 4 would ship an uncalibrated operating point.
