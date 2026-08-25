@@ -24,12 +24,16 @@ MATLAB**. Two deliverables, in order of primacy:
 > **Amended 2026-08-25 by [ADR-0003](adr/0003-parity-was-the-inheritance-not-the-contract.md).**
 > This section was titled *"Parity is the product"* and read as a standing
 > constraint on what bugarach may compute. It is now a statement about the **point
-> of inheritance**. Tony: *"it is unlikely constellation will work further on this
-> project. bugarach is the inheritor of their efforts and we matched their output
-> when it was crucial … we should no longer be concerned about matching their
-> output."* Everything below is unchanged and still binding — the MATLAB-semantics
-> helpers, the RNG facts and the upstream hazards are how these ports work, not a
-> courtesy to a counterparty.
+> of inheritance**. Tony: *"the constellation team gave birth to bugarach … parity
+> with constellation suite is a lot of work and not relevant to our immediate
+> goals. At some point in the future, it might be interesting to move back to
+> MATLAB. But that is not a concern at this time."*
+>
+> **Deferred, not abandoned**, and the difference is load-bearing: a return to
+> MATLAB stays open, so divergence is **enumerated** — a `forks.md` entry and a
+> named test exemption per fork — rather than allowed to drift. Everything below is
+> unchanged and still binding: the MATLAB-semantics helpers, the RNG facts and the
+> upstream hazards are how these ports work, not a courtesy to a counterparty.
 
 Every detector matched its MATLAB original **to 1e-9 on committed fixtures, in
 every mode**, and the tests that prove it stay and keep running. That is the

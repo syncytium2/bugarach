@@ -29,12 +29,46 @@ job at the time: a lab could stop needing MATLAB without anybody having to
 re-argue whether the Python computed the same thing. It worked, and the receipts
 are in `tests/` and regenerable through `tools/matlab_ref/`.
 
-**What changed is not the standard but the counterparty.** Parity is a two-repo
-property. It costs something to hold — every mechanism change has to land behind a
-flag defaulting to the MATLAB's behaviour ([`forks.md`](../forks.md) §1), and
-correcting a defect found here means either not correcting it or maintaining the
-divergence in two places. That price bought comparability with an active campaign.
-With constellation not continuing, it buys comparability with an archive.
+**The lineage, in Tony's words rather than mine** (2026-08-25, clarifying the
+above — the first draft of this ADR read the decision as a counterparty
+disappearing, and that is not what it is):
+
+> *"The constellation team gave birth to bugarach. bugarach serves two purposes,
+> coordination detection for our lab work and a portfolio piece to illustrate my
+> approach to a deep learning project. Parity with constellation suite is a lot of
+> work and not relevant to our immediate goals. At some point in the future, it
+> might be interesting to move back to MATLAB. But that is not a concern at this
+> time."*
+
+**So this is a cost-and-priority call, not a divorce, and not permanent.** Parity
+is a two-repo property and it costs something to hold: every mechanism change has
+to land behind a flag defaulting to the MATLAB's behaviour
+([`forks.md`](../forks.md) §1), and correcting a defect found here means either not
+correcting it or maintaining the divergence in two places. That price bought
+comparability with an active campaign. It is a lot of work, and it is not what
+either of bugarach's two purposes needs right now.
+
+**Both purposes are worth naming, because they pull differently on this.**
+Coordination detection for the lab wants the *right* answer, which is what parity
+was preventing. The portfolio piece (FOUNDATIONS §8) wants the **credential** —
+*"six MATLAB detectors and the coactivity assessment ported and matched to 1e-9 on
+committed fixtures"* is a strong, checkable claim about how this author works, and
+it survives untouched. The two purposes agree on the outcome for opposite reasons,
+which is why the tests stay while the constraint lifts.
+
+**Returning to MATLAB is explicitly left open.** That is not a courtesy line; it
+decides something below. If a move back is ever interesting, what makes it
+tractable is a **list of exactly where the two diverged** — which is why
+consequence 3 is not optional bookkeeping but the bridge back.
+
+**What forced the question.** The null test (2026-08-24) found the coactivity
+excess is mostly a selection artifact — at the busy background 96% of it survives
+replacing the data with a draw from its own null. The remedy is known, cheap, and
+reuses the ensemble already computed. Every argument against taking it was an
+argument about parity, and
+[`the fork decision figure`](../learned/assess_fork_decision.png) put that cost in
+a column. This ADR is Tony reading that column and saying the cost is not worth
+paying for a goal that is not current.
 
 **What forced the question.** The null test (2026-08-24) found the coactivity
 excess is mostly a selection artifact — at the busy background 96% of it survives
@@ -48,9 +82,14 @@ worth paying.
 ## Decision
 
 **Parity with interface2's MATLAB is a historical guarantee about the point of
-inheritance. It is not a constraint on what bugarach may compute next.**
+inheritance. It is not a constraint on what bugarach may compute next, and holding
+it is not current work.**
 
-Three consequences, and the second is the one that keeps this honest.
+**Deferred, not abandoned.** A move back to MATLAB is explicitly on the table for
+some later time. Nothing here forecloses it, and consequence 3 is what keeps it
+affordable.
+
+Three consequences, and the second and third are what make this reversible.
 
 1. **A correction no longer needs permission from the MATLAB.** Where bugarach
    finds a defect, it may fix it. The question becomes *"is this right"* rather
@@ -60,19 +99,32 @@ Three consequences, and the second is the one that keeps this honest.
    the evidence for a claim this project should keep making — that the port was
    faithful when it was handed over. They are also plain regression tests for
    everything nobody has deliberately changed.
-3. **Divergence is enumerated, never ambient.** When a fork is taken, the parity
-   test for that quantity gets an explicit, named exemption pointing at the
-   `forks.md` entry that authorised it. A parity test that starts failing because
-   somebody edited arithmetic without deciding to is still a bug, and must still
-   look like one.
+3. **Divergence is enumerated, never ambient — and this is the route back.** When
+   a fork is taken, the parity test for that quantity gets an explicit, named
+   exemption pointing at the `forks.md` entry that authorised it. Two reasons, and
+   the second is the one that makes it non-negotiable:
+   - A parity test that starts failing because somebody edited arithmetic *without
+     deciding to* is still a bug, and must still look like one. "We don't do
+     parity any more" must not become "a failing parity test is nothing to worry
+     about."
+   - **If returning to MATLAB is ever interesting, the enumeration is the map.**
+     A short list of named, argued divergences is a tractable afternoon. Ambient
+     drift discovered later is an audit of every line of six detectors, and it is
+     the difference between a door and a wall.
 
-**bugarach does not update interface2's code to match.** One repo for this aspect.
+**bugarach does not update interface2's code to match, for now.** One repo for
+this aspect, at this time.
 
 ## What this does not decide
 
 - **Whether `forks.md` §1 still requires flags defaulting to old behaviour.** Its
-  stated reason was parity, so the reason is gone; reversibility is a different
-  and possibly still-good reason. **Open — Tony's call.**
+  stated reason was parity, so *that* reason is gone. **Open — Tony's call**, with
+  one argument he has already supplied against dropping it: leaving a return to
+  MATLAB open means every flag is a divergence that is still switchable rather
+  than one that has to be reconstructed. The counter-argument is that the
+  enumeration in consequence 3 already records the divergence, and a flag is a
+  second, costlier way of recording the same thing — every knob defaulting to
+  behaviour nobody uses is a knob somebody has to keep working.
 - **Whether the six detectors' arithmetic should now change.** Nothing here says a
   detector is wrong. The revision plan and
   [`the four variants of the tube`](../todo/2026-08-23-four-variants-of-the-tube.md)
