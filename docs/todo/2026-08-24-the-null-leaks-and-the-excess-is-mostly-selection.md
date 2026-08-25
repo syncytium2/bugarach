@@ -149,14 +149,38 @@ it is told to retire the pinning tests with it. Nobody has to remember.
 
 ## What would fix it, when somebody decides to
 
-Not costed, not tried, listed so the options are on the table rather than
+- **Select on the null too. ✅ COSTED 2026-08-24.** Compute the same statistic on
+  every surrogate, each selecting on *itself*, and report the observed excess
+  minus the *median surrogate excess*. The standard remedy for a selection-biased
+  statistic; it reuses the ensemble already being computed, so it needs no extra
+  sampling and adds no parameter. **Measured, with the consequences drawn:**
+
+  ![Panel A, excess against K at the busy background: the current estimator falls 75 percent from K=3 to K=6 on planted data and its nothing-planted curve has the same shape, while the corrected estimator is flat across K=3 to 6 and sits on zero when nothing is planted. Panel B, the same twelve planted events at two backgrounds: the current estimator reports them 2.8 times larger at the busy background, the corrected one within 17 percent](../learned/assess_fork_decision.png)
+
+  | at the busy background, K = 3 | current | corrected |
+  |---|---|---|
+  | nothing planted — the answer is zero | **6.15** | **0.41** |
+  | 12 events planted | 8.95 | 2.27 |
+  | same 12 events, busy ÷ quiet (1.0 = comparable) | **2.80×** | **0.83×** |
+  | fall from K=3 to K=6, 12 events planted | **−75%** | **−19%** |
+
+  Two consequences beyond the null reading zero. **The K curve reverses its
+  reading:** under the current estimator the excess falls 75% from K=3 to K=6, and
+  an analyst reading that concludes the coordination lives at low K — but the
+  nothing-planted curve has the same shape, so most of the fall is the bias dying
+  out. Corrected, the signal is flat across K=3–6 and the choice of K stops
+  changing the answer. **And the excess becomes comparable across backgrounds:**
+  the same twelve events read 2.8× larger at the busy background under the current
+  estimator and within 17% under the corrected one — which is exactly what
+  consequence 3 above, and RESET §6, said was established nowhere.
+
+  Costed by `tools/make_fork_decision_figure.py`, which computes the corrected
+  estimator **in the tool rather than in `assess.py`**, so the consequence could be
+  shown without a session pre-empting the decision.
+
+Still uncosted, listed so the options stay on the table rather than being
 rediscovered:
 
-- **Select on the null too.** Compute the same statistic on every surrogate —
-  select that surrogate's own bins at K, sum its excess against the ensemble mean
-  — and report the observed excess minus the *median surrogate excess*. That is
-  the standard remedy for a selection-biased statistic and it reuses the ensemble
-  already being computed.
 - **Report the excess as a percentile of the surrogate excess distribution**
   rather than as an absolute magnitude, which also fixes the cross-window
   comparability problem in consequence 3.
