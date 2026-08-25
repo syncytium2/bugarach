@@ -22,8 +22,10 @@ different random source — so nothing here compares generated data. The trains 
 the planted times are read back out of the page and handed to Python, which then
 has to agree about what they mean.
 
-⚠ **CI does not run this** — it needs a chromium CI does not install. Run it
-locally when the browser tuning step changes.
+**CI runs this**, since 2026-08-19 — the runner installs chromium and
+sets `BUGARACH_REQUIRE_BROWSER=1`, so a browser that goes missing fails
+`test_browser_available.py` loudly rather than letting this skip quietly.
+Without a browser locally it still skips.
 """
 
 from __future__ import annotations

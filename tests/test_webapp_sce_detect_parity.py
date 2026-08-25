@@ -19,7 +19,10 @@ event of the first — at ten-second bins a very different question from "are th
 bins adjacent". The default gap is NaN, which merges nothing because every
 comparison against NaN is false, and that is ported rather than tidied.
 
-⚠ **CI does not run this** — it needs a chromium CI does not install.
+**CI runs this**, since 2026-08-19 — the runner installs chromium and
+sets `BUGARACH_REQUIRE_BROWSER=1`, so a browser that goes missing fails
+`test_browser_available.py` loudly rather than letting this skip quietly.
+Without a browser locally it still skips.
 """
 
 from __future__ import annotations

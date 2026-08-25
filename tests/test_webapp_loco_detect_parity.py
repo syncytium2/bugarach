@@ -30,8 +30,10 @@ clamp is a no-op on both sides. That makes the comparison exact rather than
 approximately-the-same-shape, and it is why the region-blind question does not
 have to be settled before this port can be verified.
 
-⚠ **CI does not run this** — it needs a chromium CI does not install. Run it
-locally when the browser detector changes.
+**CI runs this**, since 2026-08-19 — the runner installs chromium and
+sets `BUGARACH_REQUIRE_BROWSER=1`, so a browser that goes missing fails
+`test_browser_available.py` loudly rather than letting this skip quietly.
+Without a browser locally it still skips.
 """
 
 from __future__ import annotations

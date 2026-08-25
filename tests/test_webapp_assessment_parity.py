@@ -14,9 +14,10 @@ most careful about — so they are checked against each other rather than truste
   comparison. Both sides estimate it by sampling and their generators differ, so
   they agree to sampling error. Compared loosely, and reported.
 
-⚠ **CI does not run this.** It needs a chromium that CI does not install, so it
-skips there. Nothing in the automated build is guarding the port; run it locally
-when the browser assessment changes.
+**CI runs this**, since 2026-08-19 — the runner installs chromium and
+sets `BUGARACH_REQUIRE_BROWSER=1`, so a browser that goes missing fails
+`test_browser_available.py` loudly rather than letting this skip quietly.
+Without a browser locally it still skips.
 """
 
 from __future__ import annotations

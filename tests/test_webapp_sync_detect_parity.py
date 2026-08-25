@@ -27,8 +27,10 @@ exact-tie shortcut changes nothing, because tau is always positive and the
 neighbour test then accepts a separation of zero on its own. It is recorded here
 so the next reader does not spend the afternoon writing a vector for it.
 
-⚠ **CI does not run this** — it needs a chromium CI does not install. Run it
-locally when the browser detector changes.
+**CI runs this**, since 2026-08-19 — the runner installs chromium and
+sets `BUGARACH_REQUIRE_BROWSER=1`, so a browser that goes missing fails
+`test_browser_available.py` loudly rather than letting this skip quietly.
+Without a browser locally it still skips.
 """
 
 from __future__ import annotations

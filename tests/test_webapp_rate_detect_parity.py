@@ -8,8 +8,10 @@ same bar the Python port holds against MATLAB.
 That is a stronger guarantee than the assessment port carries, and it is why
 these two detectors went first: a mistake cannot pass as Monte Carlo noise.
 
-⚠ **CI does not run this** — it needs a chromium CI does not install. Run it
-locally when the browser detector changes.
+**CI runs this**, since 2026-08-19 — the runner installs chromium and
+sets `BUGARACH_REQUIRE_BROWSER=1`, so a browser that goes missing fails
+`test_browser_available.py` loudly rather than letting this skip quietly.
+Without a browser locally it still skips.
 """
 
 from __future__ import annotations

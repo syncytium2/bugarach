@@ -175,6 +175,28 @@ RULES = [
         fixture_bad='s = load_slice(root / "recording.mat")',
         fixture_good='slices = load_folder(export_dir)',
     ),
+    Rule(
+        id="SAP008", level="BLOCK",
+        pattern=r"CI does not (run|install)",
+        # Narrow to tests/ on purpose. Prose elsewhere describing the history of
+        # the runner is fine; what must not go stale is a TEST telling its reader
+        # that the green tick does not cover it.
+        include=["tests/**"], exclude=[],
+        message="CI HAS A BROWSER since 2026-08-19 (04f667f): ci.yml runs "
+                "`playwright install --with-deps chromium` and sets "
+                "BUGARACH_REQUIRE_BROWSER=1, so a runner that loses it fails "
+                "test_browser_available.py loudly instead of skipping the webapp "
+                "suite quietly. Eight test docstrings went on saying the opposite "
+                "for six days, and on 2026-08-25 one was read back to Tony as a "
+                "live gap in the coverage while he was weighing a decision. Each "
+                "was true when written, on 2026-08-18. A claim about what the "
+                "green tick COVERS is the one thing a reader cannot check for "
+                "themselves, so it does not get to go stale quietly. Say what CI "
+                "does today, or say nothing.",
+        fixture_bad="⚠ **CI does not run this** — it needs a chromium CI does not install.",
+        fixture_good="**CI runs this** — the runner installs chromium and sets "
+                     "BUGARACH_REQUIRE_BROWSER=1.",
+    ),
 ]
 
 
