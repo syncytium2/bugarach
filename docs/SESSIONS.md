@@ -1283,3 +1283,21 @@ session's work is not a sweep.
   every other bin**, 17 of 24 seeds. §4a's instrument was right; its recording had a 14 s
   floor and could not populate the bin that carries the signal, and `compact`
   normalization was cancelling most of what was left.
+
+### Tonys-MacBook-Pro/benchmark-explainer — what the benchmark actually is, in pictures, for a human
+- **Status:** ACTIVE 2026-08-26. Claim released on merge.
+- **Writes:** `<darkroom>/bugarach/detector_history/benchmark_rasters.{png,html}`,
+  `benchmark_map.{png,html}`, and `<darkroom>/bugarach/learned/benchmark_explainer.html` —
+  **three filename stems**; repo copies in `docs/learned/` via `--also`. **Does not touch
+  `guard_in_the_tail.*`, `guard_bench_validity.*`, `guard_norm_bench.*`,
+  `guard_exposure.*` or `guard_where_it_lands.*`.**
+- **Claims:** those three stems only.
+- **Reads, read-only:** the export folder `2026-08-20_pensub_revised_2v`, for rasters and
+  for the crowding/rate map. **Nothing filtered.** No `.mat` store opened.
+- **Finding another session should know:** real recordings reach the crowded tail by **two
+  different routes** and `TAIL_RECORDING` simulates only one. Dense-and-regular
+  (`20260706_343`, 36.9 events/h, CV 0.93) and sparse-but-bursty (`20260115_243`, 16.4
+  events/h, CV 1.59) both land above 0.38 crowded. `TAIL_RECORDING` takes the dense route
+  and **overshoots it: 60.3 events/h against a real tail median of 16.4 and an all-recordings
+  median of 7.9.** Its crowding fraction, interval CV and floor match; its absolute event
+  rate does not. The bursty-at-low-rate route is unsimulated.

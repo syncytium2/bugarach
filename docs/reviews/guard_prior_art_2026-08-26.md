@@ -199,8 +199,19 @@ calibrated on"* — could have shown the mechanism at all.
 **2. The field is flat, which is the one place a CFAR-shaped detector has nothing to
 adapt to.** Adaptive thresholding exists for *heterogeneous* clutter. `assess` fits a
 Gamma shape off real recordings (`MEASURED_RATE_SHAPE` = 0.275, strongly skewed) and
-`docs/learned/flat_vs_fitted.json` shows swapping the field **reorders the six**. So the
-sweep was re-run on both fields.
+`docs/learned/flat_vs_fitted.json` shows swapping the field moves scores far more than
+seed noise. So the sweep was re-run on both fields.
+
+> ⚠ **Corrected 2026-08-26.** This sentence originally said the swap *"reorders the
+> six"*, taken from
+> [`revise the bench recording before the refit`](../todo/2026-08-23-revise-the-bench-recording-before-the-refit.md),
+> which says the same. **Checked against the file, and it is wrong in both places.**
+> Ranked by F1 the order is *identical* under either field — coact > loco > rate > sync >
+> cicada > sce. What the swap moves is the spacing: `rate` 0.636 → 0.547 and `sync`
+> 0.367 → 0.500 close from 0.269 apart to 0.047 without crossing, while `coact` and
+> `loco` each gain about 0.03. The argument for re-running both fields is unaffected —
+> it never rested on the ranking — but the claim as written was not true. The todo is
+> another session's file and is not edited here.
 
 **The null result survives both.** Every guard configuration's best F1 is inside the
 no-guard band on all six rows, including the two where the mechanism *can* fire:
