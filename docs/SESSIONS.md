@@ -1218,7 +1218,8 @@ session's work is not a sweep.
   mechanism does not, and #308/#310/#315 are all about the mechanism.
 
 ### Tonys-MacBook-Pro/bench-is-the-instrument — the bench is the median recording and degenerate there
-- **Status:** ACTIVE 2026-08-26. Claim released on merge.
+- **Status:** DONE 2026-08-26 — merged as PR #319. **Darkroom claim released.**
+  `guard_bench_validity.{png,html}` is written and is not being regenerated; the stem is free.
 - **Writes:** `<darkroom>/bugarach/detector_history/guard_bench_validity.{png,html}` — **one
   filename stem**; repo copy in `docs/learned/` via `--also`. **Does not touch
   `guard_norm_bench.*`, `guard_exposure.*` or `guard_where_it_lands.*`** in that directory.
