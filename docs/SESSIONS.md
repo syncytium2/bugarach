@@ -1216,3 +1216,22 @@ session's work is not a sweep.
   exposure row peaks at alpha 1e-7 where compact peaks at 1e-5, which is the bar genuinely
   having dropped. So `forks.md` §4a's conclusion survives on outcome while its stated
   mechanism does not, and #308/#310/#315 are all about the mechanism.
+
+### Tonys-MacBook-Pro/bench-is-the-instrument — the bench is the median recording and degenerate there
+- **Status:** ACTIVE 2026-08-26. Claim released on merge.
+- **Writes:** `<darkroom>/bugarach/detector_history/guard_bench_validity.{png,html}` — **one
+  filename stem**; repo copy in `docs/learned/` via `--also`. **Does not touch
+  `guard_norm_bench.*`, `guard_exposure.*` or `guard_where_it_lands.*`** in that directory.
+- **Claims:** that stem only.
+- **Reads, read-only:** the export folder `2026-08-20_pensub_revised_2v` — CoactDetect at its
+  shipped FAST point, to measure how crowded real recordings are. **Nothing filtered**; the
+  45 recordings with fewer than three detections are reported as uncharacterizable, which is
+  a limit of a nearest-neighbour statistic and not an exclusion. No `.mat` store opened.
+- **Finding another session should know:** `BENCH_RECORDING` plants events 120 s apart against
+  a ±30 s reference window, so its crowding fraction is **0.00** — measured, both regimes —
+  and any experiment about reference-window contamination run on it is answering a question it
+  cannot see. Real recordings run **median 0.00, IQR 0.00–0.30, range 0.00–0.57**, with 7 of
+  39 above the crowded diagnostic's 0.38. **The bench is the median recording and degenerate
+  at it.** This is evidence for
+  [`revise the bench recording before the refit`](todo/2026-08-23-revise-the-bench-recording-before-the-refit.md),
+  which `bench-is-not-the-folder` owns — that file is deliberately NOT edited here.

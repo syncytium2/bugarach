@@ -148,7 +148,9 @@ best each configuration can reach. 12 seeds, 1.5 s match tolerance.
 
 **Every number in every row is inside one seed standard deviation of the no-guard entry
 beside it.** The widest gap anywhere — 0.703 to 0.731 on quiet — is half that row's
-spread. Moving α one decade moves F1 further than the guard does, and further than the
+spread. ⚠ **Two of these three rows cannot show the guard's main mechanism at all**;
+see *Can the bench show this at all* below, which is the correction to this table's
+coverage rather than to its numbers. Moving α one decade moves F1 further than the guard does, and further than the
 normalization does: on busy, α alone spans 0.269 to 0.630.
 
 So `forks.md` §4a's *conclusion* — the guard is a threshold knob — survives, on outcome,
@@ -175,11 +177,74 @@ normalizations and demands identical detections — neither branch is entered, s
 else means the tool is measuring itself. Clean on quiet (145/247) and crowded
 (1151/1278).
 
+## Can the bench show this at all? Two thirds of it cannot
+
+⚠ **The table above overstates its own coverage, and this section is the correction.**
+Tony asked whether the simulated data's coordination structure was deciding the answer.
+Measured, twice over:
+
+![where the bench sits in the real range, and what the guard buys once the field is fixed](../learned/guard_bench_validity.png)
+
+**1. Mutual masking is impossible on two of those three rows, by construction.**
+`BENCH_RECORDING` sets `min_sep_sec=120` against CoactDetect's ±30 s reference window,
+so no planted event is ever inside another's context. Measured over 12 seeds, the
+fraction of planted events with a neighbour in their own reference window is **0.00** on
+`baseline_quiet` and **0.00** on `baseline_busy`, against **0.38** on `crowded`.
+`CROWDED_RECORDING`'s own docstring says it plainly — *"The failure mode every CFAR
+detector uses guard cells against ... is impossible by construction on the recording the
+detectors are scored on."* So the quiet and busy rows tested the **self-masking half
+alone**, and only the `crowded` row — the one `bench.py` says *"nothing should be
+calibrated on"* — could have shown the mechanism at all.
+
+**2. The field is flat, which is the one place a CFAR-shaped detector has nothing to
+adapt to.** Adaptive thresholding exists for *heterogeneous* clutter. `assess` fits a
+Gamma shape off real recordings (`MEASURED_RATE_SHAPE` = 0.275, strongly skewed) and
+`docs/learned/flat_vs_fitted.json` shows swapping the field **reorders the six**. So the
+sweep was re-run on both fields.
+
+**The null result survives both.** Every guard configuration's best F1 is inside the
+no-guard band on all six rows, including the two where the mechanism *can* fire:
+
+| row | crowded frac | best-F1 delta, worst → best | no-guard sd |
+|---|---|---|---|
+| crowded · flat | 0.38 | +0.001 → +0.004 | ±0.017 |
+| crowded · fitted | 0.35 | −0.002 → +0.001 | ±0.047 |
+| quiet · fitted | **0.00** | −0.001 → +0.012 | ±0.062 |
+| busy · fitted | **0.00** | −0.025 → +0.016 | ±0.090 |
+
+The fitted field does raise CoactDetect's absolute F1 a lot — 0.882 → 0.911 on crowded,
+0.703 → 0.749 on quiet — which is its own argument for revising the bench. It does not
+change what the guard is worth.
+
+**3. Do real recordings crowd their own reference window?** Neither simulated value is an
+observation, so here is one. CoactDetect at its shipped FAST point over the
+`2026-08-20_pensub_revised_2v` export folder, 39 recordings with enough detections to
+characterize, 393 detections:
+
+**median 0.00 · IQR 0.00–0.30 · range 0.00–0.57 · 7 of 39 above the crowded
+diagnostic's 0.38.**
+
+So the bench is not unrepresentative — it *is* the median recording. It is
+**degenerate at the median**: it holds one point of a distribution that really spans
+zero to 0.57, and the guard question is a question about the crowded tail, which is
+roughly a fifth of the folder rather than a corner case. The `crowded` diagnostic sits
+near the 80th percentile of the real range, which is a better defence of it than
+"diagnostic" was.
+
+**What that leaves the null result.** It is bracketed rather than general: nothing at the
+real median, nothing at the real ~80th percentile, and **untested between and above**.
+Detections are not ground truth, and a detector that misses crowded events would
+understate the crowding — the direction that flatters the bench. The honest statement is
+that the guard buys nothing at either end of the real range, not that it buys nothing.
+
 ## Reproduce it
 
 ```
 python tools/probe_guard_norm_bench.py --selftest          # identical detections
-python tools/probe_guard_norm_bench.py                     # the F1 sweep
+python tools/probe_guard_norm_bench.py --json sweep.json   # both fields, the F1 sweep
+python tools/probe_real_crowding.py <export-folder> --json crowd.json
+python tools/make_guard_bench_validity_figure.py --also docs/learned \
+    --from-json sweep.json --crowding-json crowd.json
 python tools/make_guard_norm_bench_figure.py --also docs/learned
 python tools/probe_guard_exposure.py --selftest            # must print "clean" twice
 python tools/probe_guard_exposure.py --crowded --loco      # the tables above
