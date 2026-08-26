@@ -49,7 +49,7 @@
 #   tools/guard_local_board.sh                      check this worktree (hook use)
 #   tools/guard_local_board.sh --board F --name N   check a hypothetical pair
 #   tools/guard_local_board.sh --path               print the board path and exit
-#   tools/guard_local_board.sh --audit              every live worktree, old vs new
+#   tools/guard_local_board.sh --audit [board]      every live worktree, old vs new
 #   tools/guard_local_board.sh --selftest           prove every branch fires
 #
 # EXIT  0 allowed   1 blocked   2 could not determine (never a silent pass)
@@ -124,9 +124,12 @@ claims_substring() {
 # people it will refuse are other sessions mid-task. They are owed the list before
 # it lands rather than a surprise at their next commit.
 # =================================================================================
+#   $1 board file, optional — defaults to this machine's. Taking one is what makes
+#   the audit testable anywhere: CI has no machine-local board, so a test that only
+#   ever saw the live one could assert nothing about the table it prints.
 audit() {
-  local board line dir branch old new changed=0 total=0
-  board=$(board_path) || { echo "not a git repo" >&2; return 2; }
+  local board="${1:-}" line dir branch old new changed=0 total=0
+  [ -n "$board" ] || board=$(board_path) || { echo "not a git repo" >&2; return 2; }
   if [ ! -f "$board" ]; then
     echo "board-guard audit: no board at $board — every worktree here is NOBOARD."
     return 0
@@ -225,7 +228,7 @@ selftest() {
 BOARD=""; NAME=""; BRANCH=""
 case "${1:-}" in
   --selftest) selftest; exit $? ;;
-  --audit)    audit; exit $? ;;
+  --audit)    audit "${2:-}"; exit $? ;;
   -h|--help)  sed -n '2,56p' "$0"; exit 2 ;;
   --path)     board_path || { echo "not a git repo" >&2; exit 2; }; exit 0 ;;
   --board)    BOARD="${2:-}"

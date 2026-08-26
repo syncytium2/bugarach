@@ -167,14 +167,35 @@ def test_a_name_carrying_regex_syntax_is_compared_literally(tmp_path):
     assert run("--board", str(b), "--name", "v1X2+rc").returncode == 1
 
 
-def test_audit_reports_who_changes_verdict():
+def test_audit_reports_who_changes_verdict(tmp_path):
     """A stricter gate starts refusing commits that pass today, and the sessions it
     will refuse are mid-task. --audit is what lets that list be read before the
-    change lands rather than discovered at somebody's next commit."""
-    r = run("--audit")
+    change lands rather than discovered at somebody's next commit.
+
+    Driven against a fixture board rather than this machine's. The first cut of
+    this test read the live one and passed here and nowhere else — CI has no
+    machine-local board, so every row came back NOBOARD and the table it is meant
+    to check was never printed. That is the same shape as the bug being fixed: a
+    check that only holds where the thing it checks happens to be set up.
+    """
+    board = tmp_path / "SESSIONS.md"
+    # The repo name in prose and no heading for it — the primary checkout's exact
+    # situation, and the row the audit must mark as changing.
+    board.write_text(
+        "# board\n\n### Mac/somebody-else — their task\n"
+        "- **Touches:** paths under bugarach\n", encoding="utf-8")
+    r = run("--audit", str(board))
     assert r.returncode == 0, r.stderr
-    assert "worktree(s) change verdict" in r.stdout
     assert "was" in r.stdout and "now" in r.stdout
+    assert "worktree(s) change verdict" in r.stdout
+    assert "CHANGES" in r.stdout, r.stdout
+
+
+def test_audit_says_so_when_there_is_no_board(tmp_path):
+    """Quiet and successful, never a crash — it is a report, not a gate."""
+    r = run("--audit", str(tmp_path / "absent.md"))
+    assert r.returncode == 0
+    assert "no board" in r.stdout
 
 
 def test_guard_and_hook_agree_on_the_board_path():
