@@ -60,6 +60,34 @@ Template:
 
 ## Active
 
+### Tonys-MacBook-Pro/deploy-the-site — the live page leads with the figure now
+- **Status:** DONE 2026-08-26 — deployed and verified; **DEPLOY RELEASED.** Version
+  `1403a88f-75c8-4c38-b852-ee2f16c26aef`, built from `8b307a3`, six files changed at the
+  edge (all four pages' HTML plus `hero.png` and `reality.png`). `tools/site_staleness.py`
+  says **current**, 0 commits behind.
+- **Started:** 2026-08-26
+- **Writes:** `bugarach.tonydefazio.com` and `site/` (gitignored build output). Nothing in
+  the darkroom, no store, no export folder.
+- **Claims:** ~~the site deploy~~ — **released.** Also held port 5096 on this machine for
+  the drive-before-upload step, released.
+- **Notes:** Authorised by Tony in words on 2026-08-26 ("deploy"), right after PR #321
+  landed the front-page reflow — recorded because deploying is outward-facing and a
+  session does not do it on its own judgement.
+  **What changed for a reader:** the page opens on the six-detector figure instead of on
+  two paragraphs, the tagline is one line, and the rasters are compressed to a third of
+  their old height with their onset marks halved, which is what makes a planted event
+  visible as a column rather than as scattered dashes.
+  **Port 5096 was already held when this session went to claim it** — an `http.server`
+  from the 2026-08-25 deploy, still alive after that block said it had released the port,
+  with its cwd in this same worktree. It was serving the fresh build, so it was used
+  rather than killed; if a future session finds 5096 busy, check `lsof` before assuming a
+  live session holds it. Releasing a port on the board is not the same as ending the
+  process.
+  Driven over HTTP before the upload and again on the live URL: four pages 200, four nav
+  links resolving on each, both front-page images decoded at their real sizes, viewer
+  simulating and drawing. `tools/audit_deployed_page.py` passed — *the page fetched
+  nothing but itself.*
+
 ### Tonys-MacBook-Pro/guard-finding-for-review — the guard finding, and the figure it wants
 - **Status:** DONE 2026-08-25 — PR #310 merged (`087f70a`); **claim released.** The figure
   is written and will not be rewritten by this session. Anything regenerating
