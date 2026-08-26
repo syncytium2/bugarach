@@ -1285,13 +1285,22 @@ session's work is not a sweep.
   normalization was cancelling most of what was left.
 
 ### Tonys-MacBook-Pro/benchmark-explainer — what the benchmark actually is, in pictures, for a human
-- **Status:** ACTIVE 2026-08-26. Claim released on merge.
+- **Status:** DONE 2026-08-26 — merged as PR #328. **Darkroom claim released.**
 - **Writes:** `<darkroom>/bugarach/detector_history/benchmark_rasters.{png,html}`,
-  `benchmark_map.{png,html}`, and `<darkroom>/bugarach/learned/benchmark_explainer.html` —
+  `benchmark_map.{png,html}`, and `<darkroom>/bugarach/benchmark_explainer.html` —
   **three filename stems**; repo copies in `docs/learned/` via `--also`. **Does not touch
   `guard_in_the_tail.*`, `guard_bench_validity.*`, `guard_norm_bench.*`,
-  `guard_exposure.*` or `guard_where_it_lands.*`.**
-- **Claims:** those three stems only.
+  `guard_exposure.*` or `guard_where_it_lands.*`** where they live in `detector_history/`.
+- ⚠ **One more darkroom write than the claim above named, recorded rather than hidden:**
+  `<darkroom>/bugarach/2026-08-26-guard-and-the-benchmark/` — a new dated folder holding
+  the explainer, a `README.md` naming what each figure shows, and **copies** of all seven
+  guard/benchmark figures. Tony went looking and found the document at the darkroom root
+  with its figures a folder away in `detector_history/`; the dated folder is the
+  darkroom's own convention for a report and its figures. The originals in
+  `detector_history/` are untouched, so nothing another session claimed was overwritten.
+  **A session republishing any of those seven figures should refresh the copy here too**,
+  or the folder goes stale silently.
+- **Claims:** those three stems, plus that folder. All released.
 - **Reads, read-only:** the export folder `2026-08-20_pensub_revised_2v`, for rasters and
   for the crowding/rate map. **Nothing filtered.** No `.mat` store opened.
 - **Finding another session should know:** real recordings reach the crowded tail by **two
