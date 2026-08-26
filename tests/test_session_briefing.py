@@ -13,7 +13,10 @@ fire, because a channel nobody verifies is the same as no channel.
 """
 
 import json
+import os
+import shutil
 import subprocess
+import tempfile
 import time
 from pathlib import Path
 
@@ -39,11 +42,154 @@ def test_it_runs_and_succeeds(briefing):
 def test_it_is_fast_enough_to_be_unconditional(briefing):
     """It runs on the blocking session-start path, ahead of the generic hook.
     interface2 lost half a day to a SessionStart hook that took the whole
-    session down at 60 s; this one is local-only and must stay trivial, because
-    the moment it needs a budget it becomes droppable — and a channel dropped
-    for budget is the failure it exists to prevent."""
+    session down at 60 s; this one is local-only and must stay trivial.
+
+    This docstring used to go on: "the moment it needs a budget it becomes
+    droppable — and a channel dropped for budget is the failure it exists to
+    prevent." That reasoning conflated two budgets. A RUNTIME budget would make
+    the hook droppable; a SIZE budget is what keeps it deliverable, and refusing
+    one is what made the whole channel silent on 2026-08-25 instead of shorter.
+    """
     _, elapsed = briefing
     assert elapsed < 3.0, f"briefing took {elapsed:.1f}s on the blocking path"
+
+
+# ---------------------------------------------------------------------------------
+# DELIVERY. Everything below this line asserts about what a session RECEIVES.
+#
+# The fifteen tests in this file on 2026-08-25 all asserted what the script PRINTS,
+# and every one of them passed while the hook emitted 17,568B — which the harness
+# spilled to a file, injecting a 2KB preview instead. 88% of a green-tested channel
+# reached nobody: the waiting-on-tony alarm, the commit-gate report, the handover
+# gates, the darkroom line, and the HANDOFF-in-flight alarm, which nothing else in
+# the tree prints.
+#
+# `test_waiting_items_come_before_the_fifty_open_ones` is the sharpest example. It
+# asserts an ORDERING, and passed — with both sides of the comparison past the cut.
+# ---------------------------------------------------------------------------------
+
+
+def _budget() -> int:
+    """The script's own default, read from the script — never a second copy of the
+    number here, or the test and the thing it guards drift apart."""
+    for line in SCRIPT.read_text().splitlines():
+        if line.startswith("briefing_budget()"):
+            return int(line.split(":-")[1].split("}")[0])
+    raise AssertionError("briefing_budget() is gone — the size guard has no number")
+
+
+def test_the_briefing_fits_in_one_injection(briefing):
+    """THE TEST THIS FILE DID NOT HAVE.
+
+    An oversized SessionStart hook is not truncated in place — it is spilled to a
+    file and replaced by a ~2KB preview, so going over is not "slightly less gets
+    through", it is "almost nothing does". Two payloads are known to have been
+    spilled (60,235B and 13,414B); 6,809B is known to have arrived whole.
+
+    A content assertion cannot catch this, because the content is all still there
+    in the script's stdout. Only the total can.
+    """
+    out, _ = briefing
+    size = len(out.stdout.encode())
+    assert size <= _budget(), (
+        f"the briefing is {size}B against a {_budget()}B budget. It will be spilled "
+        f"to a file and delivered as a 2KB preview — i.e. it will not arrive. Trim a "
+        f"section or move it behind the budget ladder in deliver()."
+    )
+
+
+def test_it_prints_its_own_size(briefing):
+    """The canary. The 2026-08-20 note on the sibling hook ends "Watch that number";
+    this one had no number to watch, which is how it crossed the line unobserved."""
+    out, _ = briefing
+    assert "briefing delivered:" in out.stdout
+    assert f"budget {_budget()}B" in out.stdout
+
+
+def test_the_alarms_come_before_the_bulk(briefing):
+    """Ordering as a survival property, not a courtesy.
+
+    If the budget machinery ever fails, what survives is whatever fits in 2KB. The
+    alarms are bounded and small; FOUNDATIONS §9 is 5.7KB. So the alarms lead —
+    which is the reverse of the order that made them invisible.
+    """
+    out, _ = briefing
+    facts = out.stdout.index("Facts about the preparation")
+    for alarm in ("commit gates:", "darkroom:", "gates, before you hand anything over"):
+        assert alarm in out.stdout, f"alarm missing entirely: {alarm}"
+        assert out.stdout.index(alarm) < facts, (
+            f"{alarm!r} sits after the 5.7KB FOUNDATIONS extract. That is the "
+            f"position it was in when it stopped arriving."
+        )
+
+
+def test_the_open_thread_list_is_a_count_not_a_dump(briefing):
+    """9,658B of the 17,568 that got this hook spilled was a list of every open todo
+    — the largest thing in the briefing and, by its own handoff's account, "a record,
+    not a queue". It evicted the six alarms behind it. The count and the query stay;
+    the list is a file you open."""
+    out, _ = briefing
+    assert "open threads:" in out.stdout
+    names = [p.name for p in sorted((ROOT / "docs" / "todo").glob("*.md"))
+             if "status: open" in p.read_text()]
+    listed = [n for n in names if n in out.stdout]
+    assert not listed, f"the open-todo dump is back ({len(listed)} filenames): {listed[:3]}"
+
+
+def test_a_root_handoff_is_the_first_thing_a_session_sees():
+    """This script is the ONLY thing in the tree that reads HANDOFF.md, and CLAUDE.md
+    rests "no handoff file == nothing in flight" on it. On 2026-08-25 the alarm sat at
+    byte 17,569 of a stream cut at 2,000, so a root handoff could not have reached any
+    session at all.
+
+    Driven in a throwaway repo rather than by creating HANDOFF.md at this root: the
+    file's presence is a live signal other sessions read, and a test must not forge it
+    even for a second.
+    """
+    with tempfile.TemporaryDirectory() as tmp:
+        repo = Path(tmp)
+        subprocess.run(["git", "init", "-q"], cwd=repo, check=True)
+        (repo / "tools").mkdir()
+        (repo / "docs" / "todo").mkdir(parents=True)
+        shutil.copy(SCRIPT, repo / "tools" / SCRIPT.name)
+        shutil.copy(ROOT / "tools" / "guard_local_board.sh", repo / "tools")
+        shutil.copy(ROOT / "docs" / "FOUNDATIONS.md", repo / "docs")
+        (repo / "HANDOFF.md").write_text(
+            "# Handoff — the one thing in flight\n\nPR #1 is open and main depends on it.\n"
+        )
+        out = subprocess.run(["bash", "tools/" + SCRIPT.name], cwd=repo,
+                             capture_output=True, text=True, timeout=30)
+
+    assert "HANDOFF.md present" in out.stdout, "the in-flight alarm did not fire"
+    head = "\n".join(out.stdout.splitlines()[:6])
+    assert "HANDOFF.md present" in head, (
+        "the in-flight alarm is not in the first six lines. It was last, and last is "
+        "where it stopped arriving:\n" + head
+    )
+    assert "the one thing in flight" in out.stdout, "the alarm must carry the file's own words"
+
+
+def test_over_budget_it_degrades_loudly_and_keeps_the_alarms():
+    """Degrade loudly, the rule the sibling hook sets for its own budget cuts. A
+    silent trim looks like a working briefing while delivering less than it says."""
+    env = {**os.environ, "BUGARACH_BRIEFING_BUDGET_BYTES": "1"}
+    out = subprocess.run(["bash", str(SCRIPT)], cwd=ROOT, env=env,
+                         capture_output=True, text=True, timeout=30)
+    assert "TTX IS NOT A SILENCING CONTROL" in out.stdout, "the claim must survive any cut"
+    assert "min_rois" not in out.stdout, "the reasoning is what the cut drops"
+    assert "THE CLAIMS ONLY" in out.stdout, "and it must say that it cut"
+    assert "(TERSE" in out.stdout, "the canary names the degraded mode"
+    assert "commit gates:" in out.stdout, "alarms are never budgeted"
+    assert "over the 1B budget" in out.stderr, "and it is loud where a human looks"
+
+
+def test_the_selftest_passes():
+    """sapper-style: the script proves its own ladder can fire in every direction,
+    and the suite runs that proof rather than trusting it."""
+    out = subprocess.run(["bash", str(SCRIPT), "--selftest"], cwd=ROOT,
+                         capture_output=True, text=True, timeout=60)
+    assert out.returncode == 0, out.stdout + out.stderr
+    assert "all checks pass" in out.stdout
 
 
 def test_it_carries_the_ttx_fact(briefing):
