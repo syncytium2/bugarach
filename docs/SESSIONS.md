@@ -61,7 +61,9 @@ Template:
 ## Active
 
 ### Tonys-MacBook-Pro/guard-finding-for-review — the guard finding, and the figure it wants
-- **Status:** ACTIVE 2026-08-25
+- **Status:** DONE 2026-08-25 — PR #310 merged (`087f70a`); **claim released.** The figure
+  is written and will not be rewritten by this session. Anything regenerating
+  `guard_where_it_lands.*` should take the stem fresh.
 - **Started:** 2026-08-25
 - **Writes:** `<darkroom>/bugarach/detector_history/guard_where_it_lands.{png,html}` — that
   filename stem only. Does **not** touch `cfar_map.*`, which the same directory holds and
