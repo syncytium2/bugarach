@@ -5,6 +5,13 @@ on:
     branches: [main]
   pull_request:
 
+# Read-only, and named rather than left to the default so a reader can see what CI
+# is allowed to do. pull-requests: read is what tests/test_handoff_is_honest.py needs
+# to ask whether the work a root HANDOFF.md claims is in flight has actually landed.
+permissions:
+  contents: read
+  pull-requests: read
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -36,4 +43,18 @@ jobs:
       - name: Test
         # real-slice tests skip without BUGARACH_DATA_ROOT; everything else
         # (incl. all MATLAB-parity fixtures) runs on the committed synthetics
+        #
+        # GH_TOKEN, because tests/test_handoff_is_honest.py asks the API whether the
+        # PRs a root HANDOFF.md names are still open, and `gh` with no token exits
+        # non-zero — which that test reads as "no evidence" and turns into a skip. So
+        # the check whose own docstring says it speaks "out loud, in CI" had never once
+        # run in CI. github.token is read-only here and needs no repository secret.
+        #
+        # BUGARACH_REQUIRE_PR_API turns that skip into a failure, exactly as
+        # BUGARACH_REQUIRE_BROWSER does for the browser step above: a guard that can go
+        # quiet on its own is a green tick that looked at nothing. It only bites when a
+        # root HANDOFF.md exists — rare, and precisely when the answer matters.
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BUGARACH_REQUIRE_PR_API: "1"
         run: pytest -q

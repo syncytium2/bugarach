@@ -172,18 +172,24 @@ def test_audit_reports_who_changes_verdict(tmp_path):
     will refuse are mid-task. --audit is what lets that list be read before the
     change lands rather than discovered at somebody's next commit.
 
-    Driven against a fixture board rather than this machine's. The first cut of
-    this test read the live one and passed here and nowhere else — CI has no
-    machine-local board, so every row came back NOBOARD and the table it is meant
-    to check was never printed. That is the same shape as the bug being fixed: a
-    check that only holds where the thing it checks happens to be set up.
+    Driven against a fixture board rather than this machine's, and the fixture is
+    derived rather than written down. This test has been wrong twice in the same way
+    now, which is worth recording, because it is the way the guard itself was wrong:
+    depending on ambient setup that happened to be there.
+
+    First cut read the LIVE board — CI has none, so every row came back NOBOARD and
+    the table this exists to check was never printed. Second cut wrote the repo name
+    into the fixture as the literal "bugarach", which only produces a changing row
+    when the checkout directory is called that; it passed here and in CI and failed
+    in a clone named anything else.
     """
     board = tmp_path / "SESSIONS.md"
-    # The repo name in prose and no heading for it — the primary checkout's exact
-    # situation, and the row the audit must mark as changing.
+    # THIS checkout's directory name in prose, with no heading for it — the primary
+    # checkout's exact situation, and the row the audit must mark as changing.
+    here = REPO.name
     board.write_text(
-        "# board\n\n### Mac/somebody-else — their task\n"
-        "- **Touches:** paths under bugarach\n", encoding="utf-8")
+        f"# board\n\n### Mac/somebody-else — their task\n"
+        f"- **Touches:** paths under {here}\n", encoding="utf-8")
     r = run("--audit", str(board))
     assert r.returncode == 0, r.stderr
     assert "was" in r.stdout and "now" in r.stdout

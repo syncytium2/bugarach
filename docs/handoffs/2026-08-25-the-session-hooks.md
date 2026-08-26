@@ -161,6 +161,27 @@ file; nothing checks it against reality; sapper has no rule for it.
 about what is in flight — a PR number is the obvious handle — and says so once that PR is
 closed. This is the most mechanizable item here.
 
+**DONE — and it was already done when this was written.** `tests/test_handoff_is_honest.py`
+shipped in #305 (`696cac3`) a couple of hours before this page was drafted, and took the PR
+number as the handle exactly as suggested. It has fired for real once: PR #298 closed
+unmerged at 03:08 UTC and the spent handoff left the root within minutes (`3b7e022`),
+instead of the four days its predecessor sat there. That is the first handoff in this repo
+retired by a test rather than by somebody noticing. This item should have been marked
+resolved on the day; it stayed open because nothing rereads a handoff's own open list.
+
+**What was left, and is now closed too (2026-08-26).** The liveness half asks the API
+through `gh`, `gh` with no token exits non-zero, `_states()` reads a non-zero exit as *no
+evidence*, and `ci.yml` set no `GH_TOKEN` — so the check whose docstring says it speaks
+*"out loud, in CI"* had never once run in CI. It skipped every time, and a skip is what
+silence looks like when it is being careful. CI now passes `github.token` (read-only, no
+secret) with `permissions: pull-requests: read`, and `BUGARACH_REQUIRE_PR_API=1` turns
+*could not answer* into a failure there — the same treatment `BUGARACH_REQUIRE_BROWSER`
+gives the browser step three lines above it in the same file, whose comment already said
+why: *"so it cannot go quiet again."* The flag only bites when a root `HANDOFF.md` exists,
+so the normal state stays quiet and never touches the network. A workflow-shape test sits
+next to the check that depends on it, because that dependency lives in a file the check
+cannot see — which is how it went missing in the first place.
+
 ### 3. `murderboard_revendor.py --selftest` fails in a consumer, passes upstream
 
 Two failures in this repo, zero in the upstream clone:
