@@ -1201,7 +1201,8 @@ session's work is not a sweep.
   occupied effect is the *largest* in the whole table (×0.66, not ×0.99).
 
 ### Tonys-MacBook-Pro/guard-norm-bench — the fixed normalization does not detect better, and the figure says so
-- **Status:** ACTIVE 2026-08-26. Claim released on merge.
+- **Status:** DONE 2026-08-26 — merged as PR #317. **Darkroom claim released.**
+  `guard_norm_bench.{png,html}` is written and is not being regenerated; the stem is free.
 - **Writes:** `<darkroom>/bugarach/detector_history/guard_norm_bench.{png,html}` — **one
   filename stem**, the bench figure for `docs/reviews/guard_prior_art_2026-08-26.md`, whose
   repo copy lands in `docs/learned/` via `--also`. **Does not touch `guard_exposure.*` or
