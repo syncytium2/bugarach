@@ -127,11 +127,31 @@ def test_the_open_thread_list_is_a_count_not_a_dump(briefing):
     """9,658B of the 17,568 that got this hook spilled was a list of every open todo
     — the largest thing in the briefing and, by its own handoff's account, "a record,
     not a queue". It evicted the six alarms behind it. The count and the query stay;
-    the list is a file you open."""
+    the list is a file you open.
+
+    Two substring traps here, both of which this test fell into on first contact with a
+    root HANDOFF.md — the same looseness that lets `guard_local_board.sh` wave every
+    worktree through:
+
+    * ``"status: open" in text`` matches ``docs/todo/README.md``, which documents the
+      frontmatter format and carries the value as an EXAMPLE. `session_briefing.sh`'s own
+      comment records that it "did, first run"; the lesson had to be learned twice.
+    * a bare ``README.md`` then matches the briefing's link to ``docs/handoffs/README.md``,
+      so the test reported a todo dump that was not there.
+
+    So: the status is read from the frontmatter line, and README is excluded the way the
+    script excludes it.
+    """
     out, _ = briefing
     assert "open threads:" in out.stdout
+
+    def is_open(p: Path) -> bool:
+        head = p.read_text().splitlines()[:8]
+        return any(ln.strip() == "status: open" for ln in head)
+
     names = [p.name for p in sorted((ROOT / "docs" / "todo").glob("*.md"))
-             if "status: open" in p.read_text()]
+             if p.name != "README.md" and is_open(p)]
+    assert names, "no open todos at all — if that is real, this test needs rethinking"
     listed = [n for n in names if n in out.stdout]
     assert not listed, f"the open-todo dump is back ({len(listed)} filenames): {listed[:3]}"
 

@@ -1,11 +1,47 @@
 ---
-status: waiting-on-tony
+status: done
 filed: 2026-08-24
+closed: 2026-08-25
 ---
 
-# The null leaks: plant nothing and the assessor reports coordination
+# The null leaked; the excess is selection-corrected now
 
-waiting: Decide whether the assessor's excess gets a fork or a caveat — parity says the same bias is in the MATLAB. The K decision is read off this number and is blocked behind the answer.
+> ## ✅ Decided and implemented 2026-08-25
+>
+> Tony was shown both outcomes measured
+> ([the decision figure](../learned/assess_fork_decision.png)) and **took the
+> correction**. Landed in PR #303 as `excess_mode="corrected"`, the default, in both
+> the Python and the browser — [forks §13](../forks.md).
+>
+> | nothing planted, K=3 | was | is |
+> |---|---|---|
+> | quiet, 5.2 mHz/ROI | 0.28 | **0.01** |
+> | busy, 19.0 mHz/ROI | 6.14 | **0.39** |
+> | crowded, 50 mHz/ROI | 30.09 | **0.04** |
+>
+> The residual does not track the background — that is how it is told from the bias
+> it replaced — and it is signed, so it is noise rather than a clamp.
+>
+> **No parity exemption was needed.** `coact_excess_raw` still carries the
+> uncorrected quantity on every call and `tests/test_assess.py` still holds it to the
+> MATLAB fixtures at 1e-9 via `excess_mode="raw"`. The inheritance stayed *verified*
+> rather than waived — a cleaner pattern than ADR-0003 anticipated needing, and the one
+> to reach for on the next fork.
+>
+> ⚠ **ADR-0003 is not on `main` yet** — it is [PR #298](https://github.com/syncytium2/bugarach/pull/298),
+> held open because it edits `FOUNDATIONS.md` §2 and that is Tony's call. Nine other
+> places on `main` already name it the same way. Deliberately **not** a relative link
+> here: a link to `docs/adr/0003-*` renders as a dead click today, which is worse than
+> a name a reader can search for. Make it a link when #298 lands.
+>
+> `tests/test_assess_null.py`'s strict xfail — *plant nothing, expect zero* — passes
+> now, and the tests that pinned the leak are retired with it.
+>
+> **Still owed, not started:** RESET §5's one-pass regeneration of everything derived
+> from the old number — `docs/learned/`, `generator_spec.json`, the bake-off. It
+> should not start until
+> [the scoring question](2026-08-25-two-scorers-two-winners-and-nothing-decides.md)
+> is settled, or it needs doing twice.
 
 > **Not murderboarded** — a finding for sessions in this tree, same standing as
 > the revision plan it feeds. Every number is reproducible from
