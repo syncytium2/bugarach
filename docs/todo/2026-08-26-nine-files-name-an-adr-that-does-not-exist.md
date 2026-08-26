@@ -5,7 +5,7 @@ filed: 2026-08-26
 
 # Nine files name ADR-0003, and PR #298 was closed without merging
 
-waiting: ADR-0003 was declined — does the decision get a different home, or do the nine files that cite it get rewritten? Both are fine; nobody can pick without you, and the citations read as broken until someone does.
+waiting: Did you mean to close PR #298, or did a session tidy it away on its shutdown? It was green and mergeable and nothing records a reason. If you meant it, nine files need their ADR-0003 citations rehomed or rewritten; if you did not, reopening is one click and they all come right.
 
 > **Not murderboarded** — a finding for sessions in this tree. Every claim below is one
 > `git grep` away.
