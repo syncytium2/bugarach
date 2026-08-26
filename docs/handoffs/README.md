@@ -43,3 +43,4 @@ The rule was missing a third option. This is it.
 | handoff | written | what it carries |
 | --- | --- | --- |
 | [the difficulty axis moved, and three guards fired](2026-08-20-difficulty-axis-and-synfire.md) | 2026-08-20 | `bench.REGIMES` re-derived from the export folder; the retune it exposed; three synfire defects, two of which reached published numbers; three open items nobody owns |
+| [one hook delivered, one went silent, one waves everything through](2026-08-25-the-session-hooks.md) | 2026-08-25 | the briefing was spilled at 17,568B and 88% of it reached no session — fixed in #306, with the size test fifteen green tests did not have; the board guard that cannot fail in the primary checkout; nothing retiring a spent root `HANDOFF.md`; four open items |
