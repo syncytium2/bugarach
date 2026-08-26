@@ -126,9 +126,61 @@ LoCo here** — its threshold pool is built over bins inside each half, so `expo
 not a one-line change there, and claiming the quantizer is the whole of the shortfall
 would be a story, not a measurement.
 
+## Does it detect better? No — and that is the result
+
+Everything above is about the **bar**. Tony asked the question the bar cannot answer, and
+this document's first version admitted it had never been asked: does the fixed
+normalization *detect* better?
+
+![F1 against alpha for every guard configuration, all inside the no-guard seed band](../learned/guard_norm_bench.png)
+
+**Comparing at a fixed α would rig it.** `exposure` lowers a bar `compact` raised, so at
+a frozen α it buys recall and pays precision — which is what any threshold change does
+and is not evidence about a detector. So sweep the knob the operating point is actually
+chosen with (`bench.OPERATING_POINTS["coact"].grid`, α from 1e-2 to 1e-7) and compare the
+best each configuration can reach. 12 seeds, 1.5 s match tolerance.
+
+| recording | no guard | 5 s compact | 5 s exposure | 20 s compact | 20 s exposure | seed sd |
+|---|---|---|---|---|---|---|
+| quiet | 0.703 | 0.711 | 0.709 | **0.731** | 0.723 | ±0.05 |
+| busy | 0.613 | 0.617 | **0.630** | 0.625 | 0.584 | ±0.08 |
+| crowded | 0.882 | **0.885** | **0.885** | 0.883 | 0.884 | ±0.02 |
+
+**Every number in every row is inside one seed standard deviation of the no-guard entry
+beside it.** The widest gap anywhere — 0.703 to 0.731 on quiet — is half that row's
+spread. Moving α one decade moves F1 further than the guard does, and further than the
+normalization does: on busy, α alone spans 0.269 to 0.630.
+
+So `forks.md` §4a's *conclusion* — the guard is a threshold knob — survives, on outcome,
+while the mechanism it gave for that conclusion does not. #308 and #310 corrected the
+mechanism and this corrects what the correction is worth. Both are true at once and
+neither is the other's refutation.
+
+**What did change is where the operating point sits**, and it changed exactly as the
+normalization argument predicts. The 20 s `exposure` row peaks at **α = 1e-7** where 20 s
+`compact` peaks at **1e-5**: the bar genuinely dropped, so it takes two more decades of
+strictness to get back to the same place. That is CFAR's own discipline — change the
+reference and you recompute the multiplier — showing up in the measurement rather than
+in an argument. Nothing in bugarach recomputes it, which is why the shipped `alpha=1e-4`
+would be the wrong constant for a guard this repo does not currently use.
+
+One row is worth flagging on its own: **20 s `exposure` on the busy regime is the only
+configuration that is clearly worse than no guard at all** at the shipped α (F1 0.481 vs
+0.613, precision 0.345 vs 0.639). Its best is still inside the noise band, but a wide
+guard with a correctly-normalized reference and an uncorrected α is the one combination
+that actively hurts.
+
+`python tools/probe_guard_norm_bench.py --selftest` runs guard 0 under both
+normalizations and demands identical detections — neither branch is entered, so anything
+else means the tool is measuring itself. Clean on quiet (145/247) and crowded
+(1151/1278).
+
 ## Reproduce it
 
 ```
+python tools/probe_guard_norm_bench.py --selftest          # identical detections
+python tools/probe_guard_norm_bench.py                     # the F1 sweep
+python tools/make_guard_norm_bench_figure.py --also docs/learned
 python tools/probe_guard_exposure.py --selftest            # must print "clean" twice
 python tools/probe_guard_exposure.py --crowded --loco      # the tables above
 python tools/make_guard_exposure_figure.py --also docs/learned   # the figure
@@ -229,9 +281,10 @@ patch, exactly as §4a was.
   stays the largest gap here. What changes is the size of the thing whose consequence is
   unmeasured.
 - **CoactDetect only.** LoCo is reported beside the prediction and no fix is offered.
-- **`guard_norm="exposure"` has not been benched.** No F1, no precision, no recall, on
-  any recording. It is a normalization argued from arithmetic and confirmed on the bar;
-  whether it *detects* better is a separate measurement nobody has run.
+- **It buys no measurable detection.** Benched after the fact — see *Does it detect
+  better* below. Every guard configuration's best F1 lands inside one seed sd of the
+  no-guard configuration's, on all three recordings. The fix is real and its consequence
+  for detection is not.
 - **4 seeds, simulated, one regime.** `baseline_quiet` only. `forks.md` §4b says the
   background axis matters more than crowding does, and this was not swept across it.
 - **Nothing here is about real slices**, and no export folder was opened.

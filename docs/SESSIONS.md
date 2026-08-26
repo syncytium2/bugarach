@@ -1199,3 +1199,19 @@ session's work is not a sweep.
   where it cancels most of the masking relief. **#310's "at a 20 s guard the occupied effect
   collapses" is that cancellation, not a collapse:** with the normalization fixed the 20 s
   occupied effect is the *largest* in the whole table (×0.66, not ×0.99).
+
+### Tonys-MacBook-Pro/guard-norm-bench — the fixed normalization does not detect better, and the figure says so
+- **Status:** ACTIVE 2026-08-26. Claim released on merge.
+- **Writes:** `<darkroom>/bugarach/detector_history/guard_norm_bench.{png,html}` — **one
+  filename stem**, the bench figure for `docs/reviews/guard_prior_art_2026-08-26.md`, whose
+  repo copy lands in `docs/learned/` via `--also`. **Does not touch `guard_exposure.*` or
+  `guard_where_it_lands.*`** in the same directory.
+- **Claims:** that stem only.
+- **Reads, read-only:** nothing outside the repo. Simulated bench recordings only.
+- **Finding another session should know:** #315 fixed a real normalization error and it buys
+  **no measurable detection.** Sweeping alpha over the operating-point grid, every guard
+  configuration's best F1 lands inside one seed sd of the no-guard configuration's, on all
+  three recordings. What the fix does change is **where the operating point sits** — the 20 s
+  exposure row peaks at alpha 1e-7 where compact peaks at 1e-5, which is the bar genuinely
+  having dropped. So `forks.md` §4a's conclusion survives on outcome while its stated
+  mechanism does not, and #308/#310/#315 are all about the mechanism.
