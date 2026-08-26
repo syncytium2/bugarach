@@ -95,8 +95,8 @@ nearest-neighbour gap is a threshold shift wearing a mechanism's clothes.
 
 Test the two half-contexts for homogeneity and choose symmetric or maxlt **per anchor**
 instead of shipping `maxlt` unconditionally.
-[`the CFAR bench`](../reviews/cfar_demo_2026-08-24.md) names it *"the cheapest real
-upgrade, and it involves no learning at all"*, and `detector_history.md` §5.4 establishes
+[`the CFAR bench`](../reviews/cfar_demo_2026-08-24.md) names it *"The cheapest real
+upgrade involves no learning at all"*, and `detector_history.md` §5.4 establishes
 that the estimator and the combination rule are separable, so it is a third value of
 `null_context_mode` rather than a module. The measured cost of the unconditional choice:
 greatest-of holds 1.12× design through a clutter edge where cell-averaging reads 2.03× —
