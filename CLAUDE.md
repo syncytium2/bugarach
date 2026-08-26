@@ -179,8 +179,18 @@ wired to `tools/session_start_trimmed.sh`, which runs the vendored
 board, which on 2026-08-20 made the briefing 60,235 bytes; the harness refused an
 injection that size, spilled it to a file and delivered a 2KB preview, so the board
 (line 32) reached nobody and took the worktree list and the unpushed-work alarm
-with it. The wrapper prints a size canary — `briefing delivered: N lines, NB` —
-so the next regression is visible rather than silent. **Watch that number.**
+with it. Both hooks print a size canary — `briefing delivered: N lines, NB` — as
+their **first** line, because a spill keeps the opening ~2KB and drops the rest, so
+a canary anywhere else reports only when nothing is wrong.
+
+**Don't take the budgets on trust, and don't watch the number by hand.** They were
+guessed from two remembered incidents, and the guess was three kilobytes loose.
+`tools/hook_spill_census.sh` reads the record instead: every payload the harness has
+ever refused is still on disk, because refusing it is what wrote it there. On this
+machine that record says the threshold sits in **(8,768B, 10,186B]** across 55
+refusals. Run it before changing either budget — and note that a budget can be wrong
+in *both* directions: too high and the channel goes silent, too low and FOUNDATIONS
+§9 degrades to its claims on every run while the hook reports success.
 
 **There are two boards and they answer different questions.** `docs/SESSIONS.md`
 is in git and covers what another *machine* can see — the darkroom, the public

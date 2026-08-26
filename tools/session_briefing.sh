@@ -61,9 +61,38 @@
 # at the bottom of a briefing behind a spent budget and never ran once. What is budgeted
 # here is the bulk, and the bulk was a list nobody was reading.
 #
+# ---------------------------------------------------------------------------------
+# 2026-08-25, LATER THE SAME DAY. Four things the above got right in principle and
+# wrong in placement or in arithmetic:
+#
+#   THE CANARY PRINTED LAST, which is the one position a spilled payload cannot
+#   deliver. A spill keeps the first ~2KB and discards the rest, so a size line at the
+#   bottom reports only in the case where nothing is wrong. It is line 1 now. That is
+#   the whole point of a canary: it has to be the part that survives.
+#
+#   THE LADDER HAD NO FLOOR. deliver() re-rendered terse, and printed it whatever it
+#   measured. A terse render still over budget shipped labelled "(TERSE", which reads
+#   as a working degrade. It now says STILL OVER, on stdout and on stderr.
+#
+#   THE ALARMS WERE BOUNDED IN LINES, NOT BYTES. `head -14 HANDOFF.md` is fourteen
+#   lines, and fourteen 300-character lines is 4KB — enough to push the alarms this
+#   file reordered to the front straight back out of the preview. bound_bytes() caps
+#   them, cutting only at a line end or an ASCII space so a multibyte character is
+#   never split. (This repo has already shipped mojibake once, from an in-place
+#   rewrite of prose; see docs/reviews/2026-08-25-the-session-hooks_2026-08-25.md.)
+#
+#   ONE ENV VAR MEANT TWO THINGS. BUGARACH_BRIEFING_BUDGET_BYTES was read by BOTH
+#   hooks, defaulting to 9,000 here and 8,000 in session_start_trimmed.sh. Setting it
+#   to drive one silently retuned the other, including in this file's own selftest,
+#   which sets it to 1. Each script now reads the variable named after it; the sibling
+#   takes BUGARACH_SESSION_START_BUDGET_BYTES.
+#
+# AND THE THRESHOLD IS OBSERVABLE AFTER ALL — see briefing_budget() below.
+#
 # USAGE
 #   tools/session_briefing.sh              what .claude/settings.json wires as the hook
 #   tools/session_briefing.sh --selftest   prove the budget ladder and extractor fire
+#   tools/hook_spill_census.sh             what the harness has actually refused
 #
 # EXIT  0 always. A SessionStart hook that fails takes the session with it.
 
@@ -72,14 +101,107 @@ root=$(git rev-parse --show-toplevel 2>/dev/null) || exit 0
 [ -z "$root" ] && exit 0
 cd "$root" || exit 0
 
-# THE NUMBER. Two injections are known to have been spilled — 60,235B and 13,414B —
-# and 6,809B is known to have been delivered whole. The exact threshold is not
-# observable from inside a session, so this does not guess it: 9,000 is comfortably
-# under the smaller known failure and comfortably over what this briefing costs with
-# BOTH a full FOUNDATIONS §9 (5,683B) and a root HANDOFF.md present. Sized so the
-# common case never degrades and the ladder is a backstop, not the normal path.
+# THE NUMBER, and it is measured now rather than inferred. This used to read "the
+# exact threshold is not observable from inside a session". It is observable from
+# outside one: every payload the harness has ever refused is still on disk, because
+# refusing it is what writes it there —
+#
+#   <claude-config>/projects/<slug>/<session>/tool-results/hook-*-stdout.txt
+#
+# tools/hook_spill_census.sh reads that record. Against this machine's history on
+# 2026-08-25 it reports a band four kilobytes tighter than the guess above:
+#
+#   largest payload DELIVERED whole      8,768B   (this briefing, root HANDOFF present)
+#   smallest payload SPILLED            10,186B   (of 55 refusals on record)
+#   therefore the threshold is in       (8,768, 10,186]
+#
+# 9,000 stays, and the census is why rather than the guess being why. Two things
+# pin it from both sides: it must sit under the smallest observed spill, and it must
+# sit ABOVE the ordinary briefing — 8,016B bare, 8,768B with a root handoff. Lowering
+# it to match the sibling's 8,000, which was this file's first instinct, would have
+# degraded §9 to its claims on every single run and called that normal.
+#
 # Read inside deliver(), never captured at load, so a caller can override it.
+# The variable is named after THIS script: the sibling hook reads
+# BUGARACH_SESSION_START_BUDGET_BYTES, because sharing one name meant setting it to
+# test either hook silently retuned the other.
 briefing_budget() { echo "${BUGARACH_BRIEFING_BUDGET_BYTES:-9000}"; }
+
+# Cap a variable-length alarm at a byte budget, cutting ONLY at a line end or an
+# ASCII space — never mid-character, which is how prose becomes mojibake. LC_ALL=C
+# so length()/substr() count bytes in every awk; an ASCII space cannot be part of a
+# UTF-8 multibyte sequence, so a cut located at one is always on a character
+# boundary.  $1 = cap in bytes, text on stdin.
+bound_bytes() {
+  LC_ALL=C awk -v cap="$1" '
+    function trim(s, room,   c, i) {
+      if (length(s) <= room) return s
+      c = substr(s, 1, room)
+      i = length(c)
+      while (i > 0 && substr(c, i, 1) != " ") i--
+      return (i > 1 ? substr(c, 1, i - 1) " […]" : "")
+    }
+    { room = cap - used
+      if (room <= 0) { over = 1; next }
+      line = trim($0, room)
+      if (line == "" && $0 != "") { over = 1; next }
+      print line
+      used += length(line) + 1
+      if (line != $0) over = 1 }
+    END { if (over) print "   […] truncated at " cap "B — read the file" }'
+}
+
+# The variable alarms spend from ONE shared allowance, in the order they are
+# rendered, so what is bounded is the block rather than each piece separately. A live
+# root handoff renders first and therefore outranks the waiting list, which is the
+# priority the ordering already asserts; the per-call caps stop either one alone from
+# eating the allowance.  $1 = per-call cap, $2 = text.
+#
+# WHY THE ALLOWANCE IS 1,400 AND NOT 1,000. The first cut of this said 1,000, sized so
+# canary + banner + both variable alarms + ~690B of fixed alarms held the whole block
+# under a 2KB preview. That number was measured on a configured machine, where the
+# fixed alarms collapse to one line each: "commit gates: ACTIVE", "darkroom: -> ...".
+# On a FRESH CLONE every one of them fires at full length — gates OFF with its fix,
+# no board with its path, darkroom not found with its probe — and the block runs past
+# 2.3KB no matter what the variable alarms do. Squeezing the waiting list to make room
+# for that is backwards twice over: it truncates the one list with a person waiting at
+# the end of it, in order to protect standing context that has no deadline.
+#
+# So the block is NOT held under 2KB, and the guarantee is stated on position instead:
+# the alarms that cannot wait — a live handoff, work finished and waiting on a person,
+# and whether the commit gates are installed — are rendered first and land inside the
+# first 2,000 bytes whatever else is wrong with the machine. That is what the ordering
+# was for. tests/test_session_briefing.py asserts the offsets, not the total.
+ALARM_ROOM=1400
+
+# A named function rather than a loop inlined into emit_bounded's argument: the body
+# carries an apostrophe and a quoted question, and nesting that inside "$( ... )" is
+# a parse hazard for no gain.
+waiting_list() {
+  local f
+  for f in docs/todo/*.md; do
+    [ -r "$f" ] || continue
+    [ "$(basename "$f")" = "README.md" ] && continue
+    grep -q '^status: waiting-on-tony[[:space:]]*$' "$f" 2>/dev/null || continue
+    echo "   $(sed -n 's/^# //p' "$f" | head -1 | cut -c1-70)"
+    echo "     $f"
+    # The action line is the item's own one-sentence answer to "what do I do?".
+    sed -n 's/^waiting: //p' "$f" | head -1 | sed 's/^/     -> /'
+  done
+}
+
+emit_bounded() {
+  local cap="$1" text="$2" room
+  [ -z "$text" ] && return 0
+  room=$ALARM_ROOM
+  [ "$cap" -lt "$room" ] && room=$cap
+  [ "$room" -le 0 ] && { echo "   […] alarm allowance spent — read the file"; return 0; }
+  text=$(printf '%s\n' "$text" | bound_bytes "$room")
+  printf '%s\n' "$text"
+  ALARM_ROOM=$(( ALARM_ROOM - $(printf '%s\n' "$text" | wc -c | tr -d ' ') ))
+  [ "$ALARM_ROOM" -lt 0 ] && ALARM_ROOM=0
+  return 0
+}
 
 # =================================================================================
 # The FOUNDATIONS extract, and its degraded form. Extracted rather than restated so
@@ -133,10 +255,14 @@ render() {
   # FIRST, because it was last and therefore invisible. CLAUDE.md: "No handoff file
   # on main == nothing in flight", so the root is a signal and it has to stay honest.
   # Nothing else in the tree reads this file.
+  # Bounded in BYTES, not just lines: `head -14` of a file whose lines run 300
+  # characters is 4KB, which puts the alarms this render deliberately front-loaded
+  # right back behind the preview cut. The whole alarm block has to stay inside 2KB
+  # for the ordering to be worth anything.
   if [ -f HANDOFF.md ]; then
     echo
     echo "--- !! HANDOFF.md present — work is in flight, read it before starting ---"
-    head -14 HANDOFF.md
+    emit_bounded 700 "$(head -14 HANDOFF.md)"
   fi
 
   # --- 2. finished work that only Tony can move ----------------------------------
@@ -152,15 +278,9 @@ render() {
   if [ "${waiting:-0}" -gt 0 ]; then
     echo
     echo ">> ${waiting} item(s) FINISHED and waiting on Tony — nothing else unblocks these:"
-    for f in docs/todo/*.md; do
-      [ -r "$f" ] || continue
-      [ "$(basename "$f")" = "README.md" ] && continue
-      grep -q '^status: waiting-on-tony[[:space:]]*$' "$f" 2>/dev/null || continue
-      echo "   $(sed -n 's/^# //p' "$f" | head -1 | cut -c1-70)"
-      echo "     $f"
-      # The action line is the item's own one-sentence answer to "what do I do?".
-      sed -n 's/^waiting: //p' "$f" | head -1 | sed 's/^/     -> /'
-    done
+    # Bounded like the handoff excerpt above: the count is already printed, so what
+    # this list can afford to lose is its tail, not the alarms behind it.
+    emit_bounded 1200 "$(waiting_list)"
   fi
 
   # --- 3. is the commit gate actually installed in THIS clone? --------------------
@@ -301,33 +421,66 @@ print(p if p else "")' 2>/dev/null)
 # DELIVER.  Render, measure, degrade once if over budget, and always print the size.
 # The ladder has exactly one rung on purpose: the alarms are not droppable, and if
 # FOUNDATIONS §9's six claims alone blow 8KB then the thing to fix is §9, not this.
+# It does have a FLOOR, which it did not: a terse render that is STILL over budget
+# used to ship labelled "(TERSE", which reads as a degrade that worked.
 # =================================================================================
+
+# The canary, as a function of what it is describing, because it has to be emitted
+# BEFORE the body it measures — which makes its own length part of the number. Two
+# passes settle that: the second only moves if the first changed a digit count.
+#   $1 body   $2 parenthetical (the mode leads it, so a reader sees TERSE first)
+canary_line() {
+  local body="$1" paren="$2" lines base n line total i
+  lines=$(printf '%s\n' "$body" | wc -l | tr -d ' ')
+  # Both halves counted the way they are emitted — printf '%s\n', so each carries
+  # exactly one newline. wc -c, never ${#line}: the parenthetical holds an em dash,
+  # and a character count would report it as one byte where the harness sees three.
+  base=$(printf '%s\n' "$body" | wc -c | tr -d ' ')
+  n=$base
+  for i in 1 2 3; do
+    line="briefing delivered: ${lines} lines, ${n}B (${paren})"
+    total=$(( base + $(printf '%s\n' "$line" | wc -c | tr -d ' ') ))
+    [ "$n" -eq "$total" ] && break
+    n=$total
+  done
+  printf '%s\n' "$line"
+}
+
 deliver() {
-  local out bytes budget
+  local body bytes budget
   budget=$(briefing_budget)
-  out=$(render full)
-  bytes=$(printf '%s\n' "$out" | wc -c | tr -d ' ')
+  body=$(render full)
+  bytes=$(printf '%s\n' "$body" | wc -c | tr -d ' ')
 
   if [ "${bytes:-0}" -gt "$budget" ] 2>/dev/null; then
-    local terse tbytes
+    local terse tbytes floor=""
     terse=$(render terse)
     tbytes=$(printf '%s\n' "$terse" | wc -c | tr -d ' ')
     echo "!! [session-briefing] ${bytes}B over the ${budget}B budget — FOUNDATIONS §9" >&2
     echo "   degraded to its claims (${tbytes}B). An oversized hook is SPILLED to a file" >&2
     echo "   and delivered as a 2KB preview, which is how this channel went silent on" >&2
     echo "   2026-08-25. Trim the briefing or raise BUGARACH_BRIEFING_BUDGET_BYTES." >&2
+    # THE FLOOR. There is no third rung to fall to — the alarms are not droppable —
+    # so when the last rung does not fit either, the only honest move is to say so
+    # in the place a reader is looking, rather than label it a successful degrade.
+    if [ "${tbytes:-0}" -gt "$budget" ] 2>/dev/null; then
+      floor=", STILL OVER"
+      echo "!! and the terse render is STILL over: ${tbytes}B against ${budget}B. There is" >&2
+      echo "   no rung below this one. If this is real and not a test, only the alarms at" >&2
+      echo "   the top are certain to arrive — FOUNDATIONS §9 needs trimming, not this." >&2
+    fi
+    canary_line "$terse" "TERSE${floor} — ${bytes}B full, over the ${budget}B budget"
     printf '%s\n' "$terse"
-    echo "briefing delivered: $(printf '%s\n' "$terse" | wc -l | tr -d ' ') lines, ${tbytes}B" \
-         "(TERSE — ${bytes}B full, over the ${budget}B budget)"
     return 0
   fi
 
-  printf '%s\n' "$out"
-  # THE CANARY. The 2026-08-20 note on the other hook ends "Watch that number." This
-  # one had no number to watch, which is how it crossed the line unobserved. On stdout,
-  # so it lands in the session's context rather than on a stderr nobody reads.
-  echo "briefing delivered: $(printf '%s\n' "$out" | wc -l | tr -d ' ') lines, ${bytes}B" \
-       "(budget ${budget}B)"
+  # THE CANARY, and it goes FIRST. The 2026-08-20 note on the other hook ends "Watch
+  # that number", and this one printed it as the LAST line — the one position a
+  # spilled payload cannot deliver, since a spill keeps the opening ~2KB and drops
+  # the rest. A size line that only arrives when the size was fine is not a canary.
+  # On stdout, so it lands in the session's context rather than on a stderr nobody reads.
+  canary_line "$body" "budget ${budget}B"
+  printf '%s\n' "$body"
 }
 
 # =================================================================================
@@ -376,6 +529,55 @@ selftest() {
 
   out=$(BUGARACH_BRIEFING_BUDGET_BYTES=1 deliver 2>&1 >/dev/null)
   t "over budget: loud on stderr"    "$out" "over the 1B budget" yes
+  t "over budget: floor is named"    "$out" "STILL over"         yes
+
+  # THE CANARY'S POSITION IS THE POINT. A spill keeps the opening ~2KB and discards
+  # the rest, so a size line at the bottom reports only when the size was fine.
+  out=$(deliver | head -1)
+  case "$out" in
+    "briefing delivered:"*) printf '  ok   %-54s\n' "canary is line 1, not the last line" ;;
+    *) printf '  FAIL %-54s (%s)\n' "canary is line 1, not the last line" "${out:0:40}"
+       fails=$((fails+1)) ;;
+  esac
+  out=$(BUGARACH_BRIEFING_BUDGET_BYTES=1 deliver 2>/dev/null | head -1)
+  t "canary leads the degraded form too" "$out" "briefing delivered:" yes
+
+  # And it must be TRUE. The number describes the whole payload including the canary
+  # line itself, which is why canary_line settles a fixed point rather than measuring
+  # the body alone. A canary that is merely present was what this file already had.
+  local claimed actual
+  claimed=$(deliver | head -1 | sed 's/.*lines, \([0-9]*\)B.*/\1/')
+  actual=$(deliver | wc -c | tr -d ' ')
+  if [ "$claimed" = "$actual" ]; then
+    printf '  ok   %-54s\n' "the canary's number is the payload's real size"
+  else
+    printf '  FAIL %-54s (says %s, is %s)\n' "the canary's number is the payload's real size" \
+           "$claimed" "$actual"; fails=$((fails+1))
+  fi
+
+  # THE ALARMS WITH A DEADLINE MUST BE INSIDE THE PREVIEW. Stated as an offset, not
+  # a total: on a fresh clone the standing alarms all fire at full length and the
+  # block runs past 2.3KB whatever the variable ones do. What ordering buys is that
+  # the urgent ones are in front of that, and `head -14` of a file bounds lines
+  # rather than bytes — fourteen 300-character lines would undo it.
+  local at
+  at=$(deliver | head -c 2000 | grep -c 'commit gates:')
+  if [ "${at:-0}" -ge 1 ]; then
+    printf '  ok   %-54s\n' "urgent alarms land inside the first 2000B"
+  else
+    printf '  FAIL %-54s\n' "urgent alarms land inside the first 2000B"; fails=$((fails+1))
+  fi
+
+  # bound_bytes cuts at a line end or an ASCII space and never mid-character. This
+  # repo has already shipped mojibake from an in-place rewrite of prose; a truncator
+  # that splits a UTF-8 sequence is the same failure with a budget as its excuse.
+  out=$(printf 'ααααα βββββ γγγγγ δδδδδ\n' | bound_bytes 14)
+  if printf '%s' "$out" | iconv -f UTF-8 -t UTF-8 >/dev/null 2>&1; then
+    printf '  ok   %-54s\n' "a mid-character cut still leaves valid UTF-8"
+  else
+    printf '  FAIL %-54s\n' "a mid-character cut still leaves valid UTF-8"; fails=$((fails+1))
+  fi
+  t "and it says it truncated" "$out" "truncated at 14B" yes
 
   # The claim extractor must not cut mid-sentence — the failure mode of taking line
   # one, since some claims wrap across two or three of them.

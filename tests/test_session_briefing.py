@@ -339,3 +339,123 @@ def test_it_is_wired_into_both_session_start_matchers():
     assert {b["matcher"] for b in blocks} == {"startup", "resume"}
     for block in blocks:
         assert block["hooks"][0]["command"] == "bash tools/session_briefing.sh"
+
+
+# ---------------------------------------------------------------------------------
+# THE CANARY HAS TO BE THE PART THAT SURVIVES, and the number on it has to be true.
+#
+# #306 added a size canary and printed it as the LAST line — the one position a
+# spilled payload cannot deliver, since a spill keeps the opening ~2KB and discards
+# the rest. So it reported only in the case where nothing was wrong.
+# ---------------------------------------------------------------------------------
+
+CENSUS = ROOT / "tools" / "hook_spill_census.sh"
+
+
+def test_the_canary_is_the_first_line(briefing):
+    out, _ = briefing
+    first = out.stdout.splitlines()[0]
+    assert first.startswith("briefing delivered:"), (
+        "the canary is not line 1. A spilled payload keeps its opening bytes and "
+        f"drops the rest, so anywhere else it reports only on success. Got: {first!r}"
+    )
+
+
+def test_the_canary_number_is_the_real_payload_size(briefing):
+    """A canary that is merely present was what this file already had. The number
+    describes the whole payload including the canary line itself — which is why
+    canary_line() settles a fixed point rather than measuring the body alone."""
+    out, _ = briefing
+    claimed = int(out.stdout.split("lines, ")[1].split("B")[0])
+    assert claimed == len(out.stdout.encode()), (
+        f"the canary says {claimed}B and the payload is {len(out.stdout.encode())}B"
+    )
+
+
+def test_the_alarms_with_a_deadline_are_inside_the_preview(briefing):
+    """Stated as an OFFSET, not as a total, and the difference is the whole finding.
+
+    A first cut of this asserted the alarm block came in under 2,000B. It passed on
+    a configured machine — where "commit gates: ACTIVE" and "darkroom: -> ..." are
+    one line each — and failed on CI, where the clone is fresh, every standing alarm
+    fires at full length and the block runs past 2.3KB whatever else happens. The
+    tempting repair was to squeeze the waiting-on-Tony list to make room, which is
+    backwards twice: it truncates the one list with a person waiting at the end of
+    it, to protect standing context that has no deadline.
+
+    So what ordering actually buys is asserted directly. The alarms that cannot wait
+    — a live handoff, work finished and waiting on a person, whether the commit
+    gates are installed — are rendered first and land inside the first 2,000 bytes
+    however misconfigured the machine is. `head -14 HANDOFF.md` bounds lines rather
+    than bytes, and fourteen 300-character lines would undo exactly that.
+    """
+    out, _ = briefing
+    preview = out.stdout.encode()[:2000].decode("utf-8", "ignore")
+    assert "commit gates:" in preview, (
+        "the commit-gate alarm is past the ~2KB a spilled payload keeps. Everything "
+        "ordered after it is past it too."
+    )
+    if "waiting on Tony" in out.stdout:
+        assert "waiting on Tony" in preview
+
+
+def test_the_ladder_has_a_floor():
+    """A terse render that is still over budget used to ship labelled '(TERSE',
+    which reads as a degrade that worked. There is no rung below it, so the only
+    honest move is to say so."""
+    env = {**os.environ, "BUGARACH_BRIEFING_BUDGET_BYTES": "1"}
+    out = subprocess.run(["bash", str(SCRIPT)], cwd=ROOT, env=env,
+                         capture_output=True, text=True, timeout=30)
+    assert "STILL OVER" in out.stdout.splitlines()[0], "the canary must name the floor"
+    assert "STILL over" in out.stderr, "and it must be loud where a human looks"
+
+
+def test_each_hook_reads_its_own_budget_variable():
+    """One name meant two numbers: BUGARACH_BRIEFING_BUDGET_BYTES defaulted to 9,000
+    in session_briefing.sh and 8,000 in session_start_trimmed.sh, so setting it to
+    drive either hook silently retuned the other — including this file's own
+    over-budget tests, which set it to 1."""
+    sibling = (ROOT / "tools" / "session_start_trimmed.sh").read_text()
+    live = [ln for ln in sibling.splitlines()
+            if "BUGARACH_" in ln and "BUDGET_BYTES" in ln
+            and not ln.lstrip().startswith("#")]
+    assert live, "the sibling hook reads no budget variable at all"
+    for line in live:
+        assert "BUGARACH_BRIEFING_BUDGET_BYTES" not in line, (
+            f"the sibling still reads this script's variable: {line.strip()}"
+        )
+        assert "BUGARACH_SESSION_START_BUDGET_BYTES" in line
+
+
+def test_the_budget_is_under_what_the_harness_has_actually_refused():
+    """THE CIRCULARITY, BROKEN. test_the_briefing_fits_in_one_injection reads the
+    budget out of the script and asserts the output is under it — so raising the
+    budget to 50,000 keeps that test green while the channel dies.
+
+    tools/hook_spill_census.sh supplies the outside number: every payload the
+    harness ever refused is still on disk, because refusing it is what wrote it
+    there. Skipped where there is no such record (CI, a fresh clone) — the number
+    comes from outside this repo, so it cannot always be here.
+    """
+    census = subprocess.run(["bash", str(CENSUS), "--values"], cwd=ROOT,
+                            capture_output=True, text=True, timeout=180)
+    assert census.returncode == 0, census.stderr
+    vals = dict(ln.split("=", 1) for ln in census.stdout.strip().splitlines() if "=" in ln)
+    if not vals.get("spilled_min"):
+        pytest.skip("no spill on record on this machine — nothing to calibrate against")
+
+    check = subprocess.run(["bash", str(CENSUS), "--check", str(_budget())], cwd=ROOT,
+                           capture_output=True, text=True, timeout=180)
+    assert check.returncode == 0, check.stdout + check.stderr
+
+
+def test_the_budget_is_also_above_the_ordinary_briefing(briefing):
+    """The other side of it, and why the budget was NOT lowered to the sibling's
+    8,000 when the census came back tighter than the header had claimed: a budget
+    under the ordinary payload degrades §9 to its claims on every run and reports
+    that as normal."""
+    out, _ = briefing
+    assert "(TERSE" not in out.stdout, (
+        "the ordinary briefing is already degrading. The ladder is a backstop, not "
+        "the normal path — trim a section rather than living in the degraded form."
+    )
