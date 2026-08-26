@@ -34,7 +34,11 @@ HERE=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd -P)
 ROOT=$(dirname "$HERE")
 VENDORED="${ROOT}/.claude/hooks/session-start.sh"
 DIGEST="${HERE}/board_digest.sh"
-BUDGET_BYTES="${BUGARACH_BRIEFING_BUDGET_BYTES:-8000}"
+# Named after THIS script. It used to read BUGARACH_BRIEFING_BUDGET_BYTES, which
+# tools/session_briefing.sh also reads with a different default (9,000) — so one name
+# meant two numbers, and setting it to drive either hook silently retuned the other,
+# including session_briefing.sh's own selftest, which sets it to 1. (2026-08-25)
+BUDGET_BYTES="${BUGARACH_SESSION_START_BUDGET_BYTES:-8000}"
 
 # Replace the board dump with the digest, and slot the site line in above RULES.
 #   $1 vendored stdout   $2 rendered digest   $3 site line (optional)
