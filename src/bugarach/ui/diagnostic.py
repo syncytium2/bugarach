@@ -71,13 +71,29 @@ FALSE_ALARM = "#b3261e"
 RASTER_INK = "#2b2b2b"
 PROBE_BAND = "#e8a33d"
 
+#: How far apart, in pixels, two marks in one lane have to be before this figure
+#: is entitled to give them different verdicts. The ✕ is about 5 px across; two
+#: of them a pixel apart are one blot, and a reader asked to tell a false alarm
+#: from the hit beside it has nothing to look at. Used by `lane_panel` to decide
+#: which false alarms it can honestly draw as such — never by the scorer.
+SEPARABLE_PX = 5.0
 
-def _spans(onsets, widths, ext):
+
+def _spans(onsets, widths, ext, tol_sec: float = 1.5):
     """(onset, width) -> [(t0, t1)] clipped to the extent.
 
     A zero or non-finite width becomes a small visible sliver rather than
     nothing: a detection drawn as zero pixels reads as "the detector found
     nothing here", which is the opposite of the truth.
+
+    **The sliver is capped at the matching tolerance, and the cap is the point.**
+    The floor was 0.2% of the record and nothing else — 3.6 s on a 30-minute
+    figure, against a `tol_sec` of 1.5. Five of the six detectors report windows
+    of 0.3–2.1 s, so every one of their bars was drawn *wider than the window it
+    is judged in*: a reader saw a bar covering a planted event while the scorer
+    called that same detection a false alarm for missing by 2 s. The picture
+    contradicted its own verdict. A bar still runs wide when the detector
+    genuinely claims that much — SCE bins at 10 s and its bars say so.
     """
     if onsets is None or np.size(onsets) == 0:
         return []
@@ -87,7 +103,7 @@ def _spans(onsets, widths, ext):
     if w.size != o.size:
         w = np.zeros_like(o)
     span = float(ext[1] - ext[0])
-    floor = max(span * 0.002, 1e-9)
+    floor = min(max(span * 0.002, 1e-9), max(float(tol_sec), 1e-9))
     out = []
     for a, b in zip(o, w):
         if not np.isfinite(a):
@@ -138,11 +154,15 @@ def lane_panel(lanes: dict, *, ext, gt=None, tol_sec: float = 1.5,
     for key, ev in lanes.items():
         y = ypos[key]
         colour = COLORS.get(key, "#555555")
-        sp = _spans(ev[0], ev[1] if len(ev) > 1 else None, ext)
+        sp = _spans(ev[0], ev[1] if len(ev) > 1 else None, ext, tol_sec)
         if sp:
+            # No stroke. A 1 px outline on a bar whose fill is under a pixel
+            # wide is most of the ink, and it is ink that stands for nothing —
+            # it made every detection look about 3 px of time across whatever
+            # the detector reported.
             items.append(hv.Rectangles(
                 [(a, y - 0.30, b, y + 0.30) for a, b in sp]
-            ).opts(color=colour, line_color=colour, line_width=1, alpha=0.9))
+            ).opts(color=colour, line_color=None, line_alpha=0, alpha=0.9))
         if gt is not None:
             # spans, not points — the same rule the scoreboard and the bench
             # use. Scored as points, a binned detector's bin edge lands up to a
@@ -159,15 +179,37 @@ def lane_panel(lanes: dict, *, ext, gt=None, tol_sec: float = 1.5,
             dup = set(np.round(sc.dup_times, 6).tolist())
             spurious = np.array([t for t in sc.fa_times
                                  if round(float(t), 6) not in dup])
+            # AND THE SAME MISTAKE ONE PIXEL OVER. `dup` catches a second call
+            # that lands *within tolerance* of a claimed event. It does not catch
+            # one that lands just outside — 6 s from a planted event this figure
+            # draws at 1.8 s per pixel — where the reader sees a single column of
+            # ink carrying both a hit and an ✕ and can only conclude the ✕ marks
+            # the hit. Three of them did exactly that on the published page. So a
+            # spurious call closer to one of this detector's own matched calls
+            # than this figure can separate gets the duplicate ring rather than
+            # the ✕: the arithmetic is untouched — it is still a false alarm and
+            # still costs precision — but the picture stops asserting a
+            # distinction it has no pixels to show.
+            if spurious.size and np.isfinite(sc.matched).any():
+                sec_per_px = float(ext[1] - ext[0]) / max(width, 1)
+                near = sec_per_px * SEPARABLE_PX
+                won = sc.matched[np.isfinite(sc.matched)]
+                unseparable = np.array(
+                    [np.min(np.abs(won - t)) <= near for t in spurious])
+                dup_times = np.concatenate([sc.dup_times,
+                                            spurious[unseparable]])
+                spurious = spurious[~unseparable]
+            else:
+                dup_times = sc.dup_times
             if spurious.size:
                 items.append(hv.Scatter(
                     (spurious, np.full(spurious.size, y + 0.40))).opts(
-                    marker="x", size=7, color=FALSE_ALARM, line_width=2,
+                    marker="x", size=5.5, color=FALSE_ALARM, line_width=1.4,
                     alpha=0.95))
-            if sc.dup_times.size:
+            if dup_times.size:
                 items.append(hv.Scatter(
-                    (sc.dup_times, np.full(sc.dup_times.size, y + 0.40))).opts(
-                    marker="circle", size=5, color=FALSE_ALARM, alpha=0.55,
+                    (dup_times, np.full(dup_times.size, y + 0.40))).opts(
+                    marker="circle", size=4, color=FALSE_ALARM, alpha=0.55,
                     line_color=FALSE_ALARM, line_width=1, fill_alpha=0.0))
 
     if gt is not None and len(getattr(gt, "distractors", [])):
@@ -436,14 +478,23 @@ def legend_html(lanes: dict, gt=None, member_source: str | None = None) -> str:
     entries = [
         (_key("bar", COLORS.get(src, "#555")),
          "<b>Lane bar</b> — one row per detector; the bar spans a detection's "
-         "<i>onset → onset + width</i>. Colour is detector identity:<br>"
+         "<i>onset → onset + width</i>, and never more than the matching "
+         "tolerance when that window is too narrow to draw. Most of these "
+         "windows run under two seconds, which is about a pixel here, so the "
+         "bars are hairlines by honesty rather than by style; SCE bins at ten "
+         "seconds and its bars are visibly wider because they are. "
+         "Colour is detector identity:<br>"
          f'<div style="display:flex;flex-wrap:wrap;margin-top:3px">{swatches}</div>'),
         (_key("x", FALSE_ALARM),
-         "<b>False alarm</b> — a detection near <b>no</b> planted event."),
+         "<b>False alarm</b> — a detection near <b>no</b> planted event, and far "
+         "enough from this detector's own hits to be told apart from them here."),
         (_key("circle", FALSE_ALARM),
-         "<b>Duplicate</b> — it lands on a real event another detection already "
-         "claimed, and matching is one-to-one, so it is left over. "
-         "Fragmentation, not hallucination."),
+         "<b>Second call, not an independent one</b> — a detection that costs "
+         "precision like any other false alarm, but that a reader should not "
+         "count as a separate miss-fire. Either it lands on a real event another "
+         "detection already claimed (matching is one-to-one, so it is left over "
+         "— fragmentation, not hallucination), or it sits closer to one of this "
+         "detector's own hits than this figure can separate."),
         (_key("triangle", FOUND),
          "<b>Planted event, recovered</b> by at least one detector."),
         *([(_key("inverted", MISSED),
