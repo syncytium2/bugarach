@@ -13,10 +13,15 @@ this file leaves the root — spent, or moved to
 the inheritance, not a standing contract".** It is complete, green, and held open on
 purpose because it edits `FOUNDATIONS.md` §2 and Tony had not looked.
 
-**Then I built on it before it landed.** `main` now carries **nine references to
-ADR-0003 in a file that does not exist on `main`** — `src/bugarach/assess.py`,
-`docs/forks.md` §13, both assess test modules, and the two-scorers todo. A session
-reading any of them goes looking for `docs/adr/0003-*` and finds `0001` and `0002`.
+**Then I built on it before it landed.** `main` **names ADR-0003 in files that ship
+ahead of it** — `src/bugarach/assess.py`, `docs/forks.md` §13, both assess test
+modules, and the two-scorers todo. A session reading any of them goes looking for
+`docs/adr/0003-*` and finds `0001` and `0002`.
+
+*(This said "nine references" when it was written and the number has already moved —
+the set grows every time someone writes about the decision. Naming the files instead
+is the version that stays true, and the count was a small instance of exactly the
+stale-status defect this handoff spends a section on.)*
 
 Nothing is broken at runtime and no test fails. It is a documentation
 inconsistency, it is mine, and it resolves the moment #298 merges.
@@ -121,10 +126,41 @@ saying to Tony.
 
 ## Housekeeping for whoever picks this up
 
-- **71 open todos**, most written before the reset. Read as history, not a queue.
-- **PRs #292, #270, #53, #50** are open and none is webapp work; #270 is red and
-  stale from 2026-08-24 and wants a rebase.
-- Board: `../bugarach-worktrees/SESSIONS.md`. Every block I opened today is closed
-  and every shared resource released — the viewer, the darkroom, the deploy, port
-  5096.
-- Suite on `main`: **1,333 passed, 13 skipped, no xfail.** sapper clear.
+- **70 open todos**, most written before the reset. Read as history, not a queue.
+  Two are `waiting-on-tony` and the session briefing names them at startup.
+- **PRs #304, #292, #270, #53, #50** are open besides #298; none is webapp work.
+  #270 is red and stale from 2026-08-24 and wants a rebase.
+- Board: `../bugarach-worktrees/SESSIONS.md`. Every block opened for this work is
+  closed and every shared resource released — the viewer, the darkroom, the deploy,
+  port 5096.
+- Suite on `main`: **1,356 collected**, sapper clear.
+
+---
+
+## Amended 2026-08-25 evening — the channel this file depends on was broken
+
+This handoff was written to be read at session start. **It could not have been.**
+
+`tools/session_briefing.sh` is the only code that reads `HANDOFF.md`, and it was
+emitting 17,568B — a `SessionStart` hook that size is not trimmed, it is spilled to
+a file and replaced by a ~2KB preview. The in-flight alarm sat at byte **17,569**,
+dead last. Six alarms were behind the cut, including the two `waiting-on-tony` items
+this file asks Tony to settle.
+
+Fixed and on `main`: **#306** reorders so the alarms lead, budgets the bulk at 9,000B
+and prints a size canary (17,439B → 8,068B); **#307** re-vendored a stale murderboard;
+**#309** is the write-up, [`docs/handoffs/2026-08-25-the-session-hooks.md`](docs/handoffs/2026-08-25-the-session-hooks.md),
+which carries four open items nobody owns.
+
+Three things in this file were also amended rather than left standing:
+
+- The ADR-0003 mention in the null-leak todo is **not** a relative link. `docs/adr/0003-*`
+  is not on `main` until #298 lands, so a link there renders as a dead click — this
+  handoff was about to add a tenth reference to that ADR and make it the only broken one.
+- The open-PR list above omitted #304, which was open when this was written. That is the
+  same stale-status defect the file's own body catalogues.
+- **This file is now machine-checked.** `tests/test_handoff_is_honest.py` asserts that a
+  root handoff names the PR it claims is in flight, and that at least one of them is still
+  open. When #298 closes, that test goes red and says so — which is the retirement
+  mechanism `docs/handoffs/README.md` was missing when its predecessor sat here for four
+  days saying *"nothing is half-done"*.

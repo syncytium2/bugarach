@@ -25,9 +25,14 @@ closed: 2026-08-25
 > **No parity exemption was needed.** `coact_excess_raw` still carries the
 > uncorrected quantity on every call and `tests/test_assess.py` still holds it to the
 > MATLAB fixtures at 1e-9 via `excess_mode="raw"`. The inheritance stayed *verified*
-> rather than waived — a cleaner pattern than
-> [ADR-0003](../adr/0003-parity-was-the-inheritance-not-the-contract.md) anticipated
-> needing, and the one to reach for on the next fork.
+> rather than waived — a cleaner pattern than ADR-0003 anticipated needing, and the one
+> to reach for on the next fork.
+>
+> ⚠ **ADR-0003 is not on `main` yet** — it is [PR #298](https://github.com/syncytium2/bugarach/pull/298),
+> held open because it edits `FOUNDATIONS.md` §2 and that is Tony's call. Nine other
+> places on `main` already name it the same way. Deliberately **not** a relative link
+> here: a link to `docs/adr/0003-*` renders as a dead click today, which is worse than
+> a name a reader can search for. Make it a link when #298 lands.
 >
 > `tests/test_assess_null.py`'s strict xfail — *plant nothing, expect zero* — passes
 > now, and the tests that pinned the leak are retired with it.
