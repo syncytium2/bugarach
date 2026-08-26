@@ -60,15 +60,23 @@ project_dirs() {
 # SPILLED. The file exists because the injection was refused; its size is the size
 # that was refused. Only hook-*-stdout.txt — tool-results holds spilled output from
 # ordinary tools as well, and those say nothing about the SessionStart limit.
-spilled_sizes() {
+spill_files() {
   local d
   while IFS= read -r d; do
     [ -n "$d" ] || continue
-    find "$d" -path '*/tool-results/hook-*-stdout.txt' -type f \
-      -exec stat -f '%z' {} \; 2>/dev/null \
-      || find "$d" -path '*/tool-results/hook-*-stdout.txt' -type f \
-           -printf '%s\n' 2>/dev/null
-  done < <(project_dirs) | grep -E '^[0-9]+$' | sort -n
+    find "$d" -path '*/tool-results/hook-*-stdout.txt' -type f 2>/dev/null
+  done < <(project_dirs)
+}
+
+# `wc -c < file`, not stat: BSD wants `stat -f %z` and GNU wants `stat -c %s`, and
+# the obvious `find -exec stat -f ... || find -printf ...` fallback does not fire —
+# find exits 0 even when every -exec failed, so on Linux this produced an empty list
+# and a green selftest that had measured nothing. CI caught it; this machine could
+# not have.
+spilled_sizes() {
+  local f
+  spill_files | while IFS= read -r f; do wc -c < "$f" 2>/dev/null | tr -d ' '; done \
+    | grep -E '^[0-9]+$' | sort -n
 }
 
 # DELIVERED. A payload that arrived carries its canary into the transcript. A
@@ -85,11 +93,8 @@ canaries_seen() {
 }
 
 canaries_spilled() {
-  local d f
-  while IFS= read -r d; do
-    [ -n "$d" ] || continue
-    find "$d" -path '*/tool-results/hook-*-stdout.txt' -type f 2>/dev/null
-  done < <(project_dirs) | while IFS= read -r f; do
+  local f
+  spill_files | while IFS= read -r f; do
     tail -c 400 "$f" 2>/dev/null | grep -o 'briefing delivered: [0-9]* lines, [0-9]*B' | tail -1
   done | sed 's/.*, \([0-9]*\)B$/\1/' | sort -u
 }
@@ -205,9 +210,14 @@ selftest() {
   CLAUDE_CONFIG_DIR="$tmp" ; export CLAUDE_CONFIG_DIR
   project_dirs() { echo "$tmp/projects/x-repo"; }
 
+  # Checked against the size the fixture was BUILT to have, not against wc -c —
+  # comparing the sizer to itself is how the Linux break got a green selftest here.
   got=$(spilled_sizes | head -1)
-  t "a refused payload is counted by its file size" "$got" \
-    "$(wc -c < "$tmp/projects/x-repo/sess1/tool-results/hook-aaa-stdout.txt" | tr -d ' ')"
+  case "$got" in
+    ''|*[!0-9]*) t "a refused payload is measured at all"   "$got" "a number ≥3000" ;;
+    *) [ "$got" -ge 3000 ] && t "a refused payload is measured at all" ok ok \
+         || t "a refused payload is measured at all" "$got" "≥3000" ;;
+  esac
   t "canaries seen includes both"      "$(canaries_seen | tr '\n' ',')"     "1200,4000,"
   t "the refused one is subtracted"    "$(delivered_sizes | tr '\n' ',')"   "1200,"
   t "delivered_max is the real one"    "$(values | sed -n 's/delivered_max=//p')" "1200"
