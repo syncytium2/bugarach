@@ -17,8 +17,20 @@ point is chosen with (`bench.OPERATING_POINTS["coact"].grid`, alpha 1e-2 ... 1e-
 compare the best each configuration can reach.
 
 The seed spread is reported beside every number, because the comparison lives or dies on
-it: `docs/learned` records coact's sd(dF1) at **0.078** over 12 seeds, so a difference of
-0.02 in F1 is not a difference.
+it: `docs/learned` records coact's sd(dF1) at **0.078** over 12 seeds.
+
+**The sd is not the yardstick for a gap, and this docstring used to say it was** — the
+line here read *"so a difference of 0.02 in F1 is not a difference."* `seed_sd` is the
+spread of a SINGLE seed's F1; `f1` is pooled over all twelve. A gap between two pooled
+numbers is measured against the standard error, sd/sqrt(12), about 3.5x smaller. This
+tool's widest gap reads 0.45 against the sd and 1.57 against the SEM. Both fail, so
+nothing it concluded moves — but 3.5x of slack is not a margin to keep by accident.
+
+Better and free: every row carries `per_seed`, so two configs can be subtracted seed by
+seed. All configs run the same seeds, so recording difficulty — the dominant term in the
+sd — cancels. Measured on `baseline_quiet`, no-guard against 20 s compact: the arms
+correlate at r = 0.663, so pairing buys only 18%; 8 of 12 seeds favour the guard and the
+paired t is 1.85 on 11 df. Not a result, on the widest gap in the table.
 
 ## Two axes, because the first version of this probe could not have found an effect
 
@@ -128,6 +140,14 @@ def collect(fields=("flat", "fitted")):
                         f1=pooled.f1, precision=pooled.precision,
                         recall=pooled.recall,
                         seed_sd=float(np.nanstd(ps, ddof=1)),
+                        # THE PER-SEED F1s SURVIVE, not just their spread. Reducing
+                        # `ps` to one sd threw the PAIRING away: every config runs the
+                        # same twelve seeds, so the seed-to-seed term is shared and
+                        # cancels in a per-seed difference. Without these numbers that
+                        # comparison needs the whole sweep re-run — which is exactly
+                        # what it cost the first time somebody wanted it.
+                        per_seed=[None if not np.isfinite(v) else float(v)
+                                  for v in ps],
                         n_hit=pooled.n_hit, n_detected=pooled.n_detected,
                         n_planted=pooled.n_planted))
     return rows
@@ -176,6 +196,13 @@ def main(argv=None) -> int:
             sub = [r for r in rows if r["field"] == field and r["regime"] == regime]
             print(f"{regime} · {field} field · crowded frac "
                   f"{sub[0]['crowded_frac']:.2f}")
+            # Units on every column. F1, precision, recall and alpha are all
+            # DIMENSIONLESS, and saying so is what stops a reader supplying a unit —
+            # a table of F1 gaps was read as minutes on 2026-08-26
+            # (docs/writing_conventions.md, "Every table column carries its units").
+            print("  " + " " * 14 + " ".join(f"{'':>8s}" for _ in ALPHAS)
+                  + f" | {'(F1)':>8s} {'(prob.)':>9s} {'(F1)':>8s} "
+                    f"{'(F1)':>6s} {'(F1)':>6s}")
             print(f"  {'config':14s} " + " ".join(f"{x:>8.0e}" for x in ALPHAS)
                   + f" | {'best F1':>8s} {'at alpha':>9s} {'seed sd':>8s} "
                     f"{'P':>6s} {'R':>6s}")
@@ -196,8 +223,23 @@ def main(argv=None) -> int:
     print("  Compare each row's BEST F1, not its column at a shared alpha: exposure")
     print("  lowers a bar compact raised, so a frozen alpha scores two different")
     print("  operating points and calls it a detector comparison.")
-    print("  Then compare the gaps against the seed sd in the same row. A gap smaller")
-    print("  than that is not a result, whichever way it points.")
+    print("  All five right-hand columns are DIMENSIONLESS. 'at alpha' is a")
+    print("  probability; the rest are F1 or its parts.")
+    print()
+    print("  THE SEED SD IS NOT THE YARDSTICK FOR A GAP, and this tool used to say it")
+    print("  was. 'seed sd' is the spread of ONE seed's F1. 'best F1' is pooled over")
+    print(f"  all {len(SEEDS)}, so the scale a gap between two pooled numbers is measured")
+    print(f"  against is the standard error, sd/sqrt({len(SEEDS)}) — about "
+          f"{np.sqrt(len(SEEDS)):.1f}x smaller.")
+    print("  Judged against the sd, this tool's widest gap read 0.45 and looked dead;")
+    print("  against the SEM it reads 1.57. Both still fail, which is why the answer")
+    print("  did not move — but 3.5x of slack is not a margin to keep by accident.")
+    print()
+    print("  BETTER, AND FREE: the rows carry 'per_seed', so subtract two configs")
+    print("  SEED BY SEED and count the signs. Every config runs the same seeds, so")
+    print("  recording difficulty cancels. On baseline_quiet, no-guard against 20s")
+    print("  compact: 8 of 12 seeds favour the guard, paired t = 1.85 on 11 df.")
+    print("  Not a result — and it is the widest gap in the whole table.")
     return 0
 
 

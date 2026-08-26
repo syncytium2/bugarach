@@ -488,3 +488,89 @@ The open item is Berge et al. §3–4: the structural point (α is an exposure r
 exclusion region is a denominator change) follows from the definition, but the exact
 wording of how the field recomputes it after masking is quoted here from documentation
 rather than from the paper. Somebody should read it before this leaves the repo.
+
+---
+
+## Addendum 2026-08-26 — the yardstick was wrong and the answer was right
+
+Tony asked what the units were on a table of these gaps. They are dimensionless — F1 is
+counts over counts — and checking that led back into the comparison itself, where a second
+thing was wrong.
+
+**"Compare the gap against the seed sd" is the wrong scale**, and the probe printed it as
+advice to whoever ran it next. `seed_sd` is the spread of a **single** seed's F1;
+`best F1` is pooled over all twelve. The scale a gap between two pooled numbers is measured
+against is the standard error, sd/√12 — about 3.5× smaller.
+
+| regime | gap (ΔF1) | seed sd (F1) | gap/sd (ratio) | SEM (F1) | gap/SEM (ratio) |
+|---|---|---|---|---|---|
+| quiet | 0.026 | 0.056 | 0.45 | 0.016 | 1.57 |
+| busy | 0.017 | 0.071 | 0.24 | 0.020 | 0.83 |
+| crowded | 0.003 | 0.017 | 0.18 | 0.005 | 0.61 |
+
+Judged the first way the widest gap looks dead on arrival; judged correctly it is 1.57
+standard errors. **Both fail, which is why nothing above moves** — but 3.5× of slack is not
+a margin to hold by accident, and on a different sweep that is where a real effect hides.
+
+### The comparison the sweep already had the data for
+
+Every configuration runs the **same twelve seeds**. Seed 4 makes a hard recording and every
+config scores badly on it; seed 8 makes an easy one. That variation is the dominant term in
+the seed sd, it is common to both arms, and it **cancels** if the configs are subtracted
+seed by seed instead of pooled first. `one()` computed those per-seed F1s and then reduced
+them to one sd, so the pairing was thrown away and recovering it needed the whole sweep
+re-run. `per_seed` is now carried in the JSON row.
+
+Run on the widest gap in the table — `baseline_quiet`, no guard against 20 s compact, each
+at its own best α (1e-3 and 1e-5):
+
+| seed | no guard (F1) | 20 s compact (F1) | difference (ΔF1) |
+|---|---|---|---|
+| 1 | 0.778 | 0.800 | +0.022 |
+| 2 | 0.632 | 0.667 | +0.035 |
+| 3 | 0.737 | 0.778 | +0.041 |
+| 4 | 0.710 | 0.645 | **−0.065** |
+| 5 | 0.684 | 0.667 | −0.018 |
+| 6 | 0.650 | 0.722 | +0.072 |
+| 7 | 0.650 | 0.743 | +0.093 |
+| 8 | 0.811 | 0.857 | +0.046 |
+| 9 | 0.714 | 0.703 | −0.012 |
+| 10 | 0.667 | 0.737 | +0.070 |
+| 11 | 0.757 | 0.722 | −0.035 |
+| 12 | 0.667 | 0.722 | +0.056 |
+
+**8 of 12 seeds favour the guard** — a sign test would put that at p ≈ 0.39 — and the paired
+*t* is **1.85 on 11 df**, against the 2.20 it needs. Not a result, on the largest gap in the
+whole table. Busy at +0.017 and crowded at +0.003 cannot clear a bar this one failed, so
+one comparison settles the table.
+
+### Pairing bought less than expected, and the reason is worth keeping
+
+The arms correlate at **r = 0.663**, not the ≈0.95 a paired design usually enjoys, so
+sd(differences) is 0.048 F1 against a seed sd of 0.056 F1 and the test gains only ~18%
+(1.57 → 1.85). Pairing pays when two arms are near-identical perturbations of each other.
+These are not: a 20 s guard is a substantial reconfiguration, and the two arms sit at
+**different α**, so they are different operating points and shared seed difficulty explains
+only r² ≈ 44% of the covariance. **Expect the full benefit of pairing only where the knob
+under test is small.**
+
+### What this does and does not change
+
+- **The conclusion stands, better supported than before.** *"The normalization fix is real
+  and buys no detection you can measure"* survives the more sensitive test.
+- **Nothing in `forks.md` changes**, and `guard_sec` is still 0.0 everywhere.
+- **The tool's printed guidance changed**, because that sentence was the part with a reader
+  downstream of it.
+- **One caution the paired test does not remove.** Each config's best α is an `argmax` over
+  six values chosen on the same data it is then scored on. That inflates both arms. It did
+  not matter here — the effect failed anyway — but a paired test is sensitive enough that on
+  a sweep where it *did* pass, this would need holding out first.
+
+**Detectable and meaningful are different questions.** Had the paired test passed, the
+honest reading would still have been *a real effect of +0.026 F1* — which is what
+*"no detection you can measure"* claimed all along. The title was about magnitude; the
+rejected yardstick was about detectability. They only came apart here by luck.
+
+> **Not murderboarded**, on the same footing as the document it extends. Every number is
+> from `tools/probe_guard_norm_bench.py`; the per-seed table is one 12-seed run of the two
+> named configurations.
