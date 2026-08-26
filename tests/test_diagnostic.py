@@ -43,6 +43,24 @@ def test_non_finite_width_still_draws():
     assert len(sp) == 1 and sp[0][1] > sp[0][0]
 
 
+def test_a_bar_is_never_drawn_wider_than_the_tolerance_it_is_judged_by():
+    """The floor used to be 0.2% of the record with no reference to `tol_sec`.
+
+    On a 30-minute figure that is 3.6 s, and five of the six detectors report
+    windows under 2.1 s — so every bar was drawn more than twice as wide as the
+    window the scorer matches in, and a detection could visibly cover a planted
+    event the same figure marked a false alarm. Tony reported it twice.
+    """
+    ext = (0.0, 1800.0)
+    (t0, t1), = _spans([500.0], [0.4], ext, tol_sec=1.5)
+    assert t1 - t0 <= 1.5 + 1e-9, (
+        f"a 0.4 s detection is drawn {t1 - t0:.2f} s wide against a 1.5 s "
+        "tolerance — the bar claims more than the scorer allows")
+    # a detector that really does claim ten seconds still gets to say so
+    (w0, w1), = _spans([500.0], [9.7], ext, tol_sec=1.5)
+    assert w1 - w0 == pytest.approx(9.7)
+
+
 def test_every_raster_onset_is_drawn_identically(sim):
     """The raster shows the recording, not a detector's reading of it.
 
@@ -70,6 +88,67 @@ def test_raster_takes_no_detection_spans():
     """A caller cannot re-introduce the highlight by passing spans."""
     import inspect
     assert "member_spans" not in inspect.signature(raster_panel).parameters
+
+
+def _lane_marks(panel):
+    """{marker: sorted x values} for the point markers in a lane panel."""
+    out = {}
+    for el in panel:
+        if not isinstance(el, hv.Scatter):
+            continue
+        style = el.opts.get("style").kwargs
+        if style.get("alpha") == 0:
+            continue                     # the invisible x-dimension anchor
+        out.setdefault(style.get("marker"), []).extend(
+            np.asarray(el.dimension_values(0), dtype=float).tolist())
+    return {k: sorted(v) for k, v in out.items()}
+
+
+def test_a_false_alarm_is_not_drawn_on_top_of_a_hit(sim):
+    """✕ means "this detector fired at nothing". It must not land on a column
+    that also carries a hit, because then it reads as marking the hit.
+
+    The duplicate ring already covered a second call *within* tolerance. It did
+    not cover one just outside it: on the published page three ✕ sat 1–4 px from
+    a call by the same detector that had matched, which is the complaint Tony has
+    now made twice ("false alarms are false — again, I thought we fixed it").
+    Nothing about the scoring changes here; both are still false alarms and still
+    cost precision. What changes is that the figure stops asserting a difference
+    it has no pixels to show.
+    """
+    from bugarach.simulate import GroundTruth, PlantedEvent
+
+    gt = GroundTruth(events=[PlantedEvent(time=500.0, frac=1.0, n_part=10,
+                                          rois=tuple(range(10)), jitter_sec=0.0)])
+    ext = (0.0, 1800.0)                  # 1.8 s per pixel at width=1000
+    near, far = 506.0, 900.0             # 6 s away = 3.3 px; 400 s away = 222 px
+    lanes = {"coact": (np.array([500.0, near, far]), np.zeros(3))}
+    marks = _lane_marks(lane_panel(lanes, ext=ext, gt=gt, width=1000))
+
+    assert far in marks.get("x", []), "a call at nothing must still get its ✕"
+    assert near not in marks.get("x", []), (
+        f"a false alarm {near - 500.0:g} s from this detector's own hit is "
+        "3 px away on this figure and is drawn as an independent miss-fire")
+    assert near in marks.get("circle", []), (
+        "it should carry the ring that means 'a second call, not an independent "
+        "one' — the count is unchanged, the claim is honest")
+
+
+def test_the_ring_rule_is_resolution_dependent_not_a_wider_tolerance(sim):
+    """Zoom in and the same pair becomes two verdicts again.
+
+    If this ever starts behaving like a widened matching tolerance, the figure is
+    hiding false alarms rather than declining to over-claim.
+    """
+    from bugarach.simulate import GroundTruth, PlantedEvent
+
+    gt = GroundTruth(events=[PlantedEvent(time=500.0, frac=1.0, n_part=10,
+                                          rois=tuple(range(10)), jitter_sec=0.0)])
+    lanes = {"coact": (np.array([500.0, 506.0]), np.zeros(2))}
+    zoomed = _lane_marks(lane_panel(lanes, ext=(490.0, 520.0), gt=gt, width=1000))
+    assert 506.0 in zoomed.get("x", []), (
+        "over a 30 s window 6 s is a third of the panel — at that width the "
+        "figure can show the difference and must")
 
 
 def test_builds_with_lanes_and_ground_truth(sim):

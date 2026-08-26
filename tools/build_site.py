@@ -99,8 +99,13 @@ INDEX = """<!doctype html>
   :root {{ color-scheme: light dark; }}
   body {{ font: 16px/1.65 system-ui, sans-serif; margin: 0; }}
   .col {{ max-width: 46rem; margin: 2.2rem auto 3rem; padding: 0 1.2rem; }}
-  h1 {{ font-size: 1.6rem; margin-bottom: .2rem; }}
-  .sub {{ color: #666; margin-top: 0; }}
+  /* Name and sentence share one line: the page says what it is in the width of
+     a headline, and the figure starts a line and a half further up the screen.
+     flex-wrap rather than nowrap — on a phone it becomes two lines, which is
+     the right answer there and is not what "one line" was asking about. */
+  h1 {{ font-size: 1.35rem; margin: 0 0 .2rem; display: flex; flex-wrap: wrap;
+        align-items: baseline; gap: .55rem; }}
+  h1 .sub {{ font-size: 1rem; font-weight: 400; color: #666; }}
   /* the figure breaks out of the text column: it is the lead, not an
      illustration slotted into the prose. */
   figure.lead {{ width: min(94vw, 78rem); margin: 1.6rem 0 1.9rem 50%;
@@ -127,9 +132,8 @@ INDEX = """<!doctype html>
 {nav}
 
 <div class="col">
-<h1>bugarach</h1>
-<p class="sub">Six coordinated-event detectors ported from MATLAB, tested against
-planted ground truth.</p>
+<h1>bugarach<span class="sub">Six coordinated-event detectors ported from MATLAB,
+tested on planted ground truth.</span></h1>
 
 {lead}
 
@@ -578,8 +582,13 @@ LEAD_FIGURE = """<figure class="lead">
   they measure rather than for the tool — <span class="key">rate+context</span>
   is RateDetect, and <span class="key">binned SCE</span> is SCE.
   In the lanes, <span class="key">&#10007;</span> marks a false alarm and
-  <span class="key">&#9711;</span> a second call on an event another detection
-  had already claimed. The top lane is the ground truth:
+  <span class="key">&#9711;</span> one that a reader should not count as a
+  separate miss-fire — a second call on an event another detection had already
+  claimed, or one too close to this detector's own hit for the picture to
+  separate. The bars are the windows the detectors called: most run under two
+  seconds, which is about a pixel at this width, so they are hairlines; SCE bins
+  at ten seconds and its bars are wider because they are.
+  The top lane is the ground truth:
   <span class="key">&#9650;</span> an event some detector recovered,
   <span class="key">&#9660;</span> one they all missed.
   The <span class="key">shaded block</span> fires at a higher rate but contains
