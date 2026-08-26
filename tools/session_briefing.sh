@@ -152,14 +152,27 @@ bound_bytes() {
 }
 
 # The variable alarms spend from ONE shared allowance, in the order they are
-# rendered — so the guarantee is about the alarm block as a whole rather than about
-# each piece separately. Fixed alarms (commit gates, board, darkroom, handover
-# gates) cost ~690B and the banner ~150B, so 1,000B here holds the whole block under
-# 1.9KB and inside a 2KB preview even when both variable alarms are at full stretch.
-# A live root handoff renders first and therefore outranks the waiting list, which is
-# the priority the ordering already asserts; per-call caps stop either one alone from
+# rendered, so what is bounded is the block rather than each piece separately. A live
+# root handoff renders first and therefore outranks the waiting list, which is the
+# priority the ordering already asserts; the per-call caps stop either one alone from
 # eating the allowance.  $1 = per-call cap, $2 = text.
-ALARM_ROOM=1000
+#
+# WHY THE ALLOWANCE IS 1,400 AND NOT 1,000. The first cut of this said 1,000, sized so
+# canary + banner + both variable alarms + ~690B of fixed alarms held the whole block
+# under a 2KB preview. That number was measured on a configured machine, where the
+# fixed alarms collapse to one line each: "commit gates: ACTIVE", "darkroom: -> ...".
+# On a FRESH CLONE every one of them fires at full length — gates OFF with its fix,
+# no board with its path, darkroom not found with its probe — and the block runs past
+# 2.3KB no matter what the variable alarms do. Squeezing the waiting list to make room
+# for that is backwards twice over: it truncates the one list with a person waiting at
+# the end of it, in order to protect standing context that has no deadline.
+#
+# So the block is NOT held under 2KB, and the guarantee is stated on position instead:
+# the alarms that cannot wait — a live handoff, work finished and waiting on a person,
+# and whether the commit gates are installed — are rendered first and land inside the
+# first 2,000 bytes whatever else is wrong with the machine. That is what the ordering
+# was for. tests/test_session_briefing.py asserts the offsets, not the total.
+ALARM_ROOM=1400
 
 # A named function rather than a loop inlined into emit_bounded's argument: the body
 # carries an apostrophe and a quoted question, and nesting that inside "$( ... )" is
@@ -267,7 +280,7 @@ render() {
     echo ">> ${waiting} item(s) FINISHED and waiting on Tony — nothing else unblocks these:"
     # Bounded like the handoff excerpt above: the count is already printed, so what
     # this list can afford to lose is its tail, not the alarms behind it.
-    emit_bounded 900 "$(waiting_list)"
+    emit_bounded 1200 "$(waiting_list)"
   fi
 
   # --- 3. is the commit gate actually installed in THIS clone? --------------------
@@ -542,15 +555,17 @@ selftest() {
            "$claimed" "$actual"; fails=$((fails+1))
   fi
 
-  # THE ALARM BLOCK MUST FIT A PREVIEW. Ordering the alarms first only buys anything
-  # if they are small enough to be what survives, and `head -14` of a file bounds
-  # lines rather than bytes — fourteen 300-character lines is 4KB.
-  local alarms
-  alarms=$(deliver | awk '/^## 9\./{exit} {print}' | wc -c | tr -d ' ')
-  if [ "${alarms:-99999}" -lt 2000 ]; then
-    printf '  ok   %-54s (%sB)\n' "alarms fit inside a 2KB preview" "$alarms"
+  # THE ALARMS WITH A DEADLINE MUST BE INSIDE THE PREVIEW. Stated as an offset, not
+  # a total: on a fresh clone the standing alarms all fire at full length and the
+  # block runs past 2.3KB whatever the variable ones do. What ordering buys is that
+  # the urgent ones are in front of that, and `head -14` of a file bounds lines
+  # rather than bytes — fourteen 300-character lines would undo it.
+  local at
+  at=$(deliver | head -c 2000 | grep -c 'commit gates:')
+  if [ "${at:-0}" -ge 1 ]; then
+    printf '  ok   %-54s\n' "urgent alarms land inside the first 2000B"
   else
-    printf '  FAIL %-54s (%sB)\n' "alarms fit inside a 2KB preview" "$alarms"; fails=$((fails+1))
+    printf '  FAIL %-54s\n' "urgent alarms land inside the first 2000B"; fails=$((fails+1))
   fi
 
   # bound_bytes cuts at a line end or an ASCII space and never mid-character. This

@@ -352,15 +352,31 @@ def test_the_canary_number_is_the_real_payload_size(briefing):
     )
 
 
-def test_the_alarm_block_fits_inside_a_preview(briefing):
-    """Ordering the alarms first only buys something if they are small enough to BE
-    what survives. `head -14 HANDOFF.md` bounds lines, not bytes, and fourteen
-    300-character lines is 4KB — enough to push the alarms straight back out."""
+def test_the_alarms_with_a_deadline_are_inside_the_preview(briefing):
+    """Stated as an OFFSET, not as a total, and the difference is the whole finding.
+
+    A first cut of this asserted the alarm block came in under 2,000B. It passed on
+    a configured machine — where "commit gates: ACTIVE" and "darkroom: -> ..." are
+    one line each — and failed on CI, where the clone is fresh, every standing alarm
+    fires at full length and the block runs past 2.3KB whatever else happens. The
+    tempting repair was to squeeze the waiting-on-Tony list to make room, which is
+    backwards twice: it truncates the one list with a person waiting at the end of
+    it, to protect standing context that has no deadline.
+
+    So what ordering actually buys is asserted directly. The alarms that cannot wait
+    — a live handoff, work finished and waiting on a person, whether the commit
+    gates are installed — are rendered first and land inside the first 2,000 bytes
+    however misconfigured the machine is. `head -14 HANDOFF.md` bounds lines rather
+    than bytes, and fourteen 300-character lines would undo exactly that.
+    """
     out, _ = briefing
-    alarms = out.stdout.split("## 9. Facts about the preparation")[0]
-    assert len(alarms.encode()) < 2000, (
-        f"the alarm block is {len(alarms.encode())}B and a spill preview is ~2000B"
+    preview = out.stdout.encode()[:2000].decode("utf-8", "ignore")
+    assert "commit gates:" in preview, (
+        "the commit-gate alarm is past the ~2KB a spilled payload keeps. Everything "
+        "ordered after it is past it too."
     )
+    if "waiting on Tony" in out.stdout:
+        assert "waiting on Tony" in preview
 
 
 def test_the_ladder_has_a_floor():
