@@ -60,6 +60,16 @@ Template:
 
 ## Active
 
+### Tonys-MacBook-Pro/guard-finding-for-review — the guard finding, and the figure it wants
+- **Status:** ACTIVE 2026-08-25
+- **Started:** 2026-08-25
+- **Writes:** `<darkroom>/bugarach/detector_history/guard_where_it_lands.{png,html}` — that
+  filename stem only. Does **not** touch `cfar_map.*`, which the same directory holds and
+  which `tools/make_cfar_figures.py` owns.
+- **Claims:** exclusive write on that stem while ACTIVE. Nothing else external.
+- **Notes:** The repo copy lands via `--also docs/learned`, so a reviewer without the
+  darkroom mounted can still see the figure. Released when the PR merges.
+
 ### Mac/deploy-two-track — publishing the two-track rail
 - **Status:** DONE 2026-08-23 — deployed and verified; **claim released.** Cloudflare
   version `97c20b04`. Four assets changed: `index.html`, `diagnostic.html`,
