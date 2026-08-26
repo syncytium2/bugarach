@@ -133,6 +133,22 @@ substring. Small change, but it will start *refusing* worktrees that currently c
 land it with a run over the live board first to see who it catches. Related and unresolved:
 [claim before starting, not before committing](../todo/2026-08-20-claim-before-starting-not-before-committing.md).
 
+**DONE 2026-08-26.** `verdict()` parses the heading and compares the identifier exactly
+against the worktree's basename or its branch, and `tools/guard_local_board.sh --audit`
+runs both the old rule and the new one over every live worktree so the blast radius can be
+read before it lands rather than discovered at somebody's next commit.
+
+The run this item asked for: **three of thirteen worktrees changed verdict, all three true
+positives.** `bugarach (main)` — the primary checkout, which is the whole item.
+`generator-revision-input` and `parameter-spec-v2` — both passing only because a session
+that finished on 2026-08-20 had listed them under its own *Worktrees touched* line. Someone
+else's record of having been there is not this session's claim to be there now. No worktree
+holding a real block was refused, and the escape hatch is unchanged.
+
+That also repairs a **dead alarm in the session briefing**: §4's "this worktree has NO block
+on the machine-local board" is downstream of this guard, so it had never once fired in the
+primary checkout either.
+
 ### 2. Nothing removes the root `HANDOFF.md` when the in-flight thing lands
 
 PR #305's handoff says the file leaves the root when its work resolves. That promise is
