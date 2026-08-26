@@ -232,10 +232,79 @@ near the 80th percentile of the real range, which is a better defence of it than
 "diagnostic" was.
 
 **What that leaves the null result.** It is bracketed rather than general: nothing at the
-real median, nothing at the real ~80th percentile, and **untested between and above**.
+real median, nothing at the real ~80th percentile, and **untested between and above** —
+which the next section closes, and where the answer changes.
 Detections are not ground truth, and a detector that misses crowded events would
 understate the crowding — the direction that flatters the bench. The honest statement is
 that the guard buys nothing at either end of the real range, not that it buys nothing.
+
+## In the tail, the gain is not flat — and §4a's conclusion does not hold there
+
+The tail had no simulated counterpart, so one was fitted to it.
+`bench.TAIL_RECORDING` keeps `CROWDED_RECORDING`'s three-hour duration, drops the floor
+from 14 s to **6 s** — the real tail's own minimum gaps are 6–26 s, median 8 — and
+raises the count. **`interval_cv` was deliberately not the knob**: it buys crowding by
+clumping, and reaching 0.5 that way needs a realized interval CV of 1.2–1.6 while the
+seven real tail recordings sit at **0.62–1.59, median 0.93**. The tail is dense and
+Poisson-ish, not bursty. Realized over 8 seeds: crowding **0.61**, CV **0.91**, minimum
+gap **6.3 s** — and, the point, **591 planted events under a 10 s gap**, a bin
+`CROWDED_RECORDING` cannot contain at all.
+
+![the gap-dependent gain a matched threshold change cannot buy](../learned/guard_in_the_tail.png)
+
+### The control is the argument
+
+The tight bins start lower — recall 0.659 at `<10s` against 0.859 at `>60s` — so **any**
+uniform loosening lifts them more in absolute terms. A tilt toward tight gaps is what
+headroom looks like, and is not evidence by itself.
+
+So the 20 s `exposure` guard is compared against a **no-guard run whose alpha is loosened
+until it matches**, picked from a sweep rather than assumed. At α = 3e-3 the control
+matches on **both** margins that could otherwise explain a difference:
+
+| | overall recall | precision |
+|---|---|---|
+| 20 s exposure guard | 0.871 | 0.909 |
+| no guard @ α 3e-3 (control) | 0.865 | 0.910 |
+
+**Guard minus control, paired per seed, 24 seeds:**
+
+| gap bin | `<10s` | `10-20s` | `20-30s` | `30-60s` | `>60s` |
+|---|---|---|---|---|---|
+| planted | 591 | 1220 | 783 | 1207 | 519 |
+| delta | **+0.071** | −0.009 | −0.007 | +0.003 | −0.000 |
+| sd across seeds | 0.073 | 0.031 | 0.035 | 0.007 | 0.019 |
+| seeds agreeing | **17/24** | 9/24 | 7/24 | 4/24 | 1/24 |
+
+**One bin moves and the rest are zero.** The bin that moves is the only one where events
+sit inside each other's reference window. A threshold change matched on both recall and
+precision cannot buy those 7 points, and the profile is not what headroom produces —
+headroom would tilt every bin in proportion to its remaining room, and `10-20s` has
+nearly as much room as `<10s` and shows nothing.
+
+**So `forks.md` §4a's conclusion is false in the tail.** Its *instrument* — recall
+split by each event's own neighbour gap — was right, and it was defeated twice over:
+its recording had a 14 s floor, so the bin carrying the signal did not exist in it, and
+`compact` normalization was cancelling most of what remained. #308 and #310 corrected
+the mechanism; #315 removed the cancellation; this supplies the recording. **The guard
+is not only a threshold knob.**
+
+### What this does NOT show
+
+- **It is 17 of 24 seeds, and the sd is the size of the effect.** The mean is roughly
+  five standard errors out and every other bin is flat, which is a structural signature
+  rather than a p-value — none is offered and 24 seeds could not support one.
+- **A 20 s guard, not the shipped 0.0.** At 5 s `exposure` the same residual is present
+  but smaller; nothing here argues for turning a guard on anywhere.
+- **`TAIL_RECORDING`'s aggregate crowding is 0.61, above the observed maximum of 0.57.**
+  Deliberate, and the same trade `CROWDED_RECORDING` states about itself: the count is
+  raised to populate the tight bins, and the **bins** are the unit of use, not the
+  headline fraction. It is a diagnostic and nothing may be calibrated on it.
+- **Recall, on simulated data, at one background.** No F1 claim; #317's finding that
+  best-F1 does not move is untouched, and the two are consistent — a gain concentrated
+  in 14% of events is worth about a point of overall recall.
+- **Nothing here is about real slices**, only about a recording fitted to statistics
+  measured off them.
 
 ## Reproduce it
 
@@ -243,6 +312,9 @@ that the guard buys nothing at either end of the real range, not that it buys no
 python tools/probe_guard_norm_bench.py --selftest          # identical detections
 python tools/probe_guard_norm_bench.py --json sweep.json   # both fields, the F1 sweep
 python tools/probe_real_crowding.py <export-folder> --json crowd.json
+python tools/probe_guard_in_the_tail.py --selftest       # identical with no guard
+python tools/probe_guard_in_the_tail.py --seeds 24 --json tail.json
+python tools/make_tail_figure.py --from-json tail.json --also docs/learned
 python tools/make_guard_bench_validity_figure.py --also docs/learned \
     --from-json sweep.json --crowding-json crowd.json
 python tools/make_guard_norm_bench_figure.py --also docs/learned
