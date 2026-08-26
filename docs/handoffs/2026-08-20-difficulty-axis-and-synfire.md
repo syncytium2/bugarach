@@ -41,7 +41,7 @@ withdrew. This closed the open question in
 seeds, nothing re-tuned, ranking identical both ways. But the committed figures and
 `docs/learned/*.json` were computed at the old endpoints and **do not look wrong**, which
 is the dangerous kind of stale. That is filed:
-[`2026-08-20-artifacts-predate-the-corrected-difficulty-axis.md`](docs/todo/2026-08-20-artifacts-predate-the-corrected-difficulty-axis.md).
+[`2026-08-20-artifacts-predate-the-corrected-difficulty-axis.md`](../todo/2026-08-20-artifacts-predate-the-corrected-difficulty-axis.md).
 
 **Do not quote a bench number without reading that todo first.**
 
@@ -134,7 +134,7 @@ question in the six-tools todo.
 
 A test counted sentences, a seed was a salted hash, four tools transcribed a constant.
 Same shape: **pinned a literal, the literal moved.** Filed with a suggested sweep:
-[`2026-08-20-guards-that-pin-a-literal-go-stale.md`](docs/todo/2026-08-20-guards-that-pin-a-literal-go-stale.md).
+[`2026-08-20-guards-that-pin-a-literal-go-stale.md`](../todo/2026-08-20-guards-that-pin-a-literal-go-stale.md).
 Deliberately not a sapper rule, and that note says why.
 
 ---
@@ -150,7 +150,7 @@ Deliberately not a sapper rule, and that note says why.
   untouched: it draws surrogate participants from every ROI, including cells that never
   joined a coordinated cluster, so the report's 45-of-47 rests on a null that can recruit
   cells the observed data never could. Bounded check, described in
-  [`2026-08-19-cells-that-never-fired-are-answering-the-question.md`](docs/todo/2026-08-19-cells-that-never-fired-are-answering-the-question.md).
+  [`2026-08-19-cells-that-never-fired-are-answering-the-question.md`](../todo/2026-08-19-cells-that-never-fired-are-answering-the-question.md).
   Left alone because that instrument was mid-murderboard.
 - **`docs/generator.md`'s realized-total ratios** are flagged stale in place rather than
   recomputed. The point survives; the three numbers do not.
