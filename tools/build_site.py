@@ -128,10 +128,20 @@ INDEX = """<!doctype html>
 
 <div class="col">
 <h1>bugarach</h1>
-<p class="sub">Six coordinated-event detectors, ported from MATLAB to Python —
-and a synthetic benchmark with planted ground truth to test them against.</p>
+<p class="sub">Six coordinated-event detectors ported from MATLAB, tested against
+planted ground truth.</p>
 
-{real}
+{lead}
+
+<p>Each row above is one <b>ROI</b> — one cell's worth of signal, of the kind
+pulled out of a 2-photon calcium recording. These rows are simulated and every
+coordinated event among them was planted, so a miss and a false alarm are drawn
+rather than inferred.</p>
+
+<p>Detectors flag the moments when many ROIs fire together. There are six here —
+LoCo, locust, SCE, CoactDetect, RateDetect and SPIKE-synch — each asking a
+different question, and each matched to its MATLAB original to 1e-9 on committed
+fixtures, so it can be cited in its place.</p>
 
 <p><b>Coordination is not one phenomenon, so there is no one detector to train.</b>
 Stars coordinate and cells coordinate, and between them the timescales run over
@@ -149,28 +159,8 @@ that synthetic baseline do two jobs at once: tune the six detectors, and train
 the model. Only then is the finished instrument pointed at the whole dataset,
 treatments included. Simulate the treatment and you have spent the effect you
 ran the experiment to measure; withhold it and it comes back as a result. The
-detectors and the generator below are built and tested; <b>the training half is
+detectors and the generator are built and tested; <b>the training half is
 the plan, not yet the practice</b>.</p>
-
-<p>Each row above is one <b>ROI</b> — one cell's worth of signal pulled out of a
-2-photon calcium recording. Detectors flag the moments when many of them fire
-together. There are six here — LoCo, locust, SCE, CoactDetect, RateDetect and
-SPIKE-synch — each asking a different question, and each matched to its MATLAB
-original to 1e-9 on committed fixtures, so it can be cited in its place.</p>
-
-<p>All six work by finding moments that stand out from the rest of the
-recording, which is what makes the shape of the background more than a cosmetic
-detail: on the pair above, the same detector at the same settings finds
-<b>twice as many</b> coordinated events in the imitation as in the original.
-Matching the rate, the jitter and the participation is necessary and not
-sufficient. That gap is open work, and it is written down rather than papered
-over.</p>
-
-<p class="note"><b>One real recording; everything else is synthetic.</b> The top
-panel above is a real baseline-only slice, published deliberately — it carries no
-before/after result, so releasing it costs nothing this lab intends to publish.
-It is a committed figure rather than a live read: the build opens no data store,
-and generates every other figure here from a seed.</p>
 
 <h2 style="font-size:1.15rem">What it cost to get this wrong</h2>
 <p>Tuning a detector against a synthetic benchmark that does not match reality
@@ -185,11 +175,23 @@ rate lights it up), <b>correlated bursts</b> that are real coincidence but not
 coordination, and <b>variable event timing</b>, so nothing can be predicted from
 the clock.</p>
 
-<h2 style="font-size:1.15rem">What the detectors do with a known answer</h2>
-<p>That is what the generator is <i>for</i>. Every coordinated event below was
-planted, so a miss and a false alarm are drawn, not inferred.</p>
+<h2 style="font-size:1.15rem">The generator, beside the recording it imitates</h2>
 
-{lead}
+{real}
+
+<p>All six work by finding moments that stand out from the rest of the
+recording, which is what makes the shape of the background more than a cosmetic
+detail: on the pair above, the same detector at the same settings finds
+<b>twice as many</b> coordinated events in the imitation as in the original.
+Matching the rate, the jitter and the participation is necessary and not
+sufficient. That gap is open work, and it is written down rather than papered
+over.</p>
+
+<p class="note"><b>One real recording; everything else is synthetic.</b> The top
+panel above is a real baseline-only slice, published deliberately — it carries no
+before/after result, so releasing it costs nothing this lab intends to publish.
+It is a committed figure rather than a live read: the build opens no data store,
+and generates every other figure here from a seed.</p>
 
 <h2 style="font-size:1.15rem">Where this sits, and who else is doing it</h2>
 <p>Detecting coordinated events is not a new problem, and a page that positions

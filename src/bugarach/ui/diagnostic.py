@@ -208,13 +208,26 @@ def lane_panel(lanes: dict, *, ext, gt=None, tol_sec: float = 1.5,
 
 
 def raster_panel(stream, *, ext, gt=None, name="events",
-                 width: int = 1000, height: int | None = None):
+                 width: int = 1000, height: int | None = None,
+                 mark_px: float = 2.0):
     """ROI raster, quietest ROI at the bottom, every onset drawn identically.
 
     Takes no detection spans on purpose. Inking the onsets inside a detected
     window asserts which events a detector *recruited*, and none of the six
     reports that — they report a window, and membership was the figure's own
     inference. Detections belong to the lanes and the top markers.
+
+    **The raster is drawn short on purpose, and the marks short with it.** What
+    the reader is asked to see is a *column* — many ROIs firing at once — and
+    vertical alignment is a judgement human vision makes better the less
+    distance it has to carry it across. Spread thirty rows over 560 px, which is
+    what this drew until 2026-08-26, and a planted event is a handful of
+    unrelated dashes with white between them; fold the same rows into 200 and
+    the same dashes fuse into a stripe you cannot miss. The compression has one
+    cost: the row pitch comes down to meet the mark, and a dash as tall as its
+    own row makes every column look solid whether or not anything coordinated.
+    So `mark_px` came down with it, from 5 px to 2, and wants to stay under
+    about a third of the pitch (`height / n_roi`).
     """
     n_roi = stream.n_rois
     counts = [int(np.sum(np.isfinite(np.asarray(v, dtype=float))))
@@ -239,10 +252,11 @@ def raster_panel(stream, *, ext, gt=None, name="events",
                 color=PROBE_BAND, alpha=0.16))
     if t.size:
         items.append(hv.Scatter((t, y), kdims=["t"], vdims=["roi"]).opts(
-            marker="dash", angle=90, size=5, color=RASTER_INK, alpha=0.9))
+            marker="dash", angle=90, size=mark_px, color=RASTER_INK,
+            alpha=0.9))
 
     if height is None:
-        height = int(np.clip(30 + 9 * n_roi, 200, 640))
+        height = int(np.clip(20 + 6 * n_roi, 110, 320))
     return hv.Overlay(items).opts(
         width=width, height=height, xlim=tuple(ext), ylim=(-1, n_roi),
         ylabel=f"{name} · {n_roi} ROI", title="",
@@ -310,17 +324,24 @@ def trace_panel(traces: dict, *, ext, width: int = 1000, height: int = 112):
 def coordination_diagnostic(stream, *, ext, lanes=None, gt=None,
                             tol_sec: float = 1.5, name: str = "events",
                             traces=None,
-                            width: int = 1000, height: int | None = None):
+                            width: int = 1000, height: int | None = None,
+                            mark_px: float | None = None):
     """Lanes over raster over analysis traces, all x-linked.
 
     ``traces`` is ``ui.app._compute``'s output for one stream, keyed by detector
     — ``{det: (t, y, (onsets, widths), extra)}``. Omit it for the lanes-only
     figure.
+
+    ``height`` and ``mark_px`` are the raster's, and they move together — see
+    `raster_panel`, which is also where the default mark size lives. Passing it
+    on only when a caller asked for one keeps that number in a single place
+    rather than restating it in every signature it travels through.
     """
     lanes = lanes or {}
     top = lane_panel(lanes, ext=ext, gt=gt, tol_sec=tol_sec, width=width)
     bottom = raster_panel(stream, ext=ext, gt=gt, name=name,
-                          width=width, height=height)
+                          width=width, height=height,
+                          **({} if mark_px is None else {"mark_px": mark_px}))
     # shared_axes links by DIMENSION NAME: both panels use "t" for x, and their
     # y dimensions are deliberately named differently ("lane" vs "roi") so only
     # x links. Same rule as the signal rows in ui.app.

@@ -161,7 +161,8 @@ def build(args):
             + "\n  ".join(f"{k}: {v}" for k, v in failed.items()))
 
     fig = coordination_diagnostic(slice_.streams["events"], ext=ext, lanes=lanes,
-                                  gt=gt, traces=traces, height=args.height)
+                                  gt=gt, traces=traces, height=args.height,
+                                  mark_px=getattr(args, "mark_px", None))
     legend = legend_html(lanes, gt)
 
     header = [
@@ -212,7 +213,16 @@ def main(argv=None):
     p.add_argument("--no-hot", dest="hot", action="store_false")
     p.add_argument("--hot-rate", type=float, default=0.25)
     p.add_argument("--distractors", type=int, default=3)
-    p.add_argument("--height", type=int, default=560)
+    p.add_argument("--height", type=int, default=200,
+                   help="raster height in px. Short on purpose: a coordinated "
+                        "event is a vertical alignment, and vision reads one "
+                        "better over less distance — raster_panel's docstring "
+                        "has the argument and the limit")
+    p.add_argument("--mark-px", type=float, default=None,
+                   help="height of one onset mark in px (default: raster_panel's "
+                        "own). Moves with --height: a mark as tall as its own row "
+                        "makes every column look solid whether or not anything "
+                        "coordinated")
     from bugarach.bench import REGIMES as _R
     p.add_argument("--bench", choices=tuple(_R), default=None,
                    help="render the bugarach.bench recording for this regime "
@@ -332,7 +342,31 @@ def _render_png(html_path: Path, png_path: Path, *, wait_ms: int = 3500,
                                    device_scale_factor=scale)
                 page.goto(html_path.resolve().as_uri())
                 page.wait_for_timeout(wait_ms)      # bokeh draws after load
-                page.screenshot(path=str(tmp), full_page=True)
+                # CROP TO THE FIGURE, not to the viewport. `full_page` returns
+                # whichever is taller, so a figure shorter than the 1400 px
+                # viewport comes back with the difference as white — and the
+                # raster is deliberately short now, which put a quarter-page of
+                # blank under the hero's bottom trace.
+                #
+                # The measurement is taken with the viewport SHRUNK first, and
+                # both tricks that suggest themselves fail: Panel's wrappers
+                # stretch to the viewport, so measuring a container just hands
+                # the viewport height back, and Bokeh 3 draws into a shadow root,
+                # so `querySelectorAll('canvas')` comes back EMPTY. Against a
+                # short viewport nothing has room to stretch and `scrollHeight`
+                # is the content. Nothing here is responsive — every plot carries
+                # a fixed width and height — so the resize does not reflow the
+                # figure. An implausible reading leaves the untrimmed shot, which
+                # is still a correct figure.
+                page.set_viewport_size({"width": 1180, "height": 320})
+                page.wait_for_timeout(400)
+                h = page.evaluate("document.documentElement.scrollHeight")
+                w = page.evaluate("document.documentElement.scrollWidth")
+                clip = None
+                if all(isinstance(v, (int, float)) for v in (h, w)) \
+                        and 200 <= h <= 20000 and 200 <= w <= 8000:
+                    clip = {"x": 0, "y": 0, "width": float(w), "height": float(h)}
+                page.screenshot(path=str(tmp), full_page=True, clip=clip)
                 browser.close()
             os.replace(tmp, png_path)
         return True
