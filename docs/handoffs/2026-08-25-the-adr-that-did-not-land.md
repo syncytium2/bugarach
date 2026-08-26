@@ -1,9 +1,46 @@
+> ## Moved off the root 2026-08-26. Its one in-flight PR closed, so the signal is spent.
+>
+> **[PR #298](https://github.com/syncytium2/bugarach/pull/298) was closed without merging**
+> at 03:08 UTC, with no comment anywhere saying why. ADR-0003 therefore does not exist on
+> `main`; the branch `parity-was-the-inheritance` survives on `origin` at `016df3b`, but
+> nothing points at it. This handoff named that PR as the only thing in flight, so the root
+> is clear again.
+>
+> **Do not read the closure as the decision.** The timeline says `closed by syncytium2`,
+> and that account is both Tony and every session in this tree, so it does not distinguish
+> a deliberate decline from a tidy-up on the way out — it closed one minute after #311
+> merged, while another session was shutting down, and the PR was `MERGEABLE`, `CLEAN` and
+> 3/3 green at the time.
+>
+> **The body below is unedited except for relative link paths**, which had to be rewritten
+> because the file moved out of the repo root. That is a mechanical consequence of the
+> move, not a correction to the record. Two of its claims are now false, and are corrected
+> here rather than in place:
+>
+> - *"It resolves the moment #298 merges."* It did not merge. The handoff named the other
+>   branch too — *"if he declines it, the nine references need rewriting instead, and that
+>   is a bigger job than the merge"* — and that is the branch we are on.
+> - *"What the evening session should do: ask Tony to look at #298."* Overtaken by the
+>   closure, whatever the closure meant.
+>
+> **What is now owed:** nine files on `main` name ADR-0003 as though it exists. Filed as
+> [nine files name an ADR that does not exist](../todo/2026-08-26-nine-files-name-an-adr-that-does-not-exist.md),
+> `waiting-on-tony` — reopening #298, rehoming the decision in `forks.md` §13, or rewriting
+> the citations are all fine, and picking is Tony's, not a session's.
+>
+> **What retired this file was a test, not a person.** `tests/test_handoff_is_honest.py`
+> went red within minutes of #298 closing, and named what closed. That guard shipped in
+> #305 hours before it was needed. It is the first time this repo's in-flight signal has
+> been retired by something other than somebody happening to notice.
+
+---
+
 # Handoff — 2026-08-25 afternoon, for the evening session
 
 **This file at the root means something is in flight.** One thing is, and it is the
 first section. Everything else here is orientation, and when that one thing lands
 this file leaves the root — spent, or moved to
-[`docs/handoffs/`](docs/handoffs/README.md) if any of it is still worth reading.
+[`docs/handoffs/`](README.md) if any of it is still worth reading.
 
 ---
 
@@ -61,7 +98,7 @@ is now fixed in code.**
 ## Two decisions waiting, and they are in the briefing
 
 1. **How does the promiscuity probe enter the score?**
-   [`todo/2026-08-25-two-scorers-two-winners-and-nothing-decides.md`](docs/todo/2026-08-25-two-scorers-two-winners-and-nothing-decides.md).
+   [`todo/2026-08-25-two-scorers-two-winners-and-nothing-decides.md`](../todo/2026-08-25-two-scorers-two-winners-and-nothing-decides.md).
    Two rules are live in the tree and they pick **opposite winners** for the rate
    detector — multiplicative wins 1 of 7 background points with the probe excluded
    and 5 of 7 with it included. `BenchResult.precision` excludes it;
@@ -149,7 +186,7 @@ this file asks Tony to settle.
 
 Fixed and on `main`: **#306** reorders so the alarms lead, budgets the bulk at 9,000B
 and prints a size canary (17,439B → 8,068B); **#307** re-vendored a stale murderboard;
-**#309** is the write-up, [`docs/handoffs/2026-08-25-the-session-hooks.md`](docs/handoffs/2026-08-25-the-session-hooks.md),
+**#309** is the write-up, [`docs/handoffs/2026-08-25-the-session-hooks.md`](2026-08-25-the-session-hooks.md),
 which carries four open items nobody owns.
 
 Three things in this file were also amended rather than left standing:
