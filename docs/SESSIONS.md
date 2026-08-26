@@ -1266,7 +1266,8 @@ session's work is not a sweep.
   which `bench-is-not-the-folder` owns — that file is deliberately NOT edited here.
 
 ### Tonys-MacBook-Pro/simulate-the-tail — the crowded tail, simulated, and the guard's gain appears in it
-- **Status:** ACTIVE 2026-08-26. Claim released on merge.
+- **Status:** DONE 2026-08-26 — merged as PR #325. **Darkroom claim released.**
+  `guard_in_the_tail.{png,html}` is written and is not being regenerated; the stem is free.
 - **Writes:** `<darkroom>/bugarach/detector_history/guard_in_the_tail.{png,html}` — **one
   filename stem**; repo copy in `docs/learned/` via `--also`. **Does not touch
   `guard_bench_validity.*`, `guard_norm_bench.*`, `guard_exposure.*` or
