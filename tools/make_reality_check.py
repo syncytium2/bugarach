@@ -36,6 +36,16 @@ import numpy as np
 
 DEFAULT_SLICE = "20240813_39"
 
+# Three rasters stacked on one page, so each is squat by necessity — and the
+# compression is the point rather than the concession: what this figure asks a
+# reader to compare is TEXTURE, whether activity clumps into columns and into
+# busy rows, and texture survives vertical compression better than it survives
+# scrolling. 37 ROIs in this much height leaves a row pitch of about 5 px, which
+# is why the mark is 2 px and not the 5 it was: a dash the height of its own row
+# turns every panel into a solid field and there is no texture left to compare.
+RASTER_PX = 200
+RASTER_MARK_PX = 2.0
+
 
 def _window(stream, lo, hi):
     """Per-ROI onsets inside the region, re-zeroed to the window start."""
@@ -157,24 +167,28 @@ def build(args):
                                          getattr(d, "width_sec", None))},
                                ext=ext, gt=own, width=args.width))
         panel = raster_panel(sl.streams["events"], ext=ext,
-                             name=label, width=args.width, height=250)
-        # Keep this SHORT. The bottom panel spends part of its 250 px on an
-        # x-axis the top one does not have, so its rotated y-label has less room
-        # to run in and a long string is clipped with no error — the figure read
-        # "9.5 mHz/RC" until 2026-08-15, including on the public site. The ROI
-        # count is already in the header line, so the axis need not repeat it.
+                             name=label, width=args.width,
+                             height=RASTER_PX, mark_px=RASTER_MARK_PX)
+        # Keep this SHORT, and shorter now than it was. The bottom panel spends
+        # part of its height on an x-axis the top one does not have, so its
+        # rotated y-label has less room to run in and a long string is clipped
+        # with no error — the figure read "9.5 mHz/RC" until 2026-08-15,
+        # including on the public site. That was at 250 px; the raster is
+        # shorter than that now, and "REAL · 9.5 mHz/ROI" would have walked back
+        # into the same clip. The header line above the figure already gives the
+        # ROI count, the duration AND the per-ROI rate, so the axis carries the
+        # one thing the header cannot: which panel you are looking at.
         # The published two-panel figure keeps saying GENERATED. Only when the
         # third panel is present does "generated" become ambiguous, and only
         # then do the two generated rows need distinguishing from each other.
         if len(series) > 2:
-            short = {"real": "REAL", "synthetic": "FLAT BG",
-                     "heterogeneous": "VARIED BG"}[label]
+            lab = {"real": "REAL", "synthetic": "FLAT BG",
+                   "heterogeneous": "VARIED BG"}[label]
         else:
-            short = "REAL" if label == "real" else "GENERATED"
-        lab = f"{short} · {rate*1000:.1f} mHz/ROI"
+            lab = "REAL" if label == "real" else "GENERATED"
         last = label == series[-1][0]
         rows.append(panel.opts(
-            width=args.width, height=250, xlim=ext, ylim=(-1, n_roi),
+            width=args.width, height=RASTER_PX, xlim=ext, ylim=(-1, n_roi),
             xaxis="bottom" if last else None,
             ylabel=lab, xlabel="time" if last else "", title="",
             fontsize={"ylabel": "10pt"}, show_legend=False,
