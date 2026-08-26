@@ -77,6 +77,7 @@ def coact_detect(
     peak_prominence: float = 0.0,
     peak_min_distance_sec: float = 0.0,
     guard_sec: float = 0.0,
+    guard_norm: str = "compact",
 ) -> CoactDetection:
     """Distinct-ROI coincidence vs a rolling rate-local circular-shift null.
 
@@ -84,9 +85,17 @@ def coact_detect(
     are clipped to t_range here). Defaults mirror the MATLAB function; the
     explore_sce viewer uses per-stream values (FAST: 2 s bins / 60 s context /
     alpha 1e-4; SLOW: 1 s / 120 s / 1e-6; n_surrogates 100).
+
+    ``guard_norm`` decides what the guard removes. ``"compact"`` — the shipped
+    behaviour, and the only one that existed before 2026-08-26 — removes the
+    excised events *and* the excised span. ``"exposure"`` removes only the
+    events. They differ by a factor the guard applies to every bin whether or
+    not it excised anything; see ``docs/reviews/guard_prior_art_2026-08-26.md``.
     """
     if detection_mode not in ("threshold", "peak"):
         raise ValueError('detection_mode must be "threshold" or "peak"')
+    if guard_norm not in ("compact", "exposure"):
+        raise ValueError('guard_norm must be "compact" or "exposure"')
     rng = np.random.RandomState(rng_seed)
     t0, t1 = t_range
     bw = int_win_sec
@@ -155,9 +164,20 @@ def coact_detect(
             g_lo, g_hi = ctr[b] - guard_sec / 2, ctr[b] + guard_sec / 2
             left = max(c_lo, min(g_lo, c_hi))
             right = min(c_hi, max(g_hi, c_lo))
-            cw = (left - c_lo) + (c_hi - right)
+            retained = (left - c_lo) + (c_hi - right)
+            # A null mean here is a DENSITY: the chance an ROI's shifted events
+            # land in one bin-width scales as (events retained) / (line length).
+            # `compact` divides by the shortened line, so it raises the bar by
+            # C / (C - guard) at every bin, including the ones where the guard
+            # excised nothing at all. `exposure` keeps the full line and drops
+            # only the excised events, which is the same choice gamma-ray
+            # astronomy makes at an exclusion region — the OFF exposure is
+            # recomputed from the retained acceptance, never by squeezing the
+            # surviving counts onto what is left of the field.
+            # docs/reviews/guard_prior_art_2026-08-26.md measures the factor.
+            cw = retained if guard_norm == "compact" else (c_hi - c_lo)
             tlo, thi = 0.0, bhi - blo
-            if cw <= thi:
+            if retained <= thi:
                 nullmean[b] = np.nan      # no reference cells left to estimate from
                 continue
             ctx = []
@@ -165,7 +185,10 @@ def coact_detect(
                 if e.size == 0:
                     continue
                 lo_part = e[(e >= c_lo) & (e < left)] - c_lo
-                hi_part = e[(e > right) & (e <= c_hi)] - right + (left - c_lo)
+                if guard_norm == "compact":
+                    hi_part = e[(e > right) & (e <= c_hi)] - right + (left - c_lo)
+                else:
+                    hi_part = e[(e > right) & (e <= c_hi)] - c_lo
                 vv = np.concatenate((lo_part, hi_part))
                 if vv.size:
                     ctx.append(vv)
@@ -249,7 +272,7 @@ def coact_detect(
     opts = {
         "int_win_sec": int_win_sec, "context_win_sec": context_win_sec,
         "min_rois": min_rois, "n_surrogates": n_surrogates, "alpha": alpha,
-        "guard_sec": guard_sec,
+        "guard_sec": guard_sec, "guard_norm": guard_norm,
         "merge_gap_sec": merge_gap_sec, "rng_seed": rng_seed,
         "detection_mode": detection_mode, "peak_prominence": peak_prominence,
         "peak_min_distance_sec": peak_min_distance_sec,

@@ -1178,3 +1178,21 @@ session's work is not a sweep.
   Separately, `tools/make_diagnostic.py` is **broken on `main`** and fails soft: every
   detector raises inside it, the failures are filed to a sidecar, and it still exits 0
   having drawn a figure with no detector lanes. Nothing in the suite covers it.
+
+### Tonys-MacBook-Pro/prior-art-cfar — the guard's empty-stratum rise is an exposure factor, and three fields already knew
+- **Status:** ACTIVE 2026-08-26. Claim released on merge.
+- **Writes:** `<darkroom>/bugarach/detector_history/guard_exposure.{png,html}` — **one
+  filename stem**, the figure for `docs/reviews/guard_prior_art_2026-08-26.md`, whose repo
+  copy lands in `docs/learned/` via `--also`. Nothing else in the darkroom; nothing in
+  `constellation/`; **does not touch `guard_where_it_lands.*`** in the same directory, which
+  #310 wrote and #311 released.
+- **Claims:** that stem only.
+- **Reads, read-only:** nothing outside the repo. Simulated bench recordings only — no
+  export folder opened, no `.mat` store, no real slices.
+- **Finding another session should know:** the empty-stratum rise #310 reports is not a
+  property of the recordings. It is `C / (C - guard)` — the ratio of the reference window's
+  length before and after the guard — and it lands within 0.5% of that closed form on both
+  recordings and both guard widths. It is applied to every bin, occupied ones included,
+  where it cancels most of the masking relief. **#310's "at a 20 s guard the occupied effect
+  collapses" is that cancellation, not a collapse:** with the normalization fixed the 20 s
+  occupied effect is the *largest* in the whole table (×0.66, not ×0.99).
