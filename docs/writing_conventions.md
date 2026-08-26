@@ -78,6 +78,12 @@ no board catches, because it lives in the wording rather than the filing.
 | document deliverables | the murderboard, line-editor and naive-reader roles |
 | commit messages, PR bodies | nothing — reviewer judgement |
 | docs under `docs/` | nothing automated |
+| **a table in a chat reply** | **nothing, and it is where the units rule broke** |
+
+The last row is not a gap waiting for a tool. A chat reply reaches one reader
+immediately and is never reviewed, which makes it the surface where a convention
+has to be held by whoever is writing rather than caught downstream. It is listed
+so that "the conventions are for documents" cannot be read into the table.
 
 A sapper rule was considered for bare commit shas in prose and **not** written:
 the repo's own vendoring stamps (`vendored from interface2 @ 9df9a16`) are
@@ -117,3 +123,30 @@ exactly the reader the bold was talking to.
 Emphasize the row a passage is *about* if you like. Do not emphasize a number
 unless it is the extreme of its column, and not even then when the document's own
 argument is that the differences are not separable.
+
+## Every table column carries its units, and *dimensionless* is a unit
+
+A bare number in a table is a number in whatever unit the reader last saw. This
+repo puts seconds, hertz, millihertz per ROI, bytes, counts, ratios and
+dimensionless scores in front of the same reader, often on the same page, so
+there is no default to fall back on.
+
+Tony had to ask what the units were on a table of F1 gaps — *"minutes?"* — and
+the honest answer is that nothing in the table said, while the paragraph beside
+it discussed a guard in **seconds** and an α that is a **dimensionless
+probability**. Three kinds of quantity, one of them a duration, no column marked.
+The reading he took is the one the table supported.
+
+- **Put the unit in the header**, not in a caption underneath: `gap (ΔF1)`,
+  `seed sd (F1)`, `guard (s)`, `rate (mHz/ROI)`, `size (B)`.
+- **Say dimensionless when it is dimensionless.** F1, α, precision, a ratio of
+  two F1s — these carry no unit, and *writing that down* is what stops a reader
+  supplying one. `gap/sd (ratio)` costs eight characters and closes the question.
+- **A ratio names what it is a ratio of, in the prose once.** `gap/SEM` is F1 over
+  F1; what the reader needs is that it means *how many standard errors wide*.
+- **Percentages say what of.** `+2.03%` of a bar sitting near 2.9 is not
+  comparable to `+8.78%` of a bar near 0.5 — `probe_guard_where_it_lands.py` got
+  this right and said so in its own table. The point is that it had to.
+
+This applies to any table a person reads: a PR body or a chat reply as much as a
+document under `docs/`. The chat reply is where it went wrong.
