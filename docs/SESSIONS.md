@@ -1236,3 +1236,21 @@ session's work is not a sweep.
   at it.** This is evidence for
   [`revise the bench recording before the refit`](todo/2026-08-23-revise-the-bench-recording-before-the-refit.md),
   which `bench-is-not-the-folder` owns — that file is deliberately NOT edited here.
+
+### Tonys-MacBook-Pro/simulate-the-tail — the crowded tail, simulated, and the guard's gain appears in it
+- **Status:** ACTIVE 2026-08-26. Claim released on merge.
+- **Writes:** `<darkroom>/bugarach/detector_history/guard_in_the_tail.{png,html}` — **one
+  filename stem**; repo copy in `docs/learned/` via `--also`. **Does not touch
+  `guard_bench_validity.*`, `guard_norm_bench.*`, `guard_exposure.*` or
+  `guard_where_it_lands.*`** in that directory.
+- **Claims:** that stem only.
+- **Reads, read-only:** nothing outside the repo. `TAIL_RECORDING`'s settings were fitted
+  against measurements #319 already took off the export folder; no folder is opened here.
+- **Finding another session should know:** `forks.md` §4a's conclusion — the guard is a
+  threshold knob because its recall gain is flat across the neighbour gap — **is false in
+  the tail.** On `TAIL_RECORDING`, against a no-guard control whose alpha is loosened to
+  match both overall recall (0.865 vs 0.871) and precision (0.910 vs 0.909), a 20 s guard
+  with `exposure` normalization recovers **+0.071 recall in the <10 s bin and 0.000 in
+  every other bin**, 17 of 24 seeds. §4a's instrument was right; its recording had a 14 s
+  floor and could not populate the bin that carries the signal, and `compact`
+  normalization was cancelling most of what was left.

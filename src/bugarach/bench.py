@@ -434,6 +434,70 @@ regime**: nothing should be calibrated on it, because a set assembled to hold
 both populations in useful proportions is not one that anything resembles.
 """
 
+TAIL_RECORDING = dict(CROWDED_RECORDING, n_per_level=(60, 60, 60),
+                      min_sep_sec=6.0, interval_cv=1.0)
+"""The crowded **tail** — fitted to real recordings, not invented.
+
+:data:`CROWDED_RECORDING` plants a crowding fraction of **0.38**. Measured against the
+export folder (``tools/probe_real_crowding.py``, 39 recordings with enough detections
+to characterize), real recordings run **median 0.00, IQR 0.00–0.30, range 0.00–0.57**,
+and **7 of 39 sit above 0.38**. So the region where reference-window contamination is
+worst had no simulated counterpart at all;
+``docs/reviews/guard_prior_art_2026-08-26.md`` records that as the gap this closes.
+
+**The tail is not bursty, and that ruled out the obvious knob.** ``interval_cv`` buys
+crowding by making the schedule clumpy — ``simulate_coordination`` calls ``>1`` *"long
+quiet stretches broken by closely-spaced events"* — and reaching 0.5 that way needs
+``interval_cv`` near 1.5, whose realized interval CV is 1.2–1.6. The seven real tail
+recordings have an interval CV of **0.62–1.59, median 0.93**: Poisson-ish spacing, not
+bursts. What they do have is a **small floor** — minimum gaps of **6–26 s, median 8** —
+against this module's 14 s, and more events per hour.
+
+So the tail is reached with ``interval_cv`` left at 1.0, the floor dropped onto the
+real tail's own minimum gaps, and the count raised, holding the three-hour duration.
+8 seeds, realized:
+
+===============================  ========  ======  =========  =================
+setting                           crowded      CV    min gap  matches real?
+===============================  ========  ======  =========  =================
+``CROWDED_RECORDING``                0.39    0.85       14.7  at the boundary
+120 ev / 3 h / floor 6 s             0.48    0.94        6.8  **yes, mid-tail**
+**TAIL_RECORDING** (180 / 3 h)       0.61    0.91        6.3  above in aggregate
+===============================  ========  ======  =========  =================
+
+**Its aggregate crowding is above anything observed, on purpose, and it is meant to be
+used per-event rather than in aggregate.** This is the same trade
+:data:`CROWDED_RECORDING` makes and states — *"a set assembled to hold both populations
+in useful proportions is not one that anything resembles"* — for the same reason:
+recall is per-event, so splitting by each event's own :func:`nearest_neighbour_gaps`
+holds count, duration, background and false-alarm opportunity fixed inside one
+recording. Raising the count is what populates the **tightest gap bins**, which are the
+point and which :data:`CROWDED_RECORDING` barely reaches. Read the bins, not the
+headline fraction.
+
+⚠ **A diagnostic, exactly like its parent. Nothing may be calibrated on it**, and no
+operating point in this module is derived from it.
+
+One note against the parent's docstring: *"at the bench's own event count
+[``min_sep_sec``] changes almost nothing"* is true, and is about
+:data:`BENCH_RECORDING`'s 15 events. At the crowded count the floor moves crowding
+0.39 → 0.51 by itself, which is why it is a knob here and not there.
+"""
+
+
+def make_tail_recording(regime: str, seed: int, **overrides):
+    """A recording whose planted events reach the real crowded tail.
+
+    Same ``(slice, ground_truth)`` pair as :func:`make_recording`, and ``regime`` is
+    required for the same reason it is on :func:`make_crowded_recording`. See
+    :data:`TAIL_RECORDING` for what it is fitted to and what it must not be used for.
+    """
+    if regime not in REGIMES:
+        raise ValueError(f"unknown regime {regime!r} — have {sorted(REGIMES)}")
+    return simulate_coordination(
+        seed=seed, **{**TAIL_RECORDING, **REGIMES[regime], **overrides})
+
+
 CROWDING_GAP_SEC = 30.0
 """Half the shipped 60 s context — a gap below this puts two planted events in
 one another's reference window, which is what makes an event crowded.
