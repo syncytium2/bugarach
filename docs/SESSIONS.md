@@ -1182,7 +1182,8 @@ session's work is not a sweep.
   having drawn a figure with no detector lanes. Nothing in the suite covers it.
 
 ### Tonys-MacBook-Pro/prior-art-cfar — the guard's empty-stratum rise is an exposure factor, and three fields already knew
-- **Status:** ACTIVE 2026-08-26. Claim released on merge.
+- **Status:** DONE 2026-08-26 — merged as PR #315 (`6db9c7a`). **Darkroom claim released.**
+  `guard_exposure.{png,html}` is written and is not being regenerated; the stem is free.
 - **Writes:** `<darkroom>/bugarach/detector_history/guard_exposure.{png,html}` — **one
   filename stem**, the figure for `docs/reviews/guard_prior_art_2026-08-26.md`, whose repo
   copy lands in `docs/learned/` via `--also`. Nothing else in the darkroom; nothing in
