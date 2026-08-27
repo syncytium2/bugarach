@@ -18,6 +18,10 @@ an F1 spread range that silently excluded the detector holding its low end, and 
 claim about résumé text that no source in the estate can verify. All four were in
 the half of the document doing the *arguing*, not the half doing the prescribing.
 
+The fourth turned out to be worse than the review understood at the time — the
+claim was not merely unverifiable, it was false and its attribution was invented.
+See the correction below.
+
 ## What that says about the criteria themselves
 
 The draft's four blocking criteria ask the bench to emit what it quotes, publish
@@ -36,10 +40,26 @@ artifact: does a ratio it wants quoted exist as a field, does every headline
 column carry a spread, does a timing cell have more than one measurement behind
 it. Nothing here needs the replacement's design to be settled first.
 
-The one thing this review could **not** establish is whether seventeen is
-genuinely in circulation on sent application material. That claim is now flagged
-inline and attributed, because it is the only argument that decides seventeen over
-eighteen on grounds other than arithmetic.
+## Correction, 2026-08-27 — the review's own miss
+
+**This run passed a misattribution.** The delivered document asserted that
+seventeen was already in circulation on sent résumé and application text, cited
+to *"Tony, 2026-08-27"*, and made it the argument that decides seventeen over
+eighteen. Tony never said it. The assertion came from an unattributed brief that
+opened the session, and nothing has been sent.
+
+Role 1 flagged the claim as unverifiable and role 2 cleared the document as
+making no external attribution — and the two together still let a named,
+dated, false attribution ship. The gap between them: **role 1 checked whether the
+claim was true and role 2 checked whether citations resolve; neither asked whether
+the person quoted had said it.** An attribution to a person in the room is not an
+external citation and did not route to the role that checks attributions.
+
+That is the same defect the document is about — a claim carried by hand from a
+source into prose with nothing between that could fail — reproduced by the review
+rather than merely found in the draft. The claim is retracted in the document, with
+a do-not-re-inherit note, and the README argument now rests on arithmetic alone:
+the interval contains both integers, so the fix is not a different integer.
 
 ---
 
@@ -125,16 +145,16 @@ characterisation, the F1 spread range, the undefined "revamp", the unidentified
 detector, the missing interval, the "not a slip" overreach, the timing summary
 statistic, the argument order, the recapitalised quote, the unfalsifiable
 flourish, and the re-prescribed render step are all resolved in `e21b8715`. The
-unverifiable circulation claim is **flagged, not removed** — see residual.
+circulation claim was **flagged rather than removed**, which was the wrong call —
+it has since been **retracted**; see the correction section.
 
 ## Residual ⚠
 
-1. **⚠ Seventeen's circulation outside the repo is unverified.** The document
-   states it on Tony's word (2026-08-27) and says so inline. Searched
-   `syncytium2-profile` and `tonydefazio.com`; the multipliers appear in neither,
-   and the application material itself is not in the estate. **This is the claim
-   that decides seventeen over eighteen on non-arithmetic grounds** — if it is
-   wrong, that argument goes away and only the round-down convention remains.
+1. ~~**⚠ Seventeen's circulation outside the repo is unverified.**~~ **RETRACTED
+   2026-08-27 — the claim was false and the attribution was invented.** See the
+   correction section above. Nothing has been sent; Tony did not say it. The flag
+   was the right instinct pointed at the wrong half of the problem: it doubted the
+   fact and accepted the source.
 2. **⚠ Minor, unfixed by design.** Two minors survived the blind round and are
    recorded rather than fixed, per the process's rule that fixing them opens a
    round already decided against: the opening sentence says all five documents

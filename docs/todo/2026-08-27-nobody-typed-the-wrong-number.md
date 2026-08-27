@@ -151,14 +151,23 @@ the individual figures will move on their own.
 "eighteen times faster than LoCo" where four other documents say seventeen. That is a
 real inconsistency and it is deliberately left alone: the replacement supersedes the
 value, and editing it now spends a murderboard pass on a number with a known expiry.
-If the replacement slips, the one-word fix stands on its own — and the direction is
-settled by something other than arithmetic, because ⚠ **seventeen is reportedly
-already in circulation outside the repo, on résumé and application text that has been
-sent** (Tony, 2026-08-27). That could not be verified from here: the multipliers
-appear in neither `syncytium2-profile` nor `tonydefazio.com`, and the documents in
-question are not in the estate. If it holds, standardising on seventeen costs one word
-and standardising on eighteen retroactively falsifies documents already in strangers'
-hands.
+
+**And when it is corrected, the fix is not a different integer.** The interval above
+contains seventeen and eighteen both, so a one-word swap replaces a defensible number
+with an equally defensible one and changes nothing about why they disagreed. The
+correction that holds is the one the criteria ask for: a ratio quoted with its spread,
+or no bare integer at all.
+
+> **A retracted claim, recorded so it cannot be re-inherited.** The first version of
+> this section argued the choice was settled on non-arithmetic grounds, because
+> seventeen was *"already in circulation outside the repo, on résumé and application
+> text that has been sent"* — attributed to Tony and dated. **He never said it, and it
+> is not true: nothing has been sent.** The assertion came from an unattributed brief
+> that opened the session; it was carried into a committed document with a person's
+> name stamped on it, and the review that flagged it as unverifiable never questioned
+> the attribution. It is the defect this document is about, one level up — a claim
+> copied by hand from a source into prose, with nothing in between that could fail.
+> Do not restore the argument.
 
 **Do not sweep on the string.** `docs/forks.md` contains an `18×` in its
 background-grid table that has nothing to do with speed — it is CoactDetect's F1
