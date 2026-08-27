@@ -1310,3 +1310,21 @@ session's work is not a sweep.
   and **overshoots it: 60.3 events/h against a real tail median of 16.4 and an all-recordings
   median of 7.9.** Its crowding fraction, interval CV and floor match; its absolute event
   rate does not. The bursty-at-low-rate route is unsimulated.
+
+### Tonys-MacBook-Pro/rasters-stay-clean — nothing is ever drawn on the raster
+- **Status:** ACTIVE 2026-08-26. Claim released on merge.
+- **Writes:** `<darkroom>/bugarach/detector_history/benchmark_rasters.{png,html}` and
+  `benchmark_map.{png,html}` — **two filename stems, both re-renders of my own from
+  #328**, plus refreshed copies of the same two inside
+  `<darkroom>/bugarach/2026-08-26-guard-and-the-benchmark/`, and
+  `benchmark_explainer.html` in that folder and at the darkroom root. **Nothing else in
+  the darkroom; no other stem touched.**
+- **Claims:** those stems only.
+- **Reads, read-only:** the export folder `2026-08-20_pensub_revised_2v`. Nothing filtered.
+- **Finding another session should know:** `tools/make_generator_figures.py::_render_png`
+  **silently truncated any figure taller than the 1200 px viewport** — a screenshot clip
+  larger than the viewport is cut to it, with no error and no warning. Every figure tool
+  in this tree writes through that function. It happened to bite nothing before now
+  because no figure had exceeded 1200 CSS px; the five-row raster figure did, and lost
+  its last panel and its x-axis. Fixed by growing the viewport to the measured content.
+  **If you have a figure that looks cut off, re-render it.**

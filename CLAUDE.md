@@ -78,6 +78,19 @@ F1 0.57 and here is the trace showing why" beats three paragraphs of mechanism.
   `t` dimension.
 - **Scroll wins**: wheel-zoom stays in the toolbar but inactive — the mouse
   wheel scrolls the page; drag pans.
+- **Nothing is ever drawn on the raster** (Tony, 2026-08-26 — *"please, lets never
+  draw on the raster. i know i've changed my mind on this"*). The raster is **black
+  and white**: one ink, one mark per event, nothing competing with it. Every
+  detection, planted event, treatment window, anchor or other cue goes in a **lane
+  above** it — symbols, or hashes where the cue needs rows — x-linked through the
+  shared `t` dimension. Identity and counts go in the panel's y-axis label or a
+  text header outside the plot, **never as text laid over the marks**.
+  `bugarach.ui.diagnostic.raster_panel` already refuses detection spans in its own
+  docstring and `lane_panel` is what stacks above it; the way to break the rule is
+  to overlay from *outside* the module, which is exactly how
+  `make_benchmark_figures.py` broke it on the day the rule was written. **Sapper
+  SAP009 fires on it**, and it works by naming — hold a raster in a variable
+  called `raster` so the check can see it.
 
 ## Repo management — stop-on-a-dime, any machine, any OS
 
