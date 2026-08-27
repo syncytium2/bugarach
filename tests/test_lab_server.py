@@ -28,6 +28,13 @@ from bugarach import lab as lab_mod
 ROOT = Path(__file__).resolve().parents[1]
 VIEWER = ROOT / "docs" / "site" / "raster_viewer.html"
 
+# torch's intra-op thread count on the machine that generated
+# `docs/learned/bakeoff.json`. It belongs here rather than in that file because it
+# is a property of the *generating machine*, not of the result — and recording it
+# is the smallest honest thing to do until the trainer pins threads itself. See
+# test_the_server_reproduces_the_published_bakeoff for the measurements.
+_REFERENCE_INTRA_OP_THREADS = 10
+
 
 # ---------------------------------------------------------------------------
 # the gate — both halves
@@ -429,19 +436,54 @@ def test_the_server_reproduces_the_published_bakeoff():
     server that merely *resembled* `fair_bakeoff.py` would pass every other test
     in this file and quietly publish different numbers than the report does.
 
-    ~25 s and it needs torch, so it does not run in CI: `.github/workflows/ci.yml`
-    installs `[ui]`, not `[dl]`. That is stated rather than papered over — this
-    check runs on a machine that has the training extra, which is every machine
-    where anyone can change the thing it guards.
+    **It does not run in CI, and the reason changed on 2026-08-27.** It used to
+    be that CI installed `[ui]` and not `[dl]`, so there was no torch; ADR-0004
+    fixed that and every other torch test now runs there. This one still stands
+    aside, for a worse reason that the install change exposed: **the published
+    reference is bound to the machine that produced it.**
 
-    Cross-machine drift in the float ops is possible in principle; if this ever
-    fires with a *small* per-fold difference on a different platform, that is
-    the finding, and the tolerance question gets answered then rather than
-    pre-loosened now into a check that cannot fail.
+    `learn/train.py` seeds with `torch.manual_seed` and pins nothing else, so
+    torch takes its intra-op thread count from the hardware — 10 on the Mac that
+    generated `bakeoff.json`. Change that number and the CPU reduction order
+    changes with it, and 900 steps of gradient descent amplify the difference:
+
+        threads   mean F1     n_detected per fold (published -> run)
+             10   0.667972    71->71  47->47  58->58  45->45   reproduces
+              1   0.685781    71->76  47->47  58->58  45->62
+              2   0.685781    71->76  47->47  58->58  45->62
+              4   0.685781    71->76  47->47  58->58  45->62
+
+    A GitHub runner has 4 cores. So this test would fail there — on the first
+    exact-integer assertion, `n_detected` fold 0, 76 against 71 — and the failure
+    would be reporting something true.
+
+    That is *not* the "small per-fold difference" anticipated below; fold 3 moves
+    45 -> 62, and the honest reading is that the reference is not reproducible
+    from the repository alone. The mean F1 barely moves (+0.018, about 2.7%), so
+    the model is fine and the published headline is robust; what is broken is the
+    claim that these numbers can be regenerated anywhere. The fix — pin the
+    thread count in the trainer and regenerate the reference — changes numbers
+    that `docs/learned/report.html` publishes, so it is Tony's call and it is
+    filed: `docs/todo/2026-08-27-the-bakeoff-reference-is-thread-count-bound.md`.
+
+    Until then this skips wherever the thread count is not the one the reference
+    was made under, and says so. That is a silent skip becoming a stated
+    precondition, which is the opposite of what ADR-0004 was fixing elsewhere.
     """
     tr = lab_mod.TubeTrainer()
     if not tr.available:
-        pytest.skip("torch not installed — CI installs [ui], not [dl]")
+        pytest.skip("torch not installed — install `.[dl]` to run this")
+
+    import torch
+
+    if torch.get_num_threads() != _REFERENCE_INTRA_OP_THREADS:
+        pytest.skip(
+            f"docs/learned/bakeoff.json was generated at "
+            f"{_REFERENCE_INTRA_OP_THREADS} intra-op threads and this machine "
+            f"runs {torch.get_num_threads()}; the CPU reduction order differs and "
+            f"the per-fold counts do not reproduce. This is a defect in the "
+            f"reference, not in the server — see "
+            f"docs/todo/2026-08-27-the-bakeoff-reference-is-thread-count-bound.md")
 
     ref = json.loads((ROOT / "docs" / "learned" / "bakeoff.json").read_text())
     model = tr.train({"spec": ref["spec"], "arch": "tube",
