@@ -1,13 +1,10 @@
 # Handoff — 2026-08-27, for the big push
 
-**This file at the root means something is in flight.** In flight: **#304, #292, #270
-(red), #53, #50** — detail at the bottom. Everything else is orientation for a session
-starting cold. When the last of those closes, `tests/test_handoff_is_honest.py` goes red
-and names what closed; that retires this file, not somebody remembering.
+**In flight: #304, #292, #270 (red), #53, #50.** When the last closes,
+`tests/test_handoff_is_honest.py` goes red and retires this file.
 
-Written after two sessions closed together. `main` is green at `ab1dbfd`, the suite is
-**1,391 collected**, sapper is clear, and the machine-local board is down to **4 ACTIVE
-claims** from 12 — the eight that were holding nothing were released on the way out.
+`main` green at `ab1dbfd`; suite **1,391**; sapper clear; board down to 4 ACTIVE claims
+from 12.
 
 ---
 
@@ -126,12 +123,16 @@ worktree; neither has been applied to it.
   `attribution-corrections`. The other eight were released on 2026-08-27 — every one held
   nothing, and the briefing was showing them as live.
 - **72 open todos.** A record, not a queue; most predate the reset.
-- **⚠ The briefing has 38 bytes of headroom.** `session_briefing.sh` delivers 8,962B
-  against its 9,000B budget with this handoff present, 8,360B without — and the handoff's
-  slot is byte-capped, so that gap is the briefing's own drift, not this file's. Go over
-  and the ladder degrades `FOUNDATIONS §9` to its six bolded claims and drops the
-  reasoning that binds code. **Check the canary on line 1 before adding anything to that
-  hook**, and note it says `(TERSE` when it has degraded.
+- **⚠ The briefing has ~56 bytes of headroom, and the number that binds is the one from a
+  fresh clone.** With this file present it delivers **8,944B on a fresh clone** against a
+  9,000B budget, and 8,578B on this configured machine. The fresh figure is the real one:
+  on a machine with no `hooksPath`, no board and no darkroom, every standing alarm fires at
+  full length instead of collapsing to `commit gates: ACTIVE`. That is the shape CI runs,
+  and the first draft of this handoff pushed it to 9,078B — over, degrading `FOUNDATIONS
+  §9` to its six bolded claims. **Measure on a throwaway clone before adding anything to
+  that hook**, and read the canary on line 1: it says `(TERSE` once it has degraded.
+  `tools/hook_spill_census.sh` puts the real spill threshold at (8,962B, 10,186B] from 55
+  recorded refusals, so there is very little budget left to buy.
 
 ## Two open items from the hook audit
 
