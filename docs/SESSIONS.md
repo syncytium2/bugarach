@@ -60,6 +60,29 @@ Template:
 
 ## Active
 
+### Tonys-MacBook-Pro/deploy-0827b — redeploy, so the sweep range control is on the live page
+- **Status:** DONE 2026-08-27 — deployed and verified; **DEPLOY RELEASED.** Version
+  `acac81b2-a1bf-4260-99e6-fa917dfe958f`, built from `0ed939d`. **Four files at the edge,
+  not the usual six** — `hero.png` and `reality.png` were byte-identical and went
+  unuploaded, which is the first deploy in this run where a detector change did not move
+  the rendered figures. `tools/site_staleness.py` says **current**.
+- **Started:** 2026-08-27 (fourth deploy in three days)
+- **Writes:** `bugarach.tonydefazio.com` and `site/` (gitignored). Nothing in the darkroom,
+  no store, no export folder.
+- **Claims:** ~~the site deploy~~ — **released.** Port 5096 released and the process ended.
+- **Verified:** all four pages walked over HTTP before the upload and again on the live URL
+  — four nav links on each, every one resolving, no console or page errors anywhere. The
+  Tune panel driven on the live page: range boxes edited to 0.5–3 in 4 steps, swept, and
+  the out-of-range refusal offered "Extend past 3 and sweep again". `audit_deployed_page.py`
+  passed: the page fetched nothing but itself.
+- **Notes:** Authorised by Tony in two words ("do it"), after PR #345 gave the Tune panel a
+  sweep range. Live is **19 commits behind** and `site_staleness.py` names four as changing
+  what is served — two of them mine, one the page-status banners from PR #344, one the
+  Cossart attribution fix. **A deploy takes `origin/main` whole**, so this publishes another
+  session's work as well as this one's. That session released the deploy in its own block
+  and its change is merged, so nothing is held against it — but it is worth saying out loud
+  rather than discovering at the edge.
+
 ### Tonys-MacBook-Pro/deploy-0827 — redeploy, so the live markers point at their raster
 - **Status:** DONE 2026-08-27 — deployed and verified; **DEPLOY RELEASED.** Version
   `256689ce-bf04-494c-bea2-ebdf5c5fd2fb`, built from `ab1dbfd`. Six files changed at the
