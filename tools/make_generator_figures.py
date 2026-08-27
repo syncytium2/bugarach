@@ -422,10 +422,23 @@ def _render_png(html_path: Path, png_path: Path, *, wait_ms: int = 3000) -> bool
                     raise RuntimeError(
                         f"measured no rendered content ({w}x{h}) — the page "
                         f"did not draw, or every element matched the viewport")
+                clip_h = min(float(h) + 12, 4000.0)
+                clip_w = min(float(w) + 12, 1120.0)
+                # A CLIP TALLER THAN THE VIEWPORT IS SILENTLY CUT TO IT. The
+                # measurement above is correct — it reads the document, not the
+                # window — but `screenshot(clip=...)` without `full_page` can
+                # only return pixels the viewport holds, so a figure taller than
+                # the 1200 px viewport came out ending mid-panel with no error
+                # and no warning. Found on the five-row raster figure
+                # (2026-08-26), whose last raster was cut in half; every figure
+                # before it happened to fit. Growing the viewport to the content
+                # is the fix that does not depend on clip/full_page semantics.
+                if clip_h > page.viewport_size["height"]:
+                    page.set_viewport_size({"width": int(clip_w),
+                                            "height": int(clip_h)})
+                    page.wait_for_timeout(1200)
                 page.screenshot(path=str(tmp), clip={
-                    "x": 0, "y": 0,
-                    "width": min(float(w) + 12, 1120.0),
-                    "height": min(float(h) + 12, 4000.0)})
+                    "x": 0, "y": 0, "width": clip_w, "height": clip_h})
                 browser.close()
                 os.replace(tmp, png_path)
         return True

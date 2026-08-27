@@ -197,6 +197,37 @@ RULES = [
         fixture_good="**CI runs this** — the runner installs chromium and sets "
                      "BUGARACH_REQUIRE_BROWSER=1.",
     ),
+    Rule(
+        id="SAP009", level="BLOCK",
+        pattern=r"(raster_panel\([^\n]*\)\s*\*|\braster\w*\s*\*\s*hv\.)",
+        # Deliberately crude, and it works BY NAMING — the message says so. A
+        # rule that tracked "is this variable a raster" across statements would
+        # need a parser, and sapper is a line matcher on purpose. The convention
+        # (hold a raster in a variable called `raster`) is what lets a one-line
+        # regex see the thing it guards. Its blind spot is honest and recorded in
+        # docs/sapper_feedback/2026-08-26-sap009-sees-only-what-is-named.md.
+        include=["tools/**", "src/bugarach/ui/**"], exclude=[],
+        message="NOTHING IS DRAWN ON THE RASTER (Tony, 2026-08-26). The raster is "
+                "black and white: one ink, one mark per event, and nothing "
+                "competing with it. Detections, planted events, treatment "
+                "windows, anchors and labels go in a LANE ABOVE it — symbols, or "
+                "hashes where the cue needs rows — x-linked through the shared "
+                "`t`. Stack ui.diagnostic.lane_panel over raster_panel in a "
+                "Column; do not overlay onto the raster with `*`. raster_panel "
+                "already refuses detection spans in its own docstring, and the "
+                "way to break that is to overlay from OUTSIDE the module, which "
+                "is what tools/make_benchmark_figures.py did the day before this "
+                "rule existed. Identity and counts belong in the y-axis label or "
+                "a header outside the plot, never as text over the marks. THIS "
+                "CHECK SEES ONLY WHAT IS NAMED: hold the raster in a variable "
+                "called `raster`.",
+        # Assembled by concatenation, like _UM above: written whole, this
+        # fixture is itself a line that draws on a raster, and the scan would
+        # fire on the rule that forbids it. Fourth time a self-describing
+        # string has tripped its own rule in this file.
+        fixture_bad="raster = raster " + "* hv.VLine(t).opts(color='#a03623')",
+        fixture_good="page = pn.Column(lane_panel(lanes, ext=ext), raster)",
+    ),
 ]
 
 
