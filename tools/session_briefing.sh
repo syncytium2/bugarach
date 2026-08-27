@@ -190,10 +190,30 @@ waiting_list() {
   done
 }
 
+# THE THIRD ARGUMENT IS A RESERVE, and it exists because ALARM_ROOM is a shared pool spent
+# in emission order — so whatever renders first can starve whatever renders after it. A
+# root HANDOFF.md renders first, correctly: it is the "stop, something is in flight" line.
+# On 2026-08-27 a 601B one left the waiting-on-Tony list too little, cutting the third
+# item's action line to "-> Did […]" and failing the test that asserts every waiting item
+# reaches a person. That is the trade ALARM_ROOM's own comment above calls backwards twice
+# over: truncating the one list with a person waiting at the end of it, to protect
+# something else.
+#
+# The handoff is the safer thing to shorten, because its alarm line says READ THE FILE and
+# the reader is about to open it. A decision request has nowhere else to appear. So a block
+# that renders early passes the room a later, less truncatable one will need, and spends
+# only what is left over.
+#
+# THE GUARD ON THIS IS test_it_surfaces_work_that_is_finished_and_waiting_on_a_person,
+# which asserts each waiting item's action line reaches the briefing — it is what caught
+# the regression and it fails without the reserve. A second test counting action lines was
+# written and DELETED: truncation cut the tail of the third line, not the line, so the
+# count never moved and the test could not fail in either direction. A guard nobody has
+# watched fail is not a guard.
 emit_bounded() {
-  local cap="$1" text="$2" room
+  local cap="$1" text="$2" reserve="${3:-0}" room
   [ -z "$text" ] && return 0
-  room=$ALARM_ROOM
+  room=$(( ALARM_ROOM - reserve ))
   [ "$cap" -lt "$room" ] && room=$cap
   [ "$room" -le 0 ] && { echo "   […] alarm allowance spent — read the file"; return 0; }
   text=$(printf '%s\n' "$text" | bound_bytes "$room")
@@ -259,10 +279,18 @@ render() {
   # characters is 4KB, which puts the alarms this render deliberately front-loaded
   # right back behind the preview cut. The whole alarm block has to stay inside 2KB
   # for the ordering to be worth anything.
+  # Rendered once here so its size can be reserved before the handoff spends the pool,
+  # and reused below rather than recomputed.
+  local wl wl_need
+  wl=$(waiting_list)
+  wl_need=$(printf '%s\n' "$wl" | wc -c | tr -d ' ')
+  [ -z "$wl" ] && wl_need=0
+  [ "$wl_need" -gt 1200 ] && wl_need=1200
+
   if [ -f HANDOFF.md ]; then
     echo
     echo "--- !! HANDOFF.md present — work is in flight, read it before starting ---"
-    emit_bounded 700 "$(head -14 HANDOFF.md)"
+    emit_bounded 700 "$(head -14 HANDOFF.md)" "$wl_need"
   fi
 
   # --- 2. finished work that only Tony can move ----------------------------------
@@ -279,8 +307,9 @@ render() {
     echo
     echo ">> ${waiting} item(s) FINISHED and waiting on Tony — nothing else unblocks these:"
     # Bounded like the handoff excerpt above: the count is already printed, so what
-    # this list can afford to lose is its tail, not the alarms behind it.
-    emit_bounded 1200 "$(waiting_list)"
+    # this list can afford to lose is its tail, not the alarms behind it. Its room was
+    # reserved before the handoff spent the pool, so a live handoff can no longer cut it.
+    emit_bounded 1200 "$wl"
   fi
 
   # --- 3. is the commit gate actually installed in THIS clone? --------------------

@@ -5,7 +5,7 @@ filed: 2026-08-26
 
 # Nine files name ADR-0003, and PR #298 was closed without merging
 
-waiting: Did you mean to close PR #298, or did a session tidy it away on its shutdown? It was green and mergeable and nothing records a reason. If you meant it, nine files need their ADR-0003 citations rehomed or rewritten; if you did not, reopening is one click and they all come right.
+waiting: Did you mean to close PR #298, or did a session tidy it away? If you meant it, nine ADR-0003 citations need rehoming; if not, reopening fixes all nine at once.
 
 > **Not murderboarded** — a finding for sessions in this tree. Every claim below is one
 > `git grep` away.
