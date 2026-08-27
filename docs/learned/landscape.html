@@ -171,7 +171,7 @@
 <div class="wrap">
 <div class="col">
   <p class="eyebrow">bugarach &middot; 17 August 2026</p>
-  <h1>Everyone finds coordinated events. Almost nobody learns to.</h1>
+  <h1>Everyone finds coordinated events. We found four that learn to.</h1>
   <p class="standfirst">
     Where a learned coordination detector sits in neuroscience &mdash; what the
     neighbouring fields already do, which of it was reached independently here, and
@@ -183,8 +183,10 @@
   <strong>This page exists because an earlier claim was too strong.</strong> A
   companion report said no prior work trains a network to emit coordinated
   population events. Four searches deep, no paper opened. Reading them found three
-  such networks, so the claim is withdrawn and replaced with a narrower one that
-  survives contact with the methods sections. The shelf is at
+  such networks &mdash; and the map below carries a fourth, SpikeNet, which is indexed
+  but was not retrieved, so it is counted on its bibliographic record and nothing is
+  asserted about its contents. The claim is withdrawn and replaced with a narrower one
+  that survives contact with the methods sections. The shelf is at
   <code>&lt;darkroom&gt;/bugarach/lit/coordination/</code>, with per-paper read
   status, because a citation nobody opened is how the first version went wrong.
 </div>
@@ -221,7 +223,7 @@
 
 <figure class="map">
   <svg viewBox="0 0 900 566" xmlns="http://www.w3.org/2000/svg" role="img"
-     aria-label="A six-cell map of coordination-detection methods in neuroscience. Columns are what a method emits: per-cell events, cell assemblies meaning which cells group together, and population events meaning when the group fired. Rows are how it decides: learned from data on top, hand-written rules below. Bottom left and bottom middle are crowded with classical work — thresholded transients, and the ICA, Promax, SGC, CORE, SVD, FIM-X and CAD assembly detectors. Bottom right holds the classical population-event detectors including the SCE rule, CICADA, LoCo, CoactDetect and the MEA network-burst methods, plus the coactivity frame gate that SGC, CORE and SVD each run before they can begin. Top left holds the learned per-cell methods CASCADE, DeepCINAC and the spikefinder entrants. The cell for learned assembly detection is empty — nobody trains a network to emit assembly membership. Top right, the learned population-event detectors, holds DOSED and SEED on sleep EEG, cnn-ripple on hippocampal LFP and SpikeNet on clinical EEG — four methods, none of them calcium imaging — and bugarach's centre-surround model, which is the only calcium-imaging entry and the only one whose ground truth is planted in simulation rather than labelled by an expert. Two notes sit outside the grid: autoMEA is learned but emits a classical detector's parameters rather than detections, and RADICaL is learned at the population level but emits a latent trajectory rather than discrete events.">
+     aria-label="A six-cell map of coordination-detection methods in neuroscience. Columns are what a method emits: per-cell events, cell assemblies meaning which cells group together, and population events meaning when the group fired. Rows are how it decides: learned from data on top, hand-written rules below. Bottom left and bottom middle are crowded with classical work — thresholded transients, and the ICA, Promax, SGC, CORE, SVD, FIM-X and CAD assembly detectors. Bottom right holds the classical population-event detectors including the SCE rule, CICADA, LoCo, CoactDetect and the MEA network-burst methods, plus the coactivity frame gate that SGC, CORE and SVD each run before they can begin. Top left holds the learned per-cell methods CASCADE, DeepCINAC and the spikefinder entrants. The cell for learned assembly detection is empty: this survey found no network trained to emit assembly membership, which is a statement about the search and not about the field. Top right, the learned population-event detectors, holds DOSED and SEED on sleep EEG, cnn-ripple on hippocampal LFP and SpikeNet on clinical EEG — four methods, none of them calcium imaging — and bugarach's centre-surround model, which is the only calcium-imaging entry and the only one whose ground truth is planted in simulation rather than labelled by an expert. Two notes sit outside the grid: autoMEA is learned but emits a classical detector's parameters rather than detections, and RADICaL is learned at the population level but emits a latent trajectory rather than discrete events.">
   <style>
     .lbl  { font-family: var(--sans, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif); fill: var(--muted, #5c6773); }
     .hd   { font-size: 13.5px; font-weight: 700; fill: var(--ink, #16202b); }
@@ -262,9 +264,9 @@
   <text class="lbl sub" x="168" y="226">electrophysiology</text>
 
   <rect class="empty" x="390" y="62" width="230" height="176" rx="4"/>
-  <text class="lbl it" x="505" y="145" text-anchor="middle">&#8212; empty &#8212;</text>
-  <text class="lbl sub" x="505" y="165" text-anchor="middle">nobody trains a network</text>
-  <text class="lbl sub" x="505" y="180" text-anchor="middle">to emit assembly membership</text>
+  <text class="lbl it" x="505" y="145" text-anchor="middle">&#8212; no entry found &#8212;</text>
+  <text class="lbl sub" x="505" y="165" text-anchor="middle">this survey found no network</text>
+  <text class="lbl sub" x="505" y="180" text-anchor="middle">trained to emit membership</text>
 
   <rect class="cell" x="628" y="62" width="256" height="176" rx="4"/>
   <text class="lbl it" x="644" y="86">DOSED</text>
@@ -345,15 +347,21 @@
 </div>
 
 <div class="cellwalk">
-  <h4>The middle of the top row is empty, and it stays empty</h4>
+  <h4>The middle of the top row is empty as far as this survey could see</h4>
   <p>
-    Nobody trains a network to emit assembly membership, in anything this survey
-    reached. The likely reason &mdash; and this is a reading, not something any of these
+    <strong>We could not find public evidence that anyone trains a network to emit
+    assembly membership.</strong> That is a statement about a search &mdash; twelve
+    papers, of which nine were read closely &mdash; and not about the field. An empty
+    cell here means no entry was found, which is weaker than no entry existing, and the
+    distinction is not pedantry: the last version of this survey asserted an absence it
+    had not established, and reading the papers produced three counterexamples.
+    The likely reason for the gap &mdash; and this is a reading, not something any of these
     papers says &mdash; is that membership is a clustering, which the field already
     solves with eigenvalue tests and graph community detection that need no labels at
     all. On that reading an empty cell is a field that does not need the tool rather
-    than a gap waiting to be filled. Nothing here rules out the alternative: that it was
-    tried and did not work well enough to publish.
+    than a gap waiting to be filled. Two alternatives stay open and neither is ruled out
+    here: that it was tried and did not work well enough to publish, or that it exists
+    and this survey did not reach it.
   </p>
 
   <h4>The bottom right is where this project's six detectors live &mdash; and so does a step
@@ -411,10 +419,12 @@
     score</em>. Two substrates, two independent groups, the same omission.
   </p>
   <p>
-    So the defensible claim is positional and narrow: <strong>nobody detects the
-    coordinated event itself from per-cell calcium activity, against events planted
-    in a simulation parameterised from the lab's own recordings.</strong> The
-    substrate and the source of truth are what is new here &mdash; not the network.
+    So the defensible claim is positional, narrow, and about a search rather than about
+    the world: <strong>we could not find published work that detects the coordinated
+    event itself from per-cell calcium activity, against events planted in a simulation
+    parameterised from the lab's own recordings.</strong> The substrate and the source
+    of truth are what appear to be new here &mdash; not the network. If a reader knows
+    of an entry for that cell, it belongs in this table and the claim comes down.
   </p>
 </div>
 

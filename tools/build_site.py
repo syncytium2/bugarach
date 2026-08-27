@@ -112,8 +112,15 @@ INDEX = """<!doctype html>
                  transform: translateX(-50%); }}
   figure.lead img {{ display:block; width:100%; height:auto;
                      border:1px solid #8883; border-radius:10px; }}
-  figure.lead a {{ display:block; text-decoration:none; }}
-  figure.lead a:hover img {{ border-color:#888; }}
+  /* `>` matters. This was `figure.lead a`, which is the anchor WRAPPING the
+     image — but it also caught every link in the caption, and the first inline
+     one to arrive there (CICADA, in the name key) became a block and broke its
+     own sentence across three lines. Invisible in the source; only a render
+     shows it. The caption's own trailing link keeps a line to itself by
+     asking for one. */
+  figure.lead > a {{ display:block; text-decoration:none; }}
+  figure.lead figcaption a.more {{ display:block; margin-top:.45rem; }}
+  figure.lead > a:hover img {{ border-color:#888; }}
   figcaption {{ color:#666; font-size:.92rem; margin-top:.55rem;
                 max-width: 46rem; margin-left:auto; margin-right:auto; }}
   .key {{ white-space:nowrap; font-weight:600; }}
@@ -199,19 +206,28 @@ and generates every other figure here from a seed.</p>
 
 <h2 style="font-size:1.15rem">Where this sits, and who else is doing it</h2>
 <p>Detecting coordinated events is not a new problem, and a page that positions
-itself against work a reader cannot go and look at is marketing. So: three
-groups already train networks whose output is a population event with times —
+itself against work a reader cannot go and look at is marketing. So: four
+methods already train networks whose output is a population event with times —
 <a href="https://github.com/Dreem-Organization/dosed">DOSED</a> on sleep EEG,
 <a href="https://github.com/PridaLab/cnn-ripple">cnn-ripple</a> on hippocampal
-LFP, and SEED on sleep spindles. None of them works on calcium imaging, and all
-of them learn from events a human expert labelled. What is different here is the
+LFP, SEED on sleep spindles, and SpikeNet on clinical EEG, the last of which we
+have on its bibliographic record alone. None of them works on calcium imaging,
+and all of them learn from events a human expert labelled. What is different here is the
 substrate and where the answers come from — the events are planted in a
 simulation fitted to one lab's own recordings, so the ground truth is exact and
 the benchmark is rebuilt per lab.</p>
 <p>The classical side of the same problem is
 <a href="https://gitlab.com/cossartlab/cicada">CICADA</a> and the coactivity-vs-shuffle
-rule it comes from, both of which are among the six detectors this project ports
-and scores against.
+rule it comes from, and both are already in the figure at the top of this page.
+<b>The lane marked <span class="key">locust</span> is CICADA's method</b>, ported
+from the Cossart lab's implementation and modified, which is why it carries a
+different name; <b><span class="key">binned SCE</span></b> is the
+coactivity-vs-shuffle rule itself, whose root is Cossart, Aronov &amp; Yuste
+(2003). Cite them, not this repo, for those two —
+Denis, Dard, Quiroli, Cossart &amp; Picardo (2020),
+<i>CICADA</i>, Zenodo <code>10.5281/zenodo.10041434</code>, and
+<i>Attractor dynamics of network UP states in the neocortex</i>,
+Nature 423:283–288.
 <b>No method from the literature has yet been run on this project's recordings</b>, so
 nothing here claims to beat one.</p>
 <p><a href="landscape.html">The full landscape &rarr;</a> — what a dozen methods
@@ -580,7 +596,12 @@ LEAD_FIGURE = """<figure class="lead">
   all six were reading, one row per ROI; then what each detector computes.
   Each lane carries its detector's own name; two of the six are named for what
   they measure rather than for the tool — <span class="key">rate+context</span>
-  is RateDetect, and <span class="key">binned SCE</span> is SCE.
+  is RateDetect, and <span class="key">binned SCE</span> is SCE. A third name
+  needs decoding for a different reason: <span class="key">locust</span> is the
+  <a href="https://gitlab.com/cossartlab/cicada">CICADA</a> method, ported from
+  the Cossart lab's implementation and modified. It is named apart <i>because</i>
+  it is modified — another lab's tool name on a changed port credits them with
+  something they did not write.
   In the lanes, <span class="key">&#10007;</span> marks a false alarm and
   <span class="key">&#9711;</span> one that a reader should not count as a
   separate miss-fire — a second call on an event another detection had already
@@ -594,7 +615,7 @@ LEAD_FIGURE = """<figure class="lead">
   The <span class="key">shaded block</span> fires at a higher rate but contains
   <b>no planted events</b>, so every bar inside it is a false alarm by
   construction — you can see which detectors take the bait.
-  <a href="diagnostic.html">Open the interactive version &rarr;</a></figcaption>
+  <a class="more" href="diagnostic.html">Open the interactive version &rarr;</a></figcaption>
 </figure>"""
 
 # The real recording. Carried from docs/, never regenerated here — see the module
