@@ -60,6 +60,24 @@ Template:
 
 ## Active
 
+### Tonys-MacBook-Pro/deploy-0827 — redeploy, so the live markers point at their raster
+- **Status:** DONE 2026-08-27 — deployed and verified; **DEPLOY RELEASED.** Version
+  `256689ce-bf04-494c-bea2-ebdf5c5fd2fb`, built from `ab1dbfd`. Six files changed at the
+  edge, the same six every time: the four pages' HTML plus `hero.png` and `reality.png`.
+  `tools/site_staleness.py` says **current**.
+- **Started:** 2026-08-27 (third deploy in two days)
+- **Writes:** `bugarach.tonydefazio.com` and `site/` (gitignored). Nothing in the darkroom,
+  no store, no export folder.
+- **Claims:** ~~the site deploy~~ — **released.** Port 5096 released and the process ended.
+- **Notes:** Authorised by Tony in two words ("update it"), after PR #335 turned every
+  marker in a lane above a raster downward. Live had been ten commits behind, and
+  `site_staleness.py` named exactly one of them — `aa9a8b4` — as changing what is served;
+  the deploy still takes `origin/main` whole, so the stamp is `ab1dbfd`.
+  **Third deploy, third `npm install`.** `merge_when_green` reaps this worktree every time
+  it lands a docs-only PR from inside it, and `node_modules` goes with it. Whether the
+  deploy worktree should be exempt is Tony's call and has now cost three minutes across
+  three deploys; recording the pattern rather than working around it silently.
+
 ### Tonys-MacBook-Pro/deploy-0826 — redeploy, so the lanes on the live page stop over-claiming
 - **Status:** DONE 2026-08-26 — deployed and verified; **DEPLOY RELEASED.** Version
   `f80b6619-5a41-4c04-a391-c8e05120d4d5`, built from `e83e8ec`. Six files changed at the
