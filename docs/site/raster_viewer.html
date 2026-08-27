@@ -9,7 +9,7 @@
      rather than naming a sha this page could not know — the reasoning is at the
      visible stamp. -->
 <meta name="bugarach:born" content="2026-08-13">
-<meta name="bugarach:version-date" content="2026-08-25">
+<meta name="bugarach:version-date" content="2026-08-27">
 <meta name="bugarach:commit" content="content-addressed">
 <!--
   The raster viewer, client side.
@@ -79,6 +79,28 @@
   }
   nav.site a:hover { background: var(--band); color: var(--fg); }
   nav.site a[aria-current="page"] { color: var(--fg); background: var(--band); }
+  /* HOW FINISHED THIS PAGE IS, said on the page (Tony, 2026-08-27 — the site is
+     public and the work is not). `build_site.STATUS` marks this page `wip` and
+     injects the bar into the other three. It cannot inject it here: this file is
+     copied byte-for-byte and `tests/test_lab_server.py` pins that, precisely so
+     the build cannot transform a page that promises the reader it reaches
+     nothing. So the bar is hand-written, like the nav above it and the build
+     stamp below, and `tests/test_site_coherence.py` checks its wording against
+     `build_site.BANNERS` so the two cannot drift apart unnoticed.
+     `flex:none` because body is a 100vh flex column — without it this bar is
+     what gets squeezed. */
+  div.status {
+    flex: none; font-size: 12.5px; line-height: 1.45; padding: 8px 24px;
+    background: #f6d5cd; color: #5a1f13; border-bottom: 1px solid #e2a696;
+  }
+  div.status b {
+    font-weight: 700; letter-spacing: .04em; text-transform: uppercase;
+    margin-right: 8px;
+  }
+  @media (prefers-color-scheme: dark) {
+    div.status { background: #3f1f18; color: #f4cdc2;
+                 border-bottom-color: #6b3225; }
+  }
   header { padding: 22px 24px 14px; border-bottom: 1px solid var(--line); }
   /* Medium, one line, and the promise rides on the same line as an inline run
      rather than a block under it. Wraps on a narrow window instead of forcing a
@@ -452,6 +474,8 @@
   #reopen { margin-top: 6px; }
   code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px; }
 </style>
+
+<div class="status wip" role="note"><b>&#9888; Under construction</b>This page is live software still being built. Expect rough edges, and behaviour that changes without notice.</div>
 
 <nav class="site">
   <span class="brand">bugarach</span>
@@ -1295,10 +1319,10 @@
      a page edited without bumping it turns CI red instead of shipping a date
      that has quietly become a lie. Bump it when you edit this page. -->
 <p class="site-dates" data-bugarach-born="2026-08-13"
-   data-bugarach-version-date="2026-08-25"
+   data-bugarach-version-date="2026-08-27"
    data-bugarach-commit="content-addressed"
    style="margin:1.5rem max(1.2rem, calc(50% - 23rem));color:#666;font-size:.85rem">
-  First published 2026-08-13 · this version 2026-08-25 · identified by its own
+  First published 2026-08-13 · this version 2026-08-27 · identified by its own
   bytes rather than by a build stamp
 </p>
 

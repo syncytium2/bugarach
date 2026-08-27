@@ -83,6 +83,71 @@ def built_pages():
 
 
 # --------------------------------------------------------------------------
+# How finished each page says it is.
+# --------------------------------------------------------------------------
+
+def test_every_page_says_how_finished_it_is():
+    """A public page that says nothing reads as finished, and this site is not.
+
+    Tony, 2026-08-27, on realizing the thing is public while he is still working
+    on it. The failure this closes is the quiet one: a fifth page is added to
+    `PAGES`, nobody classifies it, and it ships looking done — which is a claim,
+    made by omission, on the front door of a portfolio artifact (FOUNDATIONS §8).
+    """
+    unlabelled = [name for name, _ in bs.PAGES if name not in bs.STATUS]
+    assert not unlabelled, (
+        f"{unlabelled} are published with no entry in build_site.STATUS, so they "
+        f"ship with no banner and read as finished work")
+    unknown = {k: v for k, v in bs.STATUS.items() if v not in bs.BANNERS}
+    assert not unknown, f"STATUS names a banner that does not exist: {unknown}"
+
+
+def test_the_banner_travels_with_the_nav_so_no_page_can_lose_it():
+    """Both routes onto a page go through `nav_html`, so both carry the label.
+
+    The index writes its own template; the other three are post-processed by
+    `add_nav`. Checking the BUILT pages is the point — it is the only way to catch
+    a page that took the nav down one path and the banner down neither.
+    """
+    for name, path in built_pages():
+        body = path.read_text(encoding="utf-8")
+        kind = bs.STATUS[name]
+        badge, _ = bs.BANNERS[kind]
+        assert f'class="status {kind}"' in body, (
+            f"{name} carries a nav but no {kind} banner")
+        # the badge, minus any entity, actually reaches the reader
+        assert badge.split(";")[-1].strip() in body, f"{name} banner has no label"
+
+
+def test_the_viewers_hand_written_banner_matches_the_one_the_build_injects():
+    """The viewer is the one page the build may not touch, so its label is a copy.
+
+    `viewer.html` is published byte-for-byte from `docs/site/raster_viewer.html`
+    and `tests/test_lab_server.py` pins that, because the page promises the reader
+    it reaches nothing and a build that could rewrite it could break the promise.
+    That means its nav, its stamp and now its status bar are hand-written — and a
+    hand-written copy of a constant is a drift waiting to happen. This is the
+    thing that notices.
+    """
+    src = (ROOT / "docs" / "site" / "raster_viewer.html").read_text(encoding="utf-8")
+    assert bs.status_html("viewer.html").strip() in src, (
+        "the viewer's hand-written status bar no longer matches "
+        "build_site.BANNERS['wip'] — one of the two was edited alone")
+
+
+def test_running_the_build_twice_does_not_stack_two_banners():
+    """`add_nav` is a no-op on a page that already has a bar; prove the banner
+    inherits that rather than being appended on every rebuild."""
+    for name, path in built_pages():
+        if name == "index.html":
+            continue                    # written whole from the template each time
+        body = path.read_text(encoding="utf-8")
+        once = bs.add_nav(body, name)
+        assert once == body, f"{name} gained a second banner on rebuild"
+        assert body.count('class="status ') == 1, f"{name} has stacked banners"
+
+
+# --------------------------------------------------------------------------
 # The front page, checked from the template — no build required.
 # --------------------------------------------------------------------------
 
