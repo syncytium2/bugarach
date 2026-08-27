@@ -23,9 +23,10 @@ Reading it
   scanning down should meet the answer before the attempts. A bar spans
   ``onset → onset + width``: that is what the detector claimed. A **✕** marks a
   detection that matched no planted event (a false alarm), a **○** a duplicate
-  of one another detection already claimed. On the planted row, ▲ marks an event
-  some detector recovered and ▼ one every detector missed, with ▽ distractors
-  riding above.
+  of one another detection already claimed. On the planted row, a green ▼ marks
+  an event some detector recovered and a red ▼ one every detector missed, with ▽
+  distractors riding above. Every marker in this panel points **down**, at the
+  raster it is about.
 * **Raster** — one row per ROI, sorted quietest at the bottom, so coordination
   can be found as a vertical stripe when you zoom, rather than being scattered by
   store order — at page width the stripe is faint, and the interactive version is
@@ -229,12 +230,18 @@ def lane_panel(lanes: dict, *, ext, gt=None, tol_sec: float = 1.5,
                 found |= score_detections(gt, ev[0],
                                           widths=ev[1] if len(ev) > 1 else None,
                                           tol_sec=tol_sec).hits
-            for mask, colour, marker in ((found, FOUND, "triangle"),
-                                         (~found, MISSED, "inverted_triangle")):
+            # BOTH POINT DOWN. Every mark in this lane is an annotation on the
+            # raster underneath it, and an annotation points at the thing it
+            # annotates — the up-triangle over a recovered event pointed at the
+            # panel border (Tony, 2026-08-26). Recovered and missed are still
+            # told apart by colour, which is what told them apart already; the
+            # shape was carrying "look down here" for one and "look up there"
+            # for the other, and only one of those is true of either.
+            for mask, colour in ((found, FOUND), (~found, MISSED)):
                 if np.any(mask):
                     items.append(hv.Scatter(
                         (planted[mask], np.full(int(mask.sum()), y))
-                    ).opts(marker=marker, size=10, color=colour,
+                    ).opts(marker="inverted_triangle", size=10, color=colour,
                            line_color="white", line_width=1))
 
     yticks = [(ypos[n], TITLES.get(n, n)) for n in rows]
@@ -423,8 +430,8 @@ def _key(kind: str, colour: str, size: int = 16) -> str:
              f'stroke-linecap="round" fill="none"/>',
         "circle": f'<circle cx="{c}" cy="{c}" r="4.1" stroke="{colour}" '
                   f'stroke-width="1.5" fill="none"/>',
-        "triangle": f'<path d="M{c} {c-5}L{c+5} {c+3.8}L{c-5} {c+3.8}Z" '
-                    f'fill="{colour}" stroke="white" stroke-width="1"/>',
+        # No "triangle": nothing in these figures points up any more. See the
+        # marker block in `lane_panel` for why.
         "inverted": f'<path d="M{c} {c+5}L{c+5} {c-3.8}L{c-5} {c-3.8}Z" '
                     f'fill="{colour}" stroke="white" stroke-width="1"/>',
         "inverted_open": f'<path d="M{c} {c+4.6}L{c+4.6} {c-3.5}L{c-4.6} '
@@ -495,10 +502,12 @@ def legend_html(lanes: dict, gt=None, member_source: str | None = None) -> str:
          "detection already claimed (matching is one-to-one, so it is left over "
          "— fragmentation, not hallucination), or it sits closer to one of this "
          "detector's own hits than this figure can separate."),
-        (_key("triangle", FOUND),
-         "<b>Planted event, recovered</b> by at least one detector."),
+        (_key("inverted", FOUND),
+         "<b>Planted event, recovered</b> by at least one detector. Green, and "
+         "pointing down at the raster like everything else in that lane."),
         *([(_key("inverted", MISSED),
-            "<b>Planted event, missed</b> by all of them.")] if any_missed else []),
+            "<b>Planted event, missed</b> by all of them. Same shape, red — "
+            "the verdict is the colour.")] if any_missed else []),
         (_key("inverted_open", "#5a5a5a"),
          "<b>Distractor</b> — a correlated burst that is real coincidence but "
          "<b>not</b> a coordinated event."),

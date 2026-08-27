@@ -80,8 +80,12 @@ def build_k(enc, gt, scan, dt, bin_frames, width, ks=(3, 4, 6, 8)):
         if e.kind != "coordinated":
             continue
         if lo <= e.time <= hi:
+            # Above the trace, so it points down at it — CLAUDE.md, plot
+            # conventions. Not a raster, same reason: a marker riding over data
+            # is an annotation on the data, and an annotation points at its
+            # subject.
             ov = ov * hv.Scatter([(e.time, float(max(ks)) + 1.0)]).opts(
-                color=TRUTH, size=9, marker="triangle")
+                color=TRUTH, size=9, marker="inverted_triangle")
 
     # Headroom, explicitly. Auto-ranging cropped the K=6 and K=8 lines and the
     # planted-event markers straight out of the view, while the caption went on

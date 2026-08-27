@@ -141,7 +141,9 @@ def build(gen=None, width=980, out_dir: Path | None = None):
     # third category the caption never declares.
     ticks = hv.Scatter((planted, [sub.shape[0] + 1.6] * len(planted)),
                        kdims=["t"], vdims=["cell"]).opts(
-        marker="triangle", size=9, color="#1b7f3b")
+        # Down, at the raster it is about — CLAUDE.md, plot conventions. It is a
+        # solid green triangle against the distractors' open grey one below.
+        marker="inverted_triangle", size=9, color="#1b7f3b")
     # Distractors carry the project's existing convention — an open inverted
     # triangle in grey (`make_generator_figures.build`).
     dmark = hv.Scatter((distractors, [sub.shape[0] - 0.6] * len(distractors)),

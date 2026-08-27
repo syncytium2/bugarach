@@ -251,12 +251,13 @@ def build(param: str, seed: int, width: int):
                              name=_vlabel(param, value),
                              width=width, height=170)
         # planted times ticked along the top: the structure, separate from the
-        # background it is buried in
+        # background it is buried in — and pointing DOWN at the rows it is about,
+        # the same as the distractors below it (CLAUDE.md, plot conventions).
         if len(gt.times):
             panel = panel * hv.Scatter(
                 (gt.times, np.full(gt.times.size, n_roi - 0.5)),
                 kdims=["t"], vdims=["roi"]).opts(
-                marker="triangle", size=7, color="#1b7f3b", alpha=0.9)
+                marker="inverted_triangle", size=7, color="#1b7f3b", alpha=0.9)
         # opts go on AFTER the overlay, not before: overlaying returns a new
         # element whose options are its own, so a width/ylabel/hook set on the
         # raster is silently dropped. First render of this figure came out a
@@ -345,7 +346,7 @@ def main(argv=None):
                 f'<div style="font:13px/1.6 system-ui,sans-serif;max-width:1000px">'
                 f'<b style="font-size:15px">{param}</b> — {note}<br>'
                 f'<span style="color:#555">Everything else held. '
-                f'<span style="color:#1b7f3b">▲</span> planted event times · '
+                f'<span style="color:#1b7f3b">▼</span> planted event times · '
                 f'{distractor_key}'
                 f'every raster onset drawn the same · '
                 f'seed {args.seed}.</span></div>'),

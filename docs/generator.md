@@ -159,9 +159,10 @@ detections **outside the probe block**; F1 is their harmonic mean.
 ## Parameters
 
 Each figure shows one recording re-rendered across several values of a single
-knob. **▲** marks planted event times along the top — unconditioned here, since
-these figures run no detector — and **▽** marks distractors where a sweep plants
-any. **Every raster onset is drawn the same.** Read the marks along the top
+knob. A green **▼** marks planted event times along the top — unconditioned here,
+since these figures run no detector — and an open grey **▽** marks distractors
+where a sweep plants any — both pointing down, at the rows
+they are about. **Every raster onset is drawn the same.** Read the marks along the top
 against an unmarked raster: if the structure is not visible there, that is the
 finding, not a failure of the picture. (Why the rasters stopped being inked is in
 the corrections appendix.)
