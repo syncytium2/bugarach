@@ -588,9 +588,9 @@ LEAD_FIGURE = """<figure class="lead">
   separate. The bars are the windows the detectors called: most run under two
   seconds, which is about a pixel at this width, so they are hairlines; SCE bins
   at ten seconds and its bars are wider because they are.
-  The top lane is the ground truth:
-  <span class="key">&#9650;</span> an event some detector recovered,
-  <span class="key">&#9660;</span> one they all missed.
+  The top lane is the ground truth, and every mark in it points down at the
+  raster it is about: a green <span class="key">&#9660;</span> is an event some
+  detector recovered, a red <span class="key">&#9660;</span> one they all missed.
   The <span class="key">shaded block</span> fires at a higher rate but contains
   <b>no planted events</b>, so every bar inside it is a false alarm by
   construction — you can see which detectors take the bait.

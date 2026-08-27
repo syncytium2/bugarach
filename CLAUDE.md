@@ -94,6 +94,13 @@ F1 0.57 and here is the trace showing why" beats three paragraphs of mechanism.
   `make_benchmark_figures.py` broke it on the day the rule was written. **Sapper
   SAP009 fires on it**, and it works by naming — hold a raster in a variable
   called `raster` so the check can see it.
+  Two consequences of that down-pointing rule, learned the same day. **Shape is
+  spoken for**: it already means "look below", so it cannot also encode what a
+  mark *is* — recovered and missed are both ▼, green and red, and the verdict is
+  the colour. And it holds **above a trace** as well as above a raster, for the
+  same reason: a mark riding over data is an annotation on that data.
+  Not mechanized, and the reason is filed rather than skipped —
+  [`docs/sapper_feedback/2026-08-26-down-triangles-cannot-be-a-line-match.md`](docs/sapper_feedback/2026-08-26-down-triangles-cannot-be-a-line-match.md).
 
 ## Repo management — stop-on-a-dime, any machine, any OS
 

@@ -226,9 +226,11 @@ def build(cases: list[dict], width: int):
         planted_lane = []
         if c["truth"].size:
             vis = c["truth"][(c["truth"] >= VIEW[0]) & (c["truth"] <= VIEW[1])]
+            # Down, at the raster this lane sits above — CLAUDE.md, plot
+            # conventions.
             planted_lane = [hv.Scatter((vis, np.full(vis.size, -1.0))).opts(
-                marker="triangle", size=11, color=PLANTED, line_color=INK,
-                line_width=0.6)]
+                marker="inverted_triangle", size=11, color=PLANTED,
+                line_color=INK, line_width=0.6)]
 
         # NEVER the x-axis, on any lane. One axis per linked group and it belongs
         # to the bottom row (plot conventions); the first version gave it to the
@@ -238,7 +240,7 @@ def build(cases: list[dict], width: int):
             width=width, height=70, xlim=VIEW, ylim=(-2.0, 1.0),
             yaxis="bare", xaxis="bare", xlabel="",
             ylabel=("assessor calls" if not c["truth"].size
-                    else "calls · ▲ planted"),
+                    else "calls · ▼ planted"),
             fontsize={"ylabel": "9pt", "ticks": "8pt"},
             show_legend=False, toolbar=None, hooks=[_time_axis_hook])
 
@@ -285,7 +287,7 @@ planted. Calls are drawn in a lane <i>above</i> the data so the raster can be
 read without the answer over it.
 <span style="color:{SPURIOUS}"><b>Red</b></span> is a call with no planted event
 under it; <span style="color:{TRUE_C}"><b>green</b></span> is a call on one;
-<span style="color:{PLANTED}"><b>▲</b></span> marks a planted event.</p>
+<span style="color:{PLANTED}"><b>▼</b></span> marks a planted event.</p>
 
 <table style="border-collapse:collapse;font-size:12px">
 <tr style="border-bottom:1px solid #c8d6e4">

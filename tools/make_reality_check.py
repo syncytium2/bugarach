@@ -223,7 +223,7 @@ def build(args):
         f'matching tolerance — the widest a bar is allowed to be when its own '
         f'window is too narrow to draw, so that no bar can appear to cover an '
         f'event the scorer refused it. '
-        f'<span style="color:#1b7f3b">▲</span> <b>planted</b> — the truth, '
+        f'<span style="color:#1b7f3b">▼</span> <b>planted</b> — the truth, '
         f'which exists only below; <span style="color:#b3261e">▼</span> is one '
         f'LoCo did not call, <span style="color:#b3261e">✕</span> a call '
         f'with nothing planted within 1.5 s, and '
