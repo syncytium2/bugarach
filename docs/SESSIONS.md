@@ -1334,7 +1334,10 @@ session's work is not a sweep.
   rate does not. The bursty-at-low-rate route is unsimulated.
 
 ### Tonys-MacBook-Pro/rasters-stay-clean — nothing is ever drawn on the raster
-- **Status:** ACTIVE 2026-08-26. Claim released on merge.
+- **Status:** DONE 2026-08-26 — merged as PR #333, then one revision on top (down
+  triangles, below). **Darkroom claim released**: `benchmark_rasters.*` and
+  `benchmark_map.*` are written and are not being regenerated; both stems are free, and
+  so is the `2026-08-26-guard-and-the-benchmark/` folder.
 - **Writes:** `<darkroom>/bugarach/detector_history/benchmark_rasters.{png,html}` and
   `benchmark_map.{png,html}` — **two filename stems, both re-renders of my own from
   #328**, plus refreshed copies of the same two inside
@@ -1350,3 +1353,17 @@ session's work is not a sweep.
   because no figure had exceeded 1200 CSS px; the five-row raster figure did, and lost
   its last panel and its x-axis. Fixed by growing the viewport to the measured content.
   **If you have a figure that looks cut off, re-render it.**
+
+### Tonys-MacBook-Pro/cue-points-down — a cue lane's marker points at its own raster
+- **Status:** DONE 2026-08-26 — last change of the session. Claim released in this same
+  commit; nothing is held after it.
+- **Writes:** re-renders of `benchmark_rasters.*` and `benchmark_map.*` in
+  `<darkroom>/bugarach/detector_history/`, `benchmark_explainer.html` at the darkroom
+  root, and refreshed copies of all three in
+  `<darkroom>/bugarach/2026-08-26-guard-and-the-benchmark/`. **Same stems as #333, no
+  new ones, nothing else in the darkroom touched.**
+- **Reads:** the export folder `2026-08-20_pensub_revised_2v`, read-only, nothing filtered.
+- **Finding another session should know:** an up triangle in a cue lane **points at the
+  wrong raster.** The lane sits above the raster it describes, so a reader's eye is
+  walked to the panel above — which belongs to the previous recording. Down triangles.
+  Now in CLAUDE.md's plot conventions beside the no-drawing-on-the-raster rule.

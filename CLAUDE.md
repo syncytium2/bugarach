@@ -83,7 +83,10 @@ F1 0.57 and here is the trace showing why" beats three paragraphs of mechanism.
   and white**: one ink, one mark per event, nothing competing with it. Every
   detection, planted event, treatment window, anchor or other cue goes in a **lane
   above** it — symbols, or hashes where the cue needs rows — x-linked through the
-  shared `t` dimension. Identity and counts go in the panel's y-axis label or a
+  shared `t` dimension. **A directional marker in that lane points *down*, at the
+  raster it describes** (Tony, 2026-08-26): the lane sits above its own raster, so
+  an up triangle walks the reader's eye to the panel above, which belongs to the
+  previous recording. Identity and counts go in the panel's y-axis label or a
   text header outside the plot, **never as text laid over the marks**.
   `bugarach.ui.diagnostic.raster_panel` already refuses detection spans in its own
   docstring and `lane_panel` is what stacks above it; the way to break the rule is
