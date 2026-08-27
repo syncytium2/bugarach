@@ -21,8 +21,10 @@ routes into the tail became visible: dense-and-regular, and sparse-but-bursty.
 CLAUDE.md's plot conventions, and sapper SAP009. The raster is **black and white** —
 one ink, one mark per event, nothing competing with it. The coordinated events go in a
 **cue lane above** it: open circles for events a detector *found* on a real recording,
-filled triangles for events *planted* in a simulated one. Identity and counts go in a
-text header outside the plots.
+filled **down**-triangles for events *planted* in a simulated one — a lane sitting above
+its raster has to point *at* that raster, and an up triangle walks the eye to the panel
+above, which belongs to the previous recording. Identity and counts go in a text header
+outside the plots.
 
 An earlier version of this file drew both the cue marks and the labels straight onto
 the raster, which is what prompted the rule. On the two panels that mattered most — the
@@ -139,7 +141,11 @@ def cue_lane(row, ext, width):
     if ons.size:
         lane = lane * hv.Scatter(
             (ons, np.zeros(ons.size)), kdims=["t"], vdims=[ydim]).opts(
-            marker="triangle" if row["sim"] else "circle",
+            # DOWN triangle, not up. A cue lane sits above the raster it
+            # describes, so its marker has to point at that raster — an up
+            # triangle walks the reader's eye to the panel above, which belongs
+            # to the previous recording (Tony, 2026-08-26).
+            marker="inverted_triangle" if row["sim"] else "circle",
             size=9, color=SIM if row["sim"] else REAL,
             fill_alpha=1.0 if row["sim"] else 0.0, line_width=1.6)
     return lane.opts(width=width, height=34, xaxis=None, yaxis=None,
@@ -237,7 +243,7 @@ def main(argv=None) -> int:
             clean_raster(r, ext, a.width, last=(i == len(rows) - 1))))
     panes.append(pn.pane.HTML(
         f'<div style="font:400 11px/1.6 system-ui,sans-serif;color:{RULE};'
-        f'margin:8px 0 0 92px">&#9650; planted coordinated event '
+        f'margin:8px 0 0 92px">&#9660; planted coordinated event '
         f'&nbsp;&nbsp;&nbsp; &#9675; coordinated event a detector found'
         f'<br>the cue lane sits above each raster; the raster itself is the '
         f'recording and nothing else</div>', height=44, margin=0))
