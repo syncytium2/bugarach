@@ -201,6 +201,10 @@ checks pass, so nothing is blocked.
 place. It wants sending back to `syncytium2/murderboard` as a portability bug: a selftest
 that only passes in its home repo cannot tell a consumer whether vendoring worked.
 
+> **STILL OPEN, and it now lives where live things live:**
+> [`murderboard_revendor.py --selftest` is not portable](../todo/2026-08-26-murderboard-revendor-selftest-is-not-portable.md).
+> Re-checked 2026-08-26: both failures reproduce.
+
 ### 4. Two `SessionStart` hooks, and neither knows the other exists
 
 `.claude/settings.json` wires both `session_briefing.sh` and `session_start_trimmed.sh` on
@@ -211,6 +215,11 @@ all of it before the first user message. Both fit individually, so nothing warns
 Whether that total is worth ~14KB of every session's context is a judgement nobody has
 made — it accumulated. Worth settling before a third hook is added.
 
+> **STILL OPEN, and those two numbers have already moved** — 8,360B + 7,028B = 15,388B on
+> 2026-08-26, because both hooks report on live state and grow with the repo. A figure that
+> drifts is the clearest possible argument that it did not belong in a dated record:
+> [two SessionStart hooks and neither sees the total](../todo/2026-08-26-two-session-start-hooks-and-neither-sees-the-total.md).
+
 ---
 
 ## How to reproduce any of it
@@ -219,9 +228,18 @@ made — it accumulated. Worth settling before a third hook is added.
 bash tools/session_briefing.sh | wc -c                            # the number that matters
 bash tools/session_briefing.sh --selftest                         # every rung of the ladder
 BUGARACH_BRIEFING_BUDGET_BYTES=1 bash tools/session_briefing.sh   # the degraded form
-bash tools/guard_local_board.sh ; echo $?                         # 0 from an unclaimed worktree
+bash tools/guard_local_board.sh ; echo $?                         # NOW 1 — see below
 python3 tools/murderboard_revendor.py --root . --selftest
 ```
+
+> ⚠ **The board-guard line no longer reproduces, and that is the good news.** It was
+> offered as a demonstration of item 1: exit 0 from an unclaimed worktree, the gate waving
+> everything through. PR #324 anchored the match on the block heading, so it exits **1**
+> now and refuses correctly. A reader running the block as written would get a pass and
+> conclude the page was wrong about everything else — which is why a reproduce block for a
+> defect has to be retired along with the defect.
+>
+> The other four commands still do what they say.
 
 ## What this session did not do
 
