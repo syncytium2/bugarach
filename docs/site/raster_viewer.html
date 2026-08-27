@@ -363,6 +363,35 @@
      reader scanning for the slow ones must not find this in the same list. */
   .picks .off { color: var(--muted); font-size: 11px; font-style: italic; }
   .picks label:has(input:disabled) { opacity: 0.55; cursor: not-allowed; }
+  /* WHAT EACH SWEEP WILL SEARCH — one row per ticked detector, because the six
+     knobs are in six different units and a single from/to across them would be
+     three boxes meaning a different thing on every row. The detector's lane
+     colour repeats here, so the row, the tick above it and the block of results
+     below are recognisably the same detector. */
+  .ranges { margin-top: 6px; }
+  /* Wide enough for 99.9999 — LoCo's grid ends there, and a box that clips its
+     own value is a range control that cannot be read. */
+  .ranges .rg { display: grid;
+                grid-template-columns: minmax(0, 1fr) 76px 76px 42px;
+                gap: 4px 4px; align-items: center; margin-top: 4px; }
+  .ranges .rg.hd { margin-top: 2px; }
+  .ranges .rg.hd span { color: var(--muted); font-size: 11px; text-align: center; }
+  /* Two lines, because the rail is narrow and the knob's NAME is the half that
+     says what the boxes beside it will move. On one line it ellipsised to
+     "SCE …", which is the detector telling the reader nothing. */
+  .ranges .who { display: grid; grid-template-columns: auto minmax(0, 1fr);
+                 gap: 0 5px; align-items: center; font-size: 11.5px;
+                 color: var(--fg); min-width: 0; }
+  .ranges .who .dot { width: 9px; height: 9px; border-radius: 2px; flex: none; }
+  .ranges .who .kn { grid-column: 2; color: var(--muted); font-size: 11px;
+                     line-height: 1.25; }
+  /* 99.9999 is a real value of LoCo's knob and has to fit in the box that holds
+     it — a range control whose own number is clipped cannot be read. */
+  .ranges input[type="number"] { width: 100%; font-size: 12px; padding: 4px 5px; }
+  /* An edited row is marked, so "this sweep searched something other than what
+     the page ships with" is visible without comparing six numbers by eye. */
+  .ranges input.edited { border-color: var(--accent);
+                         box-shadow: inset 0 0 0 1px var(--accent); }
   #wins i { font-style: normal; color: var(--fg); }
   canvas { width: 100%; display: block; }
   /* the annotation stage: a header line, the candidate, then the verdict row */
@@ -851,6 +880,22 @@
              returns while you watch and one you wait out. -->
         <label>detectors</label>
         <div class="span picks" id="tPicks"></div>
+        <!-- HOW FAR EACH SWEEP LOOKS, which the panel could not say at all until
+             now. `pickOperatingPoint` refuses an answer at the end of the grid
+             and tells the reader to widen the range — and the range was six
+             literals in the registry with no control anywhere on the page, so
+             the advice could only be taken by editing the source. Tony hit it
+             tuning locust (2026-08-27): "the f1 plot says extend the sweep. i
+             don't see how. there's only match tolerance."
+
+             The boxes are filled from the grid the page ships with, and while
+             they still hold it the sweep uses that grid VERBATIM rather than
+             regenerating it. The shipped grids are not evenly spaced — locust's
+             90/95/98/99/99.5/99.9 crowds the tail on purpose — so regenerating
+             one from its endpoints would quietly move settings this project has
+             already fitted and published against. -->
+        <label>sweep range</label>
+        <div class="span ranges" id="tRanges"></div>
         <div class="span"><button id="runTune">Sweep</button></div>
         <div class="note" id="tuneWhat"></div>
         <div class="note nagnote" id="tuneUnchecked" hidden></div>
@@ -877,7 +922,16 @@
         <b>A best value at the end of the range is not a best value.</b> It is
         the sweep saying it stopped too early, and it is reported as that rather
         than as an answer — a boundary value has been published as a calibrated
-        setting before.
+        setting before. When it happens, that block offers to extend the grid
+        past the end it hit and sweep again; the sweep range boxes above are the
+        same thing done deliberately, before pressing Sweep.
+        <br><br>
+        <b>Each detector has exactly one swept setting, and the range boxes do
+        not change that.</b> The other settings are held wherever the Detect step
+        has them, so a sweep answers "what does this one knob do to <i>these</i>
+        settings" — not "what is the best this detector can do". A grid that
+        scores the same at every setting is that limit showing: the knob being
+        swept is not what decides the answer, and no width of range will help.
       </div>
     </details>
     <details class="acc" id="accDetect">
@@ -4120,11 +4174,15 @@ function pickOperatingPoint(curve) {
   const optimal = scored.filter(r => r.f1 >= best - 1e-9);
   const interior = optimal.filter(r => r !== scored[0] && r !== scored[scored.length - 1]);
   if (interior.length) return { row: interior[0], why: "" };
+  // WHICH end, carried out rather than only spoken: the block below offers to
+  // extend the grid in this direction, and re-deriving the direction from the
+  // row would have to re-do the "scored rows, not grid points" reasoning above.
   const end = optimal[0] === scored[0] ? "low" : "high";
-  return { row: null, edge: optimal[0], why:
+  return { row: null, edge: optimal[0], end, why:
     "F1 peaks at the " + end + " end of the grid, so this sweep found no "
     + "operating point — it was still climbing when it stopped. Widen the "
-    + "range before calling any of these a setting." };
+    + "range before calling any of these a setting — the sweep range boxes in "
+    + "the Tune panel are what set it." };
 }
 /* ---------- the assessment, in the browser -----------------------------------
    A port of `bugarach.assess`, which is itself a port of interface2's
@@ -7229,6 +7287,19 @@ function savedSettingsRows() {
       prov.fitted_n_folds = t.nFolds ?? null;
       prov.fitted_n_recordings = t.dataSetN ?? null;
       prov.fitted_held_out = t.heldOut ? "yes" : "no";
+      /* AND WHAT WAS SEARCHED TO FIND IT. The endpoints are not decoration: a
+         value chosen from six settings between 90 and 99.9 and the same value
+         chosen from nine between 90 and 99.99 are different claims, and since
+         the Tune panel's boxes can move the range, the file is where that
+         difference has to survive. `fitted_grid_default` says whether the range
+         was the one this page ships with — the sweep having run over a range
+         somebody typed is not a defect, but it is a thing a reader of the file
+         has to be able to see. */
+      prov.fitted_grid_from = t.gridFrom ?? null;
+      prov.fitted_grid_to = t.gridTo ?? null;
+      prov.fitted_grid_steps = t.gridN ?? null;
+      prov.fitted_grid_default = t.gridEdited === undefined ? null
+        : (t.gridEdited ? "no" : "yes");
       /* AND WHETHER THE GENERATOR IT WAS FITTED ON WAS EVER CHECKED. This is the
          file that crosses the gap: the sweep runs on invented recordings and the
          detector runs on real ones, and this row is the only thing that travels
@@ -7428,7 +7499,7 @@ const DETECTORS = {
        exists, or declared `fixed`. */
     params: { excessThresholdHz: "dThr", rateWin: "dRate", contextWin: "dCtx" },
     knob: { key: "excessThresholdHz", input: "dThr", name: "excess threshold", unit: "Hz",
-            grid: [0.5, 1, 2, 3, 4, 5, 6, 8] },
+            scale: "linear", grid: [0.5, 1, 2, 3, 4, 5, 6, 8] },
   },
   sce: {
     label: "SCE",
@@ -7444,7 +7515,7 @@ const DETECTORS = {
       + " shuffles · one bar per window · floor 3 ROIs",
     params: { binWidthSec: "sBin", thresholdPctile: "sPct", nSurrogates: "sSur" },
     knob: { key: "thresholdPctile", input: "sPct", name: "threshold percentile", unit: "",
-            grid: [90.0, 95.0, 98.0, 99.0, 99.5, 99.9] },
+            scale: "tail", grid: [90.0, 95.0, 98.0, 99.0, 99.5, 99.9] },
   },
   coact: {
     label: "CoactDetect",
@@ -7462,7 +7533,7 @@ const DETECTORS = {
     params: { intWinSec: "cWin", contextWinSec: "cCtx", alpha: "cAlpha",
               nSurrogates: "cSur" },
     knob: { key: "alpha", input: "cAlpha", name: "alpha", unit: "per bin",
-            grid: [1e-2, 1e-3, 1e-4, 1e-5, 1e-6, 1e-7] },
+            scale: "log", grid: [1e-2, 1e-3, 1e-4, 1e-5, 1e-6, 1e-7] },
   },
   loco: {
     label: "LoCo",
@@ -7480,7 +7551,7 @@ const DETECTORS = {
     params: { binWidthSec: "lBin", contextWinSec: "lCtx",
               thresholdPctile: "lPct", nSurrogates: "lSur" },
     knob: { key: "thresholdPctile", input: "lPct", name: "threshold percentile", unit: "",
-            grid: [99.0, 99.5, 99.9, 99.99, 99.999, 99.9999] },
+            scale: "tail", grid: [99.0, 99.5, 99.9, 99.99, 99.999, 99.9999] },
   },
   cicada: {
     label: "locust",
@@ -7536,7 +7607,7 @@ const DETECTORS = {
       + "at how many cells the strongest events actually carry before reading "
       + "anything into the count." : null,
     knob: { key: "scePercentile", input: "cPct", name: "SCE percentile", unit: "",
-            grid: [90.0, 95.0, 98.0, 99.0, 99.5, 99.9] },
+            scale: "tail", grid: [90.0, 95.0, 98.0, 99.0, 99.5, 99.9] },
   },
   sync: {
     label: "SPIKE-synch",
@@ -7589,7 +7660,7 @@ const DETECTORS = {
       + "stage knock rather than coordination. They are counted here and drawn "
       + "like the rest; deciding what to do with them is yours." : null,
     knob: { key: "CThreshold", input: "dC", name: "C to start an event", unit: "",
-            grid: [0.005, 0.01, 0.02, 0.04, 0.08, 0.12] },
+            scale: "log", grid: [0.005, 0.01, 0.02, 0.04, 0.08, 0.12] },
   },
 };
 
@@ -7943,6 +8014,250 @@ const DET_SLOW = new Set(["loco", "cicada"]);
   }
 }
 
+/* ---------- how far a sweep looks, and who gets to change it ----------------
+
+   The page used to refuse a best value at the end of the grid, tell the reader
+   to widen the range, and offer nothing that could widen it: the six grids were
+   literals in the registry above and the Tune panel's only input was the match
+   tolerance. Tony, 2026-08-27, tuning locust: *"the f1 plot says extend the
+   sweep. i don't see how."* Everything from here to `extendPlan` exists so that
+   the refusal names a move the reader can actually make. */
+
+/* HOW A GRID IS SPACED, which is a property of the knob and not of the reader.
+   A percentile is spaced by how far it reaches into the TAIL — the step from
+   99.9 to 99.99 is the same size as the step from 90 to 99 in the only sense
+   that matters here, which is how much of the surrogate distribution sits
+   beyond it. Alpha and the SPIKE-synch threshold move by factors. Only the rate
+   detector's excess is linear. Interpolate in the wrong one of these and most
+   of the new settings land where the old grid already answered. */
+const SCALE = {
+  linear: { to: v => v,                   from: u => u },
+  log:    { to: v => Math.log10(v),       from: u => Math.pow(10, u) },
+  tail:   { to: v => Math.log10(100 - v), from: u => 100 - Math.pow(10, u) },
+};
+const knobScale = knob => SCALE[knob.scale] || SCALE.linear;
+
+/* A KNOB'S LEGAL RANGE IS THE ONE ITS OWN CONTROL ACCEPTS — read off the
+   control rather than restated here. The `min`/`max` on each input and the
+   `clamp` in each detector's `read` are the same two numbers today, and a third
+   copy in this file would be the one that drifted. It matters because a setting
+   swept past those bounds is one the Detect step cannot hold: the sweep would
+   find it, the reader would apply it, and `read` would silently clamp it back
+   to something that was never scored. */
+function knobBounds(knob) {
+  const n = document.getElementById(knob.input);
+  return { lo: n && n.min !== "" ? Number(n.min) : -Infinity,
+           hi: n && n.max !== "" ? Number(n.max) : Infinity };
+}
+
+/* A generated setting, rounded to something a person can read and retype: three
+   figures of the TAIL for a percentile, so 99.99372895 comes back as 99.9937
+   rather than as a number nobody would type into the box below. */
+function roundKnob(knob, v) {
+  if (!Number.isFinite(v)) return v;
+  if (knob.scale === "tail") {
+    const t = 100 - v;
+    if (!(t > 0)) return v;
+    const dp = Math.min(9, Math.max(0, 2 - Math.floor(Math.log10(t))));
+    return Number((100 - Number(t.toFixed(dp))).toFixed(dp));
+  }
+  return Number(v.toPrecision(knob.scale === "log" ? 3 : 4));
+}
+
+/* `n` settings from `from` to `to`, spaced the way this knob is spaced and
+   ORDERED THE WAY IT WAS ASKED FOR. Direction is not cosmetic: CoactDetect's
+   shipped grid runs 1e-2 down to 1e-7, loosest first, and every other one runs
+   the other way. Sorting them all ascending would have flipped that detector's
+   table, and with it which end `pickOperatingPoint` calls the low one.
+
+   Deduplicated after rounding, because two neighbours can round together at a
+   wide `n` — which is why a sweep sometimes reports fewer settings than were
+   asked for rather than scoring the same one twice and drawing it as two. */
+function makeGrid(knob, from, to, n) {
+  const s = knobScale(knob);
+  const a = s.to(from), b = s.to(to);
+  const out = [];
+  for (let i = 0; i < n; i++)
+    out.push(roundKnob(knob, s.from(n === 1 ? a : a + (b - a) * i / (n - 1))));
+  return [...new Set(out.filter(Number.isFinite))];
+}
+
+/* WHAT THE READER ASKED FOR, and nothing at all when they have not asked. An
+   entry appears here only while the boxes differ from the grid this page ships
+   with, so `sweepGrid` can hand back the shipped array untouched in the
+   ordinary case. That is the point rather than an optimisation: the shipped
+   grids are deliberately uneven — locust's 90/95/98/99/99.5/99.9 crowds the
+   tail — and regenerating one from its own endpoints would move settings this
+   project has already fitted and published against. */
+const SWEEP_RANGE = {};
+
+/* THE RANGE IS DIRECTIONAL — "from" is where the grid starts and "to" is where
+   it ends, not the smaller and the larger. For five of the six that is the same
+   thing; CoactDetect's alpha runs from 1e-2 down to 1e-7, and a box labelled
+   "from" holding the smaller number would be describing a sweep that detector
+   has never run. */
+const RANGE_PARTS = ["from", "to", "n"];
+const defaultRange = which => {
+  const g = DETECTORS[which].knob.grid;
+  return { from: g[0], to: g[g.length - 1], n: g.length };
+};
+const rangeId = (which, part) => "tRange_" + which + "_" + part;
+const sameRange = (a, b) => a.from === b.from && a.to === b.to && a.n === b.n;
+
+/* What the boxes currently ask for, bounds applied. Out-of-bounds ends are
+   pulled back rather than refused, because the bound is the detector's and a
+   reader reaching past it has asked for the furthest thing there is; `n` is
+   capped because the two slow detectors cost seconds per setting and a mistyped
+   400 would be indistinguishable from a hung page. */
+function readRange(which) {
+  const knob = DETECTORS[which].knob, b = knobBounds(knob);
+  const dflt = defaultRange(which);
+  const num = (part, fallback) => {
+    const node = document.getElementById(rangeId(which, part));
+    const v = node ? Number(node.value) : NaN;
+    return Number.isFinite(v) ? v : fallback;
+  };
+  return { from: clamp(num("from", dflt.from), b.lo, b.hi),
+           to: clamp(num("to", dflt.to), b.lo, b.hi),
+           n: Math.round(clamp(num("n", dflt.n), 1, 40)) };
+}
+
+/** The grid one detector will be swept over — the shipped one unless the reader
+    has moved a box. */
+function sweepGrid(which) {
+  const r = SWEEP_RANGE[which];
+  return r ? makeGrid(DETECTORS[which].knob, r.from, r.to, r.n)
+           : DETECTORS[which].knob.grid;
+}
+
+/** Whether this detector's sweep is searching something other than the shipped
+    range — the one fact the results block has to carry, since an F1 curve says
+    nothing about where its own endpoints came from. */
+const rangeEdited = which => !!SWEEP_RANGE[which];
+
+function markRangeEdited(which) {
+  for (const part of RANGE_PARTS) {
+    const node = document.getElementById(rangeId(which, part));
+    if (node) node.classList.toggle("edited", rangeEdited(which));
+  }
+}
+
+function noteRangeEdit(which) {
+  const r = readRange(which);
+  if (sameRange(r, defaultRange(which))) delete SWEEP_RANGE[which];
+  else SWEEP_RANGE[which] = r;
+  markRangeEdited(which);
+  paintTuneWhat();
+}
+
+/** Put a range into the boxes AND into the state, so the panel and the next
+    sweep cannot disagree about what is being searched. */
+function setRangeFields(which, r) {
+  if (sameRange(r, defaultRange(which))) delete SWEEP_RANGE[which];
+  else SWEEP_RANGE[which] = { from: r.from, to: r.to, n: r.n };
+  for (const part of RANGE_PARTS) {
+    const node = document.getElementById(rangeId(which, part));
+    if (node) node.value = String(r[part]);
+  }
+  markRangeEdited(which);
+}
+
+/* ONE ROW PER TICKED DETECTOR, rebuilt whenever the ticks change. Typed values
+   survive the rebuild because they live in `SWEEP_RANGE` and not in the boxes —
+   unticking a detector to time a cheaper sweep must not throw away the range
+   you were in the middle of choosing for it. */
+function paintRanges() {
+  const box = document.getElementById("tRanges");
+  if (!box) return;
+  box.textContent = "";
+  const picks = sweptDetectors();
+  if (!picks.length) return;
+  const head = document.createElement("div");
+  head.className = "rg hd";
+  head.append(el("span", ""), el("span", "from"), el("span", "to"),
+              el("span", "steps"));
+  box.append(head);
+  for (const which of picks) {
+    const knob = DETECTORS[which].knob, b = knobBounds(knob);
+    const r = SWEEP_RANGE[which] || defaultRange(which);
+    const row = document.createElement("div");
+    row.className = "rg";
+    const who = document.createElement("span");
+    who.className = "who";
+    const dot = document.createElement("span");
+    dot.className = "dot";
+    dot.style.background = DET_COLORS[which] || "";
+    who.append(dot, el("span", DETECTORS[which].label, "nm"),
+               el("span", knob.name + (knob.unit ? " (" + knob.unit + ")" : ""),
+                  "kn"));
+    row.append(who);
+    for (const part of RANGE_PARTS) {
+      const inp = document.createElement("input");
+      inp.type = "number";
+      inp.id = rangeId(which, part);
+      if (part === "n") {
+        inp.min = "1"; inp.max = "40"; inp.step = "1";
+        inp.title = "how many settings to try between from and to. "
+                  + DETECTORS[which].label + " is scored once per setting on "
+                  + "every simulated recording, so this is what the sweep costs.";
+      } else {
+        if (Number.isFinite(b.lo)) inp.min = String(b.lo);
+        if (Number.isFinite(b.hi)) inp.max = String(b.hi);
+        inp.step = "any";
+        inp.title = knob.name + " between " + b.lo + " and " + b.hi
+                  + " — the range " + DETECTORS[which].label + " itself accepts. "
+                  + "A value outside it is pulled back to the edge, because a "
+                  + "setting the Detect step cannot hold is not one worth "
+                  + "scoring.";
+      }
+      inp.value = String(r[part]);
+      inp.addEventListener("input", () => { clearTune(); noteRangeEdit(which); });
+      row.append(inp);
+    }
+    box.append(row);
+    markRangeEdited(which);
+  }
+}
+
+/* EXTENDING PAST THE END THE SWEEP HIT. `pickOperatingPoint` refuses a best
+   value at the edge of a grid — that is the search saying it stopped too early,
+   and a boundary value has been published as a calibrated setting before — and
+   this is the offer that follows it: keep the spacing the grid already had, go
+   three more steps in the direction it was still climbing, stop at the last
+   value the detector will accept.
+
+   It reports `room: false` instead of a one-step extension when the grid
+   already reaches that bound. Locust is the case that made this necessary: its
+   grid ends at 99.9 and its control accepts 99.99, so there is exactly one
+   notch above and a reader deserves to be told that before spending seven
+   seconds a setting to find out. */
+function extendPlan(which, grid, end) {
+  const knob = DETECTORS[which].knob, b = knobBounds(knob), s = knobScale(knob);
+  const more = 3;
+  /* `end` names a POSITION in the grid, not a size — "low" is the row the table
+     starts with. For CoactDetect, whose grid runs 1e-2 down to 1e-7, the row it
+     starts with holds the LARGEST alpha, so which of the detector's two bounds
+     to push against is decided by comparing the two ends' values, never by the
+     word. */
+  const at = end === "low" ? grid[0] : grid[grid.length - 1];
+  const other = end === "low" ? grid[grid.length - 1] : grid[0];
+  const up = at > other;                    // extending upward in value?
+  const bound = up ? b.hi : b.lo;
+  if (!Number.isFinite(bound) || Math.abs(at - bound) <= 1e-12)
+    return { room: false, bound, at };
+  const step = grid.length > 1
+    ? Math.abs(s.to(grid[grid.length - 1]) - s.to(grid[0])) / (grid.length - 1)
+    : Math.abs(s.to(bound) - s.to(at)) / more;
+  const away = s.to(at) > s.to(other) ? 1 : -1;
+  let edge = roundKnob(knob, s.from(s.to(at) + away * more * step));
+  edge = up ? Math.min(edge, b.hi) : Math.max(edge, b.lo);
+  if (up ? !(edge > at) : !(edge < at)) return { room: false, bound, at };
+  return { room: true, bound, at, up,
+           from: end === "low" ? edge : grid[0],
+           to: end === "low" ? grid[grid.length - 1] : edge,
+           n: grid.length + more };
+}
+
 /* THE SAME LIST AGAIN, FOR THE SWEEP — and deliberately a second list rather
    than a shared one.
 
@@ -7966,7 +8281,8 @@ const DET_SLOW = new Set(["loco", "cicada"]);
     cb.type = "checkbox"; cb.id = "tPick_" + k;
     cb.checked = DET_DEFAULT_ON.includes(k) && !offReason(k);
     if (offReason(k)) { cb.disabled = true; lab.title = offReason(k); }
-    cb.addEventListener("change", () => { clearTune(); paintTuneWhat(); });
+    cb.addEventListener("change",
+                        () => { clearTune(); paintRanges(); paintTuneWhat(); });
     const dot = document.createElement("span");
     dot.className = "dot";
     dot.style.background = DET_COLORS[k] || "";
@@ -7975,6 +8291,7 @@ const DET_SLOW = new Set(["loco", "cicada"]);
     if (offReason(k)) lab.append(el("span", "off in this build", "off"));
     box.append(lab);
   }
+  paintRanges();
 }
 
 /** Which detectors the sweep will visit — registry order, never tick order, so
@@ -8035,9 +8352,17 @@ function paintTuneWhat() {
     : !picks.length
       ? "No detector is ticked, so there is nothing to sweep. Tick at least one "
         + "above."
-      : "Sweeps " + picks.map(k => DETECTORS[k].label + "'s "
-            + DETECTORS[k].knob.name + " over " + DETECTORS[k].knob.grid.length
-            + " values").join(", ")
+      /* NAMES THE RANGE, not just the count. Since the boxes above can move it,
+         "over 6 values" no longer identifies what is about to run — and the
+         reader who just widened one is precisely the reader who needs to see it
+         confirmed before paying for the sweep. */
+      : "Sweeps " + picks.map(k => {
+            const g = sweepGrid(k);
+            return DETECTORS[k].label + "'s " + DETECTORS[k].knob.name + " over "
+              + g.length + " values from " + fmtKnob(g[0]) + " to "
+              + fmtKnob(g[g.length - 1])
+              + (rangeEdited(k) ? " (range edited)" : "");
+          }).join(", ")
         + ", holding their other settings at what the Detect section has, and "
         + "scores each against the " + truth.times.length + " events planted in "
         + "this recording."
@@ -8293,6 +8618,12 @@ async function scoreAllDetectors() {
         continue;
       }
       const knob = D.knob;
+      /* THE SHIPPED GRID, DELIBERATELY — this one table does not follow the Tune
+         panel's range boxes. Its whole claim is that six detectors met the same
+         corpus and the same folds; letting one of them be searched over a range
+         a reader had just widened for a different purpose would put a wider
+         search in one row and call the comparison fair. A range worth comparing
+         on belongs in the registry, where every row gets it. */
       const base = D.read(dataSet[0].dt);
       const t0 = performance.now();
       const scored = new Map();
@@ -8542,6 +8873,22 @@ async function sweepDetector(which, dataSet, tol, onPoint) {
     const bad = dataSet.find(c => c.peaks && c.peaks.why);
     if (bad) return { which, refusal: bad.peaks.why };
   }
+  /* WHAT THIS SWEEP SEARCHES, decided once and carried in the result. Everything
+     downstream — the curve, the folds, the table header, the provenance on the
+     setting if it is applied — reads this array rather than the registry, so a
+     block on screen cannot describe a range other than the one it was measured
+     over. */
+  const grid = sweepGrid(which);
+  /* One setting is not a sweep. `pickOperatingPoint` would hand back its only
+     row as an operating point — true, and with nothing on either side of it to
+     say the peak was bracketed, which is the whole thing this panel refuses to
+     do. */
+  if (grid.length < 2)
+    return { which, refusalHead: D.label + " has no range to sweep",
+             refusal: "The sweep range for " + D.label + "'s " + knob.name
+      + " covers one setting" + (grid.length ? " (" + fmtKnob(grid[0]) + ")" : "")
+      + ", so there is nothing to compare it with. Widen the range, or ask for "
+      + "more steps across it." };
   const base = D.read(dataSet[0].dt);
 
   /* Score every recording at every setting ONCE, then reuse. The folds below
@@ -8550,9 +8897,9 @@ async function sweepDetector(which, dataSet, tol, onPoint) {
      different runs of the same detector. */
   const scored = new Map();          // knob value -> per-recording scores
   const rows = [];
-  for (let i = 0; i < knob.grid.length; i++) {
-    const v = knob.grid[i];
-    if (onPoint) onPoint(i, knob.grid.length);
+  for (let i = 0; i < grid.length; i++) {
+    const v = grid[i];
+    if (onPoint) onPoint(i, grid.length);
     const per = dataSet.map(c =>
       sweepPoint(c.trains, c.range, which, base, knob, v, c.truth, tol, c.peaks));
     scored.set(v, per);
@@ -8570,7 +8917,7 @@ async function sweepDetector(which, dataSet, tol, onPoint) {
   if (split) {
     for (let f = 0; f < split.nFolds; f++) {
       const tr = split.train(f), te = split.test(f);
-      const trainRows = knob.grid.map(v =>
+      const trainRows = grid.map(v =>
         tunePool(tr.map(i => scored.get(v)[i]),
                  { detector: which, knobValue: v, tolSec: tol, seeds: tr }));
       const chosen = pickOperatingPoint(trainRows);
@@ -8586,7 +8933,8 @@ async function sweepDetector(which, dataSet, tol, onPoint) {
       await new Promise(r => setTimeout(r, 0));
     }
   }
-  return { which, rows, folds, split, pick: pickOperatingPoint(rows) };
+  return { which, grid, rows, folds, split, edited: rangeEdited(which),
+           pick: pickOperatingPoint(rows) };
 }
 
 async function runTune() {
@@ -8670,7 +9018,13 @@ async function runTune() {
       await new Promise(r => setTimeout(r, 0));
       const out = await sweepDetector(which, dataSet, tol,
                                       (pt, nPt) => say(i, which, pt, nPt));
-      paintSweepBlock(box, out, dataSet, tol, levels, picks.length > 1);
+      /* Each detector's results get their own container, so an extend-and-sweep
+         inside one block can replace that block and leave the rest of the run
+         standing. Appending straight into `box` made every block one flat run of
+         nodes with nothing to address. */
+      const sub = document.createElement("div");
+      box.append(sub);
+      paintSweepBlock(sub, out, dataSet, tol, levels, picks.length > 1);
     }
     if (note)
       note.textContent = "swept " + picks.length + " detector"
@@ -8689,18 +9043,55 @@ async function runTune() {
   }
 }
 
+/* ONE DETECTOR RE-SWEPT OVER A WIDER RANGE, in place. Only the detector whose
+   block was clicked: the other blocks on screen are still true, and re-running
+   all of them to widen one would charge the reader for LoCo and locust to move
+   RateDetect's endpoint.
+
+   The new range goes into the Tune panel's boxes as well as into this run, so
+   the panel keeps describing what actually ran and a second press of Sweep
+   repeats it rather than quietly reverting to the shipped grid. */
+async function extendAndResweep(which, plan, btn, box, dataSet, tol, levels,
+                                several) {
+  if (TUNE_RUNNING) return;
+  setRangeFields(which, { from: plan.from, to: plan.to, n: plan.n });
+  TUNE_RUNNING = true;
+  btn.disabled = true;
+  const was = btn.textContent;
+  try {
+    const out = await sweepDetector(which, dataSet, tol, (pt, nPt) => {
+      btn.textContent = "sweeping… " + (pt + 1) + "/" + nPt;
+    });
+    box.textContent = "";
+    paintSweepBlock(box, out, dataSet, tol, levels, several);
+  } catch (e) {
+    btn.textContent = was;
+    btn.disabled = false;
+    box.append(el("p", "The extended sweep did not finish: " + e, "verdict bad"));
+  } finally {
+    TUNE_RUNNING = false;
+    paintTuneWhat();
+  }
+}
+
 /* ONE DETECTOR'S SWEEP, drawn. Everything below was `runTune`'s tail; it moved
    out unchanged so that a run of six prints six of exactly what a run of one
-   used to print, rather than a summary that has quietly dropped the caveats. */
+   used to print, rather than a summary that has quietly dropped the caveats.
+
+   `box` IS THIS DETECTOR'S OWN CONTAINER, not the whole panel — `runTune` gives
+   each detector a div of its own so a re-sweep can replace one block without
+   redrawing the other five. */
 function paintSweepBlock(box, out, dataSet, tol, levels, several) {
   const which = out.which;
   const D = DETECTORS[which], knob = D.knob, label = D.label;
   if (out.refusal) {
-    box.append(el("h5", label + " cannot be swept on this folder"));
+    box.append(el("h5", out.refusalHead
+      || (label + " cannot be swept on this folder")));
     box.append(el("p", out.refusal, "verdict bad"));
     return;
   }
   const { rows, folds, split, pick } = out;
+  const grid = out.grid || knob.grid;
   {
     const nPlanted = rows.length ? rows[0].nPlanted : 0;
     if (several) {
@@ -8711,7 +9102,14 @@ function paintSweepBlock(box, out, dataSet, tol, levels, several) {
       h.append(dot, document.createTextNode(" " + label));
       box.append(h);
     }
-    box.append(el("p", knob.grid.length + " settings tried · " + knob.name
+    /* THE RANGE IS PART OF THE RESULT, not a setting of the panel. A curve read
+       a week later has to say what was searched — the endpoints are what decide
+       whether "F1 peaks at 99.9" is a measurement or an artefact of stopping
+       there — and since the boxes above can move them, the count alone no
+       longer identifies the run. */
+    box.append(el("p", grid.length + " settings tried · " + knob.name
+      + " from " + fmtKnob(grid[0]) + " to " + fmtKnob(grid[grid.length - 1])
+      + (out.edited ? " (range edited)" : "")
       + " · matched within " + tol + " s of a planted event · "
       + nPlanted + " planted"
       + (split ? " · " + split.nFolds + " folds" : "")
@@ -8796,6 +9194,13 @@ function paintSweepBlock(box, out, dataSet, tol, levels, several) {
         f1: heldMean === null ? pick.row.f1 : heldMean,
         heldOut: heldMean !== null,
         nFolds: held.length, dataSetN: dataSet.length, tolSec: tol,
+        /* THE RANGE TRAVELS WITH THE NUMBER, into the settings file and out of
+           it. "99.9, the best of six between 90 and 99.9" and "99.9, the best of
+           nine between 90 and 99.99" are different claims about the same value,
+           and once the reader can move the endpoints the file is the only place
+           that difference survives. */
+        gridFrom: grid[0], gridTo: grid[grid.length - 1], gridN: grid.length,
+        gridEdited: !!out.edited,
       });
       apply.append(go, document.createTextNode(
         " — sets " + knob.name + " to " + fmtKnob(pick.row.knob)
@@ -8806,6 +9211,51 @@ function paintSweepBlock(box, out, dataSet, tol, levels, several) {
       box.append(apply);
     } else {
       box.append(el("p", pick.why, "verdict bad"));
+      /* THE ADVICE, WITH A BUTTON UNDER IT. `pick.why` has always ended "widen
+         the range before calling any of these a setting", and until now the page
+         offered nothing that could widen it — the grid was a literal in the
+         registry, so the only reader who could act on that sentence was one
+         editing the source. Offered ONLY for the edge refusal: a degenerate
+         sweep says so in its own words, and widening a grid whose every setting
+         already ties is the one move that certainly will not help.
+
+         The re-sweep replaces this block in place rather than appending a
+         second one, so what is on screen is the last thing that ran. */
+      if (pick.edge && !pick.degenerate) {
+        const end = pick.end === "low" ? "low" : "high";
+        const plan = extendPlan(which, grid, end);
+        /* "past", not "above" — the end of CoactDetect's grid is its SMALLEST
+           alpha, and a button offering to go above it would be pointing the
+           wrong way for exactly one of the six. */
+        const where = "past " + fmtKnob(plan.at);
+        if (!plan.room) {
+          box.append(el("p", "There is no room to widen it: " + label
+            + " accepts " + knob.name + " no further than " + fmtKnob(plan.bound)
+            + ", and the grid already reaches it. The peak is against the "
+            + "detector's own limit, not against a range that can be extended — "
+            + "so the thing to move is one of its other settings, in the Detect "
+            + "step, and this knob will not settle until that changes.",
+            "caveat"));
+        } else {
+          const wrap = document.createElement("p");
+          wrap.className = "caveat";
+          const btn2 = document.createElement("button");
+          btn2.textContent = "Extend " + where + " and sweep again";
+          btn2.style.width = "auto";
+          btn2.onclick = () => extendAndResweep(
+            which, plan, btn2, box, dataSet, tol, levels, several);
+          wrap.append(btn2, document.createTextNode(
+            " — searches " + knob.name + " from " + fmtKnob(plan.from) + " to "
+            + fmtKnob(plan.to) + " across " + plan.n + " settings"
+            + (Math.abs(plan[end === "low" ? "from" : "to"] - plan.bound) <= 1e-12
+                ? ", which is as far as " + label + " will go"
+                : "")
+            + ". The boxes in the Tune panel move with it, so this is the same "
+            + "range you could have typed — and " + label + " is scored again at "
+            + "every setting, including the ones already on this table."));
+          box.append(wrap);
+        }
+      }
     }
 
     /* THE TABLE ABOVE IS IN-SAMPLE AND HAS TO SAY SO. Every row of it chose its
