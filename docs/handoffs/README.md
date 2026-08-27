@@ -39,6 +39,23 @@ The rule was missing a third option. This is it.
 - **Do not edit the body.** A handoff is a record of what one session knew at one
   moment; correcting it in place turns a dated account into an undated claim. If
   something in it has since been settled, say so in the header.
+- **Open items leave for `docs/todo/` when the handoff moves here.** This is the rule
+  the one above needs in order to be workable, and it was missing.
+  `2026-08-25-the-session-hooks.md` arrived carrying four numbered open items. Two were
+  fixed within a day, and closing them meant adding twenty-one lines **inside the body**
+  of a file whose rule says not to — because a `DONE` marker for item 2 of 4 cannot go in
+  the header. The session that did it was right and the rule was wrong: a dated record
+  and a live queue are different objects, and that file was being both. Its own closing
+  commit named the cost — *"nothing rereads a handoff's own open list"* — and by then
+  item 1's reproduce command had quietly stopped reproducing and item 4's byte counts had
+  drifted from 14KB to 15KB, with nothing in either case to notice.
+  **A todo gets reread**: the session briefing counts `docs/todo/` at every start and
+  reads `waiting-on-tony` out loud. A handoff is read once, by whoever was told to.
+  Leave a pointer in the handoff so the record still says what was owed.
+- **A reproduce block retires with the defect it reproduces.** Commands in a handoff are
+  offered as demonstrations of something being wrong; once it is fixed they demonstrate
+  the opposite, and a reader who runs one and gets a pass concludes the page is wrong
+  about everything else. Strike the line, or say what it does now and why.
 - **Rewrite the relative link paths, and only those.** A handoff is written at the
   repo root, so it links `docs/todo/x.md`. From here that resolves to
   `docs/handoffs/docs/todo/x.md` and every one of them is dead. Rewriting
