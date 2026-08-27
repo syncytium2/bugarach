@@ -60,6 +60,28 @@ Template:
 
 ## Active
 
+### Tonys-MacBook-Pro/deploy-0826 — redeploy, so the lanes on the live page stop over-claiming
+- **Status:** DONE 2026-08-26 — deployed and verified; **DEPLOY RELEASED.** Version
+  `f80b6619-5a41-4c04-a391-c8e05120d4d5`, built from `e83e8ec`. Six files changed at the
+  edge, the same six as this morning. `tools/site_staleness.py` says **current**.
+- **Started:** 2026-08-26 (second deploy of the day)
+- **Writes:** `bugarach.tonydefazio.com` and `site/` (gitignored). Nothing in the darkroom,
+  no store, no export folder.
+- **Claims:** ~~the site deploy~~ — **released.** Port 5096 released, and the process ended
+  this time (see the block below for why that sentence is here).
+- **Notes:** Authorised by Tony in words ("redeploy"), after PR #327 fixed what the lanes
+  were claiming. What changed for a reader: a detection's bar used to be floored at 0.2% of
+  the record — 3.6 s against a 1.5 s matching tolerance — so five of six detectors drew
+  every call wider than the window it is scored in, and bars visibly covered planted events
+  the same figure marked as false alarms. Bars are now capped at the tolerance, and a false
+  alarm the figure cannot separate from one of its own detector's hits takes the duplicate
+  ring instead of the ✕. **No score moved**; only what the picture asserts.
+  **The deploy took `origin/main` whole, not just #327**: four other PRs (#328–#331) landed
+  while it was in flight. The version above is `e83e8ec`, not `bdf0b60`.
+  **The deploy worktree had to be rebuilt** — `merge_when_green` reaped the last one along
+  with its `node_modules`, so this deploy began with `npm install`. Worth a minute of
+  someone's day: the reaper does not know the deploy worktree is furniture.
+
 ### Tonys-MacBook-Pro/deploy-the-site — the live page leads with the figure now
 - **Status:** DONE 2026-08-26 — deployed and verified; **DEPLOY RELEASED.** Version
   `1403a88f-75c8-4c38-b852-ee2f16c26aef`, built from `8b307a3`, six files changed at the
