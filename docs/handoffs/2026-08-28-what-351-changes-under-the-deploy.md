@@ -82,9 +82,12 @@ setting, so the clamp multiplies by sweep size rather than costing a flat delay:
 | locust, 6 settings | 8 | 4.2 s | ~8 s | ~8 min |
 | RateDetect, 8 settings | 13 | 0.1 s | ~13 s | ~13 min |
 
-Three simulated recordings of 30 min, 40 ROI. (*locust* is this project's port of
-the CICADA detector; it and LoCo are the two slow ones, together about 97% of a
-six-detector sweep's wall clock.) Measured after the change:
+Three simulated recordings of 30 min, 40 ROI. (*locust* is **derived from the
+Cossart lab's CICADA and is not CICADA** — it is fed this project's own detected
+events, and paints each cell active for the rise interval where the original
+paints the whole transient duration. It and LoCo are the two slow detectors,
+together about 97% of a six-detector sweep's wall clock.) Measured after the
+change:
 instrumented **timer** yields for the LoCo case went **25 → 0**, and the
 foreground got slightly faster (10.1 s → 9.7 s), with every other detector inside
 noise.
