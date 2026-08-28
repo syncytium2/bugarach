@@ -227,7 +227,18 @@ sets out.
   from. bugarach's *context window* is a reference window.
 - **guard cells / guard interval** — reference cells immediately around the cell
   under test, **excluded** so the event cannot inflate the threshold it must
-  clear. **bugarach has none**; that absence is the finding.
+  clear. This entry read *"bugarach has none; that absence is the finding"* until
+  2026-08-28, and was true for one day: guard cells landed on the two surrogate
+  detectors the morning after it was written (`a15f5e3`). **Three of the six now
+  take a `guard_sec`** — CoactDetect, LoCo and rate+context — and it defaults to
+  `0.0` on all three, with no operating point in `bench.OPERATING_POINTS` setting
+  it. So the capability exists and **nothing ships with it on**, which is a
+  different statement from either "has none" or "has them"; say which one you
+  mean. Where it lands and what it costs:
+  [`docs/reviews/guard_prior_art_2026-08-26.md`](reviews/guard_prior_art_2026-08-26.md).
+  **Not to be confused with a `clamp`**, which bounds a *fitted parameter* to a
+  range in `learn/nets.py`. A guard excludes data from a background estimate; a
+  clamp bounds a number during fitting. Different objects, different stage.
 - **self-masking / mutual masking** — an event raising its own bar; a second
   event inside the reference window raising it further.
 - **greatest-of / ordered-statistic selection** — combination rules for the
