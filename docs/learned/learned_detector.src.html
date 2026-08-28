@@ -63,7 +63,7 @@ th.n { text-align: right; font-family: var(--mono);
 <div class="wrap">
 <div class="col">
   <p class="eyebrow">bugarach &middot; the learned detector</p>
-  <h1>Nobody labeled the data, so the benchmark had to be built first.</h1>
+  <h1>Nobody can label the data, so the benchmark had to be built first.</h1>
   <p class="standfirst">
     A pipeline that measures real recordings, simulates a data set with the answers
     planted in it, and scores every detector against the same truth on the same
@@ -107,17 +107,32 @@ th.n { text-align: right; font-family: var(--mono);
     Training a network to answer it instead runs into the thing that makes the
     neighboring fields tractable and this one not. Sleep-EEG spindle detectors,
     hippocampal ripple detectors and clinical-EEG discharge detectors predominantly
-    learn from events a human expert marked. <strong>There is no expert-labeled data
-    set of coordinated calcium events.</strong> The nearest is DeepCINAC's
-    four-expert corpus, which labels when a <em>cell</em> fired, not when the group
-    did. There is no consensus rule to imitate either &mdash; the six detectors
-    disagree with each other, which is the reason this project exists.
+    learn from events a human expert marked.
   </p>
   <p>
-    So a detector can only be scored against another detector's opinion, which
-    measures agreement rather than correctness. The way out is to
-    <em>manufacture</em> the truth, and to manufacture it from the lab's own
-    recordings so that it is not a toy.
+    <strong>Nobody has labeled coordinated calcium events, and the reason is not that
+    nobody got around to it.</strong> Show two experienced people the same raster and
+    they will not draw the same boxes. How many cells make a group, how far apart their
+    onsets may drift and still count, whether a busy stretch with no tight alignment is
+    one long event or none &mdash; there is no observer-independent answer, so a
+    hand-marked corpus would record one person's threshold rather than a fact about the
+    tissue. The nearest thing that exists is DeepCINAC's four-expert corpus, and it
+    labels when a <em>cell</em> fired, not when the group did &mdash; a question with a
+    much sharper answer.
+  </p>
+  <p>
+    <span class="key hand">That is the whole reason this project exists</span>, and the
+    six detectors are the evidence for it: they are six people's attempts to write the
+    threshold down, and they disagree with each other on real recordings.
+  </p>
+  <p>
+    So scoring a detector against a human's marks would measure agreement with that
+    human, and scoring it against another detector measures agreement with that
+    detector. <strong>Neither is correctness, and no amount of labeling effort turns
+    one into the other.</strong> The way out is to stop looking for a truth to discover
+    and <em>manufacture</em> one instead &mdash; events placed at times the generator
+    records, in recordings whose statistics were measured from the lab's own, so that
+    the answer is exact by construction and the question is not a toy.
   </p>
   <p>
     <span class="key hand">Getting that wrong is not a hypothetical cost.</span>
@@ -891,6 +906,15 @@ def build_tube(*, n_scales=4, width=8, depth=6,
     <strong>The ranking is quoted at one point on the background axis.</strong> This
     project has already measured that moving the background reorders detectors. Which
     parts of the table survive that move is unmeasured.
+  </p>
+  <p>
+    <strong>That two experts would disagree is this lab's position, not a measured
+    inter-rater statistic.</strong> Nobody has run the study &mdash; shown several
+    experienced readers the same recordings and counted how far apart their calls fall.
+    It would be worth doing: it is the one number that would turn the premise of this
+    page from an argument into a measurement, and it would also put a floor under every
+    detector here, since no detector should be expected to beat the spread between two
+    people looking at the same raster.
   </p>
   <p>
     <strong>No third-party implementation has been run on these recordings.</strong>

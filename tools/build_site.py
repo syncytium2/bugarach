@@ -205,15 +205,15 @@ It is a committed figure rather than a live read: the build opens no data store,
 and generates every other figure here from a seed.</p>
 
 <h2 style="font-size:1.15rem">A network trained on that simulation</h2>
-<p>Because the planted events have known times, a model can be trained against
-them rather than against another detector's opinion — and, more usefully, every
-detector can be scored on the same footing. A center-surround architecture with
-about eleven hundred parameters has been through the pipeline, and what the
-pipeline says about it is the interesting part: on the headline metric it is
-level with the best hand-written detectors, and once firings into the no-event
-trap block are charged rather than forgiven, <b>the ordering reverses</b>. The
-same column drops <span class="key">locust</span> from fifth of nine to last of
-those that fire at all.</p>
+<p><b>Nobody can label coordinated events</b> — show two experienced people the same
+raster and they will not draw the same boxes — so there is no corpus to train against
+and no human answer to score against. Planting the events instead makes the answer exact
+by construction. A center-surround architecture with about eleven hundred parameters has
+been through that pipeline, and what the pipeline says about it is the interesting part:
+on the headline metric it is level with the best hand-written detectors, and once firings
+into the no-event trap block are charged rather than forgiven, <b>the ordering
+reverses</b>. The same column drops <span class="key">locust</span> from fifth of nine to
+seventh.</p>
 <p><a href="learned_detector.html">The learned detector &rarr;</a> — how the
 ground truth is manufactured, what the apparatus caught that the headline metric
 could not, and where the six methods come from.</p>
