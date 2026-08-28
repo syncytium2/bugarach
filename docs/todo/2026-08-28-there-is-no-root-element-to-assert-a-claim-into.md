@@ -5,7 +5,7 @@ filed: 2026-08-28
 
 # Numbers derive from a store and cannot drift; claims are hand-copied and do
 
-waiting: Decide whether claims get the token treatment numbers already have. Tony, 2026-08-28: "there is no root element for me to assert something. i thought that was ADR. i thought that was FOUNDATIONS. all of that seems gone here." One page carries 122 number tokens and 0 references to the ADR that governs its claims.
+waiting: Decide whether claims get the token treatment numbers already have. One page: 122 number tokens, 0 claim references.
 
 > **Not murderboarded** — a structural observation about this repo, every count
 > reproducible by the greps quoted below.
