@@ -8703,6 +8703,16 @@ const SCORE_COPY = {
        + "mixes variation between recordings with variation between training "
        + "runs, which the swept detectors do not have — so read a learned row's "
        + "± as looser than a hand-written one's, not as the same measurement.",
+  /* The hole this table must not leave. When no learned row is present the
+     panel still has to say so: a comparison that simply omits a detector
+     invites the reading that it lost, which is the same reason a detector that
+     could not run gets a refused row rather than no row. */
+  learnedAbsent: "No learned detector is in this table. Training runs in a "
+       + "process beside this page rather than in it, so there is nothing to "
+       + "add unless that process is running — start it and pick one or more "
+       + "architectures, and they are fitted on these same folds and scored on "
+       + "these same held-out recordings. Absence here is a missing trainer, "
+       + "not a detector that competed and lost.",
   heldOut: "Each detector's setting is chosen on the folds it may see and scored "
        + "on the fold it may not. The spread is across folds.",
 };
@@ -9030,7 +9040,8 @@ function paintScoreboard() {
 
   const learned = rows.filter(r => r.learned && !r.refused);
   const caveats = ["heldOut", "tolerance"];
-  if (learned.length) caveats.push("learned", "learnedSpread");
+  caveats.push(...(learned.length ? ["learned", "learnedSpread"]
+                                  : ["learnedAbsent"]));
   caveats.push("simulatedOnly");
   for (const key of caveats)
     box.append(el("p", SCORE_COPY[key], "caveat"));
