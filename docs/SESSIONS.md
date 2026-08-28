@@ -60,6 +60,61 @@ Template:
 
 ## Active
 
+### Tonys-MacBook-Pro/cicada-on-the-authors-data — run locust on the data CICADA was built for
+- **Status:** ACTIVE 2026-08-27 — **BLOCKED, waiting on one data path** (the DANDI side).
+  **Every number this session derived is WITHDRAWN** — see the correction below. Rebased
+  onto `4297033`; uses `dataset.current()` now. Nothing committed to this branch but this
+  block.
+- **Worktree:** `bugarach-worktrees/cicada-on-the-authors-data` (branch same, rebased onto
+  origin/main `4297033`)
+- **Holds, and why it is on THIS board — now WRITES a shared location:** creates
+  **`<data>/exports/external/dandi_000219/`**, a new export folder built from the Cossart
+  lab's published DANDI:000219. Deliberately **not** under `exports/bugarach/`, because
+  `dataset.resolve()` searches that directory for bare names and a foreign corpus sitting
+  there is one typo from being read as ours — the exact hazard `current_export.toml` was
+  written to close. It is **not** added to `current_export.toml`; it must be passed by
+  path. Reads `<Dropbox>/…/data/dandi_000219/` write-free. May write figures under
+  `<darkroom>/bugarach/` — none yet. No MATLAB, no interface2 write, no deploy.
+- **Touches:** `tools/import_dandi.py` (new) + its test, and a `docs/todo/` item.
+  Explicitly NOT `src/bugarach/detectors/**` and NOT `bench.py::OPERATING_POINTS` — an
+  operating point fitted on another lab's data is a finding about that data, not a
+  recalibration of ours, and conflating the two is exactly the error this is being run to
+  avoid. NOT `current_export.toml` — that pointer names *this lab's* corpus.
+- **Scope decided by Tony 2026-08-27:** importer **plus** a side-by-side viewer check, in
+  `bugarach/tools/`. The viewer check is the point of the extra step: `bugarach view` takes
+  `nargs="+"` and `io.py` claims it NaN-fills absent width/peak/amp, but **no minimal
+  folder has ever been run through either** — the tolerance is asserted in a docstring, not
+  tested. Tony also confirmed defaulting to fast is fine, and that the two-stream export is
+  this lab's peculiarity: *"this is intended as a general project. we might be the only
+  ones with two streams."*
+- **Why:** Tony asked for the comparison the attribution question turns on — *"we don't
+  want to blame the authors … an early step once the pipeline is complete is to run the
+  authors dandiset."*
+- **⚠ CORRECTION — do not reuse the numbers this block used to carry.** It quoted a
+  transient duration of *"median 0.59 s against this lab's 10–60+ s."* **Both halves were
+  wrong as a comparison**: it set another lab's active-stamp against this lab's *full slow
+  transient*, which is not the quantity any detector is fed, and the 0.59 s was derived
+  from raw rasters rather than read from a designated source. The width answer needs no
+  derivation and is already in the export (Tony, 2026-08-27): **fast `width_sec` =
+  `halfprom_width_findpeaks_w`, the real transient width, median 0.90 s; slow `width_sec` =
+  `rise_interval_peak_minus_t50rise`, median 2.00 s, max 5.5 s.** Read `width_def`, never
+  the column name. Written up as a case report in `syncytium2/short-course` (`42e981c`).
+- **What is still true and still unblocked:** the public page asserts *"the lane marked
+  locust is CICADA's method"* while the **same paragraph** says *"no method from the
+  literature has yet been run on this project's recordings."* Those cannot both hold. That
+  defect needs no DANDI data and is a wording call for Tony.
+- **FAST ONLY** (Tony, 2026-08-27): *"fast and slow are two utterly different data
+  streams. both are interesting, but fast is closer to classical calcium events. for now,
+  stick with fast."* So the stream is **not** a thing an analysis here surveys — it is
+  chosen, and it is fast. Anything reporting both streams side by side is answering a
+  question nobody asked. Note there is **no declared default in code** — `bench.py`'s
+  `STREAM` is the simulator's synthetic single stream, `assess_folder()` takes
+  `stream=None`, and FOUNDATIONS §3 refuses to privilege either on purpose. Until that is
+  settled the constraint lives here.
+- **What this is blocked on:** a designated path to the **coordination** data for
+  DANDI:000219. The extracted `.mat` sessions are event-level; deriving coordination from
+  them is what went wrong. Not searching for it again.
+
 ### Tonys-MacBook-Pro/deploy-0827b — redeploy, so the sweep range control is on the live page
 - **Status:** DONE 2026-08-27 — deployed and verified; **DEPLOY RELEASED.** Version
   `acac81b2-a1bf-4260-99e6-fa917dfe958f`, built from `0ed939d`. **Four files at the edge,
