@@ -1484,3 +1484,31 @@ session's work is not a sweep.
     time and picked the new numbers up on rebuild. `bakeoff.md` transcribes by hand and
     needed nine rows and six derived ratios retyped. That contrast is the whole case for
     giving it a generator, filed as a todo.
+
+### Tonys-MacBook-Pro/main — the ablation still uses the maker `fold_maker` replaced
+- **Status:** DONE 2026-08-28. Filed, not fixed. Nothing held at any point. Landed by PR
+  rather than by a commit on `main`: it was written on `main` and `guard_branch` refused
+  it, which is the gate doing its job — CI runs after a push to `main` and can report a
+  breakage but not prevent one. The escape hatch exists and was deliberately not used.
+- **Writes:** one new file, `docs/todo/2026-08-28-the-ablation-still-picks-thresholds-on-its-fitting-data.md`.
+  **Nothing in the darkroom, no page, no JSON, no `src/`, no `tools/`.**
+- **Reads:** `git`, and `docs/learned/tube_ablation.json` + `bakeoff.json`. No export
+  folder, no store, no MATLAB, no venv.
+- **Findings another session should know.**
+  - **`tools/ablate_tube.py:82` still carries the leaky `seed % len` maker.** `2bc3160`
+    named two call sites; `git grep 'seed % len' 2bc3160^` returns three. `train()` always
+    calls `pick_threshold()`, so the ablation's operating points are still chosen on the
+    recordings it had just fitted.
+  - **The report's conclusion is NOT affected and should not be withdrawn.** Both arms of
+    the one-scale-versus-four comparison leak identically, so it is common-mode. What
+    broke is the tool's claim that its numbers are *"comparable with `bakeoff.json`"* —
+    the ablation predates `fold_maker`, the reopened threshold grid and `THREADS = 1`.
+  - **`coordination_report` calls 0.668 "the published four-scale".** It was, until
+    2026-08-28. `bakeoff.json` now reads 0.6808, and the built
+    `docs/learned/coordination_report.html` has 0.668 baked in.
+  - **`tube_ablation.json` has no `machine` block**, so it cannot state the thread count
+    that produced it. `bakeoff.json` can.
+  - **`src/bugarach/learn/train.py:35` says "until 2026-08-28 no caller did".** One
+    caller still does not. Cheapest half of this item and prose-only.
+  - Found from `syncytium2/short-course`, checking a commit message against `git grep`
+    while writing a case study about #347 — not by anyone working in this repo.
