@@ -178,7 +178,8 @@ def build_trace(*, head_width=8, head_depth=11):
 
 
 @register("tube", note="center-surround on the brightness trace — Tony's tube, "
-                       "2026-08-16: rate invariance by construction",
+                       "2026-08-16: a DC-free kernel, with a raw-brightness "
+                       "bypass the kernel does not reach",
           n_scales=4, width=8, depth=6, max_center_frames=128, max_ratio=40.0)
 def build_tube(*, n_scales=4, width=8, depth=6, max_center_frames=128,
                max_ratio=40.0):
@@ -188,21 +189,49 @@ def build_tube(*, n_scales=4, width=8, depth=6, max_center_frames=128,
     spot crosses the centre. Jitter dims it. A busier background raises the whole
     field, but a real spot still stands above its own surround.
 
-    That last sentence is the architecture. **Center-surround makes rate
-    invariance structural rather than learned**: the surround subtracts the local
-    level, so a uniform rate change cancels and only excess survives. It is what
-    every one of the six detectors computes by hand — observed minus context — and
-    what `tiny` was spending a 2 000-sample receptive field *hoping* to discover.
+    That last sentence is the architecture. **The KERNEL makes rate invariance
+    structural**: it is a difference of Gaussians, area-normalised so a flat field
+    integrates to zero, so a uniform rate change cancels rather than merely
+    shrinking. It is what every one of the six detectors computes by hand —
+    observed minus context — and what `tiny` spends a 2 000-sample receptive field
+    *hoping* to discover.
 
-    Three properties fall out rather than being enforced:
+    ⚠ **That is a property of the kernel and not of this model**, and the
+    difference is one line of ``forward``::
+
+        self.head(torch.cat([bright, resp], dim=1))
+
+    ``bright`` is the pooled brightness itself — an absolute local activity level —
+    and it reaches the head on its own channel, beside the zero-integral responses.
+    Whatever the kernel cancels, that channel carries through, so the model is free
+    to learn the rate dependence the kernel was built to remove. Whether it should
+    keep that channel is an open experiment rather than a defect to paper over:
+    item 4 of `docs/todo/2026-08-16-learned-detectors-handoff.md` is *"drop the raw
+    brightness channel and re-run"*, and doing so moves every published number.
+    **No magnitude is quoted here, deliberately** — three probes on three training
+    runs put the effect an order of magnitude apart, and one was not monotonic in
+    the background rate at all. One training run per seed is the standing
+    limitation of everything learned in this project, and it bites hardest here.
+
+    Two properties fall out rather than being enforced, and a third does not:
 
     * **space invariance** — cells are summed, so the model never sees which cell
       is which and runs at any cell count. Tony's phrase for it.
-    * **distinctness** — each cell is capped at one vote *inside the centre
-      window* before the sum, so a single cell bursting cannot imitate a crowd.
-      Here the cap is exact rather than soft, because a centre window exists.
     * **tightness is a learned kernel width** — the centre widths are free
       parameters, so how tight an event must be is fitted, not supplied.
+    * ⚠ **distinctness is NOT delivered, and this docstring used to claim it was.**
+      It said each cell was capped at one vote and that the cap was *"exact rather
+      than soft"*, in explicit contrast to `tiny`. The contrast was the wrong way
+      round. ``encode.Encoded.raster`` is already one-or-zero per (cell, frame) —
+      *"several onsets in one frame stay 1"* — so the ``max_pool1d`` below runs on
+      a binary signal and returns a binary signal. **It caps nothing.** What it
+      does is *widen* each onset to ``2*kmin+1`` frames, which increases what a
+      repeatedly firing cell contributes to the centre integral. Measured on a
+      trained model at its own operating point: one cell bursting eight times
+      scores 0.28 and stays silent, but **two** such cells score 0.997 and fire —
+      level with four genuinely distinct cells at 0.998. Two bursting cells
+      imitating a crowd is the exact false coordination this design exists to
+      reject. Probe it behaviourally; do not assert it.
 
     ⚠ The centre widths are initialised across a geometric spread and then
     trained. The spread is a starting point, not the answer: if a fitted width
@@ -254,9 +283,20 @@ def build_tube(*, n_scales=4, width=8, depth=6, max_center_frames=128,
 
         def forward(self, x):                       # (B, n_roi, T)
             b, n, t = x.shape
-            # --- one cell, one vote, inside the centre window -----------------
-            # Smooth each cell by the smallest centre, then clamp: "did this cell
-            # fire near here", not "how many times". Exact, not a soft cap.
+            # --- widen each cell's onsets, which is NOT one cell one vote -----
+            # This was written as "smooth each cell, then clamp -- exact, not a
+            # soft cap". It is neither exact nor a cap. `x` is already binary, so
+            # a max-pool over it returns a binary signal and bounds nothing; what
+            # it does is WIDEN each onset to 2*kmin+1 frames, which increases a
+            # bursting cell's contribution to the centre integral. Two cells
+            # bursting reach the response of four distinct cells at the shipped
+            # operating point. See the class docstring; do not restore the claim
+            # without a probe that fails when it stops being true.
+            #
+            # ⚠ kmin is clamped to [1, k] HERE and each centre width is clamped to
+            # [0.5, k/2] in `_kernels` -- two different bounds on the same fitted
+            # quantity. They agree over the widths seen so far (~4-7 samples) and
+            # would diverge at either extreme. Nothing says which is intended.
             kmin = int(torch.exp(self.log_center.detach()).min().clamp(1, self.k))
             pooled = torch.nn.functional.max_pool1d(
                 x.reshape(b * n, 1, t), kernel_size=2 * kmin + 1,
@@ -266,6 +306,10 @@ def build_tube(*, n_scales=4, width=8, depth=6, max_center_frames=128,
             # --- centre-surround in time --------------------------------------
             resp = torch.nn.functional.conv1d(
                 bright, self._kernels(x.device), padding=self.k)
+            # ⚠ THE BYPASS. `bright` is an absolute activity level and it goes to
+            # the head alongside the zero-integral responses, so the kernel's DC
+            # invariance is not the model's. Removing this channel is a filed
+            # experiment, not a tidy-up: it moves every published number.
             return self.head(torch.cat([bright, resp], dim=1)).squeeze(1)
 
     return Tube()
