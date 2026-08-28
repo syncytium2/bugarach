@@ -1,6 +1,33 @@
 ---
-status: open
+status: done
 filed: 2026-08-27
+---
+
+# DONE — every input on the page refuses autofill now, not the three that were reported
+
+**Resolved 2026-08-27**, the same day, when Tony asked for both open threads to
+be handled while other sessions pushed on the pipeline. The decision below —
+three boxes or all of them — was the whole content of this item, and it went
+**all of them**, on a fact the original write-up did not have:
+
+> The page carried **50 inputs and not one autofill hint of any kind**. So "only
+> the new boxes are broken" and "they always were and nobody looked" were both
+> live readings, and only a manager installed in a real browser could tell them
+> apart. Covering every input settles it without needing that experiment — none
+> of them is a credential, so the superset costs nothing, while guessing wrong
+> costs a silently altered sweep.
+
+The `type="text"` box asking who is judging an annotation is, on reflection, the
+one most likely to have been offered a username all along.
+
+**What landed:** the five attributes on all 50 inputs in the markup, a
+`noAutofill()` helper for the four built at runtime, and
+`tests/test_webapp_no_autofill.py`, which checks the markup *and* the live DOM —
+so a control added either way cannot ship bare. It asserts "every input", never a
+count, so adding a control does not fail it.
+
+The original write-up follows, unchanged.
+
 ---
 
 # A password manager offers to fill the sweep's "from" box

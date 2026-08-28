@@ -1,6 +1,54 @@
 ---
-status: open
+status: done
 filed: 2026-08-27
+---
+
+# DONE — the unload guard exists, and backgrounding stopped costing anything
+
+**Resolved 2026-08-27**, same day. Three things came out of it, and the middle
+one is the correction: *"backgrounding costs nothing"* was too generous.
+
+**1. The measurement this file said was missing, finished.** Not the way it
+proposed — Chromium under automation cannot be made to throttle at all.
+Playwright launches it with `--disable-background-timer-throttling` and two
+friends; dropping those still will not hide a tab via `bring_to_front`, and
+CDP's `frozen` lifecycle state was not honoured (the sweep ran to completion
+through it). What **is** exactly measurable is the multiplier, since the penalty
+is (timer yields) × (clamp):
+
+| detector | settings | timer yields | in front |
+|---|---|---|---|
+| RateDetect | 8 | 13 | 0.1 s |
+| SCE | 6 | 11 | 0.4 s |
+| LoCo | 6 | 11 | 3.0 s |
+| **LoCo** | **20** | **25** | **10.1 s** |
+| locust | 6 | 8 | 4.2 s |
+
+Three recordings of 30 min, 40 ROI. Chrome clamps background-tab timers to ≥1 s,
+and to ≥1/min after ~5 min hidden — so that 10-second LoCo sweep was **~25 s**
+backgrounded and **~25 minutes** if left hidden five minutes. Nothing lost, a
+great deal paid.
+
+**2. So the yield changed.** All 17 `await new Promise(r => setTimeout(r, 0))`
+call sites now go through one `yieldToUI()` built on a `MessageChannel` — an
+ordinary task, not a timer task, so the clamp does not apply. The instrumented
+timer-yield count for the LoCo-20 sweep went **25 → 0**, and foreground timings
+did not regress (10.1 s → 9.7 s, and every other row within noise). The
+end-to-end throttled wall clock is still unreproducible here; that is stated in
+the code comment rather than papered over. To see it yourself: start a locust
+sweep in a real browser, switch tabs for a minute, come back.
+
+**3. The unload guard, armed only when there is something to lose.** A sweep
+actually running, or a fit the sweep chose that has not reached a settings file.
+Not an open folder, not a hand-typed threshold — this file warned that a page
+people open to look at a raster must not nag, and
+`tests/test_webapp_leaving_the_page.py` spends most of its cases on when the
+guard must stay **quiet**, including one that fires a real `beforeunload` and
+checks the event comes back uncancelled.
+
+The original write-up follows, unchanged — including the "not measured" section,
+which item 1 above answers.
+
 ---
 
 # Backgrounding a tab mid-sweep costs nothing; closing it loses everything, silently

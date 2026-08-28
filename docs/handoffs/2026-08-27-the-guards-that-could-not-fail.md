@@ -126,8 +126,13 @@ arriving, which is the failure the digest was built in 2026-08-20 to prevent, re
 by the other road. **That budget is also the one with room to move**: the census floor
 is 10,186B and 8,000 sits 2,186B under it, so unlike the briefing this one can simply
 be raised. Nothing in this session's work touched it, and nobody has looked — so it is
-filed as [`docs/todo/2026-08-27-the-board-digest-is-213-bytes-from-degrading.md`](../todo/2026-08-27-the-board-digest-is-213-bytes-from-degrading.md),
+filed as [`docs/todo/2026-08-27-the-briefing-budget-ratchets-the-digest-oscillates.md`](../todo/2026-08-27-the-briefing-budget-ratchets-the-digest-oscillates.md),
 where it will be reread, rather than left here where it will not.
+
+*(Link repointed when that todo was renamed an hour later. Body otherwise untouched, per
+this directory's rule — and the todo now opens by explaining that the paragraph above
+measured a spike: the digest recovered to 1,182B and the **briefing** is the one at 217B.
+The record stands as what was measured; the correction lives where it gets reread.)*
 
 The briefing is the slower problem. It is 8,360B against its own 9,000B
 budget — **640B of headroom**, and it grows with the board and the todo count. A spill
@@ -149,7 +154,7 @@ when the canary and the budget on the same line get close, that is the signal, a
 | --- | --- | --- |
 | 3 | `murderboard_revendor.py --selftest` fails in every consumer and passes upstream | [`…-murderboard-revendor-selftest-is-not-portable.md`](../todo/2026-08-26-murderboard-revendor-selftest-is-not-portable.md) |
 | 4 | two SessionStart hooks, neither aware of the other's total | [`…-two-session-start-hooks-and-neither-sees-the-total.md`](../todo/2026-08-26-two-session-start-hooks-and-neither-sees-the-total.md) |
-| new | the board digest is ~200B from degrading, and its budget is the one with room | [`…-the-board-digest-is-213-bytes-from-degrading.md`](../todo/2026-08-27-the-board-digest-is-213-bytes-from-degrading.md) |
+| new | a SessionStart budget is ~200B from degrading — this page names the digest; an hour later it was the briefing | [`…-the-briefing-budget-ratchets-the-digest-oscillates.md`](../todo/2026-08-27-the-briefing-budget-ratchets-the-digest-oscillates.md) |
 
 The third was found **by this review**, not by the work it reviews — the murderboard
 re-measured a number the draft had quoted twenty minutes earlier and it had moved.

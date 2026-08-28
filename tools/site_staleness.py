@@ -67,6 +67,42 @@ ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_BASE = "https://bugarach.tonydefazio.com"
 VIEWER_SOURCE = "docs/site/raster_viewer.html"
 
+HOLD_FILE = ROOT / "docs" / "DEPLOY_HOLD.md"
+
+
+def deploy_hold() -> str | None:
+    """The condition that releases a held deploy, or None if nothing is held.
+
+    **This tool is the loudest voice telling anyone to deploy** — a copy-paste
+    command in the full report, a daily CI summary, and a line in every session
+    briefing — so when a deploy is deliberately queued, this is where the queue
+    has to be visible. A hold recorded only in prose is outvoted every morning by
+    nags that fire by themselves, and the session that gives in is right by every
+    signal it can see (Tony, 2026-08-28: *"queue these updates to land with the
+    next iteration of the pipeline plumbing"*).
+
+    Deliberately forgiving about the file's shape. A missing file, an unreadable
+    one, or `held:` set to anything but a yes all mean "not held" — the failure
+    worth engineering against is a hold nobody notices, not a typo that fails to
+    stop a deploy. A tool that announced a hold nobody set would be ignored
+    inside a week, and then it would not stop the real one either.
+    """
+    try:
+        text = HOLD_FILE.read_text(encoding="utf-8")
+    except OSError:
+        return None
+    held = release = ""
+    for line in text.splitlines()[:20]:
+        key, _, val = line.partition(":")
+        key, val = key.strip().lower(), val.strip()
+        if key == "held":
+            held = val.lower()
+        elif key == "release-when":
+            release = val
+    if held not in {"yes", "true", "on"}:
+        return None
+    return release or "see docs/DEPLOY_HOLD.md — no release condition recorded"
+
 # What a commit has to touch to change what the site serves. Everything
 # build_site.py opens, and the figure script whose output it embeds.
 #
@@ -446,6 +482,12 @@ def render_brief(rep: Report) -> str:
     what = f"{len(rep.behind_pages)} change the pages it serves"
     if rep.viewer_behind:
         what += f", {len(rep.viewer_behind)} the viewer"
+    # The briefing is where a session decides what to do before it has read
+    # anything, so the hold has to reach it. Without this line the briefing says
+    # "deploy it" every morning at a queue that is deliberate.
+    if deploy_hold():
+        return (f"site: {rep.behind_total} commits behind {rep.ref} ({what}) — "
+                f"ON HOLD, do not publish: docs/DEPLOY_HOLD.md")
     return (f"site: {rep.behind_total} commits behind {rep.ref} ({what}) — "
             f"deploy it: docs/deploy.md")
 
@@ -502,15 +544,27 @@ def render_text(rep: Report) -> str:
     for sha, subject in rep.behind_pages:
         mark = "viewer" if any(sha == v for v, _ in rep.viewer_behind) else "      "
         out.append(f"    {mark}  {sha}  {subject}")
-    out += ["",
-            "  Publish it (docs/deploy.md — needs the wrangler login on this machine):",
-            "",
-            "    PATH=$PWD/.venv/bin:$PATH npm run deploy",
-            "    python tools/audit_deployed_page.py",
-            "",
-            "  Nothing here can do that for you: deploying needs a Cloudflare",
-            "  credential, and this check deliberately holds none.",
-            ""]
+    held = deploy_hold()
+    if held:
+        out += ["",
+                "  ON HOLD — do not publish. This gap is queued on purpose.",
+                "",
+                f"    releases when: {held}",
+                "",
+                "  docs/DEPLOY_HOLD.md has the reason and how to lift it. Lifting it",
+                "  is a decision somebody makes and records, not something to route",
+                "  around because the number above looks large.",
+                ""]
+    else:
+        out += ["",
+                "  Publish it (docs/deploy.md — needs the wrangler login on this machine):",
+                "",
+                "    PATH=$PWD/.venv/bin:$PATH npm run deploy",
+                "    python tools/audit_deployed_page.py",
+                "",
+                "  Nothing here can do that for you: deploying needs a Cloudflare",
+                "  credential, and this check deliberately holds none.",
+                ""]
     if rep.behind_total > len(rep.behind_pages):
         out += ["  (The other commits touch code, docs or tests that the build does not",
                 "   read. One caveat: hero.png is rendered from src/bugarach, so a",
@@ -539,8 +593,13 @@ def render_markdown(rep: Report) -> str:
     if rep.behind_pages:
         body += ["Commits that change what the site serves:", ""]
         body += [f"- `{sha}` {subject}" for sha, subject in rep.behind_pages]
-        body += ["", "Publishing is manual (`npm run deploy`, see `docs/deploy.md`) "
-                 "because nothing in CI holds a Cloudflare credential.", ""]
+        held = deploy_hold()
+        if held:
+            body += ["", f"**On hold — do not publish.** Releases when: {held}. "
+                     "See `docs/DEPLOY_HOLD.md`.", ""]
+        else:
+            body += ["", "Publishing is manual (`npm run deploy`, see `docs/deploy.md`) "
+                     "because nothing in CI holds a Cloudflare credential.", ""]
     return "\n".join(body)
 
 

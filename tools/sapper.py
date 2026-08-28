@@ -161,7 +161,17 @@ RULES = [
                  # different case: this one already PREFERS the folder and keeps
                  # the store as a documented fallback. Whether the fallback
                  # should exist at all is the open question in the todo.
-                 "tools/assess_archive.py"],
+                 "tools/assess_archive.py",
+                 # A THIRD CATEGORY, and NOT backlog: an IMPORTER. It reads
+                 # ANOTHER lab's published source data (DANDI:000219, CC-BY-4.0,
+                 # extracted to .mat) in order to WRITE an export folder — the
+                 # same role interface2's exporter plays for this lab, and its
+                 # output is what analyses then read. It cannot go around this
+                 # lab's exclusions because it never touches this lab's data.
+                 # This makes "the list shrinking is the progress" above true of
+                 # only half the list; see
+                 # docs/sapper_feedback/2026-08-28-sap007-cannot-tell-an-importer-from-an-analysis.md
+                 "tools/import_dandi.py"],
         message="Analysis must read the EXPORT FOLDER, never a .mat store. The "
                 "folder is what the lab approved: the exporter honours "
                 "db4's `exclude` flag, drops what was withdrawn, and records it "

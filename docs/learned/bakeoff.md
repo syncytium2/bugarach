@@ -1,9 +1,21 @@
 # The fair bake-off — real recordings in, one data set, one rule
 
-**Run 2026-08-16.** Everything below is regenerable:
+**First run 2026-08-16. Re-run 2026-08-28 and the numbers moved** — see
+*What changed on the re-run* below before quoting any of them against an earlier
+copy of this page. Everything is regenerable:
 `tools/assess_archive.py` → `tools/derive_spec.py` → `tools/fair_bakeoff.py` →
 `tools/make_bakeoff_figures.py`. Numbers live in `bakeoff.json`,
 `assessment_real.json` and `generator_spec.json`.
+
+⚠ **The table below is transcribed by hand from `bakeoff.json`, and that is a
+known weakness of this page rather than a feature of it.** `report.src.html`
+solved the same problem by substituting tokens at build time, with a comment
+saying why: *"a superseding notice carrying its own stale transcription of the
+newer result would be the exact failure this substitution exists to stop."* This
+page has no generator, so every re-run needs a human to retype nine rows — and on
+2026-08-28 one of its claims had been stale for eight days without anyone
+noticing. Giving it one is filed as
+[`2026-08-28-the-bakeoff-page-transcribes-what-a-token-could-substitute.md`](../todo/2026-08-28-the-bakeoff-page-transcribes-what-a-token-could-substitute.md).
 
 ## What was run
 
@@ -27,35 +39,90 @@
 
 | detector | F1 (mean of 4 folds) | fold range | recall | precision | fit s | detect s | params | probe firings |
 |---|---|---|---|---|---|---|---|---|
-| **center−surround (learned)** | 0.668 ± 0.061 | 0.58–0.73 | 0.775 | 0.590 | 5.6 | 0.014 | 1,149 | 15.8 |
-| CoactDetect | 0.651 ± 0.044 | 0.61–0.71 | 0.767 | 0.572 | 1.1 | 0.060 | — | 1.2 |
-| LoCo | 0.638 ± 0.053 | 0.57–0.70 | 0.733 | 0.569 | 4.4 | 0.245 | — | 2.5 |
+| **center−surround (learned)** | 0.681 ± 0.049 | 0.63–0.74 | 0.917 | 0.543 | 6.9 | 0.023 | 1,149 | 20.5 |
+| CoactDetect | 0.651 ± 0.044 | 0.61–0.71 | 0.767 | 0.572 | 1.1 | 0.062 | — | 1.2 |
+| LoCo | 0.638 ± 0.053 | 0.57–0.70 | 0.733 | 0.569 | 4.4 | 0.246 | — | 2.5 |
 | rate+context | 0.571 ± 0.085 | 0.46–0.65 | 0.700 | 0.485 | 0.2 | 0.005 | — | 34.8 |
-| CICADA | 0.541 ± 0.070 | 0.47–0.63 | 0.742 | 0.446 | 2.6 | 0.114 | — | 214.8 |
-| binned SCE | 0.422 ± 0.083 | 0.31–0.49 | 0.400 | 0.453 | 0.2 | 0.011 | — | 58.8 |
-| SPIKE-synch | 0.254 ± 0.065 | 0.21–0.34 | 0.167 | 0.538 | 1.7 | 0.094 | — | 8.8 |
-| pooled trace (learned) | 0.131 ± 0.012 | 0.12–0.15 | 0.075 | 0.825 | 8.0 | 0.015 | 2,065 | 0.0 |
-| per-cell bank (learned) | 0.125 ± 0.000 | 0.12–0.12 | 0.067 | 1.000 | 236.4 | 2.453 | 2,393 | 0.0 |
+| locust | 0.541 ± 0.070 | 0.47–0.63 | 0.742 | 0.446 | 3.3 | 0.114 | — | 214.8 |
+| binned SCE | 0.420 ± 0.079 | 0.31–0.49 | 0.483 | 0.384 | 0.3 | 0.012 | — | 59.2 |
+| SPIKE-synch | 0.254 ± 0.065 | 0.21–0.34 | 0.167 | 0.538 | 1.7 | 0.093 | — | 8.8 |
+| per-cell bank (learned) | 0.125 ± 0.000 | 0.12–0.12 | 0.067 | 1.000 | 75.6 | 0.226 | 2,393 | 0.0 |
+| pooled trace (learned) | 0.118 ± 0.015 | 0.10–0.12 | 0.067 | 0.792 | 8.6 | 0.023 | 2,065 | 0.0 |
 
 `fit s` is time to calibrate (hand-written) or train (learned). `detect s` is
 wall-clock to run one held-out fold — 2 recordings, ~118 minutes of data.
 
+### What changed on the re-run, and why
+
+Three defects were fixed on 2026-08-28, in one change because each of them moves
+the same numbers and fixing them separately would have meant regenerating three
+times. **None was found by re-running this page**; all three were found by trying
+to make the run *reproduce somewhere else*.
+
+1. **The operating point was chosen on the recordings the model had just been
+   fitted to.** `pick_threshold` draws validation seeds from a block disjoint from
+   the training block and asserts it — but every caller supplied a maker that
+   mapped both blocks onto the same recordings, so the assertion passed on *seeds*
+   while the *recordings* were identical. `learn.train.fold_maker` splits the
+   training folds again. **This is what moved the learned rows.** The scored fold
+   was never reachable either way, so no earlier F1 on this page was inflated by
+   it; what was wrong is that a fairness guarantee the code stated was not the one
+   it delivered.
+2. **Torch's thread count was read off the hardware.** The first run's numbers
+   reproduced only on a 10-thread machine. Threads are pinned to 1 now — the only
+   count available everywhere — which is what makes the `fit s` and `detect s`
+   columns comparable between machines and **not** comparable with the first run's.
+3. **The reference was already stale against its own bench.** SCE's knob grid had
+   been extended downward (floor 90 → 75) after the first run, so the sweep could
+   reach an operating point the reference never had. SCE's chosen percentile moves
+   on three of four folds for that reason alone, which is why its recall and
+   precision move a long way while its F1 barely does.
+
+**The six are the control**: they never touch torch, and every one of them is
+unchanged **in F1** to four decimal places except SCE, for reason 3.
+
+⚠ Their *timings* did move — `locust`'s calibration goes 2.6 s → 3.3 s — and **no
+mechanism is claimed for it**. Thread pinning is the obvious suspect and it is the
+wrong one: `torch.set_num_threads` does not reach numpy's BLAS, which is what the
+hand-written detectors run on. What is left is this page's own standing caveat —
+one machine, one process, no warm-up control — and a re-run on a differently loaded
+laptop. Read the **F1** column as the control; the timing columns are an
+order-of-magnitude comparison within a run, not between runs.
+
 ### On accuracy: a tie at the top, and it should be read as one
 
-Centre−surround leads on the mean. **It is not ahead of CoactDetect.** Their fold
-ranges are 0.58–0.73 and 0.61–0.71; four folds of 30 planted events cannot
-separate 0.668 from 0.651, and panel A draws every fold so that overlap is visible
-rather than hidden behind a bar. Three detectors are tied at the top and the
-honest statement is that the learned model **reaches the level of the best
-hand-written detectors in this project**, having been given no more information
-than they were.
+Centre−surround leads on the mean. **It is still not ahead of CoactDetect.** Their
+fold ranges are 0.63–0.74 and 0.61–0.71, overlapping across most of both; four
+folds of 30 planted events cannot separate 0.681 from 0.651, and panel A draws
+every fold so that overlap is visible rather than hidden behind a bar. Three
+detectors remain tied at the top and the honest statement is unchanged: the
+learned model **reaches the level of the best hand-written detectors in this
+project**, having been given no more information than they were.
+
+**What did change is the shape of how it gets there**, and it is worth more
+attention than the mean. Recall went 0.775 → 0.917 while precision fell
+0.590 → 0.543: the model now finds nearly every planted event and pays for it in
+false positives, where before it split the difference. That is a consequence of
+picking the operating point honestly — on recordings the fit never saw, rather
+than on the ones it had just been fitted to — and it is the same direction the
+probe column shows (16 → 21 firings into a block containing nothing). **A reader
+comparing this page against an earlier copy should read the recall and precision
+columns, not the F1**: F1 moved 0.013 while recall moved 0.142 and precision
+0.047, so the summary is the number that hid the change.
 
 ### On cost: this is where the difference is
 
-- **Detection.** 0.014 s to scan two hour-long recordings — **4× faster than
-  CoactDetect and 17× faster than LoCo**, the two it ties with. Only
-  `rate+context` is faster, and it sits 0.10 of F1 lower.
-- **Fitting.** 5.6 s to train from scratch. CoactDetect's sweep is quicker (1.1 s),
+- **Detection.** 0.023 s to scan two hour-long recordings — **2.6× faster than
+  CoactDetect and 10.5× faster than LoCo**, the two it ties with. Only
+  `rate+context` is faster, and it sits 0.11 of F1 lower. ⚠ Those multiples were
+  4× and 17× on the first run. **Both runs' multiples are internally consistent
+  and neither is comparable with the other**: this run pins torch to one thread,
+  which changes the learned model's wall-clock, and the hand-written detectors'
+  timings moved too for reasons this page does not establish (see the control note
+  above). What the ranking supports is *the learned model is the fastest of the
+  three at the top*, which holds in both runs. What it does not support is a
+  changed multiple read as a changed model.
+- **Fitting.** 6.9 s to train from scratch. CoactDetect's sweep is quicker (1.1 s),
   LoCo's is comparable (4.4 s) — so for the app's purpose, training a model on a
   lab's own simulated data costs about the same as calibrating a hand-written
   detector, and buys a faster detector at the end of it.
@@ -68,20 +135,46 @@ this project has measured it on a footing where the comparison means anything.
 
 ### On the two that still do not learn
 
-`pooled trace` and `per-cell bank` remain at the floor (0.13, 0.125). The per-cell
-bank costs **236 s to train and 2.45 s to detect** — 42× the training and 175× the
-detection of the model that works, for a fifth of the F1. ⚠ Both land their
-threshold on the low edge of the searched grid, which this project treats
-elsewhere as a search that stopped too early rather than an answer, so their F1 is
-reported for completeness and is not an operating point.
+`pooled trace` and `per-cell bank` remain at the floor (0.118, 0.125). The
+per-cell bank costs **75.6 s to train and 0.226 s to detect** — 11× the training
+and 9.6× the detection of the model that works, for a fifth of the F1. ⚠ Those were
+236 s and 2.45 s on the first run, and the drop is **not** an improvement to the
+architecture: pinning torch to one thread happens to suit this model, which spent
+its time contending across ten. Same code, different thread count.
+
+⚠ **Both land their threshold on the low edge of the searched grid**, which this
+project treats elsewhere as a search that stopped too early rather than an answer,
+so their F1 is reported for completeness and is not an operating point. On the
+first run that was true of the per-cell bank alone; the grid has since been opened
+at the bottom as well as the top, and under it the pooled trace joined it — three
+of its four folds sit at the floor. **That matters more than its F1 does**, because
+the pooled trace is the *control*: it exists to answer whether giving up
+distinctness costs anything, and a control with no operating point cannot answer
+it. The centre−surround still beats it by a wide margin and the direction is what
+the architecture argument predicts — but the baseline is not being beaten at its
+best, because it has no best. Both weak architectures also train at a tenth the
+centre−surround's learning rate, so *"worse architecture"* is not yet separable
+from *"trained differently"*:
+[`2026-08-28-two-architectures-have-no-operating-point.md`](../todo/2026-08-28-two-architectures-have-no-operating-point.md).
 
 ## What the assessment found on the way
 
 Two things fell out that were not the objective.
 
-- **The bench's regimes reproduce.** Per-ROI rate across the 85 slices has an
-  interquartile range of **0.0037–0.0185 Hz**. The bench's quiet and busy regimes,
-  set weeks ago from a different archive, are **0.0038 and 0.0175**.
+- ~~**The bench's regimes reproduce.**~~ **Retracted 2026-08-28 — this agreement
+  no longer exists, and it had been gone for eight days before anyone checked.**
+  The claim was that per-ROI rate across the 85 slices has an interquartile range
+  of 0.0037–0.0185 Hz, matching the bench's quiet and busy regimes at 0.0038 and
+  0.0175. Both halves were measured on the **`.mat` store**. On 2026-08-20 the
+  bench moved its regimes to **0.0052 and 0.0190**, re-derived from the approved
+  export folder — because the store carries every recording ever processed,
+  including two the lab withdrew (FOUNDATIONS §9, and the defect SAP007 exists to
+  stop). So the agreement celebrated here is between two measurements of the same
+  superseded source, and it reads as corroboration when it is the opposite: the
+  page and the bench agreed because they were making the same mistake.
+  **Nothing in the results table depends on this** — it was an aside, and it is
+  left visible rather than deleted because a reader of the earlier version needs
+  to know it was withdrawn.
 - **38% of slices have a median ROI that never fires in baseline** — FOUNDATIONS
   §9's "roughly 35% with no events in a baseline window", on a store it was never
   measured on. This also disqualified `roi_rate_med` as a background rate: a median
@@ -101,8 +194,8 @@ coordination should show.
 3. **The probe still cannot fail.** Firings inside it leave both numerator and
    denominator, so the column above is a diagnostic and not a penalty
    (`docs/todo/2026-08-16-promiscuity-probe-cannot-fail.md`). Read it as a
-   promiscuity *report*: CICADA fires 215 times in a block containing nothing;
-   center−surround fires 16; CoactDetect fires 1.
+   promiscuity *report*: locust fires 215 times in a block containing nothing;
+   center−surround fires 21; CoactDetect fires 1.
 4. **K=3 was chosen by a human and the choice moves the data set.** The scan is in
    `generator_spec.json`; K=4 cuts the cluster rate to roughly a quarter of K=3's
    (0.095 against 0.350 per minute) and would build a different

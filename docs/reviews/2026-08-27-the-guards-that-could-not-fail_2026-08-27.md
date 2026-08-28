@@ -27,7 +27,17 @@ same command returned `102 lines, 7787B` — **936B of drift**, because sessions
 blocks on the board in between. That put the hook **213B from its 8,000B budget**, which
 is a live problem nobody had looked at, found by a review of a document about hooks
 rather than by the hook work itself. It is filed as
-[`docs/todo/2026-08-27-the-board-digest-is-213-bytes-from-degrading.md`](../todo/2026-08-27-the-board-digest-is-213-bytes-from-degrading.md).
+[`docs/todo/2026-08-27-the-briefing-budget-ratchets-the-digest-oscillates.md`](../todo/2026-08-27-the-briefing-budget-ratchets-the-digest-oscillates.md).
+
+**Postscript, one hour later.** That todo has been rewritten and renamed, and the reason
+is worth more than the finding was. Re-measured, the digest had recovered to 1,182B while
+`session_briefing.sh` had fallen to 217B — they swapped. The review caught a real number
+and drew a wrong shape from it: one measurement of a quantity that oscillates was reported
+as a trend. The corrected item separates the two hooks by what drives them — ACTIVE board
+blocks, which go down, versus the open-todo count, which does not — and the briefing is the
+one that ratchets. A single measurement cannot distinguish a spike from a trend, and this
+run's own lesson was that the number has to come from outside; it needed to come from
+*more than one moment* as well.
 
 ## What this run does not warrant
 
