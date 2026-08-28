@@ -1,7 +1,15 @@
 #!/usr/bin/env bash
-# the-folder-is-the-input.sh — PreToolUse(Bash) gate: a session reaching for a
-# `.mat` event store is told, before the command runs, WHICH export folder to read
-# instead and what to call to get it.
+# the-folder-is-the-input.sh — PreToolUse(Bash) gate. A session reaching for a `.mat`
+# event store, or going looking for where the data lives, is told before the command
+# runs WHICH export folder to read and what to call to get it.
+#
+# TWO BRANCHES, AND THE SECOND EXISTS BECAUSE THE FIRST WAS NOT ENOUGH. The store
+# branch catches a session that has already decided to read a store. The search branch
+# catches one that is simply LOST — the state that PRODUCES the first, and which
+# nothing here addressed until 2026-08-28, one day after this file shipped. Each
+# branch carries its own reasoning where it is implemented;
+# `docs/todo/2026-08-28-the-resolver-exists-and-is-invisible.md` records how the gap
+# was found and why the briefing alone could not close it.
 #
 # NOT VENDORED. This one is bugarach's own and is not project-neutral: it names this
 # project's data shapes, its pointer file and its contract. Do not copy it upstream.
@@ -75,6 +83,20 @@ if [ "${1:-}" = "--selftest" ]; then
   probe 0 'git log --oneline -- src/bugarach/store.py'       'git is not a read'
   probe 0 'python -c "from bugarach import dataset; dataset.current()"' 'the sanctioned call'
   probe 0 'BUGARACH_STORE_OK=1 python probe.py --store s.mat' 'stated intent opts out'
+  # The search half. The first is the shape a session ran on 2026-08-28 (with a
+  # synthetic root — SAP004 keeps home paths out), one day after this gate shipped.
+  probe 2 'find /mnt/lab -maxdepth 6 -type d -name "exports"'  'the search that got past it'
+  probe 2 'ls /mnt/lab/data/exports/bugarach'          'listing the export root'
+  probe 2 'ls /mnt/lab/data/processed_archive/event_store_onset_revised_2v | wc -l' 'counting a store'
+  probe 2 'find /mnt/lab/data -maxdepth 4 -name "slices.csv"' 'hunting inside the data root'
+  probe 0 'BUGARACH_DATA_OK=1 ls /mnt/lab/data/exports' 'stated intent opts out of the search gate'
+  # Negatives. Each is a shape the measured 12,009-command census contains and does not
+  # fire on; a gate that also caught these would be trained away inside a day.
+  probe 0 'ls docs/'                                          'an ordinary repo listing'
+  probe 0 'find docs -name "export_folder_spec.md"'           'the contract is not the data'
+  probe 0 'find ~/Developer -maxdepth 4 -iname "eval_modularity*"' 'unrelated home search'
+  probe 0 'grep -rn "exports/bugarach" docs/'                 'naming the path is not reading it'
+  probe 0 'ls src/bugarach/'                                  'the source tree'
   # The one that matters most: still blocks with no interpreter anywhere on PATH.
   nopy=$(printf '%s' "$PATH" | tr ':' '\n' | grep -vi python | paste -sd: -)
   got=$(printf '%s' '{"tool_input":{"command":"python -c \"loadmat(1)\""}}' \
@@ -122,9 +144,70 @@ if [ -z "$cmd" ]; then DEGRADED=1; cmd="$payload"; fi
 #
 # The escape hatch is deliberately a thing you have to TYPE. `BUGARACH_STORE_OK=1`
 # costs nothing when the read is intended and cannot be arrived at by drift.
-printf '%s' "$cmd" | grep -qE 'BUGARACH_STORE_OK=1' && exit 0
+printf '%s' "$cmd" | grep -qE 'BUGARACH_(STORE|DATA)_OK=1' && exit 0
 printf '%s' "$cmd" | grep -qE '(^|[^a-zA-Z_/])(pytest|tox|nox)([^a-zA-Z_]|$)' && exit 0
 printf '%s' "$cmd" | grep -qE '(tools/matlab_ref/|src/bugarach/store\.py|tools/lab_excluded\.py|tools/sapper\.py)' && exit 0
+
+# ---- is this command SEARCHING FOR THE DATA? --------------------------------
+# THE HALF THAT WAS MISSING, and the hole it left is measured rather than argued.
+# Everything below this block addresses a session that has already decided to read a
+# store. None of it reaches one that simply does not know where the data is — and on
+# 2026-08-28, one day after this gate shipped, a session ran
+#
+#     find <home> -maxdepth 6 -type d -name "exports"
+#
+# and hand-pathed the result into --folder four separate times. The gate stayed silent,
+# correctly by its own design: `find` is not store access. SAP007 stayed silent too, for
+# its own stated reason: it greps what a COMMIT adds, and an interactive --folder is
+# never committed. `dataset.current()` would have answered instantly on that machine.
+#
+# THE TRIGGER IS MEASURED, NOT GUESSED, because the objection to a gate here was always
+# noise. Scored against every Bash command in the 54 bugarach session transcripts on this
+# machine — 12,009 of them — this pair fires 30 times (0.25%). All 30 were read by hand:
+# every one is a session locating the data root, listing export folders, or counting a
+# store's slices. Not one is unrelated work. A wider variant was measured and REJECTED:
+# allowing the verb after `;` or `&&` took it to 140 hits including a heredoc writing a
+# todo file, and anchoring on `find` over the home directory generally ran at roughly a
+# 50% false-positive rate — 23 interruptions to buy 2 extra true positives.
+#
+# It must sit ABOVE the read-only-verb opt-out below, which exempts find/ls so that
+# `grep -rn event_store docs/` never trips the store check. That exemption is right for
+# the store branch and is exactly what hid this one.
+if printf '%s' "$cmd" | grep -qE '^[[:space:]]*(find|ls|tree)[[:space:]]' \
+  && printf '%s' "$cmd" | grep -qE '(exports?/|exports([^a-zA-Z0-9_]|$)|processed_archive|/data([^a-zA-Z0-9_]|$))'; then
+  folder="$(current_export)"
+  [ -n "$folder" ] || folder="(see current_export.toml — it could not be read)"
+  {
+    echo "BLOCKED: this looks like a search for where the data lives. There is a"
+    echo "resolver, it is correct, and it answers on any machine:"
+    echo
+    echo "    from bugarach import dataset"
+    echo "    dataset.current()     # -> the export folder ${folder}"
+    echo "    dataset.data_root()   # -> the directory holding exports/ and processed_archive/"
+    echo
+    echo "    python -m bugarach.dataset      # both, printed, from a shell"
+    echo
+    echo "You do not need BUGARACH_DATA_ROOT set -- data_root() finds the Dropbox mount"
+    echo "by itself. current_export.toml at the repo root declares WHICH export is current"
+    echo "and is the only place that does; every analysis tool takes --dataset <name>, so"
+    echo "a path never has to be typed. Contract: docs/export_folder_spec.md."
+    echo
+    echo "WHY THIS FIRES AT ALL. On 2026-08-27 a session that could not find the data began"
+    echo "re-deriving it from a .mat store, and the machinery built that day -- the pointer"
+    echo "file, the resolver, this gate, sapper SAP007 -- fixed the store half only. One day"
+    echo "later a session ran 'find <home> -maxdepth 6 -type d -name exports' and hand-pathed"
+    echo "the result into --folder four times, because nothing addressed a session that was"
+    echo "simply LOST. This trigger was measured over 12,009 recorded commands: it fires on"
+    echo "30, and all 30 were sessions hunting for the data."
+    echo
+    echo "IF YOU MEANT IT -- inspecting what the producer shipped, checking a raw 2R"
+    echo "acquisition folder, counting a store's slices -- say so and prefix the command:"
+    echo
+    echo "    BUGARACH_DATA_OK=1 <your command>"
+  } >&2
+  exit 2
+fi
+
 printf '%s' "$cmd" | grep -qE '^[[:space:]]*(git|grep|rg|ag|find|ls|wc|diff|gh)([[:space:]]|$)' && exit 0
 
 # ---- does this command LOAD a store? ---------------------------------------

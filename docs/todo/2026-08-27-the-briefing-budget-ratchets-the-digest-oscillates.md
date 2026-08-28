@@ -63,6 +63,38 @@ The trimmed hook's 8,000B genuinely does have room — 2,186B under the floor �
 to 9,000B whenever its oscillation next peaks. One line, and
 `bash tools/hook_spill_census.sh --check 9000` says whether it still holds.
 
+## 2026-08-28 — the ratchet bit twice in one day, and the second time it set a design
+
+Both bites were the same shape: a line that fit on a laptop and did not fit in CI.
+
+`a194188` cut FOUNDATIONS §9's signpost from 201B to 124B after **CI measured 9,020B
+where the laptop said 8,984B**. Hours later, the input line from
+[the resolver being invisible](2026-08-28-the-resolver-exists-and-is-invisible.md) came in
+at 228B in its unresolved branch — a fresh clone with no data and no darkroom, which is
+what CI is — and put the briefing at **9,013B, 13B over**. Same day, same ~40B gap between
+the two machines, twice.
+
+**Measure a fresh clone, not this one.** This laptop resolves the darkroom in one line and
+has the board and the commit gates; a fresh clone fires every standing alarm at full
+length. The difference is ~90B and it falls entirely on the side with no margin:
+
+```
+cp -R <worktree> /tmp/ci && cd /tmp/ci && git config --unset core.hooksPath
+HOME=$(mktemp -d) bash tools/session_briefing.sh | head -1
+```
+
+**What the second bite settled is worth more than the bytes it saved.** The 228B version
+also said *"do not hunt with find(1); do not fall back to a .mat store"*, and the cut moved
+that corrective into `.claude/hooks/the-folder-is-the-input.sh`, which fires on the `find`
+itself. That is the better home on its own merits — a gate speaks at the moment of need and
+has **no byte budget at all** — and it generalises: **the briefing's job is to make a
+mistake unnecessary; a PreToolUse gate's job is to catch the session that made it anyway.**
+Prose only a session already going wrong needs does not belong in a payload every session
+pays for.
+
+So there is a second relief valve beside "turn it into a count", and it does not regrow
+either. The briefing sits at **8,878B in a fresh clone — 122B of headroom.**
+
 ## Related
 
 - [two SessionStart hooks and neither sees the total](2026-08-26-two-session-start-hooks-and-neither-sees-the-total.md)
