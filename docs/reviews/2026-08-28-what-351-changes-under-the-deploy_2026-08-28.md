@@ -107,6 +107,30 @@ rather than assume it.
    penalty. The handoff names the experiment that settles it, and that experiment
    is only available once the page is deployed.
 
+## Correction, 2026-08-28 — the gloss this review approved was wrong
+
+The gloss role 8 asked for, and this record signed off, described *locust* as
+**"this project's port of the CICADA detector"**. PR #360 merged minutes later and
+established the opposite in terms: locust is *derived from the Cossart lab's
+CICADA and **is not** CICADA* — it is fed this project's own detected events and
+paints each cell active for the rise interval where the original paints the whole
+transient. Saying locust IS CICADA's method beside this project's benchmark
+numbers is the precise defect #360 removed from the public front page, because a
+reader who joins that to locust's 85 firings on the decoy block concludes CICADA
+is promiscuous.
+
+**Why the review missed it.** Role 3 checks the artifact against companion docs as
+they stand, and `README.md`, `src/bugarach/ui/app.py` and interface2's methods doc
+already carried the correct phrasing — four places against one. The review
+consulted none of them, because it treated the word as a convenience gloss for a
+cold reader rather than as a claim about another lab's work. That is the finding:
+**a one-line definition of someone else's tool is an attribution claim and
+inherits role 2's zero-tolerance rule**, whatever else the document is about.
+Role 8 asked for a gloss; role 2 was never pointed at the gloss it got.
+
+Corrected in the handoff, matching the substance of the comment at
+`src/bugarach/ui/app.py:132-139`. No other claim in this record is affected.
+
 ## What this run does not warrant
 
 This review found and fixed 16 defects across 11 roles. **It is not a correctness
