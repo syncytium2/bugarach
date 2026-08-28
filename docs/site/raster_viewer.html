@@ -4155,7 +4155,14 @@ const spanGap = (t, lo, hi) => Math.max(0, Math.max(lo - t, t - hi));
 /* Matching is greedy CLOSEST PAIR FIRST, not planted-events-in-time-order.
    Walking them in time can consume a detection that was a much better match for
    the next event, which shows up as misses that are really bookkeeping. */
-function scoreDetections(times, fracs, onsets, widths, tolSec) {
+/* `hotWindow` is the promiscuity probe's span, or null where the recording has no
+   probe — which is every recording this page generates today, so the count below
+   is zero everywhere until the generator plants one. It is computed anyway
+   because the pooler downstream has always been ready for it: `poolScores` sums
+   `hotFa` and subtracts it from `nScored`, spliced verbatim from `scoring.js` and
+   parity-checked against `bench.pool_scores` on exactly this case. What was
+   missing was a producer, and this is it. */
+function scoreDetections(times, fracs, onsets, widths, tolSec, hotWindow = null) {
   // `Number.isFinite`, not the bare `isFinite`, which coerces first and so
   // answers true for null, for "" and for a one-element array. A detection that
   // arrived as null would be scored as one at time zero. Caught by a vector
@@ -4217,8 +4224,18 @@ function scoreDetections(times, fracs, onsets, widths, tolSec) {
   const f1 = (Number.isFinite(recall) && Number.isFinite(precision)
               && recall + precision > 0)
     ? 2 * recall * precision / (recall + precision) : NaN;
+  /* The probe counts a false alarm that OVERLAPS the window, not one whose left
+     edge happens to land in it — a span straddling the boundary was still fired
+     inside the dense block. Zero-width spans reduce to containment. Same rule and
+     same comparison as `score.py:242`, `(fa_ends >= hot[0]) & (fa_times <= hot[1])`;
+     the two differ only in that this one loops. */
+  let hotFa = 0;
+  if (hotWindow && faLo.length)
+    for (let k = 0; k < faLo.length; k++)
+      if (faHi[k] >= hotWindow[0] && faLo[k] <= hotWindow[1]) hotFa++;
+
   return { nPlanted: nP, nDetected: nD, nHit, nMiss: nP - nHit,
-           nFa: faLo.length, nDup, byFrac, recall, precision, f1 };
+           nFa: faLo.length, nDup, hotFa, byFrac, recall, precision, f1 };
 }
 
 /* The sensitivity axis — one knob per detector, and it lives in the DETECTORS
@@ -4235,10 +4252,54 @@ function scoreDetections(times, fracs, onsets, widths, tolSec) {
 
    A PLATEAU reaching the edge is different, and is allowed: if any point sharing
    the best F1 has neighbours on both sides, the grid bracketed the peak. */
-function pickOperatingPoint(curve) {
+/* `bench.MAX_PROBE_PER_MIN`, and the numbers are that dict's, not new ones. The
+   comment there is the decision this implements: the probe stays OUT of F1 —
+   folding it in makes the headline measure how hard the probe was set — and the
+   fix for "the alarm cannot ring" is a gate at SELECTION time instead.
+
+   Keyed by detector, and an unknown key passes rather than throwing: a detector
+   with no budget written for it should not become un-calibratable. Same
+   forgiveness as `_gate_on_probe`. */
+const MAX_PROBE_PER_MIN = {
+  coact: 1.0, loco: 1.0, sync: 1.0, rate: 2.0, sce: 9.0, cicada: 25.0,
+};
+
+/* The third refusal, and it does NOT re-rank. A promiscuous winner is refused,
+   not quietly replaced by the runner-up — silently accepting a worse point is how
+   a calibration stops being reproducible. Python twin: `bench._gate_on_probe`.
+
+   `hotWindow` null, or a recording with no probe, means the rate is NaN and the
+   gate passes, which is every recording this page generates today. That is
+   deliberate and it is not the same as the gate being absent: when the generator
+   plants a probe this begins refusing without another edit. */
+function gateOnProbe(row, hotWindow) {
+  const ceiling = MAX_PROBE_PER_MIN[row.detector];
+  if (ceiling === undefined) return { row, why: "" };
+  const rate = row.hotFaPerMin ? row.hotFaPerMin(hotWindow) : NaN;
+  if (!Number.isFinite(rate) || rate <= ceiling) return { row, why: "" };
+  return { row: null, promiscuous: true, rate, ceiling, why:
+    "the best setting on this sweep (F1 " + row.f1.toFixed(2) + " at "
+    + fmtKnob(row.knob) + ") fires " + rate.toFixed(1) + " times a minute inside "
+    + "a block where nothing was planted, against a budget of " + ceiling + ". "
+    + "It wins on F1 by keying on how busy the recording is, which is not an "
+    + "operating point. Tighten the detector, or raise the budget on purpose — "
+    + "the runner-up is not taken silently." };
+}
+
+/* One window for a pooled row, because `hotFaPerMin` multiplies one span by the
+   number of recordings pooled — the Python does the same and both assume every
+   recording in a data set carries the same probe. They do here: the folder is
+   generated in one pass from one set of parameters. The first recording that has
+   one answers for all of them, and a folder with none answers null. */
+const probeWindow = ds => {
+  const withProbe = (ds || []).find(c => c && c.truth && c.truth.hotWindow);
+  return withProbe ? withProbe.truth.hotWindow : null;
+};
+
+function pickOperatingPoint(curve, hotWindow = null) {
   const scored = curve.filter(r => Number.isFinite(r.f1));
   if (!scored.length) return { row: null, why: "no setting on this sweep has a defined F1" };
-  if (scored.length === 1) return { row: scored[0], why: "" };
+  if (scored.length === 1) return gateOnProbe(scored[0], hotWindow);
   const best = Math.max(...scored.map(r => r.f1));
   // Before asking WHERE the optimum sits, ask whether the sweep found one at
   // all. A grid whose every point ties has not measured the knob: the swept
@@ -4257,7 +4318,7 @@ function pickOperatingPoint(curve) {
   }
   const optimal = scored.filter(r => r.f1 >= best - 1e-9);
   const interior = optimal.filter(r => r !== scored[0] && r !== scored[scored.length - 1]);
-  if (interior.length) return { row: interior[0], why: "" };
+  if (interior.length) return gateOnProbe(interior[0], hotWindow);
   // WHICH end, carried out rather than only spoken: the block below offers to
   // extend the grid in this direction, and re-deriving the direction from the
   // row would have to re-do the "scored rows, not grid points" reasoning above.
@@ -8551,7 +8612,8 @@ function sweepPoint(trains, range, which, base, knob, value, truth, tolSec, extr
   const d = DETECTORS[which].run(trains, range, cfg, extra);
   const widths = d.widths || d.starts.map((s, i) => d.ends[i] - s);
   return { knob: value,
-           ...scoreDetections(truth.times, truth.fracs, d.starts, widths, tolSec) };
+           ...scoreDetections(truth.times, truth.fracs, d.starts, widths, tolSec,
+                              truth.hotWindow || null) };
 }
 
 /* Everything the sweep needs from one recording, read once. The sweep visits
@@ -8811,7 +8873,7 @@ async function learnedRows(dataSet, split, archs, tol, say) {
       const scored = f.detections.map(d => {
         const c = dataSet[d.index];
         return scoreDetections(c.truth.times, c.truth.fracs, d.onset_sec,
-                               d.width_sec, tol);
+                               d.width_sec, tol, c.truth.hotWindow || null);
       });
       held.push(tunePool(scored, { detector: arch, knobValue: f.threshold,
                                    tolSec: tol, seeds: f.test_idx }));
@@ -8938,7 +9000,7 @@ async function scoreAllDetectors() {
           const trainRows = knob.grid.map(v =>
             tunePool(tr.map(i => scored.get(v)[i]),
                      { detector: which, knobValue: v, tolSec: tol, seeds: tr }));
-          const chosen = pickOperatingPoint(trainRows);
+          const chosen = pickOperatingPoint(trainRows, probeWindow(dataSet));
           if (!chosen.row) { refusedFolds.push({ fold: f, why: chosen.why }); continue; }
           held.push(tunePool(te.map(i => scored.get(chosen.row.knob)[i]),
                              { detector: which, knobValue: chosen.row.knob,
@@ -9239,7 +9301,7 @@ async function sweepDetector(which, dataSet, tol, onPoint) {
       const trainRows = grid.map(v =>
         tunePool(tr.map(i => scored.get(v)[i]),
                  { detector: which, knobValue: v, tolSec: tol, seeds: tr }));
-      const chosen = pickOperatingPoint(trainRows);
+      const chosen = pickOperatingPoint(trainRows, probeWindow(dataSet));
       if (!chosen.row) {
         folds.push({ fold: f, chosen: null, why: chosen.why }); continue;
       }
@@ -9253,7 +9315,7 @@ async function sweepDetector(which, dataSet, tol, onPoint) {
     }
   }
   return { which, grid, rows, folds, split, edited: rangeEdited(which),
-           pick: pickOperatingPoint(rows) };
+           pick: pickOperatingPoint(rows, probeWindow(dataSet)) };
 }
 
 async function runTune() {
@@ -10389,7 +10451,7 @@ function demoScoreLine() {
   const which = DETECT.rows[0].detector;
   const mine = DETECT.rows.filter(r => r.detector === which);
   const sc = scoreDetections(t.times, t.fracs, mine.map(r => r.onset_sec),
-                             mine.map(r => r.width_sec), tol);
+                             mine.map(r => r.width_sec), tol, t.hotWindow || null);
   return " Nothing here is a recording of anything: " + n
     + " coordinated events were planted and "
     + (DETECTORS[which] ? DETECTORS[which].label : which)

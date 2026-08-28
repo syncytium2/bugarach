@@ -35,9 +35,9 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from bugarach.bench import (BenchResult, DegenerateSweep, EdgeOfRange,
-                            OPERATING_POINTS,
-                            pick_operating_point)
+from bugarach.bench import (BENCH_RECORDING, BenchResult, DegenerateSweep,
+                            EdgeOfRange, MAX_PROBE_PER_MIN, OPERATING_POINTS,
+                            TooPromiscuous, pick_operating_point)
 from bugarach.detectors.rate import rate_detect
 from bugarach.detectors.sync import sync_detect
 from bugarach.score import score_detections
@@ -500,3 +500,139 @@ def test_a_knob_that_changes_nothing_is_refused_on_both_sides(pick_in_browser):
     assert got["knob"] is None, "the browser named a setting on a flat sweep"
     assert "same f1" in got["why"].lower(), got["why"]
     assert "widening the range will not help" in got["why"].lower(), got["why"]
+
+
+# --------------------------------------------- the third refusal: the probe
+#
+# `bench._gate_on_probe` has been the default inside `pick_operating_point` since
+# 2026-08-22 and the browser had the other two refusals without it, so the page
+# could choose a setting the Python refuses. These are the tests that stop the
+# two drifting apart again.
+#
+# The rows are built INSIDE the page, because `hotFaPerMin` is a closure and a
+# function cannot cross `page.evaluate`'s JSON boundary. Only the plain numbers
+# travel; the real `pickOperatingPoint` runs on them.
+
+# The stub takes the window and returns NaN without one, because the real
+# `hotFaPerMin` does (`if (!hotWindow) return NaN`). A stub that ignored its
+# argument would report a rate for a recording with no probe, and the no-probe
+# test below would then be asserting against a state that cannot happen. It got
+# written that way first and that test caught it.
+PICK_GATED = """(args) => {
+  const rows = args.rows.map(r => ({
+    knob: r.knob, f1: r.f1, detector: args.detector,
+    hotFaPerMin: (w) => (w ? r.rate : NaN),
+  }));
+  const p = pickOperatingPoint(rows, args.hotWindow);
+  return {knob: p.row ? p.row.knob : null, why: p.why,
+          promiscuous: !!p.promiscuous};
+}"""
+
+
+@pytest.fixture(scope="module")
+def gated_pick_in_browser(viewer):
+    page, _ = viewer
+    return lambda rows, detector, hot_window: page.evaluate(
+        PICK_GATED, {"rows": rows, "detector": detector, "hotWindow": hot_window})
+
+
+def _gate_rows(f1s, rates):
+    return [{"knob": i, "f1": f, "rate": r}
+            for i, (f, r) in enumerate(zip(f1s, rates))]
+
+
+# One seed and a 300 s probe window is five minutes, so `hot_fa` five times the
+# per-minute rate. Stated here rather than left for the reader to divide.
+HOT_MIN = (BENCH_RECORDING["hot_window"][1]
+           - BENCH_RECORDING["hot_window"][0]) / 60.0
+
+
+def _promiscuous_curve(rate_per_min):
+    """An interior peak whose winner fires `rate_per_min` into the empty block.
+
+    The probe's firings are added to ``n_detected`` as well as to ``hot_fa``,
+    because ``n_scored = n_detected - hot_fa`` — set ``hot_fa`` alone and the
+    scored denominator shrinks, F1 moves, and the peak walks off point 2. The
+    first draft of this helper did exactly that and the pass-through tests caught
+    it: the curve it was meant to hold fixed was being reshaped by the very knob
+    under test. Adding both keeps every F1 identical to the ungated shape, so what
+    these tests vary is promiscuity and nothing else.
+    """
+    shape = [(20, 6), (40, 28), (60, 64), (20, 30), (20, 12)]
+    curve = [BenchResult(detector="rate", regime="baseline_quiet", knob_value=i,
+                         n_planted=100, n_detected=d, n_hit=h, seeds=(1,))
+             for i, (d, h) in enumerate(shape)]
+    hot = int(round(rate_per_min * HOT_MIN))
+    curve[2].hot_fa = hot
+    curve[2].n_detected += hot
+    return curve
+
+
+def test_a_winner_that_fires_into_the_empty_block_is_refused_on_both_sides(
+        gated_pick_in_browser):
+    """The refusal `MAX_PROBE_PER_MIN` was written for, now on both sides.
+
+    The winner here is a genuine interior peak — the other two refusals have
+    nothing to say about it — and it gets there by firing where nothing was
+    planted. Python raises; the browser names no row and says why, the same
+    division of labour the edge case already uses.
+    """
+    ceiling = MAX_PROBE_PER_MIN["rate"]
+    curve = _promiscuous_curve(ceiling + 4.0)
+    assert pick_operating_point(curve, max_probe_per_min=None).knob_value == 2, (
+        "with the gate off this curve has a clean interior winner — so what the "
+        "gate refuses below is the promiscuity and nothing else")
+    with pytest.raises(TooPromiscuous):
+        pick_operating_point(curve)
+
+    got = gated_pick_in_browser(
+        _gate_rows([r.f1 for r in curve], [r.hot_fa / HOT_MIN for r in curve]),
+        "rate", list(BENCH_RECORDING["hot_window"]))
+    assert got["knob"] is None, "the browser took a setting Python refuses"
+    assert got["promiscuous"], got
+    assert "nothing was planted" in got["why"], got["why"]
+    assert "runner-up is not taken silently" in got["why"], (
+        "the refusal must not read as an invitation to take second place")
+
+
+def test_a_winner_inside_its_budget_is_taken_on_both_sides(gated_pick_in_browser):
+    """The gate must not refuse everything with a probe in it — a detector that
+    fires a little in the block is doing what a detector does."""
+    curve = _promiscuous_curve(MAX_PROBE_PER_MIN["rate"] - 1.0)
+    assert pick_operating_point(curve).knob_value == 2
+
+    got = gated_pick_in_browser(
+        _gate_rows([r.f1 for r in curve], [r.hot_fa / HOT_MIN for r in curve]),
+        "rate", list(BENCH_RECORDING["hot_window"]))
+    assert got["knob"] == 2, got
+    assert not got["promiscuous"]
+
+
+def test_no_probe_means_the_gate_passes_rather_than_refusing_everything(
+        gated_pick_in_browser):
+    """Today's recordings have no probe, and this is why landing the gate before
+    the generator plants one is not a regression: with no window the rate is not
+    a number, and `_gate_on_probe` passes on exactly that condition too.
+
+    It is also the test that will fail loudly if someone later makes a missing
+    probe mean zero instead of unknown — which would silently pass every
+    candidate for the wrong reason.
+    """
+    curve = _promiscuous_curve(MAX_PROBE_PER_MIN["rate"] + 20.0)
+    got = gated_pick_in_browser(
+        _gate_rows([r.f1 for r in curve], [r.hot_fa / HOT_MIN for r in curve]),
+        "rate", None)
+    assert got["knob"] == 2, "with no probe window there is nothing to gate on"
+    assert not got["promiscuous"]
+
+
+def test_an_unknown_detector_is_calibratable_rather_than_refused(
+        gated_pick_in_browser):
+    """A detector with no budget written for it passes, the same forgiveness
+    `_gate_on_probe` shows — a new detector should not be un-calibratable until
+    somebody writes it a ceiling."""
+    curve = _promiscuous_curve(999.0)
+    got = gated_pick_in_browser(
+        _gate_rows([r.f1 for r in curve], [r.hot_fa / HOT_MIN for r in curve]),
+        "nosuchdetector", list(BENCH_RECORDING["hot_window"]))
+    assert got["knob"] == 2, got
