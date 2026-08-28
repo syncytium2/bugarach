@@ -126,7 +126,7 @@ def main(argv=None) -> int:
     ap.add_argument("--seed", type=int, default=7)
     a = ap.parse_args(argv)
 
-    from bugarach.learn.train import train
+    from bugarach.learn.train import fold_maker, train
 
     spec = json.loads(Path(a.bakeoff).read_text())["spec"]
     fb = _fair_bakeoff()
@@ -141,10 +141,14 @@ def main(argv=None) -> int:
             cache[seed] = fb._make_recording(spec, seed)
         return cache[seed]
 
-    mk = lambda seed, _t=tuple(train_seeds): rec(_t[seed % len(_t)])   # noqa: E731
+    # `fold_maker`, not `seed % len` — the latter hands `pick_threshold` the
+    # recordings the fit just used, defeating a separation that function
+    # asserts. #356 fixed this in `fair_bakeoff.py` and `lab.py` and did not
+    # reach this file, so results produced before 2026-08-28 were fitted so.
+    mk, n_fit, _ = fold_maker(rec, train_seeds)
     print(f"training tube: {a.steps} steps, seed {a.seed}")
-    tr = train("tube", mk, dt=dt, n_train=6, steps=a.steps, crop=4096,
-               batch=3, lr=1e-2, seed=a.seed)
+    tr = train("tube", mk, dt=dt, n_train=min(6, n_fit), steps=a.steps,
+               crop=4096, batch=3, lr=1e-2, seed=a.seed)
     thr = float(tr.threshold)
     print(f"  operating point {thr:.6f}, {tr.n_params} params")
 

@@ -179,9 +179,9 @@ def run(spec: dict, *, folds: int, seeds_per_fold: int, quick: bool) -> dict:
 
             # `fold_maker` splits the TRAINING folds again so the operating point
             # is picked on recordings the fit never saw. The maker here used to be
-            # `seed % len(tr_seeds)`, which handed `pick_threshold` the very
-            # recordings it had just fitted on and silently defeated the seed
-            # separation that function asserts.
+            # an index by seed-modulo-length, which handed `pick_threshold` the
+            # very recordings it had just fitted on and silently defeated the
+            # seed separation that function asserts. SAP010 blocks that shape.
             mk, n_fit, _ = fold_maker(rec, tr_seeds)
             t0 = time.perf_counter()
             tr = train(name, mk, n_train=min(10, n_fit),

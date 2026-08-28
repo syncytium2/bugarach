@@ -3,26 +3,26 @@
  "by_multiple": {
   "1": {
    "background_hz": 0.009705882352941177,
-   "frames_over_threshold": 14,
-   "frames_over_threshold_no_bypass": 3,
+   "frames_over_threshold": 66,
+   "frames_over_threshold_no_bypass": 39,
    "n_frames": 35186
   },
   "2": {
    "background_hz": 0.019411764705882354,
-   "frames_over_threshold": 86,
-   "frames_over_threshold_no_bypass": 42,
+   "frames_over_threshold": 208,
+   "frames_over_threshold_no_bypass": 137,
    "n_frames": 35238
   },
   "4": {
    "background_hz": 0.03882352941176471,
-   "frames_over_threshold": 267,
-   "frames_over_threshold_no_bypass": 134,
+   "frames_over_threshold": 637,
+   "frames_over_threshold_no_bypass": 467,
    "n_frames": 35204
   },
   "8": {
    "background_hz": 0.07764705882352942,
-   "frames_over_threshold": 486,
-   "frames_over_threshold_no_bypass": 298,
+   "frames_over_threshold": 890,
+   "frames_over_threshold_no_bypass": 692,
    "n_frames": 35230
   }
  },
@@ -30,5 +30,5 @@
  "note": "recordings contain no planted events, no distractors and no hot block: n_per_level is all zeros, n_distractors is 0, and hot_rate_hz is 0.0 rather than equal to the background, because the hot block is additive",
  "seed": 7,
  "steps": 900,
- "threshold": 0.9908190573212562
+ "threshold": 0.9838471862538573
 }

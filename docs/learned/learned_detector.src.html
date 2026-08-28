@@ -612,7 +612,7 @@ th.n { text-align: right; font-family: var(--mono);
     reported span contains it. Recall, precision and
     fold ranges for every row are in
     <a href="https://github.com/syncytium2/bugarach/blob/main/docs/learned/bakeoff.md">the
-    full run</a>, which predates the rename and still lists locust as CICADA. The two F1 columns describe <em>the same detections</em> &mdash;
+    full run</a>. The two F1 columns describe <em>the same detections</em> &mdash;
     nothing was re-run; one arithmetic choice is reversed.
   </p>
   <p>
@@ -710,22 +710,37 @@ th.n { text-align: right; font-family: var(--mono);
     {{N:ablation:by_key.s1_c40.n_params|,}} parameters against four scales at
     {{N:ablation:by_key.s4_c40.f1.mean|.3f}} and
     {{N:ablation:by_key.s4_c40.n_params|,}}. Two scales scores
-    {{N:ablation:by_key.s2_c40.f1.mean|.3f}} &mdash; further from both than they are
-    from each other, which no monotone reading predicts. All three sit inside a fold
+    {{N:ablation:by_key.s2_c40.f1.mean|.3f}}, so the three are ordered by scale count.
+    ⚠ <strong>That ordering is new, and it is the second thing this ablation has
+    said.</strong> Re-run on 2026-08-28 after the operating point stopped being chosen
+    on the fitting recordings, it reversed: one scale had scored <em>above</em> four,
+    and two scales had sat outside both, which no monotone reading predicted. The old
+    grid is what the webapp README's <em>&ldquo;ship one scale&rdquo;</em> guidance was
+    derived from.
+    <strong>Neither ordering is a result.</strong> All three still sit inside a fold
     spread of {{N:b:learned.tube.f1.sd|.3f}}, so <strong>none of the three differences
-    is one this benchmark can distinguish from noise.</strong> Four is what ships, because four is what was
-    measured end to end &mdash; not because a sweep chose it.
+    is one this benchmark can distinguish from noise</strong> &mdash; and a grid whose
+    ranking flips when an unrelated defect is fixed is a grid reporting that it cannot
+    resolve the variable. Four is what ships, because four is what was measured end to
+    end &mdash; not because a sweep chose it, and not because it now happens to lead.
   </p>
   <p>
     A second ablation raised the ceiling on how much wider the surround may be than
     the center, from 40 to 200, and the score did not move by a digit. That is not a
     null result &mdash; <strong>it is a no-op.</strong> The largest ratio fitted
-    anywhere in the published four-scale fits is 23.5, so the ceiling never binds and the two runs
-    are bit-identical computations. Where it does bind, in the single-scale runs, the
-    scores differ as they must
-    ({{N:ablation:by_key.s1_c40.f1.mean|.3f}} against
-    {{N:ablation:by_key.s1_c200.f1.mean|.3f}}). An earlier version of this page
-    reported the no-op as evidence the clamp was harmless.
+    anywhere is 24.8 at four scales and 28.6 at one, so the ceiling never binds and
+    each pair of runs is a bit-identical computation:
+    {{N:ablation:by_key.s1_c40.f1.mean|.3f}} against
+    {{N:ablation:by_key.s1_c200.f1.mean|.3f}} at one scale, and the same equality at
+    four. An earlier version of this page reported the no-op as evidence the clamp was
+    harmless.
+    ⚠ <strong>And the question that prompted this ablation no longer reproduces.</strong>
+    It was written because a fitted ratio sat at 38 against a ceiling of 40 &mdash; by
+    this project's own rule, a search reporting that its range was wrong. After the
+    2026-08-28 threshold fix nothing fits above 28.6, so the ceiling is clear at every
+    scale count and there is nothing left to raise. The earlier page also said the
+    clamp <em>did</em> bind in the single-scale runs and that their scores &ldquo;differ
+    as they must&rdquo;; they no longer differ, because it no longer binds there either.
   </p>
   <p>
     <strong>Applying the same test to the busier regime says the same thing.</strong>
@@ -760,7 +775,7 @@ th.n { text-align: right; font-family: var(--mono);
   <thead><tr><th>detector</th><th>the method it ports</th></tr></thead>
   <tbody>
     <tr><td>binned SCE</td><td>Synchronous calcium events: the coactivity-versus-shuffle rule. Cossart, Aronov &amp; Yuste (2003), <i>Attractor dynamics of network UP states in the neocortex</i>, <i>Nature</i> <b>423</b>:283&ndash;288, <code>doi:10.1038/nature01614</code>.</td></tr>
-    <tr><td>locust</td><td>CICADA's method, from the Cossart lab, ported and modified &mdash; which is why it carries a different name. Denis, Dard, Quiroli, Cossart &amp; Picardo (2020), <code>doi:10.5281/zenodo.10041434</code>. ⚠ That is a version DOI and the release it resolves to does not contain the method; pin a revision when citing it.</td></tr>
+    <tr><td>locust</td><td>A <b>partial</b> port of an <b>older</b> version of the Cossart lab's implementation &mdash; which is why it carries a different name. It <b>skips CICADA's per-cell transient-detection stage</b>, because it is fed events this project detected separately, and it <b>replaces the active-duration model</b>, which does not transfer to this preparation's much longer transients. The chain is <b>checked only at its last link</b>: locust matches the MATLAB implementation it was ported from to 1e-9, and nobody here has checked that implementation against the Cossart original. <b>So locust's numbers on this page are a result about locust, not about CICADA.</b> Denis, Dard, Quiroli, Cossart &amp; Picardo (2020), <code>doi:10.5281/zenodo.10041434</code>. ⚠ That is a version DOI and the release it resolves to does not contain the method; pin a revision when citing it.</td></tr>
     <tr><td>LoCo &middot; CoactDetect</td><td>Build on Unitary Events, including the per-cell clipping step this page's model also uses. Gr&uuml;n, Diesmann &amp; Aertsen (2002), <i>Neural Computation</i> <b>14</b>(1):43&ndash;80 and 81&ndash;119.</td></tr>
     <tr><td>rate+context</td><td>Cell-averaging constant-false-alarm-rate detection, from radar. Finn &amp; Johnson (1968), <i>RCA Review</i> <b>29</b>(3):414&ndash;464; restated by Rohling (1983), <i>IEEE T-AES</i> <b>19</b>(4):608&ndash;621.</td></tr>
     <tr><td>SPIKE-synch</td><td>Kreuz's SPIKE-synchronization measure. Kreuz, Mulansky &amp; Bozanic (2015), <i>J Neurophysiol</i> <b>113</b>(9):3432&ndash;3445, <code>doi:10.1152/jn.00848.2014</code>. The detection layer built on top of the measure is this project's, not his, and it sits under two open defects &mdash; so its score here is not a statement about the measure.</td></tr>
