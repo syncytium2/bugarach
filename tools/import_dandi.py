@@ -23,8 +23,21 @@ amplitude.
 What the source actually holds, and what it does not
 ----------------------------------------------------
 The published data is **binarised**: an ``int8`` raster, frames × ROIs, of "this
-cell is active in this frame", plus frame timestamps. That is the output of the
-authors' own inference (CICADA / DeepCINAC), not a fluorescence trace. So:
+cell is active in this frame", plus frame timestamps, found under
+``processing/ophys`` in the NWB. It is **not** a fluorescence trace — some
+inference step has already been applied and what arrives is a state, not a shape.
+
+**Which step, this importer does not claim to know.** The Cossart lab publishes
+CICADA and DeepCINAC and it is tempting to name one, so an earlier draft of this
+docstring did. Nobody here has read their pipeline documentation. Attributing a
+method to another group on a guess is a research-integrity problem, not a
+citation nitpick, and this project has already had to correct one. If the answer
+matters to a result, read their paper or ask them.
+
+**Nothing this lab knows about its own event data transfers here either.** In
+particular the `locs` / `t50rise` field-name history that governs our export —
+where a legacy `findpeaks` name ended up holding an onset — is **ours**, and says
+nothing about what is in theirs. So:
 
 ===============  ==================================================================
 column           what this producer sends
@@ -184,10 +197,14 @@ extracted sessions at `{src.name}/`.
 ## What `time_sec` is here, and what it is not
 
 **It is the first frame of an inferred active run — NOT a `t50rise`.** The source
-is a binary raster: the authors' own activity inference, one bit per cell per
-frame. There is no half-rise in a state variable, so this producer sends the
-closest landmark it has, which the contract permits provided it says so. This is
-that statement.
+is a binary raster, one bit per cell per frame: some inference step ran before
+publication and **this importer does not claim to know which one.** There is no
+half-rise in a state variable, so this producer sends the closest landmark it
+has, which the contract permits provided it says so. This is that statement.
+
+**What is in this corpus is the authors' business and is not documented here
+beyond what the files show.** Nothing about this lab's own event data — its
+`locs` / `t50rise` field-name history in particular — has been assumed to apply.
 
 **Consequence for anyone comparing this folder to this lab's:** our `time_sec` is
 a half-rise and this one is a state onset. They are different landmarks, and the
