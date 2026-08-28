@@ -35,6 +35,16 @@ td.n, th.n { text-align: right; font-family: var(--mono);
              font-variant-numeric: tabular-nums; white-space: nowrap; }
 .cite { font-size: .93rem; }
 .cite td:first-child { white-space: nowrap; font-weight: 640; }
+/* On a phone the citations table is the only one whose cells are prose, so
+   scrolling it sideways cuts every line mid-word. Stack it into blocks instead;
+   the numeric tables scroll fine because a reader tracks along one row. */
+@media (max-width: 640px) {
+  .cite thead { display: none; }
+  .cite, .cite tbody, .cite tr, .cite td { display: block; width: auto; }
+  .cite tr { border-bottom: 1px solid var(--rule); padding: .6rem 0; }
+  .cite td { border: 0; padding: .1rem 0; }
+  .cite td:first-child { white-space: normal; }
+}
 </style>
 
 <div class="wrap">
@@ -56,7 +66,8 @@ td.n, th.n { text-align: right; font-family: var(--mono);
     <strong>The model numbers on this page are stale, and they are kept because the
     apparatus is the subject.</strong> They come from a run of 2026-08-16 whose
     generator settings were measured from a data store the project has since closed
-    in favor of an approved export folder, and whose difficulty axis was
+    in favor of an approved export folder, and whose difficulty axis &mdash; the band of
+    background rates the benchmark's quiet and busy regimes sit on &mdash; was
     re-derived four days later. The pipeline is current; this pass through it is not.
     Where a number would mislead if read as a live result, it is marked.
   </p>
@@ -263,8 +274,9 @@ td.n, th.n { text-align: right; font-family: var(--mono);
     involves <em>more</em> cells than two of the three planted levels (0.14 and 0.08).
     So "coincidence, not coordination" is a label applied by the generator, not a
     property a detector could discriminate on, and every leading detector duly fires on
-    nearly all of them. That caps the precision any detector can reach here and it is
-    not a fact about detectors.
+    nearly all of them. That caps the precision of any detector that fires more often
+    than it hits &mdash; which is every leading detector here &mdash; and the ceiling
+    is a fact about the generator, not about detectors.
   </p>
   <p>
     <span class="key learned">The published score cannot see the probe block, on
@@ -405,15 +417,16 @@ td.n, th.n { text-align: right; font-family: var(--mono);
     ⚠ <strong>This page carries five kinds of fit of the same architecture, and only
     the first produced the table.</strong> The four scored folds; the twenty ablation
     fits behind the scale and clamp results; the busier refit whose surround ratio
-    reaches {{N:a:ratios.1|.1f}}; the quiet-regime fit behind the transfer numbers; and
-    the {{N:onevote:n_seeds}}-seed grid that the one-vote probe and this rate sweep
-    share. Each demonstration is about the architecture rather than about a published
-    number, but the distinction is worth naming, because conflating two of them is a
-    mistake this page has already made once.
+    reaches {{N:a:ratios.1|.1f}}; the two regime fits behind the transfer numbers, of
+    which that busier refit is one; and the {{N:onevote:n_seeds}}-seed grid behind the
+    one-vote probe, of which seed 7 is the single fit this rate sweep used. Each
+    demonstration is about the architecture rather than about a published number, but
+    the distinction is worth naming, because conflating two of them is a mistake this
+    page has already made once.
   </p>
   <p>
-    ⚠ That is one training run, so it is an order of magnitude rather than a
-    measurement &mdash; the same limitation every learned number here carries. It is
+    ⚠ <strong>The rate sweep above is that one fit</strong>, so it is an order of
+    magnitude rather than a measurement &mdash; the same limitation every learned number here carries. It is
     reported because the alternative in an earlier version of this page was a figure
     panel that convolved a step with a numpy copy of the kernel and called it the
     test. That panel could not have failed.
@@ -422,9 +435,10 @@ td.n, th.n { text-align: right; font-family: var(--mono);
     <strong>The fitted kernel widths are not quoted here.</strong> An earlier version
     of this page reported them as the model recovering the timescale of a real event
     on its own. The project had already withdrawn that reading: refitted on a quieter
-    background with identical events, the same four widths span 3.8&times;. They are a
-    property of the background, not a measurement of the event, and the withdrawal is
-    older than the claim was.
+    background with identical events, the same four widths spread over a
+    3.8&times; range where the busier fit spans 1.6&times;. They are a property of the
+    background, not a measurement of the event, and the withdrawal is older than the
+    claim was.
   </p>
 </div>
 
@@ -463,7 +477,7 @@ td.n, th.n { text-align: right; font-family: var(--mono);
     <tr class="learned">
       <td>center&minus;surround (learned)</td>
       <td class="n">{{N:probe:detectors.tube.published_f1|.3f}}</td>
-      <td class="n">{{N:probe:detectors.tube.f1.mean|.3f}}</td>
+      <td class="n">{{N:probe:detectors.tube.f1.mean|.3f}} &plusmn;&nbsp;{{N:probe:detectors.tube.f1.sd|.3f}}</td>
       <td class="n">{{N:probe:detectors.tube.hot_fa.mean|.2f}} &nbsp;({{N:probe:detectors.tube.hot_fa.min|.0f}}&ndash;{{N:probe:detectors.tube.hot_fa.max|.0f}})</td>
       <td class="n">{{N:probe:detectors.tube.distractor_hits_mean|.1f}}</td>
       <td class="n">{{N:b:learned.tube.detect_sec.mean|.3f}}</td>
@@ -472,7 +486,7 @@ td.n, th.n { text-align: right; font-family: var(--mono);
     <tr>
       <td>CoactDetect</td>
       <td class="n">{{N:probe:detectors.coact.published_f1|.3f}}</td>
-      <td class="n">{{N:probe:detectors.coact.f1.mean|.3f}}</td>
+      <td class="n">{{N:probe:detectors.coact.f1.mean|.3f}} &plusmn;&nbsp;{{N:probe:detectors.coact.f1.sd|.3f}}</td>
       <td class="n">{{N:probe:detectors.coact.hot_fa.mean|.2f}} &nbsp;({{N:probe:detectors.coact.hot_fa.min|.0f}}&ndash;{{N:probe:detectors.coact.hot_fa.max|.0f}})</td>
       <td class="n">{{N:probe:detectors.coact.distractor_hits_mean|.1f}}</td>
       <td class="n">{{N:b:hand_written.coact.detect_sec.mean|.3f}}</td>
@@ -481,7 +495,7 @@ td.n, th.n { text-align: right; font-family: var(--mono);
     <tr>
       <td>LoCo</td>
       <td class="n">{{N:probe:detectors.loco.published_f1|.3f}}</td>
-      <td class="n">{{N:probe:detectors.loco.f1.mean|.3f}}</td>
+      <td class="n">{{N:probe:detectors.loco.f1.mean|.3f}} &plusmn;&nbsp;{{N:probe:detectors.loco.f1.sd|.3f}}</td>
       <td class="n">{{N:probe:detectors.loco.hot_fa.mean|.2f}} &nbsp;({{N:probe:detectors.loco.hot_fa.min|.0f}}&ndash;{{N:probe:detectors.loco.hot_fa.max|.0f}})</td>
       <td class="n">{{N:probe:detectors.loco.distractor_hits_mean|.1f}}</td>
       <td class="n">{{N:b:hand_written.loco.detect_sec.mean|.3f}}</td>
@@ -490,7 +504,7 @@ td.n, th.n { text-align: right; font-family: var(--mono);
     <tr>
       <td>rate+context</td>
       <td class="n">{{N:probe:detectors.rate.published_f1|.3f}}</td>
-      <td class="n">{{N:probe:detectors.rate.f1.mean|.3f}}</td>
+      <td class="n">{{N:probe:detectors.rate.f1.mean|.3f}} &plusmn;&nbsp;{{N:probe:detectors.rate.f1.sd|.3f}}</td>
       <td class="n">{{N:probe:detectors.rate.hot_fa.mean|.2f}} &nbsp;({{N:probe:detectors.rate.hot_fa.min|.0f}}&ndash;{{N:probe:detectors.rate.hot_fa.max|.0f}})</td>
       <td class="n">{{N:probe:detectors.rate.distractor_hits_mean|.1f}}</td>
       <td class="n">{{N:b:hand_written.rate.detect_sec.mean|.3f}}</td>
@@ -499,7 +513,7 @@ td.n, th.n { text-align: right; font-family: var(--mono);
     <tr>
       <td>locust</td>
       <td class="n">{{N:probe:detectors.cicada.published_f1|.3f}}</td>
-      <td class="n">{{N:probe:detectors.cicada.f1.mean|.3f}}</td>
+      <td class="n">{{N:probe:detectors.cicada.f1.mean|.3f}} &plusmn;&nbsp;{{N:probe:detectors.cicada.f1.sd|.3f}}</td>
       <td class="n">{{N:probe:detectors.cicada.hot_fa.mean|.2f}} &nbsp;({{N:probe:detectors.cicada.hot_fa.min|.0f}}&ndash;{{N:probe:detectors.cicada.hot_fa.max|.0f}})</td>
       <td class="n">{{N:probe:detectors.cicada.distractor_hits_mean|.1f}}</td>
       <td class="n">{{N:b:hand_written.cicada.detect_sec.mean|.3f}}</td>
@@ -508,7 +522,7 @@ td.n, th.n { text-align: right; font-family: var(--mono);
     <tr>
       <td>binned SCE</td>
       <td class="n">{{N:probe:detectors.sce.published_f1|.3f}}</td>
-      <td class="n">{{N:probe:detectors.sce.f1.mean|.3f}}</td>
+      <td class="n">{{N:probe:detectors.sce.f1.mean|.3f}} &plusmn;&nbsp;{{N:probe:detectors.sce.f1.sd|.3f}}</td>
       <td class="n">{{N:probe:detectors.sce.hot_fa.mean|.2f}} &nbsp;({{N:probe:detectors.sce.hot_fa.min|.0f}}&ndash;{{N:probe:detectors.sce.hot_fa.max|.0f}})</td>
       <td class="n">{{N:probe:detectors.sce.distractor_hits_mean|.1f}}</td>
       <td class="n">{{N:b:hand_written.sce.detect_sec.mean|.3f}}</td>
@@ -517,7 +531,7 @@ td.n, th.n { text-align: right; font-family: var(--mono);
     <tr>
       <td>SPIKE-synch</td>
       <td class="n">{{N:probe:detectors.sync.published_f1|.3f}}</td>
-      <td class="n">{{N:probe:detectors.sync.f1.mean|.3f}}</td>
+      <td class="n">{{N:probe:detectors.sync.f1.mean|.3f}} &plusmn;&nbsp;{{N:probe:detectors.sync.f1.sd|.3f}}</td>
       <td class="n">{{N:probe:detectors.sync.hot_fa.mean|.2f}} &nbsp;({{N:probe:detectors.sync.hot_fa.min|.0f}}&ndash;{{N:probe:detectors.sync.hot_fa.max|.0f}})</td>
       <td class="n">{{N:probe:detectors.sync.distractor_hits_mean|.1f}}</td>
       <td class="n">{{N:b:hand_written.sync.detect_sec.mean|.3f}}</td>
@@ -526,7 +540,7 @@ td.n, th.n { text-align: right; font-family: var(--mono);
     <tr class="learned">
       <td>pooled trace (learned)</td>
       <td class="n">{{N:probe:detectors.trace.published_f1|.3f}}</td>
-      <td class="n">{{N:probe:detectors.trace.f1.mean|.3f}}</td>
+      <td class="n">{{N:probe:detectors.trace.f1.mean|.3f}} &plusmn;&nbsp;{{N:probe:detectors.trace.f1.sd|.3f}}</td>
       <td class="n">{{N:probe:detectors.trace.hot_fa.mean|.2f}}</td>
       <td class="n">{{N:probe:detectors.trace.distractor_hits_mean|.1f}}</td>
       <td class="n">{{N:b:learned.trace.detect_sec.mean|.3f}}</td>
@@ -535,7 +549,7 @@ td.n, th.n { text-align: right; font-family: var(--mono);
     <tr class="learned">
       <td>per-cell bank (learned)</td>
       <td class="n">{{N:probe:detectors.tiny.published_f1|.3f}}</td>
-      <td class="n">{{N:probe:detectors.tiny.f1.mean|.3f}}</td>
+      <td class="n">{{N:probe:detectors.tiny.f1.mean|.3f}} &plusmn;&nbsp;{{N:probe:detectors.tiny.f1.sd|.3f}}</td>
       <td class="n">{{N:probe:detectors.tiny.hot_fa.mean|.2f}}</td>
       <td class="n">{{N:probe:detectors.tiny.distractor_hits_mean|.1f}}</td>
       <td class="n">{{N:b:learned.tiny.detect_sec.mean|.3f}}</td>
@@ -748,13 +762,11 @@ def build_tube(*, n_scales=4, width=8, depth=6,
 <div class="col">
   <p>
     ⚠ <strong>"Nothing else edited" is the intent and not yet the fact.</strong> The
-    registry has two consumers &mdash; the trainer and the architecture figure. The
-    bake-off, the regime-shift test, the figure builder and the lab server each keep
-    their own list of which architectures to run and their own learning-rate table, so
-    a new architecture today costs edits in four more files before it reaches this
-    page's curve: the bake-off, the regime-shift test, the figure builder and the lab
-    server each carry their own learning-rate table, and three of them their own list
-    of which architectures to run. Folding the learning rate into the registration and having the sweep
+    registry has two consumers &mdash; the trainer and the architecture figure. A new
+    architecture today costs edits in four more files before it reaches this page's
+    curve: the bake-off, the regime-shift test, the figure builder and the lab server
+    each carry their own learning-rate table, and three of them their own list of which
+    architectures to run. Folding the learning rate into the registration and having the sweep
     iterate the registry would make the claim true; it has not been done, and stating
     the intent as an achievement would be the same defect this page catches elsewhere.
   </p>
@@ -818,9 +830,10 @@ def build_tube(*, n_scales=4, width=8, depth=6,
   <p>
     <strong>The distractors are labeled, not discriminable.</strong> The generator draws
     them with the same code and the same jitter as planted events, at a participation
-    higher than two of the three planted levels. They cap the precision every detector
-    on this page can reach, and that ceiling is a property of the generator rather than
-    of any detector.
+    higher than two of the three planted levels. They cap the precision of any detector
+    that fires more often than it hits &mdash; every leading detector here &mdash; and
+    that ceiling is a property of the generator rather than of any detector. The two
+    floor models escape it only by firing twice.
   </p>
   <p>
     <strong>A hit is scored within 1.5 s</strong> of a planted event, against a median
