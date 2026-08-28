@@ -384,25 +384,53 @@ def test_the_probe_the_alarm_names_actually_exists():
     assert "data root:" in out.stdout
 
 
-def test_the_input_line_does_not_hand_over_a_path(briefing):
+def _input_line(env: dict | None = None) -> str:
+    """The briefing's `data in:` line, rendered under a given environment.
+
+    BOTH BRANCHES OR NEITHER. The first version of the test below took the line from
+    the module fixture only, which on a machine with the data mounted is always the
+    RESOLVED branch. It asserted `"does NOT"` as the alternative, that string was
+    shortened to `"NOT here"` in the same change, and the test stayed green on the
+    laptop and failed in CI — the one environment that renders the other branch.
+
+    A branchy line needs its branches driven explicitly. This is how.
+    """
+    # `env` REPLACES the environment rather than extending it, the way the darkroom
+    # tests above do. Merging would carry a set BUGARACH_DATA_ROOT into the unmounted
+    # case and silently render the resolved branch twice — the same one-branch blindness
+    # this helper exists to end.
+    out = subprocess.run(["bash", str(SCRIPT)], cwd=ROOT, capture_output=True,
+                         text=True, timeout=30, env=env)
+    lines = [ln for ln in out.stdout.splitlines() if "data in:" in ln]
+    assert lines, ("no input line at all — see "
+                   "test_it_reports_where_the_data_comes_from")
+    return lines[0]
+
+
+def test_the_input_line_does_not_hand_over_a_path(tmp_path):
     """THE FAILURE WAS HAND-PATHING, so the fix must not teach it.
 
     The session that ran `find` then passed the discovered absolute path to
     `--folder` four times. `dataset.current()` and `--dataset <name>` both take the
     NAME; printing the path would make copying it the path of least resistance
     again, and a path is a per-machine fact that reads as a repo one.
+
+    Driven in both directions: as this machine renders it, and with HOME pointed at an
+    empty directory so `data_root()` declines and the alarm branch renders instead.
+    Whichever branch a machine happens to produce, neither may hand over a path and
+    both must name the call that resolves one.
     """
-    out, _ = briefing
-    lines = [ln for ln in out.stdout.splitlines() if "data in:" in ln]
-    assert lines, "no input line at all — see test_it_reports_where_the_data_comes_from"
-    line = lines[0]
-    assert "dataset.current()" in line or "does NOT" in line, (
-        "the input line must name the call, not just the folder"
-    )
-    assert "/" not in line.split("data in:")[1], (
-        f"the input line hands over a path: {line!r}. The name is the interface; "
-        f"resolve() turns it into a path on whatever machine it runs on."
-    )
+    unmounted = {"PATH": "/usr/bin:/bin:/usr/sbin:/sbin", "HOME": str(tmp_path)}
+    for label, line in (("as this machine renders it", _input_line()),
+                        ("with the data unmounted", _input_line(unmounted))):
+        assert "dataset.current()" in line or "bugarach.dataset" in line, (
+            f"[{label}] the input line must name the call that resolves the folder, "
+            f"not only the folder: {line!r}"
+        )
+        assert "/" not in line.split("data in:")[1], (
+            f"[{label}] the input line hands over a path: {line!r}. The name is the "
+            f"interface; resolve() turns it into a path on whatever machine it runs on."
+        )
 
 
 def _declared_default_name() -> str:

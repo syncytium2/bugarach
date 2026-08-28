@@ -181,6 +181,24 @@ creeping back into the budgeted payload; the search check sinking below the exem
 `tests/test_session_briefing.py` and `tests/test_where_the_data_are.py`, plus 11 new probes
 in the gate's own `--selftest`.
 
+**And one of them was green on the laptop and red in CI, which is the sharpest thing
+here.** The input line has two branches — resolved and not — and this machine only ever
+renders the first. The path test took its line from the module fixture, so it asserted
+against the resolved branch and named `"does NOT"` as the alternative; the alarm was
+shortened to `"NOT here"` in the same change, and nothing on this machine could notice.
+CI renders the other branch on every run and failed immediately.
+
+The repair is not the string. It is that **a branchy line needs its branches driven
+explicitly**: `_input_line(env)` renders the briefing under a replaced environment, and
+the test now walks both. `env` *replaces* rather than extends, because merging would
+carry a set `BUGARACH_DATA_ROOT` into the unmounted case and quietly render the resolved
+branch twice — the same blindness wearing the uniform of the fix. The corrected test was
+watched failing on this laptop against the exact defect CI caught.
+
+Same shape as the byte budget, one layer up: **the machine that has the data cannot see
+the state of the machine that does not.** Both halves of this item's work were caught by
+CI and neither by a green local suite.
+
 **SAP004 caught this work's own test fixtures.** The gate probes were first written with a
 home-directory-shaped root, because that is the shape of the command being caught; sapper
 blocked the commit and they became `/mnt/lab/…`. The rule earned its keep on the very
