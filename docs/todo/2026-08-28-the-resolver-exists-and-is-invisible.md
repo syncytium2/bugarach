@@ -1,9 +1,15 @@
 ---
-status: open
+status: done
 filed: 2026-08-28
 ---
 
 # The data resolver exists, works, and a session still ran `find` over the home directory
+
+> **Done, 2026-08-28.** All four fixes shipped. The briefing names the declared export
+> and whether it resolves; the unresolved case is an alarm; the search gate went in at
+> the **narrow** scope, which is Tony's call recorded below; and the tests were each
+> watched failing before they were trusted. What the work changed about the *proposal*
+> is at the bottom, under **What shipped, and where it differed**.
 
 **Do not build a resolver. There is one, and it is correct.** This item is about
 why it did not get used, one day after it shipped.
@@ -112,6 +118,78 @@ problem:
 | the briefing to edit | `tools/session_briefing.sh` — darkroom block is the template to copy |
 | the contract | `docs/export_folder_spec.md` (revision 6) |
 | tests already guarding this | `tests/test_current_export.py`, and SAP004/SAP007 in `tools/sapper.py` |
+
+## What shipped, and where it differed
+
+**1. The briefing line — `tools/session_briefing.sh` §5a, above the darkroom block.**
+
+```
+data in: 2026-08-18_revised_2v_periods — dataset.current() resolves it here
+```
+
+The name comes from `sed` and only *resolution* pays for a python spawn (~0.2s,
+stdlib-only, so it works in a worktree with no venv). That split is the sibling hook's
+scar: a message this file exists to deliver must not depend on an interpreter being on a
+hook's login PATH.
+
+**It does not print the path, and that is deliberate.** The failure was hand-pathing —
+`--folder /Users/…`, four times. `dataset.current()` and `--dataset <name>` both take the
+NAME, so printing the path would make copying it the easy road again.
+`test_the_input_line_does_not_hand_over_a_path` holds it to that.
+
+**2. The alarm, and it had to shrink.** The unresolved branch was three lines and also
+said *"do not hunt with find(1); do not fall back to a .mat store"*. Measured in a fresh
+clone with no data and no darkroom — which is what CI is — that put the briefing at
+**9,013B against a 9,000B budget**, and 13B over degrades the *whole* payload to TERSE and
+takes FOUNDATIONS §9 with it. `a194188` had made the identical cut for §9's own signpost
+hours earlier, off the same laptop-versus-CI gap.
+
+So the alarm is one line, and **the corrective moved into the gate**, which fires on the
+`find` itself and has no byte budget at all. That is the better home on its merits, and it
+generalises: the briefing's job is to make the search unnecessary; the gate's job is to
+catch the session that searched anyway. Filed in
+[the budget ratchet](2026-08-27-the-briefing-budget-ratchets-the-digest-oscillates.md).
+Fresh clone now: **8,878B, 122B of headroom.**
+
+**3. The search gate — narrow, and the false-positive rate is measured, not argued.**
+This item called it "the one design question … Tony's call whether the false-positive rate
+is worth it." It was put to him with a number instead of a guess. Every Bash command in the
+54 bugarach transcripts on this machine — **12,009** — was scored through the real
+`grep -E` the hook runs:
+
+| trigger | fires | false positives |
+| --- | --- | --- |
+| **shipped:** a line-leading `find`/`ls`/`tree` naming `exports/`, `processed_archive` or `/data` | **30 (0.25%)** | **0**, all 30 read by hand |
+| same, but allowing the verb after `;` or `&&` | 140 (1.17%) | many, incl. a heredoc writing a todo |
+| any `find` rooted at the home directory | 46 | 23 — about 50% |
+
+All 30 are sessions locating the data root, listing export folders, or counting a store's
+slices. Not one is unrelated work. **Tony chose the narrow scope.**
+
+Two things the measurement changed. It **must sit above** the read-only-verb opt-out that
+exempts `find`/`ls` — that exemption is right for the store branch and is exactly what hid
+this one, so `test_the_search_gate_outranks_the_read_only_verb_exemption` asserts the
+order, because getting it wrong leaves every other test passing and the gate silent. And
+the block offers **`data_root()` as well as `current()`**: six of the thirty were hunting
+the raw `2R` acquisition folders or the lab workbook, which the export folder is not the
+answer to. Opt-out: `BUGARACH_DATA_OK=1`.
+
+**4. Tests — and each was watched failing first.** Five regressions were driven through a
+copy of the tree before the guards were trusted: the line dropped; the path printed instead
+of the name; the alarm going quiet with the data unmounted; the `find(1)` corrective
+creeping back into the budgeted payload; the search check sinking below the exemption.
+`tests/test_session_briefing.py` and `tests/test_where_the_data_are.py`, plus 11 new probes
+in the gate's own `--selftest`.
+
+**SAP004 caught this work's own test fixtures.** The gate probes were first written with a
+home-directory-shaped root, because that is the shape of the command being caught; sapper
+blocked the commit and they became `/mnt/lab/…`. The rule earned its keep on the very
+change written to respect it — and then blocked this paragraph's first draft too, for
+quoting the offending path.
+
+**What was NOT done, per this item's own instructions:** nothing added to CLAUDE.md, no
+path in the repo, no `--store` alias widened, `_quarantine/` and `processed_archive/`
+untouched.
 
 ## Why this is a todo and not a root `HANDOFF.md`
 

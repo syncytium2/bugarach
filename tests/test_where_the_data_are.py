@@ -182,6 +182,89 @@ def test_the_block_hands_over_the_answer():
     assert "BUGARACH_STORE_OK=1" in out.stderr, "and the way out when it is intended"
 
 
+# ------------------------------------------------- and the half that was missing
+#
+# Everything above addresses a session that has already decided to read a store. On
+# 2026-08-28, one day after this gate shipped, a session that simply did not know
+# where the data was ran `find <home> -maxdepth 6 -type d -name "exports"` and
+# hand-pathed the result into --folder four separate times. The gate stayed silent by
+# its own correct design (`find` is not store access) and SAP007 stayed silent by its
+# own stated one (it greps what a COMMIT adds; an interactive --folder is never
+# committed). `dataset.current()` would have answered instantly on that machine.
+
+
+@pytest.mark.parametrize("command", [
+    'find /mnt/lab -maxdepth 6 -type d -name "exports"',      # the 2026-08-28 shape
+    'ls /mnt/lab/data/exports/bugarach',
+    'ls /mnt/lab/data/processed_archive/event_store_onset_revised_2v | wc -l',
+    'find /mnt/lab/data -maxdepth 4 -name "slices.csv"',
+    'tree /mnt/lab/data/exports',
+])
+def test_it_blocks_searching_for_the_data(command):
+    out = _run_gate(command)
+    assert out.returncode == 2, (
+        f"the search gate let this through: {command!r}\n{out.stderr}")
+
+
+@pytest.mark.parametrize("command", [
+    'ls docs/',                                       # an ordinary repo listing
+    'ls src/bugarach/',
+    'find docs -name "export_folder_spec.md"',        # the contract is not the data
+    'find ~/Developer -maxdepth 4 -iname "eval_modularity*"',
+    'grep -rn "exports/bugarach" docs/',              # naming a path is not reading it
+    'BUGARACH_DATA_OK=1 ls /mnt/lab/data/exports',
+])
+def test_the_search_gate_leaves_ordinary_work_alone(command):
+    """THE OBJECTION TO THIS GATE WAS ALWAYS NOISE, so the answer is a measurement.
+
+    Scored against every Bash command in the 54 bugarach transcripts on the machine
+    where it was written — 12,009 of them — the trigger fires 30 times (0.25%), and
+    all 30 were read by hand: each is a session locating the data root, listing export
+    folders, or counting a store's slices. None is unrelated work.
+
+    Two wider variants were measured and rejected. Allowing the verb after `;` or `&&`
+    took it to 140 hits including a heredoc writing a todo file; firing on any `find`
+    over the home directory ran at roughly 50% false positives — 23 interruptions to
+    buy 2 more true positives. The cases here are the shapes that must stay silent.
+    """
+    out = _run_gate(command)
+    assert out.returncode == 0, (
+        f"the search gate fired on ordinary work: {command!r}\n{out.stderr}")
+
+
+def test_the_search_block_answers_rather_than_only_refusing():
+    """Same design property as the store block, for the same reason: the session is
+    LOST, and a gate that says only "no" leaves it lost and it churns somewhere else.
+
+    It must also offer `data_root()`, not just `current()`. Six of the thirty measured
+    hits were hunting the raw `2R` acquisition folders or the lab workbook, which the
+    export folder is not the answer to — the data ROOT is.
+    """
+    out = _run_gate('find /mnt/lab -maxdepth 6 -type d -name "exports"')
+    assert out.returncode == 2
+    assert dataset.current_name() in out.stderr, "the block must NAME the folder"
+    assert "dataset.current()" in out.stderr, "and give the call that opens it"
+    assert "data_root()" in out.stderr, "and the call for the root itself"
+    assert "BUGARACH_DATA_OK=1" in out.stderr, "and the way out when it is intended"
+
+
+def test_the_search_gate_outranks_the_read_only_verb_exemption():
+    """ORDER IS THE WHOLE MECHANISM HERE, and getting it wrong is silent.
+
+    The store branch exempts `find`/`ls`/`grep` outright, so that
+    `grep -rn event_store docs/` never trips it. That exemption is correct for the
+    store branch and is exactly what hid this one for a day. If a future edit moves
+    the search check below it, every test above still passes and the gate goes quiet.
+    """
+    body = GATE.read_text()
+    search = body.index("is this command SEARCHING FOR THE DATA")
+    exemption = body.index("(git|grep|rg|ag|find|ls|wc|diff|gh)")
+    assert search < exemption, (
+        "the search check now sits below the read-only-verb exemption, which exempts "
+        "find and ls — so it can never fire"
+    )
+
+
 def test_the_named_folder_tracks_the_pointer(tmp_path, monkeypatch):
     """The gate reads the pointer live rather than repeating a name of its own.
 

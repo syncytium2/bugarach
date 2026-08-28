@@ -267,6 +267,157 @@ def test_it_reports_where_figure_output_goes(briefing):
     assert "darkroom:" in out.stdout
 
 
+# ---------------------------------------------------------------------------------
+# WHERE THE DATA COMES FROM. The mirror of the darkroom tests above, and the
+# asymmetry between the two blocks is the whole defect these guard.
+#
+# The briefing has announced where output GOES since 2026-08-17 and said nothing
+# about where input COMES FROM. On 2026-08-27 a session lost the data and began
+# re-deriving it from a `.mat` store; `current_export.toml`, `dataset.current()`, a
+# PreToolUse store gate and sapper SAP007 all shipped the same day to fix it. One day
+# later a session ran `find <home> -maxdepth 6 -type d -name exports` and hand-pathed
+# the result four separate times — because every one of those mechanisms addresses a
+# session that has already decided to read a store, and none of them reaches one that
+# simply does not know where the data is.
+# ---------------------------------------------------------------------------------
+
+
+def test_it_reports_where_the_data_comes_from(briefing):
+    """The line the todo asks for, and it must name the DECLARED folder.
+
+    Not "some folder resolved" — the name out of `current_export.toml`, so that a
+    session reading the briefing has the string it needs for `--dataset` and can see
+    at a glance whether the repo's declaration matches what it expected.
+    """
+    out, _ = briefing
+    name = _declared_default_name()
+    assert "data in:" in out.stdout, "the briefing says nothing about its input"
+    assert name in out.stdout, (
+        f"the briefing does not name the declared export {name!r}. It is the one "
+        f"string a session needs, and the one nothing else pushes at it."
+    )
+
+
+def test_the_input_line_is_as_prominent_as_the_output_line(briefing):
+    """Symmetry, asserted rather than assumed.
+
+    Both are per-machine facts a session must not have to go looking for, so both
+    are rendered before the 5.7KB FOUNDATIONS extract and both land inside the ~2KB
+    a spilled payload keeps. If a future trim moves one behind the bulk, it stops
+    arriving in exactly the case where the machinery has already failed once.
+    """
+    out, _ = briefing
+    facts = out.stdout.index("Facts about the preparation")
+    assert out.stdout.index("data in:") < facts, (
+        "the input line sits after the FOUNDATIONS extract — the position that made "
+        "the other alarms invisible on 2026-08-25"
+    )
+    preview = out.stdout.encode()[:2000].decode("utf-8", "ignore")
+    assert "data in:" in preview, (
+        "the input line is past the ~2KB a spilled payload keeps, so it would not "
+        "arrive in the one case that matters"
+    )
+
+
+def test_it_names_the_declared_folder_even_with_the_data_unmounted(tmp_path):
+    """MOUNTED-BUT-WRONG IS THE DANGEROUS STATE — it is where a session invents.
+
+    `current_name()` reads no filesystem, so the briefing can say WHICH folder is
+    meant on a machine that does not have it. Going quiet here would leave exactly
+    the gap that produced the `find` sweep: a session with no answer and a
+    filesystem to search.
+
+    HOME is an empty directory, so `data_root()` finds no Dropbox and declines.
+    """
+    env = {"PATH": "/usr/bin:/bin:/usr/sbin:/sbin", "HOME": str(tmp_path)}
+    out = subprocess.run(["bash", str(SCRIPT)], cwd=ROOT, env=env,
+                         capture_output=True, text=True, timeout=30)
+    assert _declared_default_name() in out.stdout, (
+        "with the data unmounted the briefing stopped naming the folder at all"
+    )
+    assert "NOT here" in out.stdout, "unresolved must read as an alarm, not as normal"
+    assert "python -m bugarach.dataset" in out.stdout, "say how to look into it"
+
+
+def test_the_alarm_stays_one_line_because_the_budget_is_the_binding_constraint():
+    """THE TRADE, ASSERTED, because the tempting repair is to explain more here.
+
+    This alarm was three lines and also said "do not hunt with find(1); do not fall
+    back to a .mat store". Measured in a fresh clone with no data and no darkroom —
+    which is what CI is, and where the budget actually bites — that put the briefing
+    at 9,013B against 9,000: 13B over, which degrades the WHOLE payload to TERSE and
+    takes FOUNDATIONS §9 down with it. Buying a corrective with §9 is a bad trade, and
+    a194188 had made the identical cut for §9's own signpost hours earlier.
+
+    It is also unnecessary. The corrective lives in the PreToolUse gate, which fires on
+    the `find` itself, at the moment of need, with no byte budget at all. The briefing's
+    job is to make the search unnecessary; the gate's job is to catch the session that
+    searched anyway. Neither pays for the other's message.
+    """
+    script = SCRIPT.read_text()
+    block = script[script.index("data in:"):]
+    block = block[:block.index("# --- 5b.")]
+    echoes = [ln for ln in block.splitlines() if ln.strip().startswith("echo \"")]
+    assert len(echoes) <= 3, (
+        f"the input block now emits {len(echoes)} lines. Each branch prints ONE. "
+        f"Measure a fresh clone before adding another:\n"
+        f"  HOME=$(mktemp -d) bash tools/session_briefing.sh | head -1"
+    )
+    assert "find(1)" not in block, (
+        "the find(1) corrective is back in the briefing. It belongs in "
+        ".claude/hooks/the-folder-is-the-input.sh, which fires on the search itself "
+        "and has no budget — see this test's docstring for the 13B that cost."
+    )
+
+
+def test_the_probe_the_alarm_names_actually_exists():
+    """A pointer to a probe that does not exist is worse than no pointer.
+
+    The darkroom alarm's `python -m bugarach.paths` has always worked; this asserts
+    the input alarm's counterpart does too, run the way the alarm spells it.
+    """
+    out = subprocess.run(["python3", "-m", "bugarach.dataset"], cwd=ROOT,
+                         capture_output=True, text=True, timeout=60,
+                         env={**os.environ, "PYTHONPATH": str(ROOT / "src")})
+    assert out.returncode in (0, 1), out.stderr
+    assert _declared_default_name() in out.stdout, out.stdout + out.stderr
+    assert "data root:" in out.stdout
+
+
+def test_the_input_line_does_not_hand_over_a_path(briefing):
+    """THE FAILURE WAS HAND-PATHING, so the fix must not teach it.
+
+    The session that ran `find` then passed the discovered absolute path to
+    `--folder` four times. `dataset.current()` and `--dataset <name>` both take the
+    NAME; printing the path would make copying it the path of least resistance
+    again, and a path is a per-machine fact that reads as a repo one.
+    """
+    out, _ = briefing
+    lines = [ln for ln in out.stdout.splitlines() if "data in:" in ln]
+    assert lines, "no input line at all — see test_it_reports_where_the_data_comes_from"
+    line = lines[0]
+    assert "dataset.current()" in line or "does NOT" in line, (
+        "the input line must name the call, not just the folder"
+    )
+    assert "/" not in line.split("data in:")[1], (
+        f"the input line hands over a path: {line!r}. The name is the interface; "
+        f"resolve() turns it into a path on whatever machine it runs on."
+    )
+
+
+def _declared_default_name() -> str:
+    """The declared default export name, read from the pointer the briefing reads.
+
+    Never a second copy of the string in this file — `current_export.toml` is the
+    single declaration, and a test that hardcodes the folder becomes the fifth
+    disagreeing place the pointer exists to collapse.
+    """
+    import tomllib
+
+    with (ROOT / "current_export.toml").open("rb") as fh:
+        return str(tomllib.load(fh)["default"]["name"])
+
+
 @pytest.mark.parametrize(
     "value, expected",
     [

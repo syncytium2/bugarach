@@ -365,3 +365,41 @@ def preferred_stream(names) -> str:
     if len(names) == 1:
         return names[0]
     return DEFAULT_STREAM if DEFAULT_STREAM in names else names[0]
+
+
+def main() -> int:
+    """Print what resolved, so a machine can be checked in one command.
+
+    The counterpart to ``python -m bugarach.paths``, and it exists for the same
+    reason: the session briefing names this command when the declared export does
+    not resolve, and a pointer to a probe that does not exist is worse than none.
+
+    Every declared role is printed, not just ``default`` — the failure this answers
+    is "which folder, and is it here?", and a session running it has usually just
+    been told that one of them is missing.
+    """
+    try:
+        roles = declared_exports()
+    except DataError as exc:
+        print(exc)
+        return 1
+
+    root = data_root()
+    print(f"data root: {root if root else f'not found (${ENV_VAR} unset, no Dropbox)'}")
+    print(f"declared in {POINTER}:")
+
+    bad = 0
+    for role in sorted(roles):
+        name = roles[role]["name"]
+        try:
+            path = current(role)
+        except DataError as exc:
+            bad = 1
+            print(f"  {role:8} {name}\n           !! {exc}")
+            continue
+        print(f"  {role:8} {name}\n           -> {path}  ({describe(path)})")
+    return bad
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
