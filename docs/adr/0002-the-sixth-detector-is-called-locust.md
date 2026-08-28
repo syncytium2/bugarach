@@ -72,3 +72,38 @@ noted on 2026-08-15 *"is not CICADA to anyone who has met the other CIC"*.
   identically. That reply is owed and has not been sent.
 - **`docs/FOUNDATIONS.md` names CICADA in §2 and §9** and was not edited — a
   session does not edit FOUNDATIONS (CLAUDE.md). Folding the rename in is Tony's.
+
+## Addendum, 2026-08-28 — why the port needs a duration at all, and whose duration it is
+
+Added at Tony's direction, in his account. The decision above names the rise interval as one
+of the two modifications. That is true of the pipeline, and it has since been read as a claim
+about the algorithm — twice in one day, on a public page and in a handoff. The constraint
+behind it was never written down, so every reader reconstructed it and some reconstructed it
+wrong.
+
+**This project detects its own calcium events, and that is not a preference.** Calcium imaging
+in KNDy neurons reveals **action-potential-independent** calcium events. External
+event-detection algorithms cannot be relied on for them. The effort to establish whether any
+can is under way in interface2, and is pending.
+
+**What was taken from CICADA is the coordinated-event stage, and nothing else.** Its
+calcium-event detection pipeline is not usable here without major effort, and this work is
+under severe time constraints. So the coordinated-event detection was ported, and fed the
+events this project had already detected.
+
+**That stage requires an event duration, and this preparation's slow events break it.** The
+slow events here are not described in the literature, and at full duration they destroy CICADA
+fundamentally. The attempt to make it work truncates a slow event's duration to
+`peak − t50rise` — and **that truncation is done on export, by the MATLAB team.** It is not a
+step inside `cicada_detect`.
+
+**So there is no duration decision for this project to make.** The imported duration is the
+duration. In Tony's words: *"it is none of our business what the user decides to put in the
+duration column of the import."* A `width_sec` arrives with the `width_def` that names the rule
+which produced it (`../export_folder_spec.md`), the port paints each cell active for what it is
+given, and **no webapp behaviour and no dev-team judgement depends on which rule that was.**
+
+**What this changes about the decision above: nothing.** The rename stands, both deviations
+stand, and the reasoning is untouched — a port fed another project's events, painting durations
+another team defined, is a modified port. What the addendum settles is *where a reader locates
+the second deviation*: upstream, in the export, not in the algorithm.
