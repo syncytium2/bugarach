@@ -94,3 +94,81 @@ promiscuity question is settled, the multiplicative bar's score does not move.
    `bench.evaluate`), included, or a third form — a separate gate that a candidate
    must pass rather than a term in F1, which is what `hot_fa` already looks like.
 2. **Does the re-fit wait for it?** The revision plan says yes.
+
+---
+
+# MEASURED, 2026-08-28 — the third form is not a proposal. It is in `bench.py`, it is the default, and it does not pick the winner.
+
+`tools/probe_three_scoring_rules.py`. Decision 1 above lists a gate as a *third form* to
+consider. **It exists.** `pick_operating_point(max_probe_per_min=-1.0)` looks the detector
+up in `MAX_PROBE_PER_MIN` and raises `TooPromiscuous` rather than taking the runner-up
+silently, and that dict's own docstring — landed **2026-08-22, three days before this file
+was filed** — already gives the reasoning as a decision:
+
+> *"the probe stays **out of F1**. Folding it in makes the headline measure how hard the
+> probe was set … The fix for "the alarm cannot ring" is to give the probe a gate at
+> **selection time**, not to corrupt the score."*
+
+So the open question is narrower than *"two rules and nothing decides."* It is whether
+that third rule, already running, is sufficient. **Measured — and the answer is not the
+one the probe was written expecting.**
+
+![Every candidate on both mechanisms' sweeps, placed by how often it fires in a block with nothing planted, one row per background rate. The dashed rule is the 2/min ceiling and hollow markers are refused: additive spreads from 0 to 6.1 with 31 of 56 hollow, while multiplicative sits on zero at every background with none refused](../learned/three_scoring_rules.png)
+
+Same runs feed all three rules, pooled through `bench.pool_scores` — hand-pooling is the
+specific defect this file is about, so the probe imports it rather than becoming a fourth
+fork. `baseline_quiet`, 3 seeds, tol 1.5 s, each mechanism swept over its own knob.
+
+**Which mechanism each rule picks, over the seven background points:**
+
+| rule | precision | probe | multiplicative wins |
+|---|---|---|---|
+| 1 · probe-blind | `n_hit / n_scored` | excluded | **0 / 7** |
+| 2 · probe-inclusive | `n_hit / n_detected` | in F1 | **6 / 7** |
+| 3 · gate (shipped) | `n_hit / n_scored` | eligibility only | **0 / 7** |
+
+**The gate sides with rule 1 on the mechanism, not with rule 2.** It does not break that
+tie, and nothing here says it does.
+
+**What it does do is refuse the thing this file objects to.** The complaint was that the
+probe-blind rule *"picks additive thresholds firing 8 to 92 times in a block with nothing
+planted, and its F1 cannot see that."* The gate sees it: **31 of 56 additive candidates are
+refused** at rate's 2.0/min ceiling, and additive's own operating point moves — on the
+quietest background from F1 **0.827 at knob 2** (5.5 firings/min) down to **0.689 at knob
+4**. Half the sweep is ineligible at every background point.
+
+**And the asymmetry this file already found gets sharper.** Multiplicative's F1 is not
+merely the same under both rules — it never approaches the ceiling: **0 of 70 candidates
+refused, maximum 0.2 firings/min**, against additive's maximum of 6.1. It is not that the
+rules cannot disagree about multiplicative; it is that multiplicative never does the thing
+the probe looks for.
+
+## What this settles, and what it does not
+
+- **Decision 1 has a live default with a written rationale**, so the question is *"is the
+  gate enough?"* rather than *"pick one of two."* That is a smaller decision.
+- **It does not choose a mechanism.** Additive's best *eligible* F1 still beats
+  multiplicative's at all seven points, so forks §3's reason for leaving the default alone
+  is untouched.
+- **It does not validate the ceiling.** `MAX_PROBE_PER_MIN["rate"] = 2.0` against a
+  measured 0.6 is a budget somebody set; every number above moves if it moves.
+- **One detector, one regime, 3 seeds, no seed spread reported.** `baseline_quiet` only,
+  and the mechanism-winner column is an argmax comparison, not a test.
+- ⚠ **Every number here is on the FLAT bench, and a branch in flight makes it fitted.**
+  `bench-background-is-not-flat` adds `bg_rate_shape`, `bg_burst_shape` and
+  `bg_burst_bin_sec` to `BENCH_RECORDING`, which is the field this sweep draws its
+  recordings from. The prior-art review already measured what swapping that field does
+  elsewhere — CoactDetect 0.703 → 0.749 on quiet — so **the counts above (31/56, 0/7, 6/7)
+  will move when it lands**. What is unlikely to move is the shape of the finding: the gate
+  is an eligibility rule, additive is the mechanism that trips it and multiplicative is the
+  one that does not. **Re-run this probe after that branch lands** rather than quoting these
+  numbers against a fitted bench.
+- **The numbers differ slightly from the figure above** — 0/7 and 6/7 here against this
+  file's 1/7 and 5/7, which came from `make_rate_bar_axis_figure.py` on its own grids. The
+  pattern reproduces; the exact counts are grid-dependent and neither is the other's
+  correction.
+- **`probe_rate_mechanism.py` is untouched**, per this file's own instruction.
+
+`--selftest` runs the gate at an infinite ceiling and requires it to reproduce the
+probe-blind pick exactly on all 14 sweeps, refusing nothing. Without it the gate column
+could differ for a reason that is not the gate. It passes.
