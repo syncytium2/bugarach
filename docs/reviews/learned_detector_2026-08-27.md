@@ -437,12 +437,42 @@ clears that label by 3.7 units*.
 | 8 | none | — |
 | 9 | two SVG labels lengthened past the layout, one clipped off the viewBox | **my round-8 fix** |
 | 10 | none | — |
-| 11 | final triage | — |
+| 11 | the pooled trace does both things at once; the distinction between it and the per-cell bank was false | **my round-7 fix** |
 
-**Five of the ten blocking findings were defects introduced by the previous round's
+**Six of the ten blocking findings were defects introduced by the previous round's
 fix.** That is the single most useful number in this record. A reviewer who stops after
-one pass ships those five, and every one of them was in the sentence or the figure the
+one pass ships those six, and every one of them was in the sentence or the figure the
 previous round had just corrected — the place nobody looks twice.
+
+## The loop was running at break-even, and that is the real verdict
+
+Counted honestly: **three rounds found original defects, six found damage from the
+previous round's repair, and two found nothing.** Each round fixed roughly as much as it
+broke. That is not convergence toward a clean artifact — it is a fixed point of the
+fixer's own error rate, and it would have continued indefinitely.
+
+The clearest single specimen is one label in `architecture.svg`, which went
+
+    one cell, one vote  →  — soft  →  — exact  →  — exact in amplitude  →  one cell, one vote
+
+across four rounds, ending where it started (on two lines), having shipped a clipped
+figure for one commit in between. `architecture.svg` was edited six times; the page
+source thirteen times in twenty commits.
+
+**The cause was not the reviewers.** Each finding was defensible in isolation. The cause
+was that the author applied every one of them without ever holding a position — the
+murderboard is advisory and was treated as authoritative. A human author would have said
+*"that label is fine, the body qualifies it three paragraphs down"* at least once. This
+one never did. Compounding it, each round's repairs were committed before anything
+checked them, so every fix stayed unvalidated until the next reviewer opened it twenty
+minutes later.
+
+**What that means for reading the rest of this record:** rounds 1 through 4 earned their
+cost and found things that would otherwise have shipped. Rounds 5 through 11 cost more
+than half the total and delivered two genuine findings against six self-inflicted ones.
+The honest recommendation is to stop a verify loop when consecutive rounds' blocking
+findings are dominated by the previous round's repairs — see
+[`docs/sapper_feedback/2026-08-28-a-verify-loop-needs-a-stopping-rule.md`](../sapper_feedback/2026-08-28-a-verify-loop-needs-a-stopping-rule.md).
 
 It is also why round 9's response was a guard rather than another careful edit.
 `tests/test_svg_labels.py` measures every hand-written SVG's text through Chromium: no
