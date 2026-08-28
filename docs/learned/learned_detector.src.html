@@ -148,7 +148,9 @@ th.n { text-align: right; font-family: var(--mono);
     <span class="key truth">No detector runs in the measurement stage.</span> The
     assessor reads
     {{N:g:source_recordings.provenance.n_slices_assessed}} real recordings and
-    reports participation, jitter, cluster rate and background directly. Event jitter
+    reports four things directly: what fraction of cells joins an event, how tightly
+    their onsets align, how often events happen, and how active a cell is between
+    them. Event jitter
     and cluster count are each tested against
     {{N:g:source_recordings.provenance.n_surrogates|,}} circular-shift surrogates; per-cell
     rate and participation are measured outright, for two different reasons: a circular
@@ -160,7 +162,9 @@ th.n { text-align: right; font-family: var(--mono);
     recording-extent helper, and the window selector &mdash; but no detection rule.)
   </p>
   <p>
-    <span class="key truth">Baseline windows only.</span> Every non-baseline window &mdash; drug, high-potassium, washout &mdash; is
+    <span class="key truth">Baseline windows only.</span> A window is a labelled
+    stretch of one recording, and every non-baseline one &mdash; drug, high-potassium,
+    washout &mdash; is
     counted and skipped. Taking the properties of coordination from a treated slice
     assumes the answer, and this preparation is one where that assumption has already
     produced a wrong conclusion.
@@ -226,7 +230,7 @@ th.n { text-align: right; font-family: var(--mono);
     Every rate here is a <strong>median across the 85 slices</strong>, not a total.
     K=4 cuts it to roughly a quarter of K=3's and would build a different benchmark;
     by K=8 the median slice has nothing, and only 8 of 85 have enough events to measure
-    an onset spread at all. That last column is what decides the choice &mdash; the
+    an onset spread at all. The last column &mdash; the count of slices with a measurable spread &mdash; is what decides the choice &mdash; the
     spread does not fall cleanly as K rises, and past K=4 it is being measured on a shrinking and
     increasingly unrepresentative subset. Observed spread sits below its shuffled null
     at every K, which is the direction real coordination should show.
@@ -266,7 +270,7 @@ th.n { text-align: right; font-family: var(--mono);
     are correlated bursts labeled as coincidence rather than coordination, and a
     detector is charged for firing on them. And each recording carries a <strong>probe
     block</strong> &mdash; {{N:b:spec.hot_window.0|,.0f}} s to
-    {{N:b:spec.hot_window.1|.0f}} s of a {{N:b:spec.duration_sec|,.0f}} s recording, to
+    {{N:b:spec.hot_window.1|,.0f}} s of a {{N:b:spec.duration_sec|,.0f}} s recording, to
     which the generator <em>adds</em> {{N:b:spec.hot_rate_hz}} Hz per cell on top of a
     background of {{N:b:spec.bg_rate_hz|.4f}} Hz, with <em>nothing planted in it</em>.
     About seven times the baseline activity and no coordination at all: the exact thing
@@ -320,14 +324,18 @@ th.n { text-align: right; font-family: var(--mono);
     Cells are max-pooled over the narrowest fitted center width, <em>averaged</em>
     into one brightness trace &mdash; the mean is what makes the model indifferent to
     cell count &mdash; and convolved with four differences of Gaussians whose widths
-    are free parameters. Of the model's {{N:b:learned.tube.n_params|,}} parameters, the
+    are free parameters. (The model's docstring says the cells are <em>summed</em>. They
+    are averaged, and the division is what buys the invariance the docstring credits to
+    the sum &mdash; a second stale comment, named here rather than quietly fixed, on the
+    same principle as the one below.) Of the model's {{N:b:learned.tube.n_params|,}} parameters, the
     dilated stack that follows holds <strong>1,128</strong> and the final 1&times;1
     layer 9; the center&minus;surround stage the architecture is named for holds
     <strong>twelve</strong>.
   </p>
   <p>
-    Three properties are often claimed for this shape. The apparatus was pointed at
-    all three, and it supports one and a half of them.
+    Three properties are often claimed for this shape. Each was checked &mdash; two by
+    probes built for the purpose, on inputs the benchmark does not contain, and one not
+    at all &mdash; and what the checks support is one and a half of them.
   </p>
   <p>
     <span class="key truth">Cell count &mdash; holds, with a caveat worth more than
@@ -407,17 +415,22 @@ th.n { text-align: right; font-family: var(--mono);
     A rate-invariant detector would return roughly the same count at every multiple.
     Zeroing the bypass channel and re-scoring the same recordings gives
     {{N:rateinv:by_multiple.1.frames_over_threshold_no_bypass}} and
-    {{N:rateinv:by_multiple.8.frames_over_threshold_no_bypass}}, so a large share of
-    the firings depend on that channel. What remains is variance, which a difference of
-    <em>means</em> cancels and a difference of variances does not.
+    {{N:rateinv:by_multiple.8.frames_over_threshold_no_bypass}}, so most of the
+    <em>firings</em> depend on that channel. What remains is variance, which a
+    difference of <em>means</em> cancels and a difference of variances does not.
   </p>
   <p>
-    ⚠ <strong>Read the ablation as an upper bound, not as an attribution.</strong>
-    Zeroing an input channel while keeping a threshold that was fitted <em>with</em>
-    that channel takes the model out of the distribution it was calibrated on, and the
-    count falls at every multiple &mdash; which is at least as consistent with a global
-    downward shift as with a rate-specific effect. Re-picking the threshold on the
-    ablated model would separate the two, and that has not been done.
+    ⚠ <strong>The ablation does not isolate the bypass, and it points the other
+    way.</strong> The counts fall at every multiple, but the fold-change does not:
+    <strong>35&times; from baseline to eight-fold background with the channel, and
+    99&times; without it.</strong> Removing the channel this section blames makes the
+    <em>relative</em> rate sensitivity roughly three times worse. Zeroing an input while
+    keeping a threshold fitted <em>with</em> it also takes the model out of the
+    distribution it was calibrated on, so the drop in absolute counts is at least as
+    consistent with a global downward shift as with anything rate-specific. Re-picking
+    the threshold on the ablated model would separate those; it has not been done. What
+    survives is the first measurement, which needs no ablation: <strong>the model is not
+    rate-invariant.</strong> Which of its two channels is more to blame is unsettled.
   </p>
   <p>
     ⚠ <strong>This page carries four kinds of fit of the same architecture, and only
@@ -482,7 +495,7 @@ th.n { text-align: right; font-family: var(--mono);
   <tbody>
     <tr class="learned">
       <td>center&minus;surround (learned)</td>
-      <td class="n">{{N:probe:detectors.tube.published_f1|.3f}}</td>
+      <td class="n">{{N:probe:detectors.tube.published_f1|.3f}} &plusmn;&nbsp;{{N:b:learned.tube.f1.sd|.3f}}</td>
       <td class="n">{{N:probe:detectors.tube.f1.mean|.3f}} &plusmn;&nbsp;{{N:probe:detectors.tube.f1.sd|.3f}}</td>
       <td class="n">{{N:probe:detectors.tube.hot_fa.mean|.2f}} &nbsp;({{N:probe:detectors.tube.hot_fa.min|.0f}}&ndash;{{N:probe:detectors.tube.hot_fa.max|.0f}})</td>
       <td class="n">{{N:probe:detectors.tube.distractor_hits_mean|.1f}}</td>
@@ -491,7 +504,7 @@ th.n { text-align: right; font-family: var(--mono);
     </tr>
     <tr>
       <td>CoactDetect</td>
-      <td class="n">{{N:probe:detectors.coact.published_f1|.3f}}</td>
+      <td class="n">{{N:probe:detectors.coact.published_f1|.3f}} &plusmn;&nbsp;{{N:b:hand_written.coact.f1.sd|.3f}}</td>
       <td class="n">{{N:probe:detectors.coact.f1.mean|.3f}} &plusmn;&nbsp;{{N:probe:detectors.coact.f1.sd|.3f}}</td>
       <td class="n">{{N:probe:detectors.coact.hot_fa.mean|.2f}} &nbsp;({{N:probe:detectors.coact.hot_fa.min|.0f}}&ndash;{{N:probe:detectors.coact.hot_fa.max|.0f}})</td>
       <td class="n">{{N:probe:detectors.coact.distractor_hits_mean|.1f}}</td>
@@ -500,7 +513,7 @@ th.n { text-align: right; font-family: var(--mono);
     </tr>
     <tr>
       <td>LoCo</td>
-      <td class="n">{{N:probe:detectors.loco.published_f1|.3f}}</td>
+      <td class="n">{{N:probe:detectors.loco.published_f1|.3f}} &plusmn;&nbsp;{{N:b:hand_written.loco.f1.sd|.3f}}</td>
       <td class="n">{{N:probe:detectors.loco.f1.mean|.3f}} &plusmn;&nbsp;{{N:probe:detectors.loco.f1.sd|.3f}}</td>
       <td class="n">{{N:probe:detectors.loco.hot_fa.mean|.2f}} &nbsp;({{N:probe:detectors.loco.hot_fa.min|.0f}}&ndash;{{N:probe:detectors.loco.hot_fa.max|.0f}})</td>
       <td class="n">{{N:probe:detectors.loco.distractor_hits_mean|.1f}}</td>
@@ -509,7 +522,7 @@ th.n { text-align: right; font-family: var(--mono);
     </tr>
     <tr>
       <td>rate+context</td>
-      <td class="n">{{N:probe:detectors.rate.published_f1|.3f}}</td>
+      <td class="n">{{N:probe:detectors.rate.published_f1|.3f}} &plusmn;&nbsp;{{N:b:hand_written.rate.f1.sd|.3f}}</td>
       <td class="n">{{N:probe:detectors.rate.f1.mean|.3f}} &plusmn;&nbsp;{{N:probe:detectors.rate.f1.sd|.3f}}</td>
       <td class="n">{{N:probe:detectors.rate.hot_fa.mean|.2f}} &nbsp;({{N:probe:detectors.rate.hot_fa.min|.0f}}&ndash;{{N:probe:detectors.rate.hot_fa.max|.0f}})</td>
       <td class="n">{{N:probe:detectors.rate.distractor_hits_mean|.1f}}</td>
@@ -518,7 +531,7 @@ th.n { text-align: right; font-family: var(--mono);
     </tr>
     <tr>
       <td>locust</td>
-      <td class="n">{{N:probe:detectors.cicada.published_f1|.3f}}</td>
+      <td class="n">{{N:probe:detectors.cicada.published_f1|.3f}} &plusmn;&nbsp;{{N:b:hand_written.cicada.f1.sd|.3f}}</td>
       <td class="n">{{N:probe:detectors.cicada.f1.mean|.3f}} &plusmn;&nbsp;{{N:probe:detectors.cicada.f1.sd|.3f}}</td>
       <td class="n">{{N:probe:detectors.cicada.hot_fa.mean|.2f}} &nbsp;({{N:probe:detectors.cicada.hot_fa.min|.0f}}&ndash;{{N:probe:detectors.cicada.hot_fa.max|.0f}})</td>
       <td class="n">{{N:probe:detectors.cicada.distractor_hits_mean|.1f}}</td>
@@ -527,7 +540,7 @@ th.n { text-align: right; font-family: var(--mono);
     </tr>
     <tr>
       <td>binned SCE</td>
-      <td class="n">{{N:probe:detectors.sce.published_f1|.3f}}</td>
+      <td class="n">{{N:probe:detectors.sce.published_f1|.3f}} &plusmn;&nbsp;{{N:b:hand_written.sce.f1.sd|.3f}}</td>
       <td class="n">{{N:probe:detectors.sce.f1.mean|.3f}} &plusmn;&nbsp;{{N:probe:detectors.sce.f1.sd|.3f}}</td>
       <td class="n">{{N:probe:detectors.sce.hot_fa.mean|.2f}} &nbsp;({{N:probe:detectors.sce.hot_fa.min|.0f}}&ndash;{{N:probe:detectors.sce.hot_fa.max|.0f}})</td>
       <td class="n">{{N:probe:detectors.sce.distractor_hits_mean|.1f}}</td>
@@ -536,7 +549,7 @@ th.n { text-align: right; font-family: var(--mono);
     </tr>
     <tr>
       <td>SPIKE-synch</td>
-      <td class="n">{{N:probe:detectors.sync.published_f1|.3f}}</td>
+      <td class="n">{{N:probe:detectors.sync.published_f1|.3f}} &plusmn;&nbsp;{{N:b:hand_written.sync.f1.sd|.3f}}</td>
       <td class="n">{{N:probe:detectors.sync.f1.mean|.3f}} &plusmn;&nbsp;{{N:probe:detectors.sync.f1.sd|.3f}}</td>
       <td class="n">{{N:probe:detectors.sync.hot_fa.mean|.2f}} &nbsp;({{N:probe:detectors.sync.hot_fa.min|.0f}}&ndash;{{N:probe:detectors.sync.hot_fa.max|.0f}})</td>
       <td class="n">{{N:probe:detectors.sync.distractor_hits_mean|.1f}}</td>
@@ -545,7 +558,7 @@ th.n { text-align: right; font-family: var(--mono);
     </tr>
     <tr class="learned">
       <td>pooled trace (learned)</td>
-      <td class="n">{{N:probe:detectors.trace.published_f1|.3f}}</td>
+      <td class="n">{{N:probe:detectors.trace.published_f1|.3f}} &plusmn;&nbsp;{{N:b:learned.trace.f1.sd|.3f}}</td>
       <td class="n">{{N:probe:detectors.trace.f1.mean|.3f}} &plusmn;&nbsp;{{N:probe:detectors.trace.f1.sd|.3f}}</td>
       <td class="n">{{N:probe:detectors.trace.hot_fa.mean|.2f}}</td>
       <td class="n">{{N:probe:detectors.trace.distractor_hits_mean|.1f}}</td>
@@ -554,7 +567,7 @@ th.n { text-align: right; font-family: var(--mono);
     </tr>
     <tr class="learned">
       <td>per-cell bank (learned)</td>
-      <td class="n">{{N:probe:detectors.tiny.published_f1|.3f}}</td>
+      <td class="n">{{N:probe:detectors.tiny.published_f1|.3f}} &plusmn;&nbsp;{{N:b:learned.tiny.f1.sd|.3f}}</td>
       <td class="n">{{N:probe:detectors.tiny.f1.mean|.3f}} &plusmn;&nbsp;{{N:probe:detectors.tiny.f1.sd|.3f}}</td>
       <td class="n">{{N:probe:detectors.tiny.hot_fa.mean|.2f}}</td>
       <td class="n">{{N:probe:detectors.tiny.distractor_hits_mean|.1f}}</td>
@@ -581,7 +594,7 @@ th.n { text-align: right; font-family: var(--mono);
     stable.</span> On the published rule the top three are a tie: four folds of thirty
     planted events cannot separate
     {{N:probe:detectors.tube.published_f1|.3f}} from
-    {{N:probe:detectors.coact.published_f1|.3f}}, and the fold ranges overlap. Charge
+    {{N:probe:detectors.loco.published_f1|.3f}}, and all three fold ranges overlap. Charge
     the probe block and the learned model separates from the other two, downward: it
     loses {{N:probe:detectors.tube.f1_drop|.3f}} of F1 where CoactDetect loses
     {{N:probe:detectors.coact.f1_drop|.3f}}. The two hand-written detectors stay tied
@@ -826,7 +839,8 @@ def build_tube(*, n_scales=4, width=8, depth=6,
   <p>
     <strong>{{N:b:folds}} folds, eight recordings, thirty planted events per fold, one
     training run per fold.</strong> The fold spread confounds data variation with
-    training variation, because seed variance within a fold has never been measured.
+    training variation, because seed variance <em>in F1</em> within a fold has never been measured &mdash;
+    the ten-seed grid above scores behaviour on a synthetic raster, not the benchmark.
     That is the oldest open item on this work and a prerequisite for believing any
     change smaller than {{N:b:learned.tube.f1.sd|.3f}} of F1 &mdash; including two of
     the three ablations above.
@@ -846,7 +860,7 @@ def build_tube(*, n_scales=4, width=8, depth=6,
     higher than two of the three planted levels. They cap the precision of any detector
     that fires more often than it hits &mdash; every leading detector here &mdash; and
     that ceiling is a property of the generator rather than of any detector. The two
-    floor models escape it only by firing twice.
+    floor models escape it by firing twice on seven of their eight fold-fits.
   </p>
   <p>
     <strong>A hit is scored within 1.5 s</strong> of a planted event, against a median

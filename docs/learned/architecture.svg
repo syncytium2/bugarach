@@ -36,11 +36,11 @@
 
   <!-- what each stage buys, above -->
   <text x="69"  y="54" text-anchor="middle" class="lbl">row order irrelevant</text>
-  <text x="219" y="54" text-anchor="middle" class="lbl">one cell, one vote &#8212; exact</text>
+  <text x="219" y="54" text-anchor="middle" class="lbl">one cell, one vote &#8212; exact in amplitude</text>
   <text x="369" y="54" text-anchor="middle" class="lbl">space invariance</text>
   <text x="526" y="54" text-anchor="middle" class="lbl hi">flat field cancels &#8212; in the kernel</text>
   <text x="683" y="54" text-anchor="middle" class="lbl">an event is a run</text>
-  <text x="832" y="54" text-anchor="middle" class="lbl">the six&#8217;s own contract</text>
+  <text x="832" y="54" text-anchor="middle" class="lbl">same output the six emit</text>
 
   <!-- shapes, below -->
   <text x="69"  y="167" text-anchor="middle" class="lbl">N &#215; T</text>
