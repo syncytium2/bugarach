@@ -219,17 +219,30 @@ the benchmark is rebuilt per lab.</p>
 <p>The classical side of the same problem is
 <a href="https://gitlab.com/cossartlab/cicada">CICADA</a> and the coactivity-vs-shuffle
 rule it comes from, and both are already in the figure at the top of this page.
-<b>The lane marked <span class="key">locust</span> is CICADA's method</b>, ported
-from the Cossart lab's implementation and modified, which is why it carries a
-different name; <b><span class="key">binned SCE</span></b> is the
+The lane marked <span class="key">locust</span> is <b>derived from CICADA's
+method</b> — ported from an older version of the Cossart lab's implementation,
+by way of this project's MATLAB stack, and modified, which is why it carries a
+different name;
+<b><span class="key">binned SCE</span></b> is the
 coactivity-vs-shuffle rule itself, whose root is Cossart, Aronov &amp; Yuste
 (2003). Cite them, not this repo, for those two —
 Denis, Dard, Quiroli, Cossart &amp; Picardo (2020),
 <i>CICADA</i>, Zenodo <code>10.5281/zenodo.10041434</code>, and
 <i>Attractor dynamics of network UP states in the neocortex</i>,
-Nature 423:283–288.
-<b>No method from the literature has yet been run on this project's recordings</b>, so
-nothing here claims to beat one.</p>
+Nature 423:283–288.</p>
+<p><b>Two things to know before reading locust's numbers as CICADA's.</b> The port
+<b>skips CICADA's per-cell transient-detection stage</b>, because it is fed events
+this project detected separately. And <b>locust is the only one of the six that
+consumes a duration as well as a timing</b> — the other five compute their own
+spans from onsets — so what it is told about how long an event lasted affects its
+calls, and that measurement arrives from the producer rather than being defined
+here. And the derivation chain has been
+<b>checked only at its last link</b> — locust matches the MATLAB implementation it
+was ported from to 1e-9, and nobody here has checked that implementation against
+the Cossart original.
+<b>So locust's results on this page are a result about locust, not about
+CICADA</b>, and no method from the literature has been run here in its own
+form.</p>
 <p><a href="landscape.html">The full landscape &rarr;</a> — what a dozen methods
 emit, whether they learned it, and what that leaves this work entitled to claim.</p>
 
@@ -682,11 +695,14 @@ LEAD_FIGURE = """<figure class="lead">
   Each lane carries its detector's own name; two of the six are named for what
   they measure rather than for the tool — <span class="key">rate+context</span>
   is RateDetect, and <span class="key">binned SCE</span> is SCE. A third name
-  needs decoding for a different reason: <span class="key">locust</span> is the
+  needs decoding for a different reason: <span class="key">locust</span> is
+  <i>derived from</i> the
   <a href="https://gitlab.com/cossartlab/cicada">CICADA</a> method, ported from
-  the Cossart lab's implementation and modified. It is named apart <i>because</i>
-  it is modified — another lab's tool name on a changed port credits them with
-  something they did not write.
+  the Cossart lab's implementation and modified — it skips CICADA's own
+  transient-detection stage and changes how long a cell counts as active. It is
+  named apart <i>because</i> it is modified: another lab's tool name on a changed
+  port credits them with something they did not write, and would lend this
+  lane's behaviour to their method.
   In the lanes, <span class="key">&#10007;</span> marks a false alarm and
   <span class="key">&#9711;</span> one that a reader should not count as a
   separate miss-fire — a second call on an event another detection had already

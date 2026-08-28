@@ -28,13 +28,16 @@ Everything is CSV, UTF-8, newline-only endings, one header row. Times are
 this project's MATLAB exporter, another lab's Python, a spreadsheet exported by
 hand.
 
-> ⚠ **Revision 8** (2026-08-28). **Your `width_sec` is read, checked and kept. Revision 5
-> said it was ignored; that stopped being true on 2026-08-23, and the paragraph saying it
-> stood for five days after.**
+> ⚠ **Revision 8** (2026-08-28). **What the width is checked against, which reader needs
+> what, and the rule that can now reject a folder.**
 >
-> **Two rules changed for you on 2026-08-23 — five days before this note — and one of
-> them can reject a folder that loaded before.** If your export has been failing since
-> then, this is why; the rules are not new, only their announcement is.
+> The 2026-08-28 extension below says the width *is* read, and by which detector. This
+> revision is the producer-facing half of that: what bugarach requires of the column, what
+> each of the two readers does with it, and what changed under you.
+>
+> **Two rules changed on 2026-08-23 — five days before this note — and one of them can
+> reject a folder that loaded before.** If your export has been failing since then, this
+> is why; the rules are not new, only their announcement is.
 >
 > - **`width_sec` requires `width_def` on the same row.** A width with no rule beside it
 >   is now an error naming the file and line, and two different `width_def` values inside
@@ -113,9 +116,9 @@ hand.
 > producer reads when deciding whether a column is worth maintaining, and this one
 > answered no for five days while the producer-facing page said the width it received was
 > *"read from the file and discarded"*. Both documents are corrected together, because
-> either one left standing still tells that producer to stop. How the claim went stale
-> unnoticed is a lesson about this project's own search habits, not about your export:
-> it is recorded in this repo under `docs/sapper_feedback/`, dated 2026-08-28.
+> either one left standing still tells that producer to stop. Recorded under
+> `docs/sapper_feedback/`, dated 2026-08-28, along with why the obvious search confirmed
+> the wrong answer.
 
 <!-- Keep this comment. Python-Markdown merges ADJACENT blockquotes into one, so
      without a non-blockquote element here the ⚠ on revision 8 promotes every
@@ -341,6 +344,51 @@ responsibility and belongs in their documentation, not here.
 > Everything else in this note stands: the two definitions are still right, and this
 > export still sends `peak_sec` on both streams, so revision 8's peak derivation never
 > fires on it.
+
+> **Extended 2026-08-28 (Tony) — and the sentence above about nothing reading
+> `width_sec` is now FALSE: `src/bugarach/detectors/cicada.py` reads it.** Written down
+> here, in full, because Tony asked not to have to explain it again.
+>
+> **The two definitions are not two measurements.** Event detection in this lab's
+> pipeline is **methodically identical** in the fast and slow streams. What differs is
+> a preprocessing step applied **only when exporting to bugarach**: the export records
+> **FWHM as the duration for the fast stream** and the **rising phase — peak location
+> minus t50rise — for the slow stream**. Nothing upstream of the export differs, so
+> this is a property of *the file*, not of the recording and not of the detection.
+> Anything that describes it as "the two streams are measured differently" is wrong.
+>
+> **Why.** The duration CICADA receives strongly affects its calls. That is a
+> non-question for classical calcium transients of about a second, but slow-stream
+> events in this preparation can be very long, and handing over their full extent
+> makes the coincidence structure meaningless.
+>
+> **What it reaches: exactly one detector.** locust is the only one of the six that
+> consumes a per-event duration — `cicada.py`'s `duration_field`. Verified 2026-08-28:
+> the `width_kind` / `width_sec` names in `coact.py`, `sce.py`, `loco.py`, `rate.py`
+> and `sync.py` are **outputs**, describing spans those detectors computed for
+> detections they made; none is an input read off the stream. So a change to the
+> exported duration moves locust's numbers and nothing else's.
+>
+> **Not a recommendation to anybody else.** This lab's calcium-imaging pipeline is not
+> usable by other labs for the time being, so this is a fact about *this* export rather
+> than guidance. Another producer sends whatever it computes and names it in
+> `width_def`; the contract above is unchanged and does not need to know.
+>
+> ⚠ **One wording question, left with the producer rather than resolved here.** The
+> 2026-08-20 note above says the fast stream carries *findpeaks half-prominence* width;
+> the 2026-08-28 account says *FWHM*. Those are close, and may be the same quantity in
+> this pipeline, but they are not the same definition in general. `width_def` is the
+> field that settles it: whatever string the exporter writes is the answer.
+>
+> *[Revision 8 answers the ⚠ by the rule it sets, and corrects its last clause.* **The
+> string the exporter actually writes is `halfprom_width_findpeaks_w`**, on every fast
+> event of both current export folders — so by this note's own test the fast width is
+> the findpeaks half-prominence, and "FWHM" is the loose description. Nothing needs to
+> change in the file; the 2026-08-20 wording was right and the ⚠ can close. *And bugarach
+> does not quite "never parse" the string: it is matched by name in two places — deciding
+> whether a width may stand in for an absent `peak_sec`, and refusing one stream that
+> carries two rules. It is never interpreted, which is what the sentence means and what
+> revision 8 says instead.]*
 
 #### Sending more than is required
 
