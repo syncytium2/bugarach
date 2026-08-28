@@ -60,6 +60,24 @@ Template:
 
 ## Active
 
+### Tonys-MacBook-Pro/the-gate-already-decided — the promiscuity gate, measured against the two rules
+- **Status:** ACTIVE 2026-08-28. ⚠ **Claimed AFTER the write, not before** — see Notes.
+- **Started:** 2026-08-28
+- **Writes:** `<darkroom>/bugarach/detector_history/three_scoring_rules.{png,html}` — that
+  filename stem only. Does **not** touch `guard_where_it_lands.*`, `guard_exposure.*`,
+  `cfar_map.*` or anything else the same directory holds, and does not enter
+  `<darkroom>/constellation/`, which is the MATLAB producer team’s.
+- **Claims:** exclusive write on that stem while ACTIVE. Nothing else external — no deploy,
+  no MATLAB, no export folder.
+- **Notes:** The repo copy lands via `--also docs/learned`, so a reviewer without the
+  darkroom mounted still sees the figure.
+  **This block is late and says so.** The session claimed on the machine-local board with
+  *“no darkroom writes”*, then found the result was visual, wrote a figure tool, and every
+  figure tool here defaults to the darkroom under SAP006 — so the tool doing the ordinary
+  thing falsified the claim. Nothing collided: the stem is new and no other ACTIVE block
+  writes `detector_history/`. Recorded rather than quietly corrected, because a board whose
+  late entries look like punctual ones is the failure it exists to prevent.
+
 ### Tonys-MacBook-Pro/cicada-on-the-authors-data — run locust on the data CICADA was built for
 - **Status:** ACTIVE 2026-08-27 — **BLOCKED, waiting on one data path** (the DANDI side).
   **Every number this session derived is WITHDRAWN** — see the correction below. Rebased
