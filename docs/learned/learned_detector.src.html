@@ -111,10 +111,14 @@ td.n, th.n { text-align: right; font-family: var(--mono);
 <figure>
   <div class="archwrap"><div class="arch">{{SVG:pipeline}}</div></div>
   <figcaption>
-    Ground truth reaches the scorer and nothing else &mdash; no detector, learned or
-    hand-written, ever sees it. ⚠ The <em>labeled coincidence</em> in stage 3 is a
-    label the generator applies, not a property a detector could discriminate on; see
-    the caveat under the trap below.
+    <strong>No detector sees the truth of the fold it is scored on</strong> &mdash;
+    which is the guarantee that matters, and is not the same as no detector seeing
+    truth at all. The learned models are supervised: they train on the planted labels
+    of the three training folds, and pick their operating point against them too. The
+    hand-written six sweep a knob against the same labels. The held-out fold is what
+    neither ever sees. ⚠ The <em>labeled coincidence</em> in stage 3 is a label the
+    generator applies, not a property a detector could discriminate on; see the caveat
+    under the trap below.
   </figcaption>
 </figure>
 
@@ -145,7 +149,7 @@ td.n, th.n { text-align: right; font-family: var(--mono);
     produced a wrong conclusion.
   </p>
   <p>
-    <span class="key truth">The human choice ships beside the choice.</span> The
+    <span class="key truth">The scan ships beside the choice.</span> The
     assessor reports a scan across K &mdash; the minimum number of cells that must
     fire together before the assessor will call it a group &mdash; and a person picks
     one. Here K={{N:g:source_recordings.k_chosen}}. A scan is not a decision, so the
@@ -282,7 +286,16 @@ td.n, th.n { text-align: right; font-family: var(--mono);
   </p>
 </div>
 
-<div class="archwrap"><div class="arch">{{SVG:architecture}}</div></div>
+<figure>
+  <div class="archwrap"><div class="arch">{{SVG:architecture}}</div></div>
+  <figcaption>
+    The stage the model is named for holds twelve of its
+    {{N:b:learned.tube.n_params|,}} parameters; the dilated stack after it holds 1,128
+    and the final 1&times;1 layer 9. The dashed path is the one that matters for the
+    rate claim below &mdash; the untouched brightness trace skips the
+    center&minus;surround stage entirely and enters the stack as a fifth channel.
+  </figcaption>
+</figure>
 
 <div class="col">
   <p>
@@ -315,6 +328,13 @@ td.n, th.n { text-align: right; font-family: var(--mono);
     brightness of {{N:onevote:brightness_two_max|.4f}} however often they fire, and four
     distinct cells reach {{N:onevote:brightness_four_max|.4f}} &mdash; the same two
     values at every seed, to four decimals. The cap is not the problem.
+  </p>
+  <p>
+    ⚠ <strong>The behavioural results below are measured on a synthetic raster that is
+    empty apart from the cells named</strong> &mdash; the strongest contrast a
+    center&minus;surround kernel can be handed, and not a condition the benchmark
+    contains. They say what the architecture does with a clean stimulus; they are not a
+    detection rate.
   </p>
   <p>
     <strong>The problem is that the model does not decide on brightness. It decides on
@@ -639,15 +659,21 @@ td.n, th.n { text-align: right; font-family: var(--mono);
     reported the no-op as evidence the clamp was harmless.
   </p>
   <p>
-    <strong>The ceiling is not irrelevant, though &mdash; it just does not bind
-    here.</strong> A refit of the same architecture on the busier regime, which is what
-    the parameter was added for, reaches {{N:a:ratios.1|.1f}} against that ceiling of
-    40 &mdash; near enough that the search is reporting the range as wrong, which is why
-    the parameter exists. And it genuinely binds in the single-scale runs: those fits
-    push their raw ratio to 41.3 against a clamp of 40, and reach <strong>59.3</strong>
-    once the ceiling is raised to 200. So the clamp is inert on the recordings these
-    numbers come from and demonstrably active elsewhere in the same store, which is a
-    different sentence from the one an ablation reporting "identical" invites.
+    <strong>Applying the same test to the busier regime says the same thing.</strong>
+    A refit there reaches {{N:a:ratios.1|.1f}}, close enough to 40 to look like a
+    parameter pinned against its bound &mdash; and that observation is why
+    <code>max_ratio</code> exists at all. But raise the ceiling to 200 on that refit
+    and it is bit-identical too. It stops at {{N:a:ratios.1|.1f}} because that is where
+    the fit lands, not because 40 held it there.
+  </p>
+  <p>
+    <strong>Where the ceiling genuinely binds is the single-scale runs.</strong> Those
+    fits push their raw ratio to 41.3 against a clamp of 40, and reach
+    <strong>59.3</strong> once it is raised to 200 &mdash; which is why their two scores
+    differ where the four-scale pair's do not. So the clamp is inert at four scales in
+    both regimes and active at one, and the interesting thing it reveals is not about
+    the clamp: <em>a bank of four scales settles on ratios a single scale runs well
+    past.</em>
   </p>
 </div>
 
@@ -725,8 +751,10 @@ def build_tube(*, n_scales=4, width=8, depth=6,
     registry has two consumers &mdash; the trainer and the architecture figure. The
     bake-off, the regime-shift test, the figure builder and the lab server each keep
     their own list of which architectures to run and their own learning-rate table, so
-    a new architecture today costs ten edits across five files before it reaches this
-    page's curve &mdash; one of them in the tool that draws this page's own figure. Folding the learning rate into the registration and having the sweep
+    a new architecture today costs edits in four more files before it reaches this
+    page's curve: the bake-off, the regime-shift test, the figure builder and the lab
+    server each carry their own learning-rate table, and three of them their own list
+    of which architectures to run. Folding the learning rate into the registration and having the sweep
     iterate the registry would make the claim true; it has not been done, and stating
     the intent as an achievement would be the same defect this page catches elsewhere.
   </p>

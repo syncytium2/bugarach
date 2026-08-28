@@ -260,8 +260,8 @@ td.n, th.n { text-align: right; font-family: var(--mono);
 <h2>The pipeline, and where it refuses to let a detector help</h2>
 
 <figure>
-  <div class="archwrap"><div class="arch"><svg viewBox="0 0 900 470" xmlns="http://www.w3.org/2000/svg" role="img"
-     aria-label="The coordination pipeline, left to right in four stages. First, real recordings from one lab are measured without any detector: onset times from eighty-five baseline slices go through a clustering assessor with a thousand circular-shift surrogates, which reports participation, jitter and cluster rate. Second, that measurement becomes generator settings; a human chooses the cluster size K from a published scan, and the fitted heterogeneous bursty background is turned on. Third, the generator plants coordinated events at times it records, producing a data set split into four folds, with distractors and a dense random probe block as negatives. Fourth, every detector is fitted on three folds and scored on the held-out fourth: the six hand-written detectors sweep their one declared knob, the learned models train and pick a threshold, and both go through the same scorer. Ground truth flows from the generator to the scorer, never to a detector. The report and the operating points come out at the end.">
+  <div class="archwrap"><div class="arch"><svg viewBox="0 0 900 494" xmlns="http://www.w3.org/2000/svg" role="img"
+     aria-label="The coordination pipeline, left to right in four stages. First, real recordings from one lab are measured without any detector: onset times from eighty-five baseline slices go through a clustering assessor with a thousand circular-shift surrogates, which reports participation, jitter and cluster rate. Second, that measurement becomes generator settings; a human chooses the cluster size K from a published scan, and the fitted heterogeneous bursty background is turned on. Third, the generator plants coordinated events at times it records, producing a data set split into four folds, with distractors and a dense random probe block as negatives. Fourth, every detector is fitted on three folds and scored on the held-out fourth: the six hand-written detectors sweep their one declared knob, the learned models train and pick a threshold, and both go through the same scorer. Ground truth flows from the generator to the fitting of every detector on the three training folds, and to the scorer for the held-out fourth; no detector sees the truth of the fold it is scored on. The report and the operating points come out at the end.">
   <defs>
     <marker id="pa" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7"
             orient="auto-start-reverse">
@@ -379,31 +379,49 @@ td.n, th.n { text-align: right; font-family: var(--mono);
     <line x1="792" y1="224" x2="792" y2="240"/>
   </g>
 
-  <!-- Ground truth: to the scorer, never to a detector. It gets its own lane
-       along the bottom. Routed beside the data-set->detector arrow it sat 6 px from
-       a solid line and the two read as one thick one, which is the opposite of
-       the point: this path exists to be visibly separate from the signal path. -->
+  <!-- Ground truth: to the scorer, and to the training folds' fitting. It gets its
+       own lane along the bottom. Routed beside the data-set->detector arrow it sat
+       6 px from a solid line and the two read as one thick one, which is the
+       opposite of the point: this path exists to be visibly separate from the
+       signal path.
+       The caption said "it reaches the SCORER and nothing else. No detector ever
+       sees it" until 2026-08-28. That is false and it is the page's central
+       fairness guarantee, so it was the worst sentence in the figure: the learned
+       models are supervised on the planted labels of the training folds, and the
+       six sweep their knob against the same labels. What no detector sees is the
+       HELD-OUT fold, which is the true claim and still the strong one. -->
   <g fill="none" stroke-width="1.4" stroke-dasharray="5 3" marker-end="url(#pa)"
      color="inherit">
     <path d="M 672 268 L 676 268 L 676 396 L 710 396 L 710 310"/>
+    <!-- The branch that supervises. Rises at x=694, which shares no y-range with
+         the solid data-set arrow at x=686 (that one spans 86-150; this spans
+         196-396), so the two never run close enough to read as one line. -->
+    <path d="M 676 340 L 694 340 L 694 196 L 697 196"/>
   </g>
   <text x="450" y="418" text-anchor="middle" class="lbl">
-    the dashed line is ground truth &#8212; it reaches the SCORER and nothing else. No detector, learned or hand-written, ever sees it.
+    the dashed line is ground truth. It fits every detector on the 3 training folds &#8212; the learned ones supervised on it, the six swept against it &#8212;
+  </text>
+  <text x="450" y="434" text-anchor="middle" class="lbl">
+    and it scores the held-out 4th. No detector ever sees the truth of the fold it is scored on.
   </text>
 
-  <text x="450" y="444" text-anchor="middle" class="lbl">
+  <text x="450" y="462" text-anchor="middle" class="lbl">
     Every stage is a script and every output a file: assess_archive.py &#183; derive_spec.py &#183; fair_bakeoff.py &#183; make_bakeoff_figures.py
   </text>
-  <text x="450" y="462" text-anchor="middle" class="lbl">
+  <text x="450" y="480" text-anchor="middle" class="lbl">
     The data set is simulated. The settings are measured. Nothing here says any detector is right about a real slice.
   </text>
 </svg>
 </div></div>
   <figcaption>
-    Ground truth reaches the scorer and nothing else &mdash; no detector, learned or
-    hand-written, ever sees it. ⚠ The <em>labeled coincidence</em> in stage 3 is a
-    label the generator applies, not a property a detector could discriminate on; see
-    the caveat under the trap below.
+    <strong>No detector sees the truth of the fold it is scored on</strong> &mdash;
+    which is the guarantee that matters, and is not the same as no detector seeing
+    truth at all. The learned models are supervised: they train on the planted labels
+    of the three training folds, and pick their operating point against them too. The
+    hand-written six sweep a knob against the same labels. The held-out fold is what
+    neither ever sees. ⚠ The <em>labeled coincidence</em> in stage 3 is a label the
+    generator applies, not a property a detector could discriminate on; see the caveat
+    under the trap below.
   </figcaption>
 </figure>
 
@@ -434,7 +452,7 @@ td.n, th.n { text-align: right; font-family: var(--mono);
     produced a wrong conclusion.
   </p>
   <p>
-    <span class="key truth">The human choice ships beside the choice.</span> The
+    <span class="key truth">The scan ships beside the choice.</span> The
     assessor reports a scan across K &mdash; the minimum number of cells that must
     fire together before the assessor will call it a group &mdash; and a person picks
     one. Here K=3. A scan is not a decision, so the
@@ -571,7 +589,8 @@ td.n, th.n { text-align: right; font-family: var(--mono);
   </p>
 </div>
 
-<div class="archwrap"><div class="arch"><svg viewBox="0 0 900 268" xmlns="http://www.w3.org/2000/svg" role="img"
+<figure>
+  <div class="archwrap"><div class="arch"><svg viewBox="0 0 900 268" xmlns="http://www.w3.org/2000/svg" role="img"
      aria-label="Signal path of the center-surround model: a rate-sorted raster of onsets is max-pooled per cell over the narrowest fitted center width, averaged across cells into a single brightness trace, convolved with four difference-of-Gaussian center-minus-surround kernels, and passed to a dilated convolution stack and a final one-by-one layer that emits a score per frame. The raw brightness trace also bypasses the center-surround stage and enters the stack directly as a fifth channel.">
   <defs>
     <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7"
@@ -669,6 +688,14 @@ td.n, th.n { text-align: right; font-family: var(--mono);
   </text>
 </svg>
 </div></div>
+  <figcaption>
+    The stage the model is named for holds twelve of its
+    1,149 parameters; the dilated stack after it holds 1,128
+    and the final 1&times;1 layer 9. The dashed path is the one that matters for the
+    rate claim below &mdash; the untouched brightness trace skips the
+    center&minus;surround stage entirely and enters the stack as a fifth channel.
+  </figcaption>
+</figure>
 
 <div class="col">
   <p>
@@ -701,6 +728,13 @@ td.n, th.n { text-align: right; font-family: var(--mono);
     brightness of 0.0625 however often they fire, and four
     distinct cells reach 0.1250 &mdash; the same two
     values at every seed, to four decimals. The cap is not the problem.
+  </p>
+  <p>
+    ⚠ <strong>The behavioural results below are measured on a synthetic raster that is
+    empty apart from the cells named</strong> &mdash; the strongest contrast a
+    center&minus;surround kernel can be handed, and not a condition the benchmark
+    contains. They say what the architecture does with a clean stimulus; they are not a
+    detection rate.
   </p>
   <p>
     <strong>The problem is that the model does not decide on brightness. It decides on
@@ -1025,15 +1059,21 @@ td.n, th.n { text-align: right; font-family: var(--mono);
     reported the no-op as evidence the clamp was harmless.
   </p>
   <p>
-    <strong>The ceiling is not irrelevant, though &mdash; it just does not bind
-    here.</strong> A refit of the same architecture on the busier regime, which is what
-    the parameter was added for, reaches 37.7 against that ceiling of
-    40 &mdash; near enough that the search is reporting the range as wrong, which is why
-    the parameter exists. And it genuinely binds in the single-scale runs: those fits
-    push their raw ratio to 41.3 against a clamp of 40, and reach <strong>59.3</strong>
-    once the ceiling is raised to 200. So the clamp is inert on the recordings these
-    numbers come from and demonstrably active elsewhere in the same store, which is a
-    different sentence from the one an ablation reporting "identical" invites.
+    <strong>Applying the same test to the busier regime says the same thing.</strong>
+    A refit there reaches 37.7, close enough to 40 to look like a
+    parameter pinned against its bound &mdash; and that observation is why
+    <code>max_ratio</code> exists at all. But raise the ceiling to 200 on that refit
+    and it is bit-identical too. It stops at 37.7 because that is where
+    the fit lands, not because 40 held it there.
+  </p>
+  <p>
+    <strong>Where the ceiling genuinely binds is the single-scale runs.</strong> Those
+    fits push their raw ratio to 41.3 against a clamp of 40, and reach
+    <strong>59.3</strong> once it is raised to 200 &mdash; which is why their two scores
+    differ where the four-scale pair's do not. So the clamp is inert at four scales in
+    both regimes and active at one, and the interesting thing it reveals is not about
+    the clamp: <em>a bank of four scales settles on ratios a single scale runs well
+    past.</em>
   </p>
 </div>
 
@@ -1111,8 +1151,10 @@ def build_tube(*, n_scales=4, width=8, depth=6,
     registry has two consumers &mdash; the trainer and the architecture figure. The
     bake-off, the regime-shift test, the figure builder and the lab server each keep
     their own list of which architectures to run and their own learning-rate table, so
-    a new architecture today costs ten edits across five files before it reaches this
-    page's curve &mdash; one of them in the tool that draws this page's own figure. Folding the learning rate into the registration and having the sweep
+    a new architecture today costs edits in four more files before it reaches this
+    page's curve: the bake-off, the regime-shift test, the figure builder and the lab
+    server each carry their own learning-rate table, and three of them their own list
+    of which architectures to run. Folding the learning rate into the registration and having the sweep
     iterate the registry would make the claim true; it has not been done, and stating
     the intent as an achievement would be the same defect this page catches elsewhere.
   </p>
