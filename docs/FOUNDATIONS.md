@@ -271,8 +271,7 @@ a wrong conclusion in this repo. The authority is the global
   background over time, so "more activity" conflates a frequency change with a
   baseline shift. Any claim that a detector finds more under senktide must say
   which.
-- **Two DURATION definitions, fast vs slow: an export step, not two measurements.
-  Detection is identical; only locust consumes duration.**
+- **Fast/slow duration: an export step, not two measurements.**
   [`export_folder_spec.md`](export_folder_spec.md) §width.
 - **A ZERO-EVENT ROI IS NOT A DEAD ROI, and the verdict is not this repo's to
   compute. It is decided at export, in MATLAB, by the only stage holding the full
