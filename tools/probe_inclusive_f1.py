@@ -83,6 +83,14 @@ def build(bakeoff: dict) -> dict:
             per_fold = [rescore(f) for f in rec["per_fold"]]
             published = rec["f1"]["mean"]
             inclusive = _stats([f["f1"] for f in per_fold])
+            # The OTHER planted negative. The probe block is what the published rule
+            # forgives; distractors are charged by both rules, and a detector that
+            # reads zero in the probe column while hitting every distractor is telling
+            # you something the probe column cannot. Carried here so the page can put
+            # the two side by side, and so this store regenerates whole from this tool
+            # — an earlier version had these fields written in by a separate script,
+            # which meant re-running the tool silently dropped columns the page quotes.
+            dh = [f["distractor_hits"] for f in rec["per_fold"]]
             out["detectors"][name] = {
                 "group": group,
                 "published_f1": published,
@@ -93,6 +101,9 @@ def build(bakeoff: dict) -> dict:
                 # means the published number is the flattering one.
                 "f1_drop": published - inclusive["mean"],
                 "hot_fa": rec["hot_fa"],
+                "distractor_hits_mean": sum(dh) / len(dh),
+                "distractor_hits_per_fold": bakeoff["spec"]["n_distractors"]
+                                            * bakeoff["seeds_per_fold"],
             }
     ranked = sorted(out["detectors"].items(), key=lambda kv: -kv[1]["f1"]["mean"])
     out["order_inclusive"] = [n for n, _ in ranked]
