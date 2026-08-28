@@ -1,11 +1,24 @@
 ---
-status: waiting-on-tony
+status: open
 filed: 2026-08-28
 ---
 
 # Numbers derive from a store and cannot drift; claims are hand-copied and do
 
-waiting: Decide whether claims get the token treatment numbers already have. One page: 122 number tokens, 0 claim references.
+> **Open, not `waiting-on-tony`, and the status is the finding's own subject.**
+> This ends in a decision only Tony can take, so the status looks wrong — but a
+> `waiting-on-tony` item prints its action line in **every** session briefing, and
+> the briefing has no room. Marked that way it took CI to **9,124B against a
+> 9,000B budget**, degrading the whole thing to TERSE: the FOUNDATIONS extract
+> stops arriving, which is a worse outcome than this file being one click less
+> prominent.
+>
+> [`2026-08-27-the-bakeoff-reference-is-thread-count-bound.md`](2026-08-27-the-bakeoff-reference-is-thread-count-bound.md)
+> made the same choice for the same reason two days ago and said so in its own
+> header. **Twice is a property of the block, not an accident** — and it is a small
+> instance of what this file is about: the briefing is a hand-maintained budget
+> where the thing that matters (does the fact arrive?) is not derivable from the
+> thing being edited (how long is my sentence?).
 
 > **Not murderboarded** — a structural observation about this repo, every count
 > reproducible by the greps quoted below.
