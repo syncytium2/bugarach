@@ -60,6 +60,36 @@ Template:
 
 ## Active
 
+### Tonys-MacBook-Pro/lift-the-hold — DEPLOY CLAIMED: publishing the site, hold lifted early
+- **Status:** ACTIVE 2026-08-28 — **I hold the deploy.** No other session should run
+  `npm run deploy` or touch `docs/DEPLOY_HOLD.md` until this block says DONE.
+- **Worktree:** `bugarach-worktrees/lift-the-hold` (branch same, off origin/main).
+  Build and upload run from the **primary checkout**, which is where `node_modules` and
+  the wrangler login live.
+- **Holds:** **the live site `bugarach.tonydefazio.com`** — cross-machine, hence this
+  board. Also Playwright chromium for the pre-flight drive. No darkroom writes, no MATLAB,
+  no data.
+- **Touches:** `docs/DEPLOY_HOLD.md` (`held: yes` → `no`, with the reason), this block, and
+  a deploy record when it lands. Explicitly NOT `tools/build_site.py`, NOT
+  `docs/site/raster_viewer.html`, NOT `src/**` — **the published page must be what `main`
+  already says**, and editing anything the build reads mid-deploy would publish something
+  no PR reviewed.
+- **Authorised by Tony 2026-08-28:** *"fine. fucking deploy."* Lifted **early** — the hold's
+  own escape clause, for a page actively misleading a reader: the live front page says
+  `locust` **is** CICADA's method, unvalidated, beside our benchmark numbers.
+- **Six commits change what it serves** (from `site_staleness.py`, not hand-kept):
+  `831579e`, `4e880b9`, `ed5e02e`, and the three viewer commits `f7c0edb`, `173accd`,
+  `53b1d62`.
+- **⚠ Two things the next deploy session must know.**
+  1. **Three sessions edited `raster_viewer.html`** since `0ed939d` and **no session had
+     driven the combination** — this deploy is the first time they run together, which is
+     why the pre-flight drives the served build rather than trusting the build output.
+  2. **The published bench numbers predate the background change.** Branch
+     `bench-background-is-not-flat` is not merged; it makes the background non-flat and
+     moves the tolerance 1.5 s → 2.5 s, and `hero.png` / `diagnostic.png` are *rendered
+     from* `src/bugarach`. When it lands the front page's figure moves and the commit list
+     will not say why. Recorded at that branch's explicit request.
+
 ### Tonys-MacBook-Pro/the-gate-already-decided — the promiscuity gate, measured against the two rules
 - **Status:** ACTIVE 2026-08-28. ⚠ **Claimed AFTER the write, not before** — see Notes.
 - **Started:** 2026-08-28
