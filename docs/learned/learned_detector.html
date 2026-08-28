@@ -285,7 +285,7 @@ th.n { text-align: right; font-family: var(--mono);
 
 <figure>
   <div class="archwrap"><div class="arch"><svg viewBox="0 0 900 494" xmlns="http://www.w3.org/2000/svg" role="img"
-     aria-label="The coordination pipeline, left to right in four stages. First, real recordings from one lab are measured without any detector: onset times from eighty-five baseline slices go through a clustering assessor with a thousand circular-shift surrogates, which reports participation, jitter and cluster rate. Second, that measurement becomes generator settings; a human chooses the cluster size K from a published scan, and the fitted heterogeneous bursty background is turned on. Third, the generator plants coordinated events at times it records, producing a data set split into four folds, with distractors and a dense random probe block as negatives. Fourth, every detector is fitted on three folds and scored on the held-out fourth: the six hand-written detectors sweep their one declared knob, the learned models train and pick a threshold, and both go through the same scorer. Ground truth flows from the generator to the fitting of every detector on the three training folds, and to the scorer for the held-out fourth; no detector sees the truth of the fold it is scored on.">
+     aria-label="The coordination pipeline, left to right in four stages. First, real recordings from one lab are measured without any detector: onset times from eighty-five baseline slices go through a clustering assessor with a thousand circular-shift surrogates, which reports participation, jitter, cluster rate and each cell overall firing rate. Second, that measurement becomes generator settings; a human chooses the cluster size K from a published scan, and the fitted heterogeneous bursty background is turned on. Third, the generator plants coordinated events at times it records, producing a data set split into four folds, with distractors and a dense random probe block as negatives. Fourth, every detector is fitted on three folds and scored on the held-out fourth: the six hand-written detectors sweep their one declared knob, the learned models train and pick a threshold, and both go through the same scorer. Ground truth flows from the generator to the fitting of every detector on the three training folds, and to the scorer for the held-out fourth; no detector sees the truth of the fold it is scored on.">
   <defs>
     <marker id="pa" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7"
             orient="auto-start-reverse">
@@ -318,7 +318,7 @@ th.n { text-align: right; font-family: var(--mono);
   <rect x="16" y="230" width="200" height="76" rx="3"/>
   <text x="116" y="253" text-anchor="middle">what it measures</text>
   <text x="116" y="272" text-anchor="middle" class="lbl">participation &#183; jitter</text>
-  <text x="116" y="289" text-anchor="middle" class="lbl">cluster rate &#183; background</text>
+  <text x="116" y="289" text-anchor="middle" class="lbl">cluster rate &#183; per-cell rate</text>
 
   <text x="116" y="332" text-anchor="middle" class="lbl">no detector is involved,</text>
   <text x="116" y="348" text-anchor="middle" class="lbl">so nothing here is</text>
@@ -1064,21 +1064,24 @@ th.n { text-align: right; font-family: var(--mono);
     however much of the block that call covers.
   </p>
   <p>
-    The pooled trace reads zero for a different reason on one of its four folds, and
-    it is worth having: there it emitted <strong>ten calls of which seven were
-    false</strong>, and every one of them happened to miss a window that is 8.5% of the
-    recording. Not restraint, not a swallowed block &mdash; luck.
+    The pooled trace reads zero on one of its four folds for <strong>both</strong>
+    reasons at once, which is worth more than either. There it emitted ten calls. Two of
+    them &mdash; one per recording &mdash; span about 89% of their recording and swallow
+    the probe block whole; both matched a planted event, so neither could ever enter the
+    false-alarm set. The other seven are short spans at the two ends, and they happened
+    to miss a window that is 8.5% of the recording. Not restraint, and not one clean
+    mechanism.
   </p>
   <p>
     <strong>So the trap has a second blind spot, and it is worth more than the
-    first.</strong> It cannot charge a detector that fires too much; it cannot charge
-    one that fires once, forever; and it cannot charge one whose false alarms simply
-    landed elsewhere. Neither F1 column sees any of it: the charged rule differs from
+    first.</strong> It cannot charge a firing that matched a planted event, however wide
+    that call was; it cannot charge a detector that fires once, forever; and it cannot
+    charge one whose false alarms simply landed elsewhere. <strong>A zero can be
+    manufactured by more than one of those at the same time</strong>, which is the
+    strongest statement available of why the column cannot be read on its own. Neither F1 column sees any of it: the charged rule differs from
     the published one only by putting probe firings back into the denominator, so with
     zero of them the two rules are the same arithmetic. That is why these two rows alone
     are identical across the two columns while every other row moves.
-    <strong>A zero in the trap column means one of three things, and the column cannot
-    tell you which.</strong>
     ⚠ In seven of their eight fold-fits the threshold also lands on the bottom edge of
     the searched grid, which this project treats elsewhere as a search that stopped too
     early rather than an answer, so their F1 is reported for completeness and is
@@ -1298,9 +1301,12 @@ def build_tube(*, n_scales=4, width=8, depth=6,
   </p>
   <p>
     <strong>A hit is scored within 1.5 s</strong> of a planted event, or wherever the
-    detector's own reported span contains it &mdash; which is how the binned detectors
-    are scored, and binned SCE bins at 10 s. Against a median planted event of 0.70 s,
-    and a widest one of 1.6 s that is wider than the tolerance itself. That buys a trustworthy ranking and costs any
+    detector's own reported span contains it. <strong>The span rule applies to every
+    detector here, not only the binned ones</strong> &mdash; and it is what lets a
+    detector claiming one call across a whole recording read a precision of 1.00, since
+    that call contains a planted event and is therefore a hit. Against a median planted
+    event of 0.70 s, and a widest one of 1.6 s that is wider than the tolerance itself.
+    That buys a trustworthy ranking and costs any
     claim about timing accuracy &mdash; and the tolerance sweep that established it
     covers the six hand-written detectors, not the learned one.
   </p>

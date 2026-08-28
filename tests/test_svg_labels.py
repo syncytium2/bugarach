@@ -83,6 +83,60 @@ MEASURE = r"""
 """
 
 
+MEASURE_PATHS = r"""
+(svgText) => {
+  const host = document.createElement('div');
+  host.style.cssText = 'position:absolute;left:-9999px;width:1200px';
+  host.innerHTML = svgText;
+  document.body.appendChild(host);
+  const svg = host.querySelector('svg');
+  const texts = [];
+  svg.querySelectorAll('text').forEach(t => {
+    const b = t.getBBox();
+    out_push: { texts.push({text:(t.textContent||'').trim().slice(0,60),
+                            x:b.x, y:b.y, w:b.width, h:b.height}); }
+  });
+  const paths = [];
+  svg.querySelectorAll('path, line, polyline').forEach(el => {
+    // Fills are shapes (arrowhead markers, glyphs); only stroked geometry routes.
+    const cs = getComputedStyle(el);
+    if (cs.stroke === 'none' && !el.hasAttribute('stroke-width')) return;
+    let len = 0;
+    try { len = el.getTotalLength(); } catch (e) { return; }
+    if (!len) return;
+    const n = Math.max(8, Math.min(120, Math.round(len / 6)));
+    const samples = [];
+    for (let i = 0; i <= n; i++) {
+      const p = el.getPointAtLength((len * i) / n);
+      samples.push({x: p.x, y: p.y});
+    }
+    paths.push({d: el.getAttribute('d') || el.outerHTML.slice(0, 60), samples});
+  });
+  return {texts, paths};
+}
+"""
+
+
+def _measure_paths(svg_path: Path):
+    """Text boxes plus sampled points along every stroked path, in user units."""
+    pw = pytest.importorskip("playwright.sync_api",
+                             reason="playwright not installed")
+    from playwright.sync_api import Error as PWError
+    try:
+        with pw.sync_playwright() as p:
+            browser = p.chromium.launch()
+            page = browser.new_page()
+            page.set_content(
+                "<style>text { font: 12px system-ui, sans-serif; }"
+                "text.lbl { font-size: 12.5px; }</style>")
+            got = page.evaluate(MEASURE_PATHS,
+                                svg_path.read_text(encoding="utf-8"))
+            browser.close()
+            return got
+    except PWError as exc:                                   # pragma: no cover
+        pytest.skip(f"chromium unavailable: {exc}")
+
+
 def _measure(svg_path: Path):
     pw = pytest.importorskip("playwright.sync_api",
                              reason="playwright not installed")
@@ -162,6 +216,44 @@ def test_labels_that_share_vertical_space_do_not_overlap(svg):
         f"run-together string:\n" +
         "\n".join(f"  {a!r} overlaps {b!r} by {dx:.1f} x {dy:.1f} units"
                   for a, b, dx, dy in clashes))
+
+
+@pytest.mark.parametrize("svg", SVGS, ids=lambda p: p.name)
+def test_no_stroked_path_lands_on_a_label(svg):
+    """An arrow that ends inside a label reads as attached to it.
+
+    This is the third distinct way this estate's hand-drawn figures have broken, and
+    the two `architecture.svg` comments record the first two: a bypass route drawn
+    across the annotation row struck out two labels, and its return leg was later found
+    running through `1,128 params`. `landscape.svg` had an arrowhead terminating inside
+    `benchmarked by Mölter 2018`.
+
+    Text-to-text overlap does not see any of it, so this samples each stroked path and
+    asks whether any sample falls inside a text box. Endpoints matter most — an
+    arrowhead is what a reader sees as "pointing at" something — so they are checked
+    against a tighter margin than the middle of a run.
+    """
+    got = _measure_paths(svg)
+    hits = []
+    for path in got["paths"]:
+        for i, pt in enumerate(path["samples"]):
+            endpoint = i == 0 or i == len(path["samples"]) - 1
+            pad = 0.0 if endpoint else -2.0
+            for t in got["texts"]:
+                if (t["x"] - pad <= pt["x"] <= t["x"] + t["w"] + pad
+                        and t["y"] - pad <= pt["y"] <= t["y"] + t["h"] + pad):
+                    hits.append((path["d"][:44], t["text"],
+                                 round(pt["x"], 1), round(pt["y"], 1), endpoint))
+                    break
+            else:
+                continue
+            break
+
+    assert not hits, (
+        f"{svg.name}: {len(hits)} stroked path(s) land on a label. An arrow ending in "
+        f"text reads as attached to it:\n" +
+        "\n".join(f"  {'endpoint' if e else 'mid-run'} ({x}, {y}) inside {t!r}"
+                  f"   path {d}…" for d, t, x, y, e in hits))
 
 
 def test_the_guard_can_fail():
