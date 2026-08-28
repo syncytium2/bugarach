@@ -11,6 +11,10 @@
 .archwrap { overflow-x: auto; margin: 2rem 0; }
 .arch { min-width: 640px; }
 .arch svg { width: 100%; height: auto; display: block; }
+/* Same treatment for the raster-image figure, which otherwise shrinks its own
+   axis ticks to ~3px on a phone rather than scrolling. */
+.figscroll { overflow-x: auto; }
+.figscroll img { min-width: 640px; }
 pre.code { font-family: var(--mono); font-size: .82rem; line-height: 1.6;
            background: var(--card); border: 1px solid var(--rule);
            border-radius: 3px; padding: 1rem 1.1rem; overflow-x: auto;
@@ -135,8 +139,8 @@ td.n, th.n { text-align: right; font-family: var(--mono);
 <table>
   <thead><tr>
     <th>K (cells)</th>
-    <th class="n">coordinated events found<br>(per minute)</th>
-    <th class="n">cells participating<br>(count)</th>
+    <th class="n">coordinated events found<br>(per minute, median slice)</th>
+    <th class="n">cells participating<br>(count, median slice)</th>
     <th class="n">onset spread, observed<br>(s)</th>
     <th class="n">onset spread, shuffled<br>(s)</th>
     <th class="n">slices with a spread<br>(of 85)</th>
@@ -180,10 +184,11 @@ td.n, th.n { text-align: right; font-family: var(--mono);
 
 <div class="col">
   <p>
-    K=4 cuts the event rate to roughly a quarter of K=3's and would build a different
-    benchmark; K=8 finds nothing at all in 85 recordings. The column that decides it is
-    the last one &mdash; at K=8 only 8 slices have enough events to measure an onset
-    spread, so the tightening spread down that column is measured on a shrinking and
+    Every rate here is a <strong>median across the 85 slices</strong>, not a total.
+    K=4 cuts it to roughly a quarter of K=3's and would build a different benchmark;
+    by K=8 the median slice has nothing, and only 8 of 85 have enough events to measure
+    an onset spread at all. That last column is what decides the choice &mdash; the
+    spread appears to tighten as K rises, but it is being measured on a shrinking and
     increasingly unrepresentative subset. Observed spread sits below its shuffled null
     at every K, which is the direction real coordination should show.
   </p>
@@ -216,14 +221,25 @@ td.n, th.n { text-align: right; font-family: var(--mono);
   </p>
   <p>
     So the generator plants two kinds of negative as well. <strong>Distractors</strong>
-    are correlated bursts: real coincidence, not coordination, and a detector is
-    charged for firing on them. And each recording carries a <strong>probe
+    are correlated bursts labeled as coincidence rather than coordination, and a
+    detector is charged for firing on them. And each recording carries a <strong>probe
     block</strong> &mdash; {{N:b:spec.hot_window.0|.0f}} s to
-    {{N:b:spec.hot_window.1|.0f}} s of a {{N:b:spec.duration_sec|,.0f}} s recording,
-    running at {{N:b:spec.hot_rate_hz}} Hz per cell against a background of
-    {{N:b:spec.bg_rate_hz|.4f}} Hz, with <em>nothing planted in it</em>. Six times the
-    activity and no coordination at all: the exact thing a coordination detector must
-    not confuse.
+    {{N:b:spec.hot_window.1|.0f}} s of a {{N:b:spec.duration_sec|,.0f}} s recording, to
+    which the generator <em>adds</em> {{N:b:spec.hot_rate_hz}} Hz per cell on top of a
+    background of {{N:b:spec.bg_rate_hz|.4f}} Hz, with <em>nothing planted in it</em>.
+    About seven times the baseline activity and no coordination at all: the exact thing
+    a coordination detector must not confuse.
+  </p>
+  <p>
+    ⚠ <strong>The distractors are weaker than that description implies, and the page
+    reports the probe rather than them for that reason.</strong> The generator draws a
+    distractor with the same code it draws a planted event &mdash; same cell sampling,
+    same jitter &mdash; differing only in participation, and at 0.18 a distractor
+    involves <em>more</em> cells than two of the three planted levels (0.14 and 0.08).
+    So "coincidence, not coordination" is a label applied by the generator, not a
+    property a detector could discriminate on, and every leading detector duly fires on
+    nearly all of them. That caps the precision any detector can reach here and it is
+    not a fact about detectors.
   </p>
   <p>
     <span class="key learned">The published score cannot see the probe block, on
@@ -271,16 +287,18 @@ td.n, th.n { text-align: right; font-family: var(--mono);
     no sweep over cell count exists.
   </p>
   <p>
-    <span class="key learned">One cell, one vote &mdash; does not hold at the shipped
-    operating point.</span> The max-pool does cap repeats <em>inside its own
-    window</em> &mdash; the raster is one-or-zero per cell per frame, so pooling is an
-    OR. The failure is that the window is much narrower than the kernel that
-    integrates it: it spans the <em>narrowest</em> fitted center width, while the
-    surround reaches tens of samples further. Spread a burst across that gap and it
-    survives the cap. Fed synthetic input, <strong>two cells firing five times each,
-    three frames apart, score 0.9997 &mdash; above the 0.9976 that four distinct cells
-    reach, at half the brightness.</strong> Widen the burst to twelve frames and it
-    drops to 0.13 and is rejected, which is the window's edge made visible. The model's own
+    <span class="key learned">One cell, one vote &mdash; the cap holds and the
+    conclusion drawn from it does not.</span> The max-pool caps each cell's
+    contribution exactly, in amplitude: two cells bursting reach a pooled brightness of
+    2/32 no matter how often they fire, and four distinct cells reach 4/32. That much
+    is true at every pool width. But <strong>the model does not decide on
+    brightness &mdash; it decides on the length of the run</strong>, and the max-pool
+    lengthens runs. Fed synthetic input, two cells firing five times each, three frames
+    apart, score <strong>0.9997 against the 0.9976 that four distinct cells reach
+    &mdash; a higher score at half the brightness</strong>. The same two cells firing
+    <em>once</em> score 0.8664 and are rejected. Identical amplitude, opposite verdict,
+    decided entirely by duration. Widening the pool window does not repair this; it
+    makes the runs longer. The model's own
     source comment claims this cap is exact. It is not, and that is the same
     phenomenon as the probe-block firings below.
   </p>
@@ -315,6 +333,15 @@ td.n, th.n { text-align: right; font-family: var(--mono);
     ablated model would separate the two, and that has not been done.
   </p>
   <p>
+    ⚠ <strong>Both this and the one-vote probe above were run on a separate fit</strong>
+    &mdash; same architecture, same settings, a training run of its own rather than one
+    of the four folds the table scores. So this page carries three different fits of the
+    same model: the four scored folds, the busier refit whose surround ratio reaches
+    37.7, and this one. Each demonstration is about the architecture rather than about a
+    published number, but the distinction is worth naming, because conflating two of
+    them is a mistake this page has already made once.
+  </p>
+  <p>
     ⚠ That is one training run, so it is an order of magnitude rather than a
     measurement &mdash; the same limitation every learned number here carries. It is
     reported because the alternative in an earlier version of this page was a figure
@@ -334,12 +361,15 @@ td.n, th.n { text-align: right; font-family: var(--mono);
 <h2>What it measured</h2>
 
 <figure>
-  <img src="{{FIG:bakeoff}}" alt="Panel A, one bar per detector showing mean F1 on the held-out fold with each of the four folds drawn as a dot; the learned models are dark red and the hand-written ones blue. Panel B, the same F1 against seconds to detect one held-out fold on a log axis, with a vertical bar for each detector's fold range.">
+  <div class="figscroll"><img src="{{FIG:bakeoff}}" alt="Panel A, one bar per detector showing mean F1 on the held-out fold with each of the four folds drawn as a dot; the learned models are dark red and the hand-written ones blue. Panel B, the same F1 against seconds to detect one held-out fold on a log axis, with a vertical bar for each detector's fold range."></div>
   <figcaption>
     Every fold is drawn as its own dot in panel A, so the overlap at the top is
     visible rather than hidden behind a bar. Panel B is the trade-off plane: accuracy
-    against cost, marker area by parameter count. Neither panel can show the column
-    that matters most, which is why the table carries it.
+    against cost, with marker size growing with parameter count &mdash; the seven
+    detectors that have no trained weights all take the same smallest marker.
+    ⚠ <strong>Both panels rank on the probe-forgiven F1</strong>, which is the ordering
+    the table's second column overturns. The figure shows the flattering half of this
+    page's own argument, and that is a limitation of the figure rather than a finding.
   </figcaption>
 </figure>
 
@@ -350,6 +380,7 @@ td.n, th.n { text-align: right; font-family: var(--mono);
       <th rowspan="2">detector</th>
       <th colspan="2" class="pair">F1 on the held-out fold (dimensionless)</th>
       <th rowspan="2" class="n">probe-block firings<br>(count per fold)</th>
+      <th rowspan="2" class="n">distractors hit<br>(of 12 per fold)</th>
       <th rowspan="2" class="n">detect<br>(s per fold)</th>
       <th rowspan="2" class="n">parameters<br>(count)</th>
     </tr>
@@ -364,6 +395,7 @@ td.n, th.n { text-align: right; font-family: var(--mono);
       <td class="n">{{N:probe:detectors.tube.published_f1|.3f}}</td>
       <td class="n">{{N:probe:detectors.tube.f1.mean|.3f}}</td>
       <td class="n">{{N:probe:detectors.tube.hot_fa.mean|.2f}} &nbsp;({{N:probe:detectors.tube.hot_fa.min|.0f}}&ndash;{{N:probe:detectors.tube.hot_fa.max|.0f}})</td>
+      <td class="n">{{N:probe:detectors.tube.distractor_hits_mean|.1f}}</td>
       <td class="n">{{N:b:learned.tube.detect_sec.mean|.3f}}</td>
       <td class="n">{{N:b:learned.tube.n_params|,}}</td>
     </tr>
@@ -372,6 +404,7 @@ td.n, th.n { text-align: right; font-family: var(--mono);
       <td class="n">{{N:probe:detectors.coact.published_f1|.3f}}</td>
       <td class="n">{{N:probe:detectors.coact.f1.mean|.3f}}</td>
       <td class="n">{{N:probe:detectors.coact.hot_fa.mean|.2f}} &nbsp;({{N:probe:detectors.coact.hot_fa.min|.0f}}&ndash;{{N:probe:detectors.coact.hot_fa.max|.0f}})</td>
+      <td class="n">{{N:probe:detectors.coact.distractor_hits_mean|.1f}}</td>
       <td class="n">{{N:b:hand_written.coact.detect_sec.mean|.3f}}</td>
       <td class="n">&mdash;</td>
     </tr>
@@ -380,6 +413,7 @@ td.n, th.n { text-align: right; font-family: var(--mono);
       <td class="n">{{N:probe:detectors.loco.published_f1|.3f}}</td>
       <td class="n">{{N:probe:detectors.loco.f1.mean|.3f}}</td>
       <td class="n">{{N:probe:detectors.loco.hot_fa.mean|.2f}} &nbsp;({{N:probe:detectors.loco.hot_fa.min|.0f}}&ndash;{{N:probe:detectors.loco.hot_fa.max|.0f}})</td>
+      <td class="n">{{N:probe:detectors.loco.distractor_hits_mean|.1f}}</td>
       <td class="n">{{N:b:hand_written.loco.detect_sec.mean|.3f}}</td>
       <td class="n">&mdash;</td>
     </tr>
@@ -388,6 +422,7 @@ td.n, th.n { text-align: right; font-family: var(--mono);
       <td class="n">{{N:probe:detectors.rate.published_f1|.3f}}</td>
       <td class="n">{{N:probe:detectors.rate.f1.mean|.3f}}</td>
       <td class="n">{{N:probe:detectors.rate.hot_fa.mean|.2f}} &nbsp;({{N:probe:detectors.rate.hot_fa.min|.0f}}&ndash;{{N:probe:detectors.rate.hot_fa.max|.0f}})</td>
+      <td class="n">{{N:probe:detectors.rate.distractor_hits_mean|.1f}}</td>
       <td class="n">{{N:b:hand_written.rate.detect_sec.mean|.3f}}</td>
       <td class="n">&mdash;</td>
     </tr>
@@ -396,6 +431,7 @@ td.n, th.n { text-align: right; font-family: var(--mono);
       <td class="n">{{N:probe:detectors.cicada.published_f1|.3f}}</td>
       <td class="n">{{N:probe:detectors.cicada.f1.mean|.3f}}</td>
       <td class="n">{{N:probe:detectors.cicada.hot_fa.mean|.2f}} &nbsp;({{N:probe:detectors.cicada.hot_fa.min|.0f}}&ndash;{{N:probe:detectors.cicada.hot_fa.max|.0f}})</td>
+      <td class="n">{{N:probe:detectors.cicada.distractor_hits_mean|.1f}}</td>
       <td class="n">{{N:b:hand_written.cicada.detect_sec.mean|.3f}}</td>
       <td class="n">&mdash;</td>
     </tr>
@@ -404,6 +440,7 @@ td.n, th.n { text-align: right; font-family: var(--mono);
       <td class="n">{{N:probe:detectors.sce.published_f1|.3f}}</td>
       <td class="n">{{N:probe:detectors.sce.f1.mean|.3f}}</td>
       <td class="n">{{N:probe:detectors.sce.hot_fa.mean|.2f}} &nbsp;({{N:probe:detectors.sce.hot_fa.min|.0f}}&ndash;{{N:probe:detectors.sce.hot_fa.max|.0f}})</td>
+      <td class="n">{{N:probe:detectors.sce.distractor_hits_mean|.1f}}</td>
       <td class="n">{{N:b:hand_written.sce.detect_sec.mean|.3f}}</td>
       <td class="n">&mdash;</td>
     </tr>
@@ -412,6 +449,7 @@ td.n, th.n { text-align: right; font-family: var(--mono);
       <td class="n">{{N:probe:detectors.sync.published_f1|.3f}}</td>
       <td class="n">{{N:probe:detectors.sync.f1.mean|.3f}}</td>
       <td class="n">{{N:probe:detectors.sync.hot_fa.mean|.2f}} &nbsp;({{N:probe:detectors.sync.hot_fa.min|.0f}}&ndash;{{N:probe:detectors.sync.hot_fa.max|.0f}})</td>
+      <td class="n">{{N:probe:detectors.sync.distractor_hits_mean|.1f}}</td>
       <td class="n">{{N:b:hand_written.sync.detect_sec.mean|.3f}}</td>
       <td class="n">&mdash;</td>
     </tr>
@@ -420,6 +458,7 @@ td.n, th.n { text-align: right; font-family: var(--mono);
       <td class="n">{{N:probe:detectors.trace.published_f1|.3f}}</td>
       <td class="n">{{N:probe:detectors.trace.f1.mean|.3f}}</td>
       <td class="n">{{N:probe:detectors.trace.hot_fa.mean|.2f}}</td>
+      <td class="n">{{N:probe:detectors.trace.distractor_hits_mean|.1f}}</td>
       <td class="n">{{N:b:learned.trace.detect_sec.mean|.3f}}</td>
       <td class="n">{{N:b:learned.trace.n_params|,}}</td>
     </tr>
@@ -428,6 +467,7 @@ td.n, th.n { text-align: right; font-family: var(--mono);
       <td class="n">{{N:probe:detectors.tiny.published_f1|.3f}}</td>
       <td class="n">{{N:probe:detectors.tiny.f1.mean|.3f}}</td>
       <td class="n">{{N:probe:detectors.tiny.hot_fa.mean|.2f}}</td>
+      <td class="n">{{N:probe:detectors.tiny.distractor_hits_mean|.1f}}</td>
       <td class="n">{{N:b:learned.tiny.detect_sec.mean|.3f}}</td>
       <td class="n">{{N:b:learned.tiny.n_params|,}}</td>
     </tr>
@@ -452,9 +492,10 @@ td.n, th.n { text-align: right; font-family: var(--mono);
     planted events cannot separate
     {{N:probe:detectors.tube.published_f1|.3f}} from
     {{N:probe:detectors.coact.published_f1|.3f}}, and the fold ranges overlap. Charge
-    the probe block and the same three separate, in the other direction &mdash;
-    the learned model loses {{N:probe:detectors.tube.f1_drop|.3f}} of F1 and
-    CoactDetect loses {{N:probe:detectors.coact.f1_drop|.3f}}.
+    the probe block and the learned model separates from the other two, downward: it
+    loses {{N:probe:detectors.tube.f1_drop|.3f}} of F1 where CoactDetect loses
+    {{N:probe:detectors.coact.f1_drop|.3f}}. The two hand-written detectors stay tied
+    with each other &mdash; 0.025 apart, well inside the same fold spread.
   </p>
   <p>
     <span class="key hand">The column also reorders the field.</span> locust ranks
@@ -476,17 +517,28 @@ td.n, th.n { text-align: right; font-family: var(--mono);
     Printing both is the honest position while that is undecided, not a verdict.
   </p>
   <p>
-    <span class="key learned">And the two learned models at the floor are not
-    virtuous, they are silent.</span> Both fire zero times into the probe, and both
-    sit near F1 {{N:probe:detectors.trace.f1.mean|.2f}}. A clean probe from a detector
-    that barely fires is not evidence of discrimination &mdash; which is why the
-    column is read beside the score and not instead of it. ⚠ In seven of their eight
-    fold-fits the threshold also lands on the bottom edge of the searched grid, which
-    this project treats elsewhere as a search that stopped too early rather than an
-    answer, so their F1 is reported for completeness and is <em>not</em> an operating
-    point. They train at a
-    tenth the learning rate of the model they are contrasted with, so the
-    architecture comparison is uncontrolled and no conclusion is drawn from it here.
+    <span class="key learned">And the two learned models reading zero in that column
+    are not restrained &mdash; they swallowed the block whole.</span> The per-cell bank
+    emits <strong>two detections per fold</strong>, and those two calls hit twelve
+    distractors and two planted events across two recordings: one span per recording,
+    covering essentially all of it. Its probe count is zero because a detection matched
+    to a planted event never enters the false-alarm set at all, so the count is
+    <em>structurally</em> zero for any detector whose every call is a hit &mdash;
+    however much of the block that call covers.
+  </p>
+  <p>
+    <strong>That is a second blind spot in the trap, and it is worth more than the
+    first.</strong> The probe cannot charge a detector that fires too much; it also
+    cannot charge one that fires once, forever. Neither F1 column sees it either &mdash;
+    both read a precision of 1.00 from one call and one hit, which is why those two rows
+    are identical across the two columns while every other row moves. A zero in the trap
+    column means one of two opposite things, and the column cannot tell you which.
+    ⚠ In seven of their eight fold-fits the threshold also lands on the bottom edge of
+    the searched grid, which this project treats elsewhere as a search that stopped too
+    early rather than an answer, so their F1 is reported for completeness and is
+    <em>not</em> an operating point. They train at a tenth the learning rate of the
+    model they are contrasted with, so the architecture comparison is uncontrolled and
+    no conclusion is drawn from it here.
   </p>
 </div>
 
@@ -596,11 +648,11 @@ td.n, th.n { text-align: right; font-family: var(--mono);
 <h2>Adding an architecture is one builder and one decorator</h2>
 <div class="col">
   <p>
-    The requirement was that a new idea could be dropped in and land on the same
+    The intent was that a new idea could be dropped in and land on the same
     accuracy-versus-cost curve as everything already measured, with nothing else
-    edited. A registry does it &mdash; the sweep, the scorer and the figures all read
-    from it. The center&minus;surround model is registered as <code>tube</code>, after
-    the metaphor above:
+    edited. A registry carries the architectures, and the trainer and the figure tool
+    read from it. The center&minus;surround model is registered as <code>tube</code>,
+    after the metaphor above:
   </p>
 </div>
 
@@ -613,6 +665,16 @@ def build_tube(*, n_scales=4, width=8, depth=6,
     return Tube()</pre>
 
 <div class="col">
+  <p>
+    ⚠ <strong>"Nothing else edited" is the intent and not yet the fact.</strong> The
+    registry has two consumers &mdash; the trainer and the architecture figure. The
+    bake-off, the regime-shift test, the figure builder and the lab server each keep
+    their own list of which architectures to run and their own learning-rate table, so
+    a new architecture today costs six edits across four files before it reaches this
+    page's curve. Folding the learning rate into the registration and having the sweep
+    iterate the registry would make the claim true; it has not been done, and stating
+    the intent as an achievement would be the same defect this page catches elsewhere.
+  </p>
   <p>
     That is the registration verbatim, including the note that still says
     <em>rate invariance by construction</em> &mdash; the claim the section above
@@ -662,11 +724,20 @@ def build_tube(*, n_scales=4, width=8, depth=6,
     the three ablations above.
   </p>
   <p>
-    <strong>The probe block is a diagnostic that cannot fail.</strong> Even in the
-    charged column, a firing inside it is scored as a segment, and detectors that
-    merge adjacent calls differently are not directly comparable on the count. No
-    claim of the form <em>"this detector does not fire on dense random activity"</em>
-    is supported by anything here.
+    <strong>The probe block is a diagnostic with two blind spots.</strong> A firing
+    inside it is scored as a segment, so detectors that merge adjacent calls
+    differently are not comparable on the count &mdash; and a detection that matched a
+    planted event never enters the false-alarm set at all, so a detector emitting one
+    span across the whole recording reads zero. No claim of the form <em>"this detector
+    does not fire on dense random activity"</em> is supported by anything here, in
+    either column.
+  </p>
+  <p>
+    <strong>The distractors are labeled, not discriminable.</strong> The generator draws
+    them with the same code and the same jitter as planted events, at a participation
+    higher than two of the three planted levels. They cap the precision every detector
+    on this page can reach, and that ceiling is a property of the generator rather than
+    of any detector.
   </p>
   <p>
     <strong>A hit is scored within 1.5 s</strong> of a planted event, against a median

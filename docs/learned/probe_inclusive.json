@@ -1,6 +1,8 @@
 {
  "detectors": {
   "cicada": {
+   "distractor_hits_mean": 11.75,
+   "distractor_hits_per_fold": 12,
    "f1": {
     "max": 0.22459893048128343,
     "mean": 0.1615059425441722,
@@ -34,6 +36,8 @@
    }
   },
   "coact": {
+   "distractor_hits_mean": 11.25,
+   "distractor_hits_per_fold": 12,
    "f1": {
     "max": 0.6923076923076923,
     "mean": 0.6396539172882458,
@@ -67,6 +71,8 @@
    }
   },
   "loco": {
+   "distractor_hits_mean": 11.25,
+   "distractor_hits_per_fold": 12,
    "f1": {
     "max": 0.6486486486486486,
     "mean": 0.6146879197731583,
@@ -100,6 +106,8 @@
    }
   },
   "rate": {
+   "distractor_hits_mean": 12.0,
+   "distractor_hits_per_fold": 12,
    "f1": {
     "max": 0.4403669724770642,
     "mean": 0.38695021415329084,
@@ -133,6 +141,8 @@
    }
   },
   "sce": {
+   "distractor_hits_mean": 6.0,
+   "distractor_hits_per_fold": 12,
    "f1": {
     "max": 0.2459016393442623,
     "mean": 0.20708530802454173,
@@ -166,6 +176,8 @@
    }
   },
   "sync": {
+   "distractor_hits_mean": 4.5,
+   "distractor_hits_per_fold": 12,
    "f1": {
     "max": 0.28,
     "mean": 0.2084508348794063,
@@ -199,6 +211,8 @@
    }
   },
   "tiny": {
+   "distractor_hits_mean": 12.0,
+   "distractor_hits_per_fold": 12,
    "f1": {
     "max": 0.125,
     "mean": 0.125,
@@ -232,6 +246,8 @@
    }
   },
   "trace": {
+   "distractor_hits_mean": 11.75,
+   "distractor_hits_per_fold": 12,
    "f1": {
     "max": 0.15,
     "mean": 0.13125,
@@ -265,6 +281,8 @@
    }
   },
   "tube": {
+   "distractor_hits_mean": 12.0,
+   "distractor_hits_per_fold": 12,
    "f1": {
     "max": 0.6233766233766233,
     "mean": 0.5475873301615876,
