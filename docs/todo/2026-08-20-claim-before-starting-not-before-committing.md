@@ -131,6 +131,43 @@ That one is not a filtering problem, it is an editorial one. Deciding which fact
 binding enough to spend a session's first 2KB on is a judgement about the science, not
 about shell, so it is filed here rather than fixed.
 
+## 2026-08-28 — it recurred, and it refutes the reason overlap-warning was dropped
+
+Export contract **revision 8**. Two sessions independently found that the spec's warning
+"nothing in bugarach reads `width_sec`" had gone stale, and both wrote a correction into
+`docs/export_folder_spec.md` the same day. `4e880b9` landed first; PR #374 reached
+`mergeable=CONFLICTING` after six blind-verify rounds and had to be reconciled in
+`889789d`. Both sessions separately verified the same secondary fact, that locust is the
+only detector consuming a per-event duration.
+
+**Same file, same shape as this file's second table row**, eight days later — so the
+revision-6 collision was not a one-off.
+
+**The new evidence is against "Not done, deliberately", below.** That section drops the
+overlap warning partly because *"its value falls sharply now that the digest puts other
+sessions' paths in front of you at startup."* On 2026-08-28 the digest was working: it was
+delivered, under budget, with `Touches:` lines intact, and **both sessions still collided
+on a path printed in it.** Putting the paths in front of a reader is not the same as
+comparing them, and only one of those scales to a board with 25 ACTIVE blocks.
+
+Why reading failed here is worth keeping, because it is not laziness: the two blocks were
+titled `the-width-note-went-stale` and a duration-definitions task — **no shared word** —
+while both `Touches:` lines named the same file. Titles are what a session skims; paths
+are where the overlap was. That asymmetry is the whole argument for a string comparison,
+and it is why "read the digest more carefully" is not an available fix.
+
+Nothing here changes the recommendation already in **"The decision that is still yours"** —
+the write-time hook, with the overlap comparison riding on it exactly as that section
+proposes. Two small updates to it:
+
+- it says *"this repo already runs two `PreToolUse` hooks"*; as of 2026-08-28 it runs
+  **three** — `.claude/hooks/the-folder-is-the-input.sh` landed that week.
+- that hook is worth copying in one respect: it **answers rather than refuses**, naming
+  the folder to read instead of only blocking. The overlap warning should likewise name
+  the session and branch that hold the path, so the two sessions can talk — rather than
+  both backing off, which costs as much as colliding. Warn, never block: two sessions
+  legitimately touch one file all the time, and a gate that stops them gets routed around.
+
 ## Related
 
 [`2026-08-20-webapp-session-status.md`](2026-08-20-webapp-session-status.md) reaches
