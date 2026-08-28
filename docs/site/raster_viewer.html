@@ -544,8 +544,8 @@
         <button id="pickDir">Choose folder…</button>
         <button id="pickFiles" class="ghost">or choose CSV files…</button>
         <button id="reopen" class="ghost" hidden></button>
-        <input id="dir" type="file" webkitdirectory directory multiple hidden>
-        <input id="files" type="file" accept=".csv" multiple hidden>
+        <input id="dir" type="file" webkitdirectory directory multiple hidden autocomplete="off" data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other">
+        <input id="files" type="file" accept=".csv" multiple hidden autocomplete="off" data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other">
         <div class="hint">Nothing is uploaded. Reading happens in this tab.</div>
       </div>
     </details>
@@ -578,7 +578,7 @@
         <div id="dtWho"></div>
         <div class="ctl">
           <label for="dtSec">frame interval (s)</label>
-          <input id="dtSec" type="number" min="0.0001" max="10" step="0.001">
+          <input id="dtSec" type="number" min="0.0001" max="10" step="0.001" autocomplete="off" data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other">
           <div class="span"><button id="dtUse">Use this frame interval</button>
             <button id="dtDrop" class="ghost" hidden>Withdraw it</button></div>
           <div class="note" id="dtWhat"></div>
@@ -592,13 +592,13 @@
         <label for="wBase">the baseline period is</label>
         <select id="wBase"></select>
         <label for="wBaseDur">baseline: last N minutes</label>
-        <input id="wBaseDur" type="number" min="1" max="120" step="1" value="20">
+        <input id="wBaseDur" type="number" min="1" max="120" step="1" value="20" autocomplete="off" data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other">
         <label for="wDelay">treatment: skip first N minutes</label>
-        <input id="wDelay" type="number" min="0" max="60" step="0.5" value="2">
+        <input id="wDelay" type="number" min="0" max="60" step="0.5" value="2" autocomplete="off" data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other">
         <label for="wTreatDur">treatment: then N minutes</label>
-        <input id="wTreatDur" type="number" min="1" max="120" step="1" value="20">
+        <input id="wTreatDur" type="number" min="1" max="120" step="1" value="20" autocomplete="off" data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other">
         <label for="wFloor">flag windows under (min)</label>
-        <input id="wFloor" type="number" min="0" max="60" step="0.5" value="4">
+        <input id="wFloor" type="number" min="0" max="60" step="0.5" value="4" autocomplete="off" data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other">
         <div class="span toggles" id="wDelays"></div>
         <div class="span"><button id="runWindows">Set the windows</button></div>
         <div class="span"><button id="clearWindows" class="ghost">Use what the folder sent</button></div>
@@ -644,9 +644,9 @@
       <summary>Assess coordination<span class="cnt" id="cntAssess">no operating point</span></summary>
       <div class="ctl">
         <label for="aSurr">surrogates</label>
-        <input id="aSurr" type="number" min="50" max="2000" step="50" value="1000">
+        <input id="aSurr" type="number" min="50" max="2000" step="50" value="1000" autocomplete="off" data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other">
         <label for="aBin">bin (s)</label>
-        <input id="aBin" type="number" min="0.1" max="10" step="0.1" value="1">
+        <input id="aBin" type="number" min="0.1" max="10" step="0.1" value="1" autocomplete="off" data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other">
         <label for="aRegion">region</label>
         <select id="aRegion"><option value="baseline">baseline (default)</option></select>
         <!-- WHOSE PERIODS THESE ARE, said next to the menu that lists them.
@@ -705,13 +705,13 @@
       <summary>Confirm the events<span class="cnt" id="cntAnnot">assess first</span></summary>
       <div class="ctl">
         <label for="anWho">your name</label>
-        <input id="anWho" type="text" placeholder="who is judging" size="12">
+        <input id="anWho" type="text" placeholder="who is judging" size="12" autocomplete="off" data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other">
         <label for="anBudget">how many to judge</label>
-        <input id="anBudget" type="number" min="5" max="400" step="5" value="60">
+        <input id="anBudget" type="number" min="5" max="400" step="5" value="60" autocomplete="off" data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other">
         <label for="anCap">at most, per recording</label>
-        <input id="anCap" type="number" min="1" max="50" step="1" value="8">
+        <input id="anCap" type="number" min="1" max="50" step="1" value="8" autocomplete="off" data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other">
         <label for="anSeed">draw seed</label>
-        <input id="anSeed" type="number" min="0" step="1" value="20260824">
+        <input id="anSeed" type="number" min="0" step="1" value="20260824" autocomplete="off" data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other">
         <div class="span"><button id="anStart" disabled>Draw a sample and
           start</button></div>
         <div class="span note" id="anWhat"></div>
@@ -764,13 +764,13 @@
       <summary>Simulate a folder<span class="cnt">no data needed</span></summary>
       <div class="ctl">
         <label for="sRec">recordings</label>
-        <input id="sRec" type="number" min="1" max="6" step="1" value="3">
+        <input id="sRec" type="number" min="1" max="6" step="1" value="3" autocomplete="off" data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other">
         <label for="sMin">minutes each</label>
-        <input id="sMin" type="number" min="2" max="90" step="1" value="45">
+        <input id="sMin" type="number" min="2" max="90" step="1" value="45" autocomplete="off" data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other">
         <label for="sRoi">ROIs</label>
-        <input id="sRoi" type="number" min="4" max="150" step="1" value="33">
+        <input id="sRoi" type="number" min="4" max="150" step="1" value="33" autocomplete="off" data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other">
         <label for="sRate">rate (mHz/ROI)</label>
-        <input id="sRate" type="number" min="1" max="500" step="1" value="10">
+        <input id="sRate" type="number" min="1" max="500" step="1" value="10" autocomplete="off" data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other">
         <label for="sRateStat">…as the field's</label>
         <select id="sRateStat">
           <option value="mean" selected>mean</option>
@@ -787,7 +787,7 @@
           <option value="flat">flat</option>
         </select>
         <label for="sEv">coordinated events</label>
-        <input id="sEv" type="number" min="0" max="60" step="1" value="15">
+        <input id="sEv" type="number" min="0" max="60" step="1" value="15" autocomplete="off" data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other">
         <label for="sPart">participation</label>
         <select id="sPart">
           <option value="measured" selected>30/18/10% — measured</option>
@@ -796,7 +796,7 @@
           <option value="measured-here">from your recording</option>
         </select>
         <label for="sJit">jitter (ms)</label>
-        <input id="sJit" type="number" min="0" max="3000" step="10" value="360">
+        <input id="sJit" type="number" min="0" max="3000" step="10" value="360" autocomplete="off" data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other">
         <label for="sWin">windows</label>
         <select id="sWin">
           <option value="2" selected>2 — baseline, drug</option>
@@ -805,13 +805,13 @@
           <option value="4">4 — + high K</option>
         </select>
         <label for="sSeed">seed</label>
-        <input id="sSeed" type="number" min="0" max="99999" step="1" value="1">
+        <input id="sSeed" type="number" min="0" max="99999" step="1" value="1" autocomplete="off" data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other">
         <div class="span"><button id="runSim">Simulate</button></div>
         <!-- The same switch the line above the raster offers, kept somewhere it
              can be found after that line is gone. A reader who turned the
              landing demo off six months ago and now wants it back has no other
              way to say so short of clearing site data. -->
-        <div class="span"><label class="inline"><input type="checkbox" id="demoPref">
+        <div class="span"><label class="inline"><input type="checkbox" id="demoPref" autocomplete="off" data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other">
           simulate a folder on load</label></div>
         <!-- The step order reads as a pipeline that accumulates, and this one
              does not: `runSim` calls `open`, which clears RECORDINGS, REGIONS,
@@ -870,7 +870,7 @@
       <summary>Tune the settings<span class="cnt" id="cntTune">simulated only</span></summary>
       <div class="ctl">
         <label for="tTol">match tolerance (s)</label>
-        <input id="tTol" type="number" min="0.1" max="30" step="0.5" value="1.5">
+        <input id="tTol" type="number" min="0.1" max="30" step="0.5" value="1.5" autocomplete="off" data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other">
         <!-- WHICH INSTRUMENTS TO SWEEP, which the panel could not express until
              now: it took the Detect step's single chooser, so the page offered
              one detector or six and nothing between. Tony, 2026-08-21: "most
@@ -946,59 +946,59 @@
              own lane and its own rows. The list is built from the registry, so
              a seventh detector appears here without being remembered. -->
         <label for="dAll">run several</label>
-        <div class="span"><label class="inline"><input type="checkbox" id="dAll">
+        <div class="span"><label class="inline"><input type="checkbox" id="dAll" autocomplete="off" data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other">
           all the ticked detectors</label></div>
         <div class="span picks" id="dPicks" hidden></div>
       </div>
       <div class="ctl" id="dRateCtl">
         <label for="dThr">excess threshold (Hz)</label>
-        <input id="dThr" type="number" min="0.1" max="50" step="0.5" value="5">
+        <input id="dThr" type="number" min="0.1" max="50" step="0.5" value="5" autocomplete="off" data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other">
         <label for="dRate">rate window (s)</label>
-        <input id="dRate" type="number" min="0.1" max="30" step="0.1" value="1">
+        <input id="dRate" type="number" min="0.1" max="30" step="0.1" value="1" autocomplete="off" data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other">
         <label for="dCtx">context window (s)</label>
-        <input id="dCtx" type="number" min="5" max="600" step="5" value="60">
+        <input id="dCtx" type="number" min="5" max="600" step="5" value="60" autocomplete="off" data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other">
       </div>
       <div class="ctl" id="dSyncCtl" hidden>
         <label for="dTau">coincidence cap (s)</label>
-        <input id="dTau" type="number" min="0.01" max="10" step="0.05" value="0.25">
+        <input id="dTau" type="number" min="0.01" max="10" step="0.05" value="0.25" autocomplete="off" data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other">
         <label for="dGap">max gap (s)</label>
-        <input id="dGap" type="number" min="0.1" max="30" step="0.1" value="0.5">
+        <input id="dGap" type="number" min="0.1" max="30" step="0.1" value="0.5" autocomplete="off" data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other">
         <label for="dC">C to start an event</label>
-        <input id="dC" type="number" min="0.001" max="1" step="0.01" value="0.1">
+        <input id="dC" type="number" min="0.001" max="1" step="0.01" value="0.1" autocomplete="off" data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other">
         <label for="dCmin">C to sustain one</label>
-        <input id="dCmin" type="number" min="0.001" max="1" step="0.01" value="0.1">
+        <input id="dCmin" type="number" min="0.001" max="1" step="0.01" value="0.1" autocomplete="off" data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other">
       </div>
       <div class="ctl" id="dLocoCtl" hidden>
         <label for="lBin">bin width (s)</label>
-        <input id="lBin" type="number" min="0.1" max="60" step="0.1" value="1">
+        <input id="lBin" type="number" min="0.1" max="60" step="0.1" value="1" autocomplete="off" data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other">
         <label for="lCtx">context window (s)</label>
-        <input id="lCtx" type="number" min="10" max="1200" step="10" value="120">
+        <input id="lCtx" type="number" min="10" max="1200" step="10" value="120" autocomplete="off" data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other">
         <label for="lPct">threshold percentile</label>
-        <input id="lPct" type="number" min="90" max="99.9999" step="0.1" value="99.9">
+        <input id="lPct" type="number" min="90" max="99.9999" step="0.1" value="99.9" autocomplete="off" data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other">
         <label for="lSur">surrogates</label>
-        <input id="lSur" type="number" min="20" max="1000" step="20" value="100">
+        <input id="lSur" type="number" min="20" max="1000" step="20" value="100" autocomplete="off" data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other">
       </div>
       <div class="ctl" id="dCoactCtl" hidden>
         <label for="cWin">integration window (s)</label>
-        <input id="cWin" type="number" min="0.1" max="60" step="0.1" value="2">
+        <input id="cWin" type="number" min="0.1" max="60" step="0.1" value="2" autocomplete="off" data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other">
         <label for="cCtx">context window (s)</label>
-        <input id="cCtx" type="number" min="10" max="1200" step="10" value="60">
+        <input id="cCtx" type="number" min="10" max="1200" step="10" value="60" autocomplete="off" data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other">
         <label for="cAlpha">alpha</label>
-        <input id="cAlpha" type="number" min="0.0000001" max="0.5" step="0.0001" value="0.0001">
+        <input id="cAlpha" type="number" min="0.0000001" max="0.5" step="0.0001" value="0.0001" autocomplete="off" data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other">
         <label for="cSur">surrogates</label>
-        <input id="cSur" type="number" min="20" max="1000" step="20" value="100">
+        <input id="cSur" type="number" min="20" max="1000" step="20" value="100" autocomplete="off" data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other">
       </div>
       <div class="ctl" id="dSceCtl" hidden>
         <label for="sBin">bin width (s)</label>
-        <input id="sBin" type="number" min="1" max="120" step="1" value="10">
+        <input id="sBin" type="number" min="1" max="120" step="1" value="10" autocomplete="off" data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other">
         <label for="sPct">threshold percentile</label>
-        <input id="sPct" type="number" min="80" max="99.99" step="0.1" value="99">
+        <input id="sPct" type="number" min="80" max="99.99" step="0.1" value="99" autocomplete="off" data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other">
         <label for="sSur">surrogates</label>
-        <input id="sSur" type="number" min="20" max="2000" step="20" value="200">
+        <input id="sSur" type="number" min="20" max="2000" step="20" value="200" autocomplete="off" data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other">
       </div>
       <div class="ctl" id="dCicCtl" hidden>
         <label for="cPct">SCE percentile</label>
-        <input id="cPct" type="number" min="80" max="99.99" step="0.1" value="99">
+        <input id="cPct" type="number" min="80" max="99.99" step="0.1" value="99" autocomplete="off" data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other">
         <!-- `ciSur`, and not `cSur`, because CoactDetect's surrogate box above
              already owns that id. While both existed `getElementById("cSur")`
              returned CoactDetect's, so this control moved nothing and turning
@@ -1007,18 +1007,18 @@
              id is not a tidiness point; `test_webapp_panel_hygiene.py` now
              refuses any of them anywhere on the page. -->
         <label for="ciSur">surrogates</label>
-        <input id="ciSur" type="number" min="20" max="2000" step="20" value="100">
+        <input id="ciSur" type="number" min="20" max="2000" step="20" value="100" autocomplete="off" data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other">
         <label for="cSync">frames in a window</label>
-        <input id="cSync" type="number" min="1" max="50" step="1" value="1">
+        <input id="cSync" type="number" min="1" max="50" step="1" value="1" autocomplete="off" data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other">
         <label for="cDist">peaks at least (frames) apart</label>
-        <input id="cDist" type="number" min="1" max="200" step="1" value="4">
+        <input id="cDist" type="number" min="1" max="200" step="1" value="4" autocomplete="off" data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other">
         <label for="cPer">how long a cell counts as active</label>
         <select id="cPer">
           <option value="per_event">each event's own t50rise→peak</option>
           <option value="fixed">a fixed duration</option>
         </select>
         <label for="cDur">that fixed duration (s)</label>
-        <input id="cDur" type="number" min="0.1" max="60" step="0.1" value="1">
+        <input id="cDur" type="number" min="0.1" max="60" step="0.1" value="1" autocomplete="off" data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other">
       </div>
       <div class="ctl">
         <div class="span"><button id="runDetect">Detect</button>
@@ -1038,7 +1038,7 @@
       <div class="ctl">
         <div class="span"><button id="saveSettings" disabled>Save these settings</button>
           <button id="loadSettings" class="ghost">Load settings…</button>
-          <input id="settingsFile" type="file" accept=".csv" hidden></div>
+          <input id="settingsFile" type="file" accept=".csv" hidden autocomplete="off" data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other"></div>
         <div class="note" id="settingsWhat"></div>
       </div>
       <div class="ctl">
@@ -1240,9 +1240,9 @@
         <label for="lArch">architecture</label>
         <select id="lArch"><option value="tube">tube (center−surround)</option></select>
         <label for="lFolds">folds</label>
-        <input id="lFolds" type="number" min="2" max="8" step="1" value="4">
+        <input id="lFolds" type="number" min="2" max="8" step="1" value="4" autocomplete="off" data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other">
         <label for="lSeeds">recordings per fold</label>
-        <input id="lSeeds" type="number" min="1" max="6" step="1" value="2">
+        <input id="lSeeds" type="number" min="1" max="6" step="1" value="2" autocomplete="off" data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other">
         <div class="span"><button id="runLab">Train</button></div>
         <div class="note" id="labWhat"></div>
       </div>
@@ -1287,7 +1287,7 @@
       <summary>Compare the detectors<span class="cnt" id="cntScore">draft</span></summary>
       <div class="ctl">
         <label for="scTol">match tolerance (s)</label>
-        <input id="scTol" type="number" min="0.1" max="30" step="0.5" value="1.5">
+        <input id="scTol" type="number" min="0.1" max="30" step="0.5" value="1.5" autocomplete="off" data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other">
         <div class="span"><button id="runScore">Score every detector</button></div>
         <div class="note" id="scoreWhat"></div>
       </div>
@@ -1458,6 +1458,13 @@ const tunedKey = (which, stream) =>
   which + " " + (stream === undefined ? (STREAM || "") : (stream || ""));
 const tunedFor = which => TUNED[tunedKey(which)] || null;
 
+/* HAS THE FIT BEEN WRITTEN DOWN? `TUNED` lives only in this tab, and the whole
+   point of the settings file is that it is the thing which does not. So this
+   tracks the one fact the unload guard below needs: whether anything fitted
+   since the last save is still only in the page. Starts true because nothing
+   fitted is nothing to lose. */
+let TUNED_SAVED = true;
+
 // slice_id -> {times, fracs}: what the generator planted, and the only ground
 // truth this page can have. Empty for a folder read off disk, which is why
 // tuning is offered for a simulated folder and not for anybody's recordings.
@@ -1575,6 +1582,73 @@ function el(tag, text, cls) {
   return n;
 }
 const sep = text => el("span", text, "sep");
+
+/* KEEP PASSWORD MANAGERS OUT OF THE CONTROLS. Tony, 2026-08-27, on the sweep
+   range boxes the day they shipped: *"lastpass is trying to put a password into
+   the from box on the sweep page."*
+
+   Not cosmetic. A manager that fills one of these writes a number the sweep then
+   SEARCHES, and nothing on the panel distinguishes a value somebody typed from
+   one something typed for them.
+
+   Five attributes because the managers do not agree on one, and `autocomplete`
+   is the one they most reliably ignore on a field they have decided is
+   credential-shaped. Every `<input>` in the markup carries these too — all fifty
+   of them, not the three that were reported. The page had no autofill hint
+   anywhere, so "only the new boxes are broken" and "they always were and nobody
+   looked" were both live readings; covering all of them settles it without
+   having to reproduce one manager's heuristics, and costs nothing, because not
+   one input on this page is a credential. The `type="text"` box asking who is
+   judging an annotation is the one most likely to have been offered a username.
+
+   Kept honest by `tests/test_webapp_no_autofill.py` — a new control cannot ship
+   without this. */
+const NO_AUTOFILL = { autocomplete: "off", "data-lpignore": "true",
+                      "data-1p-ignore": "", "data-bwignore": "",
+                      "data-form-type": "other" };
+function noAutofill(node) {
+  for (const [k, v] of Object.entries(NO_AUTOFILL)) node.setAttribute(k, v);
+  return node;
+}
+
+/* GIVE THE BROWSER A TURN — the yield every long loop on this page awaits so the
+   button, the progress line and the raster stay answerable while work runs.
+
+   NOT `setTimeout(r, 0)`, which is what all seventeen of these used to be, and
+   the difference only shows up in a tab nobody is looking at. Chrome clamps
+   background-tab timers to **one second**, and to **one a minute** after about
+   five minutes hidden. The yields are per grid setting, so that clamp multiplies
+   by the size of the sweep rather than costing a flat delay:
+
+     LoCo, 20 settings, 3 recordings of 30 min — 25 yields, 10.1 s in front.
+     Backgrounded that is ~25 s; left hidden five minutes it is ~25 MINUTES.
+
+   Measured 2026-08-27, after Tony asked whether changing tabs loses anything. It
+   does not lose anything — that was measured too, and the results come back
+   identical — but "nothing is lost" and "nothing is paid" are different claims
+   and only the first was true.
+
+   A `MessageChannel` message is an ordinary task, not a timer task, so the timer
+   clamp does not apply to it; the browser still renders between tasks, which is
+   the whole reason these yields exist. A frozen tab stops everything either way,
+   and resumes correctly on thaw — also measured.
+
+   WHAT THIS IS NOT: a claim that the throttled wall clock was reproduced
+   end-to-end. It could not be, in this harness — Playwright launches Chromium
+   with `--disable-background-timer-throttling` and two friends, and dropping
+   them still would not hide a tab under automation, while CDP's `frozen`
+   lifecycle state was not honoured. The yield COUNT is measured exactly and the
+   clamp is Chrome's documented behaviour; the product of the two is arithmetic,
+   not an experiment. To see it for yourself: start a locust sweep in a real
+   browser, switch tabs for a minute, come back. */
+const yieldToUI = (() => {
+  if (typeof MessageChannel !== "function")
+    return () => new Promise(r => setTimeout(r, 0));
+  const ch = new MessageChannel();
+  const waiting = [];
+  ch.port1.onmessage = () => { const r = waiting.shift(); if (r) r(); };
+  return () => new Promise(r => { waiting.push(r); ch.port2.postMessage(0); });
+})();
 
 /* A cell that is absent or blank is "not sent"; anything else has to be a real
    number or the check says so. Returns undefined rather than NaN, because
@@ -2423,7 +2497,7 @@ async function checkFolder() {
     } catch (e) {
       errors.push([rec.id, e.message]);
     }
-    await new Promise(r => setTimeout(r, 0));   // keep the page answering
+    await yieldToUI();   // keep the page answering
   }
 
   // a table that names a recording the folder does not hold is fine; one that
@@ -2553,6 +2627,7 @@ async function open(fileList, opts) {
      you saved, and it says what it was fitted on
      (`docs/todo/2026-08-22-tuned-settings-are-a-file-not-a-survivor.md`). */
   TUNED = {};
+  TUNED_SAVED = true;          // a new folder: nothing fitted, nothing to lose
   paintTunedChip();
   /* The folder's own name, when the browser was told it. A directory pick fills
      `webkitRelativePath`; picking loose files does not, and the saved settings
@@ -4667,7 +4742,7 @@ function paintDelayToggles(baseIdx) {
   const counts = new Map(kinds);
   for (const [lab] of kinds) {
     const row = document.createElement("div");
-    const cb = document.createElement("input");
+    const cb = noAutofill(document.createElement("input"));
     cb.type = "checkbox";
     cb.id = "wDelay_" + lab;
     cb.checked = !DELAY_OFF.has(lab);
@@ -5409,7 +5484,7 @@ async function runSimOnce() {
   btn.textContent = "Simulating…";
   btn.disabled = true;
   // one frame, so the button repaints before the generator takes the thread
-  await new Promise(r => setTimeout(r, 0));
+  await yieldToUI();
   try {
     const spec = readSim();
     const made = simulateFolder(spec);
@@ -5569,7 +5644,7 @@ async function verifySimulation() {
   const btn = document.getElementById("verifySim");
   const was = btn ? btn.textContent : null;
   if (btn) { btn.disabled = true; btn.textContent = "Measuring…"; }
-  await new Promise(r => setTimeout(r, 0));
+  await yieldToUI();
   try {
     const nSurr = clamp(Number(document.getElementById("aSurr").value), 50, 2000);
     const bin = clamp(Number(document.getElementById("aBin").value), 0.1, 10);
@@ -5595,7 +5670,7 @@ async function verifySimulation() {
       // ignored by the one screen whose job is checking.
       if (!hit || !hit.meetsFloor) { short.push(rec.id); continue; }
       per.push(hit);
-      await new Promise(r => setTimeout(r, 0));
+      await yieldToUI();
     }
     const got = {};
     for (const r of VERIFY_ROWS) got[r.key] = medianFinite(per.map(a => a[r.key]));
@@ -5855,7 +5930,7 @@ async function runAssess() {
   const btn = document.getElementById("runAssess");
   btn.textContent = "Assessing…";
   btn.disabled = true;
-  await new Promise(r => setTimeout(r, 0));
+  await yieldToUI();
   try {
     const data = await loadRecording(current);
     const w = assessWindow(current, document.getElementById("aRegion").value);
@@ -6023,7 +6098,7 @@ async function assessFolderRun() {
     for (let i = 0; i < total; i++) {
       const rec = RECORDINGS[i];
       sayAssessProgress(i, total, rec.id, startedAt);
-      await new Promise(r => setTimeout(r, 0));
+      await yieldToUI();
       // The folder's whole vocabulary, tallied whether or not the recording is
       // measurable — that tally is what tells a reader the skips are treatments
       // rather than a bug.
@@ -6047,7 +6122,7 @@ async function assessFolderRun() {
                                    { nSurrogates: nSurr, binWidth: bin });
       records.push({ id: rec.id, stream: only, nRoi: trains.length,
                      window: [ws, we], source: w.source, res });
-      await new Promise(r => setTimeout(r, 0));
+      await yieldToUI();
     }
     sayAssessProgress(total, total, null, startedAt);
     FOLDER_ASSESS = { records, regionCounts, nSurr, bin, stream: STREAM,
@@ -6755,7 +6830,7 @@ async function analyseFolder() {
     for (const rec of RECORDINGS) {
       say("Analysing " + rec.id + " (" + (++done) + " of "
           + RECORDINGS.length + ")…");
-      await new Promise(r => setTimeout(r, 0));
+      await yieldToUI();
       const data = await loadRecording(rec);
       const m = META.get(rec.id) || {};
       // Never `… : 0.1`. The refusal above guarantees this resolves.
@@ -6855,7 +6930,7 @@ async function analyseFolder() {
               identity,
             }));
           }
-          await new Promise(r => setTimeout(r, 0));
+          await yieldToUI();
         }
       }
     }
@@ -7439,6 +7514,7 @@ function paintSaveSettings() {
 function saveSettingsFile() {
   if (!RECORDINGS.length) return;
   offerDownload(settingsFileName(), settingsCsv(savedSettingsRows()));
+  TUNED_SAVED = true;          // it is on disk now; stop guarding the reload
   const n = document.getElementById("settingsWhat");
   if (n) {
     n.dataset.said = "1";
@@ -7804,7 +7880,7 @@ async function runDetectOnce() {
   const btn = document.getElementById("runDetect");
   const was = btn.textContent;
   btn.disabled = true;
-  await new Promise(r => setTimeout(r, 0));
+  await yieldToUI();
   try {
     const picks = chosenDetectors();
     if (!picks.length) return;
@@ -7839,7 +7915,7 @@ async function runDetectOnce() {
     for (const which of picks) {
       btn.textContent = picks.length > 1
         ? "Detecting… " + DETECTORS[which].label : "Detecting…";
-      await new Promise(r => setTimeout(r, 0));
+      await yieldToUI();
       runs.push(detectOne(which, data, segs, dt, identity, current.id));
     }
 
@@ -7999,7 +8075,7 @@ const DET_SLOW = new Set(["loco", "cicada"]);
   const box = document.getElementById("dPicks");
   for (const [k, d] of Object.entries(DETECTORS)) {
     const lab = document.createElement("label");
-    const cb = document.createElement("input");
+    const cb = noAutofill(document.createElement("input"));
     cb.type = "checkbox"; cb.id = "dPick_" + k;
     cb.checked = DET_DEFAULT_ON.includes(k) && !offReason(k);
     if (offReason(k)) { cb.disabled = true; lab.title = offReason(k); }
@@ -8192,7 +8268,7 @@ function paintRanges() {
                   "kn"));
     row.append(who);
     for (const part of RANGE_PARTS) {
-      const inp = document.createElement("input");
+      const inp = noAutofill(document.createElement("input"));
       inp.type = "number";
       inp.id = rangeId(which, part);
       if (part === "n") {
@@ -8277,7 +8353,7 @@ function extendPlan(which, grid, end) {
   const box = document.getElementById("tPicks");
   for (const [k, d] of Object.entries(DETECTORS)) {
     const lab = document.createElement("label");
-    const cb = document.createElement("input");
+    const cb = noAutofill(document.createElement("input"));
     cb.type = "checkbox"; cb.id = "tPick_" + k;
     cb.checked = DET_DEFAULT_ON.includes(k) && !offReason(k);
     if (offReason(k)) { cb.disabled = true; lab.title = offReason(k); }
@@ -8319,6 +8395,38 @@ paintTunedChip();
 /* ---------- the sweep, and the picture of it -------------------------------- */
 
 let TUNE_RUNNING = false;
+
+/* THE ONE THING THIS PAGE ASKS BEFORE YOU LEAVE, and the reason it almost never
+   asks. Tony, 2026-08-27: *"can you change tabs while the sweep is running and
+   not lose anything?"* Changing tabs turned out to be safe — measured, the
+   results come back identical. Closing the tab was not: a locust sweep is
+   minutes of work, the panel says so beside the tick list, and the page had no
+   `beforeunload` handler at all. It discarded the run without a word, and took
+   the simulated folder and any unsaved fit with it.
+
+   ARMED ONLY WHEN THERE IS SOMETHING TO LOSE, which is the whole design. Most
+   people open this page to look at a raster; a blanket "leave site?" on a viewer
+   would be worse than the gap it closes, and would train the one reader it is
+   for to click straight through it. So: a sweep actually running, or a setting
+   the sweep chose that has not reached a file yet. Nothing else — not an open
+   folder, not a hand-typed threshold, not a drawn detection. Those are cheap to
+   redo, and the settings file is how a fit is meant to survive this page anyway.
+
+   Browsers ignore custom text here and show their own wording, so there is none
+   to write; `preventDefault` plus a set `returnValue` is what they ask for
+   between them. */
+function unsavedWork() {
+  if (TUNE_RUNNING) return "a sweep is still running";
+  if (!TUNED_SAVED && Object.keys(TUNED).length)
+    return "a setting the sweep chose has not been saved to a file";
+  return null;
+}
+
+window.addEventListener("beforeunload", e => {
+  if (!unsavedWork()) return;      // the ordinary case: no prompt, no friction
+  e.preventDefault();
+  e.returnValue = "";
+});
 
 function clearTune() {
   const b = document.getElementById("tuneOut");
@@ -8600,7 +8708,7 @@ async function scoreAllDetectors() {
     for (const which of Object.keys(DETECTORS)) {
       const D = DETECTORS[which];
       say("Scoring " + D.label + "…");
-      await new Promise(r => setTimeout(r, 0));
+      await yieldToUI();
       /* A detector this build withholds gets a refused row too, and for the
          same reason the peaks case does: a comparison table that silently drops
          a row invites the reading that the missing detector lost. It did not
@@ -8631,7 +8739,7 @@ async function scoreAllDetectors() {
         scored.set(v, dataSet.map(c =>
           sweepPoint(c.trains, c.range, which, base, knob, v, c.truth, tol,
                      c.peaks)));
-        await new Promise(r => setTimeout(r, 0));
+        await yieldToUI();
       }
       const fitMs = performance.now() - t0;
 
@@ -8775,6 +8883,9 @@ function useTunedSetting(which, value, meta) {
   input.value = String(value);
   TUNED[tunedKey(which)] = Object.assign(
     { value: Number(value), stream: STREAM || null }, meta);
+  // A fit that exists only in this tab. The unload guard below is the only thing
+  // standing between it and a stray reload until the file is written.
+  TUNED_SAVED = false;
   // Follow the setting with the chooser, or the reader applies a threshold to
   // one detector and watches a different one draw.
   document.getElementById("dDet").value = which;
@@ -8905,7 +9016,7 @@ async function sweepDetector(which, dataSet, tol, onPoint) {
     scored.set(v, per);
     rows.push(tunePool(per, { detector: which, knobValue: v, tolSec: tol,
                               seeds: dataSet.map((c, i2) => i2) }));
-    await new Promise(r => setTimeout(r, 0));   // let the button stay honest
+    await yieldToUI();   // let the button stay honest
   }
 
   /* The held-out half. Per fold: choose the knob on the folds it may see, then
@@ -8930,7 +9041,7 @@ async function sweepDetector(which, dataSet, tol, onPoint) {
                        { detector: which, knobValue: chosen.row.knob,
                          tolSec: tol, seeds: te }),
       });
-      await new Promise(r => setTimeout(r, 0));
+      await yieldToUI();
     }
   }
   return { which, grid, rows, folds, split, edited: rangeEdited(which),
@@ -8947,7 +9058,7 @@ async function runTune() {
   const note = document.getElementById("tuneWhat");
   TUNE_RUNNING = true;
   btn.disabled = true;
-  await new Promise(r => setTimeout(r, 0));
+  await yieldToUI();
   const startedAt = performance.now();
   try {
     const tol = clamp(Number(document.getElementById("tTol").value), 0.1, 30);
@@ -9015,7 +9126,7 @@ async function runTune() {
     for (let i = 0; i < picks.length; i++) {
       const which = picks[i];
       say(i, which, 0, 0);
-      await new Promise(r => setTimeout(r, 0));
+      await yieldToUI();
       const out = await sweepDetector(which, dataSet, tol,
                                       (pt, nPt) => say(i, which, pt, nPt));
       /* Each detector's results get their own container, so an extend-and-sweep
