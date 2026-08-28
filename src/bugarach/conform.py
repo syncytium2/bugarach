@@ -68,12 +68,20 @@ NOTE_DETAIL = {
         "protocol and are not applied to yours. If the part of a period you "
         "want scored is narrower than the period itself, say so in "
         "analysis_start_sec / analysis_end_sec."),
+    # Scoped to the reader, and named per ADR-0002. Both producer-facing documents
+    # were corrected on 2026-08-28 (export contract revision 8) to say "runs in
+    # `bugarach detect`", because the browser viewer's locust declines without a
+    # peak — this string was the last copy still claiming it flatly, and it is the
+    # one a producer actually reads. "CICADA" here named the upstream tool for a
+    # detector ADR-0002 renamed; the identifier `cicada` is untouched.
     NO_WIDTH: (
         "width_sec is asked for and not required, so this folder conforms and "
-        "every detector runs. What it cannot do is score per-event durations: "
-        "CICADA's per_event mode has nothing to read, and no other column "
-        "implies a width. Send width_sec with the width_def naming the rule "
-        "that produced it."),
+        "every detector runs in bugarach detect. What it cannot do is score "
+        "per-event durations: locust's per-event mode has nothing to read, and "
+        "no other column implies a width. In the browser viewer, which runs "
+        "per-event by default, locust also needs a peak. Send width_sec with "
+        "the width_def naming the rule that produced it, and send peak_sec if "
+        "you have it."),
     PART_WIDTH: (
         "Width is per stream, so a stream without one is simply not available "
         "to per-event duration scoring while the others are."),

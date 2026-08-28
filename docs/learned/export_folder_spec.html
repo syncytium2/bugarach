@@ -190,9 +190,18 @@
 treatment period, and the acquisition frame interval. Nothing here is specific to a
 lab, a preparation, a drug or a pipeline. A producer that can state those three is a
 conforming producer.</p>
-<p><strong>A fourth is asked for and not required:</strong> how big each event was. A producer that
-can state it should; one that cannot is still conforming, and every detector still
-runs. What it buys is in revision 5 below.</p>
+<p><strong>A fourth and a fifth are asked for and not required:</strong> how long each event lasted
+(<code>width_sec</code>, with the <code>width_def</code> naming your rule) and when it peaked (<code>peak_sec</code>). A
+producer that can state them should; one that cannot is still conforming, and every
+detector still runs in <code>bugarach detect</code>. <strong>Of the two, the peak is the one that decides
+whether the browser viewer's locust runs at all</strong> — see revision 8, which also says why
+the width is worth sending and what it changes.</p>
+<p>Two names below are worth fixing before you meet them. <strong>locust</strong> is this project's
+coincidence detector — a modified port of the Cossart lab's CICADA, renamed because it is
+modified; it still appears as <code>cicada</code> in the <code>detector</code> column of the output. <strong>The
+browser viewer</strong> is the single-page raster viewer served at <code>raster_viewer.html</code>, which
+needs no install — <strong>not</strong> <code>bugarach view</code>, which despite its name is one of the Python
+commands. The two read this contract differently, and revision 8 is largely about where.</p>
 <p><strong>This is the whole input.</strong> bugarach reads one folder and nothing else: no data
 store, no archive, no environment variable, no network, no companion database. If
 a fact is not in the folder, bugarach does not know it and does not guess it.</p>
@@ -200,7 +209,118 @@ a fact is not in the folder, bugarach does not know it and does not guess it.</p
 <strong>seconds</strong> on the recording's own clock. Any producer can write these files —
 this project's MATLAB exporter, another lab's Python, a spreadsheet exported by
 hand.</p>
+<blockquote class="warn">
+<p>⚠ <strong>Revision 8</strong> (2026-08-28). <strong>What the width is checked against, which reader needs
+what, and the rule that can now reject a folder.</strong></p>
+<p>The 2026-08-28 extension below says the width <em>is</em> read, and by which detector. This
+revision is the producer-facing half of that: what bugarach requires of the column, what
+each of the two readers does with it, and what changed under you.</p>
+<p><strong>Two rules changed on 2026-08-23 — five days before this note — and one of them can
+reject a folder that loaded before.</strong> If your export has been failing since then, this
+is why; the rules are not new, only their announcement is.</p>
+<ul>
+<li><strong><code>width_sec</code> requires <code>width_def</code> on the same row.</strong> A width with no rule beside it
+  is now an error naming the file and line, and two different <code>width_def</code> values inside
+  one stream are an error naming the recording. Either one stops the whole folder
+  loading <strong>in <code>bugarach check</code> and <code>bugarach detect</code></strong>. The browser viewer neither
+  rejects nor warns: where you also send <code>peak_sec</code> it <strong>silently uses the undeclared
+  width</strong> as locust's coincidence window, and where you do not, locust declines for want
+  of a peak and never mentions the missing rule. Either way the folder check is the
+  reader that tells you. If you have been sending width without the rule, add the rule
+  before your next export.</li>
+<li><strong>Two names, and only two, let a width stand in for an absent <code>peak_sec</code>:</strong>
+  <code>t50rise_to_peak</code> and <code>rise_interval_peak_minus_t50rise</code>. The match is on the exact
+  string — case and all, though surrounding whitespace is trimmed — not on what the rule
+  means. A width that genuinely runs half-rise to peak
+  under any other spelling derives nothing and says nothing. Send <code>peak_sec</code> and this
+  never arises; a sent peak is always the one we use. Tell us your
+  spelling and we will add it.</li>
+</ul>
+<p><strong>What supplying width buys, and the answer differs by reader.</strong> The width becomes
+locust's <em>active duration</em>: each event keeps its cell counted as active for its own
+duration rather than a fixed one, so the width sets how far apart two cells' events
+can be and still land together.</p>
+<ul>
+<li><strong>The browser viewer runs per-event by default</strong>, and its locust <strong>refuses to run at
+  all</strong> on a recording with no peak — a sent <code>peak_sec</code>, or a <code>width_sec</code> whose
+  <code>width_def</code> is one of the two names above, are the only two ways to give it one.
+  For that reader, width is not an enhancement; it is the difference between a
+  detector that runs and one that declines. <strong>And if you send <code>peak_sec</code> without
+  <code>width_sec</code>, that same default gives every event a one-frame active duration</strong> and
+  reports a flood of single-cell "events". The page does count them, under <em>of those,
+  one cell only</em> — but it explains them as a sparse recording and never names the
+  missing width, so the count reads as a property of your data. Send the width, or
+  switch the duration control to fixed.</li>
+<li><strong>The Python commands use the calibrated fixed duration.</strong> <code>bugarach detect</code>,
+  <code>bugarach view</code> and the bench all run <code>active_duration_sec=1.0</code>, so supplying width
+  changes no number they currently produce. Per-event is an opt-in a caller selects
+  through the API.</li>
+</ul>
+<p>Both halves have to be said. Giving only the second would repeat the mistake this
+revision is correcting, in the other direction — which is what the first draft of this
+revision did.</p>
+<p><strong>The two readers also differ in what they anchor on, which matters more than the
+duration.</strong> The browser locust anchors on the <strong>peak</strong> and refuses without one. The
+Python locust anchors on the <strong>half-rise</strong> — <code>time_sec</code> — and never consumes a peak,
+though the loader still reads and derives one. Both are deliberate. The consequence for
+you is worth stating plainly: the same folder, opened the two ways, gives locust two
+different event sets, and <code>peak_sec</code> is what makes the browser reader work rather than
+something the Python reader consumes.</p>
+<p><strong>The peak has to be on every event, not most of them.</strong> Where only some rows carry one,
+the browser locust does not refuse — it scores the subset that has a peak, drops the
+rest, and says nothing about the ones it dropped. A folder that is 48% peaked is scored
+as if it were the whole recording.</p>
+<p><strong>What a widthless folder does, since revision 5 promised the wrong thing.</strong> It
+conforms, and every detector runs in <code>bugarach detect</code>; in the browser viewer, locust
+needs a peak, per the bullet above. What no reader can do without a width is score
+per-event durations. Asking the Python detector for that mode anyway is <strong>not refused</strong>
+where the caller names a duration field at all — <code>width</code> or <code>rise_dur</code>, both of which
+collapse identically: every event becomes a <strong>one-frame</strong>
+run, and the count that comes back is not comparable to the fixed-duration one — it can
+be far lower, or at a looser percentile far higher, because the surrogate threshold is
+computed from the same collapsed raster. That is this contract's own failure class, a
+plausible answer instead of an error, and it is why <code>load_folder(require_width=True)</code>
+exists for a caller who cannot proceed without one.</p>
+<p><strong>What has not changed.</strong> bugarach still does not define width and still will not infer
+it. The rule is yours, named in <code>width_def</code>, and carried without being interpreted. Its
+value is examined in two places only — the two-name match above, which rule 4 (in "The
+rules that make it universal", below) now names as its single exception to inferring
+nothing, and the check that one stream does not carry two different rules.
+<code>width_sec</code> is still <strong>asked for and not required</strong>.</p>
+<p><strong>Why this is a revision and not a typo fix.</strong> A stale ⚠ in a contract is what a
+producer reads when deciding whether a column is worth maintaining, and this one
+answered no for five days while the producer-facing page said the width it received was
+<em>"read from the file and discarded"</em>. Both documents are corrected together, because
+either one left standing still tells that producer to stop. Recorded under
+<code>docs/sapper_feedback/</code>, dated 2026-08-28, along with why the obvious search confirmed
+the wrong answer.</p>
+</blockquote>
+<!-- Keep this comment. Python-Markdown merges ADJACENT blockquotes into one, so
+     without a non-blockquote element here the ⚠ on revision 8 promotes every
+     revision below it — including the withdrawn revision-5 warning — into one
+     amber .warn panel at full ink. The withdrawn claim then renders MORE
+     prominently than live contract prose, attributed to the revision that
+     withdrew it. Found by the murderboard's fourth blind pass, 2026-08-28,
+     after the ⚠ was added to fix the opposite problem. -->
+
 <blockquote>
+<p><strong>Revision 7</strong> (2026-08-23). <strong>Your bounds are scored as sent, and the two folder
+commands cannot disagree about them.</strong></p>
+<p>A region with no <code>analysis_start_sec</code>/<code>analysis_end_sec</code> used to have this project's
+convention applied to it — baseline backward off a 20-minute cap, a 2-minute wash-in
+delay on every treatment, an exemption for any label containing <code>hi</code>. It no longer
+is: <strong>the period is scored whole</strong>, <code>start_sec</code> to <code>end_sec</code>, and the guards
+requiring a baseline at 0 and contiguous periods are gone from this path. A lab that
+started recording before it started treating, or left the tissue alone between
+conditions, is describing its experiment.</p>
+<p><code>bugarach detect</code> was taught that on 2026-08-23 and <code>bugarach check</code> was not, so for
+one afternoon a folder whose baseline began at 500 s <strong>failed at the door</strong> and was
+then scored happily by the very next command — the tool contradicting itself, with
+nothing to say which answer was true. Both now ask one resolver, and a test pins the
+two verdicts together rather than trusting them to stay aligned.</p>
+<p>The four refusals in "Used as given is not the same as unchecked" below are
+unchanged, and they are now the whole of what "not conforming" means about your
+bounds.</p>
 <p><strong>Revision 6</strong> (2026-08-20). <strong>Selection is the producer's, and the consumer may
 not second-guess it.</strong></p>
 <p>"bugarach reads one folder and nothing else" was stated from revision 1 and was
@@ -245,13 +365,16 @@ took part and how long the coordination lasted. Nothing says how big the events
 <em>making it up</em> were — whether a coordinated event is many small transients or a few
 large ones, and whether that changes under a treatment. That question cannot be
 asked of onset times alone, and it is the reason this revision exists.</p>
-<p>⚠ <strong>Nothing in bugarach reads <code>width_sec</code> today</strong> — not the loader, not the folder
+<p><strong>[WITHDRAWN 2026-08-28 by revision 8 — every sentence of this paragraph is false.
+The code arrived 2026-08-23. Left unedited because a producer who read it and dropped
+the column needs to find the words they read.]</strong> It said: "Nothing in bugarach reads
+<code>width_sec</code> today — not the loader, not the folder
 check, not any detector. It is not validated, not carried through, and no result
 changes by supplying it; it is an extra column like any other until code is written
 for it. This is a
 contract to build against, stated ahead of the code on purpose so producers can
 begin emitting it — the same posture FOUNDATIONS §4 takes for the folder reader,
-and it is written down here so nobody mistakes the column for a feature.</p>
+and it is written down here so nobody mistakes the column for a feature."</p>
 <p><strong>Revision 4</strong> (2026-08-18). <strong>Group and subject are named, not merely allowed.</strong>
 <code>slices.csv</code> reserves <code>group_id</code> (which experimental group this recording belongs
 to) and <code>subject_id</code> (which animal it came from). Both were already legal as
@@ -349,8 +472,8 @@ recording silently gets nothing from it, which is almost always one typo in a
 <tr>
 <td><code>peak_sec</code></td>
 <td>number</td>
-<td>no</td>
-<td>when the transient peaked, if the producer has it</td>
+<td><strong>strongly asked for</strong></td>
+<td>when the transient peaked. Not required, but the browser viewer's locust cannot run without it — or without a <code>width_sec</code> whose <code>width_def</code> reaches the peak. See revision 8.</td>
 </tr>
 <tr>
 <td><code>amp</code></td>
@@ -377,7 +500,12 @@ producer choosing the field whose name it liked.</p>
 not the same measurement. <strong>bugarach does not define width and will not infer it.</strong>
 The producer chooses the rule, applies it consistently within a stream, and names it
 in <code>width_def</code> — <code>t50rise_to_peak</code>, <code>fwhm</code>, <code>above_threshold</code>, whatever it actually
-computed. The string is the producer's; bugarach carries it and never parses it.</p>
+computed. The string is the producer's; bugarach carries it and does not interpret it.
+Its value is examined in two places in each reader, and by name rather than by meaning:
+<code>t50rise_to_peak</code> and <code>rise_interval_peak_minus_t50rise</code> are the two spellings that let a
+width stand in for an absent <code>peak_sec</code> (revision 8), and one stream carrying two
+different rules is refused by <code>bugarach check</code> and <code>bugarach detect</code> — in the browser
+viewer the file loads and only locust declines that stream. Every other string is carried and never examined.</p>
 <p>This mirrors <code>strength_unit</code> in the output, and for the same reason: <strong>a column that
 means two things without saying which yields a plausible wrong answer rather than an
 error.</strong> A consumer comparing widths across streams must read <code>width_def</code> first, and
@@ -392,16 +520,64 @@ raises this itself as <code>⚠ CONFIRM: width_sec is not the same quantity in b
 streams</code> — fast carries the real transient width (findpeaks half-prominence), slow
 carries the rise interval <code>peak_sec − time_sec</code>, because slow widths run to a median
 of 4.7 s and a maximum of 186.9 s and would swamp any coincidence window. <strong>That ⚠
-is answered: intended behaviour, not a defect.</strong> Nothing in bugarach reads
-<code>width_sec</code> yet, so no code changes; recorded so the question is not reopened and so
-interface2 can clear its flag.</p>
+is answered: intended behaviour, not a defect.</strong> <strong>[WITHDRAWN 2026-08-28 by revision 8 —
+the sentence that followed is false in both its halves; the code arrived 2026-08-23.]</strong>
+It said: "Nothing in bugarach reads <code>width_sec</code> yet, so no code changes." Recorded so
+the question is not reopened and so interface2 can clear its flag.</p>
+<p><strong>[One further note from revision 8, 2026-08-28.]</strong> Read
+"slow widths run to a median of 4.7 s and a maximum of 186.9 s" as the counterfactual
+it was meant as — those are what a full-width rule such as <code>fwhm</code> <strong>would</strong> have given
+on slow, and the reason it was not used. The rule actually shipped there,
+<code>rise_interval_peak_minus_t50rise</code>, has a median of 2.0 s and a maximum of 5.5 s.
+Everything else in this note stands: the two definitions are still right, and this
+export still sends <code>peak_sec</code> on both streams, so revision 8's peak derivation never
+fires on it.</p>
+<p><strong>Extended 2026-08-28 (Tony) — and the sentence above about nothing reading
+<code>width_sec</code> is now FALSE: <code>src/bugarach/detectors/cicada.py</code> reads it.</strong> Written down
+here, in full, because Tony asked not to have to explain it again.</p>
+<p><strong>The two definitions are not two measurements.</strong> Event detection in this lab's
+pipeline is <strong>methodically identical</strong> in the fast and slow streams. What differs is
+a preprocessing step applied <strong>only when exporting to bugarach</strong>: the export records
+<strong>FWHM as the duration for the fast stream</strong> and the <strong>rising phase — peak location
+minus t50rise — for the slow stream</strong>. Nothing upstream of the export differs, so
+this is a property of <em>the file</em>, not of the recording and not of the detection.
+Anything that describes it as "the two streams are measured differently" is wrong.</p>
+<p><strong>Why.</strong> The duration CICADA receives strongly affects its calls. That is a
+non-question for classical calcium transients of about a second, but slow-stream
+events in this preparation can be very long, and handing over their full extent
+makes the coincidence structure meaningless.</p>
+<p><strong>What it reaches: exactly one detector.</strong> locust is the only one of the six that
+consumes a per-event duration — <code>cicada.py</code>'s <code>duration_field</code>. Verified 2026-08-28:
+the <code>width_kind</code> / <code>width_sec</code> names in <code>coact.py</code>, <code>sce.py</code>, <code>loco.py</code>, <code>rate.py</code>
+and <code>sync.py</code> are <strong>outputs</strong>, describing spans those detectors computed for
+detections they made; none is an input read off the stream. So a change to the
+exported duration moves locust's numbers and nothing else's.</p>
+<p><strong>Not a recommendation to anybody else.</strong> This lab's calcium-imaging pipeline is not
+usable by other labs for the time being, so this is a fact about <em>this</em> export rather
+than guidance. Another producer sends whatever it computes and names it in
+<code>width_def</code>; the contract above is unchanged and does not need to know.</p>
+<p>⚠ <strong>One wording question, left with the producer rather than resolved here.</strong> The
+2026-08-20 note above says the fast stream carries <em>findpeaks half-prominence</em> width;
+the 2026-08-28 account says <em>FWHM</em>. Those are close, and may be the same quantity in
+this pipeline, but they are not the same definition in general. <code>width_def</code> is the
+field that settles it: whatever string the exporter writes is the answer.</p>
+<p><em>[Revision 8 answers the ⚠ by the rule it sets, and corrects its last clause.</em> <strong>The
+string the exporter actually writes is <code>halfprom_width_findpeaks_w</code></strong>, on every fast
+event of both current export folders — so by this note's own test the fast width is
+the findpeaks half-prominence, and "FWHM" is the loose description. Nothing needs to
+change in the file; the 2026-08-20 wording was right and the ⚠ can close. <em>And bugarach
+does not quite "never parse" the string: it is matched by name in two places — deciding
+whether a width may stand in for an absent <code>peak_sec</code>, and refusing one stream that
+carries two rules. It is never interpreted, which is what the sentence means and what
+revision 8 says instead.]</em></p>
 </blockquote>
-<h4>Sending more than is asked for</h4>
+<h4>Sending more than is required</h4>
 <p>Extra columns are ignored rather than rejected, so a producer may ship one file that
 serves several consumers. A producer that already computes the full per-event set is
-encouraged to send it — <code>amp</code>, <code>peak_sec</code>, <code>t50rise</code> (as <code>time_sec</code>) and <code>width_sec</code>
-— because the questions those support are the ones nobody can ask today, and a folder
-is cheaper to write once than to regenerate.</p>
+encouraged to send it — <code>amp</code>, <code>peak_sec</code>, <code>t50rise</code> (as <code>time_sec</code>), <code>width_sec</code>, and the
+<code>width_def</code> that must travel with it. <code>peak_sec</code> and <code>width_sec</code> are no longer questions
+for later: revision 8 records what each already does and which reader needs it. <code>amp</code> is
+the one nobody can ask of today, and a folder is cheaper to write once than to regenerate.</p>
 <h4>An ROI that fired nothing is a row with no time</h4>
 <p><code>roi = 7</code>, <code>time_sec = NA</code> says <em>ROI 7 was recorded here and produced no event</em>. An
 empty field means the same thing, because that is what a spreadsheet writes.</p>
@@ -500,13 +676,11 @@ window running <code>99999</code> to <code>-500</code> passed <code>bugarach che
 window of <strong>−100,499 seconds</strong>, which every detector downstream would have reported as
 an absence of coordination. Found by interface2 on 2026-08-18, running our own gates
 against a folder they broke on purpose.</p>
-<p><strong>When they are absent, bugarach derives the analysis window itself</strong>, applying this
-project's convention: the baseline measured backward from its end with a 20-minute
-cap, every non-high-K treatment starting 2 minutes late and capped at 20 minutes,
-high K⁺ exempt from both. For this project that is correct and matches its own
-analysis. For anybody else it is an assumption you did not make, which is the reason
-these two columns exist —
-<a href="todo/2026-08-17-windowing-convention-is-not-optional.md"><code>docs/todo/2026-08-17-windowing-convention-is-not-optional.md</code></a>.</p>
+<p><strong>When they are absent, your period is scored whole.</strong> <code>start_sec</code> to <code>end_sec</code>,
+verbatim: no wash-in delay, no duration cap, no baseline measured backward from its
+end, no exemption for a label containing <code>hi</code>. Those are this project's protocol and
+they are no longer applied to yours — send the two columns above if the part you want
+scored is narrower than the period itself.</p>
 <p><strong>This is not a derived column of the kind the section above refuses.</strong> A duration
 judgement is recomputable from the row and so does not belong in it; an analysis
 window is not — it encodes a decision about the preparation that nothing in the file
@@ -525,32 +699,33 @@ row, and the threshold is <strong>policy, not fact</strong> — one lab's floor 
 Sending it would put two records of one quantity in the same file, which is exactly
 what this contract avoids elsewhere by deriving the treatment index at write time
 instead of storing it. Send the bounds; let whoever is deciding decide.</p>
-<p><strong>⚠ Send the RAW bounds, not analysis windows.</strong> <code>start_sec</code> and <code>end_sec</code> are when
-the period <em>began and ended</em> on the recording's clock: <strong>region 1 starts at 0, and
-each region starts where the previous one ended.</strong> No trimming, no caps, no wash-in
-delay, no gaps.</p>
-<p><strong>This paragraph said the opposite until 2026-08-17, and it cost a whole export.</strong> It
-promised bugarach "uses the bounds as given and never adjusts them". It does not:
-<code>region_windows</code> in <code>src/bugarach/detectors/loco.py</code> re-applies this project's
-windowing convention — a backward cap on the baseline, a two-minute wash-in delay and
-a cap on each treatment — and it <strong>halts</strong> on a baseline that does not begin at 0 or a
-gap between regions, because in these stores either means a data defect.</p>
-<p>So a producer who did the trimming, exactly as this text asked, shipped a folder that
-loaded cleanly and then halted <strong>83 of 85</strong> recordings. That happened: interface2 read
-this paragraph, sent pre-trimmed windows, and every detector refused them. <code>bugarach
-check</code> now runs <code>region_windows</code> over every recording, so a folder that cannot be
-analysed fails at the door rather than at the first detector.</p>
-<p>The case for raw bounds is the one the old text made, pointing the other way: this
-windowing rule has been reimplemented five times in this ecosystem and drifted every
-time, so it is applied <strong>once</strong>, here, to bounds nobody has already adjusted. Two
-consumers handed the same raw folder compute the same windows; two consumers handed
-pre-trimmed folders get whatever each producer decided.</p>
-<p><strong>⚠ If your lab has no wash-in and no cap, that convention is applied anyway</strong>, and it
-is not currently optional: a treatment window will start two minutes after your
-<code>start_sec</code> and end twenty minutes later. For this project that is correct and matches
-its own analysis. For anyone else it is an inherited assumption, and making it a
-parameter is open work —
-<a href="todo/2026-08-17-windowing-convention-is-not-optional.md"><code>docs/todo/2026-08-17-windowing-convention-is-not-optional.md</code></a>.</p>
+<p><strong>Send the RAW bounds — and if the only bounds you have are already trimmed, send
+those.</strong> <code>start_sec</code> and <code>end_sec</code> are when the period began and ended on the
+recording's clock. Raw is better, because the raw period travels alongside the scored
+one and how much was trimmed then stays visible in the output instead of being
+absorbed into the number. But a producer who has only trimmed bounds is no longer
+turned away for it: what you send is what gets scored, so the worst case is a
+narrower window and a <code>raw_*</code> column that repeats it.</p>
+<p><strong>Two paragraphs here said the opposite of the truth, in turn, and each cost
+something.</strong> Until 2026-08-17 this promised bugarach "uses the bounds as given and
+never adjusts them", which was false — <code>region_windows</code> re-applied this project's
+convention and <strong>halted</strong> on a baseline that did not begin at 0 or a gap between
+regions. interface2 read that promise, sent pre-trimmed windows, and <strong>83 of 85</strong>
+recordings refused to run. The correction went too far the other way: it told
+producers their bounds must be zero-based and contiguous, which is aCa5z's protocol
+and not a property of a well-formed export, and <code>bugarach check</code> was taught to refuse
+anything else at the door. A lab that started recording before it started treating
+was then told its legal folder was malformed.</p>
+<p>Both are settled by scoring what you sent. <code>region_windows</code> is unchanged and still
+halts on the data it was written for — a <code>.mat</code> store, where a baseline not beginning
+at 0 really is a defect — and the folder no longer routes into it.</p>
+<p><strong>What bugarach still refuses</strong> is the universal subset, the four things that are
+wrong under anybody's protocol: a period that ends before it begins, an analysis
+window that ends before it begins, an analysis start that is not a finite time, and
+an analysis window falling outside the period it claims to be part of. <strong><code>bugarach
+check</code> and <code>bugarach detect</code> ask one resolver and cannot disagree</strong> — a folder the
+check passes is one detection scores, and a recording it refuses is one detection
+refuses for the same stated reason.</p>
 <p><strong>How this handles any number of treatments.</strong> It carries no notion of a treatment
 <em>slot</em>, so there is nothing to run out of. One region is a recording with no
 protocol. Two is a before and an after. Six is a baseline and five conditions.
@@ -692,8 +867,8 @@ adapts to read this; it does not get a private dialect.</p>
 <td>which period it fell in — <strong>your</strong> index and <strong>your</strong> name, unchanged</td>
 </tr>
 <tr>
-<td><code>onset_sec</code> · <code>width_sec</code></td>
-<td>when it started and how long it lasted</td>
+<td><code>onset_sec</code> · <code>width_sec</code> · <code>width_def</code></td>
+<td>when the coordinated event started, how long it lasted, and by which rule <strong>the detector</strong> measured that span (<code>tightness</code>, <code>episode_span</code>, <code>half_prominence</code> where <code>mode</code> is <code>peak</code>, or <code>NA</code>). <strong>This is not your input <code>width_def</code></strong> — it names bugarach's own width, not yours.</td>
 </tr>
 <tr>
 <td><code>n_roi</code></td>
@@ -787,9 +962,12 @@ comparison when no cluster forms — it prints as <em>undefined</em>, never as a
 <li><strong>No controlled vocabularies.</strong> Stream names, region labels, ROI ids and slice
    ids are the lab's own strings. bugarach matches them, counts them, and hands
    them back.</li>
-<li><strong>Nothing is inferred that was not given.</strong> No window is derived, no region is
-   assumed to be a baseline, no viability verdict is computed, no missing metadata
-   is invented.</li>
+<li><strong>Nothing is inferred that was not given</strong>, with one named exception. No window is
+   derived, no region is assumed to be a baseline, no viability verdict is computed,
+   no missing metadata is invented. The exception is revision 8's: where no <code>peak_sec</code>
+   was sent and <code>width_def</code> is one of two names meaning the width runs to the peak, the
+   peak is computed from it. It is guarded by an exact name match rather than by
+   interpretation, and a sent <code>peak_sec</code> is never overridden.</li>
 <li><strong>Extra columns are ignored, not rejected</strong>, so one file can serve several
    consumers.</li>
 <li><strong>A quantity different producers define differently travels with its definition</strong>

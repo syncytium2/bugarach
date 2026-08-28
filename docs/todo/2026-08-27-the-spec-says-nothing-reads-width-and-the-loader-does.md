@@ -1,9 +1,35 @@
 ---
-status: open
+status: done
 filed: 2026-08-27
+closed: 2026-08-28
 ---
 
-# The contract warns that nothing reads `width_sec`. The loader has been reading it.
+# The contract warns that nothing reads `width_sec`. The loader has been reading it. — done
+
+**Closed 2026-08-28 by export contract revision 8**, which withdraws the warning in both
+documents and states what is actually true.
+
+**The open question here was answered, and the answer was the opposite of the guess.**
+This file said *"No detector consumes width — believed, not checked"* and told whoever
+fixed it to grep the detectors first. That grep is the trap: it returns
+`SceStream.width_sec`, `rate`'s `widths` and locust's own `width_sec` output — the
+detectors' **own output spans**, not the input column — so a full result list reads like
+confirmation. **locust's per-event mode does consume the producer's width**, reaching it
+through `getattr(stream, duration_field)`, which no grep for the column name will find.
+Two other clauses were wrong the same way: `conform.py` reports on width, and `io.py`
+validates it.
+
+**What this file did not anticipate, and the review found:** nothing shipped runs that
+mode. `OPERATING_POINTS["cicada"]` uses a fixed duration, so supplying width changes no
+number `bugarach detect` currently produces — it makes an opt-in mode reachable. Revision 8
+says so in terms, because overstating it repeats the error in the other direction.
+
+Recurrence guard: [`docs/sapper_feedback/2026-08-28-a-negative-claim-about-code-went-stale-in-a-contract.md`](../sapper_feedback/2026-08-28-a-negative-claim-about-code-went-stale-in-a-contract.md),
+plus two pins in `tests/test_site_viewer.py` that landed with the revision.
+
+---
+
+*Original text follows.*
 
 `docs/export_folder_spec.md`, revision 5, carries this in bold:
 

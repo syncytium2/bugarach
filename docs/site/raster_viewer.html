@@ -1189,8 +1189,10 @@
         <b>So your folder has to carry the peak, and most of the columns that
         could are optional.</b> Either send <code>peak_sec</code>, or send
         <code>width_sec</code> with <code>width_def</code> set to
-        <code>t50rise_to_peak</code> — that width is the peak minus the half-rise,
-        so the two together locate it. A width measured any other way
+        <code>t50rise_to_peak</code> or <code>rise_interval_peak_minus_t50rise</code>
+        — those are the two spellings accepted, and each names a width running from
+        the half-rise to the peak, so the two together locate it. The match is on the
+        exact string, not on what the rule means: a width measured any other way
         (<code>fwhm</code>, <code>above_threshold</code>) does not reach the peak
         and cannot be added to the onset to find one. Where the folder carries
         neither, this detector declines to run and says so, rather than falling
@@ -3781,8 +3783,10 @@ function cicadaTrains(data, stream, order, lo, hi) {
     return { why: "locust anchors on the PEAK of each transient, and this folder "
                   + "does not carry one. Send `peak_sec` — every current export "
                   + "does, and it is the unambiguous route — or send `width_sec` "
-                  + "with a `width_def` naming a width that reaches the peak, "
-                  + "such as `rise_interval_peak_minus_t50rise`. `time_sec` alone "
+                  + "with a `width_def` of `t50rise_to_peak` or "
+                  + "`rise_interval_peak_minus_t50rise` — the two spellings "
+                  + "that reach the peak, "
+                  + "`time_sec` alone "
                   + "is the half-rise"
                   + (defs.length ? ", and this folder's width is '" + defs[0]
                      + "', which does not reach the peak" : "")
