@@ -43,7 +43,7 @@ from bugarach.detectors.rate import (
 )
 from bugarach.detectors.sce import sce_detect
 from bugarach.detectors.sync import sync_detect
-from bugarach.score import score_stream
+from bugarach.score import TOL_SEC, score_stream
 from bugarach.simulate import simulate_coordination
 
 STREAM = "events"
@@ -197,7 +197,7 @@ OPERATING_POINTS: dict[str, OperatingPoint] = {
                     n_surrogates=100),
         source="explore_sce viewer FAST point — NOT the coact_detect signature "
                "default of alpha=0.01, which scores F1 0.72 here",
-        knob="alpha", grid=(1e-2, 1e-3, 1e-4, 1e-5, 1e-6, 1e-7)),
+        knob="alpha", grid=(1e-1, 3e-2, 1e-2, 1e-3, 1e-4, 1e-5, 1e-6, 1e-7)),
     "rate": OperatingPoint(
         params=dict(excess_threshold_hz=5.0, context_win=60.0, rate_win=1.0,
                     grid_dt=0.1),
@@ -883,7 +883,7 @@ def pool_scores(scores, *, detector: str, regime: str, seeds=(),
     return out
 
 
-def evaluate(name: str, regime: str, seeds=(1, 2, 3), *, tol_sec: float = 1.5,
+def evaluate(name: str, regime: str, seeds=(1, 2, 3), *, tol_sec: float = TOL_SEC,
              gen: dict | None = None, **overrides) -> BenchResult:
     """Run one detector over several seeds and pool the outcome.
 
@@ -1002,7 +1002,7 @@ with the effect being measured — and until now nothing reported it.
 
 
 def evaluate_background_curve(name: str, regime: str, seeds=(1, 2, 3), *,
-                              rates=BACKGROUND_GRID, tol_sec: float = 1.5,
+                              rates=BACKGROUND_GRID, tol_sec: float = TOL_SEC,
                               gen: dict | None = None,
                               **overrides) -> dict[float, BenchResult]:
     """One :class:`BenchResult` per background rate — the curve, not a point.

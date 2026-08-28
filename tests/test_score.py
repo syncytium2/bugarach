@@ -217,7 +217,16 @@ def test_the_binned_detector_is_scored_as_the_instrument_it_is():
     s_, gt = simulate_coordination(seed=3)
 
     sce = sce_detect(s_).streams["events"]
-    assert score_detections(gt, sce.onset_sec).recall == 0.0, "the old reading"
+    # PINNED AT 1.5 s ON PURPOSE, not left on the shipped default. This line
+    # demonstrates a property of the SCORING RULE — matching a 10 s bin's left
+    # edge against a planted onset as if it were a point — and the demonstration
+    # only bites while the tolerance is narrower than the bin. When `TOL_SEC`
+    # moved to 2.5 s (2026-08-28) this same call began returning 0.13, which
+    # would read as the regression half-healing itself. It has not: the bin edge
+    # is still the wrong thing to match; the window is merely wide enough now to
+    # catch one of fifteen by luck.
+    assert score_detections(gt, sce.onset_sec, tol_sec=1.5).recall == 0.0, \
+        "the old reading"
     assert score_detections(gt, sce.onset_sec, widths=sce.width_sec).recall >= 0.85
 
     loco = loco_detect(s_).streams["events"]

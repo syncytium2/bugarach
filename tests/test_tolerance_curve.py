@@ -17,6 +17,7 @@ import pytest
 
 from bugarach.bench import (DETECTORS, TOLERANCE_GRID, describe_curve,
                             evaluate, evaluate_curve, plateau_tol)
+from bugarach.score import TOL_SEC
 
 SEEDS = (1, 2, 3)
 REGIME = "baseline_quiet"
@@ -38,15 +39,29 @@ def test_the_curve_scores_the_same_detections_the_point_estimate_does(curves):
         assert curves[n][1.5].n_hit == point.n_hit, n
 
 
-def test_five_of_six_are_flat_well_below_the_shipped_tolerance(curves):
-    """The reassuring half, and the reason this is cheap. If a detector's score
-    stops moving far below 1.5 s, then the inherited constant was granting slack
-    nobody was using and no comparison rested on it."""
+def test_five_of_six_settle_at_or_below_the_shipped_tolerance(curves):
+    """The reassuring half, and the reason this is cheap: a detector whose score
+    has stopped moving by the shipped tolerance is one no comparison rests on the
+    slack of.
+
+    **It reads the constant now, not a literal 1.5.** On the flat background the
+    five settled *far* below the shipped value and this test said so. Wiring the
+    fitted background in moved LoCo and CoactDetect to 2.5 s and RateDetect to
+    2.0 s — a realistic field spreads the same events over a wider window — so
+    the tolerance moved with them (`score.TOL_SEC`, 1.5 → 2.5; Tony, 2026-08-28:
+    *"expand the tolerance"*).
+
+    Asserting against the constant is what keeps the two from drifting apart
+    again: lower `TOL_SEC` under a plateau and this fails, which is the alarm
+    worth having, because every F1 in the bench would be understating its
+    detector.
+    """
     flat = {n: plateau_tol(curves[n]) for n in DETECTORS}
     settled = {n: t for n, t in flat.items() if t is not None}
     assert len(settled) == 5, f"expected five to settle, got {flat}"
-    assert max(settled.values()) <= 1.5, (
-        f"a detector plateaus only above the shipped tolerance: {settled}")
+    assert max(settled.values()) <= TOL_SEC, (
+        f"a detector plateaus only above the shipped tolerance {TOL_SEC}s: "
+        f"{settled} — every F1 in the bench is understating it")
 
 
 def test_binned_sce_is_the_one_whose_score_depends_on_the_slack(curves):
