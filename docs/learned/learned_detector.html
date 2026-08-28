@@ -278,7 +278,7 @@ th.n { text-align: right; font-family: var(--mono);
 
 <figure>
   <div class="archwrap"><div class="arch"><svg viewBox="0 0 900 494" xmlns="http://www.w3.org/2000/svg" role="img"
-     aria-label="The coordination pipeline, left to right in four stages. First, real recordings from one lab are measured without any detector: onset times from eighty-five baseline slices go through a clustering assessor with a thousand circular-shift surrogates, which reports participation, jitter and cluster rate. Second, that measurement becomes generator settings; a human chooses the cluster size K from a published scan, and the fitted heterogeneous bursty background is turned on. Third, the generator plants coordinated events at times it records, producing a data set split into four folds, with distractors and a dense random probe block as negatives. Fourth, every detector is fitted on three folds and scored on the held-out fourth: the six hand-written detectors sweep their one declared knob, the learned models train and pick a threshold, and both go through the same scorer. Ground truth flows from the generator to the fitting of every detector on the three training folds, and to the scorer for the held-out fourth; no detector sees the truth of the fold it is scored on. The report and the operating points come out at the end.">
+     aria-label="The coordination pipeline, left to right in four stages. First, real recordings from one lab are measured without any detector: onset times from eighty-five baseline slices go through a clustering assessor with a thousand circular-shift surrogates, which reports participation, jitter and cluster rate. Second, that measurement becomes generator settings; a human chooses the cluster size K from a published scan, and the fitted heterogeneous bursty background is turned on. Third, the generator plants coordinated events at times it records, producing a data set split into four folds, with distractors and a dense random probe block as negatives. Fourth, every detector is fitted on three folds and scored on the held-out fourth: the six hand-written detectors sweep their one declared knob, the learned models train and pick a threshold, and both go through the same scorer. Ground truth flows from the generator to the fitting of every detector on the three training folds, and to the scorer for the held-out fourth; no detector sees the truth of the fold it is scored on.">
   <defs>
     <marker id="pa" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7"
             orient="auto-start-reverse">
@@ -539,9 +539,9 @@ th.n { text-align: right; font-family: var(--mono);
     Every rate here is a <strong>median across the 85 slices</strong>, not a total.
     K=4 cuts it to roughly a quarter of K=3's and would build a different benchmark;
     by K=8 the median slice has nothing, and only 8 of 85 have enough events to measure
-    an onset spread at all. The last column &mdash; the count of slices with a measurable spread &mdash; is what decides the choice &mdash; the
-    spread does not fall cleanly as K rises, and past K=4 it is being measured on a shrinking and
-    increasingly unrepresentative subset. Observed spread sits below its shuffled null
+    an onset spread at all. The last column &mdash; the count of slices with a measurable spread &mdash; is
+    what decides the choice, because the spread itself does not fall cleanly as K rises:
+    past K=4 it is measured on a shrinking, increasingly unrepresentative subset. Observed spread sits below its shuffled null
     at every K, which is the direction real coordination should show.
   </p>
   <p>
@@ -654,13 +654,27 @@ th.n { text-align: right; font-family: var(--mono);
   <text x="832" y="104" text-anchor="middle">1&#215;1</text>
   <text x="832" y="123" text-anchor="middle">score per frame</text>
 
-  <!-- what each stage buys, above -->
-  <text x="69"  y="54" text-anchor="middle" class="lbl">row order irrelevant</text>
-  <text x="219" y="54" text-anchor="middle" class="lbl">one cell, one vote &#8212; exact in amplitude</text>
-  <text x="369" y="54" text-anchor="middle" class="lbl">space invariance</text>
-  <text x="526" y="54" text-anchor="middle" class="lbl hi">flat field cancels &#8212; in the kernel</text>
-  <text x="683" y="54" text-anchor="middle" class="lbl">an event is a run</text>
-  <text x="832" y="54" text-anchor="middle" class="lbl">same output the six emit</text>
+  <!-- What each stage buys, above. TWO BASELINES, y=42 and y=58, because the boxes sit
+       on a 150-unit pitch and a qualified claim does not fit on one line at that width.
+       This row has broken twice: once when the bypass arrow was routed across it (see
+       the comment below), and again on 2026-08-28, when two labels were lengthened to
+       qualify them and silently began overlapping their neighbours — one running past
+       the viewBox and rendering as "same output the six emi".
+       tests/test_svg_labels.py measures this now. Keep each line under ~130 units. -->
+  <text x="69"  y="50" text-anchor="middle" class="lbl">row order irrelevant</text>
+
+  <text x="219" y="42" text-anchor="middle" class="lbl">one cell, one vote</text>
+  <text x="219" y="58" text-anchor="middle" class="lbl">exact in amplitude</text>
+
+  <text x="369" y="50" text-anchor="middle" class="lbl">space invariance</text>
+
+  <text x="526" y="42" text-anchor="middle" class="lbl hi">flat field cancels</text>
+  <text x="526" y="58" text-anchor="middle" class="lbl hi">&#8212; in the kernel</text>
+
+  <text x="683" y="50" text-anchor="middle" class="lbl">an event is a run</text>
+
+  <text x="832" y="42" text-anchor="middle" class="lbl">same output</text>
+  <text x="832" y="58" text-anchor="middle" class="lbl">as the six</text>
 
   <!-- shapes, below -->
   <text x="69"  y="167" text-anchor="middle" class="lbl">N &#215; T</text>
@@ -821,9 +835,11 @@ th.n { text-align: right; font-family: var(--mono);
     A rate-invariant detector would return roughly the same count at every multiple.
     Zeroing the bypass channel and re-scoring the same recordings gives
     3 and
-    298, so most of the
-    <em>firings</em> depend on that channel. What remains is variance, which a
-    difference of <em>means</em> cancels and a difference of variances does not.
+    298 &mdash; four fifths of
+    the baseline firings depend on that channel, but at eightfold background 298 of 486
+    survive without it. What remains is variance: a difference of Gaussians is a difference of two
+    weighted <em>means</em>, so it cancels a shift in level but not the extra
+    fluctuation a higher rate brings with it.
   </p>
   <p>
     ⚠ <strong>The ablation does not isolate the bypass, and it points the other
@@ -840,8 +856,9 @@ th.n { text-align: right; font-family: var(--mono);
   </p>
   <p>
     ⚠ <strong>This page carries four kinds of fit of the same architecture, and only
-    the first produced the table.</strong> The four scored folds; the twenty ablation
-    fits behind the scale and clamp results; the two regime fits behind the transfer
+    the first produced the table.</strong> The four scored folds; the ablation grid behind the scale and
+    clamp results &mdash; twenty fold-fits over five variants, several of which are
+    provably the same computation; the two regime fits behind the transfer
     numbers, the busier of which is also the refit whose surround ratio reaches
     37.7; and the 10-seed grid behind the one-vote
     probe, of which seed 7 is the single fit this rate sweep used. Each
@@ -992,7 +1009,7 @@ th.n { text-align: right; font-family: var(--mono);
     finding a planted event if it lands within 1.5 s of it. Recall, precision and
     fold ranges for every row are in
     <a href="https://github.com/syncytium2/bugarach/blob/main/docs/learned/bakeoff.md">the
-    full run</a>. The two F1 columns describe <em>the same detections</em> &mdash;
+    full run</a>, which predates the rename and still lists locust as CICADA. The two F1 columns describe <em>the same detections</em> &mdash;
     nothing was re-run; one arithmetic choice is reversed.
   </p>
   <p>
@@ -1090,14 +1107,14 @@ th.n { text-align: right; font-family: var(--mono);
     0.634 &mdash; further from both than they are
     from each other, which no monotone reading predicts. All three sit inside a fold
     spread of 0.061, so <strong>none of the three differences
-    is one this benchmark can distinguish from noise.</strong> Four ships because four
-    is what was measured end to end, not because a sweep chose it.
+    is one this benchmark can distinguish from noise.</strong> Four is what ships, because four is what was
+    measured end to end &mdash; not because a sweep chose it.
   </p>
   <p>
     A second ablation raised the ceiling on how much wider the surround may be than
     the center, from 40 to 200, and the score did not move by a digit. That is not a
     null result &mdash; <strong>it is a no-op.</strong> The largest ratio fitted
-    anywhere in these four folds is 23.5, so the ceiling never binds and the two runs
+    anywhere in the published four-scale fits is 23.5, so the ceiling never binds and the two runs
     are bit-identical computations. Where it does bind, in the single-scale runs, the
     scores differ as they must
     (0.670 against
@@ -1269,8 +1286,9 @@ def build_tube(*, n_scales=4, width=8, depth=6,
     floor models escape it by firing twice on seven of their eight fold-fits.
   </p>
   <p>
-    <strong>A hit is scored within 1.5 s</strong> of a planted event, against a median
-    planted event well under a second. That buys a trustworthy ranking and costs any
+    <strong>A hit is scored within 1.5 s</strong> of a planted event, against a median planted
+    event of 0.70 s &mdash; and a widest one of 1.6 s, which is wider than the tolerance
+    itself. That buys a trustworthy ranking and costs any
     claim about timing accuracy &mdash; and the tolerance sweep that established it
     covers the six hand-written detectors, not the learned one.
   </p>

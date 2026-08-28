@@ -58,7 +58,11 @@
   <!-- ours, straddling the boundary of that cell -->
   <rect class="ours" x="628" y="246" width="256" height="52" rx="4"/>
   <text class="lbl it oursT" x="644" y="268">bugarach &#183; centre&#8722;surround</text>
-  <text class="lbl sub" x="644" y="286">[Ca] &#183; truth planted in simulation, fitted per lab</text>
+  <!-- Shortened 2026-08-28. At 48 characters this ran to x=915 — past its own box,
+       which ends at 884, and past the viewBox at 900 — so it shipped clipped
+       mid-word on the published landscape page. Found by tests/test_svg_labels.py
+       the first time that guard ran, in a figure nobody was looking at. -->
+  <text class="lbl sub" x="644" y="286">[Ca] &#183; planted truth, fitted per lab</text>
 
   <!-- ================= bottom row: hand-written ================= -->
   <rect class="cell" x="152" y="316" width="230" height="176" rx="4"/>

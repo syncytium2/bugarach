@@ -230,9 +230,9 @@ th.n { text-align: right; font-family: var(--mono);
     Every rate here is a <strong>median across the 85 slices</strong>, not a total.
     K=4 cuts it to roughly a quarter of K=3's and would build a different benchmark;
     by K=8 the median slice has nothing, and only 8 of 85 have enough events to measure
-    an onset spread at all. The last column &mdash; the count of slices with a measurable spread &mdash; is what decides the choice &mdash; the
-    spread does not fall cleanly as K rises, and past K=4 it is being measured on a shrinking and
-    increasingly unrepresentative subset. Observed spread sits below its shuffled null
+    an onset spread at all. The last column &mdash; the count of slices with a measurable spread &mdash; is
+    what decides the choice, because the spread itself does not fall cleanly as K rises:
+    past K=4 it is measured on a shrinking, increasingly unrepresentative subset. Observed spread sits below its shuffled null
     at every K, which is the direction real coordination should show.
   </p>
   <p>
@@ -415,9 +415,11 @@ th.n { text-align: right; font-family: var(--mono);
     A rate-invariant detector would return roughly the same count at every multiple.
     Zeroing the bypass channel and re-scoring the same recordings gives
     {{N:rateinv:by_multiple.1.frames_over_threshold_no_bypass}} and
-    {{N:rateinv:by_multiple.8.frames_over_threshold_no_bypass}}, so most of the
-    <em>firings</em> depend on that channel. What remains is variance, which a
-    difference of <em>means</em> cancels and a difference of variances does not.
+    {{N:rateinv:by_multiple.8.frames_over_threshold_no_bypass}} &mdash; four fifths of
+    the baseline firings depend on that channel, but at eightfold background 298 of 486
+    survive without it. What remains is variance: a difference of Gaussians is a difference of two
+    weighted <em>means</em>, so it cancels a shift in level but not the extra
+    fluctuation a higher rate brings with it.
   </p>
   <p>
     ⚠ <strong>The ablation does not isolate the bypass, and it points the other
@@ -434,8 +436,9 @@ th.n { text-align: right; font-family: var(--mono);
   </p>
   <p>
     ⚠ <strong>This page carries four kinds of fit of the same architecture, and only
-    the first produced the table.</strong> The four scored folds; the twenty ablation
-    fits behind the scale and clamp results; the two regime fits behind the transfer
+    the first produced the table.</strong> The four scored folds; the ablation grid behind the scale and
+    clamp results &mdash; twenty fold-fits over five variants, several of which are
+    provably the same computation; the two regime fits behind the transfer
     numbers, the busier of which is also the refit whose surround ratio reaches
     {{N:a:ratios.1|.1f}}; and the {{N:onevote:n_seeds}}-seed grid behind the one-vote
     probe, of which seed 7 is the single fit this rate sweep used. Each
@@ -586,7 +589,7 @@ th.n { text-align: right; font-family: var(--mono);
     finding a planted event if it lands within 1.5 s of it. Recall, precision and
     fold ranges for every row are in
     <a href="https://github.com/syncytium2/bugarach/blob/main/docs/learned/bakeoff.md">the
-    full run</a>. The two F1 columns describe <em>the same detections</em> &mdash;
+    full run</a>, which predates the rename and still lists locust as CICADA. The two F1 columns describe <em>the same detections</em> &mdash;
     nothing was re-run; one arithmetic choice is reversed.
   </p>
   <p>
@@ -684,14 +687,14 @@ th.n { text-align: right; font-family: var(--mono);
     {{N:ablation:by_key.s2_c40.f1.mean|.3f}} &mdash; further from both than they are
     from each other, which no monotone reading predicts. All three sit inside a fold
     spread of {{N:b:learned.tube.f1.sd|.3f}}, so <strong>none of the three differences
-    is one this benchmark can distinguish from noise.</strong> Four ships because four
-    is what was measured end to end, not because a sweep chose it.
+    is one this benchmark can distinguish from noise.</strong> Four is what ships, because four is what was
+    measured end to end &mdash; not because a sweep chose it.
   </p>
   <p>
     A second ablation raised the ceiling on how much wider the surround may be than
     the center, from 40 to 200, and the score did not move by a digit. That is not a
     null result &mdash; <strong>it is a no-op.</strong> The largest ratio fitted
-    anywhere in these four folds is 23.5, so the ceiling never binds and the two runs
+    anywhere in the published four-scale fits is 23.5, so the ceiling never binds and the two runs
     are bit-identical computations. Where it does bind, in the single-scale runs, the
     scores differ as they must
     ({{N:ablation:by_key.s1_c40.f1.mean|.3f}} against
@@ -863,8 +866,9 @@ def build_tube(*, n_scales=4, width=8, depth=6,
     floor models escape it by firing twice on seven of their eight fold-fits.
   </p>
   <p>
-    <strong>A hit is scored within 1.5 s</strong> of a planted event, against a median
-    planted event well under a second. That buys a trustworthy ranking and costs any
+    <strong>A hit is scored within 1.5 s</strong> of a planted event, against a median planted
+    event of 0.70 s &mdash; and a widest one of 1.6 s, which is wider than the tolerance
+    itself. That buys a trustworthy ranking and costs any
     claim about timing accuracy &mdash; and the tolerance sweep that established it
     covers the six hand-written detectors, not the learned one.
   </p>
