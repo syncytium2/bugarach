@@ -18,11 +18,11 @@ filed: 2026-08-28
 >
 > **What survives the ruling, and is the reason this file is still worth reading:**
 >
-> 1. **The in-app bake-off must route its knob choice through `pick_operating_point`.** The
->    defect measured below is not about `fair_bakeoff.py` specifically — it is what happens
->    to *any* caller that takes a raw F1 argmax over a grid. A new bake-off written in the
->    app inherits it by default, because the default is to write `if f1 > best`. That is the
->    one thing here that should reach whoever builds it.
+> 1. **The in-app bake-off already selects without the gate — checked, not predicted.** This
+>    started as a warning about a bake-off nobody had written yet. The browser's sweep is
+>    stage 6a and it exists today, so the warning was checkable, and the answer is below
+>    under *"The app has two of the three refusals"*. It is the one finding here that is
+>    about the pipeline that matters.
 > 2. **`bench.py:703` is a live defect on code the app path may well use** — see the second
 >    section below. It is not stale; it has never been right.
 > 3. **The numbers below are the case for (1)**, and they are the only measurement anyone has
@@ -92,6 +92,43 @@ instrument reading in both places.
   unmeasured. It is not common-mode: the gate has per-detector ceilings, four of the six
   are comfortably inside theirs, and #379 showed it bites one mechanism hard and another
   not at all. So it *could* reorder, and saying it does would be a story.
+
+## The app has two of the three refusals, and the missing one is the gate
+
+**This is the part that matters**, given the ruling above. Stage 6a — *"optimize the six
+detectors"* — is **already in the browser**, and `webapp_completion_plan.md` records it as
+done: *"all six; the sweep splits folds and pools through the same scorer as the Python,
+checked against it in CI."*
+
+`docs/site/raster_viewer.html:4234`, `pickOperatingPoint`, is a careful port of the Python
+function. It refuses a degenerate sweep and it refuses an optimum at the edge of the grid,
+each with the Python twin named in a comment. **It does not refuse a promiscuous winner.**
+The function ends after the edge check; there is no gate and no ceiling table.
+
+And the page **already computes the number the gate needs**:
+
+```js
+out.hotFaPerMin = (hotWindow) => { …                 // raster_viewer.html:4117
+```
+
+`grep -n 'hotFaPerMin' docs/site/raster_viewer.html` returns **one line — its own
+definition.** Nothing calls it. The browser scorer correctly keeps the probe out of F1
+(`out.nScored = out.nDetected - out.hotFa`, line 4086, with the reasoning quoted from
+`pool_scores`), so it has the *first* half of the 2026-08-22 decision and not the second:
+the probe stays out of the score, and nothing gates on it at selection.
+
+So the app can choose exactly the settings the Python refuses — which, measured on the rate
+mechanism in #379, is **31 of 56 candidates** at that detector's ceiling.
+
+**One thing the browser gets right that Python does not.** `hotFaPerMin` takes the window as
+an argument instead of reaching for a module-level constant, which is precisely the defect in
+the next section. When that Python bug is fixed, the browser is the reference.
+
+**What closing it needs**, if it is wanted: the per-detector ceilings (`MAX_PROBE_PER_MIN`,
+six numbers) reaching the page, and a third branch in `pickOperatingPoint` before it returns
+a row. It is a **behaviour change to the shipped page** — settings the app accepts today
+would start being refused — so it is not a session's to make unasked, and the copy for the
+refusal is user-facing text that goes through review like the other two.
 
 ## A second defect on the same code path, latent today
 
