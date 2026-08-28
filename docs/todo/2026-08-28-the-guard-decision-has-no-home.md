@@ -1,5 +1,5 @@
 ---
-status: waiting-on-tony
+status: open
 filed: 2026-08-28
 waiting: Put `guard_sec` on the coact knob axis with a crowded regime in the scoring set, or scope the re-fit to the median on purpose and say so in `forks.md`.
 ---
@@ -102,23 +102,40 @@ is untouched by it. **If a session lifts the deferral, it says so explicitly in 
 handoff and names what replaced the ruling** — otherwise the next session finds it,
 believes it, and stops, correctly.
 
-## ⚠ This is the fourth waiting item, and the fourth one gets cut mid-sentence
+## ⚠ There is no room for a fourth decision, and that is why this says `open`
 
-**Observed while filing it.** The waiting list is bounded as a block, so with four items
-this one's action line ends in `[…]` — about a hundred characters through, which is why
-the `waiting:` line above **leads with both options** and puts the consequence last.
-Write the half a person must see first; the tail may not arrive.
+**This file wants `status: waiting-on-tony`.** It is a decision no session can advance,
+which is exactly what that status is for. It cannot have it, and the reason is measured
+rather than argued.
 
-The title and path still print and the cut announces itself (`[…] truncated at 1051B —
-read the file`), so nothing is silent, and
-`test_it_surfaces_work_that_is_finished_and_waiting_on_a_person` still fires if a line
-vanishes entirely — it checks the first 40 characters, and a 50-character version of this
-line failed to clear that bar in testing. **Do not "fix" this by shortening the line.** A
-shorter line did not survive better; the budget is spent on the block, not per line.
+Three items already carry it. Adding a fourth costs **135B** and the budget has **54B**.
+Fresh clone, `BUGARACH_DARKROOM` unset, no `core.hooksPath`, no machine-local board —
+the configuration CI runs and the one that binds:
 
-Not chased further here — it is the briefing's mechanism, not guards, and the obvious
-move spends a pool `tools/hook_spill_census.sh` measures from 55 real refusals. Related
-and already open:
+| `docs/todo/` state | briefing |
+|---|---|
+| without this file | **8,946B**, 133 lines — fits |
+| this file, `waiting-on-tony` | **9,081B** — over, so **TERSE: 70 lines, 4,251B** |
+| …title cut to 38 chars, filename shortened, action line halved | **9,071B** — still over |
+| this file, `status: open` | **8,946B**, 133 lines — costs nothing |
+
+**Trimming recovers 10B of the 81B needed, so the cost is the structure of a fourth
+entry, not its text.** No wording fits. And the failure is not a truncated line — it is
+the whole briefing collapsing from 133 lines to 70, which loses the board, the worktree
+list and the other three decisions along with this one. **A fourth decision is worse than
+no decision.**
+
+⚠ **I measured the configured machine first and got 8,758B, which fits, and CI failed.**
+That is `HANDOFF_2026-08-27.md`'s lesson repeating on the file written after it: on a
+configured machine the standing alarms collapse to one line each, so the local number is
+never the number. Measure in a throwaway clone.
+
+**So `status: open` is a workaround, not a fix, and the fix is a real choice:** raise the
+budget — `tools/hook_spill_census.sh` puts the smallest observed refusal at **10,186B**,
+so 9,000B is conservative by its own record — or retire one of the three standing items,
+of which [the PySpike report](2026-08-11-file-pyspike-max-tau-issue.md) has been finished
+and waiting since 2026-08-11 and needs one email. Neither is this file's call. Related and
+already open:
 [two session-start hooks and neither sees the total](2026-08-26-two-session-start-hooks-and-neither-sees-the-total.md).
 
 ## What must not happen
