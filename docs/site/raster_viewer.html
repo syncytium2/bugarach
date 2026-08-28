@@ -9,7 +9,7 @@
      rather than naming a sha this page could not know — the reasoning is at the
      visible stamp. -->
 <meta name="bugarach:born" content="2026-08-13">
-<meta name="bugarach:version-date" content="2026-08-27">
+<meta name="bugarach:version-date" content="2026-08-28">
 <meta name="bugarach:commit" content="content-addressed">
 <!--
   The raster viewer, client side.
@@ -1238,7 +1238,12 @@
       <summary>Train a detector<span class="cnt" id="cntLab">local only</span></summary>
       <div class="ctl">
         <label for="lArch">architecture</label>
-        <select id="lArch"><option value="tube">tube (center−surround)</option></select>
+        <!-- Multiple, because the comparison this panel feeds is between
+             architectures as much as against the six, and one training run per
+             model is cheap enough to offer several. Populated from the server's
+             registry in `wireLab`; the single hardcoded option that used to sit
+             here was a second place to remember a new model. -->
+        <select id="lArch" multiple size="3"><option value="tube" selected>tube (center−surround)</option></select>
         <label for="lFolds">folds</label>
         <input id="lFolds" type="number" min="2" max="8" step="1" value="4" autocomplete="off" data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other">
         <label for="lSeeds">recordings per fold</label>
@@ -1373,10 +1378,10 @@
      a page edited without bumping it turns CI red instead of shipping a date
      that has quietly become a lie. Bump it when you edit this page. -->
 <p class="site-dates" data-bugarach-born="2026-08-13"
-   data-bugarach-version-date="2026-08-27"
+   data-bugarach-version-date="2026-08-28"
    data-bugarach-commit="content-addressed"
    style="margin:1.5rem max(1.2rem, calc(50% - 23rem));color:#666;font-size:.85rem">
-  First published 2026-08-13 · this version 2026-08-27 · identified by its own
+  First published 2026-08-13 · this version 2026-08-28 · identified by its own
   bytes rather than by a build stamp
 </p>
 
@@ -5377,13 +5382,33 @@ function simulateRecording(p, seed) {
   // times, as `simulate.GroundTruth.times` records them — the participants get
   // jittered onsets around each one, and the event is the time it was planted
   // at rather than any one participant's arrival.
-  const truth = { times: [], fracs: [] };
+  /* ONSETS ARE KEPT TOO, and they are not a duplicate of `times`.
+     `times` is what the generator was ASKED for; `onsets` is what it actually
+     wrote — each participant jittered, clipped to the recording. Scoring uses
+     the nominal time and always has. Training cannot: a model is labelled across
+     the event's REALIZED footprint, first to last participant onset, and padding
+     the nominal time by ±3·jitter instead would mark a constant ~2.2 s window
+     against realized footprints whose median is about 0.8 s — teaching the model
+     that a second and a half of background belongs to every event, and erasing
+     the tightness axis.
+     This is the only place those onsets exist. The moment they are pushed into
+     `trains` they are indistinguishable from background, so nothing downstream
+     can recover them and `/api/fit_folds` refuses a truth without them rather
+     than padding one. */
+  const truth = { times: [], fracs: [], onsets: [], rois: [] };
   plantTimes(u, fracs.length, T).forEach((t, i) => {
     const n = Math.max(1, mround(fracs[i] * nR));
-    for (const r of pick(u, nR, n))
-      trains[r].push(Math.min(Math.max(t + p.jitter * randn(u), 0), T));
+    const ons = [], who = [];
+    for (const r of pick(u, nR, n)) {
+      const x = Math.min(Math.max(t + p.jitter * randn(u), 0), T);
+      trains[r].push(x);
+      ons.push(x);
+      who.push(r);
+    }
     truth.times.push(t);
     truth.fracs.push(fracs[i]);
+    truth.onsets.push(ons);
+    truth.rois.push(who);
   });
 
   // ---- write it as the contract says ----------------------------------------
@@ -8665,14 +8690,153 @@ const SCORE_COPY = {
   tolerance: "F1 counts a hit within the match tolerance above. Against events "
        + "this wide that makes the ORDER of these rows meaningful and a single "
        + "number's decimal places not — read the ranking, not the gap.",
-  noTube: "The learned detector is not in this table. It trains through the "
-       + "server rather than in the page, and a row scored on a different data set "
-       + "than the rest would be the one comparison this table exists to avoid.",
+  /* Was `noTube`, and said the learned detector could not be in this table.
+     That stopped being true when `fitFolds` started sending this corpus and
+     this fold split to the local server, so the sentence is replaced rather
+     than kept beside a table that now contradicts it. */
+  learned: "A learned row was fitted on the same folds, scored on the same "
+       + "held-out recordings, at the same tolerance, and pooled by the same "
+       + "scorer as every row above it. It trains in a process beside this page "
+       + "rather than in it, which is why these rows appear only here and never "
+       + "on the published site.",
+  learnedSpread: "Each learned row is ONE training run per fold. Its spread "
+       + "mixes variation between recordings with variation between training "
+       + "runs, which the swept detectors do not have — so read a learned row's "
+       + "± as looser than a hand-written one's, not as the same measurement.",
+  /* The hole this table must not leave. When no learned row is present the
+     panel still has to say so: a comparison that simply omits a detector
+     invites the reading that it lost, which is the same reason a detector that
+     could not run gets a refused row rather than no row. */
+  learnedAbsent: "No learned detector is in this table. Training runs in a "
+       + "process beside this page rather than in it, so there is nothing to "
+       + "add unless that process is running — start it and pick one or more "
+       + "architectures, and they are fitted on these same folds and scored on "
+       + "these same held-out recordings. Absence here is a missing trainer, "
+       + "not a detector that competed and lost.",
   heldOut: "Each detector's setting is chosen on the folds it may see and scored "
        + "on the fold it may not. The spread is across folds.",
 };
 
 let SCOREBOARD = null;   // {rows, nFolds, dataSetN, tol}
+let ARCHS = [];          // the server's registry, filled by `wireLab`
+
+/* The picker's current selection, and the label the table shows.
+
+   Both read `ARCHS`, which came from `/api/capabilities`, so neither carries a
+   hardcoded model name. `archLabel` falls back to the bare name rather than
+   returning nothing, because a row with no label is worse than a terse one. */
+function chosenArchs() {
+  const sel = document.getElementById("lArch");
+  if (!sel) return [];
+  return [...sel.selectedOptions].map(o => o.value)
+    .filter(v => !(ARCHS.find(a => a.name === v) || {}).unavailable);
+}
+
+function archLabel(name) {
+  const a = ARCHS.find(x => x.name === name);
+  return a && a.note ? name + " (" + a.note.split(" — ")[0] + ")" : name;
+}
+
+/* ---------- the learned rows, on THIS corpus and THIS split ----------------
+
+   The panel used to state that the learned detector could not appear in this
+   table. Its reason was right — a row scored on a different data set than the
+   rest is the one comparison this table exists to avoid — but the remedy was
+   absence, and absence in a comparison table reads as "it lost".
+
+   So the direction is inverted rather than the rule bent. `fitFolds` posts THIS
+   `dataSet` and THIS `split` to the local server; the server fits on the
+   training folds, predicts on the held-out one, and returns DETECTIONS. The
+   scoring below is `scoreDetections` and `tunePool` — the same two calls every
+   hand-written row above just went through, at the same tolerance, on the same
+   recordings, under the same fold assignment.
+
+   Nothing here computes an F1 of its own and nothing on the server does either.
+   A second scorer is precisely how this project once put the two halves of one
+   comparison onto different metrics; `poolScores` exists so that cannot recur.
+
+   ⚠ ONE TRAINING RUN PER FOLD, ONE SEED. The spread in a learned row is across
+   folds and confounds data variation with training variation. The six are
+   deterministic sweeps and theirs is not. The caveat travels in `SCORE_COPY`. */
+async function learnedRows(dataSet, split, archs, tol, say) {
+  const api = lab();
+  if (!api) return [];
+
+  /* Every recording the six were scored on, in the page's own order, with the
+     PARTICIPANT ONSETS the generator wrote. The server refuses a truth without
+     them: a model is labelled across the event's realized footprint, and the
+     nominal time padded by ±3·jitter is a different, wider window that would
+     teach it background. `runSim` keeps them for exactly this. */
+  const recordings = dataSet.map(c => ({
+    slice_id: c.id,
+    rois: c.trains,
+    frame_interval_sec: c.dt,
+    truth: {
+      events: c.truth.times.map((t, i) => ({
+        time: t,
+        frac: c.truth.fracs[i],
+        onsets: (c.truth.onsets || [])[i] || [],
+        rois: (c.truth.rois || [])[i] || [],
+      })),
+    },
+  }));
+  const missing = recordings.filter(r => r.truth.events.some(e => !e.onsets.length));
+  if (missing.length)
+    throw new Error(
+      missing.length + " recording(s) carry planted times but no participant "
+      + "onsets, so a model cannot be labelled against them. Folders simulated "
+      + "before this build do not have them — regenerate in Simulate.");
+
+  const folds = [];
+  for (let f = 0; f < split.nFolds; f++)
+    folds.push({ train: split.train(f), test: split.test(f) });
+
+  say("Training " + archs.join(", ") + " on this data set…");
+  const res = await api.fitFolds(
+    { recordings, folds, archs, steps: 900 },
+    m => say(m.message || "training…"));
+
+  const rows = [];
+  for (const arch of archs) {
+    const perFold = (res.per_arch || {})[arch] || [];
+    const held = [];
+    let fitMs = 0, detectMs = 0;
+    for (const f of perFold) {
+      fitMs += (f.fit_sec || 0) * 1000;
+      detectMs += (f.detect_sec || 0) * 1000;
+      const scored = f.detections.map(d => {
+        const c = dataSet[d.index];
+        return scoreDetections(c.truth.times, c.truth.fracs, d.onset_sec,
+                               d.width_sec, tol);
+      });
+      held.push(tunePool(scored, { detector: arch, knobValue: f.threshold,
+                                   tolSec: tol, seeds: f.test_idx }));
+    }
+    const f1s = held.map(h => h.f1).filter(Number.isFinite);
+    const mean = f1s.length ? f1s.reduce((a, b) => a + b, 0) / f1s.length : null;
+    const sd = f1s.length > 1
+      ? Math.sqrt(f1s.reduce((a, b) => a + (b - mean) ** 2, 0) / f1s.length)
+      : null;
+    rows.push({
+      which: arch, label: archLabel(arch), learned: true,
+      nParams: (perFold[0] || {}).n_params ?? null,
+      nFolds: folds.length, nScored: held.length, refusedFolds: [],
+      f1: mean, sd,
+      precision: held.length
+        ? held.reduce((a, h) => a + h.precision, 0) / held.length : null,
+      recall: held.length
+        ? held.reduce((a, h) => a + h.recall, 0) / held.length : null,
+      /* ONE. The column counts settings a detector exposes, and a trained model
+         exposes exactly one — its threshold, and even that is chosen for it on
+         held-out data rather than offered. The 1,149 fitted parameters are NOT
+         a knob count and putting them here would make the column mean two
+         different things in one table; they are reported in the caveat below. */
+      knobs: 1,
+      fitMs, detectMs,
+    });
+  }
+  return rows;
+}
 
 async function scoreAllDetectors() {
   const btn = document.getElementById("runScore");
@@ -8796,6 +8960,30 @@ async function scoreAllDetectors() {
         fitMs, detectMs,
       });
     }
+    /* THE LEARNED ROWS, ON THIS CORPUS AND THIS SPLIT.
+
+       The panel used to say the learned detector could not be in this table,
+       and it was right about the reason: a row scored on a different data set
+       than the rest is the one comparison this table exists to avoid. It was
+       wrong about the remedy being absence. `fitFolds` sends THIS `dataSet` and
+       THIS `split`; the server fits and predicts and returns detections; and the
+       scoring below is the same `scoreDetections`/`tunePool` path every row
+       above just went through. One corpus, one split, one tolerance, one scorer.
+
+       Still local-only: `lab()` is undefined on the published page, so this
+       whole block is skipped there and the table is the six, as before. */
+    const archs = chosenArchs();
+    if (lab() && archs.length && split) {
+      try {
+        rows.push(...await learnedRows(dataSet, split, archs, tol, say));
+      } catch (e) {
+        /* A failed fit is a REFUSED ROW, not a missing one. A comparison table
+           that silently drops a detector invites the reading that it lost. */
+        for (const a of archs)
+          rows.push({ which: a, label: archLabel(a), learned: true,
+                      refused: String(e.message || e) });
+      }
+    }
     SCOREBOARD = { rows, nFolds: split ? split.nFolds : 0,
                    dataSetN: dataSet.length, tol };
     say("");
@@ -8850,8 +9038,24 @@ function paintScoreboard() {
   }
   box.append(tbl);
 
-  for (const key of ["heldOut", "tolerance", "noTube", "simulatedOnly"])
+  const learned = rows.filter(r => r.learned && !r.refused);
+  const caveats = ["heldOut", "tolerance"];
+  caveats.push(...(learned.length ? ["learned", "learnedSpread"]
+                                  : ["learnedAbsent"]));
+  caveats.push("simulatedOnly");
+  for (const key of caveats)
     box.append(el("p", SCORE_COPY[key], "caveat"));
+
+  // Parameter counts, where they can be read as what they are. They are NOT in
+  // the knobs column: that counts settings a detector exposes, and conflating
+  // the two would make one column mean two things.
+  if (learned.some(r => r.nParams != null))
+    box.append(el("p", "Fitted parameters: " + learned
+      .filter(r => r.nParams != null)
+      .map(r => r.label + " " + r.nParams.toLocaleString()).join(", ")
+      + ". A hand-written detector has none — it has the settings in the knobs "
+      + "column instead, which is what makes these two kinds of row comparable "
+      + "on cost rather than on size.", "caveat"));
 
   // Named, never merely counted in a column. A sweep that ran out of range is a
   // fact about the grid rather than about the detector, and the reader's next
@@ -9709,13 +9913,26 @@ async function wireLab() {
   const chip = document.getElementById("cntLab");
   try {
     const caps = await api.capabilities();
-    const arches = caps.architectures || [];
-    if (arches.length) {
+    /* The registry, not a list of names typed here. `/api/capabilities` returns
+       one row per `@register`ed architecture with its note and its parameter
+       count BUILT rather than quoted, so adding a model is one line in
+       `nets.py` and it appears in this picker with nothing else edited.
+       The rows used to be assumed to be strings, which rendered every option as
+       "[object Object]" the moment the server started sending what the picker
+       actually needs. */
+    ARCHS = caps.architectures || [];
+    if (ARCHS.length) {
       const sel = document.getElementById("lArch");
       sel.textContent = "";
-      arches.forEach(a => {
-        const o = el("option", a);
-        o.value = a;
+      ARCHS.forEach(a => {
+        const o = el("option", archLabel(a.name));
+        o.value = a.name;
+        // Selected by default only if it can actually be built here — an
+        // architecture whose row came back `unavailable` is offered with the
+        // reason rather than hidden, because a picker that silently drops a
+        // model reads as a model that does not exist.
+        if (a.unavailable) { o.disabled = true; o.title = a.unavailable; }
+        else if (a.name === "tube") o.selected = true;
         sel.appendChild(o);
       });
     }

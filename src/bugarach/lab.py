@@ -141,6 +141,12 @@ SHIM = """
      * WITH the model and cannot be passed here -- the server refuses a request
      * that carries one rather than ignoring it. */
     detect: function (req, onProgress) { return post("/api/detect", req, onProgress); },
+
+    /* Fit on the PAGE'S corpus, split by the PAGE'S folds, and hand back
+     * DETECTIONS -- not scores. The page pools them through the same scorer it
+     * ran the six through, which is the only way a learned row and a
+     * hand-written row can sit in one table and mean the same thing. */
+    fitFolds: function (req, onProgress) { return post("/api/fit_folds", req, onProgress); },
   };
 })();
 </script>
@@ -163,6 +169,69 @@ def page_with_shim(html: str) -> str:
 
 class BadRequest(Exception):
     """A request this server refuses, with the reason a caller can act on."""
+
+
+def truth_from_request(rec: dict, *, index: int):
+    """The page's planted events -> a :class:`~bugarach.simulate.GroundTruth`.
+
+    **Onsets, not nominal times.** ``frame_targets`` labels a frame positive
+    across :attr:`~bugarach.simulate.PlantedEvent.observed_span` — first to last
+    participant onset, as actually planted — and its docstring is explicit that
+    ``time ± 3·jitter`` is the wrong target: a constant 2.16 s at bench settings
+    against realized footprints with a 0.80 s median and a 17-fold spread, which
+    would teach a model that ~1.4 s of background belongs to every event and
+    erase the tightness axis entirely.
+
+    The page holds those onsets because it drew them, and **nothing else can
+    recover them**: once the jittered times are mixed into the trains, a
+    participant onset is indistinguishable from a background one. So the page
+    sends them, and a request carrying only nominal times is **refused** rather
+    than quietly padded into a window — a fallback here would be invisible in the
+    result and would cost the very axis the target exists to teach.
+    """
+    from bugarach.simulate import GroundTruth, PlantedEvent
+
+    truth = rec.get("truth")
+    if not isinstance(truth, dict):
+        raise BadRequest(
+            f"recording {index} carries no 'truth'. Only recordings with planted "
+            f"events can train or score anything — one with no answer key cannot "
+            f"say whether a detection was right.")
+    events = truth.get("events")
+    if not isinstance(events, list) or not events:
+        raise BadRequest(f"recording {index} has an empty 'truth.events'")
+
+    def _one(e, j, kind):
+        onsets = e.get("onsets")
+        if not isinstance(onsets, list) or not onsets:
+            raise BadRequest(
+                f"recording {index} {kind} {j} has no 'onsets'. Send the "
+                f"participant onset times actually written into the trains — the "
+                f"nominal event time cannot be padded into a footprint here "
+                f"without teaching the model a window the generator never "
+                f"planted (bugarach.learn.encode.frame_targets).")
+        try:
+            onsets = tuple(float(x) for x in onsets)
+        except (TypeError, ValueError) as exc:
+            raise BadRequest(
+                f"recording {index} {kind} {j} has a non-numeric onset") from exc
+        return PlantedEvent(
+            time=float(e.get("time", min(onsets))),
+            frac=float(e.get("frac", 0.0)),
+            n_part=len(onsets),
+            rois=tuple(int(r) for r in e.get("rois", ())),
+            jitter_sec=float(e.get("jitter_sec", 0.0)),
+            kind=kind, onsets=onsets)
+
+    # Distractors travel too. `frame_targets` labels them 0, which is what they
+    # are for — they are the negatives that decide whether a model learned
+    # coordination or merely "lots of activity at once", and dropping them here
+    # would relabel the hardest negatives as background.
+    return GroundTruth(
+        events=[_one(e, j, "coordinated") for j, e in enumerate(events)],
+        distractors=[_one(e, j, "distractor")
+                     for j, e in enumerate(truth.get("distractors") or [])],
+        params=dict(truth.get("params") or {}))
 
 
 def slice_from_request(rec: dict, *, index: int):
@@ -273,6 +342,26 @@ class StubTrainer:
                     width_sec=[model.dt] * onsets.size,
                     threshold=model.threshold)
 
+    def fit_fold(self, built, train_idx, test_idx, *, arch: str, steps: int):
+        """The same seam, fitting nothing — so the route's shape, its refusals
+        and its progress stream are testable on a machine with no torch."""
+        import numpy as np
+
+        from bugarach.detectors.rate import recording_extent
+
+        detections = []
+        for i in test_idx:
+            sl = built[i][0]
+            t0, t1 = recording_extent(sl)
+            onsets = np.arange(float(t0), float(t1), self.period_sec)
+            detections.append(dict(
+                index=i, slice_id=sl.slice_id, onset_sec=onsets.tolist(),
+                width_sec=[0.1] * onsets.size, dt=0.1))
+        return dict(arch=arch, detections=detections, threshold=0.5,
+                    n_params=0, threads=0, fit_sec=0.0, detect_sec=0.0,
+                    n_fit=max(1, len(train_idx) - 1),
+                    train_idx=list(train_idx), test_idx=list(test_idx))
+
 
 class TubeTrainer:
     """The real fit: :func:`bugarach.learn.train.train` and nothing beside it.
@@ -317,6 +406,46 @@ class TubeTrainer:
         return dict(onset_sec=[float(x) for x in det.onset_sec],
                     width_sec=[float(x) for x in det.width_sec],
                     threshold=float(det.threshold), dt=float(enc.dt))
+
+    def fit_fold(self, built, train_idx, test_idx, *, arch: str, steps: int):
+        """Fit on the page's training recordings; predict on its scored ones.
+
+        Returns detections and timings only — **no score**. The page pools these
+        through the same scorer it ran the six through, which is the whole reason
+        this route exists; computing an F1 here would put the two halves of one
+        table on two scorers.
+        """
+        import time
+
+        from bugarach.learn.train import fold_maker, train
+
+        if not self.available:
+            raise BadRequest(self.capabilities()["reason"])
+
+        # `rec` is indexed by POSITION in the page's list, and `fold_maker` is
+        # handed the training positions only — so the scored recordings are
+        # unreachable from the fit by construction, exactly as in the bake-off.
+        mk, n_fit, _ = fold_maker(lambda i: built[i], train_idx)
+        t0 = time.perf_counter()
+        tr = train(arch, mk, n_train=min(10, n_fit), steps=steps, crop=4096,
+                   batch=3, lr=self.LR.get(arch, 1e-3))
+        fit_sec = time.perf_counter() - t0
+
+        t1 = time.perf_counter()
+        detections = []
+        for i in test_idx:
+            det, enc = tr.predict(built[i][0])
+            detections.append(dict(
+                index=i, slice_id=built[i][0].slice_id,
+                onset_sec=[float(x) for x in det.onset_sec],
+                width_sec=[float(x) for x in det.width_sec], dt=float(enc.dt)))
+        detect_sec = time.perf_counter() - t1
+
+        return dict(arch=arch, detections=detections,
+                    threshold=float(tr.threshold), n_params=int(tr.n_params),
+                    threads=int(tr.threads), fit_sec=fit_sec,
+                    detect_sec=detect_sec, n_fit=n_fit,
+                    train_idx=list(train_idx), test_idx=list(test_idx))
 
 
 def _train_tube(trainer: TubeTrainer, req: dict, emit) -> Model:
@@ -480,8 +609,37 @@ def _public(model: Model) -> dict:
                 n_params=model.n_params, **report)
 
 
+def _architectures() -> list:
+    """The registry, as the page may see it — the model picker's only source.
+
+    ``ARCHITECTURES`` is a registry precisely so a new model is one class plus
+    one ``@register`` line and then appears everywhere without a second edit. A
+    hardcoded ``<option>`` list in the page would be that second edit, and it
+    would be the one nobody remembers.
+
+    Parameter counts are **built, not guessed**: each architecture is
+    instantiated once so the number is the model's own. That costs a few
+    milliseconds and cannot drift from what training actually fits.
+    """
+    from bugarach.learn.nets import ARCHITECTURES, n_params
+
+    out = []
+    for name, arch in sorted(ARCHITECTURES.items()):
+        row = dict(name=name, note=arch.note, cfg=dict(arch.cfg))
+        try:
+            row["n_params"] = int(n_params(arch.make()))
+        except Exception as exc:                                # noqa: BLE001
+            # torch absent, or an architecture that cannot build at its own
+            # defaults. Reported rather than omitted: a picker that silently
+            # drops a model reads as a model that does not exist.
+            row["n_params"] = None
+            row["unavailable"] = f"{type(exc).__name__}: {exc}"
+        out.append(row)
+    return out
+
+
 class LabHandler(BaseHTTPRequestHandler):
-    """Five routes, no path handling, and one file on disk."""
+    """Six routes, no path handling, and one file on disk."""
 
     protocol_version = "HTTP/1.1"
     server_version = "bugarach-lab"
@@ -557,7 +715,7 @@ class LabHandler(BaseHTTPRequestHandler):
         if not self._guard():
             return
         route = self.path.split("?", 1)[0]
-        if route not in ("/api/train", "/api/detect"):
+        if route not in ("/api/train", "/api/detect", "/api/fit_folds"):
             return self._json(404, {"error": f"no route {route!r}"})
         try:
             req = self._body()
@@ -569,7 +727,8 @@ class LabHandler(BaseHTTPRequestHandler):
         cap = dict(self.lab.trainer.capabilities())
         cap.update(trainer=self.lab.trainer.name,
                    models=sorted(self.lab.models),
-                   viewer=self.viewer.name)
+                   viewer=self.viewer.name,
+                   architectures=_architectures())
         return cap
 
     def _page(self):
@@ -615,8 +774,9 @@ class LabHandler(BaseHTTPRequestHandler):
             line(dict(event="progress", **kw))
 
         try:
-            out = (self._train(req, emit) if route == "/api/train"
-                   else self._detect(req, emit))
+            out = {"/api/train": self._train,
+                   "/api/detect": self._detect,
+                   "/api/fit_folds": self._fit_folds}[route](req, emit)
             line(dict(event="result", **out))
         except BadRequest as exc:
             line(dict(event="error", message=str(exc)))
@@ -633,6 +793,116 @@ class LabHandler(BaseHTTPRequestHandler):
     def _train(self, req: dict, emit) -> dict:
         model = self.lab.put(self.lab.trainer.train(req, emit))
         return _public(model)
+
+    def _fit_folds(self, req: dict, emit) -> dict:
+        """Fit and predict on the page's OWN corpus and the page's OWN split.
+
+        This is the route that lets a learned model appear in the same table as
+        the six, and the reason it exists is a sentence in the page:
+
+            *"The learned detector is not in this table. It trains through the
+            server rather than in the page, and a row scored on a different data
+            set than the rest would be the one comparison this table exists to
+            avoid."*
+
+        ``/api/train`` generates its own recordings from a spec and splits them
+        with ``bench.fold_split``. The scoreboard scores the six on whatever
+        folder is open, split by the page's ``tunePlan``. Two corpora and two
+        splits, so no shared table — correctly refused rather than faked.
+
+        So the direction is inverted here. **The page sends the corpus and the
+        fold assignment; this server only fits and predicts.** It returns
+        detections, not scores: the page pools them through the same
+        ``scoring.js`` the six went through, so the comparison shares a corpus, a
+        split, a tolerance and a scorer. Nothing here computes an F1, because a
+        second scorer is exactly how the two halves of a comparison end up on
+        different metrics — see ``bench.pool_scores``' docstring for the time
+        this project already paid for that.
+
+        **The threshold is still not re-picked on the scored fold.**
+        ``fold_maker`` splits the training folds again, so the operating point
+        comes from recordings that are neither fitted on nor scored.
+        """
+        for banned in ("threshold", "thr", "retune", "calibrate"):
+            if banned in req:
+                raise BadRequest(
+                    f"'{banned}' is not accepted here either. The operating "
+                    f"point is chosen inside the fit, on recordings held out "
+                    f"from it, and travels with the model "
+                    f"(docs/adr/0001-the-lab-server.md).")
+
+        trainer = self.lab.trainer
+        if not getattr(trainer, "available", True):
+            raise BadRequest(trainer.capabilities().get("reason") or
+                             "this trainer cannot fit")
+
+        recs = req.get("recordings")
+        if not isinstance(recs, list) or len(recs) < 2:
+            raise BadRequest(
+                "fit_folds needs at least two recordings — one to fit on and one "
+                "to score on. A single recording gives an in-sample number, "
+                "which is not a result.")
+        folds = req.get("folds")
+        if not isinstance(folds, list) or not folds:
+            raise BadRequest(
+                "fit_folds needs 'folds': the page's OWN split, so the learned "
+                "rows and the six share one fold assignment. Deriving a split "
+                "here would agree with the page's right up until one of them "
+                "changed.")
+        archs = req.get("archs") or [req.get("arch", "tube")]
+        if not isinstance(archs, list) or not archs:
+            raise BadRequest("fit_folds needs a non-empty 'archs' list")
+
+        from bugarach.learn.nets import ARCHITECTURES
+        unknown = [a for a in archs if a not in ARCHITECTURES]
+        if unknown:
+            raise BadRequest(
+                f"unknown architecture(s) {unknown} — this server has "
+                f"{sorted(ARCHITECTURES)}. The picker is driven off that "
+                f"registry so a new model is one `@register` line.")
+
+        built = [(slice_from_request(r, index=i), truth_from_request(r, index=i))
+                 for i, r in enumerate(recs)]
+        steps = int(req.get("steps", 900))
+        out = {}
+        total = len(archs) * len(folds)
+        done = 0
+        for arch in archs:
+            per_fold = []
+            for f, fold in enumerate(folds):
+                tr_idx = [int(i) for i in (fold.get("train") or [])]
+                te_idx = [int(i) for i in (fold.get("test") or [])]
+                bad = [i for i in tr_idx + te_idx if not 0 <= i < len(built)]
+                if bad:
+                    raise BadRequest(
+                        f"fold {f} names recording index {bad[0]}, and only "
+                        f"{len(built)} were sent")
+                overlap = sorted(set(tr_idx) & set(te_idx))
+                if overlap:
+                    raise BadRequest(
+                        f"fold {f} puts recording {overlap[0]} in BOTH the "
+                        f"training and the scored set. That is an in-sample "
+                        f"score, and it is refused here rather than reported.")
+                if len(tr_idx) < 2 or not te_idx:
+                    raise BadRequest(
+                        f"fold {f} has {len(tr_idx)} training and {len(te_idx)} "
+                        f"scored recording(s); fitting needs at least two (one "
+                        f"is split off to choose the operating point) and "
+                        f"scoring needs at least one.")
+
+                emit(stage="fit", fold=f, of=len(folds), arch=arch,
+                     done=done, total=total,
+                     message=f"fitting {arch}, fold {f + 1}/{len(folds)}")
+                det = trainer.fit_fold(built, tr_idx, te_idx, arch=arch,
+                                       steps=steps)
+                done += 1
+                emit(stage="fitted", fold=f, of=len(folds), arch=arch,
+                     done=done, total=total,
+                     message=f"{arch} fold {f + 1}/{len(folds)} done")
+                per_fold.append(det)
+            out[arch] = per_fold
+        return dict(archs=archs, folds=len(folds), steps=steps,
+                    n_recordings=len(built), per_arch=out)
 
     def _detect(self, req: dict, emit) -> dict:
         # Refused, not ignored. A knob that is silently dropped teaches the
