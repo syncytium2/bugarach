@@ -1,5 +1,5 @@
 ---
-status: waiting-on-tony
+status: open
 filed: 2026-08-28
 waiting: Guard on the coact knob axis with a crowded scoring regime, or median-only.
 ---
@@ -102,12 +102,21 @@ is untouched by it. **If a session lifts the deferral, it says so explicitly in 
 handoff and names what replaced the ruling** — otherwise the next session finds it,
 believes it, and stops, correctly.
 
-## ⚠ This got its slot by another item vacating one, and the margin is 6 bytes
+## ⚠ The slot was freed, this file took it, and CI still refused it by 8 bytes
 
-**The briefing holds three decisions, not four.** This file was filed `status: open` on
-2026-08-28 for that reason, and took `waiting-on-tony` later the same day only because
-[the PySpike report](2026-08-11-file-pyspike-max-tau-issue.md) stopped being one — Tony
-sent the mail, so it moved to `in-progress` and freed the slot.
+**The briefing holds three decisions, not four — and on the day this was written it could
+not hold three *and* this one.** Filed `status: open`; promoted to `waiting-on-tony` when
+[the PySpike report](2026-08-11-file-pyspike-max-tau-issue.md) vacated a slot (Tony sent
+the mail, so it moved to `in-progress`); measured at **8,994B**, six bytes clear; and CI
+then failed the same PR at **9,008B**, because `main` gained content in the hours between.
+**Reverted to `open`.** The swap is not available — not because the arithmetic was wrong,
+but because six bytes does not survive a working afternoon.
+
+**This section predicted that and was right about the wrong thing.** It said *"the next
+todo that takes `waiting-on-tony` will tip it."* No todo took the status. The briefing
+grew underneath a margin measured against a `main` that had already moved on. **Measure it
+against the `main` you are merging into, at the moment you merge — not the one you
+branched from.**
 
 Measured on a fresh clone with `BUGARACH_DARKROOM` unset, no `core.hooksPath` and no
 machine-local board — the configuration CI runs and the one that binds:
