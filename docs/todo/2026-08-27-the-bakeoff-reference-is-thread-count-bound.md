@@ -1,11 +1,17 @@
 ---
-status: waiting-on-tony
+status: open
 filed: 2026-08-27
 ---
 
 # The published bakeoff numbers only reproduce on a 10-thread machine
 
-waiting: Pin the trainer's thread count and regenerate `bakeoff.json`? It changes numbers that `docs/learned/report.html` publishes to a reader, so it is not a session's call to make.
+> **Open, not waiting-on-tony**, though it ends in a decision only Tony can take. That
+> status drives the briefing's *"FINISHED and waiting on Tony — nothing else unblocks
+> these"* block, and this is neither finished nor blocking: it is a filed defect with a
+> proposed fix. Putting it there also pushed the briefing to 9001B against a 9000B budget
+> and degraded it to TERSE in CI, which is
+> [its own open item](2026-08-27-the-board-digest-is-213-bytes-from-degrading.md) and a
+> fair warning that the block is not free.
 
 > **Not murderboarded** — a measurement, not a document. Every number below is one
 > `pytest` run away and the command is given.
