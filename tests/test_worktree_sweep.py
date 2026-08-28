@@ -187,3 +187,107 @@ def test_the_primary_checkout_is_never_listed(tree):
     primary, *_ = tree
     out = sweep(primary)
     assert "primary" not in out.replace(str(primary), ""), out
+
+
+# --- --board: the claims, judged against the worktrees ----------------------
+#
+# The sweep's own header says board blocks "go stale the moment a session stops
+# updating them", and then it never reads one. On 2026-08-28 the board carried 26
+# ACTIVE claims against 16 worktrees, and a session that trusted the count
+# reported an area unclaimed while two sessions were working in it.
+#
+# These pin the two parsing rules that decide every row, because both have a
+# recorded failure behind them: a status must be read INSIDE its own block, and a
+# claim must match a heading EXACTLY rather than appearing anywhere in the prose.
+
+
+def board(tmp_path: Path, text: str) -> Path:
+    p = tmp_path / "SESSIONS.md"
+    p.write_text("# Machine-local session board — test\n\n" + text)
+    return p
+
+
+def test_an_active_claim_with_no_worktree_is_stale(tree, tmp_path):
+    primary, *_ = tree
+    b = board(tmp_path, "### m/ghost — long gone\n- **Status:** ACTIVE\n")
+    out = sweep(primary, "--board", "--board-file", str(b))
+    assert "STALE" in out and "ghost" in out, out
+
+
+def test_a_done_block_is_not_a_claim(tree, tmp_path):
+    """DONE blocks stay in the file forever; counting them would report every
+    finished task as a live session."""
+    primary, *_ = tree
+    b = board(tmp_path, "### m/ghost — finished\n- **Status:** DONE 2026-08-28\n")
+    out = sweep(primary, "--board", "--board-file", str(b))
+    assert "ghost" not in out, out
+    assert "0 ACTIVE claim(s)" in out, out
+
+
+def test_a_later_active_block_does_not_vouch_for_an_earlier_done_one(tree, tmp_path):
+    """The status has to be read within its own block's span.
+
+    Reading the file globally — "does ACTIVE appear anywhere" — would let one
+    live block certify every finished block above it, which on a 237-block board
+    means the report says nothing at all.
+    """
+    primary, *_ = tree
+    b = board(tmp_path,
+              "### m/finished — done\n- **Status:** DONE 2026-08-28\n\n"
+              "### m/working — live\n- **Status:** ACTIVE\n")
+    out = sweep(primary, "--board", "--board-file", str(b))
+    assert "finished" not in out, out
+    assert "working" in out, out
+    assert "1 ACTIVE claim(s)" in out, out
+
+
+def test_prose_naming_another_worktree_is_not_a_claim(tree, tmp_path):
+    """`guard_local_board.sh` matched by substring once, and a block that merely
+    MENTIONED another worktree counted as claiming it. This reuses its heading
+    rule, so the same text must not produce a claim here either."""
+    primary, *_ = tree
+    b = board(tmp_path,
+              "### m/working — live\n- **Status:** ACTIVE\n"
+              "- **Notes:** overlaps wt-merged, which is another session's.\n")
+    out = sweep(primary, "--board", "--board-file", str(b))
+    assert "1 ACTIVE claim(s)" in out, out
+    # wt-merged is a real worktree here; if the prose claimed it, it would not
+    # be reported as unclaimed.
+    assert "UNCLAIM" in out and "wt-merged" in out, out
+
+
+def test_a_worktree_with_no_claim_is_reported(tree, tmp_path):
+    primary, *_ = tree
+    b = board(tmp_path, "### m/working — live\n- **Status:** ACTIVE\n")
+    out = sweep(primary, "--board", "--board-file", str(b))
+    assert "UNCLAIM" in out, out
+    assert "wt-merged" in out and "wt-ahead" in out, out
+
+
+def test_a_block_headed_with_the_branch_counts_as_a_claim(tree, tmp_path):
+    """A block may legitimately be headed with the branch rather than the
+    directory; the commit gate accepts either, so this must too or it reports
+    claimed worktrees as unclaimed."""
+    primary, *_ = tree
+    b = board(tmp_path, "### m/done-work — by branch\n- **Status:** ACTIVE\n")
+    out = sweep(primary, "--board", "--board-file", str(b))
+    assert "STALE" not in out, out
+    assert not [ln for ln in out.splitlines()
+                if "wt-merged" in ln and "UNCLAIM" in ln], out
+
+
+def test_board_mode_refuses_to_apply(tree, tmp_path):
+    """It reports intent, which git state cannot adjudicate. Closing a claim is
+    the claimant's call."""
+    primary, *_ = tree
+    b = board(tmp_path, "### m/ghost — gone\n- **Status:** ACTIVE\n")
+    out = sweep(primary, "--board", "--apply", "--board-file", str(b))
+    assert "never edits the board" in out, out
+
+
+def test_a_missing_board_is_not_reported_as_nothing_claimed(tree, tmp_path):
+    """"No board" and "no claims" must not read alike — the first means the
+    check could not run."""
+    primary, *_ = tree
+    out = sweep(primary, "--board", "--board-file", str(tmp_path / "absent.md"))
+    assert "nothing can be checked" in out, out
