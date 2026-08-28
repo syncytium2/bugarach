@@ -1,7 +1,60 @@
 ---
-status: open
+status: done
 filed: 2026-08-27
+closed: 2026-08-28
 ---
+
+> **Done 2026-08-28 — and this file's diagnosis was incomplete.**
+> `learn.train.THREADS` pins the count to 1, `Trained.threads` carries it, and
+> `docs/learned/bakeoff.json` was regenerated under the pin. The skip this file
+> authorised is gone.
+>
+> **Pinning threads was necessary and not sufficient, and CI said so.** The first
+> run after the fix still failed, at fold 0, 69 detections against 72. The
+> reference is generated on macOS arm64; the runners are Linux x86_64. Different
+> CPU kernels reduce and fuse differently and 900 steps of gradient descent
+> amplify that, exactly as they amplified the thread count. **The reference is
+> platform-bound, not merely thread-bound** — this file measured the one variable
+> it happened to vary and read it as the whole cause.
+>
+> What ships instead of a false claim of portability: the test asserts the
+> genuinely platform-independent things **everywhere** — the fold split, the
+> parameter count, the planted-event counts, all drawn through
+> `numpy.random.RandomState` and bit-identical anywhere — runs the exact per-fold
+> comparison only where exactness is meaningful, and elsewhere bounds the mean by
+> the reference's **own** fold spread rather than by a number chosen to make it
+> pass. Loosening the exact assertions until they passed on both platforms was
+> never available: this file's own next section refuses it, and is right that a
+> check wide enough to absorb an architecture change cannot see a regression.
+>
+> **Two more things were true that this file did not know**, and both moved the
+> numbers more than the thread count did.
+>
+> **The reference was already stale.** SCE's knob grid on `main` had been extended
+> downward (floor 90 -> 75) after `bakeoff.json` was generated, so the sweep could
+> reach an operating point the reference never had. SCE moves 90 -> 75 on three of
+> four folds for that reason alone, with or without this fix. A reference that no
+> longer reflects the bench scoring it is the same defect as one that no longer
+> reflects the machine running it.
+>
+> **The threshold was picked on the fitting recordings** — found independently by
+> the learned-detector-page murderboard, fixed here as `learn.train.fold_maker`.
+> That is what actually moved the learned rows: centre-surround **0.668 -> 0.681**,
+> pooled trace 0.131 -> 0.118, per-cell bank unchanged at 0.125. The six are
+> unchanged to four decimals apart from SCE, which is the control this file wanted:
+> they never touch torch.
+>
+> **What it exposed.** Picking the threshold honestly pushed the optimum through
+> the *bottom* of a grid that had a hard floor at 0.05 and a dense tail only
+> towards 1. The grid is now open at both ends — and under it the pooled trace
+> joins the per-cell bank on the floor, so **two of three architectures have no
+> operating point** rather than one:
+> [`2026-08-28-two-architectures-have-no-operating-point.md`](2026-08-28-two-architectures-have-no-operating-point.md).
+>
+> Answering this file's own two questions: the report prose *does* quote the mean
+> F1, so moving it is a `/murderboard` job and was kept out of this commit. And one
+> thread is not slow — the per-cell bank trains **faster** at 1 thread than the
+> 236 s/fold the reference recorded at 10.
 
 # The published bakeoff numbers only reproduce on a 10-thread machine
 

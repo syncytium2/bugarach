@@ -84,7 +84,7 @@ def _timed_detect(fn, slices) -> tuple[list, float]:
 def run(spec: dict, *, folds: int, seeds_per_fold: int, quick: bool) -> dict:
     from bugarach.bench import (DETECTORS, OPERATING_POINTS, fold_split,
                                 pool_scores, run_detector)
-    from bugarach.learn.train import train
+    from bugarach.learn.train import fold_maker, train
     from bugarach.score import score_stream
 
     # ---- the data: one set of recordings, split into folds ------------------
@@ -177,9 +177,14 @@ def run(spec: dict, *, folds: int, seeds_per_fold: int, quick: bool) -> dict:
             tr_seeds = list(split.train(held))
             te_seeds = list(split.test(held))
 
-            mk = lambda seed, _t=tuple(tr_seeds): rec(_t[seed % len(_t)])  # noqa: E731
+            # `fold_maker` splits the TRAINING folds again so the operating point
+            # is picked on recordings the fit never saw. The maker here used to be
+            # `seed % len(tr_seeds)`, which handed `pick_threshold` the very
+            # recordings it had just fitted on and silently defeated the seed
+            # separation that function asserts.
+            mk, n_fit, _ = fold_maker(rec, tr_seeds)
             t0 = time.perf_counter()
-            tr = train(name, mk, n_train=min(10, len(tr_seeds)),
+            tr = train(name, mk, n_train=min(10, n_fit),
                        steps=300 if quick else 900, crop=4096, batch=3,
                        lr=LR[name])
             train_sec = time.perf_counter() - t0

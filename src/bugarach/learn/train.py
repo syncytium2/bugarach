@@ -26,7 +26,77 @@ from bugarach.score import score_stream
 TRAIN_SEED_BLOCK = 10_000
 """Training seeds start here. The bench scores on 1, 2, 3."""
 
+VAL_SEED_BLOCK = TRAIN_SEED_BLOCK + 500_000
+"""Threshold-validation seeds start here, and the gap is the whole guarantee.
+
+:func:`train` draws from :data:`TRAIN_SEED_BLOCK` and :func:`pick_threshold` from
+here, so the two never ask for the same seed. **That only separates recordings if
+the ``make_recording`` a caller supplies honours the boundary**, and until
+2026-08-28 no caller did: a maker of the shape ``lambda seed: recs[seed % len]``
+maps both blocks onto one set, while the assertions below still pass because they
+compare seeds rather than recordings. :func:`fold_maker` is the fix, and it exists
+so the boundary has one implementation instead of one per call site.
+"""
+
+THREADS = 1
+"""Intra-op threads, pinned — the number is part of the result.
+
+``torch.manual_seed`` fixes the draws and nothing else. Left alone, torch reads
+the thread count off the hardware and the CPU reduction order goes with it: the
+published bake-off reproduced only on a 10-thread machine, and at 1, 2 or 4
+threads the same seeds gave a mean F1 0.0178 higher with one fold moving 45 -> 62
+detections. The 1-, 2- and 4-thread runs were byte-identical to each other, so
+this is a reduction-order code path switching rather than chaos — which is why
+pinning fixes it rather than merely hiding it. **1 is the only value available on
+every machine**, so it is the one that makes a number regenerable from the
+repository alone.
+"""
+
 BENCH_SEEDS = (1, 2, 3)
+
+
+def pin_threads(n: int = THREADS) -> int:
+    """Pin torch's intra-op threads. Idempotent; returns what is now set."""
+    import torch
+
+    if torch.get_num_threads() != n:
+        torch.set_num_threads(n)
+    return torch.get_num_threads()
+
+
+def fold_maker(rec, seeds, *, n_val: int = 2):
+    """A ``make_recording`` that keeps fitting and threshold-picking apart.
+
+    ``rec`` is ``seed -> (slice, ground_truth)``; ``seeds`` are the recordings of
+    the **training folds only**, so the held-out fold is unreachable from here by
+    construction rather than by discipline — it is simply not in the list.
+
+    Those recordings are split again: the last ``n_val`` answer
+    :func:`pick_threshold`'s block and the rest answer :func:`train`'s. Callers
+    used to hand both blocks the same recordings through a ``seed % len`` maker,
+    which defeated a separation :func:`pick_threshold` asserts and its docstring
+    calls *"explicit and asserted rather than assumed."* The scored fold was never
+    reachable either way, so no published F1 was inflated by this — what was wrong
+    is that the fairness guarantee the code stated was not the one it delivered.
+
+    Returns ``(mk, n_fit, n_val)`` so a caller can size its own requests rather
+    than asking for more recordings than exist and receiving them back modulo.
+    """
+    seeds = tuple(seeds)
+    if len(seeds) < 2:
+        raise ValueError(
+            f"{len(seeds)} training recording(s) cannot be split into a fitting "
+            "set and a threshold-validation set — the operating point would be "
+            "picked on the recordings the model had just fitted")
+    n_val = max(1, min(int(n_val), len(seeds) - 1))
+    fit, val = seeds[:-n_val], seeds[-n_val:]
+
+    def mk(seed):
+        if seed >= VAL_SEED_BLOCK:
+            return rec(val[(seed - VAL_SEED_BLOCK) % len(val)])
+        return rec(fit[(seed - TRAIN_SEED_BLOCK) % len(fit)])
+
+    return mk, len(fit), len(val)
 
 
 @dataclass
@@ -41,6 +111,8 @@ class Trained:
     merge_gap_frames: int
     train_seconds: float = 0.0
     history: list = field(default_factory=list)
+    threads: int = 0
+    """Intra-op threads this was fitted at — a condition of the number, not trivia."""
 
     def predict(self, slice_, *, stream=None):
         """Detections in the six ports' contract, ready for ``score_stream``."""
@@ -76,6 +148,7 @@ def train(name: str, make_recording, *, dt: float = 0.1, n_train: int = 12,
     import torch
 
     torch.manual_seed(seed)
+    threads = pin_threads()
     arch = ARCHITECTURES[name]
     model = arch.make(**arch_over)
     opt = torch.optim.Adam(model.parameters(), lr=lr)
@@ -140,7 +213,7 @@ def train(name: str, make_recording, *, dt: float = 0.1, n_train: int = 12,
                               stream=stream)
     return Trained(name=name, model=model, threshold=thr,
                    n_params=n_params(model), dt=dt, merge_gap_frames=gap,
-                   train_seconds=train_seconds, history=hist)
+                   train_seconds=train_seconds, history=hist, threads=threads)
 
 
 def pick_threshold(model, make_recording, *, dt, seed, n_val: int = 4,
@@ -153,7 +226,7 @@ def pick_threshold(model, make_recording, *, dt, seed, n_val: int = 4,
     """
     import torch
 
-    seeds = [TRAIN_SEED_BLOCK + 500_000 + seed * 1000 + i for i in range(n_val)]
+    seeds = [VAL_SEED_BLOCK + seed * 1000 + i for i in range(n_val)]
     assert not set(seeds) & set(BENCH_SEEDS)
 
     scored = []
@@ -169,8 +242,18 @@ def pick_threshold(model, make_recording, *, dt, seed, n_val: int = 4,
     # six (`bench.EdgeOfRange`): an optimum at the edge means the search stopped
     # while still climbing, and reporting it as an operating point is how a
     # boundary value once got published upstream as one.
-    grid = np.concatenate([np.arange(0.05, 0.95, 0.05),
-                           1.0 - np.geomspace(0.05, 1e-4, 12)])
+    # ...and it must bracket it at BOTH ends, which took a second incident to
+    # learn. The grid had a dense tail towards 1 and a hard floor at 0.05, which
+    # was enough for as long as the threshold was picked on the recordings the
+    # model had just fitted: probabilities run high on training data and the
+    # optimum sat comfortably inside. The moment `fold_maker` started handing
+    # this function recordings the fit had never seen (2026-08-28), the optimum
+    # went straight through the floor and the warning below fired on the first
+    # architecture of the first fold. A grid open at one end is only half a
+    # search, and which half it is depends on data the search does not control.
+    grid = np.unique(np.concatenate([np.geomspace(1e-4, 0.05, 12),
+                                     np.arange(0.05, 0.95, 0.05),
+                                     1.0 - np.geomspace(0.05, 1e-4, 12)]))
     # Pooled by `bench.pool_scores`, like everything else scored against this
     # benchmark. Selecting the operating point under one rule and reporting it
     # under another is the same defect as scoring two detectors differently, and
