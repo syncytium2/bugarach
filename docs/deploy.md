@@ -1,5 +1,11 @@
 # Deploying the site
 
+> **Check [`DEPLOY_HOLD.md`](DEPLOY_HOLD.md) first.** A deploy can be deliberately
+> queued — updates held to land with a piece of work rather than going out one at a
+> time. `tools/site_staleness.py` reads that file and says so instead of handing you
+> the publish command, so in practice you will have met the hold before you get
+> here; this line is for the case where you came straight to the runbook.
+
 `bugarach.tonydefazio.com` — an **assets-only Cloudflare Worker**, the same shape
 `colonel_kernel` uses: no server script, Cloudflare serves `./site` directly.
 
