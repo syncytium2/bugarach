@@ -23,9 +23,21 @@ currently says it.
 
 ## The four things it carries
 
-1. **It sets the ground truth.** Three of the generator's knobs — how often events happen,
-   how many ROIs they recruit, how tightly — come from the assessment. The planted events
-   the detectors are scored against are planted to *its* description of coordination.
+1. **It sets the generator's knobs** — how often events happen, how many ROIs they recruit,
+   how tightly — so the planted events the detectors are scored against are planted to
+   *its* description of coordination.
+
+   ⚠ **Corrected 2026-08-24.** This line originally read *"it sets the ground truth"*, and
+   Tony withdrew that framing the next day: *"There's no ground truth and I shouldn't have
+   allowed the idea of an independent assessor."* The planted events **are** known by
+   construction and scoring against them is sound; what is not available is the step this
+   sentence quietly took, from *the assessor's description of coordination* to *the truth
+   about coordination*. The assessor is a **human-and-machine instrument** whose output
+   carries a person's judgement — see
+   [`the assessment needs a human in the loop`](2026-08-16-assessment-needs-a-human-in-the-loop.md),
+   escalated. Everything else in this note stands; if anything the correction sharpens it,
+   because an instrument with a person inside it is one more reason the contrast below
+   cannot be read off a table unattended.
 2. **It is what stops the loop being circular.** Its own docstring: measuring those knobs
    with the six *"would make every simulated recording a restatement of whichever detector
    measured it, and then training on it would close the circle. The assessment breaks

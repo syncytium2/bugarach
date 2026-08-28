@@ -210,6 +210,20 @@ stays `cicada`**, including the `detector` column of `detections.csv`, which is
 output contract. So `which == "cicada"` in a file and *locust* on a screen are
 the same detector, deliberately.
 
+**Both deviations are upstream of this code, and the duration is the producer's.**
+Calcium imaging in KNDy neurons reveals **action-potential-independent** calcium
+events, so this project detects its own and cannot rely on an external detector
+for them — whether any can serve is an interface2 effort, and is pending. What was
+taken from CICADA is the **coordinated-event stage alone**; that stage requires a
+per-event duration, and this preparation's slow events are not described in the
+literature and destroy it at full duration. Slow-event duration is therefore
+truncated to `peak − t50rise` **on export, by the MATLAB team** — not inside
+`cicada_detect`. So bugarach treats the **imported duration as the duration**:
+`width_sec` arrives with the `width_def` naming the rule that made it
+(`export_folder_spec.md`), the port paints what it is given, and **what a producer
+puts in that column is not this project's business** — no webapp behaviour and no
+dev-team judgement turns on it. Full account: the ADR-0002 addendum.
+
 ## 8. Team & operations
 
 **One human (Tony); everyone else on the team is an AI session**, possibly
