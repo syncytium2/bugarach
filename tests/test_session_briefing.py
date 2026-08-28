@@ -14,6 +14,7 @@ fire, because a channel nobody verifies is the same as no channel.
 
 import json
 import os
+import re
 import shutil
 import subprocess
 import tempfile
@@ -306,12 +307,25 @@ def test_it_surfaces_work_that_is_finished_and_waiting_on_a_person(briefing):
     of fifty open threads.
     """
     out, _ = briefing
+    # MATCH THE IMPLEMENTATION, WHICH ANCHORS. `waiting_list()` greps
+    # '^status: waiting-on-tony$'. This collected by substring over the whole
+    # file, so a todo that merely MENTIONS the status in its prose was counted
+    # as a waiting item and then asserted to have reached a briefing that had
+    # correctly left it out -- the test failing on a file the implementation was
+    # right about. README hit it first and was excluded by name, which fixed the
+    # instance and not the rule; the second instance was a todo whose body
+    # explains why it cannot have the status, and a name-exclusion list has
+    # nowhere to grow.
     waiting = [p for p in sorted((ROOT / "docs" / "todo").glob("*.md"))
-               if p.name != "README.md" and "status: waiting-on-tony" in p.read_text()]
+               if p.name != "README.md"
+               and re.search(r"^status: waiting-on-tony[ \t]*$",
+                             p.read_text(), re.M)]
     assert waiting, "no waiting-on-tony items -- if that is real, delete this test"
     assert "waiting on Tony" in out.stdout
     # README documents the format, so it carries the frontmatter as an example and
-    # reported itself as a waiting item on the first run. It must not come back.
+    # reported itself as a waiting item on the first run. Kept beside the anchored
+    # match above rather than retired by it: it is the one case we know by name,
+    # and it says so out loud if anyone loosens the anchor again.
     assert "docs/todo/README.md" not in out.stdout
     for item in waiting:
         assert item.name in out.stdout, f"{item.name} never reached the briefing"
