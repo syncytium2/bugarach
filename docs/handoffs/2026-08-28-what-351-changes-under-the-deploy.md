@@ -19,6 +19,58 @@ because `tools/site_staleness.py` computes it. This answers a different question
 **when the page does move, what did `53b1d62` change about how it behaves, and
 what should the pre-flight look at.**
 
+**Read [`2026-08-28-deploy-notes-2.md`](2026-08-28-deploy-notes-2.md) alongside
+this.** It covers `ed5e02e` and raises a judgement the hold's own escape clause
+puts to a person: the live page currently tells readers that locust **is**
+CICADA's method, beside numbers that would then read as CICADA being promiscuous.
+That decision is Tony's and neither note acts on it.
+
+**The gap it named is now closed, and the section below is the closing.** Deploy
+notes 2: *"three separate sessions have edited `docs/site/raster_viewer.html`
+since the last deploy … the viewer that ships is a combination no session has
+driven."* All three are on `main`, so the combination can be driven without
+deploying anything. It was, on `a74395b`.
+
+---
+
+## The combined viewer, driven — 2026-08-28 on `a74395b`
+
+Built with `tools/build_site.py`, served over HTTP on `127.0.0.1:5096`, and walked
+in chromium. **Not `file://`** — `docs/deploy.md` is emphatic that the two differ,
+and that is where two pages were once found with no nav bar at all.
+
+**Result: clean.** No console error, no page error, on any of the four pages.
+Every nav link on every page resolves. The sweep runs, the range boxes take an
+edited range, the out-of-range refusal offers to extend, extending re-sweeps and
+brackets, applying the setting runs the detector, and the unload guard arms and
+reports the right reason. Suite **1,502 passed, 3 skipped, 1 xfailed** — run with
+`PYTHONPATH=$PWD/src`, for the reason deploy notes 2 gives.
+
+**Two of the three queued viewer commits cannot be reached by a public reader.**
+Checked on the served page rather than inferred from the diff:
+
+| | `#accLab` | `#accScore` | `window.__lab` |
+| --- | --- | --- | --- |
+| published page | hidden | hidden | undefined |
+
+`f7c0edb` (the empty-state message when no trainer runs) and most of `173accd`
+(learned rows joining the scoreboard) live behind that gate, so they ship
+**inert** to anyone who is not running `bugarach lab`.
+
+**But `173accd` is not entirely gated, and that took a check rather than a
+reading.** One of its hunks lands in `simulateRecording`, which every visitor
+reaches through *Simulate a folder*. It keeps `onsets` and `rois` on the truth
+object so a model can be labelled across an event's realised footprint. Reading
+the diff says additive; the same seed run against `173accd^` and against `main`
+says so too — **2,633 spike times across three recordings, hash-identical per
+recording, same planted times, same fracs**. The simulated folder a reader gets
+is unchanged.
+
+So the deploy's public-facing surface is **`53b1d62` plus `ed5e02e`'s prose**, and
+the rest is machinery for people running the lab server. That is a smaller change
+than the commit count suggests, and it is the sentence worth carrying into the
+decision about when to lift the hold.
+
 ---
 
 ## What is queued, and what is already live
@@ -82,12 +134,9 @@ setting, so the clamp multiplies by sweep size rather than costing a flat delay:
 | locust, 6 settings | 8 | 4.2 s | ~8 s | ~8 min |
 | RateDetect, 8 settings | 13 | 0.1 s | ~13 s | ~13 min |
 
-Three simulated recordings of 30 min, 40 ROI. (*locust* is **derived from the
-Cossart lab's CICADA and is not CICADA** — it is fed this project's own detected
-events, and paints each cell active for the rise interval where the original
-paints the whole transient duration. It and LoCo are the two slow detectors,
-together about 97% of a six-detector sweep's wall clock.) Measured after the
-change:
+Three simulated recordings of 30 min, 40 ROI. (*locust* is this project's port of
+the CICADA detector; it and LoCo are the two slow ones, together about 97% of a
+six-detector sweep's wall clock.) Measured after the change:
 instrumented **timer** yields for the LoCo case went **25 → 0**, and the
 foreground got slightly faster (10.1 s → 9.7 s), with every other detector inside
 noise.
@@ -132,9 +181,10 @@ Nothing — and that was checked rather than assumed:
   scratch script that *does* register one, so its silence means something.
 - **`tools/audit_deployed_page.py` never arms the guard.** It loads the page once
   and never sweeps or applies a fit, so no prompt can fire at it.
-- The full suite passes with all of this in place — **1,485 passed, 16 skipped, 1
-  xfailed** at `1b82160`, run with `PYTHONPATH=$PWD/src` (see the worktree trap
-  below), including every existing browser test.
+- The full suite passes with all of this in place — **1,502 passed, 3 skipped, 1
+  xfailed** at `a74395b`, the tree the combined drive above was run on, including
+  every existing browser test. Run with `PYTHONPATH=$PWD/src`; see the worktree
+  trap below, and deploy notes 2 for why that prefix is not optional.
 
 **One trap, if you write your own driver.** A driver that registers its own dialog
 handler and calls `dismiss()` on a `beforeunload` is saying *stay on this page*,
@@ -160,11 +210,20 @@ Neither is mine; both cost me time on 2026-08-27, and both are already filed:
 ## A correction this handoff owes
 
 **PR #351's body and commit message both say the suite was "1,442". That number is
-wrong.** The run behind it reported *1 failed, 1421 passed, 15 skipped* — the one
-failure being the worktree trap above. Nothing downstream depends on it and the
-history is not being rewritten to fix it, but the figure is in a merged commit
-message where a later reader would take it at face value, so it is corrected here.
-The verified count today is the 1,485 quoted above.
+wrong**, and it is wrong twice over.
+
+It never matched its own run: the run behind it reported *1 failed, 1421 passed,
+15 skipped*, the one failure being the worktree trap above. And that run was made
+**without** `PYTHONPATH=$PWD/src`, so by the hazard deploy notes 2 documents it
+was measuring the worktree's `tests/` against the **primary checkout's** `src/` —
+a different tree. So 1,421 is not the corrected figure either; it is a second
+unreliable one, and there is no point retro-fitting a number to a merged message.
+
+The count that means something is the one at the top of this section: **1,502
+passed at `a74395b`**, measured with the prefix, on the tree that carries all
+three queued viewer changes. History is not being rewritten; the figure is
+corrected here because a later reader would otherwise take the merged one at face
+value.
 
 ## Still open, and not blocking the deploy
 
