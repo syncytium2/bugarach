@@ -238,6 +238,35 @@ RULES = [
         fixture_bad="raster = raster " + "* hv.VLine(t).opts(color='#a03623')",
         fixture_good="page = pn.Column(lane_panel(lanes, ext=ext), raster)",
     ),
+    Rule(
+        id="SAP010", level="BLOCK",
+        # A maker that indexes the training recordings by the seed modulo the
+        # set length answers BOTH of `train`'s seed blocks with one set, so
+        # `pick_threshold` picks the operating point on the data the model was
+        # just fitted to. The assertion inside `pick_threshold` compares SEEDS
+        # and passes anyway, which is why this survived a murderboard.
+        pattern=r"seed\s*%\s*len\s*\(",
+        # PROSE WOULD NOT HAVE CAUGHT THIS. #356 fixed two call sites, said so
+        # in its own commit message, and missed three more — one already on main
+        # (`ablate_tube.py`) and two on an unmerged branch, written AFTER the fix
+        # landed. Every number those three produced had its threshold picked on
+        # the fitting recordings. A grep finds the fifth copy; a grep that runs
+        # on every commit is what stops the sixth.
+        include=["tools/**", "src/bugarach/**"], exclude=[],
+        message="THE OPERATING POINT WOULD BE PICKED ON THE FITTING RECORDINGS. "
+                "`learn.train.train` draws recordings from TRAIN_SEED_BLOCK and "
+                "`pick_threshold` from VAL_SEED_BLOCK — disjoint on purpose, and "
+                "asserted. But a maker that indexes by the seed " + "% len(recs) "
+                "maps BOTH blocks onto one set, and the assertion still passes "
+                "because it compares seeds rather than recordings. Use "
+                "`learn.train.fold_maker(rec, train_seeds)`, which splits the "
+                "training folds again and returns (mk, n_fit, n_val). It exists "
+                "so the boundary has ONE implementation instead of one per call "
+                "site — which is how three sites were still wrong a day after "
+                "two were fixed.",
+        fixture_bad="mk = lambda seed, _t=tuple(tr): rec(_t[seed " + "% len(_t)])",
+        fixture_good="mk, n_fit, _ = fold_maker(rec, tr_seeds)",
+    ),
 ]
 
 

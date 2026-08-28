@@ -58,7 +58,7 @@ def _fb():
 
 def run(spec: dict, *, folds: int, seeds_per_fold: int, steps: int) -> dict:
     from bugarach.bench import pool_scores
-    from bugarach.learn.train import train
+    from bugarach.learn.train import fold_maker, train
     from bugarach.score import score_stream
 
     fb = _fb()
@@ -79,10 +79,15 @@ def run(spec: dict, *, folds: int, seeds_per_fold: int, steps: int) -> dict:
         for held in range(folds):
             tr_seeds = [s for s in all_seeds if fold_of[s] != held]
             te_seeds = [s for s in all_seeds if fold_of[s] == held]
-            mk = lambda seed, _t=tuple(tr_seeds): rec(_t[seed % len(_t)])  # noqa: E731
+            # `fold_maker`, not an index by seed-modulo-length — the latter hands
+            # `pick_threshold` the recordings the fit just used, defeating a
+            # separation it asserts. #356 fixed that in `fair_bakeoff.py` and
+            # `lab.py` and MISSED this file, so every number in
+            # `tube_ablation.json` before 2026-08-28 was fitted that way.
+            mk, n_fit, _ = fold_maker(rec, tr_seeds)
 
             t0 = time.perf_counter()
-            tr = train("tube", mk, n_train=min(10, len(tr_seeds)), steps=steps,
+            tr = train("tube", mk, n_train=min(10, n_fit), steps=steps,
                        crop=4096, batch=3, lr=1e-2, **over)
             train_sec = time.perf_counter() - t0
 
