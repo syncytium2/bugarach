@@ -65,7 +65,15 @@ def _null_recording(spec: dict, seed: int, multiple: float):
     # rather than removing the levels.
     s["n_per_level"] = [0] * len(spec["participation"])
     s["n_distractors"] = 0
-    s["hot_rate_hz"] = s["bg_rate_hz"]          # no hot block: same rate throughout
+    # **Zero, not `bg_rate_hz`.** The hot block is ADDITIVE — `simulate.py` gates on
+    # `hot_rate_hz > 0` and then extends the trains already there — so setting it
+    # equal to the background does not flatten the recording, it doubles the rate
+    # inside the window. The first version of this tool did exactly that and wrote a
+    # provenance note claiming "no hot block", which was false: 41% of the firings it
+    # counted at the fitted background lay inside the contaminated stretch. Caught by
+    # the verify pass of the 2026-08-27 murderboard, in a file written to answer a
+    # finding about an untestable claim.
+    s["hot_rate_hz"] = 0.0
     return _fair_bakeoff()._make_recording(s, seed)
 
 
@@ -142,7 +150,10 @@ def main(argv=None) -> int:
 
     out = {"threshold": thr, "n_params": int(tr.n_params), "steps": a.steps,
            "seed": a.seed, "bg_rate_hz": spec["bg_rate_hz"],
-           "note": "recordings contain no planted events, no distractors, no hot block",
+           "note": ("recordings contain no planted events, no distractors and no hot "
+                    "block: n_per_level is all zeros, n_distractors is 0, and "
+                    "hot_rate_hz is 0.0 rather than equal to the background, because "
+                    "the hot block is additive"),
            "by_multiple": {}}
 
     for m in MULTIPLES:

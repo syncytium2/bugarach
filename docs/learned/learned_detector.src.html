@@ -2,7 +2,14 @@
 <style>
 {{CSS:report}}
 /* --- additions this page needs, on top of the shared sheet --- */
-.arch { margin: 2rem 0; }
+/* A diagram scrolls at its own scale rather than shrinking to fit.
+   `width:100%` against a 900-unit viewBox puts 12px SVG text at 4.6 CSS px on a
+   390px phone — a quarter of body size, and the pipeline diagram carries the
+   argument of this page's central section. So the same treatment `.tablewrap`
+   already gives the results table: a scrolling window with a floor under the
+   content width. */
+.archwrap { overflow-x: auto; margin: 2rem 0; }
+.arch { min-width: 640px; }
 .arch svg { width: 100%; height: auto; display: block; }
 pre.code { font-family: var(--mono); font-size: .82rem; line-height: 1.6;
            background: var(--card); border: 1px solid var(--rule);
@@ -36,7 +43,7 @@ td.n, th.n { text-align: right; font-family: var(--mono);
     <strong>The model numbers on this page are stale, and they are kept because the
     apparatus is the subject.</strong> They come from a run of 2026-08-16 whose
     generator settings were measured from a data store the project has since closed
-    in favour of an approved export folder, and whose difficulty axis was
+    in favor of an approved export folder, and whose difficulty axis was
     re-derived four days later. The pipeline is current; this pass through it is not.
     Where a number would mislead if read as a live result, it is marked.
   </p>
@@ -87,7 +94,7 @@ td.n, th.n { text-align: right; font-family: var(--mono);
 
 <h2>The pipeline, and where it refuses to let a detector help</h2>
 
-<div class="arch">{{SVG:pipeline}}</div>
+<div class="archwrap"><div class="arch">{{SVG:pipeline}}</div></div>
 
 <div class="col">
   <p>
@@ -101,9 +108,13 @@ td.n, th.n { text-align: right; font-family: var(--mono);
     reports participation, jitter, cluster rate and background directly. Event jitter
     and cluster count are each tested against
     {{N:g:source_recordings.provenance.n_surrogates|,}} circular-shift surrogates; per-cell
-    rate and participation are measured outright, because a circular shift preserves
-    each cell's onset count exactly and so cannot be a null for a rate. Nothing here
-    inherits a detector's blind spot, because no detector is involved.
+    rate and participation are measured outright, for two different reasons: a circular
+    shift preserves each cell's onset count exactly, so it cannot be a null for a rate;
+    and it is a null for <em>how much</em> coactivity there is, not for <em>who</em>,
+    so it says nothing about participation either. No detector's decision rule runs in
+    this stage, so nothing it produces inherits a detector's blind spot. (Three
+    utilities are shared with the detector modules &mdash; a percentile, a
+    recording-extent helper, and the window selector &mdash; but no detection rule.)
   </p>
   <p>
     <span class="key truth">Baseline windows only.</span> Drug and washout windows are
@@ -115,10 +126,66 @@ td.n, th.n { text-align: right; font-family: var(--mono);
     <span class="key truth">The human choice ships beside the choice.</span> The
     assessor reports a scan across K &mdash; the minimum number of cells that must
     fire together before the assessor will call it a group &mdash; and a person picks
-    one. Here K={{N:g:source_recordings.k_chosen}}. That choice moves the data set:
-    K=4 cuts the cluster rate to roughly a quarter, which would build a different
-    benchmark. The whole scan is published beside the number so the judgement is
-    reviewable, because a scan is not a decision.
+    one. Here K={{N:g:source_recordings.k_chosen}}. A scan is not a decision, so the
+    whole scan travels with the number rather than the number alone:
+  </p>
+</div>
+
+<div class="tablewrap">
+<table>
+  <thead><tr>
+    <th>K (cells)</th>
+    <th class="n">coordinated events found<br>(per minute)</th>
+    <th class="n">cells participating<br>(count)</th>
+    <th class="n">onset spread, observed<br>(s)</th>
+    <th class="n">onset spread, shuffled<br>(s)</th>
+    <th class="n">slices with a spread<br>(of 85)</th>
+  </tr></thead>
+  <tbody>
+    <tr class="learned">
+      <td>3 &mdash; chosen</td>
+      <td class="n">{{N:spec:k_scan.3.clusters_permin|.3f}}</td>
+      <td class="n">{{N:spec:k_scan.3.part_n_obs|.1f}}</td>
+      <td class="n">{{N:spec:k_scan.3.jit_obs|.3f}}</td>
+      <td class="n">{{N:spec:k_scan.3.jit_null|.3f}}</td>
+      <td class="n">{{N:spec:k_scan.3.n_jit_defined}}</td>
+    </tr>
+    <tr>
+      <td>4</td>
+      <td class="n">{{N:spec:k_scan.4.clusters_permin|.3f}}</td>
+      <td class="n">{{N:spec:k_scan.4.part_n_obs|.1f}}</td>
+      <td class="n">{{N:spec:k_scan.4.jit_obs|.3f}}</td>
+      <td class="n">{{N:spec:k_scan.4.jit_null|.3f}}</td>
+      <td class="n">{{N:spec:k_scan.4.n_jit_defined}}</td>
+    </tr>
+    <tr>
+      <td>6</td>
+      <td class="n">{{N:spec:k_scan.6.clusters_permin|.3f}}</td>
+      <td class="n">{{N:spec:k_scan.6.part_n_obs|.1f}}</td>
+      <td class="n">{{N:spec:k_scan.6.jit_obs|.3f}}</td>
+      <td class="n">{{N:spec:k_scan.6.jit_null|.3f}}</td>
+      <td class="n">{{N:spec:k_scan.6.n_jit_defined}}</td>
+    </tr>
+    <tr>
+      <td>8</td>
+      <td class="n">{{N:spec:k_scan.8.clusters_permin|.3f}}</td>
+      <td class="n">{{N:spec:k_scan.8.part_n_obs|.1f}}</td>
+      <td class="n">{{N:spec:k_scan.8.jit_obs|.3f}}</td>
+      <td class="n">{{N:spec:k_scan.8.jit_null|.3f}}</td>
+      <td class="n">{{N:spec:k_scan.8.n_jit_defined}}</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+<div class="col">
+  <p>
+    K=4 cuts the event rate to roughly a quarter of K=3's and would build a different
+    benchmark; K=8 finds nothing at all in 85 recordings. The column that decides it is
+    the last one &mdash; at K=8 only 8 slices have enough events to measure an onset
+    spread, so the tightening spread down that column is measured on a shrinking and
+    increasingly unrepresentative subset. Observed spread sits below its shuffled null
+    at every K, which is the direction real coordination should show.
   </p>
   <p>
     Then the generator plants events at known times, so a miss and a false alarm are
@@ -132,7 +199,7 @@ td.n, th.n { text-align: right; font-family: var(--mono);
   <p>
     <span class="key hand">Provenance, stated because it bounds everything below.</span>
     This assessment read the FAST stream only, from the project's <code>.mat</code> event store.
-    That store has since been closed in favour of an approved export folder, because
+    That store has since been closed in favor of an approved export folder, because
     it carries recordings the lab later withdrew, and the difficulty axis it produced
     was re-derived from the folder on 2026-08-20. The pipeline drawn above is what
     runs today; the numbers below came out of it before that correction.
@@ -163,7 +230,7 @@ td.n, th.n { text-align: right; font-family: var(--mono);
     purpose.</span> Firings inside it are removed from the precision denominator
     rather than charged as false alarms, so the block reports rather than penalizes.
     That is a defensible rule and it has a cost: <strong>the headline metric is blind
-    to the behaviour the block was built to expose.</strong> The honest thing is to
+    to the behavior the block was built to expose.</strong> The honest thing is to
     print both numbers, which is what the table below does.
   </p>
 </div>
@@ -178,16 +245,17 @@ td.n, th.n { text-align: right; font-family: var(--mono);
   </p>
 </div>
 
-<div class="arch">{{SVG:architecture}}</div>
+<div class="archwrap"><div class="arch">{{SVG:architecture}}</div></div>
 
 <div class="col">
   <p>
     Cells are max-pooled over the narrowest fitted center width, <em>averaged</em>
     into one brightness trace &mdash; the mean is what makes the model indifferent to
     cell count &mdash; and convolved with four differences of Gaussians whose widths
-    are free parameters. The dilated stack that follows holds
-    <strong>1,128 of the model's {{N:b:learned.tube.n_params|,}} parameters</strong>;
-    the center&minus;surround stage the architecture is named for holds twelve.
+    are free parameters. Of the model's {{N:b:learned.tube.n_params|,}} parameters, the
+    dilated stack that follows holds <strong>1,128</strong> and the final 1&times;1
+    layer 9; the center&minus;surround stage the architecture is named for holds
+    <strong>twelve</strong>.
   </p>
   <p>
     Three properties are often claimed for this shape. The apparatus was pointed at
@@ -196,19 +264,25 @@ td.n, th.n { text-align: right; font-family: var(--mono);
   <p>
     <span class="key truth">Cell count &mdash; holds, with a caveat worth more than
     the claim.</span> The trace is the <em>fraction</em> of cells active, so the model
-    runs unchanged on any number of cells. What transfers is the participation
-    fraction, not the event: six cells firing together score 1.00 on a 32-cell
-    recording and 0.03 on a 300-cell one. It has only ever been scored at
-    {{N:b:spec.n_roi}}.
+    runs unchanged on any number of cells. But what transfers is that fraction, not
+    the event: six cells firing together is a participation of 0.19 on a 32-cell
+    recording and 0.02 on a 300-cell one, and the benchmark's smallest planted events
+    sit at 0.08. The model has only ever been scored at {{N:b:spec.n_roi}} cells, and
+    no sweep over cell count exists.
   </p>
   <p>
     <span class="key learned">One cell, one vote &mdash; does not hold at the shipped
-    operating point.</span> The max-pool named as the mechanism caps nothing, because
-    the raster is already one-or-zero per cell per frame; what it actually does is
-    widen each onset. Fed synthetic input, <strong>two bursting cells score
-    identically to four distinct ones.</strong> The model's own source comment claims
-    this cap is exact. It is not, and that is the same phenomenon as the probe-block
-    firings below.
+    operating point.</span> The max-pool does cap repeats <em>inside its own
+    window</em> &mdash; the raster is one-or-zero per cell per frame, so pooling is an
+    OR. The failure is that the window is much narrower than the kernel that
+    integrates it: it spans the <em>narrowest</em> fitted center width, while the
+    surround reaches tens of samples further. Spread a burst across that gap and it
+    survives the cap. Fed synthetic input, <strong>two cells firing five times each,
+    three frames apart, score 0.9997 &mdash; above the 0.9976 that four distinct cells
+    reach, at half the brightness.</strong> Widen the burst to twelve frames and it
+    drops to 0.13 and is rejected, which is the window's edge made visible. The model's own
+    source comment claims this cap is exact. It is not, and that is the same
+    phenomenon as the probe-block firings below.
   </p>
   <p>
     <span class="key learned">Rate invariance &mdash; true of the kernel, false of the
@@ -225,12 +299,20 @@ td.n, th.n { text-align: right; font-family: var(--mono);
     all</strong>, raising the background eightfold takes the model from
     {{N:rateinv:by_multiple.1.frames_over_threshold}} frames over its own operating
     point to {{N:rateinv:by_multiple.8.frames_over_threshold}}, out of about 35,000.
+    A rate-invariant detector would return roughly the same count at every multiple.
     Zeroing the bypass channel and re-scoring the same recordings gives
     {{N:rateinv:by_multiple.1.frames_over_threshold_no_bypass}} and
-    {{N:rateinv:by_multiple.8.frames_over_threshold_no_bypass}} &mdash; so the bypass
-    is most of the excess at baseline and roughly a third of it at eight times the
-    rate. What remains is variance, which a difference of <em>means</em> cancels and a
-    difference of variances does not.
+    {{N:rateinv:by_multiple.8.frames_over_threshold_no_bypass}}, so a large share of
+    the firings depend on that channel. What remains is variance, which a difference of
+    <em>means</em> cancels and a difference of variances does not.
+  </p>
+  <p>
+    ⚠ <strong>Read the ablation as an upper bound, not as an attribution.</strong>
+    Zeroing an input channel while keeping a threshold that was fitted <em>with</em>
+    that channel takes the model out of the distribution it was calibrated on, and the
+    count falls at every multiple &mdash; which is at least as consistent with a global
+    downward shift as with a rate-specific effect. Re-picking the threshold on the
+    ablated model would separate the two, and that has not been done.
   </p>
   <p>
     ⚠ That is one training run, so it is an order of magnitude rather than a
@@ -376,23 +458,33 @@ td.n, th.n { text-align: right; font-family: var(--mono);
   </p>
   <p>
     <span class="key hand">The column also reorders the field.</span> locust ranks
-    fifth of nine on the published metric and last of the seven that fire at all once
-    the probe is charged, because it fires
-    {{N:probe:detectors.cicada.hot_fa.mean|.0f}} times into a block containing nothing
-    &mdash; against CoactDetect's {{N:probe:detectors.coact.hot_fa.mean|.2f}}. That is
-    the pipeline doing the job it was built for: <strong>a detector that keys on
-    activity rather than coordination is invisible to the headline metric and obvious
-    in the trap.</strong>
+    fifth of nine on the published metric and seventh once the probe is charged,
+    because it fires {{N:probe:detectors.cicada.hot_fa.mean|.0f}} times into a block
+    containing nothing &mdash; against CoactDetect's
+    {{N:probe:detectors.coact.hot_fa.mean|.2f}}. It stays above only the two learned
+    models that barely fire at all. That is the pipeline doing the job it was built
+    for: <strong>a detector that keys on activity rather than coordination is
+    invisible to the headline metric and obvious in the trap.</strong>
+  </p>
+  <p>
+    ⚠ <strong>Which of these two columns should be <em>the</em> score is an open
+    question in this project, and this page does not answer it.</strong> Both rules
+    are already implemented in the tree, they pick opposite winners for more than one
+    detector, and a decision is pending &mdash; it blocks a planned re-fit. Excluding
+    the block has a real argument behind it: fold it in and a severe enough probe
+    stops measuring the detector and starts measuring how hard the probe was set.
+    Printing both is the honest position while that is undecided, not a verdict.
   </p>
   <p>
     <span class="key learned">And the two learned models at the floor are not
     virtuous, they are silent.</span> Both fire zero times into the probe, and both
     sit near F1 {{N:probe:detectors.trace.f1.mean|.2f}}. A clean probe from a detector
     that barely fires is not evidence of discrimination &mdash; which is why the
-    column is read beside the score and not instead of it. ⚠ Both also land their
-    threshold on the bottom edge of the searched grid, which this project treats
-    elsewhere as a search that stopped too early rather than an answer, so their F1 is
-    reported for completeness and is <em>not</em> an operating point. They train at a
+    column is read beside the score and not instead of it. ⚠ In seven of their eight
+    fold-fits the threshold also lands on the bottom edge of the searched grid, which
+    this project treats elsewhere as a search that stopped too early rather than an
+    answer, so their F1 is reported for completeness and is <em>not</em> an operating
+    point. They train at a
     tenth the learning rate of the model they are contrasted with, so the
     architecture comparison is uncontrolled and no conclusion is drawn from it here.
   </p>
@@ -408,35 +500,47 @@ td.n, th.n { text-align: right; font-family: var(--mono);
     on busy recordings it scores
     {{N:g:learned.tube.baseline_busy.baseline_quiet.f1|.3f}} on quiet and
     {{N:g:learned.tube.baseline_busy.baseline_busy.f1|.3f}} on busy. Fitting on the
-    wrong regime costs about twice as much in one direction as the other, and the
-    operational rule falls out: a lab fitting a model on its own recordings should fit
-    on the busier ones. ⚠ Both regimes here sit on the difficulty axis that was later
-    re-derived, so treat the direction as the finding and the magnitudes as stale.
+    wrong regime costs 0.080 of F1 when the recordings are busy and 0.045 when they
+    are quiet, which points at a rule &mdash; a lab fitting a model on its own
+    recordings should fit on the busier ones &mdash; while falling short of
+    establishing it. ⚠ <strong>The page's own floor forbids the stronger reading.</strong>
+    Seed variance is unmeasured and the caveat below says nothing under
+    {{N:b:learned.tube.f1.sd|.3f}} of F1 should be believed; 0.045 is under it, each of
+    the four cells is a single training run, and the rule is minimax rather than
+    dominance &mdash; on quiet data the quiet fit is still the better one. Both regimes
+    also sit on the difficulty axis that was later re-derived.
   </p>
   <p>
-    <span class="key learned">Two of the model's four scales are doing nothing, and a
-    third experiment could not have said so.</span> One scale scores
+    <span class="key learned">At four folds the scale count is not a variable this
+    benchmark can resolve.</span> One scale scores
     {{N:ablation:by_key.s1_c40.f1.mean|.3f}} at
     {{N:ablation:by_key.s1_c40.n_params|,}} parameters against four scales at
     {{N:ablation:by_key.s4_c40.f1.mean|.3f}} and
     {{N:ablation:by_key.s4_c40.n_params|,}}. Two scales scores
     {{N:ablation:by_key.s2_c40.f1.mean|.3f}} &mdash; further from both than they are
-    from each other. All three sit inside a fold spread of
-    {{N:b:learned.tube.f1.sd|.3f}}, so the honest reading is not that the extra scales
-    are unused but that <strong>at four folds the scale count is not a variable this
-    benchmark can resolve.</strong> Four ships because four is what was measured end
-    to end.
+    from each other, which no monotone reading predicts. All three sit inside a fold
+    spread of {{N:b:learned.tube.f1.sd|.3f}}, so <strong>none of the three differences
+    is one this benchmark can distinguish from noise.</strong> Four ships because four
+    is what was measured end to end, not because a sweep chose it.
   </p>
   <p>
     A second ablation raised the ceiling on how much wider the surround may be than
     the center, from 40 to 200, and the score did not move by a digit. That is not a
     null result &mdash; <strong>it is a no-op.</strong> The largest ratio fitted
-    anywhere in the four folds is 23.5, so the ceiling never binds and the two runs
+    anywhere in these four folds is 23.5, so the ceiling never binds and the two runs
     are bit-identical computations. Where it does bind, in the single-scale runs, the
     scores differ as they must
     ({{N:ablation:by_key.s1_c40.f1.mean|.3f}} against
     {{N:ablation:by_key.s1_c200.f1.mean|.3f}}). An earlier version of this page
     reported the no-op as evidence the clamp was harmless.
+  </p>
+  <p>
+    <strong>The ceiling is not irrelevant, though &mdash; it just does not bind
+    here.</strong> A refit of the same architecture on the busier regime, which is what
+    the parameter was added for, reaches {{N:a:ratios.1|.1f}} against that ceiling of
+    40. So the honest statement is that the clamp is inert on the recordings these
+    numbers come from and demonstrably live on others, which is a different sentence
+    from the one an ablation reporting "identical" invites.
   </p>
 </div>
 
@@ -453,7 +557,7 @@ td.n, th.n { text-align: right; font-family: var(--mono);
 <table class="cite">
   <thead><tr><th>detector</th><th>the method it ports</th></tr></thead>
   <tbody>
-    <tr><td>binned SCE</td><td>The coactivity-versus-shuffle rule. Cossart, Aronov &amp; Yuste (2003), <i>Attractor dynamics of network UP states in the neocortex</i>, <i>Nature</i> <b>423</b>:283&ndash;288, <code>doi:10.1038/nature01614</code>.</td></tr>
+    <tr><td>binned SCE</td><td>Synchronous calcium events: the coactivity-versus-shuffle rule. Cossart, Aronov &amp; Yuste (2003), <i>Attractor dynamics of network UP states in the neocortex</i>, <i>Nature</i> <b>423</b>:283&ndash;288, <code>doi:10.1038/nature01614</code>.</td></tr>
     <tr><td>locust</td><td>CICADA's method, from the Cossart lab, ported and modified &mdash; which is why it carries a different name. Denis, Dard, Quiroli, Cossart &amp; Picardo (2020), <code>doi:10.5281/zenodo.10041434</code>. ⚠ That is a version DOI and the release it resolves to does not contain the method; pin a revision when citing it.</td></tr>
     <tr><td>LoCo &middot; CoactDetect</td><td>Build on Unitary Events, including the per-cell clipping step this page's model also uses. Gr&uuml;n, Diesmann &amp; Aertsen (2002), <i>Neural Computation</i> <b>14</b>(1):43&ndash;80 and 81&ndash;119.</td></tr>
     <tr><td>rate+context</td><td>Cell-averaging constant-false-alarm-rate detection, from radar. Finn &amp; Johnson (1968), <i>RCA Review</i> <b>29</b>(3):414&ndash;464; restated by Rohling (1983), <i>IEEE T-AES</i> <b>19</b>(4):608&ndash;621.</td></tr>
@@ -470,8 +574,10 @@ td.n, th.n { text-align: right; font-family: var(--mono);
     Hildreth (1980); a bank of them with scale as the selected quantity, Lindeberg
     (1998), with octave spacing from Lowe (2004). Making the widths <em>learnable</em>
     has a direct precedent in Pogoncheff, Granley &amp; Beyeler (NeurIPS 2023). And
-    the fix this page proposes next &mdash; divide by the surround instead of
-    subtracting it &mdash; is STA/LTA, the standard seismological event trigger:
+    the obvious next move on the rate sensitivity above &mdash; divide by the surround
+    instead of subtracting it, so the threshold scales with the background rather than
+    sitting at a fixed offset from it &mdash; is STA/LTA, the standard seismological
+    event trigger:
     Allen (1978), <i>BSSA</i> <b>68</b>(5):1521&ndash;1532,
     <code>doi:10.1785/BSSA0680051521</code>. Same ratio, same geometry, forty-eight
     years old.
@@ -498,11 +604,25 @@ td.n, th.n { text-align: right; font-family: var(--mono);
   </p>
 </div>
 
-<pre class="code">@register("tube", note="center-surround on the brightness trace")
+<pre class="code">@register("tube", note="center-surround on the brightness trace — Tony's tube, "
+                       "2026-08-16: rate invariance by construction",
+          n_scales=4, width=8, depth=6, max_center_frames=128, max_ratio=40.0)
 def build_tube(*, n_scales=4, width=8, depth=6,
                max_center_frames=128, max_ratio=40.0):
     ...
     return Tube()</pre>
+
+<div class="col">
+  <p>
+    That is the registration verbatim, including the note that still says
+    <em>rate invariance by construction</em> &mdash; the claim the section above
+    demolishes. It is quoted unedited rather than tidied, because a page that corrects
+    one stale source comment by name and silently trims another is choosing which of
+    its own errors the reader gets to see. Correcting it is filed, not done: the
+    docstring and the model disagree, and making them agree means deciding whether to
+    change the words or the network.
+  </p>
+</div>
 
 <div class="col">
   <p>
@@ -562,7 +682,7 @@ def build_tube(*, n_scales=4, width=8, depth=6,
   <p>
     <strong>No third-party implementation has been run on these recordings.</strong>
     The six are this project's own ports of the published methods listed above, so
-    nothing here claims to beat a published result. What the neighbouring fields do,
+    nothing here claims to beat a published result. What the neighboring fields do,
     and what that leaves this work entitled to claim, is on
     <a href="landscape.html">the landscape page</a>.
   </p>

@@ -377,11 +377,15 @@ NAV_CSS = """  nav.site { display:flex; align-items:center; gap:4px; flex-wrap:w
   div.status.wip { background:#f6d5cd; color:#5a1f13;
                    border-bottom-color:#e2a696; }
   @media (prefers-color-scheme: dark) {
-    div.status.draft { background:#3a3117; color:#f0dcae;
-                       border-bottom-color:#5f5024; }
-    div.status.wip { background:#3f1f18; color:#f4cdc2;
-                     border-bottom-color:#6b3225; }
-  }"""
+    :root:not([data-theme="light"]) div.status.draft { background:#3a3117;
+                       color:#f0dcae; border-bottom-color:#5f5024; }
+    :root:not([data-theme="light"]) div.status.wip { background:#3f1f18;
+                     color:#f4cdc2; border-bottom-color:#6b3225; }
+  }
+  :root[data-theme="dark"] div.status.draft { background:#3a3117; color:#f0dcae;
+                     border-bottom-color:#5f5024; }
+  :root[data-theme="dark"] div.status.wip { background:#3f1f18; color:#f4cdc2;
+                   border-bottom-color:#6b3225; }"""
 """Full-bleed bar, links still starting at the text column's left edge.
 
 The body of the index is a 46rem column, and a nav indented to match it reads as

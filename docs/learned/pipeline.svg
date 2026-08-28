@@ -51,7 +51,7 @@
 
   <text x="342" y="332" text-anchor="middle" class="lbl">the whole scan ships</text>
   <text x="342" y="348" text-anchor="middle" class="lbl">beside the choice, so the</text>
-  <text x="342" y="364" text-anchor="middle" class="lbl">judgement is reviewable</text>
+  <text x="342" y="364" text-anchor="middle" class="lbl">judgment is reviewable</text>
 
   <!-- ============ stage 3 ============ -->
   <rect x="466" y="48" width="204" height="58" rx="3"/>

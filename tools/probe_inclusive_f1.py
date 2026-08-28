@@ -20,9 +20,26 @@ rather than leaving the reader to wonder.
 it reads the per-fold `n_hit`, `n_detected` and `n_planted` already in `bakeoff.json` and
 recomputes precision without the forgiveness term. Both numbers describe the same runs.
 
-The page quotes the result through `{{N:probe:...}}` tokens for the same reason it quotes
-everything else that way — a number typed into prose cannot be checked by anything, and
-this one exists precisely to be checked against its sibling.
+⚠ **This rule is the subject of an open decision, and nothing here settles it.**
+`docs/todo/2026-08-25-two-scorers-two-winners-and-nothing-decides.md` is
+`waiting-on-tony` and **blocks the re-fit**: two precision rules are already live in the
+tree — `bench.BenchResult.precision`'s `n_hit / n_scored` and
+`tools/probe_rate_mechanism.py`'s `n_hit / n_detected` — they pick opposite winners for
+the rate detector, and locust reads F1 0.09 one way against 0.68 the other. This file
+computes the second rule and so is a **third** implementation of it.
+
+That is the fork `bench.pool_scores`' own docstring was written to stop, which makes
+adding one deliberate rather than careless. The justification, and its limit:
+
+* it does **not** pick a winner. The page publishes both columns side by side and says
+  in terms that the ordering is not stable between them, which is the honest position
+  while the decision is open — and is strictly more informative than the page that
+  published one column and mentioned the other three sections later;
+* it does **not** feed calibration, fitting or any operating point. It reads a finished
+  results file and writes a display store. Nothing downstream consumes it;
+* it must **not** become the answer by attrition. When the open decision lands, this
+  file either adopts the chosen rule or is deleted — and the todo names a third option
+  neither rule implements (a gate rather than a term in F1), which would delete it.
 """
 
 from __future__ import annotations
