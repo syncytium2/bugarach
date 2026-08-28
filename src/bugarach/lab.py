@@ -333,7 +333,7 @@ def _train_tube(trainer: TubeTrainer, req: dict, emit) -> Model:
     import numpy as np
 
     from bugarach.bench import fold_split, pool_scores
-    from bugarach.learn.train import train
+    from bugarach.learn.train import fold_maker, train
     from bugarach.score import score_stream
     from bugarach.simulate import simulate_coordination
 
@@ -383,14 +383,17 @@ def _train_tube(trainer: TubeTrainer, req: dict, emit) -> Model:
         emit(stage="fit", fold=held, of=folds,
              message=f"fitting {arch} on fold {held + 1}/{folds}")
 
-        # `train` asks for recordings by seed; hand it the TRAINING folds only,
-        # indexed through their own list. The held-out fold is unreachable from
-        # here by construction rather than by discipline.
-        def mk(seed, _t=tuple(tr_seeds)):
-            return rec(_t[seed % len(_t)])
+        # `train` asks for recordings by seed; hand it the TRAINING folds only.
+        # The held-out fold is unreachable from here by construction rather than
+        # by discipline — it is not in the list `fold_maker` is given. That maker
+        # splits what remains once more, so the operating point is picked on
+        # recordings the fit never saw; indexing the training folds directly
+        # (`seed % len`) is what defeated that separation everywhere until
+        # 2026-08-28, here and in `tools/fair_bakeoff.py` identically.
+        mk, n_fit, _ = fold_maker(rec, tr_seeds)
 
         t0 = time.perf_counter()
-        tr = train(arch, mk, n_train=min(10, len(tr_seeds)), steps=steps,
+        tr = train(arch, mk, n_train=min(10, n_fit), steps=steps,
                    crop=4096, batch=3, lr=trainer.LR.get(arch, 1e-3))
         train_sec = time.perf_counter() - t0
         last = tr

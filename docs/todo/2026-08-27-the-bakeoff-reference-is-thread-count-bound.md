@@ -1,7 +1,43 @@
 ---
-status: open
+status: done
 filed: 2026-08-27
+closed: 2026-08-28
 ---
+
+> **Done 2026-08-28.** `learn.train.THREADS` pins the count to 1 and
+> `Trained.threads` carries it, so the number is a property of the result rather
+> than of the Mac that made it. `docs/learned/bakeoff.json` was regenerated under
+> the pin, and `test_the_server_reproduces_the_published_bakeoff` runs everywhere
+> again — the skip this file authorised is gone.
+>
+> **Two things were true that this file did not know**, and both moved the numbers
+> more than the thread count did.
+>
+> **The reference was already stale.** SCE's knob grid on `main` had been extended
+> downward (floor 90 -> 75) after `bakeoff.json` was generated, so the sweep could
+> reach an operating point the reference never had. SCE moves 90 -> 75 on three of
+> four folds for that reason alone, with or without this fix. A reference that no
+> longer reflects the bench scoring it is the same defect as one that no longer
+> reflects the machine running it.
+>
+> **The threshold was picked on the fitting recordings** — found independently by
+> the learned-detector-page murderboard, fixed here as `learn.train.fold_maker`.
+> That is what actually moved the learned rows: centre-surround **0.668 -> 0.681**,
+> pooled trace 0.131 -> 0.118, per-cell bank unchanged at 0.125. The six are
+> unchanged to four decimals apart from SCE, which is the control this file wanted:
+> they never touch torch.
+>
+> **What it exposed.** Picking the threshold honestly pushed the optimum through
+> the *bottom* of a grid that had a hard floor at 0.05 and a dense tail only
+> towards 1. The grid is now open at both ends — and under it the pooled trace
+> joins the per-cell bank on the floor, so **two of three architectures have no
+> operating point** rather than one:
+> [`2026-08-28-two-architectures-have-no-operating-point.md`](2026-08-28-two-architectures-have-no-operating-point.md).
+>
+> Answering this file's own two questions: the report prose *does* quote the mean
+> F1, so moving it is a `/murderboard` job and was kept out of this commit. And one
+> thread is not slow — the per-cell bank trains **faster** at 1 thread than the
+> 236 s/fold the reference recorded at 10.
 
 # The published bakeoff numbers only reproduce on a 10-thread machine
 
