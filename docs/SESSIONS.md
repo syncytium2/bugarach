@@ -91,6 +91,14 @@ Template:
   locust is CICADA's method"* while the **same paragraph** says *"no method from the
   literature has yet been run on this project's recordings."* Those cannot both hold. That
   defect needs no DANDI data and is a wording call for Tony.
+- **FAST ONLY** (Tony, 2026-08-27): *"fast and slow are two utterly different data
+  streams. both are interesting, but fast is closer to classical calcium events. for now,
+  stick with fast."* So the stream is **not** a thing an analysis here surveys — it is
+  chosen, and it is fast. Anything reporting both streams side by side is answering a
+  question nobody asked. Note there is **no declared default in code** — `bench.py`'s
+  `STREAM` is the simulator's synthetic single stream, `assess_folder()` takes
+  `stream=None`, and FOUNDATIONS §3 refuses to privilege either on purpose. Until that is
+  settled the constraint lives here.
 - **What this is blocked on:** a designated path to the **coordination** data for
   DANDI:000219. The extracted `.mat` sessions are event-level; deriving coordination from
   them is what went wrong. Not searching for it again.
