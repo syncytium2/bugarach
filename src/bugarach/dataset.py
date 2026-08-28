@@ -310,3 +310,58 @@ def current(role: str = "default") -> Path:
             f"{path} is a {k.name.replace('_', ' ')} ({k.detail}). The pointer names "
             f"export folders only; stores are not inputs.")
     return path
+
+
+#: The stream a HEADLESS analysis uses when neither a caller nor a person named one.
+#:
+#: **This does not privilege a stream in the sense FOUNDATIONS §3 refuses to.**
+#: §3 is right that streams are generic, that ``Slice.streams`` takes any count
+#: and any names, and that most outside labs have one. This is the **tie-break
+#: for the case §3 leaves open** — a recording carrying more than one, where a
+#: script has to pick and something has to be written down. Tony, 2026-08-27:
+#: *"fast and slow are two utterly different data streams. both are interesting,
+#: but fast is closer to classical calcium events. for now, stick with fast."*
+#: And on why there was no default at all: *"this is intended as a general
+#: project. we might be the only ones with two streams. its fine to default to
+#: fast."*
+#:
+#: **The viewer does not use this as an answer, it uses it as an opening
+#: position.** Where there is a person, the person picks: ``ui/app.py`` shows a
+#: stream control, and this only decides which entry it opens on.
+DEFAULT_STREAM = "fast"
+
+
+def preferred_stream(names) -> str:
+    """Which stream to analyse, given the names a recording actually carries.
+
+    The rule, in order:
+
+    1. **One stream — use it**, whatever it is named. The common case outside
+       this lab (FOUNDATIONS §3); no convention of ours should touch it.
+    2. **:data:`DEFAULT_STREAM` present — use it.** The tie-break above.
+    3. **Otherwise the first**, which is what the tree already did.
+
+    It lives *here*, beside :func:`current`, because it is the same kind of
+    question — *which data* — and because nothing declared it, so consumers had
+    drifted: ``assess_folder`` silently took ``names[0]`` while ``detect_folder``
+    ran every stream. A question with no answer in the tree gets a different
+    answer from each caller. That is what ``current_export.toml`` fixed for
+    *which folder*, and it is fixed the same way here: **a function that returns
+    the answer, not a paragraph that describes it.**
+
+    Deliberately **not** in ``store.py``. Stream choice is an analysis
+    convention, not a property of the store reader, and putting it there made
+    every caller import the module the folder-is-the-input hook watches — which
+    is how a helper about *convention* starts tripping a gate about *provenance*.
+    That happened once while this was being written.
+
+    Raises ``ValueError`` on an empty list rather than returning ``None``: a
+    recording with no streams is a defect the caller must report, and handing
+    back a name that indexes nothing moves the failure somewhere less legible.
+    """
+    names = list(names)
+    if not names:
+        raise ValueError("no streams to choose from")
+    if len(names) == 1:
+        return names[0]
+    return DEFAULT_STREAM if DEFAULT_STREAM in names else names[0]

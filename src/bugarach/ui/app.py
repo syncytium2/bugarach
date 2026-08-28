@@ -63,6 +63,7 @@ from bugarach.detectors import (
     sync_detect,
 )
 from bugarach.io import load_events_csv
+from bugarach.dataset import preferred_stream
 from bugarach.store import Slice, load_slice
 
 hv.extension("bokeh")
@@ -614,6 +615,27 @@ def build_viewer(slices: dict[str, Slice], *, title: str = "bugarach",
         return _build_raster_viewer(slices, title=title)
 
     slice_sel = pn.widgets.Select(name="slice", options=list(slices))
+    # The stream is a CHOICE, and the app used to make it by not offering one:
+    # every stream was drawn, stacked, with nothing saying they are different
+    # measurements. `docs/todo/2026-08-22-a-back-route-for-a-reliable-pipeline.md`
+    # already described the front door as one where "a person chooses K, looks at
+    # the comparison, and picks a stream" — that was the design, and this control
+    # is the part of it nobody built.
+    #
+    # Options are per RECORDING, not global: streams are generic (FOUNDATIONS §3)
+    # and two recordings in one folder need not carry the same names. It opens on
+    # `store.preferred_stream`, so a two-stream folder starts on fast rather than
+    # on whichever name happened to be first — visible in the widget, and changeable.
+    stream_sel = pn.widgets.Select(name="stream", options=[])
+
+    def _sync_streams(_=None):
+        names = list(slices[slice_sel.value].streams)
+        stream_sel.options = names
+        if stream_sel.value not in names:
+            stream_sel.value = preferred_stream(names) if names else None
+        # One stream is not a choice, and a live dropdown implies it is.
+        stream_sel.disabled = len(names) < 2
+
     # Toggle buttons, not checkboxes — a full-size click target
     det_checks = {d: pn.widgets.Toggle(name=TITLES[d], value=d in DEFAULT_ON,
                                        button_type="primary",
@@ -711,6 +733,10 @@ def build_viewer(slices: dict[str, Slice], *, title: str = "bugarach",
         save.disabled = not results
         blocks = []
         for name, stream in s.streams.items():
+            # The picked stream only. Drawing every stream stacked was the app
+            # answering a question it should be asking.
+            if stream_sel.value is not None and name != stream_sel.value:
+                continue
             rows = [_raster(stream, name, ext)]
             for det in enabled:
                 if name in results[det]:
@@ -754,15 +780,18 @@ def build_viewer(slices: dict[str, Slice], *, title: str = "bugarach",
 
     def _on_slice(_=None):
         _sync_dt()
+        _sync_streams()          # before render: the picked stream selects the panel
         render()
 
     go.on_click(render)
     slice_sel.param.watch(_on_slice, "value")
+    stream_sel.param.watch(lambda _=None: render(), "value")
     _sync_dt()
+    _sync_streams()
     render()
 
     sidebar = pn.Column(
-        slice_sel, dt_input, dt_note, go, status, save, toggle_grid,
+        slice_sel, stream_sel, dt_input, dt_note, go, status, save, toggle_grid,
         pn.pane.Markdown("**parameters**", margin=(6, 0, 0, 5)),
         pn.Accordion(*accordion_items, active=[]),
         width=340,

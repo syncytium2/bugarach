@@ -31,6 +31,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from bugarach.dataset import preferred_stream
+
 # The vocabulary a lab actually writes for an untreated period. Deliberately does
 # NOT fall back to "region 1 is the baseline": the export contract calls that out
 # as something producers must not do, and this project's own MATLAB exporter has
@@ -121,7 +123,10 @@ def assess_folder(folder, *, stream: str | None = None,
         if not names:
             rec.skipped = "no streams in the recording"
             continue
-        want = stream if stream in names else names[0]
+        # Was `names[0]` — a silent choice between two utterly different
+        # measurements, decided by dict order. `dataset.preferred_stream` is the
+        # declared answer; a caller naming a stream still wins.
+        want = stream if stream in names else preferred_stream(names)
         rec.stream = want
         rec.n_roi = s.streams[want].n_rois
 
