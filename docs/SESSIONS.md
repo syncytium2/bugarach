@@ -1463,3 +1463,24 @@ session's work is not a sweep.
   wrong raster.** The lane sits above the raster it describes, so a reader's eye is
   walked to the panel above — which belongs to the previous recording. Down triangles.
   Now in CLAUDE.md's plot conventions beside the no-drawing-on-the-raster rule.
+
+### Tonys-MacBook-Pro/the-numbers-moved — the bake-off page, corrected and murderboarded
+- **Status:** DONE 2026-08-28. Claim released in this same commit; nothing held after it.
+- **Writes:** a new dated folder `<darkroom>/bugarach/2026-08-28-bakeoff-corrected/` —
+  `bakeoff.md`, its run record, and the rebuilt `bakeoff.png` / `bakeoff.html` /
+  `report.html`. **A new stem, nothing existing in the darkroom overwritten.**
+- **Reads:** `docs/learned/bakeoff.json` only. No export folder, no store, no MATLAB.
+- **Findings another session should know.** Two of them have nothing to do with the
+  re-run that prompted this:
+  - **The page called the sixth detector CICADA.** ADR-0002 retired that name on
+    2026-08-24 in favour of **locust**, for the name a person sees. The regenerated
+    figure already said locust, so the table disagreed with its own panel A. If you
+    are editing any human-facing page, grep it for `CICADA`.
+  - **"The bench's regimes reproduce" was false and had been for eight days.** Both
+    sides of that agreement were measured on the closed `.mat` store; `bench.REGIMES`
+    moved to 0.0052/0.0190 from the approved export folder on 2026-08-20. Retracted
+    in place, not deleted.
+  - **`report.html` needed no edit.** It substitutes tokens against the JSON at build
+    time and picked the new numbers up on rebuild. `bakeoff.md` transcribes by hand and
+    needed nine rows and six derived ratios retyped. That contrast is the whole case for
+    giving it a generator, filed as a todo.
