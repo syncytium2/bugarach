@@ -232,10 +232,11 @@ Denis, Dard, Quiroli, Cossart &amp; Picardo (2020),
 Nature 423:283–288.</p>
 <p><b>Two things to know before reading locust's numbers as CICADA's.</b> The port
 <b>skips CICADA's per-cell transient-detection stage</b>, because it is fed events
-this project detected separately, and it <b>replaces CICADA's active-duration
-model</b>: the original marks a cell active for its transient's full duration,
-which does not transfer to this preparation's much longer transients, so locust
-marks the brief rise interval instead. And the derivation chain has been
+this project detected separately. And <b>locust is the only one of the six that
+consumes a duration as well as a timing</b> — the other five compute their own
+spans from onsets — so what it is told about how long an event lasted affects its
+calls, and that measurement arrives from the producer rather than being defined
+here. And the derivation chain has been
 <b>checked only at its last link</b> — locust matches the MATLAB implementation it
 was ported from to 1e-9, and nobody here has checked that implementation against
 the Cossart original.
