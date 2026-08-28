@@ -369,7 +369,54 @@ render() {
     fi
   fi
 
-  # --- 5. where does figure output actually go on THIS machine? -------------------
+  # --- 5a. where does the data come FROM on THIS machine? ------------------------
+  # THE ASYMMETRY THIS FIXES. Section 5b below has announced where output GOES since
+  # 2026-08-17, unprompted, and it works. Nothing announced where input COMES FROM, so
+  # a session that did not know had to go and look.
+  #
+  # It did. On 2026-08-27 a session lost the data and started re-deriving it from a
+  # `.mat` store; the permanent fix Tony asked for — "claude.md is unreliable. help me
+  # fix this permanently." — shipped the same day and is good: `current_export.toml`
+  # declares the folder, `dataset.current()` resolves it anywhere, a PreToolUse gate
+  # answers anyone reaching for a store, and sapper SAP007 blocks store reads in the
+  # tree. ONE DAY LATER a session ran `find <home> -maxdepth 6 -type d -name exports`
+  # and hand-pathed the result into --folder four separate times. Every part of that
+  # machinery addresses a session that has already decided to read a store. None of it
+  # reaches one that simply does not know where the data is — the hook fires on store
+  # access and `find` is not store access; SAP007 greps what a commit adds and an
+  # interactive `--folder` is never committed.
+  #
+  # `dataset.current()` would have answered instantly on that machine, with
+  # BUGARACH_DATA_ROOT unset. So the answer is pushed, like the darkroom's is.
+  #
+  # THE NAME COMES FROM sed, NOT FROM PYTHON, and the split is deliberate. Which folder
+  # is declared is a repo fact and must survive a machine with no interpreter on the
+  # hook's PATH — the bug colonel_kernel found in a sibling hook on 2026-08-18, where a
+  # missing `python` turned a gate into a no-op across seven repos. Only RESOLUTION,
+  # which is per-machine and needs the Dropbox discovery in dataset.data_root(), pays
+  # for a spawn (~0.2s, stdlib-only, so it works in a worktree with no venv).
+  #
+  # MOUNTED-BUT-WRONG IS THE DANGEROUS STATE, so it gets the alarm rather than silence:
+  # that is precisely where the last session started inventing.
+  echo
+  local ds_name ds_path
+  ds_name=$(sed -n '/^\[default\]/,/^\[[a-z]/p' current_export.toml 2>/dev/null \
+            | sed -n 's/^name[[:space:]]*=[[:space:]]*"\(.*\)"[[:space:]]*$/\1/p' | head -1)
+  ds_path=$(PYTHONPATH=src python3 -c 'from bugarach import dataset
+try: print(dataset.current())
+except Exception: pass' 2>/dev/null)
+  if [ -z "$ds_name" ]; then
+    echo "!! data in: current_export.toml declares nothing readable. It is the ONLY"
+    echo "   declaration of which export folder is the input — fix it before analysing."
+  elif [ -n "$ds_path" ]; then
+    echo "data in: $ds_name — dataset.current() resolves it here"
+  else
+    echo "!! data in: current_export.toml declares $ds_name and it does NOT"
+    echo "   resolve here. Do not hunt with find(1); do not fall back to a .mat store."
+    echo "   python -m bugarach.dataset   says what this machine can see"
+  fi
+
+  # --- 5b. where does figure output actually go on THIS machine? ------------------
   # Printed rather than left to be asked about. On 2026-08-17 a session reported the
   # darkroom unavailable and skipped its export while Dropbox sat mounted and visible
   # in Finder: BUGARACH_DARKROOM was exported from a ~/.zshrc, which zsh reads for
