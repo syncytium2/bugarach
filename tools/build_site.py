@@ -204,6 +204,19 @@ before/after result, so releasing it costs nothing this lab intends to publish.
 It is a committed figure rather than a live read: the build opens no data store,
 and generates every other figure here from a seed.</p>
 
+<h2 style="font-size:1.15rem">A network trained on that simulation</h2>
+<p>Because the planted events have known times, a model can be trained against
+them rather than against another detector's opinion. A center-surround
+architecture with about eleven hundred parameters — a difference of Gaussians
+whose widths are fitted, so how tight an event must be is learned rather than
+supplied — <b>ties the best hand-written detector here</b> and scans a held-out
+recording pair four times faster. It also fires into the no-event trap block an
+order of magnitude more often than the two detectors it ties with, which F1
+cannot see, and that is on the page too.</p>
+<p><a href="learned_detector.html">The learned detector &rarr;</a> — where the
+ground truth comes from, what the architecture buys, and the two ways the model
+is worse than its headline.</p>
+
 <h2 style="font-size:1.15rem">Where this sits, and who else is doing it</h2>
 <p>Detecting coordinated events is not a new problem, and a page that positions
 itself against work a reader cannot go and look at is marketing. So: four
@@ -264,18 +277,27 @@ PAGES = (
     ("index.html", "Overview"),
     ("viewer.html", "Raster viewer"),
     ("diagnostic.html", "Detector diagnostic"),
+    ("learned_detector.html", "Learned detector"),
     ("landscape.html", "Landscape"),
 )
 """What the site is, declared once, in nav order.
 
 The nav bar, the coherence check and the manifest below all read this, so
-"the site has four pages" is stated in one place instead of agreeing in three
+"the site has five pages" is stated in one place instead of agreeing in three
 by hand.
+
+Nav order is the argument's order, not the order the pages were written: what a
+recording looks like, what the ported detectors do to one, what a network trained
+on them scores, and only then where any of it sits against the field. The learned
+page comes before the landscape because the landscape's whole job is to say what
+that result does and does not entitle this project to claim, and a reader who has
+not seen the result yet has nothing for it to bite on.
 """
 
 STATUS = {
     "index.html": "draft",
     "landscape.html": "draft",
+    "learned_detector.html": "draft",
     "viewer.html": "wip",
     "diagnostic.html": "wip",
 }
@@ -287,13 +309,20 @@ making a claim, and it was making it by omission on four pages at once —
 including the two that a stranger drives against their own data.
 
 The split is Tony's and it is between *kinds* of page, not degrees of doneness.
-`draft` is the argument: the front page and the landscape survey are positions
-being written, and their claims move. `wip` is the running software: the raster
-viewer and the detector diagnostic are things a visitor points at data, where the
-honest warning is not "this text may change" but "this may behave badly".
+`draft` is the argument: the front page, the landscape survey and the learned
+detector are positions being written, and their claims move. `wip` is the running
+software: the raster viewer and the detector diagnostic are things a visitor
+points at data, where the honest warning is not "this text may change" but "this
+may behave badly".
+
+The learned page is `draft` and not something gentler even though its numbers are
+regenerable and its tokens resolve at build time. What is unfinished there is not
+the arithmetic, it is the claim: one training run per fold, a fold spread wider
+than most of the differences the page discusses, and no method from the
+literature ever run against it.
 
 Every page in `PAGES` needs an entry — `tests/test_site_coherence.py` fails if
-one is missing, so a fifth page cannot ship unlabelled by being forgotten. That
+one is missing, so a new page cannot ship unlabelled by being forgotten. That
 is the whole reason this is a dict beside `PAGES` rather than a banner pasted
 into each template: the templates are in four different tools and only one of
 them is this file.
@@ -861,6 +890,20 @@ def main(argv=None):
         return 1
     shutil.copyfile(land, SITE / "landscape.html")
 
+    # The learned-detector page is built the same way and published the same
+    # way. It must not go stale silently: every number on it is a {{N:...}}
+    # token resolved out of `bakeoff.json` and its neighbours at build time, so
+    # a rebuild of the results with no rebuild of the page leaves a page whose
+    # figures moved and whose prose did not. Refusing here is the only stage
+    # that sees both.
+    learned = ROOT / "docs" / "learned" / "learned_detector.html"
+    if not learned.exists():
+        print(f"build_site: {learned.relative_to(ROOT)} is missing, and the "
+              f"index links to it. Run tools/build_learned_report.py on "
+              f"learned_detector.src.html first.", file=sys.stderr)
+        return 1
+    shutil.copyfile(learned, SITE / "learned_detector.html")
+
     # The raster viewer is hand-written and self-contained, so publishing it is
     # a copy too. IT SHIPS NO DATA AND CANNOT: there is no network call in it,
     # and the recording it draws is whichever folder the reader opens from their
@@ -951,7 +994,7 @@ def main(argv=None):
     # are part of one site. `viewer.html` is again the exception, and again
     # because it is copied byte-for-byte — its bar is written into the source
     # page by hand, and `nav_html` matches it.
-    for page in ("landscape.html", "diagnostic.html"):
+    for page in ("landscape.html", "diagnostic.html", "learned_detector.html"):
         p = SITE / page
         if not p.is_file():
             continue
