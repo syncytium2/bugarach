@@ -8,15 +8,38 @@ had landed. A claim in a figure caption that nothing can falsify is exactly the
 class this repo's review process exists to catch, so the load-bearing ones are
 promises here instead.
 
-torch is optional in this package, so every test that needs it skips cleanly.
+torch is optional in this package, so every test that needs it skips cleanly —
+*unless* the environment says it should have torch. `BUGARACH_REQUIRE_TORCH=1`
+turns that skip into a failure, because for ten days the skip was the whole
+story: `.github/workflows/ci.yml` installed `[ui]` and never `[dl]`, so all
+eleven tests below collapsed into a single `1 skipped` line and pytest still
+exited 0. The page's footer said its tests had landed. They had, and then never
+ran. Same guard as `tests/test_browser_available.py`, for the same reason.
 """
 
 from __future__ import annotations
 
+import os
+
 import numpy as np
 import pytest
 
-torch = pytest.importorskip("torch")
+try:
+    import torch
+except ImportError as exc:                                    # pragma: no cover
+    # Deliberately a skip even when torch is required, and the loud failure lives
+    # in tests/test_torch_available.py instead. Raising here would abort
+    # *collection*, taking the other ~1,390 tests with it, so a broken install
+    # would cost every other result in the run. `test_browser_available.py` made
+    # the same choice for the same reason: one unmistakable failure that names
+    # the problem beats an interrupted suite.
+    _required = os.environ.get("BUGARACH_REQUIRE_TORCH") == "1"
+    pytest.skip(
+        f"torch is not installed ({exc})"
+        + (" — BUGARACH_REQUIRE_TORCH=1 is set, so "
+           "tests/test_torch_available.py is failing this run" if _required
+           else ""),
+        allow_module_level=True)
 
 from bugarach.learn.nets import ARCHITECTURES, n_params, receptive_field  # noqa: E402
 from bugarach.learn.train import BENCH_SEEDS, TRAIN_SEED_BLOCK  # noqa: E402

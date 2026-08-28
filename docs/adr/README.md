@@ -31,3 +31,10 @@ two never disagree, and cross-reference them.
 |-----|-------|--------|
 | [0001](0001-the-lab-server.md) | The lab server — training off the page, without changing what ships | Accepted |
 | [0002](0002-the-sixth-detector-is-called-locust.md) | The sixth detector is called locust, not CICADA | Accepted |
+| [0004](0004-ci-installs-torch-from-the-cpu-wheel-index.md) | CI installs torch, and takes it from the CPU wheel index | Accepted |
+
+`0003` is reserved, not skipped. Nine files on `main` cite it for *"Parity was the
+inheritance, not a standing contract"*, which is written and was green on the
+`parity-was-the-inheritance` branch when PR #298 was closed unmerged. Until
+[that question](../todo/2026-08-26-nine-files-name-an-adr-that-does-not-exist.md) is
+answered the number stays held — filling the gap would break all nine citations.
