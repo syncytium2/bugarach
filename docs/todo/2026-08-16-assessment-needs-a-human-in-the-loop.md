@@ -5,6 +5,68 @@ filed: 2026-08-16
 
 # The assessment will need a human to judge it, and nothing yet lets one
 
+> ## ⚠ Escalated 2026-08-24 — this is not a feature to add, it is what the assessor **is**
+>
+> Tony, 2026-08-24:
+>
+> > *"The assessor should be machine and human working together to find coordination.
+> > There's no ground truth and I shouldn't have allowed the idea of an independent
+> > assessor."*
+>
+> The entry below was written as *"this might require human interaction to judge the
+> assessment (a feature to add at some stage)"* — a review surface bolted onto an
+> instrument that otherwise stands alone. **That framing is withdrawn.** There is no
+> autonomous assessor whose output a person optionally checks; the instrument is the pair,
+> and a number produced without a person having looked is not a weaker result of the same
+> kind — it is not a result.
+>
+> **Three things this changes, and one it does not.**
+>
+> **Vocabulary.** *"Ground truth"* stays correct for **planted** events in a simulation —
+> those are known by construction, and `score.py` and `simulate.py` use the term properly.
+> It is wrong for anything the assessor says about a **real** recording, and the slide is
+> already in the tree: `webapp_completion_plan.md` justifies the K screen as what makes
+> *"optimized to the same ground truth"* a true statement, and the treatment-contrast note
+> opened by listing *"it sets the ground truth"* as the assessor's first job. The second is
+> corrected; the first is flagged and left, because the phrase wants one pass with a
+> decision behind it rather than six sessions each guessing.
+>
+> **What the output has to carry.** The machine half already refuses to decide, and says so
+> well: `assess_folder` prints *"K is a scan, not a choice"* and that *"nothing here has
+> turned a measurement into a setting — that needs somebody who has looked at the
+> recording."* The browser goes one step further and holds *"the K a person accepted"* —
+> **in a variable**. So the decision exists, briefly, and nothing writes it down. An
+> assessment is now a **record with a person's judgement inside it**, not a number with a
+> caveat beside it, and that is the same fix as
+> [`tuned settings are a file`](2026-08-22-tuned-settings-are-a-file-not-a-survivor.md).
+>
+> **The view is part of the judgement.** From
+> [`train on human-called events`](2026-08-22-train-on-human-called-events.md): *"the human
+> calls depend on psychophysics of the raster. Stretch it one way and nothing, compress
+> another and suddenly they are easy to see."* A call is a property of
+> (recording × rendering × observer). If a person's look is constitutive of the assessment
+> rather than a check on it, **the rendering they looked at is part of the record** — and
+> the browser currently lets a caller rescale time continuously without recording where
+> they were.
+>
+> **What does not change.** The machine half is still held to 1e-9 against
+> `measure_coordination_timescale.m`; parity is faithfulness of the arithmetic and is
+> untouched by who reads the output. The assessor still breaks the
+> detector → simulation → detector circle — it simply is not an oracle while doing it. And
+> treatments still may not parameterize the generator.
+>
+> **One consequence for a test that was about to be written.** A check that the assessor
+> *recovers planted events* is partly circular here: the simulation is built to the
+> assessor's own convention, so recovery is the convention agreeing with itself. What
+> survives cleanly is the **null** — plant nothing, and the excess must read zero. A
+> rate-matched null that leaks is a defect in the machine half whatever convention sits on
+> top, and every generator spec derived afterwards inherits it. Write that one, and
+> describe it as a check on the arithmetic, never as validation of the assessor.
+>
+> **Open: whether this belongs in an ADR rather than a todo.** It reverses a premise and
+> constrains vocabulary repo-wide, which is ADR-shaped; it is recorded here because this is
+> where the subject already lives. Tony's call.
+
 > **Half of this landed 2026-08-18.** `bugarach assess <folder>` runs the
 > assessment over a lab's own export folder and prints **the scoreboard** — the K
 > scan side by side, `jit_defined` rendered as *undefined (no cluster in
