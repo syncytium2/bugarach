@@ -71,6 +71,13 @@ DATA = {
     # magnitude and not a measurement; quoting it through tokens keeps it tied to
     # the run that produced it rather than to whichever run someone remembers.
     "rateinv": HERE / "rate_invariance.json",
+    # The one-cell-one-vote probe over a grid of seeds —
+    # `tools/probe_one_vote.py`. It exists in this form because the first version
+    # of the measurement used a single fit and reported a comparison that flips
+    # sign on three seeds in ten. The store keeps the fragile contrast as a tally
+    # and the robust one as a count, so the page cannot quote the fragile one as
+    # a value even by accident.
+    "onevote": HERE / "one_vote.json",
 }
 
 

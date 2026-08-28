@@ -21,6 +21,15 @@ pre.code { font-family: var(--mono); font-size: .82rem; line-height: 1.6;
            margin: 1.4rem 0; }
 /* The results table carries two F1 columns that must not be read as one. */
 th.pair { border-bottom: 2px solid var(--rule); }
+/* Let a wide table use the margin instead of hiding columns inside a 66ch column.
+   Both tables were clipped even at 1440px, where 528px of empty margin sat beside
+   them — and on the K table the hidden column was the one the next paragraph calls
+   decisive. Widening to the content width fixes that wherever the viewport allows;
+   below that the existing overflow-x still scrolls. No fade: a hover-gated one does
+   not exist on touch, and an always-on one would clip the last column of a table
+   that fits. */
+.tablewrap { width: min(1180px, calc(100vw - 3rem));
+             margin-inline: calc((100% - min(1180px, 100vw - 3rem)) / 2); }
 tr.learned td { background: color-mix(in srgb, var(--learned) 8%, transparent); }
 td.n, th.n { text-align: right; font-family: var(--mono);
              font-variant-numeric: tabular-nums; white-space: nowrap; }
@@ -53,8 +62,9 @@ td.n, th.n { text-align: right; font-family: var(--mono);
   </p>
   <p>
     <strong>The recordings scored here are simulated.</strong> Their settings were
-    measured from real ones. Nothing on this page says any detector is right about a
-    real slice.
+    measured from real ones &mdash; each a <em>slice</em>, one piece of living brain
+    tissue imaged once, and the two words are used interchangeably below. Nothing on
+    this page says any detector is right about a real slice.
   </p>
 </div>
 
@@ -140,7 +150,7 @@ td.n, th.n { text-align: right; font-family: var(--mono);
   <thead><tr>
     <th>K (cells)</th>
     <th class="n">coordinated events found<br>(per minute, median slice)</th>
-    <th class="n">cells participating<br>(count, median slice)</th>
+    <th class="n">cells participating<br>(count of 32, median slice)</th>
     <th class="n">onset spread, observed<br>(s)</th>
     <th class="n">onset spread, shuffled<br>(s)</th>
     <th class="n">slices with a spread<br>(of 85)</th>
@@ -203,7 +213,10 @@ td.n, th.n { text-align: right; font-family: var(--mono);
   </p>
   <p>
     <span class="key hand">Provenance, stated because it bounds everything below.</span>
-    This assessment read the FAST stream only, from the project's <code>.mat</code> event store.
+    This assessment read the FAST stream only &mdash; the lab separates each recording's
+    events into fast and slow calcium transients, coordination behaves differently
+    between the two, and only the fast half was measured here. It came from the
+    project's <code>.mat</code> event store.
     That store has since been closed in favor of an approved export folder, because
     it carries recordings the lab later withdrew, and the difficulty axis it produced
     was re-derived from the folder on 2026-08-20. The pipeline drawn above is what
@@ -289,18 +302,34 @@ td.n, th.n { text-align: right; font-family: var(--mono);
   <p>
     <span class="key learned">One cell, one vote &mdash; the cap holds and the
     conclusion drawn from it does not.</span> The max-pool caps each cell's
-    contribution exactly, in amplitude: two cells bursting reach a pooled brightness of
-    2/32 no matter how often they fire, and four distinct cells reach 4/32. That much
-    is true at every pool width. But <strong>the model does not decide on
-    brightness &mdash; it decides on the length of the run</strong>, and the max-pool
-    lengthens runs. Fed synthetic input, two cells firing five times each, three frames
-    apart, score <strong>0.9997 against the 0.9976 that four distinct cells reach
-    &mdash; a higher score at half the brightness</strong>. The same two cells firing
-    <em>once</em> score 0.8664 and are rejected. Identical amplitude, opposite verdict,
-    decided entirely by duration. Widening the pool window does not repair this; it
-    makes the runs longer. The model's own
-    source comment claims this cap is exact. It is not, and that is the same
-    phenomenon as the probe-block firings below.
+    contribution <em>exactly</em>, in amplitude. Across
+    {{N:onevote:n_seeds}} independently trained fits, two cells bursting reach a pooled
+    brightness of {{N:onevote:brightness_two_max|.4f}} however often they fire, and four
+    distinct cells reach {{N:onevote:brightness_four_max|.4f}} &mdash; the same two
+    values at every seed, to four decimals. The cap is not the problem.
+  </p>
+  <p>
+    <strong>The problem is that the model does not decide on brightness. It decides on
+    the length of the run</strong>, and the max-pool lengthens runs. On
+    <strong>{{N:onevote:duration_decides_seeds}} of {{N:onevote:n_seeds}} fits</strong>,
+    two cells firing five times clear the operating point while
+    <em>the same two cells firing once</em> are rejected &mdash; identical amplitude,
+    opposite verdict, decided entirely by duration. Widening the pool window does not
+    repair that; it makes the runs longer.
+  </p>
+  <p>
+    ⚠ A tempting stronger claim does <strong>not</strong> survive the same test. Two
+    bursting cells outscore four distinct ones on
+    {{N:onevote:burst_beats_four_seeds}} of {{N:onevote:n_seeds}} fits and lose on the
+    rest &mdash; both scores are saturated sigmoids far above threshold, separated by
+    about 0.002, so which one wins is seed noise. An earlier version of this page
+    reported the single fit where the burst won. That is the failure this page keeps
+    finding in its own project, committed by the page itself.
+  </p>
+  <p>
+    So the model's source comment is right that the cap is exact and wrong in what it
+    concludes: it says a single cell bursting cannot imitate a crowd, and one bursting
+    long enough does. That is the same phenomenon as the probe-block firings below.
   </p>
   <p>
     <span class="key learned">Rate invariance &mdash; true of the kernel, false of the
@@ -365,7 +394,7 @@ td.n, th.n { text-align: right; font-family: var(--mono);
   <figcaption>
     Every fold is drawn as its own dot in panel A, so the overlap at the top is
     visible rather than hidden behind a bar. Panel B is the trade-off plane: accuracy
-    against cost, with marker size growing with parameter count &mdash; the seven
+    against cost, with marker size growing with parameter count &mdash; the six
     detectors that have no trained weights all take the same smallest marker.
     ⚠ <strong>Both panels rank on the probe-forgiven F1</strong>, which is the ordering
     the table's second column overturns. The figure shows the flattering half of this
@@ -529,10 +558,12 @@ td.n, th.n { text-align: right; font-family: var(--mono);
   <p>
     <strong>That is a second blind spot in the trap, and it is worth more than the
     first.</strong> The probe cannot charge a detector that fires too much; it also
-    cannot charge one that fires once, forever. Neither F1 column sees it either &mdash;
-    both read a precision of 1.00 from one call and one hit, which is why those two rows
-    are identical across the two columns while every other row moves. A zero in the trap
-    column means one of two opposite things, and the column cannot tell you which.
+    cannot charge one that fires once, forever. Neither F1 column sees it either: the
+    charged rule differs from the published one only by putting probe firings back into
+    the denominator, so with zero of them the two rules are the same arithmetic. That is
+    why these two rows alone are identical across the two columns while every other row
+    moves. <strong>A zero in the trap column means one of two opposite things, and the
+    column cannot tell you which.</strong>
     ⚠ In seven of their eight fold-fits the threshold also lands on the bottom edge of
     the searched grid, which this project treats elsewhere as a search that stopped too
     early rather than an answer, so their F1 is reported for completeness and is
@@ -590,9 +621,11 @@ td.n, th.n { text-align: right; font-family: var(--mono);
     <strong>The ceiling is not irrelevant, though &mdash; it just does not bind
     here.</strong> A refit of the same architecture on the busier regime, which is what
     the parameter was added for, reaches {{N:a:ratios.1|.1f}} against that ceiling of
-    40. So the honest statement is that the clamp is inert on the recordings these
-    numbers come from and demonstrably live on others, which is a different sentence
-    from the one an ablation reporting "identical" invites.
+    40 &mdash; near enough that the search is reporting the range as wrong, which is why
+    the parameter exists. And it genuinely binds in the single-scale runs, whose free
+    fits reach 41.3. So the clamp is inert on the recordings these numbers come from and
+    demonstrably active elsewhere in the same store, which is a different sentence from
+    the one an ablation reporting "identical" invites.
   </p>
 </div>
 
@@ -670,8 +703,8 @@ def build_tube(*, n_scales=4, width=8, depth=6,
     registry has two consumers &mdash; the trainer and the architecture figure. The
     bake-off, the regime-shift test, the figure builder and the lab server each keep
     their own list of which architectures to run and their own learning-rate table, so
-    a new architecture today costs six edits across four files before it reaches this
-    page's curve. Folding the learning rate into the registration and having the sweep
+    a new architecture today costs ten edits across five files before it reaches this
+    page's curve &mdash; one of them in the tool that draws this page's own figure. Folding the learning rate into the registration and having the sweep
     iterate the registry would make the claim true; it has not been done, and stating
     the intent as an achievement would be the same defect this page catches elsewhere.
   </p>
@@ -688,8 +721,8 @@ def build_tube(*, n_scales=4, width=8, depth=6,
 
 <div class="col">
   <p>
-    Torch is an optional extra, and nothing outside the training code imports it &mdash;
-    so the measurement half of the package (the assessor, the generator, the six
+    Torch is an optional extra, and outside the training code only the lab server's
+    capability probe imports it, inside a try/except &mdash; so the measurement half of the package (the assessor, the generator, the six
     detectors, the scorer) installs and runs with no deep-learning stack at all. That
     split is deliberate: the apparatus has to be usable by a lab that will never train
     anything.
