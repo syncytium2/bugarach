@@ -124,11 +124,51 @@ mechanism in #379, is **31 of 56 candidates** at that detector's ceiling.
 an argument instead of reaching for a module-level constant, which is precisely the defect in
 the next section. When that Python bug is fixed, the browser is the reference.
 
-**What closing it needs**, if it is wanted: the per-detector ceilings (`MAX_PROBE_PER_MIN`,
-six numbers) reaching the page, and a third branch in `pickOperatingPoint` before it returns
-a row. It is a **behaviour change to the shipped page** — settings the app accepts today
-would start being refused — so it is not a session's to make unasked, and the copy for the
-refusal is user-facing text that goes through review like the other two.
+### And the gate cannot be ported, because the probe is not there to gate on
+
+Tony said *"do it"* to porting the gate. **It would be inert**, and that is worse than
+absent: a third branch in `pickOperatingPoint` would sit in the page looking like Python's
+protection while measuring nothing. The probe does not exist in the app **on any route**:
+
+| | |
+|---|---|
+| the in-browser generator | `simulateRecording` (raster_viewer.html:5335–5442) contains no `hot` block and no distractors — `grep` over that range returns nothing |
+| the lab-server route | `LAB_SPEC_DEFAULTS` (:9786) carries `hot_rate_hz: 0.06` but **no `hot_window`**, and `simulate.py:653` reads `if hot_window is not None and hot_rate_hz > 0` — so Python plants none either |
+| the scorer | `scoreDetections` (:4154–4217) returns `nPlanted, nDetected, nHit, nMiss, nFa, nDup, byFrac, recall, precision, f1` — **no `hotFa`** |
+| the pool | `out.hotFa += sc.hotFa \|\| 0` (:4070) therefore always adds `undefined \|\| 0`, so `out.nScored = out.nDetected - out.hotFa` (:4086) **is the identity function** |
+
+**And the page says so itself — this is a documented stub, not a disguise.** The comment
+above that line, at :4082:
+
+> *"The browser's generator plants no probe, so today this equals `nDetected` and the
+> distinction costs nothing; it stops being free the day one is added, which is exactly when
+> a page computing its own precision would quietly disagree with the Python."*
+
+So nobody was misled and nothing is pretending. The exclusion rule was written **ahead of**
+the probe on purpose, with its own inertness stated and the failure mode named. What is
+missing is the probe, and the person who wrote this line predicted precisely the situation
+this file is now in. Read it as a gap in the plan's sequencing, not as a defect in the code
+— and note that the same care is the reason step 4 below is cheap when its turn comes.
+
+**The real chain is four steps and the gate is last:**
+
+1. **Plant the probe** — a `hot_window` in the browser generator, and the same key added to
+   `LAB_SPEC_DEFAULTS` so the two routes agree.
+2. **Score it** — `scoreDetections` counts detections falling inside that window and returns
+   `hotFa`, the way `score.py:242` does.
+3. **`nScored` stops being the identity**, which is the moment the app's exclusion rule
+   begins to mean what its comment says.
+4. **Then the gate**, with the six ceilings and a third branch.
+
+**Step 3 is the one to think about before starting.** It is *approximately* F1-neutral by
+design — the probe adds detections and then excludes them from the precision denominator, so
+a correct implementation should leave the headline near where it is. That is a prediction,
+not a measurement, and it is exactly the kind of prediction this repo has been wrong about
+before. It should be measured on the existing data set before and after, and the answer
+stated, rather than asserted from the algebra.
+
+What is **not** neutral either way: the user's simulated recording gains a dense block it
+does not have today, which changes the raster they look at and the data they tune on.
 
 ## A second defect on the same code path, latent today
 
