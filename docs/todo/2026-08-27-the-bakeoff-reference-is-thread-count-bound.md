@@ -4,14 +4,31 @@ filed: 2026-08-27
 closed: 2026-08-28
 ---
 
-> **Done 2026-08-28.** `learn.train.THREADS` pins the count to 1 and
-> `Trained.threads` carries it, so the number is a property of the result rather
-> than of the Mac that made it. `docs/learned/bakeoff.json` was regenerated under
-> the pin, and `test_the_server_reproduces_the_published_bakeoff` runs everywhere
-> again — the skip this file authorised is gone.
+> **Done 2026-08-28 — and this file's diagnosis was incomplete.**
+> `learn.train.THREADS` pins the count to 1, `Trained.threads` carries it, and
+> `docs/learned/bakeoff.json` was regenerated under the pin. The skip this file
+> authorised is gone.
 >
-> **Two things were true that this file did not know**, and both moved the numbers
-> more than the thread count did.
+> **Pinning threads was necessary and not sufficient, and CI said so.** The first
+> run after the fix still failed, at fold 0, 69 detections against 72. The
+> reference is generated on macOS arm64; the runners are Linux x86_64. Different
+> CPU kernels reduce and fuse differently and 900 steps of gradient descent
+> amplify that, exactly as they amplified the thread count. **The reference is
+> platform-bound, not merely thread-bound** — this file measured the one variable
+> it happened to vary and read it as the whole cause.
+>
+> What ships instead of a false claim of portability: the test asserts the
+> genuinely platform-independent things **everywhere** — the fold split, the
+> parameter count, the planted-event counts, all drawn through
+> `numpy.random.RandomState` and bit-identical anywhere — runs the exact per-fold
+> comparison only where exactness is meaningful, and elsewhere bounds the mean by
+> the reference's **own** fold spread rather than by a number chosen to make it
+> pass. Loosening the exact assertions until they passed on both platforms was
+> never available: this file's own next section refuses it, and is right that a
+> check wide enough to absorb an architecture change cannot see a regression.
+>
+> **Two more things were true that this file did not know**, and both moved the
+> numbers more than the thread count did.
 >
 > **The reference was already stale.** SCE's knob grid on `main` had been extended
 > downward (floor 90 -> 75) after `bakeoff.json` was generated, so the sweep could
