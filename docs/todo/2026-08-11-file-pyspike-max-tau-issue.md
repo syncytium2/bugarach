@@ -1,14 +1,33 @@
 ---
-status: waiting-on-tony
+status: in-progress
 filed: 2026-08-11
 ---
 
 # File the PySpike max_tau bug upstream
 
-waiting: Send `docs/kreuz_note.md` to Thomas Kreuz. Everything else is done.
+## SENT 2026-08-28. Waiting on Kreuz, not on Tony.
 
-> **A second question for the same mail appeared on 2026-08-24, and it is not
-> drafted.** Kreuz replied to Tony in April on a different subject, and that reply
+Tony sent [`docs/kreuz_note.md`](../kreuz_note.md) **as drafted** — the τmax question
+only. **Step 1 below is done; the next move is his reply**, and then step 2.
+
+Two things a later reader would otherwise get wrong:
+
+- **The "adaptive" question did not go with it, and it is no longer Kreuz's to answer.**
+  The note went without that paragraph, and Tony then **closed the question himself**
+  (2026-08-28): in MATLAB the cSPIKE-based detection could be adaptive or non-adaptive,
+  we ported the non-adaptive state, and if a toggle is ever wanted it is placed inactive
+  in the state that reflects the port. He rated it minor against finishing the pipeline,
+  and **no code changed**. So do not re-raise it with Kreuz and do not wait on him for it.
+  The block below is the version that was live until then, kept because
+  [the April todo](2026-08-24-kreuz-answered-the-spike-synch-questions-in-april.md)
+  planned around it.
+- **The ride-along is spent.** That todo's item 2 says *"These are one email, not two"* —
+  which was true while the mail was unsent and is not now. Anything still wanted from
+  Kreuz needs its own mail or a reply to this thread.
+
+> **Superseded 2026-08-28 — the version that was live until the mail went.** A second
+> question for the same mail appeared on 2026-08-24, and it was not
+> drafted. Kreuz replied to Tony in April on a different subject, and that reply
 > raised one thing only he can settle: **whether this port should keep calling its
 > profile "adaptive"**, given that interface2's cSPIKE wrapper passed Satuvuori's
 > adaptive time-scale argument as 0 while calling the code path adaptive — the
@@ -19,15 +38,15 @@ waiting: Send `docs/kreuz_note.md` to Thomas Kreuz. Everything else is done.
 > process exists to stop. Whoever sends the mail decides whether to fold it in, and
 > drafting it is its own reviewable act.
 
-**Nothing here needs more work — it needs one mail.** As of 2026-08-24 the
+**Nothing here needs more work.** As of 2026-08-24 the
 report is written, shortened, and verified end to end; the patch passes PySpike's
-own test suite on both backends; the note to Kreuz is drafted and reviewed. The
-one remaining action is a person sending a mail, which is not a session's to take.
+own test suite on both backends; the note to Kreuz is drafted and reviewed. The mail
+went on 2026-08-28, so what remains is a reply.
 
-1. **Send the note** — [`docs/kreuz_note.md`](../kreuz_note.md). Open it, replace
-   the two bracketed lines, send. It asks Kreuz the one question that decides the
+1. ~~**Send the note**~~ — **DONE 2026-08-28**, [`docs/kreuz_note.md`](../kreuz_note.md)
+   sent as drafted. It asks Kreuz the one question that decides the
    shape of everything below: is a hard τmax still the semantics PySpike should
-   have?
+   have? **Nothing further is owed by anyone here until he answers.**
 2. **Then file the issue**, with his answer behind it —
    `python tools/pyspike_issue_body.py`, per **Process** below.
 3. **Then** put the issue URL in the eight places listed at the bottom of this

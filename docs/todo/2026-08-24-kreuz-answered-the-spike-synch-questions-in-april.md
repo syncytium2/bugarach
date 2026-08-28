@@ -227,19 +227,31 @@ reference list as lineage rather than as the algorithm.
    where this happens, because it is the only floor that sums across bins. On the
    real folder locust's missing floor costs 45 events in 11,940, all two-cell.
    Figure and tables in §4.
-2. **Ask Kreuz the "adaptive" question while the line is open.** interface2 reports
-   that their cSPIKE wrapper passed Satuvuori's adaptive time-scale argument as
-   **0** — disabled — while calling the code path "adaptive"; our `sync.py`
-   docstring, the glossary and the public viewer all inherit the word. It is
-   ambiguous rather than plainly wrong: τ here really is ISI-adaptive, but
-   `AdaptiveSPIKESynchroProfile`'s "Adaptive" means the Satuvuori extension that
-   was off. **He answers email.** One question settles what the app should call it.
-   **A mail to him is already drafted and waiting** — [`docs/kreuz_note.md`](../kreuz_note.md),
-   paste-ready since 2026-08-11, asking whether a hard τmax is still PySpike's
-   intended semantics. **These are one email, not two.** That draft was reviewed as
-   it stands, so the "adaptive" paragraph needs writing and reviewing before it goes
-   in; [the filing todo](2026-08-11-file-pyspike-max-tau-issue.md) carries the note
-   for whoever sends it.
+2. ~~**Ask Kreuz the "adaptive" question while the line is open.**~~ **CLOSED
+   2026-08-28 by Tony, not by Kreuz — and the ride-along it planned on is spent.** The
+   τmax mail went that day **without** the adaptive paragraph, so *"These are one email,
+   not two"* no longer holds: anything further wanted from Kreuz needs its own mail or a
+   reply on that thread. The question itself no longer needs him. In MATLAB the
+   cSPIKE-based detection could be adaptive or non-adaptive; this port covers the
+   non-adaptive state, and Tony's ruling is that if a toggle is ever placed it sits
+   **inactive in the state that reflects the port**. He rated it minor against finishing
+   the pipeline, so **no code changed** — `sync.py` still refuses `tau_mode="mrts"` with
+   the same explanation, and the glossary entry stands. The original item, which the rest
+   of this file reasons from:
+
+   > interface2 reports
+   > that their cSPIKE wrapper passed Satuvuori's adaptive time-scale argument as
+   > **0** — disabled — while calling the code path "adaptive"; our `sync.py`
+   > docstring, the glossary and the public viewer all inherit the word. It is
+   > ambiguous rather than plainly wrong: τ here really is ISI-adaptive, but
+   > `AdaptiveSPIKESynchroProfile`'s "Adaptive" means the Satuvuori extension that
+   > was off. **He answers email.** One question settles what the app should call it.
+   > **A mail to him is already drafted and waiting** — [`docs/kreuz_note.md`](../kreuz_note.md),
+   > paste-ready since 2026-08-11, asking whether a hard τmax is still PySpike's
+   > intended semantics. **These are one email, not two.** That draft was reviewed as
+   > it stands, so the "adaptive" paragraph needs writing and reviewing before it goes
+   > in; [the filing todo](2026-08-11-file-pyspike-max-tau-issue.md) carries the note
+   > for whoever sends it.
 3. **Resolve the three Kreuz-lab citations** (§2) before quoting any of them.
 4. **Fold C-over-E into the methods surface** (§1), whenever that surface exists —
    see question 3 of [the attribution note](2026-08-24-the-methods-are-not-ours-and-the-app-says-otherwise.md).
