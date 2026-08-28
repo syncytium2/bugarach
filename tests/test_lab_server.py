@@ -364,7 +364,7 @@ def test_the_shim_parses_and_works_in_a_browser(server):
 
             assert page.evaluate("typeof window.__lab") == "object"
             assert page.evaluate("Object.keys(window.__lab).sort()") == \
-                ["capabilities", "detect", "train"]
+                ["capabilities", "detect", "fitFolds", "train"]
 
             got = page.evaluate("""async () => {
               const seen = [];
