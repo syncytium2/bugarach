@@ -1,9 +1,12 @@
 # Murderboard run — the learned-detector page
 
-> **This run stopped after synthesis, on Tony's instruction. No fixes have been
-> applied and no verify round has run.** The artifact's hash is unchanged. What
-> follows is a findings record, not a completed review — the page as committed
-> on `learned-detector-page` still carries every defect below.
+> **Round 1 stopped after synthesis, on Tony's instruction; the fixes were applied
+> the following night under a reframe from him — *the goal is the pipeline; this is
+> a page documenting a stale learned model*.** That moved the deliverable rather than
+> patching the findings, and dissolved several of them. Everything below is the
+> original findings record, kept in the words it was written in. **What happened to
+> each finding, and what four further blind rounds turned up, is appended at the end
+> — read that before acting on anything here.**
 
 ## What was at stake
 
@@ -339,3 +342,122 @@ its own container without the document ever scrolling.
   Correspondence was available and unused — recorded as a finding, not an absence.
 - ⚠ **`tests/test_site_dates.py` no longer covers every published page**, and
   `build_site.py` does not fail on the same property.
+
+---
+
+# What happened next — the fixes, and four more blind rounds
+
+**Appended 2026-08-28.** Round 1 above found 191 findings and the page did not ship.
+Tony then reframed the deliverable, the page was rewritten, and the verify loop ran
+until a blind pass stopped finding blocking defects.
+
+- artifact:  `site/learned_detector.html` (`5e03e854` → `c73370b2`)
+- rounds:    **5** (1 original + 4 blind verify)
+- commits:   11 on `learned-detector-page`, none merged, nothing deployed
+
+## The reframe, and why it was not a way of avoiding the findings
+
+*"Our goal is to achieve the pipeline. This is a page documenting a stale learned
+model."* The page's subject moved from the model to the apparatus that scores it.
+
+That legitimately dissolved three of the five structural findings rather than
+patching them. A page whose subject is the apparatus **can** say plainly that this
+pass through it is stale, which the old page could not, because the old page's
+headline depended on the numbers being live. The retracted kernel-width claim stopped
+being the centrepiece and was deleted. The tie stopped being the headline.
+
+It did not dissolve the rest, and those were fixed by measurement:
+
+| finding | how it was resolved |
+|---|---|
+| Headline contingent on the probe-exclusion rule | `tools/probe_inclusive_f1.py` rescores the same detections with probe firings charged. **Both columns are now in the table.** The column reorders the field: locust falls from fifth to seventh, and the learned model loses 0.120 of F1 where CoactDetect loses 0.011 |
+| Retracted fitted-width claim | deleted, and the retraction stated |
+| Two fits quoted as one model | no `architecture_fitted` token remains in the results argument; the page now names all five kinds of fit it carries |
+| Zero citations | six methods cited with DOIs, plus the architecture's own precedents and the seismological trigger the page proposes as its next step |
+| Three architecture guarantees | each re-measured; see below |
+
+## What the four blind rounds cost, and what they were worth
+
+Every round found something real. The findings narrowed each time, which is what
+convergence looks like, but **no round was clean until the fifth**.
+
+**Round 1 (verify).** The rate-invariance probe set `hot_rate_hz` equal to the
+background to flatten its recordings. The hot block is *additive*, so that doubled the
+rate inside a 300 s window instead of removing it — and the store's own note said "no
+hot block". 41% of the firings counted at baseline lay inside the contaminated
+stretch. Also: 1,128 + 12 = 1,140, and the model has 1,149. The final 1×1 layer holds
+9 and the prose had dropped it.
+
+**Round 2.** *"The two learned models at the floor are silent."* They are not. The
+per-cell bank emits two detections per fold, and those two calls cover twelve
+distractors and two planted events across two recordings — one span per recording,
+99.6% of it. Its probe count is zero because `score.py` never puts a matched detection
+in the false-alarm set. **A zero in that column means one of two opposite things.**
+The table now carries the distractor column so the contradiction is visible in two
+adjacent cells.
+
+**Round 3.** The architecture finding was a coin flip. "Two bursting cells outscore
+four distinct ones" holds on 5 of 10 independently trained fits, loses on 3, ties on
+2 — the two scores are saturated sigmoids a median of 0.0002 apart. `tools/probe_one_vote.py`
+now runs the grid and the store keeps the fragile contrast as a tally so the page
+cannot quote it as a value.
+
+**Round 4.** The page corrected `build_tube`'s docstring by name and the correction
+was backwards. *"One bursting long enough does"* generalised from two cells to one,
+and no measurement stood behind it. Measured: a single cell fires on 0/10 at one
+onset, **4/10 at five, and 0/10 at twenty**. Bursting longer makes it worse — the
+model has a preferred run length. Also caught two figures asserting claims the page
+retracts, and a "free fit reaches 41.3" that was a *clamped* run's raw parameter (the
+free run reaches 59.3, a stronger number sitting in the same store).
+
+**Round 5.** Ran clean of blocking findings.
+
+## The pattern across all five rounds
+
+**Ten of the findings are the same defect in different clothes: a single run reported
+as a result.** The probe-inclusive column, the rate sweep, the one-vote comparison,
+the fitted widths, the transfer asymmetry, three of the ablations. In every case the
+number was correct and the claim built on it was not, because seed variance in this
+project has never been measured and the fold spread (0.061 F1) is wider than most of
+the effects being discussed.
+
+That is the finding to carry out of this review. It is already the oldest open item on
+the model track; what this run adds is that it is not a footnote — **it is the thing
+that keeps producing wrong sentences**, including inside a review whose subject is
+wrong sentences.
+
+## What is now mechanized rather than remembered
+
+- Four probe tools, four stores, and **every number on the page is a build-time token**.
+  Each tool writes its whole store; one of them did not, and that was itself a finding.
+- `build_site.py` rebuilds the page to a temp path and byte-compares before publishing,
+  so a regenerated store with an un-regenerated page fails the build. Mutation-tested.
+- `tests/test_site_dates.py` derives its page list from `bs.PAGES` instead of carrying
+  a copy, and `build_site.py` now returns 1 on an unstamped page instead of printing.
+
+## Still open, filed rather than fixed
+
+Six todos, each naming what the fix would cost:
+
+- [`the model does not do what its docstring says`](../todo/2026-08-27-the-model-does-not-do-what-its-docstring-says.md) — `nets.py` asserts two things the model does not do. Fixing the *model* is the handoff's open item 4 and moves every published number.
+- [`the threshold is picked on the recordings it trained on`](../todo/2026-08-27-the-threshold-is-picked-on-the-recordings-it-trained-on.md) — `pick_threshold`'s assertion checks seed integers that a modulo makes meaningless. No published number is wrong; the guarantee is.
+- [`the fitted kernels figure is a different fit`](../todo/2026-08-27-the-fitted-kernels-figure-is-a-different-fit.md)
+- [`a published figure with no generator`](../todo/2026-08-27-a-published-figure-with-no-generator.md)
+- [`role 2 must enumerate before it verifies`](../todo/2026-08-27-role-2-must-enumerate-before-it-verifies.md) — upstream, in the vendored process
+- [`SAP009 misses an overlay through a named variable`](../sapper_feedback/2026-08-27-sap009-misses-an-overlay-through-a-named-variable.md)
+
+## Residual ⚠ carried to Tony
+
+- ⚠ **Which F1 column is *the* score is an open decision** —
+  [`two scorers, two winners`](../todo/2026-08-25-two-scorers-two-winners-and-nothing-decides.md)
+  is `waiting-on-tony` and **blocks the re-fit**. `probe_inclusive_f1.py` is a third
+  implementation of one of the two rules. It picks no winner and feeds no operating
+  point, and the page prints both columns and says the question is open — but a public
+  page now carries a position on a blocked internal decision.
+- ⚠ **Seed variance is still unmeasured**, and the page leans on a fold spread as a
+  believability floor throughout. Four extra fits on one fold would settle it.
+- ⚠ **Kreuz's later applied papers are unresolved**, and his April correspondence is
+  still unused, while the page publishes a bottom-of-table score under his measure's
+  name. The page mitigates by saying the detection layer is this project's, not his.
+- ⚠ **Sonar, seismology past Allen 1978, and several other literatures were not
+  searched**, and no systematic database search was run.
