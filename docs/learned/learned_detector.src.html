@@ -30,6 +30,13 @@ th.pair { border-bottom: 2px solid var(--rule); }
    that fits. */
 .tablewrap { width: min(1180px, calc(100vw - 3rem));
              margin-inline: calc((100% - min(1180px, 100vw - 3rem)) / 2); }
+/* Below ~960px the 3rem gutter is what clips the last column rather than the
+   viewport, so give the tables the full width there and keep the page's own
+   padding as the only margin. */
+@media (max-width: 960px) {
+  .tablewrap { width: 100vw;
+               margin-inline: calc((100% - 100vw) / 2); }
+}
 tr.learned td { background: color-mix(in srgb, var(--learned) 8%, transparent); }
 td.n { text-align: right; font-family: var(--mono);
        font-variant-numeric: tabular-nums; white-space: nowrap; }
@@ -149,8 +156,8 @@ th.n { text-align: right; font-family: var(--mono);
     assessor reads
     {{N:g:source_recordings.provenance.n_slices_assessed}} real recordings and
     reports four things directly: what fraction of cells joins an event, how tightly
-    their onsets align, how often events happen, and how active a cell is between
-    them. Event jitter
+    their onsets align, how often events happen, and how often a cell fires overall.
+    Event jitter
     and cluster count are each tested against
     {{N:g:source_recordings.provenance.n_surrogates|,}} circular-shift surrogates; per-cell
     rate and participation are measured outright, for two different reasons: a circular
@@ -183,10 +190,10 @@ th.n { text-align: right; font-family: var(--mono);
   <thead><tr>
     <th>K (cells)</th>
     <th class="n">coordinated events found<br>(per minute, median slice)</th>
-    <th class="n">cells participating<br>(count of 32, median slice)</th>
+    <th class="n">cells participating<br>(count of {{N:b:spec.n_roi}}, median slice)</th>
     <th class="n">onset spread, observed<br>(s, SD within a group)</th>
     <th class="n">onset spread, shuffled<br>(s, SD within a group)</th>
-    <th class="n">slices with a spread<br>(of 85)</th>
+    <th class="n">slices with a spread<br>(of {{N:g:source_recordings.provenance.n_slices_assessed}})</th>
   </tr></thead>
   <tbody>
     <tr class="learned">
@@ -227,7 +234,7 @@ th.n { text-align: right; font-family: var(--mono);
 
 <div class="col">
   <p>
-    Every rate here is a <strong>median across the 85 slices</strong>, not a total.
+    Every rate here is a <strong>median across the {{N:g:source_recordings.provenance.n_slices_assessed}} slices</strong>, not a total.
     K=4 cuts it to roughly a quarter of K=3's and would build a different benchmark;
     by K=8 the median slice has nothing, and only 8 of 85 have enough events to measure
     an onset spread at all. The last column &mdash; the count of slices with a measurable spread &mdash; is
@@ -586,7 +593,8 @@ th.n { text-align: right; font-family: var(--mono);
     <strong>F1</strong> is the harmonic mean of recall (what fraction of planted
     events were found) and precision (what fraction of calls were real); 1.0 is
     perfect, and it charges equally for a miss and a false alarm. A call counts as
-    finding a planted event if it lands within 1.5 s of it. Recall, precision and
+    finding a planted event if it lands within 1.5 s of it, or if the detector's own
+    reported span contains it. Recall, precision and
     fold ranges for every row are in
     <a href="https://github.com/syncytium2/bugarach/blob/main/docs/learned/bakeoff.md">the
     full run</a>, which predates the rename and still lists locust as CICADA. The two F1 columns describe <em>the same detections</em> &mdash;
@@ -866,9 +874,10 @@ def build_tube(*, n_scales=4, width=8, depth=6,
     floor models escape it by firing twice on seven of their eight fold-fits.
   </p>
   <p>
-    <strong>A hit is scored within 1.5 s</strong> of a planted event, against a median planted
-    event of 0.70 s &mdash; and a widest one of 1.6 s, which is wider than the tolerance
-    itself. That buys a trustworthy ranking and costs any
+    <strong>A hit is scored within 1.5 s</strong> of a planted event, or wherever the
+    detector's own reported span contains it &mdash; which is how the binned detectors
+    are scored, and binned SCE bins at 10 s. Against a median planted event of 0.70 s,
+    and a widest one of 1.6 s that is wider than the tolerance itself. That buys a trustworthy ranking and costs any
     claim about timing accuracy &mdash; and the tolerance sweep that established it
     covers the six hand-written detectors, not the learned one.
   </p>

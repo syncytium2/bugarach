@@ -181,6 +181,13 @@ th.pair { border-bottom: 2px solid var(--rule); }
    that fits. */
 .tablewrap { width: min(1180px, calc(100vw - 3rem));
              margin-inline: calc((100% - min(1180px, 100vw - 3rem)) / 2); }
+/* Below ~960px the 3rem gutter is what clips the last column rather than the
+   viewport, so give the tables the full width there and keep the page's own
+   padding as the only margin. */
+@media (max-width: 960px) {
+  .tablewrap { width: 100vw;
+               margin-inline: calc((100% - 100vw) / 2); }
+}
 tr.learned td { background: color-mix(in srgb, var(--learned) 8%, transparent); }
 td.n { text-align: right; font-family: var(--mono);
        font-variant-numeric: tabular-nums; white-space: nowrap; }
@@ -458,8 +465,8 @@ th.n { text-align: right; font-family: var(--mono);
     assessor reads
     85 real recordings and
     reports four things directly: what fraction of cells joins an event, how tightly
-    their onsets align, how often events happen, and how active a cell is between
-    them. Event jitter
+    their onsets align, how often events happen, and how often a cell fires overall.
+    Event jitter
     and cluster count are each tested against
     1,000 circular-shift surrogates; per-cell
     rate and participation are measured outright, for two different reasons: a circular
@@ -710,7 +717,10 @@ th.n { text-align: right; font-family: var(--mono);
        boxes. It returns at x=740 now, clear of that label's right edge. -->
   <g fill="none" stroke-width="1.4" stroke-dasharray="4 3"
      marker-end="url(#ah)" color="inherit">
-    <path d="M 400 144 L 400 196 L 740 196 L 740 148"/>
+    <!-- Descends at x=414, not 400: at 400 it cleared the "0 params" label under
+         "mean over cells" (which ends at 396.3) by 3.7 units and read as attached to
+         it. Same defect the return leg already had, on the leg nobody re-checked. -->
+    <path d="M 414 144 L 414 196 L 740 196 L 740 148"/>
   </g>
   <text x="530" y="212" text-anchor="middle" class="lbl">
     &#8230; and the untouched trace goes straight in as a 5th channel
@@ -1006,7 +1016,8 @@ th.n { text-align: right; font-family: var(--mono);
     <strong>F1</strong> is the harmonic mean of recall (what fraction of planted
     events were found) and precision (what fraction of calls were real); 1.0 is
     perfect, and it charges equally for a miss and a false alarm. A call counts as
-    finding a planted event if it lands within 1.5 s of it. Recall, precision and
+    finding a planted event if it lands within 1.5 s of it, or if the detector's own
+    reported span contains it. Recall, precision and
     fold ranges for every row are in
     <a href="https://github.com/syncytium2/bugarach/blob/main/docs/learned/bakeoff.md">the
     full run</a>, which predates the rename and still lists locust as CICADA. The two F1 columns describe <em>the same detections</em> &mdash;
@@ -1286,9 +1297,10 @@ def build_tube(*, n_scales=4, width=8, depth=6,
     floor models escape it by firing twice on seven of their eight fold-fits.
   </p>
   <p>
-    <strong>A hit is scored within 1.5 s</strong> of a planted event, against a median planted
-    event of 0.70 s &mdash; and a widest one of 1.6 s, which is wider than the tolerance
-    itself. That buys a trustworthy ranking and costs any
+    <strong>A hit is scored within 1.5 s</strong> of a planted event, or wherever the
+    detector's own reported span contains it &mdash; which is how the binned detectors
+    are scored, and binned SCE bins at 10 s. Against a median planted event of 0.70 s,
+    and a widest one of 1.6 s that is wider than the tolerance itself. That buys a trustworthy ranking and costs any
     claim about timing accuracy &mdash; and the tolerance sweep that established it
     covers the six hand-written detectors, not the learned one.
   </p>

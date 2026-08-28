@@ -90,7 +90,10 @@
        boxes. It returns at x=740 now, clear of that label's right edge. -->
   <g fill="none" stroke-width="1.4" stroke-dasharray="4 3"
      marker-end="url(#ah)" color="inherit">
-    <path d="M 400 144 L 400 196 L 740 196 L 740 148"/>
+    <!-- Descends at x=414, not 400: at 400 it cleared the "0 params" label under
+         "mean over cells" (which ends at 396.3) by 3.7 units and read as attached to
+         it. Same defect the return leg already had, on the leg nobody re-checked. -->
+    <path d="M 414 144 L 414 196 L 740 196 L 740 148"/>
   </g>
   <text x="530" y="212" text-anchor="middle" class="lbl">
     &#8230; and the untouched trace goes straight in as a 5th channel

@@ -21,7 +21,15 @@ text, in SVG user units, driven through Playwright — so it sees the actual fon
 estimate. It checks two things a reader would notice immediately and a diff would not:
 
 * every `<text>` sits inside its viewBox;
-* no two labels **on the same baseline** overlap horizontally.
+* no two labels **whose boxes overlap vertically** also overlap horizontally.
+
+The second check compared only labels on the *same rounded baseline* when it was first
+written, and the fix that prompted it — splitting the row onto three interleaved
+baselines — walked straight through that hole: boxes 15 units tall on baselines 8 apart
+overlap by 7 while sitting in different groups. A reviewer proved it by lengthening a
+label until it collided and watching the suite stay green. Comparing boxes closes it,
+with a looser vertical threshold so that two deliberately stacked lines of one wrapped
+label are not reported as a collision.
 
 It does not check that a label is *correct*, near the thing it describes, or legible at
 a given screen width. Those are review questions. This is the mechanical half.
@@ -41,9 +49,18 @@ import pytest
 ROOT = Path(__file__).resolve().parent.parent
 SVGS = sorted((ROOT / "docs" / "learned").glob("*.svg"))
 
-#: Labels are allowed to touch by this much before it counts as a collision. Antialiased
-#: glyph boxes are a shade wider than the ink, so a hairline of overlap is invisible.
+#: Horizontal grazing allowed before it counts. Glyph boxes are a shade wider than the
+#: ink, so a hairline of overlap is invisible.
 SLACK = 1.0
+
+#: Vertical overlap allowed, and it has to be looser than the horizontal one. Two
+#: deliberately stacked lines of a wrapped label sit a line-height apart, and their
+#: boxes graze by about a unit because the box is taller than the visible glyphs —
+#: `landscape.svg` has two such pairs and they are correct. A genuine collision between
+#: labels meant to be on separate rows is much deeper: the architecture row's baselines
+#: are 8 units apart with 15-unit boxes, so a real clash there overlaps by 7.
+#: 3 units separates the two cases with room on both sides.
+Y_SLACK = 3.0
 
 MEASURE = r"""
 (svgText) => {
@@ -115,31 +132,36 @@ def test_no_label_escapes_its_viewbox(svg):
 
 
 @pytest.mark.parametrize("svg", SVGS, ids=lambda p: p.name)
-def test_labels_on_one_baseline_do_not_overlap(svg):
-    """Two labels sharing a baseline and a span run together into one string.
+def test_labels_that_share_vertical_space_do_not_overlap(svg):
+    """Two labels whose boxes overlap in both axes run together into one string.
 
-    Grouped by rounded `y` because that is what "the same row" means to a reader; a
-    label deliberately moved to its own baseline is not compared against the row it
-    left, which is the fix this test is meant to make discoverable rather than forbid.
+    **Compares boxes, not baselines**, and the difference is the whole point. The first
+    version of this test grouped by ``round(y)`` — "the same row" as a reader would say
+    it — and the very fix it was written to protect defeated it: the annotation row was
+    split onto three interleaved baselines at y=42/50/58, where a 15-unit-tall box on
+    one baseline overlaps its neighbour on the next by seven units while sitting in a
+    different comparison group.
+
+    A later reviewer proved the hole rather than describing it: lengthening one label
+    produced a real 8.8-unit collision with its neighbour and the suite stayed green.
+    A guard with a hole is worse than no guard, because it is quoted as coverage.
     """
     got = _measure(svg)
-    rows: dict[int, list] = {}
-    for t in got["texts"]:
-        rows.setdefault(round(t["y"]), []).append(t)
+    texts = sorted(got["texts"], key=lambda t: (t["x"], t["y"]))
 
     clashes = []
-    for y, items in sorted(rows.items()):
-        items.sort(key=lambda t: t["x"])
-        for a, b in zip(items, items[1:]):
-            gap = b["x"] - (a["x"] + a["w"])
-            if gap < -SLACK:
-                clashes.append((y, a["text"], b["text"], round(gap, 1)))
+    for i, a in enumerate(texts):
+        for b in texts[i + 1:]:
+            dx = min(a["x"] + a["w"], b["x"] + b["w"]) - max(a["x"], b["x"])
+            dy = min(a["y"] + a["h"], b["y"] + b["h"]) - max(a["y"], b["y"])
+            if dx > SLACK and dy > Y_SLACK:
+                clashes.append((a["text"], b["text"], round(dx, 1), round(dy, 1)))
 
     assert not clashes, (
-        f"{svg.name}: {len(clashes)} overlapping label pair(s) on a shared baseline. "
-        f"They render as one run-together string:\n" +
-        "\n".join(f"  y={y}: {a!r} overlaps {b!r} by {-g:.1f} units"
-                  for y, a, b, g in clashes))
+        f"{svg.name}: {len(clashes)} overlapping label pair(s). They render as one "
+        f"run-together string:\n" +
+        "\n".join(f"  {a!r} overlaps {b!r} by {dx:.1f} x {dy:.1f} units"
+                  for a, b, dx, dy in clashes))
 
 
 def test_the_guard_can_fail():
@@ -154,7 +176,10 @@ def test_the_guard_can_fail():
     bad = ('<svg viewBox="0 0 200 100" xmlns="http://www.w3.org/2000/svg">'
            '<text x="10" y="50" class="lbl">a label long enough to overlap</text>'
            '<text x="60" y="50" class="lbl">its neighbour here</text>'
-           '<text x="150" y="80" class="lbl">and this one runs off the edge</text>'
+           # On a DIFFERENT baseline, 6 units down — the case the first version of
+           # this guard could not see, because it only compared equal rounded y.
+           '<text x="70" y="60" class="lbl">and one a baseline below</text>'
+           '<text x="150" y="90" class="lbl">and this one runs off the edge</text>'
            '</svg>')
     with tempfile.TemporaryDirectory() as tmp:
         p = Path(tmp) / "broken.svg"
@@ -163,14 +188,19 @@ def test_the_guard_can_fail():
         vb = got["vb"]
         escaped = [t for t in got["texts"]
                    if t["x"] + t["w"] > vb["x"] + vb["w"] + SLACK]
-        rows: dict[int, list] = {}
-        for t in got["texts"]:
-            rows.setdefault(round(t["y"]), []).append(t)
-        overlaps = 0
-        for items in rows.values():
-            items.sort(key=lambda t: t["x"])
-            for a, b in zip(items, items[1:]):
-                if b["x"] - (a["x"] + a["w"]) < -SLACK:
-                    overlaps += 1
+        texts = got["texts"]
+        same_row = cross_row = 0
+        for i, a in enumerate(texts):
+            for b in texts[i + 1:]:
+                dx = min(a["x"] + a["w"], b["x"] + b["w"]) - max(a["x"], b["x"])
+                dy = min(a["y"] + a["h"], b["y"] + b["h"]) - max(a["y"], b["y"])
+                if dx > SLACK and dy > Y_SLACK:
+                    if round(a["y"]) == round(b["y"]):
+                        same_row += 1
+                    else:
+                        cross_row += 1
     assert escaped, "the viewBox check did not catch a label off the edge"
-    assert overlaps, "the overlap check did not catch two labels on one baseline"
+    assert same_row, "the overlap check did not catch two labels on one baseline"
+    assert cross_row, (
+        "the overlap check did not catch two labels on ADJACENT baselines — this is "
+        "the blind spot the first version of this guard shipped with")
