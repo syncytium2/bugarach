@@ -5,6 +5,29 @@ filed: 2026-08-28
 
 # The bake-off picks each fold's knob by raw argmax, and rate's pick is over its own ceiling on every fold
 
+> ## ⛔ Do not act on the fix section. Tony, 2026-08-28, hours after this was written:
+>
+> > *"all the bake-offs are stale. the next bakeoff will be in app. that is the only
+> > pipeline that matters now."*
+>
+> **So `tools/fair_bakeoff.py` is not to be repaired and `docs/learned/bakeoff.json` is not
+> to be regenerated on this file's account.** Both are on a path being retired. Read the fix
+> section as the record of what *would* have been done, not as an instruction — it was
+> written before the ruling and is left standing rather than deleted, because the measurement
+> is still the evidence for what follows.
+>
+> **What survives the ruling, and is the reason this file is still worth reading:**
+>
+> 1. **The in-app bake-off must route its knob choice through `pick_operating_point`.** The
+>    defect measured below is not about `fair_bakeoff.py` specifically — it is what happens
+>    to *any* caller that takes a raw F1 argmax over a grid. A new bake-off written in the
+>    app inherits it by default, because the default is to write `if f1 > best`. That is the
+>    one thing here that should reach whoever builds it.
+> 2. **`bench.py:703` is a live defect on code the app path may well use** — see the second
+>    section below. It is not stale; it has never been right.
+> 3. **The numbers below are the case for (1)**, and they are the only measurement anyone has
+>    of what the gate does to a *fold-based* selection rather than a single sweep.
+
 > **Not murderboarded** — a code reading and one `json.load` over a store already in the
 > tree. Every number below is reproducible by the snippet at the end.
 
