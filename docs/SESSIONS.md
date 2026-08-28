@@ -60,6 +60,41 @@ Template:
 
 ## Active
 
+### Tonys-MacBook-Pro/cicada-on-the-authors-data — run locust on the data CICADA was built for
+- **Status:** ACTIVE 2026-08-27 — **BLOCKED, waiting on one data path** (the DANDI side).
+  **Every number this session derived is WITHDRAWN** — see the correction below. Rebased
+  onto `4297033`; uses `dataset.current()` now. Nothing committed to this branch but this
+  block.
+- **Worktree:** `bugarach-worktrees/cicada-on-the-authors-data` (branch same, rebased onto
+  origin/main `4297033`)
+- **Holds, and why it is on THIS board:** it *would* write figures under
+  **`<darkroom>/bugarach/`**, which is mounted on every machine — **none written yet.**
+  Reads are write-free. No MATLAB, no interface2 write, no deploy.
+- **Touches:** nothing yet. Planned: a comparison probe under `tools/` and a
+  `docs/todo/` item. Explicitly NOT `src/bugarach/detectors/**` and NOT
+  `bench.py::OPERATING_POINTS` — an operating point fitted on another lab's data is a
+  finding about that data, not a recalibration of ours, and conflating the two is exactly
+  the error this is being run to avoid.
+- **Why:** Tony asked for the comparison the attribution question turns on — *"we don't
+  want to blame the authors … an early step once the pipeline is complete is to run the
+  authors dandiset."*
+- **⚠ CORRECTION — do not reuse the numbers this block used to carry.** It quoted a
+  transient duration of *"median 0.59 s against this lab's 10–60+ s."* **Both halves were
+  wrong as a comparison**: it set another lab's active-stamp against this lab's *full slow
+  transient*, which is not the quantity any detector is fed, and the 0.59 s was derived
+  from raw rasters rather than read from a designated source. The width answer needs no
+  derivation and is already in the export (Tony, 2026-08-27): **fast `width_sec` =
+  `halfprom_width_findpeaks_w`, the real transient width, median 0.90 s; slow `width_sec` =
+  `rise_interval_peak_minus_t50rise`, median 2.00 s, max 5.5 s.** Read `width_def`, never
+  the column name. Written up as a case report in `syncytium2/short-course` (`42e981c`).
+- **What is still true and still unblocked:** the public page asserts *"the lane marked
+  locust is CICADA's method"* while the **same paragraph** says *"no method from the
+  literature has yet been run on this project's recordings."* Those cannot both hold. That
+  defect needs no DANDI data and is a wording call for Tony.
+- **What this is blocked on:** a designated path to the **coordination** data for
+  DANDI:000219. The extracted `.mat` sessions are event-level; deriving coordination from
+  them is what went wrong. Not searching for it again.
+
 ### Tonys-MacBook-Pro/deploy-0827b — redeploy, so the sweep range control is on the live page
 - **Status:** DONE 2026-08-27 — deployed and verified; **DEPLOY RELEASED.** Version
   `acac81b2-a1bf-4260-99e6-fa917dfe958f`, built from `0ed939d`. **Four files at the edge,
