@@ -51,6 +51,12 @@
             "type": "command",
             "command": "bash .claude/hooks/no-heredoc-source.sh",
             "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/the-folder-is-the-input.sh",
+            "timeout": 10,
+            "statusMessage": "Checking this reads the export folder, not a store…"
           }
         ]
       }

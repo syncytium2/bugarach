@@ -49,9 +49,21 @@ def add(parser, *, want: str = "any", aliases: tuple[str, ...] = (),
     parser.add_argument(
         "--dataset", *aliases, dest="dataset", required=required,
         metavar="PATH_OR_NAME",
+        # The example was a literal folder name, and it named one that has since been
+        # QUARANTINED — so the help advertised a withdrawn export as the thing to
+        # type. It reads the pointer now, which is the only declaration of which
+        # folder is current. See current_export.toml.
         help=(f"{_WANT_HELP[want]}. A path, or a bare name looked up under "
               f"${ds.ENV_VAR} (or the Dropbox data directory, found automatically) — "
-              f"e.g. 2026-08-17_revised_2v_v2."))
+              f"e.g. {_example_dataset()}."))
+
+
+def _example_dataset() -> str:
+    """A name that is actually current, or nothing rather than a stale one."""
+    try:
+        return ds.current_name()
+    except Exception:                       # no pointer, or it does not parse
+        return "the name in current_export.toml"
 
 
 def get(args, *, want: str = "any", quiet: bool = False) -> Path:

@@ -1,0 +1,75 @@
+# Which export folder is the input. ONE place, read by code — not prose.
+#
+# WHY THIS FILE EXISTS. On 2026-08-27 a session could not find the data and began
+# re-deriving it from a `.mat` event store. The contract that forbids exactly that
+# (`docs/export_folder_spec.md`, and "The export folder is the input. The store is
+# closed." in CLAUDE.md) was correct, current, and in the repo the whole time.
+#
+# Tony's verdict on the fix that was offered — another line in CLAUDE.md:
+#
+#     "claude.md is unreliable. help me fix this permanently."
+#
+# He is right, and the evidence was already in the tree. Nothing *declared* which
+# folder was current. It had to be triangulated from four places that did not agree
+# about what they were even naming:
+#
+#     README.md:153                      `revised_2v_periods`      (abbreviated)
+#     tests/test_io.py:588               `2026-08-18_..._periods`  (a test fixture)
+#     docs/export_for_producers.md:200   "the current export"      (prose, undated)
+#     docs/SESSIONS.md                   eight claim blocks, naming BOTH folders
+#
+# A session that does not already know the answer cannot get it from that set, and a
+# session that guesses wrong reads the wrong data and reports numbers anyway. So the
+# answer moved here, where `bugarach.dataset.current()` reads it and the PreToolUse
+# gate `.claude/hooks/the-folder-is-the-input.sh` quotes it back at anyone reaching
+# for a store.
+#
+# NAMES ONLY, NEVER PATHS. `dataset.resolve()` finds the folder under the data root
+# on whatever machine this is; a path here would carry a person's name into a public
+# repo and sapper SAP004 would block the commit. That is the correct outcome — the
+# per-machine half of the answer is not a repo fact.
+#
+# WHEN THE PRODUCER SHIPS A NEW EXPORT: change the name here and nowhere else.
+# `tests/test_current_export.py` proves the named folders parse and that this file
+# stays the only declaration.
+
+[default]
+# What an analysis reads unless it has a stated reason not to.
+name = "2026-08-18_revised_2v_periods"
+recordings = 84
+note = """
+The standard export. Two streams, region labels, and the full per-event set the
+contract asks for — `time_sec` (t50rise), `width_sec` + `width_def`, `peak_sec`, `amp`.
+Carries no `analysis_*` columns, deliberately.
+"""
+
+[pensub]
+# The penumbra-subtracted pair, for the crosstalk control ONLY.
+name = "2026-08-20_pensub_revised_2v"
+recordings = 84
+note = """
+The same 84 recordings as `default`, penumbra-subtracted — verified file-for-file,
+the two name sets are identical. That is what makes it usable as a crosstalk control:
+the comparison is PAIRED, so a difference is the subtraction and not the roster.
+
+It pairs with `default` above and NOT with `2026-08-17_revised_2v_v2`, which ships
+different columns. Note that the underlying stores are 85 and 84 recordings and are
+NOT the same set — the equality above is a fact about these two EXPORTS, checked
+here, not inherited from the store counts. Do not carry the store figures across.
+"""
+
+# ---------------------------------------------------------------------------
+# NOT AN INPUT. Named here so that "it is not in the list" is never the reason a
+# session goes looking in the store for itself.
+#
+# `_quarantine/` holds `2026-08-17_revised_2v` and `..._v2` — earlier exports kept
+# for provenance, withdrawn as inputs. Its own `WHY.md` says why. Do not read them.
+#
+# `.mat` stores under `processed_archive/` are the PRODUCER's working form. They hold
+# recordings the lab has withdrawn, and re-deriving the withdrawal here is what cost a
+# real error: a consumer matched the lab's workbook on date alone (bugarach has no
+# `slice_order`), dropped a recording the lab had NOT withdrawn, and every published
+# number was then computed over a set one recording too small. Export contract
+# revision 6 records it. If a folder looks wrong, that is a conversation with the
+# producer, not a filter here.
+# ---------------------------------------------------------------------------

@@ -35,7 +35,8 @@ from dataclasses import dataclass
 from pathlib import Path
 
 __all__ = ["Kind", "kind", "describe", "data_root", "resolve", "require",
-           "DataError", "ENV_VAR"]
+           "current", "current_name", "declared_exports",
+           "DataError", "ENV_VAR", "POINTER"]
 
 ENV_VAR = "BUGARACH_DATA_ROOT"
 """Optional. Where the stores live, so a dataset can be named rather than pathed."""
@@ -206,3 +207,106 @@ def require(spec, *, want: str, flag: str = "--dataset") -> Path:
     raise DataError(
         f"{flag} {path} is a {k.name.replace('_', ' ')} ({k.detail}), but this "
         f"analysis reads {reads[want]}.")
+
+
+# ---------------------------------------------------------------------------
+# WHICH folder — as against `resolve()`, which answers WHERE a named one lives.
+#
+# These two questions kept getting confused, and only one of them had an answer.
+# `resolve("2026-08-18_revised_2v_periods")` has always worked; what no session
+# could do was find out that this was the name to pass. See `current_export.toml`
+# for the four disagreeing places the answer used to be scattered across, and for
+# Tony's instruction that produced this: "claude.md is unreliable. help me fix
+# this permanently." Prose in CLAUDE.md is not a mechanism. A function is.
+# ---------------------------------------------------------------------------
+
+POINTER = "current_export.toml"
+"""The single declaration of which export folder is the input. Repo root."""
+
+
+def _pointer_path() -> Path:
+    """The pointer file, found from this module rather than the working directory.
+
+    Walking up from ``__file__`` and not from ``cwd``: a tool run from a worktree
+    subdirectory, or from the darkroom, still gets its own repo's answer. An
+    installed (non-editable) copy has no repo above it, which is why the caller
+    gets ``DataError`` naming the file rather than a stack trace.
+    """
+    for parent in Path(__file__).resolve().parents:
+        cand = parent / POINTER
+        if cand.is_file():
+            return cand
+    raise DataError(
+        f"{POINTER} not found above {__file__}. It declares which export folder is "
+        f"the input and lives at the repo root; without it there is no default and "
+        f"a caller must name a folder explicitly.")
+
+
+def declared_exports() -> dict[str, dict]:
+    """Every export folder the repo declares, by role. Reads no recording.
+
+    Roles are the table names in ``current_export.toml`` — ``default`` and ``pensub``
+    today. Each maps to that table, so a caller can report ``recordings`` and ``note``
+    alongside the name it used.
+    """
+    import tomllib
+
+    path = _pointer_path()
+    try:
+        with path.open("rb") as fh:
+            doc = tomllib.load(fh)
+    except tomllib.TOMLDecodeError as exc:      # a typo here breaks every analysis
+        raise DataError(f"{path} is not valid TOML: {exc}") from exc
+
+    roles = {k: v for k, v in doc.items() if isinstance(v, dict) and "name" in v}
+    if not roles:
+        raise DataError(
+            f"{path} declares no export folder. It needs at least a [default] table "
+            f"with a `name` key naming a folder under <data root>/exports/bugarach/.")
+    return roles
+
+
+def current_name(role: str = "default") -> str:
+    """The NAME of the current export folder. Does not touch the filesystem.
+
+    Separate from ``current()`` on purpose: an error message, a log line or a hook
+    can say which folder is meant on a machine where the data is not mounted at all.
+    """
+    roles = declared_exports()
+    try:
+        return str(roles[role]["name"])
+    except KeyError:
+        raise DataError(
+            f"no export role {role!r} in {_pointer_path()}; declared: "
+            f"{', '.join(sorted(roles))}") from None
+
+
+def current(role: str = "default") -> Path:
+    """The current export folder, resolved on this machine.
+
+    The one call an analysis should make when it has no reason to read anything
+    else::
+
+        folder = dataset.current()            # the standard export
+        folder = dataset.current("pensub")    # the crosstalk control's pair
+
+    Raises ``DataError`` — never returns a store, never guesses a folder — if the
+    declared name is not under the data root on this machine.
+    """
+    name = current_name(role)
+    try:
+        path = resolve(name)
+    except DataError as exc:
+        raise DataError(
+            f"{_pointer_path().name} declares the {role} export as {name!r}, but it "
+            f"is not on this machine: {exc}") from None
+
+    k = kind(path)
+    if not k.is_export_folder:
+        # The pointer naming something that is not a folder is a repo-level mistake,
+        # not a caller's. Say which file to fix rather than what shape was found.
+        raise DataError(
+            f"{_pointer_path()} declares the {role} export as {name!r}, but "
+            f"{path} is a {k.name.replace('_', ' ')} ({k.detail}). The pointer names "
+            f"export folders only; stores are not inputs.")
+    return path

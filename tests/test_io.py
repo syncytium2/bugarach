@@ -585,7 +585,10 @@ def test_the_csv_readers_will_not_be_called_without_an_answer(tmp_path):
 def _real_export():
     from bugarach import dataset
     try:
-        return dataset.resolve("2026-08-18_revised_2v_periods")
+        # `current()`, not a literal. A folder name written here was a SECOND
+        # declaration of which export is current, and the declarations disagreed —
+        # current_export.toml names the four places the answer used to be scattered.
+        return dataset.current()
     except Exception:                                    # not this machine
         return None
 
