@@ -5,7 +5,7 @@
 > a page documenting a stale learned model*.** That moved the deliverable rather than
 > patching the findings, and dissolved several of them. Everything below is the
 > original findings record, kept in the words it was written in. **What happened to
-> each finding, and what four further blind rounds turned up, is appended at the end
+> each finding, and what ten further blind rounds turned up, is appended at the end
 > — read that before acting on anything here.**
 
 ## What was at stake
@@ -345,15 +345,21 @@ its own container without the document ever scrolling.
 
 ---
 
-# What happened next — the fixes, and four more blind rounds
+# What happened next — the fixes, and ten more blind rounds
 
 **Appended 2026-08-28.** Round 1 above found 191 findings and the page did not ship.
 Tony then reframed the deliverable, the page was rewritten, and the verify loop ran
-until a blind pass stopped finding blocking defects.
+until two consecutive blind passes returned nothing blocking.
 
-- artifact:  `site/learned_detector.html` (`5e03e854` → `c73370b2`)
-- rounds:    **5** (1 original + 4 blind verify)
-- commits:   11 on `learned-detector-page`, none merged, nothing deployed
+- artifact:  `site/learned_detector.html` (`5e03e854` → current)
+- rounds:    **11** (1 original + 10 blind verify)
+- commits:   17 on `learned-detector-page`, none merged, nothing deployed
+
+**The loop was stopped, not exhausted.** Rounds 8 and 10 returned nothing blocking, and
+round 11 was run as a final triage rather than as another repair cycle. Every round
+after the first found something real; the findings narrowed steadily, but none came back
+empty. What follows is therefore an honest account of a converging process that was
+halted at a sensible point, not a proof that nothing remains.
 
 ## The reframe, and why it was not a way of avoiding the findings
 
@@ -412,7 +418,58 @@ free run reaches 59.3, a stronger number sitting in the same store).
 
 **Round 5.** Ran clean of blocking findings.
 
-## The pattern across all five rounds
+
+## The ten blind rounds, and what each cost
+
+Every round found something. None came back empty. The findings narrowed, and the
+character of them changed — from *the page is about the wrong thing* to *this arrow
+clears that label by 3.7 units*.
+
+| round | blocking finding | whose fault |
+|---|---|---|
+| 1 (verify) | the rate probe contaminated its own null recordings while the store's note said they were empty; 1,128 + 12 ≠ 1,149 | mine, new |
+| 2 | "the floor models are silent" — they swallowed the whole recording; a zero in the trap column means the opposite | mine, original |
+| 3 | the architecture finding was a coin flip: 5 of 10 seeds | mine, original |
+| 4 | the page corrected a docstring by name and the correction was backwards | **my round-3 fix** |
+| 5 | "no detector ever sees ground truth" — the learned models are supervised on it | **my round-4 fix** |
+| 6 | a sentence that contradicted itself in thirty words, in the honesty section | **my round-5 fix** |
+| 7 | the caption said the six are swept against truth; no arrow reached them | **my round-5 fix** |
+| 8 | none | — |
+| 9 | two SVG labels lengthened past the layout, one clipped off the viewBox | **my round-8 fix** |
+| 10 | none | — |
+| 11 | final triage | — |
+
+**Five of the ten blocking findings were defects introduced by the previous round's
+fix.** That is the single most useful number in this record. A reviewer who stops after
+one pass ships those five, and every one of them was in the sentence or the figure the
+previous round had just corrected — the place nobody looks twice.
+
+It is also why round 9's response was a guard rather than another careful edit.
+`tests/test_svg_labels.py` measures every hand-written SVG's text through Chromium: no
+label outside its viewBox, no two overlapping. **Round 10 then found a hole in that
+guard** — it compared only labels sharing a rounded baseline, and the fix that prompted
+it had split the row onto three interleaved baselines, straight through the gap. The
+reviewer proved it by mutation rather than by argument. It compares boxes now, and its
+own can-it-fail test carries that case.
+
+The guard's first run found a defect nobody was looking for: a clipped label in
+`landscape.svg`, a different figure on a different published page, shipping cut
+mid-word.
+
+## What the loop could not do
+
+**It never questioned the deliverable.** Eleven roles and ten blind rounds, every one
+correct within its remit, and not one said *this is a page about the wrong thing*. Tony
+said it in a sentence the next morning. The loop checks whether a page is sound; it does
+not check whether it is the page you wanted.
+
+**It has no power over seed variance**, which is the defect underneath at least ten of
+the findings — a single training run reported as a result. Four extra fits on one fold
+would settle it and cost about 25 seconds. Until they are run, the fold spread (0.061
+F1) is wider than most effects this page discusses, and every reviewer who noticed said
+so independently.
+
+## The pattern across all eleven rounds
 
 **Ten of the findings are the same defect in different clothes: a single run reported
 as a result.** The probe-inclusive column, the rate sweep, the one-vote comparison,
