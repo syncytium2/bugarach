@@ -3,6 +3,11 @@
 **2026-08-24 · from the murderboard estate · concerns
 `docs/exports/2026-08-24_reply_to_interface2_attribution.md` and the memo it replies to**
 
+> **Amended 2026-08-28, before merge.** Items 1–7 are unchanged. A section applying two
+> role-2 rules that did not exist when the reviews ran — *trace forward*, *ask what the
+> humans hold* — has been added near the end, together with the five residual `⚠` it
+> produced. Read that section before quoting this one as settled.
+
 The method-attribution memo you received from interface2
 (`docs/exports/2026-08-21_bugarach_method_attribution.md`, branch `coord-attribution`) told you
 to credit "the Cossart-lab SCE rule" and to cite Dard 2022. **Do not put that in the UI.** It
@@ -135,6 +140,81 @@ thresholds it. **No change required.** Recorded so nobody re-opens it.
 
 ---
 
+## Two rules this review did not have — applied 2026-08-28, before merge
+
+The reviews behind items 1–7 ran against a vendored `doc_review_process.md` that
+**predated the re-vendor in #307**. That re-vendor added two rules to role 2, and
+both bear on this memo more than on anything else in the estate:
+
+> **Trace FORWARD as well as backward.** For any third-party tool, measure or
+> library the deliverable builds on, *"the authors' own later applied papers are a
+> required search target, not an optional field — read the tool's publication
+> page, not only the paper it was introduced in."*
+
+> **Ask what the humans hold.** Before reporting a claim unattributed or prior art
+> not found, *"ask the people involved whether anyone has already asked
+> someone."* **"Nobody was asked" is a residual `⚠`**, recorded like an unsearched
+> field.
+
+Merging without applying them would ship a review that skipped them silently.
+Applied below. **Nothing in items 1–7 changes; two of them get reclassified, and
+three gaps that were invisible become named.**
+
+### Forward-tracing, per tool this project wraps
+
+| tool / measure | forward target the rule requires | status |
+| --- | --- | --- |
+| **CICADA** (Cossart lab) | the tool's own publication page, and the lab's later applied papers using it | **not consulted ⚠** — this memo cites the Zenodo release and GitLab `master` only. Item 3 establishes the release lacks the code; nobody has looked at what the authors published *with* it |
+| **cSPIKE / SPIKE-synchronization** (Kreuz) | `thomaskreuz.org/publications/journal-articles` refs 45–47 | **named, none read ⚠** — Cecchini 2022 (PLoS Comput Biol, SM1), Kreuz 2024 (J Neurosci Methods), Mariani (J Neurosci Methods). Item 5 has them |
+| **PySpike** | the same author's applied work | **not searched ⚠** — the project has an open finding against this library (`docs/kreuz_note.md`, the inert `max_tau`) and has never asked what its authors did with it downstream |
+| **the SCE rule** (Cossart 2003 → Yuste lineage) | later restatements | **done** — Malvache 2016 / Modol 2020 / Dard 2022 are named as restatements in item 1 |
+
+**The reclassification that matters.** Item 5 marks the Kreuz papers *"UNVERIFIED
+— do not rewrite the attribution on this alone."* Under the forward-tracing rule
+they are not an optional deepening; **they are the required search target for
+exactly the claim the memo is adjudicating** — whether this project's detection
+layer around someone else's synchrony measure is novel. The memo's own §5 already
+found one concrete design difference (Kreuz requires an amplitude condition;
+`sync.py` gates on synchrony alone). That difference is an argument for reading
+them, not a substitute for it.
+
+Same for item 6: `rate_detect | ours, as far as we know` rests on a search of
+nothing. Kreuz volunteered the lead (Mainen & Sejnowski, *Science* 1995, PSTH
+thresholding). **Unsearched is a residual `⚠`, not an absence of prior art** — the
+rule says so in terms, and the memo's row should not be read as clearance.
+
+### Who has actually been asked
+
+| party | asked? | evidence |
+| --- | --- | --- |
+| **Thomas Kreuz** — author of the wrapped measure | **yes** | correspondence dated **2026-04-23**, quoted in items 5–7. Quoted and dated, as the rule requires |
+| Kreuz, on the PySpike `max_tau` defect | **drafted, not sent** | `docs/kreuz_note.md` is paste-ready and has been waiting on Tony since 2026-08-11 |
+| **The Cossart lab / CICADA authors** | **no ⚠** | grepped the estate: no email, no issue, no exchange. The memo makes four claims about their code and their release, including that a published DOI ships without the method (item 3) — and nobody has asked them |
+| **interface2**, on the memo's own claims | yes | the reply shipped, `docs/exports/2026-08-24_reply_to_interface2_attribution.md` |
+
+**The cheapest open item in this document is one email to the Cossart lab.** It
+would settle item 3 (is the missing `sce_stats_utils.py` in v1.0.3 deliberate or
+a packaging slip?) and item 4 (do they consider `get_sce_threshold` composable
+with the windowed sum, or is the pairing ours alone?) — two questions this memo
+answers by reading their source and inferring intent. Item 4's verdict in
+particular, *"upstream never composes those two functions"*, is an inference
+about what the authors meant, made without asking them.
+
+### Residual ⚠ after applying both rules
+
+1. CICADA's publication page and the lab's applied papers — **not consulted**.
+2. Cecchini 2022 SM1, Kreuz 2024, Mariani — **named, unread**; required, not optional.
+3. Mainen & Sejnowski 1995 and the PSTH-threshold literature — **unsearched**;
+   `rate_detect`'s "ours" is unsupported, not cleared.
+4. PySpike's authors' downstream work — **unsearched**.
+5. **The Cossart lab has never been asked anything**, while this memo makes four
+   claims about their artifacts and one about their intent.
+
+None of these blocks the four MUST-FIX items: 1–4 are verified from primary
+sources and stand. They bound what the memo may be quoted as having established.
+
+---
+
 ## Provenance, and the honest caveat
 
 Items 1–4 came from **two blind murderboard runs** on the memo as it stood before correction
@@ -151,3 +231,16 @@ found ~50 further defects in the memo — most of them interface2's to fix, not 
 above are the ones that would change what *you* publish. Nothing here is a correctness proof, and
 the one class of finding that did *not* come from the process is the class the process is
 supposed to be best at.
+
+**And the process has since learned that lesson twice over.** The observation in the
+paragraph above — that correspondence beat every literature search — is now a rule in
+`doc_review_process.md`, alongside a second one about tracing a wrapped tool's authors
+*forward*. Neither existed when these reviews ran. Applying them on 2026-08-28, before
+merge, changed none of items 1–7 and produced **five named residual `⚠`** where there had
+been silence, the largest being that **nobody has ever asked the Cossart lab anything**
+while this memo makes four claims about their artifacts and one about their intent. See
+*"Two rules this review did not have"* above.
+
+That is the shape of the thing: this document's own closing caveat became a rule, and the
+rule immediately found more that the document had missed. It should be read as bounded by
+that section, not as a clearance.
