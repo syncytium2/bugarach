@@ -128,7 +128,9 @@ the next section. When that Python bug is fixed, the browser is the reference.
 
 Tony said *"do it"* to porting the gate. **It would be inert**, and that is worse than
 absent: a third branch in `pickOperatingPoint` would sit in the page looking like Python's
-protection while measuring nothing. The probe does not exist in the app **on any route**:
+protection while measuring nothing. The probe is not **planted** in the app on either route —
+which is not the same as the app being unable to run one, a distinction this section first
+got wrong and step 1 below now states properly:
 
 | | |
 |---|---|
@@ -152,8 +154,18 @@ this file is now in. Read it as a gap in the plan's sequencing, not as a defect 
 
 **The real chain is four steps and the gate is last:**
 
-1. **Plant the probe** — a `hot_window` in the browser generator, and the same key added to
-   `LAB_SPEC_DEFAULTS` so the two routes agree.
+1. **Plant the probe.** ⚠ **Corrected 2026-08-28 — this is not one job, and the wording above
+   read as though the app *could not* run a probe. It can.** Tony asked directly; the answer
+   splits by route and the two costs are nothing alike:
+   - **The lab-server route already has the capability, and needs one key.** `lab.py:499` is
+     `simulate_coordination(seed=seed, **spec)` with `spec` arriving straight from the page's
+     `labSpec()`, and that function fully supports the probe. The page already sends
+     `hot_rate_hz: 0.06`. Adding `hot_window` to `LAB_SPEC_DEFAULTS` plants it.
+   - **The published in-browser generator needs the block written.** `simulateRecording` is a
+     hand-written JS port and the hot block was not among the parts ported — a Poisson draw
+     over a window, not a large job, but it is code rather than a setting.
+   - **They must agree**, or the page and the server disagree about what a precision number
+     means, which is exactly the failure the `:4082` comment names.
 2. **Score it** — `scoreDetections` counts detections falling inside that window and returns
    `hotFa`, the way `score.py:242` does.
 3. **`nScored` stops being the identity**, which is the moment the app's exclusion rule
