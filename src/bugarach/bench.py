@@ -89,11 +89,54 @@ A flat field at the same mean leaves 2% silent at a median of 10.0 mHz.
 Gamma is the simplest distribution that produces the silence and the skew
 together; it is not the last word on the busiest ROIs.
 
-⚠ **Not wired into the bench.** ``BENCH_RECORDING`` still runs a flat field, so
-every operating point and every score in this package is still measured on the
-old background. Switching it re-derives the whole bench and is not a default
-change — see ``docs/todo/2026-08-14-generator-background-model-is-flat.md``.
+**Wired into the bench 2026-08-28.** ``BENCH_RECORDING`` carries this shape, so
+every score in this package is measured on a heterogeneous field. It was held
+back for one reason — leaving it ``None`` kept the RNG stream identical, so old
+seeds reproduced — and Tony spent that: *"all the benchmarks have changed because
+the bench is changed."* Numbers published before that date were measured on a
+flat field and are not comparable to numbers after it.
 """
+
+MEASURED_BURST_SHAPE = (1.547, 1.388)
+"""Gamma shapes of the per-bin rate multiplier, for `MEASURED_BURST_BINS`.
+
+The temporal partner of `MEASURED_RATE_SHAPE`, and the same estimator turned
+ninety degrees. There, ROIs differed from one another. Here **one ROI is followed
+across time bins**: under a constant rate its counts would be Poisson with
+variance equal to mean, and a bursty ROI is over-dispersed. Fixing the ROI is
+what makes the estimate clean — rate heterogeneity across ROIs is held constant
+inside one of them, so the over-dispersion left over is temporal.
+
+Maximum likelihood over the ROIs carrying at least 10 events in their baseline
+window (784 of them, across 85 windows), each ROI keeping its own mean.
+Re-derive with `python tools/fit_background_shape.py`.
+
+**Two scales, because one cannot work.** A single bin width draws independent
+bins, so its over-dispersion stops growing once the window exceeds the bin. Real
+ROIs keep getting more over-dispersed the wider you look:
+
+| variance/mean | 30 s | 60 s | 120 s | 300 s |
+|---|---|---|---|---|
+| real | 1.82 | 2.61 | 3.88 | 5.69 |
+| flat background | 0.99 | 0.95 | 0.93 | 0.74 |
+| these two scales | 1.87 | 2.76 | 3.04 | 4.44 |
+
+Fine scales are reproduced; the coarse end is still short, so a busy stretch of
+several minutes is shorter here than in real tissue.
+
+⚠ The two shapes are fitted **per scale independently** and then multiplied. A
+joint fit would not give these two numbers, and the agreement above is partly
+that approximation being forgiving. It is an approximation on purpose — the
+joint likelihood has no closed form — and it is why the coarse end is the half
+that misses.
+
+**Wired into the bench 2026-08-28**, with `MEASURED_RATE_SHAPE`. Both axes of
+`BENCH_RECORDING`'s background are now the fitted ones; see that constant for
+what switching them cost and who decided to spend it.
+"""
+
+MEASURED_BURST_BINS = (300.0, 60.0)
+"""Bin widths (s) the shapes in `MEASURED_BURST_SHAPE` were fitted at."""
 
 
 @dataclass(frozen=True)
@@ -272,6 +315,21 @@ BENCH_RECORDING = dict(
     n_per_level=(5, 5, 5),
     jitter_sec=0.36,
     min_sep_sec=120.0,
+    # THE BACKGROUND IS NOT FLAT, and as of 2026-08-28 this bench stops pretending
+    # it is. Both shapes are fitted, not chosen — see `MEASURED_RATE_SHAPE` (81
+    # baseline windows, 2 643 ROIs) and `MEASURED_BURST_SHAPE` (the same estimator
+    # turned on time). Wiring them in was held back for one reason and one only:
+    # leaving them `None` keeps the RNG stream identical, so every seed reproduced
+    # and every published number stayed comparable.
+    #
+    # Tony cut that knot, 2026-08-28: *"all the benchmarks have changed because the
+    # bench is changed."* The comparability those `None`s were protecting had
+    # already been spent by the bench revamp, so holding a measured background out
+    # of the bench was buying nothing and costing realism — a flat field leaves 2%
+    # of ROIs silent where real windows leave 35%.
+    bg_rate_shape=MEASURED_RATE_SHAPE,
+    bg_burst_shape=MEASURED_BURST_SHAPE,
+    bg_burst_bin_sec=MEASURED_BURST_BINS,
     hot_window=(1200.0, 1500.0),
     hot_rate_hz=0.06,
     ramp_sec=30.0,
@@ -1203,42 +1261,3 @@ def pick_operating_point(curve: list[BenchResult], *,
         "operating point")
 
 
-MEASURED_BURST_SHAPE = (1.547, 1.388)
-"""Gamma shapes of the per-bin rate multiplier, for `MEASURED_BURST_BINS`.
-
-The temporal partner of `MEASURED_RATE_SHAPE`, and the same estimator turned
-ninety degrees. There, ROIs differed from one another. Here **one ROI is followed
-across time bins**: under a constant rate its counts would be Poisson with
-variance equal to mean, and a bursty ROI is over-dispersed. Fixing the ROI is
-what makes the estimate clean — rate heterogeneity across ROIs is held constant
-inside one of them, so the over-dispersion left over is temporal.
-
-Maximum likelihood over the ROIs carrying at least 10 events in their baseline
-window (784 of them, across 85 windows), each ROI keeping its own mean.
-Re-derive with `python tools/fit_background_shape.py`.
-
-**Two scales, because one cannot work.** A single bin width draws independent
-bins, so its over-dispersion stops growing once the window exceeds the bin. Real
-ROIs keep getting more over-dispersed the wider you look:
-
-| variance/mean | 30 s | 60 s | 120 s | 300 s |
-|---|---|---|---|---|
-| real | 1.82 | 2.61 | 3.88 | 5.69 |
-| flat background | 0.99 | 0.95 | 0.93 | 0.74 |
-| these two scales | 1.87 | 2.76 | 3.04 | 4.44 |
-
-Fine scales are reproduced; the coarse end is still short, so a busy stretch of
-several minutes is shorter here than in real tissue.
-
-⚠ The two shapes are fitted **per scale independently** and then multiplied. A
-joint fit would not give these two numbers, and the agreement above is partly
-that approximation being forgiving. It is an approximation on purpose — the
-joint likelihood has no closed form — and it is why the coarse end is the half
-that misses.
-
-⚠ **Not wired into the bench**, exactly like `MEASURED_RATE_SHAPE`.
-`BENCH_RECORDING` still runs a homogeneous background in both axes.
-"""
-
-MEASURED_BURST_BINS = (300.0, 60.0)
-"""Bin widths (s) the shapes in `MEASURED_BURST_SHAPE` were fitted at."""
