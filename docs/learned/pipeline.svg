@@ -131,10 +131,16 @@
   <g fill="none" stroke-width="1.4" stroke-dasharray="5 3" marker-end="url(#pa)"
      color="inherit">
     <path d="M 672 268 L 676 268 L 676 396 L 710 396 L 710 310"/>
-    <!-- The branch that supervises. Rises at x=694, which shares no y-range with
-         the solid data-set arrow at x=686 (that one spans 86-150; this spans
-         196-396), so the two never run close enough to read as one line. -->
+    <!-- The two branches that FIT. Both rise at x=694, which shares no y-range with
+         the solid data-set arrow at x=686 (that one spans 86-150; these span
+         100-396), so they never run close enough to read as one line.
+         The branch to the six was missing until 2026-08-28: the caption had already
+         been corrected to say the six are swept against the same labels, and only
+         the learned arrow was drawn. A picture that contradicts its own corrected
+         caption is worse than the uncorrected pair, because the reader believes the
+         picture. -->
     <path d="M 676 340 L 694 340 L 694 196 L 697 196"/>
+    <path d="M 694 196 L 694 100 L 697 100"/>
   </g>
   <text x="450" y="418" text-anchor="middle" class="lbl">
     the dashed line is ground truth. It fits every detector on the 3 training folds &#8212; the learned ones supervised on it, the six swept against it &#8212;

@@ -160,7 +160,7 @@
    already gives the results table: a scrolling window with a floor under the
    content width. */
 .archwrap { overflow-x: auto; margin: 2rem 0; }
-.arch { min-width: 640px; }
+.arch { min-width: 760px; }
 .arch svg { width: 100%; height: auto; display: block; }
 /* Same treatment for the raster-image figure, which otherwise shrinks its own
    axis ticks to ~3px on a phone rather than scrolling. */
@@ -182,8 +182,14 @@ th.pair { border-bottom: 2px solid var(--rule); }
 .tablewrap { width: min(1180px, calc(100vw - 3rem));
              margin-inline: calc((100% - min(1180px, 100vw - 3rem)) / 2); }
 tr.learned td { background: color-mix(in srgb, var(--learned) 8%, transparent); }
-td.n, th.n { text-align: right; font-family: var(--mono);
-             font-variant-numeric: tabular-nums; white-space: nowrap; }
+td.n { text-align: right; font-family: var(--mono);
+       font-variant-numeric: tabular-nums; white-space: nowrap; }
+/* Headers wrap; only the numbers hold their line. With `nowrap` on both, the
+   K table ran to 1165px and clipped its last column at every width below about
+   1213 — which is most windowed laptops, and that column is the one the
+   paragraph under it calls decisive. */
+th.n { text-align: right; font-family: var(--mono);
+       font-variant-numeric: tabular-nums; }
 .cite { font-size: .93rem; }
 .cite td:first-child { white-space: nowrap; font-weight: 640; }
 /* On a phone the citations table is the only one whose cells are prose, so
@@ -404,10 +410,16 @@ td.n, th.n { text-align: right; font-family: var(--mono);
   <g fill="none" stroke-width="1.4" stroke-dasharray="5 3" marker-end="url(#pa)"
      color="inherit">
     <path d="M 672 268 L 676 268 L 676 396 L 710 396 L 710 310"/>
-    <!-- The branch that supervises. Rises at x=694, which shares no y-range with
-         the solid data-set arrow at x=686 (that one spans 86-150; this spans
-         196-396), so the two never run close enough to read as one line. -->
+    <!-- The two branches that FIT. Both rise at x=694, which shares no y-range with
+         the solid data-set arrow at x=686 (that one spans 86-150; these span
+         100-396), so they never run close enough to read as one line.
+         The branch to the six was missing until 2026-08-28: the caption had already
+         been corrected to say the six are swept against the same labels, and only
+         the learned arrow was drawn. A picture that contradicts its own corrected
+         caption is worse than the uncorrected pair, because the reader believes the
+         picture. -->
     <path d="M 676 340 L 694 340 L 694 196 L 697 196"/>
+    <path d="M 694 196 L 694 100 L 697 100"/>
   </g>
   <text x="450" y="418" text-anchor="middle" class="lbl">
     the dashed line is ground truth. It fits every detector on the 3 training folds &#8212; the learned ones supervised on it, the six swept against it &#8212;
@@ -457,7 +469,7 @@ td.n, th.n { text-align: right; font-family: var(--mono);
     recording-extent helper, and the window selector &mdash; but no detection rule.)
   </p>
   <p>
-    <span class="key truth">Baseline windows only.</span> Drug and washout windows are
+    <span class="key truth">Baseline windows only.</span> Every non-baseline window &mdash; drug, high-potassium, washout &mdash; is
     counted and skipped. Taking the properties of coordination from a treated slice
     assumes the answer, and this preparation is one where that assumption has already
     produced a wrong conclusion.
@@ -477,8 +489,8 @@ td.n, th.n { text-align: right; font-family: var(--mono);
     <th>K (cells)</th>
     <th class="n">coordinated events found<br>(per minute, median slice)</th>
     <th class="n">cells participating<br>(count of 32, median slice)</th>
-    <th class="n">onset spread, observed<br>(s)</th>
-    <th class="n">onset spread, shuffled<br>(s)</th>
+    <th class="n">onset spread, observed<br>(s, SD within a group)</th>
+    <th class="n">onset spread, shuffled<br>(s, SD within a group)</th>
     <th class="n">slices with a spread<br>(of 85)</th>
   </tr></thead>
   <tbody>
@@ -562,7 +574,7 @@ td.n, th.n { text-align: right; font-family: var(--mono);
     So the generator plants two kinds of negative as well. <strong>Distractors</strong>
     are correlated bursts labeled as coincidence rather than coordination, and a
     detector is charged for firing on them. And each recording carries a <strong>probe
-    block</strong> &mdash; 1200 s to
+    block</strong> &mdash; 1,200 s to
     1500 s of a 3,525 s recording, to
     which the generator <em>adds</em> 0.06 Hz per cell on top of a
     background of 0.0097 Hz, with <em>nothing planted in it</em>.
@@ -814,12 +826,12 @@ td.n, th.n { text-align: right; font-family: var(--mono);
     ablated model would separate the two, and that has not been done.
   </p>
   <p>
-    ⚠ <strong>This page carries five kinds of fit of the same architecture, and only
+    ⚠ <strong>This page carries four kinds of fit of the same architecture, and only
     the first produced the table.</strong> The four scored folds; the twenty ablation
-    fits behind the scale and clamp results; the busier refit whose surround ratio
-    reaches 37.7; the two regime fits behind the transfer numbers, of
-    which that busier refit is one; and the 10-seed grid behind the
-    one-vote probe, of which seed 7 is the single fit this rate sweep used. Each
+    fits behind the scale and clamp results; the two regime fits behind the transfer
+    numbers, the busier of which is also the refit whose surround ratio reaches
+    37.7; and the 10-seed grid behind the one-vote
+    probe, of which seed 7 is the single fit this rate sweep used. Each
     demonstration is about the architecture rather than about a published number, but
     the distinction is worth naming, because conflating two of them is a mistake this
     page has already made once.
@@ -1002,23 +1014,30 @@ td.n, th.n { text-align: right; font-family: var(--mono);
   </p>
   <p>
     <span class="key learned">And the two learned models reading zero in that column
-    are not restrained &mdash; they swallowed the block whole.</span> The per-cell bank
-    emits <strong>two detections per fold</strong>, and those two calls hit twelve
-    distractors and two planted events across two recordings: one span per recording,
-    covering essentially all of it. Its probe count is zero because a detection matched
-    to a planted event never enters the false-alarm set at all, so the count is
-    <em>structurally</em> zero for any detector whose every call is a hit &mdash;
+    are not restrained.</span> The per-cell bank <strong>swallowed the block
+    whole</strong>: it emits two detections per fold, and those two calls hit twelve
+    distractors and two planted events across two recordings &mdash; one span per
+    recording, covering essentially all of it. Its probe count is zero because a
+    detection matched to a planted event never enters the false-alarm set at all, so the
+    count is <em>structurally</em> zero for any detector whose every call is a hit,
     however much of the block that call covers.
   </p>
   <p>
-    <strong>That is a second blind spot in the trap, and it is worth more than the
-    first.</strong> The probe cannot charge a detector that fires too much; it also
-    cannot charge one that fires once, forever. Neither F1 column sees it either: the
-    charged rule differs from the published one only by putting probe firings back into
-    the denominator, so with zero of them the two rules are the same arithmetic. That is
-    why these two rows alone are identical across the two columns while every other row
-    moves. <strong>A zero in the trap column means one of two opposite things, and the
-    column cannot tell you which.</strong>
+    The pooled trace reads zero for a different reason on one of its four folds, and
+    it is worth having: there it emitted <strong>ten calls of which seven were
+    false</strong>, and every one of them happened to miss a window that is 8.5% of the
+    recording. Not restraint, not a swallowed block &mdash; luck.
+  </p>
+  <p>
+    <strong>So the trap has a second blind spot, and it is worth more than the
+    first.</strong> It cannot charge a detector that fires too much; it cannot charge
+    one that fires once, forever; and it cannot charge one whose false alarms simply
+    landed elsewhere. Neither F1 column sees any of it: the charged rule differs from
+    the published one only by putting probe firings back into the denominator, so with
+    zero of them the two rules are the same arithmetic. That is why these two rows alone
+    are identical across the two columns while every other row moves.
+    <strong>A zero in the trap column means one of three things, and the column cannot
+    tell you which.</strong>
     ⚠ In seven of their eight fold-fits the threshold also lands on the bottom edge of
     the searched grid, which this project treats elsewhere as a search that stopped too
     early rather than an answer, so their F1 is reported for completeness and is
