@@ -398,6 +398,47 @@ readers most likely to have the preference set.
 """
 
 
+def _page_is_current(built: Path) -> bool:
+    """Rebuild a `build_learned_report.py` page to a scratch path and compare bytes.
+
+    The question this answers is not "does the file exist" but "does the file still
+    agree with the data it quotes". Those pages resolve every number out of JSON at
+    build time, so the failure mode is a *stale build*: the stores move, the page does
+    not, and the prose keeps quoting the previous run in the previous run's own
+    formatting. Nothing about the file's mtime or size reveals it, and the page cannot
+    check itself.
+
+    Returns True when it matches, and prints what to run when it does not. Missing
+    source is not this function's failure to report — the caller has already checked
+    the built file exists, and a page whose *source* is gone is a different problem
+    from a page that is behind.
+    """
+    src = built.with_name(built.name.replace(".html", ".src.html"))
+    if not src.exists():
+        return True
+    import subprocess
+    import tempfile
+    with tempfile.TemporaryDirectory() as tmp:
+        out = Path(tmp) / built.name
+        r = subprocess.run(
+            [sys.executable, str(ROOT / "tools" / "build_learned_report.py"),
+             str(src), str(out)],
+            capture_output=True, text=True)
+        if r.returncode != 0:
+            print(f"build_site: rebuilding {src.relative_to(ROOT)} failed, so its "
+                  f"published copy cannot be trusted:\n{r.stderr.strip()}",
+                  file=sys.stderr)
+            return False
+        if out.read_bytes() != built.read_bytes():
+            print(f"build_site: {built.relative_to(ROOT)} is STALE — rebuilding it "
+                  f"from {src.name} produces different bytes, so the page is "
+                  f"quoting an older run of its own data.\n"
+                  f"  python tools/build_learned_report.py "
+                  f"{src.relative_to(ROOT)}", file=sys.stderr)
+            return False
+    return True
+
+
 def nav_html(current: str) -> str:
     """The site nav, with `current` marked, for any page.
 
@@ -892,17 +933,24 @@ def main(argv=None):
         return 1
     shutil.copyfile(land, SITE / "landscape.html")
 
-    # The learned-detector page is built the same way and published the same
-    # way. It must not go stale silently: every number on it is a {{N:...}}
-    # token resolved out of `bakeoff.json` and its neighbours at build time, so
-    # a rebuild of the results with no rebuild of the page leaves a page whose
-    # figures moved and whose prose did not. Refusing here is the only stage
-    # that sees both.
+    # The learned-detector page is built the same way and published the same way.
+    #
+    # **It is rebuilt here and compared, not merely checked for existence.** Every
+    # number on it is a {{N:...}} token resolved out of `bakeoff.json` and its
+    # neighbours at build time, so a rerun of the results with no rerun of the page
+    # leaves prose that disagrees with the data it claims to quote — and an
+    # exists() check cannot see that. The first version of this block carried this
+    # same comment over `if not learned.exists()`, which described a guard it did
+    # not implement; the 2026-08-27 murderboard caught the mismatch. A comment
+    # claiming a check that is not there is worse than no comment, because the next
+    # reader routes around it.
     learned = ROOT / "docs" / "learned" / "learned_detector.html"
     if not learned.exists():
         print(f"build_site: {learned.relative_to(ROOT)} is missing, and the "
               f"index links to it. Run tools/build_learned_report.py on "
               f"learned_detector.src.html first.", file=sys.stderr)
+        return 1
+    if not _page_is_current(learned):
         return 1
     shutil.copyfile(learned, SITE / "learned_detector.html")
 
@@ -1021,6 +1069,13 @@ def main(argv=None):
               f"published page with no born-on date and no version date is the "
               f"thing this stamp exists to prevent. Check the insertion anchors "
               f"in stamp_html().", file=sys.stderr)
+        # Refuse, like the two checks below it. This complained to stderr and
+        # returned 0 until 2026-08-27, so the stamp was the one published-page
+        # property locked at neither end: the build shrugged, and the test that
+        # should have caught it carried a hardcoded three-page list a fifth page
+        # fell outside. Both halves are fixed; this is the half that runs on
+        # every build.
+        return 1
 
     got = {str(f.relative_to(SITE)) for f in SITE.rglob("*") if f.is_file()}
     if got != set(PUBLISHED):
