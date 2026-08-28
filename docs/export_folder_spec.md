@@ -217,6 +217,42 @@ responsibility and belongs in their documentation, not here.
 > `width_sec` yet, so no code changes; recorded so the question is not reopened and so
 > interface2 can clear its flag.
 
+> **Extended 2026-08-28 (Tony) — and the sentence above about nothing reading
+> `width_sec` is now FALSE: `src/bugarach/detectors/cicada.py` reads it.** Written down
+> here, in full, because Tony asked not to have to explain it again.
+>
+> **The two definitions are not two measurements.** Event detection in this lab's
+> pipeline is **methodically identical** in the fast and slow streams. What differs is
+> a preprocessing step applied **only when exporting to bugarach**: the export records
+> **FWHM as the duration for the fast stream** and the **rising phase — peak location
+> minus t50rise — for the slow stream**. Nothing upstream of the export differs, so
+> this is a property of *the file*, not of the recording and not of the detection.
+> Anything that describes it as "the two streams are measured differently" is wrong.
+>
+> **Why.** The duration CICADA receives strongly affects its calls. That is a
+> non-question for classical calcium transients of about a second, but slow-stream
+> events in this preparation can be very long, and handing over their full extent
+> makes the coincidence structure meaningless.
+>
+> **What it reaches: exactly one detector.** locust is the only one of the six that
+> consumes a per-event duration — `cicada.py`'s `duration_field`. Verified 2026-08-28:
+> the `width_kind` / `width_sec` names in `coact.py`, `sce.py`, `loco.py`, `rate.py`
+> and `sync.py` are **outputs**, describing spans those detectors computed for
+> detections they made; none is an input read off the stream. So a change to the
+> exported duration moves locust's numbers and nothing else's.
+>
+> **Not a recommendation to anybody else.** This lab's calcium-imaging pipeline is not
+> usable by other labs for the time being, so this is a fact about *this* export rather
+> than guidance. Another producer sends whatever it computes and names it in
+> `width_def`; the contract above is unchanged and does not need to know.
+>
+> ⚠ **One wording question, left with the producer rather than resolved here.** The
+> 2026-08-20 note above says the fast stream carries *findpeaks half-prominence* width;
+> the 2026-08-28 account says *FWHM*. Those are close, and may be the same quantity in
+> this pipeline, but they are not the same definition in general. `width_def` is the
+> field that settles it: whatever string the exporter writes is the answer, and
+> bugarach carries it and never parses it.
+
 #### Sending more than is asked for
 
 Extra columns are ignored rather than rejected, so a producer may ship one file that
