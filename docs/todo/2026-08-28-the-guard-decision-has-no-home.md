@@ -1,10 +1,10 @@
 ---
-status: open
+status: waiting-on-tony
 filed: 2026-08-28
-waiting: Put `guard_sec` on the coact knob axis with a crowded regime in the scoring set, or scope the re-fit to the median on purpose and say so in `forks.md`.
+waiting: Guard on the coact knob axis with a crowded scoring regime, or median-only.
 ---
 
-# The guard decision has no home, and the file that was supposed to hold it does not mention it
+# The guard scoping decision has no home
 
 > **Not murderboarded** — a planning note for sessions in this tree, same standing as
 > [`CFAR variants are a knob axis`](2026-08-25-cfar-variants-are-a-knob-axis-not-new-detectors.md),
@@ -102,40 +102,40 @@ is untouched by it. **If a session lifts the deferral, it says so explicitly in 
 handoff and names what replaced the ruling** — otherwise the next session finds it,
 believes it, and stops, correctly.
 
-## ⚠ There is no room for a fourth decision, and that is why this says `open`
+## ⚠ This got its slot by another item vacating one, and the margin is 6 bytes
 
-**This file wants `status: waiting-on-tony`.** It is a decision no session can advance,
-which is exactly what that status is for. It cannot have it, and the reason is measured
-rather than argued.
+**The briefing holds three decisions, not four.** This file was filed `status: open` on
+2026-08-28 for that reason, and took `waiting-on-tony` later the same day only because
+[the PySpike report](2026-08-11-file-pyspike-max-tau-issue.md) stopped being one — Tony
+sent the mail, so it moved to `in-progress` and freed the slot.
 
-Three items already carry it. Adding a fourth costs **135B** and the budget has **54B**.
-Fresh clone, `BUGARACH_DARKROOM` unset, no `core.hooksPath`, no machine-local board —
-the configuration CI runs and the one that binds:
+Measured on a fresh clone with `BUGARACH_DARKROOM` unset, no `core.hooksPath` and no
+machine-local board — the configuration CI runs and the one that binds:
 
-| `docs/todo/` state | briefing |
+| state | briefing |
 |---|---|
-| without this file | **8,946B**, 133 lines — fits |
-| this file, `waiting-on-tony` | **9,081B** — over, so **TERSE: 70 lines, 4,251B** |
-| …title cut to 38 chars, filename shortened, action line halved | **9,071B** — still over |
-| this file, `status: open` | **8,946B**, 133 lines — costs nothing |
+| three items, this one `open` | **8,981B** — fits |
+| four items (this one added) | **9,050B** — over, so **TERSE: 69 lines, 4,160B** |
+| swap: PySpike out, this one in | **9,050B** — the swap alone is **+69B**, still over |
+| …plus title and action line trimmed | **8,994B** — fits, **6B to spare** |
 
-**Trimming recovers 10B of the 81B needed, so the cost is the structure of a fourth
-entry, not its text.** No wording fits. And the failure is not a truncated line — it is
-the whole briefing collapsing from 133 lines to 70, which loses the board, the worktree
-list and the other three decisions along with this one. **A fourth decision is worse than
-no decision.**
+**Two things follow, and both are about the next person, not this file.**
 
-⚠ **I measured the configured machine first and got 8,758B, which fits, and CI failed.**
-That is `HANDOFF_2026-08-27.md`'s lesson repeating on the file written after it: on a
-configured machine the standing alarms collapse to one line each, so the local number is
-never the number. Measure in a throwaway clone.
+**Six bytes is not a margin.** The next todo that takes `waiting-on-tony` will tip it, and
+the failure is not a truncated line — it is the whole briefing collapsing to **TERSE**,
+losing the board, the worktree list and the other decisions along with this one. If you
+need the slot, something has to leave first.
 
-**So `status: open` is a workaround, not a fix, and the fix is a real choice:** raise the
-budget — `tools/hook_spill_census.sh` puts the smallest observed refusal at **10,186B**,
-so 9,000B is conservative by its own record — or retire one of the three standing items,
-of which [the PySpike report](2026-08-11-file-pyspike-max-tau-issue.md) has been finished
-and waiting since 2026-08-11 and needs one email. Neither is this file's call. Related and
-already open:
+⚠ **Do not measure this on a configured machine.** The first version of this section
+reported 8,758B, which fits, and CI failed at 9,051B. On a configured machine the standing
+alarms collapse to one line each, so the local number is never the number — which is
+`HANDOFF_2026-08-27.md`'s lesson, repeating on the file written after it. Clone to a temp
+directory and measure there.
+
+**The real fix is still unmade:** raise the budget — `tools/hook_spill_census.sh` puts the
+smallest observed refusal at **10,186B**, so 9,000B is conservative by its own record — or
+accept that three is the cap and say so somewhere that fires. Neither is this file's call.
+Related and already open:
 [two session-start hooks and neither sees the total](2026-08-26-two-session-start-hooks-and-neither-sees-the-total.md).
 
 ## What must not happen
