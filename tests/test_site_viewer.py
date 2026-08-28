@@ -27,6 +27,70 @@ sys.path.insert(0, str(ROOT / "tools"))
 from build_site import NETWORK, strip_comments, viewer_network_leaks  # noqa: E402
 
 
+def test_both_readers_agree_which_widths_reach_a_peak():
+    """`io.py` says its allowlist is "kept identical" to the viewer's. Check it.
+
+    Two implementations read one contract — `src/bugarach/io.py` for the folder
+    reader and this page for the browser — and each decides whether a `width_sec`
+    may stand in for an absent `peak_sec` by matching `width_def` against a set of
+    exact strings. `io.py:97` claims the two sets are kept in step. Nothing checked
+    it: `test_io.py` asserts one name against the Python set, `test_webapp_cicada.py`
+    asserts a hand-written parallel list against the JS set, and a third name added
+    to either leaves both suites green.
+
+    That is the same shape as the defect the whole width contract exists to record —
+    two implementations of one contract disagreeing, each standing as evidence the
+    other is right (`io.py:14-20`). Divergence here is silent by construction: an
+    unrecognised name is deliberately not an error, so the two readers would simply
+    derive different peaks from the same file and neither would say a word.
+
+    Export contract revision 8 now names both strings to producers, which makes this
+    a promise to an outside lab rather than an internal detail.
+    """
+    from bugarach.io import WIDTH_REACHES_PEAK
+
+    block = re.search(r"const\s+WIDTH_REACHES_PEAK\s*=\s*new Set\(\[(.*?)\]\)",
+                      VIEWER.read_text(), re.S)
+    assert block, ("docs/site/raster_viewer.html no longer declares "
+                   "`const WIDTH_REACHES_PEAK = new Set([...])`. If it was renamed, "
+                   "point this test at the new name — do not delete it.")
+    js = set(re.findall(r'"([^"]+)"', block.group(1)))
+
+    assert js == set(WIDTH_REACHES_PEAK), (
+        f"the two readers disagree about which width_def reaches a peak.\n"
+        f"  only in the browser: {sorted(js - set(WIDTH_REACHES_PEAK))}\n"
+        f"  only in io.py:       {sorted(set(WIDTH_REACHES_PEAK) - js)}\n"
+        f"Both must change together, and docs/export_folder_spec.md names them "
+        f"to producers.")
+
+
+def test_the_contract_names_the_widths_that_reach_a_peak():
+    """The producer-facing documents must name every accepted string, verbatim.
+
+    The rule is an exact-string match, not an interpretation of what a rule means,
+    so a producer whose width genuinely runs half-rise to peak under a different
+    spelling derives nothing and is told nothing. Describing the rule semantically —
+    which both documents did until revision 8 — is therefore a promise the code does
+    not keep. If a name is added to the set, it has to reach the people who write
+    the files.
+    """
+    from bugarach.io import WIDTH_REACHES_PEAK
+
+    # The viewer's own help panel is the third producer-facing surface, and it is the
+    # one a producer reads at the moment locust refuses to run. It named only
+    # `t50rise_to_peak` — the spec's illustration — and never
+    # `rise_interval_peak_minus_t50rise`, which is the string this lab's own exporter
+    # ships. A producer comparing their correct column against that help would have
+    # concluded they had it wrong and renamed a working column.
+    for rel in ("docs/export_folder_spec.md", "docs/export_for_producers.md",
+                "docs/site/raster_viewer.html"):
+        text = (ROOT / rel).read_text()
+        missing = [n for n in WIDTH_REACHES_PEAK if n not in text]
+        assert not missing, (
+            f"{rel} does not name {missing}, which bugarach accepts as reaching "
+            f"the peak. A producer cannot match a string they were never shown.")
+
+
 def _body() -> str:
     """The page with every comment removed.
 

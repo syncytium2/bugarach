@@ -346,12 +346,22 @@ def test_the_report_names_the_width_rules_the_folder_carries(tmp_path: Path):
 
 def test_a_folder_with_no_width_is_a_note_and_still_conforms(tmp_path: Path):
     """`width_sec` is asked for and not required, so its absence cannot fail a
-    folder — but it costs CICADA's per-event mode, which the file cannot show."""
+    folder — but it costs locust's per-event mode, which the file cannot show."""
     rep = check_folder(_write(tmp_path / "e", s1="roi,time_sec\n1,1.0\n2,NA\n"))
     assert rep.ok
     r, = rep.recordings
     assert NO_WIDTH in r.notes
-    assert "per_event" in format_report(rep)
+    text = format_report(rep)
+    assert "per-event mode" in text
+    # SCOPED to a reader, and named per ADR-0002. Both producer-facing documents
+    # were corrected on 2026-08-28 (export contract revision 8) to stop claiming
+    # flatly that every detector runs — the browser viewer's locust declines
+    # without a peak. This string is the copy a producer actually reads at
+    # `bugarach check`, and it was the last one still saying it unscoped.
+    assert "bugarach detect" in text, "name the reader the claim is true of"
+    assert "CICADA" not in text, (
+        "ADR-0002 reserves CICADA for the upstream tool; the detector a person "
+        "is shown is locust")
 
 
 def test_one_advisory_about_eighty_recordings_is_printed_once(tmp_path: Path):

@@ -35,7 +35,8 @@ The file's name is the recording's id. Nothing parses it further.
 | `stream` | no | `fast`, `slow`, whatever you call them. Omit if you have one stream. |
 | `width_sec` | *asked for* | how long the event lasted |
 | `width_def` | with `width_sec` | the name of **your** rule for width |
-| `peak_sec`, `amp` | no | send them if you have them |
+| `peak_sec` | **strongly asked for** | when the transient peaked. Not required — but the browser viewer's locust cannot run without it, or without a `width_sec` whose rule reaches it. See §4. |
+| `amp` | no | how large it was, in your units. Send it if you have it. |
 
 ## `slices.csv`
 
@@ -154,31 +155,65 @@ published number was then computed over one recording fewer than intended.
 If a folder looks like it holds something it should not, that is a conversation with
 you — not a filter on our side.
 
-## 4. `width_sec` is asked for and not yet consumed — and the rule still matters
+## 4. `width_sec` is kept, and the rule you pick decides what it does
+
+> ⚠ **This section said the opposite until 2026-08-28. If you read it before then, read
+> it again.** It told you the `width_sec` you send was "read from the file and discarded".
+> That stopped being true on 2026-08-23 and the page did not catch up. If it persuaded
+> you to stop sending the column, or not to start, that was our error — the column is
+> worth sending, and one of the checks below can now reject a folder that used to load.
 
 Width is not one quantity. A fast transient and a slow one are not the same shape, so
 "how long it lasted" is not the same measurement, and **we do not define it for you.** Pick
 a rule, apply it consistently within a stream, and name it in `width_def`.
 
-**What happens to it today: nothing.** The folder reader takes `time_sec`, `roi` and
-`stream`, and drops every other column — so `width_sec` you send is read from the file and
-discarded, and any `Stream.width` on our side is `NaN`. **`width_def` is carried and never
-parsed; `width_sec` is currently not even carried.** This page said the opposite in an
-earlier version and that was wrong. If you have already wired up width, it is not lost work
-— it is just not doing anything on our side yet, and closing that is on us
-(`docs/todo/2026-08-20-the-contract-asks-for-width-and-drops-it.md`).
+**Two things can now reject a file that used to load.** A `width_sec` with no `width_def`
+on the same row is an error naming the file and line. Two different `width_def` values
+inside one stream are an error naming the recording. Either one stops the whole folder
+loading in `bugarach check` and `bugarach detect` — the browser viewer is more permissive
+and will load the file anyway, so **run the folder check, not the viewer, to find these**.
+If you have been sending width without the rule beside it, add the rule before your next
+export.
 
-**Pick the rule as though it were consumed, because when it is, it will be as a coincidence
-duration** — how long an event counts as "on", and therefore how much of a window two cells
-must share before they count as coincident. That is the one detector mode that reads a
-per-event width.
+**Two spellings, and only two, let your width stand in for a `peak_sec` you did not
+send** — `t50rise_to_peak` and `rise_interval_peak_minus_t50rise`. We match the exact
+string, case and all (we do trim surrounding whitespace); we do not work out what your
+rule means. A width that genuinely runs from the
+half-rise to the peak under any other name derives nothing and warns about nothing. If
+you send `peak_sec`, none of this applies and your peak is the one we keep. **If your
+spelling differs, tell us and we will add it** — that is a conversation, not a rename on
+your side.
 
-On that scale, some rules break. In this project's own recordings `fwhm` on the **slow**
-stream has a median of **4.7 s** and a maximum of **186.9 s**, against a rise interval of
-2 s. A 187-second "event duration" is not a coincidence unit — it makes one cell overlap
-essentially everything. Rules that behave: `t50rise_to_peak`, `above_threshold`, anything
-bounded by the event's rise rather than its decay. `fwhm` is reasonable on a fast stream and
-wrong on a slow one, which is exactly why the definition is per stream.
+**What you get for sending it.** Your width becomes the *active duration* in locust, our
+coincidence detector (it appears as `cicada` in the `detector` column of our output) —
+how long each event keeps its cell counted as active, and so how far apart two cells'
+events can be and still land in the same window. What that is worth depends on which of
+our two readers opens your folder, and the honest answer is different for each:
+
+- **The browser viewer runs per-event by default, and its locust will not run at all on
+  a recording with no peak.** A `peak_sec`, or a `width_sec` whose `width_def` is one of
+  the two names above, are the only two ways to give it one. For that reader your width
+  is the difference between a detector that runs and one that declines — it says so in
+  its own refusal message. **Send `peak_sec` but no `width_sec` and that default turns
+  every event into a one-frame active duration**, which floods the page with single-cell
+  "events" and explains itself nowhere. Sending the width is the fix.
+- **Our Python commands use a fixed duration.** `bugarach detect` and `bugarach view`
+  do not run per-event, so sending width changes no number they currently produce.
+
+We are spelling out both because an earlier draft of this correction said only the second
+and would have told you your width did nothing.
+
+`bugarach check` will name the width rules your folder carries, and say which streams
+carry none — or, if none of them do, that none of them do.
+
+**Because it becomes a coincidence unit, some rules break at that scale.** On this
+project's own slow stream, `fwhm` *would* have run to a median of **4.7 s** and a maximum
+of **186.9 s** — which is why the rule actually shipped there is
+`rise_interval_peak_minus_t50rise`, whose maximum is 5.5 s. A 187-second "event duration"
+is not a coincidence unit; it makes one cell overlap essentially everything. Rules that
+behave: `t50rise_to_peak`, `above_threshold`, anything bounded by the event's rise rather
+than its decay. `fwhm` is reasonable on a fast stream and wrong on a slow one, which is
+exactly why the definition is per stream.
 
 If the natural output of your pipeline is a decay-dominated width, send it and say so in
 `width_def` — the string is what lets a consumer notice the scale before using it rather
