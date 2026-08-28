@@ -65,7 +65,7 @@
 
   <rect x="466" y="230" width="204" height="76" rx="3"/>
   <text x="568" y="253" text-anchor="middle">planted negatives</text>
-  <text x="568" y="272" text-anchor="middle" class="lbl">distractors: real coincidence,</text>
+  <text x="568" y="272" text-anchor="middle" class="lbl">distractors, <tspan font-style="italic">labeled</tspan> coincidence</text>
   <text x="568" y="289" text-anchor="middle" class="lbl">not coordination &#183; + a probe</text>
 
   <text x="568" y="332" text-anchor="middle" class="lbl">a detector can be charged</text>

@@ -108,7 +108,15 @@ td.n, th.n { text-align: right; font-family: var(--mono);
 
 <h2>The pipeline, and where it refuses to let a detector help</h2>
 
-<div class="archwrap"><div class="arch">{{SVG:pipeline}}</div></div>
+<figure>
+  <div class="archwrap"><div class="arch">{{SVG:pipeline}}</div></div>
+  <figcaption>
+    Ground truth reaches the scorer and nothing else &mdash; no detector, learned or
+    hand-written, ever sees it. ⚠ The <em>labeled coincidence</em> in stage 3 is a
+    label the generator applies, not a property a detector could discriminate on; see
+    the caveat under the trap below.
+  </figcaption>
+</figure>
 
 <div class="col">
   <p>
@@ -198,7 +206,7 @@ td.n, th.n { text-align: right; font-family: var(--mono);
     K=4 cuts it to roughly a quarter of K=3's and would build a different benchmark;
     by K=8 the median slice has nothing, and only 8 of 85 have enough events to measure
     an onset spread at all. That last column is what decides the choice &mdash; the
-    spread appears to tighten as K rises, but it is being measured on a shrinking and
+    spread does not fall cleanly as K rises, and past K=4 it is being measured on a shrinking and
     increasingly unrepresentative subset. Observed spread sits below its shuffled null
     at every K, which is the direction real coordination should show.
   </p>
@@ -247,7 +255,7 @@ td.n, th.n { text-align: right; font-family: var(--mono);
     ⚠ <strong>The distractors are weaker than that description implies, and the page
     reports the probe rather than them for that reason.</strong> The generator draws a
     distractor with the same code it draws a planted event &mdash; same cell sampling,
-    same jitter &mdash; differing only in participation, and at 0.18 a distractor
+    same jitter &mdash; differing in participation and in where they may land, and at 0.18 a distractor
     involves <em>more</em> cells than two of the three planted levels (0.14 and 0.08).
     So "coincidence, not coordination" is a label applied by the generator, not a
     property a detector could discriminate on, and every leading detector duly fires on
@@ -310,26 +318,38 @@ td.n, th.n { text-align: right; font-family: var(--mono);
   </p>
   <p>
     <strong>The problem is that the model does not decide on brightness. It decides on
-    the length of the run</strong>, and the max-pool lengthens runs. On
+    the length of the run.</strong> On
     <strong>{{N:onevote:duration_decides_seeds}} of {{N:onevote:n_seeds}} fits</strong>,
     two cells firing five times clear the operating point while
     <em>the same two cells firing once</em> are rejected &mdash; identical amplitude,
-    opposite verdict, decided entirely by duration. Widening the pool window does not
-    repair that; it makes the runs longer.
+    opposite verdict, decided entirely by duration.
+  </p>
+  <p>
+    Take the docstring's claim literally &mdash; <em>one</em> cell &mdash; and the
+    picture is stranger. A single cell firing once clears threshold on
+    {{N:onevote:one_once_fires_seeds}} of {{N:onevote:n_seeds}} fits; firing five times
+    it clears on {{N:onevote:one_burst5_fires_seeds}}; firing twenty times it clears on
+    {{N:onevote:one_burst20_fires_seeds}} again. <strong>The model has a preferred run
+    length, and bursting past it is rejected as surely as not bursting at all.</strong>
+    So one cell can imitate a crowd on a minority of fits, and only if it bursts by
+    about the right amount &mdash; which is a weaker claim than "a single cell cannot",
+    a stranger one, and the one the measurement supports.
   </p>
   <p>
     ⚠ A tempting stronger claim does <strong>not</strong> survive the same test. Two
     bursting cells outscore four distinct ones on
     {{N:onevote:burst_beats_four_seeds}} of {{N:onevote:n_seeds}} fits and lose on the
-    rest &mdash; both scores are saturated sigmoids far above threshold, separated by
-    about 0.002, so which one wins is seed noise. An earlier version of this page
+    rest &mdash; both scores are saturated sigmoids above threshold, separated by a
+    median of 0.0002 and never more than 0.006, so which one wins is seed noise. An
+    earlier version of this page
     reported the single fit where the burst won. That is the failure this page keeps
     finding in its own project, committed by the page itself.
   </p>
   <p>
     So the model's source comment is right that the cap is exact and wrong in what it
-    concludes: it says a single cell bursting cannot imitate a crowd, and one bursting
-    long enough does. That is the same phenomenon as the probe-block firings below.
+    concludes. It says a single cell bursting cannot imitate a crowd; two cells bursting
+    reliably do, and one cell does on a minority of fits. That is the same phenomenon as
+    the probe-block firings below.
   </p>
   <p>
     <span class="key learned">Rate invariance &mdash; true of the kernel, false of the
@@ -362,13 +382,14 @@ td.n, th.n { text-align: right; font-family: var(--mono);
     ablated model would separate the two, and that has not been done.
   </p>
   <p>
-    ⚠ <strong>Both this and the one-vote probe above were run on a separate fit</strong>
-    &mdash; same architecture, same settings, a training run of its own rather than one
-    of the four folds the table scores. So this page carries three different fits of the
-    same model: the four scored folds, the busier refit whose surround ratio reaches
-    37.7, and this one. Each demonstration is about the architecture rather than about a
-    published number, but the distinction is worth naming, because conflating two of
-    them is a mistake this page has already made once.
+    ⚠ <strong>This page carries five kinds of fit of the same architecture, and only
+    the first produced the table.</strong> The four scored folds; the twenty ablation
+    fits behind the scale and clamp results; the busier refit whose surround ratio
+    reaches {{N:a:ratios.1|.1f}}; the quiet-regime fit behind the transfer numbers; and
+    the {{N:onevote:n_seeds}}-seed grid that the one-vote probe and this rate sweep
+    share. Each demonstration is about the architecture rather than about a published
+    number, but the distinction is worth naming, because conflating two of them is a
+    mistake this page has already made once.
   </p>
   <p>
     ⚠ That is one training run, so it is an order of magnitude rather than a
@@ -409,7 +430,7 @@ td.n, th.n { text-align: right; font-family: var(--mono);
       <th rowspan="2">detector</th>
       <th colspan="2" class="pair">F1 on the held-out fold (dimensionless)</th>
       <th rowspan="2" class="n">probe-block firings<br>(count per fold)</th>
-      <th rowspan="2" class="n">distractors hit<br>(of 12 per fold)</th>
+      <th rowspan="2" class="n">distractors hit<br>(of {{N:probe:detectors.tube.distractor_hits_per_fold}} per fold)</th>
       <th rowspan="2" class="n">detect<br>(s per fold)</th>
       <th rowspan="2" class="n">parameters<br>(count)</th>
     </tr>
@@ -622,10 +643,11 @@ td.n, th.n { text-align: right; font-family: var(--mono);
     here.</strong> A refit of the same architecture on the busier regime, which is what
     the parameter was added for, reaches {{N:a:ratios.1|.1f}} against that ceiling of
     40 &mdash; near enough that the search is reporting the range as wrong, which is why
-    the parameter exists. And it genuinely binds in the single-scale runs, whose free
-    fits reach 41.3. So the clamp is inert on the recordings these numbers come from and
-    demonstrably active elsewhere in the same store, which is a different sentence from
-    the one an ablation reporting "identical" invites.
+    the parameter exists. And it genuinely binds in the single-scale runs: those fits
+    push their raw ratio to 41.3 against a clamp of 40, and reach <strong>59.3</strong>
+    once the ceiling is raised to 200. So the clamp is inert on the recordings these
+    numbers come from and demonstrably active elsewhere in the same store, which is a
+    different sentence from the one an ablation reporting "identical" invites.
   </p>
 </div>
 
@@ -802,10 +824,13 @@ def build_tube(*, n_scales=4, width=8, depth=6,
   <p>
     The full run with every caveat is
     <a href="https://github.com/syncytium2/bugarach/blob/main/docs/learned/bakeoff.md"><code>docs/learned/bakeoff.md</code></a>;
-    the architectures are <code>src/bugarach/learn/nets.py</code>, the training loop is
-    <code>src/bugarach/learn/train.py</code>, and the rescoring in the table's second
-    F1 column is <code>tools/probe_inclusive_f1.py</code>. All of it regenerates from
-    the tools in the repository.
+    the architectures are <code>src/bugarach/learn/nets.py</code> and the training loop
+    is <code>src/bugarach/learn/train.py</code>. The three claims this page makes about
+    the model each have a tool behind them and a store in front of them: the second F1
+    column is <code>tools/probe_inclusive_f1.py</code>, the rate sweep is
+    <code>tools/probe_rate_invariance.py</code>, and the one-vote grid is
+    <code>tools/probe_one_vote.py</code>. All of it regenerates from the tools in the
+    repository, and each of those three writes its whole store.
   </p>
   <p>
     <a href="landscape.html">The landscape &rarr;</a> &mdash; what a dozen methods

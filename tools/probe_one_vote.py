@@ -113,14 +113,27 @@ def main(argv=None) -> int:
         burst = _case(torch, n_cells=2, n_onsets=5, gap=3)
         once2 = _case(torch, n_cells=2, n_onsets=1, gap=3)
         four = _case(torch, n_cells=4, n_onsets=1, gap=3)
+        # The literal reading of the docstring's claim — ONE cell, bursting. A first
+        # version of this tool omitted it, and the page then generalised from the
+        # two-cell result to a single cell and asserted that bursting for longer
+        # helps. Both halves are measured here instead.
+        one1 = _case(torch, n_cells=1, n_onsets=1, gap=3)
+        one5 = _case(torch, n_cells=1, n_onsets=5, gap=3)
+        one20 = _case(torch, n_cells=1, n_onsets=20, gap=3)
         row = {
             "seed": s, "threshold": thr,
             "burst_two": _peak(torch, m, burst),
             "two_once": _peak(torch, m, once2),
             "four_distinct": _peak(torch, m, four),
+            "one_once": _peak(torch, m, one1),
+            "one_burst5": _peak(torch, m, one5),
+            "one_burst20": _peak(torch, m, one20),
             "brightness_two": _brightness(torch, m, burst),
             "brightness_four": _brightness(torch, m, four),
+            "brightness_one": _brightness(torch, m, one5),
         }
+        for k in ("one_once", "one_burst5", "one_burst20"):
+            row[k + "_fires"] = row[k] >= thr
         row["burst_beats_four"] = row["burst_two"] > row["four_distinct"]
         row["burst_fires"] = row["burst_two"] >= thr
         row["two_once_fires"] = row["two_once"] >= thr
@@ -129,7 +142,8 @@ def main(argv=None) -> int:
         per_seed.append(row)
         print(f"  seed {s}: burst {row['burst_two']:.4f}  four "
               f"{row['four_distinct']:.4f}  two-once {row['two_once']:.4f}  "
-              f"thr {thr:.4f}  duration-decides={row['duration_decides']}")
+              f"| one x1 {row['one_once']:.4f} x5 {row['one_burst5']:.4f} "
+              f"x20 {row['one_burst20']:.4f}  thr {thr:.4f}")
 
     n = len(per_seed)
     beats = sum(r["burst_beats_four"] for r in per_seed)
@@ -145,6 +159,11 @@ def main(argv=None) -> int:
         "burst_beats_four_fraction": beats / n,
         # The robust one.
         "duration_decides_seeds": sum(r["duration_decides"] for r in per_seed),
+        # The docstring's claim read literally: ONE cell, bursting. If "a single cell
+        # bursting cannot imitate a crowd" is false, these should rise with onsets.
+        "one_once_fires_seeds": sum(r["one_once_fires"] for r in per_seed),
+        "one_burst5_fires_seeds": sum(r["one_burst5_fires"] for r in per_seed),
+        "one_burst20_fires_seeds": sum(r["one_burst20_fires"] for r in per_seed),
         # The cap itself: brightness must be exactly 2/32 and 4/32 everywhere.
         "brightness_two_min": min(r["brightness_two"] for r in per_seed),
         "brightness_two_max": max(r["brightness_two"] for r in per_seed),
