@@ -120,6 +120,90 @@ def unreachable(monkeypatch, message="URLError: no route"):
     monkeypatch.setattr(ss, "fetch", fake)
 
 
+# --------------------------------------------------------------------- the hold
+
+
+def _hold(monkeypatch, tmp_path, body: str | None):
+    """Point the tool at a throwaway hold file (or none)."""
+    p = tmp_path / "DEPLOY_HOLD.md"
+    if body is not None:
+        p.write_text(body, encoding="utf-8")
+    monkeypatch.setattr(ss, "HOLD_FILE", p)
+
+
+HELD = "---\nheld: yes\nrelease-when: the plumbing lands\n---\n"
+
+
+def test_a_held_deploy_is_not_advertised_as_one_to_run(repo, monkeypatch, tmp_path):
+    """The one tool that tells anyone to deploy has to know when not to.
+
+    Tony queued a deploy on 2026-08-28. The report's copy-paste command, the
+    daily CI summary and the session briefing all fire without being asked, so a
+    queue that lived only in prose would be outvoted every morning — and the
+    session that gave in would be right by every signal it could see.
+    """
+    serve(monkeypatch, stamp=repo.shas["v1"], viewer=b"<!-- viewer v1 -->\n")
+    rep = ss.collect("https://site.invalid", None, 1.0)
+    assert rep.status == "behind", "the hold must not change the measurement"
+
+    _hold(monkeypatch, tmp_path, HELD)
+    text, brief, md = ss.render_text(rep), ss.render_brief(rep), ss.render_markdown(rep)
+    for rendered in (text, brief, md):
+        assert "hold" in rendered.lower(), "a held deploy that reads as runnable"
+    assert "npm run deploy" not in text, (
+        "the report still hands over the command that publishes over the hold")
+    assert "the plumbing lands" in text and "the plumbing lands" in md, (
+        "a hold with no release condition is indistinguishable from a stall")
+    assert "DEPLOY_HOLD.md" in brief, "the briefing must say where the hold is"
+
+
+def test_the_hold_reports_the_distance_unchanged(repo, monkeypatch, tmp_path):
+    """Holding a deploy is not the same as pretending the site is current.
+
+    The failure to avoid: a hold that quietly turns the verdict green, so when it
+    is lifted nobody knows how far behind the page had drifted.
+    """
+    serve(monkeypatch, stamp=repo.shas["v1"], viewer=b"<!-- viewer v1 -->\n")
+    _hold(monkeypatch, tmp_path, HELD)
+    rep = ss.collect("https://site.invalid", None, 1.0)
+    assert rep.status == "behind" and rep.exit_code == 1
+    assert "behind by 2 commits" in ss.render_text(rep)
+
+
+@pytest.mark.parametrize("body", [
+    None,                                   # no file at all
+    "---\nheld: no\nrelease-when: x\n---\n",
+    "---\nrelease-when: x\n---\n",           # no `held:` key
+    "just some prose about deploying\n",
+])
+def test_anything_but_an_explicit_yes_means_not_held(repo, monkeypatch, tmp_path, body):
+    """Fail open, on purpose.
+
+    The expensive failure is a hold nobody notices, not a typo that fails to stop
+    a deploy — and a tool that announced a hold nobody set would be ignored
+    inside a week, at which point it would not stop the real one either.
+    """
+    serve(monkeypatch, stamp=repo.shas["v1"], viewer=b"<!-- viewer v1 -->\n")
+    _hold(monkeypatch, tmp_path, body)
+    assert ss.deploy_hold() is None
+    assert "npm run deploy" in ss.render_text(ss.collect("https://site.invalid", None, 1.0))
+
+
+def test_the_shipped_hold_file_parses_as_whatever_it_currently_says():
+    """The real `docs/DEPLOY_HOLD.md`, read by the real reader.
+
+    Not asserting held-or-not — that changes with the state of the world and a
+    test asserting today's answer would fail the day somebody lifts it correctly.
+    What must hold is that the file the repo ships is *parseable*: if it is held
+    it names a release condition, and either way nothing raises.
+    """
+    held = ss.deploy_hold()
+    if held is not None:
+        assert held.strip(), "held with an empty release condition"
+        assert "no release condition recorded" not in held, (
+            "docs/DEPLOY_HOLD.md is held but records no `release-when:`")
+
+
 # ----------------------------------------------------------------- the measurement
 
 
