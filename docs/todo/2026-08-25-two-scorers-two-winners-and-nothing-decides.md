@@ -154,6 +154,15 @@ the probe looks for.
   measured 0.6 is a budget somebody set; every number above moves if it moves.
 - **One detector, one regime, 3 seeds, no seed spread reported.** `baseline_quiet` only,
   and the mechanism-winner column is an argmax comparison, not a test.
+- ⚠ **Every number here is on the FLAT bench, and a branch in flight makes it fitted.**
+  `bench-background-is-not-flat` adds `bg_rate_shape`, `bg_burst_shape` and
+  `bg_burst_bin_sec` to `BENCH_RECORDING`, which is the field this sweep draws its
+  recordings from. The prior-art review already measured what swapping that field does
+  elsewhere — CoactDetect 0.703 → 0.749 on quiet — so **the counts above (31/56, 0/7, 6/7)
+  will move when it lands**. What is unlikely to move is the shape of the finding: the gate
+  is an eligibility rule, additive is the mechanism that trips it and multiplicative is the
+  one that does not. **Re-run this probe after that branch lands** rather than quoting these
+  numbers against a fitted bench.
 - **The numbers differ slightly from the figure above** — 0/7 and 6/7 here against this
   file's 1/7 and 5/7, which came from `make_rate_bar_axis_figure.py` on its own grids. The
   pattern reproduces; the exact counts are grid-dependent and neither is the other's
