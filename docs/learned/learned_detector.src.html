@@ -2,17 +2,19 @@
 <style>
 {{CSS:report}}
 /* --- additions this page needs, on top of the shared sheet --- */
-.pipe { border: 1px solid var(--rule); border-radius: 3px;
-        padding: 1.1rem 1.3rem; margin: 1.6rem 0; }
-.pipe h4 { font-family: var(--sans); font-size: .95rem; font-weight: 660;
-           margin: 1.1rem 0 .35rem; }
-.pipe h4:first-child { margin-top: 0; }
-.pipe p { margin: 0 0 .8rem; font-size: .95rem; max-width: 66ch; }
-.pipe p:last-child { margin-bottom: 0; }
+.arch { margin: 2rem 0; }
+.arch svg { width: 100%; height: auto; display: block; }
 pre.code { font-family: var(--mono); font-size: .82rem; line-height: 1.6;
            background: var(--card); border: 1px solid var(--rule);
            border-radius: 3px; padding: 1rem 1.1rem; overflow-x: auto;
            margin: 1.4rem 0; }
+/* The results table carries two F1 columns that must not be read as one. */
+th.pair { border-bottom: 2px solid var(--rule); }
+tr.learned td { background: color-mix(in srgb, var(--learned) 8%, transparent); }
+td.n, th.n { text-align: right; font-family: var(--mono);
+             font-variant-numeric: tabular-nums; white-space: nowrap; }
+.cite { font-size: .93rem; }
+.cite td:first-child { white-space: nowrap; font-weight: 640; }
 </style>
 
 <div class="wrap">
@@ -20,256 +22,332 @@ pre.code { font-family: var(--mono); font-size: .82rem; line-height: 1.6;
   <p class="eyebrow">bugarach &middot; the learned detector</p>
   <h1>Nobody labeled the data, so the benchmark had to be built first.</h1>
   <p class="standfirst">
-    A {{N:b:learned.tube.n_params|,}}-parameter network that finds coordinated
-    firing in calcium imaging, and the apparatus that makes its score mean
-    something. It ties the best hand-written detector in this project and runs
-    four times faster. The interesting part is what had to exist before that
-    sentence could be checked.
+    A pipeline that measures real recordings, simulates a data set with the answers
+    planted in it, and scores every detector against the same truth on the same
+    terms. The deliverable is the apparatus. A
+    {{N:b:learned.tube.n_params|,}}-parameter network is one of the things that has
+    been through it, and what the apparatus says about that network is more
+    interesting than its score.
   </p>
 </div>
 
-<div class="note">
-  <strong>Read the last section before quoting anything here.</strong> The
-  recordings the detectors were scored on are simulated &mdash; their settings
-  were measured from real ones, but nothing on this page says any detector is
-  right about a real slice. The fold spread is not a confidence interval, and
-  the top three are a tie.
+<div class="note warn">
+  <p>
+    <strong>The model numbers on this page are stale, and they are kept because the
+    apparatus is the subject.</strong> They come from a run of 2026-08-16 whose
+    generator settings were measured from a data store the project has since closed
+    in favour of an approved export folder, and whose difficulty axis was
+    re-derived four days later. The pipeline is current; this pass through it is not.
+    Where a number would mislead if read as a live result, it is marked.
+  </p>
+  <p>
+    <strong>The recordings scored here are simulated.</strong> Their settings were
+    measured from real ones. Nothing on this page says any detector is right about a
+    real slice.
+  </p>
 </div>
 
 <h2>The problem is the absence of a label</h2>
 <div class="col">
   <p>
-    A calcium-imaging movie gives you, per cell, a list of times at which that
-    cell fired. The question is when a <em>group</em> fired together &mdash; a
-    coordinated event, with a start and an end. Six detectors in this project
-    answer it, each by a hand-written rule: count active cells in a window,
-    compare against a shuffled null, threshold.
+    A calcium-imaging movie gives you, per cell, a list of times at which that cell
+    fired. The question is when a <em>group</em> fired together &mdash; a coordinated
+    event, with a start and an end. Six detectors in this project answer it, each by
+    a rule somebody wrote down: most compare a windowed count of active cells against
+    a shuffled null and threshold the excess, though two do neither &mdash;
+    rate+context compares a short window against its own longer context, and
+    SPIKE-synch works from a spike-timing coincidence profile.
   </p>
   <p>
-    Training a network to answer it instead runs immediately into the thing that
-    makes the neighboring fields tractable and this one not. Sleep-EEG spindle
-    detectors, hippocampal ripple detectors and epileptiform-discharge detectors
-    all learn from events a human expert marked. <strong>There is no expert
-    corpus of coordinated calcium events.</strong> There is no consensus rule to
-    imitate either &mdash; the six detectors disagree with each other, which is
-    the reason this project exists.
+    Training a network to answer it instead runs into the thing that makes the
+    neighboring fields tractable and this one not. Sleep-EEG spindle detectors,
+    hippocampal ripple detectors and clinical-EEG discharge detectors predominantly
+    learn from events a human expert marked. <strong>There is no expert-labeled data
+    set of coordinated calcium events.</strong> The nearest is DeepCINAC's
+    four-expert corpus, which labels when a <em>cell</em> fired, not when the group
+    did. There is no consensus rule to imitate either &mdash; the six detectors
+    disagree with each other, which is the reason this project exists.
   </p>
   <p>
-    So scoring a detector against another detector's opinion is the only thing
-    available, and it is worthless: it measures agreement, not correctness. The
-    way out taken here is to <em>manufacture</em> the truth, and to manufacture
-    it from the lab's own recordings so that it is not a toy.
+    So a detector can only be scored against another detector's opinion, which
+    measures agreement rather than correctness. The way out is to
+    <em>manufacture</em> the truth, and to manufacture it from the lab's own
+    recordings so that it is not a toy.
+  </p>
+  <p>
+    <span class="key hand">Getting that wrong is not a hypothetical cost.</span>
+    Detector settings tuned on a dense benchmark &mdash; a coordinated event every 14
+    seconds &mdash; collapsed when the same settings met sparse data, because planted
+    events sat inside the context window the detectors measure their null against.
+    Binned SCE's precision fell from 74% to 10%, and finding out took two weeks. Both
+    benchmarks were synthetic, which is the point: <strong>a simulator that does not
+    match the recordings can mis-tune a detector all by itself.</strong>
   </p>
 </div>
 
-<h2>Where the ground truth comes from</h2>
+<h2>The pipeline, and where it refuses to let a detector help</h2>
 
-<div class="pipe">
-  <h4>Measure {{N:g:source_recordings.provenance.n_slices_assessed}} real recordings without a detector</h4>
-  <p>
-    Baseline regions only &mdash; drug and washout windows are counted and
-    skipped, because taking the properties of coordination from a treated slice
-    assumes the answer. Per-cell rate, event jitter, how many cells participate,
-    how many clusters the activity falls into, each against
-    {{N:g:source_recordings.provenance.n_surrogates|,}} circular-shift surrogates.
-    No detector runs in this stage, so nothing it produces can inherit a
-    detector's blind spot.
-  </p>
-  <h4>Derive one generator specification from that measurement</h4>
-  <p>
-    Background rate {{N:b:spec.bg_rate_hz|.4f}} Hz per cell, event jitter
-    {{N:b:spec.jitter_sec|.2f}} s, {{N:b:spec.n_roi}} cells,
-    heterogeneous and bursty background. A human picks the cluster count
-    &mdash; here {{N:g:source_recordings.k_chosen}} &mdash; from the published
-    scan, because that choice moves the data set and a scan is not a decision.
-  </p>
-  <h4>Generate recordings with the events planted</h4>
-  <p>
-    Eight recordings, {{N:b:spec.duration_sec|,.0f}} s each, split into
-    {{N:b:folds}} folds. Every coordinated event has a known time, so a miss and
-    a false alarm are <em>drawn</em>, not inferred. Each recording also carries a
-    block with nothing planted in it &mdash; a trap, described below.
-  </p>
-  <h4>Fit on three folds, score on the fourth, rotate</h4>
-  <p>
-    Hand-written detectors sweep their declared knob; networks train and pick a
-    threshold. Same data, same procedure, same scorer. A detector never sees the
-    fold it is scored on, and the network's threshold is chosen on held-out data
-    drawn from the training regime and <strong>never re-picked on the recording
-    being analyzed</strong> &mdash; a &ldquo;re-tune on this slice&rdquo; button
-    would hide exactly the failure the transfer test below measures.
-  </p>
-</div>
+<div class="arch">{{SVG:pipeline}}</div>
 
 <div class="col">
   <p>
-    This is the part that took the longest and it is the part worth evaluating.
-    The network is small enough to read in an afternoon. The apparatus that lets
-    its score be compared against six ported detectors on equal terms is where
-    the work went.
+    Four stages. Three constraints in them are the reason the output means anything,
+    and each was a decision rather than a default.
+  </p>
+  <p>
+    <span class="key truth">No detector runs in the measurement stage.</span> The
+    assessor reads
+    {{N:g:source_recordings.provenance.n_slices_assessed}} real recordings and
+    reports participation, jitter, cluster rate and background directly. Event jitter
+    and cluster count are each tested against
+    {{N:g:source_recordings.provenance.n_surrogates|,}} circular-shift surrogates; per-cell
+    rate and participation are measured outright, because a circular shift preserves
+    each cell's onset count exactly and so cannot be a null for a rate. Nothing here
+    inherits a detector's blind spot, because no detector is involved.
+  </p>
+  <p>
+    <span class="key truth">Baseline windows only.</span> Drug and washout windows are
+    counted and skipped. Taking the properties of coordination from a treated slice
+    assumes the answer, and this preparation is one where that assumption has already
+    produced a wrong conclusion.
+  </p>
+  <p>
+    <span class="key truth">The human choice ships beside the choice.</span> The
+    assessor reports a scan across K &mdash; the minimum number of cells that must
+    fire together before the assessor will call it a group &mdash; and a person picks
+    one. Here K={{N:g:source_recordings.k_chosen}}. That choice moves the data set:
+    K=4 cuts the cluster rate to roughly a quarter, which would build a different
+    benchmark. The whole scan is published beside the number so the judgement is
+    reviewable, because a scan is not a decision.
+  </p>
+  <p>
+    Then the generator plants events at known times, so a miss and a false alarm are
+    counted rather than inferred. Every detector is fitted on three folds and scored
+    on the fourth, all four rotations, by one scorer. The hand-written six sweep the
+    single threshold each declares; the networks train and pick an operating point.
+    That operating point is chosen on the <strong>training folds</strong> &mdash;
+    never on the fold being scored, and never re-picked on the recording being
+    analyzed, which would hide exactly the failure the transfer test below measures.
+  </p>
+  <p>
+    <span class="key hand">Provenance, stated because it bounds everything below.</span>
+    This assessment read the FAST stream only, from the project's <code>.mat</code> event store.
+    That store has since been closed in favour of an approved export folder, because
+    it carries recordings the lab later withdrew, and the difficulty axis it produced
+    was re-derived from the folder on 2026-08-20. The pipeline drawn above is what
+    runs today; the numbers below came out of it before that correction.
   </p>
 </div>
 
-<h2>The architecture: a difference of Gaussians, learned</h2>
+<h2>What the apparatus is for: making a failure visible</h2>
+<div class="col">
+  <p>
+    A benchmark that only plants events measures whether a detector can find them. It
+    says nothing about what else the detector fires on, and <em>that</em> is where
+    coordination detection goes wrong &mdash; the failure is not missing a crowd, it
+    is calling a busy stretch a crowd.
+  </p>
+  <p>
+    So the generator plants two kinds of negative as well. <strong>Distractors</strong>
+    are correlated bursts: real coincidence, not coordination, and a detector is
+    charged for firing on them. And each recording carries a <strong>probe
+    block</strong> &mdash; {{N:b:spec.hot_window.0|.0f}} s to
+    {{N:b:spec.hot_window.1|.0f}} s of a {{N:b:spec.duration_sec|,.0f}} s recording,
+    running at {{N:b:spec.hot_rate_hz}} Hz per cell against a background of
+    {{N:b:spec.bg_rate_hz|.4f}} Hz, with <em>nothing planted in it</em>. Six times the
+    activity and no coordination at all: the exact thing a coordination detector must
+    not confuse.
+  </p>
+  <p>
+    <span class="key learned">The published score cannot see the probe block, on
+    purpose.</span> Firings inside it are removed from the precision denominator
+    rather than charged as false alarms, so the block reports rather than penalizes.
+    That is a defensible rule and it has a cost: <strong>the headline metric is blind
+    to the behaviour the block was built to expose.</strong> The honest thing is to
+    print both numbers, which is what the table below does.
+  </p>
+</div>
+
+<h2>One thing that went through it</h2>
 <div class="col">
   <p>
     Look down a tube as the recording slides past. The tube is dark and single
-    firings are specks; when several cells fire together a bright spot crosses
-    the center. Jitter dims it. A busier background raises the whole field, but a
-    real spot still stands above <em>its own surround</em>.
-  </p>
-  <p>
-    That last sentence is the architecture. Cells are pooled to one brightness
-    trace, and the trace is convolved with a difference of two Gaussians, both
-    area-normalized so a flat field integrates to zero. Three properties fall out
-    of the shape rather than being trained for:
-  </p>
-  <p>
-    <span class="key learned">Any cell count.</span> Cells are summed before the
-    temporal filter, so the model never sees which cell is which and runs on a
-    recording with thirty cells or three hundred.
-  </p>
-  <p>
-    <span class="key learned">One cell, one vote.</span> Each cell is max-pooled
-    over the center window before the sum, so a single cell bursting repeatedly
-    cannot imitate a crowd. This is the distinction between coordination and
-    activity, and it is enforced exactly rather than hoped for.
-  </p>
-  <p>
-    <span class="key learned">Rate invariance by construction.</span> A
-    zero-integral kernel cancels a uniform change in background. The claim is
-    testable rather than asserted, and panel C below is the test.
-  </p>
-  <p>
-    Nothing in the model knows what a second is &mdash; receptive fields are in
-    samples. The center widths are free parameters initialized at
-    {{N:a:init_centres.0|.0f}}, {{N:a:init_centres.1|.0f}},
-    {{N:a:init_centres.2|.0f}} and {{N:a:init_centres.3|.0f}} samples, one sample
-    being the finest thing the recording can resolve and therefore the only
-    non-arbitrary place to start. What they converge to is the model's own
-    estimate of how wide a coordinated event is.
+    firings are specks; when several cells fire together a bright spot crosses the
+    center. Jitter dims it. A busier background raises the whole field, but a real
+    spot still stands above its own surround.
   </p>
 </div>
 
-<figure>
-  <img src="{{FIG:architecture_fitted}}" alt="Four panels. A: one fitted kernel, a narrow positive center against a wide shallow negative surround, the difference integrating to zero. B: all four fitted kernels as solid curves against their dotted starting points, converged into one narrow band. C: the response of each kernel to a permanent doubling of the background, returning to zero within a few hundred samples. D: samples visible after each layer of the dilated stack, on a log axis.">
-  <figcaption>
-    <span class="key learned">B is the result.</span> Four scales started an
-    octave apart and all four converged into one narrow band &mdash;
-    {{N:a:centres.0|.1f}} to {{N:a:centres.3|.1f}} samples. Multiply by the
-    {{N:b:spec.grid_sec}} s frame interval and that is the model's own estimate
-    of how wide a coordinated event is, in seconds; the median planted event is
-    about 0.8 s across. The model was told one sample and found the scale on its
-    own.
-    <span class="key learned">C is the falsifiable one:</span> the background is
-    permanently doubled at the dashed line and every response is back at zero
-    within a few hundred samples, which is what &ldquo;invariance by
-    construction&rdquo; has to look like or it is not true.
-    Figures spell the model's name in British English; the code and this page
-    spell it <code>center</code>. Re-rendering them retrains a model, so the
-    drift is recorded rather than papered over.
-  </figcaption>
-</figure>
+<div class="arch">{{SVG:architecture}}</div>
 
-<h2>The result, and the part of it that is a tie</h2>
+<div class="col">
+  <p>
+    Cells are max-pooled over the narrowest fitted center width, <em>averaged</em>
+    into one brightness trace &mdash; the mean is what makes the model indifferent to
+    cell count &mdash; and convolved with four differences of Gaussians whose widths
+    are free parameters. The dilated stack that follows holds
+    <strong>1,128 of the model's {{N:b:learned.tube.n_params|,}} parameters</strong>;
+    the center&minus;surround stage the architecture is named for holds twelve.
+  </p>
+  <p>
+    Three properties are often claimed for this shape. The apparatus was pointed at
+    all three, and it supports one and a half of them.
+  </p>
+  <p>
+    <span class="key truth">Cell count &mdash; holds, with a caveat worth more than
+    the claim.</span> The trace is the <em>fraction</em> of cells active, so the model
+    runs unchanged on any number of cells. What transfers is the participation
+    fraction, not the event: six cells firing together score 1.00 on a 32-cell
+    recording and 0.03 on a 300-cell one. It has only ever been scored at
+    {{N:b:spec.n_roi}}.
+  </p>
+  <p>
+    <span class="key learned">One cell, one vote &mdash; does not hold at the shipped
+    operating point.</span> The max-pool named as the mechanism caps nothing, because
+    the raster is already one-or-zero per cell per frame; what it actually does is
+    widen each onset. Fed synthetic input, <strong>two bursting cells score
+    identically to four distinct ones.</strong> The model's own source comment claims
+    this cap is exact. It is not, and that is the same phenomenon as the probe-block
+    firings below.
+  </p>
+  <p>
+    <span class="key learned">Rate invariance &mdash; true of the kernel, false of the
+    model.</span> Two area-matched Gaussians subtracted give a kernel that integrates
+    to zero, so a flat field cancels. That is the figure's
+    <em>flat field cancels</em> label, and it is arithmetic. But the raw brightness
+    trace <em>bypasses</em> that stage and enters the stack as a fifth channel &mdash;
+    the dashed path in the figure &mdash; carrying the absolute background level with
+    it.
+  </p>
+  <p>
+    Pushing a rate change through the whole trained model rather than through its
+    kernel says what that costs. On recordings with <strong>nothing planted in them at
+    all</strong>, raising the background eightfold takes the model from
+    {{N:rateinv:by_multiple.1.frames_over_threshold}} frames over its own operating
+    point to {{N:rateinv:by_multiple.8.frames_over_threshold}}, out of about 35,000.
+    Zeroing the bypass channel and re-scoring the same recordings gives
+    {{N:rateinv:by_multiple.1.frames_over_threshold_no_bypass}} and
+    {{N:rateinv:by_multiple.8.frames_over_threshold_no_bypass}} &mdash; so the bypass
+    is most of the excess at baseline and roughly a third of it at eight times the
+    rate. What remains is variance, which a difference of <em>means</em> cancels and a
+    difference of variances does not.
+  </p>
+  <p>
+    ⚠ That is one training run, so it is an order of magnitude rather than a
+    measurement &mdash; the same limitation every learned number here carries. It is
+    reported because the alternative in an earlier version of this page was a figure
+    panel that convolved a step with a numpy copy of the kernel and called it the
+    test. That panel could not have failed.
+  </p>
+  <p>
+    <strong>The fitted kernel widths are not quoted here.</strong> An earlier version
+    of this page reported them as the model recovering the timescale of a real event
+    on its own. The project had already withdrawn that reading: refitted on a quieter
+    background with identical events, the same four widths span 3.8&times;. They are a
+    property of the background, not a measurement of the event, and the withdrawal is
+    older than the claim was.
+  </p>
+</div>
+
+<h2>What it measured</h2>
 
 <figure>
-  <img src="{{FIG:bakeoff}}" alt="Panel A, one bar per detector showing mean F1 on the held-out fold with each of the four individual folds drawn as a dot; the learned models are dark red and the hand-written ones blue. Panel B, the same F1 against seconds to detect one held-out fold on a log axis, with a vertical bar for each detector's fold range.">
+  <img src="{{FIG:bakeoff}}" alt="Panel A, one bar per detector showing mean F1 on the held-out fold with each of the four folds drawn as a dot; the learned models are dark red and the hand-written ones blue. Panel B, the same F1 against seconds to detect one held-out fold on a log axis, with a vertical bar for each detector's fold range.">
   <figcaption>
-    Every fold is drawn as its own dot in panel A, so the overlap between the top
-    three is visible rather than hidden behind a bar. Panel B is the axis the
-    learned model actually wins on.
+    Every fold is drawn as its own dot in panel A, so the overlap at the top is
+    visible rather than hidden behind a bar. Panel B is the trade-off plane: accuracy
+    against cost, marker area by parameter count. Neither panel can show the column
+    that matters most, which is why the table carries it.
   </figcaption>
 </figure>
 
 <div class="tablewrap">
 <table>
-  <thead><tr>
-    <th>detector</th><th>F1 (dimensionless)</th><th>fold range (F1)</th>
-    <th>recall (dimensionless)</th><th>precision (dimensionless)</th>
-    <th>detect (s)</th><th>parameters (count)</th>
-  </tr></thead>
+  <thead>
+    <tr>
+      <th rowspan="2">detector</th>
+      <th colspan="2" class="pair">F1 on the held-out fold (dimensionless)</th>
+      <th rowspan="2" class="n">probe-block firings<br>(count per fold)</th>
+      <th rowspan="2" class="n">detect<br>(s per fold)</th>
+      <th rowspan="2" class="n">parameters<br>(count)</th>
+    </tr>
+    <tr>
+      <th class="n">as published<br><span class="lbl">probe forgiven</span></th>
+      <th class="n">probe charged<br><span class="lbl">same detections</span></th>
+    </tr>
+  </thead>
   <tbody>
     <tr class="learned">
       <td>center&minus;surround (learned)</td>
-      <td>{{N:b:learned.tube.f1.mean|.3f}} &plusmn; {{N:b:learned.tube.f1.sd|.3f}}</td>
-      <td>{{N:b:learned.tube.f1.min|.2f}}&ndash;{{N:b:learned.tube.f1.max|.2f}}</td>
-      <td>{{N:b:learned.tube.recall.mean|.3f}}</td>
-      <td>{{N:b:learned.tube.precision.mean|.3f}}</td>
-      <td>{{N:b:learned.tube.detect_sec.mean|.3f}}</td>
-      <td>{{N:b:learned.tube.n_params|,}}</td>
+      <td class="n">{{N:probe:detectors.tube.published_f1|.3f}}</td>
+      <td class="n">{{N:probe:detectors.tube.f1.mean|.3f}}</td>
+      <td class="n">{{N:probe:detectors.tube.hot_fa.mean|.2f}} &nbsp;({{N:probe:detectors.tube.hot_fa.min|.0f}}&ndash;{{N:probe:detectors.tube.hot_fa.max|.0f}})</td>
+      <td class="n">{{N:b:learned.tube.detect_sec.mean|.3f}}</td>
+      <td class="n">{{N:b:learned.tube.n_params|,}}</td>
     </tr>
     <tr>
       <td>CoactDetect</td>
-      <td>{{N:b:hand_written.coact.f1.mean|.3f}} &plusmn; {{N:b:hand_written.coact.f1.sd|.3f}}</td>
-      <td>{{N:b:hand_written.coact.f1.min|.2f}}&ndash;{{N:b:hand_written.coact.f1.max|.2f}}</td>
-      <td>{{N:b:hand_written.coact.recall.mean|.3f}}</td>
-      <td>{{N:b:hand_written.coact.precision.mean|.3f}}</td>
-      <td>{{N:b:hand_written.coact.detect_sec.mean|.3f}}</td>
-      <td>&mdash;</td>
+      <td class="n">{{N:probe:detectors.coact.published_f1|.3f}}</td>
+      <td class="n">{{N:probe:detectors.coact.f1.mean|.3f}}</td>
+      <td class="n">{{N:probe:detectors.coact.hot_fa.mean|.2f}} &nbsp;({{N:probe:detectors.coact.hot_fa.min|.0f}}&ndash;{{N:probe:detectors.coact.hot_fa.max|.0f}})</td>
+      <td class="n">{{N:b:hand_written.coact.detect_sec.mean|.3f}}</td>
+      <td class="n">&mdash;</td>
     </tr>
     <tr>
       <td>LoCo</td>
-      <td>{{N:b:hand_written.loco.f1.mean|.3f}} &plusmn; {{N:b:hand_written.loco.f1.sd|.3f}}</td>
-      <td>{{N:b:hand_written.loco.f1.min|.2f}}&ndash;{{N:b:hand_written.loco.f1.max|.2f}}</td>
-      <td>{{N:b:hand_written.loco.recall.mean|.3f}}</td>
-      <td>{{N:b:hand_written.loco.precision.mean|.3f}}</td>
-      <td>{{N:b:hand_written.loco.detect_sec.mean|.3f}}</td>
-      <td>&mdash;</td>
+      <td class="n">{{N:probe:detectors.loco.published_f1|.3f}}</td>
+      <td class="n">{{N:probe:detectors.loco.f1.mean|.3f}}</td>
+      <td class="n">{{N:probe:detectors.loco.hot_fa.mean|.2f}} &nbsp;({{N:probe:detectors.loco.hot_fa.min|.0f}}&ndash;{{N:probe:detectors.loco.hot_fa.max|.0f}})</td>
+      <td class="n">{{N:b:hand_written.loco.detect_sec.mean|.3f}}</td>
+      <td class="n">&mdash;</td>
     </tr>
     <tr>
       <td>rate+context</td>
-      <td>{{N:b:hand_written.rate.f1.mean|.3f}} &plusmn; {{N:b:hand_written.rate.f1.sd|.3f}}</td>
-      <td>{{N:b:hand_written.rate.f1.min|.2f}}&ndash;{{N:b:hand_written.rate.f1.max|.2f}}</td>
-      <td>{{N:b:hand_written.rate.recall.mean|.3f}}</td>
-      <td>{{N:b:hand_written.rate.precision.mean|.3f}}</td>
-      <td>{{N:b:hand_written.rate.detect_sec.mean|.3f}}</td>
-      <td>&mdash;</td>
+      <td class="n">{{N:probe:detectors.rate.published_f1|.3f}}</td>
+      <td class="n">{{N:probe:detectors.rate.f1.mean|.3f}}</td>
+      <td class="n">{{N:probe:detectors.rate.hot_fa.mean|.2f}} &nbsp;({{N:probe:detectors.rate.hot_fa.min|.0f}}&ndash;{{N:probe:detectors.rate.hot_fa.max|.0f}})</td>
+      <td class="n">{{N:b:hand_written.rate.detect_sec.mean|.3f}}</td>
+      <td class="n">&mdash;</td>
     </tr>
     <tr>
       <td>locust</td>
-      <td>{{N:b:hand_written.cicada.f1.mean|.3f}} &plusmn; {{N:b:hand_written.cicada.f1.sd|.3f}}</td>
-      <td>{{N:b:hand_written.cicada.f1.min|.2f}}&ndash;{{N:b:hand_written.cicada.f1.max|.2f}}</td>
-      <td>{{N:b:hand_written.cicada.recall.mean|.3f}}</td>
-      <td>{{N:b:hand_written.cicada.precision.mean|.3f}}</td>
-      <td>{{N:b:hand_written.cicada.detect_sec.mean|.3f}}</td>
-      <td>&mdash;</td>
+      <td class="n">{{N:probe:detectors.cicada.published_f1|.3f}}</td>
+      <td class="n">{{N:probe:detectors.cicada.f1.mean|.3f}}</td>
+      <td class="n">{{N:probe:detectors.cicada.hot_fa.mean|.2f}} &nbsp;({{N:probe:detectors.cicada.hot_fa.min|.0f}}&ndash;{{N:probe:detectors.cicada.hot_fa.max|.0f}})</td>
+      <td class="n">{{N:b:hand_written.cicada.detect_sec.mean|.3f}}</td>
+      <td class="n">&mdash;</td>
     </tr>
     <tr>
       <td>binned SCE</td>
-      <td>{{N:b:hand_written.sce.f1.mean|.3f}} &plusmn; {{N:b:hand_written.sce.f1.sd|.3f}}</td>
-      <td>{{N:b:hand_written.sce.f1.min|.2f}}&ndash;{{N:b:hand_written.sce.f1.max|.2f}}</td>
-      <td>{{N:b:hand_written.sce.recall.mean|.3f}}</td>
-      <td>{{N:b:hand_written.sce.precision.mean|.3f}}</td>
-      <td>{{N:b:hand_written.sce.detect_sec.mean|.3f}}</td>
-      <td>&mdash;</td>
+      <td class="n">{{N:probe:detectors.sce.published_f1|.3f}}</td>
+      <td class="n">{{N:probe:detectors.sce.f1.mean|.3f}}</td>
+      <td class="n">{{N:probe:detectors.sce.hot_fa.mean|.2f}} &nbsp;({{N:probe:detectors.sce.hot_fa.min|.0f}}&ndash;{{N:probe:detectors.sce.hot_fa.max|.0f}})</td>
+      <td class="n">{{N:b:hand_written.sce.detect_sec.mean|.3f}}</td>
+      <td class="n">&mdash;</td>
     </tr>
     <tr>
       <td>SPIKE-synch</td>
-      <td>{{N:b:hand_written.sync.f1.mean|.3f}} &plusmn; {{N:b:hand_written.sync.f1.sd|.3f}}</td>
-      <td>{{N:b:hand_written.sync.f1.min|.2f}}&ndash;{{N:b:hand_written.sync.f1.max|.2f}}</td>
-      <td>{{N:b:hand_written.sync.recall.mean|.3f}}</td>
-      <td>{{N:b:hand_written.sync.precision.mean|.3f}}</td>
-      <td>{{N:b:hand_written.sync.detect_sec.mean|.3f}}</td>
-      <td>&mdash;</td>
+      <td class="n">{{N:probe:detectors.sync.published_f1|.3f}}</td>
+      <td class="n">{{N:probe:detectors.sync.f1.mean|.3f}}</td>
+      <td class="n">{{N:probe:detectors.sync.hot_fa.mean|.2f}} &nbsp;({{N:probe:detectors.sync.hot_fa.min|.0f}}&ndash;{{N:probe:detectors.sync.hot_fa.max|.0f}})</td>
+      <td class="n">{{N:b:hand_written.sync.detect_sec.mean|.3f}}</td>
+      <td class="n">&mdash;</td>
     </tr>
     <tr class="learned">
       <td>pooled trace (learned)</td>
-      <td>{{N:b:learned.trace.f1.mean|.3f}} &plusmn; {{N:b:learned.trace.f1.sd|.3f}}</td>
-      <td>{{N:b:learned.trace.f1.min|.2f}}&ndash;{{N:b:learned.trace.f1.max|.2f}}</td>
-      <td>{{N:b:learned.trace.recall.mean|.3f}}</td>
-      <td>{{N:b:learned.trace.precision.mean|.3f}}</td>
-      <td>{{N:b:learned.trace.detect_sec.mean|.3f}}</td>
-      <td>{{N:b:learned.trace.n_params|,}}</td>
+      <td class="n">{{N:probe:detectors.trace.published_f1|.3f}}</td>
+      <td class="n">{{N:probe:detectors.trace.f1.mean|.3f}}</td>
+      <td class="n">{{N:probe:detectors.trace.hot_fa.mean|.2f}}</td>
+      <td class="n">{{N:b:learned.trace.detect_sec.mean|.3f}}</td>
+      <td class="n">{{N:b:learned.trace.n_params|,}}</td>
     </tr>
     <tr class="learned">
       <td>per-cell bank (learned)</td>
-      <td>{{N:b:learned.tiny.f1.mean|.3f}} &plusmn; {{N:b:learned.tiny.f1.sd|.3f}}</td>
-      <td>{{N:b:learned.tiny.f1.min|.2f}}&ndash;{{N:b:learned.tiny.f1.max|.2f}}</td>
-      <td>{{N:b:learned.tiny.recall.mean|.3f}}</td>
-      <td>{{N:b:learned.tiny.precision.mean|.3f}}</td>
-      <td>{{N:b:learned.tiny.detect_sec.mean|.3f}}</td>
-      <td>{{N:b:learned.tiny.n_params|,}}</td>
+      <td class="n">{{N:probe:detectors.tiny.published_f1|.3f}}</td>
+      <td class="n">{{N:probe:detectors.tiny.f1.mean|.3f}}</td>
+      <td class="n">{{N:probe:detectors.tiny.hot_fa.mean|.2f}}</td>
+      <td class="n">{{N:b:learned.tiny.detect_sec.mean|.3f}}</td>
+      <td class="n">{{N:b:learned.tiny.n_params|,}}</td>
     </tr>
   </tbody>
 </table>
@@ -277,122 +355,162 @@ pre.code { font-family: var(--mono); font-size: .82rem; line-height: 1.6;
 
 <div class="col">
   <p>
-    <span class="key hand">The top three are a tie and should be read as one.</span>
-    The learned model leads on the mean by
-    {{N:b:learned.tube.f1.mean|.3f}} against
-    {{N:b:hand_written.coact.f1.mean|.3f}}, and their fold ranges overlap almost
-    completely. Four folds of thirty planted events cannot separate them. The
-    claim the numbers support is that a
-    {{N:b:learned.tube.n_params|,}}-parameter network <em>reaches the level of
-    the best hand-written detectors in this project</em>, having been given no
-    more information than they were.
+    <strong>F1</strong> is the harmonic mean of recall (what fraction of planted
+    events were found) and precision (what fraction of calls were real); 1.0 is
+    perfect, and it charges equally for a miss and a false alarm. A call counts as
+    finding a planted event if it lands within 1.5 s of it. Recall, precision and
+    fold ranges for every row are in
+    <a href="https://github.com/syncytium2/bugarach/blob/main/docs/learned/bakeoff.md">the
+    full run</a>. The two F1 columns describe <em>the same detections</em> &mdash;
+    nothing was re-run; one arithmetic choice is reversed.
   </p>
   <p>
-    <span class="key learned">Cost is where the difference is.</span>
-    {{N:b:learned.tube.detect_sec.mean|.3f}} s to scan two hour-long recordings
-    &mdash; four times faster than CoactDetect and seventeen times faster than
-    LoCo, the two it ties with &mdash; from
-    {{N:b:learned.tube.train_sec.mean|.1f}} s of training. It is not the fastest
-    detector here: rate+context scans the same fold in
-    {{N:b:hand_written.rate.detect_sec.mean|.3f}} s and sits about a tenth of F1
-    lower. Top-of-pack accuracy, seconds to fit, milliseconds to run, kilobytes
-    to store, is the combination that makes a per-lab training loop plausible.
+    <span class="key hand">Read the two columns together, and the ordering is not
+    stable.</span> On the published rule the top three are a tie: four folds of thirty
+    planted events cannot separate
+    {{N:probe:detectors.tube.published_f1|.3f}} from
+    {{N:probe:detectors.coact.published_f1|.3f}}, and the fold ranges overlap. Charge
+    the probe block and the same three separate, in the other direction &mdash;
+    the learned model loses {{N:probe:detectors.tube.f1_drop|.3f}} of F1 and
+    CoactDetect loses {{N:probe:detectors.coact.f1_drop|.3f}}.
   </p>
   <p>
-    <span class="key hand">The two learned models at the floor are controls, and
-    they did their job.</span> The pooled trace collapses cells before filtering
-    in time, which is precisely what the design argues against; the per-cell bank
-    keeps every cell separate and spends
-    {{N:b:learned.tiny.detect_sec.mean|.2f}} s per fold doing it. Both sit near
-    F1 {{N:b:learned.trace.f1.mean|.2f}}. Building the invariant into the shape
-    beat hoping a general architecture would find it &mdash; on this data, at
-    this budget.
+    <span class="key hand">The column also reorders the field.</span> locust ranks
+    fifth of nine on the published metric and last of the seven that fire at all once
+    the probe is charged, because it fires
+    {{N:probe:detectors.cicada.hot_fa.mean|.0f}} times into a block containing nothing
+    &mdash; against CoactDetect's {{N:probe:detectors.coact.hot_fa.mean|.2f}}. That is
+    the pipeline doing the job it was built for: <strong>a detector that keys on
+    activity rather than coordination is invisible to the headline metric and obvious
+    in the trap.</strong>
+  </p>
+  <p>
+    <span class="key learned">And the two learned models at the floor are not
+    virtuous, they are silent.</span> Both fire zero times into the probe, and both
+    sit near F1 {{N:probe:detectors.trace.f1.mean|.2f}}. A clean probe from a detector
+    that barely fires is not evidence of discrimination &mdash; which is why the
+    column is read beside the score and not instead of it. ⚠ Both also land their
+    threshold on the bottom edge of the searched grid, which this project treats
+    elsewhere as a search that stopped too early rather than an answer, so their F1 is
+    reported for completeness and is <em>not</em> an operating point. They train at a
+    tenth the learning rate of the model they are contrasted with, so the
+    architecture comparison is uncontrolled and no conclusion is drawn from it here.
   </p>
 </div>
 
-<h2>What the model said it did not need</h2>
+<h2>What else the apparatus caught</h2>
 <div class="col">
   <p>
-    Panel B above shows four scales collapsing into one band, which is the model
-    reporting that it is not using its multi-scale capacity. Removing that
-    capacity confirms it. One scale scores
+    <span class="key learned">The model transfers asymmetrically.</span> Fitted on
+    quiet recordings it scores
+    {{N:g:learned.tube.baseline_quiet.baseline_quiet.f1|.3f}} on held-out quiet ones
+    and {{N:g:learned.tube.baseline_quiet.baseline_busy.f1|.3f}} on busy ones. Fitted
+    on busy recordings it scores
+    {{N:g:learned.tube.baseline_busy.baseline_quiet.f1|.3f}} on quiet and
+    {{N:g:learned.tube.baseline_busy.baseline_busy.f1|.3f}} on busy. Fitting on the
+    wrong regime costs about twice as much in one direction as the other, and the
+    operational rule falls out: a lab fitting a model on its own recordings should fit
+    on the busier ones. ⚠ Both regimes here sit on the difficulty axis that was later
+    re-derived, so treat the direction as the finding and the magnitudes as stale.
+  </p>
+  <p>
+    <span class="key learned">Two of the model's four scales are doing nothing, and a
+    third experiment could not have said so.</span> One scale scores
     {{N:ablation:by_key.s1_c40.f1.mean|.3f}} at
-    {{N:ablation:by_key.s1_c40.n_params|,}} parameters against the shipped four
-    scales at {{N:ablation:by_key.s4_c40.f1.mean|.3f}} and
-    {{N:ablation:by_key.s4_c40.n_params|,}} &mdash; a difference far inside the
-    fold spread of {{N:b:learned.tube.f1.sd|.3f}}.
+    {{N:ablation:by_key.s1_c40.n_params|,}} parameters against four scales at
+    {{N:ablation:by_key.s4_c40.f1.mean|.3f}} and
+    {{N:ablation:by_key.s4_c40.n_params|,}}. Two scales scores
+    {{N:ablation:by_key.s2_c40.f1.mean|.3f}} &mdash; further from both than they are
+    from each other. All three sit inside a fold spread of
+    {{N:b:learned.tube.f1.sd|.3f}}, so the honest reading is not that the extra scales
+    are unused but that <strong>at four folds the scale count is not a variable this
+    benchmark can resolve.</strong> Four ships because four is what was measured end
+    to end.
   </p>
   <p>
-    A second ablation went after a suspicious constant. One fitted
-    surround-to-center ratio sat at {{N:a:ratios.1|.0f}} against a ceiling of 40,
-    which this project treats as the search reporting that the range was wrong
-    rather than as an answer. Raising the ceiling to 200 changed the score to
-    {{N:ablation:by_key.s4_c200.f1.mean|.3f}} &mdash; identical. The clamp was
-    not doing the work, and saying so is worth more than leaving it unexamined.
+    A second ablation raised the ceiling on how much wider the surround may be than
+    the center, from 40 to 200, and the score did not move by a digit. That is not a
+    null result &mdash; <strong>it is a no-op.</strong> The largest ratio fitted
+    anywhere in the four folds is 23.5, so the ceiling never binds and the two runs
+    are bit-identical computations. Where it does bind, in the single-scale runs, the
+    scores differ as they must
+    ({{N:ablation:by_key.s1_c40.f1.mean|.3f}} against
+    {{N:ablation:by_key.s1_c200.f1.mean|.3f}}). An earlier version of this page
+    reported the no-op as evidence the clamp was harmless.
   </p>
 </div>
 
-<h2>Two ways this model is worse than its headline</h2>
+<h2>Where the six come from</h2>
 <div class="col">
   <p>
-    <span class="key learned">It fires into the trap.</span> Every recording
-    carries a block with nothing planted in it and a raised firing rate &mdash;
-    activity without coordination, which is the thing a coordination detector
-    must not confuse. The learned model fires
-    {{N:b:learned.tube.hot_fa.mean|.2f}} times into that block per fold. The two
-    hand-written detectors it ties with fire
-    {{N:b:hand_written.coact.hot_fa.mean|.2f}} and
-    {{N:b:hand_written.loco.hot_fa.mean|.2f}}. F1 cannot see this &mdash;
-    firings inside the block leave both numerator and denominator by design
-    &mdash; so the tie at the top is a tie at finding planted events and is not a
-    tie at ignoring the trap.
-  </p>
-  <p>
-    The mechanism is legible in the kernel and it is a known defect rather than a
-    mystery. Both Gaussians sit on the same axis with no gap, so the surround is
-    largest exactly at the sample under test: an event contributes to the
-    reference that judges it. And an area-normalized <em>difference</em> cancels
-    the mean of a background change without canceling its variance, so a fixed
-    threshold on a zero-mean but rate-scaled signal has a false-alarm rate that
-    climbs with background. Both are classical radar results in a network's
-    clothing, and the fix that literature prescribes &mdash; divide by the
-    surround rather than subtract it &mdash; is the next experiment, not a
-    finished result.
-  </p>
-  <p>
-    <span class="key learned">It transfers asymmetrically.</span> Fitted on quiet
-    recordings and deployed on busy ones, F1 falls from
-    {{N:g:learned.tube.baseline_quiet.baseline_quiet.f1|.3f}} to
-    {{N:g:learned.tube.baseline_quiet.baseline_busy.f1|.3f}}. Fitted on busy and
-    deployed on busy it holds
-    {{N:g:learned.tube.baseline_busy.baseline_busy.f1|.3f}}. The operational rule
-    that follows is free to implement and is implemented: if a lab fits a model
-    on its own recordings, it fits on the busier ones.
+    <strong>None of the six is this project's method.</strong> Each is a port, and
+    several are modified; the names in the table are the ports, not the originals.
+    Cite the sources below rather than this repository for any of them.
   </p>
 </div>
 
-<h2>Adding an architecture is one class and one line</h2>
+<div class="tablewrap">
+<table class="cite">
+  <thead><tr><th>detector</th><th>the method it ports</th></tr></thead>
+  <tbody>
+    <tr><td>binned SCE</td><td>The coactivity-versus-shuffle rule. Cossart, Aronov &amp; Yuste (2003), <i>Attractor dynamics of network UP states in the neocortex</i>, <i>Nature</i> <b>423</b>:283&ndash;288, <code>doi:10.1038/nature01614</code>.</td></tr>
+    <tr><td>locust</td><td>CICADA's method, from the Cossart lab, ported and modified &mdash; which is why it carries a different name. Denis, Dard, Quiroli, Cossart &amp; Picardo (2020), <code>doi:10.5281/zenodo.10041434</code>. ⚠ That is a version DOI and the release it resolves to does not contain the method; pin a revision when citing it.</td></tr>
+    <tr><td>LoCo &middot; CoactDetect</td><td>Build on Unitary Events, including the per-cell clipping step this page's model also uses. Gr&uuml;n, Diesmann &amp; Aertsen (2002), <i>Neural Computation</i> <b>14</b>(1):43&ndash;80 and 81&ndash;119.</td></tr>
+    <tr><td>rate+context</td><td>Cell-averaging constant-false-alarm-rate detection, from radar. Finn &amp; Johnson (1968), <i>RCA Review</i> <b>29</b>(3):414&ndash;464; restated by Rohling (1983), <i>IEEE T-AES</i> <b>19</b>(4):608&ndash;621.</td></tr>
+    <tr><td>SPIKE-synch</td><td>Kreuz's SPIKE-synchronization measure. Kreuz, Mulansky &amp; Bozanic (2015), <i>J Neurophysiol</i> <b>113</b>(9):3432&ndash;3445, <code>doi:10.1152/jn.00848.2014</code>. The detection layer built on top of the measure is this project's, not his, and it sits under two open defects &mdash; so its score here is not a statement about the measure.</td></tr>
+  </tbody>
+</table>
+</div>
+
+<div class="col">
+  <p>
+    <strong>The architecture is not unprecedented either.</strong> A
+    center&minus;surround receptive field as a difference of Gaussians is Rodieck
+    (1965) and Enroth-Cugell &amp; Robson (1966); as a detection kernel, Marr &amp;
+    Hildreth (1980); a bank of them with scale as the selected quantity, Lindeberg
+    (1998), with octave spacing from Lowe (2004). Making the widths <em>learnable</em>
+    has a direct precedent in Pogoncheff, Granley &amp; Beyeler (NeurIPS 2023). And
+    the fix this page proposes next &mdash; divide by the surround instead of
+    subtracting it &mdash; is STA/LTA, the standard seismological event trigger:
+    Allen (1978), <i>BSSA</i> <b>68</b>(5):1521&ndash;1532,
+    <code>doi:10.1785/BSSA0680051521</code>. Same ratio, same geometry, forty-eight
+    years old.
+  </p>
+  <p>
+    <strong>Nor is the pipeline's shape.</strong> Simulation-derived benchmarks with
+    planted ground truth are established practice &mdash; NAOMi and MEArec build them
+    for calcium imaging and extracellular recording, SpikeForest scores against them.
+    The per-lab retraining loop is CASCADE's stated central move, published in 2021.
+    What differs here is narrower and worth stating exactly: <strong>the substrate and
+    the source of truth</strong> &mdash; a generator fitted to one lab's own baseline
+    recordings, so the benchmark is rebuilt per lab and the ground truth is exact.
+  </p>
+</div>
+
+<h2>Adding an architecture is one builder and one decorator</h2>
 <div class="col">
   <p>
     The requirement was that a new idea could be dropped in and land on the same
     accuracy-versus-cost curve as everything already measured, with nothing else
-    edited. A registry does it &mdash; the sweep, the scorer and the figures all
-    read from it:
+    edited. A registry does it &mdash; the sweep, the scorer and the figures all read
+    from it. The center&minus;surround model is registered as <code>tube</code>, after
+    the metaphor above:
   </p>
 </div>
 
 <pre class="code">@register("tube", note="center-surround on the brightness trace")
-def build_tube(*, n_scales=4, width=8, depth=6, max_center_frames=128):
+def build_tube(*, n_scales=4, width=8, depth=6,
+               max_center_frames=128, max_ratio=40.0):
     ...
     return Tube()</pre>
 
 <div class="col">
   <p>
-    Torch is an optional extra. Nothing in the encoding layer imports it, so the
-    measurement half of the package &mdash; the assessor, the generator, the six
-    detectors, the scorer &mdash; installs and runs without a deep-learning
-    stack at all. That split is deliberate: the apparatus has to be usable by a
-    lab that will never train anything.
+    Torch is an optional extra, and nothing outside the training code imports it &mdash;
+    so the measurement half of the package (the assessor, the generator, the six
+    detectors, the scorer) installs and runs with no deep-learning stack at all. That
+    split is deliberate: the apparatus has to be usable by a lab that will never train
+    anything.
   </p>
 </div>
 
@@ -405,44 +523,69 @@ def build_tube(*, n_scales=4, width=8, depth=6, max_center_frames=128):
     detector is right about a real slice.
   </p>
   <p>
-    <strong>{{N:b:folds}} folds, eight recordings, thirty planted events per
-    fold, one training run per fold.</strong> The &plusmn; is the standard
-    deviation across folds and the range is their minimum and maximum. Neither is
-    a confidence interval, and seed variance within a fold has never been
-    measured &mdash; so fold-to-fold spread confounds data variation with
-    training variation. This is the oldest open item on the model track and it is
-    a prerequisite for believing any change smaller than
-    {{N:b:learned.tube.f1.sd|.3f}} of F1.
+    <strong>The generator spec came from a closed store, on a retired difficulty
+    axis.</strong> It was derived from the <code>.mat</code> event store rather than the approved
+    export folder, and the baseline rate band it used was re-derived four days later.
+    Every model number on this page predates that correction.
   </p>
   <p>
-    <strong>A hit is scored within 1.5 s</strong> of a planted event, against a
-    median realized event about 0.8 s across. That buys a trustworthy ranking and
-    costs any claim about timing accuracy.
+    <strong>FAST stream, baseline windows only.</strong> Coordination in this
+    preparation splits by stream, so nothing here is a claim about the SLOW stream,
+    and nothing here is a claim about any treatment condition.
   </p>
   <p>
-    <strong>The cluster count was a human choice and it moves the data set.</strong>
-    The scan ships beside the choice; a different reading of it cuts the event
-    rate to roughly a quarter and builds a different benchmark.
+    <strong>{{N:b:folds}} folds, eight recordings, thirty planted events per fold, one
+    training run per fold.</strong> The fold spread confounds data variation with
+    training variation, because seed variance within a fold has never been measured.
+    That is the oldest open item on this work and a prerequisite for believing any
+    change smaller than {{N:b:learned.tube.f1.sd|.3f}} of F1 &mdash; including two of
+    the three ablations above.
   </p>
   <p>
-    <strong>No method from the literature has been run on these recordings</strong>,
-    so nothing here claims to beat one. What the neighboring fields do, and which
-    of their claims this work can and cannot make, is on
+    <strong>The probe block is a diagnostic that cannot fail.</strong> Even in the
+    charged column, a firing inside it is scored as a segment, and detectors that
+    merge adjacent calls differently are not directly comparable on the count. No
+    claim of the form <em>"this detector does not fire on dense random activity"</em>
+    is supported by anything here.
+  </p>
+  <p>
+    <strong>A hit is scored within 1.5 s</strong> of a planted event, against a median
+    planted event well under a second. That buys a trustworthy ranking and costs any
+    claim about timing accuracy &mdash; and the tolerance sweep that established it
+    covers the six hand-written detectors, not the learned one.
+  </p>
+  <p>
+    <strong>The ranking is quoted at one point on the background axis.</strong> This
+    project has already measured that moving the background reorders detectors. Which
+    parts of the table survive that move is unmeasured.
+  </p>
+  <p>
+    <strong>No third-party implementation has been run on these recordings.</strong>
+    The six are this project's own ports of the published methods listed above, so
+    nothing here claims to beat a published result. What the neighbouring fields do,
+    and what that leaves this work entitled to claim, is on
     <a href="landscape.html">the landscape page</a>.
   </p>
   <p>
-    <strong>Timings are one machine, one process, no warm-up control</strong> —
-    {{N:b:machine.platform}} on Python {{N:b:machine.python}}. They are
-    order-of-magnitude comparisons, not benchmarks.
+    <strong>Timings are one developer laptop, one process, no warm-up and no thread
+    normalization</strong> &mdash; {{N:b:machine.platform}} on Python
+    {{N:b:machine.python}}. Torch multi-threads by default and the ports largely do
+    not, so these are order-of-magnitude comparisons and not benchmarks.
   </p>
 </div>
 
 <div class="col">
   <p>
-    The full run with every caveat is <code>docs/learned/bakeoff.md</code>; the
-    architectures are <code>src/bugarach/learn/nets.py</code> and the training
-    loop is <code>src/bugarach/learn/train.py</code>. All of it regenerates from
+    The full run with every caveat is
+    <a href="https://github.com/syncytium2/bugarach/blob/main/docs/learned/bakeoff.md"><code>docs/learned/bakeoff.md</code></a>;
+    the architectures are <code>src/bugarach/learn/nets.py</code>, the training loop is
+    <code>src/bugarach/learn/train.py</code>, and the rescoring in the table's second
+    F1 column is <code>tools/probe_inclusive_f1.py</code>. All of it regenerates from
     the tools in the repository.
+  </p>
+  <p>
+    <a href="landscape.html">The landscape &rarr;</a> &mdash; what a dozen methods
+    emit, whether they learned it, and what that leaves this work entitled to claim.
   </p>
 </div>
 

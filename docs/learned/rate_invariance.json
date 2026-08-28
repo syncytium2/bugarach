@@ -1,0 +1,34 @@
+{
+ "bg_rate_hz": 0.009705882352941177,
+ "by_multiple": {
+  "1": {
+   "background_hz": 0.009705882352941177,
+   "frames_over_threshold": 22,
+   "frames_over_threshold_no_bypass": 4,
+   "n_frames": 35186
+  },
+  "2": {
+   "background_hz": 0.019411764705882354,
+   "frames_over_threshold": 104,
+   "frames_over_threshold_no_bypass": 58,
+   "n_frames": 35238
+  },
+  "4": {
+   "background_hz": 0.03882352941176471,
+   "frames_over_threshold": 342,
+   "frames_over_threshold_no_bypass": 172,
+   "n_frames": 35204
+  },
+  "8": {
+   "background_hz": 0.07764705882352942,
+   "frames_over_threshold": 538,
+   "frames_over_threshold_no_bypass": 354,
+   "n_frames": 35230
+  }
+ },
+ "n_params": 1149,
+ "note": "recordings contain no planted events, no distractors, no hot block",
+ "seed": 7,
+ "steps": 900,
+ "threshold": 0.9908190573212562
+}

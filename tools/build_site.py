@@ -206,16 +206,17 @@ and generates every other figure here from a seed.</p>
 
 <h2 style="font-size:1.15rem">A network trained on that simulation</h2>
 <p>Because the planted events have known times, a model can be trained against
-them rather than against another detector's opinion. A center-surround
-architecture with about eleven hundred parameters — a difference of Gaussians
-whose widths are fitted, so how tight an event must be is learned rather than
-supplied — <b>ties the best hand-written detector here</b> and scans a held-out
-recording pair four times faster. It also fires into the no-event trap block an
-order of magnitude more often than the two detectors it ties with, which F1
-cannot see, and that is on the page too.</p>
-<p><a href="learned_detector.html">The learned detector &rarr;</a> — where the
-ground truth comes from, what the architecture buys, and the two ways the model
-is worse than its headline.</p>
+them rather than against another detector's opinion — and, more usefully, every
+detector can be scored on the same footing. A center-surround architecture with
+about eleven hundred parameters has been through the pipeline, and what the
+pipeline says about it is the interesting part: on the headline metric it is
+level with the best hand-written detectors, and once firings into the no-event
+trap block are charged rather than forgiven, <b>the ordering reverses</b>. The
+same column drops <span class="key">locust</span> from fifth of nine to last of
+those that fire at all.</p>
+<p><a href="learned_detector.html">The learned detector &rarr;</a> — how the
+ground truth is manufactured, what the apparatus caught that the headline metric
+could not, and where the six methods come from.</p>
 
 <h2 style="font-size:1.15rem">Where this sits, and who else is doing it</h2>
 <p>Detecting coordinated events is not a new problem, and a page that positions
@@ -241,8 +242,9 @@ Denis, Dard, Quiroli, Cossart &amp; Picardo (2020),
 <i>CICADA</i>, Zenodo <code>10.5281/zenodo.10041434</code>, and
 <i>Attractor dynamics of network UP states in the neocortex</i>,
 Nature 423:283–288.
-<b>No method from the literature has yet been run on this project's recordings</b>, so
-nothing here claims to beat one.</p>
+<b>No third-party implementation has been run on this project's recordings</b> — the six
+are this project's own ports of published methods, several of them modified — so nothing
+here claims to beat a published result.</p>
 <p><a href="landscape.html">The full landscape &rarr;</a> — what a dozen methods
 emit, whether they learned it, and what that leaves this work entitled to claim.</p>
 

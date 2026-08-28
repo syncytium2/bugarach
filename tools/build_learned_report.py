@@ -56,6 +56,21 @@ DATA = {
     # documents, a figure and a published page before anyone divided
     # 0.0952 by 0.3500 and got 0.27.
     "spec": HERE / "generator_spec.json",
+    # The same bake-off runs rescored with probe-block firings charged to
+    # precision instead of forgiven — written by `tools/probe_inclusive_f1.py`.
+    # It exists because the learned-detector page led with a tie that the
+    # forgiveness term produces and never printed the number without it; the
+    # 2026-08-27 murderboard called that blocking. Derived, not measured: the
+    # same detections, one arithmetic choice reversed. It lives in a store
+    # rather than in prose for the reason every other number here does.
+    "probe": HERE / "probe_inclusive.json",
+    # A rate step pushed through the WHOLE trained model rather than through a
+    # numpy copy of its kernel — `tools/probe_rate_invariance.py`. The figure
+    # panel this replaces convolved a step with the kernel alone, which is
+    # arithmetic and cannot fail. One training run, so the effect is an order of
+    # magnitude and not a measurement; quoting it through tokens keeps it tied to
+    # the run that produced it rather than to whichever run someone remembers.
+    "rateinv": HERE / "rate_invariance.json",
 }
 
 

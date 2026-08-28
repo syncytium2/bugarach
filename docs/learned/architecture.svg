@@ -1,5 +1,5 @@
 <svg viewBox="0 0 900 268" xmlns="http://www.w3.org/2000/svg" role="img"
-     aria-label="Signal path of the centre-surround model: a rate-sorted raster of onsets is capped per cell inside the centre window, summed across cells into a single brightness trace, convolved with four difference-of-Gaussian centre-minus-surround kernels, and passed to a dilated convolution stack and a final one-by-one layer that emits a score per frame. The raw brightness trace also bypasses the centre-surround stage and enters the stack directly as a fifth channel.">
+     aria-label="Signal path of the center-surround model: a rate-sorted raster of onsets is capped per cell inside the center window, summed across cells into a single brightness trace, convolved with four difference-of-Gaussian center-minus-surround kernels, and passed to a dilated convolution stack and a final one-by-one layer that emits a score per frame. The raw brightness trace also bypasses the center-surround stage and enters the stack directly as a fifth channel.">
   <defs>
     <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7"
             orient="auto-start-reverse">
@@ -25,7 +25,7 @@
   <text x="369" y="104" text-anchor="middle">sum over cells</text>
   <text x="369" y="123" text-anchor="middle">one trace</text>
 
-  <text x="526" y="104" text-anchor="middle" class="hi">centre &#8722; surround</text>
+  <text x="526" y="104" text-anchor="middle" class="hi">center &#8722; surround</text>
   <text x="526" y="123" text-anchor="middle">4 DoG kernels</text>
 
   <text x="683" y="104" text-anchor="middle">dilated stack</text>
@@ -38,7 +38,7 @@
   <text x="69"  y="54" text-anchor="middle" class="lbl">sorted by rate</text>
   <text x="219" y="54" text-anchor="middle" class="lbl">one cell, one vote</text>
   <text x="369" y="54" text-anchor="middle" class="lbl">space invariance</text>
-  <text x="526" y="54" text-anchor="middle" class="lbl hi">rate invariance, by construction</text>
+  <text x="526" y="54" text-anchor="middle" class="lbl hi">flat field cancels &#8212; in the kernel</text>
   <text x="683" y="54" text-anchor="middle" class="lbl">an event is a run</text>
   <text x="832" y="54" text-anchor="middle" class="lbl">the six&#8217;s own contract</text>
 
@@ -66,7 +66,7 @@
     <line x1="748" y1="108" x2="766" y2="108"/>
   </g>
 
-  <!-- The brightness trace also skips the centre-surround stage.
+  <!-- The brightness trace also skips the center-surround stage.
        Routed BELOW the boxes, not over them: run across the top it passed
        straight through the "space invariance" label and its arrowhead landed on
        "an event is a run", striking out two of the six annotations. -->
