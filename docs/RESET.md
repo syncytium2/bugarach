@@ -16,9 +16,18 @@
 > named in part 9 instead. Vocabulary is in [`GLOSSARY.md`](GLOSSARY.md); this page defines
 > only the handful of terms its own argument turns on.
 >
-> **Operationally blocking as of the reset: CI fails on every pull request**, and `main`
-> goes red on the next merge. One-line fix and diagnosis in part 9. Nothing lands until
-> that does.
+> **Operationally blocking as of the reset: CI failed on every pull request**, and `main`
+> would go red on the next merge. Diagnosis in part 9. ✅ **Fixed since — and fixed the way
+> part 9 prescribed**: `tests/test_site_dates.py` now reads the stamp date from the viewer
+> page's own history rather than from `HEAD`. Pull requests have been going green since;
+> #375 passed 3/3 on 2026-08-28.
+
+> **Landed 2026-08-28, four days after it was written, unchanged in argument.** This page sat
+> on an unproposed branch while every session reconstructed its part 7 from `HANDOFF.md`'s
+> table. What was corrected on the way in: the CI banner above and its twin in part 9, both
+> now false; the status of part 7 steps 0–2, which have since been done; and #270, which has
+> merged. **Nothing in parts 1–6, 8 or 10 was touched** — those are the decisions, and they
+> are the reason the page exists.
 
 ---
 
@@ -238,14 +247,17 @@ The previous plan was **mechanism → benchmark → calibration**, and that orde
 right: re-fitting a detector whose mechanism is wrong bakes the defect into the new
 operating point at full price. The reset inserts a step in front of it.
 
-0. **The assessor becomes a pair.** The screen that shows the scan, takes the decision, and
+**Status as of 2026-08-28**, added when this page landed — the steps, not the argument:
+
+0. ✅ **The assessor becomes a pair.** The screen that shows the scan, takes the decision, and
    **records the decision and the view beside the data set it produced.** Nothing
    downstream is reproducible until this exists, because today the one input everything
    derives from is a number a person agreed to in a tab that has since closed.
-1. **The null test.** Plant nothing, expect zero.
-2. **The background axis becomes a reported curve**, not a point.
-3. **Fresh assessment of the approved folder, and a K decision**, which unblocks a re-derived
-   generator spec.
+   *Landed 2026-08-24; #270, which carries the decision, merged 2026-08-28.*
+1. ✅ **The null test.** Plant nothing, expect zero. *It leaked; corrected in #303.*
+2. ✅ **The background axis becomes a reported curve**, not a point. *Nothing is flat.*
+3. ⛔ **Fresh assessment of the approved folder, and a K decision**, which unblocks a re-derived
+   generator spec. *Tony's.*
 4. **Mechanism, behind flags defaulting to current behaviour** — parity is the product, so
    every mechanism change lands as a named alternative and never as a redefinition —
    [`forks.md`](forks.md) records each such choice and how to go back. Four tube candidates
@@ -255,7 +267,15 @@ operating point at full price. The reset inserts a step in front of it.
    unsupported rather than refuted, and a censored surround is the prescribed remedy nobody
    has run.
 5. **Then the re-fit**, then the regeneration of everything that quotes an operating point,
-   in one pass.
+   in one pass. ⚠ *Two things stand in front of it that are not steps 3 and 4. The scoring
+   question — how the promiscuity probe enters the score — is under measurement rather than
+   open: `bench.py` has kept the probe out of F1 and gated on it at selection since
+   2026-08-22, which is the third form
+   [the todo](todo/2026-08-25-two-scorers-two-winners-and-nothing-decides.md) names. And
+   **no tool in this repo runs a campaign** — `bench.sweep()` builds a curve and
+   `pick_operating_point()` chooses on one, but the walk over every detector × regime is
+   still `optimize_detectors.m` in interface2
+   ([port it](todo/2026-08-12-port-coordination-benchmark.md)).*
 6. **Then the contrast** — [`the question nothing computes`](todo/2026-08-23-the-treatment-contrast-is-the-question-nothing-computes.md)
    — and only then does the loop answer the question it opens with.
 
@@ -294,20 +314,22 @@ git worktree list                                          # where
 grep -l 'status: open' docs/todo/*.md | wc -l              # the backlog
 ```
 
-The durable parts: **PR #270** carries the assessor decision and is blocked by the CI
-failure below, not by review. **#53** and **#50** are proposals aimed at other teams rather
-than webapp work. The todo backlog is large and **most of it was written before part 1** —
-read it in that light rather than as a queue.
+The durable parts: **PR #270** carries the assessor decision and was blocked by the CI
+failure below, not by review — *it merged on 2026-08-28*. **#53** and **#50** are proposals
+aimed at other teams rather than webapp work, and both are still open. The todo backlog is
+large and **most of it was written before part 1** — read it in that light rather than as a
+queue.
 
-**CI is broken for every pull request, and `main` will go red on the next merge.**
-`test_the_stamp_prefix_is_the_one_the_viewer_page_writes_by_hand` compares the viewer page's
-hand-written date stamp against `_stamp_dates(HEAD)`; on a pull request, HEAD is GitHub's
-ephemeral merge commit, dated *now*. The page says one day, CI computes another. The fix is
-one line — read the date from the page's own history
+**CI was broken for every pull request, and `main` would go red on the next merge.** ✅
+*Fixed since, as prescribed here.* `test_the_stamp_prefix_is_the_one_the_viewer_page_writes_by_hand`
+compared the viewer page's hand-written date stamp against `_stamp_dates(HEAD)`; on a pull
+request, HEAD is GitHub's ephemeral merge commit, dated *now*. The page said one day, CI
+computed another. The fix was one line — read the date from the page's own history
 (`git log -1 --format=%cs -- docs/site/raster_viewer.html`) rather than from HEAD, which is
-also what the commit that last touched this claimed to be doing. It was left unfixed because
-`tools/build_site.py` and `tests/test_site_dates.py` are claimed by a session that was still
-ACTIVE when the stop was called.
+also what the commit that last touched this claimed to be doing. It was left unfixed at the
+stop because `tools/build_site.py` and `tests/test_site_dates.py` were claimed by a session
+that was still ACTIVE. `tests/test_site_dates.py` now reads the page's own history, and pull
+requests have been going green since.
 
 ---
 
