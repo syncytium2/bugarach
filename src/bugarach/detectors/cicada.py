@@ -1,6 +1,30 @@
-"""CICADA sliding-window SCE detector — port of interface2's
+"""**locust** — sliding-window SCE detector. Port of interface2's
 ``generate_sce_cicada``, itself a faithful port of the Cossart lab's CICADA
 (``cossartlab/cicada`` sce_stats_utils: get_sce_threshold + detect_sce).
+
+**THIS FILE IS locust. The key is `cicada` and the name is `locust`, and three
+different things are spelled similarly here — read this once and the rest of the
+module is unambiguous:**
+
+- **locust** — the detector implemented in this file. What every screen, figure,
+  scoreboard, README and glossary entry calls it, and the only name a person
+  sees (ADR-0002, 2026-08-24).
+- ``cicada`` — the **identifier**, in this module name, in ``cicada_detect``, and
+  as the detector key everywhere in ``src/``. It stays because it is the value in
+  ``detections.csv``'s ``detector`` column, which is **output contract** shared
+  with interface2 and fireflies — a rename there is a cross-team coordination
+  cost, not a tidy-up, and this ecosystem was already bitten once by two projects
+  diverging on a field name (``width_sec``).
+- **CICADA** in capitals — the Cossart lab's upstream tool, which is neither of
+  the above. locust is a **modified** port of it and does not carry its name in
+  public: it is fed this project's own detected events rather than running
+  CICADA's transient detection, and it is fed a per-event duration by the
+  producer rather than measuring the whole transient itself.
+
+So ``which == "cicada"`` in a file and *locust* on a screen are the same
+detector, deliberately. Whether the identifier should move too is
+``docs/todo/2026-08-24-the-identifier-still-says-cicada.md``; the answer so far
+is that it moves everywhere at once or not at all.
 
 Upstream notice (MIT License): Copyright (c) 2019 Cossart Lab —
 https://gitlab.com/cossartlab/cicada. The detection method implemented here
