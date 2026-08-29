@@ -60,10 +60,21 @@ Template:
 
 ## Active
 
-### Tonys-MacBook-Pro/transfer-across-corpora — DEPLOY CLAIMED: the site is 25 commits behind
-- **Status:** ACTIVE — claimed 2026-08-29 before the upload.
-- **Claims:** **the site deploy** (`bugarach.tonydefazio.com`) and local **port 5096** for
-  the pre-upload drive. Nothing else external — no darkroom write, no MATLAB, no store.
+### Tonys-MacBook-Pro/transfer-across-corpora — DEPLOY: done, and RELEASED
+- **Status:** **DONE 2026-08-29 — DEPLOYED AND VERIFIED. The deploy is held by nobody;
+  the next session may publish without asking.**
+  - Version ID `41b75a27-8e54-46a0-bf05-051f2f0ba104`; 4 of 8 assets changed
+    (`index`, `viewer`, `landscape`, `diagnostic` — the four HTML pages; the images were
+    already uploaded).
+  - `tools/site_staleness.py` after: **current**, `viewer.html` matching
+    `docs/site/raster_viewer.html` at `58480e2`.
+  - `tools/audit_deployed_page.py` against the live URL: **"The page fetched nothing but
+    itself"** on both `/viewer.html` and the `/viewer` the 307 lands on — the
+    no-network promise holds as served, not merely as written.
+  - Driven over **HTTP before the upload**, not `file://`, per `docs/deploy.md`: all five
+    paths 200, and the three serving changes confirmed present in the payload by string
+    match rather than by assumption.
+- **Claims:** ~~the site deploy~~, ~~port 5096~~ — **both released**, server stopped.
 - **Authorised by Tony, 2026-08-29:** *"i need to land this website today"*, and the deploy
   confirmed explicitly before the upload. `docs/DEPLOY_HOLD.md` reads `held: no` (released
   2026-08-28) and no other block held the deploy.
