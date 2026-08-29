@@ -144,9 +144,9 @@ browser, with no install and no upload. That is the deliverable and it substanti
   no real slice has an answer key. This is the sentence that must survive every rewrite.
 - **That the tube leads.** The tube is the learned detector — a centre-minus-surround
   filter, 1,149 parameters, the only model here that is trained rather than configured. It
-  **ties**: 0.668 ± 0.061 against CoactDetect's 0.651 ± 0.044, four folds, **one training
+  **ties**: 0.681 ± 0.049 against CoactDetect's 0.651 ± 0.044, four folds, **one training
   run per fold and no seed replication anywhere**. What it demonstrably wins on is cost —
-  5.6 s to fit, 0.014 s to scan a fold. It also transfers worse than two of the six from a
+  6.9 s to fit, 0.023 s to scan a fold. It also transfers worse than two of the six from a
   quiet background to a busy one, which is a negative result about its own central claim.
   ⚠ **And both numbers were computed at a calibration that has since been superseded** —
   see part 5. They are the best published figures and they are not current ones.

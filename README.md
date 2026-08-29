@@ -294,35 +294,39 @@ cost of any claim about timing accuracy, and it helps the imprecise detectors mo
 
 | detector | F1 (mean of 4 folds) | fold range | probe firings | detect s | params |
 | --- | --- | --- | --- | --- | --- |
-| center−surround (learned) | 0.668 ± 0.061 | 0.58–0.73 | 15.8 | 0.014 | 1,149 |
-| CoactDetect | 0.651 ± 0.044 | 0.61–0.71 | 1.2 | 0.060 | — |
-| LoCo | 0.638 ± 0.053 | 0.57–0.70 | 2.5 | 0.245 | — |
+| center−surround (learned) | 0.681 ± 0.049 | 0.63–0.74 | 20.5 | 0.023 | 1,149 |
+| CoactDetect | 0.651 ± 0.044 | 0.61–0.71 | 1.2 | 0.062 | — |
+| LoCo | 0.638 ± 0.053 | 0.57–0.70 | 2.5 | 0.246 | — |
 | rate+context | 0.571 ± 0.085 | 0.46–0.65 | 34.8 | 0.005 | — |
 | locust | 0.541 ± 0.070 | 0.47–0.63 | 214.8 | 0.114 | — |
-| binned SCE | 0.422 ± 0.083 | 0.31–0.49 | 58.8 | 0.011 | — |
-| SPIKE-synch | 0.254 ± 0.065 | 0.21–0.34 | 8.8 | 0.094 | — |
-| pooled trace (learned) | 0.131 ± 0.012 | 0.12–0.15 | 0.0 | 0.015 | 2,065 |
-| per-cell bank (learned) | 0.125 ± 0.000 | 0.12–0.12 | 0.0 | 2.453 | 2,393 |
+| binned SCE | 0.420 ± 0.079 | 0.31–0.49 | 59.2 | 0.012 | — |
+| SPIKE-synch | 0.254 ± 0.065 | 0.21–0.34 | 8.8 | 0.093 | — |
+| per-cell bank (learned) | 0.125 ± 0.000 | 0.12–0.12 | 0.0 | 0.226 | 2,393 |
+| pooled trace (learned) | 0.118 ± 0.015 | 0.10–0.12 | 0.0 | 0.023 | 2,065 |
 
 `detect s` is wall-clock to scan one held-out fold — two recordings, about 118
 minutes of data.
 
 **The top three tie on F1 and do not tie on the trap.** Four folds of thirty
-planted events cannot separate 0.668 from 0.651; the fold ranges overlap, and the
+planted events cannot separate 0.681 from 0.651; the fold ranges overlap, and the
 figure draws every fold so that is visible rather than hidden behind a bar. But
 `probe firings` is the column F1 cannot see — firings inside the no-event block are
 excluded from precision, by design, so a detector that keys on activity is not
 punished for it in the score. On that column the three are not alike at all: the
-learned model fires into the block **15.8** times a fold against CoactDetect's
+learned model fires into the block **20.5** times a fold against CoactDetect's
 **1.2**. Read the tie as "indistinguishable at finding planted events, and not
 indistinguishable at ignoring the trap" — and note that the two detectors this page
 praises for ignoring the trap are the two hand-written ones. The
 claim the numbers support is that a 1,149-parameter network **reaches the level of
 the best hand-written detectors here**, having been given no more information than
-they were — and then detects four times faster than CoactDetect and eighteen
-times faster than LoCo, from 5.6 seconds of training. It is **not** the fastest
-detector here: rate+context scans the same fold in 0.005 s, roughly three times
-quicker again, and sits 0.10 of F1 below.
+they were — and then detects **2.6× faster than CoactDetect and 10.5× faster than
+LoCo**, from 6.9 seconds of training. It is **not** the fastest detector here:
+rate+context scans the same fold in 0.005 s, roughly four times quicker again, and
+sits 0.11 of F1 below. ⚠ Those multiples were 4× and 17× on the previous run, and
+**the two runs are not comparable**: this one pins torch to a single thread, which
+moves the learned model's wall-clock, and the hand-written timings moved too for
+reasons [`bakeoff.md`](docs/learned/bakeoff.md) does not establish. What survives
+across both is the ranking, not the factor.
 
 ⚠ **What this does not establish.** Eight simulated recordings — two per fold —
 four folds, one training run each. The `±` above is the standard deviation across

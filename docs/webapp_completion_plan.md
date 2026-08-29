@@ -244,7 +244,7 @@ detector fitted on three folds and scored on a held-out fourth:
 
 That is a **tie at the top, not an outperformance**, and every learned number is one
 training run per fold, so no seed error bars exist to test it with. What the tube
-demonstrably wins on is cost — 1,149 parameters, 5.6 s to fit, 0.014 s to scan a fold.
+demonstrably wins on is cost — 1,149 parameters, 6.9 s to fit, 0.023 s to scan a fold.
 It also **transfers worse** than two of the six from a quiet background to a busy one,
 which is a negative result about its own central claim; fit busy, deploy quiet.
 
