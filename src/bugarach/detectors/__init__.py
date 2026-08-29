@@ -6,7 +6,9 @@ parity test):
   local     CoactDetect                        -- landed (see coact.py)
   loco      LoCo                               -- landed (see loco.py)
   sce       binned SCE                         -- landed (see sce.py)
-  cicada    **locust**                         -- landed (see cicada.py)
+  cicada    **locust**                         -- landed (see cicada.py; a
+            modified partial port derived from the Cossart lab's CICADA, not
+            CICADA itself)
   sync      SPIKE-synchronization              -- landed (see sync.py; native
             port bit-exact vs cSPIKE — PySpike's max_tau cap has been
             broken since 0.8.0, so it is a test-suite cross-check only,

@@ -1,5 +1,8 @@
-"""Parity tests for the CICADA sliding-window detector (generate_sce_cicada
-port) against MATLAB reference output — global/regional threshold scope,
+"""Parity tests for locust, the sliding-window detector ported from interface2's
+``generate_sce_cicada`` — so what these assert is agreement with THAT, not with the
+Cossart lab's CICADA (docs/detector_history.md §6.3).
+
+Against MATLAB reference output — global/regional threshold scope,
 fixed and per-event duration modes, randi-based surrogate rolls on the shared
 RNG stream.
 

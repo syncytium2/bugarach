@@ -13,6 +13,6 @@ license: BSD-3-Clause
 repository-code: "https://github.com/syncytium2/bugarach"
 abstract: >-
   Browser-based viewer and Python ports of six neural-coordination
-  detectors (rate+context, CoactDetect, LoCo, binned SCE, CICADA,
+  detectors (rate+context, CoactDetect, LoCo, binned SCE, locust,
   SPIKE-synchronization), each validated to 1e-9 against MATLAB reference
   output.

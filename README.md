@@ -76,7 +76,7 @@ this repo needs it to build, run or be tested.
 
 | what exists | what it means |
 | --- | --- |
-| **Six detector ports** | rate+context, CoactDetect, LoCo, binned SCE, locust and SPIKE-synch — each agreeing with its MATLAB original to within 1e-9 on every returned number, in every detection mode, on committed synthetic fixtures. That is a port-fidelity claim and it is the whole of what is checkable from a clone: it says the Python computes what the MATLAB computed, which is what lets the ports be cited in the originals' place. It says nothing about either being right. |
+| **Six detector ports** | rate+context, CoactDetect, LoCo, binned SCE, locust and SPIKE-synch — each agreeing with its MATLAB original to within 1e-9 on every returned number, in every detection mode, on committed synthetic fixtures. That is a port-fidelity claim and it is the whole of what is checkable from a clone: it says the Python computes what the MATLAB computed, which is what lets these stand in for **the MATLAB originals**. It says nothing about either being right, and standing in for the MATLAB is not the same as standing in for a published method that MATLAB implements — see [`docs/detector_history.md`](docs/detector_history.md) for which is which. |
 | **Peak gating** | The half-prominence extent kernel the peak-gated mode needs, written **clean-room** from a spec and validated against an independently built adversary implementation. |
 | **A generator with ground truth** | Coordinated events planted at known times in per-ROI background activity, so a miss and a false alarm are counted rather than argued about (`bugarach.simulate`, from interface2's `generate_synth_coord.m`). |
 | **A scorer that reads intervals** | Binned detectors report a bin's left edge; matching that edge against a planted onset scored a correct detector at **0.00 recall on fourteen detections that each spanned a planted event**. Detections are matched as intervals, greedily, closest pair first (`bugarach.score`). |
@@ -221,7 +221,7 @@ Every coordinated event here was planted, so a hit, a miss and a false alarm are
 drawn rather than argued about. Forty-five minutes of simulated recording, and
 what six detectors made of it:
 
-![One lane per detector above a 33-row event raster and six analysis traces. Inside the shaded block, the CICADA and binned SCE lanes are packed solid with detections while the LoCo lane is empty](docs/generator/coord_diagnostic_bench_quiet_hero.png)
+![One lane per detector above a 33-row event raster and six analysis traces. Inside the shaded block, the lane labelled CICADA — this repo's modified port of it, since renamed locust — and the binned SCE lane are packed solid with detections, while the LoCo lane is empty](docs/generator/coord_diagnostic_bench_quiet_hero.png)
 
 Top row, the answer: ▲ a planted event at least one detector recovered, and a grey
 down-triangle for a distractor — a correlated burst that is real coincidence and not
@@ -384,11 +384,13 @@ come from: the events are planted in a simulation fitted to one lab's own
 recordings, so the ground truth is exact and the benchmark is rebuilt per lab.
 The classical side of the same problem is
 [CICADA](https://gitlab.com/cossartlab/cicada) and the coactivity-versus-shuffle
-rule it comes from — both among the six ported here.
+rule it comes from — **binned SCE implements that rule**, with a circular shift where
+the 2003 Methods reshuffle intervals, so cite its authors for it and not this repo.
 
-**No method from the literature has been run on this project's recordings**, so
-nothing here claims to beat one. The reading behind that paragraph — which papers
-were read closely and which were deliberately not opened — is on the site as
+**No method from the literature has been run on this project's recordings as its
+authors published it**, and nothing here claims to beat one. The reading behind that
+claim — which papers were read closely and which were deliberately not opened — is
+on the site as
 [the landscape](https://bugarach.tonydefazio.com/landscape.html), built from
 `docs/learned/landscape.src.html`.
 
@@ -611,7 +613,7 @@ code from cSPIKE's MATLAB source.
 | Upstream | License | Role here |
 | --- | --- | --- |
 | [PySpike](https://github.com/mariomulansky/PySpike) | BSD | SPIKE-synchronization semantics ported from its (BSD) source; test-suite cross-check (its `max_tau` bug, live since 0.8.0, limits it to the uncapped regime) |
-| [CICADA](https://gitlab.com/cossartlab/cicada) | MIT | the detection method behind **locust** (ported and modified; carries upstream copyright notice) |
+| [CICADA](https://gitlab.com/cossartlab/cicada) | MIT | **locust** is code-derived from it, by way of interface2, and modified; carries the upstream copyright notice |
 | cSPIKE (MATLAB) | research/education only — **no code used** | reference outputs for parity tests only (research use, via interface2) |
 
 ⚠ SPIKE-synchronization is a **native port** rather than a PySpike wrapper because
@@ -623,33 +625,63 @@ cap. The write-up is [`docs/kreuz_note.md`](docs/kreuz_note.md), and
 that will fail the day upstream fixes it. PySpike stays a test-suite
 cross-check in the uncapped regime, where the two definitions agree.
 
-**Cite in any publication that uses results from this tool:**
+**Cite in any publication that uses results from this tool.** ° marks a work carried
+from interface2's attribution audit and **not read here** — this project's shelf
+holds only Finn & Johnson of the works below. Where each detector came from, which
+are this lab's own designs and which derive from published work, is
+[`docs/detector_history.md`](docs/detector_history.md).
 
-- **PySpike** — Mulansky M., Kreuz T., *PySpike — A Python library for analyzing
-  spike train synchrony*, SoftwareX 5, 183–189 (2016).
+- **rate+context** — the structure is cell-averaging, with an *additive* rather than
+  a multiplicative threshold, so it does **not** carry the constant-false-alarm
+  property its ancestor is named for
+  ([`docs/detector_history.md`](docs/detector_history.md) §5.2): Finn H.M.,
+  Johnson R.S. (1968). *Adaptive detection mode with threshold control as a function
+  of spatially sampled clutter-level estimates*. RCA Review 29(3), 414–464.
+- **LoCo and CoactDetect** — the family is excess-coincidence testing against a
+  rate-preserving independence null; its canonical form is Unitary Events:
+  ° Grün S., Diesmann M., Aertsen A. (2002). *Unitary events in multiple
+  single-neuron spiking activity: I. Detection and significance*, Neural Computation
+  14(1):43–80, and *II. Nonstationary data*, 14(1):81–119. The shift-based null used
+  here is nearer ° Amarasingham A., Harrison M.T., Hatsopoulos N.G., Geman S. (2012).
+  *Conditional modeling and the jitter method of spike resampling*, J Neurophysiol
+  107(2):517–531, doi:10.1152/jn.00633.2011. LoCo's `maxlt` is greatest-of CFAR:
+  ° Hansen V.G. (1973). *Constant false alarm rate processing in search radars*, Proc.
+  IEE Int. Radar Conf., IEE Conf. Publ. 105, 325–332 — the origin; its detectability
+  cost is measured in Hansen V.G. & Sawyers J.H. (1980), IEEE T-AES AES-16(1):115–118,
+  which **is** on this project's shelf.
+- **PySpike**, for the measure under **SPIKE-synch** — Mulansky M., Kreuz T. (2016).
+  *PySpike — A Python library for analyzing spike train synchrony*, SoftwareX 5,
+  183–189, doi:10.1016/j.softx.2016.07.006. The measure is ° Kreuz T., Mulansky M.,
+  Bozanic N. (2015). *SPIKY: a graphical user interface for monitoring spike train
+  synchrony*, J Neurophysiol 113(9):3432–3445, doi:10.1152/jn.00848.2014, which builds
+  on event synchronization — ° Quian Quiroga R., Kreuz T., Grassberger P. (2002),
+  Phys Rev E 66:041904.
 - **CICADA**, for the detector this repo calls **locust** — Denis J, Dard R, Quiroli
   E, Cossart R, Picardo M (2020). *CICADA (Calcium Imaging Complete Automated Data
   Analysis)*, v1.0.3. Zenodo. doi:10.5281/zenodo.10041434. Source:
-  [`gitlab.com/cossartlab/cicada`](https://gitlab.com/cossartlab/cicada); the port
-  here is of the older `sce_stats_utils`. **It is named apart from CICADA because it
-  is modified** — and both modifications are changes to what it is *fed*, not to what
-  it computes: it gets our own detected events instead of running CICADA's transient
-  detection, and it gets each event's duration from the producer instead of measuring
-  the whole transient itself. **Duration is the exporter's, never bugarach's**: it
-  arrives in `width_sec` under the `width_def` naming the rule that made it, and the
-  port paints what it is given (ADR-0002 addendum, FOUNDATIONS §7).
+  [`gitlab.com/cossartlab/cicada`](https://gitlab.com/cossartlab/cicada), MIT; the
+  port is of `sce_stats_utils` and is **modified**, so it is named apart. What is
+  modified, and what its parity number does and does not cover, is
+  [`docs/detector_history.md`](docs/detector_history.md) §6.3.
 - **binned SCE** — the rule's root is Cossart R, Aronov D, Yuste R (2003). *Attractor
-  dynamics of network UP states in the neocortex*. Nature 423(6937):283–288.
-  doi:10.1038/nature01614, whose Methods state it in full; the modern circular-shift
-  form is Dard et al. 2022 (eLife 11:e78116) and Bocchio et al. 2020 (Nat Commun
-  11:4559).
-- ⚠ **The remaining rows are being rewritten.** An attribution audit closed all six
-  origins on 2026-08-24 — `rate_detect` is cell-averaging CFAR (Finn & Johnson 1968),
-  `loco_detect`'s `maxlt` is GO-CFAR (Hansen 1973), and LoCo/CoactDetect sit on
-  Unitary Events (Grün et al. 2002). None of it changes a claim this tool makes, and
-  the full list with DOIs is in
-  [the attribution note](docs/todo/2026-08-24-the-methods-are-not-ours-and-the-app-says-otherwise.md)
-  until this section is rebuilt properly.
+  dynamics of network UP states in the neocortex*. Nature 423(6937):283–288,
+  doi:10.1038/nature01614, whose Methods state it in full — with **interval
+  reshuffling** where this code circular-shifts. The modern circular-shift form is
+  Dard et al. 2022 (eLife 11:e78116) and Bocchio et al. 2020 (Nat Commun 11:4559).
+  The 2003 paper credits the technique to ° Mao B.Q., Hamzei-Sichani F., Aronov D.,
+  Froemke R.C., Yuste R. (2001). *Dynamics of spontaneous activity in neocortical
+  slices*, Neuron 32(5):883–898, which nobody here has obtained — so 2003 is the root
+  **reached**, not the bottom.
+
+Two things arrived with those citations that are about behaviour rather than credit,
+and both are open: greatest-of CFAR is blind to a second event inside its own
+reference window, and rate+context's false-alarm rate is not rate-controlled. They
+are the reason this section is worth more than a bibliography —
+[the attribution note](docs/todo/2026-08-24-the-methods-are-not-ours-and-the-app-says-otherwise.md)
+carries both. ⚠ Four literatures that could host prior art for the CFAR
+convergence — genomics peak calling, seismological STA/LTA, adaptive image
+thresholding, and changepoint detection — **have never been searched by anyone on
+this project**, so read "designed here" as *not found elsewhere yet*, not as novel.
 
 ## Dev
 
