@@ -60,9 +60,27 @@ Template:
 
 ## Active
 
-### Tonys-MacBook-Pro/transfer-across-corpora — DEPLOY: done, and RELEASED
-- **Status:** **DONE 2026-08-29 — DEPLOYED AND VERIFIED. The deploy is held by nobody;
-  the next session may publish without asking.**
+### Tonys-MacBook-Pro/transfer-across-corpora — DEPLOY: done twice, and RELEASED
+- **Status:** **DONE 2026-08-29 — DEPLOYED TWICE AND VERIFIED. The deploy is held by
+  nobody; the next session may publish without asking.**
+- **⚠ SECOND DEPLOY, `429e3c04` — the sixth detector is withheld from the public build.**
+  Tony, 2026-08-29: *"suppress all locust/cicada mentions in the public facing
+  webapp/docs. we'll come back to it when we have time."* **The first deploy of the day
+  went out ~20 minutes before that instruction and carried the name**, which is why a
+  second one was needed rather than optional.
+  - **Zero visible mentions on all four served pages**, down from 27 — measured by
+    rendering each page and reading `innerText`, not by grepping bytes. The residual
+    occurrences in the served files (1 in `index.html`, 13 in `viewer.html`) are the
+    `cicada` **code key and source comments**, which is the agreed scope: purging the key
+    from served bytes was offered and explicitly not chosen, because it is
+    `detections.csv`'s `detector` value and forking it would split the browser's output
+    contract from the Python's.
+  - **Two mentions no grep would have found.** The detector lane labels are rendered into
+    `hero.png` and `diagnostic.png` from `ui/app.py`, so the name reached readers **as
+    pixels** while every HTML page was clean; and `landscape.svg` carried it in a diagram
+    label and in the figure's own alt text. Both neutralised, and `app.py`'s docstring now
+    says why so the next person does not scrub the pages and ship the figures.
+  - Live bytes checked against the local payload after upload: identical counts.
   - Version ID `41b75a27-8e54-46a0-bf05-051f2f0ba104`; 4 of 8 assets changed
     (`index`, `viewer`, `landscape`, `diagnostic` — the four HTML pages; the images were
     already uploaded).
