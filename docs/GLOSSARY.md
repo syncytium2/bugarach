@@ -26,10 +26,13 @@ always by proper name:
   - **binned SCE** — surrogate-thresholded coactivity per trimmed region
     window (generate_sce port).
   - **locust** — sliding-window coactivity with per-cell roll null. Derived
-    from the Cossart lab's **CICADA** (Denis et al. 2020) and **modified**: fed
+    from the Cossart lab's **CICADA** (Denis et al. 2020) and **modified**, in
+    both cases by changing what it is *fed* rather than what it computes: it gets
     the events already in the folder rather than running CICADA's own transient
-    detection, and painting each cell active for the *rise interval* where the
-    original paints the whole transient duration. **RENAMED 2026-08-24** — a
+    detection, and it gets each event's duration from the producer rather than
+    measuring the whole transient the way the original does. **Duration is never
+    derived here** — it arrives in `width_sec` under its `width_def` and the port
+    paints what it is given (ADR-0002 addendum). **RENAMED 2026-08-24** — a
     modified port does not carry the original's name in a public UI (Tony's
     call, on interface2's ADR-0016: *"we can't say we used it if we turned off
     half of it"*).

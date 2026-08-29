@@ -280,10 +280,13 @@ either repository records that the decision was revisited. §6.5 returns to it.<
 carried in the module. The only one of the six whose <em>idea</em> has a settled external
 owner. It is also <strong>not a drop-in</strong>, and both reports say so: we feed our own
 upstream-detected events instead of running CICADA's transient detection, and we
-replace its active-duration model — the original paints each cell active for its
-detected transient <em>duration</em>, which over-detects catastrophically on SLOW
-transients (median ~4.6 s of duration-overlap swamps onset-synchrony), so we paint
-the brief rise interval (~2 s) instead. A regional-scope option was added; the
+feed it a per-event duration instead of letting it measure one. The original
+paints each cell active for the transient <em>duration</em> it detected itself, which
+over-detects catastrophically on SLOW transients here (median ~4.6 s of
+duration-overlap swamps onset-synchrony), so the brief rise interval (~2 s) is
+sent instead — <strong>by the exporter, on export; not by this code, which paints what
+it is given and since 2026-08-29 refuses to compute a duration at all</strong> (ADR-0002
+addendum, FOUNDATIONS §7, sapper SAP012). A regional-scope option was added; the
 original thresholds over the whole recording.</p>
 <h3>Tier 2 — a published <em>measure</em>, with our detector on top</h3>
 <p><strong>SPIKE-synch.</strong> The SPIKE-synchronization profile is Kreuz and colleagues'
@@ -714,8 +717,9 @@ place, and it is a lineage claim, not an independence claim.</p>
 <p>The only detector whose method has a settled external owner, and the port's parity
 to 1e-9 is what makes it citable in the original's place. That citability is the
 asset, and every modification spends some of it.</p>
-<p>It is already modified — rise-interval active duration replaces the original's
-transient duration, for a stated and good reason. But a reader who sees "CICADA"
+<p>It is already modified — it is handed a per-event duration where the original
+measures the transient itself, for a stated and good reason, and the duration it
+is handed is the exporter's. But a reader who sees "CICADA"
 in a figure legend assumes the published method.</p>
 <p><strong>Ship both modes, name them in every output, and default to the faithful one for
 any comparison against published work.</strong> Its 214.8 probe firings — 180× the

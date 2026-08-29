@@ -132,8 +132,10 @@ COLORS = {
 }
 #: Display names. **`cicada` is the key; `locust` is the name.** The detector is
 #: derived from the Cossart lab's CICADA and is not CICADA — it is fed our own
-#: detected events, and paints each cell active for the rise interval where the
-#: original paints the whole transient duration. Showing a user another lab's
+#: detected events instead of running CICADA's transient detection, and it is fed
+#: each event's duration by the producer instead of measuring the whole transient
+#: itself. Both are changes of input: the duration arrives in `width_sec` and is
+#: never derived here (FOUNDATIONS §7). Showing a user another lab's
 #: tool name for a modified port was the one attribution item Tony did not wave
 #: off (2026-08-24). The **key** stays `cicada` because it is the value in
 #: `detections.csv`'s `detector` column, which is output contract — see

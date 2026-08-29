@@ -137,10 +137,13 @@ Three tiers, and the tier matters more than the name.
 carried in the module. The only one of the six whose *idea* has a settled external
 owner. It is also **not a drop-in**, and both reports say so: we feed our own
 upstream-detected events instead of running CICADA's transient detection, and we
-replace its active-duration model — the original paints each cell active for its
-detected transient *duration*, which over-detects catastrophically on SLOW
-transients (median ~4.6 s of duration-overlap swamps onset-synchrony), so we paint
-the brief rise interval (~2 s) instead. A regional-scope option was added; the
+feed it a per-event duration instead of letting it measure one. The original
+paints each cell active for the transient *duration* it detected itself, which
+over-detects catastrophically on SLOW transients here (median ~4.6 s of
+duration-overlap swamps onset-synchrony), so the brief rise interval (~2 s) is
+sent instead — **by the exporter, on export; not by this code, which paints what
+it is given and since 2026-08-29 refuses to compute a duration at all** (ADR-0002
+addendum, FOUNDATIONS §7, sapper SAP012). A regional-scope option was added; the
 original thresholds over the whole recording.
 
 ### Tier 2 — a published *measure*, with our detector on top
@@ -568,8 +571,9 @@ The only detector whose method has a settled external owner, and the port's pari
 to 1e-9 is what makes it citable in the original's place. That citability is the
 asset, and every modification spends some of it.
 
-It is already modified — rise-interval active duration replaces the original's
-transient duration, for a stated and good reason. But a reader who sees "CICADA"
+It is already modified — it is handed a per-event duration where the original
+measures the transient itself, for a stated and good reason, and the duration it
+is handed is the exporter's. But a reader who sees "CICADA"
 in a figure legend assumes the published method.
 
 **Ship both modes, name them in every output, and default to the faithful one for

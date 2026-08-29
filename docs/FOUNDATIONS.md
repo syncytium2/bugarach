@@ -202,9 +202,10 @@ adversarial differential validation under `docs/clean_room/` (process:
 
 **CICADA is the upstream tool; `locust` is the detector here**, and the
 distinction is a provenance decision rather than a label. The sixth detector is a
-**modified** port — fed the events the folder already carries instead of running
-CICADA's own transient detection, and painting each cell active for the rise
-interval where the original paints the whole transient duration — so it ships
+**modified** port, in both cases by what it is **fed** rather than what it
+computes — the events the folder already carries instead of CICADA's own transient
+detection, and a per-event duration from the producer instead of the whole
+transient the original measures for itself — so it ships
 under its own name with CICADA cited (2026-08-24, ADR-0002). The **code key
 stays `cicada`**, including the `detector` column of `detections.csv`, which is
 output contract. So `which == "cicada"` in a file and *locust* on a screen are
@@ -223,6 +224,18 @@ truncated to `peak − t50rise` **on export, by the MATLAB team** — not inside
 (`export_folder_spec.md`), the port paints what it is given, and **what a producer
 puts in that column is not this project's business** — no webapp behaviour and no
 dev-team judgement turns on it. Full account: the ADR-0002 addendum.
+
+**This is now enforced rather than described** (2026-08-29). One function had been
+deriving a duration all along — `rise_durations()` computed `locs − t50rise`, the
+exporter's own truncation, recomputed a layer too late. It refuses now, naming the
+rule and the column to read instead. It was also, on folder input, returning
+**zero for every event** — `locs` in a folder holds the `t50rise` — with the right
+shape and dtype and no error, which is the failure class this contract exists to
+prevent and the reason a wrong answer here would have been hard to see.
+**Sapper SAP012** blocks any arithmetic pairing two of `locs` / `peak` /
+`t50rise` under `src/` or `tools/`, because `peak − locs` is the plausible repair
+and is equally forbidden: the rule is not *derive it correctly*, it is **do not
+derive it**.
 
 ## 8. Team & operations
 
