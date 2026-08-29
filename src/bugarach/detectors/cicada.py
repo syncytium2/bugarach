@@ -125,14 +125,14 @@ def rise_durations(stream: Stream) -> list[np.ndarray]:
     This used to return ``locs - t50rise``, and it was wrong twice over.
 
     Wrong in principle, which is the reason it is gone: **duration is the
-    exporter's, not ours.** Tony, 2026-08-29 — *"matlab decides duration.
-    bugarach python and webapp is not responsible for what the duration is
-    derived from."* The slow events in this preparation are not described in the
-    literature and destroy CICADA at full duration, so the MATLAB team truncates
-    them to ``peak − t50rise`` **on export**; that truncation is theirs, it
-    travels in ``width_sec`` under its own ``width_def``, and re-deriving it here
-    both duplicates a decision and silently overrides whatever the producer
-    actually sent. ADR-0002's 2026-08-28 addendum and FOUNDATIONS §7.
+    producer's, and this repo does not have an opinion about it.** Tony,
+    2026-08-29 — *"matlab decides duration. bugarach python and webapp is not
+    responsible for what the duration is derived from"*, and *"bugarach doesn't
+    care what you put in the duration column."* A number arrives in ``width_sec``
+    under the ``width_def`` that names the producer's rule; this function paints
+    each cell active for that long and does not interpret it. Deriving one here
+    duplicates a decision already made and silently overrides what was sent.
+    FOUNDATIONS §7.
 
     Wrong in fact, which is how the principle got noticed: on **folder** input —
     the only input, since the store is closed — the field named ``locs`` holds

@@ -285,22 +285,57 @@ RULES = [
         # reproduces explore_sce's prep to make the parity fixture, which is the
         # one context where computing this is the correct thing to do.
         exclude=["tools/matlab_ref/**"],
-        message="BUGARACH DOES NOT DERIVE EVENT DURATIONS. Tony, 2026-08-29: "
-                "\"matlab decides duration. bugarach python and webapp is not "
-                "responsible for what the duration is derived from.\" An event's "
-                "duration arrives in `width_sec` with the `width_def` naming the "
-                "rule that made it, and this package paints what it is given. "
-                "The slow events here are not described in the literature and "
-                "destroy CICADA at full duration, so the MATLAB team truncates "
-                "them to peak - t50rise ON EXPORT; re-deriving it here duplicates "
-                "a decision already made and overrides whatever the producer "
-                "actually sent. It also silently returned ZERO for all 2,215 "
-                "events on folder input, because `locs` in a folder holds the "
-                "t50rise — right shape, right dtype, no error, wrong number. Read "
-                "`stream.width` (guarded by `stream.has_width`). ADR-0002's "
-                "2026-08-28 addendum; FOUNDATIONS section 7.",
+        message="BUGARACH DOES NOT DERIVE EVENT DURATIONS AND HAS NO OPINION ON "
+                "WHAT ONE MEANS. Tony, 2026-08-29: \"matlab decides duration. "
+                "bugarach python and webapp is not responsible for what the "
+                "duration is derived from\" — and \"bugarach doesn't care what you "
+                "put in the duration column. your mother's social security number "
+                "works fine for 5 of 6 detectors.\" That is literal: five of the "
+                "six never read the column, and the sixth paints each cell active "
+                "for that many seconds without interpreting it. A number arrives "
+                "in `width_sec` under the `width_def` naming the producer's rule; "
+                "re-deriving one here duplicates a decision already made and "
+                "overrides what was sent. It also silently returned ZERO for all "
+                "2,215 events on folder input, because `locs` in a folder holds "
+                "the t50rise — right shape, right dtype, no error, wrong number. "
+                "Read `stream.width` (guarded by `stream.has_width`). "
+                "FOUNDATIONS section 7.",
         fixture_bad="dur = [pk - on for pk, on in zip(st.locs, st." + "t50rise)]",
         fixture_good="dur = st.width if st.has_width else None",
+    ),
+    Rule(
+        id="SAP013", level="BLOCK",
+        # SAP012 stops the code computing a duration. This stops the PROSE
+        # explaining what one means, which is the half that kept coming back.
+        # Ten surfaces said locust "paints the rise interval". That was the SLOW
+        # stream's rule; `fast` — the stream the bench actually scores — carries a
+        # half-prominence width, so the sentence was false for every published
+        # locust number, and stayed false through a session that was cleaning up
+        # this exact area. Naming a producer's rule here cannot be kept true,
+        # because it is not this repo's fact to maintain.
+        pattern=r"rise[ -]interval",
+        include=["src/bugarach/**", "tools/**", "README.md", "docs/GLOSSARY.md",
+                 "docs/FOUNDATIONS.md", "docs/detector_history.md",
+                 "docs/site/**"],
+        # matlab_ref reproduces the producer's prep to build parity fixtures, and
+        # export_folder_spec/ADR-0002/dated records are the producer contract and
+        # the historical record — neither is this repo forming an opinion.
+        exclude=["tools/matlab_ref/**", "tools/sapper.py"],
+        message="BUGARACH DOES NOT DESCRIBE WHAT A DURATION MEANS. Tony, "
+                "2026-08-29: \"there should be no reference to duration "
+                "definitions in this repo. bugarach doesn't care what you put in "
+                "the duration column.\" A number arrives in `width_sec` under the "
+                "producer's `width_def`; five of the six detectors never read it "
+                "and the sixth does not interpret it. Naming the rule that made it "
+                "is not a fact this repo can keep true: ten surfaces said locust "
+                "\"paints the rise interval\", which is the SLOW stream's rule — "
+                "`fast`, the stream the bench scores, carries a half-prominence "
+                "width, so the sentence was false for every published locust "
+                "number. Say what the code does (paints the producer's duration) "
+                "and stop. The producer contract (`docs/export_folder_spec.md`) is "
+                "where rules are discussed with the people who write them.",
+        fixture_bad="it paints each cell active for the rise interval instead",
+        fixture_good="it paints each cell active for the producer's width_sec",
     ),
 ]
 

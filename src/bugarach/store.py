@@ -32,13 +32,15 @@ sitting one line under the two field names, which read as a licence and was
 taken as one. :func:`~bugarach.detectors.cicada.rise_durations` computed exactly
 that subtraction. It refuses now. **An event's duration arrives from the
 producer** in ``width_sec``, under the ``width_def`` naming the rule that made
-it, and this package paints what it is given. On this preparation the two
-streams are not even measured the same way — a half-prominence width on ``fast``,
-a truncation to ``peak − t50rise`` on ``slow``, because these slow events are not
-described in the literature and destroy CICADA at full length — and **that
-truncation is applied on export, by the MATLAB team.** Tony, 2026-08-29:
-*"matlab decides duration. bugarach python and webapp is not responsible for
-what the duration is derived from."* Read ``Stream.width`` behind
+it, and this package paints what it is given. **It does not interpret it, and
+nothing here describes what a duration means** — different producers, and even
+different streams from one producer, measure it differently, and a repo that
+writes any of those rules down is a repo whose description goes stale and whose
+readers mistake the producer's decision for ours. Tony, 2026-08-29: *"matlab
+decides duration. bugarach python and webapp is not responsible for what the
+duration is derived from"* — and, on how little of this is ours to know,
+*"bugarach doesn't care what you put in the duration column. your mother's social
+security number works fine for 5 of 6 detectors."* Read ``Stream.width`` behind
 ``Stream.has_width``; sapper SAP012 blocks the subtraction; ADR-0002's
 2026-08-28 addendum and FOUNDATIONS §7 carry the reasoning. The correctness
 argument is the smaller of the two: on **folder** input ``locs`` holds the

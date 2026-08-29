@@ -138,12 +138,12 @@ carried in the module. The only one of the six whose *idea* has a settled extern
 owner. It is also **not a drop-in**, and both reports say so: we feed our own
 upstream-detected events instead of running CICADA's transient detection, and we
 feed it a per-event duration instead of letting it measure one. The original
-paints each cell active for the transient *duration* it detected itself, which
-over-detects catastrophically on SLOW transients here (median ~4.6 s of
-duration-overlap swamps onset-synchrony), so the brief rise interval (~2 s) is
-sent instead — **by the exporter, on export; not by this code, which paints what
-it is given and since 2026-08-29 refuses to compute a duration at all** (ADR-0002
-addendum, FOUNDATIONS §7, sapper SAP012). A regional-scope option was added; the
+paints each cell active for the transient *duration* it detected itself; the port
+paints each cell active for whatever the producer put in `width_sec`. **What that
+number means is the producer's business and is not described here** — this repo
+has no opinion on it, and since 2026-08-29 it cannot form one: the port refuses to
+compute a duration at all (FOUNDATIONS §7, sapper SAP012). A regional-scope option
+was added; the
 original thresholds over the whole recording.
 
 ### Tier 2 — a published *measure*, with our detector on top
