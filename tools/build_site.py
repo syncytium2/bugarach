@@ -150,9 +150,9 @@ coordinated event among them was planted, so a miss and a false alarm are drawn
 rather than inferred.</p>
 
 <p>Detectors flag the moments when many ROIs fire together. There are six here —
-LoCo, locust, SCE, CoactDetect, RateDetect and SPIKE-synch — each asking a
-different question, and each matched to its MATLAB original to 1e-9 on committed
-fixtures, so it can be cited in its place.</p>
+LoCo, SCE, CoactDetect, RateDetect, SPIKE-synch, and a sixth held back from this
+build — each asking a different question, and each matched to its MATLAB original
+to 1e-9 on committed fixtures, so it can be cited in its place.</p>
 
 <p><b>Coordination is not one phenomenon, so there is no one detector to train.</b>
 Stars coordinate and cells coordinate, and between them the timescales run over
@@ -216,34 +216,19 @@ and all of them learn from events a human expert labelled. What is different her
 substrate and where the answers come from — the events are planted in a
 simulation fitted to one lab's own recordings, so the ground truth is exact and
 the benchmark is rebuilt per lab.</p>
-<p>The classical side of the same problem is
-<a href="https://gitlab.com/cossartlab/cicada">CICADA</a> and the coactivity-vs-shuffle
-rule it comes from, and both are already in the figure at the top of this page.
-The lane marked <span class="key">locust</span> is <b>derived from CICADA's
-method</b> — ported from an older version of the Cossart lab's implementation,
-by way of this project's MATLAB stack, and modified, which is why it carries a
-different name;
-<b><span class="key">binned SCE</span></b> is the
-coactivity-vs-shuffle rule itself, whose root is Cossart, Aronov &amp; Yuste
-(2003). Cite them, not this repo, for those two —
-Denis, Dard, Quiroli, Cossart &amp; Picardo (2020),
-<i>CICADA</i>, Zenodo <code>10.5281/zenodo.10041434</code>, and
+<p>The classical side of the same problem is the coactivity-vs-shuffle rule, and
+it is already in the figure at the top of this page:
+<b><span class="key">binned SCE</span></b> is that rule itself, whose root is
+Cossart, Aronov &amp; Yuste (2003) — cite them, not this repo, for it:
 <i>Attractor dynamics of network UP states in the neocortex</i>,
 Nature 423:283–288.</p>
-<p><b>Three things to know before reading locust's numbers as CICADA's.</b> The port
-<b>skips CICADA's per-cell transient-detection stage</b>, because it is fed events
-this project detected separately. And <b>locust is the only one of the six that
-consumes a duration as well as a timing</b> — the other five compute their own
-spans from onsets — so what it is told about how long an event lasted affects its
-calls, and <b>that measurement is the producer's and is never derived here</b>: it
-arrives per event, named by the rule that made it, and this code paints what it is
-given. And the derivation chain has been
-<b>checked only at its last link</b> — locust matches the MATLAB implementation it
-was ported from to 1e-9, and nobody here has checked that implementation against
-the Cossart original.
-<b>So locust's results on this page are a result about locust, not about
-CICADA</b>, and no method from the literature has been run here in its own
-form.</p>
+<p><b>A sixth detector is held back from this build.</b> It is derived from
+another laboratory's published tool, and how it should be named and credited here
+is an open question this project has not finished answering — so it is withheld
+until that is settled rather than shipped under a name that would prejudge it.
+Nothing on this page reports its results. <b>No method from the literature has
+been run here in its own form</b>, which was true before it was withheld and is
+still true.</p>
 <p><a href="landscape.html">The full landscape &rarr;</a> — what a dozen methods
 emit, whether they learned it, and what that leaves this work entitled to claim.</p>
 
@@ -695,20 +680,14 @@ LEAD_FIGURE = """<figure class="lead">
   all six were reading, one row per ROI; then what each detector computes.
   Each lane carries its detector's own name; two of the six are named for what
   they measure rather than for the tool — <span class="key">rate+context</span>
-  is RateDetect, and <span class="key">binned SCE</span> is SCE. A third name
-  needs decoding for a different reason: <span class="key">locust</span> is this
-  project's port of <a href="https://gitlab.com/cossartlab/cicada">CICADA</a>, the
-  Cossart lab's published tool, brought in for this comparison. Running it in this
-  pipeline changed what it is fed, twice. It gets the
-  events this project detected separately, rather than running CICADA's own
-  transient-detection stage; and it gets each event's duration from the
-  recording's producer, rather than the whole transient the original measures for
-  itself — on this preparation's slow events, duration overlap would otherwise
-  swamp the onset synchrony the detector is looking for. Both are changes of
-  input, not of algorithm: <b>the duration is the exporter's, and locust paints
-  what it is given</b>. It carries a name of its own because of them —
-  <b>this lane's numbers are locust's, and are not CICADA's, in either
-  direction</b>.
+  is RateDetect, and <span class="key">binned SCE</span> is SCE. A third lane,
+  <span class="key">sixth</span>, is a detector <b>held back from this build</b>:
+  it is derived from another laboratory's published tool, and how it should be
+  named and credited here is an open question this project has not finished
+  answering, so it is withheld until that is settled rather than shipped under a
+  name that would prejudge it. Its lane is drawn because this figure is a fixed
+  record of one run, and dropping a row would misrepresent what the six were
+  scored against; nothing on the page reports it as a result.
   In the lanes, <span class="key">&#10007;</span> marks a false alarm and
   <span class="key">&#9711;</span> one that a reader should not count as a
   separate miss-fire — a second call on an event another detection had already

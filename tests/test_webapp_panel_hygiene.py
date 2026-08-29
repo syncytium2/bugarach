@@ -209,6 +209,15 @@ def test_the_folder_table_carries_the_caveat_the_one_recording_view_does(page):
 
     Counted and said, never filtered: raising a floor until the awkward rows
     disappear is what FOUNDATIONS §9 forbids in terms.
+
+    **The withholding is lifted for the length of this run and put back after.**
+    Since 2026-08-29 that detector carries `unavailable` — off the public build
+    while how it should be named and credited is settled — so a folder run
+    produces no rows for it and this test had nothing to count. Lifting keeps the
+    caveat's behaviour under test in the state it will be restored from; the
+    tests that assert a visitor cannot reach it live in
+    `test_webapp_cicada.py` and `test_webapp_tune_picks.py` and would fail if
+    this leaked.
     """
     pg, errs = page
     pg.evaluate("""async (sim) => {
@@ -216,6 +225,14 @@ def test_the_folder_table_carries_the_caveat_the_one_recording_view_does(page):
         document.getElementById(k).value = v;
       await runSim();
     }""", SIM)
+    held = pg.evaluate("""() => {
+      const h = DETECTORS.cicada.unavailable;
+      delete DETECTORS.cicada.unavailable;
+      paintDetectorChoice();
+      const b = document.getElementById("dPick_cicada");
+      if (b && !b.checked) { b.checked = true; b.dispatchEvent(new Event("change")); }
+      return h === undefined ? null : h;
+    }""")
     _go(pg, "accDetect")
     pg.click("#runFolder")
     pg.wait_for_function("() => !document.getElementById('runFolder').disabled",
@@ -228,6 +245,10 @@ def test_the_folder_table_carries_the_caveat_the_one_recording_view_does(page):
       brackets: [...document.querySelectorAll('#detectOut td .qual')]
         .map(n => n.textContent.trim()),
     })""")
+    pg.evaluate("""(h) => {
+      if (h !== null) DETECTORS.cicada.unavailable = h;
+      paintDetectorChoice();
+    }""", held)
     assert got["single"] > 0, (
         "this fixture no longer produces single-cell CICADA rows, so it can no "
         "longer show whether the caveat is printed — pick a sparser folder")

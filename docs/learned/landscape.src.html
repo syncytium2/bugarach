@@ -108,7 +108,7 @@
     thousand-iteration per-cell permutation null.
   </p>
   <p>
-    That is the same construction as the SCE rule and as CICADA, arrived at
+    That is the same construction as the SCE rule, arrived at
     independently, sitting as a <em>precondition</em> of assembly detection rather
     than as anybody's output. It is drawn as the dashed arrow. It also means the
     most obvious published comparison for this work needs no adapter at all: those
@@ -190,8 +190,8 @@
        F1 (quiet) and F1 (busy), each plotting F1 against scoring tolerance from 0.1 to
        3 seconds for six detectors. In both panels the ordering of the detectors is the
        same at every tolerance. LoCo, CoactDetect and rate-plus-context are flat
-       lines across the whole range. CICADA and SPIKE-synch rise steeply from the
-       left and flatten by about three quarters of a second; CICADA rises from 0.12
+       lines across the whole range. The sixth detector and SPIKE-synch rise steeply from the
+       left and flatten by about three quarters of a second; the sixth rises from 0.12
        to 0.56 in the busy panel. A dashed vertical rule marks the shipped tolerance
        of 1.5 seconds, which falls well to the right of the point where every curve
        has levelled off."/>
@@ -207,7 +207,7 @@
     every tolerance from 0.1 s to 3 s, so no comparison in this project rests on the
     choice. That is worth knowing rather than assuming &mdash; and the sweep could have
     come out the other way: three of the six move by more than 0.1 of F1 across the
-    range, CICADA by 0.44, and at the tightest tolerance CICADA sits below a fifth of
+    range, the sixth by 0.44, and at the tightest tolerance it sits below a fifth of
     the leader in the busy regime. A sweep on which nothing moved at all would be the
     uninformative one.
   </p>
@@ -219,7 +219,7 @@
     the bench cannot distinguish a detector that lands on an event from one that
     lands a second away. Localization accuracy is not measured badly here; it is not
     measured. The detectors that move most across the sweep are the binned ones,
-    which is exactly where timing error lives: CICADA reads
+    which is exactly where timing error lives: the sixth detector reads
     <strong>{{N:t:f1.baseline_busy.cicada.0|.2f}}</strong> at the tightest tolerance
     and <strong>{{N:t:f1.baseline_busy.cicada.8|.2f}}</strong> at the shipped one, on
     the same detections.
@@ -237,8 +237,11 @@
 <table class="links">
   <thead><tr><th>method</th><th>what it emits</th><th>code</th><th>licence</th></tr></thead>
   <tbody>
-    <tr><td>CICADA</td><td>population events [Ca]</td>
-        <td><a href="https://gitlab.com/cossartlab/cicada">gitlab.com/cossartlab/cicada</a></td><td>not stated</td></tr>
+    <!-- A ROW IS MISSING HERE, deliberately (Tony, 2026-08-29). The calcium
+         population-event tool this project ports is withheld from the public
+         build while how it should be named and credited is settled, and a
+         survey table cannot cite a method the same page declines to name.
+         Restore it together with the detector. -->
     <tr><td>cnn-ripple</td><td>population events [LFP], learned</td>
         <td><a href="https://github.com/PridaLab/cnn-ripple">PridaLab/cnn-ripple</a></td><td>GPL-3.0</td></tr>
     <tr><td>DOSED</td><td>population events [EEG], learned</td>
@@ -259,8 +262,10 @@
   <p>
     <strong>No method above has been run on this project's recordings.</strong> The
     comparison here is six detectors ported into this repo plus its own networks, and
-    of those six only CICADA is published work &mdash; reaching us second-hand, as a
-    port of a port. Until something from this page goes through the same
+    the only one of the six that was published work is <strong>withheld from this
+    build</strong> while how it should be named and credited is settled &mdash; so
+    as this page stands, <strong>nothing in the comparison is a published
+    method</strong>. Until something from this page goes through the same
     fit-and-score procedure, &ldquo;competes with state of the art&rdquo; is not a
     supported sentence and does not appear in one.
   </p>

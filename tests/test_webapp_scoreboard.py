@@ -208,12 +208,26 @@ def test_every_detector_gets_a_row(scored):
 
 
 def test_a_detector_that_cannot_run_says_so_instead_of_scoring_zero(scored):
-    """CICADA on a folder with no peak is the case that exists today. A zero
-    would read as a poor detector rather than an unanswerable question."""
-    cic = next(r for r in scored["board"]["rows"] if r["which"] == "cicada")
-    if cic.get("refused"):
-        assert cic["f1"] is None or "f1" not in cic
-        assert "could not run" in scored["text"]
+    """A refused row carries its reason, never a zero.
+
+    A zero would read as a poor detector rather than an unanswerable question,
+    and the table's whole claim is that every row was offered the same folds.
+
+    TWO REASONS a row is refused now, and both must produce the same shape. A
+    detector can be unable to answer THIS folder — the peak-less case — or be
+    withheld from the build entirely, which since 2026-08-29 covers `sync` and
+    `cicada`. The second arrived after this test was written and would have
+    slipped past it: the old version read `cic["f1"]` unguarded, so a withheld
+    row raised KeyError instead of failing an assertion, which is a crash
+    dressed as a test result.
+    """
+    refused = [r for r in scored["board"]["rows"] if r.get("refused")]
+    assert refused, "no row was refused, so this checked nothing"
+    for r in refused:
+        assert r.get("f1") is None, (
+            f"{r['which']} was refused and still carries an F1: {r.get('f1')}")
+        assert str(r["refused"]).strip(), f"{r['which']} refused with no reason"
+    assert "could not run" in scored["text"]
 
 
 def test_the_columns_the_plan_asked_for_are_all_there(scored):
