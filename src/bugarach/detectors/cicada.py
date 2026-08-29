@@ -1,23 +1,47 @@
-"""locust — a sliding-window SCE detector DERIVED FROM the Cossart lab's CICADA.
+"""**locust** — sliding-window SCE detector. Port of interface2's
+``generate_sce_cicada``, which is itself DERIVED FROM the Cossart lab's CICADA
+(``cossartlab/cicada`` sce_stats_utils: get_sce_threshold + detect_sce).
 
-The module, the function and the ``detections.csv`` value are all still keyed
-``cicada``; the detector is called **locust** everywhere a person reads it.
-GLOSSARY.md "locust versus CICADA" carries the mapping, and the identifier
-question is docs/todo/2026-08-24-the-identifier-still-says-cicada.md.
-
-**This is a port of interface2's ``generate_sce_cicada``, and the chain is
-validated only at that last link.** ``tools/matlab_ref/gen_ref_cicada.m`` builds
-the parity fixture by running ``generate_sce_cicada`` itself, so the 1e-9 result
-says this file computes what interface2 computed and says NOTHING about CICADA.
-Nothing in either repo compares either against the Cossart source. This docstring
-used to call ``generate_sce_cicada`` "a faithful port"; that was an assertion, it
-was tested nowhere, and interface2 PARKED that function in ``f55643bf`` for
-over-detecting on this preparation's long SLOW transients. It is also a partial
-port by design — CICADA's per-cell transient-detection step is skipped, because
-the events already exist by the time anything here runs.
+**The 1e-9 reaches interface2 and stops there.**
+``tools/matlab_ref/gen_ref_cicada.m`` builds the parity fixture by running
+``generate_sce_cicada`` itself, so the number says this file computes what
+interface2 computed. **No output of either has ever been compared against
+CICADA's.** interface2 did check its transliteration against upstream by reading
+code, function for function, and found it matched — a correspondence check on the
+*unmodified* transliteration, not a measurement, and not a check of the two
+deviations below. This docstring used to call it "a faithful port": that was an
+assertion tested nowhere, and interface2 had already parked ``generate_sce_cicada``
+for over-detecting on this preparation's long SLOW transients a month before this
+port landed. It is also a partial port by design — CICADA's per-cell
+transient-detection step is skipped, because the events already exist by the time
+anything here runs.
 
 So: do not report this detector's numbers as CICADA's, and do not describe it as
 CICADA's method. docs/detector_history.md §6.3 has the full chain and the reason.
+
+**THIS FILE IS locust. The key is `cicada` and the name is `locust`, and three
+different things are spelled similarly here — read this once and the rest of the
+module is unambiguous:**
+
+- **locust** — the detector implemented in this file. What every screen, figure,
+  scoreboard, README and glossary entry calls it, and the only name a person
+  sees (ADR-0002, 2026-08-24).
+- ``cicada`` — the **identifier**, in this module name, in ``cicada_detect``, and
+  as the detector key everywhere in ``src/``. It stays because it is the value in
+  ``detections.csv``'s ``detector`` column, which is **output contract** shared
+  with interface2 and fireflies — a rename there is a cross-team coordination
+  cost, not a tidy-up, and this ecosystem was already bitten once by two projects
+  diverging on a field name (``width_sec``).
+- **CICADA** in capitals — the Cossart lab's upstream tool, which is neither of
+  the above. locust is a **modified** port of it and does not carry its name in
+  public: it is fed this project's own detected events rather than running
+  CICADA's transient detection, and it is fed a per-event duration by the
+  producer rather than measuring the whole transient itself.
+
+So ``which == "cicada"`` in a file and *locust* on a screen are the same
+detector, deliberately. Whether the identifier should move too is
+``docs/todo/2026-08-24-the-identifier-still-says-cicada.md``; the answer so far
+is that it moves everywhere at once or not at all.
 
 Upstream notice (MIT License): Copyright (c) 2019 Cossart Lab —
 https://gitlab.com/cossartlab/cicada (sce_stats_utils: get_sce_threshold +

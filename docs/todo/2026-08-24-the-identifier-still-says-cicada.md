@@ -5,6 +5,33 @@ filed: 2026-08-24
 
 # The detector is called locust and its identifier still says `cicada`
 
+> **2026-08-29 — the cost this file named is paid; the rename question it poses is
+> still open, and deliberately.** Tony: *"i see cicada.py that makes it difficult to
+> use locust without confusion. can we clean that up without breaking everything?"*
+> He chose the signpost over either rename.
+>
+> The measured harm was worse than this file's phrasing suggested. `cicada.py` —
+> the module that *implements* locust — did not contain the word once, and neither
+> did `bench.py`, `detect_folder.py`, `emit.py`, `store.py` or `detectors/
+> __init__.py`, whose port-order table listed the row as `cicada  CICADA (native
+> peak detection)`: the key and the upstream tool, with the name absent. Across all
+> of `src/`, *locust* appeared on eight lines in three files, none of them the
+> implementation. So "a reader who greps for what they saw on screen finds nothing"
+> was literally true of every place the detector actually lives.
+>
+> **Every file where `cicada` is an identifier now names locust**, and
+> `cicada.py`'s docstring carries the three-way split — *locust* the detector,
+> `cicada` the identifier, **CICADA** the Cossart lab's tool — which is the
+> distinction that was nowhere and is needed most inside that module.
+> `tests/test_locust_is_findable.py` holds it: a new module reaching for the key
+> inherits the obligation without anyone having read this file. (It is a test and
+> not a SAP rule because the property is file-level — *if a file contains X it must
+> contain Y* — and sapper's rules are per-line regexes.)
+>
+> **No identifier moved and no contract value moved.** The recommendation below
+> stands untouched: it moves everywhere at once as an announced spec revision, or
+> not at all.
+
 The user-visible label was renamed on 2026-08-24 — the rule is the Cossart lab's
 CICADA, this implementation modifies it in two ways, and a modified port does not
 carry the original's name in a public UI. **The identifier was deliberately left
