@@ -47,8 +47,15 @@ from pathlib import Path
 
 import numpy as np
 
-LEARNED = ("tube", "trace", "tiny")
-LR = {"tube": 1e-2, "trace": 1e-3, "tiny": 1e-3}
+LEARNED = ("tube", "tube_guard", "tube_ratio", "tube_ratio_guard", "trace", "tiny")
+LR = {"tube": 1e-2, "trace": 1e-3, "tiny": 1e-3,
+      # THE 2x2 RUNS AT THE CONTROL'S LEARNING RATE, DELIBERATELY. `tube`'s 1e-2 is
+      # what every published tube number was fitted under, and the three variants
+      # differ from it by a kernel change alone. Tuning lr per variant would confound
+      # the mechanism with its optimisation -- the mistake `model_track.md` already
+      # records against the per-cell architecture, which "trains at a tenth the
+      # learning rate of the model that works, so the comparison is uncontrolled."
+      "tube_guard": 1e-2, "tube_ratio": 1e-2, "tube_ratio_guard": 1e-2}
 
 
 def _rows(r, *, folds_note=None) -> dict:
@@ -81,7 +88,8 @@ def _timed_detect(fn, slices) -> tuple[list, float]:
     return out, time.perf_counter() - t0
 
 
-def run(spec: dict, *, folds: int, seeds_per_fold: int, quick: bool) -> dict:
+def run(spec: dict, *, folds: int, seeds_per_fold: int, quick: bool,
+        train_seed: int = 0) -> dict:
     from bugarach.bench import (DETECTORS, OPERATING_POINTS, fold_split,
                                 pool_scores, run_detector)
     from bugarach.learn.train import fold_maker, train
@@ -110,6 +118,7 @@ def run(spec: dict, *, folds: int, seeds_per_fold: int, quick: bool) -> dict:
 
     out: dict = {
         "spec": spec, "folds": n_folds, "seeds_per_fold": seeds_per_fold,
+        "train_seed": train_seed,
         "seeds": all_seeds,
         "machine": {"platform": platform.platform(),
                     "python": platform.python_version()},
@@ -184,9 +193,16 @@ def run(spec: dict, *, folds: int, seeds_per_fold: int, quick: bool) -> dict:
             # seed separation that function asserts. SAP010 blocks that shape.
             mk, n_fit, _ = fold_maker(rec, tr_seeds)
             t0 = time.perf_counter()
+            # THE SEED AXIS. `train_seed` is the torch seed, and it is threaded here
+            # so a caller can repeat the SAME fold with a different draw. Without it
+            # every learned number in this repo is one training run per fold and the
+            # only spread reported is across FOLDS -- which is a property of the data
+            # split, not of the optimiser. The tube's headline is a 0.017 gap inside a
+            # 0.061 fold spread, so a variant that moves F1 by less than that has
+            # demonstrated nothing until this axis is populated.
             tr = train(name, mk, n_train=min(10, n_fit),
                        steps=300 if quick else 900, crop=4096, batch=3,
-                       lr=LR[name])
+                       lr=LR[name], seed=train_seed)
             train_sec = time.perf_counter() - t0
 
             te_slices = [rec(sd) for sd in te_seeds]
@@ -229,13 +245,20 @@ def main(argv=None) -> int:
     p.add_argument("--seeds-per-fold", type=int, default=2)
     p.add_argument("--quick", action="store_true",
                    help="coarser grids and shorter training, for a smoke run")
+    p.add_argument("--train-seed", type=int, default=0,
+                   help="torch seed for the learned fits. Vary it across otherwise "
+                        "identical runs to replicate each fold and get an error bar "
+                        "on the OPTIMISER, not just on the data split.")
     a = p.parse_args(argv)
 
     spec = json.loads(a.spec.read_text())["generator"]
     a.out.mkdir(parents=True, exist_ok=True)
     res = run(spec, folds=a.folds, seeds_per_fold=a.seeds_per_fold,
-              quick=a.quick)
-    f = a.out / ("bakeoff_quick.json" if a.quick else "bakeoff.json")
+              quick=a.quick, train_seed=a.train_seed)
+    stem = "bakeoff_quick" if a.quick else "bakeoff"
+    if a.train_seed:
+        stem = f"{stem}_seed{a.train_seed}"
+    f = a.out / f"{stem}.json"
     f.write_text(json.dumps(res, indent=1, sort_keys=True))
     print(f"\nwrote {f}")
     return 0
