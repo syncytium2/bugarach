@@ -1,5 +1,13 @@
 """What bugarach emits back: one row per detected coordinated event.
 
+**``cicada`` is the key that reaches the file; locust is the name that reaches
+the reader.** This module writes the ``detector`` column, so it is the boundary
+where that matters: ``cicada`` is **output contract**, read by interface2 and
+fireflies, and the same detector is *locust* on every screen and figure. Do not
+translate it here — the value in the file and the key in the code are one string
+on purpose. ``bugarach.detectors.cicada`` carries the three-way split between the
+key, the name, and CICADA the upstream tool.
+
 **The six detectors do not return the same shape**, and until now nothing in this
 tree had to reconcile them. Three return flat parallel arrays over one stream's
 events (``rate``, ``coact``, ``sync``); three return a slice-level container whose

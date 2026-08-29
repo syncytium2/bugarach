@@ -17,7 +17,9 @@ exists at all.
 
 **The three detectors that take an ``onset_field`` do not agree, and that is
 deliberate.** ``sce_detect`` and ``loco_detect`` default to ``t50rise``;
-:func:`bugarach.detectors.cicada.cicada_detect` defaults to ``locs``, the
+:func:`bugarach.detectors.cicada.cicada_detect` — **the detector named locust;
+``cicada`` is its key because that is the ``detections.csv`` contract value** —
+defaults to ``locs``, the
 peak. CICADA's MATLAB original anchors its raster on the peak, and §2 makes
 matching it the product — so the port keeps the peak rather than improving on
 it. The science agrees with the parity: a single-cell event runs 10-60+ s from
