@@ -1,6 +1,32 @@
 """Shared helpers for MATLAB-reference parity tests."""
 
+import re
+from pathlib import Path
+
 import numpy as np
+
+_VIEWER = Path(__file__).resolve().parents[1] / "docs/site/raster_viewer.html"
+
+
+def locust_suppressed_in_the_browser() -> bool:
+    """Does the shipped page hold locust out of this build?
+
+    Read from the artifact rather than from a constant in this suite, so a skip
+    can only ever agree with what a user actually gets. The page's own mechanism
+    is a truthy ``unavailable`` on the registry entry — the same flag
+    ``offReason()`` reads to disable the option, clear the tick, label it "off in
+    this build" and keep the detector out of every run.
+
+    locust was suppressed for this release on 2026-08-29 (Tony). The port, its
+    MATLAB parity to 1e-9 and ``bugarach detect`` are untouched; what went away
+    is the viewer offering a detector whose number would come from a fixed
+    duration nobody chose. Tests that exercise it are keyed to this rather than
+    deleted, so **they come back by themselves the day the flag does** — the
+    behaviour they cover is not knowledge worth re-earning later.
+    """
+    entry = re.search(r"\n  cicada: \{(.*?)\n  \},",
+                      _VIEWER.read_text(encoding="utf-8"), re.S)
+    return bool(entry and "unavailable:" in entry.group(1))
 
 
 def as1d(v):

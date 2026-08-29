@@ -25,6 +25,12 @@ from pathlib import Path
 
 import pytest
 
+from conftest import locust_suppressed_in_the_browser
+
+SUPPRESSED = (
+    "locust is suppressed in this build; the behaviour below is still implemented and these come back with it (conftest.locust_suppressed_in_the_browser)")
+
+
 VIEWER = Path(__file__).resolve().parents[1] / "docs/site/raster_viewer.html"
 
 DUPES = """() => {
@@ -194,6 +200,7 @@ def test_the_window_table_does_not_outlive_the_folder_it_describes(page):
 SIM = {"sRec": "2", "sMin": "10", "sRoi": "16", "sRate": "12", "sEv": "6",
        "sJit": "360", "sSeed": "4"}
 
+@pytest.mark.skipif(locust_suppressed_in_the_browser(), reason=SUPPRESSED)
 
 def test_the_folder_table_carries_the_caveat_the_one_recording_view_does(page):
     """CICADA's single-cell moments, in the view that produces the file.

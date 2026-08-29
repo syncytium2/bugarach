@@ -31,6 +31,12 @@ from pathlib import Path
 
 import pytest
 
+from conftest import locust_suppressed_in_the_browser
+
+SUPPRESSED = (
+    "locust is suppressed in this build; the behaviour below is still implemented and these come back with it (conftest.locust_suppressed_in_the_browser)")
+
+
 ROOT = Path(__file__).resolve().parents[1]
 VIEWER = ROOT / "docs/site/raster_viewer.html"
 
@@ -179,6 +185,7 @@ def test_the_folder_run_offers_a_detector_settings_file(ran):
     assert ran["saveEnabled"], (
         "the folder run finished and the settings file could not be saved")
 
+@pytest.mark.skipif(locust_suppressed_in_the_browser(), reason=SUPPRESSED)
 
 def test_the_settings_read_back_through_the_library_keyed_by_detector_and_stream(
         ran, tmp_path):

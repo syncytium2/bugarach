@@ -35,6 +35,7 @@ from bugarach.ui.app import (  # noqa: E402
     CALIBRATED,
     DT_DERIVED,
     NO_REGION,
+    ALL_PARAM_SPECS,
     PARAM_SPECS,
     FrameIntervalMissing,
     _compute,
@@ -181,7 +182,7 @@ def test_every_viewer_default_is_the_calibrated_one():
     numbers, and two of them fell behind ``bench.OPERATING_POINTS`` without
     anything noticing.
     """
-    for det, rows in PARAM_SPECS.items():
+    for det, rows in ALL_PARAM_SPECS.items():
         point = OPERATING_POINTS[det].params
         for pname, _label, default, _bounds, _step in rows:
             if pname in point:
@@ -193,6 +194,10 @@ def test_every_viewer_default_is_the_calibrated_one():
 def test_the_two_that_drifted_are_the_calibrated_values_now():
     """The specific regression, named so it cannot come back quietly.
 
+    Reads ``ALL_PARAM_SPECS``, not ``PARAM_SPECS``: locust is suppressed from the
+    viewer for this release, and a suppressed detector whose defaults are free to
+    drift is one that comes back wrong. The guard outlives the visibility.
+
     CICADA's FAST percentile was retuned to 99.999 on 2026-08-20 after the
     looser point fired 7.3 false events an hour against a ceiling of 6
     (FOUNDATIONS §9); CoactDetect's calibrated pair scores F1 1.00 against 0.72
@@ -200,7 +205,7 @@ def test_the_two_that_drifted_are_the_calibrated_values_now():
     the rejected value in both cases.
     """
     got = {det: {p: v for p, _, v, _, _ in rows}
-           for det, rows in PARAM_SPECS.items()}
+           for det, rows in ALL_PARAM_SPECS.items()}
     assert got["cicada"]["sce_percentile"] == 99.999
     assert got["cicada"]["n_surrogates"] == 100
     assert got["coact"]["int_win_sec"] == 2.0
@@ -228,7 +233,7 @@ def test_a_default_outside_its_own_widget_range_is_refused():
 
 def test_no_widget_offers_to_overrule_the_recording_about_its_own_dt():
     for det, names in DT_DERIVED.items():
-        exposed = {p for p, _, _, _, _ in PARAM_SPECS[det]}
+        exposed = {p for p, _, _, _, _ in ALL_PARAM_SPECS[det]}
         assert not exposed & set(names), (
             f"{det} exposes {exposed & set(names)}, which the recording decides")
     bad = {"rate": [("grid_dt", "grid dt", 0.1, (0.001, 1.0), 0.001)]}
@@ -259,6 +264,9 @@ def test_dt_comes_from_the_folder(tmp_path):
     assert _dt_derived("loco", 0.05) == {}
 
 
+# ALL_PARAM_SPECS, not PARAM_SPECS: this is about the PYTHON detector running on
+# the folder's own grid, which is still true and still worth checking while
+# locust is suppressed from the viewer.
 @pytest.mark.parametrize("det", ["rate", "cicada"])
 @pytest.mark.parametrize("dt", [0.05, 0.1])
 def test_the_detectors_actually_run_on_the_folders_grid(tmp_path, det, dt):
@@ -270,7 +278,7 @@ def test_the_detectors_actually_run_on_the_folders_grid(tmp_path, det, dt):
     interval), which is exactly where an inversion bug would hide.
     """
     s, = load_folder(_folder(tmp_path, dt=str(dt)))
-    params = {p: v for p, _, v, _, _ in PARAM_SPECS[det]}
+    params = {p: v for p, _, v, _, _ in ALL_PARAM_SPECS[det]}
     if "n_surrogates" in params:
         params["n_surrogates"] = 10
     out = _compute(det, s, recording_extent(s), params,
@@ -332,7 +340,7 @@ def _computed(tmp_path, dets=("rate", "loco")):
     ext = recording_extent(s)
     results, settings = {}, {}
     for det in dets:
-        params = {p: v for p, _, v, _, _ in PARAM_SPECS[det]}
+        params = {p: v for p, _, v, _, _ in ALL_PARAM_SPECS[det]}
         if "n_surrogates" in params:
             params["n_surrogates"] = 20
         results[det] = _compute(det, s, ext, params, dt=0.05)

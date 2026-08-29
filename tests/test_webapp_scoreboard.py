@@ -30,6 +30,12 @@ from pathlib import Path
 
 import pytest
 
+from conftest import locust_suppressed_in_the_browser
+
+SUPPRESSED = (
+    "locust is suppressed in this build; the behaviour below is still implemented and these come back with it (conftest.locust_suppressed_in_the_browser)")
+
+
 ROOT = Path(__file__).resolve().parents[1]
 VIEWER = ROOT / "docs/site/raster_viewer.html"
 
@@ -124,6 +130,7 @@ def test_every_detector_gets_a_row(scored):
     got = {r["which"] for r in rows}
     assert got == {"rate", "sce", "coact", "loco", "cicada", "sync"}, sorted(got)
 
+@pytest.mark.skipif(locust_suppressed_in_the_browser(), reason=SUPPRESSED)
 
 def test_a_detector_that_cannot_run_says_so_instead_of_scoring_zero(scored):
     """CICADA on a folder with no peak is the case that exists today. A zero
