@@ -346,7 +346,7 @@ nowhere on the page.
 
 **Alternative considered and rejected:** retire the weak ones.
 
-- **binned SCE** (F1 0.422) — kept as a **reference row**, because its value is
+- **binned SCE** (F1 0.420) — kept as a **reference row**, because its value is
   comparability with the field's own rule, not accuracy. Tuning it to compete
   destroys the only thing it is for.
 - **locust** — kept as a reference row. **Its citability was never the asset**

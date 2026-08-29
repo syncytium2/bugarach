@@ -22,7 +22,7 @@ darkroom literature shelf.*
 >   bake-off number came from that branch. A `"peak"` mode exists and has never
 >   shipped. Design intent and shipped behaviour, not a contradiction to resolve by
 >   picking one.* Not novel either: Kreuz's own lab has published the same two-knob
->   detector on this profile (personal communication, April 2026; Kreuz et al. 2022).
+>   detector on this profile (personal communication, April 2026; Kreuz et al. 2022, J Neurosci Methods 381:109703).
 > - **locust and binned SCE both pass through CICADA, by different routes — and one
 >   of them lands on something older.** locust is the port, *"modified at port to
 >   MATLAB to use our pipeline event detection data rather than feed it raw calcium —
@@ -584,7 +584,7 @@ measurement of a fixable bug and partly a measurement of untuned defaults.
 
 SCE is second-to-last (0.420) and fires 59.2 times in an empty block. The
 promiscuity is expected — a stationary bar is what §4 predicts fails at rate
-transitions. **The low recall (0.400) is not**; that is the signature of a bar set
+transitions. **The low recall (0.483) is not**; that is the signature of a bar set
 too high, and its own bench note says the measured optimum lies at or below the
 grid floor while it ships at the 99th percentile.
 

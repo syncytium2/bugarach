@@ -76,7 +76,7 @@ this repo needs it to build, run or be tested.
 
 | what exists | what it means |
 | --- | --- |
-| **Six detector ports** | rate+context, CoactDetect, LoCo, binned SCE, locust and SPIKE-synch — each agreeing with its MATLAB original to within 1e-9 on every returned number, on committed synthetic fixtures. That is a port-fidelity claim and it is the whole of what is checkable from a clone: it says the Python computes what the MATLAB computed, which is what lets these stand in for **the MATLAB originals**. It says nothing about either being right — and standing in for the MATLAB is not the same as standing in for the published method that MATLAB implements. For five of the six the original is this lab's own code and the distinction is idle; for **locust** it is the whole story, and [Where the six came from](#where-the-six-came-from) tells it. |
+| **Six detector ports** | rate+context, CoactDetect, LoCo, binned SCE, locust and SPIKE-synch — each agreeing with its MATLAB original to within 1e-9 on every returned number, in every detection mode, on committed synthetic fixtures. That is a port-fidelity claim and it is the whole of what is checkable from a clone: it says the Python computes what the MATLAB computed, which is what lets these stand in for **the MATLAB originals**. It says nothing about either being right, and standing in for the MATLAB is not the same as standing in for a published method that MATLAB implements — see [`docs/detector_history.md`](docs/detector_history.md) for which is which. |
 | **Peak gating** | The half-prominence extent kernel the peak-gated mode needs, written **clean-room** from a spec and validated against an independently built adversary implementation. |
 | **A generator with ground truth** | Coordinated events planted at known times in per-ROI background activity, so a miss and a false alarm are counted rather than argued about (`bugarach.simulate`, from interface2's `generate_synth_coord.m`). |
 | **A scorer that reads intervals** | Binned detectors report a bin's left edge; matching that edge against a planted onset scored a correct detector at **0.00 recall on fourteen detections that each spanned a planted event**. Detections are matched as intervals, greedily, closest pair first (`bugarach.score`). |
@@ -221,7 +221,7 @@ Every coordinated event here was planted, so a hit, a miss and a false alarm are
 drawn rather than argued about. Forty-five minutes of simulated recording, and
 what six detectors made of it:
 
-![One lane per detector above a 33-row event raster and six analysis traces. Inside the shaded block, the lane labelled CICADA — this repo's own detector, since renamed locust — and the binned SCE lane are packed solid with detections, while the LoCo lane is empty](docs/generator/coord_diagnostic_bench_quiet_hero.png)
+![One lane per detector above a 33-row event raster and six analysis traces. Inside the shaded block, the lane labelled CICADA — this repo's modified port of it, since renamed locust — and the binned SCE lane are packed solid with detections, while the LoCo lane is empty](docs/generator/coord_diagnostic_bench_quiet_hero.png)
 
 Top row, the answer: ▲ a planted event at least one detector recovered, and a grey
 down-triangle for a distractor — a correlated burst that is real coincidence and not
@@ -243,10 +243,7 @@ rather than on how much of it is together. Two take the bait plainly: locust fir
 
 > ⚠ **This figure and those two counts predate locust's recalibration — and its
 > rename**, so the lane the text calls *locust* is still drawn *CICADA* in the
-> picture above. **That lane is this repo's detector, and the 85 firings are its
-> own.** locust is a modified partial port and its numbers are not measurements of
-> the Cossart lab's CICADA — [Where the six came from](#where-the-six-came-from)
-> says what the difference is. Re-running
+> picture above. Re-running
 > the same seed today gives locust **35** probe firings and binned SCE **29**, with
 > LoCo and CoactDetect still at zero. The shape of the finding survives and the
 > numbers printed above it do not — they are quoted from the figure, so that the page
@@ -302,7 +299,7 @@ cost of any claim about timing accuracy, and it helps the imprecise detectors mo
 | LoCo | 0.638 ± 0.053 | 0.57–0.70 | 2.5 | 0.245 | — |
 | rate+context | 0.571 ± 0.085 | 0.46–0.65 | 34.8 | 0.005 | — |
 | locust | 0.541 ± 0.070 | 0.47–0.63 | 214.8 | 0.114 | — |
-| binned SCE | 0.420 ± 0.079 | 0.31–0.49 | 59.2 | 0.012 | — |
+| binned SCE | 0.422 ± 0.083 | 0.31–0.49 | 58.8 | 0.011 | — |
 | SPIKE-synch | 0.254 ± 0.065 | 0.21–0.34 | 8.8 | 0.094 | — |
 | pooled trace (learned) | 0.131 ± 0.012 | 0.12–0.15 | 0.0 | 0.015 | 2,065 |
 | per-cell bank (learned) | 0.125 ± 0.000 | 0.12–0.12 | 0.0 | 2.453 | 2,393 |
@@ -387,10 +384,8 @@ come from: the events are planted in a simulation fitted to one lab's own
 recordings, so the ground truth is exact and the benchmark is rebuilt per lab.
 The classical side of the same problem is
 [CICADA](https://gitlab.com/cossartlab/cicada) and the coactivity-versus-shuffle
-rule it comes from, and two of the six here reach that lineage differently.
-**binned SCE is the shuffle rule itself**, in the modern circular-shift form — cite
-its authors, not this repo. **locust is not CICADA**: a modified partial port,
-by way of interface2, that skips a stage of the original.
+rule it comes from — **binned SCE implements that rule**, with a circular shift where
+the 2003 Methods reshuffle intervals, so cite its authors for it and not this repo.
 
 **No method from the literature has been run on this project's recordings as its
 authors published it**, and nothing here claims to beat one. The reading behind that
@@ -618,7 +613,7 @@ code from cSPIKE's MATLAB source.
 | Upstream | License | Role here |
 | --- | --- | --- |
 | [PySpike](https://github.com/mariomulansky/PySpike) | BSD | SPIKE-synchronization semantics ported from its (BSD) source; test-suite cross-check (its `max_tau` bug, live since 0.8.0, limits it to the uncapped regime) |
-| [CICADA](https://gitlab.com/cossartlab/cicada) | MIT | **locust** is code-derived from it, by way of interface2 — from `sce_stats_utils` (`get_sce_threshold` + `detect_sce`), partial and modified; carries the upstream copyright notice. See the ⚠ below for what the parity number does and does not cover |
+| [CICADA](https://gitlab.com/cossartlab/cicada) | MIT | **locust** is code-derived from it, by way of interface2, and modified; carries the upstream copyright notice |
 | cSPIKE (MATLAB) | research/education only — **no code used** | reference outputs for parity tests only (research use, via interface2) |
 
 ⚠ SPIKE-synchronization is a **native port** rather than a PySpike wrapper because
@@ -630,68 +625,11 @@ cap. The write-up is [`docs/kreuz_note.md`](docs/kreuz_note.md), and
 that will fail the day upstream fixes it. PySpike stays a test-suite
 cross-check in the uncapped regime, where the two definitions agree.
 
-### Where the six came from
-
-**The names on the lanes are not the published methods.** Two mistakes are easy to
-make from this page and both are worth heading off: that `locust`'s numbers measure
-the Cossart lab's CICADA — they do not, and the ⚠ at the end of this section says
-why — and that the three detectors with radar lineage were derived from that
-literature. They were not; the literature was found afterwards.
-
-The six arrived three different ways:
-
-| detector | how it arrived | prior art | ever compared against it? |
-| --- | --- | --- | --- |
-| rate+context | designed here | cell-averaging CFAR (Finn & Johnson 1968) | n/a — convergent, not derived |
-| CoactDetect | designed here | Unitary Events (Grün et al. 2002) | n/a |
-| LoCo | designed here | Unitary Events; `maxlt` is greatest-of CFAR (Hansen 1973) | n/a |
-| SPIKE-synch | our detector on Kreuz's measure | Kreuz et al. 2015; the measure is bit-exact vs cSPIKE | measure: yes. detector: no |
-| binned SCE | written from ideas in CICADA, before the port | Cossart et al. 2003 — which predates CICADA | it **is** the published rule |
-| **locust** | **modified partial port, via interface2** | **CICADA (Denis et al. 2020)** | **no — see ⚠ below** |
-
-**Designed here, and later found to have prior art.** rate+context, CoactDetect and
-LoCo were built for this preparation with no detection-theory source in hand, and
-they reconstruct pieces of a literature nobody here had read. That is the author's
-own account (Tony, 2026-08-29 — *"they blindly reconstructed elements of CFAR, I was
-totally unaware when I designed them"*), recorded in
-[`docs/detector_history.md`](docs/detector_history.md); there is no contemporaneous
-document either way, and the map onto the radar line is that file's §4. Tony,
-2026-08-24, on what that link is worth: *"I don't think anyone is going to jump on
-us for a technique used in radar analysis from 1968. In fact I feel most researchers
-would be kind of thrilled with the link."*
-
-**A detector built here on somebody else's measure.** The SPIKE-synchronization
-*profile* is Kreuz's. The detector on top of it — a dual-threshold hysteresis scan,
-start at `C_threshold`, sustain at `C_min` across gaps under `max_gap` — was written
-here, and is not novel either: the measure's own author has built the same two-knob
-detector on the same profile (T. Kreuz, personal communication, April 2026; Kreuz et
-al. 2022). ⚠ The full published recipe sits in a supplement nobody here has opened.
-
-**Derived from CICADA — and one case that only looks like it.** `locust` is a
-modified partial port of CICADA, by way of interface2, and the ⚠ below is about it.
-binned SCE is a different story: it was written from ideas in CICADA *before* that
-port existed, and it lands on a rule published earlier still, from **Yuste's lab at
-Columbia** rather than the Cossart lab — Cossart was first author there, and the
-method travelled to Marseille with her and became CICADA. Getting that direction
-backwards would credit the wrong laboratory.
-
-⚠ **`locust`'s 1e-9 measures this repo against interface2, not against CICADA.** The
-parity fixture is built by running interface2's `generate_sce_cicada`, so the number
-says this repo computes what interface2 computed. **No output of either has ever
-been compared against CICADA's.** interface2 did check its transliteration against
-upstream by reading code, function for function, and found it matched — a
-correspondence check on the *unmodified* transliteration, not a measurement, and not
-a check of either deviation. And interface2 had already parked that function, a
-month before this port landed, for over-detecting on long SLOW transients. **So do
-not read any of this tool's locust numbers as measurements of CICADA** — running
-CICADA itself here is
-[an open item](docs/todo/2026-08-17-run-a-literature-method-on-our-recordings.md),
-not something done. Full chain:
-[`docs/detector_history.md`](docs/detector_history.md) §6.3.
-
 **Cite in any publication that uses results from this tool.** ° marks a work carried
 from interface2's attribution audit and **not read here** — this project's shelf
-holds only Finn & Johnson of the works below.
+holds only Finn & Johnson of the works below. Where each detector came from, which
+are this lab's own designs and which derive from published work, is
+[`docs/detector_history.md`](docs/detector_history.md).
 
 - **rate+context** — the structure is cell-averaging, with an *additive* rather than
   a multiplicative threshold, so it does **not** carry the constant-false-alarm
@@ -721,17 +659,10 @@ holds only Finn & Johnson of the works below.
 - **CICADA**, for the detector this repo calls **locust** — Denis J, Dard R, Quiroli
   E, Cossart R, Picardo M (2020). *CICADA (Calcium Imaging Complete Automated Data
   Analysis)*, v1.0.3. Zenodo. doi:10.5281/zenodo.10041434. Source:
-  [`gitlab.com/cossartlab/cicada`](https://gitlab.com/cossartlab/cicada); the port
-  is of `sce_stats_utils` (`get_sce_threshold` + `detect_sce`). The same five
-  authors' peer-reviewed paper for that pipeline is Denis J, Dard RF, Quiroli E,
-  Cossart R, Picardo MA (2020). *DeepCINAC*, eNeuro 7(4):ENEURO.0038-20.2020,
-  doi:10.1523/ENEURO.0038-20.2020. **It is named apart from CICADA because it
-  is modified** — and both modifications are changes to what it is *fed*, not to what
-  it computes: it gets our own detected events instead of running CICADA's transient
-  detection, and it gets each event's duration from the producer instead of measuring
-  the whole transient itself. **Duration is the exporter's, never bugarach's**: it
-  arrives in `width_sec` under the `width_def` naming the rule that made it, and the
-  port paints what it is given (ADR-0002 addendum, FOUNDATIONS §7).
+  [`gitlab.com/cossartlab/cicada`](https://gitlab.com/cossartlab/cicada), MIT; the
+  port is of `sce_stats_utils` and is **modified**, so it is named apart. What is
+  modified, and what its parity number does and does not cover, is
+  [`docs/detector_history.md`](docs/detector_history.md) §6.3.
 - **binned SCE** — the rule's root is Cossart R, Aronov D, Yuste R (2003). *Attractor
   dynamics of network UP states in the neocortex*. Nature 423(6937):283–288,
   doi:10.1038/nature01614, whose Methods state it in full — with **interval

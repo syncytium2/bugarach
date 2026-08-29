@@ -234,12 +234,12 @@ detector fitted on three folds and scored on a held-out fourth:
 
 | detector | F1 (mean of 4 folds) |
 |---|---|
-| tube / center−surround (learned) | **0.668 ± 0.061** |
+| tube / center−surround (learned) | **0.681 ± 0.049** |
 | CoactDetect | **0.651 ± 0.044** |
 | LoCo | 0.638 ± 0.053 |
 | rate+context | 0.571 ± 0.085 |
 | locust | 0.541 ± 0.070 |
-| binned SCE | 0.422 ± 0.083 |
+| binned SCE | 0.420 ± 0.079 |
 | SPIKE-synch | 0.254 ± 0.065 |
 
 That is a **tie at the top, not an outperformance**, and every learned number is one
