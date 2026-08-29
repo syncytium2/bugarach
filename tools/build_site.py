@@ -695,14 +695,15 @@ LEAD_FIGURE = """<figure class="lead">
   Each lane carries its detector's own name; two of the six are named for what
   they measure rather than for the tool — <span class="key">rate+context</span>
   is RateDetect, and <span class="key">binned SCE</span> is SCE. A third name
-  needs decoding for a different reason: <span class="key">locust</span> is
-  <i>derived from</i> the
-  <a href="https://gitlab.com/cossartlab/cicada">CICADA</a> method, ported from
-  the Cossart lab's implementation and modified — it skips CICADA's own
-  transient-detection stage and changes how long a cell counts as active. It is
-  named apart <i>because</i> it is modified: another lab's tool name on a changed
-  port credits them with something they did not write, and would lend this
-  lane's behaviour to their method.
+  needs decoding for a different reason: <span class="key">locust</span> is this
+  project's port of <a href="https://gitlab.com/cossartlab/cicada">CICADA</a>, the
+  Cossart lab's published tool, brought in for this comparison. Running it in this
+  pipeline took two changes: it is fed the
+  events this project detected separately rather than running CICADA's own
+  transient-detection stage, and it counts a cell as active for the rise interval
+  rather than the whole transient. It carries a name of its own because of them —
+  <b>this lane's numbers are locust's, and are not CICADA's, in either
+  direction</b>.
   In the lanes, <span class="key">&#10007;</span> marks a false alarm and
   <span class="key">&#9711;</span> one that a reader should not count as a
   separate miss-fire — a second call on an event another detection had already
