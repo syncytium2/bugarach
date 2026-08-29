@@ -60,6 +60,32 @@ Template:
 
 ## Active
 
+### Tonys-MacBook-Pro/transfer-across-corpora — DEPLOY CLAIMED: the site is 25 commits behind
+- **Status:** ACTIVE — claimed 2026-08-29 before the upload.
+- **Claims:** **the site deploy** (`bugarach.tonydefazio.com`) and local **port 5096** for
+  the pre-upload drive. Nothing else external — no darkroom write, no MATLAB, no store.
+- **Authorised by Tony, 2026-08-29:** *"i need to land this website today"*, and the deploy
+  confirmed explicitly before the upload. `docs/DEPLOY_HOLD.md` reads `held: no` (released
+  2026-08-28) and no other block held the deploy.
+- **What goes out.** `origin/main` at `50bea02`. `tools/site_staleness.py`: **behind by 25
+  commits, 3 of which change what it serves** —
+  `58480e2` (duration is the exporter's — the viewer's locust attribution panel and its
+  code comments), `9772425` (the caption leads with the credit), `d999ae4` (the app counts
+  what fires where nothing was planted).
+- **Built from `transfer-across-corpora`, and that is checkable rather than asserted.** The
+  branch differs from `origin/main` in four files — `tools/fair_bakeoff.py`,
+  `tools/assess_archive.py`, `tests/test_fair_bakeoff_transfer.py` and one todo — and
+  **`build_site.py` reads none of them**. Its inputs are `docs/site/raster_viewer.html`,
+  `docs/learned/landscape.html`, `docs/generator/reality_check.png` and `src/bugarach/**`
+  through `make_diagnostic.py`. So the payload is byte-identical to one built on `main`.
+- **⚠ The scoreboard stays hidden in this deploy.** Its copy has not been through
+  `docs/doc_review_process.md`, which is the whole reason for the `window.__lab` gate
+  ([`todo/2026-08-20-the-scoreboard-copy-needs-review.md`](todo/2026-08-20-the-scoreboard-copy-needs-review.md)).
+  Tony's plan for today is deploy first, murderboard the copy second, redeploy. **The next
+  deploy is expected to be that one.**
+- **Release:** this block flips to DONE with the served version and the
+  `audit_deployed_page.py` result the moment the upload verifies.
+
 ### Tonys-MacBook-Pro/lift-the-hold — DEPLOY CLAIMED: publishing the site, hold lifted early
 - **Status:** **DONE 2026-08-28 — DEPLOYED AND RELEASED.** The site is live at version
   `4541a2b1`, built from `3a0b63b`; `site_staleness.py` reads **current, 0 commits
