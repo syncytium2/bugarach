@@ -1,7 +1,7 @@
 ---
 status: open
 filed: 2026-08-28
-proposes: SAP010
+proposes: SAP011 (SAP010 was taken on 2026-08-28 by a different session, hours after this was filed)
 ---
 
 # A contract promised producers that their column was ignored, five days after it stopped being
@@ -39,7 +39,7 @@ different quantity sharing the word. A full result list reads exactly like confi
 which is how the murderboard's first pass on revision 8 concluded "no detector consumes
 width" and had to be corrected by a second.
 
-## Proposed SAP010
+## Proposed SAP011
 
 Precedent is six days old and near-identical in reasoning — **SAP008**
 (`tools/sapper.py:189`): *"A claim about what the green tick COVERS is the one thing a
@@ -73,4 +73,4 @@ The higher-value half did not need a new rule, only a test — `tests/test_site_
   code does not keep.
 
 That is the shape worth generalising: where a document states a *value* the code holds,
-pin the value. SAP010 is for the residue that cannot be pinned.
+pin the value. SAP011 is for the residue that cannot be pinned.
