@@ -7733,6 +7733,18 @@ const DETECTORS = {
   cicada: {
     label: "locust",
     blurb: "how many cells at once",
+    /* SUPPRESSED FOR THIS RELEASE (Tony, 2026-08-29). Not a defect and not a
+       retraction: the port stands, its MATLAB parity to 1e-9 stands, and
+       `bugarach detect` still runs it. What is missing is a fair test. locust is
+       the only one of the six that consumes a per-event duration, this build
+       scores it at a fixed one, and the generator plants no duration to vary —
+       so its number here measures a configuration nobody chose. `unavailable` is
+       the mechanism already built for this: the option disables, the tick
+       clears, the label reads "off in this build", and no run includes it.
+       Deleting these two lines brings it back. */
+    unavailable: "locust is held out of this release — scoring it fairly needs a "
+               + "per-event duration this build does not exercise. The port and "
+               + "its MATLAB parity are unchanged.",
     ctl: "dCicCtl", fine: "dFineCicada",
     // NEEDS THE PEAK, which is why it carries a flag the other five do not: its
     // raster is anchored on `locs`, and the folder has to have sent enough to

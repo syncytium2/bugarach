@@ -30,17 +30,27 @@ from pathlib import Path
 
 import pytest
 
+from conftest import locust_suppressed_in_the_browser
+
+SUPPRESSED = (
+    "locust is suppressed in this build; the behaviour below is still implemented and these come back with it (conftest.locust_suppressed_in_the_browser)")
+
+
 VIEWER = Path(__file__).resolve().parents[1] / "docs/site/raster_viewer.html"
 
 SIM = {"sRec": "2", "sMin": "22", "sRoi": "22", "sRate": "45", "sEv": "14",
        "sJit": "300", "sSeed": "5", "sWin": "0"}
 # WHAT THE PAGE CAN RUN, which since 2026-08-24 is not the same as what it
-# carries. The `sync` row is still in the registry and carries `unavailable`, so
-# it draws, it reads an older file back, and `syncDetect` stays callable — but
-# nothing on the page can tick it. These two lists are the SELECTABLE set, so
-# `ALL` is five. When the field comes off the registry row, put "sync" back in
-# both and the counts below move with it.
-ALL = ["rate", "loco", "coact", "sce", "cicada"]
+# carries. A row with `unavailable` still draws, still reads an older settings
+# file back, and its detector stays callable — but nothing on the page can tick
+# it. These lists are the SELECTABLE set.
+#
+# `sync` came out on 2026-08-24. `cicada` (locust) came out on 2026-08-29, held
+# back for the release: it is the only one of the six that consumes a per-event
+# duration, this build scores it at a fixed one, and the generator plants no
+# duration to vary. Four remain selectable. When either `unavailable` is deleted,
+# put the key back here and the counts below move with it.
+ALL = ["rate", "loco", "coact", "sce"]
 CHEAP = ["rate", "coact", "sce"]
 
 
@@ -84,6 +94,7 @@ def _tick(pg, prefix: str, on: list[str]):
           }
         }""", [prefix, on])
 
+@pytest.mark.skipif(locust_suppressed_in_the_browser(), reason=SUPPRESSED)
 
 def test_the_tune_panel_has_a_tick_per_detector_and_marks_the_costly_two(page):
     pg, _ = page
@@ -98,6 +109,7 @@ def test_the_tune_panel_has_a_tick_per_detector_and_marks_the_costly_two(page):
                            pg.evaluate("() => Object.keys(DETECTORS)")]
     assert sorted(got["slow"]) == ["LoCo", "locust"], got["slow"]
 
+@pytest.mark.skipif(locust_suppressed_in_the_browser(), reason=SUPPRESSED)
 
 def test_it_says_which_before_the_click_and_names_the_slow_ones(page):
     pg, _ = page
