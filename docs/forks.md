@@ -349,9 +349,10 @@ nowhere on the page.
 - **binned SCE** (F1 0.422) — kept as a **reference row**, because its value is
   comparability with the field's own rule, not accuracy. Tuning it to compete
   destroys the only thing it is for.
-- **CICADA** — kept, and its citability is the asset. It is already modified
-  (rise-interval active duration); the recommendation is to carry **both** modes
-  and name which produced any output.
+- **locust** — kept as a reference row. **Its citability was never the asset**
+  (`detector_history.md` §6.3, revised 2026-08-29): the 1e-9 reaches interface2, not
+  the Cossart source, and there is no faithful mode to ship because the port skips a
+  stage of the original. Never report its numbers as CICADA's.
 - **SPIKE-synch** — kept. Its 0.254 is the score of a **degenerate sweep**
   (#6), not of the detector, and must not be quoted as accuracy until
   `(C_threshold, C_min)` are swept together.

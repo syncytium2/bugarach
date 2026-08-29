@@ -10,21 +10,30 @@ darkroom literature shelf.*
 >
 > - **`rate_detect`, `coact_detect`, `loco_detect` are his**, designed for this
 >   preparation. *"They blindly reconstructed elements of CFAR, I was totally
->   unaware when I designed them."* §5's map is therefore a convergence, not a
->   derivation — which is the stronger reading and the one §2 used to hedge.
-> - **SPIKE-synch is his detector on someone else's measure** — peak detection on
->   the cSPIKE/PySpike synchrony profile. The measure is Kreuz's; the detection
->   layer was written here and, per the 2026-08-24 audit, is not novel either.
-> - **locust and binned SCE both trace to CICADA, by different routes.** locust is
->   the port, *"modified at port to MATLAB to use our pipeline event detection data
->   rather than feed it raw calcium — our calcium events differ from the CICADA
->   team's."* binned SCE is **not** a port: *"based on ideas in CICADA before we did
->   the port"*, and its published root (Cossart 2003) predates CICADA.
+>   unaware when I designed them."* §4's map is therefore a convergence, not a
+>   derivation — the stronger reading, and the one §2 could only hedge toward.
+>   ⚠ It rests on the author's recollection; there is no contemporaneous record
+>   either way, and four literatures that could host prior art for it have never
+>   been searched (§7).
+> - **SPIKE-synch is his detector on someone else's measure.** The measure is
+>   Kreuz's; the detector on it was written here. ⚠ *Tony described it as "peak
+>   detection on the synchrony plot", and the shipped code is a **dual-threshold
+>   hysteresis** scan — `detection_mode` defaults to `"threshold"`, and every
+>   bake-off number came from that branch. A `"peak"` mode exists and has never
+>   shipped. Design intent and shipped behaviour, not a contradiction to resolve by
+>   picking one.* Not novel either: Kreuz's own lab has published the same two-knob
+>   detector on this profile (personal communication, April 2026; Kreuz et al. 2022).
+> - **locust and binned SCE both pass through CICADA, by different routes — and one
+>   of them lands on something older.** locust is the port, *"modified at port to
+>   MATLAB to use our pipeline event detection data rather than feed it raw calcium —
+>   our calcium events differ from the CICADA team's."* binned SCE is **not** a port:
+>   *"based on ideas in CICADA before we did the port"* — 18 days before it, by
+>   interface2's own git — and its published root (Cossart 2003, from **Yuste's** lab)
+>   predates CICADA.
 >
 > **And interface2 development is frozen on this topic**, so the audit that several
-> sections here defer to will not move again. Anything still written as "pending
-> their next pass" is final as it stands; §6.3 and the README's citations block were
-> rebuilt on that basis the same day.
+> sections here defer to will not move again: what it says is final as it stands.
+> §6.3 and the README's citations block were rebuilt on that basis the same day.
 
 > **Revised 2026-08-22: the radar primaries have been retrieved, and they were
 > worth retrieving.** This document first shipped with every attribution in §4
@@ -154,11 +163,15 @@ either repository records that the decision was revisited. §6.5 returns to it.
 
 Three tiers, and the tier matters more than the name.
 
-### Tier 1 — a published method, ported
+### Tier 1 — a published method, partially ported and modified
 
-**CICADA.** Cossart lab, `gitlab.com/cossartlab/cicada`, MIT, upstream copyright
-carried in the module. The only one of the six whose *idea* has a settled external
-owner. It is also **not a drop-in**, and both reports say so: we feed our own
+**locust.** Derived from the Cossart lab's CICADA, `gitlab.com/cossartlab/cicada`,
+MIT, upstream copyright carried in the module. This entry used to call it *"the only
+one of the six whose idea has a settled external owner"* — the 2026-08-24 audit found
+published prior art for all six, so that sentence is withdrawn; §6.3 has what
+replaced it, and the tier membership below is superseded by the three-way split in
+this document's 2026-08-29 header. It is also **not a drop-in**, and both reports say
+so: we feed our own
 upstream-detected events instead of running CICADA's transient detection, and we
 feed it a per-event duration instead of letting it measure one. The original
 paints each cell active for the transient *duration* it detected itself, which
@@ -542,7 +555,7 @@ different questions and are not averaged here.
 | LoCo | measured-regime F1 optimum | 0.638 |
 | locust | calibrated pair, retuned 2026-08-20 | 0.541 |
 | rate+context | **`rate_detect` defaults** | 0.571 |
-| binned SCE | **`sce_detect` defaults** | 0.422 |
+| binned SCE | **`sce_detect` defaults** | 0.420 |
 | SPIKE-synch | **viewer FAST defaults** | 0.254 |
 
 The three calibrated detectors place 1st, 2nd and 4th; the three uncalibrated ones
@@ -569,7 +582,7 @@ measurement of a fixable bug and partly a measurement of untuned defaults.
 
 ### 6.2 binned SCE — keep, and stop scoring it as a competitor
 
-SCE is second-to-last (0.422) and fires 58.8 times in an empty block. The
+SCE is second-to-last (0.420) and fires 59.2 times in an empty block. The
 promiscuity is expected — a stationary bar is what §4 predicts fails at rate
 transitions. **The low recall (0.400) is not**; that is the signature of a bar set
 too high, and its own bench note says the measured optimum lies at or below the

@@ -29,8 +29,10 @@
   simulated; its settings are measured.
 - **"Competes with state-of-the-art models from the literature" is not supported —
   but the earlier phrasing of this was wrong and Tony corrected it.** *Published
-  methods are in the comparison*: **CICADA** is the Cossart lab's, ported here (MIT,
-  © 2019 Cossart Lab) and scoring 0.541, and **SpikyDetect** runs on cSPIKE/PySpike's
+  methods are in the comparison*: **locust** is a modified partial port of the
+  Cossart lab's CICADA (MIT, © 2019 Cossart Lab) scoring 0.541 — **its own number,
+  not a measurement of CICADA** (`detector_history.md` §6.3) — and **SpikyDetect**
+  runs on cSPIKE/PySpike's
   adaptive SPIKE-synchronization profile (Kreuz lab) — a published measure with our
   event detector on top. So the accurate claim is narrower and still worth making:
   the comparison contains **no published *learned* method**, and **none of the

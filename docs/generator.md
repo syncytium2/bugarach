@@ -544,7 +544,7 @@ over.
 The distinction matters because the causes differ — fragmentation is a merge-gap
 problem, firing at noise is a threshold problem — and a precision number that
 merges them cannot tell you which you have. Measured on the quiet regime, outside
-the probe: **41% of CICADA's unmatched detections sit within 2 s of a planted
+the probe: **41% of locust's unmatched detections sit within 2 s of a planted
 event**, against 0% for every other detector — whose medians run 31–47 s out,
 except SCE at 8.3 s.
 

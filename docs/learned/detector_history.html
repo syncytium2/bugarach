@@ -189,6 +189,37 @@
 <p><em>Written 2026-08-22 from two interface2 reports, the bugarach tree, and the
 darkroom literature shelf.</em></p>
 <blockquote>
+<p><strong>Revised 2026-08-29: the author said where each one came from, and interface2
+is frozen on the topic.</strong> Every lineage row in this document was assembled from
+interface2's reports and this tree. Tony supplied the missing half — who wrote
+what — and it separates the six three ways, which nothing here had recorded:</p>
+<ul>
+<li><strong><code>rate_detect</code>, <code>coact_detect</code>, <code>loco_detect</code> are his</strong>, designed for this
+  preparation. <em>"They blindly reconstructed elements of CFAR, I was totally
+  unaware when I designed them."</em> §4's map is therefore a convergence, not a
+  derivation — the stronger reading, and the one §2 could only hedge toward.
+  ⚠ It rests on the author's recollection; there is no contemporaneous record
+  either way, and four literatures that could host prior art for it have never
+  been searched (§7).</li>
+<li><strong>SPIKE-synch is his detector on someone else's measure.</strong> The measure is
+  Kreuz's; the detector on it was written here. ⚠ <em>Tony described it as "peak
+  detection on the synchrony plot", and the shipped code is a </em><em>dual-threshold
+  hysteresis</em><em> scan — <code>detection_mode</code> defaults to <code>"threshold"</code>, and every
+  bake-off number came from that branch. A <code>"peak"</code> mode exists and has never
+  shipped. Design intent and shipped behaviour, not a contradiction to resolve by
+  picking one.</em> Not novel either: Kreuz's own lab has published the same two-knob
+  detector on this profile (personal communication, April 2026; Kreuz et al. 2022).</li>
+<li><strong>locust and binned SCE both pass through CICADA, by different routes — and one
+  of them lands on something older.</strong> locust is the port, <em>"modified at port to
+  MATLAB to use our pipeline event detection data rather than feed it raw calcium —
+  our calcium events differ from the CICADA team's."</em> binned SCE is <strong>not</strong> a port:
+  <em>"based on ideas in CICADA before we did the port"</em> — 18 days before it, by
+  interface2's own git — and its published root (Cossart 2003, from <strong>Yuste's</strong> lab)
+  predates CICADA.</li>
+</ul>
+<p><strong>And interface2 development is frozen on this topic</strong>, so the audit that several
+sections here defer to will not move again: what it says is final as it stands.
+§6.3 and the README's citations block were rebuilt on that basis the same day.</p>
 <p><strong>Revised 2026-08-22: the radar primaries have been retrieved, and they were
 worth retrieving.</strong> This document first shipped with every attribution in §4
 flagged unverified. Two of the four are now <strong>read in full</strong> and shelved at
@@ -202,6 +233,27 @@ control cells introduces a masking effect"</em> — and the multiplicative thres
 that §5.2 says rate+context is missing is stated outright in both primaries. It
 also corrected one claim of mine, in §5.1: guard cells are documented as routine
 by 1983, not by 1968.</p>
+<p><strong>Revised 2026-08-24: §2 has been overtaken, and §5 was right all along.</strong> An
+interface2 audit closed every lineage row in §2, including the three filed below
+under <em>"Tier 3 — our constructions on common ideas"</em>. The SCE rule's root is
+<strong>Cossart, Aronov &amp; Yuste 2003, <em>Nature</em> 423:283–288</strong>, whose Methods state the
+whole algorithm — not Malvache 2016, not the Cossart lab, and crediting Mao 2001,
+which nobody has reached. <code>rate_detect</code> is cell-averaging CFAR, <strong>which §5.2 of
+this document already names</strong> while §2 still files the detector as ours; where the
+two halves disagree, §5 wins. <code>loco_detect</code>'s <code>maxlt</code> is GO-CFAR (Hansen 1973) and
+its percentile-of-pool is kin to OS-CFAR — so §4's argument that three of these
+are re-derivations of CFAR has stopped being a reading of the design space and
+become the attribution. Separately, Kreuz's own lab has published detection layers
+on the synchronization profile, which weakens the Tier 2 framing.</p>
+<p><strong>None of this is a problem, and Tony has ruled on that</strong> — <em>"most researchers
+would be kind of thrilled with the link … it's a tool and it's useful."</em> Priority
+is closed: acknowledge the origins, say we arrived independently, and take the
+engineering the radar literature is offering. <strong>This document's own thesis is what
+survives</strong> — §5 lists five things radar knows that this project does not, and
+being right about the lineage is the reason to trust that list.</p>
+<p>The corrections, what they change in the app, and what is still second-hand:
+<a href="todo/2026-08-24-the-methods-are-not-ours-and-the-app-says-otherwise.md">the methods are not ours</a>
+and <a href="todo/2026-08-24-kreuz-answered-the-spike-synch-questions-in-april.md">what Kreuz answered in April</a>.</p>
 </blockquote>
 <hr />
 <h2>The finding, first</h2>
@@ -275,10 +327,14 @@ either repository records that the decision was revisited. §6.5 returns to it.<
 <hr />
 <h2>2. The lineage of each of the six</h2>
 <p>Three tiers, and the tier matters more than the name.</p>
-<h3>Tier 1 — a published method, ported</h3>
-<p><strong>CICADA.</strong> Cossart lab, <code>gitlab.com/cossartlab/cicada</code>, MIT, upstream copyright
-carried in the module. The only one of the six whose <em>idea</em> has a settled external
-owner. It is also <strong>not a drop-in</strong>, and both reports say so: we feed our own
+<h3>Tier 1 — a published method, partially ported and modified</h3>
+<p><strong>locust.</strong> Derived from the Cossart lab's CICADA, <code>gitlab.com/cossartlab/cicada</code>,
+MIT, upstream copyright carried in the module. This entry used to call it <em>"the only
+one of the six whose idea has a settled external owner"</em> — the 2026-08-24 audit found
+published prior art for all six, so that sentence is withdrawn; §6.3 has what
+replaced it, and the tier membership below is superseded by the three-way split in
+this document's 2026-08-29 header. It is also <strong>not a drop-in</strong>, and both reports say
+so: we feed our own
 upstream-detected events instead of running CICADA's transient detection, and we
 feed it a per-event duration instead of letting it measure one. The original
 paints each cell active for the transient <em>duration</em> it detected itself, which
@@ -331,6 +387,20 @@ than a result points the same way.</p>
 <p>So the position is unchanged in shape and much better grounded: <strong>cite this paper
 for the SCE phenomenon, which is what it establishes and what it is known for; do
 not attribute the constants to it.</strong> interface2 can say what interface2 did.</p>
+<blockquote>
+<p><strong>The root was found on 2026-08-24, and this paragraph's suspicion was
+justified.</strong> <em>"A paper introducing a canonical rule does not usually bury it"</em> —
+and Malvache 2016 was not introducing it. <strong>Cossart, Aronov &amp; Yuste 2003</strong> was,
+in its Methods, in full: coactive cells per frame, a rate-preserving per-cell
+surrogate, 1,000 iterations, pooled histogram, percentile cut. The rule is a
+<strong>Yuste-lab</strong> method that travelled to Marseille with its first author and
+eventually became CICADA, and the 1,000 shuffles this document lists as unverified
+are in the 2003 Methods — matched here by coincidence, since the default was
+carried from MATLAB that cited nothing. One divergence to know: 2003 resamples by
+<strong>interval reshuffling</strong>, where CICADA, Bocchio 2020, Dard 2022 and <code>sce_detect</code>
+all circular-shift.
+<a href="todo/2026-08-24-the-methods-are-not-ours-and-the-app-says-otherwise.md">The full correction</a>.</p>
+</blockquote>
 <p><strong>rate+context (RateDetect).</strong> Pooled population rate in a 1 s window minus a 60 s
 rolling context; fire where the excess clears a fixed level. Authorship is not
 contested. Priority has never been examined, and <em>"threshold the pooled population
@@ -446,7 +516,7 @@ named for exactly the choices bugarach made by benchmark.</p>
 <td>—</td>
 </tr>
 <tr>
-<td>binned SCE, CICADA</td>
+<td>binned SCE, locust</td>
 <td>one bar per region</td>
 <td>pre-CFAR fixed threshold</td>
 <td>—</td>
@@ -561,7 +631,7 @@ sweep answerable to something outside itself.</p>
 <p>It would also give the promiscuity probe its missing teeth. The probe's firings
 are already <strong>reported</strong> — the <code>probe firings</code> column, and panel A — but they
 <a href="todo/2026-08-16-promiscuity-probe-cannot-fail.md">cannot fail</a>: they leave both
-the numerator and the denominator of F1, so CICADA's 215 firings in an empty block
+the numerator and the denominator of F1, so locust's 215 firings in an empty block
 cost it nothing. Measured false-alarm rate against a stated design target is a
 score the probe could actually fail.</p>
 <h3>5.4 Greatest-of selection is edge-robust and target-blind, and LoCo inherits both halves</h3>
@@ -658,7 +728,7 @@ different questions and are not averaged here.</p>
 <td>0.638</td>
 </tr>
 <tr>
-<td>CICADA</td>
+<td>locust</td>
 <td>calibrated pair, retuned 2026-08-20</td>
 <td>0.541</td>
 </tr>
@@ -670,7 +740,7 @@ different questions and are not averaged here.</p>
 <tr>
 <td>binned SCE</td>
 <td><strong><code>sce_detect</code> defaults</strong></td>
-<td>0.422</td>
+<td>0.420</td>
 </tr>
 <tr>
 <td>SPIKE-synch</td>
@@ -697,7 +767,7 @@ artifact of a threshold rule nobody examined.</p>
 <p><strong>Do not retire it for its low F1 before doing this.</strong> Its score is partly a
 measurement of a fixable bug and partly a measurement of untuned defaults.</p>
 <h3>6.2 binned SCE — keep, and stop scoring it as a competitor</h3>
-<p>SCE is second-to-last (0.422) and fires 58.8 times in an empty block. The
+<p>SCE is second-to-last (0.420) and fires 59.2 times in an empty block. The
 promiscuity is expected — a stationary bar is what §4 predicts fails at rate
 transitions. <strong>The low recall (0.400) is not</strong>; that is the signature of a bar set
 too high, and its own bench note says the measured optimum lies at or below the
@@ -713,23 +783,65 @@ canonical rule reached this project second-hand, the primary was never retrieved
 and the same construction appears inside Mölter's benchmark. Tony's own framing —
 <em>derived from ideas in CICADA, but essentially ours</em> — is the honest landing
 place, and it is a lineage claim, not an independence claim.</p>
-<h3>6.3 CICADA — keep unmodified, and always carry both active-duration modes</h3>
-<p>The only detector whose method has a settled external owner, and the port's parity
-to 1e-9 is what makes it citable in the original's place. That citability is the
-asset, and every modification spends some of it.</p>
-<p>It is already modified — it is handed a per-event duration where the original
-measures the transient itself, for a stated and good reason, and the duration it
-is handed is the exporter's. But a reader who sees "CICADA"
-in a figure legend assumes the published method.</p>
-<p><strong>Ship both modes, name them in every output, and default to the faithful one for
-any comparison against published work.</strong> Its 214.8 probe firings — 180× the
-rate-local detectors — then become a property of the published method under this
-benchmark, which is a <em>finding</em>, rather than a property of our variant, which is a
-much weaker thing to have measured.</p>
+<h3>6.3 locust — the citability this section was built on does not exist</h3>
+<blockquote>
+<p><strong>Rewritten 2026-08-29.</strong> This section used to open <em>"the only detector whose
+method has a settled external owner, and the port's parity to 1e-9 is what makes
+it citable in the original's place"</em>, and recommended shipping a faithful mode to
+spend that asset carefully. The 2026-08-28 attribution audit
+(<a href="reviews/locust_attribution_2026-08-28.md">review</a>) established that the asset
+was never there. The recommendation below is the opposite of what stood here, and
+the old text is kept in this note rather than deleted so the reversal is legible.</p>
+</blockquote>
+<p><strong>The 1e-9 measures this repo against interface2, not against CICADA.</strong>
+<code>tools/matlab_ref/gen_ref_cicada.m</code> builds the parity fixture by running
+interface2's own <code>generate_sce_cicada</code>, so the number says bugarach computes what
+interface2 computed. <strong>No output of either has ever been compared against CICADA's</strong>
+— that comparison does not exist anywhere, and it is what "validated against the
+original" would have to mean.</p>
+<p>What <em>does</em> exist, and this document said otherwise until 2026-08-29: interface2
+checked its transliteration against upstream <code>master</code> by <strong>reading code</strong>, function
+for function, on 2026-08-21 — <code>local_sce_threshold</code>↔<code>get_sce_threshold</code>,
+<code>local_slide_coact</code>↔<code>sum_activity</code>, <code>local_findpeaks</code>↔<code>find_peaks</code>, down to
+confirming the single-frame-null quirk is upstream's real behaviour
+(<code>coordination_method_provenance.md</code> §5, on their unmerged <code>coord-attribution</code>
+branch). That is a correspondence check on the <strong>unmodified</strong> transliteration. It is
+not a measurement, and it does not cover either documented deviation.</p>
+<pre><code class="language-text">Cossart CICADA ── read-for-correspondence, never run against ──▶ interface2 generate_sce_cicada
+                                                                            │
+                                                             1e-9, on every returned number
+                                                                            ▼
+                                                                         locust
+</code></pre>
+<p>It is also <strong>already modified</strong> — it is handed a per-event duration where the
+original measures the transient itself, for a stated and good reason, and the
+duration it is handed is <strong>the exporter's</strong> (FOUNDATIONS §7; the port paints what it
+is given). But a reader who sees "CICADA" in a figure legend assumes the published
+method.</p>
+<p><strong>And interface2 had parked that function before this port existed.</strong>
+<code>generate_sce_cicada</code> was shelved on 2026-07-07 for over-detecting on this
+preparation's long SLOW transients — median ~4.6 s of duration-overlap swamping
+onset-synchrony — and bugarach's port landed a month later, on 2026-08-10. So the
+upstream end of the chain is a function its own authors had already stopped using,
+for a reason that bears directly on what locust measures.</p>
+<p><strong>There is no faithful mode to ship.</strong> The port skips a whole stage by design —
+<code>generate_sce_cicada.m</code>: <em>"we already have events, so their per-cell
+transient-detection step is skipped."</em> A mode that restores the active-duration
+model would still be missing that stage, so calling it "faithful" would put the
+old claim back under a new name.</p>
+<p><strong>So: take the producer's exported duration as the duration — it is not this
+project's to choose (FOUNDATIONS §7, ADR-0002 addendum) — and never report locust's
+numbers as CICADA's.</strong> Its 214.8 probe firings — 86× LoCo's 2.5 and 172×
+CoactDetect's 1.25 — are a property of <strong>our variant on this benchmark</strong> and are not
+available as a finding about the published method. That is the weaker thing to have measured, and it is the true one. What
+would actually license the stronger claim is running CICADA itself on these
+recordings, which is
+<a href="todo/2026-08-17-run-a-literature-method-on-our-recordings.md">its own open item</a>
+and has not been done.</p>
 <h3>6.4 LoCo — keep as the flagship, and change three things</h3>
 <p>LoCo is the detector the manuscript is built around and it deserves the position:
 top MATLAB performer on FAST, second among the hand-written detectors in the
-bake-off, and 2.5 probe firings against CICADA's 215.</p>
+bake-off, and 2.5 probe firings against locust's 215.</p>
 <ol>
 <li><strong>Add a guard interval</strong> (§5.1). Highest-value change here.</li>
 <li><strong>Test the greatest-of blind spot</strong> (§5.4): plant event pairs at swept
@@ -775,7 +887,7 @@ in <code>bench.py</code> in plain sight:</p>
   on the grid returns the identical result</strong> — four detections, eleven misses.</li>
 </ul>
 <p>The bake-off's numbers confirm it from the other side. SPIKE-synch's precision is
-<strong>0.538</strong> — mid-pack, better than CICADA or SCE — while its recall is <strong>0.167</strong>.
+<strong>0.538</strong> — mid-pack, better than locust or SCE — while its recall is <strong>0.167</strong>.
 It is not firing wrongly; it is barely firing at all. That is a detector held shut
 by a pinned parameter, not a broken port.</p>
 <p><strong>So the verdict is narrower and more actionable than "demote an unexplained
@@ -800,12 +912,13 @@ result":</strong></p>
 wins</em>, and the honest answer — the top three are a tie across four folds of thirty
 planted events, and the ranking below them tracks calibration status — reads as an
 evasion.</p>
-<p>The suite is better described as <strong>one published method, one canonical reference
-rule, one published measure with our detector on it, and three points in a design
-space detection theory already has names for</strong>:</p>
+<p>The suite is better described as <strong>one modified port of a published method, one
+canonical reference rule, one published measure with our detector on it, and three
+points in a design space detection theory already has names for</strong>:</p>
 <ul>
-<li><strong>Reference rows</strong> — binned SCE (the field's rule), CICADA (the published
-  method). Not tuned, not competing, present so outside numbers can be placed.</li>
+<li><strong>Reference rows</strong> — binned SCE (the field's rule), locust (a partial, modified
+  port of CICADA — §6.3: it stands <em>near</em> the published method, not <em>for</em> it).
+  Not tuned, not competing, present so outside numbers can be placed.</li>
 <li><strong>Characterization</strong> — SPIKE-synch's profile. Not a detector row until §6.6 is
   done.</li>
 <li><strong>The adaptive-threshold family</strong> — rate+context (cell-averaging, pooled

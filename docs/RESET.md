@@ -151,9 +151,11 @@ browser, with no install and no upload. That is the deliverable and it substanti
   ⚠ **And both numbers were computed at a calibration that has since been superseded** —
   see part 5. They are the best published figures and they are not current ones.
 - **That the comparison reaches the state of the art.** It contains **no published learned
-  method** and **none of the assembly-detection family**. CICADA (Cossart lab) and
-  SPIKE-synch (Kreuz lab) are published, so the accurate claim is narrower than the first
-  version of it and wider than the second.
+  method** and **none of the assembly-detection family**. SPIKE-synch's profile (Kreuz
+  lab) is published and locust derives from published work — but locust is a modified
+  partial port whose numbers are its own, not CICADA's (`detector_history.md` §6.3), so
+  **no published method runs here in its authors' form.** The accurate claim is narrower
+  than the first version of it and wider than the second.
 - **SPIKE-synch's 0.254 is not its accuracy.** Its swept knob is not binding — `C_min` sits
   pinned above most of the grid and the profile is quantised — so on a default simulation
   every value on the grid returns the same result. It is the score of a sweep that could
@@ -166,7 +168,7 @@ browser, with no install and no upload. That is the deliverable and it substanti
 
 **Everything in `docs/learned/` was computed before the difficulty axis was corrected.**
 `bench.REGIMES` moved on 2026-08-20 (0.0038 → 0.0052 quiet, 0.0175 → 0.0190 busy) and
-CICADA's FAST percentile was retuned in the same change. Nothing has been regenerated. The
+locust's FAST percentile was retuned in the same change. Nothing has been regenerated. The
 figures render identically; only the numbers underneath moved. **Nothing will fail, and
 somebody will quote them.**
 
@@ -203,7 +205,7 @@ reports.
 already drawn — [`docs/learned/two_decisions.png`](learned/two_decisions.png), panels A
 and B:
 
-![Panel A, a histogram of per-ROI background rate: the bench's flat field is a single red spike at 5.2 mHz with no silent ROIs, against the fitted field's long blue tail with 34% of ROIs silent and a median of 1.1 mHz. Panel B, every detector's F1 at its shipped operating point under both fields, joined by a line: binned SCE 0.155 to 0.107, CICADA 0.296 to 0.265, SPIKE-synch 0.367 to 0.500, rate+context 0.636 to 0.547, LoCo 0.674 to 0.703, CoactDetect 0.703 to 0.736 — every score moves and they move in both directions](learned/two_decisions.png)
+![Panel A, a histogram of per-ROI background rate: the bench's flat field is a single red spike at 5.2 mHz with no silent ROIs, against the fitted field's long blue tail with 34% of ROIs silent and a median of 1.1 mHz. Panel B, every detector's F1 at its shipped operating point under both fields, joined by a line: binned SCE 0.155 to 0.107, locust 0.296 to 0.265, SPIKE-synch 0.367 to 0.500, rate+context 0.636 to 0.547, LoCo 0.674 to 0.703, CoactDetect 0.703 to 0.736 — every score moves and they move in both directions](learned/two_decisions.png)
 
 Panel A is the difference: the real recordings leave **35% of ROIs silent** across 81
 baseline windows and 2,643 ROIs, and the bench's flat field leaves **none**. Panel B is
