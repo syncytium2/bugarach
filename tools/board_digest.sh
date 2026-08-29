@@ -34,8 +34,21 @@ set -uo pipefail
 
 # The one awk program, kept as a function so the selftest drives the real thing
 # rather than a copy of it.  $1 board file, $2 terse flag (1 = headings + one field)
+# Names of worktrees that exist right now — directory basename AND branch, because
+# a block may legitimately be headed with either (guard_local_board.sh accepts both).
+# Prints nothing and returns 1 when git cannot answer, which the caller turns into
+# "do not judge staleness at all" rather than "everything is stale".
+live_worktree_names() {
+  git worktree list --porcelain 2>/dev/null | awk '
+    /^worktree /{ n = split($2, p, "/"); print p[n] }
+    /^branch /{ sub("refs/heads/", "", $2); print $2 }'
+}
+
 digest_body() {
-  awk -v TERSE="${2:-0}" '
+  # NAMES goes through the ENVIRONMENT, not -v: the value is newline-separated and
+  # awk -v rejects a multi-line assignment (macOS awk prints the value back as an
+  # error, which lands in the counts stream and poisons every number downstream).
+  BOARD_LIVE_NAMES="${3:-}" awk -v TERSE="${2:-0}" -v KNOWN="${4:-0}" '
     function flush(   i, n) {
       if (!have) return
       total++
@@ -47,10 +60,30 @@ digest_body() {
       if (buf_n > CAP) print "    (block trimmed — the rest is in the board file)"
       buf_n = 0; have = 0; active = 0
     }
-    BEGIN { CAP = (TERSE ? 3 : 10); buf_n = 0; have = 0; active = 0; total = 0; nactive = 0; keep = 0 }
-    /^### / { flush(); have = 1; buf[++buf_n] = $0; keep = 0; next }
+    BEGIN {
+      CAP = (TERSE ? 3 : 10); buf_n = 0; have = 0; active = 0; total = 0; nactive = 0; keep = 0
+      # Worktrees that actually exist, exact names only — a claim is matched the
+      # way guard_local_board.sh matches it, never as a substring.
+      nlive = split(ENVIRON["BOARD_LIVE_NAMES"], _n, "\n")
+      for (i = 1; i <= nlive; i++) if (_n[i] != "") live[_n[i]] = 1
+    }
+    /^### / {
+      flush(); have = 1; buf[++buf_n] = $0; keep = 0
+      slug = $0
+      sub(/^###[[:space:]]+/, "", slug)
+      while (index(slug, "/")) sub(/^[^\/]*\//, "", slug)
+      sub(/[[:space:]].*$/, "", slug)
+      next
+    }
     !have { next }
-    /^- \*\*Status:\*\* *ACTIVE/ { active = 1; next }
+    /^- \*\*Status:\*\* *ACTIVE/ {
+      active = 1
+      # KNOWN==0 means we could not enumerate worktrees; then nothing is stale,
+      # because "cannot tell" must not print as "dead". Same fail-closed rule the
+      # liveness probe in worktree_sweep.sh uses.
+      if (KNOWN && slug != "" && !(slug in live)) nstale++
+      next
+    }
     /^- \*\*(Worktree|Touches|Holds):\*\*/ {
       buf[++buf_n] = $0
       keep = ($0 ~ /^- \*\*(Touches|Holds):\*\*/)
@@ -61,13 +94,13 @@ digest_body() {
     # wrap, and half a sentence is worse than none
     keep && /^  [^ ]/ { buf[++buf_n] = $0; next }
     { keep = 0 }
-    END { flush(); printf "%d %d\n", nactive, total > "/dev/stderr" }
+    END { flush(); printf "%d %d %d\n", nactive, total, nstale > "/dev/stderr" }
   ' "$1"
 }
 
 # Print the digest for a board file. $1 board path, $2 terse flag.
 render() {
-  local board="$1" terse="${2:-0}" body counts nactive total
+  local board="$1" terse="${2:-0}" body counts nactive total nstale names known
   if [ ! -f "$board" ]; then
     echo "--- session board: $board"
     echo "    (no board yet — the briefing scaffolds it; add your block before you start)"
@@ -75,13 +108,31 @@ render() {
   fi
   # counts come back on stderr so the body stays a clean stdout stream
   local tmp; tmp=$(mktemp) || { cat "$board"; return 0; }
-  body=$(digest_body "$board" "$terse" 2>"$tmp")
+  # A claim is only checkable against worktrees we can actually enumerate. If git
+  # cannot answer, KNOWN=0 and the staleness clause is omitted entirely rather than
+  # printed as zero — "cannot tell" and "none dead" must not read alike.
+  names=$(live_worktree_names) && known=1 || known=0
+  [ -z "$names" ] && known=0
+  # Selftest hook for the fail-closed branch, which is otherwise only reachable
+  # outside a git repo — and a branch with no test is the thing this file is about.
+  [ -n "${BOARD_DIGEST_FORCE_UNKNOWN:-}" ] && { names=""; known=0; }
+  body=$(digest_body "$board" "$terse" "$names" "$known" 2>"$tmp")
   counts=$(cat "$tmp"); rm -f "$tmp"
-  nactive=${counts%% *}; total=${counts##* }
+  nactive=$(printf %s "$counts" | awk '{print $1}')
+  total=$(printf %s "$counts" | awk '{print $2}')
+  nstale=$(printf %s "$counts" | awk '{print $3}')
   [ -z "$nactive" ] && nactive=0
   [ -z "$total" ] && total=0
+  [ -z "$nstale" ] && nstale=0
 
-  echo "--- session board — LIVE CLAIMS ONLY (${nactive} ACTIVE of ${total}): $board ---"
+  # THE HEADLINE COUNT IS THE THING SESSIONS TRUST, so it says how many of those
+  # claims have nothing behind them. On 2026-08-28 it read "26 ACTIVE" while 17 had
+  # no worktree, and a session that believed it started work beside two others.
+  if [ "$known" = "1" ] && [ "$nstale" -gt 0 ] 2>/dev/null; then
+    echo "--- session board — LIVE CLAIMS ONLY (${nactive} ACTIVE of ${total}, ${nstale} with NO worktree): $board ---"
+  else
+    echo "--- session board — LIVE CLAIMS ONLY (${nactive} ACTIVE of ${total}): $board ---"
+  fi
   if [ "$nactive" -eq 0 ] 2>/dev/null; then
     echo "    Nothing is claimed on this machine right now."
   else
@@ -149,6 +200,18 @@ selftest() {
 
   out=$(render "$tmp/absent.md")
   t "a missing board is named, not fatal" "$out" "no board yet"       yes
+
+  # THE HEADLINE COUNT IS WHAT SESSIONS TRUST. On 2026-08-28 it read "26 ACTIVE"
+  # while 17 of those claims had no worktree behind them, and a session that
+  # believed it reported an area unclaimed and started beside two others.
+  # live-one is not a worktree on any machine running this, so it must count stale.
+  out=$(render "$tmp/board.md")
+  t "a claim with no worktree is counted"  "$out" "1 with NO worktree" yes
+  # And the fail-closed half: with nothing enumerable, the clause disappears
+  # rather than claiming everything is dead. "cannot tell" is not "none alive".
+  out=$(BOARD_DIGEST_FORCE_UNKNOWN=1 render "$tmp/board.md")
+  t "unknown worktrees omit the clause"    "$out" "with NO worktree"   no
+  t "and still report the live count"      "$out" "1 ACTIVE of 3"      yes
 
   rm -rf "$tmp"
   echo
