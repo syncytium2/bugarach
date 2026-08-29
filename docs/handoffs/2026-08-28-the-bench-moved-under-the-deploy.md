@@ -1,11 +1,19 @@
 # The bench moved under the deploy — every published number and two published figures
 
-**The deploy hold is protecting more than it was set up to protect.** When it was
-set, the queue was three viewer commits and a prose fix. Since then the bench
-itself changed: the background is no longer flat and the scoring tolerance moved
-1.5 s → 2.5 s. **Every F1 on the site was computed under neither of those**, and
-`hero.png` and `diagnostic.png` are *rendered from* `src/bugarach`, so they move
-too.
+> **Updated 2026-08-28, after the deploy.** The hold was lifted early and the site
+> published at `3a0b63b` (PR #386) — *"the live page was misattributing a result to
+> another lab."* The two conditional sections at the end are no longer both live:
+> **the deploy went first**, and the session that ran it carried this note's caveat
+> into [`DEPLOY_HOLD.md`](../DEPLOY_HOLD.md) rather than leaving it here. What
+> remains open is the other branch — what happens when `bench-background-is-not-flat`
+> lands on a site that has already published.
+
+**The published page predates the bench.** When the hold was set, the queue was
+three viewer commits and a prose fix. Then the bench itself changed: the
+background is no longer flat and the scoring tolerance moved 1.5 s → 2.5 s.
+**Every F1 now on the site was computed under neither of those**, and `hero.png`
+and `diagnostic.png` are *rendered from* `src/bugarach`, so they will move when
+that branch lands.
 
 None of it is merged. Branch `bench-background-is-not-flat`, **red on purpose —
 four tests**: three that encode a finding and one stale published artifact, both
@@ -90,37 +98,49 @@ exactly that, because it proves you cannot quote "detector X is best" without
 naming a background. With the fitted field **coact wins at every rate** and the
 largest rank change is two.
 
-Two readings, opposite rewrites, and the failure cannot separate them:
+Two readings wanted opposite rewrites, and the failure alone could not separate
+them. **It has since been measured**, and the answer has its own handoff:
+[the winner stopped changing](2026-08-28-the-winner-stopped-changing.md). Short
+version — the axis **still discriminates** (own-range 0.185 → 0.136,
+between-detector spread 0.117 → 0.098, neither collapsed), and the four-place
+reordering was living in a crowded low-F1 tail that the *flat* field manufactured
+at the busy end.
 
-1. the instability was largely an artifact of the flat field, and the honest new
-   claim is "coact wins across the range"; or
-2. the fitted heterogeneity now dominates the rate axis, so the axis has stopped
-   discriminating and these tests should sweep something else.
-
-Re-baselining them to the new numbers would delete the finding either way. One of
-them says so in its own failure message: *"the reordering this test was written
-for has gone, which is good news worth looking at."* **Tony has not ruled on
-this one** — it is the open item on this branch.
+So these three are still red, but no longer undecided: what they should assert is
+the spread rather than the ordering, and that note lists three options in the
+order worth trying. **Tony has not ruled on the rewrite** — that is the open item
+on this branch.
 
 `test_the_server_reproduces_the_published_bakeoff` also fails, and it is a
 consequence rather than a decision: it compares against `docs/learned/bakeoff.json`,
 computed at 1.5 s on a flat field. Regenerating that file puts new numbers into
 something people read, so it waits for the same ruling.
 
-## If you deploy before this lands
+## The deploy went first — done, 2026-08-28
 
-Nothing here blocks you. The site serves what is on `main`, this is not on
-`main`, and the two companion notes cover what is. **Say in the deploy record
-that the bench numbers on the published page predate the background change** —
-otherwise the next deploy moves the figure and the diff will not explain it.
+The hold was lifted early and the site published at `3a0b63b` (PR #386), because
+the live page was misattributing a result to another laboratory. This note asked
+for one thing in that case — *say in the deploy record that the published bench
+numbers predate the background change* — and the session that ran it did, in
+[`DEPLOY_HOLD.md`](../DEPLOY_HOLD.md) rather than only in a PR body, which is the
+better place: the next hold starts from a page that records how the last one
+ended.
 
-## If this lands first
+Nothing here blocked that deploy and nothing here was published by it. **The
+site's F1 numbers and both rendered figures are the pre-change ones.**
 
-Rebuild and *look at* `hero.png` before uploading — not just the four pages'
-links. It is rendered from the detectors at the bench's settings, and both of
-those moved. `docs/deploy.md`'s "drive the built site before you upload it" is
-the step that catches this, and it is the step a prose-only change lets people
-skip.
+## When this branch lands — still open
+
+**Rebuild and *look at* `hero.png` before uploading**, not just the four pages'
+links. It is rendered from the detectors at the bench's settings, and both the
+background and the tolerance moved, so it will not be the picture now on the
+site. `docs/deploy.md`'s *"drive the built site before you upload it"* is the step
+that catches this, and it is exactly the step a prose-only change trains people
+to skip — the deploy that just happened was a prose-only change.
+
+The before/after render comparison **has still not been run** (residual ⚠ below);
+the claim rests on reading the build's imports. Running it is now cheap and
+meaningful, because there is a published `hero.png` to compare against.
 
 ## Reproduce
 
