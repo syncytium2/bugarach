@@ -1,9 +1,34 @@
 ---
-status: open
+status: done
 filed: 2026-08-20
+closed: 2026-08-29
 ---
 
 # The scoreboard's numbers are built; its sentences have not been reviewed
+
+> **CLOSED 2026-08-29 — reviewed and published.** The murderboard ran 11/11 roles;
+> the record is [`the run record`](../reviews/scoreboard_copy_2026-08-29.md) and the
+> panel went out in the same deploy. Read the rest of this file as the brief the review
+> was given, not as open work.
+>
+> **What it got right:** it predicted the `knobs` misreading almost exactly — *"check it
+> cannot be read as fewer is better"* — and nothing on screen stopped that reading; a
+> caveat now says it in terms. The banned-phrase check held. The tube's-absence worry was
+> already answered by `learnedAbsent`, which arrived after this was filed.
+>
+> **Where it went stale:** the copy table below lists a `noTube` key that no longer
+> exists, replaced by `learned`, `learnedSpread` and `learnedAbsent` once `fitFolds`
+> began sending this corpus and split to the local server.
+>
+> **What it missed, and this is the one that matters.** It said *"Un-hiding it is one
+> line — the gate in `wireLab`"* and named `tests/test_webapp_scoreboard.py` as having
+> the gate mechanised. Both wrong, in the same direction. Un-hiding is **two** edits —
+> drop `hidden` from the markup **and** drop `gated: true` from the panel's rail-registry
+> entry — which the viewer's own `accLab` comment states and this file never read. And
+> the test pinning the gate **could not fail**: it asserted the `hidden` attribute and
+> `is_hidden()` on load, but `details.acc` is `display:none` until the rail adds `.on`,
+> so every accordion is hidden on load whether gated or not. The un-gating edit left the
+> suite green at 50 passed. Both are fixed and mutation-checked.
 
 Phase 4 of [`the completion plan`](../webapp_completion_plan.md) landed as a
 panel that scores every detector on one data set and one fold split. **The panel

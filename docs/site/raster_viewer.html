@@ -1283,19 +1283,31 @@
         measured against.
       </div>
     </details>
-    <!-- The scoreboard. HIDDEN ON THE PUBLISHED PAGE, on the same `window.__lab`
-         gate as the training panel above and for two reasons rather than one.
+    <!-- The scoreboard. PUBLISHED SINCE 2026-08-29; it was gated on
+         `window.__lab` before that, for two reasons that have both expired.
 
-         The wording in it has not been through the review this repo requires of
-         anything a stranger reads, so it must not ship until it has —
-         docs/todo/2026-08-20-the-scoreboard-copy-needs-review.md carries the
-         sentences and what each has to survive.
+         The wording had not been through the review this repo requires of
+         anything a stranger reads. It has now —
+         docs/reviews/scoreboard_copy_2026-08-29.md, which also records what the
+         review changed and what it left as a residual.
 
-         And it belongs here anyway: the comparison is only complete with the
-         tube in it, the tube trains through `bugarach lab`, so the one place
-         the full table can exist is the one place the server is running. -->
-    <details class="acc" id="accScore" hidden>
-      <summary>Compare the detectors<span class="cnt" id="cntScore">draft</span></summary>
+         And "the comparison is only complete with the tube in it, so it belongs
+         where the server is" was the second reason. That is the argument the
+         `learnedAbsent` sentence answers: a table that silently omits a detector
+         invites the reading that it lost, and one that says in terms "absence
+         here is a missing trainer, not a detector that competed and lost" does
+         not. Withholding the six from every visitor to avoid a gap the copy
+         already explains was the gate outliving its own reason.
+
+         `hidden` is dropped here and `gated` is dropped from this panel's line
+         in TAIL — the two-edit publish procedure the `accLab` entry names. The
+         rail still decides WHEN it appears (`ready: RECORDINGS.length > 0`),
+         because a comparison with nothing loaded has nothing to compare. -->
+    <details class="acc" id="accScore">
+      <!-- The chip read "draft" for as long as the panel was gated. It cannot
+           say that on a page the panel now appears on, and it should not go
+           blank either: every other accordion's chip carries a count. -->
+      <summary>Compare the detectors<span class="cnt" id="cntScore">6 detectors</span></summary>
       <div class="ctl">
         <label for="scTol">match tolerance (s)</label>
         <input id="scTol" type="number" min="0.1" max="30" step="0.5" value="1.5" autocomplete="off" data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other">
@@ -8759,14 +8771,36 @@ function tunePool(scores, opts) {
    detector exposes, which is what makes the tube's 1,149 parameters a
    comparison rather than a boast; it is not a complexity measure. */
 const SCORE_COPY = {
-  draft: "Draft — the wording on this panel has not been reviewed, which is why "
-       + "it does not appear on the published page.",
+  /* THE DRAFT BANNER IS GONE, and it had to be removed rather than reworded.
+     It read "Draft — the wording on this panel has not been reviewed, which is
+     why it does not appear on the published page", which asserts the panel is
+     unpublished; publishing it makes the page's own first line false. A panel
+     that has been reviewed says so by not carrying a draft warning. The review
+     that retires it: docs/reviews/scoreboard_copy_2026-08-29.md. */
+  provenance: "Two of these are other laboratories' methods and are named as "
+       + "theirs: locust is derived from the Cossart lab's CICADA and is not "
+       + "CICADA, and SPIKE-synch runs on the Kreuz lab's "
+       + "SPIKE-synchronization. What each detector is, and what was changed to "
+       + "bring it here, is under \"What these detectors are\" above.",
+  knobs: "The knobs column counts the settings a detector exposes, and it is not "
+       + "a score: more is not worse and fewer is not better. It is here so that "
+       + "a detector with one threshold and a detector with six are visibly "
+       + "different KINDS of thing before their F1 are compared.",
   simulatedOnly: "Every number here is measured on simulated recordings. None of "
        + "it says a detector is right about a real slice, because no real slice "
        + "has an answer key to be right against.",
-  tolerance: "F1 counts a hit within the match tolerance above. Against events "
-       + "this wide that makes the ORDER of these rows meaningful and a single "
-       + "number's decimal places not — read the ranking, not the gap.",
+  /* Said "read the ranking, not the gap", which told the reader the ORDER was
+     safe. It is not, and the table's own ± refutes it: on the page's default
+     folder two rows sat 0.085 apart with a fold spread of 0.105 on one of them.
+     A caveat that retires one wrong reading by asserting another is worse than
+     none, because it carries the page's authority. So it now says what the
+     numbers support — a decimal place means nothing, and neither does an order
+     inside overlapping spreads. */
+  tolerance: "F1 counts a hit within the match tolerance above, which is loose "
+       + "against events this wide, so a single number's decimal places mean "
+       + "nothing. Neither does an ordering closer than the ± beside it: where "
+       + "two rows' spreads overlap, this table has not separated them, and "
+       + "three or four folds is not enough to.",
   /* Was `noTube`, and said the learned detector could not be in this table.
      That stopped being true when `fitFolds` started sending this corpus and
      this fold split to the local server, so the sentence is replaced rather
@@ -9077,10 +9111,16 @@ function paintScoreboard() {
   if (!SCOREBOARD) return;
   const { rows, nFolds, dataSetN, tol } = SCOREBOARD;
 
-  box.append(el("p", SCORE_COPY.draft, "verdict bad"));
   box.append(el("h4", "Every detector on the same data set"));
   box.append(el("p", dataSetN + " simulated recording(s) · " + nFolds
     + " fold(s) · matched within " + tol + " s", "sub"));
+  /* THE SIMULATED-DATA ADMISSION LEADS. It used to be the LAST of five caveat
+     paragraphs, behind a four-line one about a trainer that is not running —
+     so the single sentence a stranger most needs was the one they were least
+     likely to reach. Same rule as `demoNote` above the raster: by the time a
+     reader has scrolled past the numbers to a footnote they have already
+     believed them. */
+  box.append(el("p", SCORE_COPY.simulatedOnly, "sub"));
 
   const ranked = rows.slice().sort((a, b) =>
     (b.f1 ?? -1) - (a.f1 ?? -1));
@@ -9116,10 +9156,15 @@ function paintScoreboard() {
   box.append(tbl);
 
   const learned = rows.filter(r => r.learned && !r.refused);
-  const caveats = ["heldOut", "tolerance"];
+  /* `simulatedOnly` is NOT in this list — it now leads, above the table. The
+     order here is what the reader needs to read a ROW: how the number was got
+     (heldOut), what its precision is worth (tolerance), what the one column
+     nobody can guess means (knobs), why a detector may be missing (learned*),
+     and whose methods these are (provenance). */
+  const caveats = ["heldOut", "tolerance", "knobs"];
   caveats.push(...(learned.length ? ["learned", "learnedSpread"]
                                   : ["learnedAbsent"]));
-  caveats.push("simulatedOnly");
+  caveats.push("provenance");
   for (const key of caveats)
     box.append(el("p", SCORE_COPY[key], "caveat"));
 
@@ -9976,13 +10021,8 @@ async function wireLab() {
   const acc = document.getElementById("accLab");
   if (!api || !acc) return;
   acc.hidden = false;
-  // The scoreboard rides the same gate: draft copy, and the comparison is only
-  // whole where the server that trains the tube is running.
-  const score = document.getElementById("accScore");
-  if (score) {
-    score.hidden = false;
-    document.getElementById("runScore").onclick = scoreAllDetectors;
-  }
+  // The scoreboard used to be un-hidden here, on this gate. It is wired by
+  // `wireScoreboard` now and shows on every page; see the comment on `accScore`.
   document.getElementById("runLab").onclick = runLab;
   ["lArch", "lFolds", "lSeeds"].forEach(id =>
     document.getElementById(id).addEventListener("input", paintLabWhat));
@@ -10037,10 +10077,41 @@ async function wireLab() {
    the page that should show it, and hidden is also its correct published-page
    behaviour, so the bug looks like success. Inline scripts run in document
    order during parsing, so DOMContentLoaded is after the shim either way. */
-if (document.readyState === "loading")
+/* The scoreboard is NOT on the lab gate, and stopped being on it 2026-08-29.
+   `scoreAllDetectors` never needed the server: it guards its learned rows with
+   `if (lab() && archs.length && split)` and paints `learnedAbsent` otherwise, so
+   the six hand-written detectors sweep, fold and pool entirely in the page —
+   the same route, the same scorer and the same split as the Python, checked
+   against it in CI. The reasons it was gated are on the `accScore` comment.
+
+   It also fills the panel's note BEFORE the run, which was empty until now: a
+   reader who opened the accordion and did not press the button was told nothing
+   at all about what the button would do. */
+function wireScoreboard() {
+  const btn = document.getElementById("runScore");
+  const note = document.getElementById("scoreWhat");
+  if (!btn) return;
+  /* It does NOT un-hide the panel, and an earlier version of this function did
+     — which was ineffective and looked exactly like working. `details.acc` is
+     `display:none` until the rail adds `.on`, so dropping the `hidden`
+     attribute from JavaScript changes nothing a reader can see. Visibility is
+     the rail's, through `gated`/`ready`; this only wires the button and fills
+     the note. */
+  btn.onclick = scoreAllDetectors;
+  if (note) note.textContent =
+    "Every detector is given the same recordings and the same fold split: each "
+    + "one's setting is chosen on the folds it may see, and scored on the fold "
+    + "it may not. Open a folder or simulate one first — the comparison runs on "
+    + "whatever is loaded, and only on recordings that carry planted events.";
+}
+
+if (document.readyState === "loading") {
   document.addEventListener("DOMContentLoaded", wireLab);
-else
+  document.addEventListener("DOMContentLoaded", wireScoreboard);
+} else {
   wireLab();
+  wireScoreboard();
+}
 
 /* ---------- the rail: two tracks, one tail ----------------------------------
 
@@ -10133,8 +10204,12 @@ const TAIL = [
      in the markup, and drop `gated` from this line. */
   { key: "accLab", panel: "accLab", group: "detections",
     need: "local server", gated: true, ready: () => !!lab() },
+  /* PUBLISHED 2026-08-29 — `gated` dropped here and `hidden` dropped from the
+     markup, which is the two-edit procedure the `accLab` comment above names.
+     The copy went through docs/doc_review_process.md first:
+     docs/reviews/scoreboard_copy_2026-08-29.md. */
   { key: "accScore", panel: "accScore", group: "detections",
-    need: "open something first", gated: true,
+    need: "open something first",
     ready: () => RECORDINGS.length > 0 },
 ];
 
