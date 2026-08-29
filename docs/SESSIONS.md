@@ -61,8 +61,25 @@ Template:
 ## Active
 
 ### Tonys-MacBook-Pro/lift-the-hold — DEPLOY CLAIMED: publishing the site, hold lifted early
-- **Status:** ACTIVE 2026-08-28 — **I hold the deploy.** No other session should run
-  `npm run deploy` or touch `docs/DEPLOY_HOLD.md` until this block says DONE.
+- **Status:** **DONE 2026-08-28 — DEPLOYED AND RELEASED.** The site is live at version
+  `4541a2b1`, built from `3a0b63b`; `site_staleness.py` reads **current, 0 commits
+  behind**. **The deploy is no longer held by anyone** — the next session may publish
+  without asking me. Worktree reaped.
+- **Verified after upload, not just before:** the live front page now says *"derived from
+  CICADA's method"*, and both retired claims — the identity assertion and the
+  self-contradicting *"no method from the literature has yet been run"* — return **zero**
+  matches on the served HTML. `tools/audit_deployed_page.py` re-run against the live URL:
+  *"the page fetched nothing but itself"*, so nothing was injected at the edge this time.
+- **The pre-flight earned its place.** Three sessions had edited `raster_viewer.html` and
+  **no session had driven the combination.** The build was served over HTTP — not
+  `file://`, which is the mistake `docs/deploy.md` exists about — and driven in a real
+  browser before upload: it simulated on load and the generator ran. That was the only
+  test that combination has ever had.
+- **Still true after the deploy, for whoever goes next:** the published bench numbers,
+  `hero.png` and `diagnostic.png` **predate** the background change and the 1.5 s → 2.5 s
+  tolerance move on `bench-background-is-not-flat`, which is not merged. Those figures
+  render from `src/bugarach`, so when it lands the front page's picture moves and the
+  commit list will not say why. Also recorded in `docs/DEPLOY_HOLD.md`.
 - **Worktree:** `bugarach-worktrees/lift-the-hold` (branch same, off origin/main).
   Build and upload run from the **primary checkout**, which is where `node_modules` and
   the wrangler login live.
