@@ -16,7 +16,8 @@ and it reported `rate_detect` finding **0 ROIs in 94% of its events** and locust
 
 - `rate_detect` has no `ends` field, so the span collapsed to zero width;
 - locust's `magnitude` counts cells **active** across its sliding window (painted
-  active for the rise interval), not onsets inside its ~0.3 s reported width;
+  active for the duration the producer exported), not onsets inside its ~0.3 s
+  reported width;
 - binned SCE's `onset_sec` is the **bin edge**, not the first participating event —
   one event reads onset 1060.30, width 1.30, nearest event 4.6 s away, own
   magnitude 10.
