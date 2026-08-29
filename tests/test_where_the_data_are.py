@@ -57,6 +57,31 @@ def test_it_declares_the_default_and_the_pensub_pair():
         assert table["name"].strip() == table["name"], f"{role} name has whitespace"
 
 
+def test_the_export_directories_are_searched_before_the_bare_root():
+    """A NAME THAT RESOLVES TO THE WRONG DIRECTORY PASSES EVERY OTHER CHECK.
+
+    `dandi_000219` exists twice under the data root: the raw DANDI download at
+    `<root>/dandi_000219`, and the conforming 59-recording export at
+    `<root>/exports/external/dandi_000219`. The raw one holds a single CSV, so
+    `kind()` classifies it as an export folder and `require(want="export_folder")`
+    accepts it — a caller would analyse **1 recording instead of 59** and nothing
+    downstream would complain, because every shape check passes. Only the search
+    ORDER prevents it.
+
+    Asserted against the order itself rather than a resolved path, so it runs on CI
+    where neither directory exists.
+    """
+    subs = next((c for c in dataset.resolve.__code__.co_consts
+                 if isinstance(c, tuple) and "exports" in c), None)
+    assert subs is not None, "resolve() no longer carries a search-order tuple"
+    assert "exports/external" in subs, (
+        "resolve() stopped searching exports/external, where other labs' imported "
+        "folders live")
+    assert subs.index("exports/external") < subs.index(""), (
+        "the bare data root is searched before exports/external, so a name present "
+        "in both resolves to the raw download instead of the export folder")
+
+
 def test_the_name_is_available_without_the_data_being_mounted():
     """`current_name()` must not touch the filesystem.
 

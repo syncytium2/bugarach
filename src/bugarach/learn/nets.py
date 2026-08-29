@@ -313,3 +313,155 @@ def build_tube(*, n_scales=4, width=8, depth=6, max_center_frames=128,
             return self.head(torch.cat([bright, resp], dim=1)).squeeze(1)
 
     return Tube()
+
+
+# ---------------------------------------------------------------------------------
+# THE 2x2 MECHANISM SCREEN — the variants scoped in
+# docs/todo/2026-08-23-four-variants-of-the-tube.md, built so they can be measured
+# rather than argued about.
+#
+# WHAT THEY ARE AIMED AT. In the probe block, which contains nothing planted, the
+# shipped tube fires 15.75 times on average against LoCo's 2.50 and CoactDetect's
+# 1.25 -- six to thirteen times the two rate-LOCAL hand-written detectors. Two
+# classical results in a network's clothing explain it, and each variant addresses
+# one:
+#
+#   * the surround is maximal EXACTLY at the sample under test, so an event
+#     contributes to the reference that judges it -> the GUARD (V1)
+#   * area-normalised subtraction cancels the MEAN of a rate change and not its
+#     VARIANCE, where CFAR divides -> the RATIO (V2)
+#
+# THEY ARE NOT A RACE, and the todo is explicit about why: on `rate` the guard paid
+# only once the bar was multiplicative (0.667 -> 0.686), because a contaminated
+# reference then multiplies into the threshold instead of adding a fixed offset.
+# Evaluating them independently would repeat a mistake already made once. Hence a
+# 2x2 over {subtract, ratio} x {no guard, guard}, with `tube` itself as the control
+# cell -- re-measured in the same run rather than quoted from a previous one.
+#
+# V3 (censored surround) IS DELIBERATELY ABSENT. An order statistic over a sliding
+# window is not a convolution, so it spends the one property the tube actually owns
+# (0.014 s to scan a held-out fold). The todo says run it last, against a stated
+# speed budget. It is not a variant to slip into an unattended run.
+# ---------------------------------------------------------------------------------
+
+def _build_tube_variant(*, mode: str, guard_frames: int, n_scales=4, width=8,
+                        depth=6, max_center_frames=128, max_ratio=40.0,
+                        eps: float = 1e-6):
+    """The shipped tube with one or both mechanism changes applied.
+
+    ``mode="subtract"`` reproduces :func:`build_tube`'s arithmetic; ``mode="ratio"``
+    replaces centre-minus-surround with a **difference of logs**.
+
+    WHY LOGS RATHER THAN A DIVIDE. The todo prescribes it, for three reasons that all
+    matter here: there is no denominator to clamp, so the variant cannot quietly
+    absorb the question it was added to answer -- ``model_track.md`` already records
+    the existing surround clamp as "a wart, not a cause"; the operation stays a
+    convolution followed by a pointwise map, which keeps the JS trainer's operation
+    list closed; and the fitted ``gain`` already plays the role of CFAR's alpha, so no
+    grid is needed. On `rate` the alpha optimum sat at 15-20 and a first grid topping
+    out at 8 put it on the boundary -- a learned gain has no boundary to sit on.
+
+    THE COST OF THE RATIO, STATED HERE RATHER THAN LEFT STANDING. ``build_tube``'s
+    docstring says the kernel makes rate invariance *structural* because a difference
+    of Gaussians area-normalises to zero. That sentence is about the **difference**.
+    Under ``mode="ratio"`` the invariance holds for a different reason -- a common
+    multiplicative factor cancels in a log difference -- and a correct-sounding
+    justification over changed arithmetic is exactly what the todo warns against.
+
+    THE GUARD. ``guard_frames`` zeroes the surround within +/-g of the sample under
+    test and renormalises **after** masking, so the reference still integrates to one
+    and only its support changes. Renormalising before would leave the guarded kernel
+    with less than unit mass and confound a mechanism change with a gain change.
+
+    The guard is a **fixed configuration value, not a fitted parameter**. It is an
+    axis of the screen; letting it train would mean the 2x2 compared four models that
+    had each chosen their own guard, which is a different experiment.
+    """
+    if mode not in ("subtract", "ratio"):
+        raise ValueError(f"mode must be 'subtract' or 'ratio', not {mode!r}")
+
+    torch = _torch()
+    nn = torch.nn
+    import math
+
+    class TubeVariant(nn.Module):
+        def __init__(self):
+            super().__init__()
+            self.k = int(max_center_frames)
+            self.g = int(guard_frames)
+            self.mode = mode
+            init = [math.log(1.0 * (2 ** i)) for i in range(n_scales)]
+            self.log_center = nn.Parameter(torch.tensor(init))
+            self.log_ratio = nn.Parameter(torch.full((n_scales,), math.log(8.0)))
+            self.gain = nn.Parameter(torch.ones(n_scales))
+            self.head = _dilated_stack(nn, n_scales + 1, 1, width, depth)
+
+        def _centre_surround(self, device):
+            """The two kernels, each area-normalised, guard applied to the surround.
+
+            Returned apart rather than differenced, because the ratio mode convolves
+            them separately and both modes should read one construction.
+            """
+            t = torch.arange(-self.k, self.k + 1, device=device,
+                             dtype=torch.float32).view(1, -1)
+            c = torch.exp(self.log_center).clamp(0.5, self.k / 2).view(-1, 1)
+            s = c * torch.exp(self.log_ratio).clamp(1.5, max_ratio).view(-1, 1)
+            centre = torch.exp(-0.5 * (t / c) ** 2)
+            surround = torch.exp(-0.5 * (t / s) ** 2)
+            if self.g > 0:
+                surround = surround * (t.abs() > self.g).to(surround.dtype)
+            centre = centre / centre.sum(dim=1, keepdim=True).clamp_min(eps)
+            surround = surround / surround.sum(dim=1, keepdim=True).clamp_min(eps)
+            return centre.unsqueeze(1), surround.unsqueeze(1)
+
+        def forward(self, x):                       # (B, n_roi, T)
+            b, n, t = x.shape
+            kmin = int(torch.exp(self.log_center.detach()).min().clamp(1, self.k))
+            pooled = torch.nn.functional.max_pool1d(
+                x.reshape(b * n, 1, t), kernel_size=2 * kmin + 1,
+                stride=1, padding=kmin).reshape(b, n, t)
+            bright = pooled.sum(dim=1, keepdim=True) / max(n, 1)
+
+            ck, sk = self._centre_surround(x.device)
+            gain = self.gain.view(1, -1, 1)
+            if self.mode == "subtract":
+                resp = torch.nn.functional.conv1d(
+                    bright, (ck - sk), padding=self.k) * gain
+            else:
+                # Two convolutions, then a pointwise log difference. `bright` is a
+                # non-negative rate and both kernels are non-negative and normalised,
+                # so both responses are >= 0 and eps is the only guard needed.
+                cr = torch.nn.functional.conv1d(bright, ck, padding=self.k)
+                sr = torch.nn.functional.conv1d(bright, sk, padding=self.k)
+                resp = (torch.log(cr.clamp_min(eps))
+                        - torch.log(sr.clamp_min(eps))) * gain
+            return self.head(torch.cat([bright, resp], dim=1)).squeeze(1)
+
+    return TubeVariant()
+
+
+# The 2x2's other three cells. `tube` itself is the fourth and is registered above,
+# unchanged -- the control has to be the shipped model, not a re-expression of it.
+@register("tube_guard", note="V1 -- centre minus GUARDED surround: the reference stops "
+                             "abutting the sample it judges",
+          mode="subtract", guard_frames=8, n_scales=4, width=8, depth=6,
+          max_center_frames=128, max_ratio=40.0)
+def build_tube_guard(**cfg):
+    return _build_tube_variant(**cfg)
+
+
+@register("tube_ratio", note="V2 -- log(centre) minus log(surround): divides where the "
+                             "shipped tube subtracts; the one mechanism change with "
+                             "positive evidence anywhere in this repo",
+          mode="ratio", guard_frames=0, n_scales=4, width=8, depth=6,
+          max_center_frames=128, max_ratio=40.0)
+def build_tube_ratio(**cfg):
+    return _build_tube_variant(**cfg)
+
+
+@register("tube_ratio_guard", note="V1+V2 -- the interaction cell; on `rate` the guard "
+                                   "paid only once the bar was multiplicative",
+          mode="ratio", guard_frames=8, n_scales=4, width=8, depth=6,
+          max_center_frames=128, max_ratio=40.0)
+def build_tube_ratio_guard(**cfg):
+    return _build_tube_variant(**cfg)
