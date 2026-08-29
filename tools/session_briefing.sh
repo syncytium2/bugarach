@@ -421,7 +421,7 @@ except Exception: pass' 2>/dev/null)
   elif [ -n "$ds_path" ]; then
     echo "data in: $ds_name — dataset.current() resolves it here"
   else
-    echo "!! data in: $ds_name declared, NOT here — python -m bugarach.dataset"
+    echo "!! data in: $ds_name declared, NOT here — PYTHONPATH=src python3 -m bugarach.dataset"
   fi
 
   # --- 5b. where does figure output actually go on THIS machine? ------------------
