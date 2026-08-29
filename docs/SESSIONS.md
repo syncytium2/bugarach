@@ -1577,3 +1577,15 @@ session's work is not a sweep.
     caller still does not. Cheapest half of this item and prose-only.
   - Found from `syncytium2/short-course`, checking a commit message against `git grep`
     while writing a case study about #347 — not by anyone working in this repo.
+
+### Tonys-MacBook-Pro/real-baseline-detection-figure — SCE + LoCo on a real baseline recording
+- **Status:** ACTIVE — claimed before writing anything shared.
+- **Claims the DARKROOM** for `<darkroom>/bugarach/real_detection_20240813_39.{html,png,txt}`
+  — three new filenames, nothing existing overwritten. No other session's file is touched.
+  **Not** `<darkroom>/constellation/` (the MATLAB producer team's folder), not the deploy,
+  not the public site.
+- **Reads** the current export folder `2026-08-18_revised_2v_periods`, read-only. No `.mat`
+  store, no MATLAB, no fixture regeneration.
+- **Task:** run `sce` and `loco` at the `bugarach.bench` operating points on the FAST stream
+  of `20240813_39` — a baseline-only recording, the one slice released by name (FOUNDATIONS
+  §5) — and draw the detections in a lane above its raster.
