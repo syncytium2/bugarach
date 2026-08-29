@@ -6,9 +6,9 @@ participants known exactly. A detector run on one can be scored against what was
 actually there, instead of against another detector's opinion.
 
 Terms — ROI, slice, stream, and the six detectors — are defined in
-[`GLOSSARY.md`](GLOSSARY.md). The six are **LoCo, CICADA, SCE, CoactDetect,
-RateDetect and SPIKE-synch** (written `spike-sync` in code); a *stream* is one
-channel of onset times per ROI.
+[`GLOSSARY.md`](GLOSSARY.md). The six are **LoCo, locust, SCE, CoactDetect,
+RateDetect and SPIKE-synch** (written `spike-sync` in code, where locust is still
+keyed `cicada`); a *stream* is one channel of onset times per ROI.
 
 ---
 
@@ -67,7 +67,7 @@ nearer 3%. The 35% above is a property of the window, not a judgement about the
 cell.
 
 That matters for these detectors specifically. Four of the six count *distinct
-ROIs coactive* — CoactDetect, LoCo, binned SCE and CICADA; RateDetect scores a
+ROIs coactive* — CoactDetect, LoCo, binned SCE and locust; RateDetect scores a
 population-rate excess against a slow context rate, and SPIKE-synch a
 synchronization profile. For the four, a population where most ROIs contribute
 almost no events has a much smaller effective size than its ROI count suggests;
@@ -333,14 +333,14 @@ bases, and the 0.11 one is the one that answers "is the spacing irregular".
 
 Extra background inside the shaded block, with **no planted events**, ramping in
 rather than stepping. In the **quiet regime** it separates one detector sharply:
-CICADA fires **17.3 times a minute** in there, CoactDetect 0.0 and LoCo 0.1, with
+locust fires **17.3 times a minute** in there, CoactDetect 0.0 and LoCo 0.1, with
 SCE intermediate at 5.6.
 
 Those firings are counted separately and kept **out** of headline precision —
 folded in, the probe's severity would set everyone's precision instead of their
 behaviour.
 
-⚠ That separation is regime-dependent: in the busy regime CICADA and SCE
+⚠ That separation is regime-dependent: in the busy regime locust and SCE
 converge, so the probe distinguishes them only where the background is thin.
 
 ### `n_distractors` / `distractor_frac` — correlated bursts (default 0; bench uses 6 at 0.18)
@@ -350,7 +350,7 @@ converge, so the probe distinguishes them only where the background is thin.
 Real cross-ROI coincidence that is not a coordinated event, marked **▽**. They
 recruit the same fraction of ROIs as a planted event, so they are genuinely
 confusable, and the six detectors answer them differently — in the **quiet
-regime**, SCE fires on 3 of 18, SPIKE-synch 4, RateDetect 13, LoCo 16, CICADA and
+regime**, SCE fires on 3 of 18, SPIKE-synch 4, RateDetect 13, LoCo 16, locust and
 CoactDetect 18. The 18 is the bench's 6 distractors pooled over its three seeds,
 not a third setting of the knob. ⚠ The ordering reshuffles in the busy regime;
 this is one regime's answer, not a ranking.
@@ -479,7 +479,7 @@ and this document would mislead a reader who stopped before here.
 - **The campaign is marked PROVISIONAL by its own record.** `optim_history`'s
   README states that the calibrated settings were adopted into production
   *without* the real-data validation the deck named as its deciding step, and
-  that a CICADA minimum-cell-floor flaw survived that adoption and is still open.
+  that a locust minimum-cell-floor flaw survived that adoption and is still open.
 - **`jitter_sec` is calibrated to a near-null statistic** (0.36 observed against
   a 0.42 surrogate null), and the calibration does not round-trip: build a
   recording at 0.36 and the estimator that produced 0.36 measures ~0.64 back.

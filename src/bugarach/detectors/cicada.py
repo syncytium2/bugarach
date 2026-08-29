@@ -1,11 +1,28 @@
-"""CICADA sliding-window SCE detector — port of interface2's
-``generate_sce_cicada``, itself a faithful port of the Cossart lab's CICADA
-(``cossartlab/cicada`` sce_stats_utils: get_sce_threshold + detect_sce).
+"""locust — a sliding-window SCE detector DERIVED FROM the Cossart lab's CICADA.
+
+The module, the function and the ``detections.csv`` value are all still keyed
+``cicada``; the detector is called **locust** everywhere a person reads it.
+GLOSSARY.md "locust versus CICADA" carries the mapping, and the identifier
+question is docs/todo/2026-08-24-the-identifier-still-says-cicada.md.
+
+**This is a port of interface2's ``generate_sce_cicada``, and the chain is
+validated only at that last link.** ``tools/matlab_ref/gen_ref_cicada.m`` builds
+the parity fixture by running ``generate_sce_cicada`` itself, so the 1e-9 result
+says this file computes what interface2 computed and says NOTHING about CICADA.
+Nothing in either repo compares either against the Cossart source. This docstring
+used to call ``generate_sce_cicada`` "a faithful port"; that was an assertion, it
+was tested nowhere, and interface2 PARKED that function in ``f55643bf`` for
+over-detecting on this preparation's long SLOW transients. It is also a partial
+port by design — CICADA's per-cell transient-detection step is skipped, because
+the events already exist by the time anything here runs.
+
+So: do not report this detector's numbers as CICADA's, and do not describe it as
+CICADA's method. docs/detector_history.md §6.3 has the full chain and the reason.
 
 Upstream notice (MIT License): Copyright (c) 2019 Cossart Lab —
-https://gitlab.com/cossartlab/cicada. The detection method implemented here
-derives from that source; see the repo README's Licensing & citations
-section for the full licensing table.
+https://gitlab.com/cossartlab/cicada (sce_stats_utils: get_sce_threshold +
+detect_sce). The detection method here derives from that source; see the repo
+README's Licensing & citations section for the full licensing table.
 
 1. Binary raster at imaging-frame resolution from the store's event times;
    each event marks its cell active for the transient DURATION (fixed scalar,
@@ -111,7 +128,7 @@ def cicada_detect(
     active_duration_mode: str = "fixed",
     duration_field: str = "",
 ) -> CicadaDetection:
-    """Run the CICADA detector on every stream (declaration order, one RNG).
+    """Run locust on every stream (declaration order, one RNG).
 
     onset_field anchors the raster, and the default is "locs" — the PEAK, not
     the onset. That is CICADA's own convention, kept because §2 makes matching

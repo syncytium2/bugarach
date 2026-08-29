@@ -5,7 +5,10 @@ Port order (each lands only with a MATLAB parity test):
   local     CoactDetect                        -- landed (see coact.py)
   loco      LoCo                               -- landed (see loco.py)
   sce       binned SCE                         -- landed (see sce.py)
-  cicada    CICADA (native peak detection)     -- landed (see cicada.py)
+  cicada    locust (native peak detection)     -- landed (see cicada.py; the
+            KEY is `cicada` and the detector is `locust` — a modified partial
+            port derived from the Cossart lab's CICADA, not CICADA itself.
+            GLOSSARY.md "locust versus CICADA" carries the mapping)
   sync      SPIKE-synchronization              -- landed (see sync.py; native
             port bit-exact vs cSPIKE — PySpike's max_tau cap has been
             broken since 0.8.0, so it is a test-suite cross-check only,

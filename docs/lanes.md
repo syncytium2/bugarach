@@ -4,7 +4,7 @@
 >
 > **Updated 2026-08-23.** The three-item serial queue this page carried is **done**.
 > Scoring is spliced into the page and the sweep runs through it. The download button
-> is in, and the page writes `detections.csv` and `run.json`. CICADA landed, which
+> is in, and the page writes `detections.csv` and `run.json`. locust landed, which
 > made six of six. Three of the four lanes below had already landed; **model** is the
 > only one still unstarted, and it needs Tony's go because it is compute rather than
 > code.
@@ -119,8 +119,8 @@ second rebases — do not rebase somebody else's branch for them.
 
 **The model lane**, above — real compute, and it wants asking first.
 
-**CICADA landed**, so the hold Tony placed on it in 2026-08-19 is discharged and the
+**locust landed**, so the hold Tony placed on it in 2026-08-19 is discharged and the
 browser runs all six. The reason it was held is worth keeping, because it is a
-property of the detector rather than of the schedule: CICADA's `onset_field` defaults
+property of the detector rather than of the schedule: locust's `onset_field` defaults
 to the peak rather than the transient onset, the way its original does, and
 `store.py`'s note on that has already misled two readers.

@@ -3,6 +3,29 @@
 *Written 2026-08-22 from two interface2 reports, the bugarach tree, and the
 darkroom literature shelf.*
 
+> **Revised 2026-08-29: the author said where each one came from, and interface2
+> is frozen on the topic.** Every lineage row in this document was assembled from
+> interface2's reports and this tree. Tony supplied the missing half — who wrote
+> what — and it separates the six three ways, which nothing here had recorded:
+>
+> - **`rate_detect`, `coact_detect`, `loco_detect` are his**, designed for this
+>   preparation. *"They blindly reconstructed elements of CFAR, I was totally
+>   unaware when I designed them."* §5's map is therefore a convergence, not a
+>   derivation — which is the stronger reading and the one §2 used to hedge.
+> - **SPIKE-synch is his detector on someone else's measure** — peak detection on
+>   the cSPIKE/PySpike synchrony profile. The measure is Kreuz's; the detection
+>   layer was written here and, per the 2026-08-24 audit, is not novel either.
+> - **locust and binned SCE both trace to CICADA, by different routes.** locust is
+>   the port, *"modified at port to MATLAB to use our pipeline event detection data
+>   rather than feed it raw calcium — our calcium events differ from the CICADA
+>   team's."* binned SCE is **not** a port: *"based on ideas in CICADA before we did
+>   the port"*, and its published root (Cossart 2003) predates CICADA.
+>
+> **And interface2 development is frozen on this topic**, so the audit that several
+> sections here defer to will not move again. Anything still written as "pending
+> their next pass" is final as it stands; §6.3 and the README's citations block were
+> rebuilt on that basis the same day.
+
 > **Revised 2026-08-22: the radar primaries have been retrieved, and they were
 > worth retrieving.** This document first shipped with every attribution in §4
 > flagged unverified. Two of the four are now **read in full** and shelved at
@@ -283,7 +306,7 @@ named for exactly the choices bugarach made by benchmark.
 | LoCo's 99.9th percentile of the pooled null | a high order statistic, not a mean | kin to ordered-statistic (OS-CFAR) | Rohling, *IEEE T-AES* **AES-19**(4), July 1983, 608–621 | **read in full** |
 | censoring the largest reference cells | discard the interferers before estimating | trimmed-mean / censored CFAR | Weiss 1982 and Rickard & Dillard, *per Rohling*; Gandhi & Kassam, *IEEE T-AES* **24**(4), 1988, 427–445 | **read in full** |
 | `min_rois` floor on top of the significance test | a second, absolute threshold | second-threshold / binary integration | — | — |
-| binned SCE, CICADA | one bar per region | pre-CFAR fixed threshold | — | — |
+| binned SCE, locust | one bar per region | pre-CFAR fixed threshold | — | — |
 
 **All four primaries are now held and read**, on the shelf at
 `<darkroom>/bugarach/lit/radar/` with a read-status entry each — Tony supplied the
@@ -415,7 +438,7 @@ sweep answerable to something outside itself.
 It would also give the promiscuity probe its missing teeth. The probe's firings
 are already **reported** — the `probe firings` column, and panel A — but they
 [cannot fail](todo/2026-08-16-promiscuity-probe-cannot-fail.md): they leave both
-the numerator and the denominator of F1, so CICADA's 215 firings in an empty block
+the numerator and the denominator of F1, so locust's 215 firings in an empty block
 cost it nothing. Measured false-alarm rate against a stated design target is a
 score the probe could actually fail.
 
@@ -514,7 +537,7 @@ different questions and are not averaged here.
 | --- | --- | --- |
 | CoactDetect | calibrated viewer point | 0.651 |
 | LoCo | measured-regime F1 optimum | 0.638 |
-| CICADA | calibrated pair, retuned 2026-08-20 | 0.541 |
+| locust | calibrated pair, retuned 2026-08-20 | 0.541 |
 | rate+context | **`rate_detect` defaults** | 0.571 |
 | binned SCE | **`sce_detect` defaults** | 0.422 |
 | SPIKE-synch | **viewer FAST defaults** | 0.254 |
@@ -562,27 +585,52 @@ and the same construction appears inside Mölter's benchmark. Tony's own framing
 *derived from ideas in CICADA, but essentially ours* — is the honest landing
 place, and it is a lineage claim, not an independence claim.
 
-### 6.3 CICADA — keep unmodified, and always carry both active-duration modes
+### 6.3 locust — the citability this section was built on does not exist
 
-The only detector whose method has a settled external owner, and the port's parity
-to 1e-9 is what makes it citable in the original's place. That citability is the
-asset, and every modification spends some of it.
+> **Rewritten 2026-08-29.** This section used to open *"the only detector whose
+> method has a settled external owner, and the port's parity to 1e-9 is what makes
+> it citable in the original's place"*, and recommended shipping a faithful mode to
+> spend that asset carefully. The 2026-08-28 attribution audit
+> ([review](reviews/locust_attribution_2026-08-28.md)) established that the asset
+> was never there. The recommendation below is the opposite of what stood here, and
+> the old text is kept in this note rather than deleted so the reversal is legible.
 
-It is already modified — rise-interval active duration replaces the original's
-transient duration, for a stated and good reason. But a reader who sees "CICADA"
-in a figure legend assumes the published method.
+**The 1e-9 does not reach CICADA.** `tools/matlab_ref/gen_ref_cicada.m` builds the
+parity fixture by running interface2's own `generate_sce_cicada`, so the number
+says bugarach computes what interface2 computed. Nothing in either repo compares
+either against the Cossart source — "faithful port" is an assertion in both and is
+tested in neither. The chain is validated only at its last link:
 
-**Ship both modes, name them in every output, and default to the faithful one for
-any comparison against published work.** Its 214.8 probe firings — 180× the
-rate-local detectors — then become a property of the published method under this
-benchmark, which is a *finding*, rather than a property of our variant, which is a
-much weaker thing to have measured.
+```
+Cossart CICADA ─── never validated ───▶ interface2 generate_sce_cicada ──1e-9──▶ locust
+```
+
+**And the first link is worse than unvalidated: interface2 parked it.**
+`generate_sce_cicada` was shelved in `f55643bf` for over-detecting on this
+preparation's long SLOW transients — median ~4.6 s of duration-overlap swamping
+onset-synchrony. So the upstream end of the chain is a function its own authors
+stopped using, for a reason that bears directly on what locust measures.
+
+**There is no faithful mode to ship.** The port skips a whole stage by design —
+`generate_sce_cicada.m`: *"we already have events, so their per-cell
+transient-detection step is skipped."* A mode that restores the active-duration
+model would still be missing that stage, so calling it "faithful" would put the
+old claim back under a new name.
+
+**So: keep the rise-interval model, and never report locust's numbers as CICADA's.**
+Its 214.8 probe firings — 180× the rate-local detectors — are a property of **our
+variant on this benchmark** and are not available as a finding about the published
+method. That is the weaker thing to have measured, and it is the true one. What
+would actually license the stronger claim is running CICADA itself on these
+recordings, which is
+[its own open item](todo/2026-08-17-run-a-literature-method-on-our-recordings.md)
+and has not been done.
 
 ### 6.4 LoCo — keep as the flagship, and change three things
 
 LoCo is the detector the manuscript is built around and it deserves the position:
 top MATLAB performer on FAST, second among the hand-written detectors in the
-bake-off, and 2.5 probe firings against CICADA's 215.
+bake-off, and 2.5 probe firings against locust's 215.
 
 1. **Add a guard interval** (§5.1). Highest-value change here.
 2. **Test the greatest-of blind spot** (§5.4): plant event pairs at swept
@@ -634,7 +682,7 @@ in `bench.py` in plain sight:
   on the grid returns the identical result** — four detections, eleven misses.
 
 The bake-off's numbers confirm it from the other side. SPIKE-synch's precision is
-**0.538** — mid-pack, better than CICADA or SCE — while its recall is **0.167**.
+**0.538** — mid-pack, better than locust or SCE — while its recall is **0.167**.
 It is not firing wrongly; it is barely firing at all. That is a detector held shut
 by a pinned parameter, not a broken port.
 
@@ -662,12 +710,13 @@ wins*, and the honest answer — the top three are a tie across four folds of th
 planted events, and the ranking below them tracks calibration status — reads as an
 evasion.
 
-The suite is better described as **one published method, one canonical reference
-rule, one published measure with our detector on it, and three points in a design
-space detection theory already has names for**:
+The suite is better described as **one modified port of a published method, one
+canonical reference rule, one published measure with our detector on it, and three
+points in a design space detection theory already has names for**:
 
-- **Reference rows** — binned SCE (the field's rule), CICADA (the published
-  method). Not tuned, not competing, present so outside numbers can be placed.
+- **Reference rows** — binned SCE (the field's rule), locust (a partial, modified
+  port of CICADA — §6.3: it stands *near* the published method, not *for* it).
+  Not tuned, not competing, present so outside numbers can be placed.
 - **Characterization** — SPIKE-synch's profile. Not a detector row until §6.6 is
   done.
 - **The adaptive-threshold family** — rate+context (cell-averaging, pooled

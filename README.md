@@ -384,10 +384,13 @@ come from: the events are planted in a simulation fitted to one lab's own
 recordings, so the ground truth is exact and the benchmark is rebuilt per lab.
 The classical side of the same problem is
 [CICADA](https://gitlab.com/cossartlab/cicada) and the coactivity-versus-shuffle
-rule it comes from — both among the six ported here.
+rule it comes from. **Two of the six here stand near them and neither stands for
+them**: `locust` is a modified partial port of CICADA's rule by way of interface2,
+and `sce_detect` was written from the same shuffle idea. Both are this repo's code
+answering to this repo's benchmark.
 
-**No method from the literature has been run on this project's recordings**, so
-nothing here claims to beat one. The reading behind that paragraph — which papers
+**So no method from the literature has been run on this project's recordings in its
+own form**, and nothing here claims to beat one. The reading behind that paragraph — which papers
 were read closely and which were deliberately not opened — is on the site as
 [the landscape](https://bugarach.tonydefazio.com/landscape.html), built from
 `docs/learned/landscape.src.html`.
@@ -611,7 +614,7 @@ code from cSPIKE's MATLAB source.
 | Upstream | License | Role here |
 | --- | --- | --- |
 | [PySpike](https://github.com/mariomulansky/PySpike) | BSD | SPIKE-synchronization semantics ported from its (BSD) source; test-suite cross-check (its `max_tau` bug, live since 0.8.0, limits it to the uncapped regime) |
-| [CICADA](https://gitlab.com/cossartlab/cicada) | MIT | the detection method behind **locust** (ported and modified; carries upstream copyright notice) |
+| [CICADA](https://gitlab.com/cossartlab/cicada) | MIT | the rule **locust** derives from — a partial, modified port by way of interface2, never compared against this source (carries upstream copyright notice) |
 | cSPIKE (MATLAB) | research/education only — **no code used** | reference outputs for parity tests only (research use, via interface2) |
 
 ⚠ SPIKE-synchronization is a **native port** rather than a PySpike wrapper because
@@ -623,10 +626,48 @@ cap. The write-up is [`docs/kreuz_note.md`](docs/kreuz_note.md), and
 that will fail the day upstream fixes it. PySpike stays a test-suite
 cross-check in the uncapped regime, where the two definitions agree.
 
+### Where the six came from
+
+**They did not all arrive the same way, and the differences are the interesting
+part.** An attribution audit closed all six origins on 2026-08-24 and found
+published prior art for every one; none of it changes a claim this tool makes,
+because no claim here rests on priority. Tony DeFazio wrote the MATLAB originals
+and settled the tone of this section on the day the audit landed: *"I don't think
+anyone is going to jump on us for a technique used in radar analysis from 1968. In
+fact I feel most researchers would be kind of thrilled with the link. We
+acknowledge its origins, don't worry about finding the lit after we built it, it's
+a tool and it's useful."*
+
+**Designed here, and later found to have prior art.** `rate_detect`, `coact_detect`
+and `loco_detect` were built for this preparation with no detection-theory source
+in hand. They turn out to reconstruct pieces of a literature nobody here had read:
+cell-averaging CFAR, greatest-of CFAR, and Unitary Events. Arriving at those from a
+calcium-imaging problem is evidence the design space is real — the map from this
+repo's constructions onto the radar line is [`docs/detector_history.md`](docs/detector_history.md) §5.
+
+**A detector built here on somebody else's measure.** SPIKE-synchronization — the
+profile — is Kreuz's; the detector is peak detection on that profile and was
+written here. That layer is not novel either: the audit found it published.
+
+**Derived from CICADA.** `locust` is a modified partial port of the Cossart lab's
+rule, by way of interface2. `sce_detect` is a separate thing: it was written from
+ideas in CICADA *before* that port existed, and its root turns out to be older than
+CICADA. Neither is a claim of independence.
+
 **Cite in any publication that uses results from this tool:**
 
-- **PySpike** — Mulansky M., Kreuz T., *PySpike — A Python library for analyzing
-  spike train synchrony*, SoftwareX 5, 183–189 (2016).
+- **rate+context** — the method is cell-averaging CFAR: Finn H.M., Johnson R.S.
+  (1968). *Adaptive detection mode with threshold control as a function of spatially
+  sampled clutter-level estimates*. RCA Review 29, 414–464.
+- **LoCo and CoactDetect** — Unitary Events: Grün S., Diesmann M., Aertsen A. (2002).
+  *Unitary events in multiple single-neuron spiking activity*. Neural Computation
+  14(1), 43–80 and 81–119; see also Amarasingham et al. (2012). LoCo's `maxlt` is
+  greatest-of CFAR: Hansen V.G. (1973), *Constant false alarm rate processing in
+  search radars*.
+- **PySpike**, for the measure under **SPIKE-synch** — Mulansky M., Kreuz T.,
+  *PySpike — A Python library for analyzing spike train synchrony*, SoftwareX 5,
+  183–189 (2016); the measure itself is Kreuz et al. (2015), with Satuvuori et al.
+  (2017) on the detection layer.
 - **CICADA**, for the detector this repo calls **locust** — Denis J, Dard R, Quiroli
   E, Cossart R, Picardo M (2020). *CICADA (Calcium Imaging Complete Automated Data
   Analysis)*, v1.0.3. Zenodo. doi:10.5281/zenodo.10041434. Source:
@@ -638,14 +679,23 @@ cross-check in the uncapped regime, where the two definitions agree.
   dynamics of network UP states in the neocortex*. Nature 423(6937):283–288.
   doi:10.1038/nature01614, whose Methods state it in full; the modern circular-shift
   form is Dard et al. 2022 (eLife 11:e78116) and Bocchio et al. 2020 (Nat Commun
-  11:4559).
-- ⚠ **The remaining rows are being rewritten.** An attribution audit closed all six
-  origins on 2026-08-24 — `rate_detect` is cell-averaging CFAR (Finn & Johnson 1968),
-  `loco_detect`'s `maxlt` is GO-CFAR (Hansen 1973), and LoCo/CoactDetect sit on
-  Unitary Events (Grün et al. 2002). None of it changes a claim this tool makes, and
-  the full list with DOIs is in
-  [the attribution note](docs/todo/2026-08-24-the-methods-are-not-ours-and-the-app-says-otherwise.md)
-  until this section is rebuilt properly.
+  11:4559). The 2003 paper credits the technique to Mao et al. (2001), *Neuron*
+  32(5):883–898, which nobody here has obtained — so 2003 is the root **reached**,
+  not the bottom.
+
+⚠ **`locust`'s 1e-9 does not reach CICADA.** The parity fixture is built by running
+interface2's `generate_sce_cicada`, so the number says this repo computes what
+interface2 computed. Nothing in either repo compares either against the Cossart
+source, and interface2 has since parked that function for over-detecting on long
+SLOW transients. **Do not read any of this tool's locust numbers as measurements of
+CICADA** — running CICADA itself here is
+[an open item](docs/todo/2026-08-17-run-a-literature-method-on-our-recordings.md),
+not something done. Full chain: [`docs/detector_history.md`](docs/detector_history.md) §6.3.
+
+The working list, with the behavioural consequences that arrived with the citations
+— GO-CFAR's target masking on a wash-in, and rate+context's false-alarm rate not
+being rate-controlled — is
+[the attribution note](docs/todo/2026-08-24-the-methods-are-not-ours-and-the-app-says-otherwise.md).
 
 ## Dev
 
