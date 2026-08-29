@@ -22,8 +22,26 @@ peak. CICADA's MATLAB original anchors its raster on the peak, and §2 makes
 matching it the product — so the port keeps the peak rather than improving on
 it. The science agrees with the parity: a single-cell event runs 10-60+ s from
 half-rise to peak, and treating events that long as points would find almost
-any pair of them coincident. ``t50rise`` locates an event; ``locs`` closes it;
-the interval between them is its duration.
+any pair of them coincident. ``t50rise`` locates an event; ``locs`` closes it.
+
+**The interval between them is NOT this package's to compute**, and this
+sentence used to say it *was* — *"the interval between them is its duration"*,
+sitting one line under the two field names, which read as a licence and was
+taken as one. :func:`~bugarach.detectors.cicada.rise_durations` computed exactly
+that subtraction. It refuses now. **An event's duration arrives from the
+producer** in ``width_sec``, under the ``width_def`` naming the rule that made
+it, and this package paints what it is given. On this preparation the two
+streams are not even measured the same way — a half-prominence width on ``fast``,
+a truncation to ``peak − t50rise`` on ``slow``, because these slow events are not
+described in the literature and destroy CICADA at full length — and **that
+truncation is applied on export, by the MATLAB team.** Tony, 2026-08-29:
+*"matlab decides duration. bugarach python and webapp is not responsible for
+what the duration is derived from."* Read ``Stream.width`` behind
+``Stream.has_width``; sapper SAP012 blocks the subtraction; ADR-0002's
+2026-08-28 addendum and FOUNDATIONS §7 carry the reasoning. The correctness
+argument is the smaller of the two: on **folder** input ``locs`` holds the
+``t50rise``, so that subtraction was identically zero for all 2,215 events in
+the corpus — right shape, right dtype, no error.
 
 **Do not "correct" cicada to ``t50rise``.** Two sentences claiming otherwise
 have already been written in this file. Until 2026-08-17 it said *"``locs`` are

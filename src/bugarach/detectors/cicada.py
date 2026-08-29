@@ -9,8 +9,8 @@ section for the full licensing table.
 
 1. Binary raster at imaging-frame resolution from the store's event times;
    each event marks its cell active for the transient DURATION (fixed scalar,
-   or per-event durations the CALLER precomputed — e.g. rise interval =
-   peak locs - t50rise; CICADA rasterizes what it is given).
+   or the per-event durations the PRODUCER exported in ``width_sec`` — this
+   package never derives one; it rasterizes what it is given).
 2. Coactivity trace: distinct cells active within a sliding window of
    n_synchronous_frames consecutive frames.
 3. Threshold: circular-shift each cell independently, sum active cells PER
@@ -84,11 +84,48 @@ class CicadaDetection:
         return self.streams["slow"]
 
 
+class DurationIsNotOursToDerive(NotImplementedError):
+    """Raised where this package would have computed an event duration itself.
+
+    There is one rule and it has no exceptions: **an event's duration arrives in
+    ``width_sec`` with the ``width_def`` that names the rule which produced it,
+    and bugarach paints what it is given.** Deriving a duration here — from
+    onsets, from peaks, from anything — is answering a question that belongs to
+    the producer, in a layer that cannot see the record needed to answer it.
+    """
+
+
 def rise_durations(stream: Stream) -> list[np.ndarray]:
-    """Per-ROI rise intervals (peak locs - t50rise onset), the per_event
-    duration explore_sce feeds CICADA to tame long SLOW transients."""
-    return [np.asarray(pk, dtype=float) - np.asarray(on, dtype=float)
-            for pk, on in zip(stream.locs, stream.t50rise)]
+    """**Refuses.** Kept as a named landing site so the rule states itself.
+
+    This used to return ``locs - t50rise``, and it was wrong twice over.
+
+    Wrong in principle, which is the reason it is gone: **duration is the
+    exporter's, not ours.** Tony, 2026-08-29 — *"matlab decides duration.
+    bugarach python and webapp is not responsible for what the duration is
+    derived from."* The slow events in this preparation are not described in the
+    literature and destroy CICADA at full duration, so the MATLAB team truncates
+    them to ``peak − t50rise`` **on export**; that truncation is theirs, it
+    travels in ``width_sec`` under its own ``width_def``, and re-deriving it here
+    both duplicates a decision and silently overrides whatever the producer
+    actually sent. ADR-0002's 2026-08-28 addendum and FOUNDATIONS §7.
+
+    Wrong in fact, which is how the principle got noticed: on **folder** input —
+    the only input, since the store is closed — the field named ``locs`` holds
+    the ``t50rise``, so the subtraction returned identically zero for every event
+    in the corpus. Not NaN, not an error: a plausible array of the right shape
+    and dtype. 2,215 events, all zero, for however long nobody looked.
+
+    Use ``duration_field="width"``, which reads what the producer sent.
+    """
+    raise DurationIsNotOursToDerive(
+        "rise_durations() is refused: bugarach does not derive event durations. "
+        "The duration is whatever the producer put in width_sec, named by "
+        "width_def — pass duration_field=\"width\". This function computed "
+        "locs - t50rise, which duplicates a decision the MATLAB exporter has "
+        "already made and, on folder input, evaluates to zero for every event "
+        "because `locs` there holds the t50rise. See ADR-0002's 2026-08-28 "
+        "addendum and FOUNDATIONS §7.")
 
 
 def cicada_detect(
@@ -119,9 +156,15 @@ def cicada_detect(
     also the right anchor here: a single-cell event runs 10-60+ s from half-rise
     to peak, so scoring coincidence on onsets alone would call nearly any two
     events coordinated. sce_detect and loco_detect default to "t50rise" — the
-    three genuinely differ, and :mod:`bugarach.store` says why. active_duration_mode="per_event" reads per-event
-    durations from duration_field on each Stream ("width"), or "rise_dur"
-    (computed here as locs - t50rise, matching explore_sce's prep).
+    three genuinely differ, and :mod:`bugarach.store` says why.
+
+    active_duration_mode="per_event" reads per-event durations from
+    duration_field on each Stream — **"width", and in practice only "width"**.
+    The duration is the producer's: it arrives in ``width_sec`` under the
+    ``width_def`` naming the rule that made it, and this package paints what it
+    is given. ``duration_field="rise_dur"`` used to compute ``locs - t50rise``
+    here and now raises :class:`DurationIsNotOursToDerive`, which explains
+    itself.
     sce_percentile and active_duration_sec take a scalar, a sequence in stream
     order, or a name-keyed dict; left unset they resolve to the calibrated
     (FAST, SLOW) pair for a two-stream store and its FAST element otherwise —
@@ -184,7 +227,9 @@ def cicada_detect(
             else (stream.t50rise or stream.locs)
         if active_duration_mode == "per_event":
             if duration_field == "rise_dur":
-                dur = rise_durations(stream)
+                # Was: dur = rise_durations(stream). The mode survives; the
+                # derivation does not. See rise_durations' docstring.
+                rise_durations(stream)          # raises, and says why
             elif duration_field and hasattr(stream, duration_field):
                 dur = getattr(stream, duration_field)
             else:

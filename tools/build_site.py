@@ -230,13 +230,14 @@ Denis, Dard, Quiroli, Cossart &amp; Picardo (2020),
 <i>CICADA</i>, Zenodo <code>10.5281/zenodo.10041434</code>, and
 <i>Attractor dynamics of network UP states in the neocortex</i>,
 Nature 423:283–288.</p>
-<p><b>Two things to know before reading locust's numbers as CICADA's.</b> The port
+<p><b>Three things to know before reading locust's numbers as CICADA's.</b> The port
 <b>skips CICADA's per-cell transient-detection stage</b>, because it is fed events
 this project detected separately. And <b>locust is the only one of the six that
 consumes a duration as well as a timing</b> — the other five compute their own
 spans from onsets — so what it is told about how long an event lasted affects its
-calls, and that measurement arrives from the producer rather than being defined
-here. And the derivation chain has been
+calls, and <b>that measurement is the producer's and is never derived here</b>: it
+arrives per event, named by the rule that made it, and this code paints what it is
+given. And the derivation chain has been
 <b>checked only at its last link</b> — locust matches the MATLAB implementation it
 was ported from to 1e-9, and nobody here has checked that implementation against
 the Cossart original.
@@ -698,10 +699,14 @@ LEAD_FIGURE = """<figure class="lead">
   needs decoding for a different reason: <span class="key">locust</span> is this
   project's port of <a href="https://gitlab.com/cossartlab/cicada">CICADA</a>, the
   Cossart lab's published tool, brought in for this comparison. Running it in this
-  pipeline took two changes: it is fed the
-  events this project detected separately rather than running CICADA's own
-  transient-detection stage, and it counts a cell as active for the rise interval
-  rather than the whole transient. It carries a name of its own because of them —
+  pipeline changed what it is fed, twice. It gets the
+  events this project detected separately, rather than running CICADA's own
+  transient-detection stage; and it gets each event's duration from the
+  recording's producer, rather than the whole transient the original measures for
+  itself — on this preparation's slow events, duration overlap would otherwise
+  swamp the onset synchrony the detector is looking for. Both are changes of
+  input, not of algorithm: <b>the duration is the exporter's, and locust paints
+  what it is given</b>. It carries a name of its own because of them —
   <b>this lane's numbers are locust's, and are not CICADA's, in either
   direction</b>.
   In the lanes, <span class="key">&#10007;</span> marks a false alarm and
