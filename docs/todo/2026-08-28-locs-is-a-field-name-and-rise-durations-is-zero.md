@@ -1,9 +1,25 @@
 ---
-status: open
+status: done
 filed: 2026-08-28
+closed: 2026-08-29
 ---
 
 # `locs` is a field name, not a value, and `rise_durations()` is zero on every folder
+
+> **CLOSED 2026-08-29 — and the first half of what this file proposed is now
+> forbidden.** Item 1 below offered two ways out, *"use the peak or refuse"*.
+> Tony ruled, and only the second survives: *"matlab decides duration. bugarach
+> python and webapp is not responsible for what the duration is derived from."*
+> `rise_durations()` raises `DurationIsNotOursToDerive`; `peak - locs` — the
+> repair this file suggested — is blocked by **sapper SAP012** alongside the
+> subtraction it was meant to replace, because the rule is not *derive it
+> correctly*, it is **do not derive it**. An event's duration arrives in
+> `width_sec` under its `width_def` and the port paints what it is given.
+> Items 2 and 3 landed as written (`tests/test_rise_durations_on_a_folder.py`,
+> and the doc pass of 2026-08-29). Item 4 — `Stream.onset` / `Stream.peak_time`
+> resolving per input kind — is **not done and still worth doing**; it is the
+> only part of this file that is still live work. Read the rest as the record of
+> how the derivation was found, not as a plan.
 
 > **Replaces `2026-08-28-the-export-sends-a-peak-and-cicada-never-reads-it.md`,
 > filed and retracted the same day.** That file claimed `cicada_detect` anchors on

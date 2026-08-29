@@ -160,10 +160,13 @@ Three tiers, and the tier matters more than the name.
 carried in the module. The only one of the six whose *idea* has a settled external
 owner. It is also **not a drop-in**, and both reports say so: we feed our own
 upstream-detected events instead of running CICADA's transient detection, and we
-replace its active-duration model — the original paints each cell active for its
-detected transient *duration*, which over-detects catastrophically on SLOW
-transients (median ~4.6 s of duration-overlap swamps onset-synchrony), so we paint
-the brief rise interval (~2 s) instead. A regional-scope option was added; the
+feed it a per-event duration instead of letting it measure one. The original
+paints each cell active for the transient *duration* it detected itself, which
+over-detects catastrophically on SLOW transients here (median ~4.6 s of
+duration-overlap swamps onset-synchrony), so the brief rise interval (~2 s) is
+sent instead — **by the exporter, on export; not by this code, which paints what
+it is given and since 2026-08-29 refuses to compute a duration at all** (ADR-0002
+addendum, FOUNDATIONS §7, sapper SAP012). A regional-scope option was added; the
 original thresholds over the whole recording.
 
 ### Tier 2 — a published *measure*, with our detector on top
@@ -595,21 +598,42 @@ place, and it is a lineage claim, not an independence claim.
 > was never there. The recommendation below is the opposite of what stood here, and
 > the old text is kept in this note rather than deleted so the reversal is legible.
 
-**The 1e-9 does not reach CICADA.** `tools/matlab_ref/gen_ref_cicada.m` builds the
-parity fixture by running interface2's own `generate_sce_cicada`, so the number
-says bugarach computes what interface2 computed. Nothing in either repo compares
-either against the Cossart source — "faithful port" is an assertion in both and is
-tested in neither. The chain is validated only at its last link:
+**The 1e-9 measures this repo against interface2, not against CICADA.**
+`tools/matlab_ref/gen_ref_cicada.m` builds the parity fixture by running
+interface2's own `generate_sce_cicada`, so the number says bugarach computes what
+interface2 computed. **No output of either has ever been compared against CICADA's**
+— that comparison does not exist anywhere, and it is what "validated against the
+original" would have to mean.
 
-```
-Cossart CICADA ─── never validated ───▶ interface2 generate_sce_cicada ──1e-9──▶ locust
+What *does* exist, and this document said otherwise until 2026-08-29: interface2
+checked its transliteration against upstream `master` by **reading code**, function
+for function, on 2026-08-21 — `local_sce_threshold`↔`get_sce_threshold`,
+`local_slide_coact`↔`sum_activity`, `local_findpeaks`↔`find_peaks`, down to
+confirming the single-frame-null quirk is upstream's real behaviour
+(`coordination_method_provenance.md` §5, on their unmerged `coord-attribution`
+branch). That is a correspondence check on the **unmodified** transliteration. It is
+not a measurement, and it does not cover either documented deviation.
+
+```text
+Cossart CICADA ── read-for-correspondence, never run against ──▶ interface2 generate_sce_cicada
+                                                                            │
+                                                             1e-9, on every returned number
+                                                                            ▼
+                                                                         locust
 ```
 
-**And the first link is worse than unvalidated: interface2 parked it.**
-`generate_sce_cicada` was shelved in `f55643bf` for over-detecting on this
+It is also **already modified** — it is handed a per-event duration where the
+original measures the transient itself, for a stated and good reason, and the
+duration it is handed is **the exporter's** (FOUNDATIONS §7; the port paints what it
+is given). But a reader who sees "CICADA" in a figure legend assumes the published
+method.
+
+**And interface2 had parked that function before this port existed.**
+`generate_sce_cicada` was shelved on 2026-07-07 for over-detecting on this
 preparation's long SLOW transients — median ~4.6 s of duration-overlap swamping
-onset-synchrony. So the upstream end of the chain is a function its own authors
-stopped using, for a reason that bears directly on what locust measures.
+onset-synchrony — and bugarach's port landed a month later, on 2026-08-10. So the
+upstream end of the chain is a function its own authors had already stopped using,
+for a reason that bears directly on what locust measures.
 
 **There is no faithful mode to ship.** The port skips a whole stage by design —
 `generate_sce_cicada.m`: *"we already have events, so their per-cell
@@ -617,10 +641,11 @@ transient-detection step is skipped."* A mode that restores the active-duration
 model would still be missing that stage, so calling it "faithful" would put the
 old claim back under a new name.
 
-**So: keep the rise-interval model, and never report locust's numbers as CICADA's.**
-Its 214.8 probe firings — 180× the rate-local detectors — are a property of **our
-variant on this benchmark** and are not available as a finding about the published
-method. That is the weaker thing to have measured, and it is the true one. What
+**So: take the producer's exported duration as the duration — it is not this
+project's to choose (FOUNDATIONS §7, ADR-0002 addendum) — and never report locust's
+numbers as CICADA's.** Its 214.8 probe firings — 86× LoCo's 2.5 and 172×
+CoactDetect's 1.25 — are a property of **our variant on this benchmark** and are not
+available as a finding about the published method. That is the weaker thing to have measured, and it is the true one. What
 would actually license the stronger claim is running CICADA itself on these
 recordings, which is
 [its own open item](todo/2026-08-17-run-a-literature-method-on-our-recordings.md)

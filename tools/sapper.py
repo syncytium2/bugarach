@@ -267,6 +267,41 @@ RULES = [
         fixture_bad="mk = lambda seed, _t=tuple(tr): rec(_t[seed " + "% len(_t)])",
         fixture_good="mk, n_fit, _ = fold_maker(rec, tr_seeds)",
     ),
+    Rule(
+        # SAP011 is spoken for by an unbuilt proposal
+        # (docs/sapper_feedback/2026-08-28-a-negative-claim-about-code-went-stale-
+        # in-a-contract.md), so this takes the next free id rather than the next
+        # number. Two sessions reserved SAP010 on one day (#389); not again.
+        id="SAP012", level="BLOCK",
+        # Any arithmetic pairing two of the three event-time fields is a duration
+        # being derived. `locs - t50rise` is the one that was actually written;
+        # `peak - locs` is the plausible repair, and it is equally forbidden,
+        # which is why the rule names the operation rather than the operands.
+        # The comma catches the zip-the-two-fields form the original used to
+        # spread the subtraction over two lines and out of a per-line grep.
+        pattern=r"\.(locs|peak|t50rise)\b[^\n]*[-,][^\n]*\.(locs|peak|t50rise)\b",
+        include=["src/bugarach/**", "tools/**"],
+        # The MATLAB reference generator is the PRODUCER side by definition: it
+        # reproduces explore_sce's prep to make the parity fixture, which is the
+        # one context where computing this is the correct thing to do.
+        exclude=["tools/matlab_ref/**"],
+        message="BUGARACH DOES NOT DERIVE EVENT DURATIONS. Tony, 2026-08-29: "
+                "\"matlab decides duration. bugarach python and webapp is not "
+                "responsible for what the duration is derived from.\" An event's "
+                "duration arrives in `width_sec` with the `width_def` naming the "
+                "rule that made it, and this package paints what it is given. "
+                "The slow events here are not described in the literature and "
+                "destroy CICADA at full duration, so the MATLAB team truncates "
+                "them to peak - t50rise ON EXPORT; re-deriving it here duplicates "
+                "a decision already made and overrides whatever the producer "
+                "actually sent. It also silently returned ZERO for all 2,215 "
+                "events on folder input, because `locs` in a folder holds the "
+                "t50rise — right shape, right dtype, no error, wrong number. Read "
+                "`stream.width` (guarded by `stream.has_width`). ADR-0002's "
+                "2026-08-28 addendum; FOUNDATIONS section 7.",
+        fixture_bad="dur = [pk - on for pk, on in zip(st.locs, st." + "t50rise)]",
+        fixture_good="dur = st.width if st.has_width else None",
+    ),
 ]
 
 

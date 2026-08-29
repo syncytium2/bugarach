@@ -24,6 +24,7 @@ extents) is ported in peaks.py.
 from bugarach.detectors.cicada import (
     CicadaDetection,
     CicadaStream,
+    DurationIsNotOursToDerive,
     cicada_detect,
     rise_durations,
 )
@@ -70,6 +71,7 @@ __all__ = [
     "adaptive_profile",
     "binned_synchrony",
     "cicada_detect",
+    "DurationIsNotOursToDerive",
     "coact_detect",
     "event_rate",
     "loco_detect",

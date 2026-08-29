@@ -24,11 +24,16 @@ story, a citation, and no further obligation. The sixth is different in kind:
 
 - It is a **port of a specific, living lab's named software** — the Cossart lab's
   CICADA, MIT-licensed, whose copyright notice this repo already carries.
-- It is a **modified** port, in two ways that change what it detects. It is fed
-  the events the folder already contains rather than running CICADA's own
-  transient detection, and it paints each cell active for the **rise interval**
-  where the original paints the whole transient duration — because on slow
-  transients a median ~4.6 s of duration-overlap swamps onset synchrony.
+- It is a **modified** port, in two ways that change what it detects — and both
+  are changes to what it is **fed**, not to what it computes. It is fed the events
+  the folder already contains rather than running CICADA's own transient
+  detection, and it is fed a per-event duration rather than measuring the whole
+  transient the way the original does: on slow transients a median ~4.6 s of
+  duration-overlap swamps onset synchrony, so the exporter sends the **rise
+  interval** instead. *(That the truncation is the exporter's, and not this
+  code's, is the 2026-08-28 addendum below — this bullet was read the other way
+  twice before it said so. Since 2026-08-29 the code cannot do it either:
+  `rise_durations()` refuses and sapper SAP012 blocks the arithmetic.)*
 - The name was **on a public website**, in a lane label, a scoreboard column, a
   help panel and every figure legend.
 

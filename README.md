@@ -673,8 +673,12 @@ CICADA. Neither is a claim of independence.
   Analysis)*, v1.0.3. Zenodo. doi:10.5281/zenodo.10041434. Source:
   [`gitlab.com/cossartlab/cicada`](https://gitlab.com/cossartlab/cicada); the port
   here is of the older `sce_stats_utils`. **It is named apart from CICADA because it
-  is modified** — fed our own detected events, and painting the rise interval where
-  the original paints the transient duration.
+  is modified** — and both modifications are changes to what it is *fed*, not to what
+  it computes: it gets our own detected events instead of running CICADA's transient
+  detection, and it gets each event's duration from the producer instead of measuring
+  the whole transient itself. **Duration is the exporter's, never bugarach's**: it
+  arrives in `width_sec` under the `width_def` naming the rule that made it, and the
+  port paints what it is given (ADR-0002 addendum, FOUNDATIONS §7).
 - **binned SCE** — the rule's root is Cossart R, Aronov D, Yuste R (2003). *Attractor
   dynamics of network UP states in the neocortex*. Nature 423(6937):283–288.
   doi:10.1038/nature01614, whose Methods state it in full; the modern circular-shift

@@ -28,6 +28,32 @@ Everything is CSV, UTF-8, newline-only endings, one header row. Times are
 this project's MATLAB exporter, another lab's Python, a spreadsheet exported by
 hand.
 
+> ⚠ **Revision 9** (2026-08-29). **The duration you export is the duration. There is no
+> longer any way to ask bugarach for a different one.**
+>
+> Nothing you send changes, and no folder that conformed stops conforming. What changed
+> is on our side, and it closes a question this contract had left half-answered.
+>
+> `width_sec` was always described as yours — revision 5 said bugarach does not define a
+> width and will not infer one. But the CICADA port shipped a second duration source
+> alongside it, `rise_dur`, which recomputed `locs - t50rise` for itself. That is your
+> truncation, re-derived a layer too late by code that cannot see why you made it, and it
+> silently **overrode whatever you had actually sent**. It is gone: asking for it now
+> raises, and sapper rule SAP012 blocks the arithmetic anywhere in the package.
+>
+> It was also wrong in a way worth telling you about, because it says what kind of error
+> this contract is built to catch. On folder input the field named `locs` holds the
+> `t50rise` — the legacy `findpeaks` name, the new value — so the subtraction returned
+> **zero for every event**, across all 2,215 of them in the current corpus. Not an error,
+> not a NaN: an array of the right length and dtype. A plausible answer instead of an
+> error, which is this document's own failure class, arriving from the consumer side for
+> once.
+>
+> **So: whatever is in `width_sec`, under the `width_def` naming your rule for it, is what
+> a cell is painted active for.** Nothing here re-derives it, corrects it, second-guesses
+> it, or has an opinion about it. Tony, 2026-08-29: *"matlab decides duration. bugarach
+> python and webapp is not responsible for what the duration is derived from."*
+
 > ⚠ **Revision 8** (2026-08-28). **What the width is checked against, which reader needs
 > what, and the rule that can now reject a folder.**
 >
@@ -97,13 +123,14 @@ hand.
 > conforms, and every detector runs in `bugarach detect`; in the browser viewer, locust
 > needs a peak, per the bullet above. What no reader can do without a width is score
 > per-event durations. Asking the Python detector for that mode anyway is **not refused**
-> where the caller names a duration field at all — `width` or `rise_dur`, both of which
-> collapse identically: every event becomes a **one-frame**
+> where the caller names `width`: every event becomes a **one-frame**
 > run, and the count that comes back is not comparable to the fixed-duration one — it can
 > be far lower, or at a looser percentile far higher, because the surrogate threshold is
 > computed from the same collapsed raster. That is this contract's own failure class, a
 > plausible answer instead of an error, and it is why `load_folder(require_width=True)`
 > exists for a caller who cannot proceed without one.
+> *(This paragraph used to offer a second duration field, `rise_dur`. Revision 9
+> removed it.)*
 >
 > **What has not changed.** bugarach still does not define width and still will not infer
 > it. The rule is yours, named in `width_def`, and carried without being interpreted. Its

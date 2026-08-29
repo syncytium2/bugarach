@@ -1205,11 +1205,15 @@
         <a href="https://doi.org/10.5281/zenodo.10041434">doi:10.5281/zenodo.10041434</a>,
         MIT-licensed, and described in Dard et al., <i>eLife</i> 11:e78116 (2022).
         This implementation changes two things, so it carries its own name rather
-        than theirs: it is fed the events your folder already contains instead of
-        running CICADA's own transient detection, and it paints each cell active
-        for the <b>rise interval</b> where the original paints the whole transient
-        duration — which on slow transients would otherwise swamp onset synchrony
-        with duration overlap. Same idea, different detector; cite CICADA for the
+        than theirs — and both are changes to what it is <b>fed</b>, not to what it
+        computes: it gets the events your folder already contains instead of
+        running CICADA's own transient detection, and it gets each event's
+        <b>duration from your folder</b> instead of measuring the whole transient
+        the way the original does — on slow transients, duration overlap would
+        otherwise swamp the onset synchrony it is looking for. <b>The duration is
+        yours, not ours</b>: whatever you put in <code>width_sec</code>, under the
+        <code>width_def</code> that names your rule for it, is what each cell is
+        painted active for. Same idea, different detector; cite CICADA for the
         method.
       </div>
       <div class="fine" id="dFineSync" hidden>
@@ -1713,8 +1717,10 @@ async function loadRecording(rec) {
          validation of 2026-08-20 checked all 84 recordings and found no
          `peak_sec` before its own `time_sec`.
        * `time_sec + width_sec`, but ONLY where `width_def` names a width that
-         actually reaches the peak. That sum IS `locs - t50rise`, the quantity
-         `cicada.py` calls `rise_dur`. Under a half-prominence or
+         actually reaches the peak. Note what this is and is not: it RECOVERS A
+         PEAK from the duration the producer sent, which is reading their answer.
+         It does not derive a duration — nothing here does, and `cicada.py` refuses
+         to (`DurationIsNotOursToDerive`). Under a half-prominence or
          above-threshold width it is not a peak and never was, and adding them
          anyway produces exactly what the spec warns about: a plausible wrong
          answer rather than an error.
@@ -3598,9 +3604,13 @@ function coactDetect(trains, range, opts) {
    threshold sampled, episodes exact once the threshold is fixed. */
 /* ---------- locust (key `cicada`) ---------------------------------------------
    SHOWN TO USERS AS "locust". A port of `bugarach.detectors.cicada.cicada_detect`,
-   which is itself a port of the Cossart lab's CICADA — and a MODIFIED one: it is
-   fed our own detected events, and paints each cell active for the rise interval
-   where the original paints the whole transient duration. Putting another lab's
+   which is itself a port of the Cossart lab's CICADA — and a MODIFIED one, in both
+   cases by what it is FED rather than what it computes: our own detected events
+   instead of CICADA's transient detection, and a per-event duration from the
+   producer instead of the whole transient the original measures for itself. THE
+   DURATION IS NEVER DERIVED HERE — it arrives in `width_sec` under the `width_def`
+   naming the rule that made it, and this code paints what it is given
+   (FOUNDATIONS section 7). Putting another lab's
    tool name on a modified port, in a public UI, was the one attribution item Tony
    did not wave off (2026-08-24); the name is his.
 
@@ -3621,13 +3631,14 @@ function coactDetect(trains, range, opts) {
 
    WHICH MAKES THE FOLDER THE PROBLEM, not the algorithm. The contract sends
    `time_sec` as the half-rise. The peak is either sent as `peak_sec` or recovered
-   as `time_sec + width_sec` where `width_def` is `t50rise_to_peak` — that width is
-   `locs - t50rise`, the same quantity `cicada.py` computes as `rise_dur`. Where
+   as `time_sec + width_sec` where `width_def` is `t50rise_to_peak` — reading the
+   producer's own duration, which is the only place a duration ever comes from
+   here; `cicada.py` used to recompute this and now refuses. Where
    neither is available this detector does not run, and says why. It does not fall
    back to the half-rise, which would produce a full page of coordinated events
    from a stream where the onsets merely arrive close together.
 
-   The raster marks a cell active FROM ITS PEAK forward for the transient
+   The raster marks a cell active FROM ITS PEAK forward for the producer's
    duration, so an event contributes its own length rather than a single frame.
    Everything after that is the sliding coactivity count, a surrogate threshold
    from circularly rolled cells, and peak-picking with a minimum separation. */
