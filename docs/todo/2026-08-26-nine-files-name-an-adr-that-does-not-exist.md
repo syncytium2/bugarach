@@ -1,9 +1,25 @@
 ---
-status: waiting-on-tony
+status: done
 filed: 2026-08-26
+closed: 2026-08-30
 ---
 
 # Nine files name ADR-0003, and PR #298 was closed without merging
+
+> **ANSWERED 2026-08-30: it was not deliberate, and the ADR exists now.** Tony asked for
+> the branches with no open PR to be merged; `parity-was-the-inheritance` was one, and it
+> landed in **#406**. `docs/adr/0003-parity-was-the-inheritance-not-the-contract.md` is on
+> `main`, so **all nine citations resolve**, and the ADR index's reserved-not-skipped note
+> is retired in place rather than deleted — why a number sat empty for four days is worth
+> more than a tidy table.
+>
+> **What this file got right, and it is the reusable part:** it refused to fill `0003`
+> with anything else while the question was open. Renumbering would have broken nine
+> citations to close one gap, and the gap was much the cheaper thing to carry. **Holding a
+> number is a real option**, and this is the precedent for it.
+>
+> The branch was four commits and 228 behind when it merged; two conflicts, both age
+> rather than disagreement.
 
 waiting: Did you mean to close PR #298, or did a session tidy it away? If you meant it, nine ADR-0003 citations need rehoming; if not, reopening fixes all nine at once.
 
