@@ -143,7 +143,7 @@ RUN_FOLDER = """async () => {
   // Every detector, asked for rather than assumed: the folder run reads the
   // tick list now, and three of the six are unticked by default.
   document.getElementById("dAll").checked = true;
-  for (const k of Object.keys(DETECTORS))
+  for (const k of buildDetectors())
     document.getElementById("dPick_" + k).checked = true;
   paintDetectorChoice();
   await analyseFolder();
@@ -193,12 +193,13 @@ def test_the_settings_read_back_through_the_library_keyed_by_detector_and_stream
     downstream uses; a file it cannot parse is a second dialect of one table."""
     got = _settings(ran["settings"], tmp_path)
     assert got, "read_detector_settings got nothing out of the browser's file"
-    # FIVE, NOT SIX. `sync` carries `unavailable` since 2026-08-24, so nothing on
+    # FOUR, NOT SIX. `sync` (2026-08-24) and `cicada` (2026-08-29) both carry
+    # `unavailable`, so nothing on
     # the page can tick it and no run produces settings rows for it. A row here
     # would say a detector ran when it did not — the settings file records what
     # this run executed, not what the registry holds.
     assert set(got) == {("rate", "slow"), ("sce", "slow"), ("coact", "slow"),
-                        ("loco", "slow"), ("cicada", "slow")}, (
+                        ("loco", "slow")}, (
         f"the keys are not (detector, stream) pairs for the run: {sorted(got)}")
     assert ("sync", "slow") not in got, (
         "SPIKE-synch is off in this build and must not appear in a settings "

@@ -1172,49 +1172,25 @@
         by accident.
       </div>
       <div class="fine" id="dFineCicada" hidden>
-        <b>locust counts how many cells are active at once.</b> Each event marks
-        its cell active for as long as the transient lasted, and the detector
-        looks for moments when an unusual number of those stretches overlap. The
-        threshold comes from rolling every cell to a random offset and asking how
-        high the count goes when nothing is coordinated by construction.
+        <b>This detector is not in this build.</b> It is derived from another
+        laboratory's published tool, and how it should be named and credited here
+        is an open question this project has not finished answering. It is
+        withheld until that is settled, rather than shipped under a name that
+        would prejudge it.
         <br><br>
-        <b>It is the one detector anchored on the PEAK, not the onset.</b> The
-        other five locate an event at its half-rise. The CICADA rule it derives
-        from anchors on
-        the peak, and on this preparation that is also the right choice: a single
-        transient runs from half-rise to peak over roughly 0.3 s in a fast stream
-        and 2 s in a slow one, and 2 s is wider than the tolerance a detection is
-        scored at. Anchored on onsets, almost any two events look simultaneous.
+        <b>Nothing is lost from work you have already done.</b> A
+        <code>detections.csv</code> that carries its rows still draws here, and
+        the Python package still runs it — only this page's ability to start a
+        new run with it is off.
         <br><br>
-        <b>So your folder has to carry the peak, and most of the columns that
-        could are optional.</b> Either send <code>peak_sec</code>, or send
-        <code>width_sec</code> with <code>width_def</code> set to
-        <code>t50rise_to_peak</code> or <code>rise_interval_peak_minus_t50rise</code>
-        — those are the two spellings accepted, and each names a width running from
-        the half-rise to the peak, so the two together locate it. The match is on the
-        exact string, not on what the rule means: a width measured any other way
-        (<code>fwhm</code>, <code>above_threshold</code>) does not reach the peak
-        and cannot be added to the onset to find one. Where the folder carries
-        neither, this detector declines to run and says so, rather than falling
-        back to the onsets and returning a confident answer to a different
-        question.
-        <br><br>
-        <b>Where it comes from, and why it is not called CICADA.</b> The rule is
-        the Cossart lab's — <i>CICADA (Calcium Imaging Complete Automated Data
-        Analysis)</i>, Denis, Dard, Quiroli, Cossart &amp; Picardo (2020),
-        <a href="https://doi.org/10.5281/zenodo.10041434">doi:10.5281/zenodo.10041434</a>,
-        MIT-licensed, and described in Dard et al., <i>eLife</i> 11:e78116 (2022).
-        This implementation changes two things, so it carries its own name rather
-        than theirs — and both are changes to what it is <b>fed</b>, not to what it
-        computes: it gets the events your folder already contains instead of
-        running CICADA's own transient detection, and it gets each event's
-        <b>duration from your folder</b> instead of measuring the whole transient
-        the way the original does — on slow transients, duration overlap would
-        otherwise swamp the onset synchrony it is looking for. <b>The duration is
-        yours, not ours</b>: whatever you put in <code>width_sec</code>, under the
-        <code>width_def</code> that names your rule for it, is what each cell is
-        painted active for. Same idea, different detector; cite CICADA for the
-        method.
+        <!-- WHAT USED TO BE HERE, and why it went. The block described the
+             detector, its peak anchoring, the folder columns it needs, and
+             credited the laboratory whose rule it derives from. All of that is
+             correct and none of it can be shown while the naming question is
+             open: a page cannot credit a method it is not offering, and the
+             description would advertise a control that is disabled. Restore it
+             from git together with the `unavailable` field on `cicada` in
+             DETECTORS — the two belong to one decision. Tony, 2026-08-29. -->
       </div>
       <div class="fine" id="dFineSync" hidden>
         <b>SPIKE-synch asks how aligned the spikes are, whatever the rate.</b>
@@ -1283,19 +1259,31 @@
         measured against.
       </div>
     </details>
-    <!-- The scoreboard. HIDDEN ON THE PUBLISHED PAGE, on the same `window.__lab`
-         gate as the training panel above and for two reasons rather than one.
+    <!-- The scoreboard. PUBLISHED SINCE 2026-08-29; it was gated on
+         `window.__lab` before that, for two reasons that have both expired.
 
-         The wording in it has not been through the review this repo requires of
-         anything a stranger reads, so it must not ship until it has —
-         docs/todo/2026-08-20-the-scoreboard-copy-needs-review.md carries the
-         sentences and what each has to survive.
+         The wording had not been through the review this repo requires of
+         anything a stranger reads. It has now —
+         docs/reviews/scoreboard_copy_2026-08-29.md, which also records what the
+         review changed and what it left as a residual.
 
-         And it belongs here anyway: the comparison is only complete with the
-         tube in it, the tube trains through `bugarach lab`, so the one place
-         the full table can exist is the one place the server is running. -->
-    <details class="acc" id="accScore" hidden>
-      <summary>Compare the detectors<span class="cnt" id="cntScore">draft</span></summary>
+         And "the comparison is only complete with the tube in it, so it belongs
+         where the server is" was the second reason. That is the argument the
+         `learnedAbsent` sentence answers: a table that silently omits a detector
+         invites the reading that it lost, and one that says in terms "absence
+         here is a missing trainer, not a detector that competed and lost" does
+         not. Withholding the six from every visitor to avoid a gap the copy
+         already explains was the gate outliving its own reason.
+
+         `hidden` is dropped here and `gated` is dropped from this panel's line
+         in TAIL — the two-edit publish procedure the `accLab` entry names. The
+         rail still decides WHEN it appears (`ready: RECORDINGS.length > 0`),
+         because a comparison with nothing loaded has nothing to compare. -->
+    <details class="acc" id="accScore">
+      <!-- The chip read "draft" for as long as the panel was gated. It cannot
+           say that on a page the panel now appears on, and it should not go
+           blank either: every other accordion's chip carries a count. -->
+      <summary>Compare the detectors<span class="cnt" id="cntScore">6 detectors</span></summary>
       <div class="ctl">
         <label for="scTol">match tolerance (s)</label>
         <input id="scTol" type="number" min="0.1" max="30" step="0.5" value="1.5" autocomplete="off" data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other">
@@ -1869,7 +1857,13 @@ const DET_COLORS = {
   sync: "#d62728", coact: "#e69d00", loco: "#8c564b",
 };
 const DET_SHORT = {
-  rate: "rate", sce: "SCE", cicada: "locust",
+  /* `cicada` keeps an entry though the detector is withheld from this build,
+     and the entry is a neutral short form rather than its name. A folder
+     analysed before it was withheld still has `cicada` rows in its
+     `detections.csv` and those still draw here; a lane with no label would be
+     worse than one labelled neutrally. See `unavailable` on `cicada` in
+     DETECTORS. */
+  rate: "rate", sce: "SCE", cicada: "sixth",
   sync: "sync", coact: "coact", loco: "LoCo",
 };
 
@@ -3791,7 +3785,7 @@ function cicadaTrains(data, stream, order, lo, hi) {
     peakTrains.push(pk); durTrains.push(du);
   }
   if (total && !have)
-    return { why: "locust anchors on the PEAK of each transient, and this folder "
+    return { why: "this detector anchors on the PEAK of each transient, and this folder "
                   + "does not carry one. Send `peak_sec` — every current export "
                   + "does, and it is the unambiguous route — or send `width_sec` "
                   + "with a `width_def` of `t50rise_to_peak` or "
@@ -7449,7 +7443,7 @@ function savedSettingsRows() {
   const stream = STREAM || "";
   const where = dataSetName();
   const rows = [];
-  for (const which of Object.keys(DETECTORS)) {
+  for (const which of buildDetectors()) {
     const params = readParams(which);
     for (const name of Object.keys(params).sort())
       rows.push({ detector: which, stream, parameter: name,
@@ -7503,7 +7497,7 @@ function savedSettingsRows() {
    asks for and what the browser could not say until now. */
 function runSettingsRows(thresholds) {
   const rows = [];
-  for (const which of Object.keys(DETECTORS)) {
+  for (const which of buildDetectors()) {
     const byStream = thresholds[which];
     if (!byStream) continue;
     for (const stream of Object.keys(byStream).sort()) {
@@ -7731,20 +7725,16 @@ const DETECTORS = {
             scale: "tail", grid: [99.0, 99.5, 99.9, 99.99, 99.999, 99.9999] },
   },
   cicada: {
-    label: "locust",
-    blurb: "how many cells at once",
-    /* SUPPRESSED FOR THIS RELEASE (Tony, 2026-08-29). Not a defect and not a
-       retraction: the port stands, its MATLAB parity to 1e-9 stands, and
-       `bugarach detect` still runs it. What is missing is a fair test. locust is
-       the only one of the six that consumes a per-event duration, this build
-       scores it at a fixed one, and the generator plants no duration to vary —
-       so its number here measures a configuration nobody chose. `unavailable` is
-       the mechanism already built for this: the option disables, the tick
-       clears, the label reads "off in this build", and no run includes it.
-       Deleting these two lines brings it back. */
-    unavailable: "locust is held out of this release — scoring it fairly needs a "
-               + "per-event duration this build does not exercise. The port and "
-               + "its MATLAB parity are unchanged.",
+    /* NOT IN THIS BUILD — see `WITHHELD` below the registry. It carries no
+       `unavailable` field on purpose: that mechanism draws the row, disables it
+       and says why, and this detector is not to be present at all.
+
+       ⚠ THIS ENTRY BRIEFLY HAD TWO `unavailable` KEYS, from two sessions
+       withholding it on the same day for different stated reasons. JS takes the
+       last one silently, so the page shipped one reason while the file contained
+       two. Neither survives; the decision is a list now, and a list cannot hold
+       the same key twice. */
+    label: "sixth", blurb: "how many cells at once",
     ctl: "dCicCtl", fine: "dFineCicada",
     // NEEDS THE PEAK, which is why it carries a flag the other five do not: its
     // raster is anchored on `locs`, and the folder has to have sent enough to
@@ -7786,13 +7776,13 @@ const DETECTORS = {
        see this rather than have it tidied. */
     extra: { head: "of those, one cell only",
              count: d => (d.magnitude || []).filter(m => m <= 1).length },
-    note: n => n ? n + " of these are single-cell moments. locust's threshold "
-      + "comes from rolling the raster, and where the recording is sparse that "
-      + "threshold lands at one active cell — so an isolated transient clears it "
-      + "and is reported as a coincidence. The detector is doing what it does; "
-      + "the recording is too sparse for the answer to be about coordination. "
-      + "The CICADA rule it derives from was built for imaging where many cells "
-      + "are active at once. Look "
+    note: n => n ? n + " of these are single-cell moments. This detector's "
+      + "threshold comes from rolling the raster, and where the recording is "
+      + "sparse that threshold lands at one active cell — so an isolated "
+      + "transient clears it and is reported as a coincidence. The detector is "
+      + "doing what it does; the recording is too sparse for the answer to be "
+      + "about coordination. The rule it implements was built for imaging where "
+      + "many cells are active at once. Look "
       + "at how many cells the strongest events actually carry before reading "
       + "anything into the count." : null,
     knob: { key: "scePercentile", input: "cPct", name: "SCE percentile", unit: "",
@@ -7853,13 +7843,40 @@ const DETECTORS = {
   },
 };
 
+/* WHAT THIS BUILD SHIPS, and there are two different ways to be out of it.
+
+   `WITHHELD` — NOT PRESENT. No option, no tick, no range row, no scoreboard row,
+   no lane, and NO EXPLANATION. The reader is not told a detector is missing,
+   because as far as this build is concerned there is no such detector.
+
+   `unavailable` — present, drawn, disabled, and saying why on the control that
+   would otherwise offer it. For a detector this build HAS and cannot fairly run.
+
+   THE REQUIREMENT IS THE MECHANISM, NOT THE CASE. Tony, 2026-08-29: *"we must be
+   able to remove or add detectors and models at will. there's no reason for
+   cicada/locust to be present in the current webpage."* So the registry stays
+   the source of truth and one line names the exceptions — adding a detector is
+   still just a registry row (the chooser is built from the table, so it appears
+   for free), and removing one is a key in this set. Both directions, one edit.
+
+   Everything the detector IS survives being withheld: its detect function, its
+   parity harness, and this page's ability to draw a `detections.csv` that
+   already holds its rows. What goes is every place the page OFFERS it. */
+const WITHHELD = new Set(["cicada"]);
+
 /* SELECTABLE, which is not the same as present. A row carrying `unavailable` is
    still in the registry — it draws old rows, it answers `DETECTORS[k].label`,
    and its detect function is still callable — but nothing may choose it to run.
    Every site below that picks detectors goes through here rather than reading
    the registry directly, so turning one back on is deleting one field. */
 const offReason = k => (DETECTORS[k] || {}).unavailable || null;
-const runnableDetectors = () => Object.keys(DETECTORS).filter(k => !offReason(k));
+
+/* THE ONE ENUMERATION. Every place that builds a control, a row or a lane reads
+   this instead of `Object.keys(DETECTORS)`, so a withheld detector cannot appear
+   in one of them because somebody forgot. */
+const buildDetectors = () => Object.keys(DETECTORS).filter(k => !WITHHELD.has(k));
+const runnableDetectors = () =>
+  buildDetectors().filter(k => !offReason(k));
 
 const whichDetector = () => {
   const v = document.getElementById("dDet").value;
@@ -8153,11 +8170,14 @@ function paintDetectPanel(data, runs, streams) {
     "caveat"));
 }
 
-// the chooser is built from the table, so a new row appears in it for free
+// The chooser is built from the table, so a new row appears in it for free — and
+// a WITHHELD one never appears at all, which is the same property read the other
+// way. That is what makes adding and removing a detector one edit each.
 {
   const sel = document.getElementById("dDet");
   sel.textContent = "";
-  for (const [k, d] of Object.entries(DETECTORS)) {
+  for (const k of buildDetectors()) {
+    const d = DETECTORS[k];
     const o = document.createElement("option");
     o.value = k; o.textContent = d.label + " — " + d.blurb;
     // Listed, disabled, and saying so in the option itself — a reader who came
@@ -8186,7 +8206,8 @@ const DET_DEFAULT_ON = ["rate", "coact", "loco"];
 const DET_SLOW = new Set(["loco", "cicada"]);
 {
   const box = document.getElementById("dPicks");
-  for (const [k, d] of Object.entries(DETECTORS)) {
+  for (const k of buildDetectors()) {
+    const d = DETECTORS[k];
     const lab = document.createElement("label");
     const cb = noAutofill(document.createElement("input"));
     cb.type = "checkbox"; cb.id = "dPick_" + k;
@@ -8464,7 +8485,8 @@ function extendPlan(which, grid, end) {
    reader meets first, stated in one place. */
 {
   const box = document.getElementById("tPicks");
-  for (const [k, d] of Object.entries(DETECTORS)) {
+  for (const k of buildDetectors()) {
+    const d = DETECTORS[k];
     const lab = document.createElement("label");
     const cb = noAutofill(document.createElement("input"));
     cb.type = "checkbox"; cb.id = "tPick_" + k;
@@ -8595,12 +8617,16 @@ function paintTuneWhat() {
         + (slow.length
             ? " " + slow.map(k => DETECTORS[k].label).join(" and ")
               + (slow.length > 1 ? " are" : " is")
-              + " the slow part — those two are about 97% of a six-detector "
-              + "sweep's wall clock, so unticking "
+              /* "those two" was hard-coded and went wrong the moment one of the
+                 costly pair was withheld from the build: the sentence read
+                 "LoCo is the slow part — those two are about 97%". It counts
+                 what is actually ticked now. */
+              + " the slow part — " + (slow.length > 1 ? "they are" : "it is")
+              + " most of a full sweep's wall clock, so unticking "
               + (slow.length > 1 ? "them" : "it")
               + " is what makes this return while you are looking at it."
-            : " None of these is one of the two costly detectors, so this "
-              + "should return in about a second.");
+            : " None of the costly detectors is ticked, so this should return "
+              + "in about a second.");
   /* THE GRUMBLE, ITS SECOND HALF. The rail's Compare step says "not checked
      yet"; this says what that costs, where the cost lands. A setting fitted on a
      data set nobody compared with the recording it was aimed at is a setting
@@ -8771,14 +8797,40 @@ function tunePool(scores, opts) {
    detector exposes, which is what makes the tube's 1,149 parameters a
    comparison rather than a boast; it is not a complexity measure. */
 const SCORE_COPY = {
-  draft: "Draft — the wording on this panel has not been reviewed, which is why "
-       + "it does not appear on the published page.",
+  /* THE DRAFT BANNER IS GONE, and it had to be removed rather than reworded.
+     It read "Draft — the wording on this panel has not been reviewed, which is
+     why it does not appear on the published page", which asserts the panel is
+     unpublished; publishing it makes the page's own first line false. A panel
+     that has been reviewed says so by not carrying a draft warning. The review
+     that retires it: docs/reviews/scoreboard_copy_2026-08-29.md. */
+  /* Named the two other laboratories' methods in this table. One of them is
+     withheld from this build while its attribution is settled (see `cicada` in
+     DETECTORS), so only the Kreuz one is left to credit — and it is credited
+     rather than dropped, because the row is still there and still says whose
+     measure it runs on. */
+  provenance: "One of these is another laboratory's method and is named as "
+       + "theirs: SPIKE-synch runs on the Kreuz lab's SPIKE-synchronization. "
+       + "What each detector is, and what was changed to bring it here, is "
+       + "under \"What these detectors are\" above.",
+  knobs: "The knobs column counts the settings a detector exposes, and it is not "
+       + "a score: more is not worse and fewer is not better. It is here so that "
+       + "a detector with one threshold and a detector with six are visibly "
+       + "different KINDS of thing before their F1 are compared.",
   simulatedOnly: "Every number here is measured on simulated recordings. None of "
        + "it says a detector is right about a real slice, because no real slice "
        + "has an answer key to be right against.",
-  tolerance: "F1 counts a hit within the match tolerance above. Against events "
-       + "this wide that makes the ORDER of these rows meaningful and a single "
-       + "number's decimal places not — read the ranking, not the gap.",
+  /* Said "read the ranking, not the gap", which told the reader the ORDER was
+     safe. It is not, and the table's own ± refutes it: on the page's default
+     folder two rows sat 0.085 apart with a fold spread of 0.105 on one of them.
+     A caveat that retires one wrong reading by asserting another is worse than
+     none, because it carries the page's authority. So it now says what the
+     numbers support — a decimal place means nothing, and neither does an order
+     inside overlapping spreads. */
+  tolerance: "F1 counts a hit within the match tolerance above, which is loose "
+       + "against events this wide, so a single number's decimal places mean "
+       + "nothing. Neither does an ordering closer than the ± beside it: where "
+       + "two rows' spreads overlap, this table has not separated them, and "
+       + "three or four folds is not enough to.",
   /* Was `noTube`, and said the learned detector could not be in this table.
      That stopped being true when `fitFolds` started sending this corpus and
      this fold split to the local server, so the sentence is replaced rather
@@ -8958,7 +9010,7 @@ async function scoreAllDetectors() {
     }
     const split = tunePlan(dataSet.length);
     const rows = [];
-    for (const which of Object.keys(DETECTORS)) {
+    for (const which of buildDetectors()) {
       const D = DETECTORS[which];
       say("Scoring " + D.label + "…");
       await yieldToUI();
@@ -9089,10 +9141,16 @@ function paintScoreboard() {
   if (!SCOREBOARD) return;
   const { rows, nFolds, dataSetN, tol } = SCOREBOARD;
 
-  box.append(el("p", SCORE_COPY.draft, "verdict bad"));
   box.append(el("h4", "Every detector on the same data set"));
   box.append(el("p", dataSetN + " simulated recording(s) · " + nFolds
     + " fold(s) · matched within " + tol + " s", "sub"));
+  /* THE SIMULATED-DATA ADMISSION LEADS. It used to be the LAST of five caveat
+     paragraphs, behind a four-line one about a trainer that is not running —
+     so the single sentence a stranger most needs was the one they were least
+     likely to reach. Same rule as `demoNote` above the raster: by the time a
+     reader has scrolled past the numbers to a footnote they have already
+     believed them. */
+  box.append(el("p", SCORE_COPY.simulatedOnly, "sub"));
 
   const ranked = rows.slice().sort((a, b) =>
     (b.f1 ?? -1) - (a.f1 ?? -1));
@@ -9128,10 +9186,15 @@ function paintScoreboard() {
   box.append(tbl);
 
   const learned = rows.filter(r => r.learned && !r.refused);
-  const caveats = ["heldOut", "tolerance"];
+  /* `simulatedOnly` is NOT in this list — it now leads, above the table. The
+     order here is what the reader needs to read a ROW: how the number was got
+     (heldOut), what its precision is worth (tolerance), what the one column
+     nobody can guess means (knobs), why a detector may be missing (learned*),
+     and whose methods these are (provenance). */
+  const caveats = ["heldOut", "tolerance", "knobs"];
   caveats.push(...(learned.length ? ["learned", "learnedSpread"]
                                   : ["learnedAbsent"]));
-  caveats.push("simulatedOnly");
+  caveats.push("provenance");
   for (const key of caveats)
     box.append(el("p", SCORE_COPY[key], "caveat"));
 
@@ -9988,13 +10051,8 @@ async function wireLab() {
   const acc = document.getElementById("accLab");
   if (!api || !acc) return;
   acc.hidden = false;
-  // The scoreboard rides the same gate: draft copy, and the comparison is only
-  // whole where the server that trains the tube is running.
-  const score = document.getElementById("accScore");
-  if (score) {
-    score.hidden = false;
-    document.getElementById("runScore").onclick = scoreAllDetectors;
-  }
+  // The scoreboard used to be un-hidden here, on this gate. It is wired by
+  // `wireScoreboard` now and shows on every page; see the comment on `accScore`.
   document.getElementById("runLab").onclick = runLab;
   ["lArch", "lFolds", "lSeeds"].forEach(id =>
     document.getElementById(id).addEventListener("input", paintLabWhat));
@@ -10049,10 +10107,41 @@ async function wireLab() {
    the page that should show it, and hidden is also its correct published-page
    behaviour, so the bug looks like success. Inline scripts run in document
    order during parsing, so DOMContentLoaded is after the shim either way. */
-if (document.readyState === "loading")
+/* The scoreboard is NOT on the lab gate, and stopped being on it 2026-08-29.
+   `scoreAllDetectors` never needed the server: it guards its learned rows with
+   `if (lab() && archs.length && split)` and paints `learnedAbsent` otherwise, so
+   the six hand-written detectors sweep, fold and pool entirely in the page —
+   the same route, the same scorer and the same split as the Python, checked
+   against it in CI. The reasons it was gated are on the `accScore` comment.
+
+   It also fills the panel's note BEFORE the run, which was empty until now: a
+   reader who opened the accordion and did not press the button was told nothing
+   at all about what the button would do. */
+function wireScoreboard() {
+  const btn = document.getElementById("runScore");
+  const note = document.getElementById("scoreWhat");
+  if (!btn) return;
+  /* It does NOT un-hide the panel, and an earlier version of this function did
+     — which was ineffective and looked exactly like working. `details.acc` is
+     `display:none` until the rail adds `.on`, so dropping the `hidden`
+     attribute from JavaScript changes nothing a reader can see. Visibility is
+     the rail's, through `gated`/`ready`; this only wires the button and fills
+     the note. */
+  btn.onclick = scoreAllDetectors;
+  if (note) note.textContent =
+    "Every detector is given the same recordings and the same fold split: each "
+    + "one's setting is chosen on the folds it may see, and scored on the fold "
+    + "it may not. Open a folder or simulate one first — the comparison runs on "
+    + "whatever is loaded, and only on recordings that carry planted events.";
+}
+
+if (document.readyState === "loading") {
   document.addEventListener("DOMContentLoaded", wireLab);
-else
+  document.addEventListener("DOMContentLoaded", wireScoreboard);
+} else {
   wireLab();
+  wireScoreboard();
+}
 
 /* ---------- the rail: two tracks, one tail ----------------------------------
 
@@ -10145,8 +10234,12 @@ const TAIL = [
      in the markup, and drop `gated` from this line. */
   { key: "accLab", panel: "accLab", group: "detections",
     need: "local server", gated: true, ready: () => !!lab() },
+  /* PUBLISHED 2026-08-29 — `gated` dropped here and `hidden` dropped from the
+     markup, which is the two-edit procedure the `accLab` comment above names.
+     The copy went through docs/doc_review_process.md first:
+     docs/reviews/scoreboard_copy_2026-08-29.md. */
   { key: "accScore", panel: "accScore", group: "detections",
-    need: "open something first", gated: true,
+    need: "open something first",
     ready: () => RECORDINGS.length > 0 },
 ];
 

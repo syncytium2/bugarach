@@ -123,7 +123,7 @@ def test_every_input_on_the_live_page_refuses_autofill(page):
 def test_the_sweep_range_boxes_specifically(page):
     """The three Tony reported, named, so the report cannot regress quietly."""
     page.evaluate("""() => {
-      for (const k of Object.keys(DETECTORS)) {
+      for (const k of buildDetectors()) {
         const b = document.getElementById("tPick_" + k);
         if (b && !b.disabled) b.checked = true;
       }

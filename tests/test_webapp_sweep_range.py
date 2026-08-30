@@ -39,7 +39,13 @@ VIEWER = Path(__file__).resolve().parents[1] / "docs/site/raster_viewer.html"
 
 # The detectors the page can actually run, and so the ones with a range row.
 # `sync` is in the registry carrying `unavailable`; nothing on the page ticks it.
-RUNNABLE = ["rate", "loco", "coact", "sce", "cicada"]
+# **`cicada` carries it too since 2026-08-29** — withheld from the public build
+# while how it should be named and credited is settled (Tony: *"no
+# locust/cicada"*). Withheld, not removed: the detector, its knob grid and its
+# refusals are all still in the file, which is why the tests below that reach
+# `DETECTORS.cicada` directly still pass. Put the key back in this list when the
+# field comes off its registry row.
+RUNNABLE = ["rate", "loco", "coact", "sce"]
 
 
 @pytest.fixture(scope="module")
@@ -72,7 +78,7 @@ def _reset(pg, tick=RUNNABLE):
     """
     pg.evaluate("""(tick) => {
       for (const k of Object.keys(SWEEP_RANGE)) delete SWEEP_RANGE[k];
-      for (const k of Object.keys(DETECTORS)) {
+      for (const k of buildDetectors()) {
         const b = document.getElementById("tPick_" + k);
         if (b && !b.disabled) b.checked = tick.includes(k);
       }
@@ -174,14 +180,16 @@ def _set_range(pg, which, frm, to, n):
 
 def test_a_widened_range_reaches_settings_the_shipped_grid_could_not(page):
     _reset(page)
-    # locust — the detector Tony was tuning. Its shipped grid stops at 99.9 and
-    # its own control accepts 99.99.
-    _set_range(page, "cicada", 90, 99.99, 9)
-    grid = page.evaluate("() => sweepGrid('cicada')")
+    # SCE. Its shipped grid stops at 99.9 and its own control accepts 99.99 —
+    # the same shape this test used to demonstrate on the withheld sixth detector,
+    # whose range row the page no longer draws. Checked rather than assumed: it is
+    # the only other percentile knob whose grid stops short of its control.
+    _set_range(page, "sce", 90, 99.99, 9)
+    grid = page.evaluate("() => sweepGrid('sce')")
     assert len(grid) == 9, grid
     assert grid == sorted(grid), grid
     assert grid[-1] == pytest.approx(99.99), grid
-    assert max(page.evaluate("() => DETECTORS.cicada.knob.grid")) == 99.9, (
+    assert max(page.evaluate("() => DETECTORS.sce.knob.grid")) == 99.9, (
         "the shipped grid moved; this test is about reaching past it")
     _reset(page)
 
@@ -189,18 +197,18 @@ def test_a_widened_range_reaches_settings_the_shipped_grid_could_not(page):
 
 def test_the_range_boxes_mark_themselves_when_they_leave_the_default(page):
     _reset(page)
-    assert page.evaluate("() => rangeEdited('cicada')") is False
-    _set_range(page, "cicada", 90, 99.99, 9)
-    assert page.evaluate("() => rangeEdited('cicada')") is True
+    assert page.evaluate("() => rangeEdited('sce')") is False
+    _set_range(page, "sce", 90, 99.99, 9)
+    assert page.evaluate("() => rangeEdited('sce')") is True
     assert page.evaluate(
-        "() => document.getElementById('tRange_cicada_to')"
+        "() => document.getElementById('tRange_sce_to')"
         ".classList.contains('edited')") is True
     # Typing the shipped range back in is not an edit — the panel stops claiming
     # one, and `sweepGrid` goes back to the registry's own array.
-    _set_range(page, "cicada", 90, 99.9, 6)
-    assert page.evaluate("() => rangeEdited('cicada')") is False
+    _set_range(page, "sce", 90, 99.9, 6)
+    assert page.evaluate("() => rangeEdited('sce')") is False
     assert page.evaluate(
-        "() => sweepGrid('cicada') === DETECTORS.cicada.knob.grid") is True
+        "() => sweepGrid('sce') === DETECTORS.sce.knob.grid") is True
     _reset(page)
 
 @pytest.mark.skipif(locust_suppressed_in_the_browser(), reason=SUPPRESSED)
@@ -210,10 +218,10 @@ def test_the_boxes_cannot_ask_for_a_setting_the_detector_will_not_hold(page):
     would silently clamp — so the sweep would score a value the reader could
     never apply. The bounds are read off the control rather than restated."""
     _reset(page)
-    _set_range(page, "cicada", -50, 500, 8)
-    grid = page.evaluate("() => sweepGrid('cicada')")
+    _set_range(page, "sce", -50, 500, 8)
+    grid = page.evaluate("() => sweepGrid('sce')")
     lo, hi = page.evaluate(
-        "() => { const b = knobBounds(DETECTORS.cicada.knob); return [b.lo, b.hi]; }")
+        "() => { const b = knobBounds(DETECTORS.sce.knob); return [b.lo, b.hi]; }")
     assert (lo, hi) == (80, 99.99), (lo, hi)
     assert min(grid) >= lo and max(grid) <= hi, grid
     _reset(page)
@@ -250,8 +258,8 @@ def test_a_range_of_one_setting_is_refused_rather_than_answered(page):
     nothing on either side of it, that is exactly the un-bracketed answer this
     panel exists to refuse — so the sweep never gets there."""
     _reset(page)
-    _set_range(page, "cicada", 99, 99, 4)
-    assert len(page.evaluate("() => sweepGrid('cicada')")) == 1
+    _set_range(page, "sce", 99, 99, 4)
+    assert len(page.evaluate("() => sweepGrid('sce')")) == 1
     _reset(page)
 
 
@@ -290,6 +298,15 @@ def test_a_linear_range_stays_linear(page):
 
 
 def test_extending_goes_further_and_stops_where_the_detector_does(page):
+    """Still driven on the withheld detector, deliberately.
+
+    `extendPlan` is a pure function of a key, a grid and a direction — it reads
+    the registry, never the DOM — so it works on a detector whose range row the
+    page does not draw. Keeping it here holds that detector's grid arithmetic
+    under test while it is off the page, which is the state it will be restored
+    from. The tests ABOVE that set boxes moved to `sce`, because those need a row
+    that exists.
+    """
     _reset(page)
     plan = page.evaluate(
         "() => extendPlan('cicada', DETECTORS.cicada.knob.grid, 'high')")

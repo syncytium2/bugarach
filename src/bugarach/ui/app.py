@@ -130,24 +130,33 @@ COLORS = {
     "coact":  "#e69d00",
     "loco":   "#8c564b",
 }
-#: Display names. **`cicada` is the key; `locust` is the name.** The detector is
-#: derived from the Cossart lab's CICADA and is not CICADA — it is fed our own
-#: detected events instead of running CICADA's transient detection, and it is fed
-#: each event's duration by the producer instead of measuring the whole transient
-#: itself. Both are changes of input: the duration arrives in `width_sec` and is
-#: never derived here (FOUNDATIONS §7). Showing a user another lab's
-#: tool name for a modified port was the one attribution item Tony did not wave
-#: off (2026-08-24). The **key** stays `cicada` because it is the value in
-#: `detections.csv`'s `detector` column, which is output contract — see
-#: `docs/todo/2026-08-24-the-identifier-still-says-cicada.md`.
+#: Display names. **`cicada` is the key, and its name is WITHHELD** — Tony,
+#: 2026-08-29: *"suppress all locust/cicada mentions in the public facing
+#: webapp/docs. we'll come back to it when we have time."*
+#:
+#: **These labels are rendered into `hero.png` and `diagnostic.png`, which the
+#: published site serves.** A name here reaches a reader as pixels, where no grep
+#: of the HTML will find it — which is exactly how this map came to matter: the
+#: pages were scrubbed and the figures still said it.
+#:
+#: The detector is derived from another laboratory's published tool, and how it
+#: should be named and credited here is an open question this project has not
+#: finished answering. It is withheld from the public build rather than shipped
+#: under a name that would prejudge it; see the `unavailable` field on `cicada`
+#: in the viewer's DETECTORS, which is the same decision. The **key** stays
+#: `cicada` because it is the value in `detections.csv`'s `detector` column,
+#: which is output contract — see
+#: `docs/todo/2026-08-24-the-identifier-still-says-cicada.md`. Restore the name
+#: together with the detector.
 TITLES = {
-    "rate": "rate+context", "sce": "binned SCE", "cicada": "locust",
+    "rate": "rate+context", "sce": "binned SCE", "cicada": "sixth",
     "sync": "SPIKE-synch", "coact": "CoactDetect", "loco": "LoCo",
 }
-# short row labels — the full titles overflow the slim signal rows.
-# "locust" fits the 75px row, and retires "CIC", which Tony noted on 2026-08-15
-# is not CICADA to anyone who has met the other CIC.
-SHORT = {"rate": "rate", "sce": "SCE", "cicada": "locust",
+# short row labels — the full titles overflow the slim signal rows. The sixth
+# detector's entry matches its TITLES entry rather than being shorter: a longer
+# form there rendered as "he sixth detector (105", clipped at BOTH ends, which is
+# the overflow this map exists to prevent.
+SHORT = {"rate": "rate", "sce": "SCE", "cicada": "sixth",
          "sync": "sync", "coact": "coact", "loco": "LoCo"}
 DEFAULT_ON = ["rate", "coact", "loco"]
 
