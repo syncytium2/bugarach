@@ -4,8 +4,42 @@
 `tests/test_background_curve.py` fail, they are the last red on that branch that
 is a *finding* rather than a chore, and nobody has ruled on them.
 
-> Tony, 2026-08-28, on the four decisions the background change surfaced:
-> *"don't get 4."* Fair — it was handed over as a test failure. It is a result.
+> ⚠ **CORRECTED 2026-08-30 — this quote was read as a ruling and it was a
+> question.** Tony, 2026-08-28, on the four decisions the background change
+> surfaced, said: *"don't get 4."*
+>
+> **It means "I do not understand item 4."** Tony, 2026-08-30: *"I meant I didn't
+> understand 4 and it inferred something else."* **Item 4 is the three
+> `test_background_curve` tests** — [`HANDOFF-bench-background.md`](../../HANDOFF-bench-background.md)
+> §4, *"do not re-baseline these quietly"* — so the question was asked about the
+> exact decision this handoff was written to advance, and was recorded as answered.
+>
+> It was read here as agreement that
+> item 4 had been mis-framed, and the sentence originally printed after it —
+> *"Fair — it was handed over as a test failure. It is a result."* — presented that
+> reading as **Tony's own verdict on his own decision**. He had ruled on nothing. He
+> had asked what item 4 was.
+>
+> The original sentence is quoted above rather than silently dropped, because this
+> handoff was read afterwards as though the ruling existed.
+>
+> **The same phrasing was misread twice on one day**, by two sessions, and one of
+> them wrote its misreading into a durable handoff as a ruling — this one. What it
+> cost is small and specific: item 4 read as settled when it was asked-and-
+> unanswered, so nobody answered it. A `UserPromptSubmit` hook now fires on short
+> replies of this shape, and a decisions log is filed so a misread shows up as a
+> wrong row rather than as prose nobody questions. Written up as a teaching case in
+> `syncytium2/short-course`,
+> `docs/cases/2026-08-30-the-hedge-that-crossed-a-session-boundary.md`.
+>
+> **Item 4 is still unanswered — and it is now measured.** On 2026-08-30 the three
+> tests were re-run at **12 seeds** rather than their own `SEEDS = (1, 2, 3)`, which
+> is the count this branch's author called noise-dominated one file over. On seeds
+> 1–12 coact wins all seven grid points but by **0.0011** at the busy endpoint; on an
+> independent block, seeds 13–24, **LoCo takes the busy half and two of the three
+> tests pass.** The tests assert a strict inequality on a quantity that is a coin
+> flip, so neither "re-baseline them" nor "leave them red" is right. That is the
+> answer to item 4, and it is still Tony's call what the tests should assert instead.
 
 **Since then it has been measured, and the two readings are no longer even.**
 Skip to *What the measurement says* if you want the answer; the rest is why the
