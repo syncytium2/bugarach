@@ -60,6 +60,61 @@ Template:
 
 ## Active
 
+### Tonys-MacBook-Pro/transfer-across-corpora — DEPLOY: done twice, and RELEASED
+- **Status:** **DONE 2026-08-29 — DEPLOYED TWICE AND VERIFIED. The deploy is held by
+  nobody; the next session may publish without asking.**
+- **⚠ SECOND DEPLOY, `429e3c04` — the sixth detector is withheld from the public build.**
+  Tony, 2026-08-29: *"suppress all locust/cicada mentions in the public facing
+  webapp/docs. we'll come back to it when we have time."* **The first deploy of the day
+  went out ~20 minutes before that instruction and carried the name**, which is why a
+  second one was needed rather than optional.
+  - **Zero visible mentions on all four served pages**, down from 27 — measured by
+    rendering each page and reading `innerText`, not by grepping bytes. The residual
+    occurrences in the served files (1 in `index.html`, 13 in `viewer.html`) are the
+    `cicada` **code key and source comments**, which is the agreed scope: purging the key
+    from served bytes was offered and explicitly not chosen, because it is
+    `detections.csv`'s `detector` value and forking it would split the browser's output
+    contract from the Python's.
+  - **Two mentions no grep would have found.** The detector lane labels are rendered into
+    `hero.png` and `diagnostic.png` from `ui/app.py`, so the name reached readers **as
+    pixels** while every HTML page was clean; and `landscape.svg` carried it in a diagram
+    label and in the figure's own alt text. Both neutralised, and `app.py`'s docstring now
+    says why so the next person does not scrub the pages and ship the figures.
+  - Live bytes checked against the local payload after upload: identical counts.
+  - Version ID `41b75a27-8e54-46a0-bf05-051f2f0ba104`; 4 of 8 assets changed
+    (`index`, `viewer`, `landscape`, `diagnostic` — the four HTML pages; the images were
+    already uploaded).
+  - `tools/site_staleness.py` after: **current**, `viewer.html` matching
+    `docs/site/raster_viewer.html` at `58480e2`.
+  - `tools/audit_deployed_page.py` against the live URL: **"The page fetched nothing but
+    itself"** on both `/viewer.html` and the `/viewer` the 307 lands on — the
+    no-network promise holds as served, not merely as written.
+  - Driven over **HTTP before the upload**, not `file://`, per `docs/deploy.md`: all five
+    paths 200, and the three serving changes confirmed present in the payload by string
+    match rather than by assumption.
+- **Claims:** ~~the site deploy~~, ~~port 5096~~ — **both released**, server stopped.
+- **Authorised by Tony, 2026-08-29:** *"i need to land this website today"*, and the deploy
+  confirmed explicitly before the upload. `docs/DEPLOY_HOLD.md` reads `held: no` (released
+  2026-08-28) and no other block held the deploy.
+- **What goes out.** `origin/main` at `50bea02`. `tools/site_staleness.py`: **behind by 25
+  commits, 3 of which change what it serves** —
+  `58480e2` (duration is the exporter's — the viewer's locust attribution panel and its
+  code comments), `9772425` (the caption leads with the credit), `d999ae4` (the app counts
+  what fires where nothing was planted).
+- **Built from `transfer-across-corpora`, and that is checkable rather than asserted.** The
+  branch differs from `origin/main` in four files — `tools/fair_bakeoff.py`,
+  `tools/assess_archive.py`, `tests/test_fair_bakeoff_transfer.py` and one todo — and
+  **`build_site.py` reads none of them**. Its inputs are `docs/site/raster_viewer.html`,
+  `docs/learned/landscape.html`, `docs/generator/reality_check.png` and `src/bugarach/**`
+  through `make_diagnostic.py`. So the payload is byte-identical to one built on `main`.
+- **⚠ The scoreboard stays hidden in this deploy.** Its copy has not been through
+  `docs/doc_review_process.md`, which is the whole reason for the `window.__lab` gate
+  ([`todo/2026-08-20-the-scoreboard-copy-needs-review.md`](todo/2026-08-20-the-scoreboard-copy-needs-review.md)).
+  Tony's plan for today is deploy first, murderboard the copy second, redeploy. **The next
+  deploy is expected to be that one.**
+- **Release:** this block flips to DONE with the served version and the
+  `audit_deployed_page.py` result the moment the upload verifies.
+
 ### Tonys-MacBook-Pro/lift-the-hold — DEPLOY CLAIMED: publishing the site, hold lifted early
 - **Status:** **DONE 2026-08-28 — DEPLOYED AND RELEASED.** The site is live at version
   `4541a2b1`, built from `3a0b63b`; `site_staleness.py` reads **current, 0 commits

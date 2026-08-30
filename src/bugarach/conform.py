@@ -77,9 +77,9 @@ NOTE_DETAIL = {
     NO_WIDTH: (
         "width_sec is asked for and not required, so this folder conforms and "
         "every detector runs in bugarach detect. What it cannot do is score "
-        "per-event durations: locust's per-event mode has nothing to read, and "
-        "no other column implies a width. In the browser viewer, which runs "
-        "per-event by default, locust also needs a peak. Send width_sec with "
+        "per-event durations: the coactivity detector's per-event mode has nothing "
+        "to read, and no other column implies a width. In the browser viewer, which "
+        "runs per-event by default, it also needs a peak. Send width_sec with "
         "the width_def naming the rule that produced it, and send peak_sec if "
         "you have it."),
     PART_WIDTH: (

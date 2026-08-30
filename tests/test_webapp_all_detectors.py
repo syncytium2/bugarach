@@ -65,7 +65,7 @@ RUN_ALL = """async (sim) => {
   await show(RECORDINGS[0]);
   // tick every detector, not just the default trio
   document.getElementById("dAll").checked = true;
-  for (const k of Object.keys(DETECTORS))
+  for (const k of buildDetectors())
     document.getElementById("dPick_" + k).checked = true;
   paintDetectorChoice();
   await runDetect();

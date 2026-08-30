@@ -12,20 +12,37 @@ def locust_suppressed_in_the_browser() -> bool:
     """Does the shipped page hold locust out of this build?
 
     Read from the artifact rather than from a constant in this suite, so a skip
-    can only ever agree with what a user actually gets. The page's own mechanism
-    is a truthy ``unavailable`` on the registry entry — the same flag
-    ``offReason()`` reads to disable the option, clear the tick, label it "off in
-    this build" and keep the detector out of every run.
+    can only ever agree with what a user actually gets.
 
-    locust was suppressed for this release on 2026-08-29 (Tony). The port, its
-    MATLAB parity to 1e-9 and ``bugarach detect`` are untouched; what went away
-    is the viewer offering a detector whose number would come from a fixed
-    duration nobody chose. Tests that exercise it are keyed to this rather than
-    deleted, so **they come back by themselves the day the flag does** — the
-    behaviour they cover is not knowledge worth re-earning later.
+    ⚠ **THIS READ THE WRONG FIELD FOR A WHILE, AND WENT SILENTLY BLIND.** It
+    looked for a truthy ``unavailable`` on the registry entry. That was the
+    mechanism on 2026-08-29 morning; by the evening the page had moved to a
+    ``WITHHELD`` set, because ``unavailable`` draws the row and states a reason
+    and Tony asked for the detector to be absent instead — *"withold cicada
+    locust entirely … there's no reason for cicada/locust to be present in the
+    current webpage."* The helper then reported **not suppressed** while the page
+    suppressed it, so every skip it guards would have quietly run against a
+    detector with no controls at all: a check that cannot ring, which is the
+    failure class this suite files incidents about.
+
+    It reads **both** now. A detector is out of this build if it is in
+    ``WITHHELD`` (absent: no option, no tick, no explanation) or carries
+    ``unavailable`` (present, disabled, and saying why) — two different answers to
+    "not in this build", and a test that exercises the detector wants to skip
+    under either.
+
+    The port, its MATLAB parity to 1e-9 and ``bugarach detect`` are untouched;
+    what went away is the viewer offering it. Tests are keyed to this rather than
+    deleted, so **they come back by themselves the day it does** — the behaviour
+    they cover is not knowledge worth re-earning later.
     """
-    entry = re.search(r"\n  cicada: \{(.*?)\n  \},",
-                      _VIEWER.read_text(encoding="utf-8"), re.S)
+    src = _VIEWER.read_text(encoding="utf-8")
+
+    held = re.search(r"const WITHHELD = new Set\(\[(.*?)\]\)", src, re.S)
+    if held and '"cicada"' in held.group(1):
+        return True
+
+    entry = re.search(r"\n  cicada: \{(.*?)\n  \},", src, re.S)
     return bool(entry and "unavailable:" in entry.group(1))
 
 

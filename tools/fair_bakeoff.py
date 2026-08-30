@@ -5,6 +5,12 @@ then score them on recordings none of them was allowed to see.
     python tools/fair_bakeoff.py --spec docs/learned/generator_spec.json \
         --out docs/learned [--folds 4] [--quick]
 
+**One data set, unless you ask for two.** `--score-spec` generates the held-out
+fold from a SECOND generator spec while everything stays fitted on the first —
+the cross-corpus transfer test, and the only supported way to ask whether a
+detector tuned on one preparation works on another. It is off by default and the
+default path is unchanged.
+
 Every complaint the 2026-08-16 murderboard made about the previous comparison was
 a fairness complaint, and each one is answered by construction here rather than by
 a caveat in the prose.
@@ -89,7 +95,7 @@ def _timed_detect(fn, slices) -> tuple[list, float]:
 
 
 def run(spec: dict, *, folds: int, seeds_per_fold: int, quick: bool,
-        train_seed: int = 0) -> dict:
+        train_seed: int = 0, score_spec: dict | None = None) -> dict:
     from bugarach import provenance
     from bugarach.bench import (DETECTORS, OPERATING_POINTS, fold_split,
                                 pool_scores, run_detector)
@@ -97,26 +103,62 @@ def run(spec: dict, *, folds: int, seeds_per_fold: int, quick: bool,
     from bugarach.learn.train import fold_maker, train
     from bugarach.score import score_stream
 
-    # ---- the data: one set of recordings, split into folds ------------------
+    # ---- the data: two corpora, or the same one twice -----------------------
     # The split comes from bench so that the browser, which runs the same
     # comparison on its own generated data, divides it the same way.
+    #
+    # THE SECOND CORPUS IS THE WHOLE POINT OF `score_spec`. Every operating
+    # point here -- the six detectors' knob, the learned models' weights AND
+    # their threshold -- is chosen on `spec`; the held-out fold is generated
+    # from `score_spec`. Left unset the two are the same object and this file
+    # behaves exactly as it did before, which `test_fair_bakeoff_transfer.py`
+    # checks rather than asserts.
+    #
+    # Why it is two generators and not two folders. Their corpus has no ground
+    # truth and cannot supply one: it is binarised, `time_sec` is a rising edge
+    # rather than a t50rise, and their own PROVENANCE.md says coincidence within
+    # a tolerance is not recoverable from those files. So a cross-corpus number
+    # is not an F1 on their recordings -- RESET section 10 reserves that word for
+    # planted events -- it is an F1 on a simulation parameterised from THEIR
+    # measured statistics. The `[cossart]` role in `current_export.toml` carries
+    # the same warning, including that their K is not ours to transplant.
     n_folds = folds
     split = fold_split(n_folds=n_folds, seeds_per_fold=seeds_per_fold)
     all_seeds = list(split.seeds)
+    transfer = score_spec is not None and score_spec != spec
     print(f"data set: {len(all_seeds)} recordings, {n_folds} folds "
           f"({seeds_per_fold} each)")
+    if transfer:
+        print("  TRANSFER: fitted on --spec, scored on --score-spec. "
+              "The held-out fold is a different generator, not a different seed.")
 
-    cache: dict[int, tuple] = {}
+    fit_cache: dict[int, tuple] = {}
+    score_cache: dict[int, tuple] = {}
 
     def rec(seed):
-        if seed not in cache:
-            cache[seed] = _make_recording(spec, seed)
-        return cache[seed]
+        """The FITTING corpus. Calibration, training and threshold-picking only."""
+        if seed not in fit_cache:
+            fit_cache[seed] = _make_recording(spec, seed)
+        return fit_cache[seed]
+
+    def rec_scored(seed):
+        """The SCORED corpus. Reached only from a held-out fold."""
+        if not transfer:
+            return rec(seed)
+        if seed not in score_cache:
+            score_cache[seed] = _make_recording(score_spec, seed)
+        return score_cache[seed]
 
     for s in all_seeds:                       # generate once, up front
         rec(s)
-    total_sec = sum(r[1].params["duration_sec"] for r in cache.values())
+        if transfer:
+            rec_scored(s)
+    total_sec = sum(r[1].params["duration_sec"] for r in fit_cache.values())
     print(f"  {total_sec / 60:.0f} recording-minutes total")
+    if transfer:
+        scored_sec = sum(r[1].params["duration_sec"]
+                         for r in score_cache.values())
+        print(f"  {scored_sec / 60:.0f} recording-minutes in the scored corpus")
 
     # WHAT PRODUCED THIS FILE, IN THE FILE. Until 2026-08-29 this artifact carried
     # `machine` and nothing else, so a reader holding only the JSON could not say
@@ -135,6 +177,8 @@ def run(spec: dict, *, folds: int, seeds_per_fold: int, quick: bool,
     out: dict = {
         "spec": spec, "folds": n_folds, "seeds_per_fold": seeds_per_fold,
         "train_seed": train_seed,
+        "score_spec": score_spec if transfer else None,
+        "transfer": transfer,
         "seeds": all_seeds,
         "machine": {"platform": platform.platform(),
                     "python": platform.python_version()},
@@ -188,8 +232,11 @@ def run(spec: dict, *, folds: int, seeds_per_fold: int, quick: bool,
             cal_sec = time.perf_counter() - t0
             cal_sec_total += cal_sec
 
-            # score: held-out fold, knob carried over unchanged
-            te_slices = [rec(sd) for sd in te_seeds]
+            # score: held-out fold, knob carried over unchanged. Under transfer
+            # the knob crosses a corpus boundary as well as a fold boundary,
+            # which is the quantity being measured -- `min_rois` fitted where
+            # the median field is 34 cells, applied where it is 566.
+            te_slices = [rec_scored(sd) for sd in te_seeds]
             dets, det_sec = _timed_detect(
                 lambda sg: run_detector(det, sg[0], **{op.knob: best_v}),
                 te_slices)
@@ -243,7 +290,12 @@ def run(spec: dict, *, folds: int, seeds_per_fold: int, quick: bool,
                        lr=LR[name], seed=train_seed)
             train_sec = time.perf_counter() - t0
 
-            te_slices = [rec(sd) for sd in te_seeds]
+            # `mk` above closes over `rec`, so BOTH the weights and the
+            # threshold `pick_threshold` chooses come from the fitting corpus.
+            # Nothing about the scored corpus is visible to the fit -- which is
+            # what makes the number below a transfer penalty rather than a
+            # domain adaptation.
+            te_slices = [rec_scored(sd) for sd in te_seeds]
             dets, det_sec = _timed_detect(lambda sg: tr.predict(sg[0])[0],
                                           te_slices)
             scs = [score_stream(gt, d) for (sl, gt), d in zip(te_slices, dets)]
@@ -277,7 +329,17 @@ def main(argv=None) -> int:
     p = argparse.ArgumentParser(description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("--spec", type=Path, required=True,
-                   help="generator kwargs JSON from tools/derive_spec.py")
+                   help="generator kwargs JSON from tools/derive_spec.py. "
+                        "EVERYTHING IS FITTED ON THIS: the six detectors' knob, "
+                        "the learned models' weights, and their threshold.")
+    p.add_argument("--score-spec", type=Path, default=None,
+                   help="a SECOND generator spec to score the held-out fold on, "
+                        "for the cross-corpus transfer test. Omit and the "
+                        "held-out fold comes from --spec, which is the ordinary "
+                        "bake-off and is bit-identical to it. Give a spec derived "
+                        "from another lab's folder and the number that comes back "
+                        "is the transfer penalty: nothing about this corpus is "
+                        "visible to the fit.")
     p.add_argument("--out", type=Path, required=True)
     p.add_argument("--folds", type=int, default=4)
     p.add_argument("--seeds-per-fold", type=int, default=2)
@@ -290,10 +352,18 @@ def main(argv=None) -> int:
     a = p.parse_args(argv)
 
     spec = json.loads(a.spec.read_text())["generator"]
+    score_spec = (json.loads(a.score_spec.read_text())["generator"]
+                  if a.score_spec else None)
     a.out.mkdir(parents=True, exist_ok=True)
     res = run(spec, folds=a.folds, seeds_per_fold=a.seeds_per_fold,
-              quick=a.quick, train_seed=a.train_seed)
+              quick=a.quick, train_seed=a.train_seed, score_spec=score_spec)
     stem = "bakeoff_quick" if a.quick else "bakeoff"
+    if res["transfer"]:
+        # The file name has to carry BOTH corpora. A transfer result filed as
+        # `bakeoff.json` is a number about somebody else's data wearing the name
+        # of the home result, and this project has already paid once for a figure
+        # that could not be told apart from the one it superseded.
+        stem = f"{stem}_{a.spec.stem}_to_{a.score_spec.stem}"
     if a.train_seed:
         stem = f"{stem}_seed{a.train_seed}"
     f = a.out / f"{stem}.json"
