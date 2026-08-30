@@ -9,7 +9,7 @@
      rather than naming a sha this page could not know — the reasoning is at the
      visible stamp. -->
 <meta name="bugarach:born" content="2026-08-13">
-<meta name="bugarach:version-date" content="2026-08-28">
+<meta name="bugarach:version-date" content="2026-08-30">
 <meta name="bugarach:commit" content="content-addressed">
 <!--
   The raster viewer, client side.
@@ -511,6 +511,7 @@
   <a href="index.html">Overview</a>
   <a href="viewer.html" aria-current="page">Raster viewer</a>
   <a href="diagnostic.html">Detector diagnostic</a>
+  <a href="learned_detector.html">Learned detector</a>
   <a href="landscape.html">Landscape</a>
 </nav>
 
@@ -1014,7 +1015,12 @@
         <input id="cDist" type="number" min="1" max="200" step="1" value="4" autocomplete="off" data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other">
         <label for="cPer">how long a cell counts as active</label>
         <select id="cPer">
-          <option value="per_event">each event's own t50rise→peak</option>
+          <!-- NOT "t50rise→peak", which this said until 2026-08-29. That names a
+               producer's duration rule, and naming one here is what FOUNDATIONS
+               section 7 forbids: it is not this repo's fact to maintain, it goes
+               stale, and a reader takes the producer's decision for ours. Your
+               folder's width_sec is whatever your width_def says it is. -->
+          <option value="per_event">each event's own duration, from your folder</option>
           <option value="fixed">a fixed duration</option>
         </select>
         <label for="cDur">that fixed duration (s)</label>
@@ -1172,45 +1178,25 @@
         by accident.
       </div>
       <div class="fine" id="dFineCicada" hidden>
-        <b>locust counts how many cells are active at once.</b> Each event marks
-        its cell active for as long as the transient lasted, and the detector
-        looks for moments when an unusual number of those stretches overlap. The
-        threshold comes from rolling every cell to a random offset and asking how
-        high the count goes when nothing is coordinated by construction.
+        <b>This detector is not in this build.</b> It is derived from another
+        laboratory's published tool, and how it should be named and credited here
+        is an open question this project has not finished answering. It is
+        withheld until that is settled, rather than shipped under a name that
+        would prejudge it.
         <br><br>
-        <b>It is the one detector anchored on the PEAK, not the onset.</b> The
-        other five locate an event at its half-rise. The CICADA rule it derives
-        from anchors on
-        the peak, and on this preparation that is also the right choice: a single
-        transient runs from half-rise to peak over roughly 0.3 s in a fast stream
-        and 2 s in a slow one, and 2 s is wider than the tolerance a detection is
-        scored at. Anchored on onsets, almost any two events look simultaneous.
+        <b>Nothing is lost from work you have already done.</b> A
+        <code>detections.csv</code> that carries its rows still draws here, and
+        the Python package still runs it — only this page's ability to start a
+        new run with it is off.
         <br><br>
-        <b>So your folder has to carry the peak, and most of the columns that
-        could are optional.</b> Either send <code>peak_sec</code>, or send
-        <code>width_sec</code> with <code>width_def</code> set to
-        <code>t50rise_to_peak</code> or <code>rise_interval_peak_minus_t50rise</code>
-        — those are the two spellings accepted, and each names a width running from
-        the half-rise to the peak, so the two together locate it. The match is on the
-        exact string, not on what the rule means: a width measured any other way
-        (<code>fwhm</code>, <code>above_threshold</code>) does not reach the peak
-        and cannot be added to the onset to find one. Where the folder carries
-        neither, this detector declines to run and says so, rather than falling
-        back to the onsets and returning a confident answer to a different
-        question.
-        <br><br>
-        <b>Where it comes from, and why it is not called CICADA.</b> The rule is
-        the Cossart lab's — <i>CICADA (Calcium Imaging Complete Automated Data
-        Analysis)</i>, Denis, Dard, Quiroli, Cossart &amp; Picardo (2020),
-        <a href="https://doi.org/10.5281/zenodo.10041434">doi:10.5281/zenodo.10041434</a>,
-        MIT-licensed, and described in Dard et al., <i>eLife</i> 11:e78116 (2022).
-        This implementation changes two things, so it carries its own name rather
-        than theirs: it is fed the events your folder already contains instead of
-        running CICADA's own transient detection, and it paints each cell active
-        for the <b>rise interval</b> where the original paints the whole transient
-        duration — which on slow transients would otherwise swamp onset synchrony
-        with duration overlap. Same idea, different detector; cite CICADA for the
-        method.
+        <!-- WHAT USED TO BE HERE, and why it went. The block described the
+             detector, its peak anchoring, the folder columns it needs, and
+             credited the laboratory whose rule it derives from. All of that is
+             correct and none of it can be shown while the naming question is
+             open: a page cannot credit a method it is not offering, and the
+             description would advertise a control that is disabled. Restore it
+             from git together with the `unavailable` field on `cicada` in
+             DETECTORS — the two belong to one decision. Tony, 2026-08-29. -->
       </div>
       <div class="fine" id="dFineSync" hidden>
         <b>SPIKE-synch asks how aligned the spikes are, whatever the rate.</b>
@@ -1279,19 +1265,31 @@
         measured against.
       </div>
     </details>
-    <!-- The scoreboard. HIDDEN ON THE PUBLISHED PAGE, on the same `window.__lab`
-         gate as the training panel above and for two reasons rather than one.
+    <!-- The scoreboard. PUBLISHED SINCE 2026-08-29; it was gated on
+         `window.__lab` before that, for two reasons that have both expired.
 
-         The wording in it has not been through the review this repo requires of
-         anything a stranger reads, so it must not ship until it has —
-         docs/todo/2026-08-20-the-scoreboard-copy-needs-review.md carries the
-         sentences and what each has to survive.
+         The wording had not been through the review this repo requires of
+         anything a stranger reads. It has now —
+         docs/reviews/scoreboard_copy_2026-08-29.md, which also records what the
+         review changed and what it left as a residual.
 
-         And it belongs here anyway: the comparison is only complete with the
-         tube in it, the tube trains through `bugarach lab`, so the one place
-         the full table can exist is the one place the server is running. -->
-    <details class="acc" id="accScore" hidden>
-      <summary>Compare the detectors<span class="cnt" id="cntScore">draft</span></summary>
+         And "the comparison is only complete with the tube in it, so it belongs
+         where the server is" was the second reason. That is the argument the
+         `learnedAbsent` sentence answers: a table that silently omits a detector
+         invites the reading that it lost, and one that says in terms "absence
+         here is a missing trainer, not a detector that competed and lost" does
+         not. Withholding the six from every visitor to avoid a gap the copy
+         already explains was the gate outliving its own reason.
+
+         `hidden` is dropped here and `gated` is dropped from this panel's line
+         in TAIL — the two-edit publish procedure the `accLab` entry names. The
+         rail still decides WHEN it appears (`ready: RECORDINGS.length > 0`),
+         because a comparison with nothing loaded has nothing to compare. -->
+    <details class="acc" id="accScore">
+      <!-- The chip read "draft" for as long as the panel was gated. It cannot
+           say that on a page the panel now appears on, and it should not go
+           blank either: every other accordion's chip carries a count. -->
+      <summary>Compare the detectors<span class="cnt" id="cntScore">6 detectors</span></summary>
       <div class="ctl">
         <label for="scTol">match tolerance (s)</label>
         <input id="scTol" type="number" min="0.1" max="30" step="0.5" value="1.5" autocomplete="off" data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other">
@@ -1380,10 +1378,10 @@
      a page edited without bumping it turns CI red instead of shipping a date
      that has quietly become a lie. Bump it when you edit this page. -->
 <p class="site-dates" data-bugarach-born="2026-08-13"
-   data-bugarach-version-date="2026-08-28"
+   data-bugarach-version-date="2026-08-30"
    data-bugarach-commit="content-addressed"
    style="margin:1.5rem max(1.2rem, calc(50% - 23rem));color:#666;font-size:.85rem">
-  First published 2026-08-13 · this version 2026-08-28 · identified by its own
+  First published 2026-08-13 · this version 2026-08-30 · identified by its own
   bytes rather than by a build stamp
 </p>
 
@@ -1713,8 +1711,10 @@ async function loadRecording(rec) {
          validation of 2026-08-20 checked all 84 recordings and found no
          `peak_sec` before its own `time_sec`.
        * `time_sec + width_sec`, but ONLY where `width_def` names a width that
-         actually reaches the peak. That sum IS `locs - t50rise`, the quantity
-         `cicada.py` calls `rise_dur`. Under a half-prominence or
+         actually reaches the peak. Note what this is and is not: it RECOVERS A
+         PEAK from the duration the producer sent, which is reading their answer.
+         It does not derive a duration — nothing here does, and `cicada.py` refuses
+         to (`DurationIsNotOursToDerive`). Under a half-prominence or
          above-threshold width it is not a peak and never was, and adding them
          anyway produces exactly what the spec warns about: a plausible wrong
          answer rather than an error.
@@ -1863,7 +1863,13 @@ const DET_COLORS = {
   sync: "#d62728", coact: "#e69d00", loco: "#8c564b",
 };
 const DET_SHORT = {
-  rate: "rate", sce: "SCE", cicada: "locust",
+  /* `cicada` keeps an entry though the detector is withheld from this build,
+     and the entry is a neutral short form rather than its name. A folder
+     analysed before it was withheld still has `cicada` rows in its
+     `detections.csv` and those still draw here; a lane with no label would be
+     worse than one labelled neutrally. See `unavailable` on `cicada` in
+     DETECTORS. */
+  rate: "rate", sce: "SCE", cicada: "sixth",
   sync: "sync", coact: "coact", loco: "LoCo",
 };
 
@@ -2841,78 +2847,6 @@ function eventRate(trains, tRange, windowSec, dt) {
   return { rateX, rateY };
 }
 
-/* The context window is clipped to 0.9x the recording, and the value actually
-   used travels with the result — a context wider than the recording is silently
-   a different detector. */
-function eventRateContext(trains, tRange, windowSec, contextSec, dt) {
-  const maxCtx = 0.9 * (tRange[1] - tRange[0]);
-  const ctxActual = contextSec >= maxCtx ? maxCtx : contextSec;
-  const { rateX, rateY } = eventRate(trains, tRange, windowSec, dt);
-  const ctx = eventRate(trains, tRange, ctxActual, dt);
-  return { rateX, rateY, ctxY: ctx.rateY, ctxActual };
-}
-
-const RATE_PAD_S = 0.5;   // CHARACTERIZATION_PAD_S
-
-/* RateDetect, threshold mode. Grid times whose rate excess over the local
-   context clears the threshold, merged when no more than merge_gap_s apart. */
-function rateDetect(trains, tRange, opts) {
-  const o = opts || {};
-  const thr = o.excessThresholdHz === undefined ? 5.0 : o.excessThresholdHz;
-  const mergeGap = o.mergeGapS === undefined ? 3.0 : o.mergeGapS;
-  const rateWin = o.rateWin === undefined ? 1.0 : o.rateWin;
-  const ctxWin = o.contextWin === undefined ? 60.0 : o.contextWin;
-  const dt = o.gridDt === undefined ? 0.1 : o.gridDt;
-
-  const { rateX, rateY, ctxY, ctxActual } =
-    eventRateContext(trains, tRange, rateWin, ctxWin, dt);
-  const m = rateX.length;
-  const excess = new Float64Array(m);
-  for (let i = 0; i < m; i++) excess[i] = rateY[i] - ctxY[i];
-
-  const cand = [];
-  for (let i = 0; i < m; i++) if (excess[i] >= thr) cand.push(rateX[i]);
-  let starts = [], ends = [];
-  if (cand.length) {
-    const brk = [];
-    for (let i = 1; i < cand.length; i++)
-      if (cand[i] - cand[i - 1] > mergeGap) brk.push(i - 1);
-    const s = [0].concat(brk.map(i => i + 1));
-    const e = brk.concat([cand.length - 1]);
-    for (let i = 0; i < s.length; i++) {
-      // a single-bin crossing is likely noise, and the Python drops it
-      if (cand[e[i]] - cand[s[i]] > 0) {
-        starts.push(cand[s[i]]); ends.push(cand[e[i]]);
-      }
-    }
-  }
-  // pad for characterization: onsets sit on a 0.1 s grid and the rate is
-  // window-smoothed, so the stats get a margin matching the kernel
-  starts = starts.map(x => x - RATE_PAD_S);
-  ends = ends.map(x => x + RATE_PAD_S);
-
-  const freqMax = [], freqMean = [];
-  for (let i = 0; i < starts.length; i++) {
-    let mx = 0, sum = 0, n = 0;
-    for (let k = 0; k < m; k++)
-      if (rateX[k] >= starts[i] && rateX[k] <= ends[i]) {
-        if (rateY[k] > mx) mx = rateY[k];
-        sum += rateY[k]; n++;
-      }
-    if (n) { freqMax.push(mx); freqMean.push(sum / n); }
-    else if (m) {
-      const mid = (starts[i] + ends[i]) / 2;
-      let j = 0, bd = Infinity;
-      for (let k = 0; k < m; k++) {
-        const d = Math.abs(rateX[k] - mid);
-        if (d < bd) { bd = d; j = k; }
-      }
-      freqMax.push(rateY[j]); freqMean.push(rateY[j]);
-    } else { freqMax.push(0); freqMean.push(0); }
-  }
-  return { starts, ends, freqMax, freqMean, rateX, rateY, ctxY, excess,
-           ctxActual, nEvents: starts.length };
-}
 
 /* ---------- SPIKE-synch, in the browser --------------------------------------
    The second detector that draws no random numbers, and therefore the second
@@ -3115,70 +3049,6 @@ function flagArtifacts(begins, ends, amps, cx, cy, ev, athr, afthr, aplat90) {
   return { peakC, plat90, nPart, isArtifact };
 }
 
-/* SpikyDetect3's hysteresis scan, transliterated rather than tidied. A bin over
-   C_threshold opens an event; bins over the lower C_min keep it open across gaps
-   shorter than max_gap, and empty bins are stepped over without closing it. The
-   control flow re-tests a gap it has not recomputed and lets the outer cursor
-   jump to the bin that ended the event; both are load-bearing, because the
-   Python they are checked against does the same and the MATLAB before it did. */
-function syncDetect(trains, tRange, opts) {
-  const o = opts || {};
-  const tauMax = o.tauMax === undefined ? 0.25 : o.tauMax;
-  const maxGap = o.maxGap === undefined ? 0.5 : o.maxGap;
-  const Cthr = o.CThreshold === undefined ? 0.1 : o.CThreshold;
-  const Cmin = o.CMin === undefined ? 0.1 : o.CMin;
-  const minN = o.minN === undefined ? 3 : o.minN;
-  /* THE PROFILE BIN, WHICH IS NOT THE FRAME INTERVAL. `sync.py` names this
-     `PROFILE_BIN_SEC` and argues it at length: nothing upstream of the binning
-     touches a grid, so this is the resolution of the DETECTOR — the way a
-     spectrogram's window length belongs to the analyst and not the microphone —
-     and it is the width the hysteresis thresholds were calibrated at. Wiring
-     the recording's interval into it moves the detector off its operating
-     point, which is exactly what this page did until now. `gridDt` is still
-     honoured because the parity tests pass it by that name. */
-  const dt = o.profileBinSec !== undefined ? o.profileBinSec
-           : (o.gridDt === undefined ? SYNC_PROFILE_BIN_SEC : o.gridDt);
-  const stat = o.statistic === undefined ? "mean" : o.statistic;
-  const athr = o.artifactThreshold === undefined ? 0.85 : o.artifactThreshold;
-  const afthr = o.artifactThresholdFraction === undefined ? 0.70 : o.artifactThresholdFraction;
-  const aplat = o.artifactThresholdPlat90 === undefined ? 0.8 : o.artifactThresholdPlat90;
-
-  const ev = clipSorted(trains, tRange[0], tRange[1]);
-  const prof = adaptiveProfile(trains, tRange, tauMax);
-  const { cx, cy, cn } = binnedSynchrony(prof.x, prof.y, dt, tRange, stat);
-  const n2 = cy.length;
-
-  const starts = [], ends = [], amps = [];
-  let i = -1;
-  while (i < n2 - 1) {
-    i += 1;
-    if (cy[i] > Cthr) {
-      let cmean = cy[i], ncmean = 1;
-      const evBegin = cx[i];
-      let evEnd = evBegin, evSum = cn[i];
-      let j = i + 1;
-      let gap = j < n2 ? cx[j] - cx[i] : Infinity;
-      while (j < n2 - 1 && gap < maxGap) {
-        while (j < n2 - 2 && cy[j] === 0 && gap < maxGap) { j += 1; gap = cx[j] - cx[i]; }
-        if (gap <= maxGap && cy[j] > Cmin) {
-          cmean += cy[j]; ncmean += 1; evSum += cn[j];
-          evEnd = cx[j]; i = j; j += 1;
-        } else { i = j; break; }
-      }
-      if (evBegin === evEnd) evEnd = evEnd + dt;
-      if (evSum >= minN) { starts.push(evBegin); ends.push(evEnd); amps.push(cmean / ncmean); }
-    }
-  }
-
-  const art = flagArtifacts(starts, ends, amps, cx, cy, ev, athr, afthr, aplat);
-  return { starts, ends, amps,
-           widths: starts.map((s, k) => ends[k] - s),
-           peakC: Array.from(art.peakC), plat90: Array.from(art.plat90),
-           nParticipatingRois: Array.from(art.nPart), isArtifact: art.isArtifact,
-           nTotalRois: trains.length,
-           profileX: prof.x, profileY: prof.y, cx, cy, cn,
-           nEvents: starts.length };
-}
 
 
 
@@ -3313,80 +3183,6 @@ const matlabRound = x => Math.floor(x + 0.5);
    `thresholds` may be supplied to bypass the sampling entirely — that is how
    the parity test compares detections exactly against a Python run that drew
    different random numbers. Nothing in the interface passes it. */
-function locoDetect(trains, range, opts) {
-  const o = opts || {};
-  const binw = o.binWidthSec === undefined ? 1.0 : o.binWidthSec;
-  const mgap = o.mergeGapSec === undefined ? 2.0 : o.mergeGapSec;
-  const ctx = o.contextWinSec === undefined ? 120.0 : o.contextWinSec;
-  const pctile = o.thresholdPctile === undefined ? 99.9 : o.thresholdPctile;
-  const tstep = o.thrStepSec === undefined ? 15.0 : o.thrStepSec;
-  const nSur = o.nSurrogates === undefined ? 100 : o.nSurrogates;
-  // min_rois is NOT a knob and is not exposed. FOUNDATIONS §9: a nonzero
-  // coactivity excess is evidence about the preparation, not a false-alarm floor
-  // to raise until it goes away.
-  const minRois = o.minRois === undefined ? 3 : o.minRois;
-  const u = rng32(o.seed === undefined ? 20260706 : o.seed);
-
-  const tLo = range[0], tHi = range[1];
-  const halfCtx = ctx / 2;
-  const ev = clipSorted(trains, tLo, tHi);
-
-  let edges = matlabColon(tLo, binw, tHi);
-  if (edges.length < 2) edges = Float64Array.from([tLo, tHi]);
-  const nb = edges.length - 1;
-  const bc = new Float64Array(nb);
-  for (let i = 0; i < nb; i++) bc[i] = edges[i] + binw / 2;
-  const sObs = distinctCoact(ev, edges);
-
-  const anchors = matlabColon(tLo, tstep, tHi);
-  const thrA = new Float64Array(anchors.length);
-  for (let ai = 0; ai < anchors.length; ai++) {
-    const a = anchors[ai];
-    // the segment IS the region here — see the note at the top of this block
-    const tl = thresholdPool(ev, Math.max(a - halfCtx, tLo), a, binw, nSur, pctile, u);
-    const tr = thresholdPool(ev, a, Math.min(a + halfCtx, tHi), binw, nSur, pctile, u);
-    thrA[ai] = Math.max(tl, tr);
-  }
-  const thrBin = new Float64Array(nb);
-  for (let i = 0; i < nb; i++) {
-    let best = 0, bd = Infinity;
-    for (let k = 0; k < anchors.length; k++) {
-      const d = Math.abs(bc[i] - anchors[k]);
-      if (d < bd) { bd = d; best = k; }          // np.argmin takes the FIRST
-    }
-    thrBin[i] = thrA[best];
-  }
-  if (o.thresholds) for (let i = 0; i < nb; i++) thrBin[i] = o.thresholds[i];
-
-  const fb = [];
-  for (let i = 0; i < nb; i++) if (sObs[i] > thrBin[i] && sObs[i] >= minRois) fb.push(i);
-  const runs = [];
-  if (fb.length) {
-    const gapB = Math.max(1, matlabRound(mgap / binw));
-    let cur = [fb[0]];
-    for (let k = 1; k < fb.length; k++) {
-      if (fb[k] - cur[cur.length - 1] <= gapB) cur.push(fb[k]);
-      else { runs.push(cur); cur = [fb[k]]; }
-    }
-    runs.push(cur);
-  }
-
-  const starts = [], ends = [], mag = [], magTotal = [], thr = [], widths = [];
-  for (const gi of runs) {
-    const b0 = gi[0], b1 = gi[gi.length - 1];
-    const sp = spanOf(ev, edges[b0], edges[b1 + 1]);
-    let pk = 0;
-    for (let k = 1; k < gi.length; k++) if (sObs[gi[k]] > sObs[gi[pk]]) pk = k;  // first max
-    starts.push(sp.tfirst);
-    ends.push(sp.tlast);
-    widths.push(sp.tlast - sp.tfirst);
-    mag.push(sObs[gi[pk]]);
-    magTotal.push(sp.nrec);
-    thr.push(thrBin[gi[pk]]);
-  }
-  return { starts, ends, widths, magnitude: mag, magTotal, threshold: thr,
-           bc, sObs, thrBin, nEvents: starts.length };
-}
 
 
 /* ---------- CoactDetect, in the browser --------------------------------------
@@ -3461,117 +3257,6 @@ function coactStats(observed, counts) {
 
    `pvals` may be supplied to bypass the sampling, which is how the parity test
    compares episodes exactly against a Python run that drew different numbers. */
-function coactDetect(trains, range, opts) {
-  const o = opts || {};
-  const bw = o.intWinSec === undefined ? 0.5 : o.intWinSec;
-  const C = o.contextWinSec === undefined ? 60.0 : o.contextWinSec;
-  const minRois = o.minRois === undefined ? 3 : o.minRois;
-  const nSur = o.nSurrogates === undefined ? 200 : o.nSurrogates;
-  const alpha = o.alpha === undefined ? 0.01 : o.alpha;
-  const mgap = o.mergeGapSec === undefined ? 3.0 : o.mergeGapSec;
-  const u = rng32(o.seed === undefined ? 20260706 : o.seed);
-
-  const t0 = range[0], t1 = range[1];
-  const ev = clipSorted(trains, t0, t1);
-  const nb = Math.max(1, Math.ceil((t1 - t0) / bw));
-  const edges = new Float64Array(nb + 1);
-  for (let k = 0; k <= nb; k++) edges[k] = t0 + k * bw;
-  const ctr = new Float64Array(nb);
-  for (let k = 0; k < nb; k++) ctr[k] = t0 + (k + 0.5) * bw;
-
-  // distinct ROIs per bin — one per ROI per bin, however often it fired
-  const obs = new Float64Array(nb);
-  for (const e of ev) {
-    if (!e.length) continue;
-    const seen = new Set();
-    for (const x of e) {
-      let b = Math.floor((x - t0) / bw);
-      if (b < 0) b = 0; else if (b > nb - 1) b = nb - 1;
-      seen.add(b);
-    }
-    for (const b of seen) obs[b] += 1;
-  }
-
-  const z = new Float64Array(nb).fill(NaN);
-  const pval = new Float64Array(nb).fill(NaN);
-  const nullmean = new Float64Array(nb).fill(NaN);
-  const cand = [];
-  for (let b = 0; b < nb; b++) if (obs[b] >= minRois) cand.push(b);
-
-  if (o.pvals) {
-    for (let b = 0; b < nb; b++) pval[b] = o.pvals[b];
-  } else {
-    for (const b of cand) {
-      const blo = edges[b], bhi = edges[b + 1];
-      const cLo = Math.max(t0, ctr[b] - C / 2);
-      const cHi = Math.min(t1, ctr[b] + C / 2);
-      const cw = cHi - cLo;
-      const tlo = blo - cLo, thi = bhi - cLo;
-      const ctx = [];
-      for (const e of ev) {
-        if (!e.length) continue;
-        const vv = [];
-        for (const x of e) if (x >= cLo && x <= cHi) vv.push(x - cLo);
-        if (vv.length) ctx.push(vv);
-      }
-      // one draw per (surrogate, context ROI), surrogate-major — the same stream
-      // shape the MATLAB scalar-rand loops consume
-      const counts = new Float64Array(nSur);
-      const draws = new Float64Array(nSur * ctx.length);
-      for (let i = 0; i < draws.length; i++) draws[i] = u();
-      for (let j = 0; j < ctx.length; j++) {
-        for (let s = 0; s < nSur; s++) {
-          const d = draws[s * ctx.length + j];
-          let hit = false;
-          for (const x of ctx[j]) {
-            let sh = (x + d * cw) % cw;
-            if (sh < 0) sh += cw;
-            if (sh >= tlo && sh < thi) { hit = true; break; }
-          }
-          if (hit) counts[s] += 1;
-        }
-      }
-      const st = coactStats(obs[b], counts);
-      nullmean[b] = st.mu; z[b] = st.z; pval[b] = st.p;
-    }
-  }
-
-  // a NaN p-value is not significant — the bin was never a candidate
-  const sig = [];
-  for (const b of cand) if (pval[b] <= alpha) sig.push(b);
-
-  const startsB = [], endsB = [];
-  if (sig.length) {
-    let sCur = sig[0], prev = sig[0];
-    for (let k = 1; k < sig.length; k++) {
-      const b = sig[k];
-      // gap measured from the END of the previous significant bin, not its start
-      if (edges[b] - edges[prev + 1] <= mgap) prev = b;
-      else { startsB.push(sCur); endsB.push(prev); sCur = prev = b; }
-    }
-    startsB.push(sCur); endsB.push(prev);
-  }
-
-  const starts = [], widths = [], ends = [], nrois = [], evZ = [], evP = [];
-  for (let k = 0; k < startsB.length; k++) {
-    const s = startsB[k], e = endsB[k];
-    starts.push(edges[s]);
-    widths.push(edges[e + 1] - edges[s]);
-    ends.push(edges[e + 1]);
-    let mx = -Infinity, zmax = NaN, pmin = NaN;
-    for (let b = s; b <= e; b++) {
-      if (obs[b] > mx) mx = obs[b];
-      // merged episodes span non-candidate bins whose z/p are NaN, and MATLAB's
-      // max/min ignore NaN — so these are the nan-variants, not the plain ones
-      if (!Number.isNaN(z[b])) zmax = Number.isNaN(zmax) ? z[b] : Math.max(zmax, z[b]);
-      if (!Number.isNaN(pval[b])) pmin = Number.isNaN(pmin) ? pval[b] : Math.min(pmin, pval[b]);
-    }
-    nrois.push(mx); evZ.push(zmax); evP.push(pmin);
-  }
-  return { starts, ends, widths, nrois, z: evZ, p: evP,
-           ctr, obs, zProf: z, pvalProf: pval, nullmean,
-           nEvents: starts.length };
-}
 
 
 /* ---------- SCE, in the browser ----------------------------------------------
@@ -3598,9 +3283,13 @@ function coactDetect(trains, range, opts) {
    threshold sampled, episodes exact once the threshold is fixed. */
 /* ---------- locust (key `cicada`) ---------------------------------------------
    SHOWN TO USERS AS "locust". A port of `bugarach.detectors.cicada.cicada_detect`,
-   which is itself a port of the Cossart lab's CICADA — and a MODIFIED one: it is
-   fed our own detected events, and paints each cell active for the rise interval
-   where the original paints the whole transient duration. Putting another lab's
+   which is itself a port of the Cossart lab's CICADA — and a MODIFIED one, in both
+   cases by what it is FED rather than what it computes: our own detected events
+   instead of CICADA's transient detection, and a per-event duration from the
+   producer instead of the whole transient the original measures for itself. THE
+   DURATION IS NEVER DERIVED HERE — it arrives in `width_sec` under the `width_def`
+   naming the rule that made it, and this code paints what it is given
+   (FOUNDATIONS section 7). Putting another lab's
    tool name on a modified port, in a public UI, was the one attribution item Tony
    did not wave off (2026-08-24); the name is his.
 
@@ -3621,129 +3310,17 @@ function coactDetect(trains, range, opts) {
 
    WHICH MAKES THE FOLDER THE PROBLEM, not the algorithm. The contract sends
    `time_sec` as the half-rise. The peak is either sent as `peak_sec` or recovered
-   as `time_sec + width_sec` where `width_def` is `t50rise_to_peak` — that width is
-   `locs - t50rise`, the same quantity `cicada.py` computes as `rise_dur`. Where
+   as `time_sec + width_sec` where `width_def` is `t50rise_to_peak` — reading the
+   producer's own duration, which is the only place a duration ever comes from
+   here; `cicada.py` used to recompute this and now refuses. Where
    neither is available this detector does not run, and says why. It does not fall
    back to the half-rise, which would produce a full page of coordinated events
    from a stream where the onsets merely arrive close together.
 
-   The raster marks a cell active FROM ITS PEAK forward for the transient
+   The raster marks a cell active FROM ITS PEAK forward for the producer's
    duration, so an event contributes its own length rather than a single frame.
    Everything after that is the sliding coactivity count, a surrogate threshold
    from circularly rolled cells, and peak-picking with a minimum separation. */
-function cicadaDetect(peakTrains, durTrains, range, opts) {
-  const o = opts || {};
-  const dt = o.gridDt === undefined ? 0.1 : o.gridDt;
-  const nsync = Math.max(1, Math.round(o.nSynchronousFrames === undefined
-                                       ? 1 : o.nSynchronousFrames));
-  const pctile = o.scePercentile === undefined ? 99.0 : o.scePercentile;
-  const nSur = o.nSurrogates === undefined ? 100 : o.nSurrogates;
-  const minDist = Math.max(1, Math.round(o.sceMinDistanceFrames === undefined
-                                         ? 4 : o.sceMinDistanceFrames));
-  const adur = o.activeDurationSec === undefined ? 1.0 : o.activeDurationSec;
-  const perEvent = !!o.perEventDuration;
-  const u = rng32(o.seed === undefined ? 20260706 : o.seed);
-
-  const wLo = range[0], wHi = range[1];
-  const empty = { starts: [], ends: [], widths: [], magnitude: [], magTotal: [],
-                  threshold: NaN, obs: new Float64Array(0),
-                  bctr: new Float64Array(0), nEvents: 0 };
-  if (wHi <= wLo) return empty;
-
-  const nf = Math.max(1, Math.floor((wHi - wLo) / dt));
-  const nc = peakTrains.length;
-  if (nc < 1) return empty;
-  const dframes = Math.max(1, Math.floor(adur / dt + 0.5));
-
-  /* logical [nc x nf], each event active from its own frame for its own length.
-     A frame outside the window is SKIPPED, not clamped to an edge: clamping
-     would pile every out-of-range event onto frame 0 and invent a synchrony
-     there. */
-  const raster = [];
-  for (let c = 0; c < nc; c++) {
-    const row = new Uint8Array(nf);
-    const v = peakTrains[c] || [], d = (durTrains && durTrains[c]) || null;
-    for (let k = 0; k < v.length; k++) {
-      const t = v[k];
-      if (!Number.isFinite(t)) continue;
-      const f = Math.floor((t - wLo) / dt);
-      if (f < 0 || f >= nf) continue;
-      let df = dframes;
-      if (perEvent && d) {
-        const dv = d[k];
-        df = Number.isFinite(dv) ? Math.max(1, Math.floor(dv / dt + 0.5)) : 1;
-      }
-      const hi = Math.min(nf, f + df);
-      for (let j = f; j < hi; j++) row[j] = 1;
-    }
-    raster.push(row);
-  }
-
-  // distinct cells active in each nsync-frame sliding window
-  const m = nf - nsync;
-  if (m < 1) return empty;
-  const obs = new Float64Array(m);
-  for (let c = 0; c < nc; c++) {
-    const row = raster[c];
-    let inWin = 0;
-    for (let j = 0; j < nsync; j++) inWin += row[j];
-    for (let i = 0; i < m; i++) {
-      if (inWin > 0) obs[i] += 1;
-      inWin -= row[i];
-      if (i + nsync < nf) inWin += row[i + nsync];
-    }
-  }
-
-  /* CICADA's get_sce_threshold: roll each cell by randi(nf-1), sum active cells
-     PER FRAME, pool every surrogate together, take the percentile of the pool.
-     Pooled rather than per-surrogate — the threshold is one number about the
-     whole recording, and taking a percentile per surrogate and averaging is a
-     different statistic that looks just as reasonable. */
-  let threshold = 0;
-  if (nf >= 2) {
-    const pool = new Float64Array(nSur * nf);
-    for (let s = 0; s < nSur; s++) {
-      const off = s * nf;
-      for (let c = 0; c < nc; c++) {
-        const row = raster[c];
-        const k = Math.floor(u() * (nf - 1)) + 1;      // MATLAB randi(nf-1)
-        for (let j = 0; j < nf; j++) {
-          // np.roll(row, k)[j] === row[(j - k) mod nf]
-          let src = j - k; if (src < 0) src += nf;
-          pool[off + j] += row[src];
-        }
-      }
-    }
-    threshold = matlabPrctile(Array.from(pool), pctile);
-  }
-
-  /* local maxima >= threshold, plateau taking its LEFT edge (> left, >= right),
-     thinned tallest-first to at least minDist apart with earlier winning ties */
-  const cand = [];
-  for (let i = 0; i < m; i++) {
-    if (!(obs[i] >= threshold) || obs[i] <= 0) continue;
-    const l = i > 0 ? obs[i - 1] : -Infinity;
-    const r = i < m - 1 ? obs[i + 1] : -Infinity;
-    if (obs[i] > l && obs[i] >= r) cand.push(i);
-  }
-  cand.sort((a, b) => obs[b] - obs[a] || a - b);
-  const kept = [];
-  for (const i of cand)
-    if (kept.every(j => Math.abs(i - j) >= minDist)) kept.push(i);
-  kept.sort((a, b) => a - b);
-
-  const starts = [], ends = [], widths = [], magnitude = [], magTotal = [];
-  for (const i of kept) {
-    const s = wLo + i * dt, e = wLo + (i + nsync) * dt;
-    starts.push(s); ends.push(e); widths.push(e - s);
-    magnitude.push(obs[i]);
-    magTotal.push(obs[i]);
-  }
-  const bctr = new Float64Array(m);
-  for (let i = 0; i < m; i++) bctr[i] = wLo + (i + nsync / 2) * dt;
-  return { starts, ends, widths, magnitude, magTotal, threshold, obs, bctr,
-           nEvents: starts.length };
-}
 
 /* Can this recording answer CICADA at all?
 
@@ -3780,7 +3357,7 @@ function cicadaTrains(data, stream, order, lo, hi) {
     peakTrains.push(pk); durTrains.push(du);
   }
   if (total && !have)
-    return { why: "locust anchors on the PEAK of each transient, and this folder "
+    return { why: "this detector anchors on the PEAK of each transient, and this folder "
                   + "does not carry one. Send `peak_sec` — every current export "
                   + "does, and it is the unambiguous route — or send `width_sec` "
                   + "with a `width_def` of `t50rise_to_peak` or "
@@ -3796,122 +3373,6 @@ function cicadaTrains(data, stream, order, lo, hi) {
            widthDef: defs[0] || null };
 }
 
-function sceDetect(trains, range, opts) {
-  const o = opts || {};
-  const bw = o.binWidthSec === undefined ? 10.0 : o.binWidthSec;
-  const pctile = o.thresholdPctile === undefined ? 99.0 : o.thresholdPctile;
-  const nSur = o.nSurrogates === undefined ? 200 : o.nSurrogates;
-  const minRois = o.minRois === undefined ? 3 : o.minRois;
-  const mgap = o.mergeGapSec === undefined ? NaN : o.mergeGapSec;
-  const u = rng32(o.seed === undefined ? 20260706 : o.seed);
-
-  const wLo = range[0], wHi = range[1];
-  const empty = { starts: [], ends: [], widths: [], magnitude: [],
-                  magTotal: [], threshold: NaN, obs: new Float64Array(0),
-                  bctr: new Float64Array(0), nEvents: 0 };
-  if (wHi <= wLo) return empty;
-
-  const lw = wHi - wLo;
-  const ev = clipSorted(trains, wLo, wHi);
-  const nRoi = ev.length;
-  const nBins = Math.max(1, Math.ceil(lw / bw));
-  const bctr = new Float64Array(nBins);
-  for (let i = 0; i < nBins; i++) bctr[i] = wLo + (i + 0.5) * bw;
-  // the bin index is CLIPPED into range rather than dropped, so the last bin
-  // takes the window's final instant — same rule CoactDetect uses, and not the
-  // `discretize` rule LoCo uses
-  const binOf = t => {
-    let i = Math.floor((t - wLo) / bw);
-    return i < 0 ? 0 : (i > nBins - 1 ? nBins - 1 : i);
-  };
-
-  const obs = new Float64Array(nBins);
-  for (const v of ev) {
-    if (!v.length) continue;
-    const seen = new Set();
-    for (const x of v) seen.add(binOf(x));
-    for (const i of seen) obs[i] += 1;
-  }
-
-  let thr;
-  if (o.threshold !== undefined) {
-    thr = o.threshold;
-  } else {
-    // one offset per ROI per surrogate, and EMPTY ROIs ARE DRAWN FOR — they
-    // consume their place in the stream even though they contribute nothing
-    const draws = new Float64Array(nSur * nRoi);
-    for (let i = 0; i < draws.length; i++) draws[i] = u() * lw;
-    const nullCounts = new Float64Array(nSur * nBins);
-    for (let r = 0; r < nRoi; r++) {
-      if (!ev[r].length) continue;
-      for (let s = 0; s < nSur; s++) {
-        const d = draws[s * nRoi + r];
-        const act = new Set();
-        for (const x of ev[r]) {
-          let sh = (x - wLo + d) % lw;
-          if (sh < 0) sh += lw;
-          act.add(binOf(wLo + sh));
-        }
-        for (const i of act) nullCounts[s * nBins + i] += 1;
-      }
-    }
-    thr = matlabPrctile(nullCounts, pctile);
-  }
-
-  const sig = [];
-  for (let i = 0; i < nBins; i++) if (obs[i] > thr && obs[i] >= minRois) sig.push(i);
-  if (!sig.length) {
-    return { ...empty, threshold: thr, obs, bctr };
-  }
-
-  // every in-window event with its bin and its ROI — the merge and the episode
-  // statistics are both computed from these rather than from the bins
-  const evTimes = [], evBin = [], evRoi = [];
-  for (let r = 0; r < nRoi; r++)
-    for (const x of ev[r]) { evTimes.push(x); evBin.push(binOf(x)); evRoi.push(r); }
-  const binFirst = new Float64Array(nBins).fill(NaN);
-  const binLast = new Float64Array(nBins).fill(NaN);
-  for (let k = 0; k < evTimes.length; k++) {
-    const b = evBin[k];
-    if (Number.isNaN(binFirst[b]) || evTimes[k] < binFirst[b]) binFirst[b] = evTimes[k];
-    if (Number.isNaN(binLast[b]) || evTimes[k] > binLast[b]) binLast[b] = evTimes[k];
-  }
-
-  const runs = [];
-  let cs = sig[0], ce = sig[0], runLast = binLast[sig[0]];
-  for (let k = 1; k < sig.length; k++) {
-    const b = sig[k];
-    // NaN gap compares false and therefore never merges — which is also what
-    // the default merge_gap of NaN means
-    if (binFirst[b] - runLast <= mgap) { ce = b; runLast = binLast[b]; }
-    else { runs.push([cs, ce]); cs = ce = b; runLast = binLast[b]; }
-  }
-  runs.push([cs, ce]);
-
-  const starts = [], ends = [], widths = [], mag = [], magTotal = [];
-  for (const [fb, lb] of runs) {
-    let mx = -Infinity;
-    for (let b = fb; b <= lb; b++) if (obs[b] > mx) mx = obs[b];
-    const rois = new Set();
-    let tfirst = Infinity, tlast = -Infinity;
-    for (let k = 0; k < evTimes.length; k++) {
-      if (evBin[k] >= fb && evBin[k] <= lb) {
-        rois.add(evRoi[k]);
-        if (evTimes[k] < tfirst) tfirst = evTimes[k];
-        if (evTimes[k] > tlast) tlast = evTimes[k];
-      }
-    }
-    const w = rois.size ? tlast - tfirst : NaN;
-    // the reported onset is the BIN's start, not the first event in it
-    starts.push(wLo + fb * bw);
-    widths.push(w);
-    ends.push(wLo + fb * bw + (Number.isNaN(w) ? 0 : w));
-    mag.push(mx);
-    magTotal.push(rois.size);
-  }
-  return { starts, ends, widths, magnitude: mag, magTotal, threshold: thr,
-           obs, bctr, nEvents: starts.length };
-}
 
 /* ---------- scoring, and the step that makes this a loop ----------------------
    Measure, simulate from what you measured, DETECT — and then the question the
@@ -6824,7 +6285,42 @@ let FOLDER_RUN = null;   // {rows, slices, frameIntervals, frameSources,
    byte-identical to `docs/site/raster_viewer.html`, so a build cannot stamp one
    in, and a hand-maintained constant here would go stale silently — which is
    worse than absent, because it would be believed. `write_run` already treats a
-   null as "asked and had no answer". */
+   null as "asked and had no answer".
+
+   BUT THE PAGE IS NOT ANONYMOUS, and until 2026-08-29 it wrote as if it were.
+   The argument above is right about a *code* version and was over-applied: this
+   file already carries `<meta name="bugarach:version-date">`, and the objection
+   to a hand-maintained constant — that it goes stale silently — is exactly what
+   does not happen to that one. Two tests fail the moment it disagrees with git,
+   in `test_site_dates.py` and `test_site_viewer.py`. So the page reads its own
+   stamp at runtime rather than hardcoding a second copy, and a downloaded
+   run.json can be tied to a version of this page.
+
+   It lands in `provenance`, beside the null `code_version`, never instead of it.
+   They answer different questions, and a page date quietly filling a field that
+   means "which library" is the confusion this whole block exists to prevent. */
+function pageProvenance() {
+  const meta = document.querySelector('meta[name="bugarach:version-date"]');
+  return {
+    // Null is a real answer here — a page opened from a context that stripped
+    // the head has no stamp — and it is reported rather than papered over.
+    page_version_date: meta ? meta.getAttribute("content") : null,
+    produced_by: "bugarach raster viewer (in-browser)",
+    // Which detectors this build actually offers, read from the registry rather
+    // than listed here, so a detector added to docs/site/detectors shows up in
+    // the record of the run without anybody editing this function (ADR-0005).
+    detectors_available: Object.keys(DETECTORS),
+    // The library's version and commit. A browser has neither and cannot get
+    // them; saying so is the honest answer, and it is why `code_version` stays
+    // null below rather than borrowing the page date.
+    bugarach_version: null,
+    git_commit: null,
+    git_dirty: null,
+    code_version: null,
+    user_agent: (typeof navigator !== "undefined" && navigator.userAgent) || null,
+  };
+}
+
 function runJson(run) {
   return {
     slices: run.slices.slice(),
@@ -6841,6 +6337,7 @@ function runJson(run) {
        untouched and every existing reader of `frame_interval_sec` still works. */
     frame_interval_source: Object.assign({}, run.frameSources),
     code_version: null,
+    provenance: pageProvenance(),
     // Present only for a folder this page invented; a folder off disk had no
     // generator, no K was chosen for it and it has no seeds.
     generator_spec: run.generatorSpec ?? null,
@@ -7438,7 +6935,7 @@ function savedSettingsRows() {
   const stream = STREAM || "";
   const where = dataSetName();
   const rows = [];
-  for (const which of Object.keys(DETECTORS)) {
+  for (const which of buildDetectors()) {
     const params = readParams(which);
     for (const name of Object.keys(params).sort())
       rows.push({ detector: which, stream, parameter: name,
@@ -7492,7 +6989,7 @@ function savedSettingsRows() {
    asks for and what the browser could not say until now. */
 function runSettingsRows(thresholds) {
   const rows = [];
-  for (const which of Object.keys(DETECTORS)) {
+  for (const which of buildDetectors()) {
     const byStream = thresholds[which];
     if (!byStream) continue;
     for (const stream of Object.keys(byStream).sort()) {
@@ -7645,83 +7142,82 @@ async function loadSettingsFile(file) {
 }
 
 const DETECTORS = {
-  rate: {
-    label: "RateDetect",
-    blurb: "how fast",
-    ctl: "dRateCtl", fine: "dFineRate",
-    read: dt => ({ gridDt: dt,
-      excessThresholdHz: clamp(numById("dThr"), 0.1, 50),
-      rateWin: clamp(numById("dRate"), 0.1, 30),
-      contextWin: clamp(numById("dCtx"), 5, 600) }),
-    run: (trains, range, cfg) => rateDetect(trains, range, cfg),
-    settings: cfg => "threshold " + cfg.excessThresholdHz + " Hz excess · rate window "
-      + cfg.rateWin + " s · context " + cfg.contextWin + " s · dt " + cfg.gridDt + " s",
-    /* WHICH CONTROL HOLDS WHICH PARAMETER — the map a saved settings file is
-       read back through. `read` above is one direction only; without this, a
-       file could be written and never loaded, which is provenance that looks
-       like provenance and is not. Kept honest by
-       `test_webapp_settings_file.py`, which derives the check from this
-       registry: every key `read` produces is either in here with a control that
-       exists, or declared `fixed`. */
-    params: { excessThresholdHz: "dThr", rateWin: "dRate", contextWin: "dCtx" },
-    knob: { key: "excessThresholdHz", input: "dThr", name: "excess threshold", unit: "Hz",
-            scale: "linear", grid: [0.5, 1, 2, 3, 4, 5, 6, 8] },
-  },
-  sce: {
-    label: "SCE",
-    blurb: "was anything happening",
-    ctl: "dSceCtl", fine: "dFineSce",
-    read: dt => ({ gridDt: dt,
-      binWidthSec: clamp(numById("sBin"), 1, 120),
-      thresholdPctile: clamp(numById("sPct"), 80, 99.99),
-      nSurrogates: Math.round(clamp(numById("sSur"), 20, 2000)) }),
-    run: (trains, range, cfg) => sceDetect(trains, range, cfg),
-    settings: cfg => "bin " + cfg.binWidthSec + " s · "
-      + cfg.thresholdPctile + "th percentile of " + cfg.nSurrogates
-      + " shuffles · one bar per window · floor 3 ROIs",
-    params: { binWidthSec: "sBin", thresholdPctile: "sPct", nSurrogates: "sSur" },
-    knob: { key: "thresholdPctile", input: "sPct", name: "threshold percentile", unit: "",
-            scale: "tail", grid: [90.0, 95.0, 98.0, 99.0, 99.5, 99.9] },
-  },
-  coact: {
-    label: "CoactDetect",
-    blurb: "how unlikely",
-    ctl: "dCoactCtl", fine: "dFineCoact",
-    read: dt => ({ gridDt: dt,
-      intWinSec: clamp(numById("cWin"), 0.1, 60),
-      contextWinSec: clamp(numById("cCtx"), 10, 1200),
-      alpha: clamp(numById("cAlpha"), 1e-7, 0.5),
-      nSurrogates: Math.round(clamp(numById("cSur"), 20, 1000)) }),
-    run: (trains, range, cfg) => coactDetect(trains, range, cfg),
-    settings: cfg => "bin " + cfg.intWinSec + " s · context " + cfg.contextWinSec
-      + " s · alpha " + cfg.alpha + " per bin · " + cfg.nSurrogates
-      + " shuffles · floor 3 ROIs",
-    params: { intWinSec: "cWin", contextWinSec: "cCtx", alpha: "cAlpha",
-              nSurrogates: "cSur" },
-    knob: { key: "alpha", input: "cAlpha", name: "alpha", unit: "per bin",
-            scale: "log", grid: [1e-2, 1e-3, 1e-4, 1e-5, 1e-6, 1e-7] },
-  },
-  loco: {
-    label: "LoCo",
-    blurb: "how many together",
-    ctl: "dLocoCtl", fine: "dFineLoco",
-    read: dt => ({ gridDt: dt,
-      binWidthSec: clamp(numById("lBin"), 0.1, 60),
-      contextWinSec: clamp(numById("lCtx"), 10, 1200),
-      thresholdPctile: clamp(numById("lPct"), 90, 99.9999),
-      nSurrogates: Math.round(clamp(numById("lSur"), 20, 1000)) }),
-    run: (trains, range, cfg) => locoDetect(trains, range, cfg),
-    settings: cfg => "bin " + cfg.binWidthSec + " s · context "
-      + cfg.contextWinSec + " s · " + cfg.thresholdPctile + "th percentile of "
-      + cfg.nSurrogates + " shuffles · floor 3 ROIs",
-    params: { binWidthSec: "lBin", contextWinSec: "lCtx",
-              thresholdPctile: "lPct", nSurrogates: "lSur" },
-    knob: { key: "thresholdPctile", input: "lPct", name: "threshold percentile", unit: "",
-            scale: "tail", grid: [99.0, 99.5, 99.9, 99.99, 99.999, 99.9999] },
-  },
-  cicada: {
-    label: "locust",
-    blurb: "how many cells at once",
+};
+
+/* THE ORDER IS PART OF THE CONTRACT, so it is declared here rather than
+   inherited from whatever order files happen to be read in.
+
+   It was incidental until 2026-08-29: `rate` was simply first in the
+   literal. Moving it into an object file put it last, and
+   `test_webapp_tune_picks` caught it — which was luck, because the same
+   reordering also moves the row order of `detections.csv`, the lane order
+   on the raster, and the sequence in which detectors draw from the shared
+   RNG (`cicada_detect`: "declaration order, one RNG"). A silent
+   reordering there changes surrogate draws, and nothing else would say so.
+
+   A detector NOT named here still loads — it goes to the end. So "added at
+   will" holds, and only a detector needing a specific slot has to say so. */
+const DETECTOR_ORDER = ["rate", "sce", "coact", "loco", "cicada", "sync"];
+
+/* One detector, registered. The object files in docs/site/detectors call
+   this; the shell owns the table so a detector cannot see or clobber its
+   neighbours. A duplicate key throws rather than last-one-wins, because two
+   files claiming one detector is the ambiguity the folder exists to remove. */
+function registerDetector(d) {
+  if (DETECTORS[d.key]) throw new Error("duplicate detector: " + d.key);
+  DETECTORS[d.key] = d;
+  /* Rebuild in canonical order. JS objects iterate string keys in insertion
+     order, so re-inserting is how a key moves — there is no cheaper way, and
+     this runs once per detector at load. */
+  const ranked = Object.keys(DETECTORS).sort((a, b) => {
+    const ia = DETECTOR_ORDER.indexOf(a), ib = DETECTOR_ORDER.indexOf(b);
+    return (ia < 0 ? 1e9 : ia) - (ib < 0 ? 1e9 : ib);
+  });
+  const held = {};
+  ranked.forEach(k => { held[k] = DETECTORS[k]; delete DETECTORS[k]; });
+  ranked.forEach(k => { DETECTORS[k] = held[k]; });
+}
+
+/* <<<ASSEMBLED DETECTORS>>> — do not edit between here and the closing
+   marker. `tools/assemble_viewer.py` writes this region from
+   docs/site/detectors/*.js, one file per detector, in sorted order.
+   Editing raster_viewer.html here is overwritten by the next build;
+   edit the object file instead. ADR-0005. */
+
+/* cicada — the sixth detector (key `cicada`), as an object.
+
+   ONE FILE IS ONE DETECTOR: the descriptor the page renders from, and the code
+   that runs. Delete this file and cicada is gone — picker, controls and algorithm
+   together — which is the point of the folder (ADR-0005).
+
+   Assembled into the page at BUILD time, not load time: docs/site is one
+   self-contained file making zero requests, so it works from file:// and no
+   recording leaves the machine. build_site.py's NETWORK guard enforces it.
+
+   WHAT THE SHELL PROVIDES and this file uses: the shared helpers. `clipSorted`
+   is called by five detectors and `matlabPrctile` by three, so they stay in the
+   shell — a shared helper living in one detector's file would make deleting
+   that file break the others.
+
+   PARITY: `bugarach.detectors.cicada` is the other implementation of this, and
+   tests/test_webapp_cicada_detect_parity.py pins the two. A change here that is
+   not made there is a divergence, not an improvement.
+*/
+
+// ---- descriptor -------------------------------------------------------------
+registerDetector(
+{
+    key: "cicada",
+    /* NOT IN THIS BUILD — see `WITHHELD` below the registry. It carries no
+       `unavailable` field on purpose: that mechanism draws the row, disables it
+       and says why, and this detector is not to be present at all.
+
+       ⚠ THIS ENTRY BRIEFLY HAD TWO `unavailable` KEYS, from two sessions
+       withholding it on the same day for different stated reasons. JS takes the
+       last one silently, so the page shipped one reason while the file contained
+       two. Neither survives; the decision is a list now, and a list cannot hold
+       the same key twice. */
+    label: "sixth", blurb: "how many cells at once",
     ctl: "dCicCtl", fine: "dFineCicada",
     // NEEDS THE PEAK, which is why it carries a flag the other five do not: its
     // raster is anchored on `locs`, and the folder has to have sent enough to
@@ -7739,7 +7235,7 @@ const DETECTORS = {
     settings: cfg => cfg.scePercentile + "th percentile of " + cfg.nSurrogates
       + " rolls · " + cfg.nSynchronousFrames + " frame window · peaks "
       + cfg.sceMinDistanceFrames + " frames apart · active "
-      + (cfg.perEventDuration ? "per event (t50rise→peak)"
+      + (cfg.perEventDuration ? "per event (the folder's own width_sec)"
                               : cfg.activeDurationSec + " s")
       + " · dt " + cfg.gridDt + " s",
     /* `perEventDuration` is a boolean in `cfg` and a two-valued select on the
@@ -7763,19 +7259,712 @@ const DETECTORS = {
        see this rather than have it tidied. */
     extra: { head: "of those, one cell only",
              count: d => (d.magnitude || []).filter(m => m <= 1).length },
-    note: n => n ? n + " of these are single-cell moments. locust's threshold "
-      + "comes from rolling the raster, and where the recording is sparse that "
-      + "threshold lands at one active cell — so an isolated transient clears it "
-      + "and is reported as a coincidence. The detector is doing what it does; "
-      + "the recording is too sparse for the answer to be about coordination. "
-      + "The CICADA rule it implements was built for imaging where many cells "
-      + "are active at once. Look "
+    note: n => n ? n + " of these are single-cell moments. This detector's "
+      + "threshold comes from rolling the raster, and where the recording is "
+      + "sparse that threshold lands at one active cell — so an isolated "
+      + "transient clears it and is reported as a coincidence. The detector is "
+      + "doing what it does; the recording is too sparse for the answer to be "
+      + "about coordination. The rule it implements was built for imaging where "
+      + "many cells are active at once. Look "
       + "at how many cells the strongest events actually carry before reading "
       + "anything into the count." : null,
     knob: { key: "scePercentile", input: "cPct", name: "SCE percentile", unit: "",
             scale: "tail", grid: [90.0, 95.0, 98.0, 99.0, 99.5, 99.9] },
-  },
-  sync: {
+  }
+);
+
+// ---- algorithm --------------------------------------------------------------
+function cicadaDetect(peakTrains, durTrains, range, opts) {
+  const o = opts || {};
+  const dt = o.gridDt === undefined ? 0.1 : o.gridDt;
+  const nsync = Math.max(1, Math.round(o.nSynchronousFrames === undefined
+                                       ? 1 : o.nSynchronousFrames));
+  const pctile = o.scePercentile === undefined ? 99.0 : o.scePercentile;
+  const nSur = o.nSurrogates === undefined ? 100 : o.nSurrogates;
+  const minDist = Math.max(1, Math.round(o.sceMinDistanceFrames === undefined
+                                         ? 4 : o.sceMinDistanceFrames));
+  const adur = o.activeDurationSec === undefined ? 1.0 : o.activeDurationSec;
+  const perEvent = !!o.perEventDuration;
+  const u = rng32(o.seed === undefined ? 20260706 : o.seed);
+
+  const wLo = range[0], wHi = range[1];
+  const empty = { starts: [], ends: [], widths: [], magnitude: [], magTotal: [],
+                  threshold: NaN, obs: new Float64Array(0),
+                  bctr: new Float64Array(0), nEvents: 0 };
+  if (wHi <= wLo) return empty;
+
+  const nf = Math.max(1, Math.floor((wHi - wLo) / dt));
+  const nc = peakTrains.length;
+  if (nc < 1) return empty;
+  const dframes = Math.max(1, Math.floor(adur / dt + 0.5));
+
+  /* logical [nc x nf], each event active from its own frame for its own length.
+     A frame outside the window is SKIPPED, not clamped to an edge: clamping
+     would pile every out-of-range event onto frame 0 and invent a synchrony
+     there. */
+  const raster = [];
+  for (let c = 0; c < nc; c++) {
+    const row = new Uint8Array(nf);
+    const v = peakTrains[c] || [], d = (durTrains && durTrains[c]) || null;
+    for (let k = 0; k < v.length; k++) {
+      const t = v[k];
+      if (!Number.isFinite(t)) continue;
+      const f = Math.floor((t - wLo) / dt);
+      if (f < 0 || f >= nf) continue;
+      let df = dframes;
+      if (perEvent && d) {
+        const dv = d[k];
+        df = Number.isFinite(dv) ? Math.max(1, Math.floor(dv / dt + 0.5)) : 1;
+      }
+      const hi = Math.min(nf, f + df);
+      for (let j = f; j < hi; j++) row[j] = 1;
+    }
+    raster.push(row);
+  }
+
+  // distinct cells active in each nsync-frame sliding window
+  const m = nf - nsync;
+  if (m < 1) return empty;
+  const obs = new Float64Array(m);
+  for (let c = 0; c < nc; c++) {
+    const row = raster[c];
+    let inWin = 0;
+    for (let j = 0; j < nsync; j++) inWin += row[j];
+    for (let i = 0; i < m; i++) {
+      if (inWin > 0) obs[i] += 1;
+      inWin -= row[i];
+      if (i + nsync < nf) inWin += row[i + nsync];
+    }
+  }
+
+  /* CICADA's get_sce_threshold: roll each cell by randi(nf-1), sum active cells
+     PER FRAME, pool every surrogate together, take the percentile of the pool.
+     Pooled rather than per-surrogate — the threshold is one number about the
+     whole recording, and taking a percentile per surrogate and averaging is a
+     different statistic that looks just as reasonable. */
+  let threshold = 0;
+  if (nf >= 2) {
+    const pool = new Float64Array(nSur * nf);
+    for (let s = 0; s < nSur; s++) {
+      const off = s * nf;
+      for (let c = 0; c < nc; c++) {
+        const row = raster[c];
+        const k = Math.floor(u() * (nf - 1)) + 1;      // MATLAB randi(nf-1)
+        for (let j = 0; j < nf; j++) {
+          // np.roll(row, k)[j] === row[(j - k) mod nf]
+          let src = j - k; if (src < 0) src += nf;
+          pool[off + j] += row[src];
+        }
+      }
+    }
+    threshold = matlabPrctile(Array.from(pool), pctile);
+  }
+
+  /* local maxima >= threshold, plateau taking its LEFT edge (> left, >= right),
+     thinned tallest-first to at least minDist apart with earlier winning ties */
+  const cand = [];
+  for (let i = 0; i < m; i++) {
+    if (!(obs[i] >= threshold) || obs[i] <= 0) continue;
+    const l = i > 0 ? obs[i - 1] : -Infinity;
+    const r = i < m - 1 ? obs[i + 1] : -Infinity;
+    if (obs[i] > l && obs[i] >= r) cand.push(i);
+  }
+  cand.sort((a, b) => obs[b] - obs[a] || a - b);
+  const kept = [];
+  for (const i of cand)
+    if (kept.every(j => Math.abs(i - j) >= minDist)) kept.push(i);
+  kept.sort((a, b) => a - b);
+
+  const starts = [], ends = [], widths = [], magnitude = [], magTotal = [];
+  for (const i of kept) {
+    const s = wLo + i * dt, e = wLo + (i + nsync) * dt;
+    starts.push(s); ends.push(e); widths.push(e - s);
+    magnitude.push(obs[i]);
+    magTotal.push(obs[i]);
+  }
+  const bctr = new Float64Array(m);
+  for (let i = 0; i < m; i++) bctr[i] = wLo + (i + nsync / 2) * dt;
+  return { starts, ends, widths, magnitude, magTotal, threshold, obs, bctr,
+           nEvents: starts.length };
+}
+
+/* coact — CoactDetect, as an object.
+
+   ONE FILE IS ONE DETECTOR: the descriptor the page renders from, and the code
+   that runs. Delete this file and coact is gone — picker, controls and algorithm
+   together — which is the point of the folder (ADR-0005).
+
+   Assembled into the page at BUILD time, not load time: docs/site is one
+   self-contained file making zero requests, so it works from file:// and no
+   recording leaves the machine. build_site.py's NETWORK guard enforces it.
+
+   WHAT THE SHELL PROVIDES and this file uses: the shared helpers. `clipSorted`
+   is called by five detectors and `matlabPrctile` by three, so they stay in the
+   shell — a shared helper living in one detector's file would make deleting
+   that file break the others.
+
+   PARITY: `bugarach.detectors.coact` is the other implementation of this, and
+   tests/test_webapp_coact_detect_parity.py pins the two. A change here that is
+   not made there is a divergence, not an improvement.
+*/
+
+// ---- descriptor -------------------------------------------------------------
+registerDetector(
+{
+    key: "coact",
+    label: "CoactDetect",
+    blurb: "how unlikely",
+    ctl: "dCoactCtl", fine: "dFineCoact",
+    read: dt => ({ gridDt: dt,
+      intWinSec: clamp(numById("cWin"), 0.1, 60),
+      contextWinSec: clamp(numById("cCtx"), 10, 1200),
+      alpha: clamp(numById("cAlpha"), 1e-7, 0.5),
+      nSurrogates: Math.round(clamp(numById("cSur"), 20, 1000)) }),
+    run: (trains, range, cfg) => coactDetect(trains, range, cfg),
+    settings: cfg => "bin " + cfg.intWinSec + " s · context " + cfg.contextWinSec
+      + " s · alpha " + cfg.alpha + " per bin · " + cfg.nSurrogates
+      + " shuffles · floor 3 ROIs",
+    params: { intWinSec: "cWin", contextWinSec: "cCtx", alpha: "cAlpha",
+              nSurrogates: "cSur" },
+    knob: { key: "alpha", input: "cAlpha", name: "alpha", unit: "per bin",
+            scale: "log", grid: [1e-2, 1e-3, 1e-4, 1e-5, 1e-6, 1e-7] },
+  }
+);
+
+// ---- algorithm --------------------------------------------------------------
+function coactDetect(trains, range, opts) {
+  const o = opts || {};
+  const bw = o.intWinSec === undefined ? 0.5 : o.intWinSec;
+  const C = o.contextWinSec === undefined ? 60.0 : o.contextWinSec;
+  const minRois = o.minRois === undefined ? 3 : o.minRois;
+  const nSur = o.nSurrogates === undefined ? 200 : o.nSurrogates;
+  const alpha = o.alpha === undefined ? 0.01 : o.alpha;
+  const mgap = o.mergeGapSec === undefined ? 3.0 : o.mergeGapSec;
+  const u = rng32(o.seed === undefined ? 20260706 : o.seed);
+
+  const t0 = range[0], t1 = range[1];
+  const ev = clipSorted(trains, t0, t1);
+  const nb = Math.max(1, Math.ceil((t1 - t0) / bw));
+  const edges = new Float64Array(nb + 1);
+  for (let k = 0; k <= nb; k++) edges[k] = t0 + k * bw;
+  const ctr = new Float64Array(nb);
+  for (let k = 0; k < nb; k++) ctr[k] = t0 + (k + 0.5) * bw;
+
+  // distinct ROIs per bin — one per ROI per bin, however often it fired
+  const obs = new Float64Array(nb);
+  for (const e of ev) {
+    if (!e.length) continue;
+    const seen = new Set();
+    for (const x of e) {
+      let b = Math.floor((x - t0) / bw);
+      if (b < 0) b = 0; else if (b > nb - 1) b = nb - 1;
+      seen.add(b);
+    }
+    for (const b of seen) obs[b] += 1;
+  }
+
+  const z = new Float64Array(nb).fill(NaN);
+  const pval = new Float64Array(nb).fill(NaN);
+  const nullmean = new Float64Array(nb).fill(NaN);
+  const cand = [];
+  for (let b = 0; b < nb; b++) if (obs[b] >= minRois) cand.push(b);
+
+  if (o.pvals) {
+    for (let b = 0; b < nb; b++) pval[b] = o.pvals[b];
+  } else {
+    for (const b of cand) {
+      const blo = edges[b], bhi = edges[b + 1];
+      const cLo = Math.max(t0, ctr[b] - C / 2);
+      const cHi = Math.min(t1, ctr[b] + C / 2);
+      const cw = cHi - cLo;
+      const tlo = blo - cLo, thi = bhi - cLo;
+      const ctx = [];
+      for (const e of ev) {
+        if (!e.length) continue;
+        const vv = [];
+        for (const x of e) if (x >= cLo && x <= cHi) vv.push(x - cLo);
+        if (vv.length) ctx.push(vv);
+      }
+      // one draw per (surrogate, context ROI), surrogate-major — the same stream
+      // shape the MATLAB scalar-rand loops consume
+      const counts = new Float64Array(nSur);
+      const draws = new Float64Array(nSur * ctx.length);
+      for (let i = 0; i < draws.length; i++) draws[i] = u();
+      for (let j = 0; j < ctx.length; j++) {
+        for (let s = 0; s < nSur; s++) {
+          const d = draws[s * ctx.length + j];
+          let hit = false;
+          for (const x of ctx[j]) {
+            let sh = (x + d * cw) % cw;
+            if (sh < 0) sh += cw;
+            if (sh >= tlo && sh < thi) { hit = true; break; }
+          }
+          if (hit) counts[s] += 1;
+        }
+      }
+      const st = coactStats(obs[b], counts);
+      nullmean[b] = st.mu; z[b] = st.z; pval[b] = st.p;
+    }
+  }
+
+  // a NaN p-value is not significant — the bin was never a candidate
+  const sig = [];
+  for (const b of cand) if (pval[b] <= alpha) sig.push(b);
+
+  const startsB = [], endsB = [];
+  if (sig.length) {
+    let sCur = sig[0], prev = sig[0];
+    for (let k = 1; k < sig.length; k++) {
+      const b = sig[k];
+      // gap measured from the END of the previous significant bin, not its start
+      if (edges[b] - edges[prev + 1] <= mgap) prev = b;
+      else { startsB.push(sCur); endsB.push(prev); sCur = prev = b; }
+    }
+    startsB.push(sCur); endsB.push(prev);
+  }
+
+  const starts = [], widths = [], ends = [], nrois = [], evZ = [], evP = [];
+  for (let k = 0; k < startsB.length; k++) {
+    const s = startsB[k], e = endsB[k];
+    starts.push(edges[s]);
+    widths.push(edges[e + 1] - edges[s]);
+    ends.push(edges[e + 1]);
+    let mx = -Infinity, zmax = NaN, pmin = NaN;
+    for (let b = s; b <= e; b++) {
+      if (obs[b] > mx) mx = obs[b];
+      // merged episodes span non-candidate bins whose z/p are NaN, and MATLAB's
+      // max/min ignore NaN — so these are the nan-variants, not the plain ones
+      if (!Number.isNaN(z[b])) zmax = Number.isNaN(zmax) ? z[b] : Math.max(zmax, z[b]);
+      if (!Number.isNaN(pval[b])) pmin = Number.isNaN(pmin) ? pval[b] : Math.min(pmin, pval[b]);
+    }
+    nrois.push(mx); evZ.push(zmax); evP.push(pmin);
+  }
+  return { starts, ends, widths, nrois, z: evZ, p: evP,
+           ctr, obs, zProf: z, pvalProf: pval, nullmean,
+           nEvents: starts.length };
+}
+
+/* loco — LoCo, as an object.
+
+   ONE FILE IS ONE DETECTOR: the descriptor the page renders from, and the code
+   that runs. Delete this file and loco is gone — picker, controls and algorithm
+   together — which is the point of the folder (ADR-0005).
+
+   Assembled into the page at BUILD time, not load time: docs/site is one
+   self-contained file making zero requests, so it works from file:// and no
+   recording leaves the machine. build_site.py's NETWORK guard enforces it.
+
+   WHAT THE SHELL PROVIDES and this file uses: the shared helpers. `clipSorted`
+   is called by five detectors and `matlabPrctile` by three, so they stay in the
+   shell — a shared helper living in one detector's file would make deleting
+   that file break the others.
+
+   PARITY: `bugarach.detectors.loco` is the other implementation of this, and
+   tests/test_webapp_loco_detect_parity.py pins the two. A change here that is
+   not made there is a divergence, not an improvement.
+*/
+
+// ---- descriptor -------------------------------------------------------------
+registerDetector(
+{
+    key: "loco",
+    label: "LoCo",
+    blurb: "how many together",
+    ctl: "dLocoCtl", fine: "dFineLoco",
+    read: dt => ({ gridDt: dt,
+      binWidthSec: clamp(numById("lBin"), 0.1, 60),
+      contextWinSec: clamp(numById("lCtx"), 10, 1200),
+      thresholdPctile: clamp(numById("lPct"), 90, 99.9999),
+      nSurrogates: Math.round(clamp(numById("lSur"), 20, 1000)) }),
+    run: (trains, range, cfg) => locoDetect(trains, range, cfg),
+    settings: cfg => "bin " + cfg.binWidthSec + " s · context "
+      + cfg.contextWinSec + " s · " + cfg.thresholdPctile + "th percentile of "
+      + cfg.nSurrogates + " shuffles · floor 3 ROIs",
+    params: { binWidthSec: "lBin", contextWinSec: "lCtx",
+              thresholdPctile: "lPct", nSurrogates: "lSur" },
+    knob: { key: "thresholdPctile", input: "lPct", name: "threshold percentile", unit: "",
+            scale: "tail", grid: [99.0, 99.5, 99.9, 99.99, 99.999, 99.9999] },
+  }
+);
+
+// ---- algorithm --------------------------------------------------------------
+function locoDetect(trains, range, opts) {
+  const o = opts || {};
+  const binw = o.binWidthSec === undefined ? 1.0 : o.binWidthSec;
+  const mgap = o.mergeGapSec === undefined ? 2.0 : o.mergeGapSec;
+  const ctx = o.contextWinSec === undefined ? 120.0 : o.contextWinSec;
+  const pctile = o.thresholdPctile === undefined ? 99.9 : o.thresholdPctile;
+  const tstep = o.thrStepSec === undefined ? 15.0 : o.thrStepSec;
+  const nSur = o.nSurrogates === undefined ? 100 : o.nSurrogates;
+  // min_rois is NOT a knob and is not exposed. FOUNDATIONS §9: a nonzero
+  // coactivity excess is evidence about the preparation, not a false-alarm floor
+  // to raise until it goes away.
+  const minRois = o.minRois === undefined ? 3 : o.minRois;
+  const u = rng32(o.seed === undefined ? 20260706 : o.seed);
+
+  const tLo = range[0], tHi = range[1];
+  const halfCtx = ctx / 2;
+  const ev = clipSorted(trains, tLo, tHi);
+
+  let edges = matlabColon(tLo, binw, tHi);
+  if (edges.length < 2) edges = Float64Array.from([tLo, tHi]);
+  const nb = edges.length - 1;
+  const bc = new Float64Array(nb);
+  for (let i = 0; i < nb; i++) bc[i] = edges[i] + binw / 2;
+  const sObs = distinctCoact(ev, edges);
+
+  const anchors = matlabColon(tLo, tstep, tHi);
+  const thrA = new Float64Array(anchors.length);
+  for (let ai = 0; ai < anchors.length; ai++) {
+    const a = anchors[ai];
+    // the segment IS the region here — see the note at the top of this block
+    const tl = thresholdPool(ev, Math.max(a - halfCtx, tLo), a, binw, nSur, pctile, u);
+    const tr = thresholdPool(ev, a, Math.min(a + halfCtx, tHi), binw, nSur, pctile, u);
+    thrA[ai] = Math.max(tl, tr);
+  }
+  const thrBin = new Float64Array(nb);
+  for (let i = 0; i < nb; i++) {
+    let best = 0, bd = Infinity;
+    for (let k = 0; k < anchors.length; k++) {
+      const d = Math.abs(bc[i] - anchors[k]);
+      if (d < bd) { bd = d; best = k; }          // np.argmin takes the FIRST
+    }
+    thrBin[i] = thrA[best];
+  }
+  if (o.thresholds) for (let i = 0; i < nb; i++) thrBin[i] = o.thresholds[i];
+
+  const fb = [];
+  for (let i = 0; i < nb; i++) if (sObs[i] > thrBin[i] && sObs[i] >= minRois) fb.push(i);
+  const runs = [];
+  if (fb.length) {
+    const gapB = Math.max(1, matlabRound(mgap / binw));
+    let cur = [fb[0]];
+    for (let k = 1; k < fb.length; k++) {
+      if (fb[k] - cur[cur.length - 1] <= gapB) cur.push(fb[k]);
+      else { runs.push(cur); cur = [fb[k]]; }
+    }
+    runs.push(cur);
+  }
+
+  const starts = [], ends = [], mag = [], magTotal = [], thr = [], widths = [];
+  for (const gi of runs) {
+    const b0 = gi[0], b1 = gi[gi.length - 1];
+    const sp = spanOf(ev, edges[b0], edges[b1 + 1]);
+    let pk = 0;
+    for (let k = 1; k < gi.length; k++) if (sObs[gi[k]] > sObs[gi[pk]]) pk = k;  // first max
+    starts.push(sp.tfirst);
+    ends.push(sp.tlast);
+    widths.push(sp.tlast - sp.tfirst);
+    mag.push(sObs[gi[pk]]);
+    magTotal.push(sp.nrec);
+    thr.push(thrBin[gi[pk]]);
+  }
+  return { starts, ends, widths, magnitude: mag, magTotal, threshold: thr,
+           bc, sObs, thrBin, nEvents: starts.length };
+}
+
+/* rate — RateDetect, as an object.
+
+   ONE FILE IS ONE DETECTOR: the descriptor the page renders from, and the code
+   that runs. Delete this file and rate is gone — picker, controls and algorithm
+   together — which is the whole point of the folder (ADR-0005).
+
+   The page assembles this in at BUILD time, not load time. docs/site is one
+   self-contained file making zero requests, so it works from file:// and no
+   recording can leave the machine; build_site.py's NETWORK guard enforces it.
+
+   WHAT THE SHELL PROVIDES and this file may use: clamp, numById, eventRate.
+   Anything else a detector needs, it brings.
+
+   PARITY: bugarach.detectors.rate is the other implementation of this, and
+   tests/test_webapp_rate_detect_parity.py pins the two at 1e-9. A change here
+   that is not made there is a divergence, not an improvement.
+*/
+
+// ---- descriptor -------------------------------------------------------------
+registerDetector(
+{
+    key: "rate",
+    label: "RateDetect",
+    blurb: "how fast",
+    ctl: "dRateCtl", fine: "dFineRate",
+    read: dt => ({ gridDt: dt,
+      excessThresholdHz: clamp(numById("dThr"), 0.1, 50),
+      rateWin: clamp(numById("dRate"), 0.1, 30),
+      contextWin: clamp(numById("dCtx"), 5, 600) }),
+    run: (trains, range, cfg) => rateDetect(trains, range, cfg),
+    settings: cfg => "threshold " + cfg.excessThresholdHz + " Hz excess · rate window "
+      + cfg.rateWin + " s · context " + cfg.contextWin + " s · dt " + cfg.gridDt + " s",
+    /* WHICH CONTROL HOLDS WHICH PARAMETER — the map a saved settings file is
+       read back through. `read` above is one direction only; without this, a
+       file could be written and never loaded, which is provenance that looks
+       like provenance and is not. Kept honest by
+       `test_webapp_settings_file.py`, which derives the check from this
+       registry: every key `read` produces is either in here with a control that
+       exists, or declared `fixed`. */
+    params: { excessThresholdHz: "dThr", rateWin: "dRate", contextWin: "dCtx" },
+    knob: { key: "excessThresholdHz", input: "dThr", name: "excess threshold", unit: "Hz",
+            scale: "linear", grid: [0.5, 1, 2, 3, 4, 5, 6, 8] },
+  }
+);
+
+// ---- algorithm --------------------------------------------------------------
+/* The context window is clipped to 0.9x the recording, and the value actually
+   used travels with the result — a context wider than the recording is silently
+   a different detector. */
+function eventRateContext(trains, tRange, windowSec, contextSec, dt) {
+  const maxCtx = 0.9 * (tRange[1] - tRange[0]);
+  const ctxActual = contextSec >= maxCtx ? maxCtx : contextSec;
+  const { rateX, rateY } = eventRate(trains, tRange, windowSec, dt);
+  const ctx = eventRate(trains, tRange, ctxActual, dt);
+  return { rateX, rateY, ctxY: ctx.rateY, ctxActual };
+}
+
+const RATE_PAD_S = 0.5;   // CHARACTERIZATION_PAD_S
+
+/* RateDetect, threshold mode. Grid times whose rate excess over the local
+   context clears the threshold, merged when no more than merge_gap_s apart. */
+function rateDetect(trains, tRange, opts) {
+  const o = opts || {};
+  const thr = o.excessThresholdHz === undefined ? 5.0 : o.excessThresholdHz;
+  const mergeGap = o.mergeGapS === undefined ? 3.0 : o.mergeGapS;
+  const rateWin = o.rateWin === undefined ? 1.0 : o.rateWin;
+  const ctxWin = o.contextWin === undefined ? 60.0 : o.contextWin;
+  const dt = o.gridDt === undefined ? 0.1 : o.gridDt;
+
+  const { rateX, rateY, ctxY, ctxActual } =
+    eventRateContext(trains, tRange, rateWin, ctxWin, dt);
+  const m = rateX.length;
+  const excess = new Float64Array(m);
+  for (let i = 0; i < m; i++) excess[i] = rateY[i] - ctxY[i];
+
+  const cand = [];
+  for (let i = 0; i < m; i++) if (excess[i] >= thr) cand.push(rateX[i]);
+  let starts = [], ends = [];
+  if (cand.length) {
+    const brk = [];
+    for (let i = 1; i < cand.length; i++)
+      if (cand[i] - cand[i - 1] > mergeGap) brk.push(i - 1);
+    const s = [0].concat(brk.map(i => i + 1));
+    const e = brk.concat([cand.length - 1]);
+    for (let i = 0; i < s.length; i++) {
+      // a single-bin crossing is likely noise, and the Python drops it
+      if (cand[e[i]] - cand[s[i]] > 0) {
+        starts.push(cand[s[i]]); ends.push(cand[e[i]]);
+      }
+    }
+  }
+  // pad for characterization: onsets sit on a 0.1 s grid and the rate is
+  // window-smoothed, so the stats get a margin matching the kernel
+  starts = starts.map(x => x - RATE_PAD_S);
+  ends = ends.map(x => x + RATE_PAD_S);
+
+  const freqMax = [], freqMean = [];
+  for (let i = 0; i < starts.length; i++) {
+    let mx = 0, sum = 0, n = 0;
+    for (let k = 0; k < m; k++)
+      if (rateX[k] >= starts[i] && rateX[k] <= ends[i]) {
+        if (rateY[k] > mx) mx = rateY[k];
+        sum += rateY[k]; n++;
+      }
+    if (n) { freqMax.push(mx); freqMean.push(sum / n); }
+    else if (m) {
+      const mid = (starts[i] + ends[i]) / 2;
+      let j = 0, bd = Infinity;
+      for (let k = 0; k < m; k++) {
+        const d = Math.abs(rateX[k] - mid);
+        if (d < bd) { bd = d; j = k; }
+      }
+      freqMax.push(rateY[j]); freqMean.push(rateY[j]);
+    } else { freqMax.push(0); freqMean.push(0); }
+  }
+  return { starts, ends, freqMax, freqMean, rateX, rateY, ctxY, excess,
+           ctxActual, nEvents: starts.length };
+}
+
+/* sce — binned SCE, as an object.
+
+   ONE FILE IS ONE DETECTOR: the descriptor the page renders from, and the code
+   that runs. Delete this file and sce is gone — picker, controls and algorithm
+   together — which is the point of the folder (ADR-0005).
+
+   Assembled into the page at BUILD time, not load time: docs/site is one
+   self-contained file making zero requests, so it works from file:// and no
+   recording leaves the machine. build_site.py's NETWORK guard enforces it.
+
+   WHAT THE SHELL PROVIDES and this file uses: the shared helpers. `clipSorted`
+   is called by five detectors and `matlabPrctile` by three, so they stay in the
+   shell — a shared helper living in one detector's file would make deleting
+   that file break the others.
+
+   PARITY: `bugarach.detectors.sce` is the other implementation of this, and
+   tests/test_webapp_sce_detect_parity.py pins the two. A change here that is
+   not made there is a divergence, not an improvement.
+*/
+
+// ---- descriptor -------------------------------------------------------------
+registerDetector(
+{
+    key: "sce",
+    label: "SCE",
+    blurb: "was anything happening",
+    ctl: "dSceCtl", fine: "dFineSce",
+    read: dt => ({ gridDt: dt,
+      binWidthSec: clamp(numById("sBin"), 1, 120),
+      thresholdPctile: clamp(numById("sPct"), 80, 99.99),
+      nSurrogates: Math.round(clamp(numById("sSur"), 20, 2000)) }),
+    run: (trains, range, cfg) => sceDetect(trains, range, cfg),
+    settings: cfg => "bin " + cfg.binWidthSec + " s · "
+      + cfg.thresholdPctile + "th percentile of " + cfg.nSurrogates
+      + " shuffles · one bar per window · floor 3 ROIs",
+    params: { binWidthSec: "sBin", thresholdPctile: "sPct", nSurrogates: "sSur" },
+    knob: { key: "thresholdPctile", input: "sPct", name: "threshold percentile", unit: "",
+            scale: "tail", grid: [90.0, 95.0, 98.0, 99.0, 99.5, 99.9] },
+  }
+);
+
+// ---- algorithm --------------------------------------------------------------
+function sceDetect(trains, range, opts) {
+  const o = opts || {};
+  const bw = o.binWidthSec === undefined ? 10.0 : o.binWidthSec;
+  const pctile = o.thresholdPctile === undefined ? 99.0 : o.thresholdPctile;
+  const nSur = o.nSurrogates === undefined ? 200 : o.nSurrogates;
+  const minRois = o.minRois === undefined ? 3 : o.minRois;
+  const mgap = o.mergeGapSec === undefined ? NaN : o.mergeGapSec;
+  const u = rng32(o.seed === undefined ? 20260706 : o.seed);
+
+  const wLo = range[0], wHi = range[1];
+  const empty = { starts: [], ends: [], widths: [], magnitude: [],
+                  magTotal: [], threshold: NaN, obs: new Float64Array(0),
+                  bctr: new Float64Array(0), nEvents: 0 };
+  if (wHi <= wLo) return empty;
+
+  const lw = wHi - wLo;
+  const ev = clipSorted(trains, wLo, wHi);
+  const nRoi = ev.length;
+  const nBins = Math.max(1, Math.ceil(lw / bw));
+  const bctr = new Float64Array(nBins);
+  for (let i = 0; i < nBins; i++) bctr[i] = wLo + (i + 0.5) * bw;
+  // the bin index is CLIPPED into range rather than dropped, so the last bin
+  // takes the window's final instant — same rule CoactDetect uses, and not the
+  // `discretize` rule LoCo uses
+  const binOf = t => {
+    let i = Math.floor((t - wLo) / bw);
+    return i < 0 ? 0 : (i > nBins - 1 ? nBins - 1 : i);
+  };
+
+  const obs = new Float64Array(nBins);
+  for (const v of ev) {
+    if (!v.length) continue;
+    const seen = new Set();
+    for (const x of v) seen.add(binOf(x));
+    for (const i of seen) obs[i] += 1;
+  }
+
+  let thr;
+  if (o.threshold !== undefined) {
+    thr = o.threshold;
+  } else {
+    // one offset per ROI per surrogate, and EMPTY ROIs ARE DRAWN FOR — they
+    // consume their place in the stream even though they contribute nothing
+    const draws = new Float64Array(nSur * nRoi);
+    for (let i = 0; i < draws.length; i++) draws[i] = u() * lw;
+    const nullCounts = new Float64Array(nSur * nBins);
+    for (let r = 0; r < nRoi; r++) {
+      if (!ev[r].length) continue;
+      for (let s = 0; s < nSur; s++) {
+        const d = draws[s * nRoi + r];
+        const act = new Set();
+        for (const x of ev[r]) {
+          let sh = (x - wLo + d) % lw;
+          if (sh < 0) sh += lw;
+          act.add(binOf(wLo + sh));
+        }
+        for (const i of act) nullCounts[s * nBins + i] += 1;
+      }
+    }
+    thr = matlabPrctile(nullCounts, pctile);
+  }
+
+  const sig = [];
+  for (let i = 0; i < nBins; i++) if (obs[i] > thr && obs[i] >= minRois) sig.push(i);
+  if (!sig.length) {
+    return { ...empty, threshold: thr, obs, bctr };
+  }
+
+  // every in-window event with its bin and its ROI — the merge and the episode
+  // statistics are both computed from these rather than from the bins
+  const evTimes = [], evBin = [], evRoi = [];
+  for (let r = 0; r < nRoi; r++)
+    for (const x of ev[r]) { evTimes.push(x); evBin.push(binOf(x)); evRoi.push(r); }
+  const binFirst = new Float64Array(nBins).fill(NaN);
+  const binLast = new Float64Array(nBins).fill(NaN);
+  for (let k = 0; k < evTimes.length; k++) {
+    const b = evBin[k];
+    if (Number.isNaN(binFirst[b]) || evTimes[k] < binFirst[b]) binFirst[b] = evTimes[k];
+    if (Number.isNaN(binLast[b]) || evTimes[k] > binLast[b]) binLast[b] = evTimes[k];
+  }
+
+  const runs = [];
+  let cs = sig[0], ce = sig[0], runLast = binLast[sig[0]];
+  for (let k = 1; k < sig.length; k++) {
+    const b = sig[k];
+    // NaN gap compares false and therefore never merges — which is also what
+    // the default merge_gap of NaN means
+    if (binFirst[b] - runLast <= mgap) { ce = b; runLast = binLast[b]; }
+    else { runs.push([cs, ce]); cs = ce = b; runLast = binLast[b]; }
+  }
+  runs.push([cs, ce]);
+
+  const starts = [], ends = [], widths = [], mag = [], magTotal = [];
+  for (const [fb, lb] of runs) {
+    let mx = -Infinity;
+    for (let b = fb; b <= lb; b++) if (obs[b] > mx) mx = obs[b];
+    const rois = new Set();
+    let tfirst = Infinity, tlast = -Infinity;
+    for (let k = 0; k < evTimes.length; k++) {
+      if (evBin[k] >= fb && evBin[k] <= lb) {
+        rois.add(evRoi[k]);
+        if (evTimes[k] < tfirst) tfirst = evTimes[k];
+        if (evTimes[k] > tlast) tlast = evTimes[k];
+      }
+    }
+    const w = rois.size ? tlast - tfirst : NaN;
+    // the reported onset is the BIN's start, not the first event in it
+    starts.push(wLo + fb * bw);
+    widths.push(w);
+    ends.push(wLo + fb * bw + (Number.isNaN(w) ? 0 : w));
+    mag.push(mx);
+    magTotal.push(rois.size);
+  }
+  return { starts, ends, widths, magnitude: mag, magTotal, threshold: thr,
+           obs, bctr, nEvents: starts.length };
+}
+
+/* sync — SPIKE-synch, as an object.
+
+   ONE FILE IS ONE DETECTOR: the descriptor the page renders from, and the code
+   that runs. Delete this file and sync is gone — picker, controls and algorithm
+   together — which is the point of the folder (ADR-0005).
+
+   Assembled into the page at BUILD time, not load time: docs/site is one
+   self-contained file making zero requests, so it works from file:// and no
+   recording leaves the machine. build_site.py's NETWORK guard enforces it.
+
+   WHAT THE SHELL PROVIDES and this file uses: the shared helpers. `clipSorted`
+   is called by five detectors and `matlabPrctile` by three, so they stay in the
+   shell — a shared helper living in one detector's file would make deleting
+   that file break the others.
+
+   PARITY: `bugarach.detectors.sync` is the other implementation of this, and
+   tests/test_webapp_sync_detect_parity.py pins the two. A change here that is
+   not made there is a divergence, not an improvement.
+*/
+
+// ---- descriptor -------------------------------------------------------------
+registerDetector(
+{
+    key: "sync",
     label: "SPIKE-synch",
     blurb: "how aligned",
     ctl: "dSyncCtl", fine: "dFineSync",
@@ -7827,8 +8016,96 @@ const DETECTORS = {
       + "like the rest; deciding what to do with them is yours." : null,
     knob: { key: "CThreshold", input: "dC", name: "C to start an event", unit: "",
             scale: "log", grid: [0.005, 0.01, 0.02, 0.04, 0.08, 0.12] },
-  },
-};
+  }
+);
+
+// ---- algorithm --------------------------------------------------------------
+/* SpikyDetect3's hysteresis scan, transliterated rather than tidied. A bin over
+   C_threshold opens an event; bins over the lower C_min keep it open across gaps
+   shorter than max_gap, and empty bins are stepped over without closing it. The
+   control flow re-tests a gap it has not recomputed and lets the outer cursor
+   jump to the bin that ended the event; both are load-bearing, because the
+   Python they are checked against does the same and the MATLAB before it did. */
+function syncDetect(trains, tRange, opts) {
+  const o = opts || {};
+  const tauMax = o.tauMax === undefined ? 0.25 : o.tauMax;
+  const maxGap = o.maxGap === undefined ? 0.5 : o.maxGap;
+  const Cthr = o.CThreshold === undefined ? 0.1 : o.CThreshold;
+  const Cmin = o.CMin === undefined ? 0.1 : o.CMin;
+  const minN = o.minN === undefined ? 3 : o.minN;
+  /* THE PROFILE BIN, WHICH IS NOT THE FRAME INTERVAL. `sync.py` names this
+     `PROFILE_BIN_SEC` and argues it at length: nothing upstream of the binning
+     touches a grid, so this is the resolution of the DETECTOR — the way a
+     spectrogram's window length belongs to the analyst and not the microphone —
+     and it is the width the hysteresis thresholds were calibrated at. Wiring
+     the recording's interval into it moves the detector off its operating
+     point, which is exactly what this page did until now. `gridDt` is still
+     honoured because the parity tests pass it by that name. */
+  const dt = o.profileBinSec !== undefined ? o.profileBinSec
+           : (o.gridDt === undefined ? SYNC_PROFILE_BIN_SEC : o.gridDt);
+  const stat = o.statistic === undefined ? "mean" : o.statistic;
+  const athr = o.artifactThreshold === undefined ? 0.85 : o.artifactThreshold;
+  const afthr = o.artifactThresholdFraction === undefined ? 0.70 : o.artifactThresholdFraction;
+  const aplat = o.artifactThresholdPlat90 === undefined ? 0.8 : o.artifactThresholdPlat90;
+
+  const ev = clipSorted(trains, tRange[0], tRange[1]);
+  const prof = adaptiveProfile(trains, tRange, tauMax);
+  const { cx, cy, cn } = binnedSynchrony(prof.x, prof.y, dt, tRange, stat);
+  const n2 = cy.length;
+
+  const starts = [], ends = [], amps = [];
+  let i = -1;
+  while (i < n2 - 1) {
+    i += 1;
+    if (cy[i] > Cthr) {
+      let cmean = cy[i], ncmean = 1;
+      const evBegin = cx[i];
+      let evEnd = evBegin, evSum = cn[i];
+      let j = i + 1;
+      let gap = j < n2 ? cx[j] - cx[i] : Infinity;
+      while (j < n2 - 1 && gap < maxGap) {
+        while (j < n2 - 2 && cy[j] === 0 && gap < maxGap) { j += 1; gap = cx[j] - cx[i]; }
+        if (gap <= maxGap && cy[j] > Cmin) {
+          cmean += cy[j]; ncmean += 1; evSum += cn[j];
+          evEnd = cx[j]; i = j; j += 1;
+        } else { i = j; break; }
+      }
+      if (evBegin === evEnd) evEnd = evEnd + dt;
+      if (evSum >= minN) { starts.push(evBegin); ends.push(evEnd); amps.push(cmean / ncmean); }
+    }
+  }
+
+  const art = flagArtifacts(starts, ends, amps, cx, cy, ev, athr, afthr, aplat);
+  return { starts, ends, amps,
+           widths: starts.map((s, k) => ends[k] - s),
+           peakC: Array.from(art.peakC), plat90: Array.from(art.plat90),
+           nParticipatingRois: Array.from(art.nPart), isArtifact: art.isArtifact,
+           nTotalRois: trains.length,
+           profileX: prof.x, profileY: prof.y, cx, cy, cn,
+           nEvents: starts.length };
+}
+/* <<<END ASSEMBLED DETECTORS>>> */
+
+/* WHAT THIS BUILD SHIPS, and there are two different ways to be out of it.
+
+   `WITHHELD` — NOT PRESENT. No option, no tick, no range row, no scoreboard row,
+   no lane, and NO EXPLANATION. The reader is not told a detector is missing,
+   because as far as this build is concerned there is no such detector.
+
+   `unavailable` — present, drawn, disabled, and saying why on the control that
+   would otherwise offer it. For a detector this build HAS and cannot fairly run.
+
+   THE REQUIREMENT IS THE MECHANISM, NOT THE CASE. Tony, 2026-08-29: *"we must be
+   able to remove or add detectors and models at will. there's no reason for
+   cicada/locust to be present in the current webpage."* So the registry stays
+   the source of truth and one line names the exceptions — adding a detector is
+   still just a registry row (the chooser is built from the table, so it appears
+   for free), and removing one is a key in this set. Both directions, one edit.
+
+   Everything the detector IS survives being withheld: its detect function, its
+   parity harness, and this page's ability to draw a `detections.csv` that
+   already holds its rows. What goes is every place the page OFFERS it. */
+const WITHHELD = new Set(["cicada"]);
 
 /* SELECTABLE, which is not the same as present. A row carrying `unavailable` is
    still in the registry — it draws old rows, it answers `DETECTORS[k].label`,
@@ -7836,7 +8113,13 @@ const DETECTORS = {
    Every site below that picks detectors goes through here rather than reading
    the registry directly, so turning one back on is deleting one field. */
 const offReason = k => (DETECTORS[k] || {}).unavailable || null;
-const runnableDetectors = () => Object.keys(DETECTORS).filter(k => !offReason(k));
+
+/* THE ONE ENUMERATION. Every place that builds a control, a row or a lane reads
+   this instead of `Object.keys(DETECTORS)`, so a withheld detector cannot appear
+   in one of them because somebody forgot. */
+const buildDetectors = () => Object.keys(DETECTORS).filter(k => !WITHHELD.has(k));
+const runnableDetectors = () =>
+  buildDetectors().filter(k => !offReason(k));
 
 const whichDetector = () => {
   const v = document.getElementById("dDet").value;
@@ -8130,11 +8413,14 @@ function paintDetectPanel(data, runs, streams) {
     "caveat"));
 }
 
-// the chooser is built from the table, so a new row appears in it for free
+// The chooser is built from the table, so a new row appears in it for free — and
+// a WITHHELD one never appears at all, which is the same property read the other
+// way. That is what makes adding and removing a detector one edit each.
 {
   const sel = document.getElementById("dDet");
   sel.textContent = "";
-  for (const [k, d] of Object.entries(DETECTORS)) {
+  for (const k of buildDetectors()) {
+    const d = DETECTORS[k];
     const o = document.createElement("option");
     o.value = k; o.textContent = d.label + " — " + d.blurb;
     // Listed, disabled, and saying so in the option itself — a reader who came
@@ -8163,7 +8449,8 @@ const DET_DEFAULT_ON = ["rate", "coact", "loco"];
 const DET_SLOW = new Set(["loco", "cicada"]);
 {
   const box = document.getElementById("dPicks");
-  for (const [k, d] of Object.entries(DETECTORS)) {
+  for (const k of buildDetectors()) {
+    const d = DETECTORS[k];
     const lab = document.createElement("label");
     const cb = noAutofill(document.createElement("input"));
     cb.type = "checkbox"; cb.id = "dPick_" + k;
@@ -8441,7 +8728,8 @@ function extendPlan(which, grid, end) {
    reader meets first, stated in one place. */
 {
   const box = document.getElementById("tPicks");
-  for (const [k, d] of Object.entries(DETECTORS)) {
+  for (const k of buildDetectors()) {
+    const d = DETECTORS[k];
     const lab = document.createElement("label");
     const cb = noAutofill(document.createElement("input"));
     cb.type = "checkbox"; cb.id = "tPick_" + k;
@@ -8572,12 +8860,16 @@ function paintTuneWhat() {
         + (slow.length
             ? " " + slow.map(k => DETECTORS[k].label).join(" and ")
               + (slow.length > 1 ? " are" : " is")
-              + " the slow part — those two are about 97% of a six-detector "
-              + "sweep's wall clock, so unticking "
+              /* "those two" was hard-coded and went wrong the moment one of the
+                 costly pair was withheld from the build: the sentence read
+                 "LoCo is the slow part — those two are about 97%". It counts
+                 what is actually ticked now. */
+              + " the slow part — " + (slow.length > 1 ? "they are" : "it is")
+              + " most of a full sweep's wall clock, so unticking "
               + (slow.length > 1 ? "them" : "it")
               + " is what makes this return while you are looking at it."
-            : " None of these is one of the two costly detectors, so this "
-              + "should return in about a second.");
+            : " None of the costly detectors is ticked, so this should return "
+              + "in about a second.");
   /* THE GRUMBLE, ITS SECOND HALF. The rail's Compare step says "not checked
      yet"; this says what that costs, where the cost lands. A setting fitted on a
      data set nobody compared with the recording it was aimed at is a setting
@@ -8748,14 +9040,40 @@ function tunePool(scores, opts) {
    detector exposes, which is what makes the tube's 1,149 parameters a
    comparison rather than a boast; it is not a complexity measure. */
 const SCORE_COPY = {
-  draft: "Draft — the wording on this panel has not been reviewed, which is why "
-       + "it does not appear on the published page.",
+  /* THE DRAFT BANNER IS GONE, and it had to be removed rather than reworded.
+     It read "Draft — the wording on this panel has not been reviewed, which is
+     why it does not appear on the published page", which asserts the panel is
+     unpublished; publishing it makes the page's own first line false. A panel
+     that has been reviewed says so by not carrying a draft warning. The review
+     that retires it: docs/reviews/scoreboard_copy_2026-08-29.md. */
+  /* Named the two other laboratories' methods in this table. One of them is
+     withheld from this build while its attribution is settled (see `cicada` in
+     DETECTORS), so only the Kreuz one is left to credit — and it is credited
+     rather than dropped, because the row is still there and still says whose
+     measure it runs on. */
+  provenance: "One of these is another laboratory's method and is named as "
+       + "theirs: SPIKE-synch runs on the Kreuz lab's SPIKE-synchronization. "
+       + "What each detector is, and what was changed to bring it here, is "
+       + "under \"What these detectors are\" above.",
+  knobs: "The knobs column counts the settings a detector exposes, and it is not "
+       + "a score: more is not worse and fewer is not better. It is here so that "
+       + "a detector with one threshold and a detector with six are visibly "
+       + "different KINDS of thing before their F1 are compared.",
   simulatedOnly: "Every number here is measured on simulated recordings. None of "
        + "it says a detector is right about a real slice, because no real slice "
        + "has an answer key to be right against.",
-  tolerance: "F1 counts a hit within the match tolerance above. Against events "
-       + "this wide that makes the ORDER of these rows meaningful and a single "
-       + "number's decimal places not — read the ranking, not the gap.",
+  /* Said "read the ranking, not the gap", which told the reader the ORDER was
+     safe. It is not, and the table's own ± refutes it: on the page's default
+     folder two rows sat 0.085 apart with a fold spread of 0.105 on one of them.
+     A caveat that retires one wrong reading by asserting another is worse than
+     none, because it carries the page's authority. So it now says what the
+     numbers support — a decimal place means nothing, and neither does an order
+     inside overlapping spreads. */
+  tolerance: "F1 counts a hit within the match tolerance above, which is loose "
+       + "against events this wide, so a single number's decimal places mean "
+       + "nothing. Neither does an ordering closer than the ± beside it: where "
+       + "two rows' spreads overlap, this table has not separated them, and "
+       + "three or four folds is not enough to.",
   /* Was `noTube`, and said the learned detector could not be in this table.
      That stopped being true when `fitFolds` started sending this corpus and
      this fold split to the local server, so the sentence is replaced rather
@@ -8935,7 +9253,7 @@ async function scoreAllDetectors() {
     }
     const split = tunePlan(dataSet.length);
     const rows = [];
-    for (const which of Object.keys(DETECTORS)) {
+    for (const which of buildDetectors()) {
       const D = DETECTORS[which];
       say("Scoring " + D.label + "…");
       await yieldToUI();
@@ -9066,10 +9384,16 @@ function paintScoreboard() {
   if (!SCOREBOARD) return;
   const { rows, nFolds, dataSetN, tol } = SCOREBOARD;
 
-  box.append(el("p", SCORE_COPY.draft, "verdict bad"));
   box.append(el("h4", "Every detector on the same data set"));
   box.append(el("p", dataSetN + " simulated recording(s) · " + nFolds
     + " fold(s) · matched within " + tol + " s", "sub"));
+  /* THE SIMULATED-DATA ADMISSION LEADS. It used to be the LAST of five caveat
+     paragraphs, behind a four-line one about a trainer that is not running —
+     so the single sentence a stranger most needs was the one they were least
+     likely to reach. Same rule as `demoNote` above the raster: by the time a
+     reader has scrolled past the numbers to a footnote they have already
+     believed them. */
+  box.append(el("p", SCORE_COPY.simulatedOnly, "sub"));
 
   const ranked = rows.slice().sort((a, b) =>
     (b.f1 ?? -1) - (a.f1 ?? -1));
@@ -9105,10 +9429,15 @@ function paintScoreboard() {
   box.append(tbl);
 
   const learned = rows.filter(r => r.learned && !r.refused);
-  const caveats = ["heldOut", "tolerance"];
+  /* `simulatedOnly` is NOT in this list — it now leads, above the table. The
+     order here is what the reader needs to read a ROW: how the number was got
+     (heldOut), what its precision is worth (tolerance), what the one column
+     nobody can guess means (knobs), why a detector may be missing (learned*),
+     and whose methods these are (provenance). */
+  const caveats = ["heldOut", "tolerance", "knobs"];
   caveats.push(...(learned.length ? ["learned", "learnedSpread"]
                                   : ["learnedAbsent"]));
-  caveats.push("simulatedOnly");
+  caveats.push("provenance");
   for (const key of caveats)
     box.append(el("p", SCORE_COPY[key], "caveat"));
 
@@ -9965,13 +10294,8 @@ async function wireLab() {
   const acc = document.getElementById("accLab");
   if (!api || !acc) return;
   acc.hidden = false;
-  // The scoreboard rides the same gate: draft copy, and the comparison is only
-  // whole where the server that trains the tube is running.
-  const score = document.getElementById("accScore");
-  if (score) {
-    score.hidden = false;
-    document.getElementById("runScore").onclick = scoreAllDetectors;
-  }
+  // The scoreboard used to be un-hidden here, on this gate. It is wired by
+  // `wireScoreboard` now and shows on every page; see the comment on `accScore`.
   document.getElementById("runLab").onclick = runLab;
   ["lArch", "lFolds", "lSeeds"].forEach(id =>
     document.getElementById(id).addEventListener("input", paintLabWhat));
@@ -10026,10 +10350,41 @@ async function wireLab() {
    the page that should show it, and hidden is also its correct published-page
    behaviour, so the bug looks like success. Inline scripts run in document
    order during parsing, so DOMContentLoaded is after the shim either way. */
-if (document.readyState === "loading")
+/* The scoreboard is NOT on the lab gate, and stopped being on it 2026-08-29.
+   `scoreAllDetectors` never needed the server: it guards its learned rows with
+   `if (lab() && archs.length && split)` and paints `learnedAbsent` otherwise, so
+   the six hand-written detectors sweep, fold and pool entirely in the page —
+   the same route, the same scorer and the same split as the Python, checked
+   against it in CI. The reasons it was gated are on the `accScore` comment.
+
+   It also fills the panel's note BEFORE the run, which was empty until now: a
+   reader who opened the accordion and did not press the button was told nothing
+   at all about what the button would do. */
+function wireScoreboard() {
+  const btn = document.getElementById("runScore");
+  const note = document.getElementById("scoreWhat");
+  if (!btn) return;
+  /* It does NOT un-hide the panel, and an earlier version of this function did
+     — which was ineffective and looked exactly like working. `details.acc` is
+     `display:none` until the rail adds `.on`, so dropping the `hidden`
+     attribute from JavaScript changes nothing a reader can see. Visibility is
+     the rail's, through `gated`/`ready`; this only wires the button and fills
+     the note. */
+  btn.onclick = scoreAllDetectors;
+  if (note) note.textContent =
+    "Every detector is given the same recordings and the same fold split: each "
+    + "one's setting is chosen on the folds it may see, and scored on the fold "
+    + "it may not. Open a folder or simulate one first — the comparison runs on "
+    + "whatever is loaded, and only on recordings that carry planted events.";
+}
+
+if (document.readyState === "loading") {
   document.addEventListener("DOMContentLoaded", wireLab);
-else
+  document.addEventListener("DOMContentLoaded", wireScoreboard);
+} else {
   wireLab();
+  wireScoreboard();
+}
 
 /* ---------- the rail: two tracks, one tail ----------------------------------
 
@@ -10122,8 +10477,12 @@ const TAIL = [
      in the markup, and drop `gated` from this line. */
   { key: "accLab", panel: "accLab", group: "detections",
     need: "local server", gated: true, ready: () => !!lab() },
+  /* PUBLISHED 2026-08-29 — `gated` dropped here and `hidden` dropped from the
+     markup, which is the two-edit procedure the `accLab` comment above names.
+     The copy went through docs/doc_review_process.md first:
+     docs/reviews/scoreboard_copy_2026-08-29.md. */
   { key: "accScore", panel: "accScore", group: "detections",
-    need: "open something first", gated: true,
+    need: "open something first",
     ready: () => RECORDINGS.length > 0 },
 ];
 

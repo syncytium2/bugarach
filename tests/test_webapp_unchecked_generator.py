@@ -68,7 +68,7 @@ def page():
 
 ONE = """async () => {
   document.getElementById("dAll").checked = true;
-  for (const k of Object.keys(DETECTORS))
+  for (const k of buildDetectors())
     document.getElementById("dPick_" + k).checked = (k === "rate");
   paintDetectorChoice();
   await analyseFolder();
@@ -150,7 +150,7 @@ def test_comparing_turns_the_mark_over_and_carries_the_ratios(page):
     got = pg.evaluate("""async () => {
       await verifySimulation();
       document.getElementById("dAll").checked = true;
-      for (const k of Object.keys(DETECTORS))
+      for (const k of buildDetectors())
         document.getElementById("dPick_" + k).checked = (k === "rate");
       paintDetectorChoice();
       await analyseFolder();
@@ -188,7 +188,7 @@ def test_the_settings_file_carries_it_too_because_that_is_what_crosses(page):
         document.getElementById(k).value = v;
       await runSim();
       await show(RECORDINGS[0]);
-      for (const k of Object.keys(DETECTORS))
+      for (const k of buildDetectors())
         document.getElementById("tPick_" + k).checked = (k === "rate");
       await runTune();
       const go = [...document.querySelectorAll("#tuneOut button")]

@@ -336,7 +336,7 @@ def test_it_names_the_declared_folder_even_with_the_data_unmounted(tmp_path):
         "with the data unmounted the briefing stopped naming the folder at all"
     )
     assert "NOT here" in out.stdout, "unresolved must read as an alarm, not as normal"
-    assert "python -m bugarach.dataset" in out.stdout, "say how to look into it"
+    assert "python3 -m bugarach.dataset" in out.stdout, "say how to look into it"
 
 
 def test_the_alarm_stays_one_line_because_the_budget_is_the_binding_constraint():

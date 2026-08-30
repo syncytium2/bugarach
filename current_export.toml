@@ -58,6 +58,39 @@ NOT the same set — the equality above is a fact about these two EXPORTS, check
 here, not inherited from the store counts. Do not carry the store figures across.
 """
 
+[cossart]
+# ANOTHER LAB'S DATA. Not ours, and not a control for ours — a second preparation.
+name = "dandi_000219"
+recordings = 59
+note = """
+The Cossart lab's published DANDI:000219, imported by `tools/import_dandi.py`: in vivo
+two-photon CA1 in mouse pups, P5–P12. The first folder this project has read that it
+did not produce. `check` passes on all 59.
+
+⚠ **THE NAME IS AMBIGUOUS ON DISK, AND THE RESOLVER IS WHAT SETTLES IT.** The raw
+download sits at `<data root>/dandi_000219`; the conforming export at
+`<data root>/exports/external/dandi_000219`. The raw directory holds one CSV, so
+`kind()` calls it an export folder and `require(want="export_folder")` accepts it — a
+caller would silently analyse **1 recording instead of 59**, with every shape check
+passing. `dataset.resolve()` searches the export directories before the bare root for
+exactly that reason. Do not reorder that list.
+
+⚠ **WHAT THIS CORPUS CANNOT DO.** It is binarised — an int8 raster of "active in this
+frame", the authors' own inference — so there is no peak and no amplitude, and
+`time_sec` is the rising edge of an active run, NOT a t50rise. Their `PROVENANCE.md`
+documents the substitution and its cost: rates, counts and rankings are safe;
+**cross-lab coincidence within a tolerance is not available from these files.** So a
+comparison against our corpus lives in a SIMULATION parameterised from each corpus's
+own statistics — never in matching their event times against ours.
+
+⚠ **DO NOT TRANSPLANT OUR K.** Measured 2026-08-29 across both folders: our excess
+peaks at K=3; theirs does not. Their slices carry ~405 ROIs against our ~34 and fire
+about twice as fast per ROI, so at K=3 the rate-matched null already holds three
+co-active cells and there is no excess left to find. The bar has to come from each
+corpus's own null — which is what the Cossart lab's own SCE method does, and what
+`sce.py` ports.
+"""
+
 # ---------------------------------------------------------------------------
 # NOT AN INPUT. Named here so that "it is not in the list" is never the reason a
 # session goes looking in the store for itself.

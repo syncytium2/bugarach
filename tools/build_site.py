@@ -37,6 +37,35 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 SITE = ROOT / "site"
 
+
+def _withheld_from_the_viewer() -> tuple[str, ...]:
+    """Which detectors this build withholds — READ OFF THE VIEWER, never restated.
+
+    The viewer's `WITHHELD` set is the declaration. This build has to know it too,
+    because the figures are rendered by Python and a detector's name reaches a
+    reader through a lane label as surely as through a paragraph — and a picture
+    is where no check on the served HTML can see it.
+
+    Two copies of that list would drift, and the drift would be invisible in
+    exactly one direction: the page clean, the figure not. So there is one copy
+    and this parses it. If the parse ever finds nothing where the viewer holds
+    something, that is a build failure rather than a silent empty set — see the
+    raise below.
+    """
+    src = (ROOT / "docs" / "site" / "raster_viewer.html").read_text(encoding="utf-8")
+    m = re.search(r"const WITHHELD = new Set\(\[(.*?)\]\)", src, re.S)
+    if m is None:
+        raise SystemExit(
+            "build_site: the viewer has no `const WITHHELD = new Set([...])`. "
+            "Either it was renamed — in which case fix this parse — or the "
+            "withholding mechanism is gone, in which case the figures are about "
+            "to be built with every detector in them. Not guessing.")
+    return tuple(re.findall(r'"([^"]+)"', m.group(1)))
+
+
+#: Withheld for this build. Empty is a legitimate answer and means "ship all six".
+WITHHELD_FROM_THE_BUILD = _withheld_from_the_viewer()
+
 # Every way a page can talk to a host, including the ones that do not look like a
 # request. Kept here, next to the build that refuses on them, and imported by
 # tests/test_site_viewer.py so the two can never drift into disagreeing about what
@@ -149,8 +178,8 @@ pulled out of a 2-photon calcium recording. These rows are simulated and every
 coordinated event among them was planted, so a miss and a false alarm are drawn
 rather than inferred.</p>
 
-<p>Detectors flag the moments when many ROIs fire together. There are six here —
-LoCo, locust, SCE, CoactDetect, RateDetect and SPIKE-synch — each asking a
+<p>Detectors flag the moments when many ROIs fire together. There are five in this
+build — LoCo, SCE, CoactDetect, RateDetect and SPIKE-synch — each asking a
 different question, and each matched to its MATLAB original to 1e-9 on committed
 fixtures, so it can be cited in its place.</p>
 
@@ -166,7 +195,7 @@ scores as noise.</p>
 <p><b>So the instrument gets built for your recordings, not for coordination in
 general.</b> Measure the coordination parameters of an <i>untreated</i>
 recording, simulate from those alone, and let
-that synthetic baseline do two jobs at once: tune the six detectors, and train
+that synthetic baseline do two jobs at once: tune the detectors, and train
 the model. Only then is the finished instrument pointed at the whole dataset,
 treatments included. Simulate the treatment and you have spent the effect you
 ran the experiment to measure; withhold it and it comes back as a result. The
@@ -204,6 +233,20 @@ before/after result, so releasing it costs nothing this lab intends to publish.
 It is a committed figure rather than a live read: the build opens no data store,
 and generates every other figure here from a seed.</p>
 
+<h2 style="font-size:1.15rem">A network trained on that simulation</h2>
+<p><b>Nobody can label coordinated events</b> — show two experienced people the same
+raster and they will not draw the same boxes — so there is no corpus to train against
+and no human answer to score against. Planting the events instead makes the answer exact
+by construction. A center-surround architecture with about eleven hundred parameters has
+been through that pipeline, and what the pipeline says about it is the interesting part:
+on the headline metric it is level with the best hand-written detectors, and once firings
+into the no-event trap block are charged rather than forgiven, <b>the ordering
+reverses</b>. The same column drops <span class="key">locust</span> from fifth of nine to
+seventh.</p>
+<p><a href="learned_detector.html">The learned detector &rarr;</a> — how the
+ground truth is manufactured, what the apparatus caught that the headline metric
+could not, and where the six methods come from.</p>
+
 <h2 style="font-size:1.15rem">Where this sits, and who else is doing it</h2>
 <p>Detecting coordinated events is not a new problem, and a page that positions
 itself against work a reader cannot go and look at is marketing. So: four
@@ -216,33 +259,13 @@ and all of them learn from events a human expert labelled. What is different her
 substrate and where the answers come from — the events are planted in a
 simulation fitted to one lab's own recordings, so the ground truth is exact and
 the benchmark is rebuilt per lab.</p>
-<p>The classical side of the same problem is
-<a href="https://gitlab.com/cossartlab/cicada">CICADA</a> and the coactivity-vs-shuffle
-rule it comes from, and both are already in the figure at the top of this page.
-The lane marked <span class="key">locust</span> is <b>derived from CICADA's
-method</b> — ported from an older version of the Cossart lab's implementation,
-by way of this project's MATLAB stack, and modified, which is why it carries a
-different name;
-<b><span class="key">binned SCE</span></b> is the
-coactivity-vs-shuffle rule itself, whose root is Cossart, Aronov &amp; Yuste
-(2003). Cite them, not this repo, for those two —
-Denis, Dard, Quiroli, Cossart &amp; Picardo (2020),
-<i>CICADA</i>, Zenodo <code>10.5281/zenodo.10041434</code>, and
+<p>The classical side of the same problem is the coactivity-vs-shuffle rule, and
+it is already in the figure at the top of this page:
+<b><span class="key">binned SCE</span></b> is that rule itself, whose root is
+Cossart, Aronov &amp; Yuste (2003) — cite them, not this repo, for it:
 <i>Attractor dynamics of network UP states in the neocortex</i>,
 Nature 423:283–288.</p>
-<p><b>Two things to know before reading locust's numbers as CICADA's.</b> The port
-<b>skips CICADA's per-cell transient-detection stage</b>, because it is fed events
-this project detected separately. And <b>locust is the only one of the six that
-consumes a duration as well as a timing</b> — the other five compute their own
-spans from onsets — so what it is told about how long an event lasted affects its
-calls, and that measurement arrives from the producer rather than being defined
-here. And the derivation chain has been
-<b>checked only at its last link</b> — locust matches the MATLAB implementation it
-was ported from to 1e-9, and nobody here has checked that implementation against
-the Cossart original.
-<b>So locust's results on this page are a result about locust, not about
-CICADA</b>, and no method from the literature has been run here in its own
-form.</p>
+<p><b>No method from the literature has been run here in its own form.</b></p>
 <p><a href="landscape.html">The full landscape &rarr;</a> — what a dozen methods
 emit, whether they learned it, and what that leaves this work entitled to claim.</p>
 
@@ -277,18 +300,27 @@ PAGES = (
     ("index.html", "Overview"),
     ("viewer.html", "Raster viewer"),
     ("diagnostic.html", "Detector diagnostic"),
+    ("learned_detector.html", "Learned detector"),
     ("landscape.html", "Landscape"),
 )
 """What the site is, declared once, in nav order.
 
 The nav bar, the coherence check and the manifest below all read this, so
-"the site has four pages" is stated in one place instead of agreeing in three
+"the site has five pages" is stated in one place instead of agreeing in three
 by hand.
+
+Nav order is the argument's order, not the order the pages were written: what a
+recording looks like, what the ported detectors do to one, what a network trained
+on them scores, and only then where any of it sits against the field. The learned
+page comes before the landscape because the landscape's whole job is to say what
+that result does and does not entitle this project to claim, and a reader who has
+not seen the result yet has nothing for it to bite on.
 """
 
 STATUS = {
     "index.html": "draft",
     "landscape.html": "draft",
+    "learned_detector.html": "draft",
     "viewer.html": "wip",
     "diagnostic.html": "wip",
 }
@@ -300,13 +332,20 @@ making a claim, and it was making it by omission on four pages at once —
 including the two that a stranger drives against their own data.
 
 The split is Tony's and it is between *kinds* of page, not degrees of doneness.
-`draft` is the argument: the front page and the landscape survey are positions
-being written, and their claims move. `wip` is the running software: the raster
-viewer and the detector diagnostic are things a visitor points at data, where the
-honest warning is not "this text may change" but "this may behave badly".
+`draft` is the argument: the front page, the landscape survey and the learned
+detector are positions being written, and their claims move. `wip` is the running
+software: the raster viewer and the detector diagnostic are things a visitor
+points at data, where the honest warning is not "this text may change" but "this
+may behave badly".
+
+The learned page is `draft` and not something gentler even though its numbers are
+regenerable and its tokens resolve at build time. What is unfinished there is not
+the arithmetic, it is the claim: one training run per fold, a fold spread wider
+than most of the differences the page discusses, and no method from the
+literature ever run against it.
 
 Every page in `PAGES` needs an entry — `tests/test_site_coherence.py` fails if
-one is missing, so a fifth page cannot ship unlabelled by being forgotten. That
+one is missing, so a new page cannot ship unlabelled by being forgotten. That
 is the whole reason this is a dict beside `PAGES` rather than a banner pasted
 into each template: the templates are in four different tools and only one of
 them is this file.
@@ -359,11 +398,15 @@ NAV_CSS = """  nav.site { display:flex; align-items:center; gap:4px; flex-wrap:w
   div.status.wip { background:#f6d5cd; color:#5a1f13;
                    border-bottom-color:#e2a696; }
   @media (prefers-color-scheme: dark) {
-    div.status.draft { background:#3a3117; color:#f0dcae;
-                       border-bottom-color:#5f5024; }
-    div.status.wip { background:#3f1f18; color:#f4cdc2;
-                     border-bottom-color:#6b3225; }
-  }"""
+    :root:not([data-theme="light"]) div.status.draft { background:#3a3117;
+                       color:#f0dcae; border-bottom-color:#5f5024; }
+    :root:not([data-theme="light"]) div.status.wip { background:#3f1f18;
+                     color:#f4cdc2; border-bottom-color:#6b3225; }
+  }
+  :root[data-theme="dark"] div.status.draft { background:#3a3117; color:#f0dcae;
+                     border-bottom-color:#5f5024; }
+  :root[data-theme="dark"] div.status.wip { background:#3f1f18; color:#f4cdc2;
+                   border-bottom-color:#6b3225; }"""
 """Full-bleed bar, links still starting at the text column's left edge.
 
 The body of the index is a 46rem column, and a nav indented to match it reads as
@@ -378,6 +421,47 @@ dark; }` on the index means the browser paints its own background dark, and a
 banner that set only a light background would be dark text on dark on exactly the
 readers most likely to have the preference set.
 """
+
+
+def _page_is_current(built: Path) -> bool:
+    """Rebuild a `build_learned_report.py` page to a scratch path and compare bytes.
+
+    The question this answers is not "does the file exist" but "does the file still
+    agree with the data it quotes". Those pages resolve every number out of JSON at
+    build time, so the failure mode is a *stale build*: the stores move, the page does
+    not, and the prose keeps quoting the previous run in the previous run's own
+    formatting. Nothing about the file's mtime or size reveals it, and the page cannot
+    check itself.
+
+    Returns True when it matches, and prints what to run when it does not. Missing
+    source is not this function's failure to report — the caller has already checked
+    the built file exists, and a page whose *source* is gone is a different problem
+    from a page that is behind.
+    """
+    src = built.with_name(built.name.replace(".html", ".src.html"))
+    if not src.exists():
+        return True
+    import subprocess
+    import tempfile
+    with tempfile.TemporaryDirectory() as tmp:
+        out = Path(tmp) / built.name
+        r = subprocess.run(
+            [sys.executable, str(ROOT / "tools" / "build_learned_report.py"),
+             str(src), str(out)],
+            capture_output=True, text=True)
+        if r.returncode != 0:
+            print(f"build_site: rebuilding {src.relative_to(ROOT)} failed, so its "
+                  f"published copy cannot be trusted:\n{r.stderr.strip()}",
+                  file=sys.stderr)
+            return False
+        if out.read_bytes() != built.read_bytes():
+            print(f"build_site: {built.relative_to(ROOT)} is STALE — rebuilding it "
+                  f"from {src.name} produces different bytes, so the page is "
+                  f"quoting an older run of its own data.\n"
+                  f"  python tools/build_learned_report.py "
+                  f"{src.relative_to(ROOT)}", file=sys.stderr)
+            return False
+    return True
 
 
 def nav_html(current: str) -> str:
@@ -689,20 +773,12 @@ LEAD_FIGURE = """<figure class="lead">
               Each lane marks where that detector called a coordinated event;
               the shaded block is a dense-but-random stretch containing none.">
   </a>
-  <figcaption><b>Thirty minutes of simulated recording, and what six detectors
+  <figcaption><b>Thirty minutes of simulated recording, and what five detectors
   made of it.</b> One lane per detector, each bar a call it made; then the raster
-  all six were reading, one row per ROI; then what each detector computes.
-  Each lane carries its detector's own name; two of the six are named for what
+  they were all reading, one row per ROI; then what each detector computes.
+  Each lane carries its detector's own name; two of the five are named for what
   they measure rather than for the tool — <span class="key">rate+context</span>
-  is RateDetect, and <span class="key">binned SCE</span> is SCE. A third name
-  needs decoding for a different reason: <span class="key">locust</span> is
-  <i>derived from</i> the
-  <a href="https://gitlab.com/cossartlab/cicada">CICADA</a> method, ported from
-  the Cossart lab's implementation and modified — it skips CICADA's own
-  transient-detection stage and changes how long a cell counts as active. It is
-  named apart <i>because</i> it is modified: another lab's tool name on a changed
-  port credits them with something they did not write, and would lend this
-  lane's behaviour to their method.
+  is RateDetect, and <span class="key">binned SCE</span> is SCE.
   In the lanes, <span class="key">&#10007;</span> marks a false alarm and
   <span class="key">&#9711;</span> one that a reader should not count as a
   separate miss-fire — a second call on an event another detection had already
@@ -825,7 +901,13 @@ def main(argv=None):
     cmd = [sys.executable, str(ROOT / "tools" / "make_diagnostic.py"),
            "--out", str(SITE), "--tag", "site",
            "--hero", str(SITE / "hero.png"),
-           "--seed", str(args.seed), "--duration", str(args.duration)]
+           "--seed", str(args.seed), "--duration", str(args.duration),
+           # THE FIGURE IS PART OF THE BUILD. A detector the viewer withholds
+           # must not come back as a lane label in `hero.png` — which is a
+           # picture, so no check on the served HTML can see it. Kept in step
+           # with the viewer's own `WITHHELD` by
+           # `tests/test_site_withholding.py`.
+           "--without", *WITHHELD_FROM_THE_BUILD]
     print("$", " ".join(cmd))
     r = subprocess.run(cmd, cwd=ROOT)
     if r.returncode != 0:
@@ -847,7 +929,7 @@ def main(argv=None):
                                         if sidecar.is_file() else "")
     if silent:
         degraded.append(
-            f"{len(silent)} of the six detectors did not run ({', '.join(silent)}), "
+            f"{len(silent)} detector(s) did not run ({', '.join(silent)}), "
             f"so the hero figure and the diagnostic page carry that many fewer "
             f"lanes than the text beside them promises. See site/diagnostic.txt "
             f"for what each one raised.")
@@ -876,6 +958,27 @@ def main(argv=None):
               f"landscape.src.html first.", file=sys.stderr)
         return 1
     shutil.copyfile(land, SITE / "landscape.html")
+
+    # The learned-detector page is built the same way and published the same way.
+    #
+    # **It is rebuilt here and compared, not merely checked for existence.** Every
+    # number on it is a {{N:...}} token resolved out of `bakeoff.json` and its
+    # neighbours at build time, so a rerun of the results with no rerun of the page
+    # leaves prose that disagrees with the data it claims to quote — and an
+    # exists() check cannot see that. The first version of this block carried this
+    # same comment over `if not learned.exists()`, which described a guard it did
+    # not implement; the 2026-08-27 murderboard caught the mismatch. A comment
+    # claiming a check that is not there is worse than no comment, because the next
+    # reader routes around it.
+    learned = ROOT / "docs" / "learned" / "learned_detector.html"
+    if not learned.exists():
+        print(f"build_site: {learned.relative_to(ROOT)} is missing, and the "
+              f"index links to it. Run tools/build_learned_report.py on "
+              f"learned_detector.src.html first.", file=sys.stderr)
+        return 1
+    if not _page_is_current(learned):
+        return 1
+    shutil.copyfile(learned, SITE / "learned_detector.html")
 
     # The raster viewer is hand-written and self-contained, so publishing it is
     # a copy too. IT SHIPS NO DATA AND CANNOT: there is no network call in it,
@@ -967,7 +1070,7 @@ def main(argv=None):
     # are part of one site. `viewer.html` is again the exception, and again
     # because it is copied byte-for-byte — its bar is written into the source
     # page by hand, and `nav_html` matches it.
-    for page in ("landscape.html", "diagnostic.html"):
+    for page in ("landscape.html", "diagnostic.html", "learned_detector.html"):
         p = SITE / page
         if not p.is_file():
             continue
@@ -992,6 +1095,13 @@ def main(argv=None):
               f"published page with no born-on date and no version date is the "
               f"thing this stamp exists to prevent. Check the insertion anchors "
               f"in stamp_html().", file=sys.stderr)
+        # Refuse, like the two checks below it. This complained to stderr and
+        # returned 0 until 2026-08-27, so the stamp was the one published-page
+        # property locked at neither end: the build shrugged, and the test that
+        # should have caught it carried a hardcoded three-page list a fifth page
+        # fell outside. Both halves are fixed; this is the half that runs on
+        # every build.
+        return 1
 
     got = {str(f.relative_to(SITE)) for f in SITE.rglob("*") if f.is_file()}
     if got != set(PUBLISHED):

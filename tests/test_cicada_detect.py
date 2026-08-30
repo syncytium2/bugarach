@@ -1,9 +1,27 @@
-"""Parity tests for the CICADA sliding-window detector (generate_sce_cicada
-port) against MATLAB reference output — global/regional threshold scope,
-fixed and per-event (rise_dur / width) duration modes, randi-based surrogate
-rolls on the shared RNG stream.
+"""Parity tests for locust, the sliding-window detector ported from interface2's
+``generate_sce_cicada`` — so what these assert is agreement with THAT, not with the
+Cossart lab's CICADA (docs/detector_history.md §6.3).
+
+Against MATLAB reference output — global/regional threshold scope,
+fixed and per-event duration modes, randi-based surrogate rolls on the shared
+RNG stream.
+
+**Where case 2's durations come from, and why the test computes them.** MATLAB's
+``explore_sce`` prep feeds CICADA a per-event rise interval, ``locs - t50rise``,
+and reference case 2 was generated that way — so parity has to be checked
+against exactly that array. It used to be reproduced by ``rise_durations()``
+inside the detector, and that function is now refused: **bugarach does not
+derive event durations**, because the duration is the producer's and arrives in
+``width_sec`` (ADR-0002's 2026-08-28 addendum, FOUNDATIONS §7). Nothing about
+parity changes. The subtraction moves out of the shipped library and into the
+one place it belongs — a test whose stated job is reconstructing MATLAB's
+*input* — and is then handed to the detector the way any producer's duration is
+handed to it, through ``duration_field="width"``. Same array in, same raster,
+same numbers; the derivation is no longer something the package can do to a
+recording on its own.
 """
 
+import dataclasses
 import json
 from pathlib import Path
 
@@ -11,7 +29,11 @@ import numpy as np
 import pytest
 from conftest import as1d, assert_close_naninf
 
-from bugarach.detectors.cicada import cicada_detect, rise_durations
+from bugarach.detectors.cicada import (
+    DurationIsNotOursToDerive,
+    cicada_detect,
+    rise_durations,
+)
 from bugarach.store import load_slice
 
 FIXTURES = Path(__file__).parent / "fixtures"
@@ -37,9 +59,31 @@ def as_structs(v):
     return v if isinstance(v, list) else [v]
 
 
+def _with_rise_interval_as_the_width(sl):
+    """MATLAB's ``explore_sce`` input, rebuilt: the rise interval AS the width.
+
+    This is the store case, where ``locs`` really is the peak — so the
+    subtraction is the rise interval and reproduces what generated the
+    reference. On an export folder it would be zero for every event, which is
+    the second reason the detector no longer does this for anybody.
+    """
+    streams = {
+        name: dataclasses.replace(
+            st,
+            width=[np.asarray(pk, dtype=float) - np.asarray(on, dtype=float)
+                   for pk, on in zip(st.locs, st.t50rise)],
+            width_def="rise_interval_peak_minus_t50rise")
+        for name, st in sl.streams.items()}
+    return dataclasses.replace(sl, streams=streams)
+
+
 def _detect(params):
+    sl = SLICE
+    dfield = params["dfield"]
+    if dfield == "rise_dur":
+        sl, dfield = _with_rise_interval_as_the_width(SLICE), "width"
     return cicada_detect(
-        SLICE,
+        sl,
         threshold_scope=params["scope"],
         n_synchronous_frames=params["nsync"],
         sce_percentile=params["pct"] if isinstance(params["pct"], (int, float))
@@ -49,7 +93,7 @@ def _detect(params):
         imaging_rate_hz=10.0,
         onset_field="t50rise",
         active_duration_mode=params["admode"],
-        duration_field=params["dfield"],
+        duration_field=dfield,
         active_duration_sec=tuple(params["adur"]),
         rng_seed=20260706,
         emit_signal=True,
@@ -92,11 +136,31 @@ def test_cicada_parity(ci):
             assert got["value"] == pytest.approx(want["value"], rel=1e-9)
 
 
-def test_rise_durations_matches_definition():
-    rd = rise_durations(SLICE.fast)
-    assert len(rd) == SLICE.fast.n_rois
-    np.testing.assert_allclose(
-        rd[0], np.asarray(SLICE.fast.locs[0]) - np.asarray(SLICE.fast.t50rise[0]))
+def test_rise_durations_refuses_because_duration_is_not_ours_to_derive():
+    """The rule, asserted where the violation would be written.
+
+    This test used to check that the subtraction was correct. The subtraction
+    was correct and that was never the question: bugarach is not the layer that
+    decides what a duration is derived from, so the right number computed here
+    is still the wrong thing to compute.
+    """
+    with pytest.raises(DurationIsNotOursToDerive) as e:
+        rise_durations(SLICE.fast)
+    msg = str(e.value)
+    assert "width_sec" in msg and 'duration_field="width"' in msg, (
+        "the refusal has to say what to do instead, or it is an obstacle "
+        f"rather than a rule — got: {msg}")
+
+
+def test_the_detector_refuses_the_rise_dur_field_too():
+    """The refusal covers the route a caller actually takes to reach it.
+
+    Removing the function but leaving `duration_field="rise_dur"` wired to it
+    would have moved the derivation, not closed it.
+    """
+    with pytest.raises(DurationIsNotOursToDerive):
+        cicada_detect(SLICE, active_duration_mode="per_event",
+                      duration_field="rise_dur", n_surrogates=2, rng_seed=1)
 
 
 def test_bad_params_raise():

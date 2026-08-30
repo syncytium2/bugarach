@@ -76,7 +76,7 @@ this repo needs it to build, run or be tested.
 
 | what exists | what it means |
 | --- | --- |
-| **Six detector ports** | rate+context, CoactDetect, LoCo, binned SCE, locust and SPIKE-synch — each agreeing with its MATLAB original to within 1e-9 on every returned number, in every detection mode, on committed synthetic fixtures. That is a port-fidelity claim and it is the whole of what is checkable from a clone: it says the Python computes what the MATLAB computed, which is what lets the ports be cited in the originals' place. It says nothing about either being right. |
+| **Six detector ports** | rate+context, CoactDetect, LoCo, binned SCE, locust and SPIKE-synch — each agreeing with its MATLAB original to within 1e-9 on every returned number, in every detection mode, on committed synthetic fixtures. That is a port-fidelity claim and it is the whole of what is checkable from a clone: it says the Python computes what the MATLAB computed, which is what lets these stand in for **the MATLAB originals**. It says nothing about either being right, and standing in for the MATLAB is not the same as standing in for a published method that MATLAB implements — see [`docs/detector_history.md`](docs/detector_history.md) for which is which. |
 | **Peak gating** | The half-prominence extent kernel the peak-gated mode needs, written **clean-room** from a spec and validated against an independently built adversary implementation. |
 | **A generator with ground truth** | Coordinated events planted at known times in per-ROI background activity, so a miss and a false alarm are counted rather than argued about (`bugarach.simulate`, from interface2's `generate_synth_coord.m`). |
 | **A scorer that reads intervals** | Binned detectors report a bin's left edge; matching that edge against a planted onset scored a correct detector at **0.00 recall on fourteen detections that each spanned a planted event**. Detections are matched as intervals, greedily, closest pair first (`bugarach.score`). |
@@ -221,7 +221,7 @@ Every coordinated event here was planted, so a hit, a miss and a false alarm are
 drawn rather than argued about. Forty-five minutes of simulated recording, and
 what six detectors made of it:
 
-![One lane per detector above a 33-row event raster and six analysis traces. Inside the shaded block, the CICADA and binned SCE lanes are packed solid with detections while the LoCo lane is empty](docs/generator/coord_diagnostic_bench_quiet_hero.png)
+![One lane per detector above a 33-row event raster and six analysis traces. Inside the shaded block, the lane labelled CICADA — this repo's modified port of it, since renamed locust — and the binned SCE lane are packed solid with detections, while the LoCo lane is empty](docs/generator/coord_diagnostic_bench_quiet_hero.png)
 
 Top row, the answer: ▲ a planted event at least one detector recovered, and a grey
 down-triangle for a distractor — a correlated burst that is real coincidence and not
@@ -294,35 +294,39 @@ cost of any claim about timing accuracy, and it helps the imprecise detectors mo
 
 | detector | F1 (mean of 4 folds) | fold range | probe firings | detect s | params |
 | --- | --- | --- | --- | --- | --- |
-| center−surround (learned) | 0.668 ± 0.061 | 0.58–0.73 | 15.8 | 0.014 | 1,149 |
-| CoactDetect | 0.651 ± 0.044 | 0.61–0.71 | 1.2 | 0.060 | — |
-| LoCo | 0.638 ± 0.053 | 0.57–0.70 | 2.5 | 0.245 | — |
+| center−surround (learned) | 0.681 ± 0.049 | 0.63–0.74 | 20.5 | 0.023 | 1,149 |
+| CoactDetect | 0.651 ± 0.044 | 0.61–0.71 | 1.2 | 0.062 | — |
+| LoCo | 0.638 ± 0.053 | 0.57–0.70 | 2.5 | 0.248 | — |
 | rate+context | 0.571 ± 0.085 | 0.46–0.65 | 34.8 | 0.005 | — |
-| locust | 0.541 ± 0.070 | 0.47–0.63 | 214.8 | 0.114 | — |
-| binned SCE | 0.422 ± 0.083 | 0.31–0.49 | 58.8 | 0.011 | — |
-| SPIKE-synch | 0.254 ± 0.065 | 0.21–0.34 | 8.8 | 0.094 | — |
-| pooled trace (learned) | 0.131 ± 0.012 | 0.12–0.15 | 0.0 | 0.015 | 2,065 |
-| per-cell bank (learned) | 0.125 ± 0.000 | 0.12–0.12 | 0.0 | 2.453 | 2,393 |
+| locust | 0.541 ± 0.070 | 0.47–0.63 | 214.8 | 0.117 | — |
+| binned SCE | 0.420 ± 0.079 | 0.31–0.49 | 59.2 | 0.012 | — |
+| SPIKE-synch | 0.254 ± 0.065 | 0.21–0.34 | 8.8 | 0.095 | — |
+| per-cell bank (learned) | 0.125 ± 0.000 | 0.12–0.12 | 0.0 | 0.228 | 2,393 |
+| pooled trace (learned) | 0.118 ± 0.015 | 0.10–0.12 | 0.0 | 0.022 | 2,065 |
 
 `detect s` is wall-clock to scan one held-out fold — two recordings, about 118
 minutes of data.
 
 **The top three tie on F1 and do not tie on the trap.** Four folds of thirty
-planted events cannot separate 0.668 from 0.651; the fold ranges overlap, and the
+planted events cannot separate 0.681 from 0.651; the fold ranges overlap, and the
 figure draws every fold so that is visible rather than hidden behind a bar. But
 `probe firings` is the column F1 cannot see — firings inside the no-event block are
 excluded from precision, by design, so a detector that keys on activity is not
 punished for it in the score. On that column the three are not alike at all: the
-learned model fires into the block **15.8** times a fold against CoactDetect's
+learned model fires into the block **20.5** times a fold against CoactDetect's
 **1.2**. Read the tie as "indistinguishable at finding planted events, and not
 indistinguishable at ignoring the trap" — and note that the two detectors this page
 praises for ignoring the trap are the two hand-written ones. The
 claim the numbers support is that a 1,149-parameter network **reaches the level of
 the best hand-written detectors here**, having been given no more information than
-they were — and then detects four times faster than CoactDetect and eighteen
-times faster than LoCo, from 5.6 seconds of training. It is **not** the fastest
-detector here: rate+context scans the same fold in 0.005 s, roughly three times
-quicker again, and sits 0.10 of F1 below.
+they were — and then detects **2.6× faster than CoactDetect and 10.5× faster than
+LoCo**, from 6.9 seconds of training. It is **not** the fastest detector here:
+rate+context scans the same fold in 0.005 s, roughly four times quicker again, and
+sits 0.11 of F1 below. ⚠ Those multiples were 4× and 17× on the previous run, and
+**the two runs are not comparable**: this one pins torch to a single thread, which
+moves the learned model's wall-clock, and the hand-written timings moved too for
+reasons [`bakeoff.md`](docs/learned/bakeoff.md) does not establish. What survives
+across both is the ranking, not the factor.
 
 ⚠ **What this does not establish.** Eight simulated recordings — two per fold —
 four folds, one training run each. The `±` above is the standard deviation across
@@ -384,11 +388,13 @@ come from: the events are planted in a simulation fitted to one lab's own
 recordings, so the ground truth is exact and the benchmark is rebuilt per lab.
 The classical side of the same problem is
 [CICADA](https://gitlab.com/cossartlab/cicada) and the coactivity-versus-shuffle
-rule it comes from — both among the six ported here.
+rule it comes from — **binned SCE implements that rule**, with a circular shift where
+the 2003 Methods reshuffle intervals, so cite its authors for it and not this repo.
 
-**No method from the literature has been run on this project's recordings**, so
-nothing here claims to beat one. The reading behind that paragraph — which papers
-were read closely and which were deliberately not opened — is on the site as
+**No method from the literature has been run on this project's recordings as its
+authors published it**, and nothing here claims to beat one. The reading behind that
+claim — which papers were read closely and which were deliberately not opened — is
+on the site as
 [the landscape](https://bugarach.tonydefazio.com/landscape.html), built from
 `docs/learned/landscape.src.html`.
 
@@ -611,7 +617,7 @@ code from cSPIKE's MATLAB source.
 | Upstream | License | Role here |
 | --- | --- | --- |
 | [PySpike](https://github.com/mariomulansky/PySpike) | BSD | SPIKE-synchronization semantics ported from its (BSD) source; test-suite cross-check (its `max_tau` bug, live since 0.8.0, limits it to the uncapped regime) |
-| [CICADA](https://gitlab.com/cossartlab/cicada) | MIT | the detection method behind **locust** (ported and modified; carries upstream copyright notice) |
+| [CICADA](https://gitlab.com/cossartlab/cicada) | MIT | **locust** is code-derived from it, by way of interface2, and modified; carries the upstream copyright notice |
 | cSPIKE (MATLAB) | research/education only — **no code used** | reference outputs for parity tests only (research use, via interface2) |
 
 ⚠ SPIKE-synchronization is a **native port** rather than a PySpike wrapper because
@@ -623,29 +629,63 @@ cap. The write-up is [`docs/kreuz_note.md`](docs/kreuz_note.md), and
 that will fail the day upstream fixes it. PySpike stays a test-suite
 cross-check in the uncapped regime, where the two definitions agree.
 
-**Cite in any publication that uses results from this tool:**
+**Cite in any publication that uses results from this tool.** ° marks a work carried
+from interface2's attribution audit and **not read here** — this project's shelf
+holds only Finn & Johnson of the works below. Where each detector came from, which
+are this lab's own designs and which derive from published work, is
+[`docs/detector_history.md`](docs/detector_history.md).
 
-- **PySpike** — Mulansky M., Kreuz T., *PySpike — A Python library for analyzing
-  spike train synchrony*, SoftwareX 5, 183–189 (2016).
+- **rate+context** — the structure is cell-averaging, with an *additive* rather than
+  a multiplicative threshold, so it does **not** carry the constant-false-alarm
+  property its ancestor is named for
+  ([`docs/detector_history.md`](docs/detector_history.md) §5.2): Finn H.M.,
+  Johnson R.S. (1968). *Adaptive detection mode with threshold control as a function
+  of spatially sampled clutter-level estimates*. RCA Review 29(3), 414–464.
+- **LoCo and CoactDetect** — the family is excess-coincidence testing against a
+  rate-preserving independence null; its canonical form is Unitary Events:
+  ° Grün S., Diesmann M., Aertsen A. (2002). *Unitary events in multiple
+  single-neuron spiking activity: I. Detection and significance*, Neural Computation
+  14(1):43–80, and *II. Nonstationary data*, 14(1):81–119. The shift-based null used
+  here is nearer ° Amarasingham A., Harrison M.T., Hatsopoulos N.G., Geman S. (2012).
+  *Conditional modeling and the jitter method of spike resampling*, J Neurophysiol
+  107(2):517–531, doi:10.1152/jn.00633.2011. LoCo's `maxlt` is greatest-of CFAR:
+  ° Hansen V.G. (1973). *Constant false alarm rate processing in search radars*, Proc.
+  IEE Int. Radar Conf., IEE Conf. Publ. 105, 325–332 — the origin; its detectability
+  cost is measured in Hansen V.G. & Sawyers J.H. (1980), IEEE T-AES AES-16(1):115–118,
+  which **is** on this project's shelf.
+- **PySpike**, for the measure under **SPIKE-synch** — Mulansky M., Kreuz T. (2016).
+  *PySpike — A Python library for analyzing spike train synchrony*, SoftwareX 5,
+  183–189, doi:10.1016/j.softx.2016.07.006. The measure is ° Kreuz T., Mulansky M.,
+  Bozanic N. (2015). *SPIKY: a graphical user interface for monitoring spike train
+  synchrony*, J Neurophysiol 113(9):3432–3445, doi:10.1152/jn.00848.2014, which builds
+  on event synchronization — ° Quian Quiroga R., Kreuz T., Grassberger P. (2002),
+  Phys Rev E 66:041904.
 - **CICADA**, for the detector this repo calls **locust** — Denis J, Dard R, Quiroli
   E, Cossart R, Picardo M (2020). *CICADA (Calcium Imaging Complete Automated Data
   Analysis)*, v1.0.3. Zenodo. doi:10.5281/zenodo.10041434. Source:
-  [`gitlab.com/cossartlab/cicada`](https://gitlab.com/cossartlab/cicada); the port
-  here is of the older `sce_stats_utils`. **It is named apart from CICADA because it
-  is modified** — fed our own detected events, and painting the rise interval where
-  the original paints the transient duration.
+  [`gitlab.com/cossartlab/cicada`](https://gitlab.com/cossartlab/cicada), MIT; the
+  port is of `sce_stats_utils` and is **modified**, so it is named apart. What is
+  modified, and what its parity number does and does not cover, is
+  [`docs/detector_history.md`](docs/detector_history.md) §6.3.
 - **binned SCE** — the rule's root is Cossart R, Aronov D, Yuste R (2003). *Attractor
-  dynamics of network UP states in the neocortex*. Nature 423(6937):283–288.
-  doi:10.1038/nature01614, whose Methods state it in full; the modern circular-shift
-  form is Dard et al. 2022 (eLife 11:e78116) and Bocchio et al. 2020 (Nat Commun
-  11:4559).
-- ⚠ **The remaining rows are being rewritten.** An attribution audit closed all six
-  origins on 2026-08-24 — `rate_detect` is cell-averaging CFAR (Finn & Johnson 1968),
-  `loco_detect`'s `maxlt` is GO-CFAR (Hansen 1973), and LoCo/CoactDetect sit on
-  Unitary Events (Grün et al. 2002). None of it changes a claim this tool makes, and
-  the full list with DOIs is in
-  [the attribution note](docs/todo/2026-08-24-the-methods-are-not-ours-and-the-app-says-otherwise.md)
-  until this section is rebuilt properly.
+  dynamics of network UP states in the neocortex*. Nature 423(6937):283–288,
+  doi:10.1038/nature01614, whose Methods state it in full — with **interval
+  reshuffling** where this code circular-shifts. The modern circular-shift form is
+  Dard et al. 2022 (eLife 11:e78116) and Bocchio et al. 2020 (Nat Commun 11:4559).
+  The 2003 paper credits the technique to ° Mao B.Q., Hamzei-Sichani F., Aronov D.,
+  Froemke R.C., Yuste R. (2001). *Dynamics of spontaneous activity in neocortical
+  slices*, Neuron 32(5):883–898, which nobody here has obtained — so 2003 is the root
+  **reached**, not the bottom.
+
+Two things arrived with those citations that are about behaviour rather than credit,
+and both are open: greatest-of CFAR is blind to a second event inside its own
+reference window, and rate+context's false-alarm rate is not rate-controlled. They
+are the reason this section is worth more than a bibliography —
+[the attribution note](docs/todo/2026-08-24-the-methods-are-not-ours-and-the-app-says-otherwise.md)
+carries both. ⚠ Four literatures that could host prior art for the CFAR
+convergence — genomics peak calling, seismological STA/LTA, adaptive image
+thresholding, and changepoint detection — **have never been searched by anyone on
+this project**, so read "designed here" as *not found elsewhere yet*, not as novel.
 
 ## Dev
 

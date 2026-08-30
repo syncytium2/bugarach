@@ -10,6 +10,33 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
+### Mac/runs-say-what-made-them — DEPLOY claimed 2026-08-30 ~03:55Z, overnight run
+- **Status:** **DONE 2026-08-30 — DEPLOYED AND VERIFIED. The deploy is held by
+  nobody; the next session may publish without asking.** Version ID
+  `547f03b1`. All six pages 200; served `viewer.html` byte-identical to the built
+  one (`8e1db40a…`); `audit_deployed_page.py`: *"the page fetched nothing but
+  itself."*
+- **Why now:** Tony, 2026-08-29, going to sleep: *"in the morning i want to see
+  optimizatoin and training and performance charts for the detectors and the dl
+  approaches. webiste should be deployed and ready to test."* `DEPLOY_HOLD.md` says
+  `held: no`, and the 2026-08-29 session that deployed twice released it in terms —
+  *"the deploy is held by nobody; the next session may publish without asking."*
+- **Site was 42 commits behind, 14 of them changing what it serves.** Built from
+  `487fbc9`; this publishes the current tree.
+- **What is new on the page:** the six detectors are now assembled from
+  `docs/site/detectors/*.js` rather than a literal (ADR-0005), and the viewer writes
+  a `provenance` block into `run.json` carrying its own version stamp and the
+  detector list it actually offers.
+- **⚠ Deployed from a branch, not from `main`.** PR #404 is armed to auto-merge and
+  had not landed at deploy time. That is checkable rather than asserted:
+  `build_site.py`'s inputs are `docs/site/raster_viewer.html`,
+  `docs/learned/*.html`, `docs/generator/reality_check.png` and `src/bugarach/**`
+  via `make_diagnostic.py` — and the branch differs from `main` in exactly those,
+  which is the point of the deploy. Suite 1,583 green, sapper clear at the built
+  commit.
+
+---
+
 ## Which board does this go on?
 
 One test, and it is **not** "is this about my machine?":
@@ -60,9 +87,81 @@ Template:
 
 ## Active
 
+### Tonys-MacBook-Pro/transfer-across-corpora — DEPLOY: done twice, and RELEASED
+- **Status:** **DONE 2026-08-29 — DEPLOYED TWICE AND VERIFIED. The deploy is held by
+  nobody; the next session may publish without asking.**
+- **⚠ SECOND DEPLOY, `429e3c04` — the sixth detector is withheld from the public build.**
+  Tony, 2026-08-29: *"suppress all locust/cicada mentions in the public facing
+  webapp/docs. we'll come back to it when we have time."* **The first deploy of the day
+  went out ~20 minutes before that instruction and carried the name**, which is why a
+  second one was needed rather than optional.
+  - **Zero visible mentions on all four served pages**, down from 27 — measured by
+    rendering each page and reading `innerText`, not by grepping bytes. The residual
+    occurrences in the served files (1 in `index.html`, 13 in `viewer.html`) are the
+    `cicada` **code key and source comments**, which is the agreed scope: purging the key
+    from served bytes was offered and explicitly not chosen, because it is
+    `detections.csv`'s `detector` value and forking it would split the browser's output
+    contract from the Python's.
+  - **Two mentions no grep would have found.** The detector lane labels are rendered into
+    `hero.png` and `diagnostic.png` from `ui/app.py`, so the name reached readers **as
+    pixels** while every HTML page was clean; and `landscape.svg` carried it in a diagram
+    label and in the figure's own alt text. Both neutralised, and `app.py`'s docstring now
+    says why so the next person does not scrub the pages and ship the figures.
+  - Live bytes checked against the local payload after upload: identical counts.
+  - Version ID `41b75a27-8e54-46a0-bf05-051f2f0ba104`; 4 of 8 assets changed
+    (`index`, `viewer`, `landscape`, `diagnostic` — the four HTML pages; the images were
+    already uploaded).
+  - `tools/site_staleness.py` after: **current**, `viewer.html` matching
+    `docs/site/raster_viewer.html` at `58480e2`.
+  - `tools/audit_deployed_page.py` against the live URL: **"The page fetched nothing but
+    itself"** on both `/viewer.html` and the `/viewer` the 307 lands on — the
+    no-network promise holds as served, not merely as written.
+  - Driven over **HTTP before the upload**, not `file://`, per `docs/deploy.md`: all five
+    paths 200, and the three serving changes confirmed present in the payload by string
+    match rather than by assumption.
+- **Claims:** ~~the site deploy~~, ~~port 5096~~ — **both released**, server stopped.
+- **Authorised by Tony, 2026-08-29:** *"i need to land this website today"*, and the deploy
+  confirmed explicitly before the upload. `docs/DEPLOY_HOLD.md` reads `held: no` (released
+  2026-08-28) and no other block held the deploy.
+- **What goes out.** `origin/main` at `50bea02`. `tools/site_staleness.py`: **behind by 25
+  commits, 3 of which change what it serves** —
+  `58480e2` (duration is the exporter's — the viewer's locust attribution panel and its
+  code comments), `9772425` (the caption leads with the credit), `d999ae4` (the app counts
+  what fires where nothing was planted).
+- **Built from `transfer-across-corpora`, and that is checkable rather than asserted.** The
+  branch differs from `origin/main` in four files — `tools/fair_bakeoff.py`,
+  `tools/assess_archive.py`, `tests/test_fair_bakeoff_transfer.py` and one todo — and
+  **`build_site.py` reads none of them**. Its inputs are `docs/site/raster_viewer.html`,
+  `docs/learned/landscape.html`, `docs/generator/reality_check.png` and `src/bugarach/**`
+  through `make_diagnostic.py`. So the payload is byte-identical to one built on `main`.
+- **⚠ The scoreboard stays hidden in this deploy.** Its copy has not been through
+  `docs/doc_review_process.md`, which is the whole reason for the `window.__lab` gate
+  ([`todo/2026-08-20-the-scoreboard-copy-needs-review.md`](todo/2026-08-20-the-scoreboard-copy-needs-review.md)).
+  Tony's plan for today is deploy first, murderboard the copy second, redeploy. **The next
+  deploy is expected to be that one.**
+- **Release:** this block flips to DONE with the served version and the
+  `audit_deployed_page.py` result the moment the upload verifies.
+
 ### Tonys-MacBook-Pro/lift-the-hold — DEPLOY CLAIMED: publishing the site, hold lifted early
-- **Status:** ACTIVE 2026-08-28 — **I hold the deploy.** No other session should run
-  `npm run deploy` or touch `docs/DEPLOY_HOLD.md` until this block says DONE.
+- **Status:** **DONE 2026-08-28 — DEPLOYED AND RELEASED.** The site is live at version
+  `4541a2b1`, built from `3a0b63b`; `site_staleness.py` reads **current, 0 commits
+  behind**. **The deploy is no longer held by anyone** — the next session may publish
+  without asking me. Worktree reaped.
+- **Verified after upload, not just before:** the live front page now says *"derived from
+  CICADA's method"*, and both retired claims — the identity assertion and the
+  self-contradicting *"no method from the literature has yet been run"* — return **zero**
+  matches on the served HTML. `tools/audit_deployed_page.py` re-run against the live URL:
+  *"the page fetched nothing but itself"*, so nothing was injected at the edge this time.
+- **The pre-flight earned its place.** Three sessions had edited `raster_viewer.html` and
+  **no session had driven the combination.** The build was served over HTTP — not
+  `file://`, which is the mistake `docs/deploy.md` exists about — and driven in a real
+  browser before upload: it simulated on load and the generator ran. That was the only
+  test that combination has ever had.
+- **Still true after the deploy, for whoever goes next:** the published bench numbers,
+  `hero.png` and `diagnostic.png` **predate** the background change and the 1.5 s → 2.5 s
+  tolerance move on `bench-background-is-not-flat`, which is not merged. Those figures
+  render from `src/bugarach`, so when it lands the front page's picture moves and the
+  commit list will not say why. Also recorded in `docs/DEPLOY_HOLD.md`.
 - **Worktree:** `bugarach-worktrees/lift-the-hold` (branch same, off origin/main).
   Build and upload run from the **primary checkout**, which is where `node_modules` and
   the wrangler login live.
@@ -1512,6 +1611,21 @@ session's work is not a sweep.
   walked to the panel above — which belongs to the previous recording. Down triangles.
   Now in CLAUDE.md's plot conventions beside the no-drawing-on-the-raster rule.
 
+### Mac/learned-detector-page — the deep-learning page, murderboarded and held
+- **Status:** ACTIVE 2026-08-27
+- **Claims:** `<darkroom>/bugarach/2026-08-27-learned-detector-page/` (new subfolder) and
+  **one appended row** to `<darkroom>/bugarach/README.md`'s "dated subfolders" table so the
+  folder is findable from the index — additive, nothing rewritten. Nothing else in the
+  darkroom; nothing under `$BUGARACH_DATA_ROOT`; no deploy.
+- **Writes:** the page as built (`learned_detector.html`), the murderboard run record as a
+  readable page beside it, and a folder README that opens with what is waiting on a decision.
+- **Why the darkroom and not just the repo:** the record reached `docs/reviews/` and stopped
+  there, which is the 2026-08-18 failure again — a report is output, and "in the repo" is not
+  delivered. Tony could not open it from the editor and said so.
+- **Not claimed:** `<darkroom>/constellation/` (the MATLAB producer's folder — never written),
+  `<darkroom>/bugarach/lit/`, and every existing file at the top level of `bugarach/`.
+- **Released when:** Tony has decided what the page should claim. The page is NOT on `main`
+  and NOT deployed; 31 blocking findings stand against it.
 ### Tonys-MacBook-Pro/the-numbers-moved — the bake-off page, corrected and murderboarded
 - **Status:** DONE 2026-08-28. Claim released in this same commit; nothing held after it.
 - **Writes:** a new dated folder `<darkroom>/bugarach/2026-08-28-bakeoff-corrected/` —
@@ -1560,3 +1674,15 @@ session's work is not a sweep.
     caller still does not. Cheapest half of this item and prose-only.
   - Found from `syncytium2/short-course`, checking a commit message against `git grep`
     while writing a case study about #347 — not by anyone working in this repo.
+
+### Tonys-MacBook-Pro/real-baseline-detection-figure — SCE + LoCo on a real baseline recording
+- **Status:** ACTIVE — claimed before writing anything shared.
+- **Claims the DARKROOM** for `<darkroom>/bugarach/real_detection_20240813_39.{html,png,txt}`
+  — three new filenames, nothing existing overwritten. No other session's file is touched.
+  **Not** `<darkroom>/constellation/` (the MATLAB producer team's folder), not the deploy,
+  not the public site.
+- **Reads** the current export folder `2026-08-18_revised_2v_periods`, read-only. No `.mat`
+  store, no MATLAB, no fixture regeneration.
+- **Task:** run `sce` and `loco` at the `bugarach.bench` operating points on the FAST stream
+  of `20240813_39` — a baseline-only recording, the one slice released by name (FOUNDATIONS
+  §5) — and draw the detections in a lane above its raster.

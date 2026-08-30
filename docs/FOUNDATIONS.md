@@ -19,11 +19,43 @@ MATLAB**. Two deliverables, in order of primacy:
 1. **The detector ports** — trusted stand-ins for the MATLAB originals.
 2. **The viewer** — Panel/HoloViews, launched with `bugarach view`.
 
-## 2. Parity is the product
+## 2. Parity was the inheritance
 
-Every detector matches its MATLAB original **to 1e-9 on committed fixtures,
-in every mode** — that is what makes the ports citable in place of the
-originals. Consequences:
+> **Amended 2026-08-25 by [ADR-0003](adr/0003-parity-was-the-inheritance-not-the-contract.md).**
+> This section was titled *"Parity is the product"* and read as a standing
+> constraint on what bugarach may compute. It is now a statement about the **point
+> of inheritance**. Tony: *"the constellation team gave birth to bugarach … parity
+> with constellation suite is a lot of work and not relevant to our immediate
+> goals. At some point in the future, it might be interesting to move back to
+> MATLAB. But that is not a concern at this time."*
+>
+> **Deferred, not abandoned**, and the difference is load-bearing: a return to
+> MATLAB stays open, so divergence is **enumerated** — a `forks.md` entry and a
+> named test exemption per fork — rather than allowed to drift. Everything below is
+> unchanged and still binding: the MATLAB-semantics helpers, the RNG facts and the
+> upstream hazards are how these ports work, not a courtesy to a counterparty.
+
+Every detector matched its MATLAB original **to 1e-9 on committed fixtures, in
+every mode**, and the tests that prove it stay and keep running. That is the
+**provenance record** — it is what makes the ports citable in place of the
+originals, and it stays true whatever bugarach does next.
+
+**What it is not, since ADR-0003:** permission bugarach must ask before changing
+something. **The six detectors may be modified at will to improve performance, and
+the MATLAB versions are stale** — bugarach is the live implementation and they are
+a snapshot of where it started, so a difference between them is no longer evidence
+that bugarach is wrong. The question is *"is this better"*, measured; each change
+still owes evidence that it helped, which is a standard about measurement rather
+than about MATLAB.
+
+The fixtures stop being a gate and become the **baseline**: the before in every
+"I improved this" claim, and the provenance record for the port itself. So a
+deliberate change that reddens a parity test is expected — give the fork a
+[`forks.md`](forks.md) entry and exempt the test by name pointing at it. That is a
+note, not a gate: it exists so a test that goes red *without* anyone deciding to
+still looks like the bug it is.
+
+Consequences, all unchanged:
 
 - `src/bugarach/detectors/_shared.py` holds MATLAB-semantics helpers
   (`matlab_colon` two-ended element construction, `matlab_prctile` mid-point
@@ -202,9 +234,10 @@ adversarial differential validation under `docs/clean_room/` (process:
 
 **CICADA is the upstream tool; `locust` is the detector here**, and the
 distinction is a provenance decision rather than a label. The sixth detector is a
-**modified** port — fed the events the folder already carries instead of running
-CICADA's own transient detection, and painting each cell active for the rise
-interval where the original paints the whole transient duration — so it ships
+**modified** port, in both cases by what it is **fed** rather than what it
+computes — the events the folder already carries instead of CICADA's own transient
+detection, and a per-event duration from the producer instead of the whole
+transient the original measures for itself — so it ships
 under its own name with CICADA cited (2026-08-24, ADR-0002). The **code key
 stays `cicada`**, including the `detector` column of `detections.csv`, which is
 output contract. So `which == "cicada"` in a file and *locust* on a screen are
@@ -215,14 +248,31 @@ Calcium imaging in KNDy neurons reveals **action-potential-independent** calcium
 events, so this project detects its own and cannot rely on an external detector
 for them — whether any can serve is an interface2 effort, and is pending. What was
 taken from CICADA is the **coordinated-event stage alone**; that stage requires a
-per-event duration, and this preparation's slow events are not described in the
-literature and destroy it at full duration. Slow-event duration is therefore
-truncated to `peak − t50rise` **on export, by the MATLAB team** — not inside
-`cicada_detect`. So bugarach treats the **imported duration as the duration**:
+per-event duration, and the producer supplies one. Where it comes from, and why a
+producer might measure it one way on one stream and another way on another, is
+**theirs and is deliberately not written down here** — a rule described in this
+repo is a rule that goes stale and that readers mistake for ours, which is exactly
+what happened. So bugarach treats the **imported duration as the duration**:
 `width_sec` arrives with the `width_def` naming the rule that made it
 (`export_folder_spec.md`), the port paints what it is given, and **what a producer
 puts in that column is not this project's business** — no webapp behaviour and no
-dev-team judgement turns on it. Full account: the ADR-0002 addendum.
+dev-team judgement turns on it. Tony, 2026-08-29: *"bugarach doesn't care what you
+put in the duration column. your mother's social security number works fine for 5
+of 6 detectors."* That is the literal operating rule: **five of the six detectors
+never read the column at all**, and the sixth reads it as a number. Full account:
+the ADR-0002 addendum.
+
+**This is now enforced rather than described** (2026-08-29). One function had been
+deriving a duration all along — `rise_durations()` recomputed a producer's own
+truncation, a layer too late. It refuses now, naming the column to read instead.
+It was also, on folder input, returning
+**zero for every event** — `locs` in a folder holds the `t50rise` — with the right
+shape and dtype and no error, which is the failure class this contract exists to
+prevent and the reason a wrong answer here would have been hard to see.
+**Sapper SAP012** blocks any arithmetic pairing two of `locs` / `peak` /
+`t50rise` under `src/` or `tools/`, because `peak − locs` is the plausible repair
+and is equally forbidden: the rule is not *derive it correctly*, it is **do not
+derive it**.
 
 ## 8. Team & operations
 

@@ -1,181 +1,20 @@
-"""Architectures, and the registry that makes adding one cheap.
+"""tube — one architecture, one file.
 
-A new architecture is **one class plus one ``@register`` line**. It is then
-trained on the same data, scored by the same scorer, and placed on the same
-performance-vs-mass curve as everything already here, with nothing else edited.
-That was the requirement: *if we decide a new architecture is needed, it can be
-slotted in and trained and evaluated on the others we build now.*
+ONE FILE IS ONE ARCHITECTURE. Drop a module in this folder with a ``@register``
+line and it appears everywhere the registry is read — the bake-off, the lab
+server's ``/api/capabilities``, the browser's model picker — with nothing else
+edited. Delete the file and it is gone. That is what "added and removed at will"
+has to mean to be worth saying (ADR-0005).
 
-torch is an optional extra (``pip install -e ".[dl]"``). Nothing in
-:mod:`bugarach.learn.encode` imports it, so the measurement half of the package
-works without it.
-
-The one structural commitment
------------------------------
-**One ROI, one vote.** Coactivity is distinct active ROIs, never a spike count
-(GLOSSARY), and every one of the six detectors enforces it. Reduce over ROIs
-*before* smoothing over time and that is destroyed: one busy ROI firing
-repeatedly becomes indistinguishable from several ROIs firing together — the
-exact false coordination a ``min_rois`` floor exists to reject. Sorting rows by
-rate makes it worse, because it puts every busiest ROI in the same place.
-
-So the ROI axis survives the temporal filter, and each ROI's contribution is
-**bounded before pooling**:
-
-    (n_roi, T)  rows rate-sorted
-        -> shared temporal filter, applied per ROI    (learns its own width)
-        -> bounded activation                          <- one ROI, one vote
-        -> pooled within rate quantiles                (distinctness preserved)
-        -> temporal head -> per-frame logit
-
-⚠ The bound is **soft**, not exact. An exact "any event in this window" needs a
-fixed window, which is the assumption the whole design refuses to make — the
-smear must be learned, not handed over. A sigmoid lets the model choose its own
-window and pays for it with approximate distinctness. That trade is the thing to
-probe behaviourally, not to assert.
-
-Nothing here knows what a second is. Receptive fields are in samples.
+``nets/__init__.py`` imports every module in this folder at import time, so
+registration is automatic; there is no list of architectures anywhere to fall
+behind. Shared machinery — ``register``, ``_torch``, ``_dilated_stack``,
+``receptive_field`` — lives there and is imported from there.
 """
 
-from __future__ import annotations
+from bugarach.learn.nets import _dilated_stack, _torch, receptive_field, register
 
-from dataclasses import dataclass, field
-
-ARCHITECTURES: dict[str, "Arch"] = {}
-
-
-@dataclass(frozen=True)
-class Arch:
-    """One registered architecture: how to build it, and what it costs."""
-
-    name: str
-    build: object
-    """``build(n_rate_quantiles=..., **cfg) -> torch.nn.Module``."""
-    cfg: dict = field(default_factory=dict)
-    note: str = ""
-
-    def make(self, **over):
-        return self.build(**{**self.cfg, **over})
-
-
-def register(name: str, note: str = "", **cfg):
-    """Add an architecture to the sweep. One line per architecture, by design."""
-    def deco(fn):
-        ARCHITECTURES[name] = Arch(name=name, build=fn, cfg=cfg, note=note)
-        return fn
-    return deco
-
-
-def n_params(model) -> int:
-    """Trainable parameter count — the mass axis."""
-    return int(sum(p.numel() for p in model.parameters() if p.requires_grad))
-
-
-def _torch():
-    try:
-        import torch
-        return torch
-    except ImportError as exc:                                  # pragma: no cover
-        raise ImportError(
-            "bugarach.learn.nets needs torch — install the optional extra:\n"
-            '    pip install -e ".[dl]"') from exc
-
-
-def _dilated_stack(nn, c_in, c_out, width, depth):
-    """Dilated causal-free conv stack. Dilation doubles per layer, so the
-    receptive field grows exponentially in depth — which is how a small model
-    reaches the ~1000 samples it needs to judge activity against its own local
-    background without being told what that background is."""
-    layers = []
-    c = c_in
-    for i in range(depth):
-        d = 2 ** i
-        layers += [nn.Conv1d(c, width, kernel_size=3, dilation=d, padding=d),
-                   nn.GELU()]
-        c = width
-    layers += [nn.Conv1d(c, c_out, kernel_size=1)]
-    return nn.Sequential(*layers)
-
-
-def receptive_field(depth: int) -> int:
-    """Samples visible to a stack of the given depth. Reported, not assumed —
-    a model whose receptive field is shorter than the background it must judge
-    against cannot be rate-invariant however it is trained."""
-    return 1 + 2 * sum(2 ** i for i in range(depth))
-
-
-@register("tiny", note="per-ROI filter, bounded vote, rate-quantile pooling",
-          roi_width=4, roi_depth=4, head_width=8, head_depth=10,
-          n_rate_quantiles=4)
-def build_tiny(*, roi_width=4, roi_depth=4, head_width=8, head_depth=10,
-               n_rate_quantiles=4):
-    torch = _torch()
-    nn = torch.nn
-
-    class Tiny(nn.Module):
-        """The smallest thing that can honour distinctness.
-
-        ``n_rate_quantiles`` is the ROI-resolution knob, and it is the interesting
-        half of the mass axis: 1 pools every ROI together and is exactly the
-        coactivity trace the six detectors threshold; larger values keep bands of
-        the rate distribution apart. If 1 scores as well as 32, rate-band
-        structure does not matter and the cheap model is the right one — a real
-        result either way.
-        """
-
-        def __init__(self):
-            super().__init__()
-            self.q = int(n_rate_quantiles)
-            self.roi = _dilated_stack(nn, 1, roi_width, roi_width, roi_depth)
-            self.head = _dilated_stack(nn, roi_width * self.q, 1,
-                                       head_width, head_depth)
-
-        def forward(self, x):                     # x: (B, n_roi, T)
-            b, n, t = x.shape
-            h = self.roi(x.reshape(b * n, 1, t))  # shared weights, per ROI
-            h = torch.sigmoid(h)                  # <- one ROI, one vote (soft)
-            h = h.reshape(b, n, -1, t)
-
-            # Rows arrive rate-sorted, so a contiguous split of the ROI axis IS a
-            # split by rate quantile. Uneven splits are fine and expected: a
-            # recording's ROI count is not a multiple of anything.
-            idx = [int(round(i * n / self.q)) for i in range(self.q + 1)]
-            pooled = [h[:, idx[i]:max(idx[i] + 1, idx[i + 1])].sum(dim=1)
-                      for i in range(self.q)]
-            z = torch.cat(pooled, dim=1)          # (B, q*roi_width, T)
-            return self.head(z).squeeze(1)        # (B, T) logits
-
-    return Tiny()
-
-
-@register("trace", note="pools ROIs first — the cheap baseline that gives up "
-                        "distinctness, and the control for whether it matters",
-          head_width=8, head_depth=11)
-def build_trace(*, head_width=8, head_depth=11):
-    """Collapse the ROI axis immediately, then filter in time.
-
-    Deliberately the thing the design argues against: pooling before the temporal
-    filter means a busy ROI bursting alone can masquerade as coordination. It is
-    here as a **control** — if it matches ``tiny``, the distinctness machinery is
-    not earning its compute on this data, and that is worth knowing.
-    """
-    torch = _torch()
-    nn = torch.nn
-
-    class Trace(nn.Module):
-        def __init__(self):
-            super().__init__()
-            self.head = _dilated_stack(nn, 2, 1, head_width, head_depth)
-
-        def forward(self, x):                     # (B, n_roi, T)
-            n = x.shape[1]
-            frac = x.sum(dim=1, keepdim=True) / max(n, 1)
-            import math
-            scale = torch.full_like(frac, math.log(max(n, 1)) / 5.0)
-            return self.head(torch.cat([frac, scale], dim=1)).squeeze(1)
-
-    return Trace()
-
+__all__ = ["build_tube"]
 
 @register("tube", note="center-surround on the brightness trace — Tony's tube, "
                        "2026-08-16: a DC-free kernel, with a raw-brightness "
@@ -313,3 +152,132 @@ def build_tube(*, n_scales=4, width=8, depth=6, max_center_frames=128,
             return self.head(torch.cat([bright, resp], dim=1)).squeeze(1)
 
     return Tube()
+
+
+# ---------------------------------------------------------------------------------
+# THE 2x2 MECHANISM SCREEN — the variants scoped in
+# docs/todo/2026-08-23-four-variants-of-the-tube.md, built so they can be measured
+# rather than argued about.
+#
+# WHAT THEY ARE AIMED AT. In the probe block, which contains nothing planted, the
+# shipped tube fires 15.75 times on average against LoCo's 2.50 and CoactDetect's
+# 1.25 -- six to thirteen times the two rate-LOCAL hand-written detectors. Two
+# classical results in a network's clothing explain it, and each variant addresses
+# one:
+#
+#   * the surround is maximal EXACTLY at the sample under test, so an event
+#     contributes to the reference that judges it -> the GUARD (V1)
+#   * area-normalised subtraction cancels the MEAN of a rate change and not its
+#     VARIANCE, where CFAR divides -> the RATIO (V2)
+#
+# THEY ARE NOT A RACE, and the todo is explicit about why: on `rate` the guard paid
+# only once the bar was multiplicative (0.667 -> 0.686), because a contaminated
+# reference then multiplies into the threshold instead of adding a fixed offset.
+# Evaluating them independently would repeat a mistake already made once. Hence a
+# 2x2 over {subtract, ratio} x {no guard, guard}, with `tube` itself as the control
+# cell -- re-measured in the same run rather than quoted from a previous one.
+#
+# V3 (censored surround) IS DELIBERATELY ABSENT. An order statistic over a sliding
+# window is not a convolution, so it spends the one property the tube actually owns
+# (0.014 s to scan a held-out fold). The todo says run it last, against a stated
+# speed budget. It is not a variant to slip into an unattended run.
+# ---------------------------------------------------------------------------------
+
+def _build_tube_variant(*, mode: str, guard_frames: int, n_scales=4, width=8,
+                        depth=6, max_center_frames=128, max_ratio=40.0,
+                        eps: float = 1e-6):
+    """The shipped tube with one or both mechanism changes applied.
+
+    ``mode="subtract"`` reproduces :func:`build_tube`'s arithmetic; ``mode="ratio"``
+    replaces centre-minus-surround with a **difference of logs**.
+
+    WHY LOGS RATHER THAN A DIVIDE. The todo prescribes it, for three reasons that all
+    matter here: there is no denominator to clamp, so the variant cannot quietly
+    absorb the question it was added to answer -- ``model_track.md`` already records
+    the existing surround clamp as "a wart, not a cause"; the operation stays a
+    convolution followed by a pointwise map, which keeps the JS trainer's operation
+    list closed; and the fitted ``gain`` already plays the role of CFAR's alpha, so no
+    grid is needed. On `rate` the alpha optimum sat at 15-20 and a first grid topping
+    out at 8 put it on the boundary -- a learned gain has no boundary to sit on.
+
+    THE COST OF THE RATIO, STATED HERE RATHER THAN LEFT STANDING. ``build_tube``'s
+    docstring says the kernel makes rate invariance *structural* because a difference
+    of Gaussians area-normalises to zero. That sentence is about the **difference**.
+    Under ``mode="ratio"`` the invariance holds for a different reason -- a common
+    multiplicative factor cancels in a log difference -- and a correct-sounding
+    justification over changed arithmetic is exactly what the todo warns against.
+
+    THE GUARD. ``guard_frames`` zeroes the surround within +/-g of the sample under
+    test and renormalises **after** masking, so the reference still integrates to one
+    and only its support changes. Renormalising before would leave the guarded kernel
+    with less than unit mass and confound a mechanism change with a gain change.
+
+    The guard is a **fixed configuration value, not a fitted parameter**. It is an
+    axis of the screen; letting it train would mean the 2x2 compared four models that
+    had each chosen their own guard, which is a different experiment.
+    """
+    if mode not in ("subtract", "ratio"):
+        raise ValueError(f"mode must be 'subtract' or 'ratio', not {mode!r}")
+
+    torch = _torch()
+    nn = torch.nn
+    import math
+
+    class TubeVariant(nn.Module):
+        def __init__(self):
+            super().__init__()
+            self.k = int(max_center_frames)
+            self.g = int(guard_frames)
+            self.mode = mode
+            init = [math.log(1.0 * (2 ** i)) for i in range(n_scales)]
+            self.log_center = nn.Parameter(torch.tensor(init))
+            self.log_ratio = nn.Parameter(torch.full((n_scales,), math.log(8.0)))
+            self.gain = nn.Parameter(torch.ones(n_scales))
+            self.head = _dilated_stack(nn, n_scales + 1, 1, width, depth)
+
+        def _centre_surround(self, device):
+            """The two kernels, each area-normalised, guard applied to the surround.
+
+            Returned apart rather than differenced, because the ratio mode convolves
+            them separately and both modes should read one construction.
+            """
+            t = torch.arange(-self.k, self.k + 1, device=device,
+                             dtype=torch.float32).view(1, -1)
+            c = torch.exp(self.log_center).clamp(0.5, self.k / 2).view(-1, 1)
+            s = c * torch.exp(self.log_ratio).clamp(1.5, max_ratio).view(-1, 1)
+            centre = torch.exp(-0.5 * (t / c) ** 2)
+            surround = torch.exp(-0.5 * (t / s) ** 2)
+            if self.g > 0:
+                surround = surround * (t.abs() > self.g).to(surround.dtype)
+            centre = centre / centre.sum(dim=1, keepdim=True).clamp_min(eps)
+            surround = surround / surround.sum(dim=1, keepdim=True).clamp_min(eps)
+            return centre.unsqueeze(1), surround.unsqueeze(1)
+
+        def forward(self, x):                       # (B, n_roi, T)
+            b, n, t = x.shape
+            kmin = int(torch.exp(self.log_center.detach()).min().clamp(1, self.k))
+            pooled = torch.nn.functional.max_pool1d(
+                x.reshape(b * n, 1, t), kernel_size=2 * kmin + 1,
+                stride=1, padding=kmin).reshape(b, n, t)
+            bright = pooled.sum(dim=1, keepdim=True) / max(n, 1)
+
+            ck, sk = self._centre_surround(x.device)
+            gain = self.gain.view(1, -1, 1)
+            if self.mode == "subtract":
+                resp = torch.nn.functional.conv1d(
+                    bright, (ck - sk), padding=self.k) * gain
+            else:
+                # Two convolutions, then a pointwise log difference. `bright` is a
+                # non-negative rate and both kernels are non-negative and normalised,
+                # so both responses are >= 0 and eps is the only guard needed.
+                cr = torch.nn.functional.conv1d(bright, ck, padding=self.k)
+                sr = torch.nn.functional.conv1d(bright, sk, padding=self.k)
+                resp = (torch.log(cr.clamp_min(eps))
+                        - torch.log(sr.clamp_min(eps))) * gain
+            return self.head(torch.cat([bright, resp], dim=1)).squeeze(1)
+
+    return TubeVariant()
+
+
+# The 2x2's other three cells. `tube` itself is the fourth and is registered above,
+# unchanged -- the control has to be the shipped model, not a re-expression of it.

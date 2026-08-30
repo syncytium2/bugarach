@@ -44,7 +44,7 @@ RUN = """async (sim) => {
      Detect panel's chooser, so one detector is asked for rather than implied.
      The first `p.sub` is the run's scope line — which detectors it covered —
      and each block's own sub is the one after it. */
-  for (const k of Object.keys(DETECTORS))
+  for (const k of buildDetectors())
     document.getElementById("tPick_" + k).checked = (k === "rate");
   document.getElementById("tTol").value = "1.5";
   await runTune();

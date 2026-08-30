@@ -292,7 +292,7 @@ reason the yardstick's amplitude outputs will be empty on real folder input.
 **The acquisition interval feeds more than one detector, and only one of them
 complains.** `frame_interval_sec` sets the rate detector's grid, which warns when it
 is missing. Two other detectors carry the same assumption silently — the synchrony
-detector bins on its own interval parameter, and CICADA derives a grid from an
+detector bins on its own interval parameter, and locust derives a grid from an
 imaging-rate parameter that defaults to ten hertz. A lab imaging at twenty hertz
 that sends no interval gets one warning and two quietly wrong answers. Wire the
 folder's value into all three, or state in the spec which are left uncovered.
@@ -408,7 +408,7 @@ coactivity levels, since a scalar cannot separate how many coordinated moments
 there are from how many ROIs each recruits; and the shift window must be at least as
 long as the structure it is meant to destroy. The shipped detectors disagree about
 that window — CoactDetect shifts inside a rolling minute and LoCo inside two, while
-CICADA rolls across the whole recording and SCE across the whole region — and real
+locust rolls across the whole recording and SCE across the whole region — and real
 burst structure runs to five minutes. Say which window the fit uses and why. Apply
 the same round-trip test jitter got; if it fails, participation joins jitter as a
 named prior.
@@ -476,7 +476,7 @@ viewer a consumer rather than a donor.
 
 Four divergences to resolve deliberately while extracting:
 
-- **The viewer and the bench feed CICADA different onset fields.** They coincide on
+- **The viewer and the bench feed locust different onset fields.** They coincide on
   synthetic single-stream data and diverge on real recordings, which is why this has
   gone unnoticed. This is the one that changes a detector's input.
 - **The bench's runner is hardcoded to a single stream**, so it cannot be the batch
@@ -574,7 +574,7 @@ Detect takes two inputs, a folder and the settings to run on it; today it can on
 be handed the first.
 
 **SPIKE-synch never learns the frame interval.** `bugarach detect` passes the
-folder's stated interval to rate+context and CICADA, and refuses — one **recording**
+folder's stated interval to rate+context and locust, and refuses — one **recording**
 at a time, recording the refusal in `run.json` and still exiting 0 — any recording
 whose folder states none. `bugarach check` exits 1 on the same folder, so it is the
 one to gate a script on. The

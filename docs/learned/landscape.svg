@@ -1,5 +1,5 @@
 <svg viewBox="0 0 900 566" xmlns="http://www.w3.org/2000/svg" role="img"
-     aria-label="A six-cell map of coordination-detection methods in neuroscience. Columns are what a method emits: per-cell events, cell assemblies meaning which cells group together, and population events meaning when the group fired. Rows are how it decides: learned from data on top, hand-written rules below. Bottom left and bottom middle are crowded with classical work — thresholded transients, and the ICA, Promax, SGC, CORE, SVD, FIM-X and CAD assembly detectors. Bottom right holds the classical population-event detectors including the SCE rule, CICADA, LoCo, CoactDetect and the MEA network-burst methods, plus the coactivity frame gate that SGC, CORE and SVD each run before they can begin. Top left holds the learned per-cell methods CASCADE, DeepCINAC and the spikefinder entrants. The cell for learned assembly detection is empty — nobody trains a network to emit assembly membership. Top right, the learned population-event detectors, holds DOSED and SEED on sleep EEG, cnn-ripple on hippocampal LFP and SpikeNet on clinical EEG — four methods, none of them calcium imaging — and bugarach's centre-surround model, which is the only calcium-imaging entry and the only one whose ground truth is planted in simulation rather than labelled by an expert. Two notes sit outside the grid: autoMEA is learned but emits a classical detector's parameters rather than detections, and RADICaL is learned at the population level but emits a latent trajectory rather than discrete events.">
+     aria-label="A six-cell map of coordination-detection methods in neuroscience. Columns are what a method emits: per-cell events, cell assemblies meaning which cells group together, and population events meaning when the group fired. Rows are how it decides: learned from data on top, hand-written rules below. Bottom left and bottom middle are crowded with classical work — thresholded transients, and the ICA, Promax, SGC, CORE, SVD, FIM-X and CAD assembly detectors. Bottom right holds the classical population-event detectors including the SCE rule, LoCo, CoactDetect and the MEA network-burst methods, plus the coactivity frame gate that SGC, CORE and SVD each run before they can begin. Top left holds the learned per-cell methods CASCADE, DeepCINAC and the spikefinder entrants. The cell for learned assembly detection is empty — nobody trains a network to emit assembly membership. Top right, the learned population-event detectors, holds DOSED and SEED on sleep EEG, cnn-ripple on hippocampal LFP and SpikeNet on clinical EEG — four methods, none of them calcium imaging — and bugarach's centre-surround model, which is the only calcium-imaging entry and the only one whose ground truth is planted in simulation rather than labelled by an expert. Two notes sit outside the grid: autoMEA is learned but emits a classical detector's parameters rather than detections, and RADICaL is learned at the population level but emits a latent trajectory rather than discrete events.">
   <style>
     .lbl  { font-family: var(--sans, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif); fill: var(--muted, #5c6773); }
     .hd   { font-size: 13.5px; font-weight: 700; fill: var(--ink, #16202b); }
@@ -58,7 +58,11 @@
   <!-- ours, straddling the boundary of that cell -->
   <rect class="ours" x="628" y="246" width="256" height="52" rx="4"/>
   <text class="lbl it oursT" x="644" y="268">bugarach &#183; centre&#8722;surround</text>
-  <text class="lbl sub" x="644" y="286">[Ca] &#183; truth planted in simulation, fitted per lab</text>
+  <!-- Shortened 2026-08-28. At 48 characters this ran to x=915 — past its own box,
+       which ends at 884, and past the viewBox at 900 — so it shipped clipped
+       mid-word on the published landscape page. Found by tests/test_svg_labels.py
+       the first time that guard ran, in a figure nobody was looking at. -->
+  <text class="lbl sub" x="644" y="286">[Ca] &#183; planted truth, fitted per lab</text>
 
   <!-- ================= bottom row: hand-written ================= -->
   <rect class="cell" x="152" y="316" width="230" height="176" rx="4"/>
@@ -83,7 +87,7 @@
   <rect class="cell" x="628" y="316" width="256" height="176" rx="4"/>
   <text class="lbl it" x="644" y="340">SCE coactivity vs shuffle</text>
   <text class="lbl sub" x="644" y="355">Cr&#233;pel 2007, Malvache 2016 &#183; [Ca]</text>
-  <text class="lbl it" x="644" y="378">CICADA &#183; LoCo &#183; CoactDetect</text>
+  <text class="lbl it" x="644" y="378">LoCo &#183; CoactDetect &#183; SCE</text>
   <text class="lbl sub" x="644" y="393">ported and benchmarked here &#183; [Ca]</text>
   <text class="lbl it" x="644" y="416">MaxInterval &#183; logISI &#183; ISI_N</text>
   <text class="lbl sub" x="644" y="431">network bursts &#183; [MEA]</text>
@@ -97,7 +101,13 @@
       <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--truth, #1b7f3b)"/>
     </marker>
   </defs>
-  <path d="M 640 450 C 604 450 600 434 574 424" fill="none"
+  <!-- Routed BELOW the label row, not through it. The original curve
+       `M 640 450 C 604 450 600 434 574 424` passed through the middle of
+       "benchmarked by Mölter 2018 · [Ca]" (x 406-613, y 419-434) at (584.9, 429.1),
+       so the connector read as underlining that label rather than pointing past it.
+       Found 2026-08-28 by tests/test_svg_labels.py's stroke-vs-text check, which was
+       written after the same class of defect turned up twice in architecture.svg. -->
+  <path d="M 640 450 C 616 452 596 448 574 444" fill="none"
         stroke="var(--truth, #1b7f3b)" stroke-width="1.4" stroke-dasharray="4 3"
         marker-end="url(#ga)"/>
 

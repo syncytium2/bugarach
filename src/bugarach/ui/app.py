@@ -50,7 +50,7 @@ import holoviews as hv
 import numpy as np
 import panel as pn
 
-from bugarach import emit
+from bugarach import emit, provenance
 from bugarach.bench import OPERATING_POINTS
 from bugarach.detectors import (
     cicada_detect,
@@ -130,22 +130,33 @@ COLORS = {
     "coact":  "#e69d00",
     "loco":   "#8c564b",
 }
-#: Display names. **`cicada` is the key; `locust` is the name.** The detector is
-#: derived from the Cossart lab's CICADA and is not CICADA — it is fed our own
-#: detected events, and paints each cell active for the rise interval where the
-#: original paints the whole transient duration. Showing a user another lab's
-#: tool name for a modified port was the one attribution item Tony did not wave
-#: off (2026-08-24). The **key** stays `cicada` because it is the value in
-#: `detections.csv`'s `detector` column, which is output contract — see
-#: `docs/todo/2026-08-24-the-identifier-still-says-cicada.md`.
+#: Display names. **`cicada` is the key, and its name is WITHHELD** — Tony,
+#: 2026-08-29: *"suppress all locust/cicada mentions in the public facing
+#: webapp/docs. we'll come back to it when we have time."*
+#:
+#: **These labels are rendered into `hero.png` and `diagnostic.png`, which the
+#: published site serves.** A name here reaches a reader as pixels, where no grep
+#: of the HTML will find it — which is exactly how this map came to matter: the
+#: pages were scrubbed and the figures still said it.
+#:
+#: The detector is derived from another laboratory's published tool, and how it
+#: should be named and credited here is an open question this project has not
+#: finished answering. It is withheld from the public build rather than shipped
+#: under a name that would prejudge it; see the `unavailable` field on `cicada`
+#: in the viewer's DETECTORS, which is the same decision. The **key** stays
+#: `cicada` because it is the value in `detections.csv`'s `detector` column,
+#: which is output contract — see
+#: `docs/todo/2026-08-24-the-identifier-still-says-cicada.md`. Restore the name
+#: together with the detector.
 TITLES = {
-    "rate": "rate+context", "sce": "binned SCE", "cicada": "locust",
+    "rate": "rate+context", "sce": "binned SCE", "cicada": "sixth",
     "sync": "SPIKE-synch", "coact": "CoactDetect", "loco": "LoCo",
 }
-# short row labels — the full titles overflow the slim signal rows.
-# "locust" fits the 75px row, and retires "CIC", which Tony noted on 2026-08-15
-# is not CICADA to anyone who has met the other CIC.
-SHORT = {"rate": "rate", "sce": "SCE", "cicada": "locust",
+# short row labels — the full titles overflow the slim signal rows. The sixth
+# detector's entry matches its TITLES entry rather than being shorter: a longer
+# form there rendered as "he sixth detector (105", clipped at BOTH ends, which is
+# the overflow this map exists to prevent.
+SHORT = {"rate": "rate", "sce": "SCE", "cicada": "sixth",
          "sync": "sync", "coact": "coact", "loco": "LoCo"}
 DEFAULT_ON = ["rate", "coact", "loco"]
 
@@ -275,7 +286,32 @@ def _resolve_specs(specs: dict) -> dict:
     return out
 
 
-PARAM_SPECS = _resolve_specs(_SPECS)
+#: Detectors built, calibrated and tested, but **not offered by this viewer**.
+#:
+#: locust is suppressed for this release (Tony, 2026-08-29). Not a defect and not
+#: a retraction: the port stands, its MATLAB parity to 1e-9 stands, and
+#: ``bugarach detect`` still runs it. What is missing is a fair test — locust is
+#: the only one of the six that consumes a per-event duration, this build scores
+#: it at a fixed one, and the generator plants no duration to vary, so the number
+#: it would show measures a configuration nobody chose.
+#:
+#: **Suppression is a UI decision and lives here, at the one seam.** Everything
+#: downstream reads ``PARAM_SPECS``, so removing a key from this set is the whole
+#: change and putting it back is the whole revert. Nothing is deleted: ``_SPECS``
+#: keeps locust's parameters, :data:`TITLES`, :data:`COLORS` and :data:`SHORT`
+#: keep its name and colour, and ``cicada_detect`` is still imported and still
+#: called by :func:`run_detector` for any caller that asks for it directly.
+SUPPRESSED_IN_VIEWER = frozenset({"cicada"})
+
+#: Every detector's resolved parameters, suppression ignored. The calibration
+#: guards read THIS, not :data:`PARAM_SPECS`: a suppressed detector's defaults
+#: must not be allowed to drift away from ``bench.OPERATING_POINTS`` while it is
+#: out of the viewer, or turning it back on silently reintroduces the drift the
+#: guard exists to catch.
+ALL_PARAM_SPECS = _resolve_specs(_SPECS)
+
+PARAM_SPECS = {k: v for k, v in ALL_PARAM_SPECS.items()
+               if k not in SUPPRESSED_IN_VIEWER}
 RNG_SEED = 20260706
 
 #: Column of an export folder's ``slices.csv`` that states the sampling interval.
@@ -511,7 +547,9 @@ def detection_bundle(s: Slice, results: dict, settings: dict, *,
             d / "run.json",
             slices=[s.slice_id],
             frame_interval_sec={s.slice_id: dt},
-            code_version=_code_version(),
+            provenance=provenance.stamp(
+                produced_by="bugarach viewer (Panel)",
+                detectors=sorted({det for det, _ in settings})),
             extra={"produced_by": "bugarach viewer",
                    "detectors": sorted({det for det, _ in settings})})
         with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as z:
@@ -519,15 +557,6 @@ def detection_bundle(s: Slice, results: dict, settings: dict, *,
                 z.write(d / name, arcname=name)
     buf.seek(0)
     return buf
-
-
-def _code_version() -> str | None:
-    from importlib.metadata import PackageNotFoundError, version
-
-    try:
-        return version("bugarach")
-    except PackageNotFoundError:      # running from a source tree, uninstalled
-        return None
 
 
 def _raster(stream, name: str, ext) -> hv.Scatter:

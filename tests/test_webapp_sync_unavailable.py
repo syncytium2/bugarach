@@ -161,7 +161,7 @@ def test_the_folder_run_produces_no_sync_rows(page):
         document.getElementById(k).value = v;
       await runSim();
       document.getElementById("dAll").checked = true;
-      for (const k of Object.keys(DETECTORS)) {
+      for (const k of buildDetectors()) {
         const b = document.getElementById("dPick_" + k);
         b.checked = true;                    // every box, disabled ones included
       }

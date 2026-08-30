@@ -49,11 +49,19 @@ date_stamp = bs.date_stamp
 meta_stamp = bs.meta_stamp
 stamp_html = bs.stamp_html
 
-#: Built pages that must carry the stamp. `viewer.html` is deliberately absent —
-#: it is a byte-for-byte copy of the hand-written source page, pinned that way by
-#: `test_lab_server.py`, so its dates belong in the source rather than injected
-#: by the build. See the comment at that copy in `tools/build_site.py`.
-STAMPED = ("index.html", "landscape.html", "diagnostic.html")
+#: Built pages that must carry the stamp — **derived from `bs.PAGES`, not listed**.
+#: `viewer.html` is the one exclusion: it is a byte-for-byte copy of the hand-written
+#: source page, pinned that way by `test_lab_server.py`, so its dates belong in the
+#: source rather than being injected by the build. See the comment at that copy in
+#: `tools/build_site.py`.
+#:
+#: This was a hardcoded triple until 2026-08-27, when a fifth page shipped and fell
+#: outside it — the test stayed green while covering three of five. That is the drift
+#: `test_site_coherence.py`'s module docstring warns about in terms ("a test carrying
+#: its own copy of 'the site has four pages' agrees with the build until somebody adds
+#: a fifth, and then it is the test that is wrong"), and that file derives from
+#: `bs.PAGES` for the reason this one now does.
+STAMPED = tuple(name for name, _ in bs.PAGES if name != "viewer.html")
 
 ISO = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 

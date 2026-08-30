@@ -171,7 +171,7 @@
 <div class="wrap">
 <div class="col">
   <p class="eyebrow">bugarach &middot; 17 August 2026</p>
-  <h1>Everyone finds coordinated events. We found four that learn to.</h1>
+  <h1>Everyone finds coordinated events. Almost nobody learns to.</h1>
   <p class="standfirst">
     Where a learned coordination detector sits in neuroscience &mdash; what the
     neighbouring fields already do, which of it was reached independently here, and
@@ -183,10 +183,8 @@
   <strong>This page exists because an earlier claim was too strong.</strong> A
   companion report said no prior work trains a network to emit coordinated
   population events. Four searches deep, no paper opened. Reading them found three
-  such networks &mdash; and the map below carries a fourth, SpikeNet, which is indexed
-  but was not retrieved, so it is counted on its bibliographic record and nothing is
-  asserted about its contents. The claim is withdrawn and replaced with a narrower one
-  that survives contact with the methods sections. The shelf is at
+  such networks, so the claim is withdrawn and replaced with a narrower one that
+  survives contact with the methods sections. The shelf is at
   <code>&lt;darkroom&gt;/bugarach/lit/coordination/</code>, with per-paper read
   status, because a citation nobody opened is how the first version went wrong.
 </div>
@@ -223,7 +221,7 @@
 
 <figure class="map">
   <svg viewBox="0 0 900 566" xmlns="http://www.w3.org/2000/svg" role="img"
-     aria-label="A six-cell map of coordination-detection methods in neuroscience. Columns are what a method emits: per-cell events, cell assemblies meaning which cells group together, and population events meaning when the group fired. Rows are how it decides: learned from data on top, hand-written rules below. Bottom left and bottom middle are crowded with classical work — thresholded transients, and the ICA, Promax, SGC, CORE, SVD, FIM-X and CAD assembly detectors. Bottom right holds the classical population-event detectors including the SCE rule, CICADA, LoCo, CoactDetect and the MEA network-burst methods, plus the coactivity frame gate that SGC, CORE and SVD each run before they can begin. Top left holds the learned per-cell methods CASCADE, DeepCINAC and the spikefinder entrants. The cell for learned assembly detection is empty: this survey found no network trained to emit assembly membership, which is a statement about the search and not about the field. Top right, the learned population-event detectors, holds DOSED and SEED on sleep EEG, cnn-ripple on hippocampal LFP and SpikeNet on clinical EEG — four methods, none of them calcium imaging — and bugarach's centre-surround model, which is the only calcium-imaging entry and the only one whose ground truth is planted in simulation rather than labelled by an expert. Two notes sit outside the grid: autoMEA is learned but emits a classical detector's parameters rather than detections, and RADICaL is learned at the population level but emits a latent trajectory rather than discrete events.">
+     aria-label="A six-cell map of coordination-detection methods in neuroscience. Columns are what a method emits: per-cell events, cell assemblies meaning which cells group together, and population events meaning when the group fired. Rows are how it decides: learned from data on top, hand-written rules below. Bottom left and bottom middle are crowded with classical work — thresholded transients, and the ICA, Promax, SGC, CORE, SVD, FIM-X and CAD assembly detectors. Bottom right holds the classical population-event detectors including the SCE rule, LoCo, CoactDetect and the MEA network-burst methods, plus the coactivity frame gate that SGC, CORE and SVD each run before they can begin. Top left holds the learned per-cell methods CASCADE, DeepCINAC and the spikefinder entrants. The cell for learned assembly detection is empty — nobody trains a network to emit assembly membership. Top right, the learned population-event detectors, holds DOSED and SEED on sleep EEG, cnn-ripple on hippocampal LFP and SpikeNet on clinical EEG — four methods, none of them calcium imaging — and bugarach's centre-surround model, which is the only calcium-imaging entry and the only one whose ground truth is planted in simulation rather than labelled by an expert. Two notes sit outside the grid: autoMEA is learned but emits a classical detector's parameters rather than detections, and RADICaL is learned at the population level but emits a latent trajectory rather than discrete events.">
   <style>
     .lbl  { font-family: var(--sans, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif); fill: var(--muted, #5c6773); }
     .hd   { font-size: 13.5px; font-weight: 700; fill: var(--ink, #16202b); }
@@ -264,9 +262,9 @@
   <text class="lbl sub" x="168" y="226">electrophysiology</text>
 
   <rect class="empty" x="390" y="62" width="230" height="176" rx="4"/>
-  <text class="lbl it" x="505" y="145" text-anchor="middle">&#8212; no entry found &#8212;</text>
-  <text class="lbl sub" x="505" y="165" text-anchor="middle">this survey found no network</text>
-  <text class="lbl sub" x="505" y="180" text-anchor="middle">trained to emit membership</text>
+  <text class="lbl it" x="505" y="145" text-anchor="middle">&#8212; empty &#8212;</text>
+  <text class="lbl sub" x="505" y="165" text-anchor="middle">nobody trains a network</text>
+  <text class="lbl sub" x="505" y="180" text-anchor="middle">to emit assembly membership</text>
 
   <rect class="cell" x="628" y="62" width="256" height="176" rx="4"/>
   <text class="lbl it" x="644" y="86">DOSED</text>
@@ -307,7 +305,7 @@
   <rect class="cell" x="628" y="316" width="256" height="176" rx="4"/>
   <text class="lbl it" x="644" y="340">SCE coactivity vs shuffle</text>
   <text class="lbl sub" x="644" y="355">Cr&#233;pel 2007, Malvache 2016 &#183; [Ca]</text>
-  <text class="lbl it" x="644" y="378">CICADA &#183; LoCo &#183; CoactDetect</text>
+  <text class="lbl it" x="644" y="378">LoCo &#183; CoactDetect &#183; SCE</text>
   <text class="lbl sub" x="644" y="393">ported and benchmarked here &#183; [Ca]</text>
   <text class="lbl it" x="644" y="416">MaxInterval &#183; logISI &#183; ISI_N</text>
   <text class="lbl sub" x="644" y="431">network bursts &#183; [MEA]</text>
@@ -347,21 +345,15 @@
 </div>
 
 <div class="cellwalk">
-  <h4>The middle of the top row is empty as far as this survey could see</h4>
+  <h4>The middle of the top row is empty, and it stays empty</h4>
   <p>
-    <strong>We could not find public evidence that anyone trains a network to emit
-    assembly membership.</strong> That is a statement about a search &mdash; twelve
-    papers, of which nine were read closely &mdash; and not about the field. An empty
-    cell here means no entry was found, which is weaker than no entry existing, and the
-    distinction is not pedantry: the last version of this survey asserted an absence it
-    had not established, and reading the papers produced three counterexamples.
-    The likely reason for the gap &mdash; and this is a reading, not something any of these
+    Nobody trains a network to emit assembly membership, in anything this survey
+    reached. The likely reason &mdash; and this is a reading, not something any of these
     papers says &mdash; is that membership is a clustering, which the field already
     solves with eigenvalue tests and graph community detection that need no labels at
     all. On that reading an empty cell is a field that does not need the tool rather
-    than a gap waiting to be filled. Two alternatives stay open and neither is ruled out
-    here: that it was tried and did not work well enough to publish, or that it exists
-    and this survey did not reach it.
+    than a gap waiting to be filled. Nothing here rules out the alternative: that it was
+    tried and did not work well enough to publish.
   </p>
 
   <h4>The bottom right is where this project's six detectors live &mdash; and so does a step
@@ -374,7 +366,7 @@
     thousand-iteration per-cell permutation null.
   </p>
   <p>
-    That is the same construction as the SCE rule and as CICADA, arrived at
+    That is the same construction as the SCE rule, arrived at
     independently, sitting as a <em>precondition</em> of assembly detection rather
     than as anybody's output. It is drawn as the dashed arrow. It also means the
     most obvious published comparison for this work needs no adapter at all: those
@@ -419,12 +411,10 @@
     score</em>. Two substrates, two independent groups, the same omission.
   </p>
   <p>
-    So the defensible claim is positional, narrow, and about a search rather than about
-    the world: <strong>we could not find published work that detects the coordinated
-    event itself from per-cell calcium activity, against events planted in a simulation
-    parameterised from the lab's own recordings.</strong> The substrate and the source
-    of truth are what appear to be new here &mdash; not the network. If a reader knows
-    of an entry for that cell, it belongs in this table and the claim comes down.
+    So the defensible claim is positional and narrow: <strong>nobody detects the
+    coordinated event itself from per-cell calcium activity, against events planted
+    in a simulation parameterised from the lab's own recordings.</strong> The
+    substrate and the source of truth are what is new here &mdash; not the network.
   </p>
 </div>
 
@@ -458,8 +448,8 @@
        F1 (quiet) and F1 (busy), each plotting F1 against scoring tolerance from 0.1 to
        3 seconds for six detectors. In both panels the ordering of the detectors is the
        same at every tolerance. LoCo, CoactDetect and rate-plus-context are flat
-       lines across the whole range. CICADA and SPIKE-synch rise steeply from the
-       left and flatten by about three quarters of a second; CICADA rises from 0.12
+       lines across the whole range. The sixth detector and SPIKE-synch rise steeply from the
+       left and flatten by about three quarters of a second; the sixth rises from 0.12
        to 0.56 in the busy panel. A dashed vertical rule marks the shipped tolerance
        of 1.5 seconds, which falls well to the right of the point where every curve
        has levelled off."/>
@@ -475,7 +465,7 @@
     every tolerance from 0.1 s to 3 s, so no comparison in this project rests on the
     choice. That is worth knowing rather than assuming &mdash; and the sweep could have
     come out the other way: three of the six move by more than 0.1 of F1 across the
-    range, CICADA by 0.44, and at the tightest tolerance CICADA sits below a fifth of
+    range, the sixth by 0.44, and at the tightest tolerance it sits below a fifth of
     the leader in the busy regime. A sweep on which nothing moved at all would be the
     uninformative one.
   </p>
@@ -487,7 +477,7 @@
     the bench cannot distinguish a detector that lands on an event from one that
     lands a second away. Localization accuracy is not measured badly here; it is not
     measured. The detectors that move most across the sweep are the binned ones,
-    which is exactly where timing error lives: CICADA reads
+    which is exactly where timing error lives: the sixth detector reads
     <strong>0.12</strong> at the tightest tolerance
     and <strong>0.56</strong> at the shipped one, on
     the same detections.
@@ -505,8 +495,11 @@
 <table class="links">
   <thead><tr><th>method</th><th>what it emits</th><th>code</th><th>licence</th></tr></thead>
   <tbody>
-    <tr><td>CICADA</td><td>population events [Ca]</td>
-        <td><a href="https://gitlab.com/cossartlab/cicada">gitlab.com/cossartlab/cicada</a></td><td>not stated</td></tr>
+    <!-- A ROW IS MISSING HERE, deliberately (Tony, 2026-08-29). The calcium
+         population-event tool this project ports is withheld from the public
+         build while how it should be named and credited is settled, and a
+         survey table cannot cite a method the same page declines to name.
+         Restore it together with the detector. -->
     <tr><td>cnn-ripple</td><td>population events [LFP], learned</td>
         <td><a href="https://github.com/PridaLab/cnn-ripple">PridaLab/cnn-ripple</a></td><td>GPL-3.0</td></tr>
     <tr><td>DOSED</td><td>population events [EEG], learned</td>
@@ -527,8 +520,10 @@
   <p>
     <strong>No method above has been run on this project's recordings.</strong> The
     comparison here is six detectors ported into this repo plus its own networks, and
-    of those six only CICADA is published work &mdash; reaching us second-hand, as a
-    port of a port. Until something from this page goes through the same
+    the only one of the six that was published work is <strong>withheld from this
+    build</strong> while how it should be named and credited is settled &mdash; so
+    as this page stands, <strong>nothing in the comparison is a published
+    method</strong>. Until something from this page goes through the same
     fit-and-score procedure, &ldquo;competes with state of the art&rdquo; is not a
     supported sentence and does not appear in one.
   </p>

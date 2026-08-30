@@ -25,6 +25,12 @@ from pathlib import Path
 
 import pytest
 
+from conftest import locust_suppressed_in_the_browser
+
+SUPPRESSED = (
+    "locust is suppressed in this build; the behaviour below is still implemented and these come back with it (conftest.locust_suppressed_in_the_browser)")
+
+
 VIEWER = Path(__file__).resolve().parents[1] / "docs/site/raster_viewer.html"
 
 DUPES = """() => {
@@ -56,8 +62,13 @@ def _show_every_detector(pg):
     """
     _go(pg, "accDetect")
     pg.check("#dAll")
-    for k in ("rate", "sce", "coact", "loco", "cicada", "sync"):
-        if pg.evaluate("k => !!offReason(k)", k):
+    for k in pg.evaluate("() => Object.keys(DETECTORS)"):
+        # TWO WAYS TO BE UNTICKABLE and both land here. `offReason` is the
+        # disabled-and-explained case; `WITHHELD` is the absent case, where there
+        # is no box at all and `pg.check` waits 30 s for a control that will
+        # never exist. Read off the page rather than listed, so a key joining
+        # either set is handled without editing this file.
+        if pg.evaluate("k => !!offReason(k) || WITHHELD.has(k)", k):
             pg.evaluate(
                 "k => { document.getElementById(DETECTORS[k].ctl).hidden = false; }",
                 k)
@@ -194,6 +205,7 @@ def test_the_window_table_does_not_outlive_the_folder_it_describes(page):
 SIM = {"sRec": "2", "sMin": "10", "sRoi": "16", "sRate": "12", "sEv": "6",
        "sJit": "360", "sSeed": "4"}
 
+@pytest.mark.skipif(locust_suppressed_in_the_browser(), reason=SUPPRESSED)
 
 def test_the_folder_table_carries_the_caveat_the_one_recording_view_does(page):
     """CICADA's single-cell moments, in the view that produces the file.
@@ -209,6 +221,15 @@ def test_the_folder_table_carries_the_caveat_the_one_recording_view_does(page):
 
     Counted and said, never filtered: raising a floor until the awkward rows
     disappear is what FOUNDATIONS §9 forbids in terms.
+
+    **The withholding is lifted for the length of this run and put back after.**
+    Since 2026-08-29 that detector carries `unavailable` — off the public build
+    while how it should be named and credited is settled — so a folder run
+    produces no rows for it and this test had nothing to count. Lifting keeps the
+    caveat's behaviour under test in the state it will be restored from; the
+    tests that assert a visitor cannot reach it live in
+    `test_webapp_cicada.py` and `test_webapp_tune_picks.py` and would fail if
+    this leaked.
     """
     pg, errs = page
     pg.evaluate("""async (sim) => {
@@ -216,6 +237,14 @@ def test_the_folder_table_carries_the_caveat_the_one_recording_view_does(page):
         document.getElementById(k).value = v;
       await runSim();
     }""", SIM)
+    held = pg.evaluate("""() => {
+      const h = DETECTORS.cicada.unavailable;
+      delete DETECTORS.cicada.unavailable;
+      paintDetectorChoice();
+      const b = document.getElementById("dPick_cicada");
+      if (b && !b.checked) { b.checked = true; b.dispatchEvent(new Event("change")); }
+      return h === undefined ? null : h;
+    }""")
     _go(pg, "accDetect")
     pg.click("#runFolder")
     pg.wait_for_function("() => !document.getElementById('runFolder').disabled",
@@ -228,6 +257,10 @@ def test_the_folder_table_carries_the_caveat_the_one_recording_view_does(page):
       brackets: [...document.querySelectorAll('#detectOut td .qual')]
         .map(n => n.textContent.trim()),
     })""")
+    pg.evaluate("""(h) => {
+      if (h !== null) DETECTORS.cicada.unavailable = h;
+      paintDetectorChoice();
+    }""", held)
     assert got["single"] > 0, (
         "this fixture no longer produces single-cell CICADA rows, so it can no "
         "longer show whether the caveat is printed — pick a sparser folder")

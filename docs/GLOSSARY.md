@@ -26,10 +26,13 @@ always by proper name:
   - **binned SCE** — surrogate-thresholded coactivity per trimmed region
     window (generate_sce port).
   - **locust** — sliding-window coactivity with per-cell roll null. Derived
-    from the Cossart lab's **CICADA** (Denis et al. 2020) and **modified**: fed
+    from the Cossart lab's **CICADA** (Denis et al. 2020) and **modified**, in
+    both cases by changing what it is *fed* rather than what it computes: it gets
     the events already in the folder rather than running CICADA's own transient
-    detection, and painting each cell active for the *rise interval* where the
-    original paints the whole transient duration. **RENAMED 2026-08-24** — a
+    detection, and it gets each event's duration from the producer rather than
+    measuring the whole transient the way the original does. **Duration is never
+    derived here** — it arrives in `width_sec` under its `width_def` and the port
+    paints what it is given (ADR-0002 addendum). **RENAMED 2026-08-24** — a
     modified port does not carry the original's name in a public UI (Tony's
     call, on interface2's ADR-0016: *"we can't say we used it if we turned off
     half of it"*).
@@ -78,7 +81,13 @@ message naming the two candidates.
 
 **locust versus CICADA, and it is one word apart.** *CICADA* in this repo means
 the **upstream tool** — the Cossart lab's software, the thing we cite. *locust*
-means **the detector here**. The **code key is still `cicada`** everywhere it is
+means **the detector here**: a **partial** port, because CICADA's per-cell
+transient-detection stage is skipped entirely, and a **modified** one, because the
+durations it paints come from the producer's export rather than from measuring the
+transient itself. **The 1e-9 parity reaches interface2's `generate_sce_cicada`, not
+the Cossart source**, so locust's numbers are never measurements of CICADA
+([`detector_history.md`](detector_history.md) §6.3). The **code key is still
+`cicada`** everywhere it is
 an identifier: the module, `cicada_detect`, the fixtures, and the `detector`
 column value in `detections.csv`, which is output contract and not this repo's
 alone to change ([the identifier

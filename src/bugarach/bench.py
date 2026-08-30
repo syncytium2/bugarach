@@ -1,5 +1,11 @@
 """Score all six detectors against planted truth, at declared operating points.
 
+**One of the six is keyed ``cicada`` and named locust.** The key is the value in
+``detections.csv``'s ``detector`` column — output contract — and *locust* is what
+every screen, figure and report says. Same detector; ``bugarach.detectors.cicada``
+carries the three-way split between the key, the name, and CICADA the upstream
+tool.
+
 Stage 3 of [`docs/simulation_plan.md`](../../docs/simulation_plan.md): the
 sensitivity bench, and the regime-shift guard the plan calls the single
 highest-value item on that page — *the precision-collapse figure is a test that

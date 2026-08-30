@@ -172,7 +172,16 @@ def resolve(spec) -> Path:
             f"{ENV_VAR} to the directory holding processed_archive/ and exports/, "
             f"or pass a full path")
 
-    for sub in ("processed_archive", "exports/bugarach", "exports", ""):
+    # ORDER MATTERS, and the bare root comes last for a reason that has already nearly
+    # bitten. `exports/external/` holds folders imported from OTHER labs — DANDI:000219
+    # is the first — and the raw download for that corpus sits at `<root>/dandi_000219`
+    # under the same name. That raw directory holds ONE csv, so `kind()` calls it an
+    # export folder and `require(want="export_folder")` waves it through: a caller
+    # naming `dandi_000219` would silently analyse 1 recording instead of 59, with every
+    # shape check passing. Searching the export directories before the root is what
+    # makes the name mean the conforming folder.
+    for sub in ("processed_archive", "exports/bugarach", "exports/external",
+                "exports", ""):
         cand = root / sub / spec if sub else root / spec
         if cand.is_dir():
             return cand

@@ -90,7 +90,7 @@ if [ "${1:-}" = "--selftest" ]; then
   probe 2 'ls /mnt/lab/data/processed_archive/event_store_onset_revised_2v | wc -l' 'counting a store'
   probe 2 'find /mnt/lab/data -maxdepth 4 -name "slices.csv"' 'hunting inside the data root'
   probe 0 'BUGARACH_DATA_OK=1 ls /mnt/lab/data/exports' 'stated intent opts out of the search gate'
-  # Negatives. Each is a shape the measured 12,009-command census contains and does not
+  # Negatives. Each is a shape the transcript census contains and does not
   # fire on; a gate that also caught these would be trained away inside a day.
   probe 0 'ls docs/'                                          'an ordinary repo listing'
   probe 0 'find docs -name "export_folder_spec.md"'           'the contract is not the data'
@@ -163,7 +163,7 @@ printf '%s' "$cmd" | grep -qE '(tools/matlab_ref/|src/bugarach/store\.py|tools/l
 #
 # THE TRIGGER IS MEASURED, NOT GUESSED, because the objection to a gate here was always
 # noise. Scored against every Bash command in the 54 bugarach session transcripts on this
-# machine — 12,009 of them — this pair fires 30 times (0.25%). All 30 were read by hand:
+# machine — over 12,000 as of 2026-08-28, and growing — this pair fires 30 times. All 30 read by hand:
 # every one is a session locating the data root, listing export folders, or counting a
 # store's slices. Not one is unrelated work. A wider variant was measured and REJECTED:
 # allowing the verb after `;` or `&&` took it to 140 hits including a heredoc writing a
@@ -185,7 +185,7 @@ if printf '%s' "$cmd" | grep -qE '^[[:space:]]*(find|ls|tree)[[:space:]]' \
     echo "    dataset.current()     # -> the export folder ${folder}"
     echo "    dataset.data_root()   # -> the directory holding exports/ and processed_archive/"
     echo
-    echo "    python -m bugarach.dataset      # both, printed, from a shell"
+    echo "    PYTHONPATH=src python3 -m bugarach.dataset   # both, printed, from a shell"
     echo
     echo "You do not need BUGARACH_DATA_ROOT set -- data_root() finds the Dropbox mount"
     echo "by itself. current_export.toml at the repo root declares WHICH export is current"
@@ -197,13 +197,16 @@ if printf '%s' "$cmd" | grep -qE '^[[:space:]]*(find|ls|tree)[[:space:]]' \
     echo "file, the resolver, this gate, sapper SAP007 -- fixed the store half only. One day"
     echo "later a session ran 'find <home> -maxdepth 6 -type d -name exports' and hand-pathed"
     echo "the result into --folder four times, because nothing addressed a session that was"
-    echo "simply LOST. This trigger was measured over 12,009 recorded commands: it fires on"
-    echo "30, and all 30 were sessions hunting for the data."
+    echo "simply LOST. Scored over every recorded command on this machine, this trigger"
+    echo "fires 30 times, and all 30 were sessions hunting for the data."
     echo
     echo "IF YOU MEANT IT -- inspecting what the producer shipped, checking a raw 2R"
     echo "acquisition folder, counting a store's slices -- say so and prefix the command:"
     echo
     echo "    BUGARACH_DATA_OK=1 <your command>"
+    echo
+    echo "IF YOU THINK THIS GATE IS WRONG: docs/where_the_data_are.md turns each symptom"
+    echo "into a cause and carries the measured rate to check the claim against."
   } >&2
   exit 2
 fi
@@ -255,6 +258,11 @@ folder="$(current_export)"
   echo "the store reader itself -- say so and prefix the command:"
   echo
   echo "    BUGARACH_STORE_OK=1 <your command>"
+  echo
+  echo "IF YOUR COMMAND READS NO STORE AT ALL -- writing a tool whose docstring names"
+  echo "one, or grepping for the word -- this branch has a KNOWN false positive: it"
+  echo "matches a store name anywhere alongside python/matlab/--store/open(."
+  echo "docs/where_the_data_are.md records it, and how it should be tightened."
   if [ "$DEGRADED" = "1" ]; then
     echo
     echo "(NOTE: no python3/python/py found, so this matched the RAW payload rather"

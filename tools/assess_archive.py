@@ -38,9 +38,73 @@ import _dataset_arg  # noqa: E402
 from bugarach.assess_folder import BASELINE_TOKENS, is_baseline as _is_baseline  # noqa: E402,F401
 
 
+def _whole_recording_region(s):
+    """The one implicit window FOUNDATIONS §4 gives a recording with no periods.
+
+    Built from the same `recording_extent` the detectors use, so an unannotated
+    recording is scored over exactly the span they would score it over. It gets
+    no `analysis_*` pair: a producer who annotated nothing has expressed no
+    opinion about which part to score, and inventing one here would be this
+    project's convention applied to somebody else's data — which is the thing
+    `Region`'s own docstring warns about.
+
+    Named `""` rather than `"baseline"`. Calling it baseline would put a protocol
+    word this folder never used into the `region` column of every row, and a
+    reader could not then tell a lab's real baseline period from our shrug.
+    """
+    from bugarach.detectors.rate import recording_extent
+    from bugarach.store import Region
+    lo, hi = recording_extent(s)
+    return Region(name="", slot=None, start_sec=lo, end_sec=hi)
+
+
+def _default_floors():
+    from bugarach.assess import DEFAULT_MIN_ROIS
+    return DEFAULT_MIN_ROIS
+
+
+def _refuse_to_overwrite_ours(folder: Path, out_name: str) -> None:
+    """`assessment_real.json` is OUR corpus's assessment. Nothing else may claim it.
+
+    The filename was hardcoded, and eight tools plus a dozen documents read it by
+    that name. Point this script at another lab's folder with the usual
+    `--out docs/learned` and their measurement lands on ours, silently, under a
+    name whose only adjective is *real* — after which `derive_spec` builds a
+    generator from their statistics and every downstream number is about a
+    preparation nobody said they were studying. The overwrite is the whole error;
+    nothing later in the chain could notice it.
+
+    So the guard is here, at the write, and it is a refusal rather than a rename:
+    a session assessing a second corpus has to say where it goes, which is the
+    moment it is thinking about the distinction anyway.
+    """
+    if out_name != "assessment_real.json":
+        return
+    try:
+        from bugarach import dataset
+        ours = dataset.current().resolve()
+    except Exception:
+        return          # no resolver, no data root: nothing to protect it from
+    if folder.resolve() == ours:
+        return
+    raise SystemExit(
+        f"REFUSING to write assessment_real.json from a folder that is not the "
+        f"current export.\n"
+        f"  assessing: {folder}\n"
+        f"  ours:      {ours}\n"
+        f"That file is this lab's assessment by name and by convention — "
+        f"derive_spec and seven other tools read it — so writing another "
+        f"corpus's measurement into it would silently reparameterise every "
+        f"downstream number.\n"
+        f"Pass --out-name assessment_<corpus>.json (e.g. "
+        f"assessment_cossart.json), and give it its own --k: see "
+        f"current_export.toml's [cossart] role on why K does not transplant.")
+
+
 def assess_store(store: Path, *, stream: str | None, n_surrogates: int,
                  limit: int | None = None, assemblies: bool = False,
-                 assembly_surrogates: int = 1000) -> dict:
+                 assembly_surrogates: int = 1000,
+                 min_rois=None) -> dict:
     """Assess every baseline recording under ``store``.
 
     **Takes an export folder or a `.mat` store, and prefers the folder.** The
@@ -57,6 +121,13 @@ def assess_store(store: Path, *, stream: str | None, n_surrogates: int,
     from bugarach.store import load_slice
     if assemblies:
         from bugarach.assembly import assess_assemblies
+
+    # The floors are this lab's default unless a caller names its own. They are
+    # not a universal: K is a coactivity FLOOR IN CELLS, so what it means depends
+    # on how many cells the field has, and (3, 4, 6, 8) was chosen against ~34.
+    floors = tuple(sorted(set(int(k) for k in (min_rois or DEFAULT_MIN_ROIS))))
+    if any(k < 2 for k in floors):
+        raise SystemExit(f"K must be at least 2 to be a coactivity floor: {floors}")
 
     is_folder = (store / "slices.csv").is_file() or (store / "regions.csv").is_file()
     if is_folder:
@@ -84,6 +155,7 @@ def assess_store(store: Path, *, stream: str | None, n_surrogates: int,
     t0 = time.time()
 
     n_analysis_window = 0
+    n_unannotated = 0
     for i, f in enumerate(files):
         if is_folder:
             s = f
@@ -102,13 +174,37 @@ def assess_store(store: Path, *, stream: str | None, n_surrogates: int,
             nm = (getattr(r, "name", None) or "<unnamed>").strip().lower()
             seen_regions[nm] = seen_regions.get(nm, 0) + 1
 
-        base = [r for r in (s.regions or []) if _is_baseline(r)]
-        if not base:
-            skipped["no_baseline_region"] += 1
-            continue
-        # The longest baseline region; assess.py has its own floor and returns
-        # NaN under it, which is reported rather than silently dropped.
-        r = max(base, key=lambda r: r.end_sec - r.start_sec)
+        # TWO DIFFERENT ABSENCES, and collapsing them skipped a whole corpus.
+        #
+        # A folder that annotates periods and has no BASELINE one is a folder of
+        # drug windows: FOUNDATIONS §9 forbids sourcing coordination properties
+        # from it, and skipping is right.
+        #
+        # A folder that annotates NO periods at all is saying something else —
+        # that this recording is one undivided window. FOUNDATIONS §4 settles it
+        # in the library's favour ("a recording with no region annotations gets
+        # one implicit whole-recording window, so foreign data assesses its full
+        # extent rather than nothing") and `assess_coactivity` implements exactly
+        # that. This driver's baseline filter ran FIRST and defeated it, so every
+        # such recording fell into `no_baseline_region` and the run ended on
+        # "no slice yielded an assessment — nothing to report".
+        #
+        # That is not hypothetical. The Cossart corpus (`[cossart]` in
+        # current_export.toml, 59 recordings, `check` passes on all of them)
+        # carries no regions, and the whole folder assessed to nothing here —
+        # the one message that reads like a fact about the DATA when it was a
+        # fact about this loop. Found 2026-08-29, setting up the transfer test.
+        if not (s.regions or []):
+            r = _whole_recording_region(s)
+            n_unannotated += 1
+        else:
+            base = [r for r in s.regions if _is_baseline(r)]
+            if not base:
+                skipped["no_baseline_region"] += 1
+                continue
+            # The longest baseline region; assess.py has its own floor and returns
+            # NaN under it, which is reported rather than silently dropped.
+            r = max(base, key=lambda r: r.end_sec - r.start_sec)
         # **What to score, not what happened.** A producer that has already
         # decided which part of a period is analysable says so in
         # analysis_start_sec / analysis_end_sec, and that decision is theirs to
@@ -130,7 +226,8 @@ def assess_store(store: Path, *, stream: str | None, n_surrogates: int,
 
         try:
             res = assess_coactivity(s, stream=want, window=win,
-                                    n_surrogates=n_surrogates)
+                                    n_surrogates=n_surrogates,
+                                    min_rois=floors)
         except Exception as e:                       # noqa: BLE001
             skipped["too_short"] += 1
             print(f"  ~ {f.name}: {type(e).__name__}: {e}", file=sys.stderr)
@@ -185,6 +282,11 @@ def assess_store(store: Path, *, stream: str | None, n_surrogates: int,
         raise SystemExit("no slice yielded an assessment — nothing to report")
     print(f"  scored the producer's ANALYSIS window on {n_analysis_window} "
           f"recording(s); the raw period on {len(files) - n_analysis_window}")
+    if n_unannotated:
+        print(f"  {n_unannotated} recording(s) annotate no periods at all and "
+              f"were scored over their whole extent (FOUNDATIONS §4). Their "
+              f"`region` reads \"\", never \"baseline\" — this folder never used "
+              f"the word and neither does the output.")
 
     ks = sorted({r["K"] for r in rows})
 
@@ -212,6 +314,18 @@ def assess_store(store: Path, *, stream: str | None, n_surrogates: int,
     n_roi = np.array([r["n_roi"] for r in rows if r["K"] == ks[0]], float)
     return {
         "store": store.name,
+        # The floors this run scanned, recorded rather than inferred from `by_k`.
+        # A reader comparing two assessments has to be able to see that one
+        # corpus was scanned somewhere the other was not — `by_k`'s keys say
+        # which K were reported, `k_scan` says which were ASKED FOR, and the two
+        # come apart when a K yields no assessable slice.
+        "k_scan": list(floors),
+        # How many recordings were scored over their whole extent because they
+        # annotate no periods. Zero on this lab's own exports; 59 of 59 on a
+        # folder that does not divide a recording into periods at all. A reader
+        # comparing two assessments needs it: one of them may be measuring a
+        # baseline period and the other an entire session.
+        "n_unannotated_whole_extent": n_unannotated,
         "n_files": len(files),
         "n_slices_assessed": len({r["slice_id"] for r in rows}),
         "skipped": skipped,
@@ -287,15 +401,32 @@ def main(argv=None) -> int:
                         "(both nulls; see bugarach.assembly). Roughly doubles "
                         "the run.")
     p.add_argument("--assembly-surrogates", type=int, default=1000)
+    p.add_argument("--k", type=int, nargs="+", default=None, metavar="K",
+                   help="the coactivity floors to report at. Default "
+                        f"{list(_default_floors())} — this lab's, and they are "
+                        "this lab's. ANOTHER CORPUS NEEDS ITS OWN: our excess "
+                        "peaks at K=3 on ~34-cell fields, and a corpus with "
+                        "~566 cells per field peaks well outside this range, so "
+                        "scanning it here would report only the tail. Still a "
+                        "scan and still not a choice — a human picks K, and "
+                        "`derive_spec --k` is where that happens.")
+    p.add_argument("--out-name", default="assessment_real.json",
+                   help="the file to write inside --out. Defaults to the name "
+                        "every downstream tool reads, which is why assessing "
+                        "somebody else's folder into it is refused.")
     a = p.parse_args(argv)
 
+    folder = _dataset_arg.get(a, want="any")
+    _refuse_to_overwrite_ours(folder, a.out_name)
+
     a.out.mkdir(parents=True, exist_ok=True)
-    res = assess_store(_dataset_arg.get(a, want="any"),
+    res = assess_store(folder,
                        stream=a.stream, n_surrogates=a.n_surrogates,
                        limit=a.limit, assemblies=a.assemblies,
-                       assembly_surrogates=a.assembly_surrogates)
+                       assembly_surrogates=a.assembly_surrogates,
+                       min_rois=a.k)
 
-    f = a.out / "assessment_real.json"
+    f = a.out / a.out_name
     f.write_text(json.dumps(res, indent=1, sort_keys=True))
     print(f"\nwrote {f}")
     print(f"  {res['n_slices_assessed']} slices assessed of {res['n_files']}, "
