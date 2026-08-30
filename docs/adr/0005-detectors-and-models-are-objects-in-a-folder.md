@@ -5,6 +5,43 @@
 - **Supersedes nothing.** Extends [ADR-0001](0001-the-lab-server.md) (the lab server)
   and the requirement in [`../webapp_spec.md`](../webapp_spec.md).
 
+## What is built, and what is only decided — 2026-08-30
+
+This ADR was written before the work and describes six decisions. Three are built
+and three are not, and an ADR that does not say which is a plan pretending to be a
+record.
+
+| # | decision | state |
+|---|---|---|
+| 1 | page assembled from a folder, assembled file committed | **built** — `tools/assemble_viewer.py`, `--check` in the suite |
+| 2 | knobs as data, controls rendered not written | **NOT built.** All six objects carry their descriptor and algorithm, but `read()` still names input ids by string and the control divs are still hand-written HTML. This is the decision that finishes the job, and it is the one still open |
+| 3 | Python is source of truth for the descriptor | **partly** — `test_registries_do_not_drift` compares the two lists by name; the full parameter comparison is not written |
+| 4 | browser trainer is a SECOND trainer | decided, nothing built |
+| 5 | user files load Worker-sandboxed | decided, nothing built |
+| 6 | Chromium is the super-user target | decided, nothing built |
+
+**Also built, and not in the original six:** the architectures moved the same way
+— `learn/nets.py` became `learn/nets/`, one file per architecture, auto-imported
+so a dropped-in file registers with nothing else edited and no list of names
+exists anywhere.
+
+### Two things learned by doing it
+
+**Detector order was incidental and is load-bearing.** `rate` was first only
+because it was first in the literal. Moving it into a file put it last, which
+moves `detections.csv` row order, raster lane order, and *the sequence detectors
+draw from the shared RNG* (`cicada_detect`: "declaration order, one RNG"). A test
+with a different subject caught it, which was luck. `DETECTOR_ORDER` in the
+template declares it now; a detector not named there loads at the end, so adding
+one still needs no central edit.
+
+**The collision predicted below arrived on the first merge.** `main` edited
+`raster_viewer.html` in three places while this branch made that file generated.
+Git auto-merged it — meaningless for a build artifact — and each change had to be
+rehomed by hand, two to the template and one to `cicada.js`. The generated page is
+committed precisely so that shows up in a diff rather than in a browser, and it
+did. Every session that edits that file needs telling.
+
 ## The ask
 
 Tony, 2026-08-29: *"the structure was always intended to be flexible. detectors and dl

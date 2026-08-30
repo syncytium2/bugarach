@@ -12,6 +12,12 @@ is **released**: nobody holds it.
 
 ---
 
+## Where the charts are
+
+**`<darkroom>/bugarach/2026-08-30-overnight-run/`** — every figure from tonight in
+one folder, with an `index.html` that opens and says what each one shows. Start
+with `guard_screen.png`. Repo copies are in `docs/learned/`.
+
 ## Two findings, and they are the reason to read further
 
 ### The guard works, on the axis F1 cannot see
@@ -108,8 +114,11 @@ registry. `assemble_viewer --check` catches a hand-edit of the generated page.
    COMMITTED VERSION"* until #404 merges; that is the tool being right about a
    branch deploy, not a defect.
 2. **The grid edges** on LoCo and binned SCE, above.
-3. **ADR-0005 is drafted and uncommitted** in this worktree. It predates the
-   ordering finding below and needs a pass before it lands.
+3. **ADR-0005's decision 2 is the one still open** — knobs as data, controls
+   rendered rather than hand-written. All six objects carry their descriptor and
+   algorithm, but `read()` still names input ids by string and the control divs are
+   still hand-written HTML. That is what finishes the job; the ADR now says so, and
+   marks which of its six decisions are built and which are only decided.
 
 ## One thing that bit, and will bit again
 
@@ -125,4 +134,4 @@ generated. Git auto-merged it, which is meaningless for a build artifact; each
 change was rehomed by hand (two to the template, one to `cicada.js`) and
 reassembled. Every session that edits that file needs telling.
 
-Suite **1,583 green**, sapper clear.
+Suite **1,587 green**, sapper clear.
