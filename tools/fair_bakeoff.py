@@ -90,8 +90,10 @@ def _timed_detect(fn, slices) -> tuple[list, float]:
 
 def run(spec: dict, *, folds: int, seeds_per_fold: int, quick: bool,
         train_seed: int = 0) -> dict:
+    from bugarach import provenance
     from bugarach.bench import (DETECTORS, OPERATING_POINTS, fold_split,
                                 pool_scores, run_detector)
+    from bugarach.learn.nets import ARCHITECTURES
     from bugarach.learn.train import fold_maker, train
     from bugarach.score import score_stream
 
@@ -116,12 +118,48 @@ def run(spec: dict, *, folds: int, seeds_per_fold: int, quick: bool,
     total_sec = sum(r[1].params["duration_sec"] for r in cache.values())
     print(f"  {total_sec / 60:.0f} recording-minutes total")
 
+    # WHAT PRODUCED THIS FILE, IN THE FILE. Until 2026-08-29 this artifact carried
+    # `machine` and nothing else, so a reader holding only the JSON could not say
+    # which library version, which commit, or which grids produced the numbers --
+    # the answer lived in `docs/learned/bakeoff.md`'s prose, which is excellent and
+    # is one rename away from leaving the data unattributable. Tony asked what
+    # generated it and the file could not answer; this is that gap closed.
+    #
+    # `machine` is kept unchanged because older files carry it and readers key on
+    # it. Everything new lands under `provenance`, so nothing that reads this file
+    # today has to change.
+    #
+    # The grids are recorded as **swept on this run**, not as whatever `bench` says
+    # when someone later reads it: a stale grid recorded here would be worse than
+    # no grid at all, because it would look like evidence.
     out: dict = {
         "spec": spec, "folds": n_folds, "seeds_per_fold": seeds_per_fold,
         "train_seed": train_seed,
         "seeds": all_seeds,
         "machine": {"platform": platform.platform(),
                     "python": platform.python_version()},
+        "provenance": provenance.stamp(
+            produced_by="tools/fair_bakeoff.py",
+            quick=quick,
+            detectors_swept={
+                det: {"knob": OPERATING_POINTS[det].knob,
+                      "grid": list(OPERATING_POINTS[det].grid if not quick
+                                   else OPERATING_POINTS[det].grid[::2])}
+                for det in DETECTORS},
+            # BOTH LISTS, BECAUSE THEY ARE DIFFERENT FACTS AND THEY DRIFT APART.
+            # `registered` is read from the `@register` registry, so an
+            # architecture added by one `@register` line appears here without
+            # anybody editing this tool. `ran` is what this run actually swept.
+            # Recording only `ran` would make an architecture that exists but was
+            # skipped indistinguishable from one that does not exist — which is
+            # the same "a finding and a bug must not look alike" rule `run.json`'s
+            # roster is built on.
+            learned_architectures={
+                "registered": sorted(ARCHITECTURES),
+                "ran": {name: {"lr": LR.get(name)} for name in LEARNED},
+                "registered_but_not_run": sorted(set(ARCHITECTURES) - set(LEARNED)),
+            },
+        ),
         "hand_written": {}, "learned": {},
     }
 

@@ -6835,7 +6835,38 @@ let FOLDER_RUN = null;   // {rows, slices, frameIntervals, frameSources,
    byte-identical to `docs/site/raster_viewer.html`, so a build cannot stamp one
    in, and a hand-maintained constant here would go stale silently — which is
    worse than absent, because it would be believed. `write_run` already treats a
-   null as "asked and had no answer". */
+   null as "asked and had no answer".
+
+   BUT THE PAGE IS NOT ANONYMOUS, and until 2026-08-29 it wrote as if it were.
+   The argument above is right about a *code* version and was over-applied: this
+   file already carries `<meta name="bugarach:version-date">`, and the objection
+   to a hand-maintained constant — that it goes stale silently — is exactly what
+   does not happen to that one. Two tests fail the moment it disagrees with git,
+   in `test_site_dates.py` and `test_site_viewer.py`. So the page reads its own
+   stamp at runtime rather than hardcoding a second copy, and a downloaded
+   run.json can be tied to a version of this page.
+
+   It lands in `provenance`, beside the null `code_version`, never instead of it.
+   They answer different questions, and a page date quietly filling a field that
+   means "which library" is the confusion this whole block exists to prevent. */
+function pageProvenance() {
+  const meta = document.querySelector('meta[name="bugarach:version-date"]');
+  return {
+    // Null is a real answer here — a page opened from a context that stripped
+    // the head has no stamp — and it is reported rather than papered over.
+    page_version_date: meta ? meta.getAttribute("content") : null,
+    produced_by: "bugarach raster viewer (in-browser)",
+    // The library's version and commit. A browser has neither and cannot get
+    // them; saying so is the honest answer, and it is why `code_version` stays
+    // null below rather than borrowing the page date.
+    bugarach_version: null,
+    git_commit: null,
+    git_dirty: null,
+    code_version: null,
+    user_agent: (typeof navigator !== "undefined" && navigator.userAgent) || null,
+  };
+}
+
 function runJson(run) {
   return {
     slices: run.slices.slice(),
@@ -6852,6 +6883,7 @@ function runJson(run) {
        untouched and every existing reader of `frame_interval_sec` still works. */
     frame_interval_source: Object.assign({}, run.frameSources),
     code_version: null,
+    provenance: pageProvenance(),
     // Present only for a folder this page invented; a folder off disk had no
     // generator, no K was chosen for it and it has no seeds.
     generator_spec: run.generatorSpec ?? null,

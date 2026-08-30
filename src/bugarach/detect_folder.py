@@ -93,6 +93,7 @@ from pathlib import Path
 
 import numpy as np
 
+from bugarach import provenance
 from bugarach.emit import (
     events_from,
     write_detections,
@@ -523,7 +524,10 @@ def detect_folder(folder, *, out_dir, detectors=DETECTORS,
         out_dir / "run.json",
         slices=[r.slice_id for r in run.records],
         frame_interval_sec=intervals,
-        code_version=_code_version(),
+        provenance=provenance.stamp(
+            produced_by="bugarach detect (headless)",
+            detectors=list(detectors),
+            rng_seed=RNG_SEED),
         extra={
             "input_folder": str(folder),
             "detectors": list(detectors),
@@ -588,16 +592,6 @@ def _nothing_detected_message(run: DetectionRun) -> str:
     return "\n".join(lines)
 
 
-def _code_version() -> str | None:
-    """The commit this ran at, when the tree is a git checkout."""
-    import subprocess
-    try:
-        out = subprocess.run(["git", "rev-parse", "HEAD"],
-                             cwd=Path(__file__).resolve().parent,
-                             capture_output=True, text=True, timeout=5)
-    except (OSError, subprocess.SubprocessError):      # pragma: no cover - env
-        return None
-    return out.stdout.strip() or None
 
 
 def format_run(run: DetectionRun) -> str:

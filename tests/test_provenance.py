@@ -1,0 +1,144 @@
+"""Every run says what produced it, and says it the same way everywhere.
+
+The defect these pin, from 2026-08-29: Tony asked what generated
+``docs/learned/bakeoff.json`` and the file could not answer. It carried
+``platform`` and ``python`` and no version of anything. Meanwhile three other
+call sites each had their own answer — ``detect_folder._code_version()`` returned
+a git sha, ``ui/app.py._code_version()`` returned a package version **under the
+same function name**, and the browser page wrote a hardcoded ``null``.
+
+So these tests are less about any single field than about there being **one**
+answer. The one that would have caught the original bug is
+``test_the_bakeoff_records_what_produced_it``.
+"""
+
+from __future__ import annotations
+
+import json
+
+import pytest
+
+from bugarach import emit, provenance
+
+
+def test_the_stamp_names_the_code_and_the_machine():
+    s = provenance.stamp()
+    for key in ("bugarach_version", "git_commit", "git_dirty", "code_version",
+                "python", "platform"):
+        assert key in s, f"provenance.stamp() dropped {key}"
+    # python/platform always answer; the version fields legitimately may not.
+    assert s["python"] and s["platform"]
+
+
+def test_extras_ride_along_and_do_not_displace_the_stamp():
+    s = provenance.stamp(produced_by="a test", detectors=["rate"])
+    assert s["produced_by"] == "a test"
+    assert s["detectors"] == ["rate"]
+    assert "python" in s and "code_version" in s
+
+
+def test_dirty_is_tri_state_because_unknown_is_not_clean():
+    """``None`` (nobody could check) must never be reported as ``False`` (checked, clean).
+
+    Only ``False`` licenses trusting the commit beside it, so collapsing the two
+    would turn "we don't know" into "we verified" — the exact upgrade a
+    provenance record must never make on its own.
+    """
+    assert provenance.git_dirty() in (True, False, None)
+
+
+def test_code_version_carries_the_commit_when_there_is_one():
+    """In a checkout the scalar must name the tree, not just the release.
+
+    A package version alone is the failure mode this replaced: this project runs
+    from a checkout at a version that goes weeks without a bump, so every run in
+    that window would report an identical string.
+    """
+    commit, cv = provenance.git_commit(), provenance.code_version()
+    if commit is None:
+        pytest.skip("not a git checkout — nothing to assert about the commit")
+    assert cv is not None and commit[:7] in cv
+
+
+def test_run_json_carries_provenance_beside_code_version(tmp_path):
+    p = emit.write_run(tmp_path / "run.json", slices=["a"],
+                       frame_interval_sec={"a": 0.1},
+                       provenance=provenance.stamp(produced_by="a test"))
+    doc = json.loads(p.read_text())
+    assert doc["provenance"]["produced_by"] == "a test"
+    # The scalar is filled FROM the block rather than left null: one fact, two
+    # shapes, written once.
+    assert doc["code_version"] == doc["provenance"]["code_version"]
+
+
+def test_an_explicit_code_version_still_wins(tmp_path):
+    """A caller that passes both is not overridden by the block."""
+    p = emit.write_run(tmp_path / "run.json", slices=["a"],
+                       frame_interval_sec={"a": 0.1},
+                       code_version="pinned-by-caller",
+                       provenance=provenance.stamp())
+    assert json.loads(p.read_text())["code_version"] == "pinned-by-caller"
+
+
+def test_run_json_without_provenance_is_unchanged(tmp_path):
+    """The output contract did not move.
+
+    ``run.json``'s keys are read by other teams, so this addition had to be
+    additive. A caller that passes nothing gets the old shape plus one null.
+    """
+    p = emit.write_run(tmp_path / "run.json", slices=["a"],
+                       frame_interval_sec={"a": 0.1})
+    doc = json.loads(p.read_text())
+    assert doc["code_version"] is None
+    assert doc["provenance"] is None
+    for key in ("slices", "frame_interval_sec", "generator_spec", "chosen_k",
+                "simulated_data_seeds", "thresholds"):
+        assert key in doc
+
+
+def test_there_is_exactly_one_code_version_implementation():
+    """The three-answers-to-one-question bug, mechanized.
+
+    Two modules each defined ``_code_version`` meaning different things. Anything
+    reintroducing a private one is reintroducing the divergence.
+    """
+    from pathlib import Path
+    src = Path(__file__).resolve().parent.parent / "src" / "bugarach"
+    offenders = [p.relative_to(src) for p in src.rglob("*.py")
+                 if p.name != "provenance.py" and "def _code_version" in p.read_text()]
+    assert not offenders, (
+        f"{offenders} define a private _code_version; use bugarach.provenance")
+
+
+def test_the_bakeoff_records_what_produced_it():
+    """The artifact that started this must name its own code and grids.
+
+    Skipped rather than failed when the committed JSON predates the change —
+    this asserts the *emitter*'s contract, and the file is only regenerated by a
+    full bake-off run. `tools/fair_bakeoff.py` is read directly so the assertion
+    does not depend on anyone having re-run it.
+    """
+    from pathlib import Path
+    src = (Path(__file__).resolve().parent.parent
+           / "tools" / "fair_bakeoff.py").read_text()
+    assert "provenance.stamp(" in src, "fair_bakeoff no longer stamps its output"
+    for field in ("detectors_swept", "learned_architectures", "produced_by"):
+        assert field in src, f"fair_bakeoff stopped recording {field}"
+
+
+def test_the_browser_page_reports_its_own_version_and_not_the_librarys():
+    """The viewer writes a page stamp, and still refuses to invent a code version.
+
+    Both halves matter. Before 2026-08-29 it wrote neither and a downloaded
+    run.json could not be tied to anything; the wrong fix would be letting the
+    page date fill ``code_version``, which means "which library" and which a
+    browser cannot know.
+    """
+    from pathlib import Path
+    page = (Path(__file__).resolve().parent.parent
+            / "docs" / "site" / "raster_viewer.html").read_text()
+    assert "function pageProvenance()" in page
+    assert "provenance: pageProvenance()," in page
+    assert 'meta[name="bugarach:version-date"]' in page
+    # The page must not borrow its own date for the library's field.
+    assert "code_version: null," in page
