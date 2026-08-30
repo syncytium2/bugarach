@@ -3,75 +3,76 @@
 *Written 2026-08-22 from two interface2 reports, the bugarach tree, and the
 darkroom literature shelf.*
 
-> **Revised 2026-08-30: two of the three "his" detectors were built with AI
-> sessions, and the independence claim is withdrawn — replaced by a timeline that
-> does not depend on anyone's memory.** This corrects the block immediately below,
-> which is five days older and says the wrong thing in one place and an
-> unestablishable thing in another.
+> **Revised 2026-08-30: the block below is right that these are his, and the word
+> "team" in interface2 does not mean what a stranger will read it to mean.** This
+> block adds a checkable timeline, decodes one piece of vocabulary that invites a
+> serious misreading, and leaves §4's reading standing.
 >
-> **What is wrong.** Tony, 2026-08-30: *"we built the first version of loco and
-> coact detect in matlab together."* Together means with AI sessions in this
-> estate. So *"`rate_detect`, `coact_detect`, `loco_detect` **are his**"* overstates
-> for at least two of the three. interface2's own record agrees, and the dates are
-> checkable:
+> **"Team" means a session.** Tony, 2026-08-30: *"i am the only human in these
+> repos. my teams are sessions. in those days, i'd work two workstations in
+> parallel and call them teams."* This matters because interface2's own commits say
+> things like *"LoCo (**the other team's** detector #5 …)"* (`bc833ca8`) and
+> *"handoff: detector5 LoCo branch — **for the CoactDetect team's** integration"*
+> (`e8692f77`). **A reader outside this estate will take that as another
+> laboratory.** It is not: it is Tony running two parallel workstations and naming
+> them. There is no third party in any of it, and no outside attribution is owed.
+> ⚠ Anyone quoting interface2 commit prose in a public artifact must decode this
+> first.
 >
-> | | first committed | AI-assisted commit |
+> **The design is his and the commits show it, in his own vocabulary.** `bc833ca8`
+> says *"my CoactDetect `detect_local_coincidence.m`"* and specifies it as *"the
+> coactivity analog of RateDetect: distinct-ROI coactivity excess over a rolling
+> LOCAL null"*; `9d4d37a2` states RateDetect's rule as *"excess = primary rate (1s) −
+> context rate (60s), Hz"* — the phrasing Tony reproduced from memory 3½ months
+> later, unprompted, before being shown the commit. Both carry his own validation
+> runs on named recordings.
+>
+> ⚠ **A `Co-Authored-By` trailer records who produced a commit, not who designed
+> the thing.** An earlier draft of this block tagged three rows *"AI-assisted"* and
+> withdrew §4's independence claim on that basis. **That was wrong twice**: the
+> trailer does not carry design attribution, and reading it as though it does
+> disparages the person who specified the detector, ran the validation and wrote the
+> spec into the message. Recorded rather than quietly deleted, because the same
+> inference is available to anyone else auditing this tree.
+>
+> **What survives from that draft is the timeline**, which is worth having on its own
+> — it replaces a recollection with a record:
+>
+> | | first committed | commit produced in a session |
 > |---|---|---|
-> | SpikyDetect 1–3 (synchrony) | 2026-04-23 → 04-28 | **no** |
-> | `rate_detect` (`SpikyDetect4` → `RateDetect`) | 2026-05-13 | **yes** |
-> | `CoactDetect` (renamed from *"local coinc"*) | 2026-07-14 | **yes** |
-> | `detect_loco` | 2026-07-14 | **yes** |
+> | SpikyDetect 1–3 (synchrony) | 2026-04-23 → 04-28 | no |
+> | `rate_detect` (`SpikyDetect4` → `RateDetect`) | 2026-05-13 | yes |
+> | `CoactDetect` (renamed from *"local coinc"*) | 2026-07-14 | yes |
+> | `detect_loco` | 2026-07-14 | yes |
 >
-> The first Claude-assisted commit anywhere in interface2 is **2026-05-06**. The
-> synchrony lineage predates it; **everything rate- and coordination-shaped comes
-> after.** ⚠ Commit dates are a **lower bound** on when work happened, and Tony
-> notes his repo hygiene was poor for years, so uncommitted earlier work cannot be
-> ruled out. What the dates do establish is which commits carry a co-author trailer,
-> and for `rate`, `coact` and `loco` they all do.
+> > Built **2026-04 to 2026-07**. The CFAR literature was found on **2026-08-22** —
+> > `ff1db4d`, *"Three of the six detectors judge a moment using a window that
+> > contains it"* — and the resemblance was recognised then, five weeks to four
+> > months after the fact, in a search run for another purpose.
 >
-> **What is unestablishable.** The block below rests §4's *"convergence, not a
-> derivation"* on *"I was totally unaware when I designed them."* For a human that
-> is real evidence — a person's knowledge is roughly what they have read. **It is
-> not available as evidence when a model is a co-builder**, because a model has no
-> introspective access to whether its output derives from CFAR-shaped training data,
-> and neither collaborator can inspect that from the outside. Tony, 2026-08-30, on
-> the lit search that found CFAR: *"i think it surpised both of us."* Genuine, and
-> consistent with **both** independent convergence and unrecognised reconstruction.
-> **Surprise cannot separate them.** So the claim is withdrawn as unsupportable, not
-> as false — nothing here says it is wrong, only that nothing available can show it
-> is right.
+> That is **stronger than "I was unaware"**, because it is checkable in two
+> repositories and depends on nobody's memory. Keep both: the recollection speaks to
+> the designer's knowledge, the timeline shows the order of events, and together they
+> rule out derivation without either carrying the weight alone.
 >
-> **What replaces it, and it is stronger.** A timeline, in git, in two repositories,
-> depending on nobody's recollection:
+> ⚠ Commit dates are a **lower bound** — Tony notes years of poor repo hygiene, so
+> earlier uncommitted work is not ruled out. The bound runs the right way for this
+> argument: earlier work would only widen the gap to 2026-08-22.
 >
-> > The detectors were built **2026-04 to 2026-07**. The CFAR literature was found
-> > on **2026-08-22** — `ff1db4d`, *"Three of the six detectors judge a moment using
-> > a window that contains it"* — and the resemblance was recognised then, five weeks
-> > to four months after the fact, in a search run for another purpose. `rate`,
-> > `coact` and `loco` were built in AI-assisted sessions.
+> **The residual caveat, stated small because it is small.** Sessions may have
+> contributed design suggestions that no commit records, and a model's suggestions can
+> carry literature-shaped structure its user cannot see. Nothing in the record shows
+> that happened, and the commit bodies show specification running the other way. It is
+> a footnote, not a retraction — and §7's admission that four literatures were never
+> searched remains the larger open question.
 >
-> That **rules out deliberate derivation**, which is the only charge worth
-> pre-empting. It does not assert independence from the literature, and should not:
-> with a model in the loop that is not a claim this project can support, and §7
-> already concedes four literatures were never searched.
+> **What this does not touch:** §5's list, which is what this document is for; **port
+> fidelity to 1e-9**, about code and not ideas; the SCE root (Cossart 2003); the Kreuz
+> position; and `locust` as the one true port.
 >
-> **This costs nothing that was being defended.** Tony closed priority on 2026-08-24,
-> in the block further down — *"most researchers would be kind of thrilled with the
-> link … it's a tool and it's useful"* — and the ruling there was *acknowledge the
-> origins and take the engineering*. The independence claim was never load-bearing;
-> it is simply the one sentence here that would not survive a reader who asked how it
-> could be known. **§5's list is untouched, and it is what this document is for.**
->
-> Also unchanged: **port fidelity to 1e-9**, which is about code and not about ideas;
-> the SCE root (Cossart 2003) and the Kreuz position, both settled in the blocks
-> below; and `locust` as the one true port.
->
-> Consequence outside this file: the README and `CITATION.cff` are wrong in the
-> *other* direction — they say "six detector ports" when one is a port — so the repo
-> now has an error each way. Filed as
-> [the repo underclaims its own authorship](todo/2026-08-30-the-repo-underclaims-its-own-authorship.md),
-> **which must be re-read against this revision before anyone acts on it**: it was
-> written before this correction and its title overstates.
+> Consequence outside this file: the README and `CITATION.cff` are wrong in the *other*
+> direction — they say "six detector ports" when one is a port. Filed as
+> [who wrote the detectors](todo/2026-08-30-who-wrote-the-detectors-the-repo-is-wrong-both-ways.md).
 
 > **Revised 2026-08-29: the author said where each one came from, and interface2
 > is frozen on the topic.** Every lineage row in this document was assembled from
