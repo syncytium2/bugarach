@@ -53,6 +53,45 @@ darkroom literature shelf.*
 > *"collapse to ONE unified detector #5"* line in that commit was a **plan**, not a
 > record. Both detectors ship, separately, and their numbers above are why.
 >
+> **Why the plan was never followed through, and why that was lucky.** Tony,
+> 2026-08-30: *"the performance was so different we never followed thru. loco kicked
+> ass in the beginning, we might have dropped coact as the ugly sister. but now with
+> our more serious optimization tools, coact is consistently higher than loco."*
+>
+> **The ranking reversed.** The scheduled collapse — *"LoCo engine + CoactDetect
+> name"*, `detect_loco.m` removed — would have kept LoCo's engine at exactly the
+> moment LoCo was ahead. Run on time, it would have **deleted the detector that
+> later won**, and the surviving one would have carried the loser's mechanism under
+> the winner's name with nothing recording the swap. The A/B outlived its own
+> deletion notice and that is the reason there is anything to compare.
+>
+> **What the reversal actually is, measured** — the 2026-08-29 bake-off
+> (`bakeoff.json`, built from `a510e694`), which Tony had not seen when he described
+> it from memory:
+>
+> | fold | coact | loco |
+> |---|---|---|
+> | 0 | **0.711** | 0.696 |
+> | 1 | **0.645** | 0.640 |
+> | 2 | **0.606** | 0.567 |
+> | 3 | 0.641 | **0.648** |
+>
+> **coact takes 3 of 4 folds, 0.651 vs 0.638.** The direction of the recollection is
+> right.
+>
+> ⚠ **But "consistently higher" does not survive on F1, and this is the useful
+> part.** The gap is **0.013** against fold ranges of 0.61–0.71 and 0.57–0.70, which
+> overlap almost entirely; and on the background sweep at 12 seeds the ordering
+> **flips with the seed block** — coact takes all seven grid points on seeds 1–12,
+> LoCo takes the busy half on seeds 13–24. **F1 cannot separate these two detectors.**
+>
+> Where coact is ahead consistently is everywhere F1 averages away: **recall 0.767 vs
+> 0.733, probe 1.25 vs 2.50 firings/min, detect 0.062 s vs 0.248 s.** Half the false
+> alarms on a block with nothing planted, four times faster, more events found. So the
+> reversal is real and the number a reader would check to confirm it reports a tie —
+> which is an argument for reporting the parts rather than the composite, filed
+> separately.
+>
 > **The design is his and the commits show it, in his own vocabulary.** `bc833ca8`
 > says *"my CoactDetect `detect_local_coincidence.m`"* and specifies it as *"the
 > coactivity analog of RateDetect: distinct-ROI coactivity excess over a rolling
