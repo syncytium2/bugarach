@@ -119,8 +119,8 @@ def page():
             # The page simulates a folder on load, asynchronously; opening one
             # of ours before that settles races it.
             pg.wait_for_function(
-                "() => document.getElementById('demoNote') && "
-                "!document.getElementById('demoNote').hidden", timeout=120000)
+                "() => document.getElementById('prov') && "
+                "!document.getElementById('prov').hidden", timeout=120000)
             yield pg, errs
         finally:
             browser.close()
