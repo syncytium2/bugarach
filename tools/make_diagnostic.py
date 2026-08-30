@@ -292,14 +292,30 @@ def main(argv=None):
     # what produced its orphaned-file problem.
     with tempfile.TemporaryDirectory() as td:
         tmp_html = Path(td) / "fig.html"
-        # header + legend + figure: a figure whose markers need explaining
-        # and does not carry the explanation is not finished.
+        # header + figure + legend: a figure whose markers need explaining and
+        # does not carry the explanation is not finished — but the explanation
+        # goes UNDER it.
+        #
+        # THE FIGURE COMES SECOND, NOT THIRD (Tony, 2026-08-30, of this page:
+        # *"raster should dominate rather than a crapton of dense text and
+        # symbols"*). The legend sat between the title and the figure, so a
+        # reader met eleven SVG keys and their glosses before the thing they
+        # annotate, with nothing yet to attach them to. A key is consulted when
+        # something is puzzling, which is after looking.
+        #
+        # `<details>`, not deletion. These keys are the only place the ✕ and the
+        # ◯ are explained, and this file's own module docstring records shipping
+        # this figure once with "an unexplained marker" in it. Closed is not
+        # hidden: it is one click, sitting beside the picture that raised the
+        # question instead of ahead of it.
         title = header[0]
         subtitle = "  \n".join(header[1:4])
         page = pn.Column(
             pn.pane.Markdown("### " + title + "\n\n" + subtitle),
-            pn.pane.HTML(legend),
             pn.pane.HoloViews(fig),
+            pn.pane.HTML("<details><summary style='cursor:pointer;font:13px "
+                         "system-ui,sans-serif;padding:6px 0;color:#555'>"
+                         "What the marks mean</summary>" + legend + "</details>"),
             pn.pane.HTML("<pre style='font:12px ui-monospace,monospace'>"
                          + report + "</pre>"),
         )

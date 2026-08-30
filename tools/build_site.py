@@ -266,8 +266,6 @@ Cossart, Aronov &amp; Yuste (2003) — cite them, not this repo, for it:
 <i>Attractor dynamics of network UP states in the neocortex</i>,
 Nature 423:283–288.</p>
 <p><b>No method from the literature has been run here in its own form.</b></p>
-<p><a href="landscape.html">The full landscape &rarr;</a> — what a dozen methods
-emit, whether they learned it, and what that leaves this work entitled to claim.</p>
 
 <h2>Open your own recordings</h2>
 <p><a href="viewer.html">The raster viewer &rarr;</a> — point it at a folder of
@@ -301,25 +299,34 @@ PAGES = (
     ("viewer.html", "Raster viewer"),
     ("diagnostic.html", "Detector diagnostic"),
     ("learned_detector.html", "Learned detector"),
-    ("landscape.html", "Landscape"),
 )
 """What the site is, declared once, in nav order.
 
 The nav bar, the coherence check and the manifest below all read this, so
-"the site has five pages" is stated in one place instead of agreeing in three
+"the site has four pages" is stated in one place instead of agreeing in three
 by hand.
 
 Nav order is the argument's order, not the order the pages were written: what a
-recording looks like, what the ported detectors do to one, what a network trained
-on them scores, and only then where any of it sits against the field. The learned
-page comes before the landscape because the landscape's whole job is to say what
-that result does and does not entitle this project to claim, and a reader who has
-not seen the result yet has nothing for it to bite on.
+recording looks like, what the ported detectors do to one, and what a network
+trained on them scores.
+
+**`landscape.html` is WITHHELD from this build** (Tony, 2026-08-30: *"suppress
+landscape page until we can update it. many changes to incorporate. way too
+long"*). Withheld, not deleted — `docs/learned/landscape.html` and its source stay
+in the tree, and putting the page back is this row, its `STATUS` row and the copy
+step below. What has to be true first is in
+`docs/todo/2026-08-30-landscape-is-withheld-until-it-catches-up.md`.
+
+Withholding rather than unlisting, and the difference is not cosmetic: `nav_html`
+and `status_html` both key off this tuple, so a page dropped from here while still
+being *shipped* would arrive with no nav and no draft banner — a dead end on a
+public site, which is the exact defect `nav_html`'s own docstring records fixing.
+There is no halfway. The precedent is `487fbc9`, which withheld the sixth detector
+from the public build, name and all.
 """
 
 STATUS = {
     "index.html": "draft",
-    "landscape.html": "draft",
     "learned_detector.html": "draft",
     "viewer.html": "wip",
     "diagnostic.html": "wip",
@@ -332,8 +339,8 @@ making a claim, and it was making it by omission on four pages at once —
 including the two that a stranger drives against their own data.
 
 The split is Tony's and it is between *kinds* of page, not degrees of doneness.
-`draft` is the argument: the front page, the landscape survey and the learned
-detector are positions being written, and their claims move. `wip` is the running
+`draft` is the argument: the front page and the learned detector are positions
+being written, and their claims move. `wip` is the running
 software: the raster viewer and the detector diagnostic are things a visitor
 points at data, where the honest warning is not "this text may change" but "this
 may behave badly".
@@ -947,17 +954,32 @@ def main(argv=None):
         return 1
     shutil.copyfile(src, SITE / "reality.png")
 
-    # The landscape page is a self-contained single file, so publishing it is a
-    # copy. It has to travel: the page above links to it, and the coordination
-    # report's retraction points at it too — a relative href to a file that was
-    # not shipped is a dead end where the correction should be.
-    land = ROOT / "docs" / "learned" / "landscape.html"
-    if not land.exists():
-        print(f"build_site: {land.relative_to(ROOT)} is missing, and the page "
-              f"links to it. Run tools/build_learned_report.py on "
-              f"landscape.src.html first.", file=sys.stderr)
-        return 1
-    shutil.copyfile(land, SITE / "landscape.html")
+    # THE LANDSCAPE PAGE IS NOT COPIED. It used to be published here as a
+    # self-contained single file; it is withheld from this build — see `PAGES`
+    # for the instruction and for why withholding beats unlisting. The file is
+    # still `docs/learned/landscape.html`; restoring the page is this block, its
+    # `PAGES` row and its `STATUS` row.
+    #
+    # Every inbound href had to go with it, and finding them is the whole reason
+    # this is a build step and not a deletion: `test_every_link_on_every_built_
+    # page_resolves_to_a_file_that_exists` resolves against `PUBLISHED`, so a
+    # surviving link fails the build rather than shipping a 404. Three did —
+    # the index's own "full landscape" line, and two in the learned page.
+    #
+    # ⚠ THE REASON THIS BLOCK USED TO GIVE FOR ITSELF WAS FALSE, and it is worth
+    # recording rather than quietly dropping. The comment here said the page "has
+    # to travel" because "the coordination report's retraction points at it too —
+    # a relative href to a file that was not shipped is a dead end where the
+    # correction should be." Checked before acting on it: `coordination_report`
+    # contains the string "landscape" zero times, in both its source and its build.
+    # The dependency did not exist. A comment that argues a file is load-bearing,
+    # naming a dependent that does not depend on it, is the kind of thing that
+    # makes a later session keep something for a reason nobody can retest.
+    #
+    # What DOES still point here, and is fine: `docs/learned/next_stage.md` and
+    # `README_for_the_webapp.md` use relative in-repo links, and the file they
+    # resolve against — `docs/learned/landscape.html` — is still there. Withholding
+    # the page from the *site* breaks none of them.
 
     # The learned-detector page is built the same way and published the same way.
     #
@@ -1070,7 +1092,7 @@ def main(argv=None):
     # are part of one site. `viewer.html` is again the exception, and again
     # because it is copied byte-for-byte — its bar is written into the source
     # page by hand, and `nav_html` matches it.
-    for page in ("landscape.html", "diagnostic.html", "learned_detector.html"):
+    for page in ("diagnostic.html", "learned_detector.html"):
         p = SITE / page
         if not p.is_file():
             continue

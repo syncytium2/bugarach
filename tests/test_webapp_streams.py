@@ -132,8 +132,8 @@ def viewer():
             # of ours before that settles races it, and the stream selector is
             # exactly the thing a stale load would repaint.
             page.wait_for_function(
-                "() => document.getElementById('demoNote') && "
-                "!document.getElementById('demoNote').hidden", timeout=120000)
+                "() => document.getElementById('prov') && "
+                "!document.getElementById('prov').hidden", timeout=120000)
             yield page, errs
         finally:
             browser.close()
