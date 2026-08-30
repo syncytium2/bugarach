@@ -19,6 +19,27 @@ darkroom literature shelf.*
 > ⚠ Anyone quoting interface2 commit prose in a public artifact must decode this
 > first.
 >
+> **`CoactDetect` and `LoCo` are two versions of one idea, not two detectors.**
+> Tony, 2026-08-30: *"we built loco and coact detect as two versions of the same
+> circular shift idea."* So `bc833ca8`'s *"the other team's detector #5"* is not a
+> rival design — it is **the same idea implemented on his other workstation**, wired
+> in as a deliberate A/B, with the stated plan to *"collapse to ONE unified detector
+> #5 (LoCo engine + CoactDetect name)"*.
+>
+> **The shipped code says so itself**, and this document does not:
+> `src/bugarach/detectors/_shared.py:3` — *"CoactDetect and LoCo share the
+> circular-shift surrogate machinery"* — a module that exists for exactly this
+> reason, with `loco.py:5` naming the same *"core machinery (distinct-ROI counts,
+> in-context circular-shift surrogates)"*.
+>
+> ⚠ **§2 and §4 below file them as two independent lineages** — `loco_detect`'s
+> `maxlt` as GO-CFAR, its percentile-of-pool as kin to OS-CFAR, `coact` separately.
+> **Two variants of one idea landing on two CFAR variants is a weaker coincidence
+> than two detectors doing so**, and the CFAR argument should not be counted twice.
+> Whether that changes §4's conclusion is not settled here; it is flagged because
+> the arithmetic of "three of these are re-derivations" depends on how many
+> independent arrivals there were, and it is **fewer than three**.
+>
 > **The design is his and the commits show it, in his own vocabulary.** `bc833ca8`
 > says *"my CoactDetect `detect_local_coincidence.m`"* and specifies it as *"the
 > coactivity analog of RateDetect: distinct-ROI coactivity excess over a rolling
