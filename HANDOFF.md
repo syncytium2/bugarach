@@ -1,14 +1,27 @@
 # Handoff — 2026-08-27, for the big push
 
-**In flight: #304, #292, #270 (red), #53, #50.** When the last closes,
-`tests/test_handoff_is_honest.py` goes red and retires this file.
+**In flight: #292, #53, #50** — all three are proposals sitting with other teams, and
+none of them blocks work here. **#304 and #270 merged on 2026-08-28.** When the last
+closes, `tests/test_handoff_is_honest.py` goes red and retires this file.
 
-`main` green at `ab1dbfd`; suite **1,391**; sapper clear; board down to 4 ACTIVE claims
-from 12.
+`main` green at `ced0da4`; suite **1,569**; sapper clear. Board: **11 ACTIVE** on the git
+board and **30** on the machine-local one, of which only **7 have a live worktree**.
+
+> **Refreshed 2026-08-30, and every figure above had rotted.** It listed #304 and #270 as
+> in flight two days after they merged, quoted `main` at `ab1dbfd` — 61 commits back — and
+> the suite at 1,391 when it is 1,569, and reported the board "down to 4 ACTIVE claims"
+> while the local one carried 30.
+>
+> **None of that made the gate fire.** `test_handoff_is_honest.py` only goes red when the
+> *last* named PR closes, so this file could be wrong about four things out of five and
+> still read as authoritative — and it is the first thing the briefing reads aloud at
+> every session start. Same can-the-alarm-ring shape this project keeps finding, and it
+> earns the general form: **a file whose whole job is to say what is true cannot be
+> checked only on its own retirement condition.**
 
 ---
 
-## ⚠ Start here: three decisions, and two of them block the pipeline
+## ⚠ Start here: two decisions, and one of them blocks the pipeline
 
 The session briefing reads these out loud at every start. They are the only things no
 session can advance.
@@ -16,8 +29,14 @@ session can advance.
 | | decision | what it blocks |
 |---|---|---|
 | 1 | **How does the promiscuity probe enter the score?** [two scorers, two winners](docs/todo/2026-08-25-two-scorers-two-winners-and-nothing-decides.md) | **the re-fit** — RESET §7 step 5 |
-| 2 | **Did you mean to close PR #298?** [nine files name an ADR that does not exist](docs/todo/2026-08-26-nine-files-name-an-adr-that-does-not-exist.md) | nine citations, and whether ADR-0003 exists |
-| 3 | **Send the Kreuz letter.** [PySpike `max_tau`](docs/todo/2026-08-11-file-pyspike-max-tau-issue.md) | nothing — it has been ready for 16 days |
+| ~~2~~ | ~~Did you mean to close PR #298?~~ | **ANSWERED 2026-08-30 — ADR-0003 exists** |
+| 2 | **Send the Kreuz letter.** [PySpike `max_tau`](docs/todo/2026-08-11-file-pyspike-max-tau-issue.md) | nothing — it has been ready for 19 days |
+| 3 | **What happens to `bench-background-is-not-flat`?** [below](#the-fitted-background-cannot-land-green) | the tube numbers, and what `main` says about its own bench |
+
+**The PR #298 question is closed.** Tony asked on 2026-08-30 for the orphaned branches to
+be merged, which answered it: `parity-was-the-inheritance` landed in #406 and
+`docs/adr/0003-parity-was-the-inheritance-not-the-contract.md` is on `main`. The nine
+files that cited it resolve, and the ADR index's reserved-not-skipped note is retired.
 
 **Decision 1 is the gate.** Two scoring rules are live in the tree and pick **opposite
 winners** for the rate detector: `BenchResult.precision` excludes the promiscuity probe,
@@ -35,6 +54,30 @@ a decline from a tidy-up. The branch `parity-was-the-inheritance` still exists a
 Reopening is one click and nine citations come right at once. **The decision it records is
 not in doubt and is already shipped** — `excess_mode="corrected"` has been the default in
 both the Python and the browser since #303. What closed was the document, not the practice.
+
+## The fitted background cannot land green
+
+**`bench-background-is-not-flat` merges cleanly into `main` and fails four tests, and
+none of them is a merge artifact.** It wires the measured background shape into the
+bench — which `main` still describes, in `bench.py`'s own prose, as *"Not wired into the
+bench"*.
+
+- **Three `test_background_curve.py` tests, left red on purpose by their author**, who
+  said so in the commit: *"coact now wins everywhere — the instability they were written
+  to prove was partly an artifact of the flat field. Re-baselining them would delete a
+  finding, so they are left red for a human."*
+- **`test_lab_server.py::test_the_server_reproduces_the_published_bakeoff`**, fold 3,
+  `29 != 28`. `docs/learned/bakeoff.json` was computed on the flat field, so the
+  published bake-off goes stale the instant the fitted background is wired.
+
+**Why it matters more than a stuck branch.** Every tube-variant number in the 2026-08-29
+handoff — the 2×2 mechanism screen, the seed axis, the 0.662 tie at the top — was measured
+in that environment. It does not exist on `main`. So the branch is not optional cleanup:
+until it lands or is abandoned, the published bench and the numbers most likely to be
+quoted describe two different benches.
+
+Neither failure is a session's to resolve. One asks what a finding means; the other asks
+what gets regenerated and republished.
 
 ## Where the pipeline is
 
