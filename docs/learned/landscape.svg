@@ -58,7 +58,11 @@
   <!-- ours, straddling the boundary of that cell -->
   <rect class="ours" x="628" y="246" width="256" height="52" rx="4"/>
   <text class="lbl it oursT" x="644" y="268">bugarach &#183; centre&#8722;surround</text>
-  <text class="lbl sub" x="644" y="286">[Ca] &#183; truth planted in simulation, fitted per lab</text>
+  <!-- Shortened 2026-08-28. At 48 characters this ran to x=915 — past its own box,
+       which ends at 884, and past the viewBox at 900 — so it shipped clipped
+       mid-word on the published landscape page. Found by tests/test_svg_labels.py
+       the first time that guard ran, in a figure nobody was looking at. -->
+  <text class="lbl sub" x="644" y="286">[Ca] &#183; planted truth, fitted per lab</text>
 
   <!-- ================= bottom row: hand-written ================= -->
   <rect class="cell" x="152" y="316" width="230" height="176" rx="4"/>
@@ -97,7 +101,13 @@
       <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--truth, #1b7f3b)"/>
     </marker>
   </defs>
-  <path d="M 640 450 C 604 450 600 434 574 424" fill="none"
+  <!-- Routed BELOW the label row, not through it. The original curve
+       `M 640 450 C 604 450 600 434 574 424` passed through the middle of
+       "benchmarked by Mölter 2018 · [Ca]" (x 406-613, y 419-434) at (584.9, 429.1),
+       so the connector read as underlining that label rather than pointing past it.
+       Found 2026-08-28 by tests/test_svg_labels.py's stroke-vs-text check, which was
+       written after the same class of defect turned up twice in architecture.svg. -->
+  <path d="M 640 450 C 616 452 596 448 574 444" fill="none"
         stroke="var(--truth, #1b7f3b)" stroke-width="1.4" stroke-dasharray="4 3"
         marker-end="url(#ga)"/>
 

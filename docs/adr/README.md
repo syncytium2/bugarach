@@ -31,10 +31,11 @@ two never disagree, and cross-reference them.
 |-----|-------|--------|
 | [0001](0001-the-lab-server.md) | The lab server — training off the page, without changing what ships | Accepted |
 | [0002](0002-the-sixth-detector-is-called-locust.md) | The sixth detector is called locust, not CICADA | Accepted |
+| [0003](0003-parity-was-the-inheritance-not-the-contract.md) | Parity was the inheritance, not a standing contract | Accepted |
 | [0004](0004-ci-installs-torch-from-the-cpu-wheel-index.md) | CI installs torch, and takes it from the CPU wheel index | Accepted |
 
-`0003` is reserved, not skipped. Nine files on `main` cite it for *"Parity was the
-inheritance, not a standing contract"*, which is written and was green on the
-`parity-was-the-inheritance` branch when PR #298 was closed unmerged. Until
-[that question](../todo/2026-08-26-nine-files-name-an-adr-that-does-not-exist.md) is
-answered the number stays held — filling the gap would break all nine citations.
+**`0003` was reserved-not-skipped for four days, and is now filled.** Nine files cited
+it while it did not exist, because it was written and green on
+`parity-was-the-inheritance` when PR #298 was closed without merging and nobody knew
+whether that was deliberate. Tony answered it on 2026-08-30 by asking for the branch to
+be merged. The nine citations resolve; the question that held the number is closed.

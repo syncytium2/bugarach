@@ -49,7 +49,7 @@ registerDetector(
     settings: cfg => cfg.scePercentile + "th percentile of " + cfg.nSurrogates
       + " rolls · " + cfg.nSynchronousFrames + " frame window · peaks "
       + cfg.sceMinDistanceFrames + " frames apart · active "
-      + (cfg.perEventDuration ? "per event (t50rise→peak)"
+      + (cfg.perEventDuration ? "per event (the folder's own width_sec)"
                               : cfg.activeDurationSec + " s")
       + " · dt " + cfg.gridDt + " s",
     /* `perEventDuration` is a boolean in `cfg` and a two-valued select on the

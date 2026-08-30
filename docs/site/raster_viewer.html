@@ -511,6 +511,7 @@
   <a href="index.html">Overview</a>
   <a href="viewer.html" aria-current="page">Raster viewer</a>
   <a href="diagnostic.html">Detector diagnostic</a>
+  <a href="learned_detector.html">Learned detector</a>
   <a href="landscape.html">Landscape</a>
 </nav>
 
@@ -1014,7 +1015,12 @@
         <input id="cDist" type="number" min="1" max="200" step="1" value="4" autocomplete="off" data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other">
         <label for="cPer">how long a cell counts as active</label>
         <select id="cPer">
-          <option value="per_event">each event's own t50rise→peak</option>
+          <!-- NOT "t50rise→peak", which this said until 2026-08-29. That names a
+               producer's duration rule, and naming one here is what FOUNDATIONS
+               section 7 forbids: it is not this repo's fact to maintain, it goes
+               stale, and a reader takes the producer's decision for ours. Your
+               folder's width_sec is whatever your width_def says it is. -->
+          <option value="per_event">each event's own duration, from your folder</option>
           <option value="fixed">a fixed duration</option>
         </select>
         <label for="cDur">that fixed duration (s)</label>
@@ -7229,7 +7235,7 @@ registerDetector(
     settings: cfg => cfg.scePercentile + "th percentile of " + cfg.nSurrogates
       + " rolls · " + cfg.nSynchronousFrames + " frame window · peaks "
       + cfg.sceMinDistanceFrames + " frames apart · active "
-      + (cfg.perEventDuration ? "per event (t50rise→peak)"
+      + (cfg.perEventDuration ? "per event (the folder's own width_sec)"
                               : cfg.activeDurationSec + " s")
       + " · dt " + cfg.gridDt + " s",
     /* `perEventDuration` is a boolean in `cfg` and a two-valued select on the

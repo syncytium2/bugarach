@@ -1584,6 +1584,21 @@ session's work is not a sweep.
   walked to the panel above — which belongs to the previous recording. Down triangles.
   Now in CLAUDE.md's plot conventions beside the no-drawing-on-the-raster rule.
 
+### Mac/learned-detector-page — the deep-learning page, murderboarded and held
+- **Status:** ACTIVE 2026-08-27
+- **Claims:** `<darkroom>/bugarach/2026-08-27-learned-detector-page/` (new subfolder) and
+  **one appended row** to `<darkroom>/bugarach/README.md`'s "dated subfolders" table so the
+  folder is findable from the index — additive, nothing rewritten. Nothing else in the
+  darkroom; nothing under `$BUGARACH_DATA_ROOT`; no deploy.
+- **Writes:** the page as built (`learned_detector.html`), the murderboard run record as a
+  readable page beside it, and a folder README that opens with what is waiting on a decision.
+- **Why the darkroom and not just the repo:** the record reached `docs/reviews/` and stopped
+  there, which is the 2026-08-18 failure again — a report is output, and "in the repo" is not
+  delivered. Tony could not open it from the editor and said so.
+- **Not claimed:** `<darkroom>/constellation/` (the MATLAB producer's folder — never written),
+  `<darkroom>/bugarach/lit/`, and every existing file at the top level of `bugarach/`.
+- **Released when:** Tony has decided what the page should claim. The page is NOT on `main`
+  and NOT deployed; 31 blocking findings stand against it.
 ### Tonys-MacBook-Pro/the-numbers-moved — the bake-off page, corrected and murderboarded
 - **Status:** DONE 2026-08-28. Claim released in this same commit; nothing held after it.
 - **Writes:** a new dated folder `<darkroom>/bugarach/2026-08-28-bakeoff-corrected/` —
