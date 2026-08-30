@@ -13,6 +13,13 @@ that do **not** appear in the path — that is the whole point of the file.
 the linked file wins. If you find it wrong, fix the row in the same commit as whatever
 you were doing.
 
+⚠ **A row may only point at something that exists on `main`.** This repo runs 14
+worktrees and several open PRs at once, and the first version of this file cited a todo
+that existed only on an unmerged branch — dead for every reader on `main`, and the link
+test could not see it because the pointer was a bare code span rather than a markdown
+link. **Land the thing first, then index it.** Both the rule and the gap are now
+enforced by `tests/test_index_resolves.py`, which reads code spans too.
+
 ---
 
 ## The data
@@ -30,9 +37,11 @@ you were doing.
 | you want | keywords | go to |
 |---|---|---|
 | import another lab's published data | DANDI, 000219, Cossart, other lab, outside producer, NWB, binarised, mouse pup, CA1 | [`tools/import_dandi.py`](../tools/import_dandi.py) — its docstring is the reference, including what the source does **not** carry |
-| what their corpus looks like statistically | assessment, their numbers, K scan | `docs/learned/assessment_cossart.json` (ours: `assessment_real.json`) |
+| what their corpus looks like statistically | assessment, their numbers, K scan | `docs/learned/assessment_cossart.json` (ours: `docs/learned/assessment_real.json`) |
 | **does a detector tuned here work on their data** | transfer, generalisation, cross-lab, out-of-corpus, fit-here-score-there | `fair_bakeoff.py --score-spec`. ⚠ **Read this first:** transfer works by deriving a *generator spec* from their statistics and scoring on simulation from it — **not** by scoring on their raster. Their data is a **binary raster with no coordination ground truth**, so recall/precision are not directly computable on it |
-| why their timing cannot be compared to ours | landmark, t50rise, rising edge, half-rise, offset | `import_dandi.py` — *"cross-lab timing comparisons carry a caveat"*. Rankings and rates transfer; coincidence-to-a-tolerance does not |
+| why their timing cannot be compared to ours | landmark, t50rise, rising edge, half-rise, offset | `tools/import_dandi.py` — *"cross-lab timing comparisons carry a caveat"*. Rankings and rates transfer; coincidence-to-a-tolerance does not |
+| the executable spec for import and transfer | what does it actually promise, contract test | `tests/test_import_dandi.py`, `tests/test_fair_bakeoff_transfer.py` |
+| **numbers from the transfer work that were later retracted** | superseded, corrected, K=3 vs K=12, sample size | `docs/handoffs/2026-08-29-the-transfer-experiment-and-two-things-i-corrected-myself-on.md` — ⚠ **read before quoting any transfer figure**; a session that finds this index will not otherwise learn which numbers were withdrawn |
 
 ## The bench, the simulation, the scoring
 
@@ -51,8 +60,8 @@ you were doing.
 |---|---|---|
 | **who wrote which one, and which are ports** | authorship, provenance, lineage, port, original, credit, CFAR, radar | [`detector_history.md`](detector_history.md). **Read its revision blocks top-down — they correct each other.** Only `locust` is a port |
 | what each detector actually does | mechanism, algorithm, how it works | [`src/bugarach/detectors/`](../src/bugarach/detectors/) — one file each, docstring first |
-| why coact and loco look like one detector | shared, circular shift, surrogate, _shared.py, duplicate | `detectors/_shared.py` shares the **null**, not the detector. They differ in thresholding principle, params, speed and false-alarm rate |
-| the learned models | network, torch, tube, center-surround, DL, training | [`src/bugarach/learn/`](../src/bugarach/learn/), architectures in `learn/nets/` |
+| why coact and loco look like one detector | shared, circular shift, surrogate, _shared.py, duplicate | `src/bugarach/detectors/_shared.py` shares the **null**, not the detector. They differ in thresholding principle, params, speed and false-alarm rate |
+| the learned models | network, torch, tube, center-surround, DL, training | [`src/bugarach/learn/`](../src/bugarach/learn/), architectures in `src/bugarach/learn/nets/` |
 | head-to-head numbers | bake-off, comparison, scoreboard, ranking, F1 table | `docs/learned/bakeoff.json` is the data; `docs/learned/bakeoff.md` is the page. ⚠ The page's table is **typed by hand** and has gone stale |
 
 ## The site
@@ -83,7 +92,7 @@ you were doing.
 | a worktree's tests run against the **primary checkout's** `src` | worktree, PYTHONPATH, fails toward green, wrong src | `handoffs/2026-08-28-the-worktree-src-fix-nobody-has-chosen.md`. Use `PYTHONPATH=$PWD/src` |
 | running a **subset** of tests and reading it as green | partial, subset, passed | Full suite, always. Cost two sessions on 2026-08-30 |
 | the session briefing reads a **stale checkout** | briefing wrong, out of date, behind | `git pull` first. A 64-commit-behind primary reported wrong PRs, suite size and board counts |
-| numbers typed into prose by hand | transcribed, stale table, retype | `bakeoff.md` and `README.md`'s tables. Filed: `todo/2026-08-30-the-site-types-what-a-token-could-substitute.md` |
+| numbers typed into prose by hand | transcribed, stale table, retype | `docs/learned/bakeoff.md` and `README.md`'s tables. Filed: `docs/todo/2026-08-28-the-bakeoff-page-transcribes-what-a-token-could-substitute.md` |
 | "team" in **interface2** commit prose | other team, their detector, another lab | It means **a parallel session**, not another laboratory. `detector_history.md` 2026-08-30 |
 | three seeds is inside the noise on this bench | seeds, flaky, noise, reproducible | 12+ seeds. At 3 the background-axis winner flips between blocks |
 
