@@ -11,7 +11,11 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 ---
 
 ### Mac/runs-say-what-made-them — DEPLOY claimed 2026-08-30 ~03:55Z, overnight run
-- **Status:** ACTIVE — **holds the deploy.** Released when this block says DONE.
+- **Status:** **DONE 2026-08-30 — DEPLOYED AND VERIFIED. The deploy is held by
+  nobody; the next session may publish without asking.** Version ID
+  `547f03b1`. All six pages 200; served `viewer.html` byte-identical to the built
+  one (`8e1db40a…`); `audit_deployed_page.py`: *"the page fetched nothing but
+  itself."*
 - **Why now:** Tony, 2026-08-29, going to sleep: *"in the morning i want to see
   optimizatoin and training and performance charts for the detectors and the dl
   approaches. webiste should be deployed and ready to test."* `DEPLOY_HOLD.md` says
