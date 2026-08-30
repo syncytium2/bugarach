@@ -39,6 +39,12 @@ from pathlib import Path
 
 import pytest
 
+from conftest import locust_suppressed_in_the_browser
+
+SUPPRESSED = (
+    "locust is suppressed in this build; the behaviour below is still implemented and these come back with it (conftest.locust_suppressed_in_the_browser)")
+
+
 ROOT = Path(__file__).resolve().parents[1]
 VIEWER = ROOT / "docs/site/raster_viewer.html"
 
@@ -201,11 +207,23 @@ def scored(page):
     return got
 
 
-def test_every_detector_gets_a_row(scored):
-    rows = scored["board"]["rows"]
-    got = {r["which"] for r in rows}
-    assert got == {"rate", "sce", "coact", "loco", "cicada", "sync"}, sorted(got)
+def test_every_detector_gets_a_row(scored, page):
+    """Every detector THIS BUILD SHIPS, which is not every detector in the file.
 
+    The table's whole claim is that none is quietly left out, so the expected set
+    is read off the page's own `buildDetectors()` rather than listed here — a
+    literal list would need editing every time a detector is added or withheld,
+    and would be wrong in between.
+    """
+    pg, _ = page
+    want = set(pg.evaluate("() => buildDetectors()"))
+    got = {r["which"] for r in scored["board"]["rows"]}
+    assert got == want, (sorted(got), sorted(want))
+    withheld = set(pg.evaluate("() => [...WITHHELD]"))
+    assert not (got & withheld), (
+        f"a withheld detector reached the scoreboard: {sorted(got & withheld)}")
+
+@pytest.mark.skipif(locust_suppressed_in_the_browser(), reason=SUPPRESSED)
 
 def test_a_detector_that_cannot_run_says_so_instead_of_scoring_zero(scored):
     """A refused row carries its reason, never a zero.

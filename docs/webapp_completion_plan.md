@@ -146,7 +146,7 @@ detectors live.*
 
 **Phase 1 — the sixth detector, and a file that comes out.** ✅ **Done**, with one
 omission: `detector_settings.csv` is still not among the files the page writes.
-CICADA as one more
+locust as one more
 registry row. Then `detections.csv` and `run.json` to the contract already written in
 `docs/webapp_spec.md`: `slice_id` from the data and never a filename, `treatment`
 carried and never inferred, one row per event per detector with no consensus merging,
@@ -217,7 +217,7 @@ Lanes below are ordered by how much they are worth starting **now**.
 | **D1 · the writer, Python side** | `detections.csv` + `run.json` writer in the library, with a round-trip test | **no** | nothing | both callers must agree, so the shape gets settled once here rather than twice |
 | **F · model track** | multi-seed, drop the raw brightness channel | **no** — `learn/`, `tools/` | nothing | decides whether *"the tube outperforms"* is a claim we own; see below |
 | **G · housekeeping** | prune ~25 merged worktrees, push or drop `preview-everything` | **no** | nothing | ten minutes, removes most of the confusion |
-| **B · CICADA port** | Phase 1's detector | **holds it** | lane A | one registry row once #128 lands |
+| **B · locust port** | Phase 1's detector | **holds it** | lane A | one registry row once #128 lands |
 | **D2 · the writer, browser side** | download button + the same CSV shape | **holds it** | lanes A, D1 | small once D1 fixed the shape |
 | **H2 · the training panel** | the inert `if (window.__lab)` panel in the page | **holds it** | lanes A, H1 | H1 settles the request and response shapes first |
 | **C · JS tube trainer** | Phase 3b: autodiff, the model, Adam, Web Worker | **no** — standalone block, spliced later | lane H1 (for the reference it checks against) | **resequenced, not cancelled.** Start it once H1 answers what correct looks like |
@@ -234,12 +234,12 @@ detector fitted on three folds and scored on a held-out fourth:
 
 | detector | F1 (mean of 4 folds) |
 |---|---|
-| tube / center−surround (learned) | **0.668 ± 0.061** |
+| tube / center−surround (learned) | **0.681 ± 0.049** |
 | CoactDetect | **0.651 ± 0.044** |
 | LoCo | 0.638 ± 0.053 |
 | rate+context | 0.571 ± 0.085 |
-| CICADA | 0.541 ± 0.070 |
-| binned SCE | 0.422 ± 0.083 |
+| locust | 0.541 ± 0.070 |
+| binned SCE | 0.420 ± 0.079 |
 | SPIKE-synch | 0.254 ± 0.065 |
 
 That is a **tie at the top, not an outperformance**, and every learned number is one

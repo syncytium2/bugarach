@@ -56,9 +56,25 @@ import numpy as np
 # pairs that could not broadcast to a single-stream slice. Fixed 2026-08-13;
 # the "did not run" path below stays, because a detector that cannot run is a
 # finding worth printing rather than a crash worth losing the figure to.)
-def _detector_params():
+def _detector_params(without=()):
+    """The calibrated operating points, minus any detector a build withholds.
+
+    `without` exists because a figure is part of a BUILD, not a fixed fact about
+    the project. Tony, 2026-08-29: *"we must be able to remove or add detectors
+    and models at will."* The published site passes it; a troubleshooting run
+    passes nothing and still draws all six, which is what this tool is for.
+
+    **A lane is the one place a withheld detector comes back without anyone
+    editing a page.** Every served HTML file can be scrubbed clean while
+    `hero.png`, rendered from `bugarach.ui`, still carries the name in its y-axis
+    label — where no grep of the served bytes will ever find it. That happened on
+    2026-08-29, which is why this is an argument and not a note asking somebody
+    to remember.
+    """
     from bugarach.bench import OPERATING_POINTS
-    return {name: dict(op.params) for name, op in OPERATING_POINTS.items()}
+    drop = set(without or ())
+    return {name: dict(op.params) for name, op in OPERATING_POINTS.items()
+            if name not in drop}
 
 
 class NoDetectorRan(RuntimeError):
@@ -136,7 +152,7 @@ def build(args):
     dt = _dt_for(slice_)
 
     lanes, traces, failed = {}, {}, {}
-    for det, params in _detector_params().items():
+    for det, params in _detector_params(getattr(args, "without", ())).items():
         try:
             # Read the fields by name. This used to unpack the tuple positionally
             # and broke silently the day `StreamResult` grew a fifth field for
@@ -201,6 +217,13 @@ def build(args):
 def main(argv=None):
     p = argparse.ArgumentParser(description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
+    p.add_argument("--without", nargs="*", default=(), metavar="DETECTOR",
+                   help="detectors this build withholds — no lane, no trace, no "
+                        "score row. Default: none, so a troubleshooting run "
+                        "draws all six. The published site passes the same set "
+                        "the viewer's WITHHELD holds, because a figure carries "
+                        "a detector's name in pixels where no grep of the "
+                        "served HTML will find it.")
     p.add_argument("--seed", type=int, default=3)
     p.add_argument("--duration", type=float, default=1800.0)
     p.add_argument("--n-roi", type=int, default=30)

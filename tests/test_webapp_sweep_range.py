@@ -29,6 +29,12 @@ from pathlib import Path
 
 import pytest
 
+from conftest import locust_suppressed_in_the_browser
+
+SUPPRESSED = (
+    "locust is suppressed in this build; the behaviour below is still implemented and these come back with it (conftest.locust_suppressed_in_the_browser)")
+
+
 VIEWER = Path(__file__).resolve().parents[1] / "docs/site/raster_viewer.html"
 
 # The detectors the page can actually run, and so the ones with a range row.
@@ -72,7 +78,7 @@ def _reset(pg, tick=RUNNABLE):
     """
     pg.evaluate("""(tick) => {
       for (const k of Object.keys(SWEEP_RANGE)) delete SWEEP_RANGE[k];
-      for (const k of Object.keys(DETECTORS)) {
+      for (const k of buildDetectors()) {
         const b = document.getElementById("tPick_" + k);
         if (b && !b.disabled) b.checked = tick.includes(k);
       }
@@ -170,6 +176,7 @@ def _set_range(pg, which, frm, to, n):
           set("from", frm); set("to", to); set("n", n);
         }""", [which, frm, to, n])
 
+@pytest.mark.skipif(locust_suppressed_in_the_browser(), reason=SUPPRESSED)
 
 def test_a_widened_range_reaches_settings_the_shipped_grid_could_not(page):
     _reset(page)
@@ -186,6 +193,7 @@ def test_a_widened_range_reaches_settings_the_shipped_grid_could_not(page):
         "the shipped grid moved; this test is about reaching past it")
     _reset(page)
 
+@pytest.mark.skipif(locust_suppressed_in_the_browser(), reason=SUPPRESSED)
 
 def test_the_range_boxes_mark_themselves_when_they_leave_the_default(page):
     _reset(page)
@@ -203,6 +211,7 @@ def test_the_range_boxes_mark_themselves_when_they_leave_the_default(page):
         "() => sweepGrid('sce') === DETECTORS.sce.knob.grid") is True
     _reset(page)
 
+@pytest.mark.skipif(locust_suppressed_in_the_browser(), reason=SUPPRESSED)
 
 def test_the_boxes_cannot_ask_for_a_setting_the_detector_will_not_hold(page):
     """A swept setting outside the control's own bounds is one the Detect step
@@ -242,6 +251,7 @@ def test_the_bound_on_the_box_is_the_bound_the_detector_enforces(page):
             f"step cannot hold.")
         assert r["high"] == pytest.approx(r["max"]), r
 
+@pytest.mark.skipif(locust_suppressed_in_the_browser(), reason=SUPPRESSED)
 
 def test_a_range_of_one_setting_is_refused_rather_than_answered(page):
     """`pickOperatingPoint` hands back a single row as an operating point. With

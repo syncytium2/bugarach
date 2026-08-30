@@ -37,6 +37,35 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 SITE = ROOT / "site"
 
+
+def _withheld_from_the_viewer() -> tuple[str, ...]:
+    """Which detectors this build withholds — READ OFF THE VIEWER, never restated.
+
+    The viewer's `WITHHELD` set is the declaration. This build has to know it too,
+    because the figures are rendered by Python and a detector's name reaches a
+    reader through a lane label as surely as through a paragraph — and a picture
+    is where no check on the served HTML can see it.
+
+    Two copies of that list would drift, and the drift would be invisible in
+    exactly one direction: the page clean, the figure not. So there is one copy
+    and this parses it. If the parse ever finds nothing where the viewer holds
+    something, that is a build failure rather than a silent empty set — see the
+    raise below.
+    """
+    src = (ROOT / "docs" / "site" / "raster_viewer.html").read_text(encoding="utf-8")
+    m = re.search(r"const WITHHELD = new Set\(\[(.*?)\]\)", src, re.S)
+    if m is None:
+        raise SystemExit(
+            "build_site: the viewer has no `const WITHHELD = new Set([...])`. "
+            "Either it was renamed — in which case fix this parse — or the "
+            "withholding mechanism is gone, in which case the figures are about "
+            "to be built with every detector in them. Not guessing.")
+    return tuple(re.findall(r'"([^"]+)"', m.group(1)))
+
+
+#: Withheld for this build. Empty is a legitimate answer and means "ship all six".
+WITHHELD_FROM_THE_BUILD = _withheld_from_the_viewer()
+
 # Every way a page can talk to a host, including the ones that do not look like a
 # request. Kept here, next to the build that refuses on them, and imported by
 # tests/test_site_viewer.py so the two can never drift into disagreeing about what
@@ -149,10 +178,10 @@ pulled out of a 2-photon calcium recording. These rows are simulated and every
 coordinated event among them was planted, so a miss and a false alarm are drawn
 rather than inferred.</p>
 
-<p>Detectors flag the moments when many ROIs fire together. There are six here —
-LoCo, SCE, CoactDetect, RateDetect, SPIKE-synch, and a sixth held back from this
-build — each asking a different question, and each matched to its MATLAB original
-to 1e-9 on committed fixtures, so it can be cited in its place.</p>
+<p>Detectors flag the moments when many ROIs fire together. There are five in this
+build — LoCo, SCE, CoactDetect, RateDetect and SPIKE-synch — each asking a
+different question, and each matched to its MATLAB original to 1e-9 on committed
+fixtures, so it can be cited in its place.</p>
 
 <p><b>Coordination is not one phenomenon, so there is no one detector to train.</b>
 Stars coordinate and cells coordinate, and between them the timescales run over
@@ -166,7 +195,7 @@ scores as noise.</p>
 <p><b>So the instrument gets built for your recordings, not for coordination in
 general.</b> Measure the coordination parameters of an <i>untreated</i>
 recording, simulate from those alone, and let
-that synthetic baseline do two jobs at once: tune the six detectors, and train
+that synthetic baseline do two jobs at once: tune the detectors, and train
 the model. Only then is the finished instrument pointed at the whole dataset,
 treatments included. Simulate the treatment and you have spent the effect you
 ran the experiment to measure; withhold it and it comes back as a result. The
@@ -222,13 +251,7 @@ it is already in the figure at the top of this page:
 Cossart, Aronov &amp; Yuste (2003) — cite them, not this repo, for it:
 <i>Attractor dynamics of network UP states in the neocortex</i>,
 Nature 423:283–288.</p>
-<p><b>A sixth detector is held back from this build.</b> It is derived from
-another laboratory's published tool, and how it should be named and credited here
-is an open question this project has not finished answering — so it is withheld
-until that is settled rather than shipped under a name that would prejudge it.
-Nothing on this page reports its results. <b>No method from the literature has
-been run here in its own form</b>, which was true before it was withheld and is
-still true.</p>
+<p><b>No method from the literature has been run here in its own form.</b></p>
 <p><a href="landscape.html">The full landscape &rarr;</a> — what a dozen methods
 emit, whether they learned it, and what that leaves this work entitled to claim.</p>
 
@@ -675,19 +698,12 @@ LEAD_FIGURE = """<figure class="lead">
               Each lane marks where that detector called a coordinated event;
               the shaded block is a dense-but-random stretch containing none.">
   </a>
-  <figcaption><b>Thirty minutes of simulated recording, and what six detectors
+  <figcaption><b>Thirty minutes of simulated recording, and what five detectors
   made of it.</b> One lane per detector, each bar a call it made; then the raster
-  all six were reading, one row per ROI; then what each detector computes.
-  Each lane carries its detector's own name; two of the six are named for what
+  they were all reading, one row per ROI; then what each detector computes.
+  Each lane carries its detector's own name; two of the five are named for what
   they measure rather than for the tool — <span class="key">rate+context</span>
-  is RateDetect, and <span class="key">binned SCE</span> is SCE. A third lane,
-  <span class="key">sixth</span>, is a detector <b>held back from this build</b>:
-  it is derived from another laboratory's published tool, and how it should be
-  named and credited here is an open question this project has not finished
-  answering, so it is withheld until that is settled rather than shipped under a
-  name that would prejudge it. Its lane is drawn because this figure is a fixed
-  record of one run, and dropping a row would misrepresent what the six were
-  scored against; nothing on the page reports it as a result.
+  is RateDetect, and <span class="key">binned SCE</span> is SCE.
   In the lanes, <span class="key">&#10007;</span> marks a false alarm and
   <span class="key">&#9711;</span> one that a reader should not count as a
   separate miss-fire — a second call on an event another detection had already
@@ -810,7 +826,13 @@ def main(argv=None):
     cmd = [sys.executable, str(ROOT / "tools" / "make_diagnostic.py"),
            "--out", str(SITE), "--tag", "site",
            "--hero", str(SITE / "hero.png"),
-           "--seed", str(args.seed), "--duration", str(args.duration)]
+           "--seed", str(args.seed), "--duration", str(args.duration),
+           # THE FIGURE IS PART OF THE BUILD. A detector the viewer withholds
+           # must not come back as a lane label in `hero.png` — which is a
+           # picture, so no check on the served HTML can see it. Kept in step
+           # with the viewer's own `WITHHELD` by
+           # `tests/test_site_withholding.py`.
+           "--without", *WITHHELD_FROM_THE_BUILD]
     print("$", " ".join(cmd))
     r = subprocess.run(cmd, cwd=ROOT)
     if r.returncode != 0:
@@ -832,7 +854,7 @@ def main(argv=None):
                                         if sidecar.is_file() else "")
     if silent:
         degraded.append(
-            f"{len(silent)} of the six detectors did not run ({', '.join(silent)}), "
+            f"{len(silent)} detector(s) did not run ({', '.join(silent)}), "
             f"so the hero figure and the diagnostic page carry that many fewer "
             f"lanes than the text beside them promises. See site/diagnostic.txt "
             f"for what each one raised.")

@@ -30,26 +30,32 @@ from pathlib import Path
 
 import pytest
 
+from conftest import locust_suppressed_in_the_browser
+
+SUPPRESSED = (
+    "locust is suppressed in this build; the behaviour below is still implemented and these come back with it (conftest.locust_suppressed_in_the_browser)")
+
+
 VIEWER = Path(__file__).resolve().parents[1] / "docs/site/raster_viewer.html"
 
 SIM = {"sRec": "2", "sMin": "22", "sRoi": "22", "sRate": "45", "sEv": "14",
        "sJit": "300", "sSeed": "5", "sWin": "0"}
 # WHAT THE PAGE CAN RUN, which since 2026-08-24 is not the same as what it
-# carries. The `sync` row is still in the registry and carries `unavailable`, so
-# it draws, it reads an older file back, and `syncDetect` stays callable — but
-# nothing on the page can tick it. These two lists are the SELECTABLE set.
+# carries. These lists are the SELECTABLE set, and a detector can be off it two
+# different ways.
 #
-# **`cicada` joined `sync` on 2026-08-29, so `ALL` is four.** Tony: *"suppress
-# all locust/cicada mentions in the public facing webapp/docs. we'll come back to
-# it when we have time."* It is derived from another laboratory's published tool
-# and how it should be named and credited here is unsettled, so it is withheld
-# rather than shipped under a name that would prejudge it — the same
-# `unavailable` field, a different reason. Everything else is untouched:
-# `cicadaDetect` still runs, an older `detections.csv` carrying its rows still
-# draws, and the Python has all six.
+# `unavailable` — present, drawn, disabled, and SAYING WHY. `sync` carries it
+# since 2026-08-24: the reader who came looking finds it and finds out why.
 #
-# When either field comes off its registry row, put that key back in both lists
-# and the counts below move with it.
+# `WITHHELD` — not in this build at all. No option, no tick, no row, no
+# explanation. `cicada` is on it since 2026-08-29 (Tony: *"withold cicada locust
+# entirely … there's no reason for cicada/locust to be present in the current
+# webpage"*), and the mechanism is general: the requirement is that detectors and
+# models can be added or removed at will, so the registry stays the source of
+# truth and one line names the exceptions.
+#
+# Four remain selectable. Take a key off `WITHHELD`, or delete an `unavailable`,
+# and put it back here — the counts below move with it.
 ALL = ["rate", "loco", "coact", "sce"]
 CHEAP = ["rate", "coact", "sce"]
 
@@ -94,6 +100,7 @@ def _tick(pg, prefix: str, on: list[str]):
           }
         }""", [prefix, on])
 
+@pytest.mark.skipif(locust_suppressed_in_the_browser(), reason=SUPPRESSED)
 
 def test_the_tune_panel_has_a_tick_per_detector_and_marks_the_costly_two(page):
     pg, _ = page
@@ -106,14 +113,10 @@ def test_the_tune_panel_has_a_tick_per_detector_and_marks_the_costly_two(page):
     })""")
     assert got["boxes"] == ["tPick_" + k for k in
                            pg.evaluate("() => Object.keys(DETECTORS)")]
-    # The costly pair was LoCo and the sixth detector. The sixth is withheld
-    # from the build, so its row still DRAWS the cost marker (the marker is a
-    # property of the detector, not of whether it can be ticked) while only LoCo
-    # is selectable. Read off the registry rather than restated, so this cannot
-    # drift from the page the way the "those two are 97%" sentence did.
-    # Read off DET_SLOW, which is where the marker actually comes from, rather
-    # than restated here — so this cannot drift from the page the way the
-    # hard-coded "those two are about 97%" sentence did.
+    # The costly pair was LoCo and the withheld detector. Read off DET_SLOW,
+    # which is where the marker actually comes from, rather than restated here —
+    # so this cannot drift from the page the way the hard-coded "those two are
+    # about 97%" sentence did.
     costly = pg.evaluate("() => [...DET_SLOW].map(k => DETECTORS[k].label)")
     # Two suffixes to peel, and the ORDER matters: the page's own strip is
     # anchored /slow$/, which stops working on a withheld row because its "off in
@@ -123,6 +126,7 @@ def test_the_tune_panel_has_a_tick_per_detector_and_marks_the_costly_two(page):
     assert sorted(marked) == sorted(costly), (marked, costly)
     assert "LoCo" in marked, marked
 
+@pytest.mark.skipif(locust_suppressed_in_the_browser(), reason=SUPPRESSED)
 
 def test_it_says_which_before_the_click_and_names_the_slow_ones(page):
     pg, _ = page
@@ -226,7 +230,7 @@ def test_the_two_tick_lists_are_independent(page):
 
 FOLDER = """async (on) => {
   document.getElementById("dAll").checked = true;
-  for (const k of Object.keys(DETECTORS)) {
+  for (const k of buildDetectors()) {
     const b = document.getElementById("dPick_" + k);
     b.checked = on.includes(k);
   }

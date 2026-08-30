@@ -25,6 +25,12 @@ from pathlib import Path
 
 import pytest
 
+from conftest import locust_suppressed_in_the_browser
+
+SUPPRESSED = (
+    "locust is suppressed in this build; the behaviour below is still implemented and these come back with it (conftest.locust_suppressed_in_the_browser)")
+
+
 VIEWER = Path(__file__).resolve().parents[1] / "docs/site/raster_viewer.html"
 
 DUPES = """() => {
@@ -56,8 +62,13 @@ def _show_every_detector(pg):
     """
     _go(pg, "accDetect")
     pg.check("#dAll")
-    for k in ("rate", "sce", "coact", "loco", "cicada", "sync"):
-        if pg.evaluate("k => !!offReason(k)", k):
+    for k in pg.evaluate("() => Object.keys(DETECTORS)"):
+        # TWO WAYS TO BE UNTICKABLE and both land here. `offReason` is the
+        # disabled-and-explained case; `WITHHELD` is the absent case, where there
+        # is no box at all and `pg.check` waits 30 s for a control that will
+        # never exist. Read off the page rather than listed, so a key joining
+        # either set is handled without editing this file.
+        if pg.evaluate("k => !!offReason(k) || WITHHELD.has(k)", k):
             pg.evaluate(
                 "k => { document.getElementById(DETECTORS[k].ctl).hidden = false; }",
                 k)
@@ -194,6 +205,7 @@ def test_the_window_table_does_not_outlive_the_folder_it_describes(page):
 SIM = {"sRec": "2", "sMin": "10", "sRoi": "16", "sRate": "12", "sEv": "6",
        "sJit": "360", "sSeed": "4"}
 
+@pytest.mark.skipif(locust_suppressed_in_the_browser(), reason=SUPPRESSED)
 
 def test_the_folder_table_carries_the_caveat_the_one_recording_view_does(page):
     """CICADA's single-cell moments, in the view that produces the file.

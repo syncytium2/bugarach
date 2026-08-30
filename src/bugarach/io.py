@@ -21,9 +21,10 @@ feature: each is evidence for the other being right.
 
 **Width carries its definition or it does not travel.** ``width_sec`` without
 ``width_def`` is refused at the line that has it, and two different
-``width_def`` values inside one stream are refused for the recording — a fast
-half-prominence width and a slow rise interval are not the same measurement,
-and once they are in one array nothing downstream can tell them apart. What is
+``width_def`` values inside one stream are refused for the recording — two rules
+in one array are two different measurements that nothing downstream can tell
+apart. **Which rules those are is not this module's business**, and it does not
+name any: it checks that a rule travelled and that only one did. What is
 *not* refused is a folder with no width at all: the contract asks for width and
 does not require it, so such a folder loads with ``width_def is None``, which
 is the caller's unambiguous tell. ``load_folder(..., require_width=True)`` is
@@ -79,17 +80,23 @@ NO_EVENT = ("", "na", "nan", "none", "null")
 WIDTH_COL, WIDTH_DEF_COL, PEAK_COL, AMP_COL = (
     "width_sec", "width_def", "peak_sec", "amp")
 
-#: ``width_def`` values that name a width running from the half-rise to the
-#: peak, so that ``time_sec + width_sec`` locates one.
+#: ``width_def`` values for which ``time_sec + width_sec`` happens to land on a
+#: peak.
 #:
-#: **These are the producer's strings, not the spec's.** The spec offers
-#: ``t50rise_to_peak`` as an illustration and says in terms that bugarach
-#: carries the string without parsing it. This is the one place that has to
-#: look, so it matches the vocabulary actually in use: interface2 sends
-#: ``rise_interval_peak_minus_t50rise`` on its slow stream and
-#: ``halfprom_width_findpeaks_w`` on its fast one. Both are legitimate widths
-#: and only the first reaches a peak — adding a half-prominence width to an
-#: onset produces a plausible wrong answer rather than an error.
+#: **THE ONE PLACE IN THIS PACKAGE THAT LOOKS AT A ``width_def`` STRING, and it
+#: is not about duration.** bugarach has no opinion on what a duration means —
+#: any number in ``width_sec`` is painted as sent, and five of the six detectors
+#: never read it at all. This set answers a different question: locust anchors on
+#: the PEAK, and where a producer sent no ``peak_sec`` the only other way to
+#: locate one is to add the width to the onset. That sum is a peak for some
+#: rules and nonsense for others, so the membership test is an exact string
+#: match and never an interpretation — a rule whose name is not here simply does
+#: not stand in, which is the safe direction. Adding a width that does not reach
+#: a peak would produce a plausible wrong answer rather than an error.
+#:
+#: Entries are the producer's own strings; the spec offers ``t50rise_to_peak``
+#: as an illustration and is explicit that bugarach carries the string without
+#: parsing it.
 #:
 #: A name that is not here is not refused for being unknown. ``peak_sec`` still
 #: carries it, and that is the route every current export takes; this list only
@@ -97,8 +104,8 @@ WIDTH_COL, WIDTH_DEF_COL, PEAK_COL, AMP_COL = (
 #: to ``WIDTH_REACHES_PEAK`` in ``docs/site/raster_viewer.html``, which is the
 #: same rule in the other implementation.
 WIDTH_REACHES_PEAK = frozenset({
-    "rise_interval_peak_minus_t50rise",   # interface2, `slow`
-    "t50rise_to_peak",                    # the spec's illustration
+    "rise_interval_peak_minus_t50rise",
+    "t50rise_to_peak",
 })
 
 

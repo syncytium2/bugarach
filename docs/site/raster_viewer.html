@@ -7443,7 +7443,7 @@ function savedSettingsRows() {
   const stream = STREAM || "";
   const where = dataSetName();
   const rows = [];
-  for (const which of Object.keys(DETECTORS)) {
+  for (const which of buildDetectors()) {
     const params = readParams(which);
     for (const name of Object.keys(params).sort())
       rows.push({ detector: which, stream, parameter: name,
@@ -7497,7 +7497,7 @@ function savedSettingsRows() {
    asks for and what the browser could not say until now. */
 function runSettingsRows(thresholds) {
   const rows = [];
-  for (const which of Object.keys(DETECTORS)) {
+  for (const which of buildDetectors()) {
     const byStream = thresholds[which];
     if (!byStream) continue;
     for (const stream of Object.keys(byStream).sort()) {
@@ -7725,34 +7725,16 @@ const DETECTORS = {
             scale: "tail", grid: [99.0, 99.5, 99.9, 99.99, 99.999, 99.9999] },
   },
   cicada: {
-    /* WITHHELD FROM THE PUBLIC PAGE (Tony, 2026-08-29): *"suppress all
-       locust/cicada mentions in the public facing webapp/docs. we'll come back
-       to it when we have time."*
+    /* NOT IN THIS BUILD — see `WITHHELD` below the registry. It carries no
+       `unavailable` field on purpose: that mechanism draws the row, disables it
+       and says why, and this detector is not to be present at all.
 
-       The attribution question is PARKED, not answered, and this is the state
-       that says so honestly. The detector is derived from another laboratory's
-       published tool, and the two ways of shipping it while the question is open
-       are both worse than withholding it: naming it invites the reader to check
-       an attribution nobody has finished, and renaming it to a third neutral
-       word would present someone else's method with no attribution at all —
-       which is the move ADR-0002 already refused (*"we can't say we used it if
-       we turned off half of it"*).
-
-       So it is off the page rather than disguised on it. Everything stays: the
-       Python runs all six, `bugarach detect` writes `cicada` rows, this file's
-       `cicadaDetect` still draws a `detections.csv` that already holds them.
-       Nothing on the page can SELECT it, so no new public run produces one.
-
-       Same field, same reasoning, as `sync` below — see its comment for why
-       this is a field and not a deletion. To turn it back on, delete this one
-       field and restore the label. */
-    unavailable: "Not in this build. This detector is derived from another "
-      + "laboratory's published tool, and how it should be named and credited "
-      + "here is an open question this project has not finished answering. It "
-      + "is withheld until that is settled rather than shipped under a name "
-      + "that would prejudge it.",
-    label: "the sixth detector",
-    blurb: "how many cells at once",
+       ⚠ THIS ENTRY BRIEFLY HAD TWO `unavailable` KEYS, from two sessions
+       withholding it on the same day for different stated reasons. JS takes the
+       last one silently, so the page shipped one reason while the file contained
+       two. Neither survives; the decision is a list now, and a list cannot hold
+       the same key twice. */
+    label: "sixth", blurb: "how many cells at once",
     ctl: "dCicCtl", fine: "dFineCicada",
     // NEEDS THE PEAK, which is why it carries a flag the other five do not: its
     // raster is anchored on `locs`, and the folder has to have sent enough to
@@ -7861,13 +7843,40 @@ const DETECTORS = {
   },
 };
 
+/* WHAT THIS BUILD SHIPS, and there are two different ways to be out of it.
+
+   `WITHHELD` — NOT PRESENT. No option, no tick, no range row, no scoreboard row,
+   no lane, and NO EXPLANATION. The reader is not told a detector is missing,
+   because as far as this build is concerned there is no such detector.
+
+   `unavailable` — present, drawn, disabled, and saying why on the control that
+   would otherwise offer it. For a detector this build HAS and cannot fairly run.
+
+   THE REQUIREMENT IS THE MECHANISM, NOT THE CASE. Tony, 2026-08-29: *"we must be
+   able to remove or add detectors and models at will. there's no reason for
+   cicada/locust to be present in the current webpage."* So the registry stays
+   the source of truth and one line names the exceptions — adding a detector is
+   still just a registry row (the chooser is built from the table, so it appears
+   for free), and removing one is a key in this set. Both directions, one edit.
+
+   Everything the detector IS survives being withheld: its detect function, its
+   parity harness, and this page's ability to draw a `detections.csv` that
+   already holds its rows. What goes is every place the page OFFERS it. */
+const WITHHELD = new Set(["cicada"]);
+
 /* SELECTABLE, which is not the same as present. A row carrying `unavailable` is
    still in the registry — it draws old rows, it answers `DETECTORS[k].label`,
    and its detect function is still callable — but nothing may choose it to run.
    Every site below that picks detectors goes through here rather than reading
    the registry directly, so turning one back on is deleting one field. */
 const offReason = k => (DETECTORS[k] || {}).unavailable || null;
-const runnableDetectors = () => Object.keys(DETECTORS).filter(k => !offReason(k));
+
+/* THE ONE ENUMERATION. Every place that builds a control, a row or a lane reads
+   this instead of `Object.keys(DETECTORS)`, so a withheld detector cannot appear
+   in one of them because somebody forgot. */
+const buildDetectors = () => Object.keys(DETECTORS).filter(k => !WITHHELD.has(k));
+const runnableDetectors = () =>
+  buildDetectors().filter(k => !offReason(k));
 
 const whichDetector = () => {
   const v = document.getElementById("dDet").value;
@@ -8161,11 +8170,14 @@ function paintDetectPanel(data, runs, streams) {
     "caveat"));
 }
 
-// the chooser is built from the table, so a new row appears in it for free
+// The chooser is built from the table, so a new row appears in it for free — and
+// a WITHHELD one never appears at all, which is the same property read the other
+// way. That is what makes adding and removing a detector one edit each.
 {
   const sel = document.getElementById("dDet");
   sel.textContent = "";
-  for (const [k, d] of Object.entries(DETECTORS)) {
+  for (const k of buildDetectors()) {
+    const d = DETECTORS[k];
     const o = document.createElement("option");
     o.value = k; o.textContent = d.label + " — " + d.blurb;
     // Listed, disabled, and saying so in the option itself — a reader who came
@@ -8194,7 +8206,8 @@ const DET_DEFAULT_ON = ["rate", "coact", "loco"];
 const DET_SLOW = new Set(["loco", "cicada"]);
 {
   const box = document.getElementById("dPicks");
-  for (const [k, d] of Object.entries(DETECTORS)) {
+  for (const k of buildDetectors()) {
+    const d = DETECTORS[k];
     const lab = document.createElement("label");
     const cb = noAutofill(document.createElement("input"));
     cb.type = "checkbox"; cb.id = "dPick_" + k;
@@ -8472,7 +8485,8 @@ function extendPlan(which, grid, end) {
    reader meets first, stated in one place. */
 {
   const box = document.getElementById("tPicks");
-  for (const [k, d] of Object.entries(DETECTORS)) {
+  for (const k of buildDetectors()) {
+    const d = DETECTORS[k];
     const lab = document.createElement("label");
     const cb = noAutofill(document.createElement("input"));
     cb.type = "checkbox"; cb.id = "tPick_" + k;
@@ -8996,7 +9010,7 @@ async function scoreAllDetectors() {
     }
     const split = tunePlan(dataSet.length);
     const rows = [];
-    for (const which of Object.keys(DETECTORS)) {
+    for (const which of buildDetectors()) {
       const D = DETECTORS[which];
       say("Scoring " + D.label + "…");
       await yieldToUI();

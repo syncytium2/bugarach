@@ -2,6 +2,13 @@
 
     bugarach detect my_export/
 
+**One of the six detector keys here is ``cicada``, and it is named locust.** This
+module is where the key becomes a column value, so the two have to agree: the
+``detector`` column of the file this writes says ``cicada``, which is output
+contract, while every screen and figure says *locust*. Same detector;
+``bugarach.detectors.cicada`` carries the three-way split between the key, the
+name, and CICADA the upstream tool.
+
 ``check`` says whether a folder can be read and ``assess`` says how coordinated
 it is without a detector. This is the third question and the one the six ports
 exist to answer: **run them, and write the events down.**

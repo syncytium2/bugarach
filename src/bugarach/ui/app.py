@@ -286,7 +286,32 @@ def _resolve_specs(specs: dict) -> dict:
     return out
 
 
-PARAM_SPECS = _resolve_specs(_SPECS)
+#: Detectors built, calibrated and tested, but **not offered by this viewer**.
+#:
+#: locust is suppressed for this release (Tony, 2026-08-29). Not a defect and not
+#: a retraction: the port stands, its MATLAB parity to 1e-9 stands, and
+#: ``bugarach detect`` still runs it. What is missing is a fair test — locust is
+#: the only one of the six that consumes a per-event duration, this build scores
+#: it at a fixed one, and the generator plants no duration to vary, so the number
+#: it would show measures a configuration nobody chose.
+#:
+#: **Suppression is a UI decision and lives here, at the one seam.** Everything
+#: downstream reads ``PARAM_SPECS``, so removing a key from this set is the whole
+#: change and putting it back is the whole revert. Nothing is deleted: ``_SPECS``
+#: keeps locust's parameters, :data:`TITLES`, :data:`COLORS` and :data:`SHORT`
+#: keep its name and colour, and ``cicada_detect`` is still imported and still
+#: called by :func:`run_detector` for any caller that asks for it directly.
+SUPPRESSED_IN_VIEWER = frozenset({"cicada"})
+
+#: Every detector's resolved parameters, suppression ignored. The calibration
+#: guards read THIS, not :data:`PARAM_SPECS`: a suppressed detector's defaults
+#: must not be allowed to drift away from ``bench.OPERATING_POINTS`` while it is
+#: out of the viewer, or turning it back on silently reintroduces the drift the
+#: guard exists to catch.
+ALL_PARAM_SPECS = _resolve_specs(_SPECS)
+
+PARAM_SPECS = {k: v for k, v in ALL_PARAM_SPECS.items()
+               if k not in SUPPRESSED_IN_VIEWER}
 RNG_SEED = 20260706
 
 #: Column of an export folder's ``slices.csv`` that states the sampling interval.

@@ -114,7 +114,7 @@ RUN_FOLDER = """async (files) => {
      panel govern the raster and not the file. So a test that wants all six asks
      for all six, the way a reader does. */
   document.getElementById("dAll").checked = true;
-  for (const k of Object.keys(DETECTORS))
+  for (const k of buildDetectors())
     document.getElementById("dPick_" + k).checked = true;
   paintDetectorChoice();
   await analyseFolder();

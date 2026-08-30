@@ -30,6 +30,16 @@ from pathlib import Path
 
 import numpy as np
 import pytest
+from conftest import locust_suppressed_in_the_browser
+
+#: Every test in this file drives the browser's locust, which is held out of the
+#: build for this release (Tony, 2026-08-29). Nothing below is deleted and
+#: nothing below is wrong: the refusals it covers are the load-bearing part of
+#: that detector, and they are expensive to re-derive. Keyed to the page's own
+#: flag, so the day the suppression is lifted this file wakes up with it.
+pytestmark = pytest.mark.skipif(
+    locust_suppressed_in_the_browser(),
+    reason="locust is suppressed in this build; these return when it does")
 
 VIEWER = Path(__file__).resolve().parents[1] / "docs/site/raster_viewer.html"
 

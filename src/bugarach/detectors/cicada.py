@@ -1,11 +1,52 @@
-"""CICADA sliding-window SCE detector — port of interface2's
-``generate_sce_cicada``, itself a faithful port of the Cossart lab's CICADA
+"""**locust** — sliding-window SCE detector. Port of interface2's
+``generate_sce_cicada``, which is itself DERIVED FROM the Cossart lab's CICADA
 (``cossartlab/cicada`` sce_stats_utils: get_sce_threshold + detect_sce).
 
+**The 1e-9 reaches interface2 and stops there.**
+``tools/matlab_ref/gen_ref_cicada.m`` builds the parity fixture by running
+``generate_sce_cicada`` itself, so the number says this file computes what
+interface2 computed. **No output of either has ever been compared against
+CICADA's.** interface2 did check its transliteration against upstream by reading
+code, function for function, and found it matched — a correspondence check on the
+*unmodified* transliteration, not a measurement, and not a check of the two
+deviations below. This docstring used to call it "a faithful port": that was an
+assertion tested nowhere, and interface2 had already parked ``generate_sce_cicada``
+for over-detecting on this preparation's long SLOW transients a month before this
+port landed. It is also a partial port by design — CICADA's per-cell
+transient-detection step is skipped, because the events already exist by the time
+anything here runs.
+
+So: do not report this detector's numbers as CICADA's, and do not describe it as
+CICADA's method. docs/detector_history.md §6.3 has the full chain and the reason.
+
+**THIS FILE IS locust. The key is `cicada` and the name is `locust`, and three
+different things are spelled similarly here — read this once and the rest of the
+module is unambiguous:**
+
+- **locust** — the detector implemented in this file. What every screen, figure,
+  scoreboard, README and glossary entry calls it, and the only name a person
+  sees (ADR-0002, 2026-08-24).
+- ``cicada`` — the **identifier**, in this module name, in ``cicada_detect``, and
+  as the detector key everywhere in ``src/``. It stays because it is the value in
+  ``detections.csv``'s ``detector`` column, which is **output contract** shared
+  with interface2 and fireflies — a rename there is a cross-team coordination
+  cost, not a tidy-up, and this ecosystem was already bitten once by two projects
+  diverging on a field name (``width_sec``).
+- **CICADA** in capitals — the Cossart lab's upstream tool, which is neither of
+  the above. locust is a **modified** port of it and does not carry its name in
+  public: it is fed this project's own detected events rather than running
+  CICADA's transient detection, and it is fed a per-event duration by the
+  producer rather than measuring the whole transient itself.
+
+So ``which == "cicada"`` in a file and *locust* on a screen are the same
+detector, deliberately. Whether the identifier should move too is
+``docs/todo/2026-08-24-the-identifier-still-says-cicada.md``; the answer so far
+is that it moves everywhere at once or not at all.
+
 Upstream notice (MIT License): Copyright (c) 2019 Cossart Lab —
-https://gitlab.com/cossartlab/cicada. The detection method implemented here
-derives from that source; see the repo README's Licensing & citations
-section for the full licensing table.
+https://gitlab.com/cossartlab/cicada (sce_stats_utils: get_sce_threshold +
+detect_sce). The detection method here derives from that source; see the repo
+README's Licensing & citations section for the full licensing table.
 
 1. Binary raster at imaging-frame resolution from the store's event times;
    each event marks its cell active for the transient DURATION (fixed scalar,
@@ -101,14 +142,14 @@ def rise_durations(stream: Stream) -> list[np.ndarray]:
     This used to return ``locs - t50rise``, and it was wrong twice over.
 
     Wrong in principle, which is the reason it is gone: **duration is the
-    exporter's, not ours.** Tony, 2026-08-29 — *"matlab decides duration.
-    bugarach python and webapp is not responsible for what the duration is
-    derived from."* The slow events in this preparation are not described in the
-    literature and destroy CICADA at full duration, so the MATLAB team truncates
-    them to ``peak − t50rise`` **on export**; that truncation is theirs, it
-    travels in ``width_sec`` under its own ``width_def``, and re-deriving it here
-    both duplicates a decision and silently overrides whatever the producer
-    actually sent. ADR-0002's 2026-08-28 addendum and FOUNDATIONS §7.
+    producer's, and this repo does not have an opinion about it.** Tony,
+    2026-08-29 — *"matlab decides duration. bugarach python and webapp is not
+    responsible for what the duration is derived from"*, and *"bugarach doesn't
+    care what you put in the duration column."* A number arrives in ``width_sec``
+    under the ``width_def`` that names the producer's rule; this function paints
+    each cell active for that long and does not interpret it. Deriving one here
+    duplicates a decision already made and silently overrides what was sent.
+    FOUNDATIONS §7.
 
     Wrong in fact, which is how the principle got noticed: on **folder** input —
     the only input, since the store is closed — the field named ``locs`` holds
@@ -148,7 +189,7 @@ def cicada_detect(
     active_duration_mode: str = "fixed",
     duration_field: str = "",
 ) -> CicadaDetection:
-    """Run the CICADA detector on every stream (declaration order, one RNG).
+    """Run locust on every stream (declaration order, one RNG).
 
     onset_field anchors the raster, and the default is "locs" — the PEAK, not
     the onset. That is CICADA's own convention, kept because §2 makes matching

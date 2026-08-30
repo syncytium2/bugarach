@@ -81,7 +81,13 @@ message naming the two candidates.
 
 **locust versus CICADA, and it is one word apart.** *CICADA* in this repo means
 the **upstream tool** — the Cossart lab's software, the thing we cite. *locust*
-means **the detector here**. The **code key is still `cicada`** everywhere it is
+means **the detector here**: a **partial** port, because CICADA's per-cell
+transient-detection stage is skipped entirely, and a **modified** one, because the
+durations it paints come from the producer's export rather than from measuring the
+transient itself. **The 1e-9 parity reaches interface2's `generate_sce_cicada`, not
+the Cossart source**, so locust's numbers are never measurements of CICADA
+([`detector_history.md`](detector_history.md) §6.3). The **code key is still
+`cicada`** everywhere it is
 an identifier: the module, `cicada_detect`, the fixtures, and the `detector`
 column value in `detections.csv`, which is output contract and not this repo's
 alone to change ([the identifier

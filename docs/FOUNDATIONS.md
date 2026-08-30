@@ -216,19 +216,24 @@ Calcium imaging in KNDy neurons reveals **action-potential-independent** calcium
 events, so this project detects its own and cannot rely on an external detector
 for them — whether any can serve is an interface2 effort, and is pending. What was
 taken from CICADA is the **coordinated-event stage alone**; that stage requires a
-per-event duration, and this preparation's slow events are not described in the
-literature and destroy it at full duration. Slow-event duration is therefore
-truncated to `peak − t50rise` **on export, by the MATLAB team** — not inside
-`cicada_detect`. So bugarach treats the **imported duration as the duration**:
+per-event duration, and the producer supplies one. Where it comes from, and why a
+producer might measure it one way on one stream and another way on another, is
+**theirs and is deliberately not written down here** — a rule described in this
+repo is a rule that goes stale and that readers mistake for ours, which is exactly
+what happened. So bugarach treats the **imported duration as the duration**:
 `width_sec` arrives with the `width_def` naming the rule that made it
 (`export_folder_spec.md`), the port paints what it is given, and **what a producer
 puts in that column is not this project's business** — no webapp behaviour and no
-dev-team judgement turns on it. Full account: the ADR-0002 addendum.
+dev-team judgement turns on it. Tony, 2026-08-29: *"bugarach doesn't care what you
+put in the duration column. your mother's social security number works fine for 5
+of 6 detectors."* That is the literal operating rule: **five of the six detectors
+never read the column at all**, and the sixth reads it as a number. Full account:
+the ADR-0002 addendum.
 
 **This is now enforced rather than described** (2026-08-29). One function had been
-deriving a duration all along — `rise_durations()` computed `locs − t50rise`, the
-exporter's own truncation, recomputed a layer too late. It refuses now, naming the
-rule and the column to read instead. It was also, on folder input, returning
+deriving a duration all along — `rise_durations()` recomputed a producer's own
+truncation, a layer too late. It refuses now, naming the column to read instead.
+It was also, on folder input, returning
 **zero for every event** — `locs` in a folder holds the `t50rise` — with the right
 shape and dtype and no error, which is the failure class this contract exists to
 prevent and the reason a wrong answer here would have been hard to see.
