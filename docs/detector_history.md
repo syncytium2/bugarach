@@ -19,26 +19,39 @@ darkroom literature shelf.*
 > ⚠ Anyone quoting interface2 commit prose in a public artifact must decode this
 > first.
 >
-> **`CoactDetect` and `LoCo` are two versions of one idea, not two detectors.**
-> Tony, 2026-08-30: *"we built loco and coact detect as two versions of the same
-> circular shift idea."* So `bc833ca8`'s *"the other team's detector #5"* is not a
-> rival design — it is **the same idea implemented on his other workstation**, wired
-> in as a deliberate A/B, with the stated plan to *"collapse to ONE unified detector
-> #5 (LoCo engine + CoactDetect name)"*.
+> **`CoactDetect` and `LoCo` share a surrogate idea and are two distinct
+> detectors. Do not collapse them.** Tony, 2026-08-30: *"we built loco and coact
+> detect as two versions of the same circular shift idea"*, and then, when this
+> block briefly said they were therefore one detector: *"loco and coact detect
+> performance is distinct. they are two distinct detectors with different params."*
 >
-> **The shipped code says so itself**, and this document does not:
-> `src/bugarach/detectors/_shared.py:3` — *"CoactDetect and LoCo share the
-> circular-shift surrogate machinery"* — a module that exists for exactly this
-> reason, with `loco.py:5` naming the same *"core machinery (distinct-ROI counts,
-> in-context circular-shift surrogates)"*.
+> The shared part is real and is in the code —
+> `src/bugarach/detectors/_shared.py:3`, *"CoactDetect and LoCo share the
+> circular-shift surrogate machinery"*, a module that exists for that reason. **The
+> shared part is how the null is built. Everything that makes a detector is
+> different:**
 >
-> ⚠ **§2 and §4 below file them as two independent lineages** — `loco_detect`'s
-> `maxlt` as GO-CFAR, its percentile-of-pool as kin to OS-CFAR, `coact` separately.
-> **Two variants of one idea landing on two CFAR variants is a weaker coincidence
-> than two detectors doing so**, and the CFAR argument should not be counted twice.
-> Whether that changes §4's conclusion is not settled here; it is flagged because
-> the arithmetic of "three of these are re-derivations" depends on how many
-> independent arrivals there were, and it is **fewer than three**.
+> | | knob | parameters | recall | probe/min | detect s |
+> |---|---|---|---|---|---|
+> | `coact` | `alpha` = 1e-4 — a **significance level** | 4, `context_win` **60 s** | 0.767 | 1.25 | 0.062 |
+> | `loco` | `threshold_pctile` = 99.9 — an **order statistic** | 6, `context_win` **120 s** | 0.733 | 2.50 | 0.248 |
+>
+> Two different thresholding principles on a shared null, twice the false-alarm rate
+> on the probe, four times the runtime. **That is why §4 maps them to different CFAR
+> variants, and its separate rows are correct.**
+>
+> ⚠ **The trap this paragraph exists to close:** `_shared.py` invites the reading
+> that these are one detector twice, and an earlier version of this very block made
+> that error and drew a false consequence from it — that §4's CFAR mappings were
+> being double-counted and there were "fewer than three independent arrivals."
+> **That flag is withdrawn.** §4 maps *mechanisms*, its rows are distinct
+> mechanisms, and nothing in the count was wrong. Recorded rather than deleted
+> because the inference is available to anyone reading `_shared.py` cold.
+>
+> `bc833ca8`'s *"the other team's detector #5"* is still worth decoding — it means
+> the detector from Tony's other workstation session, not a rival group — and the
+> *"collapse to ONE unified detector #5"* line in that commit was a **plan**, not a
+> record. Both detectors ship, separately, and their numbers above are why.
 >
 > **The design is his and the commits show it, in his own vocabulary.** `bc833ca8`
 > says *"my CoactDetect `detect_local_coincidence.m`"* and specifies it as *"the
