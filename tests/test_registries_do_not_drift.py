@@ -31,14 +31,22 @@ PAGE = ROOT / "docs" / "site" / "raster_viewer.html"
 
 
 def _webapp_detector_keys() -> set[str]:
-    """The keys of ``const DETECTORS = { ... }`` in the viewer page.
+    """Every detector the viewer page offers, however it got there.
 
-    Parsed by brace-matching from the declaration rather than by a regex over the
-    whole file: the page is 9,000 lines and the word appears in prose, in
-    comments and inside other objects, and a looser match would drift between
-    finding too much and too little without saying which.
+    **Two sources, because the page is mid-migration** (ADR-0005). Detectors that
+    have been converted to object files live in ``docs/site/detectors/*.js`` and
+    arrive as ``registerDetector({key: "rate", ...})``; the rest are still
+    entries in the ``const DETECTORS = { ... }`` literal. Both are read, so this
+    check keeps working across the conversion instead of going quiet in the
+    middle of it — which is when a drift test is least affordable to lose.
+
+    The literal is parsed by brace-matching from the declaration rather than by a
+    regex over the whole file: the page is 10,000 lines, the word appears in
+    prose and comments and inside other objects, and a looser match would drift
+    between finding too much and too little without saying which.
     """
     text = PAGE.read_text(encoding="utf-8")
+    registered = set(re.findall(r'registerDetector\(\s*\{\s*key:\s*"([a-z_]+)"', text))
     start = text.index("const DETECTORS = {")
     i = text.index("{", start)
     depth, end = 0, None
@@ -61,7 +69,7 @@ def _webapp_detector_keys() -> set[str]:
             if m:
                 keys.append(m.group(1))
         depth += line.count("{") - line.count("}")
-    return set(keys)
+    return set(keys) | registered
 
 
 def test_the_browser_offers_every_detector_the_library_has():
