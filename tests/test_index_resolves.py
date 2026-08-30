@@ -40,6 +40,25 @@ def test_the_index_exists():
     assert INDEX.is_file(), f"{INDEX} is missing"
 
 
+def test_the_index_is_announced():
+    """An index nobody is pointed at is the defect it was written to fix.
+
+    The first version of this file shipped with a docstring claiming CLAUDE.md
+    referenced it, and CLAUDE.md did not. Checked rather than asserted now, in
+    both places a session actually reads: the instructions file it loads at start,
+    and the briefing the SessionStart hook prints.
+    """
+    claude_md = (ROOT / "CLAUDE.md").read_text(encoding="utf-8")
+    assert "docs/INDEX.md" in claude_md, (
+        "CLAUDE.md does not point at docs/INDEX.md — an index with no address is "
+        "the exact failure it exists to fix")
+
+    briefing = (ROOT / "tools" / "session_briefing.sh").read_text(encoding="utf-8")
+    assert "docs/INDEX.md" in briefing, (
+        "the session briefing does not mention docs/INDEX.md; a session that "
+        "never reads CLAUDE.md in full would never learn the index exists")
+
+
 @pytest.mark.parametrize("target", sorted(set(_links())))
 def test_every_index_link_resolves(target):
     """A row that points nowhere reads as 'the thing is gone', not 'fix the row'."""

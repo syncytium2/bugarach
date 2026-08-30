@@ -461,6 +461,9 @@ print(p if p else "")' 2>/dev/null)
   # a session that had read neither CLAUDE.md nor this list.
   echo
   echo "--- gates, before you hand anything over ---"
+  echo "   can't find something, or about to build one?  docs/INDEX.md FIRST —"
+  echo "     keywords -> the file that owns the answer. It exists because a session"
+  echo "     re-derived the DANDI transfer machinery that was already in the tree."
   echo "   document deliverable (report, explainer, methodology, figure + caption, handoff)?"
   echo "     -> /murderboard <artifact> FIRST. Not a first draft. docs/doc_review_process.md"
   echo "   landing work?  branch + green PR; never commit on main."
