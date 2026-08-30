@@ -93,8 +93,8 @@ def page():
             pg.on("pageerror", lambda e: errs.append(str(e)))
             pg.goto(VIEWER.as_uri(), wait_until="load")
             pg.wait_for_function(
-                "() => document.getElementById('demoNote') && "
-                "!document.getElementById('demoNote').hidden", timeout=60000)
+                "() => document.getElementById('prov') && "
+                "!document.getElementById('prov').hidden", timeout=60000)
             yield pg, errs
         finally:
             browser.close()

@@ -83,18 +83,27 @@ def test_the_page_detects_something_before_anyone_clicks(landed):
 
 
 def test_the_page_says_the_landing_data_is_invented(landed):
+    """The admission moved from a note above the raster into the `#prov` chip on
+    the identity row (2026-08-30). The property is unchanged and is the one that
+    matters: a reader must not be able to look at this page and think the marks
+    are somebody's recording. What changed is that the chip is permanent, where
+    the note sat above a raster and could be scrolled past."""
     pg, _ = landed
-    note = pg.text_content("#demoNote")
-    assert "simulated" in note.lower()
-    assert "not a recording" in note.lower() or "nothing here is a recording" in note.lower()
+    chip = pg.text_content("#prov")
+    assert "simulated" in chip.lower(), chip
+    # The full sentence is the chip's title — it was 96 characters and displacing
+    # the ROI-order control, so the numbers are shown and the sentence is on
+    # hover. It still has to EXIST, or the admission is only a one-word label.
+    said = pg.get_attribute("#prov", "title") or ""
+    assert "nothing here is a recording" in said.lower(), said
 
 
-def test_the_note_says_how_many_were_planted_and_how_many_were_found(landed):
-    """The claim is scored, not asserted. A landing line that said "found them"
+def test_the_chip_says_how_many_were_planted_and_how_many_were_found(landed):
+    """The claim is scored, not asserted. A landing chip that said "found them"
     without counting would be the one unchecked number on the page."""
     pg, _ = landed
-    note = pg.text_content("#demoNote")
-    assert "planted" in note and "found" in note, note
+    chip = pg.text_content("#prov")
+    assert "planted" in chip and "found" in chip, chip
 
 
 def test_the_rail_draws_two_tracks_and_not_one_line(landed):
@@ -215,16 +224,18 @@ def test_turning_the_demo_off_leaves_the_page_empty(pw):
     try:
         pg.wait_for_timeout(4000)
         got = pg.evaluate("() => ({recs: RECORDINGS.length, "
-                          "note: document.getElementById('demoNote').hidden, "
+                          "note: document.getElementById('prov').hidden, "
                           "empty: !document.getElementById('empty').hidden})")
         assert not errs, errs
         assert got["recs"] == 0, "the demo ran with the switch off"
-        assert got["note"], "the demo note is up with no demo behind it"
-        # `hidden` alone is not enough: `#demoNote` sets `display: flex`, which
-        # beats the UA rule for the attribute, and the note dismissed itself into
-        # an empty bordered bar sitting above a real recording.
-        assert not pg.locator("#demoNote").is_visible(), (
-            "the note is hidden by attribute and still drawn")
+        assert got["note"], "the provenance chip is up with no data behind it"
+        # `hidden` alone is not enough: `#prov` sets `display: inline-flex`, which
+        # beats the UA rule for the attribute. The note this replaced hit exactly
+        # this and dismissed itself into an empty bordered bar above a real
+        # recording; the chip carries its own `[hidden]` rule for the same reason,
+        # and this is what proves the rule is still there.
+        assert not pg.locator("#prov").is_visible(), (
+            "the chip is hidden by attribute and still drawn")
         assert got["empty"], "nothing ran and the empty state is not showing"
     finally:
         browser.close()
