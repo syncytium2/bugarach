@@ -10,13 +10,43 @@
 
 ## 1. The problem: the winner changes when you change the seeds
 
-Run the background-activity sweep on seeds 1–12 and CoactDetect wins every one of
-the seven grid points. Run the same code, the same grid, on seeds 13–24 and **LoCo
-takes the busy half.** ⚠ *inherited*
+Sweep CoactDetect and LoCo across the seven background levels at twelve seeds, then
+do it again with the *next* twelve seeds. Same code, same grid, different seeds —
+**the winner changes at two of the seven levels.** All re-derived; the command is in
+§9.
 
-That is not a close result. It is the absence of a result, and it means **any
-scheme obliged to emit a strict order will emit a different strict order next
-week.**
+| background (Hz/ROI) | seeds 1–12 gap | winner | seeds 13–24 gap | winner | |
+|---|---|---|---|---|---|
+| 0.0026 | +0.0515 | CoactDetect | +0.0774 | CoactDetect | |
+| 0.0052 | +0.0372 | CoactDetect | +0.0451 | CoactDetect | |
+| 0.0080 | −0.0102 | LoCo | −0.0345 | LoCo | |
+| **0.0120** | **+0.0032** | CoactDetect | **−0.0011** | LoCo | **flips** |
+| 0.0190 | −0.0088 | LoCo | −0.0411 | LoCo | |
+| **0.0280** | **−0.0411** | LoCo | **+0.0006** | CoactDetect | **flips** |
+| 0.0400 | −0.0444 | LoCo | −0.0397 | LoCo | |
+
+*Gap is mean F1, CoactDetect minus LoCo. Neither detector wins the axis: CoactDetect
+takes three of seven levels in both blocks.*
+
+That is not a close result. It is the absence of one, and it means **any scheme
+obliged to emit a strict order will emit a different strict order next week.**
+
+**Look at where the flips are.** Both happen where the gap is under **0.004** in at
+least one block — 0.0032 against 0.0011, and 0.0411 against 0.0006. **No level whose
+gap clears 0.02 in both blocks changes its winner.** The largest between-block swing
+in the gap is 0.042, which is about the whole 0.043 spanning the top four detectors
+in the figure below. That number is where §5's tie margin comes from, and this is an
+independent check on it: the rule declines to call a winner in exactly the places the
+data cannot keep one.
+
+> ⚠ **The brief this rule answers reports a stronger version of this — CoactDetect
+> winning all seven levels on seeds 1–12 by 0.0011 at the busy end — and it does not
+> reproduce on `main`.** Here CoactDetect takes three of seven, and varying the match
+> tolerance does not recover it. The brief's background numbers were most likely
+> measured on the branch carrying a fitted background shape rather than on `main`.
+> **The finding survives the correction and is not weakened by it**: the winner is
+> still unstable across seed blocks, and this document quotes only what `main`
+> produces. Worth reconciling before the brief's figure is quoted anywhere else.
 
 The project already draws the reason:
 
@@ -180,9 +210,11 @@ same folds and seeds, so "won three of four" is free — and writing it as
 `0.651 ± 0.044` against `0.638 ± 0.053` discards it and makes the comparison look
 like a coin flip.
 
-**The margin** is the bench's noise floor, comfortably above the 0.0011 ⚠ that
-separated two detectors at one end of the background grid — a gap that reversed when
-the seed block changed.
+**The margin** is the bench's noise floor. §1 is the check: every background level
+whose gap clears 0.02 in both seed blocks keeps its winner, and both levels that flip
+have a gap under 0.004 — one of them 0.0011. *Re-derived.* A margin is not a
+preference about how much better is better; it is the width of the region where this
+bench cannot tell.
 
 **The margin is also what makes tiers exist**, which was not the reason for choosing
 it and is the better reason for keeping it. Because beating requires a mean-F1 lead,
@@ -196,6 +228,25 @@ ranking. That is why "margin only" and "majority only" were both rejected.
 
 *The Condorcet paradox is Marquis de Condorcet's, 1785; the term is used here in its
 standard sense and nothing about it is claimed as new.*
+
+> ⚠ **BLOCKING — 0.02 does not deliver the stability it was chosen for, measured.**
+> Tiering the six hand-written detectors on seeds 1–12 and again on seeds 13–24
+> (four folds, one background level) gives **different tierings**: `{CoactDetect,
+> LoCo, rate+context}` is one tier on the first block and splits into **three** on the
+> second. Sweeping the margin, the two tierings first agree at **0.08** — four times
+> the chosen value. Doubling the seeds per fold does **not** fix it: at 24 seeds per
+> block the tierings still disagree at 0.02 through 0.04, so this is not simply thin
+> folds. *All re-derived; §9 has the command.*
+>
+> The **tier-1 membership** is the stable part — it agrees from about 0.05 upward. It
+> is the finer distinctions further down that will not hold still.
+>
+> **The margin is decision D4 and is not a session's to move**, so the code still
+> ships 0.02 and this document still states it. What needs deciding: raise the margin
+> to something this bench can support, restrict the claim to tier 1 versus the rest,
+> or accept that the tiering below tier 1 is not reproducible and say so wherever it
+> is quoted. Evidence and the alternatives:
+> [the tie margin does not survive its own test](todo/2026-08-30-the-tie-margin-does-not-survive-its-own-test.md).
 
 **The seed floor refuses rather than warns.** Twelve is the count this bench's own
 author reached for after calling three noise-dominated ⚠ — and three is still live in
@@ -254,10 +305,15 @@ are reported next to the platform that produced them.
 
 ## 8. What this does not do, and what is not yet tested
 
-- **⚠ The central claim is untested.** *"The tiers hold even though the argmax
-  flips"* is the design's whole promise and **nothing has run it**. It needs the
-  bake-off at twenty-four seeds, tiered on each block, with the two tierings
-  compared. Until then the rule is argued, not demonstrated.
+- **⚠ BLOCKING — the central claim was tested and it failed at the shipped margin.**
+  *"The tiers hold even though the argmax flips"* is the design's whole promise. Run
+  on two seed blocks it comes back **false at 0.02**, and the argmax was the stable
+  thing while the tiering was not. It holds at 0.08. The margin is D4 and awaits
+  Tony; the evidence and the three options are in
+  [the tie margin does not survive its own test](todo/2026-08-30-the-tie-margin-does-not-survive-its-own-test.md).
+  **Everything else in the rule is unaffected** — the gates fire, the pairing works,
+  the seed floor refuses. What is in question is how far down the tiering can be
+  trusted.
 - **It does not re-baseline the background-curve tests.** Those asserts encode a
   claim — that an F1 cannot be quoted without saying what background it was measured
   at — and were left red deliberately. Flipping them to today's numbers would publish
@@ -289,10 +345,18 @@ docs/learned/bakeoff.json -> hand_written[name]["per_fold"], learned[name]["per_
 # Panel A above
 python tools/make_bakeoff_figures.py --bakeoff docs/learned/bakeoff.json --out docs/learned
 
-# the background axis, both seed blocks  (INHERITED — not run for this document)
-evaluate_background_curve(name, "baseline_quiet", tuple(range(1, 13)))
-evaluate_background_curve(name, "baseline_quiet", tuple(range(13, 25)))
+# the seed-block flip in §1 — runs in seconds, re-derived for this document
+python -c "
+from bugarach.bench import evaluate_background_curve as ebc, BACKGROUND_GRID
+for lo in (1, 13):
+    seeds = tuple(range(lo, lo + 12))
+    c, l = ebc('coact','baseline_quiet',seeds), ebc('loco','baseline_quiet',seeds)
+    print(seeds[0], [round(c[r].f1 - l[r].f1, 4) for r in BACKGROUND_GRID])"
 ```
+
+The tier-stability test in §5's blocking flag — two seed blocks, margin swept — has
+its own command in
+[the tie-margin write-up](todo/2026-08-30-the-tie-margin-does-not-survive-its-own-test.md).
 
 Run pytest with `PYTHONPATH=$PWD/src` from a worktree, or it tests the primary
 checkout's sources and fails toward green.
