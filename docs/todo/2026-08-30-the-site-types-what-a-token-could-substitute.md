@@ -69,32 +69,81 @@ That branch is the running cost of not having tokens here. **Landing this item
 retires it**, and whoever does the work should say so in the PR rather than leaving
 it to be reaped by someone who has to work out whether it still matters.
 
-### 3. The front page types its own detector count, and the two halves disagree
+### 3. The front page types its own detector count in seven places, and they disagree
 
-`tools/build_site.py`, three places in the `INDEX` template:
+**REVISED 2026-08-30, after this file was first written.** The original said three
+locations and recommended *deriving* the count. Both were wrong. Corrected below;
+the original reasoning is left visible at the end of this section because the
+argument against it is the useful part.
 
-| line | text |
-|---|---|
-| 171 | `<h1>bugarach<span class="sub">Six coordinated-event detectors…` |
-| 222 | `All six work by finding moments that stand out…` |
-| 776 | `<figcaption>… and what five detectors made of it` |
+Re-counted on `main` at `0188362`, `tools/build_site.py`, reader-facing strings only:
 
-**Six in two places, five in a third, on one page.** Not a typo — `locust` is
-withheld from the public build, so the caption is right about the figure and the
-prose is right about the repo, and nothing reconciles them.
+| line | says | text |
+|---|---|---|
+| 171 | six | `<h1>bugarach…Six coordinated-event detectors ported from MATLAB` |
+| 181 | **five** | `There are five in this build` — **and names the roster** |
+| 222 | six | `All six work by finding moments that stand out…` |
+| 248 | six | `…and where the six methods come from` |
+| 779 | six | alt text: `Six detector lanes … and six analysis traces` |
+| 783 | **five** | `…and what five detectors made of it` |
+| 786 | **five** | `two of the five are named for what…` |
 
-**The mechanism to fix it already exists and the prose does not use it.**
-`_withheld_from_the_viewer()` (`tools/build_site.py:41`) reads the viewer's
-`const WITHHELD = new Set([...])` rather than restating it, with a docstring saying
-exactly why. So *which* detectors are withheld is already derived. Only the
-**count** is typed.
+**Seven locations. Four say six, three say five.** Not a typo — `locust` is withheld
+from the public build, so the "five" strings are right about the figure and the "six"
+strings are right about the repo, and nothing reconciles them.
 
-⚠ **The blocker for whoever takes this:** `tools/build_site.py` imports nothing from
-`bugarach` — pure stdlib, verified — so it has no detector list to count. It needs a
-source. **Prefer `bakeoff.json`**: its `hand_written` and `learned` keys already
-enumerate exactly the detectors that were scored, which makes one file the source of
-the page's numbers, its detector set and its counts at once. Importing the registry
-is the alternative and it couples the site builder to the package.
+Not on this list, deliberately: line 283's *"about six of thirty-three"* is a
+**participation** figure — ROIs recruited per event — not a detector count. It is
+correct and must not be swept up by a fix that pattern-matches on numerals.
+
+#### The fix is to remove the count, not to source it
+
+**A sentence with no count in it cannot go stale.** A derived count is still a thing
+that resolves a key at build time, and can silently resolve the wrong one. Removing
+the number removes the failure mode rather than automating it.
+
+It also dissolves the blocker the original version of this file spent a paragraph on:
+`tools/build_site.py` imports nothing from `bugarach` — pure stdlib, verified twice
+independently — so a derived count needs a *new* data source wired into the builder.
+Eliminating the count needs none, and couples the site builder to nothing.
+
+⚠ **One of the seven is not a count and needs a different answer.** Line 181 does not
+merely say "five", it **names the roster** — so deleting the number there would still
+leave five detector names typed by hand. A named list is worth more to a reader than
+a count, and rots the same way. `_withheld_from_the_viewer()` (`build_site.py:41`)
+already derives *which* detectors are withheld, by reading the viewer's
+`const WITHHELD = new Set([...])` rather than restating it. **That is the mechanism
+for line 181** — the roster, not the count.
+
+<details>
+<summary>What this section said first, and why it was replaced</summary>
+
+It listed three locations instead of seven, and recommended deriving the count from
+`bakeoff.json` on the grounds that its `hand_written`/`learned` keys enumerate exactly
+what was scored, making one file the source of the page's numbers, its detector set
+and its counts at once.
+
+That is a real option and it is worse. It solves "the count is wrong" by building a
+machine to keep it right, when the count carries almost nothing for the reader in six
+of the seven places it appears. **Prefer deleting a fact to automating it, when the
+fact was not load-bearing.** The exception is line 181, above, where it is.
+
+</details>
+
+#### Provenance of this revision, stated because it matters here
+
+The elimination approach reached this file **relayed by another session**, quoting
+Tony on 2026-08-30 as: *"maybe just rewrite the text so it is independent of how many
+detectors are currently enabled?"*
+
+**That is a hedged suggestion phrased as a question, and it is recorded here as one.**
+It was relayed to this file's author as "the other instruction directly"; it is not an
+instruction and this file does not treat it as a ruling. The reasoning above stands on
+its own merits — no count cannot go stale, no source is needed, nothing gets coupled —
+and would stand if Tony had never said it. **If the argument is wrong, it is wrong on
+the argument, and no one should find a decision here that was never made.**
+(This session mis-relayed a hedge of Tony's as a ruling earlier the same day; the
+write-up is in `syncytium2/short-course`. Same failure, one hop over, caught this time.)
 
 ## 4. The measure-set is the point of the whole item
 
@@ -126,8 +175,10 @@ the above lands as a convention.
   build artifact, so this is a *test* that parses the table and compares, not a
   generator — a red suite when the numbers drift, which is the alarm the orphan
   branch is currently standing in for.
-- **No typed detector count survives.** A check that the front page contains no
-  hardcoded numeral where a derived count belongs. Sapper is the natural home;
+- **No typed detector count comes back.** A check that the front page's prose carries
+  no detector count at all. It must **not** fire on line 283's participation figure —
+  a rule keyed on bare numerals would, which is the trap that makes this check worth
+  writing carefully rather than quickly. Sapper is the natural home;
   `SAP011` is **reserved for a different unbuilt proposal**
   (`docs/sapper_feedback/2026-08-28-a-negative-claim-about-code-went-stale-in-a-contract.md`),
   so take the next free id and say so in the comment, per the convention that file
@@ -146,14 +197,20 @@ the above lands as a convention.
   tokens are right, the numbers follow whenever it is next run. A re-run inside this
   change makes the diff unreadable and confuses a mechanism change with a data change.
 
-## Who holds what, as of 2026-08-30
+## Who holds what — UPDATED 2026-08-30, nothing is held
 
-`bugarach-63` is ACTIVE on `docs/site/**`, `tools/build_site.py`,
-`tools/make_diagnostic.py`, `docs/learned/**` and `tests/test_site_coherence.py` for
-site cosmetics, the raster `VSpan` removal and the authorship correction. **This item
-is theirs to execute or to hand back** — it is written as a spec precisely so it does
-not collide with work already in flight. Coordinate before starting; do not open a
-second branch against those files.
+`bugarach-63` landed **#411** (`0188362`) and **released every path it held** —
+`docs/site/**`, `tools/build_site.py`, `tools/make_diagnostic.py`,
+`tests/test_site_*`. Its worktree is reaped and its board block is closed.
+
+**It declined this item, and the reason is a constraint on whoever picks it up.**
+Tony pulled it up for scope — *"address this critique does not mean run wild"* — so
+items 1, 2 and 4 are **his to release**, not for a session to start on its own
+initiative. Item 3 overlaps work it has reserved but not started (`who-wrote-these`,
+the authorship correction), also waiting on Tony.
+
+**Nothing here is unblocked by the absence of a claim.** The paths are free; the work
+is not authorized. Ask before starting.
 
 The front-page count fix (item 3) **overlaps their attribution work**, which is also
 rewriting the opening prose. Doing both in one pass is cheaper than sequencing them,
