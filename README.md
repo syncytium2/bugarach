@@ -296,13 +296,13 @@ cost of any claim about timing accuracy, and it helps the imprecise detectors mo
 | --- | --- | --- | --- | --- | --- |
 | center−surround (learned) | 0.681 ± 0.049 | 0.63–0.74 | 20.5 | 0.023 | 1,149 |
 | CoactDetect | 0.651 ± 0.044 | 0.61–0.71 | 1.2 | 0.062 | — |
-| LoCo | 0.638 ± 0.053 | 0.57–0.70 | 2.5 | 0.246 | — |
+| LoCo | 0.638 ± 0.053 | 0.57–0.70 | 2.5 | 0.248 | — |
 | rate+context | 0.571 ± 0.085 | 0.46–0.65 | 34.8 | 0.005 | — |
-| locust | 0.541 ± 0.070 | 0.47–0.63 | 214.8 | 0.114 | — |
+| locust | 0.541 ± 0.070 | 0.47–0.63 | 214.8 | 0.117 | — |
 | binned SCE | 0.420 ± 0.079 | 0.31–0.49 | 59.2 | 0.012 | — |
-| SPIKE-synch | 0.254 ± 0.065 | 0.21–0.34 | 8.8 | 0.093 | — |
-| per-cell bank (learned) | 0.125 ± 0.000 | 0.12–0.12 | 0.0 | 0.226 | 2,393 |
-| pooled trace (learned) | 0.118 ± 0.015 | 0.10–0.12 | 0.0 | 0.023 | 2,065 |
+| SPIKE-synch | 0.254 ± 0.065 | 0.21–0.34 | 8.8 | 0.095 | — |
+| per-cell bank (learned) | 0.125 ± 0.000 | 0.12–0.12 | 0.0 | 0.228 | 2,393 |
+| pooled trace (learned) | 0.118 ± 0.015 | 0.10–0.12 | 0.0 | 0.022 | 2,065 |
 
 `detect s` is wall-clock to scan one held-out fold — two recordings, about 118
 minutes of data.
