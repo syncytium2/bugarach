@@ -10,6 +10,29 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
+### Mac/runs-say-what-made-them — DEPLOY claimed 2026-08-30 ~03:55Z, overnight run
+- **Status:** ACTIVE — **holds the deploy.** Released when this block says DONE.
+- **Why now:** Tony, 2026-08-29, going to sleep: *"in the morning i want to see
+  optimizatoin and training and performance charts for the detectors and the dl
+  approaches. webiste should be deployed and ready to test."* `DEPLOY_HOLD.md` says
+  `held: no`, and the 2026-08-29 session that deployed twice released it in terms —
+  *"the deploy is held by nobody; the next session may publish without asking."*
+- **Site was 42 commits behind, 14 of them changing what it serves.** Built from
+  `487fbc9`; this publishes the current tree.
+- **What is new on the page:** the six detectors are now assembled from
+  `docs/site/detectors/*.js` rather than a literal (ADR-0005), and the viewer writes
+  a `provenance` block into `run.json` carrying its own version stamp and the
+  detector list it actually offers.
+- **⚠ Deployed from a branch, not from `main`.** PR #404 is armed to auto-merge and
+  had not landed at deploy time. That is checkable rather than asserted:
+  `build_site.py`'s inputs are `docs/site/raster_viewer.html`,
+  `docs/learned/*.html`, `docs/generator/reality_check.png` and `src/bugarach/**`
+  via `make_diagnostic.py` — and the branch differs from `main` in exactly those,
+  which is the point of the deploy. Suite 1,583 green, sapper clear at the built
+  commit.
+
+---
+
 ## Which board does this go on?
 
 One test, and it is **not** "is this about my machine?":
