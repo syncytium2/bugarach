@@ -50,7 +50,7 @@ import holoviews as hv
 import numpy as np
 import panel as pn
 
-from bugarach import emit
+from bugarach import emit, provenance
 from bugarach.bench import OPERATING_POINTS
 from bugarach.detectors import (
     cicada_detect,
@@ -547,7 +547,9 @@ def detection_bundle(s: Slice, results: dict, settings: dict, *,
             d / "run.json",
             slices=[s.slice_id],
             frame_interval_sec={s.slice_id: dt},
-            code_version=_code_version(),
+            provenance=provenance.stamp(
+                produced_by="bugarach viewer (Panel)",
+                detectors=sorted({det for det, _ in settings})),
             extra={"produced_by": "bugarach viewer",
                    "detectors": sorted({det for det, _ in settings})})
         with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as z:
@@ -555,15 +557,6 @@ def detection_bundle(s: Slice, results: dict, settings: dict, *,
                 z.write(d / name, arcname=name)
     buf.seek(0)
     return buf
-
-
-def _code_version() -> str | None:
-    from importlib.metadata import PackageNotFoundError, version
-
-    try:
-        return version("bugarach")
-    except PackageNotFoundError:      # running from a source tree, uninstalled
-        return None
 
 
 def _raster(stream, name: str, ext) -> hv.Scatter:

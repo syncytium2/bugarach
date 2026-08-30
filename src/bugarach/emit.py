@@ -374,7 +374,7 @@ def read_detector_settings(path) -> dict[tuple[str, str], dict[str, str]]:
 
 def write_run(path, *, slices, frame_interval_sec, code_version=None,
               generator_spec=None, chosen_k=None, simulated_data_seeds=None,
-              thresholds=None, extra=None) -> Path:
+              thresholds=None, provenance=None, extra=None) -> Path:
     """Write ``run.json`` — the provenance a table of times cannot carry itself.
 
     ``slices`` is the **roster**: every slice that was analysed, whether or not it
@@ -385,12 +385,25 @@ def write_run(path, *, slices, frame_interval_sec, code_version=None,
     detection pass over a real folder has no generator spec, no chosen K and no
     seeds, and writing ``null`` for those says so honestly rather than
     implying the question was never asked.
+
+    **``provenance`` is a new key beside ``code_version``, not a replacement for
+    it.** ``code_version`` is a scalar string in the output contract and other
+    teams read it, so its shape does not move; the structured block
+    (:func:`bugarach.provenance.stamp`) lands next to it and carries the commit,
+    whether that tree was dirty, and the interpreter. Callers that pass neither
+    get ``null`` for both, which stays what it has always meant: asked, no answer.
+    When a caller passes ``provenance`` and no ``code_version``, the scalar is
+    filled from the block rather than left null — one fact, written once, in the
+    two shapes its two audiences read.
     """
+    if provenance and code_version is None:
+        code_version = provenance.get("code_version")
     doc = {
         "slices": list(slices),
         "frame_interval_sec": {k: (None if v is None else float(v))
                                for k, v in dict(frame_interval_sec).items()},
         "code_version": code_version,
+        "provenance": provenance,
         "generator_spec": generator_spec,
         "chosen_k": chosen_k,
         "simulated_data_seeds":
