@@ -19,11 +19,43 @@ MATLAB**. Two deliverables, in order of primacy:
 1. **The detector ports** — trusted stand-ins for the MATLAB originals.
 2. **The viewer** — Panel/HoloViews, launched with `bugarach view`.
 
-## 2. Parity is the product
+## 2. Parity was the inheritance
 
-Every detector matches its MATLAB original **to 1e-9 on committed fixtures,
-in every mode** — that is what makes the ports citable in place of the
-originals. Consequences:
+> **Amended 2026-08-25 by [ADR-0003](adr/0003-parity-was-the-inheritance-not-the-contract.md).**
+> This section was titled *"Parity is the product"* and read as a standing
+> constraint on what bugarach may compute. It is now a statement about the **point
+> of inheritance**. Tony: *"the constellation team gave birth to bugarach … parity
+> with constellation suite is a lot of work and not relevant to our immediate
+> goals. At some point in the future, it might be interesting to move back to
+> MATLAB. But that is not a concern at this time."*
+>
+> **Deferred, not abandoned**, and the difference is load-bearing: a return to
+> MATLAB stays open, so divergence is **enumerated** — a `forks.md` entry and a
+> named test exemption per fork — rather than allowed to drift. Everything below is
+> unchanged and still binding: the MATLAB-semantics helpers, the RNG facts and the
+> upstream hazards are how these ports work, not a courtesy to a counterparty.
+
+Every detector matched its MATLAB original **to 1e-9 on committed fixtures, in
+every mode**, and the tests that prove it stay and keep running. That is the
+**provenance record** — it is what makes the ports citable in place of the
+originals, and it stays true whatever bugarach does next.
+
+**What it is not, since ADR-0003:** permission bugarach must ask before changing
+something. **The six detectors may be modified at will to improve performance, and
+the MATLAB versions are stale** — bugarach is the live implementation and they are
+a snapshot of where it started, so a difference between them is no longer evidence
+that bugarach is wrong. The question is *"is this better"*, measured; each change
+still owes evidence that it helped, which is a standard about measurement rather
+than about MATLAB.
+
+The fixtures stop being a gate and become the **baseline**: the before in every
+"I improved this" claim, and the provenance record for the port itself. So a
+deliberate change that reddens a parity test is expected — give the fork a
+[`forks.md`](forks.md) entry and exempt the test by name pointing at it. That is a
+note, not a gate: it exists so a test that goes red *without* anyone deciding to
+still looks like the bug it is.
+
+Consequences, all unchanged:
 
 - `src/bugarach/detectors/_shared.py` holds MATLAB-semantics helpers
   (`matlab_colon` two-ended element construction, `matlab_prctile` mid-point
