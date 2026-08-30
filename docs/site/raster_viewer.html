@@ -63,7 +63,7 @@
     font: 15px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     display: flex; flex-direction: column; height: 100vh; overflow: hidden;
   }
-  nav.site, header { flex: none; }
+  nav.site { flex: none; }
   /* Site nav, first thing on the page. The viewer used to be reachable only by
      scrolling the landing page past every paragraph, which is a good way to
      publish a tool nobody finds. */
@@ -101,14 +101,27 @@
     div.status { background: #3f1f18; color: #f4cdc2;
                  border-bottom-color: #6b3225; }
   }
-  header { padding: 22px 24px 14px; border-bottom: 1px solid var(--line); }
-  /* Medium, one line, and the promise rides on the same line as an inline run
-     rather than a block under it. Wraps on a narrow window instead of forcing a
-     horizontal scroll. */
-  h1 { margin: 0; font-size: 15px; font-weight: 600; letter-spacing: -.01em;
-       display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
-  h1 .promise { font-size: 12px; font-weight: 400; color: var(--muted); }
-  h1 .promise b { color: var(--fg); font-weight: 600; }
+  /* THE PROMISE RIDES IN THE NAV, and the `<h1>` it used to live under is gone
+     (Tony, 2026-08-30: *"need to compress vertical space so the raster
+     dominates the display. 'open a recording...' line probably does nothing"*).
+
+     He was right about the line and wrong about nothing being lost, so this is
+     not a deletion. The heading said "Open a recording" above a panel already
+     labelled *Open a folder*, next to a rail whose first step is also *Open a
+     folder* — three sayings of one thing, costing a 22px-padded band across the
+     full width. What rode with it was the promise, which is the page's central
+     claim and the reason it can be published at all, so the promise moves up
+     into the bar and the heading does not come back.
+
+     `margin-left:auto` parks it at the right end of the nav rather than in the
+     link run, because it is a statement and not somewhere to go. On a narrow
+     window `flex-wrap` on the nav drops it to its own line, which is the right
+     answer there — the alternative is a link run that scrolls sideways. */
+  nav.site .promise {
+    margin-left: auto; font-size: 12px; color: var(--muted);
+    padding: 0 2px; text-align: right;
+  }
+  nav.site .promise b { color: var(--fg); font-weight: 600; }
   .sub { color: var(--muted); font-size: 13.5px; max-width: 62ch; }
   .sub a { color: var(--accent); }
   main { display: flex; align-items: stretch; gap: 0;
@@ -147,16 +160,25 @@
      spanning all three so they sit centred between them. `align-items: start`
      keeps a track's steps at the top of their row instead of stretching to the
      height of the merge. */
+  /* TIGHTENED, NOT REDRAWN (Tony, 2026-08-30: *"can we make the pipeline nav
+     shorter without losing function?"*). Measured at 1440x900 the rail was 202px
+     of a 514px approach to the raster — the single largest band above it. What
+     is spent here is padding and gaps; what is NOT spent is the group labels or
+     the two-track shape, because those are the function he asked to keep. The
+     labels name the pipeline's stages and are the only thing on the rail that
+     teaches it; the second track is the fork, drawn rather than implied.
+     Collapsing the grid to one row is the remaining ~97px and it is a change to
+     what the diagram asserts, so it is a question for him and not a tidy-up. */
   #rail {
     flex: none; display: grid; justify-content: start; align-items: start;
-    column-gap: 0; row-gap: 3px;
-    padding: 10px 24px 11px; border-bottom: 1px solid var(--line);
+    column-gap: 0; row-gap: 2px;
+    padding: 7px 24px 8px; border-bottom: 1px solid var(--line);
     background: var(--panel); overflow-x: auto;
   }
-  .railgroup { display: flex; flex-direction: column; gap: 5px; }
+  .railgroup { display: flex; flex-direction: column; gap: 3px; }
   .railgroup > .glabel {
     font-size: 10px; letter-spacing: .07em; text-transform: uppercase;
-    color: var(--muted); padding-left: 2px; min-height: 13px; white-space: nowrap;
+    color: var(--muted); padding-left: 2px; min-height: 12px; white-space: nowrap;
   }
   /* the arrow between steps, on the line of the steps rather than the label
      above them */
@@ -200,7 +222,7 @@
   .step {
     all: unset; box-sizing: border-box; cursor: pointer;
     display: flex; flex-direction: column; justify-content: center;
-    min-width: 104px; padding: 5px 11px; border-radius: 7px;
+    min-width: 104px; padding: 4px 11px; border-radius: 7px;
     border: 1px solid var(--line); background: var(--bg);
     font-size: 12.5px; font-weight: 600; line-height: 1.3;
   }
@@ -323,7 +345,7 @@
   /* The legend. Every window on the raster is a colour, so the colour has to be
      named somewhere the reader can see both at once — and the name is ink, never
      the window's own colour, so a pale hue never has to carry text. */
-  #wins { font-size: 12.5px; color: var(--muted); margin: 0 0 14px; }
+  #wins { font-size: 12.5px; color: var(--muted); margin: 0 0 10px; }
   #wins span.win { display: inline-flex; align-items: center; gap: 6px;
                    margin-right: 16px; }
   /* THE SWATCH IS A MINIATURE OF THE PICTURE, not one of its two channels.
@@ -407,18 +429,38 @@
         border: 1px solid var(--line); border-radius: 3px; padding: 0 4px;
         margin-left: 6px; color: var(--muted); }
   .empty { color: var(--muted); padding: 48px 8px; max-width: 60ch; }
-  #demoNote {
-    display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap;
-    font-size: 12.5px; color: var(--muted); margin: 0 0 12px;
-    padding: 7px 11px; border: 1px solid var(--line); border-radius: 7px;
-    background: var(--panel);
+  /* The identity row: what this is, which recording, and how it is ordered.
+     `align-items: baseline` so the chip, the name and the toggle sit on one
+     line of text rather than three boxes of different heights. */
+  #idbar { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap;
+           margin: 0 0 10px; }
+  /* The toggle goes to the far end — it is a control, and the rest of the row
+     is a description. `flex-wrap` above means it drops to its own line on a
+     narrow window instead of crushing the recording's name. */
+  #idbar #bar { margin: 0; margin-left: auto; }
+  #idbar #meta { margin: 0; }
+  /* WHAT AM I LOOKING AT, as four states rather than a sentence. `--sim` is the
+     amber the diagnostic already uses for "this is not a recording of
+     anything"; a real folder gets no colour at all, because the unremarkable
+     case should not compete with the raster for attention.
+
+     `display:inline-flex` on the id beats the UA's `[hidden]{display:none}` —
+     the same trap the note this replaces documented from a screenshot, kept
+     because the element is still conditionally shown. */
+  #prov {
+    display: inline-flex; align-items: baseline; gap: 6px;
+    font-size: 12px; line-height: 1.5; padding: 2px 9px; border-radius: 999px;
+    border: 1px solid var(--line); background: var(--panel); color: var(--muted);
+    white-space: nowrap;
   }
-  #demoNote b { color: var(--fg); font-weight: 600; }
-  /* `display: flex` on the id beats the UA's `[hidden] { display: none }`, so
-     without this the note is merely EMPTIED when it is dismissed and its border
-     stays — an empty bar above a real recording, which is worse than the note.
-     Seen in a screenshot, not in a test. */
-  #demoNote[hidden] { display: none; }
+  #prov[hidden] { display: none; }
+  #prov b { color: var(--fg); font-weight: 600; }
+  #prov.sim { border-color: #e0b878; background: #fbf3e4; color: #6b4c14; }
+  #prov.sim b { color: #4a3a12; }
+  @media (prefers-color-scheme: dark) {
+    #prov.sim { border-color: #6a5424; background: #33290f; color: #e8d3a2; }
+    #prov.sim b { color: #f4e3bb; }
+  }
   /* A button that reads as a link, for a choice that is not the panel's main
      action. Same shape `#checkbar` grew for itself; named here so the next one
      does not grow a third copy. */
@@ -512,20 +554,15 @@
   <a href="viewer.html" aria-current="page">Raster viewer</a>
   <a href="diagnostic.html">Detector diagnostic</a>
   <a href="learned_detector.html">Learned detector</a>
-  <a href="landscape.html">Landscape</a>
+  <!-- THE PROMISE, in the bar rather than under a heading of its own. It used to
+       ride on an `<h1>Open a recording</h1>` that has been removed — see the
+       `nav.site .promise` rule for why the heading went and the promise stayed.
+       It is a claim about this page's code, and `build_site.viewer_network_leaks`
+       is what keeps it true; nothing here is allowed to make it true by saying
+       it more loudly. -->
+  <span class="promise"><b>Your files never leave this computer</b> — no network
+    calls, static files, no server to send them to.</span>
 </nav>
-
-<header>
-  <!-- ONE LINE. The header spans both columns, so every line of it is charged
-       to the accordion column, which has nine panels to fit and is where the
-       work happens. What survives the trim is the promise — it is the page's
-       central claim and belongs above the fold. The import-contract link and
-       the invitation to simulate both still appear in the empty state below,
-       which is where a reader with no folder is looking anyway. -->
-  <h1>Open a recording<span class="promise"><b>Your files never leave this
-    computer</b> — no network calls, static files, no server to send them
-    to.</span></h1>
-</header>
 
 <!-- THE RAIL IS BUILT, NOT WRITTEN. Every chip takes its label from its panel's
      own `<summary>`, so the two cannot drift: rename a panel and the rail
@@ -1300,13 +1337,6 @@
   </div>
 
   <div id="stage">
-    <!-- Where the page owns up to having invented the data on screen. It sits
-         ABOVE the raster, because by the time a reader has scrolled past a
-         raster to a footnote they have already believed it. The opt-out is in
-         the same line as the admission: the reader who most objects to being
-         shown made-up data is the one who needs the switch, and they are
-         looking right here. -->
-    <div id="demoNote" hidden></div>
     <div class="empty" id="empty">
       <p>No recordings open yet.</p>
       <p>A folder holds one <code>.csv</code> per recording with columns
@@ -1326,14 +1356,34 @@
     </div>
     <div id="panel" hidden></div>
     <div id="view" hidden>
-      <p id="meta"></p>
-      <div id="bar">
-        <span class="lab">ROI order</span>
-        <span class="seg">
-          <button data-order="id" aria-pressed="true">by id</button>
-          <button data-order="rate" aria-pressed="false">by events</button>
-        </span>
-        <span class="lab" id="orderNote"></span>
+      <!-- ONE ROW WHERE THERE WERE FOUR (Tony, 2026-08-30: *"minimize confusion
+           as to what we are looking at, without taking up 25% of the vertical
+           space"*). The admission that the data is invented, the recording's
+           identity, and the ROI-order control were three stacked blocks plus a
+           legend; measured at 1440x900 they cost 105px of a 514px approach to
+           the raster. They are one flex row now, and `#wins` is the only line
+           left under it.
+
+           `#prov` IS THE ADMISSION, and it did not get quieter by getting
+           smaller — it moved from a sentence to a chip that is always on screen
+           rather than a note above a raster the reader has already scrolled
+           past. It sits FIRST, before the recording's own name, because "what
+           am I looking at" is answered before "which one is it".
+
+           It is a sibling of `#meta` rather than a child, and that is
+           load-bearing: `#meta` is rebuilt with `textContent = ""` on every
+           recording change, which would take the chip with it. -->
+      <div id="idbar">
+        <span id="prov" hidden></span>
+        <p id="meta"></p>
+        <div id="bar">
+          <span class="lab">ROI order</span>
+          <span class="seg">
+            <button data-order="id" aria-pressed="true">by id</button>
+            <button data-order="rate" aria-pressed="false">by events</button>
+          </span>
+          <span class="lab" id="orderNote"></span>
+        </div>
       </div>
       <p id="wins"></p>
       <canvas id="cv"></canvas>
@@ -2332,6 +2382,13 @@ async function show(rec) {
   // has to be able to see which of the two they are working from.
   else if (DT_SUPPLIED !== null)
     meta.append(sep("dt " + DT_SUPPLIED + " s — yours, not the folder's"));
+
+  // The chip shares this row and is repainted with it, because half of what it
+  // says is about the recording on screen rather than about the folder: the
+  // planted-and-found count comes from THIS recording's truth. Painting it only
+  // when the folder changed would leave the second recording of a simulated set
+  // wearing the first one's score.
+  paintProv();
 
   const wins = REGIONS.get(rec.id) || [];
   const winbox = document.getElementById("wins");
@@ -10769,29 +10826,80 @@ function setDemo(on) {
   paintDemoNote();
 }
 
-/** The line above the raster: what was invented, and how well it was found. */
-function paintDemoNote() {
-  const el = document.getElementById("demoNote");
+/** WHAT AM I LOOKING AT — the chip at the head of the identity row.
+
+    Four states, and they are the four Tony named (2026-08-30): real recordings;
+    a simulated data set; a simulated data set aimed at a real measurement; and
+    the same aimed at a measurement of something itself simulated. They are not
+    a new classification — every one is already decided by state this page keeps,
+    and the chip reads it rather than being told:
+
+      SIMULATED     false -> your own folder, whatever is in it
+                    true  -> the page wrote these recordings
+      SIM_TARGET    null  -> from the defaults on the Simulate panel
+                    set   -> aimed at an assessed baseline, and it names which
+
+    Whether the *target* was itself simulated is not a fifth flag: `SIM_TARGET`
+    carries the recording id it was aimed at, and `TRUTH` knows whether that
+    recording had events planted in it. So the distinction the reader needs is
+    derived, not declared, and cannot fall out of step with the data.
+
+    THIS REPLACED A SENTENCE AND A BUTTON, and lost neither. The admission that
+    the data is invented used to be a bordered note above the raster carrying
+    "Simulated on load", the score line and a "Start empty next time" link. The
+    note is gone; the admission is on screen permanently instead of above a
+    raster the reader scrolls past, the score line rides in the same chip, and
+    the opt-out was already duplicated in the Simulate panel — which the note's
+    own comment said was why it was put there ("so it can be found again after
+    the line is gone"). It is now the only copy, which is what that sentence was
+    preparing for. */
+function paintProv() {
+  const el = document.getElementById("prov");
   if (!el) return;
   el.textContent = "";
-  // The note belongs to the demo folder and to nothing else. Open a real folder
-  // and it goes: leaving it up would caption a real recording with the sentence
-  // "nothing here is a recording of anything".
-  if (!DEMO_SHOWING) { el.hidden = true; return; }
+  el.className = "";
+  if (!RECORDINGS.length) { el.hidden = true; return; }
   el.hidden = false;
+
   const b = document.createElement("b");
-  b.textContent = "Simulated on load.";
-  el.appendChild(b);
-  const said = document.createElement("span");
-  said.textContent = demoScoreLine();
-  el.appendChild(said);
-  const btn = document.createElement("button");
-  btn.className = "linkish";
-  btn.type = "button";
-  btn.textContent = "Start empty next time";
-  btn.onclick = () => { setDemo(false); DEMO_SHOWING = false; paintDemoNote(); };
-  el.appendChild(btn);
+  const tail = document.createElement("span");
+
+  if (!SIMULATED) {
+    // A real folder says so plainly and wears no colour. Nothing about a
+    // person's own recording is a caveat.
+    b.textContent = "your recording";
+    tail.textContent = "read from your folder, never uploaded";
+  } else {
+    el.className = "sim";
+    if (!SIM_TARGET) {
+      b.textContent = "simulated";
+      /* THE COUNT, NOT THE SENTENCE. The full admission — "Nothing here is a
+         recording of anything: 15 coordinated events were planted and RateDetect
+         found 8 of them" — is 96 characters, and rendered it pushed the ROI-order
+         toggle onto a second line, spending the row this merge had just saved.
+         Seen in a render, not reasoned about.
+
+         So the chip carries the two numbers and the sentence becomes the chip's
+         `title`. Nothing is hidden that a reader needs: the word `simulated` is
+         the admission, and it is in front of them permanently now rather than in
+         a note above a raster they have scrolled past. */
+      const t = current ? TRUTH.get(current.id) : null;
+      const n = t && t.times ? t.times.length : 0;
+      const found = demoFoundCount();
+      tail.textContent = found === null ? n + " planted"
+                                        : n + " planted · " + found + " found";
+      el.title = demoScoreLine().trim();
+    } else {
+      const t = TRUTH.get(SIM_TARGET.recId);
+      const fromSim = !!(t && t.times && t.times.length);
+      b.textContent = fromSim ? "simulated from simulated" : "simulated from real";
+      tail.textContent = "aimed at " + SIM_TARGET.recId + " at K = " + SIM_TARGET.K;
+    }
+  }
+  el.append(b, tail);
 }
+/** Kept as the name the demo lifecycle calls; the chip is what it paints now. */
+function paintDemoNote() { paintProv(); }
 let DEMO_SHOWING = false;
 
 /** "15 events planted, RateDetect found 13." — or the honest shorter version.
@@ -10815,6 +10923,25 @@ function demoScoreLine() {
     + " coordinated events were planted and "
     + (DETECTORS[which] ? DETECTORS[which].label : which)
     + " found " + sc.nHit + " of them.";
+}
+
+/** How many planted events the first detector recovered, or null if none ran.
+
+    THE SCORING IS `demoScoreLine`'S, CALLED RATHER THAN COPIED. Two readings of
+    "found" that could drift apart is exactly the defect this page keeps finding
+    in its own prose — the chip and its tooltip have to agree, and the only way
+    they cannot disagree is if one number is derived from the other's source.
+    Same tolerance, read from the Tune control, same greedy interval match. */
+function demoFoundCount() {
+  const t = current ? TRUTH.get(current.id) : null;
+  if (!t || !t.times.length) return null;
+  if (!DETECT || DETECT.recId !== current.id || !DETECT.rows.length) return null;
+  const tol = clamp(Number(document.getElementById("tTol").value), 0.1, 30);
+  const which = DETECT.rows[0].detector;
+  const mine = DETECT.rows.filter(r => r.detector === which);
+  return scoreDetections(t.times, t.fracs, mine.map(r => r.onset_sec),
+                         mine.map(r => r.width_sec), tol,
+                         t.hotWindow || null).nHit;
 }
 
 /* ONE FOLDER-CHANGING JOB AT A TIME. `runSim` and `runDetect` are both async and
