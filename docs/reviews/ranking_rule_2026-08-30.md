@@ -1,6 +1,13 @@
 # A ranking rule that promised stability, and the test that says it does not deliver it
 
-The document under review, [`docs/ranking_rule.md`](../ranking_rule.md), exists to
+> **The artifact this reviews no longer exists.** `docs/ranking_rule.md` became
+> [`docs/performance_table.md`](../performance_table.md) hours after this run, when Tony
+> ruled that no winner needs declaring. **The blocking finding below was not fixed — the
+> ordering it applied to was removed**, which retires the question instead of answering
+> it. The record stays exactly as written: it is what the review found, and that finding
+> is a large part of why the ordering went.
+
+The document under review, `docs/ranking_rule.md`, exists to
 solve one problem: **the detectors cannot be ordered, because the order changes with
 the seeds.** Its answer is to emit tiers rather than an order, and to call two
 detectors tied unless one wins by more than 0.02 mean F1 on a majority of paired
