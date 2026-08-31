@@ -3,24 +3,30 @@ Restore the max_tau coincidence-window cap
 Since 0.8.0 consolidated three per-file copies of get_tau into one shared
 implementation, the final clamp went missing: max_tau now seeds the four
 neighboring-ISI slots and every one of them is overwritten as soon as that
-neighbor exists, so a spike interior to both trains never sees the cap. The
+neighbor exists, so a pair interior to both trains never sees the cap. The
 window returned is the minimum of the interpolated half-ISIs and max_tau is
-never compared against it.
+never compared against it. Under MRTS > 0 the seeded slot enters Interpolate
+as an argument rather than as an outer bound, so the cap is inert at the
+edges too.
 
 Inside get_tau the parameter named max_tau carries true_max -- the recording
-span, or twice the user's cap when one was given and it is smaller -- so the
+span, or twice the user's cap when that doubled value is smaller -- so the
 bound to apply is half of it. No max_tau > 0 guard is needed: when the user
 passes 0 or None the callers set true_max to the recording span, and bounding
 the window at half the span is what 0.7.0 did, since it seeded m with interval
 before halving.
 
 Reported at: docs/todo/2026-08-11-file-pyspike-max-tau-issue.md (bugarach)
-Verified against PySpike v0.9.0: 50 tests over all 13 files in test/ pass with
-this applied, on both the compiled Cython and the pure-Python backend.
+Verified against PySpike v0.9.0: 56 tests over 13 collecting files pass with
+this applied, on both the compiled Cython and the pure-Python backend, against
+50 over 12 without it. Generated with git diff, and accepted by both git apply
+and patch(1) -- tools/pyspike_patch_check.sh gates both.
 
+diff --git a/pyspike/cython/cython_get_tau.pyx b/pyspike/cython/cython_get_tau.pyx
+index 5bdae7b..764352a 100644
 --- a/pyspike/cython/cython_get_tau.pyx
 +++ b/pyspike/cython/cython_get_tau.pyx
-@@ -43,8 +43,8 @@
+@@ -43,8 +43,8 @@ cdef double get_tau(double[:] spikes1, double[:] spikes2,
      if i<0 or j<0 or spikes1[i] <= spikes2[j]:
          s1F = Interpolate(mP1, mF1, MRTS)
          s2P = Interpolate(mF2, mP2, MRTS)
@@ -31,9 +37,11 @@ this applied, on both the compiled Cython and the pure-Python backend.
          s2F = Interpolate(mP2, mF2, MRTS)
 -        return fmin(s1P, s2F)
 +        return fmin(fmin(s1P, s2F), max_tau/2.)
+diff --git a/pyspike/cython/python_backend.py b/pyspike/cython/python_backend.py
+index 3e03781..6171e2f 100644
 --- a/pyspike/cython/python_backend.py
 +++ b/pyspike/cython/python_backend.py
-@@ -361,11 +361,11 @@
+@@ -361,11 +361,11 @@ def get_tau(spikes1, spikes2, i, j, max_tau, MRTS):
      if i<0 or j<0 or spikes1[i] <= spikes2[j]:
          s1F = Interpolate(mP1, mF1, MRTS)
          s2P = Interpolate(mF2, mP2, MRTS)
@@ -44,3 +52,155 @@ this applied, on both the compiled Cython and the pure-Python backend.
          s2F = Interpolate(mP2, mF2, MRTS)
 -        return min(s1P, s2F)
 +        return min(min(s1P, s2F), max_tau/2.)
+ 
+ 
+ 
+diff --git a/test/test_max_tau.py b/test/test_max_tau.py
+new file mode 100644
+index 0000000..8bcb706
+--- /dev/null
++++ b/test/test_max_tau.py
+@@ -0,0 +1,143 @@
++""" test_max_tau.py
++
++Tests that max_tau bounds the coincidence window for pairs of spikes that are
++interior to their own trains, not only for spikes at the trains' edges.
++
++Copyright 2026, Tony DeFazio
++
++Distributed under the BSD License
++
++"""
++
++from __future__ import print_function
++import numpy as np
++from numpy.testing import assert_almost_equal, assert_array_almost_equal, \
++    assert_array_less
++
++import pyspike as spk
++from pyspike import SpikeTrain
++
++
++def gen_spike_trains():
++    """Two trains whose six pairs are separated by 0, 0.1, 0.2, 0.3, 0.4 and
++    0.5, so raising max_tau past each separation admits exactly one more pair.
++    Every expected value below is a sixth, countable by hand off these two
++    lines.
++    """
++    return (SpikeTrain([0.0, 1.0, 3.0, 5.0, 7.0, 9.0], 10.0),
++            SpikeTrain([0.0, 1.1, 3.2, 5.3, 7.4, 9.5], 10.0))
++
++
++def test_spike_sync_max_tau_bounds_interior_pairs():
++    spikes1, spikes2 = gen_spike_trains()
++
++    # Unaided, every pair's window is at least half its own surrounding ISI --
++    # 1.0 at the widest pair -- so all six match.
++    assert_almost_equal(spk.spike_sync(spikes1, spikes2), 1.0, decimal=15)
++
++    # Each cap sits between two separations, so it admits one further pair.
++    # The first row is set by the pair at separation 0, which the equal-times
++    # fast path admits without consulting the window at all.
++    for max_tau, expected in ((0.05, 1.0 / 6),
++                              (0.15, 2.0 / 6),
++                              (0.25, 3.0 / 6),
++                              (0.35, 4.0 / 6),
++                              (0.45, 5.0 / 6),
++                              (0.55, 6.0 / 6)):
++        assert_almost_equal(spk.spike_sync(spikes1, spikes2, max_tau=max_tau),
++                            expected, decimal=15)
++
++
++def test_spike_sync_profile_max_tau_bounds_interior_pairs():
++    spikes1, spikes2 = gen_spike_trains()
++
++    # Under a 0.25 cap the pairs at 0, 0.1 and 0.2 coincide and the rest do
++    # not. Each of those later pairs is interior to both trains, which is the
++    # case a cap has to reach and did not.
++    expected_x = np.array([0.0, 0.0, 1.0, 1.1, 3.0, 3.2,
++                           5.0, 5.3, 7.0, 7.4, 9.0, 9.5, 10.0])
++    expected_y = np.array([1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
++                           0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
++
++    f = spk.spike_sync_profile(spikes1, spikes2, max_tau=0.25)
++
++    # Both trains fire at 0.0, so that entry carries multiplicity 2 and the
++    # raw sum f.y reads 2.0 there. get_plottable_data returns f.y/f.mp, which
++    # is the coincidence indicator this test is about.
++    x, y = f.get_plottable_data()
++    assert_array_almost_equal(x, expected_x, decimal=15)
++    assert_array_almost_equal(y, expected_y, decimal=15)
++
++
++def test_spike_directionality_max_tau():
++    # get_tau serves spike-directionality and spike-train-order too, so the
++    # cap has to reach them by the same route.
++    spikes1, spikes2 = gen_spike_trains()
++
++    # spike_directionality normalizes by len(spikes1), which is 6 here. Five
++    # of the six spikes of train 1 lead their partner; the pair at 0.0 has
++    # zero lag and contributes nothing.
++    assert_almost_equal(spk.spike_directionality(spikes1, spikes2),
++                        5.0 / 6, decimal=15)
++    assert_almost_equal(
++        spk.spike_directionality(spikes1, spikes2, max_tau=0.25),
++        2.0 / 6, decimal=15)
++    assert_almost_equal(
++        spk.spike_directionality(spikes1, spikes2, max_tau=0.35),
++        3.0 / 6, decimal=15)
++
++
++def test_spike_sync_max_tau_is_strictly_increasing():
++    # Each of these caps clears one more pair separation, so every step must
++    # move. A merely non-decreasing check would pass on the unbounded
++    # behavior: without the cap only the last, edge-of-train pair responds to
++    # max_tau, so the sequence rises exactly once (5/6 -> 6/6).
++    spikes1, spikes2 = gen_spike_trains()
++    values = np.array([spk.spike_sync(spikes1, spikes2, max_tau=t)
++                       for t in (0.05, 0.15, 0.25, 0.35, 0.45, 0.55)])
++    assert_array_less(0.0, np.diff(values))
++
++
++def test_no_cap_is_unchanged():
++    # The property the patch promises to preserve, and the one a later
++    # refactor is most likely to break: 0 and None mean no upper bound, and
++    # must return what an uncapped call returns.
++    rng = np.random.default_rng(3)
++    edges = (0.0, 100.0)
++    spikes1, spikes2 = (SpikeTrain(np.sort(rng.uniform(*edges, 20)), edges)
++                        for _ in range(2))
++
++    uncapped = spk.spike_sync(spikes1, spikes2)
++    assert_almost_equal(spk.spike_sync(spikes1, spikes2, max_tau=0),
++                        uncapped, decimal=15)
++    assert_almost_equal(spk.spike_sync(spikes1, spikes2, max_tau=None),
++                        uncapped, decimal=15)
++
++
++def test_max_tau_bounds_an_mrts_raised_window():
++    # MRTS raises the window off the local ISIs, which is what it is for. The
++    # cap has to survive that: without it, a seeded slot enters Interpolate as
++    # an argument rather than as an outer bound and the interpolation walks
++    # straight past it.
++    spikes1 = SpikeTrain([0.0, 0.1, 2.1, 2.2, 4.2, 4.3], 6.0)
++    spikes2 = SpikeTrain([0.4, 0.5, 2.5, 2.6, 4.6, 4.7], 6.0)
++
++    # The nearest pair across these trains is 0.3 apart, so a 0.2 cap admits
++    # nothing however far MRTS lifts the window.
++    assert_almost_equal(
++        spk.spike_sync(spikes1, spikes2, max_tau=0.2, MRTS=2.0),
++        0.0, decimal=15)
++
++    # A cap wider than MRTS raises must not claw the window back down.
++    assert_almost_equal(
++        spk.spike_sync(spikes1, spikes2, max_tau=0.5, MRTS=2.0),
++        spk.spike_sync(spikes1, spikes2, MRTS=2.0), decimal=15)
++
++
++if __name__ == "__main__":
++    test_spike_sync_max_tau_bounds_interior_pairs()
++    test_spike_sync_profile_max_tau_bounds_interior_pairs()
++    test_spike_directionality_max_tau()
++    test_spike_sync_max_tau_is_strictly_increasing()
++    test_no_cap_is_unchanged()
++    test_max_tau_bounds_an_mrts_raised_window()

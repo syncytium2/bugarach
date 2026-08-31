@@ -43,15 +43,41 @@ tar xzf "v${VER}.tar.gz"
 cd "PySpike-${VER}"
 
 echo "== upstream suite, as shipped =="
-"$PY" -m pytest test -q -p no:cacheprovider | tail -1
+expect_suite() {   # expect_suite <n tests> <n collecting files> [PYTHONPATH]
+    local want_tests="$1" want_files="$2" pp="${3:-}"
+    local got_tests got_files
+    got_tests=$(PYTHONPATH="$pp" "$PY" -m pytest test -q -p no:cacheprovider \
+                | grep -oE '[0-9]+ passed' | grep -oE '^[0-9]+')
+    got_files=$(PYTHONPATH="$pp" "$PY" -m pytest test -p no:cacheprovider \
+                --collect-only -q 2>/dev/null \
+                | grep '::' | sed 's/::.*//' | sort -u | wc -l | tr -d ' ')
+    echo "   ${got_tests} passed over ${got_files} collecting files"
+    [ "$got_tests" = "$want_tests" ] && [ "$got_files" = "$want_files" ] || {
+        echo "   FAIL: expected ${want_tests} over ${want_files}" >&2; exit 1; }
+}
+expect_suite 50 12
+
+# git apply is strict where patch(1) is lenient, and it is what a maintainer
+# reaches for. A hand-written diff with a short hunk body sailed through
+# patch(1) here for weeks while git apply called it corrupt -- so the tool that
+# CAN fail is the one that gates. Both must accept it.
+echo "== docs/pyspike_max_tau.patch is accepted by git apply AND patch(1) =="
+git init -q . && git add -A >/dev/null \
+    && git -c user.email=check@local -c user.name=check commit -qm baseline
+git apply --check -p1 "${REPO}/docs/pyspike_max_tau.patch" \
+    || { echo "   FAIL: git apply rejects the patch" >&2; exit 1; }
+patch -p1 --dry-run --quiet < "${REPO}/docs/pyspike_max_tau.patch" \
+    || { echo "   FAIL: patch(1) rejects the patch" >&2; exit 1; }
+echo "   both accept it"
 
 echo "== applying docs/pyspike_max_tau.patch =="
 patch -p1 --quiet < "${REPO}/docs/pyspike_max_tau.patch"
 grep -n "fmin(fmin" pyspike/cython/cython_get_tau.pyx
 grep -n "min(min" pyspike/cython/python_backend.py
+ls test/test_max_tau.py >/dev/null   # the patch carries the regression test
 
 echo "== upstream suite, patched (pure-Python backend) =="
-"$PY" -m pytest test -q -p no:cacheprovider | tail -1
+expect_suite 56 13
 
 echo "== building the patched Cython extension =="
 "$PY" -m pip install . --quiet --target "${WORK}/build"
@@ -59,7 +85,7 @@ ls "${WORK}/build/pyspike/cython/"cython_get_tau*.so >/dev/null
 
 echo "== upstream suite, patched (compiled backend) =="
 mv pyspike pyspike_src_hidden
-PYTHONPATH="${WORK}/build" "$PY" -m pytest test -q -p no:cacheprovider | tail -1
+expect_suite 56 13 "${WORK}/build"
 mv pyspike_src_hidden pyspike
 
 echo "== the report's sweep, shipped vs patched compiled =="
