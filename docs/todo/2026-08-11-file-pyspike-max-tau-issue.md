@@ -604,9 +604,12 @@ explicitly optional variant, and it is named and used in the SPIKE-order work
 fifteen years later. Neither the paper that defines SPIKE-Sync nor the one that
 introduces MRTS carries it — neither is about bounding the window. For
 `max_dist > 0`, cSPIKE's two conditions are exactly `|Δt| < min(TAUij, max_dist)`,
-which is what the patch computes; the check I can offer for that reading is our
-own port, which reproduces cSPIKE's per-spike profile to 1e-9 at a 0.25 s cap on
-30 dense trains.
+which is what the patch computes. That reading is from the C++ in a checkout we
+run — `if (|Δt| < TAUij)` guarding
+`if (((max_dist < 0) || (|Δt| < max_dist)) && ...)`, where `max_dist < 0` is the
+disabled sentinel — and it is corroborated by our port matching cSPIKE's own
+per-spike profile to 1e-9 at finite caps on 30 dense trains, as described under
+*Environment*.
 
 </details>
 
@@ -793,13 +796,18 @@ without consulting the window.
 Our port computes the same three-term minimum this patch restores, so its
 agreement with the patched column is arithmetic rather than a second
 measurement — it reproduces that column bit-for-bit, which is what you would
-expect of a transcription. The independent anchor is one layer down: the port's
-per-spike profile matches cSPIKE's own MATLAB output to 1e-9 at a 0.25 s cap
-([`test_sync_detect.py`](https://github.com/syncytium2/bugarach/blob/6eafdb69cd3c3ed4694dcdddcf5978aa84af6636/tests/test_sync_detect.py)),
-while our cross-check against PySpike had to be run uncapped precisely because
-the capped regime disagreed.
+expect of a transcription. **The independent anchor is one layer down, and it is
+cSPIKE itself.** The port's per-spike profile is tested against cSPIKE's own
+MATLAB output at `rtol = atol = 1e-9` — the full 2670-point profile, at a 0.25 s
+cap, a 0.5 s cap and uncapped, on both streams. So the semantics this patch
+restores are the semantics we already hold cSPIKE to, at finite caps, on 10,680
+per-spike values. Meanwhile our cross-check *against PySpike* had to be run
+uncapped, precisely because the capped regime disagreed — which is how we found
+this in the first place.
 [`sync.py`](https://github.com/syncytium2/bugarach/blob/6eafdb69cd3c3ed4694dcdddcf5978aa84af6636/src/bugarach/detectors/sync.py)
-is the port.
+is the port;
+[`test_sync_detect.py`](https://github.com/syncytium2/bugarach/blob/6eafdb69cd3c3ed4694dcdddcf5978aa84af6636/tests/test_sync_detect.py)
+is the parity test.
 
 </details>
 
@@ -809,8 +817,22 @@ PySpike 0.9.0 (pip, compiled Cython backend), NumPy 2.5.2, Python 3.14.5, macOS;
 built and run on that platform only. The pure-Python backend agrees on every
 number quoted here, as shipped and patched both, and the two `Interpolate`
 implementations agree on 200k random triples, so none of this is a build
-artifact. I have not run cSPIKE — the cSPIKE figures above are Kreuz's, and the
-`max_dist` semantics in the table come from reading `Spiketrains.cpp`.
+artifact.
+
+**On cSPIKE.** The two figures in the Kreuz section are his. Everything else this
+report says about cSPIKE we checked ourselves: we run it under MATLAB (R2025b) to
+generate the reference our port is tested against, through cSPIKE's own
+`SpikyRun` and `computeAdaptiveProfile`. The reference is the **raw per-spike
+profile — 2670 points per condition**, at a 0.25 s cap, a 0.5 s cap, and
+uncapped, on both of our event streams; our port matches it at `rtol = atol =
+1e-9` in all four. Generator, committed fixture and test are
+[`gen_ref_sync.m`](https://github.com/syncytium2/bugarach/blob/6eafdb69cd3c3ed4694dcdddcf5978aa84af6636/tools/matlab_ref/gen_ref_sync.m),
+[`ref_sync_synth.json`](https://github.com/syncytium2/bugarach/blob/6eafdb69cd3c3ed4694dcdddcf5978aa84af6636/tests/fixtures/ref_sync_synth.json)
+and
+[`test_sync_detect.py`](https://github.com/syncytium2/bugarach/blob/6eafdb69cd3c3ed4694dcdddcf5978aa84af6636/tests/test_sync_detect.py).
+The `max_dist` semantics in the table are read from the C++ in that same
+checkout. What I have **not** done is run cSPIKE on Kreuz's six-spike example —
+those two numbers are quoted from his mail, not reproduced here.
 
 ### What is in this PR
 

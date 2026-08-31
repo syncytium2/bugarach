@@ -71,11 +71,23 @@ settled the question.
 
 ## What would validate this, and what generalises
 
-The run's own weakest link is named rather than hidden: **cSPIKE was never executed
-here.** Every other evidentiary chain bottoms out in something reproducible — a build,
-a PyPI record, a DOI, a paper's text — and this one bottoms out in figures Kreuz
-supplied by email and in a reading of `Spiketrains.cpp`. The PR now says so in as many
-words.
+The run named cSPIKE as its weakest link, and **the review was wrong about that** —
+which is worth recording, because the error was mine and it ran in the direction of
+under-claiming. Eleven roles plus four blind reviewers all reported that cSPIKE had
+never been executed here, and the draft conceded it. Tony corrected it in one line, and
+the evidence was in the repo the whole time: `tools/matlab_ref/gen_ref_sync.m` drives
+cSPIKE's own `SpikyRun` and `computeAdaptiveProfile` under MATLAB R2025b, and
+`tests/test_sync_detect.py` holds the port to that output at `rtol = atol = 1e-9` over
+the **full 2670-point per-spike profile**, at a 0.25 s cap, a 0.5 s cap and uncapped,
+on both streams — 10,680 values, at finite caps, against the reference implementation.
+
+Every role read `tests/test_sync_detect.py`. Several cited it. None followed it back to
+the generator that produced its fixture, so all of them accepted the draft's own
+hedge instead of checking whether it was true. **A conceded weakness is a claim, and it
+is checked like any other** — the process file says exactly this about unavailability
+("the most comfortable finding in a review and the least often true"), and the rule
+fired against the review itself rather than against the artifact. The PR now leads its
+cSPIKE section with what was actually run.
 
 What generalises beyond this repo:
 
@@ -137,9 +149,13 @@ manufactured a third round's review surface.
 
 ## Residual ⚠ — for Tony, before anything is sent
 
-- ⚠ **cSPIKE has never been run here.** The 0.5 and 2/3 figures are Kreuz's; the
-  `max_dist` semantics come from reading `Spiketrains.cpp:453` (v1.5). Disclosed in the
-  PR. Closing it needs a cSPIKE run, or Kreuz confirming the reading.
+- ~~⚠ **cSPIKE has never been run here.**~~ **CLOSED 2026-08-31 by Tony**, who pointed
+  out the lab has exercised cSPIKE in MATLAB extensively. Verified: the committed
+  reference is cSPIKE's own per-spike profile, 2670 points, at two finite caps and
+  uncapped, matched at 1e-9. The PR now says so. **What remains true and is stated:**
+  Kreuz's two six-spike figures were not reproduced here, and no cSPIKE version string
+  is recorded in the checkout or in `tools/matlab_ref/README.md` — worth stamping,
+  since `Spiketrains.cpp` line numbers are version-dependent.
 - ⚠ **Three of the four disclosed behaviour changes have no regression test** — the tie
   boundary, `Reconcile=False`, and the sorting permutation. The PR argues at length that
   the bug survived because nothing pinned it, then ships changes with nothing pinning
