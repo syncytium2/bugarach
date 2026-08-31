@@ -489,9 +489,12 @@ print(p if p else "")' 2>/dev/null)
   # drops the alarms. The tool paths live in CLAUDE.md.
   echo
   echo "--- gates, before you hand anything over ---"
-  echo "   can't find something, or about to build one?  docs/INDEX.md FIRST —"
-  echo "     keywords -> the file that owns the answer. It exists because a session"
-  echo "     re-derived the DANDI transfer machinery that was already in the tree."
+  # One line, not three. The origin story — a session re-derived the DANDI transfer
+  # machinery already in the tree — is IN the index, which is where a reader who cares
+  # will be. The address is the payload. Shortened 2026-08-31 because the three-line
+  # form put the briefing 65B over budget on a fresh clone, and a degraded briefing
+  # drops FOUNDATIONS §9's consequences, which is a worse loss than an anecdote.
+  echo "   can't find something, or about to build one?  docs/INDEX.md FIRST — keywords."
   echo "   document deliverable (report, explainer, figure + caption, handoff)?"
   echo "     -> /murderboard <artifact> FIRST. Not a first draft."
   echo "   landing work?  branch + green PR; never commit on main."
