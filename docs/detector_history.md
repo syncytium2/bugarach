@@ -3,6 +3,150 @@
 *Written 2026-08-22 from two interface2 reports, the bugarach tree, and the
 darkroom literature shelf.*
 
+> **Revised 2026-08-30: the block below is right that these are his, and the word
+> "team" in interface2 does not mean what a stranger will read it to mean.** This
+> block adds a checkable timeline, decodes one piece of vocabulary that invites a
+> serious misreading, and leaves §4's reading standing.
+>
+> **"Team" means a session.** Tony, 2026-08-30: *"i am the only human in these
+> repos. my teams are sessions. in those days, i'd work two workstations in
+> parallel and call them teams."* This matters because interface2's own commits say
+> things like *"LoCo (**the other team's** detector #5 …)"* (`bc833ca8`) and
+> *"handoff: detector5 LoCo branch — **for the CoactDetect team's** integration"*
+> (`e8692f77`). **A reader outside this estate will take that as another
+> laboratory.** It is not: it is Tony running two parallel workstations and naming
+> them. There is no third party in any of it, and no outside attribution is owed.
+> ⚠ Anyone quoting interface2 commit prose in a public artifact must decode this
+> first.
+>
+> **`CoactDetect` and `LoCo` share a surrogate idea and are two distinct
+> detectors. Do not collapse them.** Tony, 2026-08-30: *"we built loco and coact
+> detect as two versions of the same circular shift idea"*, and then, when this
+> block briefly said they were therefore one detector: *"loco and coact detect
+> performance is distinct. they are two distinct detectors with different params."*
+>
+> The shared part is real and is in the code —
+> `src/bugarach/detectors/_shared.py:3`, *"CoactDetect and LoCo share the
+> circular-shift surrogate machinery"*, a module that exists for that reason. **The
+> shared part is how the null is built. Everything that makes a detector is
+> different:**
+>
+> | | knob | parameters | recall | probe/min | detect s |
+> |---|---|---|---|---|---|
+> | `coact` | `alpha` = 1e-4 — a **significance level** | 4, `context_win` **60 s** | 0.767 | 1.25 | 0.062 |
+> | `loco` | `threshold_pctile` = 99.9 — an **order statistic** | 6, `context_win` **120 s** | 0.733 | 2.50 | 0.248 |
+>
+> Two different thresholding principles on a shared null, twice the false-alarm rate
+> on the probe, four times the runtime. **That is why §4 maps them to different CFAR
+> variants, and its separate rows are correct.**
+>
+> ⚠ **The trap this paragraph exists to close:** `_shared.py` invites the reading
+> that these are one detector twice, and an earlier version of this very block made
+> that error and drew a false consequence from it — that §4's CFAR mappings were
+> being double-counted and there were "fewer than three independent arrivals."
+> **That flag is withdrawn.** §4 maps *mechanisms*, its rows are distinct
+> mechanisms, and nothing in the count was wrong. Recorded rather than deleted
+> because the inference is available to anyone reading `_shared.py` cold.
+>
+> `bc833ca8`'s *"the other team's detector #5"* is still worth decoding — it means
+> the detector from Tony's other workstation session, not a rival group — and the
+> *"collapse to ONE unified detector #5"* line in that commit was a **plan**, not a
+> record. Both detectors ship, separately, and their numbers above are why.
+>
+> **Why the plan was never followed through, and why that was lucky.** Tony,
+> 2026-08-30: *"the performance was so different we never followed thru. loco kicked
+> ass in the beginning, we might have dropped coact as the ugly sister. but now with
+> our more serious optimization tools, coact is consistently higher than loco."*
+>
+> **The ranking reversed.** The scheduled collapse — *"LoCo engine + CoactDetect
+> name"*, `detect_loco.m` removed — would have kept LoCo's engine at exactly the
+> moment LoCo was ahead. Run on time, it would have **deleted the detector that
+> later won**, and the surviving one would have carried the loser's mechanism under
+> the winner's name with nothing recording the swap. The A/B outlived its own
+> deletion notice and that is the reason there is anything to compare.
+>
+> **What the reversal actually is, measured** — the 2026-08-29 bake-off
+> (`bakeoff.json`, built from `a510e694`), which Tony had not seen when he described
+> it from memory:
+>
+> | fold | coact | loco |
+> |---|---|---|
+> | 0 | **0.711** | 0.696 |
+> | 1 | **0.645** | 0.640 |
+> | 2 | **0.606** | 0.567 |
+> | 3 | 0.641 | **0.648** |
+>
+> **coact takes 3 of 4 folds, 0.651 vs 0.638.** The direction of the recollection is
+> right.
+>
+> ⚠ **But "consistently higher" does not survive on F1, and this is the useful
+> part.** The gap is **0.013** against fold ranges of 0.61–0.71 and 0.57–0.70, which
+> overlap almost entirely; and on the background sweep at 12 seeds the ordering
+> **flips with the seed block** — coact takes all seven grid points on seeds 1–12,
+> LoCo takes the busy half on seeds 13–24. **F1 cannot separate these two detectors.**
+>
+> Where coact is ahead consistently is everywhere F1 averages away: **recall 0.767 vs
+> 0.733, probe 1.25 vs 2.50 firings/min, detect 0.062 s vs 0.248 s.** Half the false
+> alarms on a block with nothing planted, four times faster, more events found. So the
+> reversal is real and the number a reader would check to confirm it reports a tie —
+> which is an argument for reporting the parts rather than the composite, filed
+> separately.
+>
+> **The design is his and the commits show it, in his own vocabulary.** `bc833ca8`
+> says *"my CoactDetect `detect_local_coincidence.m`"* and specifies it as *"the
+> coactivity analog of RateDetect: distinct-ROI coactivity excess over a rolling
+> LOCAL null"*; `9d4d37a2` states RateDetect's rule as *"excess = primary rate (1s) −
+> context rate (60s), Hz"* — the phrasing Tony reproduced from memory 3½ months
+> later, unprompted, before being shown the commit. Both carry his own validation
+> runs on named recordings.
+>
+> ⚠ **A `Co-Authored-By` trailer records who produced a commit, not who designed
+> the thing.** An earlier draft of this block tagged three rows *"AI-assisted"* and
+> withdrew §4's independence claim on that basis. **That was wrong twice**: the
+> trailer does not carry design attribution, and reading it as though it does
+> disparages the person who specified the detector, ran the validation and wrote the
+> spec into the message. Recorded rather than quietly deleted, because the same
+> inference is available to anyone else auditing this tree.
+>
+> **What survives from that draft is the timeline**, which is worth having on its own
+> — it replaces a recollection with a record:
+>
+> | | first committed | commit produced in a session |
+> |---|---|---|
+> | SpikyDetect 1–3 (synchrony) | 2026-04-23 → 04-28 | no |
+> | `rate_detect` (`SpikyDetect4` → `RateDetect`) | 2026-05-13 | yes |
+> | `CoactDetect` (renamed from *"local coinc"*) | 2026-07-14 | yes |
+> | `detect_loco` | 2026-07-14 | yes |
+>
+> > Built **2026-04 to 2026-07**. The CFAR literature was found on **2026-08-22** —
+> > `ff1db4d`, *"Three of the six detectors judge a moment using a window that
+> > contains it"* — and the resemblance was recognised then, five weeks to four
+> > months after the fact, in a search run for another purpose.
+>
+> That is **stronger than "I was unaware"**, because it is checkable in two
+> repositories and depends on nobody's memory. Keep both: the recollection speaks to
+> the designer's knowledge, the timeline shows the order of events, and together they
+> rule out derivation without either carrying the weight alone.
+>
+> ⚠ Commit dates are a **lower bound** — Tony notes years of poor repo hygiene, so
+> earlier uncommitted work is not ruled out. The bound runs the right way for this
+> argument: earlier work would only widen the gap to 2026-08-22.
+>
+> **The residual caveat, stated small because it is small.** Sessions may have
+> contributed design suggestions that no commit records, and a model's suggestions can
+> carry literature-shaped structure its user cannot see. Nothing in the record shows
+> that happened, and the commit bodies show specification running the other way. It is
+> a footnote, not a retraction — and §7's admission that four literatures were never
+> searched remains the larger open question.
+>
+> **What this does not touch:** §5's list, which is what this document is for; **port
+> fidelity to 1e-9**, about code and not ideas; the SCE root (Cossart 2003); the Kreuz
+> position; and `locust` as the one true port.
+>
+> Consequence outside this file: the README and `CITATION.cff` are wrong in the *other*
+> direction — they say "six detector ports" when one is a port. Filed as
+> [who wrote the detectors](todo/2026-08-30-who-wrote-the-detectors-the-repo-is-wrong-both-ways.md).
+
 > **Revised 2026-08-29: the author said where each one came from, and interface2
 > is frozen on the topic.** Every lineage row in this document was assembled from
 > interface2's reports and this tree. Tony supplied the missing half — who wrote

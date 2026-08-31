@@ -5,10 +5,77 @@ filed: 2026-08-11
 
 # File the PySpike max_tau bug upstream
 
-## SENT 2026-08-28. Waiting on Kreuz, not on Tony.
+## KREUZ ANSWERED 2026-08-31. It is a regression, the fix is endorsed, and the route is a PR.
 
-Tony sent [`docs/kreuz_note.md`](../kreuz_note.md) **as drafted** — the τmax question
-only. **Step 1 below is done; the next move is his reply**, and then step 2.
+**The question this whole file was waiting on is settled, and it went the way the report
+assumed.** Thomas Kreuz replied to the note three days after Tony sent it, with Mario Mulansky
+cc'd from the first line — *"I put Mario in cc to alert him already of your upcoming PR."*
+What he settled, in the order it matters:
+
+- **He reproduced it himself, on his own example**, and got our numbers. Two trains,
+  `[0 1 3 5 7 9]` and `[0 1.1 3.2 5.3 7.4 9.5]`, so the pairs are separated by 0, 0.1, 0.2,
+  0.3, 0.4 and 0.5. In cSPIKE `max_dist=0.25` gives 0.5 — the first three pairs match — and
+  `max_dist=0.35` gives 2/3. **PySpike returns 5/6 for both.** His reading of why is the
+  report's: *"only the last spike pair is not matched, for all other pairs max_tau is ignored
+  (or overwritten). So it indeed seems that we just forgot to track tau_max within the new
+  get_tau function in v0.8.0."* That is an independent reproduction by the measure's senior
+  author, arrived at from the same code without our fixture, and it names 0.8.0 unprompted.
+- **The fix is endorsed as written:** *"So this should clearly be fixed and I am happy with
+  your suggested correction. Please go ahead with sending the PR to Mario."*
+- **A hard τmax is the semantics PySpike should have.** This is the answer the note actually
+  asked for, and it disposes of the alternative the file has been hedging against since
+  2026-08-23. His group's standing philosophy is *"to give the user options and not impose one
+  specific variant over any other"* — the parameter-free measure stays the default, the
+  adapted variants stay easily reachable. So τmax is an option that must work, not a default
+  that was withdrawn.
+- **The review's silence was space, not a verdict.** Kreuz confirms the omission from
+  [arXiv:2510.07140](https://arxiv.org/abs/2510.07140) was an editorial constraint — the
+  agreement was to present the basic ideas and example applications and leave details to the
+  original papers, so MRTS appears only in passing and τmax *"isn't even mentioned at all."*
+  Against that: *"we use it in the 2017 paper and again quite a lot in the two recent latency
+  correction papers"*, and **Fig. 11 of Mariani et al. 2025 shows explicitly what the
+  parameter changes.** *"So for sure it should be included and of course work correctly in
+  PySpike as well."*
+
+**The one complication the note raised itself is therefore closed**, and closed in the
+direction that makes the report stronger rather than weaker. The 2026-08-23 check that found
+the review carrying neither τmax nor MRTS, and the decision to ask rather than assert, did
+exactly the work it was supposed to do: it surfaced the objection before a maintainer could,
+and the answer came back with a figure reference we did not have.
+
+### What changed in the plan
+
+**Kreuz redirected step 2 from an issue to a PR.** The file's plan was: note → issue → offer a
+PR. He read the note's closing offer and skipped the middle, and he alerted the maintainer
+before we wrote anything. That is his call to make on his own project, and it is the faster
+route. **The issue body is not wasted** — it is the reviewed 12 KB of mechanism, and it becomes
+the PR description. See **Route** below for what that costs and the one thing to decide.
+
+**What did not change:** the patch, the numbers, or the report's shape. Re-verified today
+against `docs/pyspike_max_tau.patch` on a fresh v0.9.0 build —
+`bash tools/pyspike_patch_check.sh` — upstream's suite is 50 green as shipped, patched on the
+pure-Python backend, and patched on the compiled one; the sweep is
+0.3500/0.1833/0.0500/0.0000; the 7.7 s pair stops being coincident under a 0.25 s cap.
+**And the patched build reproduces Kreuz's own cSPIKE figures to the digit** — 0.500000 at
+`max_dist=0.25`, 0.666667 at 0.35, against his 0.5 and 2/3. That is the single strongest line
+available to the PR, because it is upstream's code, patched, landing on the reference
+implementation's values on an example the maintainer's collaborator chose.
+
+### One thing his reply does not answer
+
+The report closes with a design question — *"with `MRTS > 0` this lets `max_tau` override the
+MRTS-raised window"* — and Kreuz did not address it, almost certainly because the note left the
+mechanism to the issue and never put it in front of him. His options-not-impositions answer
+implies a hard cap should win over a raised floor, but that is our inference, not his sentence.
+**Leave it in the PR as the open question it is.** Do not upgrade it to "Kreuz confirmed".
+
+### Not to be re-raised
+
+His reply also describes his staffing and some unreleased work. **None of it is quoted here or
+anywhere in this public repo, and it should not be.** The sentences above are the ones he wrote
+to be acted on. The full mail is in Tony's inbox; filing it durably is Tony's call.
+
+---
 
 Two things a later reader would otherwise get wrong:
 
@@ -38,22 +105,63 @@ Two things a later reader would otherwise get wrong:
 > process exists to stop. Whoever sends the mail decides whether to fold it in, and
 > drafting it is its own reviewable act.
 
-**Nothing here needs more work.** As of 2026-08-24 the
-report is written, shortened, and verified end to end; the patch passes PySpike's
-own test suite on both backends; the note to Kreuz is drafted and reviewed. The mail
-went on 2026-08-28, so what remains is a reply.
-
 1. ~~**Send the note**~~ — **DONE 2026-08-28**, [`docs/kreuz_note.md`](../kreuz_note.md)
-   sent as drafted. It asks Kreuz the one question that decides the
-   shape of everything below: is a hard τmax still the semantics PySpike should
-   have? **Nothing further is owed by anyone here until he answers.**
-2. **Then file the issue**, with his answer behind it —
-   `python tools/pyspike_issue_body.py`, per **Process** below.
-3. **Then** put the issue URL in the eight places listed at the bottom of this
-   file. The version half of that pass is already done.
+   sent as drafted.
+2. ~~**Then file the issue**~~ — **superseded 2026-08-31.** Kreuz asked for the PR instead
+   and cc'd Mulansky. See **Route**.
+3. **Open the PR against `mariomulansky/PySpike`** — the patch is
+   [`docs/pyspike_max_tau.patch`](../pyspike_max_tau.patch), the description descends from
+   `python tools/pyspike_issue_body.py`, and it needs the two additions in **Route** below.
+   **Tony releases it**; the Process section's rule that external communication is his to send
+   did not change because the destination did.
+4. **Then** put the PR URL in the eight places listed at the bottom of this file. The version
+   half of that pass is already done. The list says "issue URL" throughout — it is now a PR
+   URL, and the eight places are the same eight.
 
-If Kreuz answers that 0.8.0 dropped the clamp deliberately, stop and re-read
-before filing: the report becomes a docs bug and most of it comes out.
+~~If Kreuz answers that 0.8.0 dropped the clamp deliberately, stop and re-read before filing:
+the report becomes a docs bug and most of it comes out.~~ **He answered the other way**
+(2026-08-31): a regression, fix endorsed, cap wanted. This contingency is spent.
+
+## Route — issue, or straight to the PR
+
+**Kreuz asked for the PR, so the PR is the route.** What it costs, said plainly so nobody
+re-opens it as a mistake: a PR description is read by people deciding whether to *merge*, and
+this one is 12 KB of triage material aimed at someone deciding whether to *believe*. Most of
+that weight was carrying the burden of proof against a maintainer who had never heard of the
+problem. **That burden is gone** — the senior author reproduced it independently, named 0.8.0
+himself, and told Mulansky it was coming.
+
+So the description is the reviewed body, with two changes and no rewriting of what the
+murderboard already passed:
+
+- **Lead with Kreuz's confirmation and his example, not ours.** His two trains are six pairs
+  at 0.1 s steps and the expected answers are exact fractions a reader checks in their head —
+  strictly better as an opener than our 40.4/77.3/534.4 construction, which exists only to
+  manufacture an interior spike. Keep ours; it is the one that shows the *mechanism*, and the
+  ISI arithmetic under it is what makes the cause legible. Kreuz's goes first because it is
+  the one Mulansky's collaborator already agrees with.
+- **Add the row that closes it:** patched PySpike returns 0.500000 and 0.666667 on that
+  example, against cSPIKE's 0.5 and 2/3. Reference implementation and patched code, same
+  numbers, on an example neither of us chose to flatter the patch.
+
+**What to cut, if anything:** the seven-row provenance table is the piece whose job was
+persuasion, and Kreuz's *"we use it in the 2017 paper and again quite a lot in the two recent
+latency correction papers"* now does that job in one sentence with better authority. It is
+still the clearest statement of where the cap comes from, and it is cheap. **Recommend keeping
+it** and adding Mariani et al. 2025 Fig. 11 to it — Kreuz points at that figure as the explicit
+demonstration of what the parameter changes, and the table currently stops at 2017.
+
+**The PR needs a regression test**, which the issue did not. Upstream's suite has exactly one
+`max_tau` assertion (`test/test_distance.py:184`) and it cannot catch this — its one-spike
+partner train keeps the cap live, which is why the bug shipped for three years. Kreuz's example
+is the natural test: two trains, three caps, exact expected values, no fixture. Our own
+[`test_pyspike_max_tau_is_still_inert`](../../tests/test_sync_detect.py) is the inverse — it
+asserts the bug is *present* in the installed PySpike, so it goes red the day this merges and
+a release ships. That is intended, and it is the trigger for step 4.
+
+**A PR description is a document deliverable, so it goes through
+[`/murderboard`](../doc_review_process.md) before it is sent** — the issue body was reviewed as
+an issue, and the two additions above plus the reordering are new text nobody has reviewed.
 
 ---
 
@@ -86,8 +194,8 @@ carries the July commit date and gives the right answer.
 Draft the issue text below; **Tony reviews before anything is posted or sent**
 (external communication). After filing, add the issue URL here and flip status.
 
-**Kreuz first, then the tracker.** Tony corresponds with Thomas Kreuz directly,
-which beats a tracker that has gone three months without a maintainer comment.
+**Kreuz first, then the tracker — and it worked.** Tony corresponds with Thomas Kreuz
+directly, which beats a tracker that has gone three months without a maintainer comment.
 Kreuz is senior author on the measure papers, maintains cSPIKE — where the same
 parameter lives as `max_dist` — and works with Mulansky. So there are two
 artifacts here and they are not the same document: a short note to Kreuz, which
@@ -97,6 +205,14 @@ first; if he confirms it is a regression, the issue files itself with his answer
 behind it. If he says 0.8.0 dropped the cap on purpose, the report changes shape
 entirely — it becomes a docs bug — and we will have learned that in private
 rather than in public.
+
+> **Outcome, 2026-08-31 — keep this paragraph, it is the reason there is anything to send.**
+> The private route returned a confirmation, an independent reproduction, an endorsement of
+> the patch, a settled answer on the semantics, and the maintainer already cc'd — in three
+> days, from a tracker that would have offered none of it. It also cost the tracker step
+> entirely: Kreuz asked for the PR directly, so the "then the tracker" half never ran. A
+> later session choosing between a cold issue and a mail to the person who wrote the measure
+> has a data point here.
 
 **Before posting**: done — the branch landed as `6eafdb6` and all three repo links
 (fixture, `sync.py`, `test_sync_detect.py`) are pinned to that SHA, so they keep
@@ -109,17 +225,23 @@ No tool, no command — it is one page a person edits in the mail anyway, and
 putting a script in front of it was friction invented for no reason (Tony,
 2026-08-23).
 
-**The issue body does need the tool**, because it is 12 KB of fenced blocks and
+**The body does need the tool**, because it is 12 KB of fenced blocks and
 tables, and this file is hard-wrapped near 80 columns while GitHub turns every
 newline in an issue body into a line break — so pasting the source ships each
-paragraph as a stack of ragged lines. `gh` wants a file anyway:
+paragraph as a stack of ragged lines. `gh` wants a file anyway. **The destination changed on
+2026-08-31 from an issue to a pull request** (see **Route**); the body and the tool did not,
+so this is the same command with a different verb:
 
 ```bash
-python tools/pyspike_issue_body.py > /tmp/pyspike_issue.md
-gh issue create --repo mariomulansky/PySpike \
+python tools/pyspike_issue_body.py > /tmp/pyspike_pr.md
+gh pr create --repo mariomulansky/PySpike \
   --title "$(python tools/pyspike_issue_body.py --title)" \
-  --body-file /tmp/pyspike_issue.md
+  --body-file /tmp/pyspike_pr.md --head <fork>:restore-max-tau-cap --base master
 ```
+
+The fork does not exist yet and neither does the branch — nothing has been pushed anywhere
+outside this repo. Creating a public fork is itself an external act, so it waits for Tony
+with the rest.
 
 Rendered through GitHub's own markdown API, the issue body comes out as 2 tables
 (12 rows, all three cells wide), 10 code blocks, 7 links and no stray
