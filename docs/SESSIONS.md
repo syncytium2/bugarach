@@ -1690,7 +1690,14 @@ session's work is not a sweep.
 ---
 
 ### Mac/ranking-rule — DARKROOM claimed 2026-08-30, one report write
-- **Status:** ACTIVE — claimed before the write, not after.
+- **Status:** **RELEASED 2026-08-30. Nothing held; the darkroom is free.** The one file
+  landed — `<darkroom>/bugarach/reviews/ranking_rule_2026-08-30.md`, 8,791B — and the work
+  it belonged to merged as #418. The next session may write there without asking.
+  **Read that run record before re-deriving anything about the ranking rule.** It carries a
+  blocking residual that is Tony's and not a session's: the 0.02 tie margin does not make
+  the tiers reproducible across seed blocks — they agree at 0.08 — filed with three options
+  in `docs/todo/2026-08-30-the-tie-margin-does-not-survive-its-own-test.md`.
+- **Status was:** ACTIVE — claimed before the write, not after.
 - **Holds:** `<darkroom>/bugarach/` for **one file**: the murderboard run record for
   `docs/ranking_rule.md`. No deploy, no site build, no `constellation/` writes, no
   MATLAB. Released as soon as the copy lands — nothing here needs to keep it.
