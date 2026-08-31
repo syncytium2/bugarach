@@ -3,9 +3,9 @@ status: waiting-on-tony
 filed: 2026-08-31
 ---
 
-# Four naming decisions before the run store is built — and a prior-art pass nobody has run
+# Run-record naming: four decisions, and a prior-art pass nobody ran
 
-waiting: Rule on the four items in [`docs/run_records.md`](../run_records.md) §Decisions. They amend an accepted ADR and they land in an output contract two other teams read, so they are cheap now and expensive after.
+waiting: Rule the four items in `docs/run_records.md` — they amend ADR-0005 and land in a contract two other teams read.
 
 **Read [`docs/run_records.md`](../run_records.md).** This file is the queue entry; that
 one is the content.
