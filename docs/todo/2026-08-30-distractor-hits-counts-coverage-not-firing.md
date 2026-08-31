@@ -88,7 +88,7 @@ left-hand column is scored on with a tolerance. **The measure cannot currently d
 "fires on bursts" from "fires in wide spans", and those have opposite meanings for a
 ranking.**
 
-So D3's axis is **specified and not yet armed**: `bugarach.rank` carries the gate with its
+So D3's axis is **specified and not yet armed**: `bugarach.performance` carries the gate with its
 threshold set to `None`, and says why in the one place a reader will look.
 
 ## What the repair probably is
@@ -111,7 +111,7 @@ Not this branch. `src/bugarach/score.py` is declared off-limits by
 `tube-variants-overnight`, which is live and running fits on top of it, and changing the
 number re-quotes anything already published from `bakeoff.json`. `ranking-rule` reads the
 value and refuses to gate on it; whoever repairs it should re-arm the threshold in
-`bugarach.rank.MAX_DISTRACTOR_RATE` and say in the commit what moved.
+`bugarach.performance.MAX_DISTRACTOR_RATE` and say in the commit what moved.
 
 ## See also
 

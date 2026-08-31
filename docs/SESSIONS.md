@@ -1711,3 +1711,20 @@ session's work is not a sweep.
   Tony's. The repo keeps its own copy under `docs/reviews/`; both copies are the same
   file, because review and git history need the one in the tree and a person opening the
   darkroom needs the other.
+
+---
+
+### Mac/performance-table — DARKROOM claimed 2026-08-30, one report write
+- **Status:** ACTIVE — claimed before the write, not after. Released in the same session.
+- **Holds:** `<darkroom>/bugarach/` for **one file**:
+  `reviews/performance_table_2026-08-30.md`, the run record for an 11-of-11 murderboard.
+  No deploy, no site build, no `constellation/` writes, no MATLAB.
+- **What changed under it:** the ranking rule reviewed in the previous block is **gone**.
+  Tony, 2026-08-30: *"no ranking just a table of performance"*. The tiers, the beats
+  relation and the tie margin are removed; the gates stay as a reported column. So the
+  blocking residual advertised in the block above — the 0.02 margin — is **retired
+  without being answered**, and the darkroom copy of that earlier record now carries a
+  banner saying so. A session that reads only the older file would otherwise chase a
+  decision nobody needs.
+- **Also written:** the earlier record `reviews/ranking_rule_2026-08-30.md` gets its
+  superseded banner in the same pass, so the two files in that folder do not disagree.

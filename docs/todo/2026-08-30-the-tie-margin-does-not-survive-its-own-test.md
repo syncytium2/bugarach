@@ -1,11 +1,20 @@
 ---
-status: waiting-on-tony
+status: superseded
 filed: 2026-08-30
 ---
 
 # The tie margin does not survive its own test
 
-waiting: Decide the tie margin: 0.02 leaves the tiers irreproducible, 0.08 holds. Options in file.
+> **SUPERSEDED the same day — dissolved, not solved.** Tony: *"no ranking just a table of
+> performance … no one said we need to declare a winner."* The margin existed to decide
+> when one detector beats another; with no ordering there is nothing for it to decide, so
+> the question is retired without an answer. **It was never fixed — 0.02 still would not
+> have worked.** What replaced it: [the performance table](../performance_table.md).
+>
+> **Kept because the measurement is still true.** If an ordering is ever wanted again,
+> everything below is the evidence about what this bench can and cannot separate, and §5
+> of the performance table records why the standard statistical route (Friedman +
+> Nemenyi) is the wrong fit for a bench that ships deliberate controls.
 
 > **Not murderboarded** — a finding for sessions in this tree, produced during the
 > murderboard of [`docs/ranking_rule.md`](../ranking_rule.md). Every number is
