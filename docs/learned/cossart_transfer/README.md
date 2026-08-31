@@ -5,21 +5,18 @@ filed: 2026-08-31
 
 # The learned detectors are the best on another lab's field and the only ones that do not survive the trip
 
-> ⚠ **THE K IS WRONG, AND K WAS NEVER AN OPEN QUESTION.** Every number in this file is at
-> **k=3 and k=8**. The decided value is **K=12**, measured on 2026-08-29 across all 59 of
-> their recordings, written into
-> [the transfer handoff](../../handoffs/2026-08-29-the-transfer-experiment-and-two-things-i-corrected-myself-on.md),
-> indexed in `docs/INDEX.md` as *"K=3 vs K=12 — read before quoting any transfer figure"*,
-> and flagged in the `[cossart]` role of `current_export.toml` as **DO NOT TRANSPLANT OUR
-> K** — which is precisely what this run did.
+> **RE-RUN AT THE DECIDED K, 2026-08-31. Quote the K=12 table in §2a.** The k=3 and k=8
+> tables below were produced by transplanting our own K — which
+> [the transfer handoff](../../handoffs/2026-08-29-the-transfer-experiment-and-two-things-i-corrected-myself-on.md)
+> forbids in those words, `docs/INDEX.md` indexes as *"K=3 vs K=12 — read before quoting
+> any transfer figure"*, and the `[cossart]` role of `current_export.toml` flags in
+> capitals. **K=12 was measured on 2026-08-29 across all 59 of their recordings and was
+> never an open question.** The wrong-K tables are kept below because they are the
+> sensitivity evidence, and because deleting the error would delete why the conclusions
+> are trustworthy.
 >
-> **What survives and what does not.** The *shape* is unchanged across the two K values
-> actually run — every score rises a little with K and nothing reorders — so the three
-> conclusions in §"Three things it says" are directions worth keeping. **The numbers are
-> not quotable.** A re-run at K=12 was started 2026-08-31 and is not reflected here.
->
-> ⚠ **And the input data may be revised** (Tony, 2026-08-31), which would supersede a
-> K=12 re-run as well. Re-derive the spec before re-running.
+> ⚠ **The input data may be revised** (Tony, 2026-08-31), which supersedes K=12 as well.
+> Re-derive the spec before re-running anything here.
 >
 > Why this happened, and the repair that makes it impossible rather than documented:
 > [a decision in prose will be re-derived](../../todo/2026-08-31-a-decision-in-prose-will-be-re-derived.md).
@@ -28,10 +25,14 @@ filed: 2026-08-31
 > JSONs beside this file. **If any of it reaches an outside reader, murderboard that
 > artifact first.**
 >
-> ⚠ **NOBODY HAS LOOKED AT THE SPEC.** Both specs were produced with
-> `derive_spec.py --unreviewed` and say so in their own `notes`. `docs/RESET.md` §1 calls
-> that state *"not a weaker result of the same kind — not a result"*. Treat everything
-> below as a direction, not a number to quote.
+> ⚠ **THE K IS DECIDED; THE REST OF THE SPEC IS NOT REVIEWED.** All three specs were built
+> with `derive_spec.py --unreviewed` and say so in their own `notes` — that flag covers
+> every parameter, not just K, and `docs/RESET.md` §1 calls the unreviewed state *"not a
+> weaker result of the same kind — not a result"*. So §2a is the table to quote **against
+> the other two**, and none of it is a publishable figure until a human has read the spec.
+> The background shape in particular is **inherited from this lab**, because their export
+> yielded zero usable baseline windows — and a background is not a detail for detectors
+> that estimate one.
 
 Tony, overnight: *"compare the detectors performance on the dandiset from cossart with
 and without retraining."*
@@ -59,6 +60,50 @@ Two conditions, 4 folds of 2 seeds each:
 - **retrained** — fitted on the Cossart spec, scored on the Cossart spec.
 - **as-is** — fitted on **our** spec, scored on the Cossart spec. Nothing about the scored
   recordings reaches the fit; that seam is what `--score-spec` exists for and it is tested.
+
+## 2a. The result at the decided K — quote this one
+
+K=12, 4 folds of 2 seeds, both directions. F1, and planted events found out of 120.
+
+| detector | home | Cossart, retrained | Cossart, as-is | as-is hits |
+|---|---|---|---|---|
+| **tube_guard** | 0.673 | **0.885** | 0.272 | 19/120 |
+| **tube** | 0.681 | **0.836** | 0.256 | 25/120 |
+| **CoactDetect** | 0.651 | 0.790 | **0.789** | **107/120** |
+| LoCo | 0.638 | 0.777 | 0.728 | 114/120 |
+| tube_ratio | 0.503 | 0.740 | *no F1* | **0/120** |
+| tube_ratio_guard | 0.471 | 0.708 | *no F1* | **0/120** |
+| binned SCE | 0.420 | 0.528 | 0.514 | 57/120 |
+| locust | 0.541 | 0.431 | 0.422 | 86/120 |
+| rate+context | 0.571 | 0.416 | **0.168** | **120/120** |
+| trace | 0.118 | 0.295 | 0.133 | 9/120 |
+| SPIKE-synch | 0.254 | 0.167 | 0.178 | 40/120 |
+| tiny | 0.125 | 0.125 | 0.125 | 8/120 |
+
+**Every conclusion from the wrong-K runs survives, and sharpens.**
+
+- **CoactDetect transfers for free, and now that is not a hedge**: 0.790 refitted against
+  **0.789** carried over — a gap of 0.001 — on 107 of 120 events. LoCo costs 0.049.
+- **The learned models are the best on that field and cannot travel to it.** `tube_guard`
+  reaches **0.885** refitted, clear of every hand-written detector, and drops to 0.272
+  carried over; the two ratio variants find **nothing at all**.
+- **rate+context still fails with perfect recall** — 120 of 120 events found, F1 0.168.
+
+⚠ *no F1* is total failure, not missing data: zero hits, so recall and precision are both
+zero and F1 is 0/0.
+
+**Cost, which is a result in itself.** Direction A (fit *and* score on their field) took
+**9,348s**; direction B (fit on ours, score on theirs) took **726s** — a 13× gap. All of it
+is calibration: SPIKE-synch alone costs ~120s per recording on 566 ROIs against ~16s for
+CoactDetect. Nothing bugarach publishes reports calibration cost; `xRT` is detection only.
+For a lab deciding whether it can run this stack, that is the number that matters.
+
+---
+
+## The earlier runs at the wrong K, kept as sensitivity evidence
+
+Everything below is at **k=3 and k=8** and should not be quoted. It is retained because it
+shows the ordering is stable across K, which is why §2a can be trusted.
 
 ## The result, and it holds at both K
 
@@ -155,9 +200,9 @@ shipping the training loop rather than the weights.
 
 | file | what it is |
 |---|---|
-| `spec_k3.json`, `spec_k8.json` | generator specs derived from `assessment_cossart.json`, **unreviewed** |
-| `k3_retrained.json`, `k8_retrained.json` | fitted and scored on the Cossart spec |
-| `k3_as_is.json`, `k8_as_is.json` | fitted on ours, scored on the Cossart spec |
+| `spec_k12.json` (**the decided K**), `spec_k3.json`, `spec_k8.json` | generator specs derived from `assessment_cossart.json`, **unreviewed** |
+| `k12_retrained.json`, `k3_retrained.json`, `k8_retrained.json` | fitted and scored on the Cossart spec |
+| `k12_as_is.json`, `k3_as_is.json`, `k8_as_is.json` | fitted on ours, scored on the Cossart spec |
 
 ## Reproduce
 
