@@ -5,8 +5,7 @@ filed: 2026-08-30
 
 # The tie margin does not survive its own test
 
-waiting: Decide what to do about a 0.02 tie margin that does not make the tiers
-reproducible. Three options below; all three are D4 and none is a session's call.
+waiting: Decide the tie margin: 0.02 leaves the tiers irreproducible, 0.08 holds. Options in file.
 
 > **Not murderboarded** — a finding for sessions in this tree, produced during the
 > murderboard of [`docs/ranking_rule.md`](../ranking_rule.md). Every number is
