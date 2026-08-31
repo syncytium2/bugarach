@@ -332,10 +332,10 @@ report cites, and it is the reason the note asks rather than asserts.
 ### Summary
 
 Since 0.8.0, `max_tau` has had no effect on any pair of spikes that each have a
-neighbour on both sides in their own train — which is most pairs in most
-recordings. On two six-spike trains where cSPIKE returns 0.5 for
-`max_dist = 0.25`, PySpike returns 5/6, and returns the same 5/6 for
-`max_dist = 0.35`, and the same again at 1 µs.
+neighbour on both sides in their own train — call such a pair *interior*, and it
+is most pairs in most recordings. On two six-spike trains where cSPIKE returns
+3/6 at its `max_dist = 0.25`, PySpike at `max_tau = 0.25` returns 5/6 — and
+returns that same 5/6 at 0.35, and again at 1 µs.
 
 In `get_tau`, `max_tau` seeds each of the four neighbouring ISI slots, and each
 slot is overwritten as soon as that neighbour exists. All four are overwritten
@@ -372,10 +372,11 @@ tau_max within the new get_tau function in v0.8.0."* And on the fix: *"So this
 should clearly be fixed and I am happy with your suggested correction. Please go
 ahead with sending the PR to Mario."*
 
-What he saw was the one-sentence description of the fix in my note — bound the
-returned window by `max_tau/2`, since `get_tau` receives the already-doubled
-`true_max`. The diff, the test and the caveats below are new to him too, so his
-agreement covers the direction and not the details.
+What he saw was the one-sentence description of the fix in my note: bound the
+returned window by half the value `get_tau` is handed, because that value is
+already twice the user's cap (the `true_max` of the section below). The diff, the
+test and the caveats are new to him too, so his agreement covers the direction
+and not the details.
 
 I then applied the patch and re-ran his example: PySpike returns **0.500000** and
 **0.666667**, matching the cSPIKE figures he quoted.
@@ -461,12 +462,21 @@ neighbour lets the default survive — here just one such pair moves. Sweeping
 final pair of spikes; below it every positive value returns 0.3333, above it the
 uncapped 0.3500. (`max_tau=0`, like `None`, means no cap.)
 
-**Under the adaptive variants the cap is inert everywhere, including at the
-edges.** With `MRTS > 0` the seeded slot enters `Interpolate` as an argument of
-`max(MRTS/4, ...)` rather than as an outer bound, so the interpolation can walk
-straight past it. Searching 400k random short train pairs at `max_tau = 0.05`
-and `MRTS` in {2, 5, 10}, 0.9.0 reports coincidences whose nearest cross-train
-gap runs up to 0.96 s — 201 such cases; with this patch, none.
+**`MRTS > 0` opens a second route past the cap, this time at the edges.** `MRTS` —
+the minimum relevant time scale of Satuvuori et al. 2017, which stops short-ISI
+stretches producing spuriously narrow windows — is passed to the same `get_tau`.
+`Interpolate(a, b, t)` is bounded above by `b`, so a seeded slot arriving in that
+position still bounds the result; but a slot arriving as the *first* argument
+does not, and the interpolation can walk straight past it. So under `MRTS > 0`
+the cap survives at some edge spikes and leaks at others. A case you can run —
+it is `test_max_tau_bounds_an_mrts_raised_window` in the new test file:
+
+```python
+a = pyspike.SpikeTrain([0.0, 0.1, 2.1, 2.2, 4.2, 4.3], 6.0)
+b = pyspike.SpikeTrain([0.4, 0.5, 2.5, 2.6, 4.6, 4.7], 6.0)
+# nearest cross-train pair is 0.3 apart, so a 0.2 cap should admit nothing
+pyspike.spike_sync(a, b, max_tau=0.2, MRTS=2.0)   # 0.166667 shipped, 0.0 patched
+```
 
 ### Scope
 
@@ -481,6 +491,11 @@ affected surface is wider than SPIKE-Sync:
 - the six `spike_train_order` entry points
 - `optimal_spike_train_sorting`, which reaches them through
   `spike_directionality_matrix` rather than calling `get_tau` itself
+
+For scale: on a 2670-event recording of ours at a 0.25 s cap, the shipped code
+reports **4.5× the synchrony the capped definition allows** — 0.3133 against
+0.0696. The numbers behind that are at the end, under *what the inert cap costs
+downstream*.
 
 ### Cause
 
@@ -506,6 +521,7 @@ if j > 0:
     mP2 = (spikes2[j]-spikes2[j-1])
 
 mF1, mF2, mP1, mP2 = mF1/2., mF2/2., mP1/2., mP2/2.
+...                              # <- MRTS /= 4. elided
 
 if i<0 or j<0 or spikes1[i] <= spikes2[j]:
     s1F = Interpolate(mP1, mF1, MRTS)
@@ -515,7 +531,7 @@ if i<0 or j<0 or spikes1[i] <= spikes2[j]:
 
 One slot per neighbour, and each is claimed by that neighbour if it exists:
 
-| slot | seeded with | overwritten when | value in the example above |
+| slot | seeded with | overwritten when | value in the 7.7 s example above |
 | --- | --- | --- | --- |
 | `mP1` | `max_tau` | train a has an earlier spike | 36.9 |
 | `mF1` | `max_tau` | train a has a later spike | 457.1 |
@@ -528,10 +544,13 @@ never touches. **MRTS does not substitute for a cap**: `Interpolate` is bounded
 above by its second argument, the half-ISI facing the other spike, so raising
 MRTS can only move the window up toward that bound, never down.
 
-The clamp existed until 0.8.0, which replaced three per-file copies of `get_tau`
-with one shared implementation that no longer carries it — so it left all three
-call sites at once. In 0.7.0 the seed and the cap were separate parameters, and
-`max_tau` there was the user's raw value rather than today's `true_max`:
+The clamp existed until 0.8.0. 0.7.0 carried `get_tau` separately in each of the
+three `.pyx` files and again in `python_backend.py`, and those copies ended with
+the clamp; 0.8.0 consolidated the Cython side into one shared implementation that
+does not carry it, and the pure-Python copy lost it too — so this was not a
+single edit to a single consolidated function. In 0.7.0 the seed and the cap were
+separate parameters, and `max_tau` there was the user's raw value rather than
+today's `true_max`:
 
 ```cython
     m *= 0.5
@@ -556,10 +575,10 @@ Yes, and not only on Kreuz's say-so. He confirms the parameter is one his group
 still uses — their approach is *"to give the user options and not impose one
 specific variant over any other"*, so the parameter-free measure stays the
 default and `max_tau` is an option that has to work. He puts its absence from his
-2025 review ([arXiv:2510.07140](https://arxiv.org/abs/2510.07140), in press at
-*Biological Cybernetics*) down to space rather than to a withdrawal, and points
-at the 2017 paper and the two recent latency-correction papers as where it is
-actually used.
+review ([Biol Cybern 120:21](https://doi.org/10.1007/s00422-026-01045-5), 2026)
+down to space rather than to a withdrawal, and points at Kreuz et al. 2017 and
+the two recent latency-correction papers as where it is actually used. All three
+are in the table below.
 
 <details>
 
@@ -576,7 +595,7 @@ that the cap is not an invention of the implementations:
 | **yes — `τmax`** | Kreuz, Satuvuori, Pofahl & Mulansky 2017 ([New J Phys 19:043028](https://doi.org/10.1088/1367-2630/aa68c3)) | *"For some applications it might be appropriate to additionally introduce a maximum coincidence window τmax as a parameter."* Used in §3.3 with τmax = 9 months |
 | **yes — `τmax`** | Kreuz et al. 2022 ([J Neurosci Methods 381:109703](https://doi.org/10.1016/j.jneumeth.2022.109703)) | *"…combining the time-scale independent coincident detection with a time-scale dependent upper limit."* |
 | **yes — `τmax`** | Mariani et al. 2025 ([J Neurosci Methods 416:110378](https://doi.org/10.1016/j.jneumeth.2025.110378), [arXiv:2410.15018](https://arxiv.org/abs/2410.15018)) | Fig. 11 applies *"a maximum time interval of 2.5ms between matched spikes"* to the gerbil data, alongside a Spike Train Order threshold, and reports that it *"reduces the number of mismatched spikes […] considerably"* |
-| yes — `max_dist` | cSPIKE | `Spiketrains.cpp:453` requires `\|Δt\| < TAUij` **and** `\|Δt\| < max_dist` |
+| yes — `max_dist` | cSPIKE | cSPIKE v1.5 `Spiketrains.cpp:453` requires `\|Δt\| < TAUij` **and** `\|Δt\| < max_dist` |
 | yes — `max_tau` | PySpike ≤ 0.7.0 | `if max_tau > 0.0: m = fmin(m, max_tau)` |
 | **no** | PySpike ≥ 0.8.0 | seeds four ISI slots, all overwritten for an interior pair |
 
@@ -648,7 +667,7 @@ Patched, the sweep above becomes:
     None       0.3500          0.3500
      1.0       0.3333          0.1833
     0.25       0.3333          0.0500
-   1 µs        0.3333          0.0000
+   1e-06       0.3333          0.0000
 ```
 
 The score becomes monotone in `max_tau` for SPIKE-Sync, where it follows from
@@ -659,23 +678,27 @@ these same trains the patched values run −0.016667 uncapped, −0.050000 at 1.
 
 ### Does `max_tau` override an MRTS-raised window?
 
-Yes, and I do not think this is a judgement call. Kreuz et al. 2017 §3.3
-introduces τmax alongside the adaptive window, not instead of it — *"We still use
-the adaptive coincidence detection from Eq. 1 but define a maximum coincidence
-window τmax"* — and its purpose there is a hard physical constraint (a
-propagation speed), the kind that should not be defeated by a resolution floor.
-Satuvuori's Eqs. 17–18 already pair MRTS with its own ISI ceiling: *"each side is
-limited to half the ISI even if the threshold is larger."*
+I believe this is forced rather than chosen, but it is your library and your
+call. **Kreuz, Satuvuori, Pofahl & Mulansky 2017** (New J Phys 19:043028)
+introduces τmax in §2.1 alongside the adaptive window, not instead of it, and
+applies it to the El Niño data of §3.3; Appendix B puts it plainly — *"We still
+use the adaptive coincidence detection from Eq. 1 but define a maximum
+coincidence window τmax"*, there set to 9 months. Its purpose is a hard physical
+constraint, a propagation speed, the kind that should not be defeated by a
+resolution floor. **Satuvuori et al. 2017**
+(J Neurosci Methods 287:25), which introduced MRTS, already pairs it with its own
+ISI ceiling: *"each side is limited to half the ISI even if the threshold is
+larger."*
 
-And because `min` is associative and commutative, applying the cap inside
-Eqs. 17–18 per side or outside Eq. 19 gives the same function — so the placement
-in this patch is not one choice among several. Flagging it because it is a real
-behaviour change under `MRTS > 0`, not because I think it is open.
+And because `min` is associative and commutative, applying the cap per side
+inside the MRTS expression or once outside it gives the same function — so the
+placement in this patch is not one choice among several. Flagging it because it
+is a real behaviour change under `MRTS > 0`, not because I think it is open.
 
 ### The regression test
 
 `test/test_max_tau.py` is new here, and it exists because nothing in the suite
-pairs two spikes that are each interior to their own train. The existing
+passes `max_tau` for a pair of spikes that are each interior to their own train. The existing
 `max_tau` assertion (`test/test_distance.py:184`) scores a three-spike train
 against `SpikeTrain([2.1], 4.0)`; the one-spike partner leaves two slots seeded,
 so the cap stays live and the assertion passes either way. It is untouched and
@@ -694,9 +717,9 @@ no reference file:
 | with the patch | 1/6 | 2/6 | 3/6 | 4/6 | 5/6 | 6/6 |
 
 The last two columns agree; only the strictly-increasing check separates them.
-The first column is set by the pair at separation 0, which the equal-times fast
-path admits without consulting the window at all — so that cell pins the tie
-behaviour rather than the cap.
+The first column is set by the pair at separation 0, which the equal-times branch
+admits without calling `get_tau` at all — so that cell is insensitive to the cap
+rather than a test of it.
 
 Six tests: the staircase above; `spike_sync_profile` under a 0.25 s cap; the same
 bound reaching `spike_directionality`; the staircase's strict increase rather
@@ -707,30 +730,43 @@ remain no-ops; and one `MRTS > 0` case, since that is where the cap leaks worst.
 Five of the six fail on 0.9.0 as shipped and pass with the patch, compiled and
 pure-Python alike. The sixth is the `0`/`None` no-op, which passes either way —
 it is there to keep it passing. With them the suite is **56 tests over 13
-collecting files**, against 50 over 12 today. Run them from outside the source
-tree: from inside `test/`, the working copy shadows the installed package and
-even the failing five come up green.
+collecting files**, against 50 over 12 today. I ran it from the source root
+against a build of the patched tree, and separately against an installed
+unpatched 0.9.0 from a directory outside the tree.
 
 ### What changes for existing users
 
 Nothing, when `max_tau` is `0` or `None` and `Reconcile` is left at its default —
-verified over the full suite and ~12,600 differential probes on both backends.
-Three things do change, and all three follow from the cap working:
+verified over the full suite and ~12,600 probes comparing shipped against patched
+output on both backends. (`Reconcile` is the flag that sorts, de-duplicates and
+trims each train to the common interval before analysis; it defaults to on.)
+Four things do change, and all four follow from the cap working:
 
 - **A boundary now exists.** `|Δt| == max_tau` is no longer a coincidence, which
   matches cSPIKE's strict `|Δt| < max_dist` and 0.7.0's behaviour.
 - **`Reconcile=False`.** A half-ISI can exceed the recording span, and 0.9.0
   returns it where this bounds it at half the span — a restoration of 0.7.0
   rather than a new hazard, but it moves numbers: fuzzing 3,000 pairs with spikes
-  drawn well outside the interval, 23 differed, always downward, sometimes to
-  zero (0.5714 → 0.2857, 0.2857 → 0.0000). `test_reconcile.py` passes either way.
-- **A working cap can filter a train to empty.** `filter_by_spike_sync` with a
-  tight `max_tau` now returns empty trains where it previously returned a few
-  spikes, and 0.9.0 raises `ZeroDivisionError` on `spike_directionality` of an
-  empty train while `spike_sync` returns 1.0. That empty-train handling is
-  pre-existing — it fires on 0.9.0 today if you hand it an empty train directly —
-  but this patch makes it reachable from an ordinary call chain. Happy to open it
-  as a separate issue; it is not in scope here.
+  drawn well outside the interval, 23 `spike_sync` values differed, always
+  downward, sometimes to zero (0.5714 → 0.2857, 0.2857 → 0.0000); the signed
+  measures move both ways, as they do under any tightening of the window.
+  `test_reconcile.py` passes either way.
+- **A working cap filters more aggressively, and empty trains are a rough
+  landing.** `filter_by_spike_sync` with a tight `max_tau` returns empty trains on
+  inputs where it previously returned a few spikes. Empty trains are already
+  reachable on 0.9.0 — a tight cap plus a high threshold does it today, without
+  this patch — so the hazard is pre-existing, but the patch makes it much easier
+  to hit. `spike_directionality` raises `ZeroDivisionError` on an empty train and
+  `spike_sync` returns 1.0. Happy to open that separately; it is not in scope
+  here.
+- **`optimal_spike_train_sorting` can return a different permutation.** On five
+  jittered synfire trains it returns `[0,1,2,3,4]` with synfire indicator 50.0
+  as shipped at `max_tau = 0.25`, and `[1,2,4,0,3]` with 5.0 patched. At
+  `max_tau = 0.01` the directionality matrix underneath it is **all zero**, so the
+  ordering handed back is arbitrary rather than meaningful — worth knowing, since
+  this output is a permutation people publish. Both are the cap doing its job on a
+  matrix that no longer has evidence in it, but neither is a number quietly
+  shifting.
 
 <details>
 

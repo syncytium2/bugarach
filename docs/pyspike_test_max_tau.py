@@ -37,7 +37,8 @@ def test_spike_sync_max_tau_bounds_interior_pairs():
 
     # Each cap sits between two separations, so it admits one further pair.
     # The first row is set by the pair at separation 0, which the equal-times
-    # fast path admits without consulting the window at all.
+    # branch admits without calling get_tau at all -- that row is insensitive
+    # to the cap rather than a test of it.
     for max_tau, expected in ((0.05, 1.0 / 6),
                               (0.15, 2.0 / 6),
                               (0.25, 3.0 / 6),
@@ -102,10 +103,8 @@ def test_no_cap_is_unchanged():
     # The property the patch promises to preserve, and the one a later
     # refactor is most likely to break: 0 and None mean no upper bound, and
     # must return what an uncapped call returns.
-    rng = np.random.default_rng(3)
-    edges = (0.0, 100.0)
-    spikes1, spikes2 = (SpikeTrain(np.sort(rng.uniform(*edges, 20)), edges)
-                        for _ in range(2))
+    spikes1 = SpikeTrain([0.4, 1.9, 4.1, 6.6, 8.0], 10.0)
+    spikes2 = SpikeTrain([0.9, 2.7, 3.3, 7.2, 9.4], 10.0)
 
     uncapped = spk.spike_sync(spikes1, spikes2)
     assert_almost_equal(spk.spike_sync(spikes1, spikes2, max_tau=0),
