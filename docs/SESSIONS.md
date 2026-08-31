@@ -1714,8 +1714,31 @@ session's work is not a sweep.
 
 ---
 
+### Mac/overnight-2026-08-30 — DARKROOM claimed for the fireflies export
+- **Status:** ACTIVE — claimed before the write, not after. Overnight run, Tony asleep.
+- **Holds:** `<darkroom>/bugarach/detect/2026-08-18_revised_2v_periods/` — the output of
+  `bugarach detect` over the whole export folder, which is where that command sends its
+  three files by default. **New directory, nothing overwritten.** No deploy, no site
+  build, no `constellation/` writes, no MATLAB.
+- **Why:** Tony, 2026-08-30, going to sleep: *"run the full pipeline on the senktide and
+  ttx data sets. export the data for fireflies, have them generate before after plots for
+  the coordinated events."*
+- **What this is and is not.** It is the six ports run over every recording in the folder,
+  writing `detections.csv` with the producer's own `region_idx` / `region_label` carried
+  per detection — so baseline / senktide / TTX / high K+ / wash / SB222200 are all
+  distinguishable downstream without this repo taking a view. **It is not a before/after
+  analysis.** FOUNDATIONS §9: treatment effects are `fireflies`' and must not be re-derived
+  here. bugarach exports; fireflies plots. Nothing here is fitted on treatment data —
+  `detect` runs shipped operating points and trains nothing, and Tony confirmed the rule in
+  the same session: *"all training and optimization is on the baseline periods for our
+  data."*
+- **⚠ Real-data-derived output, so it goes to the darkroom and NEVER to the repo**
+  (FOUNDATIONS §5). No slice ids, counts or derived figures from it get committed.
+
+---
+
 ### Mac/performance-table — DARKROOM claimed 2026-08-30, one report write
-- **Status:** ACTIVE — claimed before the write, not after. Released in the same session.
+- **Status:** **RELEASED.** Both records written; nothing held.
 - **Holds:** `<darkroom>/bugarach/` for **one file**:
   `reviews/performance_table_2026-08-30.md`, the run record for an 11-of-11 murderboard.
   No deploy, no site build, no `constellation/` writes, no MATLAB.
