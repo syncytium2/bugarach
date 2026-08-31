@@ -1,11 +1,20 @@
 ---
-status: waiting-on-tony
+status: parked
 filed: 2026-08-31
 ---
 
 # Promote the 24-seed bake-off, or leave it beside the 8-seed run?
 
-waiting: One decision. Promoting re-quotes about ten docs, the site and several figures.
+> **HELD 2026-08-31 — the question is no longer live.** Tony: *"we're going to hold on the
+> 24 seed run. the input data may need revision."* Two reasons not to promote anything yet:
+> the input data may change underneath it, and the run came out of the same ungated
+> calibration that the next piece of work repairs. **Fix the gate, then re-run, then promote
+> once** — the re-run is under ten minutes, and re-quoting ten documents twice is not.
+>
+> Next work: [the gate fix](../handoffs/2026-08-31-the-gate-fix-the-bakeoff-calibrates-without-one.md).
+>
+> Nothing below is withdrawn. The measurements stand; the hold is about what to publish,
+> not about whether the numbers are right.
 
 [`docs/learned/bakeoff_24seed.md`](../learned/bakeoff_24seed.md) has the numbers.
 

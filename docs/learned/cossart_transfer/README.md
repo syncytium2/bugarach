@@ -1,11 +1,28 @@
 ---
-status: waiting-on-tony
+status: open
 filed: 2026-08-31
 ---
 
 # The learned detectors are the best on another lab's field and the only ones that do not survive the trip
 
-waiting: Choose a K for the Cossart assessment. Every number here is at an unreviewed K, and `derive_spec` refuses to pick one because it is a human's call.
+> ⚠ **THE K IS WRONG, AND K WAS NEVER AN OPEN QUESTION.** Every number in this file is at
+> **k=3 and k=8**. The decided value is **K=12**, measured on 2026-08-29 across all 59 of
+> their recordings, written into
+> [the transfer handoff](../../handoffs/2026-08-29-the-transfer-experiment-and-two-things-i-corrected-myself-on.md),
+> indexed in `docs/INDEX.md` as *"K=3 vs K=12 — read before quoting any transfer figure"*,
+> and flagged in the `[cossart]` role of `current_export.toml` as **DO NOT TRANSPLANT OUR
+> K** — which is precisely what this run did.
+>
+> **What survives and what does not.** The *shape* is unchanged across the two K values
+> actually run — every score rises a little with K and nothing reorders — so the three
+> conclusions in §"Three things it says" are directions worth keeping. **The numbers are
+> not quotable.** A re-run at K=12 was started 2026-08-31 and is not reflected here.
+>
+> ⚠ **And the input data may be revised** (Tony, 2026-08-31), which would supersede a
+> K=12 re-run as well. Re-derive the spec before re-running.
+>
+> Why this happened, and the repair that makes it impossible rather than documented:
+> [a decision in prose will be re-derived](../../todo/2026-08-31-a-decision-in-prose-will-be-re-derived.md).
 
 > **Not murderboarded** — a finding for sessions in this tree. Every number is in the
 > JSONs beside this file. **If any of it reaches an outside reader, murderboard that
