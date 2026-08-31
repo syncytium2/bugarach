@@ -1686,3 +1686,21 @@ session's work is not a sweep.
 - **Task:** run `sce` and `loco` at the `bugarach.bench` operating points on the FAST stream
   of `20240813_39` — a baseline-only recording, the one slice released by name (FOUNDATIONS
   §5) — and draw the detections in a lane above its raster.
+
+---
+
+### Mac/ranking-rule — DARKROOM claimed 2026-08-30, one report write
+- **Status:** ACTIVE — claimed before the write, not after.
+- **Holds:** `<darkroom>/bugarach/` for **one file**: the murderboard run record for
+  `docs/ranking_rule.md`. No deploy, no site build, no `constellation/` writes, no
+  MATLAB. Released as soon as the copy lands — nothing here needs to keep it.
+- **Why it is on this board and not the machine-local one:** the darkroom is mounted on
+  every machine, so another session can see and overwrite what is written there. The
+  repo work behind it (a new `bugarach.rank`, its tests, and two todos) touches nothing
+  another machine can reach and is claimed locally.
+- **What is being written:** `reviews/ranking_rule_2026-08-30.md` — the run record for an
+  11-of-11 murderboard. It carries a **blocking** residual: the rule's 0.02 tie margin
+  does not make the tiers reproducible across seed blocks, which is decision D4 and is
+  Tony's. The repo keeps its own copy under `docs/reviews/`; both copies are the same
+  file, because review and git history need the one in the tree and a person opening the
+  darkroom needs the other.
