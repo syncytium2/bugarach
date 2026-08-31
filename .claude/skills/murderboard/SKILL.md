@@ -1,5 +1,5 @@
 ---
-<!-- vendored from syncytium2/murderboard @ f62acb3 — canonical source; do NOT edit here, update upstream and re-copy -->
+<!-- vendored from syncytium2/murderboard @ 564b944 — canonical source; do NOT edit here, update upstream and re-copy -->
 # canonical: syncytium2/murderboard skills/murderboard/SKILL.md
 # When vendoring, INSERT a line just below the --- above: vendored from https://github.com/syncytium2/murderboard @ <short-sha> — do NOT edit here; update by re-copying. (murderboard_revendor.py does this, and keeps it in the right place.)
 name: murderboard
