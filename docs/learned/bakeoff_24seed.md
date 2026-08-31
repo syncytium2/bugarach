@@ -1,11 +1,21 @@
 ---
-status: waiting-on-tony
+status: parked
 filed: 2026-08-30
 ---
 
 # The bake-off at 24 seeds: the top four converge, and a second detector fails its gate
 
-waiting: Promote this run over the shipped 8-seed one, or leave it beside it? Promotion re-quotes ~10 docs, the site and several figures.
+> **HELD 2026-08-31. Do not promote this run.** Tony: *"we're going to hold on the 24 seed
+> run. the input data may need revision."* It is also, like the 8-seed run beside it, the
+> output of a calibration that picks each fold's knob by raw argmax with **no probe gate** —
+> which is exactly why locust reads 30.62/min here against a ceiling of 25. Promoting it
+> would publish numbers from the defect twice: once now, once again after the repair.
+>
+> **Order: fix the gate → re-run → promote once.**
+> [The gate fix handoff](../handoffs/2026-08-31-the-gate-fix-the-bakeoff-calibrates-without-one.md)
+> is the next piece of work and cites this file's numbers as its evidence.
+>
+> Nothing below is withdrawn. §4's gate failures are the strongest argument *for* the fix.
 
 > **Not murderboarded** — a finding for sessions in this tree. Every number is in
 > `bakeoff_24seed.json` beside this file. **If any of it reaches an outside reader,
