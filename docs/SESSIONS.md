@@ -1686,3 +1686,68 @@ session's work is not a sweep.
 - **Task:** run `sce` and `loco` at the `bugarach.bench` operating points on the FAST stream
   of `20240813_39` — a baseline-only recording, the one slice released by name (FOUNDATIONS
   §5) — and draw the detections in a lane above its raster.
+
+---
+
+### Mac/ranking-rule — DARKROOM claimed 2026-08-30, one report write
+- **Status:** **RELEASED 2026-08-30. Nothing held; the darkroom is free.** The one file
+  landed — `<darkroom>/bugarach/reviews/ranking_rule_2026-08-30.md`, 8,791B — and the work
+  it belonged to merged as #418. The next session may write there without asking.
+  **Read that run record before re-deriving anything about the ranking rule.** It carries a
+  blocking residual that is Tony's and not a session's: the 0.02 tie margin does not make
+  the tiers reproducible across seed blocks — they agree at 0.08 — filed with three options
+  in `docs/todo/2026-08-30-the-tie-margin-does-not-survive-its-own-test.md`.
+- **Status was:** ACTIVE — claimed before the write, not after.
+- **Holds:** `<darkroom>/bugarach/` for **one file**: the murderboard run record for
+  `docs/ranking_rule.md`. No deploy, no site build, no `constellation/` writes, no
+  MATLAB. Released as soon as the copy lands — nothing here needs to keep it.
+- **Why it is on this board and not the machine-local one:** the darkroom is mounted on
+  every machine, so another session can see and overwrite what is written there. The
+  repo work behind it (a new `bugarach.rank`, its tests, and two todos) touches nothing
+  another machine can reach and is claimed locally.
+- **What is being written:** `reviews/ranking_rule_2026-08-30.md` — the run record for an
+  11-of-11 murderboard. It carries a **blocking** residual: the rule's 0.02 tie margin
+  does not make the tiers reproducible across seed blocks, which is decision D4 and is
+  Tony's. The repo keeps its own copy under `docs/reviews/`; both copies are the same
+  file, because review and git history need the one in the tree and a person opening the
+  darkroom needs the other.
+
+---
+
+### Mac/overnight-2026-08-30 — DARKROOM claimed for the fireflies export
+- **Status:** ACTIVE — claimed before the write, not after. Overnight run, Tony asleep.
+- **Holds:** `<darkroom>/bugarach/detect/2026-08-18_revised_2v_periods/` — the output of
+  `bugarach detect` over the whole export folder, which is where that command sends its
+  three files by default. **New directory, nothing overwritten.** No deploy, no site
+  build, no `constellation/` writes, no MATLAB.
+- **Why:** Tony, 2026-08-30, going to sleep: *"run the full pipeline on the senktide and
+  ttx data sets. export the data for fireflies, have them generate before after plots for
+  the coordinated events."*
+- **What this is and is not.** It is the six ports run over every recording in the folder,
+  writing `detections.csv` with the producer's own `region_idx` / `region_label` carried
+  per detection — so baseline / senktide / TTX / high K+ / wash / SB222200 are all
+  distinguishable downstream without this repo taking a view. **It is not a before/after
+  analysis.** FOUNDATIONS §9: treatment effects are `fireflies`' and must not be re-derived
+  here. bugarach exports; fireflies plots. Nothing here is fitted on treatment data —
+  `detect` runs shipped operating points and trains nothing, and Tony confirmed the rule in
+  the same session: *"all training and optimization is on the baseline periods for our
+  data."*
+- **⚠ Real-data-derived output, so it goes to the darkroom and NEVER to the repo**
+  (FOUNDATIONS §5). No slice ids, counts or derived figures from it get committed.
+
+---
+
+### Mac/performance-table — DARKROOM claimed 2026-08-30, one report write
+- **Status:** **RELEASED.** Both records written; nothing held.
+- **Holds:** `<darkroom>/bugarach/` for **one file**:
+  `reviews/performance_table_2026-08-30.md`, the run record for an 11-of-11 murderboard.
+  No deploy, no site build, no `constellation/` writes, no MATLAB.
+- **What changed under it:** the ranking rule reviewed in the previous block is **gone**.
+  Tony, 2026-08-30: *"no ranking just a table of performance"*. The tiers, the beats
+  relation and the tie margin are removed; the gates stay as a reported column. So the
+  blocking residual advertised in the block above — the 0.02 margin — is **retired
+  without being answered**, and the darkroom copy of that earlier record now carries a
+  banner saying so. A session that reads only the older file would otherwise chase a
+  decision nobody needs.
+- **Also written:** the earlier record `reviews/ranking_rule_2026-08-30.md` gets its
+  superseded banner in the same pass, so the two files in that folder do not disagree.

@@ -115,17 +115,36 @@ cd "$root" || exit 0
 #   smallest payload SPILLED            10,186B   (of 55 refusals on record)
 #   therefore the threshold is in       (8,768, 10,186]
 #
-# 9,000 stays, and the census is why rather than the guess being why. Two things
-# pin it from both sides: it must sit under the smallest observed spill, and it must
-# sit ABOVE the ordinary briefing — 8,016B bare, 8,768B with a root handoff. Lowering
-# it to match the sibling's 8,000, which was this file's first instinct, would have
-# degraded §9 to its claims on every single run and called that normal.
+# Two things pin it from both sides: it must sit under the smallest observed spill,
+# and it must sit ABOVE the ordinary briefing. Lowering it to match the sibling's
+# 8,000, which was this file's first instinct, would have degraded §9 to its claims
+# on every single run and called that normal.
+#
+# RAISED 9,000 -> 9,150 on 2026-08-30, and the same census is still why. Re-run, the
+# record had moved — 66 refusals now, not 55:
+#
+#   largest payload DELIVERED whole      9,019B
+#   smallest payload SPILLED            10,186B
+#   therefore the threshold is in        (9,019, 10,186]   -> safe up to 9,186B
+#
+# What forced it was the LOWER bound, not the upper one. The ordinary briefing on a
+# FRESH CLONE — no export folder, no darkroom, no local board — costs about 270B more
+# than on a set-up machine, because each missing resource prints a warning. That is
+# not a CI artifact: FOUNDATIONS §8 requires this repo to resume on any machine, and a
+# new laptop looks exactly like a fresh clone. Measured there the briefing reached
+# 9,057B and the ladder degraded §9 to its claims — silently, on the one machine whose
+# operator has the least context. 9,150 clears that and stays 1,036B under the
+# smallest refusal.
+#
+# It is close. The briefing carries roughly one more waiting-on-Tony item of headroom
+# before this recurs, and the structural fix is not another 150B:
+# docs/todo/2026-08-30-the-briefing-has-one-todo-of-headroom.md
 #
 # Read inside deliver(), never captured at load, so a caller can override it.
 # The variable is named after THIS script: the sibling hook reads
 # BUGARACH_SESSION_START_BUDGET_BYTES, because sharing one name meant setting it to
 # test either hook silently retuned the other.
-briefing_budget() { echo "${BUGARACH_BRIEFING_BUDGET_BYTES:-9000}"; }
+briefing_budget() { echo "${BUGARACH_BRIEFING_BUDGET_BYTES:-9150}"; }
 
 # Cap a variable-length alarm at a byte budget, cutting ONLY at a line end or an
 # ASCII space — never mid-character, which is how prose becomes mojibake. LC_ALL=C
@@ -458,18 +477,26 @@ print(p if p else "")' 2>/dev/null)
 
   # --- 6. the gates that apply before work is handed over -------------------------
   # Listed because these are the ones sessions skip. Every item here was skipped by
-  # a session that had read neither CLAUDE.md nor this list.
+  # a session that had read neither CLAUDE.md nor this list -- so all four gates keep
+  # their own line and none may be dropped for space.
+  #
+  # What WAS dropped, 2026-08-30: the tool-path sub-lines, and the block went from
+  # seven lines to five. Everything above this point is an alarm true only of this
+  # run; this block is standing guidance. When the region overran the ~1.5KB that
+  # section 7's spill-preview guarantee assumes -- 2,326B, which put the unpushed-work
+  # alarm outside a 2KB preview -- this was the only part that could afford it.
+  # Re-expanding it costs a spilled briefing whose preview carries boilerplate and
+  # drops the alarms. The tool paths live in CLAUDE.md.
   echo
   echo "--- gates, before you hand anything over ---"
   echo "   can't find something, or about to build one?  docs/INDEX.md FIRST —"
   echo "     keywords -> the file that owns the answer. It exists because a session"
   echo "     re-derived the DANDI transfer machinery that was already in the tree."
-  echo "   document deliverable (report, explainer, methodology, figure + caption, handoff)?"
-  echo "     -> /murderboard <artifact> FIRST. Not a first draft. docs/doc_review_process.md"
+  echo "   document deliverable (report, explainer, figure + caption, handoff)?"
+  echo "     -> /murderboard <artifact> FIRST. Not a first draft."
   echo "   landing work?  branch + green PR; never commit on main."
   echo "   a visual finding?  render the figure and show it — do not describe it."
-  echo "     -> tools/make_diagnostic.py, tools/make_generator_figures.py"
-  echo "   writing to the darkroom?  it is shared across machines — claim it on docs/SESSIONS.md."
+  echo "   writing to the darkroom?  shared across machines — claim it on docs/SESSIONS.md."
 
   # --- 7. the facts about the preparation, straight out of FOUNDATIONS -----------
   # Below the alarms because it is the one section large enough to bury them, and

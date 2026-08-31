@@ -1,4 +1,4 @@
-<!-- vendored from syncytium2/murderboard @ f62acb3 — canonical source; do NOT edit here, update upstream and re-copy -->
+<!-- vendored from syncytium2/murderboard @ 564b944 — canonical source; do NOT edit here, update upstream and re-copy -->
 # The murderboard — critical review process for document deliverables (anti-slop)
 
 A standing, project-neutral review process. Its purpose is to stop **slop** — unsourced
