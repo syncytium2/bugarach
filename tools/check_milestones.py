@@ -50,12 +50,33 @@ PATHY = re.compile(
 # Cells that are deliberately not paths: a dotted code symbol, or a placeholder.
 NOT_A_PATH = re.compile(r"^(—|-|n/a|[A-Za-z_][A-Za-z0-9_]*\.[A-Z][A-Z0-9_]*)$")
 
-# An `evidence` row asserting its own subject is settled. Negation and futurity are
-# exempt: the honest hedge must survive, or the rule punishes the writing it protects.
+# An `evidence` row asserting its own subject is settled.
+#
+# THIS WAS A BLOCKLIST OF FIVE IDIOMS AND AN ADVERSARIAL PASS DEFEATED IT FOURTEEN WAYS,
+# including with a sentence sitting in the tree right now --
+# `docs/todo/2026-08-31-two-overnight-results-need-a-ruling.md`: "K=12 was already
+# decided". One inserted adverb broke a literal `was decided` match. So: match the LEMMA
+# (decid/chos/settl/resolv/final/rul/pick/clos) and allow intervening words, rather than
+# freezing the phrasings we happened to think of.
+#
+# TWO PATTERNS, BECAUSE NEGATION CUTS BOTH WAYS. "K was never decided" is the honest
+# hedge and must pass; "it was never an open question" is the assertion and must fail.
+# Both contain "never". What differs is WHAT is negated -- the settling, or the openness.
+# So a negator exempts a SETTLED-lemma hit, and never exempts a DENIES_OPEN hit.
 ASSERTS_SETTLED = re.compile(
-    r"\b(the decided|was decided|is decided|has been decided|settled"
-    r"|was chosen|is final|never an open question)\b", re.I)
-NEGATED = re.compile(r"\b(not|never|no|yet|pending|awaiting|refuses|unchosen|open)\b", re.I)
+    r"\b(?:the|is|was|were|has been|have been|been|we|i)\b[^.;|]{0,40}?"
+    r"\b(decided|chosen|settled|resolved|final|finalised|finalized|ruled|picked|closed"
+    r"|canonical|signed off|stands)\b"
+    r"|\bthe decided\b", re.I)
+DENIES_OPEN = re.compile(
+    r"\b(?:never|not|no longer|nor)\b[^.;|]{0,24}?"
+    r"\b(open|in question|unsettled|undecided|up for debate)\b", re.I)
+# Negation exempts an assertion only when it actually negates it: the negator must be
+# adjacent to the matched verb, not merely somewhere in a 24-character window. The window
+# form was itself a bypass -- putting the word "open" nearby switched the rule off.
+NEGATED = re.compile(
+    r"\b(not|never|no|nor|yet|unchosen|undecided|pending|awaiting"
+    r"|refuses?|cannot|isn't|wasn't|hasn't)\b", re.I)
 
 
 def git(*args):
@@ -146,10 +167,21 @@ def check(doc):
             fails.append(f"line {lineno}: 'superseded' without 'superseded by <row>'")
 
         if strength == "evidence":
-            hit = ASSERTS_SETTLED.search(plain)
-            if hit and not NEGATED.search(plain[max(0, hit.start() - 24):hit.start()]):
+            # Denying that the question is open is an assertion that it is settled, and
+            # no negator exempts it -- the negation IS the assertion.
+            denial = DENIES_OPEN.search(plain)
+            if denial:
                 fails.append(f"line {lineno}: an `evidence` row asserts "
-                             f"`{hit.group(0)}` about its own subject")
+                             f"`{denial.group(0)}` about its own subject")
+            else:
+                hit = ASSERTS_SETTLED.search(plain)
+                # The negator usually sits INSIDE the assertion ("was never decided"),
+                # not before it. Checking only the preceding window is how the earlier
+                # rule failed the honest hedge while passing the real decay.
+                if hit and not NEGATED.search(hit.group(0)) \
+                        and not NEGATED.search(plain[max(0, hit.start() - 24):hit.start()]):
+                    fails.append(f"line {lineno}: an `evidence` row asserts "
+                                 f"`{hit.group(0)}` about its own subject")
 
     return fails, stats
 
@@ -161,7 +193,13 @@ HEAD = ("---\nstatus: living\n---\n# t\n\n"
 
 def selftest():
     """Every rule, proven fireable -- in both directions where it has two."""
-    good = git("rev-parse", "--short", "HEAD").stdout.strip()
+    # NOT `HEAD`: the moment this work is committed on a feature branch, HEAD stops being
+    # an ancestor of origin/main and every fixture using it fails for a reason that has
+    # nothing to do with the rule under test. Use a commit that is an ancestor by
+    # construction -- the merge base -- so the fixtures test the rules and not the branch.
+    ref = base_ref() or "HEAD"
+    good = (git("merge-base", "HEAD", ref).stdout.strip()
+            or git("rev-parse", "HEAD").stdout.strip())[:7]
     cases = [
         ("clean control", f"| a | b | measured | `{good}` | `docs/INDEX.md` | current |", 0),
         ("bad sha", "| a | b | measured | `0000000` | `docs/INDEX.md` | current |", 1),
@@ -173,12 +211,26 @@ def selftest():
         ("undeclared status", f"| a | b | measured | `{good}` | `docs/INDEX.md` | FINE |", 1),
         ("superseded, no successor",
          f"| a | b | measured | `{good}` | `docs/INDEX.md` | superseded |", 1),
-        ("evidence asserts settled",
+        # The four sentences the real decay actually used, verbatim from the tree.
+        # An adversarial pass defeated the previous rule with the first of these.
+        ("decay wording 1/4: 'was already decided'",
+         f"| a | K=12 was already decided | evidence | `{good}` | `docs/INDEX.md` | open |", 1),
+        ("decay wording 2/4: 'the decided K'",
          f"| a | the decided K | evidence | `{good}` | `docs/INDEX.md` | open |", 1),
-        ("evidence, the real decay wording",
+        ("decay wording 3/4: 'was decided by a real effort'",
+         f"| a | K was decided by a real effort | evidence | `{good}` | `docs/INDEX.md` | open |", 1),
+        ("decay wording 4/4: 'never an open question'",
          f"| a | it was never an open question | evidence | `{good}` | `docs/INDEX.md` | open |", 1),
-        ("evidence hedges honestly (MUST PASS)",
+        ("paraphrase: 'is the chosen value'",
+         f"| a | K=12 is the chosen value | evidence | `{good}` | `docs/INDEX.md` | open |", 1),
+        ("paraphrase: 'the question is closed'",
+         f"| a | the K question is closed | evidence | `{good}` | `docs/INDEX.md` | open |", 1),
+        ("paraphrase: 'we picked K=12'",
+         f"| a | we picked K=12 | evidence | `{good}` | `docs/INDEX.md` | open |", 1),
+        ("hedge MUST PASS: 'was never decided'",
          f"| a | K was never decided; still open | evidence | `{good}` | `docs/INDEX.md` | open |", 0),
+        ("hedge MUST PASS: 'not yet decided'",
+         f"| a | not yet decided | evidence | `{good}` | `docs/INDEX.md` | open |", 0),
         ("empty document", "", 1),
     ]
     bad = 0
