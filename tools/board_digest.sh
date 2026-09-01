@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# instrument: concurrency
 # board_digest.sh — print only the LIVE blocks of a session board.
 #
 # WHY THIS EXISTS. The vendored session-start hook ends by `cat`-ing the whole

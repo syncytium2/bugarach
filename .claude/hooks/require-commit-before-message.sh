@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# instrument: concurrency
 # vendored from syncytium2/murderboard @ fae0eca — do NOT edit here; update upstream and re-copy.
 # require_commit_before_message.sh — a session may tell another session something
 # once that something exists in git.

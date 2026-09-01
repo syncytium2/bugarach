@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# instrument: propagation
 # check_vendor_freshness.sh — are bugarach's vendored copies current?
 #
 # bugarach vendors from TWO upstreams, so per the session protocol it needs one

@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# instrument: retrieval
 # bugarach-specific SessionStart briefing — runs ALONGSIDE the vendored generic hook
 # (.claude/hooks/session-start.sh), wired as a separate entry in .claude/settings.json.
 #

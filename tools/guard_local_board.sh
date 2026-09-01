@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# instrument: concurrency
 # guard_local_board.sh — refuse a commit from a session that has not claimed
 # itself on the MACHINE-LOCAL session board.
 #

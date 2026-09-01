@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# instrument: retrieval
 # session_start_trimmed.sh — run the vendored session-start hook, but deliver the
 # session board as a digest of LIVE claims instead of the whole file.
 #

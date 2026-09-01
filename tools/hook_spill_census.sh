@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# instrument: verification
 # hook_spill_census.sh — what has the harness actually REFUSED to inject?
 #
 # Both SessionStart hooks carry a size budget, and both budgets were guessed. The
