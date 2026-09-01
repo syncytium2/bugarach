@@ -79,10 +79,28 @@ def test_the_generator_is_deterministic(tmp_path):
 
     Without this, the check above has a second reading — dict ordering, a float
     that formats differently, an id that counts up — and a session facing a red
-    suite would have to rule that out before believing it. The generator draws
-    an architecture, so it must not depend on initialised weights: the centre
-    widths are *initialised* across a geometric spread and then trained, and a
-    figure that redrew itself per seed would be describing a run.
+    suite would have to rule that out before believing it.
+
+    ⚠ **WHAT THIS DOES NOT COVER, AND THE SENTENCE THAT USED TO SAY IT DID.**
+    This docstring previously went on: *"The generator draws an architecture, so
+    it must not depend on initialised weights … a figure that redrew itself per
+    seed would be describing a run."* The first clause is the right ambition and
+    the second does not deliver it. `build_tube` initialises `log_center`
+    **deterministically** at 1/2/4/8 samples, so a fitted quantity baked into the
+    figure is baked identically on every run and both comparisons agree. The
+    figure could state an initialisation as though it were an architectural
+    constant and this test would be green — which is exactly the defect
+    `docs/todo/2026-09-01-a-traced-figure-cannot-tell-a-constant-from-an-
+    initialisation.md` was filed about, in this very figure, at the same time
+    this test was written.
+
+    **Determinism and architecture are different claims**, and only the first one
+    is checked here. Found by `draughtsman` while vendoring against this gate,
+    2026-09-01; recorded rather than quietly reworded, because a check whose
+    docstring overstates its reach is worse than no check. What actually closes
+    the gap lives upstream in draughtsman's `check` stage: torch warns when it
+    bakes a Python-arithmetic constant into a trace, and a spec may not quote such
+    a constant until it declares why that one is architectural.
     """
     first = _regenerated(tmp_path)
     second = _regenerated(tmp_path / "again")
