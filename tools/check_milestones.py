@@ -120,6 +120,16 @@ def check(doc):
         return ["cannot resolve a base ref (origin/main, main or HEAD) -- run "
                 "`git fetch origin main`; refusing to judge rows against nothing"], stats
 
+    # A shallow clone has no history, so EVERY historical sha reports "no such commit"
+    # and the run reads as 36 fabricated citations. That is a checker blaming the
+    # document for its own environment -- and it is what turned CI red on this file's
+    # first run, exactly as two review roles predicted. Say the real reason, once.
+    if git("rev-parse", "--is-shallow-repository").stdout.strip() == "true":
+        return ["this clone is SHALLOW, so commit ancestry cannot be checked at all. "
+                "This is an environment fault, not a document fault -- set "
+                "`fetch-depth: 0` on the checkout step. Refusing to report rows as "
+                "broken when the history to judge them against is absent."], stats
+
     data = rows(doc.read_text())
     stats["rows"] = len(data)
 

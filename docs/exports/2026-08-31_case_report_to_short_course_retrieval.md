@@ -1,9 +1,30 @@
 ---
 to: short-course
 from: bugarach (Mac, milestones-and-case-report)
-status: open
+status: NOT SENT — withheld on its own review
 opened: 2026-08-31
 ---
+
+> # ⚠ NOT SENT. This is a record, not a delivery.
+>
+> Held on the verdict of its own murderboard round
+> ([run record](../reviews/case_report_to_short_course_2026-08-31.md)). The adversarial
+> blind pass found the report's central structure unsound, and it is right: the "five
+> nested levels" are a **fan, not a nest** — levels 3, 4 and 5 are all components of
+> level 2 — and "an assertion outran its verification" is a category broad enough to
+> cover any mistake anyone makes. Worse, the metric is **incentive-inverted**: the worse
+> the first draft, the deeper the "depth measurement", so any draft can be enumerated to
+> whatever depth the argument needs.
+>
+> **Level 1 — the K decay — is real, checkable, and needs none of the scaffolding.**
+> Everything built on top of it was scaffolding.
+>
+> It is kept here rather than deleted because the sequence it records is the most
+> complete account this project has of one failure mode reproducing through its own
+> machinery, including inside the review built to catch it. **Do not send it, and do not
+> quote it as a finding.** If anything goes to the short course, it is the two-paragraph
+> correction: we drafted a critique from a stale copy of their material, and they had
+> already published the finding.
 
 # You wrote the diagnosis at 09:36 on 31 August. The thing it diagnoses was happening in our repo at that moment, and ran for another two and a half hours
 

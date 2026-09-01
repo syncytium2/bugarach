@@ -76,6 +76,7 @@ enforced by `tests/test_index_resolves.py`, which reads code spans too.
 
 | you want | keywords | go to |
 |---|---|---|
+| **where are we, what is established, how strongly** | milestone, achievement, status, what is done, what is settled, evidence vs decided, strength, superseded, held, inert | [`MILESTONES.md`](MILESTONES.md) — every row pinned to a commit and a doc, with a `strength` column separating **measured** from **decided** from ⚠ **evidence** (the measurement exists; the decision it informs does not). Read `strength` and `status` before quoting a row |
 | what is in flight right now | handoff, in progress, resume | root `HANDOFF.md`. **No file at root == nothing in flight** |
 | what another session is touching | board, claim, collision, concurrent, parallel | [`SESSIONS.md`](SESSIONS.md) (cross-machine) **and** `../bugarach-worktrees/SESSIONS.md` (this machine). Two boards, different questions |
 | rules that fire by themselves | sapper, lint, gate, hook, SAP0.. | [`../tools/sapper.py`](../tools/sapper.py); disputes in [`sapper_feedback/`](sapper_feedback/) |
