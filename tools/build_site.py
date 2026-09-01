@@ -66,6 +66,20 @@ def _withheld_from_the_viewer() -> tuple[str, ...]:
 #: Withheld for this build. Empty is a legitimate answer and means "ship all six".
 WITHHELD_FROM_THE_BUILD = _withheld_from_the_viewer()
 
+#: Kept out of the FRONT PAGE FIGURE for legibility, not withheld from the build.
+#:
+#: Tony, 2026-09-01, on the version carrying every remaining detector: *"Not all
+#: detectors. Too busy. Maybe [one] from each class. Rate, coact, best tube."* So
+#: the figure shows one detector per family — a rate/CFAR rule, a
+#: coactivity-vs-shuffle rule, and the learned model — instead of the whole field.
+#:
+#: **This is not a claim that the others lost.** They are scored in the bake-off
+#: and described on the learned-detector page; what they are not is legible as
+#: five simultaneous hairline lanes at this width. Distinct from
+#: :data:`WITHHELD_FROM_THE_BUILD`, which is a decision about attribution and is
+#: read off the viewer rather than chosen here.
+CROWDED_OUT = ("sce", "sync", "loco")
+
 # Every way a page can talk to a host, including the ones that do not look like a
 # request. Kept here, next to the build that refuses on them, and imported by
 # tests/test_site_viewer.py so the two can never drift into disagreeing about what
@@ -150,6 +164,27 @@ INDEX = """<!doctype html>
   figure.lead > a {{ display:block; text-decoration:none; }}
   figure.lead figcaption a.more {{ display:block; margin-top:.45rem; }}
   figure.lead > a:hover img {{ border-color:#888; }}
+  /* The architecture diagram is INLINE SVG, not an <img>, so it inherits the
+     page's colour scheme and stays sharp at any width. These rules are the
+     `.arch` block of `docs/learned/report.css` restated against this page's own
+     palette — the SVG ships no styling of its own, which is why it renders as
+     six black boxes anywhere that forgets to supply it. If the diagram ever
+     looks like solid blocks with no text, this is the block that is missing. */
+  .arch {{ width: min(94vw, 78rem); margin: 1.6rem 0 .6rem 50%;
+           transform: translateX(-50%); }}
+  .arch svg {{ width: 100%; height: auto; display: block; }}
+  .arch text {{ font: 12px/1.3 ui-monospace, SFMono-Regular, Menlo, monospace;
+                fill: currentColor; }}
+  .arch text.lbl {{ font: 12.5px/1.3 system-ui, sans-serif; fill: #666; }}
+  .arch text.hi {{ fill: #7a1f22; font-weight: 700; }}
+  .arch rect {{ fill: none; stroke: #8886; }}
+  .arch rect.act {{ stroke: #7a1f22; stroke-width: 1.6; }}
+  .arch line, .arch path {{ stroke: #888; }}
+  @media (prefers-color-scheme: dark) {{
+    .arch text.hi {{ fill: #e0796f; }}
+    .arch rect.act {{ stroke: #e0796f; }}
+    .arch text.lbl {{ fill: #999; }}
+  }}
   /* The model figure breaks out exactly like the hero, and the first attempt at
      this page did not — it was held to the 46rem text column on the reasoning
      that four stacked panels want to be read at the width of the prose. Measured
@@ -181,34 +216,19 @@ INDEX = """<!doctype html>
 nobody can label.</span></h1>
 
 <p>A <b>coordinated event</b> is a moment when many cells in a recording fire
-together. <b>Nobody can label one reliably.</b> Show two experienced people the
-same raster and they will not draw the same boxes — so there is no corpus to
-train against, and no human answer to score against. The four learned methods
-this page names below all take their ground truth from an expert marking a
-record; that route is closed here.</p>
-
-<p><b>So the ground truth is manufactured instead, and the instrument is built
-per lab</b> — because coordination is not one phenomenon. Stars coordinate and
-cells coordinate, and a network trained across every source of it spends its
-capacity on a space where almost nothing transfers. Measure the coordination
-statistics of one <i>untreated</i> recording, simulate from those alone, and the
-answer is exact by construction: every event in the training set is there
-because it was planted. The model below has about eleven hundred parameters,
-trains in seconds, and scans an hour-long recording in hundredths of one.</p>
+together. <b>Nobody can label one reliably</b> — show two experienced people the
+same raster and they will not draw the same boxes. So the ground truth is
+planted instead: measure one <i>untreated</i> recording, simulate from those
+statistics alone, and every event in the training set is there because it was
+put there.</p>
 
 {model}
 
-<p>Every panel is measured off a trained model or computed from its layer stack.
-None of it is a block diagram: a box labelled <i>centre minus surround</i> asserts
-a mechanism, and only a plot of the fitted kernel shows one — which is also why
-<b>C</b> is on the page at all, since a design that claims invariance should be
-shown the one test that could take it away.</p>
+<p>Eleven hundred parameters. Trains in seconds; scans an hour-long recording in
+hundredths of one. <a href="learned_detector.html">The learned detector
+&rarr;</a></p>
 
-<p><a href="learned_detector.html">The learned detector &rarr;</a> — how the
-ground truth is manufactured, what the apparatus caught that the headline metric
-could not, and where the hand-written methods come from.</p>
-
-<h2 style="font-size:1.15rem">The problem, and what the hand-written methods make of it</h2>
+<h2 style="font-size:1.15rem">What it finds</h2>
 
 {lead}
 
@@ -431,7 +451,7 @@ what it actually means for the reader in front of it.
 
 PUBLISHED = frozenset(
     {name for name, _ in PAGES}
-    | {"hero.png", "reality.png", "model.png", "diagnostic.png", "diagnostic.txt"})
+    | {"hero.png", "reality.png", "diagnostic.png", "diagnostic.txt"})
 """Exactly the files a finished build leaves in `site/`, checked at the end.
 
 Two failures this closes, both of which have happened in this tree. A **missing**
@@ -886,26 +906,26 @@ LEAD_REAL = """<figure class="lead">
 # Every panel is measured or computed — the figure exists because a block diagram
 # was rejected: "a box labelled centre minus surround asserts a mechanism; it does
 # not show one." The caption must not undo that by asserting what the panels show.
-LEAD_MODEL = """<figure class="lead">
-  <img src="model.png" width="{w}" height="{h}"
-       alt="Four panels measured off a trained model. A, the centre and surround
-            kernels at the narrowest fitted scale and their difference. B, all four
-            scales as fitted against where each started. C, a permanent doubling of
-            the background pushed through each kernel, every response returning to
-            zero. D, samples visible after each layer, on a log axis.">
-  <figcaption><b>The model, as fitted — not as diagrammed.</b>
-  <b>A</b> is the mechanism at its narrowest scale: a centre and a surround of
-  equal area, so their difference integrates to zero and a change in background
-  cancels. <b>B</b> shows all four scales where training left them (solid) against
-  where each began (dotted) — they converged into one narrow band, which is a
-  result about this data set rather than about the architecture. <b>C</b> doubles
-  the background permanently and pushes it through each fitted kernel; the
-  responses return to zero instead of settling at a new level, which is the panel
-  that could have falsified the design and did not. <b>D</b> is how far each model
-  can see after every layer — the axis is <b>samples</b>, the unit the models are
-  written in, because expressing a receptive field in seconds bakes in one lab's
-  imaging rate.</figcaption>
-</figure>"""
+MODEL_SVG = ROOT / "docs" / "learned" / "architecture.svg"
+"""The network, stage by stage. Inlined, not linked — see the `.arch` CSS."""
+
+
+def lead_model(svg: str) -> str:
+    """The architecture diagram, with the one caption line it needs.
+
+    Tony, 2026-09-01: *"The tube network structure at the top with detail. The
+    minimal text."* So this is the **signal path**, not the fitted kernels — the
+    kernels moved to the learned-detector page, where there is room to argue
+    about them. The diagram already carries its own per-stage shapes and
+    parameter counts, which is the detail; repeating them in prose underneath is
+    the text he asked to lose.
+
+    The SVG is inlined rather than served as a file because it ships no styling
+    of its own: as an `<img>` it renders six black boxes with the stage names
+    invisible, which is exactly what it looked like the first time this was
+    tried.
+    """
+    return f'<div class="arch">{svg}</div>'
 
 LEAD_FALLBACK = """<a class="card" href="diagnostic.html">
   <b>Detector diagnostic &rarr;</b>
@@ -988,24 +1008,58 @@ def main(argv=None):
         shutil.rmtree(SITE)
     SITE.mkdir(parents=True)
 
-    # The diagnostic writes straight into the site payload. --out keeps it out
-    # of the darkroom: the published copy and the review copy are different
-    # artifacts with different audiences.
+    # TWO RUNS, because the two figures answer different questions and stopped
+    # being able to share one.
+    #
+    # The **diagnostic page** is the detail view: every detector this build ships,
+    # plus the learned lane. The **front page hero** is one detector per family —
+    # Tony, 2026-09-01, on the version carrying all of them: *"Not all detectors.
+    # Too busy. Maybe [one] from each class. Rate, coact, best tube."*
+    #
+    # They were one invocation until that instruction, and keeping them so would
+    # have thinned the diagnostic page too — silently stripping three detectors
+    # from the page whose entire purpose is to show them. The cost of splitting is
+    # a second fit, about eight seconds.
+    diag = [sys.executable, str(ROOT / "tools" / "make_diagnostic.py"),
+            "--out", str(SITE), "--tag", "site",
+            "--seed", str(args.seed), "--duration", str(args.duration),
+            # THE FIGURE IS PART OF THE BUILD. A detector the viewer withholds
+            # must not come back as a lane label in a PNG, where no check on the
+            # served HTML can see it. Kept in step with the viewer's own
+            # `WITHHELD` by `tests/test_site_withholding.py`.
+            "--without", *WITHHELD_FROM_THE_BUILD,
+            "--tube"]
+    print("$", " ".join(diag))
+    rd = subprocess.run(diag, cwd=ROOT)
+    if rd.returncode != 0:
+        return rd.returncode
+
     cmd = [sys.executable, str(ROOT / "tools" / "make_diagnostic.py"),
-           "--out", str(SITE), "--tag", "site",
+           "--out", str(SITE), "--tag", "hero", "--no-png",
            "--hero", str(SITE / "hero.png"),
            "--seed", str(args.seed), "--duration", str(args.duration),
-           # THE FIGURE IS PART OF THE BUILD. A detector the viewer withholds
-           # must not come back as a lane label in `hero.png` — which is a
-           # picture, so no check on the served HTML can see it. Kept in step
-           # with the viewer's own `WITHHELD` by
-           # `tests/test_site_withholding.py`.
-           "--without", *WITHHELD_FROM_THE_BUILD]
+           # Withheld AND crowded out, and the two are different decisions.
+           # `WITHHELD_FROM_THE_BUILD` is about attribution and is read off the
+           # viewer; `CROWDED_OUT` is this page's own editorial call about
+           # legibility. Kept apart because they move independently.
+           "--without", *WITHHELD_FROM_THE_BUILD, *CROWDED_OUT,
+           # One from each class means the learned one too, and it is the lane
+           # this page exists to show. It trains inside the build (~8 s) on seeds
+           # from the training block — never the seed the figure is drawn on.
+           "--tube"]
     print("$", " ".join(cmd))
     r = subprocess.run(cmd, cwd=ROOT)
     if r.returncode != 0:
-        print("build_site: the diagnostic failed to build", file=sys.stderr)
+        print("build_site: the hero figure failed to build", file=sys.stderr)
         return 1
+
+    # The hero run writes a page and a sidecar nobody serves — it exists for the
+    # one PNG. Remove them rather than let `PUBLISHED` catch them at the end: a
+    # stray is a real check and it should not have to fire on something this
+    # build put there on purpose.
+    for leftover in ("coord_diagnostic_hero.html", "coord_diagnostic_hero.txt",
+                     "coord_diagnostic_hero.png"):
+        (SITE / leftover).unlink(missing_ok=True)
 
     (SITE / "coord_diagnostic_site.html").rename(SITE / "diagnostic.html")
     for stray in ("coord_diagnostic_site.png", "coord_diagnostic_site.txt"):
@@ -1045,13 +1099,12 @@ def main(argv=None):
     # clone with no data still builds the page. It is now the LEAD, and four
     # paragraphs name its panels by letter — a missing file would leave the page
     # opening on a broken image and describing panels nobody can see. Refuse.
-    model_src = ROOT / "docs" / "learned" / "architecture_fitted.png"
-    if not model_src.exists():
-        print(f"build_site: {model_src.relative_to(ROOT)} is missing. It is the "
-              f"page's lead figure and the text walks its four panels, so this is "
-              f"a build failure, not something to ship without.", file=sys.stderr)
+    if not MODEL_SVG.exists():
+        print(f"build_site: {MODEL_SVG.relative_to(ROOT)} is missing. It is the "
+              f"page's lead figure — the network the whole page is about — so "
+              f"this is a build failure, not something to ship without.",
+              file=sys.stderr)
         return 1
-    shutil.copyfile(model_src, SITE / "model.png")
 
     # THE LANDSCAPE PAGE IS NOT COPIED. It used to be published here as a
     # self-contained single file; it is withheld from this build — see `PAGES`
@@ -1130,12 +1183,7 @@ def main(argv=None):
         return 1
     real = LEAD_REAL.format(w=real_size[0], h=real_size[1])
 
-    model_size = _png_size(SITE / "model.png")
-    if model_size is None:
-        print(f"build_site: {model_src.relative_to(ROOT)} is not a readable PNG.",
-              file=sys.stderr)
-        return 1
-    model = LEAD_MODEL.format(w=model_size[0], h=model_size[1])
+    model = lead_model(MODEL_SVG.read_text(encoding="utf-8"))
 
     # THE HERO IS NOT OPTIONAL, and it used to be the only asset here that was.
     # Missing reality.png, landscape.html and viewer.html each return 1 above;
