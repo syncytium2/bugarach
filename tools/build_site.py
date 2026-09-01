@@ -175,10 +175,28 @@ INDEX = """<!doctype html>
      measured on the render at a 420px viewport, the diagram came out 395px wide
      and its labels about 5px tall — the lead figure of the page, illegible on a
      phone, and invisible from any desktop browser. The `min-width` below is the
-     floor and `overflow-x` is what happens when the floor is hit. It is set in
-     `rem` so it tracks the reader's own text size: a diagram that stops
-     shrinking at a fixed pixel count still shrinks relative to someone who has
-     turned their font up.
+     floor and `overflow-x` is what happens when the floor is hit.
+
+     ⚠ **THE FLOOR IS DERIVED, AND THE FIRST VERSION OF IT WAS TYPED.** It read
+     `min-width: 44rem`, a number measured against a figure whose viewBox was 884
+     units wide, with a comment arguing for `rem` so it would track the reader's
+     text size. Both were wrong within the day. When the model figure was
+     revendored its viewBox became 1221.74 units, and the same 704px floor now
+     rendered a 9px label at **5.19px** at a 420px viewport — the exact
+     illegibility the floor was added to prevent — and at 768px it was worse
+     still, 5.32px with no scrollbar at all, because the box was 722px and so
+     never reached the floor to scroll against it. The `rem` argument was also
+     confused: SVG text is sized in user units, so it does not respond to the
+     reader's font size, and tying the floor to `rem` bought nothing.
+
+     A figure's natural width is a property of the figure. `lead_model()` reads
+     it off the viewBox and sets `--arch-natural`, so the floor is now whatever
+     this figure actually wants and cannot go stale when the figure changes. The
+     `44rem` fallback survives only for a page that somehow supplies no variable.
+     This is the same lesson as the parameter counts one level out: the reason
+     `make_architecture_diagram.py` refuses to let a human maintain "1,128
+     params" by hand is the reason a human should not maintain the figure's
+     width by hand either.
 
      THE OTHER PAGE THAT EMBEDS THIS FIGURE ALREADY DID IT. `learned_detector
      .src.html` wraps the same SVG in `.archwrap {{ overflow-x: auto }}`, and
@@ -189,7 +207,8 @@ INDEX = """<!doctype html>
   .arch {{ width: min(94vw, 78rem); margin: 1.6rem 0 .6rem 50%;
            transform: translateX(-50%);
            overflow-x: auto; overscroll-behavior-x: contain; }}
-  .arch svg {{ width: 100%; height: auto; display: block; min-width: 44rem; }}
+  .arch svg {{ width: 100%; height: auto; display: block;
+               min-width: var(--arch-natural, 44rem); }}
   .arch text {{ font: 12px/1.3 ui-monospace, SFMono-Regular, Menlo, monospace;
                 fill: currentColor; }}
   .arch text.lbl {{ font: 12.5px/1.3 system-ui, sans-serif; fill: #666; }}
@@ -950,8 +969,41 @@ def lead_model(svg: str) -> str:
     of its own: as an `<img>` it renders six black boxes with the stage names
     invisible, which is exactly what it looked like the first time this was
     tried.
+
+    **It also carries its own scroll floor.** `--arch-natural` is the figure's
+    viewBox width, which is the width at which its labels render at the size they
+    were authored; below that the `.arch` box scrolls instead of shrinking. Read
+    from the figure rather than typed into the stylesheet, because the typed
+    version was measured against an 884-unit viewBox and silently became wrong
+    the day the figure was redrawn at 1221.74. See the `.arch` CSS comment.
     """
-    return f'<div class="arch">{svg}</div>'
+    return f'<div class="arch"{_natural_width(svg)}>{svg}</div>'
+
+
+VIEWBOX_RE = re.compile(
+    r'viewBox\s*=\s*"\s*[-\d.eE]+\s+[-\d.eE]+\s+([\d.eE]+)\s+[-\d.eE]+\s*"')
+
+
+def _natural_width(svg: str) -> str:
+    """`style="--arch-natural: <viewBox width>px"`, or nothing if it cannot be read.
+
+    Returning nothing on a miss is deliberate. The CSS carries a `44rem`
+    fallback, so a figure this cannot parse still gets *a* floor and still
+    scrolls rather than shrinking to nothing — degraded, not broken. Refusing the
+    build over an unparseable viewBox would trade a small layout imperfection for
+    no front page at all, which is the wrong way round for something this
+    cosmetic.
+    """
+    m = VIEWBOX_RE.search(svg)
+    if not m:
+        return ""
+    try:
+        width = float(m.group(1))
+    except ValueError:
+        return ""
+    if not (0 < width < 100_000):        # a nonsense viewBox is not a floor
+        return ""
+    return f' style="--arch-natural: {width:g}px"'
 
 LEAD_FALLBACK = """<a class="card" href="diagnostic.html">
   <b>Detector diagnostic &rarr;</b>
