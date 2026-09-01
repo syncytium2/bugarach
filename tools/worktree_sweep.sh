@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# instrument: concurrency
 # worktree_sweep.sh — remove worktrees whose branch is already on origin/main,
 # and say which ones somebody is sitting in right now.
 #
