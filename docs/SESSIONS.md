@@ -10,6 +10,36 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
+### Mac/release-the-hold — DEPLOY claimed 2026-09-01, the model-figure release
+- **Status:** ACTIVE — claimed **before** publishing, not after. Tony authorised it
+  (*"Push"*), the hold's condition was met by #443, and `DEPLOY_HOLD.md` goes `held: no`
+  in this same change.
+- **Holds:** **`bugarach.tonydefazio.com`.** No other session should run
+  `npm run deploy` while this block is ACTIVE. Nothing in the darkroom, no MATLAB, no
+  export reads, no port beyond an ephemeral localhost one for the page walk.
+- **Why:** the front page's model figure is `draughtsman`'s, vendored as a pipeline
+  rather than a picture, and the page has been held since this morning so it moves once
+  rather than three times. Publishing `bf02001` carries #439, #440, #441, #442, #443
+  and #444 together.
+- **What was verified before publishing** — recorded here because another machine can
+  only learn it from this file:
+  - Vendored stamp `bcd104a` matches draughtsman's upstream HEAD, read from the remote.
+    `check_vendor_freshness.sh` could **not** answer: it exits 2 on the first UNKNOWN
+    family and never reaches draughtsman's, so this was checked by hand.
+  - Built from a worktree **detached at `origin/main`**, `rev-parse` compared first.
+    The primary checkout is on another session's branch (`declare-instrument-families`)
+    and building there would have published it silently — see
+    [`todo/2026-09-01-nothing-stops-a-deploy-publishing-a-branch.md`](todo/2026-09-01-nothing-stops-a-deploy-publishing-a-branch.md).
+  - Served over HTTP and walked: 29 passed, 1 xfailed (the known diagnostic overflow).
+  - Figure read in light and dark at five widths; labels land at 9.00px throughout.
+- **Known and shipped anyway:** at 1280px the figure's last stage is clipped 19px and its
+  box scrolls; all of its text is legible. Widening `.arch` would desynchronise it from
+  the hero figure, which shares `min(94vw, 78rem)` on purpose.
+- **When this is DONE** the block will say so and name the wrangler version id, so the
+  next session knows the deploy is free.
+
+---
+
 ### Mac/k-scan-curve — DARKROOM claimed 2026-09-01, two files
 - **Status:** ACTIVE — claimed before the first file write.
 - **Holds:** `<darkroom>/bugarach/k_scan_cossart.html` and `.png`, and nothing else in
