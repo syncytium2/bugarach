@@ -292,26 +292,22 @@ methods already train networks whose output is a population event with times —
 LFP, SEED on sleep spindles and K-complexes, and SpikeNet on clinical EEG, the
 last of which we have on its bibliographic record alone. <b>None of those four
 works on calcium imaging, and all four learn from events a human expert
-labelled.</b> What is different here is the substrate and where the answers come
-from — the events are planted in a simulation fitted to one lab's own
+labelled.</b> Here the events are planted in a simulation fitted to one lab's own
 recordings, so the ground truth is exact and the benchmark is rebuilt per lab.</p>
 
-<p class="note"><b>Neither half of that is unoccupied ground, and the honest
-version is narrower.</b> Population-event detection on calcium imaging is
-already done by non-learned rules — including by the author of the very measure
-<span class="key">SPIKE-synch</span> runs on: Kreuz and colleagues (2022,
-<i>J Neurosci Methods</i> 381:109703) apply it to wide-field calcium imaging in
-mouse cortex, following Cecchini et al. (2021, <i>PLoS Comput Biol</i>
-17:e1008963). And training on planted rather than expert-marked events is not
-new either — <b>SpindleNet</b> (Kulkarni et al. 2019) trained partly on
-synthetic spindles with known onsets for exactly the reason argued at the top of
-this page, that experts disagree; <b>DeepWonder</b> (Zhang et al. 2023) trains
-on synthetic calcium recordings outright. <b>What we have not found is a
-<i>learned</i> detector emitting population coordinated events with times on
-calcium imaging</b> — and that is a search that came up empty, not a proof that
-none exists. Several fields where planting signals in real background is the
-standard method — gravitational-wave astronomy, seismology, high-energy physics
-— have not been searched at all.</p>
+<p class="note"><b>None of that is a first, and it does not need to be.</b>
+Population-event detection on calcium imaging is already done by non-learned
+rules — including by the author of the measure
+<span class="key">SPIKE-synch</span> runs on, who applied it to wide-field
+calcium imaging (Kreuz et al. 2022, <i>J Neurosci Methods</i> 381:109703).
+Training on planted rather than expert-marked events is not new either:
+<b>SpindleNet</b> (2019) used synthetic spindles for the reason argued at the
+top of this page, and <b>DeepWonder</b> (2023) trains on synthetic recordings
+outright. We have not found a <i>learned</i> detector emitting population
+coordinated events with times on calcium imaging — but that is a search that
+came up empty, not a proof, and fields where planting signals in real background
+is routine (gravitational-wave astronomy, seismology, high-energy physics) have
+not been searched at all.</p>
 <p>The classical side of the same problem is the coactivity-vs-shuffle rule, and
 it is already in the figure at the top of this page:
 <b><span class="key">binned SCE</span></b> is that rule itself. Its root is
