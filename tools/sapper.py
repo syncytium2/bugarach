@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# instrument: retrieval
 """sapper — bugarach's mechanized rule gate (ported pattern from interface2).
 
 A sapper clears mines from ground others are about to cross: each rule is a

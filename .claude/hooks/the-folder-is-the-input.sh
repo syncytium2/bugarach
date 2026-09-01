@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# instrument: retrieval
 # the-folder-is-the-input.sh — PreToolUse(Bash) gate. A session reaching for a `.mat`
 # event store, or going looking for where the data lives, is told before the command
 # runs WHICH export folder to read and what to call to get it.
