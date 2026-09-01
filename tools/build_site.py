@@ -150,6 +150,15 @@ INDEX = """<!doctype html>
   figure.lead > a {{ display:block; text-decoration:none; }}
   figure.lead figcaption a.more {{ display:block; margin-top:.45rem; }}
   figure.lead > a:hover img {{ border-color:#888; }}
+  /* The model figure breaks out exactly like the hero, and the first attempt at
+     this page did not — it was held to the 46rem text column on the reasoning
+     that four stacked panels want to be read at the width of the prose. Measured
+     on the render, that was wrong twice. The height it was avoiding was 1,399px,
+     not the ~2,600 estimated from the rem value; and holding it to the column
+     rendered the page's LEAD at 738px above a hero at 1205px, so the figure the
+     page is about was visibly subordinate to the figure supporting it. Whatever
+     the argument for a narrower technical figure, "smaller than the thing below
+     it" is not it. Measure the render, not the stylesheet. */
   figcaption {{ color:#666; font-size:.92rem; margin-top:.55rem;
                 max-width: 46rem; margin-left:auto; margin-right:auto; }}
   .key {{ white-space:nowrap; font-weight:600; }}
@@ -168,8 +177,38 @@ INDEX = """<!doctype html>
 {nav}
 
 <div class="col">
-<h1>bugarach<span class="sub">Six coordinated-event detectors ported from MATLAB,
-tested on planted ground truth.</span></h1>
+<h1>bugarach<span class="sub">A coordinated-event detector, trained on data
+nobody can label.</span></h1>
+
+<p>A <b>coordinated event</b> is a moment when many cells in a recording fire
+together. <b>Nobody can label one reliably.</b> Show two experienced people the
+same raster and they will not draw the same boxes — so there is no corpus to
+train against, and no human answer to score against. The four learned methods
+this page names below all take their ground truth from an expert marking a
+record; that route is closed here.</p>
+
+<p><b>So the ground truth is manufactured instead, and the instrument is built
+per lab</b> — because coordination is not one phenomenon. Stars coordinate and
+cells coordinate, and a network trained across every source of it spends its
+capacity on a space where almost nothing transfers. Measure the coordination
+statistics of one <i>untreated</i> recording, simulate from those alone, and the
+answer is exact by construction: every event in the training set is there
+because it was planted. The model below has about eleven hundred parameters,
+trains in seconds, and scans an hour-long recording in hundredths of one.</p>
+
+{model}
+
+<p>Every panel is measured off a trained model or computed from its layer stack.
+None of it is a block diagram: a box labelled <i>centre minus surround</i> asserts
+a mechanism, and only a plot of the fitted kernel shows one — which is also why
+<b>C</b> is on the page at all, since a design that claims invariance should be
+shown the one test that could take it away.</p>
+
+<p><a href="learned_detector.html">The learned detector &rarr;</a> — how the
+ground truth is manufactured, what the apparatus caught that the headline metric
+could not, and where the hand-written methods come from.</p>
+
+<h2 style="font-size:1.15rem">The problem, and what the hand-written methods make of it</h2>
 
 {lead}
 
@@ -180,27 +219,37 @@ rather than inferred.</p>
 
 <p>Detectors flag the moments when many ROIs fire together. There are five in this
 build — LoCo, SCE, CoactDetect, RateDetect and SPIKE-synch — each asking a
-different question, and each matched to its MATLAB original to 1e-9 on committed
-fixtures, so it can be cited in its place.</p>
+different question, and each matched to <b>the MATLAB implementation it was
+ported from</b> to 1e-9 on committed fixtures. That is a provenance record for
+the port, and it is not a claim about the published method behind it: matching
+this lab's MATLAB is not the same as matching the paper. They are calibrated on the same
+simulation the model is trained on, swept over one declared knob each, and scored
+by the same rule — which is what makes the comparison a comparison.</p>
 
-<p><b>Coordination is not one phenomenon, so there is no one detector to train.</b>
-Stars coordinate and cells coordinate, and between them the timescales run over
-many orders of magnitude — along with the sampling rates, the mechanisms, and
-what even counts as an event. A network trained across every source of
-coordination spends its capacity on a space in which almost nothing transfers,
-and comes out mediocre at all of it. Worse for a working lab: what it learns is
-the average case, so the preparation that departs from the average is the one it
-scores as noise.</p>
+<p><b>There is no single number that settles it, and this page does not pick a
+winner.</b> On the headline metric the learned models sit level with the best
+hand-written ones, close enough that their fold ranges overlap. But how often a
+method fires inside the shaded block — where nothing was planted, so every call
+is wrong by construction — varies by more than two orders of magnitude across the
+same set, and the headline metric does not carry it. The learned models span that
+trade rather than sitting at one end of it: the variant that scores highest is
+also among the most promiscuous, and a near-identical one gives up almost nothing
+to fire a fraction as often. Which you would rather have is a question about your
+recordings, not about the leaderboard.</p>
 
-<p><b>So the instrument gets built for your recordings, not for coordination in
-general.</b> Measure the coordination parameters of an <i>untreated</i>
-recording, simulate from those alone, and let
-that synthetic baseline do two jobs at once: tune the detectors, and train
-the model. Only then is the finished instrument pointed at the whole dataset,
-treatments included. Simulate the treatment and you have spent the effect you
-ran the experiment to measure; withhold it and it comes back as a result. The
-detectors and the generator are built and tested; <b>the training half is
-the plan, not yet the practice</b>.</p>
+<p><b>Why per lab, in full.</b> Between one source of coordination and another the
+timescales run over many orders of magnitude, along with the sampling rates, the
+mechanisms, and what even counts as an event. A network trained across all of
+them comes out mediocre at each. Worse for a working lab: what it learns is the
+average case, so <b>the preparation that departs from the average is the one it
+scores as noise</b> — which is the preparation anyone is usually studying.</p>
+
+<p><b>That synthetic baseline does two jobs at once</b> — it tunes the
+hand-written detectors and it trains the model, which is what puts them on one
+benchmark instead of two. Only then is the finished instrument pointed at the
+whole dataset, treatments included. <b>The treatment is never simulated:</b>
+simulate it and you have spent the effect you ran the experiment to measure;
+withhold it and it comes back as a result.</p>
 
 <h2 style="font-size:1.15rem">What it cost to get this wrong</h2>
 <p>Tuning a detector against a synthetic benchmark that does not match reality
@@ -219,7 +268,7 @@ the clock.</p>
 
 {real}
 
-<p>All six work by finding moments that stand out from the rest of the
+<p>All five work by finding moments that stand out from the rest of the
 recording, which is what makes the shape of the background more than a cosmetic
 detail: on the pair above, the same detector at the same settings finds
 <b>twice as many</b> coordinated events in the imitation as in the original.
@@ -233,19 +282,6 @@ before/after result, so releasing it costs nothing this lab intends to publish.
 It is a committed figure rather than a live read: the build opens no data store,
 and generates every other figure here from a seed.</p>
 
-<h2 style="font-size:1.15rem">A network trained on that simulation</h2>
-<p><b>Nobody can label coordinated events</b> — show two experienced people the same
-raster and they will not draw the same boxes — so there is no corpus to train against
-and no human answer to score against. Planting the events instead makes the answer exact
-by construction. A center-surround architecture with about eleven hundred parameters has
-been through that pipeline, and what the pipeline says about it is the interesting part:
-on the headline metric it is level with the best hand-written detectors, and once firings
-into the no-event trap block are charged rather than forgiven, <b>the ordering
-reverses</b>. The same column drops <span class="key">locust</span> from fifth of nine to
-seventh.</p>
-<p><a href="learned_detector.html">The learned detector &rarr;</a> — how the
-ground truth is manufactured, what the apparatus caught that the headline metric
-could not, and where the six methods come from.</p>
 
 <h2 style="font-size:1.15rem">Where this sits, and who else is doing it</h2>
 <p>Detecting coordinated events is not a new problem, and a page that positions
@@ -253,18 +289,43 @@ itself against work a reader cannot go and look at is marketing. So: four
 methods already train networks whose output is a population event with times —
 <a href="https://github.com/Dreem-Organization/dosed">DOSED</a> on sleep EEG,
 <a href="https://github.com/PridaLab/cnn-ripple">cnn-ripple</a> on hippocampal
-LFP, SEED on sleep spindles, and SpikeNet on clinical EEG, the last of which we
-have on its bibliographic record alone. None of them works on calcium imaging,
-and all of them learn from events a human expert labelled. What is different here is the
-substrate and where the answers come from — the events are planted in a
-simulation fitted to one lab's own recordings, so the ground truth is exact and
-the benchmark is rebuilt per lab.</p>
+LFP, SEED on sleep spindles and K-complexes, and SpikeNet on clinical EEG, the
+last of which we have on its bibliographic record alone. <b>None of those four
+works on calcium imaging, and all four learn from events a human expert
+labelled.</b> What is different here is the substrate and where the answers come
+from — the events are planted in a simulation fitted to one lab's own
+recordings, so the ground truth is exact and the benchmark is rebuilt per lab.</p>
+
+<p class="note"><b>Neither half of that is unoccupied ground, and the honest
+version is narrower.</b> Population-event detection on calcium imaging is
+already done by non-learned rules — including by the author of the very measure
+<span class="key">SPIKE-synch</span> runs on: Kreuz and colleagues (2022,
+<i>J Neurosci Methods</i> 381:109703) apply it to wide-field calcium imaging in
+mouse cortex, following Cecchini et al. (2021, <i>PLoS Comput Biol</i>
+17:e1008963). And training on planted rather than expert-marked events is not
+new either — <b>SpindleNet</b> (Kulkarni et al. 2019) trained partly on
+synthetic spindles with known onsets for exactly the reason argued at the top of
+this page, that experts disagree; <b>DeepWonder</b> (Zhang et al. 2023) trains
+on synthetic calcium recordings outright. <b>What we have not found is a
+<i>learned</i> detector emitting population coordinated events with times on
+calcium imaging</b> — and that is a search that came up empty, not a proof that
+none exists. Several fields where planting signals in real background is the
+standard method — gravitational-wave astronomy, seismology, high-energy physics
+— have not been searched at all.</p>
 <p>The classical side of the same problem is the coactivity-vs-shuffle rule, and
 it is already in the figure at the top of this page:
-<b><span class="key">binned SCE</span></b> is that rule itself, whose root is
-Cossart, Aronov &amp; Yuste (2003) — cite them, not this repo, for it:
-<i>Attractor dynamics of network UP states in the neocortex</i>,
-Nature 423:283–288.</p>
+<b><span class="key">binned SCE</span></b> is that rule itself. Its root is
+<b>Mao, Hamzei-Sichani, Aronov, Froemke &amp; Yuste (2001)</b>, <i>Dynamics of
+spontaneous activity in neocortical slices</i>, Neuron 32:883–898 — the interval
+reshuffling that Cossart, Aronov &amp; Yuste (2003) cite as their own reference 12
+and apply to UP states in <i>Attractor dynamics of network UP states in the
+neocortex</i>, Nature 423:283–288. Cite those, not this repo, for the rule.
+<span class="key">SPIKE-synch</span> is our detector on someone else's measure:
+the measure is Kreuz, Mulansky &amp; Bozanic (2015), <i>SPIKY: a graphical user
+interface for monitoring spike train synchrony</i>, J Neurophysiol
+113:3432–3445. <a href="learned_detector.html">Where each of the five comes
+from &rarr;</a> carries the rest of the citations, and none of the five is this
+project's method.</p>
 <p><b>No method from the literature has been run here in its own form.</b></p>
 
 <h2>Open your own recordings</h2>
@@ -374,7 +435,7 @@ what it actually means for the reader in front of it.
 
 PUBLISHED = frozenset(
     {name for name, _ in PAGES}
-    | {"hero.png", "reality.png", "diagnostic.png", "diagnostic.txt"})
+    | {"hero.png", "reality.png", "model.png", "diagnostic.png", "diagnostic.txt"})
 """Exactly the files a finished build leaves in `site/`, checked at the end.
 
 Two failures this closes, both of which have happened in this tree. A **missing**
@@ -516,7 +577,7 @@ def status_html(page: str) -> str:
             f'<b>{badge}</b>{text}</div>\n')
 
 
-def render_index(commit: str, lead: str, real: str) -> str:
+def render_index(commit: str, lead: str, real: str, model: str) -> str:
     """The front page, with every placeholder filled in one place.
 
     There is a function here rather than three `INDEX.format(...)` calls because
@@ -525,7 +586,7 @@ def render_index(commit: str, lead: str, real: str) -> str:
     and the build's own site looked fine while the suite went red. One caller
     knows the template's shape; everybody else asks for a page.
     """
-    return INDEX.format(commit=commit, lead=lead, real=real,
+    return INDEX.format(commit=commit, lead=lead, real=real, model=model,
                         nav=nav_html("index.html"), nav_css=NAV_CSS)
 
 
@@ -776,7 +837,7 @@ def stale_build_note(site: Path | None = None) -> str:
 LEAD_FIGURE = """<figure class="lead">
   <a href="diagnostic.html" title="Open the interactive version — zoom and pan the same figure">
     <img src="hero.png" width="{w}" height="{h}"
-         alt="Six detector lanes above a 30-ROI raster and six analysis traces.
+         alt="Five detector lanes above a 30-ROI raster and five analysis traces.
               Each lane marks where that detector called a coordinated event;
               the shaded block is a dense-but-random stretch containing none.">
   </a>
@@ -819,6 +880,35 @@ LEAD_REAL = """<figure class="lead">
   carrying most of the activity and many carrying almost none, and what activity
   there is arrives in bursts, while the generator spreads events evenly — across
   every ROI, and across the whole recording.</figcaption>
+</figure>"""
+
+# The model, carried from docs/learned/ for the same reason reality.png is: it is
+# committed, it is drawn from a trained model rather than a data store, and a clone
+# with no data must still build the whole page. Regenerate it with
+# tools/make_architecture_figures.py, never here.
+#
+# Every panel is measured or computed — the figure exists because a block diagram
+# was rejected: "a box labelled centre minus surround asserts a mechanism; it does
+# not show one." The caption must not undo that by asserting what the panels show.
+LEAD_MODEL = """<figure class="lead">
+  <img src="model.png" width="{w}" height="{h}"
+       alt="Four panels measured off a trained model. A, the centre and surround
+            kernels at the narrowest fitted scale and their difference. B, all four
+            scales as fitted against where each started. C, a permanent doubling of
+            the background pushed through each kernel, every response returning to
+            zero. D, samples visible after each layer, on a log axis.">
+  <figcaption><b>The model, as fitted — not as diagrammed.</b>
+  <b>A</b> is the mechanism at its narrowest scale: a centre and a surround of
+  equal area, so their difference integrates to zero and a change in background
+  cancels. <b>B</b> shows all four scales where training left them (solid) against
+  where each began (dotted) — they converged into one narrow band, which is a
+  result about this data set rather than about the architecture. <b>C</b> doubles
+  the background permanently and pushes it through each fitted kernel; the
+  responses return to zero instead of settling at a new level, which is the panel
+  that could have falsified the design and did not. <b>D</b> is how far each model
+  can see after every layer — the axis is <b>samples</b>, the unit the models are
+  written in, because expressing a receptive field in seconds bakes in one lab's
+  imaging rate.</figcaption>
 </figure>"""
 
 LEAD_FALLBACK = """<a class="card" href="diagnostic.html">
@@ -954,6 +1044,19 @@ def main(argv=None):
         return 1
     shutil.copyfile(src, SITE / "reality.png")
 
+    # The model figure, on the same terms as reality.png above and for the same
+    # reason: committed, drawn from a trained model rather than from a store, so a
+    # clone with no data still builds the page. It is now the LEAD, and four
+    # paragraphs name its panels by letter — a missing file would leave the page
+    # opening on a broken image and describing panels nobody can see. Refuse.
+    model_src = ROOT / "docs" / "learned" / "architecture_fitted.png"
+    if not model_src.exists():
+        print(f"build_site: {model_src.relative_to(ROOT)} is missing. It is the "
+              f"page's lead figure and the text walks its four panels, so this is "
+              f"a build failure, not something to ship without.", file=sys.stderr)
+        return 1
+    shutil.copyfile(model_src, SITE / "model.png")
+
     # THE LANDSCAPE PAGE IS NOT COPIED. It used to be published here as a
     # self-contained single file; it is withheld from this build — see `PAGES`
     # for the instruction and for why withholding beats unlisting. The file is
@@ -1031,6 +1134,13 @@ def main(argv=None):
         return 1
     real = LEAD_REAL.format(w=real_size[0], h=real_size[1])
 
+    model_size = _png_size(SITE / "model.png")
+    if model_size is None:
+        print(f"build_site: {model_src.relative_to(ROOT)} is not a readable PNG.",
+              file=sys.stderr)
+        return 1
+    model = LEAD_MODEL.format(w=model_size[0], h=model_size[1])
+
     # THE HERO IS NOT OPTIONAL, and it used to be the only asset here that was.
     # Missing reality.png, landscape.html and viewer.html each return 1 above;
     # a missing hero alone swapped in a link card, said so on stderr and exited
@@ -1070,7 +1180,7 @@ def main(argv=None):
     commit = subprocess.run(["git", "rev-parse", "--short", "HEAD"], cwd=ROOT,
                             capture_output=True, text=True).stdout.strip() or "unknown"
     (SITE / "index.html").write_text(
-        stamp_html(render_index(commit, lead, real), commit),
+        stamp_html(render_index(commit, lead, real, model), commit),
         encoding="utf-8")
 
     # EVERY page carries the pair, not just the one with a hand-written footer.
