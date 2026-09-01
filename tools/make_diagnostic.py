@@ -112,6 +112,76 @@ def _dt_for(slice_) -> float:
     return float(slice_.require_dt("the diagnostic figure"))
 
 
+def _recording_maker(args):
+    """``seed -> (slice, gt)`` at THIS figure's settings, for the trainer.
+
+    The model has to be trained on the regime the figure draws — a tube fitted to
+    the bench's 120 s spacing and shown over a 15 s one is a picture of a transfer
+    failure captioned as a detector. So the closure restates the same generator
+    arguments `build` used, and takes the seed from the caller.
+
+    It never sees the figure's own seed. :func:`bugarach.learn.train.train` draws
+    from ``TRAIN_SEED_BLOCK`` and picks its threshold from a second block above
+    that; the figure is drawn on the seed in ``args``, which is in neither.
+    Evaluating on a recording the model trained on is the most flattering possible
+    mistake and the seed blocks are what stop it.
+    """
+    from bugarach.bench import make_recording as bench_recording
+    from bugarach.simulate import simulate_coordination
+
+    if args.bench:
+        return lambda seed: bench_recording(args.bench, seed)
+
+    def make(seed):
+        return simulate_coordination(
+            seed=seed,
+            duration_sec=args.duration,
+            n_roi=args.n_roi,
+            n_per_level=(args.per_level,) * 3,
+            interval_cv=args.interval_cv,
+            hot_window=(args.duration * 0.4, args.duration * 0.6) if args.hot else None,
+            hot_rate_hz=args.hot_rate if args.hot else 0.0,
+            ramp_sec=args.duration * 0.02 if args.hot else 0.0,
+            n_distractors=args.distractors,
+        )
+    return make
+
+
+def _tube_lane(arch, slice_, *, dt, recording, steps):
+    """Train one architecture and return its lane, its trace and the fit.
+
+    Returns ``((onsets, widths), (t, y, (onsets, widths), extra), Trained)`` —
+    the same shapes ``_compute`` produces for the six, so the lane and the trace
+    join the figure through the identical path and nothing downstream needs to
+    know one of the rows came from a network.
+
+    The learning rate is read from :data:`bugarach.lab.TubeTrainer.LR`, which is
+    itself quoted from ``tools/fair_bakeoff.py``. A rate chosen here would make
+    this figure a different experiment from the published one.
+    """
+    import numpy as np
+
+    from bugarach.lab import TubeTrainer
+    from bugarach.learn.train import train
+
+    trained = train(arch, recording, dt=dt, steps=steps,
+                    lr=TubeTrainer.LR.get(arch, 1e-3))
+    det, _enc = trained.predict(slice_)
+    onsets = np.asarray(det.onset_sec, dtype=float)
+    widths = np.asarray(det.width_sec, dtype=float)
+
+    # The trace is the model's own per-frame score — the quantity its threshold
+    # is applied to, so a reader can see WHY each bar is where it is. Taken from
+    # `to_seconds`, which carries `score` and `times` alongside the detections it
+    # produced them from. Re-running the forward pass here to get the same curve
+    # would be a second computation that could disagree with the first.
+    t = np.asarray(det.times, dtype=float)
+    y = np.asarray(det.score, dtype=float)
+
+    extra = {"threshold": float(trained.threshold)}
+    return (onsets, widths), (t, y, (onsets, widths), extra), trained
+
+
 def build(args):
     import holoviews as hv
     import panel as pn
@@ -120,7 +190,7 @@ def build(args):
 
     from bugarach.detectors.rate import recording_extent
     from bugarach.simulate import simulate_coordination
-    from bugarach.ui.app import _compute
+    from bugarach.ui.app import TITLES, _compute
     from bugarach.ui.diagnostic import (coordination_diagnostic, legend_html,
                                         score_table)
 
@@ -166,6 +236,27 @@ def build(args):
             # — record it in the sidecar instead of losing the whole figure.
             failed[det] = f"{type(exc).__name__}: {exc}"
 
+    if getattr(args, "tube", None):
+        arch = args.tube
+        try:
+            lanes[arch], traces[arch], trained = _tube_lane(
+                arch, slice_, dt=dt, recording=_recording_maker(args),
+                steps=args.tube_steps)
+            header_tube = (
+                f"{TITLES.get(arch, arch)}: {trained.n_params:,} parameters, "
+                f"trained in {trained.train_seconds:.1f}s on seeds from the "
+                f"training block, threshold {trained.threshold:.3f} picked on "
+                f"held-out recordings")
+        except Exception as exc:                      # noqa: BLE001
+            # Unlike the six, this one can fail for a reason about the MACHINE
+            # rather than the data — torch is the optional `dl` extra. Both end
+            # up here, and the message has to let a reader tell them apart,
+            # because "the learned lane is missing" reads as a result.
+            failed[arch] = f"{type(exc).__name__}: {exc}"
+            header_tube = None
+    else:
+        header_tube = None
+
     if failed and not lanes:
         raise NoDetectorRan(
             "not one of the "
@@ -201,6 +292,8 @@ def build(args):
     if gt.distractors:
         header.append(f"{len(gt.distractors)} correlated-burst distractors — real "
                       f"coincidence that is not a coordinated event")
+    if header_tube:
+        header.append(header_tube)
     header += ["", score_table(gt, lanes)]
     if failed:
         header += ["", "did not run:"]
@@ -224,6 +317,17 @@ def main(argv=None):
                         "the viewer's WITHHELD holds, because a figure carries "
                         "a detector's name in pixels where no grep of the "
                         "served HTML will find it.")
+    p.add_argument("--tube", nargs="?", const="tube", default=None,
+                   metavar="ARCH",
+                   help="also draw a LEARNED lane, trained on this figure's own "
+                        "regime from the training seed block. Names an entry in "
+                        "bugarach.learn.nets.ARCHITECTURES; bare --tube means "
+                        "`tube`. Off by default: it needs torch (the optional "
+                        "`dl` extra) and costs a fit, so a troubleshooting run "
+                        "should not pay for it unless it asked.")
+    p.add_argument("--tube-steps", type=int, default=900, metavar="N",
+                   help="training steps for --tube (default 900, the value "
+                        "tools/fair_bakeoff.py uses).")
     p.add_argument("--seed", type=int, default=3)
     p.add_argument("--duration", type=float, default=1800.0)
     p.add_argument("--n-roi", type=int, default=30)

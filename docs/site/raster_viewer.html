@@ -9,7 +9,7 @@
      rather than naming a sha this page could not know — the reasoning is at the
      visible stamp. -->
 <meta name="bugarach:born" content="2026-08-13">
-<meta name="bugarach:version-date" content="2026-08-30">
+<meta name="bugarach:version-date" content="2026-09-01">
 <meta name="bugarach:commit" content="content-addressed">
 <!--
   The raster viewer, client side.
@@ -1428,10 +1428,10 @@
      a page edited without bumping it turns CI red instead of shipping a date
      that has quietly become a lie. Bump it when you edit this page. -->
 <p class="site-dates" data-bugarach-born="2026-08-13"
-   data-bugarach-version-date="2026-08-30"
+   data-bugarach-version-date="2026-09-01"
    data-bugarach-commit="content-addressed"
    style="margin:1.5rem max(1.2rem, calc(50% - 23rem));color:#666;font-size:.85rem">
-  First published 2026-08-13 · this version 2026-08-30 · identified by its own
+  First published 2026-08-13 · this version 2026-09-01 · identified by its own
   bytes rather than by a build stamp
 </p>
 
@@ -1911,6 +1911,13 @@ function fmt(sec) {
 const DET_COLORS = {
   rate: "#1f77b4", sce: "#2ca02c", cicada: "#9467bd",
   sync: "#d62728", coact: "#e69d00", loco: "#8c564b",
+  /* The learned lane. This page cannot RUN it — training happens through
+     `bugarach lab`, not in the browser — but it draws detections that come back
+     from that server, and the architecture picker already offers `tube`. Giving
+     it the ink here means a reader who trains one meets the same colour it has
+     on the front page's figure, which is what pinning these two tables to each
+     other is for. */
+  tube: "#7a1f22",
 };
 const DET_SHORT = {
   /* `cicada` keeps an entry though the detector is withheld from this build,

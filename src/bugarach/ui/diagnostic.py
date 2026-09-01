@@ -316,6 +316,13 @@ def raster_panel(stream, *, ext, gt=None, name="events",
     )
 
 
+#: Roughly the pixels one character of a **rotated** 9pt y-label occupies. The
+#: label runs along the row's height, so a long detector name is bounded by
+#: `height`, not by `width` — which is why adding one long name clipped a row
+#: that had been fine for six short ones. See `trace_panel`.
+_YLABEL_PX_PER_CHAR = 4.6
+
+
 def trace_panel(traces: dict, *, ext, width: int = 1000, height: int = 112):
     """One analysis trace per detector, x-linked to the raster above.
 
@@ -349,6 +356,17 @@ def trace_panel(traces: dict, *, ext, width: int = 1000, height: int = 112):
     over. Pinning the limits from each row's own data is the fix that does not
     depend on getting HoloViews dimension matching exactly right.
     """
+    # The comment below has always said "height is set by the longest of them".
+    # That was true and it was not enforced: the number was a default chosen when
+    # every name was short, so the first long one — "centre−surround (learned)" —
+    # clipped to "entre−surround (learned)" and read as a typo rather than a
+    # layout bug. Make the sentence literal instead of aspirational.
+    labels = [f"{TITLES.get(det, det)} ({len(ev[0]) if ev else 0})"
+              for det, (_t, _y, ev, _x) in traces.items()]
+    if labels:
+        height = max(height,
+                     int(max(len(s) for s in labels) * _YLABEL_PX_PER_CHAR) + 24)
+
     rows = []
     for det, (t, y, events, extra) in traces.items():
         fy = np.asarray(y, dtype=float)

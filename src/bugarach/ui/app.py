@@ -129,6 +129,11 @@ COLORS = {
     "sync":   "#d62728",
     "coact":  "#e69d00",
     "loco":   "#8c564b",
+    # The learned lane, in the report's own `--learned` ink so a reader moving
+    # between the figure and `docs/learned/` meets one colour for one idea. It is
+    # deliberately not on the qualitative wheel the six sit on: the six differ
+    # from each other, and this one differs from all of them in kind.
+    "tube":   "#7a1f22",
 }
 #: Display names. **`cicada` is the key, and its name is WITHHELD** — Tony,
 #: 2026-08-29: *"suppress all locust/cicada mentions in the public facing
@@ -151,13 +156,19 @@ COLORS = {
 TITLES = {
     "rate": "rate+context", "sce": "binned SCE", "cicada": "sixth",
     "sync": "SPIKE-synch", "coact": "CoactDetect", "loco": "LoCo",
+    # The learned lane is labelled by what it IS, not by the registry key. A
+    # reader meeting "tube" in a figure has no way to know it is a network; the
+    # architecture name is the one fact that makes the lane interpretable beside
+    # five hand-written rules.
+    "tube": "centre−surround (learned)",
 }
 # short row labels — the full titles overflow the slim signal rows. The sixth
 # detector's entry matches its TITLES entry rather than being shorter: a longer
 # form there rendered as "he sixth detector (105", clipped at BOTH ends, which is
 # the overflow this map exists to prevent.
 SHORT = {"rate": "rate", "sce": "SCE", "cicada": "sixth",
-         "sync": "sync", "coact": "coact", "loco": "LoCo"}
+         "sync": "sync", "coact": "coact", "loco": "LoCo",
+         "tube": "learned"}
 DEFAULT_ON = ["rate", "coact", "loco"]
 
 
