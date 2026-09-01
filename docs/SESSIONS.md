@@ -10,6 +10,21 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
+### Mac/k-scan-curve — DARKROOM claimed 2026-09-01, two files
+- **Status:** ACTIVE — claimed before the first file write.
+- **Holds:** `<darkroom>/bugarach/k_scan_cossart.html` and `.png`, and nothing else in
+  that folder. New names; no existing darkroom artifact is overwritten. Not
+  `constellation/`. No deploy — the site is untouched.
+- **Why:** the Cossart K scan gets drawn, because
+  [`docs/todo/2026-09-01-the-k12-peak-does-not-reproduce.md`](todo/2026-09-01-the-k12-peak-does-not-reproduce.md)
+  turns out to have a curve as its answer rather than a number: the per-slice argmax
+  median is **16**, the pooled mean and the mean per-slice rank peak at **12**, and which
+  one you believe is a question about aggregation that a table of nine medians hides.
+- **Does not decide K.** That is Tony's, and it stays on the `MILESTONES.md` Open list.
+  The transfer is not re-run; the input is `docs/learned/assessment_cossart.json`, in git.
+
+---
+
 ### Mac/runs-say-what-made-them — DEPLOY claimed 2026-08-30 ~03:55Z, overnight run
 - **Status:** **DONE 2026-08-30 — DEPLOYED AND VERIFIED. The deploy is held by
   nobody; the next session may publish without asking.** Version ID
