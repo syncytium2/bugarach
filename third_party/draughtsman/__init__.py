@@ -1,4 +1,4 @@
-# vendored from draughtsman @ 62a13e5 — canonical source; do NOT edit here,
+# vendored from draughtsman @ bcd104a — canonical source; do NOT edit here,
 # update upstream (syncytium2/draughtsman) and re-copy the whole package.
 """draughtsman — readable architecture diagrams for PyTorch models.
 

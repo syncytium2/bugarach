@@ -1,5 +1,5 @@
 {
-  "_vendored": "vendored from draughtsman @ 62a13e5 — canonical source is examples/tube/spec.json there; do NOT edit here, update upstream and re-copy.",
+  "_vendored": "vendored from draughtsman @ bcd104a — canonical source is examples/tube/spec.json there; do NOT edit here, update upstream and re-copy.",
   "draughtsman": "0",
   "graph": "graph.json",
   "title": "tube — a coordinated-event detector",
