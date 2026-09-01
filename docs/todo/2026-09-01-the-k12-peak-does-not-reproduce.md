@@ -14,6 +14,61 @@ reported the distribution: `3:1, 4:2, 6:11, 8:2, 10:3, 12:10, 16:12, 20:11, 24:7
 **Nobody has verified this independently, including this session.** It is filed as a
 question, not a finding — which is exactly the distinction the rest of this file is about.
 
+---
+
+> ## Verified 2026-09-01, and step 1 is answered: the argmax is aggregator-dependent
+>
+> ![the K scan under four aggregators](../learned/cossart_transfer/k_scan_cossart.png)
+>
+> `tools/make_k_scan_figure.py` recomputes all of it from the 531 rows and draws it.
+> **The reviewers are right, digit for digit** — per-slice argmax distribution
+> `3:1 4:2 6:11 8:2 10:3 12:10 16:12 20:11 24:7`, median **16**, mode **16**, and the
+> pooled-median series reproduces too. So *"their per-slice median argmax is K=12"*,
+> `80b8db6`'s stated reason, is **false** and the correction in step 2 is owed.
+>
+> **But "nothing tested yields 12" is also false, and this is the part the filing did not
+> anticipate.** Only the *median* family gives 16. Every mean-family aggregation of the
+> same scan peaks at **12**:
+>
+> | aggregation of `coact_excess` | argmax | survives resampling |
+> |---|---|---|
+> | pooled median | **16** | **47%** |
+> | pooled mean | **12** | 80% |
+> | pooled 10% trimmed mean | **12** | 77% |
+> | mean per-slice rank | **12** | **83%** |
+>
+> The right column is the figure's panel C: resample the 59 recordings 2,000 times and ask
+> each criterion for its winner again. **The reading that produces 16 is the one that will
+> not hold still.** Mean per-slice rank is the criterion worth naming — `coact_excess`
+> spans two orders of magnitude across these recordings, so a pooled mean is a few large
+> slices voting and a pooled median is one slice voting, while a rank asks all 59 the same
+> question and weights them equally. It says 12, and says it in 83% of resamples.
+>
+> **So the correction is narrower and more awkward than "12 was wrong".** The number
+> outlives the reason given for it. What the scan does not support is any bare argmax:
+> the third reviewer's plateau is real, K=8/12/16/20 sit inside a few percent on the
+> pooled median, and which one tops it is a decision about aggregation rather than a
+> measurement.
+>
+> **Choosing K is still Tony's** and stays on the `MILESTONES.md` Open list. Nothing was
+> re-derived and no transfer re-run; `derive_spec --k` still refuses. This is step 1 only.
+>
+> **A bigger defect than the arithmetic, found while checking where the claim propagated.**
+> [`docs/learned/cossart_transfer/README.md`](../learned/cossart_transfer/README.md) says in
+> bold: *"K=12 was measured on 2026-08-29 across all 59 of their recordings and **was never
+> an open question**."* `80b8db6` says *"CHOOSING K IS STILL NOT DONE"*; `MILESTONES.md`
+> says **NOT CHOSEN**; `spec_k12.json` carries `k_chosen: 12` with `review: null` and no
+> derivation at all. That sentence retires Tony's open decision by assertion, and it is the
+> four-documents-in-forty-two-hours drift the `MILESTONES.md` strength column was invented
+> to catch — which it then survived. **It is the highest-value edit in step 2**, above the
+> argmax wording.
+>
+> ⚠ **The figure is not murderboarded**, on the same footing as the README it sits beside:
+> a finding for sessions in this tree. If any of it reaches an outside reader, murderboard
+> that artifact first.
+
+---
+
 ## Why it matters more than it looks
 
 K=12 is the value the whole cross-lab transfer result was re-run at (#427), and the reason
