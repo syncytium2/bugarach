@@ -71,23 +71,37 @@ settled the question.
 
 ## What would validate this, and what generalises
 
-The run named cSPIKE as its weakest link, and **the review was wrong about that** —
-which is worth recording, because the error was mine and it ran in the direction of
-under-claiming. Eleven roles plus four blind reviewers all reported that cSPIKE had
-never been executed here, and the draft conceded it. Tony corrected it in one line, and
-the evidence was in the repo the whole time: `tools/matlab_ref/gen_ref_sync.m` drives
-cSPIKE's own `SpikyRun` and `computeAdaptiveProfile` under MATLAB R2025b, and
-`tests/test_sync_detect.py` holds the port to that output at `rtol = atol = 1e-9` over
-the **full 2670-point per-spike profile**, at a 0.25 s cap, a 0.5 s cap and uncapped,
-on both streams — 10,680 values, at finite caps, against the reference implementation.
+The run named cSPIKE as its weakest link, and the mistake was subtler than it first
+looked. Eleven roles plus four blind reviewers all reported that cSPIKE had never been
+executed **here**, and the draft conceded it as a limitation. Tony's correction:
+*"there's no way you could run cSPIKE from 'here'. you need the matlab team for that
+(or should)."*
 
-Every role read `tests/test_sync_detect.py`. Several cited it. None followed it back to
-the generator that produced its fixture, so all of them accepted the draft's own
-hedge instead of checking whether it was true. **A conceded weakness is a claim, and it
-is checked like any other** — the process file says exactly this about unavailability
-("the most comfortable finding in a review and the least often true"), and the rule
-fired against the review itself rather than against the artifact. The PR now leads its
-cSPIKE section with what was actually run.
+So the observation was true and the word *here* was doing all the work. cSPIKE runs on
+the MATLAB side; the Python port is a consumer of what that side emits. The reviewers
+were not wrong that it had not been run in this package — **they were wrong, and I was
+wrong to follow them, in filing a division of labour as a gap in the evidence.** The
+evidence was never missing. `tools/matlab_ref/gen_ref_sync.m` drives cSPIKE's own
+`SpikyRun` and `computeAdaptiveProfile` under MATLAB R2025b, and
+`tests/test_sync_detect.py` holds the port to that output at `rtol = atol = 1e-9` over
+the **full 2670-point per-spike profile**, at a 0.25 s cap, a 0.5 s cap and uncapped, on
+both streams — 10,680 values, at finite caps, against the reference implementation.
+
+Two lessons, and the second is the one that generalises.
+
+**A conceded weakness is a claim, and it is checked like any other.** Every role read
+`test_sync_detect.py` and several cited it; none followed it back to the generator that
+produced its fixture, so all of them accepted the draft's hedge rather than testing it.
+The process file already says this about unavailability — *"the most comfortable finding
+in a review and the least often true"* — and here the rule fired against the review
+rather than against the artifact.
+
+**"We did not do X" is not a defect when X belongs to another stage.** This repo already
+draws that line in the other direction and enforces it: *"the export folder is the
+input, the store is closed"* — the consumer does not reach back into the producer. A
+reviewer who does not hold the pipeline's shape reads every boundary as a hole. The
+correction is not to run cSPIKE from Python; it is to say which side runs it and to link
+what it emits, which is what the PR now does.
 
 What generalises beyond this repo:
 
@@ -149,13 +163,14 @@ manufactured a third round's review surface.
 
 ## Residual ⚠ — for Tony, before anything is sent
 
-- ~~⚠ **cSPIKE has never been run here.**~~ **CLOSED 2026-08-31 by Tony**, who pointed
-  out the lab has exercised cSPIKE in MATLAB extensively. Verified: the committed
-  reference is cSPIKE's own per-spike profile, 2670 points, at two finite caps and
-  uncapped, matched at 1e-9. The PR now says so. **What remains true and is stated:**
-  Kreuz's two six-spike figures were not reproduced here, and no cSPIKE version string
-  is recorded in the checkout or in `tools/matlab_ref/README.md` — worth stamping,
-  since `Spiketrains.cpp` line numbers are version-dependent.
+- ~~⚠ **cSPIKE has never been run here.**~~ **WITHDRAWN 2026-08-31 — it was never a
+  residual.** cSPIKE is the MATLAB side's to run, and the reference it emits is
+  committed and tested against at 1e-9 over 2670 per-spike values at two finite caps.
+  Filing that boundary as missing evidence was the review's error, not the artifact's.
+  **What is genuinely open, and much smaller:** no cSPIKE version string exists in the
+  checkout or in `tools/matlab_ref/README.md`, and `Spiketrains.cpp` line numbers are
+  version-dependent — so the citation in the provenance table is unstamped. Worth
+  fixing on the MATLAB side rather than here.
 - ⚠ **Three of the four disclosed behaviour changes have no regression test** — the tie
   boundary, `Reconcile=False`, and the sorting permutation. The PR argues at length that
   the bug survived because nothing pinned it, then ships changes with nothing pinning
