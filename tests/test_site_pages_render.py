@@ -113,15 +113,56 @@ def _handler_for(directory: Path):
 
 
 @pytest.fixture(scope="session")
-def browser():
+def walked(served):
+    """Every page, opened once, **on a thread that has no asyncio event loop.**
+
+    ⚠ **THE THREAD IS THE WHOLE POINT AND IT COST A RED CI TO LEARN.** The first
+    version of this file launched chromium straight from a session fixture. It
+    passed locally and failed on all three Python versions in CI with::
+
+        playwright._impl._errors.Error: It looks like you are using Playwright
+        Sync API inside the asyncio loop.
+
+    Playwright's sync API refuses to start when `asyncio.get_running_loop()`
+    succeeds. Running this file alone it does not; running the **whole suite** it
+    does, because something earlier in the session — Panel and Bokeh are the
+    candidates, they are imported by half the tests here — leaves a loop visible.
+    So the local pass was not evidence: *a browser test that has only ever run on
+    its own has not been tested in the environment that will run it.*
+
+    A thread created with `threading.Thread` has no running loop of its own, so
+    the sync API is legal inside it whatever the main thread is carrying. All
+    four pages are walked in one visit and the facts are handed back as plain
+    dicts, which also means one chromium launch for twelve assertions instead of
+    twelve launches.
+
+    Exceptions are carried across the boundary deliberately: a thread that dies
+    quietly would leave the tests reporting a missing key, which blames the page
+    for something the harness did.
+    """
     from playwright.sync_api import sync_playwright
 
-    with sync_playwright() as p:
-        b = p.chromium.launch()
+    facts: dict[str, dict] = {}
+    failures: list[BaseException] = []
+
+    def visit():
         try:
-            yield b
-        finally:
-            b.close()
+            with sync_playwright() as p:
+                browser = p.chromium.launch()
+                try:
+                    for name in PAGES:
+                        facts[name] = _open(browser, f"{served}/{name}")
+                finally:
+                    browser.close()
+        except BaseException as exc:                        # noqa: BLE001
+            failures.append(exc)
+
+    t = threading.Thread(target=visit, name="site-walk")
+    t.start()
+    t.join()
+    if failures:
+        raise failures[0]
+    return facts
 
 
 def _open(browser, url):
@@ -147,13 +188,13 @@ def _open(browser, url):
 
 
 @pytest.mark.parametrize("page_name", PAGES)
-def test_every_page_serves_and_carries_the_whole_nav(browser, served, page_name):
+def test_every_page_serves_and_carries_the_whole_nav(walked, page_name):
     """200, and a bar that reaches every other page.
 
     The 2026-08-23 failure was not a broken link — it was a bar that was not
     rendered at all, on a page whose links all resolved.
     """
-    f = _open(browser, f"{served}/{page_name}")
+    f = walked[page_name]
     assert f["status"] == 200, f"{page_name} served HTTP {f['status']}"
     assert f["navLinks"] == PAGES, (
         f"{page_name} carries nav links {f['navLinks']}, expected every page: "
@@ -162,15 +203,15 @@ def test_every_page_serves_and_carries_the_whole_nav(browser, served, page_name)
 
 
 @pytest.mark.parametrize("page_name", PAGES)
-def test_no_page_reports_a_console_error(browser, served, page_name):
-    f = _open(browser, f"{served}/{page_name}")
+def test_no_page_reports_a_console_error(walked, page_name):
+    f = walked[page_name]
     assert not f["errors"], (
         f"{page_name} logged {len(f['errors'])} console error(s); first: "
         f"{f['errors'][0][:300]}")
 
 
 @pytest.mark.parametrize("page_name", PAGES)
-def test_no_page_scrolls_sideways_at_desktop_width(browser, served, page_name):
+def test_no_page_scrolls_sideways_at_desktop_width(walked, page_name):
     """Wide content scrolls in its own box; the page body does not.
 
     `diagnostic.html` is a **strict** xfail rather than an exclusion. Marking it
@@ -185,7 +226,7 @@ def test_no_page_scrolls_sideways_at_desktop_width(browser, served, page_name):
             "with-it.md — the figure's Panel column declares 1511px against a "
             "1280 viewport, so the page scrolls 231px sideways and the nav bar "
             "leaves the window. The width is the layout's, not the page shell's")
-    f = _open(browser, f"{served}/{page_name}")
+    f = walked[page_name]
     assert f["scrollW"] <= f["clientW"], (
         f"{page_name} scrolls {f['scrollW'] - f['clientW']}px sideways at "
         f"{VIEWPORT['width']}px. Whatever is wide belongs in a container with "
