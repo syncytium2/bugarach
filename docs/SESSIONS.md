@@ -1751,3 +1751,35 @@ session's work is not a sweep.
   decision nobody needs.
 - **Also written:** the earlier record `reviews/ranking_rule_2026-08-30.md` gets its
   superseded banner in the same pass, so the two files in that folder do not disagree.
+
+---
+
+### Mac/tube-at-the-top — DEPLOYED 2026-09-01, the front page now leads with the model
+- **Status:** **DONE — deployed and public.** Nothing held. The live site is current with
+  `main` at `2ee7569`; `tools/site_staleness.py` says *"0 commits have landed since the
+  deploy and none of them changes what the site serves."*
+- **Deploy:** Cloudflare version `45c1527d-8111-4006-8b30-dae5e1b381c8`, 6 of 9 assets
+  uploaded (`index.html`, `diagnostic.html`, `learned_detector.html`, `viewer.html`,
+  `model.png`, `diagnostic.png`). Ran from the **primary checkout**, which has
+  `node_modules` and an authenticated wrangler — the `deploy-site` worktree named in the
+  2026-08-17 block **no longer exists**, so that instruction is stale and this is the
+  correction to it.
+- **Why now:** Tony, 2026-09-01: *"Need to see the updated website. Deploy"*, with
+  `DEPLOY_HOLD.md` reading `held: no`. It had been **31 commits behind, 3 of which change
+  what it serves.**
+- **What changed for a reader:** the page opens on the deep learning — a coordinated event
+  defined, then *nobody can label one reliably*, then the fitted model above the problem
+  figure. The five hand-written detectors keep one short section and link out. Tony,
+  2026-08-31: *"this is fundamentally a portfolio project to show off the deep learning
+  approach to data with no ground truth."*
+- **⚠ A wrong laboratory was live until this deploy.** The page credited the
+  coactivity-vs-shuffle rule to Cossart, Aronov & Yuste (2003); its root is **Mao,
+  Hamzei-Sichani, Aronov, Froemke & Yuste (2001)**, Neuron 32:883–898 — Cossart 2003's own
+  reference 12. Verified against the primary text by the murderboard's role 2. **Mao 2001
+  itself is paywalled and unread**, so the chain is good to one step short of the root.
+- **Verified from the far side, not just locally:** `tools/audit_deployed_page.py` reports
+  *"The page fetched nothing but itself"* — the no-network promise holds as served. All
+  four pages 200 with nav, no broken images, no JS errors.
+- **Run record:** `docs/reviews/index_2026-08-31.md` — 11 of 11 roles, 3 rounds, severity
+  floor reached.
+- **Holds:** nothing. Deploy released.
