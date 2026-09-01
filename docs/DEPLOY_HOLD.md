@@ -1,11 +1,33 @@
 ---
-held: no
+held: yes
 set-by: Tony
-set-on: 2026-08-28
-released-by: Tony
-released-on: 2026-08-28
-release-when: the next iteration of the pipeline plumbing lands
-released-because: lifted early — the live page was misattributing a result to another lab
+set-on: 2026-09-01
+release-when: draughtsman's revised model figure is vendored and lands
+---
+
+> ## Held again 2026-09-01 — the page moves once, with the figure
+>
+> Tony, 2026-09-01, asked to wait for draughtsman's figure rather than publish
+> twice. The front page's whole first screen is now the model, so a deploy that
+> carries the phone-legibility fix but not the figure it makes legible is half a
+> change, and a reader would watch the diagram move twice in a day for reasons
+> neither publish explains.
+>
+> **What is queued, at the moment of writing:** #439 — the `.arch` narrow-screen
+> rule, the `MODEL_SVG` comment, and the test that the committed SVG still matches
+> the model — plus whatever `python tools/site_staleness.py` lists. It computes
+> the real answer and this file deliberately does not keep a second copy.
+>
+> **Not a reason to sit on the figure.** The items to settle before the vendoring
+> are in
+> [`todo/2026-09-01-a-traced-figure-cannot-tell-a-constant-from-an-initialisation.md`](todo/2026-09-01-a-traced-figure-cannot-tell-a-constant-from-an-initialisation.md);
+> the load-bearing one is that the revision's *"max-pool, width 3"* is an
+> initialisation and not an architectural constant.
+>
+> The 2026-08-28 release below stays as written. This file's own closing line
+> asks that the next hold start from a page recording how the last one ended, and
+> this is the next hold.
+
 ---
 
 > ## Released 2026-08-28, early and deliberately
