@@ -133,8 +133,12 @@ def _page_sources() -> tuple[str, ...]:
     return tuple(build_site.SOURCE_PATHS) + (
         "docs/site",             # the viewer's siblings, which build_site copies
         "tools/make_diagnostic.py",   # not imported by build_site; run by it
-        "tools/site_staleness.py",    # this file: a fix here changes the verdict
     )
+    # NOT this file. A change to the CHECKER never changes what the site serves,
+    # and listing it here made a commit that only fixed this gate report "deploy
+    # it" -- a gate that cries wolf about its own maintenance is a gate people
+    # stop reading. The question this list answers is "what changes the bytes we
+    # publish", not "what changes the verdict".
 
 
 PAGE_SOURCES = _page_sources()

@@ -550,3 +550,16 @@ def test_the_gate_runs_on_a_bare_interpreter():
         capture_output=True, text=True, env={"PATH": "/usr/bin:/bin"})
     assert r.returncode == 0, r.stderr
     assert int(r.stdout.strip()) >= 6
+
+
+def test_the_gate_does_not_count_its_own_maintenance():
+    """A change to the checker never changes what the site serves.
+
+    The first version of the derivation listed `site_staleness.py` in its own
+    `PAGE_SOURCES`, reasoning that a fix here changes the verdict. True, and the
+    wrong question: this list answers "what changes the bytes we publish". A gate
+    that cries wolf about its own maintenance is a gate people stop reading, and
+    this repo has spent two days removing exactly that.
+    """
+    import site_staleness
+    assert "tools/site_staleness.py" not in site_staleness.PAGE_SOURCES
