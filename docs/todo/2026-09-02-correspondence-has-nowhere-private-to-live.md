@@ -1,10 +1,35 @@
 ---
 status: open
 filed: 2026-09-02
-kind: decision — Tony's; the diagnosis is done and the workaround is "paraphrase"
+deferred: 2026-09-02
+kind: decision — ruled by Tony as option 3, interim; open because "soon" is his word
 ---
 
 # Correspondence has nowhere private to live, so it lands in a mailbox or in the public tree
+
+## RULED 2026-09-02 — option 3. Gmail is the archive, and that is on purpose for now.
+
+Tony: *"correspondance is preserved in gmail for now. we'll need a better way soon but
+not today."*
+
+**So this is deferred, not settled, and the two words matter in opposite directions.**
+
+- **Do not spend a day building an archive.** *"Not today"* is a ruling. The mailbox is
+  the archive; the paraphrase rule carries everything the tree actually needs, and it is
+  already in `CLAUDE.md` §*Other people's words* and the murderboard's role 2. Nothing is
+  blocked on this and no work is waiting behind it.
+- **Do not close it either.** *"We'll need a better way soon"* is his assessment, not a
+  hedge, and the cost of option 3 is known and accepted rather than unexamined: a letter
+  in a mailbox is invisible to every session, which is exactly how the April reply sat
+  unread while this repo spent two days re-deriving what it already answered.
+- **Do not create `docs/correspondence/`.** Still ruled out, for the reason below: `docs/`
+  is public, and that proposal was this defect written as policy.
+
+**What would make it "soon".** A second recurrence of the April shape — a session
+re-deriving something a correspondent already answered — is the signal, and it is the one
+worth watching for, because it is the cost this option is knowingly paying. The three
+options below stand as written; nothing about them has been ruled out except the public
+one.
 
 Two findings collided on 2026-09-02 and neither is fixed by the other.
 
@@ -35,7 +60,7 @@ with a directory around it, and it would collect every future exchange rather th
   later — a methods sentence, a dispute about what was agreed, a second reading years on —
   there is nowhere to keep it that is both durable and not public.
 
-## The decision, which is Tony's
+## The decision, which is Tony's — **taken 2026-09-02: option 3, interim**
 
 1. **A private repo** (`syncytium2/correspondence`, or a private area of an existing one),
    with the public tree carrying only paraphrase and a pointer. Durable, greppable by
@@ -44,10 +69,10 @@ with a directory around it, and it would collect every future exchange rather th
    should not be in git, already claimed on the board before writing. Not version
    controlled, and it is a Dropbox folder carrying a person's name — fine for a PDF, less
    obviously right for a correspondence archive.
-3. **Nowhere — mailbox only, and the paraphrase rule is the whole answer.** Cheapest, and
-   defensible: the operative content reaches the tree either way, and what is lost is
-   exact wording nobody has yet needed. Accepts that the April letter's recurrence is
-   possible.
+3. ⬅ **CHOSEN. Nowhere — mailbox only, and the paraphrase rule is the whole answer.**
+   Cheapest, and defensible: the operative content reaches the tree either way, and what is
+   lost is exact wording nobody has yet needed. Accepts that the April letter's recurrence
+   is possible — **and that acceptance is the ruling's price, not an oversight in it.**
 
 **No option is blocked and none is urgent** — the paraphrase rule holds the line either
 way. This exists so the choice is a choice, rather than `docs/correspondence/` getting
