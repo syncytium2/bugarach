@@ -485,3 +485,68 @@ def test_the_tool_runs_end_to_end_offline(tmp_path, monkeypatch):
         assert "Traceback" not in r.stderr
         assert r.stdout.strip(), "a check that prints nothing reports nothing"
         assert "up to date" not in r.stdout.lower()
+
+
+# ---------------------------------------------------------------------------------
+# THE GATE HAS TO BE LOOKING AT THE FILES THE BUILD READS.
+#
+# `PAGE_SOURCES` was a hand-kept copy of `build_site.py`'s inputs, and it went
+# stale in the way a second copy always does — quietly, in the copy nobody is
+# editing. It never gained `docs/learned/architecture.svg` or
+# `docs/learned/learned_detector.html`, so on 2026-09-02, across the one commit
+# that replaced the site's lead figure, this tool reported "VERDICT: current".
+# ---------------------------------------------------------------------------------
+
+def _build_site():
+    import sys
+    from pathlib import Path
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "tools"))
+    import build_site
+    return build_site
+
+
+def test_every_file_the_build_reads_is_watched():
+    """Derived, not copied — so this asserts the derivation rather than a list."""
+    import site_staleness
+    bs = _build_site()
+    missing = [p for p in bs.SOURCE_PATHS if p not in site_staleness.PAGE_SOURCES]
+    assert not missing, (
+        f"{missing} are read by build_site.py and invisible to the staleness "
+        "gate, so a commit changing them would report the site current")
+
+
+def test_the_two_that_were_missing_are_watched():
+    """Named individually, because a list can shrink back without the general
+    assertion above noticing — `SOURCE_PATHS` is what both sides now read."""
+    import site_staleness
+    for path in ("docs/learned/architecture.svg",
+                 "docs/learned/learned_detector.html"):
+        assert path in site_staleness.PAGE_SOURCES, f"{path} is unwatched again"
+
+
+def test_the_builder_names_the_paths_it_reads():
+    """`SOURCE_PATHS` has to be the real constants, not strings beside them."""
+    bs = _build_site()
+    for const in ("ARCHITECTURE_SVG", "RASTER_VIEWER", "REALITY_CHECK",
+                  "LEARNED_REPORT", "LANDSCAPE"):
+        rel = getattr(bs, const)
+        assert rel in bs.SOURCE_PATHS, (
+            f"build_site.{const} is a file the build reads and SOURCE_PATHS "
+            "does not list it")
+        assert (bs.ROOT / rel).exists(), f"build_site.{const} is missing on disk"
+
+
+def test_the_gate_runs_on_a_bare_interpreter():
+    """It runs in the session briefing, outside the venv. Importing build_site
+    to derive the list must not change that — both modules are stdlib only."""
+    import subprocess
+    import sys
+    from pathlib import Path
+    tools = Path(__file__).resolve().parent.parent / "tools"
+    r = subprocess.run(
+        [sys.executable, "-c",
+         f"import sys; sys.path.insert(0, {str(tools)!r}); "
+         "import site_staleness; print(len(site_staleness.PAGE_SOURCES))"],
+        capture_output=True, text=True, env={"PATH": "/usr/bin:/bin"})
+    assert r.returncode == 0, r.stderr
+    assert int(r.stdout.strip()) >= 6

@@ -111,13 +111,33 @@ def deploy_hold() -> str | None:
 # change the published picture without touching one path below. The honest
 # headline is therefore two numbers — commits behind, and commits behind that
 # touch these — never one.
-PAGE_SOURCES = (
-    "docs/site",
-    "docs/learned/landscape.html",
-    "docs/generator/reality_check.png",
-    "tools/build_site.py",
-    "tools/make_diagnostic.py",
-)
+def _page_sources() -> tuple[str, ...]:
+    """What the site is built FROM, taken from the builder rather than copied.
+
+    THIS LIST USED TO LIVE HERE AND IT WENT STALE, in the way a second copy
+    always does — quietly, in the copy nobody is editing. It never gained
+    `docs/learned/architecture.svg`, which `build_site.py` inlines into the front
+    page as `MODEL_SVG`, nor `docs/learned/learned_detector.html`, which is one
+    of the four published pages. So on 2026-09-02, across the single commit that
+    replaced the site's lead figure, this tool reported **"VERDICT: current"** —
+    the gate whose entire job is to notice a stale front page, saying the page
+    was fine because it was not looking at the file that had changed.
+
+    `build_site.SOURCE_PATHS` is now the one declaration and this derives from
+    it. Both modules are standard-library only, so the import costs nothing and
+    cannot fail where this tool runs (it runs in the session briefing, on a bare
+    interpreter, outside the venv).
+    """
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    import build_site
+    return tuple(build_site.SOURCE_PATHS) + (
+        "docs/site",             # the viewer's siblings, which build_site copies
+        "tools/make_diagnostic.py",   # not imported by build_site; run by it
+        "tools/site_staleness.py",    # this file: a fix here changes the verdict
+    )
+
+
+PAGE_SOURCES = _page_sources()
 
 # The footer build_site.py writes: `built from <code>a189d5e</code>`.
 STAMP_RE = re.compile(rb"built\s+from\s*<code>\s*([0-9a-fA-F]{7,40})\s*</code>")
