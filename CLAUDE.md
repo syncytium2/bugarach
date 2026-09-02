@@ -325,9 +325,17 @@ tree for the same shape before closing it out; here that was one `grep` and nobo
 
 The murderboard's role-2 instruction used to say to **quote** correspondence, which is
 where this came from. It now says to cite it —
-[`docs/doc_review_process.md`](docs/doc_review_process.md), role 2. Requested as a
-mechanized check in
+[`docs/doc_review_process.md`](docs/doc_review_process.md), role 2.
+
+**This one fires by itself.** [`tools/check_quotes.py`](tools/check_quotes.py) gates the
+commit (`.githooks/pre-commit`, beside the branch and board guards) and the suite
+(`tests/test_check_quotes.py`) — **at the commit and not only in CI, because on a public
+repo a push is publication.** It is **not** a sapper rule: the signature spans lines, and
+sapper is a line matcher on purpose. Why, and the two defects in its own first draft that
+made it silently useless, are in
 [`docs/sapper_feedback/2026-09-02-private-correspondence-in-a-public-tree.md`](docs/sapper_feedback/2026-09-02-private-correspondence-in-a-public-tree.md).
+**If it fires on something already cleared, ask Tony — do not edit the check.** Clearance
+is rare enough to be a conversation (his ruling, 2026-09-02).
 
 ## Writing for a human reader
 

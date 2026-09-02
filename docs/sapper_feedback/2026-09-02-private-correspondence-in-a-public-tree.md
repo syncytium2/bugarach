@@ -1,11 +1,57 @@
 ---
-status: open
+status: done
 kind: new-rule-request
 raised: 2026-09-02
+resolved: 2026-09-02
 about: quoted private correspondence reaching the public tree — twice now
+outcome: built, but NOT as a sapper rule — tools/check_quotes.py
 ---
 
 # A private letter reached this public repo twice, and prose is what was supposed to stop it
+
+## RESOLVED 2026-09-02 — built as `tools/check_quotes.py`, deliberately not as a sapper rule
+
+Tony answered the three questions below: **his own speech is out of scope**, **clearance is
+*"ask me. this is rare"*** — so there is no marker and no allowlist a session can reach for
+— and it should **gate the commit as well as scan the tree**.
+
+**It is not a sapper rule, and that is the finding.** The property spans lines: in the file
+as published, the marker sentence and its block quote are **seven lines apart** with a
+paragraph between them. Sapper matches per line by design, and neither line is suspicious
+alone — `> "` matches 14 places in this tree that are the repo quoting itself. So the check
+lives in [`tools/check_quotes.py`](../../tools/check_quotes.py), which reads whole files,
+and is wired the way sapper is: `--selftest`, `--all`, `--staged`, into
+`.githooks/pre-commit` and into pytest.
+
+**It gates the commit and not only CI because on a public repo a push IS publication** — by
+the time CI runs, the branch is world-readable.
+
+### Two defects in my own first draft, both of which would have made it useless
+
+1. **`WINDOW = 3`, tuned on the tree as it stands — which no longer contains the quotes.**
+   Measuring false positives against a corpus with the true positive deleted is survivorship
+   bias, and the result did exactly what you would expect: **zero findings on the real file.**
+   The value is now set from the incident and the false positives measured afterwards.
+2. **The Tony exemption matched his name anywhere.** The sentence introducing the leaked
+   quotes was *"…replied to Tony by email in April"* — he is the **recipient**. A bare name
+   match read the letter's audience as its author and silenced the one case that mattered.
+   It now matches attribution shapes only.
+
+**Both were caught by replaying the actual pre-redaction file, not by the fixtures** — the
+fixtures passed throughout, because I wrote them to agree with the design. That replay is
+now a permanent test, `test_it_fires_on_the_file_that_actually_leaked`, so a future change
+to the window or the exemption that stops catching the real case goes red.
+
+### One thing the check itself taught
+
+The first version fired on `docs/detector_history.md`, where a **correctly formatted
+citation** — the parenthesised *(personal communication, April 2026)* this rule asks people
+to write — sat above a block quote of interface2's written audit. **A check that punishes
+the behaviour it is trying to produce teaches people to stop citing**, which is worse than
+the leak. The compliant citation form is now carved out explicitly.
+
+**Green on `main` at the time of writing, and it fires on the April file as published.**
+The questions below stand as the record of what had to be decided first.
 
 CLAUDE.md gained **Other people's words** on 2026-09-02, after the second occurrence.
 The first was a PR description on `mariomulansky/PySpike`, live about an hour. The
