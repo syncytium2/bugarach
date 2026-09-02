@@ -66,6 +66,20 @@ def _withheld_from_the_viewer() -> tuple[str, ...]:
 #: Withheld for this build. Empty is a legitimate answer and means "ship all six".
 WITHHELD_FROM_THE_BUILD = _withheld_from_the_viewer()
 
+#: Kept out of the FRONT PAGE FIGURE for legibility, not withheld from the build.
+#:
+#: Tony, 2026-09-01, on the version carrying every remaining detector: *"Not all
+#: detectors. Too busy. Maybe [one] from each class. Rate, coact, best tube."* So
+#: the figure shows one detector per family — a rate/CFAR rule, a
+#: coactivity-vs-shuffle rule, and the learned model — instead of the whole field.
+#:
+#: **This is not a claim that the others lost.** They are scored in the bake-off
+#: and described on the learned-detector page; what they are not is legible as
+#: five simultaneous hairline lanes at this width. Distinct from
+#: :data:`WITHHELD_FROM_THE_BUILD`, which is a decision about attribution and is
+#: read off the viewer rather than chosen here.
+CROWDED_OUT = ("sce", "sync", "loco")
+
 # Every way a page can talk to a host, including the ones that do not look like a
 # request. Kept here, next to the build that refuses on them, and imported by
 # tests/test_site_viewer.py so the two can never drift into disagreeing about what
@@ -150,6 +164,72 @@ INDEX = """<!doctype html>
   figure.lead > a {{ display:block; text-decoration:none; }}
   figure.lead figcaption a.more {{ display:block; margin-top:.45rem; }}
   figure.lead > a:hover img {{ border-color:#888; }}
+  /* The architecture diagram is INLINE SVG, not an <img>, so it inherits the
+     page's colour scheme and stays sharp at any width. These rules are the
+     `.arch` block of `docs/learned/report.css` restated against this page's own
+     palette — the SVG ships no styling of its own, which is why it renders as
+     six black boxes anywhere that forgets to supply it. If the diagram ever
+     looks like solid blocks with no text, this is the block that is missing. */
+  /* SCROLL RATHER THAN SHRINK. `width: min(94vw, ...)` alone has no floor, so a
+     narrow viewport does not make the figure smaller, it makes it unreadable:
+     measured on the render at a 420px viewport, the diagram came out 395px wide
+     and its labels about 5px tall — the lead figure of the page, illegible on a
+     phone, and invisible from any desktop browser. The `min-width` below is the
+     floor and `overflow-x` is what happens when the floor is hit.
+
+     ⚠ **THE FLOOR IS DERIVED, AND THE FIRST VERSION OF IT WAS TYPED.** It read
+     `min-width: 44rem`, a number measured against a figure whose viewBox was 884
+     units wide, with a comment arguing for `rem` so it would track the reader's
+     text size. Both were wrong within the day. When the model figure was
+     revendored its viewBox became 1221.74 units, and the same 704px floor now
+     rendered a 9px label at **5.19px** at a 420px viewport — the exact
+     illegibility the floor was added to prevent — and at 768px it was worse
+     still, 5.32px with no scrollbar at all, because the box was 722px and so
+     never reached the floor to scroll against it. The `rem` argument was also
+     confused: SVG text is sized in user units, so it does not respond to the
+     reader's font size, and tying the floor to `rem` bought nothing.
+
+     A figure's natural width is a property of the figure. `lead_model()` reads
+     it off the viewBox and sets `--arch-natural`, so the floor is now whatever
+     this figure actually wants and cannot go stale when the figure changes. The
+     `44rem` fallback survives only for a page that somehow supplies no variable.
+     This is the same lesson as the parameter counts one level out: the reason
+     `make_architecture_diagram.py` refuses to let a human maintain "1,128
+     params" by hand is the reason a human should not maintain the figure's
+     width by hand either.
+
+     THE OTHER PAGE THAT EMBEDS THIS FIGURE ALREADY DID IT. `learned_detector
+     .src.html` wraps the same SVG in `.archwrap {{ overflow-x: auto }}`, and
+     measured at 420px its copy is legible and the page body does not scroll.
+     Only the front page shrank, because only the front page's `.arch` is also
+     the breakout container. Same mechanism, folded into the one element rather
+     than a second wrapper. */
+  .arch {{ width: min(94vw, 78rem); margin: 1.6rem 0 .6rem 50%;
+           transform: translateX(-50%);
+           overflow-x: auto; overscroll-behavior-x: contain; }}
+  .arch svg {{ width: 100%; height: auto; display: block;
+               min-width: var(--arch-natural, 44rem); }}
+  .arch text {{ font: 12px/1.3 ui-monospace, SFMono-Regular, Menlo, monospace;
+                fill: currentColor; }}
+  .arch text.lbl {{ font: 12.5px/1.3 system-ui, sans-serif; fill: #666; }}
+  .arch text.hi {{ fill: #7a1f22; font-weight: 700; }}
+  .arch rect {{ fill: none; stroke: #8886; }}
+  .arch rect.act {{ stroke: #7a1f22; stroke-width: 1.6; }}
+  .arch line, .arch path {{ stroke: #888; }}
+  @media (prefers-color-scheme: dark) {{
+    .arch text.hi {{ fill: #e0796f; }}
+    .arch rect.act {{ stroke: #e0796f; }}
+    .arch text.lbl {{ fill: #999; }}
+  }}
+  /* The model figure breaks out exactly like the hero, and the first attempt at
+     this page did not — it was held to the 46rem text column on the reasoning
+     that four stacked panels want to be read at the width of the prose. Measured
+     on the render, that was wrong twice. The height it was avoiding was 1,399px,
+     not the ~2,600 estimated from the rem value; and holding it to the column
+     rendered the page's LEAD at 738px above a hero at 1205px, so the figure the
+     page is about was visibly subordinate to the figure supporting it. Whatever
+     the argument for a narrower technical figure, "smaller than the thing below
+     it" is not it. Measure the render, not the stylesheet. */
   figcaption {{ color:#666; font-size:.92rem; margin-top:.55rem;
                 max-width: 46rem; margin-left:auto; margin-right:auto; }}
   .key {{ white-space:nowrap; font-weight:600; }}
@@ -168,10 +248,23 @@ INDEX = """<!doctype html>
 {nav}
 
 <div class="col">
-<h1>bugarach<span class="sub">Six coordinated-event detectors ported from MATLAB,
-tested on planted ground truth.</span></h1>
+<h1>bugarach<span class="sub">A coordinated-event detector, trained on data that
+is hard to label reliably.</span></h1>
+
+{model}
 
 {lead}
+
+<p>A <b>coordinated event</b> is a moment when many cells in a recording fire
+together. <b>It is difficult to label them reliably</b> — show two experienced
+people the same raster and they will not mark the same coordinated events. So
+the ground truth is planted instead: measure one <i>untreated</i> recording,
+simulate from those statistics alone, and every event in the training set is
+there because it was put there.</p>
+
+<p>Eleven hundred parameters. Trains in seconds; scans an hour-long recording in
+hundredths of one. <a href="learned_detector.html">The learned detector
+&rarr;</a></p>
 
 <p>Each row above is one <b>ROI</b> — one cell's worth of signal, of the kind
 pulled out of a 2-photon calcium recording. These rows are simulated and every
@@ -180,27 +273,37 @@ rather than inferred.</p>
 
 <p>Detectors flag the moments when many ROIs fire together. There are five in this
 build — LoCo, SCE, CoactDetect, RateDetect and SPIKE-synch — each asking a
-different question, and each matched to its MATLAB original to 1e-9 on committed
-fixtures, so it can be cited in its place.</p>
+different question, and each matched to <b>the MATLAB implementation it was
+ported from</b> to 1e-9 on committed fixtures. That is a provenance record for
+the port, and it is not a claim about the published method behind it: matching
+this lab's MATLAB is not the same as matching the paper. They are calibrated on the same
+simulation the model is trained on, swept over one declared knob each, and scored
+by the same rule — which is what makes the comparison a comparison.</p>
 
-<p><b>Coordination is not one phenomenon, so there is no one detector to train.</b>
-Stars coordinate and cells coordinate, and between them the timescales run over
-many orders of magnitude — along with the sampling rates, the mechanisms, and
-what even counts as an event. A network trained across every source of
-coordination spends its capacity on a space in which almost nothing transfers,
-and comes out mediocre at all of it. Worse for a working lab: what it learns is
-the average case, so the preparation that departs from the average is the one it
-scores as noise.</p>
+<p><b>There is no single number that settles it, and this page does not pick a
+winner.</b> On the headline metric the learned models sit level with the best
+hand-written ones, close enough that their fold ranges overlap. But how often a
+method fires inside the shaded block — where nothing was planted, so every call
+is wrong by construction — varies by more than two orders of magnitude across the
+same set, and the headline metric does not carry it. The learned models span that
+trade rather than sitting at one end of it: the variant that scores highest is
+also among the most promiscuous, and a near-identical one gives up almost nothing
+to fire a fraction as often. Which you would rather have is a question about your
+recordings, not about the leaderboard.</p>
 
-<p><b>So the instrument gets built for your recordings, not for coordination in
-general.</b> Measure the coordination parameters of an <i>untreated</i>
-recording, simulate from those alone, and let
-that synthetic baseline do two jobs at once: tune the detectors, and train
-the model. Only then is the finished instrument pointed at the whole dataset,
-treatments included. Simulate the treatment and you have spent the effect you
-ran the experiment to measure; withhold it and it comes back as a result. The
-detectors and the generator are built and tested; <b>the training half is
-the plan, not yet the practice</b>.</p>
+<p><b>Why per lab, in full.</b> Between one source of coordination and another the
+timescales run over many orders of magnitude, along with the sampling rates, the
+mechanisms, and what even counts as an event. A network trained across all of
+them comes out mediocre at each. Worse for a working lab: what it learns is the
+average case, so <b>the preparation that departs from the average is the one it
+scores as noise</b> — which is the preparation anyone is usually studying.</p>
+
+<p><b>That synthetic baseline does two jobs at once</b> — it tunes the
+hand-written detectors and it trains the model, which is what puts them on one
+benchmark instead of two. Only then is the finished instrument pointed at the
+whole dataset, treatments included. <b>The treatment is never simulated:</b>
+simulate it and you have spent the effect you ran the experiment to measure;
+withhold it and it comes back as a result.</p>
 
 <h2 style="font-size:1.15rem">What it cost to get this wrong</h2>
 <p>Tuning a detector against a synthetic benchmark that does not match reality
@@ -219,7 +322,7 @@ the clock.</p>
 
 {real}
 
-<p>All six work by finding moments that stand out from the rest of the
+<p>All five work by finding moments that stand out from the rest of the
 recording, which is what makes the shape of the background more than a cosmetic
 detail: on the pair above, the same detector at the same settings finds
 <b>twice as many</b> coordinated events in the imitation as in the original.
@@ -233,19 +336,6 @@ before/after result, so releasing it costs nothing this lab intends to publish.
 It is a committed figure rather than a live read: the build opens no data store,
 and generates every other figure here from a seed.</p>
 
-<h2 style="font-size:1.15rem">A network trained on that simulation</h2>
-<p><b>Nobody can label coordinated events</b> — show two experienced people the same
-raster and they will not draw the same boxes — so there is no corpus to train against
-and no human answer to score against. Planting the events instead makes the answer exact
-by construction. A center-surround architecture with about eleven hundred parameters has
-been through that pipeline, and what the pipeline says about it is the interesting part:
-on the headline metric it is level with the best hand-written detectors, and once firings
-into the no-event trap block are charged rather than forgiven, <b>the ordering
-reverses</b>. The same column drops <span class="key">locust</span> from fifth of nine to
-seventh.</p>
-<p><a href="learned_detector.html">The learned detector &rarr;</a> — how the
-ground truth is manufactured, what the apparatus caught that the headline metric
-could not, and where the six methods come from.</p>
 
 <h2 style="font-size:1.15rem">Where this sits, and who else is doing it</h2>
 <p>Detecting coordinated events is not a new problem, and a page that positions
@@ -253,18 +343,39 @@ itself against work a reader cannot go and look at is marketing. So: four
 methods already train networks whose output is a population event with times —
 <a href="https://github.com/Dreem-Organization/dosed">DOSED</a> on sleep EEG,
 <a href="https://github.com/PridaLab/cnn-ripple">cnn-ripple</a> on hippocampal
-LFP, SEED on sleep spindles, and SpikeNet on clinical EEG, the last of which we
-have on its bibliographic record alone. None of them works on calcium imaging,
-and all of them learn from events a human expert labelled. What is different here is the
-substrate and where the answers come from — the events are planted in a
-simulation fitted to one lab's own recordings, so the ground truth is exact and
-the benchmark is rebuilt per lab.</p>
+LFP, SEED on sleep spindles and K-complexes, and SpikeNet on clinical EEG, the
+last of which we have on its bibliographic record alone. <b>None of those four
+works on calcium imaging, and all four learn from events a human expert
+labeled.</b> Here the events are planted in a simulation fitted to one lab's own
+recordings, so the ground truth is exact and the benchmark is rebuilt per lab.</p>
+
+<p class="note"><b>None of that is a first, and it does not need to be.</b>
+Population-event detection on calcium imaging is already done by non-learned
+rules — including by the author of the measure
+<span class="key">SPIKE-synch</span> runs on, who applied it to wide-field
+calcium imaging (Kreuz et al. 2022, <i>J Neurosci Methods</i> 381:109703).
+Training on planted rather than expert-marked events is not new either:
+<b>SpindleNet</b> (2019) used synthetic spindles for the reason argued at the
+top of this page, and <b>DeepWonder</b> (2023) trains on synthetic recordings
+outright. We have not found a <i>learned</i> detector emitting population
+coordinated events with times on calcium imaging — but that is a search that
+came up empty, not a proof, and fields where planting signals in real background
+is routine (gravitational-wave astronomy, seismology, high-energy physics) have
+not been searched at all.</p>
 <p>The classical side of the same problem is the coactivity-vs-shuffle rule, and
 it is already in the figure at the top of this page:
-<b><span class="key">binned SCE</span></b> is that rule itself, whose root is
-Cossart, Aronov &amp; Yuste (2003) — cite them, not this repo, for it:
-<i>Attractor dynamics of network UP states in the neocortex</i>,
-Nature 423:283–288.</p>
+<b><span class="key">binned SCE</span></b> is that rule itself. Its root is
+<b>Mao, Hamzei-Sichani, Aronov, Froemke &amp; Yuste (2001)</b>, <i>Dynamics of
+spontaneous activity in neocortical slices</i>, Neuron 32:883–898 — the interval
+reshuffling that Cossart, Aronov &amp; Yuste (2003) cite as their own reference 12
+and apply to UP states in <i>Attractor dynamics of network UP states in the
+neocortex</i>, Nature 423:283–288. Cite those, not this repo, for the rule.
+<span class="key">SPIKE-synch</span> is our detector on someone else's measure:
+the measure is Kreuz, Mulansky &amp; Bozanic (2015), <i>SPIKY: a graphical user
+interface for monitoring spike train synchrony</i>, J Neurophysiol
+113:3432–3445. <a href="learned_detector.html">Where each of the five comes
+from &rarr;</a> carries the rest of the citations, and none of the five is this
+project's method.</p>
 <p><b>No method from the literature has been run here in its own form.</b></p>
 
 <h2>Open your own recordings</h2>
@@ -363,7 +474,7 @@ BANNERS = {
                        "moving. Read it as a position, not a result."),
     "wip": ("&#9888; Under construction",
             "This page is live software still being built. Expect rough edges, "
-            "and behaviour that changes without notice."),
+            "and behavior that changes without notice."),
 }
 """The two labels, as (badge, sentence).
 
@@ -395,15 +506,38 @@ NAV_CSS = """  nav.site { display:flex; align-items:center; gap:4px; flex-wrap:w
                 border-radius:6px; }
   nav.site a:hover { background:#8881; color:inherit; }
   nav.site a[aria-current="page"] { color:inherit; background:#8881; }
+  /* THE STATUS NOTE IS A VERTICAL RAIL, NOT A BAR ACROSS THE TOP. Tony,
+     2026-09-02: *"vertical space is our enemy here ... how about the draft
+     banner as a thin vertical banner on the left."* As a full-width bar it cost
+     ~48px off the top of every page, which is 48px the model figure and the
+     raster did not have. Rotated into the left margin it costs a strip of
+     horizontal space the text column was not using anyway — the column is
+     46rem, centred, so on any desktop there is empty gutter on both sides.
+
+     `position:fixed` so it does not scroll away: it is a claim about the whole
+     page, not about the top of it. Below 1100px there is no gutter to put it
+     in, so it goes back to being a bar — a rail overlapping the text would be
+     worse than the space it saves. */
   div.status { font: .82rem/1.45 system-ui, sans-serif;
                padding:.5rem max(1.2rem, calc(50% - 23rem));
                border-bottom:1px solid #0000; }
   div.status b { font-weight:700; letter-spacing:.04em;
                  text-transform:uppercase; margin-right:.5rem; }
+  @media (min-width: 1100px) {
+    div.status { position:fixed; left:0; top:0; bottom:0; width:2.1rem;
+                 padding:1.1rem 0 0 0; border-bottom:none;
+                 border-right:1px solid #0000; z-index:5;
+                 display:flex; align-items:flex-start; justify-content:center;
+                 writing-mode:vertical-rl; text-orientation:mixed;
+                 letter-spacing:.02em; }
+    div.status b { margin:0 0 .5rem 0; }
+    div.status .status-why { color:inherit; opacity:.72; }
+    body { padding-left:2.1rem; }
+  }
   div.status.draft { background:#f6e6c4; color:#4a3a12;
-                     border-bottom-color:#e0c88e; }
+                     border-bottom-color:#e0c88e; border-right-color:#e0c88e; }
   div.status.wip { background:#f6d5cd; color:#5a1f13;
-                   border-bottom-color:#e2a696; }
+                   border-bottom-color:#e2a696; border-right-color:#e2a696; }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) div.status.draft { background:#3a3117;
                        color:#f0dcae; border-bottom-color:#5f5024; }
@@ -512,11 +646,14 @@ def status_html(page: str) -> str:
     if kind is None:
         return ""
     badge, text = BANNERS[kind]
+    # The reason is wrapped so the vertical rail can dim it against the badge.
+    # In the horizontal fallback the span is inert, which is why it carries no
+    # layout of its own.
     return (f'<div class="status {kind}" role="note">'
-            f'<b>{badge}</b>{text}</div>\n')
+            f'<b>{badge}</b><span class="status-why">{text}</span></div>\n')
 
 
-def render_index(commit: str, lead: str, real: str) -> str:
+def render_index(commit: str, lead: str, real: str, model: str) -> str:
     """The front page, with every placeholder filled in one place.
 
     There is a function here rather than three `INDEX.format(...)` calls because
@@ -525,7 +662,7 @@ def render_index(commit: str, lead: str, real: str) -> str:
     and the build's own site looked fine while the suite went red. One caller
     knows the template's shape; everybody else asks for a page.
     """
-    return INDEX.format(commit=commit, lead=lead, real=real,
+    return INDEX.format(commit=commit, lead=lead, real=real, model=model,
                         nav=nav_html("index.html"), nav_css=NAV_CSS)
 
 
@@ -776,7 +913,7 @@ def stale_build_note(site: Path | None = None) -> str:
 LEAD_FIGURE = """<figure class="lead">
   <a href="diagnostic.html" title="Open the interactive version — zoom and pan the same figure">
     <img src="hero.png" width="{w}" height="{h}"
-         alt="Six detector lanes above a 30-ROI raster and six analysis traces.
+         alt="Five detector lanes above a 30-ROI raster and five analysis traces.
               Each lane marks where that detector called a coordinated event;
               the shaded block is a dense-but-random stretch containing none.">
   </a>
@@ -820,6 +957,77 @@ LEAD_REAL = """<figure class="lead">
   there is arrives in bursts, while the generator spreads events evenly — across
   every ROI, and across the whole recording.</figcaption>
 </figure>"""
+
+# The model, carried from docs/learned/ for the same reason reality.png is: it is
+# committed, and a clone with no data must still build the whole page. Regenerate
+# it with tools/make_architecture_diagram.py, never here.
+#
+# ⚠ THE THREE LINES ABOVE USED TO SAY SOMETHING ELSE, AND IT SURVIVED THE FILE IT
+# DESCRIBED. Until this commit they read "drawn from a trained model rather than a
+# data store ... regenerate it with tools/make_architecture_figures.py ... every
+# panel is measured or computed". All three were true of `architecture_fitted.png`,
+# which is what MODEL_SVG pointed at before 26d0363 swapped the front page's lead
+# from the fitted kernels to the signal path. None is true of `architecture.svg`:
+# it has no panels, it is generated by make_architecture_*diagram*.py, and it is
+# deliberately NOT drawn from a trained model — centre widths are initialised
+# across a geometric spread and then trained, so a fitted width belongs to one
+# training run. That division is the whole point of having two tools: this figure
+# is true of the design, make_architecture_figures.py's is true of a run. A comment
+# naming the wrong regenerator is a comment that sends the next session to a tool
+# whose output does not go here.
+MODEL_SVG = ROOT / "docs" / "learned" / "architecture.svg"
+"""The network, stage by stage. Inlined, not linked — see the `.arch` CSS."""
+
+
+def lead_model(svg: str) -> str:
+    """The architecture diagram, with the one caption line it needs.
+
+    Tony, 2026-09-01: *"The tube network structure at the top with detail. The
+    minimal text."* So this is the **signal path**, not the fitted kernels — the
+    kernels moved to the learned-detector page, where there is room to argue
+    about them. The diagram already carries its own per-stage shapes and
+    parameter counts, which is the detail; repeating them in prose underneath is
+    the text he asked to lose.
+
+    The SVG is inlined rather than served as a file because it ships no styling
+    of its own: as an `<img>` it renders six black boxes with the stage names
+    invisible, which is exactly what it looked like the first time this was
+    tried.
+
+    **It also carries its own scroll floor.** `--arch-natural` is the figure's
+    viewBox width, which is the width at which its labels render at the size they
+    were authored; below that the `.arch` box scrolls instead of shrinking. Read
+    from the figure rather than typed into the stylesheet, because the typed
+    version was measured against an 884-unit viewBox and silently became wrong
+    the day the figure was redrawn at 1221.74. See the `.arch` CSS comment.
+    """
+    return f'<div class="arch"{_natural_width(svg)}>{svg}</div>'
+
+
+VIEWBOX_RE = re.compile(
+    r'viewBox\s*=\s*"\s*[-\d.eE]+\s+[-\d.eE]+\s+([\d.eE]+)\s+[-\d.eE]+\s*"')
+
+
+def _natural_width(svg: str) -> str:
+    """`style="--arch-natural: <viewBox width>px"`, or nothing if it cannot be read.
+
+    Returning nothing on a miss is deliberate. The CSS carries a `44rem`
+    fallback, so a figure this cannot parse still gets *a* floor and still
+    scrolls rather than shrinking to nothing — degraded, not broken. Refusing the
+    build over an unparseable viewBox would trade a small layout imperfection for
+    no front page at all, which is the wrong way round for something this
+    cosmetic.
+    """
+    m = VIEWBOX_RE.search(svg)
+    if not m:
+        return ""
+    try:
+        width = float(m.group(1))
+    except ValueError:
+        return ""
+    if not (0 < width < 100_000):        # a nonsense viewBox is not a floor
+        return ""
+    return f' style="--arch-natural: {width:g}px"'
 
 LEAD_FALLBACK = """<a class="card" href="diagnostic.html">
   <b>Detector diagnostic &rarr;</b>
@@ -902,24 +1110,58 @@ def main(argv=None):
         shutil.rmtree(SITE)
     SITE.mkdir(parents=True)
 
-    # The diagnostic writes straight into the site payload. --out keeps it out
-    # of the darkroom: the published copy and the review copy are different
-    # artifacts with different audiences.
+    # TWO RUNS, because the two figures answer different questions and stopped
+    # being able to share one.
+    #
+    # The **diagnostic page** is the detail view: every detector this build ships,
+    # plus the learned lane. The **front page hero** is one detector per family —
+    # Tony, 2026-09-01, on the version carrying all of them: *"Not all detectors.
+    # Too busy. Maybe [one] from each class. Rate, coact, best tube."*
+    #
+    # They were one invocation until that instruction, and keeping them so would
+    # have thinned the diagnostic page too — silently stripping three detectors
+    # from the page whose entire purpose is to show them. The cost of splitting is
+    # a second fit, about eight seconds.
+    diag = [sys.executable, str(ROOT / "tools" / "make_diagnostic.py"),
+            "--out", str(SITE), "--tag", "site",
+            "--seed", str(args.seed), "--duration", str(args.duration),
+            # THE FIGURE IS PART OF THE BUILD. A detector the viewer withholds
+            # must not come back as a lane label in a PNG, where no check on the
+            # served HTML can see it. Kept in step with the viewer's own
+            # `WITHHELD` by `tests/test_site_withholding.py`.
+            "--without", *WITHHELD_FROM_THE_BUILD,
+            "--tube"]
+    print("$", " ".join(diag))
+    rd = subprocess.run(diag, cwd=ROOT)
+    if rd.returncode != 0:
+        return rd.returncode
+
     cmd = [sys.executable, str(ROOT / "tools" / "make_diagnostic.py"),
-           "--out", str(SITE), "--tag", "site",
+           "--out", str(SITE), "--tag", "hero", "--no-png",
            "--hero", str(SITE / "hero.png"),
            "--seed", str(args.seed), "--duration", str(args.duration),
-           # THE FIGURE IS PART OF THE BUILD. A detector the viewer withholds
-           # must not come back as a lane label in `hero.png` — which is a
-           # picture, so no check on the served HTML can see it. Kept in step
-           # with the viewer's own `WITHHELD` by
-           # `tests/test_site_withholding.py`.
-           "--without", *WITHHELD_FROM_THE_BUILD]
+           # Withheld AND crowded out, and the two are different decisions.
+           # `WITHHELD_FROM_THE_BUILD` is about attribution and is read off the
+           # viewer; `CROWDED_OUT` is this page's own editorial call about
+           # legibility. Kept apart because they move independently.
+           "--without", *WITHHELD_FROM_THE_BUILD, *CROWDED_OUT,
+           # One from each class means the learned one too, and it is the lane
+           # this page exists to show. It trains inside the build (~8 s) on seeds
+           # from the training block — never the seed the figure is drawn on.
+           "--tube"]
     print("$", " ".join(cmd))
     r = subprocess.run(cmd, cwd=ROOT)
     if r.returncode != 0:
-        print("build_site: the diagnostic failed to build", file=sys.stderr)
+        print("build_site: the hero figure failed to build", file=sys.stderr)
         return 1
+
+    # The hero run writes a page and a sidecar nobody serves — it exists for the
+    # one PNG. Remove them rather than let `PUBLISHED` catch them at the end: a
+    # stray is a real check and it should not have to fire on something this
+    # build put there on purpose.
+    for leftover in ("coord_diagnostic_hero.html", "coord_diagnostic_hero.txt",
+                     "coord_diagnostic_hero.png"):
+        (SITE / leftover).unlink(missing_ok=True)
 
     (SITE / "coord_diagnostic_site.html").rename(SITE / "diagnostic.html")
     for stray in ("coord_diagnostic_site.png", "coord_diagnostic_site.txt"):
@@ -953,6 +1195,18 @@ def main(argv=None):
               f"failure, not something to ship without.", file=sys.stderr)
         return 1
     shutil.copyfile(src, SITE / "reality.png")
+
+    # The model figure, on the same terms as reality.png above and for the same
+    # reason: committed, drawn from a trained model rather than from a store, so a
+    # clone with no data still builds the page. It is now the LEAD, and four
+    # paragraphs name its panels by letter — a missing file would leave the page
+    # opening on a broken image and describing panels nobody can see. Refuse.
+    if not MODEL_SVG.exists():
+        print(f"build_site: {MODEL_SVG.relative_to(ROOT)} is missing. It is the "
+              f"page's lead figure — the network the whole page is about — so "
+              f"this is a build failure, not something to ship without.",
+              file=sys.stderr)
+        return 1
 
     # THE LANDSCAPE PAGE IS NOT COPIED. It used to be published here as a
     # self-contained single file; it is withheld from this build — see `PAGES`
@@ -1031,6 +1285,8 @@ def main(argv=None):
         return 1
     real = LEAD_REAL.format(w=real_size[0], h=real_size[1])
 
+    model = lead_model(MODEL_SVG.read_text(encoding="utf-8"))
+
     # THE HERO IS NOT OPTIONAL, and it used to be the only asset here that was.
     # Missing reality.png, landscape.html and viewer.html each return 1 above;
     # a missing hero alone swapped in a link card, said so on stderr and exited
@@ -1070,7 +1326,7 @@ def main(argv=None):
     commit = subprocess.run(["git", "rev-parse", "--short", "HEAD"], cwd=ROOT,
                             capture_output=True, text=True).stdout.strip() or "unknown"
     (SITE / "index.html").write_text(
-        stamp_html(render_index(commit, lead, real), commit),
+        stamp_html(render_index(commit, lead, real, model), commit),
         encoding="utf-8")
 
     # EVERY page carries the pair, not just the one with a hand-written footer.

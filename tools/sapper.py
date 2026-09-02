@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# instrument: retrieval
 """sapper — bugarach's mechanized rule gate (ported pattern from interface2).
 
 A sapper clears mines from ground others are about to cross: each rule is a
@@ -347,7 +348,24 @@ def _tracked_files() -> list[str]:
     return out.stdout.splitlines()
 
 
+#: Paths no rule applies to, whatever its own include list says.
+#:
+#: VENDORED CODE CANNOT BE EDITED IN PLACE (CLAUDE.md, "Vendored copies"): a
+#: refresh is a re-copy, so any edit sapper provoked here would be reverted by the
+#: next one. A gate that fires on something you are forbidden to fix is a gate
+#: that gets answered with the escape hatch every time, and an escape hatch used
+#: routinely stops being an escape hatch.
+#:
+#: The first case was real and was a false positive on top of that: SAP005 wants
+#: `<meta charset>` beside a `<title>`, and matched draughtsman's SVG `<title>`
+#: elements -- an SVG has no head to put a charset in. Upstream is where a genuine
+#: finding belongs, reported as a bug rather than patched into the copy.
+GLOBAL_EXCLUDE = ("third_party/*",)
+
+
 def _applies(rule: Rule, path: str) -> bool:
+    if any(fnmatch.fnmatch(path, g) for g in GLOBAL_EXCLUDE):
+        return False
     hit = any(fnmatch.fnmatch(path, g) for g in rule.include)
     exempt = any(fnmatch.fnmatch(path, g) for g in rule.exclude)
     return hit and not exempt

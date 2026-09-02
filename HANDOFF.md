@@ -4,8 +4,22 @@
 none of them blocks work here. **#304 and #270 merged on 2026-08-28.** When the last
 closes, `tests/test_handoff_is_honest.py` goes red and retires this file.
 
-`main` green at `ced0da4`; suite **1,569**; sapper clear. Board: **11 ACTIVE** on the git
-board and **30** on the machine-local one, of which only **7 have a live worktree**.
+**This file no longer carries counts, and that is the repair.** `main`'s sha, the suite size
+and the board totals used to sit here. They were wrong again within 48 hours of the refresh
+below — whose entire subject was that they rot. Derive them; each is one command:
+
+| what | how |
+|---|---|
+| `main`, the suite, sapper | `git rev-parse --short origin/main` · `pytest -q` · `python3 tools/sapper.py --all` |
+| the boards | `bash tools/board_digest.sh` — ACTIVE claims, and which have no worktree |
+| **what is established, and how strongly** | [`docs/MILESTONES.md`](docs/MILESTONES.md) — rows pinned to commits, so a row can go incomplete but cannot silently change its mind |
+
+> **Refreshed again 2026-09-01, and every figure had rotted a second time.** It claimed `main`
+> at `ced0da4` (37 commits back), the suite at 1,569 against 1,708 collected, and the board at
+> "30 ACTIVE, 7 with a live worktree" against **39 ACTIVE of 275, 29 with none**. The 08-30 note
+> below diagnosed exactly this and refreshed the numbers rather than removing them, so the same
+> file made the same claim wrong twice in three days. **A number in a file nothing recomputes is
+> a promise no one is keeping.** The counts are gone; the commands are above.
 
 > **Refreshed 2026-08-30, and every figure above had rotted.** It listed #304 and #270 as
 > in flight two days after they merged, quoted `main` at `ab1dbfd` — 61 commits back — and

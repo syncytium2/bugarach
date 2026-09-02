@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# instrument: retrieval
 # session_start_trimmed.sh — run the vendored session-start hook, but deliver the
 # session board as a digest of LIVE claims instead of the whole file.
 #
@@ -113,8 +114,35 @@ run() {
   # Take the board path from the hook's own marker, so the digest can never be of a
   # different file than the one the hook resolved.
   board=$(sed -n 's/^--- session board: \(.*\) ---$/\1/p' "$raw" | head -1)
+  # A POINTER, not a dump. Tony, 2026-08-30: "the briefing should just be pointers."
+  #
+  # The digest was spliced inline and reached 22,296B on 2026-08-30 — on its own,
+  # nearly three times the harness's measured spill threshold. The terse re-render
+  # below fired, reported success, and still left 15,663B, so the alarm worked and
+  # the remedy did not. A spilled briefing delivers none of the alarms above it,
+  # which is the whole failure this trimming exists to prevent.
+  #
+  # The digest is still GENERATED IN FULL — it is written beside the board it
+  # describes, so nothing is lost and a session that wants it is one `cat` away.
+  # What the briefing carries is the count and the path.
   if [ -n "$board" ] && [ -f "$DIGEST" ]; then
-    bash "$DIGEST" "$board" > "$rendered" 2>/dev/null
+    local full active live
+    full="$(dirname "$board")/BOARD_DIGEST.txt"
+    if bash "$DIGEST" "$board" > "$full" 2>/dev/null; then
+      active=$(grep -c 'Status:.*ACTIVE' "$board" 2>/dev/null || echo 0)
+      live=0
+      while IFS= read -r wt; do
+        [ -d "$wt" ] && live=$((live + 1))
+      done <<< "$(git worktree list --porcelain 2>/dev/null | sed -n 's/^worktree //p')"
+      {
+        echo "--- session board: $board ---"
+        echo "   ${active} ACTIVE claim(s); ${live} live worktree(s) on this machine."
+        echo "   A claim with no worktree is very likely finished and not yours to close."
+        echo "   FULL DIGEST (regenerated just now):  $full"
+        echo "   CLAIM BEFORE YOUR FIRST FILE WRITE — the commit gate fires hours later,"
+        echo "   which is after the collision. tools/guard_local_board.sh"
+      } > "$rendered"
+    fi
   fi
 
   siteline=$(site_line)

@@ -155,11 +155,12 @@ def test_the_index_template_links_only_to_files_the_build_writes():
     """The one page every visitor sees, checked in CI whether or not it was built.
 
     `INDEX` is a format string, so it is rendered with placeholder content first;
-    the lead figure and the real-recording figure carry `hero.png` and
-    `reality.png`, which are exactly the two references most likely to be wrong.
+    the three figures carry `hero.png`, `reality.png` and `model.png`, which are
+    exactly the references most likely to be wrong.
     """
     page = bs.render_index("abc1234", bs.LEAD_FIGURE.format(w=1, h=1),
-                           bs.LEAD_REAL.format(w=1, h=1))
+                           bs.LEAD_REAL.format(w=1, h=1),
+                           bs.lead_model(bs.MODEL_SVG.read_text(encoding="utf-8")))
     unresolved = sorted(local_refs(page) - set(bs.PUBLISHED))
     assert not unresolved, (
         f"the front page points at {unresolved}, which the build does not "
@@ -173,7 +174,8 @@ def test_the_fallback_front_page_also_links_only_to_real_files():
     a link like any other. A path that only appears in the fallback is a path
     nothing normally renders, which is exactly where a dead one survives."""
     page = bs.render_index("abc1234", bs.LEAD_FALLBACK,
-                           bs.LEAD_REAL.format(w=1, h=1))
+                           bs.LEAD_REAL.format(w=1, h=1),
+                           bs.lead_model(bs.MODEL_SVG.read_text(encoding="utf-8")))
     assert not sorted(local_refs(page) - set(bs.PUBLISHED))
 
 

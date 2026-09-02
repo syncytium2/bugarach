@@ -1,4 +1,5 @@
 #!/bin/sh
+# instrument: concurrency
 # Commit gates — enable with:  git config core.hooksPath .githooks
 #
 # Both run without anyone remembering them, which is the point: rules that

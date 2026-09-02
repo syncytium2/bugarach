@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# instrument: verification
 """Does the DEPLOYED viewer still reach nothing?
 
     python tools/audit_deployed_page.py                     # the live site

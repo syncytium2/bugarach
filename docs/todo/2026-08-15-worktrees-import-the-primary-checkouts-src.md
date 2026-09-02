@@ -77,6 +77,40 @@ Option 2 is the one that fires by itself, which is the test this repo applies to
 every other gate. It also generalizes: the same guard catches a stale editable
 install pointing at a deleted path.
 
+## It is worse than "a worktree imports the wrong `src`": the answer depends on test order
+
+Measured 2026-09-01, in `bugarach-worktrees/walk-the-built-pages`, same commit:
+
+```
+pytest tests/test_architectures_are_files.py                  ->  2 failed, 2 passed
+pytest tests/test_architecture_diagram_is_current.py \
+       tests/test_architectures_are_files.py                  ->  6 passed
+```
+
+**Same tests, same worktree, opposite verdicts.** Whichever file imports
+`bugarach` first decides which `src` the whole session resolves; after that it is
+in `sys.modules` and no later `sys.path` change can move it.
+`tools/make_architecture_diagram.py` does `sys.path.insert(0, ROOT / "src")` at
+import, so a test that imports it early pins the **worktree's** copy and every
+later test agrees — while a run that reaches `bugarach` by another route first
+pins the **primary checkout's**.
+
+That upgrades the defect. A consistently wrong answer is a hazard people learn
+once. An order-dependent one is a flake: two sessions run the same suite in the
+same worktree, get different results, and each has grounds to think the other
+misread something. It cuts both ways — `draughtsman` hit the mirror image the same
+day, its branch green when the arch test ran first and red when it ran alone, and
+correctly reported that as an order dependency rather than as a fix.
+
+**This argues for option 2's urgency, not for a new option.** A `conftest.py`
+guard asserting `bugarach.__file__` lives under the rootdir fires at collection,
+before ordering can matter, and turns both directions into one loud failure
+instead of two quiet disagreements.
+
+Until then, the working rule: **a green suite in a worktree is not evidence unless
+it also ran in the primary checkout**, and a red `test_architectures_are_files.py`
+in a worktree is this, not your branch.
+
 ## Related
 
 The session protocol already says to work in your own worktree

@@ -4,6 +4,21 @@
 truth — it wins over conversation) and use [`docs/GLOSSARY.md`](docs/GLOSSARY.md)'s
 vocabulary (stream axis vs detector axis; "modality" is banned).
 
+**For "where are we?": [`docs/MILESTONES.md`](docs/MILESTONES.md)** — what is established
+and how strongly, each row pinned to a commit. Its `strength` column separates **measured**
+from **decided** from ⚠ **evidence**, and the last one is the point: a measurement whose
+decision has not been made cannot be restated as settled without failing a check.
+
+**Before you build anything, or when a lookup fails: [`docs/INDEX.md`](docs/INDEX.md).**
+Keywords — the words you would type into `grep`, not the ones in the filename —
+pointing at the file that owns the answer. It exists because on 2026-08-30 a session
+spent several turns re-deriving that the Cossart/DANDI transfer machinery exists and
+began designing around a constraint `tools/import_dandi.py` had already solved.
+Nothing was missing; it was unfindable across 148 todos, 116 learned artifacts and 90
+tools. **The index is a pointer, never an authority** — the linked file wins, and a row
+you find wrong gets fixed in the same commit as whatever you were doing. Its links are
+tested (`tests/test_index_resolves.py`), so a dead row is a red suite, not a surprise.
+
 **This is not optional and skipping it has cost real work.** A session on
 2026-08-13 went the whole way without reading it, and proposed calibrating the
 detectors so that TTX slices stop showing coordination — the dominant-paradigm

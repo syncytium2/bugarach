@@ -129,6 +129,11 @@ COLORS = {
     "sync":   "#d62728",
     "coact":  "#e69d00",
     "loco":   "#8c564b",
+    # The learned lane, in the report's own `--learned` ink so a reader moving
+    # between the figure and `docs/learned/` meets one colour for one idea. It is
+    # deliberately not on the qualitative wheel the six sit on: the six differ
+    # from each other, and this one differs from all of them in kind.
+    "tube":   "#7a1f22",
 }
 #: Display names. **`cicada` is the key, and its name is WITHHELD** — Tony,
 #: 2026-08-29: *"suppress all locust/cicada mentions in the public facing
@@ -151,13 +156,31 @@ COLORS = {
 TITLES = {
     "rate": "rate+context", "sce": "binned SCE", "cicada": "sixth",
     "sync": "SPIKE-synch", "coact": "CoactDetect", "loco": "LoCo",
+    # The learned lane is named for the MODEL. It used to be named for the
+    # mechanism — "centre−surround (learned)" — on the reasoning that *"a reader
+    # meeting `tube` in a figure has no way to know it is a network."*
+    #
+    # True when written; false since the front page changed. The page now opens
+    # with draughtsman's diagram, titled **tube — a coordinated-event detector**,
+    # directly above this raster, so a reader meeting "tube" in the lane has just
+    # been told what it is, in a picture, a screen-inch higher. The old label
+    # meanwhile made this figure disagree with the figure above it and with the
+    # prose beside it, which is worse than terse. Tony, 2026-09-02: *"raster
+    # figure should use 'tube' to match the model and the text."*
+    #
+    # "(learned)" stays: it is the one fact that separates this lane from five
+    # hand-written rules, and the diagnostic page carries no model diagram to
+    # supply it. That it also drops the last British spelling on the front page
+    # is a coincidence, not the reason.
+    "tube": "tube (learned)",
 }
 # short row labels — the full titles overflow the slim signal rows. The sixth
 # detector's entry matches its TITLES entry rather than being shorter: a longer
 # form there rendered as "he sixth detector (105", clipped at BOTH ends, which is
 # the overflow this map exists to prevent.
 SHORT = {"rate": "rate", "sce": "SCE", "cicada": "sixth",
-         "sync": "sync", "coact": "coact", "loco": "LoCo"}
+         "sync": "sync", "coact": "coact", "loco": "LoCo",
+         "tube": "learned"}
 DEFAULT_ON = ["rate", "coact", "loco"]
 
 

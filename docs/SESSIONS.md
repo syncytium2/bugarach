@@ -10,6 +10,76 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
+### Mac/release-the-hold — DEPLOY **DONE**, twice; the deploy is free
+- **Status:** **DONE 2026-09-02. THE DEPLOY IS HELD BY NOBODY — the next session may
+  publish without asking.** Two publishes went out from this claim:
+  - `bf02001` — version id **`62ddbd75-eb92-4903-9156-00ff3c7afa3a`**, the vendored
+    model figure (#443) with #439–#444.
+  - `31c4bd6` — version id **`16cd0a6a-a2a3-4115-a7a2-0ec23e987014`**, the first-screen
+    pass (#446): status note as a vertical rail, prose moved below the figures, hero
+    without its analysis traces, legend inside the figure, `simulated` on the raster's
+    y-axis, `tube (learned)` on the learned lane.
+  Both verified against the live edge in a browser, not from the build: 200, stamp
+  matching `origin/main`, `site_staleness.py` **current**.
+- **Two things the next deployer should know**, both learned here:
+  - `npm run deploy` fails from a worktree — `node_modules` lives only in the primary
+    checkout. Run the pinned binary at `<primary>/node_modules/.bin/wrangler` with the
+    worktree as cwd; `npx` would fetch a different version.
+  - **Build with `PYTHONPATH=$PWD/src`.** A worktree imports the primary checkout's
+    `src`, so a change to `src/bugarach/**` can silently not reach the payload. This
+    session shipped three builds before noticing a rename had done nothing.
+- **Still open, and not a deploy blocker:** draughtsman's figure states `1×30×600`
+  against "cells × frames" — three numbers, two names, and the middle axis silently
+  changes from ROIs to channels at the kernel bank — plus `area-normalised` and a
+  request to label elements directly rather than through the colour key. Relayed to
+  `draughtsman`; its fix needs a re-vendor and one more publish.
+- **Superseded detail from the first claim**, kept because the checks are the record:
+- **Holds:** **`bugarach.tonydefazio.com`.** No other session should run
+  `npm run deploy` while this block is ACTIVE. Nothing in the darkroom, no MATLAB, no
+  export reads, no port beyond an ephemeral localhost one for the page walk.
+- **Why:** the front page's model figure is `draughtsman`'s, vendored as a pipeline
+  rather than a picture, and the page has been held since this morning so it moves once
+  rather than three times. Publishing `bf02001` carries #439, #440, #441, #442, #443
+  and #444 together.
+- **What was verified before publishing** — recorded here because another machine can
+  only learn it from this file:
+  - Vendored stamp `bcd104a` matches draughtsman's upstream HEAD, read from the remote.
+    `check_vendor_freshness.sh` could **not** answer: it exits 2 on the first UNKNOWN
+    family and never reaches draughtsman's, so this was checked by hand.
+  - Built from a worktree **detached at `origin/main`**, `rev-parse` compared first.
+    The primary checkout is on another session's branch (`declare-instrument-families`)
+    and building there would have published it silently — see
+    [`todo/2026-09-01-nothing-stops-a-deploy-publishing-a-branch.md`](todo/2026-09-01-nothing-stops-a-deploy-publishing-a-branch.md).
+  - Served over HTTP and walked: 29 passed, 1 xfailed (the known diagnostic overflow).
+  - Figure read in light and dark at five widths; labels land at 9.00px throughout.
+- **Known and shipped anyway:** at 1280px the figure's last stage is clipped 19px and its
+  box scrolls; all of its text is legible. Widening `.arch` would desynchronise it from
+  the hero figure, which shares `min(94vw, 78rem)` on purpose.
+- **When this is DONE** the block will say so and name the wrangler version id, so the
+  next session knows the deploy is free.
+
+---
+
+### Mac/k-scan-curve — DARKROOM claimed 2026-09-01, two files
+- **Status:** **DONE 2026-09-01 — released, nothing held.** Landed as PR #438 (`46a4e37`).
+  Both files written once and not since: `k_scan_cossart.html` and `.png` in the darkroom,
+  with repo copies under `docs/learned/cossart_transfer/`. **K was not chosen** — it stays on
+  the `MILESTONES.md` Open list, and the corrections the figure argues for
+  (`current_export.toml`, the transfer README's *"was never an open question"*,
+  `MILESTONES.md`) are **not applied** and are Tony's.
+- **Holds:** `<darkroom>/bugarach/k_scan_cossart.html` and `.png`, and nothing else in
+  that folder. New names; no existing darkroom artifact is overwritten. Not
+  `constellation/`. No deploy — the site is untouched.
+- **Why:** the Cossart K scan gets drawn, because
+  [`docs/todo/2026-09-01-the-k12-peak-does-not-reproduce.md`](todo/2026-09-01-the-k12-peak-does-not-reproduce.md)
+  turns out to have a curve as its answer rather than a number: the per-slice argmax
+  median is **16**, the pooled mean and the mean per-slice rank peak at **12**, and which
+  one you believe is a question about aggregation that a table of nine medians hides.
+- **Does not decide K.** That is Tony's, and it stays on the `MILESTONES.md` Open list.
+  The transfer is not re-run; the input is `docs/learned/assessment_cossart.json`, in git.
+
+---
+
 ### Mac/runs-say-what-made-them — DEPLOY claimed 2026-08-30 ~03:55Z, overnight run
 - **Status:** **DONE 2026-08-30 — DEPLOYED AND VERIFIED. The deploy is held by
   nobody; the next session may publish without asking.** Version ID
@@ -1686,3 +1756,100 @@ session's work is not a sweep.
 - **Task:** run `sce` and `loco` at the `bugarach.bench` operating points on the FAST stream
   of `20240813_39` — a baseline-only recording, the one slice released by name (FOUNDATIONS
   §5) — and draw the detections in a lane above its raster.
+
+---
+
+### Mac/ranking-rule — DARKROOM claimed 2026-08-30, one report write
+- **Status:** **RELEASED 2026-08-30. Nothing held; the darkroom is free.** The one file
+  landed — `<darkroom>/bugarach/reviews/ranking_rule_2026-08-30.md`, 8,791B — and the work
+  it belonged to merged as #418. The next session may write there without asking.
+  **Read that run record before re-deriving anything about the ranking rule.** It carries a
+  blocking residual that is Tony's and not a session's: the 0.02 tie margin does not make
+  the tiers reproducible across seed blocks — they agree at 0.08 — filed with three options
+  in `docs/todo/2026-08-30-the-tie-margin-does-not-survive-its-own-test.md`.
+- **Status was:** ACTIVE — claimed before the write, not after.
+- **Holds:** `<darkroom>/bugarach/` for **one file**: the murderboard run record for
+  `docs/ranking_rule.md`. No deploy, no site build, no `constellation/` writes, no
+  MATLAB. Released as soon as the copy lands — nothing here needs to keep it.
+- **Why it is on this board and not the machine-local one:** the darkroom is mounted on
+  every machine, so another session can see and overwrite what is written there. The
+  repo work behind it (a new `bugarach.rank`, its tests, and two todos) touches nothing
+  another machine can reach and is claimed locally.
+- **What is being written:** `reviews/ranking_rule_2026-08-30.md` — the run record for an
+  11-of-11 murderboard. It carries a **blocking** residual: the rule's 0.02 tie margin
+  does not make the tiers reproducible across seed blocks, which is decision D4 and is
+  Tony's. The repo keeps its own copy under `docs/reviews/`; both copies are the same
+  file, because review and git history need the one in the tree and a person opening the
+  darkroom needs the other.
+
+---
+
+### Mac/overnight-2026-08-30 — DARKROOM claimed for the fireflies export
+- **Status:** ACTIVE — claimed before the write, not after. Overnight run, Tony asleep.
+- **Holds:** `<darkroom>/bugarach/detect/2026-08-18_revised_2v_periods/` — the output of
+  `bugarach detect` over the whole export folder, which is where that command sends its
+  three files by default. **New directory, nothing overwritten.** No deploy, no site
+  build, no `constellation/` writes, no MATLAB.
+- **Why:** Tony, 2026-08-30, going to sleep: *"run the full pipeline on the senktide and
+  ttx data sets. export the data for fireflies, have them generate before after plots for
+  the coordinated events."*
+- **What this is and is not.** It is the six ports run over every recording in the folder,
+  writing `detections.csv` with the producer's own `region_idx` / `region_label` carried
+  per detection — so baseline / senktide / TTX / high K+ / wash / SB222200 are all
+  distinguishable downstream without this repo taking a view. **It is not a before/after
+  analysis.** FOUNDATIONS §9: treatment effects are `fireflies`' and must not be re-derived
+  here. bugarach exports; fireflies plots. Nothing here is fitted on treatment data —
+  `detect` runs shipped operating points and trains nothing, and Tony confirmed the rule in
+  the same session: *"all training and optimization is on the baseline periods for our
+  data."*
+- **⚠ Real-data-derived output, so it goes to the darkroom and NEVER to the repo**
+  (FOUNDATIONS §5). No slice ids, counts or derived figures from it get committed.
+
+---
+
+### Mac/performance-table — DARKROOM claimed 2026-08-30, one report write
+- **Status:** **RELEASED.** Both records written; nothing held.
+- **Holds:** `<darkroom>/bugarach/` for **one file**:
+  `reviews/performance_table_2026-08-30.md`, the run record for an 11-of-11 murderboard.
+  No deploy, no site build, no `constellation/` writes, no MATLAB.
+- **What changed under it:** the ranking rule reviewed in the previous block is **gone**.
+  Tony, 2026-08-30: *"no ranking just a table of performance"*. The tiers, the beats
+  relation and the tie margin are removed; the gates stay as a reported column. So the
+  blocking residual advertised in the block above — the 0.02 margin — is **retired
+  without being answered**, and the darkroom copy of that earlier record now carries a
+  banner saying so. A session that reads only the older file would otherwise chase a
+  decision nobody needs.
+- **Also written:** the earlier record `reviews/ranking_rule_2026-08-30.md` gets its
+  superseded banner in the same pass, so the two files in that folder do not disagree.
+
+---
+
+### Mac/tube-at-the-top — DEPLOYED 2026-09-01, the front page now leads with the model
+- **Status:** **DONE — deployed and public.** Nothing held. The live site is current with
+  `main` at `2ee7569`; `tools/site_staleness.py` says *"0 commits have landed since the
+  deploy and none of them changes what the site serves."*
+- **Deploy:** Cloudflare version `45c1527d-8111-4006-8b30-dae5e1b381c8`, 6 of 9 assets
+  uploaded (`index.html`, `diagnostic.html`, `learned_detector.html`, `viewer.html`,
+  `model.png`, `diagnostic.png`). Ran from the **primary checkout**, which has
+  `node_modules` and an authenticated wrangler — the `deploy-site` worktree named in the
+  2026-08-17 block **no longer exists**, so that instruction is stale and this is the
+  correction to it.
+- **Why now:** Tony, 2026-09-01: *"Need to see the updated website. Deploy"*, with
+  `DEPLOY_HOLD.md` reading `held: no`. It had been **31 commits behind, 3 of which change
+  what it serves.**
+- **What changed for a reader:** the page opens on the deep learning — a coordinated event
+  defined, then *nobody can label one reliably*, then the fitted model above the problem
+  figure. The five hand-written detectors keep one short section and link out. Tony,
+  2026-08-31: *"this is fundamentally a portfolio project to show off the deep learning
+  approach to data with no ground truth."*
+- **⚠ A wrong laboratory was live until this deploy.** The page credited the
+  coactivity-vs-shuffle rule to Cossart, Aronov & Yuste (2003); its root is **Mao,
+  Hamzei-Sichani, Aronov, Froemke & Yuste (2001)**, Neuron 32:883–898 — Cossart 2003's own
+  reference 12. Verified against the primary text by the murderboard's role 2. **Mao 2001
+  itself is paywalled and unread**, so the chain is good to one step short of the root.
+- **Verified from the far side, not just locally:** `tools/audit_deployed_page.py` reports
+  *"The page fetched nothing but itself"* — the no-network promise holds as served. All
+  four pages 200 with nav, no broken images, no JS errors.
+- **Run record:** `docs/reviews/index_2026-08-31.md` — 11 of 11 roles, 3 rounds, severity
+  floor reached.
+- **Holds:** nothing. Deploy released.

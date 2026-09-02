@@ -21,6 +21,13 @@ jobs:
         python-version: ["3.11", "3.13", "3.14"]
     steps:
       - uses: actions/checkout@v4
+        with:
+          # tests/test_milestones_resolve.py asserts every commit a milestone row cites
+          # is an ancestor of the base ref. The default depth-1 checkout carries no
+          # history, so every historical sha reads as fabricated and the job goes red for
+          # a reason that has nothing to do with the document. Two review roles predicted
+          # this before it happened; it was filed as a residual and shipped anyway.
+          fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}

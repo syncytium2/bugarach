@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# instrument: concurrency
 # guard_branch.sh — refuse a commit made directly on the default branch.
 #
 # WHY THIS IS A SCRIPT AND NOT A LINE IN CLAUDE.md. "Never commit on main" was

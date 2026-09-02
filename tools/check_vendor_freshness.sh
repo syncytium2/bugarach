@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# instrument: propagation
 # check_vendor_freshness.sh — are bugarach's vendored copies current?
 #
 # bugarach vendors from TWO upstreams, so per the session protocol it needs one
@@ -7,6 +8,8 @@
 #   session-protocol : docs/session_protocol.md + .claude/hooks/session-start.sh
 #                      <- interface2
 #   murderboard      : tools/murderboard_freshness.sh   <- syncytium2/murderboard
+#   draughtsman      : third_party/draughtsman/ + the spec it draws from
+#                      <- syncytium2/draughtsman
 #
 # This wrapper exists for ONE reason beyond convenience, and it is a safety
 # property — see the WARNING below. Do not replace it with bare calls to
@@ -50,6 +53,9 @@
 #                        never hardcode it (sapper SAP004).
 #   MURDERBOARD_REPO     path to a local murderboard clone (optional; the
 #                        murderboard family resolves fine over gh).
+#   BUGARACH_DRAUGHTSMAN path to a local draughtsman clone (optional; the repo is
+#                        private, so this is the offline route when gh cannot
+#                        reach it. Machine-local: never hardcode it, SAP004).
 #
 # EXIT   0 = all checked families current   1 = something STALE   2 = undetermined
 
@@ -89,6 +95,33 @@ bash "$GATE" $VERBOSE \
   --file tools/murderboard_roster.sh \
   --file tools/murderboard_freshness.sh \
   --file .claude/skills/murderboard/SKILL.md \
+  || { [ $? -eq 1 ] && rc=1 || { [ "$rc" -eq 0 ] && rc=2; }; }
+
+# --- family 3: draughtsman, the figure pipeline ------------------------------
+# WHY A WHOLE PACKAGE AND A SPEC ARE ONE FAMILY. tools/make_architecture_diagram.py
+# runs draughtsman's trace -> check -> render over the LIVE build_tube(), so the
+# code and the spec that drives it have to come from the same upstream commit: a
+# spec written against a newer reference grammar, or a renderer newer than the
+# spec it draws, is a half-finished re-vendor. The gate takes the first file's
+# stamp as the family's version and reports the others when they disagree, which
+# is exactly that check.
+#
+# The stamp lives on __init__.py rather than on all twelve modules, so a re-vendor
+# is one recursive copy plus one line, not a twelve-file diff.
+#
+# --clone is passed only when the env var names a real checkout. Written as a
+# string rather than an array because this runs under bash 3.2 on macOS, where
+# expanding an empty array under `set -u` is itself an error -- the same reason
+# $VERBOSE above is unquoted.
+DRAUGHTSMAN_CLONE=""
+if [ -n "${BUGARACH_DRAUGHTSMAN:-}" ] && [ -d "${BUGARACH_DRAUGHTSMAN}/.git" ]; then
+  DRAUGHTSMAN_CLONE="--clone ${BUGARACH_DRAUGHTSMAN}"
+fi
+bash "$GATE" $VERBOSE $DRAUGHTSMAN_CLONE \
+  --label draughtsman \
+  --slug syncytium2/draughtsman \
+  --file third_party/draughtsman/__init__.py \
+  --file docs/learned/architecture.spec.json \
   || { [ $? -eq 1 ] && rc=1 || { [ "$rc" -eq 0 ] && rc=2; }; }
 
 exit $rc

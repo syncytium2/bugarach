@@ -1,0 +1,147 @@
+{
+ "generator": {
+  "bg_burst_bin_sec": [
+   300.0,
+   60.0
+  ],
+  "bg_burst_shape": [
+   1.547,
+   1.388
+  ],
+  "bg_rate_hz": 0.02329022458326874,
+  "bg_rate_shape": 0.275,
+  "bg_rate_stat": "mean",
+  "distractor_frac": 0.18,
+  "distractor_window": [
+   120.0,
+   1100.0
+  ],
+  "duration_sec": 2578.0,
+  "grid_sec": 0.1,
+  "hot_rate_hz": 0.06,
+  "hot_window": [
+   1200.0,
+   1500.0
+  ],
+  "jitter_sec": 0.7487303754518779,
+  "min_sep_sec": 120.0,
+  "n_distractors": 6,
+  "n_per_level": [
+   5,
+   5,
+   5
+  ],
+  "n_roi": 566,
+  "participation": [
+   0.0806,
+   0.0504,
+   0.0302
+  ],
+  "ramp_sec": 30.0
+ },
+ "k_chosen": 3,
+ "k_scan": {
+  "10": {
+   "clusters_permin": 6.040327496557216,
+   "jit_null": 0.8226002191371113,
+   "jit_obs": 0.7306506679430572,
+   "n_jit_defined": 59,
+   "n_slices": 59,
+   "part_n_obs": 39.0
+  },
+  "12": {
+   "clusters_permin": 6.039950012995351,
+   "jit_null": 0.8055867514903918,
+   "jit_obs": 0.7092987639817652,
+   "n_jit_defined": 59,
+   "n_slices": 59,
+   "part_n_obs": 42.0
+  },
+  "16": {
+   "clusters_permin": 5.415139671923966,
+   "jit_null": 0.7708502158583869,
+   "jit_obs": 0.6929471606951858,
+   "n_jit_defined": 57,
+   "n_slices": 59,
+   "part_n_obs": 48.0
+  },
+  "20": {
+   "clusters_permin": 5.071854998505831,
+   "jit_null": 0.7380008056976239,
+   "jit_obs": 0.6784684490794577,
+   "n_jit_defined": 54,
+   "n_slices": 59,
+   "part_n_obs": 52.0
+  },
+  "24": {
+   "clusters_permin": 4.1513617634154505,
+   "jit_null": 0.7250179076655927,
+   "jit_obs": 0.6811268058980748,
+   "n_jit_defined": 42,
+   "n_slices": 59,
+   "part_n_obs": 59.75
+  },
+  "3": {
+   "clusters_permin": 2.8540612123481224,
+   "jit_null": 0.8413221545651438,
+   "jit_obs": 0.7487303754518779,
+   "n_jit_defined": 59,
+   "n_slices": 59,
+   "part_n_obs": 28.5
+  },
+  "4": {
+   "clusters_permin": 3.8522079470509287,
+   "jit_null": 0.8406172277664316,
+   "jit_obs": 0.7554415343824042,
+   "n_jit_defined": 59,
+   "n_slices": 59,
+   "part_n_obs": 30.0
+  },
+  "6": {
+   "clusters_permin": 5.052080224589411,
+   "jit_null": 0.8387147443256036,
+   "jit_obs": 0.7519322162024814,
+   "n_jit_defined": 59,
+   "n_slices": 59,
+   "part_n_obs": 35.0
+  },
+  "8": {
+   "clusters_permin": 5.716472298725273,
+   "jit_null": 0.8351360482817763,
+   "jit_obs": 0.7402027648232998,
+   "n_jit_defined": 59,
+   "n_slices": 59,
+   "part_n_obs": 37.0
+  }
+ },
+ "notes": [
+  "\u26a0 NOBODY HAS LOOKED. Every number in this spec is a median over candidates the assessor proposed and no person judged. That is the state docs/RESET.md section 1 calls 'not a weaker result of the same kind \u2014 not a result'. Pass --annotations to fix it; this spec was produced with --unreviewed, deliberately",
+  "bg_rate_hz=0.02329 is the assessment's TOTAL per-ROI rate, which includes coordinated events; the generator treats it as background only, so the background is biased slightly high",
+  "participation centred on the measured 28.5 of 566 ROI (5.0%), spread 0.6-1.6x so a participant floor stays resolvable",
+  "jitter_sec=0.749 from the measured within-cluster onset SD (null 0.841, excess -0.0873)",
+  "measured spacing 21s is INSIDE the 120s null window, so it was raised to the window: simulating at the measured rate would rebuild the contaminated null. This recording is NOT at the measured event frequency, and a frequency claim from it is invalid",
+  "duration_sec=2218 exceeds the 1474s window that was measured \u2014 the spacing floor needs the room",
+  "bg_rate_hz derived from the population event rate / ROI count: median 0.02329 Hz, IQR 0.01265-0.02834. The tree's own measured regime endpoints are 0.0052 and 0.019, so this store independently reproduces the interquartile band the bench was built on. The MEDIAN ROI rate is not used: 0% of slices have a median ROI with no events in baseline",
+  "\u26a0 bg_rate_shape=0.275 is INHERITED from this lab's own recordings rather than measured on this folder \u2014 only 0 usable baseline windows \u2014 too few to fit a shape. The consumer must choose a background explicitly rather than inherit one. Far better than a flat field, which no real recording resembles, and still a constant standing in for a measurement. Re-run the assessment on an export folder with enough baseline to fit one",
+  "bg_burst_shape=(1.547, 1.388) at bins (300.0, 60.0) turns on fitted temporal burstiness. Still inherited \u2014 the assessment does not yet fit this one per folder",
+  "the promiscuity probe and the correlated-burst distractors are carried over from BENCH_RECORDING unchanged: they are deliberate negatives, not properties of the recordings, so the assessment has nothing to say about them and they must not be fitted away",
+  "duration_sec raised by 360s to cover the probe window, which no planted event may occupy"
+ ],
+ "provenance": {
+  "n_slices_assessed": 59,
+  "n_surrogates": 1000,
+  "region_labels_seen": {},
+  "regions": "baseline only",
+  "store": "dandi_000219"
+ },
+ "review": null,
+ "roi_rate": {
+  "frac_slices_median_roi_silent": 0.0,
+  "iqr": [
+   0.01264705685362236,
+   0.028344627390198014
+  ],
+  "median": 0.02329022458326874
+ },
+ "sweep": {}
+}

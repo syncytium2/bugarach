@@ -202,11 +202,17 @@ Two things a later reader would otherwise get wrong:
 
 **Nothing here is half-done.** What is left is not this file's:
 
-- **`syncytium2/bugarach` PR #426 is open and unmerged**, 58 commits behind `main`. A merge
-  conflicts in `docs/todo/2026-08-11-file-pyspike-max-tau-issue.md` and in three vendored
-  murderboard files. **The vendored conflicts are spurious** — both sides carry the same
-  stamp, `564b944`, because both re-vendored the same upstream commit independently, so take
-  either side.
+- ~~**`syncytium2/bugarach` PR #426 is open and unmerged**~~ — **`origin/main` merged into the
+  branch 2026-09-02**, four conflicts resolved. The advice that stood here — *"the vendored
+  conflicts are spurious… take either side"* — **was true when written and false by the time
+  anyone acted on it, and taking either side would have destroyed work.** Both sides do still
+  stamp `564b944`, but `main` has since gained an `# instrument:` line in each of
+  `murderboard_freshness.sh`, `murderboard_revendor.py` and `murderboard_roster.sh`, so
+  `--ours` silently strips a landed declaration. **What was actually applied:** `--theirs`
+  (main) for the three vendored files, `--ours` for this todo — `main` carries only the
+  squashed snapshot of `f2e73e5` via #424, including a *"Draft issue text (not yet posted)"*
+  section this branch deleted once the PR was filed, so on this file the branch is strictly
+  newer. A stamp match is evidence about provenance, not about content; diff before trusting it.
 - **Two suite failures on this branch are not from this work**, verified by stashing:
   `tests/test_architectures_are_files.py` and
   `tests/test_lab_server.py::test_the_server_hands_out_the_page_with_the_shim`. They survived
