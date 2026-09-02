@@ -7,8 +7,8 @@ filed: 2026-08-11
 
 ## FILED 2026-09-01 — https://github.com/mariomulansky/PySpike/pull/89
 
-Three files, +146/−4. What remains is step 4: the URL into the eight places at the
-bottom of this file, which today still assert the bug with no upstream reference.
+Three files, +146/−4. Every numbered step below is done; what is left belongs to other
+files and is listed there.
 
 **It went out with Kreuz's private mail quoted in the description, and that was a
 mistake.** The murderboard flagged it twice as a residual — *"he was not asked whether
@@ -34,6 +34,43 @@ correspondent asked first.
 The description was also cut to 764 words from ~3,600, on Tony: *"just the facts. what
 we found, what we propose to fix it."* Three murderboard roles had said the same and
 were not acted on until he said it.
+
+### KREUZ CLEARED THE QUOTES 2026-09-02, AND THE PR STAYS TRIMMED ANYWAY. Do not restore them.
+
+He replied to the apology the same day: *"for me no worry at all. It was all scientific
+and factual content so I don't mind at all whether it is public or not. Even more so, if
+you think it might help people to understand the issue, feel free to restore the full
+version."* So the harm the apology was for did not land, and permission now exists.
+
+**Tony's call was to leave PR #89 exactly as it is.** The reason a later session needs, so
+it does not read this as unfinished repair: **the 2026-09-01 edit had two motives and only
+one of them was Kreuz's to lift.** It removed his quotes *and* cut 4,027 words to 764 on
+Tony's *"just the facts"*, in one stroke. His clearance disposes of the first. The second
+is an editorial judgement about what a maintainer deciding whether to *merge* should have
+to read, and it still stands. Mulansky was cc'd on Kreuz's own mail, so the endorsement
+already reached the only person whose agreement the PR needs.
+
+**Nothing about his staffing or unreleased work was ever in the PR body** — the board block
+for this worktree had already ruled it out, and the redaction was of three passages only:
+the "Thomas Kreuz reproduced this and asked for the PR" section, the *"give the user
+options and not impose one specific variant"* line, and one clause crediting his two
+figures to his mail. The clearance covers those three; it is not a licence to publish the
+rest of the mail, which he did not offer and which is still Tony's to file or not.
+
+**Both revisions of the body are recoverable and neither is in this repo.** GitHub keeps
+them, and one query prints either:
+
+```
+gh api graphql -f query='{ repository(owner:"mariomulansky", name:"PySpike")
+  { pullRequest(number:89) { userContentEdits(first:10)
+      { nodes { editedAt diff } } } } }'
+```
+
+Two nodes: `2026-09-01T12:19` is the 4,027-word original, `13:35` the 764-word body live
+today. The superseded commit `77f5b73` is likewise still fetchable by hash.
+
+**The standing rule from the incident is unchanged by this.** Asking afterwards and being
+told it was fine is luck, not process. It stays: get the correspondent asked *first*.
 
 ## KREUZ ANSWERED 2026-08-31. It is a regression, the fix is endorsed, and the route is a PR.
 
