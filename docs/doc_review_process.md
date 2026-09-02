@@ -314,8 +314,19 @@ defect a role whose unit matches it (11, 9), or it will be found by the reader i
      That evidence is real, it is frequently decisive, and it is invisible to every literature
      search that will ever be run. It is also the **cheapest check in this document**: one
      question, no database, no paywall. **"Nobody was asked" is a residual `⚠`**, recorded exactly
-     like an unsearched field. Where correspondence exists, quote it and date it — a personal
+     like an unsearched field. Where correspondence exists, **cite it and date it** — a personal
      communication is citable, and an undated one is not checkable.
+   - ⚠ **CITE IT; DO NOT QUOTE IT. This line used to read "quote it and date it", and that
+     instruction put a private letter's sentences into a public repository twice** — once in a
+     PR description on a stranger's project, once in
+     [`docs/todo/2026-08-24-kreuz-answered-the-spike-synch-questions-in-april.md`](todo/2026-08-24-kreuz-answered-the-spike-synch-questions-in-april.md),
+     where they stood public for nine days. **Paraphrase the content, which is yours to state,
+     and attribute it.** *"Kreuz, personal communication, 2026-04-23"* is a complete citation and
+     exactly as checkable as a block quote. The substance is what the review needs; the wording
+     belongs to the correspondent. If the wording genuinely carries load no paraphrase can,
+     **ask them first, in those terms, and record the answer** — asking afterwards is not asking,
+     and a clearance covers only the material the person was actually shown. **The deliverable is
+     usually public. The letter never was.**
 3. **Consistency auditor — "Cross-Examiner."** Cross-check **within** the document and **against companion
    docs**: counts, totals, terminology, cross-references, and figure↔text agreement. Flag
    every contradiction. **Watch for one population counted on different bases** (per-detector flags vs

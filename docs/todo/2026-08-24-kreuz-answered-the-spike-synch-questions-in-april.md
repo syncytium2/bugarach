@@ -11,22 +11,26 @@ on — replied to Tony by email in April. It surfaced on 2026-08-24, alongside
 and it settles one design choice, weakens one claim this repo makes about itself,
 and names a defect that is checkable in `sync.py` today.
 
-Quoted where it matters, because the wording carries the conditions:
+> ⚠ **His wording is not reproduced here, and that is deliberate — see
+> [the rule](#his-words-came-out-2026-09-02-and-the-rule-that-replaced-them) at the
+> foot of this file.** What follows is **paraphrase**: the technical content, which
+> is what this repo needs and reasons from, without a private letter's sentences in a
+> public repository. Treat every claim below as *reported*, not quoted, and do not
+> re-quote it from git history.
 
-> "for global event identification you should first use the SPIKE-synchronization
-> profile **C (symmetric)**, since identification should not depend on order. If
-> you use E you would only identify events that follow the predominant order."
->
-> "we combined the SPIKE-synchronization approach with a **thresholding of the
-> mean calcium signal** (higher than 1.7 standard deviations from the mean, **both
-> conditions had to be satisfied**). We also set a threshold for **maximum allowed
-> gap** for spikes of the same event, in order to avoid fragmented events. For a
-> follow up paper … we added a quite sophisticated postprocessing where we made
-> sure that **no event contains more than one spike from the same pixel** (which
-> was essential for the new method proposed in Ref. 47)."
->
-> "Other groups often use some kind of **thresholding of the PSTH**, see **Mainen
-> and Sejnowski, Science 1995** for what might be the original use of that."
+**Summarised, in our words:**
+
+- **Use profile C, the symmetric one, for global event identification** — event
+  identification should not depend on order, and E would surface only the events that
+  follow the predominant order.
+- **Their own detection layer takes two conditions together**: the
+  SPIKE-synchronization criterion **and** a threshold on the mean calcium signal at
+  1.7 SD above its mean. **Both** had to hold. They also cap the **maximum allowed
+  gap** between spikes assigned to one event, to stop events fragmenting.
+- **A later paper adds postprocessing that admits at most one spike per pixel per
+  event**, which he describes as essential to the method in that paper (their ref 47).
+- **Elsewhere in the field the common approach is thresholding the PSTH**, with
+  Mainen & Sejnowski, *Science*, 1995 offered — hedged — as possibly its earliest use.
 
 ## 1. C over E — the choice was right, and now it has an author behind it
 
@@ -69,8 +73,8 @@ attribution.
 
 ## 3. Their recipe has two conditions and this app can satisfy only one
 
-They require the profile threshold **and** the mean calcium signal above 1.7 SD —
-*"both conditions had to be satisfied"*. **bugarach cannot do the second half and
+They require the profile threshold **and** the mean calcium signal above 1.7 SD, and
+both had to hold together. **bugarach cannot do the second half and
 never will at this layer**: the input is per-ROI event times, not fluorescence
 (FOUNDATIONS §4, `docs/export_folder_spec.md`). The trace exists upstream, in the
 producer's MATLAB, and this is one of the few places where something real is lost
@@ -83,8 +87,8 @@ asked seriously.
 
 ## 4. `min_n` counts an ROI more than once, and their postprocessing exists to stop that
 
-Kreuz calls it *essential*: **no event may contain more than one spike from the
-same pixel**. Our per-ROI equivalent is the glossary's own rule — coactivity is
+He describes it as essential to that method: **no event may contain more than one
+spike from the same pixel**. Our per-ROI equivalent is the glossary's own rule — coactivity is
 distinct active ROIs, *"one count per ROI, never a spike count"*.
 
 **`sync_detect`'s floor does not honour it.** Reading `binned_synchrony` and the
@@ -213,7 +217,8 @@ interface2's audit closes `rate_detect` as cell-averaging CFAR (Finn & Johnson
 1968), which is where the *threshold form* comes from. Kreuz names where the
 *practice* comes from in this field: **thresholding the PSTH**, pointing at
 **Mainen & Sejnowski, *Science*, 1995** as possibly its original use. ⚠ Neither
-paper has been read here, and Kreuz himself hedges with *"what might be"*.
+paper has been read here, and he hedged that attribution himself rather than
+asserting it.
 
 Two roots for one detector is not a contradiction — it is the reason
 `detector_history.md` §3 is organised as four traditions. Worth carrying into the
@@ -271,3 +276,67 @@ The cheapest fix is a `docs/correspondence/` file per exchange — who, when, wh
 they were asked, what they said, quoted — so the next session greps it instead of
 re-deriving it. Two exchanges are already known to belong there: this one, and
 whatever produced interface2's Cossart 2003 read.
+
+> ⚠ **Struck 2026-09-02. `docs/` is public, and the sentence above is this file's own
+> defect proposed as a policy** — *"what they said, quoted"*, in the public tree, for
+> every future exchange. **Do not create `docs/correspondence/`.** The searchability
+> problem it names is real and is now answered by paraphrase-plus-dated-citation, which
+> is what this file was rewritten to be. Where to keep the letters themselves is open
+> and is Tony's:
+> [`2026-09-02-correspondence-has-nowhere-private-to-live.md`](2026-09-02-correspondence-has-nowhere-private-to-live.md).
+
+---
+
+## His words came out 2026-09-02, and the rule that replaced them
+
+**This file quoted a private letter verbatim in a public repository for nine days.**
+Four block quotes and three inline fragments, from a mail Thomas Kreuz wrote to Tony on
+2026-04-23, published here on 2026-08-24 and public from that moment. Nobody asked him.
+The quotes are now paraphrase; every technical claim survives, because the technical
+claims are what this repo needs and they were always ours to hold.
+
+**It is the same defect as the PySpike one, found nine days earlier and not seen.** On
+2026-09-01 the same mistake was made in public on
+[PySpike#89](https://github.com/mariomulansky/PySpike/pull/89), caught within the hour,
+apologised for, and written up at length in
+[the filing todo](2026-08-11-file-pyspike-max-tau-issue.md) — while *this* file, older
+and more exposed, sat unexamined. The lesson the incident produced was written as a rule
+about **what you are about to publish**. It should have been a rule about **what is
+already published**, and the sweep that would have found this one took a single `grep`.
+
+**Kreuz's 2026-09-02 clearance does not cover this file, and must not be read as if it
+did.** He wrote *"I don't mind at all whether it is public or not"* about the material he
+had been shown — the PySpike PR, quoting his mail of 2026-08-31. He has never been shown
+this repository, and the April letter is a different letter. **A clearance covers what
+the person was actually asked about.** Treating it as transferable is the same
+substitution — someone else's decision assumed rather than obtained — that caused the
+original error, and it is more tempting here because the answer would probably be yes.
+
+**Removal is not retraction, and saying otherwise would repeat the second mistake.** This
+repository is public and the history is intact: the original text is in
+`git log -p` on this path, in every clone and fork, and on GitHub's own blob views by
+commit sha. What the redaction buys is that the words are no longer *presented* here, and
+that a reader arriving now gets the technical content without the letter. It buys nothing
+else. **Do not re-quote from history to "restore" this file.**
+
+### The rule
+
+**A third party's private correspondence does not go into a public repository — not
+quoted, and not by default at all.** Paraphrase the technical content, which is yours to
+state, and attribute it: *"Kreuz, by email, April 2026"* is a citation; his sentences are
+his. If the wording genuinely carries load that paraphrase cannot, **ask them first**, in
+those terms, and record the answer. Afterwards is not asking.
+
+Three things this rule has already cost, so it is not abstract:
+
+1. A public PR description on someone else's project, live for an hour.
+2. This file, live for nine days.
+3. An apology whose first draft told the recipient the material was gone. It was not,
+   and that had to be checked and corrected before sending.
+
+**Correspondence still belongs somewhere durable — just not here.** The meta-finding
+above is right that a reply from an outside expert should not sit only in a mailbox while
+sessions re-derive what it already answered. Its proposed `docs/correspondence/` is the
+wrong home for the same reason this file was: it is in the public tree. Whatever replaces
+it has to be somewhere private, and choosing that is Tony's — see
+[the open item](2026-09-02-correspondence-has-nowhere-private-to-live.md).

@@ -293,6 +293,42 @@ reviewers. That todo already warns "verify all counts/claims against the tree at
 writing time"; the murderboard is the mechanized version of that warning. A parity
 claim that overstates, or a test count quoted from memory, costs more here than a bug.
 
+## Other people's words — this repo is public
+
+**A third party's private correspondence does not go into anything public, and this
+repo is public.** Not a doc, not a todo, not a commit message, not a PR description,
+not a review record. **Paraphrase the content and cite the source**: *"Kreuz, personal
+communication, 2026-04-23"* is a complete, checkable attribution, and the technical
+substance was always ours to state. The sentences are theirs.
+
+**If the wording genuinely carries load no paraphrase can, ask them first — before it
+goes out**, in those terms. Two things that are not asking: *"the user told me to post
+it"* (the words are not the user's to release either), and asking afterwards. **A
+clearance covers only the material the person was actually shown**, so an answer about
+one letter says nothing about another, and an answer about a PR says nothing about this
+tree.
+
+**Publishing is not undoable here.** GitHub keeps a PR body's edit history and the
+superseded commit stays fetchable by hash; a redaction in this repo leaves the original
+in `git log -p`, in every clone and fork. So a removal is worth making and is **not** a
+retraction — say so plainly rather than telling anyone the material is gone. An apology
+that overstates the remedy is worse than none, and the first draft of ours did exactly
+that before it was checked.
+
+**What it has cost, twice, and the second one is the instructive one:** a PR description
+on a stranger's project, live for an hour and caught the same day; and
+[the April todo](docs/todo/2026-08-24-kreuz-answered-the-spike-synch-questions-in-april.md),
+public for nine days — older, more exposed, and unnoticed while the first was being
+written up at length. **The lesson from an incident is a rule about what is already
+published, not only about what you are about to publish.** When you learn one, grep the
+tree for the same shape before closing it out; here that was one `grep` and nobody ran it.
+
+The murderboard's role-2 instruction used to say to **quote** correspondence, which is
+where this came from. It now says to cite it —
+[`docs/doc_review_process.md`](docs/doc_review_process.md), role 2. Requested as a
+mechanized check in
+[`docs/sapper_feedback/2026-09-02-private-correspondence-in-a-public-tree.md`](docs/sapper_feedback/2026-09-02-private-correspondence-in-a-public-tree.md).
+
 ## Writing for a human reader
 
 Name things; don't index them. Shas and dates are lookup keys, not content.
