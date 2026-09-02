@@ -213,10 +213,33 @@ Two things a later reader would otherwise get wrong:
   squashed snapshot of `f2e73e5` via #424, including a *"Draft issue text (not yet posted)"*
   section this branch deleted once the PR was filed, so on this file the branch is strictly
   newer. A stamp match is evidence about provenance, not about content; diff before trusting it.
-- **Two suite failures on this branch are not from this work**, verified by stashing:
-  `tests/test_architectures_are_files.py` and
-  `tests/test_lab_server.py::test_the_server_hands_out_the_page_with_the_shim`. They survived
-  an attempted merge of `main`, so `main` likely carries them too. Separate problem.
+- ~~**Two suite failures on this branch are not from this work**… `main` likely carries them
+  too.~~ **`main` does not carry them and neither does this branch. Diagnosed 2026-09-02: the
+  three failures are the shared venv, not the code.** `.venv` holds an editable install of the
+  *primary* checkout, so `import bugarach` in **any** worktree resolves to
+  `Developer/bugarach/src/bugarach` — and these three tests are exactly the ones that compare a
+  worktree file against imported behaviour. `test_architectures_are_files` writes a probe
+  architecture into this worktree's `src/` and asks the imported package to autoload it, which
+  it cannot see; `test_lab_server` asserts the served page equals this worktree's
+  `docs/site/raster_viewer.html`, and it is the primary's page that gets served.
+
+  ```
+  PYTHONPATH=src .venv/bin/python -m pytest -q     # 25 passed, 0 failed
+  ```
+
+  The stashing check that produced the original note could not have distinguished this: the
+  failures persist under any content change to the worktree, because the worktree's content is
+  not what is running. **Run the suite from a worktree with `PYTHONPATH=src`** — otherwise a
+  green run proves something about the primary checkout.
+
+  **This defect was already known, filed and indexed, and this session still re-derived it** —
+  [`2026-08-28-a-worktree-pytest-run-tests-the-primary-checkouts-src.md`](2026-08-28-a-worktree-pytest-run-tests-the-primary-checkouts-src.md),
+  its one-screen handoff
+  [`the-worktree-src-fix-nobody-has-chosen`](../handoffs/2026-08-28-the-worktree-src-fix-nobody-has-chosen.md),
+  and a row in [`INDEX.md`](../INDEX.md) under **Known traps** keyed on the words you would
+  actually type. Three fixes are written up there and none is chosen; that decision stays
+  theirs, not this file's. The three failing test names are now recorded in that todo so the
+  next session greps its way there instead. **`docs/INDEX.md` first — that is what it is for.**
 - **Three of the four disclosed behaviour changes still have no regression test** — the tie
   boundary, `Reconcile=False`, and the sorting permutation. Listed in the run record.
 

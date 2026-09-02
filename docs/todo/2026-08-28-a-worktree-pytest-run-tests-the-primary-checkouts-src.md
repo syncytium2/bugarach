@@ -93,3 +93,40 @@ reads `main`.
 Whatever remedy (1)–(3) settles on must cover `python -c` and a scratchpad script, not
 only `pytest`. A `conftest.py` guard does not run here at all; a per-worktree venv covers
 this case for free. That asymmetry is worth weighing when choosing between them.
+
+## 2026-09-02 — it wrote a wrong conclusion into a todo, and the check that should have caught it could not
+
+**The first recorded case where this trap did not just corrupt a number but produced a
+durable, reasoned, wrong claim about `main` — one that passed a sensible verification.**
+
+Three tests fail in a worktree whatever the branch contains, and these are the names to
+grep for, because nothing about them says "venv":
+
+| test | what it actually compares |
+|---|---|
+| `test_architectures_are_files.py::test_a_new_file_registers_with_nothing_else_edited` | writes a probe architecture into the **worktree's** `src/bugarach/learn/nets/`, asks the **primary's** `ARCHITECTURES` to have autoloaded it |
+| `test_architectures_are_files.py::test_a_broken_architecture_is_loud` | same probe, expects `RuntimeError`; nothing breaks because nothing loads |
+| `test_lab_server.py::test_the_server_hands_out_the_page_with_the_shim` | asserts the served body contains the **worktree's** `docs/site/raster_viewer.html`; the **primary's** page is served |
+
+All three pass under `PYTHONPATH=src` in the same worktree, same venv, same commit — 25
+passed, 0 failed. They are the subset of the suite that compares a file in the tree against
+what the imported package does, which is exactly the subset this defect can reach.
+
+**What it cost.** `docs/todo/2026-08-11-file-pyspike-max-tau-issue.md` carried, for two
+days, *"Two suite failures on this branch are not from this work… They survived an
+attempted merge of `main`, so `main` likely carries them too. Separate problem."* Written
+into the tree, in a handoff paragraph whose whole purpose was to stop a fresh session
+re-deriving things. `main` was green.
+
+**And the check behind it was a good one.** The session stashed the branch's changes and
+the failures persisted — which normally does prove a failure predates your work. Here it
+proves nothing, and cannot: **no content change to the worktree can move a test that is
+reading another checkout.** Stashing, reverting, bisecting within the worktree, `git
+clean` — every technique for isolating "is it mine?" returns the same answer for the same
+reason. That is what makes this worth adding to a file that already documents the defect:
+the failure mode is not only silent, it **defeats the standard method for diagnosing it**,
+and the wrong conclusion arrives carrying evidence.
+
+**For the decision above:** this is a second point for option (3), a guard that fails
+loudly on the mismatch. Option (2)'s per-worktree venv also fixes it. Neither (1) nor any
+amount of prose would have helped here — the session that got it wrong was being careful.
