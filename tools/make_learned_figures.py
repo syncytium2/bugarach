@@ -251,7 +251,7 @@ def build_floor(res, width=920):
     for d in sorted(six, key=lambda d: -six[d]["by_frac"][f"{fracs[0]:g}"]):
         c = _line(six[d], TITLES[d], HAND, 1.6, DASH.get(d, "solid"))
         ov = c if ov is None else ov * c
-    ov = ov * _line(learned["tube"], "centre−surround (learned)", LEARN, 3.4)
+    ov = ov * _line(learned["tube"], "tube (learned)", LEARN, 3.4)
 
     # Ticks at the three planted levels and nowhere else. A linear axis invents
     # 0.15 and 0.25, which are not levels the generator plants and not points any
@@ -318,7 +318,7 @@ def build_curve(res, width=920):
     # its own marker, the thick red line ran straight through the word
     # "surround" — the one curve the page is about carrying the one struck-out
     # label.
-    ov = ov * hv.Text(0.30, 1.05, "centre−surround (learned)").opts(
+    ov = ov * hv.Text(0.30, 1.05, "tube (learned)").opts(
         color=LEARN, text_font_size="8.5pt", text_align="left")
 
     return ov.opts(width=width, height=430, xlabel="recall (fraction of planted events)",

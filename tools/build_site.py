@@ -248,25 +248,23 @@ INDEX = """<!doctype html>
 {nav}
 
 <div class="col">
-<h1>bugarach<span class="sub">A coordinated-event detector, trained on data
-nobody can label.</span></h1>
-
-<p>A <b>coordinated event</b> is a moment when many cells in a recording fire
-together. <b>Nobody can label one reliably</b> — show two experienced people the
-same raster and they will not draw the same boxes. So the ground truth is
-planted instead: measure one <i>untreated</i> recording, simulate from those
-statistics alone, and every event in the training set is there because it was
-put there.</p>
+<h1>bugarach<span class="sub">A coordinated-event detector, trained on data that
+is hard to label reliably.</span></h1>
 
 {model}
+
+{lead}
+
+<p>A <b>coordinated event</b> is a moment when many cells in a recording fire
+together. <b>It is difficult to label them reliably</b> — show two experienced
+people the same raster and they will not mark the same coordinated events. So
+the ground truth is planted instead: measure one <i>untreated</i> recording,
+simulate from those statistics alone, and every event in the training set is
+there because it was put there.</p>
 
 <p>Eleven hundred parameters. Trains in seconds; scans an hour-long recording in
 hundredths of one. <a href="learned_detector.html">The learned detector
 &rarr;</a></p>
-
-<h2 style="font-size:1.15rem">What it finds</h2>
-
-{lead}
 
 <p>Each row above is one <b>ROI</b> — one cell's worth of signal, of the kind
 pulled out of a 2-photon calcium recording. These rows are simulated and every
@@ -348,7 +346,7 @@ methods already train networks whose output is a population event with times —
 LFP, SEED on sleep spindles and K-complexes, and SpikeNet on clinical EEG, the
 last of which we have on its bibliographic record alone. <b>None of those four
 works on calcium imaging, and all four learn from events a human expert
-labelled.</b> Here the events are planted in a simulation fitted to one lab's own
+labeled.</b> Here the events are planted in a simulation fitted to one lab's own
 recordings, so the ground truth is exact and the benchmark is rebuilt per lab.</p>
 
 <p class="note"><b>None of that is a first, and it does not need to be.</b>
@@ -476,7 +474,7 @@ BANNERS = {
                        "moving. Read it as a position, not a result."),
     "wip": ("&#9888; Under construction",
             "This page is live software still being built. Expect rough edges, "
-            "and behaviour that changes without notice."),
+            "and behavior that changes without notice."),
 }
 """The two labels, as (badge, sentence).
 
@@ -508,15 +506,38 @@ NAV_CSS = """  nav.site { display:flex; align-items:center; gap:4px; flex-wrap:w
                 border-radius:6px; }
   nav.site a:hover { background:#8881; color:inherit; }
   nav.site a[aria-current="page"] { color:inherit; background:#8881; }
+  /* THE STATUS NOTE IS A VERTICAL RAIL, NOT A BAR ACROSS THE TOP. Tony,
+     2026-09-02: *"vertical space is our enemy here ... how about the draft
+     banner as a thin vertical banner on the left."* As a full-width bar it cost
+     ~48px off the top of every page, which is 48px the model figure and the
+     raster did not have. Rotated into the left margin it costs a strip of
+     horizontal space the text column was not using anyway — the column is
+     46rem, centred, so on any desktop there is empty gutter on both sides.
+
+     `position:fixed` so it does not scroll away: it is a claim about the whole
+     page, not about the top of it. Below 1100px there is no gutter to put it
+     in, so it goes back to being a bar — a rail overlapping the text would be
+     worse than the space it saves. */
   div.status { font: .82rem/1.45 system-ui, sans-serif;
                padding:.5rem max(1.2rem, calc(50% - 23rem));
                border-bottom:1px solid #0000; }
   div.status b { font-weight:700; letter-spacing:.04em;
                  text-transform:uppercase; margin-right:.5rem; }
+  @media (min-width: 1100px) {
+    div.status { position:fixed; left:0; top:0; bottom:0; width:2.1rem;
+                 padding:1.1rem 0 0 0; border-bottom:none;
+                 border-right:1px solid #0000; z-index:5;
+                 display:flex; align-items:flex-start; justify-content:center;
+                 writing-mode:vertical-rl; text-orientation:mixed;
+                 letter-spacing:.02em; }
+    div.status b { margin:0 0 .5rem 0; }
+    div.status .status-why { color:inherit; opacity:.72; }
+    body { padding-left:2.1rem; }
+  }
   div.status.draft { background:#f6e6c4; color:#4a3a12;
-                     border-bottom-color:#e0c88e; }
+                     border-bottom-color:#e0c88e; border-right-color:#e0c88e; }
   div.status.wip { background:#f6d5cd; color:#5a1f13;
-                   border-bottom-color:#e2a696; }
+                   border-bottom-color:#e2a696; border-right-color:#e2a696; }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) div.status.draft { background:#3a3117;
                        color:#f0dcae; border-bottom-color:#5f5024; }
@@ -625,8 +646,11 @@ def status_html(page: str) -> str:
     if kind is None:
         return ""
     badge, text = BANNERS[kind]
+    # The reason is wrapped so the vertical rail can dim it against the badge.
+    # In the horizontal fallback the span is inert, which is why it carries no
+    # layout of its own.
     return (f'<div class="status {kind}" role="note">'
-            f'<b>{badge}</b>{text}</div>\n')
+            f'<b>{badge}</b><span class="status-why">{text}</span></div>\n')
 
 
 def render_index(commit: str, lead: str, real: str, model: str) -> str:

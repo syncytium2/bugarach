@@ -85,7 +85,7 @@ def spy(monkeypatch):
 
 def test_all_six_detectors_reach_the_score_table():
     """The defect, stated as the thing that was false while it was live."""
-    _, _, _, report, _ = md.build(args())
+    _, _, _, _, report, _ = md.build(args())
     assert "did not run" not in report, (
         "a detector failed to run in the default figure:\n" + report)
     # 'sixth', not the detector's name: it is withheld from the public build
@@ -184,7 +184,7 @@ def test_one_detector_failing_still_draws_the_other_five(monkeypatch):
         return real(det, s, ext, params, dt=dt)
 
     monkeypatch.setattr(app, "_compute", one_bad)
-    _, _, _, report, _ = md.build(args())
+    _, _, _, _, report, _ = md.build(args())
     assert "did not run" in report and "sync" in report, (
         "the failure was not recorded in the sidecar:\n" + report)
     assert "LoCo" in report and "sixth" in report, (
