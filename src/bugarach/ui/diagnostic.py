@@ -508,7 +508,7 @@ def legend_html(lanes: dict, gt=None, member_source: str | None = None) -> str:
          "windows run under two seconds, which is about a pixel here, so the "
          "bars are hairlines by honesty rather than by style; SCE bins at ten "
          "seconds and its bars are visibly wider because they are. "
-         "Colour is detector identity:<br>"
+         "Color is detector identity:<br>"
          f'<div style="display:flex;flex-wrap:wrap;margin-top:3px">{swatches}</div>'),
         (_key("x", FALSE_ALARM),
          "<b>False alarm</b> — a detection near <b>no</b> planted event, and far "
@@ -525,7 +525,7 @@ def legend_html(lanes: dict, gt=None, member_source: str | None = None) -> str:
          "pointing down at the raster like everything else in that lane."),
         *([(_key("inverted", MISSED),
             "<b>Planted event, missed</b> by all of them. Same shape, red — "
-            "the verdict is the colour.")] if any_missed else []),
+            "the verdict is the color.")] if any_missed else []),
         (_key("inverted_open", "#5a5a5a"),
          "<b>Distractor</b> — a correlated burst that is real coincidence but "
          "<b>not</b> a coordinated event."),

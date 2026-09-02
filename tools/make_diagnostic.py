@@ -44,6 +44,18 @@ from pathlib import Path
 
 import numpy as np
 
+#: What the raster's y-axis calls itself. **"simulated", not "events"**, because
+#: every recording this tool draws comes from `simulate_coordination` — there is
+#: no path through it that renders a real slice. Tony, 2026-09-02: *"label the
+#: raster as simulated. use yaxis title."*
+#:
+#: The y-axis is the right place by this repo's own plot conventions — identity
+#: and counts live in the y-label, never as text laid over the marks — and it is
+#: the durable place: a caption saying "simulated recording" can be trimmed, and
+#: the figure travels into reports and slides without it. A reader who meets this
+#: raster anywhere at all should not have to be told it is not data.
+RASTER_NAME = "simulated"
+
 # The six, at the operating points the bench declares, with their provenance —
 # so this figure and the scores in bugarach.bench describe the same detectors.
 # An earlier version used "deliberately plain values chosen to make the picture
@@ -269,8 +281,29 @@ def build(args):
 
     fig = coordination_diagnostic(slice_.streams["events"], ext=ext, lanes=lanes,
                                   gt=gt, traces=traces, height=args.height,
+                                  name=RASTER_NAME,
                                   mark_px=getattr(args, "mark_px", None))
     legend = legend_html(lanes, gt)
+
+    # The hero is the same figure with the analysis traces dropped — lanes over
+    # raster and nothing below. Tony, 2026-09-02: *"condense the top of the
+    # raster so that the net, the detections, and the raster are all easily
+    # viewed without scrolling."* The traces were three panels of ~112px each on
+    # a page whose first screen also has to hold the model diagram, and they
+    # answer a different question ("what does each detector compute?") which the
+    # diagnostic page exists to answer at length.
+    #
+    # Built as a SECOND figure rather than by re-running the fit: same lanes,
+    # same raster, same ground truth, no extra seconds.
+    # `getattr`, not `args.hero`: `build()` is called directly by tests with a
+    # hand-made namespace, and a function that reads an attribute only argparse
+    # guarantees turns "this tool grew an option" into "three unrelated tests
+    # fail with AttributeError". The caller that wants a hero passes one.
+    hero_fig = (coordination_diagnostic(slice_.streams["events"], ext=ext,
+                                        lanes=lanes, gt=gt, traces=None,
+                                        height=args.height, name=RASTER_NAME,
+                                        mark_px=getattr(args, "mark_px", None))
+                if getattr(args, "hero", None) else None)
 
     header = [
         f"bugarach coordination diagnostic — seed {args.seed}",
@@ -304,7 +337,7 @@ def build(args):
                    "ranking — one seed is not a measurement."]
     report = "\n".join(header)
 
-    return fig, legend, header, report, pn
+    return fig, hero_fig, legend, header, report, pn
 
 
 def main(argv=None):
@@ -385,7 +418,7 @@ def main(argv=None):
     # Nothing has been written at this point — `build` returns before `main`
     # opens a file — so an empty figure cannot be left behind either.
     try:
-        fig, legend, header, report, pn = build(args)
+        fig, hero_fig, legend, header, report, pn = build(args)
     except NoDetectorRan as exc:
         print(f"make_diagnostic: {exc}", file=sys.stderr)
         return 1
@@ -439,15 +472,32 @@ def main(argv=None):
                   "install chromium, or pass --no-png)", file=sys.stderr)
 
     if args.hero:
-        # The plot without the prose above it. A page that leads with this must
-        # supply the reading instructions itself — the flat render carries them,
-        # this one deliberately does not, because a lead graphic that is 300px of
-        # rendered text at the top is a picture of a paragraph, not a picture.
+        # The plot without the prose above it — no title, no score table. It
+        # still carries its KEY, and that is a correction rather than a
+        # relaxation of the rule above.
+        #
+        # ⚠ THIS USED TO SHIP WITH NO LEGEND AT ALL, on the reasoning that "a
+        # page that leads with this must supply the reading instructions itself"
+        # and that a lead graphic which is 300px of rendered text is a picture of
+        # a paragraph. The first half was wrong in practice. The front page did
+        # supply them, in its caption, and Tony still could not read the figure —
+        # 2026-09-02: *"open triangles never defined. needs a complete legend in
+        # figure."* He was right and the caption did not in fact define the open
+        # triangle, which marks a distractor. A key in the caption is a key the
+        # reader has to leave the picture to use, and one in a caption that gets
+        # trimmed for space is a key that quietly stops existing.
+        #
+        # `legend_html` already had the entry. Only the hero rendered without it.
+        # The second half of the old reasoning survives: this is a compact key of
+        # symbol-then-meaning rows, not the flat render's header block.
         hero = Path(args.hero).expanduser()
         hero.parent.mkdir(parents=True, exist_ok=True)
         with tempfile.TemporaryDirectory() as td:
             tmp_html = Path(td) / "hero.html"
-            pn.Column(pn.pane.HoloViews(fig)).save(str(tmp_html))
+            pn.Column(
+                pn.pane.HoloViews(hero_fig if hero_fig is not None else fig),
+                pn.pane.HTML(legend, sizing_mode="stretch_width"),
+            ).save(str(tmp_html))
             if _render_png(tmp_html, hero):
                 written.append(hero)
             else:

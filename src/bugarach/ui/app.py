@@ -156,11 +156,23 @@ COLORS = {
 TITLES = {
     "rate": "rate+context", "sce": "binned SCE", "cicada": "sixth",
     "sync": "SPIKE-synch", "coact": "CoactDetect", "loco": "LoCo",
-    # The learned lane is labelled by what it IS, not by the registry key. A
-    # reader meeting "tube" in a figure has no way to know it is a network; the
-    # architecture name is the one fact that makes the lane interpretable beside
-    # five hand-written rules.
-    "tube": "centre−surround (learned)",
+    # The learned lane is named for the MODEL. It used to be named for the
+    # mechanism — "centre−surround (learned)" — on the reasoning that *"a reader
+    # meeting `tube` in a figure has no way to know it is a network."*
+    #
+    # True when written; false since the front page changed. The page now opens
+    # with draughtsman's diagram, titled **tube — a coordinated-event detector**,
+    # directly above this raster, so a reader meeting "tube" in the lane has just
+    # been told what it is, in a picture, a screen-inch higher. The old label
+    # meanwhile made this figure disagree with the figure above it and with the
+    # prose beside it, which is worse than terse. Tony, 2026-09-02: *"raster
+    # figure should use 'tube' to match the model and the text."*
+    #
+    # "(learned)" stays: it is the one fact that separates this lane from five
+    # hand-written rules, and the diagnostic page carries no model diagram to
+    # supply it. That it also drops the last British spelling on the front page
+    # is a coincidence, not the reason.
+    "tube": "tube (learned)",
 }
 # short row labels — the full titles overflow the slim signal rows. The sixth
 # detector's entry matches its TITLES entry rather than being shorter: a longer
