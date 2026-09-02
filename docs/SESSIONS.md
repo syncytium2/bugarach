@@ -10,6 +10,22 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
+### Mac/probe-gate-is-the-shipped-gate — DARKROOM claimed for one figure: `three_scoring_rules`
+- **Status:** ACTIVE 2026-09-02, short. Released in the same PR that lands the fix.
+- **Holds:** `<darkroom>/bugarach/detector_history/three_scoring_rules.{html,png}` and
+  nothing else. **Not** `constellation/`, not the deploy, not any other page in the folder.
+  A session wanting a different figure in `<darkroom>/bugarach/` does not need to wait on
+  this. (This block first said `<darkroom>/bugarach/three_scoring_rules.*` — the builder
+  writes into a `detector_history/` subfolder, which is a different thing to hold, so the
+  claim was corrected against what the tool actually printed rather than what I assumed.)
+- **Why the figure must be rebuilt rather than left:** `tools/make_three_rules_figure.py`
+  imports `MULTIPLICATIVE_GRID` from `tools/probe_three_scoring_rules.py` precisely so the
+  two cannot drift, and this branch changes that grid. Its docstring also carries a claim
+  the corrected run falsifies — *"it does not move the mechanism winner: additive's best
+  eligible F1 still beats multiplicative's at all seven points"* — which is now wrong at
+  four of the seven. Leaving the published figure would be the staleness defect this repo
+  keeps re-finding, one commit after measuring it.
+
 ### Mac/kreuz-answered-file-the-pr — UPSTREAM `mariomulansky/PySpike` claimed, world-visible, still live
 - **Status:** ACTIVE since 2026-08-31. The work in this repo landed as **#426** (`08b95ba`);
   **the hold did not land with it, because the thing being held is not in this repo.**

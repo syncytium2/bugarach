@@ -99,6 +99,13 @@ promiscuity question is settled, the multiplicative bar's score does not move.
 
 # MEASURED, 2026-08-28 — the third form is not a proposal. It is in `bench.py`, it is the default, and it does not pick the winner.
 
+> ⚠ **Half of that heading is wrong, and the correction is at the bottom of this file
+> ([2026-09-02](#measured-again-2026-09-02--the-gate-does-move-the-winner-and-the-column-that-said-otherwise-was-not-the-gate)).**
+> The third form is real and shipped — that part stands. *"It does not pick the winner"*
+> was measured with a rule 3 that took the runner-up, which the shipped selector refuses
+> to do. Corrected, the gate picks multiplicative at **four of seven** backgrounds. Read
+> the counts below as the artifact they are; the live ones are at the end.
+
 `tools/probe_three_scoring_rules.py`. Decision 1 above lists a gate as a *third form* to
 consider. **It exists.** `pick_operating_point(max_probe_per_min=-1.0)` looks the detector
 up in `MAX_PROBE_PER_MIN` and raises `TooPromiscuous` rather than taking the runner-up
@@ -113,7 +120,7 @@ So the open question is narrower than *"two rules and nothing decides."* It is w
 that third rule, already running, is sufficient. **Measured — and the answer is not the
 one the probe was written expecting.**
 
-![Every candidate on both mechanisms' sweeps, placed by how often it fires in a block with nothing planted, one row per background rate. The dashed rule is the 2/min ceiling and hollow markers are refused: additive spreads from 0 to 6.1 with 31 of 56 hollow, while multiplicative sits on zero at every background with none refused](../learned/three_scoring_rules.png)
+![Every candidate on both mechanisms' sweeps, placed by how often it fires in a block with nothing planted, one row per background rate. The dashed rule is the 2/min ceiling and hollow markers are refused: additive spreads from 0 to 6.1 with 31 of 56 hollow; multiplicative clusters on zero but reaches 6.1 too at its lowest alphas, 8 of 119 hollow](../learned/three_scoring_rules.png)
 
 Same runs feed all three rules, pooled through `bench.pool_scores` — hand-pooling is the
 specific defect this file is about, so the probe imports it rather than becoming a fourth
@@ -172,3 +179,85 @@ the probe looks for.
 `--selftest` runs the gate at an infinite ceiling and requires it to reproduce the
 probe-blind pick exactly on all 14 sweeps, refusing nothing. Without it the gate column
 could differ for a reason that is not the gate. It passes.
+
+---
+
+# MEASURED AGAIN, 2026-09-02 — the gate does move the winner, and the column that said otherwise was not the gate
+
+The 08-28 run above modelled rule 3 as *filter to eligible candidates, take the argmax of
+those*. **That is taking the runner-up, and it is the one move the shipped selector refuses
+in terms** — its own message ends *"do not take the runner-up silently."* So the column
+headed "the gate, shipped" was not the shipped gate, and the conclusion drawn from it —
+*"the gate sides with rule 1 on the mechanism, not with rule 2"* — described a rule this
+repo does not run.
+
+Rule 3 now **calls** `bench.pick_operating_point` rather than reimplementing it. Two
+things fell out immediately, and they are separate causes with separate consequences.
+
+**Cause 1 — the gate refuses, and a refused mechanism cannot win.** On the two quietest
+backgrounds additive's F1-optimum fires 5.5 and 6.1/min against a 2.0 ceiling, so there is
+no eligible additive operating point at all. `tools/refit.py` already reports exactly this
+for `rate/baseline_quiet`, today, on `main`:
+
+```
+detector  regime           verdict          shipped  chosen     F1  probe/min
+rate      baseline_quiet   TooPromiscuous         5       —      —          —
+rate      baseline_busy    chosen                 5       5  0.682        1.2
+```
+
+**Cause 2 — calling the selector refused the grid, and the grid was wrong.**
+`pick_operating_point` also raises `EdgeOfRange`, and it did: `MULTIPLICATIVE_GRID` began
+at 5.0 while multiplicative's optimum on the busy backgrounds *was* 5.0 with F1 still
+climbing, and it stepped 5 → 10 straight over the real peak. At bg 0.028 the true optimum
+is **alpha 6, F1 0.667**, read by the old grid as **0.520**. Multiplicative was being
+scored 0.147 below its own peak in the comparison forks §3 rests on. The grid is now
+`(2, 3, 4, 5, 6, 7, 8, 9, 10, 15, …)`; the hand-rolled argmax could never have found this,
+because an argmax over a bad grid returns a number rather than a complaint.
+
+**Which mechanism each rule picks, over the seven background points:**
+
+| rule | 2026-08-28 | corrected | what moved it |
+|---|---|---|---|
+| 1 · probe-blind | 0 / 7 | **2 / 7** | the grid alone |
+| 2 · probe-inclusive | 6 / 7 | **7 / 7** | the grid alone |
+| 3 · gate (shipped) | 0 / 7 | **4 / 7** | the grid (2) + refusal (2) |
+
+**So the gate does not side with rule 1.** It sits between the two scoring rules — two
+points ahead of the probe-blind rule, three behind the probe-inclusive one — and the two
+points it adds are exactly the two where additive wins by firing into an empty block. That
+is the gate doing the job it was designed for, and the 08-28 record said it did not.
+
+**The surviving asymmetry is weaker than this file claimed.** Multiplicative was reported
+as *"0 of 70 candidates refused, maximum 0.2 firings/min"*. With the grid covering the
+alphas where the mechanism can actually fail, it is **8 of 119 refused, maximum 6.1/min** —
+the same maximum as additive. It still never trips the rule at any alpha it would plausibly
+be run at, and its chosen points sit at 0.0/min everywhere. What is no longer true is that
+it *cannot* trip it: the old lower bound of 5.0 excluded the range where it does.
+
+## What this settles, and what it does not
+
+- **Decision 1 is not open.** The probe stays out of F1 and gates at selection; that was
+  decided 2026-08-22, is the default, and `refit.py` handles the refusal as an outcome.
+  What was open was whether the gate is *sufficient*, and it is more consequential than
+  the 08-28 run made it look.
+- **Decision 2 answers itself: the re-fit does not wait.** It runs today and returns one
+  refusal, which is a result, not a blocker.
+- **What is genuinely undecided is the ceiling.** `MAX_PROBE_PER_MIN["rate"] = 2.0`
+  against a measured 0.6, and every count on this page moves with it — at the measured
+  value, six of seven additive optima would be refused rather than two. The refusal
+  message names the two ways out, *"tighten the detector or raise the ceiling
+  deliberately"*, and raising a ceiling until the alarm stops is the move §9 warns about.
+- **It still does not choose a mechanism.** Two of the four gate wins are refusals of the
+  alternative, not victories on points, and forks §3's reason for leaving the default
+  alone — no single alpha to calibrate — is untouched. Multiplicative's best alpha now
+  ranges 6 → 20 across the grid.
+- ⚠ **Still the FLAT bench.** The 08-28 caveat stands unchanged and applies to every
+  number here: `bench-background-is-not-flat` changes the field these recordings are drawn
+  from, so re-run after it lands or is abandoned. That branch is upstream of the ceiling
+  decision, which makes it the thing to resolve first.
+- **`probe_rate_mechanism.py` is still untouched**, per this file's instruction.
+
+`--selftest` now runs with `max_probe_per_min=None` — the gate off, the edge and degeneracy
+refusals still armed — and requires rule 3 to reproduce rule 1 exactly on all 14 sweeps.
+That is a stronger claim than the old infinite-ceiling form, which could not tell the gate
+from the other two refusals, and it is what caught the grid. It passes.
