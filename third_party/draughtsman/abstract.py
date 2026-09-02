@@ -41,7 +41,25 @@ LAYOUT SPEC for a figure a person can read. Read these four rules first.
    fact, the labels are yours. Drawing such a stage as a single block is how a
    figure ends up saying "linear stack" about a model that fans out.
 
-5. A TRACED CONSTANT MAY BE AN INITIALISATION. A trace watches one instantiation
+5. NAME EVERY NUMBER YOU DRAW. A shape is only a fact to a reader who knows what
+   its axes count. `1x30x600` under the label "cells x frames" is three numbers
+   and two names, and the reader is one short at the first box. Set `batch_axis`
+   when the model has one and the figure will stop drawing it -- the batch axis
+   is 1 throughout an architecture figure and carries nothing -- then label the
+   axes that remain. `check` refuses the declaration wherever the hidden number
+   is not 1, because an axis that is not 1 is carrying information. THE CASE TO
+   GET RIGHT: a model that reshapes to fold a real axis INTO the batch. `tube`
+   traces [30, 1, 600] midway -- that leading 30 is CELLS, not a batch of 30 --
+   and a figure that dropped it would delete the cell count and say nothing. If
+   any shape you draw has something other than 1 there, do not declare the axis.
+   An indexed reference to a declared batch axis (`{stage.out_shape[0]}`) is an
+   error; every other index still addresses the TRACED shape, so
+   `{stage.out_shape[1]}` is the same axis it was before you declared. WATCH FOR AN
+   AXIS THAT CHANGES MEANING: in a model that reduces over a spatial or ROI axis
+   and then convolves, the same POSITION counts something different before and
+   after, and only your labels can say so.
+
+6. A TRACED CONSTANT MAY BE AN INITIALISATION. A trace watches one instantiation
    and cannot see which of its numbers would survive training. bugarach's `tube`
    max-pools at `2 * kmin + 1` where kmin comes off a TRAINED parameter: 3 at
    init, 9-15 once trained. draughtsman drew "max-pool, width 3" and it was true
@@ -50,6 +68,54 @@ LAYOUT SPEC for a figure a person can read. Read these four rules first.
    top-level `constants` block says why THAT one is architectural — a kernel
    size, a dilation schedule and a stride usually are; anything computed from a
    parameter is not. If you cannot tell, do not put the number in the figure.
+
+6. A QUANTITY A READER COMPARES ACROSS STAGES WANTS A BAR, NOT DIGITS. `meters`
+   draws one: `value` is a {reference} like any other, `label` is the name AND
+   the series. Every meter sharing a label is scaled together across the whole
+   figure, full bar = the largest value, empty = zero, and the legend states
+   what full means. Use it for what a reader would otherwise compare in their
+   head -- parameters per stage, or a width that shrinks down the network. Do
+   not use it for a quantity only one stage has: that bar is full by definition
+   and `check` will say so.
+
+7. THE TENSOR ITSELF CAN BE DRAWN. `glyph` puts a rectangle in the box: one axis
+   of a shape as its height, another as its width, on a scale shared by the whole
+   figure. BOTH AXES MUST COME FROM THE ONE `of` REFERENCE -- the eye reads a
+   rectangle's area whether you meant it to or not, and two axes of one tensor
+   multiply to something real while two unrelated numbers do not. `scale` is
+   "sqrt" by default because channel counts span three orders of magnitude in
+   real models and a linear edge would put the smallest rectangle under a pixel;
+   use "linear" when the figure's range is narrow enough, and the legend will say
+   which you chose. Every glyph in a figure must label its axes the same way.
+
+8. A REPEATED BLOCK IS COUNTED, NOT CLAIMED. Deep models are one block over and
+   over, and a stage whose name says "and three more like it" has put a number in
+   the figure that came from you. `repeat` fixes that the way `lanes` does: you
+   name the TEMPLATE — the ordered stage ids that draw ONE unit — and draughtsman
+   tiles that unit's operation sequence against this stage's nodes and supplies
+   the count. Write `{stage.repeat}` where the number goes. A template that does
+   not tile EXACTLY is an error, not a rounding: regroup until it does, or drop
+   the claim. If a stage will not tile, the usual cause is that it holds
+   something that enters ONCE — a mask, an initial state — which belongs
+   upstream, not in one of N identical blocks.
+
+9. A SMALL AXIS CAN BE COUNTED INSTEAD OF COMPARED. `glyph` defaults to
+   `"style": "block"` — one rectangle, scaled against the figure, which answers
+   "bigger or smaller than that one". `"style": "marks"` answers a different
+   question: HOW MANY. `axes[0]` becomes rows and `axes[1]` columns, so a 3x5
+   tensor draws three rows of five objects a reader can literally count, and a
+   single countable axis draws a column of that many.
+
+   Counting stops working around thirty. An axis past the limit is NOT drawn as
+   marks — it becomes a solid bar with its number beside it, so `1x30x600` is
+   thirty marks down the page with `600` written under them. That is automatic
+   and you cannot override it: marks nobody can count are a picture pretending to
+   be a number.
+
+   Use marks where the count is the point — channels, filters, heads, scales —
+   and block where the question is relative size. `axes` indexes the shape AS
+   DRAWN, so if the spec declares a `batch_axis` the hidden axis is not there to
+   be indexed.
 
 Aim for six to twelve stages. Fewer and the figure says nothing; more and it is
 the trace again, which is already unreadable.
@@ -65,6 +131,7 @@ REFERENCE GRAMMAR — resolved against graph.json at render time.
   {stage.out_shape[1]}           one axis of it — channels, here
   {stage.params}                 parameters summed over this stage's nodes
   {stage.nodes}                  how many nodes this stage collapses
+  {stage.repeat}                 verified copies of this stage's `repeat` template
   {node:n0031.out_shape}         any field of any node, by id
   {node:n0031.constants.dilation}
   {node:n0031.params}
@@ -86,22 +153,59 @@ WRITE THIS, AND NOTHING ELSE — one JSON object:
       "kind": "input|pool|reduce|kernel|conv|stack|concat|output|op",
       "nodes": ["n0021", "n0031"],
       "detail": ["{stage.out_shape}", "{stage.params} params"],
+      "note": "<optional: kept in the spec, never drawn. Why this grouping is"
+              " the right one, or what a reader should not conclude from it>",
       "lanes": {"count_from": "{node:n0126.out_shape[1]}",
-                "labels": ["<one name per lane>"]}
+                "labels": ["<one name per lane>"]},
+      "meters": [{"value": "{stage.params}", "label": "params"}],
+      "repeat": {"template": ["<stage id>", "<stage id>"]},
+      "glyph": {"of": "{stage.out_shape}", "axes": [1, 2],
+                "labels": ["channels", "frames"], "scale": "sqrt",
+                "style": "block|marks"}
     }
   ],
   "edges": [
     {"from": "<stage id>", "to": "<stage id>",
-     "label": "<optional, e.g. 'bypass'>", "style": "solid|dashed"}
+     "label": "<optional, e.g. 'bypass'>", "style": "solid|dashed",
+     "untraced": "<only if graph.json has no path here: why you drew it anyway>"}
   ],
+  "batch_axis": 0,
   "elided": [{"nodes": ["n0017"], "reason": "<why a reader does not need this>"}],
   "constants": {"n0149.constants.dilation": "<why this traced constant is an"
                 " architectural quantity and not an initialisation>"},
+  "layout": {"orientation": "lr|tb", "wrap": 760, "legend": false},
   "caption": "<optional one line>"
 }
 
 Edge declaration order sets lane order top to bottom, so declare the branch you
 want uppermost first.
+"""
+
+ARRANGEMENT = """\
+ARRANGEMENT — `layout`, and why you have to think about it.
+
+Stages are ranked by depth and laid left to right, so a deep model turns its
+depth directly into width. Left alone, a nine-stage figure comes out around 8:1 —
+a ribbon a page cannot show and a reader cannot follow. That is the exact defect
+this tool exists to beat: it is what torchview produced, and arriving at it more
+slowly is not an improvement.
+
+Nothing catches this for you. Coverage is about operations dropped, not about
+pictures that do not read, so a figure can be 8:1 with every check green.
+
+  "wrap": 760          break the spine into rows at that width. For anything
+                       past about six stages in a line, set it. A row break is
+                       refused where a long edge is still in flight, so a model
+                       webbed with skips will wrap little or not at all — that
+                       is the tool declining to cut an edge, not a failure.
+  "orientation": "tb"  run the figure top to bottom instead. Better for a deep
+                       stack in a single column, and for a page taller than wide.
+  "legend": true       a key naming each colour family, with its share of the
+                       traced ops and parameters counted off graph.json.
+
+Both default to off and both are judgement, which is why they live here rather
+than in a render flag: the committed spec has to produce the same figure on any
+machine.
 """
 
 
@@ -113,7 +217,7 @@ def payload(graph: Graph, *, out_path: str = "spec.json") -> str:
 
     shapes = model.get("input_shapes") or [model["input_shape"]]
     described = ", ".join(_shape(s) for s in shapes)
-    lines = [RULES, "", GRAMMAR, "", SCHEMA, "", "-" * 78, "",
+    lines = [RULES, "", GRAMMAR, "", SCHEMA, "", ARRANGEMENT, "", "-" * 78, "",
              f"MODEL: {model['target']}",
              f"  input{'s' if len(shapes) > 1 else ''} {described}, "
              f"{model['params']} parameters",
