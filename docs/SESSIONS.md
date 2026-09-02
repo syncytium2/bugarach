@@ -10,6 +10,40 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
+### Mac/kreuz-answered-file-the-pr — UPSTREAM `mariomulansky/PySpike` claimed, world-visible, still live
+- **Status:** ACTIVE since 2026-08-31. The work in this repo landed as **#426** (`08b95ba`);
+  **the hold did not land with it, because the thing being held is not in this repo.**
+- **Holds:** [**PySpike#89**](https://github.com/mariomulansky/PySpike/pull/89) and anything
+  else under `mariomulansky/PySpike` — the fork, its branches, the PR body, comments,
+  reviews. **No session opens, edits, comments on or closes any of it.** Nothing goes
+  upstream without Tony: external communication is his to release, and that rule has already
+  been broken once here.
+- **Why this block exists at all.** It was written on the machine-local board, which is the
+  wrong board for it — that file covers *"only what genuinely cannot travel"*, and a public
+  PR in someone else's repository is the opposite of local. A session on another machine, or
+  on this one after the worktree is reaped, would have found nothing.
+- **What a session arriving cold must not redo** (all of it is written up in
+  [`docs/todo/2026-08-11-file-pyspike-max-tau-issue.md`](todo/2026-08-11-file-pyspike-max-tau-issue.md)):
+  - **Do not restore the redacted quotes.** The PR went out quoting Kreuz's private mail;
+    the quotes came out; **Kreuz cleared them on 2026-09-02** — *"I don't mind at all whether
+    it is public or not… feel free to restore the full version"* — **and Tony's call is to
+    leave the body trimmed anyway.** The 2026-09-01 edit had two motives and only one was
+    Kreuz's to lift: it removed his quotes *and* cut 4,027 words to 764 on Tony's *"just the
+    facts."* Finding the permission without the second motive is the trap.
+  - **Do not re-file the apology.** Sent 2026-09-01, answered, closed.
+  - **Do not re-run the murderboard.** It ran 2026-08-31 — eleven roles plus a four-lens
+    blind round — and stopped unconverged on flat severity.
+    [`docs/reviews/pyspike_pr_2026-08-31.md`](reviews/pyspike_pr_2026-08-31.md) has every
+    residual; re-running burns a fan-out to reproduce a record already in the tree.
+  - **The standing rule from the incident is unchanged by the clearance:** a third party's
+    private correspondence is not the user's to release on their behalf, and *"the user told
+    me to post it"* does not settle it. Ask the correspondent **first**. Being told
+    afterwards that it was fine is luck, not process.
+- **Released when** PySpike#89 is merged, closed, or Tony says otherwise. Until then this
+  block outlives its worktree on purpose.
+
+---
+
 ### Mac/release-the-hold — DEPLOY **DONE**, twice; the deploy is free
 - **Status:** **DONE 2026-09-02. THE DEPLOY IS HELD BY NOBODY — the next session may
   publish without asking.** Two publishes went out from this claim:
