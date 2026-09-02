@@ -1,8 +1,50 @@
 ---
-held: yes
+held: no
 set-by: Tony
 set-on: 2026-09-01
+released-by: Tony
+released-on: 2026-09-01
 release-when: draughtsman's revised model figure is vendored and lands
+released-because: the condition was met — the figure landed in #443 at 1b1297c
+---
+
+> ## Released 2026-09-01 — the condition was met, not waived
+>
+> Tony, 2026-09-01: *"Push."* The hold asked for draughtsman's revised model figure
+> to be vendored and land; it did, in **#443** at `1b1297c`, and the page moves once
+> carrying it together with #439, #440, #441, #442 and #444 — which is what the hold
+> was for.
+>
+> **What was checked before flipping this**, because a hold released on assumption is
+> worse than one nobody set:
+>
+> - **Vendor freshness, read from the remote rather than a cache.** The stamp on
+>   `third_party/draughtsman/__init__.py` is `bcd104a`; draughtsman's upstream HEAD is
+>   `bcd104a`. `check_vendor_freshness.sh` could not answer — it exits 2 on the first
+>   UNKNOWN family (`session-protocol`, which needs `BUGARACH_INTERFACE2`) and never
+>   reaches the draughtsman family, so this was verified by hand. **That
+>   short-circuit is worth fixing**: a family the gate cannot check blocks its verdict
+>   on families it can.
+> - **The build came from `origin/main` and nothing else.** Built in a worktree
+>   detached at `bf02001` with `git rev-parse HEAD` compared against
+>   `git rev-parse origin/main` first — the hand-run version of the preflight in
+>   [`todo/2026-09-01-nothing-stops-a-deploy-publishing-a-branch.md`](todo/2026-09-01-nothing-stops-a-deploy-publishing-a-branch.md).
+>   This was not paranoia: the primary checkout is on another session's branch, and
+>   building there would have published it with every existing guard satisfied.
+> - **The pages were served and walked**, not opened from `file://` — 29 passed,
+>   1 xfailed, the xfail being the known diagnostic-page overflow (#440).
+> - **The figure was rendered and read in both themes** at five widths. Labels land at
+>   9.00px everywhere after #444 derived the scroll floor from the viewBox.
+>
+> **One thing shipping imperfect, on purpose.** At a 1280px viewport the `.arch` box is
+> 1203px against the figure's natural 1222px, so the last stage's right border is
+> clipped by 19px and the box scrolls to reach it. All of its text is legible. Widening
+> `.arch` would desynchronise it from the hero figure, which shares `min(94vw, 78rem)`
+> deliberately, and the fix is not worth that or another CI cycle on the way out.
+>
+> The 2026-08-28 release block below stays. This file's own rule is that the next hold
+> starts from a page recording how the last one ended.
+
 ---
 
 > ## Held again 2026-09-01 — the page moves once, with the figure
