@@ -5,6 +5,36 @@ filed: 2026-08-11
 
 # File the PySpike max_tau bug upstream
 
+## FILED 2026-09-01 — https://github.com/mariomulansky/PySpike/pull/89
+
+Three files, +146/−4. What remains is step 4: the URL into the eight places at the
+bottom of this file, which today still assert the bug with no upstream reference.
+
+**It went out with Kreuz's private mail quoted in the description, and that was a
+mistake.** The murderboard flagged it twice as a residual — *"he was not asked whether
+he minds being quoted verbatim in a public forum"* — and it was treated as closed by
+Tony's instruction to open the PR. It was not his alone to close: the words were
+Kreuz's. The quotes were live for a little over an hour, drew no comments or reviews,
+and were removed from both the description and the commit message.
+
+**Removal is not retraction, and the note says so.** GitHub keeps the edit history of a
+PR body, and the superseded commit `77f5b73` is still fetchable by hash from the fork
+*and* from `mariomulansky/PySpike`, because the PR ref keeps it reachable. The first
+draft of the apology told Kreuz the rewritten commit meant the earlier version was
+gone; that was checked and false, and corrected before sending. An apology that
+overstates the remedy is worse than none.
+
+Tony sent the note on 2026-09-01 —
+[`docs/kreuz_note_2_apology.md`](../kreuz_note_2_apology.md), trimmed by him to 142
+words from 427. **The standing rule this leaves:** a third party's private
+correspondence is not the user's to release on their behalf, and "the user told me to
+post it" does not settle it. Raise it, and if it is going out anyway, get the
+correspondent asked first.
+
+The description was also cut to 764 words from ~3,600, on Tony: *"just the facts. what
+we found, what we propose to fix it."* Three murderboard roles had said the same and
+were not acted on until he said it.
+
 ## KREUZ ANSWERED 2026-08-31. It is a regression, the fix is endorsed, and the route is a PR.
 
 **The question this whole file was waiting on is settled, and it went the way the report

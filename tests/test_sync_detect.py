@@ -88,6 +88,12 @@ def test_profile_cross_validates_against_pyspike_uncapped():
     # max_tau=0.25 marks 77.3/85.0 coincident). cSPIKE caps correctly and
     # our port is bit-exact against cSPIKE, so the cross-validation runs in
     # the UNCAPPED regime, where the two definitions coincide.
+    #
+    # Fixed upstream by us: https://github.com/mariomulansky/PySpike/pull/89
+    # Unreleased as of 2026-09-01. When it ships, the sibling test
+    # test_pyspike_max_tau_is_still_inert goes red — that is the trigger to
+    # move this cross-check to a finite cap. What else to update is listed in
+    # docs/todo/2026-08-11-file-pyspike-max-tau-issue.md.
     pyspike = pytest.importorskip("pyspike")
     trains = [np.unique(v[np.isfinite(v) & (v >= EXT[0]) & (v <= EXT[1])])
               for v in SLICE.fast.t50rise]

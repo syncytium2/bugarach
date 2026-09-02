@@ -175,9 +175,16 @@ manufactured a third round's review surface.
   boundary, `Reconcile=False`, and the sorting permutation. The PR argues at length that
   the bug survived because nothing pinned it, then ships changes with nothing pinning
   them. The tie test is two lines.
-- ⚠ **Quoting private email in public.** The PR quotes Kreuz's mail of 2026-08-31 and
-  says he cc'd Mulansky. He asked for the PR, so he expects it to be acted on — but he
-  was not asked whether he minds being quoted verbatim in a public forum.
+- ⚠→ **FIRED, and it was the one that mattered.** This residual said Kreuz had not been
+  asked about being quoted publicly. The PR went out with the quotes in it anyway, on
+  Tony's instruction to open it, and they were live for a little over an hour before
+  removal. **The review was right and the escalation was too soft.** A flag the *user*
+  can close by saying "go" is not a flag raised on someone else's behalf. Where a
+  residual concerns a **third party's** interest rather than the user's own risk, it has
+  to be raised as blocking, because the user cannot consent for them. Removal is also
+  not retraction: the PR body's edit history and the superseded commit `77f5b73` both
+  survive, the latter fetchable from upstream as well as the fork. Apology sent
+  2026-09-01.
 - ⚠ **Length.** 24 KB, ~3,600 words, for a four-line production diff. Three independent
   roles said cut it; the collapsing helped but did not resolve it. The hostile reviewer
   would read roughly forty lines of it.

@@ -11,7 +11,8 @@ parity test):
             CICADA itself)
   sync      SPIKE-synchronization              -- landed (see sync.py; native
             port bit-exact vs cSPIKE — PySpike's max_tau cap has been
-            broken since 0.8.0, so it is a test-suite cross-check only,
+            broken since 0.8.0 (fix filed upstream as PySpike#89),
+            so it is a test-suite cross-check only,
             in the uncapped regime)
 
 **Only the fifth row has a key that is not its name.** ``cicada`` is the
