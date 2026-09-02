@@ -92,7 +92,7 @@ enforced by `tests/test_index_resolves.py`, which reads code spans too.
 
 | trap | keywords | where |
 |---|---|---|
-| a worktree's tests run against the **primary checkout's** `src` | worktree, PYTHONPATH, fails toward green, wrong src | `handoffs/2026-08-28-the-worktree-src-fix-nobody-has-chosen.md`. Use `PYTHONPATH=$PWD/src` |
+| a worktree's tests run against the **primary checkout's** `src` | worktree, PYTHONPATH, fails toward green, wrong src, `test_architectures_are_files`, `test_a_broken_architecture_is_loud`, `test_the_server_hands_out_the_page_with_the_shim`, "3 failed", "already failing on main", stashing did not clear it | [`handoffs/2026-08-28-the-worktree-src-fix-nobody-has-chosen.md`](handoffs/2026-08-28-the-worktree-src-fix-nobody-has-chosen.md). Use `PYTHONPATH=$PWD/src`. **Those three tests fail in every worktree whatever the branch holds, and stashing cannot tell you so** — [the todo](todo/2026-08-28-a-worktree-pytest-run-tests-the-primary-checkouts-src.md), §2026-09-02 |
 | running a **subset** of tests and reading it as green | partial, subset, passed | Full suite, always. Cost two sessions on 2026-08-30 |
 | the session briefing reads a **stale checkout** | briefing wrong, out of date, behind | `git pull` first. A 64-commit-behind primary reported wrong PRs, suite size and board counts |
 | numbers typed into prose by hand | transcribed, stale table, retype | `docs/learned/bakeoff.md` and `README.md`'s tables. Filed: `docs/todo/2026-08-28-the-bakeoff-page-transcribes-what-a-token-could-substitute.md` |

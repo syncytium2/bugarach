@@ -24,7 +24,8 @@ authoritative).
   by adversarial differential validation (independent adversary impl,
   hand-derived hostile vectors, mutant-checked fuzzer) —
   `docs/clean_room/WORKFLOW.md`.
-- **Upstream bug found**: PySpike's `max_tau` cap, inert since 0.8.0,
+- **Upstream bug found and fixed**: PySpike's `max_tau` cap, inert since 0.8.0,
+  reported and patched as [PySpike#89](https://github.com/mariomulansky/PySpike/pull/89),
   discovered because bit-exact cSPIKE parity made a quantitative
   inflation visible that normal use cannot detect (see the PySpike-issue
   todo).

@@ -88,6 +88,11 @@ def body(text: str) -> str:
     flush()
 
     joined = "\n".join(out).strip("\n")
+    # The source separates its sections with a horizontal rule, and this slice
+    # ends just before one. Left in, it renders as a line dangling under the
+    # last paragraph of a document going to a third party -- the one
+    # repo-internal mark that reached the public copy.
+    joined = re.sub(r"\n-{3,}\s*$", "", joined)
     return re.sub(r"\n{3,}", "\n\n", joined) + "\n"
 
 

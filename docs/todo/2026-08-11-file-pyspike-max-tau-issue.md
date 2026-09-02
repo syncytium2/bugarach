@@ -5,6 +5,73 @@ filed: 2026-08-11
 
 # File the PySpike max_tau bug upstream
 
+## FILED 2026-09-01 — https://github.com/mariomulansky/PySpike/pull/89
+
+Three files, +146/−4. Every numbered step below is done; what is left belongs to other
+files and is listed there.
+
+**It went out with Kreuz's private mail quoted in the description, and that was a
+mistake.** The murderboard flagged it twice as a residual — *"he was not asked whether
+he minds being quoted verbatim in a public forum"* — and it was treated as closed by
+Tony's instruction to open the PR. It was not his alone to close: the words were
+Kreuz's. The quotes were live for a little over an hour, drew no comments or reviews,
+and were removed from both the description and the commit message.
+
+**Removal is not retraction, and the note says so.** GitHub keeps the edit history of a
+PR body, and the superseded commit `77f5b73` is still fetchable by hash from the fork
+*and* from `mariomulansky/PySpike`, because the PR ref keeps it reachable. The first
+draft of the apology told Kreuz the rewritten commit meant the earlier version was
+gone; that was checked and false, and corrected before sending. An apology that
+overstates the remedy is worse than none.
+
+Tony sent the note on 2026-09-01 —
+[`docs/kreuz_note_2_apology.md`](../kreuz_note_2_apology.md), trimmed by him to 142
+words from 427. **The standing rule this leaves:** a third party's private
+correspondence is not the user's to release on their behalf, and "the user told me to
+post it" does not settle it. Raise it, and if it is going out anyway, get the
+correspondent asked first.
+
+The description was also cut to 764 words from ~3,600, on Tony: *"just the facts. what
+we found, what we propose to fix it."* Three murderboard roles had said the same and
+were not acted on until he said it.
+
+### KREUZ CLEARED THE QUOTES 2026-09-02, AND THE PR STAYS TRIMMED ANYWAY. Do not restore them.
+
+He replied to the apology the same day: *"for me no worry at all. It was all scientific
+and factual content so I don't mind at all whether it is public or not. Even more so, if
+you think it might help people to understand the issue, feel free to restore the full
+version."* So the harm the apology was for did not land, and permission now exists.
+
+**Tony's call was to leave PR #89 exactly as it is.** The reason a later session needs, so
+it does not read this as unfinished repair: **the 2026-09-01 edit had two motives and only
+one of them was Kreuz's to lift.** It removed his quotes *and* cut 4,027 words to 764 on
+Tony's *"just the facts"*, in one stroke. His clearance disposes of the first. The second
+is an editorial judgement about what a maintainer deciding whether to *merge* should have
+to read, and it still stands. Mulansky was cc'd on Kreuz's own mail, so the endorsement
+already reached the only person whose agreement the PR needs.
+
+**Nothing about his staffing or unreleased work was ever in the PR body** — the board block
+for this worktree had already ruled it out, and the redaction was of three passages only:
+the "Thomas Kreuz reproduced this and asked for the PR" section, the *"give the user
+options and not impose one specific variant"* line, and one clause crediting his two
+figures to his mail. The clearance covers those three; it is not a licence to publish the
+rest of the mail, which he did not offer and which is still Tony's to file or not.
+
+**Both revisions of the body are recoverable and neither is in this repo.** GitHub keeps
+them, and one query prints either:
+
+```
+gh api graphql -f query='{ repository(owner:"mariomulansky", name:"PySpike")
+  { pullRequest(number:89) { userContentEdits(first:10)
+      { nodes { editedAt diff } } } } }'
+```
+
+Two nodes: `2026-09-01T12:19` is the 4,027-word original, `13:35` the 764-word body live
+today. The superseded commit `77f5b73` is likewise still fetchable by hash.
+
+**The standing rule from the incident is unchanged by this.** Asking afterwards and being
+told it was fine is luck, not process. It stays: get the correspondent asked *first*.
+
 ## KREUZ ANSWERED 2026-08-31. It is a regression, the fix is endorsed, and the route is a PR.
 
 **The question this whole file was waiting on is settled, and it went the way the report
@@ -51,23 +118,40 @@ before we wrote anything. That is his call to make on his own project, and it is
 route. **The issue body is not wasted** — it is the reviewed 12 KB of mechanism, and it becomes
 the PR description. See **Route** below for what that costs and the one thing to decide.
 
-**What did not change:** the patch, the numbers, or the report's shape. Re-verified today
-against `docs/pyspike_max_tau.patch` on a fresh v0.9.0 build —
-`bash tools/pyspike_patch_check.sh` — upstream's suite is 50 green as shipped, patched on the
-pure-Python backend, and patched on the compiled one; the sweep is
-0.3500/0.1833/0.0500/0.0000; the 7.7 s pair stops being coincident under a 0.25 s cap.
-**And the patched build reproduces Kreuz's own cSPIKE figures to the digit** — 0.500000 at
-`max_dist=0.25`, 0.666667 at 0.35, against his 0.5 and 2/3. That is the single strongest line
-available to the PR, because it is upstream's code, patched, landing on the reference
-implementation's values on an example the maintainer's collaborator chose.
+**What did not change:** the numbers or the finding. **What did change, and it is not small:
+the patch file, the test, the harness and most of the description** — see the murderboard run
+record, [`docs/reviews/pyspike_pr_2026-08-31.md`](../reviews/pyspike_pr_2026-08-31.md). The
+short version is that the patch as it stood **could not be applied by `git apply`**: its
+hand-written `python_backend.py` hunk was missing three trailing blank context lines, and
+`patch(1)` is lenient about exactly that, so `tools/pyspike_patch_check.sh` had been green on a
+patch a maintainer's own tooling would have rejected. The patch is now generated by `git diff`,
+carries the regression test as a new-file hunk, and the harness gates **both** tools.
 
-### One thing his reply does not answer
+The patched build does reproduce Kreuz's cSPIKE figures — 0.500000 at `max_dist=0.25` and
+0.666667 at 0.35, against his 0.5 and 2/3 — and that remains the strongest line in the PR,
+because it is upstream's code, patched, landing on the reference implementation's values on an
+example the maintainer's collaborator chose.
 
-The report closes with a design question — *"with `MRTS > 0` this lets `max_tau` override the
-MRTS-raised window"* — and Kreuz did not address it, almost certainly because the note left the
-mechanism to the issue and never put it in front of him. His options-not-impositions answer
-implies a hard cap should win over a raised floor, but that is our inference, not his sentence.
-**Leave it in the PR as the open question it is.** Do not upgrade it to "Kreuz confirmed".
+### One thing his reply does not answer — and the papers do
+
+The report used to close with a design question — *"with `MRTS > 0` this lets `max_tau`
+override the MRTS-raised window"* — and Kreuz did not address it, because the note left the
+mechanism to the issue and never put it in front of him. **Do not upgrade it to "Kreuz
+confirmed"**; his options-not-impositions answer is about the parameter existing, not about
+this interaction.
+
+**The murderboard closed it from the literature instead** (2026-08-31, role 6, which read the
+papers rather than reasoning from them). Kreuz et al. 2017 §3.3 introduces τmax *alongside* the
+adaptive window — *"We still use the adaptive coincidence detection from Eq. 1 but define a
+maximum coincidence window τmax"* — and uses it as a hard physical constraint, a propagation
+speed. Satuvuori's Eqs. 17–18 already pair MRTS with its own ISI ceiling: *"each side is
+limited to half the ISI even if the threshold is larger."* And because `min` is associative and
+commutative, applying the cap inside Eqs. 17–18 per side or outside Eq. 19 is the same
+function — so the patch's placement is not one option among several.
+
+So the PR now **states the answer with those two citations** and flags the interaction as a
+behaviour change rather than an open question. Asking a maintainer to adjudicate something his
+own paper settles was the one place the draft read as under-researched.
 
 ### Not to be re-raised
 
@@ -109,14 +193,59 @@ Two things a later reader would otherwise get wrong:
    sent as drafted.
 2. ~~**Then file the issue**~~ — **superseded 2026-08-31.** Kreuz asked for the PR instead
    and cc'd Mulansky. See **Route**.
-3. **Open the PR against `mariomulansky/PySpike`** — the patch is
-   [`docs/pyspike_max_tau.patch`](../pyspike_max_tau.patch), the description descends from
-   `python tools/pyspike_issue_body.py`, and it needs the two additions in **Route** below.
-   **Tony releases it**; the Process section's rule that external communication is his to send
-   did not change because the destination did.
-4. **Then** put the PR URL in the eight places listed at the bottom of this file. The version
-   half of that pass is already done. The list says "issue URL" throughout — it is now a PR
-   URL, and the eight places are the same eight.
+3. ~~**Open the PR against `mariomulansky/PySpike`**~~ — **DONE 2026-09-01,
+   [PySpike#89](https://github.com/mariomulansky/PySpike/pull/89).** Three files, +146/−4,
+   generated by `git diff` and accepted by `git apply` and `patch(1)` alike.
+4. ~~**Then** put the PR URL in the eight places~~ — **DONE 2026-09-01.** FOUNDATIONS,
+   README ×2, SAP003's message, `detectors/__init__.py`, the sapper_feedback table, the
+   methodology-narrative todo, and the NOTE in `tests/test_sync_detect.py`.
+
+**Nothing here is half-done.** What is left is not this file's:
+
+- ~~**`syncytium2/bugarach` PR #426 is open and unmerged**~~ — **`origin/main` merged into the
+  branch 2026-09-02**, four conflicts resolved. The advice that stood here — *"the vendored
+  conflicts are spurious… take either side"* — **was true when written and false by the time
+  anyone acted on it, and taking either side would have destroyed work.** Both sides do still
+  stamp `564b944`, but `main` has since gained an `# instrument:` line in each of
+  `murderboard_freshness.sh`, `murderboard_revendor.py` and `murderboard_roster.sh`, so
+  `--ours` silently strips a landed declaration. **What was actually applied:** `--theirs`
+  (main) for the three vendored files, `--ours` for this todo — `main` carries only the
+  squashed snapshot of `f2e73e5` via #424, including a *"Draft issue text (not yet posted)"*
+  section this branch deleted once the PR was filed, so on this file the branch is strictly
+  newer. A stamp match is evidence about provenance, not about content; diff before trusting it.
+- ~~**Two suite failures on this branch are not from this work**… `main` likely carries them
+  too.~~ **`main` does not carry them and neither does this branch. Diagnosed 2026-09-02: the
+  three failures are the shared venv, not the code.** `.venv` holds an editable install of the
+  *primary* checkout, so `import bugarach` in **any** worktree resolves to
+  `Developer/bugarach/src/bugarach` — and these three tests are exactly the ones that compare a
+  worktree file against imported behaviour. `test_architectures_are_files` writes a probe
+  architecture into this worktree's `src/` and asks the imported package to autoload it, which
+  it cannot see; `test_lab_server` asserts the served page equals this worktree's
+  `docs/site/raster_viewer.html`, and it is the primary's page that gets served.
+
+  ```
+  PYTHONPATH=src .venv/bin/python -m pytest -q     # 25 passed, 0 failed
+  ```
+
+  The stashing check that produced the original note could not have distinguished this: the
+  failures persist under any content change to the worktree, because the worktree's content is
+  not what is running. **Run the suite from a worktree with `PYTHONPATH=src`** — otherwise a
+  green run proves something about the primary checkout.
+
+  **This defect was already known, filed and indexed, and this session still re-derived it** —
+  [`2026-08-28-a-worktree-pytest-run-tests-the-primary-checkouts-src.md`](2026-08-28-a-worktree-pytest-run-tests-the-primary-checkouts-src.md),
+  its one-screen handoff
+  [`the-worktree-src-fix-nobody-has-chosen`](../handoffs/2026-08-28-the-worktree-src-fix-nobody-has-chosen.md),
+  and a row in [`INDEX.md`](../INDEX.md) under **Known traps** keyed on the words you would
+  actually type. Three fixes are written up there and none is chosen; that decision stays
+  theirs, not this file's. The three failing test names are now recorded in that todo so the
+  next session greps its way there instead. **`docs/INDEX.md` first — that is what it is for.**
+- **Three of the four disclosed behaviour changes still have no regression test** — the tie
+  boundary, `Reconcile=False`, and the sorting permutation. Listed in the run record.
+
+**Do not re-run the murderboard.** It ran on 2026-08-31 — eleven roles plus a four-lens blind
+round — and stopped unconverged on flat severity. The record, with every residual, is
+[`docs/reviews/pyspike_pr_2026-08-31.md`](../reviews/pyspike_pr_2026-08-31.md).
 
 ~~If Kreuz answers that 0.8.0 dropped the clamp deliberately, stop and re-read before filing:
 the report becomes a docs bug and most of it comes out.~~ **He answered the other way**
@@ -308,197 +437,58 @@ report cites, and it is the reason the note asks rather than asserts.
 
 ---
 
-## Draft issue text (for review — not yet posted)
+## Draft issue text (now the PR description — for review, not yet posted)
 
-**Title:** `max_tau` has no effect except at spike-train edges (regression since 0.8.0)
+**Title:** Restore the `max_tau` coincidence-window cap (inert since 0.8.0)
 
-### Summary
+### The bug
 
-`spike_sync` returns the same number for `max_tau` of 1.0, 0.25 and 1e-6 on
-trains whose mean ISI is about 10 s. A 1 µs coincidence window should report no
-coincidences at all; it reports SPIKE-Sync 0.33.
-
-In `get_tau`, `max_tau` is only the initial value of each of the four
-neighbouring ISIs, and each is overwritten as soon as that neighbour exists. The
-window returned is the minimum of the interpolated half-ISIs, and `max_tau` is
-never compared against it. Only spikes at the start or end of a train — where a
-neighbour is genuinely missing — still see the cap.
-
-The docstring still promises otherwise:
-
-> `max_tau` — Maximum coincidence window size. If 0 or `None`, the coincidence
-> window has no upper bound.
-
-### Smallest reproduction
+Since 0.8.0, `max_tau` has no effect on any pair of spikes that each have a
+neighbour on both sides in their own train.
 
 ```python
-import pyspike
-
-# The middle pair is 7.7 s apart. The outer spikes exist only to give that
-# pair a neighbor on each side -- that is what triggers the bug.
-a = pyspike.SpikeTrain([40.4, 77.3, 534.4], (0, 600))   # seconds
-b = pyspike.SpikeTrain([58.8, 85.0, 300.0], (0, 600))   # seconds
-
-x, y = pyspike.spike_sync_profile(a, b, max_tau=0.25).get_plottable_data()
-for t, c in zip(x, y):
-    print(f"t={t:6.1f}  coincident={c:.0f}")
+a = pyspike.SpikeTrain([0.0, 1.0, 3.0, 5.0, 7.0, 9.0], 10.0)
+b = pyspike.SpikeTrain([0.0, 1.1, 3.2, 5.3, 7.4, 9.5], 10.0)
 ```
 
-```
-t=   0.0  coincident=0
-t=  40.4  coincident=0
-t=  58.8  coincident=0
-t=  77.3  coincident=1
-t=  85.0  coincident=1
-t= 300.0  coincident=0
-t= 534.4  coincident=0
-t= 600.0  coincident=0
-```
-
-Two spikes 7.7 s apart are coincident under a 0.25 s cap. The arithmetic, all of
-it from the ISIs surrounding that pair (spacing not to scale):
-
-```
-train a:    40.4 ─────── 77.3 ────────────────── 534.4
-train b:         58.8 ─────── 85.0 ── 300.0
-
-pair under test:  a@77.3 vs b@85.0                       gap = 7.7 s
-surrounding ISIs: 36.9 (a), 457.1 (a), 26.2 (b), 215.0 (b)
-window returned = min(36.9, 457.1, 26.2, 215.0) / 2    = 13.1 s
-max_tau                                                = 0.25 s  <- never consulted
-
-7.7 s < 13.1 s  =>  coincident
-```
-
-### The cap is inert across six orders of magnitude
-
-```python
-import numpy as np, pyspike
-
-rng = np.random.default_rng(0)
-edges = (0.0, 600.0)                       # seconds
-a, b = (pyspike.SpikeTrain(np.sort(rng.uniform(*edges, 60)), edges)
-        for _ in range(2))                 # mean ISI ~10 s
-
-print(" max_tau   SPIKE-Sync")
-for max_tau in (None, 1.0, 0.25, 1e-6):
-    print(f"{str(max_tau):>8}   {pyspike.spike_sync(a, b, max_tau=max_tau):.4f}")
-```
-
-```
- max_tau   SPIKE-Sync
-    None   0.3500
-     1.0   0.3333
-    0.25   0.3333
-   1e-06   0.3333
-```
-
-The `None` row differs, but not because the cap works on the body of the trains:
-it comes from the spikes at each end, the only ones where a missing neighbour lets
-the default survive. Sweeping `max_tau` densely finds exactly one transition, at
-the 1.2680583 s gap between the last pair — below it every positive value returns
-0.3333, above it the uncapped 0.3500. (`max_tau=0`, like `None`, means no cap.)
-
-A pair must be interior in *both* trains before all four defaults are overwritten,
-so the cap still works on trains too short to have an interior spike. That is why
-the suite does not catch this: its one `max_tau` assertion
-(`test/test_distance.py:184`) scores a three-spike train against
-`SpikeTrain([2.1], 4.0)`, and the one-spike partner keeps the cap live. The fix
-below leaves that assertion green.
-
-### Scope
-
-`get_tau` is called from 14 sites across `cython_profiles.pyx`,
-`cython_directionality.pyx` and `cython_distances.pyx`, so this is wider than
-SPIKE-Sync: `spike_sync` and its `_multi` / `_profile` / `_matrix` forms and
-`filter_by_spike_sync`, the three `spike_directionality` entry points, the six
-`spike_train_order` ones, and `optimal_spike_train_sorting` through
-`spike_directionality_matrix`. `spike_directionality` on the two trains above is
-just as flat: -0.016667 uncapped, and 0.000000 at every one of 1.0, 0.25 and 1e-6.
+The six pairs are 0, 0.1, 0.2, 0.3, 0.4, 0.5 s apart. A 0.25 s cap should admit
+three of them, a 0.35 s cap four. **PySpike returns 5/6 for both**, and for every
+positive cap down to 1 µs. The docstring, in all fourteen copies, says
+`max_tau` bounds the window.
 
 ### Cause
 
-`pyspike/cython/cython_get_tau.pyx`, and the same logic in
-`pyspike/cython/python_backend.py`. The parameter named `max_tau` here receives
-`true_max` — the recording span, or twice the user's cap when one was given and it
-is smaller — which matters for the patch. Annotations marked `<-`:
+`get_tau` seeds the four neighbouring-ISI slots with `max_tau` and overwrites
+each one as soon as that neighbour exists. All four are overwritten exactly when
+the pair is interior to both trains, and the cap is then never compared against
+the window:
 
 ```cython
 cdef double mF1 = max_tau        # <- only a default
-cdef double mP1 = max_tau
-cdef double mF2 = max_tau
-cdef double mP2 = max_tau
-
+...
 if i < len(spikes1)-1 and i > -1:
     mF1 = (spikes1[i+1]-spikes1[i])      # <- overwritten, uncapped
-if j < len(spikes2)-1 and j > -1:
-    mF2 = (spikes2[j+1]-spikes2[j])
-if i > 0:
-    mP1 = (spikes1[i]-spikes1[i-1])
-if j > 0:
-    mP2 = (spikes2[j]-spikes2[j-1])
-
-mF1, mF2, mP1, mP2 = mF1/2., mF2/2., mP1/2., mP2/2.
 ...
 return fmin(s1F, s2P)            # <- max_tau never enters
 ```
 
-At the default `MRTS=0`, `Interpolate(a, b, 0)` returns `min(a, b)`, so the
-function reduces to the minimum of the four half-ISIs — a quantity `max_tau` never
-touches. **MRTS does not substitute for a cap**: `Interpolate` is bounded above by
-its second argument, the half-ISI facing the other spike, so raising MRTS can only
-move the window up toward that bound, never down.
+0.7.0 ended `get_tau` with `if max_tau > 0.0: m = fmin(m, max_tau)`, in each of
+the three `.pyx` copies and in `python_backend.py`. 0.8.0 consolidated the Cython
+side into one shared implementation without it, and the pure-Python copy lost it
+too.
 
-The clamp existed until 0.8.0, which replaced three per-file copies of `get_tau`
-with one shared implementation and dropped it from all three at once. In 0.7.0 the
-seed and the cap were separate parameters, and `max_tau` there is the user's raw
-value rather than today's `true_max`:
+This is not only SPIKE-Sync: `get_tau` has 14 call sites across the three `.pyx`
+files and 8 more in the pure-Python backend, so `spike_directionality`,
+`spike_train_order`, `filter_by_spike_sync` and `optimal_spike_train_sorting` are
+all affected.
 
-```cython
-    m *= 0.5
-    if max_tau > 0.0:
-        m = fmin(m, max_tau)
-    return m
-```
+### The fix
 
-0.8.0 is on PyPI as of 2023-07-14, so the cap has been inert for three years. (The
-GitHub *Releases* entry reads 2023-10-13, which is when the tag was pushed after
-issue #71 asked for it; the tag is lightweight and carries the July commit date.)
-
-I can't tell from outside whether the clamp was dropped deliberately or lost in
-the consolidation. Either way the docstring and the code now disagree, and one of
-them should move.
-
-### Where the cap comes from
-
-Since the measure itself is deliberately parameter-free, it is worth saying that
-the cap is not an invention of the implementations:
-
-| source | a global cap? | what it says |
-| --- | --- | --- |
-| Quian Quiroga, Kreuz & Grassberger 2002, Eq. 4 ([Phys Rev E 66:041904](https://doi.org/10.1103/PhysRevE.66.041904)) | **sanctioned** | *"…one could also make other choices, e.g. by taking τij smaller than in Eq.(4) or by using τ′ij=min{τ,τij}."* |
-| Kreuz, Mulansky & Bozanic 2015, Eq. 19 ([J Neurophysiol 113:3432](https://doi.org/10.1152/jn.00848.2014)) | no | the parameter-free default: min of the four surrounding half-ISIs |
-| Satuvuori et al. 2017, Eqs. 17–18 ([J Neurosci Methods 287:25](https://doi.org/10.1016/j.jneumeth.2017.05.028)) | no | MRTS, which is a floor — the opposite thing |
-| **Kreuz, Satuvuori, Pofahl & Mulansky 2017** ([New J Phys 19:043028](https://doi.org/10.1088/1367-2630/aa68c3)) | **yes — `τmax`** | *"For some applications it might be appropriate to additionally introduce a maximum coincidence window τmax as a parameter."* |
-| cSPIKE | yes — `max_dist` | requires `\|Δt\| < TAUij` **and** `\|Δt\| < max_dist` |
-| PySpike ≤ 0.7.0 | yes — `max_tau` | `if max_tau > 0.0: m = fmin(m, max_tau)` |
-| PySpike ≥ 0.8.0 | **no** | seeds four ISI slots, all overwritten for an interior spike |
-
-`min{τ, τij}` is in the paper that introduced the adaptive window, as an
-explicitly optional variant, and it is named and used in the SPIKE-order work
-fifteen years later. Neither measure paper carries it because neither is about
-bounding the window. For `max_dist > 0`, cSPIKE's two conditions are exactly
-`|Δt| < min(TAUij, max_dist)`, which is what the patch computes.
-
-### Suggested fix
-
-`get_tau` receives `true_max`, so the bound to apply is half of it. In
-`pyspike/cython/cython_get_tau.pyx`:
+`get_tau` receives `true_max` — the span, or twice the user's cap when smaller —
+so the bound is half of it.
 
 ```diff
---- a/pyspike/cython/cython_get_tau.pyx
-+++ b/pyspike/cython/cython_get_tau.pyx
-@@ -43,8 +43,8 @@
+@@ -43,8 +43,8 @@ cdef double get_tau(double[:] spikes1, double[:] spikes2,
      if i<0 or j<0 or spikes1[i] <= spikes2[j]:
          s1F = Interpolate(mP1, mF1, MRTS)
          s2P = Interpolate(mF2, mP2, MRTS)
@@ -511,96 +501,59 @@ bounding the window. For `max_dist > 0`, cSPIKE's two conditions are exactly
 +        return fmin(fmin(s1P, s2F), max_tau/2.)
 ```
 
-and the same two returns in `pyspike/cython/python_backend.py`, which uses the
-builtin rather than `fmin`:
+Same two returns in `python_backend.py` with the builtin `min`. Between them that
+is every caller on both backends — `directionality_python_backend.py` imports
+`get_tau` from `python_backend`.
 
-```diff
---- a/pyspike/cython/python_backend.py
-+++ b/pyspike/cython/python_backend.py
-@@ -361,11 +361,11 @@
-     if i<0 or j<0 or spikes1[i] <= spikes2[j]:
-         s1F = Interpolate(mP1, mF1, MRTS)
-         s2P = Interpolate(mF2, mP2, MRTS)
--        return min(s1F, s2P)
-+        return min(min(s1F, s2P), max_tau/2.)
-     else:
-         s1P = Interpolate(mF1, mP1, MRTS)
-         s2F = Interpolate(mP2, mF2, MRTS)
--        return min(s1P, s2F)
-+        return min(min(s1P, s2F), max_tau/2.)
-```
+No `max_tau > 0` guard needed: at `0`/`None` the callers set `true_max` to the
+span, so the bound is half the span, which is what 0.7.0 did by seeding `m` with
+`interval` before halving. At `MRTS = 0` the patched function and 0.7.0's are
+identical.
 
-Those two files cover every caller in both backends —
-`directionality_python_backend.py` imports `get_tau` from `python_backend`.
+### What changes
 
-No `max_tau > 0` guard is needed: when the user passes 0 or `None` the callers set
-`true_max = t_end - t_start`, so the new term bounds the window at half the
-recording span, which is what 0.7.0 did by seeding `m` with `interval` before
-halving. At `MRTS = 0` the two are the same function, and both land on
-`min(interval/2, ISI/2 over existing neighbours)`, further clamped at `max_tau`
-when one was asked for. Exact ties are unaffected — the new bound is strictly
-positive for any positive cap.
+Nothing at `max_tau` of `0`/`None` with default `Reconcile` — checked over the
+suite and ~12,600 shipped-vs-patched probes on both backends. Four things do
+change, all of them the cap working:
 
-One case does change against 0.9.0: with `Reconcile=False` a half-ISI can exceed
-the recording span, and today's code returns it while the patch bounds it at half
-the span. That is a restoration of 0.7.0 rather than a new hazard, but it is yours
-to sign off on.
+- `|Δt| == max_tau` is no longer a coincidence, matching cSPIKE's strict `<` and
+  0.7.0.
+- `Reconcile=False`: a half-ISI can exceed the span, and 0.9.0 returns it where
+  this bounds it at half the span. Fuzzing 3,000 pairs, 23 `spike_sync` values
+  moved, always down. `test_reconcile.py` passes either way.
+- `filter_by_spike_sync` with a tight cap returns empty trains more readily.
+  Empty trains already break `spike_directionality` on 0.9.0
+  (`ZeroDivisionError`) — pre-existing, happy to file separately.
+- `optimal_spike_train_sorting` can return a different permutation; at a very
+  tight cap the directionality matrix is all zero, so the ordering is arbitrary.
 
-Patched, the sweep above becomes:
+Under `MRTS > 0` the cap now also overrides an MRTS-raised window. That looks
+right — Kreuz et al. 2017 introduces τmax alongside the adaptive window, and
+Satuvuori's Eqs. 17–18 already cap MRTS at half the ISI — but it is a behaviour
+change, so I am flagging it.
 
-```
- max_tau   as shipped   with the patch
-    None       0.3500          0.3500
-     1.0       0.3333          0.1833
-    0.25       0.3333          0.0500
-   1e-06       0.3333          0.0000
-```
+### Tests
 
-Finite caps become monotone in `max_tau`, a 1 µs window reaches 0 — the smallest
-cross-train gap here is 0.027 s — and the `None` row is unchanged.
+`test/test_max_tau.py` is new, because nothing in the suite passes `max_tau` for
+a pair interior to both trains. The one existing assertion
+(`test_distance.py:184`) uses a one-spike partner, which leaves two slots seeded
+and passes either way; it is untouched and still green.
 
-**Your test suite stays green.** I built the `v0.9.0` tree with both diffs applied
-and ran `test/`: 50 tests over all 13 files pass, patched and unpatched alike,
-`test_reconcile.py` included. That is with the compiled Cython extension, rebuilt
-from the patched `.pyx`.
+| pair separation (s) | 0 | 0.1 | 0.2 | 0.3 | 0.4 | 0.5 |
+| --- | --- | --- | --- | --- | --- | --- |
+| `max_tau` (s) | 0.05 | 0.15 | 0.25 | 0.35 | 0.45 | 0.55 |
+| as shipped | 5/6 | 5/6 | 5/6 | 5/6 | 5/6 | 6/6 |
+| with the patch | 1/6 | 2/6 | 3/6 | 4/6 | 5/6 | 6/6 |
 
-One design question I did not want to decide for you: with `MRTS > 0` this lets
-`max_tau` override the MRTS-raised window. That seems right for a hard cap, but it
-is your call.
+Six tests: that staircase, the profile at 0.25 s, the bound reaching
+`spike_directionality`, strict increase, `0`/`None` still a no-op, and one
+`MRTS > 0` case. Five fail as shipped and pass patched on both backends; the
+sixth is the no-op invariant.
 
-### What it costs downstream
+**56 tests over 13 collecting files, against 50 over 12 today.**
 
-We hit this porting the cSPIKE SPIKE-synchronization stack to Python and
-cross-checking against both cSPIKE reference output and PySpike. Here is the cost
-on a synthetic 30-train recording — simulated calcium event times, 2670 events at
-2362 distinct times after dropping within-train duplicates, median ISI 31 s — from
-[our committed test fixture](https://github.com/syncytium2/bugarach/blob/6eafdb69cd3c3ed4694dcdddcf5978aa84af6636/tests/fixtures/synth_fastcal_s1.mat).
-Both columns are `pyspike.spike_sync`, so this is PySpike against itself:
+Verified on PySpike 0.9.0, NumPy 2.5.2, Python 3.14.5, macOS only.
 
-| `max_tau` | as shipped | with the patch |
-| --- | --- | --- |
-| uncapped | 0.3235 | 0.3235 |
-| 0.25 s | 0.3133 | 0.0696 |
-| 1 µs | 0.3119 | 0.0156 |
-
-At a 0.25 s cap the shipped code reports 4.5× the synchrony the capped definition
-allows. Our own port, which matches cSPIKE reference output to 1e-9 at that cap,
-reproduces the patched column to the digit — corroboration rather than the
-measurement, since it implements the same semantics the patch restores. The port
-and the test that pins this:
-[`sync.py`](https://github.com/syncytium2/bugarach/blob/6eafdb69cd3c3ed4694dcdddcf5978aa84af6636/src/bugarach/detectors/sync.py),
-[`test_sync_detect.py`](https://github.com/syncytium2/bugarach/blob/6eafdb69cd3c3ed4694dcdddcf5978aa84af6636/tests/test_sync_detect.py).
-
-### Environment
-
-PySpike 0.9.0 (pip, compiled Cython backend), NumPy 2.5.2, Python 3.14.5, macOS.
-The pure-Python backend agrees, as-shipped and patched both; the two `Interpolate`
-implementations agree on 200k random triples, so this is not a build artifact.
-
-Happy to open this as a PR with a regression test — the patch is written, both
-backends are built and your suite is green against it.
-
----
 
 ## Notes for the reviewer (not part of the issue)
 

@@ -79,8 +79,10 @@ Consequences, all unchanged:
   - interface2 has duplicate `computeEventRate.m` (RateViewer 0.1 s vs
     SpikyViewer 0.05 s) shadowed by path order; production is 0.1 s.
   - **PySpike's `max_tau` cap has been broken since 0.8.0** (applied only as the default
-    for missing edge ISIs). PySpike is a test-only cross-check in the
-    uncapped regime; never a runtime dependency (sapper SAP003).
+    for missing edge ISIs). Reported upstream and fixed there by us:
+    [PySpike#89](https://github.com/mariomulansky/PySpike/pull/89). Until that lands in a
+    release, PySpike is a test-only cross-check in the uncapped regime;
+    never a runtime dependency (sapper SAP003).
 
 ## 3. Streams are generic
 

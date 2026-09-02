@@ -616,7 +616,7 @@ code from cSPIKE's MATLAB source.
 
 | Upstream | License | Role here |
 | --- | --- | --- |
-| [PySpike](https://github.com/mariomulansky/PySpike) | BSD | SPIKE-synchronization semantics ported from its (BSD) source; test-suite cross-check (its `max_tau` bug, live since 0.8.0, limits it to the uncapped regime) |
+| [PySpike](https://github.com/mariomulansky/PySpike) | BSD | SPIKE-synchronization semantics ported from its (BSD) source; test-suite cross-check (its `max_tau` bug, live since 0.8.0, limits it to the uncapped regime — fix filed as [#89](https://github.com/mariomulansky/PySpike/pull/89)) |
 | [CICADA](https://gitlab.com/cossartlab/cicada) | MIT | **locust** is code-derived from it, by way of interface2, and modified; carries the upstream copyright notice |
 | cSPIKE (MATLAB) | research/education only — **no code used** | reference outputs for parity tests only (research use, via interface2) |
 
@@ -624,7 +624,8 @@ code from cSPIKE's MATLAB source.
 **PySpike's `max_tau` cap has been broken since 0.8.0**: the cap is applied only as the default
 for the inter-spike intervals missing at the ends of a train, so spikes seconds
 apart "coincide" under a 0.25 s
-cap. The write-up is [`docs/kreuz_note.md`](docs/kreuz_note.md), and
+cap. It is filed upstream with the fix as [PySpike#89](https://github.com/mariomulansky/PySpike/pull/89),
+the write-up is [`docs/kreuz_note.md`](docs/kreuz_note.md), and
 `tests/test_sync_detect.py::test_pyspike_max_tau_is_still_inert` is the assertion
 that will fail the day upstream fixes it. PySpike stays a test-suite
 cross-check in the uncapped regime, where the two definitions agree.

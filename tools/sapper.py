@@ -70,7 +70,8 @@ RULES = [
         pattern=r"^\s*(import|from)\s+pyspike",
         include=["src/bugarach/**"], exclude=[],
         message="PySpike's max_tau cap has been broken since 0.8.0"
-                " (see detectors/sync.py)"
+                " (see detectors/sync.py; fixed upstream in PySpike#89,"
+                " unreleased as of 2026-09-01)"
                 " — PySpike is a TEST-ONLY cross-check in the uncapped regime,"
                 " never a runtime dependency.",
         fixture_bad="import pyspike",
