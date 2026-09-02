@@ -41,7 +41,12 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 ---
 
 ### Mac/k-scan-curve — DARKROOM claimed 2026-09-01, two files
-- **Status:** ACTIVE — claimed before the first file write.
+- **Status:** **DONE 2026-09-01 — released, nothing held.** Landed as PR #438 (`46a4e37`).
+  Both files written once and not since: `k_scan_cossart.html` and `.png` in the darkroom,
+  with repo copies under `docs/learned/cossart_transfer/`. **K was not chosen** — it stays on
+  the `MILESTONES.md` Open list, and the corrections the figure argues for
+  (`current_export.toml`, the transfer README's *"was never an open question"*,
+  `MILESTONES.md`) are **not applied** and are Tony's.
 - **Holds:** `<darkroom>/bugarach/k_scan_cossart.html` and `.png`, and nothing else in
   that folder. New names; no existing darkroom artifact is overwritten. Not
   `constellation/`. No deploy — the site is untouched.
