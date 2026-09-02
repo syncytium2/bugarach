@@ -10,8 +10,17 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
-### Mac/probe-gate-is-the-shipped-gate — DARKROOM claimed for one figure: `three_scoring_rules`
-- **Status:** ACTIVE 2026-09-02, short. Released in the same PR that lands the fix.
+### Mac/probe-gate-is-the-shipped-gate — DARKROOM claim RELEASED: `three_scoring_rules`
+- **Status:** **RELEASED 2026-09-02.** The figure is written, #454 (`32fc303`) is on `main`,
+  and this session holds nothing in the darkroom. Anyone may write
+  `<darkroom>/bugarach/detector_history/`.
+- ⚠ **Why this took a second commit, which is the reusable part.** The block said *"released
+  in the same PR that lands the fix"* — and it could not be, because the block travels
+  **inside** that PR. It merged reading `ACTIVE`, so from the merge until this commit the
+  only cross-machine record of the claim said a session was still holding a darkroom path
+  that nothing was holding. **A claim cannot retire itself in the commit it rides in.**
+  Releasing is always a later write, and a block that promises otherwise is wrong the moment
+  it lands.
 - **Holds:** `<darkroom>/bugarach/detector_history/three_scoring_rules.{html,png}` and
   nothing else. **Not** `constellation/`, not the deploy, not any other page in the folder.
   A session wanting a different figure in `<darkroom>/bugarach/` does not need to wait on
