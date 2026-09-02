@@ -18,7 +18,16 @@ if command -v bash >/dev/null 2>&1; then
     bash tools/guard_local_board.sh || exit $?
 fi
 
-# 3. sapper — content rules on the staged diff.
+# 3. quoted correspondence — a third party's private words must not enter this
+#    PUBLIC tree. Gated at the commit and not only in CI because on a public repo
+#    a push IS publication: by the time CI runs, the branch is world-readable.
+if command -v python3 >/dev/null 2>&1; then
+    python3 tools/check_quotes.py --staged || exit $?
+elif command -v py >/dev/null 2>&1; then
+    py tools/check_quotes.py --staged || exit $?
+fi
+
+# 4. sapper — content rules on the staged diff.
 # python3 on mac/linux; py/python on Windows git-bash
 if command -v python3 >/dev/null 2>&1; then
     exec python3 tools/sapper.py --staged
