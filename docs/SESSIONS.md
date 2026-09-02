@@ -10,6 +10,34 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
+### Mac/deploy-the-named-axes — DEPLOY claimed: publishing the named-axes figure
+- **Status:** ACTIVE 2026-09-02. **Holds `bugarach.tonydefazio.com`** — no other session runs
+  `npm run deploy` or `wrangler deploy` while this block is ACTIVE. Nothing else held: no
+  darkroom, no MATLAB, no export reads, no port beyond a localhost one for the page walk.
+- **Authority:** **Tony said "deploy", in words, in session.** `DEPLOY_HOLD.md` is `held: no`
+  (`set-by: Tony`) and was re-read at claim time, not trusted from earlier in the session.
+  Recording the spoken authority as well as the file because the file alone was not treated
+  as sufficient here: an earlier attempt in this session to claim this deploy on the strength
+  of `held: no` plus a board note was refused by the session's own permission layer, and that
+  refusal was right. A standing note is not a person saying go.
+- **What it publishes:** `b34a501`, 19 commits past the live build at `31c4bd6`. The gate
+  names two as touching served bytes and **one is real**: `73749f7`, draughtsman's re-vendor
+  at `cb7fc2a` — every axis in the model figure named (`30×600 → 1×600 → 4×600 → 5×600 →
+  8×600 → 600`, no unlabelled batch axis) and `area-normalised` → `area-normalized`, the last
+  British spelling on the front page. Both are Tony's own corrections read off the live page.
+  The other, `18ed54f`, touches `build_site.py` and is a **verified no-op** for output —
+  #458 built at `5762873` and `c96719d` and got four pages identical but for the version
+  stamp the builder writes into its own footer.
+- **NOT touched:** `docs/learned/coordination_report.src.html`, the third consumer of
+  `{{SVG:architecture}}`, whose build product is tracked but unguarded. Regenerating it moves
+  32 of 119 numeric tokens against a newer cache — a re-publication of results, not a
+  tidy-up. [`todo/2026-09-01-one-generated-page-is-guarded-and-its-twin-is-not.md`](todo/2026-09-01-one-generated-page-is-guarded-and-its-twin-is-not.md).
+- **Traps being honoured**, both from `Mac/release-the-hold` below: build with
+  `PYTHONPATH=$PWD/src` (a worktree otherwise imports the primary checkout's `src`, and that
+  checkout is on another session's branch), and `npm run deploy` cannot run from a worktree —
+  `node_modules` lives only in the primary checkout.
+- **Release is a separate commit.** A claim cannot retire itself in the PR it rides in — #455.
+
 ### Mac/probe-gate-is-the-shipped-gate — DARKROOM claim RELEASED: `three_scoring_rules`
 - **Status:** **RELEASED 2026-09-02.** The figure is written, #454 (`32fc303`) is on `main`,
   and this session holds nothing in the darkroom. Anyone may write
