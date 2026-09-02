@@ -10,9 +10,20 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
-### Mac/deploy-the-named-axes — DEPLOY claimed: publishing the named-axes figure
-- **Status:** ACTIVE 2026-09-02. **Holds `bugarach.tonydefazio.com`** — no other session runs
-  `npm run deploy` or `wrangler deploy` while this block is ACTIVE. Nothing else held: no
+### Mac/deploy-the-named-axes — DEPLOY **DONE**; the deploy is free again
+- **Status:** **DONE 2026-09-02. THE DEPLOY IS HELD BY NOBODY.** Published `7208e44`,
+  wrangler **Version ID `54361e5a-b04e-41d3-94b1-c7beb117ca65`**, 5 of 8 assets changed.
+  Verified against the live edge rather than the build: `site_staleness.py` reads
+  **`current`, 0 commits behind**; the served stamp is `7208e44`; `audit_deployed_page.py`
+  says *"the page fetched nothing but itself"* on both `/viewer.html` and `/viewer`; and the
+  front-page figure was screenshotted from `https://bugarach.tonydefazio.com/` at 1440px and
+  read — `30×600 → 1×600 → 4×600 → 5×600 → 8×600 → 600`, no batch axis, `area-normalized`.
+- **⚠ For the next deployer, learned the hard way here.** `merge_when_green.sh` **reaps the
+  worktree when the claim PR merges**, and the built `site/` payload goes with it. Claiming
+  and building in the same worktree means building twice. Either build after the claim lands,
+  or claim from a worktree you are not building in.
+- **Holds:** nothing. Was `bugarach.tonydefazio.com` — no other session ran
+  `npm run deploy` or `wrangler deploy` while this block was ACTIVE. Nothing else held: no
   darkroom, no MATLAB, no export reads, no port beyond a localhost one for the page walk.
 - **Authority:** **Tony said "deploy", in words, in session.** `DEPLOY_HOLD.md` is `held: no`
   (`set-by: Tony`) and was re-read at claim time, not trusted from earlier in the session.
