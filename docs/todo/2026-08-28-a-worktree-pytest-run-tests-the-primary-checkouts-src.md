@@ -112,6 +112,20 @@ All three pass under `PYTHONPATH=src` in the same worktree, same venv, same comm
 passed, 0 failed. They are the subset of the suite that compares a file in the tree against
 what the imported package does, which is exactly the subset this defect can reach.
 
+**There is a cheap tell, and it does not need a failure to show up.** The same worktree at
+the same commit, full suite, differing only in `PYTHONPATH`:
+
+| | passed | skipped | failed |
+|---|---|---|---|
+| bare `pytest` | 1689 | 46 | 3 |
+| `PYTHONPATH=src` | 1705 | 33 | 0 |
+
+**Thirteen tests change their minds about whether to run at all.** A skip is a decision the
+imported package participates in, so the skip count moves whenever the wrong `src` is in
+play — including in the dangerous case where nothing fails and the run reports green. So a
+run whose skip count does not match the last known-good one for that tree is worth a second
+look before its numbers go into a PR message.
+
 **What it cost.** `docs/todo/2026-08-11-file-pyspike-max-tau-issue.md` carried, for two
 days, *"Two suite failures on this branch are not from this work… They survived an
 attempted merge of `main`, so `main` likely carries them too. Separate problem."* Written
