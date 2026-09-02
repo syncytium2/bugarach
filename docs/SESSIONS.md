@@ -10,10 +10,30 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
-### Mac/release-the-hold — DEPLOY claimed 2026-09-01, the model-figure release
-- **Status:** ACTIVE — claimed **before** publishing, not after. Tony authorised it
-  (*"Push"*), the hold's condition was met by #443, and `DEPLOY_HOLD.md` goes `held: no`
-  in this same change.
+### Mac/release-the-hold — DEPLOY **DONE**, twice; the deploy is free
+- **Status:** **DONE 2026-09-02. THE DEPLOY IS HELD BY NOBODY — the next session may
+  publish without asking.** Two publishes went out from this claim:
+  - `bf02001` — version id **`62ddbd75-eb92-4903-9156-00ff3c7afa3a`**, the vendored
+    model figure (#443) with #439–#444.
+  - `31c4bd6` — version id **`16cd0a6a-a2a3-4115-a7a2-0ec23e987014`**, the first-screen
+    pass (#446): status note as a vertical rail, prose moved below the figures, hero
+    without its analysis traces, legend inside the figure, `simulated` on the raster's
+    y-axis, `tube (learned)` on the learned lane.
+  Both verified against the live edge in a browser, not from the build: 200, stamp
+  matching `origin/main`, `site_staleness.py` **current**.
+- **Two things the next deployer should know**, both learned here:
+  - `npm run deploy` fails from a worktree — `node_modules` lives only in the primary
+    checkout. Run the pinned binary at `<primary>/node_modules/.bin/wrangler` with the
+    worktree as cwd; `npx` would fetch a different version.
+  - **Build with `PYTHONPATH=$PWD/src`.** A worktree imports the primary checkout's
+    `src`, so a change to `src/bugarach/**` can silently not reach the payload. This
+    session shipped three builds before noticing a rename had done nothing.
+- **Still open, and not a deploy blocker:** draughtsman's figure states `1×30×600`
+  against "cells × frames" — three numbers, two names, and the middle axis silently
+  changes from ROIs to channels at the kernel bank — plus `area-normalised` and a
+  request to label elements directly rather than through the colour key. Relayed to
+  `draughtsman`; its fix needs a re-vendor and one more publish.
+- **Superseded detail from the first claim**, kept because the checks are the record:
 - **Holds:** **`bugarach.tonydefazio.com`.** No other session should run
   `npm run deploy` while this block is ACTIVE. Nothing in the darkroom, no MATLAB, no
   export reads, no port beyond an ephemeral localhost one for the page walk.
