@@ -98,6 +98,7 @@ enforced by `tests/test_index_resolves.py`, which reads code spans too.
 | numbers typed into prose by hand | transcribed, stale table, retype | `docs/learned/bakeoff.md` and `README.md`'s tables. Filed: `docs/todo/2026-08-28-the-bakeoff-page-transcribes-what-a-token-could-substitute.md` |
 | "team" in **interface2** commit prose | other team, their detector, another lab | It means **a parallel session**, not another laboratory. `detector_history.md` 2026-08-30 |
 | three seeds is inside the noise on this bench | seeds, flaky, noise, reproducible | 12+ seeds. At 3 the background-axis winner flips between blocks |
+| **a settings file you tuned is ignored by `bugarach detect`** | settings, tuned, --settings, write-only, detector_settings.csv, apply, load back | `detect_folder()` takes no settings argument and `emit.read_detector_settings` has no caller — the run uses stock `OPERATING_POINTS` and says nothing. [`todo/2026-09-02-the-settings-loop-does-not-close.md`](todo/2026-09-02-the-settings-loop-does-not-close.md) |
 
 ---
 
