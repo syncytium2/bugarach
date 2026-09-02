@@ -35,6 +35,27 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+
+#: EVERY FILE IN THIS REPO THAT CHANGES WHAT THE SITE SERVES, declared once.
+#:
+#: `PAGES` below says "the site has four pages" in one place instead of agreeing
+#: in three. This is that rule for the INPUTS, and it was learned the same way:
+#: `tools/site_staleness.py` kept its own copy of this list, that copy never
+#: gained `architecture.svg` or `learned_detector.html`, and so on 2026-09-02 the
+#: gate whose entire job is to notice a stale front page reported **"current"**
+#: across the one commit that replaced the lead figure. A path duplicated into a
+#: second list is a path that goes stale in the list nobody is editing.
+#:
+#: Kept RELATIVE and joined to `ROOT` at each use, so `ROOT` stays the knob a
+#: test can move to simulate a missing file.
+ARCHITECTURE_SVG = "docs/learned/architecture.svg"
+RASTER_VIEWER = "docs/site/raster_viewer.html"
+REALITY_CHECK = "docs/generator/reality_check.png"
+LEARNED_REPORT = "docs/learned/learned_detector.html"
+LANDSCAPE = "docs/learned/landscape.html"
+
+SOURCE_PATHS = (ARCHITECTURE_SVG, RASTER_VIEWER, REALITY_CHECK, LEARNED_REPORT,
+                LANDSCAPE, "tools/build_site.py")
 SITE = ROOT / "site"
 
 
@@ -52,7 +73,7 @@ def _withheld_from_the_viewer() -> tuple[str, ...]:
     something, that is a build failure rather than a silent empty set — see the
     raise below.
     """
-    src = (ROOT / "docs" / "site" / "raster_viewer.html").read_text(encoding="utf-8")
+    src = (ROOT / RASTER_VIEWER).read_text(encoding="utf-8")
     m = re.search(r"const WITHHELD = new Set\(\[(.*?)\]\)", src, re.S)
     if m is None:
         raise SystemExit(
@@ -975,7 +996,7 @@ LEAD_REAL = """<figure class="lead">
 # is true of the design, make_architecture_figures.py's is true of a run. A comment
 # naming the wrong regenerator is a comment that sends the next session to a tool
 # whose output does not go here.
-MODEL_SVG = ROOT / "docs" / "learned" / "architecture.svg"
+MODEL_SVG = ROOT / ARCHITECTURE_SVG
 """The network, stage by stage. Inlined, not linked — see the `.arch` CSS."""
 
 
@@ -1188,7 +1209,7 @@ def main(argv=None):
     # absence is a broken tree, not a degraded environment, and three paragraphs
     # of this page describe it by name. Refuse rather than publish prose about a
     # picture that is not there.
-    src = ROOT / "docs" / "generator" / "reality_check.png"
+    src = ROOT / REALITY_CHECK
     if not src.exists():
         print(f"build_site: {src.relative_to(ROOT)} is missing. The page leads "
               f"with that figure and its text describes it, so this is a build "
@@ -1246,7 +1267,7 @@ def main(argv=None):
     # not implement; the 2026-08-27 murderboard caught the mismatch. A comment
     # claiming a check that is not there is worse than no comment, because the next
     # reader routes around it.
-    learned = ROOT / "docs" / "learned" / "learned_detector.html"
+    learned = ROOT / LEARNED_REPORT
     if not learned.exists():
         print(f"build_site: {learned.relative_to(ROOT)} is missing, and the "
               f"index links to it. Run tools/build_learned_report.py on "
@@ -1262,7 +1283,7 @@ def main(argv=None):
     # own disk. That is what lets a page which reads real recordings sit on a
     # public site with §5 having nothing to say about it — the repo publishes an
     # empty reader, not a recording.
-    viewer = ROOT / "docs" / "site" / "raster_viewer.html"
+    viewer = ROOT / RASTER_VIEWER
     if not viewer.exists():
         print(f"build_site: {viewer.relative_to(ROOT)} is missing, and the "
               f"index links to it.", file=sys.stderr)
