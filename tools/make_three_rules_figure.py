@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Draw what the promiscuity gate refuses, and what it does not change.
+"""Draw what the promiscuity gate refuses, and what that costs the loser.
 
     python tools/make_three_rules_figure.py                       # -> the darkroom
     python tools/make_three_rules_figure.py --also docs/learned   # + the repo copy
@@ -9,12 +9,25 @@ knob sweeps, placed by how often it fires inside a block where nothing was plant
 The dashed rule is ``MAX_PROBE_PER_MIN["rate"]`` — everything to its right is
 **refused** by ``bench.pick_operating_point``, which already gates by default.
 
-**The claim the picture carries, and it is not the one this was built to find.**
-Half the additive sweep sits to the right of the rule at every background, so the
-gate bites hard and moves additive's own operating point. It does **not** move the
-mechanism winner: additive's best *eligible* F1 still beats multiplicative's at all
-seven points, exactly as the probe-blind rule says. Multiplicative sits on zero
-everywhere and never meets the rule at all — the one asymmetry that survives.
+**The claim the picture carries, corrected 2026-09-02.** Half the additive sweep
+sits to the right of the rule at every background, so the gate bites hard. What
+this file said next was that it *"does not move the mechanism winner: additive's
+best eligible F1 still beats multiplicative's at all seven points"*. That was an
+artifact of two defects underneath it, both surfaced by making rule 3 **call**
+``bench.pick_operating_point`` instead of reimplementing it:
+
+* The gate **refuses**; it does not hand the sweep to the runner-up. On the two
+  quietest backgrounds additive has no eligible operating point at all, so there is
+  no "best eligible additive F1" there to beat multiplicative with.
+* ``MULTIPLICATIVE_GRID`` stepped 5 -> 10 and stepped over multiplicative's own
+  peak at the busy end — alpha 6, F1 0.667, read as 0.520.
+
+Corrected, the gate picks multiplicative at **four of seven** backgrounds against
+the probe-blind rule's two. It sits between the two scoring rules rather than on
+top of either, which is the opposite of what the sentence above claimed.
+Multiplicative still never trips the rule at any alpha it would plausibly be run
+at; what is no longer true is that it *cannot* — at alpha 2 it fires 4.87/min, and
+the old grid's lower bound was hiding the range where the mechanism can fail.
 
 Numbers come from ``tools/probe_three_scoring_rules.py``, imported rather than
 recomputed, so this figure and the todo it reports to cannot drift apart.

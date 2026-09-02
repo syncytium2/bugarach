@@ -283,6 +283,18 @@ def rate_detect(
     ``threshold_alpha`` is only read in multiplicative mode. Its default of 2.0
     is a placeholder, **not a calibrated value** — deriving it from a stated
     false-alarm probability is Phase 2 of the revision plan.
+
+    **Measured 2026-09-02: that placeholder is the worst point on the curve, and
+    the bench would refuse it.** At alpha 2.0 this fires **6.07/min** into a block
+    with nothing planted on ``baseline_quiet`` and **5.47/min** on
+    ``baseline_busy``, against ``MAX_PROBE_PER_MIN["rate"] = 2.0``, for an F1 of
+    0.136 and 0.125. The alphas that win are an order up — 15 on quiet (F1 0.667),
+    10 on busy (0.580) — and fire 0.0/min. The mechanism's reputation for never
+    tripping the promiscuity probe belongs to its *calibrated* range, not to the
+    value it ships with: flip ``threshold_mode`` without also setting
+    ``threshold_alpha`` and you get the one setting
+    :func:`~bugarach.bench.pick_operating_point` would have refused.
+    ``docs/todo/2026-08-25-two-scorers-two-winners-and-nothing-decides.md``.
     """
     if threshold_mode not in ("additive", "multiplicative"):
         raise ValueError(

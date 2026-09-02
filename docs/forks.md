@@ -99,6 +99,27 @@ rules**, because it never fires in the empty block, while additive's moves by up
 0.256. Whichever way the scoring question is settled, the multiplicative bar's
 score does not move — weaker than *"it wins"*, and far more robust.
 
+⚠ **"Never fires in the empty block" is a property of the alphas that were swept,
+and the placeholder is not one of them** (measured 2026-09-02). `ALPHA_GRID` here
+and `MULTIPLICATIVE_GRID` in the three-rules probe both began at **5.0**, and below
+that the mechanism is promiscuous: at **alpha 2.0 — `rate_detect`'s own default —**
+it fires **6.07/min** on `baseline_quiet` and **5.47/min** on `baseline_busy`
+against a 2.0/min ceiling, at F1 0.136 and 0.125. That is the worst point on the
+curve, and `pick_operating_point` refuses it. Nothing above is wrong — those runs
+never visited alpha 2 — but the claim to carry forward is *"multiplicative does not
+trip the probe **where it is any good**"* (15 on quiet, 10 on busy, both 0.0/min),
+**not** that it cannot. Flipping `threshold_mode` without setting `threshold_alpha`
+lands exactly on the refused setting.
+
+⚠ **The 1-of-7 / 5-of-7 counts above are superseded.** Re-measured 2026-09-02 with
+rule 3 **calling** `bench.pick_operating_point` instead of reimplementing it, and
+with the multiplicative grid refilled — it stepped 5 → 10 straight over
+multiplicative's own peak at the busy end, scoring it 0.147 below itself at bg
+0.028. Corrected: **probe-blind 2 of 7, probe-inclusive 7 of 7, the shipped gate
+4 of 7.** The gate sits between the two scoring rules rather than agreeing with the
+probe-blind one, which is the opposite of what the 2026-08-28 record concluded.
+Working in [two scorers, two winners](todo/2026-08-25-two-scorers-two-winners-and-nothing-decides.md).
+
 **Why not switched already:** the campaign that would re-fit `α` has not run, and
 `threshold_alpha=2.0` is a placeholder, not a calibrated value. Switching the
 default before Phase 4 would ship an uncalibrated operating point.
