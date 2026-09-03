@@ -123,11 +123,28 @@ analysis short of the question it opens with.
 | train the tube | ⚠️ only under `bugarach lab` | ✅ `learn.train` (PyTorch) |
 | compare every detector on one split | ⚠️ built, hidden, copy unreviewed | ✅ `docs/learned/bakeoff.json` |
 | detect over the real folder and write files | ✅ | ✅ `bugarach detect` |
+| record the human's judgement | ✅ the assessor's markers take verdicts | ✅ `annotate.py` |
+| derive K from those judgements | ❌ | ✅ `derive_spec --k-from-annotations` |
 | **compare two regions** | ❌ | ❌ |
-| **record the human's judgement** | ❌ | ❌ |
 
-The suite is green — 1,181 passed, 2 skipped — and that number says nothing about the two
-❌ rows, because nothing tests what does not exist.
+> **The judgement row said ❌ ❌ until 2026-09-03, five days after §7 step 0 in this same
+> file said it had landed.** `annotate.py` went in on 2026-08-24 with #270; the table was
+> never updated, so a session reading §3 to find out whether the centrepiece exists was
+> told it does not — and one did, and reported the loop's centre missing to Tony, who had
+> to type his own pipeline out from memory to correct it. **A file that answers "what is
+> built" in two places will eventually answer it two ways**, and the check that would have
+> caught this is the one this repo keeps re-deriving: the claim has to be something that
+> runs. Until it is, §7's step list and this table have to be edited together.
+>
+> The K row is new on 2026-09-03 and is the reason the row above it moved: deriving K from
+> confirmed events was specified in
+> [`the K todo`](todo/2026-08-28-derive-k-from-confirmed-events.md) and had no
+> implementation, which is what "blocked on K" actually meant.
+
+Nothing tests what does not exist, so a green suite says nothing about the ❌ row — and the
+suite's size is not quoted here on purpose. `pytest -q` is one command and a number written
+down is a promise nobody is keeping; the count in this paragraph was 1,181 and had been
+wrong for weeks.
 
 ---
 

@@ -140,6 +140,13 @@ def main(argv: list[str] | None = None) -> None:
                           "with what counts as one event — say which you used")
     asr.add_argument("--limit", type=int, default=None,
                      help="assess only the first N recordings")
+    asr.add_argument("--for-annotation", action="store_true",
+                     help="scan down to K=2 instead of stopping at 3. A proposal "
+                          "list censored at the floor being estimated makes that "
+                          "floor the answer, so use this when the candidates are "
+                          "going to a person and K will be derived from the "
+                          "verdicts. The default scan is what every published "
+                          "number was produced at — do not mix them")
 
     from bugarach.detect_folder import DETECTORS
 
@@ -259,10 +266,13 @@ def main(argv: list[str] | None = None) -> None:
         # measuring its own folder should not need the viewer installed
         from bugarach.assess_folder import assess_folder, format_assessment
 
+        from bugarach.assess import PROPOSAL_MIN_ROIS
+
         fa = _load_or_exit(
             assess_folder, _folder_or_exit(args.folder), stream=args.stream,
             n_surrogates=args.surrogates, bin_width_sec=args.bin_width,
-            limit=args.limit, progress=_progress("assessing"))
+            limit=args.limit, progress=_progress("assessing"),
+            min_rois=PROPOSAL_MIN_ROIS if args.for_annotation else None)
         print(format_assessment(fa))
         # Exit 0 whether or not anything was assessable. This is a MEASUREMENT,
         # not a gate: "no recording carried a baseline region" is an answer about
