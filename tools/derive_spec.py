@@ -2,18 +2,21 @@
 """Turn the folder assessment into one generator spec, and say what it assumed.
 
     python tools/derive_spec.py --assessment docs/learned/assessment_real.json \
-        --out docs/learned --k 3
+        --out docs/learned --annotations annotations.csv --k-from-annotations
 
 The bridge in the per-lab loop: real recordings were measured without a detector,
 and this turns that measurement into settings a simulator can run. Everything it
 cannot ground it says so about, in `notes`, which travel with the spec.
 
-**Which K is a human's call and this does not make it.** `assess.py` reports a
-scan because K changes what counts as one event, and
+**K arrives two ways and neither is a default.** `assess.py` reports a scan
+because K changes what counts as one event, and
 `docs/todo/2026-08-16-assessment-needs-a-human-in-the-loop.md` says a human signs
-off before an assessment parameterizes anything shipped. `--k` is required to be
-passed explicitly for that reason; the scan is written into the spec beside the
-choice so the reader sees what was not chosen.
+off before an assessment parameterizes anything shipped. So either `--k` — a
+person looked at the scan and chose, which is defensible and is a convention the
+spec then inherits — or `--k-from-annotations`, which asks the verdicts where the
+boundary actually falls and makes K an estimate with a separation quality beside
+it. Either way the scan is written into the spec next to the value, so a reader
+sees what was not chosen, and `k_derivation` says which of the two happened.
 
 **The background gets its measured shape and burstiness.** `bench.BENCH_RECORDING`
 still runs a flat field, which the tree documents as easier than real data — real
@@ -37,7 +40,7 @@ from bugarach.bench import REGIMES as _REGIMES  # noqa: E402
 
 
 def build(assessment: dict, k: int, *, events_per_level: int = 5,
-          n_levels: int = 3, annotations=None) -> dict:
+          n_levels: int = 3, annotations=None, k_estimate=None) -> dict:
     from bugarach.adapt import generator_params
     from bugarach.assess import Assessment
     from bugarach.bench import (BENCH_RECORDING, MEASURED_BURST_BINS,
@@ -125,6 +128,14 @@ def build(assessment: dict, k: int, *, events_per_level: int = 5,
             "state docs/RESET.md section 1 calls 'not a weaker result of the "
             "same kind — not a result'. Pass --annotations to fix it; this spec "
             "was produced with --unreviewed, deliberately"]
+
+    # First in the list, because it changes what every number below it is. A K
+    # chosen off the scan is a convention the spec inherits; a K estimated from
+    # labelled calls is a measurement, and the difference is the whole point of
+    # the annotation step.
+    if k_estimate is not None:
+        notes_pre.insert(0, f"K={k} was DERIVED from labelled calls rather than "
+                            f"chosen off the scan — {k_estimate.why}")
 
     a = Assessment(
         min_rois=k, meets_floor=True, win_dur=win, n_roi=n_roi,
@@ -219,6 +230,25 @@ def build(assessment: dict, k: int, *, events_per_level: int = 5,
         "sweep": gp.sweep,
         "notes": notes,
         "k_chosen": k,
+        # How K got its value, present and null-valued when it was chosen rather
+        # than estimated — same reason `review` is. A consumer must be able to
+        # tell "a person picked 3 off the scan" from "3 is where the labels
+        # separate", because only the second makes the human-in-the-loop claim.
+        "k_derivation": (None if k_estimate is None else {
+            "method": "threshold on co-active count vs labelled calls",
+            "k": k_estimate.k,
+            "separation_youden_j": k_estimate.separation,
+            "band": list(k_estimate.band) if k_estimate.band else None,
+            "curve": {str(kk): jj for kk, jj in sorted(k_estimate.curve.items())},
+            "n_confirmed": k_estimate.n_confirmed,
+            "n_rejected": k_estimate.n_rejected,
+            "n_unsure": k_estimate.n_unsure,
+            "proposal_floor": k_estimate.proposal_floor,
+            "confirmed_median_co_active": k_estimate.confirmed_median,
+            "rejected_median_co_active": k_estimate.rejected_median,
+            "annotators": list(k_estimate.annotators),
+            "why": k_estimate.why,
+        }),
         "k_scan": {kk: {f: by_k[kk][f]["median"]
                         for f in ("part_n_obs", "jit_obs", "jit_null",
                                   "clusters_permin")}
@@ -246,8 +276,14 @@ def main(argv=None) -> int:
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("--assessment", type=Path, required=True)
     p.add_argument("--out", type=Path, required=True)
-    p.add_argument("--k", type=int, required=True,
-                   help="which K from the scan — a human's choice, not a default")
+    p.add_argument("--k", type=int, default=None,
+                   help="which K from the scan — a human's choice, not a "
+                        "default. Exactly one of --k / --k-from-annotations")
+    p.add_argument("--k-from-annotations", action="store_true",
+                   help="DERIVE K from the verdicts instead of taking it: the "
+                        "co-active count that best separates confirmed from "
+                        "rejected, refused outright when the labels cannot "
+                        "locate one. Requires --annotations")
     p.add_argument("--annotations", type=Path, default=None,
                    help="annotations.csv — the verdicts a person gave on the "
                         "assessor's candidates. Participation, span and "
@@ -273,12 +309,47 @@ def main(argv=None) -> int:
     if a.annotations is not None and a.unreviewed:
         p.error("--annotations and --unreviewed contradict each other")
 
+    # Exactly one route to K, and neither is a default. `--k` says a person
+    # looked at the scan and chose; `--k-from-annotations` says the labels were
+    # asked where the boundary is. Allowing both would let the flag silently lose
+    # to the number, and allowing neither is the state this whole step exists to
+    # end.
+    if a.k is None and not a.k_from_annotations:
+        p.error("no K. Pass --k <n> to choose one off the scan, or "
+                "--k-from-annotations to derive it from the verdicts "
+                "(docs/todo/2026-08-28-derive-k-from-confirmed-events.md).")
+    if a.k is not None and a.k_from_annotations:
+        p.error("--k and --k-from-annotations contradict each other: one takes "
+                "K as given, the other estimates it. Drop --k to derive.")
+    if a.k_from_annotations and a.annotations is None:
+        p.error("--k-from-annotations needs --annotations: K is estimated FROM "
+                "the verdicts, so there is nothing to estimate it from.")
+
     verdicts = None
     if a.annotations is not None:
         from bugarach.annotate import read_annotations
         verdicts = read_annotations(a.annotations)
 
-    spec = build(json.loads(a.assessment.read_text()), a.k, annotations=verdicts)
+    k, est = a.k, None
+    if a.k_from_annotations:
+        from bugarach.annotate import derive_k
+        est = derive_k(verdicts)
+        print("K from labelled calls:")
+        for kk, jj in sorted(est.curve.items()):
+            mark = "  <-- best" if kk == est.k else ""
+            print(f"  K={kk:<3} separation J={jj:+.3f}{mark}")
+        if not est:
+            # Non-zero and no file. A spec is the input to everything downstream,
+            # so half of one is worse than none — and each refusal names which
+            # of the four it is, because they are four different conversations.
+            print(f"\nK NOT IDENTIFIED — {est.why}", file=sys.stderr)
+            print("No spec was written.", file=sys.stderr)
+            return 2
+        k = est.k
+        print(f"\n{est.why}\n")
+
+    spec = build(json.loads(a.assessment.read_text()), k,
+                 annotations=verdicts, k_estimate=est)
     a.out.mkdir(parents=True, exist_ok=True)
     f = a.out / "generator_spec.json"
     f.write_text(json.dumps(spec, indent=1, sort_keys=True))

@@ -22,6 +22,16 @@ enforced by `tests/test_index_resolves.py`, which reads code spans too.
 
 ---
 
+## The loop — what the product actually does, end to end
+
+| you want | keywords | go to |
+|---|---|---|
+| **the pipeline, all of it, in order** | loop, workflow, pipeline, the stages, end to end, what the app does, what happens, the product, per-lab loop, what are we building | [`RESET.md`](RESET.md) **§2** — Tony's own statement of the loop, quoted verbatim, with the four places reality differs marked. **§7** is the order of work and which steps are blocked; **§3** is the built/not-built table |
+| ⚠ **not** the loop | app plan, build order, folder reader, the writers, batch | [`workflow_plan.md`](workflow_plan.md) is the **app-build** plan for the two ENDS — reading a folder, writing `detections.csv`. It does not mention the human-identification step at all. A session on 2026-09-03 read it as the pipeline, reported the centrepiece missing, and Tony had to type his own loop out from memory to correct it |
+| **the centrepiece — a person's verdicts on the machine's candidates** | human in the loop, machine assisted, identification, confirm, reject, annotate, verdict, judgement, who decided, agreement | [`src/bugarach/annotate.py`](../src/bugarach/annotate.py) — records the verdict **and the view it was made in**. `assess` proposes, this disposes; browser UI in `docs/site/raster_viewer.html` |
+| **K, and what "blocked on K" means** | K, min_rois, floor, how many ROIs, coactivity floor, blocked, who chose K | `assess` reports a **scan** and names no winner. `derive_spec --k-from-annotations` estimates K from labelled calls (`annotate.derive_k`), and `assess --for-annotation` is the proposal pass it needs. ⚠ Propose **below** the floor being estimated or the answer is the assumption returning — [the trap](todo/2026-08-28-derive-k-from-confirmed-events.md) |
+| the question the loop opens with and never answers | contrast, before and after, baseline vs drug, paired, does it change, publish | ⚠ **nothing computes it.** No function in `src/` puts two regions side by side — [`the question nothing computes`](todo/2026-08-23-the-treatment-contrast-is-the-question-nothing-computes.md) |
+
 ## The data
 
 | you want | keywords | go to |

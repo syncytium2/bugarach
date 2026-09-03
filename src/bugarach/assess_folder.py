@@ -84,7 +84,8 @@ class FolderAssessment:
 
 def assess_folder(folder, *, stream: str | None = None,
                   n_surrogates: int = 1000, bin_width_sec: float | None = None,
-                  limit: int | None = None, progress=None) -> FolderAssessment:
+                  limit: int | None = None, progress=None,
+                  min_rois=None) -> FolderAssessment:
     """Assess every recording in an export folder that may be assessed.
 
     Reads the folder with the same loader the rest of bugarach uses, so a folder
@@ -168,6 +169,7 @@ def assess_folder(folder, *, stream: str | None = None,
         try:
             rec.results = assess_coactivity(
                 s, stream=want, window=window, n_surrogates=n_surrogates,
+                **({} if min_rois is None else {"min_rois": tuple(min_rois)}),
                 **({} if bin_width_sec is None else {"bin_width_sec": bin_width_sec}))
         except Exception as e:                        # noqa: BLE001
             rec.skipped = f"{type(e).__name__}: {e}"

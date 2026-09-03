@@ -365,3 +365,191 @@ def draw_sample(candidates, *, seed: int, budget: int = 60,
     return Sample(picked=picked, seed=seed, budget=budget,
                   per_recording_cap=per_recording_cap, population=population,
                   recordings_drawn=drawn, recordings_available=len(by_rec))
+
+
+# --------------------------------------------------------------------------
+# K, derived from what a person accepted rather than picked off a scan
+# --------------------------------------------------------------------------
+
+#: A proposal list may not be censored at or above the floor it is being used to
+#: estimate. If the machine only ever proposed moments with 3+ co-active ROIs and
+#: a person confirmed from that list, the smallest K the data can speak about is
+#: 3 — and "K is 3" is then the assumption returning under a new name. Same
+#: circularity `docs/RESET.md` §1 caught in the validation test, so the estimate
+#: refuses a list whose smallest judged candidate sits above this.
+#: `docs/todo/2026-08-28-derive-k-from-confirmed-events.md`, "The trap".
+MAX_PROPOSAL_FLOOR = 2
+
+#: Below this separation the co-active count is not what the expert was judging
+#: on. That is a finding about the assessor rather than a value of K, so it comes
+#: back as "not identified" with the quality attached, never as a number.
+MIN_SEPARATION = 0.30
+
+#: Two thresholds whose separation differs by less than this are not
+#: distinguishable by these labels. The width of that band is reported, because a
+#: wide one says what a low separation says, more legibly.
+BAND_TOLERANCE = 0.05
+
+#: Fewer judged candidates than this and the estimate is noise. Not a
+#: significance test — a floor below which the curve is a handful of points and
+#: the argmax moves with one relabelled candidate.
+MIN_JUDGED = 20
+
+#: And at least this many on EACH side. Twenty confirmations and no rejections
+#: cannot locate a boundary: every threshold at or below the smallest confirmed
+#: count scores identically, and the argmax is then tie-breaking rather than
+#: measurement.
+MIN_PER_SIDE = 3
+
+
+@dataclass
+class KEstimate:
+    """K as a threshold chosen against labelled calls, and how well it separates.
+
+    **A bare integer is not the output.** The design asks for K "reported with its
+    separation quality rather than as a bare integer", because the interesting
+    failure is not a wrong K — it is a K that does not separate, which says the
+    co-active count is not the quantity the expert is judging and that the
+    assessor is measuring the wrong thing.
+    """
+
+    k: int | None
+    """The threshold that best separates confirmed from rejected, ties to the
+    smaller K. ``None`` whenever the estimate is not identified."""
+    separation: float
+    """Youden's J — sensitivity + specificity − 1. Chance is 0, perfect is 1.
+    Deliberately not accuracy: how many candidates are confirmed and how many
+    rejected is set by how the sample was drawn, so a prevalence-weighted score
+    would be reporting the sampling design back."""
+    band: tuple[int, int] | None
+    """Lowest and highest threshold within :data:`BAND_TOLERANCE` of the best. A
+    band wider than one or two values is the finding, not a detail."""
+    curve: dict[int, float]
+    """Threshold -> separation, so a caller can show what was not chosen. The scan
+    is the evidence; the argmax is one reading of it."""
+    n_confirmed: int
+    n_rejected: int
+    n_unsure: int
+    """Excluded from the fit, and reported, for the reason
+    :attr:`Agreement.judged` excludes it: a candidate a person could not judge is
+    evidence about the view, not about the candidate."""
+    proposal_floor: int | None
+    """Smallest co-active count among judged candidates — what the proposal stage
+    let through, checked against :data:`MAX_PROPOSAL_FLOOR`."""
+    confirmed_median: float
+    rejected_median: float
+    identified: bool
+    why: str
+    """Why it is or is not identified, in a sentence a person can act on. Always
+    populated, success included."""
+    annotators: tuple[str, ...] = ()
+    """Who labelled. **K inherits whoever labelled** — one observer gives one K,
+    and a second observer on a subset is what says whether it is stable or is a
+    fact about one person (RESET §1: a judgement is a property of recording ×
+    rendering × observer)."""
+
+    def __bool__(self) -> bool:
+        return self.identified
+
+
+def _separation(judged, k: int) -> float:
+    """Youden's J for the rule *confirmed iff n_members >= k*."""
+    tp = sum(1 for v in judged if v.verdict == "confirmed" and v.n_members >= k)
+    fn = sum(1 for v in judged if v.verdict == "confirmed" and v.n_members < k)
+    fp = sum(1 for v in judged if v.verdict == "rejected" and v.n_members >= k)
+    tn = sum(1 for v in judged if v.verdict == "rejected" and v.n_members < k)
+    sens = tp / (tp + fn) if (tp + fn) else 0.0
+    spec = tn / (tn + fp) if (tn + fp) else 0.0
+    return sens + spec - 1.0
+
+
+def derive_k(verdicts) -> KEstimate:
+    """Estimate K from a person's verdicts instead of taking it as an input.
+
+    Every proposed moment carries an observed co-active count and, after review, a
+    human verdict; K is the count that best separates the two. This is the step
+    that makes the human-in-the-loop claim operational. Until it exists K is a
+    number somebody chose off a scan, and everything downstream inherits the
+    choice: the generator's cluster rate, the simulated data set, the operating
+    points fitted against it, and every F1 quoted from them.
+
+    **It refuses more often than it answers, and each refusal is a different
+    conversation.** A censored proposal list, too few labels, labels all on one
+    side, and a count that does not separate are four distinct findings; returning
+    a plausible integer for any of them would be this project's own failure class,
+    a plausible answer instead of an error.
+
+    **What comes back is a recorded judgement, never ground truth.** RESET §10
+    reserves that phrase for planted events in simulation. These are the calls,
+    the view they were made in, and who made them.
+    """
+    verdicts = list(verdicts)
+    judged = [v for v in verdicts if v.verdict in ("confirmed", "rejected")]
+    n_unsure = sum(1 for v in verdicts if v.verdict == "unsure")
+    n_conf = sum(1 for v in judged if v.verdict == "confirmed")
+    n_rej = len(judged) - n_conf
+    who = tuple(sorted({v.annotator for v in verdicts if v.annotator}))
+
+    def _med(vals):
+        vals = [float(x) for x in vals if np.isfinite(x)]
+        return float(np.median(vals)) if vals else float("nan")
+
+    conf_med = _med([v.n_members for v in judged if v.verdict == "confirmed"])
+    rej_med = _med([v.n_members for v in judged if v.verdict == "rejected"])
+    floor = min((int(v.n_members) for v in judged), default=None)
+
+    def _no(why: str) -> KEstimate:
+        return KEstimate(
+            k=None, separation=float("nan"), band=None, curve={},
+            n_confirmed=n_conf, n_rejected=n_rej, n_unsure=n_unsure,
+            proposal_floor=floor, confirmed_median=conf_med,
+            rejected_median=rej_med, identified=False, why=why, annotators=who)
+
+    if len(judged) < MIN_JUDGED:
+        return _no(
+            f"only {len(judged)} judged candidate(s), and {MIN_JUDGED} is the "
+            f"floor below which the curve is a handful of points and the argmax "
+            f"moves with one relabelled candidate. Annotate more before reading "
+            f"a K off this.")
+    if n_conf < MIN_PER_SIDE or n_rej < MIN_PER_SIDE:
+        return _no(
+            f"{n_conf} confirmed and {n_rej} rejected, and a boundary needs at "
+            f"least {MIN_PER_SIDE} on each side. With one side that thin every "
+            f"threshold scores alike and the argmax is tie-breaking rather than "
+            f"a measurement.")
+    if floor is not None and floor > MAX_PROPOSAL_FLOOR:
+        return _no(
+            f"the proposal list was censored at {floor} co-active ROI — nothing "
+            f"below that was ever offered for judgement, so the smallest K these "
+            f"labels can speak about is {floor}, and \"K is {floor}\" would be "
+            f"the assumption returning under a new name. Propose at "
+            f"K={MAX_PROPOSAL_FLOOR} or with no floor at all and annotate again "
+            f"(the trap in "
+            f"docs/todo/2026-08-28-derive-k-from-confirmed-events.md).")
+
+    counts = sorted({int(v.n_members) for v in judged})
+    curve = {k: _separation(judged, k) for k in range(counts[0], counts[-1] + 1)}
+    best = max(curve.values())
+    k = min(kk for kk, j in curve.items() if j == best)
+    within = sorted(kk for kk, j in curve.items() if j >= best - BAND_TOLERANCE)
+    band = (within[0], within[-1])
+
+    if best < MIN_SEPARATION:
+        return _no(
+            f"the best threshold separates confirmed from rejected at only "
+            f"J={best:.2f}, where chance is 0. The co-active count is not what "
+            f"the expert is judging on, which is a finding about the assessor "
+            f"rather than a value of K — confirmed median {conf_med:.1f} "
+            f"co-active against rejected median {rej_med:.1f}.")
+
+    wide = "" if band[1] - band[0] <= 2 else (
+        f" The band is wide ({band[0]}–{band[1]}): these labels do not "
+        f"distinguish those thresholds, so quote the band and not the point.")
+    return KEstimate(
+        k=k, separation=best, band=band, curve=curve,
+        n_confirmed=n_conf, n_rejected=n_rej, n_unsure=n_unsure,
+        proposal_floor=floor, confirmed_median=conf_med, rejected_median=rej_med,
+        identified=True, annotators=who,
+        why=(f"K={k} separates {n_conf} confirmed from {n_rej} rejected at "
+             f"J={best:.2f}, proposed from a floor of {floor} co-active ROI, "
+             f"labelled by {', '.join(who) or 'an unnamed annotator'}.{wide}"))
