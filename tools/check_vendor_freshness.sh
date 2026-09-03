@@ -124,4 +124,29 @@ bash "$GATE" $VERBOSE $DRAUGHTSMAN_CLONE \
   --file docs/learned/architecture.spec.json \
   || { [ $? -eq 1 ] && rc=1 || { [ "$rc" -eq 0 ] && rc=2; }; }
 
+# --- family 4: armory, the file-send gate and its remedy ----------------------
+# ADDED WITH THE FAMILY ITSELF, deliberately. These two files arrived vendored on
+# 2026-09-03, and the alternative was to land them with no freshness check at all
+# — which is the defect this whole gate exists to answer, in a different costume:
+# a copy that cannot say it has fallen behind. The estate had just paid for it.
+# The stranded branch `vendor-send-goes-nowhere` carried these same two files
+# pinned at 9e62f10 while armory's canonical had moved to 1469e7a, and nothing
+# anywhere in this repo would have said so.
+#
+# THE TWO ARE ONE FAMILY because the hook points at the remedy:
+# send-goes-nowhere.py tells a session its file reached nobody and names
+# `tools/show.py` as what to do instead. A hook newer than the tool it recommends,
+# or a tool whose interface moved under the hook's advice, is a half-finished
+# re-vendor — which is exactly what listing both under one label catches.
+ARMORY_CLONE=""
+if [ -n "${BUGARACH_ARMORY:-}" ] && [ -d "${BUGARACH_ARMORY}/.git" ]; then
+  ARMORY_CLONE="--clone ${BUGARACH_ARMORY}"
+fi
+bash "$GATE" $VERBOSE $ARMORY_CLONE \
+  --label armory \
+  --slug syncytium2/armory \
+  --file tools/show.py \
+  --file .claude/hooks/send-goes-nowhere.py \
+  || { [ $? -eq 1 ] && rc=1 || { [ "$rc" -eq 0 ] && rc=2; }; }
+
 exit $rc
