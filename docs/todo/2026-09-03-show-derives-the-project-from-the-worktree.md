@@ -112,9 +112,41 @@ to write at all. They were asked to sit together for exactly that reason.
 
 `os.path.samefile(src, dest)` before the copy, and on a match print the destination
 and exit 0 — the file **is** where the tool exists to put it, so the postcondition
-already holds and the honest report is the path, not a traceback. Guard for the case
-where `dest` does not exist yet, since `samefile` raises on a missing path.
+already holds and the honest report is the path, not a traceback.
+
+**Guard it by existence, not by exception, and the difference is not cosmetic.**
+Write it as:
+
+```python
+if dest.exists() and os.path.samefile(src, dest):
+    print(dest); return 0
+```
+
+**Not** as a `try: … except FileNotFoundError:` around the comparison. `samefile`
+calls `os.stat` on both operands and raises `FileNotFoundError` for **either** one
+missing — verified, and the two cases are indistinguishable from the exception:
+
+| `samefile(src, dest)` | result |
+|---|---|
+| dest missing | raises `FileNotFoundError` |
+| **src** missing | raises `FileNotFoundError` |
+| both present, same file | `True` |
+
+So the try/except form silently treats *"the file you asked me to show does not
+exist"* as *"not the same file, carry on"*. That is a worse bug than the one being
+fixed: the crash at least stops. The existence check asks the question that is
+actually being asked — *is there already a file at the destination* — and leaves a
+missing source to fail as a missing source.
+
+This was caught by the workflow-readiness session reviewing the first version of
+this page, which proposed the guard without saying which form. Recorded explicitly
+because the natural implementation is the wrong one and it looks fine.
 
 Still **not** to be patched here: `tools/show.py` is vendored from armory, stamped on
 line 3, and the rule is to send it back. Both defects on this page belong in one
-upstream report.
+upstream report — and **that report should lead with the symlink form**, not with the
+identical-path one. The identical-path case reads as an obvious oversight and invites
+a one-line patch; the symlink case is what makes it worth a maintainer's attention,
+because the traceback names two absolute paths sharing no visible prefix, so the
+reader's first hypothesis is that the tool wrote to the wrong place — which is the
+*other* defect on this page. Leading with the cheap half buries the expensive one.
