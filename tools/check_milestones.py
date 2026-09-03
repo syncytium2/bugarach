@@ -210,37 +210,69 @@ def selftest():
     ref = base_ref() or "HEAD"
     good = (git("merge-base", "HEAD", ref).stdout.strip()
             or git("rev-parse", "HEAD").stdout.strip())[:7]
+
+    # THE FIXTURES USED TO NAME `docs/INDEX.md` AND `docs/site/` AND THAT WAS A DEFECT.
+    # Both are bugarach paths, so the selftest asserted THIS repo's directory layout
+    # rather than the rules under test. Carried anywhere else, four MUST-PASS cases go
+    # red on first run for a reason that has nothing to do with a milestone row -- which
+    # is the same shape as the unfireable rules this file's header confesses to, one level
+    # out. short-course found it by carrying the file and watching it fail; they are the
+    # reason these two lines exist. Derive from the tree so the fixtures travel.
+    f_ok = next((p for p in ("docs/INDEX.md", "docs/SESSIONS.md", "README.md")
+                 if (REPO / p).is_file()), "README.md")
+    d_ok = next((p for p in ("docs/site/", "docs/", "tools/")
+                 if (REPO / p).is_dir()), "docs/")
+
+    # A FIFTH RULE THAT COULD NOT FIRE, and the one this tool is named for. The only
+    # bad-sha fixture was `0000000`, which dies at `cat-file -e` and never reaches the
+    # ancestry branch below it -- so `a row may not cite a commit unreachable from the
+    # trunk` was asserted and never exercised. Reproduced before fixing: replacing that
+    # branch with `elif False:` left the selftest reporting 18 cases, 0 failures. Found by
+    # short-course's mutation gate, not by review, which is why it survived four rounds of
+    # someone reading this file.
+    #
+    # The fixture is a commit that EXISTS and is NOT an ancestor: same tree, parented on
+    # the merge base, so it is a descendant of the trunk rather than on it. `cat-file -e`
+    # finds it; `merge-base --is-ancestor` refuses it. Built with `commit-tree` so no ref
+    # moves and there is nothing to clean up -- it is a loose object git will collect.
+    not_anc = git("commit-tree", f"{good}^{{tree}}", "-p", good,
+                  "-m", "fixture: exists, not an ancestor").stdout.strip()[:7]
+
     cases = [
-        ("clean control", f"| a | b | measured | `{good}` | `docs/INDEX.md` | current |", 0),
-        ("bad sha", "| a | b | measured | `0000000` | `docs/INDEX.md` | current |", 1),
+        ("clean control", f"| a | b | measured | `{good}` | `{f_ok}` | current |", 0),
+        ("bad sha", f"| a | b | measured | `0000000` | `{f_ok}` | current |", 1),
+        # The case the ancestry rule never had. `0000000` above stops at `cat-file -e`;
+        # this one gets past it and must be refused for the other reason.
+        ("sha exists but is NOT an ancestor",
+         f"| a | b | measured | `{not_anc}` | `{f_ok}` | current |", 1),
         ("bad file path", f"| a | b | measured | `{good}` | `docs/nope.md` | current |", 1),
         ("bad DIRECTORY path", f"| a | b | measured | `{good}` | `docs/no_dir/` | current |", 1),
         ("good directory path (MUST PASS)",
-         f"| a | b | measured | `{good}` | `docs/site/` | current |", 0),
-        ("undeclared strength", f"| a | b | done | `{good}` | `docs/INDEX.md` | current |", 1),
-        ("undeclared status", f"| a | b | measured | `{good}` | `docs/INDEX.md` | FINE |", 1),
+         f"| a | b | measured | `{good}` | `{d_ok}` | current |", 0),
+        ("undeclared strength", f"| a | b | done | `{good}` | `{f_ok}` | current |", 1),
+        ("undeclared status", f"| a | b | measured | `{good}` | `{f_ok}` | FINE |", 1),
         ("superseded, no successor",
-         f"| a | b | measured | `{good}` | `docs/INDEX.md` | superseded |", 1),
+         f"| a | b | measured | `{good}` | `{f_ok}` | superseded |", 1),
         # The four sentences the real decay actually used, verbatim from the tree.
         # An adversarial pass defeated the previous rule with the first of these.
         ("decay wording 1/4: 'was already decided'",
-         f"| a | K=12 was already decided | evidence | `{good}` | `docs/INDEX.md` | open |", 1),
+         f"| a | K=12 was already decided | evidence | `{good}` | `{f_ok}` | open |", 1),
         ("decay wording 2/4: 'the decided K'",
-         f"| a | the decided K | evidence | `{good}` | `docs/INDEX.md` | open |", 1),
+         f"| a | the decided K | evidence | `{good}` | `{f_ok}` | open |", 1),
         ("decay wording 3/4: 'was decided by a real effort'",
-         f"| a | K was decided by a real effort | evidence | `{good}` | `docs/INDEX.md` | open |", 1),
+         f"| a | K was decided by a real effort | evidence | `{good}` | `{f_ok}` | open |", 1),
         ("decay wording 4/4: 'never an open question'",
-         f"| a | it was never an open question | evidence | `{good}` | `docs/INDEX.md` | open |", 1),
+         f"| a | it was never an open question | evidence | `{good}` | `{f_ok}` | open |", 1),
         ("paraphrase: 'is the chosen value'",
-         f"| a | K=12 is the chosen value | evidence | `{good}` | `docs/INDEX.md` | open |", 1),
+         f"| a | K=12 is the chosen value | evidence | `{good}` | `{f_ok}` | open |", 1),
         ("paraphrase: 'the question is closed'",
-         f"| a | the K question is closed | evidence | `{good}` | `docs/INDEX.md` | open |", 1),
+         f"| a | the K question is closed | evidence | `{good}` | `{f_ok}` | open |", 1),
         ("paraphrase: 'we picked K=12'",
-         f"| a | we picked K=12 | evidence | `{good}` | `docs/INDEX.md` | open |", 1),
+         f"| a | we picked K=12 | evidence | `{good}` | `{f_ok}` | open |", 1),
         ("hedge MUST PASS: 'was never decided'",
-         f"| a | K was never decided; still open | evidence | `{good}` | `docs/INDEX.md` | open |", 0),
+         f"| a | K was never decided; still open | evidence | `{good}` | `{f_ok}` | open |", 0),
         ("hedge MUST PASS: 'not yet decided'",
-         f"| a | not yet decided | evidence | `{good}` | `docs/INDEX.md` | open |", 0),
+         f"| a | not yet decided | evidence | `{good}` | `{f_ok}` | open |", 0),
         ("empty document", "", 1),
     ]
     bad = 0
