@@ -127,9 +127,11 @@ settings at all:
 - **K** — the minimum number of participating ROIs an assessment reports at. A
   **scan, not a setting**: the assessor reports every K that clears the floor and
   refuses to pick one, because picking it is the analyst's call. It is the
-  clearest case of why the instrument is [MAHDCE](#the-instrument-that-finds-coordination)
+  clearest case of why the instrument is [MAHICE](#the-instrument-that-finds-coordination)
   rather than the machine alone — K moves the headline by an order of magnitude
-  across the range the assessor scans, and no arithmetic chooses it.
+  across the range the assessor scans, and no arithmetic chooses it. **A person
+  sets it during the review, as a percentage of the field**; `annotate.derive_k`
+  will say what the labels alone would have put it at and never overrides.
 - **tolerance** — the match window scoring uses to pair a detection with a planted
   event. One word; it needs no qualifier and should not acquire one.
 
@@ -145,7 +147,7 @@ recordings is a **simulated data set**; the real recordings the lab approved are
 
 ## The instrument that finds coordination
 
-> **MAHDCE is this project's own coinage** — Tony, 2026-08-24, and he said in the
+> **MAHICE is this project's own coinage** — Tony, 2026-08-24, and he said in the
 > same breath that he had just made it up. It is **not** a term of art, not a
 > published method, and not something a reader will find in the literature. It is
 > written down here because the thing it names is real and had no name, and
@@ -153,14 +155,41 @@ recordings is a **simulated data set**; the real recordings the lab approved are
 > like a citation. **Anything outward-facing spells it out on first use and says
 > whose word it is** — the same rule the detector attributions live under.
 
-- **MAHDCE** — *machine-assisted human detection of coordinated events.* The
+> ⚠ **RETIRED SPELLING: `MAHDCE`** — *machine-assisted human **detection** of
+> coordinated events*, which is how this section read from 2026-08-24 until
+> 2026-09-03. Same instrument, same coiner, one letter.
+>
+> **The D was wrong by this file's own rule.** "Detection" belongs to the
+> **detector axis** — *per-ROI events*, below, says in terms *"Never 'detection'
+> (that's the detector axis)"* — so the old spelling spent a reserved word on the
+> half of the pair that is a person. **Identification** is free, and it is the
+> more accurate verb besides: the machine detects candidates; what the person adds
+> is saying which of them are the thing.
+>
+> Two dated documents still spell it `MAHDCE` and are **left alone**, because they
+> record what was written on the day —
+> [`the null leaks`](todo/2026-08-24-the-null-leaks-and-the-excess-is-mostly-selection.md)
+> and [`the ADR that did not land`](handoffs/2026-08-25-the-adr-that-did-not-land.md).
+> Anyone grepping the old spelling lands here.
+
+- **MAHICE** — *machine-assisted human identification of coordinated events.* The
   instrument, and it is a **person and a program together**. The machine proposes
   candidate coordinated events and the statistics behind them; a person judges
   them; **neither half is the instrument on its own.** This is the reset's §1
   reversal given a name: there is no autonomous assessor, and a coordination
   number produced without anybody having looked at the recording is not a weaker
   result of the same kind — it is not a result.
-- **the assessor** — the **machine half** of MAHDCE: `bugarach assess`,
+  In code: `bugarach.annotate.MAHICE`.
+- **K** — the coactivity floor: how many ROIs firing together make one coordinated
+  event. **Set by the person during MAHICE, and expressed as a PERCENTAGE of that
+  recording's ROI population** (Tony, 2026-09-03). One percentage per review, never
+  a different one per slice — the absolute count then follows each field size on
+  its own, which is what makes a single setting fair across recordings running 10
+  to 51 ROIs. `assess.k_from_fraction` resolves it, using the generator's own
+  participation rule; `annotate.MahiceSession` records what was set, by whom, and
+  against which ROI counts. An **absolute** K is not comparable across recordings
+  and must never be transplanted between corpora.
+- **the assessor** — the **machine half** of MAHICE: `bugarach assess`,
   `assess_coactivity`, the browser's ported copy. It proposes; it does not
   conclude. Never *"the assessment says"* — an assessment is a record containing
   a judgement, and the judgement and the **view it was made in** travel with it
@@ -171,7 +200,7 @@ recordings is a **simulated data set**; the real recordings the lab approved are
   of (recording × rendering × observer) rather than of the recording.
 
 **The code keeps its names on purpose.** `assess.py` and `bugarach assess` are the
-machine half and are correctly named for it; renaming them MAHDCE would give one
+machine half and are correctly named for it; renaming them MAHICE would give one
 half the name of the pair and undo the distinction the term exists to draw.
 
 ## Data objects
