@@ -235,8 +235,23 @@ def selftest():
     # the merge base, so it is a descendant of the trunk rather than on it. `cat-file -e`
     # finds it; `merge-base --is-ancestor` refuses it. Built with `commit-tree` so no ref
     # moves and there is nothing to clean up -- it is a loose object git will collect.
-    not_anc = git("commit-tree", f"{good}^{{tree}}", "-p", good,
+    # IDENTITY IS PASSED EXPLICITLY, and CI is why. `commit-tree` needs a committer, and a
+    # fresh runner has no `user.email` configured, so this returned empty there while
+    # passing here -- and an empty sha makes the row below contain an empty backtick pair,
+    # which the SHA regex does not match, so the case PASSED for want of a fixture. That is
+    # the exact defect this block exists to fix, reproduced one level along: my unfireable
+    # rule got an unfireable fixture. `-c` on the command keeps it local to this call rather
+    # than writing anybody's git config.
+    not_anc = git("-c", "user.name=selftest", "-c", "user.email=selftest@invalid",
+                  "commit-tree", f"{good}^{{tree}}", "-p", good,
                   "-m", "fixture: exists, not an ancestor").stdout.strip()[:7]
+    # AND IT IS CHECKED, because the failure above was silent. A fixture that did not get
+    # built must stop the selftest, not quietly turn one case into a no-op.
+    if not re.fullmatch(r"[0-9a-f]{7}", not_anc):
+        print("selftest CANNOT RUN: `git commit-tree` produced no commit, so the "
+              "not-an-ancestor fixture does not exist. Refusing to report on a rule "
+              "with nothing to test it -- that is the defect this case was added for.")
+        return 1
 
     cases = [
         ("clean control", f"| a | b | measured | `{good}` | `{f_ok}` | current |", 0),
