@@ -1,5 +1,12 @@
 [build-system]
-requires = ["hatchling"]
+# FLOOR, NOT DECORATION. `license` as a string and `license-files` as an array below are
+# PEP 639, which hatchling only understands from 1.27. Unpinned, a clean build environment
+# is free to resolve something older, and on 2026-09-03 CI's 3.14 leg did exactly that and
+# died in the Install step with `Field 'project.license-files' must be a table` — a metadata
+# error blamed on this file, which had not changed since 2026-08-11. Bisected: 1.21.0 and
+# 1.25.0 reject it, 1.27.0 accepts. The floor turns a confusing build-backend error into a
+# resolver refusal that names the real constraint.
+requires = ["hatchling>=1.27"]
 build-backend = "hatchling.build"
 
 [project]
