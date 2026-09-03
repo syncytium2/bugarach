@@ -30,6 +30,7 @@ import numpy as np
 
 from bugarach.detect_folder import folder_analysis_windows
 from bugarach.io import NO_EVENT, RESERVED, load_folder
+from bugarach.windows import SCAFFOLD_LABEL
 
 
 #: The notes a recording can carry, as fixed strings.
@@ -49,6 +50,19 @@ RAW_BOUNDS_SCORED = "no analysis windows — the raw period bounds are scored as
 NO_SILENCE_DECLARED = "no ROI declared with no events"
 NO_WIDTH = "no per-event width"
 PART_WIDTH = "some streams carry no per-event width"
+
+#: The folder-level half of "there are no periods here". Named so
+#: :data:`PROMOTED` can suppress it: with the header saying it at length, this
+#: printed the same fact a third time.
+NO_REGIONS_FILE = ("no regions.csv — allowed; every recording is then analysed "
+                   "as one unlabelled window spanning its own extent.")
+
+#: Notes promoted out of the notes block and into the header by
+#: :func:`_hard_tell`. They are the two things stage one of the loop asks a user
+#: for, and as notes they printed at line 91 of 94 on the lab's own export.
+#: Kept in ``RecordingReport.notes`` and ``FolderReport.notes`` so a
+#: programmatic caller still sees them — only the rendering moved.
+PROMOTED = (NO_WINDOWS, RAW_BOUNDS_SCORED, NO_REGIONS_FILE)
 
 #: The long half of each note, said once per folder rather than once per
 #: recording. Keyed by the note itself.
@@ -169,9 +183,7 @@ def check_folder(folder) -> FolderReport:
                 f"no {name} — allowed. Without regions.csv every recording is "
                 f"one unlabelled window; without slices.csv bugarach asks for "
                 f"the frame interval at load and will not proceed without it."
-                if name == "slices.csv" else
-                f"no {name} — allowed; every recording is then analysed as one "
-                f"unlabelled window spanning its own extent.")
+                if name == "slices.csv" else NO_REGIONS_FILE)
             continue
         missing = [c for c in required if c not in _header(p)]
         if missing:
@@ -217,6 +229,20 @@ def check_folder(folder) -> FolderReport:
                 r.errors.append(
                     f"frame_interval_sec is {r.frame_interval!r}, which is not a "
                     f"number of seconds")
+        # A scaffold that shipped. `bugarach windows --create` writes this label
+        # because it cannot know the treatment names, and the contract requires
+        # `label` to be the period's real one — so a folder still carrying it is
+        # not conforming. This is an ERROR rather than a note on purpose: it is
+        # the one absence here that a machine can be certain about, because the
+        # string exists nowhere except in a file this app wrote and told the user
+        # to edit.
+        if any(lbl == SCAFFOLD_LABEL for lbl in r.windows):
+            n = sum(1 for lbl in r.windows if lbl == SCAFFOLD_LABEL)
+            r.errors.append(
+                f"regions.csv still carries the scaffold placeholder "
+                f"{SCAFFOLD_LABEL!r} on {n} region(s) — replace it with what "
+                f"that period actually was. Every figure axis and every results "
+                f"row is named by this label")
         if not r.windows:
             r.notes.append(NO_WINDOWS)
         else:
@@ -294,6 +320,68 @@ def _shared_notes(rep: FolderReport) -> tuple[list[tuple[str, list[str]]], set[s
     return shared, {n for n, _ in shared}
 
 
+def _hard_tell(rep: FolderReport) -> list[str]:
+    """The two absences stage one of the loop cannot proceed without, said where
+    they cannot be missed.
+
+    **Both of these used to be notes**, which meant they printed after every
+    per-recording line and never failed anything. On the lab's own export that is
+    line 91 of 94. A user could take such a folder through `check`, `assess` and
+    `detect`, open the table, and never learn that every number in it came from
+    one unlabelled window — the absence is invisible in the output as well as in
+    the input.
+
+    They are still not errors. A folder holding only recording files conforms
+    (contract rule 2), and export contract revision 7 records what happened the
+    last time this side made its own protocol a condition of entry: 83 of 85
+    recordings refused at the door and then scored happily by the next command.
+    So this is volume, not a gate.
+    """
+    total = len(rep.recordings)
+    if not total:
+        return []
+    no_timing = [r.slice_id for r in rep.recordings if NO_WINDOWS in r.notes]
+    no_analysis = [r.slice_id for r in rep.recordings
+                   if RAW_BOUNDS_SCORED in r.notes]
+    out: list[str] = []
+
+    def scope(ids):
+        return ("every recording" if len(ids) == total
+                else f"{len(ids)} of {total} recording(s)")
+
+    if no_timing:
+        out += ["",
+                f"⚠  TREATMENT TIMING IS MISSING — {scope(no_timing)}"]
+        out += _wrap(
+            "Each of those is analysed as ONE unlabelled window, so there is no "
+            "before-and-after in it: nothing downstream can put two periods "
+            "side by side, and a result computed from it cannot answer whether "
+            "coordination changed with a treatment. The folder conforms — this "
+            "is not a fault in it — but the question most people bring here is "
+            "not available until the periods arrive.",
+            indent=" " * 4)
+        out += ["    Send them in regions.csv (one row per period: slice_id, "
+                "region_idx, label,",
+                "    start_sec, end_sec), or start one from the recordings:",
+                f"        bugarach windows {rep.folder} --create"]
+    if no_analysis:
+        out += ["",
+                f"⚠  NO ANALYSIS WINDOWS — {scope(no_analysis)}"]
+        out += _wrap(
+            "Those periods are scored WHOLE, start_sec to end_sec verbatim — no "
+            "wash-in delay, no duration cap, no baseline measured backward from "
+            "its end. That is correct if the whole period is what you want "
+            "scored. If it is not — a drug that takes two minutes to reach the "
+            "tissue, a long application you do not want outweighing a short one "
+            "— say so in analysis_start_sec / analysis_end_sec and they are used "
+            "exactly as sent. Both bounds or neither, and all periods of a "
+            "recording or none.",
+            indent=" " * 4)
+        out += ["    To start from the raw bounds and narrow them by hand:",
+                f"        bugarach windows {rep.folder} --create --with-analysis"]
+    return out
+
+
 def format_report(rep: FolderReport) -> str:
     """The report a producer reads in a terminal.
 
@@ -322,9 +410,17 @@ def format_report(rep: FolderReport) -> str:
         n_with = sum(1 for r in rep.recordings if r.width_defs)
         out.append(f"per-event width: {', '.join(widths)} "
                    f"({n_with} of {len(rep.recordings)} recordings)")
+
+    # Directly under the verdict, above the per-recording lines. The whole point
+    # is position: as notes these two printed at line 91 of 94.
+    out.extend(_hard_tell(rep))
     out.append("")
 
     shared, collapsed = _shared_notes(rep)
+    # Said once, at the top, by `_hard_tell`. Leaving them in the notes block as
+    # well would print each twice — and this report's whole editing history is
+    # about saying a repeated thing once.
+    shared = [(n, ids) for n, ids in shared if n not in PROMOTED]
     w = max((len(r.slice_id) for r in rep.recordings), default=10)
     for r in rep.recordings:
         flag = "ok  " if r.ok else "FAIL"
@@ -339,13 +435,14 @@ def format_report(rep: FolderReport) -> str:
         # a note the whole folder shares is said once, below, with its count —
         # here we keep only what is true of THIS recording and not the others
         for n in r.notes:
-            if n in collapsed:
+            if n in collapsed or n in PROMOTED:
                 continue
             out.append(f"       · {n}")
             out.extend(_wrap(NOTE_DETAIL[n]) if n in NOTE_DETAIL else [])
 
     total = len(rep.recordings)
-    if shared or rep.notes:
+    folder_notes = [n for n in rep.notes if n not in PROMOTED]
+    if shared or folder_notes:
         out.append("")
         out.append("  notes — these read fine and may still not be what you meant:")
     for n, ids in shared:
@@ -355,6 +452,6 @@ def format_report(rep: FolderReport) -> str:
             f" ({', '.join(ids[:4])}{' …' if len(ids) > 4 else ''})"
         out.append(f"       · {n} — {scope}{named}")
         out.extend(_wrap(NOTE_DETAIL[n]) if n in NOTE_DETAIL else [])
-    for n in rep.notes:
+    for n in folder_notes:
         out.append(f"       · {n}")
     return "\n".join(out)
