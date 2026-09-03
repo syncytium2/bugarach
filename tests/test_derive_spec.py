@@ -145,3 +145,98 @@ def test_the_review_block_is_present_either_way():
     anybody looked; a missing key would read as an older spec format."""
     assert _build(None)["review"] is None
     assert _build([mkv()])["review"]["n_confirmed"] == 1
+
+
+# ---------------------------------------------------------------------------
+# K derived rather than taken
+# ---------------------------------------------------------------------------
+
+def _labels():
+    """Verdicts a threshold can be fitted to: rejected small, confirmed large,
+    proposed from a floor of 2 so the censoring guard is not what answers."""
+    out = []
+    for i in range(12):
+        out.append(mkv(n_members=2 + i % 2, k_survived=2 + i % 2,
+                       verdict="rejected", centre_sec=100.0 + i))
+        out.append(mkv(n_members=6 + i % 3, k_survived=6 + i % 3,
+                       verdict="confirmed", centre_sec=500.0 + i))
+    return out
+
+
+def test_no_k_at_all_is_refused(tmp_path):
+    """The old signature made --k required. Making it optional must not make it
+    defaultable — omitting both routes is the state this step exists to end."""
+    ap = tmp_path / "a.json"
+    ap.write_text(json.dumps(assessment()))
+    with pytest.raises(SystemExit):
+        derive_spec.main(["--assessment", str(ap), "--out", str(tmp_path),
+                          "--unreviewed"])
+    assert not (tmp_path / "generator_spec.json").exists()
+
+
+def test_a_chosen_k_and_a_derived_one_contradict_each_other(tmp_path):
+    ap = tmp_path / "a.json"
+    ap.write_text(json.dumps(assessment()))
+    anp = tmp_path / "annotations.csv"
+    write_annotations(anp, _labels())
+    with pytest.raises(SystemExit):
+        derive_spec.main(["--assessment", str(ap), "--out", str(tmp_path),
+                          "--k", "4", "--annotations", str(anp),
+                          "--k-from-annotations"])
+
+
+def test_deriving_k_with_nothing_to_derive_it_from_is_refused(tmp_path):
+    ap = tmp_path / "a.json"
+    ap.write_text(json.dumps(assessment()))
+    with pytest.raises(SystemExit):
+        derive_spec.main(["--assessment", str(ap), "--out", str(tmp_path),
+                          "--k-from-annotations", "--unreviewed"])
+
+
+def test_labels_that_cannot_locate_a_k_write_no_spec(tmp_path, capsys):
+    """A spec is the input to everything downstream, so half of one is worse
+    than none. Non-zero exit, no file, and the reason on stderr."""
+    ap = tmp_path / "a.json"
+    ap.write_text(json.dumps(assessment()))
+    anp = tmp_path / "annotations.csv"
+    write_annotations(anp, [mkv(n_members=6, k_survived=6, centre_sec=100.0 + i)
+                            for i in range(4)])
+    rc = derive_spec.main(["--assessment", str(ap), "--out", str(tmp_path),
+                           "--annotations", str(anp), "--k-from-annotations"])
+    assert rc == 2
+    assert not (tmp_path / "generator_spec.json").exists()
+    assert "K NOT IDENTIFIED" in capsys.readouterr().err
+
+
+def test_a_derived_k_reaches_the_spec_with_its_separation(tmp_path):
+    ap = tmp_path / "a.json"
+    ap.write_text(json.dumps(assessment()))
+    anp = tmp_path / "annotations.csv"
+    write_annotations(anp, _labels())
+    rc = derive_spec.main(["--assessment", str(ap), "--out", str(tmp_path),
+                           "--annotations", str(anp), "--k-from-annotations"])
+    assert rc == 0
+    spec = json.loads((tmp_path / "generator_spec.json").read_text())
+    assert spec["k_chosen"] == 4
+    d = spec["k_derivation"]
+    assert d is not None
+    assert d["k"] == 4
+    assert d["separation_youden_j"] == pytest.approx(1.0)
+    assert d["proposal_floor"] == 2
+    assert d["annotators"] == ["tony"]
+    assert d["curve"], "the scan the choice was made against is not in the spec"
+    assert "DERIVED from labelled calls" in spec["notes"][0]
+
+
+def test_a_chosen_k_says_it_was_chosen_rather_than_estimated(tmp_path):
+    """`k_derivation` is null-valued rather than absent, so a consumer can tell
+    "a person picked it" from "the labels located it" without guessing at the
+    spec's version."""
+    ap = tmp_path / "a.json"
+    ap.write_text(json.dumps(assessment()))
+    anp = tmp_path / "annotations.csv"
+    write_annotations(anp, _labels())
+    derive_spec.main(["--assessment", str(ap), "--out", str(tmp_path),
+                      "--k", "4", "--annotations", str(anp)])
+    spec = json.loads((tmp_path / "generator_spec.json").read_text())
+    assert "k_derivation" in spec and spec["k_derivation"] is None

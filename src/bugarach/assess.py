@@ -72,6 +72,29 @@ DEFAULT_MIN_ROIS = (3, 4, 6, 8)
 **Reported as a scan, not chosen.** K is the assessment's one real convention,
 and sweeping it is how that convention stays visible instead of becoming a hidden
 operating point. A caller quoting a single number must say which K produced it.
+
+**Not the right scan for an annotation pass** — see :data:`PROPOSAL_MIN_ROIS`.
+This tuple is left exactly as it is, because every published assessment number was
+produced at these floors and moving it would silently restate them.
+"""
+
+PROPOSAL_MIN_ROIS = (2, 3, 4, 6, 8)
+"""The floors to propose candidates at when the purpose is to **estimate** K.
+
+**The proposal stage has to sit below the floor being estimated.** If the machine
+only ever offers moments with 3+ co-active ROIs and a person confirms from that
+list, the candidate set is censored at exactly the boundary the exercise is meant
+to locate, and the answer is the assumption returning under a new name — the same
+circularity `docs/RESET.md` §1 caught in the validation test, where asking the
+assessor to recover planted events is the convention agreeing with itself.
+
+So this scan reaches down to 2, and :func:`bugarach.annotate.derive_k` refuses any
+label set whose smallest judged candidate sits above
+:data:`bugarach.annotate.MAX_PROPOSAL_FLOOR`. **The two constants are one decision
+and have to move together**; there is a test that says so.
+
+Use it via ``bugarach assess --for-annotation``. Use :data:`DEFAULT_MIN_ROIS` for
+anything being compared against a published number.
 """
 
 
