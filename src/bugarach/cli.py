@@ -148,6 +148,22 @@ def main(argv: list[str] | None = None) -> None:
                           "verdicts. The default scan is what every published "
                           "number was produced at — do not mix them")
 
+    win = sub.add_parser(
+        "windows", help="what this folder says about its treatment periods — "
+                        "and start a regions.csv if it says nothing")
+    win.add_argument("folder", help="the export folder")
+    win.add_argument("--create", action="store_true",
+                     help="write a regions.csv for you to edit: one period per "
+                          "recording, spanning its own events, with the label "
+                          "left as a placeholder that `bugarach check` refuses "
+                          "until you replace it")
+    win.add_argument("--with-analysis", action="store_true",
+                     help="also write analysis_start_sec / analysis_end_sec, "
+                          "pre-filled equal to the raw bounds, for you to narrow")
+    win.add_argument("--force", action="store_true",
+                     help="overwrite an existing regions.csv. It records what a "
+                          "person did to the tissue, so this is never the default")
+
     from bugarach.detect_folder import DETECTORS
 
     det = sub.add_parser(
@@ -278,6 +294,56 @@ def main(argv: list[str] | None = None) -> None:
         # not a gate: "no recording carried a baseline region" is an answer about
         # the folder, and turning it into a non-zero exit would put it in a build
         # where somebody would make it pass.
+        raise SystemExit(0)
+
+    if args.cmd == "windows":
+        # importable without panel, like `check` and `assess`: the command a lab
+        # runs when its folder has no periods yet must not need the viewer
+        from bugarach.windows import (
+            RegionsFileExists, SCAFFOLD_LABEL, describe, format_windows,
+            scaffold,
+        )
+
+        folder = _folder_or_exit(args.folder)
+        if args.with_analysis and not args.create:
+            raise SystemExit(
+                "bugarach windows: --with-analysis only means something with "
+                "--create; on its own there is nothing to write it into.")
+        if args.force and not args.create:
+            raise SystemExit(
+                "bugarach windows: --force only means something with --create.")
+
+        if not args.create:
+            print(format_windows(_load_or_exit(describe, folder)))
+            raise SystemExit(0)
+
+        try:
+            path, rows = scaffold(folder, with_analysis=args.with_analysis,
+                                  force=args.force)
+        except RegionsFileExists as exc:
+            raise SystemExit(f"bugarach windows: {exc}") from None
+        except ValueError as exc:
+            raise SystemExit(f"bugarach windows: {exc}") from None
+
+        print(f"wrote {path} — {len(rows)} recording(s), one period each")
+        print()
+        print("THIS IS A DRAFT AND IT IS NOT FINISHED. Two things only you know:")
+        print(f"  1. the LABEL. Every row says {SCAFFOLD_LABEL!r}, and "
+              f"`bugarach check`")
+        print("     refuses the folder until it does not. Use the period's real "
+              "name —")
+        print("     every figure axis and every results row is named by it.")
+        print("  2. the PERIODS. One row per recording is a guess that nothing "
+              "was done")
+        print("     to it. If you ran a baseline and two drugs, that is three "
+              "rows per")
+        print("     recording, numbered 1, 2, 3 in time order.")
+        print()
+        print("The bounds are a starting point, not a reading: they span the "
+              "first and last")
+        print("event in each recording, which is not the same as when recording "
+              "started and")
+        print("stopped — nothing in the folder carries that. Correct them.")
         raise SystemExit(0)
 
     if args.cmd == "check":
