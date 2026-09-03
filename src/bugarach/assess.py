@@ -62,7 +62,7 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
-from bugarach.detectors._shared import matlab_prctile
+from bugarach.detectors._shared import matlab_prctile, matlab_round
 from bugarach.detectors.loco import effective_region_windows
 from bugarach.detectors.rate import recording_extent
 
@@ -96,6 +96,46 @@ and have to move together**; there is a test that says so.
 Use it via ``bugarach assess --for-annotation``. Use :data:`DEFAULT_MIN_ROIS` for
 anything being compared against a published number.
 """
+
+#: The scan of K **as a fraction of the recording's ROI population**.
+#:
+#: **An absolute K is not comparable across recordings, and this corpus makes
+#: that concrete.** Three co-active ROIs out of 10 is a third of the field; three
+#: out of 51 is six percent of it, and those are not the same event. Both counts
+#: occur in the approved export, whose recordings run 10 to 51 ROIs. Across labs
+#: it is worse and already documented: `current_export.toml` warns DO NOT
+#: TRANSPLANT OUR K because the Cossart corpus carries ~405 ROIs against our ~34,
+#: so at K=3 their rate-matched null already holds three co-active cells and
+#: there is no excess left to find.
+#:
+#: Tony, 2026-09-03: *"the human might want different K for a session, but it is
+#: not fair to change K for each slice. We do need K expressed as a
+#: percentage."* A percentage is what makes one setting fair across a folder —
+#: the person sets one number and the absolute floor varies with the population
+#: on its own, which is the opposite of setting a different K per slice by hand.
+DEFAULT_MIN_ROIS_FRAC = (0.05, 0.10, 0.15, 0.20, 0.25)
+
+
+def k_from_fraction(frac: float, n_roi: int) -> int:
+    """A participating fraction, as an absolute co-active ROI count.
+
+    **This is the generator's own rule, deliberately.** ``simulate.py`` plants
+    participation as fractions and converts with exactly
+    ``max(1, matlab_round(frac * n_roi))``; reusing it means a K set as a
+    percentage selects the same population the simulator would have planted at
+    that participation level, rather than a second rounding convention that
+    disagrees with it near the boundary. If this ever diverges, a spec derived at
+    10% and a simulation planted at 10% stop describing the same events.
+
+    ⚠ **K = 1 is reachable and means no floor at all.** A small population at a
+    small fraction rounds to one — 5% of a 10-ROI recording — and one co-active
+    ROI is not coordination. The rule is not clamped here, because the clamp
+    belongs to whoever is asking: the assessor reports the absolute K it resolved
+    for each recording so a person setting a percentage can see where it landed,
+    and :data:`bugarach.annotate.MAX_PROPOSAL_FLOOR` is what governs the
+    proposal end.
+    """
+    return max(1, matlab_round(float(frac) * int(n_roi)))
 
 
 @dataclass(frozen=True)
@@ -174,6 +214,18 @@ class Assessment:
     takes part, and reading assembly structure off it would answer the wrong
     question (see ``bugarach.assembly``)."""
 
+    min_rois_frac: float | None = None
+    """The fraction :attr:`min_rois` was resolved from, or ``None`` when K was
+    given as an absolute count.
+
+    **Carried rather than recomputed**, because ``min_rois / n_roi`` is not it:
+    :func:`k_from_fraction` rounds one way, so several fractions land on the same
+    count for one recording and dividing back invents a precision the setting
+    never had. A number quoted from this assessment names the fraction a person
+    set *and* the count it became here — two different facts about one K, and on
+    a folder of mixed ROI counts the second one differs per recording while the
+    first does not."""
+
 
 def _coact_count(trains, win_dur, bin_width, n_bins, offsets=None):
     """Per-bin distinct-ROI coactivity. An ROI contributes 1 to a bin if it has
@@ -251,7 +303,16 @@ def _clusters(trains, counts, K, bin_width, n_bins, merge_bins, wm,
             oo = np.asarray(gathered, dtype=np.float64)
             # ddof=1: MATLAB std is the sample SD. numpy defaults to ddof=0, and
             # at the 3-8 participants this operates on the difference is large.
-            sds.append(float(np.std(oo, ddof=1)))
+            #
+            # A ONE-ONSET CLUSTER HAS NO SAMPLE SD, and NaN is the answer rather
+            # than a warning: ddof=1 divides by n-1. Only reachable at K=1, which
+            # a percentage can round to on a small field (5% of 12 ROIs) and which
+            # nothing could produce before `k_from_fraction` existed — at K>=2 a
+            # cluster has at least two participants and therefore two onsets. The
+            # guard is here rather than at the caller because this is where the
+            # quantity is undefined.
+            sds.append(float(np.std(oo, ddof=1)) if oo.size >= 2
+                       else float("nan"))
             parts.append(int(oo.size))
             peaks.append(pk)
             spans.append(float(oo.max() - oo.min()))
@@ -278,7 +339,8 @@ def assess_coactivity(
     stream: str | None = None,
     window=None,
     region: str = "baseline",
-    min_rois=DEFAULT_MIN_ROIS,
+    min_rois=None,
+    min_rois_frac=None,
     bin_width_sec: float | None = None,
     wm_factor: float = 1.5,
     merge_bins: int = 2,
@@ -325,6 +387,41 @@ def assess_coactivity(
     st = s.streams[name]
     ext = recording_extent(s)
 
+    # A K given as a fraction is resolved HERE, against THIS recording's ROI
+    # population, which is the whole reason a fraction is worth setting: one
+    # number from the person, a floor that follows the field size on its own.
+    # `st.n_rois` counts every ROI the producer exported, including the ones with
+    # no events in this stream — FOUNDATIONS §9 forbids conditioning on having
+    # fired, and a denominator that dropped them would make the same percentage
+    # mean something different in a quiet recording than in a busy one.
+    if min_rois_frac is not None:
+        if min_rois is not None:
+            raise ValueError(
+                "min_rois and min_rois_frac are two ways of saying K; pass one. "
+                "A fraction resolves against each recording's ROI count, an "
+                "absolute count does not, so accepting both would leave the "
+                "result depending on which won.")
+        fracs = tuple(float(f) for f in min_rois_frac)
+        if any(not (0.0 < f <= 1.0) for f in fracs):
+            raise ValueError(
+                f"min_rois_frac must be fractions in (0, 1], got {fracs}. "
+                f"Percentages go in as 0.10 rather than 10.")
+        resolved = [(k_from_fraction(f, st.n_rois), f) for f in fracs]
+        # Two fractions can land on one count in a small field — 5% and 10% of 12
+        # ROIs are both 1. Keeping both rows would report the same measurement
+        # twice under different labels, so the coarser fraction wins its count
+        # and the duplicate is dropped rather than silently averaged.
+        seen: dict[int, float] = {}
+        for kk, f in resolved:
+            seen.setdefault(kk, f)
+        ks = tuple(sorted(seen))
+        frac_of: dict[int, float | None] = {kk: seen[kk] for kk in ks}
+    else:
+        ks = tuple(int(K) for K in (min_rois if min_rois is not None
+                                    else DEFAULT_MIN_ROIS))
+        frac_of = {kk: None for kk in ks}
+    min_rois = ks
+
     if window is None:
         rws = effective_region_windows(s, ext, region_min_sec=region_min_sec)
         want_baseline = region == "baseline"
@@ -339,7 +436,8 @@ def assess_coactivity(
         if picked is None:
             return [Assessment(min_rois=int(K), meets_floor=False,
                                win_dur=float("nan"), n_roi=st.n_rois,
-                               n_events_win=0) for K in min_rois]
+                               n_events_win=0, min_rois_frac=frac_of[K])
+                    for K in min_rois]
         win_start, win_end, win_dur = picked.win_start, picked.win_end, picked.win_dur
         meets = picked.meets_floor
     else:
@@ -349,7 +447,8 @@ def assess_coactivity(
 
     if not meets:
         return [Assessment(min_rois=int(K), meets_floor=False, win_dur=win_dur,
-                           n_roi=st.n_rois, n_events_win=0) for K in min_rois]
+                           n_roi=st.n_rois, n_events_win=0,
+                           min_rois_frac=frac_of[K]) for K in min_rois]
 
     bin_width = 1.0 if bin_width_sec is None else float(bin_width_sec)
     wm = wm_factor * bin_width
@@ -432,7 +531,8 @@ def assess_coactivity(
         jit_obs, jit_null = _med(sd_obs), _med(sds_null[K])
         defined = bool(sd_obs) and bool(sds_null[K])
         out.append(Assessment(
-            min_rois=K, meets_floor=True, win_dur=win_dur, n_roi=n_roi,
+            min_rois=K, min_rois_frac=frac_of[K],
+            meets_floor=True, win_dur=win_dur, n_roi=n_roi,
             n_events_win=int(sum(n_in_win)),
             roi_rate=roi_rate, roi_rate_med=_med(roi_rate),
             roi_rate_mean=float(np.mean(roi_rate)) if roi_rate.size else float("nan"),

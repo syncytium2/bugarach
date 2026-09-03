@@ -40,7 +40,8 @@ from bugarach.bench import REGIMES as _REGIMES  # noqa: E402
 
 
 def build(assessment: dict, k: int, *, events_per_level: int = 5,
-          n_levels: int = 3, annotations=None, k_estimate=None) -> dict:
+          n_levels: int = 3, annotations=None, k_estimate=None,
+          session=None, cross_check=None) -> dict:
     from bugarach.adapt import generator_params
     from bugarach.assess import Assessment
     from bugarach.bench import (BENCH_RECORDING, MEASURED_BURST_BINS,
@@ -48,7 +49,18 @@ def build(assessment: dict, k: int, *, events_per_level: int = 5,
 
     by_k = assessment["by_k"]
     if str(k) not in by_k:
-        raise SystemExit(f"K={k} not in the scan ({sorted(by_k)})")
+        # The likeliest way here is a percentage set in MAHICE that resolved to a
+        # count the assessment never measured. Nothing can be interpolated — the
+        # measures are computed AT a K, not sampled from a curve — so the answer
+        # is to re-assess at the percentage the person set, not to pick a nearby
+        # column.
+        extra = "" if session is None else (
+            f" It came from {100.0 * session.k_percent:.3g}% of ROIs, set by "
+            f"{session.annotator} during MAHICE. Re-run `bugarach assess "
+            f"--k-percent {100.0 * session.k_percent:.3g}` on this folder: every "
+            f"measure is computed at a K rather than read off a curve, so there "
+            f"is nothing here to interpolate.")
+        raise SystemExit(f"K={k} not in the scan ({sorted(by_k, key=int)}).{extra}")
     v = by_k[str(k)]
 
     def med(field):
@@ -133,9 +145,22 @@ def build(assessment: dict, k: int, *, events_per_level: int = 5,
     # chosen off the scan is a convention the spec inherits; a K estimated from
     # labelled calls is a measurement, and the difference is the whole point of
     # the annotation step.
-    if k_estimate is not None:
-        notes_pre.insert(0, f"K={k} was DERIVED from labelled calls rather than "
-                            f"chosen off the scan — {k_estimate.why}")
+    if session is not None:
+        notes_pre.insert(0, (
+            f"K = {100.0 * session.k_percent:.3g}% of each recording's ROI "
+            f"population, SET BY {session.annotator} during MAHICE on "
+            f"{session.decided_at}. Across the recordings reviewed that is K "
+            f"{min(session.k_absolute.values())}–"
+            f"{max(session.k_absolute.values())}; this spec is built at the "
+            f"median, K={k}. A percentage is the setting; the count varies with "
+            f"the field size, which is what makes one setting fair across a "
+            f"folder of unequal recordings"))
+        if cross_check is not None:
+            notes_pre.insert(1, cross_check.message)
+    elif k_estimate is not None:
+        notes_pre.insert(0, f"⚠ K={k} was DERIVED ARITHMETICALLY from labelled "
+                            f"calls rather than set by a person during MAHICE, "
+                            f"which is not how K is chosen — {k_estimate.why}")
 
     a = Assessment(
         min_rois=k, meets_floor=True, win_dur=win, n_roi=n_roi,
@@ -230,10 +255,32 @@ def build(assessment: dict, k: int, *, events_per_level: int = 5,
         "sweep": gp.sweep,
         "notes": notes,
         "k_chosen": k,
-        # How K got its value, present and null-valued when it was chosen rather
-        # than estimated — same reason `review` is. A consumer must be able to
-        # tell "a person picked 3 off the scan" from "3 is where the labels
-        # separate", because only the second makes the human-in-the-loop claim.
+        # How K got its value. Present and null-valued when there is no record,
+        # for the reason `review` is: a missing key reads as an older spec.
+        # **`k_source` is the field to read.** A consumer has to be able to tell
+        # "a person set 10% while looking at the recordings" from "3 is where the
+        # labels happen to separate", because only the first is how K is chosen.
+        "k_source": ("mahice" if session is not None
+                     else "estimated_from_labels" if k_estimate is not None
+                     else "given"),
+        "k_percent": (None if session is None else float(session.k_percent)),
+        "k_mahice": (None if session is None else {
+            "k_percent": float(session.k_percent),
+            "k_absolute": dict(session.k_absolute),
+            "n_roi": dict(session.n_roi),
+            "annotator": session.annotator,
+            "decided_at": session.decided_at,
+            "proposal_frac": session.proposal_frac,
+            "stream": session.stream,
+            "note": session.note,
+            "cross_check": (None if cross_check is None else {
+                "agrees": cross_check.agrees,
+                "k_set_median": cross_check.k_set_median,
+                "labels_separate_at": cross_check.estimate.k,
+                "separation_youden_j": cross_check.estimate.separation,
+                "message": cross_check.message,
+            }),
+        }),
         "k_derivation": (None if k_estimate is None else {
             "method": "threshold on co-active count vs labelled calls",
             "k": k_estimate.k,
@@ -276,14 +323,20 @@ def main(argv=None) -> int:
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("--assessment", type=Path, required=True)
     p.add_argument("--out", type=Path, required=True)
+    p.add_argument("--session", type=Path, default=None,
+                   help="mahice.json — the review record carrying the K the "
+                        "PERSON set, as a percentage of each recording's ROI "
+                        "population. THIS IS WHERE K COMES FROM; the labels are "
+                        "cross-checked against it and never override it")
     p.add_argument("--k", type=int, default=None,
-                   help="which K from the scan — a human's choice, not a "
-                        "default. Exactly one of --k / --k-from-annotations")
+                   help="an absolute K, for an assessment or a folder that "
+                        "predates mahice.json. Exactly one of --session / --k / "
+                        "--k-from-annotations")
     p.add_argument("--k-from-annotations", action="store_true",
-                   help="DERIVE K from the verdicts instead of taking it: the "
-                        "co-active count that best separates confirmed from "
-                        "rejected, refused outright when the labels cannot "
-                        "locate one. Requires --annotations")
+                   help="⚠ derive K from the verdicts arithmetically. NOT the "
+                        "normal route — K is set by a person during MAHICE. For "
+                        "seeing what the labels alone would say. Requires "
+                        "--annotations")
     p.add_argument("--annotations", type=Path, default=None,
                    help="annotations.csv — the verdicts a person gave on the "
                         "assessor's candidates. Participation, span and "
@@ -309,18 +362,22 @@ def main(argv=None) -> int:
     if a.annotations is not None and a.unreviewed:
         p.error("--annotations and --unreviewed contradict each other")
 
-    # Exactly one route to K, and neither is a default. `--k` says a person
-    # looked at the scan and chose; `--k-from-annotations` says the labels were
-    # asked where the boundary is. Allowing both would let the flag silently lose
-    # to the number, and allowing neither is the state this whole step exists to
-    # end.
-    if a.k is None and not a.k_from_annotations:
-        p.error("no K. Pass --k <n> to choose one off the scan, or "
-                "--k-from-annotations to derive it from the verdicts "
-                "(docs/todo/2026-08-28-derive-k-from-confirmed-events.md).")
-    if a.k is not None and a.k_from_annotations:
-        p.error("--k and --k-from-annotations contradict each other: one takes "
-                "K as given, the other estimates it. Drop --k to derive.")
+    # Exactly one route to K, and none of them is a default. `--session` is the
+    # normal one: a person set K while looking at the data, in MAHICE. `--k` is
+    # for an assessment that predates the record. `--k-from-annotations` asks the
+    # arithmetic and is not how K is chosen. Allowing two would leave the answer
+    # depending on which won; allowing none is the state this step exists to end.
+    routes = [bool(a.session), a.k is not None, a.k_from_annotations]
+    if sum(routes) == 0:
+        p.error("no K. K is set by a person during MAHICE — pass --session "
+                "mahice.json. For an assessment that predates that record, "
+                "--k <n>; to see what the labels alone would say, "
+                "--k-from-annotations.")
+    if sum(routes) > 1:
+        p.error("--session, --k and --k-from-annotations are three routes to "
+                "one K; pass one. --session is the normal route: it carries the "
+                "K a person set, as a percentage, and the other two would "
+                "silently disagree with it.")
     if a.k_from_annotations and a.annotations is None:
         p.error("--k-from-annotations needs --annotations: K is estimated FROM "
                 "the verdicts, so there is nothing to estimate it from.")
@@ -330,11 +387,39 @@ def main(argv=None) -> int:
         from bugarach.annotate import read_annotations
         verdicts = read_annotations(a.annotations)
 
-    k, est = a.k, None
-    if a.k_from_annotations:
+    k, est, session, check = a.k, None, None, None
+    if a.session:
+        from bugarach.annotate import cross_check_k, read_session
+
+        session = read_session(a.session)
+        # The assessment is a scan over ABSOLUTE K, so a percentage has to become
+        # a count to index it. The recordings reviewed are the ones whose K the
+        # person actually set, and the median of those is what the folder-level
+        # spec is built at — the spec holds one K and the population is skewed,
+        # so the median is the recording it describes.
+        if not session.k_absolute:
+            print("bugarach: this mahice.json records no absolute K for any "
+                  "recording, so a folder-level spec cannot be indexed from it.",
+                  file=sys.stderr)
+            return 2
+        import statistics as _st
+        k = int(_st.median_low(sorted(session.k_absolute.values())))
+        pct = 100.0 * session.k_percent
+        print(f"K = {pct:.3g}% of ROIs, set by {session.annotator} during "
+              f"MAHICE ({session.decided_at}).")
+        print(f"  across {len(session.k_absolute)} reviewed recording(s) that is "
+              f"K {min(session.k_absolute.values())}–"
+              f"{max(session.k_absolute.values())}; the spec is built at the "
+              f"median, K={k}.")
+        if verdicts:
+            check = cross_check_k(verdicts, session)
+            print(f"  {check.message}")
+        print()
+    elif a.k_from_annotations:
         from bugarach.annotate import derive_k
         est = derive_k(verdicts)
-        print("K from labelled calls:")
+        print("⚠ K from labelled calls — NOT how K is chosen. K is set by a "
+              "person during MAHICE; this is the arithmetic's opinion.")
         for kk, jj in sorted(est.curve.items()):
             mark = "  <-- best" if kk == est.k else ""
             print(f"  K={kk:<3} separation J={jj:+.3f}{mark}")
@@ -349,7 +434,8 @@ def main(argv=None) -> int:
         print(f"\n{est.why}\n")
 
     spec = build(json.loads(a.assessment.read_text()), k,
-                 annotations=verdicts, k_estimate=est)
+                 annotations=verdicts, k_estimate=est, session=session,
+                 cross_check=check)
     a.out.mkdir(parents=True, exist_ok=True)
     f = a.out / "generator_spec.json"
     f.write_text(json.dumps(spec, indent=1, sort_keys=True))

@@ -225,7 +225,11 @@ def test_a_derived_k_reaches_the_spec_with_its_separation(tmp_path):
     assert d["proposal_floor"] == 2
     assert d["annotators"] == ["tony"]
     assert d["curve"], "the scan the choice was made against is not in the spec"
-    assert "DERIVED from labelled calls" in spec["notes"][0]
+    # The note flags this as NOT the normal route: K is set by a person during
+    # MAHICE, and a spec built from the arithmetic instead has to say so.
+    assert "DERIVED ARITHMETICALLY" in spec["notes"][0]
+    assert "not how K is chosen" in spec["notes"][0]
+    assert spec["k_source"] == "estimated_from_labels"
 
 
 def test_a_chosen_k_says_it_was_chosen_rather_than_estimated(tmp_path):
@@ -240,3 +244,103 @@ def test_a_chosen_k_says_it_was_chosen_rather_than_estimated(tmp_path):
                       "--k", "4", "--annotations", str(anp)])
     spec = json.loads((tmp_path / "generator_spec.json").read_text())
     assert "k_derivation" in spec and spec["k_derivation"] is None
+    assert spec["k_source"] == "given"
+
+
+# ---------------------------------------------------------------------------
+# K from the MAHICE record — the normal route
+# ---------------------------------------------------------------------------
+
+def _session(tmp_path, **kw):
+    from bugarach.annotate import MahiceSession, write_session
+
+    base = dict(k_percent=0.12, annotator="tony",
+                decided_at="2026-09-03T16:00:00Z",
+                k_absolute={"s1": 4}, n_roi={"s1": 34}, proposal_frac=0.05)
+    base.update(kw)
+    return write_session(tmp_path, MahiceSession(**base))
+
+
+def test_the_persons_k_comes_from_the_session_and_says_so(tmp_path):
+    ap = tmp_path / "a.json"
+    ap.write_text(json.dumps(assessment()))
+    anp = tmp_path / "annotations.csv"
+    write_annotations(anp, _labels())
+    sp = _session(tmp_path)
+    rc = derive_spec.main(["--assessment", str(ap), "--out", str(tmp_path),
+                           "--annotations", str(anp), "--session", str(sp)])
+    assert rc == 0
+    spec = json.loads((tmp_path / "generator_spec.json").read_text())
+    assert spec["k_source"] == "mahice"
+    assert spec["k_chosen"] == 4
+    assert spec["k_percent"] == 0.12
+    m = spec["k_mahice"]
+    assert m["annotator"] == "tony" and m["n_roi"] == {"s1": 34}
+    assert "SET BY tony during MAHICE" in spec["notes"][0]
+    assert "12% of each recording's ROI population" in spec["notes"][0]
+
+
+def test_the_cross_check_rides_along_and_does_not_change_k(tmp_path):
+    """These labels reject at 2-3 and confirm at 6-8, so every threshold from 4
+    to 6 separates them perfectly and the band is 4-6. K=8 sits outside it: the
+    spec is still built at 8, and the disagreement is in the notes.
+
+    (K=6 was the first draft of this test and it passes as AGREEING, correctly —
+    a wide band is exactly what `derive_k` reports when the labels cannot
+    distinguish thresholds.)"""
+    ap = tmp_path / "a.json"
+    ap.write_text(json.dumps(assessment()))
+    anp = tmp_path / "annotations.csv"
+    write_annotations(anp, _labels())
+    sp = _session(tmp_path, k_percent=0.24, k_absolute={"s1": 8})
+    derive_spec.main(["--assessment", str(ap), "--out", str(tmp_path),
+                      "--annotations", str(anp), "--session", str(sp)])
+    spec = json.loads((tmp_path / "generator_spec.json").read_text())
+    assert spec["k_chosen"] == 8, "the estimate overrode the person"
+    cc = spec["k_mahice"]["cross_check"]
+    assert cc["agrees"] is False and cc["labels_separate_at"] == 4
+    assert any("NOTHING HAS BEEN CHANGED" in n for n in spec["notes"])
+
+
+def test_a_k_the_assessment_never_measured_says_to_re_assess(tmp_path):
+    """A percentage can resolve to a count the scan does not hold. Nothing can be
+    interpolated — every measure is computed AT a K — so the message has to send
+    the user back to `assess --k-percent` rather than to a nearby column."""
+    ap = tmp_path / "a.json"
+    ap.write_text(json.dumps(assessment()))
+    anp = tmp_path / "annotations.csv"
+    write_annotations(anp, _labels())
+    sp = _session(tmp_path, k_percent=0.30, k_absolute={"s1": 10})
+    with pytest.raises(SystemExit) as e:
+        derive_spec.main(["--assessment", str(ap), "--out", str(tmp_path),
+                          "--annotations", str(anp), "--session", str(sp)])
+    msg = str(e.value)
+    assert "K=10 not in the scan" in msg
+    assert "assess --k-percent 30" in msg
+    assert "MAHICE" in msg
+    assert not (tmp_path / "generator_spec.json").exists()
+
+
+def test_two_routes_to_k_at_once_are_refused(tmp_path):
+    ap = tmp_path / "a.json"
+    ap.write_text(json.dumps(assessment()))
+    anp = tmp_path / "annotations.csv"
+    write_annotations(anp, _labels())
+    sp = _session(tmp_path)
+    with pytest.raises(SystemExit):
+        derive_spec.main(["--assessment", str(ap), "--out", str(tmp_path),
+                          "--annotations", str(anp), "--session", str(sp),
+                          "--k", "4"])
+
+
+def test_the_no_k_message_names_the_session_first(tmp_path, capsys):
+    """It is the normal route, so it is the one the error should suggest.
+    `argparse.error` writes to stderr and exits 2, so the message is there."""
+    ap = tmp_path / "a.json"
+    ap.write_text(json.dumps(assessment()))
+    with pytest.raises(SystemExit):
+        derive_spec.main(["--assessment", str(ap), "--out", str(tmp_path),
+                          "--unreviewed"])
+    err = capsys.readouterr().err
+    assert "MAHICE" in err and "--session" in err
+    assert err.index("--session") < err.index("--k-from-annotations")

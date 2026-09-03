@@ -140,13 +140,21 @@ def main(argv: list[str] | None = None) -> None:
                           "with what counts as one event — say which you used")
     asr.add_argument("--limit", type=int, default=None,
                      help="assess only the first N recordings")
+    asr.add_argument("--k-percent", default=None,
+                     help="scan K as PERCENTAGES of each recording's ROI "
+                          "population instead of absolute counts — e.g. "
+                          "'5,10,15,20,25', or 'default' for the standard scan. "
+                          "This is the space K is set in: three co-active ROIs "
+                          "is a third of a 10-ROI field and six percent of a "
+                          "51-ROI one, and both are in this corpus. The report "
+                          "names the count each percentage came to")
     asr.add_argument("--for-annotation", action="store_true",
                      help="scan down to K=2 instead of stopping at 3. A proposal "
                           "list censored at the floor being estimated makes that "
                           "floor the answer, so use this when the candidates are "
-                          "going to a person and K will be derived from the "
-                          "verdicts. The default scan is what every published "
-                          "number was produced at — do not mix them")
+                          "going to a person to judge. The default scan is what "
+                          "every published number was produced at — do not mix "
+                          "them")
 
     win = sub.add_parser(
         "windows", help="what this folder says about its treatment periods — "
@@ -282,13 +290,36 @@ def main(argv: list[str] | None = None) -> None:
         # measuring its own folder should not need the viewer installed
         from bugarach.assess_folder import assess_folder, format_assessment
 
-        from bugarach.assess import PROPOSAL_MIN_ROIS
+        from bugarach.assess import DEFAULT_MIN_ROIS_FRAC, PROPOSAL_MIN_ROIS
+
+        fracs = None
+        if args.k_percent is not None:
+            if args.k_percent.strip().lower() == "default":
+                fracs = DEFAULT_MIN_ROIS_FRAC
+            else:
+                try:
+                    fracs = tuple(float(x) / 100.0
+                                  for x in args.k_percent.split(",") if x.strip())
+                except ValueError:
+                    sys.exit(f"bugarach: --k-percent takes percentages, "
+                             f"comma-separated — got {args.k_percent!r}. "
+                             f"Ten percent is '10', not '0.10'.")
+            if not fracs:
+                sys.exit("bugarach: --k-percent was empty")
+            if any(not (0.0 < f <= 1.0) for f in fracs):
+                sys.exit(f"bugarach: --k-percent values must be in (0, 100] — "
+                         f"got {args.k_percent!r}")
+        if fracs is not None and args.for_annotation:
+            sys.exit("bugarach: --k-percent and --for-annotation are two ways of "
+                     "choosing the scan. Pass a low percentage instead — the "
+                     "proposal has to sit below the K being set either way.")
 
         fa = _load_or_exit(
             assess_folder, _folder_or_exit(args.folder), stream=args.stream,
             n_surrogates=args.surrogates, bin_width_sec=args.bin_width,
             limit=args.limit, progress=_progress("assessing"),
-            min_rois=PROPOSAL_MIN_ROIS if args.for_annotation else None)
+            min_rois=(PROPOSAL_MIN_ROIS if args.for_annotation else None),
+            min_rois_frac=fracs)
         print(format_assessment(fa))
         # Exit 0 whether or not anything was assessable. This is a MEASUREMENT,
         # not a gate: "no recording carried a baseline region" is an answer about
