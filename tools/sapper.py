@@ -44,6 +44,9 @@ class Rule:
 # Patterns for self-referential strings are assembled by concatenation so this
 # file never trips its own rules when scanned.
 _UM = "University of " + "Michigan"
+#: The retired spelling of the instrument (SAP014), assembled so this file does
+#: not trip its own rule even if the exclude were ever dropped.
+_OLD_INSTRUMENT = "MAH" + "DCE"
 
 RULES = [
     Rule(
@@ -338,6 +341,37 @@ RULES = [
                 "where rules are discussed with the people who write them.",
         fixture_bad="it paints each cell active for the rise interval instead",
         fixture_good="it paints each cell active for the producer's width_sec",
+    ),
+    Rule(
+        id="SAP014", level="BLOCK",
+        # One instrument, one acronym. The centrepiece of the loop was coined
+        # MAHDCE on 2026-08-24 and is MAHICE from 2026-09-03 — and the D was
+        # wrong by the glossary's own two-axis rule, which reserves "detection"
+        # for the algorithm and not for the person. Two spellings of one term is
+        # what GLOSSARY.md exists to prevent, and the window where both were live
+        # in this tree lasted one afternoon. This closes it.
+        pattern=_OLD_INSTRUMENT,
+        include=["src/bugarach/**", "tools/**", "README.md", "docs/**"],
+        # GLOSSARY.md is where the retired spelling is DEFINED as retired, so a
+        # reader grepping it lands somewhere. The two dated documents record what
+        # was written on the day and are not edited for later vocabulary — the
+        # same posture the withdrawn paragraphs in the export contract keep.
+        exclude=["docs/GLOSSARY.md", "tools/sapper.py",
+                 "docs/todo/2026-08-24-the-null-leaks-and-the-excess-is-"
+                 "mostly-selection.md",
+                 "docs/handoffs/2026-08-25-the-adr-that-did-not-land.md"],
+        message="ONE INSTRUMENT, ONE ACRONYM — it is MAHICE, machine-assisted "
+                "human IDENTIFICATION of coordinated events (Tony, 2026-09-03). "
+                "The retired spelling put \"detection\" in it, which "
+                "docs/GLOSSARY.md reserves for the DETECTOR axis — \"Never "
+                "'detection' (that's the detector axis)\" — so it spent a "
+                "reserved word on the half of the pair that is a person. "
+                "Identification is the more accurate verb besides: the machine "
+                "detects candidates, and what the person adds is saying which of "
+                "them are the thing. The retired spelling is defined, as retired, "
+                "in docs/GLOSSARY.md; two dated records keep it and are exempt.",
+        fixture_bad="the assessor is the machine half of " + _OLD_INSTRUMENT,
+        fixture_good="the assessor is the machine half of MAHICE",
     ),
 ]
 

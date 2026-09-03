@@ -85,7 +85,7 @@ class FolderAssessment:
 def assess_folder(folder, *, stream: str | None = None,
                   n_surrogates: int = 1000, bin_width_sec: float | None = None,
                   limit: int | None = None, progress=None,
-                  min_rois=None) -> FolderAssessment:
+                  min_rois=None, min_rois_frac=None) -> FolderAssessment:
     """Assess every recording in an export folder that may be assessed.
 
     Reads the folder with the same loader the rest of bugarach uses, so a folder
@@ -170,6 +170,8 @@ def assess_folder(folder, *, stream: str | None = None,
             rec.results = assess_coactivity(
                 s, stream=want, window=window, n_surrogates=n_surrogates,
                 **({} if min_rois is None else {"min_rois": tuple(min_rois)}),
+                **({} if min_rois_frac is None
+                   else {"min_rois_frac": tuple(min_rois_frac)}),
                 **({} if bin_width_sec is None else {"bin_width_sec": bin_width_sec}))
         except Exception as e:                        # noqa: BLE001
             rec.skipped = f"{type(e).__name__}: {e}"
@@ -224,14 +226,30 @@ def format_assessment(fa: FolderAssessment) -> str:
                      f"none is printed")
             continue
 
-        L.append("       K   coact excess/min   clusters/min   participants   "
-                 "span (s)   tightness vs null")
+        # When K came from a percentage, BOTH numbers go in the row. The
+        # percentage is what a person set and is the same on every recording;
+        # the count is what it became here and is not. Printing only the first
+        # hides that 10% is a floor of 1 on a small field; only the second hides
+        # that one setting produced them.
+        by_frac = any(a.min_rois_frac is not None for a in rec.results)
+        head = "  K (% of ROI)" if by_frac else "       K"
+        L.append(f"{head}   coact excess/min   clusters/min   participants   "
+                 f"span (s)   tightness vs null")
         for a in rec.results:
             jit = (f"{_fmt(a.jit_excess)}"
                    if a.jit_defined else "undefined (no cluster in surrogates)")
-            L.append(f"      {a.min_rois:>2}   {_fmt(a.coact_excess):>15}   "
+            if by_frac:
+                pct = ("—" if a.min_rois_frac is None
+                       else f"{100.0 * a.min_rois_frac:g}%")
+                lead = f"  {a.min_rois:>3} ({pct:>5})"
+            else:
+                lead = f"      {a.min_rois:>2}"
+            L.append(f"{lead}   {_fmt(a.coact_excess):>15}   "
                      f"{_fmt(a.clusters_permin):>12}   {_fmt(a.part_n_obs, 1):>12}   "
                      f"{_fmt(a.span_med):>8}   {jit}")
+        if by_frac and any(a.min_rois == 1 for a in rec.results):
+            L.append("       ⚠ a percentage rounded to K=1 here — one co-active "
+                     "ROI is no floor at all")
         L.append("")
 
     if fa.region_counts:
