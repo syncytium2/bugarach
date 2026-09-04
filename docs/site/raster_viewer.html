@@ -256,6 +256,13 @@
     cursor: default; opacity: .45; border-style: dashed;
   }
   .step:disabled:hover { border-color: var(--line); }
+  /* NOT READY, BUT STILL A DOOR. Dashed and dimmed like the disabled state it
+     replaced, so it reads as "you have not earned this yet" — but it keeps the
+     pointer cursor and full opacity on hover, because it opens, and what it
+     opens is the panel that says what is missing and offers the fix. A step
+     whose own instructions are locked behind it is a dead end. */
+  .step.not-ready { opacity: .62; border-style: dashed; }
+  .step.not-ready:hover { opacity: 1; border-color: var(--accent); }
   .step .tick { color: var(--ok, #2c7a4b); font-weight: 700; }
   .step[aria-current="true"] .tick { color: #fff; }
 
@@ -2091,7 +2098,18 @@ function draw(rec, data) {
   const css = getComputedStyle(document.documentElement);
   const dpr = window.devicePixelRatio || 1;
   const W = cv.clientWidth || 900;
-  const names = [...data.streams.keys()].sort();
+  /* ONE CHANNEL ON SCREEN: THE ONE THAT WAS CHOSEN. Tony, 2026-09-04: "i
+     selected fast but slow still shows at the bottom", and "user should choose
+     one channel at the start. i think that simplifes."
+
+     This used to draw every stream and say so in the picker's note. That was
+     defensible when the choice only governed settings, and it stopped being
+     defensible once MAHICE runs per channel: the judging lane belongs to one
+     channel, so a second raster underneath it is a panel the lane says nothing
+     about, in the picture being used to judge. Choosing `fast` now means the
+     page is showing fast. */
+  const names = [...data.streams.keys()].sort()
+    .filter(n => STREAMS_SEEN.length < 2 || !STREAM || n === STREAM);
   const padL = 62, padR = 14, padT = 23, padB = 40, gap = 16;
   const rowH = Math.max(110, Math.min(230, 26 + data.nRois * 5));
   /* Headroom for the judging lane, reserved on EVERY panel or none. Reserving it
@@ -2999,6 +3017,11 @@ async function open(fileList, opts) {
      reason, and before the check below, because the check walks every file and
      a person coming back to unfinished judging should not wait on it. */
   offerSavedReview();
+  // ...and paint the judging step's own state for the folder just opened. Third
+  // time today a panel was correct and nothing called the function that fills it
+  // in: the step is reachable now, and without this its gate is BLANK, so it
+  // explains nothing and offers no way forward.
+  paintAnnotChip();
   // the first raster goes up before the folder is checked: seeing something is
   // the point of opening it, and the check walks every file
   document.getElementById("checkbar").hidden = false;
@@ -4381,9 +4404,10 @@ function paintStreamPick() {
   note.textContent = "This folder holds " + STREAMS_SEEN.join(" and ")
     + ". One is analysed at a time — they are separate experiments, not two "
     + "views of one. Everything below is about " + sel.value + ": the settings "
-    + "you tune, the file you save, the table you download. Switch here and run "
-    + "again for " + others.join(" or ") + ". The raster keeps drawing all of "
-    + "them.";
+    + "you tune, the file you save, the table you download, the raster on "
+    + "screen, and the MAHICE review with its own verdicts and its own K. "
+    + "Switch here and run again for " + others.join(" or ")
+    + " — switching does not lose the review you already have.";
 }
 
 /* Switching the stream throws away every result about the last one, because
@@ -5943,6 +5967,16 @@ async function assessFolderRun() {
                       elapsedSec: (performance.now() - startedAt) / 1000 };
     paintFolderAssess();
     markDone("accAssess");
+    /* THE SEAM. Nothing else tells the judging step that candidates arrived, so
+       without this `#anStart` stays disabled for the rest of the session and
+       every click on "Draw a sample and start" does nothing, silently.
+
+       This fix was made once already, in the assembled page, and LOST when the
+       change was ported into this template with `patch` -- the single-recording
+       hunk applied and this one did not, and the run was reported as a success.
+       Which is why the loop is now driven end to end on the real folder by
+       clicking real controls, instead of being checked a function at a time. */
+    paintAnnotChip();
   } finally {
     ASSESS_RUNNING = false;
     paintAssessFolderButton();
@@ -11492,7 +11526,25 @@ function railStep(s) {
     need.textContent = ok ? (stepStatus(s) || "ready") : s.need;
   }
   b.appendChild(need);
-  if (!ok && s.key !== SECTION) b.disabled = true;
+  /* A STEP THAT IS NOT READY IS STILL OPENABLE, and that is the whole point.
+
+     This used to read `if (!ok) b.disabled = true`, which made a step you had
+     not earned yet UNREACHABLE -- and the panel behind it is exactly where the
+     page explains what is missing and offers the control that fixes it. So the
+     reader got a chip that says "assess something first", cannot be clicked,
+     and leads nowhere: a dead end wearing a label.
+
+     Tony hit this for a whole session on 2026-09-04 ("clicking draw a sample
+     and start does nothing visible... there's nothing to click to accept or
+     reject"). `collectCandidates()` is empty until an assessment runs AND does
+     not survive a reload, so after any refresh the judging step was permanently
+     shut, with its own instructions locked inside it.
+
+     `not-ready` keeps it visibly not-ready. It does not pretend the step is
+     done, and nothing downstream runs on data that is not there -- every panel
+     already paints its own empty state. Being honest about a prerequisite and
+     hiding the way to satisfy it are different things. */
+  if (!ok) b.classList.add("not-ready");
   if (s.key === SECTION) b.setAttribute("aria-current", "true");
   b.onclick = () => showSection(s.key);
   return b;
