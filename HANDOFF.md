@@ -42,15 +42,15 @@ having looked, his name on it, and the ROI population it resolved against. Not a
 in a conversation — the file.
 
 **Walking the loop is how that setting becomes trustworthy rather than another number
-nobody can defend.** Each stage below is a chance for the sequence to break somewhere
-that only shows end to end, and a K set on top of a broken stage 2 is worth no more than
-the one this replaces. So: walk it, on the real folder, as a person would — and say
-where it breaks.
+nobody can defend.** Each step below is a chance for the sequence to break somewhere that
+only shows end to end, and a K set on top of periods that were read wrong is worth no
+more than the one it replaces. So: walk it, on the real folder, as a person would — and
+say where it breaks.
 
 Six things landed on 2026-09-03 and every one was verified *in isolation*. **The sequence
 has never been run.** That is the gap this handoff exists to close, and it is the kind
 that only shows up end to end: each piece passing its own tests says nothing about
-whether stage 3 can read what stage 2 wrote.
+whether *derive the spec* can read what *confirm the events* wrote.
 
 The loop is [`docs/RESET.md`](docs/RESET.md) **§2** — Tony's own statement of it, with
 the four places reality differs marked. **§3** is the built/not-built table. **Read §2
@@ -78,35 +78,51 @@ with **no** `analysis_*` columns — so it scores whole raw periods where this o
 `long_window_20`. Same events, different windows, different numbers. Redeclaring is
 Tony's call and the file says to change the name there and nowhere else.
 
-### The stages, and what to check at each
+### The steps, by name, and what to check at each
 
-1. **`bugarach check <folder>`** — expect conforming, and the new header telling you
-   loudly if treatment timing or analysis windows are missing. This folder has both, so
-   the header should be **silent**; a false alarm here is a bug.
-2. **`bugarach windows <folder>`** — what each recording says about its periods. Try
-   `--create` on a **copy** with `regions.csv` removed and confirm the scaffold refuses
-   to be shipped: `check` must fail on the placeholder until the label is real.
-3. **`bugarach assess <folder> --k-percent 5,10,15,20,25`** — the scan in the space K is
-   set in. Check the resolved count varies with the field size and the percentage does
-   not.
-4. **MAHICE, in the browser** (#469) — `docs/site/raster_viewer.html`, open the folder,
-   assess, *Confirm the events*, judge a sample, **set K as a percentage**, download
-   `annotations.csv` and `mahice.json`. **This is the step that has never touched real
-   data** — it has only been driven on simulated recordings.
-5. **`derive_spec --assessment … --annotations annotations.csv --session mahice.json`** —
-   the spec should carry `k_source: "mahice"`, the percentage, and the cross-check.
-   ⚠ The assessment must have been run at a scan containing the K your percentage
-   resolves to, or it refuses and tells you to re-assess at that percentage.
-6. **Simulate from the spec, then compare with the real folder.** Both exist; neither has
-   been driven from a `mahice.json`.
-7. **`bugarach detect <folder>`** — writes `detections.csv`, `detector_settings.csv`,
-   `run.json`.
+**Named, not numbered** — `docs/writing_conventions.md`: *"Name things; don't index
+them."* A step called "stage 4" asks the reader to hold a private taxonomy in their head
+and carries no meaning on its own; **confirm the events** tells them what it is. Refer to
+them below by these names.
+
+**Import the folder** — `bugarach check <folder>`
+: Expect conforming, and the header telling you loudly if treatment timing or analysis
+  windows are missing. This folder has both, so the header should be **silent**; a false
+  alarm here is a bug.
+
+**Declare the periods** — `bugarach windows <folder>`
+: What each recording says about its periods. Try `--create` on a **copy** with
+  `regions.csv` removed and confirm the scaffold refuses to be shipped: *import the
+  folder* must fail on the placeholder label until it is a real treatment name.
+
+**Assess coordination** — `bugarach assess <folder> --k-percent 5,10,15,20,25`
+: The scan in the space K is set in, with no detector involved. Check that the resolved
+  count varies with the field size and the percentage does not.
+
+**Confirm the events, and set K** — MAHICE, in the browser
+: `docs/site/raster_viewer.html` — open the folder, assess, *Confirm the events*, judge a
+  sample, **set K as a percentage**, download `annotations.csv` and `mahice.json`.
+  **This is the step the job is for, and the one that has never touched real data** — it
+  has only ever been driven on simulated recordings.
+
+**Derive the spec** — `derive_spec --annotations annotations.csv --session mahice.json`
+: The spec should carry `k_source: "mahice"`, the percentage, and the cross-check.
+  ⚠ *Assess coordination* must have been run at a scan containing the K the percentage
+  resolves to, or this refuses and tells you to re-assess at that percentage.
+
+**Simulate and compare**
+: Simulate from the spec, then put its statistics beside the real folder's. Both exist;
+  neither has been driven from a `mahice.json`.
+
+**Detect on the real folder** — `bugarach detect <folder>`
+: Writes `detections.csv`, `detector_settings.csv`, `run.json`.
 
 ### What is already verified, so you do not redo it
 
 - `check` / `assess` / `detect` on all 84 recordings of this folder — 84/84 conforming,
   32,078 detections in 41 s, 238 windows recorded, nothing skipped.
-- The stage-one header: correct on a folder missing periods, **silent** on this one.
+- The *import the folder* header: correct on a folder missing periods, **silent** on
+  this one.
 - `assess --k-percent` on three of its recordings: 20% is K=7 on the 34-ROI recording and
   K=6 on the 31-ROI one, from one setting.
 - MAHICE in the browser, driven by clicking, **on simulated data**: 91 candidates → judge
@@ -116,7 +132,7 @@ Tony's call and the file says to change the name there and nowhere else.
 
 - **Any of it as a sequence.** Nothing has carried a real `mahice.json` into
   `derive_spec` and out the other side.
-- **The browser against the real folder.** Stage 4 above.
+- **The browser against the real folder** — *confirm the events, and set K*.
 - **The spec → simulate → compare arc** from a person's K rather than a fixture's.
 
 ---
