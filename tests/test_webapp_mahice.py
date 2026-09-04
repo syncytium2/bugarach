@@ -386,6 +386,89 @@ def test_the_verdict_is_the_colour_not_the_shape(page):
 
 
 # ---------------------------------------------------------------------------
+# judging the mark you clicked, at the scale you chose
+# ---------------------------------------------------------------------------
+
+def test_clicking_a_mark_brings_the_verdict_buttons_with_it(page):
+    """The lane is in the main column and is always visible; the verdict buttons
+    are in the side panel, which shows one section at a time.
+
+    So clicking a triangle while another step was open selected the candidate,
+    drew its ring, and left the reader with nothing to answer with — Tony,
+    2026-09-04: "clicking on the gray down triangle draws a circle. no option to
+    accept or exclude." Selecting a candidate IS entering the judging step.
+    """
+    pg, _ = page
+    out = pg.evaluate(
+        """() => {
+          ANNOT = null; discardSavedReview();
+          document.getElementById("anWho").value = "tony";
+          document.getElementById("anCap").value = "50";
+          document.getElementById("anBudget").value = "400";
+          startAnnotation();
+          draw(current, current.loaded);
+          if (!CAND_HITS.length) return {skip: true};
+          showSection("accList");            // look at some other step
+          const away = document.getElementById("anYes").offsetParent !== null;
+          const cv = document.getElementById("cv");
+          const r = cv.getBoundingClientRect();
+          const t = CAND_HITS[0];
+          cv.dispatchEvent(new MouseEvent("click", {
+            clientX: r.left + t.x, clientY: r.top + t.y, bubbles: true}));
+          return {skip: false, onscreenBefore: away,
+                  onscreenAfter: document.getElementById("anYes").offsetParent !== null,
+                  stageHidden: document.getElementById("anStage").hidden,
+                  i: ANNOT.i, wanted: t.i};
+        }""")
+    if out.get("skip"):
+        pytest.skip("no candidates drawn in the fixture")
+    assert not out["onscreenBefore"], "fixture must start with the panel away"
+    assert out["i"] == out["wanted"], "the click selected the wrong candidate"
+    assert not out["stageHidden"], "the judging stage stayed hidden"
+    assert out["onscreenAfter"], (
+        "a mark was selected and the verdict buttons are still off screen — "
+        "there is nothing to accept or reject with")
+
+
+def test_the_time_axis_zooms_and_the_verdict_records_the_window_it_was_made_in(page):
+    """Tony, 2026-09-04: "need to be able to zoom the x-axis during mahice."
+
+    A fixed window decides for the reader how tight a co-activation has to look,
+    which is the judgement being asked for. And because a judgement is a property
+    of the recording, the rendering and the observer together, the window a
+    verdict was cast at has to travel with it — not the default it might have
+    been.
+    """
+    pg, _ = page
+    out = pg.evaluate(
+        """async () => {
+          ANNOT = null; discardSavedReview();
+          ANNOT_PAD_SEC = 20;
+          document.getElementById("anWho").value = "tony";
+          document.getElementById("anCap").value = "50";
+          document.getElementById("anBudget").value = "400";
+          startAnnotation();
+          // `showCandidate` awaits the recording before stamping the view, so
+          // the view is null until it settles.
+          await showCandidate();
+          const wide = [ANNOT.view.t0, ANNOT.view.t1];
+          document.getElementById("anZoomIn").click();   // tighter
+          await showCandidate();
+          const tight = [ANNOT.view.t0, ANNOT.view.t1];
+          recordVerdict("confirmed");
+          const stamped = ANNOT.verdicts[0].view;
+          return {wide, tight, pad: ANNOT_PAD_SEC,
+                  stamped: [stamped.t0, stamped.t1]};
+        }""")
+    wide_span = out["wide"][1] - out["wide"][0]
+    tight_span = out["tight"][1] - out["tight"][0]
+    assert tight_span < wide_span, (
+        f"zooming in did not narrow the window: {wide_span} -> {tight_span}")
+    assert out["stamped"] == out["tight"], (
+        "the verdict recorded a different window than the one it was judged in")
+
+
+# ---------------------------------------------------------------------------
 # a review that survives a reload
 # ---------------------------------------------------------------------------
 
