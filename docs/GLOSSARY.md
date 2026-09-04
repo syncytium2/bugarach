@@ -124,14 +124,26 @@ app… let's start trying to be specific"*).
 Two more that are decisions rather than parameters, and should not be called
 settings at all:
 
-- **K** — the minimum number of participating ROIs an assessment reports at. A
-  **scan, not a setting**: the assessor reports every K that clears the floor and
-  refuses to pick one, because picking it is the analyst's call. It is the
-  clearest case of why the instrument is [MAHICE](#the-instrument-that-finds-coordination)
-  rather than the machine alone — K moves the headline by an order of magnitude
-  across the range the assessor scans, and no arithmetic chooses it. **A person
-  sets it during the review, as a percentage of the field**; `annotate.derive_k`
-  will say what the labels alone would have put it at and never overrides.
+- **K** — the coactivity floor. **Defined once, in
+  [the MAHICE section](#the-instrument-that-finds-coordination)**: a person sets it
+  during the review, as a **percentage** of each recording's ROI population, one
+  percentage per review. It is *not* re-defined here — this entry used to carry a
+  second definition, and the two disagreed (see below).
+  What belongs here is why K sits apart from the three settings above: those are
+  chosen by fitting, and K is not. It moves the headline by an order of magnitude
+  across the range the assessor scans and **no arithmetic chooses it**, which is the
+  clearest case of why the instrument is MAHICE rather than the machine alone.
+  `annotate.derive_k` reports what the labels alone would have put it at and **never
+  overrides** — a cross-check, not a proposal.
+
+  > ⚠ **This entry said "a scan, not a setting" until 2026-09-03**, and led with
+  > `derive_k`, which is the mechanism from before a person set K by hand. The
+  > MAHICE section had already been corrected; this one had not, so the file
+  > answered "what is K" two ways depending on where you opened it. A session read
+  > the stale half aloud to Tony as a live decision — *which K for the Cossart
+  > folder, 12 or 16* — a question the percentage mechanism had already dissolved.
+  > **Two entries for one term is the defect this file exists to prevent**, and it
+  > had one.
 - **tolerance** — the match window scoring uses to pair a detection with a planted
   event. One word; it needs no qualifier and should not acquire one.
 
