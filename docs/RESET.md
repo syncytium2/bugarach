@@ -82,6 +82,11 @@ is not an oracle while doing it.
 
 ## 2 · What the product is
 
+> **The walked version is [`pipeline.md`](pipeline.md)** — Tony took this loop step by step
+> on 2026-09-04, naming each step and what it owns. This section stays as the record of
+> what he said on 2026-08-24 and of what was true when it was annotated; the other page is
+> where to look for what a step is *for*.
+
 Tony's own statement of the loop, 2026-08-24, with the three places reality differs marked:
 
 > *"The user shares a folder with a series of recordings. They want to quantify
@@ -101,6 +106,13 @@ Both halves are right; they come from different places.
 **⚠² Not ground truth — parameters.** Per part 1.
 
 **⚠³ Tube variants do not exist.** There is one tube, trained only under `bugarach lab`.
+
+> **CORRECTED 2026-09-04 — four are registered.** `tube`, `tube_guard`, `tube_ratio` and
+> `tube_ratio_guard`, one file each in `learn/nets/`, and the browser's picker trains every
+> architecture selected. Tony's quoted sentence stays as he said it; **the annotation under
+> it is what went stale.** What is still true is narrower and sits under *Tune* in
+> [`pipeline.md`](pipeline.md): nothing persists a trained model, so a variant cannot be
+> tested on a fresh batch or run on the user's own folder.
 
 **⚠⁴ There is no publish, and the question in the first sentence is never answered.**
 The app writes `detections.csv` and `run.json` and stops. **No function anywhere in `src/`
@@ -124,12 +136,13 @@ analysis short of the question it opens with.
 | compare every detector on one split | ⚠️ built, hidden, copy unreviewed | ✅ `docs/learned/bakeoff.json` |
 | detect over the real folder and write files | ✅ | ✅ `bugarach detect` |
 | record the human's judgement | ✅ the assessor's markers take verdicts | ✅ `annotate.py` |
-| **the user sets K during MAHICE** | ❌ **the screen cannot set it yet** | ✅ recorded by `annotate.MahiceSession` |
-| K as a % of each recording's ROIs | ❌ | ✅ `assess --k-percent`, `assess.k_from_fraction` |
+| **the user sets K during MAHICE** | ✅ **since #469, 2026-09-04** | ✅ recorded by `annotate.MahiceSession` |
+| K as a % of each recording's ROIs | ✅ the page resolves it per recording | ✅ `assess --k-percent`, `assess.k_from_fraction` |
 | cross-check that K against the labels | ❌ | ✅ `annotate.cross_check_k` — reports only |
 | **compare two regions** | ❌ | ❌ |
 
-> **K is the user's, it is a percentage, and the browser cannot yet set it.** Tony,
+> **K is the user's, it is a percentage, and the browser sets it — since #469, 2026-09-04.**
+> Tony,
 > 2026-09-03: *"K is set by the user during review of the data with MAHICE"* and *"the
 > human might want different K for a session, but it is not fair to change K for each
 > slice. We do need K expressed as a percentage."* Three co-active ROIs is a third of a
@@ -137,9 +150,15 @@ analysis short of the question it opens with.
 > export — so one percentage per review is what makes a single setting fair, and the
 > absolute floor follows each field size on its own.
 >
-> The Python half records it and every consumer reads it. **The screen does not offer the
-> control**, which is the gap that matters most now: the whole point is that K is set
-> *while looking at the data*, and today it has to be written into `mahice.json` by hand.
+> The Python half records it and every consumer reads it, and the page now offers the
+> control — *Set K for this review* — so the percentage is set while looking at the data
+> rather than written into `mahice.json` by hand.
+>
+> **This paragraph said the opposite until 2026-09-04, the day after the control landed**,
+> which is the third time this section has been the last thing to hear about its own
+> subject. **What is still open is not the control but the use of it:** nobody has run
+> MAHICE on the approved export folder, so no percentage is set for it. That is expert
+> attention, not compute — and it is a different sentence from "the screen cannot".
 
 > **The judgement row said ❌ ❌ until 2026-09-03, five days after §7 step 0 in this same
 > file said it had landed.** `annotate.py` went in on 2026-08-24 with #270; the table was
