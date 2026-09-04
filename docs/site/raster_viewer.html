@@ -457,6 +457,19 @@
      which is the one thing the ledger exists to support. So the table gets a
      bounded height and its own scrollbar, and the header row stays put inside
      it — scrolling to row 30 with no column names is its own small defeat. */
+  /* THE WORKSPACE ROW. The confirm tool and the ledger, equal footing, under
+     the raster they both describe. Tony, 2026-09-04: "i just found the event
+     display in the left hand column where i had to scroll down to see the nav
+     and buttons... have the event confirm tool and the table side by side on
+     equal footing, so a row over two columns."
+     Collapses to one column when there is not room for two — below that width
+     neither half is usable beside the other. */
+  #judgerow { display: grid; grid-template-columns: 1fr 1fr; gap: 20px;
+              align-items: start; margin-top: 10px; }
+  @media (max-width: 1100px) { #judgerow { grid-template-columns: 1fr; } }
+  #judgePane, #judgerow #candTable { min-width: 0; }
+  #judgePane #anCv { width: 100%; }
+  #judgerow #candTable h4, #judgePane .anhead { margin-top: 0; }
   .candscroll { max-height: 38vh; overflow-y: auto; overflow-x: auto;
                 border: 1px solid var(--line); border-radius: 7px;
                 padding: 0 10px; margin: 6px 0 14px; }
@@ -872,35 +885,6 @@
              and find the control that fixes it. -->
         <div class="span" id="anGate"></div>
         <div class="span note" id="anWhat"></div>
-      </div>
-      <div id="anStage" hidden>
-        <div class="anhead">
-          <span id="anWhere" class="sub"></span>
-          <span id="anProg" class="sub"></span>
-        </div>
-        <canvas id="anCv"></canvas>
-        <!-- ZOOM THE TIME AXIS WHILE JUDGING. Tony, 2026-09-04: "need to be
-             able to zoom the x-axis during mahice."
-             A fixed ±20 s window decides for the reader how tight a
-             co-activation has to look, and that is the judgement being asked
-             for. Whether five ROIs inside two seconds is one event or five
-             coincidences reads differently at ±5 s and at ±60 s, so the window
-             has to be theirs.
-             It costs nothing in the record: `view_t0_sec` / `view_t1_sec`
-             already stamp the ACTUAL window on every verdict, so a judgement
-             made zoomed in is stored as what it was. -->
-        <div class="anzoom">
-          <button id="anZoomIn" class="ghost" title="tighter window">−</button>
-          <span id="anZoomWhat" class="sub"></span>
-          <button id="anZoomOut" class="ghost" title="wider window">+</button>
-        </div>
-        <div class="anbtns">
-          <button id="anYes">Coordinated <kbd>y</kbd></button>
-          <button id="anNo">Not coordinated <kbd>n</kbd></button>
-          <button id="anIdk">Can't tell <kbd>u</kbd></button>
-          <button id="anBack" class="ghost">Back <kbd>&larr;</kbd></button>
-        </div>
-        <div class="note" id="anCand"></div>
       </div>
       <div id="anOut"></div>
       <!-- THE OTHER HALF OF MAHICE. The machine proposes and the person
@@ -1584,7 +1568,50 @@
            made in the row rather than somewhere else. Selected is BLUE in both
            places at once — the row and the arrow above the raster — so there is
            never a question about which event a click just answered. -->
-      <div id="candTable"></div>
+      <!-- THE WORKSPACE: raster on top, then the confirm tool and the
+           ledger side by side on equal footing. Tony, 2026-09-04: "i just
+           found the event display in the left hand column where i had to
+           scroll down to see the nav and buttons... have the event confirm
+           tool and the table side by side on equal footing, so a row over
+           two columns."
+           The judging canvas used to live in the sidebar accordion, below
+           a stack of setup controls, so the thing being judged and the
+           thing recording the judgement were in different columns at
+           different scroll positions. They are one row now. -->
+      <div id="judgerow">
+        <div id="judgePane">
+        <div id="anStage" hidden>
+          <div class="anhead">
+            <span id="anWhere" class="sub"></span>
+            <span id="anProg" class="sub"></span>
+          </div>
+          <canvas id="anCv"></canvas>
+          <!-- ZOOM THE TIME AXIS WHILE JUDGING. Tony, 2026-09-04: "need to be
+               able to zoom the x-axis during mahice."
+               A fixed ±20 s window decides for the reader how tight a
+               co-activation has to look, and that is the judgement being asked
+               for. Whether five ROIs inside two seconds is one event or five
+               coincidences reads differently at ±5 s and at ±60 s, so the window
+               has to be theirs.
+               It costs nothing in the record: `view_t0_sec` / `view_t1_sec`
+               already stamp the ACTUAL window on every verdict, so a judgement
+               made zoomed in is stored as what it was. -->
+          <div class="anzoom">
+            <button id="anZoomIn" class="ghost" title="tighter window">−</button>
+            <span id="anZoomWhat" class="sub"></span>
+            <button id="anZoomOut" class="ghost" title="wider window">+</button>
+          </div>
+          <div class="anbtns">
+            <button id="anYes">Coordinated <kbd>y</kbd></button>
+            <button id="anNo">Not coordinated <kbd>n</kbd></button>
+            <button id="anIdk">Can't tell <kbd>u</kbd></button>
+            <button id="anBack" class="ghost">Back <kbd>&larr;</kbd></button>
+          </div>
+          <div class="note" id="anCand"></div>
+        </div>
+        </div>
+        <div id="candTable"></div>
+      </div>
       <div id="assessOut"></div>
       <div id="detectOut"></div>
       <div id="windowOut"></div>
@@ -2301,7 +2328,9 @@ function repaintJudgingLane() {
 async function selectCandidate(i) {
   if (!ANNOT || i < 0 || i >= ANNOT.cands.length) return;
   ANNOT.i = i;
-  showSection("accAnnotate");
+  /* NO `showSection` HERE ANY MORE. The confirm tool lives in the main column
+     beside the ledger now, so it is already on screen — switching the sidebar
+     would only drag the reader off whatever step they had open. */
   const stage = document.getElementById("anStage");
   if (stage) stage.hidden = false;
   for (const id of ["anYes", "anNo", "anIdk"])
@@ -2445,7 +2474,12 @@ function draw(rec, data) {
   const names = [...data.streams.keys()].sort()
     .filter(n => STREAMS_SEEN.length < 2 || !STREAM || n === STREAM);
   const padL = 62, padR = 14, padT = 23, padB = 40, gap = 16;
-  const rowH = Math.max(110, Math.min(230, 26 + data.nRois * 5));
+  /* SHORTER, because the raster now shares the page with the workspace under it
+     rather than owning the fold. Tony, 2026-09-04: "make the raster vertically
+     shorter". Still scales with ROI count -- a 51-ROI field needs more room than
+     a 10-ROI one -- but the ceiling comes down so the confirm tool and the
+     ledger are on screen with it instead of below it. */
+  const rowH = Math.max(90, Math.min(165, 24 + data.nRois * 3.2));
   /* Headroom for the judging lane, reserved on EVERY panel or none. Reserving it
      only where candidates landed would move the frames between redraws as
      verdicts come in, and a raster that shifts under the reader while they judge
@@ -6701,7 +6735,12 @@ function drawCandidate(cv, byRoi, order, cand, t0, t1) {
   const dpr = window.devicePixelRatio || 1;
   const W = cv.clientWidth || 900;
   const padL = 54, padR = 14, padT = 10, padB = 30;
-  const H = padT + Math.max(120, Math.min(320, 20 + order.length * 7)) + padB;
+  /* Shorter, for the same reason the raster came down: this canvas now sits in
+     a workspace row beside the ledger rather than owning a sidebar column, and
+     at 320px its own verdict buttons fell below the fold — the reader could see
+     the candidate or the buttons, not both. Still scales with the field size,
+     with a lower ceiling. */
+  const H = padT + Math.max(100, Math.min(190, 18 + order.length * 3.4)) + padB;
   cv.width = W * dpr; cv.height = H * dpr; cv.style.height = H + "px";
   const g = cv.getContext("2d");
   g.scale(dpr, dpr);
@@ -7569,18 +7608,12 @@ function wireAnnotate() {
       }
       if (!best || bestD > CAND_HIT_PX + 6) return;
       ANNOT.i = best.i;
-      /* BRING THE VERDICT BUTTONS TO THE MARK THAT WAS JUST CLICKED.
-
-         The lane lives in the main column and is always on screen; the
-         Coordinated / Not coordinated / Can't tell buttons live in the side
-         panel, which shows ONE section at a time. So clicking a triangle while
-         any other step was open selected the candidate, drew its ring, and left
-         the reader with no way to answer -- Tony, 2026-09-04: "clicking on the
-         gray down triangle draws a circle. no option to accept or exclude."
-
-         Selecting a candidate IS entering the judging step, so the page goes
-         there. */
-      showSection("accAnnotate");
+      /* Clicking a mark used to need `showSection("accAnnotate")` to drag the
+         verdict buttons into view, because they lived in the sidebar and it
+         shows one step at a time -- Tony, 2026-09-04: "clicking on the gray
+         down triangle draws a circle. no option to accept or exclude."
+         The confirm tool is in the main column now, beside the ledger, so the
+         buttons are already on screen and the sidebar is left where it was. */
       const stage = document.getElementById("anStage");
       if (stage) stage.hidden = false;
       for (const id of ["anYes", "anNo", "anIdk"])

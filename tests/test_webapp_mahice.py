@@ -454,13 +454,20 @@ def test_the_ledger_selects_in_blue_and_judges_in_the_row(page):
 # ---------------------------------------------------------------------------
 
 def test_clicking_a_mark_brings_the_verdict_buttons_with_it(page):
-    """The lane is in the main column and is always visible; the verdict buttons
-    are in the side panel, which shows one section at a time.
+    """Clicking a mark must always leave you able to answer.
 
-    So clicking a triangle while another step was open selected the candidate,
-    drew its ring, and left the reader with nothing to answer with — Tony,
-    2026-09-04: "clicking on the gray down triangle draws a circle. no option to
-    accept or exclude." Selecting a candidate IS entering the judging step.
+    First this was false because the verdict buttons lived in the sidebar, which
+    shows one step at a time: clicking a triangle while another step was open
+    selected the candidate, drew its ring, and left nothing to answer with —
+    Tony, 2026-09-04: "clicking on the gray down triangle draws a circle. no
+    option to accept or exclude." That was patched by forcing the sidebar to the
+    judging step.
+
+    Then the confirm tool moved into the MAIN COLUMN beside the ledger, which
+    makes the property structural instead of patched: the buttons are on screen
+    whatever the sidebar is showing, and the sidebar is left where the reader put
+    it. So this now asserts the stronger thing — on screen BEFORE the click as
+    well as after, with the selection landing where it was aimed.
     """
     pg, _ = page
     out = pg.evaluate(
@@ -473,25 +480,31 @@ def test_clicking_a_mark_brings_the_verdict_buttons_with_it(page):
           draw(current, current.loaded);
           if (!CAND_HITS.length) return {skip: true};
           showSection("accList");            // look at some other step
-          const away = document.getElementById("anYes").offsetParent !== null;
+          const before = document.getElementById("anYes").offsetParent !== null;
           const cv = document.getElementById("cv");
           const r = cv.getBoundingClientRect();
           const t = CAND_HITS[0];
           cv.dispatchEvent(new MouseEvent("click", {
             clientX: r.left + t.x, clientY: r.top + t.y, bubbles: true}));
-          return {skip: false, onscreenBefore: away,
+          return {skip: false, onscreenBefore: before,
                   onscreenAfter: document.getElementById("anYes").offsetParent !== null,
                   stageHidden: document.getElementById("anStage").hidden,
+                  sidebarStayed: SECTION === "accList",
                   i: ANNOT.i, wanted: t.i};
         }""")
     if out.get("skip"):
         pytest.skip("no candidates drawn in the fixture")
-    assert not out["onscreenBefore"], "fixture must start with the panel away"
+    assert out["onscreenBefore"], (
+        "the verdict buttons are off screen while another sidebar step is open "
+        "— the confirm tool is supposed to live in the main column now")
     assert out["i"] == out["wanted"], "the click selected the wrong candidate"
     assert not out["stageHidden"], "the judging stage stayed hidden"
     assert out["onscreenAfter"], (
-        "a mark was selected and the verdict buttons are still off screen — "
-        "there is nothing to accept or reject with")
+        "a mark was selected and the verdict buttons are off screen — there is "
+        "nothing to accept or reject with")
+    assert out["sidebarStayed"], (
+        "clicking a mark yanked the sidebar to another step; the confirm tool "
+        "is already on screen, so there is nothing to switch to")
 
 
 def test_the_time_axis_zooms_and_the_verdict_records_the_window_it_was_made_in(page):
