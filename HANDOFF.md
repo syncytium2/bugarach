@@ -1,219 +1,191 @@
-# Handoff — 2026-08-27, for the big push
+# Handoff — walk the loop end to end, and validate it
 
-**In flight: #292, #53, #50** — all three are proposals sitting with other teams, and
-none of them blocks work here. **#304 and #270 merged on 2026-08-28.** When the last
-closes, `tests/test_handoff_is_honest.py` goes red and retires this file.
+**In flight: [#466](https://github.com/syncytium2/bugarach/pull/466)** — the field-step
+figure, held because it is a figure with a caption and was never murderboarded. When it
+closes this file is spent and `tests/test_handoff_is_honest.py` says so out loud.
 
-**This file no longer carries counts, and that is the repair.** `main`'s sha, the suite size
-and the board totals used to sit here. They were wrong again within 48 hours of the refresh
-below — whose entire subject was that they rot. Derive them; each is one command:
+*(MAHICE in the webapp landed while this handoff was in review, so it is named below as
+work to walk rather than here as work in flight. The gate reads the first forty lines
+and every PR it finds there must still be open — which is the gate doing its job, and it
+caught this one.)*
+
+> **Not murderboarded** — working material for sessions in this tree, same standing as
+> `docs/run_records.md` and the K todo. Nothing here is for an outside reader; if any of
+> it becomes one, murderboard that artifact first.
+
+**No counts in this file, deliberately.** The handoff it replaces put its own rot on the
+record twice in three days. Derive them:
 
 | what | how |
 |---|---|
 | `main`, the suite, sapper | `git rev-parse --short origin/main` · `pytest -q` · `python3 tools/sapper.py --all` |
-| the boards | `bash tools/board_digest.sh` — ACTIVE claims, and which have no worktree |
-| **what is established, and how strongly** | [`docs/MILESTONES.md`](docs/MILESTONES.md) — rows pinned to commits, so a row can go incomplete but cannot silently change its mind |
-
-> **Refreshed again 2026-09-01, and every figure had rotted a second time.** It claimed `main`
-> at `ced0da4` (37 commits back), the suite at 1,569 against 1,708 collected, and the board at
-> "30 ACTIVE, 7 with a live worktree" against **39 ACTIVE of 275, 29 with none**. The 08-30 note
-> below diagnosed exactly this and refreshed the numbers rather than removing them, so the same
-> file made the same claim wrong twice in three days. **A number in a file nothing recomputes is
-> a promise no one is keeping.** The counts are gone; the commands are above.
-
-> **Refreshed 2026-08-30, and every figure above had rotted.** It listed #304 and #270 as
-> in flight two days after they merged, quoted `main` at `ab1dbfd` — 61 commits back — and
-> the suite at 1,391 when it is 1,569, and reported the board "down to 4 ACTIVE claims"
-> while the local one carried 30.
->
-> **None of that made the gate fire.** `test_handoff_is_honest.py` only goes red when the
-> *last* named PR closes, so this file could be wrong about four things out of five and
-> still read as authoritative — and it is the first thing the briefing reads aloud at
-> every session start. Same can-the-alarm-ring shape this project keeps finding, and it
-> earns the general form: **a file whose whole job is to say what is true cannot be
-> checked only on its own retirement condition.**
+| the boards | `bash tools/board_digest.sh` |
+| what is established, how strongly | [`docs/MILESTONES.md`](docs/MILESTONES.md) |
 
 ---
 
-## ⚠ Start here: two decisions, and one of them blocks the pipeline
+## The job
 
-The session briefing reads these out loud at every start. They are the only things no
-session can advance.
+**The point of the walk is that Tony sets K on the approved folder.** Everything else
+here is in service of that, and reading it the other way round gets the priorities
+backwards. Tony, 2026-09-03: *"we've been waiting for the walkthru to do this very
+step."*
 
-| | decision | what it blocks |
-|---|---|---|
-| 1 | **How does the promiscuity probe enter the score?** [two scorers, two winners](docs/todo/2026-08-25-two-scorers-two-winners-and-nothing-decides.md) | **the re-fit** — RESET §7 step 5 |
-| ~~2~~ | ~~Did you mean to close PR #298?~~ | **ANSWERED 2026-08-30 — ADR-0003 exists** |
-| 2 | **Send the Kreuz letter.** [PySpike `max_tau`](docs/todo/2026-08-11-file-pyspike-max-tau-issue.md) | nothing — it has been ready for 19 days |
-| 3 | **What happens to `bench-background-is-not-flat`?** [below](#the-fitted-background-cannot-land-green) | the tube numbers, and what `main` says about its own bench |
+K is the one quantity nobody can compute and nothing downstream can proceed without —
+it moves the headline by an order of magnitude, and the generator's cluster rate, the
+simulated data set, the operating points fitted against it and every score quoted from
+them all inherit it. Until 2026-09-03 there was no way to set it that left a record; now
+there is, and it has never been used on real recordings.
 
-**The PR #298 question is closed.** Tony asked on 2026-08-30 for the orphaned branches to
-be merged, which answered it: `parity-was-the-inheritance` landed in #406 and
-`docs/adr/0003-parity-was-the-inheritance-not-the-contract.md` is on `main`. The nine
-files that cited it resolve, and the ADR index's reserved-not-skipped note is retired.
+**So the deliverable is a `mahice.json` for this folder**, with a percentage Tony set
+having looked, his name on it, and the ROI population it resolved against. Not a number
+in a conversation — the file.
 
-**Decision 1 is the gate.** Two scoring rules are live in the tree and pick **opposite
-winners** for the rate detector: `BenchResult.precision` excludes the promiscuity probe,
-`tools/probe_rate_mechanism.py` includes it while its docstring claims to mirror
-`bench.evaluate`. A campaign is a maximisation over a score, so two scores ship two
-different sets of settings and whichever runs first looks authoritative. There is a third
-option the todo names and nobody has taken: **a gate a candidate must pass rather than a
-term in F1**, which is what `hot_fa` already is — the only form that does not redefine
-every published score in the project.
+**Walking the loop is how that setting becomes trustworthy rather than another number
+nobody can defend.** Each step below is a chance for the sequence to break somewhere that
+only shows end to end, and a K set on top of periods that were read wrong is worth no
+more than the one it replaces. So: walk it, on the real folder, as a person would — and
+say where it breaks.
 
-**Decision 2 is cheap if it was an accident.** #298 was `MERGEABLE`, `CLEAN` and 3/3 green
-when it closed at 03:08 UTC on 2026-08-26, with no comment anywhere. The timeline says
-`closed by syncytium2`, which is both you and every session here, so it cannot distinguish
-a decline from a tidy-up. The branch `parity-was-the-inheritance` still exists at `016df3b`.
-Reopening is one click and nine citations come right at once. **The decision it records is
-not in doubt and is already shipped** — `excess_mode="corrected"` has been the default in
-both the Python and the browser since #303. What closed was the document, not the practice.
+Six things landed on 2026-09-03 and every one was verified *in isolation*. **The sequence
+has never been run.** That is the gap this handoff exists to close, and it is the kind
+that only shows up end to end: each piece passing its own tests says nothing about
+whether *derive the spec* can read what *confirm the events* wrote.
 
-## The fitted background cannot land green
+The loop is [`docs/RESET.md`](docs/RESET.md) **§2** — Tony's own statement of it, with
+the four places reality differs marked. **§3** is the built/not-built table. **Read §2
+before starting**; the app-build plan in `workflow_plan.md` is *not* the loop, and a
+session on 2026-09-03 lost half a day to reading it as one.
 
-**`bench-background-is-not-flat` merges cleanly into `main` and fails four tests, and
-none of them is a merge artifact.** It wires the measured background shape into the
-bench — which `main` still describes, in `bench.py`'s own prose, as *"Not wired into the
-bench"*.
-
-- **Three `test_background_curve.py` tests, left red on purpose by their author**, who
-  said so in the commit: *"coact now wins everywhere — the instability they were written
-  to prove was partly an artifact of the flat field. Re-baselining them would delete a
-  finding, so they are left red for a human."*
-- **`test_lab_server.py::test_the_server_reproduces_the_published_bakeoff`**, fold 3,
-  `29 != 28`. `docs/learned/bakeoff.json` was computed on the flat field, so the
-  published bake-off goes stale the instant the fitted background is wired.
-
-**Why it matters more than a stuck branch.** Every tube-variant number in the 2026-08-29
-handoff — the 2×2 mechanism screen, the seed axis, the 0.662 tie at the top — was measured
-in that environment. It does not exist on `main`. So the branch is not optional cleanup:
-until it lands or is abandoned, the published bench and the numbers most likely to be
-quoted describe two different benches.
-
-Neither failure is a session's to resolve. One asks what a finding means; the other asks
-what gets regenerated and republished.
-
-## Where the pipeline is
-
-`docs/RESET.md` §7 is the order of work. **It is still only on the unmerged `the-reset`
-branch** — a session on `main` cannot read the document the whole plan refers to.
-
-| step | | state |
-|---|---|---|
-| 0 | the assessor becomes a pair | ✅ landed 2026-08-24 |
-| 1 | the null test — plant nothing, expect zero | ✅ it leaked; corrected in #303 |
-| 2 | the background axis becomes a reported curve | ✅ nothing is flat |
-| 3 | fresh assessment + **K decision** | ⛔ Tony |
-| 4 | mechanism changes, behind flags | ⛔ Tony — and see the guard, below |
-| 5 | **the re-fit**, then regenerate `docs/learned/` in one pass | ⛔ behind decision 1 |
-| 6 | the treatment contrast | last |
-
-## The guard: a finding that is not a defect, and needs your call
-
-Deliberately unfiled, because it is a scoping decision and filing it as a todo would
-present a choice as a defect.
-
-**The re-fit cannot select a guard, and cannot see one.** Two locks:
+### The folder to walk it on
 
 ```
-OPERATING_POINTS['coact'].params = {int_win_sec, context_win_sec, alpha, n_surrogates}
-                          .knob  = 'alpha'        # guard_sec, guard_norm absent
-REGIMES                          = ['baseline_quiet', 'baseline_busy']
+<data>/exports/bugarach/2026-09-03_revised_2v_long_PRE_ARTIFACT_KILLER
 ```
 
-Both regimes measure **crowding 0.00** — crowding being the fraction of planted events with
-another inside their own reference window, which is the number that decides whether the
-guard's main mechanism can fire at all. `BENCH_RECORDING` plants events 120 s apart
-against a ±30 s reference window, so mutual masking is impossible *by construction*. The
-campaign will optimise a grid that does not contain the guard, on the two recordings where
-its mechanism cannot fire, and the result will read as *"we measured; it is not worth it."*
+interface2's draft-final-run export. 84 recordings, both streams, raw db4 periods **and**
+`long_window_20` analysis windows. Its own `README.md` and `PROVENANCE.md` sit beside the
+CSVs and are the authority on it.
 
-That matters because **the guard does work, in your own data**, not in some other domain.
-One bin moves and the rest are flat, which is the whole argument in one picture:
+⚠ **The name is the caveat and it is load-bearing.** Whole-field brightness steps that
+produce false coordinated events are still in this data. Use it for the draft run; **do
+not publish a coordination result from it** without saying it is pre-artifact-killer. A
+successor without that suffix has had the artifact work applied.
 
-![Recall difference by neighbour-gap bin, guard minus a control matched on both recall and precision: the under-10-second bin rises about seven points and every wider bin sits on zero](docs/learned/guard_in_the_tail.png)
+⚠ **`current_export.toml` still declares the August folder.** Anything reading
+`dataset.current()` gets `2026-08-18_revised_2v_periods`, which holds the same recordings
+with **no** `analysis_*` columns — so it scores whole raw periods where this one scores
+`long_window_20`. Same events, different windows, different numbers. Redeclaring is
+Tony's call and the file says to change the name there and nowhere else.
 
-- Real folder, 39 recordings: crowding median **0.00**, IQR 0.00–0.30, range 0.00–0.57.
-  **Seven of thirty-nine** sit above the crowded diagnostic's 0.38.
-- In `TAIL_RECORDING`, fitted to those seven, against a control loosened until it matched
-  on **both** recall (0.865 vs 0.871) and precision (0.910 vs 0.909): **+0.071 recall in
-  the `<10 s` gap bin, 17 of 24 seeds, every other bin flat.** A matched threshold change
-  cannot buy that. `forks.md` §4a's conclusion is false in the tail.
-- Radar has treated guard cells as standard since 1983, with parallels in sonar, VHE
-  astronomy and MACS. Having it off is the unusual position, not the default one.
+### The steps, by name, and what to check at each
 
-**Two honest ways forward, and it is a decision, not a task:** put `guard_sec` on the coact
-knob axis and add a crowded regime to the scoring set so the campaign can find it or
-genuinely reject it — *or* scope the re-fit to the median recording on purpose and write
-into `forks.md` that the guard is out of scope by construction, so nobody later mistakes
-the campaign's silence for evidence. Home for either:
-[revise the bench before the refit](docs/todo/2026-08-23-revise-the-bench-recording-before-the-refit.md).
+**Named, not numbered** — `docs/writing_conventions.md`: *"Name things; don't index
+them."* A step called "stage 4" asks the reader to hold a private taxonomy in their head
+and carries no meaning on its own; **confirm the events** tells them what it is. Refer to
+them below by these names.
 
-Caveats that belong with it: the tail result is **recall**, on simulated data fitted to
-real statistics, at a 20 s guard — not the shipped 0.0 — and #317's finding that best-F1
-does not move is untouched and consistent. A gain concentrated in 14% of events is worth
-about a point of overall recall, which is exactly what a best-F1 comparison cannot see.
+**Import the folder** — `bugarach check <folder>`
+: Expect conforming, and the header telling you loudly if treatment timing or analysis
+  windows are missing. This folder has both, so the header should be **silent**; a false
+  alarm here is a bug.
 
-## Open PRs
+**Declare the periods** — `bugarach windows <folder>`
+: What each recording says about its periods. Try `--create` on a **copy** with
+  `regions.csv` removed and confirm the scaffold refuses to be shipped: *import the
+  folder* must fail on the placeholder label until it is a real treatment name.
 
-| PR | state | |
-|---|---|---|
-| [#304](https://github.com/syncytium2/bugarach/pull/304) | green | CFAR is a knob axis we already have |
-| [#292](https://github.com/syncytium2/bugarach/pull/292) | green | the attribution memo credits the wrong laboratory |
-| [#270](https://github.com/syncytium2/bugarach/pull/270) | **RED**, stale since 2026-08-24 | no independent assessor; wants a rebase |
-| [#53](https://github.com/syncytium2/bugarach/pull/53) | green | one parameter object, before the third breaking change |
-| [#50](https://github.com/syncytium2/bugarach/pull/50) | green | for the generator team: two fitted features cancel |
+**Assess coordination** — `bugarach assess <folder> --k-percent 5,10,15,20,25`
+: The scan in the space K is set in, with no detector involved. Check that the resolved
+  count varies with the field size and the percentage does not.
 
-**#292 has new grounds since it was opened.** The murderboard was re-vendored on 2026-08-26
-(#307) and brought two rules written after an attribution report missed the same class
-twice: *trace citations forward, not only back*, and *ask what the humans hold*. That case
-turned on an email that sat in an inbox four months while three review arms reached for
-radar and econometrics. Both bear directly on #292 and on the `attribution-corrections`
-worktree; neither has been applied to it.
+**Confirm the events, and set K** — MAHICE, in the browser
+: `docs/site/raster_viewer.html` — open the folder, assess, *Confirm the events*, judge a
+  sample, **set K as a percentage**, download `annotations.csv` and `mahice.json`.
+  **This is the step the job is for, and the one that has never touched real data** — it
+  has only ever been driven on simulated recordings.
 
-## Also true, and cheap
+**Derive the spec** — `derive_spec --annotations annotations.csv --session mahice.json`
+: The spec should carry `k_source: "mahice"`, the percentage, and the cross-check.
+  ⚠ *Assess coordination* must have been run at a scan containing the K the percentage
+  resolves to, or this refuses and tells you to re-assess at that percentage.
 
-- **The site is 10 commits behind, and one of them changes a page it serves.**
-  `docs/deploy.md`. Nothing in the repo publishes it; it moves when a person runs it.
-- **4 ACTIVE board claims**, each with a branch genuinely ahead of `main`:
-  `assessor-is-not-an-oracle`, `the-reset`, `parity-was-the-inheritance`,
-  `attribution-corrections`. The other eight were released on 2026-08-27 — every one held
-  nothing, and the briefing was showing them as live.
-- **72 open todos.** A record, not a queue; most predate the reset.
-- **⚠ The briefing has ~56 bytes of headroom, and the number that binds is the one from a
-  fresh clone.** With this file present it delivers **8,944B on a fresh clone** against a
-  9,000B budget, and 8,578B on this configured machine. The fresh figure is the real one:
-  on a machine with no `hooksPath`, no board and no darkroom, every standing alarm fires at
-  full length instead of collapsing to `commit gates: ACTIVE`. That is the shape CI runs,
-  and the first draft of this handoff pushed it to 9,078B — over, degrading `FOUNDATIONS
-  §9` to its six bolded claims. **Measure on a throwaway clone before adding anything to
-  that hook**, and read the canary on line 1: it says `(TERSE` once it has degraded.
-  `tools/hook_spill_census.sh` puts the real spill threshold at (8,962B, 10,186B] from 55
-  recorded refusals, so there is very little budget left to buy.
+**Simulate and compare**
+: Simulate from the spec, then put its statistics beside the real folder's. Both exist;
+  neither has been driven from a `mahice.json`.
 
-## Two open items from the hook audit
+**Detect on the real folder** — `bugarach detect <folder>`
+: Writes `detections.csv`, `detector_settings.csv`, `run.json`.
 
-Both moved out of [the hook audit](docs/handoffs/2026-08-25-the-session-hooks.md) into
-`docs/todo/` on 2026-08-26, because an archived handoff is read once and a todo is counted
-at every session start.
+### What is already verified, so you do not redo it
 
-- [`murderboard_revendor.py --selftest` is not portable](docs/todo/2026-08-26-murderboard-revendor-selftest-is-not-portable.md)
-  — two failures here, zero upstream. It is a vendored file: send it back, do not patch it.
-- [two SessionStart hooks and neither sees the total](docs/todo/2026-08-26-two-session-start-hooks-and-neither-sees-the-total.md)
-  — roughly **15KB** of context before your first message. Each hook is budgeted; the sum
-  is nobody's job. Read the number from the todo, not from here: it was 15,388B on the
-  26th and 14,779B the next morning, because both hooks report on live state. A figure
-  that moves overnight is exactly what a dated page should not be holding, which is why
-  the item lives in `docs/todo/` now.
+- `check` / `assess` / `detect` on all 84 recordings of this folder — 84/84 conforming,
+  32,078 detections in 41 s, 238 windows recorded, nothing skipped.
+- The *import the folder* header: correct on a folder missing periods, **silent** on
+  this one.
+- `assess --k-percent` on three of its recordings: 20% is K=7 on the 34-ROI recording and
+  K=6 on the 31-ROI one, from one setting.
+- MAHICE in the browser, driven by clicking, **on simulated data**: 91 candidates → judge
+  → Set K → `mahice.json` → round-tripped through the Python's own `read_session`.
 
-## The pattern both sessions kept finding
+### What is NOT verified, and is the point of the walk
 
-Every defect in two days was a **status** defect, not a fact defect: something true when
-written and false when read. A briefing that passed fifteen tests and reached nobody. A
-guard that skipped in CI, the one place it promised to shout. A reproduce command that
-stopped reproducing once the bug was fixed. A byte count that drifted 14KB → 15KB. "Nine
-references" that had become ten — the tenth added by the session writing about the problem.
+- **Any of it as a sequence.** Nothing has carried a real `mahice.json` into
+  `derive_spec` and out the other side.
+- **The browser against the real folder** — *confirm the events, and set K*.
+- **The spec → simulate → compare arc** from a person's K rather than a fixture's.
 
-What worked was never more care. It was moving the claim out of prose and into something
-that runs: the briefing prints its own size, the handoff names a PR a test can resolve.
-**Anything in a durable document that a machine could check and doesn't is the next one.**
+---
+
+## Known gaps, carried forward
+
+**The browser proposes candidates at K≥3**, so its own labels can never validate a
+smaller K — the cross-check says so honestly rather than returning the floor as an
+answer. Closing it means the assessment scan reaching down to 2 on both sides at once:
+`tests/test_webapp_assessment_parity.py` asserts `sorted(js) == sorted(py)`, so the
+browser's scan is pinned to Python's exactly. `assess.PROPOSAL_MIN_ROIS` and
+`bugarach assess --for-annotation` are the Python half and already exist.
+
+**Nobody has set a K for the approved folder** — which is the job above, not a gap
+beside it. It is expert attention rather than compute: a couple of hundred confirmations
+at a low proposal floor, an afternoon. ⚠ **Do not set it for him.** The whole design is
+that a person looks at their own recordings and decides; a K a session picked and wrote
+into the file would pass every test in this repo and be exactly the thing the record was
+built to prevent.
+
+**Two regions are still never compared.** No function in `src/` puts two side by side, so
+the loop ends one analysis short of the question it opens with —
+[`the question nothing computes`](docs/todo/2026-08-23-the-treatment-contrast-is-the-question-nothing-computes.md).
+
+**No tool here runs a campaign.** The walk over detector × regime is still
+`optimize_detectors.m` in interface2.
+
+**The `analysis_*` columns reject `NA`**, which is the contract's own spelling of
+missing — [filed](docs/todo/2026-09-03-analysis-bounds-reject-the-contracts-own-na.md),
+found on a fixture so nothing has been mis-analysed.
+
+---
+
+## Traps that cost time on 2026-09-03
+
+- **A worktree imports the primary checkout's `src`.** `PYTHONPATH=$PWD/src` on every
+  run, and confirm it took. Filed three times, still open.
+- **`docs/site/raster_viewer.html` is ASSEMBLED**, from `viewer.template.html` plus
+  `docs/site/detectors/*.js`. Hand-edit the page and the next build discards it;
+  `python3 tools/assemble_viewer.py --check` is what catches you. Its version stamp must
+  move **in the same commit** as the page.
+- **`merge_when_green.sh` reaps the worktree when the PR merges.** Do not claim and build
+  in the same worktree.
+- **`tools/show.py --project bugarach`** is how a figure reaches Tony —
+  `SendUserFile` returns success and delivers nothing in the VS Code extension. It
+  crashes on a file already in the darkroom
+  ([#468](https://github.com/syncytium2/bugarach/pull/468)); pass the `--also` repo copy.
+- **`.claude/settings.json` carries `skip-worktree`**, so `git add -A` skips your edit
+  silently.
+
+## Still waiting on Tony
+
+Unchanged, all in [`docs/MILESTONES.md`](docs/MILESTONES.md): the `rate` promiscuity
+ceiling, which K for the Cossart folder, run-record naming, and what happens to
+`bench-background-is-not-flat` — the last is upstream of the ceiling decision and is the
+only genuinely unlanded branch in the tree.
