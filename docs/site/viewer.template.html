@@ -9,7 +9,7 @@
      rather than naming a sha this page could not know — the reasoning is at the
      visible stamp. -->
 <meta name="bugarach:born" content="2026-08-13">
-<meta name="bugarach:version-date" content="2026-09-03">
+<meta name="bugarach:version-date" content="2026-09-04">
 <meta name="bugarach:commit" content="content-addressed">
 <!--
   The raster viewer, client side.
@@ -1463,10 +1463,10 @@
      a page edited without bumping it turns CI red instead of shipping a date
      that has quietly become a lie. Bump it when you edit this page. -->
 <p class="site-dates" data-bugarach-born="2026-08-13"
-   data-bugarach-version-date="2026-09-03"
+   data-bugarach-version-date="2026-09-04"
    data-bugarach-commit="content-addressed"
    style="margin:1.5rem max(1.2rem, calc(50% - 23rem));color:#666;font-size:.85rem">
-  First published 2026-08-13 · this version 2026-09-03 · identified by its own
+  First published 2026-08-13 · this version 2026-09-04 · identified by its own
   bytes rather than by a build stamp
 </p>
 
@@ -1972,6 +1972,78 @@ const LANE_ROW = 13;          // a row in the multi-detector strip
    the last lane underneath "baseline". Found by drawing it. */
 const LANE_PAD = 22;
 
+/* ---------- the judging lane -------------------------------------------------
+
+   MAHICE's candidates, marked ABOVE the raster they belong to and clickable.
+   Tony, 2026-09-04: "the assessor would flag potential events in the raster, the
+   human would select one and say yes or no."
+
+   NOTHING IS DRAWN ON THE RASTER, so "in the raster" is served by a lane above
+   it. That is not pedantry here, it is the whole measurement: in a raster a
+   vertical mark reads as many ROIs firing at once, which is precisely the claim
+   being judged. A candidate marker drawn through the rows would put a synthetic
+   coordinated event into the picture used to decide whether the real one is
+   there, and it would do it on every candidate, in the same place the eye is
+   looking. SAP009 fires on it.
+
+   THE MARK POINTS DOWN, at the raster it describes. That costs shape as a
+   channel -- down is already spoken for -- so shape cannot also encode what the
+   mark IS. Judged and unjudged, confirmed and rejected are all the same
+   triangle, and THE VERDICT IS THE COLOUR. (CLAUDE.md, 2026-08-26.)
+
+   Positions: base at `top - 18 - CAND_LANE_H`, apex 8px lower. The treatment
+   chip and its label occupy `top - 17` to `top - 9`, so the lane clears them,
+   and the 36px between one panel's floor and the next panel's frame is enough
+   for the 32px this needs. Found by drawing it, same as LANE_PAD. */
+const CAND_LANE_H = 14;
+const CAND_HIT_PX = 8;        // click tolerance either side of a mark
+/* Rebuilt on every `draw`. Holds where each candidate landed so a click can be
+   turned back into the candidate under it -- the canvas has no DOM to hang a
+   listener on, so the hit test is ours to keep. */
+let CAND_HITS = [];
+
+/* Verdict is the colour. Deliberately not red/green alone: these are judged by
+   people and this page is read in both themes, so each carries a distinct
+   lightness as well as a hue. */
+const CAND_INK = {
+  unjudged:  "#8a8f94",
+  confirmed: "#2c7a4b",
+  rejected:  "#b3261e",
+  unsure:    "#b8860b",
+  preview:   "#c2c7cc",
+};
+
+/* The candidates to mark on one panel, with the verdict each currently carries.
+
+   Drawn from the SAMPLE being judged, not from every candidate the assessment
+   left: the sample is the review, and a lane showing 200 marks where 8 are in
+   play would misreport what is being asked of the reader. Before a review is
+   started the whole population is previewed instead, muted, so the reader can
+   see what is there to judge before committing to a draw. */
+function candidatesOnPanel(recId, stream) {
+  const out = [];
+  if (ANNOT && ANNOT.cands) {
+    ANNOT.cands.forEach((c, i) => {
+      if (c.recId !== recId || c.stream !== stream) return;
+      const v = ANNOT.verdicts[i];
+      out.push({ cand: c, i, state: v ? v.verdict : "unjudged",
+                 current: i === ANNOT.i, live: true });
+    });
+    return out;
+  }
+  for (const c of collectCandidates())
+    if (c.recId === recId && c.stream === stream)
+      out.push({ cand: c, i: -1, state: "preview", current: false, live: false });
+  return out;
+}
+
+/* Repaint the raster so the lane shows the verdict just cast. The lane is drawn
+   FROM `ANNOT`, so it is stale the instant one lands -- without this the colours
+   only catch up the next time something else happens to redraw. */
+function repaintJudgingLane() {
+  if (current && current.loaded) draw(current, current.loaded);
+}
+
 /* What the lane strip draws, derived FROM THE ROWS rather than kept beside
    them. The rows are the thing that gets written to `detections.csv`, so a lane
    built from anything else could disagree with the file the reader downloads —
@@ -2003,7 +2075,14 @@ function draw(rec, data) {
   const names = [...data.streams.keys()].sort();
   const padL = 62, padR = 14, padT = 23, padB = 40, gap = 16;
   const rowH = Math.max(110, Math.min(230, 26 + data.nRois * 5));
-  const H = padT + names.length * rowH + (names.length - 1) * gap + padB
+  /* Headroom for the judging lane, reserved on EVERY panel or none. Reserving it
+     only where candidates landed would move the frames between redraws as
+     verdicts come in, and a raster that shifts under the reader while they judge
+     it is its own defect. */
+  CAND_HITS = [];
+  const anyCands = names.some(n => candidatesOnPanel(rec.id, n).length > 0);
+  const candH = anyCands ? CAND_LANE_H : 0;
+  const H = padT + candH + names.length * rowH + (names.length - 1) * gap + padB
             + ((DETECT && DETECT.recId === rec.id) ? LANE_H : 0);
 
   cv.width = W * dpr; cv.height = H * dpr; cv.style.height = H + "px";
@@ -2075,7 +2154,7 @@ function draw(rec, data) {
   }
 
   names.forEach((name, si) => {
-    const top = padT + laneH + si * (rowH + gap), bot = top + rowH - 20;
+    const top = padT + candH + laneH + si * (rowH + gap), bot = top + rowH - 20;
     const byRoi = data.streams.get(name);
 
     // treatment windows behind the marks — a raster whose periods are not
@@ -2141,6 +2220,52 @@ function draw(rec, data) {
         g.fillText(w.label, at + 13, top - 9);          // …the name stays ink
       }
     });
+
+    /* THE JUDGING LANE. One down-pointing triangle per candidate, above this
+       panel, pointing at the raster it is a claim about. Never through the rows:
+       see CAND_LANE_H. The verdict is the COLOUR, because the shape is already
+       spoken for by "down". The candidate currently in the judging panel is
+       RINGED rather than reshaped, for the same reason. */
+    const onPanel = candidatesOnPanel(rec.id, name);
+    if (onPanel.length) {
+      const baseY = top - 18 - CAND_LANE_H;
+      for (const m of onPanel) {
+        const px = Math.round(x(m.cand.centre)) + 0.5;
+        if (px < padL || px > W - padR) continue;
+        g.fillStyle = CAND_INK[m.state] || CAND_INK.unjudged;
+        g.beginPath();
+        g.moveTo(px - 4, baseY);
+        g.lineTo(px + 4, baseY);
+        g.lineTo(px, baseY + 8);
+        g.closePath();
+        g.fill();
+        if (m.current) {
+          g.strokeStyle = css.getPropertyValue("--fg").trim();
+          g.lineWidth = 1.5;
+          g.beginPath();
+          g.arc(px, baseY + 3, 7.5, 0, Math.PI * 2);
+          g.stroke();
+          g.lineWidth = 1;
+        }
+        // `panelTop` rides along so the "never on the raster" rule is checkable
+        // per mark rather than eyeballed: every hit must sit above the frame it
+        // describes, and with two streams each panel has its own.
+        if (m.live) CAND_HITS.push({ x: px, y: baseY + 4, i: m.i,
+                                     panelTop: top, stream: name });
+      }
+      // Identity outside the plot, where the detector lanes put theirs. A count
+      // over the marks would sit on the data it counts.
+      //
+      // ONE WORD, because there are only `padL - 6` = 56px here and the label is
+      // right-aligned into them. "judging · click a mark" rendered as "lick a
+      // mark" — caught by screenshotting it, which is the only way this class of
+      // defect is ever caught. The affordance moved to the panel, which has room
+      // for a sentence.
+      g.fillStyle = css.getPropertyValue("--muted").trim();
+      g.textAlign = "end";
+      g.fillText(onPanel[0].live ? "judging" : "proposed", padL - 6, baseY + 7);
+      g.textAlign = "start";
+    }
 
     g.strokeStyle = css.getPropertyValue("--line").trim();
     g.lineWidth = 1;
@@ -6029,7 +6154,10 @@ function paintAnnotChip() {
     what.textContent = cands.length
       ? ("The assessment left " + cands.length + " candidate moments across "
          + new Set(cands.map(c => c.recId)).size + " recording(s). You will be "
-         + "shown a sample of them, one at a time.")
+         + "shown a sample of them, one at a time — and every one in the sample "
+         + "is also marked in the lane above the raster, so you can click a mark "
+         + "to jump to that moment instead of working through them in order. "
+         + "The colour of a mark is its verdict; the ringed one is where you are.")
       : "Run the assessment first — this judges what it proposes.";
   }
 }
@@ -6152,6 +6280,7 @@ function recordVerdict(v) {
   // against the labels that arrive after it. The setting itself never changes.
   paintKSetting();
   showCandidate();
+  repaintJudgingLane();
 }
 
 /* The per-K table, live. Candidates nest, so one verdict counts at every K at or
@@ -6594,6 +6723,7 @@ function startAnnotation() {
   // against the labels that arrive after it. The setting itself never changes.
   paintKSetting();
   showCandidate();
+  repaintJudgingLane();   // the lane appears the moment the sample is drawn
 }
 
 function wireAnnotate() {
@@ -6612,6 +6742,7 @@ function wireAnnotate() {
       for (const id of ["anYes", "anNo", "anIdk"])
         document.getElementById(id).disabled = false;
       paintAnnotChip(); paintAgreement(); showCandidate();
+      repaintJudgingLane();
     }
   };
   // Keys, because this is the one screen in the app somebody uses dozens of
@@ -6627,6 +6758,45 @@ function wireAnnotate() {
     else if (k === "u") recordVerdict("unsure");
     else if (ev.key === "ArrowLeft") document.getElementById("anBack").click();
   });
+
+  /* Click a mark in the judging lane to judge that candidate.
+
+     The canvas is one element, so the hit test is ours: `CAND_HITS` is rebuilt
+     on every `draw` and holds where each live candidate landed. Nearest within
+     CAND_HIT_PX wins, and a click that hits nothing does nothing -- a miss must
+     never advance the review, because an accidental jump silently re-points
+     every subsequent keystroke at a different candidate.
+
+     Judging stays in the panel below. This selects; it does not vote. */
+  const cv = document.getElementById("cv");
+  if (cv) {
+    cv.addEventListener("click", ev => {
+      if (!ANNOT || !CAND_HITS.length) return;
+      const r = cv.getBoundingClientRect();
+      const cx = ev.clientX - r.left, cy = ev.clientY - r.top;
+      let best = null, bestD = Infinity;
+      for (const h of CAND_HITS) {
+        const dx = h.x - cx, dy = h.y - cy;
+        const d = Math.hypot(dx, dy);
+        if (d < bestD) { bestD = d; best = h; }
+      }
+      if (!best || bestD > CAND_HIT_PX + 6) return;
+      ANNOT.i = best.i;
+      for (const id of ["anYes", "anNo", "anIdk"])
+        document.getElementById(id).disabled = false;
+      showCandidate();
+      if (current && current.loaded) draw(current, current.loaded);
+    });
+    // A pointer that changes over a mark is the only affordance a canvas has.
+    cv.addEventListener("mousemove", ev => {
+      if (!ANNOT || !CAND_HITS.length) { cv.style.cursor = ""; return; }
+      const r = cv.getBoundingClientRect();
+      const cx = ev.clientX - r.left, cy = ev.clientY - r.top;
+      const near = CAND_HITS.some(h =>
+        Math.hypot(h.x - cx, h.y - cy) <= CAND_HIT_PX + 6);
+      cv.style.cursor = near ? "pointer" : "";
+    });
+  }
 }
 
 document.getElementById("assessFolder").onclick = assessFolderRun;

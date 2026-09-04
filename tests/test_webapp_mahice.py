@@ -263,3 +263,107 @@ def test_clicking_the_button_actually_starts_a_review(page):
         }""")
     assert state["started"], "the button is enabled but the click reaches nothing"
     assert state["shown"], "a review started with no canvas to judge in"
+
+
+# ---------------------------------------------------------------------------
+# the judging lane on the raster
+# ---------------------------------------------------------------------------
+
+def test_candidates_are_marked_above_the_raster_and_never_on_it(page):
+    """Tony asked for the assessor to flag candidates in the raster and for the
+    marks to be selectable. Nothing is ever drawn ON the raster, so they go in a
+    lane ABOVE it, pointing down at it.
+
+    That rule is the measurement, not decoration: in a raster a vertical mark
+    reads as many ROIs firing at once, which is the exact claim being judged. A
+    candidate marker through the rows would put a synthetic coordinated event
+    into the picture used to decide whether the real one is there.
+
+    So this asserts geometry — every hit box sits ABOVE the top of the frame it
+    describes.
+    """
+    pg, _ = page
+    geom = pg.evaluate(
+        """() => {
+          document.getElementById("anWho").value = "tony";
+          document.getElementById("anCap").value = "50";
+          document.getElementById("anBudget").value = "400";
+          startAnnotation();
+          draw(current, current.loaded);
+          return {hits: CAND_HITS.map(h => ({y: h.y, top: h.panelTop,
+                                             stream: h.stream})),
+                  n: CAND_HITS.length,
+                  streams: [...new Set(CAND_HITS.map(h => h.stream))]};
+        }""")
+    assert geom["n"] > 0, "a sample was drawn and nothing was marked"
+    # each mark against ITS OWN frame: with two streams there are two panels,
+    # and a mark above the first frame can still be sitting on the second.
+    for h in geom["hits"]:
+        assert h["y"] < h["top"], (
+            f"a candidate mark on {h['stream']} landed at y={h['y']}, at or "
+            f"below its frame top {h['top']} — that is drawing on the raster")
+
+
+def test_clicking_a_mark_selects_that_candidate(page):
+    """The interaction Tony described: pick a mark, then say yes or no.
+
+    A click selects; it never votes. And a click that hits nothing must do
+    nothing — an accidental jump silently re-points every following keystroke at
+    a different candidate.
+    """
+    pg, _ = page
+    out = pg.evaluate(
+        """() => {
+          document.getElementById("anWho").value = "tony";
+          document.getElementById("anCap").value = "50";
+          document.getElementById("anBudget").value = "400";
+          startAnnotation();
+          draw(current, current.loaded);
+          if (CAND_HITS.length < 2) return {skip: true};
+          const cv = document.getElementById("cv");
+          const r = cv.getBoundingClientRect();
+          const target = CAND_HITS[CAND_HITS.length - 1];
+          const before = ANNOT.i;
+          cv.dispatchEvent(new MouseEvent("click", {
+            clientX: r.left + target.x, clientY: r.top + target.y,
+            bubbles: true}));
+          const afterHit = ANNOT.i;
+          const votesAfterHit = ANNOT.verdicts.filter(Boolean).length;
+          cv.dispatchEvent(new MouseEvent("click", {
+            clientX: r.left + target.x, clientY: r.top + target.y + 400,
+            bubbles: true}));
+          return {skip: false, before, afterHit, wanted: target.i,
+                  afterMiss: ANNOT.i, votesAfterHit};
+        }""")
+    if out.get("skip"):
+        pytest.skip("fixture drew fewer than two candidates")
+    assert out["afterHit"] == out["wanted"], "the click selected the wrong candidate"
+    assert out["votesAfterHit"] == 0, "selecting a mark cast a verdict"
+    assert out["afterMiss"] == out["afterHit"], "a click on empty canvas moved the review"
+
+
+def test_the_verdict_is_the_colour_not_the_shape(page):
+    """Down is already spoken for, so shape cannot also encode what a mark is.
+
+    Confirmed and rejected are the same triangle and differ only in ink, which
+    means the lane has to report a state per mark that the painter turns into a
+    colour. This checks the state actually changes when a verdict lands.
+    """
+    pg, _ = page
+    states = pg.evaluate(
+        """() => {
+          document.getElementById("anWho").value = "tony";
+          document.getElementById("anCap").value = "50";
+          document.getElementById("anBudget").value = "400";
+          startAnnotation();
+          const stream = ANNOT.cands[0].stream, rec = ANNOT.cands[0].recId;
+          const before = candidatesOnPanel(rec, stream).map(m => m.state);
+          recordVerdict("confirmed");
+          recordVerdict("rejected");
+          const after = candidatesOnPanel(rec, stream).map(m => m.state);
+          return {before, after, inks: Object.keys(CAND_INK)};
+        }""")
+    assert set(states["before"]) == {"unjudged"}
+    assert "confirmed" in states["after"] and "rejected" in states["after"]
+    for state in ("unjudged", "confirmed", "rejected", "unsure"):
+        assert state in states["inks"], f"no ink defined for {state}"
