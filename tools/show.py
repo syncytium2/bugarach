@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
-# instrument: verification
-# vendored from armory @ 6fc2271 — do NOT edit here; edit the canonical original (armory tools/show.py) and re-copy.
+# vendored from syncytium2/armory @ 548f734. This file is a COPY; edits here are
+# overwritten whenever it is re-vendored. Its source repository is private, so there is
+# nowhere to send a patch: treat this file as read-only and raise anything you find as
+# an issue in THIS repository.
 """show — put a file where the human will actually see it, and say where it went.
 
 THE FAILURE THIS EXISTS TO END
@@ -13,8 +15,8 @@ anthropics/claude-code#76739 — open, `has repro`, labelled macos + windows + v
 maintainer response, filed at CLI 2.1.207 and still failing at extension 2.1.252.
 
 That is the estate's "can the alarm ring?" family: a check that reports success while
-doing nothing. A bugarach session narrated **six** figures as seen across a long working
-session; the user only found out because he opened a deployed site himself. The session
+doing nothing. One session narrated **six** figures as seen across a long working
+session; the user only found out by opening a deployed site himself. The session
 briefing gate — *"a visual finding? render the figure and show it"* — was satisfied every
 time by a call that did nothing, so nothing failed anywhere in that loop.
 
@@ -30,67 +32,54 @@ Never say a figure was shown on the strength of a call returning success. Print 
 
 THIS FILE IS VENDORED. EDITING IT IS AN ESTATE EDIT, NOT A REPO EDIT
 --------------------------------------------------------------------
---------------------------------------------------------------
-Ten consumers carry a copy stamped `# vendored from armory @ <sha> -- do NOT edit here`.
-That stamp covers the consumer direction only. The reverse is not written anywhere and is
-the one that bites: **changing this original does not update them.** They are pins, and
-re-vendoring is a separate decision belonging to whoever holds the vendor pass.
+Copies of this file are installed in other repositories, each stamped with the commit it
+was taken at. That stamp covers the consumer direction only. The reverse is not written
+anywhere and is the one that bites: **changing this original does not update them.** They
+are pins. Re-vendoring is a separate decision, and it belongs to whoever is running the
+vendor pass rather than to whoever edits this file.
 
-MEASURED 2026-09-02, and it is worse than a stale pin. Of the ten consumers, **seven have
-this file in their working tree and three do not** -- bugarach, colonel_kernel and
-murderboard carry it only on an unmerged `vendor-send-goes-nowhere` branch that is not
-checked out. Committed, pushed, never merged: stranded, which is the exact statistic this
-repository was built to count. armory's own manifest reports all of them as carrying it,
-because the scan reads every branch and a working tree does not.
-
-So a session in one of those three repos can read the register, believe the gate is
-installed, and have no gate. The instrument built to answer a delivery that reports success
-and reaches nobody was itself delivered that way to three of ten. Check with
-`tools/dragnet.py show --estate` before assuming a consumer has it.
+A pin can also be stranded rather than merely stale — pushed to a consumer on a branch that
+was never merged, so the copy exists in the repository and not in anyone's working tree.
+Do not infer from an index that a consumer HAS this file; check the consumer.
 
 WHERE IT GOES
 -------------
-`<dropbox>/darkroom/<project>/` — the convention already in use by bugarach, downLow,
-casebook, constellation and crossstream_memo, and the target of interface2's
-`if2_darkroom()` (102 callers). haruspex/tools/hx_paths.py says the rule outright:
-*"Never write a figure to a scratch or temp path: a human has to find it."*
+`<review root>/<project>/`, one folder per project, resolved at runtime — by default a
+Dropbox folder the maintainer's machines already sync, or anywhere `ARMORY_DARKROOM`
+points. The rule it exists to keep: **never write a figure to a scratch or temp path,
+because a human has to find it.** A path under /tmp satisfies the code and not the reader.
 
 THE ROOT IS RESOLVED, NEVER SPELLED
 -----------------------------------
-`dropbox_member_root()` is downLow/tools/data_root.py's, unchanged in behaviour: it reads
-Dropbox's own `info.json`, which names the real local path, so the macOS
-cloud-mount-vs-symlink distinction never has to be reasoned about and Windows needs no
-second branch. Business account first — that is the one holding darkroom.
+`dropbox_member_root()` reads Dropbox's own `info.json`, which names the real local path,
+so the macOS cloud-mount-vs-symlink distinction never has to be reasoned about and Windows
+needs no second branch. Business account first — that is the one holding the review folder.
 
-⚠ This matters beyond convenience. The member folder contains the user's name. **All 26
-of the files armory flags as carrying a personal path are re-derivations of this
-resolver that spelled it out instead of reading it** — including three copies inside
-interface2 alone (`export_response_ratios.py`, `export_mean_sd_proportions.py`,
-`export_stats_frame.py`, each building the root from `Path.home()` and two literal
-folder names), and `fetch_paper.py`, which was deleted from its origin repo for exactly
-that and appears here three times over. haruspex's own `dropbox()` hardcodes it via
-DROPBOX_REL and is why hx_paths.py is on the list.
+⚠ This matters beyond convenience: **the member folder contains the user's name.** Every
+file that has ever leaked a personal path here did it the same way — by spelling that root
+out from `Path.home()` plus literal folder names instead of asking the system where it is.
+One such file was deleted from its own repository for exactly that.
 
-The literals are deliberately not quoted anywhere in this file. --selftest asserts it,
-by checking this source against the root it just resolved at runtime — so the check
-needs no copy of the name in order to look for it. That assertion went red on the first
-run of this module, against a docstring that had spelled the folder out while explaining
-not to.
+The literals are therefore not quoted anywhere in this file, and `--selftest` asserts it by
+checking this source against the root it resolved at runtime — so the check needs no copy
+of the name in order to look for one. That assertion went red on its first run, against a
+docstring that had spelled the folder out while explaining not to.
 
 So: resolve at runtime, hold it in memory, print it to the terminal, and write it to no
 file. This module records the path nowhere.
 
 USAGE
 -----
-    tools/show.py FIG.png                  copy to darkroom, open in the default viewer
+    tools/show.py FIG.png                  copy to the review folder, open in the viewer
     tools/show.py FIG.png --code           open as a tab in VS Code instead
     tools/show.py FIG.png --no-open        place it and print the path, open nothing
     tools/show.py A.png B.pdf              several at once
-    tools/show.py --where                  print the darkroom dir for this project
+    tools/show.py --where                  print the review folder for this project
     tools/show.py --selftest               prove the resolver and the copy work
 
     --project NAME    override the project folder (default: the git repo's name)
-    ARMORY_DARKROOM   env override for the darkroom root, for CI or a non-standard install
+    ARMORY_DARKROOM   the review folder to copy into. Set this on any machine that has
+                      no Dropbox install for the tool to read a default from.
 
 EXIT STATUS
 -----------
@@ -109,7 +98,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-# --- the resolver: downLow/tools/data_root.py, behaviour unchanged -------------
+# --- the resolver ---------------------------------------------------------------
 
 
 def _info_json_candidates() -> list[Path]:
@@ -162,7 +151,8 @@ def project_name(override: str | None = None) -> str:
 def darkroom(project: str, create: bool = True) -> Path:
     """`<dropbox>/darkroom/<project>` — where things meant to be looked at go.
 
-    Same convention as haruspex's darkroom() and interface2's if2_darkroom().
+    One folder per project, so two projects sharing a checkout cannot overwrite
+    each other's output.
     """
     override = os.environ.get("ARMORY_DARKROOM")
     if override:
@@ -171,10 +161,11 @@ def darkroom(project: str, create: bool = True) -> Path:
         member = dropbox_member_root()
         if member is None:
             raise SystemExit(
-                "show: could not locate Dropbox from info.json.\n"
+                "show: no review folder configured.\n"
                 f"  looked in: {', '.join(str(p) for p in _info_json_candidates())}\n"
-                "  Set ARMORY_DARKROOM to the darkroom root, e.g.\n"
-                "    ARMORY_DARKROOM='<dropbox>/darkroom'"
+                "  Set ARMORY_DARKROOM to any directory you can open, e.g.\n"
+                "    ARMORY_DARKROOM=~/review\n"
+                "  (No Dropbox install was found for the tool to read a default from.)"
             )
         root = member / "darkroom"
     p = root / project
