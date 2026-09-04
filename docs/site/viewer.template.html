@@ -761,6 +761,16 @@
         <input id="anSeed" type="number" min="0" step="1" value="20260824" autocomplete="off" data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other">
         <div class="span"><button id="anStart" disabled>Draw a sample and
           start</button></div>
+        <!-- WHY THE BUTTON ABOVE IS DEAD, AND THE WAY OUT OF IT, IN THE PLACE
+             THE PERSON IS ALREADY LOOKING. A disabled button fires no event and
+             logs nothing, so an unexplained one is indistinguishable from a
+             broken page — Tony hit exactly that twice on 2026-09-04 and the
+             second time the reason was real: the assessment does not survive a
+             reload, only the review does, so a reloaded page has nothing to
+             draw from and said so only in a chip beside the section title.
+             Never leave the dead button unexplained, and never make somebody go
+             and find the control that fixes it. -->
+        <div class="span" id="anGate"></div>
         <div class="span note" id="anWhat"></div>
       </div>
       <div id="anStage" hidden>
@@ -4382,6 +4392,17 @@ function paintStreamPick() {
    you just left, and stops them claiming to be tuned. */
 function chooseStream(name) {
   if (name === STREAM) return;
+  /* THE REVIEW GOES WITH THE CHANNEL IT WAS CAST ON. MAHICE runs separately on
+     each (Tony, 2026-09-04), so the outgoing channel's verdicts are saved under
+     ITS key before the switch and the incoming channel gets its own back, or a
+     clean slate if it has none.
+
+     Carrying `ANNOT` across a switch would have been the worst bug available
+     here: the lane would paint one channel's candidates over the other's
+     raster, every verdict would be filed against the wrong stream, and nothing
+     on the page would look wrong while it happened. */
+  saveReview();
+  ANNOT = null;
   STREAM = name;
   DETECT = null; FOLDER_RUN = null; ASSESS = null; ASSESSED = null;
   // the folder walk is a measurement OF one stream, so it goes with the rest
@@ -4395,6 +4416,10 @@ function chooseStream(name) {
     if (n) n.textContent = "";
   }
   paintStreamPick();
+  // The incoming channel's own review, if it has one. Painted after the clears
+  // above so nothing from the outgoing channel is still on screen under it.
+  offerSavedReview();
+  paintAnnotChip();
   if (current && current.loaded) loadRecording(current).then(d => draw(current, d));
 }
 
@@ -6120,7 +6145,14 @@ function drawAnnotSample(cands, seed, budget, cap) {
   const u = rng32(seed);
   const byRec = new Map();
   for (const c of cands) {
-    const k = c.recId + " " + c.stream;
+    /* A composite key, built with JSON rather than a separator character.
+       This line used to join with a RAW NUL BYTE written into the source. It
+       ran fine -- a NUL inside a JS string literal is just a character -- and
+       it was a landmine for every text tool that touches this file: invisible
+       in editors and diffs, unmatchable by exact-string editing, and silently
+       TRUNCATING the line in `awk`, which is how it was found on 2026-09-04.
+       JSON needs no separator and is all printable. */
+    const k = JSON.stringify([c.recId, c.stream]);
     if (!byRec.has(k)) byRec.set(k, []);
     byRec.get(k).push(c);
   }
@@ -6146,9 +6178,71 @@ function drawAnnotSample(cands, seed, budget, cap) {
   return { picked, population: cands.length, recordings: byRec.size, drawn };
 }
 
+/* WHICH CHANNEL, AND WHY THE BUTTON IS DEAD, WHERE THE BUTTON IS.
+
+   Two failures on 2026-09-04, both of them "nothing happens":
+   the judging step was unreachable because nothing called `paintAnnotChip`
+   after an assessment, and then -- with that fixed -- it was unreachable on a
+   RELOADED page because the assessment does not survive a reload, only the
+   review does. Both times the reason existed, in a chip beside a section title,
+   next to a control that fires no event when disabled.
+
+   A disabled button with no explanation beside it is indistinguishable from a
+   broken page. So the reason goes here, in the panel, with the button that
+   fixes it -- never "go and find the Assess step".
+
+   The channel is named unconditionally, because MAHICE runs on one at a time
+   and a review carries the channel it was cast on. */
+function paintAnnotGate() {
+  const box = document.getElementById("anGate");
+  if (!box) return;
+  box.textContent = "";
+  if (!RECORDINGS.length) { box.hidden = true; return; }
+  box.hidden = false;
+  const chan = STREAM || "events";
+  const live = !!(ANNOT && ANNOT.cands && ANNOT.cands.length);
+  const cands = collectCandidates().length;
+
+  const head = el("div", "");
+  head.append(el("b", "Channel: " + chan));
+  if (STREAMS_SEEN.length > 1) {
+    for (const other of STREAMS_SEEN.filter(s => s !== chan)) {
+      const b = el("button", "Switch to " + other);
+      b.className = "ghost";
+      b.onclick = () => {
+        const sel = document.getElementById("sStream");
+        if (sel) sel.value = other;
+        chooseStream(other);
+      };
+      head.append(b);
+    }
+    head.append(el("div", STREAMS_SEEN.join(" and ") + " are separate "
+      + "experiments, not two views of one. MAHICE runs on one at a time, and "
+      + "each keeps its own verdicts and its own K — switching does not lose "
+      + "the other one.", "note"));
+  }
+  box.append(head);
+
+  if (live || cands) return;          // the button works; nothing to explain
+
+  const why = el("div", "", "err");
+  why.append(el("b", "Nothing to judge yet for " + chan + "."));
+  why.append(el("span", " Candidates come from the assessment, and the "
+    + "assessment does not survive a page reload — only your verdicts do. Run "
+    + "it for " + chan + " and this step opens."));
+  const go = el("button", "Assess all " + RECORDINGS.length
+    + " recordings (" + chan + ")");
+  go.onclick = () => { showSection("accAssess"); assessFolderRun(); };
+  const wrap = el("div", "", "span");
+  wrap.append(go);
+  why.append(wrap);
+  box.append(why);
+}
+
 function paintAnnotChip() {
   const chip = document.getElementById("cntAnnot");
   const btn = document.getElementById("anStart");
+  paintAnnotGate();
   if (!chip || !btn) return;
   const cands = collectCandidates();
   /* A RESTORED review counts as live even with nothing judged yet. After a
@@ -6775,11 +6869,34 @@ function finishAnnotation() {
    to key on, and a review must only ever be restored into the folder it was
    cast against -- restoring positional verdicts into a different sample would
    attach a person's judgement to moments they never looked at. */
-const REVIEW_KEY = "bugarach.mahice.review";
-const REVIEW_V = 1;
+/* ONE REVIEW PER CHANNEL, KEPT SEPARATELY. Tony, 2026-09-04: "mahice runs
+   separately on each. user should choose one channel at the start."
 
+   `fast` and `slow` are separate experiments, not two views of one --
+   FOUNDATIONS §9 has them moving in opposite directions under TTX -- so a
+   review of one is not evidence about the other. Keying the store on the
+   channel is what lets both exist: judge fast, switch, judge slow, come back to
+   either with its own verdicts and its own K intact. A single key would have
+   let the second channel silently overwrite the first: hours of judging gone,
+   with no error and no sign it had happened. */
+const REVIEW_KEY_BASE = "bugarach.mahice.review";
+const REVIEW_V = 2;
+
+function reviewKey() {
+  return REVIEW_KEY_BASE + "." + (STREAM || "events");
+}
+
+/* The folder AND the channel. A review is positional against the sample it was
+   drawn from, and that sample came from one channel of one folder.
+
+   JSON rather than a joined string with a separator. The first version of this
+   used a literal U+0001 as the separator, written as a RAW BYTE into the
+   source, where it is invisible in every editor and diff and makes the line
+   unmatchable by exact-string tooling. JSON needs no separator, cannot be
+   ambiguous about where one id ends, and is all printable. */
 function reviewSignature() {
-  return RECORDINGS.map(r => r.id).sort().join("");
+  return JSON.stringify([STREAM || "events",
+                         RECORDINGS.map(r => r.id).sort()]);
 }
 
 function saveReview() {
@@ -6796,7 +6913,7 @@ function saveReview() {
     mahice: (typeof MAHICE !== "undefined" && MAHICE) ? MAHICE : null,
   };
   try {
-    localStorage.setItem(REVIEW_KEY, JSON.stringify(rec));
+    localStorage.setItem(reviewKey(), JSON.stringify(rec));
     SAVE_FAILED = null;
     return true;
   } catch (e) {
@@ -6808,7 +6925,7 @@ let SAVE_FAILED = null;
 
 function readSavedReview() {
   try {
-    const raw = localStorage.getItem(REVIEW_KEY);
+    const raw = localStorage.getItem(reviewKey());
     if (!raw) return null;
     const rec = JSON.parse(raw);
     if (!rec || rec.v !== REVIEW_V) return null;
@@ -6819,7 +6936,7 @@ function readSavedReview() {
 }
 
 function discardSavedReview() {
-  try { localStorage.removeItem(REVIEW_KEY); } catch (e) { /* nothing to undo */ }
+  try { localStorage.removeItem(reviewKey()); } catch (e) { /* nothing to undo */ }
   paintReviewBanner();
 }
 
