@@ -13,9 +13,36 @@ and putting the line in the wrong *place* has already broken a gate once.
 ## What is settled, and already fixed
 
 `bfbc375` gave seventeen instruments a `# instrument: <family>` line. **Five of the
-seventeen went into vendored copies**, and a sixth arrived later the same way in
-`.claude/hooks/send-goes-nowhere.py` — a second session repeating the mistake
-independently, which is the reason there is now a test rather than a paragraph.
+seventeen went into vendored copies**, and a sixth file,
+`.claude/hooks/send-goes-nowhere.py`, had the same collision.
+
+> ⚠ **CORRECTION, 2026-09-04, same day.** The commit that filed this note — and PR
+> #474's description with it — says that sixth file was "a second session repeating
+> the mistake independently". **That is false, and the truth is worse for everyone
+> downstream.** The declaration was not added here at all; it arrived with the file:
+>
+> ```
+> $ git -C ~/Developer/armory show 548f734:.claude/hooks/send-goes-nowhere.py | head -2
+> #!/usr/bin/env python3
+> # instrument: verification
+>
+> $ git show 049864e:.claude/hooks/send-goes-nowhere.py | head -3
+> #!/usr/bin/env python3
+> # instrument: verification
+> # vendored from armory @ 6fc2271 — do NOT edit here; ...
+> ```
+>
+> Armory declares the family on line 2 of its own instruments. Line 2 is also the
+> only line the vendoring stamp may occupy in a shebanged file. So **vendoring an
+> armory instrument displaces the stamp by construction** — no session has to make
+> a mistake for it to happen, and it will happen again for every consumer and every
+> such file. Six armory instruments declare on line 2 today (`dragnet.py`,
+> `instrument_ledger.py`, `mutation_check.sh`, `inline_asset_drift.py`,
+> `vendor_reach.py`, `send-goes-nowhere.py`), so this is a structural collision
+> between two conventions rather than an incident. Submitted to armory 2026-09-04;
+> where the line should go is a convention call across armory, murderboard and
+> interface2, and is not this repo's to make. The commit message is immutable and
+> will keep saying the wrong thing — this paragraph is the correction of record.
 
 Each was inserted at **line 2**, under the shebang and **above** the vendoring
 stamp. Line 2 is the only line `murderboard_revendor.stamp_line_index` will read in
@@ -76,7 +103,7 @@ Three ways out, and the third is the one to take:
 | | `.claude/hooks/require-commit-before-message.sh` | concurrency |
 | `interface2` | `.claude/hooks/no-heredoc-source.sh` | retrieval |
 | | `.claude/hooks/session-start.sh` | **undeclared here on purpose** — retrieval |
-| `syncytium2/armory` | `.claude/hooks/send-goes-nowhere.py` | verification |
+| `syncytium2/armory` | `.claude/hooks/send-goes-nowhere.py` | **already declared upstream** — nothing to ask for; the ask is where the line goes, see the correction above |
 | | `tools/show.py` | **undeclared here on purpose** — verification |
 
 The two marked *on purpose* are the ones this repo did **not** annotate:
