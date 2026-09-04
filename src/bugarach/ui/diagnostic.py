@@ -70,7 +70,24 @@ FALSE_ALARM = "#b3261e"
 #: One ink for every onset. The raster shows what the recording did; what a
 #: detector made of it belongs to the lanes above it.
 RASTER_INK = "#2b2b2b"
+#: The SECOND raster ink, for a partition the producer shipped with the events —
+#: never for anything this project inferred. See `raster_panel`'s `marked`.
+MARKED_INK = "#c1272d"
 PROBE_BAND = "#e8a33d"
+
+#: Treatment-region fills for `region_lane_panel`. Baseline is deliberately the
+#: quietest: it is the reference every other span is read against, and a
+#: reference that shouts is read as a result. Unknown labels fall back to grey
+#: rather than being dropped — a region drawn nowhere is a region a reader
+#: assumes was not there.
+REGION_FILL = {
+    "baseline": "#b9c3cc",
+    "TTX": "#3f7fbf",
+    "senktide": "#c86a1f",
+    "SB222200": "#7d5ba6",
+    "wash": "#8fa89b",
+    "high K+": "#8a8a8a",
+}
 
 #: How far apart, in pixels, two marks in one lane have to be before this figure
 #: is entitled to give them different verdicts. The ✕ is about 5 px across; two
@@ -258,13 +275,36 @@ def lane_panel(lanes: dict, *, ext, gt=None, tol_sec: float = 1.5,
 
 def raster_panel(stream, *, ext, gt=None, name="events",
                  width: int = 1000, height: int | None = None,
-                 mark_px: float = 2.0):
+                 mark_px: float = 2.0, marked=None, marked_ink=None,
+                 ydim: str = "roi"):
     """ROI raster, quietest ROI at the bottom, every onset drawn identically.
 
     Takes no detection spans on purpose. Inking the onsets inside a detected
     window asserts which events a detector *recruited*, and none of the six
     reports that — they report a window, and membership was the figure's own
     inference. Detections belong to the lanes and the top markers.
+
+    ``marked`` IS NOT AN EXCEPTION TO THAT, AND THE DIFFERENCE IS THE WHOLE
+    REASON IT IS ALLOWED HERE. It takes one array of onset times per ROI, index-
+    aligned to ``stream.t50rise``, and draws those onsets in a second ink. The
+    rule it has to clear is *"one ink, one mark per event, and nothing competing
+    with it"* — and it clears it because nothing is added: each event is still
+    drawn exactly once, in exactly one place, and the ink says which of two
+    populations the producer put it in. The thing the rule forbids is a mark
+    that rides *over* the data and annotates it, which is what a detection span
+    is and what `gt`'s markers are — those still live in the lane above.
+
+    The distinction that decides it is **who is asserting**. A detection is this
+    project's claim about an event and belongs where its claims live; membership
+    of ``marked`` is a property the EXPORTER shipped, decided upstream and
+    already true of the row before anything here read it. Drawing the producer's
+    own partition of their own events is not annotation, it is the raster.
+
+    So the honest constraint is on the caller, not the parameter: pass something
+    that came in with the data. ``tools/make_group_raster_summary.py`` passes
+    interface2's confirmed field-step verdicts. Passing a detector's output here
+    would break the rule while satisfying the signature, and no check can tell
+    those apart — this paragraph is the check.
 
     **The raster is drawn short on purpose, and the marks short with it.** What
     the reader is asked to see is a *column* — many ROIs firing at once — and
@@ -277,32 +317,67 @@ def raster_panel(stream, *, ext, gt=None, name="events",
     own row makes every column look solid whether or not anything coordinated.
     So `mark_px` came down with it, from 5 px to 2, and wants to stay under
     about a third of the pitch (`height / n_roi`).
+
+    ``ydim`` MUST BE UNIQUE WHEN MORE THAN ONE RASTER IS ON A PAGE. The default
+    is fine for the single-recording diagnostic this was written for, and wrong
+    the moment a second raster appears: the y-dimension NAME is what links
+    y-ranges between panels, so eighteen rasters all called "roi" share one
+    range, and every recording is drawn against the ROI count of the largest one
+    on the page. A 19-ROI recording then fills the bottom 40% of its band and
+    reads as a sparse recording rather than a small one — the panels stay the
+    same height while the ink does not, which is precisely the comparison a
+    constant row height is for. `_base` documents the trap; this parameter is
+    how a caller avoids it. Same rule CLAUDE.md states for the signal rows:
+    unique value dimension per row, so y never links; x links through ``t``.
     """
     n_roi = stream.n_rois
     counts = [int(np.sum(np.isfinite(np.asarray(v, dtype=float))))
               for v in stream.t50rise]
     order = np.argsort(counts, kind="stable")
 
-    ts, ys = [], []
+    ts, ys, mts, mys = [], [], [], []
     for row, roi in enumerate(order):
         v = np.asarray(stream.t50rise[roi], dtype=float)
         v = v[np.isfinite(v) & (v >= ext[0]) & (v <= ext[1])]
-        if v.size:
-            ts.append(v)
-            ys.append(np.full(v.size, row))
+        hit = np.zeros(v.size, dtype=bool)
+        if marked is not None and roi < len(marked):
+            m = np.asarray(marked[roi], dtype=float).ravel()
+            if m.size and v.size:
+                # Rounded rather than compared raw: both sides are written by the
+                # producer at %.6f and parsed by the same reader, so equality
+                # holds today — and a join that silently depends on that is one
+                # format-string change away from losing every mark it should draw.
+                hit = np.isin(np.round(v, 6), np.round(m, 6))
+        if np.any(~hit):
+            ts.append(v[~hit])
+            ys.append(np.full(int((~hit).sum()), row))
+        if np.any(hit):
+            mts.append(v[hit])
+            mys.append(np.full(int(hit.sum()), row))
     t = np.concatenate(ts) if ts else np.zeros(0)
     y = np.concatenate(ys) if ys else np.zeros(0)
+    mt = np.concatenate(mts) if mts else np.zeros(0)
+    my = np.concatenate(mys) if mys else np.zeros(0)
 
-    items = [_base(ext, "roi")]
+    items = [_base(ext, ydim)]
     if gt is not None:
         hw = gt.params.get("hot_window")
         if hw is not None:
             items.append(hv.VSpan(float(hw[0]), float(hw[1])).opts(
                 color=PROBE_BAND, alpha=0.16))
     if t.size:
-        items.append(hv.Scatter((t, y), kdims=["t"], vdims=["roi"]).opts(
+        items.append(hv.Scatter((t, y), kdims=["t"], vdims=[ydim]).opts(
             marker="dash", angle=90, size=mark_px, color=RASTER_INK,
             alpha=0.9))
+    if mt.size:
+        # LAST, and a size larger. Drawn first it disappears under the next
+        # thousand black dashes; drawn at the same size it is a third of a
+        # pixel, because the moment it stands for is two seconds wide on a page
+        # that is an hour across. The mark keeps its own time and its own ROI —
+        # only the ink and the stroke change.
+        items.append(hv.Scatter((mt, my), kdims=["t"], vdims=[ydim]).opts(
+            marker="dash", angle=90, size=max(mark_px * 2.5, 5.0),
+            color=marked_ink or MARKED_INK, alpha=1.0))
 
     if height is None:
         height = int(np.clip(20 + 6 * n_roi, 110, 320))
@@ -312,6 +387,53 @@ def raster_panel(stream, *, ext, gt=None, name="events",
         fontsize={"ylabel": "10pt"},
         show_legend=False, hooks=[_time_axis_hook],
         tools=["xwheel_zoom", "xpan", "reset", "hover"],
+        active_tools=["xpan"], default_tools=["reset"],
+    )
+
+
+def region_lane_panel(regions, *, ext, width: int = 1000, height: int = 30,
+                      shift: float = 0.0, ylabel: str = "", ydim: str = "region"):
+    """The treatment regions, as a lane ABOVE the raster they describe.
+
+    A treatment window is exactly the kind of cue CLAUDE.md sends to a lane: it
+    is context about the recording, not an event in it, and painted across the
+    raster as a `VSpan` it tints every mark it covers — which is how a reader
+    ends up comparing ink density between a shaded half and an unshaded one and
+    seeing an effect that is the shading. So it gets its own strip, x-linked
+    through the shared ``t``, with the raster underneath it.
+
+    **No marker, so nothing to point down.** The down-triangle rule exists
+    because a directional glyph in a lane has to say which raster it belongs to;
+    a bar spanning a time range says that by its extent, and adding an arrowhead
+    to it would be decoration carrying a second meaning. The lane sits directly
+    above its own raster and touches it.
+
+    ``shift`` is subtracted from every bound, so a caller that has re-zeroed its
+    event times to some anchor can hand the regions over unmodified and get a
+    lane on the same axis. Label text is NOT drawn — at this height it would sit
+    on top of its own bar, and the key belongs in the header.
+    """
+    items = [_base(ext, ydim)]
+    for r in regions or []:
+        a = float(r.start_sec) - shift
+        b = float(r.end_sec) - shift
+        if b <= ext[0] or a >= ext[1]:
+            continue
+        label = (r.name or "").strip()
+        items.append(hv.Rectangles(
+            [(max(a, ext[0]), 0.0, min(b, ext[1]), 1.0)]
+        ).opts(color=REGION_FILL.get(label, "#9e9e9e"),
+               line_color="white", line_width=0.6, alpha=0.95))
+    return hv.Overlay(items).opts(
+        width=width, height=height, xlim=tuple(ext), ylim=(0.0, 1.0),
+        # ONE BLANK TICK, not an empty list. `yticks=[]` reaches bokeh's
+        # `get_ticker_axis_props`, which unpacks the pairs and raises
+        # "not enough values to unpack" on the empty sequence — a strip with no
+        # y-axis has to be spelled as a tick with nothing written on it.
+        yticks=[(0.5, "")], ylabel=ylabel, xlabel="", title="", xaxis=None,
+        fontsize={"ylabel": "8pt"},
+        show_legend=False, hooks=[_time_axis_hook],
+        tools=["xwheel_zoom", "xpan", "reset"],
         active_tools=["xpan"], default_tools=["reset"],
     )
 
