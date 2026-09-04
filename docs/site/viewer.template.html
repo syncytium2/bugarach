@@ -175,6 +175,22 @@
     padding: 7px 24px 8px; border-bottom: 1px solid var(--line);
     background: var(--panel); overflow-x: auto;
   }
+  /* The fold. One line, and it carries the step you are on so folding the rail
+     does not also lose where you are. */
+  #railfold { display: flex; align-items: center; gap: 12px;
+              padding: 3px 24px; background: var(--panel);
+              border-bottom: 1px solid var(--line); font-size: 12px; }
+  #railfold button { width: auto; margin: 0; padding: 1px 9px; font-size: 12px; }
+  /* Buttons in this app default to full width, which is right in the sidebar
+     and wrong on a toolbar — "whole recording" stretched across the column. */
+  #zoombar { display: flex; align-items: center; gap: 8px; margin-left: 14px; }
+  #zoombar button { width: auto; margin: 0; padding: 1px 10px; font-size: 12px; }
+  #zoombar .seg button { padding: 1px 11px; font-weight: 700; }
+  body.railfolded #rail { display: none; }
+  /* Reclaimed vertical everywhere above the raster, on the same principle: the
+     things that explain the page are read once, the raster is read all day. */
+  body.railfolded .status.wip { padding: 3px 24px; font-size: 11.5px; }
+  body.railfolded .status.wip .status-why { display: none; }
   .railgroup { display: flex; flex-direction: column; gap: 3px; }
   .railgroup > .glabel {
     font-size: 10px; letter-spacing: .07em; text-transform: uppercase;
@@ -433,8 +449,20 @@
             gap: 10px; margin: 4px 0 0; }
   .anzoom button { min-width: 34px; font-weight: 700; }
   .anzoom .sub { min-width: 108px; text-align: center; }
-  /* THE CANDIDATE LEDGER. Blue selection matches the arrow above the raster. */
-  .candtable { border-collapse: collapse; margin: 6px 0 14px; font-size: 12.5px; }
+  /* THE CANDIDATE LEDGER. Blue selection matches the arrow above the raster.
+
+     IT SCROLLS IN ITS OWN BOX. Tony, 2026-09-04: "the table needs to scroll the
+     raster goes off screen. separate them." A recording with 40 candidates
+     pushed the raster off the top exactly when the reader needed to look at it,
+     which is the one thing the ledger exists to support. So the table gets a
+     bounded height and its own scrollbar, and the header row stays put inside
+     it — scrolling to row 30 with no column names is its own small defeat. */
+  .candscroll { max-height: 38vh; overflow-y: auto; overflow-x: auto;
+                border: 1px solid var(--line); border-radius: 7px;
+                padding: 0 10px; margin: 6px 0 14px; }
+  .candtable { border-collapse: collapse; margin: 0; font-size: 12.5px; }
+  .candtable thead th, .candtable tr:first-child th {
+    position: sticky; top: 0; background: var(--bg); z-index: 1; }
   .candtable th { text-align: left; font-weight: 600; color: var(--muted);
                   padding: 3px 10px 3px 0; border-bottom: 1px solid var(--line); }
   .candtable td { padding: 3px 10px 3px 0; border-bottom: 1px solid var(--line); }
@@ -613,6 +641,16 @@
 
      `nav`, not a row of buttons in `<main>`: it is the page's primary
      navigation now, and a screen reader should be told so. -->
+<!-- FOLDABLE, because judging needs the vertical. Tony, 2026-09-04: "consider
+     options to decrease hieght of stuff above the raster. condense model
+     vertically, maybe even foldable nav and pipeline."
+     The rail is how a reader learns the shape of the pipeline, which matters
+     once; the raster is what they look at for an hour. So it folds to a single
+     line naming the step you are on, and the choice is remembered. -->
+<div id="railfold">
+  <button id="railToggle" class="ghost" aria-expanded="true">Hide pipeline</button>
+  <span class="lab" id="railWhere"></span>
+</div>
 <nav id="rail" aria-label="pipeline"></nav>
 
 <main>
@@ -1515,6 +1553,22 @@
           </span>
           <span class="lab" id="orderNote"></span>
         </div>
+        <!-- ZOOM THE RASTER'S TIME AXIS. Tony, 2026-09-04, twice: "need to be
+             able to zoom the x-axis". The first pass put zoom on the small
+             candidate canvas in the side panel, which was the wrong picture —
+             judging now happens against THIS raster and the ledger under it,
+             so this is the axis that has to move.
+             The wheel is deliberately not bound: the mouse wheel scrolls the
+             page, which is the plot convention this project already holds. -->
+        <div id="zoombar">
+          <span class="lab">time</span>
+          <span class="seg">
+            <button id="zOut" title="wider">−</button>
+            <button id="zIn" title="tighter">+</button>
+          </span>
+          <button id="zAll" class="ghost">whole recording</button>
+          <span class="lab" id="zWhat"></span>
+        </div>
       </div>
       <p id="wins"></p>
       <canvas id="cv"></canvas>
@@ -2123,6 +2177,79 @@ const CAND_INK = {
   selected:  "#1565c0",   // the one being looked at, matching its ledger row
 };
 
+/* ---------- the raster's time window ----------------------------------------
+
+   Tony, 2026-09-04: "need to be able to zoom the x-axis." A 70-minute recording
+   drawn across 1000px puts a whole coordinated event inside one pixel column,
+   which is not a scale anything can be judged at.
+
+   SPAN AND CENTRE, not t0/t1. Zooming then holds the moment being judged in
+   place instead of letting it drift off the edge, and a scale chosen on one
+   recording carries to the next.
+
+   THE WHEEL IS NOT BOUND. The mouse wheel scrolls the page — this project's own
+   plot convention, and the one thing more annoying than not being able to zoom
+   is a page that zooms when you tried to scroll past it. */
+let RASTER_SPAN = null;   // seconds shown; null = the whole recording
+let RASTER_MID = null;    // centre of the window, on the recording's own clock
+
+const RASTER_ZOOMS = [5, 10, 20, 45, 90, 180, 300, 600, 1200, 2400];
+
+function rasterFullSpan() {
+  const d = current && current.loaded;
+  return d ? Math.max(1, d.t1 - d.t0) : null;
+}
+
+/* dir: -1 tighter, +1 wider. The last step is always the whole recording, so
+   zooming out reaches "all of it" rather than stopping just short of it. */
+function zoomRaster(dir) {
+  const full = rasterFullSpan();
+  if (!full) return;
+  const steps = RASTER_ZOOMS.filter(s => s < full).concat([full]);
+  const cur = RASTER_SPAN || full;
+  let i = steps.findIndex(s => s >= cur - 1e-6);
+  if (i < 0) i = steps.length - 1;
+  const j = Math.min(steps.length - 1, Math.max(0, i + dir));
+  RASTER_SPAN = steps[j] >= full ? null : steps[j];
+  if (RASTER_SPAN && !Number.isFinite(RASTER_MID)) {
+    const c = ANNOT && ANNOT.cands[ANNOT.i];
+    const d = current.loaded;
+    // centre on what is being judged, if anything is
+    RASTER_MID = (c && c.recId === current.id) ? c.centre : (d.t0 + d.t1) / 2;
+  }
+  repaintRaster();
+}
+
+function resetRasterZoom() {
+  RASTER_SPAN = null; RASTER_MID = null;
+  repaintRaster();
+}
+
+/* Bring a moment into view without changing the scale. Called when a candidate
+   is selected, so picking a row in the ledger walks the raster to it. */
+function centreRasterOn(t) {
+  if (!RASTER_SPAN || !Number.isFinite(t)) return;
+  RASTER_MID = t;
+  repaintRaster();
+}
+
+function repaintRaster() {
+  if (current && current.loaded) draw(current, current.loaded);
+  paintZoomBar();
+}
+
+function paintZoomBar() {
+  const full = rasterFullSpan();
+  const n = document.getElementById("zWhat");
+  if (n) n.textContent = !full ? ""
+    : RASTER_SPAN ? "showing " + fmt(RASTER_SPAN) + " of " + fmt(full)
+                  : "whole recording";
+  const all = document.getElementById("zAll");
+  if (all) all.disabled = !RASTER_SPAN;
+  const zin = document.getElementById("zIn");
+  if (zin) zin.disabled = !!(full && RASTER_SPAN && RASTER_SPAN <= RASTER_ZOOMS[0]);
+}
+
 /* The candidates to mark on one panel, with the verdict each currently carries.
 
    Drawn from the SAMPLE being judged, not from every candidate the assessment
@@ -2181,6 +2308,9 @@ async function selectCandidate(i) {
     document.getElementById(id).disabled = false;
   await showCandidate();
   paintCandidateTable();
+  // walk the raster to it, if the reader has zoomed in far enough that it might
+  // be off screen. Does nothing at whole-recording scale.
+  centreRasterOn(ANNOT.cands[i].centre);
   repaintJudgingLane();
 }
 
@@ -2263,7 +2393,15 @@ function paintCandidateTable() {
     tr.append(mk("Can't tell", "unsure", "ghost"));
     t.append(tr);
   }
-  box.append(t);
+  // its own scroll box, so a long ledger never pushes the raster off screen
+  const scroll = document.createElement("div");
+  scroll.className = "candscroll";
+  scroll.append(t);
+  box.append(scroll);
+  // keep the selected row visible when selection moved from the lane or a key
+  const sel = t.querySelector("tr.sel");
+  if (sel && sel.scrollIntoView)
+    sel.scrollIntoView({ block: "nearest" });
 }
 
 /* What the lane strip draws, derived FROM THE ROWS rather than kept beside
@@ -2324,7 +2462,19 @@ function draw(rec, data) {
   g.clearRect(0, 0, W, H);
   g.font = "11px -apple-system, system-ui, sans-serif";
 
-  const t0 = data.t0, t1 = Math.max(data.t1, t0 + 1);
+  /* THE TIME WINDOW ON SCREEN. Whole recording unless the reader has zoomed.
+     `RASTER_SPAN` is how many seconds are shown and `RASTER_MID` is what they
+     are centred on -- kept as span+centre rather than as t0/t1 so that zooming
+     holds the moment being judged in place instead of drifting off the edge,
+     and so a zoom set on one recording carries to the next at the same scale. */
+  const full0 = data.t0, full1 = Math.max(data.t1, data.t0 + 1);
+  let t0 = full0, t1 = full1;
+  if (RASTER_SPAN && RASTER_SPAN < full1 - full0) {
+    const half = RASTER_SPAN / 2;
+    let mid = Number.isFinite(RASTER_MID) ? RASTER_MID : (full0 + full1) / 2;
+    mid = Math.min(Math.max(mid, full0 + half), full1 - half);
+    t0 = mid - half; t1 = mid + half;
+  }
   const x = t => padL + (t - t0) / (t1 - t0) * (W - padL - padR);
   const wins = REGIONS.get(rec.id) || [];
   const step = ticks(t1 - t0, Math.max(4, Math.round((W - padL - padR) / 110)));
@@ -2441,7 +2591,15 @@ function draw(rec, data) {
       const ra = Math.max(padL, x0), rb = Math.min(W - padR, x1);
       g.fillStyle = ink(w.label);
       g.fillRect(ra, top - 4, Math.max(1, rb - ra), 3);
-      if (si === 0) {
+      /* ONE LABEL PER REGION THAT IS ACTUALLY IN VIEW. Every region used to get
+         a label clamped into the plot, which was harmless at whole-recording
+         scale and became a pile-up the moment the axis could zoom: four regions
+         off to the left all clamped to the same left edge and drew "baseline"
+         over "TTX". A region is labelled if it STARTS in view, or if it is the
+         one the left edge is standing in — which is exactly one of them. */
+      const startsInView = w.start >= t0 && w.start <= t1;
+      const holdsLeftEdge = w.start <= t0 && w.end > t0;
+      if (si === 0 && (startsInView || holdsLeftEdge)) {
         // clamp inside the plot: a window starting near the right edge ran its
         // label off the canvas, and a treatment silently rendered as "hig" is
         // worse than one rendered a few pixels from where it starts
@@ -10861,6 +11019,7 @@ function showSection(id) {
     n.open = true;
   }
   paintRail();
+  paintRailWhere();   // the fold line names the step when the rail is hidden
 }
 
 function railStep(s) {
@@ -11272,15 +11431,54 @@ async function bootDemo() {
 }
 bootDemo();
 
-document.querySelectorAll(".seg button").forEach(b => {
+/* SCOPED TO `#bar`, not every `.seg button` on the page. The zoom control is a
+   `.seg` too, and an unscoped selector wired ITS buttons to this handler as
+   well -- they carry no `data-order`, so pressing "+" set `ORDER = undefined`
+   and the raster silently lost its ROI ordering. */
+document.querySelectorAll("#bar .seg button").forEach(b => {
   b.onclick = () => {
     if (ORDER === b.dataset.order) return;
     ORDER = b.dataset.order;
-    document.querySelectorAll(".seg button").forEach(x =>
+    document.querySelectorAll("#bar .seg button").forEach(x =>
       x.setAttribute("aria-pressed", String(x.dataset.order === ORDER)));
     if (current?.loaded) { paintOrderNote(current.loaded); draw(current, current.loaded); }
   };
 });
+
+document.getElementById("zIn").onclick = () => zoomRaster(-1);
+document.getElementById("zOut").onclick = () => zoomRaster(+1);
+document.getElementById("zAll").onclick = resetRasterZoom;
+
+/* The pipeline fold. Remembered, because somebody who folded it once is judging
+   and wants the vertical every time, not once per reload. */
+const RAIL_KEY = "bugarach.railfolded";
+function setRailFolded(on) {
+  document.body.classList.toggle("railfolded", on);
+  const b = document.getElementById("railToggle");
+  if (b) {
+    b.textContent = on ? "Show pipeline" : "Hide pipeline";
+    b.setAttribute("aria-expanded", String(!on));
+  }
+  try { on ? localStorage.setItem(RAIL_KEY, "1")
+           : localStorage.removeItem(RAIL_KEY); } catch (e) { /* fine */ }
+  paintRailWhere();
+  // the raster's width changes with the layout, so it has to be redrawn
+  if (current && current.loaded) draw(current, current.loaded);
+}
+/* Folding the rail must not also lose WHERE YOU ARE, so the step name moves to
+   the fold line. */
+function paintRailWhere() {
+  const n = document.getElementById("railWhere");
+  if (!n) return;
+  const folded = document.body.classList.contains("railfolded");
+  const s = typeof SECTION !== "undefined" && SECTION ? stepByKey(SECTION) : null;
+  n.textContent = folded && s ? "on: " + stepLabel(s) : "";
+}
+document.getElementById("railToggle").onclick = () =>
+  setRailFolded(!document.body.classList.contains("railfolded"));
+try {
+  if (localStorage.getItem(RAIL_KEY) === "1") setRailFolded(true);
+} catch (e) { /* storage off — the rail simply stays open */ }
 
 document.getElementById("pickDir").onclick = async () => {
   // the modern picker gives a handle we can offer back next visit; without it
