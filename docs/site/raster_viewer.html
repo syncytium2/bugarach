@@ -9,7 +9,7 @@
      rather than naming a sha this page could not know — the reasoning is at the
      visible stamp. -->
 <meta name="bugarach:born" content="2026-08-13">
-<meta name="bugarach:version-date" content="2026-09-02">
+<meta name="bugarach:version-date" content="2026-09-03">
 <meta name="bugarach:commit" content="content-addressed">
 <!--
   The raster viewer, client side.
@@ -769,6 +769,18 @@
         <div class="note" id="anCand"></div>
       </div>
       <div id="anOut"></div>
+      <!-- THE OTHER HALF OF MAHICE. The machine proposes and the person
+           disposes, and what the person is there to decide is K. It sits below
+           the agreement tables on purpose: it is read off them, having looked,
+           rather than chosen beforehand. -->
+      <div class="ctl" id="anKCtl">
+        <label for="anKPct">K, as % of each recording's ROIs</label>
+        <input id="anKPct" type="number" min="0.1" max="100" step="0.5" value="10" autocomplete="off" data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other">
+        <label for="anKNote">why this K (optional)</label>
+        <input id="anKNote" type="text" placeholder="in your own words" size="24" autocomplete="off" data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other">
+        <div class="span"><button id="anKSet">Set K for this review</button></div>
+      </div>
+      <div id="anKOut"></div>
       <div class="fine">
         <b>The machine proposes; you dispose.</b> The assessment found moments
         where more ROIs fired together than its rate-matched null explains. Those
@@ -796,6 +808,29 @@
         <b>"Can't tell" is a real answer.</b> It is kept out of both sides of the
         agreement rate: a candidate you could not judge is evidence about the
         rendering, not about the candidate.
+        <br><br>
+        <b>And then you set K, which is the other half of this step.</b> K is the
+        floor: how many ROIs firing together make one coordinated event. Nothing
+        else in the pipeline can choose it — it moves the headline by an order of
+        magnitude, and every number after it inherits the choice: the simulator's
+        cluster rate, the operating points fitted against that, and every score
+        quoted from them. You set it here, having looked, and the file records
+        what you set, when, and who you are.
+        <br><br>
+        <b>K is a percentage of the field, not a count</b>, and that is what lets
+        one setting be fair across a folder. Three co-active ROIs is a third of a
+        10-ROI recording and six percent of a 51-ROI one — both are in this lab's
+        own folder, and another lab's recordings carry four hundred. Set one
+        percentage and the floor follows each recording's own population; that is
+        the opposite of choosing a different K per slice by hand, which would not
+        be fair to any of them.
+        <br><br>
+        <b>Your labels get a second opinion, and it never overrules you.</b> Once
+        enough is judged, the page reports the count that best separates what you
+        confirmed from what you rejected. If it disagrees with your setting it
+        says so and changes nothing — you have looked at these recordings and the
+        arithmetic has not. If it cannot locate a boundary at all, that is a
+        finding about the assessor rather than about your K.
       </div>
     </details>
     <details class="acc" id="accSim" open>
@@ -1428,10 +1463,10 @@
      a page edited without bumping it turns CI red instead of shipping a date
      that has quietly become a lie. Bump it when you edit this page. -->
 <p class="site-dates" data-bugarach-born="2026-08-13"
-   data-bugarach-version-date="2026-09-02"
+   data-bugarach-version-date="2026-09-03"
    data-bugarach-commit="content-addressed"
    style="margin:1.5rem max(1.2rem, calc(50% - 23rem));color:#666;font-size:.85rem">
-  First published 2026-08-13 · this version 2026-09-02 · identified by its own
+  First published 2026-08-13 · this version 2026-09-03 · identified by its own
   bytes rather than by a build stamp
 </p>
 
@@ -6113,6 +6148,9 @@ function recordVerdict(v) {
   a.i++;
   paintAnnotChip();
   paintAgreement();
+  // The cross-check moves with every verdict, so a K set early is re-examined
+  // against the labels that arrive after it. The setting itself never changes.
+  paintKSetting();
   showCandidate();
 }
 
@@ -6169,6 +6207,43 @@ function paintAgreement() {
     + "supports.", "caveat"));
   box.append(el("p", "A dash means nothing was judged at that K, which is not "
     + "the same as agreeing with nothing there.", "caveat"));
+
+  /* THE SAME VERDICTS, READ AS PERCENTAGES — and this is the table K is set
+     from. The one above pools recordings against a single absolute floor, which
+     is not one question when the folder runs 10 to 51 ROIs: K=3 is a third of
+     one field and six percent of another. Here each candidate is counted against
+     the floor its own recording resolves to, so a row means the same thing
+     everywhere in the folder. */
+  const roi = roiCounts();
+  if (roi.size) {
+    const scanP = agreementScanPct(a.verdicts, MAHICE_FRACS);
+    box.append(el("h4", "The same verdicts, as a percentage of each field"));
+    const t2 = document.createElement("table");
+    const h2 = document.createElement("tr");
+    for (const h of ["% of ROIs", "K here", "confirmed", "judged", "agreement",
+                     "can't tell"]) h2.append(el("th", h));
+    t2.append(h2);
+    for (const f of MAHICE_FRACS) {
+      const s = scanP.get(f);
+      const judged = s.c + s.r;
+      const lo = s.ks[0], hi = s.ks[s.ks.length - 1];
+      const tr = document.createElement("tr");
+      tr.append(el("td", (100 * f) + "%"));
+      tr.append(el("td", lo === hi ? String(lo) : lo + "–" + hi));
+      tr.append(el("td", String(s.c)));
+      tr.append(el("td", String(judged)));
+      tr.append(el("td", judged ? (100 * s.c / judged).toFixed(0) + "%" : "—"));
+      tr.append(el("td", String(s.u)));
+      t2.append(tr);
+    }
+    box.append(t2);
+    box.append(el("p", "\"K here\" is the range that percentage resolves to "
+      + "across the recordings in hand — one setting, a floor that follows the "
+      + "field size. This is the table to set K from: a percentage where you "
+      + "believed most of what you were shown is one this folder supports.",
+      "caveat"));
+  }
+
   const done = a.verdicts.filter(Boolean).length;
   const btn = el("button", "Download annotations.csv (" + done + " verdict"
     + (done === 1 ? "" : "s") + ")");
@@ -6216,14 +6291,285 @@ function downloadAnnotations() {
   if (text) offerDownload("annotations.csv", text);
 }
 
+/* ---------- setting K, which is the half of MAHICE that was missing ----------
+
+   MAHICE — machine-assisted human identification of coordinated events
+   (docs/GLOSSARY.md) — is a person and a program together. The page already had
+   the program's half and the person's verdicts, and no way to record the thing
+   the person is actually there to decide. Tony, 2026-09-03: "K is set by the
+   user during review of the data with MAHICE."
+
+   K IS A PERCENTAGE OF THE FIELD, NOT A COUNT. Three co-active ROIs is a third
+   of a 10-ROI recording and six percent of a 51-ROI one, and both are in this
+   lab's folder; the Cossart corpus carries ~405 ROIs against our ~34. One
+   percentage per review is what makes a single setting fair — the person sets
+   one number and the floor follows each field size on its own, which is the
+   opposite of setting a different K per slice by hand.
+
+   The Python half is `annotate.MahiceSession`, and the `mahice.json` written
+   here has to satisfy it: the dataclass refuses a percentage given as a whole
+   number, an anonymous session, and one with no time.
+   `tests/test_webapp_mahice.py` builds the file in this page and parses it with
+   `read_session`, which is the only thing that stops two halves in two languages
+   drifting apart. */
+
+//: Mirrors `assess.DEFAULT_MIN_ROIS_FRAC`.
+const MAHICE_FRACS = [0.05, 0.10, 0.15, 0.20, 0.25];
+
+let MAHICE = null;   // {kPercent, at} — what the person set, once they set it
+
+/* Mirrors `assess.k_from_fraction`, INCLUDING the rounding: `matlab_round` is
+   floor(x + 0.5), which is what `simulate.py` uses to turn a planted
+   participation fraction into a count. A second convention here would disagree
+   near the boundary, and a spec derived at 10% would stop describing the events
+   a simulation planted at 10%. */
+function kFromFraction(frac, nRoi) {
+  return Math.max(1, Math.floor(frac * nRoi + 0.5));
+}
+
+/* slice_id -> ROI population, from whichever assessment produced the candidates.
+   Every exported ROI, including those with no events in this stream:
+   FOUNDATIONS §9 forbids conditioning on having fired, and a denominator that
+   dropped the quiet ones would make one percentage mean two things. */
+function roiCounts() {
+  const out = new Map();
+  if (FOLDER_ASSESS && FOLDER_ASSESS.records) {
+    for (const r of FOLDER_ASSESS.records)
+      if (r.nRoi !== undefined) out.set(r.id, r.nRoi);
+  } else if (LAST_ASSESS && LAST_ASSESS.rec) {
+    // One recording, and the count rides on the assessment rows rather than on
+    // LAST_ASSESS itself. Streams are index-aligned (io.py refuses a recording
+    // whose streams disagree on ROI count), so any block answers for all.
+    const rows = (LAST_ASSESS.blocks || []).flatMap(b => b.res || [])
+      .concat(LAST_ASSESS.res || []);
+    const row = rows.find(r => r && r.nRoi !== undefined);
+    if (row) out.set(LAST_ASSESS.rec.id, row.nRoi);
+  }
+  return out;
+}
+
+/* Agreement at a PERCENTAGE, pooled across recordings of different sizes. Each
+   candidate is counted against the floor its OWN recording resolves to, which is
+   the whole payoff: a rate at "10% of the field" means one thing over a folder
+   where an absolute K means several. */
+function agreementScanPct(verdicts, fracs) {
+  const roi = roiCounts();
+  const out = new Map(fracs.map(f => [f, { c: 0, r: 0, u: 0, ks: [] }]));
+  for (const f of fracs) {
+    const cell = out.get(f);
+    for (const [, n] of roi) cell.ks.push(kFromFraction(f, n));
+    cell.ks.sort((a, b) => a - b);
+  }
+  for (const v of verdicts) {
+    if (!v) continue;
+    const n = roi.get(v.cand.recId);
+    if (n === undefined) continue;
+    for (const f of fracs) {
+      if (v.cand.kSurvived < kFromFraction(f, n)) continue;
+      const cell = out.get(f);
+      if (v.verdict === "confirmed") cell.c++;
+      else if (v.verdict === "rejected") cell.r++;
+      else cell.u++;
+    }
+  }
+  return out;
+}
+
+/* What the labels alone would put K at — a mirror of `annotate.derive_k`, and it
+   is NOT where K comes from. It reports; the person's setting stands. Youden's J
+   rather than accuracy, because how many candidates are confirmed is set by how
+   the sample was drawn and a prevalence-weighted score would report the sampling
+   design back. */
+function labelSeparation(verdicts) {
+  const judged = verdicts.filter(v => v && v.verdict !== "unsure");
+  const nC = judged.filter(v => v.verdict === "confirmed").length;
+  const nR = judged.length - nC;
+  if (judged.length < 20)
+    return { ok: false, why: "only " + judged.length + " judged, and 20 is the "
+      + "floor below which the argmax moves with one relabelled candidate" };
+  if (nC < 3 || nR < 3)
+    return { ok: false, why: nC + " confirmed and " + nR + " rejected — a "
+      + "boundary needs at least 3 on each side, or every threshold scores alike "
+      + "and the answer is the tie-break rule" };
+  const floor = Math.min(...judged.map(v => v.cand.nMembers));
+  if (floor > 2)
+    return { ok: false, why: "the candidates were proposed at " + floor
+      + " co-active ROI and nothing below that was ever offered, so these labels "
+      + "cannot speak about a K under " + floor + " — the answer would be the "
+      + "proposal floor returning under a new name" };
+  const counts = [...new Set(judged.map(v => v.cand.nMembers))].sort((a, b) => a - b);
+  const curve = new Map();
+  for (let k = counts[0]; k <= counts[counts.length - 1]; k++) {
+    let tp = 0, fn = 0, fp = 0, tn = 0;
+    for (const v of judged) {
+      const hit = v.cand.nMembers >= k;
+      if (v.verdict === "confirmed") hit ? tp++ : fn++;
+      else hit ? fp++ : tn++;
+    }
+    const sens = (tp + fn) ? tp / (tp + fn) : 0;
+    const spec = (tn + fp) ? tn / (tn + fp) : 0;
+    curve.set(k, sens + spec - 1);
+  }
+  const best = Math.max(...curve.values());
+  if (best < 0.30)
+    return { ok: false, why: "the best threshold separates what you confirmed "
+      + "from what you rejected at only J=" + best.toFixed(2) + ", where chance "
+      + "is 0 — the co-active count is not what you are judging on, which is a "
+      + "finding about the assessor rather than a value of K" };
+  const within = [...curve.entries()].filter(([, j]) => j >= best - 0.05)
+    .map(([k]) => k).sort((a, b) => a - b);
+  const at = [...curve.entries()].filter(([, j]) => j === best)
+    .map(([k]) => k).sort((a, b) => a - b)[0];
+  return { ok: true, k: at, j: best, band: [within[0], within[within.length - 1]] };
+}
+
+/* The file. Field for field with `annotate.MahiceSession.to_dict()`. */
+function mahiceJson() {
+  if (!MAHICE) return "";
+  const roi = roiCounts();
+  const kAbs = {}, nRoi = {};
+  for (const [id, n] of [...roi.entries()].sort()) {
+    kAbs[id] = kFromFraction(MAHICE.kPercent, n);
+    nRoi[id] = n;
+  }
+  const who = (document.getElementById("anWho").value || "").trim() || "unnamed";
+  const a = ANNOT;
+  const streams = new Set((a ? a.verdicts : []).filter(Boolean)
+    .map(v => v.cand.stream));
+  return JSON.stringify({
+    mahice: "machine-assisted human identification of coordinated events",
+    k_percent: MAHICE.kPercent,
+    k_absolute: kAbs,
+    n_roi: nRoi,
+    annotator: who,
+    decided_at: MAHICE.at,
+    // What the candidates were PROPOSED at, as a fraction, so the Python can see
+    // whether the list was censored at the boundary the review is meant to
+    // locate. Taken from the smallest candidate actually judged rather than from
+    // the scan constant, because that is what was really on offer.
+    proposal_frac: MAHICE.proposalFrac,
+    stream: streams.size === 1 ? [...streams][0] : null,
+    note: (document.getElementById("anKNote").value || "").trim(),
+  }, null, 1) + "\n";
+}
+
+function downloadMahice() {
+  const text = mahiceJson();
+  if (text) offerDownload("mahice.json", text, "application/json");
+}
+
+/* The person sets it, and nothing here checks their arithmetic against them.
+   A disagreement with the labels is shown and changes nothing. */
+function setK() {
+  const box = document.getElementById("anKPct");
+  const pct = Number(box.value);
+  const out = document.getElementById("anKOut");
+  out.textContent = "";
+  if (!isFinite(pct) || pct <= 0 || pct > 100) {
+    out.append(el("p", "K is a percentage of each recording's ROI population, "
+      + "so it has to be more than 0 and at most 100.", "verdict bad"));
+    return;
+  }
+  const roi = roiCounts();
+  if (!roi.size) {
+    out.append(el("p", "No assessed recording is in hand, so there is no ROI "
+      + "population to resolve a percentage against.", "verdict bad"));
+    return;
+  }
+  const verdicts = (ANNOT ? ANNOT.verdicts : []).filter(Boolean);
+  // The proposal floor as a fraction of the median field, which is what the
+  // Python compares against. Only meaningful once something has been judged.
+  const fields = [...roi.values()].sort((a, b) => a - b);
+  const medField = fields[fields.length >> 1];
+  const propK = verdicts.length
+    ? Math.min(...verdicts.map(v => v.cand.nMembers)) : null;
+  MAHICE = {
+    kPercent: pct / 100,
+    at: new Date().toISOString().replace(/\.\d+Z$/, "Z"),
+    proposalFrac: propK === null ? null
+      : Number((propK / medField).toPrecision(4)),
+  };
+  paintKSetting();
+}
+
+function paintKSetting() {
+  const out = document.getElementById("anKOut");
+  if (!out) return;
+  out.textContent = "";
+  if (!MAHICE) return;
+  const roi = roiCounts();
+  const ks = [...roi.entries()].map(([id, n]) =>
+    [id, kFromFraction(MAHICE.kPercent, n), n]).sort();
+  const lo = Math.min(...ks.map(r => r[1])), hi = Math.max(...ks.map(r => r[1]));
+  const pct = 100 * MAHICE.kPercent;
+
+  out.append(el("h4", "K is set: " + (+pct.toFixed(4)) + "% of each recording's "
+    + "ROIs"));
+  out.append(el("p", "Across the " + ks.length + " recording"
+    + (ks.length === 1 ? "" : "s") + " in hand that is a floor of "
+    + (lo === hi ? "K=" + lo : "K=" + lo + " to K=" + hi)
+    + ". One setting, and the count follows each field size on its own — which "
+    + "is what makes it fair across recordings of different sizes, and is not "
+    + "the same as choosing a different K per slice."));
+
+  const tbl = document.createElement("table");
+  const hr = document.createElement("tr");
+  for (const h of ["recording", "ROIs", "K here"]) hr.append(el("th", h));
+  tbl.append(hr);
+  for (const [id, k, n] of ks.slice(0, 12)) {
+    const tr = document.createElement("tr");
+    tr.append(el("td", id));
+    tr.append(el("td", String(n)));
+    tr.append(el("td", String(k)));
+    tbl.append(tr);
+  }
+  out.append(tbl);
+  if (ks.length > 12)
+    out.append(el("p", "…and " + (ks.length - 12) + " more, all in the file.",
+      "caveat"));
+  if (lo === 1)
+    out.append(el("p", "⚠ That percentage rounds to K=1 on at least one "
+      + "recording, and one co-active ROI is no floor at all — every event there "
+      + "would count as coordinated.", "verdict bad"));
+
+  // The cross-check. Reports; never overrides.
+  const verdicts = (ANNOT ? ANNOT.verdicts : []).filter(Boolean);
+  const sep = labelSeparation(verdicts);
+  const kSet = ks.map(r => r[1]).sort((a, b) => a - b)[ks.length >> 1];
+  if (!sep.ok) {
+    out.append(el("p", "Not cross-checked against your labels: " + sep.why
+      + ". Your setting stands — this was only ever a second opinion.",
+      "caveat"));
+  } else if (kSet >= sep.band[0] && kSet <= sep.band[1]) {
+    out.append(el("p", "Your labels agree: what you confirmed separates from "
+      + "what you rejected at K=" + sep.k + " (band " + sep.band[0] + "–"
+      + sep.band[1] + ", J=" + sep.j.toFixed(2) + "), and your setting comes to "
+      + "K=" + kSet + " at the median recording.", "caveat"));
+  } else {
+    out.append(el("p", "⚠ Your labels separate at K=" + sep.k + " (band "
+      + sep.band[0] + "–" + sep.band[1] + ", J=" + sep.j.toFixed(2) + "), and "
+      + "your setting comes to K=" + kSet + " at the median recording. NOTHING "
+      + "HAS BEEN CHANGED and your setting stands — you have looked at these "
+      + "recordings and this arithmetic has not. Worth a second look before the "
+      + "spec is built.", "verdict bad"));
+  }
+
+  const btn = el("button", "Download mahice.json");
+  btn.onclick = downloadMahice;
+  const wrap = el("div", "", "span");
+  wrap.append(btn);
+  out.append(wrap);
+}
+
 function finishAnnotation() {
   document.getElementById("anWhere").textContent = "every drawn candidate judged";
   document.getElementById("anProg").textContent =
     ANNOT.verdicts.filter(Boolean).length + " verdicts";
   document.getElementById("anCand").textContent =
-    "Download the file and pass it to `derive_spec --annotations`, which builds "
-    + "the simulator's settings from what you confirmed rather than from every "
-    + "candidate the assessor proposed.";
+    "Set K below if you have not, then download both files. `derive_spec "
+    + "--annotations annotations.csv --session mahice.json` builds the "
+    + "simulator's settings from what you confirmed, at the K you set, rather "
+    + "than from every candidate the assessor proposed at a K nobody chose.";
   for (const id of ["anYes", "anNo", "anIdk"])
     document.getElementById(id).disabled = true;
   markDone("accAnnotate");
@@ -6244,6 +6590,9 @@ function startAnnotation() {
     document.getElementById(id).disabled = false;
   paintAnnotChip();
   paintAgreement();
+  // The cross-check moves with every verdict, so a K set early is re-examined
+  // against the labels that arrive after it. The setting itself never changes.
+  paintKSetting();
   showCandidate();
 }
 
@@ -6251,6 +6600,8 @@ function wireAnnotate() {
   const start = document.getElementById("anStart");
   if (!start) return;
   start.onclick = startAnnotation;
+  const kSet = document.getElementById("anKSet");
+  if (kSet) kSet.onclick = setK;
   document.getElementById("anYes").onclick = () => recordVerdict("confirmed");
   document.getElementById("anNo").onclick = () => recordVerdict("rejected");
   document.getElementById("anIdk").onclick = () => recordVerdict("unsure");
