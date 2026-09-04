@@ -5644,6 +5644,14 @@ async function runAssess() {
                  streams: blocks.map(b => b.stream), region: w.source };
     paintAssessChip();
     markDone("accAssess");
+    // The judging step reads its candidates from what the assessment just left,
+    // and NOTHING ELSE TELLS IT that they arrived. Without this call the chip
+    // stays "assess first" and `anStart` stays DISABLED for the rest of the
+    // session, so every click on "Draw a sample and start" does nothing at all
+    // -- silently, because a disabled button fires no event and logs no error.
+    // That is how MAHICE shipped: both halves worked, the seam was never called,
+    // and the tests exercised each half on its own.
+    paintAnnotChip();
 
     const wantK = Number(document.getElementById("aK").value);
     const hit = blocks[0].res.find(a => a.K === wantK && a.meetsFloor);
@@ -5779,6 +5787,7 @@ async function assessFolderRun() {
                       elapsedSec: (performance.now() - startedAt) / 1000 };
     paintFolderAssess();
     markDone("accAssess");
+    paintAnnotChip();   // same seam as the single-recording path above
   } finally {
     ASSESS_RUNNING = false;
     paintAssessFolderButton();

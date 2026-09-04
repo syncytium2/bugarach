@@ -213,3 +213,53 @@ def test_setting_k_needs_an_assessment_to_resolve_against(page):
         }""")
     assert not said["set"]
     assert "ROI population" in said["said"]
+
+
+# ---------------------------------------------------------------------------
+# the seam between the two halves
+# ---------------------------------------------------------------------------
+
+def test_the_judging_step_opens_once_an_assessment_lands(page):
+    """MAHICE shipped with both halves working and nothing joining them.
+
+    `assessRun` and `assessFolderRun` each left their candidates in a global and
+    then never told the judging step they had arrived, so `#cntAnnot` stayed at
+    "assess first" and **`#anStart` stayed `disabled` for the whole session**.
+    Clicking "Draw a sample and start" did nothing, silently: a disabled button
+    fires no event, raises nothing, and logs nothing.
+
+    Every other test in this file reaches past that button and calls
+    `startAnnotation()` in JS, which is why the suite was green while the step
+    was unreachable. Tony hit it on the real folder on 2026-09-04 and reported
+    it as "clicked. nothing happened", three separate controls over.
+
+    So this asserts **what a person actually has**: an enabled control.
+    """
+    pg, _ = page
+    assert pg.evaluate("collectCandidates().length") > 0, (
+        "the fixture must leave candidates or this test proves nothing")
+    assert "assess first" not in pg.inner_text("#cntAnnot")
+    assert pg.is_enabled("#anStart"), (
+        "the assessment ran and left candidates, and the judging step is still "
+        "shut — this is the defect, not a flake")
+
+
+def test_clicking_the_button_actually_starts_a_review(page):
+    """One step past enablement: the click has to reach the loop.
+
+    Enabled-but-inert is the same experience as disabled, and only pressing the
+    control the way a person does can tell those two apart.
+    """
+    pg, _ = page
+    state = pg.evaluate(
+        """() => {
+          const keep = ANNOT;
+          ANNOT = null;
+          document.getElementById("anWho").value = "tony";
+          document.getElementById("anStart").click();
+          const started = !!(ANNOT && ANNOT.cands && ANNOT.cands.length);
+          ANNOT = keep;
+          return {started, shown: !!document.getElementById("anCv")};
+        }""")
+    assert state["started"], "the button is enabled but the click reaches nothing"
+    assert state["shown"], "a review started with no canvas to judge in"
