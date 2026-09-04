@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-# instrument: propagation
 # vendored from syncytium2/murderboard @ 564b944 — do NOT edit here; update upstream and re-copy.
+# instrument: propagation
 """murderboard_revendor — re-copy vendored files and bump their stamps, surgically.
 
     python3 murderboard_revendor.py --check      report what would change, touch nothing

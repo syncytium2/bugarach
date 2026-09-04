@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-# instrument: verification
 # vendored from syncytium2/armory @ 548f734. This file is a COPY; edits here are
 # overwritten whenever it is re-vendored. Its source repository is private, so there is
 # nowhere to send a patch: treat this file as read-only and raise anything you find as
 # an issue in THIS repository.
+# instrument: verification
 """PostToolUse gate. A file sent to the user is answered with the fact that it arrived nowhere.
 
 WHY THIS EXISTS
