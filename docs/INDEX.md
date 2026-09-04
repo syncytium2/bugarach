@@ -99,7 +99,7 @@ enforced by `tests/test_index_resolves.py`, which reads code spans too.
 | **draw a figure — how this repo renders one** | figure, plot, chart, PNG, holoviews, bokeh, panel, playwright, screenshot | copy the shape of any `tools/make_*_figure.py`: `measure()` → `build()` (holoviews panels) → `header_html()` → save HTML, screenshot it with Playwright chromium. Destination **defaults to `bugarach.paths.darkroom()`**, `--also` takes the repo copy (SAP006 blocks a required `--out`). Conventions — no titles, identity in the y-label, nothing drawn on a raster — are in `CLAUDE.md` |
 | an algorithm implemented from a spec alone | clean room, spec, adversarial validation | [`clean_room/`](clean_room/) |
 | a decision already made | ADR, ruling, settled | [`adr/`](adr/) |
-| open work | todo, backlog, next | `docs/todo/` — 148 files, `status:` in frontmatter. **A record, not a queue** |
+| open work | todo, backlog, next | `docs/todo/` — 166 files, `status:` in frontmatter. **A record, not a queue** |
 | **a question asked and how it was answered** | decision log, misread, quote, ruling | ⚠ **`docs/decisions.md` is owed and not written.** Specified in [`handoffs/2026-08-30-the-session-end-hook.md`](handoffs/2026-08-30-the-session-end-hook.md) §"Also still owed" — question asked, answer verbatim, how it was interpreted |
 
 ## Known traps — things that fail quietly
