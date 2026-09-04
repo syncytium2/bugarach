@@ -433,6 +433,34 @@
             gap: 10px; margin: 4px 0 0; }
   .anzoom button { min-width: 34px; font-weight: 700; }
   .anzoom .sub { min-width: 108px; text-align: center; }
+  /* THE CANDIDATE LEDGER. Blue selection matches the arrow above the raster. */
+  .candtable { border-collapse: collapse; margin: 6px 0 14px; font-size: 12.5px; }
+  .candtable th { text-align: left; font-weight: 600; color: var(--muted);
+                  padding: 3px 10px 3px 0; border-bottom: 1px solid var(--line); }
+  .candtable td { padding: 3px 10px 3px 0; border-bottom: 1px solid var(--line); }
+  .candtable tr.sel td { background: #1565c01a; }
+  .candtable tr.sel td:first-child { box-shadow: inset 3px 0 0 #1565c0; }
+  .candtable .clicky { cursor: pointer; font-variant-numeric: tabular-nums;
+                       text-decoration: underline; text-underline-offset: 2px; }
+  .candtable .v-confirmed { color: #2c7a4b; font-weight: 600; }
+  .candtable .v-rejected  { color: #b3261e; font-weight: 600; }
+  .candtable .v-unsure    { color: #b8860b; font-weight: 600; }
+  /* `color` IS NOT OPTIONAL HERE. Without it these inherit the page's button
+     colour, which is white for the filled controls everywhere else — so an
+     unjudged row drew two empty white boxes and the words "Accept" and
+     "Exclude" were invisible until the button was already on. Caught by
+     screenshotting the table, not by the test that clicked the buttons: a click
+     finds a button whose label nobody can read. */
+  .candtable button { font-size: 12px; padding: 2px 9px; border-radius: 5px;
+                      border: 1px solid var(--line); background: var(--bg);
+                      color: var(--fg); cursor: pointer; }
+  .candtable button:hover { border-color: var(--accent); }
+  .candtable button.acc.on { background: #2c7a4b; border-color: #2c7a4b;
+                             color: #fff; font-weight: 600; }
+  .candtable button.exc.on { background: #b3261e; border-color: #b3261e;
+                             color: #fff; font-weight: 600; }
+  .candtable button.ghost.on { background: #b8860b; border-color: #b8860b;
+                               color: #fff; font-weight: 600; }
   /* The three verdicts share the row and the Back button rides at its own
      width: at the column widths this panel actually gets, a 9rem minimum put
      one button per line and pushed the agreement table off the screen. */
@@ -1490,6 +1518,19 @@
       </div>
       <p id="wins"></p>
       <canvas id="cv"></canvas>
+      <!-- THE CANDIDATE LEDGER, UNDER THE RASTER IT DESCRIBES. Tony,
+           2026-09-04: "have a list of possible events in a table below the
+           raster. user clicks, the above arrow goes blue, the user ticks accept
+           or exclude in the table. that we we all know what just happended."
+
+           The judging controls used to live in the side panel, which shows one
+           step at a time, so a verdict was a keystroke that left no trace where
+           the reader was looking. A table is a LEDGER: every candidate for this
+           recording is a row, the row says what was decided, and the decision is
+           made in the row rather than somewhere else. Selected is BLUE in both
+           places at once — the row and the arrow above the raster — so there is
+           never a question about which event a click just answered. -->
+      <div id="candTable"></div>
       <div id="assessOut"></div>
       <div id="detectOut"></div>
       <div id="windowOut"></div>
@@ -2079,6 +2120,7 @@ const CAND_INK = {
   rejected:  "#b3261e",
   unsure:    "#b8860b",
   preview:   "#c2c7cc",
+  selected:  "#1565c0",   // the one being looked at, matching its ledger row
 };
 
 /* The candidates to mark on one panel, with the verdict each currently carries.
@@ -2110,6 +2152,118 @@ function candidatesOnPanel(recId, stream) {
    only catch up the next time something else happens to redraw. */
 function repaintJudgingLane() {
   if (current && current.loaded) draw(current, current.loaded);
+}
+
+/* ---------- the candidate ledger --------------------------------------------
+
+   Tony, 2026-09-04: "have a list of possible events in a table below the raster.
+   user clicks, the above arrow goes blue, the user ticks accept or exclude in
+   the table. that we we all know what just happended."
+
+   The judging controls lived in the side panel, which shows one step at a time,
+   so a verdict was a keystroke that left no trace where the reader was looking
+   and no way to see what had already been decided. A table is a LEDGER: one row
+   per candidate in this recording, each row says what was decided, and the
+   decision is made IN the row.
+
+   Selection is BLUE in both places at once -- the row and the arrow above the
+   raster -- so it is never ambiguous which event a click just answered. */
+
+/* Select a candidate: blue arrow, blue row, and the zoomed view of it beside
+   them. Selecting is not judging and never records anything. */
+async function selectCandidate(i) {
+  if (!ANNOT || i < 0 || i >= ANNOT.cands.length) return;
+  ANNOT.i = i;
+  showSection("accAnnotate");
+  const stage = document.getElementById("anStage");
+  if (stage) stage.hidden = false;
+  for (const id of ["anYes", "anNo", "anIdk"])
+    document.getElementById(id).disabled = false;
+  await showCandidate();
+  paintCandidateTable();
+  repaintJudgingLane();
+}
+
+/* Judge one row. It SELECTS FIRST when the row is not the one on screen, so the
+   window recorded on the verdict is the window the reader was actually looking
+   at when they answered -- `showCandidate` stamps `ANNOT.view`, and a verdict
+   carrying a view nobody saw is worse than one carrying none. */
+async function judgeCandidate(i, verdict) {
+  if (!ANNOT || i < 0 || i >= ANNOT.cands.length) return;
+  if (ANNOT.i !== i || !ANNOT.view) await selectCandidate(i);
+  ANNOT.verdicts[i] = {
+    cand: ANNOT.cands[i], verdict,
+    at: new Date().toISOString().replace(/\.\d+Z$/, "Z"),
+    view: ANNOT.view,
+  };
+  saveReview();
+  paintAnnotChip();
+  paintAgreement();
+  paintKSetting();
+  paintCandidateTable();
+  repaintJudgingLane();
+}
+
+const VERDICT_WORD = {
+  confirmed: "accepted", rejected: "excluded", unsure: "can't tell",
+};
+
+/* The rows for the recording ON SCREEN. A ledger for the whole folder would be
+   1445 rows on this lab's own export; the raster above shows one recording, and
+   the table under it is about that raster. */
+function paintCandidateTable() {
+  const box = document.getElementById("candTable");
+  if (!box) return;
+  box.textContent = "";
+  if (!ANNOT || !current) { box.hidden = true; return; }
+  const rows = [];
+  ANNOT.cands.forEach((c, i) => {
+    if (c.recId === current.id && (!STREAM || c.stream === STREAM))
+      rows.push({ c, i, v: ANNOT.verdicts[i] });
+  });
+  if (!rows.length) { box.hidden = true; return; }
+  box.hidden = false;
+
+  const doneAll = ANNOT.verdicts.filter(Boolean).length;
+  box.append(el("h4", "Possible events in " + current.id));
+  box.append(el("p", rows.length + " here · " + doneAll + " of "
+    + ANNOT.cands.length + " judged across the sample. Click a row to look at "
+    + "it — the arrow above the raster turns blue — then accept or exclude it "
+    + "here.", "note"));
+
+  const t = document.createElement("table");
+  t.className = "candtable";
+  const hr = document.createElement("tr");
+  for (const h of ["at", "ROIs", "K", "verdict", "", "", ""])
+    hr.append(el("th", h));
+  t.append(hr);
+
+  for (const r of rows) {
+    const tr = document.createElement("tr");
+    if (ANNOT.i === r.i) tr.className = "sel";
+    const at = el("td", fmt(r.c.centre));
+    at.className = "clicky";
+    at.onclick = () => selectCandidate(r.i);
+    tr.append(at);
+    tr.append(el("td", String(r.c.nMembers)));
+    tr.append(el("td", String(r.c.kSurvived)));
+    const v = el("td", r.v ? VERDICT_WORD[r.v.verdict] || r.v.verdict : "—");
+    if (r.v) v.className = "v-" + r.v.verdict;
+    tr.append(v);
+    const mk = (label, verdict, cls) => {
+      const td = document.createElement("td");
+      const b = el("button", label);
+      b.className = cls + (r.v && r.v.verdict === verdict ? " on" : "");
+      b.onclick = () => judgeCandidate(r.i, verdict);
+      td.append(b);
+      return td;
+    };
+    tr.append(mk("Accept", "confirmed", "acc"));
+    tr.append(mk("Exclude", "rejected", "exc"));
+    tr.append(mk("Can't tell", "unsure", "ghost"));
+    t.append(tr);
+  }
+  box.append(t);
 }
 
 /* What the lane strip draws, derived FROM THE ROWS rather than kept beside
@@ -2311,7 +2465,13 @@ function draw(rec, data) {
       for (const m of onPanel) {
         const px = Math.round(x(m.cand.centre)) + 0.5;
         if (px < padL || px > W - padR) continue;
-        g.fillStyle = CAND_INK[m.state] || CAND_INK.unjudged;
+        /* SELECTED IS BLUE, and it wins over the verdict colour while it is
+           selected. Tony, 2026-09-04: "user clicks, the above arrow goes blue".
+           The row in the ledger below turns blue at the same moment, so the
+           arrow and the row agree about which event a click just answered. The
+           ring stays too — colour alone is not enough on a lane this dense. */
+        g.fillStyle = m.current ? CAND_INK.selected
+                                : (CAND_INK[m.state] || CAND_INK.unjudged);
         g.beginPath();
         g.moveTo(px - 4, baseY);
         g.lineTo(px + 4, baseY);
@@ -2737,6 +2897,8 @@ async function show(rec) {
   paintSimSwapWarning();
   paintOrderNote(data);
   draw(rec, data);
+  // the ledger is about the raster above it, so it follows the recording
+  paintCandidateTable();
 }
 
 /* ---------- conformance: the same report `bugarach check` prints, in the
@@ -6517,6 +6679,7 @@ function recordVerdict(v) {
   paintKSetting();
   showCandidate();
   repaintJudgingLane();
+  paintCandidateTable();
   if (SAVE_FAILED) paintReviewBanner();   // says so, loudly, once it is true
 }
 
@@ -7065,6 +7228,7 @@ function restoreReview(rec) {
   paintKSetting();
   showCandidate();
   repaintJudgingLane();
+  paintCandidateTable();
   paintReviewBanner();
 }
 
@@ -7096,6 +7260,12 @@ function paintReviewBanner() {
       + " restored, saved " + rec.savedAt + ". They are kept in this browser as "
       + "you go. Download annotations.csv is still what takes them off it."));
   } else if (mine) {
+    /* Don't offer to resume something thinner than what is already in play. A
+       live review with more verdicts than the saved one was drawing a "Resume
+       it — 0 verdicts" banner above the review being worked on, which reads as
+       an offer to throw the work away. */
+    const live = ANNOT ? ANNOT.verdicts.filter(Boolean).length : -1;
+    if (ANNOT && done <= live) { box.hidden = true; return; }
     box.append(el("b", "A saved review for this folder — "
       + done + " verdict" + (done === 1 ? "" : "s") + "."));
     box.append(el("span", " Saved " + rec.savedAt + "."));
@@ -7170,6 +7340,7 @@ function startAnnotation() {
   paintKSetting();
   showCandidate();
   repaintJudgingLane();   // the lane appears the moment the sample is drawn
+  paintCandidateTable();
   saveReview();
   paintReviewBanner();
 }
@@ -7190,7 +7361,7 @@ function wireAnnotate() {
       for (const id of ["anYes", "anNo", "anIdk"])
         document.getElementById(id).disabled = false;
       paintAnnotChip(); paintAgreement(); showCandidate();
-      repaintJudgingLane();
+      repaintJudgingLane(); paintCandidateTable();
       saveReview();   // an un-cast verdict is a change too
     }
   };

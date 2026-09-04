@@ -386,6 +386,70 @@ def test_the_verdict_is_the_colour_not_the_shape(page):
 
 
 # ---------------------------------------------------------------------------
+# the candidate ledger
+# ---------------------------------------------------------------------------
+
+def test_the_ledger_selects_in_blue_and_judges_in_the_row(page):
+    """Tony, 2026-09-04: "have a list of possible events in a table below the
+    raster. user clicks, the above arrow goes blue, the user ticks accept or
+    exclude in the table. that we we all know what just happended."
+
+    The point is that the decision is VISIBLE where it was made. So: a row click
+    selects and nothing else (selecting is not judging); the arrow and the row
+    agree about which candidate is selected; ticking Accept in a row records
+    that row's verdict, and the row then says so.
+    """
+    pg, _ = page
+    out = pg.evaluate(
+        """async () => {
+          ANNOT = null; discardSavedReview();
+          document.getElementById("anWho").value = "tony";
+          document.getElementById("anCap").value = "50";
+          document.getElementById("anBudget").value = "400";
+          startAnnotation();
+          await showCandidate();
+          draw(current, current.loaded);
+          paintCandidateTable();
+          const rows = [...document.querySelectorAll("#candTable tr")].slice(1);
+          if (rows.length < 2) return {skip: true};
+
+          // click the LAST row's time cell — not the one already selected
+          const row = rows[rows.length - 1];
+          row.querySelector(".clicky").click();
+          await new Promise(r => setTimeout(r, 60));
+          const afterSelect = {
+            votes: ANNOT.verdicts.filter(Boolean).length,
+            selCount: document.querySelectorAll("#candTable tr.sel").length,
+            laneBlue: CAND_HITS.some(h => h.i === ANNOT.i),
+          };
+
+          // now tick Accept in that same row
+          document.querySelectorAll("#candTable tr")[rows.length]
+            .querySelector("button.acc").click();
+          await new Promise(r => setTimeout(r, 80));
+          const v = ANNOT.verdicts[ANNOT.i];
+          return {skip: false, afterSelect,
+                  verdict: v ? v.verdict : null,
+                  stamped: !!(v && v.view),
+                  votes: ANNOT.verdicts.filter(Boolean).length,
+                  rowSays: document.querySelectorAll("#candTable tr")[rows.length]
+                             .textContent};
+        }""")
+    if out.get("skip"):
+        pytest.skip("fewer than two candidates on this recording")
+    assert out["afterSelect"]["votes"] == 0, "clicking a row cast a verdict"
+    assert out["afterSelect"]["selCount"] == 1, "selection is not exactly one row"
+    assert out["afterSelect"]["laneBlue"], (
+        "the selected candidate has no mark in the lane, so nothing above the "
+        "raster can turn blue")
+    assert out["verdict"] == "confirmed", "ticking Accept did not record accept"
+    assert out["stamped"], "a verdict was recorded with no view stamped on it"
+    assert out["votes"] == 1
+    assert "accepted" in out["rowSays"], (
+        "the row does not say what was decided — the whole point of the ledger")
+
+
+# ---------------------------------------------------------------------------
 # judging the mark you clicked, at the scale you chose
 # ---------------------------------------------------------------------------
 
