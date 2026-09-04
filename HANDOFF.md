@@ -26,7 +26,26 @@ record twice in three days. Derive them:
 
 ## The job
 
-**Walk the whole loop, on the real folder, as a person would — then say where it breaks.**
+**The point of the walk is that Tony sets K on the approved folder.** Everything else
+here is in service of that, and reading it the other way round gets the priorities
+backwards. Tony, 2026-09-03: *"we've been waiting for the walkthru to do this very
+step."*
+
+K is the one quantity nobody can compute and nothing downstream can proceed without —
+it moves the headline by an order of magnitude, and the generator's cluster rate, the
+simulated data set, the operating points fitted against it and every score quoted from
+them all inherit it. Until 2026-09-03 there was no way to set it that left a record; now
+there is, and it has never been used on real recordings.
+
+**So the deliverable is a `mahice.json` for this folder**, with a percentage Tony set
+having looked, his name on it, and the ROI population it resolved against. Not a number
+in a conversation — the file.
+
+**Walking the loop is how that setting becomes trustworthy rather than another number
+nobody can defend.** Each stage below is a chance for the sequence to break somewhere
+that only shows end to end, and a K set on top of a broken stage 2 is worth no more than
+the one this replaces. So: walk it, on the real folder, as a person would — and say
+where it breaks.
 
 Six things landed on 2026-09-03 and every one was verified *in isolation*. **The sequence
 has never been run.** That is the gap this handoff exists to close, and it is the kind
@@ -111,9 +130,12 @@ answer. Closing it means the assessment scan reaching down to 2 on both sides at
 browser's scan is pinned to Python's exactly. `assess.PROPOSAL_MIN_ROIS` and
 `bugarach assess --for-annotation` are the Python half and already exist.
 
-**Nobody has set a K for the approved folder.** That is expert attention, not compute —
-a couple of hundred confirmations at a low proposal floor. Everything downstream is
-waiting on it.
+**Nobody has set a K for the approved folder** — which is the job above, not a gap
+beside it. It is expert attention rather than compute: a couple of hundred confirmations
+at a low proposal floor, an afternoon. ⚠ **Do not set it for him.** The whole design is
+that a person looks at their own recordings and decides; a K a session picked and wrote
+into the file would pass every test in this repo and be exactly the thing the record was
+built to prevent.
 
 **Two regions are still never compared.** No function in `src/` puts two side by side, so
 the loop ends one analysis short of the question it opens with —
