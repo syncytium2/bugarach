@@ -57,20 +57,39 @@ the four places reality differs marked. **§3** is the built/not-built table. **
 before starting**; the app-build plan in `workflow_plan.md` is *not* the loop, and a
 session on 2026-09-03 lost half a day to reading it as one.
 
-### The folder to walk it on
+### The folder to walk it on — CORRECTED 2026-09-04
+
+**Walk it on the cleaned folder:**
 
 ```
-<data>/exports/bugarach/2026-09-03_revised_2v_long_PRE_ARTIFACT_KILLER
+<data>/exports/bugarach/2026-09-03_revised_2v_long_STEPS_EXCLUDED
 ```
 
-interface2's draft-final-run export. 84 recordings, both streams, raw db4 periods **and**
-`long_window_20` analysis windows. Its own `README.md` and `PROVENANCE.md` sit beside the
-CSVs and are the authority on it.
+**A successor landed after this handoff was written and nothing here knew about it.**
+84 recordings, both streams, raw db4 periods and `long_window_20` windows, and its own
+`README.md` / `PROVENANCE.md` are the authority. Its own words: *"For any new analysis,
+use this folder."*
 
-⚠ **The name is the caveat and it is load-bearing.** Whole-field brightness steps that
-produce false coordinated events are still in this data. Use it for the draft run; **do
-not publish a coordination result from it** without saying it is pre-artifact-killer. A
-successor without that suffix has had the artifact work applied.
+`2026-09-03_revised_2v_long_PRE_ARTIFACT_KILLER` is still on disk **on purpose** and
+neither supersedes the other as a *record* — the draft detect run was made on it, so it
+stays unchanged and that run stays reproducible. The two differ **only** in the
+field-step events, two new columns and the sidecars; `slices.csv` and `regions.csv` are
+byte-identical between them and the 75 unaffected recordings are byte-identical once the
+new columns are stripped. **Checked by the producer, not asserted.**
+
+⚠ **It REMOVES; it does not flag — and that is a live question for interface2.** The
+design they sent said *"flag, do not drop… we are not writing rules for your detections"*.
+What shipped drops: 381 events deleted from the recording files and listed in
+`field_steps_excluded.tsv`. The two columns are there — `on_field_step`, `field_step_id`
+— **and every value in them is zero**, checked across the whole folder. `20250904_211`
+goes 3,304 → 3,221 events; `20240723_22` 1,410 → 1,405.
+
+So **there is no garbage in that folder to show or hide.** Tony asked for a show/hide
+toggle on 2026-09-04 remembering the flagging design; the columns are vestigial as
+shipped, and show/hide is only possible by pairing a folder with
+`field_steps_excluded.tsv` or by staying on `PRE_ARTIFACT_KILLER`. **This is a producer
+conversation and Tony is having it** — he wakes interface2 about two hours after this
+was written. Do not build a consumer-side workaround before he does.
 
 ⚠ **`current_export.toml` still declares the August folder.** Anything reading
 `dataset.current()` gets `2026-08-18_revised_2v_periods`, which holds the same recordings
@@ -136,6 +155,64 @@ them below by these names.
 - **The spec → simulate → compare arc** from a person's K rather than a fixture's.
 
 ---
+
+## Field steps — what interface2 settled, and what is owed back
+
+**Added 2026-09-04. Read `~/Developer/interface2` before touching any of this** — the
+sessions there are down but the repo is live, and it holds far more than their handoff
+summarised. Entry point: **`docs/field_step_CLOSEOUT.md`**, then
+`docs/handoffs/TASK_fieldstep_to_export_contract.md`. Twice on 2026-09-03 this session
+re-derived something that tree already held.
+
+**The artifact.** A whole-field brightness step: the field changes level between two
+adjacent frames and stays there, so every ROI moves with it and every detector calls
+events on it. **The discriminator is rise time, not size** — every ranking tried before
+shape put a rejected candidate first. Biology rises over ~1–2 s; the instrument rises in
+a single frame.
+
+**The slow question is answered, and it is not slow-specific.** `fieldstep_slow_question.m`:
+
+| | observed / expected | ROIs firing at once | median \|onset − step\| |
+|---|---:|---:|---:|
+| fast | 8.5× | 74 % | **0.10 s** |
+| slow | 22.7× | 82 % | **0.18 s** |
+
+Uniform coincidence in the same ±2 s window puts that median at ~1.0 s. Onsets are locked
+to the step within one or two frames, in ~80 % of ROIs, at 8–23× each slice's own rate,
+**in both streams**. It is generation, not coincidence.
+
+**The number that matters here is not 0.14 %.** It is **8 moments, inside the analysis
+windows, where most of the population fires within two frames in both channels at once** —
+the exact signature a coordination detector exists to find. Eight candidate false
+coordinated events. Nine steps are confirmed; `20240723_22`'s falls outside every analysis
+window, which is also why a zero beside a confirmed step is not a broken join.
+
+**Their review queue is empty**, not 282 deep: 9 confirmed, 5 rejected, nothing pending at
+the 0.0119 floor. `docs/field_step_verdicts.tsv` is authoritative and `if2_field_step_flag`
+reads it directly, so a future verdict needs no code change.
+
+### Owed by us
+
+- **The figure on [#466](https://github.com/syncytium2/bugarach/pull/466) is stale in three
+  places** and must be corrected before it lands: it says "282 further candidates are
+  unadjudicated" (the queue is empty), it leaves `20240723_22` as an unexplained
+  non-responder (its step is outside every analysis window), and it uses interface2's
+  superseded "population at risk" framing — their own words now are *"predominantly
+  detector artifacts caused by the step"*. It also still needs the murderboard it never
+  had, which is why it is held.
+- **⚠ Nobody has checked whether `sync` was already catching these.** interface2's note
+  says bugarach has no artifact rejection of its own; that is **half wrong** —
+  `detectors/sync.py` carries a port of `flagArtifactEvents` (`_flag_artifacts` →
+  `is_artifact`) whose criterion is narrow near-total synchrony, which reads close to what
+  a field step looks like. Their successor README notices this and says *"we have not
+  checked whether it does"*. Neither has anyone here. **This is cheap and worth doing
+  early**: run the six detectors over both folders and diff, which also measures what the
+  removal changed.
+- **Do not reach for an event-store-based artifact detector.** They tried and rejected it
+  with the measurement: `fieldstep_cofire_scan.m` recovers 8 of 9 confirmed steps blind,
+  and **no threshold both keeps the known steps and yields a reviewable queue**. The field
+  trace is what separates artifact from biology — biology cannot move the whole-frame mean.
+  Co-firing is corroboration on a field-screen candidate, never a primary screen.
 
 ## Known gaps, carried forward
 
