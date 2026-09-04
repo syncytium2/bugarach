@@ -1,9 +1,13 @@
 # Handoff — walk the loop end to end, and validate it
 
-**In flight: [#469](https://github.com/syncytium2/bugarach/pull/469)** (MAHICE in the
-webapp) and **[#466](https://github.com/syncytium2/bugarach/pull/466)** (the field-step
-figure, held for the murderboard). When both close this file is spent and
-`tests/test_handoff_is_honest.py` says so.
+**In flight: [#466](https://github.com/syncytium2/bugarach/pull/466)** — the field-step
+figure, held because it is a figure with a caption and was never murderboarded. When it
+closes this file is spent and `tests/test_handoff_is_honest.py` says so out loud.
+
+*(MAHICE in the webapp landed while this handoff was in review, so it is named below as
+work to walk rather than here as work in flight. The gate reads the first forty lines
+and every PR it finds there must still be open — which is the gate doing its job, and it
+caught this one.)*
 
 > **Not murderboarded** — working material for sessions in this tree, same standing as
 > `docs/run_records.md` and the K todo. Nothing here is for an outside reader; if any of
