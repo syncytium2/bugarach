@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# instrument: verification
 # merge_when_green.sh — merge a PR only after its checks have actually passed.
 #
 # WHY THIS EXISTS. `gh pr merge --auto` waits for *required* status checks. If a

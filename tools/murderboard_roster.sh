@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# instrument: verification
 # vendored from syncytium2/murderboard @ 564b944 — do NOT edit here; update upstream and re-copy.
+# instrument: verification
 # murderboard_roster.sh — derive the review-team roster FROM the process file, and check
 # that a review report actually accounts for every role.
 #

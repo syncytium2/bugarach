@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# instrument: verification
 """Every row in MILESTONES.md must resolve against the tree it describes.
 
     python3 tools/check_milestones.py [FILE]     check (default docs/MILESTONES.md)
