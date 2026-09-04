@@ -741,6 +741,15 @@
          caveat beside it. -->
     <details class="acc" id="accAnnotate">
       <summary>Confirm the events<span class="cnt" id="cntAnnot">assess first</span></summary>
+      <!-- A REVIEW THAT SURVIVES A RELOAD. Judging is hours of a person's
+           attention, and it used to live in one page global: a refresh, a crash
+           or a closed tab took every verdict with it, silently, with nothing
+           anywhere warning that it could happen. Tony, 2026-09-04, on being
+           told: "yes verdicts survive! it is a lot of work."
+           This is where a saved review announces itself. It is NEVER silent --
+           a restored review that said nothing would let somebody carry on
+           believing they were judging a freshly drawn sample. -->
+      <div id="anRestore" hidden></div>
       <div class="ctl">
         <label for="anWho">your name</label>
         <input id="anWho" type="text" placeholder="who is judging" size="12" autocomplete="off" data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other">
@@ -2975,6 +2984,11 @@ async function open(fileList, opts) {
   paintSaveSettings();
   showSection(SIMULATED ? "accSim" : "accList");
   await show(RECORDINGS[0]);
+  /* A saved review can only be matched to a folder once there is one: the
+     signature is the recording ids. Runs here rather than at page load for that
+     reason, and before the check below, because the check walks every file and
+     a person coming back to unfinished judging should not wait on it. */
+  offerSavedReview();
   // the first raster goes up before the folder is checked: seeing something is
   // the point of opening it, and the check walks every file
   document.getElementById("checkbar").hidden = false;
@@ -6137,9 +6151,13 @@ function paintAnnotChip() {
   const btn = document.getElementById("anStart");
   if (!chip || !btn) return;
   const cands = collectCandidates();
-  if (ANNOT && ANNOT.verdicts.length) {
-    chip.textContent = ANNOT.verdicts.length + " of " + ANNOT.cands.length
-      + " judged";
+  /* A RESTORED review counts as live even with nothing judged yet. After a
+     reload the assessment is gone, so `collectCandidates()` is empty and the
+     old test -- verdicts, or candidates to draw from -- shut the step on a
+     review that had been resumed but not yet answered. */
+  if (ANNOT && ANNOT.cands && ANNOT.cands.length) {
+    const done = ANNOT.verdicts.filter(Boolean).length;
+    chip.textContent = done + " of " + ANNOT.cands.length + " judged";
     btn.disabled = false;
   } else if (cands.length) {
     chip.textContent = cands.length + " candidate"
@@ -6151,14 +6169,29 @@ function paintAnnotChip() {
   }
   const what = document.getElementById("anWhat");
   if (what) {
-    what.textContent = cands.length
-      ? ("The assessment left " + cands.length + " candidate moments across "
-         + new Set(cands.map(c => c.recId)).size + " recording(s). You will be "
-         + "shown a sample of them, one at a time — and every one in the sample "
-         + "is also marked in the lane above the raster, so you can click a mark "
-         + "to jump to that moment instead of working through them in order. "
-         + "The colour of a mark is its verdict; the ringed one is where you are.")
-      : "Run the assessment first — this judges what it proposes.";
+    const LANE = " Every candidate in the sample is marked in the lane above the "
+      + "raster, so you can click a mark to jump to that moment instead of "
+      + "working through them in order. The colour of a mark is its verdict; "
+      + "the ringed one is where you are.";
+    /* A RESTORED review has no candidates to draw from -- the assessment did not
+       survive the reload, only the review did -- so the bare "run the assessment
+       first" was appearing UNDER A LIVE REVIEW, telling somebody to start over
+       while their own verdicts sat on the screen above it. Caught by
+       photographing the restore rather than trusting the test that proved the
+       verdicts came back. */
+    if (ANNOT && ANNOT.cands && ANNOT.cands.length && !cands.length)
+      what.textContent = "Carrying on a saved review of "
+        + ANNOT.cands.length + " candidates. The assessment behind it is not "
+        + "reloaded and does not need to be — the sample travelled with your "
+        + "answers. Draw a new sample only if you mean to start over." + LANE;
+    else if (cands.length)
+      what.textContent = "The assessment left " + cands.length
+        + " candidate moments across "
+        + new Set(cands.map(c => c.recId)).size + " recording(s). You will be "
+        + "shown a sample of them, one at a time." + LANE;
+    else
+      what.textContent = "Run the assessment first — this judges what it "
+        + "proposes.";
   }
 }
 
@@ -6274,6 +6307,9 @@ function recordVerdict(v) {
     view: a.view,
   };
   a.i++;
+  // BEFORE the repaints, not after: this is the line that makes the verdict
+  // survive the tab, and it must not sit behind anything that can throw.
+  saveReview();
   paintAnnotChip();
   paintAgreement();
   // The cross-check moves with every verdict, so a K set early is re-examined
@@ -6281,6 +6317,7 @@ function recordVerdict(v) {
   paintKSetting();
   showCandidate();
   repaintJudgingLane();
+  if (SAVE_FAILED) paintReviewBanner();   // says so, loudly, once it is true
 }
 
 /* The per-K table, live. Candidates nest, so one verdict counts at every K at or
@@ -6619,7 +6656,12 @@ function setK() {
       : Number((propK / medField).toPrecision(4)),
   };
   paintKSetting();
+  // K is the thing the person is here to decide, so it survives with the
+  // verdicts it was read off. Losing it to a reload would mean setting it again
+  // from a table that had itself been lost.
+  saveReview();
 }
+
 
 function paintKSetting() {
   const out = document.getElementById("anKOut");
@@ -6704,9 +6746,190 @@ function finishAnnotation() {
   markDone("accAnnotate");
 }
 
+/* ---------- a review that survives a reload ----------------------------------
+
+   WHY THIS EXISTS. A review is hours of a person's attention and it lived in one
+   page global. A refresh, a crash, a closed tab or a laptop asleep took every
+   verdict with it -- silently, with nothing in the page warning that it could
+   happen, and with the only exit a Download button somebody had to think to
+   press. On 2026-09-04 this session told Tony verdicts "carry over" a reload
+   while asking him to reload; they did not, and a peer session reading the
+   transcript an hour later is the only reason it was caught before he lost a
+   sitting. Tony: "yes verdicts survive! it is a lot of work."
+
+   WHAT IS SAVED: the whole review, not just the verdicts. The candidate list is
+   part of it and has to be -- verdicts are POSITIONAL against the sample that
+   was drawn (`verdicts[i]` answers `cands[i]`), and on a reload the assessment
+   is gone, so `collectCandidates()` returns nothing and there is no list to be
+   positional against. A candidate carries everything needed to show it again,
+   so the sample travels with the answers.
+
+   WHERE: `localStorage`, which is this browser on this machine and travels
+   nowhere -- the same promise as the rest of the page. It can be absent
+   (private windows, storage disabled, quota), so every access is guarded and a
+   failure to save is announced rather than swallowed. A person who believes
+   their work is being kept when it is not is worse off than one who knows it is
+   not being kept.
+
+   WHICH FOLDER: recording ids, sorted. A page opened from `file://` has no path
+   to key on, and a review must only ever be restored into the folder it was
+   cast against -- restoring positional verdicts into a different sample would
+   attach a person's judgement to moments they never looked at. */
+const REVIEW_KEY = "bugarach.mahice.review";
+const REVIEW_V = 1;
+
+function reviewSignature() {
+  return RECORDINGS.map(r => r.id).sort().join("");
+}
+
+function saveReview() {
+  if (!ANNOT) return false;
+  const who = (document.getElementById("anWho") || {}).value || "";
+  const rec = {
+    v: REVIEW_V,
+    savedAt: new Date().toISOString().replace(/\.\d+Z$/, "Z"),
+    who, sig: reviewSignature(),
+    annot: { cands: ANNOT.cands, i: ANNOT.i, verdicts: ANNOT.verdicts,
+             seed: ANNOT.seed, budget: ANNOT.budget, cap: ANNOT.cap,
+             population: ANNOT.population, recordings: ANNOT.recordings,
+             drawn: ANNOT.drawn },
+    mahice: (typeof MAHICE !== "undefined" && MAHICE) ? MAHICE : null,
+  };
+  try {
+    localStorage.setItem(REVIEW_KEY, JSON.stringify(rec));
+    SAVE_FAILED = null;
+    return true;
+  } catch (e) {
+    SAVE_FAILED = String((e && e.name) || e);
+    return false;
+  }
+}
+let SAVE_FAILED = null;
+
+function readSavedReview() {
+  try {
+    const raw = localStorage.getItem(REVIEW_KEY);
+    if (!raw) return null;
+    const rec = JSON.parse(raw);
+    if (!rec || rec.v !== REVIEW_V) return null;
+    if (!rec.annot || !Array.isArray(rec.annot.cands) || !rec.annot.cands.length)
+      return null;
+    return rec;
+  } catch (e) { return null; }
+}
+
+function discardSavedReview() {
+  try { localStorage.removeItem(REVIEW_KEY); } catch (e) { /* nothing to undo */ }
+  paintReviewBanner();
+}
+
+/* Put a saved review back in play. Never called for a folder whose signature
+   does not match -- see the header. */
+function restoreReview(rec) {
+  const a = rec.annot;
+  ANNOT = { cands: a.cands, i: a.i || 0, verdicts: a.verdicts || [],
+            seed: a.seed, budget: a.budget, cap: a.cap,
+            population: a.population, recordings: a.recordings,
+            drawn: a.drawn, view: null, restored: true };
+  const who = document.getElementById("anWho");
+  if (who && rec.who && !who.value) who.value = rec.who;
+  if (rec.mahice && typeof MAHICE !== "undefined") MAHICE = rec.mahice;
+  document.getElementById("anStage").hidden = false;
+  for (const id of ["anYes", "anNo", "anIdk"])
+    document.getElementById(id).disabled = false;
+  paintAnnotChip();
+  paintAgreement();
+  paintKSetting();
+  showCandidate();
+  repaintJudgingLane();
+  paintReviewBanner();
+}
+
+/* The banner. Loud on purpose in all three states: restored, waiting for its own
+   folder, and NOT BEING SAVED AT ALL. */
+function paintReviewBanner() {
+  const box = document.getElementById("anRestore");
+  if (!box) return;
+  box.textContent = "";
+  box.className = "note";
+  const rec = readSavedReview();
+  if (SAVE_FAILED) {
+    box.hidden = false;
+    box.className = "err";
+    box.append(el("b", "This review is NOT being saved."));
+    box.append(el("span", " The browser refused storage (" + SAVE_FAILED
+      + ") — a private window, or storage turned off. Your verdicts live only "
+      + "in this tab and a reload will lose them. Use Download "
+      + "annotations.csv often."));
+    return;
+  }
+  if (!rec) { box.hidden = true; return; }
+  const done = (rec.annot.verdicts || []).filter(Boolean).length;
+  const mine = RECORDINGS.length && rec.sig === reviewSignature();
+  box.hidden = false;
+  if (ANNOT && ANNOT.restored) {
+    box.append(el("b", "Picked up where you left off."));
+    box.append(el("span", " " + done + " verdict" + (done === 1 ? "" : "s")
+      + " restored, saved " + rec.savedAt + ". They are kept in this browser as "
+      + "you go. Download annotations.csv is still what takes them off it."));
+  } else if (mine) {
+    box.append(el("b", "A saved review for this folder — "
+      + done + " verdict" + (done === 1 ? "" : "s") + "."));
+    box.append(el("span", " Saved " + rec.savedAt + "."));
+  } else {
+    box.append(el("b", "A saved review is being kept, for a different folder."));
+    box.append(el("span", " " + done + " verdict" + (done === 1 ? "" : "s")
+      + ", saved " + rec.savedAt + ". It will not be restored here, because "
+      + "verdicts answer the sample they were drawn against. Open that folder "
+      + "to resume it."));
+  }
+  const wrap = el("div", "", "span");
+  if (mine && !(ANNOT && ANNOT.restored)) {
+    const b = el("button", "Resume it");
+    b.onclick = () => restoreReview(rec);
+    wrap.append(b);
+  }
+  const d = el("button", "Discard the saved review");
+  d.className = "ghost";
+  d.onclick = () => {
+    if (!confirm("Discard " + done + " saved verdict"
+        + (done === 1 ? "" : "s") + "? This cannot be undone, and they are not "
+        + "written anywhere else unless you have downloaded them."))
+      return;
+    discardSavedReview();
+  };
+  wrap.append(d);
+  box.append(wrap);
+}
+
+/* Called once the folder is open and its recordings exist -- a review cannot be
+   matched to a folder before there is one. */
+function offerSavedReview() {
+  const rec = readSavedReview();
+  if (!rec) { paintReviewBanner(); return; }
+  // Restore without asking when it belongs here and nothing is in flight. That
+  // is what "verdicts survive" has to mean; the banner then says it happened,
+  // because a silent restore would let somebody believe the sample was fresh.
+  if (!ANNOT && RECORDINGS.length && rec.sig === reviewSignature())
+    restoreReview(rec);
+  else
+    paintReviewBanner();
+}
+
 function startAnnotation() {
   const cands = collectCandidates();
   if (!cands.length) return;
+  /* Drawing a new sample REPLACES the review, and the verdicts already cast
+     answer the old one. Positional answers cannot be carried across a redraw,
+     so the only honest options are to keep what is there or to lose it, and
+     which of those happens is not this function's call to make silently. */
+  const live = ANNOT && ANNOT.verdicts.filter(Boolean).length;
+  if (live && !confirm("You have " + live + " verdict" + (live === 1 ? "" : "s")
+      + " in the current review. Drawing a new sample starts over and they "
+      + "cannot be carried across — verdicts answer the sample they were drawn "
+      + "against. Download annotations.csv first if you want to keep them.\n\n"
+      + "Draw a new sample anyway?"))
+    return;
   const seed = Number(document.getElementById("anSeed").value) || 0;
   const budget = Number(document.getElementById("anBudget").value) || 60;
   const cap = Number(document.getElementById("anCap").value) || 8;
@@ -6724,6 +6947,8 @@ function startAnnotation() {
   paintKSetting();
   showCandidate();
   repaintJudgingLane();   // the lane appears the moment the sample is drawn
+  saveReview();
+  paintReviewBanner();
 }
 
 function wireAnnotate() {
@@ -6743,6 +6968,7 @@ function wireAnnotate() {
         document.getElementById(id).disabled = false;
       paintAnnotChip(); paintAgreement(); showCandidate();
       repaintJudgingLane();
+      saveReview();   // an un-cast verdict is a change too
     }
   };
   // Keys, because this is the one screen in the app somebody uses dozens of

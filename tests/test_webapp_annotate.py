@@ -118,6 +118,11 @@ def test_the_view_is_captured_at_the_verdict_not_at_export(page):
     again, and the two rows must disagree about the ordering."""
     pg, _ = page
     got = pg.evaluate("""async () => {
+      // Start from nothing. `startAnnotation` now refuses to discard verdicts
+      // already cast without a confirm() — protective for a person, and
+      // headless auto-dismisses dialogs, so a test that left a review in place
+      // silently went on judging the OLD sample and its counts came out high.
+      ANNOT = null; discardSavedReview();
       startAnnotation();
       await showCandidate();
       ORDER = "file"; await showCandidate();
@@ -169,6 +174,11 @@ def test_a_verdict_writes_absolute_seconds_not_window_relative(page):
     field in the export contract is absolute on the recording's own clock."""
     pg, _ = page
     got = pg.evaluate("""async () => {
+      // Start from nothing. `startAnnotation` now refuses to discard verdicts
+      // already cast without a confirm() — protective for a person, and
+      // headless auto-dismisses dialogs, so a test that left a review in place
+      // silently went on judging the OLD sample and its counts came out high.
+      ANNOT = null; discardSavedReview();
       startAnnotation();
       await showCandidate();
       const c = ANNOT.cands[0];
@@ -190,6 +200,11 @@ def test_the_file_the_page_writes_is_a_file_the_python_accepts(tmp_path, page):
 
     pg, _ = page
     csv_text = pg.evaluate("""async () => {
+      // Start from nothing. `startAnnotation` now refuses to discard verdicts
+      // already cast without a confirm() — protective for a person, and
+      // headless auto-dismisses dialogs, so a test that left a review in place
+      // silently went on judging the OLD sample and its counts came out high.
+      ANNOT = null; discardSavedReview();
       startAnnotation();
       await showCandidate();
       recordVerdict("confirmed");

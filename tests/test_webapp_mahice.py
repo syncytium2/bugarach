@@ -72,6 +72,10 @@ def _judge(pg, n=60):
     """
     return pg.evaluate(
         """(n) => {
+          // Start clean. `startAnnotation` now REFUSES to discard live verdicts
+          // without a confirm(), and headless auto-dismisses dialogs — so a
+          // test that leaves verdicts behind silently gets no new sample.
+          ANNOT = null; discardSavedReview();
           document.getElementById("anWho").value = "tony";
           document.getElementById("anCap").value = "50";
           document.getElementById("anBudget").value = "400";
@@ -285,6 +289,10 @@ def test_candidates_are_marked_above_the_raster_and_never_on_it(page):
     pg, _ = page
     geom = pg.evaluate(
         """() => {
+          // Start clean. `startAnnotation` now REFUSES to discard live verdicts
+          // without a confirm(), and headless auto-dismisses dialogs — so a
+          // test that leaves verdicts behind silently gets no new sample.
+          ANNOT = null; discardSavedReview();
           document.getElementById("anWho").value = "tony";
           document.getElementById("anCap").value = "50";
           document.getElementById("anBudget").value = "400";
@@ -314,6 +322,10 @@ def test_clicking_a_mark_selects_that_candidate(page):
     pg, _ = page
     out = pg.evaluate(
         """() => {
+          // Start clean. `startAnnotation` now REFUSES to discard live verdicts
+          // without a confirm(), and headless auto-dismisses dialogs — so a
+          // test that leaves verdicts behind silently gets no new sample.
+          ANNOT = null; discardSavedReview();
           document.getElementById("anWho").value = "tony";
           document.getElementById("anCap").value = "50";
           document.getElementById("anBudget").value = "400";
@@ -352,6 +364,10 @@ def test_the_verdict_is_the_colour_not_the_shape(page):
     pg, _ = page
     states = pg.evaluate(
         """() => {
+          // Start clean. `startAnnotation` now REFUSES to discard live verdicts
+          // without a confirm(), and headless auto-dismisses dialogs — so a
+          // test that leaves verdicts behind silently gets no new sample.
+          ANNOT = null; discardSavedReview();
           document.getElementById("anWho").value = "tony";
           document.getElementById("anCap").value = "50";
           document.getElementById("anBudget").value = "400";
@@ -367,3 +383,132 @@ def test_the_verdict_is_the_colour_not_the_shape(page):
     assert "confirmed" in states["after"] and "rejected" in states["after"]
     for state in ("unjudged", "confirmed", "rejected", "unsure"):
         assert state in states["inks"], f"no ink defined for {state}"
+
+
+# ---------------------------------------------------------------------------
+# a review that survives a reload
+# ---------------------------------------------------------------------------
+
+SETUP = """async (sim) => {
+      for (const [k, v] of Object.entries(sim))
+        document.getElementById(k).value = v;
+      await runSim();
+      await show(RECORDINGS[0]);
+      await runAssess();
+    }"""
+
+
+@pytest.fixture
+def fresh_page(page):
+    """Its own page in its own CONTEXT, reusing the module fixture's browser.
+
+    Its own page because these tests reload, and reloading the shared page would
+    wreck every later test. Its own context because `localStorage` is what is
+    under test: a context per test is what keeps one test's saved review out of
+    the next one's. And the browser is borrowed rather than launched, because a
+    second `sync_playwright()` inside the module fixture's live one is an error.
+    """
+    pg0, _ = page
+    ctx = pg0.context.browser.new_context()
+    try:
+        pg = ctx.new_page()
+        pg.goto(VIEWER.as_uri(), wait_until="load")
+        yield pg
+    finally:
+        ctx.close()
+
+
+def test_verdicts_survive_a_reload(fresh_page):
+    """The promise, tested as a promise.
+
+    A review is hours of a person's attention and it used to live in a page
+    global: a refresh, a crash or a closed tab took every verdict, silently.
+    Tony, 2026-09-04: "yes verdicts survive! it is a lot of work."
+
+    This casts verdicts, RELOADS THE PAGE — the real thing, not a simulated
+    reset — reopens the same folder, and requires them back, in place, with the
+    position preserved so the next keystroke answers the next candidate.
+    """
+    pg = fresh_page
+    pg.evaluate(SETUP, SIM)
+    before = pg.evaluate(
+        """() => {
+          ANNOT = null; discardSavedReview();
+          document.getElementById("anWho").value = "tony";
+          document.getElementById("anCap").value = "50";
+          document.getElementById("anBudget").value = "400";
+          startAnnotation();
+          recordVerdict("confirmed");
+          recordVerdict("rejected");
+          recordVerdict("confirmed");
+          return {n: ANNOT.verdicts.filter(Boolean).length, i: ANNOT.i,
+                  first: ANNOT.verdicts[0].verdict,
+                  centre: ANNOT.cands[0].centre,
+                  who: document.getElementById("anWho").value};
+        }""")
+    assert before["n"] == 3
+
+    pg.reload(wait_until="load")
+    after = pg.evaluate(
+        """async (sim) => {
+          if (ANNOT !== null)
+            return {bug: "ANNOT survived the reload in memory — this test is "
+                         + "not exercising a real reload"};
+          for (const [k, v] of Object.entries(sim))
+            document.getElementById(k).value = v;
+          await runSim();                 // same seed, so the same recordings
+          return {restored: !!(ANNOT && ANNOT.restored),
+                  n: ANNOT ? ANNOT.verdicts.filter(Boolean).length : 0,
+                  i: ANNOT ? ANNOT.i : -1,
+                  first: ANNOT && ANNOT.verdicts[0]
+                    ? ANNOT.verdicts[0].verdict : null,
+                  centre: ANNOT ? ANNOT.cands[0].centre : null,
+                  who: document.getElementById("anWho").value,
+                  said: document.getElementById("anRestore").textContent,
+                  hidden: document.getElementById("anRestore").hidden};
+        }""", SIM)
+    assert after.get("bug") is None, after.get("bug")
+    assert after["restored"], "the folder reopened and the saved review was not picked up"
+    assert after["n"] == before["n"], "verdicts were lost across the reload"
+    assert after["i"] == before["i"], "the review resumed at the wrong candidate"
+    assert after["first"] == before["first"]
+    assert after["centre"] == before["centre"], "restored against a different sample"
+    assert after["who"] == before["who"], "the annotator was not restored with it"
+    # never silent: a restore that said nothing would let somebody believe they
+    # were judging a freshly drawn sample
+    assert not after["hidden"] and after["said"].strip(), \
+        "the review was restored and the page did not say so"
+
+
+def test_a_saved_review_is_not_restored_into_a_different_folder(fresh_page):
+    """Verdicts are POSITIONAL against the sample they were drawn from, so
+    restoring them anywhere else would attach a person's judgement to moments
+    they never looked at. The saved review is kept, and said, but not applied.
+    """
+    pg = fresh_page
+    pg.evaluate(SETUP, SIM)
+    pg.evaluate(
+        """() => {
+          ANNOT = null; discardSavedReview();
+          document.getElementById("anWho").value = "tony";
+          startAnnotation();
+          recordVerdict("confirmed");
+        }""")
+    pg.reload(wait_until="load")
+    other = dict(SIM)
+    other["sSeed"] = "999"          # a different folder: different recording ids
+    other["sRec"] = "3"
+    out = pg.evaluate(
+        """async (sim) => {
+          for (const [k, v] of Object.entries(sim))
+            document.getElementById(k).value = v;
+          await runSim();
+          return {restored: !!(ANNOT && ANNOT.restored),
+                  annot: ANNOT === null,
+                  kept: !!readSavedReview(),
+                  said: document.getElementById("anRestore").textContent};
+        }""", other)
+    assert not out["restored"], "a review was restored into the wrong folder"
+    assert out["kept"], "the saved review was destroyed rather than kept"
+    assert "different folder" in out["said"], \
+        "the page kept a review for another folder and did not say so"
