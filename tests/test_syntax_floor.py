@@ -83,16 +83,23 @@ def python_files() -> list[Path]:
 def pep701_offences(src: str) -> list[tuple[int, str]]:
     """Find f-strings that only tokenize on 3.12+.
 
-    Two forms, both `SyntaxError` on 3.11:
+    Three forms, all `SyntaxError` on 3.11:
 
     * a replacement field spanning a **newline**, in a non-triple-quoted
       f-string — the one that shipped;
     * a string inside a replacement field reusing the **enclosing quote
-      character**, e.g. ``f"{d["k"]}"``.
+      character**, e.g. ``f"{d["k"]}"``;
+    * a **backslash** anywhere in a replacement field, e.g.
+      ``f"{re.search(r'(\\d+)', k)}"`` — 3.11 says *"f-string expression part
+      cannot include a backslash"*. Added after the first run of this test found
+      `tools/ablate_tube.py` doing it: a real tool, on `main`, imported by no
+      test, so nothing had ever parsed it on the floor it claims to support.
+      Backslashes in the LITERAL part are fine on 3.11 and are not flagged —
+      only the expression.
 
     Needs 3.12+ to run, because it reads the FSTRING_* tokens PEP 701 introduced.
     On an older interpreter there is nothing to do: that interpreter *is* the
-    floor, and `ast.parse` there rejects both forms itself.
+    floor, and its own parser rejects all three.
     """
     if sys.version_info < (3, 12):
         return []
@@ -109,12 +116,22 @@ def pep701_offences(src: str) -> list[tuple[int, str]]:
             if len(q) < 3 and tok.end[0] != line:
                 out.append((line, "a replacement field spans a newline inside a "
                                   "single-quoted f-string (PEP 701, 3.12+)"))
-        elif tok.type == tokmod.STRING and starts:
+        elif starts and tok.type not in (getattr(tokmod, "FSTRING_MIDDLE", -2),
+                                         tokmod.NL, tokmod.NEWLINE):
+            # Everything reaching here is INSIDE a replacement field: the literal
+            # text of an f-string arrives as FSTRING_MIDDLE and is excluded,
+            # which is what keeps a legitimate `f"a\nb"` from being flagged.
             q, line = starts[-1]
-            if len(q) < 3 and tok.string.lstrip("rbfuRBFU").startswith(q):
+            if tok.type == tokmod.STRING and len(q) < 3 \
+                    and tok.string.lstrip("rbfuRBFU").startswith(q):
                 out.append((tok.start[0],
                             f"a string inside a replacement field reuses the "
                             f"enclosing {q} quote (PEP 701, 3.12+)"))
+            if "\\" in tok.string:
+                out.append((tok.start[0],
+                            "a backslash inside a replacement field — 3.11 says "
+                            "'f-string expression part cannot include a "
+                            "backslash' (relaxed in 3.12)"))
     return out
 
 
@@ -124,22 +141,41 @@ def test_the_floor_is_declared_and_this_interpreter_is_not_below_it():
     assert sys.version_info[:2] >= floor
 
 
-def test_the_pep701_scan_can_actually_fire():
-    """The check that would have caught it, proving it would have.
+SHIPPED = 'x = f"{chip(A, \'one \'\n               \'two\')}"\n'
+NESTED = 'x = f"{d["k"]}"\n'
+BACKSLASH = "x = f\"{re.search(r'(\\d+)', k)}\"\n"
 
-    `ast.parse(feature_version=...)` accepts BOTH of these, which is the whole
-    reason this second scan exists — asserted here so that if a future Python
-    makes `feature_version` cover the tokenizer, this test says so rather than
-    quietly leaving two checks where one would do.
-    """
-    shipped = 'x = f"{chip(A, \'one \'\n               \'two\')}"\n'
-    nested = 'x = f"{d["k"]}"\n'
-    if sys.version_info >= (3, 12):
-        assert pep701_offences(shipped), "the scan missed the form that shipped"
-        assert pep701_offences(nested), "the scan missed the nested-quote form"
-    # and the blindness it compensates for is real, not assumed
-    ast.parse(shipped, feature_version=(3, 11))
+
+@pytest.mark.skipif(sys.version_info < (3, 12),
+                    reason="the scan reads PEP 701 tokens; below 3.12 the "
+                           "interpreter's own parser is the check")
+def test_the_pep701_scan_can_actually_fire():
+    """The three forms, each proved to be caught rather than assumed to be."""
+    assert pep701_offences(SHIPPED), "the scan missed the form that shipped"
+    assert pep701_offences(NESTED), "the scan missed the nested-quote form"
+    assert pep701_offences(BACKSLASH), "the scan missed the backslash form"
+    # a backslash in the LITERAL part is legal on 3.11 and must not be flagged
+    assert pep701_offences('x = f"a\\nb{c}"\n') == []
     assert pep701_offences("x = f'{a}{b}'\ny = f'''{c\n}'''\n") == []
+
+
+@pytest.mark.skipif(sys.version_info < (3, 12),
+                    reason="on the floor itself there is no blindness to pin — "
+                           "the interpreter rejects all three at parse time")
+@pytest.mark.parametrize("src", [SHIPPED, NESTED, BACKSLASH])
+def test_feature_version_alone_would_not_have_caught_these(src):
+    """Why there are two checks and not one.
+
+    `ast.parse(feature_version=(3, 11))` constrains the GRAMMAR; f-strings are
+    handled by the TOKENIZER, which it does not downgrade — so it accepts all
+    three of these on a 3.12+ interpreter. Pinned so that if a future Python
+    extends `feature_version` to cover them, this fails and says to drop the
+    second scan rather than leaving two checks where one would do.
+
+    Skipped below 3.12 because there the assertion is simply false and should
+    be: that interpreter's own parser raises, which is the check working.
+    """
+    ast.parse(src, feature_version=(3, 11))
 
 
 @pytest.mark.parametrize("path", python_files(), ids=lambda p: str(p.relative_to(ROOT)))
