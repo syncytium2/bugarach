@@ -284,6 +284,13 @@ def header_html(group: str, treatment: str, members, ext, folder: Path) -> str:
             if lab and lab not in seen:
                 seen.append(lab)
     regions = " &nbsp; ".join(chip(REGION_FILL.get(l, "#9e9e9e"), l) for l in seen)
+    # Built here rather than inline in the f-string below. A newline INSIDE an
+    # f-string expression is PEP 701, which is 3.12+; on 3.11 the same source is
+    # `SyntaxError: unterminated string literal` at import, so the whole module
+    # fails to load and every test in the file errors at collection. Local 3.14
+    # accepted it and CI's 3.11 leg did not — this project supports >=3.11.
+    red_key = chip(MARKED_INK, "event on a confirmed whole-field brightness step "
+                               "(field-step artifact)")
     return (
         f"<div style='font:13px system-ui,sans-serif;color:#111;margin:0 0 6px'>"
         f"<b style='font-size:16px'>{group} · {treatment}</b> &nbsp;—&nbsp; "
@@ -291,8 +298,7 @@ def header_html(group: str, treatment: str, members, ext, folder: Path) -> str:
         f"<b>t = 0 is the end of that recording's baseline</b>"
         f"<div style='margin:5px 0 0;color:#444'>"
         f"{chip(RASTER_INK, 'event')} &nbsp; "
-        f"{chip(MARKED_INK, 'event on a confirmed whole-field brightness step '
-                            '(field-step artifact)')}"
+        f"{red_key}"
         f"</div>"
         f"<div style='margin:4px 0 0;color:#444'>regions: {regions}</div>"
         f"<div style='margin:5px 0 0;color:#777;font-size:11px'>"
