@@ -2334,10 +2334,46 @@ function repaintJudgingLane() {
    Selection is BLUE in both places at once -- the row and the arrow above the
    raster -- so it is never ambiguous which event a click just answered. */
 
+/* THE RASTER, THE LEDGER AND THE CONFIRM TOOL ARE ALWAYS THE SAME RECORDING.
+
+   Tony, 2026-09-05: "get the raster and the event viewer in mahice to match."
+   They did not. The sample is drawn across the WHOLE FOLDER, `ANNOT.i` starts at
+   0, and `showCandidate` renders whatever it points at -- so the confirm tool
+   opened on `20260226_287` while the raster and the ledger both showed
+   `20240930_65`. Three panels, two recordings, and nothing on screen saying so.
+
+   Worse than a cosmetic mismatch: the lane marks the candidates of the recording
+   ON SCREEN, so the arrow that turned blue and the event in the confirm tool
+   were different moments in different slices. A verdict cast there answers a
+   question the reader was not looking at, and the view stamped on it would say
+   so only to somebody who went back and checked.
+
+   One rule: the selection is always a candidate of the recording on screen. */
+function syncSelectionToCurrent() {
+  if (!ANNOT || !current) return false;
+  const cur = ANNOT.cands[ANNOT.i];
+  if (cur && cur.recId === current.id
+      && (!STREAM || cur.stream === STREAM)) return false;
+  const j = ANNOT.cands.findIndex(c => c.recId === current.id
+    && (!STREAM || c.stream === STREAM));
+  if (j < 0 || j === ANNOT.i) return false;
+  ANNOT.i = j;
+  return true;
+}
+
 /* Select a candidate: blue arrow, blue row, and the zoomed view of it beside
    them. Selecting is not judging and never records anything. */
 async function selectCandidate(i) {
   if (!ANNOT || i < 0 || i >= ANNOT.cands.length) return;
+  /* A candidate in another recording brings the raster with it, rather than
+     leaving the confirm tool describing a slice nothing else on screen shows.
+     `ANNOT.i` is set BEFORE `show` so the sync inside it sees a selection that
+     already matches and leaves it alone. */
+  const cand = ANNOT.cands[i];
+  if (!current || cand.recId !== current.id) {
+    const rec = RECORDINGS.find(r => r.id === cand.recId);
+    if (rec) { ANNOT.i = i; await show(rec); }
+  }
   ANNOT.i = i;
   /* NO `showSection` HERE ANY MORE. The confirm tool lives in the main column
      beside the ledger now, so it is already on screen — switching the sidebar
@@ -2391,7 +2427,45 @@ function paintCandidateTable() {
     if (c.recId === current.id && (!STREAM || c.stream === STREAM))
       rows.push({ c, i, v: ANNOT.verdicts[i] });
   });
-  if (!rows.length) { box.hidden = true; return; }
+  /* A RECORDING WITH NOTHING IN THE SAMPLE HIDES THE CONFIRM TOOL.
+
+     The sample is capped per recording, so plenty of recordings have no rows.
+     Leaving the confirm tool up then means it goes on describing whichever slice
+     was selected last -- which is the mismatch this whole rule exists to stop,
+     arriving by the back door. Nothing to judge here, so nothing that judges is
+     on screen, and the panel says where the judging is instead. */
+  const stage = document.getElementById("anStage");
+  if (!rows.length) {
+    if (stage) stage.hidden = true;
+    /* Wipe the identity with it. A hidden panel that still says
+       "20240930_65 · fast · 5m39s" is one `hidden = false` away from asserting
+       the wrong recording again, and that is the bug this rule exists to stop. */
+    for (const id of ["anWhere", "anProg", "anCand"]) {
+      const n = document.getElementById(id);
+      if (n) n.textContent = "";
+    }
+    box.hidden = false;
+    box.append(el("h4", "No possible events in " + current.id));
+    const elsewhere = [...new Set(ANNOT.cands
+      .filter(c => !STREAM || c.stream === STREAM)
+      .map(c => c.recId))].filter(id => id !== current.id);
+    box.append(el("p", "This recording has none in the sample — the draw is "
+      + "capped per recording so that one busy slice cannot speak for the "
+      + "folder. " + ANNOT.cands.length + " candidates are waiting across "
+      + elsewhere.length + " other recording(s).", "note"));
+    if (elsewhere.length) {
+      const b = el("button", "Go to " + elsewhere[0]);
+      b.onclick = () => {
+        const rec = RECORDINGS.find(r => r.id === elsewhere[0]);
+        if (rec) show(rec);
+      };
+      const wrap = el("div", "", "span");
+      wrap.append(b);
+      box.append(wrap);
+    }
+    return;
+  }
+  if (stage) stage.hidden = false;
   box.hidden = false;
 
   const doneAll = ANNOT.verdicts.filter(Boolean).length;
@@ -3100,8 +3174,12 @@ async function show(rec) {
   paintSimSwapWarning();
   paintOrderNote(data);
   draw(rec, data);
-  // the ledger is about the raster above it, so it follows the recording
+  /* The ledger is about the raster above it, so it follows the recording — and
+     so does the confirm tool. Changing recordings while a candidate from the
+     old one was selected is exactly how the three panels came apart. */
+  const moved = syncSelectionToCurrent();
   paintCandidateTable();
+  if (moved) { showCandidate(); draw(rec, data); }
 }
 
 /* ---------- conformance: the same report `bugarach check` prints, in the
@@ -7538,6 +7616,17 @@ function startAnnotation() {
   ANNOT = { cands: s.picked, i: 0, verdicts: [], seed, budget, cap,
             population: s.population, recordings: s.recordings,
             drawn: s.drawn, view: null };
+  /* OPEN ON THE RECORDING THE READER IS LOOKING AT. The sample is drawn across
+     the whole folder, so `i = 0` lands wherever the shuffle put it — which is
+     how a review opened on one slice while the raster showed another. If this
+     recording has nothing in the sample, walk the raster to the first one that
+     does, rather than leaving the panels disagreeing. */
+  if (!syncSelectionToCurrent()
+      && current && ANNOT.cands[0]
+      && ANNOT.cands[0].recId !== current.id) {
+    const rec = RECORDINGS.find(r => r.id === ANNOT.cands[0].recId);
+    if (rec) show(rec);
+  }
   document.getElementById("anStage").hidden = false;
   for (const id of ["anYes", "anNo", "anIdk"])
     document.getElementById(id).disabled = false;
