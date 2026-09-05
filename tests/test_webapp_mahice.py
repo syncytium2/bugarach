@@ -72,6 +72,10 @@ def _judge(pg, n=60):
     """
     return pg.evaluate(
         """(n) => {
+          // Start clean. `startAnnotation` now REFUSES to discard live verdicts
+          // without a confirm(), and headless auto-dismisses dialogs — so a
+          // test that leaves verdicts behind silently gets no new sample.
+          ANNOT = null; discardSavedReview();
           document.getElementById("anWho").value = "tony";
           document.getElementById("anCap").value = "50";
           document.getElementById("anBudget").value = "400";
@@ -213,3 +217,458 @@ def test_setting_k_needs_an_assessment_to_resolve_against(page):
         }""")
     assert not said["set"]
     assert "ROI population" in said["said"]
+
+
+# ---------------------------------------------------------------------------
+# the seam between the two halves
+# ---------------------------------------------------------------------------
+
+def test_the_judging_step_opens_once_an_assessment_lands(page):
+    """MAHICE shipped with both halves working and nothing joining them.
+
+    `assessRun` and `assessFolderRun` each left their candidates in a global and
+    then never told the judging step they had arrived, so `#cntAnnot` stayed at
+    "assess first" and **`#anStart` stayed `disabled` for the whole session**.
+    Clicking "Draw a sample and start" did nothing, silently: a disabled button
+    fires no event, raises nothing, and logs nothing.
+
+    Every other test in this file reaches past that button and calls
+    `startAnnotation()` in JS, which is why the suite was green while the step
+    was unreachable. Tony hit it on the real folder on 2026-09-04 and reported
+    it as "clicked. nothing happened", three separate controls over.
+
+    So this asserts **what a person actually has**: an enabled control.
+    """
+    pg, _ = page
+    assert pg.evaluate("collectCandidates().length") > 0, (
+        "the fixture must leave candidates or this test proves nothing")
+    assert "assess first" not in pg.inner_text("#cntAnnot")
+    assert pg.is_enabled("#anStart"), (
+        "the assessment ran and left candidates, and the judging step is still "
+        "shut — this is the defect, not a flake")
+
+
+def test_clicking_the_button_actually_starts_a_review(page):
+    """One step past enablement: the click has to reach the loop.
+
+    Enabled-but-inert is the same experience as disabled, and only pressing the
+    control the way a person does can tell those two apart.
+    """
+    pg, _ = page
+    state = pg.evaluate(
+        """() => {
+          const keep = ANNOT;
+          ANNOT = null;
+          document.getElementById("anWho").value = "tony";
+          document.getElementById("anStart").click();
+          const started = !!(ANNOT && ANNOT.cands && ANNOT.cands.length);
+          ANNOT = keep;
+          return {started, shown: !!document.getElementById("anCv")};
+        }""")
+    assert state["started"], "the button is enabled but the click reaches nothing"
+    assert state["shown"], "a review started with no canvas to judge in"
+
+
+# ---------------------------------------------------------------------------
+# the judging lane on the raster
+# ---------------------------------------------------------------------------
+
+def test_candidates_are_marked_above_the_raster_and_never_on_it(page):
+    """Tony asked for the assessor to flag candidates in the raster and for the
+    marks to be selectable. Nothing is ever drawn ON the raster, so they go in a
+    lane ABOVE it, pointing down at it.
+
+    That rule is the measurement, not decoration: in a raster a vertical mark
+    reads as many ROIs firing at once, which is the exact claim being judged. A
+    candidate marker through the rows would put a synthetic coordinated event
+    into the picture used to decide whether the real one is there.
+
+    So this asserts geometry — every hit box sits ABOVE the top of the frame it
+    describes.
+    """
+    pg, _ = page
+    geom = pg.evaluate(
+        """() => {
+          // Start clean. `startAnnotation` now REFUSES to discard live verdicts
+          // without a confirm(), and headless auto-dismisses dialogs — so a
+          // test that leaves verdicts behind silently gets no new sample.
+          ANNOT = null; discardSavedReview();
+          document.getElementById("anWho").value = "tony";
+          document.getElementById("anCap").value = "50";
+          document.getElementById("anBudget").value = "400";
+          startAnnotation();
+          draw(current, current.loaded);
+          return {hits: CAND_HITS.map(h => ({y: h.y, top: h.panelTop,
+                                             stream: h.stream})),
+                  n: CAND_HITS.length,
+                  streams: [...new Set(CAND_HITS.map(h => h.stream))]};
+        }""")
+    assert geom["n"] > 0, "a sample was drawn and nothing was marked"
+    # each mark against ITS OWN frame: with two streams there are two panels,
+    # and a mark above the first frame can still be sitting on the second.
+    for h in geom["hits"]:
+        assert h["y"] < h["top"], (
+            f"a candidate mark on {h['stream']} landed at y={h['y']}, at or "
+            f"below its frame top {h['top']} — that is drawing on the raster")
+
+
+def test_clicking_a_mark_selects_that_candidate(page):
+    """The interaction Tony described: pick a mark, then say yes or no.
+
+    A click selects; it never votes. And a click that hits nothing must do
+    nothing — an accidental jump silently re-points every following keystroke at
+    a different candidate.
+    """
+    pg, _ = page
+    out = pg.evaluate(
+        """() => {
+          // Start clean. `startAnnotation` now REFUSES to discard live verdicts
+          // without a confirm(), and headless auto-dismisses dialogs — so a
+          // test that leaves verdicts behind silently gets no new sample.
+          ANNOT = null; discardSavedReview();
+          document.getElementById("anWho").value = "tony";
+          document.getElementById("anCap").value = "50";
+          document.getElementById("anBudget").value = "400";
+          startAnnotation();
+          draw(current, current.loaded);
+          if (CAND_HITS.length < 2) return {skip: true};
+          const cv = document.getElementById("cv");
+          const r = cv.getBoundingClientRect();
+          const target = CAND_HITS[CAND_HITS.length - 1];
+          const before = ANNOT.i;
+          cv.dispatchEvent(new MouseEvent("click", {
+            clientX: r.left + target.x, clientY: r.top + target.y,
+            bubbles: true}));
+          const afterHit = ANNOT.i;
+          const votesAfterHit = ANNOT.verdicts.filter(Boolean).length;
+          cv.dispatchEvent(new MouseEvent("click", {
+            clientX: r.left + target.x, clientY: r.top + target.y + 400,
+            bubbles: true}));
+          return {skip: false, before, afterHit, wanted: target.i,
+                  afterMiss: ANNOT.i, votesAfterHit};
+        }""")
+    if out.get("skip"):
+        pytest.skip("fixture drew fewer than two candidates")
+    assert out["afterHit"] == out["wanted"], "the click selected the wrong candidate"
+    assert out["votesAfterHit"] == 0, "selecting a mark cast a verdict"
+    assert out["afterMiss"] == out["afterHit"], "a click on empty canvas moved the review"
+
+
+def test_the_verdict_is_the_colour_not_the_shape(page):
+    """Down is already spoken for, so shape cannot also encode what a mark is.
+
+    Confirmed and rejected are the same triangle and differ only in ink, which
+    means the lane has to report a state per mark that the painter turns into a
+    colour. This checks the state actually changes when a verdict lands.
+    """
+    pg, _ = page
+    states = pg.evaluate(
+        """() => {
+          // Start clean. `startAnnotation` now REFUSES to discard live verdicts
+          // without a confirm(), and headless auto-dismisses dialogs — so a
+          // test that leaves verdicts behind silently gets no new sample.
+          ANNOT = null; discardSavedReview();
+          document.getElementById("anWho").value = "tony";
+          document.getElementById("anCap").value = "50";
+          document.getElementById("anBudget").value = "400";
+          startAnnotation();
+          const stream = ANNOT.cands[0].stream, rec = ANNOT.cands[0].recId;
+          const before = candidatesOnPanel(rec, stream).map(m => m.state);
+          recordVerdict("confirmed");
+          recordVerdict("rejected");
+          const after = candidatesOnPanel(rec, stream).map(m => m.state);
+          return {before, after, inks: Object.keys(CAND_INK)};
+        }""")
+    assert set(states["before"]) == {"unjudged"}
+    assert "confirmed" in states["after"] and "rejected" in states["after"]
+    for state in ("unjudged", "confirmed", "rejected", "unsure"):
+        assert state in states["inks"], f"no ink defined for {state}"
+
+
+# ---------------------------------------------------------------------------
+# the candidate ledger
+# ---------------------------------------------------------------------------
+
+def test_the_ledger_selects_in_blue_and_judges_in_the_row(page):
+    """Tony, 2026-09-04: "have a list of possible events in a table below the
+    raster. user clicks, the above arrow goes blue, the user ticks accept or
+    exclude in the table. that we we all know what just happended."
+
+    The point is that the decision is VISIBLE where it was made. So: a row click
+    selects and nothing else (selecting is not judging); the arrow and the row
+    agree about which candidate is selected; ticking Accept in a row records
+    that row's verdict, and the row then says so.
+    """
+    pg, _ = page
+    out = pg.evaluate(
+        """async () => {
+          ANNOT = null; discardSavedReview();
+          document.getElementById("anWho").value = "tony";
+          document.getElementById("anCap").value = "50";
+          document.getElementById("anBudget").value = "400";
+          startAnnotation();
+          await showCandidate();
+          draw(current, current.loaded);
+          paintCandidateTable();
+          const rows = [...document.querySelectorAll("#candTable tr")].slice(1);
+          if (rows.length < 2) return {skip: true};
+
+          // click the LAST row's time cell — not the one already selected
+          const row = rows[rows.length - 1];
+          row.querySelector(".clicky").click();
+          await new Promise(r => setTimeout(r, 60));
+          const afterSelect = {
+            votes: ANNOT.verdicts.filter(Boolean).length,
+            selCount: document.querySelectorAll("#candTable tr.sel").length,
+            laneBlue: CAND_HITS.some(h => h.i === ANNOT.i),
+          };
+
+          // now tick Accept in that same row
+          document.querySelectorAll("#candTable tr")[rows.length]
+            .querySelector("button.acc").click();
+          await new Promise(r => setTimeout(r, 80));
+          const v = ANNOT.verdicts[ANNOT.i];
+          return {skip: false, afterSelect,
+                  verdict: v ? v.verdict : null,
+                  stamped: !!(v && v.view),
+                  votes: ANNOT.verdicts.filter(Boolean).length,
+                  rowSays: document.querySelectorAll("#candTable tr")[rows.length]
+                             .textContent};
+        }""")
+    if out.get("skip"):
+        pytest.skip("fewer than two candidates on this recording")
+    assert out["afterSelect"]["votes"] == 0, "clicking a row cast a verdict"
+    assert out["afterSelect"]["selCount"] == 1, "selection is not exactly one row"
+    assert out["afterSelect"]["laneBlue"], (
+        "the selected candidate has no mark in the lane, so nothing above the "
+        "raster can turn blue")
+    assert out["verdict"] == "confirmed", "ticking Accept did not record accept"
+    assert out["stamped"], "a verdict was recorded with no view stamped on it"
+    assert out["votes"] == 1
+    assert "accepted" in out["rowSays"], (
+        "the row does not say what was decided — the whole point of the ledger")
+
+
+# ---------------------------------------------------------------------------
+# judging the mark you clicked, at the scale you chose
+# ---------------------------------------------------------------------------
+
+def test_clicking_a_mark_brings_the_verdict_buttons_with_it(page):
+    """Clicking a mark must always leave you able to answer.
+
+    First this was false because the verdict buttons lived in the sidebar, which
+    shows one step at a time: clicking a triangle while another step was open
+    selected the candidate, drew its ring, and left nothing to answer with —
+    Tony, 2026-09-04: "clicking on the gray down triangle draws a circle. no
+    option to accept or exclude." That was patched by forcing the sidebar to the
+    judging step.
+
+    Then the confirm tool moved into the MAIN COLUMN beside the ledger, which
+    makes the property structural instead of patched: the buttons are on screen
+    whatever the sidebar is showing, and the sidebar is left where the reader put
+    it. So this now asserts the stronger thing — on screen BEFORE the click as
+    well as after, with the selection landing where it was aimed.
+    """
+    pg, _ = page
+    out = pg.evaluate(
+        """() => {
+          ANNOT = null; discardSavedReview();
+          document.getElementById("anWho").value = "tony";
+          document.getElementById("anCap").value = "50";
+          document.getElementById("anBudget").value = "400";
+          startAnnotation();
+          draw(current, current.loaded);
+          if (!CAND_HITS.length) return {skip: true};
+          showSection("accList");            // look at some other step
+          const before = document.getElementById("anYes").offsetParent !== null;
+          const cv = document.getElementById("cv");
+          const r = cv.getBoundingClientRect();
+          const t = CAND_HITS[0];
+          cv.dispatchEvent(new MouseEvent("click", {
+            clientX: r.left + t.x, clientY: r.top + t.y, bubbles: true}));
+          return {skip: false, onscreenBefore: before,
+                  onscreenAfter: document.getElementById("anYes").offsetParent !== null,
+                  stageHidden: document.getElementById("anStage").hidden,
+                  sidebarStayed: SECTION === "accList",
+                  i: ANNOT.i, wanted: t.i};
+        }""")
+    if out.get("skip"):
+        pytest.skip("no candidates drawn in the fixture")
+    assert out["onscreenBefore"], (
+        "the verdict buttons are off screen while another sidebar step is open "
+        "— the confirm tool is supposed to live in the main column now")
+    assert out["i"] == out["wanted"], "the click selected the wrong candidate"
+    assert not out["stageHidden"], "the judging stage stayed hidden"
+    assert out["onscreenAfter"], (
+        "a mark was selected and the verdict buttons are off screen — there is "
+        "nothing to accept or reject with")
+    assert out["sidebarStayed"], (
+        "clicking a mark yanked the sidebar to another step; the confirm tool "
+        "is already on screen, so there is nothing to switch to")
+
+
+def test_the_time_axis_zooms_and_the_verdict_records_the_window_it_was_made_in(page):
+    """Tony, 2026-09-04: "need to be able to zoom the x-axis during mahice."
+
+    A fixed window decides for the reader how tight a co-activation has to look,
+    which is the judgement being asked for. And because a judgement is a property
+    of the recording, the rendering and the observer together, the window a
+    verdict was cast at has to travel with it — not the default it might have
+    been.
+    """
+    pg, _ = page
+    out = pg.evaluate(
+        """async () => {
+          ANNOT = null; discardSavedReview();
+          ANNOT_PAD_SEC = 20;
+          document.getElementById("anWho").value = "tony";
+          document.getElementById("anCap").value = "50";
+          document.getElementById("anBudget").value = "400";
+          startAnnotation();
+          // `showCandidate` awaits the recording before stamping the view, so
+          // the view is null until it settles.
+          await showCandidate();
+          const wide = [ANNOT.view.t0, ANNOT.view.t1];
+          document.getElementById("anZoomIn").click();   // tighter
+          await showCandidate();
+          const tight = [ANNOT.view.t0, ANNOT.view.t1];
+          recordVerdict("confirmed");
+          const stamped = ANNOT.verdicts[0].view;
+          return {wide, tight, pad: ANNOT_PAD_SEC,
+                  stamped: [stamped.t0, stamped.t1]};
+        }""")
+    wide_span = out["wide"][1] - out["wide"][0]
+    tight_span = out["tight"][1] - out["tight"][0]
+    assert tight_span < wide_span, (
+        f"zooming in did not narrow the window: {wide_span} -> {tight_span}")
+    assert out["stamped"] == out["tight"], (
+        "the verdict recorded a different window than the one it was judged in")
+
+
+# ---------------------------------------------------------------------------
+# a review that survives a reload
+# ---------------------------------------------------------------------------
+
+SETUP = """async (sim) => {
+      for (const [k, v] of Object.entries(sim))
+        document.getElementById(k).value = v;
+      await runSim();
+      await show(RECORDINGS[0]);
+      await runAssess();
+    }"""
+
+
+@pytest.fixture
+def fresh_page(page):
+    """Its own page in its own CONTEXT, reusing the module fixture's browser.
+
+    Its own page because these tests reload, and reloading the shared page would
+    wreck every later test. Its own context because `localStorage` is what is
+    under test: a context per test is what keeps one test's saved review out of
+    the next one's. And the browser is borrowed rather than launched, because a
+    second `sync_playwright()` inside the module fixture's live one is an error.
+    """
+    pg0, _ = page
+    ctx = pg0.context.browser.new_context()
+    try:
+        pg = ctx.new_page()
+        pg.goto(VIEWER.as_uri(), wait_until="load")
+        yield pg
+    finally:
+        ctx.close()
+
+
+def test_verdicts_survive_a_reload(fresh_page):
+    """The promise, tested as a promise.
+
+    A review is hours of a person's attention and it used to live in a page
+    global: a refresh, a crash or a closed tab took every verdict, silently.
+    Tony, 2026-09-04: "yes verdicts survive! it is a lot of work."
+
+    This casts verdicts, RELOADS THE PAGE — the real thing, not a simulated
+    reset — reopens the same folder, and requires them back, in place, with the
+    position preserved so the next keystroke answers the next candidate.
+    """
+    pg = fresh_page
+    pg.evaluate(SETUP, SIM)
+    before = pg.evaluate(
+        """() => {
+          ANNOT = null; discardSavedReview();
+          document.getElementById("anWho").value = "tony";
+          document.getElementById("anCap").value = "50";
+          document.getElementById("anBudget").value = "400";
+          startAnnotation();
+          recordVerdict("confirmed");
+          recordVerdict("rejected");
+          recordVerdict("confirmed");
+          return {n: ANNOT.verdicts.filter(Boolean).length, i: ANNOT.i,
+                  first: ANNOT.verdicts[0].verdict,
+                  centre: ANNOT.cands[0].centre,
+                  who: document.getElementById("anWho").value};
+        }""")
+    assert before["n"] == 3
+
+    pg.reload(wait_until="load")
+    after = pg.evaluate(
+        """async (sim) => {
+          if (ANNOT !== null)
+            return {bug: "ANNOT survived the reload in memory — this test is "
+                         + "not exercising a real reload"};
+          for (const [k, v] of Object.entries(sim))
+            document.getElementById(k).value = v;
+          await runSim();                 // same seed, so the same recordings
+          return {restored: !!(ANNOT && ANNOT.restored),
+                  n: ANNOT ? ANNOT.verdicts.filter(Boolean).length : 0,
+                  i: ANNOT ? ANNOT.i : -1,
+                  first: ANNOT && ANNOT.verdicts[0]
+                    ? ANNOT.verdicts[0].verdict : null,
+                  centre: ANNOT ? ANNOT.cands[0].centre : null,
+                  who: document.getElementById("anWho").value,
+                  said: document.getElementById("anRestore").textContent,
+                  hidden: document.getElementById("anRestore").hidden};
+        }""", SIM)
+    assert after.get("bug") is None, after.get("bug")
+    assert after["restored"], "the folder reopened and the saved review was not picked up"
+    assert after["n"] == before["n"], "verdicts were lost across the reload"
+    assert after["i"] == before["i"], "the review resumed at the wrong candidate"
+    assert after["first"] == before["first"]
+    assert after["centre"] == before["centre"], "restored against a different sample"
+    assert after["who"] == before["who"], "the annotator was not restored with it"
+    # never silent: a restore that said nothing would let somebody believe they
+    # were judging a freshly drawn sample
+    assert not after["hidden"] and after["said"].strip(), \
+        "the review was restored and the page did not say so"
+
+
+def test_a_saved_review_is_not_restored_into_a_different_folder(fresh_page):
+    """Verdicts are POSITIONAL against the sample they were drawn from, so
+    restoring them anywhere else would attach a person's judgement to moments
+    they never looked at. The saved review is kept, and said, but not applied.
+    """
+    pg = fresh_page
+    pg.evaluate(SETUP, SIM)
+    pg.evaluate(
+        """() => {
+          ANNOT = null; discardSavedReview();
+          document.getElementById("anWho").value = "tony";
+          startAnnotation();
+          recordVerdict("confirmed");
+        }""")
+    pg.reload(wait_until="load")
+    other = dict(SIM)
+    other["sSeed"] = "999"          # a different folder: different recording ids
+    other["sRec"] = "3"
+    out = pg.evaluate(
+        """async (sim) => {
+          for (const [k, v] of Object.entries(sim))
+            document.getElementById(k).value = v;
+          await runSim();
+          return {restored: !!(ANNOT && ANNOT.restored),
+                  annot: ANNOT === null,
+                  kept: !!readSavedReview(),
+                  said: document.getElementById("anRestore").textContent};
+        }""", other)
+    assert not out["restored"], "a review was restored into the wrong folder"
+    assert out["kept"], "the saved review was destroyed rather than kept"
+    assert "different folder" in out["said"], \
+        "the page kept a review for another folder and did not say so"

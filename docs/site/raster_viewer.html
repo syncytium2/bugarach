@@ -9,7 +9,7 @@
      rather than naming a sha this page could not know — the reasoning is at the
      visible stamp. -->
 <meta name="bugarach:born" content="2026-08-13">
-<meta name="bugarach:version-date" content="2026-09-03">
+<meta name="bugarach:version-date" content="2026-09-05">
 <meta name="bugarach:commit" content="content-addressed">
 <!--
   The raster viewer, client side.
@@ -175,6 +175,32 @@
     padding: 7px 24px 8px; border-bottom: 1px solid var(--line);
     background: var(--panel); overflow-x: auto;
   }
+  /* The fold. One line, and it carries the step you are on so folding the rail
+     does not also lose where you are. */
+  #railfold { display: flex; align-items: center; gap: 12px;
+              padding: 3px 24px; background: var(--panel);
+              border-bottom: 1px solid var(--line); font-size: 12px; }
+  #railfold button { width: auto; margin: 0; padding: 1px 9px; font-size: 12px; }
+  /* Buttons in this app default to full width, which is right in the sidebar
+     and wrong on a toolbar — "whole recording" stretched across the column. */
+  #zoombar { display: flex; align-items: center; gap: 8px; margin-left: 14px; }
+  #zoombar button { width: auto; margin: 0; padding: 1px 10px; font-size: 12px; }
+  #zoombar .seg button { padding: 1px 11px; font-weight: 700; }
+  body.railfolded #rail { display: none; }
+  /* TERSE. One word per box and the vertical stripped out of it: no status
+     line, no group headings, no arrows, tight padding. The rail still shows
+     the shape of the pipeline and which step you are on — it stops narrating.
+     Tony, 2026-09-05: "It takes too much space." */
+  body.railterse #rail { padding: 3px 24px 4px; row-gap: 0; }
+  body.railterse #rail .need { display: none; }
+  body.railterse #rail .glabel { display: none; }
+  body.railterse #rail .railarrow { display: none; }
+  body.railterse .step { min-width: 0; padding: 2px 9px; font-size: 12px; }
+  body.railterse .railgroup { gap: 0; }
+  /* Reclaimed vertical everywhere above the raster, on the same principle: the
+     things that explain the page are read once, the raster is read all day. */
+  body.railfolded .status.wip { padding: 3px 24px; font-size: 11.5px; }
+  body.railfolded .status.wip .status-why { display: none; }
   .railgroup { display: flex; flex-direction: column; gap: 3px; }
   .railgroup > .glabel {
     font-size: 10px; letter-spacing: .07em; text-transform: uppercase;
@@ -256,6 +282,13 @@
     cursor: default; opacity: .45; border-style: dashed;
   }
   .step:disabled:hover { border-color: var(--line); }
+  /* NOT READY, BUT STILL A DOOR. Dashed and dimmed like the disabled state it
+     replaced, so it reads as "you have not earned this yet" — but it keeps the
+     pointer cursor and full opacity on hover, because it opens, and what it
+     opens is the panel that says what is missing and offers the fix. A step
+     whose own instructions are locked behind it is a dead end. */
+  .step.not-ready { opacity: .62; border-style: dashed; }
+  .step.not-ready:hover { opacity: 1; border-color: var(--accent); }
   .step .tick { color: var(--ok, #2c7a4b); font-weight: 700; }
   .step[aria-current="true"] .tick { color: #fff; }
 
@@ -420,6 +453,65 @@
   .anhead { display: flex; justify-content: space-between; align-items: baseline;
             gap: 12px; margin: 4px 0 2px; }
   .anbtns { display: flex; gap: 6px; flex-wrap: wrap; margin: 8px 0 4px; }
+  /* The time-axis zoom, directly under the canvas it scales. Centred and
+     narrow so it reads as a control on the picture rather than a verdict. */
+  .anzoom { display: flex; align-items: center; justify-content: center;
+            gap: 10px; margin: 4px 0 0; }
+  .anzoom button { min-width: 34px; font-weight: 700; }
+  .anzoom .sub { min-width: 108px; text-align: center; }
+  /* THE CANDIDATE LEDGER. Blue selection matches the arrow above the raster.
+
+     IT SCROLLS IN ITS OWN BOX. Tony, 2026-09-04: "the table needs to scroll the
+     raster goes off screen. separate them." A recording with 40 candidates
+     pushed the raster off the top exactly when the reader needed to look at it,
+     which is the one thing the ledger exists to support. So the table gets a
+     bounded height and its own scrollbar, and the header row stays put inside
+     it — scrolling to row 30 with no column names is its own small defeat. */
+  /* THE WORKSPACE ROW. The confirm tool and the ledger, equal footing, under
+     the raster they both describe. Tony, 2026-09-04: "i just found the event
+     display in the left hand column where i had to scroll down to see the nav
+     and buttons... have the event confirm tool and the table side by side on
+     equal footing, so a row over two columns."
+     Collapses to one column when there is not room for two — below that width
+     neither half is usable beside the other. */
+  #judgerow { display: grid; grid-template-columns: 1fr 1fr; gap: 20px;
+              align-items: start; margin-top: 10px; }
+  @media (max-width: 1100px) { #judgerow { grid-template-columns: 1fr; } }
+  #judgePane, #judgerow #candTable { min-width: 0; }
+  #judgePane #anCv { width: 100%; }
+  #judgerow #candTable h4, #judgePane .anhead { margin-top: 0; }
+  .candscroll { max-height: 38vh; overflow-y: auto; overflow-x: auto;
+                border: 1px solid var(--line); border-radius: 7px;
+                padding: 0 10px; margin: 6px 0 14px; }
+  .candtable { border-collapse: collapse; margin: 0; font-size: 12.5px; }
+  .candtable thead th, .candtable tr:first-child th {
+    position: sticky; top: 0; background: var(--bg); z-index: 1; }
+  .candtable th { text-align: left; font-weight: 600; color: var(--muted);
+                  padding: 3px 10px 3px 0; border-bottom: 1px solid var(--line); }
+  .candtable td { padding: 3px 10px 3px 0; border-bottom: 1px solid var(--line); }
+  .candtable tr.sel td { background: #1565c01a; }
+  .candtable tr.sel td:first-child { box-shadow: inset 3px 0 0 #1565c0; }
+  .candtable .clicky { cursor: pointer; font-variant-numeric: tabular-nums;
+                       text-decoration: underline; text-underline-offset: 2px; }
+  .candtable .v-confirmed { color: #2c7a4b; font-weight: 600; }
+  .candtable .v-rejected  { color: #b3261e; font-weight: 600; }
+  .candtable .v-unsure    { color: #b8860b; font-weight: 600; }
+  /* `color` IS NOT OPTIONAL HERE. Without it these inherit the page's button
+     colour, which is white for the filled controls everywhere else — so an
+     unjudged row drew two empty white boxes and the words "Accept" and
+     "Exclude" were invisible until the button was already on. Caught by
+     screenshotting the table, not by the test that clicked the buttons: a click
+     finds a button whose label nobody can read. */
+  .candtable button { font-size: 12px; padding: 2px 9px; border-radius: 5px;
+                      border: 1px solid var(--line); background: var(--bg);
+                      color: var(--fg); cursor: pointer; }
+  .candtable button:hover { border-color: var(--accent); }
+  .candtable button.acc.on { background: #2c7a4b; border-color: #2c7a4b;
+                             color: #fff; font-weight: 600; }
+  .candtable button.exc.on { background: #b3261e; border-color: #b3261e;
+                             color: #fff; font-weight: 600; }
+  .candtable button.ghost.on { background: #b8860b; border-color: #b8860b;
+                               color: #fff; font-weight: 600; }
   /* The three verdicts share the row and the Back button rides at its own
      width: at the column widths this panel actually gets, a 9rem minimum put
      one button per line and pushed the agreement table off the screen. */
@@ -572,6 +664,17 @@
 
      `nav`, not a row of buttons in `<main>`: it is the page's primary
      navigation now, and a screen reader should be told so. -->
+<!-- FOLDABLE, because judging needs the vertical. Tony, 2026-09-04: "consider
+     options to decrease hieght of stuff above the raster. condense model
+     vertically, maybe even foldable nav and pipeline."
+     The rail is how a reader learns the shape of the pipeline, which matters
+     once; the raster is what they look at for an hour. So it folds to a single
+     line naming the step you are on, and the choice is remembered. -->
+<div id="railfold">
+  <button id="railToggle" class="ghost" aria-expanded="true">Hide pipeline</button>
+  <button id="railTerse" class="ghost" aria-pressed="false">Terse</button>
+  <span class="lab" id="railWhere"></span>
+</div>
 <nav id="rail" aria-label="pipeline"></nav>
 
 <main>
@@ -584,7 +687,28 @@
         <button id="reopen" class="ghost" hidden></button>
         <input id="dir" type="file" webkitdirectory directory multiple hidden autocomplete="off" data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other">
         <input id="files" type="file" accept=".csv" multiple hidden autocomplete="off" data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other">
-        <div class="hint">Nothing is uploaded. Reading happens in this tab.</div>
+        <!-- THE BROWSER SAYS "UPLOAD" AND WE SAY NOTHING LEAVES. Tony,
+             2026-09-04: 'folder selector says "folder to upload" and we say
+             nothing leaves the computer'.
+
+             Both are true and the page has to say so, because an unexplained
+             contradiction between a browser's own dialog and a page's promise
+             is a reason to distrust the promise -- and this promise is the one
+             that lets a lab open the page with patient data on the machine.
+
+             "Upload" is Chrome's word for granting a page read access to files.
+             It is baked into the native dialog for `<input type=file>`, cannot
+             be changed by a page, and does not mean anything is transmitted.
+             The page reaches for `showDirectoryPicker()` first, which says
+             "Select Folder" instead -- but Chrome refuses that API on a
+             `file://` origin, which is exactly how this page is meant to be
+             opened, so the upload-worded input is what most readers will see.
+             Naming it is the only honest option available. -->
+        <div class="hint"><b>Nothing is uploaded.</b> Your browser's own dialog
+          may say <i>“upload”</i> — that is Chrome's word for letting a page
+          <i>read</i> files, and a page cannot change it. Nothing is sent
+          anywhere: this file makes no network requests at all, and the build
+          refuses to ship it if it contains one. Reading happens in this tab.</div>
       </div>
     </details>
     <details class="acc" id="accList" hidden>
@@ -741,6 +865,15 @@
          caveat beside it. -->
     <details class="acc" id="accAnnotate">
       <summary>Confirm the events<span class="cnt" id="cntAnnot">assess first</span></summary>
+      <!-- A REVIEW THAT SURVIVES A RELOAD. Judging is hours of a person's
+           attention, and it used to live in one page global: a refresh, a crash
+           or a closed tab took every verdict with it, silently, with nothing
+           anywhere warning that it could happen. Tony, 2026-09-04, on being
+           told: "yes verdicts survive! it is a lot of work."
+           This is where a saved review announces itself. It is NEVER silent --
+           a restored review that said nothing would let somebody carry on
+           believing they were judging a freshly drawn sample. -->
+      <div id="anRestore" hidden></div>
       <div class="ctl">
         <label for="anWho">your name</label>
         <input id="anWho" type="text" placeholder="who is judging" size="12" autocomplete="off" data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other">
@@ -752,21 +885,17 @@
         <input id="anSeed" type="number" min="0" step="1" value="20260824" autocomplete="off" data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other">
         <div class="span"><button id="anStart" disabled>Draw a sample and
           start</button></div>
+        <!-- WHY THE BUTTON ABOVE IS DEAD, AND THE WAY OUT OF IT, IN THE PLACE
+             THE PERSON IS ALREADY LOOKING. A disabled button fires no event and
+             logs nothing, so an unexplained one is indistinguishable from a
+             broken page — Tony hit exactly that twice on 2026-09-04 and the
+             second time the reason was real: the assessment does not survive a
+             reload, only the review does, so a reloaded page has nothing to
+             draw from and said so only in a chip beside the section title.
+             Never leave the dead button unexplained, and never make somebody go
+             and find the control that fixes it. -->
+        <div class="span" id="anGate"></div>
         <div class="span note" id="anWhat"></div>
-      </div>
-      <div id="anStage" hidden>
-        <div class="anhead">
-          <span id="anWhere" class="sub"></span>
-          <span id="anProg" class="sub"></span>
-        </div>
-        <canvas id="anCv"></canvas>
-        <div class="anbtns">
-          <button id="anYes">Coordinated <kbd>y</kbd></button>
-          <button id="anNo">Not coordinated <kbd>n</kbd></button>
-          <button id="anIdk">Can't tell <kbd>u</kbd></button>
-          <button id="anBack" class="ghost">Back <kbd>&larr;</kbd></button>
-        </div>
-        <div class="note" id="anCand"></div>
       </div>
       <div id="anOut"></div>
       <!-- THE OTHER HALF OF MAHICE. The machine proposes and the person
@@ -1419,9 +1548,81 @@
           </span>
           <span class="lab" id="orderNote"></span>
         </div>
+        <!-- ZOOM THE RASTER'S TIME AXIS. Tony, 2026-09-04, twice: "need to be
+             able to zoom the x-axis". The first pass put zoom on the small
+             candidate canvas in the side panel, which was the wrong picture —
+             judging now happens against THIS raster and the ledger under it,
+             so this is the axis that has to move.
+             The wheel is deliberately not bound: the mouse wheel scrolls the
+             page, which is the plot convention this project already holds. -->
+        <div id="zoombar">
+          <span class="lab">time</span>
+          <span class="seg">
+            <button id="zOut" title="wider">−</button>
+            <button id="zIn" title="tighter">+</button>
+          </span>
+          <button id="zAll" class="ghost">whole recording</button>
+          <span class="lab" id="zWhat"></span>
+        </div>
       </div>
       <p id="wins"></p>
       <canvas id="cv"></canvas>
+      <!-- THE CANDIDATE LEDGER, UNDER THE RASTER IT DESCRIBES. Tony,
+           2026-09-04: "have a list of possible events in a table below the
+           raster. user clicks, the above arrow goes blue, the user ticks accept
+           or exclude in the table. that we we all know what just happended."
+
+           The judging controls used to live in the side panel, which shows one
+           step at a time, so a verdict was a keystroke that left no trace where
+           the reader was looking. A table is a LEDGER: every candidate for this
+           recording is a row, the row says what was decided, and the decision is
+           made in the row rather than somewhere else. Selected is BLUE in both
+           places at once — the row and the arrow above the raster — so there is
+           never a question about which event a click just answered. -->
+      <!-- THE WORKSPACE: raster on top, then the confirm tool and the
+           ledger side by side on equal footing. Tony, 2026-09-04: "i just
+           found the event display in the left hand column where i had to
+           scroll down to see the nav and buttons... have the event confirm
+           tool and the table side by side on equal footing, so a row over
+           two columns."
+           The judging canvas used to live in the sidebar accordion, below
+           a stack of setup controls, so the thing being judged and the
+           thing recording the judgement were in different columns at
+           different scroll positions. They are one row now. -->
+      <div id="judgerow">
+        <div id="judgePane">
+        <div id="anStage" hidden>
+          <div class="anhead">
+            <span id="anWhere" class="sub"></span>
+            <span id="anProg" class="sub"></span>
+          </div>
+          <canvas id="anCv"></canvas>
+          <!-- ZOOM THE TIME AXIS WHILE JUDGING. Tony, 2026-09-04: "need to be
+               able to zoom the x-axis during mahice."
+               A fixed ±20 s window decides for the reader how tight a
+               co-activation has to look, and that is the judgement being asked
+               for. Whether five ROIs inside two seconds is one event or five
+               coincidences reads differently at ±5 s and at ±60 s, so the window
+               has to be theirs.
+               It costs nothing in the record: `view_t0_sec` / `view_t1_sec`
+               already stamp the ACTUAL window on every verdict, so a judgement
+               made zoomed in is stored as what it was. -->
+          <div class="anzoom">
+            <button id="anZoomIn" class="ghost" title="tighter window">−</button>
+            <span id="anZoomWhat" class="sub"></span>
+            <button id="anZoomOut" class="ghost" title="wider window">+</button>
+          </div>
+          <div class="anbtns">
+            <button id="anYes">Coordinated <kbd>y</kbd></button>
+            <button id="anNo">Not coordinated <kbd>n</kbd></button>
+            <button id="anIdk">Can't tell <kbd>u</kbd></button>
+            <button id="anBack" class="ghost">Back <kbd>&larr;</kbd></button>
+          </div>
+          <div class="note" id="anCand"></div>
+        </div>
+        </div>
+        <div id="candTable"></div>
+      </div>
       <div id="assessOut"></div>
       <div id="detectOut"></div>
       <div id="windowOut"></div>
@@ -1463,10 +1664,10 @@
      a page edited without bumping it turns CI red instead of shipping a date
      that has quietly become a lie. Bump it when you edit this page. -->
 <p class="site-dates" data-bugarach-born="2026-08-13"
-   data-bugarach-version-date="2026-09-03"
+   data-bugarach-version-date="2026-09-05"
    data-bugarach-commit="content-addressed"
    style="margin:1.5rem max(1.2rem, calc(50% - 23rem));color:#666;font-size:.85rem">
-  First published 2026-08-13 · this version 2026-09-03 · identified by its own
+  First published 2026-08-13 · this version 2026-09-05 · identified by its own
   bytes rather than by a build stamp
 </p>
 
@@ -1972,6 +2173,277 @@ const LANE_ROW = 13;          // a row in the multi-detector strip
    the last lane underneath "baseline". Found by drawing it. */
 const LANE_PAD = 22;
 
+/* ---------- the judging lane -------------------------------------------------
+
+   MAHICE's candidates, marked ABOVE the raster they belong to and clickable.
+   Tony, 2026-09-04: "the assessor would flag potential events in the raster, the
+   human would select one and say yes or no."
+
+   NOTHING IS DRAWN ON THE RASTER, so "in the raster" is served by a lane above
+   it. That is not pedantry here, it is the whole measurement: in a raster a
+   vertical mark reads as many ROIs firing at once, which is precisely the claim
+   being judged. A candidate marker drawn through the rows would put a synthetic
+   coordinated event into the picture used to decide whether the real one is
+   there, and it would do it on every candidate, in the same place the eye is
+   looking. SAP009 fires on it.
+
+   THE MARK POINTS DOWN, at the raster it describes. That costs shape as a
+   channel -- down is already spoken for -- so shape cannot also encode what the
+   mark IS. Judged and unjudged, confirmed and rejected are all the same
+   triangle, and THE VERDICT IS THE COLOUR. (CLAUDE.md, 2026-08-26.)
+
+   Positions: base at `top - 18 - CAND_LANE_H`, apex 8px lower. The treatment
+   chip and its label occupy `top - 17` to `top - 9`, so the lane clears them,
+   and the 36px between one panel's floor and the next panel's frame is enough
+   for the 32px this needs. Found by drawing it, same as LANE_PAD. */
+const CAND_LANE_H = 14;
+const CAND_HIT_PX = 8;        // click tolerance either side of a mark
+/* Rebuilt on every `draw`. Holds where each candidate landed so a click can be
+   turned back into the candidate under it -- the canvas has no DOM to hang a
+   listener on, so the hit test is ours to keep. */
+let CAND_HITS = [];
+
+/* Verdict is the colour. Deliberately not red/green alone: these are judged by
+   people and this page is read in both themes, so each carries a distinct
+   lightness as well as a hue. */
+const CAND_INK = {
+  unjudged:  "#8a8f94",
+  confirmed: "#2c7a4b",
+  rejected:  "#b3261e",
+  unsure:    "#b8860b",
+  preview:   "#c2c7cc",
+  selected:  "#1565c0",   // the one being looked at, matching its ledger row
+};
+
+/* ---------- the raster's time window ----------------------------------------
+
+   Tony, 2026-09-04: "need to be able to zoom the x-axis." A 70-minute recording
+   drawn across 1000px puts a whole coordinated event inside one pixel column,
+   which is not a scale anything can be judged at.
+
+   SPAN AND CENTRE, not t0/t1. Zooming then holds the moment being judged in
+   place instead of letting it drift off the edge, and a scale chosen on one
+   recording carries to the next.
+
+   THE WHEEL IS NOT BOUND. The mouse wheel scrolls the page — this project's own
+   plot convention, and the one thing more annoying than not being able to zoom
+   is a page that zooms when you tried to scroll past it. */
+let RASTER_SPAN = null;   // seconds shown; null = the whole recording
+let RASTER_MID = null;    // centre of the window, on the recording's own clock
+
+const RASTER_ZOOMS = [5, 10, 20, 45, 90, 180, 300, 600, 1200, 2400];
+
+function rasterFullSpan() {
+  const d = current && current.loaded;
+  return d ? Math.max(1, d.t1 - d.t0) : null;
+}
+
+/* dir: -1 tighter, +1 wider. The last step is always the whole recording, so
+   zooming out reaches "all of it" rather than stopping just short of it. */
+function zoomRaster(dir) {
+  const full = rasterFullSpan();
+  if (!full) return;
+  const steps = RASTER_ZOOMS.filter(s => s < full).concat([full]);
+  const cur = RASTER_SPAN || full;
+  let i = steps.findIndex(s => s >= cur - 1e-6);
+  if (i < 0) i = steps.length - 1;
+  const j = Math.min(steps.length - 1, Math.max(0, i + dir));
+  RASTER_SPAN = steps[j] >= full ? null : steps[j];
+  if (RASTER_SPAN && !Number.isFinite(RASTER_MID)) {
+    const c = ANNOT && ANNOT.cands[ANNOT.i];
+    const d = current.loaded;
+    // centre on what is being judged, if anything is
+    RASTER_MID = (c && c.recId === current.id) ? c.centre : (d.t0 + d.t1) / 2;
+  }
+  repaintRaster();
+}
+
+function resetRasterZoom() {
+  RASTER_SPAN = null; RASTER_MID = null;
+  repaintRaster();
+}
+
+/* Bring a moment into view without changing the scale. Called when a candidate
+   is selected, so picking a row in the ledger walks the raster to it. */
+function centreRasterOn(t) {
+  if (!RASTER_SPAN || !Number.isFinite(t)) return;
+  RASTER_MID = t;
+  repaintRaster();
+}
+
+function repaintRaster() {
+  if (current && current.loaded) draw(current, current.loaded);
+  paintZoomBar();
+}
+
+function paintZoomBar() {
+  const full = rasterFullSpan();
+  const n = document.getElementById("zWhat");
+  if (n) n.textContent = !full ? ""
+    : RASTER_SPAN ? "showing " + fmt(RASTER_SPAN) + " of " + fmt(full)
+                  : "whole recording";
+  const all = document.getElementById("zAll");
+  if (all) all.disabled = !RASTER_SPAN;
+  const zin = document.getElementById("zIn");
+  if (zin) zin.disabled = !!(full && RASTER_SPAN && RASTER_SPAN <= RASTER_ZOOMS[0]);
+}
+
+/* The candidates to mark on one panel, with the verdict each currently carries.
+
+   Drawn from the SAMPLE being judged, not from every candidate the assessment
+   left: the sample is the review, and a lane showing 200 marks where 8 are in
+   play would misreport what is being asked of the reader. Before a review is
+   started the whole population is previewed instead, muted, so the reader can
+   see what is there to judge before committing to a draw. */
+function candidatesOnPanel(recId, stream) {
+  const out = [];
+  if (ANNOT && ANNOT.cands) {
+    ANNOT.cands.forEach((c, i) => {
+      if (c.recId !== recId || c.stream !== stream) return;
+      const v = ANNOT.verdicts[i];
+      out.push({ cand: c, i, state: v ? v.verdict : "unjudged",
+                 current: i === ANNOT.i, live: true });
+    });
+    return out;
+  }
+  for (const c of collectCandidates())
+    if (c.recId === recId && c.stream === stream)
+      out.push({ cand: c, i: -1, state: "preview", current: false, live: false });
+  return out;
+}
+
+/* Repaint the raster so the lane shows the verdict just cast. The lane is drawn
+   FROM `ANNOT`, so it is stale the instant one lands -- without this the colours
+   only catch up the next time something else happens to redraw. */
+function repaintJudgingLane() {
+  if (current && current.loaded) draw(current, current.loaded);
+}
+
+/* ---------- the candidate ledger --------------------------------------------
+
+   Tony, 2026-09-04: "have a list of possible events in a table below the raster.
+   user clicks, the above arrow goes blue, the user ticks accept or exclude in
+   the table. that we we all know what just happended."
+
+   The judging controls lived in the side panel, which shows one step at a time,
+   so a verdict was a keystroke that left no trace where the reader was looking
+   and no way to see what had already been decided. A table is a LEDGER: one row
+   per candidate in this recording, each row says what was decided, and the
+   decision is made IN the row.
+
+   Selection is BLUE in both places at once -- the row and the arrow above the
+   raster -- so it is never ambiguous which event a click just answered. */
+
+/* Select a candidate: blue arrow, blue row, and the zoomed view of it beside
+   them. Selecting is not judging and never records anything. */
+async function selectCandidate(i) {
+  if (!ANNOT || i < 0 || i >= ANNOT.cands.length) return;
+  ANNOT.i = i;
+  /* NO `showSection` HERE ANY MORE. The confirm tool lives in the main column
+     beside the ledger now, so it is already on screen — switching the sidebar
+     would only drag the reader off whatever step they had open. */
+  const stage = document.getElementById("anStage");
+  if (stage) stage.hidden = false;
+  for (const id of ["anYes", "anNo", "anIdk"])
+    document.getElementById(id).disabled = false;
+  await showCandidate();
+  paintCandidateTable();
+  // walk the raster to it, if the reader has zoomed in far enough that it might
+  // be off screen. Does nothing at whole-recording scale.
+  centreRasterOn(ANNOT.cands[i].centre);
+  repaintJudgingLane();
+}
+
+/* Judge one row. It SELECTS FIRST when the row is not the one on screen, so the
+   window recorded on the verdict is the window the reader was actually looking
+   at when they answered -- `showCandidate` stamps `ANNOT.view`, and a verdict
+   carrying a view nobody saw is worse than one carrying none. */
+async function judgeCandidate(i, verdict) {
+  if (!ANNOT || i < 0 || i >= ANNOT.cands.length) return;
+  if (ANNOT.i !== i || !ANNOT.view) await selectCandidate(i);
+  ANNOT.verdicts[i] = {
+    cand: ANNOT.cands[i], verdict,
+    at: new Date().toISOString().replace(/\.\d+Z$/, "Z"),
+    view: ANNOT.view,
+  };
+  saveReview();
+  paintAnnotChip();
+  paintAgreement();
+  paintKSetting();
+  paintCandidateTable();
+  repaintJudgingLane();
+}
+
+const VERDICT_WORD = {
+  confirmed: "accepted", rejected: "excluded", unsure: "can't tell",
+};
+
+/* The rows for the recording ON SCREEN. A ledger for the whole folder would be
+   1445 rows on this lab's own export; the raster above shows one recording, and
+   the table under it is about that raster. */
+function paintCandidateTable() {
+  const box = document.getElementById("candTable");
+  if (!box) return;
+  box.textContent = "";
+  if (!ANNOT || !current) { box.hidden = true; return; }
+  const rows = [];
+  ANNOT.cands.forEach((c, i) => {
+    if (c.recId === current.id && (!STREAM || c.stream === STREAM))
+      rows.push({ c, i, v: ANNOT.verdicts[i] });
+  });
+  if (!rows.length) { box.hidden = true; return; }
+  box.hidden = false;
+
+  const doneAll = ANNOT.verdicts.filter(Boolean).length;
+  box.append(el("h4", "Possible events in " + current.id));
+  box.append(el("p", rows.length + " here · " + doneAll + " of "
+    + ANNOT.cands.length + " judged across the sample. Click a row to look at "
+    + "it — the arrow above the raster turns blue — then accept or exclude it "
+    + "here.", "note"));
+
+  const t = document.createElement("table");
+  t.className = "candtable";
+  const hr = document.createElement("tr");
+  for (const h of ["at", "ROIs", "K", "verdict", "", "", ""])
+    hr.append(el("th", h));
+  t.append(hr);
+
+  for (const r of rows) {
+    const tr = document.createElement("tr");
+    if (ANNOT.i === r.i) tr.className = "sel";
+    const at = el("td", fmt(r.c.centre));
+    at.className = "clicky";
+    at.onclick = () => selectCandidate(r.i);
+    tr.append(at);
+    tr.append(el("td", String(r.c.nMembers)));
+    tr.append(el("td", String(r.c.kSurvived)));
+    const v = el("td", r.v ? VERDICT_WORD[r.v.verdict] || r.v.verdict : "—");
+    if (r.v) v.className = "v-" + r.v.verdict;
+    tr.append(v);
+    const mk = (label, verdict, cls) => {
+      const td = document.createElement("td");
+      const b = el("button", label);
+      b.className = cls + (r.v && r.v.verdict === verdict ? " on" : "");
+      b.onclick = () => judgeCandidate(r.i, verdict);
+      td.append(b);
+      return td;
+    };
+    tr.append(mk("Accept", "confirmed", "acc"));
+    tr.append(mk("Exclude", "rejected", "exc"));
+    tr.append(mk("Can't tell", "unsure", "ghost"));
+    t.append(tr);
+  }
+  // its own scroll box, so a long ledger never pushes the raster off screen
+  const scroll = document.createElement("div");
+  scroll.className = "candscroll";
+  scroll.append(t);
+  box.append(scroll);
+  // keep the selected row visible when selection moved from the lane or a key
+  const sel = t.querySelector("tr.sel");
+  if (sel && sel.scrollIntoView)
+    sel.scrollIntoView({ block: "nearest" });
+}
+
 /* What the lane strip draws, derived FROM THE ROWS rather than kept beside
    them. The rows are the thing that gets written to `detections.csv`, so a lane
    built from anything else could disagree with the file the reader downloads —
@@ -2000,10 +2472,33 @@ function draw(rec, data) {
   const css = getComputedStyle(document.documentElement);
   const dpr = window.devicePixelRatio || 1;
   const W = cv.clientWidth || 900;
-  const names = [...data.streams.keys()].sort();
+  /* ONE CHANNEL ON SCREEN: THE ONE THAT WAS CHOSEN. Tony, 2026-09-04: "i
+     selected fast but slow still shows at the bottom", and "user should choose
+     one channel at the start. i think that simplifes."
+
+     This used to draw every stream and say so in the picker's note. That was
+     defensible when the choice only governed settings, and it stopped being
+     defensible once MAHICE runs per channel: the judging lane belongs to one
+     channel, so a second raster underneath it is a panel the lane says nothing
+     about, in the picture being used to judge. Choosing `fast` now means the
+     page is showing fast. */
+  const names = [...data.streams.keys()].sort()
+    .filter(n => STREAMS_SEEN.length < 2 || !STREAM || n === STREAM);
   const padL = 62, padR = 14, padT = 23, padB = 40, gap = 16;
-  const rowH = Math.max(110, Math.min(230, 26 + data.nRois * 5));
-  const H = padT + names.length * rowH + (names.length - 1) * gap + padB
+  /* SHORTER, because the raster now shares the page with the workspace under it
+     rather than owning the fold. Tony, 2026-09-04: "make the raster vertically
+     shorter". Still scales with ROI count -- a 51-ROI field needs more room than
+     a 10-ROI one -- but the ceiling comes down so the confirm tool and the
+     ledger are on screen with it instead of below it. */
+  const rowH = Math.max(90, Math.min(165, 24 + data.nRois * 3.2));
+  /* Headroom for the judging lane, reserved on EVERY panel or none. Reserving it
+     only where candidates landed would move the frames between redraws as
+     verdicts come in, and a raster that shifts under the reader while they judge
+     it is its own defect. */
+  CAND_HITS = [];
+  const anyCands = names.some(n => candidatesOnPanel(rec.id, n).length > 0);
+  const candH = anyCands ? CAND_LANE_H : 0;
+  const H = padT + candH + names.length * rowH + (names.length - 1) * gap + padB
             + ((DETECT && DETECT.recId === rec.id) ? LANE_H : 0);
 
   cv.width = W * dpr; cv.height = H * dpr; cv.style.height = H + "px";
@@ -2012,7 +2507,19 @@ function draw(rec, data) {
   g.clearRect(0, 0, W, H);
   g.font = "11px -apple-system, system-ui, sans-serif";
 
-  const t0 = data.t0, t1 = Math.max(data.t1, t0 + 1);
+  /* THE TIME WINDOW ON SCREEN. Whole recording unless the reader has zoomed.
+     `RASTER_SPAN` is how many seconds are shown and `RASTER_MID` is what they
+     are centred on -- kept as span+centre rather than as t0/t1 so that zooming
+     holds the moment being judged in place instead of drifting off the edge,
+     and so a zoom set on one recording carries to the next at the same scale. */
+  const full0 = data.t0, full1 = Math.max(data.t1, data.t0 + 1);
+  let t0 = full0, t1 = full1;
+  if (RASTER_SPAN && RASTER_SPAN < full1 - full0) {
+    const half = RASTER_SPAN / 2;
+    let mid = Number.isFinite(RASTER_MID) ? RASTER_MID : (full0 + full1) / 2;
+    mid = Math.min(Math.max(mid, full0 + half), full1 - half);
+    t0 = mid - half; t1 = mid + half;
+  }
   const x = t => padL + (t - t0) / (t1 - t0) * (W - padL - padR);
   const wins = REGIONS.get(rec.id) || [];
   const step = ticks(t1 - t0, Math.max(4, Math.round((W - padL - padR) / 110)));
@@ -2075,7 +2582,7 @@ function draw(rec, data) {
   }
 
   names.forEach((name, si) => {
-    const top = padT + laneH + si * (rowH + gap), bot = top + rowH - 20;
+    const top = padT + candH + laneH + si * (rowH + gap), bot = top + rowH - 20;
     const byRoi = data.streams.get(name);
 
     // treatment windows behind the marks — a raster whose periods are not
@@ -2129,7 +2636,15 @@ function draw(rec, data) {
       const ra = Math.max(padL, x0), rb = Math.min(W - padR, x1);
       g.fillStyle = ink(w.label);
       g.fillRect(ra, top - 4, Math.max(1, rb - ra), 3);
-      if (si === 0) {
+      /* ONE LABEL PER REGION THAT IS ACTUALLY IN VIEW. Every region used to get
+         a label clamped into the plot, which was harmless at whole-recording
+         scale and became a pile-up the moment the axis could zoom: four regions
+         off to the left all clamped to the same left edge and drew "baseline"
+         over "TTX". A region is labelled if it STARTS in view, or if it is the
+         one the left edge is standing in — which is exactly one of them. */
+      const startsInView = w.start >= t0 && w.start <= t1;
+      const holdsLeftEdge = w.start <= t0 && w.end > t0;
+      if (si === 0 && (startsInView || holdsLeftEdge)) {
         // clamp inside the plot: a window starting near the right edge ran its
         // label off the canvas, and a treatment silently rendered as "hig" is
         // worse than one rendered a few pixels from where it starts
@@ -2141,6 +2656,58 @@ function draw(rec, data) {
         g.fillText(w.label, at + 13, top - 9);          // …the name stays ink
       }
     });
+
+    /* THE JUDGING LANE. One down-pointing triangle per candidate, above this
+       panel, pointing at the raster it is a claim about. Never through the rows:
+       see CAND_LANE_H. The verdict is the COLOUR, because the shape is already
+       spoken for by "down". The candidate currently in the judging panel is
+       RINGED rather than reshaped, for the same reason. */
+    const onPanel = candidatesOnPanel(rec.id, name);
+    if (onPanel.length) {
+      const baseY = top - 18 - CAND_LANE_H;
+      for (const m of onPanel) {
+        const px = Math.round(x(m.cand.centre)) + 0.5;
+        if (px < padL || px > W - padR) continue;
+        /* SELECTED IS BLUE, and it wins over the verdict colour while it is
+           selected. Tony, 2026-09-04: "user clicks, the above arrow goes blue".
+           The row in the ledger below turns blue at the same moment, so the
+           arrow and the row agree about which event a click just answered. The
+           ring stays too — colour alone is not enough on a lane this dense. */
+        g.fillStyle = m.current ? CAND_INK.selected
+                                : (CAND_INK[m.state] || CAND_INK.unjudged);
+        g.beginPath();
+        g.moveTo(px - 4, baseY);
+        g.lineTo(px + 4, baseY);
+        g.lineTo(px, baseY + 8);
+        g.closePath();
+        g.fill();
+        if (m.current) {
+          g.strokeStyle = css.getPropertyValue("--fg").trim();
+          g.lineWidth = 1.5;
+          g.beginPath();
+          g.arc(px, baseY + 3, 7.5, 0, Math.PI * 2);
+          g.stroke();
+          g.lineWidth = 1;
+        }
+        // `panelTop` rides along so the "never on the raster" rule is checkable
+        // per mark rather than eyeballed: every hit must sit above the frame it
+        // describes, and with two streams each panel has its own.
+        if (m.live) CAND_HITS.push({ x: px, y: baseY + 4, i: m.i,
+                                     panelTop: top, stream: name });
+      }
+      // Identity outside the plot, where the detector lanes put theirs. A count
+      // over the marks would sit on the data it counts.
+      //
+      // ONE WORD, because there are only `padL - 6` = 56px here and the label is
+      // right-aligned into them. "judging · click a mark" rendered as "lick a
+      // mark" — caught by screenshotting it, which is the only way this class of
+      // defect is ever caught. The affordance moved to the panel, which has room
+      // for a sentence.
+      g.fillStyle = css.getPropertyValue("--muted").trim();
+      g.textAlign = "end";
+      g.fillText(onPanel[0].live ? "judging" : "proposed", padL - 6, baseY + 7);
+      g.textAlign = "start";
+    }
 
     g.strokeStyle = css.getPropertyValue("--line").trim();
     g.lineWidth = 1;
@@ -2533,6 +3100,8 @@ async function show(rec) {
   paintSimSwapWarning();
   paintOrderNote(data);
   draw(rec, data);
+  // the ledger is about the raster above it, so it follows the recording
+  paintCandidateTable();
 }
 
 /* ---------- conformance: the same report `bugarach check` prints, in the
@@ -2850,6 +3419,16 @@ async function open(fileList, opts) {
   paintSaveSettings();
   showSection(SIMULATED ? "accSim" : "accList");
   await show(RECORDINGS[0]);
+  /* A saved review can only be matched to a folder once there is one: the
+     signature is the recording ids. Runs here rather than at page load for that
+     reason, and before the check below, because the check walks every file and
+     a person coming back to unfinished judging should not wait on it. */
+  offerSavedReview();
+  // ...and paint the judging step's own state for the folder just opened. Third
+  // time today a panel was correct and nothing called the function that fills it
+  // in: the step is reachable now, and without this its gate is BLANK, so it
+  // explains nothing and offers no way forward.
+  paintAnnotChip();
   // the first raster goes up before the folder is checked: seeing something is
   // the point of opening it, and the check walks every file
   document.getElementById("checkbar").hidden = false;
@@ -4232,9 +4811,10 @@ function paintStreamPick() {
   note.textContent = "This folder holds " + STREAMS_SEEN.join(" and ")
     + ". One is analysed at a time — they are separate experiments, not two "
     + "views of one. Everything below is about " + sel.value + ": the settings "
-    + "you tune, the file you save, the table you download. Switch here and run "
-    + "again for " + others.join(" or ") + ". The raster keeps drawing all of "
-    + "them.";
+    + "you tune, the file you save, the table you download, the raster on "
+    + "screen, and the MAHICE review with its own verdicts and its own K. "
+    + "Switch here and run again for " + others.join(" or ")
+    + " — switching does not lose the review you already have.";
 }
 
 /* Switching the stream throws away every result about the last one, because
@@ -4243,6 +4823,17 @@ function paintStreamPick() {
    you just left, and stops them claiming to be tuned. */
 function chooseStream(name) {
   if (name === STREAM) return;
+  /* THE REVIEW GOES WITH THE CHANNEL IT WAS CAST ON. MAHICE runs separately on
+     each (Tony, 2026-09-04), so the outgoing channel's verdicts are saved under
+     ITS key before the switch and the incoming channel gets its own back, or a
+     clean slate if it has none.
+
+     Carrying `ANNOT` across a switch would have been the worst bug available
+     here: the lane would paint one channel's candidates over the other's
+     raster, every verdict would be filed against the wrong stream, and nothing
+     on the page would look wrong while it happened. */
+  saveReview();
+  ANNOT = null;
   STREAM = name;
   DETECT = null; FOLDER_RUN = null; ASSESS = null; ASSESSED = null;
   // the folder walk is a measurement OF one stream, so it goes with the rest
@@ -4256,6 +4847,10 @@ function chooseStream(name) {
     if (n) n.textContent = "";
   }
   paintStreamPick();
+  // The incoming channel's own review, if it has one. Painted after the clears
+  // above so nothing from the outgoing channel is still on screen under it.
+  offerSavedReview();
+  paintAnnotChip();
   if (current && current.loaded) loadRecording(current).then(d => draw(current, d));
 }
 
@@ -5779,6 +6374,16 @@ async function assessFolderRun() {
                       elapsedSec: (performance.now() - startedAt) / 1000 };
     paintFolderAssess();
     markDone("accAssess");
+    /* THE SEAM. Nothing else tells the judging step that candidates arrived, so
+       without this `#anStart` stays disabled for the rest of the session and
+       every click on "Draw a sample and start" does nothing, silently.
+
+       This fix was made once already, in the assembled page, and LOST when the
+       change was ported into this template with `patch` -- the single-recording
+       hunk applied and this one did not, and the run was reported as a success.
+       Which is why the loop is now driven end to end on the real folder by
+       clicking real controls, instead of being checked a function at a time. */
+    paintAnnotChip();
   } finally {
     ASSESS_RUNNING = false;
     paintAssessFolderButton();
@@ -5981,7 +6586,14 @@ function drawAnnotSample(cands, seed, budget, cap) {
   const u = rng32(seed);
   const byRec = new Map();
   for (const c of cands) {
-    const k = c.recId + " " + c.stream;
+    /* A composite key, built with JSON rather than a separator character.
+       This line used to join with a RAW NUL BYTE written into the source. It
+       ran fine -- a NUL inside a JS string literal is just a character -- and
+       it was a landmine for every text tool that touches this file: invisible
+       in editors and diffs, unmatchable by exact-string editing, and silently
+       TRUNCATING the line in `awk`, which is how it was found on 2026-09-04.
+       JSON needs no separator and is all printable. */
+    const k = JSON.stringify([c.recId, c.stream]);
     if (!byRec.has(k)) byRec.set(k, []);
     byRec.get(k).push(c);
   }
@@ -6007,14 +6619,80 @@ function drawAnnotSample(cands, seed, budget, cap) {
   return { picked, population: cands.length, recordings: byRec.size, drawn };
 }
 
+/* WHICH CHANNEL, AND WHY THE BUTTON IS DEAD, WHERE THE BUTTON IS.
+
+   Two failures on 2026-09-04, both of them "nothing happens":
+   the judging step was unreachable because nothing called `paintAnnotChip`
+   after an assessment, and then -- with that fixed -- it was unreachable on a
+   RELOADED page because the assessment does not survive a reload, only the
+   review does. Both times the reason existed, in a chip beside a section title,
+   next to a control that fires no event when disabled.
+
+   A disabled button with no explanation beside it is indistinguishable from a
+   broken page. So the reason goes here, in the panel, with the button that
+   fixes it -- never "go and find the Assess step".
+
+   The channel is named unconditionally, because MAHICE runs on one at a time
+   and a review carries the channel it was cast on. */
+function paintAnnotGate() {
+  const box = document.getElementById("anGate");
+  if (!box) return;
+  box.textContent = "";
+  if (!RECORDINGS.length) { box.hidden = true; return; }
+  box.hidden = false;
+  const chan = STREAM || "events";
+  const live = !!(ANNOT && ANNOT.cands && ANNOT.cands.length);
+  const cands = collectCandidates().length;
+
+  const head = el("div", "");
+  head.append(el("b", "Channel: " + chan));
+  if (STREAMS_SEEN.length > 1) {
+    for (const other of STREAMS_SEEN.filter(s => s !== chan)) {
+      const b = el("button", "Switch to " + other);
+      b.className = "ghost";
+      b.onclick = () => {
+        const sel = document.getElementById("sStream");
+        if (sel) sel.value = other;
+        chooseStream(other);
+      };
+      head.append(b);
+    }
+    head.append(el("div", STREAMS_SEEN.join(" and ") + " are separate "
+      + "experiments, not two views of one. MAHICE runs on one at a time, and "
+      + "each keeps its own verdicts and its own K — switching does not lose "
+      + "the other one.", "note"));
+  }
+  box.append(head);
+
+  if (live || cands) return;          // the button works; nothing to explain
+
+  const why = el("div", "", "err");
+  why.append(el("b", "Nothing to judge yet for " + chan + "."));
+  why.append(el("span", " Candidates come from the assessment, and the "
+    + "assessment does not survive a page reload — only your verdicts do. Run "
+    + "it for " + chan + " and this step opens."));
+  const go = el("button", "Assess all " + RECORDINGS.length
+    + " recordings (" + chan + ")");
+  go.onclick = () => { showSection("accAssess"); assessFolderRun(); };
+  const wrap = el("div", "", "span");
+  wrap.append(go);
+  why.append(wrap);
+  box.append(why);
+}
+
 function paintAnnotChip() {
   const chip = document.getElementById("cntAnnot");
   const btn = document.getElementById("anStart");
+  paintAnnotGate();
   if (!chip || !btn) return;
   const cands = collectCandidates();
-  if (ANNOT && ANNOT.verdicts.length) {
-    chip.textContent = ANNOT.verdicts.length + " of " + ANNOT.cands.length
-      + " judged";
+  /* A RESTORED review counts as live even with nothing judged yet. After a
+     reload the assessment is gone, so `collectCandidates()` is empty and the
+     old test -- verdicts, or candidates to draw from -- shut the step on a
+     review that had been resumed but not yet answered. */
+  if (ANNOT && ANNOT.cands && ANNOT.cands.length) {
+    const done = ANNOT.verdicts.filter(Boolean).length;
+    chip.textContent = done + " of " + ANNOT.cands.length + " judged";
     btn.disabled = false;
   } else if (cands.length) {
     chip.textContent = cands.length + " candidate"
@@ -6026,11 +6704,29 @@ function paintAnnotChip() {
   }
   const what = document.getElementById("anWhat");
   if (what) {
-    what.textContent = cands.length
-      ? ("The assessment left " + cands.length + " candidate moments across "
-         + new Set(cands.map(c => c.recId)).size + " recording(s). You will be "
-         + "shown a sample of them, one at a time.")
-      : "Run the assessment first — this judges what it proposes.";
+    const LANE = " Every candidate in the sample is marked in the lane above the "
+      + "raster, so you can click a mark to jump to that moment instead of "
+      + "working through them in order. The colour of a mark is its verdict; "
+      + "the ringed one is where you are.";
+    /* A RESTORED review has no candidates to draw from -- the assessment did not
+       survive the reload, only the review did -- so the bare "run the assessment
+       first" was appearing UNDER A LIVE REVIEW, telling somebody to start over
+       while their own verdicts sat on the screen above it. Caught by
+       photographing the restore rather than trusting the test that proved the
+       verdicts came back. */
+    if (ANNOT && ANNOT.cands && ANNOT.cands.length && !cands.length)
+      what.textContent = "Carrying on a saved review of "
+        + ANNOT.cands.length + " candidates. The assessment behind it is not "
+        + "reloaded and does not need to be — the sample travelled with your "
+        + "answers. Draw a new sample only if you mean to start over." + LANE;
+    else if (cands.length)
+      what.textContent = "The assessment left " + cands.length
+        + " candidate moments across "
+        + new Set(cands.map(c => c.recId)).size + " recording(s). You will be "
+        + "shown a sample of them, one at a time." + LANE;
+    else
+      what.textContent = "Run the assessment first — this judges what it "
+        + "proposes.";
   }
 }
 
@@ -6050,7 +6746,12 @@ function drawCandidate(cv, byRoi, order, cand, t0, t1) {
   const dpr = window.devicePixelRatio || 1;
   const W = cv.clientWidth || 900;
   const padL = 54, padR = 14, padT = 10, padB = 30;
-  const H = padT + Math.max(120, Math.min(320, 20 + order.length * 7)) + padB;
+  /* Shorter, for the same reason the raster came down: this canvas now sits in
+     a workspace row beside the ledger rather than owning a sidebar column, and
+     at 320px its own verdict buttons fell below the fold — the reader could see
+     the candidate or the buttons, not both. Still scales with the field size,
+     with a lower ceiling. */
+  const H = padT + Math.max(100, Math.min(190, 18 + order.length * 3.4)) + padB;
   cv.width = W * dpr; cv.height = H * dpr; cv.style.height = H + "px";
   const g = cv.getContext("2d");
   g.scale(dpr, dpr);
@@ -6108,7 +6809,36 @@ function drawCandidate(cv, byRoi, order, cand, t0, t1) {
   g.textAlign = "start";
 }
 
-const ANNOT_PAD_SEC = 20;   // seconds either side of the candidate
+/* Seconds either side of the candidate, and THE READER'S TO SET. A fixed window
+   decides for them how tight a co-activation has to look, which is the very
+   judgement being asked for: five ROIs inside two seconds reads as one event at
+   ±5 s and as scattered coincidence at ±60 s.
+
+   Kept as a page-level setting rather than a per-candidate one, so a sample is
+   judged at a consistent scale unless the reader deliberately changes it -- and
+   every verdict stamps the window it was actually made in (`view_t0_sec` /
+   `view_t1_sec`), so a change mid-review is recorded rather than lost. */
+const ANNOT_ZOOMS = [2, 5, 10, 20, 45, 90, 180];
+let ANNOT_PAD_SEC = 20;   // seconds either side of the candidate
+
+function setAnnotZoom(dir) {
+  const i = ANNOT_ZOOMS.indexOf(ANNOT_PAD_SEC);
+  const j = Math.max(0, Math.min(ANNOT_ZOOMS.length - 1,
+                                 (i < 0 ? 3 : i) + dir));
+  if (ANNOT_ZOOMS[j] === ANNOT_PAD_SEC) return;
+  ANNOT_PAD_SEC = ANNOT_ZOOMS[j];
+  showCandidate();          // repaints and re-stamps the view
+}
+
+function paintAnnotZoom() {
+  const n = document.getElementById("anZoomWhat");
+  if (n) n.textContent = "± " + fmt(ANNOT_PAD_SEC) + " window";
+  const i = ANNOT_ZOOMS.indexOf(ANNOT_PAD_SEC);
+  const zin = document.getElementById("anZoomIn");
+  const zout = document.getElementById("anZoomOut");
+  if (zin) zin.disabled = i <= 0;
+  if (zout) zout.disabled = i >= ANNOT_ZOOMS.length - 1;
+}
 
 async function showCandidate() {
   const a = ANNOT;
@@ -6135,6 +6865,7 @@ async function showCandidate() {
     cand.nMembers + " ROIs in this candidate · survives to K=" + cand.kSurvived
     + " · window " + fmt(t0) + "–" + fmt(t1);
   document.getElementById("anBack").disabled = a.i === 0;
+  paintAnnotZoom();
 }
 
 function recordVerdict(v) {
@@ -6146,12 +6877,18 @@ function recordVerdict(v) {
     view: a.view,
   };
   a.i++;
+  // BEFORE the repaints, not after: this is the line that makes the verdict
+  // survive the tab, and it must not sit behind anything that can throw.
+  saveReview();
   paintAnnotChip();
   paintAgreement();
   // The cross-check moves with every verdict, so a K set early is re-examined
   // against the labels that arrive after it. The setting itself never changes.
   paintKSetting();
   showCandidate();
+  repaintJudgingLane();
+  paintCandidateTable();
+  if (SAVE_FAILED) paintReviewBanner();   // says so, loudly, once it is true
 }
 
 /* The per-K table, live. Candidates nest, so one verdict counts at every K at or
@@ -6490,7 +7227,12 @@ function setK() {
       : Number((propK / medField).toPrecision(4)),
   };
   paintKSetting();
+  // K is the thing the person is here to decide, so it survives with the
+  // verdicts it was read off. Losing it to a reload would mean setting it again
+  // from a table that had itself been lost.
+  saveReview();
 }
+
 
 function paintKSetting() {
   const out = document.getElementById("anKOut");
@@ -6575,9 +7317,220 @@ function finishAnnotation() {
   markDone("accAnnotate");
 }
 
+/* ---------- a review that survives a reload ----------------------------------
+
+   WHY THIS EXISTS. A review is hours of a person's attention and it lived in one
+   page global. A refresh, a crash, a closed tab or a laptop asleep took every
+   verdict with it -- silently, with nothing in the page warning that it could
+   happen, and with the only exit a Download button somebody had to think to
+   press. On 2026-09-04 this session told Tony verdicts "carry over" a reload
+   while asking him to reload; they did not, and a peer session reading the
+   transcript an hour later is the only reason it was caught before he lost a
+   sitting. Tony: "yes verdicts survive! it is a lot of work."
+
+   WHAT IS SAVED: the whole review, not just the verdicts. The candidate list is
+   part of it and has to be -- verdicts are POSITIONAL against the sample that
+   was drawn (`verdicts[i]` answers `cands[i]`), and on a reload the assessment
+   is gone, so `collectCandidates()` returns nothing and there is no list to be
+   positional against. A candidate carries everything needed to show it again,
+   so the sample travels with the answers.
+
+   WHERE: `localStorage`, which is this browser on this machine and travels
+   nowhere -- the same promise as the rest of the page. It can be absent
+   (private windows, storage disabled, quota), so every access is guarded and a
+   failure to save is announced rather than swallowed. A person who believes
+   their work is being kept when it is not is worse off than one who knows it is
+   not being kept.
+
+   WHICH FOLDER: recording ids, sorted. A page opened from `file://` has no path
+   to key on, and a review must only ever be restored into the folder it was
+   cast against -- restoring positional verdicts into a different sample would
+   attach a person's judgement to moments they never looked at. */
+/* ONE REVIEW PER CHANNEL, KEPT SEPARATELY. Tony, 2026-09-04: "mahice runs
+   separately on each. user should choose one channel at the start."
+
+   `fast` and `slow` are separate experiments, not two views of one --
+   FOUNDATIONS §9 has them moving in opposite directions under TTX -- so a
+   review of one is not evidence about the other. Keying the store on the
+   channel is what lets both exist: judge fast, switch, judge slow, come back to
+   either with its own verdicts and its own K intact. A single key would have
+   let the second channel silently overwrite the first: hours of judging gone,
+   with no error and no sign it had happened. */
+const REVIEW_KEY_BASE = "bugarach.mahice.review";
+const REVIEW_V = 2;
+
+function reviewKey() {
+  return REVIEW_KEY_BASE + "." + (STREAM || "events");
+}
+
+/* The folder AND the channel. A review is positional against the sample it was
+   drawn from, and that sample came from one channel of one folder.
+
+   JSON rather than a joined string with a separator. The first version of this
+   used a literal U+0001 as the separator, written as a RAW BYTE into the
+   source, where it is invisible in every editor and diff and makes the line
+   unmatchable by exact-string tooling. JSON needs no separator, cannot be
+   ambiguous about where one id ends, and is all printable. */
+function reviewSignature() {
+  return JSON.stringify([STREAM || "events",
+                         RECORDINGS.map(r => r.id).sort()]);
+}
+
+function saveReview() {
+  if (!ANNOT) return false;
+  const who = (document.getElementById("anWho") || {}).value || "";
+  const rec = {
+    v: REVIEW_V,
+    savedAt: new Date().toISOString().replace(/\.\d+Z$/, "Z"),
+    who, sig: reviewSignature(),
+    annot: { cands: ANNOT.cands, i: ANNOT.i, verdicts: ANNOT.verdicts,
+             seed: ANNOT.seed, budget: ANNOT.budget, cap: ANNOT.cap,
+             population: ANNOT.population, recordings: ANNOT.recordings,
+             drawn: ANNOT.drawn },
+    mahice: (typeof MAHICE !== "undefined" && MAHICE) ? MAHICE : null,
+  };
+  try {
+    localStorage.setItem(reviewKey(), JSON.stringify(rec));
+    SAVE_FAILED = null;
+    return true;
+  } catch (e) {
+    SAVE_FAILED = String((e && e.name) || e);
+    return false;
+  }
+}
+let SAVE_FAILED = null;
+
+function readSavedReview() {
+  try {
+    const raw = localStorage.getItem(reviewKey());
+    if (!raw) return null;
+    const rec = JSON.parse(raw);
+    if (!rec || rec.v !== REVIEW_V) return null;
+    if (!rec.annot || !Array.isArray(rec.annot.cands) || !rec.annot.cands.length)
+      return null;
+    return rec;
+  } catch (e) { return null; }
+}
+
+function discardSavedReview() {
+  try { localStorage.removeItem(reviewKey()); } catch (e) { /* nothing to undo */ }
+  paintReviewBanner();
+}
+
+/* Put a saved review back in play. Never called for a folder whose signature
+   does not match -- see the header. */
+function restoreReview(rec) {
+  const a = rec.annot;
+  ANNOT = { cands: a.cands, i: a.i || 0, verdicts: a.verdicts || [],
+            seed: a.seed, budget: a.budget, cap: a.cap,
+            population: a.population, recordings: a.recordings,
+            drawn: a.drawn, view: null, restored: true };
+  const who = document.getElementById("anWho");
+  if (who && rec.who && !who.value) who.value = rec.who;
+  if (rec.mahice && typeof MAHICE !== "undefined") MAHICE = rec.mahice;
+  document.getElementById("anStage").hidden = false;
+  for (const id of ["anYes", "anNo", "anIdk"])
+    document.getElementById(id).disabled = false;
+  paintAnnotChip();
+  paintAgreement();
+  paintKSetting();
+  showCandidate();
+  repaintJudgingLane();
+  paintCandidateTable();
+  paintReviewBanner();
+}
+
+/* The banner. Loud on purpose in all three states: restored, waiting for its own
+   folder, and NOT BEING SAVED AT ALL. */
+function paintReviewBanner() {
+  const box = document.getElementById("anRestore");
+  if (!box) return;
+  box.textContent = "";
+  box.className = "note";
+  const rec = readSavedReview();
+  if (SAVE_FAILED) {
+    box.hidden = false;
+    box.className = "err";
+    box.append(el("b", "This review is NOT being saved."));
+    box.append(el("span", " The browser refused storage (" + SAVE_FAILED
+      + ") — a private window, or storage turned off. Your verdicts live only "
+      + "in this tab and a reload will lose them. Use Download "
+      + "annotations.csv often."));
+    return;
+  }
+  if (!rec) { box.hidden = true; return; }
+  const done = (rec.annot.verdicts || []).filter(Boolean).length;
+  const mine = RECORDINGS.length && rec.sig === reviewSignature();
+  box.hidden = false;
+  if (ANNOT && ANNOT.restored) {
+    box.append(el("b", "Picked up where you left off."));
+    box.append(el("span", " " + done + " verdict" + (done === 1 ? "" : "s")
+      + " restored, saved " + rec.savedAt + ". They are kept in this browser as "
+      + "you go. Download annotations.csv is still what takes them off it."));
+  } else if (mine) {
+    /* Don't offer to resume something thinner than what is already in play. A
+       live review with more verdicts than the saved one was drawing a "Resume
+       it — 0 verdicts" banner above the review being worked on, which reads as
+       an offer to throw the work away. */
+    const live = ANNOT ? ANNOT.verdicts.filter(Boolean).length : -1;
+    if (ANNOT && done <= live) { box.hidden = true; return; }
+    box.append(el("b", "A saved review for this folder — "
+      + done + " verdict" + (done === 1 ? "" : "s") + "."));
+    box.append(el("span", " Saved " + rec.savedAt + "."));
+  } else {
+    box.append(el("b", "A saved review is being kept, for a different folder."));
+    box.append(el("span", " " + done + " verdict" + (done === 1 ? "" : "s")
+      + ", saved " + rec.savedAt + ". It will not be restored here, because "
+      + "verdicts answer the sample they were drawn against. Open that folder "
+      + "to resume it."));
+  }
+  const wrap = el("div", "", "span");
+  if (mine && !(ANNOT && ANNOT.restored)) {
+    const b = el("button", "Resume it");
+    b.onclick = () => restoreReview(rec);
+    wrap.append(b);
+  }
+  const d = el("button", "Discard the saved review");
+  d.className = "ghost";
+  d.onclick = () => {
+    if (!confirm("Discard " + done + " saved verdict"
+        + (done === 1 ? "" : "s") + "? This cannot be undone, and they are not "
+        + "written anywhere else unless you have downloaded them."))
+      return;
+    discardSavedReview();
+  };
+  wrap.append(d);
+  box.append(wrap);
+}
+
+/* Called once the folder is open and its recordings exist -- a review cannot be
+   matched to a folder before there is one. */
+function offerSavedReview() {
+  const rec = readSavedReview();
+  if (!rec) { paintReviewBanner(); return; }
+  // Restore without asking when it belongs here and nothing is in flight. That
+  // is what "verdicts survive" has to mean; the banner then says it happened,
+  // because a silent restore would let somebody believe the sample was fresh.
+  if (!ANNOT && RECORDINGS.length && rec.sig === reviewSignature())
+    restoreReview(rec);
+  else
+    paintReviewBanner();
+}
+
 function startAnnotation() {
   const cands = collectCandidates();
   if (!cands.length) return;
+  /* Drawing a new sample REPLACES the review, and the verdicts already cast
+     answer the old one. Positional answers cannot be carried across a redraw,
+     so the only honest options are to keep what is there or to lose it, and
+     which of those happens is not this function's call to make silently. */
+  const live = ANNOT && ANNOT.verdicts.filter(Boolean).length;
+  if (live && !confirm("You have " + live + " verdict" + (live === 1 ? "" : "s")
+      + " in the current review. Drawing a new sample starts over and they "
+      + "cannot be carried across — verdicts answer the sample they were drawn "
+      + "against. Download annotations.csv first if you want to keep them.\n\n"
+      + "Draw a new sample anyway?"))
+    return;
   const seed = Number(document.getElementById("anSeed").value) || 0;
   const budget = Number(document.getElementById("anBudget").value) || 60;
   const cap = Number(document.getElementById("anCap").value) || 8;
@@ -6594,6 +7547,10 @@ function startAnnotation() {
   // against the labels that arrive after it. The setting itself never changes.
   paintKSetting();
   showCandidate();
+  repaintJudgingLane();   // the lane appears the moment the sample is drawn
+  paintCandidateTable();
+  saveReview();
+  paintReviewBanner();
 }
 
 function wireAnnotate() {
@@ -6612,6 +7569,8 @@ function wireAnnotate() {
       for (const id of ["anYes", "anNo", "anIdk"])
         document.getElementById(id).disabled = false;
       paintAnnotChip(); paintAgreement(); showCandidate();
+      repaintJudgingLane(); paintCandidateTable();
+      saveReview();   // an un-cast verdict is a change too
     }
   };
   // Keys, because this is the one screen in the app somebody uses dozens of
@@ -6626,7 +7585,63 @@ function wireAnnotate() {
     else if (k === "n") recordVerdict("rejected");
     else if (k === "u") recordVerdict("unsure");
     else if (ev.key === "ArrowLeft") document.getElementById("anBack").click();
+    // Zoom on the keys next to each other, so the window can be changed without
+    // leaving the y/n/u hand position.
+    else if (k === "-" || k === "_") setAnnotZoom(-1);
+    else if (k === "=" || k === "+") setAnnotZoom(+1);
   });
+
+  const zin = document.getElementById("anZoomIn");
+  const zout = document.getElementById("anZoomOut");
+  if (zin) zin.onclick = () => setAnnotZoom(-1);
+  if (zout) zout.onclick = () => setAnnotZoom(+1);
+
+  /* Click a mark in the judging lane to judge that candidate.
+
+     The canvas is one element, so the hit test is ours: `CAND_HITS` is rebuilt
+     on every `draw` and holds where each live candidate landed. Nearest within
+     CAND_HIT_PX wins, and a click that hits nothing does nothing -- a miss must
+     never advance the review, because an accidental jump silently re-points
+     every subsequent keystroke at a different candidate.
+
+     Judging stays in the panel below. This selects; it does not vote. */
+  const cv = document.getElementById("cv");
+  if (cv) {
+    cv.addEventListener("click", ev => {
+      if (!ANNOT || !CAND_HITS.length) return;
+      const r = cv.getBoundingClientRect();
+      const cx = ev.clientX - r.left, cy = ev.clientY - r.top;
+      let best = null, bestD = Infinity;
+      for (const h of CAND_HITS) {
+        const dx = h.x - cx, dy = h.y - cy;
+        const d = Math.hypot(dx, dy);
+        if (d < bestD) { bestD = d; best = h; }
+      }
+      if (!best || bestD > CAND_HIT_PX + 6) return;
+      ANNOT.i = best.i;
+      /* Clicking a mark used to need `showSection("accAnnotate")` to drag the
+         verdict buttons into view, because they lived in the sidebar and it
+         shows one step at a time -- Tony, 2026-09-04: "clicking on the gray
+         down triangle draws a circle. no option to accept or exclude."
+         The confirm tool is in the main column now, beside the ledger, so the
+         buttons are already on screen and the sidebar is left where it was. */
+      const stage = document.getElementById("anStage");
+      if (stage) stage.hidden = false;
+      for (const id of ["anYes", "anNo", "anIdk"])
+        document.getElementById(id).disabled = false;
+      showCandidate();
+      if (current && current.loaded) draw(current, current.loaded);
+    });
+    // A pointer that changes over a mark is the only affordance a canvas has.
+    cv.addEventListener("mousemove", ev => {
+      if (!ANNOT || !CAND_HITS.length) { cv.style.cursor = ""; return; }
+      const r = cv.getBoundingClientRect();
+      const cx = ev.clientX - r.left, cy = ev.clientY - r.top;
+      const near = CAND_HITS.some(h =>
+        Math.hypot(h.x - cx, h.y - cy) <= CAND_HIT_PX + 6);
+      cv.style.cursor = near ? "pointer" : "";
+    });
+  }
 }
 
 document.getElementById("assessFolder").onclick = assessFolderRun;
@@ -10905,7 +11920,23 @@ const ALL_STEPS = [...TRACK_TOP, ...TRACK_BOTTOM, ...TAIL];
 const SECTIONS = [...new Set(ALL_STEPS.map(s => s.panel))];
 const stepByKey = k => ALL_STEPS.find(s => s.key === k);
 
+/* ONE WORD PER BOX, for the terse rail. Tony, 2026-09-05: "Just one word per
+   box and kill thr vertical space... It takes too much space."
+
+   Written out rather than derived by truncating the full label: "Compare with
+   the folder" and "Compare the detectors" both truncate to "Compare", and two
+   boxes reading the same word is worse than a long rail. These are chosen to be
+   distinct from each other at a glance, which is the only job they have. */
+const RAIL_SHORT = {
+  accOpen: "Folder", accSim: "Simulate", accList: "Recordings",
+  accWindows: "Windows", accAssess: "Assess", accAnnotate: "Confirm",
+  simFrom: "Model", accVerify: "Check", accTune: "Tune",
+  accDetect: "Detect", accLab: "Learn", accScore: "Score",
+};
+
 function stepLabel(s) {
+  if (document.body.classList.contains("railterse") && RAIL_SHORT[s.key])
+    return RAIL_SHORT[s.key];
   if (s.label) return s.label;
   const sum = document.getElementById(s.panel).querySelector("summary");
   return (sum.firstChild.textContent || s.panel).trim();
@@ -10949,6 +11980,7 @@ function showSection(id) {
     n.open = true;
   }
   paintRail();
+  paintRailWhere();   // the fold line names the step when the rail is hidden
 }
 
 function railStep(s) {
@@ -10979,7 +12011,25 @@ function railStep(s) {
     need.textContent = ok ? (stepStatus(s) || "ready") : s.need;
   }
   b.appendChild(need);
-  if (!ok && s.key !== SECTION) b.disabled = true;
+  /* A STEP THAT IS NOT READY IS STILL OPENABLE, and that is the whole point.
+
+     This used to read `if (!ok) b.disabled = true`, which made a step you had
+     not earned yet UNREACHABLE -- and the panel behind it is exactly where the
+     page explains what is missing and offers the control that fixes it. So the
+     reader got a chip that says "assess something first", cannot be clicked,
+     and leads nowhere: a dead end wearing a label.
+
+     Tony hit this for a whole session on 2026-09-04 ("clicking draw a sample
+     and start does nothing visible... there's nothing to click to accept or
+     reject"). `collectCandidates()` is empty until an assessment runs AND does
+     not survive a reload, so after any refresh the judging step was permanently
+     shut, with its own instructions locked inside it.
+
+     `not-ready` keeps it visibly not-ready. It does not pretend the step is
+     done, and nothing downstream runs on data that is not there -- every panel
+     already paints its own empty state. Being honest about a prerequisite and
+     hiding the way to satisfy it are different things. */
+  if (!ok) b.classList.add("not-ready");
   if (s.key === SECTION) b.setAttribute("aria-current", "true");
   b.onclick = () => showSection(s.key);
   return b;
@@ -11342,15 +12392,75 @@ async function bootDemo() {
 }
 bootDemo();
 
-document.querySelectorAll(".seg button").forEach(b => {
+/* SCOPED TO `#bar`, not every `.seg button` on the page. The zoom control is a
+   `.seg` too, and an unscoped selector wired ITS buttons to this handler as
+   well -- they carry no `data-order`, so pressing "+" set `ORDER = undefined`
+   and the raster silently lost its ROI ordering. */
+document.querySelectorAll("#bar .seg button").forEach(b => {
   b.onclick = () => {
     if (ORDER === b.dataset.order) return;
     ORDER = b.dataset.order;
-    document.querySelectorAll(".seg button").forEach(x =>
+    document.querySelectorAll("#bar .seg button").forEach(x =>
       x.setAttribute("aria-pressed", String(x.dataset.order === ORDER)));
     if (current?.loaded) { paintOrderNote(current.loaded); draw(current, current.loaded); }
   };
 });
+
+document.getElementById("zIn").onclick = () => zoomRaster(-1);
+document.getElementById("zOut").onclick = () => zoomRaster(+1);
+document.getElementById("zAll").onclick = resetRasterZoom;
+
+/* The pipeline fold. Remembered, because somebody who folded it once is judging
+   and wants the vertical every time, not once per reload. */
+const RAIL_KEY = "bugarach.railfolded";
+function setRailFolded(on) {
+  document.body.classList.toggle("railfolded", on);
+  const b = document.getElementById("railToggle");
+  if (b) {
+    b.textContent = on ? "Show pipeline" : "Hide pipeline";
+    b.setAttribute("aria-expanded", String(!on));
+  }
+  try { on ? localStorage.setItem(RAIL_KEY, "1")
+           : localStorage.removeItem(RAIL_KEY); } catch (e) { /* fine */ }
+  paintRailWhere();
+  // the raster's width changes with the layout, so it has to be redrawn
+  if (current && current.loaded) draw(current, current.loaded);
+}
+/* Folding the rail must not also lose WHERE YOU ARE, so the step name moves to
+   the fold line. */
+function paintRailWhere() {
+  const n = document.getElementById("railWhere");
+  if (!n) return;
+  const folded = document.body.classList.contains("railfolded");
+  const s = typeof SECTION !== "undefined" && SECTION ? stepByKey(SECTION) : null;
+  n.textContent = folded && s ? "on: " + stepLabel(s) : "";
+}
+/* Terse: one word per box, no status lines, no group headings. A separate
+   choice from folding, and remembered separately -- somebody who wants the
+   pipeline visible but small is not the same reader as one who wants it gone. */
+const TERSE_KEY = "bugarach.railterse";
+function setRailTerse(on) {
+  document.body.classList.toggle("railterse", on);
+  const b = document.getElementById("railTerse");
+  if (b) {
+    b.textContent = on ? "Verbose" : "Terse";
+    b.setAttribute("aria-pressed", String(on));
+  }
+  try { on ? localStorage.setItem(TERSE_KEY, "1")
+           : localStorage.removeItem(TERSE_KEY); } catch (e) { /* fine */ }
+  // the labels themselves change, so the rail is rebuilt rather than restyled
+  paintRail();
+  if (current && current.loaded) draw(current, current.loaded);
+}
+document.getElementById("railTerse").onclick = () =>
+  setRailTerse(!document.body.classList.contains("railterse"));
+
+document.getElementById("railToggle").onclick = () =>
+  setRailFolded(!document.body.classList.contains("railfolded"));
+try {
+  if (localStorage.getItem(TERSE_KEY) === "1") setRailTerse(true);
+  if (localStorage.getItem(RAIL_KEY) === "1") setRailFolded(true);
+} catch (e) { /* storage off — the rail simply stays open and verbose */ }
 
 document.getElementById("pickDir").onclick = async () => {
   // the modern picker gives a handle we can offer back next visit; without it

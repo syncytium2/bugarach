@@ -153,7 +153,15 @@ def test_the_two_simulate_steps_are_one_panel_said_two_ways(landed):
           labels: [a.firstChild.textContent.trim(), b.firstChild.textContent.trim()],
           needs: [a.querySelector('.need').textContent,
                   b.querySelector('.need').textContent],
-          calibratedOff: a.disabled, defaultsOff: b.disabled,
+          // NOT READY IS NOT THE SAME AS SHUT. These two used to read
+          // `.disabled`. A step that cannot run yet still has to OPEN, because
+          // the panel behind it is where the page says what is missing and
+          // carries the control that fixes it. On 2026-09-04 the judging step
+          // was unreachable for a whole session for exactly this reason, with
+          // its own instructions locked inside it.
+          calibratedOff: a.classList.contains("not-ready"),
+          defaultsOff: b.classList.contains("not-ready"),
+          reachable: !a.disabled && !b.disabled,
         };
     }""")
     assert got["labels"][0] != got["labels"][1], got["labels"]
@@ -161,8 +169,12 @@ def test_the_two_simulate_steps_are_one_panel_said_two_ways(landed):
         "both simulate steps read the same status off the one panel they share",
         got["needs"])
     assert got["calibratedOff"], (
-        "simulating from a measurement offered itself with no measurement taken")
+        "simulating from a measurement offered itself as READY with no "
+        "measurement taken")
     assert not got["defaultsOff"]
+    assert got["reachable"], (
+        "a step marked not-ready must still open — the panel behind it is what "
+        "explains the prerequisite and offers the way to satisfy it")
 
 
 def test_one_panel_is_in_the_column_and_the_rail_says_which(landed):
@@ -194,7 +206,18 @@ def test_any_stage_can_be_reached_from_any_other(landed):
 
 def test_a_stage_that_cannot_run_yet_is_shown_and_says_what_it_wants(pw):
     """Tune scores against planted events, so on a folder read from disk it can
-    never run. Hiding it is how the old page taught readers it did not exist."""
+    never run. Hiding it is how the old page taught readers it did not exist.
+
+    And SHUTTING it is how the page taught them it was broken. This asserted
+    `disabled` until 2026-09-04, when the same rule left the judging step
+    permanently unopenable — `collectCandidates()` is empty until an assessment
+    runs and does not survive a reload, so after any refresh the step could not
+    be reached and the panel explaining that was locked behind it. Tony spent a
+    session on "clicking does nothing".
+
+    Not-ready is now a look and a label, not a locked door: the step still says
+    what it wants, and it opens so the panel can say the rest.
+    """
     try:
         browser, pg, errs = _page(pw, demo=False)
     except Exception as e:                                    # noqa: BLE001
@@ -202,10 +225,15 @@ def test_a_stage_that_cannot_run_yet_is_shown_and_says_what_it_wants(pw):
     try:
         got = pg.evaluate("""() => {
             const b = document.querySelector('#rail .step[data-step="accTune"]');
-            return {there: !!b, off: b ? b.disabled : null,
+            return {there: !!b,
+                    off: b ? b.classList.contains("not-ready") : null,
+                    reachable: b ? !b.disabled : null,
                     need: b ? b.querySelector('.need').textContent : null};
         }""")
         assert not errs, errs
+        assert got["reachable"], (
+            "Tune cannot be opened, so nothing can tell the reader why it "
+            "cannot run — a dead end wearing a label")
         assert got["there"], "Tune is not on the rail at all with no data open"
         assert got["off"], "Tune offers itself with nothing to score against"
         assert "simulated" in (got["need"] or ""), got["need"]
