@@ -44,7 +44,7 @@
 # ---------------------------------------------------------------------------
 #
 # USAGE
-#   bash tools/check_vendor_freshness.sh            check both families
+#   bash tools/check_vendor_freshness.sh            check all three families
 #   bash tools/check_vendor_freshness.sh --verbose  print verdicts even when current
 #
 # ENV
@@ -147,6 +147,36 @@ bash "$GATE" $VERBOSE $ARMORY_CLONE \
   --slug syncytium2/armory \
   --file tools/show.py \
   --file .claude/hooks/send-goes-nowhere.py \
+  || { [ $? -eq 1 ] && rc=1 || { [ "$rc" -eq 0 ] && rc=2; }; }
+
+# --- family 3: draughtsman, which draws the front page's model figure --------
+# THE HEADER OF THIS FILE HAS NAMED THIS FAMILY SINCE THE DAY IT WAS WRITTEN AND THE
+# CODE NEVER CHECKED IT. That is not a missing feature, it is the failure mode this
+# whole file is about: a gate that DESCRIBES a check reads exactly like one that
+# performs it, and nobody re-reads a header to see whether the body agrees with it.
+#
+# What it cost, 2026-09-05: `third_party/draughtsman/` sat pinned at cb7fc2a while
+# draughtsman fixed, in bb83174, an edge that routed through the box it was meant to
+# bypass. The front page published that figure for three days. Nothing was red.
+#
+#   python3 <draughtsman>/tools/edge_collisions.py docs/learned/architecture.svg
+#     mean -> concat  runs through 'dog': 56 of 147 units (38%) clips it   (x2)
+#
+# `syncytium2/draughtsman` resolves over `gh` — checked, not assumed, because the
+# WARNING at the top of this file is about a family whose slug does NOT resolve and
+# which therefore answered with another repository's HEAD. This one needs no --clone.
+#
+# ⚠ THE SPEC IS DELIBERATELY NOT LISTED HERE. `docs/learned/architecture.spec.json`
+# began as draughtsman's `examples/tube/spec.json` and has since diverged on purpose:
+# upstream added `layout.wrap`, which folds the figure into a column and is right for
+# a documentation page and wrong for this one, which is a wide banner. Listing it
+# would report a deviation we intend as staleness, every run, until someone silenced
+# the gate. It needs a stamp that can say "derived from, with deviations" and that
+# does not exist yet — see the board entry of 2026-09-05.
+bash "$GATE" $VERBOSE \
+  --label draughtsman \
+  --slug syncytium2/draughtsman \
+  --file third_party/draughtsman/__init__.py \
   || { [ $? -eq 1 ] && rc=1 || { [ "$rc" -eq 0 ] && rc=2; }; }
 
 exit $rc

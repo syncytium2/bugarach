@@ -51,7 +51,7 @@ def cmd_trace(args) -> int:
             raise
         sys.exit(
             "draughtsman: `trace` needs PyTorch, and it is not installed.\n"
-            "    pip install 'draughtsman[trace]'\n"
+            "    pip install 'draughtsman-nn[trace]'\n"
             "`check` and `render` need nothing at all and work as they are — "
             "torch is only for reading a model."
         )
@@ -96,6 +96,37 @@ def cmd_render(args) -> int:
         svg = render(spec, graph)
     except FactError as exc:
         sys.exit(f"draughtsman: {exc}")
+
+    # AN ICON IS NOT A SCALED FIGURE. At a card or tile size no type survives at
+    # any point size, so the answer is not a smaller floor -- it is no text. See
+    # draughtsman/icon.py for what is removed and why each one is not optional.
+    if args.icon:
+        from draughtsman.icon import IconError, parse_size, render_icon
+        try:
+            w, h = parse_size(args.icon)
+            svg, chosen, scale = render_icon(_read(args.spec), graph, w, h)
+        except IconError as exc:
+            sys.exit(f"draughtsman: {exc}")
+        from draughtsman.icon import NOISE, READS, READS_AT, verdict
+        how = {"single": "one layout, the candidates being identical",
+               "as committed": "as committed layout",
+               "unwrapped": "unwrapped layout"}[chosen]
+        seen = verdict(scale)
+        print(f"icon: fitted to {w:g}x{h:g}, {how}, "
+              f"drawing at {scale:.2f}x, no text — {seen}", file=sys.stderr)
+        # THE SCALE WAS ALWAYS PRINTED AND NEVER MEANT ANYTHING TO ANYONE. It
+        # predicts legibility and now says so, in the one place a person is
+        # already looking. Not a refusal: seven of the ten committed marks are
+        # under the floor and ship anyway, so failing here would fail the
+        # corpus. It has to be impossible to miss and possible to ignore.
+        if seen != READS:
+            trouble = ("will not read at this size"
+                       if seen == NOISE else "is marginal at this size")
+            print(f"  warning: this mark {trouble}. Measured at 192x96 across "
+                  f"the committed models, {READS_AT:.2f}x and above reads. "
+                  f"Give it a larger slot, or ship a mark that survives one.",
+                  file=sys.stderr)
+
     _write(args.output, svg)
     return 0
 
@@ -163,6 +194,16 @@ def main(argv: list[str] | None = None) -> int:
     r.add_argument("-o", "--output", type=Path)
     r.add_argument("--no-check", dest="check", action="store_false",
                    help="render even if coverage fails")
+    # THE FLAG NAMES A SLOT, NOT A KIND OF PICTURE. "icon" also names the mark a
+    # project has CHOSEN for its site -- an editorial decision about which net
+    # stands for what -- and a reader who has only met that sense looks for
+    # branding code and concludes this does not exist. The help says "fit ... to
+    # a slot" so the flag reads as the operation it is.
+    r.add_argument("--icon", metavar="WxH",
+                   help="fit the figure to a slot this size: drop everything "
+                        "unreadable at it and crop to what is left, "
+                        "e.g. --icon 420x104. Not a scaled figure -- no text "
+                        "survives, so none is drawn")
     r.set_defaults(func=cmd_render, check=True)
 
     c = sub.add_parser("check", help="§5 coverage — every node in exactly one stage")

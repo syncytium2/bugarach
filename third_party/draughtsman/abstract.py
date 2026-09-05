@@ -54,7 +54,13 @@ LAYOUT SPEC for a figure a person can read. Read these four rules first.
    any shape you draw has something other than 1 there, do not declare the axis.
    An indexed reference to a declared batch axis (`{stage.out_shape[0]}`) is an
    error; every other index still addresses the TRACED shape, so
-   `{stage.out_shape[1]}` is the same axis it was before you declared. WATCH FOR AN
+   `{stage.out_shape[1]}` is the same axis it was before you declared.
+   A GLYPH'S `axes` ARE DIFFERENT AND YOU SHOULD WRITE THEM NEGATIVE. They index
+   the shape AS DRAWN, so declaring `batch_axis` shifts them by one: `[1, 2]` on
+   a four-axis shape means (channels, height) and then means (height, width),
+   with the labels still claiming the first and nothing erroring. `[-3, -2]`
+   names the same two axes either way, because hiding a LEADING axis leaves the
+   trailing positions where they were. WATCH FOR AN
    AXIS THAT CHANGES MEANING: in a model that reduces over a spatial or ROI axis
    and then convolves, the same POSITION counts something different before and
    after, and only your labels can say so.
@@ -78,7 +84,13 @@ LAYOUT SPEC for a figure a person can read. Read these four rules first.
    not use it for a quantity only one stage has: that bar is full by definition
    and `check` will say so.
 
-7. THE TENSOR ITSELF CAN BE DRAWN. `glyph` puts a rectangle in the box: one axis
+7. A GLYPH AND A METER ON THE SAME STAGE COMPETE, AND THE GLYPH LOSES. A meter
+   is a row, and adding one widens the box and pulls the eye along it; the glyph
+   is a shape, read at a glance, and it stops reading. Measured on U-Net: with a
+   params meter added the hourglass its glyphs draw became hard to see. Use one
+   or the other per stage unless you have looked at both together and want them.
+
+8. THE TENSOR ITSELF CAN BE DRAWN. `glyph` puts a rectangle in the box: one axis
    of a shape as its height, another as its width, on a scale shared by the whole
    figure. BOTH AXES MUST COME FROM THE ONE `of` REFERENCE -- the eye reads a
    rectangle's area whether you meant it to or not, and two axes of one tensor
@@ -88,7 +100,7 @@ LAYOUT SPEC for a figure a person can read. Read these four rules first.
    use "linear" when the figure's range is narrow enough, and the legend will say
    which you chose. Every glyph in a figure must label its axes the same way.
 
-8. A REPEATED BLOCK IS COUNTED, NOT CLAIMED. Deep models are one block over and
+9. A REPEATED BLOCK IS COUNTED, NOT CLAIMED. Deep models are one block over and
    over, and a stage whose name says "and three more like it" has put a number in
    the figure that came from you. `repeat` fixes that the way `lanes` does: you
    name the TEMPLATE — the ordered stage ids that draw ONE unit — and draughtsman
@@ -161,7 +173,8 @@ WRITE THIS, AND NOTHING ELSE — one JSON object:
       "repeat": {"template": ["<stage id>", "<stage id>"]},
       "glyph": {"of": "{stage.out_shape}", "axes": [1, 2],
                 "labels": ["channels", "frames"], "scale": "sqrt",
-                "style": "block|marks"}
+                "style": "block|marks"},
+      "chrome": "box|none"
     }
   ],
   "edges": [
@@ -173,7 +186,9 @@ WRITE THIS, AND NOTHING ELSE — one JSON object:
   "elided": [{"nodes": ["n0017"], "reason": "<why a reader does not need this>"}],
   "constants": {"n0149.constants.dilation": "<why this traced constant is an"
                 " architectural quantity and not an initialisation>"},
-  "layout": {"orientation": "lr|tb", "wrap": 760, "legend": false},
+  "layout": {"orientation": "lr|tb", "wrap": 760, "legend": false,
+             "chrome": "box|none"},
+  "output": {"width": "6in", "min_type": "6pt"},
   "caption": "<optional one line>"
 }
 
@@ -202,10 +217,47 @@ pictures that do not read, so a figure can be 8:1 with every check green.
                        stack in a single column, and for a page taller than wide.
   "legend": true       a key naming each colour family, with its share of the
                        traced ops and parameters counted off graph.json.
+  "chrome": "none"     drop the box around every stage and let the TENSOR be the
+                       stage: the glyph is drawn large, the name floats over it,
+                       the detail sits underneath.
+                       A box is the right container when a stage's content is
+                       WORDS; it is the wrong one when the content is a picture
+                       of the tensor, because then it is a rectangle drawn
+                       around a rectangle and the eye settles on the bigger one.
+                       With "sheets" this is usually what you want.
 
-Both default to off and both are judgement, which is why they live here rather
+                       SAY IT PER STAGE WHERE THE FIGURE IS MIXED, which most
+                       are. A stage may carry its own `"chrome": "box"` or
+                       `"chrome": "none"` and it wins over the figure's; a stage
+                       that says nothing takes the figure's. The rule is about a
+                       stage, so answer it stage by stage: glyph stages bare,
+                       word stages boxed. Setting it once at the figure and
+                       leaving a stage with nothing to draw makes a bare label
+                       floating between drawings, which is the other half of the
+                       same mistake. `check` warns when a glyph is left in a box.
+
+These default to off and all are judgement, which is why they live here rather
 than in a render flag: the committed spec has to produce the same figure on any
 machine.
+
+HOW BIG WILL THIS BE ON THE PAGE? Set `output` and the figure is solved for it.
+
+  "width": "6in"       the width it will be PRINTED at — a journal column is
+                       about 3.5in, a double column about 6 to 7in. The rendered
+                       SVG then declares that size instead of a pixel count, so a
+                       page places it correctly instead of scaling it to fit.
+  "min_type": "6pt"    the floor the smallest label must clear at that size.
+
+Set it whenever you know where the figure is going, and it changes what layout
+does: the spine wraps into more rows until the figure fits the budget the two
+numbers imply. THE TYPE IS NEVER SHRUNK — a figure that fits by shrinking its
+labels has solved a different problem. If wrapping cannot get there, `check`
+refuses the spec and tells you the width to aim for.
+
+This matters more than it sounds. Measured across this gallery before it existed:
+scaled to a 6in double column the smallest type landed between 2.49pt and 5.25pt,
+and not one figure cleared 6pt. Every number in a figure can be correct and the
+figure still be unreadable at the size anybody sees it.
 """
 
 
