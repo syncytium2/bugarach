@@ -389,6 +389,73 @@ def test_the_verdict_is_the_colour_not_the_shape(page):
 # the candidate ledger
 # ---------------------------------------------------------------------------
 
+def test_the_raster_the_ledger_and_the_confirm_tool_name_one_recording(page):
+    """Tony, 2026-09-05: "get the raster and the event viewer in mahice to
+    match." They did not.
+
+    The sample is drawn across the WHOLE FOLDER and `ANNOT.i` starts at 0, so the
+    confirm tool opened on whichever recording the shuffle happened to put first
+    — he photographed the raster and the ledger on `20240930_65` while the
+    confirm tool showed `20260226_287`.
+
+    Not cosmetic. The lane marks the candidates of the recording ON SCREEN, so
+    the arrow that turned blue and the event in the confirm tool were different
+    moments in different slices, and a verdict cast there answers a question the
+    reader was not looking at.
+
+    Two states have to hold. With candidates here, all three name this recording.
+    With none here — the draw is capped per recording, so that is common — the
+    confirm tool is HIDDEN and SILENT rather than left describing the last slice:
+    a hidden panel still holding a name is one `hidden = false` from asserting it
+    again.
+    """
+    pg, _ = page
+    out = pg.evaluate(
+        """async () => {
+          ANNOT = null; discardSavedReview();
+          document.getElementById("anWho").value = "tony";
+          document.getElementById("anCap").value = "50";
+          document.getElementById("anBudget").value = "400";
+          startAnnotation();
+          await showCandidate();
+          paintCandidateTable();
+          const look = () => ({
+            raster: current ? current.id : null,
+            ledger: (document.querySelector("#candTable h4") || {}).textContent || "",
+            where: (document.getElementById("anWhere") || {}).textContent || "",
+            shown: !document.getElementById("anStage").hidden,
+            selRec: (ANNOT && ANNOT.cands[ANNOT.i])
+              ? ANNOT.cands[ANNOT.i].recId : null,
+          });
+          const withCands = look();
+
+          // a recording the sample missed, if this fixture has one
+          const have = new Set(ANNOT.cands.map(c => c.recId));
+          const empty = RECORDINGS.find(r => !have.has(r.id));
+          let without = null;
+          if (empty) { await show(empty); without = look(); }
+          return {withCands, without};
+        }""")
+    a = out["withCands"]
+    assert a["selRec"] == a["raster"], (
+        f"the selected candidate is from {a['selRec']} while the raster shows "
+        f"{a['raster']} — three panels, two recordings")
+    assert a["raster"] in a["ledger"], (a["raster"], a["ledger"])
+    assert a["raster"] in a["where"], (
+        f"the confirm tool says {a['where']!r} while the raster shows "
+        f"{a['raster']} — this is the mismatch that was photographed")
+
+    b = out["without"]
+    if b is not None:
+        assert not b["shown"], (
+            "a recording with nothing in the sample still shows the confirm "
+            "tool, which can only be describing some other recording")
+        assert not b["where"].strip(), (
+            "the hidden confirm tool still names a recording — one "
+            "`hidden = false` from asserting the wrong one again")
+        assert b["raster"] in b["ledger"]
+
+
 def test_the_ledger_selects_in_blue_and_judges_in_the_row(page):
     """Tony, 2026-09-04: "have a list of possible events in a table below the
     raster. user clicks, the above arrow goes blue, the user ticks accept or
