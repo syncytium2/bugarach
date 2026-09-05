@@ -455,6 +455,14 @@
   .anbtns { display: flex; gap: 6px; flex-wrap: wrap; margin: 8px 0 4px; }
   /* The time-axis zoom, directly under the canvas it scales. Centred and
      narrow so it reads as a control on the picture rather than a verdict. */
+  /* The legend for the candidate canvas. Swatches are the marks themselves —
+     same colours, same relative widths — so the key cannot drift from the
+     picture by being described in words instead of shown. */
+  .anlegend { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 16px;
+              margin: 5px 0 0; font-size: 12px; color: var(--muted); }
+  .anlegend .legkey { display: inline-flex; align-items: center; gap: 6px; }
+  .anlegend .legswatch { display: inline-block; height: 13px; border-radius: 1px; }
+  .anlegend .legwhy { flex-basis: 100%; font-size: 11.5px; line-height: 1.35; }
   .anzoom { display: flex; align-items: center; justify-content: center;
             gap: 10px; margin: 4px 0 0; }
   .anzoom button { min-width: 34px; font-weight: 700; }
@@ -1597,6 +1605,18 @@
             <span id="anProg" class="sub"></span>
           </div>
           <canvas id="anCv"></canvas>
+          <!-- WHAT THE TWO INKS MEAN. Tony, 2026-09-05: "the rasters in the
+               mahice interface have two colors and thicknesses, but no legend
+               to explain why."
+               They mean something load-bearing: which ROIs the assessment counts
+               as taking part in THIS candidate, and which are the rest of the
+               field. That distinction is most of what the reader is being asked
+               to judge — you cannot say whether a moment is coordinated without
+               seeing who did NOT fire — and the picture encoded it while saying
+               nothing.
+               In the DOM rather than painted on the canvas: a legend inside the
+               frame is text laid over the data it describes. -->
+          <div class="anlegend" id="anLegend"></div>
           <!-- ZOOM THE TIME AXIS WHILE JUDGING. Tony, 2026-09-04: "need to be
                able to zoom the x-axis during mahice."
                A fixed ±20 s window decides for the reader how tight a
@@ -2789,9 +2809,11 @@ function draw(rec, data) {
 
     // marks: a short vertical dash per event, one lane per ROI
     const lane = (bot - top) / Math.max(1, data.nRois);
-    const h = Math.max(1.5, Math.min(6, lane * 0.8));
+    /* Same complaint, same fix, on the main raster: a 1.5px mark at alpha 0.75
+       is not something a person reads a 70-minute recording from. */
+    const h = Math.max(2.5, Math.min(6, lane));
     g.strokeStyle = css.getPropertyValue("--mark").trim();
-    g.globalAlpha = 0.75;
+    g.globalAlpha = 0.9;
     g.beginPath();
     lanes.forEach((id, i) => {
       const yc = top + (i + 0.5) * lane;
@@ -6844,15 +6866,25 @@ function drawCandidate(cv, byRoi, order, cand, t0, t1) {
   g.lineWidth = 1;
   g.strokeRect(padL, top, W - padL - padR, bot - top);
 
+  /* LEGIBLE FIRST. Tony, 2026-09-05: "the rasters are pretty much invisible on
+     my screen." At 53 ROIs in this panel a lane is about 3.4px, so a mark was
+     ~2.7px tall drawn at alpha 0.45 and one device pixel wide — technically
+     present, and not something a person can judge coordination from.
+
+     Marks now fill their lane rather than 80% of it, the floor is 3px, and the
+     non-members are at 0.8 rather than 0.45: they are the field the candidate is
+     being judged against, so they have to be READABLE, just plainly secondary to
+     the members. The separation is carried by colour and width, which survives
+     both themes and does not depend on a faint wash. */
   const lane = (bot - top) / Math.max(1, order.length);
-  const h = Math.max(2, Math.min(7, lane * 0.8));
+  const h = Math.max(3, Math.min(7, lane));
   order.forEach((id, i) => {
     const yc = top + (i + 0.5) * lane;
     const isMem = member.has(id);
-    g.strokeStyle = isMem ? css.getPropertyValue("--accent").trim()
+    g.strokeStyle = isMem ? CAND_INK.selected
                           : css.getPropertyValue("--mark").trim();
-    g.lineWidth = isMem ? 2 : 1;
-    g.globalAlpha = isMem ? 1 : 0.45;
+    g.lineWidth = isMem ? 2.5 : 1.25;
+    g.globalAlpha = isMem ? 1 : 0.8;
     g.beginPath();
     for (const t of (byRoi.get(id) || [])) {
       if (t < t0 || t > t1) continue;
@@ -6939,6 +6971,29 @@ async function showCandidate() {
   // row has a record that is wrong in a way nobody can detect afterwards.
   a.view = { t0, t1, order: ORDER === "rate" ? "by_events" : "file",
              stream: cand.stream };
+  /* THE LEGEND, SAYING WHAT THE TWO INKS ARE. Rebuilt per candidate because the
+     counts are part of it: "5 of 53" is the claim being judged, and a legend
+     that only named the colours would leave the reader counting rows. */
+  const leg = document.getElementById("anLegend");
+  if (leg) {
+    leg.textContent = "";
+    const key = (colour, width, label) => {
+      const wrap = el("span", "", "legkey");
+      const sw = el("span", "", "legswatch");
+      sw.style.background = colour;
+      sw.style.width = width;
+      wrap.append(sw, el("span", label));
+      return wrap;
+    };
+    leg.append(key(CAND_INK.selected, "3px",
+                   cand.nMembers + " in this event"));
+    leg.append(key(getComputedStyle(document.documentElement)
+                     .getPropertyValue("--mark").trim(), "2px",
+                   Math.max(0, order.length - cand.nMembers) + " other ROIs"));
+    leg.append(el("span", "every ROI is drawn — whether a moment is coordinated "
+                          + "is a claim about the field, so you cannot judge it "
+                          + "without seeing who did not fire", "legwhy"));
+  }
   document.getElementById("anCand").textContent =
     cand.nMembers + " ROIs in this candidate · survives to K=" + cand.kSurvived
     + " · window " + fmt(t0) + "–" + fmt(t1);
