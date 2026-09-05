@@ -158,6 +158,43 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
+### Mac/draughtsman-whisper-figures — DARKROOM claimed 2026-09-05, five files and a README edit
+- **Status:** ACTIVE — claimed before the first file write. A `draughtsman` session,
+  writing into `<darkroom>/draughtsman/`, at Tony's instruction.
+- **Holds:** `<darkroom>/draughtsman/whisper-architecture.{svg,png}`,
+  `whisper-vs-torchview.{svg,png}`, `whisper-torchview-raw.png`, and an APPEND to that
+  folder's `README.md`. All five figure names are new; no existing darkroom artifact is
+  overwritten. Not `bugarach/`, not `constellation/`.
+- **Why:** the page now leads with Whisper tiny and sets torchview's view of the same
+  model beside it; those are the figures Tony has been reading this session and they
+  existed only in a scratch directory and on a Desktop. The darkroom is where a figure
+  is supposed to end up.
+- **One live signal worth naming:** `<darkroom>/draughtsman/icons-1x2/` was modified
+  today at 15:07 by something this session did not do. The claim is for the five names
+  above only, and nothing in `icons-1x2/` is touched.
+
+---
+
+### Mac/draughtsman-whisper-figures — DARKROOM claimed 2026-09-05, five files and a README edit
+- **Status:** ACTIVE — claimed before the first file write. A `draughtsman` session,
+  writing into `<darkroom>/draughtsman/`, at Tony's instruction.
+- **Holds:** `<darkroom>/draughtsman/whisper-architecture.{svg,png}`,
+  `whisper-vs-torchview.{svg,png}`, `whisper-torchview-raw.png`, and an APPEND to that
+  folder's `README.md`. All five figure names are new; no existing darkroom artifact is
+  overwritten. Not `bugarach/`, not `constellation/`.
+- **Why:** the draughtsman page now leads with Whisper tiny and sets torchview's view of
+  the same model beside it. Those figures existed only in a scratch directory and on a
+  Desktop; the darkroom is where a figure is supposed to end up.
+- **One live signal worth naming:** `<darkroom>/draughtsman/icons-1x2/` was modified
+  today at 15:07 by something this session did not do. This claim covers the five names
+  above only, and nothing in `icons-1x2/` is touched.
+- **This entry reached `main` as a branch, not a push.** bugarach's commit guard refuses
+  a detached HEAD and this repository merges by pull request, so the claim is on
+  `darkroom-claim-draughtsman-whisper` until a bugarach session merges it. A claim that
+  has not landed protects nobody, which is stated here rather than assumed away.
+
+---
+
 ### Mac/k-scan-curve — DARKROOM claimed 2026-09-01, two files
 - **Status:** **DONE 2026-09-01 — released, nothing held.** Landed as PR #438 (`46a4e37`).
   Both files written once and not since: `k_scan_cossart.html` and `.png` in the darkroom,
