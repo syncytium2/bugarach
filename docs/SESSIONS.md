@@ -159,8 +159,9 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 ---
 
 ### Mac/draughtsman-whisper-figures — DARKROOM claimed 2026-09-05, five files and a README edit
-- **Status:** ACTIVE — claimed before the first file write. A `draughtsman` session,
-  writing into `<darkroom>/draughtsman/`, at Tony's instruction.
+- **Status:** DONE 2026-09-05 — the five files are written and the README appended.
+  Released; nothing in the darkroom is held by this session. A `draughtsman` session,
+  at Tony's instruction.
 - **Holds:** `<darkroom>/draughtsman/whisper-architecture.{svg,png}`,
   `whisper-vs-torchview.{svg,png}`, `whisper-torchview-raw.png`, and an APPEND to that
   folder's `README.md`. All five figure names are new; no existing darkroom artifact is
