@@ -1,153 +1,140 @@
-# Handoff — build the loop, starting with the output nobody can read yet
+# Handoff — MAHICE is usable, and nobody has run one yet
 
-**In flight: [#466](https://github.com/syncytium2/bugarach/pull/466)** — the field-step
-figure, held because it is a figure with a caption and was never murderboarded, and red on
-three legs. When it closes this file is spent and `tests/test_handoff_is_honest.py` says so.
+**In flight: [#484](https://github.com/syncytium2/bugarach/pull/484)** (turbo mode, merging
+on green) and **[#466](https://github.com/syncytium2/bugarach/pull/466)** (the field-step
+figure, held because it is a figure with a caption and was never murderboarded). The
+predecessor to this file is
+[`docs/handoffs/2026-09-04-build-the-loop.md`](docs/handoffs/2026-09-04-build-the-loop.md) —
+its summary-page section and its trap list are still the best account of both and are NOT
+superseded by this file.
 
 > **Not murderboarded** — working material for sessions in this tree, same standing as
 > `docs/run_records.md` and `docs/pipeline.md`. Nothing here is for an outside reader.
 
 **No counts in this file.** Derive them: `git rev-parse --short origin/main` ·
-`pytest -q` · `python3 tools/sapper.py --all` · `bash tools/board_digest.sh` ·
-[`docs/MILESTONES.md`](docs/MILESTONES.md).
+`pytest -q` · `python3 tools/sapper.py --all` · `bash tools/board_digest.sh`.
 
 ---
 
-## Read this first
+## Where Tony is, and what must not be broken
 
-**[`docs/pipeline.md`](docs/pipeline.md) is the plan.** Tony walked the whole loop on
-2026-09-04, one step at a time, correcting each row before taking the next. Every step is
-named, says what it owns, what is built behind it, and what is owed. **Do not re-derive the
-loop from `RESET.md` §2** — that section is the 2026-08-24 record, and two of its four marks
-were annotating a tree that had since moved.
+**He judges out of `../bugarach-worktrees/mahice`, which is DETACHED on purpose.**
+`merge_when_green.sh` reaps a worktree when its branch lands, and on 2026-09-05 that deleted
+his viewer mid-session. To move it when `main` advances:
 
-Two rules from that walk bind everything below:
+```
+git -C ../bugarach-worktrees/mahice checkout --detach origin/main
+```
 
-- **The two modes walk the same pathway** — a Claude Code session driving the steps, and a
-  user walking them unattended in the browser. Where they have drifted, that is a defect.
-- **They converge on the webapp for MAHICE.** One judging surface. **No rendering-to-judge
-  in a chat window** — if judging needs a better picture, the fix goes in the webapp.
+**Do not delete and recreate it. Do not reap it.**
 
-The predecessor to this file is
-[`docs/handoffs/2026-09-04-walk-the-loop-end-to-end.md`](docs/handoffs/2026-09-04-walk-the-loop-end-to-end.md).
-Its field-step section and its traps are still worth reading; its plan is superseded by
-`pipeline.md`.
+**His verdicts live in `localStorage`, keyed per channel** (`bugarach.mahice.review.fast`).
+Checked, not assumed: Chrome treats every `file://` page as ONE origin, so a review saved at
+one worktree path is readable at another — the path is not what holds it. They do **not**
+survive Discard, and they do not leave the browser until `Download annotations.csv`.
 
 ---
 
-## Start here: the summary page
+## The thing that is still not done
 
-Tony has asked for this twice and it is still not right. Nothing else on this page blocks it.
+**Nobody has completed a MAHICE review on the approved folder. No K is set.**
 
-**What it is.** One page per group per treatment. Rows are recordings; `FAST` beside `SLOW`
-as two columns, not stacked; every recording re-zeroed at the end of its own baseline so the
-treatment onset is one vertical; treatment regions in a lane above each raster; per-region
-event counts in the right margin. Row height constant regardless of ROI count.
-
-**What exists.** `tools/make_group_raster_summary.py`, and the panels it added to
-`ui.diagnostic` — `raster_panel(marked=…)`, `region_lane_panel`, and `ydim` on both. It
-already aligns on baseline end, lanes the regions, and draws a producer-supplied second ink.
-
-**What is wrong with it: the geometry.** It stacks `FAST` over `SLOW` at full page width, so
-a page runs to nine thousand pixels and nothing can be read at once. **interface2 solved this
-already** — `render_coord_summary_page.m` in `~/Developer/interface2`, extracted from
-`plot_sce_summary.m` on 2026-07-08 precisely so a second caller would not redraw it, and
-**detector-agnostic** by design. Port its `D`/`M` contract, not its code. Their
-`docs/PLOTTING_ROSTER.md` lists it.
-
-**Three things the current version drops that carry information:** two shading levels per
-region (faint is the raw region span, solid is the counted window — the gap is what nobody
-scored); region names as text in the panel rather than only a colour key; and the counts
-table.
-
-⚠ **The colour rule changed, and the MATLAB page will mislead you.** There, red means
-*isolated* — an event belonging to no coordinated event — with colour otherwise encoding
-event width. **Going forward: rasters are black, excluded events are red.** Same mark,
-different claim.
-
-⚠ **A vertically narrow detector lane is wanted, including the tube variants** — but no
-detection row by default. The variants cannot run on real data yet (below), so build the
-lane against the six and leave the seam.
+That is what `docs/pipeline.md` has been waiting on since it was written. Every session
+since has been clearing obstacles in front of it rather than doing it — the obstacles were
+real and there were seven of them — but the work itself is expert attention, not compute,
+and it is Tony's.
 
 ---
 
-## The two items upstream of most of the rest
+## What was wrong, because the shape repeats
 
-**Nothing persists a trained model.** `torch.save` and `state_dict` appear nowhere in `src/`
-or `tools/`. Every learned number in this repo comes from a model trained in the same
-process, on simulated recordings. That blocks three steps at once: a variant cannot be tested
-on a fresh batch, cannot detect on the user's folder, and a user cannot bring their own
-model. It is the most upstream item in `pipeline.md`.
+Seven defects in two days and **five were one shape**: a thing that existed, worked, and
+could not be reached from where the reader was standing.
 
-**The library's detect path has no settings argument.** `bugarach detect` reads its
-parameters from `bench.OPERATING_POINTS` and cannot be handed a tuned operating point. The
-browser can apply one to the user's folder; the command line cannot. **This is where the two
-modes stop being one pathway**, at the last step before output.
+- The judging step's rail chip was `disabled` until candidates existed — and the assessment
+  does not survive a reload, so after any refresh the step was permanently shut **with its
+  own instructions locked inside it**.
+- Nothing called `paintAnnotChip` after an assessment, so the draw button never enabled. A
+  disabled button fires no event and logs nothing: *"clicked, nothing happened"* was
+  literally correct.
+- The verdict buttons lived in a sidebar showing one step at a time, so clicking a mark
+  selected it and left nothing to answer with.
+- The confirm tool rendered whichever recording the shuffle put first while the raster and
+  ledger showed another — **three panels, two recordings**; a verdict there answers a
+  question nobody was looking at.
 
----
+**The tests were green over all of it.** Every test in `test_webapp_mahice.py` reached past
+the controls and called `startAnnotation()` in JS. 2000+ tests and not one pressed a button.
+The new ones assert what a person actually has — an enabled control, a click that reaches
+the loop, three panels naming one recording — and each was confirmed to FAIL against the
+unfixed page before being kept.
 
-## The data, and one thing owed to interface2
+**Several defects were caught only by rendering the page and looking**: a lane label drawn
+as `lick a mark`, Accept/Exclude drawn as empty white boxes, region labels piling up once
+the axis could zoom, a *"Resume it — 0 verdicts"* banner offering to discard live work.
+Drive the real folder through the real controls, then look at the result.
 
-**The analysis folder is `2026-09-03_revised_2v_long_STEPS_EXCLUDED`** — field-step artifacts
-removed, 381 events, listed in its own manifest. The producer's standing rule as of
-2026-09-03 is that exporters ship clean data.
-
-**`2026-09-03_revised_2v_long_STEPS_FLAGGED_FOR_REVIEW` is the review copy** — the same
-recordings with the artifacts still present and marked, for looking at them and nothing else.
-`tools/make_group_raster_summary.py` reads it and **refuses a folder without the manifest**,
-because a page with no red is indistinguishable from recordings that never had an artifact.
-
-⚠ **`current_export.toml` still declares the August folder**, which carries no `analysis_*`
-columns — so anything reading `dataset.current()` scores whole raw periods where the new
-folder scores `long_window_20`. Same events, different windows, different numbers.
-Redeclaring is Tony's call, and that file says to change the name there and nowhere else.
-
-**Owed to interface2, cheap, and nobody has done it:** `detectors/sync.py` carries a port of
-`flagArtifactEvents` whose criterion is narrow near-total synchrony, which reads close to
-what a field step looks like. Nobody has checked whether it was already catching these. Run
-the six over the excluded and the flagged folders and diff — that answers their question and
-measures what the removal changed, in one pass.
+⚠ **A pre-existing raw NUL byte** sat in `drawAnnotSample`'s key separator at `8a0e491`.
+Harmless to JS, invisible in editors and diffs, and it **truncates the line in `awk`** — an
+`awk` edit 600 lines away took the whole page's parse down mid-session. Separators are JSON
+now and the file has no control bytes; check for them before trusting a text tool on it.
 
 ---
 
-## Traps that cost time in the thread that produced this
+## Decisions that are Tony's and still open
 
-- **The repo already has names for things; use them.** A draft of `pipeline.md` invented step
-  names for steps that had them — the webapp's own rail carries the list — and separately
-  shipped "corpus" five times, which `GLOSSARY.md` retired on 2026-08-22. Read
-  `docs/GLOSSARY.md` and `docs/writing_conventions.md` before writing prose.
-- **Do not guess a repo from its directory name.** A session hunting the universal amplitude
-  estimator went to `~/Developer/no_peak` on the strength of the word "peak". It is a
-  hormone-pulsatility CLUSTER port. The estimator was in `assess.py` the whole time.
-- **The universal amplitude is peak coactivity in #ROIs**; the universal width is the
-  participant onset span in seconds. Both are detector-free, which is why they are the axes
-  detector rows can be compared on — each detector's own `strength` is in its own unit, and
-  two of the six report a count of cells.
-- **The assessor knows cluster membership; the six detectors do not.** `assess` carries which
-  ROIs made up each observed cluster. Five detectors report only how many took part, and
-  three build the participating set internally and hand back its size. Those are different
-  facts, and the difference is where v2 event tagging starts.
-- **`tests/test_syntax_floor.py` runs in under a second — run it before pushing anything with
-  an f-string in it.** This machine is 3.14 and the project promises 3.11; CI's oldest leg
-  was the only thing testing the floor, and it caught two defects in one afternoon, one of
-  them a tool that had been unrunnable on 3.11 since it landed.
-- **`tools/show.py` infers the project from the worktree directory name.** Pass
-  `--project bugarach`, or your figure lands in a darkroom folder named after your branch.
-  Reported to armory.
-- **A worktree imports the primary checkout's `src`.** `PYTHONPATH=$PWD/src` on every run.
-- **`merge_when_green.sh` reaps the worktree when the PR merges.** Do not claim and build in
-  the worktree you are about to land.
+**The K floor**, raised 2026-09-04 and still unrecorded outside the machine-local board. A
+floor of 2 excludes K=1; it costs the fairness the percentage existed for, at the small end
+only; and **it must move on the generator side in the same change** — `assess.k_from_fraction`
+is `simulate.py`'s rule too, and if the two diverge a spec derived at 10% and a simulation
+planted at 10% stop describing the same events. Binds 3 of 84 recordings at 10%, 38 at 5%.
+
+Turbo makes it visible rather than hypothetical: **at 10% with a floor of 3 the floor binds
+on 13 of the 38 TTX baselines.** ⚠ **A floor set in turbo is not yet a floor in
+`k_from_fraction`** — whatever he lands on still has to reach that function.
+
+**Two scorers, two winners** and **run-record naming**: both still FINISHED and waiting on
+him, in `docs/todo/`.
 
 ---
 
-## Still waiting on Tony
+## Parked, claimed, not finished
 
-Unchanged, all in [`docs/MILESTONES.md`](docs/MILESTONES.md): the `rate` promiscuity ceiling,
-run-record naming, and what happens to `bench-background-is-not-flat` — the only genuinely
-unlanded branch in the tree.
+**`guards-ask-stale-questions`** — two guards that are delivered and ask questions whose
+answers stopped meaning anything:
 
-**And the one that gates the science rather than the code: nobody has run MAHICE on the
-approved folder, so no K is set for it.** Expert attention, not compute — a couple of hundred
-confirmations at a low proposal floor, an afternoon. ⚠ **Do not set it for him.** A K a
-session picked would pass every test in this repo and be exactly the thing the record was
-built to prevent.
+- the session-start unpushed-work alarm asks *"is this sha on a remote?"*, but squash-merge
+  guarantees a merged branch's shas never reach one. **Measured 59% false positives, 10 of
+  17.** Fix: `git cherry` patch-equivalence as a confirmation after the existing cheap
+  filter.
+- `check_vendor_freshness.sh` asks `syncytium2/interface2`, which 404s over `gh`, so it
+  prints `UNKNOWN` — reading as *not checked yet* rather than *pointed at a repo that cannot
+  answer*. Under that silence the vendored hook fell a full upstream commit behind
+  (interface2 `a51bef82`: the escape hatch and SAFE MODE latch).
+
+**Hooks are AUTHORED in interface2 and only COLLECTED by armory.** Do not restamp them to
+armory — the stamps are right. Armory is the routing and findings hub, and its README is
+emphatic: **submit, do not merge.** A third instance of the same family is already filed in
+armory's `FINDINGS.md` §9 (`# instrument:` on line 2 displaces the vendoring stamp to line 3,
+where the parser does not look).
+
+---
+
+## Two data folders exist that did not before
+
+`2026-09-03_revised_2v_long_STEPS_EXCLUDED_TTX` (38 recordings) and `..._SENKTIDE` (29),
+split from the approved export on **first treatment slot only** — Tony's rule, recorded in
+the TTX folder's own README with his words on it. **Copies, not moves**; the parent is
+untouched at 84.
+
+⚠ **Neither is declared in `current_export.toml`**, so `dataset.current()` and every
+`--dataset <name>` still resolve `2026-08-18_revised_2v_periods`. If these are the study's
+datasets they want entries there — not done, because it is a real decision about what
+"current" means and these are derived folders rather than producer exports.
+
+---
+
+## Read before building
+
+`docs/pipeline.md` is the plan. `docs/INDEX.md` when a lookup fails.
+`docs/FOUNDATIONS.md` §9 wins over anything in this file.
