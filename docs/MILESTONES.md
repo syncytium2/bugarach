@@ -60,7 +60,6 @@ motion, two block promotion.**
 | **Run a MAHICE review on the approved folder** — nobody has annotated a sample, so no K is set and no events are confirmed. Expert attention, not compute | **Tony** | quoting any transfer figure |
 | **Run-record naming** | **Tony** | the run store |
 | **Plant the promiscuity probe in the browser's generator** so the gate can fire | next session | the app's campaign inherits the ungated defect |
-| `bench-background-is-not-flat` — merges cleanly; three `test_background_curve` tests go red by design | **Tony** | what `main` says about its own bench |
 | The 24-seed bake-off — held; the input data may be revised | **Tony** | promoting any new bake-off number |
 
 ---
@@ -81,7 +80,9 @@ motion, two block promotion.**
 | Generator set by real recordings | 85 recordings measured; the generator stops being an opinion | measured | `fff2fb0` | `docs/learned/generator_spec.json` | superseded by the difficulty-axis row — RESET §5 records that it holds the store-derived axis the export-folder rule closed |
 | Calibrate from baseline only | treatments are what the instruments are pointed at; taking coordination properties from them assumes the answer (Tony's call) | decided | `c3fa58a` | `docs/FOUNDATIONS.md` | current |
 | Difficulty axis from the approved export folder | re-derived from the folder, not the `.mat` store; exposed locust's FAST percentile as a notch too loose | measured | `114cf29` | `docs/FOUNDATIONS.md` | current — supersedes the store-derived 0.0038–0.0175 mHz/ROI |
-| Background is an axis, not a point | **nothing is flat across it, and the ranking does not survive it** | measured | `c7786f2` | `tests/test_background_curve.py` | current |
+| Background is an axis, not a point | **nothing is flat across it** — every detector moves across the axis and a bare F1 is refused for all six | measured | `c7786f2` | `tests/test_background_curve.py` | current — the second half of this row, *"and the ranking does not survive it"*, was measured on the flat field and is superseded by the row below |
+| The bench background is fitted, not flat | `BENCH_RECORDING` carries the measured rate and burst shapes; the scoring tolerance moves 1.5 → 2.5 s to where the detectors' F1 plateaus on that field. Tony, 2026-08-28: *"cut the gordian knot"*; 2026-09-06, asked what happens to the branch: land it | decided | `d5f4b5a` | `src/bugarach/bench.py` | current |
+| On the fitted field one winner holds across the axis | at 12 seeds, one detector leads at every grid point and the largest rank change is two places; the same seeds on the flat field give three winners and a change of three. The reordering the flat field showed lived in a low-F1 tail it manufactured. The axis still discriminates: mean own-range 0.132 against 0.170 | measured | `d5f4b5a` | `tests/test_background_curve.py` | current |
 | The promiscuity probe | a dense block with nothing planted; a detector firing into it is counting rate, not coordination | built | `230f7e4` | `src/bugarach/bench.py` | current |
 
 ## C. The learned models

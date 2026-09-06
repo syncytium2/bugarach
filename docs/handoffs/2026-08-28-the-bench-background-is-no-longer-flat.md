@@ -1,5 +1,13 @@
 # Handoff — the bench background is no longer flat, and four things want a decision
 
+> **Moved here on 2026-09-06, when the branch it describes landed.** It was written on
+> 2026-08-28 as `HANDOFF-bench-background.md` at the root of `bench-background-is-not-flat`
+> and never reached `main` as a root signal, so the honesty test never saw it. Of the four
+> decisions it asks for, three were applied on the branch the same day (`dcbbf7a`) and the
+> fourth — what the three red `test_background_curve` tests should assert — was measured in
+> [the winner stopped changing](2026-08-28-the-winner-stopped-changing.md) and settled when
+> Tony chose to land the branch. The body below is unedited; its tenses are 2026-08-28's.
+
 **Work is in flight.** Branch `bench-background-is-not-flat`, pushed, **deliberately
 red**: six tests fail and I have not touched them, because at least three of them
 encode findings rather than numbers. Nothing here is merged.
@@ -19,7 +27,7 @@ Three lines in `BENCH_RECORDING`, plus moving `MEASURED_BURST_SHAPE` /
 them ~950 lines before they were defined. Both "⚠ not wired into the bench"
 docstring notes are now false and were rewritten.
 
-![what it did](docs/generator/bench_background_is_not_flat.svg)
+![what it did](../generator/bench_background_is_not_flat.svg)
 
 ## What it cost — 12 seeds, paired, same process
 

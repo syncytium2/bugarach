@@ -10,7 +10,7 @@ is a *finding* rather than a chore, and nobody has ruled on them.
 >
 > **It means "I do not understand item 4."** Tony, 2026-08-30: *"I meant I didn't
 > understand 4 and it inferred something else."* **Item 4 is the three
-> `test_background_curve` tests** — [`HANDOFF-bench-background.md`](../../HANDOFF-bench-background.md)
+> `test_background_curve` tests** — [`HANDOFF-bench-background.md`](2026-08-28-the-bench-background-is-no-longer-flat.md)
 > §4, *"do not re-baseline these quietly"* — so the question was asked about the
 > exact decision this handoff was written to advance, and was recorded as answered.
 >
