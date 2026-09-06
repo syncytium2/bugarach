@@ -86,7 +86,7 @@ winners along the axis where the tests' own seeds found **one**, and they say
 plainly that gap is inside seed noise at that count. A rewrite needs a deliberate
 seed count and a stated regime — only `baseline_quiet` was swept.
 
-## ⚠ A quote in that branch needs correcting before it merges
+## ⚠ A quote in that branch needed correcting — DONE 2026-08-30
 
 `docs/handoffs/2026-08-28-the-winner-stopped-changing.md` opens:
 
