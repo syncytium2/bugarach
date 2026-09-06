@@ -9,7 +9,7 @@
      rather than naming a sha this page could not know — the reasoning is at the
      visible stamp. -->
 <meta name="bugarach:born" content="2026-08-13">
-<meta name="bugarach:version-date" content="2026-09-05">
+<meta name="bugarach:version-date" content="2026-09-06">
 <meta name="bugarach:commit" content="content-addressed">
 <!--
   The raster viewer, client side.
@@ -463,6 +463,21 @@
   .anlegend .legkey { display: inline-flex; align-items: center; gap: 6px; }
   .anlegend .legswatch { display: inline-block; height: 13px; border-radius: 1px; }
   .anlegend .legwhy { flex-basis: 100%; font-size: 11.5px; line-height: 1.35; }
+  /* TURBO. The knob bar stays put while the column of baselines scrolls under
+     it — the whole method is "turn a knob, look at the rows", and a bar that
+     scrolls away makes that two gestures instead of one. */
+  #turbo { padding: 8px 0 0; }
+  .turbobar { position: sticky; top: 0; z-index: 3; display: flex;
+              align-items: center; flex-wrap: wrap; gap: 6px 10px;
+              padding: 7px 10px; margin-bottom: 6px; font-size: 12.5px;
+              background: var(--panel); border: 1px solid var(--line);
+              border-radius: 8px; }
+  .turbobar input { width: 68px; margin: 0; }
+  .turbobar button { width: auto; margin: 0; padding: 1px 10px; font-size: 12px; }
+  .turbospacer { flex: 1 1 18px; }
+  #turboScroll { overflow: auto; max-height: 74vh;
+                 border: 1px solid var(--line); border-radius: 8px; }
+  #turboCv { display: block; }
   .anzoom { display: flex; align-items: center; justify-content: center;
             gap: 10px; margin: 4px 0 0; }
   .anzoom button { min-width: 34px; font-weight: 700; }
@@ -681,6 +696,11 @@
 <div id="railfold">
   <button id="railToggle" class="ghost" aria-expanded="true">Hide pipeline</button>
   <button id="railTerse" class="ghost" aria-pressed="false">Terse</button>
+  <!-- In the always-visible bar rather than inside a step. Turbo is a way of
+       looking at the WHOLE folder, so it cannot live behind one step of the
+       pipeline — and the reader reaches for it precisely when the step-by-step
+       loop is the thing slowing them down. -->
+  <button id="turboBtn" class="ghost" aria-pressed="false">Turbo</button>
   <span class="lab" id="railWhere"></span>
 </div>
 <nav id="rail" aria-label="pipeline"></nav>
@@ -1654,6 +1674,56 @@
       <div id="scoreOut"></div>
       <div class="note" id="note"></div>
     </div>
+
+    <!-- TURBO: every baseline at once, tuned by eye.
+
+         Tony, 2026-09-06: "we need a turbo mode for mahice. this interface is
+         going to crush progress... the turbo toggle enables viewing all of the
+         baseline data in one column of rasters, one slice per row. at the top of
+         each row will be the assessor guided dettected events. the user will
+         have knobs: k % and k floor, and knobs to control how sensitive the
+         assessor is. adjusting any knob updates the display. the user adjusts
+         until the detection indicators match the human perception of
+         coordination."
+
+         WHAT THIS IS, AND WHAT IT IS NOT. The per-candidate loop asks "is THIS
+         moment coordinated" one moment at a time, and answers with verdicts that
+         carry the view they were made in. Turbo asks a different question — "is
+         this SETTING finding what I can see" — over the whole folder at once. It
+         is calibration by eye, and it is explicitly the stopgap: Tony, same
+         message, "i think it is the long term solution, but we can't get bogged
+         down at this stage."
+
+         ⚠ NO SURROGATE NULL HERE, AND THAT IS THE TRADE. The assessment's
+         expensive half is the rate-matched null; without it a mark is "K or more
+         ROIs co-active in a bin", a THRESHOLD rather than an excess over chance.
+         That is what makes every knob live — the cheap half is O(events) and
+         reruns in milliseconds — and it is why the panel says so on its face.
+         A K chosen here is a K chosen against the eye, not against a null. -->
+    <div id="turbo" hidden>
+      <div class="turbobar">
+        <span class="lab">K</span>
+        <input id="tPct" type="number" min="0.5" max="100" step="0.5" value="10" autocomplete="off" data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other">
+        <span class="lab">% of ROIs, floor</span>
+        <input id="tFloor" type="number" min="1" max="50" step="1" value="3" autocomplete="off" data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other">
+        <span class="lab">together within</span>
+        <input id="tBin" type="number" min="0.1" max="10" step="0.1" value="1" autocomplete="off" data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other">
+        <span class="lab">s</span>
+        <span class="lab">merge gaps under</span>
+        <input id="tMerge" type="number" min="0" max="10" step="1" value="2" autocomplete="off" data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other">
+        <span class="lab">bins</span>
+        <span class="turbospacer"></span>
+        <span class="lab">time</span>
+        <span class="seg">
+          <button id="tOut" title="wider">−</button>
+          <button id="tIn" title="tighter">+</button>
+        </span>
+        <button id="tAll" class="ghost">all</button>
+        <span class="lab" id="tZoomWhat"></span>
+      </div>
+      <div class="note" id="turboWhat"></div>
+      <div id="turboScroll"><canvas id="turboCv"></canvas></div>
+    </div>
   </div>
 </main>
 
@@ -1684,10 +1754,10 @@
      a page edited without bumping it turns CI red instead of shipping a date
      that has quietly become a lie. Bump it when you edit this page. -->
 <p class="site-dates" data-bugarach-born="2026-08-13"
-   data-bugarach-version-date="2026-09-05"
+   data-bugarach-version-date="2026-09-06"
    data-bugarach-commit="content-addressed"
    style="margin:1.5rem max(1.2rem, calc(50% - 23rem));color:#666;font-size:.85rem">
-  First published 2026-08-13 · this version 2026-09-05 · identified by its own
+  First published 2026-08-13 · this version 2026-09-06 · identified by its own
   bytes rather than by a build stamp
 </p>
 
@@ -2337,6 +2407,292 @@ function candidatesOnPanel(recId, stream) {
    only catch up the next time something else happens to redraw. */
 function repaintJudgingLane() {
   if (current && current.loaded) draw(current, current.loaded);
+}
+
+
+/* ---------- turbo: every baseline at once, tuned by eye ----------------------
+
+   The question here is not "is this moment coordinated" — that is the
+   per-candidate loop, and its answers carry the view they were made in. It is
+   "is this SETTING finding what I can see", asked of the whole folder at once.
+
+   WHY EVERY KNOB CAN BE LIVE. The assessment has an expensive half and a cheap
+   one. The expensive half is the rate-matched null: `nSurrogates` circular
+   shifts per recording, each one re-counting co-activity and re-clustering. The
+   cheap half is `coactCount` + `clusters` on the observed trains, which is
+   O(events) — about 150k operations across this lab's 38 baselines, or a few
+   milliseconds. Turbo runs only the cheap half, so a knob redraws immediately.
+
+   WHAT THAT COSTS, SAID PLAINLY ON THE PANEL. Without the null a mark is "K or
+   more ROIs co-active within one bin", a THRESHOLD rather than an excess over
+   chance. A recording whose ROIs simply fire a lot will show marks here that the
+   full assessment would not call. That is acceptable for calibrating against the
+   eye — the person IS the null in this view — and it is not acceptable as a
+   measurement, which is why nothing here writes a verdict or a K.
+
+   BASELINE ONLY. FOUNDATIONS §9: treatments are what the instruments are pointed
+   at, and taking coordination properties from them assumes the answer. */
+
+let TURBO = null;        // {rows:[{id,nRoi,trains,dur,counts,K,marks}], maxDur}
+let TURBO_BUSY = false;
+let TURBO_SPAN = null;   // seconds shown; null = the longest baseline
+let TURBO_MID = null;    // centre of the window, in seconds from baseline start
+
+const TURBO_ZOOMS = [5, 10, 20, 45, 90, 180, 300, 600, 1200];
+const TURBO_ROW = 58;    // one slice: its lane, its raster, and the gap under it
+const TURBO_LANE = 11;
+
+function turboKnobs() {
+  const num = (id, dflt) => {
+    const n = Number((document.getElementById(id) || {}).value);
+    return Number.isFinite(n) ? n : dflt;
+  };
+  return { pct: num("tPct", 10), floor: num("tFloor", 3),
+           bin: Math.max(0.05, num("tBin", 1)), merge: num("tMerge", 2) };
+}
+
+/* The baseline window of one recording, as the folder declared it. Analysis
+   bounds when the producer sent them, the raw period otherwise — the same rule
+   the raster draws, never re-derived here. */
+function baselineWindow(recId) {
+  const wins = REGIONS.get(recId) || [];
+  const b = wins.find(w => (w.label || "").trim().toLowerCase() === "baseline");
+  if (!b) return null;
+  const hasA = Number.isFinite(b.aStart) && Number.isFinite(b.aEnd);
+  const s = hasA ? b.aStart : b.start, e = hasA ? b.aEnd : b.end;
+  return (Number.isFinite(s) && Number.isFinite(e) && e > s) ? [s, e] : null;
+}
+
+/* Read every recording's baseline once. The knobs never touch this — reloading
+   38 CSVs on a knob drag is what would make turbo slower than the loop it
+   exists to replace. */
+async function turboLoad() {
+  const rows = [];
+  const say = m => {
+    const n = document.getElementById("turboWhat");
+    if (n) n.textContent = m;
+  };
+  for (let i = 0; i < RECORDINGS.length; i++) {
+    const rec = RECORDINGS[i];
+    say("reading baselines… " + (i + 1) + " of " + RECORDINGS.length);
+    await yieldToUI();
+    const win = baselineWindow(rec.id);
+    if (!win) continue;
+    const d = await loadRecording(rec);
+    const byRoi = d.streams.get(STREAM) || d.streams.get([...d.streams.keys()][0]);
+    if (!byRoi) continue;
+    const [ws, we] = win;
+    const ids = [...byRoi.keys()].sort();
+    const trains = ids.map(id =>
+      (byRoi.get(id) || []).filter(t => t >= ws && t <= we).map(t => t - ws));
+    rows.push({ id: rec.id, nRoi: ids.length, trains, dur: we - ws });
+  }
+  TURBO = { rows, maxDur: rows.reduce((a, r) => Math.max(a, r.dur), 1) };
+  turboRecompute();
+}
+
+/* The cheap half, rerun on every knob. */
+function turboRecompute() {
+  if (!TURBO) return;
+  const { pct, floor, bin, merge } = turboKnobs();
+  for (const r of TURBO.rows) {
+    const nBins = Math.max(1, Math.ceil(r.dur / bin));
+    r.counts = coactCount(r.trains, r.dur, bin, nBins, null);
+    /* `kFromFraction`'s rule with the floor made the reader's: it is
+       `max(1, ...)` there, and the 1 is exactly what the floor knob replaces.
+       ⚠ A floor chosen here is NOT yet a floor in `assess.k_from_fraction`, and
+       that function is `simulate.py`'s rule too — a spec derived at one rule and
+       a simulation planted at another stop describing the same events. */
+    r.K = Math.max(floor, Math.floor(pct / 100 * r.nRoi + 0.5));
+    r.marks = turboClusters(r, bin, nBins, merge);
+  }
+}
+
+/* `clusters` with the merge gap exposed. Same shape as the shipped one — runs of
+   supra-K bins, merged across a gap, centred on the run — but the gap is a knob
+   here because how far apart two bins can be and still be one event is exactly
+   the kind of sensitivity the reader is being asked to judge. */
+function turboClusters(r, bin, nBins, merge) {
+  const fire = [];
+  for (let b = 0; b < nBins; b++) if (r.counts[b] >= r.K) fire.push(b);
+  if (!fire.length) return [];
+  const out = [];
+  let cur = [fire[0]];
+  for (let q = 1; q < fire.length; q++) {
+    if (fire[q] - fire[q - 1] <= merge) cur.push(fire[q]);
+    else { out.push(cur); cur = [fire[q]]; }
+  }
+  out.push(cur);
+  return out.map(g => {
+    let sum = 0, peak = 0;
+    for (const b of g) { sum += (b + 0.5) * bin; if (r.counts[b] > peak) peak = r.counts[b]; }
+    return { t: sum / g.length, peak };
+  });
+}
+
+function turboFullSpan() { return TURBO ? TURBO.maxDur : null; }
+
+function turboZoom(dir) {
+  const full = turboFullSpan();
+  if (!full) return;
+  const steps = TURBO_ZOOMS.filter(s => s < full).concat([full]);
+  const cur = TURBO_SPAN || full;
+  let i = steps.findIndex(s => s >= cur - 1e-6);
+  if (i < 0) i = steps.length - 1;
+  const j = Math.min(steps.length - 1, Math.max(0, i + dir));
+  TURBO_SPAN = steps[j] >= full ? null : steps[j];
+  if (TURBO_SPAN && !Number.isFinite(TURBO_MID)) TURBO_MID = full / 2;
+  turboDraw();
+}
+
+function turboResetZoom() { TURBO_SPAN = null; TURBO_MID = null; turboDraw(); }
+
+/* EVERY ROW ON ONE AXIS. Tony: "the display must be x-axis zoomable (all rows
+   identical)". Baselines differ in length, so each row is re-zeroed at its own
+   baseline START and every row is drawn on the same 0..span scale — a row whose
+   baseline is shorter than the window simply stops, and its frame says so by
+   ending. Sharing the axis is the whole point: coordination is read by eye down
+   a column, and a per-row axis would make two rows disagree about where 4m is. */
+function turboDraw() {
+  const cv = document.getElementById("turboCv");
+  if (!cv || !TURBO) return;
+  const css = getComputedStyle(document.documentElement);
+  const dpr = window.devicePixelRatio || 1;
+  const W = cv.parentElement.clientWidth || 900;
+  const padL = 132, padR = 14, padT = 10, padB = 30;
+  const rows = TURBO.rows;
+  const H = padT + rows.length * TURBO_ROW + padB;
+  cv.width = W * dpr; cv.height = H * dpr;
+  cv.style.width = W + "px"; cv.style.height = H + "px";
+  const g = cv.getContext("2d");
+  g.scale(dpr, dpr);
+  g.clearRect(0, 0, W, H);
+  g.font = "11px -apple-system, system-ui, sans-serif";
+
+  const full = TURBO.maxDur;
+  let t0 = 0, t1 = full;
+  if (TURBO_SPAN && TURBO_SPAN < full) {
+    const half = TURBO_SPAN / 2;
+    let mid = Number.isFinite(TURBO_MID) ? TURBO_MID : full / 2;
+    mid = Math.min(Math.max(mid, half), full - half);
+    t0 = mid - half; t1 = mid + half;
+  }
+  const x = t => padL + (t - t0) / (t1 - t0) * (W - padL - padR);
+  const step = ticks(t1 - t0, Math.max(4, Math.round((W - padL - padR) / 110)));
+
+  rows.forEach((r, i) => {
+    const top = padT + i * TURBO_ROW;
+    const laneY = top + TURBO_LANE;
+    const rTop = laneY + 3, rBot = top + TURBO_ROW - 14;
+
+    /* Identity and the K this row resolved to, STACKED rather than side by side.
+       Drawn on one line they collided and the id was clipped at the left edge —
+       `20241122b_110` is 85px of text and the margin was 68. Two lines cost
+       nothing: the row is 58px tall and the label column was already there. */
+    g.textAlign = "end";
+    g.fillStyle = css.getPropertyValue("--fg").trim();
+    g.fillText(r.id, padL - 8, rTop + 10);
+    g.fillStyle = css.getPropertyValue("--muted").trim();
+    g.fillText("K " + r.K + " of " + r.nRoi, padL - 8, rTop + 23);
+    g.textAlign = "start";
+
+    g.strokeStyle = css.getPropertyValue("--line").trim();
+    g.lineWidth = 1;
+    const right = Math.min(W - padR, x(Math.min(r.dur, t1)));
+    if (right > padL) g.strokeRect(padL, rTop, right - padL, rBot - rTop);
+
+    // the marks, in a lane ABOVE the raster and pointing down at it
+    g.fillStyle = CAND_INK.selected;
+    for (const m of r.marks) {
+      if (m.t < t0 || m.t > t1) continue;
+      const px = Math.round(x(m.t)) + 0.5;
+      g.beginPath();
+      g.moveTo(px - 3.5, laneY - 8);
+      g.lineTo(px + 3.5, laneY - 8);
+      g.lineTo(px, laneY - 1);
+      g.closePath();
+      g.fill();
+    }
+
+    // the raster: every ROI of this baseline, compressed into its band
+    const lane = (rBot - rTop) / Math.max(1, r.nRoi);
+    const h = Math.max(1, Math.min(4, lane));
+    g.strokeStyle = css.getPropertyValue("--mark").trim();
+    g.globalAlpha = 0.9;
+    g.lineWidth = 1;
+    g.beginPath();
+    for (let q = 0; q < r.trains.length; q++) {
+      const yc = rTop + (q + 0.5) * lane;
+      for (const t of r.trains[q]) {
+        if (t < t0 || t > t1) continue;
+        const px = Math.round(x(t)) + 0.5;
+        g.moveTo(px, yc - h / 2); g.lineTo(px, yc + h / 2);
+      }
+    }
+    g.stroke();
+    g.globalAlpha = 1;
+  });
+
+  // one x-axis, at the bottom, because every row is on it
+  g.fillStyle = css.getPropertyValue("--muted").trim();
+  g.strokeStyle = css.getPropertyValue("--line").trim();
+  const axisY = padT + rows.length * TURBO_ROW;
+  for (let t = Math.ceil(t0 / step) * step; t <= t1; t += step) {
+    const px = Math.round(x(t)) + 0.5;
+    g.beginPath(); g.moveTo(px, axisY); g.lineTo(px, axisY + 4); g.stroke();
+    const lab = fmt(t);
+    g.fillText(lab, px - g.measureText(lab).width / 2, axisY + 18);
+  }
+  paintTurboWhat();
+}
+
+function paintTurboWhat() {
+  const n = document.getElementById("turboWhat");
+  if (!n || !TURBO) return;
+  const { pct, floor, bin, merge } = turboKnobs();
+  const total = TURBO.rows.reduce((a, r) => a + r.marks.length, 0);
+  const ks = TURBO.rows.map(r => r.K);
+  const bound = TURBO.rows.filter(r =>
+    Math.floor(pct / 100 * r.nRoi + 0.5) < floor).length;
+  n.textContent =
+    TURBO.rows.length + " baselines · " + total + " marks at K = " + pct
+    + "% with a floor of " + floor + " (that is K " + Math.min(...ks) + "–"
+    + Math.max(...ks) + " across these recordings; the floor binds on " + bound
+    + " of them) · co-active within " + bin + " s, gaps under " + merge
+    + " bins merged. No surrogate null here: a mark is a THRESHOLD, not an "
+    + "excess over chance, which is what makes the knobs live. Tune until the "
+    + "marks agree with what you can see, then set that K in the review.";
+  const z = document.getElementById("tZoomWhat");
+  if (z) z.textContent = TURBO_SPAN
+    ? "showing " + fmt(TURBO_SPAN) + " of " + fmt(TURBO.maxDur)
+    : "whole baseline";
+}
+
+async function turboToggle() {
+  const on = document.getElementById("turbo").hidden;
+  if (on && !RECORDINGS.length) return;
+  document.getElementById("turbo").hidden = !on;
+  document.getElementById("view").hidden = on || !RECORDINGS.length;
+  const b = document.getElementById("turboBtn");
+  if (b) {
+    b.textContent = on ? "Leave turbo" : "Turbo";
+    b.setAttribute("aria-pressed", String(on));
+  }
+  if (!on) return;
+  if (!TURBO && !TURBO_BUSY) {
+    TURBO_BUSY = true;
+    try { await turboLoad(); } finally { TURBO_BUSY = false; }
+  }
+  turboDraw();
+}
+
+/* Any knob redraws. Debounced only enough to survive a held arrow key on a
+   number input, which fires change events faster than a redraw of 38 rows. */
+let TURBO_T = null;
+function turboKnobChanged() {
+  if (!TURBO) return;
+  clearTimeout(TURBO_T);
+  TURBO_T = setTimeout(() => { turboRecompute(); turboDraw(); }, 60);
 }
 
 /* ---------- the candidate ledger --------------------------------------------
@@ -12598,6 +12954,34 @@ function setRailTerse(on) {
 }
 document.getElementById("railTerse").onclick = () =>
   setRailTerse(!document.body.classList.contains("railterse"));
+
+document.getElementById("turboBtn").onclick = turboToggle;
+for (const id of ["tPct", "tFloor", "tBin", "tMerge"]) {
+  const n = document.getElementById(id);
+  // `input` as well as `change`: a knob that only answers on blur is not a knob
+  n.addEventListener("input", turboKnobChanged);
+  n.addEventListener("change", turboKnobChanged);
+}
+document.getElementById("tIn").onclick = () => turboZoom(-1);
+document.getElementById("tOut").onclick = () => turboZoom(+1);
+document.getElementById("tAll").onclick = turboResetZoom;
+/* Click a row to centre the window on that moment — the same gesture the main
+   raster's ledger uses, and the only way to walk a zoomed column. */
+document.getElementById("turboCv").addEventListener("click", ev => {
+  if (!TURBO || !TURBO_SPAN) return;
+  const cv = document.getElementById("turboCv");
+  const r = cv.getBoundingClientRect();
+  const W = cv.clientWidth, padL = 132, padR = 14;
+  const full = TURBO.maxDur;
+  const half = TURBO_SPAN / 2;
+  let mid = Number.isFinite(TURBO_MID) ? TURBO_MID : full / 2;
+  mid = Math.min(Math.max(mid, half), full - half);
+  const t0 = mid - half, t1 = mid + half;
+  const frac = (ev.clientX - r.left - padL) / (W - padL - padR);
+  if (frac < 0 || frac > 1) return;
+  TURBO_MID = t0 + frac * (t1 - t0);
+  turboDraw();
+});
 
 document.getElementById("railToggle").onclick = () =>
   setRailFolded(!document.body.classList.contains("railfolded"));
