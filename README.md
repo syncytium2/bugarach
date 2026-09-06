@@ -285,7 +285,7 @@ scored on the quarter it had never seen, all four rotations. **F1** is the usual
 harmonic mean of recall (what fraction of planted events were found) and precision
 (what fraction of calls were real), so 1.0 is perfect and a detector can reach it
 only by finding everything and inventing nothing. A call counts as finding a planted
-event if it lands within **1.5 s** of it — wide against a median *realized* event
+event if it lands within **2.5 s** of it — wide against a median *realized* event
 about 0.8 s across, and deliberately so: the alternative scored a detector at zero
 recall for calls that visibly covered the event. It buys a trustworthy ranking at the
 cost of any claim about timing accuracy, and it helps the imprecise detectors most.
@@ -294,21 +294,21 @@ cost of any claim about timing accuracy, and it helps the imprecise detectors mo
 
 | detector | F1 (mean of 4 folds) | fold range | probe firings | detect s | params |
 | --- | --- | --- | --- | --- | --- |
-| center−surround (learned) | 0.681 ± 0.049 | 0.63–0.74 | 20.5 | 0.023 | 1,149 |
-| CoactDetect | 0.651 ± 0.044 | 0.61–0.71 | 1.2 | 0.062 | — |
-| LoCo | 0.638 ± 0.053 | 0.57–0.70 | 2.5 | 0.248 | — |
+| center−surround (learned) | 0.686 ± 0.042 | 0.65–0.74 | 20.5 | 0.026 | 1,149 |
+| CoactDetect | 0.651 ± 0.044 | 0.61–0.71 | 1.2 | 0.063 | — |
+| LoCo | 0.645 ± 0.057 | 0.57–0.70 | 2.5 | 0.252 | — |
 | rate+context | 0.571 ± 0.085 | 0.46–0.65 | 34.8 | 0.005 | — |
-| locust | 0.541 ± 0.070 | 0.47–0.63 | 214.8 | 0.117 | — |
-| binned SCE | 0.420 ± 0.079 | 0.31–0.49 | 59.2 | 0.012 | — |
-| SPIKE-synch | 0.254 ± 0.065 | 0.21–0.34 | 8.8 | 0.095 | — |
-| per-cell bank (learned) | 0.125 ± 0.000 | 0.12–0.12 | 0.0 | 0.228 | 2,393 |
-| pooled trace (learned) | 0.118 ± 0.015 | 0.10–0.12 | 0.0 | 0.022 | 2,065 |
+| locust | 0.541 ± 0.070 | 0.47–0.63 | 214.8 | 0.116 | — |
+| binned SCE | 0.451 ± 0.096 | 0.33–0.54 | 59.5 | 0.012 | — |
+| SPIKE-synch | 0.267 ± 0.072 | 0.21–0.34 | 8.8 | 0.096 | — |
+| per-cell bank (learned) | 0.125 ± 0.000 | 0.12–0.12 | 0.0 | 0.230 | 2,393 |
+| pooled trace (learned) | 0.110 ± 0.018 | 0.09–0.12 | 0.0 | 0.022 | 2,065 |
 
 `detect s` is wall-clock to scan one held-out fold — two recordings, about 118
 minutes of data.
 
 **The top three tie on F1 and do not tie on the trap.** Four folds of thirty
-planted events cannot separate 0.681 from 0.651; the fold ranges overlap, and the
+planted events cannot separate 0.686 from 0.651; the fold ranges overlap, and the
 figure draws every fold so that is visible rather than hidden behind a bar. But
 `probe firings` is the column F1 cannot see — firings inside the no-event block are
 excluded from precision, by design, so a detector that keys on activity is not
@@ -332,7 +332,7 @@ across both is the ranking, not the factor.
 four folds, one training run each. The `±` above is the standard deviation across
 those four folds and the range column is their min and max; neither is a confidence
 interval, and seed variance within a fold was never measured. A hit is scored within
-a 1.5 s matching tolerance, against a median realized event about 0.8 s wide, so the
+a 2.5 s matching tolerance, against a median realized event about 0.8 s wide, so the
 ranking is meaningful and a bare F1 implying timing accuracy is not. The two learned models at the floor land
 their threshold on the low edge of the searched grid, which this project treats
 elsewhere as a search that stopped too early. The data set rests on one human choice

@@ -1,5 +1,5 @@
 ---
-status: open
+status: done
 filed: 2026-08-30
 ---
 
@@ -103,3 +103,13 @@ only the framing of it as a granted decision is wrong.
 The reply that produced it is now caught by a user-level `UserPromptSubmit` hook
 (`~/.claude/hooks/ambiguous-reply-confirm.sh`, 2026-08-30) which fires on exactly
 that shape in every project on this machine.
+
+## Landed 2026-09-06
+
+Tony, asked what happens to the branch: *land it, in two PRs*. The documents went first
+(#486); the code followed with the three `test_background_curve` tests rewritten to what was
+measured at twelve seeds — one winner across the axis on the fitted field, the reordering
+the flat field showed lived in a tail it manufactured — and `docs/learned/bakeoff.json`
+regenerated at the 2.5 s tolerance with the same spec, folds and seeds, so the lab-server
+reproduction test compares like with like. The re-quote landed in `README.md` and
+`docs/learned/bakeoff.md`, from the JSON, not from memory.

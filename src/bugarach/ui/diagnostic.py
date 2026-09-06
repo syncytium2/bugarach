@@ -61,7 +61,7 @@ from __future__ import annotations
 import holoviews as hv
 import numpy as np
 
-from bugarach.score import score_detections
+from bugarach.score import TOL_SEC, score_detections
 from bugarach.ui.app import COLORS, TITLES, _signal_row, _time_axis_hook
 
 FOUND = "#1b7f3b"
@@ -97,7 +97,7 @@ REGION_FILL = {
 SEPARABLE_PX = 5.0
 
 
-def _spans(onsets, widths, ext, tol_sec: float = 1.5):
+def _spans(onsets, widths, ext, tol_sec: float = TOL_SEC):
     """(onset, width) -> [(t0, t1)] clipped to the extent.
 
     A zero or non-finite width becomes a small visible sliver rather than
@@ -106,7 +106,7 @@ def _spans(onsets, widths, ext, tol_sec: float = 1.5):
 
     **The sliver is capped at the matching tolerance, and the cap is the point.**
     The floor was 0.2% of the record and nothing else — 3.6 s on a 30-minute
-    figure, against a `tol_sec` of 1.5. Five of the six detectors report windows
+    figure, against the shipped `score.TOL_SEC`. Five of the six report windows
     of 0.3–2.1 s, so every one of their bars was drawn *wider than the window it
     is judged in*: a reader saw a bar covering a planted event while the scorer
     called that same detection a false alarm for missing by 2 s. The picture
@@ -150,7 +150,7 @@ def _base(ext, ydim: str):
     return hv.Scatter(([ext[0]], [0.0]), kdims=["t"], vdims=[ydim]).opts(alpha=0)
 
 
-def lane_panel(lanes: dict, *, ext, gt=None, tol_sec: float = 1.5,
+def lane_panel(lanes: dict, *, ext, gt=None, tol_sec: float = TOL_SEC,
                width: int = 1000, row_px: int = 26):
     """Detector lanes with a real categorical y-axis (labels cannot collide)."""
     lanes = lanes or {}
@@ -511,7 +511,7 @@ def trace_panel(traces: dict, *, ext, width: int = 1000, height: int = 112):
 
 
 def coordination_diagnostic(stream, *, ext, lanes=None, gt=None,
-                            tol_sec: float = 1.5, name: str = "events",
+                            tol_sec: float = TOL_SEC, name: str = "events",
                             traces=None,
                             width: int = 1000, height: int | None = None,
                             mark_px: float | None = None):
@@ -673,7 +673,7 @@ def legend_html(lanes: dict, gt=None, member_source: str | None = None) -> str:
 </div>"""
 
 
-def score_table(gt, lanes: dict, *, tol_sec: float = 1.5) -> str:
+def score_table(gt, lanes: dict, *, tol_sec: float = TOL_SEC) -> str:
     """Plain-text scoreboard — the numbers behind the picture, in a form that
     can travel into a commit message or a log where a figure cannot.
 
