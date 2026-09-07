@@ -151,6 +151,32 @@ def test_it_refuses_a_folder_with_no_manifest(tmp_path):
     assert mod.MANIFEST in msg and "STEPS_EXCLUDED" in msg
 
 
+def test_an_unscanned_folder_is_drawn_with_no_red_and_says_so(tmp_path):
+    """A folder the producer never scanned (export report: step-artifacts UNCHECKED)
+    has no manifest because nothing was looked for. It may be drawn — with the
+    header saying no scan was run, so no red cannot be read as a clean corpus —
+    and only when asked for by name, and never when a manifest IS there."""
+    d = _folder(tmp_path, manifest=None)
+    assert mod.resolve_folder(str(d), unscanned=True) == d
+    pages, manifest, _ = mod.measure(d, ("TTX",), unscanned=True)
+    assert manifest == {}
+    blocks, red = mod.build_page(pages[("MALE", "TTX")]["members"],
+                                 ext=pages[("MALE", "TTX")]["ext"],
+                                 manifest=manifest, width=400)
+    assert red == 0
+    head = mod.header_html("MALE", "TTX", pages[("MALE", "TTX")]["members"],
+                           pages[("MALE", "TTX")]["ext"], d, unscanned=True)
+    assert "no field-step scan has been run" in head
+    assert "UNCHECKED" in head
+    # asked for by name, and refused where it would hide marks that exist
+    with pytest.raises(SystemExit):
+        mod.resolve_folder(None, unscanned=True)
+    (tmp_path / "scanned").mkdir()
+    with pytest.raises(SystemExit) as e:
+        mod.resolve_folder(str(_folder(tmp_path / "scanned")), unscanned=True)
+    assert "drop --unscanned" in str(e.value)
+
+
 def test_a_recording_with_no_baseline_is_skipped_not_drawn_at_zero(tmp_path):
     """No anchor means no honest x — dropping it beats aligning it on nothing."""
     d = _folder(tmp_path)

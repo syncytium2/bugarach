@@ -10,7 +10,26 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
-### Mac/deploy-the-named-axes — DEPLOY **DONE**; the deploy is free again
+### Mac/pilot-apv-cnqx-gz-run — DARKROOM claimed: the pilot APV+CNQX+GZ data set through the whole loop
+- **Status:** ACTIVE 2026-09-07. Tony: *"Run the apv cnqx gz baseline data set through the
+  coordination pipeline including tube variant training. Assume assessor setting of 10% floor
+  3 for ground truth. Document each step for evaluation by the resume team. Output is labeled
+  rasters and a new fireflies plot before after. Single group fast and slow columns."* Then
+  *"Proceed autonomously"* and *"Proceed without human confirmation in mahice."*
+- **Holds:** `<darkroom>/bugarach/2026-09-07-pilot-apv-cnqx-gz/` — **new directory**, every
+  artifact of this run: the input folder, assessment, spec, bake-off with the tube variants,
+  detections, the summary rasters, the before/after figure, and the report. **The input folder
+  is consumer-built** (`data/2026-09-07_pilot_apv_cnqx_gz/` inside that directory; its README
+  says how). The plan was interface2's own `generate_export_folder.m` under MATLAB; neither
+  registering the cohort in its archive table nor launching MATLAB was permitted from the
+  session, so the folder was written from the producer's archived onset store and event
+  archive through `bugarach.store` with the hook's `BUGARACH_STORE_OK=1` escape. Nothing was
+  written under `<data>/exports/bugarach/`. No deploy, no `constellation/` writes.
+- **What it is not:** a treatment-effect analysis (FOUNDATIONS §9). Detection runs at shipped
+  operating points on every region; training and calibration use baseline only; the
+  before/after figure is descriptive output per slice and carries no statistic.
+- **⚠ MAHICE is not run.** The assessor's clusters at K = 10 % with a floor of 3 stand in for
+  confirmed events, on Tony's explicit instruction. Every artifact says so.
 - **Status:** **DONE 2026-09-02. THE DEPLOY IS HELD BY NOBODY.** Published `7208e44`,
   wrangler **Version ID `54361e5a-b04e-41d3-94b1-c7beb117ca65`**, 5 of 8 assets changed.
   Verified against the live edge rather than the build: `site_staleness.py` reads
