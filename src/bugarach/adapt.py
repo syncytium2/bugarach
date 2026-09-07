@@ -256,9 +256,14 @@ def generator_params(a, *, context_win_sec: float = CONTEXT_WIN_SEC,
     need = min_sep * (n_events + 1) * 1.15 + 2 * 5.0
     dur = float(duration_sec) if duration_sec else float(np.ceil(max(need, a.win_dur)))
     if duration_sec is None and dur > a.win_dur:
+        # Stated as what the floor NEEDS, not as the final duration: a later step
+        # (derive_spec's probe window) may raise duration_sec further, and a note
+        # quoting an intermediate value beside the final one read as a contradiction
+        # (murderboard 2026-09-07, roles 2 and 4, on a spec with 2770 in the note and
+        # 3130 in the value).
         notes.append(
-            f"duration_sec={dur:.0f} exceeds the {a.win_dur:.0f}s window that was "
-            "measured — the spacing floor needs the room")
+            f"the spacing floor needs at least {dur:.0f}s of recording, more than the "
+            f"{a.win_dur:.0f}s window that was measured; duration_sec is raised to cover it")
 
     kwargs = dict(
         n_roi=n_roi, bg_rate_hz=bg, bg_rate_stat=bg_stat, participation=levels,

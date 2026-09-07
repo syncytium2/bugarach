@@ -116,10 +116,28 @@ def read_manifest(folder: Path) -> dict[tuple[str, str, str], list[float]]:
     return out
 
 
-def resolve_folder(explicit: str | None) -> Path:
-    """Find the flagged review copy, and refuse anything that is not one."""
+def resolve_folder(explicit: str | None, *, unscanned: bool = False) -> Path:
+    """Find the flagged review copy, and refuse anything that is not one.
+
+    ``unscanned`` is the one exception, and it has to be asked for by name: a
+    folder the producer has NEVER scanned for field steps (their export report
+    says ``step-artifacts: UNCHECKED``) has no manifest because nothing was
+    looked for, not because the artifacts were removed. That folder may be
+    drawn — with no red, and with the page saying in its header that no scan
+    was run, so the absence of red cannot be read as a clean corpus.
+    """
     from bugarach import dataset
 
+    if unscanned:
+        if not explicit:
+            raise SystemExit("--unscanned needs --folder: there is no name to resolve "
+                             "for a folder that was never scanned")
+        folder = Path(dataset.require(explicit, want="export_folder", flag="--folder"))
+        if (folder / MANIFEST).is_file():
+            raise SystemExit(
+                f"{folder.name} HAS a {MANIFEST}, so it was scanned — drop --unscanned "
+                "and let the marks be drawn.")
+        return folder
     if explicit:
         folder = Path(explicit).expanduser()
     else:
@@ -187,12 +205,12 @@ def _shift_stream(stream, shift: float):
     return dataclasses.replace(stream, **moved)
 
 
-def measure(folder: Path, treatments: tuple[str, ...]):
+def measure(folder: Path, treatments: tuple[str, ...], *, unscanned: bool = False):
     """Which recordings go on which page, and what each page's extent must be."""
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         slices = load_folder(folder)
-    manifest = read_manifest(folder)
+    manifest = {} if unscanned else read_manifest(folder)
 
     pages: dict[tuple[str, str], list] = defaultdict(list)
     skipped: list[str] = []
@@ -223,10 +241,34 @@ def measure(folder: Path, treatments: tuple[str, ...]):
     return built, manifest, skipped
 
 
+#: Fills for period labels the shared palette does not know. `REGION_FILL` names
+#: this lab's own treatments; a stranger's folder arrives with labels it has never
+#: seen, and two unknown labels falling back to the same grey is a lane where the
+#: two periods a reader must tell apart cannot be told apart (murderboard
+#: 2026-09-07, role 10, on the pilot cohort's APV+CNQX+GZ against high K+).
+UNKNOWN_LABEL_FILLS = ("#d08a3a", "#5a9a6a", "#9a5aa0", "#c9a227", "#4a90a4")
+
+
+def _name_unknown_labels(members):
+    """Give each period label the palette does not know a distinct colour, once."""
+    from bugarach.ui import diagnostic
+
+    unknown = []
+    for sl, _ in members:
+        for r in sl.regions or []:
+            lab = (r.name or "").strip()
+            if lab and lab not in diagnostic.REGION_FILL and lab not in unknown:
+                unknown.append(lab)
+    for i, lab in enumerate(unknown):
+        diagnostic.REGION_FILL[lab] = UNKNOWN_LABEL_FILLS[i % len(UNKNOWN_LABEL_FILLS)]
+    return unknown
+
+
 def build_page(members, *, ext, manifest, width: int):
     """Lane over fast raster over slow raster, per recording, all x-linked."""
     from bugarach.ui.diagnostic import raster_panel, region_lane_panel
 
+    _name_unknown_labels(members)
     blocks, red_drawn = [], 0
     for sl, anchor in members:
         # A UNIQUE y-DIMENSION PER PANEL. The name is what links y-ranges across
@@ -268,7 +310,8 @@ def build_page(members, *, ext, manifest, width: int):
     return blocks, red_drawn
 
 
-def header_html(group: str, treatment: str, members, ext, folder: Path) -> str:
+def header_html(group: str, treatment: str, members, ext, folder: Path,
+                *, unscanned: bool = False) -> str:
     """The key, and the provenance. Outside every plot, per the conventions."""
     from bugarach.ui.diagnostic import MARKED_INK, RASTER_INK, REGION_FILL
 
@@ -291,6 +334,12 @@ def header_html(group: str, treatment: str, members, ext, folder: Path) -> str:
     # accepted it and CI's 3.11 leg did not — this project supports >=3.11.
     red_key = chip(MARKED_INK, "event on a confirmed whole-field brightness step "
                                "(field-step artifact)")
+    if unscanned:
+        # No red on this page, and the reader has to be told WHY there is none:
+        # nobody looked, which is not the same as nothing being there.
+        red_key = ("<b style='color:#b00'>⚠ no field-step scan has been run on this "
+                   "folder</b> (the producer's export report says UNCHECKED) — nothing "
+                   "is marked, and the absence of red is not evidence of a clean corpus")
     return (
         f"<div style='font:13px system-ui,sans-serif;color:#111;margin:0 0 6px'>"
         f"<b style='font-size:16px'>{group} · {treatment}</b> &nbsp;—&nbsp; "
@@ -320,9 +369,13 @@ def main(argv=None) -> int:
     ap.add_argument("--width", type=int, default=PAGE_PX)
     ap.add_argument("--no-png", action="store_true",
                     help="skip the flat render (needs playwright chromium)")
+    ap.add_argument("--unscanned", action="store_true",
+                    help="the folder was NEVER scanned for field steps (producer: "
+                         "UNCHECKED), so it has no manifest. Draw it with no red and "
+                         "say so in the header. Needs --folder.")
     a = ap.parse_args(argv)
 
-    folder = resolve_folder(a.folder)
+    folder = resolve_folder(a.folder, unscanned=a.unscanned)
     if a.out:
         dest = Path(a.out).expanduser()
     else:
@@ -336,7 +389,8 @@ def main(argv=None) -> int:
 
     import panel as pn
 
-    pages, manifest, skipped = measure(folder, tuple(a.treatments))
+    pages, manifest, skipped = measure(folder, tuple(a.treatments),
+                                       unscanned=a.unscanned)
     if not pages:
         print("no (group, treatment) page has any recording", file=sys.stderr)
         return 1
@@ -349,7 +403,8 @@ def main(argv=None) -> int:
         html = dest / f"{group}_{treatment.replace(' ', '')}.html"
 
         items = [pn.pane.HTML(header_html(group, treatment, spec["members"],
-                                          spec["ext"], folder))]
+                                          spec["ext"], folder,
+                                          unscanned=a.unscanned))]
         for sl, panels in blocks:
             # A TEXT HEADER OUTSIDE THE PLOT, which is what the convention offers
             # beside the y-label — and here it is the one that works. Rotated
