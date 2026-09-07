@@ -1710,8 +1710,8 @@
         <input id="tBin" type="number" min="0.1" max="10" step="0.1" value="1" autocomplete="off" data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other">
         <span class="lab">s</span>
         <span class="lab">merge gaps under</span>
-        <input id="tMerge" type="number" min="0" max="10" step="1" value="2" autocomplete="off" data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other">
-        <span class="lab">bins</span>
+        <input id="tMerge" type="number" min="0" max="30" step="0.5" value="2" autocomplete="off" data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other">
+        <span class="lab">s</span>
         <span class="turbospacer"></span>
         <span class="lab">time</span>
         <span class="seg">
@@ -2496,38 +2496,81 @@ function turboRecompute() {
   if (!TURBO) return;
   const { pct, floor, bin, merge } = turboKnobs();
   for (const r of TURBO.rows) {
-    const nBins = Math.max(1, Math.ceil(r.dur / bin));
-    r.counts = coactCount(r.trains, r.dur, bin, nBins, null);
     /* `kFromFraction`'s rule with the floor made the reader's: it is
        `max(1, ...)` there, and the 1 is exactly what the floor knob replaces.
        ⚠ A floor chosen here is NOT yet a floor in `assess.k_from_fraction`, and
        that function is `simulate.py`'s rule too — a spec derived at one rule and
        a simulation planted at another stop describing the same events. */
     r.K = Math.max(floor, Math.floor(pct / 100 * r.nRoi + 0.5));
-    r.marks = turboClusters(r, bin, nBins, merge);
+    r.marks = turboMarks(r.trains, bin, r.K, merge);
   }
 }
 
-/* `clusters` with the merge gap exposed. Same shape as the shipped one — runs of
-   supra-K bins, merged across a gap, centred on the run — but the gap is a knob
-   here because how far apart two bins can be and still be one event is exactly
-   the kind of sensitivity the reader is being asked to judge. */
-function turboClusters(r, bin, nBins, merge) {
-  const fire = [];
-  for (let b = 0; b < nBins; b++) if (r.counts[b] >= r.K) fire.push(b);
-  if (!fire.length) return [];
+/* THE WINDOW MOVES. THERE IS NO GRID.
+
+   The first turbo counted on a fixed bin grid, the way the shipped assessment
+   does — and the shipped assessment keeps it, because its bins are a parity
+   contract with Python and the surrogate null is built on the same grid. Turbo
+   is not a measurement, and the grid was costing it exactly what it exists to
+   show. Tony, 2026-09-06, watching the width knob: "there's clearly events that
+   are present at 1.2 s gone at 1.3 s and come back at 1.4." Four ROIs firing
+   within 0.3 s of each other are one event at every width above 0.3 s, and a
+   grid says otherwise whenever an edge happens to fall between them. Whether a
+   mark appears then depends on where the edges landed, not on the data, and a
+   knob that flickers cannot be tuned against the eye.
+
+   So turbo asks the question the grid was approximating: at EVERY instant, how
+   many ROIs have an onset inside a window of the chosen width? An ROI with an
+   onset at x is "in" a window that starts anywhere in [x - width, x], so each
+   ROI contributes a set of intervals of window starts; overlapping ones merge so
+   an ROI counts once however often it fires. A sweep over every interval's two
+   ends gives the count as a function of the window start, exactly, in O(n log n)
+   — no step size, no grid, nothing to align. Wider never loses an event: a set
+   of K onsets that fits in 1.2 s fits in 1.3 s.
+
+   A mark is a maximal stretch where that count reaches K, merged with the next
+   stretch when the events are closer than the merge gap; its time is the middle
+   of the events it covers and its peak the most ROIs any one window held. */
+function turboMarks(trains, width, K, mergeSec) {
+  const ev = [];                          // [window start, +1 | -1]
+  for (const v of trains) {
+    if (!v.length) continue;
+    const s = v.slice().sort((a, b) => a - b);
+    let a = s[0] - width, b = s[0];
+    for (let i = 1; i < s.length; i++) {
+      if (s[i] - width <= b) b = s[i];    // still inside the same run of starts
+      else { ev.push([a, 1], [b, -1]); a = s[i] - width; b = s[i]; }
+    }
+    ev.push([a, 1], [b, -1]);
+  }
+  // At a tie a start beats an end, so the window is closed at both edges: two
+  // onsets exactly `width` apart are co-active within `width`.
+  ev.sort((p, q) => (p[0] - q[0]) || (q[1] - p[1]));
+
+  const segs = [];                        // stretches of starts where count >= K
+  let n = 0, open = null, peak = 0;
+  for (const [t, d] of ev) {
+    const before = n;
+    n += d;
+    if (before < K && n >= K) { open = t; peak = n; }
+    else if (n >= K) { if (n > peak) peak = n; }
+    else if (before >= K) { segs.push({ a: open, b: t, peak }); open = null; }
+  }
+  if (!segs.length) return [];
+
+  // A stretch of starts [a, b] covers events in [a, b + width]. Merge two
+  // stretches when the gap between the events they cover is under the knob.
   const out = [];
-  let cur = [fire[0]];
-  for (let q = 1; q < fire.length; q++) {
-    if (fire[q] - fire[q - 1] <= merge) cur.push(fire[q]);
-    else { out.push(cur); cur = [fire[q]]; }
+  let cur = segs[0];
+  for (let i = 1; i < segs.length; i++) {
+    const nx = segs[i];
+    if (nx.a - (cur.b + width) <= mergeSec) {
+      cur = { a: cur.a, b: nx.b, peak: Math.max(cur.peak, nx.peak) };
+    } else { out.push(cur); cur = nx; }
   }
   out.push(cur);
-  return out.map(g => {
-    let sum = 0, peak = 0;
-    for (const b of g) { sum += (b + 0.5) * bin; if (r.counts[b] > peak) peak = r.counts[b]; }
-    return { t: sum / g.length, peak };
-  });
+  return out.map(g => ({ t: (g.a + g.b + width) / 2, peak: g.peak,
+                         from: g.a, to: g.b + width }));
 }
 
 function turboFullSpan() { return TURBO ? TURBO.maxDur : null; }
@@ -2658,8 +2701,9 @@ function paintTurboWhat() {
     TURBO.rows.length + " baselines · " + total + " marks at K = " + pct
     + "% with a floor of " + floor + " (that is K " + Math.min(...ks) + "–"
     + Math.max(...ks) + " across these recordings; the floor binds on " + bound
-    + " of them) · co-active within " + bin + " s, gaps under " + merge
-    + " bins merged. No surrogate null here: a mark is a THRESHOLD, not an "
+    + " of them) · co-active within a MOVING " + bin + " s window — any alignment, "
+    + "no grid — gaps under " + merge
+    + " s merged. No surrogate null here: a mark is a THRESHOLD, not an "
     + "excess over chance, which is what makes the knobs live. Tune until the "
     + "marks agree with what you can see, then set that K in the review.";
   const z = document.getElementById("tZoomWhat");
