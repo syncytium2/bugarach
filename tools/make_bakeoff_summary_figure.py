@@ -118,19 +118,23 @@ def main(argv=None) -> int:
         return (f"<span style='display:inline-block;width:11px;height:11px;background:{colour};"
                 f"vertical-align:-1px;margin-right:5px'></span><span style='color:{colour}'>{text}</span>")
 
+    # Short lines, broken by hand: the PNG renderer's viewport is the page, and a
+    # header line longer than the plot row ran off the right edge unwrapped. A
+    # fixed-width pane was tried first and made the renderer measure no content,
+    # so the PNG silently kept its previous image under a newer HTML.
     header = pn.pane.HTML(
-        f"<div style='font:13px system-ui,sans-serif;color:#111;width:1100px;white-space:normal'>"
+        f"<div style='font:13px system-ui,sans-serif;color:#111'>"
         f"<b style='font-size:16px'>the bake-off, as intervals</b> &nbsp;—&nbsp; twelve detectors on "
-        f"simulated recordings; {folds} folds × {spf} seeds; per held-out fold {n_planted} planted events "
-        f"and {n_dis} correlated-burst distractors, each distractor call scored as a false alarm.<br>"
+        f"simulated recordings; {folds} folds × {spf} seeds.<br>"
+        f"Per held-out fold: {n_planted} planted events, {n_dis} correlated-burst distractors "
+        f"(each distractor call is scored as a false alarm).<br>"
         f"Rows are grouped by family and are <b>not ranked</b>. "
-        f"C is the dense block with nothing coordinated planted; a detector that fires there counts rate."
+        f"C is the dense block with nothing coordinated planted; firing there counts rate, not coordination."
         f"<div style='margin:5px 0 0'>{chip(INK_HAND, 'hand-written detector')} &nbsp; "
         f"{chip(INK_LEARNED, 'learned model (the tube, its variants, two baselines)')} &nbsp; "
-        f"<span style='color:#999'>- - -</span> F1 ceiling {ceil:.3f}: every planted event found, every "
-        f"distractor fired on</div>"
-        f"<div style='margin:4px 0 0;color:#777;font-size:11px'>{a.bakeoff.parent.name}/{a.bakeoff.name}</div></div>",
-        width=1100, sizing_mode="fixed")
+        f"<span style='color:#999'>- - -</span> F1 ceiling {ceil:.3f}: every planted event found, "
+        f"every distractor fired on</div>"
+        f"<div style='margin:4px 0 0;color:#777;font-size:11px'>{a.bakeoff.parent.name}/{a.bakeoff.name}</div></div>")
     a.out.mkdir(parents=True, exist_ok=True)
     _write(pn.Column(header, pn.pane.HoloViews(fig)), a.out, a.stem, png=True)
     return 0
