@@ -1,4 +1,4 @@
-<!-- vendored from syncytium2/murderboard @ 564b944 — canonical source; do NOT edit here, update upstream and re-copy -->
+<!-- vendored from syncytium2/murderboard @ 3a6a8fb — canonical source; do NOT edit here, update upstream and re-copy -->
 # The murderboard — critical review process for document deliverables (anti-slop)
 
 A standing, project-neutral review process. Its purpose is to stop **slop** — unsourced
@@ -25,6 +25,52 @@ conversational answers, throwaway diagnostics, or internal scratch notes.
 **When the deliverable rests on NEW analysis code** (a figure or number produced by a
 script written for this task), the review extends to that code — not just the prose.
 Agents 6–7 (RTFM, Reinventing the Wheel) below cover this.
+
+### Run it before the artifact leaves your hands
+
+The value of a finding and the cost of acting on one move in **opposite** directions, and they
+cross at submission:
+
+| The artifact is | A finding is | Declining to look is |
+|---|---|---|
+| a draft you still control | cheap, and fully actionable | pure loss — there is nothing yet to protect |
+| submitted, under review | expensive, and only partly actionable | reasonable |
+| published | maximally expensive, and unactionable | reasonable |
+
+This is **guidance and cannot be a gate** — nothing can know an artifact's submission state, and
+a rule that depends on being remembered is not a gate. It is written down anyway so that
+declining a late run has a stated basis: the right-hand column is a cost, not a lapse. A reviewer
+who skips a run on something already published is reading the table correctly, and one who skips
+it on a draft is giving up the column where a finding is free.
+
+A murderboard is a **pre-mortem**. The same eleven roles run after the fact produce an autopsy:
+identical findings, no patient.
+
+### When the artifact can no longer change — retrospective mode
+
+The loop below assumes you can repair. *"The deliverable is not done until this pass is clean"*
+is unsatisfiable for a paper already submitted or published, and so is *"a repaired deliverable
+has not been reviewed — re-review it."* Point the process at one anyway — which people do, because
+someone else's published paper is the safest thing to try this on — and it **truncates silently**:
+roles 1–11 run, the ledger comes out complete and correct, rounds 2 and 3 never happen, and
+nothing in the output says so. The role tally is not what was lost. The loop is, and nothing
+counts loops.
+
+So a run against an artifact that cannot change is a **different mode**, and says so:
+
+- **Declare it.** The run record carries `Mode: retrospective` and states the stopping reason —
+  *"round 1 of 3; repair and re-review unavailable, the artifact is published."* A report that
+  does not distinguish itself from a complete run will be read as one.
+- **Point it forward.** Ask *what would the next document's murderboard catch that this one's
+  review did not*, rather than *what is wrong with this one*. Same roles, same findings; the
+  output becomes a checklist for the next artifact instead of a list of regrets, which is the
+  only form in which it is still actionable.
+- **Triage findings by what it now costs to act.** On a submitted artifact some findings stay
+  cheap — a citation that does not say what it is cited for, a typo, a mislabelled panel are all
+  correctable at proof. Others are not: a statistical error, an overstated abstract.
+  **This governs which findings you ACT ON, never which roles you RUN.** Every role still runs;
+  see *The team is not optional*. A reviewer that skips the roles it expects to produce expensive
+  findings has inverted this process into a machine for confirming what it hoped.
 
 ## The core principle
 
@@ -215,8 +261,15 @@ reviewers were all looking in the same wrong place.
 ## The review team
 
 Spawn these as parallel subagents, each given the draft **and** pointers to the real
-sources (the data paths, the code, the companion docs, the handoffs). Each returns a
-structured finding list: *location · issue · severity · suggested fix · could-I-verify-it-against-a-source (yes/no)*.
+sources (the data paths, the code, the companion docs, the handoffs).
+
+**Each role returns a structured finding list**, one row per finding: *location · issue · severity ·
+suggested fix · could-I-verify-it-against-a-source (yes/no)*.
+
+Those are two paragraphs on purpose. The first is addressed to **whoever spawns the team**, the
+second to **each reviewer**, and `murderboard_agents.py` compiles only the second into the agent
+files — a single paragraph mixing the two would hand every reviewer an instruction to spawn the
+team it is already a member of.
 
 **Roles are split by what it COSTS to satisfy them, not by which reader they serve.** A judgment
 call ("would a cold reader follow this?") can be satisfied by thinking about it; a mechanical check
@@ -273,21 +326,19 @@ defect a role whose unit matches it (11, 9), or it will be found by the reader i
      as hard as the claim it replaces**: a correction is a new claim, and the first fix is often a
      different unsound mechanism that the same figure's own numbers refute.
 2. **Citation & reference validator — "DOI or Die."** For every reference or named attribution, confirm
-   the work **exists** and is **correctly attributed** (web search / DOI where needed).
+   the work **exists**, **says what is quoted**, and **is the origin** — traced back until the
+   citations stop, and forward to what the same authors did next (web search / DOI where needed).
+   Existence and correct attribution are half the check.
    **Zero tolerance** for fabricated or guessed bibliographic metadata. Flag any
    "representative / placeholder / finalize-later" reference as not-yet-verified. When you
    need the paper itself, follow the **lit-cache protocol** below — check the library
    first, fetch the OA copy, flag what you can't get. Do **not** verify a claim against a
    paper you only half-remember: get the text or flag the paper.
-   - **A verified citation can still be the WRONG citation — check the ORIGIN, not the earliest
-     source you happened to reach.** When the deliverable attributes a method, term, or result to
-     a source, establishing that the source *exists* and *says what is quoted* is only half the
-     check. Ask whether it is the **origin**: open the cited work's own references for that claim
-     and follow them backwards until they stop. Then **report where you stopped and why** — "the
-     root is paywalled, verified to one step short" is a finding; silence is not. Prefer the root
-     and cite later work as the modern restatement. Verifying everything *present* while never
-     asking what is *absent* is how a reference list can be entirely correct and still credit the
-     wrong paper.
+   - **How to establish the origin.** Open the cited work's own references for the claim and follow
+     them backwards until they stop. **Report where you stopped and why** — "the root is paywalled,
+     verified to one step short" is a finding; silence is not. Prefer the root and cite later work
+     as the modern restatement. Verifying everything *present* while never asking what is *absent*
+     is how a reference list can be entirely correct and still credit the wrong paper.
      - **A shared author is not a shared laboratory.** "Which lab" is the **last author plus the
        affiliation**, not name overlap — a first author is often a trainee in someone else's
        group, and the same person appearing on both papers is exactly what a method being
@@ -314,19 +365,8 @@ defect a role whose unit matches it (11, 9), or it will be found by the reader i
      That evidence is real, it is frequently decisive, and it is invisible to every literature
      search that will ever be run. It is also the **cheapest check in this document**: one
      question, no database, no paywall. **"Nobody was asked" is a residual `⚠`**, recorded exactly
-     like an unsearched field. Where correspondence exists, **cite it and date it** — a personal
+     like an unsearched field. Where correspondence exists, quote it and date it — a personal
      communication is citable, and an undated one is not checkable.
-   - ⚠ **CITE IT; DO NOT QUOTE IT. This line used to read "quote it and date it", and that
-     instruction put a private letter's sentences into a public repository twice** — once in a
-     PR description on a stranger's project, once in
-     [`docs/todo/2026-08-24-kreuz-answered-the-spike-synch-questions-in-april.md`](todo/2026-08-24-kreuz-answered-the-spike-synch-questions-in-april.md),
-     where they stood public for nine days. **Paraphrase the content, which is yours to state,
-     and attribute it.** *"Kreuz, personal communication, 2026-04-23"* is a complete citation and
-     exactly as checkable as a block quote. The substance is what the review needs; the wording
-     belongs to the correspondent. If the wording genuinely carries load no paraphrase can,
-     **ask them first, in those terms, and record the answer** — asking afterwards is not asking,
-     and a clearance covers only the material the person was actually shown. **The deliverable is
-     usually public. The letter never was.**
 3. **Consistency auditor — "Cross-Examiner."** Cross-check **within** the document and **against companion
    docs**: counts, totals, terminology, cross-references, and figure↔text agreement. Flag
    every contradiction. **Watch for one population counted on different bases** (per-detector flags vs
@@ -393,6 +433,20 @@ defect a role whose unit matches it (11, 9), or it will be found by the reader i
      agreement on every recording. Both sides were the raw recording period; the defect was
      that the analysis should have used a *different* column — the producer's analysis window
      — and the check had no visibility of it at all.)
+   - **A PASSING check can be asserting the defect. When a defect is found, read the tests that
+     did not fail.** The two rules above are about a check with no power; this is about a check
+     with full power, aimed at the wrong outcome. A test written beside a bug encodes the bug as
+     the specification, goes green, and then *defends* it: the next person to fix the behaviour
+     sees a red suite and reads it as their own mistake. So for any defect, ask which assertion
+     should have caught it and did not — and if an assertion covered that exact behaviour and
+     passed, **the fix must flip it, not add a sibling beside it.** A repair that leaves the old
+     assertion standing has written the defect down twice. State in the record which assertions
+     flipped; that count is evidence about how the defect survived, and it is the one number a
+     reader cannot reconstruct afterwards. (Incident: a compiler that wrote into a *shared*
+     directory deleted every file it had not itself produced. Two selftest assertions — "an
+     orphaned agent file FAILS check" and "write removes the orphan" — had been green since the
+     tool was written, and both were describing a consumer's own subagent on its way to being
+     unlinked. The suite was not silent about the behaviour; it was vouching for it.)
    - **"Can the alarm ring?" — a null result needs a test with the power to fail.** The most
      dangerous sentence in an analysis deliverable is *"we checked for X and it did not happen"*: it
      reads as evidence while resting on nothing if the check could never have registered X. For
@@ -432,6 +486,49 @@ defect a role whose unit matches it (11, 9), or it will be found by the reader i
 5. **Line editor — "Kill Your Darlings."** Clarity and precision: undefined jargon, ambiguous sentences,
    redundancy, grammar, logical flow. Every sentence must earn its place and assert
    exactly one true thing.
+   - **The house voice.** Short sentences, concrete nouns, active verbs. Cut every word that does
+     not change the meaning. Prefer the specific example to the general claim. Name what the
+     document does not know instead of hedging around it. No throat-clearing, no preview of what
+     a section is about to say, no closing paragraph that recaps. Dry humour is fine where it is
+     also true; cut it where it is decoration.
+   - **Count first, then judge — and run the tool, do not describe it.** Role 5 owns both a
+     judgement (is this block longer than its point?) and a search (does this word appear?). The
+     architecture note above says what happens when one role holds both: *the prose answer covers
+     for the file nobody opened.* So the search is a script and its **output is pasted, not
+     summarised** — `murderboard_prose.sh <artifact>`, one row per hit and one row per block:
+     **line · construction · kind**, then **block · words · sentences**. **"Not run" is a failure,
+     not a clean result.** The tool cannot judge and does not try: it reports that a block is 220
+     words, never that the block is too long. The columns it cannot fill — *which sentence is the
+     payload, where it sits, what the other words buy* — are this role's, and a table returned
+     without them is a tool receipt, not a review.
+   - **The banned constructions — check these first, mechanically.** They are forms, not topics,
+     so they are searchable and either present or absent: *not just X, but Y* · *it's not about A,
+     it's about B* · *it's worth noting* · **delve, leverage, robust, seamless, crucial,
+     landscape, tapestry** · a three-item list built for rhythm rather than because there are
+     three things · an em-dash pivot into an uplifting close · an opener of the form *"In today's
+     ___"*. Report each hit with its location. A hit is a defect unless the author states why it
+     stays. **This list is a house convention, not a finding about English** — a consuming
+     project should edit it, and a role that cites it must say which list it ran.
+   - **The passage test — what does this block assert that its last sentence does not?** A block
+     can be true, correctly placed, and clean line by line, and still spend four hundred words
+     arriving at one. **Every other role passes it**: role 4 finds the claim supported, role 11
+     finds the section in its right position, role 8 finds a stranger able to follow it, role 9
+     wants a picture rather than a cut. Nobody is left holding the question *did this need to be
+     this long* — which is why it reaches a reader as the first thing they say about the draft.
+     So, per block: write the one sentence it exists to deliver, then name what the remaining
+     words buy — evidence a sceptic would actually demand, or the author's satisfaction at having
+     been thorough. Cut the second kind. **The payload is usually at the end**, because the block
+     was written in the order it was thought; promoting it is the fix more often than trimming is.
+     (Boundary with Start With the Problem: role 11 owns the order of the sections and may not
+     reach inside one; this owns the paragraph — a block in exactly the right place, three times
+     longer than its point.)
+   - **Why this role gets a list where the others get judgement.** An instruction to write with
+     more wit, or in the voice of some admired author, cannot fail: nothing in the draft can
+     contradict it, so it yields a different voice on every run and no reviewer can dispute the
+     result. Worse, a long stack of such instructions averages out — the traits blend instead of
+     stacking, and the output lands on the same neutral register the instruction was meant to
+     escape. A named construction is either in the text or it is not. Prefer the check that can
+     fail; this is *"Can the alarm ring?"* (role 4) applied to prose.
 6. **Methods / domain expert — "RTFM."** *Spawn whenever the deliverable rests on a specific
    method, tool, or library* (a statistical model, a signal-processing routine, an
    inference algorithm, a numerical library). **Before** reviewing, ground in the actual
@@ -666,6 +763,83 @@ standing to say "this should be a figure," so without 9 a deck ships as an essay
 other role reads the sequence, so without 11 it ships in the order it was written rather than the
 order it argues.
 
+### What each role must be able to reach
+
+A role that cannot perform its check still returns prose, and prose describing a check is
+indistinguishable in the report from the check. *DOI or Die* with no way to reach a DOI reports on
+citations it never resolved; *Ship It* with no way to open a render reports on a figure it never
+saw. That is this document's own **"can the alarm ring?"** rule turned on the reviewers themselves,
+so what a role may reach is part of the role's definition and belongs here, beside its checklist —
+not in whichever harness happens to spawn it.
+
+**No reviewer may edit the artifact.** Findings go to the main thread, which adjudicates and applies
+them (steps 3 and 5). A reviewer able to repair what it finds can also make a finding *disappear*
+before it reaches the record, and the record is the only thing a reader can check. No role is
+granted `Edit`, `Write` or `NotebookEdit`.
+
+**For some roles that is a boundary; for the rest it is a request, and the difference is `Bash`.**
+Withholding the three editing tools confines a role that holds none of them — the judgment roles,
+granted only `Read`, `Grep` and `Glob`, genuinely cannot alter anything. Every role granted a shell
+can: `rm`, `>` and `sed -i` are writes, and a shell subsumes all three withheld tools. For those
+roles the no-edit rule is a **discipline the reviewer is asked to keep**, not a boundary the grant
+imposes. This document will not pretend otherwise. A review harness whose own documentation
+overstates what it confines is worse than one that says nothing, because a consumer vendors on the
+strength of the sentence — and overstating a guarantee is the exact defect this document sends
+eleven roles to look for.
+
+⚠ **Open gap, stated as one.** The shell is not removable: role 1 must recompute, role 10 must
+render, and both must write intermediates somewhere. The repair is a declared writable scratch
+path plus a harness-level restriction on everything outside it, and **it is not built yet**. Until
+it is: run the murderboard on a checkout you would let a colleague run a script in, and treat a
+reviewer that reports touching anything outside the scratch path as a finding about the run.
+
+**Every reviewer declares its grant before it reviews.** A grant written down and a grant that
+arrived are different facts, and nothing downstream can tell them apart. A role spawned through a
+fallback path — because the named agent was not registered, or the harness never loaded it —
+inherits whatever tools that harness happened to hand it: sometimes fewer than its grant allows,
+sometimes *more*, including the editing tools the paragraph above forbids. So each role's
+**first output line** states what it actually holds: `GRANT <n> ok — <tools held>`, or
+`GRANT <n> MISMATCH — missing <tools>; holds <forbidden tools>`. Both are acceptable outcomes and
+only silence is not. A mismatch is a finding **about the run**, not about the artifact: it belongs
+in the ledger, and the run record's `roles:` line must then say the review took a fallback path
+rather than claiming named agents. `murderboard_agents.py verify <report>` refuses a report that
+claims grants its own reviewers said they did not have — because a rule that depends on the
+reviewer remembering to mention it is the same non-gate this document was written about.
+
+**Bash goes to the roles that must RUN something to answer.** 1 recomputes quantities and counts
+what is missing; 4 walks a constructed failure through the metric to see whether the number moves;
+7 locates the canonical implementation and compares it line for line; 9 measures a rendered
+bounding box; 10 renders, crops and zooms; and **2 and 6 run the lit tool** to fetch the papers
+this document forbids them to remember. **Web access also goes to 2 and 6** — the only two roles
+whose sources live outside the repository. The rest are judgment roles reading the artifact and its
+companions; handing them a shell would not make their answers more checkable, and a role that could
+have gone looking for evidence but reasoned instead is worse than one that plainly could not.
+**The table below is the authority and this paragraph is a gloss on it** — where they disagree the
+table is right, because the table is what the compiler reads and this paragraph is what drifted.
+
+`model` is `inherit` for every role: which model to spend on which reviewer is a property of the
+consumer's environment, not of the process, and this document declines to guess. Tune it here if you
+have a reason — that keeps the grant and the checklist in the same place, which is the point.
+
+| # | role | may reach | model |
+|---|---|---|---|
+| 1 | Prove It | Read, Grep, Glob, Bash | inherit |
+| 2 | DOI or Die | Read, Grep, Glob, Bash, WebSearch, WebFetch | inherit |
+| 3 | Cross-Examiner | Read, Grep, Glob | inherit |
+| 4 | Reviewer 2 | Read, Grep, Glob, Bash | inherit |
+| 5 | Kill Your Darlings | Read, Grep, Glob | inherit |
+| 6 | RTFM | Read, Grep, Glob, Bash, WebSearch, WebFetch | inherit |
+| 7 | Reinventing the Wheel | Read, Grep, Glob, Bash | inherit |
+| 8 | You Lost Me | Read, Grep, Glob | inherit |
+| 9 | Show, Don't Tell | Read, Grep, Glob, Bash | inherit |
+| 10 | Ship It | Read, Grep, Glob, Bash | inherit |
+| 11 | Start With the Problem | Read, Grep, Glob | inherit |
+
+`murderboard_agents.py` compiles this table together with the role blocks above into one agent file
+per role, under `agents/`. **The table and the blocks are the authority; the agent files are their
+output** — edit a role here and regenerate, never the other way round. A hand-edited agent file is a
+second copy of a rule, which is how a roster stops describing the review that actually ran.
+
 ### The team is not optional
 
 **Every role runs on every deliverable.** The matrix below records what each role is *for*, not a
@@ -873,6 +1047,12 @@ with the `MURDERBOARD_LIT` environment variable (see the tool's header). Three s
 - **Unverifiable claim** that cannot be checked right now → **flag inline** (`⚠ VERIFY …`),
   never delete-and-hope or guess a plausible number.
 - **Style / clarity** → apply when it improves precision; do not pad.
+- **A named construction or an over-length block** (role 5, with a line number) → **not covered by
+  the line above.** "Apply when it improves precision" is a disposition for taste, and taste is
+  what a style finding usually is. A hit from `murderboard_prose.sh` is not taste: it has a
+  location, it was found by a search that could have come back empty, and waving it off returns
+  the run to the state the search existed to end. Fix it, or record *why it stays* next to its
+  line number. Neither of those is "do not pad".
 - Surface residual `⚠` flags **prominently** in the delivery message.
 
 ## Output contract
@@ -901,6 +1081,21 @@ roster out of this file and verifies the report accounts for every role:
 murderboard_roster.sh list            # the roster, derived from this file (never recalled)
 murderboard_roster.sh check REPORT.md # 0 = every role accounted for, 1 = one is missing
 ```
+
+**The record declares its mode**, on a line of its own: `Mode: standard` (the full loop ran, or
+was available to run) or `Mode: retrospective` (the artifact cannot change — see *When the
+artifact can no longer change*, which also requires a stated stopping reason). The gate reports
+the mode it found, and an undeclared mode is reported as **undeclared** rather than assumed
+complete — the same discipline the freshness gate uses, where the one verdict it may never
+produce is a false "current". Undeclared still exits 0, so existing reports keep passing; a
+project that wants the declaration enforced opts in:
+
+```
+murderboard_roster.sh check --require-mode REPORT.md   # undeclared mode is a failure
+```
+
+An eleven-of-eleven ledger says every role ran. It does not say the loop finished, and until the
+mode line existed there was nowhere for that difference to be recorded.
 
 Because the roster is derived, adding a role here propagates to every consumer's check with no
 edit anywhere else. A failing check does not mean "write more" — it means a role either never
@@ -1066,6 +1261,12 @@ seriously than a rule stated in the abstract.
   laboratory is a research-integrity problem. The PI caught it from the delivered summary in one
   sentence. Every citation in the document resolved — nine PMIDs and a DataCite DOI — and an
   author-list error in the same reference had been caught and fixed by role 2 on an earlier pass.
+  **Sequel, 2026-08-25.** The fix was filed as a sub-bullet under role 2 and the role's opening
+  sentence still read "confirm the work exists and is correctly attributed". Every summary written
+  from that sentence — including this project's own briefing document and its public explainer —
+  reproduced the pre-fix rule, because a summariser reads the headline and stops. A rule filed
+  below the line a reader actually reads has not been filed. **When a role gains a check, the
+  role's first sentence is part of the change.**
   The reviewer verified everything present and never asked what was absent; one backward step,
   named in a single line of the 2003 paper's own Methods, would have found it. In the same run a
   suite of detectors was cleared against the spike-train literature and reported as "ours as far as
@@ -1120,3 +1321,19 @@ seriously than a rule stated in the abstract.
   fresh from upstream rather than resolve toward either side, because both sides are stamps and
   neither is the content. Lesson: **the thing that makes a check trustworthy is that it can say
   "I cannot tell"**, and a stamp is metadata about a file, not evidence the file is intact.
+- **Adversarial reviewer / a passing test defending the defect** (2026-08-28, `murderboard_agents.py`)
+  — the tool that compiles this file's roles into agent files writes them into `.claude/agents`,
+  which is the harness's **shared** project agent directory, not the tool's own. Its refresh deleted
+  every `*.md` there it had not itself produced, and its `check` reported those files as *orphans* —
+  which is what made the skill's unattended `check || write` fire the delete. A consumer with their
+  own subagents lost them on their first review. **Two selftest assertions had been green since the
+  tool was written** — "an orphaned agent file FAILS check" and "write removes the orphan" — and
+  both described a consumer's own agent on its way to being unlinked. The suite was not silent about
+  the behaviour; it was **vouching** for it, and a later maintainer fixing this would have met a red
+  suite and read it as their own error. The repair had to **flip** those two assertions rather than
+  add safe ones beside them. Three lessons, and the second is the one that generalises: a tool
+  writing into a directory it does not own may remove **only what it can prove it wrote** (here, a
+  generated banner in the file's own content — not its name, not its location); when a defect is
+  found, the tests that *passed* are evidence and must be read; and an unreadable file is never
+  evidence that it is yours to delete. Reported by the review team's own role 6 and role 3 running
+  against the branch that introduced it, and reproduced before repair: two files in, zero out.
