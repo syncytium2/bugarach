@@ -20,11 +20,13 @@ rasters and a new fireflies plot before after. Single group fast and slow column
 
 ## The loop, as it ran
 
-Every step of [`pipeline.md`](../pipeline.md) was walked in orchestrator mode, in order:
-open a folder → assess (machine half of MAHICE) → derive the spec → simulate, calibrate the
-six and train the tube variants → detect on the real folder → output. The summary rasters
-(`tools/make_group_raster_summary.py`) and a new before/after figure
-(`tools/make_before_after_figure.py`) are the output; a `for_fireflies/` note tells that
+Seven of [`pipeline.md`](../pipeline.md)'s eight steps were walked in orchestrator mode,
+in order: open a folder → assess (the machine half of MAHICE) → derive the spec → **simulate
+and validate, NOT run** (it needs a person to compare) → tune and test in one bake-off,
+calibrating the six and training the tube variants → detect on the real folder → output.
+The summary rasters (`tools/make_group_raster_summary.py`), a before/after figure
+(`tools/make_before_after_figure.py`) and an interval rendering of the bake-off
+(`tools/make_bakeoff_summary_figure.py`) are the output; a `for_fireflies/` note tells that
 team which two files to draw from.
 
 ## Three deviations, each on instruction or by necessity, each stamped on its artifact
@@ -65,4 +67,6 @@ team which two files to draw from.
 ## In the repository from this run
 
 `tools/make_group_raster_summary.py --unscanned` with its test; `tools/make_before_after_figure.py`
-with its test; this record; the darkroom claim on `docs/SESSIONS.md`. No data, no numbers.
+with its test; `tools/make_bakeoff_summary_figure.py`; a corrected note in `src/bugarach/adapt.py`
+(its spacing-floor note quoted an intermediate duration); this record; the darkroom claim on
+`docs/SESSIONS.md`. No data, no numbers.
