@@ -88,12 +88,12 @@ def build(d, *, width=400, row_h=26):
             xlim=xlim, padding=0.05, show_grid=False)
         return ov
 
-    a = panel("A", "F1 on the held-out fold (dot: mean of 4 folds; line: fold range)",
+    a = panel("A", "F1, held-out fold (dot mean, line fold range)",
               [r["f1"] for r in rows], [r["f1_lo"] for r in rows], [r["f1_hi"] for r in rows],
               xlim=(0, 1), vline=ceil)
-    b = panel("B", f"distractor hits per fold, of {n_dis} planted (each scored as a false alarm)",
+    b = panel("B", f"distractor hits per fold (of {n_dis})",
               [r["distractor"] for r in rows], xlim=(-0.5, n_dis + 0.5))
-    c = panel("C", "firings into the promiscuity probe per fold (nothing planted there)",
+    c = panel("C", "probe firings per fold",
               [r["probe"] for r in rows], xlim=(-5, max(r["probe"] for r in rows) * 1.1 + 5))
     for p in (b, c):
         p.opts(yaxis=None, width=int(width * 0.8))
@@ -119,16 +119,18 @@ def main(argv=None) -> int:
                 f"vertical-align:-1px;margin-right:5px'></span><span style='color:{colour}'>{text}</span>")
 
     header = pn.pane.HTML(
-        f"<div style='font:13px system-ui,sans-serif;color:#111;max-width:1180px;white-space:normal'>"
+        f"<div style='font:13px system-ui,sans-serif;color:#111;width:1100px;white-space:normal'>"
         f"<b style='font-size:16px'>the bake-off, as intervals</b> &nbsp;—&nbsp; twelve detectors on "
-        f"simulated recordings, {folds} folds × {spf} seeds, {n_planted} planted events and {n_dis} "
-        f"correlated-burst distractors per held-out fold. Rows are grouped by family and are not ranked."
+        f"simulated recordings; {folds} folds × {spf} seeds; per held-out fold {n_planted} planted events "
+        f"and {n_dis} correlated-burst distractors, each distractor call scored as a false alarm.<br>"
+        f"Rows are grouped by family and are <b>not ranked</b>. "
+        f"C is the dense block with nothing coordinated planted; a detector that fires there counts rate."
         f"<div style='margin:5px 0 0'>{chip(INK_HAND, 'hand-written detector')} &nbsp; "
-        f"{chip(INK_LEARNED, 'learned model (the tube and its variants, two baselines)')} &nbsp; "
-        f"<span style='color:#999'>- - -</span> the F1 ceiling for a detector that recovers every planted "
-        f"event and fires on every distractor: {ceil:.3f}</div>"
+        f"{chip(INK_LEARNED, 'learned model (the tube, its variants, two baselines)')} &nbsp; "
+        f"<span style='color:#999'>- - -</span> F1 ceiling {ceil:.3f}: every planted event found, every "
+        f"distractor fired on</div>"
         f"<div style='margin:4px 0 0;color:#777;font-size:11px'>{a.bakeoff.parent.name}/{a.bakeoff.name}</div></div>",
-        width=1180)
+        width=1100, sizing_mode="fixed")
     a.out.mkdir(parents=True, exist_ok=True)
     _write(pn.Column(header, pn.pane.HoloViews(fig)), a.out, a.stem, png=True)
     return 0
