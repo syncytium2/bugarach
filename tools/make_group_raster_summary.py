@@ -339,7 +339,7 @@ def header_html(group: str, treatment: str, members, ext, folder: Path,
         # nobody looked, which is not the same as nothing being there.
         red_key = ("<b style='color:#b00'>⚠ no field-step scan has been run on this "
                    "folder</b> (the producer's export report says UNCHECKED) — nothing "
-                   "is marked, and the absence of red is not evidence of a clean corpus")
+                   "is marked, and the absence of red is not evidence of a clean cohort")
     return (
         f"<div style='font:13px system-ui,sans-serif;color:#111;margin:0 0 6px'>"
         f"<b style='font-size:16px'>{group} · {treatment}</b> &nbsp;—&nbsp; "

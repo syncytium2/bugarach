@@ -1,57 +1,87 @@
 #!/usr/bin/env python3
-"""The bake-off as intervals, by family, with the two columns F1 cannot see.
+"""The bake-off as intervals, by family, with the columns F1 cannot see.
 
-    python tools/make_bakeoff_summary_figure.py --bakeoff RUN/bakeoff.json --out DIR
+    python tools/make_bakeoff_summary_figure.py --bakeoff RUN/bakeoff.json [--out DIR] [--also DIR]
 
-Three lettered panels, one row per detector, grouped by family (hand-written, then
-learned) and NOT sorted by score — a bar chart sorted by F1 says "ranking" before
-its label is read, and at four folds this table is intervals, not a ranking
-(murderboard 2026-09-07, roles 4, 8 and 10 on `make_bakeoff_figures.py`'s output).
+Two pages. `bakeoff_intervals`: four lettered panels, one row per detector, grouped
+by family (hand-written, then learned) and NOT sorted by score — a bar chart sorted
+by F1 says "ranking" before its label is read, and at four folds this table is
+intervals, not a ranking (murderboard 2026-09-07, roles 4, 8 and 10 on
+`make_bakeoff_figures.py`'s output).
 
-  A · F1 on the held-out fold: the fold range as a line, the mean as a dot.
-  B · distractor hits, of the correlated bursts planted per held-out fold — the
-      scorer counts each as a false alarm, so a detector that recovers every
-      planted event and fires on every burst sits on a ceiling the panel draws.
-  C · firings into the promiscuity probe, the dense block with nothing planted.
+  A · F1 on the held-out fold: the fold range as a line, the mean as a dot, and the
+      ceiling a detector reaches by finding every planted event and firing on every
+      distractor.
+  B · distractor hits per fold, of the correlated bursts planted — the scorer counts
+      each as a false alarm.
+  C · firings into the promiscuity probe, PER MINUTE of probe, which is the unit the
+      bench gates on (`bench.MAX_PROBE_PER_MIN`); each hand-written detector's gate
+      is drawn as a tick, so a calibrated point the gate would refuse is visible.
+  D · recall against precision, with the iso-F1 curve at the ceiling and the
+      precision a detector has when it fires on every distractor.
 
-Every colour and glyph is keyed in the header, in its colour, at body size.
+`bakeoff_knobs`: one row per hand-written detector, its search grid as ticks, the
+knob each fold chose as filled dots and the shipped operating point as an open dot,
+grid ends shaded — how far the calibrated instrument sits from the shipped one, and
+whether the search ended on an edge.
+
+Distractor and probe conversions come from the file's own spec through
+`performance.fold_scores_from_bakeoff`, never from a constant. Every colour and
+glyph is keyed in the header, in its colour, at body size.
 """
 from __future__ import annotations
 
 import argparse
 import json
+import math
+import os
 import sys
+import tempfile
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
-HAND = [("rate", "rate+context"), ("coact", "CoactDetect"), ("loco", "LoCo"),
-        ("sce", "binned SCE"), ("cicada", "locust"), ("sync", "SPIKE-synch")]
+from bugarach import paths  # noqa: E402
+from bugarach.bench import MAX_PROBE_PER_MIN, OPERATING_POINTS  # noqa: E402
+from bugarach.detect_folder import DETECTORS  # noqa: E402
+from bugarach.ui.app import TITLES  # noqa: E402
+
+#: The public build withholds locust as "sixth" (ui.app.TITLES); the darkroom is not
+#: the public build, so the one key is overridden here and nowhere else.
+NAMES = {**TITLES, "cicada": "locust"}
 LEARNED = [("tube", "tube (center-surround)"), ("tube_guard", "tube_guard"),
            ("tube_ratio", "tube_ratio"), ("tube_ratio_guard", "tube_ratio_guard"),
            ("trace", "pooled trace"), ("tiny", "per-cell bank")]
-INK_HAND, INK_LEARNED = "#3b6ea5", "#8b1a1a"
+INK_HAND, INK_LEARNED, INK_GATE = "#3b6ea5", "#8b1a1a", "#c0392b"
 
 
 def rows_of(d):
+    """One row per detector with the per-fold conversions the spec dictates."""
+    spf = int(d["seeds_per_fold"])
+    n_dis = int(d["spec"]["n_distractors"]) * spf
+    hw = d["spec"]["hot_window"]
+    probe_min = (float(hw[1]) - float(hw[0])) / 60.0 * spf
     out = []
-    for grp, names, ink in (("hand_written", HAND, INK_HAND), ("learned", LEARNED, INK_LEARNED)):
+    for grp, names, ink in (("hand_written", [(k, NAMES[k]) for k in DETECTORS], INK_HAND),
+                            ("learned", LEARNED, INK_LEARNED)):
         for key, label in names:
             r = d[grp].get(key)
             if r is None:
                 continue
             pf = r["per_fold"]
+            dis = [f["distractor_hits"] for f in pf]
+            probe = [f["hot_fa"] / probe_min for f in pf]
             out.append(dict(
-                key=key, label=label, ink=ink,
+                key=key, label=label, ink=ink, grp=grp,
                 f1=r["f1"]["mean"], f1_lo=r["f1"]["min"], f1_hi=r["f1"]["max"],
-                folds=[f["f1"] for f in pf],
-                distractor=sum(f.get("distractor_hits", 0) for f in pf) / len(pf),
-                n_distractor=max((f.get("n_distractors", 0) for f in pf), default=0),
-                probe=r["hot_fa"]["mean"],
-                n_planted=pf[0].get("n_planted", 0),
+                recall=r["recall"]["mean"], precision=r["precision"]["mean"],
+                dis=sum(dis) / len(dis), dis_lo=min(dis), dis_hi=max(dis),
+                probe=sum(probe) / len(probe), probe_lo=min(probe), probe_hi=max(probe),
+                gate=MAX_PROBE_PER_MIN.get(key),
+                knobs=[f.get("knob_value") for f in pf],   # learned rows carry a threshold, not a knob
             ))
-    return out
+    return out, n_dis, probe_min, int(pf[0]["n_planted"]) if out else 0
 
 
 def ceiling(n_planted: int, n_distractor: int) -> float:
@@ -59,84 +89,165 @@ def ceiling(n_planted: int, n_distractor: int) -> float:
     if not n_planted:
         return float("nan")
     p = n_planted / (n_planted + n_distractor)
-    return 2 * p * 1.0 / (p + 1.0)
+    return 2 * p / (p + 1.0)
 
 
-def build(d, *, width=400, row_h=26):
+def build_intervals(d, *, width=270, row_h=26):
     import holoviews as hv
     hv.extension("bokeh")
-    rows = rows_of(d)
-    n_dis = max(r["n_distractor"] for r in rows) or 12
-    n_planted = rows[0]["n_planted"] if rows else 0
+    rows, n_dis, probe_min, n_planted = rows_of(d)
     ceil = ceiling(n_planted, n_dis)
-    labels = [r["label"] for r in rows][::-1]         # top row first
+    p_ceil = n_planted / (n_planted + n_dis)
+    labels = [r["label"] for r in rows][::-1]
     height = row_h * len(rows) + 60
+    ypos = {r["label"]: labels.index(r["label"]) for r in rows}
 
-    def panel(letter, xlabel, xs, lo=None, hi=None, xlim=None, vline=None):
+    def panel(letter, xlabel, xs, lo, hi, xlim, vline=None, gates=False):
         els = []
-        for i, r in enumerate(rows):
-            y = labels.index(r["label"])
-            if lo is not None:
-                els.append(hv.Curve([(lo[i], y), (hi[i], y)]).opts(color=r["ink"], line_width=2))
-            els.append(hv.Scatter([(xs[i], y)]).opts(color=r["ink"], size=8))
+        for r in rows:
+            y = ypos[r["label"]]
+            els.append(hv.Curve([(lo[r["key"]], y), (hi[r["key"]], y)]).opts(color=r["ink"], line_width=2))
+            els.append(hv.Scatter([(xs[r["key"]], y)]).opts(color=r["ink"], size=8))
+            if gates and r["gate"] is not None:
+                els.append(hv.Scatter([(r["gate"], y)]).opts(color=INK_GATE, marker="dash", size=14, line_width=2))
         if vline is not None:
             els.append(hv.VLine(vline).opts(color="#999", line_dash="dashed", line_width=1))
-        ov = hv.Overlay(els).opts(
+        return hv.Overlay(els).opts(
             width=width, height=height, toolbar=None, show_legend=False,
             xlabel=f"{letter} · {xlabel}", ylabel="",
             yticks=list(enumerate(labels)), ylim=(-0.7, len(labels) - 0.3),
             xlim=xlim, padding=0.05, show_grid=False)
-        return ov
 
-    a = panel("A", "F1, held-out fold (dot mean, line fold range)",
-              [r["f1"] for r in rows], [r["f1_lo"] for r in rows], [r["f1_hi"] for r in rows],
-              xlim=(0, 1), vline=ceil)
-    b = panel("B", f"distractor hits per fold (of {n_dis})",
-              [r["distractor"] for r in rows], xlim=(-0.5, n_dis + 0.5))
-    c = panel("C", "probe firings per fold",
-              [r["probe"] for r in rows], xlim=(-5, max(r["probe"] for r in rows) * 1.1 + 5))
+    by = lambda k: {r["key"]: r[k] for r in rows}  # noqa: E731
+    a = panel("A", "F1 on the held-out fold",
+              by("f1"), by("f1_lo"), by("f1_hi"), (0, 1), vline=ceil)
+    b = panel("B", f"distractor hits per fold, of {n_dis}",
+              by("dis"), by("dis_lo"), by("dis_hi"), (-0.5, n_dis + 0.5))
+    pmax = max(r["probe_hi"] for r in rows)
+    gmax = max(g for g in MAX_PROBE_PER_MIN.values())
+    c = panel("C", "probe firings per minute",
+              by("probe"), by("probe_lo"), by("probe_hi"), (-0.5, max(pmax, gmax) * 1.1 + 0.5),
+              gates=True)
     for p in (b, c):
         p.opts(yaxis=None, width=int(width * 0.8))
-    return hv.Layout([a, b, c]).cols(3).opts(shared_axes=False, toolbar=None), ceil, n_dis, n_planted
+
+    # D · recall against precision, with the bound drawn
+    els = []
+    for r in rows:
+        els.append(hv.Scatter([(r["recall"], r["precision"])]).opts(color=r["ink"], size=9))
+        els.append(hv.Text(r["recall"], r["precision"], "  " + r["label"], halign="left",
+                           valign="center", fontsize=8).opts(color=r["ink"]))
+    rs = [i / 200 for i in range(1, 201)]
+    iso = [(rc, ceil * rc / (2 * rc - ceil)) for rc in rs if 2 * rc - ceil > 0 and ceil * rc / (2 * rc - ceil) <= 1.0]
+    els.append(hv.Curve(iso).opts(color="#999", line_dash="dashed", line_width=1))
+    els.append(hv.HLine(p_ceil).opts(color="#999", line_dash="dotted", line_width=1))
+    dpanel = hv.Overlay(els).opts(
+        width=int(width * 1.35), height=height, toolbar=None, show_legend=False,
+        xlabel="D · recall (fraction of planted events found)",
+        ylabel="precision (hits over scored calls)", xlim=(0, 1.32), ylim=(0.3, 1.02),
+        padding=0.05, show_grid=False)
+    return hv.Layout([a, b, c, dpanel]).cols(4).opts(shared_axes=False, toolbar=None), ceil, n_dis, probe_min, n_planted
+
+
+def build_knobs(d, *, width=900, row_h=44):
+    """Each hand-written detector's grid as ticks; calibrated folds filled, shipped open."""
+    import holoviews as hv
+    hv.extension("bokeh")
+    rows, _, _, _ = rows_of(d)
+    hand = [r for r in rows if r["grp"] == "hand_written"]
+    els = []
+    labels = []
+    for i, r in enumerate(hand[::-1]):
+        op = OPERATING_POINTS[r["key"]]
+        grid = list(op.grid)
+        shipped = op.params.get(op.knob)
+        y = i
+        labels.append((y, f"{r['label']} · {op.knob}"))
+        n = len(grid)
+        xs = [j / (n - 1) for j in range(n)]
+        for j, g in enumerate(grid):
+            els.append(hv.Scatter([(xs[j], y)]).opts(color="#bbb", size=5))
+            els.append(hv.Text(xs[j], y - 0.38, f"{g:g}", halign="center", fontsize=7).opts(color="#666"))
+        # grid ends: a search that stopped here was too narrow
+        els.append(hv.Curve([(-0.02, y), (0.0, y)]).opts(color=INK_GATE, line_width=6, alpha=0.35))
+        els.append(hv.Curve([(1.0, y), (1.02, y)]).opts(color=INK_GATE, line_width=6, alpha=0.35))
+        for k in r["knobs"]:
+            if k in grid:
+                els.append(hv.Scatter([(xs[grid.index(k)], y + 0.12)]).opts(color=INK_HAND, size=9))
+        if shipped in grid:
+            els.append(hv.Scatter([(xs[grid.index(shipped)], y - 0.12)]).opts(
+                color="white", line_color=INK_HAND, line_width=2, size=10))
+    fig = hv.Overlay(els).opts(
+        width=width, height=row_h * len(hand) + 70, toolbar=None, show_legend=False,
+        xlabel="the search grid, as steps (values under each tick; red ends = grid edge)",
+        ylabel="", yticks=labels, ylim=(-0.8, len(hand) - 0.2), xlim=(-0.05, 1.05),
+        xaxis=None, show_grid=False)
+    return fig
+
+
+def _chip(colour, text):
+    return (f"<span style='display:inline-block;width:11px;height:11px;background:{colour};"
+            f"vertical-align:-1px;margin-right:5px'></span><span style='color:{colour}'>{text}</span>")
 
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--bakeoff", type=Path, required=True)
-    ap.add_argument("--out", type=Path, required=True)
-    ap.add_argument("--stem", default="bakeoff_intervals")
+    ap.add_argument("--out", type=Path, default=None, help="destination (default: the darkroom)")
+    ap.add_argument("--also", type=Path, default=None, help="write a second copy here")
     a = ap.parse_args(argv)
 
     import panel as pn
     from make_generator_figures import _write
 
     d = json.loads(a.bakeoff.read_text())
-    fig, ceil, n_dis, n_planted = build(d)
+    fig, ceil, n_dis, probe_min, n_planted = build_intervals(d)
     folds, spf = d.get("folds"), d.get("seeds_per_fold")
+    if a.out is None:
+        root = paths.darkroom(create=True)
+        if root is None:
+            print(paths.unresolved_message(), file=sys.stderr)
+            return 2
+        a.out = root / "bakeoff"
+    a.out.mkdir(parents=True, exist_ok=True)
+    src = f"{a.bakeoff.parent.name}/{a.bakeoff.name}"
 
-    def chip(colour, text):
-        return (f"<span style='display:inline-block;width:11px;height:11px;background:{colour};"
-                f"vertical-align:-1px;margin-right:5px'></span><span style='color:{colour}'>{text}</span>")
-
-    # Short lines, broken by hand: the PNG renderer's viewport is the page, and a
-    # header line longer than the plot row ran off the right edge unwrapped. A
-    # fixed-width pane was tried first and made the renderer measure no content,
-    # so the PNG silently kept its previous image under a newer HTML.
     header = pn.pane.HTML(
-        f"<div style='font:13px system-ui,sans-serif;color:#111'>"
+        f"<div style='font:13px system-ui,sans-serif;color:#111;max-width:1060px'>"
         f"<b style='font-size:16px'>the bake-off, as intervals</b> &nbsp;—&nbsp; twelve detectors on "
         f"simulated recordings; {folds} folds × {spf} seeds.<br>"
         f"Per held-out fold: {n_planted} planted events, {n_dis} correlated-burst distractors "
-        f"(each distractor call is scored as a false alarm).<br>"
-        f"Rows are grouped by family and are <b>not ranked</b>. "
-        f"C is the dense block with nothing coordinated planted; firing there counts rate, not coordination."
-        f"<div style='margin:5px 0 0'>{chip(INK_HAND, 'hand-written detector')} &nbsp; "
-        f"{chip(INK_LEARNED, 'learned model (the tube, its variants, two baselines)')} &nbsp; "
+        f"(each distractor call is scored as a false alarm), and a probe of {probe_min:g} min with "
+        f"nothing coordinated planted (probe firings are excluded from precision).<br>"
+        f"Dot: mean over folds; line: range over folds; red tick in C: the gate. Rows are grouped by family and are <b>not ranked</b>."
+        f"<div style='margin:5px 0 0'>{_chip(INK_HAND, 'hand-written detector')} &nbsp; "
+        f"{_chip(INK_LEARNED, 'learned model (the tube, its variants, two baselines)')} &nbsp; "
+        f"{_chip(INK_GATE, 'the probe gate the bench applies to that detector (max firings/min)')} &nbsp; "
         f"<span style='color:#999'>- - -</span> F1 ceiling {ceil:.3f}: every planted event found, "
-        f"every distractor fired on</div>"
-        f"<div style='margin:4px 0 0;color:#777;font-size:11px'>{a.bakeoff.parent.name}/{a.bakeoff.name}</div></div>")
-    a.out.mkdir(parents=True, exist_ok=True)
-    _write(pn.Column(header, pn.pane.HoloViews(fig)), a.out, a.stem, png=True)
+        f"every distractor fired on; in D the dotted line is that detector's precision, "
+        f"{n_planted}/{n_planted + n_dis}</div>"
+        f"<div style='margin:4px 0 0;color:#777;font-size:11px'>{src}</div></div>")
+    _write(pn.Column(header, pn.pane.HoloViews(fig)), a.out, "bakeoff_intervals", png=True)
+
+    header2 = pn.pane.HTML(
+        f"<div style='font:13px system-ui,sans-serif;color:#111;max-width:1060px'>"
+        f"<b style='font-size:16px'>calibrated against shipped, on each detector's own grid</b> &nbsp;—&nbsp; "
+        f"one row per hand-written detector; ticks are the grid the bake-off searched. A shipped point that lies between grid points is not drawn.<br>"
+        f"<div style='margin:5px 0 0'>{_chip(INK_HAND, 'filled dot: the knob a fold chose (one per fold)')} &nbsp; "
+        f"<span style='display:inline-block;width:11px;height:11px;border:2px solid {INK_HAND};"
+        f"vertical-align:-1px;margin-right:5px'></span>open dot: the shipped operating point &nbsp; "
+        f"{_chip(INK_GATE, 'grid edge — a search that stops here was too narrow')}</div>"
+        f"<div style='margin:4px 0 0;color:#777;font-size:11px'>{src}</div></div>")
+    _write(pn.Column(header2, pn.pane.HoloViews(build_knobs(d))), a.out, "bakeoff_knobs", png=True)
+
+    if a.also:
+        a.also.mkdir(parents=True, exist_ok=True)
+        for f in list(a.out.glob("bakeoff_intervals.*")) + list(a.out.glob("bakeoff_knobs.*")):
+            with tempfile.TemporaryDirectory() as td:
+                tmp = Path(td) / f.name
+                tmp.write_bytes(f.read_bytes())
+                os.replace(tmp, a.also / f.name)
+        print(f"also {a.also}")
     return 0
 
 

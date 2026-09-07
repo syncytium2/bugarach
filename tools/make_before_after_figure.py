@@ -32,6 +32,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import math
 import os
 import sys
 import tempfile
@@ -115,6 +116,12 @@ def recording_inks(rows):
             for i, sid in enumerate(sorted({r[2] for r in rows}))}
 
 
+def dot_size(calls: int) -> float:
+    """Dot area grows with the number of calls behind the rate, so a one-call
+    endpoint is visibly one call. Keyed in the header."""
+    return 4.0 + 2.6 * math.sqrt(calls)
+
+
 def build(rows, detectors, streams, baseline, treatment, *, width=400, height=220):
     import holoviews as hv
     hv.extension("bokeh")
@@ -129,15 +136,16 @@ def build(rows, detectors, streams, baseline, treatment, *, width=400, height=22
             sub = [r for r in row_rows if r[1] == s]
             letter = next(letters)
             els = []
-            for _, _, sid, b, t, _, _ in sub:
-                els.append(hv.Curve([(baseline, b), (treatment, t)], kdims=["condition"],
+            for _, _, sid, b, t, nb, nt in sub:
+                els.append(hv.Curve([(baseline, b), (treatment, t)], kdims=["period"],
                                     vdims=[f"rate_{d}_{s}"]).opts(color=inks[sid], line_width=1.6, alpha=0.85))
-                els.append(hv.Scatter([(baseline, b), (treatment, t)], kdims=["condition"],
-                                      vdims=[f"rate_{d}_{s}"]).opts(color=inks[sid], size=7))
-            ov = hv.Overlay(els) if els else hv.Curve([], kdims=["condition"], vdims=[f"rate_{d}_{s}"])
+                for x, v, n in ((baseline, b, nb), (treatment, t, nt)):
+                    els.append(hv.Scatter([(x, v)], kdims=["period"], vdims=[f"rate_{d}_{s}"]
+                                          ).opts(color=inks[sid], size=dot_size(n), alpha=0.9))
+            ov = hv.Overlay(els) if els else hv.Curve([], kdims=["period"], vdims=[f"rate_{d}_{s}"])
             ov = ov.opts(width=width, height=height, toolbar=None, show_legend=False,
                          ylabel=f"{letter} · {DETECTOR_NAME.get(d, d)} · {s} · events/min",
-                         xlabel="", padding=(0.25, 0.1), ylim=(-0.05 * ymax, ymax))
+                         xlabel="period", padding=(0.25, 0.1), ylim=(-0.05 * ymax, ymax))
             panels.append(ov)
     return hv.Layout(panels).cols(len(streams)).opts(shared_axes=False, toolbar=None)
 
@@ -181,8 +189,14 @@ def main(argv=None) -> int:
         f"<div style='font:13px system-ui,sans-serif;color:#111;max-width:900px'>"
         f"<b style='font-size:16px'>coordinated events per minute · {a.baseline} → {a.treatment}</b>"
         f" &nbsp;—&nbsp; one line per recording (n = {len(inks)}), fast beside slow, "
-        f"one row per detector; the two panels of a row share a y-axis."
+        f"one row per detector; the two panels of a row share a y-axis, and the y-range differs "
+        f"by detector row."
         f"<div style='margin:5px 0 0'>recordings: {key}</div>"
+        f"<div style='margin:4px 0 0;color:#444'>dot area grows with the calls behind the rate: "
+        + " &nbsp;".join(
+            f"<span style='display:inline-block;width:{dot_size(n):.0f}px;height:{dot_size(n):.0f}px;"
+            f"border-radius:50%;background:#555;vertical-align:middle'></span> {n}"
+            for n in (1, 10, 50)) + " calls</div>"
         f"<div style='margin:5px 0 0;color:#444'>Descriptive output, not an analysis: calls at the "
         f"shipped operating points inside each period, divided by the length of the window the folder "
         f"was scored on. No statistic, no ground truth, no verdict — a mark on a real recording is a "
