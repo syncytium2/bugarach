@@ -79,6 +79,9 @@ enforced by `tests/test_index_resolves.py`, which reads code spans too.
 | why coact and loco look like one detector | shared, circular shift, surrogate, _shared.py, duplicate | `src/bugarach/detectors/_shared.py` shares the **null**, not the detector. They differ in thresholding principle, params, speed and false-alarm rate |
 | the learned models | network, torch, tube, center-surround, DL, training | [`src/bugarach/learn/`](../src/bugarach/learn/), architectures in `src/bugarach/learn/nets/` |
 | head-to-head numbers | bake-off, comparison, scoreboard, ranking, F1 table | `docs/learned/bakeoff.json` is the data; `docs/learned/bakeoff.md` is the page. ⚠ The page's table is **typed by hand** and has gone stale |
+| running a learned model on a real folder | learned on real data, no checkpoint, train and predict in one process | `tools/run_learned_on_folder.py`. ⚠ It writes `n_roi=NA` on every call, so a call's own participation is not in the file it produces |
+| whether a detector needs many cells to fire | participation, lone ROI, single cell, one ROI, k cells, ladder | `tools/probe_participation.py`. ⚠ **`tube_ratio` and `tube_ratio_guard` do not** — [the finding](todo/2026-09-08-the-ratio-tube-cannot-count-cells.md) |
+| why a low `hot_fa` is not rate robustness | promiscuity probe, hot window, quiet field, CFAR, divide, denominator | The probe is a HOT window only, so a divide-shaped detector passes it by arithmetic — [same todo](todo/2026-09-08-the-ratio-tube-cannot-count-cells.md) |
 
 ## The site
 
