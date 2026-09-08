@@ -99,6 +99,7 @@ ANCHOR = "baseline"
 #: recording and a 61-ROI one occupy the same band and stay comparable.
 RASTER_PX = 116
 LANE_PX = 26
+REGION_PX = 34   # two strips in one lane: the period, and the window scored
 PAGE_PX = 1500
 
 
@@ -230,9 +231,18 @@ def measure(folder: Path, treatments: tuple[str, ...], *, unscanned: bool = Fals
     for key, members in pages.items():
         members.sort(key=lambda p: p[0].slice_id)
         lo = min(-a for _, a in members)
-        hi = max(max((float(np.nanmax(v)) for st in sl.streams.values()
-                      for v in st.t50rise if len(v) and np.isfinite(v).any()),
-                     default=a) - a
+        # THE FULL RECORDING, not the last event in it. Taking the extent from
+        # the last onset ends the page wherever the quietest tail happened to
+        # stop firing, so a recording whose high-K+ period runs on in silence is
+        # drawn as if the acquisition ended early, and its period bar is cut off
+        # mid-bar with nothing to say it was cut. The period bounds are what the
+        # producer recorded, so they set the extent and the events sit inside it
+        # (Tony, 2026-09-08: "show the full calcium trace length and all
+        # treatments").
+        hi = max(max([float(np.nanmax(v)) for st in sl.streams.values()
+                      for v in st.t50rise if len(v) and np.isfinite(v).any()]
+                     + [float(r.end_sec) for r in sl.regions or []]
+                     or [a]) - a
                  for sl, a in members)
         # out to a whole minute, so the tick ladder lands on labelled values
         built[key] = dict(members=members,
@@ -264,11 +274,50 @@ def _name_unknown_labels(members):
     return unknown
 
 
-def build_page(members, *, ext, manifest, width: int):
-    """Lane over fast raster over slow raster, per recording, all x-linked."""
-    from bugarach.ui.diagnostic import raster_panel, region_lane_panel
+#: Display names for the lane rows, overriding the viewer's map. `cicada` is the
+#: output contract and `locust` is the detector; the viewer still says "sixth",
+#: which is a stale label with an open item against it and must not reach a
+#: reader outside this project.
+LANE_NAMES = {"cicada": "locust"}
+
+
+def detector_lanes(detections: Path):
+    """(slice_id, stream) -> {detector: (onsets, widths)}, in the glossary's order.
+
+    Read straight from the detect step's own output, so the marks on the page
+    are the calls in the table and not a second opinion about them.
+    """
+    from bugarach.detect_folder import DETECTORS
+    from bugarach.emit import read_detections
+
+    acc: dict = defaultdict(lambda: defaultdict(lambda: ([], [])))
+    for r in read_detections(detections):
+        key = (r["slice_id"], str(r["stream"]).strip().lower())
+        on, wd = acc[key][r["detector"]]
+        on.append(float(r["onset_sec"]))
+        wd.append(float(r.get("width_sec") or 0.0))
+    # EVERY DETECTOR GETS A ROW ON EVERY RECORDING, including the ones that
+    # called nothing there. Dropping a silent detector's row silently changes
+    # which rows a reader is looking at from one recording to the next, so the
+    # eye compares LoCo against SPIKE-synch without noticing, and a detector
+    # that found nothing — which is a result — looks like a detector that was
+    # never asked. An empty row here means exactly what it should: it ran.
+    ran = [d for d in DETECTORS if any(d in per for per in acc.values())]
+    out = {}
+    for key, per_det in acc.items():
+        out[key] = {d: (np.asarray(per_det[d][0] if d in per_det else [], float),
+                        np.asarray(per_det[d][1] if d in per_det else [], float))
+                    for d in ran}
+    return out
+
+
+def build_page(members, *, ext, manifest, width: int, lanes=None, not_run=()):
+    """Regions over detector lanes over raster, per stream, per recording, x-linked."""
+    from bugarach.detect_folder import folder_analysis_windows
+    from bugarach.ui.diagnostic import lane_panel, raster_panel, region_lane_panel
 
     _name_unknown_labels(members)
+    lanes = lanes or {}
     blocks, red_drawn = [], 0
     for sl, anchor in members:
         # A UNIQUE y-DIMENSION PER PANEL. The name is what links y-ranges across
@@ -276,13 +325,26 @@ def build_page(members, *, ext, manifest, width: int):
         # count of the largest one on the page — a 19-ROI raster fills the bottom
         # 40% of its band and reads as sparse rather than small, which is the one
         # comparison a constant row height exists to make honest.
+        _, wins = folder_analysis_windows(sl)
         panels = [region_lane_panel(sl.regions, ext=ext, width=width,
-                                    height=LANE_PX, shift=anchor,
-                                    ydim=f"region_{sl.slice_id}")]
+                                    height=REGION_PX, shift=anchor,
+                                    ydim=f"region_{sl.slice_id}",
+                                    analysis=[(w.win_start, w.win_end) for w in wins])]
         for sname in ("fast", "slow"):
             st = sl.streams.get(sname)
             if st is None:
                 continue
+            # The detector's calls sit between the periods and the raster they
+            # were made on: below the window that says what was going on, above
+            # the marks they are a claim about. Each stream gets its own block,
+            # because fast and slow are different measurements and a lane that
+            # pooled them would be a claim nobody made.
+            per_det = lanes.get((sl.slice_id, sname), {})
+            if per_det or not_run:
+                shifted = {d: (on - anchor, wd) for d, (on, wd) in per_det.items()}
+                panels.append(lane_panel(shifted, ext=ext, width=width,
+                                         row_px=LANE_PX, not_run=not_run,
+                                         names=LANE_NAMES))
             marked, n_red = [], 0
             for i in range(st.n_rois):
                 rid = (str(sl.roi_ids[i]) if sl.roi_ids is not None
@@ -294,7 +356,7 @@ def build_page(members, *, ext, manifest, width: int):
             panels.append(raster_panel(
                 _shift_stream(st, anchor), ext=ext, width=width,
                 height=RASTER_PX, name=sname, marked=marked,
-                ydim=f"roi_{sl.slice_id}_{sname}"))
+                ydim=f"roi_{sl.slice_id}_{sname}", ticks="minimal"))
         blocks.append((sl, panels))
 
     # ONE X-AXIS PER LINKED GROUP, on the bottom row only (CLAUDE.md). Every
@@ -311,7 +373,8 @@ def build_page(members, *, ext, manifest, width: int):
 
 
 def header_html(group: str, treatment: str, members, ext, folder: Path,
-                *, unscanned: bool = False) -> str:
+                *, unscanned: bool = False, ran=(), not_run=(),
+                detections: Path | None = None) -> str:
     """The key, and the provenance. Outside every plot, per the conventions."""
     from bugarach.ui.diagnostic import MARKED_INK, RASTER_INK, REGION_FILL
 
@@ -340,6 +403,27 @@ def header_html(group: str, treatment: str, members, ext, folder: Path,
         red_key = ("<b style='color:#b00'>⚠ no field-step scan has been run on this "
                    "folder</b> (the producer's export report says UNCHECKED) — nothing "
                    "is marked, and the absence of red is not evidence of a clean cohort")
+    from bugarach.ui.app import COLORS, TITLES
+
+    if ran:
+        det_key = (
+            "<div style='margin:4px 0 0;color:#444'>detector lanes, one block per "
+            "stream, between the periods and the raster they were called on: &nbsp; "
+            + " &nbsp; ".join(
+                chip(COLORS.get(d, "#555"), LANE_NAMES.get(d, TITLES.get(d, d)))
+                for d in ran))
+        if not_run:
+            det_key += (
+                " &nbsp;&nbsp; " + chip("#d8d8d8", "")
+                + "<b>" + ", ".join(LANE_NAMES.get(d, TITLES.get(d, d)) for d in not_run) + "</b> — "
+                "trained in the bake-off and <b>not runnable on real data</b>: nothing "
+                "persists a trained model, so these rows are grey rather than empty, "
+                "because an empty lane would say the detector ran and found nothing")
+        det_key += "</div>"
+    else:
+        det_key = ("<div style='margin:4px 0 0;color:#444'>no detector was run — "
+                   "pass <code>--detections</code> to draw the calls</div>")
+    src = f" &nbsp;·&nbsp; {detections.parent.name}/{detections.name}" if detections else ""
     return (
         f"<div style='font:13px system-ui,sans-serif;color:#111;margin:0 0 6px'>"
         f"<b style='font-size:16px'>{group} · {treatment}</b> &nbsp;—&nbsp; "
@@ -349,11 +433,14 @@ def header_html(group: str, treatment: str, members, ext, folder: Path,
         f"{chip(RASTER_INK, 'event')} &nbsp; "
         f"{red_key}"
         f"</div>"
-        f"<div style='margin:4px 0 0;color:#444'>regions: {regions}</div>"
+        f"<div style='margin:4px 0 0;color:#444'>regions: {regions} &nbsp;&nbsp; "
+        f"{chip('#222222', 'the window actually scored, along the bottom of its period bar')}"
+        f"</div>"
+        f"{det_key}"
         f"<div style='margin:5px 0 0;color:#777;font-size:11px'>"
-        f"{folder.name} &nbsp;·&nbsp; extent {ext[0] / 60:.0f}m to +{ext[1] / 60:.0f}m "
-        f"&nbsp;·&nbsp; row height is constant and does not scale with ROI count "
-        f"&nbsp;·&nbsp; no detector was run</div></div>")
+        f"{folder.name}{src} &nbsp;·&nbsp; extent {ext[0] / 60:.0f}m to +{ext[1] / 60:.0f}m, "
+        f"the full recorded length of the longest recording &nbsp;·&nbsp; "
+        f"row height is constant and does not scale with ROI count</div></div>")
 
 
 def main(argv=None) -> int:
@@ -373,6 +460,14 @@ def main(argv=None) -> int:
                     help="the folder was NEVER scanned for field steps (producer: "
                          "UNCHECKED), so it has no manifest. Draw it with no red and "
                          "say so in the header. Needs --folder.")
+    ap.add_argument("--detections", default=None, type=Path,
+                    help="detect's own detections.csv — draws a detector lane block "
+                         "between the period lane and each stream's raster")
+    ap.add_argument("--not-run", nargs="*", default=None, metavar="DETECTOR",
+                    help="detectors to show as rows that never ran (grey, labelled), "
+                         "so their absence is visible rather than silent. Defaults to "
+                         "the learned models when --detections is given, because "
+                         "nothing persists a trained model.")
     a = ap.parse_args(argv)
 
     folder = resolve_folder(a.folder, unscanned=a.unscanned)
@@ -395,16 +490,26 @@ def main(argv=None) -> int:
         print("no (group, treatment) page has any recording", file=sys.stderr)
         return 1
 
+    lanes = detector_lanes(a.detections) if a.detections else {}
+    ran = list(dict.fromkeys(d for per in lanes.values() for d in per))
+    if a.not_run is not None:
+        not_run = tuple(a.not_run)
+    else:
+        not_run = ("tube",) if a.detections else ()
+
     written, total_red = [], 0
     for (group, treatment), spec in sorted(pages.items()):
         blocks, red = build_page(spec["members"], ext=spec["ext"],
-                                 manifest=manifest, width=a.width)
+                                 manifest=manifest, width=a.width,
+                                 lanes=lanes, not_run=not_run)
         total_red += red
         html = dest / f"{group}_{treatment.replace(' ', '')}.html"
 
         items = [pn.pane.HTML(header_html(group, treatment, spec["members"],
                                           spec["ext"], folder,
-                                          unscanned=a.unscanned))]
+                                          unscanned=a.unscanned, ran=ran,
+                                          not_run=not_run,
+                                          detections=a.detections))]
         for sl, panels in blocks:
             # A TEXT HEADER OUTSIDE THE PLOT, which is what the convention offers
             # beside the y-label — and here it is the one that works. Rotated

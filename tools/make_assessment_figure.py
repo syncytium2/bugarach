@@ -112,7 +112,7 @@ def build(folder: Path, assess_dir: Path, k: int, show: list[str], stream: str, 
         shifted = _shift_stream(st, ws)
         ras = raster_panel(shifted, ext=ext, width=width, height=max(265, 4 * st.n_rois + 40),
                            name=f"{letter} · {sid}",
-                           ydim=f"roi_{sid}")
+                           ydim=f"roi_{sid}", ticks="minimal")
         lane.opts(xaxis=None, toolbar=None)
         ras.opts(toolbar=None)
         panels += [lane, ras]

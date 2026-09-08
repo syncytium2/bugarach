@@ -151,17 +151,40 @@ def _base(ext, ydim: str):
 
 
 def lane_panel(lanes: dict, *, ext, gt=None, tol_sec: float = TOL_SEC,
-               width: int = 1000, row_px: int = 26):
-    """Detector lanes with a real categorical y-axis (labels cannot collide)."""
+               width: int = 1000, row_px: int = 26, not_run=(), names=None):
+    """Detector lanes with a real categorical y-axis (labels cannot collide).
+
+    ``not_run`` NAMES THE ROWS THAT NEVER RAN, and they are drawn differently on
+    purpose. An empty lane already means something — the detector ran and called
+    nothing — so a detector that could not run at all cannot be shown as an
+    empty lane without saying the one thing that is not true. Those rows get a
+    hatched grey band across the whole extent and "(not run)" on the label, so
+    the absence is visible as an absence. Pass names that are also keys of
+    ``lanes`` (with empty arrays) or names that appear only here.
+
+    It exists because the pilot cohort's learned models cannot run on real data
+    at all — nothing persists a trained model — and leaving them off the page
+    made the gap invisible to the one reader who asked where they were.
+    """
     lanes = lanes or {}
+    not_run = set(not_run)
     # Ground truth goes at the TOP: it is what every other row is judged
     # against, and a reader scanning down should meet the answer before the
     # attempts at it (Tony, 2026-08-15). Distractors ride just above it and
     # still clear `ylim` — the top row sits 0.8 units below the limit and the
     # marker needs about 0.14.
     rows = (["planted"] if gt is not None else []) + list(lanes)
+    rows += [n for n in not_run if n not in rows]
     ypos = {name: len(rows) - 1 - i for i, name in enumerate(rows)}
     items = [_base(ext, "lane")]
+
+    # The "never ran" band goes down FIRST, so any lane drawn on top of it still
+    # reads. A row that is both in `lanes` and in `not_run` is a caller error,
+    # but drawing it this way makes the error visible rather than silent.
+    for name in not_run:
+        y = ypos[name]
+        items.append(hv.Rectangles([(ext[0], y - 0.34, ext[1], y + 0.34)]).opts(
+            color="#d8d8d8", line_color="#bdbdbd", line_width=0.6, alpha=0.55))
 
     if gt is not None:
         hw = gt.params.get("hot_window")
@@ -261,7 +284,13 @@ def lane_panel(lanes: dict, *, ext, gt=None, tol_sec: float = TOL_SEC,
                     ).opts(marker="inverted_triangle", size=10, color=colour,
                            line_color="white", line_width=1))
 
-    yticks = [(ypos[n], TITLES.get(n, n)) for n in rows]
+    # `names` overrides the viewer's display map. It exists because that map
+    # still calls locust "sixth", a stale label with an open item against it, and
+    # a figure that goes to an outside reader must not carry a name the project
+    # has already retired just because the viewer has not caught up.
+    shown = {**TITLES, **(names or {})}
+    yticks = [(ypos[n], shown.get(n, n) + (" (not run)" if n in not_run else ""))
+              for n in rows]
     return hv.Overlay(items).opts(
         width=width, height=max(90, row_px * len(rows) + 46),
         xlim=tuple(ext), ylim=(-0.8, len(rows) - 0.2),
@@ -276,7 +305,7 @@ def lane_panel(lanes: dict, *, ext, gt=None, tol_sec: float = TOL_SEC,
 def raster_panel(stream, *, ext, gt=None, name="events",
                  width: int = 1000, height: int | None = None,
                  mark_px: float = 2.0, marked=None, marked_ink=None,
-                 ydim: str = "roi"):
+                 ydim: str = "roi", ticks: str = "auto"):
     """ROI raster, quietest ROI at the bottom, every onset drawn identically.
 
     Takes no detection spans on purpose. Inking the onsets inside a detected
@@ -389,10 +418,20 @@ def raster_panel(stream, *, ext, gt=None, name="events",
 
     if height is None:
         height = int(np.clip(20 + 6 * n_roi, 110, 320))
+    # ``ticks="minimal"`` keeps the two that bound the axis and drops the ladder
+    # between them. The row count is already in the y-LABEL, which is where this
+    # project puts identity and counts, so an auto ladder of 0/5/10/15/20/25 is
+    # the same fact five more times — and on a page of twelve stacked rasters it
+    # is the densest text on the page (Tony, 2026-09-08: "minimalist the ticks").
+    # An ROI's index is not a quantity anyone reads off a raster anyway; what the
+    # axis has to say is where the rows start and stop.
+    extra = {}
+    if ticks == "minimal":
+        extra["yticks"] = [(0, "1"), (max(n_roi - 1, 0), str(n_roi))]
     return hv.Overlay(items).opts(
         width=width, height=height, xlim=tuple(ext), ylim=(-1, n_roi),
         ylabel=f"{name} · {n_roi} ROI", title="",
-        fontsize={"ylabel": "10pt"},
+        fontsize={"ylabel": "10pt", "yticks": "8pt"}, **extra,
         show_legend=False, hooks=[_time_axis_hook],
         tools=["xwheel_zoom", "xpan", "reset", "hover"],
         active_tools=["xpan"], default_tools=["reset"],
@@ -400,7 +439,8 @@ def raster_panel(stream, *, ext, gt=None, name="events",
 
 
 def region_lane_panel(regions, *, ext, width: int = 1000, height: int = 30,
-                      shift: float = 0.0, ylabel: str = "", ydim: str = "region"):
+                      shift: float = 0.0, ylabel: str = "", ydim: str = "region",
+                      analysis=None):
     """The treatment regions, as a lane ABOVE the raster they describe.
 
     A treatment window is exactly the kind of cue CLAUDE.md sends to a lane: it
@@ -428,17 +468,44 @@ def region_lane_panel(regions, *, ext, width: int = 1000, height: int = 30,
         if b <= ext[0] or a >= ext[1]:
             continue
         label = (r.name or "").strip()
+        # The period bar keeps the TOP of the lane; the bottom third is reserved
+        # for the window that was scored, so the two never overlap and neither
+        # has to be read through the other.
+        floor = 0.40 if analysis else 0.0
         items.append(hv.Rectangles(
-            [(max(a, ext[0]), 0.0, min(b, ext[1]), 1.0)]
+            [(max(a, ext[0]), floor, min(b, ext[1]), 1.0)]
         ).opts(color=REGION_FILL.get(label, "#9e9e9e"),
                line_color="white", line_width=0.6, alpha=0.95))
+
+    # THE WINDOW THAT WAS SCORED, under the period that was recorded. They are
+    # different facts and only the producer knows the second one: a period runs
+    # from when the drug went on to when it came off, and the analysis window is
+    # the part of it anyone agreed to measure. Where a producer declares no
+    # window, bugarach derives one by its own convention — so drawing it is the
+    # only way a reader can see whether what was scored is the whole period or
+    # some trimmed part of it, and whether the convention did anything at all.
+    # Drawn as a dark rule along the bottom edge of the bar it belongs to, which
+    # cannot be confused with the bar and cannot hide it.
+    for w in analysis or []:
+        a = float(w[0]) - shift
+        b = float(w[1]) - shift
+        if b <= ext[0] or a >= ext[1]:
+            continue
+        items.append(hv.Rectangles(
+            [(max(a, ext[0]), 0.0, min(b, ext[1]), 0.30)]
+        ).opts(color="#222222", line_color="white", line_width=0.6, alpha=0.9))
     return hv.Overlay(items).opts(
         width=width, height=height, xlim=tuple(ext), ylim=(0.0, 1.0),
         # ONE BLANK TICK, not an empty list. `yticks=[]` reaches bokeh's
         # `get_ticker_axis_props`, which unpacks the pairs and raises
         # "not enough values to unpack" on the empty sequence — a strip with no
         # y-axis has to be spelled as a tick with nothing written on it.
+        # A strip with no label needs no y-axis at all. Left on, the blank tick
+        # and the spine cross into a small "+" at the left end of every lane —
+        # a mark in no key, on a page whose whole discipline is that every mark
+        # means something (murderboard 2026-09-07, role 10).
         yticks=[(0.5, "")], ylabel=ylabel, xlabel="", title="", xaxis=None,
+        **({} if ylabel else {"yaxis": None}),
         fontsize={"ylabel": "8pt"},
         show_legend=False, hooks=[_time_axis_hook],
         tools=["xwheel_zoom", "xpan", "reset"],
