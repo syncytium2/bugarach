@@ -53,7 +53,11 @@ from bugarach.ui.app import TITLES  # noqa: E402
 NAMES = {**TITLES, "cicada": "locust"}
 LEARNED = [("tube", "tube (center-surround)"), ("tube_guard", "tube_guard"),
            ("tube_ratio", "tube_ratio"), ("tube_ratio_guard", "tube_ratio_guard"),
-           ("trace", "pooled trace"), ("tiny", "per-cell bank")]
+           # `tiny` is ONE filter shared across every ROI, with a bounded per-ROI vote
+           # pooled in rate bands — the baseline that KEEPS ROI distinctness, where
+           # `trace` is the one that gives it up. "per-cell bank" said the opposite of
+           # both halves of that and is not what the module builds.
+           ("trace", "pooled trace"), ("tiny", "shared per-ROI filter")]
 INK_HAND, INK_LEARNED, INK_GATE = "#3b6ea5", "#8b1a1a", "#c0392b"
 
 
@@ -122,7 +126,7 @@ def build_intervals(d, *, width=270, row_h=26):
     by = lambda k: {r["key"]: r[k] for r in rows}  # noqa: E731
     a = panel("A", "F1 on the held-out fold",
               by("f1"), by("f1_lo"), by("f1_hi"), (0, 1), vline=ceil)
-    b = panel("B", f"distractor hits per fold, of {n_dis}",
+    b = panel("B", f"distractors covered per fold, of {n_dis}",
               by("dis"), by("dis_lo"), by("dis_hi"), (-0.5, n_dis + 0.5))
     pmax = max(r["probe_hi"] for r in rows)
     gmax = max(g for g in MAX_PROBE_PER_MIN.values())
