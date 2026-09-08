@@ -82,6 +82,9 @@ enforced by `tests/test_index_resolves.py`, which reads code spans too.
 | running a learned model on a real folder | learned on real data, no checkpoint, train and predict in one process | `tools/run_learned_on_folder.py`. ⚠ It writes `n_roi=NA` on every call, so a call's own participation is not in the file it produces |
 | whether a detector needs many cells to fire | participation, lone ROI, single cell, one ROI, k cells, ladder | `tools/probe_participation.py`. ⚠ **`tube_ratio` and `tube_ratio_guard` do not** — [the finding](todo/2026-09-08-the-ratio-tube-cannot-count-cells.md) |
 | why a low `hot_fa` is not rate robustness | promiscuity probe, hot window, quiet field, CFAR, divide, denominator | The probe is a HOT window only, so a divide-shaped detector passes it by arithmetic — [same todo](todo/2026-09-08-the-ratio-tube-cannot-count-cells.md) |
+| all twelve detectors' numbers for one cohort | one table, summary, performance table, scoreboard for a run | `tools/make_detector_table.py`. Two halves that **must not be read across**: scored on simulation, observed on the folder where there is no ground truth |
+| whether a lone-ROI percentage is bad | chance, random placement, matched baseline, declared width | Only against that detector's own chance rate — `probe_participation.tally`. Chance is 90–97% here, so **12% is a detector working** |
+| binned SCE looking wrong on real data | sce, worst detector, random placement, near chance | [the finding](todo/2026-09-08-binned-sce-is-close-to-random-placement-here.md) — 0.64× chance and F1 0.400, two measures agreeing; ran at the **shipped** point, calibrated wants 75–80 |
 
 ## The site
 
@@ -95,6 +98,7 @@ enforced by `tests/test_index_resolves.py`, which reads code spans too.
 
 | you want | keywords | go to |
 |---|---|---|
+| two architecture tests failing only in a worktree | test_architectures_are_files, autoload, zz_probe, DID NOT RAISE, red in a worktree | **Environmental, not your change.** They write a probe file into their OWN checkout and import `bugarach.learn.nets`; the shared `.venv` is installed editable against the PRIMARY checkout, so the two trees differ. Run with `PYTHONPATH=$PWD/src` |
 | **where are we, what is established, how strongly** | milestone, achievement, status, what is done, what is settled, evidence vs decided, strength, superseded, held, inert | [`MILESTONES.md`](MILESTONES.md) — every row pinned to a commit and a doc, with a `strength` column separating **measured** from **decided** from ⚠ **evidence** (the measurement exists; the decision it informs does not). Read `strength` and `status` before quoting a row |
 | what is in flight right now | handoff, in progress, resume | root `HANDOFF.md`. **No file at root == nothing in flight** |
 | what another session is touching | board, claim, collision, concurrent, parallel | [`SESSIONS.md`](SESSIONS.md) (cross-machine) **and** `../bugarach-worktrees/SESSIONS.md` (this machine). Two boards, different questions |
