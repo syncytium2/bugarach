@@ -98,7 +98,14 @@ ANCHOR = "baseline"
 #: count when height is None; passing it explicitly is what makes a 9-ROI
 #: recording and a 61-ROI one occupy the same band and stay comparable.
 RASTER_PX = 116
-LANE_PX = 26
+
+#: Halved, and for the same reason the raster is dense: a detector row carries at
+#: most one mark per call, so the height it needs is the height of a mark, not the
+#: height of its label (Tony, 2026-09-08 — *"vertically shrink the detector row.
+#: rasters can be halved for detector (similar to data rasters)"*). At 13 px a
+#: ten-detector block is about the height of the raster it sits on rather than
+#: twice it, and the page holds six recordings instead of three.
+LANE_PX = 13
 REGION_PX = 34   # two strips in one lane: the period, and the window scored
 PAGE_PX = 1500
 
@@ -225,7 +232,14 @@ def measure(folder: Path, treatments: tuple[str, ...], *, unscanned: bool = Fals
         if not hit:
             skipped.append(f"{sl.slice_id} ({', '.join(sorted(labels)) or 'no regions'})")
         for t in hit:
-            pages[(sl.meta.get("group_id") or "UNGROUPED", t)].append((sl, anchor))
+            # ONE PAGE PER STREAM, not one page carrying both (Tony, 2026-09-08).
+            # fast and slow are different measurements, and stacking them per
+            # recording doubled every page while inviting exactly the comparison
+            # down the page that "never pooled" exists to prevent. Split, each
+            # page is one measurement of six recordings and half the height.
+            for sname in sorted(sl.streams):
+                pages[(sl.meta.get("group_id") or "UNGROUPED", t, sname)].append(
+                    (sl, anchor))
 
     built = {}
     for key, members in pages.items():
@@ -280,13 +294,23 @@ def _name_unknown_labels(members):
 #: reader outside this project.
 LANE_NAMES = {"cicada": "locust"}
 
-#: The learned family shares one hue on the shared palette, which is right when
-#: one learned lane sits beside six hand-written ones and wrong the moment four
-#: variants sit beside each other and cannot be told apart. Shades of the same
-#: red, so the family still reads as one kind against the six.
-LANE_COLORS = {"tube": "#7a1f22", "tube_guard": "#a83a3e",
-               "tube_ratio": "#c96a5c", "tube_ratio_guard": "#e0998c",
-               "trace": "#6b4a2f", "tiny": "#9c7a4a"}
+#: A PAGE PALETTE, not the viewer's. Tony, 2026-09-08: *"more striking, contrasty
+#: colors."* The viewer's inks are a muted qualitative set chosen to sit under a
+#: user's attention for an hour; ten of them stacked at a few pixels a row on a
+#: printed page is a different problem, and the marks a reader must tell apart
+#: are one or two pixels wide. So: full-saturation hues for the six, well spread
+#: around the wheel, and the learned family in a gold-to-brown ramp that reads as
+#: one kind at a glance while still separating its four members.
+LANE_COLORS = {
+    "rate": "#0B5FFF", "coact": "#00B3A4", "loco": "#7A00E6",
+    "sce": "#00A100", "cicada": "#FF00A8", "sync": "#FF3B00",
+    # A warm ramp, dark to light, well separated at the ends AND in the middle.
+    # A first attempt ran four browns from #4A2E00 to #D4A017 and the top two were
+    # one colour at a 13 px row height.
+    "tube": "#7F0000", "tube_guard": "#D62828",
+    "tube_ratio": "#F77F00", "tube_ratio_guard": "#FCBF49",
+    "trace": "#5C5C5C", "tiny": "#8C8C8C",
+}
 
 
 def detector_lanes(*detections: Path):
@@ -328,8 +352,9 @@ def detector_lanes(*detections: Path):
     return out
 
 
-def build_page(members, *, ext, manifest, width: int, lanes=None, not_run=()):
-    """Regions over detector lanes over raster, per stream, per recording, x-linked."""
+def build_page(members, *, ext, manifest, width: int, stream: str,
+               lanes=None, not_run=(), lane_px: int = None):
+    """Regions over detector lanes over raster, for ONE stream, per recording."""
     from bugarach.detect_folder import folder_analysis_windows
     from bugarach.ui.diagnostic import lane_panel, raster_panel, region_lane_panel
 
@@ -347,20 +372,18 @@ def build_page(members, *, ext, manifest, width: int, lanes=None, not_run=()):
                                     height=REGION_PX, shift=anchor,
                                     ydim=f"region_{sl.slice_id}",
                                     analysis=[(w.win_start, w.win_end) for w in wins])]
-        for sname in ("fast", "slow"):
+        for sname in (stream,):
             st = sl.streams.get(sname)
             if st is None:
                 continue
             # The detector's calls sit between the periods and the raster they
             # were made on: below the window that says what was going on, above
-            # the marks they are a claim about. Each stream gets its own block,
-            # because fast and slow are different measurements and a lane that
-            # pooled them would be a claim nobody made.
+            # the marks they are a claim about.
             per_det = lanes.get((sl.slice_id, sname), {})
             if per_det or not_run:
                 shifted = {d: (on - anchor, wd) for d, (on, wd) in per_det.items()}
                 panels.append(lane_panel(shifted, ext=ext, width=width,
-                                         row_px=LANE_PX, not_run=not_run,
+                                         row_px=lane_px or LANE_PX, not_run=not_run,
                                          names=LANE_NAMES, colors=LANE_COLORS))
             marked, n_red = [], 0
             for i in range(st.n_rois):
@@ -390,7 +413,8 @@ def build_page(members, *, ext, manifest, width: int, lanes=None, not_run=()):
 
 
 def header_html(group: str, treatment: str, members, ext, folder: Path,
-                *, unscanned: bool = False, ran=(), not_run=(), note=None,
+                *, stream: str = "", unscanned: bool = False, ran=(), not_run=(),
+                excluded=(), note=None,
                 detections: Path | None = None) -> str:
     """The key, and the provenance. Outside every plot, per the conventions."""
     from bugarach.ui.diagnostic import MARKED_INK, RASTER_INK, REGION_FILL
@@ -430,6 +454,12 @@ def header_html(group: str, treatment: str, members, ext, folder: Path,
                 chip(LANE_COLORS.get(d) or COLORS.get(d, "#555"),
                      LANE_NAMES.get(d, TITLES.get(d, d)))
                 for d in ran))
+        if excluded:
+            det_key += (
+                " &nbsp;&nbsp; <span style='color:#777'>left off this page to save "
+                "space: <b>" + ", ".join(
+                    LANE_NAMES.get(d, TITLES.get(d, d)) for d in excluded)
+                + "</b> — their calls are still in the files above</span>")
         if not_run:
             det_key += (
                 " &nbsp;&nbsp; " + chip("#d8d8d8", "")
@@ -445,7 +475,7 @@ def header_html(group: str, treatment: str, members, ext, folder: Path,
     note_html = (f"<div style='margin:4px 0 0;color:#b00'>⚠ {note}</div>") if note else ""
     return (
         f"<div style='font:13px system-ui,sans-serif;color:#111;margin:0 0 6px'>"
-        f"<b style='font-size:16px'>{group} · {treatment}</b> &nbsp;—&nbsp; "
+        f"<b style='font-size:16px'>{group} · {treatment} · {stream}</b> &nbsp;—&nbsp; "
         f"{len(members)} recording(s), each row one recording, "
         f"<b>t = 0 is the end of that recording's baseline</b>"
         f"<div style='margin:5px 0 0;color:#444'>"
@@ -484,6 +514,11 @@ def main(argv=None) -> int:
                     help="one or more detections.csv — detect's own, and any other "
                          "file in the same contract (a learned run, say). Draws a "
                          "detector lane block between the periods and each raster.")
+    ap.add_argument("--exclude", nargs="*", default=(), metavar="DETECTOR",
+                    help="detectors to leave off the page. Their calls stay in the "
+                         "files this reads — this is page space, not a data decision.")
+    ap.add_argument("--lane-px", type=int, default=None,
+                    help=f"height of one detector row in px (default {LANE_PX})")
     ap.add_argument("--note", default=None,
                     help="one extra line for the header — a caveat this page must "
                          "carry that the files it reads cannot tell it")
@@ -515,24 +550,25 @@ def main(argv=None) -> int:
         return 1
 
     lanes = detector_lanes(*a.detections) if a.detections else {}
+    if a.exclude:
+        drop = set(a.exclude)
+        lanes = {k: {d: v for d, v in per.items() if d not in drop}
+                 for k, per in lanes.items()}
     ran = list(dict.fromkeys(d for per in lanes.values() for d in per))
-    if a.not_run is not None:
-        not_run = tuple(a.not_run)
-    else:
-        not_run = ()
+    not_run = tuple(a.not_run) if a.not_run is not None else ()
 
     written, total_red = [], 0
-    for (group, treatment), spec in sorted(pages.items()):
+    for (group, treatment, stream), spec in sorted(pages.items()):
         blocks, red = build_page(spec["members"], ext=spec["ext"],
-                                 manifest=manifest, width=a.width,
-                                 lanes=lanes, not_run=not_run)
+                                 manifest=manifest, width=a.width, stream=stream,
+                                 lanes=lanes, not_run=not_run, lane_px=a.lane_px)
         total_red += red
-        html = dest / f"{group}_{treatment.replace(' ', '')}.html"
+        html = dest / f"{group}_{treatment.replace(' ', '')}_{stream}.html"
 
         items = [pn.pane.HTML(header_html(group, treatment, spec["members"],
-                                          spec["ext"], folder,
+                                          spec["ext"], folder, stream=stream,
                                           unscanned=a.unscanned, ran=ran,
-                                          not_run=not_run,
+                                          not_run=not_run, excluded=a.exclude,
                                           detections=a.detections, note=a.note))]
         for sl, panels in blocks:
             # A TEXT HEADER OUTSIDE THE PLOT, which is what the convention offers
