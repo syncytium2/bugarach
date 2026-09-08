@@ -142,12 +142,22 @@ and 9.6× the detection of the model that works, for a fifth of the F1. ⚠ Thos
 architecture: pinning torch to one thread happens to suit this model, which spent
 its time contending across ten. Same code, different thread count.
 
-⚠ **Both land their threshold on the low edge of the searched grid**, which this
-project treats elsewhere as a search that stopped too early rather than an answer,
-so their F1 is reported for completeness and is not an operating point. On the
-first run that was true of the per-cell bank alone; the grid has since been opened
-at the bottom as well as the top, and under it the pooled trace joined it — three
-of its four folds sit at the floor. **That matters more than its F1 does**, because
+⚠ **The per-cell bank lands its threshold on the low edge of the searched grid** — all
+four folds at 0.0001 — which this project treats elsewhere as a search that stopped too
+early rather than an answer, so its F1 is reported for completeness and is not an
+operating point. **The pooled trace does so on one fold of four** (0.4, 0.45, **0.0001**,
+0.45).
+
+> ⚠ **Corrected 2026-09-08.** This paragraph said *"three of its four folds sit at the
+> floor"* of the pooled trace. `bakeoff.json` beside it says **one**, and has since
+> `78ebe26` re-scored the reference at the widened tolerance — that commit re-quoted the
+> tables from the JSON and left the prose behind it. Reported by another session. The
+> lesson is the shape rather than the number: in a document whose tables are generated
+> and whose sentences are typed, the sentences are what drift, and nothing here compares
+> the two.
+> [`../todo/2026-09-08-three-documents-argue-from-the-flat-field.md`](../todo/2026-09-08-three-documents-argue-from-the-flat-field.md)
+
+**That still matters more than its F1 does**, because
 the pooled trace is the *control*: it exists to answer whether giving up
 distinctness costs anything, and a control with no operating point cannot answer
 it. The centre−surround still beats it by a wide margin and the direction is what

@@ -571,12 +571,31 @@ not survive it:**
 The published bake-off asks readers to believe a **0.017** gap between its top two
 rows. The *smallest* background spread here is five times that.
 
-**And the winner changes between the two named endpoints** — CoactDetect at
+~~**And the winner changes between the two named endpoints** — CoactDetect at
 `baseline_quiet`, rate+context at `baseline_busy` — which are the interquartile
 spread of *untreated* slices rather than any treatment effect. CoactDetect goes
 from first to fifth across the grid. Compare #5's careful claim that the top of
 the tolerance table never moves: here it does, at rates this project fits and
-reports at.
+reports at.~~
+
+> ⚠ **Retracted 2026-09-08 — the four-place rank change was the flat field's.** This
+> paragraph, its table above and the figure below were all measured before
+> `BENCH_RECORDING` carried the fitted rate and burst shapes. Re-measured on the fitted
+> field at twelve seeds (`78ebe26`, 2026-09-06): **one detector leads at all seven grid
+> points and the largest rank change is two**; the same seeds on the flat field still
+> give three winners and a change of three, which is how the artefact was identified
+> rather than assumed. `tests/test_background_curve.py` now asserts both curves side by
+> side so this cannot drift back.
+>
+> **The fork's own conclusion is untouched, and that is the point of separating them.**
+> This fork is about *spread*, not about *order*: the mean own-range fell from 0.185 to
+> 0.136 and `BACKGROUND_TOLERABLE_SPREAD = 0.05` still refuses for all six. A detector's
+> F1 still moves across the background axis by several times the 0.017 gap the bake-off
+> asks readers to believe. The retraction takes the ranking claim and leaves the finding.
+>
+> ⚠ **The figure below is the flat field's and has not been regenerated** — its Panel B
+> draws exactly the rank crossing that no longer reproduces. Do not quote it.
+> [`todo/2026-09-08-three-documents-argue-from-the-flat-field.md`](todo/2026-09-08-three-documents-argue-from-the-flat-field.md)
 
 ![Panel A, every detector's F1 against background rate on a log axis with the two REGIMES endpoints dashed: all six curves slope and several cross. Panel B, the same detectors' rank at each rate, with CoactDetect falling from first to fifth and rate+context rising to first](learned/background_curve.png)
 
