@@ -10,8 +10,16 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
-### Mac/pilot-apv-cnqx-gz-run — DARKROOM claimed: the pilot APV+CNQX+GZ data set through the whole loop
-- **Status:** ACTIVE 2026-09-07. Tony: *"Run the apv cnqx gz baseline data set through the
+### Mac/pilot-apv-cnqx-gz-run — DARKROOM claim RELEASED: the pilot APV+CNQX+GZ data set through the whole loop
+- **Status:** **RELEASED 2026-09-07 — the run is finished and the directory is held by
+  nobody.** Seven of the pipeline's eight steps walked end to end; simulate-and-validate was
+  not run, because it needs a person. The report was murderboarded over three rounds, eleven
+  roles each, and its run record sits beside it at `reviews/REPORT_2026-09-07.md` — both the
+  roster gate and the grant gate pass. Code from the run landed as **#492** (`f9b5acd`),
+  **#493**, **#494** (`5bd7412`) and **#495** (`effdbce`): the assessment figure, the two
+  bake-off pages, the before/after figure, the raster page's unscanned mode, and a raster
+  row-ordering fix in `ui/diagnostic`. **Nothing in the darkroom directory is half-written**;
+  a later session may read, extend or supersede it. Was: ACTIVE 2026-09-07. Tony: *"Run the apv cnqx gz baseline data set through the
   coordination pipeline including tube variant training. Assume assessor setting of 10% floor
   3 for ground truth. Document each step for evaluation by the resume team. Output is labeled
   rasters and a new fireflies plot before after. Single group fast and slow columns."* Then
