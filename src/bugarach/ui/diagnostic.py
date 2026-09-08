@@ -331,8 +331,16 @@ def raster_panel(stream, *, ext, gt=None, name="events",
     unique value dimension per row, so y never links; x links through ``t``.
     """
     n_roi = stream.n_rois
-    counts = [int(np.sum(np.isfinite(np.asarray(v, dtype=float))))
-              for v in stream.t50rise]
+    # Order by what this raster actually DRAWS, which is `ext` — not by the whole
+    # recording. The two agree whenever a caller draws everything, and they come apart
+    # the moment one draws a window: a panel showing the 20-minute baseline of a
+    # 50-minute recording would otherwise sort its rows by drug and high-K+ activity,
+    # so the row a reader meets at the top as "the busiest" can be drawn nearly empty.
+    # Found in review on a baseline-only assessment figure, 2026-09-07.
+    counts = []
+    for v in stream.t50rise:
+        a = np.asarray(v, dtype=float)
+        counts.append(int(np.sum(np.isfinite(a) & (a >= ext[0]) & (a <= ext[1]))))
     order = np.argsort(counts, kind="stable")
 
     ts, ys, mts, mys = [], [], [], []

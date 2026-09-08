@@ -44,6 +44,7 @@ from bugarach.assess import _coact_count, k_from_fraction  # noqa: E402
 from bugarach.detect_folder import folder_analysis_windows  # noqa: E402
 from bugarach.io import load_folder  # noqa: E402
 from make_assessor_calls_figure import cluster_calls  # noqa: E402
+from make_group_raster_summary import _shift_stream  # noqa: E402
 
 BIN, MERGE_BINS, WM_FACTOR = 1.0, 2, 1.5      # assess.py's defaults
 INK_FAST, INK_SLOW, INK_NULL = "#1f5fa8", "#b5651d", "#999999"
@@ -75,7 +76,7 @@ def rows_at_k(assess_json: Path, k: int):
     return {r["slice_id"]: r for r in a["rows"] if int(r["K"]) == k}
 
 
-def build(folder: Path, assess_dir: Path, k: int, show: list[str], stream: str, *, width=1100):
+def build(folder: Path, assess_dir: Path, k: int, show: list[str], stream: str, *, width=1040):
     import holoviews as hv
     from bugarach.ui.diagnostic import lane_panel, raster_panel
     hv.extension("bokeh")
@@ -97,19 +98,19 @@ def build(folder: Path, assess_dir: Path, k: int, show: list[str], stream: str, 
         n_row = fast[sid]["clusters_permin"] * dur / 60.0 if stream == "fast" else slow[sid]["clusters_permin"] * dur / 60.0
         assert abs(len(calls) - n_row) < 0.51, (sid, len(calls), n_row)
         letter = next(letters)
-        ext = (0.0, dur)
+        # Start the drawn extent slightly BEFORE zero. A cluster at t = 0 lands on the
+        # axis spine and disappears — and on 20260812_381, which has two clusters in
+        # twenty minutes, the one at t = 0 is half of the recording's evidence and the
+        # one the report goes on to discuss. Found in review, 2026-09-07.
+        ext = (-8.0, dur)
         onsets = np.asarray([c["t0"] for c in calls])
         widths = np.asarray([c["t1"] - c["t0"] for c in calls])
         lane = lane_panel({f"assessor K={k}": (onsets, widths)}, ext=ext, width=width, row_px=26)
-        # re-zero the stream to the baseline start so the raster and the lane share x
-        import dataclasses
-        moved = {}
-        for f in ("locs", "t50rise", "peak"):
-            v = getattr(st, f, None)
-            if v is not None:
-                moved[f] = [np.asarray(a, float) - ws for a in v]
-        shifted = dataclasses.replace(st, **moved)
-        ras = raster_panel(shifted, ext=ext, width=width, height=max(200, 4 * st.n_rois + 40),
+        # Re-zero the stream to the baseline start so the raster and the lane share x.
+        # `_shift_stream` is the same operation written in the same run, with the reason
+        # `width` must not move and the reason each field is assigned on its own line.
+        shifted = _shift_stream(st, ws)
+        ras = raster_panel(shifted, ext=ext, width=width, height=max(265, 4 * st.n_rois + 40),
                            name=f"{letter} · {sid}",
                            ydim=f"roi_{sid}")
         lane.opts(xaxis=None, toolbar=None)
@@ -125,9 +126,9 @@ def build(folder: Path, assess_dir: Path, k: int, show: list[str], stream: str, 
         for rows, ink, dy in ((fast, INK_FAST, 0.15), (slow, INK_SLOW, -0.15)):
             v = max(rows[sid]["clusters_permin"], 0.02)
             els.append(hv.Scatter([(v, y + dy)]).opts(color=ink, size=9))
-    c = hv.Overlay(els).opts(width=440, height=26 * len(ids) + 70, toolbar=None, show_legend=False,
+    c = hv.Overlay(els).opts(width=380, height=26 * len(ids) + 70, toolbar=None, show_legend=False,
                              logx=True, xlim=(0.02, 5), yticks=ylab, ylim=(-0.7, len(ids) - 0.3),
-                             xlabel="C · coordinated events per minute of baseline (log)", ylabel="",
+                             xlabel="C · coordinated events/min of baseline (log)", ylabel="",
                              show_grid=False)
     # D · onset spread observed vs null
     els = []
@@ -140,9 +141,9 @@ def build(folder: Path, assess_dir: Path, k: int, show: list[str], stream: str, 
                 els.append(hv.Scatter([(r["jit_obs"], y + dy)]).opts(color=ink, size=9))
                 els.append(hv.Scatter([(r["jit_null"], y + dy)]).opts(color="white", line_color=INK_NULL,
                                                                         line_width=2, size=9))
-    d = hv.Overlay(els).opts(width=400, height=26 * len(ids) + 70, toolbar=None, show_legend=False,
+    d = hv.Overlay(els).opts(width=340, height=26 * len(ids) + 70, toolbar=None, show_legend=False,
                              yaxis=None, ylim=(-0.7, len(ids) - 0.3), xlim=(0, 0.7),
-                             xlabel="D · within-cluster onset spread, s (filled: measured; open: null)",
+                             xlabel="D · onset spread, s (filled: seen; open: null)",
                              show_grid=False)
     # E · the K arithmetic
     els = []
@@ -153,10 +154,13 @@ def build(folder: Path, assess_dir: Path, k: int, show: list[str], stream: str, 
         kf = k_from_fraction(0.10, n)
         kmax = max(kmax, kf, k)
         els.append(hv.Scatter([(kf, y)]).opts(color="#444", size=9))
-        els.append(hv.Text(kf, y, f"   10 % of {n} → {kf}", halign="left", valign="center", fontsize=8).opts(color="#444"))
-    els.append(hv.VLine(k).opts(color="#b00", line_dash="dashed", line_width=1.5))
-    e = hv.Overlay(els).opts(width=300, height=26 * len(ids) + 70, toolbar=None, show_legend=False,
-                             yaxis=None, ylim=(-0.7, len(ids) - 0.3), xlim=(0, kmax + 2.5),
+        els.append(hv.Text(kf, y + 0.30, f"10 % of {n} → {kf}", halign="center",
+                           fontsize=8).opts(color="#444"))
+    # The floor goes UNDER the dots and clear of the text. Drawn over them it struck
+    # through two labels and hid the fill of every dot already sitting at K.
+    els.insert(0, hv.VLine(k).opts(color="#b00", line_dash="dashed", line_width=1.5, alpha=0.7))
+    e = hv.Overlay(els).opts(width=320, height=26 * len(ids) + 70, toolbar=None, show_legend=False,
+                             yaxis=None, ylim=(-0.7, len(ids) - 0.1), xlim=(0, kmax + 1.6),
                              xlabel=f"E · K at 10 % (dot) and the floor {k} (dashed)", show_grid=False)
     bottom = hv.Layout([c, d, e]).cols(3).opts(shared_axes=False, toolbar=None)
     return panels, bottom, fast, slow
@@ -192,7 +196,7 @@ def main(argv=None) -> int:
                 f"vertical-align:-1px;margin-right:5px'></span><span style='color:{colour}'>{text}</span>")
 
     header = pn.pane.HTML(
-        f"<div style='font:13px system-ui,sans-serif;color:#111'>"
+        f"<div style='font:13px system-ui,sans-serif;color:#111;max-width:1030px'>"
         f"<b style='font-size:16px'>what the assessor called, at K = {a.k}</b> &nbsp;—&nbsp; "
         f"A, B: the {a.stream} baseline of {' and '.join(a.show)}, the assessor's clusters as bars in the "
         f"lane above the raster (first to last participant onset); nothing is drawn on the raster.<br>"

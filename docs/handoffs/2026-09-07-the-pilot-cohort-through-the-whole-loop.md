@@ -67,6 +67,8 @@ team which two files to draw from.
 ## In the repository from this run
 
 `tools/make_group_raster_summary.py --unscanned` with its test; `tools/make_before_after_figure.py`
-with its test; `tools/make_bakeoff_summary_figure.py`; a corrected note in `src/bugarach/adapt.py`
-(its spacing-floor note quoted an intermediate duration); this record; the darkroom claim on
-`docs/SESSIONS.md`. No data, no numbers.
+with its test; `tools/make_bakeoff_summary_figure.py`, which grew a second page and the probe gates;
+the new `tools/make_assessment_figure.py`, which draws what the assessor called with its clusters in
+a lane above the raster; a corrected note in `src/bugarach/adapt.py` (its spacing-floor note quoted
+an intermediate duration); this record; the darkroom claim on `docs/SESSIONS.md`. Landed as #492,
+#493 and #494. No data, no numbers.
