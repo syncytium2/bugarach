@@ -21,13 +21,28 @@ they cannot be read across:**
   this folder, so `RESET.md` §1 applies and not one number here is a hit or a miss.
   A high call count is not a good score and a low one is not a bad one.
 
-And the two halves are not even the same instrument, in opposite directions:
+And **neither family's two halves are the same instrument**, for different reasons:
 
 * **For the six**, the bake-off CALIBRATED a knob per fold and `bugarach detect` then
   ran on the folder at the SHIPPED operating point, because tuned settings do not
-  reach the command line. The `knob` column prints both, so the distance is visible.
-* **For the learned six**, the same fit produced both halves — `run_learned_on_folder.py`
-  trains and predicts in one process — so their two rows do describe one instrument.
+  reach the command line. The `knob` column prints both, and the distance is large:
+  five of six shipped values lie outside everything the folds chose.
+* **For the learned six**, the Scored row is the mean of FOUR fits, one per held-out
+  fold; the Observed row is a FIFTH, separate fit — `run_learned_on_folder.py` trains
+  once over the whole simulated corpus and predicts in the same process, because
+  nothing persists a model. Same architecture and same recipe; not the same weights
+  and not the same threshold.
+
+  ⚠ That paragraph read *"the same fit produced both halves ... so their two rows do
+  describe one instrument"* until 2026-09-08, and it is false: **one process is not
+  one fit.** It reached the rendered page and a merged PR's description, and was
+  caught only when Tony asked for the chain to be confirmed a link at a time.
+  `tube_ratio_guard` is the proof — it ran the folder at threshold 0.990819, a value
+  none of the four bake-off folds produced.
+
+The scored half is **4-fold cross-validation holding out 2 recordings of 8, NOT
+leave-one-out**, at **one training seed per fold** — so the spread it reports is a
+property of the data split rather than of the optimiser.
 
 Flags earn a row a warning rather than a footnote nobody reads: a threshold that
 stopped on the end of its grid, and a model whose calls do not require more than one
