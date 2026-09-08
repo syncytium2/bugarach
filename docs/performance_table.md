@@ -15,6 +15,31 @@ Implemented in [`bugarach.performance`](../src/bugarach/performance.py).
 
 ## 1. Why there is no ranking
 
+> ## ⚠ The evidence in this section is SUPERSEDED. The conclusion may survive; this
+> argument for it does not.
+>
+> Everything below was measured on a **flat** background field, before
+> `BENCH_RECORDING` carried the fitted rate and burst shapes. Re-measured on the fitted
+> field at twelve seeds on 2026-09-06 (`78ebe26`): **one detector leads at all seven
+> grid points, and the largest rank change across the axis is two.** The same seeds on
+> the flat field give three winners and a rank change of three — so the winner-swapping
+> this section is built on was substantially the flat field's own artefact.
+>
+> This is **pinned by tests, not by prose**: `tests/test_background_curve.py` asserts the
+> fitted curves and the flat curves side by side, precisely so the explanation is checked
+> rather than believed. Written up first in
+> [`handoffs/2026-08-28-the-winner-stopped-changing.md`](handoffs/2026-08-28-the-winner-stopped-changing.md).
+>
+> **What is still true, and it is not nothing:** the axis did not go dead. Mean own-range
+> fell from 0.185 to 0.136 — a detector's F1 still moves across the background axis by
+> far more than the gaps this project asks readers to believe. So "no ranking" may well
+> be right *because the spread is large*, rather than because the winner swaps. That is a
+> different argument and it has not been written.
+>
+> **Nothing here has been re-derived.** The table below is left exactly as it was, because
+> silently restating stale numbers as current is the failure this header exists to stop.
+> [`todo/2026-09-08-three-documents-argue-from-the-flat-field.md`](todo/2026-09-08-three-documents-argue-from-the-flat-field.md)
+
 Sweep two detectors across the seven background levels at twelve seeds, then repeat with
 the *next* twelve seeds. Same code, same grid. **The winner changes at two of the seven
 levels.**
