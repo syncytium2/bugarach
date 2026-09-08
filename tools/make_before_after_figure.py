@@ -122,7 +122,16 @@ def dot_size(calls: int) -> float:
     return 4.0 + 2.6 * math.sqrt(calls)
 
 
-def build(rows, detectors, streams, baseline, treatment, *, width=400, height=220):
+def build(rows, detectors, streams, baseline, treatment, *, width=400, height=300):
+    """Panel height is set by the y-axis LABEL, not by the data.
+
+    The label carries the panel's identity and its unit, because this project puts
+    identity in the axis label and never in a title above the plot. It is rotated, so
+    the plot's height is the space it has to fit in — and at 220 px eight of twelve
+    panels lost their unit off the end ("... · events/m"), which a murderboard round
+    caught in the render rather than in the code. Height is the fix; shortening the
+    label would have cost the identity instead.
+    """
     import holoviews as hv
     hv.extension("bokeh")
 
@@ -140,8 +149,13 @@ def build(rows, detectors, streams, baseline, treatment, *, width=400, height=22
                 els.append(hv.Curve([(baseline, b), (treatment, t)], kdims=["period"],
                                     vdims=[f"rate_{d}_{s}"]).opts(color=inks[sid], line_width=1.6, alpha=0.85))
                 for x, v, n in ((baseline, b, nb), (treatment, t, nt)):
+                    # A period with no calls at all is drawn hollow. Filled-but-tiny read
+                    # as one call, and "none" and "one" are the difference between a
+                    # detector that was silent and one that fired once.
+                    fill = "white" if n == 0 else inks[sid]
                     els.append(hv.Scatter([(x, v)], kdims=["period"], vdims=[f"rate_{d}_{s}"]
-                                          ).opts(color=inks[sid], size=dot_size(n), alpha=0.9))
+                                          ).opts(color=fill, line_color=inks[sid], line_width=1.5,
+                                                 size=dot_size(n), alpha=0.9))
             ov = hv.Overlay(els) if els else hv.Curve([], kdims=["period"], vdims=[f"rate_{d}_{s}"])
             ov = ov.opts(width=width, height=height, toolbar=None, show_legend=False,
                          ylabel=f"{letter} · {DETECTOR_NAME.get(d, d)} · {s} · events/min",

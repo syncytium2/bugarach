@@ -34,6 +34,7 @@ from __future__ import annotations
 import argparse
 import json
 import math
+from collections import Counter
 import os
 import sys
 import tempfile
@@ -131,22 +132,39 @@ def build_intervals(d, *, width=270, row_h=26):
     for p in (b, c):
         p.opts(yaxis=None, width=int(width * 0.8))
 
-    # D · recall against precision, with the bound drawn
-    els = []
-    for r in rows:
-        els.append(hv.Scatter([(r["recall"], r["precision"])]).opts(color=r["ink"], size=9))
-        els.append(hv.Text(r["recall"], r["precision"], "  " + r["label"], halign="left",
-                           valign="center", fontsize=8).opts(color=r["ink"]))
-    rs = [i / 200 for i in range(1, 201)]
-    iso = [(rc, ceil * rc / (2 * rc - ceil)) for rc in rs if 2 * rc - ceil > 0 and ceil * rc / (2 * rc - ceil) <= 1.0]
-    els.append(hv.Curve(iso).opts(color="#999", line_dash="dashed", line_width=1))
-    els.append(hv.HLine(p_ceil).opts(color="#999", line_dash="dotted", line_width=1))
-    dpanel = hv.Overlay(els).opts(
-        width=int(width * 1.35), height=height, toolbar=None, show_legend=False,
-        xlabel="D · recall (fraction of planted events found)",
-        ylabel="precision (hits over scored calls)", xlim=(0, 1.32), ylim=(0.3, 1.02),
-        padding=0.05, show_grid=False)
-    return hv.Layout([a, b, c, dpanel]).cols(4).opts(shared_axes=False, toolbar=None), ceil, n_dis, probe_min, n_planted
+    # D, E · recall and precision, as dot columns on the SAME rows as A-C.
+    #
+    # These were one recall-against-precision scatter carrying a text label per point,
+    # and the five detectors the argument is about all land in one small region of it:
+    # LoCo was drawn entirely underneath CoactDetect, the tube's label ran off the right
+    # frame, and tube_guard overprinted the tube. A scatter that is illegible exactly
+    # where the argument is has negative value. The iso-F1 curve it also carried is
+    # already a vertical line in A, so nothing is lost by putting both quantities back
+    # into the row idiom, where the shared y-axis names every detector once.
+    dpanel = panel("D", "recall (of the planted events)",
+                   by("recall"), by("recall"), by("recall"), (0, 1.05))
+    epanel = panel("E", "precision (hits ÷ scored calls)",
+                   by("precision"), by("precision"), by("precision"), (0.3, 1.02),
+                   vline=p_ceil)
+    for p in (dpanel, epanel):
+        p.opts(yaxis=None, width=int(width * 0.8))
+    return (hv.Layout([a, b, c, dpanel, epanel]).cols(5).opts(shared_axes=False, toolbar=None),
+            ceil, n_dis, probe_min, n_planted)
+
+
+def _distinct_labels(grid: list[float]) -> list[str]:
+    """Tick text that tells every grid value apart, however close together they are.
+
+    `f"{g:g}"` renders locust's top three percentiles — 99.99999, 99.999999 and
+    99.9999999 — as "100", "100", "100", which a reader takes for a broken axis rather
+    than for a search that keeps going. So: take the fewest significant digits that
+    still separate every value in the row, and only then fall back to repr.
+    """
+    for sig in range(2, 16):
+        out = [f"{g:.{sig}g}" for g in grid]
+        if len(set(out)) == len(out):
+            return out
+    return [repr(g) for g in grid]
 
 
 def build_knobs(d, *, width=900, row_h=44):
@@ -165,22 +183,29 @@ def build_knobs(d, *, width=900, row_h=44):
         labels.append((y, f"{r['label']} · {op.knob}"))
         n = len(grid)
         xs = [j / (n - 1) for j in range(n)]
+        texts = _distinct_labels(grid)
         for j, g in enumerate(grid):
             els.append(hv.Scatter([(xs[j], y)]).opts(color="#bbb", size=5))
-            els.append(hv.Text(xs[j], y - 0.38, f"{g:g}", halign="center", fontsize=7).opts(color="#666"))
-        # grid ends: a search that stopped here was too narrow
-        els.append(hv.Curve([(-0.02, y), (0.0, y)]).opts(color=INK_GATE, line_width=6, alpha=0.35))
-        els.append(hv.Curve([(1.0, y), (1.02, y)]).opts(color=INK_GATE, line_width=6, alpha=0.35))
-        for k in r["knobs"]:
-            if k in grid:
-                els.append(hv.Scatter([(xs[grid.index(k)], y + 0.12)]).opts(color=INK_HAND, size=9))
+            els.append(hv.Text(xs[j], y - 0.38, texts[j], halign="center", fontsize=7).opts(color="#666"))
+        # A grid END is only worth marking where a fold actually stopped on it — that is
+        # the case the mark is about (the search was still climbing when the grid ran
+        # out). Painting both ends of every row made the mark mean "this row has ends",
+        # which every row does, and the key then read as an accusation against all six.
+        for end, at in ((grid[0], (-0.02, 0.0)), (grid[-1], (1.0, 1.02))):
+            if end in r["knobs"]:
+                els.append(hv.Curve([(at[0], y), (at[1], y)]).opts(color=INK_GATE, line_width=6, alpha=0.55))
+        # Folds that agree land on one point. Without a count, one dot reads as one fold.
+        for k, times in Counter(k for k in r["knobs"] if k in grid).items():
+            els.append(hv.Scatter([(xs[grid.index(k)], y + 0.12)]).opts(color=INK_HAND, size=9))
+            if times > 1:
+                els.append(hv.Text(xs[grid.index(k)], y + 0.30, f"×{times}", halign="center",
+                                   fontsize=7).opts(color=INK_HAND))
         if shipped in grid:
             els.append(hv.Scatter([(xs[grid.index(shipped)], y - 0.12)]).opts(
                 color="white", line_color=INK_HAND, line_width=2, size=10))
     fig = hv.Overlay(els).opts(
         width=width, height=row_h * len(hand) + 70, toolbar=None, show_legend=False,
-        xlabel="the search grid, as steps (values under each tick; red ends = grid edge)",
-        ylabel="", yticks=labels, ylim=(-0.8, len(hand) - 0.2), xlim=(-0.05, 1.05),
+        ylabel="", yticks=labels, ylim=(-0.8, len(hand) - 0.2), xlim=(-0.06, 1.06),
         xaxis=None, show_grid=False)
     return fig
 
@@ -216,27 +241,34 @@ def main(argv=None) -> int:
         f"<div style='font:13px system-ui,sans-serif;color:#111;max-width:1060px'>"
         f"<b style='font-size:16px'>the bake-off, as intervals</b> &nbsp;—&nbsp; twelve detectors on "
         f"simulated recordings; {folds} folds × {spf} seeds.<br>"
-        f"Per held-out fold: {n_planted} planted events, {n_dis} correlated-burst distractors "
-        f"(each distractor call is scored as a false alarm), and a probe of {probe_min:g} min with "
-        f"nothing coordinated planted (probe firings are excluded from precision).<br>"
+        f"Per held-out fold: {n_planted} planted events and {n_dis} correlated-burst distractors, "
+        f"plus {probe_min:g} min of promiscuity probe with nothing coordinated planted "
+        f"(probe firings are excluded from precision). A call on a distractor matches no "
+        f"planted event, so it costs precision like any other false alarm.<br>"
+        f"<b>B counts distractors COVERED by some call</b>, not calls made on them: a detector "
+        f"emitting few very wide spans can cover all {n_dis} while making no false alarm at all, "
+        f"which is what the two learned baselines do here.<br>"
         f"Dot: mean over folds; line: range over folds; red tick in C: the gate. Rows are grouped by family and are <b>not ranked</b>."
         f"<div style='margin:5px 0 0'>{_chip(INK_HAND, 'hand-written detector')} &nbsp; "
         f"{_chip(INK_LEARNED, 'learned model (the tube, its variants, two baselines)')} &nbsp; "
         f"{_chip(INK_GATE, 'the probe gate the bench applies to that detector (max firings/min)')} &nbsp; "
-        f"<span style='color:#999'>- - -</span> F1 ceiling {ceil:.3f}: every planted event found, "
-        f"every distractor fired on; in D the dotted line is that detector's precision, "
-        f"{n_planted}/{n_planted + n_dis}</div>"
+        f"<span style='color:#999'>- - -</span> in A, F1 {ceil:.3f} — the most a detector can score "
+        f"if it finds every planted event AND fires once on every distractor; in E, the precision "
+        f"that goes with it, {n_planted}/{n_planted + n_dis}. A detector that told a distractor "
+        f"from a coordinated event would pass both.</div>"
         f"<div style='margin:4px 0 0;color:#777;font-size:11px'>{src}</div></div>")
     _write(pn.Column(header, pn.pane.HoloViews(fig)), a.out, "bakeoff_intervals", png=True)
 
     header2 = pn.pane.HTML(
         f"<div style='font:13px system-ui,sans-serif;color:#111;max-width:1060px'>"
         f"<b style='font-size:16px'>calibrated against shipped, on each detector's own grid</b> &nbsp;—&nbsp; "
-        f"one row per hand-written detector; ticks are the grid the bake-off searched. A shipped point that lies between grid points is not drawn.<br>"
+        f"one row per hand-written detector, each on its own grid — positions are steps, "
+        f"not a shared scale. &quot;×n&quot; means n folds agreed on that value. A shipped point "
+        f"lying between two grid values is not drawn.<br>"
         f"<div style='margin:5px 0 0'>{_chip(INK_HAND, 'filled dot: the knob a fold chose (one per fold)')} &nbsp; "
         f"<span style='display:inline-block;width:11px;height:11px;border:2px solid {INK_HAND};"
         f"vertical-align:-1px;margin-right:5px'></span>open dot: the shipped operating point &nbsp; "
-        f"{_chip(INK_GATE, 'grid edge — a search that stops here was too narrow')}</div>"
+        f"{_chip(INK_GATE, 'a fold stopped on the end of the grid — that search was still climbing')}</div>"
         f"<div style='margin:4px 0 0;color:#777;font-size:11px'>{src}</div></div>")
     _write(pn.Column(header2, pn.pane.HoloViews(build_knobs(d))), a.out, "bakeoff_knobs", png=True)
 
