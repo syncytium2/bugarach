@@ -71,7 +71,7 @@ def _write(tmp_path: Path):
 
 def test_rates_are_per_minute_of_the_scored_window(tmp_path):
     folder, det = _write(tmp_path)
-    rows, detectors, streams, missing = mod.rates(folder, det, "baseline", "APV+CNQX+GZ")
+    rows, detectors, streams, missing = mod.rates(folder, det, baseline="baseline", treatment="APV+CNQX+GZ")
     by = {(d, s, sid): (b, t) for d, s, sid, b, t, _, _ in rows}
     # baseline: 2 calls / 20 min; treatment: 1 call / (2820-1320)/60 = 25 min —
     # the producer's analysis windows, not the raw periods
@@ -81,7 +81,7 @@ def test_rates_are_per_minute_of_the_scored_window(tmp_path):
 
 def test_a_recording_without_the_treatment_is_skipped_and_named(tmp_path):
     folder, det = _write(tmp_path)
-    rows, _, _, missing = mod.rates(folder, det, "baseline", "APV+CNQX+GZ")
+    rows, _, _, missing = mod.rates(folder, det, baseline="baseline", treatment="APV+CNQX+GZ")
     assert missing == ["s2"]
     assert not any(sid == "s2" for _, _, sid, _, _, _, _ in rows)
 
@@ -89,17 +89,17 @@ def test_a_recording_without_the_treatment_is_skipped_and_named(tmp_path):
 def test_both_periods_are_named_by_the_caller(tmp_path):
     """No slot is assumed: asking for a period the folder does not have draws nothing."""
     folder, det = _write(tmp_path)
-    rows, _, _, missing = mod.rates(folder, det, "baseline", "TTX")
+    rows, _, _, missing = mod.rates(folder, det, baseline="baseline", treatment="TTX")
     assert rows == [] and missing == ["s1", "s2"]
     # and the same call with the periods swapped is a different figure, not an error
-    rows, _, _, _ = mod.rates(folder, det, "APV+CNQX+GZ", "baseline")
+    rows, _, _, _ = mod.rates(folder, det, baseline="APV+CNQX+GZ", treatment="baseline")
     by = {(d, s, sid): (b, t) for d, s, sid, b, t, _, _ in rows}
     assert by[("coact", "fast", "s1")] == pytest.approx((1 / 25.0, 2 / 20.0))
 
 
 def test_no_calls_is_a_zero_not_a_gap(tmp_path):
     folder, det = _write(tmp_path)
-    rows, detectors, _, _ = mod.rates(folder, det, "baseline", "APV+CNQX+GZ")
+    rows, detectors, _, _ = mod.rates(folder, det, baseline="baseline", treatment="APV+CNQX+GZ")
     by = {(d, s, sid): (b, t) for d, s, sid, b, t, _, _ in rows}
     # loco called only in high K+, which is neither period drawn
     assert by[("loco", "fast", "s1")] == (0.0, 0.0)
