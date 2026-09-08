@@ -10,6 +10,36 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
+### Mac/deploy-the-figure-and-the-viewer — SITE claim: `bugarach.tonydefazio.com`
+- **Status:** **ACTIVE 2026-09-08.** Claiming the public site for one publish. No other
+  session may run `npm run deploy` or `wrangler deploy` while this block reads ACTIVE.
+- **Authority:** **Tony said "then do the 5 minute deploy", in words, in session**, having
+  been told the live front page draws the raw-brightness bypass *through* the
+  difference-of-Gaussian bank. `DEPLOY_HOLD.md` re-read at claim time rather than trusted
+  from earlier in the session: `held: no`, `set-by: Tony`. Both are recorded, because the
+  previous deployer found the file alone refused as authority and the refusal was right.
+- **What it publishes:** `caeef0c`, **111 commits** past the live build at `7208e44`
+  (2026-09-02). Two things a reader will see.
+  **The front-page figure is corrected** — #480 re-vendored draughtsman at `3762f4b` and the
+  edge router stopped drawing the bypass through the bank it bypasses. Verified in the built
+  payload rather than in the source: in `site/index.html` the `mean → concat` edge runs at
+  y=196, below the bank's y=16–164 box, and `mean → dog` is a separate edge at y=90. That
+  defect has been live since 2026-09-02.
+  **The viewer gains the whole MAHICE build-out** — 16 commits touching served bytes, every
+  one of them `raster_viewer.html`. The published viewer is the one where the judging step
+  cannot be opened at all, where the confirm tool and the raster show different recordings,
+  where a review does not survive a reload, and where turbo counts on a bin grid.
+- **Checked before publishing:** `build_site.py` clean at 3426 KB / 8 assets;
+  `test_site_coherence`, `test_site_staleness`, `test_architecture_diagram_is_current`,
+  `test_svg_labels` — 70 passed. Built from the **primary checkout at `origin/main`**, with
+  `git rev-parse HEAD` compared against `origin/main` first.
+- **Traps honoured**, both from `Mac/deploy-the-named-axes` below: `npm run deploy` runs
+  **only in the primary checkout** (`node_modules` lives nowhere else), and this claim is
+  written from a **different worktree than the build**, so `merge_when_green.sh` reaping it
+  cannot take the built `site/` payload with it.
+- **Holds:** `bugarach.tonydefazio.com` only. No darkroom, no MATLAB, no export reads.
+- **Release is a separate commit** — a claim cannot retire itself in the PR it rides in.
+
 ### Mac/pilot-apv-cnqx-gz-run — DARKROOM claim RELEASED: the pilot APV+CNQX+GZ data set through the whole loop
 - **Status:** **RELEASED 2026-09-07 — the run is finished and the directory is held by
   nobody.** Seven of the pipeline's eight steps walked end to end; simulate-and-validate was
