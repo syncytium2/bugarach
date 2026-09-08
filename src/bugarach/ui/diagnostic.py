@@ -306,7 +306,7 @@ def lane_panel(lanes: dict, *, ext, gt=None, tol_sec: float = TOL_SEC,
 def raster_panel(stream, *, ext, gt=None, name="events",
                  width: int = 1000, height: int | None = None,
                  mark_px: float = 2.0, marked=None, marked_ink=None,
-                 ydim: str = "roi", ticks: str = "auto"):
+                 ydim: str = "roi", ticks: str = "auto", sort: str = "freq"):
     """ROI raster, quietest ROI at the bottom, every onset drawn identically.
 
     Takes no detection spans on purpose. Inking the onsets inside a detected
@@ -367,11 +367,23 @@ def raster_panel(stream, *, ext, gt=None, name="events",
     # 50-minute recording would otherwise sort its rows by drug and high-K+ activity,
     # so the row a reader meets at the top as "the busiest" can be drawn nearly empty.
     # Found in review on a baseline-only assessment figure, 2026-09-07.
+    #
+    # ``sort="freq"`` IS THE DEFAULT AND SHOULD STAY IT (Tony, 2026-09-08). Store
+    # order is an arbitrary label; firing frequency is a coordinate, and sorting
+    # by it is what turns a row's height into information — the same rule
+    # `learn.encode` follows when it ranks rows busiest-first before a model sees
+    # them. ``sort="store"`` keeps the producer's order for the rare case where a
+    # caller needs to point at "the third ROI in the file".
     counts = []
     for v in stream.t50rise:
         a = np.asarray(v, dtype=float)
         counts.append(int(np.sum(np.isfinite(a) & (a >= ext[0]) & (a <= ext[1]))))
-    order = np.argsort(counts, kind="stable")
+    if sort == "store":
+        order = np.arange(len(counts))
+    elif sort == "freq":
+        order = np.argsort(counts, kind="stable")
+    else:
+        raise ValueError(f"sort must be 'freq' or 'store', got {sort!r}")
 
     ts, ys, mts, mys = [], [], [], []
     for row, roi in enumerate(order):

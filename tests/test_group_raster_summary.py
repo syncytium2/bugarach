@@ -77,10 +77,18 @@ def _folder(tmp_path: Path, *, manifest: str | None = MANIFEST) -> Path:
     return d
 
 
-def test_one_page_per_group_and_treatment(tmp_path):
+def test_one_page_per_group_and_treatment_and_stream(tmp_path):
+    """A page is one group, one treatment, ONE STREAM (Tony, 2026-09-08).
+
+    fast and slow are different measurements, so a page carrying both invites the
+    comparison down the page that "never pooled" exists to prevent — and is twice
+    the height while doing it.
+    """
     pages, _, skipped = mod.measure(_folder(tmp_path), ("TTX", "senktide"))
-    assert sorted(pages) == [("DI", "senktide"), ("MALE", "TTX")]
-    assert [s.slice_id for s, _ in pages[("MALE", "TTX")]["members"]] == ["s1", "s2"]
+    assert sorted(pages) == [("DI", "senktide", "fast"), ("DI", "senktide", "slow"),
+                             ("MALE", "TTX", "fast"), ("MALE", "TTX", "slow")]
+    assert [s.slice_id
+            for s, _ in pages[("MALE", "TTX", "fast")]["members"]] == ["s1", "s2"]
     # s4's only treatment is SB222200, so it is on no page — and named for it.
     assert any(x.startswith("s4 ") for x in skipped)
 
@@ -88,10 +96,10 @@ def test_one_page_per_group_and_treatment(tmp_path):
 def test_time_is_re_zeroed_at_each_recordings_own_baseline_end(tmp_path):
     """Different baselines, one origin — which is the whole reason to align."""
     pages, _, _ = mod.measure(_folder(tmp_path), ("TTX",))
-    members = dict((sl.slice_id, a) for sl, a in pages[("MALE", "TTX")]["members"])
+    members = dict((sl.slice_id, a) for sl, a in pages[("MALE", "TTX", "fast")]["members"])
     assert members["s1"] == 60.0 and members["s2"] == 30.0
 
-    sl = next(s for s, _ in pages[("MALE", "TTX")]["members"] if s.slice_id == "s2")
+    sl = next(s for s, _ in pages[("MALE", "TTX", "fast")]["members"] if s.slice_id == "s2")
     shifted = mod._shift_stream(sl.streams["fast"], 30.0)
     # the 70 s event sits 40 s into treatment on s2, and 10 s into it on s1
     assert 40.0 in np.concatenate([np.asarray(v) for v in shifted.t50rise])
@@ -101,12 +109,22 @@ def test_time_is_re_zeroed_at_each_recordings_own_baseline_end(tmp_path):
 
 
 def test_every_flagged_event_is_drawn_in_the_second_ink(tmp_path):
+    """Every flagged event reaches a page — across the two the streams now get.
+
+    A page is one stream, so it draws its own stream's flags and no others. The
+    guarantee is unchanged in what it protects (a join that drops rows costs a
+    mark while the page still looks finished) and now has to be counted over both
+    pages rather than one.
+    """
     folder = _folder(tmp_path)
     pages, manifest, _ = mod.measure(folder, ("TTX",))
-    spec = pages[("MALE", "TTX")]
-    _, red = mod.build_page(spec["members"], ext=spec["ext"], manifest=manifest,
-                            width=600)
-    assert red == 3 == sum(len(v) for v in manifest.values())
+    drawn = {}
+    for sname in ("fast", "slow"):
+        spec = pages[("MALE", "TTX", sname)]
+        _, drawn[sname] = mod.build_page(spec["members"], ext=spec["ext"],
+                                         manifest=manifest, width=600, stream=sname)
+    assert drawn == {"fast": 2, "slow": 1}
+    assert sum(drawn.values()) == 3 == sum(len(v) for v in manifest.values())
 
 
 def test_each_raster_carries_its_own_y_dimension(tmp_path):
@@ -114,9 +132,9 @@ def test_each_raster_carries_its_own_y_dimension(tmp_path):
     constant in the only sense that matters — the ink inside it."""
     folder = _folder(tmp_path)
     pages, manifest, _ = mod.measure(folder, ("TTX",))
-    spec = pages[("MALE", "TTX")]
+    spec = pages[("MALE", "TTX", "fast")]
     blocks, _ = mod.build_page(spec["members"], ext=spec["ext"], manifest=manifest,
-                               width=600)
+                               width=600, stream="fast")
     # One name PER PANEL is expected and required — the invisible `_base` point
     # shares it deliberately, so that the panel has a y-dimension at all. What
     # must not repeat is the name ACROSS panels.
@@ -133,9 +151,9 @@ def test_only_the_last_panel_keeps_an_x_axis(tmp_path):
     """One x-axis per linked group, bottom row only (CLAUDE.md)."""
     folder = _folder(tmp_path)
     pages, manifest, _ = mod.measure(folder, ("TTX",))
-    spec = pages[("MALE", "TTX")]
+    spec = pages[("MALE", "TTX", "fast")]
     blocks, _ = mod.build_page(spec["members"], ext=spec["ext"], manifest=manifest,
-                               width=600)
+                               width=600, stream="fast")
     flat = [p for _, panels in blocks for p in panels]
     assert all(p.opts.get("plot").kwargs.get("xaxis") is None for p in flat[:-1])
     # The bottom row never sets `xaxis` at all — it keeps holoviews' default,
@@ -160,12 +178,12 @@ def test_an_unscanned_folder_is_drawn_with_no_red_and_says_so(tmp_path):
     assert mod.resolve_folder(str(d), unscanned=True) == d
     pages, manifest, _ = mod.measure(d, ("TTX",), unscanned=True)
     assert manifest == {}
-    blocks, red = mod.build_page(pages[("MALE", "TTX")]["members"],
-                                 ext=pages[("MALE", "TTX")]["ext"],
-                                 manifest=manifest, width=400)
+    blocks, red = mod.build_page(pages[("MALE", "TTX", "fast")]["members"],
+                                 ext=pages[("MALE", "TTX", "fast")]["ext"],
+                                 manifest=manifest, width=400, stream="fast")
     assert red == 0
-    head = mod.header_html("MALE", "TTX", pages[("MALE", "TTX")]["members"],
-                           pages[("MALE", "TTX")]["ext"], d, unscanned=True)
+    head = mod.header_html("MALE", "TTX", pages[("MALE", "TTX", "fast")]["members"],
+                           pages[("MALE", "TTX", "fast")]["ext"], d, unscanned=True)
     assert "no field-step scan has been run" in head
     assert "UNCHECKED" in head
     # asked for by name, and refused where it would hide marks that exist
