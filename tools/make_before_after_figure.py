@@ -53,6 +53,9 @@ from bugarach.io import load_folder  # noqa: E402
 #: names are what every figure and table says. `cicada` is named locust: the key
 #: is the contract, the name is the detector (docs/GLOSSARY.md).
 DETECTOR_NAME = {"rate": "rate+context", "coact": "CoactDetect", "loco": "LoCo",
+                 "tube": "tube (learned)", "tube_guard": "tube_guard",
+                 "tube_ratio": "tube_ratio", "tube_ratio_guard": "tube_ratio_guard",
+                 "trace": "pooled trace", "tiny": "shared per-ROI filter",
                  "sce": "binned SCE", "cicada": "locust", "sync": "SPIKE-synch"}
 
 
@@ -72,24 +75,31 @@ def windows(folder: Path):
     return out
 
 
-def counts(detections: Path):
+def counts(*detections: Path):
     """(slice_id, stream, detector, region_idx) -> calls; and the set of detectors that ran."""
     n = defaultdict(int)
-    ran: set[str] = set()
-    for r in read_detections(detections):
-        ran.add(r["detector"])
-        if r.get("region_idx") is None:
-            continue                     # in no declared period: counted nowhere
-        n[(r["slice_id"], str(r["stream"]).strip().lower(), r["detector"], int(r["region_idx"]))] += 1
-    return n, ran
+    order: list[str] = []
+    for path in detections:
+        for r in read_detections(path):
+            if r["detector"] not in order:
+                order.append(r["detector"])
+            if r.get("region_idx") is None:
+                continue                 # in no declared period: counted nowhere
+            n[(r["slice_id"], str(r["stream"]).strip().lower(),
+               r["detector"], int(r["region_idx"]))] += 1
+    return n, order
 
 
-def rates(folder: Path, detections: Path, baseline: str, treatment: str):
+def rates(folder: Path, *detections: Path, baseline: str, treatment: str):
     wins = windows(folder)
-    n, ran = counts(detections)
+    n, ran = counts(*detections)
     slices = sorted({sid for sid, _ in wins})
     streams = sorted({s for _, s, _, _ in n}) or ["fast", "slow"]
-    detectors = [d for d in DETECTORS if d in ran] or list(DETECTORS)
+    # The glossary's order for the six, then arrival for anything else — a learned
+    # model, or a detector from outside this project. A table that reordered itself
+    # because a second file was passed would make two runs incomparable by eye.
+    detectors = ([d for d in DETECTORS if d in ran]
+                 + [d for d in ran if d not in DETECTORS]) or list(DETECTORS)
     rows = []   # (detector, stream, slice, baseline_rate, treatment_rate, baseline_calls, treatment_calls)
     missing = []
     for sid in slices:
@@ -166,7 +176,9 @@ def build(rows, detectors, streams, baseline, treatment, *, width=400, height=30
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--detections", required=True, type=Path)
+    ap.add_argument("--detections", required=True, nargs="+", type=Path,
+                    help="one or more detections.csv in the emit contract — detect's "
+                         "own, and any other run in the same shape (a learned one)")
     ap.add_argument("--folder", required=True, type=Path,
                     help="the export folder detect ran on (regions.csv, slices.csv, recordings)")
     ap.add_argument("--baseline", required=True, help="region_label of the first period")
@@ -176,7 +188,8 @@ def main(argv=None) -> int:
     ap.add_argument("--stem", default="before_after_coordinated_events")
     a = ap.parse_args(argv)
 
-    rows, detectors, streams, missing = rates(a.folder, a.detections, a.baseline, a.treatment)
+    rows, detectors, streams, missing = rates(a.folder, *a.detections,
+                                              baseline=a.baseline, treatment=a.treatment)
     if not rows:
         print(f"nothing to draw: no recording has both a {a.baseline!r} and a {a.treatment!r} period",
               file=sys.stderr)
@@ -217,7 +230,8 @@ def main(argv=None) -> int:
         f"claim; treatment effects are analysed by fireflies, the sister project, not here. "
         f"{'Skipped, lacking one of the two periods: ' + ', '.join(missing) if missing else ''}</div>"
         f"<div style='margin:4px 0 0;color:#777;font-size:11px'>{a.folder.name} · "
-        f"{a.detections.parent.name}/{a.detections.name}</div></div>")
+        + " &nbsp;·&nbsp; ".join(f"{d.parent.name}/{d.name}" for d in a.detections)
+        + "</div></div>")
     page = pn.Column(header, pn.pane.HoloViews(build(rows, detectors, streams, a.baseline, a.treatment)))
     _write(page, dest, a.stem, png=True)
 
