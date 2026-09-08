@@ -44,16 +44,30 @@ as at k=8. It is not answering *"did many cells fire together"* at all.
 ROIs in the real recording have an onset within ±0.25 s of the call's own span. A
 bursting cell counts once, because the question is how many cells.
 
-| | calls | landing on one ROI or none |
-|---|---|---|
-| `tube` | 354 | 1 — **0.3 %** |
-| `tube_guard` | 369 | 3 — 0.8 % |
-| `tube_ratio` | 298 | 17 — **5.7 %** |
-| `tube_ratio_guard` | 247 | 16 — **6.5 %** |
+> ⚠ **Revised 2026-09-08, same day, and the revision matters.** The first version of
+> this section gave the percentages alone. **A raw lone percentage is not comparable
+> across detectors** — it is set by the width each detector declares — so every call
+> is now matched against windows of its own width thrown at random times in its own
+> recording. On this cohort that chance rate is **90–97 %** for every detector with
+> short calls, which is what makes a low observed fraction worth anything. The
+> uncorrected reading put a red flag on locust, whose 12 % is against a chance of 98 %.
 
-And they cluster where the ladder predicts: the median count of events within ±30 s of a
-lone call is 7–9, against 20 around the same detector's multi-ROI calls. **The lone calls
-are in the quiet stretches**, which under a ratio is where contrast is largest.
+| | calls | on one ROI or none | thrown at random | ratio |
+|---|---|---|---|---|
+| `tube` | 354 | 1 — 0.3 % | 95 % | **0.00** |
+| `tube_guard` | 369 | 3 — 0.8 % | 96 % | **0.01** |
+| `tube_ratio` | 298 | 17 — 5.7 % | 96 % | **0.06** |
+| `tube_ratio_guard` | 247 | 16 — 6.5 % | 96 % | **0.07** |
+
+**Read this as a comparison, not as an indictment.** Both ratio variants are still
+15× better than dart-throwing; what they are is **ten times worse than the two
+subtract variants**, which differ from them by one kernel operation and nothing else.
+That differential is the finding here, and the ladder is what makes it a mechanism
+rather than a coincidence — the tally on its own could not carry the claim.
+
+The lone calls cluster where the ladder predicts: the median count of events within
+±30 s of one is 7–9, against 20 around the same detector's multi-ROI calls. **They are
+in the quiet stretches**, which under a ratio is where contrast is largest.
 
 ## Why — and it is the mechanism, not the fit
 

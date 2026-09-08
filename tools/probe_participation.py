@@ -134,12 +134,32 @@ def ladder(fitted, *, n_roi, duration_sec, dt, backgrounds, k_max, seed=0):
     return rows
 
 
-def tally(detections: Path, folder: Path, *, pad: float):
-    """Per detector: how many real calls land on <=1 ROI, and how quiet it was there.
+def tally(detections: Path, folder: Path, *, pad: float, n_shuffle: int = 200,
+          seed: int = 20260908):
+    """Per detector: how many real calls land on <=1 ROI — against matched chance.
 
     ``pad`` widens the call's own span on both sides before counting, because a
     score crosses its threshold a little before or after the onsets that raised it.
     It is a tolerance on the model's timing, not on its participation.
+
+    **THE RAW PERCENTAGE IS NOT COMPARABLE ACROSS DETECTORS, and reading it as
+    though it were put a wrong flag on two of the six before this baseline
+    existed.** A detector's lone fraction depends on the width IT declares: locust
+    emits a fixed 0.3 s span, so at ±0.25 s it scores 12 % lone while its calls
+    plainly sit on crowds; binned SCE emits the tightness of its participants and
+    can miss events sitting elsewhere in its own 10 s bin.
+
+    So every call is matched against ``n_shuffle`` windows **of its own width, in
+    its own recording and stream, at uniformly random times**. That baseline
+    absorbs width convention, event rate and recording length together, because the
+    only thing that differs from the real call is where it was put. A detector that
+    gates on coordination sits far below its own chance rate; one at chance is
+    placing calls without reference to how many cells are firing. Chance runs
+    90–97 % for every detector with short calls here, which is what makes a low
+    observed fraction mean anything at all.
+
+    Returns per detector: ``n``, ``lone``, ``chance`` (mean matched-chance lone
+    fraction, 0–1), and the surrounding-activity medians of the lone/not split.
     """
     from bugarach.detectors.rate import recording_extent, stream_trains
     from bugarach.io import load_folder
@@ -147,6 +167,7 @@ def tally(detections: Path, folder: Path, *, pad: float):
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         slices = {s.slice_id: s for s in load_folder(folder)}
+    rng = np.random.RandomState(seed)
     cache: dict[tuple, tuple] = {}
 
     def trains(sid, stream):
@@ -156,26 +177,35 @@ def tally(detections: Path, folder: Path, *, pad: float):
             tr = [np.asarray(v) for v in
                   stream_trains(s.streams[stream], recording_extent(s), "t50rise")]
             flat = np.sort(np.concatenate(tr)) if any(v.size for v in tr) else np.array([])
-            cache[key] = (tr, flat)
+            cache[key] = (tr, flat, recording_extent(s))
         return cache[key]
 
-    per = defaultdict(lambda: dict(n=0, lone=0, ctx_lone=[], ctx_multi=[]))
+    def n_roi(tr, a, b):
+        return sum(1 for v in tr if np.any((v >= a - pad) & (v <= b + pad)))
+
+    per = defaultdict(lambda: dict(n=0, lone=0, chance_runs=[], ctx_lone=[], ctx_multi=[]))
     for r in csv.DictReader(detections.open()):
         sid, stream, det = r["slice_id"], r["stream"], r["detector"]
         if sid not in slices or stream not in slices[sid].streams:
             continue
         a = float(r["onset_sec"])
-        b = a + float(r["width_sec"])
-        tr, flat = trains(sid, stream)
-        n_roi = sum(1 for v in tr if np.any((v >= a - pad) & (v <= b + pad)))
+        w = float(r["width_sec"]) if r.get("width_sec") not in (None, "", "NA") else 0.0
+        b = a + w
+        tr, flat, (t0, t1) = trains(sid, stream)
         ctx = int(((flat >= a - 30.0) & (flat <= b + 30.0)).sum())
         d = per[det]
         d["n"] += 1
-        if n_roi <= 1:
+        if n_roi(tr, a, b) <= 1:
             d["lone"] += 1
             d["ctx_lone"].append(ctx)
         else:
             d["ctx_multi"].append(ctx)
+        if n_shuffle:
+            starts = rng.uniform(t0, max(t0, t1 - w), size=n_shuffle)
+            d["chance_runs"].append(
+                float(np.mean([n_roi(tr, s0, s0 + w) <= 1 for s0 in starts])))
+    for d in per.values():
+        d["chance"] = float(np.mean(d["chance_runs"])) if d["chance_runs"] else float("nan")
     return per
 
 
@@ -203,7 +233,16 @@ def build_ladder(rows, *, width=250, height=200):
     return hv.Layout(panels).cols(3).opts(shared_axes=False, toolbar=None)
 
 
+CHANCE_INK = "#888888"
+
+
 def build_tally(per, *, width=760, row_h=26):
+    """Each detector's lone fraction as a bar, its own matched chance as a tick.
+
+    The chance mark is on the row rather than in a caption because without it the
+    bar cannot be read: 12 % looks bad until the dart-throwing rate for calls of
+    that width in those recordings turns out to be 97 %.
+    """
     import holoviews as hv
     hv.extension("bokeh")
 
@@ -212,16 +251,23 @@ def build_tally(per, *, width=760, row_h=26):
     labels, els = [], []
     for y, (det, d) in enumerate(rows):
         frac = 100.0 * d["lone"] / d["n"]
-        labels.append((y, f"{det} · {d['n']} calls"))
+        ch = 100.0 * d.get("chance", float("nan"))
+        # The count goes in the row label, not beside the bar. Drawn at the bar's end
+        # it collided with the chance tick exactly when the two were close — which is
+        # the case the figure exists to show.
+        labels.append((y, f"{det} · {d['lone']} of {d['n']} calls"))
         els.append(hv.Curve([(0, y), (frac, y)]).opts(color="#8b1a1a", line_width=7))
-        els.append(hv.Text(frac + 0.6, y, f"{d['lone']}", halign="left",
-                           fontsize=8).opts(color="#8b1a1a"))
-    top = max((100.0 * d["lone"] / d["n"] for _, d in rows), default=1.0)
+        if np.isfinite(ch):
+            els.append(hv.Scatter([(ch, y)]).opts(color=CHANCE_INK, marker="dash",
+                                                  size=15, line_width=3))
+    top = max([100.0 * d["lone"] / d["n"] for _, d in rows]
+              + [100.0 * d.get("chance", 0.0) for _, d in rows], default=1.0)
     return hv.Overlay(els).opts(
         width=width, height=row_h * max(len(rows), 1) + 60, toolbar=None,
         show_legend=False, ylabel="", yticks=labels, ylim=(-0.7, len(rows) - 0.3),
-        xlim=(0, max(top * 1.25, 1.0)),
-        xlabel="% of that detector's calls landing on one ROI or none", show_grid=False)
+        xlim=(0, max(top * 1.1, 1.0)),
+        xlabel="% of calls landing on one ROI or none  ·  grey tick: chance",
+        show_grid=False)
 
 
 def _chip(colour, text):
@@ -285,10 +331,14 @@ def main(argv=None) -> int:
     if per:
         with (a.out / "participation_tally.csv").open("w", newline="") as fh:
             w = csv.writer(fh, lineterminator="\n")
-            w.writerow(["detector", "n_calls", "n_lone", "pct_lone",
+            w.writerow(["detector", "n_calls", "n_lone", "pct_lone", "pct_lone_by_chance",
+                        "ratio_to_chance",
                         "median_events_within_30s_lone", "median_events_within_30s_multi"])
             for det, d in sorted(per.items()):
+                ch = d.get("chance", float("nan"))
                 w.writerow([det, d["n"], d["lone"], f"{100.0*d['lone']/d['n']:.1f}",
+                            f"{100.0*ch:.1f}" if np.isfinite(ch) else "",
+                            f"{(d['lone']/d['n'])/ch:.2f}" if np.isfinite(ch) and ch else "",
                             f"{np.median(d['ctx_lone']):.0f}" if d["ctx_lone"] else "",
                             f"{np.median(d['ctx_multi']):.0f}" if d["ctx_multi"] else ""])
 
@@ -322,8 +372,12 @@ def main(argv=None) -> int:
             f"every call in <code>{a.detections.name}</code>, against the recordings in "
             f"<code>{a.folder.name}</code>. A call counts as lone when at most one ROI has an "
             f"onset within &plusmn;{a.pad:g} s of the call's own span.<br>"
-            f"The number at the end of a bar is the count. Per-detector medians of how busy "
-            f"the surrounding &plusmn;30 s was, lone against not, are in "
+            f"<b>The bar cannot be read without the tick beside it.</b> A detector's lone "
+            f"fraction depends on the width IT declares, so every call is matched against "
+            f"windows of its own width placed at random times in its own recording — the grey "
+            f"tick. Twelve per cent is a good number where chance is 97.<br>"
+            f"Each row names the count. Chance rates, the ratio to chance, and per-detector "
+            f"medians of how busy the surrounding &plusmn;30 s was, lone against not, are in "
             f"<code>participation_tally.csv</code>.<br>"
             f"<div style='margin:4px 0 0;color:#777;font-size:11px'>{a.detections.parent.name}/"
             f"{a.detections.name}</div></div>")
