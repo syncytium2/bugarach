@@ -114,11 +114,20 @@ class Trained:
     threads: int = 0
     """Intra-op threads this was fitted at — a condition of the number, not trivia."""
 
-    def predict(self, slice_, *, stream=None):
-        """Detections in the six ports' contract, ready for ``score_stream``."""
+    def predict(self, slice_, *, stream=None, extent=None):
+        """Detections in the six ports' contract, ready for ``score_stream``.
+
+        ``extent`` restricts the encoding to one window of the recording, which
+        is what makes a learned model comparable with the six on real data: the
+        ports are run inside each analysis window separately, so each judges a
+        period against that period's own background. Encoding the whole
+        recording instead hands the model context across a drug transition that
+        no other detector on the page was given, and the difference would land
+        in the comparison without appearing in it.
+        """
         import torch
 
-        enc = encode(slice_, dt=self.dt, stream=stream)
+        enc = encode(slice_, dt=self.dt, stream=stream, extent=extent)
         with torch.no_grad():
             x = torch.from_numpy(enc.raster).unsqueeze(0)
             p = torch.sigmoid(self.model(x)).squeeze(0).numpy()

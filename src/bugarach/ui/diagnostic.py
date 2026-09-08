@@ -151,7 +151,8 @@ def _base(ext, ydim: str):
 
 
 def lane_panel(lanes: dict, *, ext, gt=None, tol_sec: float = TOL_SEC,
-               width: int = 1000, row_px: int = 26, not_run=(), names=None):
+               width: int = 1000, row_px: int = 26, not_run=(), names=None,
+               colors=None):
     """Detector lanes with a real categorical y-axis (labels cannot collide).
 
     ``not_run`` NAMES THE ROWS THAT NEVER RAN, and they are drawn differently on
@@ -194,7 +195,7 @@ def lane_panel(lanes: dict, *, ext, gt=None, tol_sec: float = TOL_SEC,
 
     for key, ev in lanes.items():
         y = ypos[key]
-        colour = COLORS.get(key, "#555555")
+        colour = (colors or {}).get(key) or COLORS.get(key, "#555555")
         sp = _spans(ev[0], ev[1] if len(ev) > 1 else None, ext, tol_sec)
         if sp:
             # No stroke. A 1 px outline on a bar whose fill is under a pixel

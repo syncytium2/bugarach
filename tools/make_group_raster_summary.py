@@ -280,8 +280,16 @@ def _name_unknown_labels(members):
 #: reader outside this project.
 LANE_NAMES = {"cicada": "locust"}
 
+#: The learned family shares one hue on the shared palette, which is right when
+#: one learned lane sits beside six hand-written ones and wrong the moment four
+#: variants sit beside each other and cannot be told apart. Shades of the same
+#: red, so the family still reads as one kind against the six.
+LANE_COLORS = {"tube": "#7a1f22", "tube_guard": "#a83a3e",
+               "tube_ratio": "#c96a5c", "tube_ratio_guard": "#e0998c",
+               "trace": "#6b4a2f", "tiny": "#9c7a4a"}
 
-def detector_lanes(detections: Path):
+
+def detector_lanes(*detections: Path):
     """(slice_id, stream) -> {detector: (onsets, widths)}, in the glossary's order.
 
     Read straight from the detect step's own output, so the marks on the page
@@ -290,12 +298,21 @@ def detector_lanes(detections: Path):
     from bugarach.detect_folder import DETECTORS
     from bugarach.emit import read_detections
 
+    # ORDER IS THE GLOSSARY'S, THEN ARRIVAL. The six ports have a canonical order
+    # and keep it; anything else — a learned model, a detector from outside this
+    # project — lands after them in the order its file was given, so the page
+    # never reorders itself because a run produced a different set.
     acc: dict = defaultdict(lambda: defaultdict(lambda: ([], [])))
-    for r in read_detections(detections):
-        key = (r["slice_id"], str(r["stream"]).strip().lower())
-        on, wd = acc[key][r["detector"]]
-        on.append(float(r["onset_sec"]))
-        wd.append(float(r.get("width_sec") or 0.0))
+    seen_order: list[str] = []
+    for path in detections:
+        for r in read_detections(path):
+            key = (r["slice_id"], str(r["stream"]).strip().lower())
+            if r["detector"] not in seen_order:
+                seen_order.append(r["detector"])
+            on, wd = acc[key][r["detector"]]
+            on.append(float(r["onset_sec"]))
+            wd.append(float(r.get("width_sec") or 0.0))
+    DETECTORS = list(DETECTORS) + [d for d in seen_order if d not in DETECTORS]
     # EVERY DETECTOR GETS A ROW ON EVERY RECORDING, including the ones that
     # called nothing there. Dropping a silent detector's row silently changes
     # which rows a reader is looking at from one recording to the next, so the
@@ -344,7 +361,7 @@ def build_page(members, *, ext, manifest, width: int, lanes=None, not_run=()):
                 shifted = {d: (on - anchor, wd) for d, (on, wd) in per_det.items()}
                 panels.append(lane_panel(shifted, ext=ext, width=width,
                                          row_px=LANE_PX, not_run=not_run,
-                                         names=LANE_NAMES))
+                                         names=LANE_NAMES, colors=LANE_COLORS))
             marked, n_red = [], 0
             for i in range(st.n_rois):
                 rid = (str(sl.roi_ids[i]) if sl.roi_ids is not None
@@ -373,7 +390,7 @@ def build_page(members, *, ext, manifest, width: int, lanes=None, not_run=()):
 
 
 def header_html(group: str, treatment: str, members, ext, folder: Path,
-                *, unscanned: bool = False, ran=(), not_run=(),
+                *, unscanned: bool = False, ran=(), not_run=(), note=None,
                 detections: Path | None = None) -> str:
     """The key, and the provenance. Outside every plot, per the conventions."""
     from bugarach.ui.diagnostic import MARKED_INK, RASTER_INK, REGION_FILL
@@ -410,7 +427,8 @@ def header_html(group: str, treatment: str, members, ext, folder: Path,
             "<div style='margin:4px 0 0;color:#444'>detector lanes, one block per "
             "stream, between the periods and the raster they were called on: &nbsp; "
             + " &nbsp; ".join(
-                chip(COLORS.get(d, "#555"), LANE_NAMES.get(d, TITLES.get(d, d)))
+                chip(LANE_COLORS.get(d) or COLORS.get(d, "#555"),
+                     LANE_NAMES.get(d, TITLES.get(d, d)))
                 for d in ran))
         if not_run:
             det_key += (
@@ -423,7 +441,8 @@ def header_html(group: str, treatment: str, members, ext, folder: Path,
     else:
         det_key = ("<div style='margin:4px 0 0;color:#444'>no detector was run — "
                    "pass <code>--detections</code> to draw the calls</div>")
-    src = f" &nbsp;·&nbsp; {detections.parent.name}/{detections.name}" if detections else ""
+    src = "".join(f" &nbsp;·&nbsp; {d.parent.name}/{d.name}" for d in (detections or []))
+    note_html = (f"<div style='margin:4px 0 0;color:#b00'>⚠ {note}</div>") if note else ""
     return (
         f"<div style='font:13px system-ui,sans-serif;color:#111;margin:0 0 6px'>"
         f"<b style='font-size:16px'>{group} · {treatment}</b> &nbsp;—&nbsp; "
@@ -433,6 +452,7 @@ def header_html(group: str, treatment: str, members, ext, folder: Path,
         f"{chip(RASTER_INK, 'event')} &nbsp; "
         f"{red_key}"
         f"</div>"
+        f"{note_html}"
         f"<div style='margin:4px 0 0;color:#444'>regions: {regions} &nbsp;&nbsp; "
         f"{chip('#222222', 'the window actually scored, along the bottom of its period bar')}"
         f"</div>"
@@ -460,9 +480,13 @@ def main(argv=None) -> int:
                     help="the folder was NEVER scanned for field steps (producer: "
                          "UNCHECKED), so it has no manifest. Draw it with no red and "
                          "say so in the header. Needs --folder.")
-    ap.add_argument("--detections", default=None, type=Path,
-                    help="detect's own detections.csv — draws a detector lane block "
-                         "between the period lane and each stream's raster")
+    ap.add_argument("--detections", default=None, nargs="+", type=Path,
+                    help="one or more detections.csv — detect's own, and any other "
+                         "file in the same contract (a learned run, say). Draws a "
+                         "detector lane block between the periods and each raster.")
+    ap.add_argument("--note", default=None,
+                    help="one extra line for the header — a caveat this page must "
+                         "carry that the files it reads cannot tell it")
     ap.add_argument("--not-run", nargs="*", default=None, metavar="DETECTOR",
                     help="detectors to show as rows that never ran (grey, labelled), "
                          "so their absence is visible rather than silent. Defaults to "
@@ -490,12 +514,12 @@ def main(argv=None) -> int:
         print("no (group, treatment) page has any recording", file=sys.stderr)
         return 1
 
-    lanes = detector_lanes(a.detections) if a.detections else {}
+    lanes = detector_lanes(*a.detections) if a.detections else {}
     ran = list(dict.fromkeys(d for per in lanes.values() for d in per))
     if a.not_run is not None:
         not_run = tuple(a.not_run)
     else:
-        not_run = ("tube",) if a.detections else ()
+        not_run = ()
 
     written, total_red = [], 0
     for (group, treatment), spec in sorted(pages.items()):
@@ -509,7 +533,7 @@ def main(argv=None) -> int:
                                           spec["ext"], folder,
                                           unscanned=a.unscanned, ran=ran,
                                           not_run=not_run,
-                                          detections=a.detections))]
+                                          detections=a.detections, note=a.note))]
         for sl, panels in blocks:
             # A TEXT HEADER OUTSIDE THE PLOT, which is what the convention offers
             # beside the y-label — and here it is the one that works. Rotated
