@@ -25,7 +25,7 @@ from dataclasses import dataclass
 
 from draughtsman.facts import (BATCHED_SHAPE_FIELDS, FactError, Graph, REF_RE,
                                bare_numbers, repeat_counts, resolve)
-from draughtsman.spec import Spec
+from draughtsman.spec import Spec, length_pt
 
 
 @dataclass
@@ -221,10 +221,33 @@ def check(spec: Spec, graph: Graph) -> Result:
                 errors.append(
                     f"stage {s.id!r}: glyph scale {s.glyph.scale!r} is neither "
                     "'sqrt' nor 'linear'.")
-            if len(s.glyph.axes) != 2 or len(s.glyph.labels) != 2:
+            # A STYLE NOBODY IMPLEMENTS RENDERS AS A BLOCK AND PASSES. `scale`
+            # was validated here from the start and `style` never was, so
+            # `"blcok"` -- or a style proposed in a design and not yet built --
+            # draws the default silently and `check` calls it correct. That is a
+            # figure disagreeing with its spec while every assertion is green,
+            # which is the one thing this file exists to prevent.
+            if s.glyph.style not in ("block", "marks", "sheets"):
                 errors.append(
-                    f"stage {s.id!r}: a glyph needs exactly two axes and two "
-                    "labels — one for height, one for width.")
+                    f"stage {s.id!r}: glyph style {s.glyph.style!r} is not one "
+                    "of 'block', 'marks' or 'sheets'. An unknown style would be "
+                    "drawn as a block, and the figure would not be the spec.")
+            # RANK IS SET BY THE STYLE, AND ONLY `sheets` MAY TAKE THREE.
+            #
+            # The two-axis rule is not arbitrary: the eye reads a rectangle's
+            # area, so both edges must come from one tensor or the reader
+            # perceives a product that means nothing. `sheets` is read as a
+            # VOLUME — face area times stack depth — so three axes of one tensor
+            # multiply to something real in the same way. Every other style stays
+            # at two, because nothing in a rectangle can carry a third.
+            want = 3 if s.glyph.style == "sheets" else 2
+            if len(s.glyph.axes) != want or len(s.glyph.labels) != want:
+                named = ("one for depth, one for height, one for width"
+                         if want == 3 else
+                         "one for height, one for width")
+                errors.append(
+                    f"stage {s.id!r}: a {s.glyph.style!r} glyph needs exactly "
+                    f"{want} axes and {want} labels — {named}.")
 
         for meter in s.meters:
             try:
@@ -266,11 +289,117 @@ def check(spec: Spec, graph: Graph) -> Result:
         errors.append(
             "glyphs in one figure must use one scale; found "
             + " and ".join(sorted(repr(x) for x in scaling)))
+    # WILL THIS BE LEGIBLE AT THE SIZE IT IS PRINTED?
+    #
+    # The last question in this file that coverage cannot ask. A figure with a
+    # stated output width has a unit budget, and going over it does not fail
+    # anything at render time — the SVG scales down happily and takes the type
+    # with it. Measured across the gallery before this existed: at a 6in double
+    # column the detail type landed between 2.49pt and 5.25pt, and no figure in
+    # the set cleared 6pt anywhere.
+    #
+    # Imported here rather than at module scope: `check` is the layer that must
+    # not need a renderer to answer a question about coverage, and this is the
+    # one question that genuinely does.
+    if spec.output.width:
+        from draughtsman.render import render, width_budget, type_pt
+        import re as _re
+        try:
+            drawn = render(spec, graph)
+            units = float(_re.search(r'viewBox="0 0 ([\d.]+)', drawn).group(1))
+        except Exception as exc:                      # a broken spec fails elsewhere
+            units = 0.0
+            errors.append(f"output.width is set but the figure did not render: {exc}")
+        if units:
+            got = type_pt(spec, units)
+            floor = length_pt(spec.output.min_type, "output.min_type")
+            if got is not None and got >= floor:
+                # THE PASSING CASE WAS SILENT TOO, which is half the same defect.
+                # A gate that reports only its failures cannot be told apart from
+                # a gate that is switched off, so the reader of a green run
+                # learned nothing about which of the two they had. This says the
+                # number it measured, so "checked and cleared" and "not checked"
+                # read differently at a glance.
+                notes.append(
+                    f"legibility: smallest type is {got:.2f}pt at "
+                    f"{spec.output.width}, clearing the {spec.output.min_type} "
+                    f"floor. The figure is {units:.0f} units wide.")
+            if got is not None and got < floor:
+                budget = width_budget(spec)
+                errors.append(
+                    f"at {spec.output.width} the smallest type would be "
+                    f"{got:.2f}pt, under the {spec.output.min_type} floor. The "
+                    f"figure is {units:.0f} units wide and the budget is "
+                    f"{budget:.0f}. Narrow it — wrap the spine into more rows "
+                    f"(layout.wrap around {budget * 0.92:.0f}), drop a detail "
+                    f"line, or collapse a stage. Do not shrink the type: the "
+                    f"floor is the point.")
+    else:
+        # A GATE THAT DID NOT RUN LOOKS EXACTLY LIKE A GATE THAT PASSED, and this
+        # is the one place in the file where that is true by construction: every
+        # other question above is asked of every spec, and this one is asked only
+        # of a spec that opted in. So a figure whose type would print at 2.49pt
+        # produces the same clean green run as one that was measured and cleared
+        # its floor.
+        #
+        # An outside review found it by setting the field on the specs that lack
+        # it and re-running: "they pass check only because the field that would
+        # catch it is absent." That is the shape of the defect this repository
+        # convicts other tools of -- a confident answer to a question nobody
+        # asked -- arriving in its own gate.
+        #
+        # A WARNING AND NOT AN ERROR, deliberately. Opting out is legal: a figure
+        # for a slide or a README has no printed size to be measured against, and
+        # forcing a declaration would make the field a formality rather than a
+        # claim. What is not legal is saying nothing.
+        warnings.append(
+            "output.width is not set, so THE LEGIBILITY GATE DID NOT RUN. This "
+            "figure has not been checked at any printed size, and coverage "
+            "passing says nothing about it. Set output.width and "
+            'output.min_type (e.g. "6in" and "6pt") to turn it on. To ask the '
+            "same question about the rendered file without editing the spec: "
+            "tools/measure_type.py --print 6in --floor 6pt <figure.svg>")
+
+    if spec.layout.chrome not in ("box", "none"):
+        errors.append(
+            f"layout chrome {spec.layout.chrome!r} is neither 'box' nor 'none'. "
+            "An unknown value would draw the boxed figure, and the figure would "
+            "not be the spec.")
+    # AND ONE STYLE, for the same reason one rank. A figure mixing `sheets` with
+    # `block` would put a rectangle and a volume on one ruler, and the styles do
+    # not even agree on how many axes they read — so the shared scale would be
+    # computed over glyphs measuring different things.
+    styling = {s.glyph.style for s in glyphed}
+    if len(styling) > 1:
+        errors.append(
+            "glyphs in one figure must use one style; found "
+            + " and ".join(sorted(repr(x) for x in styling)))
     if len(glyphed) == 1:
         warnings.append(
             f"stage {glyphed[0].id!r} is the only one with a glyph, so its "
             "rectangle is the full scale by definition and shows nothing a "
             "reader can weigh against anything.")
+
+    # A RECTANGLE AROUND A RECTANGLE, WHICH WAS PROSE ON THE PAGE UNTIL NOW.
+    # DECISIONS.md, "What the page leads with": a box is the right container when
+    # the stage's content is words and the wrong one when the content is a
+    # drawing of the tensor -- the two compete for the same reading and the eye
+    # settles on the larger, which is the box. `chrome` is a field of the stage
+    # now, so this is answerable per stage and no longer forces a figure to
+    # choose one container for everything it holds.
+    #
+    # A WARNING AND NOT AN ERROR. `resnet` ships this way and is not wrong about
+    # its model; refusing it would refuse a committed figure over a judgement the
+    # spec is entitled to make. A warning names it and leaves the call where it
+    # belongs.
+    boxed = [s.id for s in glyphed
+             if (s.chrome or spec.layout.chrome) != "none"]
+    if boxed:
+        warnings.append(
+            "glyph inside a box: " + ", ".join(repr(x) for x in sorted(boxed))
+            + ". The box is a second rectangle around the drawing and the eye "
+            "reads the larger one. Set chrome to 'none' on those stages to let "
+            "the tensor be the stage, or take the glyph off.")
 
     # A BAR THAT COMPARES WITH NOTHING IS DECORATION. Meters are drawn on a
     # scale shared by every stage carrying the same label, so a series with one
@@ -341,6 +470,35 @@ def check(spec: Spec, graph: Graph) -> Result:
                             f"{{{body}}}, whose axis {ba} is {val[ba]}, not 1. "
                             "Hiding it would delete a number the reader needs — "
                             "drop the declaration, or do not draw this shape.")
+
+    # -- a glyph's axes shift under a batch declaration, and its labels cannot --
+    #
+    # `glyph.axes` is a positional index into a shape whose RANK depends on
+    # `batch_axis`, declared elsewhere in the same spec. U-Net's `axes: [1, 2]`
+    # with `labels: ["channels", "height"]` means (channels, height) on a
+    # four-axis shape and (height, width) once the batch is hidden -- every
+    # rectangle becomes a square, the constant-area finding the figure exists for
+    # disappears, and NOTHING ERRORS, because both indices are still in range.
+    # (Three-axis shapes fall off the end and raise, which is why a rank-three
+    # model was safe and U-Net was not. Loud at rank three, silent at rank four.)
+    #
+    # Nothing here can verify the labels -- they are the agent's words and only
+    # they say what an axis means. What IS checkable is that NEGATIVE indices do
+    # not move: hiding a LEADING axis leaves every trailing position where it
+    # was, so `[-3, -2]` picks the same pair before and after. Positive indices
+    # into the drawn shape are legitimate, so this is a warning and not an error;
+    # what it catches is the spec that had a glyph BEFORE the declaration was
+    # added, where the indices silently came to mean something else.
+    if spec.batch_axis is not None:
+        for s_ in spec.stages:
+            if s_.glyph and any(i >= 0 for i in s_.glyph.axes):
+                warnings.append(
+                    f"stage {s_.id!r} declares batch_axis {spec.batch_axis} and "
+                    f"its glyph indexes axes {list(s_.glyph.axes)} positively. "
+                    "Those index the shape AS DRAWN, so if the declaration was "
+                    "added after the glyph they now name different axes and the "
+                    "labels no longer describe them. Negative indices count from "
+                    "the end and do not move when a leading axis is hidden.")
 
     # -- a traced constant may be an initialisation, and the trace cannot say ---
     #
@@ -481,10 +639,17 @@ def _cycle(nodes: list[str], edges: list[tuple[str, str]]) -> list[str]:
     return []
 
 
+# LEGIBILITY LEFT THIS SENTENCE WHEN IT STOPPED BEING TRUE OF EVERY RUN. The
+# caveat used to say coverage says nothing about whether the figure is legible,
+# and printed directly under a line reporting the measured point size — a
+# contradiction in one screen of output. It is now conditional in the same way
+# the gate is: checked where `output.width` is set, reported above when it runs,
+# and named as absent by a warning when it does not.
 CAVEAT = (
     "Coverage passing means no traced operation was silently dropped. It says "
-    "NOTHING about whether the names are good, the grouping is natural, or the "
-    "figure is legible. A person still has to look at it."
+    "NOTHING about whether the names are good or the grouping is natural. "
+    "Legibility is checked only where output.width is set, and reported above "
+    "when it is. A person still has to look at it."
 )
 
 
@@ -532,8 +697,8 @@ def _traced_edges(spec: Spec, graph: Graph) -> set[tuple[str, str]]:
 
     # AN ELIDED NODE IS TRANSPARENT, NOT ABSENT. Eliding says a reader does not
     # need to see an operation; it does not say the data stopped flowing through
-    # it. CASCADE elides both permutes, and treating them as gaps reported its
-    # входной arrow as unbacked -- the check calling a correct figure wrong, which
+    # it. A model that elides both of its permutes had its input arrow reported
+    # as unbacked -- the check calling a correct figure wrong, which
     # is how a check gets switched off. So resolve through them to the stages
     # behind, the way `tensor_inputs` already sees through structural nodes.
     def sources(nid: str, seen: frozenset[str]) -> set[str]:
