@@ -1,5 +1,5 @@
 ---
-<!-- vendored from syncytium2/murderboard @ 3a6a8fb — canonical source; do NOT edit here, update upstream and re-copy -->
+<!-- vendored from syncytium2/murderboard @ 81a0927 — canonical source; do NOT edit here, update upstream and re-copy -->
 # canonical: syncytium2/murderboard skills/murderboard/SKILL.md
 # When vendoring, INSERT a line just below the --- above: vendored from https://github.com/syncytium2/murderboard @ <short-sha> — do NOT edit here; update by re-copying. (murderboard_revendor.py does this, and keeps it in the right place.)
 name: murderboard
@@ -18,6 +18,43 @@ in `doc_review_process.md`, which you will load in step 2 and follow.
 > 7 of 11 roles, or target the generator instead of the built file, and every one of those
 > outcomes looked exactly like success. The steps below are the parts that must not depend on
 > anyone remembering them.
+
+## Preflight — what this costs, before it costs it
+
+**Deliberately before step 0**, and unnumbered, because it gates whether the run happens at
+all rather than how it is done. A murderboard is a fan-out: one subagent per role, every role,
+always. **Known good: Claude Opus 5**; other current models are likely fine. On a model you
+cannot afford to exhaust you get **no review and the full bill** — which is what happened on
+2026-09-07 under Fable.
+
+**A `PreToolUse` hook should already have handled this** — `murderboard_model_gate.sh`, wired
+in the plugin and in consumers that vendored it. It blocks a run on a blocked model, and it
+**asks the human before every run**, because the other way this wastes money is being fired
+too early, at a draft that was not ready. If you are reading this line it either allowed the
+call or is not installed here; do not assume the second case means no policy:
+
+```bash
+GATE=; for p in tools/murderboard_model_gate.sh murderboard_model_gate.sh \
+                "${MB:-/nonexistent}/murderboard_model_gate.sh"; do
+  [ -r "$p" ] && GATE="$p" && break
+done
+[ -n "$GATE" ] && bash "$GATE" --why || echo "no model gate present — check the model yourself"
+```
+
+**If the gate is absent, say which model you are running on and confirm the human wants to
+spend it here** before spawning anything. One line before the fan-out, rather than an apology
+after it.
+
+**If you are blocked or the human declines, that is the end of it.** Do not re-invoke, do not
+reach for the hand-run path through the process file, and do not trim the roster to fit a
+budget — a report missing roles is indistinguishable from a clean one, which is the failure
+this entire skill exists to prevent. Their options are to switch model or to set
+`MURDERBOARD_ALLOW_EXPENSIVE_MODEL=1`; both are theirs to pick, not yours.
+
+**Be straight about whose bill it is.** No cost incurred running the murderboard is ever the
+responsibility of its authors, and the gate is a safeguard, **not a spending cap** — never
+imply it protects anyone from a bill.
+<https://github.com/syncytium2/murderboard/blob/main/TERMS.md>
 
 ## 0. Resolve the paths — do not assume a layout
 
