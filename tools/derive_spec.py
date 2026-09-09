@@ -85,6 +85,16 @@ def build(assessment: dict, k: int, *, events_per_level: int = 5,
             return float(np.median(vals)) if vals else float("nan")
 
         n_jit_defined = sum(1 for r in rows if r.get("jit_defined"))
+        # The field size comes from THESE rows, not from the assessment's summary
+        # block. Under a percentage each recording appears once at its own K, and
+        # the summary block was filtered to one K — so reading it here built the
+        # generator on the smallest 55 of 84 recordings and then divided a
+        # participation count pooled across every K by that subgroup's field
+        # size. `assess_archive` no longer produces the filtered block, and this
+        # computes its own regardless, because a spec that silently describes a
+        # subpopulation is the failure the whole percentage path exists to avoid.
+        n_roi_override = int(round(float(np.median(
+            [float(r["n_roi"]) for r in rows]))))
         k_resolved = sorted({int(r["K"]) for r in rows})
         # One count still has to go into the Assessment the generator is built
         # from, because `generator_params` takes a participation floor and not a
@@ -116,7 +126,9 @@ def build(assessment: dict, k: int, *, events_per_level: int = 5,
         rows = [r for r in assessment["rows"] if r["K"] == k]
         n_jit_defined = v["n_jit_defined"]
         k_resolved = [int(k)]
-    n_roi = int(round(assessment["n_roi"]["median"]))
+        n_roi_override = None
+    n_roi = (n_roi_override if n_roi_override is not None
+             else int(round(assessment["n_roi"]["median"])))
     win = float(np.median([r["window_sec"] for r in rows]))
     # Per-ROI rate, derived from the POPULATION event rate over the window
     # divided by the ROI count — the same construction the tree's own measured
