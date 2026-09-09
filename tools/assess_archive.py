@@ -104,7 +104,8 @@ def _refuse_to_overwrite_ours(folder: Path, out_name: str) -> None:
 def assess_store(store: Path, *, stream: str | None, n_surrogates: int,
                  limit: int | None = None, assemblies: bool = False,
                  assembly_surrogates: int = 1000,
-                 min_rois=None) -> dict:
+                 min_rois=None, min_rois_frac=None,
+                 min_rois_floor: int | None = None) -> dict:
     """Assess every baseline recording under ``store``.
 
     **Takes an export folder or a `.mat` store, and prefers the folder.** The
@@ -122,12 +123,39 @@ def assess_store(store: Path, *, stream: str | None, n_surrogates: int,
     if assemblies:
         from bugarach.assembly import assess_assemblies
 
-    # The floors are this lab's default unless a caller names its own. They are
-    # not a universal: K is a coactivity FLOOR IN CELLS, so what it means depends
-    # on how many cells the field has, and (3, 4, 6, 8) was chosen against ~34.
-    floors = tuple(sorted(set(int(k) for k in (min_rois or DEFAULT_MIN_ROIS))))
-    if any(k < 2 for k in floors):
-        raise SystemExit(f"K must be at least 2 to be a coactivity floor: {floors}")
+    # K arrives one of two ways and they are not interchangeable. An absolute
+    # floor is a count of cells, so what it means depends on how many cells the
+    # field has — (3, 4, 6, 8) was chosen against ~34 and this corpus runs 10 to
+    # 61. A FRACTION resolves against each recording's own population, which is
+    # the space K is actually set in (assess.DEFAULT_MIN_ROIS_FRAC), and
+    # `min_rois_floor` is the clamp `k_from_fraction` deliberately leaves to the
+    # caller. When a fraction is given the per-recording resolution happens
+    # inside `assess_coactivity`, so nothing is resolved here.
+    by_fraction = min_rois_frac is not None
+    if by_fraction and min_rois is not None:
+        raise SystemExit(
+            "K as a fraction and K as an absolute count are two different "
+            "settings; pass one. A fraction resolves per recording, a count does "
+            "not, and a run that accepted both would depend on which won.")
+    floors = ()
+    if not by_fraction:
+        if min_rois_floor is not None:
+            raise SystemExit(
+                "--k-floor applies to --k-percent. With absolute K values the "
+                "floor is either already in them or is a second opinion.")
+        floors = tuple(sorted(set(int(k) for k in (min_rois or DEFAULT_MIN_ROIS))))
+        if any(k < 2 for k in floors):
+            raise SystemExit(
+                f"K must be at least 2 to be a coactivity floor: {floors}")
+    else:
+        fracs = tuple(sorted(set(float(f) for f in min_rois_frac)))
+        if any(not (0.0 < f <= 1.0) for f in fracs):
+            raise SystemExit(
+                f"K fractions must be in (0, 1]: {fracs}. Ten percent goes in as "
+                f"0.10, not 10.")
+    k_kw = ({"min_rois_frac": fracs} if by_fraction else {"min_rois": floors})
+    if by_fraction and min_rois_floor is not None:
+        k_kw["min_rois_floor"] = int(min_rois_floor)
 
     is_folder = (store / "slices.csv").is_file() or (store / "regions.csv").is_file()
     if is_folder:
@@ -227,7 +255,7 @@ def assess_store(store: Path, *, stream: str | None, n_surrogates: int,
         try:
             res = assess_coactivity(s, stream=want, window=win,
                                     n_surrogates=n_surrogates,
-                                    min_rois=floors)
+                                    **k_kw)
         except Exception as e:                       # noqa: BLE001
             skipped["too_short"] += 1
             print(f"  ~ {f.name}: {type(e).__name__}: {e}", file=sys.stderr)
@@ -261,6 +289,16 @@ def assess_store(store: Path, *, stream: str | None, n_surrogates: int,
                 raw_window_sec=float(r.end_sec - r.start_sec),
                 used_analysis_window=bool(getattr(r, "has_analysis_window", False)),
                 K=int(a.min_rois),
+                # How this recording's K was arrived at, carried per row. On a
+                # folder of mixed field sizes one setting produces several counts,
+                # and where a floor binds it produces them under a second rule —
+                # so a number pooled over these rows cannot say which K made it
+                # unless each row does.
+                K_percent=(None if a.min_rois_frac is None
+                           else round(100.0 * a.min_rois_frac, 6)),
+                K_floor=(None if a.min_rois_floor is None
+                         else int(a.min_rois_floor)),
+                K_floor_bound=bool(a.min_rois_floor_bound),
                 part_n_obs=float(a.part_n_obs), jit_obs=float(a.jit_obs),
                 jit_null=float(a.jit_null), jit_excess=float(a.jit_excess),
                 jit_defined=bool(a.jit_defined),
@@ -410,6 +448,22 @@ def main(argv=None) -> int:
                         "scanning it here would report only the tail. Still a "
                         "scan and still not a choice — a human picks K, and "
                         "`derive_spec --k` is where that happens.")
+    p.add_argument("--k-percent", default=None,
+                   help="K as PERCENTAGES of each recording's ROI population — "
+                        "e.g. '10' or '5,10,15'. This is the space K is set in "
+                        "(GLOSSARY: K is a percentage a person sets during "
+                        "MAHICE); the absolute count follows each field size on "
+                        "its own, which is what makes one setting fair across a "
+                        "folder running 10 to 61 ROIs. Mutually exclusive with "
+                        "--k.")
+    p.add_argument("--k-floor", type=int, default=None, metavar="N",
+                   help="an absolute floor under --k-percent, applied per "
+                        "recording after the percentage meets that recording's "
+                        "ROI count. `k_from_fraction` clamps only at 1 and says "
+                        "the clamp belongs to the caller — this is it. Every row "
+                        "records whether the floor BOUND there, because a floor "
+                        "that binds on part of a corpus means two K rules "
+                        "produced the population.")
     p.add_argument("--out-name", default="assessment_real.json",
                    help="the file to write inside --out. Defaults to the name "
                         "every downstream tool reads, which is why assessing "
@@ -419,12 +473,26 @@ def main(argv=None) -> int:
     folder = _dataset_arg.get(a, want="any")
     _refuse_to_overwrite_ours(folder, a.out_name)
 
+    fracs = None
+    if a.k_percent is not None:
+        if a.k is not None:
+            p.error("--k-percent and --k are two ways of saying K; pass one.")
+        try:
+            fracs = tuple(float(x) / 100.0
+                          for x in a.k_percent.split(",") if x.strip())
+        except ValueError:
+            p.error(f"--k-percent takes percentages, comma-separated — got "
+                    f"{a.k_percent!r}. Ten percent is '10', not '0.10'.")
+        if not fracs:
+            p.error("--k-percent was empty")
+
     a.out.mkdir(parents=True, exist_ok=True)
     res = assess_store(folder,
                        stream=a.stream, n_surrogates=a.n_surrogates,
                        limit=a.limit, assemblies=a.assemblies,
                        assembly_surrogates=a.assembly_surrogates,
-                       min_rois=a.k)
+                       min_rois=a.k, min_rois_frac=fracs,
+                       min_rois_floor=a.k_floor)
 
     f = a.out / a.out_name
     f.write_text(json.dumps(res, indent=1, sort_keys=True))

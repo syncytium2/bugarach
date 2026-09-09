@@ -163,8 +163,13 @@ def observed(run: Path, folder: Path, *, baseline: str, treatment: str, pad: flo
         mine = [r for r in rows if r[0] == det]
         # Median OVER RECORDINGS of each recording's own rate, both streams pooled;
         # a mean would be carried by the two busiest recordings in a cohort of six.
-        b = [r[3] * 60.0 for r in mine]
-        t = [r[4] * 60.0 for r in mine]
+        # Indices 4 and 5, not 3 and 4: `rates()` grew a `group` field at index 3
+        # on 2026-09-09 for the group-faceted figure. Unpacking by position across
+        # a module boundary is what made that a silent multiply-a-string rather
+        # than a wrong number — which is the good outcome, and the reason to name
+        # the fields here rather than count them.
+        b = [r[4] * 60.0 for r in mine]
+        t = [r[5] * 60.0 for r in mine]
         d = per.get(det, {})
         chance = d.get("chance", float("nan"))
         pct_lone = (100.0 * d["lone"] / d["n"]) if d.get("n") else float("nan")
@@ -174,7 +179,7 @@ def observed(run: Path, folder: Path, *, baseline: str, treatment: str, pad: flo
             # reader means by "how many calls". The two rate columns beside it are the
             # named periods only, so the three do not add up and must not be made to.
             calls=d.get("n", 0),
-            calls_in_the_two_periods=sum(r[5] + r[6] for r in mine),
+            calls_in_the_two_periods=sum(r[6] + r[7] for r in mine),
             baseline_per_min=float(np.median(b)) if b else float("nan"),
             treatment_per_min=float(np.median(t)) if t else float("nan"),
             lone=d.get("lone", 0),

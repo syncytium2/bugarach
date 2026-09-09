@@ -41,6 +41,71 @@ note = """
 The standard export. Two streams, region labels, and the full per-event set the
 contract asks for — `time_sec` (t50rise), `width_sec` + `width_def`, `peak_sec`, `amp`.
 Carries no `analysis_*` columns, deliberately.
+
+⚠ NOT the newest folder the producer has shipped, and `default` is deliberately left
+pointing here rather than moved. `steps_excluded` below is 2026-09-03 and its own README
+says "for any new analysis, use this folder"; moving `default` would silently re-point
+every existing analysis and every parity fixture at a different corpus. Changing it is a
+decision, not a housekeeping edit — see the note on `steps_excluded`.
+"""
+
+[steps_excluded]
+# The producer's 2026-09-03 export with field-step artifacts REMOVED.
+name = "2026-09-03_revised_2v_long_STEPS_EXCLUDED"
+recordings = 84
+note = """
+Whole-field brightness steps GENERATE detections — onsets lock to the step, 74% (fast)
+and 82% (slow) of ROIs fire at once, at 8.5x and 22.7x each slice's own rate, in both
+streams. That is the signature a coordination detector exists to find, and it was in the
+data. Nine steps confirmed by eye; every event within ±2 s of one removed (381 events,
+9 slices), each listed in `field_steps_excluded.tsv`.
+
+Pairs with `2026-09-03_revised_2v_long_PRE_ARTIFACT_KILLER`, which keeps the artifacts and
+is on disk so the runs made before the removal stay reproducible. `slices.csv` and
+`regions.csv` are byte-identical between the two, and the 75 unaffected recordings are
+byte-identical once the two new columns are stripped — so the pair is a clean control.
+
+Carries `analysis_start_sec` / `analysis_end_sec` (the `long_window_20` regime), which
+`default` does not, plus two new per-event columns: `on_field_step` and `field_step_id`.
+
+⚠ THE LOADER DROPS BOTH NEW COLUMNS SILENTLY. `io.py` recognises only width_sec /
+width_def / peak_sec / amp beyond roi and time_sec, and `store.Stream` has no per-event
+flag field, so `csv.DictReader` picks them up and they are discarded with no error. In
+THIS folder that costs nothing — every surviving row reads `0` — but it is why the
+FLAGGED_FOR_REVIEW companion cannot be read correctly here yet.
+
+⚠ Known contamination this folder does NOT address: non-rigid motion correction pinned
+12 ROIs to the frame floor across `20260629_312`, `20260629_309`, `20260630_316` and
+`20250926_235`. Not flagged in any column. Producer's own caveat.
+"""
+
+[senktide]
+# First-treatment subset of `steps_excluded`. A view, not a re-export.
+name = "2026-09-03_revised_2v_long_STEPS_EXCLUDED_SENKTIDE"
+recordings = 29
+note = """
+Every recording in `steps_excluded` whose first non-baseline region is `senktide`, carried
+WHOLE — every region, every event, full recording extent — with the sidecars subset to
+match. Event data byte-identical to the parent's; nothing re-derived, re-windowed or
+recounted. Groups: ORX 10, OVX 8, DI 6, MALE 5.
+
+The parent remains the record. Where the two disagree about anything but which recordings
+are present, the parent wins.
+"""
+
+[ttx]
+# First-treatment subset of `steps_excluded`. A view, not a re-export.
+name = "2026-09-03_revised_2v_long_STEPS_EXCLUDED_TTX"
+recordings = 38
+note = """
+Same construction as `senktide`, on a first treatment of `TTX`. Groups: DI 11, MALE 9,
+ORX 9, OVX 9.
+
+⚠ TTX IS NOT A SILENCING CONTROL HERE — FOUNDATIONS §9. Coordination persists under it and
+splits by stream (FAST median 0.46 of baseline, SLOW median 2.50 with 44% of slices at or
+above). A detector returning little in a TTX window is not thereby validated, and a nonzero
+coactivity excess on these slices is evidence about the preparation, not a false-alarm floor
+to tune away.
 """
 
 [pensub]

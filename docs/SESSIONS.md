@@ -10,6 +10,22 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
+### Mac/full-cohort-senktide-ttx — DARKROOM claim: `bugarach/2026-09-09-full-cohort-senktide-ttx/`
+- **Status:** ACTIVE 2026-09-09. The full senktide and TTX cohorts through the loop —
+  assess, spec, simulate, calibrate, train, held-out comparison, detect, figures. Successor
+  to the APV+CNQX+GZ pilot, and the first run able to detect at its own calibration and to
+  run its own trained models on real data, both of which #507–#509 closed yesterday.
+- **Holds:** that one darkroom directory and nothing else. No deploy, no MATLAB, no site.
+  `<darkroom>/constellation/` untouched — that is the MATLAB producer team's.
+- **Input:** the producer's `2026-09-03_..._STEPS_EXCLUDED_{SENKTIDE,TTX}` folders, which
+  no file in this repo declared until this branch. ⚠ **`current_export.toml`'s `default`
+  still points at `2026-08-18_revised_2v_periods`** and is deliberately left there — moving
+  it would re-point every existing analysis and every parity fixture at a different corpus.
+  New roles were added beside it instead; changing `default` is a decision for Tony.
+- **MAHICE skipped on instruction**, so K is a percentage nobody signed off on: `k_source`
+  reads `percentage_unreviewed`, never `mahice`. RESET.md §1 applies to everything
+  downstream and the artifacts say so.
+
 ### Mac/deploy-the-figure-and-the-viewer — SITE claim RELEASED: `bugarach.tonydefazio.com`
 - **Status:** **RELEASED 2026-09-08. THE SITE IS HELD BY NOBODY.** Published `3cb89fd`,
   wrangler **Version ID `ab3cc81d-1ed5-415b-ada8-14deb77574ce`**, 7 of 8 assets changed.

@@ -12,6 +12,24 @@ merged; one row per detector, because each detector's calls are its own claim.
 Panels are lettered; the two panels of a row share a y-axis so the streams can be
 read against each other; each line ends in its recording's id.
 
+FACETED BY EXPERIMENTAL GROUP, AND ON THIS CORPUS THAT IS NOT A PREFERENCE.
+FOUNDATIONS §9: effects run in OPPOSITE DIRECTIONS by group — ORX up, male
+unchanged, diestrus down under TTX — so a panel pooling them hides a sign change
+and is not admissible on its own. ``--facet group`` puts one group per column and
+is the default whenever the folder's `slices.csv` carries `group_id`; each panel is
+then a standard fireflies before/after over that group's recordings.
+
+ONE PAGE PER DETECTOR (``--per-detector``). Twelve detectors x two streams x four
+groups does not fit one page legibly, and stacking them invites reading down a
+column as though it were a ranking — which is the thing `performance_table.md`
+declines to do. Each page carries one detector's claim, its own y-scale, and the
+same facet grid, so pages can be flipped against each other.
+
+Y-AXES: shared ACROSS the group facets of one stream, never across streams and
+never across detectors. Groups are the comparison the facets exist to allow, so
+they need one scale; fast and slow are different measurements, and two detectors'
+rates are two different instruments' units.
+
 WHAT IT IS AND IS NOT. It is *output*: the coordinated-event table read back per
 recording and period, so a reader can judge each detector quickly
 (`docs/pipeline.md`, Output). It is **not** a treatment-effect analysis — FOUNDATIONS
@@ -90,9 +108,28 @@ def counts(*detections: Path):
     return n, order
 
 
+def groups_of(folder: Path) -> dict[str, str]:
+    """slice_id -> group_id, from the folder's own `slices.csv`.
+
+    The producer's column, carried unchanged. Recordings whose folder does not
+    declare a group come back under ``""`` and are drawn in one unlabelled facet
+    rather than being dropped — a missing group is a fact about the folder, and
+    silently discarding those recordings would shrink an n nobody was told about.
+    """
+    out: dict[str, str] = {}
+    f = Path(folder) / "slices.csv"
+    if not f.is_file():
+        return out
+    with f.open(newline="") as fh:
+        for r in csv.DictReader(fh):
+            out[str(r.get("slice_id", "")).strip()] = str(r.get("group_id") or "").strip()
+    return out
+
+
 def rates(folder: Path, *detections: Path, baseline: str, treatment: str):
     wins = windows(folder)
     n, ran = counts(*detections)
+    grp = groups_of(folder)
     slices = sorted({sid for sid, _ in wins})
     streams = sorted({s for _, s, _, _ in n}) or ["fast", "slow"]
     # The glossary's order for the six, then arrival for anything else — a learned
@@ -100,7 +137,9 @@ def rates(folder: Path, *detections: Path, baseline: str, treatment: str):
     # because a second file was passed would make two runs incomparable by eye.
     detectors = ([d for d in DETECTORS if d in ran]
                  + [d for d in ran if d not in DETECTORS]) or list(DETECTORS)
-    rows = []   # (detector, stream, slice, baseline_rate, treatment_rate, baseline_calls, treatment_calls)
+    # (detector, stream, slice, group, baseline_rate, treatment_rate,
+    #  baseline_calls, treatment_calls)
+    rows = []
     missing = []
     for sid in slices:
         b = next((k for k, v in wins.items() if k[0] == sid and v[0] == baseline), None)
@@ -111,7 +150,8 @@ def rates(folder: Path, *detections: Path, baseline: str, treatment: str):
         for d in detectors:
             for s in streams:
                 nb, nt = n.get((sid, s, d, b[1]), 0), n.get((sid, s, d, t[1]), 0)
-                rows.append((d, s, sid, nb / wins[b][1], nt / wins[t][1], nb, nt))
+                rows.append((d, s, sid, grp.get(sid, ""),
+                             nb / wins[b][1], nt / wins[t][1], nb, nt))
     return rows, detectors, streams, missing
 
 
@@ -126,10 +166,81 @@ def recording_inks(rows):
             for i, sid in enumerate(sorted({r[2] for r in rows}))}
 
 
+#: One ink per experimental group. Okabe–Ito again, and the ink is the FACET's
+#: identity rather than any recording's: with 29–38 recordings a per-recording key
+#: is unreadable, so identity moves to the sidecar CSV, which carries every
+#: recording's id, group and both counts.
+GROUP_INKS = ("#0072B2", "#D55E00", "#009E73", "#CC79A7", "#E69F00", "#56B4E9", "#000000")
+
+
+def group_inks(groups):
+    return {g: GROUP_INKS[i % len(GROUP_INKS)] for i, g in enumerate(groups)}
+
+
+def facet_groups(rows) -> list[str]:
+    """The groups present, named ones first and the unlabelled facet last."""
+    gs = sorted({r[3] for r in rows})
+    return [g for g in gs if g] + ([""] if "" in gs else [])
+
+
 def dot_size(calls: int) -> float:
     """Dot area grows with the number of calls behind the rate, so a one-call
     endpoint is visibly one call. Keyed in the header."""
     return 4.0 + 2.6 * math.sqrt(calls)
+
+
+def build_faceted(rows, detector, streams, groups, baseline, treatment, *,
+                  width=330, height=300):
+    """One detector's page: rows are streams, columns are experimental groups.
+
+    **Y is shared across the group facets of one stream and never beyond it.**
+    Comparing groups is the entire reason the facets exist, and facets on
+    different scales cannot be compared by eye — so the row shares one range. It
+    stops at the row: fast and slow are different measurements (GLOSSARY), and
+    another detector's rate is another instrument's unit.
+
+    Nothing is drawn over the data. Each panel is a plain before/after — paired
+    points joined per recording — and its identity (group, stream, n) lives in the
+    y-axis label, which is where this project puts identity.
+    """
+    import holoviews as hv
+    hv.extension("bokeh")
+
+    inks = group_inks(groups)
+    letters = iter("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz")
+    panels = []
+    for s in streams:
+        row_rows = [r for r in rows if r[0] == detector and r[1] == s]
+        # One range for the whole stream row, computed before any panel is drawn.
+        ymax = max([max(r[4], r[5]) for r in row_rows] or [0.0]) * 1.15 or 1.0
+        for g in groups:
+            sub = [r for r in row_rows if r[3] == g]
+            letter = next(letters)
+            ink = inks[g]
+            els = []
+            for _, _, sid, _, b, t, nb, nt in sub:
+                els.append(hv.Curve([(baseline, b), (treatment, t)],
+                                    kdims=["period"], vdims=[f"rate_{s}"]
+                                    ).opts(color=ink, line_width=1.4, alpha=0.7))
+                for x, v, nn in ((baseline, b, nb), (treatment, t, nt)):
+                    # Hollow means NO calls at all. Filled-but-tiny reads as one
+                    # call, and "none" and "one" are the difference between a
+                    # detector that was silent and one that fired once.
+                    els.append(hv.Scatter([(x, v)], kdims=["period"],
+                                          vdims=[f"rate_{s}"]
+                                          ).opts(color=("white" if nn == 0 else ink),
+                                                 line_color=ink, line_width=1.3,
+                                                 size=dot_size(nn), alpha=0.9))
+            ov = (hv.Overlay(els) if els
+                  else hv.Curve([], kdims=["period"], vdims=[f"rate_{s}"]))
+            ov = ov.opts(width=width, height=height, toolbar=None,
+                         show_legend=False,
+                         ylabel=f"{letter} · {g or 'no group'} · {s} · "
+                                f"{len(sub)} rec · events/min",
+                         xlabel="period", padding=(0.25, 0.1),
+                         ylim=(-0.05 * ymax, ymax))
+            panels.append(ov)
+    return hv.Layout(panels).cols(len(groups)).opts(shared_axes=False, toolbar=None)
 
 
 def build(rows, detectors, streams, baseline, treatment, *, width=400, height=300):
@@ -150,12 +261,12 @@ def build(rows, detectors, streams, baseline, treatment, *, width=400, height=30
     panels = []
     for d in detectors:
         row_rows = [r for r in rows if r[0] == d]
-        ymax = max([max(r[3], r[4]) for r in row_rows] or [0.0]) * 1.15 or 1.0
+        ymax = max([max(r[4], r[5]) for r in row_rows] or [0.0]) * 1.15 or 1.0
         for s in streams:
             sub = [r for r in row_rows if r[1] == s]
             letter = next(letters)
             els = []
-            for _, _, sid, b, t, nb, nt in sub:
+            for _, _, sid, _, b, t, nb, nt in sub:
                 els.append(hv.Curve([(baseline, b), (treatment, t)], kdims=["period"],
                                     vdims=[f"rate_{d}_{s}"]).opts(color=inks[sid], line_width=1.6, alpha=0.85))
                 for x, v, n in ((baseline, b, nb), (treatment, t, nt)):
@@ -186,10 +297,32 @@ def main(argv=None) -> int:
     ap.add_argument("--out", default=None, help="destination directory (default: the darkroom)")
     ap.add_argument("--also", default=None, help="write a second copy here")
     ap.add_argument("--stem", default="before_after_coordinated_events")
+    ap.add_argument("--per-detector", action="store_true",
+                    help="write ONE PAGE PER DETECTOR, faceted by experimental "
+                         "group (columns) and stream (rows), instead of one page "
+                         "stacking every detector. Twelve detectors x two streams "
+                         "x four groups does not fit one page legibly, and "
+                         "stacking them invites reading down a column as a "
+                         "ranking — which is what performance_table.md declines "
+                         "to do")
+    ap.add_argument("--facet", choices=("group", "none"), default="group",
+                    help="facet each page by the producer's group_id (default) "
+                         "or not at all. FOUNDATIONS section 9: effects run in "
+                         "OPPOSITE DIRECTIONS by group on this preparation, so a "
+                         "pooled panel can hide a sign change and is not "
+                         "admissible on its own. Only meaningful with "
+                         "--per-detector")
     a = ap.parse_args(argv)
 
     rows, detectors, streams, missing = rates(a.folder, *a.detections,
                                               baseline=a.baseline, treatment=a.treatment)
+    # A RECORDING THE DETECTIONS FILE NEVER MENTIONS IS DRAWN AT ZERO, and at
+    # zero it is indistinguishable from a recording that was scored and found
+    # nothing. Those are different facts — one is a detector's answer, the other
+    # is a run that did not cover this recording (a `--limit`, a crash, the wrong
+    # file). Nothing downstream can tell them apart, so the count is put on the
+    # page rather than left for a reader to not notice.
+    silent = sorted({r[2] for r in rows} - {sid for sid, _, _, _ in counts(*a.detections)[0]})
     if not rows:
         print(f"nothing to draw: no recording has both a {a.baseline!r} and a {a.treatment!r} period",
               file=sys.stderr)
@@ -232,22 +365,85 @@ def main(argv=None) -> int:
         f"<div style='margin:4px 0 0;color:#777;font-size:11px'>{a.folder.name} · "
         + " &nbsp;·&nbsp; ".join(f"{d.parent.name}/{d.name}" for d in a.detections)
         + "</div></div>")
-    page = pn.Column(header, pn.pane.HoloViews(build(rows, detectors, streams, a.baseline, a.treatment)))
-    _write(page, dest, a.stem, png=True)
+    if a.per_detector:
+        groups = facet_groups(rows) if a.facet == "group" else [""]
+        if a.facet != "group":
+            # One facet holding everything: the page shape stays identical so the
+            # two forms are comparable, and the pooled panel is what the caller
+            # asked for rather than something inferred.
+            rows = [(d, s, sid, "", b, t, nb, nt) for d, s, sid, _, b, t, nb, nt in rows]
+        ginks = group_inks(groups)
+        gkey = " &nbsp; ".join(
+            f"<span style='display:inline-block;width:11px;height:11px;"
+            f"background:{ink};vertical-align:-1px;margin-right:4px'></span>"
+            f"<span style='color:{ink}'>{g or 'no group'}</span>"
+            for g, ink in ginks.items())
+        for d in detectors:
+            name = DETECTOR_NAME.get(d, d)
+            head = pn.pane.HTML(
+                f"<div style='font:13px system-ui,sans-serif;color:#111;max-width:1200px'>"
+                f"<b style='font-size:16px'>{name} · coordinated events per minute · "
+                f"{a.baseline} → {a.treatment}</b>"
+                f" &nbsp;—&nbsp; one line per recording; columns are experimental "
+                f"groups, rows are streams. <b>The y-range is shared across the "
+                f"group facets of a stream and nowhere else</b>: comparing groups "
+                f"is what the facets are for, while fast and slow are different "
+                f"measurements and another detector's rate is another "
+                f"instrument's unit."
+                f"<div style='margin:5px 0 0'>groups: {gkey}</div>"
+                f"<div style='margin:4px 0 0;color:#444'>dot area grows with the "
+                f"calls behind the rate: "
+                + " &nbsp;".join(
+                    f"<span style='display:inline-block;width:{dot_size(n):.0f}px;"
+                    f"height:{dot_size(n):.0f}px;border-radius:50%;background:#555;"
+                    f"vertical-align:middle'></span> {n}" for n in (1, 10, 50))
+                + " calls &nbsp;·&nbsp; hollow = no calls at all in that period, "
+                  "which is not the same as a small rate</div>"
+                f"<div style='margin:5px 0 0;color:#444'>Descriptive output, not "
+                f"an analysis: calls inside each period divided by the length of "
+                f"the window the folder was scored on. No statistic, no ground "
+                f"truth, no verdict — there IS no ground truth on a real folder, "
+                f"and a mark on a real recording is a claim. Treatment effects "
+                f"are analysed by fireflies, not here; group facets are shown "
+                f"separately because effects run in opposite directions by group "
+                f"on this preparation, so a pooled panel can hide a sign change. "
+                f"{'Skipped, lacking one of the two periods: ' + ', '.join(missing) if missing else ''}</div>"
+                + (f"<div style='margin:4px 0 0;color:#a00'>⚠ {len(silent)} of "
+                   f"{len(silent) + len({r[2] for r in rows}) - len(silent)} "
+                   f"recordings contribute no call from ANY detector in this "
+                   f"file and are drawn at zero: {', '.join(silent)}. At zero "
+                   f"that is indistinguishable from a detector that ran and "
+                   f"found nothing — check this is a complete run.</div>"
+                   if silent else "")
+                + f"<div style='margin:4px 0 0;color:#777;font-size:11px'>{a.folder.name} · "
+                + " &nbsp;·&nbsp; ".join(f"{p.parent.name}/{p.name}" for p in a.detections)
+                + "</div></div>")
+            page = pn.Column(head, pn.pane.HoloViews(
+                build_faceted(rows, d, streams, groups, a.baseline, a.treatment)))
+            # The capture width has to follow the facet count. At the shared
+            # default a four-group page lost its fourth column with no error and
+            # a PNG that looked finished; 90 px per column covers the rotated
+            # y-label and the tick text beside each panel.
+            _write(page, dest, f"{a.stem}__{d}", png=True,
+                   viewport_width=max(1120, len(groups) * (330 + 90) + 40))
+    else:
+        page = pn.Column(header, pn.pane.HoloViews(build(rows, detectors, streams, a.baseline, a.treatment)))
+        _write(page, dest, a.stem, png=True)
 
     table = dest / f"{a.stem}.csv"
     with table.open("w", newline="") as fh:
         w = csv.writer(fh)
-        w.writerow(["detector", "detector_name", "stream", "slice_id",
+        w.writerow(["detector", "detector_name", "stream", "slice_id", "group_id",
                     f"{a.baseline}_calls", f"{a.baseline}_events_per_min",
                     f"{a.treatment}_calls", f"{a.treatment}_events_per_min"])
-        for d, s, sid, b, t, nb, nt in rows:
-            w.writerow([d, DETECTOR_NAME.get(d, d), s, sid, nb, f"{b:.4f}", nt, f"{t:.4f}"])
+        for d, s, sid, g, b, t, nb, nt in rows:
+            w.writerow([d, DETECTOR_NAME.get(d, d), s, sid, g,
+                        nb, f"{b:.4f}", nt, f"{t:.4f}"])
     print(f"wrote {table}")
     if a.also:
         also = Path(a.also).expanduser()
         also.mkdir(parents=True, exist_ok=True)
-        for f in dest.glob(f"{a.stem}.*"):
+        for f in sorted(dest.glob(f"{a.stem}*")):
             with tempfile.TemporaryDirectory() as td:
                 tmp = Path(td) / f.name
                 tmp.write_bytes(f.read_bytes())
