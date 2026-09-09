@@ -200,6 +200,18 @@ def main(argv: list[str] | None = None) -> None:
                           "else's microscope (FOUNDATIONS §6)")
     det.add_argument("--limit", type=int, default=None,
                      help="detect on only the first N recordings")
+    # THE FLAG THAT CLOSES THE LOOP. Without it every detector runs at its
+    # shipped operating point, so a calibration fitted on simulated data derived
+    # from these very recordings could not reach them from the command line —
+    # the instrument that was scored was not the instrument that ran. The file
+    # is `detector_settings.csv`: the one this command writes, and the one the
+    # browser's "Save these settings" writes, which are one format.
+    det.add_argument("--settings", default=None, type=Path,
+                     help="a detector_settings.csv to run at, instead of the "
+                          "shipped operating points. Takes the file this "
+                          "command writes and the file the browser saves — one "
+                          "format, either direction. Provenance rows travel "
+                          "into run.json rather than being dropped")
 
     # Imported at module scope below rather than lazily: the help text quotes
     # the default port, so a reader of `bugarach lab --help` sees the number
@@ -261,7 +273,8 @@ def main(argv: list[str] | None = None) -> None:
             run = _load_or_exit(
                 detect_folder, folder, out_dir=out, detectors=names,
                 stream=args.stream, frame_interval_sec=args.frame_interval,
-                limit=args.limit, progress=_progress("detecting"))
+                limit=args.limit, settings=args.settings,
+                progress=_progress("detecting"))
         except NoRecordingDetectedOn as exc:
             # The refusal has to reach the EXIT CODE, because that is the only
             # thing a pipeline reads from this process — the same reasoning
