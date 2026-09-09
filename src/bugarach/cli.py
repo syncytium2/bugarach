@@ -212,6 +212,17 @@ def main(argv: list[str] | None = None) -> None:
                           "command writes and the file the browser saves — one "
                           "format, either direction. Provenance rows travel "
                           "into run.json rather than being dropped")
+    # THE OTHER HALF OF CLOSING THE LOOP. --settings lets a calibrated knob reach
+    # real recordings; this lets a trained model reach them. Until a checkpoint
+    # existed a model could not outlive its process, so this command had no way
+    # to be handed one and the learned branch stopped at the bake-off table.
+    det.add_argument("--model", action="append", default=None, type=Path,
+                     metavar="CKPT.json",
+                     help="a saved model to run beside the six; repeatable. "
+                          "Plain JSON, so it loads in the browser too and opening "
+                          "a stranger's model cannot execute their code. Its calls "
+                          "land in detections.csv in the same contract as the six, "
+                          "and run.json says which models ran")
 
     # Imported at module scope below rather than lazily: the help text quotes
     # the default port, so a reader of `bugarach lab --help` sees the number
@@ -274,6 +285,7 @@ def main(argv: list[str] | None = None) -> None:
                 detect_folder, folder, out_dir=out, detectors=names,
                 stream=args.stream, frame_interval_sec=args.frame_interval,
                 limit=args.limit, settings=args.settings,
+                models=tuple(args.model or ()),
                 progress=_progress("detecting"))
         except NoRecordingDetectedOn as exc:
             # The refusal has to reach the EXIT CODE, because that is the only

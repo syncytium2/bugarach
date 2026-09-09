@@ -506,10 +506,49 @@ def _run_nested(name, s, windows, want_streams, params, identity):
     return out
 
 
+def _run_learned(trained, s, windows, want_streams, identity):
+    """One saved model over one recording, in the six ports' output contract.
+
+    **Run inside each analysis window separately**, the way the flat three are, so
+    each period is judged against its own background and no model gets context
+    across a drug transition that the hand-written detectors were denied. That
+    difference would otherwise land in a comparison without appearing in it.
+
+    ``n_roi`` is ``None``, and that is honest rather than lazy: the model emits a
+    per-frame score and never says which cells it was answering about. The six
+    report a participation count because they compute one.
+    """
+    from bugarach.emit import DetectedEvent
+
+    out = []
+    for w in windows:
+        span = (float(w.win_start), float(w.win_end))
+        if span[1] <= span[0]:
+            continue
+        idx = _region_index(w)
+        for sname in want_streams:
+            res, _enc = trained.predict(s, stream=sname, extent=span)
+            for on, wd in zip(res.onset_sec, res.width_sec):
+                out.append(DetectedEvent(
+                    slice_id=s.slice_id, stream=sname, detector=trained.name,
+                    mode="learned", onset_sec=float(on), width_sec=float(wd),
+                    strength=float(trained.threshold),
+                    strength_unit="score threshold",
+                    width_def="above threshold, merged",
+                    region_idx=idx,
+                    region_label=(w.label or "").strip() or None,
+                    n_roi=None, identity=identity))
+    return out
+
+
 def detect_slice(s: Slice, *, detectors=DETECTORS, stream: str | None = None,
                  frame_interval_sec: float | None = None,
-                 overrides: dict | None = None):
+                 overrides: dict | None = None, models=()):
     """Run the detectors over one recording. Returns ``(events, windows)``.
+
+    ``models`` are reloaded checkpoints — :class:`~bugarach.learn.train.Trained`
+    objects. They emit into the same contract as the six, so every reader of
+    ``detections.csv`` takes them without knowing the difference.
 
     ``s`` is taken as it came out of :func:`bugarach.io.load_folder`; the
     windowing is settled here, so a caller cannot forget to.
@@ -565,6 +604,8 @@ def detect_slice(s: Slice, *, detectors=DETECTORS, stream: str | None = None,
                 f"time with --stream.")
         events.extend(_run_nested(name, s, windows, want,
                                   next(iter(by_stream.values())), identity))
+    for trained in models:
+        events.extend(_run_learned(trained, s, windows, want, identity))
     return events, windows
 
 
@@ -572,8 +613,14 @@ def detect_folder(folder, *, out_dir, detectors=DETECTORS,
                   stream: str | None = None,
                   frame_interval_sec: float | None = None,
                   limit: int | None = None, progress=None,
-                  settings=None) -> DetectionRun:
+                  settings=None, models=()) -> DetectionRun:
     """Detect over a whole export folder and write the output contract.
+
+    ``models`` are paths to saved checkpoints (:mod:`bugarach.learn.checkpoint`).
+    **This is how a trained model reaches a user's recordings from the command
+    line.** Until a checkpoint existed, a model could not outlive the process that
+    fitted it, so a separate program had no way to be handed one and the learned
+    branch ended at the bake-off table.
 
     ``settings`` is a path to a ``detector_settings.csv`` — the file this function
     writes, and the file the browser's *Save these settings* writes, which are one
@@ -604,6 +651,21 @@ def detect_folder(folder, *, out_dir, detectors=DETECTORS,
         raise ValueError(
             f"unknown detector(s) {', '.join(bad)} — have "
             f"{', '.join(DETECTORS)}")
+
+    # Same rule as the settings file below: a checkpoint that no longer matches
+    # its architecture fails on recording 0, not on 84 of 85.
+    loaded = []
+    if models:
+        from bugarach.learn.checkpoint import load as _load_model
+        loaded = [m if hasattr(m, "predict") else _load_model(m) for m in models]
+        clash = sorted({m.name for m in loaded} & set(DETECTORS))
+        if clash:
+            raise ValueError(
+                f"model(s) named {', '.join(clash)} collide with a hand-written "
+                f"detector of the same name. The `detector` column of "
+                f"detections.csv is ONE namespace across both families "
+                f"(docs/run_records.md §1), so every reader keyed on it — and "
+                f"every run id — would be ambiguous.")
 
     # Loaded ONCE, before any recording is read, so a malformed settings file
     # fails before the folder is walked rather than on recording 84 of 85.
@@ -649,7 +711,7 @@ def detect_folder(folder, *, out_dir, detectors=DETECTORS,
         try:
             events, windows = detect_slice(
                 s, detectors=detectors, stream=stream, frame_interval_sec=dt,
-                overrides=overrides)
+                overrides=overrides, models=loaded)
         except Exception as exc:                      # noqa: BLE001
             rec.skipped = f"{type(exc).__name__}: {exc}"
             rec.seconds = time.monotonic() - t0
@@ -718,6 +780,15 @@ def detect_folder(folder, *, out_dir, detectors=DETECTORS,
             # and would be a TypeError if handed to one, so they are recorded
             # here instead of being dropped at the boundary.
             "settings_file": None if settings is None else str(settings),
+            # WHICH MODELS RAN. A learned call in detections.csv is deliberately
+            # indistinguishable from a hand-written one — same contract — so the
+            # roster has to live here or a reader cannot tell which rows came
+            # from weights, nor what those weights were fitted on.
+            "models": [
+                {"arch": m.name, "threshold": m.threshold, "dt_sec": m.dt,
+                 "n_params": m.n_params,
+                 "file": None if hasattr(p, "predict") else str(p)}
+                for p, m in zip(models, loaded)] or None,
             "settings_fitted_on": fitted or None,
             "window_policy": (
                 "the producer's analysis windows where the folder states them, "

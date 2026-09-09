@@ -188,9 +188,22 @@ the costly ones marked.
 
 **Owed.**
 
-- **Nothing persists a trained model.** No checkpoint is saved anywhere. A user cannot bring
-  a trained model, and a variant trained here cannot survive to be tested or to detect.
-  **This blocks three later steps and is the single most upstream item on this page.**
+- ~~**Nothing persists a trained model.**~~ **Closed 2026-09-08.**
+  `bugarach.learn.checkpoint` saves and loads one, `tools/run_learned_on_folder.py
+  --save-models` writes them, and `bugarach detect --model` runs one on a real folder from a
+  **separate process** — which is exactly what could not happen before.
+  **The format is JSON, not `torch.save`,** for two reasons. These nets are 1,149–2,393
+  parameters — smallness is their claimed advantage — so a checkpoint is tens of kilobytes of
+  numbers and can be a format a person reads, a diff shows and `JSON.parse` loads, which is
+  what makes a model shareable in *both* directions rather than only out of one. And
+  `torch.save` is pickle: ADR-0005's target flow is a user downloading a folder of models
+  from the site, and a format where opening a stranger's model executes their code cannot be
+  that format.
+  **The encoding contract travels with the weights** — `dt`, the onset field, the
+  busiest-first row rule — because a model is a function of the raster it was shown, and a
+  checkpoint carrying weights but not the encoding would reload into a model that means
+  something else and say nothing. A file that no longer matches its architecture is refused
+  with **both** shapes named rather than half-loaded.
 - The coded branch is one dictionary plus hand-maintained tables in a second module, not a
   drop-in folder. Either give it the same shape or state that the six are fixed.
 - ADR-0005's open decisions belong here: **knobs as data, controls rendered rather than
@@ -253,10 +266,17 @@ and the run summary says how many detections landed in no declared period.
   because every fold landed on the **end** of the searched grid, which this project reads
   everywhere else as a search that stopped too early. Those refusals are findings about the
   sweep rather than obstacles to it.
-- **The tube variants cannot run on the user's data at all.** The detect path knows the six
-  and has no route to the architecture registry. With nothing persisting a trained model, a
-  tuned variant has no way back to the folder it was tuned for. The two branches settled at
-  Tune merge back into one here.
+- ~~**The tube variants cannot run on the user's data at all.**~~ **Closed 2026-09-08.**
+  `bugarach detect --model <ckpt.json>` runs any registered architecture over an export
+  folder, repeatable, beside the six. **The two branches settled at Tune merge back into one
+  here, which is what this step was for.** Calls land in `detections.csv` in the same
+  contract — deliberately indistinguishable from a hand-written call, which is why `run.json`
+  carries the roster of models that ran and what each was fitted on. Each model is scored
+  **inside each analysis window**, the way the flat three are, so none gets context across a
+  drug transition the others were denied.
+  ⚠ A learned call's `n_roi` stays `NA`: the model emits a per-frame score and never says
+  which cells it was answering about, where the six report a participation count because
+  they compute one.
 - The scope choice and the validation gate, both settled earlier, land here unbuilt.
 
 ---
@@ -319,12 +339,18 @@ coordinated event it belongs to is a **v2 stretch goal**.
 
 ## What blocks what
 
-Two items sat upstream of most of the rest. **One is closed.**
+Two items sat upstream of most of the rest. **Both are closed, on 2026-09-08.**
 
-1. **Model persistence.** Nothing saves a trained model, so the learned branch cannot be
-   tested on a fresh batch, cannot detect on the user's folder, and cannot accept a model
-   the user brings. **Still open, and it is now the only one of the two.**
-2. ~~**A settings file the library's detect path will read.**~~ **Closed 2026-09-08** —
+Tony, on being told that the six had run the pilot folder at shipped operating points while
+the bake-off calibrated them on simulated data derived from that same cohort: *"that is the
+whole point of the pipeline."* These two were what stood between the derivation and the data
+it was derived from.
+
+1. ~~**Model persistence.**~~ **Closed** — `bugarach.learn.checkpoint`, plus `--save-models`
+   on the learned runner and `--model` on `bugarach detect`. A model can now be tested on a
+   fresh batch, detect on the user's folder, and be brought by a user, which were the three
+   things its absence blocked. See **Tune** and **Detect on the real folder** above.
+2. ~~**A settings file the library's detect path will read.**~~ **Closed** —
    `bugarach detect --settings`, reading the same file the browser saves, plus
    `tools/settings_from_bakeoff.py` to write one from a calibration. The Tune step reaches
    the command line, and the two modes are one pathway at the step before output. The
