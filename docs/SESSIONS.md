@@ -10,9 +10,28 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
-### Mac/deploy-the-figure-and-the-viewer — SITE claim: `bugarach.tonydefazio.com`
-- **Status:** **ACTIVE 2026-09-08.** Claiming the public site for one publish. No other
-  session may run `npm run deploy` or `wrangler deploy` while this block reads ACTIVE.
+### Mac/deploy-the-figure-and-the-viewer — SITE claim RELEASED: `bugarach.tonydefazio.com`
+- **Status:** **RELEASED 2026-09-08. THE SITE IS HELD BY NOBODY.** Published `3cb89fd`,
+  wrangler **Version ID `ab3cc81d-1ed5-415b-ada8-14deb77574ce`**, 7 of 8 assets changed.
+  Verified against the live edge rather than the build: `site_staleness.py` reads
+  **`current`, 0 commits behind**; `audit_deployed_page.py` says *"the page fetched nothing
+  but itself"* on both `/viewer.html` and `/viewer`; and the corrected edge was read off
+  the served HTML with `curl`, not off the build — `mean → concat` runs at y=196, below the
+  bank's y=16–164 box, and `mean → dog` is a separate edge at y=90. It goes around the bank
+  rather than through it, which it had not done since 2026-09-02.
+- ⚠ **One ordering to be honest about.** The claim PR (#504) was pushed and open, but had
+  **not yet merged to `main`**, when `npm run deploy` ran — CI is ~13 minutes and the
+  instruction was a five-minute deploy. So for that window the claim was visible on
+  `origin` as a branch and a PR but not in the file a starting session reads. No other
+  session was deploying and nothing collided, but the gap was real and is recorded rather
+  than smoothed over. If this recurs often, the claim is worth landing by a route that does
+  not wait on a full CI matrix.
+- **Published `3cb89fd`, not `caeef0c`.** `main` moved under the preflight — #503 merged
+  between the claim and the build. The `HEAD == origin/main` check caught it, the checkout
+  was fast-forwarded and the build re-run, so the served stamp is exactly a commit on
+  `main`. That check is worth keeping for precisely this.
+- **Was:** ACTIVE 2026-09-08. No other session may run `npm run deploy` or `wrangler deploy`
+  while such a block reads ACTIVE.
 - **Authority:** **Tony said "then do the 5 minute deploy", in words, in session**, having
   been told the live front page draws the raw-brightness bypass *through* the
   difference-of-Gaussian bank. `DEPLOY_HOLD.md` re-read at claim time rather than trusted
