@@ -141,6 +141,12 @@ def main(argv=None) -> int:
     ap.add_argument("--seeds-per-fold", type=int, default=2)
     ap.add_argument("--steps", type=int, default=900,
                     help="the bake-off's non-quick setting (default: 900)")
+    ap.add_argument("--save-models", type=Path, default=None, metavar="DIR",
+                    help="write each fitted model as a checkpoint here, so the fit "
+                         "that produced these calls can be RE-APPLIED by "
+                         "`bugarach detect --model` rather than retrained. Without "
+                         "it the models die with this process, which is the whole "
+                         "reason this tool had to exist")
     ap.add_argument("--out", type=Path, default=None, help="destination (default: darkroom)")
     a = ap.parse_args(argv)
 
@@ -164,6 +170,18 @@ def main(argv=None) -> int:
     fitted, seeds, n_fit, n_val = train_all(
         gen, a.models, folds=a.folds, seeds_per_fold=a.seeds_per_fold,
         train_seed=a.seed, steps=a.steps)
+
+    if a.save_models:
+        from bugarach.learn.checkpoint import save as save_model
+        for name, trained, secs in fitted:
+            p = save_model(
+                trained, Path(a.save_models) / f"{name}.json",
+                trained_on=a.spec.name, train_seed=a.seed, steps=a.steps,
+                n_fit=min(10, n_fit), n_threshold_val=n_val,
+                note=("fitted once over the whole simulated corpus — NOT one of "
+                      "the bake-off's per-fold fits. Same architecture and recipe, "
+                      "different weights and threshold."))
+            print(f"  saved {p}", flush=True)
 
     events, settings_rows = [], []
     for name, trained, secs in fitted:
