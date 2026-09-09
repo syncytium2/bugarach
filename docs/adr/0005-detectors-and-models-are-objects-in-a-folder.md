@@ -16,7 +16,7 @@ record.
 | 1 | page assembled from a folder, assembled file committed | **built** — `tools/assemble_viewer.py`, `--check` in the suite |
 | 2 | knobs as data, controls rendered not written | **NOT built.** All six objects carry their descriptor and algorithm, but `read()` still names input ids by string and the control divs are still hand-written HTML. This is the decision that finishes the job, and it is the one still open |
 | 3 | Python is source of truth for the descriptor | **partly** — `test_registries_do_not_drift` compares the two lists by name; the full parameter comparison is not written |
-| 4 | browser trainer is a SECOND trainer | decided, nothing built |
+| 4 | browser trainer is a SECOND trainer | **still decided, nothing built** — no JS trainer exists. What landed 2026-09-08 is model *exchange*, not a second trainer; see the note below, which is careful about the difference |
 | 5 | user files load Worker-sandboxed | decided, nothing built |
 | 6 | Chromium is the super-user target | decided, nothing built |
 

@@ -715,6 +715,17 @@ class LabHandler(BaseHTTPRequestHandler):
         if not self._guard():
             return
         route = self.path.split("?", 1)[0]
+        # These two answer with ONE body and no progress, so they are plain JSON
+        # rather than the chunked stream the fitting routes need: serialising a
+        # 1,149-parameter net has nothing to report on the way.
+        if route in ("/api/export_model", "/api/import_model"):
+            try:
+                req = self._body()
+                fn = (self._export_model if route.endswith("export_model")
+                      else self._import_model)
+                return self._json(200, fn(req))
+            except BadRequest as exc:
+                return self._json(400, {"error": str(exc)})
         if route not in ("/api/train", "/api/detect", "/api/fit_folds"):
             return self._json(404, {"error": f"no route {route!r}"})
         try:
@@ -728,7 +739,11 @@ class LabHandler(BaseHTTPRequestHandler):
         cap.update(trainer=self.lab.trainer.name,
                    models=sorted(self.lab.models),
                    viewer=self.viewer.name,
-                   architectures=_architectures())
+                   architectures=_architectures(),
+                   # Declared rather than assumed, the same way the architectures
+                   # are: a page talking to an older server must be able to find
+                   # out that these do not exist instead of getting a 404 mid-flow.
+                   model_exchange=True)
         return cap
 
     def _page(self):
@@ -789,6 +804,78 @@ class LabHandler(BaseHTTPRequestHandler):
         finally:
             self.wfile.write(b"0\r\n\r\n")
             self.wfile.flush()
+
+    def _export_model(self, req: dict) -> dict:
+        """A fitted model as a checkpoint document, for the page to download.
+
+        **This is the direction that was missing.** `Store.get`'s refusal says
+        models *"live in this process and do not survive a restart, which is
+        deliberate: a fitted model cached on disk outlives the settings that
+        produced it."* That reasoning is about a CACHE the server keeps behind the
+        user's back, and it still holds — nothing here writes to disk. Handing the
+        weights to the person who fitted them, stamped with what fitted them, is
+        the opposite case: a checkpoint that names its own provenance cannot
+        outlive it silently.
+        """
+        import tempfile
+        from pathlib import Path
+
+        from bugarach.learn import checkpoint
+
+        model = self.lab.get(req.get("model"))
+        trained = model.report.get("_trained")
+        if trained is None:
+            raise BadRequest(
+                f"model {model.handle!r} was fitted by the {model.trainer!r} "
+                f"trainer, which produces no weights to export.")
+        with tempfile.TemporaryDirectory() as td:
+            p = checkpoint.save(
+                trained, Path(td) / "m.json",
+                trained_on=req.get("trained_on"),
+                train_seed=req.get("train_seed"),
+                steps=model.report.get("steps"),
+                note=str(req.get("note") or ""))
+            return {"model": model.handle, "arch": model.arch,
+                    "checkpoint": json.loads(p.read_text())}
+
+    def _import_model(self, req: dict) -> dict:
+        """A checkpoint document from anywhere, registered as a model to run.
+
+        The other direction: a model the CLI fitted, or one a user was sent,
+        becomes a handle `/api/detect` already accepts. The checkpoint's own
+        refusals do the validating — a shape that no longer matches, an
+        unregistered architecture, a changed encoding contract — so a bad file is
+        a 400 here rather than a crash inside a detect call later.
+        """
+        import tempfile
+        from pathlib import Path
+
+        from bugarach.learn import checkpoint
+        from bugarach.learn.nets import n_params
+
+        doc = req.get("checkpoint")
+        if not isinstance(doc, dict):
+            raise BadRequest(
+                "import_model needs a 'checkpoint' object — the contents of a "
+                "model JSON file, parsed. Send the file's text through "
+                "JSON.parse, not as a string.")
+        with tempfile.TemporaryDirectory() as td:
+            p = Path(td) / "m.json"
+            p.write_text(json.dumps(doc))
+            try:
+                trained = checkpoint.load(p)
+            except (ValueError, KeyError) as exc:
+                raise BadRequest(f"that is not a model this server can run: {exc}"
+                                 ) from exc
+        model = self.lab.put(Model(
+            handle="", arch=trained.name, threshold=float(trained.threshold),
+            dt=float(trained.dt), n_params=n_params(trained.model),
+            trainer=f"imported ({self.lab.trainer.name} runs it)",
+            predict=self.lab.trainer._predict,
+            report={"_trained": trained,
+                    "imported": True,
+                    "provenance": doc.get("provenance", {})}))
+        return _public(model)
 
     def _train(self, req: dict, emit) -> dict:
         model = self.lab.put(self.lab.trainer.train(req, emit))
