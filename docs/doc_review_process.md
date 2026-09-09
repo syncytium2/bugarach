@@ -1,4 +1,4 @@
-<!-- vendored from syncytium2/murderboard @ 3a6a8fb — canonical source; do NOT edit here, update upstream and re-copy -->
+<!-- vendored from syncytium2/murderboard @ 81a0927 — canonical source; do NOT edit here, update upstream and re-copy -->
 # The murderboard — critical review process for document deliverables (anti-slop)
 
 A standing, project-neutral review process. Its purpose is to stop **slop** — unsourced
@@ -90,6 +90,32 @@ No fabricated or approximate citation. No internal contradiction. No filler.
 > authority on *what* each role does — the skill loads it and follows it. Reading this file directly
 > still works and is the fallback for a consumer without the skill installed; it is simply the mode
 > in which each of those four steps can be silently skipped.
+
+> **Cost — what to run this on.** This process is a **fan-out**: every role runs on every
+> deliverable, and what scales to stakes is how you run them, never which ones — so there is
+> no cheap murderboard. **Known good: Claude Opus 5**; other current models are likely fine.
+> **Do not start a run on a model you cannot afford to exhaust.** On **2026-09-07** a run under
+> **Fable** spent a two-day usage limit and produced no review at all. That is the shape of
+> this failure: you do not get a partial review for a partial price, you get no review and the
+> full bill.
+>
+> **This is a gate, not advice.** `murderboard_model_gate.sh` is a `PreToolUse` hook that reads
+> the running model and blocks the call-up before the fan-out starts; it ships wired in the
+> plugin and vendoring consumers should wire it too. It **also asks the human before every
+> run**, because the other way this wastes money is being fired too early — at a draft that was
+> not ready, by a session that decided on its own that something was a deliverable.
+> `--why` prints what it is currently stopping; the file itself explains why it fails closed
+> and why the blocklist carries a review-by date.
+>
+> **If you are blocked or declined, stop.** Do not re-invoke, do not run the roles by hand to
+> route around a refusal, and never economise by running fewer roles — a review missing roles
+> is indistinguishable in the report from a clean one, which is the defect this whole apparatus
+> exists to prevent. Tell the human and let them choose.
+>
+> **The bill is theirs, not ours.** No cost incurred running this process is ever the
+> responsibility of its authors, and the gate is a safeguard, **not a spending cap** — it knows
+> nothing about anyone's plan, balance, or prices. Full terms:
+> <https://github.com/syncytium2/murderboard/blob/main/TERMS.md>
 
 0. **Preflight — confirm the process itself is current.** This file is usually **vendored** into a
    consumer repo, where it drifts behind its canonical source. Before running, verify THIS copy is up

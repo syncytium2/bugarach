@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# vendored from syncytium2/murderboard @ 3a6a8fb — do NOT edit here; update upstream and re-copy.
+# vendored from syncytium2/murderboard @ 81a0927 — do NOT edit here; update upstream and re-copy.
 # instrument: propagation
 # murderboard_freshness.sh — is this repo's VENDORED murderboard current with upstream?
 #

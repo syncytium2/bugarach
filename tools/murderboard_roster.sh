@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# vendored from syncytium2/murderboard @ 3a6a8fb — do NOT edit here; update upstream and re-copy.
+# vendored from syncytium2/murderboard @ 81a0927 — do NOT edit here; update upstream and re-copy.
 # instrument: verification
 # murderboard_roster.sh — derive the review-team roster FROM the process file, and check
 # that a review report actually accounts for every role.
