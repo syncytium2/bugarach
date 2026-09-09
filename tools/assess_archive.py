@@ -349,7 +349,28 @@ def assess_store(store: Path, *, stream: str | None, n_surrogates: int,
                                        "roi_rate_med", "ev_rate_permin")},
         }
 
-    n_roi = np.array([r["n_roi"] for r in rows if r["K"] == ks[0]], float)
+    # ONE ROW PER RECORDING, deduplicated by slice_id — not filtered to a K.
+    #
+    # The filter that used to stand here (`r["K"] == ks[0]`) is correct only when
+    # every recording appears at every K, which is what an ABSOLUTE-K scan
+    # produces. A K given as a PERCENTAGE puts each recording in the rows exactly
+    # once, at its own resolved count, so filtering to the lowest K silently
+    # selects a subpopulation — and it is the worst possible one, because the
+    # recordings that resolve to the smallest K are the smallest fields. On this
+    # project's senktide/TTX assessment that was 55 of 84 recordings, and it made
+    # the summary report a median field of 25 ROIs and a maximum of 34 for a
+    # population whose real median is 31.5 and whose maximum is 61.
+    #
+    # It is not a reporting-only defect: `derive_spec` reads this block for the
+    # simulated field size, so the generator was built on the small half of the
+    # folder and `adapt.generator_params` then divided a participation count
+    # pooled across every K by it. Caught by the 2026-09-09 murderboard, twice
+    # and independently — once from this block disagreeing with its own rows, and
+    # once from the spec disagreeing with the folder.
+    seen_roi: dict[str, float] = {}
+    for r in rows:
+        seen_roi.setdefault(r["slice_id"], float(r["n_roi"]))
+    n_roi = np.array(list(seen_roi.values()), float)
     return {
         "store": store.name,
         # The floors this run scanned, recorded rather than inferred from `by_k`.
@@ -358,6 +379,14 @@ def assess_store(store: Path, *, stream: str | None, n_surrogates: int,
         # which K were reported, `k_scan` says which were ASKED FOR, and the two
         # come apart when a K yields no assessable slice.
         "k_scan": list(floors),
+        # The percentage form of the same question. `k_scan` is empty on this
+        # path — a percentage asks for no absolute floors — so without this the
+        # header records no K request at all, and the guard `k_scan` exists to
+        # provide is dead in exactly the regime that needs it most, where the
+        # resolved counts differ per recording.
+        "k_scan_percent": ([] if not by_fraction
+                           else [round(100.0 * f, 6) for f in fracs]),
+        "k_floor": (None if min_rois_floor is None else int(min_rois_floor)),
         # How many recordings were scored over their whole extent because they
         # annotate no periods. Zero on this lab's own exports; 59 of 59 on a
         # folder that does not divide a recording into periods at all. A reader
