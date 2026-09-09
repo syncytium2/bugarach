@@ -11,6 +11,15 @@ Four claims a reader cannot check from the picture:
 * a recording lacking either period is skipped and named, never drawn at zero;
 * a detector with no calls in a period is a zero, not a missing point, and a call
   outside every declared period is counted nowhere.
+
+And three the group facets added (2026-09-09):
+
+* every row carries the producer's own `group_id`, unchanged, and a recording the
+  folder gives no group keeps a row under ``""`` rather than being dropped;
+* the facet order puts the unlabelled group last, so a page never opens on it;
+* a recording the detections file never mentions is drawn at zero and is
+  REPORTED, because at zero it cannot be told from a detector that ran and found
+  nothing — one is an answer, the other is a run that did not cover it.
 """
 from __future__ import annotations
 
@@ -72,7 +81,7 @@ def _write(tmp_path: Path):
 def test_rates_are_per_minute_of_the_scored_window(tmp_path):
     folder, det = _write(tmp_path)
     rows, detectors, streams, missing = mod.rates(folder, det, baseline="baseline", treatment="APV+CNQX+GZ")
-    by = {(d, s, sid): (b, t) for d, s, sid, b, t, _, _ in rows}
+    by = {(d, s, sid): (b, t) for d, s, sid, _g, b, t, _, _ in rows}
     # baseline: 2 calls / 20 min; treatment: 1 call / (2820-1320)/60 = 25 min —
     # the producer's analysis windows, not the raw periods
     assert by[("coact", "fast", "s1")] == pytest.approx((2 / 20.0, 1 / 25.0))
@@ -83,7 +92,7 @@ def test_a_recording_without_the_treatment_is_skipped_and_named(tmp_path):
     folder, det = _write(tmp_path)
     rows, _, _, missing = mod.rates(folder, det, baseline="baseline", treatment="APV+CNQX+GZ")
     assert missing == ["s2"]
-    assert not any(sid == "s2" for _, _, sid, _, _, _, _ in rows)
+    assert not any(sid == "s2" for _, _, sid, _, _, _, _, _ in rows)
 
 
 def test_both_periods_are_named_by_the_caller(tmp_path):
@@ -93,14 +102,14 @@ def test_both_periods_are_named_by_the_caller(tmp_path):
     assert rows == [] and missing == ["s1", "s2"]
     # and the same call with the periods swapped is a different figure, not an error
     rows, _, _, _ = mod.rates(folder, det, baseline="APV+CNQX+GZ", treatment="baseline")
-    by = {(d, s, sid): (b, t) for d, s, sid, b, t, _, _ in rows}
+    by = {(d, s, sid): (b, t) for d, s, sid, _g, b, t, _, _ in rows}
     assert by[("coact", "fast", "s1")] == pytest.approx((1 / 25.0, 2 / 20.0))
 
 
 def test_no_calls_is_a_zero_not_a_gap(tmp_path):
     folder, det = _write(tmp_path)
     rows, detectors, _, _ = mod.rates(folder, det, baseline="baseline", treatment="APV+CNQX+GZ")
-    by = {(d, s, sid): (b, t) for d, s, sid, b, t, _, _ in rows}
+    by = {(d, s, sid): (b, t) for d, s, sid, _g, b, t, _, _ in rows}
     # loco called only in high K+, which is neither period drawn
     assert by[("loco", "fast", "s1")] == (0.0, 0.0)
     # a detection outside every declared period (region_idx NA) is not counted anywhere
@@ -108,3 +117,41 @@ def test_no_calls_is_a_zero_not_a_gap(tmp_path):
     assert "loco" in detectors and "rate" in detectors
     # detectors come out in the glossary's order, not the file's
     assert detectors == [d for d in mod.DETECTORS if d in ("rate", "coact", "loco")]
+
+
+def test_every_row_carries_the_producers_group(tmp_path):
+    folder, det = _write(tmp_path)
+    rows, _, _, _ = mod.rates(folder, det, baseline="baseline",
+                              treatment="APV+CNQX+GZ")
+    assert rows, "the fixture drew nothing"
+    assert {r[3] for r in rows} == {"MALE"}
+    assert mod.groups_of(folder) == {"s1": "MALE", "s2": "MALE"}
+
+
+def test_a_recording_with_no_group_is_kept_not_dropped(tmp_path):
+    folder, det = _write(tmp_path)
+    (folder / "slices.csv").write_text(
+        "slice_id,frame_interval_sec,group_id\ns1,0.1,\ns2,0.1,MALE\n")
+    rows, _, _, _ = mod.rates(folder, det, baseline="baseline",
+                              treatment="APV+CNQX+GZ")
+    # A missing group is a fact about the folder. Dropping those recordings would
+    # shrink an n nobody was told about, so they keep rows under "".
+    assert {r[3] for r in rows} == {""}
+    assert mod.facet_groups(rows) == [""]
+
+
+def test_the_unlabelled_facet_is_drawn_last():
+    rows = [("coact", "fast", "a", "OVX", 0.0, 0.0, 0, 0),
+            ("coact", "fast", "b", "", 0.0, 0.0, 0, 0),
+            ("coact", "fast", "c", "DI", 0.0, 0.0, 0, 0)]
+    # Named groups in order, then the unlabelled one — so a page never opens on
+    # the facet that has no name to read.
+    assert mod.facet_groups(rows) == ["DI", "OVX", ""]
+
+
+def test_group_inks_are_distinct_and_stable():
+    a = mod.group_inks(["DI", "MALE", "ORX", "OVX"])
+    assert len(set(a.values())) == 4, "four groups must not share one ink"
+    # The ink is the FACET's identity, so a group keeps its colour across the
+    # twelve pages of one run.
+    assert mod.group_inks(["DI", "MALE", "ORX", "OVX"]) == a

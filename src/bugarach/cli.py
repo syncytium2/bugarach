@@ -148,6 +148,15 @@ def main(argv: list[str] | None = None) -> None:
                           "is a third of a 10-ROI field and six percent of a "
                           "51-ROI one, and both are in this corpus. The report "
                           "names the count each percentage came to")
+    asr.add_argument("--k-floor", type=int, default=None,
+                     help="an absolute floor under --k-percent, applied per "
+                          "recording after the percentage meets that recording's "
+                          "ROI count. A percentage alone reaches K=1 on a small "
+                          "field and one co-active ROI is not coordination. The "
+                          "report says where the floor BOUND, because a floor "
+                          "that binds on part of the corpus means two K rules "
+                          "were running and a number pooled over them came from "
+                          "both")
     asr.add_argument("--for-annotation", action="store_true",
                      help="scan down to K=2 instead of stopping at 3. A proposal "
                           "list censored at the floor being estimated makes that "
@@ -334,6 +343,14 @@ def main(argv: list[str] | None = None) -> None:
             if any(not (0.0 < f <= 1.0) for f in fracs):
                 sys.exit(f"bugarach: --k-percent values must be in (0, 100] — "
                          f"got {args.k_percent!r}")
+        if args.k_floor is not None and fracs is None:
+            sys.exit("bugarach: --k-floor applies to --k-percent. With an "
+                     "absolute K the floor is either already in the number or is "
+                     "a second opinion about it; pass one.")
+        if args.k_floor is not None and args.k_floor < 1:
+            sys.exit(f"bugarach: --k-floor must be at least 1, got "
+                     f"{args.k_floor}. A floor below one co-active ROI is not a "
+                     f"floor.")
         if fracs is not None and args.for_annotation:
             sys.exit("bugarach: --k-percent and --for-annotation are two ways of "
                      "choosing the scan. Pass a low percentage instead — the "
@@ -344,7 +361,7 @@ def main(argv: list[str] | None = None) -> None:
             n_surrogates=args.surrogates, bin_width_sec=args.bin_width,
             limit=args.limit, progress=_progress("assessing"),
             min_rois=(PROPOSAL_MIN_ROIS if args.for_annotation else None),
-            min_rois_frac=fracs)
+            min_rois_frac=fracs, min_rois_floor=args.k_floor)
         print(format_assessment(fa))
         # Exit 0 whether or not anything was assessable. This is a MEASUREMENT,
         # not a gate: "no recording carried a baseline region" is an answer about

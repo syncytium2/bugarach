@@ -226,6 +226,22 @@ class Assessment:
     a folder of mixed ROI counts the second one differs per recording while the
     first does not."""
 
+    min_rois_floor: int | None = None
+    """An absolute floor applied under :attr:`min_rois_frac`, or ``None``.
+
+    :func:`k_from_fraction` clamps only at 1, and its own docstring says the clamp
+    belongs to whoever is asking — this is that clamp, recorded rather than applied
+    silently. A percentage alone reaches K=1 on a small field, and one co-active ROI
+    is not coordination.
+
+    **Whether it BOUND is** :attr:`min_rois_floor_bound`, and the two are meant to be
+    read together. A floor that never binds is a setting; a floor that binds on a
+    third of the corpus is a second K rule governing the small recordings, and a
+    number quoted over that population came from two rules rather than one."""
+
+    min_rois_floor_bound: bool = False
+    """True when the floor raised K above what the fraction resolved to here."""
+
 
 def _coact_count(trains, win_dur, bin_width, n_bins, offsets=None):
     """Per-bin distinct-ROI coactivity. An ROI contributes 1 to a bin if it has
@@ -341,6 +357,7 @@ def assess_coactivity(
     region: str = "baseline",
     min_rois=None,
     min_rois_frac=None,
+    min_rois_floor: int | None = None,
     bin_width_sec: float | None = None,
     wm_factor: float = 1.5,
     merge_bins: int = 2,
@@ -406,20 +423,46 @@ def assess_coactivity(
             raise ValueError(
                 f"min_rois_frac must be fractions in (0, 1], got {fracs}. "
                 f"Percentages go in as 0.10 rather than 10.")
+        # The floor is applied HERE, after the fraction has met this recording's
+        # own ROI count, because that is the only place the two can be compared.
+        # It is recorded on every result — `min_rois_floor` and
+        # `min_rois_floor_bound` — so a reader can tell a K a percentage produced
+        # from a K the floor produced. On a corpus of mixed field sizes those are
+        # different populations, and averaging across them without saying so
+        # reports one rule where two were running.
+        floor = None if min_rois_floor is None else int(min_rois_floor)
+        if floor is not None and floor < 1:
+            raise ValueError(
+                f"min_rois_floor must be at least 1, got {floor}. A floor below "
+                f"one co-active ROI is not a floor.")
         resolved = [(k_from_fraction(f, st.n_rois), f) for f in fracs]
+        bound_at = {}
+        if floor is not None:
+            bound_at = {max(floor, kk): kk < floor for kk, _ in resolved}
+            resolved = [(max(floor, kk), f) for kk, f in resolved]
         # Two fractions can land on one count in a small field — 5% and 10% of 12
         # ROIs are both 1. Keeping both rows would report the same measurement
         # twice under different labels, so the coarser fraction wins its count
-        # and the duplicate is dropped rather than silently averaged.
+        # and the duplicate is dropped rather than silently averaged. A floor
+        # collapses fractions the same way and for the same reason: below it they
+        # all name one K.
         seen: dict[int, float] = {}
         for kk, f in resolved:
             seen.setdefault(kk, f)
         ks = tuple(sorted(seen))
         frac_of: dict[int, float | None] = {kk: seen[kk] for kk in ks}
+        floor_of: dict[int, bool] = {kk: bound_at.get(kk, False) for kk in ks}
     else:
+        if min_rois_floor is not None:
+            raise ValueError(
+                "min_rois_floor applies to a K given as a fraction; with an "
+                "absolute min_rois the floor is either already in the number or "
+                "is a second opinion about it. Pass one.")
+        floor = None
         ks = tuple(int(K) for K in (min_rois if min_rois is not None
                                     else DEFAULT_MIN_ROIS))
         frac_of = {kk: None for kk in ks}
+        floor_of = {kk: False for kk in ks}
     min_rois = ks
 
     if window is None:
@@ -436,7 +479,7 @@ def assess_coactivity(
         if picked is None:
             return [Assessment(min_rois=int(K), meets_floor=False,
                                win_dur=float("nan"), n_roi=st.n_rois,
-                               n_events_win=0, min_rois_frac=frac_of[K])
+                               n_events_win=0, min_rois_frac=frac_of[K], min_rois_floor=floor, min_rois_floor_bound=floor_of[K])
                     for K in min_rois]
         win_start, win_end, win_dur = picked.win_start, picked.win_end, picked.win_dur
         meets = picked.meets_floor
@@ -448,7 +491,7 @@ def assess_coactivity(
     if not meets:
         return [Assessment(min_rois=int(K), meets_floor=False, win_dur=win_dur,
                            n_roi=st.n_rois, n_events_win=0,
-                           min_rois_frac=frac_of[K]) for K in min_rois]
+                           min_rois_frac=frac_of[K], min_rois_floor=floor, min_rois_floor_bound=floor_of[K]) for K in min_rois]
 
     bin_width = 1.0 if bin_width_sec is None else float(bin_width_sec)
     wm = wm_factor * bin_width
@@ -531,7 +574,7 @@ def assess_coactivity(
         jit_obs, jit_null = _med(sd_obs), _med(sds_null[K])
         defined = bool(sd_obs) and bool(sds_null[K])
         out.append(Assessment(
-            min_rois=K, min_rois_frac=frac_of[K],
+            min_rois=K, min_rois_frac=frac_of[K], min_rois_floor=floor, min_rois_floor_bound=floor_of[K],
             meets_floor=True, win_dur=win_dur, n_roi=n_roi,
             n_events_win=int(sum(n_in_win)),
             roi_rate=roi_rate, roi_rate_med=_med(roi_rate),

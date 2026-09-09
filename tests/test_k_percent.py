@@ -265,3 +265,76 @@ def test_the_message_always_names_who_set_it_and_the_percentage():
               cross_check_k(verdicts([(6, "confirmed")] * 4), session())):
         assert "tony" in c.message
         assert "% of ROIs" in c.message
+
+
+# --- the floor under a percentage (2026-09-09) -------------------------------
+#
+# `k_from_fraction` clamps only at 1 and says in its own docstring that the clamp
+# belongs to whoever is asking. These pin that clamp: it applies AFTER the
+# fraction has met the recording, a floor that BOUND is recorded rather than
+# absorbed, and it is refused where it would be a second opinion about an
+# absolute K.
+
+
+def test_the_floor_applies_after_the_fraction_meets_the_recording(tmp_path):
+    from bugarach.assess import assess_coactivity
+
+    # 10% of 10 ROIs rounds to 1, and one co-active ROI is not coordination.
+    small, = assess_coactivity(_slice(tmp_path, 10), window=(0.0, 1100.0),
+                               min_rois_frac=(0.10,), min_rois_floor=3,
+                               n_surrogates=20)
+    assert small.min_rois == 3
+    assert small.min_rois_floor == 3 and small.min_rois_floor_bound is True
+    # 10% of 40 is 4, already above the floor, so the floor changed nothing and
+    # must not claim it did.
+    big, = assess_coactivity(_slice(tmp_path, 40), window=(0.0, 1100.0),
+                             min_rois_frac=(0.10,), min_rois_floor=3,
+                             n_surrogates=20)
+    assert big.min_rois == 4
+    assert big.min_rois_floor == 3 and big.min_rois_floor_bound is False
+
+
+def test_a_bound_floor_is_recorded_not_absorbed(tmp_path):
+    """Two recordings can share a K and have reached it by different rules.
+
+    Without the flag the pair is indistinguishable, and a number pooled over them
+    reads as one setting when two were running.
+    """
+    from bugarach.assess import assess_coactivity
+
+    floored, = assess_coactivity(_slice(tmp_path, 10), window=(0.0, 1100.0),
+                                 min_rois_frac=(0.10,), min_rois_floor=3,
+                                 n_surrogates=20)
+    earned, = assess_coactivity(_slice(tmp_path, 30), window=(0.0, 1100.0),
+                                min_rois_frac=(0.10,), min_rois_floor=3,
+                                n_surrogates=20)
+    assert floored.min_rois == earned.min_rois == 3
+    assert floored.min_rois_floor_bound is not earned.min_rois_floor_bound
+
+
+def test_no_floor_leaves_the_fraction_alone(tmp_path):
+    from bugarach.assess import assess_coactivity
+
+    a, = assess_coactivity(_slice(tmp_path, 10), window=(0.0, 1100.0),
+                           min_rois_frac=(0.10,), n_surrogates=20)
+    assert a.min_rois == 1, "unclamped, K=1 is still reachable"
+    assert a.min_rois_floor is None and a.min_rois_floor_bound is False
+
+
+def test_a_floor_under_an_absolute_k_is_refused(tmp_path):
+    """With an absolute K the floor is either already in the number or is a
+    second opinion about it, and applying it silently would move a published K."""
+    from bugarach.assess import assess_coactivity
+
+    with pytest.raises(ValueError, match="min_rois_floor applies"):
+        assess_coactivity(_slice(tmp_path, 10), window=(0.0, 1100.0),
+                          min_rois=(3,), min_rois_floor=3, n_surrogates=20)
+
+
+def test_a_floor_below_one_is_refused(tmp_path):
+    from bugarach.assess import assess_coactivity
+
+    with pytest.raises(ValueError, match="at least 1"):
+        assess_coactivity(_slice(tmp_path, 10), window=(0.0, 1100.0),
+                          min_rois_frac=(0.10,), min_rois_floor=0,
+                          n_surrogates=20)
