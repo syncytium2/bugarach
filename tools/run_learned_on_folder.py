@@ -4,14 +4,28 @@
     python tools/run_learned_on_folder.py --spec RUN/02_spec/generator_spec.json \
         --folder EXPORT_FOLDER --models tube tube_guard --out RUN/07_learned
 
-WHY THIS EXISTS. "Nothing persists a trained model" is true and it is not the
-same sentence as "the learned models cannot run on real data" — which is what
+⚠ **THE PREMISE OF THIS TOOL WAS RETIRED ON 2026-09-08, hours after it was
+written.** `bugarach.learn.checkpoint` persists a trained model, and
+`bugarach detect --model ckpt.json` runs one on a real folder from a separate
+process. **For a model you want to keep, run this with `--save-models` and detect
+with the checkpoint** — then the fit that produced a figure is the fit anyone can
+re-apply, instead of one that has to be reproduced by retraining.
+
+This tool is still the right one for **fit-and-look in a single pass**: it trains
+on the spec's own corpus and predicts immediately, which is what you want when the
+model is a step in an argument rather than an artifact to keep.
+
+WHY IT EXISTED. *"Nothing persists a trained model"* was true and it is not the
+same sentence as *"the learned models cannot run on real data"* — which is what
 this project's own pipeline document, and a report written off it, had been
-saying. No checkpoint means a model cannot survive the end of a process, so
-`bugarach detect` (a separate process, reading settings from a table) cannot
-apply one. It does not mean the model cannot see real recordings. Train and
-predict inside ONE process and the gap closes for the length of that process,
-which is exactly long enough to produce a figure.
+saying. No checkpoint meant a model could not survive the end of a process, so
+`bugarach detect` (a separate process, reading settings from a table) could not be
+handed one. It never meant the model could not see real recordings. Train and
+predict inside ONE process and the gap closed for the length of that process,
+which was exactly long enough to produce a figure. **Keeping the reasoning because
+the distinction it draws is the useful part** — an unexamined premise had been
+carried forward until somebody tested it, and the same paragraph would have gone
+stale silently a second time if this header did not say so.
 
 Tony, 2026-09-08, on a raster page that drew the learned row grey: *"Why does it
 say tube not run? One motivation for this exercise was to demonstrate our learned

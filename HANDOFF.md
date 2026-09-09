@@ -1,11 +1,12 @@
 # Handoff — the loop closes; both of pipeline.md's blockers are gone
 
-**In flight: [#508](https://github.com/syncytium2/bugarach/pull/508)** (the checkpoint, the
-`--model` flag and the lab's model exchange, merging on green) and
-**[#466](https://github.com/syncytium2/bugarach/pull/466)** (the field-step figure, still held
-because it is a figure with a caption and was never murderboarded).
-[#507](https://github.com/syncytium2/bugarach/pull/507) landed overnight; everything else this
-session opened is merged. The predecessor is
+**In flight: [#466](https://github.com/syncytium2/bugarach/pull/466)** alone — the field-step
+figure, still held because it is a figure with a caption and was never murderboarded.
+**Everything this session opened is merged:**
+[#507](https://github.com/syncytium2/bugarach/pull/507) (a calibration reaches the recordings
+it was derived from), [#508](https://github.com/syncytium2/bugarach/pull/508) (a trained model
+outlives its process) and [#509](https://github.com/syncytium2/bugarach/pull/509) (weights
+cross in both directions). The predecessor is
 [`docs/handoffs/2026-09-08-mahice-is-usable-nobody-has-run-one.md`](docs/handoffs/2026-09-08-mahice-is-usable-nobody-has-run-one.md)
 — its MAHICE section, its K-floor note and its trap list are NOT superseded by this file.
 
