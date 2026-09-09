@@ -237,11 +237,22 @@ and the run summary says how many detections landed in no declared period.
 
 **Owed.**
 
-- **Tuning does not reach detection in orchestrator mode.** The library's detect path takes
-  its parameters from the calibrated operating points and has no argument for a settings
-  file. The browser can apply a tuned setting to the user's folder; the command line cannot.
-  **This is the second place the two modes diverge, and it is the one that matters most** —
-  it makes the whole Tune step unreachable from one of the two paths.
+- ~~**Tuning does not reach detection in orchestrator mode.**~~ **Closed 2026-09-08.**
+  `bugarach detect --settings <detector_settings.csv>` applies a calibration, and
+  `tools/settings_from_bakeoff.py` writes one out of a bake-off. It is the same four-column
+  file the browser's *Save these settings* writes — one format, either direction — and
+  `emit.read_detector_settings` had parsed both since it was written; what was missing was
+  anything calling it on the way **in**.
+  **What it was worth, measured on the pilot APV+CNQX+GZ folder:** at the calibration derived
+  from that cohort's own simulated data, `rate+context` makes **90 % more calls** than at its
+  shipped point, `locust` **105 %** more and `LoCo` **10 %** more. That gap is the distance
+  between the instrument the bench scored and the instrument that ran.
+  ⚠ **Only three of the six calibrate cleanly on that cohort**, and the emitter refuses the
+  other three rather than inventing a value: `CoactDetect` and `binned SCE` because their
+  folds disagreed — a mean over a knob grid is not a knob anyone ran — and `SPIKE-synch`
+  because every fold landed on the **end** of the searched grid, which this project reads
+  everywhere else as a search that stopped too early. Those refusals are findings about the
+  sweep rather than obstacles to it.
 - **The tube variants cannot run on the user's data at all.** The detect path knows the six
   and has no route to the architecture registry. With nothing persisting a trained model, a
   tuned variant has no way back to the folder it was tuned for. The two branches settled at
@@ -308,13 +319,15 @@ coordinated event it belongs to is a **v2 stretch goal**.
 
 ## What blocks what
 
-Two items sit upstream of most of the rest:
+Two items sat upstream of most of the rest. **One is closed.**
 
 1. **Model persistence.** Nothing saves a trained model, so the learned branch cannot be
    tested on a fresh batch, cannot detect on the user's folder, and cannot accept a model
-   the user brings.
-2. **A settings file the library's detect path will read.** Without it, tuning reaches the
-   browser and not the command line, and the two modes stop being one pathway at the last
-   step before output.
+   the user brings. **Still open, and it is now the only one of the two.**
+2. ~~**A settings file the library's detect path will read.**~~ **Closed 2026-09-08** —
+   `bugarach detect --settings`, reading the same file the browser saves, plus
+   `tools/settings_from_bakeoff.py` to write one from a calibration. The Tune step reaches
+   the command line, and the two modes are one pathway at the step before output. The
+   measured size of what it was hiding is in **Detect on the real folder** above.
 
 Everything else on this page is additive to a loop that already runs.

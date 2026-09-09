@@ -283,8 +283,126 @@ def _by_label(windows) -> dict[str, object]:
     return {k: v for k, v in seen.items() if v is not None}
 
 
-def detector_params(name: str, *, frame_interval_sec: float) -> dict:
-    """One detector's shipped operating point, plus what the recording decides.
+#: Rows in a settings file that say where a value CAME FROM rather than what it
+#: is. The browser writes them — ``fitted_on``, ``fitted_knob``, ``fitted_f1``,
+#: the grid endpoints. They are provenance, not detector arguments, and handing
+#: one to a detector is a ``TypeError``. Carried into ``run.json`` instead, so
+#: applying a settings file does not lose the record of what fitted it.
+PROVENANCE_PREFIX = "fitted_"
+
+#: Columns a settings file carries that are NOT knobs to apply, and are skipped on
+#: the way in. **A file this module wrote has to load back into it**, and the
+#: round-trip test caught this the first time it ran: `detect` writes all three.
+#:
+#: * ``onset_field`` is a fact about the detector, recorded so a reader knows which
+#:   per-event time it anchored on. It is not an argument.
+#: * ``grid_dt`` and ``imaging_rate_hz`` are the MICROSCOPE, recomputed from the
+#:   recording in front of us every time — see :func:`detector_params`. Skipping
+#:   them here is the same rule as applying them last: a file fitted on another rig
+#:   states that rig's interval, and must not be able to impose it.
+NOT_A_PARAMETER = frozenset({"onset_field", "grid_dt", "imaging_rate_hz"})
+
+#: What :func:`detect_folder` writes into a value when one folder's recordings ran
+#: at different frame intervals. It is a report, not a setting, and a run cannot be
+#: made at it — so reading one back is refused by name rather than coerced to a NaN.
+VARIES = "varies by recording"
+
+
+def _coerce(value, like):
+    """A CSV string back to the type the shipped default has.
+
+    The value column holds a threshold, a count, a percentile and a boolean in
+    different rows on purpose (`emit.read_detector_settings`'s own note), so the
+    type cannot be read off the row. It is read off the parameter the row names,
+    which makes the shipped operating point the schema — the one place in the
+    tree that already knows what each knob is.
+    """
+    if value is None:
+        return None
+    if isinstance(like, bool):
+        low = str(value).strip().lower()
+        if low in ("true", "1", "yes"):
+            return True
+        if low in ("false", "0", "no"):
+            return False
+        raise ValueError(f"{value!r} is not a boolean")
+    if isinstance(like, int) and not isinstance(like, bool):
+        return int(float(value))
+    if isinstance(like, float):
+        return float(value)
+    return value
+
+
+def load_settings(path):
+    """A settings CSV as ``({(detector, stream): {parameter: typed}}, provenance)``.
+
+    **The file the browser saves and the file this module writes are one format**
+    — ``detector,stream,parameter,value`` — and :func:`emit.read_detector_settings`
+    has parsed both since it was written, precisely so there are not two dialects
+    of one table. What was missing was anything calling it on the way *in*: a knob
+    calibrated on simulated data could not reach a real folder from the command
+    line, so the loop this project exists to run stopped one step short of closing
+    and the detectors scored on the bench were not the detectors that ran.
+
+    Refuses rather than half-applies, because a settings file quietly ignored in
+    part is worse than one rejected outright:
+
+    * an unknown detector name — a file from a tree with a different detector set;
+    * a parameter no such detector takes, which catches a typo and a newer tree's
+      knob in the same breath;
+    * a value that will not coerce to the shipped default's type.
+
+    ``fitted_*`` rows come back separately: provenance to record, not arguments to
+    pass.
+    """
+    from bugarach.bench import OPERATING_POINTS
+    from bugarach.emit import read_detector_settings
+
+    raw = read_detector_settings(path)
+    params: dict[tuple[str, str], dict] = {}
+    provenance: dict[str, dict] = {}
+    for (name, sname), row in raw.items():
+        if name not in OPERATING_POINTS:
+            raise ValueError(
+                f"{path}: settings for unknown detector {name!r} — this tree has "
+                f"{', '.join(DETECTORS)}. A file naming a detector that is not "
+                f"here is not applied by halves.")
+        shipped = OPERATING_POINTS[name].params
+        for key, value in row.items():
+            if key.startswith(PROVENANCE_PREFIX):
+                provenance.setdefault(f"{name}/{sname}" if sname else name,
+                                      {})[key] = value
+                continue
+            if key in NOT_A_PARAMETER:
+                continue
+            if value == VARIES:
+                raise ValueError(
+                    f"{path}: {name}.{key} says {VARIES!r}. That is what a run "
+                    f"over a folder of mixed frame intervals reports, not a "
+                    f"value anything can be run at. Take the settings from a "
+                    f"run over recordings that share an interval, or set this "
+                    f"parameter by hand.")
+            if key == "rng_seed":
+                params.setdefault((name, sname), {})[key] = int(float(value))
+                continue
+            if key not in shipped:
+                raise ValueError(
+                    f"{path}: {name!r} has no parameter {key!r}. It takes "
+                    f"{', '.join(sorted(shipped))}.")
+            try:
+                params.setdefault((name, sname), {})[key] = _coerce(value,
+                                                                    shipped[key])
+            except (TypeError, ValueError) as exc:
+                raise ValueError(
+                    f"{path}: {name}.{key} = {value!r} is not a "
+                    f"{type(shipped[key]).__name__} ({exc})") from None
+    return params, provenance
+
+
+def detector_params(name: str, *, frame_interval_sec: float,
+                    overrides: dict | None = None,
+                    stream: str | None = None) -> dict:
+    """One detector's operating point, plus what the recording decides.
 
     The settings come from :data:`bugarach.bench.OPERATING_POINTS`, which is the
     one place in the tree that records a calibrated point together with where it
@@ -295,6 +413,15 @@ def detector_params(name: str, *, frame_interval_sec: float) -> dict:
       detector's docstring says the value MUST be the acquisition interval.
     * ``cicada.imaging_rate_hz`` — otherwise 10.0 in silence for a rig that is
       not 10 Hz, which is exactly the failure FOUNDATIONS §6 exists to prevent.
+
+    ``overrides`` is :func:`load_settings`' first return value.
+
+    **A file supplies a knob; it does not supply the microscope.** The two
+    recording-derived values are applied AFTER the override for that reason, so a
+    settings file fitted on another rig cannot smuggle in that rig's frame
+    interval. Rows keyed to the empty stream — what the browser writes when no
+    stream is chosen — apply to every stream; a row for some other stream is not
+    this call's.
     """
     from bugarach.bench import OPERATING_POINTS
 
@@ -302,6 +429,9 @@ def detector_params(name: str, *, frame_interval_sec: float) -> dict:
     params = dict(op.params)
     if op.takes_rng:
         params["rng_seed"] = RNG_SEED
+    for key in ("", stream) if stream is not None else ("",):
+        params.update((overrides or {}).get((name, key), {}))
+    # AFTER the overrides, deliberately — see the docstring.
     if name == "rate":
         params["grid_dt"] = float(frame_interval_sec)
     elif name == "cicada":
@@ -309,7 +439,9 @@ def detector_params(name: str, *, frame_interval_sec: float) -> dict:
     return params
 
 
-def _run_flat(name, s, windows, want_streams, params, identity):
+def _run_flat(name, s, windows, want_streams, params_by_stream, identity):
+    """The three that take one stream at a time — so they can take one stream's
+    settings at a time, which is what the settings file's `stream` column is for."""
     from bugarach.detectors.coact import coact_detect
     from bugarach.detectors.rate import rate_detect, stream_trains
     from bugarach.detectors.sync import sync_detect
@@ -322,6 +454,7 @@ def _run_flat(name, s, windows, want_streams, params, identity):
         idx = _region_index(w)
         for sname in want_streams:
             st = s.streams[sname]
+            params = params_by_stream[sname]
             if name == "rate":
                 res = rate_detect(stream_trains(st, span), span, **params)
             elif name == "coact":
@@ -374,7 +507,8 @@ def _run_nested(name, s, windows, want_streams, params, identity):
 
 
 def detect_slice(s: Slice, *, detectors=DETECTORS, stream: str | None = None,
-                 frame_interval_sec: float | None = None):
+                 frame_interval_sec: float | None = None,
+                 overrides: dict | None = None):
     """Run the detectors over one recording. Returns ``(events, windows)``.
 
     ``s`` is taken as it came out of :func:`bugarach.io.load_folder`; the
@@ -405,17 +539,48 @@ def detect_slice(s: Slice, *, detectors=DETECTORS, stream: str | None = None,
     identity = dict(s.meta)
     events = []
     for name in detectors:
-        params = detector_params(name, frame_interval_sec=dt)
-        runner = _run_flat if name in FLAT else _run_nested
-        events.extend(runner(name, s, windows, want, params, identity))
+        by_stream = {n: detector_params(name, frame_interval_sec=dt,
+                                        overrides=overrides, stream=n)
+                     for n in want}
+        if name in FLAT:
+            events.extend(_run_flat(name, s, windows, want, by_stream, identity))
+            continue
+        # THE THREE NESTED PORTS TAKE THE WHOLE RECORDING and window it
+        # themselves, drawing surrogates from one RNG stream across every stream
+        # in declaration order — so there is no seam at which a per-stream
+        # setting could be applied, and pretending otherwise would silently use
+        # one stream's value for both. A file that asks for two different values
+        # is refused by name rather than resolved by luck.
+        distinct = {tuple(sorted(p.items())) for p in by_stream.values()}
+        if len(distinct) > 1:
+            differing = sorted(
+                k for k in set().union(*(p.keys() for p in by_stream.values()))
+                if len({p.get(k) for p in by_stream.values()}) > 1)
+            raise ValueError(
+                f"{s.slice_id}: the settings file gives {name!r} different "
+                f"values per stream ({', '.join(differing)}), and {name} cannot "
+                f"take them. It reads the whole recording and draws surrogates "
+                f"across every stream in one RNG sequence, so one call answers "
+                f"for all of them. Give {name} one value, or run one stream at a "
+                f"time with --stream.")
+        events.extend(_run_nested(name, s, windows, want,
+                                  next(iter(by_stream.values())), identity))
     return events, windows
 
 
 def detect_folder(folder, *, out_dir, detectors=DETECTORS,
                   stream: str | None = None,
                   frame_interval_sec: float | None = None,
-                  limit: int | None = None, progress=None) -> DetectionRun:
+                  limit: int | None = None, progress=None,
+                  settings=None) -> DetectionRun:
     """Detect over a whole export folder and write the output contract.
+
+    ``settings`` is a path to a ``detector_settings.csv`` — the file this function
+    writes, and the file the browser's *Save these settings* writes, which are one
+    format. **This is how a calibration reaches real recordings.** Without it every
+    detector runs at its shipped operating point, which is what made a bake-off's
+    tuned knobs a record rather than an input, and left the instrument that was
+    scored different from the instrument that ran.
 
     Writes three files into ``out_dir``: ``detections.csv`` (one row per event),
     ``detector_settings.csv`` (every parameter each detector ran with) and
@@ -440,6 +605,12 @@ def detect_folder(folder, *, out_dir, detectors=DETECTORS,
             f"unknown detector(s) {', '.join(bad)} — have "
             f"{', '.join(DETECTORS)}")
 
+    # Loaded ONCE, before any recording is read, so a malformed settings file
+    # fails before the folder is walked rather than on recording 84 of 85.
+    overrides, fitted = ({}, {})
+    if settings is not None:
+        overrides, fitted = load_settings(settings)
+
     run = DetectionRun(folder=folder, out_dir=out_dir,
                        detectors=tuple(detectors), stream_asked=stream)
     slices = load_folder(folder)
@@ -448,7 +619,11 @@ def detect_folder(folder, *, out_dir, detectors=DETECTORS,
 
     started = time.monotonic()
     all_events: list = []
-    settings: dict[tuple[str, str], dict] = {}
+    # `used_settings` is what each detector ACTUALLY ran with, written back out;
+    # `settings` is the file that may have been read in. Two different things,
+    # and the second used to be called the first — a shadowing that worked only
+    # because of statement order.
+    used_settings: dict[tuple[str, str], dict] = {}
     windows_by_slice: dict[str, list] = {}
     intervals: dict[str, float | None] = {}
 
@@ -473,7 +648,8 @@ def detect_folder(folder, *, out_dir, detectors=DETECTORS,
         t0 = time.monotonic()
         try:
             events, windows = detect_slice(
-                s, detectors=detectors, stream=stream, frame_interval_sec=dt)
+                s, detectors=detectors, stream=stream, frame_interval_sec=dt,
+                overrides=overrides)
         except Exception as exc:                      # noqa: BLE001
             rec.skipped = f"{type(exc).__name__}: {exc}"
             rec.seconds = time.monotonic() - t0
@@ -491,17 +667,18 @@ def detect_folder(folder, *, out_dir, detectors=DETECTORS,
         all_events.extend(events)
 
         for name in detectors:
-            row = dict(detector_params(name, frame_interval_sec=dt),
-                       onset_field=ONSET_FIELD[name])
             for sname in (n for n in s.streams if stream is None or n == stream):
+                row = dict(detector_params(name, frame_interval_sec=dt,
+                                           overrides=overrides, stream=sname),
+                           onset_field=ONSET_FIELD[name])
                 # A folder whose recordings carry different frame intervals runs
                 # the grid-building detectors at different settings, and one row
                 # cannot say two things. Flagged rather than silently overwritten.
-                prev = settings.get((name, sname))
+                prev = used_settings.get((name, sname))
                 if prev is not None and prev != row:
-                    row = {k: (v if prev.get(k) == v else "varies by recording")
+                    row = {k: (v if prev.get(k) == v else VARIES)
                            for k, v in row.items()}
-                settings[(name, sname)] = row
+                used_settings[(name, sname)] = row
 
     if progress is not None:
         progress(len(slices), len(slices), None)
@@ -519,7 +696,7 @@ def detect_folder(folder, *, out_dir, detectors=DETECTORS,
         run.paths["detections"] = write_detections(all_events,
                                                    out_dir / "detections.csv")
         run.paths["settings"] = write_detector_settings(
-            settings, out_dir / "detector_settings.csv")
+            used_settings, out_dir / "detector_settings.csv")
     run.paths["run"] = write_run(
         out_dir / "run.json",
         slices=[r.slice_id for r in run.records],
@@ -533,6 +710,15 @@ def detect_folder(folder, *, out_dir, detectors=DETECTORS,
             "detectors": list(detectors),
             "stream": stream,
             "rng_seed": RNG_SEED,
+            # WHERE THE SETTINGS CAME FROM, and it is the difference between a
+            # run at the shipped operating points and a run at a calibration.
+            # `null` keeps meaning what it always has: nothing was passed, so
+            # every detector ran shipped. `fitted_on` and its siblings are the
+            # provenance rows the file carried; they are not detector arguments
+            # and would be a TypeError if handed to one, so they are recorded
+            # here instead of being dropped at the boundary.
+            "settings_file": None if settings is None else str(settings),
+            "settings_fitted_on": fitted or None,
             "window_policy": (
                 "the producer's analysis windows where the folder states them, "
                 "and otherwise the raw period bounds verbatim — no wash-in "
