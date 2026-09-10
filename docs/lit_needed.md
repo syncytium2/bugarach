@@ -50,7 +50,7 @@ box. Modelled on `murderboard-lit/_NEEDED.md`, which has had this mechanism sinc
 a person's name and this repo is public (SAP004).
 
 Topics in use: `radar/`, `coordination/`, `DL/`, `surrogates/`, `ml/`. As of 2026-09-10 the shelf
-holds 36 papers — nine of them on surrogate methods, a topic the shelf held nothing on before this date.
+holds 37 files — nine of them papers on surrogate methods, a topic the shelf held nothing on before this date.
 
 ⚠ **There is no master library.** Checked 2026-09-10: `murderboard-lit/` is its own repo of 206
 papers but on a different subject entirely — agentic reproducibility, paper-code consistency —
@@ -91,15 +91,35 @@ locations belong to other projects.
       paper). It reads:
       > GREGERS HANSEN,V.: Constant-false-alarm-rate processing in search radars
 
-      So **the paper is real, the title is confirmed, and the surname is `Gregers Hansen`, not
-      `Hansen`.** Every citation in this repo — `GLOSSARY.md`, `README.md`, `detector_history.md` —
-      writes it as *Hansen 1973* or *Hansen VG*, which inverts a compound Danish surname. The radar
-      literature commonly makes the same inversion, which is presumably where we got it.
+      So the paper is real and the title is confirmed. **The surname is `Gregers Hansen`.**
+      IEEE's own authority record agrees — Tony saved it as
+      `radar/gregers_hansen_AUTHOR_PROFILE_ieee.pdf`, and it reads:
+      > **V. Gregers Hansen** — Also published under: Vilhelm Gregers Hansen, V. Hansen, V. G. Hansen
+      > · Affiliation: Raytheon Company, Wayland, MA
+
+      ⚠ **A correction to the first version of this entry, which said we had been citing the name
+      "wrong".** That was too strong. IEEE lists *V. G. Hansen* as a form he genuinely published
+      under, so `Hansen VG` is a documented variant rather than an error. What is true is narrower:
+      the **canonical form is Gregers Hansen**, treating `Hansen` as the surname inverts a compound
+      one, and a repo that cares about attribution should use the canonical form. Same correction
+      applies to the 1980 paper on this shelf — cite it as **Gregers Hansen & Sawyers**.
+
       ⚠ **Still open, and it is the half that matters:** whether this paper is the ORIGIN of
       greatest-of CFAR. The contents listing gives no abstract, no pages and no text, so it cannot
       settle `detector_history.md` §4 putting **Hansen & Sawyers 1980** in a column headed *origin*.
       Our claimed page range **325–332 remains unverified** — it appears in no source we hold.
-      Needs the full text; a library job.
+
+      **The chronology is evidence and not proof, and it leans one way.** From the IEEE profile and
+      OpenAlex, his CFAR thread runs: 1971 *Siebert and Dicke-Fix CFAR Radar Detectors* → 1972 *Cell
+      Averaging LOG/CFAR Receiver* → **1973 the paper in question** → 1980 *Detectability Loss Due to
+      "Greatest Of" Selection in a Cell-Averaging CFAR*. A 1980 title that costs a technique
+      presupposes the technique already exists, which is consistent with 1973 introducing it — the
+      reading murderboard role 2 argued for. It is also consistent with GO originating in the 1971 or
+      1972 papers, which we do not hold either. **Titles are not papers; this does not close it.**
+
+      ⚠ **IEEE Xplore is exhausted as a route.** The 1973 paper is an **IEE** (British) conference
+      publication and Xplore does not index it — the profile jumps 1972 → 1974. What remains is a
+      library holding IEE Conf. Publ. 105 itself.
 
 - [x] ~~**Date A, Bienenstock E & Geman S (1998).** On the temporal resolution of neural
       activity. Technical Report, Division of Applied Mathematics, Brown University.~~
