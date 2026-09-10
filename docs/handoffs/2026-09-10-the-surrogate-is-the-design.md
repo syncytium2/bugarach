@@ -181,10 +181,31 @@ Each is a real defect found this session and left for a change with its own revi
 
 ## Blocked on Tony
 
-1. **Which surrogates enter the screen**, and whether the grid runs as described.
-2. **τ, the dead-time floor** — the producer's number, not ours to infer.
-3. **Gregers Hansen 1973** — a library job; it settles the §4 origin column.
-4. **The quiet→busy transfer penalty.** `model_track.md` measures "fit busy, deploy quiet" at −0.24
-   against +0.12, and training on baseline to deploy on treated is the bad direction. Accept it, or
-   bound it before any treatment number is read.
-5. **Four recordings with motion-correction frame-floor pinning** — in or out of training.
+> **Every open item in this file is filed as a todo**, so this handoff can be deleted when the
+> thread lands and nothing is lost. Its first version was not — the items existed only here, in a
+> file the tree instructs the next session to delete. A sibling session caught that and was right
+> to; the fix is below and the items are in `docs/todo/`, where open work belongs.
+
+1. [**Which surrogates enter the screen**](../todo/2026-09-10-which-surrogates-enter-the-screen.md),
+   and whether it runs as a grid.
+2. [**τ, the dead-time floor**](../todo/2026-09-10-the-dead-time-floor-is-the-producers-number.md) —
+   the producer's number, not ours to infer.
+3. [**Gregers Hansen 1973**](../todo/2026-09-10-nobody-has-read-hansen-1973.md) — a library job; it
+   settles the §4 origin column.
+4. [**The quiet→busy transfer penalty**](../todo/2026-09-10-the-design-trains-quiet-and-deploys-busy.md).
+   `model_track.md` measures "fit busy, deploy quiet" at −0.24 against +0.12, and training on
+   baseline to deploy on treated is the bad direction. Accept it, or bound it before any treatment
+   number is read.
+5. [**Four recordings with motion-correction frame-floor pinning**](../todo/2026-09-10-four-recordings-carry-an-unflagged-contaminant.md)
+   — in or out of training.
+
+## The rest of the open work, also filed
+
+- [**Build the surrogate screen**](../todo/2026-09-10-build-the-surrogate-screen.md) — the three
+  tiers, the fixed axes, the figure it owes, and what to reuse rather than rebuild.
+- [**The canonical surname is Gregers Hansen**](../todo/2026-09-10-the-canonical-surname-is-gregers-hansen.md)
+  — actionable now, needs no new source.
+- [**The export contract does not mention field steps**](../todo/2026-09-10-the-export-contract-does-not-mention-field-steps.md)
+  — and the loader drops both columns silently.
+- [**`encode()` clips onsets onto the boundary frames**](../todo/2026-09-10-the-encoder-clips-onsets-onto-the-boundary-frames.md)
+  — inert on real data, fires on every surrogate that displaces an onset.
