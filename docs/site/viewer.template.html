@@ -475,6 +475,16 @@
   .turbobar input { width: 68px; margin: 0; }
   .turbobar button { width: auto; margin: 0; padding: 1px 10px; font-size: 12px; }
   .turbospacer { flex: 1 1 18px; }
+  /* The assumption notice. Amber and bordered rather than another grey note:
+     it says the analysis is standing on something the folder did not state,
+     and a reader skimming to the rasters has to catch it on the way past. */
+  .turboflag { margin: 0 0 6px; padding: 7px 10px; font-size: 12.5px;
+               line-height: 1.45; border: 1px solid #b8860b;
+               border-left-width: 4px; border-radius: 6px;
+               background: color-mix(in srgb, #b8860b 8%, var(--panel));
+               color: var(--fg); }
+  .turboflag b { font-weight: 600; }
+  .turboflag .ids { color: var(--muted); }
   #turboScroll { overflow: auto; max-height: 74vh;
                  border: 1px solid var(--line); border-radius: 8px; }
   #turboCv { display: block; }
@@ -1730,6 +1740,13 @@
         <button id="tAll" class="ghost">all</button>
         <span class="lab" id="tZoomWhat"></span>
       </div>
+      <!-- THE ASSUMPTION, ABOVE THE THING IT IS ABOUT, IN ITS OWN BOX.
+           Tony asked for the whole trace to be used when no baseline is
+           declared, and for the user to be told we did it. Told means a line
+           they cannot read past — not a clause in the middle of the settings
+           paragraph below, which is where it would have gone if this element
+           did not exist. Empty and hidden when nothing was assumed. -->
+      <div class="turboflag" id="turboFlag" hidden></div>
       <div class="note" id="turboWhat"></div>
       <div id="turboScroll"><canvas id="turboCv"></canvas></div>
     </div>
@@ -2312,6 +2329,10 @@ const CAND_INK = {
   unsure:    "#b8860b",
   preview:   "#c2c7cc",
   selected:  "#1565c0",   // the one being looked at, matching its ledger row
+  /* An assumption the reader is carrying, not a verdict they made — the same
+     amber `unsure` speaks with, because both mean "this one is not settled".
+     It labels a row; it never marks an event. */
+  assumed:   "#b8860b",
 };
 
 /* ---------- the raster's time window ----------------------------------------
@@ -2463,13 +2484,80 @@ function turboKnobs() {
 /* The baseline window of one recording, as the folder declared it. Analysis
    bounds when the producer sent them, the raw period otherwise — the same rule
    the raster draws, never re-derived here. */
+/* WHICH WINDOW IS THIS RECORDING'S BASELINE — RESOLVED AT IMPORT, ONCE.
+
+   Tony, 2026-09-10: when no baseline is defined, use the whole trace and say so
+   — and "we're supposed to handle this on import actually. not here", i.e. not
+   inside turbo. So the answer is worked out at the seam where the folder is
+   read, exactly as `assess_folder` works it out at the seam where a folder is
+   assessed, and every consumer reads the same verdict instead of re-deriving it
+   from `REGIONS` with its own idea of what counts.
+
+   `win === null` with no `skipped` means THE WHOLE RECORDING, which is what
+   `assess_folder` means by `window = None`. The pair is deliberate: the window
+   is not known here (it is the recording's own extent, and that needs the
+   recording), but the DECISION is, and the decision is the part worth pinning
+   at import.
+
+   ⚠ THE LABEL IS NOT CHANGED TO `baseline`, and that is the contract, not
+   fastidiousness. `export_folder_spec.md` §regions: when the file is absent the
+   recording has one region spanning its own extent with NO label, "emitted as
+   missing, never as `baseline` — an unlabelled recording is one nobody has told
+   us about, and calling it a baseline manufactures a claim about a
+   possibly-treated preparation." So nothing here renames anything. The
+   assumption lives in `assumed`, is carried to the reader, and stays visible.
+
+   AND IT USES `isBaselineLabel`, WHICH THIS PAGE ALREADY HAD. The old
+   `baselineWindow` matched the literal string "baseline" and nothing else,
+   while six other places in this same file were already asking
+   `isBaselineLabel` — so a conforming folder using the real period name
+   (`pre-drug`, `control`, `aCSF`, which the export contract asks producers to
+   send in PREFERENCE to `baseline`) had every recording silently skipped by
+   turbo and read correctly by everything else on the page.
+
+   AND REGIONS-DECLARED-BUT-NONE-BASELINE IS SKIPPED, NOT ASSUMED. A producer
+   who declared their periods and named none of them a baseline has told us this
+   recording is treated. Sweeping a senktide or TTX period into a baseline is
+   FOUNDATIONS §9 in terms — coordination properties are not taken from
+   treatments — and `assess_folder` already refuses it for that reason. This
+   page used to make the same recording vanish with no reason given; now it says
+   which and why.
+
+   THE RULE ITSELF IS `folderAssessWindow`'S AND IS NOT RESTATED HERE. That
+   function already decides exactly this — whole recording when no regions are
+   declared, skipped with the FOUNDATIONS §9 reason when regions are declared
+   and none is a baseline, the producer's stated analysis window in preference
+   to the raw period — and it is what the folder assessment walks 84 recordings
+   with. A second copy of a rule about which data is admissible is two rules
+   that drift, and the drift is silent: the page would assess one window and
+   turbo would draw another, both calling it the baseline. This resolves the
+   verdict EARLIER (at import, for everything) rather than differently. */
+let BASELINE = new Map();   // recId -> {win, source, assumed, skipped}
+
+function resolveBaselines() {
+  BASELINE = new Map();
+  for (const rec of RECORDINGS) {
+    const w = folderAssessWindow(rec);
+    BASELINE.set(rec.id, {
+      win: w.window || null,
+      source: w.source || "",
+      skipped: w.skipped || "",
+      /* ASSUMED is the one thing this layer adds, and it is a question
+         `folderAssessWindow` never had to answer: it returns `window: null` for
+         "the whole recording", which is the right window and also an
+         assumption nobody declared. A consumer needs to tell that apart from a
+         window the folder stated, because only one of them has to be confessed
+         to the reader. */
+      assumed: !w.skipped && !w.window,
+    });
+  }
+}
+
+/* Kept as the one-line question most callers actually ask. Reads the verdict
+   above rather than recomputing it. */
 function baselineWindow(recId) {
-  const wins = REGIONS.get(recId) || [];
-  const b = wins.find(w => (w.label || "").trim().toLowerCase() === "baseline");
-  if (!b) return null;
-  const hasA = Number.isFinite(b.aStart) && Number.isFinite(b.aEnd);
-  const s = hasA ? b.aStart : b.start, e = hasA ? b.aEnd : b.end;
-  return (Number.isFinite(s) && Number.isFinite(e) && e > s) ? [s, e] : null;
+  const b = BASELINE.get(recId);
+  return b && !b.skipped ? b.win : null;
 }
 
 /* Read every recording's baseline once. The knobs never touch this — reloading
@@ -2477,6 +2565,7 @@ function baselineWindow(recId) {
    exists to replace. */
 async function turboLoad() {
   const rows = [];
+  const skipped = [];
   const say = m => {
     const n = document.getElementById("turboWhat");
     if (n) n.textContent = m;
@@ -2485,18 +2574,37 @@ async function turboLoad() {
     const rec = RECORDINGS[i];
     say("reading baselines… " + (i + 1) + " of " + RECORDINGS.length);
     await yieldToUI();
-    const win = baselineWindow(rec.id);
-    if (!win) continue;
+    /* The verdict was reached at import; this reads it. A recording the
+       producer declared as treated is skipped WITH ITS REASON, so a short
+       column is a statement rather than a mystery. */
+    const b = BASELINE.get(rec.id)
+              || { win: null, assumed: true, skipped: "", source: "" };
+    if (b.skipped) { skipped.push({ id: rec.id, why: b.skipped }); continue; }
     const d = await loadRecording(rec);
     const byRoi = d.streams.get(STREAM) || d.streams.get([...d.streams.keys()][0]);
     if (!byRoi) continue;
-    const [ws, we] = win;
     const ids = [...byRoi.keys()].sort();
+    /* NO DECLARED REGIONS: the whole trace, which is the contract's implicit
+       one-region recording. Its extent is the recording's own last onset —
+       there is no other statement of duration in an export folder, and the
+       page must not invent one. A recording with nothing in it has no extent
+       and is skipped rather than drawn as a zero-width row. */
+    let ws, we;
+    if (b.win) {
+      [ws, we] = b.win;
+    } else {
+      ws = 0;
+      we = 0;
+      for (const id of ids)
+        for (const t of (byRoi.get(id) || [])) if (t > we) we = t;
+      if (!(we > ws)) { skipped.push({ id: rec.id, why: "no events" }); continue; }
+    }
     const trains = ids.map(id =>
       (byRoi.get(id) || []).filter(t => t >= ws && t <= we).map(t => t - ws));
-    rows.push({ id: rec.id, nRoi: ids.length, trains, dur: we - ws });
+    rows.push({ id: rec.id, nRoi: ids.length, trains, dur: we - ws,
+                assumed: !!b.assumed });
   }
-  TURBO = { rows, maxDur: rows.reduce((a, r) => Math.max(a, r.dur), 1) };
+  TURBO = { rows, skipped, maxDur: rows.reduce((a, r) => Math.max(a, r.dur), 1) };
   turboRecompute();
 }
 
@@ -2646,6 +2754,15 @@ function turboDraw() {
     g.fillText(r.id, padL - 8, rTop + 10);
     g.fillStyle = css.getPropertyValue("--muted").trim();
     g.fillText("K " + r.K + " of " + r.nRoi, padL - 8, rTop + 23);
+    /* THE FLAG, ON THE ROW IT IS ABOUT. A third label line rather than a mark
+       in the picture: this row's window is an assumption and the reader has to
+       be able to see WHICH rows, not just that some exist. In the label column
+       — identity and counts go in the y-axis label, never over the marks. */
+    if (r.assumed) {
+      g.fillStyle = CAND_INK.assumed;
+      g.fillText("whole trace (assumed)", padL - 8, rTop + 36);
+      g.fillStyle = css.getPropertyValue("--muted").trim();
+    }
     g.textAlign = "start";
 
     g.strokeStyle = css.getPropertyValue("--line").trim();
@@ -2698,6 +2815,65 @@ function turboDraw() {
   paintTurboWhat();
 }
 
+/* SAY THAT WE ASSUMED IT. Two different statements, and they are kept apart
+   because they have opposite consequences:
+
+     * ASSUMED — the folder declared no periods for these recordings, so the
+       whole trace is standing in for a baseline. The analysis ran. If any of
+       them is in fact a treated preparation, a K tuned here is tuned on drug
+       time and nothing in the folder would say so.
+     * SKIPPED — the folder DID declare periods and named none of them a
+       baseline, so the producer has said this recording is treated. Not shown,
+       and named, because a column quietly missing rows is worse than a short
+       one that says why (FOUNDATIONS §9).
+
+   Recording ids are listed rather than counted alone: "3 recordings" sends the
+   reader to look for which, and the ids are what they would look for. */
+function paintTurboFlag() {
+  const f = document.getElementById("turboFlag");
+  if (!f || !TURBO) return;
+  const assumed = TURBO.rows.filter(r => r.assumed).map(r => r.id);
+  const skipped = TURBO.skipped || [];
+  if (!assumed.length && !skipped.length) { f.hidden = true; f.textContent = ""; return; }
+  const list = ids => {
+    const shown = ids.slice(0, 6).join(", ");
+    return ids.length > 6 ? shown + ", … (" + ids.length + " in all)" : shown;
+  };
+  /* BUILT AS NODES, never as markup. A recording id is a FILE NAME — it comes
+     off the reader's disk and is a value, so concatenating it into innerHTML is
+     the injection this page has a guard against
+     (`test_no_value_is_ever_concatenated_into_markup`). The ids are exactly the
+     part a person needs to read here, so they go in via textContent. */
+  const line = (lead, body, ids) => {
+    const p = document.createElement("p");
+    p.style.margin = "0";
+    const b = document.createElement("b");
+    b.textContent = lead;
+    p.append(b, document.createTextNode(" " + body + " "));
+    const s = document.createElement("span");
+    s.className = "ids";
+    s.textContent = list(ids);
+    p.append(s);
+    return p;
+  };
+  f.textContent = "";
+  if (assumed.length)
+    f.append(line(
+      "⚠ " + assumed.length + " of " + TURBO.rows.length + " recording(s) "
+      + "declare no regions, so the WHOLE TRACE is being used as the baseline.",
+      "That is an assumption this page made, not something the folder said — "
+      + "if any of them is a treated preparation, a K set here is set on drug "
+      + "time.",
+      assumed));
+  if (skipped.length)
+    f.append(line(
+      skipped.length + " recording(s) not shown:",
+      "the folder declares their periods and names none as a baseline, so they "
+      + "are treated — coordination properties are not taken from treatments.",
+      skipped.map(s => s.id)));
+  f.hidden = false;
+}
+
 function paintTurboWhat() {
   const n = document.getElementById("turboWhat");
   if (!n || !TURBO) return;
@@ -2706,8 +2882,9 @@ function paintTurboWhat() {
   const ks = TURBO.rows.map(r => r.K);
   const bound = TURBO.rows.filter(r =>
     Math.floor(pct / 100 * r.nRoi + 0.5) < floor).length;
+  paintTurboFlag();
   n.textContent =
-    TURBO.rows.length + " baselines · " + total + " marks at K = " + pct
+    TURBO.rows.length + " recordings · " + total + " marks at K = " + pct
     + "% with a floor of " + floor + " (that is K " + Math.min(...ks) + "–"
     + Math.max(...ks) + " across these recordings; the floor binds on " + bound
     + " of them) · co-active within a MOVING " + bin + " s window — any alignment, "
@@ -3935,6 +4112,14 @@ async function open(fileList, opts) {
     if (!RESERVED.has(f.name))
       RECORDINGS.push({ id: f.name.replace(/\.csv$/i, ""), file: f });
   RECORDINGS.sort((a, b) => natural(a.id, b.id));
+
+  /* WHICH WINDOW IS EACH RECORDING'S BASELINE — decided HERE, at import, while
+     the folder is in hand and before anything has asked. Both files this reads
+     are parsed above; every consumer downstream reads `BASELINE` rather than
+     re-deriving a baseline from `REGIONS` with its own idea of what counts,
+     which is how the browser came to disagree with `assess_folder` about
+     whether `control` is a baseline at all. */
+  resolveBaselines();
 
   assignHues();
 
@@ -5615,7 +5800,20 @@ function paintWindowPanel() {
   const acc = document.getElementById("accWindows");
   const idxs = windowIndices();
   acc.hidden = !idxs.length;
-  if (!idxs.length) return;
+  if (!idxs.length) {
+    /* THE CHIP GOES WITH THE PANEL. This returned early and left `cntWindows`
+       holding the LAST folder's answer — and the rail reads that node rather
+       than restating it, precisely so a step and its panel cannot disagree, so
+       a hidden panel's stale text is what the rail then shows. Opening a folder
+       with no regions.csv after the page's own simulated one displayed
+       "Analysis windows — sent by the folder" about a folder that sent no
+       regions at all.
+       Pre-existing and visible on `main`; it surfaces here because a folder
+       that declares nothing now LANDS in turbo, so this is the sentence a
+       reader meets while being told the whole trace was assumed. */
+    document.getElementById("cntWindows").textContent = "none declared";
+    return;
+  }
 
   const sel = document.getElementById("wBase");
   if (sel.options.length !== idxs.length ||

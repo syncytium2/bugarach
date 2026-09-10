@@ -81,6 +81,27 @@ class FolderAssessment:
     def skipped(self) -> list[RecordingAssessment]:
         return [r for r in self.records if r.skipped]
 
+    @property
+    def assumed(self) -> list[RecordingAssessment]:
+        """Assessed on the WHOLE RECORDING, because the folder declared no
+        periods for them.
+
+        The window is the right one — the export contract gives an unannotated
+        recording a single region spanning its own extent — but it is this
+        project's assumption rather than the producer's statement, and if such
+        a recording is in fact a treated preparation, nothing downstream would
+        say so. Each already carries it in ``window_source``; this counts them
+        so the summary can say it once, at the top, where a reader who is not
+        reading every block still meets it.
+
+        Keyed on ``window_source`` and NOT on ``window is None``: a measured
+        recording's window is backfilled from its own result once the extent is
+        known, so by the time anyone asks, the window is a pair of numbers
+        whichever way it was chosen. ``window_source`` is the part that still
+        remembers who chose it."""
+        return [r for r in self.measured
+                if "no regions declared" in r.window_source]
+
 
 def assess_folder(folder, *, stream: str | None = None,
                   n_surrogates: int = 1000, bin_width_sec: float | None = None,
@@ -205,6 +226,19 @@ def format_assessment(fa: FolderAssessment) -> str:
     L.append(f"export folder: {fa.folder}")
     L.append(f"{len(fa.records)} recording(s), {len(fa.measured)} assessed, "
              f"{len(fa.skipped)} not")
+    # Said once, at the top. The per-recording `window:` line has always
+    # carried it, but a reader scanning 84 blocks for numbers is not reading
+    # 84 window lines, and "we measured the whole recording because nobody told
+    # us what the periods were" is the kind of thing that has to arrive before
+    # the numbers rather than beside them.
+    if fa.assumed:
+        L.append(f"⚠ {len(fa.assumed)} of them declare no regions, so the WHOLE "
+                 f"RECORDING was used: "
+                 + ", ".join(r.slice_id for r in fa.assumed[:6])
+                 + (" …" if len(fa.assumed) > 6 else "")
+                 + ". That window is an assumption of ours, not the folder's "
+                   "statement — if any is a treated preparation, it is being "
+                   "read as a baseline.")
     bw = "1.0 (default)" if fa.bin_width_sec is None else f"{fa.bin_width_sec}"
     L.append(f"conventions: {fa.n_surrogates} circular-shift surrogates · "
              f"bin {bw} s · stream "

@@ -258,13 +258,19 @@ def test_pressing_turbo_opens_it_and_a_knob_redraws():
 BASELINE_SEC = (0.0, 120.0)
 
 
-def _folder(tmp: Path, n_rec: int = 3, *, baseline: bool = True) -> Path:
-    """A minimal export folder: onsets that co-fire, and a baseline window.
+def _folder(tmp: Path, n_rec: int = 3, *, regions: str = "baseline") -> Path:
+    """A minimal export folder: onsets that co-fire, and a regions file or not.
 
     Six ROIs fire together every 20 s inside the baseline, so turbo finds marks
     at any sane K and the count does not depend on the knob defaults.
+
+    `regions` is the case under test, and the three differ in what the PRODUCER
+    said rather than in the data:
+      "baseline" — a declared baseline window;
+      "none"     — no regions.csv at all, so nobody has said anything;
+      "treated"  — regions declared, none of them a baseline.
     """
-    d = tmp / ("with_baseline" if baseline else "no_baseline")
+    d = tmp / f"regions_{regions}"
     d.mkdir(parents=True, exist_ok=True)
     for i in range(n_rec):
         rows = ["roi,time_sec"]
@@ -276,11 +282,16 @@ def _folder(tmp: Path, n_rec: int = 3, *, baseline: bool = True) -> Path:
     (d / "slices.csv").write_text(
         "slice_id,frame_interval_sec\n"
         + "".join(f"rec{i},0.1\n" for i in range(n_rec)), encoding="utf-8")
-    if baseline:
+    if regions == "baseline":
         s, e = BASELINE_SEC
         (d / "regions.csv").write_text(
             "slice_id,region_idx,label,start_sec,end_sec\n"
             + "".join(f"rec{i},0,baseline,{s},{e}\n" for i in range(n_rec)),
+            encoding="utf-8")
+    elif regions == "treated":
+        (d / "regions.csv").write_text(
+            "slice_id,region_idx,label,start_sec,end_sec\n"
+            + "".join(f"rec{i},0,senktide,0,120\n" for i in range(n_rec)),
             encoding="utf-8")
     return d
 
@@ -329,13 +340,20 @@ def test_opening_a_real_folder_lands_in_turbo(tmp_path):
             browser.close()
 
 
-def test_a_folder_with_no_baseline_stays_on_the_rail(tmp_path):
-    """Turbo skips a recording with no baseline, so such a folder builds no rows.
+def test_no_regions_declared_uses_the_whole_trace_and_says_so(tmp_path):
+    """Tony, 2026-09-10: no baseline defined means use the whole trace — and tell
+    the user we did it.
 
-    Landing there would stage an empty column of rasters with `#view` hidden
-    behind it and no way to read that as anything but broken. It is also what
-    `test_webapp_assessment_parity.py` opens — a folder with no `regions.csv` —
-    and that test waits on `#view`.
+    Before this, such a recording was silently dropped: `baselineWindow`
+    returned null and `turboLoad` skipped it, so a folder that declared no
+    periods produced an empty turbo and no explanation. The contract already
+    said what to do — `export_folder_spec.md` §regions gives an unannotated
+    recording one region spanning its own extent.
+
+    The flag is asserted as hard as the behaviour, because a silent assumption
+    is the failure this change exists to prevent: a K tuned on a recording that
+    is secretly a treated preparation is wrong in a way nothing downstream
+    would catch.
     """
     pytest.importorskip("playwright.sync_api")
     from playwright.sync_api import sync_playwright
@@ -343,9 +361,77 @@ def test_a_folder_with_no_baseline_stays_on_the_rail(tmp_path):
     with sync_playwright() as p:
         browser, pg, errs = _page(p, tmp_path)
         try:
-            _open(pg, _folder(tmp_path, baseline=False))
-            pg.wait_for_selector("#view:not([hidden])", timeout=30000)
-            assert pg.is_hidden("#turbo"), "landed in a turbo with no rows"
+            _open(pg, _folder(tmp_path, regions="none"))
+            pg.wait_for_selector("#turbo:not([hidden])", timeout=30000)
+            state = pg.evaluate(
+                """() => ({rows: TURBO.rows.length,
+                           assumed: TURBO.rows.filter(r => r.assumed).length,
+                           marks: TURBO.rows.reduce((a, r) => a + r.marks.length, 0),
+                           dur: TURBO.rows[0].dur,
+                           flagHidden: document.getElementById('turboFlag').hidden,
+                           flag: document.getElementById('turboFlag').textContent})""")
+            assert state["rows"] == 3, state
+            assert state["assumed"] == 3, "the rows do not know they were assumed"
+            assert state["marks"] > 0, "the whole trace produced no marks"
+            # The extent is the recording's own last onset: events run to
+            # 100 s + roi*0.05, so the span is ~100 s and emphatically not the
+            # 120 s window the *other* fixtures declare.
+            assert 100.0 <= state["dur"] <= 101.0, state["dur"]
+
+            assert state["flagHidden"] is False, "we assumed and did not say so"
+            flag = state["flag"]
+            assert "WHOLE TRACE" in flag, flag
+            # It has to name WHICH, or the reader cannot go and look.
+            for i in range(3):
+                assert f"rec{i}" in flag, flag
+
+            # ...and no OTHER part of the page may claim the folder sent
+            # windows. `paintWindowPanel` hid its panel and returned early
+            # without clearing the chip, so the rail — which reads that node so
+            # a step and its panel cannot disagree — kept the previously opened
+            # folder's answer. Live on main; it shows up here because a folder
+            # declaring nothing now lands in turbo, next to this very flag.
+            assert pg.evaluate(
+                "() => document.getElementById('cntWindows').textContent"
+            ) == "none declared"
+            assert errs == [], errs
+        finally:
+            browser.close()
+
+
+def test_regions_declared_with_none_a_baseline_are_skipped_and_named(tmp_path):
+    """The other half, and it must NOT be assumed.
+
+    A producer who declared their periods and named none a baseline has said
+    this recording is treated. Sweeping a senktide period into a baseline is
+    FOUNDATIONS §9 in terms — coordination properties are not taken from
+    treatments — and `folderAssessWindow` already refuses it. What changes here
+    is that the refusal is now stated instead of being an empty column.
+    """
+    pytest.importorskip("playwright.sync_api")
+    from playwright.sync_api import sync_playwright
+
+    with sync_playwright() as p:
+        browser, pg, errs = _page(p, tmp_path)
+        try:
+            _open(pg, _folder(tmp_path, regions="treated"))
+            # No rows, so nothing to land in: the page stays on the rail.
+            pg.wait_for_function(
+                "() => typeof RECORDINGS !== 'undefined' && RECORDINGS.length === 3",
+                timeout=30000)
+            pg.click("#turboBtn")
+            pg.wait_for_function(
+                "() => typeof TURBO !== 'undefined' && TURBO !== null",
+                timeout=30000)
+            state = pg.evaluate(
+                """() => ({rows: TURBO.rows.length,
+                           skipped: (TURBO.skipped || []).length,
+                           flag: document.getElementById('turboFlag').textContent})""")
+            assert state["rows"] == 0, "a treated period was drawn as a baseline"
+            assert state["skipped"] == 3, state
+            assert "none as a baseline" in state["flag"], state["flag"]
+            for i in range(3):
+                assert f"rec{i}" in state["flag"], state["flag"]
             assert errs == [], errs
         finally:
             browser.close()
