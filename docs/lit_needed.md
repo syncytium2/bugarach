@@ -13,6 +13,36 @@ box. Modelled on `murderboard-lit/_NEEDED.md`, which has had this mechanism sinc
 > project holds none of, and nobody asked for the papers because there was nowhere to ask.
 > Tony, 2026-09-10: *"you're supposed to ask me for pdfs you can't get."*
 
+> ## ⚠ RESOLVE EVERY PMCID FROM NCBI. NEVER WRITE ONE FROM MEMORY.
+>
+> The first version of this file, written on 2026-09-10 **immediately after an eleven-role
+> adversarial review**, carried **three fabricated PMCIDs**. Each was plausible — right shape, right
+> era, and one of them landed on a *different paper in the same journal and the same year*:
+>
+> | written | what it actually is |
+> |---|---|
+> | PMC3289479 → Amarasingham 2012 | Hsieh TH, mechanomyography and paired-pulse TMS, *J Neurophysiol* 2012 |
+> | PMC5763468 → Elsayed & Cunningham 2017 | Ji Z, linear programming for phosphoproteomics, *BMC Syst Biol* |
+> | PMC5873297 → Platkiewicz 2017 | Sin MLY, urinary RNA sequencing, *Clin Cancer Res* |
+>
+> **Every identifier supplied by a murderboard role was correct; every one generated from memory was
+> wrong.** It cost Tony a download of the wrong paper before he caught it —
+> *"PMC3289479 is a different paper"* (2026-09-10). A wrong accession number is a **fabricated
+> citation**, the exact defect role 2 of the murderboard exists to catch, and it got in here because
+> this file was written after the review rather than inside it.
+>
+> Resolve them, don't recall them. The legacy `pmc/utils/idconv` endpoint is retired; use eutils:
+>
+> ```
+> esearch.fcgi?db=pubmed&term=<title>[Title]        # title -> PMID
+> elink.fcgi?dbfrom=pubmed&db=pmc&id=<pmid>         # PMID  -> PMCID (FIRST linkset; the long
+>                                                   #          second list is "cited by")
+> esummary.fcgi?db=pmc&id=<pmcid>                   # PMCID -> title + first author, to confirm
+> ```
+>
+> And confirm the file after download: `pdftotext -f 1 -l 1 <pdf> -` prints the title page.
+> `pdftotext` is installed on this machine (`/opt/homebrew/bin/pdftotext`).
+
 ## Where the shelf is
 
 `<darkroom>/bugarach/lit/<topic>/<first-author>_<year>_<slug>.pdf` — resolve the darkroom with
@@ -20,7 +50,7 @@ box. Modelled on `murderboard-lit/_NEEDED.md`, which has had this mechanism sinc
 a person's name and this repo is public (SAP004).
 
 Topics in use: `radar/`, `coordination/`, `DL/`, `surrogates/`, `ml/`. As of 2026-09-10 the shelf
-holds 28 papers.
+holds 29 papers.
 
 ⚠ **There is no master library.** Checked 2026-09-10: `murderboard-lit/` is its own repo of 206
 papers but on a different subject entirely — agentic reproducibility, paper-code consistency —
@@ -33,17 +63,15 @@ locations belong to other projects.
 
 ## Open
 
-- [ ] **Harrison MT & Geman S (2009).** A rate and history-preserving resampling algorithm for
-      neural spike trains. *Neural Computation* 21(5):1244–1258. **PMC3065177.**
-      → **The most important one.** This is *pattern jitter*, the leading candidate to replace the
-      surrogate that the 2026-09-10 murderboard killed. It preserves each event's recent history
-      exactly, which is what makes the lone-cell property true by construction rather than by hope.
-      Cannot be implemented from secondary description — the algorithm is a dynamic program.
-      *Blocked:* PMC returns a bot-check page to `curl`; it opens fine in a browser.
+- [x] ~~**Harrison MT & Geman S (2009).** A rate and history-preserving resampling algorithm for
+      neural spike trains. *Neural Computation* 21(5):1244–1258. PMC3065177.~~
+      **Tony fetched it 2026-09-10** → `surrogates/harrison_geman_2009_pattern_jitter.pdf`.
+      *Pattern jitter*, the leading candidate to replace the surrogate the murderboard killed, and
+      a dynamic program that cannot be implemented from a secondary description.
 
 - [ ] **Amarasingham A, Harrison MT, Hatsopoulos NG & Geman S (2012).** Conditional modeling and
       the jitter method of spike resampling. *J Neurophysiol* 107(2):517–531.
-      doi:10.1152/jn.00633.2011. **PMC3289479.**
+      doi:10.1152/jn.00633.2011. **PMC3349623** (PMID 22031767).
       → Interval/window jitter, and the conditional-inference framing — *what the resampling
       conditions on is the null hypothesis*. **Already cited in this repo's own README** for LoCo
       and CoactDetect's null, and read by nobody here. Also gates a correct statement of what our
@@ -51,7 +79,7 @@ locations belong to other projects.
       *Blocked:* same PMC bot-check; publisher copy is paywalled.
 
 - [ ] **Elsayed GF & Cunningham JP (2017).** Structure in neural population recordings: an expected
-      byproduct of simpler phenomena? *Nat Neurosci* 20:1310–1318. **PMC5763468.**
+      byproduct of simpler phenomena? *Nat Neurosci* 20:1310–1318. **PMC5577566** (PMID 28783140).
       → The canonical statement of the thesis this project keeps re-deriving: a surrogate preserving
       a specified feature set can only test whether structure exceeds what that feature set implies.
       *Blocked:* PMC bot-check; Nature paywalled; no author copy found at the Columbia lab page.
@@ -78,6 +106,7 @@ as an absence of effort.
 
 | paper | where |
 |---|---|
+| Harrison & Geman 2009, *Neural Comput* 21(5):1244–1258 | `surrogates/harrison_geman_2009_pattern_jitter.pdf` — **fetched by Tony** |
 | Louis, Gerstein, Grün & Diesmann 2010, *Front Comput Neurosci* 4:127 | `surrogates/louis_2010_operational_time_dither.pdf` |
 | Stella, Bouss, Palm & Grün 2022, *eNeuro* 9(3) | `surrogates/stella_2022_comparing_surrogates.pdf` |
 | Platkiewicz, Stark & Amarasingham 2017, *Neural Comput* 29(3):783–803 | `surrogates/platkiewicz_2017_spike_centered_jitter.pdf` |
