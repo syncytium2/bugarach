@@ -241,3 +241,180 @@ def test_pressing_turbo_opens_it_and_a_knob_redraws():
             assert errs == [], errs
         finally:
             browser.close()
+
+
+# --------------------------------------------------------------------------
+# TURBO IS THE FRONT DOOR
+#
+# Tony, 2026-09-10, opening this page to run MAHICE: the interface is painful
+# and makes no sense to him. Turbo — the mode he asked for on 2026-09-06 and
+# called the long-term solution — existed, worked, and was a ghost button in
+# the fold bar, so the default way in to MAHICE was an eleven-panel rail.
+#
+# These press nothing. That is the whole point: what is under test is where a
+# folder LANDS, and a test that clicks the button cannot see it.
+# --------------------------------------------------------------------------
+
+BASELINE_SEC = (0.0, 120.0)
+
+
+def _folder(tmp: Path, n_rec: int = 3, *, baseline: bool = True) -> Path:
+    """A minimal export folder: onsets that co-fire, and a baseline window.
+
+    Six ROIs fire together every 20 s inside the baseline, so turbo finds marks
+    at any sane K and the count does not depend on the knob defaults.
+    """
+    d = tmp / ("with_baseline" if baseline else "no_baseline")
+    d.mkdir(parents=True, exist_ok=True)
+    for i in range(n_rec):
+        rows = ["roi,time_sec"]
+        for roi in range(1, 7):
+            for k in range(1, 6):
+                # 0.05 s apart: one event by any reading, inside any bin width
+                rows.append(f"{roi},{k * 20 + roi * 0.05:.2f}")
+        (d / f"rec{i}.csv").write_text("\n".join(rows) + "\n", encoding="utf-8")
+    (d / "slices.csv").write_text(
+        "slice_id,frame_interval_sec\n"
+        + "".join(f"rec{i},0.1\n" for i in range(n_rec)), encoding="utf-8")
+    if baseline:
+        s, e = BASELINE_SEC
+        (d / "regions.csv").write_text(
+            "slice_id,region_idx,label,start_sec,end_sec\n"
+            + "".join(f"rec{i},0,baseline,{s},{e}\n" for i in range(n_rec)),
+            encoding="utf-8")
+    return d
+
+
+def _open(pg, folder: Path):
+    """Open a folder the way a person does — the file input, not a function."""
+    pg.set_input_files("#files", [str(q) for q in sorted(folder.iterdir())])
+
+
+def _page(p, tmp):
+    try:
+        browser = p.chromium.launch()
+    except Exception as e:                            # noqa: BLE001
+        pytest.skip(f"no chromium available: {type(e).__name__}")
+    pg = browser.new_page()
+    errs: list[str] = []
+    pg.on("pageerror", lambda e: errs.append(str(e)))
+    pg.goto(VIEWER.as_uri(), wait_until="load")
+    return browser, pg, errs
+
+
+def test_opening_a_real_folder_lands_in_turbo(tmp_path):
+    """No click. Open a folder and you are in turbo, because that is the job."""
+    pytest.importorskip("playwright.sync_api")
+    from playwright.sync_api import sync_playwright
+
+    with sync_playwright() as p:
+        browser, pg, errs = _page(p, tmp_path)
+        try:
+            _open(pg, _folder(tmp_path))
+            pg.wait_for_selector("#turbo:not([hidden])", timeout=30000)
+            assert pg.is_hidden("#view"), "the rail's view is still on top of turbo"
+            state = pg.evaluate(
+                """() => ({rows: TURBO.rows.length,
+                           marks: TURBO.rows.reduce((a, r) => a + r.marks.length, 0),
+                           btn: document.getElementById('turboBtn').textContent,
+                           pressed: document.getElementById('turboBtn')
+                                      .getAttribute('aria-pressed')})""")
+            assert state["rows"] == 3, state
+            assert state["marks"] > 0, "landed in turbo with nothing drawn"
+            # The button is the way OUT now, and says so without being pressed.
+            assert state["btn"] == "Leave turbo", state
+            assert state["pressed"] == "true", state
+            assert errs == [], errs
+        finally:
+            browser.close()
+
+
+def test_a_folder_with_no_baseline_stays_on_the_rail(tmp_path):
+    """Turbo skips a recording with no baseline, so such a folder builds no rows.
+
+    Landing there would stage an empty column of rasters with `#view` hidden
+    behind it and no way to read that as anything but broken. It is also what
+    `test_webapp_assessment_parity.py` opens — a folder with no `regions.csv` —
+    and that test waits on `#view`.
+    """
+    pytest.importorskip("playwright.sync_api")
+    from playwright.sync_api import sync_playwright
+
+    with sync_playwright() as p:
+        browser, pg, errs = _page(p, tmp_path)
+        try:
+            _open(pg, _folder(tmp_path, baseline=False))
+            pg.wait_for_selector("#view:not([hidden])", timeout=30000)
+            assert pg.is_hidden("#turbo"), "landed in a turbo with no rows"
+            assert errs == [], errs
+        finally:
+            browser.close()
+
+
+def test_leaving_turbo_is_remembered_across_a_reload(tmp_path):
+    """Somebody who left turbo is working on the rail and wants it every time.
+
+    The counterpart matters as much: arriving in turbo must NOT write the
+    preference, or the first automatic entry would pin the choice forever.
+    """
+    pytest.importorskip("playwright.sync_api")
+    from playwright.sync_api import sync_playwright
+
+    folder = _folder(tmp_path)
+    with sync_playwright() as p:
+        browser, pg, errs = _page(p, tmp_path)
+        try:
+            _open(pg, folder)
+            pg.wait_for_selector("#turbo:not([hidden])", timeout=30000)
+            # Arriving is not a preference: nothing is stored yet.
+            assert pg.evaluate(
+                "() => localStorage.getItem('bugarach.turbofront')") is None
+
+            pg.click("#turboBtn")                     # leave, deliberately
+            pg.wait_for_selector("#view:not([hidden])", timeout=10000)
+            assert pg.evaluate(
+                "() => localStorage.getItem('bugarach.turbofront')") == "off"
+
+            pg.reload(wait_until="load")
+            _open(pg, folder)
+            pg.wait_for_selector("#view:not([hidden])", timeout=30000)
+            assert pg.is_hidden("#turbo"), "a declined front door reopened itself"
+
+            # And going back in clears the departure rather than storing a second
+            # flavour of it — the key records only a departure.
+            pg.click("#turboBtn")
+            pg.wait_for_selector("#turbo:not([hidden])", timeout=20000)
+            assert pg.evaluate(
+                "() => localStorage.getItem('bugarach.turbofront')") is None
+            assert errs == [], errs
+        finally:
+            browser.close()
+
+
+def test_a_second_folder_does_not_show_the_first_ones_rows(tmp_path):
+    """`turboLoad` only ran when `TURBO` was null, and opening a folder never
+    cleared it — so the second folder opened showing the FIRST one's baselines.
+
+    Latent while turbo was a button somebody pressed once. A defect the moment
+    opening a folder is what puts you there.
+    """
+    pytest.importorskip("playwright.sync_api")
+    from playwright.sync_api import sync_playwright
+
+    three = _folder(tmp_path / "a", n_rec=3)
+    five = _folder(tmp_path / "b", n_rec=5)
+    with sync_playwright() as p:
+        browser, pg, errs = _page(p, tmp_path)
+        try:
+            _open(pg, three)
+            pg.wait_for_selector("#turbo:not([hidden])", timeout=30000)
+            assert pg.evaluate("() => TURBO.rows.length") == 3
+
+            _open(pg, five)
+            pg.wait_for_function(
+                "() => TURBO && TURBO.rows.length === 5", timeout=30000)
+            ids = pg.evaluate("() => TURBO.rows.map(r => r.id).sort()")
+            assert ids == [f"rec{i}" for i in range(5)], ids
+            assert errs == [], errs
+        finally:
+            browser.close()

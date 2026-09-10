@@ -9,7 +9,7 @@
      rather than naming a sha this page could not know — the reasoning is at the
      visible stamp. -->
 <meta name="bugarach:born" content="2026-08-13">
-<meta name="bugarach:version-date" content="2026-09-06">
+<meta name="bugarach:version-date" content="2026-09-10">
 <meta name="bugarach:commit" content="content-addressed">
 <!--
   The raster viewer, client side.
@@ -699,8 +699,13 @@
   <!-- In the always-visible bar rather than inside a step. Turbo is a way of
        looking at the WHOLE folder, so it cannot live behind one step of the
        pipeline — and the reader reaches for it precisely when the step-by-step
-       loop is the thing slowing them down. -->
-  <button id="turboBtn" class="ghost" aria-pressed="false">Turbo</button>
+       loop is the thing slowing them down.
+       NAMED FOR THE JOB, not for the mode. "Turbo" says how it goes, not what
+       it is for, and MAHICE appeared nowhere in this page's interface while
+       being the one thing a person opens it to do. Opening a real folder now
+       lands here, so this button is what somebody presses to LEAVE — but it is
+       still the only place the word appears when they are on the rail. -->
+  <button id="turboBtn" class="ghost" aria-pressed="false">MAHICE turbo</button>
   <span class="lab" id="railWhere"></span>
 </div>
 <nav id="rail" aria-label="pipeline"></nav>
@@ -892,7 +897,11 @@
          1: an assessment is a record containing a judgement, not a number with a
          caveat beside it. -->
     <details class="acc" id="accAnnotate">
-      <summary>Confirm the events<span class="cnt" id="cntAnnot">assess first</span></summary>
+      <!-- NAMED. This panel is MAHICE, and the page called it "Confirm the
+           events" — so the one step whose name everything else in the project
+           uses (the glossary, the run records, `mahice.json`, every handoff)
+           could not be found by looking for it. -->
+      <summary>MAHICE — confirm the events<span class="cnt" id="cntAnnot">assess first</span></summary>
       <!-- A REVIEW THAT SURVIVES A RELOAD. Judging is hours of a person's
            attention, and it used to live in one page global: a refresh, a crash
            or a closed tab took every verdict with it, silently, with nothing
@@ -1754,10 +1763,10 @@
      a page edited without bumping it turns CI red instead of shipping a date
      that has quietly become a lie. Bump it when you edit this page. -->
 <p class="site-dates" data-bugarach-born="2026-08-13"
-   data-bugarach-version-date="2026-09-06"
+   data-bugarach-version-date="2026-09-10"
    data-bugarach-commit="content-addressed"
    style="margin:1.5rem max(1.2rem, calc(50% - 23rem));color:#666;font-size:.85rem">
-  First published 2026-08-13 · this version 2026-09-06 · identified by its own
+  First published 2026-08-13 · this version 2026-09-10 · identified by its own
   bytes rather than by a build stamp
 </p>
 
@@ -2712,14 +2721,48 @@ function paintTurboWhat() {
     : "whole baseline";
 }
 
-async function turboToggle() {
-  const on = document.getElementById("turbo").hidden;
+/* TURBO IS THE FRONT DOOR, not a toggle off the rail.
+
+   Tony, 2026-09-10, opening this page to run MAHICE: the interface is painful
+   and does not make sense to him. The diagnosis is the shape this page keeps
+   producing — a thing that exists, works, and cannot be reached from where the
+   reader is standing. Turbo shipped as a ghost button in the fold bar, so the
+   default way in to MAHICE was the eleven-panel rail, and the one job he came
+   to do was the fifth panel down.
+
+   He had already called it: 2026-09-06, "we need a turbo mode for mahice. this
+   interface is going to crush progress... i think it is the long term
+   solution". A mode you must know to ask for is not a solution to that.
+
+   So opening a folder LANDS in turbo, and leaving is a choice this remembers.
+   Same shape as the rail fold and Terse above — somebody who left turbo once is
+   working in the pipeline and wants it every time, not once per reload. */
+const TURBO_KEY = "bugarach.turbofront";
+/* Default ON, so the key records only a departure. Stored as "off" rather than
+   as a truthy "on" for exactly that reason: a reader with no key has not
+   declined, and the front door is what they get. Mirrors DEMO_KEY. */
+function turboIsFrontDoor() {
+  try { return localStorage.getItem(TURBO_KEY) !== "off"; }
+  catch (e) { return true; }   // storage off: the front door, every visit
+}
+function rememberTurboChoice(on) {
+  try {
+    on ? localStorage.removeItem(TURBO_KEY)
+       : localStorage.setItem(TURBO_KEY, "off");
+  } catch (e) { /* storage off — the choice holds for this visit only */ }
+}
+
+/* The state change, with no opinion about who asked for it. Split out of
+   `turboToggle` so opening a folder can put you in turbo without the button
+   having been pressed — and, more importantly, so entering turbo automatically
+   does NOT write a preference. Only a person pressing the button does that. */
+async function setTurbo(on) {
   if (on && !RECORDINGS.length) return;
   document.getElementById("turbo").hidden = !on;
   document.getElementById("view").hidden = on || !RECORDINGS.length;
   const b = document.getElementById("turboBtn");
   if (b) {
-    b.textContent = on ? "Leave turbo" : "Turbo";
+    b.textContent = on ? "Leave turbo" : "MAHICE turbo";
     b.setAttribute("aria-pressed", String(on));
   }
   if (!on) return;
@@ -2728,6 +2771,16 @@ async function turboToggle() {
     try { await turboLoad(); } finally { TURBO_BUSY = false; }
   }
   turboDraw();
+}
+
+/* The button. Flips, and the flip is remembered — this is the one path that
+   records a preference, because it is the one where somebody said what they
+   wanted. */
+async function turboToggle() {
+  const on = document.getElementById("turbo").hidden;
+  if (on && !RECORDINGS.length) return;
+  rememberTurboChoice(on);
+  await setTurbo(on);
 }
 
 /* Any knob redraws. Debounced only enough to survive a held arrow key on a
@@ -3794,6 +3847,15 @@ async function open(fileList, opts) {
   // recordings that are about to be replaced.
   FOLDER_ASSESS = null;
   RECORDINGS = []; REGIONS = new Map(); META = new Map();
+  /* AND TURBO'S ROWS, which are the last folder's baselines — its ROI counts,
+     its onset trains, its durations. `turboToggle` only ever built them when
+     `TURBO` was null, so without this line opening a second folder showed the
+     FIRST one's column of rasters, with the new folder's name nowhere on it and
+     the knobs live over stale data. Latent while turbo was a button somebody
+     pressed once; a defect the moment turbo is where opening a folder lands.
+     The zoom goes too — a window centred in one folder's longest baseline means
+     nothing in the next one's. */
+  TURBO = null; TURBO_SPAN = null; TURBO_MID = null;
   /* THE STREAM IN PLAY IS A PROPERTY OF THE FOLDER, so it goes with it. A
      folder holding one stream never names one; a folder holding two is asked,
      at the door, before anything is computed. */
@@ -3929,6 +3991,35 @@ async function open(fileList, opts) {
   // in: the step is reachable now, and without this its gate is BLANK, so it
   // explains nothing and offers no way forward.
   paintAnnotChip();
+  /* AND THIS IS WHERE A FOLDER LANDS IN TURBO. Before the folder check below,
+     which walks every file: turbo is what somebody opened the folder to reach,
+     so it goes up first and the check catches up behind it.
+
+     NOT FOR A SIMULATED FOLDER, and that is the load-bearing half of the
+     condition. Turbo's whole purpose is setting K against the eye on real
+     recordings; dropping the reader into it on invented data would invite a K
+     tuned against the generator's own planted events, which is the answer
+     assuming itself. A simulated folder still opens on the rail, exactly as it
+     did — which is also what keeps the landing demo unchanged.
+
+     `setTurbo`, not `turboToggle`: arriving here is not a preference, so it must
+     not overwrite one. Someone who left turbo stays out of it, and this same
+     call is what puts them back on the rail with the view visible.
+
+     AND ONLY IF TURBO HAS SOMETHING TO SHOW. Turbo reads each recording's
+     BASELINE window and skips a recording without one (FOUNDATIONS §9: K is
+     tuned on untreated slices or it is tuned on the answer), so a folder
+     carrying no `regions.csv` — or none with a baseline — builds zero rows.
+     Landing a reader in an empty column of rasters is a worse front door than
+     the rail, and it would strand them: `#view` hidden, nothing in its place.
+     So the rows are built FIRST and the view only moves if there are any. */
+  if (!SIMULATED && turboIsFrontDoor()) {
+    if (!TURBO && !TURBO_BUSY) {
+      TURBO_BUSY = true;
+      try { await turboLoad(); } finally { TURBO_BUSY = false; }
+    }
+    if (TURBO && TURBO.rows.length) await setTurbo(true);
+  }
   // the first raster goes up before the folder is checked: seeing something is
   // the point of opening it, and the check walks every file
   document.getElementById("checkbar").hidden = false;
@@ -11512,7 +11603,7 @@ const TRACK_TOP = [
   // from the assessment, and nothing between them used to record whether a
   // person believed any of the candidates the parameters came from.
   { key: "accAnnotate", panel: "accAnnotate", group: "measurement",
-    label: "Confirm the events",
+    label: "MAHICE — confirm the events",
     need: "assess something first",
     ready: () => typeof collectCandidates === "function"
                  && collectCandidates().length > 0 },
@@ -11572,7 +11663,9 @@ const stepByKey = k => ALL_STEPS.find(s => s.key === k);
    distinct from each other at a glance, which is the only job they have. */
 const RAIL_SHORT = {
   accOpen: "Folder", accSim: "Simulate", accList: "Recordings",
-  accWindows: "Windows", accAssess: "Assess", accAnnotate: "Confirm",
+  // "MAHICE" rather than "Confirm": terse gets one word per box, and of the two
+  // words this step has, the project's own name for it is the more findable.
+  accWindows: "Windows", accAssess: "Assess", accAnnotate: "MAHICE",
   simFrom: "Model", accVerify: "Check", accTune: "Tune",
   accDetect: "Detect", accLab: "Learn", accScore: "Score",
 };
