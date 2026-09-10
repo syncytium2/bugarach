@@ -10,6 +10,72 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
+### Mac/claim-the-site-for-the-viewer — SITE claim ACTIVE: `bugarach.tonydefazio.com`
+- **Status:** **ACTIVE 2026-09-10. THE SITE IS HELD BY THIS CLAIM.** No other session may
+  run `npm run deploy` or `wrangler deploy` while this block reads ACTIVE.
+- **Authority, stated precisely because it is partial.** Tony asked for the claim to be
+  **opened and landed so it is waiting** — *"open the claim PR now so it's landed and
+  waiting"*, answered *"yes go"*. That is authority to **reserve**, not to publish. **He has
+  not said deploy**, and this session could not deploy regardless: `npm run deploy` needs a
+  Cloudflare credential no session here holds, so the publish is his to run.
+- **`DEPLOY_HOLD.md` re-read at claim time** rather than trusted from earlier in the
+  session: `held: no`, `set-by: Tony`, released 2026-09-01 because the condition was met.
+  Recorded because a previous deployer found that file alone refused as authority, and the
+  refusal was right.
+- **What a deploy would publish.** `site_staleness.py` at claim time: built from `3cb89fd`
+  (2026-09-08), **behind by 30 commits, 4 of which change what it serves — and all four are
+  this session's**:
+  `d91ce08` turbo is the front door · `7989427` no regions declared means the whole trace,
+  flagged · `5a786f4` the reader names their own baseline · `d40fdcc` that designation stays
+  visible once it takes effect. Landed as #516, #517, #518.
+  The other 26 touch code, docs or tests the build does not read — with the standing caveat
+  that `hero.png` renders from `src/bugarach`, so a detector change can move the published
+  picture without appearing in that list. Nothing in those three PRs touches a detector.
+- ⚠ **NOBODY HAS RUN ANY OF IT ON REAL DATA, and that is the reason to hold rather than
+  publish.** All three PRs are verified by the suite and by synthetic export folders written
+  for the tests. The turbo front door has never been opened on the approved export folder,
+  and the baseline designation has never met this lab's real region labels. FOUNDATIONS §8
+  makes this page a portfolio artifact read by outsiders, so publishing before the person it
+  was built for has opened his own folder in it is the wrong order. **The recommended
+  sequence is: move the detached `mahice` worktree to `origin/main`, open the real folder,
+  then deploy.**
+- ⚠ **One sentence in the new UI makes a scientific claim** and is now public copy if this
+  ships: the assumption notice says that where a folder declares no regions the whole trace
+  is used, and *"if any of them is a treated preparation, a K set here is set on drug time"*.
+  It is defensible and it is deliberate — but it is the kind of line worth reading before
+  publication rather than after.
+- **Traps honoured**, both from `Mac/deploy-the-figure-and-the-viewer` below: `npm run
+  deploy` runs **only in the primary checkout** (`node_modules` lives nowhere else), and
+  this claim is written from a **different worktree than the build**, so
+  `merge_when_green.sh` reaping it cannot take a built `site/` payload with it. And the
+  ordering defect that block records honestly — a claim PR open but unmerged while the
+  deploy ran — is the whole reason this claim is being landed first.
+- **Release it** if the deploy does not happen: a claim left ACTIVE over an unpublished site
+  is the board rot this file already suffers from — 59 ACTIVE blocks against 11 live
+  worktrees at the start of this session.
+- **Holds:** `bugarach.tonydefazio.com` only. No darkroom, no MATLAB, no export reads.
+
+### Mac/turbo-and-the-baseline-rules — darkroom writes, recorded late
+- **Status:** RELEASED 2026-09-10, holds nothing. **Filed as a correction rather than a
+  claim**, because the writes had already happened when it was written.
+- ⚠ **Three files were written to the darkroom without claiming it here first**, which this
+  file is exactly the board for — the darkroom is mounted on every machine:
+  `<darkroom>/bugarach/front_door.png`, and `<darkroom>/designate-the-baseline/`
+  `designate_before.png` + `designate_after.png`.
+- **What they are:** UI screenshots of the viewer, rendered from **synthetic** recordings
+  written for the purpose. No lab data, no run artifact, nothing derived from the export
+  folder. Safe to delete; they collide with no run folder and are nowhere near
+  `constellation/`.
+- **How it happened**, since the mechanism is the useful part: `SendUserFile` returned
+  success while (per the local hook) delivering nothing in this editor, and the hook's
+  suggested fallback is `tools/show.py` — which resolves to `darkroom()`. So the first write
+  went there without a decision being made about the darkroom at all. Noticed, corrected on
+  the machine-local board, and then repeated twice more on that same wrong board before
+  being filed here.
+- ⚠ **`front_door.png` sits at the darkroom ROOT**, beside real run directories, rather than
+  in a subdirectory of its own. Untidy rather than harmful. Tony has been asked whether to
+  move it in with the other two or delete all three; **not touched pending his answer.**
+
 ### Mac/full-cohort-senktide-ttx — DARKROOM claim: `bugarach/2026-09-09-full-cohort-senktide-ttx/`
 - **Status:** ACTIVE 2026-09-09. The full senktide and TTX cohorts through the loop —
   assess, spec, simulate, calibrate, train, held-out comparison, detect, figures. Successor
