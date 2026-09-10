@@ -1,5 +1,13 @@
 # Handoff — the loop closes; both of pipeline.md's blockers are gone
 
+> ⚠ **A SECOND THREAD IS ALSO LIVE, and it is not this one.** The detector-design thread — a
+> self-supervised coordinated-event detector, proposed on 2026-09-10 and stopped by its own
+> eleven-role review — hands off in
+> [`docs/handoffs/2026-09-10-the-surrogate-is-the-design.md`](docs/handoffs/2026-09-10-the-surrogate-is-the-design.md).
+> It concerns `learn/`, the surrogate nulls and the literature shelf; **this file concerns none of
+> those, and neither supersedes the other.** What it leaves open are decisions for Tony, not a
+> queue. When one thread lands, delete only its own file.
+
 **In flight: [#466](https://github.com/syncytium2/bugarach/pull/466)** alone — the field-step
 figure, still held because it is a figure with a caption and was never murderboarded.
 **Everything this session opened is merged:**
