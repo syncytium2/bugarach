@@ -50,7 +50,7 @@ box. Modelled on `murderboard-lit/_NEEDED.md`, which has had this mechanism sinc
 a person's name and this repo is public (SAP004).
 
 Topics in use: `radar/`, `coordination/`, `DL/`, `surrogates/`, `ml/`. As of 2026-09-10 the shelf
-holds 29 papers.
+holds 31 papers — six of them on surrogate methods, a topic the shelf held nothing on before this date.
 
 ⚠ **There is no master library.** Checked 2026-09-10: `murderboard-lit/` is its own repo of 206
 papers but on a different subject entirely — agentic reproducibility, paper-code consistency —
@@ -69,20 +69,19 @@ locations belong to other projects.
       *Pattern jitter*, the leading candidate to replace the surrogate the murderboard killed, and
       a dynamic program that cannot be implemented from a secondary description.
 
-- [ ] **Amarasingham A, Harrison MT, Hatsopoulos NG & Geman S (2012).** Conditional modeling and
-      the jitter method of spike resampling. *J Neurophysiol* 107(2):517–531.
-      doi:10.1152/jn.00633.2011. **PMC3349623** (PMID 22031767).
-      → Interval/window jitter, and the conditional-inference framing — *what the resampling
-      conditions on is the null hypothesis*. **Already cited in this repo's own README** for LoCo
-      and CoactDetect's null, and read by nobody here. Also gates a correct statement of what our
-      existing detectors' null actually means.
-      *Blocked:* same PMC bot-check; publisher copy is paywalled.
+- [x] ~~**Amarasingham A, Harrison MT, Hatsopoulos NG & Geman S (2012).** Conditional modeling and
+      the jitter method of spike resampling. *J Neurophysiol* 107(2):517–531.~~
+      **Tony fetched it 2026-09-10**, publisher version →
+      `surrogates/amarasingham_2012_jitter_method.pdf`. Interval/window jitter and the
+      conditional-inference framing — *what the resampling conditions on is the null hypothesis*.
+      **Was already cited in this repo's own README** for LoCo and CoactDetect's null, and read by
+      nobody in it until now.
 
-- [ ] **Elsayed GF & Cunningham JP (2017).** Structure in neural population recordings: an expected
-      byproduct of simpler phenomena? *Nat Neurosci* 20:1310–1318. **PMC5577566** (PMID 28783140).
-      → The canonical statement of the thesis this project keeps re-deriving: a surrogate preserving
-      a specified feature set can only test whether structure exceeds what that feature set implies.
-      *Blocked:* PMC bot-check; Nature paywalled; no author copy found at the Columbia lab page.
+- [x] ~~**Elsayed GF & Cunningham JP (2017).** Structure in neural population recordings: an
+      expected byproduct of simpler phenomena? *Nat Neurosci* 20:1310–1318.~~
+      **Tony fetched it 2026-09-10** → `surrogates/elsayed_cunningham_2017_byproduct.pdf`. The
+      canonical statement of the thesis this project keeps re-deriving: a surrogate preserving a
+      specified feature set can only test whether structure exceeds what that feature set implies.
 
 - [ ] **Hansen VG (1973).** Constant false alarm rate processing in search radars. Proc. IEE
       International Radar Conference, IEE Conf. Publ. **105**, 325–332.
@@ -107,6 +106,8 @@ as an absence of effort.
 | paper | where |
 |---|---|
 | Harrison & Geman 2009, *Neural Comput* 21(5):1244–1258 | `surrogates/harrison_geman_2009_pattern_jitter.pdf` — **fetched by Tony** |
+| Amarasingham, Harrison, Hatsopoulos & Geman 2012, *J Neurophysiol* 107:517–531 | `surrogates/amarasingham_2012_jitter_method.pdf` — **fetched by Tony**, publisher version |
+| Elsayed & Cunningham 2017, *Nat Neurosci* 20:1310–1318 | `surrogates/elsayed_cunningham_2017_byproduct.pdf` — **fetched by Tony**, publisher version |
 | Louis, Gerstein, Grün & Diesmann 2010, *Front Comput Neurosci* 4:127 | `surrogates/louis_2010_operational_time_dither.pdf` |
 | Stella, Bouss, Palm & Grün 2022, *eNeuro* 9(3) | `surrogates/stella_2022_comparing_surrogates.pdf` |
 | Platkiewicz, Stark & Amarasingham 2017, *Neural Comput* 29(3):783–803 | `surrogates/platkiewicz_2017_spike_centered_jitter.pdf` |
