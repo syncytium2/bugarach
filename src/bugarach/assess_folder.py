@@ -40,10 +40,29 @@ from bugarach.dataset import preferred_stream
 BASELINE_TOKENS = ("baseline", "base", "pre", "control", "acsf")
 
 
-def is_baseline(region) -> bool:
-    """True when a region's own name says it is untreated."""
+def is_baseline(region, designated: tuple[str, ...] | None = None) -> bool:
+    """True when this region is the untreated one.
+
+    ``designated`` is what the READER said their baseline is called, and when
+    it is given it REPLACES the vocabulary above rather than adding to it.
+    Replacing is the point: a lab that designates ``vehicle`` and also has a
+    period called ``pre-wash`` means the first one, and a rule that kept
+    guessing alongside the designation would quietly measure the other.
+
+    Tony, 2026-09-10 — *"can we use whatever the user provides as baseline.
+    maybe they call it control, or 'pre'"*. Both of those were already in the
+    list; the ones that were not (``vehicle``, ``naive``, ``ctrl``) had no way
+    in at all, and the folder walk skipped those recordings rather than asking.
+    The answer is not a longer list. This page's own rule is that **the
+    baseline is designated, not detected** — the tokens are the opening guess
+    for a reader who has not said, and nothing more.
+
+    Matching is a case-insensitive prefix either way, so ``vehicle`` covers
+    ``Vehicle 2`` the same way ``pre`` covers ``pre-drug``.
+    """
     name = (getattr(region, "name", None) or "").strip().lower()
-    return bool(name) and any(name.startswith(t) for t in BASELINE_TOKENS)
+    want = tuple(d.strip().lower() for d in (designated or ()) if d.strip())
+    return bool(name) and any(name.startswith(t) for t in (want or BASELINE_TOKENS))
 
 
 @dataclass
@@ -107,7 +126,9 @@ def assess_folder(folder, *, stream: str | None = None,
                   n_surrogates: int = 1000, bin_width_sec: float | None = None,
                   limit: int | None = None, progress=None,
                   min_rois=None, min_rois_frac=None,
-                  min_rois_floor: int | None = None) -> FolderAssessment:
+                  min_rois_floor: int | None = None,
+                  baseline_labels: tuple[str, ...] | None = None,
+                  ) -> FolderAssessment:
     """Assess every recording in an export folder that may be assessed.
 
     Reads the folder with the same loader the rest of bugarach uses, so a folder
@@ -163,10 +184,19 @@ def assess_folder(folder, *, stream: str | None = None,
             window = None
             rec.window_source = "whole recording (no regions declared)"
         else:
-            base = [r for r in regions if is_baseline(r)]
+            base = [r for r in regions if is_baseline(r, baseline_labels)]
             if not base:
+                # Name what IS there. The reader's next move is to designate one
+                # of these, and they cannot do that without knowing what the
+                # folder calls its periods — "none named as a baseline" alone
+                # sends them to open a CSV.
+                seen = sorted({(r.name or "(unnamed)") for r in regions})
+                how = (f"you designated {', '.join(baseline_labels)}"
+                       if baseline_labels else
+                       f"looked for {', '.join(BASELINE_TOKENS)}")
                 rec.skipped = (
-                    f"{len(regions)} region(s), none named as a baseline — "
+                    f"{len(regions)} region(s), none named as a baseline "
+                    f"({how}; this recording has {', '.join(seen)}) — "
                     f"coordination properties are not taken from treatments")
                 continue
             r = max(base, key=lambda r: r.end_sec - r.start_sec)
@@ -178,14 +208,18 @@ def assess_folder(folder, *, stream: str | None = None,
             # and it was live for a few hours on 2026-08-18, with the viewer
             # shading the analysis window and both assessors measuring the raw
             # one.
+            # Who decided this region was the baseline travels with the window,
+            # because "we matched your word" and "we guessed from a built-in
+            # list" are different claims and only one of them is the reader's.
+            why = " (you designated it)" if baseline_labels else ""
             if r.has_analysis_window:
                 window = (float(r.analysis_start_sec), float(r.analysis_end_sec))
-                rec.window_source = (f"baseline region {r.name!r}, "
+                rec.window_source = (f"baseline region {r.name!r}{why}, "
                                      f"analysis window as the folder states it")
             else:
                 window = (r.start_sec, r.end_sec)
-                rec.window_source = (f"baseline region {r.name!r}, whole period "
-                                     f"(no analysis window sent)")
+                rec.window_source = (f"baseline region {r.name!r}{why}, whole "
+                                     f"period (no analysis window sent)")
             rec.window = window
 
         try:

@@ -504,3 +504,154 @@ def test_a_second_folder_does_not_show_the_first_ones_rows(tmp_path):
             assert errs == [], errs
         finally:
             browser.close()
+
+
+# --------------------------------------------------------------------------
+# DESIGNATION BEATS DETECTION
+#
+# Tony, 2026-09-10: "can we use whatever the user provides as baseline. maybe
+# they call it control, or 'pre'". Both of those were already in
+# BASELINE_TOKENS; a name that is not (`vehicle`, `naive`, `ctrl`) had no way
+# in at all and the folder walk skipped the recording. His call was that
+# designation wins and the token list is only the opening guess — which is also
+# what this page already says about itself: the baseline is DESIGNATED, not
+# detected, and a fourth guessing rule would be the worst of them.
+# --------------------------------------------------------------------------
+
+
+def _two_period_folder(tmp: Path, base_label: str, n_rec: int = 3) -> Path:
+    """Two declared periods: an untreated one under `base_label`, then a drug.
+
+    The events differ per period on purpose — co-firing in the first, quiet in
+    the second — so a test can tell WHICH period was measured rather than only
+    that something was.
+    """
+    d = tmp / f"two_period_{base_label}"
+    d.mkdir(parents=True, exist_ok=True)
+    for i in range(n_rec):
+        rows = ["roi,time_sec"]
+        for roi in range(1, 7):
+            for k in range(1, 6):                      # co-fire inside 0..120
+                rows.append(f"{roi},{k * 20 + roi * 0.05:.2f}")
+            rows.append(f"{roi},{200 + roi * 9}")      # sparse inside 120..300
+        (d / f"rec{i}.csv").write_text("\n".join(rows) + "\n", encoding="utf-8")
+    (d / "slices.csv").write_text(
+        "slice_id,frame_interval_sec\n"
+        + "".join(f"rec{i},0.1\n" for i in range(n_rec)), encoding="utf-8")
+    (d / "regions.csv").write_text(
+        "slice_id,region_idx,label,start_sec,end_sec\n"
+        + "".join(f"rec{i},1,{base_label},0,120\nrec{i},2,senktide,120,300\n"
+                  for i in range(n_rec)), encoding="utf-8")
+    return d
+
+
+def test_a_label_off_the_list_is_refused_then_designated(tmp_path):
+    """`vehicle` is untreated and no built-in token knows the word.
+
+    Refused first — which is correct, because nothing has told the page that
+    `vehicle` is not a drug — and then measured once the reader says so, on THE
+    DESIGNATED PERIOD rather than on the whole recording. The window is the
+    assertion that matters: sweeping in the senktide half would be the
+    FOUNDATIONS §9 error wearing a fix's clothes.
+    """
+    pytest.importorskip("playwright.sync_api")
+    from playwright.sync_api import sync_playwright
+
+    with sync_playwright() as p:
+        browser, pg, errs = _page(p, tmp_path)
+        try:
+            _open(pg, _two_period_folder(tmp_path, "vehicle"))
+            pg.wait_for_function(
+                "() => typeof RECORDINGS !== 'undefined' && RECORDINGS.length === 3",
+                timeout=30000)
+            pg.click("#turboBtn")
+            pg.wait_for_function(
+                "() => typeof TURBO !== 'undefined' && TURBO !== null",
+                timeout=30000)
+            assert pg.evaluate("() => TURBO.rows.length") == 0
+            assert pg.evaluate("() => TURBO.skipped.length") == 3
+            # The refusal offers what the folder actually calls its periods —
+            # the reader cannot designate a name nobody has shown them.
+            offered = pg.evaluate(
+                "() => [...document.querySelectorAll('button.designate')]"
+                ".map(b => b.textContent).sort()")
+            assert offered == ["senktide", "vehicle"], offered
+            # ...and the empty state does not print a settings sentence about
+            # nothing: Math.min of no rows is Infinity.
+            assert "Infinity" not in pg.evaluate(
+                "() => document.getElementById('turboWhat').textContent")
+
+            pg.click("button.designate:has-text('vehicle')")
+            pg.wait_for_function("() => TURBO && TURBO.rows.length === 3",
+                                 timeout=30000)
+            state = pg.evaluate(
+                """() => ({dur: TURBO.rows[0].dur,
+                           marks: TURBO.rows.reduce((a, r) => a + r.marks.length, 0),
+                           assumed: TURBO.rows.filter(r => r.assumed).length})""")
+            # 0..120 — the vehicle period, NOT 0..300 and not the whole trace.
+            assert 119.0 <= state["dur"] <= 121.0, state
+            assert state["marks"] > 0, state
+            assert state["assumed"] == 0, "a designated window is not an assumption"
+
+            # The choice stays visible and reversible. Nothing is refused any
+            # more — BECAUSE of the designation — and if the notice vanished
+            # with the refusal, nothing would say which period is being
+            # measured and there would be no way back to the built-in names.
+            after = pg.evaluate(
+                """() => ({hidden: document.getElementById('turboFlag').hidden,
+                           text: document.getElementById('turboFlag').textContent,
+                           on: [...document.querySelectorAll('button.designate')]
+                                 .filter(b => b.getAttribute('aria-pressed') === 'true')
+                                 .map(b => b.textContent)})""")
+            assert after["hidden"] is False, "the designation became invisible"
+            assert after["on"] == ["vehicle"], after
+            assert "use the usual names" in after["text"], after["text"]
+            assert errs == [], errs
+        finally:
+            browser.close()
+
+
+def test_designating_replaces_the_guess_rather_than_joining_it(tmp_path):
+    """A folder with BOTH a designated name and one the built-in list knows.
+
+    `pre-wash` matches the token `pre`. Designating `vehicle` has to mean
+    vehicle — if the guess kept running alongside, the longest match would win
+    and the page would measure the wrong period while reporting a designation.
+    """
+    pytest.importorskip("playwright.sync_api")
+    from playwright.sync_api import sync_playwright
+
+    d = tmp_path / "both"
+    d.mkdir(parents=True, exist_ok=True)
+    for i in range(2):
+        rows = ["roi,time_sec"]
+        for roi in range(1, 7):
+            for k in range(1, 6):
+                rows.append(f"{roi},{k * 20 + roi * 0.05:.2f}")   # in vehicle
+            rows.append(f"{roi},{400 + roi * 9}")                 # in pre-wash
+        (d / f"rec{i}.csv").write_text("\n".join(rows) + "\n", encoding="utf-8")
+    (d / "slices.csv").write_text(
+        "slice_id,frame_interval_sec\nrec0,0.1\nrec1,0.1\n", encoding="utf-8")
+    # pre-wash is the LONGER period, so "longest baseline wins" would take it.
+    (d / "regions.csv").write_text(
+        "slice_id,region_idx,label,start_sec,end_sec\n"
+        + "".join(f"rec{i},1,vehicle,0,120\nrec{i},2,pre-wash,120,600\n"
+                  for i in range(2)), encoding="utf-8")
+
+    with sync_playwright() as p:
+        browser, pg, errs = _page(p, tmp_path)
+        try:
+            _open(pg, d)
+            # `pre-wash` matches out of the box, so this folder is NOT refused —
+            # it lands in turbo measuring the wrong period.
+            pg.wait_for_selector("#turbo:not([hidden])", timeout=30000)
+            assert 479.0 <= pg.evaluate("() => TURBO.rows[0].dur") <= 481.0
+
+            pg.evaluate("() => designateBaseline(['vehicle'])")
+            pg.wait_for_function(
+                "() => TURBO && TURBO.rows.length === 2 && TURBO.rows[0].dur < 200",
+                timeout=30000)
+            assert 119.0 <= pg.evaluate("() => TURBO.rows[0].dur") <= 121.0
+            assert errs == [], errs
+        finally:
+            browser.close()
