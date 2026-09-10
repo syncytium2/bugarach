@@ -592,6 +592,20 @@ def test_a_label_off_the_list_is_refused_then_designated(tmp_path):
             assert 119.0 <= state["dur"] <= 121.0, state
             assert state["marks"] > 0, state
             assert state["assumed"] == 0, "a designated window is not an assumption"
+
+            # The choice stays visible and reversible. Nothing is refused any
+            # more — BECAUSE of the designation — and if the notice vanished
+            # with the refusal, nothing would say which period is being
+            # measured and there would be no way back to the built-in names.
+            after = pg.evaluate(
+                """() => ({hidden: document.getElementById('turboFlag').hidden,
+                           text: document.getElementById('turboFlag').textContent,
+                           on: [...document.querySelectorAll('button.designate')]
+                                 .filter(b => b.getAttribute('aria-pressed') === 'true')
+                                 .map(b => b.textContent)})""")
+            assert after["hidden"] is False, "the designation became invisible"
+            assert after["on"] == ["vehicle"], after
+            assert "use the usual names" in after["text"], after["text"]
             assert errs == [], errs
         finally:
             browser.close()

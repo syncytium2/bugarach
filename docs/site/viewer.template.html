@@ -2846,7 +2846,15 @@ function paintTurboFlag() {
   if (!f || !TURBO) return;
   const assumed = TURBO.rows.filter(r => r.assumed).map(r => r.id);
   const skipped = TURBO.skipped || [];
-  if (!assumed.length && !skipped.length) { f.hidden = true; f.textContent = ""; return; }
+  /* A DESIGNATION KEEPS THE NOTICE OPEN even when nothing is assumed or
+     skipped — which is the usual outcome, because designating is what fixed
+     the skips. Otherwise the notice that carried the choice vanishes the
+     instant it takes effect: nothing would say which period is being measured,
+     and there would be no way back to the built-in names. A setting that
+     changes WHICH DATA is measured does not get to be invisible. */
+  if (!assumed.length && !skipped.length && !BASELINE_DESIGNATED.length) {
+    f.hidden = true; f.textContent = ""; return;
+  }
   const list = ids => {
     const shown = ids.slice(0, 6).join(", ");
     return ids.length > 6 ? shown + ", … (" + ids.length + " in all)" : shown;
@@ -2892,6 +2900,12 @@ function paintTurboFlag() {
        to know to go and find. */
     const offer = [...new Set(skipped.flatMap(s => s.labels || []))].sort();
     if (offer.length) f.append(designateRow(offer));
+  } else if (BASELINE_DESIGNATED.length) {
+    /* Nothing is being refused any more — usually BECAUSE of the designation.
+       The choice still has to be visible and reversible, so the row is offered
+       over every label in the folder rather than over the (now empty) set of
+       refused ones. */
+    f.append(designateRow(folderLabels()));
   }
   f.hidden = false;
 }
