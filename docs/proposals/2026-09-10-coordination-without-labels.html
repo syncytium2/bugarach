@@ -1,0 +1,854 @@
+<title>Coordination Without Labels</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Spectral:ital,wght@0,400;0,600;1,400&display=swap">
+<style>
+:root{
+  --ground:#F4F6F5; --surface:#FFFFFF; --sunk:#ECEFEE;
+  --ink:#161C1A; --body:#2C3835; --muted:#5C6A66; --faint:#8A9793;
+  --rule:#DBE2DF; --rule-strong:#C3CDC9;
+  --accent:#0E6B5E; --accent-soft:#DCEBE7;
+  --surrogate:#A8641E; --surrogate-soft:#F4E7D5;
+  --warn:#8C2F1F; --warn-soft:#F6E3DE;
+  --mark:#161C1A;
+  --shadow:0 1px 2px rgba(22,28,26,.06), 0 8px 24px -12px rgba(22,28,26,.18);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ground:#0F1413; --surface:#161D1B; --sunk:#1C2422;
+    --ink:#E8EEEB; --body:#CBD6D2; --muted:#94A29E; --faint:#6E7C78;
+    --rule:#28322F; --rule-strong:#3A4643;
+    --accent:#54BCA8; --accent-soft:#123029;
+    --surrogate:#D9A05B; --surrogate-soft:#3326128C;
+    --warn:#E58A72; --warn-soft:#3A211B;
+    --mark:#E8EEEB;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.6);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0F1413; --surface:#161D1B; --sunk:#1C2422;
+  --ink:#E8EEEB; --body:#CBD6D2; --muted:#94A29E; --faint:#6E7C78;
+  --rule:#28322F; --rule-strong:#3A4643;
+  --accent:#54BCA8; --accent-soft:#123029;
+  --surrogate:#D9A05B; --surrogate-soft:#33261280;
+  --warn:#E58A72; --warn-soft:#3A211B;
+  --mark:#E8EEEB;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.6);
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--ground); color:var(--body);
+  font-family:"IBM Plex Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  font-size:16.5px; line-height:1.62;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{padding-inline:22px; padding-block:0 96px; max-width:1180px; margin:0 auto}
+.col{max-width:69ch; margin-inline:auto}
+
+h1,h2,h3{font-family:Spectral,Georgia,"Times New Roman",serif; color:var(--ink); text-wrap:balance; margin:0}
+h1{font-size:clamp(2.1rem,5.6vw,3.35rem); font-weight:600; line-height:1.06; letter-spacing:-.015em}
+h2{font-size:clamp(1.42rem,3.1vw,1.86rem); font-weight:600; line-height:1.2; margin-block:0 .1em}
+h3{font-size:1.09rem; font-weight:600; line-height:1.35; margin-block:0 .1em}
+p{margin:0}
+a{color:var(--accent); text-decoration-thickness:1px; text-underline-offset:2px}
+a:focus-visible,summary:focus-visible{outline:2px solid var(--accent); outline-offset:3px; border-radius:2px}
+strong{color:var(--ink); font-weight:600}
+em{font-style:italic}
+code,.mono{font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace; font-size:.87em}
+code{background:var(--sunk); padding:.1em .34em; border-radius:3px; color:var(--ink)}
+
+/* ---------- masthead ---------- */
+.mast{border-bottom:1px solid var(--rule-strong); padding-block:56px 34px; margin-bottom:52px}
+.kicker{font-family:"IBM Plex Mono",monospace; font-size:.7rem; letter-spacing:.15em;
+  text-transform:uppercase; color:var(--muted); margin-bottom:22px}
+.lede{font-family:Spectral,Georgia,serif; font-size:clamp(1.08rem,2.4vw,1.28rem);
+  line-height:1.55; color:var(--body); margin-top:20px}
+.chips{display:flex; flex-wrap:wrap; gap:7px; margin-top:26px}
+.chip{font-family:"IBM Plex Mono",monospace; font-size:.685rem; letter-spacing:.055em;
+  text-transform:uppercase; padding:.32em .62em; border-radius:2px; border:1px solid var(--rule-strong);
+  color:var(--muted); background:var(--surface); white-space:nowrap}
+.chip.on{border-color:var(--accent); color:var(--accent); background:var(--accent-soft)}
+.chip.no{border-color:var(--warn); color:var(--warn); background:var(--warn-soft)}
+.byline{font-size:.83rem; color:var(--faint); margin-top:24px; line-height:1.7}
+
+/* ---------- sections ---------- */
+section{margin-block:0 60px}
+.eyebrow{font-family:"IBM Plex Mono",monospace; font-size:.7rem; letter-spacing:.14em;
+  text-transform:uppercase; color:var(--accent); margin-bottom:9px}
+.stack{display:flex; flex-direction:column; gap:19px}
+.stack-tight{display:flex; flex-direction:column; gap:11px}
+
+ul,ol{margin:0; padding-left:1.15em; display:flex; flex-direction:column; gap:11px}
+li::marker{color:var(--faint)}
+
+/* ---------- devices ---------- */
+.note{border-left:2px solid var(--rule-strong); padding:2px 0 2px 17px; color:var(--muted); font-size:.945rem}
+.note.warn{border-left-color:var(--warn)}
+.note.warn strong{color:var(--warn)}
+
+.panel{background:var(--surface); border:1px solid var(--rule); border-radius:5px;
+  padding:22px 24px; box-shadow:var(--shadow)}
+.panel h3{margin-bottom:9px}
+
+pre{margin:0; background:var(--sunk); border:1px solid var(--rule); border-radius:4px;
+  padding:14px 16px; overflow-x:auto; font-family:"IBM Plex Mono",monospace;
+  font-size:.795rem; line-height:1.62; color:var(--ink)}
+pre .c{color:var(--faint)}
+
+.tbl-scroll{overflow-x:auto; border:1px solid var(--rule); border-radius:5px; background:var(--surface)}
+table{border-collapse:collapse; width:100%; font-size:.9rem; font-variant-numeric:tabular-nums}
+th,td{text-align:left; padding:9px 15px; border-bottom:1px solid var(--rule); white-space:nowrap}
+thead th{font-family:"IBM Plex Mono",monospace; font-size:.68rem; letter-spacing:.09em;
+  text-transform:uppercase; color:var(--muted); font-weight:400; background:var(--sunk)}
+tbody tr:last-child td{border-bottom:none}
+tbody tr.sum td{background:var(--sunk); color:var(--ink); font-weight:600}
+td.num,th.num{text-align:right}
+td.name{font-family:"IBM Plex Mono",monospace; color:var(--ink); font-size:.85rem}
+
+/* status of a claim -- mirrors the strength column in the project's milestone log */
+.st{font-family:"IBM Plex Mono",monospace; font-size:.63rem; letter-spacing:.07em;
+  text-transform:uppercase; padding:.22em .48em; border-radius:2px; border:1px solid currentColor;
+  white-space:nowrap; vertical-align:.14em}
+.st-m{color:var(--accent)}      /* measured */
+.st-p{color:var(--surrogate)}   /* proposed, not measured */
+.st-w{color:var(--warn)}        /* open risk */
+
+.breakout{max-width:940px; margin-inline:auto}
+
+/* ---------- figure ---------- */
+figure{margin:0; background:var(--surface); border:1px solid var(--rule);
+  border-radius:5px; padding:22px 20px 16px; box-shadow:var(--shadow)}
+figure svg{display:block; width:100%; height:auto; max-width:100%}
+figcaption{font-size:.845rem; color:var(--muted); line-height:1.6; margin-top:14px;
+  padding-top:13px; border-top:1px solid var(--rule)}
+.mk rect{fill:var(--mark)}
+.lane-tri{fill:var(--accent)}
+.lane-span{fill:var(--surrogate-soft); stroke:var(--surrogate); stroke-width:1}
+.ax{stroke:var(--rule-strong); stroke-width:1}
+.ylab{font-family:"IBM Plex Mono",monospace; font-size:9.5px; fill:var(--muted)}
+.slab{font-family:"IBM Plex Mono",monospace; font-size:9.5px; fill:var(--surrogate)}
+
+/* ---------- q&a ---------- */
+.q{border-top:1px solid var(--rule); padding-top:17px}
+.q:first-child{border-top:none; padding-top:0}
+.q h3{margin-bottom:6px}
+.q p{font-size:.95rem}
+
+.foot{border-top:1px solid var(--rule-strong); margin-top:64px; padding-top:24px;
+  font-size:.82rem; color:var(--faint); line-height:1.7}
+
+@media (max-width:640px){
+  body{font-size:16px}
+  .mast{padding-block:40px 28px; margin-bottom:40px}
+  .panel{padding:18px}
+  section{margin-bottom:48px}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important; transition:none!important}}
+</style>
+
+<div class="wrap">
+
+<div class="col" style="margin-top:34px">
+  <div class="note warn" style="border-left-width:3px;padding:14px 0 14px 18px">
+    <strong>&#9888; DRAFT — WITHDRAWN, NOT FOR CIRCULATION.</strong> An eleven-role adversarial
+    review on 10 September 2026 found <strong>blocking defects in the mechanism this document
+    proposes</strong>, not only in how it is written. The central construction — displacing every
+    event independently in time — is separable cell-by-cell on real recordings from this project's
+    own export folder, so a model trained on it can win without using any cross-cell information;
+    the negative control described below cannot detect that, because its own reference class
+    already contains the defect; and the published literature settled the question before this was
+    drafted. <strong>The core idea may survive with a different surrogate. The version below does
+    not.</strong> Read the run record beside it —
+    <code>docs/reviews/2026-09-10-coordination-without-labels_2026-09-10.md</code> — before
+    quoting anything here.
+  </div>
+</div>
+
+<header class="mast">
+  <div class="col">
+    <div class="kicker">bugarach &middot; detector design &middot; withdrawn draft</div>
+    <h1>Coordination Without Labels</h1>
+    <p class="lede">Every coordinated-event detector we have — six written by hand, four
+    learned — asks one question: is there more coincidence here than the local background
+    explains. We want to ask a different one, and to ask it of real recordings that nobody
+    can label. This describes how, and where we think it breaks.</p>
+    <div class="chips">
+      <span class="chip no">withdrawn</span>
+      <span class="chip no">nothing measured</span>
+      <span class="chip">no code written</span>
+      <span class="chip no">blocking defects found</span>
+    </div>
+    <p class="byline">
+      bugarach — a browser-based viewer and Python port of six neural-coordination
+      detectors for calcium-imaging data.<br>
+      Drafted 10 September 2026. Corpus figures measured from the export folder on the
+      date of drafting; everything else is a proposal.
+    </p>
+  </div>
+</header>
+
+<section class="col">
+  <div class="eyebrow">What we are asking for</div>
+  <div class="stack">
+    <h2>Three questions, and none of them is &ldquo;is this a good idea&rdquo;</h2>
+    <p>This is a design under construction, circulated before it is built rather than after.
+    Nothing in it has been measured. We are asking for three specific things:</p>
+    <ol>
+      <li><strong>Has this been done?</strong> We have not established that any part of
+      this is novel and we are not claiming it is. Our own prior-art pass on learned
+      coordination detection was retracted internally as too shallow to stand on. If the
+      construction below is a known method under a name we failed to search, that is the
+      most useful thing you can tell us.</li>
+      <li><strong>Does the surrogate leak?</strong> The entire design rests on a negative
+      distribution being <em>exactly</em> as hard as the positive in every respect but
+      one. We know two ways that fails and we expect there are more.</li>
+      <li><strong>Is the control sufficient?</strong> With no labels, a negative control is
+      the only thing that can catch the model being wrong. We propose one. We would like to
+      know what it misses.</li>
+    </ol>
+  </div>
+</section>
+
+<section class="col">
+  <div class="eyebrow">The problem</div>
+  <div class="stack">
+    <h2>What a coordinated event is, and why it resists measurement</h2>
+    <p>A slice of brain tissue is imaged under a fluorescence microscope. Software finds
+    cells — regions of interest, ROIs — and, for each, the moments its calcium signal
+    rises. A recording is therefore a set of cells, each with a list of event times: tens
+    of cells, twenty minutes, a few thousand events. Drawn, it is a raster.</p>
+    <p>A <strong>coordinated event</strong> is a moment when many cells become active
+    together, more tightly than their individual firing rates would produce by chance.
+    These are the events the biology is about, and finding them is the whole job.</p>
+    <p>Three things make it hard, and only the first is obvious.</p>
+    <ul>
+      <li><strong>&ldquo;Together&rdquo; needs a timescale.</strong> Within a frame? Within
+      a second? Within five? Every answer defines a different phenomenon, and no
+      measurement chooses for you.</li>
+      <li><strong>&ldquo;By chance&rdquo; needs a null.</strong> Cells here fire at rates
+      spanning more than an order of magnitude, a third of them not at all in a given
+      window, and the background moves over the course of a recording. A fixed threshold
+      on &ldquo;how many cells fired&rdquo; measures the background as much as the
+      coordination.</li>
+      <li><strong>There is no ground truth, and there cannot be.</strong> Nobody can label
+      a real recording, because a coordinated event is not visible independently of the
+      detector that proposes it. This is the crux. It is why detectors here are calibrated
+      on simulation, and why every learned number in this project was fitted on synthetic
+      data that we generated and therefore already understand.</li>
+    </ul>
+    <div class="note">
+      Our answer to the third problem so far has been to keep a person in the loop: the
+      machine proposes candidates, a person judges them, and neither half is the instrument
+      alone. That does not go away under anything proposed here. What is proposed is a way
+      to train the machine half on real recordings instead of only on simulations of them.
+    </div>
+  </div>
+</section>
+
+<section class="col">
+  <div class="eyebrow">Where we are</div>
+  <div class="stack">
+    <h2>Ten detectors, and structurally one idea</h2>
+    <p>Six detectors are written by hand. They differ in thresholding rule, in how the null
+    is built, and in speed, and their internal lineage audit traces three of them to the
+    radar constant-false-alarm-rate literature — cell-averaging CFAR, greatest-of CFAR, and
+    a relative of ordered-statistic CFAR. Two more are ports or adaptations of published
+    work: one adapted from the Cossart lab's CICADA, one built on the Kreuz lab's
+    SPIKE-synchronization measure. All six compute a version of the same statistic:
+    observed coincidence, against coincidence estimated from nearby data.</p>
+    <p>Four more are small neural networks. And here is the thing we noticed while
+    preparing this proposal, which is really what prompted it. Look at what each network
+    does to the cell axis in its first lines:</p>
+    <pre><span class="c"># trace  -- collapses immediately; registered as the control that gives up distinctness</span>
+frac = x.sum(dim=1, keepdim=True) / max(n, 1)
+
+<span class="c"># tube, tube_guard, tube_ratio, tube_ratio_guard -- collapse after a max-pool</span>
+bright = pooled.sum(dim=1, keepdim=True) / max(n, 1)
+
+<span class="c"># tiny -- the exception: filters per cell first, then pools within rate bands</span>
+h = self.roi(x.reshape(b * n, 1, t))</pre>
+    <p>Five of the six architectures reduce the cell axis to a single number per frame
+    before any temporal filter of consequence runs. Everything downstream is a
+    one-dimensional model of a population-activity trace. The sixth, <code>tiny</code>,
+    keeps the cell axis and is the one that does not train — it scores 0.125 against a best
+    of 0.681 and its behaviour is degenerate.</p>
+    <p>So the ten detectors are not ten approaches. They are one approach — <em>population
+    activity now, against population activity nearby in time</em> — measured ten ways.
+    That is a fair description of a well-explored design space, and it also explains two
+    failures we had been treating as separate bugs:</p>
+    <ul>
+      <li><strong>A learned detection cannot say which cells it meant.</strong> The
+      participation count is written as <code>NA</code> on every learned call. This is not
+      an output-format oversight. A model that summed the cells away in its second line
+      never had a participation variable to report.</li>
+      <li><strong>Two of the four learned variants fire on a single cell.</strong> Found by
+      eye on a rendered raster in September 2026. The log-ratio variants report contrast
+      and discard magnitude, so one onset against a near-empty surround looks like five
+      onsets against a surround five times larger.</li>
+    </ul>
+    <div class="note warn">
+      <strong>&#9888; Provenance of the numbers in this section.</strong> The scores come
+      from an internal bake-off at eight seeds over four held-out folds, on
+      <em>simulated</em> data. The single-cell finding is from an internal working note that
+      has not been through our own document review. Every learned number in this project is
+      one training run per fold, so none of them carries a seed error bar. Treat all of it
+      as internal working material, not as a result we are standing behind.
+    </div>
+  </div>
+</section>
+
+<section class="col">
+  <div class="eyebrow">The proposal</div>
+  <div class="stack">
+    <h2>Train a discriminator against a surrogate of the recording itself</h2>
+    <p>Take a window of a real recording. Make a copy in which each event time is
+    independently displaced by a small random amount — a <strong>dither</strong>, drawn
+    from a symmetric distribution of half-width <em>J</em>. Every cell keeps its own firing
+    rate, its own number of events, and very nearly its own interval statistics. What the
+    dither destroys, and the only thing it destroys, is the precise alignment of events
+    <em>across</em> cells at timescales finer than <em>J</em>.</p>
+    <p>Now train a model to tell the two apart.</p>
+    <p>That task needs no labels. The negative examples are manufactured from the positive
+    ones, so any recording — including the twenty-two hours of real baseline data described
+    further down, which nobody will ever annotate — becomes training data. And the optimal
+    discriminator for this task computes a monotone function of the likelihood ratio
+    between the real recording and the rate-matched null: which is to say, an estimate of
+    exactly the quantity all six hand-written detectors approximate, learned rather than
+    specified.</p>
+    <div class="panel">
+      <h3>Why the rate-invariance is structural rather than hoped-for</h3>
+      <p style="font-size:.95rem">The negative has the same per-cell rates as the positive
+      <em>by construction</em>. A model cannot win this task by keying on how much activity
+      there is, because both classes have identically as much. Compare that to the current
+      learned detectors, whose rate-invariance is a property of a difference-of-Gaussians
+      kernel — and which then feed the raw brightness to the output head on a bypass
+      channel, so the kernel's invariance is explicitly not the model's. That bypass is
+      documented in our own code as an open experiment rather than a defect. Under a
+      dither objective the question does not arise.</p>
+    </div>
+    <p>A second property falls out and it matters for the single-cell failure above: a lone
+    cell bursting carries <strong>no discriminative signal at all</strong>. Dithering one
+    cell in isolation changes nothing about that cell's own statistics, so a model that
+    fires on it gains nothing on the training objective. The failure mode is not penalised
+    after the fact; it is absent from the gradient.</p>
+  </div>
+</section>
+
+<section class="col">
+  <div class="eyebrow">The critical choice</div>
+  <div class="stack">
+    <h2>The negative distribution is the model</h2>
+    <p>Everything the detector will ever mean is decided by what the surrogate destroys.
+    This is the part we most want reviewed, because it is where a plausible-looking design
+    silently becomes a different one.</p>
+    <p>Our six hand-written detectors use a <strong>circular shift</strong> null: each
+    cell's event train is rotated by a random offset, wrapping at the recording's end. It
+    is the standard construction and it is already implemented here. We propose
+    <strong>not</strong> to reuse it, for three reasons.</p>
+  </div>
+</section>
+
+<div class="breakout" style="margin-bottom:60px">
+<figure>
+<svg viewBox="0 0 720 396" role="img" aria-label="Schematic of two rasters. The upper raster, labelled as recorded, shows scattered onset marks with seven cells aligned in a single vertical column at the coordinated moment; a triangle in the lane above points down at that column. The lower raster, labelled dithered, shows the same marks with each one independently displaced, so the aligned column is smeared across the dither width.">
+  <text class="ylab" transform="translate(15,96) rotate(-90)" text-anchor="middle">as recorded &middot; 14 ROI</text>
+  <text class="ylab" transform="translate(15,306) rotate(-90)" text-anchor="middle">dithered &plusmn;J &middot; 14 ROI</text>
+
+  <!-- lane above panel A: a down triangle points at the raster it describes -->
+  <polygon class="lane-tri" points="385,15 399,15 392,27"/>
+  <text class="ylab" x="405" y="25">coordinated moment</text>
+
+  <!-- lane above panel B: the dither span, not a detection -->
+  <rect class="lane-span" x="375" y="225" width="34" height="11" rx="1.5"/>
+  <text class="slab" x="415" y="234">each onset moved independently within &plusmn;J</text>
+
+  <g class="mk" transform="translate(0,40)">
+      <rect x="93.5" y="1.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="342.3" y="1.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="388.7" y="1.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="391.9" y="1.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="147.7" y="9.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="210.2" y="9.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="464.0" y="9.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="392.4" y="9.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="99.3" y="17.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="251.9" y="17.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="609.1" y="17.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="391.0" y="17.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="263.7" y="25.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="107.4" y="33.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="109.4" y="33.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="199.3" y="33.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="303.9" y="33.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="414.0" y="33.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="223.3" y="41.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="258.3" y="41.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="267.3" y="41.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="354.6" y="41.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="437.7" y="41.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="509.0" y="41.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="568.9" y="41.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="389.8" y="41.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="144.1" y="49.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="250.8" y="49.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="528.1" y="49.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="619.6" y="49.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="685.5" y="49.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="391.6" y="49.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="94.6" y="57.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="165.4" y="57.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="377.1" y="57.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="267.0" y="65.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="356.5" y="65.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="429.9" y="65.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="434.2" y="65.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="443.3" y="65.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="506.6" y="65.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="619.8" y="65.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="391.4" y="65.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="84.2" y="73.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="108.1" y="73.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="175.5" y="73.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="248.7" y="73.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="312.3" y="73.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="359.9" y="73.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="367.7" y="73.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="476.4" y="73.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="487.1" y="73.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="489.9" y="73.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="510.5" y="73.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="586.2" y="73.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="693.7" y="73.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="120.6" y="81.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="617.3" y="81.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="392.3" y="81.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="244.8" y="89.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="584.5" y="89.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="612.6" y="89.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="624.8" y="89.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="164.8" y="97.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="625.3" y="97.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="671.5" y="97.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="216.5" y="105.3" width="2.6" height="5.4" rx="0.6"/>
+    </g>
+  <line class="ax" x1="64" y1="156" x2="704" y2="156"/>
+
+  <g class="mk" transform="translate(0,250)">
+      <rect x="109.0" y="1.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="348.8" y="1.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="389.2" y="1.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="395.9" y="1.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="153.7" y="9.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="195.0" y="9.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="477.6" y="9.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="401.9" y="9.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="112.0" y="17.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="262.0" y="17.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="605.5" y="17.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="387.5" y="17.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="250.2" y="25.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="112.0" y="33.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="94.5" y="33.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="184.6" y="33.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="294.0" y="33.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="402.5" y="33.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="217.9" y="41.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="243.0" y="41.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="250.3" y="41.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="342.7" y="41.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="424.2" y="41.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="504.3" y="41.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="552.7" y="41.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="402.5" y="41.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="148.0" y="49.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="238.9" y="49.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="519.7" y="49.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="614.4" y="49.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="680.9" y="49.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="378.8" y="49.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="106.5" y="57.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="182.2" y="57.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="375.9" y="57.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="266.5" y="65.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="342.4" y="65.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="416.3" y="65.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="428.8" y="65.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="435.3" y="65.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="517.8" y="65.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="608.3" y="65.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="375.2" y="65.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="99.5" y="73.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="109.1" y="73.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="163.5" y="73.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="250.2" y="73.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="296.2" y="73.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="360.9" y="73.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="384.0" y="73.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="488.7" y="73.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="493.8" y="73.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="481.8" y="73.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="506.0" y="73.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="574.8" y="73.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="699.4" y="73.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="121.7" y="81.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="626.7" y="81.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="386.5" y="81.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="235.4" y="89.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="595.1" y="89.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="629.1" y="89.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="636.8" y="89.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="175.2" y="97.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="636.1" y="97.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="679.6" y="97.3" width="2.6" height="5.4" rx="0.6"/>
+      <rect x="207.2" y="105.3" width="2.6" height="5.4" rx="0.6"/>
+    </g>
+  <line class="ax" x1="64" y1="366" x2="704" y2="366"/>
+
+  <!-- one x axis for the linked pair, on the bottom panel only -->
+  <g class="ylab" text-anchor="middle">
+    <line class="ax" x1="224" y1="366" x2="224" y2="371"/><text x="224" y="383">15s</text>
+    <line class="ax" x1="384" y1="366" x2="384" y2="371"/><text x="384" y="383">30s</text>
+    <line class="ax" x1="544" y1="366" x2="544" y2="371"/><text x="544" y="383">45s</text>
+    <line class="ax" x1="704" y1="366" x2="704" y2="371"/><text x="704" y="383">1m</text>
+  </g>
+</svg>
+<figcaption><strong>Schematic, not data.</strong> Fourteen cells over one minute, background
+onsets drawn from a gamma-distributed per-cell rate, seed 7. Seven cells participate in one
+coordinated moment. Below, every onset in the same recording is independently displaced
+within &plusmn;<em>J</em>: the per-cell rates are untouched and the aligned column is gone.
+The discriminator's whole task is to tell the upper panel from the lower one. Following this
+project's plotting rule, the raster carries one ink and one mark per event and nothing is
+drawn on it — cues sit in a lane above, and a directional marker points down at the panel it
+describes.</figcaption>
+</figure>
+</div>
+
+<section class="col">
+  <div class="stack">
+    <h3>A circular shift has a splice, and the splice is easier to find than coordination</h3>
+    <p>Wrapping a train creates one anomalous interval per cell, where the end of the
+    recording meets the beginning. A model with real capacity can learn to detect the
+    splice and win the discrimination task without ever looking across cells. Our six
+    detectors are safe from this only because they have no capacity to spend on it; a
+    network is not. Dithering creates no wrap and leaves nothing of that kind to find.</p>
+
+    <h3>The dither width is a declared, interpretable parameter</h3>
+    <p><em>J</em> states, in samples, how close counts as together. It is the same quantity
+    as the tolerance our scorer already uses to decide whether a detection matches a
+    planted event, and the same quantity as the jitter our simulator uses to control how
+    tight a synthetic coordinated event is. Compare the alternative: in the current learned
+    detector, &ldquo;how tight must an event be&rdquo; is a fitted Gaussian width that
+    nobody can read off the model. Here it is set, stated, and can be swept.</p>
+
+    <h3>It dissolves a confound that the circular shift creates</h3>
+    <p>This is the reason we changed our minds mid-design, and the one we would most like
+    checked. Real recordings drift: background activity rises and falls over minutes, and
+    one of the drugs in our corpus is known to raise both event frequency and the
+    fluorescence baseline over time. Under a circular shift, that shared slow modulation is
+    destroyed along with everything else — so <em>drift alignment becomes discriminative</em>,
+    and a model can score well by detecting co-modulation on a timescale of minutes and
+    calling it coordination.</p>
+    <p>Under a dither with small <em>J</em>, the drift survives <strong>identically in both
+    classes</strong> and therefore carries no gradient at all. The model can only win on
+    structure finer than <em>J</em>. This is a sharper question than the six hand-written
+    detectors ask: their null destroys all cross-cell structure, so they cannot separate
+    &ldquo;these cells fired together&rdquo; from &ldquo;these cells were both busy this
+    minute.&rdquo;</p>
+    <div class="note">
+      There is a slot waiting for this in our own code. The binned-SCE detector's signature
+      accepts <code>surrogate_model="jitter"</code> and raises
+      <code>NotImplementedError</code> — an option inherited from the MATLAB original that
+      was contemplated and never built.
+    </div>
+  </div>
+</section>
+
+<section class="col">
+  <div class="eyebrow">From a window label to a detector</div>
+  <div class="stack">
+    <h2>Localization comes free, and that is not obvious</h2>
+    <p>The objective produces a label per <em>window</em> — real or dithered — but a
+    detector must emit event times. The resolution is multiple-instance learning: make the
+    window-level score a smooth maximum over a per-frame score, and the only way the model
+    can win the window task is to concentrate its evidence on the few moments that actually
+    betray the real recording. The per-frame head is then a detector, trained without a
+    single per-frame label.</p>
+    <p>That output is per-frame, which is exactly what our existing decoder consumes and
+    what the existing scorer measures. So a first version drops into the current
+    comparison unchanged, and can be scored head-to-head against the six on simulated data
+    even though it was never trained there.</p>
+    <h3>The encoder, and the part that finally reports participation</h3>
+    <p>Since the objective no longer requires collapsing cells, the architecture should
+    stop doing it: a shared per-cell temporal encoder, then <strong>attention pooling over
+    cells</strong> at each frame. This is permutation-equivariant by construction, which is
+    stronger than the current arrangement — today rows are sorted by firing rate so that
+    row index carries meaning, and a test exists to check the model did not learn row order
+    anyway. It also runs at any cell count, which matters because fields here range from 10
+    to 61 cells.</p>
+    <p>The attention weights are a participation readout. A detection can finally name the
+    cells it meant, and the lone-cell failure becomes visible in the output file rather than
+    only in a rendered image.</p>
+    <div class="note">
+      <strong>A better use for ground truth we already generate.</strong> Our simulator
+      records which cells it recruited into each planted event, and that array currently has
+      exactly one consumer in the codebase: its own unit test. The tempting move is to train
+      the attention head against it. We think the stronger move is to keep it entirely out
+      of training and use it as a held-out check — a label-free model that recovers planted
+      membership it was never shown is a much better result than one taught to reproduce it,
+      and it keeps &ldquo;the model learned our simulator&rdquo; off the table.
+    </div>
+  </div>
+</section>
+
+<section class="col">
+  <div class="eyebrow">The corpus</div>
+  <div class="stack">
+    <h2>Twenty-two hours nobody can label</h2>
+    <p>The recordings we intend to train on are two cohorts, split by which drug each slice
+    received first. Both are views on an export from which whole-field brightness artifacts
+    have already been removed by the producer — a real contaminant here, since a brightness
+    step makes 74&ndash;82% of cells appear to fire at once and is precisely the signature a
+    coordination detector exists to find.</p>
+  </div>
+</section>
+
+<div class="breakout" style="margin-bottom:26px">
+<div class="tbl-scroll">
+<table>
+  <thead>
+    <tr>
+      <th>cohort</th><th class="num">recordings</th><th class="num">baseline time</th>
+      <th class="num">cell traces</th><th class="num">ROIs / recording</th>
+      <th class="num">baseline onsets, fast</th><th class="num">slow</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td class="name">senktide</td><td class="num">29</td><td class="num">9.5 h</td>
+        <td class="num">950</td><td class="num">17 &ndash; 32 &ndash; 55</td>
+        <td class="num">18,011</td><td class="num">6,772</td></tr>
+    <tr><td class="name">TTX</td><td class="num">38</td><td class="num">12.6 h</td>
+        <td class="num">1,169</td><td class="num">10 &ndash; 32 &ndash; 61</td>
+        <td class="num">19,685</td><td class="num">16,072</td></tr>
+    <tr class="sum"><td class="name">both</td><td class="num">67</td><td class="num">22.1 h</td>
+        <td class="num">2,119</td><td class="num">&mdash;</td>
+        <td class="num">37,696</td><td class="num">22,844</td></tr>
+  </tbody>
+</table>
+</div>
+<p style="font-size:.82rem;color:var(--muted);margin-top:11px;max-width:69ch">
+Measured from the export folder on 10 September 2026. <em>Baseline time</em> is the sum of
+each recording's declared baseline analysis window, averaging just under 20 minutes.
+<em>Cell traces</em> sums distinct ROIs per recording, so a cell in two recordings counts
+twice. <em>ROIs / recording</em> is min &ndash; median &ndash; max. <em>Fast</em> and
+<em>slow</em> are the two event streams the producer exports; onsets are counted inside the
+baseline windows only.</p>
+</div>
+
+<section class="col">
+  <div class="stack">
+    <h3>Train on the baseline windows, deploy on the treated ones</h3>
+    <p>This is a constraint we impose on ourselves and it turns out to be the right
+    experimental design anyway. Our project's foundations forbid taking the properties of
+    coordination from treated recordings, on the grounds that the treatments are what the
+    instrument is pointed at. Training a model on tetrodotoxin data and then asking whether
+    tetrodotoxin changes coordination assumes the answer.</p>
+    <p>The constraint is sharper here than it sounds. In this preparation
+    <strong>tetrodotoxin is not a silencing control</strong> — events persist under it and
+    so does coordination, splitting by stream, with the fast stream falling to about half
+    of its own baseline and the slow stream running at roughly two and a half times
+    baseline in the lab's own campaign. That is a genuinely different regime, and fitting a
+    detector inside it would fit the thing under measurement.</p>
+    <p>But these folders carry each recording whole. The twenty-two hours in the table
+    <em>are</em> baseline windows, sitting inside the cohorts of interest. So: train there,
+    deploy on the treated windows. The baseline-to-treatment contrast then becomes a
+    genuine out-of-sample measurement rather than something the model was fitted to — and
+    that contrast is, at present, a question no code in our project computes.</p>
+    <div class="note warn">
+      <strong>&#9888; Two constraints the corpus forces.</strong>
+      <strong>Split by recording, stratified by group.</strong> A discriminator can memorize
+      an individual cell's interval signature, so the same recording appearing in training
+      and test leaks and the number means nothing. And effects in this preparation run in
+      opposite directions by experimental group, so folds must be stratified or one can come
+      out entirely single-group.
+      <strong>The two cohorts' baselines are not interchangeable.</strong> The senktide
+      cohort's baselines run about 2.7 fast onsets per slow one; the tetrodotoxin cohort's
+      run about 1.2. These are all pre-drug windows and we do not currently have an
+      explanation for the gap. A slow-stream model trained on the pooled baselines would be
+      learning mostly from one cohort.
+    </div>
+  </div>
+</section>
+
+<section class="col">
+  <div class="eyebrow">Controls</div>
+  <div class="stack">
+    <h2>With no labels, only a negative control can catch you</h2>
+    <p>A supervised model can be wrong about a label. This one has no labels to be wrong
+    about, so the only thing standing between the design and a confident artifact detector
+    is a control that manufactures data with provably no cross-cell structure.</p>
+    <p>The construction is one line different from the training objective: take a real
+    recording, <strong>dither it once</strong>, and use that as the positive against a
+    further-dithered negative. Whatever cross-cell alignment existed is already gone from
+    both sides. A model that still separates them is reading something about the surrogate
+    construction, and every number downstream is void.</p>
+    <p>We would build this before the encoder, and we would consider a non-flat result fatal
+    to the approach rather than something to tune around.</p>
+    <div class="panel">
+      <h3>The control also sets the threshold, at a stated false-alarm rate</h3>
+      <p style="font-size:.95rem">Which is the part we did not expect. Calibrate the
+      operating point so the model fires at a declared rate &alpha; on this control — real
+      recordings, real fields, real per-cell rates, provably no coordination. That is a
+      measured false-alarm rate on real data across the whole background range the corpus
+      contains.</p>
+      <p style="font-size:.95rem;margin-top:11px">Our current equivalent is a synthetic
+      probe: a stretch of elevated background with nothing planted. It only tests the busy
+      end. Our own internal note on the ratio variants makes the point sharply — a detector
+      that divides by its surround cannot fire in a <em>hot</em> window by arithmetic, so
+      scoring zero there restates the arithmetic instead of measuring robustness, and the
+      corresponding quiet-field test does not exist. The dither control covers both ends
+      because it inherits whatever backgrounds the recordings actually have.</p>
+    </div>
+    <p>A consequence worth stating plainly: this detector needs no <strong>K</strong>. K is
+    the coactivity floor — how many cells firing together constitute an event — which in our
+    pipeline a person sets during review, as a percentage of each recording's cell
+    population, because no arithmetic chooses it and it moves the headline by an order of
+    magnitude. A dither discriminator has no floor. It asks whether alignment exceeds chance
+    at timescale <em>J</em>, and <em>J</em> is declared in the same units as the tolerance.
+    That trades a number nobody can choose for one anybody can state.</p>
+    <div class="note">
+      This does <strong>not</strong> remove the person from the loop, and we are not
+      claiming it does. A human still judges candidates; what changes is that one arbitrary
+      parameter is replaced by a declared timescale and a declared false-alarm rate.
+    </div>
+  </div>
+</section>
+
+<section class="col">
+  <div class="eyebrow">Falsification</div>
+  <div class="stack">
+    <h2>What would kill this, stated before we build it</h2>
+    <ul>
+      <li><strong>The control is not flat.</strong> Dithered-versus-further-dithered
+      separates above chance. The model is reading the surrogate construction and the
+      approach is dead in this form. <span class="st st-w">fatal</span></li>
+      <li><strong>It fires on field steps and little else.</strong> A brightness artifact is
+      a genuine cross-cell alignment, so the objective rewards finding it. If performance
+      collapses when artifact-removed data is used, the model learned the artifact.
+      <span class="st st-w">fatal</span></li>
+      <li><strong>It does not localize.</strong> The window-level task is won, but the
+      per-frame score does not concentrate on planted events when scored on simulation. The
+      multiple-instance assumption fails. <span class="st st-w">redesign</span></li>
+      <li><strong>Attention does not recover membership.</strong> Scored against the held-out
+      participation ground truth on simulated data, the attention weights are no better than
+      the cell's own rate would predict. The participation claim goes, though the detector
+      might survive. <span class="st st-p">partial</span></li>
+      <li><strong>It loses to the six on simulation.</strong> Not fatal by itself — it was
+      trained on different data for a different objective — but it removes the main reason
+      to prefer it. <span class="st st-p">partial</span></li>
+    </ul>
+  </div>
+</section>
+
+<section class="col">
+  <div class="eyebrow">Limits</div>
+  <div class="stack">
+    <h2>What we are not claiming</h2>
+    <ul>
+      <li><strong>Not novelty.</strong> We have not established that this is new. An earlier
+      internal claim that no prior work trains a network to emit coordinated population
+      events was retracted as unsupported — it rested on web searches, not on papers read.
+      Contrastive training against surrogate data is an old idea in several fields and we
+      would be unsurprised to learn this exact construction has a name.</li>
+      <li><strong>Not a result.</strong> Nothing here is measured. No code exists. The only
+      measured numbers in this document are the corpus counts.</li>
+      <li><strong>Not a replacement for the person.</strong> Our instrument is a person and
+      a program together, and this proposal changes only the program.</li>
+      <li><strong>Not a claim about any drug.</strong> Nothing here says what tetrodotoxin
+      or senktide does. Treatment effects belong to a different project in this ecosystem
+      and are not ours to state.</li>
+      <li><strong>Not a comparison with the assembly-detection literature.</strong> Methods
+      that find recurring co-activation patterns — independent-component and
+      principal-component assembly detection, lag-constellation methods, item-set mining —
+      are absent from our comparison, and our simulator draws fresh participants for every
+      event, so it contains no recurring assemblies for such a method to find. Running one
+      against it today would produce a win that means nothing.</li>
+    </ul>
+  </div>
+</section>
+
+<section class="col">
+  <div class="eyebrow">For the producer team</div>
+  <div class="stack">
+    <h2>What this would ask of the export</h2>
+    <p>Nothing, in the first instance — the proposal reads the folder exactly as specified
+    today, and deliberately reads nothing else. Three notes anyway:</p>
+    <ul>
+      <li><strong>The dither surrogate diverges from the circular shift you use.</strong>
+      Reasons are above. It is an addition, not a replacement; the six keep their null.</li>
+      <li><strong>Field-step exclusion is doing real work here.</strong> The training
+      objective actively rewards finding whole-field artifacts, so the artifact-removed
+      export is not a nicety for this model — it is a precondition.</li>
+      <li><strong>The contract does not mention field steps.</strong> The current export
+      ships two per-event columns flagging them, but our folder specification does not
+      define those columns, so a future export has no stated obligation to carry them and no
+      definition to carry them under. Our own loader also drops both columns silently. This
+      costs nothing on the present folder, where every surviving row reads zero, and it
+      would cost a great deal on an export that flags artifacts instead of removing
+      them.</li>
+    </ul>
+  </div>
+</section>
+
+<section class="col">
+  <div class="eyebrow">Open</div>
+  <div class="stack">
+    <h2>Questions we have not resolved</h2>
+    <div class="stack-tight">
+      <div class="q">
+        <h3>Per-onset dither, or per-cell rigid displacement?</h3>
+        <p>Displacing every onset independently destroys each cell's own interval structure
+        as well as cross-cell alignment, which means the model could win on within-cell
+        statistics. Displacing each cell rigidly by one offset preserves its intervals
+        exactly but reintroduces a boundary problem and is closer to the circular shift we
+        are trying to leave. This changes what &ldquo;together&rdquo; means at the margin
+        and we do not have a principled answer.</p>
+      </div>
+      <div class="q">
+        <h3>How should <em>J</em> be chosen, and should it be swept rather than fixed?</h3>
+        <p>A model trained at one <em>J</em> detects coordination at one timescale. Training
+        across a range would produce a timescale-agnostic detector; training at several
+        fixed values would produce a family whose disagreement is itself informative. The
+        second is more useful scientifically and more expensive.</p>
+      </div>
+      <div class="q">
+        <h3>Does the objective admit a trivial solution we have not thought of?</h3>
+        <p>We know about the wrap splice and about drift. The general worry is that some
+        statistic differs between real and dithered data for reasons unrelated to
+        coordination — quantization onto the imaging grid is one candidate, since displaced
+        events must be re-quantized and the original ones were already on-grid.</p>
+      </div>
+      <div class="q">
+        <h3>Is twenty-two hours enough?</h3>
+        <p>The models in question are small — one to two thousand parameters — and every
+        epoch can draw fresh surrogates, so the effective negative set is unbounded. The
+        positives are not. We do not know where this saturates.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer class="col foot">
+  <p><strong>bugarach</strong> — a browser-based viewer and Python port of six
+  neural-coordination detectors, built so colleagues and other labs can browse per-ROI event
+  data and tune detectors without MATLAB. BSD-3-Clause.</p>
+  <p style="margin-top:10px">Detector lineage acknowledged in this document: the
+  coordinated-event stage adapted from the Cossart lab's CICADA (MIT, &copy; 2019 Cossart
+  Lab); the SPIKE-synchronization measure from the Kreuz lab; the constant-false-alarm-rate
+  family from the radar literature (Finn &amp; Johnson 1968; Hansen 1973; Rohling 1983).
+  Corpus figures measured 10 September 2026 and current as of that date. No recording
+  identifiers, personal data or unpublished results from collaborating laboratories appear
+  in this document.</p>
+</footer>
+
+</div>
