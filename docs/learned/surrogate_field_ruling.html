@@ -1,0 +1,924 @@
+<title>Which Surrogates Enter the Screen</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:wght@500;600&display=swap">
+<style>
+  :root {
+    --paper:      #eef1f3;
+    --surface:    #ffffff;
+    --ink:        #16212b;
+    --ink-soft:   #4a5b68;
+    --ink-faint:  #7c8c98;
+    --rule:       #d2dae0;
+    --rule-soft:  #e2e8ec;
+    --real:       #1b5570;
+    --real-wash:  #d6e6ee;
+    --surrogate:  #a86f26;
+    --sur-wash:   #f0e2ca;
+    --kill:       #a33326;
+    --kill-wash:  #f2d9d4;
+    --pass:       #386b4d;
+    --band:       rgba(163, 51, 38, 0.10);
+    --shadow:     0 1px 2px rgba(22, 33, 43, .06);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper:      #101820;
+      --surface:    #17222c;
+      --ink:        #e3eaef;
+      --ink-soft:   #a3b4c0;
+      --ink-faint:  #74868f;
+      --rule:       #2b3a46;
+      --rule-soft:  #22303b;
+      --real:       #5fa9c9;
+      --real-wash:  #1c3949;
+      --surrogate:  #d7a154;
+      --sur-wash:   #3d3016;
+      --kill:       #dd7263;
+      --kill-wash:  #40231e;
+      --pass:       #74ab88;
+      --band:       rgba(221, 114, 99, 0.14);
+      --shadow:     0 1px 2px rgba(0, 0, 0, .3);
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper:      #101820;
+    --surface:    #17222c;
+    --ink:        #e3eaef;
+    --ink-soft:   #a3b4c0;
+    --ink-faint:  #74868f;
+    --rule:       #2b3a46;
+    --rule-soft:  #22303b;
+    --real:       #5fa9c9;
+    --real-wash:  #1c3949;
+    --surrogate:  #d7a154;
+    --sur-wash:   #3d3016;
+    --kill:       #dd7263;
+    --kill-wash:  #40231e;
+    --pass:       #74ab88;
+    --band:       rgba(221, 114, 99, 0.14);
+    --shadow:     0 1px 2px rgba(0, 0, 0, .3);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-size: 16px;
+    line-height: 1.62;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap {
+    max-width: 780px;
+    margin: 0 auto;
+    padding-inline: 20px;
+    padding-block: 48px 72px;
+  }
+
+  .col { max-width: 62ch; }
+
+  /* ---------- masthead ---------- */
+
+  .eyebrow {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 11.5px;
+    letter-spacing: .13em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    margin: 0 0 18px;
+  }
+
+  h1 {
+    font-family: "IBM Plex Serif", Georgia, serif;
+    font-weight: 600;
+    font-size: clamp(30px, 5.4vw, 43px);
+    line-height: 1.12;
+    letter-spacing: -.018em;
+    text-wrap: balance;
+    margin: 0 0 20px;
+  }
+
+  .standfirst {
+    font-size: 18.5px;
+    line-height: 1.55;
+    color: var(--ink-soft);
+    max-width: 56ch;
+    margin: 0 0 34px;
+  }
+
+  .meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 22px;
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 12px;
+    color: var(--ink-faint);
+    border-top: 1px solid var(--rule);
+    border-bottom: 1px solid var(--rule);
+    padding-block: 12px;
+    margin-bottom: 46px;
+  }
+  .meta b { color: var(--ink-soft); font-weight: 500; }
+
+  /* ---------- headings ---------- */
+
+  h2 {
+    font-family: "IBM Plex Serif", Georgia, serif;
+    font-weight: 600;
+    font-size: 25px;
+    line-height: 1.22;
+    letter-spacing: -.012em;
+    text-wrap: balance;
+    margin: 56px 0 6px;
+  }
+
+  h2 .num {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: .1em;
+    color: var(--ink-faint);
+    display: block;
+    margin-bottom: 9px;
+  }
+
+  h3 {
+    font-family: "IBM Plex Sans", sans-serif;
+    font-weight: 600;
+    font-size: 16.5px;
+    letter-spacing: -.005em;
+    margin: 32px 0 6px;
+  }
+
+  p { margin: 0 0 15px; }
+  p.lede { color: var(--ink-soft); font-size: 17px; margin-bottom: 22px; }
+
+  strong { font-weight: 600; }
+  em.term { font-style: italic; }
+
+  code, .mono {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: .89em;
+  }
+  code {
+    background: var(--rule-soft);
+    padding: 1px 5px;
+    border-radius: 3px;
+  }
+
+  .num-real { color: var(--real); font-weight: 600; font-variant-numeric: tabular-nums; }
+  .num-sur  { color: var(--surrogate); font-weight: 600; font-variant-numeric: tabular-nums; }
+  .num-kill { color: var(--kill); font-weight: 600; font-variant-numeric: tabular-nums; }
+
+  /* ---------- figures ---------- */
+
+  figure {
+    margin: 30px 0 34px;
+    padding: 0;
+  }
+  figure svg {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+  }
+  figcaption {
+    font-size: 13.5px;
+    line-height: 1.5;
+    color: var(--ink-soft);
+    margin-top: 11px;
+    max-width: 68ch;
+  }
+  figcaption b {
+    color: var(--ink);
+    font-weight: 600;
+  }
+
+  /* svg paint classes — tokens so both themes resolve */
+  .sv-axis   { stroke: var(--rule); stroke-width: 1; }
+  .sv-grid   { stroke: var(--rule-soft); stroke-width: 1; }
+  .sv-lbl    { fill: var(--ink-soft); font-family: "IBM Plex Sans", sans-serif; font-size: 12px; }
+  .sv-lbl-s  { fill: var(--ink-faint); font-family: "IBM Plex Mono", monospace; font-size: 10.5px; letter-spacing: .06em; }
+  .sv-val    { fill: var(--ink); font-family: "IBM Plex Mono", monospace; font-size: 12px; font-weight: 500; }
+  .sv-panel  { fill: var(--ink-faint); font-family: "IBM Plex Mono", monospace; font-size: 10.5px; letter-spacing: .11em; }
+  .sv-real   { fill: var(--real); }
+  .sv-real-s { stroke: var(--real); fill: none; stroke-width: 2; }
+  .sv-sur    { fill: var(--surrogate); }
+  .sv-sur-s  { stroke: var(--surrogate); fill: none; stroke-width: 2; }
+  .sv-kill   { fill: var(--kill); }
+  .sv-kill-s { stroke: var(--kill); fill: none; stroke-width: 1.5; }
+  .sv-pass   { fill: var(--pass); }
+  .sv-band   { fill: var(--band); }
+  .sv-node   { fill: var(--surface); stroke: var(--ink-soft); stroke-width: 1.4; }
+  .sv-dash   { stroke: var(--ink-faint); stroke-width: 1; stroke-dasharray: 4 4; fill: none; }
+  .sv-txt    { fill: var(--ink); font-family: "IBM Plex Sans", sans-serif; font-size: 12.5px; }
+  .sv-txt-b  { fill: var(--ink); font-family: "IBM Plex Sans", sans-serif; font-size: 12.5px; font-weight: 600; }
+  .sv-arrow  { stroke: var(--ink-soft); stroke-width: 1.4; fill: none; }
+  .sv-cell   { fill: var(--rule-soft); stroke: var(--rule); stroke-width: 1; }
+  .sv-cell-x { fill: var(--sur-wash); stroke: var(--surrogate); stroke-width: 1.2; }
+  .sv-cell-m { fill: var(--kill-wash); stroke: var(--kill); stroke-width: 1.4; }
+  .sv-cx     { fill: var(--surrogate); font-family: "IBM Plex Mono", monospace; font-size: 10px; font-weight: 600; letter-spacing: .04em; }
+  .sv-cm     { fill: var(--kill); font-family: "IBM Plex Mono", monospace; font-size: 10px; font-weight: 600; letter-spacing: .04em; }
+
+  /* ---------- callouts ---------- */
+
+  .rule-note {
+    border-left: 2px solid var(--kill);
+    background: var(--kill-wash);
+    padding: 15px 18px;
+    margin: 26px 0;
+    border-radius: 0 3px 3px 0;
+  }
+  .rule-note p { margin: 0; font-size: 15.5px; line-height: 1.55; }
+  .rule-note .tag {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 10.5px;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--kill);
+    display: block;
+    margin-bottom: 7px;
+    font-weight: 600;
+  }
+
+  .fixed {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1px;
+    background: var(--rule);
+    border: 1px solid var(--rule);
+    margin: 26px 0;
+  }
+  .fixed > div { background: var(--surface); padding: 17px 19px; }
+  .fixed h4 {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 11px;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    margin: 0 0 9px;
+    font-weight: 500;
+  }
+  .fixed p { font-size: 14.5px; line-height: 1.5; margin: 0; }
+
+  /* ---------- decision sheet ---------- */
+
+  .sheet {
+    border-top: 3px solid var(--ink);
+    margin-top: 20px;
+  }
+  .ask {
+    border-bottom: 1px solid var(--rule);
+    padding-block: 24px;
+    display: grid;
+    grid-template-columns: 34px 1fr;
+    gap: 0 16px;
+  }
+  .ask-n {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--ink-faint);
+    padding-top: 3px;
+  }
+  .ask h3 { margin: 0 0 8px; font-size: 17.5px; }
+  .ask p { font-size: 15px; margin: 0 0 10px; color: var(--ink-soft); }
+  .ask p:last-child { margin-bottom: 0; }
+  .rec {
+    font-size: 15px;
+    color: var(--ink);
+    border-left: 2px solid var(--pass);
+    padding-left: 13px;
+    margin-top: 12px;
+  }
+  .rec b {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 10.5px;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--pass);
+    display: block;
+    margin-bottom: 4px;
+    font-weight: 600;
+  }
+
+  .caveat {
+    margin-top: 52px;
+    padding: 17px 19px;
+    border: 1px dashed var(--rule);
+    border-radius: 3px;
+  }
+  .caveat h4 {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 11px;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    margin: 0 0 9px;
+    font-weight: 500;
+  }
+  .caveat p { font-size: 14.5px; line-height: 1.55; margin: 0 0 11px; color: var(--ink-soft); }
+  .caveat p:last-child { margin-bottom: 0; }
+
+  .foot {
+    margin-top: 46px;
+    padding-top: 18px;
+    border-top: 1px solid var(--rule);
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 11.5px;
+    line-height: 1.75;
+    color: var(--ink-faint);
+  }
+
+  @media (max-width: 520px) {
+    .wrap { padding-block: 34px 54px; }
+    .ask { grid-template-columns: 1fr; gap: 8px; }
+    .ask-n { padding-top: 0; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+  }
+</style>
+
+<div class="wrap">
+
+  <p class="eyebrow">Decision brief · filed 2026-09-10 · two of three ruled</p>
+
+  <h1>Which surrogates enter the screen</h1>
+
+  <p class="standfirst">
+    A murderboard killed the surrogate a self-supervised detector was built on. The thesis
+    survived, the surrogate did not, and the replacement is a measurement rather than an
+    argument. Eight candidates were on offer. <b>All eight run</b> — Stella's figure 10 shows
+    the field disagreeing on real data, and nothing predicts the winner in advance.
+  </p>
+
+  <div class="meta">
+    <span><b>Ruled:</b> the whole field enters</span>
+    <span><b>Still open:</b> grid or contests</span>
+    <span><b>Todo:</b> <span class="mono">which-surrogates-enter-the-screen</span></span>
+  </div>
+
+  <div class="col">
+    <h2><span class="num">WHY THERE IS A DECISION</span>The surrogate gave itself away one cell at a time</h2>
+    <p class="lede">
+      The proposal was to train a detector with no labels: discriminate a real recording from a
+      dithered copy of itself, so whatever the model learns to key on is coordination. It failed
+      because the dithered copy is identifiable without looking across cells at all.
+    </p>
+    <p>
+      A calcium event extractor cannot emit two onsets from one cell inside a single transient, so
+      real within-cell intervals have a hard floor — <span class="num-real">0.40 s</span> in the
+      fast stream, <span class="num-real">3.20 s</span> in the slow. Independent per-onset
+      dithering has no such floor. The dithered class therefore contains intervals whose
+      probability under the real class is exactly zero.
+    </p>
+  </div>
+
+  <figure>
+    <svg viewBox="0 0 720 400" role="img" aria-label="Real within-cell intervals stop dead at a 0.40 second floor while dithered intervals spill below it; measured sub-floor window rates are 0.0 percent for real data against 29.5, 38.3 and 16.9 percent for dithered data.">
+      <!-- ============ PANEL A : mechanism ============ -->
+      <text x="24" y="26" class="sv-panel">A · WHY IT LEAKS (SHAPE SCHEMATIC)</text>
+
+      <!-- impossible band -->
+      <rect x="60" y="44" width="62" height="146" class="sv-band"></rect>
+      <line x1="122" y1="40" x2="122" y2="190" class="sv-kill-s"></line>
+
+      <!-- dithered area inside the impossible band -->
+      <path d="M60 178 L90 170 L122 158 L122 190 L60 190 Z" class="sv-kill" opacity="0.55"></path>
+
+      <!-- dithered curve -->
+      <polyline points="60,178 90,170 122,158 160,142 200,126 250,116 310,116 380,126 460,142 550,160 680,180"
+                class="sv-sur-s"></polyline>
+      <!-- real curve: exactly zero left of the floor -->
+      <polyline points="60,190 122,190 122,188 138,140 160,106 200,84 240,80 300,94 370,116 460,140 550,160 680,182"
+                class="sv-real-s"></polyline>
+
+      <line x1="60" y1="190" x2="680" y2="190" class="sv-axis"></line>
+
+      <text x="122" y="208" class="sv-lbl-s" text-anchor="middle">0.40 s</text>
+      <text x="374" y="208" class="sv-lbl" text-anchor="middle">within-cell onset interval →</text>
+
+      <text x="66" y="62" class="sv-kill" style="font-family:'IBM Plex Sans',sans-serif;font-size:11px;font-weight:600">IMPOSSIBLE</text>
+      <text x="66" y="76" class="sv-lbl-s">p = 0 for real</text>
+
+      <text x="256" y="72" class="sv-real" style="font-family:'IBM Plex Sans',sans-serif;font-size:12.5px;font-weight:600">real recording</text>
+      <text x="330" y="150" class="sv-sur" style="font-family:'IBM Plex Sans',sans-serif;font-size:12.5px;font-weight:600">dithered surrogate</text>
+
+      <line x1="112" y1="178" x2="60" y2="150" class="sv-kill-s"></line>
+      <text x="150" y="176" class="sv-txt" style="font-size:11.5px">any window with mass here is a surrogate, p = 1</text>
+
+      <line x1="24" y1="236" x2="696" y2="236" class="sv-grid"></line>
+
+      <!-- ============ PANEL B : measured ============ -->
+      <text x="24" y="262" class="sv-panel">B · HOW OFTEN, MEASURED ON SENKTIDE BASELINES · 60 s WINDOWS</text>
+
+      <!-- y grid + ticks : 0..40 % over y 372..288 -->
+      <line x1="92" y1="372" x2="680" y2="372" class="sv-axis"></line>
+      <line x1="92" y1="351" x2="680" y2="351" class="sv-grid"></line>
+      <line x1="92" y1="330" x2="680" y2="330" class="sv-grid"></line>
+      <line x1="92" y1="309" x2="680" y2="309" class="sv-grid"></line>
+      <line x1="92" y1="288" x2="680" y2="288" class="sv-grid"></line>
+      <text x="84" y="376" class="sv-lbl-s" text-anchor="end">0</text>
+      <text x="84" y="355" class="sv-lbl-s" text-anchor="end">10</text>
+      <text x="84" y="334" class="sv-lbl-s" text-anchor="end">20</text>
+      <text x="84" y="313" class="sv-lbl-s" text-anchor="end">30</text>
+      <text x="84" y="292" class="sv-lbl-s" text-anchor="end">40%</text>
+
+      <!-- group 1 : fast J=1.6 → 29.5 % = 61.95 px -->
+      <rect x="140" y="370" width="44" height="2" class="sv-real"></rect>
+      <text x="162" y="364" class="sv-val" text-anchor="middle" style="font-size:11px">0.0</text>
+      <rect x="192" y="310" width="44" height="62" class="sv-sur"></rect>
+      <text x="214" y="304" class="sv-val" text-anchor="middle" style="font-size:11px">29.5</text>
+      <text x="188" y="388" class="sv-lbl" text-anchor="middle">fast · J 1.6 s</text>
+      <text x="188" y="402" class="sv-lbl-s" text-anchor="middle">AUC 0.647</text>
+
+      <!-- group 2 : fast J=2.5 → 38.3 % = 80.4 px -->
+      <rect x="330" y="370" width="44" height="2" class="sv-real"></rect>
+      <text x="352" y="364" class="sv-val" text-anchor="middle" style="font-size:11px">0.0</text>
+      <rect x="382" y="292" width="44" height="80" class="sv-sur"></rect>
+      <text x="404" y="286" class="sv-val" text-anchor="middle" style="font-size:11px">38.3</text>
+      <text x="378" y="388" class="sv-lbl" text-anchor="middle">fast · J 2.5 s</text>
+      <text x="378" y="402" class="sv-lbl-s" text-anchor="middle">AUC 0.692</text>
+
+      <!-- group 3 : slow J=2.5 → 16.9 % = 35.5 px -->
+      <rect x="520" y="370" width="44" height="2" class="sv-real"></rect>
+      <text x="542" y="364" class="sv-val" text-anchor="middle" style="font-size:11px">0.0</text>
+      <rect x="572" y="336" width="44" height="36" class="sv-sur"></rect>
+      <text x="594" y="330" class="sv-val" text-anchor="middle" style="font-size:11px">16.9</text>
+      <text x="568" y="388" class="sv-lbl" text-anchor="middle">slow · J 2.5 s</text>
+      <text x="568" y="402" class="sv-lbl-s" text-anchor="middle">AUC 0.585</text>
+
+      <text x="24" y="376" class="sv-lbl-s" transform="rotate(-90 24 376)">windows w/ sub-floor interval</text>
+    </svg>
+    <figcaption>
+      <b>A support difference, not a distribution difference.</b> The curve shapes in panel A are
+      schematic; the measured quantity is panel B — the share of 60-second windows carrying at
+      least one impossible within-cell interval, real against dithered, per stream and per jitter
+      radius <em class="term">J</em>. One hand-picked count with no fitting reaches AUC 0.692,
+      against a best learned detector in this project of F1 0.681. Real was 0 of 543 windows.
+      Source: the 2026-09-10 run record; reproduce before building on it.
+    </figcaption>
+  </figure>
+
+  <div class="col">
+    <h2><span class="num">WHY COUNTING, NOT A MODEL</span>The safeguard could not have fired</h2>
+    <p>
+      The design carried a negative control: dither a recording once, use <em class="term">that</em>
+      as the positive against a further-dithered negative. Flat result clears the design. But its
+      positive class has already been dithered, so every leak arising <em class="term">from</em>
+      dithering sits on both sides of the comparison. The control sees only what a second dither
+      adds — and the leak has already saturated.
+    </p>
+  </div>
+
+  <figure>
+    <svg viewBox="0 0 720 250" role="img" aria-label="On a probability axis, real data sits at 0.000 and one dither at 0.932, a gap the training objective sees; the control compares 0.932 against 0.953, a gap of 0.021 that reads as flat.">
+      <text x="24" y="26" class="sv-panel">P( WINDOW CONTAINS AN IMPOSSIBLE WITHIN-CELL INTERVAL )</text>
+
+      <!-- axis 0..1 over x 70..660 -->
+      <line x1="70" y1="150" x2="660" y2="150" class="sv-axis"></line>
+      <line x1="70" y1="150" x2="70" y2="157" class="sv-axis"></line>
+      <line x1="365" y1="150" x2="365" y2="157" class="sv-axis"></line>
+      <line x1="660" y1="150" x2="660" y2="157" class="sv-axis"></line>
+      <text x="70" y="172" class="sv-lbl-s" text-anchor="middle">0.0</text>
+      <text x="365" y="172" class="sv-lbl-s" text-anchor="middle">0.5</text>
+      <text x="660" y="172" class="sv-lbl-s" text-anchor="middle">1.0</text>
+
+      <!-- markers -->
+      <circle cx="70" cy="150" r="6" class="sv-real"></circle>
+      <text x="70" y="130" class="sv-val" text-anchor="middle">0.000</text>
+      <text x="70" y="113" class="sv-lbl" text-anchor="middle">real</text>
+
+      <circle cx="620" cy="150" r="6" class="sv-sur"></circle>
+      <circle cx="632" cy="150" r="6" class="sv-kill"></circle>
+
+      <!-- callout for the two crowded points -->
+      <line x1="620" y1="144" x2="596" y2="104" class="sv-dash"></line>
+      <line x1="632" y1="144" x2="656" y2="104" class="sv-dash"></line>
+      <text x="590" y="96" class="sv-val" text-anchor="end">0.932</text>
+      <text x="590" y="80" class="sv-lbl" text-anchor="end">1 dither · control's POSITIVE</text>
+      <text x="662" y="96" class="sv-val" text-anchor="start">0.953</text>
+      <text x="662" y="80" class="sv-lbl" text-anchor="start">2 dithers</text>
+      <text x="662" y="64" class="sv-lbl" text-anchor="start">control's NEGATIVE</text>
+
+      <!-- big bracket : what the objective sees -->
+      <path d="M70 196 L70 206 L620 206 L620 196" class="sv-arrow" stroke="var(--real)"></path>
+      <text x="345" y="226" class="sv-txt-b" text-anchor="middle" fill="var(--real)">the training objective sees 0.932 — perfect separation</text>
+
+      <!-- tiny bracket : what the control sees -->
+      <path d="M620 118 L620 108 L632 108 L632 118" class="sv-arrow" stroke="var(--kill)"></path>
+
+      <rect x="330" y="34" width="300" height="1" class="sv-grid"></rect>
+      <text x="24" y="52" class="sv-txt-b" fill="var(--kill)">the control sees 0.021 — and reads it as a pass</text>
+      <text x="24" y="70" class="sv-txt" style="font-size:11.5px">flat precisely because the leak is total</text>
+    </svg>
+    <figcaption>
+      <b>A check that cannot fail, whose danger is that it passes.</b> The distance the objective
+      exploits and the distance the control measures are the same axis, and the control was
+      handed the wrong end of it. The design made this control load-bearing twice — the only
+      thing between it and a confident artifact detector, and the calibrator setting the operating
+      threshold.
+    </figcaption>
+  </figure>
+
+  <div class="rule-note">
+    <span class="tag">The transferable rule</span>
+    <p>
+      A self-supervised objective needs a control whose reference class is provably free of the
+      defect — and the obvious control, built by applying the same corrupting operation once
+      more, is not that. Anything that manufactures its own negatives inherits this trap. The
+      remedy is a direct diagnostic with no learned model in the loop: count support violations
+      at <em class="term">level</em>, not increment.
+    </p>
+  </div>
+
+  <div class="col">
+    <h2><span class="num">WHAT IS ON OFFER</span>Eight candidates, and the split that matters is cost</h2>
+    <p>
+      Each candidate preserves more of the recording's structure than the killed one did. What
+      separates them for the purposes of this decision is not their pedigree — it is whether
+      running one means calling existing code or building a new algorithm with its own
+      correctness tests.
+    </p>
+  </div>
+
+  <figure>
+    <svg viewBox="0 0 720 470" role="img" aria-label="Eight surrogate candidates plotted by how much structure they preserve against implementation cost. Four sit below a line marking existing or trivial code; four above it need new algorithms. Pattern jitter preserves the most and costs the most.">
+      <!-- axes -->
+      <line x1="96" y1="400" x2="690" y2="400" class="sv-axis"></line>
+      <line x1="96" y1="52" x2="96" y2="400" class="sv-axis"></line>
+
+      <text x="393" y="428" class="sv-lbl" text-anchor="middle">structure preserved  →</text>
+      <text x="120" y="418" class="sv-lbl-s">rate only</text>
+      <text x="686" y="418" class="sv-lbl-s" text-anchor="end">recent history, exactly</text>
+      <text x="20" y="226" class="sv-lbl" text-anchor="middle" transform="rotate(-90 20 226)">implementation cost  →</text>
+
+      <!-- the cost line -->
+      <line x1="96" y1="308" x2="690" y2="308" class="sv-dash"></line>
+      <text x="686" y="300" class="sv-lbl-s" text-anchor="end">ABOVE: NEW CODE + ITS OWN SUPPORT TESTS</text>
+      <text x="686" y="324" class="sv-lbl-s" text-anchor="end">BELOW: EXISTS, OR NEARLY FREE</text>
+
+      <!-- ---- cheap tier ---- -->
+      <!-- uniform per-onset dither : the known-bad control -->
+      <circle cx="140" cy="382" r="8" class="sv-kill"></circle>
+      <text x="156" y="379" class="sv-txt-b" fill="var(--kill)">uniform per-onset dither</text>
+      <text x="156" y="394" class="sv-lbl-s" fill="var(--kill)">KNOWN-BAD · THE CONTROL · MUST RUN</text>
+
+      <!-- dither with dead-time -->
+      <circle cx="212" cy="348" r="6" class="sv-node"></circle>
+      <text x="226" y="345" class="sv-txt">dither with dead-time τ</text>
+      <text x="226" y="359" class="sv-lbl-s">minimal fix to the killed one</text>
+
+      <!-- circular shift -->
+      <circle cx="418" cy="372" r="6" class="sv-node"></circle>
+      <text x="432" y="369" class="sv-txt">circular shift</text>
+      <text x="432" y="383" class="sv-lbl-s">INCUMBENT · 4 OF THE 6 DETECTORS USE IT</text>
+
+      <!-- rigid shift no wrap -->
+      <circle cx="462" cy="336" r="6" class="sv-node"></circle>
+      <text x="476" y="333" class="sv-txt">rigid shift, no wrap</text>
+      <text x="476" y="347" class="sv-lbl-s">the cheap splice repair</text>
+
+      <!-- ---- expensive tier ---- -->
+      <!-- interval / window jitter -->
+      <circle cx="316" cy="266" r="6" class="sv-node"></circle>
+      <text x="330" y="263" class="sv-txt">interval / window jitter</text>
+      <text x="330" y="277" class="sv-lbl-s">AMARASINGHAM 2012</text>
+
+      <!-- operational-time dither -->
+      <circle cx="358" cy="186" r="6" class="sv-node"></circle>
+      <text x="372" y="183" class="sv-txt">operational-time dither</text>
+      <text x="372" y="197" class="sv-lbl-s">LOUIS 2010 · NEEDS A RATE ESTIMATE</text>
+
+      <!-- joint-ISI dither -->
+      <circle cx="512" cy="160" r="6" class="sv-node"></circle>
+      <text x="500" y="157" class="sv-txt" text-anchor="end">joint-ISI dither</text>
+      <text x="500" y="171" class="sv-lbl-s" text-anchor="end">LOUIS 2010 · PER-CELL 2-D HISTOGRAM</text>
+
+      <!-- pattern jitter : the one to beat -->
+      <circle cx="628" cy="96" r="9" class="sv-real"></circle>
+      <text x="612" y="86" class="sv-txt-b" text-anchor="end" fill="var(--real)">pattern jitter</text>
+      <text x="612" y="101" class="sv-lbl-s" text-anchor="end" fill="var(--real)">HARRISON &amp; GEMAN 2009 · A DYNAMIC PROGRAM</text>
+      <text x="612" y="115" class="sv-lbl-s" text-anchor="end" fill="var(--real)">THE ONE TO BEAT</text>
+
+      <text x="24" y="30" class="sv-panel">THE CANDIDATE FIELD</text>
+    </svg>
+    <figcaption>
+      <b>The dashed line is the build order, not a cut.</b> Four candidates sit below it and cost
+      essentially nothing to screen; four sit above and each needs an algorithm plus its own
+      support-violation tests, because a subtly wrong surrogate produces a leak that looks like a
+      finding. With the whole field entering, that line stops being a pruning criterion and
+      becomes the sequence — the cheap four can run while the expensive four are still being
+      written. Positions on both axes are qualitative: they encode the ordering argued in the
+      handoff, not a measurement.
+    </figcaption>
+  </figure>
+
+  <div class="col">
+    <h2><span class="num">THE RULING ON THE FIELD</span>Stella's figure 10 says you cannot pick in advance</h2>
+    <p class="lede">
+      Tony, 2026-09-10: <em class="term">my read of Stella figure 10 is we need to do all of them.
+      You can't predict a priori which one is right.</em> The figure's own text supports that
+      in more detail than the figure does.
+    </p>
+    <p>
+      Stella ran six surrogates through the same pattern detector on the same monkey recordings.
+      On simulated data with ground truth, five of the six behaved; on the real recordings, where
+      nobody knows the answer, they returned overlapping but non-identical sets of significant
+      patterns — and each surrogate has its own signature of extras.
+    </p>
+  </div>
+
+  <figure>
+    <svg viewBox="0 0 720 350" role="img" aria-label="A matrix of five surrogate methods against six trial epochs from Stella figure 10. Only the cue epoch is unanimous. Every surrogate contributes patterns the others do not find, and the paper's recommended method misses a pattern all five others find during movement.">
+      <text x="24" y="28" class="sv-panel">STELLA 2022 FIG. 10 · MONKEY N · PATTERNS FOUND, BY SURROGATE AND EPOCH</text>
+
+      <!-- column headers -->
+      <text x="204" y="80" class="sv-lbl" text-anchor="middle">start</text>
+      <text x="292" y="80" class="sv-lbl" text-anchor="middle">cue</text>
+      <text x="381" y="80" class="sv-lbl" text-anchor="middle">earl-d</text>
+      <text x="469" y="80" class="sv-lbl" text-anchor="middle">late-d</text>
+      <text x="557" y="80" class="sv-lbl" text-anchor="middle">mov</text>
+      <text x="646" y="80" class="sv-lbl" text-anchor="middle">hold</text>
+
+      <!-- UDD -->
+      <text x="150" y="114" class="sv-txt" text-anchor="end">UDD</text>
+      <rect x="165" y="96" width="78" height="28" class="sv-cell-x"></rect><text x="204" y="114" class="sv-cx" text-anchor="middle">+SGHF</text>
+      <rect x="253" y="96" width="78" height="28" class="sv-cell"></rect>
+      <rect x="342" y="96" width="78" height="28" class="sv-cell-x"></rect><text x="381" y="114" class="sv-cx" text-anchor="middle">+SGHF</text>
+      <rect x="430" y="96" width="78" height="28" class="sv-cell-x"></rect><text x="469" y="114" class="sv-cx" text-anchor="middle">+SGHF</text>
+      <rect x="518" y="96" width="78" height="28" class="sv-cell"></rect>
+      <rect x="607" y="96" width="78" height="28" class="sv-cell-x"></rect><text x="646" y="114" class="sv-cx" text-anchor="middle">+SGHF</text>
+
+      <!-- JISI-D -->
+      <text x="150" y="152" class="sv-txt" text-anchor="end">JISI-D</text>
+      <rect x="165" y="134" width="78" height="28" class="sv-cell-x"></rect><text x="204" y="152" class="sv-cx" text-anchor="middle">+PGHF</text>
+      <rect x="253" y="134" width="78" height="28" class="sv-cell"></rect>
+      <rect x="342" y="134" width="78" height="28" class="sv-cell"></rect>
+      <rect x="430" y="134" width="78" height="28" class="sv-cell"></rect>
+      <rect x="518" y="134" width="78" height="28" class="sv-cell"></rect>
+      <rect x="607" y="134" width="78" height="28" class="sv-cell-x"></rect><text x="646" y="152" class="sv-cx" text-anchor="middle">+PGHF</text>
+
+      <!-- ISI-D -->
+      <text x="150" y="190" class="sv-txt" text-anchor="end">ISI-D</text>
+      <rect x="165" y="172" width="78" height="28" class="sv-cell-x"></rect><text x="204" y="190" class="sv-cx" text-anchor="middle">+PGHF</text>
+      <rect x="253" y="172" width="78" height="28" class="sv-cell"></rect>
+      <rect x="342" y="172" width="78" height="28" class="sv-cell"></rect>
+      <rect x="430" y="172" width="78" height="28" class="sv-cell"></rect>
+      <rect x="518" y="172" width="78" height="28" class="sv-cell"></rect>
+      <rect x="607" y="172" width="78" height="28" class="sv-cell-x"></rect><text x="646" y="190" class="sv-cx" text-anchor="middle">+PGHF</text>
+
+      <!-- WIN-SHUFF -->
+      <text x="150" y="228" class="sv-txt" text-anchor="end">WIN-SHUFF</text>
+      <rect x="165" y="210" width="78" height="28" class="sv-cell-x"></rect><text x="204" y="228" class="sv-cx" text-anchor="middle">+PGHF</text>
+      <rect x="253" y="210" width="78" height="28" class="sv-cell"></rect>
+      <rect x="342" y="210" width="78" height="28" class="sv-cell-x"></rect><text x="381" y="228" class="sv-cx" text-anchor="middle">+PGLF</text>
+      <rect x="430" y="210" width="78" height="28" class="sv-cell"></rect>
+      <rect x="518" y="210" width="78" height="28" class="sv-cell"></rect>
+      <rect x="607" y="210" width="78" height="28" class="sv-cell-x"></rect><text x="646" y="228" class="sv-cx" text-anchor="middle">+PGHF</text>
+
+      <!-- TR-SHIFT -->
+      <text x="150" y="266" class="sv-txt-b" text-anchor="end">TR-SHIFT</text>
+      <text x="150" y="280" class="sv-lbl-s" text-anchor="end">THEIR PICK</text>
+      <rect x="165" y="248" width="78" height="28" class="sv-cell-x"></rect><text x="204" y="266" class="sv-cx" text-anchor="middle">+SGHF</text>
+      <rect x="253" y="248" width="78" height="28" class="sv-cell"></rect>
+      <rect x="342" y="248" width="78" height="28" class="sv-cell"></rect>
+      <rect x="430" y="248" width="78" height="28" class="sv-cell"></rect>
+      <rect x="518" y="248" width="78" height="28" class="sv-cell-m"></rect><text x="557" y="266" class="sv-cm" text-anchor="middle">MISSES</text>
+      <rect x="607" y="248" width="78" height="28" class="sv-cell"></rect>
+
+      <!-- unanimous column marker -->
+      <line x1="292" y1="88" x2="292" y2="92" class="sv-axis"></line>
+      <text x="292" y="300" class="sv-lbl-s" text-anchor="middle" fill="var(--pass)">UNANIMOUS</text>
+
+      <!-- legend -->
+      <rect x="24" y="322" width="14" height="12" class="sv-cell"></rect>
+      <text x="44" y="332" class="sv-lbl-s">AGREES WITH CONSENSUS</text>
+      <rect x="222" y="322" width="14" height="12" class="sv-cell-x"></rect>
+      <text x="242" y="332" class="sv-lbl-s">FINDS A TRIAL TYPE THE OTHERS DO NOT</text>
+      <rect x="516" y="322" width="14" height="12" class="sv-cell-m"></rect>
+      <text x="536" y="332" class="sv-lbl-s">MISSES THE CONSENSUS</text>
+    </svg>
+    <figcaption>
+      <b>One column out of six is unanimous.</b> Transcribed from the paper's own description of
+      figure 10, left column — every cell here is a sentence in their results. The sharpest detail
+      is the bottom row: TR-SHIFT, the method Stella recommends as the choice for their analysis,
+      is the one that misses a movement-epoch pattern all five others find.
+    </figcaption>
+  </figure>
+
+  <div class="col">
+    <p>
+      <b>One wrinkle before anyone cites this.</b> The paper's discussion says nearly the opposite
+      of its figure — that the five valid surrogates <em class="term">"show almost identical
+      participating neurons, lags, and occurrence numbers"</em> and reach
+      <em class="term">"an almost identical significance level,"</em> then names TR-SHIFT as the
+      method of choice. That summary is not what the figure-10 results section describes, and the
+      cell-by-cell disagreements above are all quoted from that section. A reader citing the
+      conclusion gets a different paper from one reading the figure.
+    </p>
+    <p>
+      Two things transfer regardless. Stella rules out uniform dither independently, on
+      false-positive counts under a completely different analysis — which is our own leak finding
+      arrived at by another route. And their recommended TR-SHIFT is a per-neuron rigid shift
+      applied <em class="term">trial by trial</em>: it is our own
+      <span class="mono">rigid shift, no wrap</span>, and the trial structure it depends on is
+      something continuous baseline recordings do not have.
+    </p>
+  </div>
+
+  <div class="col">
+    <h2><span class="num">HOW THEY WOULD BE TESTED</span>Three tiers, cheapest first</h2>
+    <p>
+      A candidate earns the next tier by passing the one before. The decisive tier needs no model
+      at all — it is the tier that would have caught the original failure, and it runs in minutes.
+    </p>
+  </div>
+
+  <figure>
+    <svg viewBox="0 0 720 300" role="img" aria-label="Candidates pass through three tiers: counting statistics with no model, then a per-cell-only discriminator, then the full model. The uniform dither control must be eliminated at the first tier.">
+      <defs>
+        <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--ink-soft)"></path>
+        </marker>
+        <marker id="ark" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--kill)"></path>
+        </marker>
+      </defs>
+
+      <text x="24" y="28" class="sv-panel">THE SCREEN</text>
+
+      <!-- entry -->
+      <rect x="24" y="98" width="96" height="62" rx="2" class="sv-node"></rect>
+      <text x="72" y="124" class="sv-txt-b" text-anchor="middle">candidates</text>
+      <text x="72" y="141" class="sv-lbl-s" text-anchor="middle">THE RULING</text>
+
+      <line x1="120" y1="129" x2="164" y2="129" class="sv-arrow" marker-end="url(#ar)"></line>
+
+      <!-- tier 1 -->
+      <rect x="168" y="76" width="150" height="106" rx="2" class="sv-node"></rect>
+      <text x="243" y="102" class="sv-txt-b" text-anchor="middle">counting statistics</text>
+      <text x="243" y="120" class="sv-lbl" text-anchor="middle">no model at all</text>
+      <text x="243" y="140" class="sv-lbl-s" text-anchor="middle">SUB-FLOOR RATE · ISI DIVERGENCE</text>
+      <text x="243" y="154" class="sv-lbl-s" text-anchor="middle">EDGE DEFICIT · BIN COLLISIONS</text>
+      <text x="243" y="168" class="sv-lbl-s" text-anchor="middle">GENERATION TIME</text>
+      <text x="243" y="62" class="sv-lbl-s" text-anchor="middle" fill="var(--pass)">MINUTES</text>
+
+      <!-- kill-out of the control -->
+      <line x1="243" y1="182" x2="243" y2="228" class="sv-arrow" stroke="var(--kill)" marker-end="url(#ark)"></line>
+      <text x="253" y="216" class="sv-txt-b" fill="var(--kill)" style="font-size:11.5px">uniform dither must die here</text>
+      <text x="253" y="232" class="sv-lbl-s" fill="var(--kill)">A SCREEN THAT FAILS TO FLAG IT IS BROKEN</text>
+
+      <line x1="318" y1="129" x2="362" y2="129" class="sv-arrow" marker-end="url(#ar)"></line>
+      <text x="340" y="120" class="sv-lbl-s" text-anchor="middle">PASS</text>
+
+      <!-- tier 2 -->
+      <rect x="366" y="76" width="150" height="106" rx="2" class="sv-node"></rect>
+      <text x="441" y="102" class="sv-txt-b" text-anchor="middle">per-cell-only</text>
+      <text x="441" y="118" class="sv-txt-b" text-anchor="middle">discriminator</text>
+      <text x="441" y="138" class="sv-lbl" text-anchor="middle">cannot see across cells</text>
+      <text x="441" y="158" class="sv-lbl-s" text-anchor="middle">BEATS CHANCE ⇒ THAT</text>
+      <text x="441" y="172" class="sv-lbl-s" text-anchor="middle">CANDIDATE LEAKS</text>
+
+      <line x1="516" y1="129" x2="560" y2="129" class="sv-arrow" marker-end="url(#ar)"></line>
+      <text x="538" y="120" class="sv-lbl-s" text-anchor="middle">PASS</text>
+
+      <!-- tier 3 -->
+      <rect x="564" y="76" width="132" height="106" rx="2" class="sv-node"></rect>
+      <text x="630" y="110" class="sv-txt-b" text-anchor="middle">the full model</text>
+      <text x="630" y="130" class="sv-lbl" text-anchor="middle">survivors only</text>
+      <text x="630" y="152" class="sv-lbl-s" text-anchor="middle">GENERATION COST</text>
+      <text x="630" y="166" class="sv-lbl-s" text-anchor="middle">BINDS IN THIS LOOP</text>
+
+      <line x1="24" y1="264" x2="696" y2="264" class="sv-grid"></line>
+      <text x="24" y="286" class="sv-lbl" >Only the last two tiers have a pooling operator — so <tspan class="sv-txt-b">“grid or contests” is a question about them, not about the counting tier.</tspan></text>
+    </svg>
+    <figcaption>
+      <b>The leak detector and the falsification test are the same object.</b> A discriminator
+      structurally blind to cross-cell information should be at chance on a sound surrogate;
+      anything above chance is a leak, and it costs less than the real model. Generation time is
+      a column of the first tier rather than an afterthought, because the design draws fresh
+      negatives every epoch — a surrogate free in the screen can still bind at training time.
+    </figcaption>
+  </figure>
+
+  <div class="col">
+    <h2><span class="num">ALREADY SETTLED</span>Two axes that are not yours to rule on</h2>
+  </div>
+
+  <div class="fixed">
+    <div>
+      <h4>J is per-stream</h4>
+      <p>
+        At <em class="term">J</em> = 2.5 s, <span class="num-sur">50.4%</span> of fast within-cell
+        intervals sit inside 2<em class="term">J</em> against <span class="num-real">0.00%</span>
+        of slow ones. One value cannot serve both streams; the grid carries a fast axis and a slow
+        axis.
+      </p>
+    </div>
+    <div>
+      <h4>τ is declared, not fitted</h4>
+      <p>
+        The dead-time floor is a property of the producer's event extractor. It is theirs to state
+        and ours to record — inferring it from our own data would fit the very quantity the screen
+        tests against. This is an ask that should go out whichever way you rule.
+      </p>
+    </div>
+  </div>
+
+  <div class="col">
+    <h2><span class="num">THE RULING</span>Where the three stand</h2>
+  </div>
+
+  <div class="sheet">
+
+    <div class="ask">
+      <div class="ask-n">01</div>
+      <div>
+        <h3>Which candidates run <span class="mono" style="font-size:11px;letter-spacing:.1em;color:var(--pass)">· RULED</span></h3>
+        <p>
+          <b>All eight.</b> Nothing in the literature or in our own data predicts which surrogate
+          is the right null for this preparation, and the one systematic comparison that exists
+          shows the field disagreeing on real recordings. A field that disagrees is a field you
+          measure.
+        </p>
+        <p>
+          This retires the suggestion above it, which was to let the literature prune the
+          expensive four. Reading the literature is what removed that option.
+        </p>
+      </div>
+    </div>
+
+    <div class="ask">
+      <div class="ask-n">02</div>
+      <div>
+        <h3>Grid, or independent contests <span class="mono" style="font-size:11px;letter-spacing:.1em;color:var(--surrogate)">· OPEN</span></h3>
+        <p>
+          The four tube variants were explicitly "not a race" — the guard only paid once the bar
+          was multiplicative. Surrogate choice may interact with the pooling operator and with
+          <em class="term">J</em> the same way.
+        </p>
+        <div class="rec">
+          <b>Suggested</b>
+          Grid, and the ruling above makes this the one that now matters — eight surrogates
+          crossed with a per-stream <em class="term">J</em> and a pooling operator is a large
+          product, where before it might have been two or three survivors. The saving grace is
+          that the counting tier has no pooling operator: it is grid-free and runs over all eight
+          at once. Fix the grid at the per-cell discriminator, on whatever the counting tier
+          leaves standing.
+        </div>
+      </div>
+    </div>
+
+    <div class="ask">
+      <div class="ask-n">03</div>
+      <div>
+        <h3>Whether Stella answers part of it <span class="mono" style="font-size:11px;letter-spacing:.1em;color:var(--pass)">· RULED</span></h3>
+        <p>
+          It answers it in the opposite direction from the one anticipated. It does not retire
+          candidates — it removes the grounds for retiring any, and it independently rules out the
+          uniform dither we had already killed by counting.
+        </p>
+        <p>
+          What it does hand over is a caution about its own conclusion section, and the fact that
+          its recommended method is our cheapest candidate wearing a trial structure this
+          preparation does not have.
+        </p>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="caveat">
+    <h4>One thing to confirm before reusing a number</h4>
+    <p>
+      The two measured tables in the run record are in different units and the second does not
+      state its conditions. The leak table reports sub-floor rates per 60-second window, by stream
+      and by <em class="term">J</em> — <span class="num-sur">29.5%</span> and
+      <span class="num-sur">38.3%</span> for fast. The saturation table reports
+      <span class="num-kill">0.932</span> for one dither, with no stream, <em class="term">J</em>
+      or window length given.
+    </p>
+    <p>
+      Those are not reconcilable as written. The saturation argument does not depend on the exact
+      value — a leak that is total saturates whatever the conditions — but anyone quoting 0.932
+      alongside 29.5% should pin its conditions first.
+    </p>
+  </div>
+
+  <p class="foot">
+    Sources · docs/reviews/2026-09-10-coordination-without-labels_2026-09-10.md ·
+    docs/todo/2026-09-10-which-surrogates-enter-the-screen.md ·
+    docs/todo/2026-09-10-build-the-surrogate-screen.md ·
+    docs/handoffs/2026-09-10-the-surrogate-is-the-design.md<br>
+    Not murderboarded, at Tony's instruction. Working material for this tree — not for an outside reader.
+  </p>
+
+</div>
