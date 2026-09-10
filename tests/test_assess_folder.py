@@ -59,6 +59,40 @@ def test_a_folder_with_no_regions_is_assessed_whole_and_says_so(tmp_path):
         assert "no regions declared" in rec.window_source
 
 
+def test_the_summary_says_how_many_windows_were_assumed(tmp_path):
+    """Said once at the top, not only per recording.
+
+    Tony, 2026-09-10: when no baseline is defined, use the whole trace and
+    **flag to the user that we did it**. The per-recording ``window:`` line has
+    always carried it, but a reader scanning 84 blocks for numbers is not
+    reading 84 window lines, and the assumption has to arrive before the
+    numbers rather than beside them.
+    """
+    fa = assess_folder(_write_folder(tmp_path / "f", regions=None),
+                       n_surrogates=25)
+    assert len(fa.assumed) == 2, [r.window_source for r in fa.measured]
+
+    head = format_assessment(fa).split("\n\n")[0]
+    assert "declare no regions" in head, head
+    assert "WHOLE" in head, head
+    # It names them, or the reader cannot go and check which.
+    for rec in fa.measured:
+        assert rec.slice_id in head, head
+
+
+def test_a_declared_baseline_is_not_reported_as_assumed(tmp_path):
+    """The counterpart: a folder that states its periods produces no flag, or
+    the warning becomes noise a reader learns to scroll past."""
+    regions = ("slice_id,region_idx,label,start_sec,end_sec\n"
+               "rec_1,1,baseline,0,1800\n"
+               "rec_2,1,baseline,0,1800\n")
+    fa = assess_folder(_write_folder(tmp_path / "f", regions=regions),
+                       n_surrogates=25)
+    assert fa.measured, [r.skipped for r in fa.records]
+    assert fa.assumed == []
+    assert "declare no regions" not in format_assessment(fa)
+
+
 def test_a_treatment_only_folder_is_refused_not_measured(tmp_path):
     """FOUNDATIONS §9: coordination properties are not taken from treatments.
 
