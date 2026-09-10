@@ -50,7 +50,7 @@ box. Modelled on `murderboard-lit/_NEEDED.md`, which has had this mechanism sinc
 a person's name and this repo is public (SAP004).
 
 Topics in use: `radar/`, `coordination/`, `DL/`, `surrogates/`, `ml/`. As of 2026-09-10 the shelf
-holds 31 papers — six of them on surrogate methods, a topic the shelf held nothing on before this date.
+holds 36 papers — nine of them on surrogate methods, a topic the shelf held nothing on before this date.
 
 ⚠ **There is no master library.** Checked 2026-09-10: `murderboard-lit/` is its own repo of 206
 papers but on a different subject entirely — agentic reproducibility, paper-code consistency —
@@ -83,20 +83,32 @@ locations belong to other projects.
       canonical statement of the thesis this project keeps re-deriving: a surrogate preserving a
       specified feature set can only test whether structure exceeds what that feature set implies.
 
-- [ ] **Hansen VG (1973).** Constant false alarm rate processing in search radars. Proc. IEE
-      International Radar Conference, IEE Conf. Publ. **105**, 325–332.
-      → ⚠ **Settles a live dispute in this repo.** `GLOSSARY.md` and `README.md` cite Hansen 1973 as
-      the origin of GO-CFAR; `detector_history.md` §4 puts **Hansen & Sawyers 1980** in a column
-      headed *origin* and marks it read-in-full. Two murderboard roles came out on opposite sides.
-      The shelf holds the 1980 paper and not this one, so the question cannot be closed from what we
-      have. A 1973 IEE conference publication is genuinely hard to get — this may need a library.
+- [ ] **Gregers Hansen, V. (1973).** Constant-false-alarm-rate processing in search radars. Proc.
+      IEE International Radar Conference *Radar — present and future*, 23–25 October 1973, Savoy
+      Place, London. IEE Conf. Publ. **105**.
+      → **PARTIALLY RESOLVED 2026-09-10, and it turned up a name error.** Tony found the volume's
+      contents listing (`radar/iee_conf_105_1973_CONTENTS_ONLY.pdf` — the listing, **not** the
+      paper). It reads:
+      > GREGERS HANSEN,V.: Constant-false-alarm-rate processing in search radars
 
-- [ ] **Date A, Bienenstock E & Geman S (1998).** On the temporal resolution of neural activity.
-      Technical Report, Division of Applied Mathematics, Brown University.
-      → The root of the dithering lineage, cited by Louis et al. 2010. Confirmed to exist by
-      citation; no open copy located. Lowest priority — Louis et al. and Harrison & Geman supersede
-      it operationally — but this project's attribution rule is to trace to the origin, and right
-      now that trace stops one step short.
+      So **the paper is real, the title is confirmed, and the surname is `Gregers Hansen`, not
+      `Hansen`.** Every citation in this repo — `GLOSSARY.md`, `README.md`, `detector_history.md` —
+      writes it as *Hansen 1973* or *Hansen VG*, which inverts a compound Danish surname. The radar
+      literature commonly makes the same inversion, which is presumably where we got it.
+      ⚠ **Still open, and it is the half that matters:** whether this paper is the ORIGIN of
+      greatest-of CFAR. The contents listing gives no abstract, no pages and no text, so it cannot
+      settle `detector_history.md` §4 putting **Hansen & Sawyers 1980** in a column headed *origin*.
+      Our claimed page range **325–332 remains unverified** — it appears in no source we hold.
+      Needs the full text; a library job.
+
+- [x] ~~**Date A, Bienenstock E & Geman S (1998).** On the temporal resolution of neural
+      activity. Technical Report, Division of Applied Mathematics, Brown University.~~
+      **Tony fetched it 2026-09-10** from Geman's Brown page →
+      `surrogates/date_1998_temporal_resolution.pdf`, dated 21 May 1998. **The root of the dithering
+      lineage, and the trace no longer stops short of it.** Note the acknowledgements: the
+      multi-electrode data came from Hatsopoulos, Ojakangas & Donoghue — the same Hatsopoulos who is
+      a co-author on the 2012 jitter paper, so the lineage from this report to the method we intend
+      to use is one continuous group.
 
 ## Fetched 2026-09-10, on the shelf
 
@@ -105,7 +117,11 @@ as an absence of effort.
 
 | paper | where |
 |---|---|
-| Harrison & Geman 2009, *Neural Comput* 21(5):1244–1258 | `surrogates/harrison_geman_2009_pattern_jitter.pdf` — **fetched by Tony** |
+| Date, Bienenstock & Geman 1998, Brown Univ. tech. report | `surrogates/date_1998_temporal_resolution.pdf` — **fetched by Tony**, the root of the lineage |
+| Harrison & Geman 2009, *Neural Comput* 21(5):1244–1258 | `surrogates/harrison_geman_2009_pattern_jitter.pdf` — **fetched by Tony**. ⚠ **Replaced 2026-09-10** with the published version; the file was briefly the NIH author manuscript |
+| Hatsopoulos, Geman, Amarasingham & Bienenstock 2003, *Neurocomputing* 52–54:25–29 | `surrogates/hatsopoulos_2003_what_time_scale.pdf` — *"At what time scale does the nervous system operate?"*, which is the *J* question by another name |
+| Amarasingham, Geman & Harrison 2015, *PNAS* | `surrogates/amarasingham_2015_ambiguity_nonidentifiability.pdf` — what a surrogate test can and cannot conclude |
+| Paradiso et al. 2019, *Front Integr Neurosci* 12:63 | `coordination/paradiso_2019_transsaccadic_v1_lfp.pdf` — swept up from the same page; not on the ask list, filed rather than discarded |
 | Amarasingham, Harrison, Hatsopoulos & Geman 2012, *J Neurophysiol* 107:517–531 | `surrogates/amarasingham_2012_jitter_method.pdf` — **fetched by Tony**, publisher version |
 | Elsayed & Cunningham 2017, *Nat Neurosci* 20:1310–1318 | `surrogates/elsayed_cunningham_2017_byproduct.pdf` — **fetched by Tony**, publisher version |
 | Louis, Gerstein, Grün & Diesmann 2010, *Front Comput Neurosci* 4:127 | `surrogates/louis_2010_operational_time_dither.pdf` |
