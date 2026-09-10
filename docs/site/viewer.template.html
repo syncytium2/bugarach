@@ -485,6 +485,11 @@
                color: var(--fg); }
   .turboflag b { font-weight: 600; }
   .turboflag .ids { color: var(--muted); }
+  .turboflag button.designate { width: auto; margin: 0 4px 0 0; padding: 1px 9px;
+                                font-size: 12px; }
+  .turboflag button.designate[aria-pressed="true"] { border-color: #b8860b;
+                                background: color-mix(in srgb, #b8860b 18%, transparent);
+                                font-weight: 600; }
   #turboScroll { overflow: auto; max-height: 74vh;
                  border: 1px solid var(--line); border-radius: 8px; }
   #turboCv { display: block; }
@@ -2542,6 +2547,10 @@ function resolveBaselines() {
       win: w.window || null,
       source: w.source || "",
       skipped: w.skipped || "",
+      // The period names this recording DOES carry, when none of them matched.
+      // Carried rather than recomputed so the offer the reader is shown is
+      // built from the same verdict that refused them.
+      labels: w.labels || [],
       /* ASSUMED is the one thing this layer adds, and it is a question
          `folderAssessWindow` never had to answer: it returns `window: null` for
          "the whole recording", which is the right window and also an
@@ -2579,7 +2588,10 @@ async function turboLoad() {
        column is a statement rather than a mystery. */
     const b = BASELINE.get(rec.id)
               || { win: null, assumed: true, skipped: "", source: "" };
-    if (b.skipped) { skipped.push({ id: rec.id, why: b.skipped }); continue; }
+    if (b.skipped) {
+      skipped.push({ id: rec.id, why: b.skipped, labels: b.labels || [] });
+      continue;
+    }
     const d = await loadRecording(rec);
     const byRoi = d.streams.get(STREAM) || d.streams.get([...d.streams.keys()][0]);
     if (!byRoi) continue;
@@ -2865,13 +2877,62 @@ function paintTurboFlag() {
       + "if any of them is a treated preparation, a K set here is set on drug "
       + "time.",
       assumed));
-  if (skipped.length)
+  if (skipped.length) {
     f.append(line(
       skipped.length + " recording(s) not shown:",
       "the folder declares their periods and names none as a baseline, so they "
       + "are treated — coordination properties are not taken from treatments.",
       skipped.map(s => s.id)));
+    /* AND THE WAY OUT, WHERE THE PROBLEM APPEARS. The refusal is right when
+       those periods really are treatments, and wrong when the lab simply calls
+       its untreated period something the built-in guess does not know —
+       `vehicle`, `naive`, `ctrl`. The reader is the only one who can tell, so
+       the names their folder actually uses are offered here, next to the
+       sentence that just refused them, rather than in a panel they would have
+       to know to go and find. */
+    const offer = [...new Set(skipped.flatMap(s => s.labels || []))].sort();
+    if (offer.length) f.append(designateRow(offer));
+  }
   f.hidden = false;
+}
+
+/* The designation control: one button per label the folder actually uses.
+   Built as nodes — a label is a VALUE out of the reader's own CSV, so it never
+   goes near innerHTML (`test_no_value_is_ever_concatenated_into_markup`). */
+function designateRow(labels) {
+  const p = document.createElement("p");
+  p.style.margin = "6px 0 0";
+  const b = document.createElement("b");
+  b.textContent = BASELINE_DESIGNATED.length
+    ? "Baseline is: " : "Is one of these your baseline?";
+  p.append(b, document.createTextNode(" "));
+  for (const lab of labels) {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "ghost designate";
+    btn.textContent = lab;
+    btn.setAttribute("aria-pressed",
+                     String(BASELINE_DESIGNATED.includes(lab.toLowerCase())));
+    btn.onclick = () => designateBaseline([lab.toLowerCase()]);
+    p.append(btn);
+  }
+  if (BASELINE_DESIGNATED.length) {
+    const undo = document.createElement("button");
+    undo.type = "button";
+    undo.className = "ghost designate";
+    undo.textContent = "use the usual names";
+    undo.onclick = () => designateBaseline([]);
+    p.append(undo);
+  }
+  const why = document.createElement("span");
+  why.className = "ids";
+  why.textContent = BASELINE_DESIGNATED.length
+    ? " — your choice is being used instead of the built-in guess."
+    : " — picking one measures those recordings on it instead of skipping them."
+      + " It replaces the built-in guess (" + BASELINE_TOKENS.join(", ") + ")"
+      + " for this folder.";
+  p.append(why);
+  return p;
 }
 
 function paintTurboWhat() {
@@ -2883,6 +2944,19 @@ function paintTurboWhat() {
   const bound = TURBO.rows.filter(r =>
     Math.floor(pct / 100 * r.nRoi + 0.5) < floor).length;
   paintTurboFlag();
+  /* NOTHING TO DESCRIBE. `Math.min(...[])` is Infinity and `Math.max(...[])` is
+     -Infinity, so the settings sentence read "K Infinity–-Infinity across these
+     recordings" whenever every recording was refused — which is exactly the
+     moment the reader most needs the flag above to be the thing they read. The
+     knobs still stand; there is simply nothing they apply to yet. */
+  if (!TURBO.rows.length) {
+    n.textContent =
+      "No recordings to show at these settings. The notice above says why, and "
+      + "nothing below it is a measurement.";
+    const z0 = document.getElementById("tZoomWhat");
+    if (z0) z0.textContent = "";
+    return;
+  }
   n.textContent =
     TURBO.rows.length + " recordings · " + total + " marks at K = " + pct
     + "% with a floor of " + floor + " (that is K " + Math.min(...ks) + "–"
@@ -5285,8 +5359,53 @@ const REGION_MIN_SEC = 900;       // below this the assessment declines to answe
 // do, and this project's own exporter has done it.
 const BASELINE_TOKENS = ["baseline", "base", "pre", "control", "acsf"];
 
-const isBaselineLabel = s =>
-  BASELINE_TOKENS.some(tok => (s || "").trim().toLowerCase().startsWith(tok));
+/* WHAT THE READER SAID THEIR BASELINE IS CALLED. Empty means they have not
+   said, and only then does the built-in vocabulary above apply.
+
+   Tony, 2026-09-10 — "can we use whatever the user provides as baseline. maybe
+   they call it control, or 'pre'". Those two were already in the list; the ones
+   that were not (`vehicle`, `naive`, `ctrl`) had no way in at all, and the
+   folder walk skipped those recordings rather than asking. The answer is not a
+   longer list — this page's own rule, three functions down, is that the
+   baseline is DESIGNATED, not detected, and that a fourth guessing rule
+   compiled into the page would be the worst of them.
+
+   REPLACES rather than extends, matching `assess_folder.is_baseline`: a lab
+   that designates `vehicle` and also has a `pre-wash` period means the first
+   one, and a rule still guessing alongside would quietly measure the other. */
+let BASELINE_DESIGNATED = [];
+
+const isBaselineLabel = s => {
+  const n = (s || "").trim().toLowerCase();
+  const want = BASELINE_DESIGNATED.length ? BASELINE_DESIGNATED : BASELINE_TOKENS;
+  return !!n && want.some(tok => n.startsWith(tok));
+};
+
+/* Every distinct period label in the folder, for offering the reader something
+   to designate. They cannot pick a name they have not been shown, and "none
+   named as a baseline" without the names sends them to open a CSV. */
+function folderLabels() {
+  const seen = new Set();
+  for (const wins of REGIONS.values())
+    for (const w of wins) if ((w.label || "").trim()) seen.add(w.label.trim());
+  return [...seen].sort();
+}
+
+/* Designating re-decides every recording, so the verdicts reached at import are
+   stale the moment this changes — and turbo's rows were built from them. */
+async function designateBaseline(labels) {
+  BASELINE_DESIGNATED = labels.slice();
+  resolveBaselines();
+  TURBO = null; TURBO_SPAN = null; TURBO_MID = null;
+  if (!document.getElementById("turbo").hidden) {
+    if (!TURBO_BUSY) {
+      TURBO_BUSY = true;
+      try { await turboLoad(); } finally { TURBO_BUSY = false; }
+    }
+    turboDraw();
+  }
+  paintWindowPanel();
+}
 
 /* Per-bin DISTINCT-ROI coactivity. An ROI contributes 1 to a bin if it has at
    least one onset there — a count of ROIs, never of spikes. That distinction is
@@ -7081,7 +7200,11 @@ function folderAssessWindow(rec) {
   const base = wins.filter(w => isBaselineLabel(w.label));
   if (!base.length)
     return { skipped: wins.length + " region(s), none named as a baseline — "
-             + "coordination properties are not taken from treatments" };
+             + "coordination properties are not taken from treatments",
+             // What this recording DOES have, so the reader can designate one
+             // of them. Without the names, the refusal sends them to open a CSV.
+             labels: [...new Set(wins.map(w => (w.label || "").trim())
+                                     .filter(Boolean))].sort() };
   const w = base.reduce((a, b) => (b.end - b.start > a.end - a.start ? b : a));
   // The producer's own analysis window WINS wherever one is stated: `start`/
   // `end` are what happened, `aStart`/`aEnd` are what to score. Measuring the

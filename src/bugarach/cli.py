@@ -107,7 +107,33 @@ def _collect(paths: list[str]) -> list[Path]:
     return files
 
 
+def _baseline_labels(raw: str | None) -> tuple[str, ...] | None:
+    """`--baseline vehicle` or `--baseline vehicle,naive` -> what to match.
+
+    ``None`` means the reader said nothing, which is NOT the same as saying
+    nothing matched: the built-in vocabulary is the default only in the first
+    case. An all-whitespace value is refused rather than silently treated as
+    "no designation", because `--baseline ""` is somebody's shell handing over
+    an unset variable and quietly guessing instead is how the wrong window gets
+    measured under a flag that says otherwise.
+    """
+    if raw is None:
+        return None
+    labels = tuple(s for s in (p.strip() for p in raw.split(",")) if s)
+    if not labels:
+        sys.exit("bugarach: --baseline was given nothing to match. Pass the "
+                 "label your folder uses for the untreated period, e.g. "
+                 "--baseline vehicle")
+    return labels
+
+
 def main(argv: list[str] | None = None) -> None:
+    # The one bugarach import at parser-build time, and it is here rather than
+    # at module top to keep that discipline: `assess_folder` reaches only
+    # stdlib and `bugarach.dataset`, so it costs nothing, while `--baseline`'s
+    # help has to NAME the built-in vocabulary rather than restate it and drift.
+    from bugarach.assess_folder import BASELINE_TOKENS
+
     ap = argparse.ArgumentParser(
         prog="bugarach",
         description="Browse event slices and tune coordination detectors "
@@ -130,6 +156,18 @@ def main(argv: list[str] | None = None) -> None:
     asr = sub.add_parser(
         "assess", help="how coordinated are these recordings? (no detector)")
     asr.add_argument("folder", help="the export folder to assess")
+    asr.add_argument("--baseline", default=None, metavar="LABEL[,LABEL…]",
+                     help="what YOUR folder calls its untreated period — "
+                          "'--baseline vehicle', or a comma-separated list. "
+                          "Matched case-insensitively on the start of the "
+                          "label, so 'vehicle' covers 'Vehicle 2'. Without it "
+                          "the guess is "
+                          + "/".join(BASELINE_TOKENS)
+                          + ", and a folder using anything else has its "
+                            "recordings skipped rather than measured on a "
+                            "treatment. When you pass this it REPLACES that "
+                            "list: designating 'vehicle' in a folder that also "
+                            "has 'pre-wash' means vehicle")
     asr.add_argument("--stream", default=None,
                      help="which stream; default is the first in each recording")
     asr.add_argument("--surrogates", type=int, default=1000,
@@ -361,7 +399,8 @@ def main(argv: list[str] | None = None) -> None:
             n_surrogates=args.surrogates, bin_width_sec=args.bin_width,
             limit=args.limit, progress=_progress("assessing"),
             min_rois=(PROPOSAL_MIN_ROIS if args.for_annotation else None),
-            min_rois_frac=fracs, min_rois_floor=args.k_floor)
+            min_rois_frac=fracs, min_rois_floor=args.k_floor,
+            baseline_labels=_baseline_labels(args.baseline))
         print(format_assessment(fa))
         # Exit 0 whether or not anything was assessable. This is a MEASUREMENT,
         # not a gate: "no recording carried a baseline region" is an answer about
