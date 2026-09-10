@@ -2043,3 +2043,15 @@ session's work is not a sweep.
 - **Run record:** `docs/reviews/index_2026-08-31.md` — 11 of 11 roles, 3 rounds, severity
   floor reached.
 - **Holds:** nothing. Deploy released.
+
+### darkroom/bugarach/lit/ — surrogate + ML literature shelf (bugarach-supple-chisel)
+- **Claimed:** 2026-09-10, the **self-supervised-coordination-proposal** session.
+- **Writes:** `<darkroom>/bugarach/lit/surrogates/` and `<darkroom>/bugarach/lit/ml/` — NEW
+  subdirectories only. Does not touch `lit/radar/`, `lit/coordination/`, `lit/DL/` or anything
+  outside `lit/`.
+- **Why:** the shelf holds 20 papers and **none** of them is from the surrogate-data literature —
+  dithering, jitter, and the conditional-inference framing that this project's own circular-shift
+  null rests on. A murderboard on 2026-09-10 found a proposed detector's surrogate leaks per-cell,
+  a defect the missing literature had already characterised. Adding the shelf so it cannot happen
+  again.
+- **Released:** on session end. Additive only — nothing existing is moved or overwritten.
