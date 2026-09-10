@@ -86,7 +86,8 @@ locations belong to other projects.
 - [ ] **Gregers Hansen, V. (1973).** Constant-false-alarm-rate processing in search radars. Proc.
       IEE International Radar Conference *Radar — present and future*, 23–25 October 1973, Savoy
       Place, London. IEE Conf. Publ. **105**.
-      → **PARTIALLY RESOLVED 2026-09-10, and it turned up a name error.** Tony found the volume's
+      → **PARTIALLY RESOLVED 2026-09-10: the citation is confirmed, the origin question is not.**
+      Tony found the volume's
       contents listing (`radar/iee_conf_105_1973_CONTENTS_ONLY.pdf` — the listing, **not** the
       paper). It reads:
       > GREGERS HANSEN,V.: Constant-false-alarm-rate processing in search radars
