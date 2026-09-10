@@ -2111,6 +2111,17 @@ session's work is not a sweep.
 - **Holds:** nothing. Deploy released.
 
 ### darkroom/bugarach/lit/ — surrogate + ML literature shelf (bugarach-supple-chisel)
+- **RELEASED 2026-09-10.** Writing finished; this session holds nothing. Landed as #520 and #521.
+  The shelf went from 20 files to 37, and **`lit/surrogates/` is a new topic that did not exist
+  that morning** — nine papers on dithering, jitter and conditional inference, the literature this
+  project's own circular-shift null rests on and held none of.
+  ⚠ **One file was REPLACED in place**, not added:
+  `surrogates/harrison_geman_2009_pattern_jitter.pdf` was briefly the NIH author manuscript and is
+  now the published version. A session holding the earlier copy has a stale one.
+  ⚠ **Two files there are evidence, not papers**, and are named so nobody cites them as one:
+  `radar/iee_conf_105_1973_CONTENTS_ONLY.pdf` (a volume contents listing) and
+  `radar/gregers_hansen_AUTHOR_PROFILE_ieee.pdf` (an IEEE authority record).
+  What is still wanted is in [`lit_needed.md`](lit_needed.md) — one paper, and it needs a library.
 - **Claimed:** 2026-09-10, the **self-supervised-coordination-proposal** session.
 - **Writes:** `<darkroom>/bugarach/lit/surrogates/` and `<darkroom>/bugarach/lit/ml/` — NEW
   subdirectories only. Does not touch `lit/radar/`, `lit/coordination/`, `lit/DL/` or anything
