@@ -1,117 +1,130 @@
-# Handoff — the loop closes; both of pipeline.md's blockers are gone
+# Handoff — the full-cohort run is WITHDRAWN, the redesign is landed, eight questions are open
 
-**In flight: [#466](https://github.com/syncytium2/bugarach/pull/466)** alone — the field-step
-figure, still held because it is a figure with a caption and was never murderboarded.
-**Everything this session opened is merged:**
-[#507](https://github.com/syncytium2/bugarach/pull/507) (a calibration reaches the recordings
-it was derived from), [#508](https://github.com/syncytium2/bugarach/pull/508) (a trained model
-outlives its process) and [#509](https://github.com/syncytium2/bugarach/pull/509) (weights
-cross in both directions). The predecessor is
-[`docs/handoffs/2026-09-08-mahice-is-usable-nobody-has-run-one.md`](docs/handoffs/2026-09-08-mahice-is-usable-nobody-has-run-one.md)
-— its MAHICE section, its K-floor note and its trap list are NOT superseded by this file.
+**Session ended 2026-09-09 evening.** Nothing is half-written; one thing is half-*run*, and
+it must not resume until Tony has answered the questions in
+[`docs/conditioned_run.md`](docs/conditioned_run.md).
 
-> **Not murderboarded** — working material for sessions in this tree, same standing as
-> `docs/run_records.md` and `docs/pipeline.md`. Nothing here is for an outside reader.
+> **Not murderboarded** — working material, same standing as `docs/pipeline.md`.
 
 **No counts in this file.** Derive them: `git rev-parse --short origin/main` · `pytest -q` ·
-`python3 tools/sapper.py --all` · `python3 tools/site_staleness.py`.
+`python3 tools/sapper.py --all` · `bash tools/murderboard_freshness.sh --refresh`.
+
+Predecessor: [`docs/handoffs/2026-09-09-the-loop-closes.md`](docs/handoffs/2026-09-09-the-loop-closes.md).
+**Its "Do not break this" section is NOT superseded** — Tony judges out of the detached
+`../bugarach-worktrees/mahice` worktree, and it must not be reaped or recreated.
 
 ---
 
-## Do not break this
+## Read this before touching anything in the darkroom
 
-**Tony judges out of `../bugarach-worktrees/mahice`, which is DETACHED on purpose.**
-`merge_when_green.sh` reaps a worktree when its branch lands, and on 2026-09-05 that deleted
-his viewer mid-session. To move it when `main` advances:
+`<darkroom>/bugarach/2026-09-09-full-cohort-senktide-ttx/` holds a complete run whose
+**report is withdrawn and whose numbers were produced on a generator fitted to the wrong
+population.** Both `REPORT.md` and `RUN_RECORD.md` now open with the withdrawal and the
+corrections; the artifacts are kept so the review has a subject and the corrections have a
+before. **Do not quote any measurement out of that folder.** `for_fireflies/README.md` is a
+draft marked do-not-send, and was not sent.
 
-```
-git -C ../bugarach-worktrees/mahice checkout --detach origin/main
-```
+## What is in flight
 
-**Do not delete and recreate it. Do not reap it.** His verdicts live in `localStorage`, keyed
-per channel, and do not leave the browser until *Download annotations.csv*.
+**In flight as a pull request: [#466](https://github.com/syncytium2/bugarach/pull/466)
+alone** — the field-step figure, inherited from an earlier session and still held because it
+is a figure with a caption that was never murderboarded. **Everything this session opened has
+landed.**
 
-## What changed overnight, and why
+**What actually holds this root file open is not a PR.** It is a **withdrawn run** and an
+**unanswered design**: the darkroom folder's measurements are void, its replacement is
+landed and unanswered, and nobody should start the re-run until Tony has ruled on the eight
+questions below. That state has no PR to retire it, which is why this file says so in
+words — see [`docs/todo/2026-09-09-eight-questions-before-the-conditioned-run.md`](docs/todo/2026-09-09-eight-questions-before-the-conditioned-run.md).
 
-> Tony, on being told the six ran the pilot folder at *shipped* operating points while the
-> bake-off had calibrated them on simulated data derived from that same cohort:
-> **"that is the whole point of the pipeline"**.
+## What landed
 
-**`docs/pipeline.md`'s blocker list is now empty.** Both items that sat upstream of everything
-else on that page are closed:
+- **The 2026-09-03 artifact-excluded export declared** — it had sat on disk six days with no
+  file in this repo naming it — plus a K floor under a percentage, a spec derivation that
+  aggregates across recordings at each one's own resolved K, and group facets with
+  per-detector pages on the before/after figure. Two latent defects fixed on the way: a
+  hardcoded clip width that silently dropped the rightmost column of any wide page, and a
+  positional tuple read across a module boundary.
+- **The murderboard re-vendored to `81a0927`.** The freshness gate refused the review
+  outright and was right to: upstream had added a cost section after a run on another model
+  spent a two-day limit and produced no review at all. **Not adopted, deliberately:**
+  upstream's `murderboard_model_gate.sh` and `TERMS.md`. Wiring that gate deserves its own
+  decision rather than arriving as a side effect of a re-vendor.
+- **[`docs/conditioned_run.md`](docs/conditioned_run.md)**, the redesign, plus the fix for
+  the defect below.
 
-| was blocked | now |
-|---|---|
-| a settings file the library's detect path will read | `bugarach detect --settings`, plus `tools/settings_from_bakeoff.py` to write one from a bake-off |
-| model persistence | `bugarach.learn.checkpoint`, `run_learned_on_folder.py --save-models`, `bugarach detect --model`, and `/api/export_model` + `/api/import_model` on the lab server |
+## The defect that withdrew the run
 
-Both directions work for both artifacts: a calibration or a model fitted at the command line
-runs in the browser, and one fitted in the browser runs at the command line.
+A K given as a percentage puts each recording in the assessment **once**, at its own
+resolved count. `assess_archive`'s ROI summary filtered to one K — a harmless de-duplication
+under an absolute scan, a subset selector under a percentage — so it kept only the smallest
+fields, and `derive_spec` read it for the simulated field size. **Three murderboard roles
+found it independently**: from the spec, from the assessment contradicting its own rows, and
+from the code.
 
-## Two things to know before touching any of it
+Corrected, the simulated field size and participation both move materially, so every F1,
+every operating point and every detection in that folder was produced on the wrong simulated
+population. Both files now compute the field size from the rows themselves, and the
+assessment header records the percentage and floor it was asked for — which it previously
+recorded nowhere.
 
-**The settings format was already shared and nobody had called it.**
-`emit.read_detector_settings` had parsed the browser's file and the library's since the day it
-was written — its own docstring says why, in terms. The whole gap was that nothing invoked it
-on the way **in**. Before building a format here, check whether the reader already exists.
+⚠ **The re-run was started and is incomplete, and its outputs live only in this session's
+scratchpad.** Scratch is not durable: **treat the re-run as not started** and redo it from
+the command sequence in the withdrawn `RUN_RECORD.md`, against the answers to the questions
+below.
 
-**A checkpoint is JSON, not `torch.save`, and that is not a style choice.** These nets are
-1,149–2,393 parameters, so the file can be one `JSON.parse` loads — which is what lets a model
-cross to the browser at all. And ADR-0005's target flow is a user downloading models from the
-site: pickle would mean opening a stranger's model runs their code.
+## Why a session must stop here rather than guess
 
-## Measured, not asserted
+`docs/conditioned_run.md` ends with **eight questions that have no safe default** — balance
+by weighting or subsampling; the producer's windows or windows recomputed to Tony's 15–20 /
++2 min definition; the two recordings under the 15-minute floor; how finely to stratify when
+a cell holds five recordings; one operating point or several; whether the slow stream gets an
+assessment and a bench; whether K is one percentage across both streams; and whether MAHICE
+comes before or after. Four further items are listed as defaults a session may take alone.
 
-- At the calibration derived from the pilot cohort's own simulated data: `rate+context`
-  **+90 %** calls against its shipped point, `locust` **+105 %**, `LoCo` **+10 %**. That gap
-  was the distance between the instrument the bench scored and the instrument that ran.
-- Train two models with `--save-models`, then `bugarach detect --model` in a **separate
-  process**: identical, call for call (101/253 tube, 112/257 tube_guard). 31 KB per file.
+Tony, 2026-09-09: *"I don't think you can run this without my feedback."* He is right.
 
-## Three refusals that are findings
+## Two decisions sitting with Tony
 
-`settings_from_bakeoff.py` will not emit a calibration for three of the six on that cohort.
-**CoactDetect** and **binned SCE** because their folds disagreed — a mean over a knob grid is
-not a knob anyone ran. **SPIKE-synch** because every fold landed on the *end* of its grid,
-which `bench.pick_operating_point` already treats as a search that stopped too early. Each is
-named and left out, because a file carrying shipped values for the uncalibrated detectors
-would read as a calibration of all six.
+- **The TTX claim** — per-group with the zero-baseline denominators stated, or cut. Pooled
+  across groups it is inadmissible under FOUNDATIONS §9, and the per-group breakdown
+  reverses it: DI falls, MALE rises where the prior says unchanged, and ORX and OVX cannot
+  produce a ratio at all.
+- **Authorship.** The naive-reader role flagged *"A Claude Code session ran it on those
+  instructions"* as the highest-variance sentence in a resume artifact — a cold evaluator
+  cannot tell what Tony built from what was automated.
 
-⚠ **So SPIKE-synch's bake-off F1 was measured at a bound rather than an operating point.**
-Nobody has acted on that.
+## Owed, and not yet filed — write these up before they are lost
 
-## Still open, in the order I would take it
+- **The promiscuity gate is not in the bake-off's path.** `fair_bakeoff` picks each fold's
+  knob by raw F1 argmax and never calls `pick_operating_point`, so `TooPromiscuous` and
+  `EdgeOfRange` are inert; `settings_from_bakeoff` checks only fold agreement and grid edge.
+  SPIKE-synch's selected knob sat over its own declared ceiling in five of six folds.
+- **`check_quotes.py` misses a producer document.** Its marker wants a person-source phrase,
+  so a verbatim quote introduced by *"its own README says"* passes. Goes in
+  `docs/sapper_feedback/`, **not** into the check itself.
+- **`tools/murderboard_prose.sh` is required by role 5's checklist and is absent from this
+  tree** — a vendoring gap.
+- **FOUNDATIONS §9's TTX magnitudes do not reproduce** from the root file the section names,
+  and its own median/percentage pair cannot both describe one distribution.
+- **The rate-matched treatment-window surrogate**, specified in `conditioned_run.md` and
+  never run. It is the control that separates coordination from a marginal-rate response.
+- One filed already:
+  [`docs/todo/2026-09-09-an-edge-of-grid-threshold-refuses-on-one-branch-and-warns-on-the-other.md`](docs/todo/2026-09-09-an-edge-of-grid-threshold-refuses-on-one-branch-and-warns-on-the-other.md)
+  — the murderboard sharpened it: the flag fires on three of six learned models, and the
+  hand-written branch already carries the deciding rule in `pick_operating_point`'s plateau
+  test.
 
-1. **MAHICE has never been run on the approved folder.** The ground truth everything above
-   rests on is the assessor's clusters at a K nobody judged. Expert attention, not compute,
-   and the only remaining step a person must do. The viewer for it went live this session —
-   what had been published was the version whose judging step could not be opened at all.
-2. **`docs/performance_table.md` §1 has a header saying its evidence is superseded and no
-   argument in its place.** The replacement is available — the background axis narrowed
-   rather than died, mean own-range 0.136 against a 0.017 headline gap — but whether *"no
-   ranking"* survives on spread alone is Tony's call about his own result.
-3. **`docs/learned/background_curve.png` is the flat field's**, and its Panel B draws a rank
-   crossing that no longer reproduces. Regenerate or delete it.
-4. **The ratio arm of the tube 2×2** does not gate on participation, measured two ways, and
-   the failure was pre-registered in the variants' own scoping doc. Whether the arm stays is
-   a decision about a mechanism result, not a defect to patch.
-5. **binned SCE sits at 0.64× its own chance rate** on real recordings, beside the two
-   degenerate learned baselines. It ran at the shipped percentile while every fold calibrated
-   twenty points away — now testable in one command, which it was not yesterday.
+## Traps this session hit
 
-All five have todos under `docs/todo/` dated 2026-09-08.
-
-## Traps this session hit, so the next one does not
-
-- **The board gate matches on the WORKTREE NAME**, not on your block's title. A block called
-  `Mac/close-the-loop-overnight` does not clear a worktree called
-  `detect-reads-a-settings-file`. Two refused commits.
-- **`tests/test_architectures_are_files.py` fails from any worktree** using the primary
-  checkout's `.venv`: those tests write a probe file into their own tree and import from the
-  editable install, which is a different tree. Run with `PYTHONPATH=$PWD/src`. INDEX row added.
-- **A settings file this module writes must load back into it.** The round-trip test caught
-  `grid_dt` and `imaging_rate_hz` on its first run — `detect` writes them and no detector
-  takes them.
-- **The site deploy needs the claim landed, and CI is ~13 minutes.** The claim PR was pushed
-  and open but not merged when `npm run deploy` ran; `docs/SESSIONS.md` records the gap
-  honestly. And `main` moved under the preflight — the `HEAD == origin/main` check caught it.
+- **zsh does not word-split an unquoted parameter.** Building `--model a --model b` into a
+  shell variable and passing it unquoted sends **one** argument; argparse reports every flag
+  as unrecognised and the leading empty string is the tell.
+- **A commit can land on a spent branch.** #513 merged while this worktree was still on its
+  branch, so the next commit went somewhere already squashed. Check
+  `git branch --show-current` against the last merged PR before committing.
+- **A recording missing from a detections file is drawn at zero**, where it cannot be told
+  from a detector that ran and found nothing. The figure now counts and names them.
+- **The murderboard freshness gate is a hard stop, and it fires late.** It refused after the
+  report was written. Run `bash tools/murderboard_freshness.sh --refresh` *before* drafting
+  anything that will need review.

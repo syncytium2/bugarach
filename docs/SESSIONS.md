@@ -10,8 +10,15 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
-### Mac/full-cohort-senktide-ttx — DARKROOM claim: `bugarach/2026-09-09-full-cohort-senktide-ttx/`
-- **Status:** ACTIVE 2026-09-09. The full senktide and TTX cohorts through the loop —
+### Mac/full-cohort-senktide-ttx — DARKROOM claim RELEASED: `bugarach/2026-09-09-full-cohort-senktide-ttx/`
+- **Status:** **RELEASED 2026-09-09. THE DIRECTORY IS HELD BY NOBODY.** ⚠ **Its report is
+  WITHDRAWN and its measurements were produced on a generator fitted to the wrong
+  population** — `REPORT.md` and `RUN_RECORD.md` both open with the withdrawal and the
+  corrections. The artifacts are kept so the murderboard has a subject and the corrections
+  have a before. **Do not quote any measurement out of that folder**, and do not send
+  `for_fireflies/README.md`, which is a draft marked do-not-send. The redesign that replaces
+  the run is `docs/conditioned_run.md`, and it ends with eight questions needing Tony's
+  answers before a re-run. Was: ACTIVE 2026-09-09. The full senktide and TTX cohorts through the loop —
   assess, spec, simulate, calibrate, train, held-out comparison, detect, figures. Successor
   to the APV+CNQX+GZ pilot, and the first run able to detect at its own calibration and to
   run its own trained models on real data, both of which #507–#509 closed yesterday.
