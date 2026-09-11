@@ -1022,7 +1022,16 @@ def lead_model(svg: str) -> str:
     version was measured against an 884-unit viewBox and silently became wrong
     the day the figure was redrawn at 1221.74. See the `.arch` CSS comment.
     """
-    return f'<div class="arch"{_natural_width(svg)}>{svg}</div>'
+    # THE CREDIT LINE. Tony, 2026-09-10: "make sure there's a link to draughtsman
+    # near the figure." The figure's own caption names draughtsman only once the
+    # re-vendor lands (see docs/todo/2026-09-10-the-front-page-figure-waits-on-
+    # draughtsman.md), and an SVG caption cannot carry a link until draughtsman's
+    # queue item 12 does. So the page supplies it, outside the figure. Inline
+    # style, inheriting colour, so it holds in both themes without a new rule.
+    return (f'<div class="arch"{_natural_width(svg)}>{svg}</div>'
+            '<p class="arch-credit" style="margin:.2rem 0 1rem;font-size:.85rem;'
+            'opacity:.75">Drawn by <a href="https://draughtsman.tonydefazio.com">'
+            'draughtsman</a> from the traced model.</p>')
 
 
 VIEWBOX_RE = re.compile(
