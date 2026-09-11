@@ -172,23 +172,30 @@ def findings_for(path: str, text: str) -> list[tuple[str, int, str]]:
     return hits
 
 
+# EVERY git call here names its encoding. `text=True` alone decodes with the locale's
+# codec, which on Windows is cp1252 — and cp1252 has no character at 0x9d, the last byte
+# of a right double quotation mark in UTF-8. So on Windows the first staged Markdown file
+# containing a curly quote killed this gate in a reader thread, `_read` got None, and the
+# commit was refused with a traceback that said nothing about quotes (2026-09-11, a
+# docs/SESSIONS.md edit on the workstation). The working-tree path below already said
+# utf-8; the git paths never did, and on macOS and Linux the locale hid it.
 def _tracked_md() -> list[str]:
     out = subprocess.run(["git", "ls-files", "*.md"], capture_output=True,
-                         text=True, check=True)
+                         text=True, encoding="utf-8", check=True)
     return out.stdout.split()
 
 
 def _staged_md() -> list[str]:
     out = subprocess.run(["git", "diff", "--cached", "--name-only",
                           "--diff-filter=ACM"], capture_output=True,
-                         text=True, check=True)
+                         text=True, encoding="utf-8", check=True)
     return [p for p in out.stdout.split() if p.endswith(".md")]
 
 
 def _read(path: str, staged: bool) -> str:
     if staged:
         r = subprocess.run(["git", "show", f":{path}"], capture_output=True,
-                           text=True)
+                           text=True, encoding="utf-8", errors="replace")
         return r.stdout if r.returncode == 0 else ""
     try:
         return open(path, encoding="utf-8").read()
