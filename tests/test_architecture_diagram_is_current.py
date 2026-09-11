@@ -43,29 +43,36 @@ import pytest
 REPO = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO / "tools"))
 
-COMMITTED = REPO / "docs" / "learned" / "architecture.svg"
+LEARNED = REPO / "docs" / "learned"
 
 make_architecture_diagram = pytest.importorskip("make_architecture_diagram")
 
+#: Every figure the generator writes, read from the generator rather than listed
+#: here — the front page inlines two drawings of the one model, and a second list
+#: of them is a list that forgets the next one.
+FIGURES = tuple(make_architecture_diagram.DRAWABLE["tube"]["figures"])
 
-def _regenerated(tmp_path: Path) -> str:
+
+def _regenerated(tmp_path: Path) -> dict[str, str]:
     pytest.importorskip(
         "torch",
         reason="the diagram is generated FROM the built module; with no torch "
                "there is nothing to compare the committed file against")
     rc = make_architecture_diagram.main(["--out", str(tmp_path)])
     assert rc == 0, "the generator refused to build the model it draws"
-    return (tmp_path / "architecture.svg").read_text(encoding="utf-8")
+    return {name: (tmp_path / name).read_text(encoding="utf-8") for name in FIGURES}
 
 
-def test_the_committed_svg_is_what_the_generator_produces_now(tmp_path):
+@pytest.mark.parametrize("name", FIGURES)
+def test_the_committed_svg_is_what_the_generator_produces_now(tmp_path, name):
     """The whole file, byte for byte — not a spot-check on the total.
 
     Comparing only the parameter count would pass a figure whose dilation
     schedule, channel width or kernel size had moved, and those are exactly the
     quantities the generator was written to stop anyone from typing.
     """
-    assert COMMITTED.read_text(encoding="utf-8") == _regenerated(tmp_path), (
+    COMMITTED = LEARNED / name
+    assert COMMITTED.read_text(encoding="utf-8") == _regenerated(tmp_path)[name], (
         f"{COMMITTED.relative_to(REPO)} is not what "
         f"tools/make_architecture_diagram.py produces from the model as it "
         f"stands. The model moved and the figure did not — the front page is "

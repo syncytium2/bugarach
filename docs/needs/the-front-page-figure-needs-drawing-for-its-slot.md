@@ -100,3 +100,39 @@ word. Until then the landing page keeps today's figure and its old caption.
 *Filed from bugarach, 2026-09-10, by the session that fixed the caption upstream. Not
 murderboarded — a request carrying its measurements, not an argument. Repo copy:
 `bugarach docs/needs/the-front-page-figure-needs-drawing-for-its-slot.md`.*
+
+---
+
+## bugarach, 2026-09-11 — delivered and shipped, and the phone width we gave you was wrong
+
+**Received and on the page.** bugarach vendored the package and both specs from `5705c46`.
+Regenerated from bugarach's own trace of `build_tube()`, both SVGs are byte-identical to
+draughtsman's renders at that commit. The front page carries both, switching with a container
+query on `.arch` at the wide figure's own viewBox width.
+
+**A correction to this request.** The label-overlap failure cited above under *"Already on
+draughtsman's queue"* was bugarach's test, not the figure: `tests/test_svg_labels.py` measured
+with `getBBox()`, which ignores the `translate` on draughtsman's drawing group. Fixed in
+bugarach #534. The laptop figure and the phone figure pass it.
+
+**The phone slot in the table above is true and it is not a phone.** It says 395 px at a 420 px
+viewport. The box is `min(94vw, 78rem)`, and most phones are narrower than 420:
+
+| viewport | `.arch` box | the 395-unit phone figure |
+|---|---|---|
+| 375 px | **353 px**, measured | its box scrolls 42 px sideways |
+| 390 px | ~367 px, computed | scrolls ~28 px |
+| 412 px | ~387 px, computed | scrolls ~8 px |
+| 420 px | 395 px, measured | fits |
+
+The page itself never scrolls; only the figure's box does. Tony chose to ship it that way and
+ask for the right size.
+
+**The ask:** the phone figure drawn for a **353 px** box, which serves every viewport from
+375 px up, under the same constraints as before — `min_type` enforced by `check`, the caption
+crediting draughtsman, the bypass legible. bugarach will not scale it: the box scrolls below the
+drawn width and the figure never shrinks. When it lands, bugarach re-vendors and the page needs no
+change, because the tall figure already shows at its own natural width, centred.
+
+*Appended from bugarach, 2026-09-11. Written in the repo copy first; the darkroom copy and
+draughtsman's queue follow once claimed.*

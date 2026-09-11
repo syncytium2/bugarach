@@ -109,6 +109,18 @@ bash "$GATE" $VERBOSE \
 # The stamp lives on __init__.py rather than on all twelve modules, so a re-vendor
 # is one recursive copy plus one line, not a twelve-file diff.
 #
+# THIS FAMILY WAS ONCE WRITTEN TWICE, and the second copy left the spec out on
+# purpose: `architecture.spec.json` had diverged from draughtsman's gallery spec
+# (upstream's `layout.wrap` folds the figure into a column, wrong for a wide banner),
+# and listing it would have reported an intended deviation as staleness. That ended
+# at 5705c46, when draughtsman drew the front page's two figures from specs of their
+# own — `examples/tube/front-page.json` and `front-page-phone.json`, vendored here
+# verbatim — so both specs are listed and one invocation checks all three files.
+# What the second copy recorded is still the reason the family exists: on 2026-09-05
+# `third_party/draughtsman/` sat pinned at cb7fc2a while draughtsman fixed, in
+# bb83174, an edge routed through the box it bypassed, and the front page published
+# that figure for three days with nothing red.
+#
 # --clone is passed only when the env var names a real checkout. Written as a
 # string rather than an array because this runs under bash 3.2 on macOS, where
 # expanding an empty array under `set -u` is itself an error -- the same reason
@@ -122,6 +134,7 @@ bash "$GATE" $VERBOSE $DRAUGHTSMAN_CLONE \
   --slug syncytium2/draughtsman \
   --file third_party/draughtsman/__init__.py \
   --file docs/learned/architecture.spec.json \
+  --file docs/learned/architecture-phone.spec.json \
   || { [ $? -eq 1 ] && rc=1 || { [ "$rc" -eq 0 ] && rc=2; }; }
 
 # --- family 4: armory, the file-send gate and its remedy ----------------------
@@ -147,36 +160,6 @@ bash "$GATE" $VERBOSE $ARMORY_CLONE \
   --slug syncytium2/armory \
   --file tools/show.py \
   --file .claude/hooks/send-goes-nowhere.py \
-  || { [ $? -eq 1 ] && rc=1 || { [ "$rc" -eq 0 ] && rc=2; }; }
-
-# --- family 3: draughtsman, which draws the front page's model figure --------
-# THE HEADER OF THIS FILE HAS NAMED THIS FAMILY SINCE THE DAY IT WAS WRITTEN AND THE
-# CODE NEVER CHECKED IT. That is not a missing feature, it is the failure mode this
-# whole file is about: a gate that DESCRIBES a check reads exactly like one that
-# performs it, and nobody re-reads a header to see whether the body agrees with it.
-#
-# What it cost, 2026-09-05: `third_party/draughtsman/` sat pinned at cb7fc2a while
-# draughtsman fixed, in bb83174, an edge that routed through the box it was meant to
-# bypass. The front page published that figure for three days. Nothing was red.
-#
-#   python3 <draughtsman>/tools/edge_collisions.py docs/learned/architecture.svg
-#     mean -> concat  runs through 'dog': 56 of 147 units (38%) clips it   (x2)
-#
-# `syncytium2/draughtsman` resolves over `gh` — checked, not assumed, because the
-# WARNING at the top of this file is about a family whose slug does NOT resolve and
-# which therefore answered with another repository's HEAD. This one needs no --clone.
-#
-# ⚠ THE SPEC IS DELIBERATELY NOT LISTED HERE. `docs/learned/architecture.spec.json`
-# began as draughtsman's `examples/tube/spec.json` and has since diverged on purpose:
-# upstream added `layout.wrap`, which folds the figure into a column and is right for
-# a documentation page and wrong for this one, which is a wide banner. Listing it
-# would report a deviation we intend as staleness, every run, until someone silenced
-# the gate. It needs a stamp that can say "derived from, with deviations" and that
-# does not exist yet — see the board entry of 2026-09-05.
-bash "$GATE" $VERBOSE \
-  --label draughtsman \
-  --slug syncytium2/draughtsman \
-  --file third_party/draughtsman/__init__.py \
   || { [ $? -eq 1 ] && rc=1 || { [ "$rc" -eq 0 ] && rc=2; }; }
 
 exit $rc
