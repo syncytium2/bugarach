@@ -1,392 +1,356 @@
-# The surrogate screen — an overnight build and run, waiting on Tony's go
+# The surrogate screen — measure tonight, decide tomorrow
 
-> **A plan for Tony's review, 2026-09-10. Nothing runs until he says go.** Revised after an
-> eleven-role murderboard whose first round found the screen could not do its job as drafted; the
-> review record is in `docs/reviews/`.
+> **Launched overnight 2026-09-11 on Tony's go.** After the second round of this plan's review,
+> Tony set the scope: every candidate is **measured** on both folders tonight, and **nothing is
+> shortlisted**. The rule that turns measurements into a shortlist is designed tomorrow, from the
+> numbers. Review record:
+> [`reviews/2026-09-10-surrogate-evaluation-overnight_2026-09-10.md`](../reviews/2026-09-10-surrogate-evaluation-overnight_2026-09-10.md).
 
 ## The problem
 
 A coordinated-event detector with **no labels** can only be trained one way here: teach a model to
 tell a real recording from a **surrogate** of itself — a resampled copy that keeps each ROI's own
-timing and destroys the timing *between* ROIs. Whatever the model learns to spot is then
-coordination. That holds only if the surrogate differs from real data in cross-ROI timing and
-nothing else. When something else gives it away, the surrogate **leaks**, and the model learns the
-giveaway instead.
+timing (an ROI is one imaged cell's trace) and destroys the timing *between* ROIs. Whatever the model
+learns to spot is then coordination. That holds only if the surrogate differs from real data in
+cross-ROI timing and nothing else. When something else gives it away, the surrogate **leaks**, and
+the model learns the giveaway instead.
 
 On 2026-09-10 an eleven-role review
 ([the coordination-without-labels review](../reviews/2026-09-10-coordination-without-labels_2026-09-10.md))
-killed the surrogate the proposal was built on. Uniform per-onset dither manufactures within-ROI
-intervals shorter than any real one, so it can be told apart one ROI at a time — a defect Gerstein
-(2004) had already described, flat dither adding short intervals to the interval histogram. The
+killed the surrogate that [the self-supervised proposal](2026-09-10-coordination-without-labels.html)
+was built on. Uniform per-onset dither manufactures within-ROI intervals shorter than any real one,
+so it can be told apart one ROI at a time — a defect Gerstein (2004) had already described. The
 proposal's safeguard compared a once-dithered recording against a twice-dithered one; both already
-leaked, so the safeguard read flat and would have passed the design.
+leaked, so it read flat and would have passed the design.
 
-Tony then ruled that **every replacement candidate is tested, none pruned** — *"You can't predict a
-priori which one is right"* — and that the tiers comparing them **run as a grid**
-([the rulings](../todo/2026-09-10-which-surrogates-enter-the-screen.md)). He also asked whether the
-evaluation belongs in the tool itself, for users whose data are not ours. This plan builds the
-screen as that tool and runs it on our data and one other lab's.
+**Two nulls this project already relies on are among the candidates**, so tonight's measurements bear
+on shipped work: the shipped dither `jitter_trains` is the null behind the modularity result
+(`modularity_vs_null`, at a 20-second jitter), and the per-ROI circular shift is the assessor's null —
+and the standard one, used in the Cossart lab's own published analysis of the second folder here
+(Dard et al. 2022).
 
-## What Tony decides tonight
+Tony ruled that **every replacement candidate is tested, none pruned** — *"You can't predict a
+priori which one is right"* — and that the tiers comparing them with a pooling operator **run as a
+grid** ([the rulings](../todo/2026-09-10-which-surrogates-enter-the-screen.md)). He then asked whether
+the evaluation belongs in the tool itself, for users whose data are not ours. ⚠ Whether the right
+surrogate actually differs between datasets is a hypothesis tonight's cross-folder comparison tests,
+not a premise, and any difference is confounded with preparation, event extraction and ROI count.
 
-| decision | default if he says nothing | why it is a decision |
-|---|---|---|
-| **Launch as a Workflow of 21 agents, or 10 with the murderboard moved to morning** | **none — needs his go** | 21 exceeds this Claude Code install's workflow-size setting of 15 (`/config` → dynamic workflow size); the murderboard's eleven roles are what push it over. See [How the night runs](#how-the-night-runs) |
-| Elephant, pinned at 1.2.1, as an optional extra | yes | it supplies eight of the twelve generators, raises the numpy floor to 2, and carries defects the adapter must handle — [The candidates](#the-candidates) |
-| Beside the ruled eight: ISI dither, window shuffling, trial shifting on pseudo-trials, and the shipped `jitter_trains` dither | yes | the first three complete Stella's six; the shipped dither is the only candidate whose verdict bears on a result already in production |
-| A **provisional floor *f*** swept while the producer is asked for τ | yes, labelled provisional everywhere | τ is theirs to declare ([the τ todo](../todo/2026-09-10-the-dead-time-floor-is-the-producers-number.md)); nothing fitted becomes a constant |
-| What numbers from real recordings may enter the git tree | aggregate numbers in review prose, as the existing review record already does; never per-recording data, figures of real recordings, or recording ids | FOUNDATIONS §5 keeps anything derived from real data machine-local, and the tree already holds aggregates (the review record; FOUNDATIONS §9 itself). Tony can tighten this |
-| The Cossart lab's folder as the different-data test | yes | the only dataset here from another preparation — [Where the data come from](#where-the-data-come-from) |
+Two review rounds found blocking holes in the verdict rule each time, all needing numbers nobody has
+yet — such as how wide real between-mouse variation is compared with the paired real-to-surrogate
+differences a model would learn from. So tonight measures, and tomorrow decides.
 
-## Figure 1. The screen, and what each gate is for
+## What was decided, and what tonight does
 
-```mermaid
-flowchart TD
-    A["export folder<br/>(baseline analysis windows only)"] --> B["twelve candidates + five controls<br/>generated over the whole window,<br/>quantized to the frame grid"]
-    B --> C["cut into 60-second windows"]
-    C --> D["counting statistics — no model<br/>(Table 2)"]
-    D --> E{"each known-bad control<br/>flagged where it should be?"}
-    E -- no --> X["screen broken:<br/>stop, write handoff"]
-    E -- yes --> F["destruction test on synthetic trains<br/>with planted coordination"]
-    F --> G{"do-nothing control fails it?"}
-    G -- no --> X
-    G -- yes --> H["per-ROI-only discriminator<br/>(stretch goal)"]
-    H --> I["verdict rule, fixed in advance<br/>→ shortlist"]
-    I --> J["report per folder + a cross-folder summary<br/>→ darkroom"]
-    J -.-> K["full-model tier — not tonight"]
-```
+| decision | ruling |
+|---|---|
+| scope | measure every candidate on both folders; no shortlist, no verdict (Tony, 2026-09-10) |
+| launch | a Workflow — a scripted multi-agent run — of 10 agents tonight; the murderboard runs on its report in the morning (Tony's go, in words) |
+| Elephant, the Python package carrying Stella et al.'s surrogates | pinned at 1.2.1 as an optional extra; supplies seven of the twelve candidates; revisited [tomorrow](#tomorrow) |
+| candidates beyond the eight Tony ruled in | ISI dither, window shuffling and trial shifting — completing the six surrogates Stella et al. 2022 compare — and the shipped dither |
+| a provisional dead time *f* | swept, labelled provisional; the true dead time τ is the producer's to declare ([the τ todo](../todo/2026-09-10-the-dead-time-floor-is-the-producers-number.md)) |
+| numbers from real recordings in the git tree | aggregates in plans and review prose, as this plan and the earlier review already carry; never per-recording data, figures of real recordings, or recording ids — everything else goes to the darkroom. Default taken; Tony can tighten it |
+| the Cossart lab's folder | measured, as the different-data comparison |
 
-A candidate reaches the shortlist only if it **keeps** what real data has — no statistic in Table 2
-flags it — **and destroys** planted coordination. The first draft tested only the first half, so a
-surrogate that changed nothing would have passed everything.
+**By morning:** a green PR adding `src/bugarach/surrogates.py`, `tools/build_surrogate_screen.py`, the
+pattern-jitter clean-room harness and synthetic-only tests; a descriptive report per folder in the
+darkroom, each opening with an executive summary, plus a cross-folder summary; the earlier review's
+leak table rerun and its saturation table remeasured; and the list of choices the verdict rule must
+make, each beside the measurement that bears on it.
 
-## What the night delivers, and what it does not
+**Not by morning:** a shortlist; the full model; τ; any figure of a real recording in a git tree; the
+detectors' own rolling-context nulls, which answer a different question; the text-against-shape
+overlap checker; any change to the encoder ([its own todo](../todo/2026-09-11-the-encoder-truncates-frame-positions.md)).
 
-**Delivers:** a green PR adding `src/bugarach/surrogates.py` and `tools/build_surrogate_screen.py`,
-tested on synthetic trains only; one report per export folder in the darkroom, each opening with an
-executive summary, plus a cross-folder summary; the review record's leak table rerun and its
-saturation table remeasured under one stated set of conditions; a shortlist produced by the rule
-fixed below, not chosen after seeing the results.
-
-**Does not:** train the full model; declare τ; put any figure of a real recording in a git tree;
-build the text-against-shape overlap checker; touch the viewer or any detector; screen the
-detectors' own rolling-context nulls, which answer a different question (the null for detection,
-not the negatives for training).
+**Everything below is the execution spec for the sessions running the night.**
 
 ## Terms
 
 | term | meaning |
 |---|---|
-| ROI | region of interest — one imaged cell's trace; its **onsets** are the times its events begin |
-| stream | each recording carries two separately detected event sets, **fast** and **slow** (GLOSSARY: the stream axis); every statistic is computed per stream |
-| surrogate | a resampled copy of a recording that keeps each ROI's own timing and destroys cross-ROI timing |
-| leak | a difference between real data and a surrogate visible **without** cross-ROI information — the thing a model would learn instead of coordination |
-| *J* | jitter radius: how far a dither may move one onset, ± seconds. Other candidates' parameters are matched to it by equal root-mean-square displacement (Table 1) |
-| τ | dead time: the shortest interval between two onsets of one ROI that the producer's event extractor can emit. The producer's number, not yet declared. (Not SPIKE-synch's τ, which is a coincidence window.) |
-| floor, *f* | the shortest within-ROI interval **observed** in real data — 0.40 s fast and 3.20 s slow in the senktide baselines, i.e. 4 and 32 frames — standing in for τ. *f* is the provisional value swept in its place |
-| generation window | the span a surrogate is generated over: the producer's baseline analysis window |
-| analysis window | a 60-second cut of the generation window, the unit every counting statistic is computed on |
-| known-bad control | a surrogate built to fail one statistic; if that statistic does not flag it, the statistic has no power there |
-| group | the experimental group column in `slices.csv` (ORX, OVX, DI, MALE); FOUNDATIONS §9 does not admit a number pooled across them on its own |
-| AUC | area under the receiver-operating-characteristic (ROC) curve; 0.5 is chance |
+| ROI, onset | region of interest, one imaged cell's trace; an onset is the time one of its events begins |
+| stream | our folders carry two separately extracted event sets per recording, **fast** and **slow** (GLOSSARY: the stream axis); Cossart's carries one |
+| surrogate, negatives | a resampled copy keeping each ROI's own timing and destroying cross-ROI timing; used as the model's negative class |
+| leak | a real-versus-surrogate difference visible **without** cross-ROI information |
+| screen | this tool: generators, statistics, controls, report |
+| tiers | counting statistics, then a per-ROI-only discriminator, then the full model (not tonight) |
+| *J* | jitter radius: how far a dither may move one onset, ± seconds; other candidates are matched to it by root-mean-square (RMS) displacement |
+| τ | dead time: the shortest interval between two onsets of one ROI that the producer's extractor can emit. Not SPIKE-synch's τ, a coincidence window |
+| observed floor | the shortest within-ROI interval in a folder's baselines: `steps_excluded` fast 0.40 s (4 frames), slow 2.80 s (28 frames). The senktide subset's slow floor, 3.20 s, is the earlier review's and is used only to reproduce it |
+| *f* | the provisional dead time the candidates use, swept at 0.5, 0.75 and 1.0 × the observed floor, in whole frames |
+| frame index | an onset's integer frame, the nearest whole number to *t*/d*t*. Every generator and statistic works on frame indices |
+| generation window | the span a surrogate is generated over: the producer's baseline window, or the whole recording where a folder declares no regions |
+| analysis window | a 60-second cut of the generation window |
+| grid cell, draw | one combination of candidate, stream, *J* and any other swept parameter; one random surrogate of it |
+| known-bad control | a surrogate built to fail one statistic; if the statistic does not register it, the statistic has no power there |
+| destruction | whether a surrogate removes planted cross-ROI coordination |
+| adapter | the wrapper in `src/bugarach/surrogates.py` that calls Elephant on frame indices and corrects its defects |
+| group | `slices.csv` `group_id`: **ORX** and **OVX** are gonadectomized males and females, **DI** intact females in diestrus, **MALE** intact males. FOUNDATIONS §9 admits no number pooled across them unless the per-group numbers sit beside it |
+| senktide | the 29 recordings of `steps_excluded` whose first treatment was senktide; used here only for the reproduction |
+| pseudo-trial | a stretch of one ROI's onsets bounded by silences, treated as a trial for trial shifting |
+| α | the false-positive rate accepted per test |
 | UD, UDD, JISI-D, ISI-D, WIN-SHUFF, TR-SHIFT | Stella et al. 2022's names: uniform dithering, uniform dithering with dead time, joint-ISI dithering, ISI dithering (ISI: inter-onset interval), window shuffling, trial shifting |
-| Elephant | the BSD-3-licensed Python package whose surrogate code descends from Stella's (their paper ran version 0.10.0) |
-| producer | the MATLAB stage that detects events and writes the export folder |
-| darkroom | the shared Dropbox folder where figures and reports go, resolved by `bugarach.paths.darkroom()` — never the git tree |
-| Workflow | a scripted multi-agent run in Claude Code; the murderboard is this repo's eleven-role document review |
-| epoch | here, one pass of a training loop over its data (Stella's "epochs" are behavioural phases, a different thing) |
-
-## The candidates
-
-**Table 1. Twelve candidates and five controls.** Edge behaviour is *measured* on Elephant 1.2.1 by
-the review's claim-verification and methods roles, not read from its documentation.
-
-| candidate | origin | implementation | what it does to one ROI's onsets | *J* sets | at the window edge |
-|---|---|---|---|---|---|
-| uniform per-onset dither (UD) | Date, Bienenstock & Geman 1998 lineage | Elephant `dither_spikes` | moves each onset independently, uniformly within ±*J* | the radius | drops onsets pushed out |
-| shipped dither | this repo | `src/bugarach/graph.py` `jitter_trains`, in production in `modularity_vs_null` | as UD | the radius | wraps — adding a seam interval that can be sub-floor |
-| dither with dead time (UDD) | Stella et al. 2022 | Elephant `dither_spikes(refractory_period=f)` | as UD, but each onset stays at least the dead time from its neighbours | the radius | never drops — confined between neighbours; can land exactly on the window end, so the adapter clips it |
-| circular shift | this repo's assessor null | `src/bugarach/assess.py` lines 540–542, reused | shifts the whole train by one random offset per ROI, wrapping | none — the offset spans the window | wraps, with a seam interval |
-| rigid shift, no wrap | Pipa et al. 2008 | Elephant `dither_spike_train`, dropping (its clamp option piles onsets on the edge and is not used) | shifts the whole train by one offset within ±*J* | the radius | drops |
-| trial shifting (TR-SHIFT) | Pipa et al. 2008, via Stella | Elephant `trial_shifting` in its concatenated-train mode, one pseudo-trial per analysis window | shifts each pseudo-trial's onsets together within ±*J*, wrapping inside the pseudo-trial | the radius | wraps at every pseudo-trial edge |
-| joint-ISI dither (JISI-D) | Gerstein 2004 | Elephant `JointISI(...).dithering()` | moves each onset along the distribution of its preceding and following interval pair | the dither | first and last onsets fixed |
-| ISI dither (ISI-D) | Stella et al. 2022, modified from Gerstein 2004 | Elephant `JointISI(..., isi_dithering=True)` | as JISI-D, ignoring interval order | the dither | first and last onsets fixed |
-| interval jitter | Date, Bienenstock & Geman 1998 | Elephant `jitter_spikes`, each train shifted to start at 0 | moves each onset uniformly within its own fixed bin | bin width √2·*J* | bins span the window |
-| window shuffling (WIN-SHUFF) | Stella et al. 2022 | Elephant `bin_shuffling`, bin = the frame interval | shuffles bins within short windows, then randomises times within each bin | window 2·*J* | drops onsets not strictly inside; the last, partial window is handled explicitly |
-| pattern jitter | Harrison & Geman 2009 (earlier in Harrison 2005) | **written here**, clean room, fixed-partition windows (their eq. 4.2) on the frame grid | resamples each onset within its jitter window while keeping every within-ROI interval shorter than a history length *R* exactly | window length 2·*J* in frames | first and last onsets fixed, as the paper recommends |
-| operational-time dither | Louis, Gerstein, Grün & Diesmann 2010 (first presented Diesmann et al. 2009) | **written here** | dithers in a time axis warped by the ROI's own rate profile | the dither, in expected-count units, matched to *J* in seconds | recorded in the build |
-| *control:* do-nothing | — | returns its input | nothing | — | — |
-| *control:* interval shuffle | — | Elephant `shuffle_isis` | permutes the ROI's intervals | — | — |
-| *control:* homogeneous resample | — | Elephant `randomise_spikes` | redraws the ROI's onsets uniformly over the window | — | — |
-| *control:* per-window circular shift | — | the circular shift, generated per analysis window | wraps inside every analysis window | — | wraps at every window edge |
-
-Stella's description of trial shifting is a rigid shift per trial; Elephant's wraps within the
-trial. Stella allow a "trial" to be a long spike sequence separated by long silences, which is what
-makes it runnable on continuous recordings here.
-
-**Pattern jitter's history length *R* is tied to *f*:** an interval shorter than *R* is kept
-exactly, so with *R* ≥ *f* the candidate cannot manufacture a sub-floor interval. At these rates
-nearly every "pattern" is a single onset, so it may behave close to interval jitter with an
-exclusion zone — which is a result, not a failure.
-
-**Operational-time dither may degenerate here.** Louis et al. estimate the rate profile across
-trials; a single ROI with a handful of baseline onsets gives a staircase, and the dither then maps
-back to roughly one bandwidth around each onset — a disguised *J* sweep. The report shows its
-displacement distribution in seconds so that is visible either way. (The repo's per-ROI-capable rate
-estimator, `rate.event_rate`, refuses fewer than two trains and needs its core factored out.)
-
-**Elephant defects, found by running it in a scratch install**, each handled in the adapter with a
-test that fails if it recurs:
-
-- `JointISI` returns any train with **fewer than three onsets unchanged**, silently, and silently
-  falls back to plain uniform dither whenever an interval pair exceeds its truncation or a bin is
-  wider than the dither. The adapter counts both per ROI; an unchanged ROI is *not estimable*, never
-  scored. Its memory grows with the square of its bin count, so the smallest-*J* cells, which need
-  bins finer than *J* across the whole interval range, are declared **intractable** and reported so.
-  All nine of its parameters are set explicitly, with truncation at least the largest interval-pair
-  sum and bin width below *J*.
-- `dither_spikes` with a refractory period **uses the smaller of it and the train's own shortest
-  interval** — so *f* is a cap, not a guarantee — and a refractory period of zero silently runs plain
-  UD. The adapter reports the dead time actually in effect per ROI and refuses zero.
-- `jitter_spikes` builds its bins from the window start counted twice and **crashes or misplaces
-  onsets** on any window not starting at 0 — every baseline. The adapter shifts to 0 and back; a test
-  uses a nonzero start.
-- `bin_shuffling` **drops** onsets at the edge, so its count is not exactly preserved.
-- Elephant draws from both numpy's and Python's random generators and **takes no seed**. Both are
-  seeded from a key per (recording, ROI, candidate, draw), and a test checks two runs agree.
-
-Every Elephant default is millisecond-scale — joint-ISI smoothing 2 ms, dither 15 ms — and a test
-fails if any default is reached.
-
-## The counting statistics, each with its own control
-
-**Onsets in our folders sit exactly on the 0.1-second frame grid**, and every continuous-time
-candidate produces off-grid times, which would be a leak of their own. Where a folder's real onsets
-are on-grid (checked per folder), every surrogate is quantized onto the recording's frame grid
-before any statistic; Cossart's onsets are off-grid and are not. Intervals and floors are counted in
-frames.
-
-**Table 2. What each statistic can see, and what proves it can.**
-
-| statistic | leak it targets | known-bad control that must be flagged |
-|---|---|---|
-| sub-floor interval rate, per interval | impossible short intervals | uniform dither |
-| interval density just above the floor, *f* to 2*f*, both directions | a surrogate that clears the floor but distorts what sits just above it | uniform dither; dither with dead time at a mis-set *f* |
-| per-ROI interval distribution, Kolmogorov–Smirnov distance on the frame grid, against a real split-half reference | each ROI's own interval distribution changed | homogeneous resample |
-| serial dependence: lag-1 rank correlation of each ROI's consecutive log-intervals | interval order destroyed | interval shuffle |
-| rate profile: count autocorrelation and Fano factor across windows | within-ROI drift erased | homogeneous resample |
-| edge-band onset density | onsets thinned or piled at a window edge | per-window circular shift |
-| collisions after the encoder's own frame binning (`src/bugarach/learn/encode.py`) | onsets merged by binning, lost to training | uniform dither at large *J* |
-| movement: share of onsets moved, median absolute displacement, share of ROIs returned unchanged | a surrogate that "passes" by doing nothing | do-nothing must score zero movement |
-| coverage | how many ROIs each statistic could score at all | — |
-| generation time | cost inside a training loop that draws fresh negatives every epoch | — |
-
-Real baseline intervals are serially dependent in both streams, so the serial statistic has
-something to preserve; it is also what separates joint-ISI from ISI dither. Sub-floor rates are
-counted **per interval**, not per window, because a per-window share grows with ROI count — the
-Cossart folder has roughly ten to thirty times our ROIs per recording.
-
-**Coverage is a result, not a footnote.** About half the ROIs in a baseline have fewer than two
-onsets and so no within-ROI interval at all. Every statistic reports the share of ROIs it could
-score.
-
-## The verdict rule, fixed before the run
-
-- **Reference band.** Split the recordings in half **by mouse**, 100 times. For each statistic,
-  stream and group, the real-against-real difference across those splits gives a central 95% band.
-  The floor itself is re-estimated on each split's calibration half, and the report prints its spread
-  and the real sub-floor rate's expected value under an order-statistic argument (roughly one in
-  *N*+1 per interval, for *N* calibration intervals).
-- **Flagged.** A candidate at a given stream and *J* is flagged on a statistic when its
-  real-against-surrogate difference — the median over 20 draws — falls outside that band.
-- **Powered region.** A statistic's verdicts count only where its known-bad control is flagged.
-  Below that *J* a cell is reported *underpowered*, never as a pass. This is where uniform dither
-  genuinely cannot be seen: at fast *J* of 0.1–0.2 s and slow 0.8 s it is indistinguishable from real
-  data on the sub-floor statistic. It **must** be flagged at the review record's own cells — fast 1.6
-  and 2.5 s, slow 2.5 s — or the screen is broken.
-- **Destruction.** Synthetic trains with planted coordination, each ROI drawn with a hard floor
-  (`src/bugarach/simulate.py` `_place_renewal`). A candidate passes when the planted cross-ROI
-  coincidence excess falls inside the band of an unplanted twin. The do-nothing control must fail; if
-  it passes, the test is broken and the night stops.
-- **Shortlist.** Every (candidate, *J*) that is flagged by no statistic in its powered region, in
-  both streams and in no group, and that passes destruction. The report shows the whole grid, not only
-  the shortlist.
-
-This is a pre-registered screening rule, not a significance test; the grid has hundreds of cells and
-the report says so.
+| producer, export folder | the MATLAB stage that extracts events; the folder it writes, which is this analysis's only input |
+| darkroom | the shared Dropbox folder for figures and reports, resolved by `bugarach.paths.darkroom()` — never the git tree |
+| murderboard | this repo's eleven-role document review |
+| epoch | one pass of a training loop over its data |
+| ⚠ | a gap or claim carried unresolved |
 
 ## Where the data come from
 
-- **Generation window**: the producer's baseline analysis window where the folder has one, else the
-  region's extent — the two differ in 24 of the 84 `steps_excluded` baselines. The rule already
-  exists inline in `src/bugarach/assess_folder.py` (lines 178–223), and a second copy in
-  `tools/modularity_null.py` has drifted from it; the build factors it into one function, the screen
-  calls it, and the report prints each recording's window source.
-- **Surrogates are generated over the whole generation window**, then cut into 60-second analysis
-  windows — which is what training does (random crops) and avoids manufacturing an edge in every
-  window. The per-window circular shift is the control that shows what that edge costs.
-- **Our data**: the baselines of `steps_excluded`, the producer's newest folder, whose README says to
-  use it for any new analysis — 84 recordings from 44 mice, with the mice in each group reported.
-  `senktide` is 29 of those same 84 and is used only for the reproduction below. So there are **two
-  datasets, not three**.
-- **The Cossart lab's folder** (`cossart`): 59 sessions from 32 subjects, in vivo two-photon
-  recordings of hippocampal area CA1 in mouse pups, onsets taken as the rising edge of a binarised
-  active run, one stream, frame intervals of about 0.1 s. *J* is set in frames. Its floor is exactly
-  two frames in every session, so its real zero is by construction and legitimately so. Its authors
-  set their own synchronous-event threshold with independent per-cell circular shifts (Dard et al.
-  2022, *eLife*), so the circular-shift verdict bears on their published null as well as ours.
+- **`steps_excluded` baselines** — the producer's newest folder, whose README says to use it for any
+  new analysis: 84 recordings from 44 mice, 35 of whom contribute more than one; 12, 12, 10 and 10 mice
+  in ORX, OVX, DI and MALE.
+- **The generation-window rule** already exists inline in `src/bugarach/assess_folder.py` (lines
+  177–223). The build moves it into one function returning the window and its source, keeping both of
+  its fallbacks: no regions declared means the whole recording, labelled an assumption; regions declared
+  with none a baseline means the recording is skipped. Five drifted copies elsewhere
+  (`tools/modularity_null.py`, `tools/synfire_scan.py`, `tools/make_membership_example.py`,
+  `tools/assess_archive.py`, `tools/fit_background_shape.py`) are left for their own change.
+- **Cossart's folder** (`cossart`): 59 sessions from 32 subjects, in vivo two-photon recordings of
+  hippocampal area CA1 in mouse pups, onsets taken as the rising edge of a binarised active run. No
+  regions, so each whole recording is a generation window, labelled; one stream; no groups. Its onsets
+  are off the frame grid, so each maps to its nearest frame on its own session's frame interval; its
+  floor is two frames (to within the frame interval's rounding). Every report using it cites the dataset,
+  DANDI:000219 (Dard, Picardo & Cossart).
+- **Rules are per folder**: every stream the folder carries, every group it declares, if any.
 - **No recording is excluded.** The four whose motion correction pinned ROIs to a common frame value
-  ([their todo](../todo/2026-09-10-four-recordings-carry-an-unflagged-contaminant.md)) are shown with
-  and without, as a sensitivity view.
-- **Folds and splits are grouped by mouse** (`subject_id` as `src/bugarach/io.py` `_identity`
-  resolves it), because 35 of the 44 mice contribute more than one recording — the review record
-  already filed splitting by recording as a leak.
+  ([their todo](../todo/2026-09-10-four-recordings-carry-an-unflagged-contaminant.md)) are flagged per
+  recording in the report. There is no "without" view: dropping them would be a consumer-side filter,
+  and their fate is Tony's and the producer's call.
+- **Every split and fold is grouped by mouse** (`subject_id`, as `src/bugarach/io.py` `_identity`
+  resolves it).
+- **Surrogates are generated over the whole generation window**, then cut into analysis windows. Scored
+  windows reach the generation-window edges, as training crops can.
 
-⚠ **"Does the verdict change with the data?" is a hypothesis this run tests, not a premise.**
-Stella's figure 10 shows the choice matters on one dataset; it does not show the right choice differs
-between datasets. If our folder and Cossart's agree, one documented choice suffices and the tool
-becomes a check rather than a selector. Differences between the two are confounded with preparation,
-extractor and ROI count, and the report says so.
+## The candidates
 
-## The reproduction — reported, not a stop
+**Table 1. The twelve candidates.** The eight Tony ruled in — circular shift, uniform dither, rigid
+shift, dither with dead time, joint-ISI dither, pattern jitter, interval jitter, operational-time
+dither — plus ISI dither, window shuffling, trial shifting and the shipped dither.
 
-- **The leak table's windows reconstruct exactly**: non-overlapping 60-second windows inside each
-  senktide baseline analysis window, leaving a 2*J* margin, give its 543. The generator that produced
-  it is not recorded, so the rerun uses uniform dither under all three edge policies — wrap, drop,
-  clamp — and reports which lands within draw tolerance.
-- **The saturation table cannot be reproduced** — its stream, *J* and window were never recorded. It
-  is remeasured at level (real against one application) and increment (one against two), under the
-  leak table's conditions.
-- **The review record's real 0% is confirmed as by construction**: the floor is exactly the minimum
-  of those same windows. The screen does not rely on it.
+| candidate | origin | implementation | what it does to one ROI's onsets | what *J* controls | at the edge |
+|---|---|---|---|---|---|
+| uniform per-onset dither (UD) | spike-centred jitter: Abeles & Gat 2001; Hatsopoulos et al. 2003 | Elephant `dither_spikes` | moves each onset uniformly within ±*J* | radius | drops onsets pushed out |
+| shipped dither | this repo | `jitter_trains`, generated exactly as `modularity_vs_null` does: inactive ROIs dropped, half-open window, `RandomState` | as UD | radius; also its production 20 s | wraps, adding a seam interval |
+| dither with dead time (UDD) | Stella et al. 2022 | Elephant `dither_spikes(refractory_period=f)` | as UD, keeping each onset at least the dead time from its neighbours; the dead time is capped at the ROI's own shortest interval (documented behaviour) | radius | never drops |
+| circular shift | the standard per-ROI null (e.g. Dard et al. 2022); its root is unsearched | `assess.py` lines 540–541 moved into a function that `assess_coactivity` itself calls, draw order unchanged — the parity fixtures depend on it | shifts the whole train by one random offset per ROI, wrapping | none | wraps, with a seam |
+| rigid shift, no wrap | Pipa et al. 2008 | Elephant `dither_spike_train`, dropping | shifts the whole train by one offset within ±*J* | radius | drops |
+| trial shifting (TR-SHIFT) | Pipa et al. 2008 via Stella; trials as silence-bounded sequences after Harrison & Geman 2009 | **written here**: pseudo-trials cut at within-ROI silences longer than 2*J* + *f*, each shifted rigidly within ±*J*, no wrap | shifts each pseudo-trial independently | radius | drops |
+| joint-ISI dither (JISI-D) | Gerstein 2004, whose recipe takes the square root of the joint interval histogram | Elephant `JointISI`, method `window`, with the square root swept on (Gerstein) and off (Stella's runs) | moves each onset along its preceding/following interval pair's distribution | maximum displacement | first and last onsets fixed |
+| ISI dither (ISI-D) | Stella et al. 2022, modified from Gerstein 2004 | Elephant `JointISI(..., isi_dithering=True)` | as JISI-D, ignoring interval order | maximum displacement | first and last onsets fixed |
+| interval jitter | Date, Bienenstock & Geman 1998 | Elephant `jitter_spikes` | re-places each onset uniformly within its fixed bin | bin √2·*J* (RMS-matched) | bins span the window |
+| window shuffling (WIN-SHUFF) | Stella et al. 2022 | Elephant `bin_shuffling`, bin = 1 frame | shuffles bins within short windows | window √2·*J* in whole frames (RMS rule; Stella's own convention is 2·*J*) | drops onsets not strictly inside; the last partial window handled explicitly |
+| pattern jitter | Harrison & Geman 2009 (applications in Harrison 2005) | **written here**, clean room: fixed-partition windows (their equation 4.2) on frame indices | re-places each onset within its window, keeping every interval of *R* frames or less exactly and every longer one longer than *R* | window √2·*J* in whole frames | first and last onsets fixed, as their footnote 4 recommends |
+| operational-time dither | Louis, Gerstein, Grün & Diesmann 2010 (first presented Diesmann et al. 2009) | **written here** | dithers in time warped by a leave-one-out kernel estimate of the ROI's own rate | width *J*·*N*/*T* in expected-count units (*N* onsets in a window of length *T*) | recorded in the build |
 
-Nothing in the screen depends on these numbers, so a failure to reproduce is written up, not a
-reason to stop.
+**Table 2. Six controls**, each built to fail one statistic. Uniform dither, a candidate, is also the
+known-bad control for the two floor statistics; the whole-window circular shift is destruction's
+must-pass control.
 
-## The per-ROI-only discriminator — a stretch goal
+| control | built from | the statistic it must move |
+|---|---|---|
+| do-nothing | returns its input | movement; destruction |
+| interval shuffle | Elephant `shuffle_isis`, restricted to within-train intervals (it otherwise permutes the leading gap too) | serial dependence |
+| homogeneous resample | Elephant `randomise_spikes` | interval distribution; rate profile |
+| edge thinning | Elephant `dither_spikes(edges=True)`, generated per analysis window | edge-band density, low |
+| edge piling | Elephant `dither_spikes(edges=False)`, generated per analysis window | edge-band density, high |
+| per-window circular shift | the circular shift, generated per analysis window | sub-floor rate, through its seam intervals |
 
-A classifier two-sample test (Lopez-Paz & Oquab 2017): a numpy logistic model on per-ROI features
-computed over the whole analysis window — count, interval quantiles, shortest interval, edge-band
-count — pooled across ROIs by symmetric statistics, so **no operation touches a second ROI until each
-ROI has been reduced over time**. It runs on **every** candidate (Tony's grid ruling). Held-out
-accuracy with folds grouped by mouse; the null permutes the real/surrogate label within each pair;
-α and the smallest effect worth detecting are declared before the run, and the test-set size that
-bound requires is reported beside every verdict so that *not flagged* can be told from
-*underpowered*. Uniform dither is its positive control and real against real its negative control;
-if either fails, the discriminator's verdicts are void and the night continues without them.
+**Elephant's defects, and what the adapter does about each** (found by running it in a scratch
+install; each gets a test):
 
-`src/bugarach/learn/nets/tiny.py` is **not** usable here: it sums per-ROI votes frame by frame,
-which is a coactivity trace — exactly what a sound surrogate removes. If the discriminator does not
-run, the shortlist is labelled *screened for the known leak classes only*.
+- **Floating-point time.** `bin_shuffling` floor-divides seconds and puts on-grid onsets a frame early;
+  `jitter_spikes` counts a window's start twice and crashes or misplaces onsets whenever it is not
+  zero. The adapter runs every Elephant call on integer frame indices starting at zero, then maps back.
+- **`JointISI` fails silently three ways**: a train of fewer than three onsets comes back unchanged; an
+  interval pair beyond its truncation, or a bin wider than the dither, falls back to plain uniform
+  dither; and with a small smoothing width it runs and moves nothing. The adapter counts all three per
+  ROI, and such ROIs are *not estimable* — never scored as preserving anything. Its memory grows with
+  the square of its bin count; a cell over 4 GB, or over its phase's time budget, is declared
+  *intractable* and reported so.
+- **`dither_spikes`' dead time is capped** at each train's own shortest interval, and zero silently
+  runs plain UD. The adapter reports the dead time in effect per ROI and refuses zero.
+- **`bin_shuffling` drops** edge onsets, so its counts are not exactly preserved.
+- **No seed.** Elephant draws from numpy's and Python's global generators. Every draw is seeded from a
+  `zlib.crc32` key of (recording, ROI, candidate, cell, draw): our own code uses `np.random.RandomState`
+  (sapper rule SAP002 blocks `default_rng` in `src/`), and both global generators are seeded before each
+  Elephant call. A test checks that two runs agree.
+- **Millisecond defaults** — 2 ms smoothing, 15 ms dither. A test fails if any default is reached.
+
+## What is measured
+
+Every statistic works on frame indices; two onsets of one ROI in one frame count as a zero interval.
+For every grid cell, per stream and group where the folder has them:
+
+**Table 3. The statistics.**
+
+| statistic | the property or leak | control that must move it |
+|---|---|---|
+| sub-floor interval rate, per interval | impossible short intervals | UD; per-window circular shift |
+| interval density from *f* to 2*f*, excess and deficit | distortion just above the floor | UD; UDD at 0.5 × the floor |
+| intervals shorter than the preceding event's width (slow stream) | an onset inside the previous event — real slow data never has one | UD |
+| per-ROI interval distribution, Kolmogorov–Smirnov distance | each ROI's own intervals changed | homogeneous resample |
+| serial dependence: mean per-ROI lag-1 Spearman correlation of consecutive intervals, ROIs with at least five onsets, against a within-ROI shuffle null | interval order destroyed | interval shuffle |
+| rate profile: per-ROI Fano factor over 60-second counts and lag-1 count autocorrelation | drift erased | homogeneous resample |
+| edge-band density, 5-second bands at the generation-window edges | onsets thinned or piled at an edge | edge thinning; edge piling |
+| movement: share of onsets moved, median displacement, RMS displacement, share of ROIs unchanged | a surrogate that does nothing | do-nothing, which must read zero |
+| coverage | the share of ROIs each statistic could score | — |
+| cost | generation time and peak memory per ROI | — |
+
+The Fano factor reuses `burst_rows` and `fano` from `tools/fit_background_shape.py`, moved into
+`src/`. A control that fails to move its statistic is **not** a stop: it is a measurement of that
+statistic's power, reported first.
+
+**Three yardsticks for every statistic — all measured, none chosen:**
+
+- **Mouse-split band**: real against real across 100 mouse-grouped half splits — the scale of
+  between-mouse variation.
+- **Paired surrogate histogram**: the statistic on the real recordings against *K* draws of the same
+  recordings; two-sided *P* is the share of draws at least as extreme (Amarasingham et al. 2012).
+  *K* = 99 where cost allows, never below 19; the report states *K*.
+- **Exchangeable negative**: a real held-out half, and a fresh synthetic draw, each scored as if it
+  were a candidate — the rate at which each yardstick flags something that should pass.
+
+Each check's *P* is reported raw and Holm-adjusted per grid cell. The second review round measured
+that the mouse-split band misses a full interval shuffle in three of the four groups, which is why
+the paired yardstick is measured beside it; choosing between them is tomorrow's first decision.
+
+**Destruction.** A new opt-in background floor in `src/bugarach/simulate.py`, following its
+`bg_rate_shape` pattern so existing seeds reproduce, draws each synthetic ROI with a hard floor *f*
+(placing its background with `_place_renewal` at `min_sep = f`) and a rate from the folder's per-ROI
+count distribution. Planted coordinated events **replace** background onsets, so the floor holds in
+both twins; planted jitter is one frame; participation 20% and 50%. Coincidence is scored with the
+assessor's selection-corrected excess (`Assessment.coact_excess`) in a ±2-frame window, over all ROIs,
+unchanged ones included. For each candidate and *J*, the planted twin's excess after the surrogate is
+compared with the unplanted twin's across draws. The do-nothing control must keep the excess, the
+whole-window circular shift must remove it, and freezing half the ROIs is the graded control. If
+do-nothing loses the excess, the destruction measure is broken: it is reported as not run, and the
+night continues.
+
+**The per-ROI-only discriminator — required.** A classifier two-sample test (Friedman 2003;
+Lopez-Paz & Oquab 2017): a numpy logistic model on per-ROI features computed over each analysis
+window — count, interval quantiles, shortest interval, edge-band count — pooled across ROIs by
+symmetric statistics, so no operation touches a second ROI until each ROI has been reduced over time.
+Each real window is paired with its own surrogate and scored as a forced choice; the null permutes
+the label within each pair; folds are grouped by mouse; α = 0.05, the smallest effect worth detecting
+is 55% forced-choice accuracy, and the test set is sized in mice. Uniform dither is its positive
+control and real against real its negative control; if either fails, its results are marked void.
+`src/bugarach/learn/nets/tiny.py` is not usable: it sums per-ROI votes frame by frame, which is a
+coactivity trace — exactly what a sound surrogate removes.
 
 ## The grid
 
-**Table 3. Parameters, and where each value comes from.**
+**Table 4. Parameters.**
 
 | parameter | values | basis |
 |---|---|---|
-| *J*, fast stream | 0.1, 0.2, 0.4, 0.8, 1.6, 2.5 s | doubling steps around the 0.40 s floor; includes the review record's 1.6 and 2.5 |
-| *J*, slow stream | 0.8, 1.6, 2.5, 3.2, 6.4, 12.8 s | doubling steps around the 3.20 s floor; includes the review record's 2.5 |
-| *J*, Cossart | 1, 2, 4, 8, 16, 32 frames | doubling steps from its two-frame floor |
-| provisional floor *f* | 0.5, 0.75, 1.0 × the held-out floor, in frames | brackets the observed floor; Elephant's cap is reported, not hidden |
-| pattern-jitter history length *R* | equal to *f* | the smallest *R* that cannot manufacture a sub-floor interval |
-| operational-time rate bandwidth | 2, 5 and 10 minutes | a baseline is 17–20 minutes; exploratory, and labelled so |
-| draws per cell | 20 | enough that the band, not the draw noise, dominates — the report prints both |
-| splits | 100, grouped by mouse | the band's 95% edges |
-| analysis window | 60 s | the review record's; one of the constants this plan inherits rather than justifies |
+| *J*, fast | 0.1, 0.2, 0.4, 0.8, 1.6, 2.5 s | doubling around the 0.40 s floor, plus the earlier review's 2.5 |
+| *J*, slow | 0.7, 1.4, 2.5, 2.8, 5.6, 11.2 s | doubling around `steps_excluded`'s 2.80 s floor, plus the earlier review's 2.5 |
+| *J*, Cossart | 1, 2, 4, 8, 16, 32 frames | doubling from one frame; its floor is two |
+| shipped dither, extra | 20 s | its production setting |
+| *f* | 0.5, 0.75, 1.0 × the observed floor, whole frames (Cossart: 1 and 2 frames) | at or below the floor, since τ cannot exceed it |
+| pattern-jitter *R* | *f* − 1 frames | their equation 2.2 keeps intervals of *R* or less and forces longer ones above *R*, so *R* = *f* − 1 cannot make an interval shorter than *f* |
+| joint-ISI | all ten keyword parameters set and recorded per cell: method `window`; square root on and off; smoothing width *J*/2 and *J*; dead time *f*; truncation at least the ROI's largest interval-pair sum; bins narrower than *J*; cutoff and alternation on | Gerstein's recipe and Stella's; on sparse ROIs the smoothing width, not *J*, decides whether onsets move |
+| operational-time kernel | Gaussian, σ of 2, 5 and 10 minutes, leave-one-out | exploratory |
+| draws *K* | 99 where cost allows, never below 19 | *P* resolution |
+| splits | 100, grouped by mouse | the band's edges |
+| analysis window | 60 s | ⚠ inherited from the earlier review, not justified |
+| destruction | ±2-frame coincidence window; 1-frame planted jitter; 20% and 50% participation | declared |
+| discriminator | α = 0.05; 55% forced-choice accuracy | declared |
+
+## The reproduction — reported, not a stop
+
+The earlier review's leak table reconstructs exactly — 543 windows of 60 s inside the senktide baseline
+analysis windows — and is rerun under all three edge policies (wrap, drop, clamp). The expected outcome
+is that the policies cannot be told apart: the second round found all three within about 1.6
+percentage points of each other. Its saturation table's conditions were never recorded, so it is
+remeasured under the leak table's. The review's 0% real sub-floor rate is by construction, because its
+floor is the minimum of those same windows.
 
 ## How the night runs
 
-**Table 4. The Workflow.**
+**Table 5. The Workflow — 10 agents.**
 
-| phase | agents | work |
-|---|---|---|
-| build | 7 | Elephant adapter, controls, shipped dither and their support tests · pattern-jitter **spec author** · pattern-jitter **primary**, from the spec alone · pattern-jitter **adversary and fuzzer**, from the spec alone · operational-time dither · operational-time dither's hand-derived vectors · the statistics, verdict rule, destruction test, window function and report builder |
-| verify | 1 | full suite; each control flagged in its powered region; the reproduction |
-| run | 1 | both datasets; the discriminator if time allows |
-| report | 1 | the cross-folder summary |
-| review | 11 | the murderboard on that summary |
+| phase | agents | work | budget |
+|---|---|---|---|
+| claim | 1 (the integrator) | resolve the darkroom; confirm the darkroom claim on `docs/SESSIONS.md` has reached `main`; otherwise stop | 10 min |
+| build | 7 | the adapter, controls, shipped dither, trial shifting, seeding and their tests · pattern-jitter spec author · pattern-jitter primary, from the spec alone · pattern-jitter adversary, fuzzer and mutant check, from the spec alone · operational-time dither · its hand-derived vectors · statistics, yardsticks, destruction generator, generation-window function, the time-axis port and the report builder | 3 h |
+| integrate | 1 (the integrator) | full suite; commit and push — the only agent that touches git | 45 min |
+| run | 1 | both folders, the reproduction, the discriminator; cost-capped | 3 h |
+| report | 1 | the per-folder reports and the cross-folder summary, to the darkroom | 1 h |
 
-The pattern-jitter primary and adversary start only after the spec exists, so that phase is
-sequential, not parallel. Support-test fixtures are built per ROI with a hard floor, because the
-simulator's background is Poisson with no dead time and would contain sub-floor intervals itself.
+Build agents share the one claimed worktree and write disjoint paths; only the integrator commits.
+The pattern-jitter primary and adversary start only after the spec exists. **The deadline is 07:00**:
+whatever is done by then is written up as partial.
 
-## Figure 2. The night, and where it stops
+## Figure 1. The night, and where it stops
 
 ```mermaid
 flowchart TD
-    B["build (7)"] --> T{"suite green?<br/>pattern-jitter fuzz agrees?"}
-    T -- no --> H["stop: wip/ branch,<br/>thread handoff, root pointer"]
-    T -- yes --> V{"controls flagged where they must be?<br/>do-nothing fails destruction?"}
-    V -- no --> H
-    V -- yes --> R["run both datasets"]
-    R --> D{"darkroom resolves?"}
-    D -- no --> H
-    D -- yes --> S["reports + cross-folder summary"]
-    S --> M["murderboard: tonight (11)<br/>or morning, with Tony"]
-    G["guard across every phase:<br/>nothing real-derived enters any git tree"] -.-> B
-    G -.-> R
-    G -.-> S
+    C["claim the darkroom"] --> B["build: 7 agents"]
+    C -- "unresolved" --> H["stop: wip/ branch,<br/>handoff, pointer"]
+    B --> I{"suite green?<br/>fuzz agrees?"}
+    I -- no --> H
+    I -- yes --> R["run both folders"]
+    R --> P["reports to<br/>the darkroom"]
+    P --> M["murderboard<br/>in the morning"]
 ```
 
-**Stop-on-a-dime.** Branch `surrogate-screen-overnight`, each verified step committed and pushed. On
-any stop: a `wip/` branch, a handoff at `docs/handoffs/2026-09-11-surrogate-screen-overnight.md`, and
-an *additive* pointer block in the root `HANDOFF.md`, which already carries two other threads and
-must not be overwritten. The darkroom folder `<darkroom>/bugarach/2026-09-11-surrogate-screen/` is
-claimed on `docs/SESSIONS.md` before anything is written to it.
+**Stops**: the suite still red after two repair attempts; the pattern-jitter fuzz disagreeing, or a
+mutant surviving it; the darkroom unresolved or its claim not on `main`; anything derived from a real
+recording about to be committed — the integrator checks `git status` before every commit, and only
+`src/`, `tools/`, `tests/`, `docs/clean_room/` and `pyproject.toml` may change. On any stop: a `wip/`
+branch, a handoff at `docs/handoffs/2026-09-11-surrogate-screen-overnight.md`, and an additive pointer
+block in the root `HANDOFF.md`, which carries the loop thread and this thread's existing pointer.
 
 ## The report
 
-- An executive summary first: the shortlist and the rule that produced it, per stream; which
-  controls fired and where each statistic had power; coverage; what the discriminator saw.
-- Figures numbered and referred to by number and name; every abbreviation defined at first use;
-  *J*, τ and *f* defined before any figure uses them; the repo's plot conventions, including
-  `_time_axis_hook` for time axes.
-- **Inline SVG only**, because the render gate measures nothing else — it passes a page of
-  `<canvas>` figures with zero flags. The gate refuses a page with no SVG.
-- **Gated by `render_check.py`** (canonical in the downLow repo): no text overlaps, no text outside
-  its figure, no rendered type below its floor. It resolves its root as the parent of its own
-  `tools/` folder and writes screenshots under that root, so it runs as a stamped copy placed in
-  `<darkroom run folder>/tools/`, keeping both its root and its screenshots in the darkroom — its
-  default location is inside a git tree, and a destination outside its root crashes it. ⚠ It cannot
-  see text crossing a box edge or a line — the defect in the 2026-09-10 decision brief; filed as
-  armory FINDINGS 19. Until that check exists, report figures keep text out of shapes and a person
-  looks at the screenshots.
+- **An executive summary first**, per folder: for each candidate, what it keeps and what it destroys;
+  where each statistic had power; coverage and cost; the discriminator; the three yardsticks side by
+  side; the choices the verdict rule faces. No shortlist.
+- **Figures numbered and referred to by number and name**; every abbreviation defined at first use;
+  *J*, τ and *f* defined before any figure uses them. The first figures are synthetic: a surrogate and
+  its leak (a black-and-white raster with marks in a lane above it, beside one ROI's interval
+  histogram), what each candidate does to one ROI, and the window anatomy.
+- **Inline SVG only.** Time axes use a pure-Python port of `_time_axis_hook`'s tick rule (60-base
+  ticks, labels such as `45s`, `2m`, `2m30s`), tested against the original.
+- **Gated** by `render_check.py` (canonical in the downLow repo) and draughtsman's `edge_collisions.py`,
+  each run as a stamped copy in the darkroom run folder's `tools/`, so that their roots and screenshots
+  resolve there rather than in a git tree. The builder refuses a page with no SVG, which render_check
+  would pass. ⚠ No tool catches text crossing a shape; a person looks at the screenshots.
 
-## Tomorrow's targets, if the night succeeds
+## Tomorrow
 
-- Read the executive summary; accept or amend the shortlist for the full-model tier.
-- Send the producer the τ question, already drafted in its todo.
-- Decide whether to write to Grün's group about surrogate choice on sparse data — the
-  coordination-without-labels review proposed it and nobody has asked.
-- Decide whether Elephant stays a dependency or becomes only the reference our own code is tested against.
-- Choose the grid for the full-model tier.
-- Decide whether the screen becomes a stage in [`pipeline.md`](../pipeline.md) that every user's
-  folder passes through — which tonight's cross-folder comparison bears on directly.
+- Design the verdict rule from the three yardsticks and the exchangeable-negative rates; then the shortlist.
+- Murderboard the report.
+- Send the producer the τ question.
+- Read what Grün's group has published on selecting surrogates (Louis, Borgelt & Grün 2010; Grün et al.
+  2010 — both on the literature ask-list), then decide whether to write to them.
+- Decide on filing Elephant's defects upstream ([todo](../todo/2026-09-11-elephant-surrogate-defects-are-not-filed-upstream.md)),
+  on the encoder's truncation, on Elephant as a dependency, and on whether the screen becomes a stage in
+  [`pipeline.md`](../pipeline.md).
 
-## Residual ⚠, carried into the run
+## Residual ⚠
 
-- ⚠ **FOUNDATIONS §9's interquartile per-ROI rate does not reproduce** from any current folder, with
-  or without zero-event ROIs. Not used here; [filed for its own review](../todo/2026-09-10-the-foundations-rate-range-does-not-reproduce.md).
-- ⚠ The 60-second analysis window is inherited, not justified.
-- ⚠ The saturation table's original conditions are unrecoverable.
-- ⚠ Joint-ISI dither is intractable at the smallest *J*, and operational-time dither may be
-  degenerate on data this sparse; both are reported as such rather than forced.
-- ⚠ The text-against-shape gap in the render gate.
+- FOUNDATIONS §9's per-ROI rate range does not reproduce ([todo](../todo/2026-09-10-the-foundations-rate-range-does-not-reproduce.md)).
+- The 60-second analysis window is inherited; the saturation table's original conditions are unrecoverable.
+- Joint-ISI dither is intractable at the smallest *J*; operational-time dither may degenerate on data this sparse.
+- No tool catches text crossing a shape.
+- The circular shift's root, and the physics surrogate literature, were not searched.
+- Nobody has asked Grün's group or the Cossart lab anything.
+- This plan's review stopped at round two by escalation, unconverged; tonight measures what the verdict rule needs.
 
 ## Sources
 
-- The review that killed the surrogate: [`reviews/2026-09-10-coordination-without-labels_2026-09-10.md`](../reviews/2026-09-10-coordination-without-labels_2026-09-10.md)
+- The review that killed the surrogate, and the proposal it reviewed: [`reviews/2026-09-10-coordination-without-labels_2026-09-10.md`](../reviews/2026-09-10-coordination-without-labels_2026-09-10.md), [`proposals/2026-09-10-coordination-without-labels.html`](2026-09-10-coordination-without-labels.html)
 - Tony's rulings and the Stella reading: [`todo/2026-09-10-which-surrogates-enter-the-screen.md`](../todo/2026-09-10-which-surrogates-enter-the-screen.md)
 - The earlier plan this replaces: [`todo/2026-09-10-build-the-surrogate-screen.md`](../todo/2026-09-10-build-the-surrogate-screen.md)
-- Stella, Bouss, Palm & Grün 2022, *eNeuro* 9(3), ENEURO.0505-21.2022; code at
-  <https://github.com/INM-6/SPADE_surrogates>.
-- Gerstein 2004, *Acta Neurobiologiae Experimentalis* 64(2):203–207 — the joint-interval dither, and
-  flat dither's added short intervals.
-- Date, Bienenstock & Geman 1998; Harrison & Geman 2009, *Neural Computation* 21:1244–1258; Louis,
-  Gerstein, Grün & Diesmann 2010, *Frontiers in Computational Neuroscience* 4:127; Pipa et al. 2008,
-  *Journal of Computational Neuroscience* 25:64–88; Platkiewicz, Stark & Amarasingham 2017;
-  Lopez-Paz & Oquab 2017 — the shelf holds all but Gerstein and Pipa, at
-  `<darkroom>/bugarach/lit/`.
-- Dard et al. 2022, *eLife* 11:e78116 — the Cossart folder's own analysis.
-- Elephant 1.2.1, `elephant/spike_train_surrogates.py`, read and run 2026-09-10 in a scratch install.
+- Stella, Bouss, Palm & Grün 2022, *eNeuro* 9(3), ENEURO.0505-21.2022; code at <https://github.com/INM-6/SPADE_surrogates>
+- Gerstein 2004, *Acta Neurobiologiae Experimentalis* 64(2):203–207; Pipa et al. 2008, *Journal of Computational Neuroscience* 25:64–88
+- Date, Bienenstock & Geman 1998; Abeles & Gat 2001; Hatsopoulos et al. 2003; Harrison & Geman 2009, *Neural Computation* 21:1244–1258; Amarasingham et al. 2012
+- Louis, Gerstein, Grün & Diesmann 2010, *Frontiers in Computational Neuroscience* 4:127; Louis, Borgelt & Grün 2010, in *Analysis of Parallel Spike Trains*; Grün et al. 2010, *BMC Neuroscience* 11(Suppl 1):O15
+- Friedman 2003; Lopez-Paz & Oquab 2017
+- Dard et al. 2022, *eLife* 11:e78116; the dataset DANDI:000219 (Dard, Picardo & Cossart)
+- The literature shelf at `<darkroom>/bugarach/lit/` holds most of these; [`lit_needed.md`](../lit_needed.md) lists the rest
+- Elephant 1.2.1, `elephant/spike_train_surrogates.py`, read and run 2026-09-10 in a scratch install

@@ -364,5 +364,7 @@ Added 2026-09-10, when that plan's review found them used undefined.
   coordination. A surrogate can keep everything real data has and still keep the
   coordination too; a do-nothing surrogate must fail this test.
 - **generation window / analysis window** — the span a surrogate is generated over
-  (the producer's baseline analysis window), and the 60-second cuts its statistics
-  are computed on.
+  (the producer's baseline window, or the whole recording where a folder declares
+  no regions), and a 60-second cut of it, the unit its statistics are computed on.
+  "Analysis window" here is the 60-second cut, not the producer's
+  `analysis_start_sec`/`analysis_end_sec` span.
