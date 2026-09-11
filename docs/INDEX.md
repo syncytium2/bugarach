@@ -103,6 +103,7 @@ enforced by `tests/test_index_resolves.py`, which reads code spans too.
 | you want | keywords | go to |
 |---|---|---|
 | what the public site is | pages, nav, publish, deploy | `tools/build_site.py` — `PAGES`, `STATUS`, `PUBLISHED` declared once |
+| **the front page's model figure, and who draws it** | landing page figure, architecture.svg, draughtsman, caption, torch.jit.trace, front-page diagram, figure size, slot, vendored spec, re-vendor | Drawn by vendored **draughtsman** from `docs/learned/architecture.spec.json` via `tools/make_architecture_diagram.py` — never hand-edit either. A figure drawn *for the slot* is owed by draughtsman: [`the todo`](todo/2026-09-10-the-front-page-figure-waits-on-draughtsman.md) is bugarach's half, [`the request`](needs/the-front-page-figure-needs-drawing-for-its-slot.md) is the ask. ⚠ **Code and spec must be re-vendored from ONE draughtsman commit** — they are split today (`3762f4b` / `cb7fc2a`). ⚠ **The figure is never shrunk**: `.arch` is `min(94vw, 78rem)`, measured 1203 px on a 1280 laptop and 395 px on a phone, and scrolls below the viewBox width |
 | why a page refuses to build | stale, degraded, staleness gate | `_page_is_current()` rebuilds and byte-compares. A stale page is a build failure, not a warning |
 | which detectors the site hides | withheld, excluded, locust, five vs six | `_withheld_from_the_viewer()` reads the viewer's `WITHHELD` set. **README documents six, the site shows five, and both are right** |
 

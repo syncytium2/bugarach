@@ -2132,3 +2132,10 @@ session's work is not a sweep.
   a defect the missing literature had already characterised. Adding the shelf so it cannot happen
   again.
 - **Released:** on session end. Additive only — nothing existing is moved or overwritten.
+
+### darkroom/needs/the-front-page-figure-needs-drawing-for-its-slot.md — a request to draughtsman (bugarach-supple-chisel)
+- **Written:** 2026-09-10. One new file; nothing existing touched. The folder is append-by-filename,
+  so there was nothing to collide with.
+- ⚠ **Recorded after the write, not before it.** The rule is to claim a darkroom write first; this
+  one was written and then recorded. It collided with nothing, and the next one should claim first.
+- **Released:** at write — holds nothing. The repo copy is `docs/needs/` in the same change.

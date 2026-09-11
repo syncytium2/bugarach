@@ -618,6 +618,7 @@ code from cSPIKE's MATLAB source.
 | --- | --- | --- |
 | [PySpike](https://github.com/mariomulansky/PySpike) | BSD | SPIKE-synchronization semantics ported from its (BSD) source; test-suite cross-check (its `max_tau` bug, live since 0.8.0, limits it to the uncapped regime — fix filed as [#89](https://github.com/mariomulansky/PySpike/pull/89)) |
 | [CICADA](https://gitlab.com/cossartlab/cicada) | MIT | **locust** is code-derived from it, by way of interface2, and modified; carries the upstream copyright notice |
+| [draughtsman](https://github.com/syncytium2/draughtsman) | BSD-3-Clause | **draws the model figure on the front page.** It traces `build_tube()`, checks that every traced operation lands in exactly one drawn box, and renders the SVG. Vendored in `third_party/draughtsman/`, with the spec it draws from in `docs/learned/architecture.spec.json` |
 | cSPIKE (MATLAB) | research/education only — **no code used** | reference outputs for parity tests only (research use, via interface2) |
 
 ⚠ SPIKE-synchronization is a **native port** rather than a PySpike wrapper because
