@@ -1,5 +1,5 @@
 ---
-status: open
+status: done
 filed: 2026-09-10
 ---
 
@@ -109,3 +109,10 @@ Tony has deployed it.
   most phones. Tony chose to ship it and ask draughtsman for a figure drawn for the real phone box —
   appended to [`needs/the-front-page-figure-needs-drawing-for-its-slot.md`](../needs/the-front-page-figure-needs-drawing-for-its-slot.md).
 - **Still open:** the deploy, and the narrower phone figure when draughtsman draws it.
+
+## Deployed 2026-09-11 — closed
+
+Tony ran the upload. The live page stamps `22234c0`, `site_staleness.py` reads current, and the
+page carries both figures, the draughtsman caption and the credit line. That meets *Closes when*
+above. The narrower phone figure is a new item, not this one:
+[`the phone figure is drawn for a box wider than most phones`](2026-09-11-the-phone-figure-is-drawn-for-a-box-wider-than-most-phones.md).
