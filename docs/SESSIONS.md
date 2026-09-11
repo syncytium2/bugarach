@@ -10,6 +10,16 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
+### Mac/surrogate-screen-overnight — DARKROOM claim ACTIVE: `bugarach/2026-09-11-surrogate-screen/`
+- **Status:** ACTIVE 2026-09-11. Tony's go, in words, for an overnight Workflow that measures every
+  surrogate candidate on the `steps_excluded` and `cossart` folders and writes descriptive reports —
+  [the plan](proposals/2026-09-10-surrogate-evaluation-overnight.md). No shortlist tonight.
+- **Writes:** only under `<darkroom>/bugarach/2026-09-11-surrogate-screen/` — the per-folder
+  reports, the cross-folder summary, render-gate screenshots, and stamped copies of `render_check.py`
+  and `edge_collisions.py` in its `tools/`. Aggregates from real recordings stay in that folder.
+- **Branch:** `surrogate-screen-overnight`, in a worktree of the same name.
+- **Released when:** the morning murderboard on the report is done.
+
 ### Mac/claim-the-site-for-the-viewer — SITE claim ACTIVE: `bugarach.tonydefazio.com`
 - **Status:** **ACTIVE 2026-09-10. THE SITE IS HELD BY THIS CLAIM.** No other session may
   run `npm run deploy` or `wrangler deploy` while this block reads ACTIVE.

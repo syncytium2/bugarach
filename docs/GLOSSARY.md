@@ -334,3 +334,37 @@ load-bearing terms with no glossary entry.
   spacing events wider than the widest context window.
 - **participant floor** — the recruitment level below which a detector stops
   finding events. Reported as recall broken down by participation fraction.
+
+## Surrogate vocabulary
+
+Terms from the surrogate screen,
+[`proposals/2026-09-10-surrogate-evaluation-overnight.md`](proposals/2026-09-10-surrogate-evaluation-overnight.md).
+Added 2026-09-10, when that plan's review found them used undefined.
+
+- **surrogate** — a resampled copy of a recording that keeps each ROI's own timing
+  and destroys cross-ROI timing: the negatives a self-supervised detector trains
+  against, and the null a detector thresholds against. Distinct from a
+  **contaminated null** above, which is about *where* a null is estimated.
+- **leak** — a difference between real data and a surrogate that is visible
+  without any cross-ROI information. A model trained against a leaking surrogate
+  learns the leak instead of coordination. The known one: uniform per-onset
+  dither's sub-floor intervals.
+- ***J*** — jitter radius: how far a dither may move one onset, ± seconds. Other
+  surrogates' parameters are matched to it by root-mean-square displacement.
+- **dead time, τ** — the shortest within-ROI interval the producer's event
+  extractor can emit; the producer's to declare. ⚠ **Not SPIKE-synch's τ**, which
+  is a coincidence window (see **ISI-adaptive**).
+- **floor, provisional floor *f*** — the shortest within-ROI interval *observed* in
+  real data, standing in for τ until it is declared; *f* is the value swept in its
+  place. A floor observed on the same windows it is tested on makes real data score
+  zero by construction.
+- **known-bad control** — a surrogate built to fail one statistic. A statistic
+  that does not flag it has no power there, and its verdicts there do not count.
+- **destruction test** — whether a surrogate removes planted cross-ROI
+  coordination. A surrogate can keep everything real data has and still keep the
+  coordination too; a do-nothing surrogate must fail this test.
+- **generation window / analysis window** — the span a surrogate is generated over
+  (the producer's baseline window, or the whole recording where a folder declares
+  no regions), and a 60-second cut of it, the unit its statistics are computed on.
+  "Analysis window" here is the 60-second cut, not the producer's
+  `analysis_start_sec`/`analysis_end_sec` span.
