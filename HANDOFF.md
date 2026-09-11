@@ -1,7 +1,5 @@
 # Handoff — the loop closes; both of pipeline.md's blockers are gone
 
-> ⚠ **A THIRD LIVE THREAD: deploying the front-page figure.** Runbook: [`docs/handoffs/2026-09-11-deploy-the-slot-figure.md`](docs/handoffs/2026-09-11-deploy-the-slot-figure.md). Short version: #527 and #528 are merged, the site is 48 commits behind `main`, the slot-sized figure was **not found anywhere** as of 2026-09-11 (it has LANDED on draughtsman `main` at `5705c46` — vendor code and spec from there), and publishing needs Tony and his Cloudflare login. Independent of the threads below; when it lands, delete only this block.
-
 > ⚠ **A SECOND THREAD IS ALSO LIVE, and it is not this one.** The detector-design thread — a
 > self-supervised coordinated-event detector, proposed on 2026-09-10 and stopped by its own
 > eleven-role review — hands off in
