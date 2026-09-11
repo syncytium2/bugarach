@@ -5,16 +5,19 @@ filed: 2026-09-10
 
 # Build the surrogate screen — three tiers, cheapest first
 
-> **Still blocked on** [`which surrogates enter the screen`](2026-09-10-which-surrogates-enter-the-screen.md),
-> but **the candidate set is settled: all eight run** (Tony, 2026-09-10, from Stella fig. 10 —
-> you cannot predict which surrogate is right in advance). What is still open there is **grid or
-> independent contests**. Everything below is the plan, not permission to start.
+> **Unblocked by Tony's rulings, 2026-09-10** — every candidate runs, and the tiers with a pooling
+> operator run as a grid ([`which surrogates enter the screen`](2026-09-10-which-surrogates-enter-the-screen.md)).
+> **Superseded in part by the overnight plan**,
+> [`proposals/2026-09-10-surrogate-evaluation-overnight.md`](../proposals/2026-09-10-surrogate-evaluation-overnight.md),
+> which builds this screen as a per-dataset tool, takes five generators from Elephant, and adds
+> an estimability check this page does not have. **Where the two disagree, the plan wins.** It waits
+> on Tony's go; everything below is background, not permission to start.
 >
 > Two consequences of the full field entering. **The cost split is a build order, not a cut** —
-> the four cheap candidates (uniform dither, dither with dead-time, circular shift, rigid shift)
-> can run while the four that need real algorithms are still being written. And **the counting
-> tier is the only tier that scales to eight without the grid multiplying**, because it has no
-> pooling operator; treat it as the workhorse rather than a pre-filter.
+> the cheap candidates can run while the ones that need real algorithms are still being written.
+> And **the counting tier is the only tier that takes every candidate without the grid
+> multiplying**, because it has no pooling operator; treat it as the workhorse rather than a
+> pre-filter.
 
 ## Why a screen exists
 
