@@ -178,6 +178,15 @@ def candidate_rows(R: dict, stream: str) -> list[dict]:
         for r in dest:
             if r["name"] == name and r["cell_id"] in ok_ids:
                 ret[r["participation"]].append(_f(r["retained"]))
+        # Retained at 50% participation, per K (the assessor's minimum ROIs active
+        # together) and per J. A median over both hides the finding: destruction climbs
+        # steeply with J and with K, and differs between folders by ROI count.
+        jof = {c["cell_id"]: (_f(c["J"]) if c["J"] not in ("", None) else None) for c in mine}
+        rjk = defaultdict(lambda: defaultdict(list))
+        for r in dest:
+            if r["name"] == name and r["cell_id"] in ok_ids and r["participation"] == "0.5":
+                rjk[int(float(r["K"]))][jof.get(r["cell_id"])].append(_f(r["retained"]))
+        ret_JK = {K: {J: _med(v) for J, v in d.items()} for K, d in rjk.items()}
         dsc = [r for r in disc if r["name"] == name and r["status"] == "ok"]
         acc = [_f(r["accuracy"]) for r in dsc]
         Js = sorted({_f(c["J"]) for c in mine if c["J"] not in ("", None)})
@@ -201,6 +210,7 @@ def candidate_rows(R: dict, stream: str) -> list[dict]:
             "flagged": flagged_paired,
             "kept": [s for s in all_stats if s not in flagged_paired],
             "retained": {p: _summ(v) for p, v in ret.items()},
+            "ret_JK": ret_JK,
             "disc_acc": _summ(acc),
             "disc_sig": (sum(_b(r["significant"]) for r in dsc) / len(dsc)) if dsc else float("nan"),
             "disc_void": (sum(_b(r["void"]) for r in dsc) / len(dsc)) if dsc else float("nan"),
@@ -214,6 +224,19 @@ def candidate_rows(R: dict, stream: str) -> list[dict]:
 def _med(v):
     v = [x for x in v if isinstance(x, float) and math.isfinite(x)]
     return float(np.median(v)) if v else float("nan")
+
+
+def ret_span(r: dict) -> str:
+    """Coordination retained at 50% participation, smallest J -> largest J, largest K."""
+    if not r.get("ret_JK"):
+        return "—"
+    d = r["ret_JK"][max(r["ret_JK"])]
+    Js = sorted(j for j in d if j is not None)
+    if not Js:
+        return num(d.get(None))
+    if len(Js) == 1:
+        return num(d[Js[0]])
+    return f"{num(d[Js[0]])} → {num(d[Js[-1]])}"
 
 
 def _summ(v):
@@ -650,47 +673,73 @@ def fig_flags(rows_by_stream: dict, role: str) -> Svg:
     return svg
 
 
-def fig_destruction(rows_by_stream: dict, role: str) -> Svg:
-    streams = list(rows_by_stream)
-    names = [lab for _, lab in CANDIDATES + CONTROLS]
-    h = 60 + 24 * len(names) + 50
-    colw = 260
-    w = max(250 + colw * len(streams) + 20, 660)   # the legend needs 660 even for one stream
-    svg = Svg(w, h, f"Figure 5 ({role}): share of planted coordination retained after "
-                    "each candidate, median across its cells, at 20% and 50% participation")
-    for j, st in enumerate(streams):
-        cx0 = 250 + j * colw
-        cx1 = cx0 + colw - 40
+def _shade(v: float) -> tuple[str, str]:
+    """Retained 1 -> dark ink (kept), 0 -> white (removed); returns (fill, text colour)."""
+    v = max(0.0, min(1.0, v))
+    lo, hi = (255, 255, 255), (27, 42, 38)
+    rgb = tuple(round(a + (b - a) * v) for a, b in zip(lo, hi))
+    return "#%02x%02x%02x" % rgb, ("#fff" if v > 0.55 else "#111")
 
-        def X(v):
-            return cx0 + max(-0.2, min(1.2, v)) / 1.4 * (cx1 - cx0) + 0.2 / 1.4 * (cx1 - cx0)
-        svg.text((cx0 + cx1) / 2, 24, f"{st} stream", anchor="middle", weight="bold")
-        for q in (0.0, 0.5, 1.0):
-            svg.line(X(q), 36, X(q), 40 + 24 * len(names), stroke="#ddd")
-            svg.text(X(q), 58 + 24 * len(names), f"{q:g}", anchor="middle", size=12)
-        by = {r["label"]: r for r in rows_by_stream[st]}
-        for i, lab in enumerate(names):
-            y = 48 + i * 24
-            if j == 0:
-                svg.text(240, y + 4, lab, anchor="end", size=12)
-            r = by.get(lab)
-            got = False
-            for p, mark in (("0.2", "open"), ("0.5", "fill")):
-                s = (r or {}).get("retained", {}).get(p)
-                if not s:
+
+def fig_destruction(rows_by_stream: dict, role: str) -> Svg:
+    """Retained at 50% participation for every candidate at every J, at both ends of the
+    assessor's K scan — one shaded grid per (stream, K), the value printed in each square."""
+    # 42-px squares keep two grids of eight columns (no J, six J, shipped dither's 20 s)
+    # inside the page's 980 px, so the right-hand grid is not cut off at the edge.
+    lab_w, cw, rh, gap = 215, 42, 22, 36
+    names = [(n, lab) for n, lab in CANDIDATES + CONTROLS]
+    layout = []
+    for st, rows in rows_by_stream.items():
+        by = {r["name"]: r for r in rows}
+        Ks = sorted({K for r in rows for K in (r.get("ret_JK") or {})})
+        Js = sorted({J for r in rows for d in (r.get("ret_JK") or {}).values() for J in d
+                     if J is not None})
+        unit = next((r["J_unit"] for r in rows if r.get("J_unit")), "sec")
+        layout.append((st, by, [Ks[0], Ks[-1]] if len(Ks) > 1 else Ks, Js, unit))
+    ncol = max((len(Js) for *_, Js, _ in layout), default=0) + 1
+    grid_w = ncol * cw
+    w = lab_w + 2 * grid_w + gap + 20
+    block_h = 58 + len(names) * rh + 16
+    h = block_h * len(layout) + 40
+    svg = Svg(w, h, f"Figure 5 ({role}): share of planted coordination retained after each "
+                    "candidate at 50% participation, for every J, at the smallest and largest "
+                    "number of ROIs the assessor requires active together")
+    y0 = 0
+    for st, by, Ks, Js, unit in layout:
+        cols = [None] + Js
+        for g, K in enumerate(Ks):
+            gx = lab_w + g * (grid_w + gap)
+            svg.text(gx, y0 + 22, f"{st} stream · K = {K} ROIs together", weight="bold",
+                     size=13)
+            for c, J in enumerate(cols):
+                lab = "no J" if J is None else f"{J:g}"
+                svg.text(gx + c * cw + cw / 2, y0 + 44, lab, anchor="middle", size=12)
+            if g == 0:
+                svg.text(lab_w - 10, y0 + 44, f"J ({'s' if unit == 'sec' else 'frames'})",
+                         anchor="end", size=12, fill="#444")
+            for i, (n, lab) in enumerate(names):
+                y = y0 + 52 + i * rh
+                if g == 0:
+                    svg.text(lab_w - 10, y + 15, lab, anchor="end", size=12)
+                d = ((by.get(n) or {}).get("ret_JK") or {}).get(K)
+                if not d:
+                    svg.text(gx + 4, y + 15, "not measured", size=12, fill="#444")
                     continue
-                got = True
-                if mark == "open":
-                    svg.circle(X(s["med"]), y, 5, fill="#fff", stroke="#111")
-                else:
-                    svg.circle(X(s["med"]), y, 4.5)
-            if not got:
-                svg.text(cx0, y + 4, "not measured", size=12, fill="#444")
-    yl = h - 18
-    svg.circle(260, yl - 4, 5, fill="#fff", stroke="#111")
-    svg.text(270, yl, "20% participation", size=12)
-    svg.circle(420, yl - 4, 4.5)
-    svg.text(430, yl, "50% participation", size=12)
+                for c, J in enumerate(cols):
+                    v = d.get(J)
+                    if v is None or not math.isfinite(v):
+                        continue
+                    fill, ink = _shade(v)
+                    svg.rect(gx + c * cw + 1, y + 1, cw - 2, rh - 2, fill=fill,
+                             stroke="#c9d1ce", sw=0.6)
+                    svg.text(gx + c * cw + cw / 2, y + 15, num(v), anchor="middle", size=12,
+                             fill=ink)
+        y0 += block_h
+    fill_k, _ = _shade(1.0)
+    svg.rect(lab_w, h - 30, 14, 12, fill=fill_k)
+    svg.text(lab_w + 20, h - 20, "1 = all planted coordination kept", size=12)
+    svg.rect(lab_w + 250, h - 30, 14, 12, fill="#fff", stroke="#c9d1ce")
+    svg.text(lab_w + 270, h - 20, "0 = removed", size=12)
     return svg
 
 
@@ -815,13 +864,21 @@ def _role_intro(R: dict) -> str:
                 "males and females; DI, intact females in diestrus; MALE, intact males. "
                 "FOUNDATIONS §9 admits no pooled number without the per-group numbers "
                 "beside it, which is why every table carries its scope.</p>")
+    def machine(meta):
+        # meta.json names the data folder as the writing machine saw it; that path, not the
+        # file's time, is what says which machine wrote it. It matters here: the Mac's
+        # wrap-up rewrote meta.json at 13:28 after the run had moved to the workstation.
+        f = str(meta.get("folder") or "")
+        return ("the Mac" if f.startswith("/Users/") else
+                "the Windows workstation" if re.match(r"^[A-Za-z]:[\\/]", f) else
+                "an unrecorded machine")
     runs = []
     if mac.get("started"):
-        runs.append(f"started on the Mac {esc(mac.get('started'))} with {mac.get('jobs')} "
-                    f"jobs")
+        runs.append(f"first started on {machine(mac)} {esc(mac.get('started'))} with "
+                    f"{mac.get('jobs')} jobs")
     if m.get("started"):
-        runs.append(f"resumed on the Windows workstation {esc(m.get('started'))} with "
-                    f"{m.get('jobs')} jobs")
+        runs.append(f"<code>meta.json</code> last written on {machine(m)} "
+                    f"{esc(m.get('started'))}, by an invocation with {m.get('jobs')} jobs")
     y = yardstick_reach(R)
     kc = ", ".join(f"{n} cells at {k} draws" for k, n in y["K_counts"].items()) or "—"
     return (cite + f"<p class=dim>{m.get('n_recordings_loaded', '—')} recordings. "
@@ -861,7 +918,7 @@ def exec_summary(R: dict, by_stream: dict) -> str:
                    else "<i>unreachable</i> <span class=dim>(<i>K</i> ≤ 39)</span>"),
                 esc(", ".join(stat_label(s) for s in r["flagged"][:4])
                     + (" …" if len(r["flagged"]) > 4 else "")) or "none",
-                rng_txt(r["retained"].get("0.5")),
+                ret_span(r),
                 (f"{rng_txt(r['disc_acc'])}" + (f" <span class=dim>void {pct(r['disc_void'])}"
                                                 "</span>" if r["disc_void"] and math.isfinite(
                                                     r["disc_void"]) else "")),
@@ -870,7 +927,8 @@ def exec_summary(R: dict, by_stream: dict) -> str:
         parts.append(table(
             ["candidate", "cells run", "<i>J</i>", "RMS move (frames)",
              "checks flagged, unadjusted: band / paired", "what gives it away",
-             "coordination retained at 50%", "discriminator accuracy", "ms per ROI per draw"],
+             "coordination retained, smallest → largest <i>J</i>", "discriminator accuracy",
+             "ms per ROI per draw"],
             body, f"{role} {st}: per-candidate summary"))
     parts.append(
         "<p class=dim>Checks flagged, unadjusted: the share of (statistic, cell) checks "
@@ -880,8 +938,11 @@ def exec_summary(R: dict, by_stream: dict) -> str:
         "adjusted rate is zero by construction (the box above). 'What gives it away' "
         "lists statistics with a raw paired <i>P</i> under 0.05 in at least half of the "
         "candidate's cells. "
-        "Coordination retained: median across cells, range in brackets. Discriminator: the "
-        "per-ROI-only classifier's forced-choice accuracy, where 0.5 is chance.</p>")
+        "Coordination retained: the share of planted coordination still visible at 50% "
+        "participation, at the candidate's smallest and largest <i>J</i>, at the largest "
+        "<i>K</i> the assessor scans; Figure 5 has every <i>J</i> and both ends of the scan. "
+        "Discriminator: the per-ROI-only classifier's forced-choice accuracy, where 0.5 is "
+        "chance.</p>")
     return "".join(parts)
 
 
@@ -896,8 +957,32 @@ def choices(R: dict, by_stream: dict) -> str:
         moved_p = sum(p["paired"] for p in pw)
         dead = sorted({p["stat"] for p in pw} - {p["stat"] for p in pw
                                                   if p["band"] or p["paired"]})
-        ret = [r["retained"].get("0.5") for r in rows if r["kind"] == "candidate"
-               and r["retained"].get("0.5")]
+        at_top = []          # retained at each candidate's largest J, at the largest K
+        for r in rows:
+            if r["kind"] != "candidate" or not r.get("ret_JK"):
+                continue
+            d = r["ret_JK"][max(r["ret_JK"])]
+            Js = sorted(j for j in d if j is not None)
+            at_top.append(d[Js[-1]] if Js else d.get(None))
+        at_top = [v for v in at_top if v is not None and math.isfinite(v)]
+        ud = next((r for r in rows if r["name"] == "uniform_dither" and r.get("ret_JK")), None)
+        n_roi = (((R["meta"].get("streams") or {}).get(st) or {}).get("destruction_twins")
+                 or {}).get("n_roi")
+        scale = ""
+        if ud:
+            Ks = sorted(ud["ret_JK"])
+            Jtop = max(j for j in ud["ret_JK"][Ks[-1]] if j is not None)
+            unit = "s" if ud["J_unit"] == "sec" else "frames"
+            scale = (f"<li><b>How the destruction measure reads large ROI counts.</b> At its "
+                     f"largest <i>J</i> ({Jtop:g} {unit}), uniform dither leaves "
+                     f"{num(ud['ret_JK'][Ks[-1]].get(Jtop))} of the planted coordination at "
+                     f"<i>K</i> = {Ks[-1]} ROIs together, and "
+                     f"{num(ud['ret_JK'][Ks[0]].get(Jtop))} at <i>K</i> = {Ks[0]}."
+                     + (f" The synthetic twin has {n_roi} ROIs, so 50% participation "
+                        f"recruits about {n_roi // 2} of them, while the assessor's scan stops "
+                        f"at {Ks[-1]}." if n_roi else "")
+                     + " Whether the scan must grow with the ROI count before 'removed' "
+                       "means the same on every folder is the rule's to decide.</li>")
         void = [r["disc_void"] for r in rows if math.isfinite(r["disc_void"])]
         gd = group_disagreement(R, st)
         items.append(f"<h3>{esc(st)} stream</h3><ol>"
@@ -910,11 +995,14 @@ def choices(R: dict, by_stream: dict) -> str:
                      f"<li><b>What a statistic no control could move counts for.</b> "
                      f"Unmoved under both yardsticks: "
                      f"{esc(', '.join(stat_label(s) for s in dead)) or 'none'}.</li>"
-                     f"<li><b>How much destruction is enough.</b> Median coordination "
-                     f"retained at 50% participation, across candidates: "
-                     f"{num(_med([x['med'] for x in ret]))} (lowest "
-                     f"{num(min((x['min'] for x in ret), default=float('nan')))}, highest "
-                     f"{num(max((x['max'] for x in ret), default=float('nan')))}).</li>"
+                     f"<li><b>How much destruction is enough, and at which <i>J</i>.</b> At "
+                     f"each candidate's largest <i>J</i> and the largest <i>K</i>, "
+                     f"coordination retained across candidates: median "
+                     f"{num(_med(at_top))}, lowest "
+                     f"{num(min(at_top, default=float('nan')))}, highest "
+                     f"{num(max(at_top, default=float('nan')))}. At small <i>J</i> almost "
+                     f"every candidate keeps it (Figure 5).</li>"
+                     + scale +
                      f"<li><b>What an intractable cell counts as.</b> See the coverage "
                      f"section: most were never run, by projected cost.</li>"
                      f"<li><b>Whether a void discriminator result counts.</b> Void share, "
@@ -976,11 +1064,15 @@ def detail_sections(R: dict, by_stream: dict) -> str:
         "Holm-adjusted, every point would sit at zero by construction — see the box in "
         "the executive summary."))
     out.append("<h2 id=\"destruction\">Destruction</h2>")
-    out.append(figure(5, "Planted coordination retained", fig_destruction(by_stream, role),
-                      "Median across each candidate's cells of the share of planted "
-                      "coordination still visible after the surrogate, at 20% (open) and 50% "
-                      "(filled) participation. Do-nothing must keep it (1); the whole-window "
-                      "circular shift must remove it (0)."))
+    out.append(figure(5, "Planted coordination retained, by J and K", fig_destruction(
+        by_stream, role),
+        "The share of coordination planted in a synthetic twin (50% participation) still "
+        "visible after each candidate, for every jitter radius <i>J</i>, at the smallest and "
+        "the largest <i>K</i> — the number of ROIs the assessor requires active together. "
+        "Each square is the median over that candidate's cells at that <i>J</i> (its "
+        "<i>f</i> and other settings). Do-nothing must keep it (1); the whole-window circular "
+        "shift must remove it (0). Destruction climbs steeply with <i>J</i> and with "
+        "<i>K</i>, which is why no single number per candidate is given."))
     out.append("<h2 id=\"discriminator\">The per-ROI-only discriminator</h2>"
                "<p>A logistic model on per-ROI features pooled by symmetric statistics — no "
                "operation touches a second ROI until each has been reduced over time — "
@@ -1082,9 +1174,8 @@ def summary_page(run: Path, roles: dict) -> str:
                 if not r or r["n_ok"] == 0:
                     row.append("not run")
                     continue
-                ret = r["retained"].get("0.5")
                 row.append(f"flags {pct(r['band_q95'])} / {pct(r['paired_raw'])}<br>"
-                           f"retained {rng_txt(ret) if ret else '—'}<br>"
+                           f"retained {ret_span(r)}<br>"
                            f"accuracy {rng_txt(r['disc_acc'])}")
         rows.append(row)
     body = ("<h1>The surrogate screen — across folders</h1>"
@@ -1100,7 +1191,8 @@ def summary_page(run: Path, roles: dict) -> str:
             + "<p class=dim>Each cell: checks flagged without adjustment — outside the "
               "band's 95th percentile / a raw paired <i>P</i> under 0.05 — since the "
               "Holm-adjusted rates are zero by construction (the boxes above); planted "
-              "coordination retained at 50% participation; the "
+              "coordination retained at 50% participation, smallest → largest <i>J</i>, at "
+              "the largest <i>K</i> the assessor scans; the "
               "per-ROI-only discriminator's accuracy (0.5 is chance). The Cossart data are "
               "DANDI:000219 (Dard, Picardo &amp; Cossart; Dard et al. 2022).</p>"
             + "<h2 id=\"pages\">The per-folder reports</h2><ul>"
