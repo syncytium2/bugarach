@@ -77,3 +77,16 @@ Tony has deployed it.
   Tony: *"ask draughtsman to put links in their output upon request."* When it lands, the credit can
   move into the figure's own caption and the page line can go. Filed at draughtsman `8764da0`.
 - **Not deployed.** The live site shows neither the link nor the new caption until Tony says go.
+
+## Landed 2026-09-11 — no longer blocked on draughtsman
+
+- **The slot-sized figure is on draughtsman `main` at `5705c46`**, delivered by `draughtsman-b3`:
+  `examples/tube/front-page.json` (laptop, one row, viewBox 1199.15 × 343) and
+  `examples/tube/front-page-phone.json` (phone, top to bottom, 395 × 1053). The runbook is
+  [`docs/handoffs/2026-09-11-deploy-the-slot-figure.md`](../handoffs/2026-09-11-deploy-the-slot-figure.md).
+- ⚠ **A correction to this file and to the request.** Both say the gallery figure failed bugarach's
+  own label-overlap check. It did fail, but the **test** is what's wrong: `tests/test_svg_labels.py`
+  measures with `getBBox()`, which ignores the `translate` every draughtsman figure puts on its
+  drawing. The real gap was 30.4 units, not an overlap. Fixing the test is part of the runbook.
+- Still open: the re-vendor, the two-figure page, and the deploy. The deploy is bugarach's to run and
+  needs Tony's Cloudflare login.
