@@ -66,3 +66,14 @@ Ask them to build a new one."*
 
 The figure drawn for the slot is vendored whole, the page shows it with the credit, and
 Tony has deployed it.
+
+## Added 2026-09-10, later the same day
+
+- **The page now links draughtsman beside the figure** — Tony: *"make sure there's a link to
+  draughtsman near the figure."* `lead_model()` in `tools/build_site.py` emits a credit line under
+  the `.arch` box, linking `https://draughtsman.tonydefazio.com` (the repo is public; the site
+  answers 200). It is page text, not figure text, so it survives any re-vendor.
+- **draughtsman queue item 12** asks for links **in the SVG itself**, opt-in and off by default —
+  Tony: *"ask draughtsman to put links in their output upon request."* When it lands, the credit can
+  move into the figure's own caption and the page line can go. Filed at draughtsman `8764da0`.
+- **Not deployed.** The live site shows neither the link nor the new caption until Tony says go.
