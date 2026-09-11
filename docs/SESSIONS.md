@@ -10,7 +10,12 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
-### Mac/surrogate-screen-overnight — DARKROOM claim ACTIVE: `bugarach/2026-09-11-surrogate-screen/`
+### 065/surrogate-screen-overnight — DARKROOM claim ACTIVE: `bugarach/2026-09-11-surrogate-screen/`
+- **Moved 2026-09-11, from the Mac to the Windows workstation (065).** The Mac stopped the run at
+  about 11:05 for power; this machine finishes the grid and writes the reports, per
+  [the handoff](handoffs/2026-09-11-surrogate-screen-in-flight.md) (on its branch, PR #531). The
+  Mac no longer writes here. Dropbox had synced 1,606 of the manifest's 1,607 files before any
+  write; the one missing is a stale `.progress` duplicate.
 - **Status:** ACTIVE 2026-09-11. Tony's go, in words, for an overnight Workflow that measures every
   surrogate candidate on the `steps_excluded` and `cossart` folders and writes descriptive reports —
   [the plan](proposals/2026-09-10-surrogate-evaluation-overnight.md). No shortlist tonight.
