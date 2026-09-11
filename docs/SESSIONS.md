@@ -66,6 +66,7 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 - **Holds:** `bugarach.tonydefazio.com` only. No darkroom, no MATLAB, no export reads.
 
 ### Mac/turbo-and-the-baseline-rules — darkroom writes, recorded late
+- **RESOLVED 2026-09-11.** The three darkroom screenshots (`bugarach/front_door.png`, `designate-the-baseline/designate_before.png`, `designate-the-baseline/designate_after.png`) and the `designate-the-baseline/` folder are gone: checked on the mount 2026-09-11 by `draughtsman-b3` and again by `bugarach-supple-chisel`. `bugarach-0f` (copper-heron, now ended) reports they were deleted on the instruction of Tony. Relayed by `draughtsman-b3`, since this board belongs to bugarach.
 - **Status:** RELEASED 2026-09-10, holds nothing. **Filed as a correction rather than a
   claim**, because the writes had already happened when it was written.
 - ⚠ **Three files were written to the darkroom without claiming it here first**, which this

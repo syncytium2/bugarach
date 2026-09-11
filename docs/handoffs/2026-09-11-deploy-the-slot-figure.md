@@ -16,20 +16,21 @@ file's pointer from the root `HANDOFF.md`, and move this file into the archive o
   **48 commits behind `main`**: 5 of them change pages it serves, 4 change the viewer.
 - **The figure caption is fixed upstream** at draughtsman `0546e5b` (it now credits draughtsman rather
   than torch). It is not vendored here yet, deliberately — see the todo.
-- ⚠ **The slot-sized figure was NOT found**, whatever Tony thinks. As of 2026-09-11 it is not on
-  draughtsman `main` (still `8764da0`, the queue push), not on any draughtsman branch, not in
-  the shared draughtsman checkout (clean at `b177d46`), not on any bugarach branch, and not in the
-  darkroom. Nobody has commented on the request file, and **draughtsman queue item 11 is
-  unclaimed**. **First step: ask Tony, or message `draughtsman-b3` (it shows in `ListAgents`),
-  where the figure actually is.** Do not re-vendor the gallery `examples/tube` in its place —
-  Tony declined it, and it failed this repo's own `test_svg_labels` overlap check.
+- ⚠ **The slot-sized figure does not exist yet.** As of 2026-09-11 it was on no draughtsman branch,
+  worktree or darkroom folder. **`draughtsman-b3` has now taken draughtsman queue item 11** — the
+  tube drawn for the 1203/395 px slot, with item 2's axis naming — and **will message bugarach with
+  the commit to vendor from** when it lands on draughtsman `main`. Wait for that message; do not
+  re-vendor the gallery `examples/tube` in its place (Tony declined it, and it failed this repo's own
+  `test_svg_labels` overlap check).
 
 ## Who deploys
 
-- The site claim `claim-the-site-for-the-viewer` (#522) was **handed to `draughtsman-b3`** on Tony's
-  word — the machine-local board records it. The shared board (`docs/SESSIONS.md` on `main`) still
-  shows it ACTIVE under its original owner. Whoever deploys takes that claim over on `docs/SESSIONS.md`
-  and releases it in the deploy record.
+- **bugarach does. The site claim `claim-the-site-for-the-viewer` (#522) stays with bugarach.** A
+  machine-local board note, and the first version of this file, recorded it as handed to
+  `draughtsman-b3`. That did not take: `draughtsman-b3` declined on Tony's instruction, 2026-09-11 —
+  *"deploy is that repo's job, do not deploy another repos website."* This runbook is bugarach's to
+  run, and the session that runs it takes the claim over on `docs/SESSIONS.md` and releases it in
+  the deploy record.
 - ⚠ **No session can publish.** `npm run deploy` runs `wrangler deploy`, which needs a Cloudflare
   login (`npx wrangler login` is an OAuth browser flow and cannot be scripted). **Tony runs the
   publish.** A session prepares, verifies and hands him one command.
