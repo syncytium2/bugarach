@@ -660,6 +660,9 @@ def write_tables(out: Path, streams: list[str]) -> dict:
             "n_cells": len(cells_rows)}
 
 
+# `newline=""` AND an explicit `\n`, the way emit.py and windows.py write theirs: csv's
+# default terminator is `\r\n`, so the same table written on Windows and on macOS differs
+# byte for byte — and both machines wrote into this run folder on 2026-09-11.
 def _write_csv(path: Path, rows: list[dict]) -> None:
     keys = []
     for r in rows:
@@ -667,7 +670,7 @@ def _write_csv(path: Path, rows: list[dict]) -> None:
             if k not in keys:
                 keys.append(k)
     with open(path, "w", newline="", encoding="utf-8") as fh:
-        w = csv.DictWriter(fh, fieldnames=keys or ["empty"])
+        w = csv.DictWriter(fh, fieldnames=keys or ["empty"], lineterminator="\n")
         w.writeheader()
         for r in rows:
             w.writerow({k: ("" if r.get(k) is None else r.get(k)) for k in keys})
