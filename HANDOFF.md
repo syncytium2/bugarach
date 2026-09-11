@@ -1,8 +1,8 @@
 # Handoff — the loop closes; both of pipeline.md's blockers are gone
 
-> ⚠ **THE SURROGATE SCREEN IS RUNNING (2026-09-11, hard stop 15:00 EDT)** — a Workflow bound to the
-> session that launched it, with build committed as draft PR #530 and results landing in the darkroom.
-> How to finish it if that session cannot, and what is owed after:
+> ⚠ **THE SURROGATE SCREEN IS STOPPED MID-RUN (2026-09-11, ~11:05, for power) — finish it on the
+> workstation.** The build is committed as draft PR #530; results are partly in the darkroom, with a
+> sync manifest. What is finished, how to finish the rest, and what is owed after:
 > [`docs/handoffs/2026-09-11-surrogate-screen-in-flight.md`](docs/handoffs/2026-09-11-surrogate-screen-in-flight.md).
 > This block and that file leave when the report is murderboarded and #530 lands.
 
