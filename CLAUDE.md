@@ -88,6 +88,11 @@ F1 0.57 and here is the trace showing why" beats three paragraphs of mechanism.
 - **Compact labeling**: no titles above plots; identity + counts live in
   y-axis labels ("fast · 30 ROI", "rate (27)"); one x-axis per linked group
   (bottom row only, with extra height so plot areas match).
+- **Number every figure in a document** (Tony, 2026-09-10: *"please always use figure
+  numbers"*). Captions open `Figure 1.`, `Figure 2.`; a reference in prose carries the number
+  **and** the name — *"Figure 3, the candidate field"* — so the writing convention against bare
+  enumerated labels still holds: the name is what lets it read without scrolling back.
+  **Define every abbreviation** at first use, and every symbol (*J*, τ) before a figure uses it.
 - **Unlinked y, linked x**: signal rows carry a unique value dimension per
   detector so y-ranges never link across rows; x links through the shared
   `t` dimension.

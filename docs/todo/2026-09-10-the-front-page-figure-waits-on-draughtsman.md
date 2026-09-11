@@ -77,3 +77,35 @@ Tony has deployed it.
   Tony: *"ask draughtsman to put links in their output upon request."* When it lands, the credit can
   move into the figure's own caption and the page line can go. Filed at draughtsman `8764da0`.
 - **Not deployed.** The live site shows neither the link nor the new caption until Tony says go.
+
+## Landed 2026-09-11 — no longer blocked on draughtsman
+
+- **The slot-sized figure is on draughtsman `main` at `5705c46`**, delivered by `draughtsman-b3`:
+  `examples/tube/front-page.json` (laptop, one row, viewBox 1199.15 × 343) and
+  `examples/tube/front-page-phone.json` (phone, top to bottom, 395 × 1053). The runbook is
+  [`docs/handoffs/2026-09-11-deploy-the-slot-figure.md`](../handoffs/2026-09-11-deploy-the-slot-figure.md).
+- ⚠ **A correction to this file and to the request.** Both say the gallery figure failed bugarach's
+  own label-overlap check. It did fail, but the **test** is what's wrong: `tests/test_svg_labels.py`
+  measures with `getBBox()`, which ignores the `translate` every draughtsman figure puts on its
+  drawing. The real gap was 30.4 units, not an overlap. Fixing the test is part of the runbook.
+- Still open: the re-vendor, the two-figure page, and the deploy. The deploy is bugarach's to run and
+  needs Tony's Cloudflare login.
+
+## Re-vendored and on the page, 2026-09-11 — the deploy is what is left
+
+- **The label test was fixed first**, in its own PR (#534): it now maps every box and path sample
+  through ancestor transforms, and a guard case proves the old measurement fails. The phone figure's
+  reported 69.1 × 6.0 overlap reproduced under the old code and vanished under the new.
+- **Vendored whole from `5705c46`**: the package and both specs, one stamp. Regenerated from
+  bugarach's own trace, both SVGs are **byte-identical** to draughtsman's renders at that commit, and
+  the freshness gate reads draughtsman current from the remote.
+- **Both figures ship** (Tony, choosing between shipping both and the laptop one alone). The page
+  switches with a container query on `.arch` at the wide figure's own viewBox width — measured, the
+  wide figure fills the 1203 px box at 1280 and the tall one takes over at 1275. The tall copy's ids
+  are suffixed on the page, because both drawings define `ds-arrow`.
+- ⚠ **Phones narrower than 420 px scroll the figure's box sideways**, by 42 px at 375 (measured)
+  and roughly 28 at 390 and 8 at 412 (computed from the same `94vw`); the page itself never scrolls.
+  The 395 px phone slot this request quoted was measured at a 420 px viewport, which is wider than
+  most phones. Tony chose to ship it and ask draughtsman for a figure drawn for the real phone box —
+  appended to [`needs/the-front-page-figure-needs-drawing-for-its-slot.md`](../needs/the-front-page-figure-needs-drawing-for-its-slot.md).
+- **Still open:** the deploy, and the narrower phone figure when draughtsman draws it.

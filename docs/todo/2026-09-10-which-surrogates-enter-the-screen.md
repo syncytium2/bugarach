@@ -1,19 +1,24 @@
 ---
-status: open
+status: done
 filed: 2026-09-10
+closed: 2026-09-10
 ---
 
 # Which surrogates enter the screen, and does it run as a grid
 
-> **RULED IN PART, 2026-09-10.** Tony read Stella et al. 2022 fig. 10 and answered the first and
-> third questions below: **all eight candidates enter, none is pruned.** *"My read of Stella
-> figure 10 is we need to do all of them. You can't predict a priori which one is right."*
-> **Still open: grid or independent contests** — and the ruling makes that the question that
-> now matters, because eight surrogates crossed with a per-stream *J* and a pooling operator is a
-> far larger product than two or three survivors would have been.
+> **RULED IN FULL, 2026-09-10.** Tony answered all three questions below.
 >
-> The reading behind it is in [§What Stella settles](#what-stella-settles) below, and laid out
-> with figures in [`docs/learned/surrogate_field_ruling.html`](../learned/surrogate_field_ruling.html).
+> - **All eight candidates enter, none is pruned.** *"My read of Stella figure 10 is we need to do
+>   all of them. You can't predict a priori which one is right."*
+> - **The tiers with a pooling operator run as a grid.** *"02 grid sounds like all are compared, if
+>   so agreed."* It does mean that: a grid measures every candidate under every setting of the other
+>   factors, so interactions show; contests would test each candidate alone.
+> - **Stella does not retire candidates** — it removes the grounds for retiring any.
+>
+> What follows is planned in
+> [`proposals/2026-09-10-surrogate-evaluation-overnight.md`](../proposals/2026-09-10-surrogate-evaluation-overnight.md):
+> to be measured with four candidates added — Stella's three this list lacks, and
+> the shipped dither — and no shortlist until the verdict rule is designed from the measurements.
 
 An eleven-role review on 2026-09-10 killed the surrogate a proposed self-supervised detector was
 built on — independent per-onset dithering, which is separable cell-by-cell on this project's own
@@ -24,67 +29,101 @@ Tony, 2026-09-10: *"why pick one replacement? we have compute to test all of the
 replacement is a **screen**, not a choice — the same shape as the tube 2×2, which was built to be
 measured rather than argued about.
 
-## The proposed candidate set
+## The candidate set
 
-| candidate | preserves | why it is in |
-|---|---|---|
-| circular shift | circular ISI multiset | the incumbent; four of the six hand-written detectors use it |
-| **uniform per-onset dither** | rate only | **the KNOWN-BAD positive control.** A screen that fails to flag it is broken |
-| rigid shift, no wrap | ISIs exactly, no splice | the cheap repair to the splice objection |
-| dither with dead-time | rate + a declared floor τ | minimal fix to the killed one |
-| joint-ISI dither | the ISI pair distribution | Louis et al. 2010 |
-| pattern jitter | each event's recent history, exactly | Harrison & Geman 2009 — the one to beat |
-| interval / window jitter | per-window counts | Amarasingham et al. 2012 |
-| operational-time dither | the rate profile under drift | Louis et al. 2010 |
+| candidate | preserves | why it is in | origin |
+|---|---|---|---|
+| circular shift | circular ISI multiset | the incumbent; four of the six hand-written detectors use it | the standard per-cell null (e.g. Dard et al. 2022); root unsearched |
+| **uniform per-onset dither** | rate only | **the KNOWN-BAD positive control.** A screen that fails to flag it is broken | spike-centred jitter: Abeles & Gat 2001; Hatsopoulos et al. 2003 |
+| rigid shift, no wrap | ISIs exactly, no splice | the cheap repair to the splice objection | Pipa et al. 2008 |
+| dither with dead-time | rate + a declared floor τ | minimal fix to the killed one | Stella et al. 2022 |
+| joint-ISI dither | the ISI pair distribution | preserves interval pairs | Gerstein 2004, whose recipe takes the square root of the joint histogram; extended by Louis et al. 2010 |
+| pattern jitter | each event's recent history, exactly | the one to beat | Harrison & Geman 2009 |
+| interval / window jitter | per-window counts | conditional inference on fixed windows | Date, Bienenstock & Geman 1998; reviewed in Amarasingham et al. 2012 |
+| operational-time dither | the rate profile under drift | aimed at the drift problem | Louis, Gerstein, Grün & Diesmann 2010 |
 
-Every one of those papers is now on the shelf under `<darkroom>/bugarach/lit/surrogates/`.
+The shelf at `<darkroom>/bugarach/lit/surrogates/` holds all of these but Gerstein 2004 and Pipa 2008,
+both of which are open access ([`lit_needed.md`](../lit_needed.md)).
 
-## What has to be decided
+**Stella's surrogate implementations ship in Elephant** (BSD-3). Its surrogate module dates from 2015;
+Stella's group added five of their six methods to it, and their paper pinned version 0.10.0 plus a
+later commit (the `env.yml` of `github.com/INM-6/SPADE_surrogates`). Read and run 2026-09-10 at 1.2.1:
+it carries uniform dither, dither with dead time, the rigid shift, joint-ISI dither and interval jitter
+— **five of these eight** — plus ISI dithering, window shuffling and trial shifting, the three Stella
+candidates this list lacks. Circular shift is ours; pattern jitter and operational-time dither are not
+in it. ⚠ Its joint-ISI dither defaults to the *unrooted* histogram, as Stella ran it, not Gerstein's
+square-rooted recipe. Its uniform dither and shift **drop** onsets pushed out of the window (or clamp
+them with `edges=False`); its dither with dead time never drops, confining each onset between its
+neighbours; its trial shifting **wraps** within each trial. Every default is millisecond-scale and
+several failures are silent — [the overnight plan](../proposals/2026-09-10-surrogate-evaluation-overnight.md)
+lists them.
 
-1. ~~**Which candidates run.**~~ **RULED 2026-09-10: all eight.** Dropping the uniform dither was
-   never available — it is the control that proves the screen can fire — and nothing now supports
-   dropping any of the others either. See below.
-2. **Grid or independent contests.** ⚠ **STILL OPEN, and now the binding question.**
-   [`the four variants of the tube`](2026-08-23-four-variants-of-the-tube.md)
-   says in terms that variants "are not a race" — the guard only paid once the bar was
-   multiplicative. Surrogate choice may interact with the pooling operator and with *J* the same way.
-   One thing narrows it: **the counting tier has no pooling operator**, so it is grid-free and can
-   run over all eight at once. The grid only binds from the per-cell discriminator onward.
-3. ~~**Whether Stella et al. 2022 already answers part of it.**~~ **RULED 2026-09-10 — and in the
-   opposite direction from the one anticipated.** It does not retire candidates; it removes the
-   grounds for retiring any.
+## What had to be decided
+
+1. ~~**Which candidates run.**~~ **RULED: all eight.** Dropping the uniform dither was never
+   available — it is the control that proves the screen can fire — and nothing now supports
+   dropping any of the others either.
+2. ~~**Grid or independent contests.**~~ **RULED: grid**, for the tiers that have a pooling
+   operator. [`the four variants of the tube`](2026-08-23-four-variants-of-the-tube.md) says in
+   terms that variants "are not a race" — the guard only paid once the bar was multiplicative —
+   and surrogate choice may interact with the pooling operator and with *J* the same way. **The
+   counting tier has no pooling operator**, so it compares every candidate at once without one; the
+   grid binds from the per-cell discriminator onward.
+3. ~~**Whether Stella et al. 2022 already answers part of it.**~~ **RULED — in the opposite
+   direction from the one anticipated.** It does not retire candidates; it removes the grounds for
+   retiring any.
 
 ## What Stella settles
 
-**Read the figure, not the conclusion.** Stella ran six surrogates through SPADE on the same monkey
-recordings. On simulated data with ground truth, five of six behaved and uniform dither produced a
-large false-positive count. On the *real* recordings — no ground truth — the five returned
-overlapping but non-identical sets of significant patterns, each with its own signature of extras.
-Transcribing their results section for monkey N, **one epoch out of six is unanimous**: UDD adds an
-SGHF pattern in four separate epochs nobody else finds; JISI-D and ISI-D move together; WIN-SHUFF
-has its own PGLF in early delay.
+**Read the figure, not the conclusion** — this is our reading of figure 10, set against the
+authors' own summary. Stella ran six surrogates through SPADE on the same monkey recordings. On
+simulated data with ground truth, uniform dither produced a large false-positive count, and dither
+with dead time some on Gamma data only; the other four behaved. On the *real* recordings — no ground
+truth — the five non-UD surrogates returned overlapping but non-identical sets of significant
+patterns. Read from figure 10 (left column, monkey N) and checked against the results section: **one
+epoch out of six is unanimous.** UDD adds an SGHF pattern nobody else finds in three epochs — early
+delay, late delay and hold — and shares one with TR-SHIFT at the start; JISI-D and ISI-D move together;
+WIN-SHUFF has its own PGLF in early delay; and in the movement epoch TR-SHIFT misses a pattern the
+other four find. Monkey L agrees more: three epochs are unanimous at zero patterns, and four of five
+agree in late delay.
 
-⚠ **The paper's discussion contradicts its own figure.** It says the five valid surrogates *"show
-almost identical participating neurons, lags, and occurrence numbers"* and reach *"an almost
-identical significance level"*, then names TR-SHIFT the method of choice. That is not what the
-figure-10 results section describes. **Anyone citing Stella for "surrogate choice barely matters,
-use TR-SHIFT" is citing the summary, not the result** — and their own text says the pattern found
-during movement occurs *"in all surrogates, but TR-SHIFT"*, so their recommended method is the one
-that misses a pattern the other five find.
+**Uniform dither sits an order of magnitude above all of them** on those recordings — figure 10
+gives it its own y-axis, and the results text reports 203 and 121 patterns for the two monkeys
+against 7 to 14 for every other surrogate. Stella set it aside as putative false positives, which is
+why it is absent from the comparison above.
+
+⚠ **The discussion summarizes more agreement than the figure shows.** It says the five valid
+surrogates *"show almost identical participating neurons, lags, and occurrence numbers"* and reach
+*"an almost identical significance level."* The figure-10 results describe per-surrogate differences in
+five epochs of six for monkey N. **Anyone citing Stella for "surrogate choice barely matters" is
+citing the summary, not the result.**
+
+**Their TR-SHIFT recommendation is a tiebreak, not a performance claim** — Tony's read, and the text
+bears it out. The first of the five reasons given is that it *"is easy to explain and to
+implement"*; the others are that it *"reflects more closely the hypothesis of temporal coding"*,
+*"reproduces exactly the most relevant statistical features of a spike train"*, *"is as
+conservative as the other methods"*, and *"employs fewer parameters than the other techniques with
+the same performance."* It rests on the equivalence premise, and figure 10 is what undercuts that
+premise. So TR-SHIFT missing the movement-epoch pattern the other four find — *"in all surrogates,
+but TR-SHIFT"* — is not a contradiction of the recommendation; it is one of the disagreements the
+summary smooths over. The same discussion says, shortly after, that the choice *"has to be done
+appropriately and cautiously case by case"* — which is the ruling above.
 
 Two things transfer regardless:
 
-- **Stella rules out uniform dither independently**, by false-positive count under a completely
-  different analysis. That is
-  [our own leak finding](../reviews/2026-09-10-coordination-without-labels_2026-09-10.md) reached by
-  another route, and it is the strongest corroboration it has.
-- **TR-SHIFT is our own `rigid shift, no wrap`** — a per-neuron rigid displacement applied *trial by
-  trial*. The trial structure it depends on is something continuous baseline recordings do not have,
-  so we inherit the mechanism without the guarantee they draw from it.
+- **Stella's false-positive counts corroborate uniform dither's defect** under a completely different
+  analysis. The defect itself is older: Gerstein (2004) described flat dither adding short intervals
+  to the interval histogram, and Platkiewicz, Stark & Amarasingham (2017) built cases where
+  spike-centred jitter manufactures temporal structure. That is
+  [our own leak finding](../reviews/2026-09-10-coordination-without-labels_2026-09-10.md) with its
+  lineage.
+- **Stella describe TR-SHIFT as a per-neuron rigid displacement applied trial by trial**, and allow a
+  "trial" to be a long spike sequence separated by long silences, *"as suggested by Harrison and Geman
+  (2009)"* — so it can run on continuous baselines through pseudo-trials cut at long silences, and it
+  joins the screen. Elephant's implementation wraps within each trial; the overnight plan writes its
+  own no-wrap version instead.
 
 ## Closes when
 
-Tony says grid or not. The candidate set is settled. Then
-[`build the surrogate screen`](2026-09-10-build-the-surrogate-screen.md) can start — and its cost
-line is now a **build order** rather than a cut: the four cheap candidates can run while the four
-expensive ones are still being written.
+**Closed by the rulings above, 2026-09-10.** The screen is
+[the overnight plan](../proposals/2026-09-10-surrogate-evaluation-overnight.md).

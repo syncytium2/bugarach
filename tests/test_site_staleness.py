@@ -527,8 +527,8 @@ def test_the_two_that_were_missing_are_watched():
 def test_the_builder_names_the_paths_it_reads():
     """`SOURCE_PATHS` has to be the real constants, not strings beside them."""
     bs = _build_site()
-    for const in ("ARCHITECTURE_SVG", "RASTER_VIEWER", "REALITY_CHECK",
-                  "LEARNED_REPORT", "LANDSCAPE"):
+    for const in ("ARCHITECTURE_SVG", "ARCHITECTURE_PHONE_SVG", "RASTER_VIEWER",
+                  "REALITY_CHECK", "LEARNED_REPORT", "LANDSCAPE"):
         rel = getattr(bs, const)
         assert rel in bs.SOURCE_PATHS, (
             f"build_site.{const} is a file the build reads and SOURCE_PATHS "

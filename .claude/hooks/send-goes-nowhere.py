@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# vendored from syncytium2/armory @ 548f734. This file is a COPY; edits here are
+# vendored from syncytium2/armory @ e8ffaa3. This file is a COPY; edits here are
 # overwritten whenever it is re-vendored. Its source repository is private, so there is
 # nowhere to send a patch: treat this file as read-only and raise anything you find as
 # an issue in THIS repository.
@@ -61,6 +61,7 @@ EXIT  0 always. This gate never blocks.
       python3 .claude/hooks/send-goes-nowhere.py --selftest   to check it still fires.
 """
 import json
+import shlex
 import sys
 from pathlib import Path
 
@@ -108,7 +109,15 @@ def run(payload):
     show_here = SHOW.is_file()
 
     if files:
-        arg = " ".join('"%s"' % f if " " in f else f for f in files)
+        # SHELL-QUOTE EVERY PATH, ALWAYS. This used to quote only paths containing a
+        # space, which is the defect colonel-kernel-45 raised for the estate on
+        # 2026-09-06: a recipe tested where its author stands rather than where its reader
+        # stands. A path with `!` in it was emitted bare, and in INTERACTIVE zsh -- the
+        # user's shell -- `!` is history expansion, so the remedy died at parse time with
+        # `zsh: event not found` before running a line. It worked in every non-interactive
+        # test because history expansion is off there. shlex.quote uses single quotes,
+        # which suppress it.
+        arg = " ".join(shlex.quote(f) for f in files)
         remedy = ("python3 %s %s" % (SHOW, arg)) if show_here else \
                  ("copy %s into <dropbox>/darkroom/<project>/ and print the absolute path"
                   % arg)
@@ -172,12 +181,34 @@ def selftest():
         multi = run({"tool_name": "SendUserFile",
                      "tool_input": {"files": ["/tmp/a b.png", "/tmp/c.pdf"],
                                     "caption": "before vs after", "status": "proactive"}})
-        check('"/tmp/a b.png"' in multi and "/tmp/c.pdf" in multi,
-              "real multi-file send: carries every file, quotes the one with a space")
-        check("caption" not in run({"tool_name": "SendUserFile",
-                                    "tool_input": {"files": ["/tmp/x.png"],
-                                                   "caption": "before vs after"}}),
-              "ignores caption/status/display -- only `files` is load-bearing")
+        check("'/tmp/a b.png'" in multi and "/tmp/c.pdf" in multi,
+              "real multi-file send: carries every file, shell-quotes the spaced one")
+        # EVERY FIELD THE SCHEMA HAS, populated at once. `display` was covered by no
+        # fixture until colonel-kernel-80 read the tool definition independently and said
+        # so -- the second-producer rule working in the direction it is supposed to.
+        # Asserted with SENTINELS, not with the field values: a first attempt tested for
+        # the word "render", which appears in this file's own fixed prose describing the
+        # 2026-09-01 probe, so the check passed on the docstring rather than on behaviour.
+        full = run({"tool_name": "SendUserFile",
+                    "tool_input": {"files": ["/tmp/x.png"], "status": "proactive",
+                                   "display": "render", "caption": "ZZCAPTIONZZ"},
+                    "tool_response": "1 file delivered to user."})
+        check("/tmp/x.png" in full, "full schema payload: still names the file")
+        # A REMEDY THAT DIES AT PARSE TIME IS NOT A REMEDY. `!` is history expansion in
+        # interactive zsh; a bare path containing one fails with `event not found` before
+        # running. Asserted on the emitted text, because that is what a human pastes.
+        bang = run({"tool_name": "SendUserFile",
+                    "tool_input": {"files": ["/tmp/weird!name.png", "/tmp/a b.png"]}})
+        cmd = [l for l in bang.splitlines() if "show.py" in l][0]
+        check("'/tmp/weird!name.png'" in cmd,
+              "a `!` path is shell-quoted -- bare, interactive zsh refuses to parse it")
+        check("'/tmp/a b.png'" in cmd, "a spaced path is shell-quoted too")
+        check("ZZCAPTIONZZ" not in full,
+              "full schema payload: caption is not echoed into the remedy")
+        check(all(run({"tool_name": "SendUserFile",
+                       "tool_input": {"files": ["/tmp/x.png"], "display": d}})
+                  for d in ("render", "attach")),
+              "fires on both `display` values -- neither suppresses the gate")
         # If the schema ever grows a shape `files` does not match, the remedy must
         # DEGRADE, not crash -- the hook is PostToolUse and a traceback there is worse
         # than the silence it replaces.
@@ -206,8 +237,8 @@ def selftest():
         # Multi-file and unnamed calls must both produce a usable command.
         multi = run({"tool_name": "SendUserFile",
                      "tool_input": {"files": ["/tmp/a b.png", "/tmp/c.pdf"]}})
-        check('"/tmp/a b.png"' in multi and "/tmp/c.pdf" in multi,
-              "quotes a path containing a space, and carries every file")
+        check("'/tmp/a b.png'" in multi and "/tmp/c.pdf" in multi,
+              "shell-quotes a path containing a space, and carries every file")
         check("<file>" in run({"tool_name": "SendUserFile", "tool_input": {}}),
               "still gives a runnable remedy when no path is in the payload")
 

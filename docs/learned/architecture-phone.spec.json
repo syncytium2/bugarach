@@ -1,5 +1,5 @@
 {
-  "_vendored": "vendored from draughtsman @ 5705c46 — canonical source is examples/tube/front-page.json there; do NOT edit here, update upstream and re-copy.",
+  "_vendored": "vendored from draughtsman @ 5705c46 — canonical source is examples/tube/front-page-phone.json there; do NOT edit here, update upstream and re-copy.",
   "draughtsman": "0",
   "graph": "graph.json",
   "batch_axis": 0,
@@ -182,7 +182,7 @@
     }
   ],
   "layout": {
-    "orientation": "lr",
+    "orientation": "tb",
     "legend": true
   },
   "constants": {
@@ -191,7 +191,7 @@
   },
   "caption": "Drawn by draughtsman from a torch.jit.trace of the built model; every quantity is read off the trace by node id, none typed by hand. The kernel bank collapses {stage:dog.nodes} traced operations.",
   "output": {
-    "width": "1203px",
+    "width": "395px",
     "min_type": "9.5px"
   }
 }

@@ -49,13 +49,14 @@ ROOT = Path(__file__).resolve().parent.parent
 #: Kept RELATIVE and joined to `ROOT` at each use, so `ROOT` stays the knob a
 #: test can move to simulate a missing file.
 ARCHITECTURE_SVG = "docs/learned/architecture.svg"
+ARCHITECTURE_PHONE_SVG = "docs/learned/architecture-phone.svg"
 RASTER_VIEWER = "docs/site/raster_viewer.html"
 REALITY_CHECK = "docs/generator/reality_check.png"
 LEARNED_REPORT = "docs/learned/learned_detector.html"
 LANDSCAPE = "docs/learned/landscape.html"
 
-SOURCE_PATHS = (ARCHITECTURE_SVG, RASTER_VIEWER, REALITY_CHECK, LEARNED_REPORT,
-                LANDSCAPE, "tools/build_site.py")
+SOURCE_PATHS = (ARCHITECTURE_SVG, ARCHITECTURE_PHONE_SVG, RASTER_VIEWER,
+                REALITY_CHECK, LEARNED_REPORT, LANDSCAPE, "tools/build_site.py")
 SITE = ROOT / "site"
 
 
@@ -998,9 +999,11 @@ LEAD_REAL = """<figure class="lead">
 # whose output does not go here.
 MODEL_SVG = ROOT / ARCHITECTURE_SVG
 """The network, stage by stage. Inlined, not linked — see the `.arch` CSS."""
+MODEL_PHONE_SVG = ROOT / ARCHITECTURE_PHONE_SVG
+"""The same network drawn top to bottom, for a box too narrow for `MODEL_SVG`."""
 
 
-def lead_model(svg: str) -> str:
+def lead_model(svg: str, phone_svg: str) -> str:
     """The architecture diagram, with the one caption line it needs.
 
     Tony, 2026-09-01: *"The tube network structure at the top with detail. The
@@ -1021,17 +1024,45 @@ def lead_model(svg: str) -> str:
     from the figure rather than typed into the stylesheet, because the typed
     version was measured against an 884-unit viewBox and silently became wrong
     the day the figure was redrawn at 1221.74. See the `.arch` CSS comment.
+
+    **Two drawings of one model, and the box picks between them.** draughtsman
+    drew the tube for this slot twice (2026-09-11): one row for the laptop box,
+    1203 px at a 1280 px viewport, and top to bottom for the phone box, 395 px at
+    420. Tony chose to ship both, switching where the wide one stops fitting. That
+    is a container query on `.arch` against the wide figure's own viewBox width, so
+    the breakpoint is read off the figure the way the floor is — not a viewport
+    width typed here, which would also have to restate the box's `94vw`. Below it
+    the tall figure shows, at exactly its natural width.
+
+    **The tall copy's ids are suffixed.** Both drawings define
+    `<marker id="ds-arrow">`, and with two elements of one id on a page every
+    `url(#ds-arrow)` resolves to whichever comes first — on a phone, the hidden
+    figure's — so the visible arrows could lose their heads. The SVG files stay as
+    draughtsman drew them; only the page's copy is renamed, because two figures in
+    one document is the page's doing.
     """
     # THE CREDIT LINE. Tony, 2026-09-10: "make sure there's a link to draughtsman
-    # near the figure." The figure's own caption names draughtsman only once the
-    # re-vendor lands (see docs/todo/2026-09-10-the-front-page-figure-waits-on-
-    # draughtsman.md), and an SVG caption cannot carry a link until draughtsman's
-    # queue item 12 does. So the page supplies it, outside the figure. Inline
-    # style, inheriting colour, so it holds in both themes without a new rule.
-    return (f'<div class="arch"{_natural_width(svg)}>{svg}</div>'
-            '<p class="arch-credit" style="margin:.2rem 0 1rem;font-size:.85rem;'
-            'opacity:.75">Drawn by <a href="https://draughtsman.tonydefazio.com">'
-            'draughtsman</a> from the traced model.</p>')
+    # near the figure." The figures' own captions name draughtsman now, but an SVG
+    # caption cannot carry a link until draughtsman's queue item 12 does. So the
+    # page supplies it, outside the figure. Inline style, inheriting colour, so it
+    # holds in both themes without a new rule.
+    credit = ('<p class="arch-credit" style="margin:.2rem 0 1rem;font-size:.85rem;'
+              'opacity:.75">Drawn by <a href="https://draughtsman.tonydefazio.com">'
+              'draughtsman</a> from the traced model.</p>')
+    wide = _viewbox_width(svg)
+    if wide is None:
+        # Nothing to switch on: the wide figure alone, scrolling as it always did.
+        return f'<div class="arch"{_natural_width(svg)}>{svg}</div>{credit}'
+    switch = ('<style>.arch { container: arch / inline-size; }'
+              ' .arch .tall { display: none; }'
+              ' .arch .tall svg { max-width: var(--arch-natural); margin-inline: auto; }'
+              f' @container arch (width < {wide:g}px) {{'
+              ' .arch .wide { display: none; } .arch .tall { display: block; } }'
+              '</style>')
+    return (f'{switch}<div class="arch">'
+            f'<div class="wide"{_natural_width(svg)}>{svg}</div>'
+            f'<div class="tall"{_natural_width(phone_svg)}>'
+            f'{_suffix_ids(phone_svg, "-tall")}</div></div>{credit}')
 
 
 VIEWBOX_RE = re.compile(
@@ -1048,16 +1079,31 @@ def _natural_width(svg: str) -> str:
     no front page at all, which is the wrong way round for something this
     cosmetic.
     """
+    width = _viewbox_width(svg)
+    return "" if width is None else f' style="--arch-natural: {width:g}px"'
+
+
+def _viewbox_width(svg: str) -> float | None:
+    """The figure's viewBox width in user units, or None if it cannot be read."""
     m = VIEWBOX_RE.search(svg)
     if not m:
-        return ""
+        return None
     try:
         width = float(m.group(1))
     except ValueError:
-        return ""
+        return None
     if not (0 < width < 100_000):        # a nonsense viewBox is not a floor
-        return ""
-    return f' style="--arch-natural: {width:g}px"'
+        return None
+    return width
+
+
+def _suffix_ids(svg: str, suffix: str) -> str:
+    """Every `id` in the SVG, and every `url(#…)` / `href="#…"` naming one, suffixed."""
+    for name in re.findall(r'(?<![\w-])id="([^"]+)"', svg):
+        svg = re.sub(rf'(?<![\w-])id="{re.escape(name)}"', f'id="{name}{suffix}"', svg)
+        svg = (svg.replace(f"url(#{name})", f"url(#{name}{suffix})")
+                  .replace(f'href="#{name}"', f'href="#{name}{suffix}"'))
+    return svg
 
 LEAD_FALLBACK = """<a class="card" href="diagnostic.html">
   <b>Detector diagnostic &rarr;</b>
@@ -1315,7 +1361,8 @@ def main(argv=None):
         return 1
     real = LEAD_REAL.format(w=real_size[0], h=real_size[1])
 
-    model = lead_model(MODEL_SVG.read_text(encoding="utf-8"))
+    model = lead_model(MODEL_SVG.read_text(encoding="utf-8"),
+                       MODEL_PHONE_SVG.read_text(encoding="utf-8"))
 
     # THE HERO IS NOT OPTIONAL, and it used to be the only asset here that was.
     # Missing reality.png, landscape.html and viewer.html each return 1 above;

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# vendored from syncytium2/armory @ 548f734. This file is a COPY; edits here are
+# vendored from syncytium2/armory @ e8ffaa3. This file is a COPY; edits here are
 # overwritten whenever it is re-vendored. Its source repository is private, so there is
 # nowhere to send a patch: treat this file as read-only and raise anything you find as
 # an issue in THIS repository.

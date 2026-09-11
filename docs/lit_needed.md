@@ -131,6 +131,31 @@ locations belong to other projects.
       a co-author on the 2012 jitter paper, so the lineage from this report to the method we intend
       to use is one continuous group.
 
+- [ ] **Louis S, Borgelt C & Grün S (2010).** Generation and selection of surrogate methods for
+      correlation analysis. In Grün S & Rotter S (eds), *Analysis of Parallel Spike Trains*,
+      Springer, chapter 17, pp. 359–382. doi:10.1007/978-1-4419-5675-0_17.
+      → **Tony ask — paywalled.** Grün's group on choosing a surrogate by what it keeps and what it
+      destroys: the surrogate screen's own premise, already published. Read before the screen's
+      cross-folder summary claims anything about what a per-dataset tool adds. (Stella 2022 cites it as
+      "Louis 2010b".)
+
+- [ ] **Grün S, Borgelt C, Gerstein GL, Louis S & Diesmann M (2010).** Selecting appropriate
+      surrogate methods for spike correlation analysis. *BMC Neuroscience* 11(Suppl 1):O15.
+      doi:10.1186/1471-2202-11-S1-O15; PMC3090783. A conference abstract, open access.
+
+- [ ] **Gerstein (2004)**, *Acta Neurobiologiae Experimentalis* 64(2):203–207, PMID 15366253 — the
+      joint-interval dither, and the first description of flat dither adding short intervals. **Open
+      access (CC-BY) on ane.pl**; shelve under `surrogates/`.
+
+- [ ] **Pipa et al. (2008)**, *Journal of Computational Neuroscience* 25:64–88, PMID 18219568,
+      PMC2758673 — whole-train shifting, the origin Stella credit for trial shifting. PMC's site
+      bot-checks, but **Europe PMC's REST `fullTextXML` serves it**; shelve under `surrogates/`.
+
+- [ ] **Pazienti, Diesmann & Grün (2007)** and **Pazienti et al. (2008)**, *Brain Research*
+      1225:39–46 — the bounds on how far dithering can destroy precise coincidences, which is the
+      surrogate screen's destruction test. Known only from Stella's reference list; identifiers
+      not yet resolved.
+
 ## Fetched 2026-09-10, on the shelf
 
 Recorded so nobody re-fetches them, and so the failures above are legible as failures rather than
