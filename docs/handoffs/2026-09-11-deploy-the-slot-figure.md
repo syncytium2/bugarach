@@ -1,5 +1,17 @@
 # Handoff — deploy the front-page figure drawn for its slot
 
+> **No longer live: deployed 2026-09-11.** Tony ran the upload; the live page stamps
+> `22234c0` and `site_staleness.py` reads current. Settled since this was written: the figure
+> landed at draughtsman `5705c46`; the label test was fixed first, in #534; code and both specs
+> were vendored and both figures put on the page in #537; the site claim is released in the
+> deploy record on `docs/SESSIONS.md`. **The upload did not use `npm run deploy`**: it ran the
+> primary checkout's pinned `node_modules/.bin/wrangler deploy` with a worktree detached at
+> `origin/main` as its directory, because `npm run deploy` rebuilds with a bare `python` this
+> Mac does not have, and from any other directory uploads whatever `site/` it finds there. The
+> one open item it left — a phone figure drawn for phones narrower than 420 px — moved to
+> [`the phone figure is drawn for a box wider than most phones`](../todo/2026-09-11-the-phone-figure-is-drawn-for-a-box-wider-than-most-phones.md).
+> Body below unedited.
+
 > **Not murderboarded** — working material, same standing as the root `HANDOFF.md`.
 > Written by `bugarach-supple-chisel` (messaging name `bugarach-ec`) just before compaction.
 > Tony, 2026-09-11: *"prepare a handoff to handle deploy. pretty sure the new figure is ready."*

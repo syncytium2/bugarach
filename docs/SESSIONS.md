@@ -25,9 +25,21 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 - **Branch:** `surrogate-screen-overnight`, in a worktree of the same name.
 - **Released when:** the morning murderboard on the report is done.
 
-### Mac/claim-the-site-for-the-viewer — SITE claim ACTIVE: `bugarach.tonydefazio.com`
-- **Status:** **ACTIVE 2026-09-10. THE SITE IS HELD BY THIS CLAIM.** No other session may
-  run `npm run deploy` or `wrangler deploy` while this block reads ACTIVE.
+### Mac/claim-the-site-for-the-viewer — SITE claim RELEASED 2026-09-11: deployed at `22234c0`
+- **Status:** **RELEASED 2026-09-11 — deployed; nothing holds the site.** Taken over and
+  released here by `bugarach-nimble-marble` (Arioch), which prepared the deploy; Tony ran the
+  upload himself once the front-page figure landed in #537. Was: ACTIVE 2026-09-10.
+- **Deploy record.** Built in a worktree detached at `origin/main` `22234c0`, with HEAD checked
+  equal to `origin/main` first; `DEPLOY_HOLD.md` re-read: `held: no`. Uploaded with the primary
+  checkout's pinned `node_modules/.bin/wrangler deploy` (4.122.0) run from that worktree, after
+  a dry run read its 8 files from that worktree's `site/`. Afterwards: the live page answers 200
+  stamped `22234c0`; `site_staleness.py` reads **current**, nothing landed since;
+  `audit_deployed_page.py` is clean — the viewer fetched nothing but itself.
+- ⚠ **This publish also carried the four viewer commits this claim was reserved for** —
+  `d91ce08`, `7989427`, `5a786f4`, `d40fdcc` (#516–#518). The block below recommends opening the
+  real export folder in the viewer *before* deploying. The session that prepared the deploy did
+  not raise that before handing Tony the command, so this record cannot say it happened first.
+  Those commits are live either way.
 - **Authority, stated precisely because it is partial.** Tony asked for the claim to be
   **opened and landed so it is waiting** — *"open the claim PR now so it's landed and
   waiting"*, answered *"yes go"*. That is authority to **reserve**, not to publish. **He has
