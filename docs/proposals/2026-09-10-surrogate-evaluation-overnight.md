@@ -1,6 +1,6 @@
 # The surrogate screen — measure tonight, decide tomorrow
 
-> **Launched overnight 2026-09-11 on Tony's go.** After the second round of this plan's review,
+> **Approved by Tony 2026-09-11 — staged, not yet launched.** The review ran past the night's 07:00 deadline. After the second round of this plan's review,
 > Tony set the scope: every candidate is **measured** on both folders tonight, and **nothing is
 > shortlisted**. The rule that turns measurements into a shortlist is designed tomorrow, from the
 > numbers. Review record:

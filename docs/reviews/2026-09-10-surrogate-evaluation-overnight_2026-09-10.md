@@ -7,7 +7,7 @@ Mode: standard
 > round found new holes in the same place — the rule that turns measurements into a shortlist — and
 > that rule needs numbers nobody had. Tony chose the narrower night: **measure every candidate
 > tonight, shortlist nothing, design the verdict rule tomorrow from the measurements.** The plan was
-> rewritten to that scope and launched on his go.
+> rewritten to that scope and approved for launch; the review itself ran past the night's deadline, so the run is staged.
 
 ## What was at stake
 
@@ -98,7 +98,7 @@ not converge.
 - upstream:  syncytium2/murderboard @ 81a0927
 - copy:      vendored @ 81a0927
 - freshness: current
-- artifact:  docs/proposals/2026-09-10-surrogate-evaluation-overnight.md (50d04b07df79 -> ab65c2926eaf -> ece70552a1d4)
+- artifact:  docs/proposals/2026-09-10-surrogate-evaluation-overnight.md (50d04b07df79 -> ab65c2926eaf -> e4049bfdd84c)
 - roles:     11 of 11 run (role agents on fallback grants in both rounds — the seven Bash-holding roles arrived without Grep and Glob)
 - rounds:    2 blind rounds; stopped by escalation, unconverged
 

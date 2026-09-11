@@ -17,7 +17,7 @@ closed: 2026-09-10
 >
 > What follows is planned in
 > [`proposals/2026-09-10-surrogate-evaluation-overnight.md`](../proposals/2026-09-10-surrogate-evaluation-overnight.md):
-> measured overnight on 2026-09-11 with four candidates added — Stella's three this list lacks, and
+> to be measured with four candidates added — Stella's three this list lacks, and
 > the shipped dither — and no shortlist until the verdict rule is designed from the measurements.
 
 An eleven-role review on 2026-09-10 killed the surrogate a proposed self-supervised detector was
