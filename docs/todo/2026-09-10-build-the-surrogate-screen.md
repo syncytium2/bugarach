@@ -9,8 +9,9 @@ filed: 2026-09-10
 > operator run as a grid ([`which surrogates enter the screen`](2026-09-10-which-surrogates-enter-the-screen.md)).
 > **Superseded in part by the overnight plan**,
 > [`proposals/2026-09-10-surrogate-evaluation-overnight.md`](../proposals/2026-09-10-surrogate-evaluation-overnight.md),
-> which builds this screen as a per-dataset tool, takes five generators from Elephant, and adds
-> an estimability check this page does not have. **Where the two disagree, the plan wins.** It waits
+> which builds this screen as a per-dataset tool, takes eight of its twelve generators from
+> Elephant, adds a destruction test and a known-bad control for every statistic, and fixes its verdict
+> rule before the run. **Where the two disagree, the plan wins.** It waits
 > on Tony's go; everything below is background, not permission to start.
 >
 > Two consequences of the full field entering. **The cost split is a build order, not a cut** —

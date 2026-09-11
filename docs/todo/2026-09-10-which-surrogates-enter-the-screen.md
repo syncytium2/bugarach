@@ -17,8 +17,7 @@ closed: 2026-09-10
 >
 > What follows is planned in
 > [`proposals/2026-09-10-surrogate-evaluation-overnight.md`](../proposals/2026-09-10-surrogate-evaluation-overnight.md),
-> which turns the screen into a per-dataset tool step: if nothing predicts the right null for our
-> recordings, nothing predicts it for anyone else's either.
+> which turns the screen into a per-dataset tool step and adds Stella's three missing candidates.
 
 An eleven-role review on 2026-09-10 killed the surrogate a proposed self-supervised detector was
 built on — independent per-onset dithering, which is separable cell-by-cell on this project's own
@@ -31,26 +30,28 @@ measured rather than argued about.
 
 ## The candidate set
 
-| candidate | preserves | why it is in |
-|---|---|---|
-| circular shift | circular ISI multiset | the incumbent; four of the six hand-written detectors use it |
-| **uniform per-onset dither** | rate only | **the KNOWN-BAD positive control.** A screen that fails to flag it is broken |
-| rigid shift, no wrap | ISIs exactly, no splice | the cheap repair to the splice objection |
-| dither with dead-time | rate + a declared floor τ | minimal fix to the killed one |
-| joint-ISI dither | the ISI pair distribution | Louis et al. 2010 |
-| pattern jitter | each event's recent history, exactly | Harrison & Geman 2009 — the one to beat |
-| interval / window jitter | per-window counts | Amarasingham et al. 2012 |
-| operational-time dither | the rate profile under drift | Louis et al. 2010 |
+| candidate | preserves | why it is in | origin |
+|---|---|---|---|
+| circular shift | circular ISI multiset | the incumbent; four of the six hand-written detectors use it | this repo's assessor null |
+| **uniform per-onset dither** | rate only | **the KNOWN-BAD positive control.** A screen that fails to flag it is broken | Date, Bienenstock & Geman 1998 lineage |
+| rigid shift, no wrap | ISIs exactly, no splice | the cheap repair to the splice objection | Pipa et al. 2008 |
+| dither with dead-time | rate + a declared floor τ | minimal fix to the killed one | Stella et al. 2022 |
+| joint-ISI dither | the ISI pair distribution | preserves interval pairs | Gerstein 2004; extended by Louis et al. 2010 |
+| pattern jitter | each event's recent history, exactly | the one to beat | Harrison & Geman 2009 |
+| interval / window jitter | per-window counts | conditional inference on fixed windows | Date, Bienenstock & Geman 1998; reviewed in Amarasingham et al. 2012 |
+| operational-time dither | the rate profile under drift | aimed at the drift problem | Louis, Gerstein, Grün & Diesmann 2010 |
 
-Every one of those papers is on the shelf under `<darkroom>/bugarach/lit/surrogates/`.
+The shelf at `<darkroom>/bugarach/lit/surrogates/` holds all of these but Gerstein 2004 and Pipa 2008.
 
-**Stella's surrogate implementations ship in Elephant** (BSD-3), the package the paper's code
-section points to. Read 2026-09-10 at version 1.2.1: it carries uniform dither, dither with dead
-time, the rigid shift, joint-ISI dither and interval jitter — **five of these eight** — plus ISI
-dithering and window shuffling, the two Stella candidates this list lacks. Circular shift is one
-line of ours; pattern jitter and operational-time dither are not in it. ⚠ Elephant's shift and
-dither **drop** events pushed out of the window (or clamp them with `edges=False`) — neither wraps —
-and every default is millisecond-scale.
+**Stella's surrogate implementations ship in Elephant** (BSD-3); the code there descends from
+theirs, and their paper ran version 0.10.0. Read and run 2026-09-10 at version 1.2.1: it carries
+uniform dither, dither with dead time, the rigid shift, joint-ISI dither and interval jitter — **five
+of these eight** — plus ISI dithering, window shuffling and trial shifting, the three Stella
+candidates this list lacks. Circular shift is ours; pattern jitter and operational-time dither are
+not in it. ⚠ Its uniform dither and shift **drop** onsets pushed out of the window (or clamp them
+with `edges=False`); its dither with dead time never drops, confining each onset between its
+neighbours; its trial shifting **wraps** within each trial. Every default is millisecond-scale, and
+several failures are silent — the overnight plan lists them.
 
 ## What had to be decided
 
@@ -69,13 +70,16 @@ and every default is millisecond-scale.
 
 ## What Stella settles
 
-**Read the figure, not the conclusion.** Stella ran six surrogates through SPADE on the same monkey
-recordings. On simulated data with ground truth, five of six behaved and uniform dither produced a
-large false-positive count. On the *real* recordings — no ground truth — the five returned
-overlapping but non-identical sets of significant patterns, each with its own signature of extras.
-Read from figure 10 (left column, monkey N) and checked against the results section: **one epoch
-out of six is unanimous.** UDD adds an SGHF pattern in four separate epochs nobody else finds;
-JISI-D and ISI-D move together; WIN-SHUFF has its own PGLF in early delay.
+**Read the figure, not the conclusion** — this is our reading of figure 10, set against the
+authors' own summary. Stella ran six surrogates through SPADE on the same monkey recordings. On
+simulated data with ground truth, uniform dither produced a large false-positive count, and dither
+with dead time some on Gamma data only; the other four behaved. On the *real* recordings — no ground
+truth — the five non-UD surrogates returned overlapping but non-identical sets of significant
+patterns, each with its own signature of extras. Read from figure 10 (left column, monkey N) and
+checked against the results section: **one epoch out of six is unanimous.** UDD adds an SGHF pattern
+nobody else finds in three epochs — early delay, late delay and hold — and shares one with TR-SHIFT
+at the start; JISI-D and ISI-D move together; WIN-SHUFF has its own PGLF in early delay. Monkey L
+agrees more: three epochs are unanimous at zero patterns, and four of five agree in late delay.
 
 **Uniform dither sits an order of magnitude above all of them** on those recordings — figure 10
 gives it its own y-axis, and the results text reports 203 and 121 patterns for the two monkeys
@@ -85,8 +89,8 @@ why it is absent from the comparison above.
 ⚠ **The discussion summarizes more agreement than the figure shows.** It says the five valid
 surrogates *"show almost identical participating neurons, lags, and occurrence numbers"* and reach
 *"an almost identical significance level."* The figure-10 results describe per-surrogate extras in
-five epochs of six. **Anyone citing Stella for "surrogate choice barely matters" is citing the
-summary, not the result.**
+five epochs of six for monkey N. **Anyone citing Stella for "surrogate choice barely matters" is
+citing the summary, not the result.**
 
 **Their TR-SHIFT recommendation is a tiebreak, not a performance claim** — Tony's read, and the text
 bears it out. The first of the five reasons given is that it *"is easy to explain and to
@@ -101,13 +105,16 @@ appropriately and cautiously case by case"* — which is the ruling above.
 
 Two things transfer regardless:
 
-- **Stella rules out uniform dither independently**, by false-positive count under a completely
-  different analysis. That is
-  [our own leak finding](../reviews/2026-09-10-coordination-without-labels_2026-09-10.md) reached by
-  another route, and it is the strongest corroboration it has.
-- **TR-SHIFT is our own `rigid shift, no wrap`** — a per-neuron rigid displacement applied *trial by
-  trial*. The trial structure it depends on is something continuous baseline recordings do not have,
-  so we inherit the mechanism without the guarantee they draw from it.
+- **Stella's false-positive counts corroborate uniform dither's defect** under a completely different
+  analysis. The defect itself is older: Gerstein (2004) described flat dither adding short intervals
+  to the interval histogram, and Platkiewicz, Stark & Amarasingham (2017) built cases where
+  spike-centred jitter manufactures temporal structure. That is
+  [our own leak finding](../reviews/2026-09-10-coordination-without-labels_2026-09-10.md) with its
+  lineage.
+- **Stella describe TR-SHIFT as a per-neuron rigid displacement applied trial by trial**, and allow a
+  "trial" to be a long spike sequence separated by long silences — so it can run on continuous
+  baselines through pseudo-trials, and it joins the screen. Elephant's implementation wraps within
+  each trial, which makes it a close cousin of the circular shift rather than of our no-wrap shift.
 
 ## Closes when
 
