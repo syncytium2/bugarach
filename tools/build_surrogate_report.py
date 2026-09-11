@@ -286,7 +286,7 @@ def reach_block(R: dict) -> str:
     y = yardstick_reach(R)
     if not y["m"]:
         return ""
-    kc = ", ".join(f"{n} at {k}" for k, n in y["K_counts"].items())
+    kc = ", ".join(f"{n} cells at {k} draws" for k, n in y["K_counts"].items())
     return (
         f'<div class="warn"><p><b>⚠ Neither yardstick, Holm-adjusted, can flag anything at '
         f"these settings — so every Holm column below is zero for every candidate, the "
@@ -823,7 +823,7 @@ def _role_intro(R: dict) -> str:
         runs.append(f"resumed on the Windows workstation {esc(m.get('started'))} with "
                     f"{m.get('jobs')} jobs")
     y = yardstick_reach(R)
-    kc = ", ".join(f"{n} cells at {k}" for k, n in y["K_counts"].items()) or "—"
+    kc = ", ".join(f"{n} cells at {k} draws" for k, n in y["K_counts"].items()) or "—"
     return (cite + f"<p class=dim>{m.get('n_recordings_loaded', '—')} recordings. "
             f"<i>K</i> reached: {kc} (never below "
             f"{m.get('settings', {}).get('min_K', '—')}; the <i>K</i> asked for changed "
@@ -851,10 +851,10 @@ def exec_summary(R: dict, by_stream: dict) -> str:
         for r in rows:
             if r["kind"] != "candidate":
                 continue
-            J = (f"{min(r['J']):g}–{max(r['J']):g} {'s' if r['J_unit'] == 'sec' else 'fr'}"
+            J = (f"{min(r['J']):g}–{max(r['J']):g} {'s' if r['J_unit'] == 'sec' else 'frames'}"
                  if r["J"] else "none")
             body.append([
-                f"<b>{esc(r['label'])}</b>", f"{r['n_ok']}/{r['n_cells']}", J,
+                f"<b>{esc(r['label'])}</b>", f"{r['n_ok']} of {r['n_cells']} cells", J,
                 num(r["rms_disp"], 1),
                 f"{pct(r['band_q95'])} / "
                 + (pct(r["paired_raw"]) if r["paired_reachable"] or not r["n_ok"]
