@@ -46,7 +46,18 @@ them stale `.progress` markers.
    - Check out the branch: `git fetch origin && git worktree add <path> surrogate-screen-overnight`.
      Commits there go to #530.
    - Make a venv **outside** the worktree — its `.gitignore` does not cover `.venv` — and install
-     with `pip install -e ".[dev,surrogates]"`.
+     everything in `dev` **except PySpike**:
+     `pip install -e ".[ui,docs,dl,surrogates]" "pytest>=8" "playwright>=1.40"`, then
+     `python -m playwright install chromium` for the render gate.
+   - **Skip PySpike.** Nothing in the screen imports it; the two test files that use it
+     (`test_sync_detect.py`, `test_synfire_roi.py`) skip without it, and CI already runs that way.
+     PyPI ships PySpike 0.9.0 prebuilt only for macOS, so anywhere else `pip` compiles it from
+     source, which needs a C compiler plus Cython (Microsoft's C++ Build Tools on Windows;
+     `build-essential` and `python3-dev` under WSL). If you want it anyway, install the plain PyPI
+     0.9.0 — **never the fork carrying our `max_tau` fix** (PySpike#89, still open upstream).
+     `test_pyspike_max_tau_is_still_inert` deliberately asserts the upstream bug is still there, so
+     the patched build turns it red, which looks like a regression and isn't one. bugarach's own
+     SPIKE-synch is a separate port, bit-exact against cSPIKE, and needs neither.
    - Check that `python -c "from bugarach.paths import darkroom; print(darkroom())"` and
      `python -c "from bugarach import dataset; print(dataset.current('steps_excluded'))"` both resolve.
      If they do not — likely under WSL — set `BUGARACH_DARKROOM` to the `darkroom/bugarach` folder, and
