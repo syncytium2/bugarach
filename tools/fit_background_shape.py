@@ -137,19 +137,14 @@ def _baseline(sl):
     return trains, dur
 
 
-MIN_EVENTS_PER_ROI = 10
-"""Below this a within-ROI temporal fit has nothing to say."""
-
-
-def burst_rows(windows_t, bin_sec):
-    """Per-ROI binned-count vectors, for ROIs carrying enough events."""
-    rows = []
-    for trains, dur in windows_t:
-        edges = np.arange(0.0, dur + bin_sec, bin_sec)
-        for v in trains:
-            if v.size >= MIN_EVENTS_PER_ROI:
-                rows.append(np.histogram(v, bins=edges)[0].astype(float))
-    return rows
+# `burst_rows`, `fano` and their threshold live in `bugarach.count_dispersion`
+# since 2026-09-11, so the surrogate screen's rate-profile statistic is the same
+# computation as this fitter's diagnostic. Imported back under the same names.
+from bugarach.count_dispersion import (  # noqa: E402
+    MIN_EVENTS_PER_ROI,
+    burst_rows,
+    fano,
+)
 
 
 def fit_burst(windows_t, bin_sec) -> float:
@@ -162,12 +157,6 @@ def fit_burst(windows_t, bin_sec) -> float:
     if not rows:
         return float("nan")
     return fit(rows)
-
-
-def fano(rows) -> float:
-    """Mean variance/mean of per-bin counts — the diagnostic, never a target."""
-    vals = [c.var() / c.mean() for c in rows if c.mean() > 0]
-    return float(np.mean(vals)) if vals else float("nan")
 
 
 def negative_log_likelihood(log_shape: float, rows) -> float:
