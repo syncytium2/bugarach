@@ -12,7 +12,7 @@ filed: 2026-09-10
 > which builds this screen as a per-dataset tool, takes seven of its twelve candidates from
 > Elephant, and measures every one against a known-bad control per leak statistic, a destruction test
 > and three yardsticks — with no shortlist; the verdict rule is designed from those measurements.
-> **Where the two disagree, the plan wins.** It is approved and staged, not yet run; everything below is
+> **Where the two disagree, the plan wins.** It launched 2026-09-11, stopping at 15:00; everything below is
 > background.
 >
 > Two consequences of the full field entering. **The cost split is a build order, not a cut** —

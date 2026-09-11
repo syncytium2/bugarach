@@ -98,7 +98,7 @@ not converge.
 - upstream:  syncytium2/murderboard @ 81a0927
 - copy:      vendored @ 81a0927
 - freshness: current
-- artifact:  docs/proposals/2026-09-10-surrogate-evaluation-overnight.md (50d04b07df79 -> ab65c2926eaf -> e4049bfdd84c)
+- artifact:  docs/proposals/2026-09-10-surrogate-evaluation-overnight.md (50d04b07df79 -> ab65c2926eaf -> d6cd4bef056e)
 - roles:     11 of 11 run (role agents on fallback grants in both rounds — the seven Bash-holding roles arrived without Grep and Glob)
 - rounds:    2 blind rounds; stopped by escalation, unconverged
 
