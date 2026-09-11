@@ -202,11 +202,32 @@ def _clean(x):
     return x
 
 
+# ON WINDOWS, A FILE DROPBOX IS SYNCING CANNOT BE REPLACED, AND ONE REFUSAL KILLED A CELL.
+# The run folder lives in the darkroom, so Dropbox uploads every record and progress file
+# as it changes; while it holds one, Windows refuses the swap below with PermissionError
+# (WinError 5). It killed two cells of the 2026-09-11 run on the workstation -- at 12:45
+# and 15:06, both while replacing a `.progress` file after a draw -- and each became an
+# error record the resume then skips. Dropbox lets go within moments, so the swap is
+# retried with doubling waits (about 6 s in all) before the refusal is allowed to stand.
+# Only the refusal is retried: any other error still fails at once.
+_REPLACE_ATTEMPTS = 8
+_REPLACE_FIRST_WAIT_SEC = 0.05
+
+
 def _write_json(path: Path, obj) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_suffix(path.suffix + ".tmp")
     tmp.write_text(json.dumps(_clean(obj), indent=1, sort_keys=True), encoding="utf-8")
-    os.replace(tmp, path)
+    wait = _REPLACE_FIRST_WAIT_SEC
+    for attempt in range(_REPLACE_ATTEMPTS):
+        try:
+            os.replace(tmp, path)
+            return
+        except PermissionError:
+            if attempt == _REPLACE_ATTEMPTS - 1:
+                raise
+            time.sleep(wait)
+            wait *= 2
 
 
 # ---- the adapter's counters, aggregated per cell ---------------------------

@@ -226,3 +226,30 @@ def test_a_worker_past_its_cap_is_killed_and_recorded(tmp_path, cap, value, why)
     rec = json.loads((out / "events" / "cells" / "circular_shift.json").read_text())
     assert rec["status"] == "intractable", rec
     assert why in rec["why"], rec["why"]
+
+
+# Dropbox holds a file while it syncs it, and Windows then refuses to replace it. Two
+# cells of the 2026-09-11 run died of exactly that, mid-draw, on a progress file.
+
+def test_a_refused_swap_is_retried(bss, tmp_path, monkeypatch):
+    real, calls = os.replace, {"n": 0}
+
+    def refuses_twice(src, dst):
+        calls["n"] += 1
+        if calls["n"] <= 2:
+            raise PermissionError(13, "Access is denied")
+        real(src, dst)
+    monkeypatch.setattr(bss.os, "replace", refuses_twice)
+    monkeypatch.setattr(bss.time, "sleep", lambda s: None)
+    bss._write_json(tmp_path / "cell.json.progress", {"draws_completed": 3})
+    assert json.loads((tmp_path / "cell.json.progress").read_text()) == {"draws_completed": 3}
+    assert calls["n"] == 3
+
+
+def test_a_swap_refused_every_time_still_fails(bss, tmp_path, monkeypatch):
+    def always_refuses(src, dst):
+        raise PermissionError(13, "Access is denied")
+    monkeypatch.setattr(bss.os, "replace", always_refuses)
+    monkeypatch.setattr(bss.time, "sleep", lambda s: None)
+    with pytest.raises(PermissionError):
+        bss._write_json(tmp_path / "cell.json", {"status": "ok"})
