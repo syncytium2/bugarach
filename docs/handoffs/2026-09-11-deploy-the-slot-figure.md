@@ -16,12 +16,33 @@ file's pointer from the root `HANDOFF.md`, and move this file into the archive o
   **48 commits behind `main`**: 5 of them change pages it serves, 4 change the viewer.
 - **The figure caption is fixed upstream** at draughtsman `0546e5b` (it now credits draughtsman rather
   than torch). It is not vendored here yet, deliberately — see the todo.
-- ⚠ **The slot-sized figure does not exist yet.** As of 2026-09-11 it was on no draughtsman branch,
-  worktree or darkroom folder. **`draughtsman-b3` has now taken draughtsman queue item 11** — the
-  tube drawn for the 1203/395 px slot, with item 2's axis naming — and **will message bugarach with
-  the commit to vendor from** when it lands on draughtsman `main`. Wait for that message; do not
-  re-vendor the gallery `examples/tube` in its place (Tony declined it, and it failed this repo's own
-  `test_svg_labels` overlap check).
+- ✅ **The figure has landed: draughtsman `main` at `5705c46`** (the work itself is `99420f1`),
+  delivered by `draughtsman-b3` and verified on the remote 2026-09-11. **Vendor code and spec from
+  `5705c46`.** Two specs sit beside the gallery spec, and both read `examples/tube/graph.json`:
+  - `examples/tube/front-page.json` → the laptop figure, one row, viewBox **1199.15 × 343** for the
+    1203 px slot. **This is now the `_vendored` canonical source path.**
+  - `examples/tube/front-page-phone.json` → the phone figure, top to bottom, viewBox **395 × 1053**
+    for the 395 px slot — the "second size" the request allowed as the phone answer.
+
+  Each states its slot as `output.width` with `min_type` 9.5px, so `draughtsman check` refuses
+  anything that would need scaling down. The laptop figure has no glyphs, so item 2's "channels"
+  mislabel is gone from this page, and the caption is `0546e5b`'s, crediting draughtsman.
+- ⚠ **The renderer changed, so re-vendor `src/draughtsman/*` as well as the spec.** `render.py` now
+  lets the caption's 460-unit floor yield to a narrower stated width, and keeps an edge label beside
+  a vertical run off its own line. The phone figure depends on both. No other draughtsman figure moved.
+- ⚠ **`tests/test_svg_labels.py` is wrong, not the figure — fix the test.** It measures with
+  `getBBox()`, which ignores ancestor transforms, and every draughtsman figure wraps its drawing in
+  `<g class="ds-body" transform="translate(…)">`. So it reports the phone subtitle overlapping
+  "onset raster" by 69.1 × 6.0 when the real gap is 30.0 units. Measure in SVG coordinates instead —
+  `svg.getScreenCTM().inverse().multiply(el.getScreenCTM())` applied to the bbox corners. ⚠ **This
+  corrects a claim bugarach made:** the overlap failure cited against the gallery figure was the same
+  false positive (real gap 30.4). `draughtsman-b3` ran bugarach's three test functions, with the fix,
+  against both new SVGs from bugarach's venv: all pass.
+- **Two figures, one slot.** `make_architecture_diagram.py` has to render twice, once per spec, and
+  `lead_model()` plus the `.arch` CSS pick the figure by viewport width. The learned pages can keep
+  the laptop figure.
+- **Node ids come from a trace of bugarach `8cf06f6`.** If the model has changed since, `draughtsman
+  check` fails on bugarach's own trace — intended, and the signal to re-trace, not a bug.
 
 ## Who deploys
 
