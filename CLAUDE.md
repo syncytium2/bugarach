@@ -88,11 +88,19 @@ F1 0.57 and here is the trace showing why" beats three paragraphs of mechanism.
 - **Compact labeling**: no titles above plots; identity + counts live in
   y-axis labels ("fast · 30 ROI", "rate (27)"); one x-axis per linked group
   (bottom row only, with extra height so plot areas match).
-- **Number every figure in a document** (Tony, 2026-09-10: *"please always use figure
-  numbers"*). Captions open `Figure 1.`, `Figure 2.`; a reference in prose carries the number
-  **and** the name — *"Figure 3, the candidate field"* — so the writing convention against bare
-  enumerated labels still holds: the name is what lets it read without scrolling back.
-  **Define every abbreviation** at first use, and every symbol (*J*, τ) before a figure uses it.
+- **Number every figure, on every page that has one** (Tony, 2026-09-10: *"please always use
+  figure numbers"*; again 2026-09-11, *"always number the figures"*, on a status page whose
+  panels went out unnumbered — the rule then said "in a document", and a dashboard slipped
+  through that word). Captions or panel headings open `Figure 1.`, `Figure 2.`; a reference in
+  prose carries the number **and** the name — *"Figure 3, the candidate field"* — so the writing
+  convention against bare enumerated labels still holds: the name is what lets it read without
+  scrolling back. **Define every abbreviation** at first use, and every symbol (*J*, τ) before a
+  figure uses it.
+- **Every number carries its unit** — counts included (Tony, 2026-09-11, on a legend reading
+  "finished on the Mac · 327": *"327 what?"*). Write "327 cells", "99 surrogate draws", "8
+  frames", never a bare count or an abbreviated unit a reader has to decode ("fr"). Where two
+  panels use different units for the same quantity, say why beside them and give the
+  conversion (frames and seconds, with the frame interval).
 - **Unlinked y, linked x**: signal rows carry a unique value dimension per
   detector so y-ranges never link across rows; x links through the shared
   `t` dimension.
