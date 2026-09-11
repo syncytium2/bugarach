@@ -12,6 +12,8 @@ import csv
 import importlib.util
 import inspect
 import json
+import os
+import subprocess
 import sys
 from pathlib import Path
 
@@ -183,3 +185,44 @@ def test_a_cell_short_of_min_K_is_recorded_intractable(bss, tmp_path):
     assert rc == 0
     rec = json.loads((out / "events" / "cells" / "circular_shift.json").read_text())
     assert rec["status"] == "intractable" and "budget" in rec["why"]
+
+
+# THE MEMORY CAPS HAD NEVER BEEN SHOWN TO FIRE, and on Windows they could not: the meter
+# read 0 for every process, so a cell could grow without limit and the all-workers cap
+# never held a task back. A meter that reads zero looks exactly like a machine with
+# room to spare. These pin the meter to a live process and the kill to a real worker.
+
+def test_the_memory_meter_reads_a_live_process(bss):
+    before = bss._rss_bytes(os.getpid())
+    assert before > 0, "the meter reads 0 for a live process: both memory caps are off"
+    blob = bytearray(200_000_000)
+    after = bss._rss_bytes(os.getpid())
+    del blob
+    assert after - before > 100_000_000
+
+
+def test_machine_ram_is_measured_not_the_fallback(bss):
+    assert bss._machine_ram_bytes() != 16e9
+
+
+@pytest.mark.parametrize("cap, value, why", [
+    ("--cell-mem-gb", "0.001", "resident"),
+    ("--cell-hard-seconds", "0.5", "killed after"),
+])
+def test_a_worker_past_its_cap_is_killed_and_recorded(tmp_path, cap, value, why):
+    """Through the real process pool, run as a script: spawned workers import the
+    tool as ``__mp_main__``, which a module loaded under a private name cannot give
+    them."""
+    folder = _folder(tmp_path / "export", n_mice=2, per_mouse=1)
+    out = tmp_path / "out"
+    r = subprocess.run(
+        [sys.executable, str(TOOL), "--dataset", str(folder), "--out", str(out),
+         "--jobs", "1", "--J-frames", "2", "--only", "circular_shift", "--K", "5",
+         "--min-K", "3", "--splits", "4", "--neg-reps", "1", "--neg-draws", "2",
+         "--no-destruction", cap, value],
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
+        timeout=600)   # a Windows child prints in cp1252; the dashes must not kill the reader
+    assert r.returncode == 0, r.stderr[-2000:]
+    rec = json.loads((out / "events" / "cells" / "circular_shift.json").read_text())
+    assert rec["status"] == "intractable", rec
+    assert why in rec["why"], rec["why"]

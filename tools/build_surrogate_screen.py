@@ -331,9 +331,55 @@ def _worker(kind, *args):
         run_negatives(*args)
 
 
-def _rss_bytes(pid: int) -> int:
-    """Resident memory of ``pid`` and its children, from ``ps`` (no psutil here)."""
+# ON WINDOWS BOTH MEMORY CAPS WERE DISARMED, AND NOTHING SAID SO. `ps -o rss=` is a
+# procps flag; Git for Windows puts a Cygwin `ps` on PATH that has no -o, so the call
+# failed, the except returned 0, and every worker read as holding nothing — measured
+# 2026-09-11 on the workstation: 0 bytes with 300 MB allocated. Neither the per-cell
+# cap nor the all-workers cap could fire. `os.sysconf` does not exist there either, so
+# the machine read as the 16 GB fallback rather than its 127 GB, and the all-workers
+# default was computed from a guess. Both now ask the Windows API directly (ctypes,
+# still no psutil). The same resident measure — the working set — keeps the recorded
+# reason meaning one thing on every platform. tests/test_build_surrogate_screen.py
+# asserts a live process reads nonzero, which is the check that would have caught it.
+def _rss_bytes_windows(pid: int) -> int:
+    import ctypes
+    from ctypes import wintypes
+
+    class _Counters(ctypes.Structure):
+        _fields_ = [("cb", wintypes.DWORD), ("PageFaultCount", wintypes.DWORD),
+                    ("PeakWorkingSetSize", ctypes.c_size_t),
+                    ("WorkingSetSize", ctypes.c_size_t),
+                    ("QuotaPeakPagedPoolUsage", ctypes.c_size_t),
+                    ("QuotaPagedPoolUsage", ctypes.c_size_t),
+                    ("QuotaPeakNonPagedPoolUsage", ctypes.c_size_t),
+                    ("QuotaNonPagedPoolUsage", ctypes.c_size_t),
+                    ("PagefileUsage", ctypes.c_size_t),
+                    ("PeakPagefileUsage", ctypes.c_size_t)]
+
+    k32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    k32.OpenProcess.restype = wintypes.HANDLE
+    k32.OpenProcess.argtypes = [wintypes.DWORD, wintypes.BOOL, wintypes.DWORD]
+    k32.K32GetProcessMemoryInfo.argtypes = [wintypes.HANDLE,
+                                            ctypes.POINTER(_Counters), wintypes.DWORD]
+    k32.CloseHandle.argtypes = [wintypes.HANDLE]
+    handle = k32.OpenProcess(0x1000, False, pid)   # PROCESS_QUERY_LIMITED_INFORMATION
+    if not handle:
+        return 0
     try:
+        c = _Counters()
+        c.cb = ctypes.sizeof(_Counters)
+        ok = k32.K32GetProcessMemoryInfo(handle, ctypes.byref(c), c.cb)
+        return int(c.WorkingSetSize) if ok else 0
+    finally:
+        k32.CloseHandle(handle)
+
+
+def _rss_bytes(pid: int) -> int:
+    """Resident memory of ``pid``: ``ps`` on POSIX, the Windows API on Windows
+    (no psutil here). 0 when the process cannot be read."""
+    try:
+        if sys.platform == "win32":
+            return _rss_bytes_windows(pid)
         out = subprocess.run(["ps", "-o", "rss=", "-p", str(pid)],
                              capture_output=True, text=True, timeout=5).stdout
         return int(out.strip() or 0) * 1024
@@ -343,6 +389,26 @@ def _rss_bytes(pid: int) -> int:
 
 def _machine_ram_bytes() -> float:
     try:
+        if sys.platform == "win32":
+            import ctypes
+            from ctypes import wintypes
+
+            class _Status(ctypes.Structure):
+                _fields_ = [("dwLength", wintypes.DWORD),
+                            ("dwMemoryLoad", wintypes.DWORD),
+                            ("ullTotalPhys", ctypes.c_ulonglong),
+                            ("ullAvailPhys", ctypes.c_ulonglong),
+                            ("ullTotalPageFile", ctypes.c_ulonglong),
+                            ("ullAvailPageFile", ctypes.c_ulonglong),
+                            ("ullTotalVirtual", ctypes.c_ulonglong),
+                            ("ullAvailVirtual", ctypes.c_ulonglong),
+                            ("ullAvailExtendedVirtual", ctypes.c_ulonglong)]
+
+            s = _Status()
+            s.dwLength = ctypes.sizeof(_Status)
+            if ctypes.windll.kernel32.GlobalMemoryStatusEx(ctypes.byref(s)):
+                return float(s.ullTotalPhys)
+            return 16e9
         return float(os.sysconf("SC_PAGE_SIZE") * os.sysconf("SC_PHYS_PAGES"))
     except (ValueError, OSError, AttributeError):
         return 16e9
