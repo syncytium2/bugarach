@@ -655,3 +655,79 @@ def test_designating_replaces_the_guess_rather_than_joining_it(tmp_path):
             assert errs == [], errs
         finally:
             browser.close()
+
+
+# --------------------------------------------------------------------------
+# TURBO TAKES THE PAGE, AND THE OVERVIEW IS THE ONE DOOR OUT OF THE BLIND
+#
+# Tony, 2026-09-12: turbo should "occupy more space", the settings sentence
+# above the rasters "serves little purpose. put it below"; and a view of every
+# slice's whole trace with treatments named — red, behind an "are you sure?".
+# --------------------------------------------------------------------------
+
+def test_the_settings_sentence_sits_under_the_rasters():
+    text = VIEWER.read_text(encoding="utf-8")
+    assert text.index('id="turboScroll"') < text.index('id="turboWhat"'), \
+        "the settings sentence is back above the column it describes"
+
+
+def test_turbo_folds_the_side_column_and_a_rail_click_brings_it_back(tmp_path):
+    """The column gets the width; the rail still works while it has it.
+
+    Folding the side column is what makes a rail click dangerous: the step's
+    settings open in a column nobody can see, and the click looks dead. So the
+    click has to leave turbo, and this presses a real rail step to prove it.
+    """
+    pytest.importorskip("playwright.sync_api")
+    from playwright.sync_api import sync_playwright
+    with sync_playwright() as p:
+        browser, pg, errs = _page(p, tmp_path)
+        try:
+            _open(pg, _folder(tmp_path))
+            pg.wait_for_selector("#turbo:not([hidden])", timeout=30000)
+            assert pg.is_hidden("#side"), "turbo is up and the side column still takes 322px"
+            pg.click("#rail button.step >> nth=0")
+            pg.wait_for_selector("#turbo[hidden]", state="attached", timeout=5000)
+            assert pg.is_visible("#side") and pg.is_visible("#view")
+            assert errs == [], errs
+        finally:
+            browser.close()
+
+
+def test_the_overview_asks_first_and_shows_what_turbo_refuses(tmp_path):
+    """Every recording, treated ones included, and only after a yes.
+
+    The folder declares senktide and no baseline, so turbo has nothing to show
+    and the folder lands on the rail. The overview is exactly the view that
+    draws those recordings anyway, which is why it has to ask.
+    """
+    pytest.importorskip("playwright.sync_api")
+    from playwright.sync_api import sync_playwright
+    with sync_playwright() as p:
+        browser, pg, errs = _page(p, tmp_path)
+        try:
+            _open(pg, _folder(tmp_path, regions="treated"))
+            pg.wait_for_selector("#overviewBtn:not([hidden])", timeout=30000)
+            assert "danger" in pg.get_attribute("#overviewBtn", "class")
+
+            pg.click("#overviewBtn")
+            assert pg.evaluate("() => document.getElementById('unblindDlg').open")
+            pg.click("#unblindDlg button[value=cancel]")
+            assert pg.is_hidden("#overview"), "cancel opened the unblinded view anyway"
+
+            pg.click("#overviewBtn")
+            pg.click("#unblindYes")
+            pg.wait_for_function(
+                "() => typeof OVERVIEW !== 'undefined' && OVERVIEW && OVERVIEW.rows.length === 3",
+                timeout=30000)
+            assert pg.is_visible("#overview") and pg.is_hidden("#side")
+            rows = pg.evaluate(
+                "() => OVERVIEW.rows.map(r => r.wins.map(w => w.label).join(','))")
+            assert rows == ["senktide"] * 3, rows
+            assert "No detector runs here" in pg.text_content("#overviewWhat")
+
+            pg.click("#overviewBtn")          # leaving needs no permission
+            assert pg.is_hidden("#overview") and pg.is_visible("#view")
+            assert errs == [], errs
+        finally:
+            browser.close()
