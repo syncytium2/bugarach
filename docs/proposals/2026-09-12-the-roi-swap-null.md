@@ -1,8 +1,17 @@
 # The ROI-swap null — a surrogate made of real trains
 
-> **Status: PROPOSAL, revision 3. Nothing here has been run.** Written to be attacked, and already
-> attacked twice: revision 1 was reviewed by eleven roles and found unshippable, and a blind pass on
-> revision 2 found twenty-eight more defects, four of them serious. The reports are
+> **Status: NOT RECOMMENDED — review did not converge. Nothing here has been run.**
+>
+> Three review rounds. The first two found errors in a plan that looked sound. **The third found that
+> the plan cannot be built on this cohort and that its two "free" stages cannot fail** — which means
+> approving them would produce a record of passed gates that validates nothing. The hostile reviewer's
+> summary is that this proposal *"has argued itself out of its experiment without saying so"*, and
+> after checking the load-bearing numbers, that verdict stands. **Do not approve any stage below as
+> written.** What survives, and what should replace it, is in
+> [the verdict](#verdict-after-three-rounds) immediately after this banner.
+>
+> The document is kept, unconverged and marked, because the path to that verdict is worth more than a
+> tidy withdrawal — the same reason the two earlier withdrawn reevaluations were kept. The reports are
 > [roles 1-4](../reviews/2026-09-12-the-roi-swap-null-roles-1-4.md) and
 > [roles 5-11](../reviews/2026-09-12-the-roi-swap-null-roles-5-11.md), and the run record is
 > [here](../reviews/2026-09-12-the-roi-swap-null_2026-09-12.md). **What that review changed is
@@ -14,7 +23,63 @@
 
 ---
 
-## The ask
+## Verdict after three rounds
+
+**The swap grid cannot be built on this cohort.** The construction requires each swapped ROI from a
+different donor recording, with donors confined to the target's own mouse fold. The median recording
+has 31.5 ROIs and most mice contributed two recordings. The round-3 hostile reviewer simulated five
+mouse folds over fifty seeds and reports this many of the 84 targets as buildable. ⚠ **That simulation
+has not been reproduced by this session** — it is the first thing the replacement table below should
+recompute, since the verdict leans on it. The `rigid_shift` accuracies further down were re-checked
+against the run files and hold.
+
+| swap fraction k/N | global donor pool | within-group donor pool |
+|---|---|---|
+| 0.25 | 82.8 | 9.3 |
+| 0.5 | 39.1 | 0.9 |
+| 0.75 | 14.3 | 0.2 |
+| 1.0 | 3.7 | 0.0 |
+
+The within-group chimera — the group side quest's informative arm — **cannot be built at all**, and the
+recordings buildable at high k/N are the small ones, so dose is confounded with recording size.
+Within-mouse and within-session matching allow at most two swapped ROIs.
+
+**The two stages offered for free approval cannot kill the design.** The dispersion stage cannot reach
+its STOP, because the tight matching levels it would need to separate can swap only one or two ROIs and
+so cannot separate; its GO therefore carries no information. The construction-validity stage's only
+STOP is a builder assertion, and its own predicted outcome — the discriminator above chance — was given
+no consequence. Both would pass. **A gate that cannot fail is not a gate**, and a record of two passed
+gates would read as justification for the compute stage.
+
+**The alternative that was never measured may already do the job.** `rigid_shift` — whole-train
+shifting *within* a recording — keeps slice, day, silent-ROI composition and rate scale, which is
+exactly what the swap loses on its largest objection. On `steps_excluded` fast its per-ROI
+discriminator accuracy is **0.495-0.524 across all six J values**. The case made against it here was a
+count-difference argument that was never checked against those numbers. **The swap's only advantage is
+avoiding the splice and edge leaks of within-recording shifting**, and this document never showed that
+advantage outweighs losing preparation identity.
+
+**What survives.** The support-violation argument is sound: a chimera made of real trains cannot
+manufacture an interval real data never produces. So does the untouchable-floor finding and the
+correction of the seed-0 voiding (section 5), which stands independently of this proposal and is the
+most useful thing the review produced.
+
+**What should replace this.** Not revision 4 of the same plan. A **single leak-versus-destruction
+table** putting the within-recording nulls (`rigid_shift`, `circular_shift`, `trial_shift`) and the ROI
+swap side by side on the same cohort, with a **donor-feasibility table** computed before anything is
+proposed, and gates that are **paired** (each target against its own chimera) with margins declared in
+the document. Only if the swap beats the within-recording nulls on that table is there a case for it.
+
+⚠ **The group side quest's verdict is right for a different reason than section 8 gives.** Group
+nested in imaging day is, on this cohort, group nested in mouse — true of any between-animal design,
+and mouse-held-out folds handle random day effects. What folds cannot fix is **group aligned with
+calendar era**: several imaging months are single-group (DI-only in 2024-09, 2025-07, 2026-03 and
+2026-06). And the within-group chimera cannot be built anyway. A *negative* group result — group not
+learnable — would still be interpretable despite the confound.
+
+---
+
+## The ask (as written for revision 3 — superseded by the verdict above)
 
 **Approve the two arithmetic stages. They cost no compute, and either can kill the design before
 anything is trained.** If both pass, the training stage is a separate decision with a number
@@ -25,9 +90,9 @@ compute.
 imaging day in the approved export — 42 dates, none carrying more than one group — so a positive
 result could not be told apart from a day effect. Section 8 says what a future cohort would need.
 
-⚠ **This does not reopen the surrogate screen.** Tony stopped that thread on 2026-09-12 with
-"do not run anything", and nothing here runs the screen or changes its verdict rule. This is a new
-construction, and approving its arithmetic is a separate decision.
+⚠ **This does not reopen the surrogate screen.** Tony stopped that thread on 2026-09-12 — his
+recorded answers were that the family-size question needed discussion before deciding, and to stop
+there for now. Nothing here runs the screen or changes its verdict rule.
 
 Why it is worth asking at all: **every train in a chimera is a real train**, so the failure that
 killed the first label-free detector — a surrogate manufacturing within-ROI intervals real data
@@ -530,13 +595,13 @@ bears on the leak above, which is why it is here rather than elsewhere.
 > slice health — is indistinguishable from group. A classifier that learns group from these recordings
 > cannot be told apart from one that learns the day, and no fold rule over this cohort fixes that.
 >
-> What partially survives: at **month** resolution, 9 of 22 months contain more than one group. A
-> design that treats month as the batch could separate group from a month-scale effect, **but only on
-> the assumption that the confound operates at month rather than day timescale** — which is exactly the
-> thing that cannot be checked from this data. So the honest status is: **not runnable as a clean test;
-> runnable as an exploration whose positive result would be uninterpretable.** Tony's call whether that
-> is worth any compute. The rest of this section is kept because it specifies the design a future
-> cohort with groups interleaved across days would need.
+> ⚠ **Revision 3 argued the next part wrongly, and gave wrong numbers for it.** It said 9 of 22 months
+> contain more than one group; the correct count is **10 of 14 imaging months**. The error was in this
+> session's own check, which sliced an eight-character date at seven characters and so split each
+> month by the tens digit of the day. And the day-versus-month framing was the wrong frame: see
+> [the verdict](#verdict-after-three-rounds) — the confound that folds cannot fix is group aligned with
+> **calendar era**, not day-scale noise. The rest of this section is kept because it specifies the
+> design a future cohort with groups interleaved across time would need.
 
 ⚠ **The motivating premise is also weaker than revision 1 stated.** FOUNDATIONS §9 records a group ×
 *treatment* interaction — ORX up, male unchanged, diestrus down **under TTX** — and this design trains
@@ -581,7 +646,21 @@ only if it survives within-group matching, which is what the ladder measures.
 
 ---
 
-## Revision note — what two rounds of review changed
+## Revision note — what three rounds of review changed
+
+**Round 3, two blind passes on revision 3 — it did not converge.** See
+[the verdict](#verdict-after-three-rounds). Beyond the design-level findings there, round 3 caught two
+integrity errors that revision 3 introduced and that would have stood otherwise: words attributed to
+Tony in quotation marks that were a handoff author's instruction, not his; and a month count
+("9 of 22") that this session had presented as independently verified and that came from its own
+slicing bug. Both corrected above. Also found and **not** applied, because the plan they would repair
+is not recommended: the ISI families leave 55-60% of ROIs untouched (48% is operational-time dither);
+the swap's untouched share depends on the swap fraction as `(1 - k/N) + (k/N) x p_both`, about 0.14
+for a full chimera, not the 0.38 floor; the 8.7% "upper bound" on identical pairs is not a bound,
+because pooled features collapse shifted trains to the same vector; `trial_shift`'s `f` is the dead
+time, not a pseudo-trial parameter; the empty-baseline share is 0.367/0.371 in the approved periods
+folder and 0.379/0.390 only after field-step removal; 129 mice is the first power crossing and the
+repo's own rule gives 141; and "Pipa credits König" should read "cites König for the procedure".
 
 **Round 2, the blind pass on revision 2 — the ones that mattered.** The group-identity side quest
 **cannot run cleanly on this cohort**: group is perfectly nested in imaging day (verified independently
