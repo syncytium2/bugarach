@@ -1805,6 +1805,7 @@
         <button id="oAll" class="ghost">all</button>
         <span class="lab" id="oZoomWhat"></span>
       </div>
+      <div class="turboflag" id="overviewFlag" hidden></div>
       <div id="overviewScroll"><canvas id="overviewCv"></canvas></div>
       <div class="note" id="overviewWhat"></div>
     </div>
@@ -2813,7 +2814,7 @@ function columnTimeAt(cv, ev, full, span, mid) {
    stage has left under the knob bar, up to COL_ROW_MAX, and never shrinks below
    the old height — a folder of 38 still scrolls, inside its own box, so the bar
    stays where the hand is. */
-function columnRowHeight(cv, n, minRow) {
+function columnRowHeight(cv, n, minRow, headH = 0) {
   const scroll = cv.parentElement, stage = document.getElementById("stage");
   if (!scroll || !stage || !n) return minRow;
   const offset = scroll.getBoundingClientRect().top
@@ -2826,7 +2827,7 @@ function columnRowHeight(cv, n, minRow) {
                 + parseFloat(getComputedStyle(stage).paddingBottom || "0");
   const avail = Math.max(320, stage.clientHeight - offset - below - 4);
   scroll.style.maxHeight = avail + "px";
-  const fit = Math.floor((avail - 2 - COL_PADT - COL_PADB) / n);
+  const fit = Math.floor((avail - 2 - COL_PADT - headH - COL_PADB) / n);
   return Math.max(minRow, Math.min(COL_ROW_MAX, fit));
 }
 
@@ -2838,14 +2839,20 @@ function columnRowHeight(cv, n, minRow) {
    is.
 
    `o.labels(r)` gives the label-column lines as [text, colour] pairs, stacked;
-   `o.lane(g, r, laneTop, x, t0, t1, W)` paints the lane ABOVE the raster, and
-   is the only place a view may put a cue. */
+   `o.lane(g, r, laneTop, x, t0, t1, W)` paints the lane ABOVE each raster;
+   `o.head(g, y, x, t0, t1, W)` paints one lane of `o.headH` above the whole
+   column. Those lanes are the only places a view may put a cue.
+
+   A row may start after 0 (`r.from`), and the axis may be labelled from an
+   `o.origin` other than 0 — the overview aligns rows on a moment inside them,
+   so its zero is not the left edge and some of its rows begin to the right. */
 function paintColumn(cv, rows, full, span, mid, o) {
   const css = getComputedStyle(document.documentElement);
   const dpr = window.devicePixelRatio || 1;
   const W = cv.parentElement.clientWidth || 900;
-  const padL = COL_PADL, padR = COL_PADR, padT = COL_PADT, padB = COL_PADB;
-  const rowH = columnRowHeight(cv, rows.length, o.minRow);
+  const headH = o.headH || 0, origin = o.origin || 0;
+  const padL = COL_PADL, padR = COL_PADR, padT = COL_PADT + headH, padB = COL_PADB;
+  const rowH = columnRowHeight(cv, rows.length, o.minRow, headH);
   const H = padT + rows.length * rowH + padB;
   cv.width = W * dpr; cv.height = H * dpr;
   cv.style.width = W + "px"; cv.style.height = H + "px";
@@ -2857,6 +2864,8 @@ function paintColumn(cv, rows, full, span, mid, o) {
   const [t0, t1] = columnWindow(full, span, mid);
   const x = t => padL + (t - t0) / (t1 - t0) * (W - padL - padR);
   const step = ticks(t1 - t0, Math.max(4, Math.round((W - padL - padR) / 110)));
+
+  if (o.head) o.head(g, COL_PADT, x, t0, t1, W);
 
   rows.forEach((r, i) => {
     const top = padT + i * rowH;
@@ -2875,10 +2884,11 @@ function paintColumn(cv, rows, full, span, mid, o) {
 
     g.strokeStyle = css.getPropertyValue("--line").trim();
     g.lineWidth = 1;
+    const left = Math.max(padL, x(Math.max(r.from || 0, t0)));
     const right = Math.min(W - padR, x(Math.min(r.dur, t1)));
-    if (right > padL) g.strokeRect(padL, rTop, right - padL, rBot - rTop);
+    if (right > left) g.strokeRect(left, rTop, right - left, rBot - rTop);
 
-    o.lane(g, r, top, x, t0, t1, W);
+    if (o.lane) o.lane(g, r, top, x, t0, t1, W);
 
     // the raster: every ROI of this recording, compressed into its band
     const lane = (rBot - rTop) / Math.max(1, r.nRoi);
@@ -2903,10 +2913,13 @@ function paintColumn(cv, rows, full, span, mid, o) {
   g.fillStyle = css.getPropertyValue("--muted").trim();
   g.strokeStyle = css.getPropertyValue("--line").trim();
   const axisY = padT + rows.length * rowH;
-  for (let t = Math.ceil(t0 / step) * step; t <= t1; t += step) {
-    const px = Math.round(x(t)) + 0.5;
+  // ticks fall on whole steps FROM THE ORIGIN, so an aligned axis reads −2m, 0s, 2m
+  const k0 = Math.ceil((t0 - origin) / step - 1e-9);
+  for (let k = k0; origin + k * step <= t1 + 1e-9; k++) {
+    const rel = k * step;
+    const px = Math.round(x(origin + rel)) + 0.5;
     g.beginPath(); g.moveTo(px, axisY); g.lineTo(px, axisY + 4); g.stroke();
-    const lab = fmt(t);
+    const lab = (rel < 0 ? "−" : "") + fmt(Math.abs(rel));
     g.fillText(lab, px - g.measureText(lab).width / 2, axisY + 18);
   }
 }
@@ -2925,6 +2938,9 @@ function turboResetZoom() { TURBO_SPAN = null; TURBO_MID = null; turboDraw(); }
 function turboDraw() {
   const cv = document.getElementById("turboCv");
   if (!cv || !TURBO || document.getElementById("turbo").hidden) return;
+  // the words first: the column's height is what is left after the sentence
+  // under it, so the sentence has to be its real length when that is measured
+  paintTurboWhat();
   paintColumn(cv, TURBO.rows, TURBO.maxDur, TURBO_SPAN, TURBO_MID, {
     minRow: TURBO_ROW,
     laneH: TURBO_LANE,
@@ -2950,7 +2966,6 @@ function turboDraw() {
       }
     },
   });
-  paintTurboWhat();
 }
 
 /* SAY THAT WE ASSUMED IT. Two different statements, and they are kept apart
@@ -3213,39 +3228,132 @@ function redrawColumns() {
    thing it costs cannot be given back — a K tuned after seeing which rows are
    TTX is not a blind K. The confirmation is asked every time, not remembered.
 
-   The periods ride in the lane ABOVE each raster, never on it: a saturated bar
-   for the period as it happened (`start`/`end`), and under it a paler band for
-   the window the producer said to score (`analysis_*`). Where the band stops
-   short of its bar is time that happened and is not counted — the same split
-   the single-recording view draws, moved off the marks. */
-let OVERVIEW = null;       // {rows:[{id,nRoi,trains,dur,wins}], maxDur, empty}
+   ALIGNED ON THE END OF BASELINE. Tony, same day: "humans did these
+   experiments, they might not line up perfectly from t=0. align all traces by
+   baseline end." A slice imaged for 9m40s before the drug went on and one
+   imaged for 10m20s put the same moment 40 s apart when both start at 0, and
+   the moment the column exists to compare is the one where treatment begins.
+   So each row is shifted so its baseline ends at 0; the axis counts back into
+   baseline and forward into treatment, and rows begin wherever their own
+   recording began. A recording with no period read as a baseline has nothing
+   to align on and is NAMED rather than drawn at an arbitrary offset.
+
+   ONE LINE OF PERIODS, AT THE TOP. "provide only the top line of treatment
+   indicators and analysis regions." Once the rows are aligned, a lane over
+   every raster repeats the same bars; one lane over the column says it once.
+   That lane is the MEDIAN of the rows, period by period — and because humans
+   did the experiments, a row whose own periods sit off that line by more than
+   OVERVIEW_TOL, or that has different periods altogether, says so in its own
+   label column, amber, so the top line is never silently wrong about a row.
+
+   In the lane: a saturated bar for the period as it happened (`start`/`end`),
+   and under it a paler band for the window the producer said to score
+   (`analysis_*`). Where the band stops short of its bar is time that happened
+   and is not counted — the split the single-recording view draws, moved off
+   the marks. */
+let OVERVIEW = null;       // {rows, top, origin, maxDur, empty, unaligned}
 let OVERVIEW_BUSY = false;
 let OVERVIEW_SPAN = null;
 let OVERVIEW_MID = null;
 let OVERVIEW_BACK = "view"; // what leaving the overview returns to
-const OVERVIEW_LANE = 26;
+const OVERVIEW_HEAD = 36;
+/* 5 s: the narrowest window turbo's zoom offers. A disagreement smaller than
+   that is under a pixel or two at any zoom this column is read at. */
+const OVERVIEW_TOL = 5;
+
+const hasAnalysis = w => Number.isFinite(w.aStart) && Number.isFinite(w.aEnd);
+
+/* A period's identity across recordings: its label and which occurrence of that
+   label it is, so a protocol with two washouts matches washout to washout. */
+function periodKeys(wins) {
+  const seen = new Map();
+  return wins.map(w => {
+    const l = (w.label || "").trim();
+    const k = (seen.get(l) || 0) + 1;
+    seen.set(l, k);
+    return l + "#" + k;
+  });
+}
 
 async function overviewLoad() {
-  const rows = [], empty = [];
+  const raw = [], empty = [], unaligned = [];
   const n = document.getElementById("overviewWhat");
   for (let i = 0; i < RECORDINGS.length; i++) {
     const rec = RECORDINGS[i];
     if (n) n.textContent = "reading recordings… " + (i + 1) + " of " + RECORDINGS.length;
     await yieldToUI();
+    const wins = (REGIONS.get(rec.id) || []).slice().sort((a, b) => a.start - b.start);
+    const base = baselinePeriod(wins);
+    if (!base) {
+      unaligned.push({ id: rec.id, why: wins.length ? "no period read as a baseline"
+                                                    : "no periods declared" });
+      continue;
+    }
     const d = await loadRecording(rec);
     const byRoi = d.streams.get(STREAM) || d.streams.get([...d.streams.keys()][0]);
-    const wins = (REGIONS.get(rec.id) || []).slice().sort((a, b) => a.start - b.start);
     const ids = byRoi ? [...byRoi.keys()].sort() : [];
     /* The extent is the later of the last onset and the last declared period —
        an export folder states no duration, and a treatment that ends in silence
        is still a treatment the row has to reach. */
-    let dur = wins.reduce((a, w) => Math.max(a, w.end), 0);
-    for (const id of ids) for (const t of (byRoi.get(id) || [])) if (t > dur) dur = t;
-    if (!(dur > 0)) { empty.push(rec.id); continue; }
-    rows.push({ id: rec.id, nRoi: ids.length, dur, wins,
-                trains: ids.map(id => byRoi.get(id) || []) });
+    let end = wins.reduce((a, w) => Math.max(a, w.end), 0);
+    for (const id of ids) for (const t of (byRoi.get(id) || [])) if (t > end) end = t;
+    if (!(end > 0)) { empty.push(rec.id); continue; }
+    raw.push({ id: rec.id, nRoi: ids.length, shift: base.end, end, byRoi, ids, wins,
+               baseIdx: wins.indexOf(base) });
   }
-  OVERVIEW = { rows, empty, maxDur: rows.reduce((a, r) => Math.max(a, r.dur), 1) };
+
+  // relative to each row's own baseline end: [lo, hi] is the column's extent
+  const lo = Math.min(0, ...raw.map(r => -r.shift));
+  const hi = Math.max(0, ...raw.map(r => r.end - r.shift));
+  const origin = -lo;                        // where 0 = baseline end sits
+  const rows = raw.map(r => {
+    const off = origin - r.shift;            // recording time -> column time
+    const wins = r.wins.map(w => ({
+      label: w.label, start: w.start + off, end: w.end + off,
+      aStart: hasAnalysis(w) ? w.aStart + off : NaN,
+      aEnd: hasAnalysis(w) ? w.aEnd + off : NaN }));
+    return { id: r.id, nRoi: r.nRoi, from: off, dur: r.end + off, wins,
+             baseIdx: r.baseIdx,
+             keys: periodKeys(r.wins),
+             trains: r.ids.map(id => (r.byRoi.get(id) || []).map(t => t + off)) };
+  });
+
+  // THE TOP LINE: the median of every row that carries each period
+  const byKey = new Map();
+  for (const r of rows) r.keys.forEach((k, j) => {
+    if (!byKey.has(k)) byKey.set(k, []);
+    byKey.get(k).push(r.wins[j]);
+  });
+  const top = [...byKey.entries()].map(([k, ws]) => {
+    const withA = ws.filter(hasAnalysis);
+    return { key: k, label: ws[0].label, n: ws.length,
+             start: median(ws.map(w => w.start)), end: median(ws.map(w => w.end)),
+             aStart: withA.length ? median(withA.map(w => w.aStart)) : NaN,
+             aEnd: withA.length ? median(withA.map(w => w.aEnd)) : NaN };
+  }).sort((a, b) => a.start - b.start);
+
+  // and each row's disagreement with it, carried to its own label column
+  const topKeys = top.map(p => p.key).sort().join("|");
+  for (const r of rows) {
+    if (r.keys.slice().sort().join("|") !== topKeys) {
+      r.differs = "different periods";
+      continue;
+    }
+    let dev = 0;
+    r.keys.forEach((k, j) => {
+      const p = top.find(q => q.key === k), w = r.wins[j];
+      /* NOT the start of the baseline the row is aligned on: that is where the
+         recording happened to begin, which is the very difference alignment
+         exists to absorb. Its end is 0 by construction. */
+      if (j !== r.baseIdx) dev = Math.max(dev, Math.abs(w.start - p.start));
+      dev = Math.max(dev, Math.abs(w.end - p.end));
+      if (hasAnalysis(w) && hasAnalysis(p))
+        dev = Math.max(dev, Math.abs(w.aStart - p.aStart), Math.abs(w.aEnd - p.aEnd));
+    });
+    if (dev > OVERVIEW_TOL) r.differs = "periods off by " + fmt(dev);
+  }
+
+  OVERVIEW = { rows, top, origin, empty, unaligned, maxDur: Math.max(1, hi - lo) };
 }
 
 function overviewZoom(dir) {
@@ -3259,15 +3367,24 @@ function overviewDraw() {
   const cv = document.getElementById("overviewCv");
   if (!cv || !OVERVIEW || document.getElementById("overview").hidden) return;
   const css = getComputedStyle(document.documentElement);
+  paintOverviewWhat();   // before the column, for the same reason as turbo's
   paintColumn(cv, OVERVIEW.rows, OVERVIEW.maxDur, OVERVIEW_SPAN, OVERVIEW_MID, {
-    minRow: TURBO_ROW + OVERVIEW_LANE - TURBO_LANE,
-    laneH: OVERVIEW_LANE,
+    minRow: TURBO_ROW - TURBO_LANE,
+    laneH: 0,
+    headH: OVERVIEW_HEAD,
+    origin: OVERVIEW.origin,
     labels: r => [[r.id], [r.nRoi + " ROI"]]
-      .concat(r.wins.length ? [] : [["no periods declared", CAND_INK.assumed]]),
-    lane: (g, r, top, x, t0, t1, W) => {
+      .concat(r.differs ? [[r.differs, CAND_INK.assumed]] : []),
+    head: (g, top, x, t0, t1, W) => {
       const lo = COL_PADL, hi = W - COL_PADR;
+      // the lane's own y-axis label: what the line is, and how many rows made it
+      g.textAlign = "end";
+      g.fillStyle = css.getPropertyValue("--muted").trim();
+      g.fillText("periods", COL_PADL - 8, top + 11);
+      g.fillText("median of " + OVERVIEW.rows.length, COL_PADL - 8, top + 24);
+      g.textAlign = "start";
       let labelEnd = -Infinity;
-      for (const w of r.wins) {
+      for (const w of OVERVIEW.top) {
         if (w.end < t0 || w.start > t1) continue;
         const hue = ink(w.label);
         const a = Math.max(lo, x(w.start)), b = Math.min(hi, x(w.end));
@@ -3296,24 +3413,41 @@ function overviewDraw() {
       }
     },
   });
-  paintOverviewWhat();
 }
 
 function paintOverviewWhat() {
   const n = document.getElementById("overviewWhat");
   if (!n || !OVERVIEW) return;
-  const periods = OVERVIEW.rows.reduce((a, r) => a + r.wins.length, 0);
-  const noA = OVERVIEW.rows.reduce((a, r) => a + r.wins.filter(w =>
-    !(Number.isFinite(w.aStart) && Number.isFinite(w.aEnd))).length, 0);
-  const bare = OVERVIEW.rows.filter(r => !r.wins.length).length;
+  /* THE ROWS THAT ARE NOT HERE, above the column, amber — the same notice turbo
+     uses for its assumption, because a column quietly missing rows is worse
+     than a short one that says why. */
+  const f = document.getElementById("overviewFlag");
+  if (f) {
+    const un = OVERVIEW.unaligned;
+    f.hidden = !un.length;
+    f.textContent = "";
+    if (un.length) {
+      const b = document.createElement("b");
+      b.textContent = un.length + " recording(s) not drawn — nothing to align on. ";
+      const ids = document.createElement("span");
+      ids.className = "ids";
+      ids.textContent = un.map(u => u.id + " (" + u.why + ")").join(", ");
+      f.append(b, ids);
+    }
+  }
+  const noA = OVERVIEW.top.filter(p => !hasAnalysis(p)).length;
+  const off = OVERVIEW.rows.filter(r => r.differs).length;
   n.textContent =
-    OVERVIEW.rows.length + " recordings, whole trace · " + periods + " periods"
-    + (bare ? " (" + bare + " recording(s) declare none)" : "")
-    + (OVERVIEW.empty.length ? " · not drawn, no events: " + OVERVIEW.empty.join(", ") : "")
-    + ". Above each raster: the solid bar is the period as it happened, the pale "
-    + "band under it is the window the folder says to score"
-    + (noA ? " — " + noA + " period(s) sent no analysis window, so they have no band" : "")
-    + ". No detector runs here. Treatments are named, so a K chosen after "
+    OVERVIEW.rows.length + " recordings, whole trace, aligned so each baseline ends "
+    + "at 0s" + (OVERVIEW.empty.length
+      ? " · not drawn, no events: " + OVERVIEW.empty.join(", ") : "")
+    + ". The top line is the median of the rows' periods: the solid bar is the "
+    + "period as it happened, the pale band under it the window the folder says "
+    + "to score" + (noA ? " (" + noA + " period(s) sent none)" : "") + ". "
+    + (off ? off + " row(s) differ from it by more than " + OVERVIEW_TOL
+             + " s, and say so under their names. "
+           : "Every row is within " + OVERVIEW_TOL + " s of it. ")
+    + "No detector runs here. Treatments are named, so a K chosen after "
     + "looking at this is not a blind K.";
   const z = document.getElementById("oZoomWhat");
   if (z) z.textContent = OVERVIEW_SPAN
@@ -5740,6 +5874,16 @@ const isBaselineLabel = s => {
   return !!n && want.some(tok => n.startsWith(tok));
 };
 
+/* THE baseline of a recording, when several periods read as one: the longest.
+   One rule, used by the assessment's window and by the overview's alignment, so
+   the period a K is measured on and the period the column lines up on are the
+   same period. Null when none reads as a baseline. */
+function baselinePeriod(wins) {
+  const base = wins.filter(w => isBaselineLabel(w.label));
+  return base.length
+    ? base.reduce((a, b) => (b.end - b.start > a.end - a.start ? b : a)) : null;
+}
+
 /* Every distinct period label in the folder, for offering the reader something
    to designate. They cannot pick a name they have not been shown, and "none
    named as a baseline" without the names sends them to open a CSV. */
@@ -6145,12 +6289,11 @@ function assessWindow(rec, choice) {
              isBaseline: !wins.length };
   let w = null;
   if (choice === undefined || choice === "" || choice === "baseline") {
-    const base = wins.filter(q => isBaselineLabel(q.label));
-    if (!base.length)
+    w = baselinePeriod(wins);
+    if (!w)
       return { window: null, source: "whole recording (no baseline declared)",
                isBaseline: false, note: wins.length + " region(s) are declared and "
                  + "none is named as a baseline — pick one to measure it" };
-    w = base.reduce((a, b) => (b.end - b.start > a.end - a.start ? b : a));
   } else {
     w = wins[Number(choice)] || wins[0];
   }
@@ -7556,15 +7699,14 @@ function folderAssessWindow(rec) {
   const wins = (REGIONS.get(rec.id) || []).slice().sort((a, b) => a.idx - b.idx);
   if (!wins.length)
     return { window: null, source: "whole recording (no regions declared)" };
-  const base = wins.filter(w => isBaselineLabel(w.label));
-  if (!base.length)
+  const w = baselinePeriod(wins);
+  if (!w)
     return { skipped: wins.length + " region(s), none named as a baseline — "
              + "coordination properties are not taken from treatments",
              // What this recording DOES have, so the reader can designate one
              // of them. Without the names, the refusal sends them to open a CSV.
              labels: [...new Set(wins.map(w => (w.label || "").trim())
                                      .filter(Boolean))].sort() };
-  const w = base.reduce((a, b) => (b.end - b.start > a.end - a.start ? b : a));
   // The producer's own analysis window WINS wherever one is stated: `start`/
   // `end` are what happened, `aStart`/`aEnd` are what to score. Measuring the
   // first while calling the result the analysis is the defect the Python's
