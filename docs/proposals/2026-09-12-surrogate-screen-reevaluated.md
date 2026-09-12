@@ -1,6 +1,32 @@
 # The surrogate screen, reevaluated — what the probe found and what to run next
 
-> **Status: DRAFT, not yet reviewed.** This revises
+> # ⚠ WITHDRAWN 2026-09-12, after its own murderboard. Do not act on anything below.
+>
+> Eleven roles reviewed this draft and each of its four load-bearing conclusions failed
+> against the production run. It is kept, unedited below this notice, as the record of what
+> was claimed — not as advice. Its replacement is re-derived from the 2026-09-11 run rather
+> than from the probe, and lives at
+> [`2026-09-12-surrogate-screen-reevaluated-v2.md`](2026-09-12-surrogate-screen-reevaluated-v2.md).
+> The review is `docs/reviews/2026-09-12-surrogate-screen-reevaluated_2026-09-12.md`.
+>
+> **What failed, briefly.** "Delete the square-root axis" rests on a no-op claim that is false:
+> 23 sqrt/nosqrt cell pairs in the production run differ on 5 of 13 statistics or more, and
+> Elephant applies the square root before smoothing and before the cumulative is normalised,
+> so normalisation cannot undo it. The cost argument is unsourced, reproduces only at 19 draws
+> per cell (278,415 core-hours at the plan's 99), and rests on a probe ratio ~50× off the
+> shipped scale. "The discriminator tier is usable" ignores a design effect of 5.14 — about
+> 325 effective pairs against the 654 the same document demands — and leans on a `powered`
+> flag computed from the data it judges, which reads True by construction under the null.
+> Every destruction number comes from 20 assessor surrogates against a shipped 200, where the
+> estimator is the median of that ensemble, and one quoted pair reproduces nowhere.
+>
+> **The root cause, stated once.** The probe was sized to test whether the instrument can
+> answer. Its numbers were then used as evidence about cost, capability and destruction, which
+> is not what a two-recording, three-draw, twentieth-of-an-ensemble run can support. The
+> replacement takes every such number from the production run and keeps the probe for the one
+> question it was built for.
+>
+> **Status (superseded): DRAFT, not yet reviewed.** This revises
 > [the overnight plan](2026-09-10-surrogate-evaluation-overnight.md) from measurements taken
 > 2026-09-12, after that plan's run and its
 > [murderboard](../reviews/report_steps_excluded_2026-09-11.md). It goes through
