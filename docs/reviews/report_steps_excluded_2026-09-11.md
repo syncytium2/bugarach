@@ -179,6 +179,12 @@ Beyond the five findings narrated above:
   smallest adjusted *P* exactly 0.0500. The formula existed in two modules and was wrong
   in both; there is now one implementation (`surrogate_stats.smallest_n`) and a test that
   brute-forces the boundary. The pages are rebuilt and say 1300 and 2600.
+  **And the corrected sample was then shown to work**, which is what makes this a fixed
+  defect rather than a revised opinion: re-run at 260 splits and 520 draws, the same
+  known-bad control is flagged **7 of 13 (band) and 11 of 13 (paired) under Holm**, with
+  the smallest adjusted *P* at 0.0498 and 0.0499, while do-nothing stays at 0 of 13 with
+  adjusted *P* 1.0000. One extra split and one extra draw separate a screen that can flag
+  nothing from one that flags the surrogate it must and not the control it must not.
 - **The gate that could not fail now fails.** `render_check.py --json` returns 0 before
   it counts anything; on one build it exited 0 while its own JSON held 104 sub-11px
   labels, 5 overlaps and 2 viewBox escapes. The vendored copy is stamped "do NOT edit,
@@ -265,6 +271,23 @@ reporting an 8.1px label — which the gate must now reject.
    docstring that claimed the drop "is reported as coverage" is corrected; surfacing
    `not_estimable_rois` on the page, and adding a scored-share column that keeps the full
    ROI population in its denominator, are not done.
+9. **The fast stream's discriminator tier was voided by one draw of an α-level control**
+   (found 2026-09-12, by the probe). The report's ⚠ box says every fast-stream discriminator
+   result is void because "its own negative control — real against real — flagged". That is
+   reported faithfully; the judgement underneath it is the defect. `discriminator.csv`'s 248 fast
+   candidate rows carry exactly **one** distinct void reason, `negative control (real against
+   real) flagged: accuracy 0.539`, on **126** of them. `run_cell` derives the negative control
+   from the real features alone, so it is the same evaluation for every candidate in a stream —
+   one result, stamped 126 times, not 126 failures. Re-run at five seeds on the same 1,669
+   pairs it flags in **1 of 5** (0.5386/*P* = 0.035, then 0.508/0.340, 0.502/0.455,
+   0.488/0.705, 0.483/0.785), which is the α = 0.05 false-positive rate the control is designed
+   to have, while the positive control holds at 0.757–0.764, *P* = 0.005, every time. The slow
+   stream, on identical machinery and the same recordings, has **zero** void reasons, and
+   Cossart's control reads 0.525, *P* = 0.165. **So the fast tier is not unusable; it was
+   discarded because one α-level draw fell the wrong way and nothing re-drew it.** A control
+   whose failure voids a whole stream has to be evaluated over several seeds before it is
+   allowed to. Not fixed: the rule still voids on a single draw, and the shipped page still
+   tells the reader that tier is void.
 
 ## Reproduction
 
