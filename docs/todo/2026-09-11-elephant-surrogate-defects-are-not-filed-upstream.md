@@ -20,6 +20,12 @@ Reproduced by the surrogate-screen review in a scratch install of Elephant 1.2.1
   a trial boundary is emitted twice; and it drops every spike after the last whole trial.
 - **`bin_shuffling`** floor-divides times in floating point, so on-grid spikes land one bin early.
 - **No seed argument**: the module draws from both numpy's and Python's global generators.
+- **`JointISI` in ISI-dither mode without the square root** writes its smoothed histogram into an
+  integer array, so the smoothing truncates to zero wherever the histogram is sparse, and those
+  regions fall back to uniform dither. Found by the surrogate screen's build (2026-09-11); the adapter
+  switches Elephant's smoothing off and repeats it on a float copy
+  (`_float_smoothed_histogram` in `src/bugarach/surrogates.py`), which on the joint path, whose
+  histogram is already float, reproduces Elephant exactly.
 
 ## Closes when
 

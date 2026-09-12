@@ -144,14 +144,39 @@ def event_rate(
 
     grid_dt is **required** and MUST be the sampling interval of the underlying
     recording (mean acquired frame interval) — ``Slice.require_dt()`` is where
-    a caller holding a recording gets it."""
-    dt = grid_dt
+    a caller holding a recording gets it.
+
+    The arithmetic is :func:`train_rate`'s, applied to the pooled onsets; what
+    stays here is the population rule — fewer than two ROIs, or no onset at
+    all, is not a population and returns empty arrays."""
     if not _populated(trains):
         return np.empty(0), np.empty(0)
+    pooled = np.sort(np.concatenate(trains)) if trains else np.empty(0)
+    return train_rate(pooled, t_range, window_sec, grid_dt)
+
+
+def train_rate(
+    train: np.ndarray,
+    t_range: tuple[float, float],
+    window_sec: float,
+    grid_dt: float,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Sliding-window rate (Hz) of ONE onset train on a grid_dt grid — the core
+    of :func:`event_rate`, factored out so a single ROI's own rate can be
+    estimated with the detector's estimator (the operational-time dither's box
+    kernel uses it).
+
+    Same edge divisor correction: at a boundary the count is divided by the
+    truncated window span, not the full width, so the rate does not dip. There
+    is no population rule here — one onset, or one ROI, is a train.
+
+    Times and ``t_range`` share a unit with ``window_sec`` and ``grid_dt``; a
+    caller holding frame indices passes frames and ``grid_dt=1``."""
+    dt = grid_dt
     tmin, tmax = t_range
     rate_x = _grid(t_range, dt)
     m = rate_x.size
-    pooled = np.sort(np.concatenate(trains)) if trains else np.empty(0)
+    pooled = np.sort(np.asarray(train, dtype=float).ravel())
     if pooled.size == 0 or m == 0:
         return rate_x, np.zeros(m)
 

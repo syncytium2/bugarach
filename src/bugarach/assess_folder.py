@@ -65,6 +65,87 @@ def is_baseline(region, designated: tuple[str, ...] | None = None) -> bool:
     return bool(name) and any(name.startswith(t) for t in (want or BASELINE_TOKENS))
 
 
+WHOLE_RECORDING_SOURCE = "whole recording (no regions declared)"
+"""The ``source`` :func:`generation_window` names when it had to assume."""
+
+
+class NoBaselineRegion(ValueError):
+    """The recording declares regions and none of them is a baseline.
+
+    Raised rather than returned, because the recording is skipped: coordination
+    properties are not taken from treatments (FOUNDATIONS §9). The message names
+    what the recording does call its periods, so the reader can designate one."""
+
+
+def generation_window(s, *, baseline_labels: tuple[str, ...] | None = None
+                      ) -> tuple[tuple[float, float] | None, str]:
+    """The span to measure one recording over, and who chose it.
+
+    Returns ``(window, source)``. ``window`` is ``(start_sec, end_sec)``, or
+    ``None`` for the whole recording; ``source`` is the sentence a report prints
+    beside the number, because the window is half of what a number means.
+
+    Two fallbacks, both kept deliberately:
+
+    * **No regions declared** — the whole recording, ``window=None``, with
+      :data:`WHOLE_RECORDING_SOURCE` as the source. The export contract gives such
+      a recording one implicit whole-recording window, so it is measured rather
+      than dropped, but a whole-recording window is an assumption and not a
+      baseline, and the source says so.
+    * **Regions declared, none a baseline** — :class:`NoBaselineRegion` is
+      raised and the recording is skipped.
+
+    Otherwise the longest baseline region wins, and the producer's own analysis
+    window wins inside it wherever the folder states one.
+
+    Moved here out of :func:`assess_folder` (2026-09-11) so the surrogate screen
+    reads the same rule rather than a sixth copy of it. The five older copies in
+    ``tools/`` are left for their own change.
+    """
+    regions = list(s.regions or [])
+    if not regions:
+        # A folder with no regions.csv is the common case for a lab that has
+        # not declared its periods. The contract gives such a recording one
+        # implicit whole-recording window, so it gets assessed rather than
+        # dropped — but the window it got is named in the report, because a
+        # whole-recording window is an assumption and not a baseline.
+        return None, WHOLE_RECORDING_SOURCE
+    base = [r for r in regions if is_baseline(r, baseline_labels)]
+    if not base:
+        # Name what IS there. The reader's next move is to designate one
+        # of these, and they cannot do that without knowing what the
+        # folder calls its periods — "none named as a baseline" alone
+        # sends them to open a CSV.
+        seen = sorted({(r.name or "(unnamed)") for r in regions})
+        how = (f"you designated {', '.join(baseline_labels)}"
+               if baseline_labels else
+               f"looked for {', '.join(BASELINE_TOKENS)}")
+        raise NoBaselineRegion(
+            f"{len(regions)} region(s), none named as a baseline "
+            f"({how}; this recording has {', '.join(seen)}) — "
+            f"coordination properties are not taken from treatments")
+    r = max(base, key=lambda r: r.end_sec - r.start_sec)
+    # The producer's own analysis window WINS wherever the folder states
+    # one. `start_sec`/`end_sec` are what happened; `analysis_*` is what
+    # to score, and they are rarely the same once a wash-in delay or a
+    # cap has been applied. Measuring the raw period while calling the
+    # result the analysis is the defect this line exists to prevent —
+    # and it was live for a few hours on 2026-08-18, with the viewer
+    # shading the analysis window and both assessors measuring the raw
+    # one.
+    # Who decided this region was the baseline travels with the window,
+    # because "we matched your word" and "we guessed from a built-in
+    # list" are different claims and only one of them is the reader's.
+    why = " (you designated it)" if baseline_labels else ""
+    if r.has_analysis_window:
+        return ((float(r.analysis_start_sec), float(r.analysis_end_sec)),
+                f"baseline region {r.name!r}{why}, "
+                f"analysis window as the folder states it")
+    return ((r.start_sec, r.end_sec),
+            f"baseline region {r.name!r}{why}, whole "
+            f"period (no analysis window sent)")
+
+
 @dataclass
 class RecordingAssessment:
     """One recording's assessment, or the reason there isn't one."""
@@ -174,52 +255,15 @@ def assess_folder(folder, *, stream: str | None = None,
         rec.stream = want
         rec.n_roi = s.streams[want].n_rois
 
-        regions = list(s.regions or [])
-        if not regions:
-            # A folder with no regions.csv is the common case for a lab that has
-            # not declared its periods. The contract gives such a recording one
-            # implicit whole-recording window, so it gets assessed rather than
-            # dropped — but the window it got is named in the report, because a
-            # whole-recording window is an assumption and not a baseline.
-            window = None
-            rec.window_source = "whole recording (no regions declared)"
-        else:
-            base = [r for r in regions if is_baseline(r, baseline_labels)]
-            if not base:
-                # Name what IS there. The reader's next move is to designate one
-                # of these, and they cannot do that without knowing what the
-                # folder calls its periods — "none named as a baseline" alone
-                # sends them to open a CSV.
-                seen = sorted({(r.name or "(unnamed)") for r in regions})
-                how = (f"you designated {', '.join(baseline_labels)}"
-                       if baseline_labels else
-                       f"looked for {', '.join(BASELINE_TOKENS)}")
-                rec.skipped = (
-                    f"{len(regions)} region(s), none named as a baseline "
-                    f"({how}; this recording has {', '.join(seen)}) — "
-                    f"coordination properties are not taken from treatments")
-                continue
-            r = max(base, key=lambda r: r.end_sec - r.start_sec)
-            # The producer's own analysis window WINS wherever the folder states
-            # one. `start_sec`/`end_sec` are what happened; `analysis_*` is what
-            # to score, and they are rarely the same once a wash-in delay or a
-            # cap has been applied. Measuring the raw period while calling the
-            # result the analysis is the defect this line exists to prevent —
-            # and it was live for a few hours on 2026-08-18, with the viewer
-            # shading the analysis window and both assessors measuring the raw
-            # one.
-            # Who decided this region was the baseline travels with the window,
-            # because "we matched your word" and "we guessed from a built-in
-            # list" are different claims and only one of them is the reader's.
-            why = " (you designated it)" if baseline_labels else ""
-            if r.has_analysis_window:
-                window = (float(r.analysis_start_sec), float(r.analysis_end_sec))
-                rec.window_source = (f"baseline region {r.name!r}{why}, "
-                                     f"analysis window as the folder states it")
-            else:
-                window = (r.start_sec, r.end_sec)
-                rec.window_source = (f"baseline region {r.name!r}{why}, whole "
-                                     f"period (no analysis window sent)")
+        # The rule lives in `generation_window` so the surrogate screen reads
+        # the same one; both fallbacks are there, unchanged.
+        try:
+            window, rec.window_source = generation_window(
+                s, baseline_labels=baseline_labels)
+        except NoBaselineRegion as e:
+            rec.skipped = str(e)
+            continue
+        if window is not None:
             rec.window = window
 
         try:

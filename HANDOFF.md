@@ -7,6 +7,14 @@
 > It concerns `learn/`, the surrogate nulls and the literature shelf; **this file concerns none of
 > those, and neither supersedes the other.** What it leaves open are decisions for Tony, not a
 > queue. When one thread lands, delete only its own file.
+>
+> ⚠ **A THIRD THREAD IS ALSO LIVE.** The surrogate *screen* — the overnight grid of 2026-09-11, both
+> of whose reevaluations were withdrawn after eleven-role reviews — hands off in
+> [`docs/handoffs/2026-09-12-both-reevaluations-withdrawn.md`](docs/handoffs/2026-09-12-both-reevaluations-withdrawn.md),
+> on branch `surrogate-screen-overnight` (PR #530, still draft). **Tony stopped it deliberately on
+> 2026-09-12** pending a discussion about which statistics may be pre-declared; do not write a third
+> draft and do not start its code findings. Same rule as above: none of these three supersedes
+> another, and each deletes only its own file.
 
 **In flight: [#466](https://github.com/syncytium2/bugarach/pull/466)** alone — the field-step
 figure, still held because it is a figure with a caption and was never murderboarded.
