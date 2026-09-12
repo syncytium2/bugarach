@@ -997,9 +997,9 @@ def score_cell(recs, draws: Draws, fs: dict, cell_id: str, scopes: dict,
 
     ``scopes`` maps a scope name (``"all"`` or a group) to its recording ids;
     ``split_info[scope]`` holds that scope's split differences
-    (:func:`split_diffs`). Holm is applied per cell, separately for each
-    yardstick's family of checks (every statistic in every scope). Returns a
-    JSON-ready dict.
+    (:func:`split_diffs`). Holm is applied per cell **and per scope**, separately
+    for each yardstick: the family is that scope's statistics, not every statistic
+    in every scope. Returns a JSON-ready dict.
     """
     real, per = summarize_draws(recs, draws, fs, cell_id)
     names = stat_names(fs) + ["ks_intervals"]
@@ -1076,11 +1076,18 @@ def score_cell(recs, draws: Draws, fs: dict, cell_id: str, scopes: dict,
         }
         out["scopes"][scope] = rows
 
+    # Holm WITHIN each scope, not across them (Tony's call, 2026-09-12). FOUNDATIONS §9
+    # requires the per-group numbers to be REPORTED beside the pooled one; it does not
+    # say the scopes are one family to be jointly corrected. Correcting across them
+    # multiplied the family by the number of scopes — 13 statistics became 65 checks —
+    # which is how a night at 100 splits and K <= 99 reached corrected floors of 0.64 and
+    # 1.00, where nothing could flag and the known-bad control least of all.
     for yard in ("paired_p", "band_p"):
-        keys = [(sc, nm) for sc in out["scopes"] for nm in out["scopes"][sc]]
-        adj = holm([out["scopes"][sc][nm][yard] for sc, nm in keys])
-        for (sc, nm), a in zip(keys, adj):
-            out["scopes"][sc][nm][yard + "_holm"] = float(a)
+        for sc in out["scopes"]:
+            in_scope = list(out["scopes"][sc])
+            adj = holm([out["scopes"][sc][nm][yard] for nm in in_scope])
+            for nm, a in zip(in_scope, adj):
+                out["scopes"][sc][nm][yard + "_holm"] = float(a)
     out["K"] = K
     return out
 

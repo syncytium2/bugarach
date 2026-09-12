@@ -772,8 +772,9 @@ def main(argv=None) -> int:
     meta = {"role": role, "folder": str(folder), "streams": {}, "settings": settings,
             "cell_hard_seconds": hard, "cell_mem_gb": args.cell_mem_gb,
             "jobs": args.jobs, "started": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
-            "holm_family": "per grid cell, separately for each yardstick's P "
-                           "(every statistic in every scope)",
+            "holm_family": "per grid cell AND per scope, separately for each "
+                           "yardstick's P (the family is that scope's statistics, not "
+                           "every statistic in every scope — changed 2026-09-12)",
             "n_recordings_loaded": len(slices)}
     work = Path(tempfile.mkdtemp(prefix="surrogate-screen-"))
     tasks = []
@@ -815,12 +816,14 @@ def main(argv=None) -> int:
             # Refuse a run whose corrected test cannot flag anything — the arithmetic
             # that was available on 2026-09-10 and computed on 2026-09-12, after a night
             # of compute whose every Holm-adjusted rate was zero by construction.
-            n_stat = len(ss.stat_names(prep["fs"]))
-            m_cell = n_stat * len(prep["scopes"])
+            # The family is one scope's statistics, because score_cell corrects within
+            # scope. Counting the scopes in as well is what made this arithmetic fatal.
+            n_stat = len(ss.stat_names(prep["fs"])) + 1        # + ks_intervals
+            m_cell = n_stat
             reach = ss.correction_reach(m_cell, args.splits, args.K, alpha=args.alpha)
-            print(f"  correction reach ({stream}): family {m_cell} = {n_stat} statistics "
-                  f"x {len(prep['scopes'])} scopes; after Holm the smallest reachable P "
-                  f"is band {reach['band_floor_holm']:.3g}, paired "
+            print(f"  correction reach ({stream}): family {m_cell} statistics, corrected "
+                  f"within each of {len(prep['scopes'])} scopes; after Holm the smallest "
+                  f"reachable P is band {reach['band_floor_holm']:.3g}, paired "
                   f"{reach['paired_floor_holm']:.3g} against alpha {args.alpha:g}")
             if not (reach["band_reaches"] and reach["paired_reaches"]):
                 msg = (f"stream {stream!r}: no Holm-corrected flag is reachable. Family "

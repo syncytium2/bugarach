@@ -288,6 +288,53 @@ def test_score_cell_do_nothing_is_never_flagged_by_the_paired_yardstick():
     assert res["movement"]["share_moved"] == 0.0
 
 
+def test_holm_corrects_within_each_scope_and_not_across_them():
+    """Tony's call, 2026-09-12, and the arithmetic that forced it.
+
+    FOUNDATIONS §9 wants each group's number reported beside the pooled one. That is a
+    reporting requirement; it does not make the scopes one family. Correcting across them
+    turned 13 statistics into 65 checks, and at 100 splits with K <= 99 that put the
+    corrected floors at 0.64 and 1.00 — so nothing could flag, the known-bad control
+    least of all, and a whole night's corrected rates were zero by construction.
+
+    Uniform dither at J = 20 frames on floor-4 trains leaks sub-floor intervals, so some
+    raw P are at the 2/(K+1) floor and the two family sizes give visibly different
+    adjusted values. With 39 draws that floor is 0.05: eight statistics lift it to 0.4,
+    twenty-four lift it past 1.
+    """
+    recs = _synthetic_recs(n_mice=6, per_mouse=2)
+    d = ss.draw_surrogates("uniform_dither", recs, 39, "ud", {"J": 20})
+    scopes = {"all": [r.recording_id for r in recs],
+              "G1": [r.recording_id for r in recs if r.group == "G1"],
+              "G2": [r.recording_id for r in recs if r.group == "G2"]}
+    res = ss.score_cell(recs, d, FS, "ud", scopes, {})
+    assert set(res["scopes"]) == set(scopes)
+
+    # Each scope's adjustment is Holm over THAT scope's statistics and nothing else.
+    for yard in ("paired_p", "band_p"):
+        for sc in res["scopes"]:
+            names_sc = list(res["scopes"][sc])
+            want = ss.holm([res["scopes"][sc][nm][yard] for nm in names_sc])
+            for nm, w in zip(names_sc, want):
+                got = res["scopes"][sc][nm][yard + "_holm"]
+                assert (np.isnan(got) and np.isnan(w)) or got == pytest.approx(w), (sc, nm)
+
+    # And the rule this replaced would have been strictly harsher somewhere: if a reader
+    # of this test ever flattens the scopes back into one family, that is the assertion
+    # that fails. (Band P is NaN here — no split differences are supplied — so the
+    # comparison is on the paired yardstick, which is the one with a sample-size floor.)
+    keys = [(sc, nm) for sc in res["scopes"] for nm in res["scopes"][sc]]
+    across = ss.holm([res["scopes"][sc][nm]["paired_p"] for sc, nm in keys])
+    pairs = [(res["scopes"][sc][nm]["paired_p_holm"], float(a))
+             for (sc, nm), a in zip(keys, across)
+             if np.isfinite(res["scopes"][sc][nm]["paired_p_holm"]) and np.isfinite(a)]
+    assert pairs, "no finite paired P to compare the two family sizes with"
+    assert any(within < acr - 1e-12 for within, acr in pairs), (
+        "within-scope correction is no looser than across-scope — has the family been "
+        "flattened back to every statistic in every scope?")
+    assert all(within <= acr + 1e-12 for within, acr in pairs)
+
+
 def test_a_cell_that_cannot_reach_min_K_in_its_budget_says_so():
     """Below min_K an exhausted budget stops the cell and says it fell short —
     the caller records it intractable. No budget runs every draw."""
