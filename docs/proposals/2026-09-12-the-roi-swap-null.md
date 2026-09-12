@@ -1,374 +1,640 @@
-# The ROI-swap null — a surrogate made of real trains, and a test for what it leaks
+# The ROI-swap null — a surrogate made of real trains
 
-> **Status: PROPOSAL. Nothing here has been run.** It is written to be attacked before it is
-> executed. Every number attributed to the 2026-09-11 screen was read from that run's own files on
-> 2026-09-12 and carries its source; every number attributed to the literature carries its paper.
-> Where a figure is quoted from another session's reading rather than re-derived here, it says so.
-
-**Decisions this document does not make.** It does not choose the band-statistic family size — that
-is Tony's and it stays open — and it does not score the thirteen band statistics against the floor,
-because doing so would make any later pre-declaration harder to defend. It does not prune any
-candidate from the 2026-09-10 no-pruning ruling; where it says a candidate may become unnecessary,
-that is a consequence for Tony to rule on, not a pruning.
-
----
-
-## 1. The goal, and why this preparation makes it hard
-
-The aim is a coordinated-event detector that **trains without hand labels**. The mechanism is
-contrastive: build a null in which cross-ROI coordination is absent but everything else is intact,
-train a discriminator to tell real recordings from null ones, and — if the null is right — the only
-way for it to win is to use coordination. The detector falls out of the discriminator.
-
-Everything rests on the null. This is not a modelling preference; it is a formal identity.
-Amarasingham, Harrison, Hatsopoulos & Geman (2012) — `amarasingham_2012_jitter_method.pdf` on the
-shelf — make the rule explicit: **what the resampling conditions on *is* the null hypothesis.** A
-surrogate is not an implementation detail underneath a test. It is the test's statement of what
-"no coordination" means. Get the surrogate wrong and the detector answers a question nobody asked.
-
-Three properties of this preparation make the standard toolkit a poor fit.
-
-**There are no trials.** Continuous calcium imaging of slices has no stimulus-locked repetition.
-Most of the surrogate literature recombines *across trials*, because trials are the structure it
-has. Here there is nothing to recombine along that axis.
-
-**Events are rare and slow.** Baseline per-ROI rates run 0.0052–0.0190 Hz interquartile
-(FOUNDATIONS §9, re-derived 2026-08-20 from the approved export folder). Most baseline windows
-contain no coordinated event at all, so the legitimate training signal is thin — which matters
-enormously later, because a shortcut does not have to be large to dominate a thin signal.
-
-**Within-ROI structure is sharply bounded.** Real recordings have a hard floor on within-ROI
-intervals: **0.40 s on the fast stream, 3.20 s on slow** (`reproduction/leak_table.csv`, columns
-`floor_sec`, every row). Nothing in real data violates it. That floor is the trapdoor the first
-design fell through.
+> **Status: PROPOSAL, revision 3. Nothing here has been run.** Written to be attacked, and already
+> attacked twice: revision 1 was reviewed by eleven roles and found unshippable, and a blind pass on
+> revision 2 found twenty-eight more defects, four of them serious. The reports are
+> [roles 1-4](../reviews/2026-09-12-the-roi-swap-null-roles-1-4.md) and
+> [roles 5-11](../reviews/2026-09-12-the-roi-swap-null-roles-5-11.md), and the run record is
+> [here](../reviews/2026-09-12-the-roi-swap-null_2026-09-12.md). **What that review changed is
+> listed in the revision note at the end** — read it before treating any claim here as new.
+>
+> Every screen number was read from the run's own files in
+> `<darkroom>/bugarach/2026-09-11-surrogate-screen/` on 2026-09-12. Literature claims carry their
+> paper, or are marked not-held.
 
 ---
 
-## 2. What has already failed, precisely
+## The ask
 
-### 2.1 The first detector died of a support violation
+**Approve the two arithmetic stages. They cost no compute, and either can kill the design before
+anything is trained.** If both pass, the training stage is a separate decision with a number
+attached. Tony said on 2026-09-12 that a session is live on the Windows workstation and can take the
+compute.
 
-The 2026-09-10 murderboard stopped a self-supervised detector whose null was independent per-onset
-dithering. The defect was not tuning. Dithering displaces each onset independently, so it
-manufactures within-ROI intervals shorter than any real one — and a single count of sub-floor
-intervals then separates real from surrogate **using no cross-ROI information whatsoever.**
+**Do not approve the group-identity side quest on this cohort.** Group is perfectly confounded with
+imaging day in the approved export — 42 dates, none carrying more than one group — so a positive
+result could not be told apart from a day effect. Section 8 says what a future cohort would need.
 
-The 2026-09-11 screen measured it. From `reproduction/leak_table.csv`, over 543 windows:
+⚠ **This does not reopen the surrogate screen.** Tony stopped that thread on 2026-09-12 with
+"do not run anything", and nothing here runs the screen or changes its verdict rule. This is a new
+construction, and approving its arithmetic is a separate decision.
 
-| stream | J | real share sub-floor | dithered share | leak AUC |
+Why it is worth asking at all: **every train in a chimera is a real train**, so the failure that
+killed the first label-free detector — a surrogate manufacturing within-ROI intervals real data
+never produces — is not reduced here, it is *unavailable*. That is the one property no amount of
+tuning gave the dither family.
+
+Why now: **pre-registering this experiment's statistic family is legitimate today and impossible
+later.** Once a single run exists, no declaration can be distinguished from a choice made with the
+numbers in view.
+
+**Two things this document does not decide.** The band-statistic family size is Tony's and stays
+open, and the thirteen band statistics are deliberately not scored against their floor. Where the
+plan says an intractable candidate may become *unnecessary*, that is a consequence for Tony to rule
+on and not a pruning under the 2026-09-10 no-pruning ruling.
+
+---
+
+## 1. What failed, and what it looks like
+
+The first label-free detector was stopped by its own murderboard on 2026-09-10. Its null was
+independent per-onset dithering, which displaces each onset separately and therefore manufactures
+within-ROI intervals shorter than any real one. A single count of sub-floor intervals then separates
+real from surrogate **using no cross-ROI information at all.**
+
+The 2026-09-11 screen measured it on the **senktide cohort** — 543 windows from 29 recordings and 18
+mice, not the `steps_excluded` folder the rest of this document uses. Each row below is the range
+over all six policy-by-time-base rows for that stream and J, so the table summarises all eighteen
+(`reproduction/leak_table.csv`, `reproduction/reproduction.json`):
+
+| stream | J (dither half-width, s) | real share sub-floor | dithered share | leak AUC |
 |---|---|---|---|---|
-| fast | 1.6 s | **0.0** | 0.307–0.331 | 0.653–0.666 |
-| fast | 2.5 s | **0.0** | 0.387–0.425 | 0.693–0.713 |
-| slow | 2.5 s | **0.0** | 0.173–0.180 | 0.586–0.590 |
+| fast | 1.6 | **0.0** | 0.306–0.331 | 0.653–0.666 |
+| fast | 2.5 | **0.0** | 0.387–0.425 | 0.693–0.713 |
+| slow | 2.5 | **0.0** | 0.173–0.180 | 0.586–0.590 |
 
-`real_share` is **exactly zero in all nineteen rows**. This is the sharpest possible form of leak:
-not a distribution that differs, but a region of the space where real data has *no mass at all* and
-the surrogate has plenty. A window containing one such interval is a certain negative. The
-discriminator that learned it was a sub-floor-interval detector wearing a coordination detector's
-name.
+`real_share` is exactly zero in **all eighteen** rows. The leak is a **support violation**: not a
+distribution that differs, but a region of the space where real data has no mass and the surrogate
+has plenty.
 
-### 2.2 The obvious control could not see it
+⚠ **Two honest qualifications on that table, both from the review.** The floor is *defined* as the
+shortest within-ROI interval present in the screen's own analysis windows, so `real_share = 0` cannot
+take another value — it is a definitional zero, and the support argument rests on the extraction
+physics rather than on that row. And the AUC column carries no information the share column does not:
+`AUC = 0.5 x (1 + share)` exactly, per the run's own report. One measurement, shown twice.
 
-The natural control — dither-of-dither — was blind, because its own reference class already
-contained the leak. A control drawn from the same broken construction cannot report the breakage.
-This is why §2.1's numbers had to come from a per-statistic leak screen and not from the control.
+⚠ **Where the floor comes from is an open question for the producer, not a finding.** The floors are
+0.39999999999997726 s and 3.1999999999999886 s, identical in every row. Revision 2 read their
+alignment to a 0.1 s grid as the signature of a pipeline constant, but **all 84 `steps_excluded`
+recordings have `frame_interval_sec` = 0.1**, so every interval is a multiple of 0.1 s and the
+alignment is no evidence at all. The run's own report says the extractor's shortest emittable
+interval "is the producer's number and is not known". That matters here because it decides whether a
+chimera inherits the floor automatically, and the answer is a conversation with the producer.
 
-### 2.3 Mixing does not repair a support violation, and we nearly believed it would
+**The obvious control could not see it.** Dither-of-dither was blind because its own reference class
+already contained the leak — which is why these numbers had to come from a per-statistic leak screen.
 
-A natural repair is to draw each training negative from a randomly chosen generator, so the model
-cannot learn "this is dither-shaped." Two sessions examined it independently on 2026-09-12 and
-reached the same verdict, which corrects an earlier claim made in this thread that mixing could
-rehabilitate leaky candidates.
+### Mixing does not repair a support violation
 
-Against a mixture, the optimal discriminator compares `p_real` with the weighted mean of the
-members' densities. Wherever **any** member puts mass where real data has none, that ratio is zero
-and the window is classified with certainty — no generator identification required. **Mixing
-divides the leak's share; it does not close the hole.** With `m` members the shortcut still pays on
-roughly `1/m` of negatives, and against a signal as thin as §1 describes, an easy fraction that size
-can still dominate the gradient early in training, which is when shortcuts are learned.
+A natural remedy is to draw each negative from a randomly chosen generator, so the model cannot learn
+one generator's shape. It was examined on 2026-09-12 and does not work, for the following reason.
 
-The correct split, and it is the load-bearing distinction of this document:
+Against a mixture the optimal discriminator compares `p_real` with the weighted mean of the members'
+densities — the noise-contrastive estimation result of **Gutmann & Hyvärinen (2012)**, JMLR 13:307-361,
+on the shelf at `ml/gutmann_hyvarinen_2012_nce.pdf`. Wherever **any** member puts mass where real
+data has none, that ratio is zero and the window is classified with certainty, with no generator
+identification required. **Mixing divides the leak's share; it does not close the hole.**
+
+The distinction this turns on:
 
 - **Support violations must be absent per member.** They are inherited by the union.
-- **Soft distributional differences** genuinely dilute under mixing.
+- **Soft distributional differences** dilute — but only when members deviate in *different
+  directions*. Every member of the dither family shifts the ISI distribution the same way, so for the
+  screen's actual candidates the soft part does not dilute either.
 
-A second, worse consequence: a mixture's implied null is a *disjunction* — "some member could have
-produced this" — so the test inherits its **weakest** member's destruction. A member that barely
-displaces onsets is near-real data sitting in the negative class, which is label noise aimed exactly
-at the feature the model is supposed to learn. If mixing is used at all, the rule is **mix over
-mechanisms, never over strengths**: every member destroys alignment finer than the same declared
-scale, and only *how* varies.
+A mixture's implied null is also a **disjunction** — "some member could have produced this" — so the
+test inherits its weakest member's destruction. If mixing is used at all, the rule is **mix over
+mechanisms, never over strengths**.
 
-### 2.4 Two reevaluations of the screen were withdrawn
+### A floor no surrogate can move, and the swap inherits it
 
-Both 2026-09-12 drafts were withdrawn under eleven-role review, the same defect twice: probe numbers
-used where production numbers existed. The record is
-[`2026-09-12-surrogate-screen-reevaluated_2026-09-12.md`](../reviews/2026-09-12-surrogate-screen-reevaluated_2026-09-12.md)
-and the plan is again the only authority for what was run. **This document does not restate their
-conclusions**; where it needs a screen number it reads the run files directly.
+Filed as
+[an empty baseline is a group feature](../todo/2026-09-12-an-empty-baseline-is-a-group-feature-and-39-percent-of-every-surrogate-is-the-data.md),
+and re-derived for this revision:
 
----
+**There is a floor on how many ROIs any surrogate can change, and it is about 38-39%** — fast 0.379,
+slow 0.390 on `steps_excluded`. Generators that need a per-ROI estimate leave more untouched: the
+ISI-dither and joint-ISI families 48-58%, pattern jitter about 55%. **The floor is not flat in J on
+fast** — trial shift runs from about 0.46 at J = 0.1 s down to 0.38 at J = 2.5 s — but its minimum is
+stable.
 
-## 3. What the literature already knows
+**That floor is the share of ROIs with no event in the baseline window, to three decimals** (0.379
+fast, 0.390 slow, recomputed from the export folder), so the untouched ROIs are empty baselines: a
+surrogate cannot move an onset that does not exist. On `cossart` the dither family and controls sit
+at 0.039-0.073, but the full candidate range there runs up to 1.000.
 
-**The construction is not new, and that is the point.** Recombining trains that were never
-simultaneous is the *shift predictor*, standard since Perkel, Gerstein & Moore (1967): pair neuron
-A's trial 1 against neuron B's trial 2, preserving each train's own structure while destroying any
-physiological relationship between them. The modern population version is the **pseudopopulation** —
-neurons pooled across sessions or animals — whose defining, documented consequence is that it
-**eliminates noise correlations.** An entire methodological literature exists on what that
-construction destroys, which is exactly the question being asked here.
+Tony's ruling of 2026-09-12 is that an empty baseline is a **feature of some groups** and matters as
+much as an active ROI.
 
-**Where it is absent is informative.** Stella, Bouss, Palm & Grün (2022), read directly from
-`stella_2022_comparing_surrogates.pdf` on the shelf, compare six methods — uniform dither (UD),
-dither with dead time (UDD), ISI dithering (ISI-D), joint-ISI dithering (JISI-D), trial shifting
-(TR-SHIFT) and window shuffling (WIN-SHUFF). **No cross-session or cross-preparation surrogate
-appears in the catalogue at all.** The reason looks structural rather than principled: that
-literature recombines across trials because its recordings have trials. Ours do not. Across
-*preparations* is the recombination axis continuous imaging actually offers.
+⚠ **This is a share of ROIs, not of training examples, and revision 2 conflated the two.** The
+discriminator's unit is a pooled window pair, and a pair is identical only when *every* ROI in that
+window is unchanged. Windows with no event in any ROI are **8.7% on fast and 12.4% on slow** — an
+upper bound on identical pairs. So the effect is not that 39% of negatives are coin flips; it is that
+empty ROIs **dilute every pooled feature**. And the question revision 2 left open is settled:
+`surrogate_discriminator.py` never refers to `unchanged`, so **there is no exclusion** of them.
 
-**The method that literature ranks best is the within-recording limit of what is proposed here.**
-Stella et al. found TR-SHIFT the most robust of the six and used it for their own experimental
-analysis. It shifts an entire train rigidly, so within-train structure survives untouched — the same
-virtue claimed below, obtained by displacement rather than by substitution. bugarach's `rigid shift`
-is that method, and it is already the only candidate in the 2026-09-11 screen surviving out to
-1.6 s fast / 1.4 s slow (per the outside read filed as
-[`join the leak results to the destruction results`](../todo/2026-09-12-join-the-leak-results-to-the-destruction-results.md);
-the join itself has not been made and is a prerequisite below).
-
-**And it carries a defect the substitution version does not have.** bugarach's rigid shift does not
-wrap, so it loses onsets at the window edge — a *count* difference, which is Stella's diagnosed
-failure mechanism for uniform dither arriving through another door
-([todo](../todo/2026-09-12-rigid-shift-without-wrap-loses-onsets-at-the-window-edge.md)). A
-substitution surrogate has no edge, because nothing is displaced.
+**The ROI swap inherits this exactly** — swapping an empty ROI for another empty ROI changes nothing.
+It is not a surrogate defect, no candidate choice fixes it, and it does not belong in a verdict rule
+that ranks candidates. It belongs in what the objective does with those ROIs, and the three options
+are accept, weight, or drop, with drop the one FOUNDATIONS §9 rules out by default because it
+conditions on having fired.
 
 ---
 
-## 4. The proposal: the ROI swap
+## 2. Why this preparation makes surrogates hard
 
-**Construction.** Take a target recording **S** with N ROIs over duration T. Replace **k of N** ROIs
-with duration-matched baseline trains drawn from *donor* recordings. Two knobs:
+Everything rests on the null, and not as a modelling preference. **Amarasingham, Harrison,
+Hatsopoulos & Geman (2012)**, *J Neurophysiol* 107(2):517-531, doi:10.1152/jn.00633.2011
+(`surrogates/amarasingham_2012_jitter_method.pdf`) make the rule explicit: what the resampling
+conditions on *is* the null hypothesis. Get the surrogate wrong and the detector answers a question
+nobody asked.
 
-- **swap fraction** `k/N` — 0 is real, 1 is a full chimera. A dose axis, not a binary.
-- **matching level** — the donor pool: within-session → within-mouse → within-group → global.
+Three properties of continuous slice imaging rule out the standard toolkit.
 
-Each chimera is **paired to its target**: same N, same T, same frame rate, same window. Donors are
-window-matched or not used; nothing is padded, resampled or stretched.
+**There are no trials.** Most of the surrogate literature recombines across trials because trials are
+the structure it has. There is nothing to recombine along that axis here.
 
-**Why it should work, stated as the property that killed everything else.** Every train in a chimera
-*is a real train*. Therefore, on any within-ROI statistic, the null's support is a **subset** of the
-real data's support. §2.1's failure mode is not reduced, not diluted, not controlled for — it is
-**unavailable by construction**. There is no sub-floor interval to manufacture, no onset lost to a
-window edge, no count changed by binarisation, because no onset is moved at all.
+**Events are rare and slow.** Baseline per-ROI rates run 0.0052-0.0190 Hz interquartile (FOUNDATIONS
+§9, re-derived 2026-08-20 from the approved export folder), so the legitimate training signal is
+thin — which matters enormously later, because a shortcut does not have to be large to dominate a
+thin signal.
+⚠ **That range does not reproduce, and the reading this proposal needs has a lower quartile of
+zero.** An open finding
+([the FOUNDATIONS rate range does not reproduce](../todo/2026-09-10-the-foundations-rate-range-does-not-reproduce.md))
+records that GLOSSARY calls the same two numbers a quartile across *recordings* where §9 calls them
+per-*ROI*. Recomputed from the export folder for this revision, none of the readings gives
+0.0052-0.0190:
 
-And destruction is **total rather than scale-limited**. Dither destroys alignment finer than J and
-leaves a free parameter that has to be chosen and defended. ROIs from different preparations were
-never coordinated at any scale, so the null is "these cells have no relationship," full stop. That
-is a cleaner statement of *no coordination* than any dither, and by Amarasingham's rule the
-statement is the hypothesis.
+| reading | fast (Hz) | slow (Hz) |
+|---|---|---|
+| per-ROI, zeros kept (the §9 rule) | p25 **0**, p75 0.0100 | p25 **0**, p75 0.0100 |
+| per-ROI, events only | 0.0017-0.0184 | 0.0025-0.0200 |
+| per-recording mean | 0.0036-0.0186 | 0.0024-0.0109 |
 
-**Where the risk goes, and it does not vanish.** ROIs within one slice share bath temperature,
-drift, photobleaching, imaging depth, health and rate scale. A chimera's ROIs do not. So a
-discriminator can win by detecting **preparation identity** rather than coordination — and that
-signal lives in the *cross-ROI* space, which is precisely the space the detector is supposed to use.
-This is the single objection on which the design stands or falls, and §5 is built to measure it
-rather than argue it.
+The leak prediction needs the first row, whose p25 is zero because roughly 38-39% of ROIs are empty.
+So **a "3.7x spread" is not the right way to state the heterogeneity** — the distribution is
+zero-inflated, and the across-ROI dispersion in a chimera is dominated by how many empty ROIs it
+draws, which is the same untouchable floor as above.
 
-Note the shape of the leak: because every train is individually real, the leak **cannot** be a
-per-ROI statistic. It must live in the *heterogeneity across ROIs within a recording* — real slices
-draw their ROIs from one preparation, chimeras from several. With a baseline per-ROI rate IQR of
-0.0052–0.0190 Hz, a 3.7× spread, the global matching level is very likely to leak. That is a
-prediction this plan tests first and cheaply.
-
-**One precondition, already failing on one stream.** `real_vs_real` — real against real — is the
-null of the null, and it must sit at chance or nothing here is interpretable. From
-`discriminator/steps_excluded/discriminator.csv`:
-
-| stream | accuracy | P | significant |
-|---|---|---|---|
-| fast | 0.5386 | 0.035 | **True** |
-| slow | 0.5060 | 0.415 | False |
-
-**Fast currently fails it**, and that same flag is the void reason stamped on 126 of 248 fast
-candidates. The code that constructed `real_vs_real` is not in the repo, not in the run folder and
-not in `reproduction/` — it lived in the workflow script and is now transcript-only. **Recovering
-what it pairs is stage 0's first task**, because if it pairs different recordings then it is already
-a measurement of this proposal's leak, and the fast answer is "detectable."
+**Within-ROI structure is sharply bounded** — the floor above, which is the trapdoor the first design
+fell through.
 
 ---
 
-## 5. The plan, with expected results and a stop-or-go at every stage
+## 3. The proposal: the ROI swap
 
-Stages are ordered so that **the cheapest test that can kill the design runs first.** No stage
-begins until its predecessor passes. Every stage emits its figure before its prose — the finding is
-visual and this repo's rule is to render it, not describe it.
+**The incumbent alternative, first.** `rigid_shift` — whole-train shifting — is already the only
+candidate in the 2026-09-11 screen surviving contiguously out to 1.6 s on fast. A reader should ask
+why not simply use it. Two reasons: bugarach's implementation does not wrap, so it loses onsets at
+the window edge, which is a *count* difference and therefore the same failure mechanism by another
+route; and its slow-stream survival is not a survival at all but a single isolated non-significant
+point at P = 0.08, failing at 0.7 s below it and at 2.5 s above.
+⚠ `circular_shift` and `window_circular_shift` also exist and *do* wrap, so the edge gap is narrower
+than it looks — but wrapping splices the record's end to its beginning, manufacturing one arbitrary
+and possibly sub-floor interval per ROI per window. That is a real comparison to make, and it belongs
+on the ladder below rather than in a paragraph.
 
-### Stage 0 — recover the precondition (no compute)
+**Construction.** Take a target recording with N ROIs over duration T. Replace **k of N** ROIs with
+duration-matched baseline trains, **each drawn from a different donor recording**, so no two swapped
+ROIs were ever simultaneous with each other or with the target. Two knobs: the **swap fraction**
+`k/N`, from 0 (real) to 1 (full chimera); and the **matching level**, the donor pool.
 
-Establish what `real_vs_real` pairs, from the harness archives that hold the workflow script. Then
-state whether fast's 0.5386 is a preparation-identity signal or an artefact of how pairs were drawn.
+Each chimera is paired to its target: same N, same T, same frame rate, same window. Donors must
+supply a baseline stretch of at least the target's duration **at the target's `frame_interval_sec`**,
+and are otherwise not used. Nothing is padded, resampled or stretched.
 
-- **Expected if the design is viable:** `real_vs_real` pairs windows *within* a recording, making
-  fast's flag a windowing artefact and leaving this proposal's leak unmeasured.
-- **Expected if not:** it pairs across recordings, and 0.5386 with P = 0.035 is a direct measurement
-  that preparation identity is detectable on fast.
-- 🛑 **STOP if** it pairs across recordings *and* the effect survives stage 1's matching ladder. The
-  swap is then leaking on the stream that matters most, and the design needs the matching ladder to
-  rescue it before any model is trained.
-- ✅ **GO otherwise** — and either way, record the answer, because 126 voided candidates depend on it.
+**What is won.** On any within-ROI statistic the null's support is a **subset** of the real data's
+support, so a support violation is unavailable. No sub-floor interval can be manufactured, no onset
+lost to a window edge.
 
-### Stage 1 — the arithmetic leak prediction (no model, no GPU, minutes)
+**What is not won, and revision 1 got this wrong.** Subset-of-support rules out a support violation;
+it does **not** rule out a per-ROI *density* difference, and several are available using nothing but
+untouched real trains:
 
-For each matching level, compute the **across-ROI dispersion** of per-ROI summary statistics — rate,
-median ISI, event width, burstiness — within real recordings and within chimeras. No training, no
-discriminator: just the distributions.
+- **Window position within the donor's own recording.** Rate drifts across a baseline window —
+  measured here, **upward**: the median recording has more events in the second half, by 4.3% of its
+  total on fast (58% of recordings) and 14.7% on slow (71%). Donors not matched on within-window
+  position therefore carry systematically different rates. (Revision 2 asserted the drift ran down,
+  without a source; the data say otherwise.)
+- **Donor sampling weight.** Sampling uniformly over ROIs lets large-N recordings dominate the pool;
+  uniformly over recordings does not. The two give different chimera marginals and only one matches
+  the real class.
+- **Duration eligibility.** Long-T targets can only draw from long-baseline recordings. **Small on
+  this folder:** 75 of 84 baseline windows are exactly 1200 s, 8 are 1140 s and one is 1020 s.
+- **The encoder.** `encode()` truncates rather than rounds, and **clips** out-of-range onsets onto
+  frames 0 and n-1 rather than dropping them, so a one-frame duration mismatch manufactures a
+  boundary pile-up. And truncation bites even at *equal* frame intervals, because floors are stored
+  just under the grid: `int(3.1999999999999886 / 0.1)` is **31**, not 32. On `steps_excluded` every
+  recording shares `frame_interval_sec` = 0.1, so a grid mismatch cannot arise there — but **`cossart`
+  varies across nine values from 0.0926 s to 0.1190 s**, and a donor re-quantised onto a different
+  target grid can land an interval **below the floor**, the exact violation this design claims to make
+  unavailable. Hence the frame-rate clause in the construction, and the builder assertion below.
 
-**Figure:** dispersion of per-ROI rate, real vs chimera, one panel per matching level, with the real
-distribution as the reference band.
+So the honest claim is: **the chimera cannot commit a support violation; it can still differ in
+per-ROI density, and that is a testable property of the builder rather than a guarantee.**
 
-- **Expected:** dispersion rises monotonically as matching loosens. Global should separate clearly;
-  within-mouse should nearly overlap the real band.
-- ✅ **GO if** at least one matching level puts chimera dispersion inside the real band. That level
-  is the design's operating point and everything downstream uses it.
-- 🛑 **STOP if** *every* level separates, including within-session. That would mean the swap is
-  detectable from ROI heterogeneity alone at any achievable matching, and no amount of training
-  discipline fixes it. Report it as a negative result about the construction and stop.
+**Where the risk goes.** ROIs within one slice share bath temperature, drift, photobleaching,
+imaging depth, health and rate scale; a chimera's do not. A discriminator can therefore win by
+detecting **slice identity**, which lives in the cross-ROI space the detector is supposed to use.
+This is the largest of the three objections the plan must survive.
 
-This stage is the whole design's cheapest kill shot and it predicts the slope of stage 3
-arithmetically. **Run it before anything else is built.**
+**And the null is compound.** The same Amarasingham paper discusses the nearest relative of this
+construction. Jitter is its worked example; trial shuffling is, in its own words, "another, familiar,
+example" of conditional inference, and of it the paper says (emphasis added):
 
-### Stage 2 — construction validity (no training)
+> "an excess of synchronies in the original pairing, relative to the trial-shuffled pairings,
+> **rejects the hypothesis that all pairings are equally likely**, not a hypothesized lack of
+> precision of spike timing."
 
-Run the **existing per-ROI-only discriminator** with real as one class and chimera as the other.
-Because every chimeric train is a real train, a discriminator that sees one ROI at a time has, by
-construction, *identical* marginal distributions in both classes.
+⚠ Trial shuffling recombines trials *within* a session; the ROI swap recombines *across*
+preparations. The paper's caution transfers by analogy, not by direct treatment.
 
-- **Expected:** chance. Exactly chance.
-- 🛑 **STOP if** it beats chance. That is not a finding about the preparation; it is a **bug in the
-  chimera builder** — duration mismatch, resampling, a donor pool that is not baseline-only, or
-  leakage of the target's own ROIs into its donor set. Fix and re-run.
-- ✅ **GO on** chance.
+The ROI swap's null is "these ROIs are independent **and** exchangeable across slices". A rejection
+does not isolate coordination, and the plan's ladder exists to separate the conjuncts rather than to
+pretend they are one. **That paper also recommends jitter over trial shuffling** when the goal is
+fine-temporal correlation, because shuffle-correction flags "because of slow, common rate fluctuations
+alone". Shared slow fluctuation across ROIs in a slice is plausible — common bath, drift and bleaching
+— though this document has not measured it. Citing the paper as authority for this construction while
+omitting that recommendation would be selective, so it is stated here and the plan is built against it.
 
-This stage cannot succeed and is therefore worth running: its only possible outcome is catching our
-own error before a model launders it into a result.
-
-### Stage 3 — the coordination test (compute: the workstation)
-
-Train `tube` to discriminate real (k=0) from chimera (k=N) at **every matching level**, and across
-the dose axis `k/N ∈ {0.25, 0.5, 0.75, 1.0}`.
-
-**The measurement is not the accuracy. It is the slope across the matching ladder.** Coordination is
-destroyed equally at every level, so a tube using coordination gives a flat line; any rise from
-within-mouse to global is preparation-identity leak, measured rather than asserted.
-
-> **Intercept is signal. Slope is leak.** That decomposition is why the ladder is the design and not
-> a refinement of it.
-
-**Figure:** accuracy against matching level, one line per swap fraction, with the stage-1 dispersion
-prediction overlaid.
-
-- **Expected if the design works:** a flat, well-above-chance line — high accuracy that does not
-  care where donors came from — and accuracy rising smoothly with `k/N`.
-- **Expected if it leaks:** accuracy tracking the stage-1 dispersion curve, and a step up as soon as
-  `k/N > 0` rather than a smooth rise, because one foreign ROI is enough to betray provenance.
-- ✅ **GO if** the slope is flat within seed noise at some matching level.
-- 🛑 **STOP if** slope dominates intercept everywhere. Self-supervision via ROI swap is then
-  unavailable on this data — **which is a result about the preparation and worth writing up, not a
-  failure.** The thread's missing exit criterion is filed as
-  [a todo](../todo/2026-09-12-the-label-free-detector-thread-has-no-exit-criterion.md); this is it,
-  stated before the numbers exist.
-
-### Stage 4 — the ablation that decides what was learned
-
-`tube`'s `bright` channel is a raw-brightness bypass the DC-free kernel never reaches — an absolute
-local activity level, which is exactly where an aggregate rate difference between preparations would
-enter. Re-run stage 3 with that channel removed. Dropping it is already filed as item 4 of
-[the learned-detectors handoff todo](../todo/2026-08-16-learned-detectors-handoff.md).
-
-- **Expected if the tube learned coordination:** accuracy survives, because centre-surround
-  structure is what the kernel computes.
-- **Expected if it learned the leak:** accuracy collapses toward the stage-1 dispersion prediction.
-- ✅ **GO if** accuracy survives ablation. That is the affirmative result this whole plan exists to
-  produce.
-- ⚠ **Neither outcome is a stop** — this stage *interprets* stage 3 rather than gating it. But an
-  unablated number must never be reported on its own after this stage exists.
-
-Note `tube`'s own standing limitation, from its docstring: three probes on three training runs put
-this channel's effect an order of magnitude apart and one was not monotonic. **Multiple seeds are
-mandatory here**, not advisory.
+⚠ **One more cost of totality.** A null that destroys everything identifies nothing: the negative
+class now differs from the positive on many axes and gradient descent takes the cheapest. This is
+Elsayed & Cunningham's objection (`surrogates/elsayed_cunningham_2017_byproduct.pdf`), and
+Amarasingham, Geman & Harrison 2015 on nonidentifiability is the same point
+(`surrogates/amarasingham_2015_ambiguity_nonidentifiability.pdf`). It also breaks a condition of noise-contrastive
+estimation. Gutmann & Hyvärinen's Theorem 1 guarantees the objective has **no other extrema** only if
+the *noise* density is nonzero wherever the data density is — a condition for **uniqueness**, not for
+the maximum to exist — and this design deliberately does the opposite. The practical consequence: the
+learned logit need not be a density ratio where real data is coordinated and the null is not, so
+**accuracy near 1 carries no effect-size information** and must be reported alongside a calibrated
+measure.
 
 ---
 
-## 6. The side quest: can `tube` learn group identity?
+## 4. Precedent
 
-A separate question that the same construction answers, and worth asking on its own terms rather
-than only as a confound.
+Recombining trains that were never simultaneous is the **shift predictor**, whose construction goes
+back to Perkel, Gerstein & Moore (1967), *Biophys J* 7(4):419-440, **"II. Simultaneous spike
+trains"**, doi:10.1016/S0006-3495(67)86597-4. ⚠ **Not held** — an open ask in
+[`lit_needed.md`](../lit_needed.md), and the *name* is later usage: Amarasingham et al. call it the
+shuffle predictor and Pipa et al. credit König (1994).
 
-FOUNDATIONS §9 records that treatment effects run in **opposite directions by group** — ORX up, male
-unchanged, diestrus down under TTX — so groups genuinely differ. Whether that difference is visible
-to a learned detector, and *where it lives*, is unknown.
+The modern population version is the **pseudopopulation**, whose defining consequence is that it
+eliminates noise correlations. ⚠ **Uncited and therefore not yet admissible.** The obvious shelf
+candidate does not support it — `elsayed_cunningham_2017_byproduct.pdf` contains no occurrence of
+"pseudopopulation" and one of "noise correlation", in a reference title. Cunningham & Yu (2014),
+*Nat Neurosci* 17:1500-1509, doi:10.1038/nn.3776 is a candidate source, now an open ask in
+`lit_needed.md`; **nobody here has read it**, so this paragraph claims nothing until someone has.
 
-`tube` is an unusually clean instrument for this because **cells are summed**: the architecture never
-sees which ROI is which and runs at any cell count. So it cannot memorise ROI identity, and whatever
-group signal it finds must be carried by aggregate temporal structure.
+**Where it is absent.** Stella, Bouss, Palm & Grün (2022), *eNeuro* 9(3), ENEURO.0505-21.2022
+(`surrogates/stella_2022_comparing_surrogates.pdf`) compare six methods — uniform dither, dither with
+dead time, ISI dithering, joint-ISI dithering, trial shifting and window shuffling. **No
+cross-session or cross-preparation surrogate appears.** Verified by full-text search.
 
-**Design.** Multiclass labels (DI / MALE / ORX / OVX), three conditions:
+⚠ **That absence is weaker evidence than revision 1 claimed.** A reviewer reports that cross-subject
+recombination is a routine null in hyperscanning inter-brain synchrony, where "pseudo-pairs" of
+participants who never interacted serve as the control. ⚠ **Not held and not cited** — that report came
+from search results, not from reading a paper, so it is a lead rather than a finding. Either way,
+absence from one catalogue in one field is not absence. Three fields remain unsearched: contrastive
+learning on neural time series, fMRI surrogate construction, and ecology/genomics null models.
+
+**Trial shifting is `trial_shift`, not `rigid_shift`.** bugarach ships both as separate candidates.
+Stella shifts real experimental trials, which this data does not have, so `trial_shift` **adapts** the
+method to pseudo-trials cut at silences longer than 2J + f, where `f` is the pseudo-trial parameter.
+It descends from
+Pipa et al. (2008), whose own antecedent is the multiple-shift method of **Grün et al. (1999)**,
+*J Neurosci Methods* 94:67-79 (⚠ not held, now an open ask).
+
+⚠ **Stella's ranking is not citable here.** `docs/INDEX.md` row 125 carries a standing prohibition —
+their discussion says the surrogates agree and their figure 10 says they do not, with the recommended
+method the one that misses a pattern the other four find (uniform dither having been set aside). Their *measurements* are citable and are
+what this document uses. The 2026-09-10 ruling records that the recommendation was a tiebreak on ease
+of explanation, not a performance claim.
+
+**The design mechanism is not ours either.** Training a classifier to separate two samples and reading
+its held-out accuracy is a **classifier two-sample test**, Lopez-Paz & Oquab (2017), ICLR
+(`ml/lopezpaz_oquab_2017_c2st.pdf`), which also supplies the null the plan below uses.
+
+⚠ **Nobody has asked the people who would know.** No one has written to the Grün group asking whether
+a cross-session surrogate has been tried. That is the cheapest outstanding check on this whole
+section. Per CLAUDE.md, cite any reply, never quote it.
+
+---
+
+## 5. The precondition, and a finding that outlives this proposal
+
+`real_vs_real` — real against real — is the null of the null. Revision 1 said it was failing on the
+fast stream and that the code building it was lost. **Both were wrong**, and the correction matters
+more than the proposal.
+
+The code is `negative_control_pairs` in `surrogate_discriminator.py` on the screen branch. Its
+docstring answers the question outright: each real window is paired with **another real window of its
+own recording**, orientation drawn at random. It pairs *within* a recording, so it measures machinery
+— folds, scaling, the null — and can measure no slice-identity leak at all. The arithmetic agrees:
+candidates run at 1669 pairs, `real_vs_real` at 830.
+
+And it is not failing. `controls/negative_seeds.json` holds **20 seeds at flag_rate 0.05** with mean
+accuracy 0.4948, below chance. The 0.5386 / P = 0.035 that revision 1 quoted is **seed 0**, the single
+flagged draw of twenty — a negative control flagging at exactly its nominal rate.
+
+> ⚠ **126 of 248 fast candidates were voided on that seed-0 coin flip, while the 20-seed flag rate
+> sat in the same run folder.** Among fast candidates that returned a number at all it is 126 of 126.
+> That is a defect in how the voiding rule read the control, not a fact about the preparation, and it
+> is worth its own todo regardless of what happens to this proposal.
+
+Revision 1 committed the same probe-for-production substitution that withdrew both 2026-09-12
+reevaluations, in a document that cited those withdrawals. **Third occurrence in this thread.**
+
+---
+
+## 6. The plan
+
+Two stages cost nothing and either can end the design. The third costs real compute and is a separate
+decision. Every gate names a statistic, a threshold and a unit; revision 1's gates were qualitative
+and, by the review's judgement, could not have been adjudicated by two readers to the same answer.
+
+**Units of analysis, stated once because they differ by stage:** the dispersion stage's unit is the
+recording (84, clustered in 44 mice); the discriminator stage's is the window pair (1669), clustered
+in recording then mouse; the training stage's is the **recording**, because slice identity is a
+per-recording property; the group side quest's is the **mouse** (44 total, 10-12 per group, from
+`slices.csv`).
+
+**Folds are grouped by mouse throughout, and donors are drawn only from the target's own fold.** A
+chimera has k+1 contributing mice, so a donor whose mouse sits in the test fold would otherwise put
+test data in training. `mouse_folds` exists and takes one mouse label per unit, so this needs a
+wrapper, not a new fold maker.
+
+**Which folder.** `steps_excluded` first, because the whole-field-step contaminant was removed there
+and every recording shares one frame interval; `cossart` second, because the *proposed* exit
+criterion asks for both folders (that criterion is still an open todo, and its narrowed branch
+proceeds on one) and because the untouchable floor differs roughly tenfold between them.
+
+### Stage one — the arithmetic leak prediction (no model, minutes)
+
+For each matching level, compute the **across-ROI dispersion** of per-ROI summary statistics within
+real recordings and within chimeras. Use the definitions the project already has, in their own units:
+rate as `events/win_dur` Hz (`bench.py`), burstiness as the Fano factor of 60 s bins
+(`count_dispersion.fano`), median ISI, event width in frames where `has_width`.
+
+**Figure `dispersion_ladder`:** rows are statistics, one shared x axis of matching level on the bottom
+row only, one point per chimera with jitter, reference band = 5th-95th percentile of the same
+statistic over real recordings. Matching level and donor count go in each row's y-axis label.
+
+- **Expected:** dispersion rises monotonically as matching loosens; within-mouse close to the real
+  band, global clearly outside it.
+- **GO if** the chimera dispersion at some matching level lies inside the reference band on all four
+  statistics, by a **TOST equivalence test** with the margin declared before the run. The **loosest**
+  qualifying level is the chosen matching level.
+- **STOP if** every level separates, including within-session. The swap is then detectable from ROI
+  heterogeneity alone at any achievable matching, and no training discipline fixes it. That is a
+  negative result about the construction and it gets written up.
+
+⚠ **This stage predicts less than revision 1 claimed.** It measures dispersion of first-order
+summaries, and the confounds that matter most — whole-field brightness steps, shared rundown, common
+motion — are cross-ROI and *temporal*, and move none of these four numbers. Two further statistics
+are therefore required, not optional: the **population-sum Fano factor** and the **pairwise
+frame-coincidence count**, real against chimera, per recording.
+
+### Stage two — construction validity (no training)
+
+Assert what the builder claims, directly, rather than inferring it from a classifier:
+`set(chimera onsets) == set(donor onsets)` after encoding, equal `n_frame` per pair, and the
+encoder's boundary clip never firing. These are free and they catch the encoder defects named above.
+
+Then run the existing per-ROI discriminator, real against chimera.
+
+⚠ **Revision 1 expected "exactly chance" here and would have stopped on a correct build.**
+`pool_symmetric` pools per-ROI columns with `("mean", "sd", "min", "median", "max")`, so `sd_count`
+**is** the across-ROI dispersion stage one measures — and on seed 0 of the fast `real_vs_real` control
+it is the top-weighted feature. (Per-seed feature weights are not stored, so this rests on the one
+flagged seed — the same single-seed reliance section 5 warns against; it is suggestive, not
+established.) This stage is therefore the powered version of stage one, not an
+independent check, and a result above chance is the design's predicted leak rather than a builder
+bug. The builder assertions above are what catch builder bugs.
+
+**Figure `chimera_marginals`:** four panels, real and chimera densities overlaid, so that when they
+separate, *which* panel separates names the cause — width says resampling, rate says the donor pool is
+not baseline-only, count says duration mismatch.
+
+- **GO if** the assertions hold and the discriminator's accuracy is within the declared equivalence
+  margin of chance, tested against the binomial null at the **mouse** level, not the pair level.
+  ⚠ At 44 mice the exact minimum detectable accuracy is about **0.684**, so this gate can only rule
+  out a large leak. A GO here is weak evidence, and the margin must be declared knowing that.
+- **STOP if** an assertion fails. Fix the builder and re-run.
+
+### Stage three — the coordination test (compute: the workstation)
+
+Train `tube` — the project's 1,149-parameter center-surround detector, which averages over cells and
+so never sees which ROI is which — to discriminate real recordings from chimeras, across matching levels
+and swap fractions `k/N` in {0.25, 0.5, 0.75, 1.0}, multiple seeds per cell.
+
+⚠ **Two things this requires that do not exist.** `learn/train.py` is a supervised per-frame trainer
+on *generated* recordings; there is no window-level real-versus-surrogate path, and turning tube's
+per-frame score into a window logit is a weak-label pooling choice that has to be declared because it
+determines what "the detector falls out of the discriminator" means. And the ablation below needs a
+new registered architecture, because the `bright` bypass is hardcoded and ADR-0005 makes one file one
+architecture. **Budget this stage as new code plus compute.**
+
+**Revision 1's decomposition — "intercept is signal, slope is leak" — is withdrawn.** It assumed every
+nuisance destroyed by the swap is monotone in matching looseness. The two largest documented
+confounds in this tree are not: whole-field brightness steps make **74% of fast and 82% of slow
+cells** appear to fire at once, and motion-correction pinning drives 12 ROIs in four recordings to a
+common value. Both are real-only, both are destroyed equally at every rung, and both therefore land
+in the *intercept* and would be scored as coordination. The ladder is a leak detector for static
+compositional heterogeneity and is silent on every temporal leak.
+
+What replaces it:
+
+- **A metric x axis.** Regress accuracy on the *measured* donor-target dispersion distance from stage
+  one, not on the ordinal rung, and report the **intercept at distance zero with a confidence
+  interval** over mice.
+- **A zero-leak anchor.** Add a **within-recording, across-time** rung: replace an ROI with the same
+  recording's other ROIs re-origined from a disjoint segment. Bath, drift, depth and rate scale are
+  then identical by construction, so the anchor is measured rather than extrapolated. This is the
+  large-lag limit of `circular_shift` and is nearly free.
+- **A planted-artifact control.** Insert a synthetic whole-field step into held-out real windows and
+  show accuracy does not move. Without it, "the tube learned to recognise acquisition artifacts"
+  remains the strongest alternative explanation for any positive result.
+
+**Figures:** `accuracy_vs_dispersion` (metric x, the stage-one prediction as a reference line) and
+`accuracy_vs_dose` (x = k/N, where the "step at k/N > 0" prediction actually lives). Each seed drawn
+as a thin line with the mean heavy — never a mean with an error bar, because tube's own docstring
+puts three probes on one channel an order of magnitude apart with one non-monotonic.
+
+- **GO if** the intercept at zero dispersion distance is above chance by more than the declared
+  margin, the planted-artifact control does not move accuracy, and the result survives the ablation
+  below.
+- **STOP if** accuracy tracks the dispersion regression with an intercept indistinguishable from
+  chance. Self-supervision via ROI swap is then unavailable on this data — **a result about the
+  preparation, worth writing up.** The thread's proposed exit criterion is written for the screen
+  rather than for this construction, so this is an additional criterion, not a discharge of that one.
+
+**The ablation.** Re-run without tube's raw-brightness bypass, which carries absolute local activity
+straight past the DC-free kernel.
+⚠ It does not separate what revision 1 said it did. The bypass is a *level*; a composition leak
+expressed as the **variance** of the summed trace survives its removal, because the kernel cancels DC
+and not variance — and for a sum of per-ROI processes at matched mean rate, greater rate dispersion
+*lowers* that variance. The ablation therefore needs a **rate-matched-donor arm** to be interpretable:
+donors selected to match the replaced ROI's rate within a tolerance, compared against unmatched.
+
+---
+
+## 7. Residual risk, and what is not settled
+
+**Open, and not this document's to close.** The band-statistic family size, and which of the
+thirteen statistics sit on the floor — deliberately not looked at, and still not looked at here. One
+thing about that family *is* already settled and is not a per-statistic result: the screen's own gate
+returns `correction_reach(m=13, n_splits=100, K=99)` = `band_reaches: False`, so **a family of all
+thirteen cannot flag on the night's 100 splits**. That is arithmetic about the family's size and says
+nothing about any statistic. Whether the intractable joint-ISI candidates are bought is also open; if
+the swap succeeds they may become unnecessary, which is a consequence to rule on and not a pruning.
+
+**Prerequisite.** The leak-by-destruction join has never been made though both halves sit in the
+2026-09-11 run folder ([todo](../todo/2026-09-12-join-the-leak-results-to-the-destruction-results.md)).
+Stage one consumes it rather than re-deriving it.
+
+**Power, and it is not reassuring.** At 830 pairs the exact minimum detectable accuracy is about
+**0.544**, and the 0.5386 that `real_vs_real` was voided on sits **below** it — power at 0.5386 is only
+about 0.70. So the negative control is less powered than the tests it gated. Those figures treat pairs
+as independent; the gates in this plan are declared at the **mouse** level, where at 44 mice the
+floor is about 0.684. At 1669 independent pairs the critical accuracy is 0.521 and power against a
+true 0.52 is about 0.49 — a coin flip — so a small chimera leak is unlikely to be caught by the
+construction-validity stage while remaining fully available to tube. The screen's own machinery
+already reports `powered: False` for **seven** of twelve positive controls — fast J 0.8, 1.6, 2.5 and
+slow J 2.5, 2.8, 5.6, 11.2 — with `required_mice` up to 104 against 44.
+
+**The unchanged-ROI question is settled, and it changes the power picture.** `surrogate_stats` masks
+not-estimable ROIs when scoring preservation, and `surrogate_discriminator.py` **never refers to
+`unchanged` at all** — there is no exclusion. Because the discriminator pools whole windows, empty ROIs
+do not make pairs into coin flips; they dilute every pooled feature, which lowers the discriminator's
+sensitivity most on the folder with the most empty baselines. Every "no leak detected" on
+`steps_excluded` should be read with that in mind.
+
+**Cost.** Stages one and two need no compute worth naming and run anywhere. Stage three is
+matching levels x swap fractions x seeds, doubled by the ablation, and the seed count must be declared
+before the first run because the gate is a function of it. The compute can go to the Windows
+workstation session Tony named on 2026-09-12. `<darkroom>/bugarach/2026-09-11-surrogate-screen/` is
+claimed under board block 065; **a new run claims its own folder before writing.**
+
+---
+
+## 8. Second use of the same construction: group identity
+
+Optional, priced separately, and decided separately. It shares the instrument and one of its arms
+bears on the leak above, which is why it is here rather than elsewhere.
+
+> **As designed, this cannot run on this cohort, and the reason is in `slices.csv`.** The approved
+> export holds 84 recordings on **42 imaging dates, and not one date carries more than one group.** No
+> mouse was imaged on more than one date. At day resolution, **group and imaging day are perfectly
+> confounded**: anything that varies by day — laser power, bath temperature, bleaching, the day's
+> slice health — is indistinguishable from group. A classifier that learns group from these recordings
+> cannot be told apart from one that learns the day, and no fold rule over this cohort fixes that.
+>
+> What partially survives: at **month** resolution, 9 of 22 months contain more than one group. A
+> design that treats month as the batch could separate group from a month-scale effect, **but only on
+> the assumption that the confound operates at month rather than day timescale** — which is exactly the
+> thing that cannot be checked from this data. So the honest status is: **not runnable as a clean test;
+> runnable as an exploration whose positive result would be uninterpretable.** Tony's call whether that
+> is worth any compute. The rest of this section is kept because it specifies the design a future
+> cohort with groups interleaved across days would need.
+
+⚠ **The motivating premise is also weaker than revision 1 stated.** FOUNDATIONS §9 records a group ×
+*treatment* interaction — ORX up, male unchanged, diestrus down **under TTX** — and this design trains
+on **baseline** trains. Groups can have identical baseline statistics and opposite TTX responses, so
+whether groups differ *at baseline* is an **open question**, not a consequence of §9.
+
+`tube` is a clean instrument for it because cells are pooled, so the model cannot memorise which ROI
+is which and any group signal must be carried by aggregate structure. (The code takes a mean, not a
+sum; permutation invariance holds either way, but the mean makes that channel a per-ROI activity
+level — which is the quantity most likely to carry group.)
 
 | condition | coordination | group identity | what it isolates |
 |---|---|---|---|
 | real recordings | intact | intact | is group visible at all? |
-| within-group chimera | destroyed | intact | group signal *without* coordination |
+| within-group chimera | destroyed | intact | group signal without coordination |
 | cross-group chimera | destroyed | mixed | the floor |
 
-**The informative contrast is real vs within-group chimera.**
+**The informative contrast is real against within-group chimera.** If accuracy holds, group lives in
+single-ROI statistics aggregated over cells. If it collapses, group lives in the coordination
+structure — the more interesting outcome, and the one with the most ways to be wrong:
 
-- **If accuracy holds on within-group chimeras:** group identity lives in **single-ROI statistics**
-  aggregated over cells — rates, widths, shapes. Unsurprising, still worth knowing, and it means
-  group is a nuisance variable the coordination test must match on.
-- **If accuracy collapses:** group identity lives in the **coordination structure itself**. That is
-  a result about the preparation rather than about the detector, and a considerably more interesting
-  one — it would say groups differ in *how cells coordinate*, not in how often they fire.
+- **Train and test within condition**, never train-on-real/test-on-chimera, or a collapse is fully
+  explained by distribution shift.
+- **Fold by mouse nested in acquisition batch, with batch defined before the run.** Mouse folds alone
+  do not break a batch confound, and the within-group chimera *preserves* the batch signature — so
+  "group lives in coordination" and "group lives in a day signature that co-varies with group" are not
+  separated by the fold rule alone. On this cohort that crosstab has been produced and it is the reason
+  for the box above.
+- **Sex is confounded with group** — MALE and ORX are male, DI and OVX female — so report the 4x4
+  confusion matrix, which shows it immediately.
+- **Chance is not 0.25** with unequal classes; use balanced accuracy against a mouse-level label
+  permutation. At 44 mice the exact significance threshold is 17 of 44 (about **0.386**), and about
+  **129 mice** would be needed for 80% power against a true 0.35. **This is powered only for a large
+  effect**, which compounds the confound: a cohort big enough to power it would also need groups spread
+  across days.
 
-Run the §5 stage-4 ablation here too: it separates "groups differ in rate" from "groups differ in
-temporal structure."
+**Figure `group_confusion`:** three 4x4 matrices, shared colour scale — because which pair of groups
+stops being separable is the result, and no accuracy number says it.
 
-🛑 **One hard constraint.** Split folds **by mouse, never by recording.** Otherwise the model
-memorises individual animals and the group result is circular. This is the side quest's single
-largest failure mode and it is cheap to get wrong.
-
-⚠ **Group identity being learnable is not, by itself, bad news for §5.** It becomes a problem for the
-coordination test only if it survives *within-group* matching — which is exactly what stage 3's
-ladder measures. The two tests share one instrument and one construction on purpose.
+⚠ Group identity being learnable is **not by itself bad news** for the coordination test. It bites
+only if it survives within-group matching, which is what the ladder measures.
 
 ---
 
-## 7. What this plan does not settle, and what it costs
+## Revision note — what two rounds of review changed
 
-**Not settled.** Family size for the band statistics (Tony's, open). Whether the thirteen band
-statistics flag on the night's existing data — deliberately not computed. Whether the intractable
-joint-ISI candidates are bought; if the swap succeeds they may become *unnecessary*, which is a
-consequence for Tony to rule on and **not** a pruning under the 2026-09-10 no-pruning ruling.
+**Round 2, the blind pass on revision 2 — the ones that mattered.** The group-identity side quest
+**cannot run cleanly on this cohort**: group is perfectly nested in imaging day (verified independently
+of the reviewer, from `slices.csv`). The 39% untouchable floor is a share of **ROIs**, not of training
+examples — windows with no event in any ROI are 8.7% fast and 12.4% slow — and the question revision 2
+left open is closed: the discriminator has **no** exclusion of unchanged ROIs. Revision 2 claimed four
+papers had been added to `lit_needed.md` when they had not; **they are added now.** And "every
+generator leaves 39%" was wrong — that is a floor; the ISI families leave 48-58%.
 
-**A pre-registration opportunity, and it is free right now.** The family-size deadlock is a
-*post-hoc* problem: choosing statistics after seeing which sit on the band floor. That trap does not
-bind a run that has not happened. Declaring this experiment's statistic family **before stage 3
-trains anything** is legitimate by construction, and it is unbuyable afterwards. Size it with
-`surrogate_stats.correction_reach` against the splits actually intended.
+Also corrected in round 2: power figures (MDA 0.544 sits *above* 0.5386, not below; seven of twelve
+positive controls unpowered, not six; exact binomial 0.386 and 129 mice); baseline rate drifts
+**up**, not down; the leak table is the senktide cohort and summarises all eighteen rows; floor-grid
+alignment is no evidence when every recording is at 0.1 s, so the floor's origin is a question for the
+producer; there is no 0.05 s grid on `steps_excluded`, and the frame-interval hazard is real on
+`cossart`; the per-ROI rate IQR has a lower quartile of zero; Stella's figure 10 is "the other four";
+`trial_shift` adapts rather than is Stella's method; Amarasingham treats trial shuffling as "another,
+familiar" example rather than the worked one; NCE's condition is for uniqueness, not existence; the
+workstation claim is attributed to Tony, and the stopped screen thread is named; `correction_reach`
+for a thirteen-statistic family is recorded as already computed.
 
-**Prerequisite carried from the outside read.** The leak × destruction join has never been made
-though both halves sit in the 2026-09-11 run folder
-([todo](../todo/2026-09-12-join-the-leak-results-to-the-destruction-results.md)). Stage 1 should
-consume it rather than re-derive it.
+**Round 1, the eleven-role review on revision 1.**
 
-**An open question about power that bears on every "no leak detected" below.** The outside read
-reports 1,261 of 2,630 ROIs as not estimable in a discriminator cell it opened. **This document has
-not verified that figure** — the cell-level status counts in
-`discriminator/*/discriminator.csv` are a different granularity (326 ok / 218 intractable on
-`steps_excluded`, 106 / 99 on `cossart`). If the ROI-level figure holds, per-ROI leak power sits on
-a minority of ROIs and "no leak detected" is weaker than it reads. **Settle it before stage 2's
-chance result is trusted.**
+**Withdrawn:** that the fast precondition was failing (it is nominal at 20 seeds); that the code
+building it was lost (it is `negative_control_pairs`); that the leak cannot be per-ROI (four density
+channels are available); that "intercept is signal, slope is leak" (field steps and motion pinning
+land in the intercept); that the construction-validity stage should expect exact chance (its own
+features include the dispersion statistic); that the ablation separates coordination from leak (it
+separates level, not composition); that Stella's ranking supports this design (a standing prohibition
+forbids citing it); that mixing could rehabilitate leaky candidates (true only for non-aligned soft
+differences).
 
-**Compute.** Stages 0–2 need none worth naming and run anywhere. Stage 3 is the only real cost —
-matching levels × swap fractions × seeds — and a session is live on the Windows workstation that can
-take it. The darkroom is claimed for the 2026-09-11 run under board block 065; **a new run needs its
-own claim before it writes anything.**
+**Added:** the untouchable-ROI floor and its inheritance; the compound-null statement and
+Amarasingham's recommendation against trial shuffling; NCE's support condition and what breaking it
+costs; the noise-contrastive and two-sample-test citations that were the document's own uncited
+premises; the within-recording zero-leak anchor; the planted-artifact control; the rate-matched arm;
+units, folds, donor-fold confinement, equivalence margins and power; the group-by-date crosstab and
+the sex confound.
+
+**Corrected:** eighteen rows not nineteen; 0.306 not 0.307; `rigid_shift` and `trial_shift` are
+different functions; the dead review link; the definitional zero;
+AUC as a restatement of share; the pseudopopulation claim demoted to unadmissible pending a reading.
+
+**Still open against this document:** it has no figures, and three of the ones specified above are
+renderable from data already on disk. That is the repo's own show-the-picture rule and this revision
+does not satisfy it.
+
+## Sources
+
+On the shelf at `<darkroom>/bugarach/lit/`: `surrogates/amarasingham_2012_jitter_method.pdf` ·
+`surrogates/amarasingham_2015_ambiguity_nonidentifiability.pdf` ·
+`surrogates/elsayed_cunningham_2017_byproduct.pdf` · `surrogates/stella_2022_comparing_surrogates.pdf` ·
+`surrogates/pipa_2008_neuroxidence.pdf` · `ml/gutmann_hyvarinen_2012_nce.pdf` ·
+`ml/lopezpaz_oquab_2017_c2st.pdf`.
+
+Not held, open asks in [`lit_needed.md`](../lit_needed.md): Perkel, Gerstein & Moore 1967 (II) ·
+Grün et al. 1999 · Stella et al. 2019 3d-SPADE and the INM-6 harnesses · Cunningham & Yu 2014.
