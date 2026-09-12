@@ -655,3 +655,122 @@ def test_designating_replaces_the_guess_rather_than_joining_it(tmp_path):
             assert errs == [], errs
         finally:
             browser.close()
+
+
+# --------------------------------------------------------------------------
+# TURBO TAKES THE PAGE, AND THE OVERVIEW IS THE ONE DOOR OUT OF THE BLIND
+#
+# Tony, 2026-09-12: turbo should "occupy more space", the settings sentence
+# above the rasters "serves little purpose. put it below"; and a view of every
+# slice's whole trace with treatments named — red, behind an "are you sure?".
+# --------------------------------------------------------------------------
+
+def test_the_settings_sentence_sits_under_the_rasters():
+    text = VIEWER.read_text(encoding="utf-8")
+    assert text.index('id="turboScroll"') < text.index('id="turboWhat"'), \
+        "the settings sentence is back above the column it describes"
+
+
+def test_turbo_folds_the_side_column_and_a_rail_click_brings_it_back(tmp_path):
+    """The column gets the width; the rail still works while it has it.
+
+    Folding the side column is what makes a rail click dangerous: the step's
+    settings open in a column nobody can see, and the click looks dead. So the
+    click has to leave turbo, and this presses a real rail step to prove it.
+    """
+    pytest.importorskip("playwright.sync_api")
+    from playwright.sync_api import sync_playwright
+    with sync_playwright() as p:
+        browser, pg, errs = _page(p, tmp_path)
+        try:
+            _open(pg, _folder(tmp_path))
+            pg.wait_for_selector("#turbo:not([hidden])", timeout=30000)
+            assert pg.is_hidden("#side"), "turbo is up and the side column still takes 322px"
+            pg.click("#rail button.step >> nth=0")
+            pg.wait_for_selector("#turbo[hidden]", state="attached", timeout=5000)
+            assert pg.is_visible("#side") and pg.is_visible("#view")
+            assert errs == [], errs
+        finally:
+            browser.close()
+
+
+def _unaligned_folder(tmp: Path) -> Path:
+    """Three slices whose baselines end at different times, and one with none.
+
+    Humans ran these: baseline ends at 100, 130 and 160 s, and the senktide
+    period after it runs 200 s in every slice but the last, which runs 260 s —
+    so that one is off the median line and has to say so. The fourth slice
+    declares senktide only, so there is nothing to align it on.
+    """
+    d = tmp / "unaligned"
+    d.mkdir(parents=True, exist_ok=True)
+    ends = {"rec0": (100, 300), "rec1": (130, 330), "rec2": (160, 420)}
+    for rid in [*ends, "rec3"]:
+        rows = ["roi,time_sec"] + [f"{roi},{k * 20 + roi * 0.05:.2f}"
+                                   for roi in range(1, 7) for k in range(1, 15)]
+        (d / f"{rid}.csv").write_text("\n".join(rows) + "\n", encoding="utf-8")
+    (d / "slices.csv").write_text(
+        "slice_id,frame_interval_sec\n"
+        + "".join(f"rec{i},0.1\n" for i in range(4)), encoding="utf-8")
+    (d / "regions.csv").write_text(
+        "slice_id,region_idx,label,start_sec,end_sec\n"
+        + "".join(f"{rid},0,baseline,0,{b}\n{rid},1,senktide,{b},{e}\n"
+                  for rid, (b, e) in ends.items())
+        + "rec3,0,senktide,0,300\n", encoding="utf-8")
+    return d
+
+
+def test_the_overview_asks_first_and_aligns_on_the_end_of_baseline(tmp_path):
+    """Only after a yes; every row's baseline ends at the same x; one top line.
+
+    Tony, 2026-09-12: "humans did these experiments, they might not line up
+    perfectly from t=0. align all traces by baseline end. provide only the top
+    line of treatment indicators and analysis regions."
+    """
+    pytest.importorskip("playwright.sync_api")
+    from playwright.sync_api import sync_playwright
+    with sync_playwright() as p:
+        browser, pg, errs = _page(p, tmp_path)
+        try:
+            _open(pg, _unaligned_folder(tmp_path))
+            pg.wait_for_selector("#overviewBtn:not([hidden])", timeout=30000)
+            assert "danger" in pg.get_attribute("#overviewBtn", "class")
+
+            pg.click("#overviewBtn")
+            assert pg.evaluate("() => document.getElementById('unblindDlg').open")
+            pg.click("#unblindDlg button[value=cancel]")
+            assert pg.is_hidden("#overview"), "cancel opened the unblinded view anyway"
+
+            pg.click("#overviewBtn")
+            pg.click("#unblindYes")
+            pg.wait_for_function(
+                "() => typeof OVERVIEW !== 'undefined' && OVERVIEW && OVERVIEW.rows.length === 3",
+                timeout=30000)
+            assert pg.is_visible("#overview") and pg.is_hidden("#side")
+            got = pg.evaluate("""() => ({
+                origin: OVERVIEW.origin,
+                senk: OVERVIEW.rows.map(r => r.wins.find(w => w.label === 'senktide').start),
+                from: OVERVIEW.rows.map(r => r.from),
+                top: OVERVIEW.top.map(q => [q.label, q.start, q.end]),
+                differs: OVERVIEW.rows.map(r => r.differs || ''),
+                unaligned: OVERVIEW.unaligned.map(u => u.id),
+            })""")
+            # every baseline ends — every treatment starts — at the same column time
+            assert got["senk"] == [got["origin"]] * 3, got
+            # and each row begins where its own recording began, 160 s back at most
+            assert got["origin"] == 160 and got["from"] == [60, 30, 0], got
+            # ONE line of periods: the median of the rows, not one lane per row
+            assert got["top"] == [["baseline", 30, 160], ["senktide", 160, 360]], got
+            assert got["differs"][:2] == ["", ""] and "off by" in got["differs"][2], got
+            assert got["unaligned"] == ["rec3"], got
+            assert pg.is_visible("#overviewFlag")
+            assert "rec3" in pg.text_content("#overviewFlag")
+
+            # leaving needs no permission, and returns to where it was opened
+            # from — this folder has baselines, so that is turbo
+            pg.click("#overviewBtn")
+            pg.wait_for_selector("#turbo:not([hidden])", timeout=10000)
+            assert pg.is_hidden("#overview")
+            assert errs == [], errs
+        finally:
+            browser.close()
