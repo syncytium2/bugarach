@@ -1,10 +1,35 @@
 # The surrogate screen: what the night bought, what it did not, and what to run next
 
-**Status: draft, unreviewed.** Replaces
-[`2026-09-12-surrogate-screen-reevaluated.md`](2026-09-12-surrogate-screen-reevaluated.md),
-withdrawn the same day after its own murderboard: four of its conclusions rested on probe
-numbers where production numbers existed. Every figure here is from the 2026-09-11 production
-run unless the table says otherwise.
+> # ⚠ WITHDRAWN 2026-09-12, after a blind murderboard. Do not act on anything below.
+>
+> Eleven roles reviewed this draft blind and returned two blocking findings. It is kept, unedited
+> below this notice, as the record of what was claimed. The review is
+> [`../reviews/2026-09-12-surrogate-screen-reevaluated_2026-09-12.md`](../reviews/2026-09-12-surrogate-screen-reevaluated_2026-09-12.md).
+>
+> **What failed.** *"Only a new run can flag"* is **false**. The family size is a free parameter and
+> this draft varied it only between 65 and 13. The band floor 1/101 is actually attained — by 1,223
+> statistics in scope `all` alone — so Holm on a **pre-declared family of five** flags on the night's
+> existing data (5 x 1/101 = 0.0495 < 0.05). This session's own gate says so in one call:
+> `correction_reach(5, 100, 99)` returns `band_reaches: True, splits_needed: 100`, and the night ran
+> exactly 100 splits. The 53,432-core-hour rerun is priced here as the only option; it is not.
+>
+> **And the defect that withdrew the previous draft is repeated here three times**, inside the
+> section headed *"with the power stated correctly"*. The discriminator table's slow row matches no
+> production control; the fast negative control's verdict is **inverted** (production reads accuracy
+> 0.5386, P = 0.035, `significant: True` — the flag that voids 126 candidate rows, which the very
+> next paragraph relies on); and production's **20-seed** negative reruns (fast `flag_rate 0.05`,
+> slow and events `0.0`) sat unused in the same folder while this draft argued from the probe's five.
+>
+> Also wrong: "differ on 5–7 of 13" matches no metric (`delta` differs on 9–13, and the Holm-corrected
+> verdicts on **0** of 13); "480 splits and 960 draws" should be **520 and 1040**; "99 draws" was 19
+> for the whole ISI family; "four- to fivefold" is exactly fivefold and nothing on Cossart; "two
+> recordings at three draws" describes only stage 1, not the 84 recordings stages 2 and 4 ran.
+>
+> **Status (superseded): DRAFT, unreviewed.** Replaced
+> [`2026-09-12-surrogate-screen-reevaluated.md`](2026-09-12-surrogate-screen-reevaluated.md),
+> withdrawn the same day after its own murderboard: four of its conclusions rested on probe
+> numbers where production numbers existed. Every figure here is from the 2026-09-11 production
+> run unless the table says otherwise.
 
 ## The bottom line
 
