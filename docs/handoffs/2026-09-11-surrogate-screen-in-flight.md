@@ -35,6 +35,11 @@ caught. ⚠ CI skips the 98 surrogate tests, because CI does not install Elephan
 **`_manifest_mac_2026-09-11.json`** in the run folder lists all 1,607 files with their byte counts, 81 of
 them stale `.progress` markers.
 
+**`_build_reports/` in the run folder** holds what the seven build agents and the integrator reported —
+the cost curves, the mutation check, and why each Elephant workaround exists — plus the raw
+`journal.jsonl`. It was written only to the Mac's workflow journal, which does not travel, and the same
+loss mode already cost one round of murderboard role reports.
+
 ## On the workstation, in order
 
 1. **Wait for Dropbox.** Every path in the manifest must exist with the same byte count. Do not start
