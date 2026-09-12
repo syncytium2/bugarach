@@ -1,5 +1,11 @@
 # Handoff — the loop closes; both of pipeline.md's blockers are gone
 
+> ⚠ **THE SURROGATE SCREEN IS STOPPED MID-RUN (2026-09-11, ~11:05, for power) — finish it on the
+> workstation.** The build is committed as draft PR #530; results are partly in the darkroom, with a
+> sync manifest. What is finished, how to finish the rest, and what is owed after:
+> [`docs/handoffs/2026-09-11-surrogate-screen-in-flight.md`](docs/handoffs/2026-09-11-surrogate-screen-in-flight.md).
+> This block and that file leave when the report is murderboarded and #530 lands.
+
 > ⚠ **A SECOND THREAD IS ALSO LIVE, and it is not this one.** The detector-design thread — a
 > self-supervised coordinated-event detector, proposed on 2026-09-10 and stopped by its own
 > eleven-role review — hands off in
