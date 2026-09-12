@@ -28,6 +28,17 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
   the reviewed run above is never overwritten. Tony's go, in words, for the probe and for this
   folder; he also chose the family-13 correction scope, which needs 260 splits and 520 draws
   (259 and 519 make the adjusted floor exactly alpha, and a check fires on P < alpha).
+- **Also writes, from 2026-09-12:** `<darkroom>/bugarach/lit/surrogates/` and `<darkroom>/bugarach/lit/ml/`
+  — **additive only**: new PDFs, and the `README.md` each of those two topics is missing. Nothing
+  existing is moved, renamed or deleted. A blind murderboard round found two roles hunting the same
+  unshelved paper in one session: role 2 fetched Gerstein 2004 open-access and read it, role 6 could
+  not reach it and marked the claim unverified. Neither shelved it, and that was correct: the four
+  judgment roles hold `Read`/`Grep`/`Glob` and genuinely cannot write, while the seven shell-holding
+  roles could (the process says so in terms — a shell subsumes the withheld editing tools) but are
+  asked to stay inside a scratch path, and a reviewer writing to a shared shelf is itself a finding
+  about the run. So the shelf's lookup half works and its deposit half has exactly one legitimate
+  operator: the main thread. Claiming the path rather than writing first, because the darkroom is
+  mounted on every machine.
 - **Released when:** the probe has reported and the plan has been reevaluated. The murderboard on
   the report is done — two rounds, all 11 roles, record at
   `docs/reviews/report_steps_excluded_2026-09-11.md` — but it established that the night's

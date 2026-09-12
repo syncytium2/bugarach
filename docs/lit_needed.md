@@ -49,8 +49,19 @@ box. Modelled on `murderboard-lit/_NEEDED.md`, which has had this mechanism sinc
 `bugarach.paths.darkroom()` or `python -m bugarach.paths`. **Never hardcode it**: the path carries
 a person's name and this repo is public (SAP004).
 
-Topics in use: `radar/`, `coordination/`, `DL/`, `surrogates/`, `ml/`. As of 2026-09-10 the shelf
-holds 37 files — nine of them papers on surrogate methods, a topic the shelf held nothing on before this date.
+Topics in use: `radar/`, `coordination/`, `DL/`, `surrogates/`, `ml/`. As of 2026-09-12 the shelf
+holds **40 PDFs** — twelve of them papers on surrogate methods, a topic the shelf held nothing on
+before 2026-09-10.
+
+**Check the shelf before fetching, and shelve what you fetch.** Both halves, because on 2026-09-12
+only the first half was running: a single blind review round had two roles hunting the same unshelved
+paper — one reached Gerstein 2004 open-access and read it, the other could not and marked the claim
+unverified. Both had correctly checked the shelf first. Neither shelved it, and neither should have:
+the judgment roles cannot write, and the shell-holding roles are asked to keep to a scratch path that
+a shared cross-machine shelf is not. **Carrying a review's fetches onto the shelf is part of applying
+its findings**, and it is the adjudicating thread's job. `surrogates/README.md` and `ml/README.md`
+were themselves missing until 2026-09-12, so fourteen PDFs sat in the state the shelf's own top-level
+README calls "indistinguishable from a PDF someone downloaded and forgot".
 
 ⚠ **There is no master library.** Checked 2026-09-10: `murderboard-lit/` is its own repo of 206
 papers but on a different subject entirely — agentic reproducibility, paper-code consistency —
@@ -134,22 +145,46 @@ locations belong to other projects.
 - [ ] **Louis S, Borgelt C & Grün S (2010).** Generation and selection of surrogate methods for
       correlation analysis. In Grün S & Rotter S (eds), *Analysis of Parallel Spike Trains*,
       Springer, chapter 17, pp. 359–382. doi:10.1007/978-1-4419-5675-0_17.
-      → **Tony ask — paywalled.** Grün's group on choosing a surrogate by what it keeps and what it
-      destroys: the surrogate screen's own premise, already published. Read before the screen's
-      cross-folder summary claims anything about what a per-dataset tool adds. (Stella 2022 cites it as
-      "Louis 2010b".)
+      → **Still not shelved, but NOT unreachable — the "paywalled" label was wrong.** An open full
+      text of chapter 17 is served at `portal.g-node.org/advanced-course-2019/`, which a 2026-09-12
+      blind review fetched and read; pp. 359–382 confirmed from the PDF's own running heads. Its
+      abstract is the surrogate screen's premise almost verbatim: surrogates must destroy "the
+      feature of interest (temporal coordination of spikes)" while "other features of the data are
+      preserved. The latter aspect is the most demanding." **Fetch from G-Node and shelve.** Any
+      document still citing this as unread-because-paywalled is wrong as written. (Stella 2022 cites
+      it as "Louis 2010b".)
 
-- [ ] **Grün S, Borgelt C, Gerstein GL, Louis S & Diesmann M (2010).** Selecting appropriate
+- [x] ~~**Grün S, Borgelt C, Gerstein GL, Louis S & Diesmann M (2010).** Selecting appropriate
       surrogate methods for spike correlation analysis. *BMC Neuroscience* 11(Suppl 1):O15.
-      doi:10.1186/1471-2202-11-S1-O15; PMC3090783. A conference abstract, open access.
+      doi:10.1186/1471-2202-11-S1-O15; PMC3090783.~~ **Fetched 2026-09-12** from biomedcentral →
+      `surrogates/grun_2010_selecting_surrogate_methods.pdf`. Two pages, CNS*2010 abstract, and the
+      free form of the chapter-17 premise above. Europe PMC's `fullTextPDF` endpoint returned 0
+      bytes; the publisher's `/counter/pdf/` URL served it.
 
-- [ ] **Gerstein (2004)**, *Acta Neurobiologiae Experimentalis* 64(2):203–207, PMID 15366253 — the
-      joint-interval dither, and the first description of flat dither adding short intervals. **Open
-      access (CC-BY) on ane.pl**; shelve under `surrogates/`.
+- [x] ~~**Gerstein (2004)**, *Acta Neurobiologiae Experimentalis* 64(2):203–207, PMID 15366253.~~
+      **Fetched 2026-09-12** from ane.pl (open access, CC-BY) →
+      `surrogates/gerstein_2004_searching_for_significance.pdf`, 5 pp., pages 203–207 confirmed off
+      the title page. ⚠ **Two corrections it forces.** Its abstract calls its own method "a novel
+      variant of the *dither surrogate* (Date et al. 1998)" — so the dithering root is Date 1998,
+      already on this shelf, and a trace stopping at Gerstein stops one paper short. And he says flat
+      dither "does change the original IH by **adding** short intervals and lowering the peak"; he
+      does **not** claim intervals shorter than any real one. That stronger claim is bugarach's own
+      measurement and must not be attributed to him.
 
-- [ ] **Pipa et al. (2008)**, *Journal of Computational Neuroscience* 25:64–88, PMID 18219568,
-      PMC2758673 — whole-train shifting, the origin Stella credit for trial shifting. PMC's site
-      bot-checks, but **Europe PMC's REST `fullTextXML` serves it**; shelve under `surrogates/`.
+- [x] ~~**Pipa et al. (2008)**, *Journal of Computational Neuroscience* 25:64–88, PMID 18219568,
+      PMC2758673 — whole-train shifting, the origin Stella credit for trial shifting.~~
+      **Fetched 2026-09-12** → `surrogates/pipa_2008_neuroxidence.pdf`, 25 pp. The paper is
+      *NeuroXidence*, Pipa, Wheeler, Singer & Nikolić — the identifier in this entry was correct.
+      Route: Springer `link.springer.com/content/pdf/10.1007/s10827-007-0065-3.pdf`; Europe PMC's
+      `fullTextPDF` gave 0 bytes and its `fullTextXML` gave usable metadata but not a shelf-able file.
+
+- [ ] **Stella A, Quaglio P, Torre E & Grün S (2019).** 3d-SPADE: significance evaluation of
+      spatio-temporal patterns of various temporal extents. *Biosystems* 185:104022.
+      doi:10.1016/j.biosystems.2019.104022. → **Named by a 2026-09-12 review as the closest prior art
+      for what the surrogate screen does** — the applied paper in which Grün's group selected
+      joint-ISI dithering as SPADE's surrogate. Their released harnesses `INM-6/SPADE_surrogates` and
+      `INM-6/SPADE_applications` run substantially the comparison this screen runs. The screen is not
+      wrong to exist, but it is currently unsituated against this. Shelve under `surrogates/`.
 
 - [ ] **Pazienti, Diesmann & Grün (2007)** and **Pazienti et al. (2008)**, *Brain Research*
       1225:39–46 — the bounds on how far dithering can destroy precise coincidences, which is the
@@ -172,6 +207,9 @@ as an absence of effort.
 | Elsayed & Cunningham 2017, *Nat Neurosci* 20:1310–1318 | `surrogates/elsayed_cunningham_2017_byproduct.pdf` — **fetched by Tony**, publisher version |
 | Louis, Gerstein, Grün & Diesmann 2010, *Front Comput Neurosci* 4:127 | `surrogates/louis_2010_operational_time_dither.pdf` |
 | Stella, Bouss, Palm & Grün 2022, *eNeuro* 9(3) | `surrogates/stella_2022_comparing_surrogates.pdf` |
+| Gerstein 2004, *Acta Neurobiol Exp* 64(2):203–207 | `surrogates/gerstein_2004_searching_for_significance.pdf` — **fetched 2026-09-12**, ane.pl, open access |
+| Grün, Borgelt, Gerstein, Louis & Diesmann 2010, *BMC Neurosci* 11(Suppl 1):O15 | `surrogates/grun_2010_selecting_surrogate_methods.pdf` — **fetched 2026-09-12**, biomedcentral |
+| Pipa, Wheeler, Singer & Nikolic 2008, *J Comput Neurosci* 25(1):64–88 | `surrogates/pipa_2008_neuroxidence.pdf` — **fetched 2026-09-12**, Springer |
 | Platkiewicz, Stark & Amarasingham 2017, *Neural Comput* 29(3):783–803 | `surrogates/platkiewicz_2017_spike_centered_jitter.pdf` |
 | Gutmann & Hyvärinen 2012, *JMLR* 13:307–361 | `ml/gutmann_hyvarinen_2012_nce.pdf` |
 | Lopez-Paz & Oquab 2017, ICLR | `ml/lopezpaz_oquab_2017_c2st.pdf` |
