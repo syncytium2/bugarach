@@ -713,6 +713,10 @@ def main(argv=None) -> int:
                    help="fewest draws a cell may report (19); below it, intractable")
     p.add_argument("--splits", type=int, default=100, help="mouse-grouped splits (100)")
     p.add_argument("--alpha", type=float, default=ss.ALPHA)
+    p.add_argument("--allow-underpowered", action="store_true",
+                   help="run even when no Holm-corrected flag is reachable at these "
+                        "settings (functional probes need this; a scoring run should "
+                        "not)")
     p.add_argument("--neg-reps", type=int, default=20,
                    help="replicates of the fresh-synthetic negative (20)")
     p.add_argument("--neg-draws", type=int, default=19,
@@ -808,6 +812,32 @@ def main(argv=None) -> int:
                                   J_unit=J_unit, f_frames=f_frames, f_labels=f_labels,
                                   n_splits=args.splits, alpha=args.alpha,
                                   no_destruction=args.no_destruction)
+            # Refuse a run whose corrected test cannot flag anything — the arithmetic
+            # that was available on 2026-09-10 and computed on 2026-09-12, after a night
+            # of compute whose every Holm-adjusted rate was zero by construction.
+            n_stat = len(ss.stat_names(prep["fs"]))
+            m_cell = n_stat * len(prep["scopes"])
+            reach = ss.correction_reach(m_cell, args.splits, args.K, alpha=args.alpha)
+            print(f"  correction reach ({stream}): family {m_cell} = {n_stat} statistics "
+                  f"x {len(prep['scopes'])} scopes; after Holm the smallest reachable P "
+                  f"is band {reach['band_floor_holm']:.3g}, paired "
+                  f"{reach['paired_floor_holm']:.3g} against alpha {args.alpha:g}")
+            if not (reach["band_reaches"] and reach["paired_reaches"]):
+                msg = (f"stream {stream!r}: no Holm-corrected flag is reachable. Family "
+                       f"{m_cell} checks per cell puts the corrected floors at band "
+                       f"{reach['band_floor_holm']:.3g} and paired "
+                       f"{reach['paired_floor_holm']:.3g}, both above alpha "
+                       f"{args.alpha:g} — so every corrected rate would read zero for "
+                       f"every candidate, the known-bad control included. Either raise "
+                       f"the sample (at least {reach['splits_needed']} splits and "
+                       f"{reach['K_needed']} draws) or shrink the family (correcting "
+                       f"within scope instead of across all {len(prep['scopes'])} gives "
+                       f"{n_stat}). Pass --allow-underpowered to run anyway and report "
+                       f"raw P only.")
+                if not args.allow_underpowered:
+                    print(f"error: {msg}", file=sys.stderr)
+                    return 2
+                print(f"warning: {msg}")
             cells = build_grid(J_values=J_values, J_unit=J_unit, f_frames=prep["fs"],
                                only=set(args.only) if args.only else None,
                                shipped_extra=not args.no_shipped_extra and not is_cossart)
@@ -829,7 +859,8 @@ def main(argv=None) -> int:
                 "n_cells": len(cells),
                 "window_sources": sorted({r.window_source for r in recs}),
                 "dt_values": sorted({r.dt for r in recs}),
-                "destruction_twins": (prep["twins"] or {}).get("describe")}
+                "destruction_twins": (prep["twins"] or {}).get("describe"),
+                "correction_reach": reach}
             yard = {"stream": stream, "bands": prep["bands"],
                     "negative_heldout": prep["heldout"], "alpha": args.alpha,
                     "n_splits": args.splits}

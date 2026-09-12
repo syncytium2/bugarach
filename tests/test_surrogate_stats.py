@@ -132,6 +132,36 @@ def test_paired_p_by_hand():
     assert np.isnan(ss.paired_p(np.nan, [1, 2]))
 
 
+def test_a_correction_that_cannot_reach_alpha_is_detected_before_the_run():
+    """The arithmetic that was available on 2026-09-10 and computed on 2026-09-12.
+
+    At 100 mouse splits, K = 99 and a family of 65 checks per grid cell — the settings
+    the overnight screen actually ran — the Holm-corrected floors are 0.64 and 1.00, so
+    no corrected flag was reachable for any candidate, the known-bad control included.
+    """
+    bad = ss.correction_reach(65, 100, 99)
+    assert bad["band_floor"] == pytest.approx(1 / 101)
+    assert bad["paired_floor"] == pytest.approx(2 / 100)
+    assert bad["band_floor_holm"] == pytest.approx(65 / 101)
+    assert bad["paired_floor_holm"] == pytest.approx(1.0)        # capped at 1
+    assert not bad["band_reaches"] and not bad["paired_reaches"]
+    assert bad["splits_needed"] == 1299 and bad["K_needed"] == 2599
+
+    # Correcting within scope rather than across all five gives a family of 13, and the
+    # sample it needs is reachable. The boundary itself must pass, not miss by an ulp.
+    ok = ss.correction_reach(13, 259, 519)
+    assert ok["splits_needed"] == 259 and ok["K_needed"] == 519
+    assert ok["band_reaches"] and ok["paired_reaches"]
+
+    # One short, in each direction independently, must fail.
+    assert not ss.correction_reach(13, 258, 519)["band_reaches"]
+    assert not ss.correction_reach(13, 259, 518)["paired_reaches"]
+
+    for args in ((0, 100, 99), (13, 0, 99), (13, 100, 0)):
+        with pytest.raises(ValueError):
+            ss.correction_reach(*args)
+
+
 def test_holm_by_hand():
     adj = ss.holm([0.01, 0.04, np.nan, 0.03])
     # three tests: 0.01*3 = 0.03, 0.03*2 = 0.06, max(0.06, 0.04*1) = 0.06

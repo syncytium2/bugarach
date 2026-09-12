@@ -584,7 +584,8 @@ def saturation_by_J(R: dict, stream: str) -> dict:
     Js = sorted(j for j in ud["ret_JK"][Ks[-1]] if j is not None)
     in_sec = ud["J_unit"] == "sec" and math.isfinite(dt) and dt
     recruited = 0.5 * n_roi
-    per = {J: recruited * bin_fr / (2 * (J / dt if in_sec else J) + 1) for J in Js}
+    per = {J: recruited * min(1.0, bin_fr / (2 * (J / dt if in_sec else J) + 1))
+           for J in Js}
     return {"n_roi": n_roi, "recruited": recruited, "bin": bin_fr, "K_hi": Ks[-1],
             "per_J": per, "saturated": {J: e > Ks[-1] for J, e in per.items()},
             "unit": "s" if in_sec else "frames"}
@@ -619,7 +620,11 @@ def destruction_reach(R: dict, stream: str) -> dict:
     J_top = Js[-1]
     J_frames = J_top / dt if (ud["J_unit"] == "sec" and math.isfinite(dt) and dt) else J_top
     recruited = 0.5 * n_roi
-    expected = recruited * bin_fr / (2 * J_frames + 1)
+    # Capped at what was recruited: bin/(2J+1) is a PROBABILITY of staying in the bin, so
+    # it cannot exceed 1. Uncapped, a dither radius below the bin's half-width reported
+    # more co-active ROIs than the event planted — 25.8 from a twin that recruits 15.5,
+    # 471.7 from one that recruits 283 (caught 2026-09-11 while computing this per J).
+    expected = recruited * min(1.0, bin_fr / (2 * J_frames + 1))
     return {"n_roi": n_roi, "recruited": recruited, "bin": bin_fr, "J_top": J_top,
             "J_frames": J_frames, "K_hi": Ks[-1], "K_lo": Ks[0], "expected": expected,
             "saturated": expected > Ks[-1], "unit": "s" if ud["J_unit"] == "sec" else "frames",

@@ -4,8 +4,8 @@
 - copy:      vendored @ 81a0927
 - freshness: current
 - artifact:  `<darkroom>/bugarach/2026-09-11-surrogate-screen/report_steps_excluded.html`
-  (`f39e4979` -> `c32fe346`), with its companions `report_cossart.html`
-  (`05db65b3` -> `6317dedd`) and `report_summary.html` (`ea7127e0` -> `b9622c80`)
+  (`f39e4979` -> `bf556a6f`), with its companions `report_cossart.html`
+  (`05db65b3` -> `bfbf4627`) and `report_summary.html` (`ea7127e0` -> `600b9bd3`)
 - roles:     11 of 11 run (each spawned as its own compiled per-role agent, not an inline
   prompt; role 4's round-2 instance declared MISMATCH, holding an editing capability over
   the artifact's location beyond its grant — its own words are in the ledger)
@@ -44,7 +44,11 @@ number of co-active ROIs still inside the assessor's coincidence bin is
 least saturated one in the sweep. The build tested there, found the fast stream
 unsaturated, and printed "the measure can register removal on this twin." Recomputed
 at every radius, 3 of 6 fast radii are saturated: at *J* = 0.1, 0.2 and 0.4 s about
-25.8, 15.5 and 8.6 ROIs stay in the bin against a scan stopping at 8. Every headline
+15.5, 15.5 and 8.6 ROIs stay in the bin against a scan stopping at 8. (Those first two
+counts read 25.8 and 15.5 in the build this review shipped, because the formula multiplied
+the recruitment by `bin/(2J+1)` without capping it at 1 — a probability cannot exceed 1, so
+the count cannot exceed what the event planted. Corrected 2026-09-12; the saturation
+verdicts are unchanged, the printed counts were not.) Every headline
 span — "retained 0.96 → 0.00" — began at a radius where retention *cannot* fall.
 Those entries are now marked † and the report computes saturation per radius.
 
@@ -158,6 +162,12 @@ Round 2 (blind): 12 findings — no Terms section on the entry page; a dangling
 
 Beyond the five findings narrated above:
 
+- **A defect this review did not catch, found the next day and fixed.** The saturation
+  arithmetic read `recruited x bin/(2J+1)` with no cap, so it reported 25.8 expected
+  co-active ROIs from a twin that recruits 15.5, and 471.7 from one that recruits 283 —
+  impossible counts, in the build eleven roles had just signed off. It surfaced only when
+  the same formula was run across every radius to plan the follow-up. Capped at the
+  recruitment, with a test asserting the expected count never exceeds it.
 - **The gate that could not fail now fails.** `render_check.py --json` returns 0 before
   it counts anything; on one build it exited 0 while its own JSON held 104 sub-11px
   labels, 5 overlaps and 2 viewBox escapes. The vendored copy is stamped "do NOT edit,

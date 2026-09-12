@@ -303,6 +303,25 @@ def test_the_20_percent_arm_names_the_floor_it_was_measured_at(built):
     assert "co-active ROIs" in t
 
 
+def test_the_expected_in_bin_count_never_exceeds_what_was_planted(bsr, built):
+    """bin/(2J+1) is a probability, so the expected count is capped by the recruitment.
+
+    Uncapped it read 25.8 co-active ROIs from a twin recruiting 15.5, and 471.7 from one
+    recruiting 283 — impossible numbers that reached a shipped page. The saturation
+    verdicts survive the cap; the printed counts did not.
+    """
+    for role, stream in (("steps_excluded", "fast"), ("cossart", "events")):
+        R = bsr.load_role(built, role)
+        sj = bsr.saturation_by_J(R, stream)
+        assert sj, f"no saturation arithmetic for {role}/{stream}"
+        for J, exp in sj["per_J"].items():
+            assert exp <= sj["recruited"] + 1e-9, (
+                f"{role}/{stream} J={J}: {exp} expected from {sj['recruited']} recruited")
+        dr = bsr.destruction_reach(R, stream)
+        if dr:
+            assert dr["expected"] <= dr["recruited"] + 1e-9
+
+
 def test_a_no_op_cell_is_not_counted_as_a_measurement(bsr, built):
     R = bsr.load_role(built, "steps_excluded")
     rows = {r["name"]: r for r in bsr.candidate_rows(R, "fast")}

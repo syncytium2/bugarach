@@ -654,6 +654,45 @@ def band_p(delta: float, split_diffs) -> float:
     return float((1 + np.sum(np.abs(d) >= abs(delta))) / (d.size + 1))
 
 
+def correction_reach(m: int, n_splits: int, K: int, *, alpha: float = ALPHA) -> dict:
+    """Can a CORRECTED test flag anything at these settings? Arithmetic, before compute.
+
+    A rank test's smallest possible ``P`` is fixed by its sample: the mouse-split band's
+    is ``1/(n_splits + 1)``, the paired surrogate histogram's ``2/(K + 1)``. Holm
+    multiplies the smallest ``P`` in a family by the family size, so once that product
+    passes ``alpha`` the corrected test cannot flag anything — for any candidate, the
+    known-bad control included.
+
+    **This is computable from a plan alone, and on 2026-09-11 nobody computed it.** A
+    night ran at 100 splits, ``K <= 99`` and a family of 65 checks per grid cell, where
+    the corrected floors are 0.64 and 1.00; every corrected rate was therefore zero by
+    construction, and the screen's own positive control could not have fired. Two
+    murderboard rounds on that plan missed it, because no role computes forward from
+    declared parameters to the resolution they buy. Hence a function, so that the next
+    design is refused rather than reviewed.
+
+    Returns the floors, whether each yardstick reaches ``alpha``, and the smallest sample
+    that would: ``splits >= ceil(m/alpha - 1)`` and ``draws >= ceil(2m/alpha - 1)``.
+    """
+    if m <= 0 or n_splits <= 0 or K <= 0:
+        raise ValueError("family size, splits and draws must all be positive")
+    band_floor = 1.0 / (n_splits + 1)
+    paired_floor = 2.0 / (K + 1)
+    return {
+        "m": int(m), "alpha": float(alpha), "n_splits": int(n_splits), "K": int(K),
+        "band_floor": band_floor, "paired_floor": paired_floor,
+        "band_floor_holm": min(1.0, band_floor * m),
+        "paired_floor_holm": min(1.0, paired_floor * m),
+        # A relative tolerance, because the boundary is exactly representable in decimal
+        # and not in binary: at m = 13 and 259 splits the product is 13/260 = 0.05, which
+        # evaluates to 0.05000000000000001 and would demand a 260th split for nothing.
+        "band_reaches": bool(band_floor * m <= alpha * (1 + 1e-9)),
+        "paired_reaches": bool(paired_floor * m <= alpha * (1 + 1e-9)),
+        "splits_needed": int(np.ceil(m / alpha - 1)),
+        "K_needed": int(np.ceil(2 * m / alpha - 1)),
+    }
+
+
 def holm(pvals) -> np.ndarray:
     """Holm step-down adjustment; NaNs pass through and do not count as tests."""
     p = np.asarray(pvals, dtype=float)
