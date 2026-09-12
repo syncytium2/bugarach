@@ -156,6 +156,42 @@ locations belong to other projects.
       surrogate screen's destruction test. Known only from Stella's reference list; identifiers
       not yet resolved.
 
+**Added 2026-09-12 by the ROI-swap proposal's murderboard**
+([`proposals/2026-09-12-the-roi-swap-null.md`](proposals/2026-09-12-the-roi-swap-null.md)).
+The proposal cites all four as not held; until they are read, the claims resting on them are not
+admissible there.
+
+- [ ] **Perkel DH, Gerstein GL & Moore GP (1967).** Neuronal spike trains and stochastic point
+      processes. **II. Simultaneous spike trains.** *Biophys J* 7(4):419–440. PMID 4292792,
+      PMC1368069, doi:10.1016/S0006-3495(67)86597-4.
+      → **Tony ask — PMC bot-checks, cell.com returned 403, Europe PMC `fullTextXML` is empty for this
+      scanned-era article.** The shift predictor's construction. ⚠ Not Part I, *The single spike train*,
+      same authors, same issue — a bare "(1967)" does not distinguish them. Whether *"shift
+      predictor"* is their term is unresolved: Amarasingham 2012 calls it the shuffle predictor and
+      Pipa 2008 credits the name to König (1994).
+
+- [ ] **Grün S, Diesmann M, Grammont F, Riehle A & Aertsen A (1999).** Detecting unitary events
+      without discretization of time. *J Neurosci Methods* 94:67–79.
+      → The multiple-shift method, which Pipa 2008 credits as the antecedent of whole-train shifting.
+      Known only from Pipa's reference list; **whether it is itself the root is unverified** — the
+      trace stopped here, one paper short of certain, the same shape as the Gerstein-to-Date correction
+      recorded on the shelf.
+
+- [ ] **Stella A, Quaglio P, Torre E & Grün S (2019).** 3d-SPADE: Significance evaluation of
+      spatio-temporal patterns of various temporal extents. *Biosystems* 185:104022.
+      doi:10.1016/j.biosystems.2019.104022, PMID 31449837.
+      → The closest named prior art for what the screen does. Its forward trace matters:
+      `github.com/INM-6/SPADE_surrogates` accompanies a **2021** paper by Stella, Bouss, Palm & Grün,
+      a different title and year from the 2022 eNeuro paper, so a citation set complete on 2022 still
+      misses the group's released harness.
+
+- [ ] **Cunningham JP & Yu BM (2014).** Dimensionality reduction for large-scale neural recordings.
+      *Nat Neurosci* 17:1500–1509. doi:10.1038/nn.3776.
+      → **Candidate** source for "a pseudopopulation eliminates noise correlations". ⚠ Proposed by a
+      reviewer on metadata alone — **nobody has read it**, and the obvious shelf candidate
+      (`surrogates/elsayed_cunningham_2017_byproduct.pdf`) was checked and does **not** support that
+      claim. Read before citing; do not paste it in on a reviewer's word.
+
 ## Fetched 2026-09-10, on the shelf
 
 Recorded so nobody re-fetches them, and so the failures above are legible as failures rather than
