@@ -152,6 +152,14 @@ or does not."* No finding was suggested, no ordering hinted, no verdict supplied
 
 Every declared grant matches the compiled agent file exactly. Eleven `ok`, no `MISMATCH`.
 
+**The eleven reports themselves are preserved**, in
+[roles 1–6](2026-09-12-v2-blind-round-roles-1-6.md) and
+[roles 7–11](2026-09-12-v2-blind-round-roles-7-11.md). ⚠ They were nearly lost the way round 1's
+were: the harness wrote each agent's output to a file and **every one of those files is 0 bytes**,
+so these are reproduced from the session transcript, which is where they existed. Anyone running a
+murderboard in this tree should write the reports to `docs/reviews/` as they arrive rather than
+trusting the task output files.
+
 **Independent confirmation counts**, which is what a blind round buys: the missing review record
 was found by **five** roles separately (2, 3, 8, 10, 11); the inverted fast-negative verdict by
 **five** (1, 3, 4, 6, 10); the probe-for-production discriminator table by **four** (3, 4, 6, 10);
