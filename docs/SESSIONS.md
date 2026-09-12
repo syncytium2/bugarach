@@ -26,7 +26,8 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 - **Also writes, from 2026-09-12:** `<darkroom>/bugarach/probe-surrogate-screen/` — a staged probe
   that asks whether the instrument can answer *before* any grid runs again. A separate folder, so
   the reviewed run above is never overwritten. Tony's go, in words, for the probe and for this
-  folder; he also chose the family-13 correction scope, which needs 259 splits and 519 draws.
+  folder; he also chose the family-13 correction scope, which needs 260 splits and 520 draws
+  (259 and 519 make the adjusted floor exactly alpha, and a check fires on P < alpha).
 - **Released when:** the probe has reported and the plan has been reevaluated. The murderboard on
   the report is done — two rounds, all 11 roles, record at
   `docs/reviews/report_steps_excluded_2026-09-11.md` — but it established that the night's

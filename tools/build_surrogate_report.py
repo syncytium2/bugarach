@@ -62,6 +62,7 @@ from pathlib import Path
 import numpy as np
 
 from bugarach import provenance, time_axis
+from bugarach.surrogate_stats import smallest_n
 
 OUT_DIRNAME = "2026-09-11-surrogate-screen"
 ALPHA = 0.05
@@ -392,10 +393,21 @@ def yardstick_reach(R: dict) -> dict:
     price is a family-wise false-flag rate per cell, which this reports rather than
     leaving to the reader.
     """
-    fam = defaultdict(int)
-    for s in R["stats"]:
-        fam[(s["stream"], s["cell_id"])] += 1
-    m = max(fam.values()) if fam else 0
+    # The Holm family is whatever the RUN used, not whatever this build would choose.
+    # Runs before 2026-09-12 corrected across every scope, so the family is the checks per
+    # cell; runs after it correct within scope and record the family in meta.json. Reading
+    # the recorded value keeps a page describing the run that produced it rather than the
+    # rule in force when the page was built.
+    recorded = [((R["meta"].get("streams") or {}).get(st) or {}).get("correction_reach")
+                for st in ((R["meta"].get("streams") or {}))]
+    recorded = [int(c["m"]) for c in recorded if isinstance(c, dict) and c.get("m")]
+    if recorded:
+        m = max(recorded)
+    else:
+        fam = defaultdict(int)
+        for s in R["stats"]:
+            fam[(s["stream"], s["cell_id"])] += 1
+        m = max(fam.values()) if fam else 0
     n_splits = _med([_f(y["n_splits"]) for y in R["yardsticks"]])
     Ks = [_f(c["K"]) for c in R["cells"] if c["status"] == "ok" and math.isfinite(_f(c["K"]))]
     kc = defaultdict(int)
@@ -444,8 +456,13 @@ def yardstick_reach(R: dict) -> dict:
         "n_scored": len(scored), "n_paired": len(paired),
         "n_zero_width": len(on_zw), "n_zw_stats": len(zw),
         "share_band_nozw": sh(keep_zw, lambda s: _b(s["band_flag"])),
-        "splits_needed": math.ceil(m / ALPHA - 1) if m else None,
-        "K_needed": math.ceil(2 * m / ALPHA - 1) if m else None,
+        # Strictly, because a check fires on P < alpha and an adjusted P of exactly alpha
+        # fires nothing. `ceil(m/alpha - 1)` named the sample that REACHES alpha, one
+        # short of the sample that can flag: 1299 where 1300 is needed. The helper is
+        # imported from surrogate_stats rather than restated here, because this formula
+        # existing separately in two modules is how it came to be wrong in both.
+        "splits_needed": smallest_n(m, ALPHA) if m else None,
+        "K_needed": smallest_n(2 * m, ALPHA) if m else None,
         "fwer": 1 - (1 - ALPHA) ** m if m else float("nan"),
         "cells_unreachable": unreach, "cells_ok": len(Ks),
     }

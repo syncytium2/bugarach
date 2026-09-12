@@ -15,7 +15,25 @@ Conventions, all from the plan:
   never moves an onset itself.
 * **Not-estimable ROIs are never scored as preserving anything.** An ROI the
   adapter marks not estimable in any draw of a cell is dropped from that cell's
-  real *and* surrogate statistics alike, and the drop is reported as coverage.
+  real *and* surrogate statistics alike, and the count of them is reported as
+  ``not_estimable_rois`` on the cell.
+  ⚠ **It is NOT reported as coverage, and this line used to claim it was.**
+  ``roi_mask`` removes those ROIs before ``summarize`` counts ``n_roi``, so they
+  leave a statistic's numerator and denominator together and ``coverage`` is the
+  share of the *scored* population a statistic could score — not the share of the
+  recording. The two run in opposite directions, which is how a cell can exclude
+  most of its ROIs and report coverage 1.000: on the 2026-09-11 fast stream,
+  joint-ISI dither excluded 1,676 of 2,630 ROIs and read 1.000, while do-nothing
+  excluded none and read 0.505, because the ROIs with no interval stayed in its
+  denominator. Read ``coverage`` beside ``not_estimable_rois`` or not at all; a
+  verdict rule that takes coverage for completeness will prefer whichever
+  generator discarded the most data.
+  The 0.505 is exact and checkable: 1,328 of those 2,630 ROIs have two or more
+  onsets, so 1,328/2,630 = 0.505 is the share with any interval to score. The
+  1,676 is **not** simply the sparse ROIs — 1,452 have fewer than three onsets
+  (``surrogates.JISI_MIN_ONSETS``) and the remaining ~224 were excluded for the
+  other reasons the adapter records, chiefly ``jisi_moved_nothing``. So the
+  exclusion is mostly a property of this corpus and partly of the method.
 * **Seeds** are ``zlib.crc32`` of a key's ``repr`` feeding
   ``np.random.RandomState`` (sapper SAP002 bans ``default_rng`` in ``src/``).
 
@@ -654,6 +672,19 @@ def band_p(delta: float, split_diffs) -> float:
     return float((1 + np.sum(np.abs(d) >= abs(delta))) / (d.size + 1))
 
 
+def smallest_n(numer: float, alpha: float) -> int:
+    """Smallest ``n`` with ``numer / (n + 1) < alpha``, strictly.
+
+    The rank tests' floors are ``1/(n_splits + 1)`` and ``2/(K + 1)``, so the sample that
+    makes a Holm-adjusted P *reach* alpha is one short of the sample that makes it fall
+    *below* alpha — and only the second can ever flag. Computed by flooring and then
+    checking, rather than by a closed form, because the interesting cases are exactly the
+    ones where ``numer / alpha`` is a whole number.
+    """
+    n = int(np.floor(numer / alpha))
+    return n if numer / (n + 1) < alpha else n + 1
+
+
 def correction_reach(m: int, n_splits: int, K: int, *, alpha: float = ALPHA) -> dict:
     """Can a CORRECTED test flag anything at these settings? Arithmetic, before compute.
 
@@ -683,13 +714,17 @@ def correction_reach(m: int, n_splits: int, K: int, *, alpha: float = ALPHA) -> 
         "band_floor": band_floor, "paired_floor": paired_floor,
         "band_floor_holm": min(1.0, band_floor * m),
         "paired_floor_holm": min(1.0, paired_floor * m),
-        # A relative tolerance, because the boundary is exactly representable in decimal
-        # and not in binary: at m = 13 and 259 splits the product is 13/260 = 0.05, which
-        # evaluates to 0.05000000000000001 and would demand a 260th split for nothing.
-        "band_reaches": bool(band_floor * m <= alpha * (1 + 1e-9)),
-        "paired_reaches": bool(paired_floor * m <= alpha * (1 + 1e-9)),
-        "splits_needed": int(np.ceil(m / alpha - 1)),
-        "K_needed": int(np.ceil(2 * m / alpha - 1)),
+        # STRICT, because the flag test is strict: a check fires on ``P < alpha``, so an
+        # adjusted P of exactly alpha fires nothing. An earlier version asked ``<=`` and
+        # added a tolerance to let the boundary through, which made this function promise
+        # a sample that cannot flag — Stage 2 of the 2026-09-12 probe ran at the boundary
+        # it blessed (13 statistics, 259 splits, 519 draws), reached band and paired
+        # floors of exactly 0.0500, and flagged the known-bad control 0 times out of 13
+        # after Holm while flagging it 7 and 11 times raw.
+        "band_reaches": bool(band_floor * m < alpha),
+        "paired_reaches": bool(paired_floor * m < alpha),
+        "splits_needed": smallest_n(m, alpha),
+        "K_needed": smallest_n(2 * m, alpha),
     }
 
 

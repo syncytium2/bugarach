@@ -145,17 +145,33 @@ def test_a_correction_that_cannot_reach_alpha_is_detected_before_the_run():
     assert bad["band_floor_holm"] == pytest.approx(65 / 101)
     assert bad["paired_floor_holm"] == pytest.approx(1.0)        # capped at 1
     assert not bad["band_reaches"] and not bad["paired_reaches"]
-    assert bad["splits_needed"] == 1299 and bad["K_needed"] == 2599
+    assert bad["splits_needed"] == 1300 and bad["K_needed"] == 2600
 
-    # Correcting within scope rather than across all five gives a family of 13, and the
-    # sample it needs is reachable. The boundary itself must pass, not miss by an ulp.
-    ok = ss.correction_reach(13, 259, 519)
-    assert ok["splits_needed"] == 259 and ok["K_needed"] == 519
+    # Correcting within scope rather than across all five gives a family of 13. The
+    # sample it needs is 260 and 520, NOT 259 and 519: at 259 splits the adjusted floor
+    # is 13/260 = exactly alpha, and the flag test is strict, so nothing fires. Stage 2
+    # of the probe ran at 259/519 and flagged the known-bad control 0 of 13 times under
+    # Holm while flagging it 7 and 11 times raw — this is that lesson, as arithmetic.
+    edge = ss.correction_reach(13, 259, 519)
+    assert edge["band_floor_holm"] == pytest.approx(0.05)
+    assert edge["paired_floor_holm"] == pytest.approx(0.05)
+    assert not edge["band_reaches"] and not edge["paired_reaches"]
+
+    ok = ss.correction_reach(13, 260, 520)
+    assert ok["splits_needed"] == 260 and ok["K_needed"] == 520
     assert ok["band_reaches"] and ok["paired_reaches"]
+    assert ok["band_floor_holm"] < 0.05 and ok["paired_floor_holm"] < 0.05
 
     # One short, in each direction independently, must fail.
-    assert not ss.correction_reach(13, 258, 519)["band_reaches"]
-    assert not ss.correction_reach(13, 259, 518)["paired_reaches"]
+    assert not ss.correction_reach(13, 259, 520)["band_reaches"]
+    assert not ss.correction_reach(13, 260, 519)["paired_reaches"]
+    # And the smallest-sample helper agrees with a brute-force search.
+    for m in (1, 7, 8, 13, 20, 65):
+        s = ss.correction_reach(m, 10_000, 10_000)
+        assert s["splits_needed"] == next(n for n in range(1, 3000)
+                                          if m / (n + 1) < ss.ALPHA)
+        assert s["K_needed"] == next(n for n in range(1, 6000)
+                                     if 2 * m / (n + 1) < ss.ALPHA)
 
     for args in ((0, 100, 99), (13, 0, 99), (13, 100, 0)):
         with pytest.raises(ValueError):

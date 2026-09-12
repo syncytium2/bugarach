@@ -4,8 +4,9 @@
 - copy:      vendored @ 81a0927
 - freshness: current
 - artifact:  `<darkroom>/bugarach/2026-09-11-surrogate-screen/report_steps_excluded.html`
-  (`f39e4979` -> `bf556a6f`), with its companions `report_cossart.html`
-  (`05db65b3` -> `bfbf4627`) and `report_summary.html` (`ea7127e0` -> `600b9bd3`)
+  (`f39e4979` -> `566a2c20`), with its companions `report_cossart.html`
+  (`05db65b3` -> `dfcd9ba6`) and `report_summary.html` (`ea7127e0` -> `18edde2c`)
+  — rebuilt twice after the review, for the two defects at the end of this record
 - roles:     11 of 11 run (each spawned as its own compiled per-role agent, not an inline
   prompt; role 4's round-2 instance declared MISMATCH, holding an editing capability over
   the artifact's location beyond its grant — its own words are in the ledger)
@@ -168,6 +169,16 @@ Beyond the five findings narrated above:
   impossible counts, in the build eleven roles had just signed off. It surfaced only when
   the same formula was run across every radius to plan the follow-up. Capped at the
   recruitment, with a test asserting the expected count never exceeds it.
+- **A second defect this review did not catch, and the probe did.** The report told the
+  reader a corrected test would need "at least 1299 mouse splits and 2599 draws". Those
+  are the samples at which the Holm-adjusted floor *equals* α — and a check fires on
+  `P < α`, so equality fires nothing. The correct minimums are **1300 and 2600**. It came
+  to light on 2026-09-12 by running the screen at the boundary the same formula blessed:
+  at 13 statistics with 259 splits and 519 draws, uniform dither — the known-bad control
+  — was flagged 7 of 13 (band) and 11 of 13 (paired) raw, and **0 of 13 under Holm**,
+  smallest adjusted *P* exactly 0.0500. The formula existed in two modules and was wrong
+  in both; there is now one implementation (`surrogate_stats.smallest_n`) and a test that
+  brute-forces the boundary. The pages are rebuilt and say 1300 and 2600.
 - **The gate that could not fail now fails.** `render_check.py --json` returns 0 before
   it counts anything; on one build it exited 0 while its own JSON held 104 sub-11px
   labels, 5 overlaps and 2 viewBox escapes. The vendored copy is stamped "do NOT edit,

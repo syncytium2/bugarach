@@ -203,10 +203,13 @@ def test_the_reach_box_says_holm_cannot_flag_and_what_unadjusted_costs(bsr, buil
     y = bsr.yardstick_reach(R)
     assert y["m"] == 65 and y["band_floor"] == pytest.approx(1 / 101)
     assert y["band_floor_holm"] > bsr.ALPHA and y["paired_floor_holm"] > bsr.ALPHA
-    assert y["splits_needed"] == 1299 and y["K_needed"] == 2599
+    # 1300 and 2600, not 1299 and 2599: at 1299 splits the Holm-adjusted floor is
+    # exactly alpha, and a check fires on P < alpha, so the sample that REACHES alpha
+    # cannot flag anything. Stage 2 of the 2026-09-12 probe demonstrated it.
+    assert y["splits_needed"] == 1300 and y["K_needed"] == 2600
     assert y["fwer"] > 0.9                       # 65 checks at alpha = 0.05
     t = _page(built, "report_steps_excluded.html")
-    assert "Holm-adjusted, can flag anything at these settings" in t and "1299" in t
+    assert "Holm-adjusted, can flag anything at these settings" in t and "1300" in t
     assert "false flag somewhere in a cell" in t
 
 
