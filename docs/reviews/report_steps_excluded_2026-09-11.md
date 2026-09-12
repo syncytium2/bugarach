@@ -247,6 +247,24 @@ reporting an 8.1px label — which the gate must now reject.
    detects text crossing a shape; a person has to look.
 7. **The screenshots are viewport-only at 900 and 430 px** while the pages are
    10,600–51,400 px tall, so the narrow renders show only the top of each page.
+8. **Three generators score a fraction of their ROIs and no page says so** (found
+   2026-09-12, by the probe rather than by this review). On the fast stream every cell
+   holds the same 2,630 ROIs, and `not_estimable_rois` is **0 for fifteen generators**
+   but a median **1,676 for joint-ISI dither, 1,664 for ISI dither and 1,302 for
+   operational-time dither** — so those three are scored on 803–1,328 ROIs while the rest
+   are scored on all 2,630. That column is in `cells.csv` and on no page. Worse, the one
+   quantity a reader would reach for reads the wrong way: per-statistic `coverage` is
+   **1.000** for exactly those three and **0.505** for everything else, because the
+   excluded ROIs leave the denominator with the numerator. Of joint-ISI's 1,676, 1,452 are
+   ROIs with fewer than three onsets (`surrogates.JISI_MIN_ONSETS`) — a property of this
+   corpus — and the rest were excluded by the method itself, chiefly
+   `jisi_moved_nothing`. Two consequences, both for the verdict rule: the joint-ISI family
+   is not merely expensive on this data but largely inapplicable to it, which bears
+   directly on whether its dropped cells are worth rerunning; and any rule that reads
+   `coverage` as completeness will prefer whichever generator discarded the most data. The
+   docstring that claimed the drop "is reported as coverage" is corrected; surfacing
+   `not_estimable_rois` on the page, and adding a scored-share column that keeps the full
+   ROI population in its denominator, are not done.
 
 ## Reproduction
 
