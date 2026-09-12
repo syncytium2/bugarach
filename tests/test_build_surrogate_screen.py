@@ -105,7 +105,10 @@ def run(bss, tmp_path_factory):
                    "shipped_dither", "window_circular_shift",
                    "--K", "5", "--min-K", "3", "--splits", "12", "--neg-reps", "2",
                    "--neg-draws", "4", "--destruction-draws", "3",
-                   "--destruction-assess-surrogates", "30"])
+                   "--destruction-assess-surrogates", "30",
+                   # deliberately underpowered: this fixture tests plumbing, not power,
+                   # and the correction gate would otherwise refuse it
+                   "--allow-underpowered"])
     assert rc == 0
     return folder, out
 
@@ -169,7 +172,8 @@ def test_a_rerun_resumes_rather_than_redoing(bss, run, capsys):
     before = (out / "events" / "cells" / "do_nothing.json").stat().st_mtime
     rc = bss.main(["--dataset", str(folder), "--out", str(out), "--jobs", "0",
                    "--J-frames", "2", "--only", "do_nothing", "--K", "5",
-                   "--min-K", "3", "--splits", "12", "--no-destruction"])
+                   "--min-K", "3", "--splits", "12", "--no-destruction",
+                   "--allow-underpowered"])
     assert rc == 0
     assert "0 task(s)" in capsys.readouterr().out
     assert (out / "events" / "cells" / "do_nothing.json").stat().st_mtime == before
@@ -181,10 +185,30 @@ def test_a_cell_short_of_min_K_is_recorded_intractable(bss, tmp_path):
     rc = bss.main(["--dataset", str(folder), "--out", str(out), "--jobs", "0",
                    "--J-frames", "2", "--only", "circular_shift", "--K", "50",
                    "--min-K", "40", "--cell-seconds", "0", "--splits", "4",
-                   "--neg-reps", "1", "--neg-draws", "2", "--no-destruction"])
+                   "--neg-reps", "1", "--neg-draws", "2", "--no-destruction",
+                   "--allow-underpowered"])
     assert rc == 0
     rec = json.loads((out / "events" / "cells" / "circular_shift.json").read_text())
     assert rec["status"] == "intractable" and "budget" in rec["why"]
+
+
+def test_a_run_that_cannot_reach_alpha_is_refused_unless_it_says_so(bss, tmp_path):
+    """The gate the 2026-09-11 night needed and did not have.
+
+    That night ran at 100 splits, K <= 99 and 65 checks per cell, where the Holm-corrected
+    floors are 0.64 and 1.00: every corrected rate was zero by construction and the
+    screen's own known-bad control could not have fired. The arithmetic needed no data.
+
+    Every fixture above passes ``--allow-underpowered`` because it tests plumbing rather
+    than power — which is exactly why the refusal needs its own test, or a gate that
+    nothing exercises would have been added by the same commit that argued for gates.
+    """
+    folder = _folder(tmp_path / "export", n_mice=2, per_mouse=1)
+    argv = ["--dataset", str(folder), "--out", str(tmp_path / "out"), "--jobs", "0",
+            "--J-frames", "2", "--only", "do_nothing", "--K", "5", "--min-K", "3",
+            "--splits", "12", "--no-destruction"]
+    assert bss.main(argv) == 2                      # refused, and nothing was spent
+    assert bss.main(argv + ["--allow-underpowered"]) == 0
 
 
 # THE MEMORY CAPS HAD NEVER BEEN SHOWN TO FIRE, and on Windows they could not: the meter
@@ -219,7 +243,7 @@ def test_a_worker_past_its_cap_is_killed_and_recorded(tmp_path, cap, value, why)
         [sys.executable, str(TOOL), "--dataset", str(folder), "--out", str(out),
          "--jobs", "1", "--J-frames", "2", "--only", "circular_shift", "--K", "5",
          "--min-K", "3", "--splits", "4", "--neg-reps", "1", "--neg-draws", "2",
-         "--no-destruction", cap, value],
+         "--no-destruction", "--allow-underpowered", cap, value],
         capture_output=True, text=True, encoding="utf-8", errors="replace",
         timeout=600)   # a Windows child prints in cp1252; the dashes must not kill the reader
     assert r.returncode == 0, r.stderr[-2000:]
