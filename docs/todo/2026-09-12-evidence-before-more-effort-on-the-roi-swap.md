@@ -82,6 +82,18 @@ this plan before any code is written:
 - **Session identity reported as highly decodable in multi-session population models.** That moves the
   slice-identity stage's expectation toward STOP.
 
+> **Both outcomes came in, 2026-09-12** — [reading log](../learned/recombination_nulls_reading_log.md),
+> section *What this changes in the plan*. The stages below are **not yet edited** to match. Whoever next
+> declares a stage's margins reads that section first. It proposes:
+> - **Slice identity:** expect STOP at the global level; add a single-train lineup test of native versus
+>   donor ROIs.
+> - **Simulated ground truth:** split the slice-level covariation arm into three — shared gain within a
+>   recording, donor mismatch with unshared gains, and protocol-locked structure. Declare the hot window's
+>   timing random per recording, or its positive control cannot bite for the swap. Add a shared-drift arm
+>   before simulation can license real data.
+> - **The decision:** the condition for reopening training negatives is **not met**. Cross-recording
+>   negatives taught recording identity in every study that measured it.
+
 ---
 
 ## Buildability for a significance test — arithmetic, hours

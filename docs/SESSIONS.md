@@ -10,9 +10,12 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
-### Mac/lit-recombination-nulls — DARKROOM claim ACTIVE: `bugarach/lit/` (additive)
-- **Status:** ACTIVE 2026-09-12 (bugarach-ivory-shrike). Tony asked for the literature deep dive on
-  recombination nulls to be attempted, and for a list of every paper no publisher PDF could be fetched for.
+### Mac/lit-recombination-nulls — DARKROOM claim RELEASED 2026-09-12: `bugarach/lit/` (additive)
+- **Status:** **RELEASED 2026-09-12 — writes done.** 93 PDFs added (13 `surrogates/`, 5 `coordination/`,
+  30 `ml/`, 45 in the new `recombination/`), README rows appended to those four and one row to
+  `lit/README.md`. Nothing existing moved or overwritten. Was: ACTIVE (bugarach-ivory-shrike). Tony asked
+  for the literature deep dive on recombination nulls to be attempted, and for a list of every paper no
+  publisher PDF could be fetched for.
 - **Writes:** new PDFs and new README rows only, under `<darkroom>/bugarach/lit/` — `surrogates/`,
   `ml/`, `coordination/`, and possibly new topic folders with their own README. Nothing existing is moved,
   renamed or overwritten.
