@@ -1,9 +1,33 @@
 ---
-status: open
+status: done
 filed: 2026-09-12
+closed: 2026-09-12
 ---
 
 # Literature deep dive: has anyone built a null by recombining units that were never recorded together?
+
+> **Done 2026-09-12 — [reading log](../learned/recombination_nulls_reading_log.md).** Each of the four
+> questions has at least two read sources, which is this todo's stop rule. In short:
+> - **As a null: yes, widely.** It is the shuffle predictor, session permutation, pseudo-pairs and
+>   inter-subject surrogates. The documented false positives share one cause, units of a record sharing a
+>   state:
+>   Brody 1999; Louis, Borgelt & Grün 2010 (24% at α = 1%); Ventura et al. 2005; Harris 2021; Burgess 2013.
+> - **As negatives: yes, across recordings.** All seven studies that measured it found the model learned
+>   recording identity, and each fixed it by keeping negatives within a recording. No one found uses real
+>   units recombined across recordings as negatives for a coordination detector.
+> - **Identity:** near ceiling at population level, weak for single units under a standard protocol.
+> - **Exchangeability:** fails exactly when the tested contrast and a nuisance share the block structure
+>   (Winkler 2015; Abney 2015), and "recorded together" is that block.
+>
+> **What it changes:** gate changes to the justification plan are in the reading log. The largest is that
+> the plan's condition for reopening training negatives is **not met**.
+>
+> **Still open, and not this todo's:**
+> - the papers in [`lit_needed.md`](../lit_needed.md) under the deep-dive heading;
+> - whether to write to the Grün group (Tony's call);
+> - the CICADA credit in `detectors/cicada.py`.
+>
+> The table below is kept as filed; the reading log's corrections section says which rows moved.
 
 **Why this exists.** Tony's ROI-swap idea — replace ROIs in a recording with real trains from other
 recordings, so coordination is destroyed while every train stays real — was written up and reviewed
