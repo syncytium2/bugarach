@@ -10,6 +10,15 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
+### Mac/lit-recombination-nulls — DARKROOM claim ACTIVE: `bugarach/lit/` (additive)
+- **Status:** ACTIVE 2026-09-12 (bugarach-ivory-shrike). Tony asked for the literature deep dive on
+  recombination nulls to be attempted, and for a list of every paper no publisher PDF could be fetched for.
+- **Writes:** new PDFs and new README rows only, under `<darkroom>/bugarach/lit/` — `surrogates/`,
+  `ml/`, `coordination/`, and possibly new topic folders with their own README. Nothing existing is moved,
+  renamed or overwritten.
+- **Branch:** `lit-recombination-nulls`, in a worktree of the same name.
+- **Released when:** the reading log lands on `main`.
+
 ### 065/surrogate-screen-overnight — DARKROOM claim ACTIVE: `bugarach/2026-09-11-surrogate-screen/`
 - **Moved 2026-09-11, from the Mac to the Windows workstation (065).** The Mac stopped the run at
   about 11:05 for power; this machine finishes the grid and writes the reports, per
