@@ -632,8 +632,7 @@ that will fail the day upstream fixes it. PySpike stays a test-suite
 cross-check in the uncapped regime, where the two definitions agree.
 
 **Cite in any publication that uses results from this tool.** ° marks a work carried
-from interface2's attribution audit and **not read here** — this project's shelf
-holds only Finn & Johnson of the works below. Where each detector came from, which
+from interface2's attribution audit and **not read here**. Where each detector came from, which
 are this lab's own designs and which derive from published work, is
 [`docs/detector_history.md`](docs/detector_history.md).
 
@@ -650,11 +649,16 @@ are this lab's own designs and which derive from published work, is
   14(1):43–80, and *II. Nonstationary data*, 14(1):81–119. The shift-based null used
   here is nearer ° Amarasingham A., Harrison M.T., Hatsopoulos N.G., Geman S. (2012).
   *Conditional modeling and the jitter method of spike resampling*, J Neurophysiol
-  107(2):517–531, doi:10.1152/jn.00633.2011. LoCo's `maxlt` is greatest-of CFAR:
-  ° Hansen V.G. (1973). *Constant false alarm rate processing in search radars*, Proc.
-  IEE Int. Radar Conf., IEE Conf. Publ. 105, 325–332 — the origin; its detectability
-  cost is measured in Hansen V.G. & Sawyers J.H. (1980), IEEE T-AES AES-16(1):115–118,
-  which **is** on this project's shelf.
+  107(2):517–531, doi:10.1152/jn.00633.2011. LoCo's `maxlt` mode takes the
+  larger of two local thresholds, one from the trailing and one from the leading
+  half-window, which is greatest-of selection in constant-false-alarm-rate (CFAR)
+  radar detection. The added detection loss of greatest-of over plain
+  cell-averaging, in radar, is computed in Hansen V.G. & Sawyers J.H. (1980),
+  IEEE T-AES AES-16(1):115–118, doi:10.1109/TAES.1980.308885. **Where greatest-of
+  began is not established**, and this README no longer cites a 1973 Hansen
+  conference paper as its origin;
+  [`docs/detector_history.md` §4.1](docs/detector_history.md#41-where-greatest-of-began)
+  sets out what is known and what is not.
 - **PySpike**, for the measure under **SPIKE-synch** — Mulansky M., Kreuz T. (2016).
   *PySpike — A Python library for analyzing spike train synchrony*, SoftwareX 5,
   183–189, doi:10.1016/j.softx.2016.07.006. The measure is ° Kreuz T., Mulansky M.,

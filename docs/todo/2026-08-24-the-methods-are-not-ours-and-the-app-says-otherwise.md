@@ -94,7 +94,7 @@ shipped claim rests on priority: the scoreboard already forbids
 | `sce_detect` | **published 2003, Yuste lab**, crediting 2001 | Cossart 2003; Mao 2001; then Dard 2022 / Bocchio 2020 |
 | `cicada_detect` | published, and **modified** here | Denis 2020 (Zenodo); Dard 2022 |
 | `sync_detect` | measure published; detection layer *not* novel either — see [the Kreuz note](2026-08-24-kreuz-answered-the-spike-synch-questions-in-april.md) | Kreuz 2015; Satuvuori 2017 |
-| `loco_detect`, `coact_detect` | Unitary Events 2002; `maxlt` is GO-CFAR 1973 | Grün 2002a & 2002b; Amarasingham 2012; Hansen 1973 |
+| `loco_detect`, `coact_detect` | Unitary Events 2002; `maxlt` is GO-CFAR, origin not established (`detector_history.md` §4.1; was "1973" until 2026-09-14) | Grün 2002a & 2002b; Amarasingham 2012; Hansen & Sawyers 1980 (loss analysis, not origin) |
 
 **This repo half-knew.** [`detector_history.md`](../detector_history.md) derived
 the CFAR connection independently on 2026-08-22, retrieved two of the radar

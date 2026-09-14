@@ -336,13 +336,13 @@ footer{margin-top:56px; color:var(--ink-3); font-size:.8rem; font-family:"IBM Pl
   <h2>Where this repo already lives in that space</h2>
   <p class="lede">bugarach's coordination detectors were tuned by benchmark, not by reading radar — and
   they landed on named CFAR variants anyway. The mapping is
-  <b>docs/detector_history.md</b> &sect;4; every primary behind it is on the shelf and read.</p>
+  <b>docs/detector_history.md</b> &sect;4; &sect;4.1 records that greatest-of's origin is not established.</p>
   <div class="card pad scrollx">
     <table class="map">
       <thead><tr><th>bugarach detector</th><th>mechanism</th><th>CFAR name</th><th>source</th></tr></thead>
       <tbody>
         <tr><td class="code">rate+context</td><td>test window vs the mean of a surrounding window</td><td>cell-averaging (CA)</td><td>Finn &amp; Johnson 1968</td></tr>
-        <tr><td class="code">LoCo · maxlt</td><td><b>max</b> of a trailing and a leading half-window</td><td>greatest-of (GO)</td><td>Hansen &amp; Sawyers 1980</td></tr>
+        <tr><td class="code">LoCo · maxlt</td><td><b>max</b> of a trailing and a leading half-window</td><td>greatest-of (GO)</td><td>origin not established; loss: Hansen &amp; Sawyers 1980</td></tr>
         <tr><td class="code">LoCo · symmetric</td><td>one window spanning both sides</td><td>cell-averaging again</td><td>—</td></tr>
         <tr><td class="code">LoCo · 99.9th pct</td><td>a high order statistic of the surrogate pool</td><td>kin to ordered-statistic (OS)</td><td>Rohling 1983</td></tr>
         <tr><td class="code">CoactDetect</td><td>bin vs a null centred on that bin</td><td>cell-averaging, per-cell test</td><td>—</td></tr>
@@ -379,7 +379,7 @@ var $=function(s){return document.querySelector(s)};
 
 var VARIANTS=[
  {id:"CA",name:"CA-CFAR",rule:"mean of every reference cell",cite:"Finn & Johnson 1968"},
- {id:"GO",name:"GO-CFAR",rule:"greater of the two half-means",cite:"Hansen & Sawyers 1980"},
+ {id:"GO",name:"GO-CFAR",rule:"greater of the two half-means",cite:"loss analysis: Hansen & Sawyers 1980"},
  {id:"SO",name:"SO-CFAR",rule:"lesser of the two half-means",cite:"Trunk 1978"},
  {id:"OS",name:"OS-CFAR",rule:"k-th smallest reference cell",cite:"Rohling 1983"},
  {id:"TM",name:"TM-CFAR",rule:"mean, two largest censored",cite:"Weiss 1982; Rickard & Dillard"}
