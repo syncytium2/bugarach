@@ -45,6 +45,18 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 - **Branch:** `surrogate-screen-overnight`, in a worktree of the same name.
 - **Released when:** the morning murderboard on the report is done.
 
+### Mac/deploy-column-axis — SITE claim RELEASED 2026-09-14: deployed at `a3a4f7b`
+- **Status:** **RELEASED 2026-09-14 — deployed; nothing holds the site.** Continuing Tony's live
+  testing of the column views (he asked "ready?" for it). Held on the machine-local board for the
+  upload; this block is the record.
+- **What went out:** #551 — pinned axis and timings strip, raster height by ROI count, tighter rows,
+  per-row timing off the median, the ROI order toggle in the column views, one-line footnotes,
+  the terse rail's arrow.
+- **Deploy record.** Worktree detached at `origin/main` `a3a4f7b`; `DEPLOY_HOLD.md` `held: no`; no
+  ACTIVE site claim. Site tests green on the build; dry run read 8 files; uploaded with the pinned
+  wrangler, version `d53490d2`. Afterwards `site_staleness.py` reads **current** and
+  `audit_deployed_page.py` is clean.
+
 ### Mac/deploy-overview-pickers — SITE claim RELEASED 2026-09-13: deployed at `55ce08f`
 - **Status:** **RELEASED 2026-09-13 — deployed; nothing holds the site.** Tony, in words: *"deploy
   so i can test"*. Held on the machine-local board for the length of the upload, which is shorter
