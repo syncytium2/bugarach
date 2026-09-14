@@ -5,6 +5,12 @@ filed: 2026-09-10
 
 # The canonical surname is Gregers Hansen, and three docs treat it as Hansen
 
+> **Update 2026-09-14:** the origin question this file keeps apart from itself is now closed. It was
+> closed by ruling rather than by a source: §4 says where greatest-of began is **not established**
+> ([the closed todo](2026-09-10-nobody-has-read-hansen-1973.md)). The "Do not" section and the "nothing
+> about the origin column has moved" condition below are therefore spent. The rename itself is still
+> open, and it should not reword that passage.
+
 > **Actionable now** — needs no new source. Deliberately not done on 2026-09-10 because changing an
 > attribution across the glossary, the README and the lineage doc deserves its own review rather
 > than riding along in a handoff.

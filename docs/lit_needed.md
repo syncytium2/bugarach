@@ -135,21 +135,33 @@ locations belong to other projects.
       - **The page range has a source now:** Gandhi & Kassam 1988's reference list. It is still a
         secondary source, and the only one found. Hansen's own citation gives no pages.
       - **"The talk treated greatest-of selection" is supported by its own author.** "The talk
-        proposed it" rests on Gandhi & Kassam alone, nine years after the 1980 paper.
-      - ⚠ **"The talk is the origin of greatest-of" cannot be established by anyone, and the
-        evidence runs against it.** A Hughes memo analysed the split mean-level detector in February
-        1972. Nobody can read the memo either (it is internal), so all this shows is that the idea
-        was circulating in industry before the talk. It does not show who had it first.
-      - So **neither of the two readings `detector_history.md` §4 was waiting on can be confirmed**.
-        The 1973 talk as *origin* is contradicted by the date of the memo. Hansen & Sawyers 1980 as
-        *origin* is contradicted by its own §I, which cites earlier work on the same selection.
-        **The rewording of the column, and of `GLOSSARY.md` and `README.md`, is Tony's call**; it is
-        filed in [the todo](todo/2026-09-10-nobody-has-read-hansen-1973.md), and it was not made here.
+        proposed it" rests on Gandhi & Kassam alone, fifteen years after the talk. (This line said
+        "nine years after the 1980 paper" when it merged in #553; 1988 is eight years after 1980.)
+      - ~~"The talk is the origin" … the evidence runs against it … contradicted by the date of the
+        memo.~~ **Withdrawn the same day by the murderboard on the public passage.** That reading
+        treated the memo's date as priority. The shelf does not support it: the 1980 paper's
+        acknowledgment calls its authors' results *"independent work"*, and Rohling 1983 names a
+        third proposer, Moore & Lawrence 1980. The shelf's papers do not settle who proposed
+        greatest-of, in either direction.
+      - **Tony's ruling, 2026-09-14: no replacement origin.** In his words, *"let's not replace origin,
+        but discuss our attempt to find it. state what we know, what we don't know. and leave it at
+        that"*. **`detector_history.md` §4.1, *Where greatest-of began*, is now the authority** for
+        what is known and not known, including a patent (US 4,318,101) that describes the 1973
+        paper's content, the searches tried, and the catalogue record of a search-only scan of the
+        volume at HathiTrust (001618382). Its attribution cell for `maxlt` reads *not established*, and
+        `GLOSSARY.md` and `README.md` point there instead of naming an origin.
 
-      **Routes that were exhausted before the close**, kept so nobody retries them: IEEE Xplore does
-      not index the talk, since it was an IEE (British) publication and the author profile jumps
-      1972 → 1974. OpenAlex has a record with no DOI and a wrong venue. The volume's contents listing
-      is the most anyone has found.
+      **Routes tried**, kept so nobody retries them: Hansen's IEEE Xplore author record lists nothing
+      between 1972 and 1974, and Xplore refused direct fetches (HTTP 418 / CAPTCHA). The IET Digital
+      Library and HathiTrust's full-text search refused automated queries, but HathiTrust's
+      catalogue API answers: record **001618382** is a search-only scan of a US university
+      library's copy (`mdp.39015000988512`), catalogued with ISBN 0 85296 112 X. OpenAlex and
+      Semantic Scholar hold records without text. The shelf PDF titled "contents listing" is a
+      notice of the volume in *Proc. IEE* 120(11), November 1973, p. 1391, whose text gives ISBN
+      0 85296 114 6, which HathiTrust (011456921) attaches to the IEE's 1973 *Conference on the Use of
+      Digital Computers in Measurement* instead. **Not tried:** a search of the
+      HathiTrust scan in a browser, a library request for the printed volume, the IET archives,
+      or writing to the author.
 
 - [x] ~~**Date A, Bienenstock E & Geman S (1998).** On the temporal resolution of neural
       activity. Technical Report, Division of Applied Mathematics, Brown University.~~

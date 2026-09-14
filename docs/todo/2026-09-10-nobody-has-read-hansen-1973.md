@@ -1,9 +1,45 @@
 ---
-status: open
+status: done
 filed: 2026-09-10
+closed: 2026-09-14
 ---
 
 # Nobody has read Gregers Hansen 1973, and it decides whose column is right
+
+> ## Closed 2026-09-14: the origin is left unestablished, on purpose
+>
+> **Tony's ruling:** *"let's not replace origin, but discuss our attempt to find it. state what we
+> know, what we don't know. and leave it at that"*. So the answer to the question in this file's
+> title is *neither*, and the docs now say so:
+> - `detector_history.md` **§4.1, Where greatest-of began** covers the searches tried, what three
+>   shelf papers and one patent say, and what is not known. It is the authority now; this file and
+>   `lit_needed.md` are not. The attribution cell for `maxlt` reads *origin not established*. The
+>   murderboard run is [`reviews/greatest-of-origin_2026-09-14.md`](../reviews/greatest-of-origin_2026-09-14.md).
+> - `GLOSSARY.md`, `README.md`, `learned/cfar_scope.html` and the withdrawn proposal's footer no
+>   longer imply an origin. They point at §4.1.
+>
+> ⚠ **Two corrections to this file's own record:**
+> - §4's column is headed **attribution**, not *origin*. The body below, `lit_needed.md` and the
+>   2026-09-10 handoff all misquote it.
+> - The "What that does to the dispute" paragraph in the revision below is **superseded**. It read
+>   the memo's date as contradicting the talk, and proposed "the earliest published treatment" as a
+>   replacement origin. The murderboard found the shelf does not support either: the 1980 paper
+>   calls its authors' work *independent*, and Rohling 1983 credits a different proposer, Moore &
+>   Lawrence 1980.
+> - The 2026-09-10 review record ([roles 1–6](../reviews/2026-09-10-coordination-without-labels-roles-1-6.md),
+>   row 4) says a reviewer *"confirmed independently"* that Hansen 1973 introduces greatest-of, with
+>   pages 325–332. It names no source, and no source held that day gave those pages. Treat that row
+>   as unsupported. The record itself is left as written.
+>
+> **Not done here, and still open:**
+> - [the canonical surname](2026-09-10-the-canonical-surname-is-gregers-hansen.md). The new passage
+>   keeps the document's *Hansen* form and names the canonical form once, so that change can land as
+>   the rename it is.
+> - [the follow-ups](2026-09-14-greatest-of-follow-ups.md) the review left: the darkroom copy of the
+>   history page, the page builder's rendering, the shelf README, `maxlt`'s calibration, the other
+>   attributions, and questions for Tony.
+>
+> Everything below is the record as it stood before the ruling.
 
 > ## Revision, 2026-09-14: nobody will read it, so the question changes
 >
