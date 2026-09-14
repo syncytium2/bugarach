@@ -42,12 +42,11 @@ that the origin stays *not established*.
 - **Questions for Tony (role 2):**
   - Has anyone written to the IET archives, to V. Gregers Hansen, or to Technology Service
     Corporation (thanked in the 1980 paper)?
-  - HathiTrust record 001618382 is a search-only scan of a US university library's copy of
-    Conf. Publ. 105 (item `mdp.39015000988512`). Its full-text search could show whether the
-    paper uses "greatest" or "split" at all, and that library's print copy could be requested.
-    Is either wanted?
-  - The notice's ISBN (0 85296 114 6) and the catalogue's (0 85296 112 X) disagree, so any
-    library request should use the HathiTrust record.
+  - ~~Is a library request wanted?~~ **Answered 2026-09-14: Tony placed an interlibrary-loan
+    request**, identified by OCLC 952520 and ISBN 0-85296-112-X. What to do when the copy arrives
+    is recorded in `docs/lit_needed.md`. Until then, the search-only HathiTrust scans (records
+    001618382 and 011456921) remain the quicker way to check whether the paper uses "greatest"
+    or "split" at all.
 
 - **Found in the review's third round, outside this change:**
   - `detector_history.md` §7 item 4 says Rohling 1983 is "a greatest-of combination rule and an
