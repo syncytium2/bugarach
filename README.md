@@ -650,15 +650,15 @@ are this lab's own designs and which derive from published work, is
   here is nearer ° Amarasingham A., Harrison M.T., Hatsopoulos N.G., Geman S. (2012).
   *Conditional modeling and the jitter method of spike resampling*, J Neurophysiol
   107(2):517–531, doi:10.1152/jn.00633.2011. LoCo's `maxlt` mode takes the
-  larger of two local thresholds, one from the trailing and one from the leading
-  half-window, which is greatest-of selection in constant-false-alarm-rate (CFAR)
-  radar detection. The added detection loss of greatest-of over plain
-  cell-averaging, in radar, is computed in Hansen V.G. & Sawyers J.H. (1980),
-  IEEE T-AES AES-16(1):115–118, doi:10.1109/TAES.1980.308885. **Where greatest-of
-  began is not established**, and this README no longer cites a 1973 Hansen
-  conference paper as its origin;
-  [`docs/detector_history.md` §4.1](docs/detector_history.md#41-where-greatest-of-began)
-  sets out what is known and what is not.
+  larger of two local thresholds (each a percentile of a surrogate null, one from
+  the trailing and one from the leading half of the context window), which is the
+  greatest-of combination rule of constant-false-alarm-rate (CFAR) radar detection.
+  **Where greatest-of began is not established**
+  ([`docs/detector_history.md` §4.1](docs/detector_history.md#41-where-greatest-of-began)).
+  In radar, the added detection loss of cell-averaging greatest-of over plain
+  cell-averaging is computed in Hansen V.G. & Sawyers J.H. (1980), *Detectability
+  loss due to "greatest of" selection in a cell-averaging CFAR*, IEEE T-AES
+  AES-16(1):115–118, doi:10.1109/TAES.1980.308885.
 - **PySpike**, for the measure under **SPIKE-synch** — Mulansky M., Kreuz T. (2016).
   *PySpike — A Python library for analyzing spike train synchrony*, SoftwareX 5,
   183–189, doi:10.1016/j.softx.2016.07.006. The measure is ° Kreuz T., Mulansky M.,

@@ -256,18 +256,18 @@ so the words mean one thing.
 
 **That argument is no longer a reading: the mechanisms are CFAR's.** This paragraph
 used to say the attributions were "flagged unverified and nothing below depends
-on them", which was true when it was written and stopped being true twice: four
-radar papers were retrieved and read on 2026-08-22, and an interface2 audit on
-2026-08-24 identified the mechanism of every lineage row. `rate_detect` is
-cell-averaging CFAR (Finn & Johnson 1968), `loco_detect`'s `maxlt` uses greatest-of
-selection, and its percentile-of-pool is kin to OS-CFAR (Rohling 1983). **The words
-below name the mechanisms these detectors use.** None of it is a problem — this
-project's own priority is closed (Tony, 2026-08-24) and the reason to care is the
-engineering the radar literature is offering, which
+on them". Since then four radar papers were read in full (2026-08-22), and an
+interface2 audit (received 2026-08-24) matched each detector to a CFAR mechanism:
+`rate_detect` is cell-averaging in structure (Finn & Johnson 1968), `loco_detect`'s
+`maxlt` uses the greatest-of combination rule, and its percentile-of-pool is kin to
+OS-CFAR (Rohling 1983). One attribution that audit made, Hansen 1973 as the origin
+of greatest-of, is withdrawn as unverified; where greatest-of began is not
+established ([`detector_history.md` §4.1](detector_history.md#41-where-greatest-of-began)).
+**The words below name the mechanisms these detectors use.** The question of who got
+there first is closed for this project (Tony, 2026-08-24); the reason to care is the
+engineering the radar literature offers, which
 [the attribution note](todo/2026-08-24-the-methods-are-not-ours-and-the-app-says-otherwise.md)
-sets out. Where greatest-of selection itself began is not established;
-[`detector_history.md` §4.1](detector_history.md#41-where-greatest-of-began) sets out
-what is known and what is not.
+describes.
 
 - **CFAR** — constant false alarm rate: set the threshold from an estimate of
   the local background so the false-alarm probability stays put as the
@@ -294,7 +294,8 @@ what is known and what is not.
 - **self-masking / mutual masking** — an event raising its own bar; a second
   event inside the reference window raising it further.
 - **greatest-of (GO) / ordered-statistic (OS) selection** — combination rules for the
-  reference estimate. LoCo's `maxlt` is greatest-of; its percentile-of-pool is
+  reference estimate. LoCo's `maxlt` uses the greatest-of rule over percentile
+  thresholds rather than means; its percentile-of-pool is
   kin to an ordered statistic.
 
 ## Validation vocabulary

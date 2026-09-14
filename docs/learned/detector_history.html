@@ -440,9 +440,10 @@ this document already names</strong> while §2 still files the detector as ours;
 two halves disagree, §5 wins. <code>loco_detect</code>'s <code>maxlt</code> is GO-CFAR (Hansen 1973) and
 its percentile-of-pool is kin to OS-CFAR — so §4's argument that three of these
 are re-derivations of CFAR has stopped being a reading of the design space and
-become the attribution. ⚠ <em>2026-09-14: the Hansen 1973 credit is withdrawn as
-unverified. For greatest-of the audit identified the mechanism, not where it
-began; see §4.1, Where greatest-of began.</em> Separately, Kreuz's own lab has published detection layers
+become the attribution. ⚠ <em>2026-09-14: the audit named Hansen 1973 as the origin
+of greatest-of, and nobody had read that paper; the credit is withdrawn as
+unverified (§4.1). <code>maxlt</code> uses greatest-of's combination rule over percentile
+thresholds, not GO-CFAR's mean-based form (§4).</em> Separately, Kreuz's own lab has published detection layers
 on the synchronization profile, which weakens the Tier 2 framing.</p>
 <p><strong>None of this is a problem, and Tony has ruled on that</strong> — <em>"most researchers
 would be kind of thrilled with the link … it's a tool and it's useful."</em> Priority
@@ -683,8 +684,8 @@ named for exactly the choices bugarach made by benchmark.</p>
 <td>LoCo, <code>maxlt</code></td>
 <td><strong>max</strong> of a trailing and a leading half-window</td>
 <td>greatest-of (GO) selection</td>
-<td>origin <strong>not established</strong> (§4.1); loss analysis of the cell-averaging form: Hansen &amp; Sawyers, <em>IEEE T-AES</em> <strong>AES-16</strong>(1), Jan 1980, 115–118</td>
-<td><strong>read in full</strong></td>
+<td>origin <strong>not established</strong> (§4.1); added-loss analysis of cell-averaging greatest-of: Hansen &amp; Sawyers, <em>IEEE T-AES</em> <strong>AES-16</strong>(1), Jan 1980, 115–118</td>
+<td>Hansen &amp; Sawyers <strong>read in full</strong></td>
 </tr>
 <tr>
 <td>LoCo, <code>symmetric</code></td>
@@ -728,8 +729,9 @@ Sawyers, Rohling, and Gandhi &amp; Kassam — on the shelf at
 <code>&lt;darkroom&gt;/bugarach/lit/radar/</code>, each with a read-status entry. Tony supplied
 Hansen &amp; Sawyers and Gandhi &amp; Kassam on 2026-08-22, closing item 2 of §7. The 1973
 Hansen paper this document used to cite is not among them (§4.1). Radar quotations
-are checked by hand against text extracted from those PDFs; <code>tools/verify_quotes.py</code>
-traces some of them automatically and does not block anything.</p>
+are checked by hand against text extracted from those PDFs (the patent quotations in
+§4.1 excepted); <code>tools/verify_quotes.py</code> traces some of them automatically and does
+not block anything.</p>
 <p>One correction the retrieval forced: an earlier draft said the censoring fix was
 Gandhi &amp; Kassam's. Rohling, writing in 1983, already credits Weiss and Rickard &amp;
 Dillard with <em>"eliminating the maximum amplitude(s) from the reference window"</em>,
@@ -750,63 +752,61 @@ empty <em>in the calcium-imaging literature</em>. In detection theory it has bee
 occupied for a long time, and a methods reviewer from a signal-processing
 background will know that.</p>
 <h3>4.1 Where greatest-of began</h3>
-<p>Where greatest-of selection began is not established. This document used to credit
-it to a 1973 paper by V. Gregers Hansen (listed in the IEE's notice as "GREGERS
-HANSEN, V.", and cited by other authors as V.G. Hansen): <em>"Constant-false-alarm-rate processing in
-search radars"</em>, in <em>Radar — present and future</em>, Conference Publication 105 of the
-Institution of Electrical Engineers (IEE, the British body, not the IEEE), from a
-London conference held 23–25 October 1973. That paper has not been read here. The
-sources we do hold describe work on greatest-of from 1972 onward and credit
-different people with proposing it. Nothing above depends on the answer: <code>maxlt</code>
-matches greatest-of's combination rule whoever devised it.</p>
-<p><strong>The search, 2026-09-10 to 2026-09-14.</strong> A notice of the volume in <em>Proc. IEE</em>
-120(11), November 1973, p. 1391, confirms the author and title. Its text gives the
-ISBN as 0 85296 114 6; the HathiTrust catalogue record for the volume (001618382)
-gives 0 85296 112 X. HathiTrust holds a
-search-only scan of a US university library's copy, which has not been searched
-from here. IEEE Xplore and the IET Digital Library could not be queried with this
-project's automated tools, and OpenAlex and Semantic Scholar hold catalogue records
-without text. No library request for the printed volume has been recorded.</p>
-<p>What the sources we hold say, oldest first:</p>
+<p>Where greatest-of selection began is not established. Following an interface2
+attribution audit, this document used to credit it to a 1973 conference paper by
+V. Gregers Hansen, <em>"Constant-false-alarm-rate processing in search radars"</em>, IEE
+Conference Publication 105 (London, 23–25 October 1973; the IEE is the British
+Institution of Electrical Engineers, not the IEEE). Nobody on this project has read
+that paper, and the sources we have read credit different people with proposing
+greatest-of. The mechanism match above does not depend on the answer; what to cite
+for greatest-of's origin does, and it stays open.</p>
+<p><strong>The search.</strong> A notice of the volume in <em>Proc. IEE</em> 120(11), November 1973,
+p. 1391, confirms the author (listed as "GREGERS HANSEN, V.") and the title. The
+notice prints ISBN 0 85296 114 6, which HathiTrust's catalogue gives to Conference
+Publication 103; its record for no. 105 (001618382) gives 0 85296 112 X. HathiTrust
+holds two search-only scans that may contain the paper, one under that record and a
+bound "no. 103–105" volume under record 011456921. Neither has been searched. IEEE
+Xplore and the IET Digital Library refused this project's automated queries, and
+OpenAlex and Semantic Scholar hold catalogue records without text. No library request
+and no correspondence about the paper is recorded.</p>
+<p>What the sources we have read say, oldest first:</p>
 <ul>
 <li><strong>Hansen &amp; Sawyers 1980</strong> cite the 1973 paper for <em>"a simple rule for determining
   the detectability loss"</em> of cell-averaging CFAR with greatest-of selection, a rule
-  <em>"based on a simplified analysis and simulation results of limited accuracy"</em>. By
-  their account, then, the 1973 paper treated greatest-of. Their introduction also
-  cites an internal Hughes Aircraft memo by J.H. Sawyers, dated 15 February 1972,
-  <em>"Detection losses of the 'Conventional' and 'Split' mean level threshold
-  detectors"</em>, as the exact analysis their loss curves are prepared from; as they
-  describe it, that memo is the earliest dated treatment of greatest-of in the
-  sources we hold. Their acknowledgment says the paper's results <em>"are derived from
-  independent work performed by the two authors"</em>.</li>
+  <em>"based on a simplified analysis and simulation results of limited accuracy"</em>. They
+  take the exact analysis behind their loss curves from an internal Hughes Aircraft
+  memo by J.H. Sawyers dated 15 February 1972, <em>"Detection losses of the
+  'Conventional' and 'Split' mean level threshold detectors"</em>, and their
+  acknowledgment says the paper's results <em>"are derived from independent work
+  performed by the two authors"</em>.</li>
 <li><strong>US patent 4,318,101</strong> (Nippon Electric, filed 1980, granted 1982; quoted from the
   Google Patents text, which is not on the shelf) says Hansen <em>"proposed another CFAR
-  processor for the Weibull clutter in general"</em> in the 1973 paper, "another" meaning
-  besides Goldstein's 1973 Weibull processor, and paginates the paper 1–8. The
-  processor it reproduces <em>"as disclosed in the Hansen report"</em> averages the reference
-  cells on both sides of the cell under test. The patent does not mention greatest-of
-  selection.</li>
+  processor for the Weibull clutter in general"</em> in the 1973 paper, which it paginates
+  1–8. The processor it reproduces estimates Weibull parameters from averages of the
+  log amplitudes on both sides of the cell under test. The patent concerns Weibull
+  clutter and does not discuss greatest-of either way.</li>
 <li><strong>Rohling 1983</strong> writes that <em>"Moore et al. [3] proposed a different estimation
   method. The CAGO CFAR applies the maximum of two arithmetic means"</em>, citing Moore &amp;
   Lawrence at the 1980 IEEE International Radar Conference, and that <em>"Hansen et al.
-  [2] have investigated CAGO CFAR"</em>, citing the 1980 paper. He does not cite the 1973
-  paper. Moore &amp; Lawrence's talk is later than both the memo and the 1973 paper, so
-  his "proposed" cannot mean first.</li>
+  [2] have investigated CAGO CFAR"</em>, citing the 1980 paper. He cites neither the 1973
+  paper nor the memo.</li>
 <li><strong>Gandhi &amp; Kassam 1988</strong> write that <em>"Hansen [9] has proposed a CFAR procedure to
   regulate false alarm rate in the region of clutter transition; in this procedure
   the noise power is estimated by the greatest of (GO) the sums in the leading and
   lagging windows"</em>, with [9] the 1973 paper, and elsewhere that greatest-of was
-  <em>"proposed and analyzed in [9, 10]"</em>, the 1973 and 1980 papers together. Their
-  reference list is our only source for the 1973 paper's pages, 325–332 (the patent
-  gives 1–8), and it names the venue as an IEEE conference.</li>
+  <em>"proposed and analyzed in [9, 10]"</em>, the 1973 and 1980 papers together. They give
+  the 1973 paper's pages as 325–332 and name its venue as an IEEE conference.</li>
 </ul>
+<p>Finn &amp; Johnson 1968 and Weinberg 2017, also on the shelf, say nothing about where
+greatest-of began.</p>
 <p>What we do not know:</p>
 <ul>
-<li>whether greatest-of began with the 1972 memo, the 1973 paper, or earlier work;</li>
+<li>whether greatest-of began with the 1972 memo, the 1973 paper, Moore &amp; Lawrence's
+  1980 talk, or earlier work;</li>
 <li>what the 1973 paper and the memo contain, beyond what the sources above report;</li>
-<li>whether Hansen's other early detection papers bear on it, including two with CFAR
-  in the title: with Zottl, <em>IEEE T-AES</em> AES-7(4), 1971, and with Ward, <em>IEEE T-AES</em>
-  AES-8(5), 1972, 648–652. None of them is on the shelf.</li>
+<li>whether Hansen's other papers bear on it, among them two with CFAR in the title:
+  with Zottl, <em>IEEE T-AES</em> AES-7(4), 1971, and with Ward, <em>IEEE T-AES</em> AES-8(5),
+  1972, 648–652. Neither is on the shelf.</li>
 </ul>
 <hr />
 <h2>5. Five things radar knows that this project does not</h2>
@@ -1219,10 +1219,10 @@ provenance note; 2, 4 and 5 follow from §4.</p>
      edges, which is the nonhomogeneity this preparation actually has.</li>
 </ul>
 <p>Net effect: <strong>stop proposing to replace <code>maxlt</code>, start proposing to censor inside
-   it.</strong> All four primaries are read. ⚠ <em>2026-09-14:</em> this check read the 1980 loss
-   analysis, not the 1973 paper the greatest-of attribution named, and could not tell
-   the two apart. That attribution is withdrawn as unverified, and where greatest-of
-   began is not established (§4.1).
+   it.</strong> All four papers are read. ⚠ <em>2026-09-14:</em> this check verified the
+   greatest-of attribution as it then stood, Hansen &amp; Sawyers 1980, without asking
+   whether that paper was the origin. The 2026-08-24 audit replaced it with Hansen
+   1973, which nobody read; that credit is withdrawn as unverified (§4.1).
 3. ~~<strong>Fetch Malvache et al. 2016 by hand.</strong>~~ <strong>Done 2026-08-22</strong>, from Tony's own
    copy, and it was the highest-value fetch of the three: <strong>two of the four constants
    this project attributes to it are wrong</strong> (§2). What remains is narrower and now

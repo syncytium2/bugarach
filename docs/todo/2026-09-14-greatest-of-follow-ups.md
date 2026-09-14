@@ -49,5 +49,24 @@ that the origin stays *not established*.
   - The notice's ISBN (0 85296 114 6) and the catalogue's (0 85296 112 X) disagree, so any
     library request should use the HathiTrust record.
 
+- **Found in the review's third round, outside this change:**
+  - `detector_history.md` §7 item 4 says Rohling 1983 is "a greatest-of combination rule and an
+    order-statistic estimator, in print". Role 4 reads Rohling as describing the two as separate
+    processors (eq. 7 versus eqs. 9–10), which would make that sentence an origin claim for
+    LoCo's hybrid. Check it against the PDF before changing it.
+  - `docs/learned/cfar_scope.html` names a detector row "binned SCE, CICADA". The port is
+    **locust** and must not be reported as CICADA (§6.3, README).
+  - `docs/handoffs/2026-09-10-the-surrogate-is-the-design.md` still says "the chronology leans
+    toward 1973" and "do not change the column until someone has read the 1973 paper". It needs
+    a dated note pointing at §4.1.
+  - The README ° legend now claims unmarked works were read here. Amarasingham et al. 2012 is
+    marked ° but is on the surrogates shelf, read in part. Whether Cossart, Aronov & Yuste 2003
+    was read here is unrecorded.
+  - `tests/test_index_resolves.py` checks paths but not `#anchors`, so a renamed §4.1 heading
+    would silently break the README and GLOSSARY links.
+  - The CiNii and OpenAlex records also give 325–332, probably derived from citations. Japanese
+    Weibull-clutter papers that cite the 1973 paper, radar handbooks, and patents from before
+    1973 have not been searched.
+
   Moore & Lawrence 1980, and Hansen's other pre-1974 detection papers, are not on the shelf either.
   Under the 2026-09-14 ruling none of this is being pursued unless Tony says so.
