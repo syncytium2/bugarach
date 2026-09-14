@@ -337,6 +337,22 @@ def _clusters(trains, counts, K, bin_width, n_bins, merge_bins, wm,
         else (sds, parts, peaks, spans)
 
 
+def circular_shift_trains(trains, win_dur, rng):
+    """The assessor's null: every ROI's train slid by its own random lag, wrapping.
+
+    ``trains`` are onset times **relative to the window start**, one array per ROI,
+    over a window of length ``win_dur``. One ``rng.random_sample(len(trains))`` per
+    call — one uniform per ROI, empty ROIs included, in ROI order. That is the draw
+    the MATLAB original consumes per surrogate, and the parity fixtures rest on it:
+    :func:`assess_coactivity` calls this once per surrogate, and
+    :mod:`bugarach.surrogates` calls the same function so the screen measures the
+    null the assessor actually uses, not a copy of it.
+    """
+    off = rng.random_sample(len(trains)) * win_dur
+    return [np.mod(v + off[r], win_dur) if v.size else v
+            for r, v in enumerate(trains)]
+
+
 def _med(x):
     a = np.asarray(x, dtype=float)
     return float(np.median(a)) if a.size else float("nan")
@@ -537,9 +553,7 @@ def assess_coactivity(
     # over a 75-minute window at 1 s bins this is 18 MB rather than 36.
     sur_counts = np.empty((int(n_surrogates), n_bins), dtype=np.float32)
     for i in range(int(n_surrogates)):
-        off = rng.random_sample(n_roi) * win_dur
-        shifted = [np.mod(v + off[r], win_dur) if v.size else v
-                   for r, v in enumerate(trains)]
+        shifted = circular_shift_trains(trains, win_dur, rng)
         cn = _coact_count(shifted, win_dur, bin_width, n_bins)
         null_sum += cn
         sur_counts[i] = cn

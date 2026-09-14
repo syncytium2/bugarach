@@ -1,5 +1,5 @@
 ---
-status: open
+status: done
 filed: 2026-09-12
 ---
 
@@ -45,3 +45,7 @@ that branch landing — not before.
 
 CI installs Elephant and the surrogate tests run on all three Python versions, or `ci.yml` records
 why they do not.
+
+## Closed 2026-09-14
+
+The `surrogates` extra is in the CI install line (`.github/workflows/ci.yml`), landed with #530, so the three Python legs install `elephant==1.2.1` and the surrogate tests run in CI.

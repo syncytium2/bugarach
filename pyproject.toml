@@ -26,8 +26,12 @@ dependencies = [
 ui = ["panel>=1.4", "holoviews>=1.18"]
 docs = ["markdown>=3.5"]
 dl = ["torch>=2.0"]
+# Elephant carries seven of the surrogate screen's candidates. Pinned exactly: the
+# adapter in src/bugarach/surrogates.py corrects defects found by running 1.2.1, and
+# a different release can move, fix or add them without anything here noticing.
+surrogates = ["elephant==1.2.1"]
 dev = ["pytest>=8", "pyspike", "panel>=1.4", "holoviews>=1.18", "markdown>=3.5",
-       "playwright>=1.40", "torch>=2.0"]
+       "playwright>=1.40", "torch>=2.0", "elephant==1.2.1"]
 
 [project.scripts]
 bugarach = "bugarach.cli:main"

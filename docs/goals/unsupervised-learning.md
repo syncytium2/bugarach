@@ -37,7 +37,7 @@ emit.
 - **The surrogate screen is stopped** (Tony, 2026-09-12). He was asked how to settle the
   family-size question below and whether to write a third re-evaluation; he answered that the first
   needs discussion before deciding and to stop there for now
-  ([handoff on the screen branch](https://github.com/syncytium2/bugarach/blob/surrogate-screen-overnight/docs/handoffs/2026-09-12-both-reevaluations-withdrawn.md)).
+  ([the screen thread's closing handoff](../handoffs/2026-09-12-both-reevaluations-withdrawn.md)).
 - **The ROI-swap evidence plan is live, and its first real-data stage returned STOP** (2026-09-13).
   Its next stage is simulation and needs a murderboard before it starts
   ([the plan](../todo/2026-09-12-evidence-before-more-effort-on-the-roi-swap.md)).
@@ -74,8 +74,8 @@ The next move is a conversation, not a run.
 | ⚠ **Every fast-stream candidate that returned a number was voided by a defect**: the voiding rule read seed 0 of a twenty-seed negative control whose flag rate was the nominal 0.05 | measured; a defect in the rule, not a fact about the data | [voiding todo](../todo/2026-09-12-126-fast-candidates-were-voided-on-one-seed-of-twenty.md) |
 | ⚠ **Joint-ISI dither was never measured** — every cell hit the memory or time cap. Unmeasured, not failed | measured | [todo](../todo/2026-09-12-joint-isi-dithering-is-unmeasured-not-failed.md) |
 | **About 39 % of ROIs are bit-identical in every surrogate** on the lab folder (4–7 % on Cossart), flat in *J*: ROIs with no events to move. So about 39 % of the negative class *is* the positive class, and no surrogate choice removes it. Empty baselines are a group feature and §9 governs them | measured; ruling by Tony 2026-09-12 | [todo](../todo/2026-09-12-an-empty-baseline-is-a-group-feature-and-39-percent-of-every-surrogate-is-the-data.md) |
-| **The screen's report, reviewed**: at its settings no Holm-adjusted yardstick could flag; on Cossart the destruction measure cannot register removal at all | measured, two review rounds | [review record](https://github.com/syncytium2/bugarach/blob/surrogate-screen-overnight/docs/reviews/report_steps_excluded_2026-09-11.md) (screen branch) |
-| …but **a pre-declared family of five band statistics *can* flag on the existing run**. Picking those five after seeing the results would be post-hoc, which is why the family size is Tony's call | measured | [handoff](https://github.com/syncytium2/bugarach/blob/surrogate-screen-overnight/docs/handoffs/2026-09-12-both-reevaluations-withdrawn.md) (screen branch) |
+| **The screen's report, reviewed**: at its settings no Holm-adjusted yardstick could flag; on Cossart the destruction measure cannot register removal at all | measured, two review rounds | [review record](../reviews/report_steps_excluded_2026-09-11.md) |
+| …but **a pre-declared family of five band statistics *can* flag on the existing run**. Picking those five after seeing the results would be post-hoc, which is why the family size is Tony's call | measured | [handoff](../handoffs/2026-09-12-both-reevaluations-withdrawn.md) |
 
 ### The model
 
@@ -110,9 +110,9 @@ in both streams, and in the slow stream every tier does. Full caption and tables
   *significance* null is still open, with same-mouse donors only.
   [Proposal, not recommended after three review rounds](../proposals/2026-09-12-the-roi-swap-null.md).
 - **Two re-evaluations of the screen**, both withdrawn for quoting probe numbers where production
-  numbers existed. On the screen branch:
-  [first](https://github.com/syncytium2/bugarach/blob/surrogate-screen-overnight/docs/proposals/2026-09-12-surrogate-screen-reevaluated.md),
-  [second](https://github.com/syncytium2/bugarach/blob/surrogate-screen-overnight/docs/proposals/2026-09-12-surrogate-screen-reevaluated-v2.md).
+  numbers existed:
+  [first](../proposals/2026-09-12-surrogate-screen-reevaluated.md),
+  [second](../proposals/2026-09-12-surrogate-screen-reevaluated-v2.md).
 - **Reading "no leak" as a score.** Do-nothing survives every leak test; the leak test is a gate, and a
   candidate is credited only at a displacement where it also destroys coordination
   ([displacement floor](../todo/2026-09-12-the-verdict-rule-needs-a-displacement-floor.md)).
@@ -126,8 +126,7 @@ Each is a decision, not a task, and nothing below it can be settled by a session
 | decision | why it gates the goal | filed |
 |---|---|---|
 | **An exit criterion** — *viable* (a candidate that neither leaks nor fails to destroy coordination, on both folders), *narrowed* (one folder), *stopped* (none; write it up as a result about the data) | Without one, the thread cannot tell "not yet" from "no". Should be adopted before any verdict rule reads the numbers | [todo](../todo/2026-09-12-the-label-free-detector-thread-has-no-exit-criterion.md) |
-| **The family size for the band statistics** — pre-declare for a future run, rerun at 260 or 520 splits keeping all thirteen, re-score openly as post-hoc, or decide after a third draft | Decides whether the screen can flag anything at all | [handoff](https://github.com/syncytium2/bugarach/blob/surrogate-screen-overnight/docs/handoffs/2026-09-12-both-reevaluations-withdrawn.md) (screen branch) |
-| **What happens to draft PR #530** — the screen's code, the pattern-jitter clean-room spec, the reviewed report builder and this thread's latest handoff | The largest body of work toward this goal that is not on `main` | [#530](https://github.com/syncytium2/bugarach/pull/530) |
+| **The family size for the band statistics** — pre-declare for a future run, rerun at 260 or 520 splits keeping all thirteen, re-score openly as post-hoc, or decide after a third draft | Decides whether the screen can flag anything at all | [handoff](../handoffs/2026-09-12-both-reevaluations-withdrawn.md) |
 | **How the voiding rule reads a seeded control** — the seed distribution, not one draw | Re-derives every fast verdict without a rerun. Do not look at what un-voids first | [todo](../todo/2026-09-12-126-fast-candidates-were-voided-on-one-seed-of-twenty.md) |
 | **ROIs no surrogate can touch** — accept the noise, weight the loss, or drop (§9 rules out dropping without a group-aware argument) | Sets a label-noise floor for any objective on this folder | [todo](../todo/2026-09-12-an-empty-baseline-is-a-group-feature-and-39-percent-of-every-surrogate-is-the-data.md) |
 | **The quiet → busy transfer penalty** — accept and state it, or bound it before any treatment number is read | Training on baseline is forced; deploying on treated is the measured-bad direction | [todo](../todo/2026-09-10-the-design-trains-quiet-and-deploys-busy.md) |
@@ -146,12 +145,15 @@ Each is a decision, not a task, and nothing below it can be settled by a session
 - **The encoder** clips out-of-range onsets onto the boundary frames and truncates frame positions:
   [clipping](../todo/2026-09-10-the-encoder-clips-onsets-onto-the-boundary-frames.md),
   [truncation](../todo/2026-09-11-the-encoder-truncates-frame-positions.md).
-- **CI does not install Elephant**, so the surrogate tests skip there.
-  [Todo](../todo/2026-09-12-ci-installs-no-elephant-so-the-surrogate-tests-skip.md); upstream defects:
-  [todo](../todo/2026-09-11-elephant-surrogate-defects-are-not-filed-upstream.md).
-- **Seven code findings on the screen branch**, none started — including two implementations of the
+- **Elephant's defects at our timescales are not filed upstream.**
+  [Todo](../todo/2026-09-11-elephant-surrogate-defects-are-not-filed-upstream.md). CI installs
+  Elephant since #530, so the surrogate tests run there.
+- **Two cap tests fail on macOS**: `test_a_worker_past_its_cap_is_killed_and_recorded` expects a
+  memory and a wall-clock cap to kill a tiny cell, and on the Mac neither fires. It failed the same
+  way before #530 was merged with `main`, so it is platform behaviour, not a merge defect.
+- **Seven code findings from the screen's review**, none started — including two implementations of the
   √2·*J* window rule that disagree, and a test that certifies a circularity the review says to remove.
-  Listed in the [screen handoff](https://github.com/syncytium2/bugarach/blob/surrogate-screen-overnight/docs/handoffs/2026-09-12-both-reevaluations-withdrawn.md).
+  Listed in the [screen handoff](../handoffs/2026-09-12-both-reevaluations-withdrawn.md).
 - **The figure this thread still owes**: the same-ROI interval distribution, real against each
   surrogate, with the floor marked.
 
@@ -164,8 +166,7 @@ in this list. Check *Waiting on Tony* before starting anything there.
 
 | what | where |
 |---|---|
-| Screen machinery: `surrogate_stats`, the screen and report builders, the pattern-jitter clean room, the Elephant adapter's tests | **only on** `surrogate-screen-overnight`, draft [#530](https://github.com/syncytium2/bugarach/pull/530) |
-| The per-ROI discriminator | on `main` as [`src/bugarach/surrogate_discriminator.py`](../../src/bugarach/surrogate_discriminator.py), copied verbatim from that branch for the identity run |
+| Screen machinery | [`src/bugarach/surrogates.py`](../../src/bugarach/surrogates.py) (the candidates and the Elephant adapter), [`surrogate_stats.py`](../../src/bugarach/surrogate_stats.py), [`surrogate_discriminator.py`](../../src/bugarach/surrogate_discriminator.py); [`tools/build_surrogate_screen.py`](../../tools/build_surrogate_screen.py) and [`tools/build_surrogate_report.py`](../../tools/build_surrogate_report.py); the pattern-jitter clean room in [`clean_room/pattern_jitter_spec.md`](../clean_room/pattern_jitter_spec.md). Landed with [#530](https://github.com/syncytium2/bugarach/pull/530) on 2026-09-14 — **landing it is not a restart; Tony's stop stands** |
 | The recording-identity measurement | [`tools/measure_recording_identity.py`](../../tools/measure_recording_identity.py) |
 | The learned models | [`src/bugarach/learn/`](../../src/bugarach/learn/) |
 | Run outputs | `<darkroom>/bugarach/2026-09-11-surrogate-screen/`, `<darkroom>/bugarach/2026-09-13-recording-identity/` — resolve with `bugarach.paths.darkroom()` |
@@ -174,9 +175,8 @@ in this list. Check *Waiting on Tony* before starting anything there.
 
 **Branches checked 2026-09-14.** `surrogate-screen-plan`, `surrogate-field-ruled` and
 `the-conditioned-run` show as unpushed in the session briefing but were squash-merged (#529, #526,
-#514) — nothing is lost. Open PR [#531](https://github.com/syncytium2/bugarach/pull/531) holds the
-handoff for moving the 2026-09-11 run to the workstation; the run has since finished and its report
-been reviewed, and that handoff asks to be deleted once #530 lands.
+#514) — nothing is lost. The screen branch landed as #530, and its workstation handoff, #531, was
+closed unmerged on Tony's instruction, 2026-09-14: the run it moved had finished and been reviewed.
 
 ---
 

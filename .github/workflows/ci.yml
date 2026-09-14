@@ -43,7 +43,10 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install torch --index-url https://download.pytorch.org/whl/cpu
-          pip install -e ".[ui,dl]" pytest playwright
+          # `surrogates` is Elephant, pinned: without it the surrogate screen's 98 tests
+          # (tests/test_surrogates.py and its neighbours) skip, and a green tick here
+          # would say nothing about the generators the screen measured.
+          pip install -e ".[ui,dl,surrogates]" pytest playwright
       - name: Install the browser the webapp tests drive
         # The viewer is JavaScript, so checking it means running it. Without a
         # browser here those tests SKIP rather than fail, which is the worst of

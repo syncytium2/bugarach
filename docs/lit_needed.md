@@ -49,8 +49,19 @@ box. Modelled on `murderboard-lit/_NEEDED.md`, which has had this mechanism sinc
 `bugarach.paths.darkroom()` or `python -m bugarach.paths`. **Never hardcode it**: the path carries
 a person's name and this repo is public (SAP004).
 
-Topics in use: `radar/`, `coordination/`, `DL/`, `surrogates/`, `ml/`. As of 2026-09-10 the shelf
-holds 37 files — nine of them papers on surrogate methods, a topic the shelf held nothing on before this date.
+Topics in use: `radar/`, `coordination/`, `DL/`, `surrogates/`, `ml/`. As of 2026-09-12 the shelf
+holds **40 PDFs** — twelve of them papers on surrogate methods, a topic the shelf held nothing on
+before 2026-09-10.
+
+**Check the shelf before fetching, and shelve what you fetch.** Both halves, because on 2026-09-12
+only the first half was running: a single blind review round had two roles hunting the same unshelved
+paper — one reached Gerstein 2004 open-access and read it, the other could not and marked the claim
+unverified. Both had correctly checked the shelf first. Neither shelved it, and neither should have:
+the judgment roles cannot write, and the shell-holding roles are asked to keep to a scratch path that
+a shared cross-machine shelf is not. **Carrying a review's fetches onto the shelf is part of applying
+its findings**, and it is the adjudicating thread's job. `surrogates/README.md` and `ml/README.md`
+were themselves missing until 2026-09-12, so fourteen PDFs sat in the state the shelf's own top-level
+README calls "indistinguishable from a PDF someone downloaded and forgot".
 
 ⚠ **There is no master library.** Checked 2026-09-10: `murderboard-lit/` is its own repo of 206
 papers but on a different subject entirely — agentic reproducibility, paper-code consistency —
@@ -369,6 +380,9 @@ as an absence of effort.
 | Elsayed & Cunningham 2017, *Nat Neurosci* 20:1310–1318 | `surrogates/elsayed_cunningham_2017_byproduct.pdf` — **fetched by Tony**, publisher version |
 | Louis, Gerstein, Grün & Diesmann 2010, *Front Comput Neurosci* 4:127 | `surrogates/louis_2010_operational_time_dither.pdf` |
 | Stella, Bouss, Palm & Grün 2022, *eNeuro* 9(3) | `surrogates/stella_2022_comparing_surrogates.pdf` |
+| Gerstein 2004, *Acta Neurobiol Exp* 64(2):203–207 | `surrogates/gerstein_2004_searching_for_significance.pdf` — **fetched 2026-09-12**, ane.pl, open access |
+| Grün, Borgelt, Gerstein, Louis & Diesmann 2010, *BMC Neurosci* 11(Suppl 1):O15 | `surrogates/grun_2010_selecting_surrogate_methods.pdf` — **fetched 2026-09-12**, biomedcentral |
+| Pipa, Wheeler, Singer & Nikolic 2008, *J Comput Neurosci* 25(1):64–88 | `surrogates/pipa_2008_neuroxidence.pdf` — **fetched 2026-09-12**, Springer |
 | Platkiewicz, Stark & Amarasingham 2017, *Neural Comput* 29(3):783–803 | `surrogates/platkiewicz_2017_spike_centered_jitter.pdf` |
 | Gutmann & Hyvärinen 2012, *JMLR* 13:307–361 | `ml/gutmann_hyvarinen_2012_nce.pdf` |
 | Lopez-Paz & Oquab 2017, ICLR | `ml/lopezpaz_oquab_2017_c2st.pdf` |
