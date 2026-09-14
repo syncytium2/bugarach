@@ -828,17 +828,32 @@ def test_the_overview_asks_first_and_aligns_on_the_end_of_baseline(tmp_path):
                 "() => ['overviewHead', 'overviewAxis'].every(id => "
                 "!document.getElementById('overviewScroll').contains(document.getElementById(id)))")
 
+            # THE MARKS COME ALONG ("no blue triangles once you show all"): with no
+            # assessment run, every row carries turbo's threshold marks at its K
+            marks = pg.evaluate("() => OVERVIEW.rows.map(r => Array.isArray(r.marks) && r.K > 0)")
+            assert marks == [True, True, True], marks
+            assert "threshold marks" in pg.text_content("#overviewWhat")
+
+            # EACH COUNT IS WITHIN THE OTHER PICK: under senktide, A has 2 and B 1
+            chips = lambda: pg.evaluate(                                   # noqa: E731
+                "() => [...document.querySelectorAll('#oGroups button')].map(b => b.textContent)")
+            assert chips() == ["all", "A · 2", "B · 1"], chips()
+
             # TTX: high K+ after it is drawn in the top line without selecting
             pg.select_option("#oTreat", "TTX")
             got = pg.evaluate(_OVERVIEW_STATE)
             assert got["ids"] == ["rec4"], got
             assert [t[0] for t in got["top"]] == ["baseline", "TTX", "high K+"], got
+            assert chips() == ["all", "A · 0", "B · 1"], chips()
 
             # GROUPS: one, then two, then none left pressed is all of them again
             pg.select_option("#oTreat", "senktide")
             pg.click("#oGroups button[data-group=B]")
             got = pg.evaluate(_OVERVIEW_STATE)
             assert got["ids"] == ["rec1"] and got["pressed"] == ["B"], got
+            # and a treatment counts the slices in the groups picked
+            opts = pg.evaluate("() => [...document.querySelectorAll('#oTreat option')].map(o => o.textContent)")
+            assert opts == ["baseline only · 2", "senktide · 1", "TTX · 1"], opts
             pg.click("#oGroups button[data-group=A]")
             assert pg.evaluate(_OVERVIEW_STATE)["ids"] == ["rec0", "rec1", "rec2"]
             pg.click("#oGroups button[data-group=A]")
