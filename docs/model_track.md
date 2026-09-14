@@ -5,6 +5,9 @@
 > *"invest in building out the full infrastructure then refine the model"* — so the
 > website has priority and nothing here blocks it.
 >
+> **The label-free detector goal has its own page**, [`goals/unsupervised-learning.md`](goals/unsupervised-learning.md);
+> this page covers the simulator-trained models it builds on.
+>
 > **Nothing here is approved to run.** The experiments and their costs are in
 > [`docs/overnight_spec.md`](overnight_spec.md) Track B, which carries its own refusal
 > block.

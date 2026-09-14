@@ -9,6 +9,13 @@ and how strongly, each row pinned to a commit. Its `strength` column separates *
 from **decided** from ⚠ **evidence**, and the last one is the point: a measurement whose
 decision has not been made cannot be restated as settled without failing a check.
 
+**For "where are we on *this goal*?": [`docs/goals/`](docs/goals/README.md)** — one page
+per goal: what it is, what is settled, what was dropped and why, what waits on Tony, where
+the work lives. Picking up work toward a goal? Read its page first, put `Goal:` on your
+board claim, and update the page in the same PR as the result. A long-lived goal branch
+was considered and rejected on 2026-09-14: sessions start from `main`, and a branch holds
+commits, not a summary.
+
 **Before you build anything, or when a lookup fails: [`docs/INDEX.md`](docs/INDEX.md).**
 Keywords — the words you would type into `grep`, not the ones in the filename —
 pointing at the file that owns the answer. It exists because on 2026-08-30 a session
