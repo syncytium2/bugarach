@@ -544,8 +544,9 @@
   /* One line, the width of the column: a footnote to the knobs, not a paragraph. */
   #turboWhat, #overviewWhat { margin-top: 4px; max-width: none; font-size: 12px; }
   body.columnopen #stage { padding-bottom: 8px; }
-  #overviewCv { display: block; }
-  #turboCv { display: block; }
+  /* a click zooms in (shift-click out), so the pointer says so */
+  #overviewCv { display: block; cursor: zoom-in; }
+  #turboCv { display: block; cursor: zoom-in; }
   .anzoom { display: flex; align-items: center; justify-content: center;
             gap: 10px; margin: 4px 0 0; }
   .anzoom button { min-width: 34px; font-weight: 700; }
@@ -2861,6 +2862,17 @@ function columnZoom(full, span, mid, dir) {
   return { span: next, mid: next && !Number.isFinite(mid) ? full / 2 : mid };
 }
 
+/* CLICK TO ZOOM. Tony, 2026-09-14: "the plus minus time works, but in turbo
+   mahice i need to click to zoom". A click used to recentre only, and only once
+   the buttons had zoomed in, so on a whole baseline it did nothing at all. Now a
+   click is one step in, centred on the moment under it; shift-click is one step
+   out. At the tightest window a click has nowhere tighter to go and just
+   recentres, which is still how a zoomed column is walked. */
+function columnClickZoom(full, span, t, out) {
+  const z = columnZoom(full, span, t, out ? +1 : -1);
+  return z.span ? { span: z.span, mid: t } : { span: null, mid: null };
+}
+
 /** The time under a click on a column canvas, or null outside the plot. */
 function columnTimeAt(cv, ev, full, span, mid) {
   const r = cv.getBoundingClientRect();
@@ -3291,8 +3303,8 @@ function paintTurboWhat(assessed = null) {
     + (assessed ? "" : " · a threshold, not tested against a null");
   const z = document.getElementById("tZoomWhat");
   if (z) z.textContent = TURBO_SPAN
-    ? "showing " + fmt(TURBO_SPAN) + " of " + fmt(TURBO.maxDur)
-    : "whole baseline";
+    ? "showing " + fmt(TURBO_SPAN) + " of " + fmt(TURBO.maxDur) + " · shift-click out"
+    : "whole baseline · click to zoom";
 }
 
 /* TURBO IS THE FRONT DOOR, not a toggle off the rail.
@@ -3856,8 +3868,8 @@ function paintOverviewWhat() {
     + " · not blind";
   const z = document.getElementById("oZoomWhat");
   if (z) z.textContent = OVERVIEW_SPAN
-    ? "showing " + fmt(OVERVIEW_SPAN) + " of " + fmt(OVERVIEW.maxDur)
-    : OVERVIEW.baseOnly ? "whole baseline" : "whole trace";
+    ? "showing " + fmt(OVERVIEW_SPAN) + " of " + fmt(OVERVIEW.maxDur) + " · shift-click out"
+    : (OVERVIEW.baseOnly ? "whole baseline" : "whole trace") + " · click to zoom";
 }
 
 /* The state change. Leaving returns to whichever view was up when it opened,
@@ -13475,13 +13487,13 @@ for (const id of ["tPct", "tFloor", "tBin", "tMerge"]) {
 document.getElementById("tIn").onclick = () => turboZoom(-1);
 document.getElementById("tOut").onclick = () => turboZoom(+1);
 document.getElementById("tAll").onclick = turboResetZoom;
-/* Click a row to centre the window on that moment — the same gesture the main
-   raster's ledger uses, and the only way to walk a zoomed column. */
+/* Click a row to zoom in on that moment, shift-click to zoom out: `columnClickZoom`. */
 document.getElementById("turboCv").addEventListener("click", ev => {
-  if (!TURBO || !TURBO_SPAN) return;
+  if (!TURBO) return;
   const t = columnTimeAt(ev.currentTarget, ev, TURBO.maxDur, TURBO_SPAN, TURBO_MID);
   if (t === null) return;
-  TURBO_MID = t;
+  ({ span: TURBO_SPAN, mid: TURBO_MID } =
+     columnClickZoom(TURBO.maxDur, TURBO_SPAN, t, ev.shiftKey));
   turboDraw();
 });
 
@@ -13499,10 +13511,11 @@ document.getElementById("oAll").onclick = () => {
   OVERVIEW_SPAN = null; OVERVIEW_MID = null; overviewDraw();
 };
 document.getElementById("overviewCv").addEventListener("click", ev => {
-  if (!OVERVIEW || !OVERVIEW_SPAN) return;
+  if (!OVERVIEW) return;
   const t = columnTimeAt(ev.currentTarget, ev, OVERVIEW.maxDur, OVERVIEW_SPAN, OVERVIEW_MID);
   if (t === null) return;
-  OVERVIEW_MID = t;
+  ({ span: OVERVIEW_SPAN, mid: OVERVIEW_MID } =
+     columnClickZoom(OVERVIEW.maxDur, OVERVIEW_SPAN, t, ev.shiftKey));
   overviewDraw();
 });
 

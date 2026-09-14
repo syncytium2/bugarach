@@ -340,6 +340,44 @@ def test_opening_a_real_folder_lands_in_turbo(tmp_path):
             browser.close()
 
 
+def test_a_click_on_a_row_zooms_in_there_and_shift_click_zooms_out(tmp_path):
+    """Tony, 2026-09-14: *"the plus minus time works, but in turbo mahice i need to
+    click to zoom"*. A click on a whole baseline used to do nothing at all."""
+    pytest.importorskip("playwright.sync_api")
+    from playwright.sync_api import sync_playwright
+
+    with sync_playwright() as p:
+        browser, pg, errs = _page(p, tmp_path)
+        try:
+            _open(pg, _folder(tmp_path))
+            pg.wait_for_selector("#turbo:not([hidden])", timeout=30000)
+            assert pg.evaluate("() => TURBO.maxDur") == pytest.approx(BASELINE_SEC[1])
+            assert "click to zoom" in pg.text_content("#tZoomWhat")
+            # A quarter of the way along the plot: 30 s into a 120 s baseline.
+            box = pg.evaluate(
+                """() => { const r = document.getElementById('turboCv').getBoundingClientRect();
+                           return {w: r.width, padl: COL_PADL, padr: COL_PADR}; }""")
+            x = box["padl"] + 0.25 * (box["w"] - box["padl"] - box["padr"])
+            zoom = "() => ({span: TURBO_SPAN, mid: TURBO_MID})"
+
+            pg.click("#turboCv", position={"x": x, "y": 20})
+            z = pg.evaluate(zoom)
+            assert z["span"] == 90, z                     # one step in from 120 s
+            assert z["mid"] == pytest.approx(30, abs=1), z
+
+            pg.click("#turboCv", position={"x": x, "y": 20})
+            assert pg.evaluate(zoom)["span"] == 45
+            assert "shift-click out" in pg.text_content("#tZoomWhat")
+
+            pg.click("#turboCv", position={"x": x, "y": 20}, modifiers=["Shift"])
+            assert pg.evaluate(zoom)["span"] == 90
+            pg.click("#turboCv", position={"x": x, "y": 20}, modifiers=["Shift"])
+            assert pg.evaluate(zoom) == {"span": None, "mid": None}, "not back to the whole baseline"
+            assert errs == [], errs
+        finally:
+            browser.close()
+
+
 def test_no_regions_declared_uses_the_whole_trace_and_says_so(tmp_path):
     """Tony, 2026-09-10: no baseline defined means use the whole trace — and tell
     the user we did it.
