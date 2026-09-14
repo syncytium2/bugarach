@@ -695,37 +695,61 @@ def test_turbo_folds_the_side_column_and_a_rail_click_brings_it_back(tmp_path):
 
 
 def _unaligned_folder(tmp: Path) -> Path:
-    """Three slices whose baselines end at different times, and one with none.
+    """Slices a human timed by hand, two treatments, two groups, and one orphan.
 
-    Humans ran these: baseline ends at 100, 130 and 160 s, and the senktide
-    period after it runs 200 s in every slice but the last, which runs 260 s —
-    so that one is off the median line and has to say so. The fourth slice
-    declares senktide only, so there is nothing to align it on.
+    Baselines end at 100, 130 and 160 s before senktide, and in rec2 the drug
+    went on 10 s late — the one thing the alignment assumes, so that row has to
+    say so. rec4 is a TTX slice with high K+ after it: TTX is a choice in the
+    treatment picker and high K+ is not. rec3 declares senktide only, so there
+    is nothing to align it on.
     """
     d = tmp / "unaligned"
     d.mkdir(parents=True, exist_ok=True)
-    ends = {"rec0": (100, 300), "rec1": (130, 330), "rec2": (160, 420)}
-    for rid in [*ends, "rec3"]:
+    periods = {   # slice: ([(label, start, end), ...], group)
+        "rec0": ([("baseline", 0, 100), ("senktide", 100, 300)], "A"),
+        "rec1": ([("baseline", 0, 130), ("senktide", 130, 330)], "B"),
+        "rec2": ([("baseline", 0, 160), ("senktide", 170, 420)], "A"),
+        "rec3": ([("senktide", 0, 300)], "B"),
+        "rec4": ([("baseline", 0, 120), ("TTX", 120, 320), ("high K+", 320, 400)], "B"),
+    }
+    for rid in periods:
         rows = ["roi,time_sec"] + [f"{roi},{k * 20 + roi * 0.05:.2f}"
                                    for roi in range(1, 7) for k in range(1, 15)]
         (d / f"{rid}.csv").write_text("\n".join(rows) + "\n", encoding="utf-8")
     (d / "slices.csv").write_text(
-        "slice_id,frame_interval_sec\n"
-        + "".join(f"rec{i},0.1\n" for i in range(4)), encoding="utf-8")
+        "slice_id,frame_interval_sec,group_id\n"
+        + "".join(f"{rid},0.1,{g}\n" for rid, (_, g) in periods.items()),
+        encoding="utf-8")
     (d / "regions.csv").write_text(
         "slice_id,region_idx,label,start_sec,end_sec\n"
-        + "".join(f"{rid},0,baseline,0,{b}\n{rid},1,senktide,{b},{e}\n"
-                  for rid, (b, e) in ends.items())
-        + "rec3,0,senktide,0,300\n", encoding="utf-8")
+        + "".join(f"{rid},{i},{lab},{s},{e}\n"
+                  for rid, (ps, _) in periods.items()
+                  for i, (lab, s, e) in enumerate(ps)), encoding="utf-8")
     return d
 
 
+_OVERVIEW_STATE = """() => ({
+    ids: OVERVIEW.rows.map(r => r.id),
+    origin: OVERVIEW.origin,
+    from: OVERVIEW.rows.map(r => r.from),
+    dur: OVERVIEW.rows.map(r => r.dur),
+    top: OVERVIEW.top.map(q => [q.label, q.start, q.end]),
+    differs: OVERVIEW.rows.map(r => r.differs || ''),
+    unaligned: OVERVIEW.unaligned.map(u => u.id),
+    options: [...document.querySelectorAll('#oTreat option')].map(o => o.value),
+    pressed: [...document.querySelectorAll('#oGroups button[aria-pressed=true]')]
+               .map(b => b.dataset.group),
+})"""
+
+
 def test_the_overview_asks_first_and_aligns_on_the_end_of_baseline(tmp_path):
-    """Only after a yes; every row's baseline ends at the same x; one top line.
+    """Only after a yes; picked by treatment 1 and by group; aligned; one top line.
 
     Tony, 2026-09-12: "humans did these experiments, they might not line up
     perfectly from t=0. align all traces by baseline end. provide only the top
-    line of treatment indicators and analysis regions."
+    line of treatment indicators and analysis regions." And 2026-09-13: select
+    the data set by treatment — baseline only, or whatever is in treatment 1 —
+    ignoring treatment 2 and high K+ for selection, and choose which groups.
     """
     pytest.importorskip("playwright.sync_api")
     from playwright.sync_api import sync_playwright
@@ -744,27 +768,47 @@ def test_the_overview_asks_first_and_aligns_on_the_end_of_baseline(tmp_path):
             pg.click("#overviewBtn")
             pg.click("#unblindYes")
             pg.wait_for_function(
-                "() => typeof OVERVIEW !== 'undefined' && OVERVIEW && OVERVIEW.rows.length === 3",
+                "() => typeof OVERVIEW !== 'undefined' && OVERVIEW && OVERVIEW.rows.length === 4",
                 timeout=30000)
             assert pg.is_visible("#overview") and pg.is_hidden("#side")
-            got = pg.evaluate("""() => ({
-                origin: OVERVIEW.origin,
-                senk: OVERVIEW.rows.map(r => r.wins.find(w => w.label === 'senktide').start),
-                from: OVERVIEW.rows.map(r => r.from),
-                top: OVERVIEW.top.map(q => [q.label, q.start, q.end]),
-                differs: OVERVIEW.rows.map(r => r.differs || ''),
-                unaligned: OVERVIEW.unaligned.map(u => u.id),
-            })""")
-            # every baseline ends — every treatment starts — at the same column time
-            assert got["senk"] == [got["origin"]] * 3, got
-            # and each row begins where its own recording began, 160 s back at most
-            assert got["origin"] == 160 and got["from"] == [60, 30, 0], got
-            # ONE line of periods: the median of the rows, not one lane per row
-            assert got["top"] == [["baseline", 30, 160], ["senktide", 160, 360]], got
-            assert got["differs"][:2] == ["", ""] and "off by" in got["differs"][2], got
+
+            # BASELINE ONLY is where it opens: every aligned slice, cut at its baseline
+            got = pg.evaluate(_OVERVIEW_STATE)
+            assert got["options"] == ["", "senktide", "TTX"], got   # never high K+
+            assert got["ids"] == ["rec0", "rec1", "rec2", "rec4"], got
+            assert got["origin"] == 160 and got["dur"] == [160] * 4, got
+            assert got["from"] == [60, 30, 0, 40], got
+            assert got["top"] == [["baseline", 35, 160]], got
             assert got["unaligned"] == ["rec3"], got
             assert pg.is_visible("#overviewFlag")
             assert "rec3" in pg.text_content("#overviewFlag")
+
+            # SENKTIDE: whole traces, the treatment starting at 0s in each row
+            pg.select_option("#oTreat", "senktide")
+            got = pg.evaluate(_OVERVIEW_STATE)
+            assert got["ids"] == ["rec0", "rec1", "rec2"], got
+            assert got["origin"] == 160 and got["from"] == [60, 30, 0], got
+            assert got["top"] == [["baseline", 30, 160], ["senktide", 160, 360]], got
+            # the late start is flagged; a longer drug period is not
+            assert got["differs"] == ["", "", "senktide starts +10s"], got
+
+            # TTX: high K+ after it is drawn in the top line without selecting
+            pg.select_option("#oTreat", "TTX")
+            got = pg.evaluate(_OVERVIEW_STATE)
+            assert got["ids"] == ["rec4"], got
+            assert [t[0] for t in got["top"]] == ["baseline", "TTX", "high K+"], got
+
+            # GROUPS: one, then two, then none left pressed is all of them again
+            pg.select_option("#oTreat", "senktide")
+            pg.click("#oGroups button[data-group=B]")
+            got = pg.evaluate(_OVERVIEW_STATE)
+            assert got["ids"] == ["rec1"] and got["pressed"] == ["B"], got
+            pg.click("#oGroups button[data-group=A]")
+            assert pg.evaluate(_OVERVIEW_STATE)["ids"] == ["rec0", "rec1", "rec2"]
+            pg.click("#oGroups button[data-group=A]")
+            pg.click("#oGroups button[data-group=B]")
+            got = pg.evaluate(_OVERVIEW_STATE)
+            assert got["pressed"] == [""] and len(got["ids"]) == 3, got
 
             # leaving needs no permission, and returns to where it was opened
             # from — this folder has baselines, so that is turbo

@@ -9,7 +9,7 @@
      rather than naming a sha this page could not know — the reasoning is at the
      visible stamp. -->
 <meta name="bugarach:born" content="2026-08-13">
-<meta name="bugarach:version-date" content="2026-09-12">
+<meta name="bugarach:version-date" content="2026-09-13">
 <meta name="bugarach:commit" content="content-addressed">
 <!--
   The raster viewer, client side.
@@ -495,6 +495,7 @@
               background: var(--panel); border: 1px solid var(--line);
               border-radius: 8px; }
   .turbobar input { width: 68px; margin: 0; }
+  .turbobar select { width: auto; margin: 0; font-size: 12.5px; }
   .turbobar button { width: auto; margin: 0; padding: 1px 10px; font-size: 12px; }
   .turbospacer { flex: 1 1 18px; }
   /* The assumption notice. Amber and bordered rather than another grey note:
@@ -1795,7 +1796,13 @@
          Same column as turbo, drawn by the same `paintColumn`. -->
     <div id="overview" hidden>
       <div class="turbobar">
-        <span class="lab unblinded">Unblinded — treatments are named</span>
+        <span class="lab unblinded">Unblinded</span>
+        <!-- Treatment 1 selects the data set; groups narrow it. Both built from
+             the folder by `paintOverviewPickers`. -->
+        <span class="lab">data</span>
+        <select id="oTreat" autocomplete="off" data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other"></select>
+        <span class="lab" id="oGroupsLab">groups</span>
+        <span class="seg" id="oGroups"></span>
         <span class="turbospacer"></span>
         <span class="lab">time</span>
         <span class="seg">
@@ -1852,10 +1859,10 @@
      a page edited without bumping it turns CI red instead of shipping a date
      that has quietly become a lie. Bump it when you edit this page. -->
 <p class="site-dates" data-bugarach-born="2026-08-13"
-   data-bugarach-version-date="2026-09-12"
+   data-bugarach-version-date="2026-09-13"
    data-bugarach-commit="content-addressed"
    style="margin:1.5rem max(1.2rem, calc(50% - 23rem));color:#666;font-size:.85rem">
-  First published 2026-08-13 · this version 2026-09-12 · identified by its own
+  First published 2026-08-13 · this version 2026-09-13 · identified by its own
   bytes rather than by a build stamp
 </p>
 
@@ -3243,20 +3250,44 @@ function redrawColumns() {
    every raster repeats the same bars; one lane over the column says it once.
    That lane is the MEDIAN of the rows, period by period — and because humans
    did the experiments, a row whose own periods sit off that line by more than
-   OVERVIEW_TOL, or that has different periods altogether, says so in its own
-   label column, amber, so the top line is never silently wrong about a row.
+   OVERVIEW_TOL says so in its own label column, amber, so the top line is never
+   silently wrong about a row. A period only some rows carry is labelled with
+   how many ("high K+ · 23 of 34"), and periods that overlap in time — a wash in
+   some slices where others have a second drug — take separate tracks rather
+   than covering each other.
+
+   PICKED BY TREATMENT, AND BY GROUP. Opened on the real export folder the
+   first version stacked TTX, senktide and SB222200 into one bar at 0s and
+   named only one of them, and flagged all 84 rows as different — one median
+   line cannot describe a folder of three protocols. Tony, 2026-09-13: "the
+   user should be able to select which data set based on the treatment.
+   options would be baseline only, ttx, senktide, sb222200, whatever is in
+   treatment1. for now ignore treatment 2 and hik for selection (show them on
+   the rasters). the user should also be allowed to chose what groups to show."
+   So:
+     * TREATMENT is the period that follows the baseline — treatment 1 — and it
+       is the only one that selects. What comes after it (a second drug, a wash,
+       high K+) is drawn in the top line and never filters a row out.
+     * BASELINE ONLY shows every aligned slice cut to its baseline, whatever it
+       was later given.
+     * GROUP is `slices.csv`'s `group_id`: all of them, or any subset. A folder
+       that sends no `group_id` gets no group control rather than one group
+       called blank.
 
    In the lane: a saturated bar for the period as it happened (`start`/`end`),
    and under it a paler band for the window the producer said to score
    (`analysis_*`). Where the band stops short of its bar is time that happened
    and is not counted — the split the single-recording view draws, moved off
    the marks. */
-let OVERVIEW = null;       // {rows, top, origin, maxDur, empty, unaligned}
+let OVERVIEW = null;       // the view: {rows, top, tracks, origin, maxDur, ...}
+let OVERVIEW_ALL = null;   // every slice as loaded: {raw, empty, unaligned}
 let OVERVIEW_BUSY = false;
 let OVERVIEW_SPAN = null;
 let OVERVIEW_MID = null;
 let OVERVIEW_BACK = "view"; // what leaving the overview returns to
-const OVERVIEW_HEAD = 36;
+let OVERVIEW_TREAT = "";    // "" = baseline only; otherwise a treatment-1 label
+let OVERVIEW_GROUPS = [];   // [] = all groups
+const OVERVIEW_TRACK = 26;  // one line of periods: label, bar, analysis band
 /* 5 s: the narrowest window turbo's zoom offers. A disagreement smaller than
    that is under a pixel or two at any zoom this column is read at. */
 const OVERVIEW_TOL = 5;
@@ -3298,24 +3329,105 @@ async function overviewLoad() {
     let end = wins.reduce((a, w) => Math.max(a, w.end), 0);
     for (const id of ids) for (const t of (byRoi.get(id) || [])) if (t > end) end = t;
     if (!(end > 0)) { empty.push(rec.id); continue; }
+    /* TREATMENT 1 is the first period to start once the baseline has — by
+       start, not by `region_idx`, which a producer numbers however it likes. */
+    const after = wins.filter(w => w !== base && w.start >= base.start)
+                      .sort((a, b) => a.start - b.start)[0];
     raw.push({ id: rec.id, nRoi: ids.length, shift: base.end, end, byRoi, ids, wins,
-               baseIdx: wins.indexOf(base) });
+               base, treat: after ? (after.label || "").trim() : "",
+               group: ((META.get(rec.id) || {}).group_id || "").trim() });
   }
+  OVERVIEW_ALL = { raw, empty, unaligned };
+  // a treatment or group the new folder does not have is not kept selected
+  if (OVERVIEW_TREAT && !raw.some(r => r.treat === OVERVIEW_TREAT)) OVERVIEW_TREAT = "";
+  OVERVIEW_GROUPS = OVERVIEW_GROUPS.filter(g => raw.some(r => r.group === g));
+  paintOverviewPickers();
+  overviewBuild();
+}
 
-  // relative to each row's own baseline end: [lo, hi] is the column's extent
-  const lo = Math.min(0, ...raw.map(r => -r.shift));
-  const hi = Math.max(0, ...raw.map(r => r.end - r.shift));
+/* The choices on offer, built from the folder: treatments most-common first,
+   because the one a reader wants is usually the one most slices got. */
+function paintOverviewPickers() {
+  const sel = document.getElementById("oTreat");
+  const box = document.getElementById("oGroups");
+  if (!sel || !box || !OVERVIEW_ALL) return;
+  const raw = OVERVIEW_ALL.raw;
+  const count = key => raw.reduce((m, r) => m.set(r[key], (m.get(r[key]) || 0) + 1), new Map());
+  const treats = [...count("treat").entries()].filter(([t]) => t)
+    .sort((a, b) => b[1] - a[1] || natural(a[0], b[0]));
+  sel.textContent = "";
+  const opt = (value, text) => {
+    const o = document.createElement("option");
+    o.value = value; o.textContent = text;
+    o.selected = value === OVERVIEW_TREAT;
+    sel.append(o);
+  };
+  opt("", "baseline only · " + raw.length);
+  for (const [t, n] of treats) opt(t, t + " · " + n);
+
+  const groups = [...count("group").entries()].filter(([g]) => g)
+    .sort((a, b) => natural(a[0], b[0]));
+  box.textContent = "";
+  document.getElementById("oGroupsLab").hidden = !groups.length;
+  if (!groups.length) return;
+  const chip = (value, text) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.dataset.group = value;
+    b.textContent = text;
+    const on = value === "" ? !OVERVIEW_GROUPS.length : OVERVIEW_GROUPS.includes(value);
+    b.setAttribute("aria-pressed", String(on));
+    b.onclick = () => overviewPickGroup(value);
+    box.append(b);
+  };
+  chip("", "all");
+  for (const [g, n] of groups) chip(g, g + " · " + n);
+}
+
+/* "all" clears the subset; a group toggles in or out of it; and a subset
+   emptied by toggling its last group off is all of them again, never none. */
+function overviewPickGroup(g) {
+  if (g === "") OVERVIEW_GROUPS = [];
+  else if (OVERVIEW_GROUPS.includes(g)) OVERVIEW_GROUPS = OVERVIEW_GROUPS.filter(x => x !== g);
+  else OVERVIEW_GROUPS = OVERVIEW_GROUPS.concat([g]);
+  overviewRepick();
+}
+
+function overviewRepick() {
+  OVERVIEW_SPAN = null; OVERVIEW_MID = null;   // the extent changed under the zoom
+  paintOverviewPickers();
+  overviewBuild();
+  overviewDraw();
+}
+
+/* The column for the current picks. Cheap: every slice is already in memory,
+   so a pick rebuilds rows and the top line without touching a file. */
+function overviewBuild() {
+  if (!OVERVIEW_ALL) return;
+  const { empty, unaligned } = OVERVIEW_ALL;
+  const baseOnly = !OVERVIEW_TREAT;
+  const raw = OVERVIEW_ALL.raw.filter(r =>
+    (baseOnly || r.treat === OVERVIEW_TREAT)
+    && (!OVERVIEW_GROUPS.length || OVERVIEW_GROUPS.includes(r.group)));
+
+  /* Baseline only cuts every row to its baseline period, so the extent of a
+     row is that period and nothing after it is drawn or counted. */
+  const span = r => baseOnly ? [r.base.start, r.base.end] : [0, r.end];
+  const lo = Math.min(0, ...raw.map(r => span(r)[0] - r.shift));
+  const hi = Math.max(0, ...raw.map(r => span(r)[1] - r.shift));
   const origin = -lo;                        // where 0 = baseline end sits
   const rows = raw.map(r => {
     const off = origin - r.shift;            // recording time -> column time
-    const wins = r.wins.map(w => ({
+    const [s0, s1] = span(r);
+    const src = baseOnly ? [r.base] : r.wins;
+    const wins = src.map(w => ({
       label: w.label, start: w.start + off, end: w.end + off,
       aStart: hasAnalysis(w) ? w.aStart + off : NaN,
       aEnd: hasAnalysis(w) ? w.aEnd + off : NaN }));
-    return { id: r.id, nRoi: r.nRoi, from: off, dur: r.end + off, wins,
-             baseIdx: r.baseIdx,
-             keys: periodKeys(r.wins),
-             trains: r.ids.map(id => (r.byRoi.get(id) || []).map(t => t + off)) };
+    return { id: r.id, nRoi: r.nRoi, group: r.group, from: s0 + off, dur: s1 + off,
+             wins, baseIdx: src.indexOf(r.base), keys: periodKeys(src),
+             trains: r.ids.map(id => (r.byRoi.get(id) || [])
+               .filter(t => t >= s0 && t <= s1).map(t => t + off)) };
   });
 
   // THE TOP LINE: the median of every row that carries each period
@@ -3328,32 +3440,41 @@ async function overviewLoad() {
     const withA = ws.filter(hasAnalysis);
     return { key: k, label: ws[0].label, n: ws.length,
              start: median(ws.map(w => w.start)), end: median(ws.map(w => w.end)),
+             // the whole spread across rows, drawn faint behind the median bar
+             lo: Math.min(...ws.map(w => w.start)), hi: Math.max(...ws.map(w => w.end)),
              aStart: withA.length ? median(withA.map(w => w.aStart)) : NaN,
              aEnd: withA.length ? median(withA.map(w => w.aEnd)) : NaN };
   }).sort((a, b) => a.start - b.start);
 
-  // and each row's disagreement with it, carried to its own label column
-  const topKeys = top.map(p => p.key).sort().join("|");
-  for (const r of rows) {
-    if (r.keys.slice().sort().join("|") !== topKeys) {
-      r.differs = "different periods";
-      continue;
-    }
-    let dev = 0;
-    r.keys.forEach((k, j) => {
-      const p = top.find(q => q.key === k), w = r.wins[j];
-      /* NOT the start of the baseline the row is aligned on: that is where the
-         recording happened to begin, which is the very difference alignment
-         exists to absorb. Its end is 0 by construction. */
-      if (j !== r.baseIdx) dev = Math.max(dev, Math.abs(w.start - p.start));
-      dev = Math.max(dev, Math.abs(w.end - p.end));
-      if (hasAnalysis(w) && hasAnalysis(p))
-        dev = Math.max(dev, Math.abs(w.aStart - p.aStart), Math.abs(w.aEnd - p.aEnd));
-    });
-    if (dev > OVERVIEW_TOL) r.differs = "periods off by " + fmt(dev);
+  /* TRACKS. A period goes on the first track whose last period has ended by
+     the time it starts (within the tolerance); otherwise it opens a new one.
+     Overlap is real in these folders — TTX followed by senktide in some slices
+     and by a wash in others — and two bars on one line would draw one name. */
+  const ends = [];
+  for (const p of top) {
+    let k = ends.findIndex(e => e <= p.start + OVERVIEW_TOL);
+    if (k < 0) { k = ends.length; ends.push(-Infinity); }
+    p.track = k;
+    ends[k] = p.end;
   }
 
-  OVERVIEW = { rows, top, origin, empty, unaligned, maxDur: Math.max(1, hi - lo) };
+  /* THE ROW FLAG IS ABOUT ALIGNMENT, NOT ABOUT PROTOCOL. The first version
+     flagged any period more than 5 s off the median, and on the real folder
+     that was 36 of 38 TTX slices: how long a drug stays on varies by up to ten
+     minutes there, and high K+ starts up to 24 minutes from its median. That is
+     the experiment, not a defect, and a flag on every row says nothing — the
+     spread is drawn in the top line instead (`lo`/`hi` per period). What a row
+     does flag is the one thing the column's alignment assumes: that its
+     treatment begins where its baseline ends. */
+  if (!baseOnly) for (const r of rows) {
+    const t = r.wins.find((w, j) => j !== r.baseIdx && w.label.trim() === OVERVIEW_TREAT);
+    const gap = t ? t.start - origin : 0;
+    if (Math.abs(gap) > OVERVIEW_TOL)
+      r.differs = OVERVIEW_TREAT + " starts " + (gap < 0 ? "−" : "+") + fmt(Math.abs(gap));
+  }
+
+  OVERVIEW = { rows, top, tracks: Math.max(1, ends.length), origin, empty, unaligned,
+               baseOnly, maxDur: Math.max(1, hi - lo) };
 }
 
 function overviewZoom(dir) {
@@ -3371,24 +3492,34 @@ function overviewDraw() {
   paintColumn(cv, OVERVIEW.rows, OVERVIEW.maxDur, OVERVIEW_SPAN, OVERVIEW_MID, {
     minRow: TURBO_ROW - TURBO_LANE,
     laneH: 0,
-    headH: OVERVIEW_HEAD,
+    headH: 10 + OVERVIEW.tracks * OVERVIEW_TRACK,
     origin: OVERVIEW.origin,
-    labels: r => [[r.id], [r.nRoi + " ROI"]]
+    labels: r => [[r.id], [r.nRoi + " ROI" + (r.group ? " · " + r.group : "")]]
       .concat(r.differs ? [[r.differs, CAND_INK.assumed]] : []),
-    head: (g, top, x, t0, t1, W) => {
-      const lo = COL_PADL, hi = W - COL_PADR;
+    head: (g, top0, x, t0, t1, W) => {
+      const lo = COL_PADL, hi = W - COL_PADR, N = OVERVIEW.rows.length;
       // the lane's own y-axis label: what the line is, and how many rows made it
       g.textAlign = "end";
       g.fillStyle = css.getPropertyValue("--muted").trim();
-      g.fillText("periods", COL_PADL - 8, top + 11);
-      g.fillText("median of " + OVERVIEW.rows.length, COL_PADL - 8, top + 24);
+      g.fillText("periods", COL_PADL - 8, top0 + 11);
+      g.fillText("median of " + N, COL_PADL - 8, top0 + 24);
       g.textAlign = "start";
-      let labelEnd = -Infinity;
+      const labelEnd = [];
       for (const w of OVERVIEW.top) {
-        if (w.end < t0 || w.start > t1) continue;
+        if (w.hi < t0 || w.lo > t1) continue;
+        const top = top0 + w.track * OVERVIEW_TRACK;
         const hue = ink(w.label);
-        const a = Math.max(lo, x(w.start)), b = Math.min(hi, x(w.end));
         g.fillStyle = hue;
+        /* THE SPREAD, faint and thin, from the earliest start to the latest end
+           of this period across the rows on screen — so a median bar that stops
+           at 25m says, in the same colour, that some slices stayed on to 35m. */
+        const r0 = Math.max(lo, x(w.lo)), r1 = Math.min(hi, x(w.hi));
+        if (r1 > r0) {
+          g.globalAlpha = 0.45;
+          g.fillRect(r0, top + 15.5, r1 - r0, 1);
+          g.globalAlpha = 1;
+        }
+        const a = Math.max(lo, x(w.start)), b = Math.min(hi, x(w.end));
         g.fillRect(a, top + 14, Math.max(1, b - a), 4);
         if (Number.isFinite(w.aStart) && Number.isFinite(w.aEnd)) {
           const s0 = Math.max(lo, x(w.aStart)), s1 = Math.min(hi, x(w.aEnd));
@@ -3399,17 +3530,18 @@ function overviewDraw() {
           }
         }
         /* One label per period that starts in view or holds the left edge, and
-           none that would run into the previous one — a short wash-in period
-           labelled over its neighbour is two unreadable names, not two. */
+           none that would run into the previous one on its track — a short
+           wash-in period labelled over its neighbour is two unreadable names. */
         const holdsLeft = w.start <= t0 && w.end > t0;
         if (!(w.start >= t0 || holdsLeft) || !(w.label || "").trim()) continue;
-        const tw = g.measureText(w.label).width + 13;
+        const text = w.label + (w.n < N ? " · " + w.n + " of " + N : "");
+        const tw = g.measureText(text).width + 13;
         const at = Math.max(lo, Math.min(x(w.start) + 1, hi - tw));
-        if (at < labelEnd + 6) continue;
+        if (at < (labelEnd[w.track] ?? -Infinity) + 6) continue;
         g.fillRect(at, top + 3, 8, 8);
         g.fillStyle = css.getPropertyValue("--fg").trim();
-        g.fillText(w.label, at + 12, top + 11);
-        labelEnd = at + tw;
+        g.fillText(text, at + 12, top + 11);
+        labelEnd[w.track] = at + tw;
       }
     },
   });
@@ -3437,22 +3569,36 @@ function paintOverviewWhat() {
   }
   const noA = OVERVIEW.top.filter(p => !hasAnalysis(p)).length;
   const off = OVERVIEW.rows.filter(r => r.differs).length;
+  const picked = (OVERVIEW.baseOnly ? "baseline only" : OVERVIEW_TREAT)
+    + (OVERVIEW_GROUPS.length ? ", " + OVERVIEW_GROUPS.join(" + ") : ", all groups");
+  if (!OVERVIEW.rows.length) {
+    n.textContent = "No recordings match " + picked + ". Nothing below is drawn.";
+    const z0 = document.getElementById("oZoomWhat");
+    if (z0) z0.textContent = "";
+    return;
+  }
   n.textContent =
-    OVERVIEW.rows.length + " recordings, whole trace, aligned so each baseline ends "
-    + "at 0s" + (OVERVIEW.empty.length
+    OVERVIEW.rows.length + " recordings (" + picked + "), "
+    + (OVERVIEW.baseOnly ? "each cut to its baseline" : "whole trace")
+    + ", aligned so each baseline ends at 0s. Treatment 1 selects; what follows "
+    + "it — a second treatment, a wash, high K+ — is drawn and never filters"
+    + (OVERVIEW.empty.length
       ? " · not drawn, no events: " + OVERVIEW.empty.join(", ") : "")
     + ". The top line is the median of the rows' periods: the solid bar is the "
     + "period as it happened, the pale band under it the window the folder says "
-    + "to score" + (noA ? " (" + noA + " period(s) sent none)" : "") + ". "
-    + (off ? off + " row(s) differ from it by more than " + OVERVIEW_TOL
-             + " s, and say so under their names. "
-           : "Every row is within " + OVERVIEW_TOL + " s of it. ")
+    + "to score" + (noA === OVERVIEW.top.length ? " (this folder sent none)"
+                    : noA ? " (" + noA + " period(s) sent none)" : "")
+    + ", and the thin line through it runs from the earliest start to the latest "
+    + "end across these rows. "
+    + (off ? off + " row(s) do not start " + OVERVIEW_TREAT + " within "
+             + OVERVIEW_TOL + " s of their baseline's end, and say so under their names. "
+           : "")
     + "No detector runs here. Treatments are named, so a K chosen after "
     + "looking at this is not a blind K.";
   const z = document.getElementById("oZoomWhat");
   if (z) z.textContent = OVERVIEW_SPAN
     ? "showing " + fmt(OVERVIEW_SPAN) + " of " + fmt(OVERVIEW.maxDur)
-    : "whole trace";
+    : OVERVIEW.baseOnly ? "whole baseline" : "whole trace";
 }
 
 /* The state change. Leaving returns to whichever view was up when it opened,
@@ -4597,7 +4743,7 @@ async function open(fileList, opts) {
   TURBO = null; TURBO_SPAN = null; TURBO_MID = null;
   // the overview's rows are the last folder's too, for the same reason
   closeOverview();
-  OVERVIEW = null; OVERVIEW_SPAN = null; OVERVIEW_MID = null;
+  OVERVIEW = null; OVERVIEW_ALL = null; OVERVIEW_SPAN = null; OVERVIEW_MID = null;
   /* THE STREAM IN PLAY IS A PROPERTY OF THE FOLDER, so it goes with it. A
      folder holding one stream never names one; a folder holding two is asked,
      at the door, before anything is computed. */
@@ -4770,7 +4916,11 @@ async function open(fileList, opts) {
       TURBO_BUSY = true;
       try { await turboLoad(); } finally { TURBO_BUSY = false; }
     }
-    if (TURBO && TURBO.rows.length) await setTurbo(true);
+    /* NOT OVER THE OVERVIEW. The red button is live before turbo's rows are
+       built, so a reader who pressed it while this was loading had asked for
+       the overview — and this line used to take the screen back from them. */
+    if (TURBO && TURBO.rows.length && document.getElementById("overview").hidden)
+      await setTurbo(true);
   }
   // the first raster goes up before the folder is checked: seeing something is
   // the point of opening it, and the check walks every file
@@ -13942,6 +14092,10 @@ document.getElementById("unblindDlg").addEventListener("close", ev => {
 });
 document.getElementById("oIn").onclick = () => overviewZoom(-1);
 document.getElementById("oOut").onclick = () => overviewZoom(+1);
+document.getElementById("oTreat").addEventListener("change", ev => {
+  OVERVIEW_TREAT = ev.target.value;
+  overviewRepick();
+});
 document.getElementById("oAll").onclick = () => {
   OVERVIEW_SPAN = null; OVERVIEW_MID = null; overviewDraw();
 };
