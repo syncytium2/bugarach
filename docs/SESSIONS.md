@@ -81,6 +81,17 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
   Holm-corrected yardsticks could not flag anything at any setting, so the claim stays until the
   probe settles what a rerun should be.
 
+### Mac/deploy-participation-order — SITE claim RELEASED 2026-09-14: deployed at `03c7866`
+- **Status:** **RELEASED 2026-09-14 — deployed; nothing holds the site.** Asked whether to deploy
+  #571 once it merged, Tony answered *"yes please"*. Held on the machine-local board for the upload.
+- **What went out:** #571. In MAHICE's confirm tool the blue marks the proposed event's own ROIs in
+  every row order (under "by events" it had marked other ROIs), it can be turned off, and rows sort
+  by participation, by ROI order or by ROI frequency.
+- **Deploy record.** Worktree detached at `origin/main` `03c7866`; `DEPLOY_HOLD.md` `held: no`; no
+  ACTIVE site claim. `test_site_coherence.py` 18 passed on the build; the upload read 8 files and
+  used the pinned wrangler, version `13d02de1`. The edge served the new viewer about 10 s later;
+  `site_staleness.py` then read **current** and `audit_deployed_page.py` was clean.
+
 ### Mac/deploy-click-zoom — SITE claim RELEASED 2026-09-14: deployed at `78975b4`
 - **Status:** **RELEASED 2026-09-14 — deployed; nothing holds the site.** Tony: *"deploy"*. Held on
   the machine-local board for the upload.
