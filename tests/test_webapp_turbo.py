@@ -778,11 +778,17 @@ def test_the_overview_asks_first_and_aligns_on_the_end_of_baseline(tmp_path):
             _open(pg, _unaligned_folder(tmp_path))
             pg.wait_for_selector("#overviewBtn:not([hidden])", timeout=30000)
             assert "danger" in pg.get_attribute("#overviewBtn", "class")
+            # THE BUTTON NAMES WHAT IS SHOWING, not what a click would show
+            # (Tony, 2026-09-14). This folder has baselines, so it lands in turbo.
+            pg.wait_for_selector("#turbo:not([hidden])", timeout=30000)
+            btn = lambda: pg.text_content("#overviewBtn")          # noqa: E731
+            assert btn() == "Showing baseline only · blind", btn()
 
             pg.click("#overviewBtn")
             assert pg.evaluate("() => document.getElementById('unblindDlg').open")
             pg.click("#unblindDlg button[value=cancel]")
             assert pg.is_hidden("#overview"), "cancel opened the unblinded view anyway"
+            assert btn() == "Showing baseline only · blind", btn()
 
             pg.click("#overviewBtn")
             pg.click("#unblindYes")
@@ -790,6 +796,8 @@ def test_the_overview_asks_first_and_aligns_on_the_end_of_baseline(tmp_path):
                 "() => typeof OVERVIEW !== 'undefined' && OVERVIEW && OVERVIEW.rows.length === 4",
                 timeout=30000)
             assert pg.is_visible("#overview") and pg.is_hidden("#side")
+            assert btn() == "Showing baseline only · unblinded", btn()
+            assert pg.get_attribute("#overviewBtn", "aria-pressed") == "true"
 
             # BASELINE ONLY is where it opens: every aligned slice, cut at its baseline
             got = pg.evaluate(_OVERVIEW_STATE)
@@ -804,6 +812,7 @@ def test_the_overview_asks_first_and_aligns_on_the_end_of_baseline(tmp_path):
 
             # SENKTIDE: whole traces, the treatment starting at 0s in each row
             pg.select_option("#oTreat", "senktide")
+            assert btn() == "Showing senktide full trace · unblinded", btn()
             got = pg.evaluate(_OVERVIEW_STATE)
             assert got["ids"] == ["rec0", "rec1", "rec2"], got
             assert got["origin"] == 160 and got["from"] == [60, 30, 0], got
@@ -842,6 +851,8 @@ def test_the_overview_asks_first_and_aligns_on_the_end_of_baseline(tmp_path):
             pg.click("#overviewBtn")
             pg.wait_for_selector("#turbo:not([hidden])", timeout=10000)
             assert pg.is_hidden("#overview")
+            assert btn() == "Showing baseline only · blind", btn()
+            assert pg.get_attribute("#overviewBtn", "aria-pressed") == "false"
             assert errs == [], errs
         finally:
             browser.close()

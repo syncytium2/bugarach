@@ -485,7 +485,9 @@
      Not the accent colour with a warning word on it: a button that looks like
      every other button is pressed like every other button. */
   button.danger { background: #b3261e; border-color: #b3261e; color: #fff; }
-  button.danger[aria-pressed="true"] { background: transparent; color: #b3261e; }
+  /* The overview button names the current view: outlined while blind, filled
+     once unblinded — the colour carries the state as well as the words. */
+  #overviewBtn[aria-pressed="false"] { background: transparent; color: #b3261e; }
   #unblindDlg { max-width: 460px; border: 1px solid #b3261e; border-radius: 10px;
                 padding: 18px 20px 14px; background: var(--panel); color: var(--fg);
                 font-size: 13.5px; line-height: 1.5; }
@@ -775,7 +777,7 @@
   <!-- RED, AND IT ASKS. Every slice's whole trace with its treatments named —
        the one view on this page that is not blind to treatment. Hidden until a
        folder is open. See `overviewToggle`. -->
-  <button id="overviewBtn" class="danger" aria-pressed="false" hidden>Every slice, unblinded</button>
+  <button id="overviewBtn" class="danger" aria-pressed="false" hidden>Showing one slice</button>
   <span class="lab" id="railWhere"></span>
 </div>
 <nav id="rail" aria-label="pipeline"></nav>
@@ -1859,11 +1861,13 @@
 
     <dialog id="unblindDlg">
       <h3>Are you sure?</h3>
-      <p>The overview draws every slice's whole trace with its <b>treatments
-      named</b> — baseline, TTX, senktide — and the analysis windows under them.</p>
-      <p>MAHICE is tuned blind to treatment, on baseline only. A K chosen after
-      seeing which rows are treated is not a blind K, and looking cannot be
-      undone.</p>
+      <p>This shows every slice's <b>full trace with treatments named</b> —
+      baseline, TTX, senktide — and the analysis windows.</p>
+      <!-- Tony, 2026-09-14: "the idea is to set the params without prejudice,
+           but the reality is you don't want to launch a run blind." So the
+           copy says the order, not that looking is a mistake. -->
+      <p>Set the MAHICE parameters blind first if you can. Look before you
+      launch a run — but a K chosen after this is no longer a blind K.</p>
       <form method="dialog" class="dlgbtns">
         <button value="cancel" class="ghost">Cancel</button>
         <button value="yes" id="unblindYes" class="danger">Yes, show every slice</button>
@@ -3291,6 +3295,7 @@ function syncColumnLayout() {
   const was = document.body.classList.contains("columnopen");
   document.body.classList.toggle("columnopen", open);
   if (was && !open && current && current.loaded) draw(current, current.loaded);
+  paintOverviewBtn();   // every view change passes through here
 }
 
 /* A RAIL CLICK IS A REQUEST FOR THE PIPELINE. The rail's steps open their
@@ -3496,6 +3501,7 @@ function overviewRepick() {
   paintOverviewPickers();
   overviewBuild();
   overviewDraw();
+  paintOverviewBtn();   // the button names the treatment on screen
 }
 
 /* The column for the current picks. Cheap: every slice is already in memory,
@@ -3732,11 +3738,7 @@ async function setOverview(on) {
     if (tb) { tb.textContent = "MAHICE turbo"; tb.setAttribute("aria-pressed", "false"); }
   }
   box.hidden = !on;
-  const b = document.getElementById("overviewBtn");
-  if (b) {
-    b.textContent = on ? "Leave overview" : "Every slice, unblinded";
-    b.setAttribute("aria-pressed", String(on));
-  }
+  paintOverviewBtn();
   if (!on) {
     if (OVERVIEW_BACK === "turbo") return setTurbo(true);
     document.getElementById("view").hidden = !RECORDINGS.length;
@@ -3757,8 +3759,38 @@ function closeOverview() {
   const box = document.getElementById("overview");
   if (!box || box.hidden) return;
   box.hidden = true;
+  paintOverviewBtn();
+}
+
+/* THE BUTTON SAYS WHAT IS SHOWING, NOT WHAT A CLICK WOULD SHOW. Tony,
+   2026-09-14: "the 'every slice unblinded' toggle throws me off. you have to
+   click it to see 'every slice unblinded'. the button should show what is
+   current, not what you get if you click. clarify with a qualifier like
+   'showing only baseline/showing full trace'." A label that names the far side
+   of the switch reads as a status while you are on the near side, which is the
+   one thing a blinding control must not be ambiguous about.
+
+   Red either way — "i like the red because the idea is to set the params
+   without prejudice, but the reality is you don't want to launch a run blind"
+   — OUTLINED while blind, FILLED while unblinded, so the state is the colour
+   as well as the words. What a click does is in the tooltip. */
+function paintOverviewBtn() {
   const b = document.getElementById("overviewBtn");
-  if (b) { b.textContent = "Every slice, unblinded"; b.setAttribute("aria-pressed", "false"); }
+  if (!b) return;
+  const over = !document.getElementById("overview").hidden;
+  const turbo = !document.getElementById("turbo").hidden;
+  let text, title;
+  if (over) {
+    text = "Showing " + (OVERVIEW_TREAT ? OVERVIEW_TREAT + " full trace" : "baseline only")
+           + " · unblinded";
+    title = "Click to go back blind";
+  } else {
+    text = turbo ? "Showing baseline only · blind" : "Showing one slice";
+    title = "Click to see every slice's full trace with treatments named (asks first)";
+  }
+  b.textContent = text;
+  b.title = title;
+  b.setAttribute("aria-pressed", String(over));
 }
 
 /* The button. Leaving needs no permission; entering asks, every time. */
@@ -4995,6 +5027,7 @@ async function open(fileList, opts) {
   showSection(SIMULATED ? "accSim" : "accList");
   // the overview has something to show from here on, and not before
   document.getElementById("overviewBtn").hidden = !RECORDINGS.length;
+  paintOverviewBtn();
   await show(RECORDINGS[0]);
   /* A saved review can only be matched to a folder once there is one: the
      signature is the recording ids. Runs here rather than at page load for that
