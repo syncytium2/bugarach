@@ -1,8 +1,9 @@
 # Pre-registration — is rigid shift a usable surrogate on these data?
 
-> **DRAFT, not signed.** Every number marked **⚠ OPEN** is a proposal for Tony to accept or
-> change. When he signs at the bottom, everything above the line freezes: after that, only typos
-> change, and the run reads its result against this page as written.
+> **SIGNED by Tony, 2026-09-14 — every value accepted as proposed.** Everything above the sign-off
+> line is frozen: only typos change, and the run reads its result against this page as written.
+> A change found necessary before any result exists goes in as a **dated amendment** below the
+> sign-off, never as an edit above it.
 >
 > **Goal:** [`goals/unsupervised-learning.md`](../goals/unsupervised-learning.md).
 > **Why this page exists.** Tony stopped the surrogate screen on 2026-09-12 because it felt like
@@ -59,7 +60,7 @@ that way.
   producer's call ([todo](../todo/2026-09-10-four-recordings-carry-an-unflagged-contaminant.md));
   the report names them.
 
-## The displacements — ⚠ OPEN
+## The displacements — accepted
 
 Three per stream, declared now; no other *J* may be credited.
 
@@ -86,13 +87,13 @@ symmetric statistics, so the classifier cannot see coordination. 60 s windows, m
 folds, 199 within-pair permutations. Intervals: bootstrap over **mice**, 2,000 resamples (the
 recording-identity run's `mouse_bootstrap`).
 
-- **Pass at a *J*:** the upper 98.3 % bound on accuracy is **below 0.55** ⚠ OPEN — the screen's
+- **Pass at a *J*:** the upper 98.3 % bound on accuracy is **below 0.55** (accepted) — the screen's
   own smallest effect worth detecting. Not detecting a leak is not enough; the bound has to
   exclude one.
 - **Positive control, uniform dither at the same *J*:** lower bound **above 0.55**. If it fails,
   that *J* is **void** for that stream: the test could not have seen a leak.
 - **Negative control, real against real, 20 seeds:** void the stream if **4 or more of 20** seeds
-  flag at α = 0.05 ⚠ OPEN. Three or more happens 7.5 % of the time by chance, four or more 1.6 %.
+  flag at α = 0.05 (accepted). Three or more happens 7.5 % of the time by chance, four or more 1.6 %.
   **No single seed can void anything** — that was the defect.
 
 ### Count preservation — the surrogate must not change how many onsets there are
@@ -103,7 +104,7 @@ over ROIs sees a count change as a free win
 
 - **Statistic:** per ROI and per analysis window, surrogate onset count minus real, paired,
   averaged within mouse.
-- **Pass:** the 98.3 % interval over mice lies inside **±2 % of the mean real count** ⚠ OPEN.
+- **Pass:** the 98.3 % interval over mice lies inside **±2 % of the mean real count** (accepted).
 - **Control:** the screen's `edge_thinning` control, which deletes onsets near the window edges,
   must *fail* this gate. If it passes, the statistic is too coarse to read and the gate is void.
 
@@ -115,11 +116,11 @@ shift with the same key and scored by the assessor's selection-corrected coactiv
 **Retained** = excess the planted twin keeps after the surrogate, as a share of what it had
 before. Participation 0.2 and 0.5, the assessor's K scan.
 
-- ⚠ **OPEN — the timescale of "coordinated".** The screen scored destruction in a ±2-frame
+- **The timescale of "coordinated" — accepted: 1.0 s.** The screen scored destruction in a ±2-frame
   (0.5 s) bin. The assessor that proposes events uses **1.0 s**. A shift can clear a 0.5 s bin and
-  still leave 1 s coincidences in place. **Proposed: score at 1.0 s**, the assessor's own
+  still leave 1 s coincidences in place. **Scored at 1.0 s**, the assessor's own
   definition, and report 0.5 s beside it.
-- **Pass at a *J*:** retained share **at most 0.25** ⚠ OPEN, at every K where the planted
+- **Pass at a *J*:** retained share **at most 0.25** (accepted), at every K where the planted
   events are visible before the surrogate, at both participation levels.
 - **Controls:** do-nothing must retain **at least 0.9** (the measure sees coordination that
   survives); homogeneous resample must retain **at most 0.1** (it sees removal). **Not circular
@@ -182,8 +183,14 @@ outside reader. Plans in between are working material.
 
 | | |
 |---|---|
-| Accepted as written, or amended as noted | |
-| Signed | |
-| Date | |
+| Accepted as written, or amended as noted | **Accepted as written.** Asked to set or accept each proposed value — the 1.0 s timescale, the displacements, the 0.55 leak margin, 25 % retained, ±2 % counts, 4 of 20 seeds — and to name any that was wrong, Tony answered *"agreed. signed"* |
+| Signed | Tony |
+| Date | 2026-09-14 |
 
 *Nothing above this line changes after signing, except typos.*
+
+## Amendments
+
+⚠ **The page asked for its murderboard before signing; it was signed first.** The review runs
+once, now, before any code is built or any data are read. A blocking finding is brought to Tony
+and, if he accepts it, recorded here with its date. Nothing above the line is edited.
