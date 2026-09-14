@@ -83,11 +83,11 @@ locations belong to other projects.
       canonical statement of the thesis this project keeps re-deriving: a surrogate preserving a
       specified feature set can only test whether structure exceeds what that feature set implies.
 
-- [ ] **Gregers Hansen, V. (1973).** Constant-false-alarm-rate processing in search radars. Proc.
+- [x] **Gregers Hansen, V. (1973).** Constant-false-alarm-rate processing in search radars. Proc.
       IEE International Radar Conference *Radar — present and future*, 23–25 October 1973, Savoy
       Place, London. IEE Conf. Publ. **105**.
-      → **PARTIALLY RESOLVED 2026-09-10: the citation is confirmed, the origin question is not.**
-      Tony found the volume's
+      → **Closed 2026-09-14 as unobtainable; the close is at the end of this entry.** On 2026-09-10
+      the citation was confirmed and the origin question was left open. Tony found the volume's
       contents listing (`radar/iee_conf_105_1973_CONTENTS_ONLY.pdf` — the listing, **not** the
       paper). It reads:
       > GREGERS HANSEN,V.: Constant-false-alarm-rate processing in search radars
@@ -105,22 +105,40 @@ locations belong to other projects.
       one, and a repo that cares about attribution should use the canonical form. Same correction
       applies to the 1980 paper on this shelf — cite it as **Gregers Hansen & Sawyers**.
 
-      ⚠ **Still open, and it is the half that matters:** whether this paper is the ORIGIN of
-      greatest-of CFAR. The contents listing gives no abstract, no pages and no text, so it cannot
-      settle `detector_history.md` §4 putting **Hansen & Sawyers 1980** in a column headed *origin*.
-      Our claimed page range **325–332 remains unverified** — it appears in no source we hold.
+      ⚠ **CLOSED 2026-09-14 as unobtainable — no longer an ask.** Tony, 2026-09-14: the paper
+      *"resolves only to a conference listing"*, and he can find no documentation of what was in the
+      talk. Nobody will read it. What the talk contained is known only from papers that cite it, and
+      three of those are already on `radar/`. Read 2026-09-14 with `pdftotext`:
 
-      **The chronology is evidence and not proof, and it leans one way.** From the IEEE profile and
-      OpenAlex, his CFAR thread runs: 1971 *Siebert and Dicke-Fix CFAR Radar Detectors* → 1972 *Cell
-      Averaging LOG/CFAR Receiver* → **1973 the paper in question** → 1980 *Detectability Loss Due to
-      "Greatest Of" Selection in a Cell-Averaging CFAR*. A 1980 title that costs a technique
-      presupposes the technique already exists, which is consistent with 1973 introducing it — the
-      reading murderboard role 2 argued for. It is also consistent with GO originating in the 1971 or
-      1972 papers, which we do not hold either. **Titles are not papers; this does not close it.**
+      | shelf paper | what it says about the 1973 talk |
+      |---|---|
+      | **Gregers Hansen & Sawyers 1980**, §I — the author, on his own talk | *"A simple rule for determining the detectability loss of a cell-averaging constant false-alarm rate (CFAR) processor using 'greatest of' selection between the leading and lagging sets of reference cells is given in [1]"*, where [1] is this talk, dated Oct. 23–25, 1973, **no pages given**. So the talk **treated greatest-of**; the author's own sentence credits it with a loss rule, not with inventing the selection |
+      | same paper, same paragraph | that rule's loss is *"somewhat larger than predicted from an exact analysis contained in [2]"* — **J.H. Sawyers, "Detection losses of the 'Conventional' and 'Split' mean level threshold detectors", internal memo, Hughes Aircraft Co., Feb. 15, 1972.** An exact analysis of the split detector, **dated twenty months before the talk**, at a different company |
+      | **Gandhi & Kassam 1988**, §I and §III-B | *"Hansen [9] has proposed a CFAR procedure to regulate false alarm rate in the region of clutter transition; in this procedure the noise power is estimated by the greatest of (GO) the sums in the leading and lagging windows"*; later, GO is the scheme *"proposed and analyzed in [9, 10]"*. Its reference list gives the talk as **pp. 325–332**, in *"Proceedings of the IEEE 1973 International Radar Conference, London"* — IEEE where the volume says IEE |
+      | **Rohling 1983** | credits greatest-of (CAGO) to Hansen & Sawyers 1980 and Moore & Lawrence 1980, **not** to the talk |
 
-      ⚠ **IEEE Xplore is exhausted as a route.** The 1973 paper is an **IEE** (British) conference
-      publication and Xplore does not index it — the profile jumps 1972 → 1974. What remains is a
-      library holding IEE Conf. Publ. 105 itself.
+      (`weinberg_2017_sliding_window_detectors.pdf` cites only the 1980 paper, spelling him *"Gregers
+      Hanson"*.)
+
+      **What this settles, and what it cannot:**
+      - **The page range has a source now:** Gandhi & Kassam 1988's reference list. It is still a
+        secondary source, and the only one found. Hansen's own citation gives no pages.
+      - **"The talk treated greatest-of selection" is supported by its own author.** "The talk
+        proposed it" rests on Gandhi & Kassam alone, nine years after the 1980 paper.
+      - ⚠ **"The talk is the origin of greatest-of" cannot be established by anyone, and the
+        evidence runs against it.** A Hughes memo analysed the split mean-level detector in February
+        1972. Nobody can read the memo either (it is internal), so all this shows is that the idea
+        was circulating in industry before the talk. It does not show who had it first.
+      - So **neither of the two readings `detector_history.md` §4 was waiting on can be confirmed**.
+        The 1973 talk as *origin* is contradicted by the date of the memo. Hansen & Sawyers 1980 as
+        *origin* is contradicted by its own §I, which cites earlier work on the same selection.
+        **The rewording of the column, and of `GLOSSARY.md` and `README.md`, is Tony's call**; it is
+        filed in [the todo](todo/2026-09-10-nobody-has-read-hansen-1973.md), and it was not made here.
+
+      **Routes that were exhausted before the close**, kept so nobody retries them: IEEE Xplore does
+      not index the talk, since it was an IEE (British) publication and the author profile jumps
+      1972 → 1974. OpenAlex has a record with no DOI and a wrong venue. The volume's contents listing
+      is the most anyone has found.
 
 - [x] ~~**Date A, Bienenstock E & Geman S (1998).** On the temporal resolution of neural
       activity. Technical Report, Division of Applied Mathematics, Brown University.~~

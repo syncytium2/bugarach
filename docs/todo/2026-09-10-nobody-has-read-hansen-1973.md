@@ -5,7 +5,38 @@ filed: 2026-09-10
 
 # Nobody has read Gregers Hansen 1973, and it decides whose column is right
 
-> **A library job.** Every online route is exhausted; this needs a physical or institutional copy.
+> ## Revision, 2026-09-14: nobody will read it, so the question changes
+>
+> **The library job is off.** Tony, 2026-09-14: the paper *"resolves only to a conference listing"*,
+> and he can find no documentation of what was in the talk. The closing condition below, *someone
+> reads the paper*, can no longer be met.
+>
+> **The shelf already held what can be known**, and nobody had searched it for this question. Full
+> quotes and sources are in [`lit_needed.md`](../lit_needed.md), in the Gregers Hansen entry:
+> - **Gregers Hansen & Sawyers 1980, §I**, citing the talk as its reference [1]: the talk gave *"a
+>   simple rule for determining the detectability loss"* of cell-averaging CFAR with greatest-of
+>   selection. So by its author's own account the talk **treated** greatest-of.
+> - **The same paragraph cites J.H. Sawyers's Hughes Aircraft internal memo of 15 February 1972**,
+>   an exact analysis of the *"'Split' mean level threshold detector"*. That is twenty months before
+>   the talk.
+> - **Gandhi & Kassam 1988** say Hansen *"proposed"* greatest-of, cite the talk as its reference
+>   [9], and supply the **325–332** page range. That list is the only source for the pages.
+> - **Rohling 1983** credits greatest-of to the 1980 paper, not to the talk.
+>
+> **What that does to the dispute:** neither column is right as an *origin*. The 1973 talk is
+> contradicted by the 1972 memo; Hansen & Sawyers 1980 is contradicted by its own citation of the
+> talk. What the published record supports is **the talk as the earliest published treatment of
+> greatest-of that any paper on the shelf cites**, with its proposal credited by Gandhi & Kassam 1988, and **Gregers
+> Hansen & Sawyers 1980 as the loss analysis**.
+>
+> **Now closes when** Tony rules on the wording for `detector_history.md` §4's attribution column,
+> `GLOSSARY.md` (*"GO-CFAR (Hansen 1973)"*), `README.md` (*"the origin"*) and `detector_history.md`
+> near line 204. All three are outside-reader documents, so the edit goes through the murderboard.
+> Do it together with [the surname fix](2026-09-10-the-canonical-surname-is-gregers-hansen.md), since
+> it touches the same lines. The body below is kept as written.
+
+> **A library job.** ~~Every online route is exhausted; this needs a physical or institutional copy.~~
+> Superseded 2026-09-14; see the revision above.
 
 ## The dispute
 
