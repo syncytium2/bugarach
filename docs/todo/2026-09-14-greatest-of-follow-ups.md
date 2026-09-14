@@ -45,11 +45,12 @@ that the origin stays *not established*.
   - ~~Is a library request wanted?~~ **Done 2026-09-14: the interlibrary-loan copy arrived the
     same afternoon and was read.** §4.1 now reports what it says. The darkroom rebuild and the
     shelf README rows above are claimed on `docs/SESSIONS.md` for this update.
-  - **A lead for the cell-averaging question, from the 1973 paper's reference list:** H. M. Finn,
-    *"Adaptive detection with regulated error probabilities"*, RCA Review, Dec. 1967 (as Hansen
-    cites it: vol. 29, pp. 653–676). That is earlier than Steenson (July 1968) and Finn & Johnson
-    (Sept. 1968). ⚠ The volume number is unverified. Hansen gives Finn & Johnson as vol. 30,
-    where the journal's contents page says 29, so check this citation against the journal.
+  - **An unverified citation in the 1973 paper's reference list:** "H. H. Finn, *Adaptive
+    detection with regulated error probabilities*, RCA Review, vol. 29, pp. 653–676, Dec. 1967",
+    as printed. ⚠ RCA Review vol. 29 is 1968: Finn & Johnson are 29(3), Sept. 1968. So the year,
+    not the volume, is likely wrong, and this may be a December 1968 paper. Hansen's reference
+    list is unreliable here, and he also gives Finn & Johnson as vol. 30. This is a note for
+    whoever next cites Finn, not an origin search; that question was closed on 2026-08-24.
 
 - **Found in the review's third round, outside this change:**
   - `detector_history.md` §7 item 4 says Rohling 1983 is "a greatest-of combination rule and an

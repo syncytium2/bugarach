@@ -177,7 +177,8 @@ locations belong to other projects.
       the shelf and never commit it. The volume's own copyright page prints **ISBN 0 85296 112 X**,
       so the notice's 114 6 was the error, and the paper runs **pp. 325–332**, as Gandhi & Kassam
       gave. The paper **describes greatest-of selection on p. 326 without citing a source and without
-      presenting it as new**; it reviews CFAR designs. `detector_history.md` §4.1 now carries what it
+      presenting it as new**; it surveys CFAR loss results and presents computations of its own, including the
+      greatest-of cases. `detector_history.md` §4.1 now carries what it
       says. Two earlier readings in this entry, "Nobody will read it" and "the talk", are superseded
       by the paper itself.
 

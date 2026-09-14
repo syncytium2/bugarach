@@ -205,10 +205,9 @@ darkroom literature shelf.*
 > its percentile-of-pool is kin to OS-CFAR — so §4's argument that three of these
 > are re-derivations of CFAR has stopped being a reading of the design space and
 > become the attribution. ⚠ *2026-09-14: the audit named Hansen 1973 as the origin
-> of greatest-of, and nobody had read that paper; the origin credit is withdrawn.
-> Read later that day, the paper describes greatest-of but neither attributes it to
-> anyone nor presents it as new, so where greatest-of began is still not established
-> (§4.1). `maxlt` uses greatest-of's combination rule over percentile thresholds, not
+> of greatest-of without anyone having read that paper, so that credit is withdrawn.
+> Read later that day, the paper neither confirms nor rules it out; where greatest-of
+> began is not established (§4.1). `maxlt` uses greatest-of's combination rule over percentile thresholds, not
 > GO-CFAR's mean-based form (§4).* Separately, Kreuz's own lab has published detection layers
 > on the synchronization profile, which weakens the Tier 2 framing.
 >
@@ -466,7 +465,7 @@ named for exactly the choices bugarach made by benchmark.
 | --- | --- | --- | --- | --- |
 | rate+context | test window vs the mean of a surrounding window | cell-averaging (CA-CFAR) | Finn & Johnson, *RCA Review* **29**(3), Sept 1968, 414–464 | **read in full** |
 | CoactDetect | bin vs a null built from a window **centred on that bin** | cell-averaging, per-cell test | — | — |
-| LoCo, `maxlt` | **max** of a trailing and a leading half-window | greatest-of (GO) selection | origin **not established** (§4.1); described, attributed to no one, in Hansen, IEE Conf. Publ. 105, 1973, 325–332; added-loss analysis of cell-averaging greatest-of: Hansen & Sawyers, *IEEE T-AES* **AES-16**(1), Jan 1980, 115–118 | both **read in full** |
+| LoCo, `maxlt` | **max** of a trailing and a leading half-window | greatest-of (GO) selection | origin **not established** (§4.1); described, without citing a source, in Hansen, IEE Conf. Publ. 105, 1973, 325–332; added-loss analysis of cell-averaging greatest-of: Hansen & Sawyers, *IEEE T-AES* **AES-16**(1), Jan 1980, 115–118 | both **read in full** |
 | LoCo, `symmetric` | one window spanning both sides | cell-averaging again | — | — |
 | LoCo's 99.9th percentile of the pooled null | a high order statistic, not a mean | kin to ordered-statistic (OS-CFAR) | Rohling, *IEEE T-AES* **AES-19**(4), July 1983, 608–621 | **read in full** |
 | censoring the largest reference cells | discard the interferers before estimating | trimmed-mean / censored CFAR | Weiss 1982 and Rickard & Dillard, *per Rohling*; Gandhi & Kassam, *IEEE T-AES* **24**(4), 1988, 427–445 | **read in full** |
@@ -514,10 +513,15 @@ V. Gregers Hansen, *"Constant false alarm rate processing in search radars"*, IE
 Conference Publication 105, *Radar — present and future* (London, 23–25 October
 1973), pp. 325–332. The IEE is the British Institution of Electrical Engineers, not
 the IEEE. This project could not read it online. Tony obtained it by interlibrary
-loan, and it was read on 2026-09-14. **It describes greatest-of selection, but it
-neither attributes it to anyone nor presents it as new**, and two of the later
-sources credit different people with proposing it. The mechanism match above does not
-depend on the answer; what to cite for greatest-of's origin does, and it stays open.
+loan, and it was read on 2026-09-14. The credit was withdrawn because nobody had read
+the paper. **Reading it neither confirms nor rules it out**: the paper describes
+greatest-of selection, cites no earlier source for it, and makes no claim to priority,
+which is how it would read either way. It is the earliest *published* description of
+greatest-of this project has found. An unpublished Hughes Aircraft memo from February
+1972 is earlier, and is known only through Hansen & Sawyers 1980. Of the later
+sources, Gandhi & Kassam 1988 credit this paper with proposing greatest-of, and
+Rohling 1983 credits Moore & Lawrence 1980. The mechanism match above does not depend
+on the answer; what to cite for greatest-of's origin does, and it stays open.
 
 **What the 1973 paper says.** Its conclusions call it *"a survey of available
 results"* on CFAR losses. Alongside that survey it reports computed results without
@@ -556,8 +560,8 @@ What the later sources say, oldest first:
   memo by J.H. Sawyers dated 15 February 1972, *"Detection losses of the
   'Conventional' and 'Split' mean level threshold detectors"*, and their
   acknowledgment says the paper's results *"are derived from independent work
-  performed by the two authors"*, made aware of each other's work by a third party. The
-  1973 paper does not cite that memo.
+  performed by the two authors"*. Neither paper says when the two authors learned of
+  each other's work.
 - **US patent 4,318,101** (Nippon Electric, filed 1980, granted 1982; quoted from the
   Google Patents text, which is not on the shelf) says Hansen *"proposed another CFAR
   processor for the Weibull clutter in general"* in the 1973 paper, and paginates it
@@ -575,16 +579,14 @@ What the later sources say, oldest first:
   lagging windows"*, with [9] the 1973 paper, and elsewhere that greatest-of was
   *"proposed and analyzed in [9, 10]"*, the 1973 and 1980 papers together. Their
   page range for the 1973 paper, 325–332, matches the volume; their venue, an IEEE
-  conference, does not. The 1973 paper itself does not say it is proposing the
-  technique.
-
+  conference, does not.
 Finn & Johnson 1968 and Weinberg 2017, also on the shelf, say nothing about where
 greatest-of began.
 
 What we do not know:
 
-- whether greatest-of began with the 1972 Sawyers memo, the 1973 paper, or earlier
-  work;
+- whether greatest-of began with the 1972 Sawyers memo, Hansen's own unpublished work
+  before 1973, or earlier work;
 - what the 1972 memo contains, beyond what Hansen & Sawyers report;
 - whether any earlier work the 1973 paper cites for other purposes describes
   greatest-of. That covers its citations for cell-averaging (Hall 1962–63, Hansen
@@ -1043,9 +1045,8 @@ provenance note; 2, 4 and 5 follow from §4.
    it.** All four papers are read. ⚠ *2026-09-14:* this check verified the
    greatest-of attribution as it then stood, Hansen & Sawyers 1980, without asking
    whether that paper was the origin. The 2026-08-24 audit replaced it with Hansen
-   1973, which nobody read; that origin credit is withdrawn. The paper, read on
-   2026-09-14, describes greatest-of but neither attributes it to anyone nor presents
-   it as new (§4.1).
+   1973, which nobody read, and that credit is withdrawn. Reading the paper on
+   2026-09-14 neither confirmed nor ruled it out (§4.1).
 3. ~~**Fetch Malvache et al. 2016 by hand.**~~ **Done 2026-08-22**, from Tony's own
    copy, and it was the highest-value fetch of the three: **two of the four constants
    this project attributes to it are wrong** (§2). What remains is narrower and now
