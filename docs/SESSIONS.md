@@ -45,6 +45,22 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 - **Branch:** `surrogate-screen-overnight`, in a worktree of the same name.
 - **Released when:** the morning murderboard on the report is done.
 
+### Mac/deploy-overview-pickers — SITE claim RELEASED 2026-09-13: deployed at `55ce08f`
+- **Status:** **RELEASED 2026-09-13 — deployed; nothing holds the site.** Tony, in words: *"deploy
+  so i can test"*. Held on the machine-local board for the length of the upload, which is shorter
+  than landing a claim here would have taken; this block is the record.
+- **What went out:** the three viewer commits after `22234c0` — turbo takes the page and the red
+  unblinded overview (#543), and the overview's treatment and group pickers (#549).
+- **Deploy record.** Built in a worktree detached at `origin/main` `55ce08f`; `DEPLOY_HOLD.md` read
+  `held: no`; no ACTIVE site claim on this board. `test_site_coherence`, `test_site_viewer` and
+  `test_site_dates` green on the build; `wrangler deploy --dry-run` read 8 files from that
+  worktree's `site/`; uploaded with the primary checkout's pinned wrangler (4.122.0), version
+  `c159b4e3`. Afterwards `site_staleness.py` reads **current** at `55ce08f`, and
+  `audit_deployed_page.py` is clean — the viewer fetched nothing but itself.
+- **Checked against the real export folder before the merge, not on the live site:** baseline
+  only, TTX, TTX with ORX + DI, senktide with ORX + DI, driven headless on this machine. Tony is
+  testing the live page himself.
+
 ### Mac/claim-the-site-for-the-viewer — SITE claim RELEASED 2026-09-11: deployed at `22234c0`
 - **Status:** **RELEASED 2026-09-11 — deployed; nothing holds the site.** Taken over and
   released here by `bugarach-nimble-marble` (Arioch), which prepared the deploy; Tony ran the
