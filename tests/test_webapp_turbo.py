@@ -686,6 +686,25 @@ def test_turbo_folds_the_side_column_and_a_rail_click_brings_it_back(tmp_path):
             _open(pg, _folder(tmp_path))
             pg.wait_for_selector("#turbo:not([hidden])", timeout=30000)
             assert pg.is_hidden("#side"), "turbo is up and the side column still takes 322px"
+
+            # THE AXIS DOES NOT SCROLL: its own canvas, outside the scrolling box
+            assert pg.is_visible("#turboAxis")
+            assert pg.evaluate(
+                "() => !document.getElementById('turboScroll').contains("
+                "document.getElementById('turboAxis'))")
+
+            # ROI ORDER IS IN TURBO, and one press sets every copy of the toggle
+            pg.click("#turbo button[data-order=rate]")
+            assert pg.evaluate("() => ORDER") == "rate"
+            assert pg.evaluate(
+                "() => [...document.querySelectorAll('button[data-order=rate]')]"
+                ".every(b => b.getAttribute('aria-pressed') === 'true')")
+            pg.click("#turbo button[data-order=id]")
+
+            # A RASTER IS AS TALL AS ITS FIELD: one scale, so more ROIs, more height
+            assert pg.evaluate(
+                "() => rasterH({nRoi: 50}, COL_ROI_PX) > rasterH({nRoi: 20}, COL_ROI_PX)")
+
             pg.click("#rail button.step >> nth=0")
             pg.wait_for_selector("#turbo[hidden]", state="attached", timeout=5000)
             assert pg.is_visible("#side") and pg.is_visible("#view")
@@ -791,6 +810,14 @@ def test_the_overview_asks_first_and_aligns_on_the_end_of_baseline(tmp_path):
             assert got["top"] == [["baseline", 30, 160], ["senktide", 160, 360]], got
             # the late start is flagged; a longer drug period is not
             assert got["differs"] == ["", "", "senktide starts +10s"], got
+            # rec2's senktide runs a minute past the median line, so its timing
+            # travels with its row; the two on the line carry none
+            assert pg.evaluate("() => OVERVIEW.rows.map(r => r.unique)") == [False, False, True]
+            # the timings strip and the axis are pinned outside the scrolling rows
+            assert pg.is_visible("#overviewHead") and pg.is_visible("#overviewAxis")
+            assert pg.evaluate(
+                "() => ['overviewHead', 'overviewAxis'].every(id => "
+                "!document.getElementById('overviewScroll').contains(document.getElementById(id)))")
 
             # TTX: high K+ after it is drawn in the top line without selecting
             pg.select_option("#oTreat", "TTX")
