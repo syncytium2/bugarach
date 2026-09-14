@@ -45,6 +45,17 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 - **Branch:** `surrogate-screen-overnight`, in a worktree of the same name.
 - **Released when:** the morning murderboard on the report is done.
 
+### Mac/deploy-overview-button — SITE claim RELEASED 2026-09-14: deployed at `379ee39`
+- **Status:** **RELEASED 2026-09-14 — deployed; nothing holds the site.** Asked whether to redeploy
+  #554 once it merged, Tony answered *"go"*. Held on the machine-local board for the upload.
+- **What went out:** #554 — the red overview button names the view on screen ("Showing baseline
+  only · blind" / "Showing TTX full trace · unblinded" / "Showing one slice"), and the
+  confirmation's wording.
+- **Deploy record.** Worktree detached at `origin/main` `379ee39`; `DEPLOY_HOLD.md` `held: no`; no
+  ACTIVE site claim. Site tests green on the build; dry run read 8 files; uploaded with the pinned
+  wrangler, version `c8d439e1`. Afterwards `site_staleness.py` reads **current** and
+  `audit_deployed_page.py` is clean.
+
 ### Mac/deploy-column-axis — SITE claim RELEASED 2026-09-14: deployed at `a3a4f7b`
 - **Status:** **RELEASED 2026-09-14 — deployed; nothing holds the site.** Continuing Tony's live
   testing of the column views (he asked "ready?" for it). Held on the machine-local board for the
