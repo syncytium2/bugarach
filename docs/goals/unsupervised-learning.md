@@ -35,11 +35,11 @@ emit.
 **Nothing is running. The next run is pre-registered and signed** (Tony, 2026-09-14):
 [is rigid shift usable?](../proposals/2026-09-14-preregistration-is-rigid-shift-usable.md). It
 treats the overnight run as exploratory and carries the exit criterion in its outcome table.
-⚠ **It is not runnable as signed.** Its murderboard, run after signing, found three controls
+⚠ **Amended 2026-09-14.** Its murderboard, run after signing, found three controls
 that cannot fail, an incomplete outcome table and an undefined interval, and proposed eleven
-amendments that change no signed threshold
+amendments that change no signed threshold, all adopted by Tony the same day
 ([run record](../reviews/2026-09-14-preregistration-is-rigid-shift-usable_2026-09-14.md)).
-**Read the page's Amendments section before executing anything.**
+**The Adopted amendments section wins over the text above it. One blind review pass runs before any code is built.**
 
 - **The surrogate screen is stopped** (Tony, 2026-09-12). He was asked how to settle the
   family-size question below and whether to write a third re-evaluation; he answered that the first
@@ -48,10 +48,10 @@ amendments that change no signed threshold
 - **The ROI-swap evidence plan is live, and its first real-data stage returned STOP** (2026-09-13).
   Its next stage is simulation and needs a murderboard before it starts
   ([the plan](../todo/2026-09-12-evidence-before-more-effort-on-the-roi-swap.md)).
-- **The exit criterion is the pre-registration's outcome table**, which the review found
-  incomplete: no VOID rows and no UNDECIDED state.
+- **The exit criterion is the pre-registration's outcome table, as amended**: VIABLE, NARROWED,
+  STOPPED (only when the failure is intrinsic) or UNRESOLVED.
 
-The next move is Tony's ruling on the amendments, not a run.
+The next move is one blind review pass on the amended page, then the runner.
 
 ---
 
