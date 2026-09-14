@@ -194,3 +194,11 @@ outside reader. Plans in between are working material.
 ⚠ **The page asked for its murderboard before signing; it was signed first.** The review runs
 once, now, before any code is built or any data are read. A blocking finding is brought to Tony
 and, if he accepts it, recorded here with its date. Nothing above the line is edited.
+
+**2026-09-14 — the review ran; eleven amendments are proposed and none is adopted yet.** All 11
+roles found that the rule as signed cannot be read if it runs: three controls cannot fail, the
+outcome table has no VOID or UNDECIDED rows, the 98.3 % bound is undefined, and "fresh
+randomness" is not delivered by the instruments as they stand. No amendment changes a signed
+threshold. ⚠ One reviewer quoted exploratory outcomes at declared displacements, so anything
+adopted from here is post-exposure and says so. **Do not run until Tony has ruled on each.**
+[Run record](../reviews/2026-09-14-preregistration-is-rigid-shift-usable_2026-09-14.md).

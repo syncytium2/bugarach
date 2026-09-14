@@ -32,10 +32,14 @@ emit.
 
 ## Where it stands
 
-**Nothing is running. The next run is being pre-registered, and the draft is the authority once
-Tony signs it:** [is rigid shift usable?](../proposals/2026-09-14-preregistration-is-rigid-shift-usable.md)
-(2026-09-14). It treats the overnight run as exploratory, fixes the rule before a small
-confirmatory run, and carries the exit criterion in its outcome table.
+**Nothing is running. The next run is pre-registered and signed** (Tony, 2026-09-14):
+[is rigid shift usable?](../proposals/2026-09-14-preregistration-is-rigid-shift-usable.md). It
+treats the overnight run as exploratory and carries the exit criterion in its outcome table.
+⚠ **It is not runnable as signed.** Its murderboard, run after signing, found three controls
+that cannot fail, an incomplete outcome table and an undefined interval, and proposed eleven
+amendments that change no signed threshold
+([run record](../reviews/2026-09-14-preregistration-is-rigid-shift-usable_2026-09-14.md)).
+**Read the page's Amendments section before executing anything.**
 
 - **The surrogate screen is stopped** (Tony, 2026-09-12). He was asked how to settle the
   family-size question below and whether to write a third re-evaluation; he answered that the first
@@ -44,9 +48,10 @@ confirmatory run, and carries the exit criterion in its outcome table.
 - **The ROI-swap evidence plan is live, and its first real-data stage returned STOP** (2026-09-13).
   Its next stage is simulation and needs a murderboard before it starts
   ([the plan](../todo/2026-09-12-evidence-before-more-effort-on-the-roi-swap.md)).
-- **The thread has no exit criterion.** One is proposed and not adopted — see *Waiting on Tony*.
+- **The exit criterion is the pre-registration's outcome table**, which the review found
+  incomplete: no VOID rows and no UNDECIDED state.
 
-The next move is a conversation, not a run.
+The next move is Tony's ruling on the amendments, not a run.
 
 ---
 
@@ -73,9 +78,9 @@ The next move is a conversation, not a run.
 | **Every surrogate candidate enters; none is pruned; the tiers with a pooling operator run as a grid** | decided, Tony 2026-09-10 | [ruling](../todo/2026-09-10-which-surrogates-enter-the-screen.md) |
 | ***J* is per stream; τ is declared by the producer, not fitted** | decided | [handoff](../handoffs/2026-09-10-the-surrogate-is-the-design.md), [τ todo](../todo/2026-09-10-the-dead-time-floor-is-the-producers-number.md) |
 | **Analysis runs only on field-step-excluded data** | decided, Tony 2026-09-12 | [`MILESTONES.md`](../MILESTONES.md) |
-| **The screen ran** on 2026-09-11 over both folders. Candidates the per-ROI leak detector could not tell from real: do-nothing everywhere; interval and pattern jitter at one frame; **rigid shift out to 1.6 s fast, 1.4 s slow and four frames on Cossart**. The known-bad control was caught even at one frame, so the test has power | measured | [the join todo](../todo/2026-09-12-join-the-leak-results-to-the-destruction-results.md) |
+| **The screen ran** on 2026-09-11 over both folders. Candidates the per-ROI leak detector could not tell from real: do-nothing everywhere; interval and pattern jitter at one frame; **rigid shift up to 1.6 s fast, at 1.4 s slow (0.7 s slow was detected) and four frames on Cossart**. The known-bad control was caught even at one frame, so the test has power | measured | [the join todo](../todo/2026-09-12-join-the-leak-results-to-the-destruction-results.md) |
 | ⚠ **Every fast-stream candidate that returned a number was voided by a defect**: the voiding rule read seed 0 of a twenty-seed negative control whose flag rate was the nominal 0.05 | measured; a defect in the rule, not a fact about the data | [voiding todo](../todo/2026-09-12-126-fast-candidates-were-voided-on-one-seed-of-twenty.md) |
-| ⚠ **Joint-ISI dither was never measured** — every cell hit the memory or time cap. Unmeasured, not failed | measured | [todo](../todo/2026-09-12-joint-isi-dithering-is-unmeasured-not-failed.md) |
+| ⚠ **Joint-ISI dither was measured only where it was tractable, and leaked at every cell it reached**: 36 cells on the lab folder (fast 2.5 s, slow 5.6 s and 11.2 s), all detected at accuracy 0.60–0.73. The small displacements and all of Cossart hit the memory or time cap. Corrected 2026-09-14; this row used to say "never measured" (found by the pre-registration's murderboard) | measured | [todo](../todo/2026-09-12-joint-isi-dithering-is-unmeasured-not-failed.md) |
 | **About 39 % of ROIs are bit-identical in every surrogate** on the lab folder (4–7 % on Cossart), flat in *J*: ROIs with no events to move. So about 39 % of the negative class *is* the positive class, and no surrogate choice removes it. Empty baselines are a group feature and §9 governs them | measured; ruling by Tony 2026-09-12 | [todo](../todo/2026-09-12-an-empty-baseline-is-a-group-feature-and-39-percent-of-every-surrogate-is-the-data.md) |
 | **The screen's report, reviewed**: at its settings no Holm-adjusted yardstick could flag; on Cossart the destruction measure cannot register removal at all | measured, two review rounds | [review record](../reviews/report_steps_excluded_2026-09-11.md) |
 | …but **a pre-declared family of five band statistics *can* flag on the existing run**. Picking those five after seeing the results would be post-hoc, which is why the family size is Tony's call | measured | [handoff](../handoffs/2026-09-12-both-reevaluations-withdrawn.md) |

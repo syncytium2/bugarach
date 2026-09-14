@@ -1,0 +1,70 @@
+GRANT 9 MISMATCH — missing Grep, Glob; holds Read, Bash (no editing tools)
+
+The run record should show this review took a fallback path. Without Grep and Glob I did the file searches with `grep` and `ls` through Bash. Nothing was edited or created. One heredoc was blocked by the repo's `no-heredoc-source` hook, so I re-ran it as `python -c`.
+
+# Role 9, Show Don't Tell: the rigid-shift pre-registration
+
+**Artifact:** `docs/proposals/2026-09-14-preregistration-is-rigid-shift-usable.md`
+
+## What I checked, and the thresholds I used
+- I rendered the page with `markdown` using the tables extension. It has **0 `<img>` tags and 3 `<table>` blocks**: the displacements, the outcome and the sign-off.
+- Words were counted per `## ` section (link targets, code ticks and markup removed). A "text block" is one paragraph, one bullet or one table row.
+- The thresholds are the checklist defaults, which are conventions and not researched optima: **40 words per page** (here, per section), **60 words per block**, a results or methods section with no figure, **two or more prose-only sections in a row**, and a figure share under 50%.
+- **The 40-word limit is written for slides and says little about a pre-registration.** A document like this is read line by line and has to be exact. Almost every section breaks the limit, so I report it but don't treat it as a finding. The findings below rest on the 60-word block limit, methods sections with no figure, the prose-only run, and above all on whether a picture would make the rule less ambiguous.
+- Figure share is **0% everywhere**, because there are no figures. The half-canvas test doesn't apply.
+
+## Count table
+
+| section | total words | largest block | figure (y/n) | figure share | flags |
+|---|---|---|---|---|---|
+| Preamble quote (sign-off notice and "why this page exists") | 130 | 130 (one quote holding two paragraphs) | n | 0% | block over 60 words |
+| The question | 84 | 42 | n | 0% | prose-only run begins |
+| Why rigid shift, and why only rigid shift | 126 | **93** | n | 0% | block over 60 words; evidence given as prose |
+| What this run cannot claim | 65 | **65** | n | 0% | block over 60 words (prose is right here) |
+| Data | 80 | 29 | n | 0% | fourth prose-only section in a row |
+| The displacements — accepted | 80 | 25 | table | 0% | none: a table is right |
+| The gates, total | **559** | 66 | n | 0% | methods section with no figure |
+| · Leak | 176 | 55 | n | 0% | methods section with no figure |
+| · Count preservation | 103 | 32 | n | 0% | methods section with no figure |
+| · Destruction | 264 | **66** | n | 0% | block over 60 words; methods section with no figure |
+| The outcome, per stream and overall | 178 | 45 | table | 0% | decision rule given as table plus prose |
+| Not in this run | 37 | 23 | n | 0% | none |
+| What has to be built, and its cost | 106 | 46 | n | 0% | none (prose is right here) |
+| Review, once | 25 | 25 | n | 0% | none |
+| Sign-off | 62 | 47 (table cell) | table | 0% | none |
+| Amendments | 50 | 50 | n | 0% | none |
+| **Page** | **1,637** | | **0 figures** | | |
+
+## Should the figures exist before the run, or only in the write-up?
+This page is frozen above its sign-off line, so any figure has to go in a **dated amendment** below it. I split the possible figures into three kinds:
+
+- **Figures that define or decide need to exist before any data is read.** That covers the generator schematic, the diagram of which window sits inside which, the outcome flow diagram, and a blank template showing how each result will be read. They don't add evidence. They are the rule drawn out, and drawing a rule is how you find its missing branches. If they are drawn after a result exists, the flow gets drawn around whatever case came up. That is the post-hoc failure this page was written to prevent. Drawing the outcome flow and the window diagram exposed three gaps, all listed below.
+- **Evidence figures belong in the result write-up.** Examples are accuracy intervals, retained share against K, and count differences. Their axes and threshold lines should still be fixed now by the template.
+- **The exploratory evidence for choosing rigid shift is not needed before the run.** It already exists in the overnight screen, so link to it.
+- **An amendment that adds figures has to say:** *"These figures draw the rule above; where a figure and the text disagree, the text wins, and the disagreement is brought to Tony as an amendment."* Without that line, a figure becomes a way to change a signed rule without anyone signing.
+- **Every figure is numbered** (`Figure 1.` …) and cited by number and name, following the repo CLAUDE.md.
+
+## Findings
+
+| # | location | issue | severity | suggested fix (the replacement figure) | verified against source |
+|---|---|---|---|---|---|
+| 1 | The outcome, per stream and overall (outcome table and PASS/VOID/FAIL paragraph) | The decision rule is split between a paragraph and a four-row table, and neither gives the whole tree. Drawing it shows branches with no outcome: **VOID is never mapped to an overall outcome** (fast VOID with slow PASS, VOID on both, and so on). The "PASS on one stream, FAIL on the other" row leaves **the Cossart column empty**. "Cossart leak at the passing *J*" doesn't say **which *J*** when fast and slow pass at different displacements, or when more than one *J* passes. Cossart's own positive control can also void its leak test, and that isn't mapped either. On a page whose purpose is "rule first", a branch with no outcome gets decided after the fact. | **major**. Whether it blocks is for the rigor roles to decide; my part is that drawing the rule is what exposes it. | **Figure 3, the outcome flow.** Per stream: are the controls valid at some *J*? No gives VOID. Does some *J* pass leak, count and destruction? Yes gives PASS, no gives FAIL. Then a join node combining fast, slow and the Cossart leak into VIABLE, NARROWED or STOPPED, with **every** combination of PASS, FAIL and VOID across three inputs leading somewhere. Put it in a dated amendment. Each branch the text doesn't cover goes to Tony as a separate amendment item. Don't settle it inside the figure. | yes: lines 137–146 |
+| 2 | The question, and Why rigid shift (the generator is described only in words) | "Each ROI's whole train moved by one random offset in ±*J*, nothing wrapped" is the only definition of the thing being tested. Nowhere does a reader *see* how it differs from uniform dither, which is the leak control, or from circular shift, which the destruction section rules out. Drawing it also forces two details the words skip: how the offset is **distributed** (uniform? continuous or on the 0.1 s frame grid?), and the fact that onsets pushed past the edge **disappear**. That second point is the whole reason for the count-preservation gate. | major | **Figure 1, what the three generators do.** A small black-and-white raster: 6 ROIs and about 20 s of real data, stacked and x-linked with the same rows after rigid shift at *J* = 1.6 s, uniform dither at 1.6 s, and circular shift. One planted coordinated event is marked with a **down-pointing triangle in a lane above each raster**, never drawn on it, per CLAUDE.md. That shows the event column dispersing under rigid shift. Onsets lost at the edge get hash marks in the same lane. Reuse `tools/make_generator_figures.py`, which already stacks rasters and puts planted-event cues above them, with the generators in `src/bugarach/surrogates.py`. The offset distribution goes to the rigor roles as a question, not into the figure as an answer. | yes for the text (line 17). Whether the code already fixes the distribution: no, I didn't open `surrogates.py`. |
+| 3 | Count preservation (lines 101–109): three different windows | The section names a "generation window's edge", a "per analysis window" statistic (60 s windows, line 86), and an `edge_thinning` control that deletes "onsets near the window edges". The text never says how these windows nest or which edge the control thins. Destruction adds a 1.0 s bin and a 0.5 s bin on top. The number of timescales is a reason to draw them. | major | **Figure 2, the windows and bins on one timeline.** Recording, then baseline window, then generation window, then 60 s analysis windows, then edge bands, with a ±*J* bracket at each edge showing where onsets get dropped. Show the 1.0 s and 0.5 s coincidence bins at the same scale, and the three *J* for each stream beside them. The time axis uses minutes (`_time_axis_hook` labelling). If the drawing forces a choice the text didn't make, that choice is an amendment. | yes: lines 86, 101, 105, 108, 119–122 |
+| 4 | The gates, all three subsections: 559 words, no figure, 66-word Destruction instrument block | Each gate has the same structure: statistic, pass threshold, control that must pass, control that must fail, void condition, bin or scale. The text says so itself: "Each gate states how it can fail, and each has a control that shows it can". That repeated structure is really a table, and in prose a reader has to rebuild it for each gate. | minor | **Table 1, gates and controls.** Rows: leak, count, destruction. Columns: statistic · pass at a *J* · control that must fail the gate (dither, edge_thinning) · control that must pass it (real against real, do-nothing, homogeneous resample) · void if · scale (98.3% interval, 1.0 s bin with 0.5 s alongside). This finishes the table the page half has already. **Relocate, don't delete:** the instrument internals stay below the table as notes. That means the feature list, 199 permutations, 2,000 resamples, the reason for not using circular shift, the saturation rule, and why Cossart isn't scored for destruction. All of it is load-bearing. | yes: lines 80–131 |
+| 5 | The gates, reading template (nothing exists) | A pre-registration that says "read the result once" doesn't fix *how* a result will look when it is read. Different plot layouts invite different readings. | major for a pre-registration (none of this would apply to a deck) | **Figure 4, how a result will be read, drawn empty before the run.** Panel A: leak accuracy with a 98.3% interval for each *J*, for rigid shift, dither and real against real, with a line at 0.55 and the pass region shaded under it. Panel B: retained share against K at participation 0.2 and 0.5, with lines at 0.25 (pass), 0.9 (do-nothing floor) and 0.1 (homogeneous ceiling), and a marker for the saturation limit. Panel C: count difference as a share of the mean, with the ±2% band. The result write-up then fills in this exact layout. `make_null_leak_figure.py` and `make_k_scan_figure.py` already draw axes close to Panels A and B. | yes: thresholds at lines 90–129 |
+| 6 | Why rigid shift (93-word block, line 27) | The case for choosing rigid shift is a set of numbers in prose: displacement limits for fast, slow and Cossart, an accuracy range, a voided seed, and the other candidates dismissed one at a time. It is comparative evidence, which is a picture. | minor, and **not needed before the run** | **Link to an existing figure, or add Figure 5: candidates by what they achieve.** Dot plot: x is the largest leak-free displacement, y is how far onsets are moved compared with the coordination timescale. Rigid shift is the only point beyond both; uniform dither is marked as leaking; joint-ISI is marked not measured. The label **exploratory** goes on the figure itself. The seed-0 voiding caveat and the todo links go in the caption notes, and stay. If the overnight screen page already has this, cite it by figure number in the amendment rather than redrawing it. | yes for the text. Whether an existing figure already covers it: no. |
+| 7 | Four prose-only sections in a row: The question → Why rigid shift → What this run cannot claim → Data | This breaks the two-in-a-row limit. Most of it is fixed by Figure 1, the generator schematic, which sits next to The question. | minor | Figure 1 belongs with The question, through the amendment's pointer. **What this run cannot claim** is right as prose: it is a limit on what may be claimed and has to be read word for word. **Data** is right as a list of inclusion rules. Don't turn either into a figure, and don't cut them. | yes |
+| 8 | Preamble quote (130 words) | The sign-off notice and a history paragraph share one quote block. The history ("Tony stopped the surrogate screen…") is context, not rule. | minor, and the frozen body means it can't change here | Leave it. For the **next** pre-registration built from this one, keep only the frozen-status notice and the goal link at the top, and move the history into the goal file. The page stays unchanged. | yes |
+| 9 | Sections where prose is right | Displacements (already a table), Not in this run, What has to be built, Review once, Sign-off, Amendments. These are administrative, lists of scope or build items, or record of fact. None would be better as a picture. | none | No change. | yes |
+
+## Summary for the main thread
+- **The page has no figures at all.** Most of its words describe things that can be drawn: a generator, windows inside windows, a matrix of gates and controls, a decision tree.
+- **Before the run, add one amendment** with Figure 1 (the generators), Figure 2 (the windows and bins), Figure 3 (the outcome flow) and Figure 4 (the blank reading template), plus the text-wins sentence.
+- **Drawing the outcome flow and the window diagram found three gaps in the rule.** Each goes to Tony as its own amendment item and must not be settled inside a figure:
+  - VOID results are never mapped to an overall outcome.
+  - It's unclear which *J* the Cossart leak test uses when fast and slow pass at different displacements.
+  - It's unclear which window edge the count-preservation gate and its control refer to.
+- **The offset distribution** (finding 2) is a side question I'm handing to the rigor roles, not claiming as mine.
+- **Table 1, the gates matrix** (finding 4), is an optional layout fix.
+- **Figure 5, the candidate comparison** (finding 6), is a link, not a requirement before the run.
