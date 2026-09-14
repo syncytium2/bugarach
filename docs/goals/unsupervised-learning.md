@@ -39,7 +39,7 @@ treats the overnight run as exploratory and carries the exit criterion in its ou
 that cannot fail, an incomplete outcome table and an undefined interval, and proposed eleven
 amendments that change no signed threshold, all adopted by Tony the same day
 ([run record](../reviews/2026-09-14-preregistration-is-rigid-shift-usable_2026-09-14.md)).
-**The Adopted amendments section wins over the text above it. One blind review pass runs before any code is built.**
+**The one blind review pass after amendment found the rule still not buildable; nothing is built or run until Tony chooses between a rule written as tested code and stopping the goal** ([blind-round record](../reviews/2026-09-14-preregistration-is-rigid-shift-usable_2026-09-14-round2.md)).
 
 - **The surrogate screen is stopped** (Tony, 2026-09-12). He was asked how to settle the
   family-size question below and whether to write a third re-evaluation; he answered that the first
@@ -51,7 +51,7 @@ amendments that change no signed threshold, all adopted by Tony the same day
 - **The exit criterion is the pre-registration's outcome table, as amended**: VIABLE, NARROWED,
   STOPPED (only when the failure is intrinsic) or UNRESOLVED.
 
-The next move is one blind review pass on the amended page, then the runner.
+The next move is Tony's decision on how to proceed, not a run.
 
 ---
 

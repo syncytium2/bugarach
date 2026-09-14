@@ -353,3 +353,16 @@ look at the same recordings".** It is never reported as a confirmation or a repl
   four groups, beside every pooled verdict (FOUNDATIONS §9).
 - **Declared now:** if a stream passes pooled while any group's leak point estimate is at or
   above 0.55, the outcome is NARROWED for that stream and the claim names the group.
+
+---
+
+### 2026-09-14 — the one blind review pass ran; the amended rule is not buildable
+
+All 11 roles reviewed the amended page without seeing the first round. They found it still cannot
+be executed without decisions made after the data exist: a cell can hold two results at once,
+count and destruction have no decided-FAIL rule, the saturation exclusion ungates exactly the
+cases the destruction gate exists to catch, and the leak classifier's edge-band features see
+coordination under rigid shift. The round cap Tony set is reached, so nothing here is patched
+further. **Do not build or run from this page.** The recommendation, a rule written as tested
+code instead of prose, or stopping the goal, is Tony's to decide:
+[blind-round record](../reviews/2026-09-14-preregistration-is-rigid-shift-usable_2026-09-14-round2.md).
