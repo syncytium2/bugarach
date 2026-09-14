@@ -1,20 +1,12 @@
 # Handoff — the loop closes; both of pipeline.md's blockers are gone
 
-> ⚠ **A SECOND THREAD IS ALSO LIVE, and it is not this one.** The detector-design thread — a
-> self-supervised coordinated-event detector, proposed on 2026-09-10 and stopped by its own
-> eleven-role review — hands off in
-> [`docs/handoffs/2026-09-10-the-surrogate-is-the-design.md`](docs/handoffs/2026-09-10-the-surrogate-is-the-design.md).
-> It concerns `learn/`, the surrogate nulls and the literature shelf; **this file concerns none of
-> those, and neither supersedes the other.** What it leaves open are decisions for Tony, not a
-> queue. When one thread lands, delete only its own file.
->
-> ⚠ **A THIRD THREAD IS ALSO LIVE.** The surrogate *screen* — the overnight grid of 2026-09-11, both
-> of whose reevaluations were withdrawn after eleven-role reviews — hands off in
-> [`docs/handoffs/2026-09-12-both-reevaluations-withdrawn.md`](docs/handoffs/2026-09-12-both-reevaluations-withdrawn.md),
-> on branch `surrogate-screen-overnight` (PR #530, still draft). **Tony stopped it deliberately on
-> 2026-09-12** pending a discussion about which statistics may be pre-declared; do not write a third
-> draft and do not start its code findings. Same rule as above: none of these three supersedes
-> another, and each deletes only its own file.
+> ⚠ **ANOTHER GOAL IS ALSO LIVE, and it is not this one.** The label-free (unsupervised) detector —
+> its detector-design thread and its surrogate-screen thread — is gathered on one page:
+> [`docs/goals/unsupervised-learning.md`](docs/goals/unsupervised-learning.md). Start there; it links
+> both of that goal's handoffs. The screen's code landed on `main` with PR #530 on 2026-09-14, but
+> **Tony's stop of 2026-09-12 still stands**: no third reevaluation, no code findings, no run, until
+> the family-size question is discussed. **This file concerns none of that, and neither supersedes
+> the other.** When a thread lands, delete only its own file.
 
 **In flight: [#466](https://github.com/syncytium2/bugarach/pull/466)** alone — the field-step
 figure, still held because it is a figure with a caption and was never murderboarded.

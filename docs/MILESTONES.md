@@ -102,6 +102,7 @@ motion, two block promotion.**
 | The export folder is the input | the store is closed; a withdrawn recording is simply absent | decided | `954a489` | `docs/export_folder_spec.md` | current — revision 9 |
 | The dead-ROI verdict is the exporter's | it needs every treatment of an ROI at once, which baseline-only puts out of reach here | decided | `2d536f4` | `docs/todo/2026-08-15-zero-event-rois-are-not-dead-rois.md` | current |
 | One file declares which folder is current | `dataset.current()` reads it; prose had been the only thing stopping a session going to the store, and prose did not hold | built | `4297033` | `current_export.toml` | current |
+| **Analysis runs only on field-step-excluded data** | Tony, 2026-09-12. Whole-field brightness steps generate the signature a coordination detector exists to find — 74% (fast) and 82% (slow) of ROIs firing at once, at 8.5× and 22.7× each slice's own rate — so the producer removed every event within ±2 s of a confirmed step (381 events, 9 slices) and analysis reads that folder, role `steps_excluded`. A detector or surrogate result computed on a steps-flagged folder is not admissible | decided | `f33bb0e` | `current_export.toml` | current |
 
 ## E. Cross-lab — the Cossart export folder
 

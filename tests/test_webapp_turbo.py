@@ -655,3 +655,275 @@ def test_designating_replaces_the_guess_rather_than_joining_it(tmp_path):
             assert errs == [], errs
         finally:
             browser.close()
+
+
+# --------------------------------------------------------------------------
+# TURBO TAKES THE PAGE, AND THE OVERVIEW IS THE ONE DOOR OUT OF THE BLIND
+#
+# Tony, 2026-09-12: turbo should "occupy more space", the settings sentence
+# above the rasters "serves little purpose. put it below"; and a view of every
+# slice's whole trace with treatments named — red, behind an "are you sure?".
+# --------------------------------------------------------------------------
+
+def test_the_settings_sentence_sits_under_the_rasters():
+    text = VIEWER.read_text(encoding="utf-8")
+    assert text.index('id="turboScroll"') < text.index('id="turboWhat"'), \
+        "the settings sentence is back above the column it describes"
+
+
+def test_turbo_folds_the_side_column_and_a_rail_click_brings_it_back(tmp_path):
+    """The column gets the width; the rail still works while it has it.
+
+    Folding the side column is what makes a rail click dangerous: the step's
+    settings open in a column nobody can see, and the click looks dead. So the
+    click has to leave turbo, and this presses a real rail step to prove it.
+    """
+    pytest.importorskip("playwright.sync_api")
+    from playwright.sync_api import sync_playwright
+    with sync_playwright() as p:
+        browser, pg, errs = _page(p, tmp_path)
+        try:
+            _open(pg, _folder(tmp_path))
+            pg.wait_for_selector("#turbo:not([hidden])", timeout=30000)
+            assert pg.is_hidden("#side"), "turbo is up and the side column still takes 322px"
+
+            # THE AXIS DOES NOT SCROLL: its own canvas, outside the scrolling box
+            assert pg.is_visible("#turboAxis")
+            assert pg.evaluate(
+                "() => !document.getElementById('turboScroll').contains("
+                "document.getElementById('turboAxis'))")
+
+            # ROI ORDER IS IN TURBO, and one press sets every copy of the toggle
+            pg.click("#turbo button[data-order=rate]")
+            assert pg.evaluate("() => ORDER") == "rate"
+            assert pg.evaluate(
+                "() => [...document.querySelectorAll('button[data-order=rate]')]"
+                ".every(b => b.getAttribute('aria-pressed') === 'true')")
+            pg.click("#turbo button[data-order=id]")
+
+            # A RASTER IS AS TALL AS ITS FIELD: one scale, so more ROIs, more height
+            assert pg.evaluate(
+                "() => rasterH({nRoi: 50}, COL_ROI_PX) > rasterH({nRoi: 20}, COL_ROI_PX)")
+
+            pg.click("#rail button.step >> nth=0")
+            pg.wait_for_selector("#turbo[hidden]", state="attached", timeout=5000)
+            assert pg.is_visible("#side") and pg.is_visible("#view")
+            assert errs == [], errs
+        finally:
+            browser.close()
+
+
+def _unaligned_folder(tmp: Path) -> Path:
+    """Slices a human timed by hand, two treatments, two groups, and one orphan.
+
+    Baselines end at 100, 130 and 160 s before senktide, and in rec2 the drug
+    went on 10 s late — the one thing the alignment assumes, so that row has to
+    say so. rec4 is a TTX slice with high K+ after it: TTX is a choice in the
+    treatment picker and high K+ is not. rec3 declares senktide only, so there
+    is nothing to align it on.
+    """
+    d = tmp / "unaligned"
+    d.mkdir(parents=True, exist_ok=True)
+    periods = {   # slice: ([(label, start, end), ...], group)
+        "rec0": ([("baseline", 0, 100), ("senktide", 100, 300)], "A"),
+        "rec1": ([("baseline", 0, 130), ("senktide", 130, 330)], "B"),
+        "rec2": ([("baseline", 0, 160), ("senktide", 170, 420)], "A"),
+        "rec3": ([("senktide", 0, 300)], "B"),
+        "rec4": ([("baseline", 0, 120), ("TTX", 120, 320), ("high K+", 320, 400)], "B"),
+    }
+    for rid in periods:
+        rows = ["roi,time_sec"] + [f"{roi},{k * 20 + roi * 0.05:.2f}"
+                                   for roi in range(1, 7) for k in range(1, 15)]
+        (d / f"{rid}.csv").write_text("\n".join(rows) + "\n", encoding="utf-8")
+    (d / "slices.csv").write_text(
+        "slice_id,frame_interval_sec,group_id\n"
+        + "".join(f"{rid},0.1,{g}\n" for rid, (_, g) in periods.items()),
+        encoding="utf-8")
+    (d / "regions.csv").write_text(
+        "slice_id,region_idx,label,start_sec,end_sec\n"
+        + "".join(f"{rid},{i},{lab},{s},{e}\n"
+                  for rid, (ps, _) in periods.items()
+                  for i, (lab, s, e) in enumerate(ps)), encoding="utf-8")
+    return d
+
+
+_OVERVIEW_STATE = """() => ({
+    ids: OVERVIEW.rows.map(r => r.id),
+    origin: OVERVIEW.origin,
+    from: OVERVIEW.rows.map(r => r.from),
+    dur: OVERVIEW.rows.map(r => r.dur),
+    top: OVERVIEW.top.map(q => [q.label, q.start, q.end]),
+    differs: OVERVIEW.rows.map(r => r.differs || ''),
+    unaligned: OVERVIEW.unaligned.map(u => u.id),
+    options: [...document.querySelectorAll('#oTreat option')].map(o => o.value),
+    pressed: [...document.querySelectorAll('#oGroups button[aria-pressed=true]')]
+               .map(b => b.dataset.group),
+})"""
+
+
+def test_the_overview_asks_first_and_aligns_on_the_end_of_baseline(tmp_path):
+    """Only after a yes; picked by treatment 1 and by group; aligned; one top line.
+
+    Tony, 2026-09-12: "humans did these experiments, they might not line up
+    perfectly from t=0. align all traces by baseline end. provide only the top
+    line of treatment indicators and analysis regions." And 2026-09-13: select
+    the data set by treatment — baseline only, or whatever is in treatment 1 —
+    ignoring treatment 2 and high K+ for selection, and choose which groups.
+    """
+    pytest.importorskip("playwright.sync_api")
+    from playwright.sync_api import sync_playwright
+    with sync_playwright() as p:
+        browser, pg, errs = _page(p, tmp_path)
+        try:
+            _open(pg, _unaligned_folder(tmp_path))
+            pg.wait_for_selector("#overviewBtn:not([hidden])", timeout=30000)
+            assert "danger" in pg.get_attribute("#overviewBtn", "class")
+            # THE BUTTON NAMES WHAT IS SHOWING, not what a click would show
+            # (Tony, 2026-09-14). This folder has baselines, so it lands in turbo.
+            pg.wait_for_selector("#turbo:not([hidden])", timeout=30000)
+            btn = lambda: pg.text_content("#overviewBtn")          # noqa: E731
+            assert btn() == "Showing baseline only · blind", btn()
+
+            pg.click("#overviewBtn")
+            assert pg.evaluate("() => document.getElementById('unblindDlg').open")
+            pg.click("#unblindDlg button[value=cancel]")
+            assert pg.is_hidden("#overview"), "cancel opened the unblinded view anyway"
+            assert btn() == "Showing baseline only · blind", btn()
+
+            pg.click("#overviewBtn")
+            pg.click("#unblindYes")
+            pg.wait_for_function(
+                "() => typeof OVERVIEW !== 'undefined' && OVERVIEW && OVERVIEW.rows.length === 4",
+                timeout=30000)
+            assert pg.is_visible("#overview") and pg.is_hidden("#side")
+            assert btn() == "Showing baseline only · unblinded", btn()
+            assert pg.get_attribute("#overviewBtn", "aria-pressed") == "true"
+
+            # BASELINE ONLY is where it opens: every aligned slice, cut at its baseline
+            got = pg.evaluate(_OVERVIEW_STATE)
+            assert got["options"] == ["", "senktide", "TTX"], got   # never high K+
+            assert got["ids"] == ["rec0", "rec1", "rec2", "rec4"], got
+            assert got["origin"] == 160 and got["dur"] == [160] * 4, got
+            assert got["from"] == [60, 30, 0, 40], got
+            assert got["top"] == [["baseline", 35, 160]], got
+            assert got["unaligned"] == ["rec3"], got
+            assert pg.is_visible("#overviewFlag")
+            assert "rec3" in pg.text_content("#overviewFlag")
+
+            # SENKTIDE: whole traces, the treatment starting at 0s in each row
+            pg.select_option("#oTreat", "senktide")
+            assert btn() == "Showing senktide full trace · unblinded", btn()
+            got = pg.evaluate(_OVERVIEW_STATE)
+            assert got["ids"] == ["rec0", "rec1", "rec2"], got
+            assert got["origin"] == 160 and got["from"] == [60, 30, 0], got
+            assert got["top"] == [["baseline", 30, 160], ["senktide", 160, 360]], got
+            # the late start is flagged; a longer drug period is not
+            assert got["differs"] == ["", "", "senktide starts +10s"], got
+            # rec2's senktide runs a minute past the median line, so its timing
+            # travels with its row; the two on the line carry none
+            assert pg.evaluate("() => OVERVIEW.rows.map(r => r.unique)") == [False, False, True]
+            # the timings strip and the axis are pinned outside the scrolling rows
+            assert pg.is_visible("#overviewHead") and pg.is_visible("#overviewAxis")
+            assert pg.evaluate(
+                "() => ['overviewHead', 'overviewAxis'].every(id => "
+                "!document.getElementById('overviewScroll').contains(document.getElementById(id)))")
+
+            # THE MARKS COME ALONG ("no blue triangles once you show all"): with no
+            # assessment run, every row carries turbo's threshold marks at its K
+            marks = pg.evaluate("() => OVERVIEW.rows.map(r => Array.isArray(r.marks) && r.K > 0)")
+            assert marks == [True, True, True], marks
+            assert "threshold marks" in pg.text_content("#overviewWhat")
+
+            # EACH COUNT IS WITHIN THE OTHER PICK: under senktide, A has 2 and B 1
+            chips = lambda: pg.evaluate(                                   # noqa: E731
+                "() => [...document.querySelectorAll('#oGroups button')].map(b => b.textContent)")
+            assert chips() == ["all", "A · 2", "B · 1"], chips()
+
+            # TTX: high K+ after it is drawn in the top line without selecting
+            pg.select_option("#oTreat", "TTX")
+            got = pg.evaluate(_OVERVIEW_STATE)
+            assert got["ids"] == ["rec4"], got
+            assert [t[0] for t in got["top"]] == ["baseline", "TTX", "high K+"], got
+            assert chips() == ["all", "A · 0", "B · 1"], chips()
+
+            # GROUPS: one, then two, then none left pressed is all of them again
+            pg.select_option("#oTreat", "senktide")
+            pg.click("#oGroups button[data-group=B]")
+            got = pg.evaluate(_OVERVIEW_STATE)
+            assert got["ids"] == ["rec1"] and got["pressed"] == ["B"], got
+            # and a treatment counts the slices in the groups picked
+            opts = pg.evaluate("() => [...document.querySelectorAll('#oTreat option')].map(o => o.textContent)")
+            assert opts == ["baseline only · 2", "senktide · 1", "TTX · 1"], opts
+            pg.click("#oGroups button[data-group=A]")
+            assert pg.evaluate(_OVERVIEW_STATE)["ids"] == ["rec0", "rec1", "rec2"]
+            pg.click("#oGroups button[data-group=A]")
+            pg.click("#oGroups button[data-group=B]")
+            got = pg.evaluate(_OVERVIEW_STATE)
+            assert got["pressed"] == [""] and len(got["ids"]) == 3, got
+
+            # leaving needs no permission, and returns to where it was opened
+            # from — this folder has baselines, so that is turbo
+            pg.click("#overviewBtn")
+            pg.wait_for_selector("#turbo:not([hidden])", timeout=10000)
+            assert pg.is_hidden("#overview")
+            assert btn() == "Showing baseline only · blind", btn()
+            assert pg.get_attribute("#overviewBtn", "aria-pressed") == "false"
+            assert errs == [], errs
+        finally:
+            browser.close()
+
+
+# --------------------------------------------------------------------------
+# ASSESSED EVENTS ARE NOT LOST
+#
+# Tony, 2026-09-14: "assessed events are lost. would like to see them in turbo
+# mahice" — "blue down triangles after running assess". Two defects, one old:
+# the raster on screen was never redrawn when the assessment finished, so its
+# candidate lane stayed empty; and turbo never drew the candidates at all.
+# --------------------------------------------------------------------------
+
+def test_assessing_redraws_the_raster_and_turbo_shows_the_assessed_events():
+    pytest.importorskip("playwright.sync_api")
+    from playwright.sync_api import sync_playwright
+    sim = {"sRec": "3", "sMin": "45", "sRoi": "24", "sRate": "45", "sEv": "16",
+           "sJit": "300", "sSeed": "6", "sWin": "2", "aSurr": "100"}
+    with sync_playwright() as p:
+        try:
+            browser = p.chromium.launch()
+        except Exception as e:                        # noqa: BLE001
+            pytest.skip(f"no chromium available: {type(e).__name__}")
+        try:
+            pg = browser.new_page()
+            errs: list[str] = []
+            pg.on("pageerror", lambda e: errs.append(str(e)))
+            pg.goto(VIEWER.as_uri(), wait_until="load")
+            got = pg.evaluate("""async (sim) => {
+              for (const [k, v] of Object.entries(sim)) document.getElementById(k).value = v;
+              await runSim();
+              await show(RECORDINGS[0]);
+              // count redraws of the single-recording raster across the walk
+              let drawn = 0;
+              const orig = draw;
+              draw = (...a) => { drawn++; return orig(...a); };
+              await assessFolderRun();
+              draw = orig;
+              return {drawn, cands: collectCandidates().length};
+            }""", sim)
+            assert got["cands"] > 0, got
+            assert got["drawn"] > 0, "the assessment finished and the raster was not redrawn"
+
+            pg.evaluate("() => setTurbo(true)")
+            pg.wait_for_function("() => TURBO && TURBO.rows.length === 3", timeout=30000)
+            state = pg.evaluate("""() => {
+              const a = turboAssessed();
+              return {rows: a ? TURBO.rows.map(r => (a.get(r.id) || []).length) : null,
+                      inks: a ? [...new Set([...a.values()].flat().map(c => c.ink))] : [],
+                      note: document.getElementById('turboWhat').textContent};
+            }""")
+            assert state["rows"] and sum(state["rows"]) > 0, state
+            # unjudged assessed events are the blue triangles
+            assert state["inks"] == ["#1565c0"], state
+            assert "assessed" in state["note"] and "grey" in state["note"], state
+            assert errs == [], errs
+        finally:
+            browser.close()

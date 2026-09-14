@@ -9,7 +9,7 @@
      rather than naming a sha this page could not know — the reasoning is at the
      visible stamp. -->
 <meta name="bugarach:born" content="2026-08-13">
-<meta name="bugarach:version-date" content="2026-09-10">
+<meta name="bugarach:version-date" content="2026-09-14">
 <meta name="bugarach:commit" content="content-addressed">
 <!--
   The raster viewer, client side.
@@ -197,6 +197,11 @@
   body.railterse #rail .railarrow { display: none; }
   body.railterse .step { min-width: 0; padding: 2px 9px; font-size: 12px; }
   body.railterse .railgroup { gap: 0; }
+  /* The merge's arrow sits 3px past its own box, which the full rail's spacing
+     absorbed; terse strips that spacing, and the arrow landed on "Recordings"
+     (Tony, 2026-09-14). Inside the box, with a gap after it. */
+  body.railterse .railmerge { margin: 4px 8px 4px 0; }
+  body.railterse .railmerge::after { right: 0; }
   /* Reclaimed vertical everywhere above the raster, on the same principle: the
      things that explain the page are read once, the raster is read all day. */
   body.railfolded .status.wip { padding: 3px 24px; font-size: 11.5px; }
@@ -467,12 +472,37 @@
      it — the whole method is "turn a knob, look at the rows", and a bar that
      scrolls away makes that two gestures instead of one. */
   #turbo { padding: 8px 0 0; }
+  /* TURBO TAKES THE PAGE. Tony, 2026-09-12: "we need to make the turbo mahice
+     occupy more space." The side column holds the settings for whichever rail
+     step is open, and turbo has its own knobs in the bar, so while turbo is up
+     that column is 322px of controls for something not on screen. It folds;
+     a rail click leaves turbo and brings it back (`railStep`). The overview is
+     the same column and folds it the same way. */
+  body.columnopen #side { display: none; }
+  #overview { padding: 8px 0 0; }
+  #overview .unblinded { color: #b3261e; font-weight: 600; }
+  /* RED means the one control on the page that costs the reader their blind.
+     Not the accent colour with a warning word on it: a button that looks like
+     every other button is pressed like every other button. */
+  button.danger { background: #b3261e; border-color: #b3261e; color: #fff; }
+  /* The overview button names the current view: outlined while blind, filled
+     once unblinded — the colour carries the state as well as the words. */
+  #overviewBtn[aria-pressed="false"] { background: transparent; color: #b3261e; }
+  #unblindDlg { max-width: 460px; border: 1px solid #b3261e; border-radius: 10px;
+                padding: 18px 20px 14px; background: var(--panel); color: var(--fg);
+                font-size: 13.5px; line-height: 1.5; }
+  #unblindDlg::backdrop { background: rgba(0, 0, 0, 0.35); }
+  #unblindDlg h3 { margin: 0 0 8px; font-size: 16px; color: #b3261e; }
+  #unblindDlg p { margin: 0 0 10px; }
+  #unblindDlg .dlgbtns { display: flex; justify-content: flex-end; gap: 8px; margin: 14px 0 0; }
+  #unblindDlg .dlgbtns button { width: auto; margin: 0; }
   .turbobar { position: sticky; top: 0; z-index: 3; display: flex;
               align-items: center; flex-wrap: wrap; gap: 6px 10px;
               padding: 7px 10px; margin-bottom: 6px; font-size: 12.5px;
               background: var(--panel); border: 1px solid var(--line);
               border-radius: 8px; }
   .turbobar input { width: 68px; margin: 0; }
+  .turbobar select { width: auto; margin: 0; font-size: 12.5px; }
   .turbobar button { width: auto; margin: 0; padding: 1px 10px; font-size: 12px; }
   .turbospacer { flex: 1 1 18px; }
   /* The assumption notice. Amber and bordered rather than another grey note:
@@ -490,8 +520,31 @@
   .turboflag button.designate[aria-pressed="true"] { border-color: #b8860b;
                                 background: color-mix(in srgb, #b8860b 18%, transparent);
                                 font-weight: 600; }
-  #turboScroll { overflow: auto; max-height: 74vh;
-                 border: 1px solid var(--line); border-radius: 8px; }
+  /* The height is set by `turboDraw` to what the stage has left under the bar,
+     so the column fills the screen; 74vh is only the value before first draw. */
+  #turboScroll, #overviewScroll { overflow: auto; max-height: 74vh;
+                 border: 1px solid var(--line); border-bottom: 0;
+                 border-radius: 8px 8px 0 0; }
+  /* THE AXIS DOES NOT SCROLL. Tony, 2026-09-14: "x-axis needs to appear at the
+     bottom no matter scroll". Its own canvas under the scrolling box, closing
+     the box's border, so the ticks are always under whatever rows are showing. */
+  /* content-box: `columnCanvas` sets the drawing size, the border goes outside
+     it, so the strip is exactly as wide as the scrolling box above it. */
+  .colaxis { display: block; box-sizing: content-box;
+             border: 1px solid var(--line);
+             border-radius: 0 0 8px 8px; background: var(--bg); }
+  /* The overview's timings, pinned over the rows the same way the axis is
+     pinned under them: the box's top border, with the rows' border as its
+     bottom edge. */
+  .colhead { display: block; box-sizing: content-box;
+             border: 1px solid var(--line); border-bottom: 0;
+             border-radius: 8px 8px 0 0; background: var(--bg); }
+  .colhead[hidden] { display: none; }
+  .colhead:not([hidden]) + div { border-radius: 0; }
+  /* One line, the width of the column: a footnote to the knobs, not a paragraph. */
+  #turboWhat, #overviewWhat { margin-top: 4px; max-width: none; font-size: 12px; }
+  body.columnopen #stage { padding-bottom: 8px; }
+  #overviewCv { display: block; }
   #turboCv { display: block; }
   .anzoom { display: flex; align-items: center; justify-content: center;
             gap: 10px; margin: 4px 0 0; }
@@ -721,6 +774,10 @@
        lands here, so this button is what somebody presses to LEAVE — but it is
        still the only place the word appears when they are on the rail. -->
   <button id="turboBtn" class="ghost" aria-pressed="false">MAHICE turbo</button>
+  <!-- RED, AND IT ASKS. Every slice's whole trace with its treatments named —
+       the one view on this page that is not blind to treatment. Hidden until a
+       folder is open. See `overviewToggle`. -->
+  <button id="overviewBtn" class="danger" aria-pressed="false" hidden>Showing one slice</button>
   <span class="lab" id="railWhere"></span>
 </div>
 <nav id="rail" aria-label="pipeline"></nav>
@@ -1737,6 +1794,14 @@
         <input id="tMerge" type="number" min="0" max="30" step="0.5" value="2" autocomplete="off" data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other">
         <span class="lab">s</span>
         <span class="turbospacer"></span>
+        <!-- ROI ORDER IN EVERY RASTER VIEW. Tony, 2026-09-14: the toggle "must
+             always appear". Same buttons, same `ORDER`, as the single-recording
+             view's; `setRoiOrder` keeps every copy pressed alike. -->
+        <span class="lab">ROI order</span>
+        <span class="seg">
+          <button data-order="id" aria-pressed="true">by id</button>
+          <button data-order="rate" aria-pressed="false">by events</button>
+        </span>
         <span class="lab">time</span>
         <span class="seg">
           <button id="tOut" title="wider">−</button>
@@ -1752,9 +1817,62 @@
            paragraph below, which is where it would have gone if this element
            did not exist. Empty and hidden when nothing was assumed. -->
       <div class="turboflag" id="turboFlag" hidden></div>
-      <div class="note" id="turboWhat"></div>
       <div id="turboScroll"><canvas id="turboCv"></canvas></div>
+      <canvas id="turboAxis" class="colaxis"></canvas>
+      <!-- UNDER THE RASTERS, NOT OVER THEM. Tony, 2026-09-12: the block of text
+           above the rasters "serves little purpose. put it below". It restates
+           the knobs in a sentence; the knobs are already in the bar, so it is a
+           footnote and sits where footnotes go. The assumption notice stays
+           above — that one is a warning, and a warning below the fold is not. -->
+      <div class="note" id="turboWhat"></div>
     </div>
+
+    <!-- THE OVERVIEW: every slice, whole trace, treatments named, no detector.
+         Same column as turbo, drawn by the same `paintColumn`. -->
+    <div id="overview" hidden>
+      <div class="turbobar">
+        <span class="lab unblinded">Unblinded</span>
+        <!-- Treatment 1 selects the data set; groups narrow it. Both built from
+             the folder by `paintOverviewPickers`. -->
+        <span class="lab">data</span>
+        <select id="oTreat" autocomplete="off" data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other"></select>
+        <span class="lab" id="oGroupsLab">groups</span>
+        <span class="seg" id="oGroups"></span>
+        <span class="turbospacer"></span>
+        <span class="lab">ROI order</span>
+        <span class="seg">
+          <button data-order="id" aria-pressed="true">by id</button>
+          <button data-order="rate" aria-pressed="false">by events</button>
+        </span>
+        <span class="lab">time</span>
+        <span class="seg">
+          <button id="oOut" title="wider">−</button>
+          <button id="oIn" title="tighter">+</button>
+        </span>
+        <button id="oAll" class="ghost">all</button>
+        <span class="lab" id="oZoomWhat"></span>
+      </div>
+      <div class="turboflag" id="overviewFlag" hidden></div>
+      <canvas id="overviewHead" class="colhead"></canvas>
+      <div id="overviewScroll"><canvas id="overviewCv"></canvas></div>
+      <canvas id="overviewAxis" class="colaxis"></canvas>
+      <div class="note" id="overviewWhat"></div>
+    </div>
+
+    <dialog id="unblindDlg">
+      <h3>Are you sure?</h3>
+      <p>This shows every slice's <b>full trace with treatments named</b> —
+      baseline, TTX, senktide — and the analysis windows.</p>
+      <!-- Tony, 2026-09-14: "the idea is to set the params without prejudice,
+           but the reality is you don't want to launch a run blind." So the
+           copy says the order, not that looking is a mistake. -->
+      <p>Set the MAHICE parameters blind first if you can. Look before you
+      launch a run — but a K chosen after this is no longer a blind K.</p>
+      <form method="dialog" class="dlgbtns">
+        <button value="cancel" class="ghost">Cancel</button>
+        <button value="yes" id="unblindYes" class="danger">Yes, show every slice</button>
+      </form>
+    </dialog>
   </div>
 </main>
 
@@ -1785,10 +1903,10 @@
      a page edited without bumping it turns CI red instead of shipping a date
      that has quietly become a lie. Bump it when you edit this page. -->
 <p class="site-dates" data-bugarach-born="2026-08-13"
-   data-bugarach-version-date="2026-09-10"
+   data-bugarach-version-date="2026-09-14"
    data-bugarach-commit="content-addressed"
    style="margin:1.5rem max(1.2rem, calc(50% - 23rem));color:#666;font-size:.85rem">
-  First published 2026-08-13 · this version 2026-09-10 · identified by its own
+  First published 2026-08-13 · this version 2026-09-14 · identified by its own
   bytes rather than by a build stamp
 </p>
 
@@ -2442,6 +2560,8 @@ function candidatesOnPanel(recId, stream) {
    only catch up the next time something else happens to redraw. */
 function repaintJudgingLane() {
   if (current && current.loaded) draw(current, current.loaded);
+  // turbo draws the same candidates and verdicts, so it goes stale with this
+  turboDraw();
 }
 
 
@@ -2474,8 +2594,7 @@ let TURBO_SPAN = null;   // seconds shown; null = the longest baseline
 let TURBO_MID = null;    // centre of the window, in seconds from baseline start
 
 const TURBO_ZOOMS = [5, 10, 20, 45, 90, 180, 300, 600, 1200];
-const TURBO_ROW = 58;    // one slice: its lane, its raster, and the gap under it
-const TURBO_LANE = 11;
+const TURBO_LANE = 9;    // the marks' lane over each raster: a 7px triangle and air
 
 function turboKnobs() {
   const num = (id, dflt) => {
@@ -2593,9 +2712,11 @@ async function turboLoad() {
       continue;
     }
     const d = await loadRecording(rec);
-    const byRoi = d.streams.get(STREAM) || d.streams.get([...d.streams.keys()][0]);
+    const stream = d.streams.has(STREAM) ? STREAM : [...d.streams.keys()][0];
+    const byRoi = d.streams.get(stream);
     if (!byRoi) continue;
-    const ids = [...byRoi.keys()].sort();
+    // `natural`, not `.sort()`: ROI 2 before ROI 10, as the single-recording view
+    const ids = [...byRoi.keys()].sort(natural);
     /* NO DECLARED REGIONS: the whole trace, which is the contract's implicit
        one-region recording. Its extent is the recording's own last onset —
        there is no other statement of duration in an export folder, and the
@@ -2613,8 +2734,9 @@ async function turboLoad() {
     }
     const trains = ids.map(id =>
       (byRoi.get(id) || []).filter(t => t >= ws && t <= we).map(t => t - ws));
-    rows.push({ id: rec.id, nRoi: ids.length, trains, dur: we - ws,
-                assumed: !!b.assumed });
+    // `ws` and `stream` so the assessment's candidates can be placed on this row
+    rows.push({ id: rec.id, nRoi: ids.length, trains, dur: we - ws, ws, stream,
+                byRate: busiestFirst(ids, d), assumed: !!b.assumed });
   }
   TURBO = { rows, skipped, maxDur: rows.reduce((a, r) => Math.max(a, r.dur), 1) };
   turboRecompute();
@@ -2630,9 +2752,15 @@ function turboRecompute() {
        ⚠ A floor chosen here is NOT yet a floor in `assess.k_from_fraction`, and
        that function is `simulate.py`'s rule too — a spec derived at one rule and
        a simulation planted at another stop describing the same events. */
-    r.K = Math.max(floor, Math.floor(pct / 100 * r.nRoi + 0.5));
+    r.K = turboK(r.nRoi, pct, floor);
     r.marks = turboMarks(r.trains, bin, r.K, merge);
   }
+}
+
+/* K for a field of `nRoi` at the knobs' percentage and floor — turbo's rule,
+   and the overview's, so a row's threshold is the same number in both. */
+function turboK(nRoi, pct, floor) {
+  return Math.max(floor, Math.floor(pct / 100 * nRoi + 0.5));
 }
 
 /* THE WINDOW MOVES. THERE IS NO GRID.
@@ -2702,129 +2830,307 @@ function turboMarks(trains, width, K, mergeSec) {
                          from: g.a, to: g.b + width }));
 }
 
-function turboFullSpan() { return TURBO ? TURBO.maxDur : null; }
+/* ---------- one column of rasters: turbo and the overview ---------------------
 
-function turboZoom(dir) {
-  const full = turboFullSpan();
-  if (!full) return;
+   Two views draw the same picture — every recording as one row on one shared
+   time axis — and differ only in the lane above each raster and the words in
+   its label column. Turbo's lane carries MAHICE marks; the overview's carries
+   the periods. Written once so the two cannot drift apart on the axis, the
+   row geometry, or the rule that nothing is drawn on the raster itself. */
+const COL_PADL = 132, COL_PADR = 14, COL_PADT = 6, COL_PADB = 2;
+const COL_AXIS_H = 26;     // the pinned axis strip under the column
+const COL_ROW_GAP = 3;     // white space under each raster, before the next row
+
+/** The visible [t0, t1] for a column whose longest row is `full` seconds. */
+function columnWindow(full, span, mid) {
+  if (!span || span >= full) return [0, full];
+  const half = span / 2;
+  let m = Number.isFinite(mid) ? mid : full / 2;
+  m = Math.min(Math.max(m, half), full - half);
+  return [m - half, m + half];
+}
+
+/** One zoom step. Returns the new {span, mid}; span null means "all of it". */
+function columnZoom(full, span, mid, dir) {
   const steps = TURBO_ZOOMS.filter(s => s < full).concat([full]);
-  const cur = TURBO_SPAN || full;
+  const cur = span || full;
   let i = steps.findIndex(s => s >= cur - 1e-6);
   if (i < 0) i = steps.length - 1;
   const j = Math.min(steps.length - 1, Math.max(0, i + dir));
-  TURBO_SPAN = steps[j] >= full ? null : steps[j];
-  if (TURBO_SPAN && !Number.isFinite(TURBO_MID)) TURBO_MID = full / 2;
-  turboDraw();
+  const next = steps[j] >= full ? null : steps[j];
+  return { span: next, mid: next && !Number.isFinite(mid) ? full / 2 : mid };
 }
 
-function turboResetZoom() { TURBO_SPAN = null; TURBO_MID = null; turboDraw(); }
+/** The time under a click on a column canvas, or null outside the plot. */
+function columnTimeAt(cv, ev, full, span, mid) {
+  const r = cv.getBoundingClientRect();
+  const [t0, t1] = columnWindow(full, span, mid);
+  const frac = (ev.clientX - r.left - COL_PADL) / (cv.clientWidth - COL_PADL - COL_PADR);
+  return frac < 0 || frac > 1 ? null : t0 + frac * (t1 - t0);
+}
+
+/* A RASTER IS AS TALL AS ITS FIELD. Tony, 2026-09-14: "raster height should be
+   fixed so slices with high nroi are taller than slices with low nroi." Every
+   row used to get the same height, so a 55-ROI slice was squeezed into the band
+   a 17-ROI one had room to spare in, and the column hid the one size difference
+   that matters to reading coordination by eye. Now one pixels-per-ROI scale
+   holds for the whole column: a row's raster is `nRoi × scale`.
+
+   The scale is COL_ROI_PX at least. It grows toward COL_ROI_PX_MAX only when
+   the whole column would otherwise leave the stage half empty — still one scale
+   for every row, so the proportion holds — which keeps what Tony asked for on
+   2026-09-12, "make the turbo mahice occupy more space", for a five-slice
+   folder. A folder of 84 scrolls inside its own box, so the bar stays where the
+   hand is. A raster is never shorter than its three label lines (id, K, and
+   the assessed count or an assumption), so a small field's labels never run
+   into the next row. */
+const COL_ROI_PX = 2, COL_ROI_PX_MAX = 4, COL_RASTER_MIN = 40;
+const rasterH = (r, px) => Math.max(COL_RASTER_MIN, Math.round(r.nRoi * px));
+
+function columnScale(cv, rows, laneH) {
+  const scroll = cv.parentElement, stage = document.getElementById("stage");
+  if (!scroll || !stage || !rows.length) return COL_ROI_PX;
+  const offset = scroll.getBoundingClientRect().top
+                 - stage.getBoundingClientRect().top + stage.scrollTop;
+  /* Room is kept for everything under the scrolling box — the pinned axis and
+     the footnote — and for the stage's own bottom padding. Without it the
+     footnote was sliced through its first line by the bottom of the stage,
+     which reads as broken rather than as "scroll". */
+  let below = parseFloat(getComputedStyle(stage).paddingBottom || "0");
+  for (let el = scroll.nextElementSibling; el; el = el.nextElementSibling)
+    below += el.offsetHeight + parseFloat(getComputedStyle(el).marginTop || "0");
+  const avail = Math.max(320, stage.clientHeight - offset - below - 2);
+  scroll.style.maxHeight = avail + "px";
+  const fixed = COL_PADT + COL_PADB + 2 + rows.length * (laneH + 1 + COL_ROW_GAP);
+  const fields = rows.reduce((a, r) => a + r.nRoi, 0) || 1;
+  const fit = (avail - fixed) / fields;
+  return Math.max(COL_ROI_PX, Math.min(COL_ROI_PX_MAX, fit));
+}
+
+/* "By events" for a column row: indices into `ids`, busiest first by the
+   recording's own counts — summed across streams over the whole recording, the
+   same `counts` the single-recording view's `byRate` sorts on — ties in id
+   order. Counted once at load, so the toggle is a redraw and not a recount. */
+function busiestFirst(ids, d) {
+  const n = id => (d.counts && d.counts.get(id)) || 0;
+  return ids.map((_, q) => q)
+    .sort((a, b) => n(ids[b]) - n(ids[a]) || natural(ids[a], ids[b]));
+}
+
+/* A canvas sized in CSS pixels and scaled for the display, cleared, with the
+   column's font set. */
+function columnCanvas(c, w, h) {
+  const dpr = window.devicePixelRatio || 1;
+  c.width = Math.round(w * dpr); c.height = Math.round(h * dpr);
+  c.style.width = w + "px"; c.style.height = h + "px";
+  const g = c.getContext("2d");
+  g.scale(dpr, dpr);
+  g.clearRect(0, 0, w, h);
+  g.font = "11px -apple-system, system-ui, sans-serif";
+  return g;
+}
 
 /* EVERY ROW ON ONE AXIS. Tony: "the display must be x-axis zoomable (all rows
-   identical)". Baselines differ in length, so each row is re-zeroed at its own
-   baseline START and every row is drawn on the same 0..span scale — a row whose
-   baseline is shorter than the window simply stops, and its frame says so by
-   ending. Sharing the axis is the whole point: coordination is read by eye down
-   a column, and a per-row axis would make two rows disagree about where 4m is. */
-function turboDraw() {
-  const cv = document.getElementById("turboCv");
-  if (!cv || !TURBO) return;
-  const css = getComputedStyle(document.documentElement);
-  const dpr = window.devicePixelRatio || 1;
-  const W = cv.parentElement.clientWidth || 900;
-  const padL = 132, padR = 14, padT = 10, padB = 30;
-  const rows = TURBO.rows;
-  const H = padT + rows.length * TURBO_ROW + padB;
-  cv.width = W * dpr; cv.height = H * dpr;
-  cv.style.width = W + "px"; cv.style.height = H + "px";
-  const g = cv.getContext("2d");
-  g.scale(dpr, dpr);
-  g.clearRect(0, 0, W, H);
-  g.font = "11px -apple-system, system-ui, sans-serif";
+   identical)". Recordings differ in length, so every row is drawn on the same
+   0..span scale — a row shorter than the window simply stops, and its frame says
+   so by ending. Sharing the axis is the whole point: coordination is read by eye
+   down a column, and a per-row axis would make two rows disagree about where 4m
+   is.
 
-  const full = TURBO.maxDur;
-  let t0 = 0, t1 = full;
-  if (TURBO_SPAN && TURBO_SPAN < full) {
-    const half = TURBO_SPAN / 2;
-    let mid = Number.isFinite(TURBO_MID) ? TURBO_MID : full / 2;
-    mid = Math.min(Math.max(mid, half), full - half);
-    t0 = mid - half; t1 = mid + half;
-  }
+   `o.labels(r)` gives the label-column lines as [text, colour] pairs, stacked;
+   `o.lane(g, r, laneTop, x, t0, t1, W)` paints the lane ABOVE each raster;
+   `o.head(g, x, t0, t1, W)` paints `o.headCv`, a strip of `o.headH` pinned
+   above the whole column. Those lanes are the only places a view may put a cue.
+
+   THREE CANVASES, ONE AXIS. The rows scroll; the head above them and the time
+   axis under them (`o.axisCv`) do not — Tony, 2026-09-14: the axis "needs to
+   appear at the bottom no matter scroll", and the top row of timings "should
+   be fixed too". All three are drawn with the rows' own width and x mapping,
+   so a tick, a period's edge and an event line up even when the scrolling box
+   has a scrollbar eating into its width.
+
+   A row may start after 0 (`r.from`), and the axis may be labelled from an
+   `o.origin` other than 0 — the overview aligns rows on a moment inside them,
+   so its zero is not the left edge and some of its rows begin to the right. */
+function paintColumn(cv, rows, full, span, mid, o) {
+  const css = getComputedStyle(document.documentElement);
+  const scroll = cv.parentElement;
+  const W = scroll.clientWidth || 900;
+  const outerW = Math.max(W, scroll.offsetWidth - 2);   // inside the strips' borders
+  const origin = o.origin || 0;
+  const padL = COL_PADL, padR = COL_PADR, padT = COL_PADT, padB = COL_PADB;
+
+  // the pinned strips are sized FIRST: the rows get what they leave
+  const [t0, t1] = columnWindow(full, span, mid);
   const x = t => padL + (t - t0) / (t1 - t0) * (W - padL - padR);
+  if (o.headCv) {
+    o.headCv.hidden = !o.head;
+    if (o.head) o.head(columnCanvas(o.headCv, outerW, o.headH), x, t0, t1, W);
+  }
+  const ga = o.axisCv ? columnCanvas(o.axisCv, outerW, COL_AXIS_H - 2) : null;
+
+  const px = columnScale(cv, rows, o.laneH);
+  /* COL_ROW_GAP under each raster rather than 14, and 1px over it: the gap only
+     has to separate one slice from the next, and every pixel of it came out of
+     the rasters (Tony, 2026-09-14: "decrease the white space between raster
+     rows"). */
+  const rowH = r => o.laneH + 1 + rasterH(r, px) + COL_ROW_GAP;
+  const H = padT + rows.reduce((a, r) => a + rowH(r), 0) + padB;
+  const g = columnCanvas(cv, W, H);
   const step = ticks(t1 - t0, Math.max(4, Math.round((W - padL - padR) / 110)));
 
-  rows.forEach((r, i) => {
-    const top = padT + i * TURBO_ROW;
-    const laneY = top + TURBO_LANE;
-    const rTop = laneY + 3, rBot = top + TURBO_ROW - 14;
+  let top = padT;
+  rows.forEach(r => {
+    const rTop = top + o.laneH + 1, rBot = rTop + rasterH(r, px);
+    const rowTop = top;
+    top += rowH(r);
 
-    /* Identity and the K this row resolved to, STACKED rather than side by side.
-       Drawn on one line they collided and the id was clipped at the left edge —
-       `20241122b_110` is 85px of text and the margin was 68. Two lines cost
-       nothing: the row is 58px tall and the label column was already there. */
+    /* Identity and counts, STACKED rather than side by side. Drawn on one line
+       they collided and the id was clipped at the left edge — `20241122b_110` is
+       85px of text and the margin was 68. Identity and counts go in the y-axis
+       label, never over the marks. */
     g.textAlign = "end";
-    g.fillStyle = css.getPropertyValue("--fg").trim();
-    g.fillText(r.id, padL - 8, rTop + 10);
-    g.fillStyle = css.getPropertyValue("--muted").trim();
-    g.fillText("K " + r.K + " of " + r.nRoi, padL - 8, rTop + 23);
-    /* THE FLAG, ON THE ROW IT IS ABOUT. A third label line rather than a mark
-       in the picture: this row's window is an assumption and the reader has to
-       be able to see WHICH rows, not just that some exist. In the label column
-       — identity and counts go in the y-axis label, never over the marks. */
-    if (r.assumed) {
-      g.fillStyle = CAND_INK.assumed;
-      g.fillText("whole trace (assumed)", padL - 8, rTop + 36);
-      g.fillStyle = css.getPropertyValue("--muted").trim();
-    }
+    o.labels(r).forEach(([text, colour], k) => {
+      g.fillStyle = colour || css.getPropertyValue(k ? "--muted" : "--fg").trim();
+      g.fillText(text, padL - 8, rTop + 10 + 13 * k);
+    });
     g.textAlign = "start";
 
     g.strokeStyle = css.getPropertyValue("--line").trim();
     g.lineWidth = 1;
+    const left = Math.max(padL, x(Math.max(r.from || 0, t0)));
     const right = Math.min(W - padR, x(Math.min(r.dur, t1)));
-    if (right > padL) g.strokeRect(padL, rTop, right - padL, rBot - rTop);
+    if (right > left) g.strokeRect(left, rTop, right - left, rBot - rTop);
 
-    // the marks, in a lane ABOVE the raster and pointing down at it
-    g.fillStyle = CAND_INK.selected;
-    for (const m of r.marks) {
-      if (m.t < t0 || m.t > t1) continue;
-      const px = Math.round(x(m.t)) + 0.5;
-      g.beginPath();
-      g.moveTo(px - 3.5, laneY - 8);
-      g.lineTo(px + 3.5, laneY - 8);
-      g.lineTo(px, laneY - 1);
-      g.closePath();
-      g.fill();
-    }
+    if (o.lane) o.lane(g, r, rowTop, x, t0, t1, W);
 
-    // the raster: every ROI of this baseline, compressed into its band
+    /* The raster: every ROI of this recording, compressed into its band, in the
+       page's ROI order — by id, or busiest first — the same toggle and the same
+       counts the single-recording view uses, so lane 3 is the same ROI in both. */
     const lane = (rBot - rTop) / Math.max(1, r.nRoi);
     const h = Math.max(1, Math.min(4, lane));
+    const seq = ORDER === "rate" && r.byRate ? r.byRate : null;
     g.strokeStyle = css.getPropertyValue("--mark").trim();
     g.globalAlpha = 0.9;
     g.lineWidth = 1;
     g.beginPath();
-    for (let q = 0; q < r.trains.length; q++) {
-      const yc = rTop + (q + 0.5) * lane;
+    for (let p = 0; p < r.trains.length; p++) {
+      const q = seq ? seq[p] : p;
+      const yc = rTop + (p + 0.5) * lane;
       for (const t of r.trains[q]) {
         if (t < t0 || t > t1) continue;
-        const px = Math.round(x(t)) + 0.5;
-        g.moveTo(px, yc - h / 2); g.lineTo(px, yc + h / 2);
+        const cx = Math.round(x(t)) + 0.5;
+        g.moveTo(cx, yc - h / 2); g.lineTo(cx, yc + h / 2);
       }
     }
     g.stroke();
     g.globalAlpha = 1;
   });
 
-  // one x-axis, at the bottom, because every row is on it
-  g.fillStyle = css.getPropertyValue("--muted").trim();
-  g.strokeStyle = css.getPropertyValue("--line").trim();
-  const axisY = padT + rows.length * TURBO_ROW;
-  for (let t = Math.ceil(t0 / step) * step; t <= t1; t += step) {
-    const px = Math.round(x(t)) + 0.5;
-    g.beginPath(); g.moveTo(px, axisY); g.lineTo(px, axisY + 4); g.stroke();
-    const lab = fmt(t);
-    g.fillText(lab, px - g.measureText(lab).width / 2, axisY + 18);
+  // one x-axis, pinned under the column, because every row is on it
+  if (!ga) return;
+  ga.fillStyle = css.getPropertyValue("--muted").trim();
+  ga.strokeStyle = css.getPropertyValue("--line").trim();
+  // ticks fall on whole steps FROM THE ORIGIN, so an aligned axis reads −2m, 0s, 2m
+  const k0 = Math.ceil((t0 - origin) / step - 1e-9);
+  for (let k = k0; origin + k * step <= t1 + 1e-9; k++) {
+    const rel = k * step;
+    const cx = Math.round(x(origin + rel)) + 0.5;
+    ga.beginPath(); ga.moveTo(cx, 0); ga.lineTo(cx, 4); ga.stroke();
+    const lab = (rel < 0 ? "−" : "") + fmt(Math.abs(rel));
+    const lw = ga.measureText(lab).width;
+    ga.fillText(lab, Math.min(outerW - lw - 2, Math.max(2, cx - lw / 2)), 17);
   }
-  paintTurboWhat();
+}
+
+function turboZoom(dir) {
+  if (!TURBO) return;
+  ({ span: TURBO_SPAN, mid: TURBO_MID } =
+     columnZoom(TURBO.maxDur, TURBO_SPAN, TURBO_MID, dir));
+  turboDraw();
+}
+
+function turboResetZoom() { TURBO_SPAN = null; TURBO_MID = null; turboDraw(); }
+
+/* Each row is re-zeroed at its own baseline START, so turbo's 4m is four minutes
+   into every baseline. */
+function turboDraw() {
+  const cv = document.getElementById("turboCv");
+  if (!cv || !TURBO || document.getElementById("turbo").hidden) return;
+  // the words first: the column's height is what is left after the sentence
+  // under it, so the sentence has to be its real length when that is measured
+  const assessed = turboAssessed();
+  paintTurboWhat(assessed);
+  const tri = downTri;
+  paintColumn(cv, TURBO.rows, TURBO.maxDur, TURBO_SPAN, TURBO_MID, {
+    laneH: assessed ? 2 * TURBO_LANE : TURBO_LANE,
+    axisCv: document.getElementById("turboAxis"),
+    /* The K this row resolved to under the id, and how many assessed events it
+       carries. THE FLAG, ON THE ROW IT IS ABOUT: a third line rather than a mark
+       in the picture, because this row's window is an assumption and the reader
+       has to see WHICH rows, not just that some exist. */
+    labels: r => [[r.id], ["K " + r.K + " of " + r.nRoi]]
+      .concat(assessed ? [[(assessed.get(r.id) || []).length + " assessed",
+                           CAND_INK.selected]] : [])
+      .concat(r.assumed ? [["whole trace (assumed)", CAND_INK.assumed]] : []),
+    /* The lanes ABOVE the raster, pointing down at it. Before an assessment,
+       one lane: the knobs' threshold marks, blue. After one — Tony, 2026-09-14,
+       choosing between the options put to him — the ASSESSED events are the
+       blue triangles, in the top lane, in their verdict colour once judged, and
+       the threshold marks step down to a grey lane under them, still there to
+       tune against. Colour tells them apart; the shape stays "look below". */
+    lane: (g, r, top, x, t0, t1) => {
+      if (assessed) {
+        for (const c of (assessed.get(r.id) || [])) {
+          /* Only inside this row's baseline: a single recording assessed on some
+             other region leaves candidates turbo's window does not hold. */
+          const t = c.centre - r.ws;
+          if (t < 0 || t > r.dur || t < t0 || t > t1) continue;
+          g.fillStyle = c.ink;
+          tri(g, Math.round(x(t)) + 0.5, top + TURBO_LANE - 1);
+        }
+      }
+      const tip = top + (assessed ? 2 * TURBO_LANE : TURBO_LANE) - 1;
+      g.fillStyle = assessed ? CAND_INK.unjudged : CAND_INK.selected;
+      for (const m of r.marks) {
+        if (m.t < t0 || m.t > t1) continue;
+        tri(g, Math.round(x(m.t)) + 0.5, tip);
+      }
+    },
+  });
+}
+
+/* THE ASSESSED EVENTS, per turbo row: every candidate the assessment kept —
+   the same set `collectCandidates` hands the review — in blue, and in its
+   verdict colour where the review has judged it. Null before any assessment,
+   which is what keeps turbo exactly as it was until one runs. Only candidates
+   on the stream this row draws, since a lane has to be about its own raster. */
+function turboAssessed() {
+  return TURBO ? assessedByRecording(TURBO.rows) : null;
+}
+
+/* The same, for any column of rows carrying `id` and `stream` — turbo's and the
+   overview's — so an assessed event and its verdict colour are one thing on
+   every view that draws them. Centres are on the recording's own clock. */
+function assessedByRecording(rows) {
+  const cands = collectCandidates();
+  if (!cands.length) return null;
+  const key = c => c.recId + "|" + c.stream + "|" + c.centre.toFixed(3);
+  const verdicts = new Map();
+  if (ANNOT && ANNOT.cands)
+    ANNOT.cands.forEach((c, i) => {
+      const v = ANNOT.verdicts[i];
+      if (v && CAND_INK[v.verdict]) verdicts.set(key(c), CAND_INK[v.verdict]);
+    });
+  const streamOf = new Map(rows.map(r => [r.id, r.stream]));
+  const out = new Map();
+  for (const c of cands) {
+    if (streamOf.get(c.recId) !== c.stream) continue;
+    if (!out.has(c.recId)) out.set(c.recId, []);
+    out.get(c.recId).push({ centre: c.centre,
+                            ink: verdicts.get(key(c)) || CAND_INK.selected });
+  }
+  return out;
 }
 
 /* SAY THAT WE ASSUMED IT. Two different statements, and they are kept apart
@@ -2949,7 +3255,7 @@ function designateRow(labels) {
   return p;
 }
 
-function paintTurboWhat() {
+function paintTurboWhat(assessed = null) {
   const n = document.getElementById("turboWhat");
   if (!n || !TURBO) return;
   const { pct, floor, bin, merge } = turboKnobs();
@@ -2971,15 +3277,18 @@ function paintTurboWhat() {
     if (z0) z0.textContent = "";
     return;
   }
+  /* BARE MINIMUM, ONE LINE. Tony, 2026-09-14: "edited down to bare minimum".
+     The knobs say their own values; this says only what they resolved to and
+     the one caveat a reader must not miss — a mark is a threshold. */
+  const nAssessed = assessed
+    ? [...assessed.values()].reduce((a, l) => a + l.length, 0) : 0;
   n.textContent =
-    TURBO.rows.length + " recordings · " + total + " marks at K = " + pct
-    + "% with a floor of " + floor + " (that is K " + Math.min(...ks) + "–"
-    + Math.max(...ks) + " across these recordings; the floor binds on " + bound
-    + " of them) · co-active within a MOVING " + bin + " s window — any alignment, "
-    + "no grid — gaps under " + merge
-    + " s merged. No surrogate null here: a mark is a THRESHOLD, not an "
-    + "excess over chance, which is what makes the knobs live. Tune until the "
-    + "marks agree with what you can see, then set that K in the review.";
+    TURBO.rows.length + " recordings"
+    + (assessed ? " · ▼ blue: " + nAssessed + " assessed (vs null) · ▼ grey: "
+                : " · ") + total + " threshold marks · K " + Math.min(...ks)
+    + "–" + Math.max(...ks) + " (floor binds on " + bound + ") · MOVING "
+    + bin + " s window, no grid"
+    + (assessed ? "" : " · a threshold, not tested against a null");
   const z = document.getElementById("tZoomWhat");
   if (z) z.textContent = TURBO_SPAN
     ? "showing " + fmt(TURBO_SPAN) + " of " + fmt(TURBO.maxDur)
@@ -3023,6 +3332,7 @@ function rememberTurboChoice(on) {
    does NOT write a preference. Only a person pressing the button does that. */
 async function setTurbo(on) {
   if (on && !RECORDINGS.length) return;
+  if (on) closeOverview();
   document.getElementById("turbo").hidden = !on;
   document.getElementById("view").hidden = on || !RECORDINGS.length;
   const b = document.getElementById("turboBtn");
@@ -3030,12 +3340,607 @@ async function setTurbo(on) {
     b.textContent = on ? "Leave turbo" : "MAHICE turbo";
     b.setAttribute("aria-pressed", String(on));
   }
+  syncColumnLayout();
   if (!on) return;
   if (!TURBO && !TURBO_BUSY) {
     TURBO_BUSY = true;
     try { await turboLoad(); } finally { TURBO_BUSY = false; }
   }
   turboDraw();
+}
+
+/* The side column folds while either column view is up, and the single-
+   recording raster is redrawn when it comes back: it was laid out 322px wider
+   than it now is, or not at all while hidden. */
+function syncColumnLayout() {
+  const open = !document.getElementById("turbo").hidden
+               || !document.getElementById("overview").hidden;
+  const was = document.body.classList.contains("columnopen");
+  document.body.classList.toggle("columnopen", open);
+  if (was && !open && current && current.loaded) draw(current, current.loaded);
+  paintOverviewBtn();   // every view change passes through here
+}
+
+/* A RAIL CLICK IS A REQUEST FOR THE PIPELINE. The rail's steps open their
+   settings in the side column, which is folded while a column view is up, so
+   the click would otherwise do nothing visible — the shape this page has been
+   caught in seven times. Not remembered: nobody said they were done with turbo,
+   only that they wanted that step.
+
+   SYNCHRONOUS, so the step's panel is open by the time the click returns —
+   and straight to the single-recording view, not back through the overview's
+   "return to turbo", because the pipeline is what was asked for. */
+function leaveColumnViews() {
+  closeOverview();
+  // the off path of `setTurbo` never reaches an await, so this runs in full now
+  setTurbo(false);
+}
+
+/* Redraw whichever column is up; the row height and width follow the stage. */
+function redrawColumns() {
+  turboDraw();
+  overviewDraw();
+}
+
+/* ---------- the overview: every slice, whole trace, treatments named --------
+
+   Tony, 2026-09-12: "add a toggle for showing the full trace ... with
+   treatments labeled and analysis regions. i realize this runs counter to how
+   we decided to handle treatment blind. make the button red, with a dialog
+   button to click 'are you sure?'" — and then, the same minute, "maybe this
+   should be a way to view all the data in the initial stage and not with
+   detection in mahice. i like that better."
+
+   So it is a look at the FOLDER, not at a detector: every recording, every
+   period, no marks. Turbo stays blind and baseline-only (FOUNDATIONS §9); this
+   is the door out of that blindness, and it is red and asks first because the
+   thing it costs cannot be given back — a K tuned after seeing which rows are
+   TTX is not a blind K. The confirmation is asked every time, not remembered.
+
+   ALIGNED ON THE END OF BASELINE. Tony, same day: "humans did these
+   experiments, they might not line up perfectly from t=0. align all traces by
+   baseline end." A slice imaged for 9m40s before the drug went on and one
+   imaged for 10m20s put the same moment 40 s apart when both start at 0, and
+   the moment the column exists to compare is the one where treatment begins.
+   So each row is shifted so its baseline ends at 0; the axis counts back into
+   baseline and forward into treatment, and rows begin wherever their own
+   recording began. A recording with no period read as a baseline has nothing
+   to align on and is NAMED rather than drawn at an arbitrary offset.
+
+   ONE LINE OF PERIODS, AT THE TOP. "provide only the top line of treatment
+   indicators and analysis regions." Once the rows are aligned, a lane over
+   every raster repeats the same bars; one lane over the column says it once.
+   That lane is the MEDIAN of the rows, period by period — and because humans
+   did the experiments, a row whose own periods sit off that line by more than
+   OVERVIEW_TOL says so in its own label column, amber, so the top line is never
+   silently wrong about a row. A period only some rows carry is labelled with
+   how many ("high K+ · 23 of 34"), and periods that overlap in time — a wash in
+   some slices where others have a second drug — take separate tracks rather
+   than covering each other.
+
+   PICKED BY TREATMENT, AND BY GROUP. Opened on the real export folder the
+   first version stacked TTX, senktide and SB222200 into one bar at 0s and
+   named only one of them, and flagged all 84 rows as different — one median
+   line cannot describe a folder of three protocols. Tony, 2026-09-13: "the
+   user should be able to select which data set based on the treatment.
+   options would be baseline only, ttx, senktide, sb222200, whatever is in
+   treatment1. for now ignore treatment 2 and hik for selection (show them on
+   the rasters). the user should also be allowed to chose what groups to show."
+   So:
+     * TREATMENT is the period that follows the baseline — treatment 1 — and it
+       is the only one that selects. What comes after it (a second drug, a wash,
+       high K+) is drawn in the top line and never filters a row out.
+     * BASELINE ONLY shows every aligned slice cut to its baseline, whatever it
+       was later given.
+     * GROUP is `slices.csv`'s `group_id`: all of them, or any subset. A folder
+       that sends no `group_id` gets no group control rather than one group
+       called blank.
+
+   In the lane: a saturated bar for the period as it happened (`start`/`end`),
+   and under it a paler band for the window the producer said to score
+   (`analysis_*`). Where the band stops short of its bar is time that happened
+   and is not counted — the split the single-recording view draws, moved off
+   the marks. */
+let OVERVIEW = null;       // the view: {rows, top, tracks, origin, maxDur, ...}
+let OVERVIEW_ALL = null;   // every slice as loaded: {raw, empty, unaligned}
+let OVERVIEW_BUSY = false;
+let OVERVIEW_SPAN = null;
+let OVERVIEW_MID = null;
+let OVERVIEW_BACK = "view"; // what leaving the overview returns to
+let OVERVIEW_TREAT = "";    // "" = baseline only; otherwise a treatment-1 label
+let OVERVIEW_GROUPS = [];   // [] = all groups
+/* One line of periods in the pinned strip: a 10.5px label, then the bar and
+   its analysis band under it. 26px until Tony asked for the strip "less tall". */
+const OVERVIEW_TRACK = 17;
+const OVERVIEW_ROW_LANE = 7;  // a row's own timing: 3px bar, 2px band, air
+/* 5 s: the narrowest window turbo's zoom offers. A disagreement smaller than
+   that is under a pixel or two at any zoom this column is read at. */
+const OVERVIEW_TOL = 5;
+
+const hasAnalysis = w => Number.isFinite(w.aStart) && Number.isFinite(w.aEnd);
+
+/* A period's identity across recordings: its label and which occurrence of that
+   label it is, so a protocol with two washouts matches washout to washout. */
+function periodKeys(wins) {
+  const seen = new Map();
+  return wins.map(w => {
+    const l = (w.label || "").trim();
+    const k = (seen.get(l) || 0) + 1;
+    seen.set(l, k);
+    return l + "#" + k;
+  });
+}
+
+async function overviewLoad() {
+  const raw = [], empty = [], unaligned = [];
+  const n = document.getElementById("overviewWhat");
+  for (let i = 0; i < RECORDINGS.length; i++) {
+    const rec = RECORDINGS[i];
+    if (n) n.textContent = "reading recordings… " + (i + 1) + " of " + RECORDINGS.length;
+    await yieldToUI();
+    const wins = (REGIONS.get(rec.id) || []).slice().sort((a, b) => a.start - b.start);
+    const base = baselinePeriod(wins);
+    if (!base) {
+      unaligned.push({ id: rec.id, why: wins.length ? "no period read as a baseline"
+                                                    : "no periods declared" });
+      continue;
+    }
+    const d = await loadRecording(rec);
+    const stream = d.streams.has(STREAM) ? STREAM : [...d.streams.keys()][0];
+    const byRoi = d.streams.get(stream);
+    const ids = byRoi ? [...byRoi.keys()].sort(natural) : [];
+    /* The extent is the later of the last onset and the last declared period —
+       an export folder states no duration, and a treatment that ends in silence
+       is still a treatment the row has to reach. */
+    let end = wins.reduce((a, w) => Math.max(a, w.end), 0);
+    for (const id of ids) for (const t of (byRoi.get(id) || [])) if (t > end) end = t;
+    if (!(end > 0)) { empty.push(rec.id); continue; }
+    /* TREATMENT 1 is the first period to start once the baseline has — by
+       start, not by `region_idx`, which a producer numbers however it likes. */
+    const after = wins.filter(w => w !== base && w.start >= base.start)
+                      .sort((a, b) => a.start - b.start)[0];
+    raw.push({ id: rec.id, nRoi: ids.length, shift: base.end, end, byRoi, ids, wins,
+               byRate: busiestFirst(ids, d), stream,
+               base, treat: after ? (after.label || "").trim() : "",
+               group: ((META.get(rec.id) || {}).group_id || "").trim() });
+  }
+  OVERVIEW_ALL = { raw, empty, unaligned };
+  // a treatment or group the new folder does not have is not kept selected
+  if (OVERVIEW_TREAT && !raw.some(r => r.treat === OVERVIEW_TREAT)) OVERVIEW_TREAT = "";
+  OVERVIEW_GROUPS = OVERVIEW_GROUPS.filter(g => raw.some(r => r.group === g));
+  paintOverviewPickers();
+  overviewBuild();
+}
+
+/* The choices on offer, built from the folder: treatments most-common first,
+   because the one a reader wants is usually the one most slices got.
+
+   EACH COUNT IS WITHIN THE OTHER PICK. Tony, 2026-09-14: "number of slices in
+   each group does not change if treatment is selected" — the chips read DI · 17
+   over a column of 11 TTX slices. A count beside a choice has to be what that
+   choice would put on screen now, so a group counts the slices under the
+   treatment picked, and a treatment counts the slices in the groups picked.
+   The ORDER of the choices stays the folder's, so nothing moves under the hand. */
+function paintOverviewPickers() {
+  const sel = document.getElementById("oTreat");
+  const box = document.getElementById("oGroups");
+  if (!sel || !box || !OVERVIEW_ALL) return;
+  const raw = OVERVIEW_ALL.raw;
+  const count = (rows, key) =>
+    rows.reduce((m, r) => m.set(r[key], (m.get(r[key]) || 0) + 1), new Map());
+  const inGroups = raw.filter(r => !OVERVIEW_GROUPS.length || OVERVIEW_GROUPS.includes(r.group));
+  const underTreat = raw.filter(r => !OVERVIEW_TREAT || r.treat === OVERVIEW_TREAT);
+  const treatsNow = count(inGroups, "treat");
+  const treats = [...count(raw, "treat").entries()].filter(([t]) => t)
+    .sort((a, b) => b[1] - a[1] || natural(a[0], b[0]));
+  sel.textContent = "";
+  const opt = (value, text) => {
+    const o = document.createElement("option");
+    o.value = value; o.textContent = text;
+    o.selected = value === OVERVIEW_TREAT;
+    sel.append(o);
+  };
+  opt("", "baseline only · " + inGroups.length);
+  for (const [t] of treats) opt(t, t + " · " + (treatsNow.get(t) || 0));
+
+  const groupsNow = count(underTreat, "group");
+  const groups = [...count(raw, "group").keys()].filter(g => g)
+    .sort(natural).map(g => [g, groupsNow.get(g) || 0]);
+  box.textContent = "";
+  document.getElementById("oGroupsLab").hidden = !groups.length;
+  if (!groups.length) return;
+  const chip = (value, text) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.dataset.group = value;
+    b.textContent = text;
+    const on = value === "" ? !OVERVIEW_GROUPS.length : OVERVIEW_GROUPS.includes(value);
+    b.setAttribute("aria-pressed", String(on));
+    b.onclick = () => overviewPickGroup(value);
+    box.append(b);
+  };
+  chip("", "all");
+  for (const [g, n] of groups) chip(g, g + " · " + n);
+}
+
+/* "all" clears the subset; a group toggles in or out of it; and a subset
+   emptied by toggling its last group off is all of them again, never none. */
+function overviewPickGroup(g) {
+  if (g === "") OVERVIEW_GROUPS = [];
+  else if (OVERVIEW_GROUPS.includes(g)) OVERVIEW_GROUPS = OVERVIEW_GROUPS.filter(x => x !== g);
+  else OVERVIEW_GROUPS = OVERVIEW_GROUPS.concat([g]);
+  overviewRepick();
+}
+
+function overviewRepick() {
+  OVERVIEW_SPAN = null; OVERVIEW_MID = null;   // the extent changed under the zoom
+  paintOverviewPickers();
+  overviewBuild();
+  overviewDraw();
+  paintOverviewBtn();   // the button names the treatment on screen
+}
+
+/* The column for the current picks. Cheap: every slice is already in memory,
+   so a pick rebuilds rows and the top line without touching a file. */
+function overviewBuild() {
+  if (!OVERVIEW_ALL) return;
+  const { empty, unaligned } = OVERVIEW_ALL;
+  const baseOnly = !OVERVIEW_TREAT;
+  const raw = OVERVIEW_ALL.raw.filter(r =>
+    (baseOnly || r.treat === OVERVIEW_TREAT)
+    && (!OVERVIEW_GROUPS.length || OVERVIEW_GROUPS.includes(r.group)));
+
+  /* Baseline only cuts every row to its baseline period, so the extent of a
+     row is that period and nothing after it is drawn or counted. */
+  const span = r => baseOnly ? [r.base.start, r.base.end] : [0, r.end];
+  const lo = Math.min(0, ...raw.map(r => span(r)[0] - r.shift));
+  const hi = Math.max(0, ...raw.map(r => span(r)[1] - r.shift));
+  const origin = -lo;                        // where 0 = baseline end sits
+  const rows = raw.map(r => {
+    const off = origin - r.shift;            // recording time -> column time
+    const [s0, s1] = span(r);
+    const src = baseOnly ? [r.base] : r.wins;
+    const wins = src.map(w => ({
+      label: w.label, start: w.start + off, end: w.end + off,
+      aStart: hasAnalysis(w) ? w.aStart + off : NaN,
+      aEnd: hasAnalysis(w) ? w.aEnd + off : NaN }));
+    return { id: r.id, nRoi: r.nRoi, group: r.group, from: s0 + off, dur: s1 + off,
+             byRate: r.byRate, stream: r.stream, off,
+             wins, baseIdx: src.indexOf(r.base), keys: periodKeys(src),
+             trains: r.ids.map(id => (r.byRoi.get(id) || [])
+               .filter(t => t >= s0 && t <= s1).map(t => t + off)) };
+  });
+
+  // THE TOP LINE: the median of every row that carries each period
+  const byKey = new Map();
+  for (const r of rows) r.keys.forEach((k, j) => {
+    if (!byKey.has(k)) byKey.set(k, []);
+    byKey.get(k).push(r.wins[j]);
+  });
+  const top = [...byKey.entries()].map(([k, ws]) => {
+    const withA = ws.filter(hasAnalysis);
+    return { key: k, label: ws[0].label, n: ws.length,
+             start: median(ws.map(w => w.start)), end: median(ws.map(w => w.end)),
+             // the whole spread across rows, drawn faint behind the median bar
+             lo: Math.min(...ws.map(w => w.start)), hi: Math.max(...ws.map(w => w.end)),
+             aStart: withA.length ? median(withA.map(w => w.aStart)) : NaN,
+             aEnd: withA.length ? median(withA.map(w => w.aEnd)) : NaN };
+  }).sort((a, b) => a.start - b.start);
+
+  /* TRACKS. A period goes on the first track whose last period has ended by
+     the time it starts (within the tolerance); otherwise it opens a new one.
+     Overlap is real in these folders — TTX followed by senktide in some slices
+     and by a wash in others — and two bars on one line would draw one name. */
+  const ends = [];
+  for (const p of top) {
+    let k = ends.findIndex(e => e <= p.start + OVERVIEW_TOL);
+    if (k < 0) { k = ends.length; ends.push(-Infinity); }
+    p.track = k;
+    ends[k] = p.end;
+  }
+
+  /* THE ROW FLAG IS ABOUT ALIGNMENT, NOT ABOUT PROTOCOL. The first version
+     flagged any period more than 5 s off the median, and on the real folder
+     that was 36 of 38 TTX slices: how long a drug stays on varies by up to ten
+     minutes there, and high K+ starts up to 24 minutes from its median. That is
+     the experiment, not a defect, and a flag on every row says nothing — the
+     spread is drawn in the top line instead (`lo`/`hi` per period). What a row
+     does flag is the one thing the column's alignment assumes: that its
+     treatment begins where its baseline ends. */
+  if (!baseOnly) for (const r of rows) {
+    const t = r.wins.find((w, j) => j !== r.baseIdx && w.label.trim() === OVERVIEW_TREAT);
+    const gap = t ? t.start - origin : 0;
+    if (Math.abs(gap) > OVERVIEW_TOL)
+      r.differs = OVERVIEW_TREAT + " starts " + (gap < 0 ? "−" : "+") + fmt(Math.abs(gap));
+  }
+
+  /* A ROW WHOSE OWN TIMING IS NOT THE LINE CARRIES IT. Tony, 2026-09-14: "the
+     timing for unique rows should travel with the row." The pinned line is the
+     median; a row with any period more than OVERVIEW_TOL off it draws its own
+     periods in a thin lane over its raster, so its timing scrolls with its
+     events instead of being read off a line that is not about it. Measured
+     over the periods the row HAS, and not on the start of the baseline it is
+     aligned on — that is only where its recording began. */
+  for (const r of rows) {
+    r.unique = r.keys.some((k, j) => {
+      const p = top.find(q => q.key === k), w = r.wins[j];
+      return Math.abs(w.end - p.end) > OVERVIEW_TOL
+        || (j !== r.baseIdx && Math.abs(w.start - p.start) > OVERVIEW_TOL);
+    });
+  }
+
+  OVERVIEW = { rows, top, tracks: Math.max(1, ends.length), origin, empty, unaligned,
+               baseOnly, maxDur: Math.max(1, hi - lo) };
+}
+
+function overviewZoom(dir) {
+  if (!OVERVIEW) return;
+  ({ span: OVERVIEW_SPAN, mid: OVERVIEW_MID } =
+     columnZoom(OVERVIEW.maxDur, OVERVIEW_SPAN, OVERVIEW_MID, dir));
+  overviewDraw();
+}
+
+/* A down-pointing triangle whose tip sits at `yTip` — the one shape every mark
+   lane uses, pointing at the raster below it. Fill colour is the caller's. */
+function downTri(g, px, yTip) {
+  g.beginPath();
+  g.moveTo(px - 3.5, yTip - 7);
+  g.lineTo(px + 3.5, yTip - 7);
+  g.lineTo(px, yTip);
+  g.closePath();
+  g.fill();
+}
+
+/* Turbo's threshold marks over each overview row, at turbo's current knobs.
+   Recomputed only when the knobs or the rows changed — a pick rebuilds the rows,
+   which drops the cached key with them. */
+function overviewMarks() {
+  if (!OVERVIEW) return;
+  const { pct, floor, bin, merge } = turboKnobs();
+  const sig = [pct, floor, bin, merge].join("|");
+  for (const r of OVERVIEW.rows) {
+    if (r.marksSig === sig) continue;
+    r.K = turboK(r.nRoi, pct, floor);
+    r.marks = turboMarks(r.trains, bin, r.K, merge);
+    r.marksSig = sig;
+  }
+}
+
+function overviewDraw() {
+  const cv = document.getElementById("overviewCv");
+  if (!cv || !OVERVIEW || document.getElementById("overview").hidden) return;
+  const css = getComputedStyle(document.documentElement);
+  overviewMarks();       // the footnote counts them, so they come first
+  paintOverviewWhat();   // before the column, for the same reason as turbo's
+  const lo = COL_PADL;
+  /* A period as bars: saturated for what happened, pale under it for what is
+     scored. `y` is the bar's top; the band sits directly beneath it. */
+  const bars = (g, w, y, barH, bandH, x, hi) => {
+    const a = Math.max(lo, x(w.start)), b = Math.min(hi, x(w.end));
+    g.fillStyle = ink(w.label);
+    if (b > lo && a < hi) g.fillRect(a, y, Math.max(1, b - a), barH);
+    if (hasAnalysis(w)) {
+      const s0 = Math.max(lo, x(w.aStart)), s1 = Math.min(hi, x(w.aEnd));
+      if (s1 > s0) {
+        g.globalAlpha = 0.35;
+        g.fillRect(s0, y + barH, s1 - s0, bandH);
+        g.globalAlpha = 1;
+      }
+    }
+  };
+  /* THE MARKS COME ALONG. Tony, 2026-09-14, having shown every slice: "no blue
+     triangles once you show all". The overview began as a look at the folder
+     with no detector in it; the marks are what he reads it for. Same rule as
+     turbo: before an assessment the threshold marks are blue; after one the
+     assessed events are blue and the threshold marks grey under them. The
+     threshold marks run over the whole row on screen — treatment time included
+     — at turbo's knobs; assessed events exist only inside baselines, because
+     the assessment measures nothing else. */
+  const assessed = assessedByRecording(OVERVIEW.rows);
+  const marksH = (assessed ? 2 : 1) * TURBO_LANE;
+  paintColumn(cv, OVERVIEW.rows, OVERVIEW.maxDur, OVERVIEW_SPAN, OVERVIEW_MID, {
+    laneH: marksH + OVERVIEW_ROW_LANE,
+    headCv: document.getElementById("overviewHead"),
+    headH: 4 + OVERVIEW.tracks * OVERVIEW_TRACK,
+    axisCv: document.getElementById("overviewAxis"),
+    origin: OVERVIEW.origin,
+    labels: r => [[r.id], [r.nRoi + " ROI" + (r.group ? " · " + r.group : "") + " · K " + r.K]]
+      .concat(assessed ? [[(assessed.get(r.id) || []).length + " assessed",
+                           CAND_INK.selected]] : [])
+      .concat(r.differs ? [[r.differs, CAND_INK.assumed]] : []),
+    lane: (g, r, top, x, t0, t1, W) => {
+      if (assessed) {
+        g.fillStyle = CAND_INK.selected;
+        for (const c of (assessed.get(r.id) || [])) {
+          const t = c.centre + r.off;
+          if (t < r.from || t > r.dur || t < t0 || t > t1) continue;
+          g.fillStyle = c.ink;
+          downTri(g, Math.round(x(t)) + 0.5, top + TURBO_LANE - 1);
+        }
+      }
+      g.fillStyle = assessed ? CAND_INK.unjudged : CAND_INK.selected;
+      for (const m of r.marks) {
+        if (m.t < t0 || m.t > t1) continue;
+        downTri(g, Math.round(x(m.t)) + 0.5, top + marksH - 1);
+      }
+      // a row's own timing, only where it is not the pinned line's
+      if (r.unique)
+        for (const w of r.wins) bars(g, w, top + marksH + 1, 3, 2, x, W - COL_PADR);
+    },
+    head: (g, x, t0, t1, W) => {
+      const hi = W - COL_PADR, N = OVERVIEW.rows.length;
+      // the strip's own y-axis label: what the line is, and how many rows made it
+      g.textAlign = "end";
+      g.fillStyle = css.getPropertyValue("--muted").trim();
+      g.fillText("median of " + N, COL_PADL - 8, 12);
+      g.textAlign = "start";
+      g.font = "10.5px -apple-system, system-ui, sans-serif";
+      const labelEnd = [];
+      for (const w of OVERVIEW.top) {
+        if (w.hi < t0 || w.lo > t1) continue;
+        const top = 2 + w.track * OVERVIEW_TRACK;
+        /* THE SPREAD, faint and thin, from the earliest start to the latest end
+           of this period across the rows on screen — so a median bar that stops
+           at 25m says, in the same colour, that some slices stayed on to 35m. */
+        const r0 = Math.max(lo, x(w.lo)), r1 = Math.min(hi, x(w.hi));
+        if (r1 > r0) {
+          g.fillStyle = ink(w.label);
+          g.globalAlpha = 0.45;
+          g.fillRect(r0, top + 12.5, r1 - r0, 1);
+          g.globalAlpha = 1;
+        }
+        bars(g, w, top + 11, 3, 3, x, hi);
+        /* One label per period that starts in view or holds the left edge, and
+           none that would run into the previous one on its track — a short
+           wash-in period labelled over its neighbour is two unreadable names. */
+        const holdsLeft = w.start <= t0 && w.end > t0;
+        if (!(w.start >= t0 || holdsLeft) || !(w.label || "").trim()) continue;
+        const text = w.label + (w.n < N ? " · " + w.n + " of " + N : "");
+        const tw = g.measureText(text).width;
+        const at = Math.max(lo, Math.min(x(w.start) + 1, hi - tw));
+        if (at < (labelEnd[w.track] ?? -Infinity) + 8) continue;
+        g.fillStyle = css.getPropertyValue("--fg").trim();
+        g.fillText(text, at, top + 9);
+        labelEnd[w.track] = at + tw;
+      }
+    },
+  });
+}
+
+function paintOverviewWhat() {
+  const n = document.getElementById("overviewWhat");
+  if (!n || !OVERVIEW) return;
+  /* THE ROWS THAT ARE NOT HERE, above the column, amber — the same notice turbo
+     uses for its assumption, because a column quietly missing rows is worse
+     than a short one that says why. */
+  const f = document.getElementById("overviewFlag");
+  if (f) {
+    const un = OVERVIEW.unaligned;
+    f.hidden = !un.length;
+    f.textContent = "";
+    if (un.length) {
+      const b = document.createElement("b");
+      b.textContent = un.length + " recording(s) not drawn — nothing to align on. ";
+      const ids = document.createElement("span");
+      ids.className = "ids";
+      ids.textContent = un.map(u => u.id + " (" + u.why + ")").join(", ");
+      f.append(b, ids);
+    }
+  }
+  const noA = OVERVIEW.top.filter(p => !hasAnalysis(p)).length;
+  const off = OVERVIEW.rows.filter(r => r.differs).length;
+  const picked = (OVERVIEW.baseOnly ? "baseline only" : OVERVIEW_TREAT)
+    + (OVERVIEW_GROUPS.length ? ", " + OVERVIEW_GROUPS.join(" + ") : ", all groups");
+  if (!OVERVIEW.rows.length) {
+    n.textContent = "No recordings match " + picked + ". Nothing below is drawn.";
+    const z0 = document.getElementById("oZoomWhat");
+    if (z0) z0.textContent = "";
+    return;
+  }
+  // one line: what is on screen, how to read the strips and marks, the caveat
+  const own = OVERVIEW.rows.filter(r => r.unique).length;
+  const assessed = assessedByRecording(OVERVIEW.rows);
+  const nAss = assessed ? OVERVIEW.rows.reduce((a, r) =>
+    a + (assessed.get(r.id) || []).filter(c =>
+      c.centre + r.off >= r.from && c.centre + r.off <= r.dur).length, 0) : 0;
+  const nMarks = OVERVIEW.rows.reduce((a, r) => a + (r.marks || []).length, 0);
+  n.textContent =
+    OVERVIEW.rows.length + " recordings · " + picked + " · aligned at baseline end"
+    + (assessed ? " · ▼ blue: " + nAss + " assessed (baseline only) · ▼ grey: "
+                : " · ▼ ") + nMarks + " threshold marks at turbo's knobs"
+    + " · top: median period, thin line = spread"
+    + (noA < OVERVIEW.top.length ? ", pale = scored window" : "")
+    + (own ? " · " + own + " rows carry their own timing" : "")
+    + (off ? " · " + off + " late start(s)" : "")
+    + (OVERVIEW.empty.length ? " · no events: " + OVERVIEW.empty.join(", ") : "")
+    + " · not blind";
+  const z = document.getElementById("oZoomWhat");
+  if (z) z.textContent = OVERVIEW_SPAN
+    ? "showing " + fmt(OVERVIEW_SPAN) + " of " + fmt(OVERVIEW.maxDur)
+    : OVERVIEW.baseOnly ? "whole baseline" : "whole trace";
+}
+
+/* The state change. Leaving returns to whichever view was up when it opened,
+   so an unblinded look from turbo lands back in turbo. */
+async function setOverview(on) {
+  if (on && !RECORDINGS.length) return;
+  const box = document.getElementById("overview");
+  if (on) {
+    if (!box.hidden) return;
+    OVERVIEW_BACK = document.getElementById("turbo").hidden ? "view" : "turbo";
+    document.getElementById("turbo").hidden = true;
+    document.getElementById("view").hidden = true;
+    const tb = document.getElementById("turboBtn");
+    if (tb) { tb.textContent = "MAHICE turbo"; tb.setAttribute("aria-pressed", "false"); }
+  }
+  box.hidden = !on;
+  paintOverviewBtn();
+  if (!on) {
+    if (OVERVIEW_BACK === "turbo") return setTurbo(true);
+    document.getElementById("view").hidden = !RECORDINGS.length;
+    syncColumnLayout();
+    return;
+  }
+  syncColumnLayout();
+  if (!OVERVIEW && !OVERVIEW_BUSY) {
+    OVERVIEW_BUSY = true;
+    try { await overviewLoad(); } finally { OVERVIEW_BUSY = false; }
+  }
+  overviewDraw();
+}
+
+/* Closing without restoring anything — for a caller that is about to put
+   another view up itself. */
+function closeOverview() {
+  const box = document.getElementById("overview");
+  if (!box || box.hidden) return;
+  box.hidden = true;
+  paintOverviewBtn();
+}
+
+/* THE BUTTON SAYS WHAT IS SHOWING, NOT WHAT A CLICK WOULD SHOW. Tony,
+   2026-09-14: "the 'every slice unblinded' toggle throws me off. you have to
+   click it to see 'every slice unblinded'. the button should show what is
+   current, not what you get if you click. clarify with a qualifier like
+   'showing only baseline/showing full trace'." A label that names the far side
+   of the switch reads as a status while you are on the near side, which is the
+   one thing a blinding control must not be ambiguous about.
+
+   Red either way — "i like the red because the idea is to set the params
+   without prejudice, but the reality is you don't want to launch a run blind"
+   — OUTLINED while blind, FILLED while unblinded, so the state is the colour
+   as well as the words. What a click does is in the tooltip. */
+function paintOverviewBtn() {
+  const b = document.getElementById("overviewBtn");
+  if (!b) return;
+  const over = !document.getElementById("overview").hidden;
+  const turbo = !document.getElementById("turbo").hidden;
+  let text, title;
+  if (over) {
+    text = "Showing " + (OVERVIEW_TREAT ? OVERVIEW_TREAT + " full trace" : "baseline only")
+           + " · unblinded";
+    title = "Click to go back blind";
+  } else {
+    text = turbo ? "Showing baseline only · blind" : "Showing one slice";
+    title = "Click to see every slice's full trace with treatments named (asks first)";
+  }
+  b.textContent = text;
+  b.title = title;
+  b.setAttribute("aria-pressed", String(over));
+}
+
+/* The button. Leaving needs no permission; entering asks, every time. */
+function overviewToggle() {
+  if (!document.getElementById("overview").hidden) return setOverview(false);
+  if (!RECORDINGS.length) return;
+  const dlg = document.getElementById("unblindDlg");
+  if (!dlg || typeof dlg.showModal !== "function") {
+    // no <dialog> support: the browser's own confirm is still a confirmation
+    if (window.confirm("Are you sure? This names every treatment.")) setOverview(true);
+    return;
+  }
+  dlg.returnValue = "";
+  dlg.showModal();
 }
 
 /* The button. Flips, and the flip is remembered — this is the one path that
@@ -4121,6 +5026,9 @@ async function open(fileList, opts) {
      The zoom goes too — a window centred in one folder's longest baseline means
      nothing in the next one's. */
   TURBO = null; TURBO_SPAN = null; TURBO_MID = null;
+  // the overview's rows are the last folder's too, for the same reason
+  closeOverview();
+  OVERVIEW = null; OVERVIEW_ALL = null; OVERVIEW_SPAN = null; OVERVIEW_MID = null;
   /* THE STREAM IN PLAY IS A PROPERTY OF THE FOLDER, so it goes with it. A
      folder holding one stream never names one; a folder holding two is asked,
      at the door, before anything is computed. */
@@ -4253,6 +5161,9 @@ async function open(fileList, opts) {
   if (sw) delete sw.dataset.said;
   paintSaveSettings();
   showSection(SIMULATED ? "accSim" : "accList");
+  // the overview has something to show from here on, and not before
+  document.getElementById("overviewBtn").hidden = !RECORDINGS.length;
+  paintOverviewBtn();
   await show(RECORDINGS[0]);
   /* A saved review can only be matched to a folder once there is one: the
      signature is the recording ids. Runs here rather than at page load for that
@@ -4291,7 +5202,11 @@ async function open(fileList, opts) {
       TURBO_BUSY = true;
       try { await turboLoad(); } finally { TURBO_BUSY = false; }
     }
-    if (TURBO && TURBO.rows.length) await setTurbo(true);
+    /* NOT OVER THE OVERVIEW. The red button is live before turbo's rows are
+       built, so a reader who pressed it while this was loading had asked for
+       the overview — and this line used to take the screen back from them. */
+    if (TURBO && TURBO.rows.length && document.getElementById("overview").hidden)
+      await setTurbo(true);
   }
   // the first raster goes up before the folder is checked: seeing something is
   // the point of opening it, and the check walks every file
@@ -5395,6 +6310,16 @@ const isBaselineLabel = s => {
   return !!n && want.some(tok => n.startsWith(tok));
 };
 
+/* THE baseline of a recording, when several periods read as one: the longest.
+   One rule, used by the assessment's window and by the overview's alignment, so
+   the period a K is measured on and the period the column lines up on are the
+   same period. Null when none reads as a baseline. */
+function baselinePeriod(wins) {
+  const base = wins.filter(w => isBaselineLabel(w.label));
+  return base.length
+    ? base.reduce((a, b) => (b.end - b.start > a.end - a.start ? b : a)) : null;
+}
+
 /* Every distinct period label in the folder, for offering the reader something
    to designate. They cannot pick a name they have not been shown, and "none
    named as a baseline" without the names sends them to open a CSV. */
@@ -5800,12 +6725,11 @@ function assessWindow(rec, choice) {
              isBaseline: !wins.length };
   let w = null;
   if (choice === undefined || choice === "" || choice === "baseline") {
-    const base = wins.filter(q => isBaselineLabel(q.label));
-    if (!base.length)
+    w = baselinePeriod(wins);
+    if (!w)
       return { window: null, source: "whole recording (no baseline declared)",
                isBaseline: false, note: wins.length + " region(s) are declared and "
                  + "none is named as a baseline — pick one to measure it" };
-    w = base.reduce((a, b) => (b.end - b.start > a.end - a.start ? b : a));
   } else {
     w = wins[Number(choice)] || wins[0];
   }
@@ -7146,6 +8070,8 @@ async function runAssess() {
     LAST_ASSESS = { rec: current, res: blocks[0].res, stream: blocks[0].stream,
                     blocks, source: w.source, isBaseline: w.isBaseline,
                     winStart: ws };
+    // the candidates are new; the lane over the raster was drawn without them
+    repaintJudgingLane();
 
     /* The raster's cluster ticks belong to one stream's measurement, and are
        drawn under that stream's lane. The first stream is what an unprompted
@@ -7211,15 +8137,14 @@ function folderAssessWindow(rec) {
   const wins = (REGIONS.get(rec.id) || []).slice().sort((a, b) => a.idx - b.idx);
   if (!wins.length)
     return { window: null, source: "whole recording (no regions declared)" };
-  const base = wins.filter(w => isBaselineLabel(w.label));
-  if (!base.length)
+  const w = baselinePeriod(wins);
+  if (!w)
     return { skipped: wins.length + " region(s), none named as a baseline — "
              + "coordination properties are not taken from treatments",
              // What this recording DOES have, so the reader can designate one
              // of them. Without the names, the refusal sends them to open a CSV.
              labels: [...new Set(wins.map(w => (w.label || "").trim())
                                      .filter(Boolean))].sort() };
-  const w = base.reduce((a, b) => (b.end - b.start > a.end - a.start ? b : a));
   // The producer's own analysis window WINS wherever one is stated: `start`/
   // `end` are what happened, `aStart`/`aEnd` are what to score. Measuring the
   // first while calling the result the analysis is the defect the Python's
@@ -7310,6 +8235,12 @@ async function assessFolderRun() {
        Which is why the loop is now driven end to end on the real folder by
        clicking real controls, instead of being checked a function at a time. */
     paintAnnotChip();
+    /* AND THE PICTURES. The candidates exist the moment this returns, but the
+       raster on screen was drawn before they did, so its lane stayed empty until
+       something else redrew it — Tony, 2026-09-14: "assessed events are lost".
+       Older than turbo; found by driving the real folder through Assess and
+       looking. */
+    repaintJudgingLane();
   } finally {
     ASSESS_RUNNING = false;
     paintAssessFolderButton();
@@ -13003,7 +13934,7 @@ function railStep(s) {
      hiding the way to satisfy it are different things. */
   if (!ok) b.classList.add("not-ready");
   if (s.key === SECTION) b.setAttribute("aria-current", "true");
-  b.onclick = () => showSection(s.key);
+  b.onclick = () => { leaveColumnViews(); showSection(s.key); };
   return b;
 }
 
@@ -13368,14 +14299,20 @@ bootDemo();
    `.seg` too, and an unscoped selector wired ITS buttons to this handler as
    well -- they carry no `data-order`, so pressing "+" set `ORDER = undefined`
    and the raster silently lost its ROI ordering. */
-document.querySelectorAll("#bar .seg button").forEach(b => {
-  b.onclick = () => {
-    if (ORDER === b.dataset.order) return;
-    ORDER = b.dataset.order;
-    document.querySelectorAll("#bar .seg button").forEach(x =>
-      x.setAttribute("aria-pressed", String(x.dataset.order === ORDER)));
-    if (current?.loaded) { paintOrderNote(current.loaded); draw(current, current.loaded); }
-  };
+/* And now the column views carry the same toggle, so it is scoped by the
+   attribute that makes a button an order button, not by where it sits: every
+   copy sets the one `ORDER`, every copy shows it, and every raster on the page
+   is redrawn in it. */
+function setRoiOrder(order) {
+  if (ORDER === order) return;
+  ORDER = order;
+  document.querySelectorAll("button[data-order]").forEach(x =>
+    x.setAttribute("aria-pressed", String(x.dataset.order === ORDER)));
+  if (current?.loaded) { paintOrderNote(current.loaded); draw(current, current.loaded); }
+  redrawColumns();
+}
+document.querySelectorAll("button[data-order]").forEach(b => {
+  b.onclick = () => setRoiOrder(b.dataset.order);
 });
 
 document.getElementById("zIn").onclick = () => zoomRaster(-1);
@@ -13395,8 +14332,10 @@ function setRailFolded(on) {
   try { on ? localStorage.setItem(RAIL_KEY, "1")
            : localStorage.removeItem(RAIL_KEY); } catch (e) { /* fine */ }
   paintRailWhere();
-  // the raster's width changes with the layout, so it has to be redrawn
+  // the raster's width changes with the layout, so it has to be redrawn — and a
+  // column view's rows are sized to the stage height, which this just changed
   if (current && current.loaded) draw(current, current.loaded);
+  redrawColumns();
 }
 /* Folding the rail must not also lose WHERE YOU ARE, so the step name moves to
    the fold line. */
@@ -13441,18 +14380,31 @@ document.getElementById("tAll").onclick = turboResetZoom;
    raster's ledger uses, and the only way to walk a zoomed column. */
 document.getElementById("turboCv").addEventListener("click", ev => {
   if (!TURBO || !TURBO_SPAN) return;
-  const cv = document.getElementById("turboCv");
-  const r = cv.getBoundingClientRect();
-  const W = cv.clientWidth, padL = 132, padR = 14;
-  const full = TURBO.maxDur;
-  const half = TURBO_SPAN / 2;
-  let mid = Number.isFinite(TURBO_MID) ? TURBO_MID : full / 2;
-  mid = Math.min(Math.max(mid, half), full - half);
-  const t0 = mid - half, t1 = mid + half;
-  const frac = (ev.clientX - r.left - padL) / (W - padL - padR);
-  if (frac < 0 || frac > 1) return;
-  TURBO_MID = t0 + frac * (t1 - t0);
+  const t = columnTimeAt(ev.currentTarget, ev, TURBO.maxDur, TURBO_SPAN, TURBO_MID);
+  if (t === null) return;
+  TURBO_MID = t;
   turboDraw();
+});
+
+document.getElementById("overviewBtn").onclick = overviewToggle;
+document.getElementById("unblindDlg").addEventListener("close", ev => {
+  if (ev.currentTarget.returnValue === "yes") setOverview(true);
+});
+document.getElementById("oIn").onclick = () => overviewZoom(-1);
+document.getElementById("oOut").onclick = () => overviewZoom(+1);
+document.getElementById("oTreat").addEventListener("change", ev => {
+  OVERVIEW_TREAT = ev.target.value;
+  overviewRepick();
+});
+document.getElementById("oAll").onclick = () => {
+  OVERVIEW_SPAN = null; OVERVIEW_MID = null; overviewDraw();
+};
+document.getElementById("overviewCv").addEventListener("click", ev => {
+  if (!OVERVIEW || !OVERVIEW_SPAN) return;
+  const t = columnTimeAt(ev.currentTarget, ev, OVERVIEW.maxDur, OVERVIEW_SPAN, OVERVIEW_MID);
+  if (t === null) return;
+  OVERVIEW_MID = t;
+  overviewDraw();
 });
 
 document.getElementById("railToggle").onclick = () =>
@@ -13498,7 +14450,10 @@ document.body.addEventListener("drop", e => {
 let rt;
 window.addEventListener("resize", () => {
   clearTimeout(rt);
-  rt = setTimeout(() => { if (current?.loaded) draw(current, current.loaded); }, 120);
+  rt = setTimeout(() => {
+    if (current?.loaded) draw(current, current.loaded);
+    redrawColumns();
+  }, 120);
 });
 // the window colours are picked for the surface they sit on, so a reader who
 // switches the OS to dark mid-session gets the dark steps rather than the light

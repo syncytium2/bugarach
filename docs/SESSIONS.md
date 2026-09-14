@@ -10,6 +10,26 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
+### Mac/measure-recording-identity — DARKROOM claim RELEASED 2026-09-13: `bugarach/2026-09-13-recording-identity/`
+- **Status:** **RELEASED 2026-09-13 — run written, nothing further writes there.** Was: ACTIVE
+  (bugarach-ivory-shrike). Tony: measure on our data whether recording identity is visible, as the
+  literature found it is elsewhere.
+- **Writes:** `results.json` and `recording_identity.png`, only in that new folder.
+- **Branch:** `measure-recording-identity`, in a worktree of the same name.
+- **Released when:** the result lands on `main`.
+
+### Mac/lit-recombination-nulls — DARKROOM claim RELEASED 2026-09-12: `bugarach/lit/` (additive)
+- **Status:** **RELEASED 2026-09-12 — writes done.** 93 PDFs added (13 `surrogates/`, 5 `coordination/`,
+  30 `ml/`, 45 in the new `recombination/`), README rows appended to those four and one row to
+  `lit/README.md`. Nothing existing moved or overwritten. Was: ACTIVE (bugarach-ivory-shrike). Tony asked
+  for the literature deep dive on recombination nulls to be attempted, and for a list of every paper no
+  publisher PDF could be fetched for.
+- **Writes:** new PDFs and new README rows only, under `<darkroom>/bugarach/lit/` — `surrogates/`,
+  `ml/`, `coordination/`, and possibly new topic folders with their own README. Nothing existing is moved,
+  renamed or overwritten.
+- **Branch:** `lit-recombination-nulls`, in a worktree of the same name.
+- **Released when:** the reading log lands on `main`.
+
 ### 065/surrogate-screen-overnight — DARKROOM claim ACTIVE: `bugarach/2026-09-11-surrogate-screen/`
 - **Moved 2026-09-11, from the Mac to the Windows workstation (065).** The Mac stopped the run at
   about 11:05 for power; this machine finishes the grid and writes the reports, per
@@ -44,6 +64,55 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
   `docs/reviews/report_steps_excluded_2026-09-11.md` — but it established that the night's
   Holm-corrected yardsticks could not flag anything at any setting, so the claim stays until the
   probe settles what a rerun should be.
+
+### Mac/deploy-assessed-events — SITE claim RELEASED 2026-09-14: deployed at `9285266`
+- **Status:** **RELEASED 2026-09-14 — deployed; nothing holds the site.** Asked whether to redeploy
+  #556 once it merged, Tony answered *"go"*. Held on the machine-local board for the upload.
+- **What went out:** #556 — the raster redraws when an assessment finishes (its candidate lane had
+  stayed empty), and turbo draws the assessed events as blue triangles over grey threshold marks.
+- **Deploy record.** Worktree detached at `origin/main` `9285266`; `DEPLOY_HOLD.md` `held: no`; no
+  ACTIVE site claim. Site tests green on the build; dry run read 8 files; uploaded with the pinned
+  wrangler, version `f7df1a29`. Afterwards `site_staleness.py` reads **current** and
+  `audit_deployed_page.py` is clean.
+
+### Mac/deploy-overview-button — SITE claim RELEASED 2026-09-14: deployed at `379ee39`
+- **Status:** **RELEASED 2026-09-14 — deployed; nothing holds the site.** Asked whether to redeploy
+  #554 once it merged, Tony answered *"go"*. Held on the machine-local board for the upload.
+- **What went out:** #554 — the red overview button names the view on screen ("Showing baseline
+  only · blind" / "Showing TTX full trace · unblinded" / "Showing one slice"), and the
+  confirmation's wording.
+- **Deploy record.** Worktree detached at `origin/main` `379ee39`; `DEPLOY_HOLD.md` `held: no`; no
+  ACTIVE site claim. Site tests green on the build; dry run read 8 files; uploaded with the pinned
+  wrangler, version `c8d439e1`. Afterwards `site_staleness.py` reads **current** and
+  `audit_deployed_page.py` is clean.
+
+### Mac/deploy-column-axis — SITE claim RELEASED 2026-09-14: deployed at `a3a4f7b`
+- **Status:** **RELEASED 2026-09-14 — deployed; nothing holds the site.** Continuing Tony's live
+  testing of the column views (he asked "ready?" for it). Held on the machine-local board for the
+  upload; this block is the record.
+- **What went out:** #551 — pinned axis and timings strip, raster height by ROI count, tighter rows,
+  per-row timing off the median, the ROI order toggle in the column views, one-line footnotes,
+  the terse rail's arrow.
+- **Deploy record.** Worktree detached at `origin/main` `a3a4f7b`; `DEPLOY_HOLD.md` `held: no`; no
+  ACTIVE site claim. Site tests green on the build; dry run read 8 files; uploaded with the pinned
+  wrangler, version `d53490d2`. Afterwards `site_staleness.py` reads **current** and
+  `audit_deployed_page.py` is clean.
+
+### Mac/deploy-overview-pickers — SITE claim RELEASED 2026-09-13: deployed at `55ce08f`
+- **Status:** **RELEASED 2026-09-13 — deployed; nothing holds the site.** Tony, in words: *"deploy
+  so i can test"*. Held on the machine-local board for the length of the upload, which is shorter
+  than landing a claim here would have taken; this block is the record.
+- **What went out:** the three viewer commits after `22234c0` — turbo takes the page and the red
+  unblinded overview (#543), and the overview's treatment and group pickers (#549).
+- **Deploy record.** Built in a worktree detached at `origin/main` `55ce08f`; `DEPLOY_HOLD.md` read
+  `held: no`; no ACTIVE site claim on this board. `test_site_coherence`, `test_site_viewer` and
+  `test_site_dates` green on the build; `wrangler deploy --dry-run` read 8 files from that
+  worktree's `site/`; uploaded with the primary checkout's pinned wrangler (4.122.0), version
+  `c159b4e3`. Afterwards `site_staleness.py` reads **current** at `55ce08f`, and
+  `audit_deployed_page.py` is clean — the viewer fetched nothing but itself.
+- **Checked against the real export folder before the merge, not on the live site:** baseline
+  only, TTX, TTX with ORX + DI, senktide with ORX + DI, driven headless on this machine. Tony is
+  testing the live page himself.
 
 ### Mac/claim-the-site-for-the-viewer — SITE claim RELEASED 2026-09-11: deployed at `22234c0`
 - **Status:** **RELEASED 2026-09-11 — deployed; nothing holds the site.** Taken over and
