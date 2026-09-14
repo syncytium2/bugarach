@@ -8787,10 +8787,32 @@ function recordVerdict(v) {
   // The cross-check moves with every verdict, so a K set early is re-examined
   // against the labels that arrive after it. The setting itself never changes.
   paintKSetting();
+  followSample();
+  if (SAVE_FAILED) paintReviewBanner();   // says so, loudly, once it is true
+}
+
+/* THE RASTER FOLLOWS THE SAMPLE ACROSS SLICES. Tony, 2026-09-14, in MAHICE: "i
+   made my selections, how to advance to the next slice". The sample is grouped
+   by slice, so the verdict on a slice's last candidate moves `ANNOT.i` into the
+   next slice — and only the zoomed pane went with it. The raster and the ledger
+   stayed on the finished slice, all judged, with nothing on screen saying where
+   the review had gone. Now the raster moves to the selected candidate's slice.
+
+   Not `selectCandidate`: that sets `ANNOT.i` again after the recording loads,
+   so a key pressed during the load would be rewound. Here a verdict cast while
+   the next slice loads simply wins, and this call steps aside. */
+async function followSample() {
+  const a = ANNOT;
+  if (!a) return;
+  const i = a.i, cand = a.cands[i];
+  if (cand && current && cand.recId !== current.id) {
+    const rec = RECORDINGS.find(r => r.id === cand.recId);
+    if (rec) await show(rec);
+    if (ANNOT !== a || a.i !== i) return;
+  }
   showCandidate();
   repaintJudgingLane();
   paintCandidateTable();
-  if (SAVE_FAILED) paintReviewBanner();   // says so, loudly, once it is true
 }
 
 /* The per-K table, live. Candidates nest, so one verdict counts at every K at or
@@ -9481,8 +9503,8 @@ function wireAnnotate() {
       ANNOT.verdicts[ANNOT.i] = undefined;
       for (const id of ["anYes", "anNo", "anIdk"])
         document.getElementById(id).disabled = false;
-      paintAnnotChip(); paintAgreement(); showCandidate();
-      repaintJudgingLane(); paintCandidateTable();
+      paintAnnotChip(); paintAgreement();
+      followSample();   // back across a slice boundary brings that slice back
       saveReview();   // an un-cast verdict is a change too
     }
   };

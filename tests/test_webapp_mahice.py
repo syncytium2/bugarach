@@ -456,6 +456,64 @@ def test_the_raster_the_ledger_and_the_confirm_tool_name_one_recording(page):
         assert b["raster"] in b["ledger"]
 
 
+def test_a_verdict_that_finishes_a_slice_brings_the_next_slice_on_screen(fresh_page):
+    """Tony, 2026-09-14, in MAHICE: "i made my selections, how to advance to the
+    next slice".
+
+    The sample is grouped by slice, so the verdict on one slice's last candidate
+    moves the review into the next. Only the zoomed pane followed; the raster and
+    the ledger stayed on the slice he had finished. Judged the way a person
+    does — one key, then wait for the page — the three must name one recording
+    after the crossing, and again after Back crosses home.
+    """
+    pg = fresh_page
+    out = pg.evaluate(
+        """async (sim) => {
+          for (const [k, v] of Object.entries(sim))
+            document.getElementById(k).value = v;
+          await runSim();
+          await show(RECORDINGS[0]);
+          await assessFolderRun();
+          ANNOT = null; discardSavedReview();
+          document.getElementById("anWho").value = "tony";
+          document.getElementById("anCap").value = "3";
+          document.getElementById("anBudget").value = "400";
+          startAnnotation();
+          const recs = new Set(ANNOT.cands.map(c => c.recId));
+          if (recs.size < 2) return {skip: "the sample holds one slice"};
+          const settle = () => new Promise(r => setTimeout(r, 300));
+          // the review opens on the slice on screen, which may be the sample's
+          // last; start at its first so there is a next slice to cross into
+          await selectCandidate(0);
+          await settle();
+          const look = () => ({
+            sel: ANNOT.cands[ANNOT.i].recId,
+            raster: current.id,
+            ledger: (document.querySelector("#candTable h4") || {}).textContent || "",
+            where: document.getElementById("anWhere").textContent,
+          });
+          const first = ANNOT.cands[ANNOT.i].recId;
+          while (ANNOT.cands[ANNOT.i].recId === first) {
+            recordVerdict("confirmed");
+            await settle();
+          }
+          const crossed = look();
+          document.getElementById("anBack").click();
+          await settle();
+          return {first, crossed, back: look()};
+        }""", SIM)
+    if out.get("skip"):
+        pytest.skip(out["skip"])
+    for when in ("crossed", "back"):
+        s = out[when]
+        assert s["raster"] == s["sel"], (
+            f"{when}: the review is on {s['sel']} and the raster still shows {s['raster']}")
+        assert s["sel"] in s["ledger"], (when, s)
+        assert s["sel"] in s["where"], (when, s)
+    assert out["crossed"]["sel"] != out["first"]
+    assert out["back"]["sel"] == out["first"], "Back did not return to the finished slice"
+
+
 def test_the_ledger_selects_in_blue_and_judges_in_the_row(page):
     """Tony, 2026-09-04: "have a list of possible events in a table below the
     raster. user clicks, the above arrow goes blue, the user ticks accept or
