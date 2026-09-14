@@ -9,7 +9,7 @@
      rather than naming a sha this page could not know — the reasoning is at the
      visible stamp. -->
 <meta name="bugarach:born" content="2026-08-13">
-<meta name="bugarach:version-date" content="2026-09-13">
+<meta name="bugarach:version-date" content="2026-09-14">
 <meta name="bugarach:commit" content="content-addressed">
 <!--
   The raster viewer, client side.
@@ -197,6 +197,11 @@
   body.railterse #rail .railarrow { display: none; }
   body.railterse .step { min-width: 0; padding: 2px 9px; font-size: 12px; }
   body.railterse .railgroup { gap: 0; }
+  /* The merge's arrow sits 3px past its own box, which the full rail's spacing
+     absorbed; terse strips that spacing, and the arrow landed on "Recordings"
+     (Tony, 2026-09-14). Inside the box, with a gap after it. */
+  body.railterse .railmerge { margin: 4px 8px 4px 0; }
+  body.railterse .railmerge::after { right: 0; }
   /* Reclaimed vertical everywhere above the raster, on the same principle: the
      things that explain the page are read once, the raster is read all day. */
   body.railfolded .status.wip { padding: 3px 24px; font-size: 11.5px; }
@@ -516,8 +521,27 @@
   /* The height is set by `turboDraw` to what the stage has left under the bar,
      so the column fills the screen; 74vh is only the value before first draw. */
   #turboScroll, #overviewScroll { overflow: auto; max-height: 74vh;
-                 border: 1px solid var(--line); border-radius: 8px; }
-  #turboWhat, #overviewWhat { margin-top: 8px; }
+                 border: 1px solid var(--line); border-bottom: 0;
+                 border-radius: 8px 8px 0 0; }
+  /* THE AXIS DOES NOT SCROLL. Tony, 2026-09-14: "x-axis needs to appear at the
+     bottom no matter scroll". Its own canvas under the scrolling box, closing
+     the box's border, so the ticks are always under whatever rows are showing. */
+  /* content-box: `columnCanvas` sets the drawing size, the border goes outside
+     it, so the strip is exactly as wide as the scrolling box above it. */
+  .colaxis { display: block; box-sizing: content-box;
+             border: 1px solid var(--line);
+             border-radius: 0 0 8px 8px; background: var(--bg); }
+  /* The overview's timings, pinned over the rows the same way the axis is
+     pinned under them: the box's top border, with the rows' border as its
+     bottom edge. */
+  .colhead { display: block; box-sizing: content-box;
+             border: 1px solid var(--line); border-bottom: 0;
+             border-radius: 8px 8px 0 0; background: var(--bg); }
+  .colhead[hidden] { display: none; }
+  .colhead:not([hidden]) + div { border-radius: 0; }
+  /* One line, the width of the column: a footnote to the knobs, not a paragraph. */
+  #turboWhat, #overviewWhat { margin-top: 4px; max-width: none; font-size: 12px; }
+  body.columnopen #stage { padding-bottom: 8px; }
   #overviewCv { display: block; }
   #turboCv { display: block; }
   .anzoom { display: flex; align-items: center; justify-content: center;
@@ -1768,6 +1792,14 @@
         <input id="tMerge" type="number" min="0" max="30" step="0.5" value="2" autocomplete="off" data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other">
         <span class="lab">s</span>
         <span class="turbospacer"></span>
+        <!-- ROI ORDER IN EVERY RASTER VIEW. Tony, 2026-09-14: the toggle "must
+             always appear". Same buttons, same `ORDER`, as the single-recording
+             view's; `setRoiOrder` keeps every copy pressed alike. -->
+        <span class="lab">ROI order</span>
+        <span class="seg">
+          <button data-order="id" aria-pressed="true">by id</button>
+          <button data-order="rate" aria-pressed="false">by events</button>
+        </span>
         <span class="lab">time</span>
         <span class="seg">
           <button id="tOut" title="wider">−</button>
@@ -1784,6 +1816,7 @@
            did not exist. Empty and hidden when nothing was assumed. -->
       <div class="turboflag" id="turboFlag" hidden></div>
       <div id="turboScroll"><canvas id="turboCv"></canvas></div>
+      <canvas id="turboAxis" class="colaxis"></canvas>
       <!-- UNDER THE RASTERS, NOT OVER THEM. Tony, 2026-09-12: the block of text
            above the rasters "serves little purpose. put it below". It restates
            the knobs in a sentence; the knobs are already in the bar, so it is a
@@ -1804,6 +1837,11 @@
         <span class="lab" id="oGroupsLab">groups</span>
         <span class="seg" id="oGroups"></span>
         <span class="turbospacer"></span>
+        <span class="lab">ROI order</span>
+        <span class="seg">
+          <button data-order="id" aria-pressed="true">by id</button>
+          <button data-order="rate" aria-pressed="false">by events</button>
+        </span>
         <span class="lab">time</span>
         <span class="seg">
           <button id="oOut" title="wider">−</button>
@@ -1813,7 +1851,9 @@
         <span class="lab" id="oZoomWhat"></span>
       </div>
       <div class="turboflag" id="overviewFlag" hidden></div>
+      <canvas id="overviewHead" class="colhead"></canvas>
       <div id="overviewScroll"><canvas id="overviewCv"></canvas></div>
+      <canvas id="overviewAxis" class="colaxis"></canvas>
       <div class="note" id="overviewWhat"></div>
     </div>
 
@@ -1859,10 +1899,10 @@
      a page edited without bumping it turns CI red instead of shipping a date
      that has quietly become a lie. Bump it when you edit this page. -->
 <p class="site-dates" data-bugarach-born="2026-08-13"
-   data-bugarach-version-date="2026-09-13"
+   data-bugarach-version-date="2026-09-14"
    data-bugarach-commit="content-addressed"
    style="margin:1.5rem max(1.2rem, calc(50% - 23rem));color:#666;font-size:.85rem">
-  First published 2026-08-13 · this version 2026-09-13 · identified by its own
+  First published 2026-08-13 · this version 2026-09-14 · identified by its own
   bytes rather than by a build stamp
 </p>
 
@@ -2548,8 +2588,7 @@ let TURBO_SPAN = null;   // seconds shown; null = the longest baseline
 let TURBO_MID = null;    // centre of the window, in seconds from baseline start
 
 const TURBO_ZOOMS = [5, 10, 20, 45, 90, 180, 300, 600, 1200];
-const TURBO_ROW = 58;    // one slice: its lane, its raster, and the gap under it
-const TURBO_LANE = 11;
+const TURBO_LANE = 9;    // the marks' lane over each raster: a 7px triangle and air
 
 function turboKnobs() {
   const num = (id, dflt) => {
@@ -2669,7 +2708,8 @@ async function turboLoad() {
     const d = await loadRecording(rec);
     const byRoi = d.streams.get(STREAM) || d.streams.get([...d.streams.keys()][0]);
     if (!byRoi) continue;
-    const ids = [...byRoi.keys()].sort();
+    // `natural`, not `.sort()`: ROI 2 before ROI 10, as the single-recording view
+    const ids = [...byRoi.keys()].sort(natural);
     /* NO DECLARED REGIONS: the whole trace, which is the contract's implicit
        one-region recording. Its extent is the recording's own last onset —
        there is no other statement of duration in an export folder, and the
@@ -2688,7 +2728,7 @@ async function turboLoad() {
     const trains = ids.map(id =>
       (byRoi.get(id) || []).filter(t => t >= ws && t <= we).map(t => t - ws));
     rows.push({ id: rec.id, nRoi: ids.length, trains, dur: we - ws,
-                assumed: !!b.assumed });
+                byRate: busiestFirst(ids, d), assumed: !!b.assumed });
   }
   TURBO = { rows, skipped, maxDur: rows.reduce((a, r) => Math.max(a, r.dur), 1) };
   turboRecompute();
@@ -2783,9 +2823,9 @@ function turboMarks(trains, width, K, mergeSec) {
    its label column. Turbo's lane carries MAHICE marks; the overview's carries
    the periods. Written once so the two cannot drift apart on the axis, the
    row geometry, or the rule that nothing is drawn on the raster itself. */
-const COL_PADL = 132, COL_PADR = 14, COL_PADT = 10, COL_PADB = 30;
-const COL_ROW_MAX = 150;   // past this a row stops gaining legibility and a
-                           // five-recording folder reads as five posters
+const COL_PADL = 132, COL_PADR = 14, COL_PADT = 6, COL_PADB = 2;
+const COL_AXIS_H = 26;     // the pinned axis strip under the column
+const COL_ROW_GAP = 3;     // white space under each raster, before the next row
 
 /** The visible [t0, t1] for a column whose longest row is `full` seconds. */
 function columnWindow(full, span, mid) {
@@ -2815,27 +2855,63 @@ function columnTimeAt(cv, ev, full, span, mid) {
   return frac < 0 || frac > 1 ? null : t0 + frac * (t1 - t0);
 }
 
-/* THE COLUMN FILLS THE SCREEN. Tony, 2026-09-12: "we need to make the turbo
-   mahice occupy more space." A fixed 58px row left five recordings in the top
-   third of the stage with the rest of it empty. The row now grows into what the
-   stage has left under the knob bar, up to COL_ROW_MAX, and never shrinks below
-   the old height — a folder of 38 still scrolls, inside its own box, so the bar
-   stays where the hand is. */
-function columnRowHeight(cv, n, minRow, headH = 0) {
+/* A RASTER IS AS TALL AS ITS FIELD. Tony, 2026-09-14: "raster height should be
+   fixed so slices with high nroi are taller than slices with low nroi." Every
+   row used to get the same height, so a 55-ROI slice was squeezed into the band
+   a 17-ROI one had room to spare in, and the column hid the one size difference
+   that matters to reading coordination by eye. Now one pixels-per-ROI scale
+   holds for the whole column: a row's raster is `nRoi × scale`.
+
+   The scale is COL_ROI_PX at least. It grows toward COL_ROI_PX_MAX only when
+   the whole column would otherwise leave the stage half empty — still one scale
+   for every row, so the proportion holds — which keeps what Tony asked for on
+   2026-09-12, "make the turbo mahice occupy more space", for a five-slice
+   folder. A folder of 84 scrolls inside its own box, so the bar stays where the
+   hand is. A raster is never shorter than its two label lines. */
+const COL_ROI_PX = 2, COL_ROI_PX_MAX = 4, COL_RASTER_MIN = 26;
+const rasterH = (r, px) => Math.max(COL_RASTER_MIN, Math.round(r.nRoi * px));
+
+function columnScale(cv, rows, laneH) {
   const scroll = cv.parentElement, stage = document.getElementById("stage");
-  if (!scroll || !stage || !n) return minRow;
+  if (!scroll || !stage || !rows.length) return COL_ROI_PX;
   const offset = scroll.getBoundingClientRect().top
                  - stage.getBoundingClientRect().top + stage.scrollTop;
-  /* Room is kept for the sentence under the column, and for the stage's own
-     bottom padding — without it the footnote was sliced through its first line
-     by the bottom of the stage, which reads as broken rather than as "scroll". */
-  const note = scroll.nextElementSibling;
-  const below = (note ? note.offsetHeight + 8 : 0)
-                + parseFloat(getComputedStyle(stage).paddingBottom || "0");
-  const avail = Math.max(320, stage.clientHeight - offset - below - 4);
+  /* Room is kept for everything under the scrolling box — the pinned axis and
+     the footnote — and for the stage's own bottom padding. Without it the
+     footnote was sliced through its first line by the bottom of the stage,
+     which reads as broken rather than as "scroll". */
+  let below = parseFloat(getComputedStyle(stage).paddingBottom || "0");
+  for (let el = scroll.nextElementSibling; el; el = el.nextElementSibling)
+    below += el.offsetHeight + parseFloat(getComputedStyle(el).marginTop || "0");
+  const avail = Math.max(320, stage.clientHeight - offset - below - 2);
   scroll.style.maxHeight = avail + "px";
-  const fit = Math.floor((avail - 2 - COL_PADT - headH - COL_PADB) / n);
-  return Math.max(minRow, Math.min(COL_ROW_MAX, fit));
+  const fixed = COL_PADT + COL_PADB + 2 + rows.length * (laneH + 1 + COL_ROW_GAP);
+  const fields = rows.reduce((a, r) => a + r.nRoi, 0) || 1;
+  const fit = (avail - fixed) / fields;
+  return Math.max(COL_ROI_PX, Math.min(COL_ROI_PX_MAX, fit));
+}
+
+/* "By events" for a column row: indices into `ids`, busiest first by the
+   recording's own counts — summed across streams over the whole recording, the
+   same `counts` the single-recording view's `byRate` sorts on — ties in id
+   order. Counted once at load, so the toggle is a redraw and not a recount. */
+function busiestFirst(ids, d) {
+  const n = id => (d.counts && d.counts.get(id)) || 0;
+  return ids.map((_, q) => q)
+    .sort((a, b) => n(ids[b]) - n(ids[a]) || natural(ids[a], ids[b]));
+}
+
+/* A canvas sized in CSS pixels and scaled for the display, cleared, with the
+   column's font set. */
+function columnCanvas(c, w, h) {
+  const dpr = window.devicePixelRatio || 1;
+  c.width = Math.round(w * dpr); c.height = Math.round(h * dpr);
+  c.style.width = w + "px"; c.style.height = h + "px";
+  const g = c.getContext("2d");
+  g.scale(dpr, dpr);
+  g.clearRect(0, 0, w, h);
+  g.font = "11px -apple-system, system-ui, sans-serif";
+  return g;
 }
 
 /* EVERY ROW ON ONE AXIS. Tony: "the display must be x-axis zoomable (all rows
@@ -2847,36 +2923,51 @@ function columnRowHeight(cv, n, minRow, headH = 0) {
 
    `o.labels(r)` gives the label-column lines as [text, colour] pairs, stacked;
    `o.lane(g, r, laneTop, x, t0, t1, W)` paints the lane ABOVE each raster;
-   `o.head(g, y, x, t0, t1, W)` paints one lane of `o.headH` above the whole
-   column. Those lanes are the only places a view may put a cue.
+   `o.head(g, x, t0, t1, W)` paints `o.headCv`, a strip of `o.headH` pinned
+   above the whole column. Those lanes are the only places a view may put a cue.
+
+   THREE CANVASES, ONE AXIS. The rows scroll; the head above them and the time
+   axis under them (`o.axisCv`) do not — Tony, 2026-09-14: the axis "needs to
+   appear at the bottom no matter scroll", and the top row of timings "should
+   be fixed too". All three are drawn with the rows' own width and x mapping,
+   so a tick, a period's edge and an event line up even when the scrolling box
+   has a scrollbar eating into its width.
 
    A row may start after 0 (`r.from`), and the axis may be labelled from an
    `o.origin` other than 0 — the overview aligns rows on a moment inside them,
    so its zero is not the left edge and some of its rows begin to the right. */
 function paintColumn(cv, rows, full, span, mid, o) {
   const css = getComputedStyle(document.documentElement);
-  const dpr = window.devicePixelRatio || 1;
-  const W = cv.parentElement.clientWidth || 900;
-  const headH = o.headH || 0, origin = o.origin || 0;
-  const padL = COL_PADL, padR = COL_PADR, padT = COL_PADT + headH, padB = COL_PADB;
-  const rowH = columnRowHeight(cv, rows.length, o.minRow, headH);
-  const H = padT + rows.length * rowH + padB;
-  cv.width = W * dpr; cv.height = H * dpr;
-  cv.style.width = W + "px"; cv.style.height = H + "px";
-  const g = cv.getContext("2d");
-  g.scale(dpr, dpr);
-  g.clearRect(0, 0, W, H);
-  g.font = "11px -apple-system, system-ui, sans-serif";
+  const scroll = cv.parentElement;
+  const W = scroll.clientWidth || 900;
+  const outerW = Math.max(W, scroll.offsetWidth - 2);   // inside the strips' borders
+  const origin = o.origin || 0;
+  const padL = COL_PADL, padR = COL_PADR, padT = COL_PADT, padB = COL_PADB;
 
+  // the pinned strips are sized FIRST: the rows get what they leave
   const [t0, t1] = columnWindow(full, span, mid);
   const x = t => padL + (t - t0) / (t1 - t0) * (W - padL - padR);
+  if (o.headCv) {
+    o.headCv.hidden = !o.head;
+    if (o.head) o.head(columnCanvas(o.headCv, outerW, o.headH), x, t0, t1, W);
+  }
+  const ga = o.axisCv ? columnCanvas(o.axisCv, outerW, COL_AXIS_H - 2) : null;
+
+  const px = columnScale(cv, rows, o.laneH);
+  /* COL_ROW_GAP under each raster rather than 14, and 1px over it: the gap only
+     has to separate one slice from the next, and every pixel of it came out of
+     the rasters (Tony, 2026-09-14: "decrease the white space between raster
+     rows"). */
+  const rowH = r => o.laneH + 1 + rasterH(r, px) + COL_ROW_GAP;
+  const H = padT + rows.reduce((a, r) => a + rowH(r), 0) + padB;
+  const g = columnCanvas(cv, W, H);
   const step = ticks(t1 - t0, Math.max(4, Math.round((W - padL - padR) / 110)));
 
-  if (o.head) o.head(g, COL_PADT, x, t0, t1, W);
-
-  rows.forEach((r, i) => {
-    const top = padT + i * rowH;
-    const rTop = top + o.laneH + 3, rBot = top + rowH - 14;
+  let top = padT;
+  rows.forEach(r => {
+    const rTop = top + o.laneH + 1, rBot = rTop + rasterH(r, px);
+    const rowTop = top;
+    top += rowH(r);
 
     /* Identity and counts, STACKED rather than side by side. Drawn on one line
        they collided and the id was clipped at the left edge — `20241122b_110` is
@@ -2895,39 +2986,44 @@ function paintColumn(cv, rows, full, span, mid, o) {
     const right = Math.min(W - padR, x(Math.min(r.dur, t1)));
     if (right > left) g.strokeRect(left, rTop, right - left, rBot - rTop);
 
-    if (o.lane) o.lane(g, r, top, x, t0, t1, W);
+    if (o.lane) o.lane(g, r, rowTop, x, t0, t1, W);
 
-    // the raster: every ROI of this recording, compressed into its band
+    /* The raster: every ROI of this recording, compressed into its band, in the
+       page's ROI order — by id, or busiest first — the same toggle and the same
+       counts the single-recording view uses, so lane 3 is the same ROI in both. */
     const lane = (rBot - rTop) / Math.max(1, r.nRoi);
     const h = Math.max(1, Math.min(4, lane));
+    const seq = ORDER === "rate" && r.byRate ? r.byRate : null;
     g.strokeStyle = css.getPropertyValue("--mark").trim();
     g.globalAlpha = 0.9;
     g.lineWidth = 1;
     g.beginPath();
-    for (let q = 0; q < r.trains.length; q++) {
-      const yc = rTop + (q + 0.5) * lane;
+    for (let p = 0; p < r.trains.length; p++) {
+      const q = seq ? seq[p] : p;
+      const yc = rTop + (p + 0.5) * lane;
       for (const t of r.trains[q]) {
         if (t < t0 || t > t1) continue;
-        const px = Math.round(x(t)) + 0.5;
-        g.moveTo(px, yc - h / 2); g.lineTo(px, yc + h / 2);
+        const cx = Math.round(x(t)) + 0.5;
+        g.moveTo(cx, yc - h / 2); g.lineTo(cx, yc + h / 2);
       }
     }
     g.stroke();
     g.globalAlpha = 1;
   });
 
-  // one x-axis, at the bottom, because every row is on it
-  g.fillStyle = css.getPropertyValue("--muted").trim();
-  g.strokeStyle = css.getPropertyValue("--line").trim();
-  const axisY = padT + rows.length * rowH;
+  // one x-axis, pinned under the column, because every row is on it
+  if (!ga) return;
+  ga.fillStyle = css.getPropertyValue("--muted").trim();
+  ga.strokeStyle = css.getPropertyValue("--line").trim();
   // ticks fall on whole steps FROM THE ORIGIN, so an aligned axis reads −2m, 0s, 2m
   const k0 = Math.ceil((t0 - origin) / step - 1e-9);
   for (let k = k0; origin + k * step <= t1 + 1e-9; k++) {
     const rel = k * step;
-    const px = Math.round(x(origin + rel)) + 0.5;
-    g.beginPath(); g.moveTo(px, axisY); g.lineTo(px, axisY + 4); g.stroke();
+    const cx = Math.round(x(origin + rel)) + 0.5;
+    ga.beginPath(); ga.moveTo(cx, 0); ga.lineTo(cx, 4); ga.stroke();
     const lab = (rel < 0 ? "−" : "") + fmt(Math.abs(rel));
-    g.fillText(lab, px - g.measureText(lab).width / 2, axisY + 18);
+    const lw = ga.measureText(lab).width;
+    ga.fillText(lab, Math.min(outerW - lw - 2, Math.max(2, cx - lw / 2)), 17);
   }
 }
 
@@ -2949,8 +3045,8 @@ function turboDraw() {
   // under it, so the sentence has to be its real length when that is measured
   paintTurboWhat();
   paintColumn(cv, TURBO.rows, TURBO.maxDur, TURBO_SPAN, TURBO_MID, {
-    minRow: TURBO_ROW,
     laneH: TURBO_LANE,
+    axisCv: document.getElementById("turboAxis"),
     /* The K this row resolved to under the id. THE FLAG, ON THE ROW IT IS ABOUT:
        a third line rather than a mark in the picture, because this row's window
        is an assumption and the reader has to see WHICH rows, not just that some
@@ -3119,15 +3215,13 @@ function paintTurboWhat() {
     if (z0) z0.textContent = "";
     return;
   }
+  /* BARE MINIMUM, ONE LINE. Tony, 2026-09-14: "edited down to bare minimum".
+     The knobs say their own values; this says only what they resolved to and
+     the one caveat a reader must not miss — a mark is a threshold. */
   n.textContent =
-    TURBO.rows.length + " recordings · " + total + " marks at K = " + pct
-    + "% with a floor of " + floor + " (that is K " + Math.min(...ks) + "–"
-    + Math.max(...ks) + " across these recordings; the floor binds on " + bound
-    + " of them) · co-active within a MOVING " + bin + " s window — any alignment, "
-    + "no grid — gaps under " + merge
-    + " s merged. No surrogate null here: a mark is a THRESHOLD, not an "
-    + "excess over chance, which is what makes the knobs live. Tune until the "
-    + "marks agree with what you can see, then set that K in the review.";
+    TURBO.rows.length + " recordings · " + total + " marks · K " + Math.min(...ks)
+    + "–" + Math.max(...ks) + " (floor binds on " + bound + ") · MOVING "
+    + bin + " s window, no grid · a threshold, not tested against a null";
   const z = document.getElementById("tZoomWhat");
   if (z) z.textContent = TURBO_SPAN
     ? "showing " + fmt(TURBO_SPAN) + " of " + fmt(TURBO.maxDur)
@@ -3287,7 +3381,10 @@ let OVERVIEW_MID = null;
 let OVERVIEW_BACK = "view"; // what leaving the overview returns to
 let OVERVIEW_TREAT = "";    // "" = baseline only; otherwise a treatment-1 label
 let OVERVIEW_GROUPS = [];   // [] = all groups
-const OVERVIEW_TRACK = 26;  // one line of periods: label, bar, analysis band
+/* One line of periods in the pinned strip: a 10.5px label, then the bar and
+   its analysis band under it. 26px until Tony asked for the strip "less tall". */
+const OVERVIEW_TRACK = 17;
+const OVERVIEW_ROW_LANE = 7;  // a row's own timing: 3px bar, 2px band, air
 /* 5 s: the narrowest window turbo's zoom offers. A disagreement smaller than
    that is under a pixel or two at any zoom this column is read at. */
 const OVERVIEW_TOL = 5;
@@ -3322,7 +3419,7 @@ async function overviewLoad() {
     }
     const d = await loadRecording(rec);
     const byRoi = d.streams.get(STREAM) || d.streams.get([...d.streams.keys()][0]);
-    const ids = byRoi ? [...byRoi.keys()].sort() : [];
+    const ids = byRoi ? [...byRoi.keys()].sort(natural) : [];
     /* The extent is the later of the last onset and the last declared period —
        an export folder states no duration, and a treatment that ends in silence
        is still a treatment the row has to reach. */
@@ -3334,6 +3431,7 @@ async function overviewLoad() {
     const after = wins.filter(w => w !== base && w.start >= base.start)
                       .sort((a, b) => a.start - b.start)[0];
     raw.push({ id: rec.id, nRoi: ids.length, shift: base.end, end, byRoi, ids, wins,
+               byRate: busiestFirst(ids, d),
                base, treat: after ? (after.label || "").trim() : "",
                group: ((META.get(rec.id) || {}).group_id || "").trim() });
   }
@@ -3425,6 +3523,7 @@ function overviewBuild() {
       aStart: hasAnalysis(w) ? w.aStart + off : NaN,
       aEnd: hasAnalysis(w) ? w.aEnd + off : NaN }));
     return { id: r.id, nRoi: r.nRoi, group: r.group, from: s0 + off, dur: s1 + off,
+             byRate: r.byRate,
              wins, baseIdx: src.indexOf(r.base), keys: periodKeys(src),
              trains: r.ids.map(id => (r.byRoi.get(id) || [])
                .filter(t => t >= s0 && t <= s1).map(t => t + off)) };
@@ -3473,6 +3572,21 @@ function overviewBuild() {
       r.differs = OVERVIEW_TREAT + " starts " + (gap < 0 ? "−" : "+") + fmt(Math.abs(gap));
   }
 
+  /* A ROW WHOSE OWN TIMING IS NOT THE LINE CARRIES IT. Tony, 2026-09-14: "the
+     timing for unique rows should travel with the row." The pinned line is the
+     median; a row with any period more than OVERVIEW_TOL off it draws its own
+     periods in a thin lane over its raster, so its timing scrolls with its
+     events instead of being read off a line that is not about it. Measured
+     over the periods the row HAS, and not on the start of the baseline it is
+     aligned on — that is only where its recording began. */
+  for (const r of rows) {
+    r.unique = r.keys.some((k, j) => {
+      const p = top.find(q => q.key === k), w = r.wins[j];
+      return Math.abs(w.end - p.end) > OVERVIEW_TOL
+        || (j !== r.baseIdx && Math.abs(w.start - p.start) > OVERVIEW_TOL);
+    });
+  }
+
   OVERVIEW = { rows, top, tracks: Math.max(1, ends.length), origin, empty, unaligned,
                baseOnly, maxDur: Math.max(1, hi - lo) };
 }
@@ -3489,58 +3603,69 @@ function overviewDraw() {
   if (!cv || !OVERVIEW || document.getElementById("overview").hidden) return;
   const css = getComputedStyle(document.documentElement);
   paintOverviewWhat();   // before the column, for the same reason as turbo's
+  const lo = COL_PADL;
+  /* A period as bars: saturated for what happened, pale under it for what is
+     scored. `y` is the bar's top; the band sits directly beneath it. */
+  const bars = (g, w, y, barH, bandH, x, hi) => {
+    const a = Math.max(lo, x(w.start)), b = Math.min(hi, x(w.end));
+    g.fillStyle = ink(w.label);
+    if (b > lo && a < hi) g.fillRect(a, y, Math.max(1, b - a), barH);
+    if (hasAnalysis(w)) {
+      const s0 = Math.max(lo, x(w.aStart)), s1 = Math.min(hi, x(w.aEnd));
+      if (s1 > s0) {
+        g.globalAlpha = 0.35;
+        g.fillRect(s0, y + barH, s1 - s0, bandH);
+        g.globalAlpha = 1;
+      }
+    }
+  };
   paintColumn(cv, OVERVIEW.rows, OVERVIEW.maxDur, OVERVIEW_SPAN, OVERVIEW_MID, {
-    minRow: TURBO_ROW - TURBO_LANE,
-    laneH: 0,
-    headH: 10 + OVERVIEW.tracks * OVERVIEW_TRACK,
+    laneH: OVERVIEW_ROW_LANE,
+    headCv: document.getElementById("overviewHead"),
+    headH: 4 + OVERVIEW.tracks * OVERVIEW_TRACK,
+    axisCv: document.getElementById("overviewAxis"),
     origin: OVERVIEW.origin,
     labels: r => [[r.id], [r.nRoi + " ROI" + (r.group ? " · " + r.group : "")]]
       .concat(r.differs ? [[r.differs, CAND_INK.assumed]] : []),
-    head: (g, top0, x, t0, t1, W) => {
-      const lo = COL_PADL, hi = W - COL_PADR, N = OVERVIEW.rows.length;
-      // the lane's own y-axis label: what the line is, and how many rows made it
+    // a row's own timing, only where it is not the pinned line's
+    lane: (g, r, top, x, t0, t1, W) => {
+      if (!r.unique) return;
+      for (const w of r.wins) bars(g, w, top + 1, 3, 2, x, W - COL_PADR);
+    },
+    head: (g, x, t0, t1, W) => {
+      const hi = W - COL_PADR, N = OVERVIEW.rows.length;
+      // the strip's own y-axis label: what the line is, and how many rows made it
       g.textAlign = "end";
       g.fillStyle = css.getPropertyValue("--muted").trim();
-      g.fillText("periods", COL_PADL - 8, top0 + 11);
-      g.fillText("median of " + N, COL_PADL - 8, top0 + 24);
+      g.fillText("median of " + N, COL_PADL - 8, 12);
       g.textAlign = "start";
+      g.font = "10.5px -apple-system, system-ui, sans-serif";
       const labelEnd = [];
       for (const w of OVERVIEW.top) {
         if (w.hi < t0 || w.lo > t1) continue;
-        const top = top0 + w.track * OVERVIEW_TRACK;
-        const hue = ink(w.label);
-        g.fillStyle = hue;
+        const top = 2 + w.track * OVERVIEW_TRACK;
         /* THE SPREAD, faint and thin, from the earliest start to the latest end
            of this period across the rows on screen — so a median bar that stops
            at 25m says, in the same colour, that some slices stayed on to 35m. */
         const r0 = Math.max(lo, x(w.lo)), r1 = Math.min(hi, x(w.hi));
         if (r1 > r0) {
+          g.fillStyle = ink(w.label);
           g.globalAlpha = 0.45;
-          g.fillRect(r0, top + 15.5, r1 - r0, 1);
+          g.fillRect(r0, top + 12.5, r1 - r0, 1);
           g.globalAlpha = 1;
         }
-        const a = Math.max(lo, x(w.start)), b = Math.min(hi, x(w.end));
-        g.fillRect(a, top + 14, Math.max(1, b - a), 4);
-        if (Number.isFinite(w.aStart) && Number.isFinite(w.aEnd)) {
-          const s0 = Math.max(lo, x(w.aStart)), s1 = Math.min(hi, x(w.aEnd));
-          if (s1 > s0) {
-            g.globalAlpha = 0.35;
-            g.fillRect(s0, top + 19, s1 - s0, 5);
-            g.globalAlpha = 1;
-          }
-        }
+        bars(g, w, top + 11, 3, 3, x, hi);
         /* One label per period that starts in view or holds the left edge, and
            none that would run into the previous one on its track — a short
            wash-in period labelled over its neighbour is two unreadable names. */
         const holdsLeft = w.start <= t0 && w.end > t0;
         if (!(w.start >= t0 || holdsLeft) || !(w.label || "").trim()) continue;
         const text = w.label + (w.n < N ? " · " + w.n + " of " + N : "");
-        const tw = g.measureText(text).width + 13;
+        const tw = g.measureText(text).width;
         const at = Math.max(lo, Math.min(x(w.start) + 1, hi - tw));
-        if (at < (labelEnd[w.track] ?? -Infinity) + 6) continue;
-        g.fillRect(at, top + 3, 8, 8);
+        if (at < (labelEnd[w.track] ?? -Infinity) + 8) continue;
         g.fillStyle = css.getPropertyValue("--fg").trim();
-        g.fillText(text, at + 12, top + 11);
+        g.fillText(text, at, top + 9);
         labelEnd[w.track] = at + tw;
       }
     },
@@ -3577,24 +3702,16 @@ function paintOverviewWhat() {
     if (z0) z0.textContent = "";
     return;
   }
+  // one line: what is on screen, how to read the strips, and the one caveat
+  const own = OVERVIEW.rows.filter(r => r.unique).length;
   n.textContent =
-    OVERVIEW.rows.length + " recordings (" + picked + "), "
-    + (OVERVIEW.baseOnly ? "each cut to its baseline" : "whole trace")
-    + ", aligned so each baseline ends at 0s. Treatment 1 selects; what follows "
-    + "it — a second treatment, a wash, high K+ — is drawn and never filters"
-    + (OVERVIEW.empty.length
-      ? " · not drawn, no events: " + OVERVIEW.empty.join(", ") : "")
-    + ". The top line is the median of the rows' periods: the solid bar is the "
-    + "period as it happened, the pale band under it the window the folder says "
-    + "to score" + (noA === OVERVIEW.top.length ? " (this folder sent none)"
-                    : noA ? " (" + noA + " period(s) sent none)" : "")
-    + ", and the thin line through it runs from the earliest start to the latest "
-    + "end across these rows. "
-    + (off ? off + " row(s) do not start " + OVERVIEW_TREAT + " within "
-             + OVERVIEW_TOL + " s of their baseline's end, and say so under their names. "
-           : "")
-    + "No detector runs here. Treatments are named, so a K chosen after "
-    + "looking at this is not a blind K.";
+    OVERVIEW.rows.length + " recordings · " + picked + " · aligned at baseline end"
+    + " · top: median period, thin line = spread"
+    + (noA < OVERVIEW.top.length ? ", pale = scored window" : "")
+    + (own ? " · " + own + " rows off the median carry their own timing" : "")
+    + (off ? " · " + off + " late start(s)" : "")
+    + (OVERVIEW.empty.length ? " · no events: " + OVERVIEW.empty.join(", ") : "")
+    + " · no detector, not blind";
   const z = document.getElementById("oZoomWhat");
   if (z) z.textContent = OVERVIEW_SPAN
     ? "showing " + fmt(OVERVIEW_SPAN) + " of " + fmt(OVERVIEW.maxDur)
@@ -14005,14 +14122,20 @@ bootDemo();
    `.seg` too, and an unscoped selector wired ITS buttons to this handler as
    well -- they carry no `data-order`, so pressing "+" set `ORDER = undefined`
    and the raster silently lost its ROI ordering. */
-document.querySelectorAll("#bar .seg button").forEach(b => {
-  b.onclick = () => {
-    if (ORDER === b.dataset.order) return;
-    ORDER = b.dataset.order;
-    document.querySelectorAll("#bar .seg button").forEach(x =>
-      x.setAttribute("aria-pressed", String(x.dataset.order === ORDER)));
-    if (current?.loaded) { paintOrderNote(current.loaded); draw(current, current.loaded); }
-  };
+/* And now the column views carry the same toggle, so it is scoped by the
+   attribute that makes a button an order button, not by where it sits: every
+   copy sets the one `ORDER`, every copy shows it, and every raster on the page
+   is redrawn in it. */
+function setRoiOrder(order) {
+  if (ORDER === order) return;
+  ORDER = order;
+  document.querySelectorAll("button[data-order]").forEach(x =>
+    x.setAttribute("aria-pressed", String(x.dataset.order === ORDER)));
+  if (current?.loaded) { paintOrderNote(current.loaded); draw(current, current.loaded); }
+  redrawColumns();
+}
+document.querySelectorAll("button[data-order]").forEach(b => {
+  b.onclick = () => setRoiOrder(b.dataset.order);
 });
 
 document.getElementById("zIn").onclick = () => zoomRaster(-1);
