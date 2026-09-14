@@ -194,3 +194,162 @@ outside reader. Plans in between are working material.
 ⚠ **The page asked for its murderboard before signing; it was signed first.** The review runs
 once, now, before any code is built or any data are read. A blocking finding is brought to Tony
 and, if he accepts it, recorded here with its date. Nothing above the line is edited.
+
+**2026-09-14 — the review ran; eleven amendments are proposed and none is adopted yet.** All 11
+roles found that the rule as signed cannot be read if it runs: three controls cannot fail, the
+outcome table has no VOID or UNDECIDED rows, the 98.3 % bound is undefined, and "fresh
+randomness" is not delivered by the instruments as they stand. No amendment changes a signed
+threshold. ⚠ One reviewer quoted exploratory outcomes at declared displacements, so anything
+adopted from here is post-exposure and says so. **Do not run until Tony has ruled on each.**
+[Run record](../reviews/2026-09-14-preregistration-is-rigid-shift-usable_2026-09-14.md).
+
+---
+
+### Adopted amendments — 2026-09-14
+
+**Adopted by Tony, all eleven.** He was shown the eleven, each described as leaving every signed
+threshold unchanged, with the recommendation to accept all of them and then run one blind review
+pass before building, and answered *"agreed"*. **Where an amendment and the text above disagree,
+the amendment wins.** ⚠ **These were written after one reviewer quoted exploratory outcomes at
+declared displacements** (the run record's contamination section). They were written to make gates
+able to fail and the rule executable, not in response to those outcomes. A reader should still
+weigh them as post-exposure.
+
+**Terms used below.** A *window* is one of the 60 s analysis windows. An *interior window* is one
+that is neither the first nor the last window of its recording. A *cell* is one stream at one
+declared *J*. *Bootstrap* means 2,000 resamples of mice with replacement.
+
+#### The outcome, completed
+
+- **Each cell** gets one of four results.
+  - **PASS:** every gate passes and every control is valid.
+  - **FAIL:** a gate fails with its controls valid, and that failure is decided. For the leak
+    gate, decided means the lower bound is above 0.55.
+  - **UNDECIDED:** no gate fails decidedly, but at least one could not pass. For the leak gate,
+    that means the upper bound is at or above 0.55 and the lower bound is at or below 0.55. A
+    cell whose can-pass check fails (see *The leak gate*) is also UNDECIDED.
+  - **VOID:** a control needed by some gate is invalid.
+- **Each stream:** PASS if any cell passes. Otherwise FAIL only if **every** cell is FAIL.
+  Otherwise VOID if every non-FAIL cell is VOID. Otherwise UNDECIDED. **A void or undecided cell
+  can never make a stream FAIL.**
+- **Cossart** is tied to the lab folder by grid position: smallest, middle, largest. Its leak
+  result is read at the position of the smallest passing cell among the lab streams.
+
+| fast | slow | Cossart leak at that position | outcome |
+|---|---|---|---|
+| PASS | PASS | PASS | **VIABLE** |
+| PASS | PASS | FAIL, UNDECIDED or VOID | **NARROWED** — claims name the lab folder |
+| PASS | FAIL | any | **NARROWED** — claims name the fast stream |
+| FAIL | PASS | any | **NARROWED** — claims name the slow stream |
+| FAIL | FAIL | — | **STOPPED**, scoped as below |
+| any other combination | | | **UNRESOLVED** — nothing is read about the candidate |
+
+- **After UNRESOLVED:**
+  - **A VOID stream may be rerun**, changing only the instrument whose control failed. No
+    threshold, displacement, window, bin or seed rule may change.
+  - **An UNDECIDED stream is not rerun.** There are no more recordings to add. It is written up
+    as "not decidable on these data", and it does not stop the goal.
+
+#### The leak gate
+
+- **Which windows count:** the gate is scored on **interior windows only**, which removes the
+  generation-edge loss. The same statistic on all windows is reported beside it and does not
+  gate. The runner reports the pair count per stream from the window layout before any
+  surrogate is scored.
+- **The bounds are one-sided.** All three use the mouse bootstrap:
+  - **PASS** if the 98.33rd percentile is below 0.55.
+  - **Decided FAIL** if the 1.67th percentile is above 0.55.
+  - **Positive control valid** if uniform dither's 1.67th percentile is above 0.55.
+- **The bootstrap refits.** Each resample re-runs the mouse-grouped cross-validation on the
+  resampled mice. A mouse drawn twice stays inside one fold. Each resample also draws a fresh
+  fold seed, so variation between fold assignments sits inside the interval rather than being
+  chosen once.
+- **Can-pass check:** before the candidate is scored, two independent rigid-shift draws at the
+  same *J* go through the identical pipeline, one playing "real". If their 98.33rd percentile is
+  at or above 0.55, the gate cannot pass on these data and the cell is UNDECIDED.
+- **Negative control:** unchanged, 4 or more of 20 seeds. It is labelled a check of the
+  permutation machinery. Nothing decides on its P values.
+
+#### The count gate
+
+- **What is counted:** occupied frames per ROI per interior window, so two onsets in one frame
+  count once. That is the input `tube` sees. The statistic is surrogate minus real, averaged
+  within mouse.
+- **Pass:** the two-sided 96.67 % bootstrap interval (1.67th to 98.33rd percentile) lies inside
+  ±2 % of the mean real occupied-frame count per ROI per interior window. That is equivalence by
+  two one-sided tests at 0.05/3 each.
+- **Edge windows** (first and last) are reported separately, and a count difference there does
+  not gate. If a later step trains on whole recordings, that edge difference is a precondition
+  to address there.
+- **Control:** `edge_thinning` at a **fixed 5 s**, expected loss about 4 %, must fall outside
+  ±2 %. If it does not, the count gate is VOID.
+
+#### The destruction gate
+
+- **The bin is given in seconds:** 1.0 s, which is 10 frames.
+- **Slow is scored at 1.0 s and at 2.0 s**, the MATLAB assessor's slow default, and must pass
+  at both.
+- **Retained** is computed as the code does it: planted minus unplanted excess after the
+  surrogate, divided by the same difference before, averaged over draws.
+- **Replication:** 5 independent twins per stream and participation level, 40 surrogate draws per
+  twin, and 200 assessor surrogates per score.
+- **Pass:** the 98.33rd percentile of retained is at most 0.25, under a bootstrap that resamples
+  twins and then draws within each twin. This applies at every gated K.
+- **Gated K:** a K is gated only if both of these hold.
+  - **Visible:** the excess before the surrogate is at least 1.0.
+  - **Not saturated:** the saturation table does not put P(largest bin ≥ K) at or above 0.95 for
+    the planted event after the shift.
+  - If no K is gated, the cell is VOID for destruction.
+- **The saturation table** is computed by the runner's first step from a synthetic event model
+  alone: participants, 1-frame planted jitter, the shift, and the bin. It is committed before
+  any score is produced.
+- **Controls:**
+  - **`freeze_half` applied to homogeneous resample** is the graded control. At K = 4 it must
+    read retained between 0.10 and 0.90, and at least 0.10 away from homogeneous resample's own
+    value. Otherwise the cell is VOID.
+  - **Homogeneous resample** must retain at most 0.10. It is labelled a guard against saturation.
+  - **Do-nothing** is scored with a different assessor seed on its "after" side and must retain
+    at least 0.9. It is labelled a check of the machinery.
+
+#### Randomness
+
+**Every random key is salted with the run tag `confirm-2026-09-14`:** surrogate cell ids, twin
+seeds, the assessor seed, fold seeds, and negative-control seeds (1000 to 1019). A test asserts
+that no key equals one that `tools/build_surrogate_screen.py`'s 2026-09-11 scheme would produce.
+
+#### What was known before signing
+
+- **Exploratory results already existed** at every declared cell except fast 5.0 s.
+- **The smallest *J* in each stream was chosen by this leak criterion**, from fast rows the
+  seed-0 defect had voided.
+- **In the slow stream, 0.7 s leaked**; 1.4 s was the only slow displacement that did not.
+- **After signing, a reviewer quoted exploratory outcomes** at declared displacements.
+
+**So a VIABLE or NARROWED result is reported as "held up under a rule fixed after an exploratory
+look at the same recordings".** It is never reported as a confirmation or a replication.
+
+#### What a PASS may claim
+
+- **Leak:** a PASS means "not separable by this per-ROI, coordination-blind linear discriminator
+  on 60 s interior windows, per stream". It does not mean "no leak".
+- **Offsets:** fast and slow receive independent offsets. A model at the next tier that sees both
+  streams must use one offset per ROI across both, or take one stream only.
+- **The largest *J*:** a pass there is reported as removing "coordination up to *J*".
+- **Destruction:** a PASS is a statement about synthetic twins sized like the stream.
+
+#### What STOPPED means
+
+- **STOPPED stops the goal only when the failure is intrinsic**: no cell in either stream passes
+  both the leak and the destruction gate with its controls valid. A FAIL traced to a fixable
+  instrument or to window edges is written up as that, and it does not stop the goal.
+- **Joint-ISI:** "was never measured" above is wrong. Joint-ISI was measured where tractable (the
+  lab folder, fast 2.5 s, slow 5.6 s and 11.2 s) and leaked at every cell it reached.
+- **Before any model that pools across ROIs**, whatever this run's outcome, the aggregate-channel
+  leak test from the `tube` todo is still required.
+
+#### Groups
+
+- **Reported per group:** leak accuracy, count difference and zero-event share, for each of the
+  four groups, beside every pooled verdict (FOUNDATIONS §9).
+- **Declared now:** if a stream passes pooled while any group's leak point estimate is at or
+  above 0.55, the outcome is NARROWED for that stream and the claim names the group.
