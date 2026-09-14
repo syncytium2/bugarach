@@ -240,6 +240,19 @@ not a detector. It is the comparison the review asked for: the swap against the 
 gates. `rigid_shift` already reads 0.495–0.524 per-ROI on fast, checked against the run files on
 2026-09-12, and any case for the swap has to beat that.
 
+⚠ **Training negatives also inherit [the tube foot gun](2026-09-12-tube-cannot-tell-a-count-leak-from-coordination.md),
+and nothing in this plan tests it.** `tube` means over cells before its first kernel, so it reads only how
+many ROIs are active per frame. Every check above sees the trains one ROI at a time, the slice-identity
+classifier included: `window_features` reduces each train alone and `pool_symmetric` pools the reductions
+with no cross-ROI term. So reopening the swap as training negatives for tube, or for any model that
+collapses the cell axis, also requires that todo's **aggregate-channel leak test** — can a model reading
+only the cells-mean trace tell a recording from its chimera? **Expect the swap to fail it** unless donors
+are rate-matched, for two reasons that are argued here and not measured:
+- a chimera keeps each train real but not the recording's total count, so the trace's level moves;
+- slow rate modulation shared by every ROI in one slice is destroyed along with coordination, because
+  donors from different recordings carry different drifts — and the simulator has no shared drift, so
+  simulated ground truth cannot show it.
+
 **A partial result is still value, and is named in advance.** If simulation shows the swap null makes
 better significance calls but slice identity is visible on pooled features, the swap is **worth adopting
 for coactivity significance testing** and **not** worth pursuing as training negatives. The outcome is

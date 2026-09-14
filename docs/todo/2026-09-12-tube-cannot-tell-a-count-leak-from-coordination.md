@@ -69,3 +69,11 @@ story hides.
 Either the objective is built on an architecture that does not collapse the cell axis before its
 first kernel, or the aggregate-channel leak test exists and every candidate that reaches the model
 tier has passed it.
+
+## Related
+
+- [The ROI-swap evidence plan](2026-09-12-evidence-before-more-effort-on-the-roi-swap.md) — the next
+  surrogate this test would have to clear. The swap keeps every train real, which answers the per-ROI
+  leaks above, but not the recording's total count or the slow drift its ROIs share; both reach the
+  cells-mean trace. That plan tests the swap as a significance null first, where tube is not involved,
+  and names this test as a condition for reopening it as training negatives.
