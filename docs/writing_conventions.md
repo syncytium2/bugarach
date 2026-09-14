@@ -77,7 +77,7 @@ no board catches, because it lives in the wording rather than the filing.
 |---|---|
 | document deliverables | the murderboard, line-editor and naive-reader roles |
 | commit messages, PR bodies | nothing — reviewer judgement |
-| docs under `docs/` | nothing automated |
+| docs under `docs/` | nothing automated, except SAP015's warning on singular *data* |
 | **a table in a chat reply** | **nothing, and it is where the units rule broke** |
 
 The last row is not a gap waiting for a tool. A chat reply reaches one reader
@@ -90,6 +90,27 @@ the repo's own vendoring stamps (`vendored from interface2 @ 9df9a16`) are
 legitimate bare shas, as are the provenance lines in this file's neighbours, so
 the rule would have fired mostly on correct text. Filed as a thought rather than
 a rule — see `docs/sapper_feedback/` if that changes.
+
+## "Data" is plural
+
+**House rule** (Tony, 2026-09-14): *data* is a plural noun, so every verb and
+pronoun that agrees with it is plural.
+
+> ✗ "The data is noisy, and it shows a gap where the recording was withdrawn."
+>
+> ✓ "The data are noisy, and they show a gap where the recording was withdrawn."
+
+The same goes for *were* not *was*, *have* not *has*, *do* not *does*, *themselves*
+not *itself*, and *these data* not *this data*. "Metadata" and "dataset" are
+different words with their own grammar ("the dataset is"). Inside a quotation,
+the speaker's grammar stands.
+
+**Mechanized, as a warning:** sapper SAP015 fires on a new line where a determiner
+and *data* are followed by a singular verb ("the data is", "their data has").
+It warns and does not block. The tree held 73 such lines when the rule was
+written, and some of them are other people's quoted words that must not be
+reworded, so a blocking rule would have needed a sweep and a set of exemptions
+first. It needs a determiner so it stays off code: `data is None` has none.
 
 ## American English
 

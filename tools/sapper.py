@@ -373,6 +373,40 @@ RULES = [
         fixture_bad="the assessor is the machine half of " + _OLD_INSTRUMENT,
         fixture_good="the assessor is the machine half of MAHICE",
     ),
+    Rule(
+        id="SAP015", level="WARN",
+        # House rule, Tony 2026-09-14: "data" is plural. A WARN, not a BLOCK: the
+        # tree held 73 singular uses when this was written, some inside other
+        # people's quoted words, which are not ours to regrammar. A determiner is
+        # required before "data" so the rule reads prose and not code — `data is
+        # None` has none, "the data is" does.
+        pattern=r"(?i)\b(the|this|that|our|their|its|real|raw|input|source|no|"
+                r"synthetic|simulated|recorded|new|more|less|much|enough|which|"
+                r"whose|all|any|such|foreign|observed|imaging|calcium|same|your|"
+                r"my|his|her) data (is|was|has|does|doesn't|isn't|wasn't|hasn't|"
+                r"shows|says|suggests|indicates|contains|supports|refutes|lives|"
+                r"sits|comes|goes|looks|reads|means|needs|makes|gives|arrives|"
+                r"exists|stays|changes|tells|agrees|disagrees|belongs|matches|"
+                r"fits|lacks|carries|holds|reaches|lands|remains|seems|appears|"
+                r"allows|requires|proves|confirms|reveals|itself)\b",
+        include=["*.md", "*.py", "*.html", "*.sh", "*.js", "*.txt"],
+        # This file; vendored copies, which are re-copied rather than edited;
+        # the producer's own delivery notes; and the built viewer, whose
+        # template is already scanned. writing_conventions.md is where the wrong
+        # form is shown AS wrong, the way GLOSSARY.md is exempt from SAP014.
+        exclude=["tools/sapper.py", "docs/writing_conventions.md",".claude/agents/murderboard/*",
+                 ".claude/skills/murderboard/*", "docs/session_protocol.md",
+                 ".claude/hooks/session-start.sh", "tools/murderboard_freshness.sh",
+                 "docs/exports/*", "docs/site/raster_viewer.html"],
+        message="\"DATA\" IS PLURAL — house rule (Tony, 2026-09-14). Make its "
+                "verb and pronoun agree: the data ARE, the data SHOW, the data "
+                "WERE, the data HAVE, the data THEMSELVES, THESE data. "
+                "\"Metadata\" and \"dataset\" keep their own grammar. If this "
+                "line quotes someone, leave their words as they said them. "
+                "docs/writing_conventions.md, \"Data\" is plural.",
+        fixture_bad="the fit reaches 847 mHz where the data reaches 486",
+        fixture_good="the fit reaches 847 mHz where the data reach 486, and data is None",
+    ),
 ]
 
 

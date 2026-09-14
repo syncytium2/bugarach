@@ -1734,6 +1734,18 @@
             <span id="anZoomWhat" class="sub"></span>
             <button id="anZoomOut" class="ghost" title="wider window">+</button>
           </div>
+          <!-- ROW ORDER AND THE EVENT'S COLOUR, both the reader's. Tony,
+               2026-09-14: "toggle by participation/by ROI order/by ROI freq",
+               and the blue "should be corrected and toggleable".
+               `setAnnotOrder` / `setAnnotInk`. -->
+          <div class="anzoom anview">
+            <span class="seg">
+              <button data-anorder="participation" aria-pressed="true">by participation</button>
+              <button data-anorder="id" aria-pressed="false">by ROI order</button>
+              <button data-anorder="rate" aria-pressed="false">by ROI freq</button>
+            </span>
+            <button id="anInk" class="ghost" aria-pressed="true">event ROIs in blue: on</button>
+          </div>
           <div class="anbtns">
             <button id="anYes">Coordinated <kbd>y</kbd></button>
             <button id="anNo">Not coordinated <kbd>n</kbd></button>
@@ -8610,7 +8622,7 @@ function paintAnnotChip() {
    EVERY ROI IS DRAWN, not only the members. Whether a moment is coordinated is a
    claim about the field: you cannot judge it without seeing who did not fire.
    Members are inked, everyone else is muted. */
-function drawCandidate(cv, byRoi, order, cand, t0, t1) {
+function drawCandidate(cv, byRoi, order, cand, t0, t1, opts = {}) {
   const css = getComputedStyle(document.documentElement);
   const dpr = window.devicePixelRatio || 1;
   const W = cv.clientWidth || 900;
@@ -8629,7 +8641,13 @@ function drawCandidate(cv, byRoi, order, cand, t0, t1) {
 
   const x = t => padL + (t - t0) / (t1 - t0) * (W - padL - padR);
   const top = padT, bot = H - padB;
-  const member = new Set(cand.members.map(i => order[i]));
+  /* MEMBERS ARE POSITIONS IN THE FILE'S ROI ORDER — every assessment builds its
+     trains from `data.order` — never in the order on screen. This line used to
+     read them through `order`, so with "by events" pressed the blue went on
+     whichever ROIs happened to sit at those ranks, not on the event's own. */
+  const fileOrder = opts.fileOrder || order;
+  const member = new Set(cand.members.map(i => fileOrder[i]));
+  const ink = opts.ink !== false;
 
   g.strokeStyle = css.getPropertyValue("--line").trim();
   g.lineWidth = 1;
@@ -8649,7 +8667,7 @@ function drawCandidate(cv, byRoi, order, cand, t0, t1) {
   const h = Math.max(3, Math.min(7, lane));
   order.forEach((id, i) => {
     const yc = top + (i + 0.5) * lane;
-    const isMem = member.has(id);
+    const isMem = ink && member.has(id);
     g.strokeStyle = isMem ? CAND_INK.selected
                           : css.getPropertyValue("--mark").trim();
     g.lineWidth = isMem ? 2.5 : 1.25;
@@ -8686,6 +8704,7 @@ function drawCandidate(cv, byRoi, order, cand, t0, t1) {
   g.fillText(cand.stream + " · " + order.length + " ROI", 0, 0);
   g.restore();
   g.textAlign = "start";
+  return { member, rows: order };   // what was inked, and in which rows — for tests
 }
 
 /* Seconds either side of the candidate, and THE READER'S TO SET. A fixed window
@@ -8707,6 +8726,70 @@ function setAnnotZoom(dir) {
   if (ANNOT_ZOOMS[j] === ANNOT_PAD_SEC) return;
   ANNOT_PAD_SEC = ANNOT_ZOOMS[j];
   showCandidate();          // repaints and re-stamps the view
+}
+
+/* HOW THE CONFIRM TOOL ORDERS ITS ROWS, AND WHETHER IT COLOURS THE EVENT.
+   Tony, 2026-09-14: "in a sparse activity slice 4 aligned events spread across
+   the whole field is very hard to judge", then: "if it was coloring events in
+   the proposed coordinated event then it should be corrected and toggleable.
+   toggle by participation/by ROI order/by ROI freq".
+
+   BY PARTICIPATION puts this candidate's ROIs on top, in ROI order, and the
+   rest of the field under them in ROI order. Every ROI is still drawn. Members
+   go in ROI order rather than onset order, because onset order would draw a
+   diagonal that reads as a sequence. The other two follow the page-wide ROI
+   order toggle, so pressing one here sets it everywhere, as that toggle does.
+
+   The caution that comes with it: stacked, any K onsets inside the window make
+   a short vertical line, so this view shows alignment and not whether it stands
+   out from the field. That is why the field stays drawn under it, why the
+   window zooms, and why every verdict stamps which order it was cast in. */
+const ANNOT_ORDER_KEY = "bugarach.annotorder";
+const ANNOT_INK_KEY = "bugarach.annotink";
+let ANNOT_BY_PARTICIPATION = (() => {
+  try { return localStorage.getItem(ANNOT_ORDER_KEY) !== "roi"; } catch (e) { return true; }
+})();
+let ANNOT_INK = (() => {
+  try { return localStorage.getItem(ANNOT_INK_KEY) !== "off"; } catch (e) { return true; }
+})();
+
+function paintAnnotView() {
+  document.querySelectorAll("button[data-anorder]").forEach(b =>
+    b.setAttribute("aria-pressed", String(ANNOT_BY_PARTICIPATION
+      ? b.dataset.anorder === "participation"
+      : b.dataset.anorder === ORDER)));
+  const ink = document.getElementById("anInk");
+  if (ink) {
+    ink.setAttribute("aria-pressed", String(ANNOT_INK));
+    ink.textContent = ANNOT_INK ? "event ROIs in blue: on" : "event ROIs in blue: off";
+  }
+}
+
+function setAnnotOrder(which) {
+  ANNOT_BY_PARTICIPATION = which === "participation";
+  try { localStorage.setItem(ANNOT_ORDER_KEY, ANNOT_BY_PARTICIPATION ? "participation" : "roi"); }
+  catch (e) { /* the choice still holds for this page */ }
+  if (!ANNOT_BY_PARTICIPATION) setRoiOrder(which);
+  paintAnnotView();
+  showCandidate();
+}
+
+function setAnnotInk(on) {
+  ANNOT_INK = on;
+  try { localStorage.setItem(ANNOT_INK_KEY, on ? "on" : "off"); } catch (e) { /* page-only */ }
+  paintAnnotView();
+  showCandidate();
+}
+
+/** The confirm tool's row order for one candidate, and the name its verdict stamps. */
+function annotRowOrder(d, cand) {
+  if (!ANNOT_BY_PARTICIPATION)
+    return ORDER === "rate" ? { rows: d.byRate, name: "by_events" }
+                            : { rows: d.order, name: "file" };
+  const mem = new Set(cand.members.map(i => d.order[i]));
+  return { rows: d.order.filter(id => mem.has(id))
+                   .concat(d.order.filter(id => !mem.has(id))),
+           name: "participation" };
 }
 
 function paintAnnotZoom() {
@@ -8731,15 +8814,16 @@ async function showCandidate() {
     (a.i + 1) + " of " + a.cands.length;
   const d = await loadRecording(rec);
   const byRoi = d.streams.get(cand.stream) || d.streams.get([...d.streams.keys()][0]);
-  const order = ORDER === "rate" ? d.byRate : d.order;
+  const { rows: order, name: orderName } = annotRowOrder(d, cand);
   const t0 = Math.max(cand.winStart, cand.centre - ANNOT_PAD_SEC);
   const t1 = Math.min(cand.winEnd, cand.centre + ANNOT_PAD_SEC);
-  drawCandidate(document.getElementById("anCv"), byRoi, order, cand, t0, t1);
+  drawCandidate(document.getElementById("anCv"), byRoi, order, cand, t0, t1,
+                { fileOrder: d.order, ink: ANNOT_INK });
+  paintAnnotView();
   // THE VIEW AS SHOWN, captured here rather than at export: a person who
   // changes the ordering between judgements and gets one view stamped on every
   // row has a record that is wrong in a way nobody can detect afterwards.
-  a.view = { t0, t1, order: ORDER === "rate" ? "by_events" : "file",
-             stream: cand.stream };
+  a.view = { t0, t1, order: orderName, stream: cand.stream };
   /* THE LEGEND, SAYING WHAT THE TWO INKS ARE. Rebuilt per candidate because the
      counts are part of it: "5 of 53" is the claim being judged, and a legend
      that only named the colours would leave the reader counting rows. */
@@ -8754,11 +8838,20 @@ async function showCandidate() {
       wrap.append(sw, el("span", label));
       return wrap;
     };
-    leg.append(key(CAND_INK.selected, "3px",
-                   cand.nMembers + " in this event"));
-    leg.append(key(getComputedStyle(document.documentElement)
-                     .getPropertyValue("--mark").trim(), "2px",
-                   Math.max(0, order.length - cand.nMembers) + " other ROIs"));
+    /* SAYS WHAT BLUE IS. Tony, 2026-09-14: "never understood the blue color
+       events". It is the ROIs the assessment gathered into this candidate, and
+       the legend now says so in those words, and says where they sit. */
+    const others = Math.max(0, order.length - cand.nMembers) + " other ROIs";
+    const where = orderName === "participation" ? ", the top " + cand.nMembers + " rows" : "";
+    if (ANNOT_INK) {
+      leg.append(key(CAND_INK.selected, "3px",
+                     "blue: the " + cand.nMembers + " ROIs in this proposed event" + where));
+      leg.append(key(getComputedStyle(document.documentElement)
+                       .getPropertyValue("--mark").trim(), "2px", others));
+    } else {
+      leg.append(el("span", cand.nMembers + " ROIs in this proposed event" + where
+                            + ", not coloured · " + others));
+    }
     leg.append(el("span", "every ROI is drawn — whether a moment is coordinated "
                           + "is a claim about the field, so you cannot judge it "
                           + "without seeing who did not fire", "legwhy"));
@@ -9530,6 +9623,12 @@ function wireAnnotate() {
   const zout = document.getElementById("anZoomOut");
   if (zin) zin.onclick = () => setAnnotZoom(-1);
   if (zout) zout.onclick = () => setAnnotZoom(+1);
+  document.querySelectorAll("button[data-anorder]").forEach(b => {
+    b.onclick = () => setAnnotOrder(b.dataset.anorder);
+  });
+  const inkBtn = document.getElementById("anInk");
+  if (inkBtn) inkBtn.onclick = () => setAnnotInk(!ANNOT_INK);
+  paintAnnotView();
 
   /* Click a mark in the judging lane to judge that candidate.
 
@@ -14344,6 +14443,9 @@ function setRoiOrder(order) {
     x.setAttribute("aria-pressed", String(x.dataset.order === ORDER)));
   if (current?.loaded) { paintOrderNote(current.loaded); draw(current, current.loaded); }
   redrawColumns();
+  // the confirm tool follows too, unless it is sorted by participation
+  paintAnnotView();
+  if (ANNOT && !ANNOT_BY_PARTICIPATION) showCandidate();
 }
 document.querySelectorAll("button[data-order]").forEach(b => {
   b.onclick = () => setRoiOrder(b.dataset.order);
