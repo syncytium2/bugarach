@@ -10,6 +10,22 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
+### WSMIP065/shelve-hansen-1973 — DARKROOM claim ACTIVE 2026-09-14: `bugarach/lit/radar/` and `bugarach/detector_history.html`
+- **Status:** **ACTIVE — claimed before writing.** Tony's interlibrary-loan copy of Gregers Hansen 1973
+  (IEE Conf. Publ. 105, pp. 325–332) arrived, and Tony asked for it to be shelved and for
+  `detector_history.md` §4.1 to be updated from it.
+- **Writes:**
+  - one new PDF, `lit/radar/gregers_hansen_1973_cfar_search_radars.pdf`. It is an
+    interlibrary-loan copy for private study, so it goes on the shelf and never into the repo;
+  - new read-status rows in `lit/radar/README.md` for it and for the two evidence PDFs already on the
+    shelf that have no row (`iee_conf_105_1973_CONTENTS_ONLY.pdf`, `gregers_hansen_AUTHOR_PROFILE_ieee.pdf`);
+  - a rebuild of `<darkroom>/bugarach/detector_history.html` once the §4.1 update lands, which replaces
+    the copy dated 2026-08-29.
+
+  Nothing else on the shelf is moved or overwritten.
+- **Branch:** `shelve-hansen-1973` (worktree `greatest-of-origin-not-established`), then the §4.1 update.
+- **Released when:** the §4.1 update is on `main` and the darkroom page is rebuilt.
+
 ### Mac/measure-recording-identity — DARKROOM claim RELEASED 2026-09-13: `bugarach/2026-09-13-recording-identity/`
 - **Status:** **RELEASED 2026-09-13 — run written, nothing further writes there.** Was: ACTIVE
   (bugarach-ivory-shrike). Tony: measure on our data whether recording identity is visible, as the
