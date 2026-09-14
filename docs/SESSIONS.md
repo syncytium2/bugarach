@@ -10,6 +10,14 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
+### Mac/measure-recording-identity — DARKROOM claim RELEASED 2026-09-13: `bugarach/2026-09-13-recording-identity/`
+- **Status:** **RELEASED 2026-09-13 — run written, nothing further writes there.** Was: ACTIVE
+  (bugarach-ivory-shrike). Tony: measure on our data whether recording identity is visible, as the
+  literature found it is elsewhere.
+- **Writes:** `results.json` and `recording_identity.png`, only in that new folder.
+- **Branch:** `measure-recording-identity`, in a worktree of the same name.
+- **Released when:** the result lands on `main`.
+
 ### Mac/lit-recombination-nulls — DARKROOM claim RELEASED 2026-09-12: `bugarach/lit/` (additive)
 - **Status:** **RELEASED 2026-09-12 — writes done.** 93 PDFs added (13 `surrogates/`, 5 `coordination/`,
   30 `ml/`, 45 in the new `recombination/`), README rows appended to those four and one row to
