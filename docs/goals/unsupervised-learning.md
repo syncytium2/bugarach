@@ -32,7 +32,10 @@ emit.
 
 ## Where it stands
 
-**Nothing is running, and no document is the authority for what to run next.**
+**Nothing is running. The next run is being pre-registered, and the draft is the authority once
+Tony signs it:** [is rigid shift usable?](../proposals/2026-09-14-preregistration-is-rigid-shift-usable.md)
+(2026-09-14). It treats the overnight run as exploratory, fixes the rule before a small
+confirmatory run, and carries the exit criterion in its outcome table.
 
 - **The surrogate screen is stopped** (Tony, 2026-09-12). He was asked how to settle the
   family-size question below and whether to write a third re-evaluation; he answered that the first
