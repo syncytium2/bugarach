@@ -371,6 +371,12 @@ Name things; don't index them. Shas and dates are lookup keys, not content.
 Prefer the consequence to the label. Full version, with the examples that
 prompted it: [`docs/writing_conventions.md`](docs/writing_conventions.md).
 
+**"Data" is plural — house rule** (Tony, 2026-09-14). Its verbs and pronouns are
+plural everywhere you write: *the data **are***, *the data **show***, *the data
+**were***, *the data **themselves***, *these data*. "Metadata" and "dataset" keep
+their own grammar, and quoted words keep the speaker's. Sapper SAP015 warns on a
+new line that breaks it.
+
 ## Portfolio posture
 
 The repo is a resume artifact as much as a tool (FOUNDATIONS §8): commit
