@@ -65,6 +65,17 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
   Holm-corrected yardsticks could not flag anything at any setting, so the claim stays until the
   probe settles what a rerun should be.
 
+### Mac/deploy-overview-marks — SITE claim RELEASED 2026-09-14: deployed at `fdae99e`
+- **Status:** **RELEASED 2026-09-14 — deployed; nothing holds the site.** Asked whether to redeploy
+  #560 once it merged, Tony answered *"go"*. Held on the machine-local board for the upload.
+- **What went out:** #560 — the every-slice overview draws turbo's marks (threshold marks, and
+  assessed events once an assessment has run), and its group and treatment counts follow the
+  other pick.
+- **Deploy record.** Worktree detached at `origin/main` `fdae99e`; `DEPLOY_HOLD.md` `held: no`; no
+  ACTIVE site claim. Site tests green on the build; dry run read 8 files; uploaded with the pinned
+  wrangler, version `1c810cc3`. Afterwards `site_staleness.py` reads **current** and
+  `audit_deployed_page.py` is clean.
+
 ### Mac/deploy-assessed-events — SITE claim RELEASED 2026-09-14: deployed at `9285266`
 - **Status:** **RELEASED 2026-09-14 — deployed; nothing holds the site.** Asked whether to redeploy
   #556 once it merged, Tony answered *"go"*. Held on the machine-local board for the upload.
