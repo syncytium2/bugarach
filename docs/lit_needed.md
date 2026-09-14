@@ -94,10 +94,11 @@ locations belong to other projects.
       canonical statement of the thesis this project keeps re-deriving: a surrogate preserving a
       specified feature set can only test whether structure exceeds what that feature set implies.
 
-- [x] **Gregers Hansen, V. (1973).** Constant-false-alarm-rate processing in search radars. Proc.
+- [ ] **Gregers Hansen, V. (1973).** Constant-false-alarm-rate processing in search radars. Proc.
       IEE International Radar Conference *Radar — present and future*, 23–25 October 1973, Savoy
       Place, London. IEE Conf. Publ. **105**.
-      → **Closed 2026-09-14 as unobtainable; the close is at the end of this entry.** On 2026-09-10
+      → **Interlibrary-loan request placed 2026-09-14; see the end of this entry.** It was closed as
+      unobtainable earlier that day. On 2026-09-10
       the citation was confirmed and the origin question was left open. Tony found the volume's
       contents listing (`radar/iee_conf_105_1973_CONTENTS_ONLY.pdf` — the listing, **not** the
       paper). It reads:
@@ -160,8 +161,15 @@ locations belong to other projects.
       notice of the volume in *Proc. IEE* 120(11), November 1973, p. 1391, whose text gives ISBN
       0 85296 114 6, which HathiTrust (011456921) attaches to the IEE's 1973 *Conference on the Use of
       Digital Computers in Measurement* instead. **Not tried:** a search of the
-      HathiTrust scan in a browser, a library request for the printed volume, the IET archives,
-      or writing to the author.
+      HathiTrust scan in a browser, the IET archives, or writing to the author.
+
+      **Reopened 2026-09-14: Tony placed an interlibrary-loan request** for pp. 325–332 of IEE
+      Conf. Publ. 105, identified by OCLC 952520 / LCCN 74169985 and ISBN 0-85296-112-X. The
+      request notes the conflicting page range (1–8 in US 4,318,101) and ISBN. When the copy
+      arrives: shelve it as `radar/gregers_hansen_1973_cfar_search_radars.pdf`, check the title
+      page with `pdftotext -f 1 -l 1`, add a read-status entry to `radar/README.md`, and bring
+      `detector_history.md` §4.1 up to date with what the paper says. Tony's 2026-09-14 ruling
+      (no replacement origin) stays in force until he rules again.
 
 - [x] ~~**Date A, Bienenstock E & Geman S (1998).** On the temporal resolution of neural
       activity. Technical Report, Division of Applied Mathematics, Brown University.~~

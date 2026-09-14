@@ -520,8 +520,9 @@ Publication 103; its record for no. 105 (001618382) gives 0 85296 112 X. HathiTr
 holds two search-only scans that may contain the paper, one under that record and a
 bound "no. 103–105" volume under record 011456921. Neither has been searched. IEEE
 Xplore and the IET Digital Library refused this project's automated queries, and
-OpenAlex and Semantic Scholar hold catalogue records without text. No library request
-and no correspondence about the paper is recorded.
+OpenAlex and Semantic Scholar hold catalogue records without text. An interlibrary-loan
+request for the paper was placed on 2026-09-14. No correspondence about the paper is
+recorded.
 
 What the sources we have read say, oldest first:
 
