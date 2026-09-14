@@ -1,4 +1,4 @@
-# Pre-registration — is rigid shift a usable surrogate on this data?
+# Pre-registration — is rigid shift a usable surrogate on these data?
 
 > **DRAFT, not signed.** Every number marked **⚠ OPEN** is a proposal for Tony to accept or
 > change. When he signs at the bottom, everything above the line freezes: after that, only typos
@@ -19,7 +19,7 @@ while it removes planted coordination at the timescale this project calls coordi
 
 If yes, a self-supervised objective has a usable negative class, and the goal moves to the model.
 If no, the goal stops with a written result: the leading within-recording surrogate either leaks
-or leaves coordination in place on this data.
+or leaves coordination in place on these data.
 
 ## Why rigid shift, and why only rigid shift
 
@@ -38,7 +38,7 @@ evidence.
 
 ## What this run cannot claim
 
-⚠ **The data is the same data.** Both folders were used in the exploratory run, and there are no
+⚠ **The data are the same data.** Both folders were used in the exploratory run, and there are no
 unused baseline recordings. What protects this run is a **fixed rule and fresh randomness** —
 new surrogate seeds, new mouse folds — not new recordings. A VIABLE result is therefore "held up
 under a rule declared in advance", not "replicated on independent data". It must be reported
