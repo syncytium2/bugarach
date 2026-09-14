@@ -2752,9 +2752,15 @@ function turboRecompute() {
        ⚠ A floor chosen here is NOT yet a floor in `assess.k_from_fraction`, and
        that function is `simulate.py`'s rule too — a spec derived at one rule and
        a simulation planted at another stop describing the same events. */
-    r.K = Math.max(floor, Math.floor(pct / 100 * r.nRoi + 0.5));
+    r.K = turboK(r.nRoi, pct, floor);
     r.marks = turboMarks(r.trains, bin, r.K, merge);
   }
+}
+
+/* K for a field of `nRoi` at the knobs' percentage and floor — turbo's rule,
+   and the overview's, so a row's threshold is the same number in both. */
+function turboK(nRoi, pct, floor) {
+  return Math.max(floor, Math.floor(pct / 100 * nRoi + 0.5));
 }
 
 /* THE WINDOW MOVES. THERE IS NO GRID.
@@ -3055,14 +3061,7 @@ function turboDraw() {
   // under it, so the sentence has to be its real length when that is measured
   const assessed = turboAssessed();
   paintTurboWhat(assessed);
-  const tri = (g, px, yTip) => {
-    g.beginPath();
-    g.moveTo(px - 3.5, yTip - 7);
-    g.lineTo(px + 3.5, yTip - 7);
-    g.lineTo(px, yTip);
-    g.closePath();
-    g.fill();
-  };
+  const tri = downTri;
   paintColumn(cv, TURBO.rows, TURBO.maxDur, TURBO_SPAN, TURBO_MID, {
     laneH: assessed ? 2 * TURBO_LANE : TURBO_LANE,
     axisCv: document.getElementById("turboAxis"),
@@ -3107,8 +3106,15 @@ function turboDraw() {
    which is what keeps turbo exactly as it was until one runs. Only candidates
    on the stream this row draws, since a lane has to be about its own raster. */
 function turboAssessed() {
+  return TURBO ? assessedByRecording(TURBO.rows) : null;
+}
+
+/* The same, for any column of rows carrying `id` and `stream` — turbo's and the
+   overview's — so an assessed event and its verdict colour are one thing on
+   every view that draws them. Centres are on the recording's own clock. */
+function assessedByRecording(rows) {
   const cands = collectCandidates();
-  if (!cands.length || !TURBO) return null;
+  if (!cands.length) return null;
   const key = c => c.recId + "|" + c.stream + "|" + c.centre.toFixed(3);
   const verdicts = new Map();
   if (ANNOT && ANNOT.cands)
@@ -3116,7 +3122,7 @@ function turboAssessed() {
       const v = ANNOT.verdicts[i];
       if (v && CAND_INK[v.verdict]) verdicts.set(key(c), CAND_INK[v.verdict]);
     });
-  const streamOf = new Map(TURBO.rows.map(r => [r.id, r.stream]));
+  const streamOf = new Map(rows.map(r => [r.id, r.stream]));
   const out = new Map();
   for (const c of cands) {
     if (streamOf.get(c.recId) !== c.stream) continue;
@@ -3480,7 +3486,8 @@ async function overviewLoad() {
       continue;
     }
     const d = await loadRecording(rec);
-    const byRoi = d.streams.get(STREAM) || d.streams.get([...d.streams.keys()][0]);
+    const stream = d.streams.has(STREAM) ? STREAM : [...d.streams.keys()][0];
+    const byRoi = d.streams.get(stream);
     const ids = byRoi ? [...byRoi.keys()].sort(natural) : [];
     /* The extent is the later of the last onset and the last declared period —
        an export folder states no duration, and a treatment that ends in silence
@@ -3493,7 +3500,7 @@ async function overviewLoad() {
     const after = wins.filter(w => w !== base && w.start >= base.start)
                       .sort((a, b) => a.start - b.start)[0];
     raw.push({ id: rec.id, nRoi: ids.length, shift: base.end, end, byRoi, ids, wins,
-               byRate: busiestFirst(ids, d),
+               byRate: busiestFirst(ids, d), stream,
                base, treat: after ? (after.label || "").trim() : "",
                group: ((META.get(rec.id) || {}).group_id || "").trim() });
   }
@@ -3506,14 +3513,25 @@ async function overviewLoad() {
 }
 
 /* The choices on offer, built from the folder: treatments most-common first,
-   because the one a reader wants is usually the one most slices got. */
+   because the one a reader wants is usually the one most slices got.
+
+   EACH COUNT IS WITHIN THE OTHER PICK. Tony, 2026-09-14: "number of slices in
+   each group does not change if treatment is selected" — the chips read DI · 17
+   over a column of 11 TTX slices. A count beside a choice has to be what that
+   choice would put on screen now, so a group counts the slices under the
+   treatment picked, and a treatment counts the slices in the groups picked.
+   The ORDER of the choices stays the folder's, so nothing moves under the hand. */
 function paintOverviewPickers() {
   const sel = document.getElementById("oTreat");
   const box = document.getElementById("oGroups");
   if (!sel || !box || !OVERVIEW_ALL) return;
   const raw = OVERVIEW_ALL.raw;
-  const count = key => raw.reduce((m, r) => m.set(r[key], (m.get(r[key]) || 0) + 1), new Map());
-  const treats = [...count("treat").entries()].filter(([t]) => t)
+  const count = (rows, key) =>
+    rows.reduce((m, r) => m.set(r[key], (m.get(r[key]) || 0) + 1), new Map());
+  const inGroups = raw.filter(r => !OVERVIEW_GROUPS.length || OVERVIEW_GROUPS.includes(r.group));
+  const underTreat = raw.filter(r => !OVERVIEW_TREAT || r.treat === OVERVIEW_TREAT);
+  const treatsNow = count(inGroups, "treat");
+  const treats = [...count(raw, "treat").entries()].filter(([t]) => t)
     .sort((a, b) => b[1] - a[1] || natural(a[0], b[0]));
   sel.textContent = "";
   const opt = (value, text) => {
@@ -3522,11 +3540,12 @@ function paintOverviewPickers() {
     o.selected = value === OVERVIEW_TREAT;
     sel.append(o);
   };
-  opt("", "baseline only · " + raw.length);
-  for (const [t, n] of treats) opt(t, t + " · " + n);
+  opt("", "baseline only · " + inGroups.length);
+  for (const [t] of treats) opt(t, t + " · " + (treatsNow.get(t) || 0));
 
-  const groups = [...count("group").entries()].filter(([g]) => g)
-    .sort((a, b) => natural(a[0], b[0]));
+  const groupsNow = count(underTreat, "group");
+  const groups = [...count(raw, "group").keys()].filter(g => g)
+    .sort(natural).map(g => [g, groupsNow.get(g) || 0]);
   box.textContent = "";
   document.getElementById("oGroupsLab").hidden = !groups.length;
   if (!groups.length) return;
@@ -3586,7 +3605,7 @@ function overviewBuild() {
       aStart: hasAnalysis(w) ? w.aStart + off : NaN,
       aEnd: hasAnalysis(w) ? w.aEnd + off : NaN }));
     return { id: r.id, nRoi: r.nRoi, group: r.group, from: s0 + off, dur: s1 + off,
-             byRate: r.byRate,
+             byRate: r.byRate, stream: r.stream, off,
              wins, baseIdx: src.indexOf(r.base), keys: periodKeys(src),
              trains: r.ids.map(id => (r.byRoi.get(id) || [])
                .filter(t => t >= s0 && t <= s1).map(t => t + off)) };
@@ -3661,10 +3680,37 @@ function overviewZoom(dir) {
   overviewDraw();
 }
 
+/* A down-pointing triangle whose tip sits at `yTip` — the one shape every mark
+   lane uses, pointing at the raster below it. Fill colour is the caller's. */
+function downTri(g, px, yTip) {
+  g.beginPath();
+  g.moveTo(px - 3.5, yTip - 7);
+  g.lineTo(px + 3.5, yTip - 7);
+  g.lineTo(px, yTip);
+  g.closePath();
+  g.fill();
+}
+
+/* Turbo's threshold marks over each overview row, at turbo's current knobs.
+   Recomputed only when the knobs or the rows changed — a pick rebuilds the rows,
+   which drops the cached key with them. */
+function overviewMarks() {
+  if (!OVERVIEW) return;
+  const { pct, floor, bin, merge } = turboKnobs();
+  const sig = [pct, floor, bin, merge].join("|");
+  for (const r of OVERVIEW.rows) {
+    if (r.marksSig === sig) continue;
+    r.K = turboK(r.nRoi, pct, floor);
+    r.marks = turboMarks(r.trains, bin, r.K, merge);
+    r.marksSig = sig;
+  }
+}
+
 function overviewDraw() {
   const cv = document.getElementById("overviewCv");
   if (!cv || !OVERVIEW || document.getElementById("overview").hidden) return;
   const css = getComputedStyle(document.documentElement);
+  overviewMarks();       // the footnote counts them, so they come first
   paintOverviewWhat();   // before the column, for the same reason as turbo's
   const lo = COL_PADL;
   /* A period as bars: saturated for what happened, pale under it for what is
@@ -3682,18 +3728,44 @@ function overviewDraw() {
       }
     }
   };
+  /* THE MARKS COME ALONG. Tony, 2026-09-14, having shown every slice: "no blue
+     triangles once you show all". The overview began as a look at the folder
+     with no detector in it; the marks are what he reads it for. Same rule as
+     turbo: before an assessment the threshold marks are blue; after one the
+     assessed events are blue and the threshold marks grey under them. The
+     threshold marks run over the whole row on screen — treatment time included
+     — at turbo's knobs; assessed events exist only inside baselines, because
+     the assessment measures nothing else. */
+  const assessed = assessedByRecording(OVERVIEW.rows);
+  const marksH = (assessed ? 2 : 1) * TURBO_LANE;
   paintColumn(cv, OVERVIEW.rows, OVERVIEW.maxDur, OVERVIEW_SPAN, OVERVIEW_MID, {
-    laneH: OVERVIEW_ROW_LANE,
+    laneH: marksH + OVERVIEW_ROW_LANE,
     headCv: document.getElementById("overviewHead"),
     headH: 4 + OVERVIEW.tracks * OVERVIEW_TRACK,
     axisCv: document.getElementById("overviewAxis"),
     origin: OVERVIEW.origin,
-    labels: r => [[r.id], [r.nRoi + " ROI" + (r.group ? " · " + r.group : "")]]
+    labels: r => [[r.id], [r.nRoi + " ROI" + (r.group ? " · " + r.group : "") + " · K " + r.K]]
+      .concat(assessed ? [[(assessed.get(r.id) || []).length + " assessed",
+                           CAND_INK.selected]] : [])
       .concat(r.differs ? [[r.differs, CAND_INK.assumed]] : []),
-    // a row's own timing, only where it is not the pinned line's
     lane: (g, r, top, x, t0, t1, W) => {
-      if (!r.unique) return;
-      for (const w of r.wins) bars(g, w, top + 1, 3, 2, x, W - COL_PADR);
+      if (assessed) {
+        g.fillStyle = CAND_INK.selected;
+        for (const c of (assessed.get(r.id) || [])) {
+          const t = c.centre + r.off;
+          if (t < r.from || t > r.dur || t < t0 || t > t1) continue;
+          g.fillStyle = c.ink;
+          downTri(g, Math.round(x(t)) + 0.5, top + TURBO_LANE - 1);
+        }
+      }
+      g.fillStyle = assessed ? CAND_INK.unjudged : CAND_INK.selected;
+      for (const m of r.marks) {
+        if (m.t < t0 || m.t > t1) continue;
+        downTri(g, Math.round(x(m.t)) + 0.5, top + marksH - 1);
+      }
+      // a row's own timing, only where it is not the pinned line's
+      if (r.unique)
+        for (const w of r.wins) bars(g, w, top + marksH + 1, 3, 2, x, W - COL_PADR);
     },
     head: (g, x, t0, t1, W) => {
       const hi = W - COL_PADR, N = OVERVIEW.rows.length;
@@ -3765,16 +3837,23 @@ function paintOverviewWhat() {
     if (z0) z0.textContent = "";
     return;
   }
-  // one line: what is on screen, how to read the strips, and the one caveat
+  // one line: what is on screen, how to read the strips and marks, the caveat
   const own = OVERVIEW.rows.filter(r => r.unique).length;
+  const assessed = assessedByRecording(OVERVIEW.rows);
+  const nAss = assessed ? OVERVIEW.rows.reduce((a, r) =>
+    a + (assessed.get(r.id) || []).filter(c =>
+      c.centre + r.off >= r.from && c.centre + r.off <= r.dur).length, 0) : 0;
+  const nMarks = OVERVIEW.rows.reduce((a, r) => a + (r.marks || []).length, 0);
   n.textContent =
     OVERVIEW.rows.length + " recordings · " + picked + " · aligned at baseline end"
+    + (assessed ? " · ▼ blue: " + nAss + " assessed (baseline only) · ▼ grey: "
+                : " · ▼ ") + nMarks + " threshold marks at turbo's knobs"
     + " · top: median period, thin line = spread"
     + (noA < OVERVIEW.top.length ? ", pale = scored window" : "")
-    + (own ? " · " + own + " rows off the median carry their own timing" : "")
+    + (own ? " · " + own + " rows carry their own timing" : "")
     + (off ? " · " + off + " late start(s)" : "")
     + (OVERVIEW.empty.length ? " · no events: " + OVERVIEW.empty.join(", ") : "")
-    + " · no detector, not blind";
+    + " · not blind";
   const z = document.getElementById("oZoomWhat");
   if (z) z.textContent = OVERVIEW_SPAN
     ? "showing " + fmt(OVERVIEW_SPAN) + " of " + fmt(OVERVIEW.maxDur)
