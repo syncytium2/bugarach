@@ -1,4 +1,4 @@
-GRANT 11 ok — Read, Grep, Glob (single-pass self-review by the main thread, not a separate agent)
+GRANT 11 MISMATCH — single-pass self-review by the main thread, which holds more tools than this role's grant (Read, Grep, Glob); only reading and the checks named below were used
 
 Spine of §4.1 after the update:
 1. Where greatest-of began is not established. This document used to credit the 1973 paper, which has now been obtained and read; it describes greatest-of without attributing it or presenting it as new.

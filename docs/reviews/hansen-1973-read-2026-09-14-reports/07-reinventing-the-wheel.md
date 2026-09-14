@@ -1,4 +1,4 @@
-GRANT 7 ok — Read, Grep, Glob, Bash (single-pass self-review by the main thread, not a separate agent)
+GRANT 7 MISMATCH — single-pass self-review by the main thread, which holds more tools than this role's grant (Read, Grep, Glob, Bash); only reading and the checks named below were used
 
 No analysis code was written. Checked the process and the copies:
 

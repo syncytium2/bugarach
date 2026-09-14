@@ -1,4 +1,4 @@
-GRANT 9 ok — Read, Grep, Glob, Bash (single-pass self-review by the main thread, not a separate agent)
+GRANT 9 MISMATCH — single-pass self-review by the main thread, which holds more tools than this role's grant (Read, Grep, Glob, Bash); only reading and the checks named below were used
 
 Thresholds: flag a single block over 60 words, or a comparison of three or more items written as prose.
 

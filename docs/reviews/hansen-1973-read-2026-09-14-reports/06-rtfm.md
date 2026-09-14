@@ -1,4 +1,4 @@
-GRANT 6 ok — Read, Grep, Glob, Bash, WebSearch, WebFetch (single-pass self-review by the main thread, not a separate agent)
+GRANT 6 MISMATCH — single-pass self-review by the main thread, which holds more tools than this role's grant (Read, Grep, Glob, Bash, WebSearch, WebFetch); only reading and the checks named below were used
 
 The only method content is the paper's description of greatest-of CFAR. I read it against the 1973 text (pp. 325–327) and against Rohling 1983 eq. 7 and Gandhi & Kassam eq. 22.
 

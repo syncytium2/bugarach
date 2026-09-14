@@ -45,12 +45,13 @@ that the origin stays *not established*.
   - ~~Is a library request wanted?~~ **Done 2026-09-14: the interlibrary-loan copy arrived the
     same afternoon and was read.** §4.1 now reports what it says. The darkroom rebuild and the
     shelf README rows above are claimed on `docs/SESSIONS.md` for this update.
-  - **An unverified citation in the 1973 paper's reference list:** "H. H. Finn, *Adaptive
-    detection with regulated error probabilities*, RCA Review, vol. 29, pp. 653–676, Dec. 1967",
-    as printed. ⚠ RCA Review vol. 29 is 1968: Finn & Johnson are 29(3), Sept. 1968. So the year,
-    not the volume, is likely wrong, and this may be a December 1968 paper. Hansen's reference
-    list is unreliable here, and he also gives Finn & Johnson as vol. 30. This is a note for
-    whoever next cites Finn, not an origin search; that question was closed on 2026-08-24.
+  - **A misprinted citation in the 1973 paper's reference list.** Hansen prints "H. H. Finn,
+    *Adaptive detection with regulated error probabilities*, RCA Review, vol. 29, pp. 653–676,
+    Dec. 1967". The December 1967 issue's contents page, checked in review, gives it as
+    H. M. Finn, RCA Review **28**(4), Dec. 1967, pp. 653–678 (the next article starts on
+    p. 679). So the year is right and the volume, end page and initial are misprinted. Hansen
+    also gives Finn & Johnson 1968 as vol. 30. This is a note for whoever next cites Finn, not
+    an origin search; that question was closed on 2026-08-24.
 
 - **Found in the review's third round, outside this change:**
   - `detector_history.md` §7 item 4 says Rohling 1983 is "a greatest-of combination rule and an

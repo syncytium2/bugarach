@@ -1,4 +1,4 @@
-GRANT 8 ok — Read, Grep, Glob (single-pass self-review by the main thread, not a separate agent)
+GRANT 8 MISMATCH — single-pass self-review by the main thread, which holds more tools than this role's grant (Read, Grep, Glob); only reading and the checks named below were used
 
 | unit | terms first used here | defined here or earlier? | can a cold reader follow? |
 |---|---|---|---|

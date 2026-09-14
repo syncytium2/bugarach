@@ -14,6 +14,10 @@ closed: 2026-09-14
 > 1980 paper. The two complaints below that still stood are answered: the row no longer claims an
 > unread paper, and the "read in full" marking is no longer attached to the wrong one. Detail is in
 > [the closed Hansen 1973 todo](2026-09-10-nobody-has-read-hansen-1973.md).
+>
+> *Later on 2026-09-14:* the 1973 paper arrived by interlibrary loan and was read. It neither
+> confirms nor rules out the origin claim. The body below, which calls it the origin and says it
+> is not on the shelf, is superseded by `detector_history.md` §4.1.
 
 `docs/detector_history.md` §4 line 281 attributes greatest-of selection to **Hansen & Sawyers,
 IEEE T-AES AES-16(1), Jan 1980** and marks it **read in full**. That paper exists, is correctly

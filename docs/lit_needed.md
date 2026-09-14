@@ -94,9 +94,10 @@ locations belong to other projects.
       canonical statement of the thesis this project keeps re-deriving: a surrogate preserving a
       specified feature set can only test whether structure exceeds what that feature set implies.
 
-- [x] **Gregers Hansen, V. (1973).** Constant-false-alarm-rate processing in search radars. Proc.
-      IEE International Radar Conference *Radar — present and future*, 23–25 October 1973, Savoy
-      Place, London. IEE Conf. Publ. **105**.
+- [x] **Gregers Hansen, V. (1973).** Constant false alarm rate processing in search radars. In
+      *International Conference on Radar — Present and Future*, 23–25 October 1973, Savoy
+      Place, London. IEE Conf. Publ. **105**, pp. 325–332. (Title and volume as the paper prints
+      them; this heading first followed the *Proc. IEE* notice.)
       → **Fetched 2026-09-14 by interlibrary loan, and read; see the end of this entry.** It was
       closed as unobtainable earlier that day, then reopened. On 2026-09-10
       the citation was confirmed and the origin question was left open. Tony found the volume's
@@ -127,7 +128,7 @@ locations belong to other projects.
       | **Gregers Hansen & Sawyers 1980**, §I — the author, on his own talk | *"A simple rule for determining the detectability loss of a cell-averaging constant false-alarm rate (CFAR) processor using 'greatest of' selection between the leading and lagging sets of reference cells is given in [1]"*, where [1] is this talk, dated Oct. 23–25, 1973, **no pages given**. So the talk **treated greatest-of**; the author's own sentence credits it with a loss rule, not with inventing the selection |
       | same paper, same paragraph | that rule's loss is *"somewhat larger than predicted from an exact analysis contained in [2]"* — **J.H. Sawyers, "Detection losses of the 'Conventional' and 'Split' mean level threshold detectors", internal memo, Hughes Aircraft Co., Feb. 15, 1972.** An exact analysis of the split detector, **dated twenty months before the talk**, at a different company |
       | **Gandhi & Kassam 1988**, §I and §III-B | *"Hansen [9] has proposed a CFAR procedure to regulate false alarm rate in the region of clutter transition; in this procedure the noise power is estimated by the greatest of (GO) the sums in the leading and lagging windows"*; later, GO is the scheme *"proposed and analyzed in [9, 10]"*. Its reference list gives the talk as **pp. 325–332**, in *"Proceedings of the IEEE 1973 International Radar Conference, London"* — IEEE where the volume says IEE |
-      | **Rohling 1983** | credits greatest-of (CAGO) to Hansen & Sawyers 1980 and Moore & Lawrence 1980, **not** to the talk |
+      | **Rohling 1983** | says Moore & Lawrence 1980 *"proposed"* greatest-of (CAGO) and Hansen & Sawyers 1980 *"have investigated"* it; cites neither the talk nor the memo |
 
       (`weinberg_2017_sliding_window_detectors.pdf` cites only the 1980 paper, spelling him *"Gregers
       Hanson"*.)
@@ -177,8 +178,8 @@ locations belong to other projects.
       the shelf and never commit it. The volume's own copyright page prints **ISBN 0 85296 112 X**,
       so the notice's 114 6 was the error, and the paper runs **pp. 325–332**, as Gandhi & Kassam
       gave. The paper **describes greatest-of selection on p. 326 without citing a source and without
-      presenting it as new**; it surveys CFAR loss results and presents computations of its own, including the
-      greatest-of cases. `detector_history.md` §4.1 now carries what it
+      presenting it as new**; it surveys CFAR loss results and reports computed results without saying whose they are,
+      including the greatest-of cases. `detector_history.md` §4.1 now carries what it
       says. Two earlier readings in this entry, "Nobody will read it" and "the talk", are superseded
       by the paper itself.
 

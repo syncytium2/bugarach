@@ -518,19 +518,23 @@ the paper. **Reading it neither confirms nor rules it out**: the paper describes
 greatest-of selection, cites no earlier source for it, and makes no claim to priority,
 which is how it would read either way. It is the earliest *published* description of
 greatest-of this project has found. An unpublished Hughes Aircraft memo from February
-1972 is earlier, and is known only through Hansen & Sawyers 1980. Of the later
+1972 is earlier and, according to Hansen & Sawyers 1980, the only source that
+describes it, contains an exact loss analysis of greatest-of. Of the later
 sources, Gandhi & Kassam 1988 credit this paper with proposing greatest-of, and
 Rohling 1983 credits Moore & Lawrence 1980. The mechanism match above does not depend
 on the answer; what to cite for greatest-of's origin does, and it stays open.
 
-**What the 1973 paper says.** Its conclusions call it *"a survey of available
-results"* on CFAR losses. Alongside that survey it reports computed results without
-attributing them, among them these on greatest-of. For clutter edges it writes: *"A
-technique which can be used to prevent this increase in the false alarm probability
-at a clutter edge is to make the estimate of the background noise level independently
-from the leading and lagging reference noise samples and to use the greatest of these
-two estimates to normalize the output"* (p. 326).
-- Fig. 6 is a block diagram of a cell-averaging CFAR *"using 'greatest-of' selection"*.
+**What the 1973 paper says.** Its conclusions describe its treatment of CFAR loss in
+stationary Gaussian noise as *"a survey of available results"*. It also reports
+computed results without saying whose they are, among them these on greatest-of. For
+clutter edges it writes: *"A technique which can be used to prevent this increase in
+the false alarm probability at a clutter edge is to make the estimate of the
+background noise level independently from the leading and lagging reference noise
+samples and to use the greatest of these two estimates to normalize the output"*
+(p. 326).
+
+- Fig. 6 (p. 331) is captioned *"Conventional cell averaging CFAR processor with
+  'Greatest-Of' selection"*.
 - Fig. 5 is one computed case: 32 reference cells, linear envelope detection, a design
   false-alarm probability of 10⁻⁵, and a 20 dB clutter step. The expected number of
   false alarms at the step is 0.15 for plain cell-averaging and 0.0008 with
@@ -579,21 +583,27 @@ What the later sources say, oldest first:
   lagging windows"*, with [9] the 1973 paper, and elsewhere that greatest-of was
   *"proposed and analyzed in [9, 10]"*, the 1973 and 1980 papers together. Their
   page range for the 1973 paper, 325–332, matches the volume; their venue, an IEEE
-  conference, does not.
+  conference, does not. The volume's title page names the IEE as organiser, with the
+  IEEE's UK and Republic of Ireland Section among five associated bodies.
+
 Finn & Johnson 1968 and Weinberg 2017, also on the shelf, say nothing about where
 greatest-of began.
 
 What we do not know:
 
 - whether greatest-of began with the 1972 Sawyers memo, Hansen's own unpublished work
-  before 1973, or earlier work;
+  before 1973, or other work;
 - what the 1972 memo contains, beyond what Hansen & Sawyers report;
-- whether any earlier work the 1973 paper cites for other purposes describes
-  greatest-of. That covers its citations for cell-averaging (Hall 1962–63, Hansen
-  1965, Finn 1967, Steenson 1968, Hansen & Ward 1972) and Hansen's papers with Zottl
-  (1971) and on generalized CFAR (1972). Of its cell-averaging citations, only Finn &
-  Johnson 1968 is on the shelf;
-- what the patent and technical-report literature before 1973 contains, which has not
+- whether any of the 1973 paper's 21 references, or Hansen's other papers before 1973,
+  describe greatest-of. Examples: its citations for cell-averaging (Hall 1962–63,
+  Hansen 1965, Finn 1967, Finn & Johnson 1968, Steenson 1968, Hansen & Ward 1972);
+  Nathanson & Reilly 1968, cited in the paragraph just before the greatest-of passage;
+  Carpentier's 1968 book *Radars: New Concepts*; Hansen's papers with Zottl (1971) and
+  on generalized CFAR (1972); and his 1970 *"Performance of the analog moving window
+  detector"*, which the 1973 paper does not cite. Only Finn & Johnson 1968 is on the shelf, and it has not been
+  checked for this;
+- what earlier patents, technical reports, radar textbooks and handbooks, other
+  conference proceedings and non-English radar literature contain. None of these has
   been searched.
 
 ---
@@ -1042,7 +1052,7 @@ provenance note; 2, 4 and 5 follow from §4.
      edges, which is the nonhomogeneity this preparation actually has.
 
    Net effect: **stop proposing to replace `maxlt`, start proposing to censor inside
-   it.** All four papers are read. ⚠ *2026-09-14:* this check verified the
+   it.** All four papers named here are read. ⚠ *2026-09-14:* this check verified the
    greatest-of attribution as it then stood, Hansen & Sawyers 1980, without asking
    whether that paper was the origin. The 2026-08-24 audit replaced it with Hansen
    1973, which nobody read, and that credit is withdrawn. Reading the paper on

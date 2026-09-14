@@ -1,4 +1,4 @@
-GRANT 5 ok — Read, Grep, Glob (single-pass self-review by the main thread, not a separate agent; used reading only)
+GRANT 5 MISMATCH — single-pass self-review by the main thread, which holds more tools than this role's grant (Read, Grep, Glob); only reading and the checks named below were used
 
 Construction list: role 5 in `docs/doc_review_process.md`. I searched the added lines by eye and with Grep for the banned words (delve, leverage, robust, seamless, crucial, landscape, tapestry), "not just … but", "it's worth noting", and "In today's". **0 hits.** The one em-dash in the changed text sits inside the conference title (*Radar — present and future*); it is not a pivot.
 

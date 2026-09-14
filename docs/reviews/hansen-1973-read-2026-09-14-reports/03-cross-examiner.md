@@ -1,4 +1,4 @@
-GRANT 3 ok — Read, Grep, Glob (single-pass self-review by the main thread, not a separate agent; the main thread holds more tools than this grant, and used only reading here)
+GRANT 3 MISMATCH — single-pass self-review by the main thread, which holds more tools than this role's grant (Read, Grep, Glob); only reading and the checks named below were used
 
 Checked the round-1 draft of `detector_history.md` (the §4 table row, the paragraph after it, §4.1, the 2026-08-24 ⚠ and the §7 item 2 ⚠), `GLOSSARY.md`, the proposal footer, `lit_needed.md` and the two todos. Each was compared with the others and with README, `cfar_scope.html` and INDEX.
 

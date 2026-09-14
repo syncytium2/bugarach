@@ -142,6 +142,8 @@ did not exist this morning.
 **The lit search is finished. Do not redo it.** One paper outstanding — Gregers Hansen 1973, IEE
 Conf. Publ. 105 — and it needs a library. IEEE Xplore does not index it and answers a fetch with
 HTTP 418 / a CAPTCHA.
+*2026-09-14:* that paper was obtained by interlibrary loan and read. It neither confirms nor rules
+out greatest-of's origin, which stays *not established*; see `detector_history.md` §4.1.
 
 ## Corrections owed in the tree, deliberately NOT made here
 
@@ -153,7 +155,8 @@ Each is a real defect found this session and left for a change with its own revi
   paper: **Gregers Hansen & Sawyers**.
 - **Whether `detector_history.md` §4 is right** to head its Hansen & Sawyers 1980 row *origin*. The
   chronology leans toward 1973 introducing greatest-of, but that is titles, not papers. **Do not
-  change the column until someone has read the 1973 paper.**
+  change the column until someone has read the 1973 paper.** *2026-09-14:* resolved. The column
+  now reads *not established*, and the paper has been read (§4.1).
 - **`docs/export_folder_spec.md` does not mention field steps**, though the current export ships
   `on_field_step` and `field_step_id` and the loader drops both silently. Harmless on this folder,
   not harmless on the FLAGGED companion.
