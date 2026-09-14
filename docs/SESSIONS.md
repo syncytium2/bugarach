@@ -10,9 +10,10 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
-### Mac/measure-recording-identity — DARKROOM claim ACTIVE: `bugarach/2026-09-13-recording-identity/`
-- **Status:** ACTIVE 2026-09-13 (bugarach-ivory-shrike). Tony: measure on our data whether recording
-  identity is visible, as the literature found it is elsewhere.
+### Mac/measure-recording-identity — DARKROOM claim RELEASED 2026-09-13: `bugarach/2026-09-13-recording-identity/`
+- **Status:** **RELEASED 2026-09-13 — run written, nothing further writes there.** Was: ACTIVE
+  (bugarach-ivory-shrike). Tony: measure on our data whether recording identity is visible, as the
+  literature found it is elsewhere.
 - **Writes:** `results.json` and `recording_identity.png`, only in that new folder.
 - **Branch:** `measure-recording-identity`, in a worktree of the same name.
 - **Released when:** the result lands on `main`.

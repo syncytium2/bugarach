@@ -129,6 +129,15 @@ reproduced by this project.
 
 ## Is slice identity detectable at all — real data, no chimera builder
 
+> **RUN 2026-09-13: STOP in both streams** — [result](../learned/recording_identity.md). The design and
+> gates were declared before running. Controls passed. Window pairs told same recording from different at
+> 0.70–0.78 at every tier, with every lower bound above 0.60. The run also included the single-train
+> **chimera test** the literature review proposed: a coordination-blind classifier separates swaps with
+> other-group donors at 0.75 (fast) and 0.86 (slow), and same-group donors at 0.64 and 0.76. **Same-mouse
+> donors cost no measurable identity** beyond moving a recording's own trains in time. They are also
+> same-day donors, and 9 of 44 mice have no second slice. In slow, even a within-recording swap reads 0.64,
+> so any null that moves trains in time faces within-baseline nonstationarity there.
+
 **Question.** The swap's largest objection is that a model can tell ROIs from one slice apart from ROIs
 pooled from several. **Measure that directly on real recordings, before building anything.**
 
