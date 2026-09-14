@@ -207,6 +207,14 @@ The state on `origin` must always be enough to resume elsewhere (FOUNDATIONS
   `--also` for the repo copy; sapper SAP006 blocks the required form in page and
   report builders. Keep both copies: the repo one is what review and git history
   need, the darkroom one is what a person opens.
+  **Every image you show Tony goes there too — UI screenshots and headless checks
+  included** (Tony, 2026-09-14: *"please always use darkroom"*). A session rendered
+  its click-zoom check into the scratchpad, sent it with `SendUserFile` (which does
+  not deliver in VS Code and reports success anyway) and handed over scratchpad
+  paths. It had held back on purpose, because screenshots were deleted from the
+  darkroom on 2026-09-11. That deletion was a cleanup, not a ban. Put the image
+  there with `python3 tools/show.py <file>`, give the path it prints, and note the
+  write in your board block's `Holds:`.
   Two paths, one directory: `~/Dropbox-<org>` is a **symlink** to
   `~/Library/CloudStorage/Dropbox-<org>`. Seeing a tool print one while looking in
   the other does not mean the file went somewhere else — check with `ls -ld`
