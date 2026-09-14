@@ -65,6 +65,17 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
   Holm-corrected yardsticks could not flag anything at any setting, so the claim stays until the
   probe settles what a rerun should be.
 
+### Mac/deploy-click-zoom — SITE claim RELEASED 2026-09-14: deployed at `78975b4`
+- **Status:** **RELEASED 2026-09-14 — deployed; nothing holds the site.** Tony: *"deploy"*. Held on
+  the machine-local board for the upload.
+- **What went out:** #565, where a click on a turbo or overview row zooms the time axis there
+  (shift-click zooms out), and #567, where finishing a slice in MAHICE brings the next slice's raster
+  and ledger on screen.
+- **Deploy record.** Worktree detached at `origin/main` `78975b4`; `DEPLOY_HOLD.md` `held: no`; no
+  ACTIVE site claim. `test_site_coherence.py` 18 passed; dry run read 8 files; uploaded with the
+  pinned wrangler, version `2da5d5f6`. Afterwards `site_staleness.py` reads **current** and
+  `audit_deployed_page.py` is clean.
+
 ### Mac/deploy-overview-marks — SITE claim RELEASED 2026-09-14: deployed at `fdae99e`
 - **Status:** **RELEASED 2026-09-14 — deployed; nothing holds the site.** Asked whether to redeploy
   #560 once it merged, Tony answered *"go"*. Held on the machine-local board for the upload.
