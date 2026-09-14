@@ -6,6 +6,12 @@ closed: 2026-09-14
 
 # Nobody has read Gregers Hansen 1973, and it decides whose column is right
 
+> **Update, later on 2026-09-14: the title is no longer true.** Tony obtained the paper by
+> interlibrary loan and it was read that afternoon. It describes greatest-of selection (p. 326)
+> without citing a source and without presenting it as new, so it does not decide the column
+> either. The origin stays not established, and `detector_history.md` §4.1 carries what the paper
+> says. The rest of this file is the record from before the paper arrived.
+
 > ## Closed 2026-09-14: the origin is left unestablished, on purpose
 >
 > **Tony's ruling:** *"let's not replace origin, but discuss our attempt to find it. state what we

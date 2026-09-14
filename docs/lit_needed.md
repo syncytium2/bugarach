@@ -94,11 +94,11 @@ locations belong to other projects.
       canonical statement of the thesis this project keeps re-deriving: a surrogate preserving a
       specified feature set can only test whether structure exceeds what that feature set implies.
 
-- [ ] **Gregers Hansen, V. (1973).** Constant-false-alarm-rate processing in search radars. Proc.
+- [x] **Gregers Hansen, V. (1973).** Constant-false-alarm-rate processing in search radars. Proc.
       IEE International Radar Conference *Radar — present and future*, 23–25 October 1973, Savoy
       Place, London. IEE Conf. Publ. **105**.
-      → **Interlibrary-loan request placed 2026-09-14; see the end of this entry.** It was closed as
-      unobtainable earlier that day. On 2026-09-10
+      → **Fetched 2026-09-14 by interlibrary loan, and read; see the end of this entry.** It was
+      closed as unobtainable earlier that day, then reopened. On 2026-09-10
       the citation was confirmed and the origin question was left open. Tony found the volume's
       contents listing (`radar/iee_conf_105_1973_CONTENTS_ONLY.pdf` — the listing, **not** the
       paper). It reads:
@@ -170,6 +170,16 @@ locations belong to other projects.
       page with `pdftotext -f 1 -l 1`, add a read-status entry to `radar/README.md`, and bring
       `detector_history.md` §4.1 up to date with what the paper says. Tony's 2026-09-14 ruling
       (no replacement origin) stays in force until he rules again.
+
+      **Fetched 2026-09-14, the same afternoon.** It came as an interlibrary-loan scan supplied
+      through HathiTrust Resource Sharing from record 001618382, and is shelved at
+      `radar/gregers_hansen_1973_cfar_search_radars.pdf`. It is a private-study copy: keep it on
+      the shelf and never commit it. The volume's own copyright page prints **ISBN 0 85296 112 X**,
+      so the notice's 114 6 was the error, and the paper runs **pp. 325–332**, as Gandhi & Kassam
+      gave. The paper **describes greatest-of selection on p. 326 without citing a source and without
+      presenting it as new**; it reviews CFAR designs. `detector_history.md` §4.1 now carries what it
+      says. Two earlier readings in this entry, "Nobody will read it" and "the talk", are superseded
+      by the paper itself.
 
 - [x] ~~**Date A, Bienenstock E & Geman S (1998).** On the temporal resolution of neural
       activity. Technical Report, Division of Applied Mathematics, Brown University.~~

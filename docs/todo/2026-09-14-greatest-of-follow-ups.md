@@ -42,11 +42,14 @@ that the origin stays *not established*.
 - **Questions for Tony (role 2):**
   - Has anyone written to the IET archives, to V. Gregers Hansen, or to Technology Service
     Corporation (thanked in the 1980 paper)?
-  - ~~Is a library request wanted?~~ **Answered 2026-09-14: Tony placed an interlibrary-loan
-    request**, identified by OCLC 952520 and ISBN 0-85296-112-X. What to do when the copy arrives
-    is recorded in `docs/lit_needed.md`. Until then, the search-only HathiTrust scans (records
-    001618382 and 011456921) remain the quicker way to check whether the paper uses "greatest"
-    or "split" at all.
+  - ~~Is a library request wanted?~~ **Done 2026-09-14: the interlibrary-loan copy arrived the
+    same afternoon and was read.** §4.1 now reports what it says. The darkroom rebuild and the
+    shelf README rows above are claimed on `docs/SESSIONS.md` for this update.
+  - **A lead for the cell-averaging question, from the 1973 paper's reference list:** H. M. Finn,
+    *"Adaptive detection with regulated error probabilities"*, RCA Review, Dec. 1967 (as Hansen
+    cites it: vol. 29, pp. 653–676). That is earlier than Steenson (July 1968) and Finn & Johnson
+    (Sept. 1968). ⚠ The volume number is unverified. Hansen gives Finn & Johnson as vol. 30,
+    where the journal's contents page says 29, so check this citation against the journal.
 
 - **Found in the review's third round, outside this change:**
   - `detector_history.md` §7 item 4 says Rohling 1983 is "a greatest-of combination rule and an

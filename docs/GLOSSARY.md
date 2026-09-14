@@ -261,8 +261,9 @@ interface2 audit (received 2026-08-24) matched each detector to a CFAR mechanism
 `rate_detect` is cell-averaging in structure (Finn & Johnson 1968), `loco_detect`'s
 `maxlt` uses the greatest-of combination rule, and its percentile-of-pool is kin to
 OS-CFAR (Rohling 1983). One attribution that audit made, Hansen 1973 as the origin
-of greatest-of, is withdrawn as unverified; where greatest-of began is not
-established ([`detector_history.md` §4.1](detector_history.md#41-where-greatest-of-began)).
+of greatest-of, is withdrawn. The paper, read on 2026-09-14, describes greatest-of but
+neither attributes it to anyone nor presents it as new, and where greatest-of began is
+not established ([`detector_history.md` §4.1](detector_history.md#41-where-greatest-of-began)).
 **The words below name the mechanisms these detectors use.** The question of who got
 there first is closed for this project (Tony, 2026-08-24); the reason to care is the
 engineering the radar literature offers, which
