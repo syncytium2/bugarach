@@ -856,3 +856,59 @@ def test_the_overview_asks_first_and_aligns_on_the_end_of_baseline(tmp_path):
             assert errs == [], errs
         finally:
             browser.close()
+
+
+# --------------------------------------------------------------------------
+# ASSESSED EVENTS ARE NOT LOST
+#
+# Tony, 2026-09-14: "assessed events are lost. would like to see them in turbo
+# mahice" — "blue down triangles after running assess". Two defects, one old:
+# the raster on screen was never redrawn when the assessment finished, so its
+# candidate lane stayed empty; and turbo never drew the candidates at all.
+# --------------------------------------------------------------------------
+
+def test_assessing_redraws_the_raster_and_turbo_shows_the_assessed_events():
+    pytest.importorskip("playwright.sync_api")
+    from playwright.sync_api import sync_playwright
+    sim = {"sRec": "3", "sMin": "45", "sRoi": "24", "sRate": "45", "sEv": "16",
+           "sJit": "300", "sSeed": "6", "sWin": "2", "aSurr": "100"}
+    with sync_playwright() as p:
+        try:
+            browser = p.chromium.launch()
+        except Exception as e:                        # noqa: BLE001
+            pytest.skip(f"no chromium available: {type(e).__name__}")
+        try:
+            pg = browser.new_page()
+            errs: list[str] = []
+            pg.on("pageerror", lambda e: errs.append(str(e)))
+            pg.goto(VIEWER.as_uri(), wait_until="load")
+            got = pg.evaluate("""async (sim) => {
+              for (const [k, v] of Object.entries(sim)) document.getElementById(k).value = v;
+              await runSim();
+              await show(RECORDINGS[0]);
+              // count redraws of the single-recording raster across the walk
+              let drawn = 0;
+              const orig = draw;
+              draw = (...a) => { drawn++; return orig(...a); };
+              await assessFolderRun();
+              draw = orig;
+              return {drawn, cands: collectCandidates().length};
+            }""", sim)
+            assert got["cands"] > 0, got
+            assert got["drawn"] > 0, "the assessment finished and the raster was not redrawn"
+
+            pg.evaluate("() => setTurbo(true)")
+            pg.wait_for_function("() => TURBO && TURBO.rows.length === 3", timeout=30000)
+            state = pg.evaluate("""() => {
+              const a = turboAssessed();
+              return {rows: a ? TURBO.rows.map(r => (a.get(r.id) || []).length) : null,
+                      inks: a ? [...new Set([...a.values()].flat().map(c => c.ink))] : [],
+                      note: document.getElementById('turboWhat').textContent};
+            }""")
+            assert state["rows"] and sum(state["rows"]) > 0, state
+            # unjudged assessed events are the blue triangles
+            assert state["inks"] == ["#1565c0"], state
+            assert "assessed" in state["note"] and "grey" in state["note"], state
+            assert errs == [], errs
+        finally:
+            browser.close()

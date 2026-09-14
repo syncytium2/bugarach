@@ -2560,6 +2560,8 @@ function candidatesOnPanel(recId, stream) {
    only catch up the next time something else happens to redraw. */
 function repaintJudgingLane() {
   if (current && current.loaded) draw(current, current.loaded);
+  // turbo draws the same candidates and verdicts, so it goes stale with this
+  turboDraw();
 }
 
 
@@ -2710,7 +2712,8 @@ async function turboLoad() {
       continue;
     }
     const d = await loadRecording(rec);
-    const byRoi = d.streams.get(STREAM) || d.streams.get([...d.streams.keys()][0]);
+    const stream = d.streams.has(STREAM) ? STREAM : [...d.streams.keys()][0];
+    const byRoi = d.streams.get(stream);
     if (!byRoi) continue;
     // `natural`, not `.sort()`: ROI 2 before ROI 10, as the single-recording view
     const ids = [...byRoi.keys()].sort(natural);
@@ -2731,7 +2734,8 @@ async function turboLoad() {
     }
     const trains = ids.map(id =>
       (byRoi.get(id) || []).filter(t => t >= ws && t <= we).map(t => t - ws));
-    rows.push({ id: rec.id, nRoi: ids.length, trains, dur: we - ws,
+    // `ws` and `stream` so the assessment's candidates can be placed on this row
+    rows.push({ id: rec.id, nRoi: ids.length, trains, dur: we - ws, ws, stream,
                 byRate: busiestFirst(ids, d), assumed: !!b.assumed });
   }
   TURBO = { rows, skipped, maxDur: rows.reduce((a, r) => Math.max(a, r.dur), 1) };
@@ -2871,8 +2875,10 @@ function columnTimeAt(cv, ev, full, span, mid) {
    for every row, so the proportion holds — which keeps what Tony asked for on
    2026-09-12, "make the turbo mahice occupy more space", for a five-slice
    folder. A folder of 84 scrolls inside its own box, so the bar stays where the
-   hand is. A raster is never shorter than its two label lines. */
-const COL_ROI_PX = 2, COL_ROI_PX_MAX = 4, COL_RASTER_MIN = 26;
+   hand is. A raster is never shorter than its three label lines (id, K, and
+   the assessed count or an assumption), so a small field's labels never run
+   into the next row. */
+const COL_ROI_PX = 2, COL_ROI_PX_MAX = 4, COL_RASTER_MIN = 40;
 const rasterH = (r, px) => Math.max(COL_RASTER_MIN, Math.round(r.nRoi * px));
 
 function columnScale(cv, rows, laneH) {
@@ -3047,32 +3053,78 @@ function turboDraw() {
   if (!cv || !TURBO || document.getElementById("turbo").hidden) return;
   // the words first: the column's height is what is left after the sentence
   // under it, so the sentence has to be its real length when that is measured
-  paintTurboWhat();
+  const assessed = turboAssessed();
+  paintTurboWhat(assessed);
+  const tri = (g, px, yTip) => {
+    g.beginPath();
+    g.moveTo(px - 3.5, yTip - 7);
+    g.lineTo(px + 3.5, yTip - 7);
+    g.lineTo(px, yTip);
+    g.closePath();
+    g.fill();
+  };
   paintColumn(cv, TURBO.rows, TURBO.maxDur, TURBO_SPAN, TURBO_MID, {
-    laneH: TURBO_LANE,
+    laneH: assessed ? 2 * TURBO_LANE : TURBO_LANE,
     axisCv: document.getElementById("turboAxis"),
-    /* The K this row resolved to under the id. THE FLAG, ON THE ROW IT IS ABOUT:
-       a third line rather than a mark in the picture, because this row's window
-       is an assumption and the reader has to see WHICH rows, not just that some
-       exist. */
+    /* The K this row resolved to under the id, and how many assessed events it
+       carries. THE FLAG, ON THE ROW IT IS ABOUT: a third line rather than a mark
+       in the picture, because this row's window is an assumption and the reader
+       has to see WHICH rows, not just that some exist. */
     labels: r => [[r.id], ["K " + r.K + " of " + r.nRoi]]
+      .concat(assessed ? [[(assessed.get(r.id) || []).length + " assessed",
+                           CAND_INK.selected]] : [])
       .concat(r.assumed ? [["whole trace (assumed)", CAND_INK.assumed]] : []),
-    // the marks, in a lane ABOVE the raster and pointing down at it
+    /* The lanes ABOVE the raster, pointing down at it. Before an assessment,
+       one lane: the knobs' threshold marks, blue. After one — Tony, 2026-09-14,
+       choosing between the options put to him — the ASSESSED events are the
+       blue triangles, in the top lane, in their verdict colour once judged, and
+       the threshold marks step down to a grey lane under them, still there to
+       tune against. Colour tells them apart; the shape stays "look below". */
     lane: (g, r, top, x, t0, t1) => {
-      const laneY = top + TURBO_LANE;
-      g.fillStyle = CAND_INK.selected;
+      if (assessed) {
+        for (const c of (assessed.get(r.id) || [])) {
+          /* Only inside this row's baseline: a single recording assessed on some
+             other region leaves candidates turbo's window does not hold. */
+          const t = c.centre - r.ws;
+          if (t < 0 || t > r.dur || t < t0 || t > t1) continue;
+          g.fillStyle = c.ink;
+          tri(g, Math.round(x(t)) + 0.5, top + TURBO_LANE - 1);
+        }
+      }
+      const tip = top + (assessed ? 2 * TURBO_LANE : TURBO_LANE) - 1;
+      g.fillStyle = assessed ? CAND_INK.unjudged : CAND_INK.selected;
       for (const m of r.marks) {
         if (m.t < t0 || m.t > t1) continue;
-        const px = Math.round(x(m.t)) + 0.5;
-        g.beginPath();
-        g.moveTo(px - 3.5, laneY - 8);
-        g.lineTo(px + 3.5, laneY - 8);
-        g.lineTo(px, laneY - 1);
-        g.closePath();
-        g.fill();
+        tri(g, Math.round(x(m.t)) + 0.5, tip);
       }
     },
   });
+}
+
+/* THE ASSESSED EVENTS, per turbo row: every candidate the assessment kept —
+   the same set `collectCandidates` hands the review — in blue, and in its
+   verdict colour where the review has judged it. Null before any assessment,
+   which is what keeps turbo exactly as it was until one runs. Only candidates
+   on the stream this row draws, since a lane has to be about its own raster. */
+function turboAssessed() {
+  const cands = collectCandidates();
+  if (!cands.length || !TURBO) return null;
+  const key = c => c.recId + "|" + c.stream + "|" + c.centre.toFixed(3);
+  const verdicts = new Map();
+  if (ANNOT && ANNOT.cands)
+    ANNOT.cands.forEach((c, i) => {
+      const v = ANNOT.verdicts[i];
+      if (v && CAND_INK[v.verdict]) verdicts.set(key(c), CAND_INK[v.verdict]);
+    });
+  const streamOf = new Map(TURBO.rows.map(r => [r.id, r.stream]));
+  const out = new Map();
+  for (const c of cands) {
+    if (streamOf.get(c.recId) !== c.stream) continue;
+    if (!out.has(c.recId)) out.set(c.recId, []);
+    out.get(c.recId).push({ centre: c.centre,
+                            ink: verdicts.get(key(c)) || CAND_INK.selected });
+  }
+  return out;
 }
 
 /* SAY THAT WE ASSUMED IT. Two different statements, and they are kept apart
@@ -3197,7 +3249,7 @@ function designateRow(labels) {
   return p;
 }
 
-function paintTurboWhat() {
+function paintTurboWhat(assessed = null) {
   const n = document.getElementById("turboWhat");
   if (!n || !TURBO) return;
   const { pct, floor, bin, merge } = turboKnobs();
@@ -3222,10 +3274,15 @@ function paintTurboWhat() {
   /* BARE MINIMUM, ONE LINE. Tony, 2026-09-14: "edited down to bare minimum".
      The knobs say their own values; this says only what they resolved to and
      the one caveat a reader must not miss — a mark is a threshold. */
+  const nAssessed = assessed
+    ? [...assessed.values()].reduce((a, l) => a + l.length, 0) : 0;
   n.textContent =
-    TURBO.rows.length + " recordings · " + total + " marks · K " + Math.min(...ks)
+    TURBO.rows.length + " recordings"
+    + (assessed ? " · ▼ blue: " + nAssessed + " assessed (vs null) · ▼ grey: "
+                : " · ") + total + " threshold marks · K " + Math.min(...ks)
     + "–" + Math.max(...ks) + " (floor binds on " + bound + ") · MOVING "
-    + bin + " s window, no grid · a threshold, not tested against a null";
+    + bin + " s window, no grid"
+    + (assessed ? "" : " · a threshold, not tested against a null");
   const z = document.getElementById("tZoomWhat");
   if (z) z.textContent = TURBO_SPAN
     ? "showing " + fmt(TURBO_SPAN) + " of " + fmt(TURBO.maxDur)
@@ -7934,6 +7991,8 @@ async function runAssess() {
     LAST_ASSESS = { rec: current, res: blocks[0].res, stream: blocks[0].stream,
                     blocks, source: w.source, isBaseline: w.isBaseline,
                     winStart: ws };
+    // the candidates are new; the lane over the raster was drawn without them
+    repaintJudgingLane();
 
     /* The raster's cluster ticks belong to one stream's measurement, and are
        drawn under that stream's lane. The first stream is what an unprompted
@@ -8097,6 +8156,12 @@ async function assessFolderRun() {
        Which is why the loop is now driven end to end on the real folder by
        clicking real controls, instead of being checked a function at a time. */
     paintAnnotChip();
+    /* AND THE PICTURES. The candidates exist the moment this returns, but the
+       raster on screen was drawn before they did, so its lane stayed empty until
+       something else redrew it — Tony, 2026-09-14: "assessed events are lost".
+       Older than turbo; found by driving the real folder through Assess and
+       looking. */
+    repaintJudgingLane();
   } finally {
     ASSESS_RUNNING = false;
     paintAssessFolderButton();
