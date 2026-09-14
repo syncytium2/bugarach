@@ -378,7 +378,7 @@ RULES = [
 
 def _tracked_files() -> list[str]:
     out = subprocess.run(["git", "ls-files"], capture_output=True, text=True,
-                         check=True)
+                         encoding="utf-8", check=True)   # see scan_staged
     return out.stdout.splitlines()
 
 
@@ -429,8 +429,13 @@ def scan_all() -> list[tuple[Rule, str, int, str]]:
 
 
 def scan_staged() -> list[tuple[Rule, str, int, str]]:
+    # encoding="utf-8" is load-bearing on Windows: without it the diff is decoded in
+    # the locale codepage, the reader thread swallows the UnicodeDecodeError, and
+    # .stdout comes back None — so any staged ▼ or ✕ crashed the pre-commit hook
+    # (2026-09-14). check_quotes.py hit and fixed the same thing in #535.
     out = subprocess.run(["git", "diff", "--cached", "--unified=0"],
-                         capture_output=True, text=True, check=True).stdout
+                         capture_output=True, text=True, encoding="utf-8",
+                         errors="replace", check=True).stdout
     findings = []
     path = None
     lineno = 0
