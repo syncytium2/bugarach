@@ -10,6 +10,14 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
+### Mac/rigid-shift-cossart — DARKROOM claim ACTIVE 2026-09-15: `bugarach/2026-09-15-rigid-shift-look/cossart/`
+- **Status:** **ACTIVE — claimed before writing.** Tony asked *"Does it work on the cossart
+  dandiset?"*; the same rigid-shift look was run on the Cossart folder (59 recordings, whole
+  recordings, since that folder declares no regions).
+- **Writes:** one new subfolder only — results JSON, two figures, a short note. Nothing existing
+  in the look folder is touched.
+- **Released when:** the figures are in the subfolder and a repo copy is on a PR.
+
 ### Mac/rigid-shift-look — DARKROOM claim RELEASED 2026-09-15: `bugarach/2026-09-15-rigid-shift-look/`
 - **Status:** **RELEASED — both runs, four figures and the note are in the folder; repo copy in `docs/learned/rigid_shift_look/`.** Was ACTIVE, claimed before writing. Offered one exploratory figure in place of
   the pre-registration machinery (rigid shift at 1.6, 2.5 and 5 s on baseline windows: leak,
