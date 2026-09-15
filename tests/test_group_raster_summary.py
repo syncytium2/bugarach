@@ -226,6 +226,17 @@ def test_the_steps_excluded_folder_is_drawn_with_no_red_and_counts_the_removal(t
         mod.resolve_folder(str(d), steps_excluded=True, unscanned=True)
 
 
+def test_raster_height_is_proportional_to_roi_count_and_the_id_never_stretches_it():
+    """Same pitch per ROI on every recording (Tony, 2026-09-15). An id longer than
+    a small block gets whitespace, never a taller raster."""
+    assert mod.raster_px(60) == 6 * mod.raster_px(10)
+    data, label = mod.block_heights("20260707_346", 10)
+    assert data == mod.REGION_PX + mod.raster_px(10)
+    assert label > data                      # the id needs more than 10 ROI give it
+    data, label = mod.block_heights("20260707_346", 61)
+    assert label == data                     # and a large block needs nothing extra
+
+
 def test_groups_limits_the_pages(tmp_path):
     pages, _, _ = mod.measure(_folder(tmp_path), ("TTX", "senktide"), groups=("DI",))
     assert sorted(pages) == [("DI", "senktide", "fast"), ("DI", "senktide", "slow")]

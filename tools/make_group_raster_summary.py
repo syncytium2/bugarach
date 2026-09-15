@@ -101,11 +101,21 @@ DEFAULT_TREATMENTS = ("TTX", "senktide")
 #: is always first, so its end is a real shared moment rather than a convention.
 ANCHOR = "baseline"
 
-#: Constant, and asked for. Tony, 2026-09-04: *"the height of each row constant
-#: independent of the number of rois."* `raster_panel` sizes itself from ROI
-#: count when height is None; passing it explicitly is what makes a 9-ROI
-#: recording and a 61-ROI one occupy the same band and stay comparable.
-RASTER_PX = 116
+#: Proportional to ROI count: every ROI gets the same pitch on every recording,
+#: so a 10-ROI recording is a sixth the height of a 61-ROI one and the ink
+#: density reads the same down the page (Tony, 2026-09-15: *"the height of the row
+#: should be proportional to the number of ROIs"*). It replaced the constant 116 px
+#: row he asked for on 2026-09-04, which drew a small recording's ROIs far apart
+#: and a large one's packed together.
+RASTER_PX_PER_ROI = 3
+
+#: The slice id, rotated, in a column left of its block (Tony, 2026-09-15). A
+#: 10-ROI block is shorter than its own id, so the block gets whitespace BELOW the
+#: raster rather than a taller raster: the ink stays proportional and only the
+#: gap grows.
+LABEL_COL_PX = 18
+LABEL_PX_PER_CHAR = 6.2
+BLOCK_GAP_PX = 6
 
 #: Halved, and for the same reason the raster is dense: a detector row carries at
 #: most one mark per call, so the height it needs is the height of a mark, not the
@@ -114,7 +124,13 @@ RASTER_PX = 116
 #: ten-detector block is about the height of the raster it sits on rather than
 #: twice it, and the page holds six recordings instead of three.
 LANE_PX = 13
-REGION_PX = 34   # two strips in one lane: the period, and the window scored
+REGION_PX = 14   # two strips in one lane: the period, and the window scored
+AXIS_PX = 30     # what the bottom raster adds for the page's one x-axis
+
+#: No padding above or below a panel. Bokeh's default border is the white band
+#: between the period lane and its raster, and on a page of eleven blocks it was
+#: most of the vertical space that was not data.
+TIGHT = {"plot.min_border_top": 0, "plot.min_border_bottom": 0}
 PAGE_PX = 1500
 
 
@@ -437,10 +453,14 @@ def build_page(members, *, ext, manifest, width: int, stream: str,
                 marked.append(np.asarray(hits, dtype=float) - anchor)
                 n_red += len(hits)
             red_drawn += n_red
+            # No y-label: the slice id sits rotated to the left of the block, the
+            # stream is in the page title, and the top tick already says the ROI
+            # count. A rotated label inside a 30 px raster is clipped anyway.
             panels.append(raster_panel(
                 _shift_stream(st, anchor), ext=ext, width=width,
-                height=RASTER_PX, name=sname, marked=marked,
-                ydim=f"roi_{sl.slice_id}_{sname}", ticks="minimal"))
+                height=raster_px(st.n_rois), name=sname, marked=marked,
+                ydim=f"roi_{sl.slice_id}_{sname}", ticks="minimal"
+            ).opts(ylabel="", backend_opts=TIGHT))
         blocks.append((sl, panels))
 
     # ONE X-AXIS PER LINKED GROUP, on the bottom row only (CLAUDE.md). Every
@@ -450,10 +470,25 @@ def build_page(members, *, ext, manifest, width: int, stream: str,
     # own and gets the height back that the others give up.
     flat = [p for _, ps in blocks for p in ps]
     for p in flat[:-1]:
-        p.opts(xaxis=None, toolbar=None)
+        p.opts(xaxis=None, toolbar=None, backend_opts=TIGHT)
     if flat:
-        flat[-1].opts(height=RASTER_PX + 34, toolbar=None)
+        last_h = flat[-1].opts.get("plot").kwargs.get("height") or 0
+        flat[-1].opts(height=last_h + AXIS_PX, toolbar=None)
     return blocks, red_drawn
+
+
+def raster_px(n_rois: int) -> int:
+    return RASTER_PX_PER_ROI * max(int(n_rois), 1)
+
+
+def block_heights(slice_id: str, n_rois: int) -> tuple[int, int]:
+    """(data height, label height) for one block, in px.
+
+    The label height is the larger of the two: an id longer than its block gets
+    the room it needs as whitespace below the raster, never as a taller raster.
+    """
+    data = REGION_PX + raster_px(n_rois)
+    return data, max(data, int(len(slice_id) * LABEL_PX_PER_CHAR) + 6)
 
 
 def header_html(group: str, treatment: str, members, ext, folder: Path,
@@ -545,7 +580,8 @@ def header_html(group: str, treatment: str, members, ext, folder: Path,
         f"<div style='margin:5px 0 0;color:#777;font-size:11px'>"
         f"{folder.name}{src} &nbsp;·&nbsp; extent {ext[0] / 60:.0f}m to +{ext[1] / 60:.0f}m, "
         f"the full recorded length of the longest recording &nbsp;·&nbsp; "
-        f"row height is constant and does not scale with ROI count</div></div>")
+        f"raster height is proportional to ROI count ({RASTER_PX_PER_ROI} px per ROI); "
+        f"slice id at the left of each recording</div></div>")
 
 
 def main(argv=None) -> int:
@@ -640,18 +676,25 @@ def main(argv=None) -> int:
                                           detections=a.detections, note=a.note,
                                           removed=removed))]
         for sl, panels in blocks:
-            # A TEXT HEADER OUTSIDE THE PLOT, which is what the convention offers
-            # beside the y-label — and here it is the one that works. Rotated
-            # into a 116 px y-label the recording id was clipped to
-            # "0240827a55", and a truncated identifier on a per-recording figure
-            # is worse than none: it still looks like an answer.
-            n_roi = next((s.n_rois for s in sl.streams.values()), 0)
-            items.append(pn.pane.HTML(
-                f"<div style='font:12px system-ui,sans-serif;color:#111;"
-                f"margin:9px 0 0 78px'><b>{sl.slice_id}</b>"
-                f"<span style='color:#666'> · {n_roi} ROI · "
-                f"{sl.meta.get('group_id', '?')}</span></div>"))
-            items += [pn.pane.HoloViews(p) for p in panels]
+            # THE ID, ROTATED, IN ITS OWN COLUMN — an HTML block and not the
+            # raster's y-label. As a y-label it is clipped to the plot's height:
+            # at 116 px it came out as "0240827a55", and a truncated identifier
+            # still looks like an answer. Its own column is as tall as the id
+            # needs, and a block shorter than that gets the difference as space.
+            st = sl.streams.get(stream)
+            data_h, label_h = block_heights(sl.slice_id, st.n_rois if st else 0)
+            label = pn.pane.HTML(
+                f"<div style='height:{label_h}px;width:{LABEL_COL_PX}px;"
+                f"display:flex;align-items:center;justify-content:center'>"
+                f"<span style='writing-mode:vertical-rl;transform:rotate(180deg);"
+                f"font:600 10px system-ui,sans-serif;color:#111;white-space:nowrap'>"
+                f"{sl.slice_id}</span></div>",
+                width=LABEL_COL_PX, height=label_h, margin=(0, 0, 0, 0))
+            col = [pn.pane.HoloViews(p, margin=0, linked_axes=True) for p in panels]
+            if label_h > data_h:
+                col.append(pn.Spacer(height=label_h - data_h, margin=0))
+            items.append(pn.Row(label, pn.Column(*col, margin=0),
+                                margin=(0, 0, BLOCK_GAP_PX, 0)))
 
         with tempfile.TemporaryDirectory() as td:
             tmp = Path(td) / "p.html"
