@@ -10,6 +10,21 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
+### Mac/rigid-shift-darkroom-fix — DARKROOM claim ACTIVE 2026-09-15: `bugarach/2026-09-15-rigid-shift-look/` and the stray `bugarach/bugarach/`
+- **Status:** **ACTIVE — claimed before writing.** The murderboard of the rigid-shift look found the
+  darkroom copy broken. Earlier today the Cossart outputs and the updated note were copied to a
+  doubled path, `bugarach/bugarach/2026-09-15-rigid-shift-look/`, because `darkroom()` already ends
+  in `bugarach`. The folder Tony reads still holds the old note and the pre-fix figures.
+- **Writes:**
+  - move `cossart/` from the doubled path into the look folder, then remove the now-empty stray
+    `bugarach/bugarach/` (it holds only this session's copies);
+  - replace `README.md`, the top-level figures and the figures in `declared-displacements/` and
+    `larger-displacements/` with the current repo versions, which carry the correction banner and
+    the legend fix.
+
+  `README.html` and `.Rhistory` in the look folder are Tony's and are not touched.
+- **Released when:** the look folder matches the repo copy and the stray folder is gone.
+
 ### WSMIP065/detector-review-doc — DARKROOM claim ACTIVE 2026-09-15: `bugarach/2026-09-15-detector-review/`
 - **Status:** **ACTIVE — claimed before writing.** Tony asked for a document for external review:
   every detector (coded and learned) with a figure of how it decides, surrogates, the simulator,
