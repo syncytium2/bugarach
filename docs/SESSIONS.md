@@ -10,8 +10,10 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
-### WSMIP065/detector-review-plain — DARKROOM claim ACTIVE 2026-09-15: `bugarach/2026-09-15-detector-review-plain/`
-- **Status:** **ACTIVE.** Tony's verdict on the first detector review was that it did not meet the
+### WSMIP065/detector-review-plain — DARKROOM claim RELEASED 2026-09-15: `bugarach/2026-09-15-detector-review-plain/`
+- **Status:** **RELEASED — `detector_review_plain.html`, its figures, `real_prose.json` and `_work/`
+  are in the folder; the builder is on the `detector-review-doc` PR.** Was ACTIVE, claimed before
+  writing. Tony's verdict on the first detector review was that it did not meet the
   ask: figures and sixth-grade text for a reader with no background. This session rebuilds it as a
   plain-language page with step-by-step figures, and looks closely at real calls that disagree with
   the eye. Not murderboarded, by Tony's instruction.

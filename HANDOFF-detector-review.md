@@ -4,12 +4,44 @@
 > When this thread is finished, delete this file (or move it to `docs/handoffs/` if anything
 > below is still worth reading). Not murderboarded; working notes.
 
-## State when the session ended
+## Update, later on 2026-09-15: Tony rejected the review; a plain-language rebuild is in the darkroom
+
+Tony's verdict on `detector_review.html`: he had asked for figures and sixth-grade text for a
+reader with no background, and did not get it. Specifically: no figure showed *how* a detector
+works; the networks were shown only as bell curves; Figure 2B made no sense to a naive reader;
+jargon ("shipped"); citations without live links; and the one that matters most — on real
+recordings some calls look like nothing, and some clear stripes are missed by most tools. He
+asked that the old shift-versus-scramble deck figure (`constellation/coord_explainer/`, from
+`coord_explainers_with_arc-td.pptx`) be combined with Figure 2, and said **do not murderboard**.
+
+- **Delivered:** `<darkroom>/bugarach/2026-09-15-detector-review-plain/detector_review_plain.html`
+  (21 figures, about 6,300 words), plus its PNGs, `real_prose.json` and `_work/`.
+- **Builder:** `tools/make_plain_detector_review.py` (+ `tools/svgfig.py`,
+  `tools/plain_detector_review_template.html`, `tests/test_svgfig.py`). It reads the first review's
+  darkroom `measurements/` and reuses its four real-recording figures:
+  `--from-review <darkroom>/bugarach/2026-09-15-detector-review --stages all`.
+- **What the close-ups found** (numbers in the darkroom only): nearly all clear stripes that three or
+  fewer detectors called sit outside the analysis windows, where the window-scoped detectors never
+  run; inside windows most detectors call almost every clear stripe (binned SCE is the low one, partly
+  the scoring todo below). Calls on nothing come from busy stretches (locust, SPIKE-synch, binned SCE,
+  rate+context call through) and from 3-cell lineups in quiet recordings. A "clear stripe" needs a
+  local stand-out rule, or busy stretches fill with chance "stripes" — the first cut without it was
+  misleading.
+- **Direction flag:** the deck slide says a scramble inflates the bar (bursty cells); the old Figure 2
+  says a shuffle lowers it (the lab's evenly firing brief events). Both are right; the new Figure 5
+  shows both directions.
+- **Darkroom claim** `WSMIP065/detector-review-plain` is RELEASED in the same push as this update.
+
+## State when the first session ended
 
 - **PR [#587](https://github.com/syncytium2/bugarach/pull/587)** (`detector-review-doc`), auto-merge ON.
   - First CI run **failed on all three Pythons**: `tests/test_session_briefing.py`. The briefing was
     **9179B against a 9150B budget**. The cause was this PR's new todo (listed in the briefing).
-  - Fixed in `dc6a411` by shortening the todo's title. The re-run was **pending** at hand-off.
+  - Fixed in `dc6a411` by shortening the todo's title. **That did not fix it**: the re-run failed at the
+    same 9179B. The waiting-on-Tony section is capped, so a shorter title just lets the section fill
+    back up. The todo adds a third waiting entry (about 100B on this machine: main 9016B with the
+    missing-board warning, the branch 8917B without it). The fix is a decision, not a trim — either
+    Tony rules on the todo, or it leaves `waiting-on-tony`. Do not raise the budget.
   - **First job next session:** `gh pr checks 587`.
     - If the briefing is still over budget, shorten the todo title or its first line further. Do NOT
       raise the budget; see CLAUDE.md on `hook_spill_census.sh`.
