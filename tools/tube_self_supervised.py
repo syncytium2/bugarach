@@ -217,9 +217,21 @@ def ssl_train(name, bank, seed, lr):
 # -- scoring ----------------------------------------------------------------------------------
 
 def probs(model, raster):
+    """Per-frame LOGITS, not probabilities. A ranking loss fixes no scale, so a self-supervised
+    model's logits grow until the sigmoid rounds them to exactly 1.0 and no probability grid can
+    separate frames. Every threshold here is chosen in logit space, from quantiles of the scores
+    the model actually produced; ``decode`` compares a score against a threshold and does not care
+    which scale it is."""
     import torch
     with torch.no_grad():
-        return torch.sigmoid(model(torch.from_numpy(raster).unsqueeze(0))).squeeze(0).numpy()
+        return model(torch.from_numpy(raster).unsqueeze(0)).squeeze(0).numpy().astype(float)
+
+
+def quantile_grid(z_all):
+    """Descending candidate thresholds: just above the maximum, then upper quantiles."""
+    z = np.concatenate([np.ravel(v) for v in z_all])
+    qs = np.quantile(z, 1.0 - np.geomspace(0.5, 1e-6, 90))
+    return np.unique(np.concatenate([[z.max() + 1e-6], qs]))[::-1]
 
 
 def n_events(p, thr):
@@ -236,8 +248,7 @@ def label_free_threshold(p_surs, minutes, rate_per_10min):
     merges into one detection, which a bare "lowest threshold that passes" would accept.
     """
     allowed = rate_per_10min * minutes / 10.0
-    grid = np.unique(np.concatenate([np.geomspace(1e-4, 0.05, 12), np.arange(0.05, 0.95, 0.01),
-                                     1.0 - np.geomspace(0.05, 1e-6, 16)]))[::-1]
+    grid = quantile_grid(p_surs)
     chosen = float(grid[0])
     for thr in grid:
         if max(n_events(ps, thr) for ps in p_surs) > allowed:
@@ -246,15 +257,16 @@ def label_free_threshold(p_surs, minutes, rate_per_10min):
     return chosen
 
 
-def score_held_out(model, held, dt, J_sec, oracle_thr, label):
-    """Pooled bench scores on the held-out fold, at each label-free rate and the oracle."""
+def score_held_out(model, held, dt, J_sec, oracles, label):
+    """Pooled bench scores on the held-out fold, at each label-free rate and each oracle."""
     from bugarach.bench import pool_scores
     from bugarach.learn.encode import decode, encode
     from bugarach.score import score_stream
     sp = split()
     te = list(sp.test(held))
     per = {f"label_free_{r:g}": [] for r in RATES_PER_10MIN}
-    per["oracle"] = []
+    for k in oracles:
+        per[k] = []
     thresholds = {k: [] for k in per}
     for sd_ in te:
         sl, gt = sim_recording(sd_)
@@ -271,10 +283,12 @@ def score_held_out(model, held, dt, J_sec, oracle_thr, label):
             det = decode(p, threshold=thr, merge_gap_frames=MERGE_GAP)
             per[f"label_free_{r:g}"].append(score_stream(gt, det.to_seconds(enc)))
             thresholds[f"label_free_{r:g}"].append(thr)
-        if oracle_thr is not None:
-            det = decode(p, threshold=oracle_thr, merge_gap_frames=MERGE_GAP)
-            per["oracle"].append(score_stream(gt, det.to_seconds(enc)))
-            thresholds["oracle"].append(oracle_thr)
+        for k, thr in oracles.items():
+            if thr is None:
+                continue
+            det = decode(p, threshold=thr, merge_gap_frames=MERGE_GAP)
+            per[k].append(score_stream(gt, det.to_seconds(enc)))
+            thresholds[k].append(thr)
     out = {}
     for k, scs in per.items():
         if not scs:
@@ -287,10 +301,29 @@ def score_held_out(model, held, dt, J_sec, oracle_thr, label):
 
 
 def oracle_threshold(model, held, dt, seed):
-    from bugarach.learn.train import fold_maker, pick_threshold
+    """F1-best logit threshold on the training folds' threshold-validation recordings — the same
+    recordings ``pick_threshold`` reads (``fold_maker``'s validation block), with its pooled F1
+    rule, over a quantile grid in logit space. Reads planted truth: comparison only."""
+    from bugarach.bench import pool_scores
+    from bugarach.learn.encode import decode, encode
+    from bugarach.learn.train import VAL_SEED_BLOCK, fold_maker
+    from bugarach.score import score_stream
     mk, _, _ = fold_maker(sim_recording, list(split().train(held)))
-    thr, _ = pick_threshold(model, mk, dt=dt, seed=seed)
-    return thr
+    seeds = [VAL_SEED_BLOCK + seed * 1000 + i for i in range(4)]
+    scored = []
+    for s in seeds:
+        sl, gt = mk(s)
+        enc = encode(sl, dt=dt)
+        scored.append((probs(model, enc.raster), enc, gt))
+    best, best_f1 = None, -1.0
+    for thr in quantile_grid([z for z, _, _ in scored]):
+        scs = [score_stream(gt, decode(z, threshold=float(thr),
+                                        merge_gap_frames=MERGE_GAP).to_seconds(enc))
+               for z, enc, gt in scored]
+        b = pool_scores(scs, detector="oracle", regime="val", seeds=seeds)
+        if b.n_planted and np.isfinite(b.f1) and b.f1 > best_f1:
+            best, best_f1 = float(thr), b.f1
+    return best
 
 
 def paired_checks(model, held, J_sec, label):
@@ -373,14 +406,18 @@ def task(args):
         mk, n_fit, _ = fold_maker(sim_recording, list(split().train(held)))
         tr = train(name, mk, n_train=min(10, n_fit), steps=STEPS, crop=CROP, batch=BATCH,
                    lr=fb.LR[name], seed=seed)
-        model, n_par, hist, oracle = tr.model, tr.n_params, tr.history, tr.threshold
+        model, n_par, hist = tr.model, tr.n_params, tr.history
+        p = min(max(float(tr.threshold), 1e-12), 1 - 1e-12)
+        # The bake-off's own operating point, as a logit so it applies to logit scores.
+        oracles = {"oracle": oracle_threshold(model, held, dt, seed),
+                   "oracle_bakeoff_rule": float(np.log(p / (1 - p)))}
     elif arm == "untrained":
         import torch
         from bugarach.learn.nets import ARCHITECTURES, n_params
         torch.manual_seed(seed)
         model = ARCHITECTURES[name].make().eval()
         n_par, hist = n_params(model), []
-        oracle = oracle_threshold(model, held, dt, seed)
+        oracles = {"oracle": oracle_threshold(model, held, dt, seed)}
     else:
         if arm == "ssl_sim":
             items = sim_items(list(split().train(held)), dt)
@@ -389,12 +426,12 @@ def task(args):
         bank = bank_for(items, J_sec, (arm, held))
         model, n_par, hist = ssl_train(name, bank, seed, fb.LR[name])
         res["n_train_recordings"] = len(bank)
-        oracle = oracle_threshold(model, held, dt, seed)
+        oracles = {"oracle": oracle_threshold(model, held, dt, seed)}
     res["n_params"] = int(n_par)
     res["history"] = hist
     res["train_seconds"] = time.time() - t0
     res["centre_widths_sec"] = widths_sec(model, dt)
-    res["scores"] = score_held_out(model, held, dt, J_sec, oracle, label)
+    res["scores"] = score_held_out(model, held, dt, J_sec, oracles, label)
     if arm in ("ssl_sim", "ssl_real", "untrained"):
         res["checks"] = paired_checks(model, held, J_sec, label)
     res["seconds"] = time.time() - t0
