@@ -51,7 +51,7 @@ amendments that change no signed threshold, all adopted by Tony the same day
 - **The exit criterion is the pre-registration's outcome table, as amended**: VIABLE, NARROWED,
   STOPPED (only when the failure is intrinsic) or UNRESOLVED.
 
-The next move is Tony's decision on how to proceed, not a run.
+**Tony chose, 2026-09-14, to have the rule written as tested code** (offered that or stopping the goal). In progress on branch `unsup/rule-as-code`: [handoff](../handoffs/2026-09-14-rigid-shift-rule-as-code.md). Nothing reads a recording until he signs the committed code.
 
 ---
 
