@@ -51,7 +51,7 @@ amendments that change no signed threshold, all adopted by Tony the same day
 - **The exit criterion is the pre-registration's outcome table, as amended**: VIABLE, NARROWED,
   STOPPED (only when the failure is intrinsic) or UNRESOLVED.
 
-**Tony chose, 2026-09-14, to have the rule written as tested code** (offered that or stopping the goal). In progress on branch `unsup/rule-as-code`: [handoff](../handoffs/2026-09-14-rigid-shift-rule-as-code.md). Nothing reads a recording until he signs the committed code.
+**Latest, 2026-09-14 night — one exploratory look replaced the pre-registration machinery** ([note and figures](../learned/rigid_shift_look/README.md)). On fast, rigid shift at 10–20 s hides from a coordination-blind classifier (0.50) and removes 84–99 % of planted coordination in synthetic recordings. On slow it hides to about 11 s but leaves 29 % of large-event coordination at the 2 s bin, and from 22 s it starts to leak, mostly in DI. The decision it sets up is Tony's. The rule-as-code work is parked on `unsup/rule-as-code` ([handoff](../handoffs/2026-09-14-rigid-shift-rule-as-code.md)).
 
 ---
 

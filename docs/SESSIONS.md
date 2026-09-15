@@ -10,8 +10,8 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
-### Mac/rigid-shift-look — DARKROOM claim ACTIVE 2026-09-14: `bugarach/2026-09-15-rigid-shift-look/`
-- **Status:** **ACTIVE — claimed before writing.** Offered one exploratory figure in place of
+### Mac/rigid-shift-look — DARKROOM claim RELEASED 2026-09-15: `bugarach/2026-09-15-rigid-shift-look/`
+- **Status:** **RELEASED — both runs, four figures and the note are in the folder; repo copy in `docs/learned/rigid_shift_look/`.** Was ACTIVE, claimed before writing. Offered one exploratory figure in place of
   the pre-registration machinery (rigid shift at 1.6, 2.5 and 5 s on baseline windows: leak,
   destruction on synthetic twins, onset count), Tony answered *"Yep. Overnight run."*
 - **Writes:** a new folder only — per-stream JSON results, one figure, a short note. Nothing
