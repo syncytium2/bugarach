@@ -3,7 +3,7 @@ status: waiting-on-tony
 filed: 2026-09-15
 ---
 
-# Binned SCE's calls are scored over the wrong stretch, and every bench number for it is too low
+# Binned SCE calls are scored over the wrong stretch
 
 **What happens.** `sce_detect` reports each call with `onset_sec` = the start of its 10 s
 bin and `width_sec` = `tlast - tfirst`, the spread of the events inside it
