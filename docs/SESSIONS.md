@@ -10,8 +10,11 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
-### Mac/rigid-shift-cossart — DARKROOM claim ACTIVE 2026-09-15: `bugarach/2026-09-15-rigid-shift-look/cossart/`
-- **Status:** **ACTIVE — claimed before writing.** Tony asked *"Does it work on the cossart
+### Mac/rigid-shift-cossart — DARKROOM claim RELEASED 2026-09-15: `bugarach/2026-09-15-rigid-shift-look/cossart/`
+- **Status:** **RELEASED — two figures, results JSON and the destruction table are in the subfolder;
+  repo copy in `docs/learned/rigid_shift_look/cossart/`.** ⚠ **The copy was written before this
+  claim merged:** the merge helper was first called without `bash`, failed on permissions, and
+  the copy went ahead while the claim PR was still open. No other session held the folder. Tony asked *"Does it work on the cossart
   dandiset?"*; the same rigid-shift look was run on the Cossart folder (59 recordings, whole
   recordings, since that folder declares no regions).
 - **Writes:** one new subfolder only — results JSON, two figures, a short note. Nothing existing
