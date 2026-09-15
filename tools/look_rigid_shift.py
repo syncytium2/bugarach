@@ -53,31 +53,50 @@ from bugarach import surrogate_stats as ss                  # noqa: E402
 from bugarach import surrogates as sg                       # noqa: E402
 
 TAG = "look-2026-09-15"
-J_SEC = {"fast": (1.6, 2.5, 5.0), "slow": (1.4, 2.8, 5.6)}
-BINS_SEC = {"fast": (1.0,), "slow": (1.0, 2.0)}
+J_SEC = {"fast": (1.6, 2.5, 5.0), "slow": (1.4, 2.8, 5.6), "events": (1.6, 5.0, 10.0, 20.0, 40.0)}
+BINS_SEC = {"fast": (1.0,), "slow": (1.0, 2.0), "events": (1.0,)}
 WINDOW_SEC = 60.0
 EDGE_SEC = 5.0
 PARTICIPATION = (0.2, 0.5)
 K_SCAN = (3, 4, 6, 8)
+LAB_MEDIAN_ROIS = 31
+"""The lab folder's median ROI count. K_SCAN is absolute there; on a folder with many more ROIs
+the same K are scaled to the same share of the field, the way MAHICE sets K as a percentage."""
 EDGE_THIN_SEC = 5.0
+ROLE_ENV = "LOOK_ROLE"
 
 
 def seed31(*key) -> int:
     return int(ss.seed_of((TAG,) + tuple(key)) & 0x7FFFFFFF)
 
 
+def k_scan(n_roi: int) -> tuple[int, ...]:
+    if n_roi <= 2 * LAB_MEDIAN_ROIS:
+        return K_SCAN
+    return tuple(int(round(k / LAB_MEDIAN_ROIS * n_roi)) for k in K_SCAN)
+
+
+def role() -> str:
+    import os
+    return os.environ.get(ROLE_ENV, "steps_excluded")
+
+
 # -- data -------------------------------------------------------------------------------------
 
 def load(stream: str, limit: int | None):
+    """The lab folder is refused anything but its declared baseline. The Cossart folder declares
+    no regions (untreated pups), so it is read whole and every window source says so."""
     from bugarach import dataset
     from bugarach.io import load_folder
-    slices = load_folder(dataset.current("steps_excluded"))
+    slices = load_folder(dataset.current(role()))
     if limit:
         slices = slices[:limit]
     recs, skipped = ss.recordings_from_slices(slices, stream)
-    refused = [r.recording_id for r in recs if not r.window_source.startswith("baseline region")]
-    if refused:
-        raise SystemExit(f"refusing non-baseline windows in {stream}: {refused}")
+    if role() == "steps_excluded":
+        refused = [r.recording_id for r in recs
+                   if not r.window_source.startswith("baseline region")]
+        if refused:
+            raise SystemExit(f"refusing non-baseline windows in {stream}: {refused}")
     return recs, skipped
 
 
@@ -218,7 +237,7 @@ def excess(trains, n_frames, dt, bin_sec, n_assess, seed):
     s = slice_from_events({"events": [np.asarray(v, float) * dt for v in trains]},
                           dt=dt, slice_id="twin")
     res = assess.assess_coactivity(s, stream="events", window=(0.0, n_frames * dt),
-                                   min_rois=K_SCAN, bin_width_sec=bin_sec,
+                                   min_rois=k_scan(len(trains)), bin_width_sec=bin_sec,
                                    n_surrogates=n_assess, rng_seed=int(seed),
                                    region_min_sec=0.0)
     return {int(a.min_rois): float(a.coact_excess) for a in res}
@@ -251,6 +270,7 @@ def destruction_task(args):
     variants = [("rigid_shift", J) for J in Js] + [("homogeneous_resample", None),
                                                                ("do_nothing", None)]
     base_seed = seed31("assess", stream, bin_sec, p)
+    Ks = k_scan(tw["n_roi"])
     rows = {f"{n}@{J}" if J else n: [] for n, J in variants}
     for t in range(n_twins):
         pl, un = tw["twins"][(p, t)]
@@ -259,20 +279,21 @@ def destruction_task(args):
         for name, J in variants:
             params = {"J": round(J / dt, 9)} if J else {}
             after_seed = base_seed + 7 if name == "do_nothing" else base_seed
-            a_pl = {K: [] for K in K_SCAN}; a_un = {K: [] for K in K_SCAN}
+            a_pl = {K: [] for K in Ks}; a_un = {K: [] for K in Ks}
             for k in range(n_draws if name != "do_nothing" else 1):
                 key = (TAG, "destroy", stream, bin_sec, p, t, name, J or 0, k)
                 s_pl = sg.generate(name, pl, (0, n_frames), key, **params).trains
                 s_un = sg.generate(name, un, (0, n_frames), key, **params).trains
                 e_pl = excess(s_pl, n_frames, dt, bin_sec, n_assess, after_seed)
                 e_un = excess(s_un, n_frames, dt, bin_sec, n_assess, after_seed)
-                for K in K_SCAN:
+                for K in Ks:
                     a_pl[K].append(e_pl[K]); a_un[K].append(e_un[K])
             rows[f"{name}@{J}" if J else name].append({
                 "twin": t,
-                "before": {K: b_pl[K] - b_un[K] for K in K_SCAN},
-                "after": {K: float(np.mean(a_pl[K]) - np.mean(a_un[K])) for K in K_SCAN}})
+                "before": {K: b_pl[K] - b_un[K] for K in Ks},
+                "after": {K: float(np.mean(a_pl[K]) - np.mean(a_un[K])) for K in Ks}})
     return {"stream": stream, "bin_sec": bin_sec, "participation": p, "n_twins": n_twins,
+            "k_scan": list(Ks),
             "n_draws": n_draws, "n_assess_surrogates": n_assess,
             "twin_shape": {k: tw[k] for k in ("dt", "n_frames", "n_roi", "floor_frames")},
             "variants": rows}
@@ -291,18 +312,29 @@ def main(argv=None):
                     help="displacements for fast, seconds (default 1.6 2.5 5.0)")
     ap.add_argument("--J-slow", nargs="*", type=float, default=None,
                     help="displacements for slow, seconds (default 1.4 2.8 5.6)")
+    ap.add_argument("--J-events", nargs="*", type=float, default=None,
+                    help="displacements for a single-stream folder, seconds")
+    ap.add_argument("--role", default="steps_excluded",
+                    help="export role from current_export.toml (steps_excluded, cossart)")
+    ap.add_argument("--twins", type=int, default=20)
+    ap.add_argument("--draws", type=int, default=20)
     a = ap.parse_args(argv)
+    import os
+    os.environ[ROLE_ENV] = a.role          # spawned workers inherit it
     if a.J_fast:
         J_SEC["fast"] = tuple(a.J_fast)
     if a.J_slow:
         J_SEC["slow"] = tuple(a.J_slow)
+    if a.J_events:
+        J_SEC["events"] = tuple(a.J_events)
+    streams = ("fast", "slow") if a.role == "steps_excluded" else ("events",)
     out = Path(a.out)
     out.mkdir(parents=True, exist_ok=True)
     n_boot = 40 if a.quick else 1000
-    n_twins, n_draws, n_assess = (2, 2, 20) if a.quick else (20, 20, 200)
+    n_twins, n_draws, n_assess = (2, 2, 20) if a.quick else (a.twins, a.draws, 200)
 
     tasks = []
-    for stream in ("fast", "slow"):
+    for stream in streams:
         for J in J_SEC[stream]:
             tasks.append(("leak", (stream, "rigid_shift", J, n_boot, a.limit)))
             tasks.append(("leak", (stream, "uniform_dither", J, n_boot, a.limit)))
@@ -317,8 +349,8 @@ def main(argv=None):
             "quick": a.quick, "n_boot": n_boot, "n_twins": n_twins, "n_draws": n_draws,
             "n_assess_surrogates": n_assess, "J_sec": J_SEC, "bins_sec": BINS_SEC,
             "window_sec": WINDOW_SEC, "edge_thinning_sec": EDGE_THIN_SEC,
-            "exploratory": True}
-    for stream in ("fast", "slow"):
+            "exploratory": True, "role": a.role}
+    for stream in streams:
         recs, skipped = load(stream, a.limit)
         meta[f"{stream}_recordings"] = len(recs)
         meta[f"{stream}_skipped"] = skipped
