@@ -10,8 +10,10 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
-### Mac/rigid-shift-darkroom-fix — DARKROOM claim ACTIVE 2026-09-15: `bugarach/2026-09-15-rigid-shift-look/` and the stray `bugarach/bugarach/`
-- **Status:** **ACTIVE — claimed before writing.** The murderboard of the rigid-shift look found the
+### Mac/rigid-shift-darkroom-fix — DARKROOM claim RELEASED 2026-09-15: `bugarach/2026-09-15-rigid-shift-look/` and the stray `bugarach/bugarach/`
+- **Status:** **RELEASED — `cossart/` moved into the look folder, the stray folder removed, and the
+  note and all six figures byte-identical to the repo copy (checked with `cmp`).** Was ACTIVE,
+  claimed before writing. The murderboard of the rigid-shift look found the
   darkroom copy broken. Earlier today the Cossart outputs and the updated note were copied to a
   doubled path, `bugarach/bugarach/2026-09-15-rigid-shift-look/`, because `darkroom()` already ends
   in `bugarach`. The folder Tony reads still holds the old note and the pre-fix figures.
