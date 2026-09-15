@@ -169,6 +169,74 @@
       "top_pair_share_median": 0.26785714285714285,
       "n_recordings_with_pairs": 36,
       "events_per_run": 1108.3333333333333
+    },
+    "supervised line label-free": {
+      "events_per_10min": 4.459756341122429,
+      "n_events": 2233,
+      "n_runs": 3,
+      "participation_median": 4.0,
+      "participation_share_ge3": 0.8011643528884909,
+      "participation_share_le2": 0.19883564711150917,
+      "random_participation_median": 0.0,
+      "random_share_ge3": 0.07053291536050156,
+      "participation_1s_median": 5.0,
+      "participation_1s_share_ge3": 0.8665472458575907,
+      "random_participation_1s_median": 1.0,
+      "random_1s_share_ge3": 0.1909986565158979,
+      "top_pair_share_median": 0.3333333333333333,
+      "n_recordings_with_pairs": 39,
+      "events_per_run": 744.3333333333334
+    },
+    "supervised line bake-off threshold": {
+      "events_per_10min": 5.206710605152786,
+      "n_events": 2607,
+      "n_runs": 3,
+      "participation_median": 4.0,
+      "participation_share_ge3": 0.7330264672036824,
+      "participation_share_le2": 0.2669735327963176,
+      "random_participation_median": 0.0,
+      "random_share_ge3": 0.06789413118527042,
+      "participation_1s_median": 4.0,
+      "participation_1s_share_ge3": 0.80897583429229,
+      "random_participation_1s_median": 1.0,
+      "random_1s_share_ge3": 0.2002301495972382,
+      "top_pair_share_median": 0.4,
+      "n_recordings_with_pairs": 46,
+      "events_per_run": 869.0
+    },
+    "ssl line J10": {
+      "events_per_10min": 6.395046934291991,
+      "n_events": 3202,
+      "n_runs": 3,
+      "participation_median": 1.0,
+      "participation_share_ge3": 0.2401623985009369,
+      "participation_share_le2": 0.7598376014990631,
+      "random_participation_median": 0.0,
+      "random_share_ge3": 0.09166146158650844,
+      "participation_1s_median": 3.0,
+      "participation_1s_share_ge3": 0.5399750156152405,
+      "random_participation_1s_median": 1.0,
+      "random_1s_share_ge3": 0.2712367270455965,
+      "top_pair_share_median": 0.25,
+      "n_recordings_with_pairs": 53,
+      "events_per_run": 1067.3333333333333
+    },
+    "ssl line J20": {
+      "events_per_10min": 6.5108847613341325,
+      "n_events": 3260,
+      "n_runs": 3,
+      "participation_median": 0.0,
+      "participation_share_ge3": 0.18036809815950922,
+      "participation_share_le2": 0.8196319018404908,
+      "random_participation_median": 0.0,
+      "random_share_ge3": 0.07484662576687116,
+      "participation_1s_median": 2.0,
+      "participation_1s_share_ge3": 0.4754601226993865,
+      "random_participation_1s_median": 1.0,
+      "random_1s_share_ge3": 0.24631901840490797,
+      "top_pair_share_median": 0.25,
+      "n_recordings_with_pairs": 48,
+      "events_per_run": 1086.6666666666667
     }
   },
   "agreement": {
@@ -341,8 +409,88 @@
       "share": 0.5454545454545454,
       "chance": 0.09965034965034957,
       "n": 429
+    },
+    "supervised line label-free -> coact": {
+      "share": 0.4218540080609046,
+      "chance": 0.050918047469771105,
+      "n": 2233
+    },
+    "supervised line label-free -> loco": {
+      "share": 0.3672189879086431,
+      "chance": 0.03493058665472426,
+      "n": 2233
+    },
+    "coact -> supervised line label-free": {
+      "share": 0.7450110864745011,
+      "chance": 0.09179600886917966,
+      "n": 451
+    },
+    "loco -> supervised line label-free": {
+      "share": 0.6946386946386947,
+      "chance": 0.06188811188811203,
+      "n": 429
+    },
+    "supervised line bake-off threshold -> coact": {
+      "share": 0.3670886075949367,
+      "chance": 0.05395090141925572,
+      "n": 2607
+    },
+    "supervised line bake-off threshold -> loco": {
+      "share": 0.32642884541618716,
+      "chance": 0.03375527426160297,
+      "n": 2607
+    },
+    "coact -> supervised line bake-off threshold": {
+      "share": 0.738359201773836,
+      "chance": 0.10920177383592022,
+      "n": 451
+    },
+    "loco -> supervised line bake-off threshold": {
+      "share": 0.6876456876456877,
+      "chance": 0.07062937062937077,
+      "n": 429
+    },
+    "ssl line J10 -> coact": {
+      "share": 0.27701436602123675,
+      "chance": 0.0531230480949409,
+      "n": 3202
+    },
+    "ssl line J10 -> loco": {
+      "share": 0.22423485321673953,
+      "chance": 0.037320424734540406,
+      "n": 3202
+    },
+    "coact -> ssl line J10": {
+      "share": 0.5299334811529933,
+      "chance": 0.11308203991130816,
+      "n": 451
+    },
+    "loco -> ssl line J10": {
+      "share": 0.48484848484848486,
+      "chance": 0.09172494172494161,
+      "n": 429
+    },
+    "ssl line J20 -> coact": {
+      "share": 0.2085889570552147,
+      "chance": 0.05251533742331309,
+      "n": 3260
+    },
+    "ssl line J20 -> loco": {
+      "share": 0.16349693251533742,
+      "chance": 0.03694785276073562,
+      "n": 3260
+    },
+    "coact -> ssl line J20": {
+      "share": 0.3858093126385809,
+      "chance": 0.10831485587583152,
+      "n": 451
+    },
+    "loco -> ssl line J20": {
+      "share": 0.26107226107226106,
+      "chance": 0.08391608391608393,
+      "n": 429
     }
   },
-  "seconds": 116.29089093208313,
+  "seconds": 788.2487468719482,
   "quick": false
 }

@@ -215,10 +215,44 @@ distinctness with `tube`'s rate invariance; 1,233 parameters against tube's 1,14
 **Where it is:** registered (22 registry tests pass), and added to `tools/fair_bakeoff.py`,
 `tools/tube_self_supervised.py` and `tools/tube_ssl_real_compare.py`.
 
-**In flight when this was written:** `tools/fair_bakeoff.py --spec docs/learned/generator_spec.json`
-with `line` included, writing to a scratchpad folder. **Nothing else is running.** Still to do:
-the bake-off result, then `line` through the label-free training and the real-recording comparison,
-then the probe again on the trained `line`.
+### What `line` scored, all three tests
+
+**Supervised, on the bake-off's planted truth** (same run, four folds, one spec:
+[`learned/tube_self_supervised/line_bakeoff/`](../learned/tube_self_supervised/line_bakeoff/)):
+tube 0.686, tube_guard 0.680, **line 0.655** (recall 0.750, **precision 0.592, the highest of any
+learned model**), CoactDetect 0.651, LoCo 0.645, tiny 0.125, trace 0.110. Distinctness alone
+(`tiny`) fails; distinctness with rate invariance works.
+
+**Supervised, with the label-free threshold** — set from each recording's own rigid shift, no
+labels read at scoring time. This is where `line` separates from the tube models:
+
+| model | ≤ 0.5 events/10 min | ≤ 1 | ≤ 2 | oracle |
+|---|---|---|---|---|
+| line | **0.612** | **0.665** | **0.703** | **0.693** |
+| tube | 0.432 | 0.519 | 0.625 | 0.665 |
+| tube_guard | 0.487 | 0.542 | 0.640 | 0.652 |
+
+`line` keeps its F1 as the threshold tightens, where the tube models lose a third of theirs. That
+is the count channel doing what it was built for: the surrogate cannot manufacture a long line, so
+a threshold read off the surrogate lands in the right place.
+
+**Trained against rigid shift, no labels** — `line` is *not* better than the tube models:
+oracle 0.45 (simulated, J 10 s), 0.455 (real, J 10 s), against tube's 0.41–0.49. Label-free 0.24–0.29
+against tube's 0.26–0.31. Training stays unstable: 8–11 of 12 fits learned anything.
+
+**On real recordings** (`tools/tube_ssl_real_compare.py`, 84 lab fast baselines): supervised `line`
+behaves like supervised tube — 4.5 events per 10 min, median 5 ROIs within ±1 s, 87 % of its events
+on 3 or more ROIs, and it catches 69–75 % of CoactDetect and LoCo. `line` trained without labels
+behaves like the tube models trained without labels — 6.4 per 10 min, median 2–3 ROIs, 48–54 % on
+three or more.
+
+**The reading.** The architecture was the limit for a *supervised* detector's threshold robustness
+and precision, and `line` fixes that. It is **not** the limit for the label-free objective: with
+rigid shift as the only teacher, both architectures land in the same place. The bottleneck there is
+the objective, which rewards anything that separates real from shifted.
+
+**Nothing is running.** Still to do: the probe on the trained `line` (`tools/probe_line_vs_fuzz.py
+--checkpoints …`), and the untrained-baseline recheck above.
 
 ## Rerun
 
