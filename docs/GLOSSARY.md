@@ -337,6 +337,15 @@ load-bearing terms with no glossary entry.
   spacing events wider than the widest context window.
 - **participant floor** — the recruitment level below which a detector stops
   finding events. Reported as recall broken down by participation fraction.
+- **Reader-facing synonyms** (added 2026-09-15 for the outside-reader detector review,
+  `tools/make_detector_review.py`, which defines each in its own word list). A page for
+  readers outside the project may use these; code and project docs keep the terms above.
+  **quiet / busy background** = regime; **busy block** = promiscuity probe; **decoy** =
+  distractor; **call** = detection; **bar** = a detector's threshold; **call level** = a
+  learned model's decision threshold; **limit** = `MAX_PROBE_PER_MIN` ceiling; **shipped
+  setting** = operating point; **round** = held-out fold; **marked windows** = the
+  producer's analysis-start/end span (not "analysis window", which is reserved above);
+  **large / mid-sized / small events** = participation 30 / 18 / 10%.
 
 ## Surrogate vocabulary
 
