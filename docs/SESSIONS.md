@@ -27,8 +27,12 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
   `README.html` and `.Rhistory` in the look folder are Tony's and are not touched.
 - **Released when:** the look folder matches the repo copy and the stray folder is gone.
 
-### WSMIP065/detector-review-doc — DARKROOM claim ACTIVE 2026-09-15: `bugarach/2026-09-15-detector-review/`
-- **Status:** **ACTIVE — claimed before writing.** Tony asked for a document for external review:
+### WSMIP065/detector-review-doc — DARKROOM claim RELEASED 2026-09-15: `bugarach/2026-09-15-detector-review/`
+- **Status:** **RELEASED — `detector_review.html`, its 19 figures, `real_prose.json`, the
+  measurements (`measurements/`) and the verbatim role reports of all three murderboard rounds
+  (`reviews/`) are in the folder; the builder, template, public review copies and run record are on
+  the `detector-review-doc` PR.** The run stopped at the round cap, unconverged; open items are in
+  `docs/reviews/detector_review_2026-09-15.md`. Tony asked for a document for external review:
   every detector (coded and learned) with a figure of how it decides, surrogates, the simulator,
   the optimization procedure, and real TTX and senktide rasters; HTML only; full murderboard.
 - **Writes:** one new folder only — the page, its figures, the fresh bench run's JSON, and the
