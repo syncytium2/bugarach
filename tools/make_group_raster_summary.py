@@ -6,7 +6,8 @@
     python tools/make_group_raster_summary.py --folder <a flagged review copy>
 
 One page per (group, treatment) — `MALE_TTX`, `ORX_senktide`, and so on. Each
-page carries the recordings in that group that received that treatment, one
+page carries the recordings in that group whose FIRST treatment, the period right
+after baseline, was that treatment — a later period never adds a recording — one
 above the next, **all re-zeroed at the end of their own baseline** so the moment
 the drug arrives is the same vertical line on every row and the rows can be read
 against each other. Time runs negative through baseline and positive through
@@ -75,6 +76,16 @@ from bugarach.io import load_folder  # noqa: E402
 
 MANIFEST = "field_steps_flagged.tsv"
 
+#: The analysis folder's record of what was taken OUT: one row per event removed
+#: for sitting within ±2 s of a confirmed field step. Its presence, with no
+#: `MANIFEST` beside it, is what identifies the steps-excluded export.
+EXCLUDED_MANIFEST = "field_steps_excluded.tsv"
+
+#: The producer's analysis dataset — "for any new analysis, use this folder" — by
+#: its ROLE in `current_export.toml`, never by name: the pointer is the one place a
+#: folder name is declared (`tests/test_where_the_data_are.py`).
+EXCLUDED_ROLE = "steps_excluded"
+
 #: Names the flagged review copy has shipped under. The producer's README calls
 #: it `..._STEPS_FLAGGED_FOR_REVIEW`; it arrived on this machine as
 #: `_superseded_flagrun2`. Neither is a path — `dataset` resolves a NAME against
@@ -93,11 +104,21 @@ DEFAULT_TREATMENTS = ("TTX", "senktide")
 #: is always first, so its end is a real shared moment rather than a convention.
 ANCHOR = "baseline"
 
-#: Constant, and asked for. Tony, 2026-09-04: *"the height of each row constant
-#: independent of the number of rois."* `raster_panel` sizes itself from ROI
-#: count when height is None; passing it explicitly is what makes a 9-ROI
-#: recording and a 61-ROI one occupy the same band and stay comparable.
-RASTER_PX = 116
+#: Proportional to ROI count: every ROI gets the same pitch on every recording,
+#: so a 10-ROI recording is a sixth the height of a 61-ROI one and the ink
+#: density reads the same down the page (Tony, 2026-09-15: *"the height of the row
+#: should be proportional to the number of ROIs"*). It replaced the constant 116 px
+#: row he asked for on 2026-09-04, which drew a small recording's ROIs far apart
+#: and a large one's packed together.
+RASTER_PX_PER_ROI = 3
+
+#: The slice id, rotated, in a column left of its block (Tony, 2026-09-15). A
+#: 10-ROI block is shorter than its own id, so the block gets whitespace BELOW the
+#: raster rather than a taller raster: the ink stays proportional and only the
+#: gap grows.
+LABEL_COL_PX = 18
+LABEL_PX_PER_CHAR = 6.2
+BLOCK_GAP_PX = 6
 
 #: Halved, and for the same reason the raster is dense: a detector row carries at
 #: most one mark per call, so the height it needs is the height of a mark, not the
@@ -106,7 +127,13 @@ RASTER_PX = 116
 #: ten-detector block is about the height of the raster it sits on rather than
 #: twice it, and the page holds six recordings instead of three.
 LANE_PX = 13
-REGION_PX = 34   # two strips in one lane: the period, and the window scored
+REGION_PX = 14   # two strips in one lane: the period, and the window scored
+AXIS_PX = 30     # what the bottom raster adds for the page's one x-axis
+
+#: No padding above or below a panel. Bokeh's default border is the white band
+#: between the period lane and its raster, and on a page of eleven blocks it was
+#: most of the vertical space that was not data.
+TIGHT = {"plot.min_border_top": 0, "plot.min_border_bottom": 0}
 PAGE_PX = 1500
 
 
@@ -124,18 +151,51 @@ def read_manifest(folder: Path) -> dict[tuple[str, str, str], list[float]]:
     return out
 
 
-def resolve_folder(explicit: str | None, *, unscanned: bool = False) -> Path:
+def read_removed(folder: Path) -> dict[tuple[str, str], int]:
+    """Events the producer removed, counted per (slice_id, stream)."""
+    out: dict[tuple[str, str], int] = defaultdict(int)
+    with (folder / EXCLUDED_MANIFEST).open(newline="") as fh:
+        for row in csv.DictReader(fh, delimiter="\t"):
+            out[(row["slice_id"], str(row["stream"]).strip().lower())] += 1
+    return out
+
+
+def resolve_folder(explicit: str | None, *, unscanned: bool = False,
+                   steps_excluded: bool = False) -> Path:
     """Find the flagged review copy, and refuse anything that is not one.
 
-    ``unscanned`` is the one exception, and it has to be asked for by name: a
+    ``unscanned`` is one exception, and it has to be asked for by name: a
     folder the producer has NEVER scanned for field steps (their export report
     says ``step-artifacts: UNCHECKED``) has no manifest because nothing was
     looked for, not because the artifacts were removed. That folder may be
     drawn — with no red, and with the page saying in its header that no scan
     was run, so the absence of red cannot be read as a clean corpus.
+
+    ``steps_excluded`` is the other, also by name: the analysis dataset itself,
+    artifacts already removed (Tony, 2026-09-15 — the pages people read the data
+    from, rather than the review of what the artifacts did). It has no red to
+    draw, so the header says the steps were REMOVED and how many events that
+    took from the page's recordings, read from the producer's own
+    ``field_steps_excluded.tsv``. A folder without that file is refused: absent
+    red on a page claiming exclusion has to be backed by the exclusion record.
     """
     from bugarach import dataset
 
+    if unscanned and steps_excluded:
+        raise SystemExit("--unscanned and --steps-excluded contradict each other: "
+                         "one says no scan was run, the other that its results were applied")
+    if steps_excluded:
+        folder = (Path(dataset.require(explicit, want="export_folder", flag="--folder"))
+                  if explicit else Path(dataset.current(EXCLUDED_ROLE)))
+        if not (folder / EXCLUDED_MANIFEST).is_file():
+            raise SystemExit(
+                f"{folder.name} has no {EXCLUDED_MANIFEST}, so nothing records that "
+                "field steps were removed from it — refusing to label it steps-excluded.")
+        if (folder / MANIFEST).is_file():
+            raise SystemExit(
+                f"{folder.name} has a {MANIFEST}: it is the flagged review copy, with the "
+                "artifacts still in it. Drop --steps-excluded and let the marks be drawn.")
+        return folder
     if unscanned:
         if not explicit:
             raise SystemExit("--unscanned needs --folder: there is no name to resolve "
@@ -184,6 +244,15 @@ def _anchor_of(sl) -> float | None:
     return None
 
 
+def treatment_one(sl) -> str | None:
+    """The first period after baseline, in time order, or None if there is none."""
+    for r in sorted(sl.regions or [], key=lambda r: float(r.start_sec)):
+        lab = (r.name or "").strip()
+        if lab and lab.lower() != ANCHOR:
+            return lab
+    return None
+
+
 def _shift_stream(stream, shift: float):
     """The same stream, re-zeroed. Times move; nothing else does.
 
@@ -213,12 +282,15 @@ def _shift_stream(stream, shift: float):
     return dataclasses.replace(stream, **moved)
 
 
-def measure(folder: Path, treatments: tuple[str, ...], *, unscanned: bool = False):
+def measure(folder: Path, treatments: tuple[str, ...], *, unscanned: bool = False,
+            steps_excluded: bool = False, groups: tuple[str, ...] | None = None):
     """Which recordings go on which page, and what each page's extent must be."""
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         slices = load_folder(folder)
-    manifest = {} if unscanned else read_manifest(folder)
+    manifest = {} if (unscanned or steps_excluded) else read_manifest(folder)
+    if groups:
+        slices = [sl for sl in slices if (sl.meta.get("group_id") or "UNGROUPED") in groups]
 
     pages: dict[tuple[str, str], list] = defaultdict(list)
     skipped: list[str] = []
@@ -227,10 +299,16 @@ def measure(folder: Path, treatments: tuple[str, ...], *, unscanned: bool = Fals
         if anchor is None:
             skipped.append(f"{sl.slice_id} (no {ANCHOR} region to align on)")
             continue
-        labels = {(r.name or "").strip() for r in sl.regions or []}
-        hit = [t for t in treatments if t in labels]
+        # TREATMENT 1 DECIDES THE PAGE, AND NOTHING AFTER IT (Tony, 2026-09-15:
+        # "treatment 1 is the only one that matters for inclusion on a page").
+        # Matching any period put a recording given TTX and then senktide on the
+        # senktide page too, where its senktide arrives on a slice already
+        # treated — 35 recordings on the senktide pages against the producer's
+        # 29 in its senktide-first folder.
+        first = treatment_one(sl)
+        hit = [t for t in treatments if t == first]
         if not hit:
-            skipped.append(f"{sl.slice_id} ({', '.join(sorted(labels)) or 'no regions'})")
+            skipped.append(f"{sl.slice_id} (treatment 1: {first or 'none'})")
         for t in hit:
             # ONE PAGE PER STREAM, not one page carrying both (Tony, 2026-09-08).
             # fast and slow are different measurements, and stacking them per
@@ -393,10 +471,14 @@ def build_page(members, *, ext, manifest, width: int, stream: str,
                 marked.append(np.asarray(hits, dtype=float) - anchor)
                 n_red += len(hits)
             red_drawn += n_red
+            # No y-label: the slice id sits rotated to the left of the block, the
+            # stream is in the page title, and the top tick already says the ROI
+            # count. A rotated label inside a 30 px raster is clipped anyway.
             panels.append(raster_panel(
                 _shift_stream(st, anchor), ext=ext, width=width,
-                height=RASTER_PX, name=sname, marked=marked,
-                ydim=f"roi_{sl.slice_id}_{sname}", ticks="minimal"))
+                height=raster_px(st.n_rois), name=sname, marked=marked,
+                ydim=f"roi_{sl.slice_id}_{sname}", ticks="minimal"
+            ).opts(ylabel="", backend_opts=TIGHT))
         blocks.append((sl, panels))
 
     # ONE X-AXIS PER LINKED GROUP, on the bottom row only (CLAUDE.md). Every
@@ -406,15 +488,30 @@ def build_page(members, *, ext, manifest, width: int, stream: str,
     # own and gets the height back that the others give up.
     flat = [p for _, ps in blocks for p in ps]
     for p in flat[:-1]:
-        p.opts(xaxis=None, toolbar=None)
+        p.opts(xaxis=None, toolbar=None, backend_opts=TIGHT)
     if flat:
-        flat[-1].opts(height=RASTER_PX + 34, toolbar=None)
+        last_h = flat[-1].opts.get("plot").kwargs.get("height") or 0
+        flat[-1].opts(height=last_h + AXIS_PX, toolbar=None)
     return blocks, red_drawn
+
+
+def raster_px(n_rois: int) -> int:
+    return RASTER_PX_PER_ROI * max(int(n_rois), 1)
+
+
+def block_heights(slice_id: str, n_rois: int) -> tuple[int, int]:
+    """(data height, label height) for one block, in px.
+
+    The label height is the larger of the two: an id longer than its block gets
+    the room it needs as whitespace below the raster, never as a taller raster.
+    """
+    data = REGION_PX + raster_px(n_rois)
+    return data, max(data, int(len(slice_id) * LABEL_PX_PER_CHAR) + 6)
 
 
 def header_html(group: str, treatment: str, members, ext, folder: Path,
                 *, stream: str = "", unscanned: bool = False, ran=(), not_run=(),
-                excluded=(), note=None,
+                excluded=(), note=None, removed: dict | None = None,
                 detections: Path | None = None) -> str:
     """The key, and the provenance. Outside every plot, per the conventions."""
     from bugarach.ui.diagnostic import MARKED_INK, RASTER_INK, REGION_FILL
@@ -444,6 +541,17 @@ def header_html(group: str, treatment: str, members, ext, folder: Path,
         red_key = ("<b style='color:#b00'>⚠ no field-step scan has been run on this "
                    "folder</b> (the producer's export report says UNCHECKED) — nothing "
                    "is marked, and the absence of red is not evidence of a clean cohort")
+    elif removed is not None:
+        # No red here either, for the opposite reason: the artifacts were found
+        # and taken out. The count is this page's recordings on this page's
+        # stream, so a reader can see what the clean page cost.
+        hit = sorted((sl.slice_id, removed[(sl.slice_id, stream)]) for sl, _ in members
+                     if removed.get((sl.slice_id, stream)))
+        n = sum(k for _, k in hit)
+        where = (" — " + ", ".join(f"{sid}: {k} events" for sid, k in hit)) if hit else ""
+        red_key = (f"<b>field-step artifacts removed by the producer</b>: {n} {stream} "
+                   f"events on {len(hit)} of these {len(members)} recordings{where} "
+                   f"(listed in {EXCLUDED_MANIFEST}); nothing on this page is marked")
     from bugarach.ui.app import COLORS, TITLES
 
     if ran:
@@ -490,7 +598,8 @@ def header_html(group: str, treatment: str, members, ext, folder: Path,
         f"<div style='margin:5px 0 0;color:#777;font-size:11px'>"
         f"{folder.name}{src} &nbsp;·&nbsp; extent {ext[0] / 60:.0f}m to +{ext[1] / 60:.0f}m, "
         f"the full recorded length of the longest recording &nbsp;·&nbsp; "
-        f"row height is constant and does not scale with ROI count</div></div>")
+        f"raster height is proportional to ROI count ({RASTER_PX_PER_ROI} px per ROI); "
+        f"slice id at the left of each recording</div></div>")
 
 
 def main(argv=None) -> int:
@@ -510,6 +619,12 @@ def main(argv=None) -> int:
                     help="the folder was NEVER scanned for field steps (producer: "
                          "UNCHECKED), so it has no manifest. Draw it with no red and "
                          "say so in the header. Needs --folder.")
+    ap.add_argument("--steps-excluded", action="store_true",
+                    help=f"draw the ANALYSIS dataset, field-step artifacts already "
+                         f"removed (default: the '{EXCLUDED_ROLE}' export). No red; the header "
+                         f"counts what {EXCLUDED_MANIFEST} says was removed.")
+    ap.add_argument("--groups", nargs="+", default=None, metavar="GROUP",
+                    help="only these groups (e.g. DI) — for rendering one page to review")
     ap.add_argument("--detections", default=None, nargs="+", type=Path,
                     help="one or more detections.csv — detect's own, and any other "
                          "file in the same contract (a learned run, say). Draws a "
@@ -529,7 +644,9 @@ def main(argv=None) -> int:
                          "nothing persists a trained model.")
     a = ap.parse_args(argv)
 
-    folder = resolve_folder(a.folder, unscanned=a.unscanned)
+    folder = resolve_folder(a.folder, unscanned=a.unscanned,
+                            steps_excluded=a.steps_excluded)
+    removed = read_removed(folder) if a.steps_excluded else None
     if a.out:
         dest = Path(a.out).expanduser()
     else:
@@ -538,13 +655,18 @@ def main(argv=None) -> int:
             print(paths.unresolved_message(), file=sys.stderr)
             return 2
         # Named for what is in it, not for the branch that made it.
-        dest = root / "rasters_by_group_and_treatment_baseline_aligned"
+        # A separate folder for the excluded pages: same filenames, different
+        # data, and overwriting the flagged review in place would lose it.
+        dest = root / ("rasters_by_group_and_treatment_baseline_aligned"
+                       + ("_steps_excluded" if a.steps_excluded else ""))
     dest.mkdir(parents=True, exist_ok=True)
 
     import panel as pn
 
     pages, manifest, skipped = measure(folder, tuple(a.treatments),
-                                       unscanned=a.unscanned)
+                                       unscanned=a.unscanned,
+                                       steps_excluded=a.steps_excluded,
+                                       groups=tuple(a.groups) if a.groups else None)
     if not pages:
         print("no (group, treatment) page has any recording", file=sys.stderr)
         return 1
@@ -569,20 +691,28 @@ def main(argv=None) -> int:
                                           spec["ext"], folder, stream=stream,
                                           unscanned=a.unscanned, ran=ran,
                                           not_run=not_run, excluded=a.exclude,
-                                          detections=a.detections, note=a.note))]
+                                          detections=a.detections, note=a.note,
+                                          removed=removed))]
         for sl, panels in blocks:
-            # A TEXT HEADER OUTSIDE THE PLOT, which is what the convention offers
-            # beside the y-label — and here it is the one that works. Rotated
-            # into a 116 px y-label the recording id was clipped to
-            # "0240827a55", and a truncated identifier on a per-recording figure
-            # is worse than none: it still looks like an answer.
-            n_roi = next((s.n_rois for s in sl.streams.values()), 0)
-            items.append(pn.pane.HTML(
-                f"<div style='font:12px system-ui,sans-serif;color:#111;"
-                f"margin:9px 0 0 78px'><b>{sl.slice_id}</b>"
-                f"<span style='color:#666'> · {n_roi} ROI · "
-                f"{sl.meta.get('group_id', '?')}</span></div>"))
-            items += [pn.pane.HoloViews(p) for p in panels]
+            # THE ID, ROTATED, IN ITS OWN COLUMN — an HTML block and not the
+            # raster's y-label. As a y-label it is clipped to the plot's height:
+            # at 116 px it came out as "0240827a55", and a truncated identifier
+            # still looks like an answer. Its own column is as tall as the id
+            # needs, and a block shorter than that gets the difference as space.
+            st = sl.streams.get(stream)
+            data_h, label_h = block_heights(sl.slice_id, st.n_rois if st else 0)
+            label = pn.pane.HTML(
+                f"<div style='height:{label_h}px;width:{LABEL_COL_PX}px;"
+                f"display:flex;align-items:center;justify-content:center'>"
+                f"<span style='writing-mode:vertical-rl;transform:rotate(180deg);"
+                f"font:600 10px system-ui,sans-serif;color:#111;white-space:nowrap'>"
+                f"{sl.slice_id}</span></div>",
+                width=LABEL_COL_PX, height=label_h, margin=(0, 0, 0, 0))
+            col = [pn.pane.HoloViews(p, margin=0, linked_axes=True) for p in panels]
+            if label_h > data_h:
+                col.append(pn.Spacer(height=label_h - data_h, margin=0))
+            items.append(pn.Row(label, pn.Column(*col, margin=0),
+                                margin=(0, 0, BLOCK_GAP_PX, 0)))
 
         with tempfile.TemporaryDirectory() as td:
             tmp = Path(td) / "p.html"
@@ -616,11 +746,15 @@ def main(argv=None) -> int:
         # and a reader who does not know that will read these eight pages as the
         # whole corpus.
         print(f"\n{len(skipped)} recording(s) on NO page "
-              f"(no {'/'.join(a.treatments)} region):")
+              f"(treatment 1 is not {'/'.join(a.treatments)}):")
         for s in sorted(skipped):
             print(f"  {s}")
-    print(f"\nred marks {total_red} drawn / {in_manifest} in {MANIFEST} "
-          f"(a recording on two pages is drawn on both)")
+    if removed is not None:
+        print(f"\nsteps-excluded: no red drawn; {sum(removed.values())} events listed "
+              f"as removed in {EXCLUDED_MANIFEST}")
+    else:
+        print(f"\nred marks {total_red} drawn / {in_manifest} in {MANIFEST} "
+              f"(a recording on two pages is drawn on both)")
     return 0
 
 

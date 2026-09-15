@@ -10,9 +10,39 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
-### Mac/rigid-shift-cossart — DARKROOM claim ACTIVE 2026-09-15: `bugarach/2026-09-15-rigid-shift-look/cossart/`
-- **Status:** **ACTIVE — claimed before writing.** Tony asked *"Does it work on the cossart
-  dandiset?"*; the same rigid-shift look was run on the Cossart folder (59 recordings, whole
+### Mac/rigid-shift-darkroom-fix — DARKROOM claim RELEASED 2026-09-15: `bugarach/2026-09-15-rigid-shift-look/` and the stray `bugarach/bugarach/`
+- **Status:** **RELEASED — `cossart/` moved into the look folder, the stray folder removed, and the
+  note and all six figures byte-identical to the repo copy (checked with `cmp`).** Was ACTIVE,
+  claimed before writing. The murderboard of the rigid-shift look found the
+  darkroom copy broken. Earlier today the Cossart outputs and the updated note were copied to a
+  doubled path, `bugarach/bugarach/2026-09-15-rigid-shift-look/`, because `darkroom()` already ends
+  in `bugarach`. The folder Tony reads still holds the old note and the pre-fix figures.
+- **Writes:**
+  - move `cossart/` from the doubled path into the look folder, then remove the now-empty stray
+    `bugarach/bugarach/` (it holds only this session's copies);
+  - replace `README.md`, the top-level figures and the figures in `declared-displacements/` and
+    `larger-displacements/` with the current repo versions, which carry the correction banner and
+    the legend fix.
+
+  `README.html` and `.Rhistory` in the look folder are Tony's and are not touched.
+- **Released when:** the look folder matches the repo copy and the stray folder is gone.
+
+### WSMIP065/detector-review-doc — DARKROOM claim ACTIVE 2026-09-15: `bugarach/2026-09-15-detector-review/`
+- **Status:** **ACTIVE — claimed before writing.** Tony asked for a document for external review:
+  every detector (coded and learned) with a figure of how it decides, surrogates, the simulator,
+  the optimization procedure, and real TTX and senktide rasters; HTML only; full murderboard.
+- **Writes:** one new folder only — the page, its figures, the fresh bench run's JSON, and the
+  review record. Nothing existing in the darkroom is touched.
+- ⚠ **Holds real treatment rasters**, so the page stays in the darkroom (FOUNDATIONS §5): no repo
+  copy of those figures, and no web link.
+- **Released when:** the reviewed page is in the folder and the builder is on a PR.
+
+### Mac/rigid-shift-cossart — DARKROOM claim RELEASED 2026-09-15: `bugarach/2026-09-15-rigid-shift-look/cossart/`
+- **Status:** **RELEASED — two figures, results JSON and the destruction table are in the subfolder;
+  repo copy in `docs/learned/rigid_shift_look/cossart/`.** ⚠ **The copy was written before this
+  claim merged:** the merge helper was first called without `bash`, failed on permissions, and
+  the copy went ahead while the claim PR was still open. No other session held the folder. Tony
+  asked *"Does it work on the cossart dandiset?"*; the same rigid-shift look was run on the Cossart folder (59 recordings, whole
   recordings, since that folder declares no regions).
 - **Writes:** one new subfolder only — results JSON, two figures, a short note. Nothing existing
   in the look folder is touched.
@@ -2322,3 +2352,14 @@ session's work is not a sweep.
 - ⚠ **Recorded after the write, not before it.** The rule is to claim a darkroom write first; this
   one was written and then recorded. It collided with nothing, and the next one should claim first.
 - **Released:** at write — holds nothing. The repo copy is `docs/needs/` in the same change.
+
+### darkroom/bugarach/rasters_by_group_and_treatment_baseline_aligned_steps_excluded/ — group rasters from the steps-excluded export (065/rasters-steps-excluded)
+- **Claimed:** 2026-09-15, before the first write. A new folder, so nothing existing is overwritten;
+  the 09-04 flagged-copy pages in `rasters_by_group_and_treatment_baseline_aligned/` are left as they are.
+- **Writes:** `{GROUP}_{senktide,TTX}_{fast,slow}.html` from
+  `tools/make_group_raster_summary.py --steps-excluded --no-png` — 16 pages, review pages (DI and OVX TTX) first.
+- **Released:** 2026-09-15, at write. All 16 pages written. The review PNGs written earlier that morning
+  were deleted from the folder at Tony's request (HTML only).
+- **Re-claimed** the same day, before rewriting all 16: pages are now decided by treatment 1 alone, so a
+  recording given senktide after TTX leaves the senktide page. Released again at write: 16 pages rewritten,
+  TTX 38 recordings and senktide 29, the same counts as the producer's `_TTX` and `_SENKTIDE` folders. Holds nothing.

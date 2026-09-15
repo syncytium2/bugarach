@@ -195,6 +195,70 @@ def test_an_unscanned_folder_is_drawn_with_no_red_and_says_so(tmp_path):
     assert "drop --unscanned" in str(e.value)
 
 
+def test_the_steps_excluded_folder_is_drawn_with_no_red_and_counts_the_removal(tmp_path):
+    """The analysis dataset (Tony, 2026-09-15): artifacts already removed, so no
+    red — and the header says what was removed from THIS page's recordings on
+    THIS page's stream, from the producer's own record. Refused without that
+    record, and refused on the flagged copy, where it would hide marks."""
+    d = _folder(tmp_path, manifest=None)
+    (d / mod.EXCLUDED_MANIFEST).write_text(MANIFEST)  # same columns as the producer's
+    assert mod.resolve_folder(str(d), steps_excluded=True) == d
+    pages, manifest, _ = mod.measure(d, ("TTX",), steps_excluded=True)
+    assert manifest == {}
+    spec = pages[("MALE", "TTX", "fast")]
+    _, red = mod.build_page(spec["members"], ext=spec["ext"], manifest=manifest,
+                            width=400, stream="fast")
+    assert red == 0
+    removed = mod.read_removed(d)
+    head = mod.header_html("MALE", "TTX", spec["members"], spec["ext"], d,
+                           stream="fast", removed=removed)
+    assert "removed by the producer" in head
+    assert "2 fast events on 1 of these 2 recordings" in head and "s1: 2 events" in head
+
+    (tmp_path / "flagged_copy").mkdir()
+    with pytest.raises(SystemExit):
+        mod.resolve_folder(str(_folder(tmp_path / "flagged_copy")), steps_excluded=True)
+    (tmp_path / "bare").mkdir()
+    with pytest.raises(SystemExit):
+        mod.resolve_folder(str(_folder(tmp_path / "bare", manifest=None)),
+                           steps_excluded=True)
+    with pytest.raises(SystemExit):
+        mod.resolve_folder(str(d), steps_excluded=True, unscanned=True)
+
+
+def test_raster_height_is_proportional_to_roi_count_and_the_id_never_stretches_it():
+    """Same pitch per ROI on every recording (Tony, 2026-09-15). An id longer than
+    a small block gets whitespace, never a taller raster."""
+    assert mod.raster_px(60) == 6 * mod.raster_px(10)
+    data, label = mod.block_heights("20260707_346", 10)
+    assert data == mod.REGION_PX + mod.raster_px(10)
+    assert label > data                      # the id needs more than 10 ROI give it
+    data, label = mod.block_heights("20260707_346", 61)
+    assert label == data                     # and a large block needs nothing extra
+
+
+def test_only_treatment_one_puts_a_recording_on_a_page(tmp_path):
+    """A slice given TTX and then senktide is a TTX recording and nothing else
+    (Tony, 2026-09-15). Its senktide arrives on a slice already treated."""
+    d = _folder(tmp_path)
+    (d / "regions.csv").write_text(
+        "slice_id,region_idx,label,start_sec,end_sec,analysis_start_sec,analysis_end_sec\n"
+        "s1,1,baseline,0,60,0,60\n"
+        "s1,2,TTX,60,120,60,120\n"
+        "s1,3,senktide,120,180,120,180\n"
+        "s3,1,baseline,0,60,0,60\n"
+        "s3,2,high K+,60,90,60,90\n"
+        "s3,3,senktide,90,120,90,120\n")
+    pages, _, skipped = mod.measure(d, ("TTX", "senktide"))
+    assert sorted(pages) == [("MALE", "TTX", "fast"), ("MALE", "TTX", "slow")]
+    assert any(s.startswith("s3 (treatment 1: high K+)") for s in skipped)
+
+
+def test_groups_limits_the_pages(tmp_path):
+    pages, _, _ = mod.measure(_folder(tmp_path), ("TTX", "senktide"), groups=("DI",))
+    assert sorted(pages) == [("DI", "senktide", "fast"), ("DI", "senktide", "slow")]
+
+
 def test_a_recording_with_no_baseline_is_skipped_not_drawn_at_zero(tmp_path):
     """No anchor means no honest x — dropping it beats aligning it on nothing."""
     d = _folder(tmp_path)
