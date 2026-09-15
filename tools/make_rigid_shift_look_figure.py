@@ -50,13 +50,6 @@ def _fig1(R, out):
         ax.set_ylabel(f"{stream} · forced-choice accuracy\n({n['n_pairs']} window pairs, "
                       f"{n['n_mice']} mice, {n['n_slices']} slices)")
         ax.set_xlabel("displacement J")
-        if row == 0:
-            handles = [Line2D([], [], color=INK["rigid_shift"], marker="o", lw=2.2, label="rigid shift"),
-                       Line2D([], [], color=INK["uniform_dither"], marker="o", lw=2.2,
-                              label="uniform dither (what a leak looks like)"),
-                       Line2D([], [], color="0.3", lw=2.2, label="thick: 1.67–98.33 % over mice"),
-                       Line2D([], [], color="0.3", lw=1.0, alpha=0.6, label="thin: same, over slices")]
-            ax.legend(handles=handles, frameon=False, fontsize=7, loc="upper left")
 
         ax = axes[row, 1]
         rows = [r for r in R["count"] if r["stream"] == stream]
@@ -78,7 +71,15 @@ def _fig1(R, out):
                       [f"{r['J_sec']:g} s" for r in rs] + ["edge thinning\n5 s (control)"])
         ax.set_ylabel(f"{stream} · occupied-frame change (%)\n({et['n_slices']} slices)")
         ax.set_xlabel("displacement J")
-    fig.tight_layout()
+    # The legend sits above the panels: inside the leak panel it covered the dither bars.
+    handles = [Line2D([], [], color=INK["rigid_shift"], marker="o", lw=2.2, label="rigid shift"),
+               Line2D([], [], color=INK["uniform_dither"], marker="o", lw=2.2,
+                      label="uniform dither (what a leak looks like)"),
+               Line2D([], [], color="0.3", lw=2.2, label="thick bar: 1.67–98.33 % over mice"),
+               Line2D([], [], color="0.3", lw=1.0, alpha=0.6, label="thin bar: same, over slices")]
+    height = fig.get_size_inches()[1]
+    fig.legend(handles=handles, frameon=False, fontsize=8, ncol=2, loc="upper center")
+    fig.tight_layout(rect=(0, 0, 1, 1 - 0.55 / height))
     p = out / "fig1_leak_count.png"
     fig.savefig(p, dpi=160)
     plt.close(fig)
@@ -123,12 +124,13 @@ def _fig2(R, out):
                     table.append((stream, bin_sec, p, v, K, q))
             for ctl, c in (("homogeneous_resample", "0.45"), ("do_nothing", "0.7")):
                 pts = [_retained(d["variants"][ctl], str(K), rs) for K in Ks]
-                ax.plot(Ks, [q[0] for q in pts], color=c, lw=1, marker="s", ms=3,
+                # On top, so a control reading 0 is not hidden under rigid-shift lines at 0.
+                ax.plot(Ks, [q[0] for q in pts], color=c, lw=1, marker="s", ms=3, zorder=4,
                         label=ctl.replace("_", " ") + " (control)")
             ax.axhline(0.25, color="0.3", lw=0.8, ls="--")
             ax.set_xticks(Ks)
             if j == 0:
-                ax.set_ylabel(f"{stream} · {bin_sec:g} s bin\nretained share of planted coordination")
+                ax.set_ylabel(f"{stream} · {bin_sec:g} s bin\nretained share of\nplanted coordination")
             ax.set_xlabel(f"K, co-active ROIs (absolute) · participation {p:g}")
             if j == len(parts) - 1:
                 ax.legend(frameon=False, fontsize=7, loc="center left", bbox_to_anchor=(1.01, 0.5))
