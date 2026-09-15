@@ -141,6 +141,45 @@ Three options were put to him, the first recommended:
    matched run.
 3. **Stop**, and record the result as a negative on the goal page.
 
+## Option 1, run after the internet returned — the trained models on real recordings
+
+Tony chose option 1. The tools are `tools/tube_ssl_real_compare.py` and
+`tools/make_tube_real_lanes.py`.
+
+**Data and training.**
+- **What is kept:** the summary, per-recording event times and seed-0 checkpoints are in
+  [`learned/tube_self_supervised/real_compare/`](../learned/tube_self_supervised/real_compare/).
+- **Folds:** the models trained against rigid shift were refitted per mouse fold, so every
+  recording is called by a model that never saw its mouse.
+- **Detectors:** they were run beside supervised tube, CoactDetect and LoCo on all 84 lab
+  fast-stream baselines.
+- **Threshold:** label-free, at most 2 events per 10 minutes on the recording's own rigid shift.
+
+**Results, trained without labels (supervised in brackets).**
+- **Rate:** 5.7–6.6 events per 10 minutes (4.6–5.0). CoactDetect fires 2.7 and LoCo 2.6.
+- **Coverage:** 67–77 % of CoactDetect and LoCo events are caught at *J* = 10 s, and 36–55 % at
+  *J* = 20 s (80–87 %). Chance is about 10 %.
+- **Precision against the hand-written calls:** 18–28 % of their own events land within 1 s of a
+  CoactDetect or LoCo event (31–47 %). Chance is about 5 %.
+- **Participation within ±1 s, away from window edges:** median 2–3 ROIs, and 40–52 % of events
+  involve 3 or more (median 5, 85–89 %). At random times, 19–33 % reach 3.
+- **Timing:** the offset from the nearest CoactDetect event is spread across ±5 s, where
+  supervised tube is locked at +0.5 to +2 s from the CoactDetect onset.
+- **Fragmentation:** 13–22 % of CoactDetect events carry two or more of their events within
+  ±5 s (2–6 %).
+- **Events far from any hand-written call** (more than 5 s): 51–53 % (44–45 %).
+- **Not a crosstalk artefact:** the most frequent ROI pair's share is 0.25–0.33, no more
+  concentrated than supervised tube's 0.33–0.5.
+- **Not an edge artefact:** only 3–4 % of their events sit within 5 s of a window edge.
+
+**Figures** (darkroom only, because they hold real rasters):
+`<darkroom>/bugarach/tube_real_lanes_20250827_199_baseline.png` and `..._zoom.png`.
+
+**Reading.** They are a real but weaker coordination detector, not an artefact detector. They
+find most of the bursts the hand-written detectors find, but about half of their calls sit on
+two ROIs or fewer, they break single bursts into several calls, and their timing is not locked
+to the burst.
+
 ## Rerun
 
 - **Controls:** `tools/look_rigid_shift_controls.py`, about 3 minutes on the lab folder and about

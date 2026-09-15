@@ -1,0 +1,348 @@
+{
+  "stats": {
+    "coact": {
+      "events_per_10min": 2.7022168963451167,
+      "n_events": 451,
+      "n_runs": 1,
+      "participation_median": 7.0,
+      "participation_share_ge3": 1.0,
+      "participation_share_le2": 0.0,
+      "random_participation_median": 1.0,
+      "random_share_ge3": 0.18403547671840353,
+      "participation_1s_median": 7.0,
+      "participation_1s_share_ge3": 1.0,
+      "random_participation_1s_median": 1.0,
+      "random_1s_share_ge3": 0.270509977827051,
+      "top_pair_share_median": null,
+      "n_recordings_with_pairs": 0,
+      "events_per_run": 451.0
+    },
+    "loco": {
+      "events_per_10min": 2.5704014379868183,
+      "n_events": 429,
+      "n_runs": 1,
+      "participation_median": 7.0,
+      "participation_share_ge3": 1.0,
+      "participation_share_le2": 0.0,
+      "random_participation_median": 0.0,
+      "random_share_ge3": 0.08624708624708624,
+      "participation_1s_median": 8.0,
+      "participation_1s_share_ge3": 1.0,
+      "random_participation_1s_median": 1.0,
+      "random_1s_share_ge3": 0.2540792540792541,
+      "top_pair_share_median": null,
+      "n_recordings_with_pairs": 0,
+      "events_per_run": 429.0
+    },
+    "supervised tube label-free": {
+      "events_per_10min": 4.6195326542840025,
+      "n_events": 2313,
+      "n_runs": 3,
+      "participation_median": 5.0,
+      "participation_share_ge3": 0.8028534370946823,
+      "participation_share_le2": 0.19714656290531776,
+      "random_participation_median": 0.0,
+      "random_share_ge3": 0.06571552096843926,
+      "participation_1s_median": 5.0,
+      "participation_1s_share_ge3": 0.8664072632944229,
+      "random_participation_1s_median": 1.0,
+      "random_1s_share_ge3": 0.18979680069174232,
+      "top_pair_share_median": 0.3333333333333333,
+      "n_recordings_with_pairs": 39,
+      "events_per_run": 771.0
+    },
+    "supervised tube bake-off threshold": {
+      "events_per_10min": 6.498901537847014,
+      "n_events": 3254,
+      "n_runs": 3,
+      "participation_median": 4.0,
+      "participation_share_ge3": 0.7811923786109404,
+      "participation_share_le2": 0.21880762138905963,
+      "random_participation_median": 0.0,
+      "random_share_ge3": 0.09834050399508297,
+      "participation_1s_median": 5.0,
+      "participation_1s_share_ge3": 0.8494161032575291,
+      "random_participation_1s_median": 1.0,
+      "random_1s_share_ge3": 0.29870928088506454,
+      "top_pair_share_median": 0.3333333333333333,
+      "n_recordings_with_pairs": 51,
+      "events_per_run": 1084.6666666666667
+    },
+    "ssl tube J10": {
+      "events_per_10min": 6.299181146395047,
+      "n_events": 3154,
+      "n_runs": 3,
+      "participation_median": 0.0,
+      "participation_share_ge3": 0.15948002536461636,
+      "participation_share_le2": 0.8405199746353836,
+      "random_participation_median": 0.0,
+      "random_share_ge3": 0.08449587824984148,
+      "participation_1s_median": 3.0,
+      "participation_1s_share_ge3": 0.5133164235890932,
+      "random_participation_1s_median": 1.0,
+      "random_1s_share_ge3": 0.2707672796448954,
+      "top_pair_share_median": 0.25,
+      "n_recordings_with_pairs": 43,
+      "events_per_run": 1051.3333333333333
+    },
+    "ssl tube J20": {
+      "events_per_10min": 5.658078689834232,
+      "n_events": 2833,
+      "n_runs": 3,
+      "participation_median": 0.0,
+      "participation_share_ge3": 0.12813272149664667,
+      "participation_share_le2": 0.8718672785033533,
+      "random_participation_median": 0.0,
+      "random_share_ge3": 0.07483233321567243,
+      "participation_1s_median": 2.0,
+      "participation_1s_share_ge3": 0.4041651959054006,
+      "random_participation_1s_median": 1.0,
+      "random_1s_share_ge3": 0.22520296505471232,
+      "top_pair_share_median": 0.3333333333333333,
+      "n_recordings_with_pairs": 26,
+      "events_per_run": 944.3333333333334
+    },
+    "supervised tube_guard label-free": {
+      "events_per_10min": 5.006990213700819,
+      "n_events": 2507,
+      "n_runs": 3,
+      "participation_median": 5.0,
+      "participation_share_ge3": 0.8372556840845632,
+      "participation_share_le2": 0.16274431591543678,
+      "random_participation_median": 0.0,
+      "random_share_ge3": 0.07618667730355005,
+      "participation_1s_median": 5.0,
+      "participation_1s_share_ge3": 0.8795372955723972,
+      "random_participation_1s_median": 1.0,
+      "random_1s_share_ge3": 0.21061029118468289,
+      "top_pair_share_median": 0.5,
+      "n_recordings_with_pairs": 34,
+      "events_per_run": 835.6666666666666
+    },
+    "supervised tube_guard bake-off threshold": {
+      "events_per_10min": 6.740563211503894,
+      "n_events": 3375,
+      "n_runs": 3,
+      "participation_median": 5.0,
+      "participation_share_ge3": 0.8088888888888889,
+      "participation_share_le2": 0.19111111111111112,
+      "random_participation_median": 0.0,
+      "random_share_ge3": 0.12088888888888889,
+      "participation_1s_median": 5.0,
+      "participation_1s_share_ge3": 0.8693333333333333,
+      "random_participation_1s_median": 1.0,
+      "random_1s_share_ge3": 0.33214814814814814,
+      "top_pair_share_median": 0.4,
+      "n_recordings_with_pairs": 39,
+      "events_per_run": 1125.0
+    },
+    "ssl tube_guard J10": {
+      "events_per_10min": 6.484921110445376,
+      "n_events": 3247,
+      "n_runs": 3,
+      "participation_median": 0.0,
+      "participation_share_ge3": 0.1847859562673237,
+      "participation_share_le2": 0.8152140437326764,
+      "random_participation_median": 0.0,
+      "random_share_ge3": 0.08623344625808439,
+      "participation_1s_median": 3.0,
+      "participation_1s_share_ge3": 0.5180166307360641,
+      "random_participation_1s_median": 1.0,
+      "random_1s_share_ge3": 0.25700646750846934,
+      "top_pair_share_median": 0.3333333333333333,
+      "n_recordings_with_pairs": 48,
+      "events_per_run": 1082.3333333333333
+    },
+    "ssl tube_guard J20": {
+      "events_per_10min": 6.640703015777911,
+      "n_events": 3325,
+      "n_runs": 3,
+      "participation_median": 0.0,
+      "participation_share_ge3": 0.1606015037593985,
+      "participation_share_le2": 0.8393984962406015,
+      "random_participation_median": 0.0,
+      "random_share_ge3": 0.08165413533834587,
+      "participation_1s_median": 2.0,
+      "participation_1s_share_ge3": 0.4637593984962406,
+      "random_participation_1s_median": 1.0,
+      "random_1s_share_ge3": 0.24962406015037594,
+      "top_pair_share_median": 0.26785714285714285,
+      "n_recordings_with_pairs": 36,
+      "events_per_run": 1108.3333333333333
+    }
+  },
+  "agreement": {
+    "coact -> loco": {
+      "share": 0.70509977827051,
+      "chance": 0.05875831485587597,
+      "n": 451
+    },
+    "loco -> coact": {
+      "share": 0.7738927738927739,
+      "chance": 0.0679487179487181,
+      "n": 429
+    },
+    "supervised tube label-free -> coact": {
+      "share": 0.47297881539126674,
+      "chance": 0.05177258971033234,
+      "n": 2313
+    },
+    "supervised tube label-free -> loco": {
+      "share": 0.4280155642023346,
+      "chance": 0.03179853004755698,
+      "n": 2313
+    },
+    "coact -> supervised tube label-free": {
+      "share": 0.8292682926829268,
+      "chance": 0.09135254988913524,
+      "n": 451
+    },
+    "loco -> supervised tube label-free": {
+      "share": 0.8018648018648019,
+      "chance": 0.0672494172494174,
+      "n": 429
+    },
+    "supervised tube bake-off threshold -> coact": {
+      "share": 0.32913337430854334,
+      "chance": 0.047280270436385864,
+      "n": 3254
+    },
+    "supervised tube bake-off threshold -> loco": {
+      "share": 0.30762138905961894,
+      "chance": 0.03146896127842602,
+      "n": 3254
+    },
+    "coact -> supervised tube bake-off threshold": {
+      "share": 0.8713968957871396,
+      "chance": 0.12716186252771616,
+      "n": 451
+    },
+    "loco -> supervised tube bake-off threshold": {
+      "share": 0.8764568764568764,
+      "chance": 0.09615384615384609,
+      "n": 429
+    },
+    "ssl tube J10 -> coact": {
+      "share": 0.25237793278376663,
+      "chance": 0.047891566265059984,
+      "n": 3154
+    },
+    "ssl tube J10 -> loco": {
+      "share": 0.20862396956246038,
+      "chance": 0.03541534559289737,
+      "n": 3154
+    },
+    "coact -> ssl tube J10": {
+      "share": 0.6740576496674058,
+      "chance": 0.11940133037694006,
+      "n": 451
+    },
+    "loco -> ssl tube J10": {
+      "share": 0.7272727272727273,
+      "chance": 0.09137529137529127,
+      "n": 429
+    },
+    "ssl tube J20 -> coact": {
+      "share": 0.2788563360395341,
+      "chance": 0.054341687257324356,
+      "n": 2833
+    },
+    "ssl tube J20 -> loco": {
+      "share": 0.1817860924814684,
+      "chance": 0.03443346276032427,
+      "n": 2833
+    },
+    "coact -> ssl tube J20": {
+      "share": 0.4567627494456763,
+      "chance": 0.11751662971175159,
+      "n": 451
+    },
+    "loco -> ssl tube J20": {
+      "share": 0.358974358974359,
+      "chance": 0.08368298368298366,
+      "n": 429
+    },
+    "supervised tube_guard label-free -> coact": {
+      "share": 0.4623055444754687,
+      "chance": 0.05438771439968069,
+      "n": 2507
+    },
+    "supervised tube_guard label-free -> loco": {
+      "share": 0.43478260869565216,
+      "chance": 0.03709613083366525,
+      "n": 2507
+    },
+    "coact -> supervised tube_guard label-free": {
+      "share": 0.8536585365853658,
+      "chance": 0.10565410199556531,
+      "n": 451
+    },
+    "loco -> supervised tube_guard label-free": {
+      "share": 0.8717948717948718,
+      "chance": 0.07319347319347333,
+      "n": 429
+    },
+    "supervised tube_guard bake-off threshold -> coact": {
+      "share": 0.33244444444444443,
+      "chance": 0.04668148148148141,
+      "n": 3375
+    },
+    "supervised tube_guard bake-off threshold -> loco": {
+      "share": 0.32266666666666666,
+      "chance": 0.03401481481481422,
+      "n": 3375
+    },
+    "coact -> supervised tube_guard bake-off threshold": {
+      "share": 0.7960088691796009,
+      "chance": 0.1070953436807095,
+      "n": 451
+    },
+    "loco -> supervised tube_guard bake-off threshold": {
+      "share": 0.8484848484848485,
+      "chance": 0.08799533799533801,
+      "n": 429
+    },
+    "ssl tube_guard J10 -> coact": {
+      "share": 0.2796427471512165,
+      "chance": 0.05218663381583005,
+      "n": 3247
+    },
+    "ssl tube_guard J10 -> loco": {
+      "share": 0.227594702802587,
+      "chance": 0.038527871881736404,
+      "n": 3247
+    },
+    "coact -> ssl tube_guard J10": {
+      "share": 0.6674057649667405,
+      "chance": 0.1259423503325942,
+      "n": 451
+    },
+    "loco -> ssl tube_guard J10": {
+      "share": 0.7738927738927739,
+      "chance": 0.09662004662004652,
+      "n": 429
+    },
+    "ssl tube_guard J20 -> coact": {
+      "share": 0.24030075187969924,
+      "chance": 0.05037593984962422,
+      "n": 3325
+    },
+    "ssl tube_guard J20 -> loco": {
+      "share": 0.18285714285714286,
+      "chance": 0.03603007518796933,
+      "n": 3325
+    },
+    "coact -> ssl tube_guard J20": {
+      "share": 0.5432372505543237,
+      "chance": 0.13292682926829263,
+      "n": 451
+    },
+    "loco -> ssl tube_guard J20": {
+      "share": 0.5454545454545454,
+      "chance": 0.09965034965034957,
+      "n": 429
+    }
+  },
+  "seconds": 116.29089093208313,
+  "quick": false
+}
