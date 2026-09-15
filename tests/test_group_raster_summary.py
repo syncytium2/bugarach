@@ -237,6 +237,23 @@ def test_raster_height_is_proportional_to_roi_count_and_the_id_never_stretches_i
     assert label == data                     # and a large block needs nothing extra
 
 
+def test_only_treatment_one_puts_a_recording_on_a_page(tmp_path):
+    """A slice given TTX and then senktide is a TTX recording and nothing else
+    (Tony, 2026-09-15). Its senktide arrives on a slice already treated."""
+    d = _folder(tmp_path)
+    (d / "regions.csv").write_text(
+        "slice_id,region_idx,label,start_sec,end_sec,analysis_start_sec,analysis_end_sec\n"
+        "s1,1,baseline,0,60,0,60\n"
+        "s1,2,TTX,60,120,60,120\n"
+        "s1,3,senktide,120,180,120,180\n"
+        "s3,1,baseline,0,60,0,60\n"
+        "s3,2,high K+,60,90,60,90\n"
+        "s3,3,senktide,90,120,90,120\n")
+    pages, _, skipped = mod.measure(d, ("TTX", "senktide"))
+    assert sorted(pages) == [("MALE", "TTX", "fast"), ("MALE", "TTX", "slow")]
+    assert any(s.startswith("s3 (treatment 1: high K+)") for s in skipped)
+
+
 def test_groups_limits_the_pages(tmp_path):
     pages, _, _ = mod.measure(_folder(tmp_path), ("TTX", "senktide"), groups=("DI",))
     assert sorted(pages) == [("DI", "senktide", "fast"), ("DI", "senktide", "slow")]

@@ -2329,4 +2329,6 @@ session's work is not a sweep.
 - **Writes:** `{GROUP}_{senktide,TTX}_{fast,slow}.html` from
   `tools/make_group_raster_summary.py --steps-excluded --no-png` — 16 pages, review pages (DI and OVX TTX) first.
 - **Released:** 2026-09-15, at write. All 16 pages written. The review PNGs written earlier that morning
-  were deleted from the folder at Tony's request (HTML only). Holds nothing.
+  were deleted from the folder at Tony's request (HTML only).
+- **Re-claimed** the same day, before rewriting all 16: pages are now decided by treatment 1 alone, so a
+  recording given senktide after TTX leaves the senktide page. Released again when that write finishes.

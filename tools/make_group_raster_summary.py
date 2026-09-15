@@ -6,7 +6,8 @@
     python tools/make_group_raster_summary.py --folder <a flagged review copy>
 
 One page per (group, treatment) — `MALE_TTX`, `ORX_senktide`, and so on. Each
-page carries the recordings in that group that received that treatment, one
+page carries the recordings in that group whose FIRST treatment, the period right
+after baseline, was that treatment — a later period never adds a recording — one
 above the next, **all re-zeroed at the end of their own baseline** so the moment
 the drug arrives is the same vertical line on every row and the rows can be read
 against each other. Time runs negative through baseline and positive through
@@ -241,6 +242,15 @@ def _anchor_of(sl) -> float | None:
     return None
 
 
+def treatment_one(sl) -> str | None:
+    """The first period after baseline, in time order, or None if there is none."""
+    for r in sorted(sl.regions or [], key=lambda r: float(r.start_sec)):
+        lab = (r.name or "").strip()
+        if lab and lab.lower() != ANCHOR:
+            return lab
+    return None
+
+
 def _shift_stream(stream, shift: float):
     """The same stream, re-zeroed. Times move; nothing else does.
 
@@ -287,10 +297,16 @@ def measure(folder: Path, treatments: tuple[str, ...], *, unscanned: bool = Fals
         if anchor is None:
             skipped.append(f"{sl.slice_id} (no {ANCHOR} region to align on)")
             continue
-        labels = {(r.name or "").strip() for r in sl.regions or []}
-        hit = [t for t in treatments if t in labels]
+        # TREATMENT 1 DECIDES THE PAGE, AND NOTHING AFTER IT (Tony, 2026-09-15:
+        # "treatment 1 is the only one that matters for inclusion on a page").
+        # Matching any period put a recording given TTX and then senktide on the
+        # senktide page too, where its senktide arrives on a slice already
+        # treated — 35 recordings on the senktide pages against the producer's
+        # 29 in its senktide-first folder.
+        first = treatment_one(sl)
+        hit = [t for t in treatments if t == first]
         if not hit:
-            skipped.append(f"{sl.slice_id} ({', '.join(sorted(labels)) or 'no regions'})")
+            skipped.append(f"{sl.slice_id} (treatment 1: {first or 'none'})")
         for t in hit:
             # ONE PAGE PER STREAM, not one page carrying both (Tony, 2026-09-08).
             # fast and slow are different measurements, and stacking them per
@@ -728,7 +744,7 @@ def main(argv=None) -> int:
         # and a reader who does not know that will read these eight pages as the
         # whole corpus.
         print(f"\n{len(skipped)} recording(s) on NO page "
-              f"(no {'/'.join(a.treatments)} region):")
+              f"(treatment 1 is not {'/'.join(a.treatments)}):")
         for s in sorted(skipped):
             print(f"  {s}")
     if removed is not None:
