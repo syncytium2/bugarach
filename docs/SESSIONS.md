@@ -10,6 +10,16 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
+### WSMIP065/detector-review-doc — DARKROOM claim ACTIVE 2026-09-15: `bugarach/2026-09-15-detector-review/`
+- **Status:** **ACTIVE — claimed before writing.** Tony asked for a document for external review:
+  every detector (coded and learned) with a figure of how it decides, surrogates, the simulator,
+  the optimization procedure, and real TTX and senktide rasters; HTML only; full murderboard.
+- **Writes:** one new folder only — the page, its figures, the fresh bench run's JSON, and the
+  review record. Nothing existing in the darkroom is touched.
+- ⚠ **Holds real treatment rasters**, so the page stays in the darkroom (FOUNDATIONS §5): no repo
+  copy of those figures, and no web link.
+- **Released when:** the reviewed page is in the folder and the builder is on a PR.
+
 ### Mac/rigid-shift-cossart — DARKROOM claim ACTIVE 2026-09-15: `bugarach/2026-09-15-rigid-shift-look/cossart/`
 - **Status:** **ACTIVE — claimed before writing.** Tony asked *"Does it work on the cossart
   dandiset?"*; the same rigid-shift look was run on the Cossart folder (59 recordings, whole
