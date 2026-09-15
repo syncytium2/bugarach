@@ -75,6 +75,14 @@ from bugarach.io import load_folder  # noqa: E402
 
 MANIFEST = "field_steps_flagged.tsv"
 
+#: The analysis folder's record of what was taken OUT: one row per event removed
+#: for sitting within ±2 s of a confirmed field step. Its presence, with no
+#: `MANIFEST` beside it, is what identifies the steps-excluded export.
+EXCLUDED_MANIFEST = "field_steps_excluded.tsv"
+
+#: The producer's analysis dataset — "for any new analysis, use this folder".
+EXCLUDED_NAME = "2026-09-03_revised_2v_long_STEPS_EXCLUDED"
+
 #: Names the flagged review copy has shipped under. The producer's README calls
 #: it `..._STEPS_FLAGGED_FOR_REVIEW`; it arrived on this machine as
 #: `_superseded_flagrun2`. Neither is a path — `dataset` resolves a NAME against
@@ -124,18 +132,51 @@ def read_manifest(folder: Path) -> dict[tuple[str, str, str], list[float]]:
     return out
 
 
-def resolve_folder(explicit: str | None, *, unscanned: bool = False) -> Path:
+def read_removed(folder: Path) -> dict[tuple[str, str], int]:
+    """Events the producer removed, counted per (slice_id, stream)."""
+    out: dict[tuple[str, str], int] = defaultdict(int)
+    with (folder / EXCLUDED_MANIFEST).open(newline="") as fh:
+        for row in csv.DictReader(fh, delimiter="\t"):
+            out[(row["slice_id"], str(row["stream"]).strip().lower())] += 1
+    return out
+
+
+def resolve_folder(explicit: str | None, *, unscanned: bool = False,
+                   steps_excluded: bool = False) -> Path:
     """Find the flagged review copy, and refuse anything that is not one.
 
-    ``unscanned`` is the one exception, and it has to be asked for by name: a
+    ``unscanned`` is one exception, and it has to be asked for by name: a
     folder the producer has NEVER scanned for field steps (their export report
     says ``step-artifacts: UNCHECKED``) has no manifest because nothing was
     looked for, not because the artifacts were removed. That folder may be
     drawn — with no red, and with the page saying in its header that no scan
     was run, so the absence of red cannot be read as a clean corpus.
+
+    ``steps_excluded`` is the other, also by name: the analysis dataset itself,
+    artifacts already removed (Tony, 2026-09-15 — the pages people read the data
+    from, rather than the review of what the artifacts did). It has no red to
+    draw, so the header says the steps were REMOVED and how many events that
+    took from the page's recordings, read from the producer's own
+    ``field_steps_excluded.tsv``. A folder without that file is refused: absent
+    red on a page claiming exclusion has to be backed by the exclusion record.
     """
     from bugarach import dataset
 
+    if unscanned and steps_excluded:
+        raise SystemExit("--unscanned and --steps-excluded contradict each other: "
+                         "one says no scan was run, the other that its results were applied")
+    if steps_excluded:
+        folder = Path(dataset.require(explicit or EXCLUDED_NAME,
+                                      want="export_folder", flag="--folder"))
+        if not (folder / EXCLUDED_MANIFEST).is_file():
+            raise SystemExit(
+                f"{folder.name} has no {EXCLUDED_MANIFEST}, so nothing records that "
+                "field steps were removed from it — refusing to label it steps-excluded.")
+        if (folder / MANIFEST).is_file():
+            raise SystemExit(
+                f"{folder.name} has a {MANIFEST}: it is the flagged review copy, with the "
+                "artifacts still in it. Drop --steps-excluded and let the marks be drawn.")
+        return folder
     if unscanned:
         if not explicit:
             raise SystemExit("--unscanned needs --folder: there is no name to resolve "
@@ -213,12 +254,15 @@ def _shift_stream(stream, shift: float):
     return dataclasses.replace(stream, **moved)
 
 
-def measure(folder: Path, treatments: tuple[str, ...], *, unscanned: bool = False):
+def measure(folder: Path, treatments: tuple[str, ...], *, unscanned: bool = False,
+            steps_excluded: bool = False, groups: tuple[str, ...] | None = None):
     """Which recordings go on which page, and what each page's extent must be."""
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         slices = load_folder(folder)
-    manifest = {} if unscanned else read_manifest(folder)
+    manifest = {} if (unscanned or steps_excluded) else read_manifest(folder)
+    if groups:
+        slices = [sl for sl in slices if (sl.meta.get("group_id") or "UNGROUPED") in groups]
 
     pages: dict[tuple[str, str], list] = defaultdict(list)
     skipped: list[str] = []
@@ -414,7 +458,7 @@ def build_page(members, *, ext, manifest, width: int, stream: str,
 
 def header_html(group: str, treatment: str, members, ext, folder: Path,
                 *, stream: str = "", unscanned: bool = False, ran=(), not_run=(),
-                excluded=(), note=None,
+                excluded=(), note=None, removed: dict | None = None,
                 detections: Path | None = None) -> str:
     """The key, and the provenance. Outside every plot, per the conventions."""
     from bugarach.ui.diagnostic import MARKED_INK, RASTER_INK, REGION_FILL
@@ -444,6 +488,17 @@ def header_html(group: str, treatment: str, members, ext, folder: Path,
         red_key = ("<b style='color:#b00'>⚠ no field-step scan has been run on this "
                    "folder</b> (the producer's export report says UNCHECKED) — nothing "
                    "is marked, and the absence of red is not evidence of a clean cohort")
+    elif removed is not None:
+        # No red here either, for the opposite reason: the artifacts were found
+        # and taken out. The count is this page's recordings on this page's
+        # stream, so a reader can see what the clean page cost.
+        hit = sorted((sl.slice_id, removed[(sl.slice_id, stream)]) for sl, _ in members
+                     if removed.get((sl.slice_id, stream)))
+        n = sum(k for _, k in hit)
+        where = (" — " + ", ".join(f"{sid}: {k} events" for sid, k in hit)) if hit else ""
+        red_key = (f"<b>field-step artifacts removed by the producer</b>: {n} {stream} "
+                   f"events on {len(hit)} of these {len(members)} recordings{where} "
+                   f"(listed in {EXCLUDED_MANIFEST}); nothing on this page is marked")
     from bugarach.ui.app import COLORS, TITLES
 
     if ran:
@@ -510,6 +565,12 @@ def main(argv=None) -> int:
                     help="the folder was NEVER scanned for field steps (producer: "
                          "UNCHECKED), so it has no manifest. Draw it with no red and "
                          "say so in the header. Needs --folder.")
+    ap.add_argument("--steps-excluded", action="store_true",
+                    help=f"draw the ANALYSIS dataset, field-step artifacts already "
+                         f"removed (default folder {EXCLUDED_NAME}). No red; the header "
+                         f"counts what {EXCLUDED_MANIFEST} says was removed.")
+    ap.add_argument("--groups", nargs="+", default=None, metavar="GROUP",
+                    help="only these groups (e.g. DI) — for rendering one page to review")
     ap.add_argument("--detections", default=None, nargs="+", type=Path,
                     help="one or more detections.csv — detect's own, and any other "
                          "file in the same contract (a learned run, say). Draws a "
@@ -529,7 +590,9 @@ def main(argv=None) -> int:
                          "nothing persists a trained model.")
     a = ap.parse_args(argv)
 
-    folder = resolve_folder(a.folder, unscanned=a.unscanned)
+    folder = resolve_folder(a.folder, unscanned=a.unscanned,
+                            steps_excluded=a.steps_excluded)
+    removed = read_removed(folder) if a.steps_excluded else None
     if a.out:
         dest = Path(a.out).expanduser()
     else:
@@ -538,13 +601,18 @@ def main(argv=None) -> int:
             print(paths.unresolved_message(), file=sys.stderr)
             return 2
         # Named for what is in it, not for the branch that made it.
-        dest = root / "rasters_by_group_and_treatment_baseline_aligned"
+        # A separate folder for the excluded pages: same filenames, different
+        # data, and overwriting the flagged review in place would lose it.
+        dest = root / ("rasters_by_group_and_treatment_baseline_aligned"
+                       + ("_steps_excluded" if a.steps_excluded else ""))
     dest.mkdir(parents=True, exist_ok=True)
 
     import panel as pn
 
     pages, manifest, skipped = measure(folder, tuple(a.treatments),
-                                       unscanned=a.unscanned)
+                                       unscanned=a.unscanned,
+                                       steps_excluded=a.steps_excluded,
+                                       groups=tuple(a.groups) if a.groups else None)
     if not pages:
         print("no (group, treatment) page has any recording", file=sys.stderr)
         return 1
@@ -569,7 +637,8 @@ def main(argv=None) -> int:
                                           spec["ext"], folder, stream=stream,
                                           unscanned=a.unscanned, ran=ran,
                                           not_run=not_run, excluded=a.exclude,
-                                          detections=a.detections, note=a.note))]
+                                          detections=a.detections, note=a.note,
+                                          removed=removed))]
         for sl, panels in blocks:
             # A TEXT HEADER OUTSIDE THE PLOT, which is what the convention offers
             # beside the y-label — and here it is the one that works. Rotated
@@ -619,8 +688,12 @@ def main(argv=None) -> int:
               f"(no {'/'.join(a.treatments)} region):")
         for s in sorted(skipped):
             print(f"  {s}")
-    print(f"\nred marks {total_red} drawn / {in_manifest} in {MANIFEST} "
-          f"(a recording on two pages is drawn on both)")
+    if removed is not None:
+        print(f"\nsteps-excluded: no red drawn; {sum(removed.values())} events listed "
+              f"as removed in {EXCLUDED_MANIFEST}")
+    else:
+        print(f"\nred marks {total_red} drawn / {in_manifest} in {MANIFEST} "
+              f"(a recording on two pages is drawn on both)")
     return 0
 
 

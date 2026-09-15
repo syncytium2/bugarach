@@ -195,6 +195,42 @@ def test_an_unscanned_folder_is_drawn_with_no_red_and_says_so(tmp_path):
     assert "drop --unscanned" in str(e.value)
 
 
+def test_the_steps_excluded_folder_is_drawn_with_no_red_and_counts_the_removal(tmp_path):
+    """The analysis dataset (Tony, 2026-09-15): artifacts already removed, so no
+    red — and the header says what was removed from THIS page's recordings on
+    THIS page's stream, from the producer's own record. Refused without that
+    record, and refused on the flagged copy, where it would hide marks."""
+    d = _folder(tmp_path, manifest=None)
+    (d / mod.EXCLUDED_MANIFEST).write_text(MANIFEST)  # same columns as the producer's
+    assert mod.resolve_folder(str(d), steps_excluded=True) == d
+    pages, manifest, _ = mod.measure(d, ("TTX",), steps_excluded=True)
+    assert manifest == {}
+    spec = pages[("MALE", "TTX", "fast")]
+    _, red = mod.build_page(spec["members"], ext=spec["ext"], manifest=manifest,
+                            width=400, stream="fast")
+    assert red == 0
+    removed = mod.read_removed(d)
+    head = mod.header_html("MALE", "TTX", spec["members"], spec["ext"], d,
+                           stream="fast", removed=removed)
+    assert "removed by the producer" in head
+    assert "2 fast events on 1 of these 2 recordings" in head and "s1: 2 events" in head
+
+    (tmp_path / "flagged_copy").mkdir()
+    with pytest.raises(SystemExit):
+        mod.resolve_folder(str(_folder(tmp_path / "flagged_copy")), steps_excluded=True)
+    (tmp_path / "bare").mkdir()
+    with pytest.raises(SystemExit):
+        mod.resolve_folder(str(_folder(tmp_path / "bare", manifest=None)),
+                           steps_excluded=True)
+    with pytest.raises(SystemExit):
+        mod.resolve_folder(str(d), steps_excluded=True, unscanned=True)
+
+
+def test_groups_limits_the_pages(tmp_path):
+    pages, _, _ = mod.measure(_folder(tmp_path), ("TTX", "senktide"), groups=("DI",))
+    assert sorted(pages) == [("DI", "senktide", "fast"), ("DI", "senktide", "slow")]
+
+
 def test_a_recording_with_no_baseline_is_skipped_not_drawn_at_zero(tmp_path):
     """No anchor means no honest x — dropping it beats aligning it on nothing."""
     d = _folder(tmp_path)
