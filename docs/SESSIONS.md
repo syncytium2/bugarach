@@ -10,6 +10,15 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
+### Mac/rigid-shift-look — DARKROOM claim ACTIVE 2026-09-14: `bugarach/2026-09-15-rigid-shift-look/`
+- **Status:** **ACTIVE — claimed before writing.** Offered one exploratory figure in place of
+  the pre-registration machinery (rigid shift at 1.6, 2.5 and 5 s on baseline windows: leak,
+  destruction on synthetic twins, onset count), Tony answered *"Yep. Overnight run."*
+- **Writes:** a new folder only — per-stream JSON results, one figure, a short note. Nothing
+  existing is touched; the 2026-09-11 screen folder is read-only and not opened for rigid-shift
+  outcomes.
+- **Released when:** the figure and note are in the folder and a repo copy is on a PR.
+
 ### WSMIP065/shelve-hansen-1973 — DARKROOM claim ACTIVE 2026-09-14: `bugarach/lit/radar/` and `bugarach/detector_history.html`
 - **Status:** **ACTIVE — claimed before writing.** Tony's interlibrary-loan copy of Gregers Hansen 1973
   (IEE Conf. Publ. 105, pp. 325–332) arrived, and Tony asked for it to be shelved and for
