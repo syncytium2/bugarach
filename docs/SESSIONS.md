@@ -10,6 +10,16 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
+### WSMIP065/detector-review-plain — DARKROOM claim ACTIVE 2026-09-15: `bugarach/2026-09-15-detector-review-plain/`
+- **Status:** **ACTIVE.** Tony's verdict on the first detector review was that it did not meet the
+  ask: figures and sixth-grade text for a reader with no background. This session rebuilds it as a
+  plain-language page with step-by-step figures, and looks closely at real calls that disagree with
+  the eye. Not murderboarded, by Tony's instruction.
+- **Writes:** one new folder only — the page, its figures, `real_prose.json`, and the builder's
+  `_work/` measurements. It reads, and does not touch, `bugarach/2026-09-15-detector-review/`.
+- ⚠ **Holds real treatment rasters**, so the page stays in the darkroom (FOUNDATIONS §5).
+- **Released when:** the page is in the folder and the builder is pushed on the `detector-review-doc` PR.
+
 ### Mac/rigid-shift-darkroom-fix — DARKROOM claim RELEASED 2026-09-15: `bugarach/2026-09-15-rigid-shift-look/` and the stray `bugarach/bugarach/`
 - **Status:** **RELEASED — `cossart/` moved into the look folder, the stray folder removed, and the
   note and all six figures byte-identical to the repo copy (checked with `cmp`).** Was ACTIVE,
