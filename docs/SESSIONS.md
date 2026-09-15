@@ -2322,3 +2322,14 @@ session's work is not a sweep.
 - ⚠ **Recorded after the write, not before it.** The rule is to claim a darkroom write first; this
   one was written and then recorded. It collided with nothing, and the next one should claim first.
 - **Released:** at write — holds nothing. The repo copy is `docs/needs/` in the same change.
+
+### darkroom/bugarach/rasters_by_group_and_treatment_baseline_aligned_steps_excluded/ — group rasters from the steps-excluded export (065/rasters-steps-excluded)
+- **Claimed:** 2026-09-15, before the first write. A new folder, so nothing existing is overwritten;
+  the 09-04 flagged-copy pages in `rasters_by_group_and_treatment_baseline_aligned/` are left as they are.
+- **Writes:** `{GROUP}_{senktide,TTX}_{fast,slow}.html` from
+  `tools/make_group_raster_summary.py --steps-excluded --no-png` — 16 pages, review pages (DI and OVX TTX) first.
+- **Released:** 2026-09-15, at write. All 16 pages written. The review PNGs written earlier that morning
+  were deleted from the folder at Tony's request (HTML only).
+- **Re-claimed** the same day, before rewriting all 16: pages are now decided by treatment 1 alone, so a
+  recording given senktide after TTX leaves the senktide page. Released again at write: 16 pages rewritten,
+  TTX 38 recordings and senktide 29, the same counts as the producer's `_TTX` and `_SENKTIDE` folders. Holds nothing.
