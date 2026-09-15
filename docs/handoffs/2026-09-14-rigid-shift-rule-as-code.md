@@ -62,6 +62,14 @@ Tony adopts these by signing. Each is marked ⚠ in its docstring.
      PASSes.
 4. **Runner and salting:**
    - a runner under `tools/` that builds `rule` readings;
+   - **a baseline guard (Tony asked, 2026-09-14, for confirmation that only baseline is
+     tested).** For the lab folder the runner refuses any recording whose window source is not
+     a baseline region, so the loader's whole-recording fallback can never reach it. It also
+     refuses any window that overlaps a non-baseline region. A test must fail if either guard
+     is removed. On 2026-09-14 all 84 lab recordings took the baseline path, each window 17–20
+     minutes long, none outside its baseline region, and none overlapping TTX, senktide, high K+,
+     SB222200 or wash. The Cossart folder declares no regions (untreated awake pups), so it is
+     read whole, and the runner labels it that way rather than calling it baseline;
    - run tag `confirm-2026-09-14` salted into every seed, with a test that records every seed
      passed to `RandomState` and asserts none matches the exploratory set;
    - a `--limit` smoke run on synthetic folders only.
