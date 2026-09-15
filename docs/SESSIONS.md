@@ -2326,6 +2326,7 @@ session's work is not a sweep.
 ### darkroom/bugarach/rasters_by_group_and_treatment_baseline_aligned_steps_excluded/ — group rasters from the steps-excluded export (065/rasters-steps-excluded)
 - **Claimed:** 2026-09-15, before the first write. A new folder, so nothing existing is overwritten;
   the 09-04 flagged-copy pages in `rasters_by_group_and_treatment_baseline_aligned/` are left as they are.
-- **Writes:** `{GROUP}_{senktide,TTX}_{fast,slow}.{html,png}` from
-  `tools/make_group_raster_summary.py --steps-excluded` — 16 pages, review pages (DI and OVX TTX) first.
-- **Released:** when the full series is written and PR `rasters-steps-excluded` lands.
+- **Writes:** `{GROUP}_{senktide,TTX}_{fast,slow}.html` from
+  `tools/make_group_raster_summary.py --steps-excluded --no-png` — 16 pages, review pages (DI and OVX TTX) first.
+- **Released:** 2026-09-15, at write. All 16 pages written. The review PNGs written earlier that morning
+  were deleted from the folder at Tony's request (HTML only). Holds nothing.
