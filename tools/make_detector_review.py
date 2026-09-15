@@ -542,7 +542,7 @@ def stage_surrogates(work: Path) -> None:
                 color="#1b7f3b", line_width=2.2, line_dash="dotdash"))
         ov.append(hv.VLine(6).opts(color="#999", line_dash="dotted", line_width=1))
         plots.append(hv.Overlay(ov).opts(
-            width=520, height=320, logy=True, xlim=(1, 16), ylim=(1e-6, 1),
+            width=520, height=320, logy=True, xlim=(1, 16), ylim=(1e-6, 1), yticks=[(1, "100%"), (0.1, "10%"), (0.01, "1%"), (1e-3, "0.1%"), (1e-4, "0.01%"), (1e-5, "0.001%"), (1e-6, "0.0001%")],
             xlabel=f"n, ROIs with an event in one 2 s bin ({stream} stream)",
             ylabel=f"B{j + 1} · share of bins with at least n ROIs",
             show_legend=False, toolbar=None, show_grid=True,
@@ -662,12 +662,12 @@ def stage_surrogates(work: Path) -> None:
                                                                                   line_alpha=0)
             ).opts(width=1060, height=130, xlim=view_c, ylim=(-0.7, 3.6), toolbar=None,
                    xaxis=None, yticks=[(3, "planted"), (2, "decoy"),
-                                       (1, "calls: whole-recording bar"),
-                                       (0, "calls: nearby-60 s bar")],
+                                       (1, f"whole-recording bar · {calls_g.size} calls"),
+                                       (0, f"nearby-60 s bar · {calls_l.size} calls")],
                    ylabel="", shared_axes=False, fontsize={"yticks": "9pt"})
     from bugarach.ui.diagnostic import raster_panel
     rast = raster_panel(s.streams["events"], ext=view_c, width=1060, height=130,
-                        name="simulated", ydim="roi_sur_c", ticks="minimal").opts(
+                        name="simulated", ydim="roi_sur_c", ticks="minimal").opts(ylabel=f"simulated · {s.streams['events'].n_rois} ROIs",
         toolbar=None, xaxis=None, xlim=view_c, shared_axes=False)
     trace = (hv.Curve((ctr[k], obs[k]), "t", "c_obs").opts(interpolation="steps-mid",
                                                           color="#0B5FFF", line_width=1)
@@ -683,15 +683,15 @@ def stage_surrogates(work: Path) -> None:
                           "surrogates (B1 fast stream, B2 slow stream)"),
              key_html(pn, [glyph("- -", "#111", "recorded"), glyph("—", "#0B5FFF", "circular shift"),
                            glyph("—", "#F77F00", "shuffle"),
-                           glyph("-·-", "#1b7f3b", "simulated bench recordings (B1 only)"),
+                           glyph("-·-", "#1b7f3b", "simulated recordings, Section 5 (B1 only)"),
                            glyph("┊", "#999", "n = 6")]),
              pn.pane.HoloViews(hv.Layout(plots).cols(2).opts(shared_axes=False, toolbar=None)),
              sub_head(pn, "C · why: how often a cell's event lands in a 2 s bin that cell already "
-                          "filled (left pair fast stream, right pair slow)"),
+                          "filled"),
              key_html(pn, [glyph("▮", "#111", "recorded"), glyph("▮", "#0B5FFF", "circular shift"),
                            glyph("▮", "#F77F00", "shuffle")]),
              pn.pane.HoloViews(dplot),
-             sub_head(pn, f"D · where the surrogate is drawn from: minutes {view_c[0] / 60:.0f}–"
+             sub_head(pn, f"D · a sketch of where the surrogate is drawn from (not a shipped detector): minutes {view_c[0] / 60:.0f}–"
                           f"{view_c[1] / 60:.0f} of a simulated recording whose busy block has "
                           "nothing planted inside it"),
              key_html(pn, [glyph("—", "#0B5FFF", "ROIs active per 2 s bin"),
@@ -939,7 +939,7 @@ def stage_learned(work: Path) -> None:
             width=520, height=190 + (30 if bottom else 0), xlim=(-13.5, 13.5), ylim=(-1.15, 1.15),
             toolbar=None, show_grid=True, xticks=lag_ticks, yticks=[(-1, "−1"), (0, "0"), (1, "1")],
             xlabel="before (−) and after (+) the moment scored" if bottom else "",
-            ylabel=f"A · {NAMES[name]}", fontsize={"ylabel": "9pt", "xlabel": "9pt"},
+            ylabel=f"A{j + 1} · {NAMES[name]} · weight (scaled)", fontsize={"ylabel": "9pt", "xlabel": "9pt"},
             shared_axes=False, **({} if bottom else {"xaxis": None})))
 
     # ---- B, C: two windows ---------------------------------------------------------------
@@ -985,6 +985,9 @@ def stage_learned(work: Path) -> None:
 
 # ----------------------------------------------------------------------- generator
 FANO_WINDOWS = (30.0, 60.0, 120.0, 300.0)
+#: (key, low Hz, high Hz, label) — ROI rate bands for the bunching split
+RATE_BANDS = (("under_20", 0.0, 0.02, "under 20 mHz"), ("20_50", 0.02, 0.05, "20–50 mHz"),
+              ("50_100", 0.05, 0.1, "50–100 mHz"), ("over_100", 0.1, np.inf, "over 100 mHz"))
 
 
 def stage_generator(work: Path) -> None:
@@ -1007,12 +1010,14 @@ def stage_generator(work: Path) -> None:
         distr = np.asarray(gt.distractor_times, float)
         return (hv.Scatter(([ext_[0]], [0.0]), "t", f"truth_{key}").opts(alpha=0)
                 * hv.Rectangles([(hw[0], 0.0, hw[1], 1.0)]).opts(color="#f3dcc0", line_alpha=0)
-                * hv.Scatter((distr, np.full(distr.size, 0.72)), "t", f"truth_{key}").opts(
+                * hv.Scatter((distr, np.full(distr.size, 0.75)), "t", f"truth_{key}").opts(
                     marker="inverted_triangle", size=10, fill_alpha=0, line_color="#555")
-                * hv.Scatter((planted, np.full(planted.size, 0.35)), "t", f"truth_{key}").opts(
+                * hv.Scatter((planted, np.full(planted.size, 0.27)), "t", f"truth_{key}").opts(
                     marker="inverted_triangle", size=11, color="#111")).opts(
-            width=width, height=46, xlim=ext_, ylim=(0, 1), yaxis=None, xaxis=None,
-            toolbar=None, show_legend=False, shared_axes=False)
+            width=width, height=62, xlim=ext_, ylim=(0, 1), xaxis=None,
+            yticks=[(0.27, f"planted · {planted.size} events"),
+                    (0.75, f"decoys · {distr.size}")], ylabel="",
+            fontsize={"yticks": "9pt"}, toolbar=None, show_legend=False, shared_axes=False)
 
     items = [key_html(pn, [glyph("▼", "#111", "planted event"), glyph("▽", "#555", "decoy"),
                            "<span style='background:#f3dcc0;padding:0 6px'>shaded</span> busy block"])]
@@ -1023,25 +1028,26 @@ def stage_generator(work: Path) -> None:
                                   f"({bench.REGIMES[regime]['bg_rate_hz'] * 1000:g} mHz per ROI)"))
         r = raster_panel(s.streams["events"], ext=ext, width=W, height=140, name="simulated",
                          ydim=f"roi_gen_{regime}", ticks="minimal").opts(
-            toolbar=None, xlim=ext, shared_axes=False,
+            toolbar=None, xlim=ext, shared_axes=False, ylabel=f"simulated · {s.streams['events'].n_rois} ROIs",
             **({"xaxis": None} if i == 0 else {"height": 170, "xlabel": TIME_LABEL}))
         items += [pn.pane.HoloViews(truth(gt, regime, ext, W)), pn.pane.HoloViews(r)]
         if i == 0:
             gt_quiet, s_quiet = gt, s
 
     e = sorted(gt_quiet.events, key=lambda e: -e.n_part)[0]
-    zoom = (e.time - 4.0, e.time + 4.0)
+    zoom = (e.time - 1.5, e.time + 1.5)
     put(work, "gen_zoom_event", dict(n_part=e.n_part, pct=int(round(e.frac * 100)),
                                      spread_s=round(max(e.onsets) - min(e.onsets), 2)))
     zr = raster_panel(s_quiet.streams["events"], ext=zoom, width=W, height=170,
                       name="simulated", ydim="roi_gen_zoom", ticks="minimal", mark_px=3).opts(
-        toolbar=None, xlim=zoom, shared_axes=False, xlabel=TIME_LABEL)
+        toolbar=None, xlim=zoom, shared_axes=False, xlabel=TIME_LABEL,
+        ylabel=f"simulated · {s_quiet.streams['events'].n_rois} ROIs")
     zl = (hv.Scatter(([zoom[0]], [0.0]), "t", "truth_zoom").opts(alpha=0)
           * hv.Scatter(([e.time], [0.35]), "t", "truth_zoom").opts(
               marker="inverted_triangle", size=11, color="#111")).opts(
         width=W, height=46, xlim=zoom, ylim=(0, 1), yaxis=None, xaxis=None, toolbar=None,
         shared_axes=False)
-    items += [sub_head(pn, "B · one planted event in A1, 8 seconds around it"),
+    items += [sub_head(pn, "B · one planted event in A1, 3 seconds around it"),
               pn.pane.HoloViews(zl), pn.pane.HoloViews(zr)]
 
     cache = work / "generator_stats.json"
@@ -1097,6 +1103,15 @@ def stage_generator(work: Path) -> None:
                     for v in sb.streams["events"].t50rise)
             per.append(n / (sb.streams["events"].n_rois * (T - (hwb[1] - hwb[0]))))
         realized[regime.split("_")[1]] = round(1000 * float(np.mean(per)), 1)
+        # the background alone, against its nominal setting
+        bg = []
+        for seed in range(1000, 1024):
+            sb, gtb = bench.make_recording(regime, seed, n_distractors=0, n_per_level=(0, 0, 0),
+                                           hot_window=None, hot_rate_hz=0.0)
+            T = gtb.params["duration_sec"]
+            bg.append(sum(len(v) for v in sb.streams["events"].t50rise)
+                      / (sb.streams["events"].n_rois * T))
+        realized[regime.split("_")[1] + "_background_only"] = round(1000 * float(np.mean(bg)), 1)
     put(work, "bench_realized_mhz", realized)
     colours = {"real": "#111111", "flat": "#F77F00", "fitted": "#0B5FFF"}
     bins = np.arange(-4.0, 0.01, 0.25)                    # log10 Hz
@@ -1114,20 +1129,22 @@ def stage_generator(work: Path) -> None:
     ch = hv.Overlay(hists).opts(width=520, height=280, toolbar=None, show_grid=True,
                                 xticks=[(-1, "0.1"), (0, "1"), (1, "10"), (2, "100"), (3, "1000")],
                                 xlabel="event rate of one ROI in its baseline (mHz, log scale)",
-                                ylabel="C · share of all ROIs", legend_position="top_left",
+                                ylabel="C · share of all ROIs", legend_position="top_left", ylim=(0, 0.4),
                                 fontsize={"ylabel": "9pt", "xlabel": "9pt", "legend": "8pt"})
     fano_curves = []
+    band_rows = {}
     for kind in ("real", "flat", "fitted"):
         wins = [([np.asarray(v, float) for v in tr], dur) for tr, dur in stats[kind]["windows"]]
         vals = [fano(burst_rows(wins, w)) for w in FANO_WINDOWS]
         put(work, f"gen_{kind}_fano", [round(v, 2) for v in vals])
         # the same statistic split by each ROI's own rate: where the gap comes from
         strata = {}
-        for name, lo_hz, hi_hz in (("under_50", 0.0, 0.05), ("over_100", 0.1, np.inf)):
+        for name, lo_hz, hi_hz, _ in RATE_BANDS + (("under_50", 0.0, 0.05, ""),):
             sub = [([v for v in tr if lo_hz <= v.size / dur < hi_hz], dur) for tr, dur in wins]
             strata[name] = {f"w{w}": round(fano(burst_rows(sub, w)), 2) for w in (30, 300)}
             strata[name]["n_roi"] = len(burst_rows(sub, 30))
         put(work, f"gen_{kind}_fano_by_rate", strata)
+        band_rows[kind] = strata
         fano_curves.append(hv.Curve((list(FANO_WINDOWS), vals), "fano_w", "fano", label={"real": "recorded"}.get(kind, kind)).opts(
             color=colours[kind], line_width=2.2)
             * hv.Scatter((list(FANO_WINDOWS), vals), "fano_w", "fano").opts(color=colours[kind],
@@ -1138,10 +1155,26 @@ def stage_generator(work: Path) -> None:
                                       ylabel="D · bunching (variance ÷ average count)",
                                       legend_position="top_left",
                                       fontsize={"ylabel": "9pt", "xlabel": "9pt"})
+    # E: bunching in 30 s windows by each ROI's own rate — where the simulator goes wrong
+    ev = []
+    for kind in ("real", "fitted"):
+        xs_ = [i + (-0.12 if kind == "real" else 0.12) for i in range(len(RATE_BANDS))]
+        ys_ = [band_rows[kind][b[0]]["w30"] for b in RATE_BANDS]
+        ev.append(hv.Scatter((xs_, ys_), "band", "fano_band").opts(color=colours[kind], size=11))
+    ce = hv.Overlay(ev).opts(
+        width=1060, height=240, toolbar=None, show_grid=True, logy=True, ylim=(0.8, 20),
+        yticks=[(1, "1"), (2, "2"), (5, "5"), (10, "10"), (20, "20")],
+        xticks=[(i, b[3]) for i, b in enumerate(RATE_BANDS)], xlim=(-0.5, len(RATE_BANDS) - 0.5),
+        xlabel="event rate of the ROI in its baseline", ylabel="E · bunching, 30 s windows",
+        fontsize={"ylabel": "9pt", "xlabel": "9pt"}, shared_axes=False)
     items += [sub_head(pn, "C, D · real baselines against simulations matched to each one "
                            "(fast stream)"),
               pn.pane.HoloViews(hv.Layout([ch, cd]).cols(2).opts(shared_axes=False,
-                                                                 toolbar=None))]
+                                                                 toolbar=None)),
+              sub_head(pn, "E · the same bunching, split by how busy each ROI is"),
+              key_html(pn, [glyph("●", colours["real"], "recorded"),
+                            glyph("●", colours["fitted"], "fitted simulation")]),
+              pn.pane.HoloViews(ce)]
     put(work, "bench", dict(n_roi=rec["n_roi"], minutes=rec["duration_sec"] / 60,
                             n_planted=sum(rec["n_per_level"]),
                             per_level=rec["n_per_level"][0],
@@ -1198,7 +1231,7 @@ def _shipped_one(job):
 
 
 def stage_shipped(work: Path, workers: int = 12) -> None:
-    """The hand-written detectors at the settings Figures 3–8 and 13–16 use, on the same 24
+    """The hand-written detectors at the settings Figures 3–8 and 15–18 use, on the same 24
     recordings the rounds score. Those settings were not chosen on these recordings."""
     jobs = [(d, r) for r in ("baseline_quiet", "baseline_busy") for d in CODED]
     with ProcessPoolExecutor(workers) as ex:
@@ -1217,40 +1250,57 @@ BLOCK_SIZES = (0.30, 0.18, 0.10)
 BLOCK_PLACE = (1240.0, 1460.0)
 
 
-def _block_events(seed, frac):
+def _block_events(seed, frac, hot_rate_hz=None):
     """A bench recording whose decoys are moved into the busy block at one event size.
 
     A decoy is built exactly as a planted event is (`simulate.py`), so two of them placed
     inside the block are planted events there in all but name. The bench keeps planted
     events out of the block on purpose; this is the recording that asks what that hides.
-    Draws are repeated with a new seed until the two sit at least 30 s apart, so one call
-    cannot claim both.
+    The recording then has no decoys outside the block. Draws are repeated with a new seed
+    until the two sit at least the bench's own spacing apart (120 s), so the inside events
+    are no more crowded than the planted ones outside. ``hot_rate_hz`` makes the block busier.
     """
     from bugarach.bench import BENCH_RECORDING, make_recording
-    for attempt in range(50):
+    extra = {} if hot_rate_hz is None else {"hot_rate_hz": hot_rate_hz}
+    sep = BENCH_RECORDING["min_sep_sec"]
+    for attempt in range(200):
         s, gt = make_recording("baseline_quiet", seed + 100_000 * attempt, n_distractors=2,
                                distractor_frac=frac, distractor_window=BLOCK_PLACE,
-                               distractor_jitter=BENCH_RECORDING["jitter_sec"])
+                               distractor_jitter=BENCH_RECORDING["jitter_sec"], **extra)
         t = sorted(d.time for d in gt.distractors)
-        if t[1] - t[0] >= 30.0:
+        if t[1] - t[0] >= sep:
             return s, gt
-    raise RuntimeError(f"seed {seed}: no draw put the two block events 30 s apart")
+    raise RuntimeError(f"seed {seed}: no draw put the two block events {sep:g} s apart")
+
+
+def _wilson(k, n, z=1.96):
+    """95% interval for a proportion, usable at 0 and at n."""
+    if n == 0:
+        return (float("nan"), float("nan"))
+    p = k / n
+    d = 1 + z * z / n
+    c = (p + z * z / (2 * n)) / d
+    h = z * np.sqrt(p * (1 - p) / n + z * z / (4 * n * n)) / d
+    return (max(0.0, c - h), min(1.0, c + h))
 
 
 def _blockrecall_one(job):
-    seed, frac, work = job
+    seed, frac, work, hot = job
     from types import SimpleNamespace
     from bugarach import bench
     from bugarach.score import TOL_SEC, score_detections, score_stream
-    s, gt = _block_events(seed, frac)
+    s, gt = _block_events(seed, frac, hot)
     inside = SimpleNamespace(times=[d.time for d in gt.distractors], events=gt.distractors,
                              params={}, distractors=[])
     models = load_models(Path(work))
     out = {}
     for det in list(CODED) + [n for n in LEARNED if n not in CONTROLS]:
         r = bench.run_detector(det, s) if det in CODED else models[det].predict(s)[0]
-        sc_out = score_stream(gt, r)
         on, wd = ((r.onset_sec, r.width_sec) if hasattr(r, "onset_sec") else (r.locs, r.widths))
+        if det == "sce":   # score each call over its own bin (see _sce_rescore_one)
+            bw = float(bench.OPERATING_POINTS["sce"].params["bin_width_sec"])
+            wd = np.full(np.asarray(on).size, bw)
+        sc_out = score_detections(gt, on, widths=wd)
         sc_in = score_detections(inside, on, widths=wd)
         n, h = sc_out.by_frac.get(frac, (0, 0))
         # A detector calling all through the block "finds" anything placed there. So also
@@ -1262,8 +1312,14 @@ def _blockrecall_one(job):
         far = np.all([np.abs(grid - t) > 10.0 for t in inside.times], axis=0)
         grid = grid[far]
         near = [bool(np.any((hi >= g - TOL_SEC) & (lo <= g + TOL_SEC))) for g in grid]
+        # calls that start in the block but nowhere near the two events: false alarms, per
+        # minute, for these very copies on these very recordings
+        start_ok = ((lo >= BLOCK_PLACE[0]) & (lo < BLOCK_PLACE[1])
+                    & np.all([np.abs(lo - t) > 10.0 for t in inside.times], axis=0))
+        minutes = (BLOCK_PLACE[1] - BLOCK_PLACE[0] - 20.0 * len(inside.times)) / 60.0
         out[det] = dict(in_n=int(sc_in.n_planted), in_hit=int(sc_in.n_hit), out_n=int(n),
-                        out_hit=int(h), chance=float(np.mean(near)) if near else float("nan"))
+                        out_hit=int(h), chance=float(np.mean(near)) if near else float("nan"),
+                        block_calls=int(start_ok.sum()), block_minutes=minutes)
     return f"{seed}|{frac}", out
 
 
@@ -1272,64 +1328,225 @@ def stage_blockrecall(work: Path, workers: int = 12) -> None:
     planted events outside it, every detector at its shipped setting (learned: the single
     copies). The block's calls are left out of precision, so without this a detector that
     goes blind inside the block loses nothing on the bench."""
-    cache = work / "blockrecall.json"
-    if cache.exists():
-        res = json.loads(cache.read_text())
-    else:
-        jobs = [(seed, f, str(work)) for seed in BLOCK_SEEDS for f in BLOCK_SIZES]
+    from bugarach.bench import BENCH_RECORDING
+    base_rate = BENCH_RECORDING["hot_rate_hz"]
+
+    def run(hot, name):
+        cache = work / name
+        if cache.exists():
+            return json.loads(cache.read_text())
+        jobs = [(seed, f, str(work), hot) for seed in BLOCK_SEEDS for f in BLOCK_SIZES]
         with ProcessPoolExecutor(workers) as ex:
-            res = dict(ex.map(_blockrecall_one, jobs))
-        cache.write_text(json.dumps(res, indent=1))
-    dets = list(next(iter(res.values())))
-    summary = {}
-    for det in dets:
-        row = {}
-        for f in BLOCK_SIZES:
-            per = [res[f"{seed}|{f}"][det] for seed in BLOCK_SEEDS]
-            i_n, i_h = sum(p["in_n"] for p in per), sum(p["in_hit"] for p in per)
-            o_n, o_h = sum(p["out_n"] for p in per), sum(p["out_hit"] for p in per)
-            row[f"p{round(f * 100)}"] = dict(inside=i_h / i_n, outside=o_h / o_n,
-                                             n_inside=i_n, n_outside=o_n,
-                                             chance=float(np.nanmean([p["chance"] for p in per])))
-        summary[det] = row
-    put(work, "blockrecall", dict(per_detector=summary, n_recordings=len(BLOCK_SEEDS),
-                                  events_per_recording=2, seeds=[BLOCK_SEEDS[0], BLOCK_SEEDS[-1]]))
+            got = dict(ex.map(_blockrecall_one, jobs))
+        cache.write_text(json.dumps(got, indent=1))
+        return got
+
+    def summarise(res):
+        out = {}
+        for det in next(iter(res.values())):
+            row = {}
+            for f in BLOCK_SIZES:
+                per = [res[f"{seed}|{f}"][det] for seed in BLOCK_SEEDS]
+                i_n, i_h = sum(p["in_n"] for p in per), sum(p["in_hit"] for p in per)
+                o_n, o_h = sum(p["out_n"] for p in per), sum(p["out_hit"] for p in per)
+                ch = float(np.nanmean([p["chance"] for p in per]))
+                inside = i_h / i_n
+                row[f"p{round(f * 100)}"] = dict(
+                    inside=inside, outside=o_h / o_n, n_inside=i_n, n_outside=o_n, chance=ch,
+                    inside_ci=_wilson(i_h, i_n), outside_ci=_wilson(o_h, o_n),
+                    # recall above chance, as a share of what chance leaves to find
+                    # undefined when chance alone already reaches nearly everything
+                    inside_corrected=(max(0.0, (inside - ch) / (1 - ch)) if ch < 0.9
+                                      else float("nan")))
+            allp = [res[f"{seed}|{f}"][det] for seed in BLOCK_SEEDS for f in BLOCK_SIZES]
+            row["calls_per_min"] = (sum(p["block_calls"] for p in allp)
+                                    / sum(p["block_minutes"] for p in allp))
+            out[det] = row
+        return out
+
+    res = run(None, "blockrecall.json")
+    summary = summarise(res)
+    dets = list(summary)
+    hot3 = summarise(run(3 * base_rate, "blockrecall_hot3x.json"))
+    put(work, "blockrecall", dict(per_detector=summary, n_seeds=len(BLOCK_SEEDS),
+                                  n_recordings=len(BLOCK_SEEDS) * len(BLOCK_SIZES),
+                                  events_per_recording=2, events_per_size=2 * len(BLOCK_SEEDS),
+                                  seeds=[BLOCK_SEEDS[0], BLOCK_SEEDS[-1]],
+                                  block_mhz=round(1000 * base_rate),
+                                  min_gap_s=BENCH_RECORDING["min_sep_sec"]))
+    put(work, "blockrecall_hot3x", dict(per_detector=hot3, block_mhz=round(3000 * base_rate)))
     for det, row in summary.items():
         print(f"  {det:18s} " + "  ".join(f"{k}: in {v['inside']:.2f} out {v['outside']:.2f}"
-                                           for k, v in row.items()))
+                                           for k, v in row.items() if k.startswith("p"))
+              + f"  block calls/min {row['calls_per_min']:.2f}")
 
     hv, pn = _hv()
+    from make_group_raster_summary import LANE_COLORS
     ticks = [(i, NAMES[d]) for i, d in enumerate(dets)]
     panels = []
     for j, f in enumerate(BLOCK_SIZES):
         key = f"p{round(f * 100)}"
         x = np.arange(len(dets))
         yd, xd = f"br_{key}", f"brx_{key}"
-        out_ = [summary[d][key]["outside"] for d in dets]
-        in_ = [summary[d][key]["inside"] for d in dets]
-        ch = [summary[d][key]["chance"] for d in dets]
+        out_ = np.array([summary[d][key]["outside"] for d in dets])
+        in_ = np.array([summary[d][key]["inside"] for d in dets])
+        ch = np.array([summary[d][key]["chance"] for d in dets])
+        oci = [summary[d][key]["outside_ci"] for d in dets]
+        ici = [summary[d][key]["inside_ci"] for d in dets]
+        xo, xi_ = x - 0.16, x + 0.16
+        # hollow where recall inside the block is within 0.1 of chance: found by luck
+        lucky = in_ - ch < 0.1
+        seg = [xd, yd, f"{xd}1", f"{yd}1"]
+        el = (hv.Segments([(a, o, b, i) for a, b, o, i in zip(xo, xi_, out_, in_)], seg).opts(
+                  color="#cfcfcf", line_width=2)
+              * hv.Segments([(a, lo, a, hi) for a, (lo, hi) in zip(xo, oci)], seg).opts(
+                  color="#111", line_width=1.5)
+              * hv.Segments([(a, lo, a, hi) for a, (lo, hi) in zip(xi_, ici)], seg).opts(
+                  color="#c77a12", line_width=1.5)
+              * hv.Scatter((xi_, ch), xd, yd).opts(marker="dash", size=26, color="#9e9e9e",
+                                                   line_width=3)
+              * hv.Scatter((xo, out_), xd, yd).opts(color="#111", size=10)
+              * hv.Scatter((xi_[~lucky], in_[~lucky]), xd, yd).opts(color="#c77a12", size=11)
+              * hv.Scatter((xi_[lucky], in_[lucky]), xd, yd).opts(
+                  color="#c77a12", size=11, fill_alpha=0, line_width=2.5))
         last = j == len(BLOCK_SIZES) - 1
-        el = (hv.Scatter((x, ch), xd, yd).opts(marker="dash", size=30, color="#9e9e9e",
-                                               line_width=3)
-              * hv.Scatter((x - 0.14, out_), xd, yd).opts(color="#111", size=11)
-              * hv.Scatter((x + 0.14, in_), xd, yd).opts(color="#c77a12", size=11))
         panels.append(el.opts(
             width=1060, height=200 + (70 if last else 0), ylim=(-0.04, 1.06),
             xlim=(-0.6, len(dets) - 0.4), xticks=ticks, xrotation=35 if last else 0,
             ylabel=f"{'ABC'[j]} · {round(f * 100)}% of ROIs · recall (0–1)", xlabel="",
             toolbar=None, show_grid=True, shared_axes=False,
             fontsize={"ylabel": "9pt", "xticks": "9pt"}, **({} if last else {"xaxis": None})))
-    items = [sub_head(pn, f"{len(BLOCK_SEEDS)} new simulated recordings (quiet level), each with "
-                          "2 planted-style events inside its busy block; every detector at the "
-                          "setting it ships with"),
-             key_html(pn, [glyph("●", "#111", "recall outside the busy block"),
-                           glyph("●", "#c77a12", "recall inside the busy block"),
-                           glyph("▬", "#9e9e9e", "chance: how often a moment in the block with "
-                                                 "no event nearby still has a call within "
-                                                 "reach")]),
+    items = [key_html(pn, [glyph("●", "#111", "recall outside the busy block (left)"),
+                           glyph("●", "#c77a12", "recall inside it (right)"),
+                           glyph("○", "#c77a12", "inside, within 0.1 of chance"),
+                           glyph("▬", "#9e9e9e", "chance line"),
+                           glyph("│", "#555", "95% range")]),
              *[pn.pane.HoloViews(p) for p in panels]]
-    png = save_figure(items, work, "fig14_blockrecall")
+    png = save_figure(items, work, "fig13_blockrecall")
     print("  wrote", png.name)
+
+    # the trade-off in one picture: false alarms in a busy stretch against what is still
+    # found there, for the same copies on the same recordings
+    NO_INFO = -0.08          # where a detector whose chance line reaches ~everything sits
+
+    def xy(summ, d):
+        y_ = summ[d]["p18"]["inside_corrected"]
+        return max(summ[d]["calls_per_min"], 0.01), (NO_INFO if not np.isfinite(y_) else y_)
+    base = {d: xy(summary, d) for d in dets}
+    tri = {d: xy(hot3, d) for d in dets}
+    links = hv.Segments([(base[d][0], base[d][1], tri[d][0], tri[d][1]) for d in dets],
+                        ["tx", "ty", "tx1", "ty1"]).opts(color="#b5b5b5", line_width=1.5,
+                                                         line_dash="dotted")
+    pts = hv.Overlay([hv.Scatter(([base[d][0]], [base[d][1]]), "tx", "ty").opts(
+        color=LANE_COLORS.get(d, "#555"), size=16, line_color="#111", line_width=0.8)
+        for d in dets])
+    pts3 = hv.Overlay([hv.Scatter(([tri[d][0]], [tri[d][1]]), "tx", "ty").opts(
+        color=LANE_COLORS.get(d, "#555"), size=13, fill_alpha=0, line_width=2.5)
+        for d in dets])
+    # hand-placed labels where points coincide (log x: offsets are factors)
+    nudge = {"cicada": (1.25, -0.02), "sce": (1.25, 0.05), "tube_ratio": (1.25, 0.05),
+             "tube_ratio_guard": (1.25, -0.06), "tube": (1.2, -0.05), "sync": (0.25, 0.05)}
+    labels = hv.Labels([(base[d][0] * nudge.get(d, (1.2, 0.035))[0],
+                         base[d][1] + nudge.get(d, (1.2, 0.035))[1],
+                         NAMES[d] + (" (no information)" if base[d][1] == NO_INFO else ""))
+                        for d in dets], ["tx", "ty"], "name").opts(
+        text_font_size="10pt", text_align="left", text_color="#222")
+    corner = hv.Rectangles([(0.006, 0.5, 1.0, 1.05)]).opts(color="#dfe9d8", line_alpha=0)
+    trade = (corner * links * pts3 * pts * labels).opts(
+        width=1060, height=480, logx=True, xlim=(0.006, 120), ylim=(-0.2, 1.1),
+        xticks=[(0.01, "0.01"), (0.1, "0.1"), (1, "1"), (10, "10"), (100, "100")],
+        yticks=[(NO_INFO, "chance"), (0, "0"), (0.2, "0.2"), (0.4, "0.4"), (0.6, "0.6"),
+                (0.8, "0.8"), (1, "1")],
+        xlabel="false alarms per minute inside the busy block (log scale; 0.01 means fewer)",
+        ylabel="mid-sized events found inside it, beyond chance (0–1)",
+        toolbar=None, show_grid=True, shared_axes=False,
+        fontsize={"ylabel": "9pt", "xlabel": "9pt"})
+    items = [key_html(pn, [glyph("●", "#555", f"busy block as in the bench "
+                                              f"(+{round(1000 * base_rate)} mHz per ROI)"),
+                           glyph("○", "#555", f"three times busier "
+                                              f"(+{round(3000 * base_rate)} mHz)"),
+                           "<span style='background:#dfe9d8;padding:0 6px'>shaded</span> "
+                           "fewer than 1 false alarm a minute and at least half the events "
+                           "chance leaves still found"]),
+             pn.pane.HoloViews(trade)]
+    png = save_figure(items, work, "fig19_tradeoff")
+    print("  wrote", png.name)
+
+
+def _sce_rescore_one(job):
+    """binned SCE on one bench recording at every value on its list, scored two ways.
+
+    `sce_detect` reports a call as starting at its bin but only as wide as the spread of
+    the events inside (`width_sec = tlast - tfirst`, the MATLAB contract). The scorer reads
+    that as the call's stretch, which starts at the bin edge and can end before the events
+    it was made on. With merging off (the shipped default), a call's own bin is exactly
+    [onset, onset + bin width], so the second score uses that.
+    """
+    regime, seed = job
+    from bugarach import bench
+    from bugarach.score import score_detections, score_stream
+    op = bench.OPERATING_POINTS["sce"]
+    s, gt = bench.make_recording(regime, seed)
+    out = {}
+    for v in op.grid:
+        det = bench.run_detector("sce", s, **{op.knob: v})
+        bw = float(op.params["bin_width_sec"])
+        for tag, sc in (("as_shipped", score_stream(gt, det)),
+                        ("full_bin", score_detections(gt, det.onset_sec,
+                                                      widths=np.full(det.onset_sec.size, bw)))):
+            out[f"{v}|{tag}"] = dict(n_planted=sc.n_planted, n_detected=sc.n_detected,
+                                    n_hit=sc.n_hit, n_fa=sc.n_fa, hot_fa=sc.hot_fa,
+                                    distractor_hits=sc.distractor_hits, tol_sec=sc.tol_sec,
+                                    by_frac={str(k): list(n) for k, n in sc.by_frac.items()})
+    return f"{regime}|{seed}", out
+
+
+def stage_sce_rescore(work: Path, workers: int = 12) -> None:
+    """How much the span mismatch costs binned SCE, through the same rounds as Section 7."""
+    from types import SimpleNamespace
+    from bugarach import bench
+    op = bench.OPERATING_POINTS["sce"]
+    split = bench.fold_split(n_folds=4, seeds_per_fold=6)
+    cache = work / "sce_rescore.json"
+    if cache.exists():
+        res = json.loads(cache.read_text())
+    else:
+        jobs = [(r, sd) for r in ("baseline_quiet", "baseline_busy") for sd in split.seeds]
+        with ProcessPoolExecutor(workers) as ex:
+            res = dict(ex.map(_sce_rescore_one, jobs))
+        cache.write_text(json.dumps(res))
+
+    def pooled(regime, seeds, v, tag):
+        scs = []
+        for sd in seeds:
+            d = dict(res[f"{regime}|{sd}"][f"{v}|{tag}"])
+            d["by_frac"] = {float(k): tuple(n) for k, n in d["by_frac"].items()}
+            scs.append(SimpleNamespace(**d))
+        return bench.pool_scores(scs, detector="sce", regime=regime, seeds=seeds)
+
+    out = {}
+    for regime in ("baseline_quiet", "baseline_busy"):
+        row = {}
+        for tag in ("as_shipped", "full_bin"):
+            f1s, small = [], []
+            for held in range(4):
+                best_v, best_f1 = None, -1.0
+                for v in op.grid:                       # loosest first; ties keep the looser
+                    p = pooled(regime, split.train(held), v, tag)
+                    if np.isfinite(p.f1) and p.f1 > best_f1:
+                        best_f1, best_v = p.f1, v
+                p = pooled(regime, split.test(held), best_v, tag)
+                f1s.append(p.f1)
+                small.append(p.recall_at(0.10))
+            sh = pooled(regime, split.seeds, op.params[op.knob], tag)
+            row[tag] = dict(tuned_f1=float(np.mean(f1s)), tuned_f1_min=float(min(f1s)),
+                            tuned_f1_max=float(max(f1s)), tuned_small=float(np.mean(small)),
+                            shipped_f1=float(sh.f1), shipped_recall=float(sh.recall),
+                            shipped_precision=float(sh.precision))
+        out[regime.split("_")[1]] = row
+        print(f"  {regime}: " + "  ".join(f"{t}: tuned {v['tuned_f1']:.3f} shipped {v['shipped_f1']:.3f}"
+                                         for t, v in row.items()))
+    put(work, "sce_rescore", out)
 
 
 def _bakeoff(bakeoff: Path, regime: str) -> dict:
@@ -1472,16 +1689,14 @@ def stage_optimization(work: Path, bakeoff: Path) -> None:
              pn.pane.HoloViews(panel_b)]
     png = save_figure(items, work, "fig11_grading")
     print("  wrote", png.name)
-    items = [sub_head(pn, f"each hand-written detector's setting list, tried on all "
-                          f"{len(seeds)} recordings at the quiet level (loosest on the left)"),
-             key_html(pn, [glyph("●", "#222", "F1 score"), glyph("▲", "#5a8fb0", "recall"),
+    items = [key_html(pn, [glyph("●", "#222", "F1 score"), glyph("▲", "#5a8fb0", "recall"),
                            glyph("■", "#b08a3c", "precision"),
                            glyph("○", "#1a7f37", "chosen in at least one round"),
                            glyph("◇", "#7A00E6", "the setting it ships with"),
                            glyph("□", "#b3261e",
                                  f"breaks its busy-block limit (on all {len(seeds)} recordings)")]),
              pn.pane.HoloViews(hv.Layout(plots).cols(3).opts(shared_axes=False, toolbar=None))]
-    png = save_figure(items, work, "fig12_settings")
+    png = save_figure(items, work, "fig14_settings")
     print("  wrote", png.name)
 
 
@@ -1516,15 +1731,9 @@ def _perf_rows(bake: dict, regime: str, work: Path) -> dict:
                                 float(np.nanmean([s.by_frac[lv] for s in scores]))
                                 for lv in levels},
                  thresholds=[f.get("threshold") for f in folds if "threshold" in f],
-                 # About: `distractor_hits` counts decoys with a call in reach, not calls,
-                 # so a decoy drawing two calls is set aside once.
-                 precision_no_decoys=min(1.0, sum(f["n_hit"] for f in folds)
-                                      / max(1, sum(f["n_scored"] - f["distractor_hits"]
-                                                   for f in folds))),
-                 decoys_reached=sum(f["distractor_hits"] for f in folds),
-                 decoys_share=(sum(f["distractor_hits"] for f in folds)
-                               / (len(folds) * int(bake["runs"][0]["seeds_per_fold"])
-                                  * BENCH_RECORDING["n_distractors"])))
+                 # share of decoys with any call in reach: coverage, not a count of calls,
+                 # so no precision is rebuilt from it (performance.MAX_DISTRACTOR_RATE)
+                 decoys_share=row.distractor_rate)
         out[det] = d
         put(work, f"perf_{regime}_{det}", {k: v for k, v in d.items() if k != "f1_per_score"})
     slow = min(out, key=lambda k: out[k]["x_realtime"])
@@ -1571,14 +1780,13 @@ def stage_performance(work: Path, bakeoff: Path) -> None:
                                                   line_color="#7A00E6", line_width=2))
         plots.append(el.opts(width=520, height=300, ylim=(0, 1), xlim=(-0.6, len(order) - 0.4),
                              xticks=ticks, xrotation=55,
-                             ylabel=f"A{1 if label == 'quiet' else 2} · {label} level · F1 score (0–1)", xlabel="",
+                             ylabel=f"A{1 if label == 'quiet' else 2} · {label} background · F1 score (0–1)", xlabel="",
                              toolbar=None, show_grid=True, shared_axes=False,
                              fontsize={"xticks": "8pt", "ylabel": "9pt"}))
     floor = 0.01
     pxs, pys, pcs, cx, cy, sx, sy = [], [], [], [], [], [], []
-    for i, det in enumerate(order):
-        if det in CONTROLS:     # a call spanning the recording: the rate means nothing
-            continue
+    useful = [d for d in order if d not in CONTROLS]   # a call spanning the recording: no rate
+    for i, det in enumerate(useful):
         d = rows["baseline_quiet"][det]
         pxs.append(i)
         pys.append(max(d["probe_per_min"], floor))
@@ -1595,12 +1803,12 @@ def stage_performance(work: Path, bakeoff: Path) -> None:
                                                            line_color="#7A00E6", line_width=2)
              * hv.Scatter((cx, cy), "det_p", "probe").opts(marker="dash", size=26,
                                                            color="#b3261e", line_width=3)).opts(
-        width=520, height=320, logy=True, ylim=(0.006, 200), xlim=(-0.6, len(order) - 0.4),
-        xticks=ticks, xrotation=55, toolbar=None,
-        ylabel="B · calls per minute, busy block", xlabel="", show_grid=True,
-        fontsize={"xticks": "8pt", "ylabel": "9pt"}, shared_axes=False)
+        width=520, height=320, logy=True, ylim=(0.006, 200), xlim=(-0.6, len(useful) - 0.4),
+        xticks=[(i, NAMES[d]) for i, d in enumerate(useful)], xrotation=35, toolbar=None,
+        yticks=[(0.01, "0.01"), (0.1, "0.1"), (1, "1"), (10, "10"), (100, "100")],
+        ylabel="B · false alarms per minute, busy block", xlabel="", show_grid=True,
+        fontsize={"xticks": "9pt", "ylabel": "9pt"}, shared_axes=False)
     shade = {"p30": "#111111", "p18": "#6f6f6f", "p10": "#c8c8c8"}
-    useful = [d for d in order if d not in CONTROLS]
     uticks = [(i, NAMES[d]) for i, d in enumerate(useful)]
     parts = []
     for k, (regime, label) in enumerate((("baseline_quiet", "quiet"), ("baseline_busy", "busy"))):
@@ -1610,10 +1818,15 @@ def stage_performance(work: Path, bakeoff: Path) -> None:
             ys_ = [rows[regime][d]["recall_by_pct"][lv] for d in useful]
             lv_plots.append(hv.Scatter((xs_, ys_), f"det_c{k}", "rec").opts(
                 color=shade[lv], size=9, line_color="#111", line_width=0.8))
+        # small events at the setting each hand-written detector ships with
+        shx = [i + 0.24 for i, d in enumerate(useful) if d in CODED]
+        shy = [shipped_res[f"{d}|{regime}"]["by_frac"]["p10"] for d in useful if d in CODED]
+        lv_plots.append(hv.Scatter((shx, shy), f"det_c{k}", "rec").opts(
+            marker="diamond", size=11, fill_alpha=0, line_color="#7A00E6", line_width=2))
         parts.append(hv.Overlay(lv_plots).opts(
-            width=520, height=300, ylim=(0, 1.05), toolbar=None, show_grid=True,
+            width=520, height=300, ylim=(-0.03, 1.05), toolbar=None, show_grid=True,
             xlim=(-0.6, len(useful) - 0.4), xrotation=55, xticks=uticks, xlabel="",
-            show_legend=False, ylabel=f"C{k + 1} · {label} level · recall (0–1)",
+            show_legend=False, ylabel=f"C{k + 1} · {label} background · recall (0–1)",
             fontsize={"ylabel": "9pt", "xticks": "8pt"}, shared_axes=False))
     items = [sub_head(pn, "A · F1 score on simulated recordings the setting or training never saw"),
              key_html(pn, [glyph("●", "#0B5FFF", "hand-written, one round"),
@@ -1622,34 +1835,39 @@ def stage_performance(work: Path, bakeoff: Path) -> None:
                            glyph("◇", "#7A00E6", "hand-written, at the setting it ships with"),
                            glyph("┅", "#1b7f3b", f"the best F1 possible here ({f1_ceiling:.2f})")]),
              pn.pane.HoloViews(hv.Layout(plots).cols(2).opts(shared_axes=False, toolbar=None)),
-             sub_head(pn, "B · calls per minute in the busy block, where nothing is planted "
-                          "(quiet level)"),
+             sub_head(pn, "B · false alarms per minute in the busy block, where nothing is "
+                          "planted (quiet background)"),
              key_html(pn, [glyph("●", "#0B5FFF", "hand-written, average"),
                            glyph("●", "#7F0000", "learned, average"),
                            glyph("◇", "#7A00E6", "at the setting it ships with"),
                            glyph("▬", "#b3261e", "the limit (hand-written only)"),
                            glyph("┄", "#bbb", "fewer than 0.01 per minute: drawn on this line")]),
              pn.pane.HoloViews(probe.opts(width=1060)),
-             sub_head(pn, "C · recall by event size: C1 at the quiet level, C2 at the busy level"),
-             key_html(pn, [glyph("●", "#111", "30% of ROIs take part"),
-                           glyph("●", "#6f6f6f", "18%"), glyph("●", "#c8c8c8", "10%"),
-                           "left to right within each detector: 30%, 18%, 10%"]),
+             sub_head(pn, "C · recall by event size, tuned settings averaged over rounds: "
+                          "C1 quiet background, C2 busy background"),
+             key_html(pn, [glyph("●", "#111", "large events (30% of ROIs)"),
+                           glyph("●", "#6f6f6f", "mid-sized (18%)"),
+                           glyph("●", "#c8c8c8", "small (10%)"),
+                           glyph("◇", "#7A00E6", "small events at the shipped setting"),
+                           "left to right within each detector"]),
              pn.pane.HoloViews(hv.Layout(parts).cols(2).opts(shared_axes=False, toolbar=None))]
-    png = save_figure(items, work, "fig13_performance")
+    png = save_figure(items, work, "fig12_performance")
     print("  wrote", png.name)
 
     def cell(v, fmt="{:.2f}"):
         return "—" if v is None or (isinstance(v, float) and not np.isfinite(v)) else fmt.format(v)
-    head = ("<tr><th rowspan=2>detector</th>"
-            "<th colspan=2>F1 score, quiet level (0–1)</th><th colspan=2>F1 score, busy level (0–1)</th>"
-            "<th colspan=3>quiet level (0–1)</th>"
-            "<th colspan=3>calls per minute in the busy block, quiet level</th>"
-            "<th colspan=3>at the setting it ships with</th>"
-            "<th rowspan=2>speed, quiet level (times faster than real time)</th></tr>"
+    head = ("<tr><th rowspan=2 class=d>detector</th>"
+            "<th colspan=2>F1 score, quiet background (0–1)</th>"
+            "<th colspan=2>F1 score, busy background (0–1)</th>"
+            "<th colspan=3>quiet background (0–1)</th>"
+            "<th colspan=4>false alarms per minute in the busy block, quiet background</th>"
+            "<th colspan=5>at the setting it ships with</th>"
+            "<th rowspan=2>speed, quiet background (times faster than real time)</th></tr>"
             "<tr><th>average</th><th>lowest–highest</th><th>average</th><th>lowest–highest</th>"
-            "<th>recall</th><th>precision</th><th>precision, decoy calls set aside (about)</th>"
-            "<th>average</th><th>worst round</th><th>limit</th>"
-            "<th>F1, quiet</th><th>F1, busy</th><th>calls per minute, busy block, quiet</th></tr>")
+            "<th>recall</th><th>precision</th><th>recall, small events</th>"
+            "<th>average</th><th>worst round</th><th>limit</th><th>average under the limit?</th>"
+            "<th>F1, quiet</th><th>F1, busy</th><th>small events, quiet</th>"
+            "<th>small events, busy</th><th>busy-block false alarms per minute, quiet</th></tr>")
     body = []
     for det in order:
         q, b = rows["baseline_quiet"][det], rows["baseline_busy"][det]
@@ -1658,17 +1876,23 @@ def stage_performance(work: Path, bakeoff: Path) -> None:
         sq = shipped_res.get(f"{det}|baseline_quiet")
         sb = shipped_res.get(f"{det}|baseline_busy")
         dash = "—"
+        gate = (dash if q["ceiling"] is None or ctrl
+                else ("yes" if q["probe_per_min"] <= q["ceiling"] else "no"))
+        mark = " (failed control)¹" if ctrl else ("²" if det == "sce" else "")
         body.append(
-            f"<tr><td>{NAMES[det]}{' (failed control)¹' if ctrl else ''}</td>"
+            f"<tr><td class=d>{NAMES[det]}{mark}</td>"
             f"<td>{cell(q['f1'])}</td><td>{cell(q['f1_min'])}–{cell(q['f1_max'])}</td>"
             f"<td>{cell(b['f1'])}</td><td>{cell(b['f1_min'])}–{cell(b['f1_max'])}</td>"
             f"<td>{cell(q['recall'])}</td>"
             f"<td>{dash if ctrl else cell(q['precision'])}</td>"
-            f"<td>{dash if ctrl else cell(q['precision_no_decoys'])}</td>"
+            f"<td>{cell(q['recall_by_pct'].get('p10'))}</td>"
             f"<td>{dash if ctrl else cell(q['probe_per_min'], '{:.2f}')}</td>"
             f"<td{' class=over' if over else ''}>{dash if ctrl else cell(q['probe_max_round'], '{:.2f}')}</td>"
             f"<td>{cell(q['ceiling'], '{:g}') if q['ceiling'] is not None else dash}</td>"
+            f"<td>{gate}</td>"
             f"<td>{cell(sq['f1']) if sq else dash}</td><td>{cell(sb['f1']) if sb else dash}</td>"
+            f"<td>{cell(sq['by_frac']['p10']) if sq else dash}</td>"
+            f"<td>{cell(sb['by_frac']['p10']) if sb else dash}</td>"
             f"<td>{cell(sq['probe_per_min'], '{:.2f}') if sq else dash}</td>"
             f"<td>{cell(q['x_realtime'], '{:,.0f}')}</td></tr>")
     (work / "table_performance.html").write_text(
@@ -1781,9 +2005,17 @@ def stage_real(work: Path, workers: int) -> None:
                     else:
                         per[dd] = (on, wd)
                 lanes[(s.slice_id, stream)] = per
+                # how busy each marked window is: mean events per ROI per second, in mHz,
+                # to set beside the simulated busy block (Section 10)
+                win_rate = {}
+                for wname, w0, w1 in wins:
+                    ev = [np.asarray(v, float) for v in s.streams[stream].t50rise]
+                    n_ev = sum(int(np.sum((v >= w0) & (v <= w1))) for v in ev)
+                    win_rate[wname] = round(1000 * n_ev / (len(ev) * (w1 - w0)), 1)
                 summary[s.meta.get("group_id")] = dict(n_roi=s.streams[stream].n_rois,
                                                         calls_in_windows=in_win,
-                                                        control_time_covered=ctrl_cover)
+                                                        control_time_covered=ctrl_cover,
+                                                        window_rate_mhz=win_rate)
             put(work, f"real_{label}_{stream}", summary)
             # One build per recording, so each lane label can carry that recording's own
             # count inside the marked windows; then one x-axis for the whole figure.
@@ -1791,7 +2023,7 @@ def stage_real(work: Path, workers: int) -> None:
             blocks = []
             for s, a in members:
                 n_in = summary[s.meta.get("group_id")]["calls_in_windows"]
-                names = {dd: f"{NAMES[dd]} · {n_in[dd]}" for dd in shown}
+                names = {dd: f"{NAMES[dd]} · {n_in[dd]} call{'' if n_in[dd] == 1 else 's'}" for dd in shown}
                 with _page_layout(names=names, raster_px=raster_px):
                     b, _ = build_page([(s, a)], ext=ext, manifest={}, width=1060,
                                       stream=stream, lanes={(s.slice_id, stream):
@@ -1852,7 +2084,7 @@ def fill(template: str, numbers: dict) -> str:
             return m.group(0)
         fmt = fmt.strip()
         if fmt == "pct":
-            return f"{100 * v:.0f}%"
+            return f"{int(100 * v + 0.5)}%"   # half up: 52.5% reads 53%
         return format(v, fmt) if fmt else str(v)
     out = TOKEN.sub(rep, template)
     if missing:
@@ -1914,7 +2146,8 @@ def stage_page(work: Path, bakeoff, dest: Path) -> None:
 
 # ----------------------------------------------------------------------- main
 STAGE_ORDER = ["models", "real", "problem", "surrogates", "mechanism", "learned", "generator",
-               "sweeps", "shipped", "blockrecall", "optimization", "performance", "page"]
+               "sweeps", "shipped", "blockrecall", "sce_rescore", "optimization", "performance",
+               "page"]
 
 
 def main(argv=None) -> int:
@@ -1946,7 +2179,7 @@ def main(argv=None) -> int:
         t0 = time.time()
         print(f"stage {st}")
         fn = globals()[f"stage_{st}"]
-        if st in ("models", "sweeps", "shipped", "blockrecall", "real"):
+        if st in ("models", "sweeps", "shipped", "blockrecall", "sce_rescore", "real"):
             fn(work, a.workers)
         elif st in ("optimization", "performance"):
             fn(work, a.bakeoff)

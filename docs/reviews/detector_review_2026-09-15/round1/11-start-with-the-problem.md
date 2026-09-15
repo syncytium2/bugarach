@@ -1,4 +1,4 @@
-> **Public copy.** Lines that concern real treatment recordings are removed (22 here), per FOUNDATIONS §5, and machine paths are shortened to `<scratchpad>`, `<worktree>`, `<darkroom>` or `<home>` (sapper SAP004). Everything else is verbatim.
+> **Public copy.** Lines that concern real treatment recordings are removed (23 here), per FOUNDATIONS §5, and machine paths are shortened to `<scratchpad>`, `<worktree>`, `<darkroom>` or `<home>` (sapper SAP004). Everything else is verbatim.
 
 GRANT 11 ok — Read, Grep, Glob
 
@@ -47,7 +47,7 @@ The spine breaks in four places:
 
 The reader sees, in order: the lede, the "In short" box (setup and a hedge), a 12-item contents list, then Figure 1.
 
-Figure 1A is ten minutes of a *quiet* real baseline whose heading says "no answer key". Figure 1B is one planted stripe. That is a picture of **the data**, not of **the problem**. Nothing in Figure 1 looks wrong or ambiguous.
+[line removed from the public copy: it concerns real treatment recordings (FOUNDATIONS §5); the verbatim report is in the darkroom delivery folder]
 
 [line removed from the public copy: it concerns real treatment recordings (FOUNDATIONS §5); the verbatim report is in the darkroom delivery folder]
 
