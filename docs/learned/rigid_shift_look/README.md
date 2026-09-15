@@ -90,6 +90,46 @@ Run the same night, because the first run showed no leak rising with displacemen
   and 40 s.
 - **Slow, 2 s bin:** 0.60 → 0.29 → 0.13 → 0.07.
 
+### The Cossart folder, 2026-09-15
+
+Tony asked whether it works on the Cossart dataset. The same look was run on the Cossart folder:
+59 recordings from 32 mice, 1,257 window pairs. The folder declares no baseline region, so each
+recording was read whole; the typical recording is 12,634 frames at a 0.118 s frame interval,
+about 25 minutes. The twins have 566 ROIs,
+the folder's typical field. With 566 ROIs a K of 3–8 would count chance coincidences, so K was
+scaled with the field to 55, 73, 110 and 146 ROIs. There are 10 twin pairs per level.
+Displacements are 1.6, 5, 10, 20 and 40 s.
+
+![Leak and count, Cossart](cossart/fig1_leak_count.png)
+
+**Figure 5. Leak and onset count on the Cossart folder.**
+- **Panels:** as in Figure 1, one stream.
+- **Leak:** rigid shift reads 0.49 at 1.6 s and 0.52 at 5 s (range over mice 0.48–0.58). From
+  10 s it gives itself away: 0.58 at 10 s, 0.59 at 20 s and 0.60 at 40 s, with lower bounds
+  0.53–0.56. Uniform dither reads 0.98–0.99. The ranges over slices match those over mice.
+- **Counts:** within 0.11 %, against −4.5 % for the control.
+
+![Destruction, Cossart](cossart/fig2_destruction.png)
+
+**Figure 6. How much planted coordination survives on the Cossart folder.**
+- **Panels:** as in Figure 2, with the 1 s bin only. The homogeneous-resample control reads 0
+  and sits under the rigid-shift lines. At K = 146 with 20 % participation, a planted event holds
+  113 ROIs, which is fewer than K, so there is nothing to remove and no point.
+- **What it shows:** from 5 s every displacement removes all of it. At 1.6 s, events in 50 % of
+  ROIs keep 0.87 at K = 55 and 0.79 at K = 73.
+
+**Reading.** On Cossart the only candidate is near 5 s: it hides, though its upper bound crosses
+0.55, and it removes large events. Unlike the lab's fast stream, larger shifts leak. Why is
+not known. One untested guess: the recordings are whole, so slow drift is moved in time, the
+same story as the lab's slow stream.
+
+**The K scaling makes removal easy.** Take an event in 283 ROIs, shifted ±5 s. It spreads over
+10 s, about 28 ROIs per 1 s bin, which is below K = 55. If the Cossart events that matter involve
+tens of ROIs, the right K is small, removal needs a larger shift, and that is where the leak
+begins. Small K on Cossart is not measured. The screen's review found that the destruction
+measure could not register removal on Cossart at its settings; with K scaled, the controls read
+0 and 1, so here it can.
+
 ## What this cannot say
 
 - **The destruction test uses synthetic events with one frame of jitter.** Real coordinated events

@@ -20,15 +20,16 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
 
-STREAMS = ("fast", "slow")
+STREAMS = ("fast", "slow", "events")
 INK = {"rigid_shift": "#1f4e79", "uniform_dither": "#b04a2f", "edge_thinning": "#7a7a7a"}
 J_STYLE = ("-", "--", ":", "-.", (0, (5, 1, 1, 1)), (0, (1, 3)))
 
 
 def _fig1(R, out):
     from matplotlib.lines import Line2D
-    fig, axes = plt.subplots(2, 2, figsize=(10, 7.6))
-    for row, stream in enumerate(STREAMS):
+    streams = [s for s in STREAMS if any(r["stream"] == s for r in R["leak"])]
+    fig, axes = plt.subplots(len(streams), 2, figsize=(10, 3.8 * len(streams)), squeeze=False)
+    for row, stream in enumerate(streams):
         ax = axes[row, 0]
         rows = [r for r in R["leak"] if r["stream"] == stream]
         Js = sorted({r["J_sec"] for r in rows})
