@@ -245,10 +245,10 @@ def twins_for(stream, limit, n_twins):
 
 
 def destruction_task(args):
-    stream, bin_sec, p, n_twins, n_draws, n_assess, limit = args
+    stream, bin_sec, p, n_twins, n_draws, n_assess, limit, Js = args
     tw = twins_for(stream, limit, n_twins)
     dt, n_frames = tw["dt"], tw["n_frames"]
-    variants = [("rigid_shift", J) for J in J_SEC[stream]] + [("homogeneous_resample", None),
+    variants = [("rigid_shift", J) for J in Js] + [("homogeneous_resample", None),
                                                                ("do_nothing", None)]
     base_seed = seed31("assess", stream, bin_sec, p)
     rows = {f"{n}@{J}" if J else n: [] for n, J in variants}
@@ -287,7 +287,15 @@ def main(argv=None):
     ap.add_argument("--limit", type=int, default=None, help="first N recordings (smoke)")
     ap.add_argument("--quick", action="store_true", help="tiny counts for a smoke run")
     ap.add_argument("--jobs", type=int, default=12)
+    ap.add_argument("--J-fast", nargs="*", type=float, default=None,
+                    help="displacements for fast, seconds (default 1.6 2.5 5.0)")
+    ap.add_argument("--J-slow", nargs="*", type=float, default=None,
+                    help="displacements for slow, seconds (default 1.4 2.8 5.6)")
     a = ap.parse_args(argv)
+    if a.J_fast:
+        J_SEC["fast"] = tuple(a.J_fast)
+    if a.J_slow:
+        J_SEC["slow"] = tuple(a.J_slow)
     out = Path(a.out)
     out.mkdir(parents=True, exist_ok=True)
     n_boot = 40 if a.quick else 1000
@@ -303,7 +311,7 @@ def main(argv=None):
         for bin_sec in BINS_SEC[stream]:
             for p in PARTICIPATION:
                 tasks.append(("destruction", (stream, bin_sec, p, n_twins, n_draws, n_assess,
-                                              a.limit)))
+                                              a.limit, J_SEC[stream])))
     fn = {"leak": leak_task, "count": count_task, "destruction": destruction_task}
     meta = {"tag": TAG, "started": time.strftime("%Y-%m-%dT%H:%M:%S%z"), "limit": a.limit,
             "quick": a.quick, "n_boot": n_boot, "n_twins": n_twins, "n_draws": n_draws,

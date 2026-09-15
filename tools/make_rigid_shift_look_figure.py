@@ -22,7 +22,7 @@ import numpy as np  # noqa: E402
 
 STREAMS = ("fast", "slow")
 INK = {"rigid_shift": "#1f4e79", "uniform_dither": "#b04a2f", "edge_thinning": "#7a7a7a"}
-J_STYLE = {0: "-", 1: "--", 2: ":"}
+J_STYLE = ("-", "--", ":", "-.", (0, (5, 1, 1, 1)), (0, (1, 3)))
 
 
 def _fig1(R, out):
