@@ -1,0 +1,40 @@
+{
+  "tag": "tube-ssl-2026-09-15",
+  "started": "2026-09-15T18:58:05-0400",
+  "quick": false,
+  "models": [
+    "tube",
+    "tube_guard",
+    "line"
+  ],
+  "J_sec": [
+    10.0,
+    20.0
+  ],
+  "train_seeds": [
+    0,
+    1,
+    2
+  ],
+  "folds": [
+    0,
+    1,
+    2,
+    3
+  ],
+  "crop": 4096,
+  "batch": 3,
+  "steps": 900,
+  "topk_frac": 0.01,
+  "n_bank": 6,
+  "rates_per_10min": [
+    0.5,
+    1.0,
+    2.0
+  ],
+  "merge_gap_frames": 20,
+  "spec": "generator_spec.json",
+  "exploratory": true,
+  "n_tasks": 216,
+  "seconds": 1528.998594045639
+}
