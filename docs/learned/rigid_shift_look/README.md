@@ -1,5 +1,38 @@
 # Rigid shift, one look — does it hide while it removes coordination?
 
+> ⚠ **Under correction, 2026-09-15 — read this before anything below.** This note was reviewed
+> after it shipped ([run record](../../reviews/rigid-shift-look-2026-09-15.md)). Two of its
+> readings do not hold as written, and the rest of the note has not yet been rewritten.
+>
+> - **The rising "leak" at large displacements on the slow stream and on Cossart is probably not
+>   a leak.** The classifier's pooled per-ROI statistics respond when ROIs that rise and fall
+>   together are shifted apart. A reviewer shifted every ROI of a recording by one *shared*
+>   offset. That moves each ROI's drift exactly as rigid shift does but keeps cross-ROI
+>   structure, and it reads at chance:
+>   - slow stream, 44.8 s: 0.502, against 0.558 for independent offsets;
+>   - Cossart, 10 s: 0.500, against 0.560;
+>   - each value is 3 surrogate draws × 3 fold seeds.
+>
+>   The classifier is detecting removed shared modulation, not drift moved in time. The slow
+>   window, "Cossart only near 5 s" and "larger shifts leak" all rest on that misreading. The fast
+>   stream is unaffected (40 s: 0.506, against 0.510 for a shared offset).
+> - **The Cossart destruction result could not have failed.** At K of 55 co-active ROIs or more,
+>   every shift of 2.6 s or longer has to read 0. The Cossart events that matter are smaller: about
+>   28 of 566 ROIs (8.1 %,
+>   [cossart_transfer](../cossart_transfer/README.md)), below every K scanned.
+> - **Also corrected:**
+>   - **The slow window:** at 11.2 s the upper bound over mice is 0.551, which crosses 0.55.
+>   - **The groups:** the slow leak is not "almost entirely" in DI. MALE reads 0.593 at 44.8 s,
+>     and group cannot be separated from imaging day.
+>   - **The Cossart recordings:** they are in vivo two-photon imaging of CA1 in awake pups aged
+>     5–12 postnatal days, not slices. The data are
+>     [DANDI:000219](https://dandiarchive.org/dandiset/000219) by Robin Dard, Michel Picardo and
+>     Rosa Cossart, licensed CC-BY-4.0. They come from Dard et al. 2022, *eLife* 11:e78116,
+>     doi:10.7554/eLife.78116.
+>   - **Prior art:** rigid shift is published as whole-train shifting (Pipa, Riehle & Grün 2007;
+>     Pipa et al. 2008; Louis, Borgelt & Grün 2010). The published form wraps the train; this run
+>     does not.
+
 > **Exploratory, run 2026-09-14 night.** Tony set the pre-registration machinery aside for one
 > figure he reads himself. The dashed lines at 0.55, ±2 % and 0.25 are the thresholds he signed
 > earlier, drawn for reference, not applied as a rule. Not murderboarded. Baseline windows of the
