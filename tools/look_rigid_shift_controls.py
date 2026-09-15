@@ -194,46 +194,81 @@ def twin_pair(stream, limit, p, t):
     return pl, un, {"dt": dt, "n_frames": n_frames, "n_roi": n_roi, "floor_frames": int(floor)}
 
 
-def destruction_task(args):
-    stream, bin_sec, p, Ks, Js, n_twins, n_draws, n_assess, limit, with_rigid = args
-    variants = ([("rigid_shift", J) for J in Js] if with_rigid else []) + \
-        [("homogeneous_resample", None), ("freeze_half", None), ("do_nothing", None)]
+def before_task(args):
+    """The planted-minus-unplanted excess of one twin pair before any surrogate."""
+    stream, bin_sec, p, Ks, t, n_assess, limit = args
+    pl, un, shape = twin_pair(stream, limit, p, t)
     base_seed = seed31("assess", stream, bin_sec, p)
-    rows = {(f"{n}@{J}" if J else n): [] for n, J in variants}
-    shape = None
+    b_pl = excess_k(pl, shape["n_frames"], shape["dt"], bin_sec, Ks, n_assess, base_seed)
+    b_un = excess_k(un, shape["n_frames"], shape["dt"], bin_sec, Ks, n_assess, base_seed)
+    return {"cell": (stream, bin_sec, p), "twin": t, "shape": shape,
+            "before": {K: b_pl[K] - b_un[K] for K in Ks}}
+
+
+def draw_task(args):
+    """One surrogate draw of one variant on one twin pair: planted and unplanted excess after.
+    Split this finely because at Cossart's measured K one excess call takes about 37 s."""
+    stream, bin_sec, p, Ks, t, name, J, k, n_assess, limit = args
+    pl, un, shape = twin_pair(stream, limit, p, t)
+    dt, n_frames = shape["dt"], shape["n_frames"]
+    base_seed = seed31("assess", stream, bin_sec, p)
+    gen = "homogeneous_resample" if name == "freeze_half" else name
+    params = {"J": round(J / dt, 9)} if J else {}
+    after_seed = base_seed + 7 if name == "do_nothing" else base_seed
+    key = (TAG, "destroy", stream, bin_sec, p, t, name, J or 0, k)
+    s_pl = [np.asarray(v, np.int64) for v in sg.generate(gen, pl, (0, n_frames), key, **params).trains]
+    s_un = [np.asarray(v, np.int64) for v in sg.generate(gen, un, (0, n_frames), key, **params).trains]
+    if name == "freeze_half":
+        half = np.random.RandomState(seed31("freeze-half", stream, p, t, k)) \
+            .permutation(len(pl))[: len(pl) // 2]
+        for r_ in half:
+            s_pl[r_] = np.asarray(pl[r_], np.int64)
+            s_un[r_] = np.asarray(un[r_], np.int64)
+    return {"cell": (stream, bin_sec, p), "twin": t, "variant": f"{name}@{J}" if J else name,
+            "draw": k,
+            "planted": excess_k(s_pl, n_frames, dt, bin_sec, Ks, n_assess, after_seed),
+            "unplanted": excess_k(s_un, n_frames, dt, bin_sec, Ks, n_assess, after_seed)}
+
+
+def destruction_tasks(stream, bin_sec, p, Ks, Js, n_twins, n_draws, n_assess, limit):
+    variants = [("rigid_shift", J) for J in Js] + \
+        [("homogeneous_resample", None), ("freeze_half", None), ("do_nothing", None)]
+    out = []
     for t in range(n_twins):
-        pl, un, shape = twin_pair(stream, limit, p, t)
-        dt, n_frames = shape["dt"], shape["n_frames"]
-        b_pl = excess_k(pl, n_frames, dt, bin_sec, Ks, n_assess, base_seed)
-        b_un = excess_k(un, n_frames, dt, bin_sec, Ks, n_assess, base_seed)
+        out.append(("before", (stream, bin_sec, p, Ks, t, n_assess, limit)))
         for name, J in variants:
-            gen = "homogeneous_resample" if name == "freeze_half" else name
-            params = {"J": round(J / dt, 9)} if J else {}
-            after_seed = base_seed + 7 if name == "do_nothing" else base_seed
-            a_pl = {K: [] for K in Ks}; a_un = {K: [] for K in Ks}
             for k in range(n_draws if name != "do_nothing" else 1):
-                key = (TAG, "destroy", stream, bin_sec, p, t, name, J or 0, k)
-                s_pl = [np.asarray(v, np.int64) for v in
-                        sg.generate(gen, pl, (0, n_frames), key, **params).trains]
-                s_un = [np.asarray(v, np.int64) for v in
-                        sg.generate(gen, un, (0, n_frames), key, **params).trains]
-                if name == "freeze_half":
-                    half = np.random.RandomState(seed31("freeze-half", stream, p, t, k)) \
-                        .permutation(len(pl))[: len(pl) // 2]
-                    for r_ in half:
-                        s_pl[r_] = np.asarray(pl[r_], np.int64)
-                        s_un[r_] = np.asarray(un[r_], np.int64)
-                e_pl = excess_k(s_pl, n_frames, dt, bin_sec, Ks, n_assess, after_seed)
-                e_un = excess_k(s_un, n_frames, dt, bin_sec, Ks, n_assess, after_seed)
-                for K in Ks:
-                    a_pl[K].append(e_pl[K]); a_un[K].append(e_un[K])
-            rows[f"{name}@{J}" if J else name].append({
-                "twin": t,
-                "before": {K: b_pl[K] - b_un[K] for K in Ks},
-                "after": {K: float(np.mean(a_pl[K]) - np.mean(a_un[K])) for K in Ks}})
-    return {"stream": stream, "bin_sec": bin_sec, "participation": p, "k_scan": list(Ks),
-            "n_twins": n_twins, "n_draws": n_draws, "n_assess_surrogates": n_assess,
-            "twin_shape": shape, "variants": rows}
+                out.append(("draw", (stream, bin_sec, p, Ks, t, name, J, k, n_assess, limit)))
+    return out
+
+
+def assemble(befores, draws, meta_of_cell):
+    """Per cell, the look's structure: variants -> one row per twin with before and after."""
+    cells = []
+    for cell, info in meta_of_cell.items():
+        stream, bin_sec, p = cell
+        Ks = info["k_scan"]
+        rows = {}
+        for d in draws:
+            if tuple(d["cell"]) != cell:
+                continue
+            rows.setdefault(d["variant"], {}).setdefault(d["twin"], []).append(d)
+        variants = {}
+        for v, by_twin in rows.items():
+            variants[v] = []
+            for t, ds in sorted(by_twin.items()):
+                b = next(x for x in befores if tuple(x["cell"]) == cell and x["twin"] == t)
+                variants[v].append({
+                    "twin": t, "n_draws": len(ds),
+                    "before": {K: b["before"][K] for K in Ks},
+                    "after": {K: float(np.mean([x["planted"][K] for x in ds])
+                                       - np.mean([x["unplanted"][K] for x in ds])) for K in Ks}})
+        shape = next((x["shape"] for x in befores if tuple(x["cell"]) == cell), None)
+        cells.append({"stream": stream, "bin_sec": bin_sec, "participation": p, "k_scan": list(Ks),
+                      "twin_shape": shape, **{k: info[k] for k in ("n_twins", "n_draws",
+                                                                   "n_assess_surrogates")},
+                      "variants": variants})
+    return cells
 
 
 # -- main -------------------------------------------------------------------------------------
@@ -261,20 +296,21 @@ def main(argv=None):
     else:
         n_twins, n_draws, n_assess = 10, 10, 200
 
-    tasks = []
+    tasks, cells = [], {}
     for stream in streams:
         for J in J_SEC[stream]:
             tasks.append(("leak", (stream, J, n_boot, a.limit)))
         for bin_sec in lr.BINS_SEC[stream]:
             if lab:
                 # The graded control beside the look's own twins and K; rigid shift is in the look.
-                for p in lr.PARTICIPATION:
-                    tasks.append(("destruction", (stream, bin_sec, p, lr.K_SCAN, (), n_twins,
-                                                  n_draws, n_assess, a.limit, False)))
+                specs = [(p, lr.K_SCAN, ()) for p in lr.PARTICIPATION]
             else:
-                tasks.append(("destruction", (stream, bin_sec, COSSART_PARTICIPATION, COSSART_K,
-                                              J_SEC[stream], n_twins, n_draws, n_assess,
-                                              a.limit, True)))
+                specs = [(COSSART_PARTICIPATION, COSSART_K, J_SEC[stream])]
+            for p, Ks, Js in specs:
+                cells[(stream, bin_sec, p)] = {"k_scan": tuple(Ks), "n_twins": n_twins,
+                                               "n_draws": n_draws, "n_assess_surrogates": n_assess}
+                tasks += destruction_tasks(stream, bin_sec, p, tuple(Ks), Js, n_twins, n_draws,
+                                           n_assess, a.limit)
     meta = {"tag": TAG, "role": a.role, "started": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
             "limit": a.limit, "quick": a.quick, "n_boot": n_boot, "fold_seeds": FOLD_SEEDS,
             "n_twins": n_twins, "n_draws": n_draws, "n_assess_surrogates": n_assess,
@@ -288,17 +324,28 @@ def main(argv=None):
         meta[f"{stream}_window_sources"] = sorted({r.window_source for r in recs})
     (out / "meta.json").write_text(json.dumps(meta, indent=2, default=str))
 
-    fn = {"leak": leak_task, "destruction": destruction_task}
+    fn = {"leak": leak_task, "before": before_task, "draw": draw_task}
     results = {"leak": [], "destruction": []}
+    raw = {"before": [], "draw": []}
     t0 = time.time()
+    done = 0
     with mp.get_context("spawn").Pool(a.jobs) as pool:
         futs = [(kind, pool.apply_async(fn[kind], (args,))) for kind, args in tasks]
         for kind, f in futs:
             r = f.get()
-            results[kind].append(r)
-            (out / "results.json").write_text(json.dumps(results, indent=2, default=str))
-            print(f"[{time.time() - t0:7.0f}s] {kind} {r.get('stream')} "
-                  f"{r.get('J_sec', r.get('bin_sec', ''))}", flush=True)
+            done += 1
+            if kind == "leak":
+                results["leak"].append(r)
+                (out / "results.json").write_text(json.dumps(results, indent=2, default=str))
+                print(f"[{time.time() - t0:7.0f}s] leak {r['stream']} {r['J_sec']}", flush=True)
+            else:
+                raw[kind].append(r)
+                with open(out / "destruction_raw.jsonl", "a") as fh:
+                    fh.write(json.dumps({"kind": kind, **r}, default=str) + "\n")
+                if done % 25 == 0 or done == len(tasks):
+                    print(f"[{time.time() - t0:7.0f}s] {done}/{len(tasks)} tasks", flush=True)
+    results["destruction"] = assemble(raw["before"], raw["draw"], cells)
+    (out / "results.json").write_text(json.dumps(results, indent=2, default=str))
     meta["finished"] = time.strftime("%Y-%m-%dT%H:%M:%S%z")
     meta["seconds"] = time.time() - t0
     (out / "meta.json").write_text(json.dumps(meta, indent=2, default=str))
