@@ -180,6 +180,46 @@ find most of the bursts the hand-written detectors find, but about half of their
 two ROIs or fewer, they break single bursts into several calls, and their timing is not locked
 to the burst.
 
+## `line`, the architecture Tony's question produced
+
+Tony asked whether the weak precision is a limit of tube's architecture, and proposed *"an
+orientation detector rather than a center-surround … when most rois fire it looks like a vertical
+line. two rois aren't enough and noise/high background looks like fuzz"*.
+
+**The limit is real and measured.** `tools/probe_line_vs_fuzz.py` plants, on a quiet synthetic
+field, a **line** (K distinct ROIs in one frame), a **burst** (K/4 ROIs firing 4 times: the same
+ink) and **fuzz** (K ROIs over 3 s), and scores each model by its peak response minus the same
+field unplanted.
+
+| model | line ÷ burst at K = 16 | line ÷ fuzz at K = 16 |
+|---|---|---|
+| supervised tube | 1.34 | 1.43 |
+| supervised tube_guard | 1.31 | 1.34 |
+| trained against rigid shift (15 live fits) | 2.23 (1.48–3.29) | 4.90 (3.41–7.36) |
+| a detector that counted distinct ROIs | 4 | about 8–16 |
+
+⚠ The untrained models scored 0.00 on every plant here, so **the untrained baseline in the Stage 2
+table needs rechecking** — a model that does not respond to a planted line should not have scored
+F1 0.51.
+
+**`src/bugarach/learn/nets/line.py`** is that idea made order-free, because row order is a
+coordinate and a literal oriented filter would read the encoder's sort. Each ROI is smoothed on its
+own at a fitted width (peak-normalised, so one onset reaches 1 at any width), bounded by a sigmoid
+so a bursting cell votes once, averaged over ROIs into the share of the field that is lit, then put
+through an area-normalised difference of Gaussians so a rising background cancels. It is `tiny`'s
+distinctness with `tube`'s rate invariance; 1,233 parameters against tube's 1,149.
+
+**At initialisation its count channel reads** 0.500 for a 16-ROI line, 0.141 for the same ink from
+4 bursting ROIs, and 0.100 (narrow smear) for 16 ROIs spread over 3 s.
+
+**Where it is:** registered (22 registry tests pass), and added to `tools/fair_bakeoff.py`,
+`tools/tube_self_supervised.py` and `tools/tube_ssl_real_compare.py`.
+
+**In flight when this was written:** `tools/fair_bakeoff.py --spec docs/learned/generator_spec.json`
+with `line` included, writing to a scratchpad folder. **Nothing else is running.** Still to do:
+the bake-off result, then `line` through the label-free training and the real-recording comparison,
+then the probe again on the trained `line`.
+
 ## Rerun
 
 - **Controls:** `tools/look_rigid_shift_controls.py`, about 3 minutes on the lab folder and about
