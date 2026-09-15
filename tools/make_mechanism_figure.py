@@ -56,6 +56,28 @@ GREY = "#8c8c8c"
 NAME = "figure_mechanism_loco_coact_rate"
 
 
+def coact_bar(raw):
+    """CoactDetect's bar in ROI units, rebuilt from its own per-bin numbers.
+
+    Returns ``(bin centres, observed counts, null mean, bar)``; the bar is NaN where
+    the detector did not test the bin. It reports z, not a threshold, so the count
+    that reaches p = alpha is null mean + z* x null sd, with the null sd recovered as
+    (obs - null mean) / z. **Any z other than 0 recovers it** — a first version kept
+    only z > 0 and silently dropped every tested bin whose count sat below its null
+    mean (27 of 71 in one busy window). Shared by this tool and
+    ``make_detector_review.py`` so the reconstruction has one home.
+    """
+    from statistics import NormalDist
+
+    zstar = NormalDist().inv_cdf(1 - raw.opts["alpha"])
+    ctr, obs = np.asarray(raw.ctr), np.asarray(raw.obs, float)
+    nm, z = np.asarray(raw.nullmean_prof, float), np.asarray(raw.z_prof, float)
+    ok = np.isfinite(z) & (z != 0) & np.isfinite(nm)
+    sd = np.full(obs.size, np.nan)
+    sd[ok] = (obs[ok] - nm[ok]) / z[ok]
+    return ctr, obs, nm, nm + zstar * sd
+
+
 def build(args):
     import holoviews as hv
     import panel as pn
@@ -111,12 +133,7 @@ def build(args):
         panels.append(trace_opts(el, win, "LoCo · ROIs / 1 s bin", last=False))
 
         raw = res["coact"].result
-        ctr, obs = np.asarray(raw.ctr), np.asarray(raw.obs, float)
-        nm, z = np.asarray(raw.nullmean_prof, float), np.asarray(raw.z_prof, float)
-        ok = np.isfinite(z) & (z > 0) & np.isfinite(nm)
-        sd = np.full(obs.size, np.nan)
-        sd[ok] = (obs[ok] - nm[ok]) / z[ok]
-        bar = nm + zstar * sd
+        ctr, obs, nm, bar = coact_bar(raw)
         k, yd = near(ctr), f"coact_{key}"
         kb, kn = k & np.isfinite(bar), k & np.isfinite(nm)
         el = (hv.Curve((ctr[k], obs[k]), "t", yd).opts(interpolation="steps-mid",
