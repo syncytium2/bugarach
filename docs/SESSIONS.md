@@ -2331,4 +2331,5 @@ session's work is not a sweep.
 - **Released:** 2026-09-15, at write. All 16 pages written. The review PNGs written earlier that morning
   were deleted from the folder at Tony's request (HTML only).
 - **Re-claimed** the same day, before rewriting all 16: pages are now decided by treatment 1 alone, so a
-  recording given senktide after TTX leaves the senktide page. Released again when that write finishes.
+  recording given senktide after TTX leaves the senktide page. Released again at write: 16 pages rewritten,
+  TTX 38 recordings and senktide 29, the same counts as the producer's `_TTX` and `_SENKTIDE` folders. Holds nothing.
