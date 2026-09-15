@@ -81,8 +81,10 @@ MANIFEST = "field_steps_flagged.tsv"
 #: `MANIFEST` beside it, is what identifies the steps-excluded export.
 EXCLUDED_MANIFEST = "field_steps_excluded.tsv"
 
-#: The producer's analysis dataset — "for any new analysis, use this folder".
-EXCLUDED_NAME = "2026-09-03_revised_2v_long_STEPS_EXCLUDED"
+#: The producer's analysis dataset — "for any new analysis, use this folder" — by
+#: its ROLE in `current_export.toml`, never by name: the pointer is the one place a
+#: folder name is declared (`tests/test_where_the_data_are.py`).
+EXCLUDED_ROLE = "steps_excluded"
 
 #: Names the flagged review copy has shipped under. The producer's README calls
 #: it `..._STEPS_FLAGGED_FOR_REVIEW`; it arrived on this machine as
@@ -183,8 +185,8 @@ def resolve_folder(explicit: str | None, *, unscanned: bool = False,
         raise SystemExit("--unscanned and --steps-excluded contradict each other: "
                          "one says no scan was run, the other that its results were applied")
     if steps_excluded:
-        folder = Path(dataset.require(explicit or EXCLUDED_NAME,
-                                      want="export_folder", flag="--folder"))
+        folder = (Path(dataset.require(explicit, want="export_folder", flag="--folder"))
+                  if explicit else Path(dataset.current(EXCLUDED_ROLE)))
         if not (folder / EXCLUDED_MANIFEST).is_file():
             raise SystemExit(
                 f"{folder.name} has no {EXCLUDED_MANIFEST}, so nothing records that "
@@ -619,7 +621,7 @@ def main(argv=None) -> int:
                          "say so in the header. Needs --folder.")
     ap.add_argument("--steps-excluded", action="store_true",
                     help=f"draw the ANALYSIS dataset, field-step artifacts already "
-                         f"removed (default folder {EXCLUDED_NAME}). No red; the header "
+                         f"removed (default: the '{EXCLUDED_ROLE}' export). No red; the header "
                          f"counts what {EXCLUDED_MANIFEST} says was removed.")
     ap.add_argument("--groups", nargs="+", default=None, metavar="GROUP",
                     help="only these groups (e.g. DI) — for rendering one page to review")
