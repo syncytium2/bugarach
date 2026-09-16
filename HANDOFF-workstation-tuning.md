@@ -370,7 +370,11 @@ claimed there). Its five corrections are folded in above: the inner-fit cache ke
 recordings, the exact configuration draw, the edge check limited to axes of three values or more, what
 a refit trains on (corrected again against the code: 10 of 16 recordings, alternating with the seed's
 parity, not "the extra six feed the threshold"), and `chorus_gain_norm` in Gate 1. Its budget and job
-count are adopted. **Blocked on one decision by Tony: WSL2 or native Windows Python** (Setup step 3).
-After that: claim the local board, create the worktree, run Gate 1 with fits timed one at a time.
+count are adopted. **Setup step 3 decided (2026-09-16): WSL2.** Ubuntu 26.04, Python 3.14.4, torch
+2.14.0+cpu, 24 physical / 48 logical CPUs, WSL memory 96 GB. The clone is at `~/bugarach`, not
+`~/Developer/bugarach`. Its venv lacks `pyspike` (no `python3-dev` to build it), which CI tolerates the
+same way; nothing under `src/` imports it. `darkroom()` finds the darkroom without `BUGARACH_DARKROOM`.
+**In progress:** board claimed, worktree `tune-learned-vs-coact` created; next, merge `main` (#597) and
+run Gate 1 with fits timed one at a time.
 ⚠ PR #596 was still open with CI running; if review changes a model's code, results tuned against an
 older commit go stale, which the commit recorded in `meta.json` makes visible.
