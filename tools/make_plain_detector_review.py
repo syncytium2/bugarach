@@ -631,6 +631,12 @@ def _arr(v):
     return np.asarray([np.nan if x is None else x for x in v], float)
 
 
+def _clock(t):
+    """A time in the recording, as a person says it: 8m12s, 22m30s."""
+    m, s = divmod(int(round(float(t))), 60)
+    return f"{m}m{s}s" if s else f"{m}m"
+
+
 def _by_activity(trains):
     """Quietest cell at the bottom, busiest at the top, counted on what is drawn.
 
@@ -991,7 +997,8 @@ LINE_LABELS = {
     "loco": [("cells in each 1 s bin", "loco", "y"), ("the bar", BARC, "bar")],
     "sce": [("cells in each 10 s bin", "sce", "y"), ("the bar", BARC, "bar")],
     "cicada": [("cells switched on", "cicada", "y"), ("the bar", BARC, "bar")],
-    "sync": [("score of each event", "sync", "py"), ("the bar", BARC, None)],
+    "sync": [("score of each event", "sync", "py"),
+             ("the continuous line those scores make", "#7a2a00", "cy"), ("the bar", BARC, None)],
 }
 
 MEASURE = {"rate": ("events per second", "all cells added up", (0, 14)),
@@ -1148,58 +1155,51 @@ def fig_algorithm(W, det):
         X, Wd = 450 + j * 275, 240
         win = D["win"]
         f.text(X, 26, title, size=13, weight=600)
+        f.text(X, 42, f"one minute, from {_clock(win[0])} into the recording", size=11, color=MUTED)
         calls = D[f"{det}_calls"]
-        lane = f.panel(X, 36, Wd, 50, win, (0, 1))
+        lane = f.panel(X, 52, Wd, 50, win, (0, 1))
         if key == "A":
             ok = _found(calls, ev["time"])
-            lane.down_triangle(ev["time"], 48, color=GREEN if ok else RED, size=12)
+            lane.down_triangle(ev["time"], 64, color=GREEN if ok else RED, size=12)
         for on, wd in calls:
-            lane.span(on, on + max(wd, 0.0), row_y=62, row_h=16, color=COLORS[det])
+            lane.span(on, on + max(wd, 0.0), row_y=78, row_h=16, color=COLORS[det])
         n_calls = sum(1 for on, wd in calls if on + wd >= win[0] and on <= win[1])
-        f.text(X + Wd, 100, _plural(n_calls, "call"), size=12, anchor="end", color=MUTED)
-        r = f.panel(X, 106, Wd, 190, win, (0, 1))
+        f.text(X + Wd, 116, _plural(n_calls, "call"), size=12, anchor="end", color=MUTED)
+        r = f.panel(X, 122, Wd, 178, win, (0, 1))
         r.raster(_by_activity(D["trains"]), width=1.1)
         label, sub, ylim = MEASURE[det]
-        p = f.panel(X, 330, Wd, 220, win, ylim)
+        # NAME THE LINES ABOVE THE PANEL, NOT ON IT. Labels placed inside collided with the
+        # data and with each other — "the average nearby" landed on the average it named
+        # (Tony, 2026-09-16: "TEXT OVERLAP! UGH!"), which is also what CLAUDE.md means by
+        # nothing competing with the marks. Above the frame nothing can collide by
+        # construction, and the labels still sit against the panel they belong to.
+        if j == 0:                       # once, beside the left panel; both columns share it
+            ly = 306
+            for text, col, _key in LINE_LABELS[det]:
+                f.rich(X, ly, [("▬ ", dict(color=COLORS.get(col, col), weight=700)),
+                               (text, dict(color=MUTED))], size=11)
+                ly += 14
+        p = f.panel(X, 352, Wd, 200, win, ylim)
         _measure(p, det, D)
-        if j == 0:                       # name each line where it is drawn, not in a key
-            M = D[det]
-            used = []
-            for text, col, key in LINE_LABELS[det]:
-                col = COLORS.get(col, col)
-                if key and key in M and np.isfinite(_arr(M[key])).any():
-                    v = _arr(M[key])
-                    yv = float(np.nanmax(v)) if key in ("y", "py") else float(np.nanmedian(v))
-                else:
-                    yv = float(M.get("bar", ylim[1] * 0.4)) if not isinstance(M.get("bar"), list) \
-                        else ylim[1] * 0.4
-                yv = min(max(float(yv), ylim[0]), ylim[1])
-                ly = float(p.py(yv)) + (-8 if key in ("y", "py") else 14)
-                while any(abs(ly - u) < 15 for u in used):
-                    ly += 15
-                used.append(ly)
-                f.text(X + 6, min(max(ly, 344), 546), text, size=11, color=col, weight=600)
         ticks = nice_ticks(*ylim, 4)
         p.yaxis(ticks, fmt="{:g}", grid=True)
         if j == 0:
             p.ylabel(label, lines=[label] + ([sub] if sub else []), dx=40)
             r.ylabel(f"{sim['n_roi']} cells", dx=14)
-            f.text(X - 8, 56, "planted", size=11, anchor="end", color=MUTED)
-            f.text(X - 8, 75, "calls", size=11, anchor="end", color=MUTED)
-        p.xaxis_time(label="time in the recording", target=3)
-    # the key
+            f.text(X - 8, 72, "planted", size=11, anchor="end", color=MUTED)
+            f.text(X - 8, 91, "calls", size=11, anchor="end", color=MUTED)
+        # BOTH VIEWS ARE ONE MINUTE, so both axes count seconds from the start of that
+        # minute. Absolute clock times (8m … 8m30s against 22m30s … 23m30s) hid the fact
+        # that the panels are the same width and invited the reader to do arithmetic to
+        # find out (Tony, 2026-09-16). Where each minute sits is in the panel's own title.
+        p.xaxis_time(offset=win[0], target=4,
+                     label="seconds from the start of this minute")
+    # The foot carries only what nothing else names: the two triangles. Every line is
+    # labelled beside the panel it is drawn in, so repeating it here is ink that sends the
+    # reader travelling for something already in front of them.
     ky = 625
-    keys = {"rate": [("—", COLORS["rate"], "events per second"), ("—", GREY, "local average"),
-                     ("┄", BARC, "the bar")],
-            "coact": [("—", COLORS["coact"], "cells per bin"), ("●", GREY, "copies' average"),
-                      ("━", BARC, "the bar (drawn where tested)")],
-            "loco": [("—", COLORS["loco"], "cells per bin"), ("┄", BARC, "the bar")],
-            "sce": [("—", COLORS["sce"], "cells per bin"), ("┄", BARC, "the bar")],
-            "cicada": [("—", COLORS["cicada"], "cells switched on"), ("┄", BARC, "the bar")],
-            "sync": [("●", COLORS["sync"], "each event's score"), ("—", "#7a2a00", "frame score"),
-                     ("—", BARC, "the bar")]}[det]
     xx = 460
-    for g, col, lab in [("▼", GREEN, "planted event, found"), ("▼", RED, "planted event, missed")] + keys:
+    for g, col, lab in [("▼", GREEN, "planted event, found"), ("▼", RED, "planted event, missed")]:
         f.rich(xx, ky, [(g + " ", dict(color=col, weight=700)), (lab, dict(color=MUTED))], size=12)
         xx += 16 + 7.0 * len(lab) + 14
         if xx > 900:

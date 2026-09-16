@@ -341,3 +341,41 @@ it. **Fixed and tied to its data** — `{{T.steps_cells}}`, `{{T.steps_observed}
 **Two for two.** Both times a figure was replaced, its caption survived and read plausibly. Captions are
 now written from the figure's own measured numbers wherever they state a fact about the data, which is
 the only form the build can check.
+
+## 27. "Looking nearby means the bar rises" — the sentence that explains nothing ⚠ RULE (2026-09-16)
+
+*"this is classic you. it sort of makes sense to a human ... but then 'looking' what do you mean? ...
+What bar? how did it rise?"*
+
+Three faults, no wrong fact: an activity with no actor ("looking" — nobody looks, the programs compute);
+a definite article with no owner ("the bar"); and an intransitive verb that makes the mechanism
+unstatable ("rises"). The chain was in my head and the conclusion went on the page.
+
+**Applied.** The sentence is now two paragraphs that name the program, say what it computes, and then
+say what follows — one for the three that measure chance from the surrounding seconds, one for the two
+that measure it once from the whole recording.
+
+**Mechanized as sapper SAP016**, which matches a gerund made the subject of an explanation
+(`Looking … means`) in the plain-language templates only. Its first draft could not fire on the very
+sentence it was written for, because the page says `Looking <b>nearby</b> means` and `\w+` does not match
+a tag — a prose rule scanning HTML has to read through markup. What it cannot catch, and why the scope is
+two files, is in
+[`sapper_feedback/2026-09-16-an-activity-standing-in-for-an-actor.md`](../sapper_feedback/2026-09-16-an-activity-standing-in-for-an-actor.md).
+
+## 28. Text overlap in the algorithm figures, and an unreadable x-axis (2026-09-16)
+
+*"TEXT OVERLAP! UGH! I HATE TEXT OVERLAP ON FIGURES!"* — my line labels (note 15) were placed inside the
+panel, and "the average nearby" landed on the average it named. Also: *"the x-axis for A and B is
+absolute shite. they are both 1 minute long but you need to be a math major to figure it out"* — the two
+panels were labelled with clock times (8m–8m30s against 22m30s–23m30s), so their equal width was
+invisible.
+
+**Both applied, in the form that cannot regress:**
+- The labels moved **above the panel frame**, where collision is impossible by construction, rather than
+  being nudged around inside it. They are printed once, beside the left panel, and the foot of the figure
+  now carries only the two triangles — everything else is named where it is drawn.
+- Both x-axes count **seconds from the start of their own minute** (0s … 1m), so the panels are visibly
+  the same width; where each minute sits in the recording is in its panel's subtitle.
+
+The house rule this belongs under already existed — CLAUDE.md, nothing competing with the marks — and the
+first version broke it by putting text on the data.
