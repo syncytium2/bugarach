@@ -1,0 +1,1354 @@
+<meta charset="utf-8">
+<title>Nine Cells to a Thousand</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Spectral:ital,wght@0,400;0,600;1,400&display=swap">
+<style>
+:root{
+  --ground:#F4F6F5; --surface:#FFFFFF; --sunk:#ECEFEE;
+  --ink:#161C1A; --body:#2C3835; --muted:#5C6A66; --faint:#8A9793;
+  --rule:#DBE2DF; --rule-strong:#C3CDC9;
+  --accent:#0E6B5E; --accent-soft:#DCEBE7;
+  --surrogate:#A8641E; --surrogate-soft:#F4E7D5;
+  --warn:#8C2F1F; --warn-soft:#F6E3DE;
+  --mark:#161C1A;
+  --shadow:0 1px 2px rgba(22,28,26,.06), 0 8px 24px -12px rgba(22,28,26,.18);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ground:#0F1413; --surface:#161D1B; --sunk:#1C2422;
+    --ink:#E8EEEB; --body:#CBD6D2; --muted:#94A29E; --faint:#6E7C78;
+    --rule:#28322F; --rule-strong:#3A4643;
+    --accent:#54BCA8; --accent-soft:#123029;
+    --surrogate:#D9A05B; --surrogate-soft:#33261280;
+    --warn:#E58A72; --warn-soft:#3A211B;
+    --mark:#E8EEEB;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.6);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0F1413; --surface:#161D1B; --sunk:#1C2422;
+  --ink:#E8EEEB; --body:#CBD6D2; --muted:#94A29E; --faint:#6E7C78;
+  --rule:#28322F; --rule-strong:#3A4643;
+  --accent:#54BCA8; --accent-soft:#123029;
+  --surrogate:#D9A05B; --surrogate-soft:#33261280;
+  --warn:#E58A72; --warn-soft:#3A211B;
+  --mark:#E8EEEB;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.6);
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--ground); color:var(--body);
+  font-family:"IBM Plex Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  font-size:16.5px; line-height:1.62;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{padding-inline:22px; padding-block:0 96px; max-width:1180px; margin:0 auto}
+.col{max-width:69ch; margin-inline:auto}
+
+h1,h2,h3{font-family:Spectral,Georgia,"Times New Roman",serif; color:var(--ink); text-wrap:balance; margin:0}
+h1{font-size:clamp(2.1rem,5.6vw,3.35rem); font-weight:600; line-height:1.06; letter-spacing:-.015em}
+h2{font-size:clamp(1.42rem,3.1vw,1.86rem); font-weight:600; line-height:1.2; margin-block:0 .1em}
+h3{font-size:1.09rem; font-weight:600; line-height:1.35; margin-block:0 .1em}
+p{margin:0}
+a{color:var(--accent); text-decoration-thickness:1px; text-underline-offset:2px}
+a:focus-visible,summary:focus-visible{outline:2px solid var(--accent); outline-offset:3px; border-radius:2px}
+strong{color:var(--ink); font-weight:600}
+em{font-style:italic}
+code,.mono{font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace; font-size:.87em}
+code{background:var(--sunk); padding:.1em .34em; border-radius:3px; color:var(--ink)}
+
+.mast{border-bottom:1px solid var(--rule-strong); padding-block:56px 34px; margin-bottom:52px}
+.kicker{font-family:"IBM Plex Mono",monospace; font-size:.7rem; letter-spacing:.15em;
+  text-transform:uppercase; color:var(--muted); margin-bottom:22px}
+.lede{font-family:Spectral,Georgia,serif; font-size:clamp(1.08rem,2.4vw,1.28rem);
+  line-height:1.55; color:var(--body); margin-top:20px}
+.chips{display:flex; flex-wrap:wrap; gap:7px; margin-top:26px}
+.chip{font-family:"IBM Plex Mono",monospace; font-size:.685rem; letter-spacing:.055em;
+  text-transform:uppercase; padding:.32em .62em; border-radius:2px; border:1px solid var(--rule-strong);
+  color:var(--muted); background:var(--surface); white-space:nowrap}
+.chip.on{border-color:var(--accent); color:var(--accent); background:var(--accent-soft)}
+.chip.no{border-color:var(--warn); color:var(--warn); background:var(--warn-soft)}
+.byline{font-size:.83rem; color:var(--faint); margin-top:24px; line-height:1.7}
+
+section{margin-block:0 60px}
+.eyebrow{font-family:"IBM Plex Mono",monospace; font-size:.7rem; letter-spacing:.14em;
+  text-transform:uppercase; color:var(--accent); margin-bottom:9px}
+.stack{display:flex; flex-direction:column; gap:19px}
+.stack-tight{display:flex; flex-direction:column; gap:11px}
+
+ul,ol{margin:0; padding-left:1.15em; display:flex; flex-direction:column; gap:11px}
+li::marker{color:var(--faint)}
+
+.note{border-left:2px solid var(--rule-strong); padding:2px 0 2px 17px; color:var(--muted); font-size:.945rem}
+.note.warn{border-left-color:var(--warn)}
+.note.warn strong{color:var(--warn)}
+.note.good{border-left-color:var(--accent)}
+
+.panel{background:var(--surface); border:1px solid var(--rule); border-radius:5px;
+  padding:22px 24px; box-shadow:var(--shadow); display:flex; flex-direction:column; gap:14px}
+.panel h3{margin-bottom:0}
+.panel-grid{display:grid; gap:18px; grid-template-columns:repeat(auto-fit,minmax(255px,1fr))}
+.panel-grid.three{grid-template-columns:repeat(auto-fit,minmax(290px,1fr))}
+
+pre{margin:0; background:var(--sunk); border:1px solid var(--rule); border-radius:4px;
+  padding:14px 16px; overflow-x:auto; font-family:"IBM Plex Mono",monospace;
+  font-size:.795rem; line-height:1.62; color:var(--ink)}
+pre .c{color:var(--faint)}
+
+.tbl-scroll{overflow-x:auto; border:1px solid var(--rule); border-radius:5px; background:var(--surface)}
+table{border-collapse:collapse; width:100%; font-size:.9rem; font-variant-numeric:tabular-nums}
+th,td{text-align:left; padding:9px 15px; border-bottom:1px solid var(--rule); white-space:nowrap}
+thead th{font-family:"IBM Plex Mono",monospace; font-size:.68rem; letter-spacing:.09em;
+  text-transform:uppercase; color:var(--muted); font-weight:400; background:var(--sunk)}
+tbody tr:last-child td{border-bottom:none}
+tbody tr.sum td{background:var(--sunk); color:var(--ink); font-weight:600}
+td.num,th.num{text-align:right}
+td.name{font-family:"IBM Plex Mono",monospace; color:var(--ink); font-size:.85rem}
+td.wrap-cell{white-space:normal; min-width:16rem}
+
+.st{font-family:"IBM Plex Mono",monospace; font-size:.63rem; letter-spacing:.07em;
+  text-transform:uppercase; padding:.22em .48em; border-radius:2px; border:1px solid currentColor;
+  white-space:nowrap; vertical-align:.14em}
+.st-m{color:var(--accent)}
+.st-p{color:var(--surrogate)}
+.st-w{color:var(--warn)}
+
+.breakout{max-width:1000px; margin-inline:auto}
+.breakout.wide{max-width:1120px}
+
+figure{margin:0; background:var(--surface); border:1px solid var(--rule);
+  border-radius:5px; padding:22px 20px 16px; box-shadow:var(--shadow)}
+figure svg{display:block; width:100%; height:auto; max-width:100%}
+figcaption{font-size:.845rem; color:var(--muted); line-height:1.6; margin-top:14px;
+  padding-top:13px; border-top:1px solid var(--rule)}
+figcaption b{color:var(--ink); font-weight:600}
+
+/* ---- shared figure grammar ---- */
+.ax{stroke:var(--rule-strong); stroke-width:1; fill:none}
+.tick{font-family:"IBM Plex Mono",monospace; font-size:10px; fill:var(--muted)}
+.lab{font-family:"IBM Plex Sans",sans-serif; font-size:12px; fill:var(--ink); font-weight:600}
+.pan{font-family:Spectral,Georgia,serif; font-size:17px; fill:var(--ink); font-weight:600}
+.tick.a,.curve.a{stroke:var(--accent)}
+text.tick.a{fill:var(--accent); stroke:none}
+text.tick.b{fill:var(--surrogate); stroke:none}
+.tick.hi{fill:var(--warn)}
+.tick.dim{fill:var(--faint)}
+.whisk{stroke-width:1.4; fill:none}
+.whisk.a,.med.a{stroke:var(--accent)}
+.whisk.b,.med.b{stroke:var(--surrogate)}
+.box{stroke-width:1.2}
+.box.a{fill:var(--accent-soft); stroke:var(--accent)}
+.box.b{fill:var(--surrogate-soft); stroke:var(--surrogate)}
+.med{stroke-width:2.2}
+.callout{stroke:var(--warn); stroke-width:1.2}
+.curve{fill:none; stroke-width:2.2}
+.curve.b{stroke:var(--surrogate)}
+.rule-count{stroke:var(--faint); stroke-width:1.4; stroke-dasharray:5 4; fill:none}
+.rule-frac{stroke:var(--faint); stroke-width:1.4; stroke-dasharray:1.5 3.5; fill:none}
+.thick{stroke-width:2}
+.zero{stroke:var(--rule-strong); stroke-width:1; stroke-dasharray:2 3}
+
+/* ---- network-diagram grammar ---- */
+.nbox{fill:var(--sunk); stroke:var(--rule-strong); stroke-width:1}
+.nbox.on{fill:var(--accent-soft); stroke:var(--accent); stroke-width:1.6}
+.nbox.warn{fill:var(--warn-soft); stroke:var(--warn); stroke-width:1.6}
+.nname{font-family:"IBM Plex Sans",sans-serif; font-size:11.5px; fill:var(--ink); font-weight:600}
+.nunit{font-family:"IBM Plex Mono",monospace; font-size:9.5px; fill:var(--muted)}
+.nunit.warn{fill:var(--warn)}
+.arw{stroke:var(--rule-strong); stroke-width:1.3; fill:none}
+.bypass{stroke:var(--warn); stroke-width:1.3; stroke-dasharray:4 3; fill:none}
+.flag{font-family:"IBM Plex Sans",sans-serif; font-size:12px; fill:var(--warn); font-weight:600}
+.flag.on{fill:var(--accent)}
+.axl{font-family:Spectral,Georgia,serif; font-size:19px; fill:var(--accent); font-weight:600}
+.dtitle{font-family:Spectral,Georgia,serif; font-size:16px; fill:var(--ink); font-weight:600}
+.dnote{font-family:"IBM Plex Sans",sans-serif; font-size:11px; fill:var(--muted)}
+.rastbg{fill:var(--surface); stroke:var(--rule-strong); stroke-width:1}
+.mkr{fill:var(--mark)}
+.lanetri{fill:var(--accent)}
+
+.foot{border-top:1px solid var(--rule-strong); margin-top:64px; padding-top:24px;
+  font-size:.82rem; color:var(--faint); line-height:1.7}
+
+@media (max-width:640px){
+  body{font-size:16px}
+  .mast{padding-block:40px 28px; margin-bottom:40px}
+  .panel{padding:18px}
+  section{margin-bottom:48px}
+  figure{padding:16px 12px 12px}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important; transition:none!important}}
+</style>
+
+<div class="wrap">
+
+<header class="mast">
+  <div class="col">
+    <div class="kicker">bugarach &middot; detector design &middot; proposal, nothing measured here</div>
+    <h1>Nine Cells to a Thousand</h1>
+    <p class="lede">A recording in this project carries anywhere from 9 cells to 62. Another
+    lab&rsquo;s carries up to 1,050. Every learned detector we have reduces that field to a single
+    number in its second stage, and the number it picks is an answer to the field-size question
+    whether or not anyone meant it as one. This is what the answer currently is, why it does not
+    travel, and three designs that would.</p>
+    <div class="chips">
+      <span class="chip on">two corpora measured</span>
+      <span class="chip">six nets evaluated</span>
+      <span class="chip">three classes proposed</span>
+      <span class="chip no">nothing trained here</span>
+      <span class="chip no">no murderboard &mdash; asked for</span>
+    </div>
+    <p class="byline">
+      bugarach &mdash; a browser-based viewer and Python port of six neural-coordination
+      detectors for calcium-imaging data.<br>
+      Written 16 September 2026. Every measured number is read from an artifact already
+      committed in the tree and is named where it is used; everything about the three
+      proposed networks is a design.
+    </p>
+  </div>
+</header>
+
+<section class="col">
+  <div class="eyebrow">Before anything else</div>
+  <div class="stack">
+    <h2>Two notes on what was asked</h2>
+    <div class="note">
+      <strong>&ldquo;Tube and line.&rdquo;</strong> There is no architecture called <code>line</code>
+      in the registry. It holds six: <code>tube</code>, <code>tube_guard</code>,
+      <code>tube_ratio</code>, <code>tube_ratio_guard</code>, <code>tiny</code> and
+      <code>trace</code>. I have read <em>line</em> as <code>trace</code> &mdash; the one that
+      collapses every cell into a single line before it filters anything, and which exists as the
+      control for whether the cell axis matters at all. <strong>Everything below evaluates all
+      six</strong>, so the answer holds either way; if <em>line</em> meant something that never
+      reached this tree, say so and I will fold it in.
+    </div>
+    <div class="note warn">
+      <strong>&#9888; No murderboard, on instruction.</strong> This page has not been through the
+      eleven-role adversarial review that <code>CLAUDE.md</code> requires of a document
+      deliverable. Treat it as working material for sessions in this tree, at the same standing as
+      <code>docs/pipeline.md</code>. <strong>If any of it goes to an outside reader, murderboard
+      that artifact first.</strong>
+    </div>
+    <div class="note warn">
+      <strong>&#9888; Nothing here was trained, traced or scored.</strong> This session ran in a
+      container where <code>torch</code> would not install. Every F1, every transfer number and
+      every corpus statistic below is read out of a file already in the tree and cited to it. The
+      two data figures are computed from those files by
+      <code>tools/probe_field_size.py</code>; the five network figures are <strong>schematics</strong>
+      and say so on their own faces. Three of the four networks drawn do not exist, so there is
+      nothing for draughtsman to trace.
+    </div>
+  </div>
+</section>
+
+<section class="col">
+  <div class="eyebrow">1 &middot; the data</div>
+  <div class="stack">
+    <h2>The field is not a parameter that varies a little</h2>
+    <p>Two corpora have been assessed and both assessments are committed. This lab&rsquo;s 85
+    recordings run from <strong>9 cells to 62</strong>, median 32. The Cossart lab&rsquo;s 59
+    recordings on DANDI:000219 run from <strong>117 cells to 1,050</strong>, median 566. End to
+    end that is a factor of <strong>117</strong>, and the two corpora do not overlap at all.</p>
+  </div>
+</section>
+
+<div class="breakout" style="margin-block:26px 34px">
+  <figure>
+    <svg viewBox="0 0 880 232" role="img" aria-label="Field size per recording in two corpora, log axis, 9 to 1050 cells">
+<line class="ax" x1="128.0" y1="186" x2="850.0" y2="186"/>
+<line class="ax" x1="159.6" y1="186" x2="159.6" y2="191"/>
+<text class="tick" x="159.6" y="204" text-anchor="middle">10</text>
+<line class="ax" x1="258.0" y1="186" x2="258.0" y2="191"/>
+<text class="tick" x="258.0" y="204" text-anchor="middle">20</text>
+<line class="ax" x1="387.9" y1="186" x2="387.9" y2="191"/>
+<text class="tick" x="387.9" y="204" text-anchor="middle">50</text>
+<line class="ax" x1="486.2" y1="186" x2="486.2" y2="191"/>
+<text class="tick" x="486.2" y="204" text-anchor="middle">100</text>
+<line class="ax" x1="584.5" y1="186" x2="584.5" y2="191"/>
+<text class="tick" x="584.5" y="204" text-anchor="middle">200</text>
+<line class="ax" x1="714.5" y1="186" x2="714.5" y2="191"/>
+<text class="tick" x="714.5" y="204" text-anchor="middle">500</text>
+<line class="ax" x1="812.8" y1="186" x2="812.8" y2="191"/>
+<text class="tick" x="812.8" y="204" text-anchor="middle">1000</text>
+<text class="tick" x="489.0" y="222" text-anchor="middle">cells in the field (log scale)</text>
+<line class="whisk a" x1="144.7" y1="62.0" x2="418.4" y2="62.0"/>
+<line class="whisk a" x1="144.7" y1="54.0" x2="144.7" y2="70.0"/>
+<line class="whisk a" x1="418.4" y1="54.0" x2="418.4" y2="70.0"/>
+<rect class="box a" x="283.8" y="49.0" width="61.4" height="26" rx="2"/>
+<line class="med a" x1="324.6" y1="47.0" x2="324.6" y2="77.0"/>
+<text class="lab" x="114.0" y="60.0" text-anchor="end">this lab</text>
+<text class="tick" x="114.0" y="75.0" text-anchor="end">340 windows</text>
+<text class="tick a" x="144.7" y="42.0" text-anchor="middle">9</text>
+<text class="tick a" x="324.6" y="92.0" text-anchor="middle">median 32 cells</text>
+<text class="tick a" x="418.4" y="42.0" text-anchor="middle">62</text>
+<line class="whisk b" x1="508.5" y1="126.0" x2="819.7" y2="126.0"/>
+<line class="whisk b" x1="508.5" y1="118.0" x2="508.5" y2="134.0"/>
+<line class="whisk b" x1="819.7" y1="118.0" x2="819.7" y2="134.0"/>
+<rect class="box b" x="684.6" y="113.0" width="76.8" height="26" rx="2"/>
+<line class="med b" x1="732.1" y1="111.0" x2="732.1" y2="141.0"/>
+<text class="lab" x="114.0" y="124.0" text-anchor="end">Cossart</text>
+<text class="tick" x="114.0" y="139.0" text-anchor="end">531 windows</text>
+<text class="tick b" x="508.5" y="106.0" text-anchor="middle">117</text>
+<text class="tick b" x="732.1" y="156.0" text-anchor="middle">median 566 cells</text>
+<text class="tick b" x="819.7" y="106.0" text-anchor="middle">1050</text>
+<line class="callout" x1="196.9" y1="178" x2="196.9" y2="186"/>
+<text class="tick hi" x="196.9" y="173" text-anchor="middle">13 cells</text>
+<line class="callout" x1="387.9" y1="178" x2="387.9" y2="186"/>
+<text class="tick hi" x="387.9" y="173" text-anchor="middle">50 cells</text>
+</svg>
+    <figcaption><b>Figure 1. The field.</b> Field size per analysis window, log axis, both
+    corpora. Box is the interquartile range, the heavy tick is the median, whiskers run to the
+    extremes. <b>ROI</b> &mdash; region of interest, one imaged cell; the two words are used
+    interchangeably here. The two sizes named in the request, 13 cells and 50 cells, both sit
+    inside this lab&rsquo;s range and nowhere near the other lab&rsquo;s. Drawn from
+    <code>docs/learned/assessment_real.json</code> and
+    <code>docs/learned/assessment_cossart.json</code> by <code>tools/probe_field_size.py</code>.
+    </figcaption>
+  </figure>
+</div>
+
+<section class="col">
+  <div class="stack">
+    <p><strong>And field size is not the only thing that moves with it.</strong> The per-cell
+    event rate moves too, in the same direction, and by a comparable factor:</p>
+  </div>
+</section>
+
+<div class="breakout" style="margin-block:22px 30px">
+  <div class="tbl-scroll">
+    <table>
+      <thead><tr>
+        <th>corpus</th><th class="num">windows</th><th class="num">cells, median</th>
+        <th class="num">cells, range</th><th class="num">per-cell rate, median</th>
+        <th class="num">cells per event, median</th><th class="num">that, as a fraction</th>
+      </tr></thead>
+      <tbody>
+        <tr><td class="name">this lab</td><td class="num">340</td><td class="num">32 cells</td>
+          <td class="num">9&ndash;62 cells</td><td class="num">0.00083 Hz</td>
+          <td class="num">7 cells</td><td class="num">21.9 %</td></tr>
+        <tr><td class="name">Cossart / DANDI:000219</td><td class="num">531</td>
+          <td class="num">566 cells</td><td class="num">117&ndash;1050 cells</td>
+          <td class="num">0.01636 Hz</td><td class="num">42 cells</td><td class="num">7.4 %</td></tr>
+        <tr class="sum"><td class="name">ratio</td><td class="num">&mdash;</td>
+          <td class="num">17.7&#215;</td><td class="num">117&#215; end to end</td>
+          <td class="num">19.6&#215;</td><td class="num">6.0&#215;</td><td class="num">0.34&#215;</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<section class="col">
+  <div class="stack">
+    <div class="note warn"><strong>&#9888; These two axes are confounded, and no measurement in
+    this tree separates them.</strong> The larger field is also the busier one, by almost the same
+    factor. Every cross-lab transfer number quoted below therefore reports the effect of
+    <em>both</em> changes at once. Separating them needs a field-size sweep on simulation, which
+    the bench cannot currently do &mdash; see &sect;6.</div>
+    <p><strong>It is not only a cross-lab problem either.</strong> Rate moves inside this
+    lab&rsquo;s own corpus, and it moves in opposite directions by stream: under TTX the fast
+    stream&rsquo;s coordination falls to a median 0.46 of its own baseline and the slow
+    stream&rsquo;s rises to 2.50, with 44 % of slices at or above baseline
+    (FOUNDATIONS &sect;9). A detector must be calibrated on baseline windows &mdash; the same
+    section forbids sourcing coordination properties from treated ones &mdash; and then pointed at
+    treated ones. So the deployment range is outside the calibration range by construction, on
+    every run this project will ever do.</p>
+  </div>
+</section>
+
+<section class="col">
+  <div class="eyebrow">2 &middot; the arithmetic</div>
+  <div class="stack">
+    <h2>The honest floor is neither a count nor a fraction</h2>
+    <p>Before asking what a network should compute, it is worth asking what the answer looks like
+    when nothing is learned at all. Take the simplest null: cells fire independently, each at the
+    corpus&rsquo;s median rate, and a frame is 0.1 s. Set a budget of <strong>one chance frame per
+    hour of recording</strong>. Then ask: how many cells have to fire in the same frame before
+    that is not chance?</p>
+  </div>
+</section>
+
+<div class="breakout" style="margin-block:26px 34px">
+  <figure>
+    <svg viewBox="0 0 880 330" role="img" aria-label="Panel a, the co-active-cell floor against field size, with a fixed-count rule and a fixed-fraction rule; panel b, how far each rule misses its false-alarm budget">
+<text class="pan" x="22.0" y="24.0">a</text>
+<text class="lab" x="42.0" y="24.0">how many cells it takes</text>
+<line class="ax" x1="56.0" y1="240.0" x2="408.0" y2="240.0"/>
+<line class="ax" x1="56.0" y1="40.0" x2="56.0" y2="240.0"/>
+<line class="ax" x1="71.4" y1="240.0" x2="71.4" y2="245.0"/>
+<text class="tick" x="71.4" y="258.0" text-anchor="middle">10</text>
+<line class="ax" x1="230.6" y1="240.0" x2="230.6" y2="245.0"/>
+<text class="tick" x="230.6" y="258.0" text-anchor="middle">100</text>
+<line class="ax" x1="389.9" y1="240.0" x2="389.9" y2="245.0"/>
+<text class="tick" x="389.9" y="258.0" text-anchor="middle">1000</text>
+<line class="ax" x1="51.0" y1="240.0" x2="56.0" y2="240.0"/>
+<text class="tick" x="47.0" y="243.5" text-anchor="end">1</text>
+<line class="ax" x1="51.0" y1="195.5" x2="56.0" y2="195.5"/>
+<text class="tick" x="47.0" y="199.0" text-anchor="end">3</text>
+<line class="ax" x1="51.0" y1="146.8" x2="56.0" y2="146.8"/>
+<text class="tick" x="47.0" y="150.3" text-anchor="end">10</text>
+<line class="ax" x1="51.0" y1="102.3" x2="56.0" y2="102.3"/>
+<text class="tick" x="47.0" y="105.8" text-anchor="end">30</text>
+<line class="ax" x1="51.0" y1="53.6" x2="56.0" y2="53.6"/>
+<text class="tick" x="47.0" y="57.1" text-anchor="end">100</text>
+<text class="tick" x="232.0" y="274.0" text-anchor="middle">cells in the field</text>
+<text class="tick" transform="translate(22.0,140.0) rotate(-90)" text-anchor="middle">co-active cells</text>
+<line class="rule-count" x1="56.0" y1="195.5" x2="408.0" y2="195.5"/>
+<polyline class="rule-frac" points="64.1,240.0 119.4,214.6 182.7,177.5 253.9,135.8 326.5,93.3 408.0,45.6"/>
+<polyline class="curve a" points="64.1,211.9 78.0,195.5 89.6,195.5 103.9,195.5 119.4,195.5 134.8,195.5 151.9,195.5 167.3,195.5 182.7,195.5 197.6,195.5 215.2,183.9 230.6,183.9 241.5,183.9 258.7,183.9 278.6,183.9 294.0,174.9 311.1,174.9 326.5,174.9 341.9,167.5 350.5,167.5 365.2,167.5 378.6,161.2 393.2,161.2"/>
+<text class="tick a" x="393.2" y="176.2" text-anchor="end">this lab</text>
+<polyline class="curve b" points="64.1,183.9 78.0,183.9 89.6,174.9 103.9,174.9 119.4,174.9 134.8,167.5 151.9,167.5 167.3,167.5 182.7,161.2 197.6,155.8 215.2,155.8 230.6,151.1 241.5,146.8 258.7,143.0 278.6,136.2 294.0,133.2 311.1,125.3 326.5,120.8 341.9,116.8 350.5,113.1 365.2,108.1 378.6,102.3 393.2,97.3"/>
+<text class="tick b" x="393.2" y="87.3" text-anchor="end">Cossart</text>
+<text class="tick dim" x="237.2" y="210.5" text-anchor="middle">a fixed count, 3 cells</text>
+<text class="tick dim" x="147.4" y="234.3" text-anchor="middle">a fixed 9.4% of the field</text>
+<text class="pan" x="522.0" y="24.0">b</text>
+<text class="lab" x="542.0" y="24.0">how far each rule misses its budget</text>
+<line class="ax" x1="556.0" y1="240.0" x2="850.0" y2="240.0"/>
+<line class="ax" x1="556.0" y1="40.0" x2="556.0" y2="240.0"/>
+<line class="ax" x1="568.9" y1="240.0" x2="568.9" y2="245.0"/>
+<text class="tick" x="568.9" y="258.0" text-anchor="middle">10</text>
+<line class="ax" x1="701.9" y1="240.0" x2="701.9" y2="245.0"/>
+<text class="tick" x="701.9" y="258.0" text-anchor="middle">100</text>
+<line class="ax" x1="834.8" y1="240.0" x2="834.8" y2="245.0"/>
+<text class="tick" x="834.8" y="258.0" text-anchor="middle">1000</text>
+<line class="ax" x1="551.0" y1="60.0" x2="556.0" y2="60.0"/>
+<text class="tick" x="547.0" y="63.5" text-anchor="end">on budget</text>
+<line class="ax" x1="551.0" y1="100.0" x2="556.0" y2="100.0"/>
+<text class="tick" x="547.0" y="103.5" text-anchor="end">-20 decades</text>
+<line class="ax" x1="551.0" y1="140.0" x2="556.0" y2="140.0"/>
+<text class="tick" x="547.0" y="143.5" text-anchor="end">-40 decades</text>
+<line class="ax" x1="551.0" y1="180.0" x2="556.0" y2="180.0"/>
+<text class="tick" x="547.0" y="183.5" text-anchor="end">-60 decades</text>
+<line class="ax" x1="551.0" y1="220.0" x2="556.0" y2="220.0"/>
+<text class="tick" x="547.0" y="223.5" text-anchor="end">-80 decades</text>
+<line class="zero" x1="556.0" y1="60.0" x2="850.0" y2="60.0"/>
+<text class="tick" x="703.0" y="274.0" text-anchor="middle">cells in the field</text>
+<text class="tick" transform="translate(480.0,140.0) rotate(-90)" text-anchor="middle">chance firings vs budget</text>
+<polyline class="rule-count thick" points="562.8,65.8 584.0,64.7 608.9,63.5 636.1,62.3 661.8,61.1 674.3,60.5 710.9,58.9 754.8,56.9 802.0,55.0 837.7,53.6"/>
+<polyline class="rule-frac thick" points="562.8,55.2 584.0,59.6 608.9,58.8 636.1,62.3 661.8,69.5 674.3,72.8 710.9,89.8 754.8,134.5 802.0,236.4 837.7,240.0"/>
+<text class="tick dim" x="847.7" y="43.6" text-anchor="end">a fixed count &#8212; fires far too often</text>
+<text class="tick dim" x="729.0" y="171.0" text-anchor="middle">a fixed fraction &#8212; goes deaf</text>
+<line class="callout" x1="636.1" y1="64.0" x2="636.1" y2="220.0" stroke-dasharray="3 3"/>
+<text class="tick hi" x="636.1" y="232.0" text-anchor="middle">both rules are set here</text>
+<text class="lab" x="42.0" y="306">A statistic standardized against the field’s own null sits on the budget at every size &#8212; the flat line in b, and the measured curves in a.</text>
+</svg>
+    <figcaption><b>Figure 2. The chance floor, and the two rules on offer.</b>
+    <b>(a)</b> The smallest co-active cell count whose chance probability per frame sits at or
+    below one chance frame per hour, against field size, both axes logarithmic. The two measured
+    curves lie <em>between</em> a fixed count (dashed, long) and a fixed fraction of the field
+    (dashed, fine) at every size. <b>(b)</b> What each rule costs when it is set on a 32-cell
+    field and carried elsewhere: chance firings relative to the same budget, log axis spanning
+    ninety decades. A fixed count fires ever more often as the field grows; a fixed fraction goes
+    deaf. Computed by <code>tools/probe_field_size.py</code>; the exponents are exact binomial
+    tail sums, not a normal approximation.</figcaption>
+  </figure>
+</div>
+
+<div class="breakout" style="margin-block:0 30px">
+  <div class="tbl-scroll">
+    <table>
+      <thead><tr>
+        <th>cells in the field</th>
+        <th class="num">floor, this lab&rsquo;s rate</th><th class="num">as a fraction</th>
+        <th class="num">floor, Cossart&rsquo;s rate</th><th class="num">as a fraction</th>
+      </tr></thead>
+      <tbody>
+        <tr><td class="num">9 cells</td><td class="num">2 cells</td><td class="num">22.2 %</td>
+            <td class="num">4 cells</td><td class="num">44.4 %</td></tr>
+        <tr><td class="num">13 cells</td><td class="num">3 cells</td><td class="num">23.1 %</td>
+            <td class="num">5 cells</td><td class="num">38.5 %</td></tr>
+        <tr><td class="num">32 cells</td><td class="num">3 cells</td><td class="num">9.4 %</td>
+            <td class="num">6 cells</td><td class="num">18.8 %</td></tr>
+        <tr><td class="num">50 cells</td><td class="num">3 cells</td><td class="num">6.0 %</td>
+            <td class="num">7 cells</td><td class="num">14.0 %</td></tr>
+        <tr><td class="num">117 cells</td><td class="num">4 cells</td><td class="num">3.4 %</td>
+            <td class="num">10 cells</td><td class="num">8.5 %</td></tr>
+        <tr><td class="num">566 cells</td><td class="num">6 cells</td><td class="num">1.1 %</td>
+            <td class="num">23 cells</td><td class="num">4.1 %</td></tr>
+        <tr><td class="num">1050 cells</td><td class="num">7 cells</td><td class="num">0.7 %</td>
+            <td class="num">34 cells</td><td class="num">3.2 %</td></tr>
+        <tr class="sum"><td class="num">9 &rarr; 1050</td><td class="num">&#215;3.5</td>
+            <td class="num">&#247;32</td><td class="num">&#215;8.5</td><td class="num">&#247;14</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<section class="col">
+  <div class="stack">
+    <p>Three things fall out, and the third is the design brief.</p>
+    <ol>
+      <li><strong>A fixed count is wrong, and it gets worse as the field grows.</strong> Three
+      cells is right at 32. Carried to 566 cells at this lab&rsquo;s rate it fires
+      <strong>334&#215;</strong> over budget; at the Cossart rate, 30,200&#215;.</li>
+      <li><strong>A fixed fraction is wrong too, in the other direction and harder.</strong>
+      9.4 % of the field is the same three cells at 32. At 566 cells it demands 54 cells, whose
+      chance probability is <strong>6&#215;10<sup>&minus;89</sup></strong> of the budget &mdash; a
+      bar so far above chance that nothing the preparation produces will reach it. And at 9 cells
+      the same fraction rounds to one cell and fires 242&#215; over budget.</li>
+      <li><strong>The floor grows sub-linearly and neither rule has that shape.</strong> Across
+      the whole span the floor multiplies by 3.5 while the field multiplies by 117. A rule with
+      the right shape is a power of the field size with an exponent strictly between 0 and 1
+      &mdash; which is the third proposal below, where the exponent is fitted rather than
+      chosen.</li>
+    </ol>
+    <div class="note warn"><strong>&#9888; This is an ordering and an order of magnitude, never
+    an operating point.</strong> The null is independent cells at one homogeneous rate, and real
+    recordings are neither: per-cell rates are heterogeneous, and same-cell intervals have a hard
+    floor &mdash; 0.40 s fast and 3.20 s slow on the senktide baselines &mdash; which
+    independence does not model. Those two errors run in opposite directions. The thing that gets
+    this right on real recordings is a <em>within-recording surrogate null</em>, which
+    <code>bugarach.assess</code> and <code>CoactDetect</code> already compute; the point of the
+    arithmetic is to show why that matters, not to replace it.</div>
+    <div class="note"><strong>A question this raises and does not answer.</strong> K &mdash; the
+    coactivity floor a person sets during machine-assisted human identification of coordinated
+    events (<b>MAHICE</b>) &mdash; is currently a percentage of each recording&rsquo;s cell
+    population, with an optional absolute floor under it. That is a human judgement about what
+    counts as one event, which is a different question from the false-alarm floor above, and the
+    two must not be conflated. But they are now both expressed as a percentage, and the arithmetic
+    says a percentage is the wrong <em>shape</em> for the second. Whether that should reach the K
+    rule is Tony&rsquo;s call, not a session&rsquo;s; it is flagged here and nowhere else.</div>
+  </div>
+</section>
+
+<section class="col">
+  <div class="eyebrow">3 &middot; the nets we have</div>
+  <div class="stack">
+    <h2>What the six actually read, and where each one breaks</h2>
+    <p>All four tubes share their first two stages. Every cell&rsquo;s onsets are widened, then
+    the cell axis is averaged away, and everything after that reads one trace whose value is the
+    fraction of the field that is active. The guard and the ratio both act downstream of that
+    point.</p>
+  </div>
+</section>
+
+<div class="breakout" style="margin-block:26px 34px">
+  <figure>
+    <svg viewBox="0 0 880 264" role="img" aria-label="The tube pipeline, with the cell axis ending at the mean over cells">
+<defs><marker id="ar" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L8,4 L0,8 z" style="fill:var(--rule-strong)"/></marker></defs>
+<text class="dtitle" x="14" y="20">what all four tubes read</text>
+<rect class="rastbg" x="22" y="42" width="67.0" height="46.0" rx="2"/>
+<rect class="mkr" x="52.0" y="44.0" width="5.0" height="5.0"/>
+<rect class="mkr" x="52.0" y="51.0" width="5.0" height="5.0"/>
+<rect class="mkr" x="52.0" y="58.0" width="5.0" height="5.0"/>
+<rect class="mkr" x="52.0" y="65.0" width="5.0" height="5.0"/>
+<rect class="mkr" x="52.0" y="72.0" width="5.0" height="5.0"/>
+<rect class="mkr" x="52.0" y="79.0" width="5.0" height="5.0"/>
+<rect class="mkr" x="24.0" y="44.0" width="5.0" height="5.0"/>
+<rect class="mkr" x="31.0" y="58.0" width="5.0" height="5.0"/>
+<rect class="mkr" x="38.0" y="79.0" width="5.0" height="5.0"/>
+<rect class="mkr" x="66.0" y="51.0" width="5.0" height="5.0"/>
+<rect class="mkr" x="73.0" y="65.0" width="5.0" height="5.0"/>
+<rect class="mkr" x="80.0" y="72.0" width="5.0" height="5.0"/>
+<rect class="mkr" x="80.0" y="44.0" width="5.0" height="5.0"/>
+<rect class="mkr" x="66.0" y="79.0" width="5.0" height="5.0"/>
+<path class="lanetri" d="M50.5,32.0 L58.5,32.0 L54.5,39.0 z"/>
+<text class="nunit" x="55" y="112" text-anchor="middle">9 cells × frames</text>
+<text class="nunit" x="55" y="124" text-anchor="middle">binary</text>
+<rect class="nbox" x="112.0" y="44" width="134.8" height="52" rx="3"/>
+<text class="nname" x="179.4" y="60.0" text-anchor="middle">widen each</text>
+<text class="nname" x="179.4" y="73.0" text-anchor="middle">onset</text>
+<text class="nunit" x="179.4" y="111.0" text-anchor="middle">cells × frames</text>
+<rect class="nbox warn" x="266.8" y="44" width="134.8" height="52" rx="3"/>
+<text class="nname" x="334.2" y="60.0" text-anchor="middle">mean over</text>
+<text class="nname" x="334.2" y="73.0" text-anchor="middle">cells</text>
+<text class="nunit" x="334.2" y="111.0" text-anchor="middle">ONE trace</text>
+<text class="nunit" x="334.2" y="123.0" text-anchor="middle">a fraction, 0 to 1</text>
+<line class="arw" x1="246.8" y1="70.0" x2="262.8" y2="70.0" marker-end="url(#ar)"/>
+<rect class="nbox" x="421.6" y="44" width="134.8" height="52" rx="3"/>
+<text class="nname" x="489.0" y="60.0" text-anchor="middle">difference-of-</text>
+<text class="nname" x="489.0" y="73.0" text-anchor="middle">Gaussian bank</text>
+<text class="nunit" x="489.0" y="111.0" text-anchor="middle">4 traces</text>
+<text class="nunit" x="489.0" y="123.0" text-anchor="middle">zero-integral</text>
+<line class="arw" x1="401.6" y1="70.0" x2="417.6" y2="70.0" marker-end="url(#ar)"/>
+<rect class="nbox" x="576.4" y="44" width="134.8" height="52" rx="3"/>
+<text class="nname" x="643.8" y="60.0" text-anchor="middle">dilated</text>
+<text class="nname" x="643.8" y="73.0" text-anchor="middle">stack</text>
+<text class="nunit" x="643.8" y="111.0" text-anchor="middle">8 wide, 6 deep</text>
+<line class="arw" x1="556.4" y1="70.0" x2="572.4" y2="70.0" marker-end="url(#ar)"/>
+<rect class="nbox" x="731.2" y="44" width="134.8" height="52" rx="3"/>
+<text class="nname" x="798.6" y="60.0" text-anchor="middle">per-frame</text>
+<text class="nname" x="798.6" y="73.0" text-anchor="middle">score</text>
+<text class="nunit" x="798.6" y="111.0" text-anchor="middle">1 × frames</text>
+<line class="arw" x1="711.2" y1="70.0" x2="727.2" y2="70.0" marker-end="url(#ar)"/>
+<line class="arw" x1="94" y1="70" x2="108" y2="70" marker-end="url(#ar)"/>
+<path class="bypass" d="M401.6,88.0 C489.0,182 489.0,182 572.4,88.0" marker-end="url(#ar)"/>
+<text class="nunit warn" x="489.0" y="196" text-anchor="middle">the bypass — the absolute level, un-normalized</text>
+<text class="flag" x="334.2" y="150" text-anchor="middle">the cell axis ends here</text>
+<text class="nunit" x="334.2" y="164" text-anchor="middle">below this stage the field size is only a divisor,</text>
+<text class="nunit" x="334.2" y="176" text-anchor="middle">and nothing later can ask how many cells fired</text>
+<text class="dnote" x="14" y="226.0">The guard moves a hole into the surround; the ratio replaces the subtraction with a difference of logs. Both act to the RIGHT of</text>
+<text class="dnote" x="14" y="240.0">the flag, so all four variants share this stage and share its behaviour when the field changes size.</text>
+</svg>
+    <figcaption><b>Figure 3. Where the cell axis ends.</b> The shipped <code>tube</code>, stage by
+    stage, with the unit of what leaves each stage written underneath it. The red box is the
+    reduction: after it, the field size survives only as a divisor, and no later stage can ask how
+    many cells fired. The dashed line is the bypass &mdash; the pooled brightness reaching the head
+    on its own channel, carrying the absolute activity level that the difference-of-Gaussian kernel
+    exists to cancel. <b>Schematic.</b> The traced drawing of the real module is
+    <code>docs/learned/architecture.svg</code>.</figcaption>
+  </figure>
+</div>
+
+<div class="breakout wide" style="margin-block:0 32px">
+  <div class="tbl-scroll">
+    <table>
+      <thead><tr>
+        <th>net</th><th class="num">params</th><th class="num">F1, 8 seeds</th>
+        <th class="num">F1, 24 seeds</th><th class="num">probe</th>
+        <th class="num">Cossart, refit</th><th class="num">Cossart, as-is</th>
+        <th class="num">events</th>
+      </tr></thead>
+      <tbody>
+        <tr><td class="name">tube</td><td class="num">1,149</td><td class="num">0.686 &plusmn; 0.042</td>
+          <td class="num">0.656 &plusmn; 0.028</td><td class="num">62.8</td>
+          <td class="num">0.836</td><td class="num">0.256</td><td class="num">25 of 120</td></tr>
+        <tr><td class="name">tube_guard</td><td class="num">1,149</td><td class="num">0.680 &plusmn; 0.060</td>
+          <td class="num">0.645 &plusmn; 0.023</td><td class="num">44.3</td>
+          <td class="num">0.885</td><td class="num">0.272</td><td class="num">19 of 120</td></tr>
+        <tr><td class="name">tube_ratio</td><td class="num">1,149</td><td class="num">0.503 &plusmn; 0.069</td>
+          <td class="num">0.525 &plusmn; 0.045</td><td class="num">0.0</td>
+          <td class="num">0.740</td><td class="num">no F1</td><td class="num">0 of 120</td></tr>
+        <tr><td class="name">tube_ratio_guard</td><td class="num">1,149</td><td class="num">0.471 &plusmn; 0.055</td>
+          <td class="num">0.389 &plusmn; 0.109</td><td class="num">0.0</td>
+          <td class="num">0.708</td><td class="num">no F1</td><td class="num">0 of 120</td></tr>
+        <tr><td class="name">tiny</td><td class="num">2,393</td><td class="num">0.125 &plusmn; 0.000</td>
+          <td class="num">0.125 &plusmn; 0.000</td><td class="num">0.0</td>
+          <td class="num">0.125</td><td class="num">0.125</td><td class="num">8 of 120</td></tr>
+        <tr><td class="name">trace &mdash; &ldquo;line&rdquo;?</td><td class="num">2,065</td>
+          <td class="num">0.110 &plusmn; 0.018</td><td class="num">0.125 &plusmn; 0.000</td>
+          <td class="num">0.0</td><td class="num">0.295</td><td class="num">0.133</td>
+          <td class="num">9 of 120</td></tr>
+        <tr class="sum"><td class="name">CoactDetect</td><td class="num">0</td>
+          <td class="num">0.651 &plusmn; 0.044</td><td class="num">0.645 &plusmn; 0.023</td>
+          <td class="num">2.8</td><td class="num">0.790</td><td class="num">0.789</td>
+          <td class="num">107 of 120</td></tr>
+        <tr class="sum"><td class="name">LoCo</td><td class="num">0</td>
+          <td class="num">0.645 &plusmn; 0.057</td><td class="num">0.650 &plusmn; 0.015</td>
+          <td class="num">7.0</td><td class="num">0.777</td><td class="num">0.728</td>
+          <td class="num">114 of 120</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="note" style="margin-top:12px">F1 columns are from <code>docs/learned/bakeoff.json</code>
+  (4 folds &#215; 2 seeds) and <code>docs/learned/bakeoff_24seed.json</code> (4 folds &#215; 6 seeds).
+  Probe firings are firings into the promiscuity block &mdash; a stretch of raised background with
+  nothing coordinated planted &mdash; from the 24-seed run. The three Cossart columns are from
+  <code>docs/learned/cossart_transfer/</code> at the decided K of 12 cells, and
+  <em>no&nbsp;F1</em> means zero hits, not missing data. <span class="st st-w">unreviewed spec</span>
+  Those transfer numbers rest on a generator spec built with <code>--unreviewed</code>, whose
+  background shape is inherited from this lab because the Cossart export yielded no usable baseline
+  window. They are the best evidence in the tree and they are not publishable.</p>
+</div>
+
+<section class="col">
+  <div class="stack">
+    <h3>Reading the table</h3>
+    <ul>
+      <li><strong><code>trace</code> and <code>tiny</code> are not weak detectors &mdash; they are
+      non-detectors.</strong> F1 0.125 comes from making <em>two</em> detections in an entire
+      fold, both of which happen to land on planted events, at a threshold sitting on the edge of
+      its own grid in four folds of four. Their clean probe columns are worth nothing: a silent
+      model cannot fire into the promiscuity block. Whatever <code>trace</code> was meant to be
+      the control for, it has never functioned as one, because it never learned.</li>
+      <li><strong><code>tube</code> is the best detector in this project on a field it was fitted
+      on, and it cannot travel.</strong> Refitted on the Cossart statistics it reaches 0.836 and
+      <code>tube_guard</code> 0.885, clear of every hand-written detector. Carried over unchanged
+      they find 25 and 19 of 120 planted events. Maximum benefit and maximum dependence are the
+      same property.</li>
+      <li><strong>CoactDetect transfers for a gap of 0.001</strong> &mdash; 0.790 refitted against
+      0.789 carried over, onto a field seventeen times larger, at 107 of 120 events. That is the
+      single most useful number on this page, and &sect;5 is largely an argument about why.</li>
+      <li><strong>The ratio arm lost participation as a variable.</strong> Plant <em>k</em> cells
+      in one frame and read the score: <code>tube</code> and <code>tube_guard</code> sit at zero
+      for one cell and need two at every background. <code>tube_ratio</code> scores 0.89 on a
+      <em>single</em> cell in a quiet field, and <code>tube_ratio_guard</code>&rsquo;s curve is
+      flat across every <em>k</em> including <em>k</em>&nbsp;=&nbsp;0 &mdash; it sits on its
+      threshold whether eight cells fire, one fires, or none does. A difference of logs is
+      scale-free by construction: it reports contrast and discards magnitude, and participation is
+      exactly the magnitude it throws away.</li>
+      <li><strong>Their perfect probe columns are a restatement of that arithmetic.</strong> The
+      promiscuity probe is a <em>hot</em> window only. A model that divides by its surround cannot
+      fire there, because the denominator is large. The failure it trades into is a small
+      denominator, and the bench contains no quiet-field negative at all. <code>hot_fa</code> of
+      0.0 on a divide-shaped model measures nothing.</li>
+    </ul>
+
+    <h3>Three properties the tube is credited with, and what each one is really worth</h3>
+  </div>
+</section>
+
+<div class="breakout" style="margin-block:18px 30px">
+    <div class="panel-grid three">
+      <div class="panel">
+        <h3>Space invariance <span class="st st-p">partly</span></h3>
+        <p style="font-size:.93rem">Cells are summed, so the model never sees which cell is which
+        and runs at any cell count. True, and it is only half of what is needed: <em>running</em> at
+        any cell count is not the same as being <em>calibrated</em> at any cell count. The statistic
+        it runs on is a fraction of the field, and Figure 2b is what a fraction costs.</p>
+      </div>
+      <div class="panel">
+        <h3>Rate invariance <span class="st st-w">measured, and it does not hold</span></h3>
+        <p style="font-size:.93rem">The difference-of-Gaussian kernel area-normalizes to zero, so a
+        uniform rate change cancels &mdash; in the <em>mean</em>. Not in the spread. Multiply the
+        background by 8 on recordings with nothing planted and frames over threshold go
+        <strong>66 &rarr; 890</strong>, a factor of 13.5. Remove the bypass channel and it is
+        39 &rarr; 692, a factor of 17.7 &mdash; so the bypass is not the cause, and the one cheap
+        explanation for the transfer asymmetry is closed.</p>
+      </div>
+      <div class="panel">
+        <h3>One cell, one vote <span class="st st-w">not delivered</span></h3>
+        <p style="font-size:.93rem">The raster is already binary, so the max-pool that was supposed
+        to cap each cell at one vote instead <em>widens</em> each onset, which increases what a
+        repeatedly firing cell contributes. Measured at the shipped operating point: two cells
+        bursting score a median 0.9996 against four genuinely distinct cells at 0.9988, and in 6 of
+        10 seeds the two bursting cells score <em>higher</em>. One cell bursting five times crosses
+        its own threshold in 5 of 10 seeds. Two busy cells imitating a crowd is the exact false
+        coordination this design exists to reject.</p>
+      </div>
+    </div>
+</div>
+
+<section class="col">
+  <div class="stack">
+
+    <div class="note warn"><strong>&#9888; The 2&#215;2 could not have found the field-size
+    problem, because the axis is not in it.</strong> The screen crossed
+    {subtract, ratio} with {no guard, guard}. Both axes change what the reference <em>is</em> and
+    where on the time axis it is measured. Neither touches the reduction over cells, which happens
+    before either of them and is identical in all four cells of the screen. That is not a criticism
+    of the screen &mdash; it answered the question it was built to answer, and it answered it
+    usefully: the ratio arm&rsquo;s failure is a real result about divide-shaped detectors. It is
+    an argument that the next screen has to move a different axis.</div>
+  </div>
+</section>
+
+<section class="col">
+  <div class="eyebrow">4 &middot; the method</div>
+  <div class="stack">
+    <h2>Design the net from the nuisance list, not from the layer catalogue</h2>
+    <p>Here is the more scientific approach that was asked for, and it is not a new idea &mdash; it
+    is how the six hand-written detectors were built, written down so a network can be built the
+    same way. <strong>List the transformations a recording can undergo without the coordination in
+    it changing. For each one, decide whether the architecture is invariant to it by construction,
+    is trained to be invariant to it, or simply is not.</strong> Then the design is that
+    assignment, and every row is a probe that can fail.</p>
+    <p>Six of them apply here. The ledger below is what the estate currently assigns.</p>
+  </div>
+</section>
+
+<div class="breakout" style="margin-block:24px 30px">
+  <div class="tbl-scroll">
+    <table>
+      <thead><tr>
+        <th>what can change without the coordination changing</th>
+        <th>tube family</th><th>tiny</th><th>trace</th><th>evidence</th>
+      </tr></thead>
+      <tbody>
+        <tr><td class="wrap-cell">relabel the cells &mdash; any permutation</td>
+          <td><span class="st st-m">structural</span></td>
+          <td><span class="st st-m">structural</span></td>
+          <td><span class="st st-m">structural</span></td>
+          <td class="wrap-cell">the encoder returns a bit-identical raster under permutation, and
+          <code>permute_rois</code> tests it rather than asserting it</td></tr>
+        <tr><td class="wrap-cell">change the number of cells &mdash; 9 to 1,050</td>
+          <td><span class="st st-w">absent</span></td>
+          <td><span class="st st-w">absent</span></td>
+          <td><span class="st st-w">absent</span></td>
+          <td class="wrap-cell">runs at any count; calibrated at none. 25 of 120 events carried
+          over to a 17&#215; larger field, against CoactDetect&rsquo;s 107</td></tr>
+        <tr><td class="wrap-cell">multiply every cell&rsquo;s rate by the same factor</td>
+          <td><span class="st st-p">the mean only</span></td>
+          <td><span class="st st-w">absent</span></td>
+          <td><span class="st st-w">absent</span></td>
+          <td class="wrap-cell">the kernel cancels the mean, not the spread: 8&#215; background
+          gives 13.5&#215; the firings on empty recordings</td></tr>
+        <tr><td class="wrap-cell">give different cells different rates</td>
+          <td><span class="st st-w">absent</span></td>
+          <td><span class="st st-p">bands only</span></td>
+          <td><span class="st st-w">absent</span></td>
+          <td class="wrap-cell">rate-sorted rows are the only acknowledgement anywhere, and the
+          mean over cells discards the order immediately</td></tr>
+        <tr><td class="wrap-cell">shift the recording in time</td>
+          <td><span class="st st-m">structural</span></td>
+          <td><span class="st st-m">structural</span></td>
+          <td><span class="st st-m">structural</span></td>
+          <td class="wrap-cell">convolution, up to the frame grid. Two of the hand-written six move
+          their calls with the grid; the learned models have not been measured on this</td></tr>
+        <tr><td class="wrap-cell">change the sampling interval</td>
+          <td><span class="st st-w">absent</span></td>
+          <td><span class="st st-w">absent</span></td>
+          <td><span class="st st-w">absent</span></td>
+          <td class="wrap-cell">receptive fields are in samples and every bench recording shares
+          one imaging rate, so nothing here can fail if the model has learned our microscope</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<section class="col">
+  <div class="stack">
+    <p>Read down the middle columns and the diagnosis is not subtle. <strong>The one
+    transformation the estate handles structurally is the one that was free</strong> &mdash;
+    permutation, which a sum gives you. <strong>The two that decide whether a detector travels are
+    both unhandled</strong>, and the third, rate scaling, is handled in its first moment and not
+    its second, which is why a fixed threshold on a zero-mean signal still has a false-alarm rate
+    that climbs with the background.</p>
+    <p>The ledger also says where a fix has to go. Cardinality and heterogeneity are both
+    properties of the <em>cell axis</em>, and the tube destroys that axis in its second stage.
+    <strong>No change downstream of Figure 3&rsquo;s red box can address either one.</strong> That
+    is the whole reason the three proposals below are not four more tubes.</p>
+  </div>
+</section>
+
+<section class="col">
+  <div class="eyebrow">5 &middot; the proposal</div>
+  <div class="stack">
+    <h2>Three classes, one per unhandled row</h2>
+    <p>Each one moves a single axis of the same skeleton, so each can be run against the shipped
+    <code>tube</code> as the control and re-measured in the same run &mdash; the discipline the
+    tube screen set, for the reason it set it.</p>
+  </div>
+</section>
+
+<div class="breakout" style="margin-block:26px 34px">
+  <figure>
+    <svg viewBox="0 0 880 216" role="img" aria-label="The three proposed classes as three swap points on one shared skeleton">
+<defs><marker id="ar" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L8,4 L0,8 z" style="fill:var(--rule-strong)"/></marker></defs>
+<text class="dtitle" x="14" y="20">three axes on one skeleton, not three horses in one race</text>
+<rect class="nbox" x="14.0" y="40" width="154.4" height="52" rx="3"/>
+<text class="nname" x="91.2" y="62.0" text-anchor="middle">raster</text>
+<text class="nunit" x="91.2" y="107.0" text-anchor="middle">cells × frames</text>
+<rect class="nbox on" x="188.4" y="40" width="154.4" height="52" rx="3"/>
+<text class="nname" x="265.6" y="56.0" text-anchor="middle">per-cell</text>
+<text class="nname" x="265.6" y="69.0" text-anchor="middle">stage</text>
+<text class="nunit" x="265.6" y="107.0" text-anchor="middle">A · chorus</text>
+<line class="arw" x1="168.4" y1="66.0" x2="184.4" y2="66.0" marker-end="url(#ar)"/>
+<rect class="nbox on" x="362.8" y="40" width="154.4" height="52" rx="3"/>
+<text class="nname" x="440.0" y="56.0" text-anchor="middle">pool over</text>
+<text class="nname" x="440.0" y="69.0" text-anchor="middle">cells</text>
+<text class="nunit" x="440.0" y="107.0" text-anchor="middle">C · quorum</text>
+<line class="arw" x1="342.8" y1="66.0" x2="358.8" y2="66.0" marker-end="url(#ar)"/>
+<rect class="nbox on" x="537.2" y="40" width="154.4" height="52" rx="3"/>
+<text class="nname" x="614.4" y="62.0" text-anchor="middle">calibrate</text>
+<text class="nunit" x="614.4" y="107.0" text-anchor="middle">B · gauge</text>
+<line class="arw" x1="517.2" y1="66.0" x2="533.2" y2="66.0" marker-end="url(#ar)"/>
+<rect class="nbox" x="711.6" y="40" width="154.4" height="52" rx="3"/>
+<text class="nname" x="788.8" y="56.0" text-anchor="middle">head</text>
+<text class="nname" x="788.8" y="69.0" text-anchor="middle">→ score</text>
+<text class="nunit" x="788.8" y="107.0" text-anchor="middle">1 × frames</text>
+<line class="arw" x1="691.6" y1="66.0" x2="707.6" y2="66.0" marker-end="url(#ar)"/>
+<text class="axl" x="265.6" y="128" text-anchor="middle">A</text>
+<text class="nunit" x="265.6" y="146" text-anchor="middle">what each cell contributes, before anything is pooled</text>
+<text class="axl" x="440.0" y="128" text-anchor="middle">C</text>
+<text class="nunit" x="440.0" y="146" text-anchor="middle">how the field is summarized into one number</text>
+<text class="axl" x="614.4" y="128" text-anchor="middle">B</text>
+<text class="nunit" x="614.4" y="146" text-anchor="middle">what the number is compared against</text>
+<text class="dnote" x="14" y="176.0">The shipped tube fills all three: A is nothing, C is a mean, and B is a difference of Gaussians in time. The 2×2 that produced</text>
+<text class="dnote" x="14" y="190.0">the guard and the ratio variants moved B alone, twice, which is why none of the four can differ from the others when the field</text>
+<text class="dnote" x="14" y="204.0">changes size. Each proposal moves one axis, with the shipped tube as the control, re-measured in the same run.</text>
+</svg>
+    <figcaption><b>Figure 7. Three axes, one skeleton.</b> Every coordination net in this project
+    fills the same three slots: what each cell contributes before anything is pooled (A), how the
+    field is summarized into one number (C), and what that number is compared against (B). The
+    shipped <code>tube</code> answers <em>nothing</em>, <em>a mean</em>, and <em>a difference of
+    Gaussians in time</em>. The 2&#215;2 that produced the guard and the ratio moved B twice.
+    <b>Schematic.</b></figcaption>
+  </figure>
+</div>
+
+<section class="col">
+  <div class="stack">
+    <h2 style="margin-top:8px">A &middot; <code>chorus</code> &mdash; keep the cell axis until
+    after the filter</h2>
+    <p><strong>The row it fixes:</strong> cardinality, and heterogeneity as a side effect.</p>
+    <p><strong>The principle.</strong> Permutation invariance over a set of varying size is not an
+    open problem; it is a solved representation question with a standard shape &mdash; encode each
+    element with shared weights, pool with a symmetric function, decode the pool (Zaheer and
+    colleagues, <em>Deep Sets</em>, 2017; Qi and colleagues, <em>PointNet</em>, 2017). The
+    tube&rsquo;s mean over cells is the degenerate member of that family: one element feature, one
+    pooling function, and the pooling applied before any element encoder exists. The fix is not a
+    bigger network. It is <em>moving the pool to the right of the filter</em> and returning more
+    than one statistic from it.</p>
+  </div>
+</section>
+
+<div class="breakout" style="margin-block:22px 30px">
+  <figure>
+    <svg viewBox="0 0 880 226" role="img" aria-label="chorus: a per-cell filter, a bounded vote, and a symmetric pool that returns several statistics">
+<defs><marker id="ar" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L8,4 L0,8 z" style="fill:var(--rule-strong)"/></marker></defs>
+<text class="dtitle" x="14" y="20">chorus — the cell axis survives the filter</text>
+<rect class="rastbg" x="14" y="42" width="67.0" height="46.0" rx="2"/>
+<rect class="mkr" x="44.0" y="44.0" width="5.0" height="5.0"/>
+<rect class="mkr" x="44.0" y="51.0" width="5.0" height="5.0"/>
+<rect class="mkr" x="44.0" y="58.0" width="5.0" height="5.0"/>
+<rect class="mkr" x="44.0" y="65.0" width="5.0" height="5.0"/>
+<rect class="mkr" x="44.0" y="72.0" width="5.0" height="5.0"/>
+<rect class="mkr" x="44.0" y="79.0" width="5.0" height="5.0"/>
+<rect class="mkr" x="16.0" y="44.0" width="5.0" height="5.0"/>
+<rect class="mkr" x="23.0" y="58.0" width="5.0" height="5.0"/>
+<rect class="mkr" x="30.0" y="79.0" width="5.0" height="5.0"/>
+<rect class="mkr" x="58.0" y="51.0" width="5.0" height="5.0"/>
+<rect class="mkr" x="65.0" y="65.0" width="5.0" height="5.0"/>
+<rect class="mkr" x="72.0" y="72.0" width="5.0" height="5.0"/>
+<rect class="mkr" x="72.0" y="44.0" width="5.0" height="5.0"/>
+<rect class="mkr" x="58.0" y="79.0" width="5.0" height="5.0"/>
+<path class="lanetri" d="M42.5,32.0 L50.5,32.0 L46.5,39.0 z"/>
+<rect class="nbox" x="112.0" y="44" width="173.5" height="52" rx="3"/>
+<text class="nname" x="198.8" y="60.0" text-anchor="middle">one shared filter,</text>
+<text class="nname" x="198.8" y="73.0" text-anchor="middle">run on each cell</text>
+<text class="nunit" x="198.8" y="111.0" text-anchor="middle">cells × channels × frames</text>
+<rect class="nbox" x="305.5" y="44" width="173.5" height="52" rx="3"/>
+<text class="nname" x="392.2" y="60.0" text-anchor="middle">bounded vote</text>
+<text class="nname" x="392.2" y="73.0" text-anchor="middle">per cell</text>
+<text class="nunit" x="392.2" y="111.0" text-anchor="middle">one cell, one vote</text>
+<line class="arw" x1="285.5" y1="70.0" x2="301.5" y2="70.0" marker-end="url(#ar)"/>
+<rect class="nbox on" x="499.0" y="44" width="173.5" height="52" rx="3"/>
+<text class="nname" x="585.8" y="60.0" text-anchor="middle">symmetric pool</text>
+<text class="nname" x="585.8" y="73.0" text-anchor="middle">over cells</text>
+<text class="nunit" x="585.8" y="111.0" text-anchor="middle">mean · spread · top-m</text>
+<text class="nunit" x="585.8" y="123.0" text-anchor="middle">the SHAPE, not the level</text>
+<line class="arw" x1="479.0" y1="70.0" x2="495.0" y2="70.0" marker-end="url(#ar)"/>
+<rect class="nbox" x="692.5" y="44" width="173.5" height="52" rx="3"/>
+<text class="nname" x="779.2" y="60.0" text-anchor="middle">read the</text>
+<text class="nname" x="779.2" y="73.0" text-anchor="middle">pooled shape</text>
+<text class="nunit" x="779.2" y="111.0" text-anchor="middle">1 × frames</text>
+<line class="arw" x1="672.5" y1="70.0" x2="688.5" y2="70.0" marker-end="url(#ar)"/>
+<line class="arw" x1="94" y1="70" x2="108" y2="70" marker-end="url(#ar)"/>
+<text class="flag on" x="585.8" y="148" text-anchor="middle">every cell is still a cell here</text>
+<text class="dnote" x="14" y="176.0">The pool returns several symmetric functions instead of one sum, so the head sees how the activity is DISTRIBUTED across the</text>
+<text class="dnote" x="14" y="190.0">field and not only how much of it there is. Mean and top-m both carry over a change of field size; a sum does not. This is the</text>
+<text class="dnote" x="14" y="204.0">Deep Sets shape (Zaheer and colleagues, 2017), and `tiny` is already a member of the family — which is the reason to re-run</text>
+<text class="dnote" x="14" y="218.0">`tiny` under control before building anything new.</text>
+</svg>
+    <figcaption><b>Figure 4. chorus.</b> One shared temporal filter is run on every cell&rsquo;s own
+    row, each cell&rsquo;s contribution is bounded, and only then is the field pooled &mdash; into
+    several symmetric statistics rather than one. The head reads how the activity is distributed,
+    not only how much of it there is. <b>Schematic; this network does not exist.</b></figcaption>
+  </figure>
+</div>
+
+<section class="col">
+  <div class="stack">
+    <pre><span class="c"># chorus, the part that matters. x is (batch, cells, frames).</span>
+h = phi(x.reshape(B*N, 1, T)).reshape(B, N, C, T)   <span class="c"># shared weights, per cell</span>
+v = h.sigmoid()                                     <span class="c"># bounded: one cell, one vote</span>
+pooled = cat([v.mean(dim=1),                        <span class="c"># the level</span>
+              v.std(dim=1),                         <span class="c"># the spread across the field</span>
+              v.topk(m, dim=1).values.mean(dim=1)], <span class="c"># the loudest m</span>
+             dim=1)                                 <span class="c"># (B, 3C, T): no N</span>
+return rho(pooled)</pre>
+    <p><strong>Why it answers the field-size question.</strong> The mean and the standard deviation
+    of a bounded per-cell score both have the same expectation at 9 cells and at 1,050; only their
+    sampling error shrinks. The top-<em>m</em> channel is an order statistic, which is the one
+    summary that keeps meaning when the population changes size. And because the cell axis survives
+    the filter, a later stage can distinguish <em>many cells firing once</em> from <em>one cell
+    firing many times</em> &mdash; which is the property the tube&rsquo;s docstring claimed, that
+    the one-vote probe took away, and that the count-leak foot gun turns on.</p>
+    <p><strong>What it costs.</strong> The per-cell stage runs <em>N</em> times instead of once.
+    At 1,050 cells that is the whole question. <code>tube</code> scans a held-out fold in 0.014 s;
+    <code>tiny</code>, which already pays this, takes 0.23 s &mdash; sixteen times more, and still
+    30,000&#215; realtime. A budget has to be stated before this is built, not discovered
+    after.</p>
+    <div class="note warn"><strong>&#9888; This class has already failed once in this tree, and
+    that is the most important thing about it.</strong> <code>tiny</code> is a member of the
+    family &mdash; per-cell filter, bounded vote, pooling by rate band &mdash; and it scored 0.125
+    across every run, with its threshold on the edge of its grid in 4 folds of 4. So
+    <code>chorus</code> is not a new idea here; it is the idea that did not train. Three things
+    differ, and none of them has been tested: <code>tiny</code> pools with an unbounded
+    <em>sum</em> within each band, which puts the count leak straight back; it trains at a tenth of
+    <code>tube</code>&rsquo;s learning rate, so the architecture comparison was never controlled;
+    and it normalizes nothing at the pool.
+    <strong>Step 0 of this proposal is therefore not to build anything.</strong> It is to re-run
+    <code>tiny</code> at <code>tube</code>&rsquo;s learning rate with <code>pos_weight</code> and
+    batch size held fixed. That is one run, and it decides whether this class is alive.</div>
+    <p><strong>What it would have to show.</strong> That it trains at all, with a threshold off the
+    edge of its grid. F1 within seed error of <code>tube</code> at home. Carried to the Cossart
+    spec without refitting, F1 above 0.5 &mdash; the bar is CoactDetect&rsquo;s 0.789, and
+    <code>tube</code>&rsquo;s 0.256 is the floor to beat. And a participation ladder that rises
+    with the number of co-active cells at <em>every</em> field size, not only at 32.</p>
+  </div>
+</section>
+
+<section class="col">
+  <div class="stack">
+    <h2 style="margin-top:8px">B &middot; <code>gauge</code> &mdash; build the bar from the
+    recording being judged</h2>
+    <p><strong>The row it fixes:</strong> rate scaling, in the second moment as well as the first
+    &mdash; and cardinality, for free, as a consequence.</p>
+    <p><strong>The principle, and it is the one measurement on this page I would build on.</strong>
+    CoactDetect scores 0.790 refitted on a 566-cell field and <strong>0.789 carried over
+    unchanged</strong>. A gap of 0.001 across a seventeen-fold change in field size is not a
+    property of its statistic &mdash; its statistic is a coactivity count, the same quantity the
+    tube reads. It is a property of its <em>bar</em>, which is a percentile of a null built by
+    circularly shifting that recording&rsquo;s own cells. The hand-written detectors that travel
+    are exactly the ones that compare against a within-recording null; the two that do not travel,
+    rate+context and SPIKE-synchronization, carry an absolute threshold. rate+context finds
+    <em>120 of 120</em> planted events on the Cossart field and still scores 0.168, because a bar
+    that is right for 32 cells is tripped constantly by 566.</p>
+    <p>So: stop treating calibration as something done to a model after it is trained, and make it
+    a layer inside the model.</p>
+  </div>
+</section>
+
+<div class="breakout" style="margin-block:22px 30px">
+  <figure>
+    <svg viewBox="0 0 880 340" role="img" aria-label="gauge: the feature stage is run on the window and on B surrogate copies, and the output is standardized against them">
+<defs><marker id="ar" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L8,4 L0,8 z" style="fill:var(--rule-strong)"/></marker></defs>
+<text class="dtitle" x="14" y="20">gauge — the bar is built from the recording being judged</text>
+<rect class="rastbg" x="14" y="48" width="67.0" height="46.0" rx="2"/>
+<rect class="mkr" x="44.0" y="50.0" width="5.0" height="5.0"/>
+<rect class="mkr" x="44.0" y="57.0" width="5.0" height="5.0"/>
+<rect class="mkr" x="44.0" y="64.0" width="5.0" height="5.0"/>
+<rect class="mkr" x="44.0" y="71.0" width="5.0" height="5.0"/>
+<rect class="mkr" x="44.0" y="78.0" width="5.0" height="5.0"/>
+<rect class="mkr" x="44.0" y="85.0" width="5.0" height="5.0"/>
+<rect class="mkr" x="16.0" y="50.0" width="5.0" height="5.0"/>
+<rect class="mkr" x="23.0" y="64.0" width="5.0" height="5.0"/>
+<rect class="mkr" x="30.0" y="85.0" width="5.0" height="5.0"/>
+<rect class="mkr" x="58.0" y="57.0" width="5.0" height="5.0"/>
+<rect class="mkr" x="65.0" y="71.0" width="5.0" height="5.0"/>
+<rect class="mkr" x="72.0" y="78.0" width="5.0" height="5.0"/>
+<rect class="mkr" x="72.0" y="50.0" width="5.0" height="5.0"/>
+<rect class="mkr" x="58.0" y="85.0" width="5.0" height="5.0"/>
+<path class="lanetri" d="M42.5,38.0 L50.5,38.0 L46.5,45.0 z"/>
+<text class="nunit" x="48" y="118" text-anchor="middle">the window</text>
+<rect class="rastbg" x="14" y="150" width="43.6" height="30.400000000000002" rx="2"/>
+<rect class="mkr" x="38.0" y="156.4" width="2.4" height="2.4"/>
+<rect class="mkr" x="38.0" y="160.8" width="2.4" height="2.4"/>
+<rect class="mkr" x="38.0" y="165.2" width="2.4" height="2.4"/>
+<rect class="mkr" x="38.0" y="169.6" width="2.4" height="2.4"/>
+<rect class="mkr" x="38.0" y="174.0" width="2.4" height="2.4"/>
+<rect class="mkr" x="38.0" y="152.0" width="2.4" height="2.4"/>
+<rect class="mkr" x="16.0" y="152.0" width="2.4" height="2.4"/>
+<rect class="mkr" x="20.4" y="160.8" width="2.4" height="2.4"/>
+<rect class="mkr" x="24.8" y="174.0" width="2.4" height="2.4"/>
+<rect class="mkr" x="42.4" y="156.4" width="2.4" height="2.4"/>
+<rect class="mkr" x="46.8" y="165.2" width="2.4" height="2.4"/>
+<rect class="mkr" x="51.2" y="169.6" width="2.4" height="2.4"/>
+<rect class="mkr" x="51.2" y="152.0" width="2.4" height="2.4"/>
+<rect class="mkr" x="42.4" y="174.0" width="2.4" height="2.4"/>
+<rect class="rastbg" x="14" y="180" width="43.6" height="30.400000000000002" rx="2"/>
+<rect class="mkr" x="46.8" y="190.8" width="2.4" height="2.4"/>
+<rect class="mkr" x="46.8" y="195.2" width="2.4" height="2.4"/>
+<rect class="mkr" x="46.8" y="199.6" width="2.4" height="2.4"/>
+<rect class="mkr" x="46.8" y="204.0" width="2.4" height="2.4"/>
+<rect class="mkr" x="46.8" y="182.0" width="2.4" height="2.4"/>
+<rect class="mkr" x="46.8" y="186.4" width="2.4" height="2.4"/>
+<rect class="mkr" x="20.4" y="186.4" width="2.4" height="2.4"/>
+<rect class="mkr" x="24.8" y="195.2" width="2.4" height="2.4"/>
+<rect class="mkr" x="29.2" y="182.0" width="2.4" height="2.4"/>
+<rect class="mkr" x="46.8" y="190.8" width="2.4" height="2.4"/>
+<rect class="mkr" x="51.2" y="199.6" width="2.4" height="2.4"/>
+<rect class="mkr" x="16.0" y="204.0" width="2.4" height="2.4"/>
+<rect class="mkr" x="16.0" y="186.4" width="2.4" height="2.4"/>
+<rect class="mkr" x="46.8" y="182.0" width="2.4" height="2.4"/>
+<rect class="rastbg" x="14" y="210" width="43.6" height="30.400000000000002" rx="2"/>
+<rect class="mkr" x="16.0" y="225.2" width="2.4" height="2.4"/>
+<rect class="mkr" x="16.0" y="229.6" width="2.4" height="2.4"/>
+<rect class="mkr" x="16.0" y="234.0" width="2.4" height="2.4"/>
+<rect class="mkr" x="16.0" y="212.0" width="2.4" height="2.4"/>
+<rect class="mkr" x="16.0" y="216.4" width="2.4" height="2.4"/>
+<rect class="mkr" x="16.0" y="220.8" width="2.4" height="2.4"/>
+<rect class="mkr" x="24.8" y="220.8" width="2.4" height="2.4"/>
+<rect class="mkr" x="29.2" y="229.6" width="2.4" height="2.4"/>
+<rect class="mkr" x="33.6" y="216.4" width="2.4" height="2.4"/>
+<rect class="mkr" x="51.2" y="225.2" width="2.4" height="2.4"/>
+<rect class="mkr" x="16.0" y="234.0" width="2.4" height="2.4"/>
+<rect class="mkr" x="20.4" y="212.0" width="2.4" height="2.4"/>
+<rect class="mkr" x="20.4" y="220.8" width="2.4" height="2.4"/>
+<rect class="mkr" x="51.2" y="216.4" width="2.4" height="2.4"/>
+<text class="nunit" x="48" y="248" text-anchor="middle">B copies, each cell|rolled on its own</text>
+<rect class="nbox" x="128.0" y="50.0" width="168.0" height="52" rx="3"/>
+<text class="nname" x="212.0" y="80.0" text-anchor="middle">any feature stage</text>
+<rect class="nbox" x="128.0" y="200.0" width="168.0" height="52" rx="3"/>
+<text class="nname" x="212.0" y="230.0" text-anchor="middle">the same stage, shared weights</text>
+<line class="arw" x1="94" y1="76" x2="124.0" y2="76" marker-end="url(#ar)"/>
+<line class="arw" x1="94" y1="226" x2="124.0" y2="226" marker-end="url(#ar)"/>
+<rect class="nbox on" x="340.0" y="116.0" width="196.0" height="68" rx="3"/>
+<text class="nname" x="438.0" y="140.0" text-anchor="middle">standardize</text>
+<text class="nunit" x="438.0" y="158.0" text-anchor="middle">(observed &#8722; null mean) &#247; null spread</text>
+<path class="arw" d="M296.0,76.0 L326.0,76.0 L326.0,142.0 L336.0,142.0" marker-end="url(#ar)" fill="none"/>
+<path class="arw" d="M296.0,226.0 L326.0,226.0 L326.0,150.0 L336.0,150.0" marker-end="url(#ar)" fill="none"/>
+<rect class="nbox" x="570.0" y="116.0" width="296.0" height="68" rx="3"/>
+<text class="nname" x="718.0" y="146.0" text-anchor="middle">head → score</text>
+<line class="arw" x1="536.0" y1="146.0" x2="566.0" y2="146.0" marker-end="url(#ar)"/>
+<text class="flag on" x="438.0" y="196.0" text-anchor="middle">what leaves here has the same null at 9 cells and at 1,050</text>
+<text class="dnote" x="14" y="286.0">A roll is one tensor operation and costs nothing; what it costs is B extra passes through the feature stage, and that is the</text>
+<text class="dnote" x="14" y="300.0">number to measure first. The shift destroys timing ACROSS cells and preserves each cell’s own rate and intervals exactly — which</text>
+<text class="dnote" x="14" y="314.0">is why the same surrogate is under scrutiny elsewhere in this project, and why this one has to clear the same leak screen before</text>
+<text class="dnote" x="14" y="328.0">it is trusted.</text>
+</svg>
+    <figcaption><b>Figure 5. gauge.</b> The feature stage runs twice &mdash; once on the window and
+    once on each of B surrogate copies in which every cell&rsquo;s row has been rolled by its own
+    random offset &mdash; and what leaves the layer is the observation expressed in units of its own
+    null. Downstream stages then read a quantity whose null distribution does not move with the
+    field size, the background rate or the sampling interval. <b>Schematic; this network does not
+    exist.</b></figcaption>
+  </figure>
+</div>
+
+<section class="col">
+  <div class="stack">
+    <pre><span class="c"># gauge wraps ANY feature stage. `roll_rows` shifts each cell's row on its own.</span>
+f_obs = feat(x)                                     <span class="c"># (B, C, T)</span>
+f_null = stack([feat(roll_rows(x, g)) for g in gens])   <span class="c"># (n_null, B, C, T)</span>
+z = (f_obs - f_null.mean(0)) / (f_null.std(0) + eps)
+return head(z)                                      <span class="c"># downstream is pivotal</span></pre>
+    <p><strong>Why it is the right shape.</strong> The tube&rsquo;s own screen document identified
+    this in one sentence and then did not act on it: area-normalized subtraction &ldquo;cancels the
+    <em>mean</em> of a rate change and not its <em>variance</em>.&rdquo; The guard changed where the
+    reference is measured; the ratio changed how the comparison is formed. Neither divided by the
+    null&rsquo;s spread, which is the term that actually holds a false-alarm rate constant. This is
+    constant-false-alarm-rate detection with the reference estimated by resampling instead of by
+    assuming a noise model &mdash; and the resampling is a circular shift, which costs one tensor
+    operation.</p>
+    <p><strong>What it costs.</strong> B+1 passes through the feature stage. At B&nbsp;=&nbsp;15
+    that is 16&#215;, which on <code>tube</code>&rsquo;s 0.014 s per fold is still a fifth of a
+    second. Two reductions are available and both need measuring rather than assuming: draw the
+    surrogate set once per training window instead of once per step, and at inference estimate the
+    null on a coarse sliding block rather than per frame.</p>
+    <div class="note warn"><strong>&#9888; This class inherits the surrogate problem, whole.</strong>
+    A per-cell circular shift is the construction this project has spent weeks finding leaks in.
+    It preserves each cell&rsquo;s own rate and intervals exactly, which is what makes it a clean
+    null for cross-cell timing &mdash; and the rigid-shift work has already shown that a shift can
+    leak through shared modulation and through what happens at the window edge. <strong>gauge&rsquo;s
+    surrogate must clear the same leak screen as any training surrogate before the layer is
+    trusted.</strong> One thing does differ, and it is worth saying: here the surrogate is a
+    calibration reference inside a supervised network, not a training negative, so a leak biases
+    the bar rather than manufacturing a learning signal out of nothing. That is a smaller failure,
+    not an absent one.</div>
+    <p><strong>What it would have to show.</strong> That the false-alarm rate per hour is flat
+    across a field-size sweep from 9 to 1,050 cells <em>and</em> across a background-rate sweep from
+    1&#215; to 8&#215;. The existing rate-invariance probe already has exactly that shape and the
+    tube fails it 66 &rarr; 890; the same probe re-run is the test. Then: carried to the Cossart
+    spec without refitting, within 0.05 F1 of its own refitted score &mdash; CoactDetect&rsquo;s
+    0.001 is the standard to be measured against. And the cost inside a stated budget.</p>
+  </div>
+</section>
+
+<section class="col">
+  <div class="stack">
+    <h2 style="margin-top:8px">C &middot; <code>quorum</code> &mdash; decide by rank, not by count
+    and not by fraction</h2>
+    <p><strong>The row it fixes:</strong> heterogeneous per-cell rates &mdash; the one nothing in
+    the estate touches &mdash; and cardinality, with the right shape rather than a chosen one.</p>
+    <p><strong>The principle.</strong> Figure 2 says the honest floor lies strictly between a fixed
+    count and a fixed fraction, and grows sub-linearly with the field. Neither rule on offer has
+    that shape, so neither should be hard-coded. Give the network the shape and let it fit the
+    exponent. And score each cell against <em>its own</em> history rather than the field average,
+    which is what makes the decision variable a rank &mdash; and a rank&rsquo;s null distribution
+    does not care how the rates are distributed.</p>
+  </div>
+</section>
+
+<div class="breakout" style="margin-block:22px 30px">
+  <figure>
+    <svg viewBox="0 0 880 230" role="img" aria-label="quorum: per-cell surprise, a sort over cells, and a top-m pool whose m grows with the field size at a fitted exponent">
+<defs><marker id="ar" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L8,4 L0,8 z" style="fill:var(--rule-strong)"/></marker></defs>
+<text class="dtitle" x="14" y="20">quorum — a rank, not a count and not a fraction</text>
+<rect class="rastbg" x="14" y="42" width="67.0" height="46.0" rx="2"/>
+<rect class="mkr" x="44.0" y="44.0" width="5.0" height="5.0"/>
+<rect class="mkr" x="44.0" y="51.0" width="5.0" height="5.0"/>
+<rect class="mkr" x="44.0" y="58.0" width="5.0" height="5.0"/>
+<rect class="mkr" x="44.0" y="65.0" width="5.0" height="5.0"/>
+<rect class="mkr" x="44.0" y="72.0" width="5.0" height="5.0"/>
+<rect class="mkr" x="44.0" y="79.0" width="5.0" height="5.0"/>
+<rect class="mkr" x="16.0" y="44.0" width="5.0" height="5.0"/>
+<rect class="mkr" x="23.0" y="58.0" width="5.0" height="5.0"/>
+<rect class="mkr" x="30.0" y="79.0" width="5.0" height="5.0"/>
+<rect class="mkr" x="58.0" y="51.0" width="5.0" height="5.0"/>
+<rect class="mkr" x="65.0" y="65.0" width="5.0" height="5.0"/>
+<rect class="mkr" x="72.0" y="72.0" width="5.0" height="5.0"/>
+<rect class="mkr" x="72.0" y="44.0" width="5.0" height="5.0"/>
+<rect class="mkr" x="58.0" y="79.0" width="5.0" height="5.0"/>
+<path class="lanetri" d="M42.5,32.0 L50.5,32.0 L46.5,39.0 z"/>
+<rect class="nbox" x="112.0" y="44" width="173.5" height="52" rx="3"/>
+<text class="nname" x="198.8" y="60.0" text-anchor="middle">score each cell</text>
+<text class="nname" x="198.8" y="73.0" text-anchor="middle">against ITS OWN rate</text>
+<text class="nunit" x="198.8" y="111.0" text-anchor="middle">a surprise per cell</text>
+<text class="nunit" x="198.8" y="123.0" text-anchor="middle">busy cells are worth less</text>
+<rect class="nbox" x="305.5" y="44" width="173.5" height="52" rx="3"/>
+<text class="nname" x="392.2" y="60.0" text-anchor="middle">sort the cells</text>
+<text class="nname" x="392.2" y="73.0" text-anchor="middle">within each frame</text>
+<text class="nunit" x="392.2" y="111.0" text-anchor="middle">an ordered column</text>
+<line class="arw" x1="285.5" y1="70.0" x2="301.5" y2="70.0" marker-end="url(#ar)"/>
+<rect class="nbox on" x="499.0" y="44" width="173.5" height="52" rx="3"/>
+<text class="nname" x="585.8" y="60.0" text-anchor="middle">take the top m,</text>
+<text class="nname" x="585.8" y="73.0" text-anchor="middle">m = a × N to the power b</text>
+<text class="nunit" x="585.8" y="111.0" text-anchor="middle">b fitted between</text>
+<text class="nunit" x="585.8" y="123.0" text-anchor="middle">0 and 1</text>
+<line class="arw" x1="479.0" y1="70.0" x2="495.0" y2="70.0" marker-end="url(#ar)"/>
+<rect class="nbox" x="692.5" y="44" width="173.5" height="52" rx="3"/>
+<text class="nname" x="779.2" y="60.0" text-anchor="middle">head</text>
+<text class="nname" x="779.2" y="73.0" text-anchor="middle">→ score</text>
+<text class="nunit" x="779.2" y="111.0" text-anchor="middle">1 × frames</text>
+<line class="arw" x1="672.5" y1="70.0" x2="688.5" y2="70.0" marker-end="url(#ar)"/>
+<line class="arw" x1="94" y1="70" x2="108" y2="70" marker-end="url(#ar)"/>
+<text class="flag on" x="585.8" y="148" text-anchor="middle">b = 0 is a fixed count · b = 1 is a fixed fraction</text>
+<text class="dnote" x="14" y="176.0">Figure 2, the chance floor, says the honest rule lies between those two bounds, so the exponent is fitted rather than chosen and</text>
+<text class="dnote" x="14" y="190.0">its fitted value is itself the result. If it runs to a bound, one of the two rules was right after all. This is</text>
+<text class="dnote" x="14" y="204.0">ordered-statistic CFAR moved off the time axis and onto the cell axis — the censored surround the tube screen left out, where a</text>
+<text class="dnote" x="14" y="218.0">partial sort over cells costs one kernel instead of a sliding window.</text>
+</svg>
+    <figcaption><b>Figure 6. quorum.</b> Each cell&rsquo;s onset is scored against that cell&rsquo;s
+    own trailing occupancy, the cells are sorted within each frame, and the decision reads the top
+    <em>m</em> &mdash; where <em>m</em> grows with the field as a power whose exponent is fitted.
+    An exponent of 0 is a fixed count; an exponent of 1 is a fixed fraction; Figure 2 says the
+    answer is in between. <b>Schematic; this network does not exist.</b></figcaption>
+  </figure>
+</div>
+
+<section class="col">
+  <div class="stack">
+    <pre><span class="c"># quorum. `occ` is each cell's own occupancy over a long trailing window.</span>
+s = x * -(occ(x, w).clamp_min(eps).log())        <span class="c"># a quiet cell counts for more</span>
+m = (a * N ** b).ceil().clamp(1, N)              <span class="c"># b fitted, initialised at 0.5</span>
+q = soft_topk_mean(s, m, dim=1)                  <span class="c"># an order statistic over CELLS</span>
+return head(q)</pre>
+    <p><strong>Why the cell axis and not the time axis.</strong> This is ordered-statistic
+    constant-false-alarm-rate detection, and it was already on the list once: V3 of the tube screen,
+    the censored surround, which was deliberately left out because an order statistic over a
+    sliding time window is not a convolution and spends the one property the tube actually owns
+    &mdash; 0.014 s to scan a fold. Over the <em>cell</em> axis the cost is a different shape
+    entirely: a partial sort of <em>N</em> values per frame, which is one kernel, not a sliding
+    window. That distinction is the reason this is worth running where V3 was not.</p>
+    <p><strong>What it costs.</strong> A top-<em>k</em> over the cell axis per frame. Cheaper than
+    <code>chorus</code>, more than <code>tube</code>. The per-cell occupancy is a box filter and is
+    free.</p>
+    <div class="note warn"><strong>&#9888; Two things to watch.</strong> An order statistic is not
+    differentiable at ties, so this needs a soft sort or a straight-through estimator, and which one
+    is a real choice rather than a detail. And the fitted exponent is a new free parameter, so the
+    tube&rsquo;s own rule applies to it: <em>if a fitted value runs to the end of its range, the
+    model is telling you the range was wrong.</em> Report the range with the value, every
+    time.</div>
+    <p><strong>What it would have to show.</strong> That the fitted exponent lands strictly inside
+    its bounds &mdash; if it goes to 0 or 1, one of the two rules was right after all, and that is
+    a result worth having either way. That recall holds when a tenth of the cells are made ten times
+    busier than the rest, which is the heterogeneity probe nothing in the estate currently runs.
+    And the participation ladder, again, at every field size.</p>
+
+    <h3 style="margin-top:12px">What I would not build, and why</h3>
+    <p>The obvious fourth candidate is the assembly-detection family &mdash; principal or
+    independent components over co-activation, graph and item-set methods &mdash; which is where
+    the coordination literature actually concentrates and which would handle cell identity
+    natively. <strong>It cannot be scored here yet.</strong> The generator draws each planted
+    event&rsquo;s participants fresh, so no group of cells ever recurs, and every one of those
+    methods works by finding patterns that repeat. Run one on this bench and it finds nothing, and
+    the zero would be about the generator rather than the method. The order that makes it possible
+    is already written down: ask the 85 real recordings whether participant groups recur, plant
+    them if they do, then port. Until then a comparison against that family would be won
+    meaninglessly.</p>
+  </div>
+</section>
+
+<section class="col">
+  <div class="eyebrow">6 &middot; how to run them</div>
+  <div class="stack">
+    <h2>Two things the bench cannot currently measure, and both come first</h2>
+    <p>Neither of these is about the proposals. Both are gaps that would make any result from them
+    unreadable, and both are cheap.</p>
+    <div class="panel-grid">
+      <div class="panel">
+        <h3>A field-size axis in the generator</h3>
+        <p style="font-size:.93rem">Every bench recording today has one field size, taken from one
+        spec. There is therefore <strong>no run in this project that varies field size with
+        everything else held fixed</strong> &mdash; the only evidence is the cross-lab transfer,
+        where field size and per-cell rate moved together by 17.7&#215; and 19.6&#215;. Field size
+        is already a parameter the spec carries, so the axis is a sweep rather than new machinery,
+        and it is what turns &ldquo;the tube does not travel&rdquo; into a statement about
+        <em>which</em> of the two changes broke it.</p>
+      </div>
+      <div class="panel">
+        <h3>A quiet-field negative</h3>
+        <p style="font-size:.93rem">The promiscuity probe is a hot window only, so a
+        divide-shaped detector passes it by arithmetic and the ratio arm&rsquo;s 0.0 measures
+        nothing. <strong>All three proposals divide or standardize</strong>, so all three would
+        inherit the same free pass. The cheap version is a low-rate stretch with nothing planted,
+        scored the same way, so the hot count gains a twin. Until it exists, no detector&rsquo;s
+        rate robustness has been measured &mdash; only half of it.</p>
+      </div>
+    </div>
+
+    <h2 style="margin-top:14px">Then, in this order</h2>
+    <ol>
+      <li><strong>Re-run <code>tiny</code> under control.</strong> One run, no new code:
+      <code>tube</code>&rsquo;s learning rate, <code>pos_weight</code> and batch size fixed. It
+      decides whether <code>chorus</code> is a live class or a repeat, and it also closes the
+      standing complaint that the architecture conclusion was never controlled.</li>
+      <li><strong><code>gauge</code>, because it has the strongest prior evidence.</strong> A gap
+      of 0.001 across a 17&#215; field change is the best transfer result anyone here has
+      measured, and this is the attempt to buy it inside a learned model. It is also the smallest
+      change: it wraps the existing feature stage and leaves the tube&rsquo;s kernel alone, so the
+      control is exact.</li>
+      <li><strong><code>quorum</code>.</strong> Needs the soft-sort decision made first, and needs
+      the heterogeneity probe written, which does not exist yet.</li>
+      <li><strong><code>chorus</code></strong>, if step 1 says the class is alive.</li>
+    </ol>
+    <p><strong>They compose, and that is a reason to run them one at a time.</strong>
+    <code>gauge</code> is a layer that can wrap either pooling; <code>quorum</code> is a pooling
+    that can sit inside <code>chorus</code>. So the eventual screen is a 2&#215;2&#215;2 with the
+    shipped <code>tube</code> in the corner. Running the factorial before any single axis has been
+    measured would repeat the mistake the tube screen names in its own text &mdash; and that screen
+    at least had a measured interaction to justify crossing its two axes.</p>
+    <div class="note warn"><strong>&#9888; And the standing limitation, which bites hardest
+    here.</strong> Every learned number in this project is one training run per fold. Going from
+    8 seeds to 24 already moved <code>tube</code> from 0.686 to 0.656 and reordered the leaders
+    &mdash; LoCo and CoactDetect swap places between the two runs. A comparison <em>between
+    architectures</em> is exactly where that thinness is least affordable, so any screen of these
+    three needs its seed budget decided up front rather than after a result looks
+    interesting.</div>
+  </div>
+</section>
+
+<section class="col">
+  <div class="eyebrow">7 &middot; the limits of this page</div>
+  <div class="stack">
+    <h2>What none of this establishes</h2>
+    <ul>
+      <li><strong>Nothing here was trained, traced or scored.</strong> Every performance number is
+      read out of an artifact already committed in the tree and named where it is used. The three
+      architectures are designs; no line of them has been written.</li>
+      <li><strong>The chance floor assumes independent cells at one rate.</strong> Real cells have
+      a hard same-cell interval floor and heterogeneous rates, and those two errors push the true
+      floor in opposite directions. Figure 2 is an ordering, not an operating point.</li>
+      <li><strong>Field size and per-cell rate are confounded in every transfer number quoted.</strong>
+      The two corpora differ by 117&#215; in field size and 19.6&#215; in rate, together. Which one
+      breaks the tube is not measured, and the field-size axis in &sect;6 is what would measure it.</li>
+      <li><strong>The Cossart transfer table rests on an unreviewed spec.</strong> Its background
+      shape is inherited from this lab, because that export yielded no usable baseline window, and
+      a background is not a detail for detectors that estimate one. Those numbers are the best
+      evidence in the tree and they are not publishable.</li>
+      <li><strong>No prior-art pass has been run on any of the three.</strong> The set-encoder,
+      constant-false-alarm-rate and order-statistic literatures are named because that is where
+      each idea comes from, and naming a lineage is not the same as establishing that a
+      combination is new. This project&rsquo;s own earlier prior-art pass on learned coordination
+      detection was retracted internally as too shallow to stand on.</li>
+      <li><strong>This page has not been murderboarded</strong>, on instruction. It is working
+      material for sessions in this tree.</li>
+    </ul>
+  </div>
+</section>
+
+<footer class="col foot">
+  <p><strong>Where the numbers are.</strong> Corpus statistics and the chance floor:
+  <code>docs/learned/field_size.json</code>, written by <code>tools/probe_field_size.py</code> from
+  <code>docs/learned/assessment_real.json</code> and <code>docs/learned/assessment_cossart.json</code>.
+  Head-to-head scores: <code>docs/learned/bakeoff.json</code> and
+  <code>docs/learned/bakeoff_24seed.json</code>. Transfer: <code>docs/learned/cossart_transfer/</code>.
+  Rate invariance: <code>docs/learned/rate_invariance.json</code>. The one-vote probe:
+  <code>docs/learned/one_vote.json</code>. The participation ladder and the ratio-arm finding:
+  <code>docs/todo/2026-09-08-the-ratio-tube-cannot-count-cells.md</code>. The count-leak foot gun:
+  <code>docs/todo/2026-09-12-tube-cannot-tell-a-count-leak-from-coordination.md</code>. The tube
+  screen: <code>docs/todo/2026-08-23-four-variants-of-the-tube.md</code>. Preparation facts:
+  <code>docs/FOUNDATIONS.md</code> &sect;9.</p>
+  <p style="margin-top:14px">Figures 1 and 2 are drawn from the committed assessments by
+  <code>tools/probe_field_size.py</code> and <code>tools/make_field_size_figures.py</code>;
+  Figures 3 to 7 are schematics drawn by <code>tools/make_net_diagrams.py</code> and carry no
+  measured quantity. This page is built from
+  <code>docs/proposals/2026-09-16-nine-cells-to-a-thousand.src.html</code> by
+  <code>tools/build_net_design_page.py</code> &mdash; edit the source and rebuild, never the
+  output.</p>
+</footer>
+
+</div>

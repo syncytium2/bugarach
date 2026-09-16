@@ -10,6 +10,21 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
+### vm/net-design — DARKROOM claim ACTIVE 2026-09-16: `bugarach/2026-09-16-net-design/`
+- **Status:** **ACTIVE — claimed before writing.** Tony asked for an evaluation of the data and of
+  `tube`, `trace` and the tube variants, and for three new classes of net with diagrams, against
+  the problem that a recording carries anywhere from 9 to 1,050 cells. No murderboard, on his
+  instruction.
+- **Writes:** one new folder only — the proposal page and the closed-form field-size numbers it
+  draws. Nothing existing in the darkroom is touched.
+- ⚠ **Written through the Dropbox connector, not a mount.** This session runs in a remote
+  container with no darkroom mount and no `.venv`; `torch` would not install, so **nothing here
+  is trained, traced or scored**. Every measured number on the page is read from an artifact
+  already committed in this tree, and the three architectures are designs rather than code.
+- **Released when:** the page is in the folder and its repo copy is on a PR.
+
+---
+
 ### Mac/rigid-shift-darkroom-fix — DARKROOM claim RELEASED 2026-09-15: `bugarach/2026-09-15-rigid-shift-look/` and the stray `bugarach/bugarach/`
 - **Status:** **RELEASED — `cossart/` moved into the look folder, the stray folder removed, and the
   note and all six figures byte-identical to the repo copy (checked with `cmp`).** Was ACTIVE,
