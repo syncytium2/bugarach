@@ -34,9 +34,13 @@ participation levels would fit the generator rather than the tissue.
    95% bootstrap interval. **The held-out gain is the number to quote**; the
    selection-set gain is reported beside it so the optimism of choosing is visible.
 
-**Admissible** means under both false-alarm budgets (``bench.MAX_PROBE_PER_MIN`` on both
-backgrounds, ``bench.MAX_FALSE_POSITIVES_PER_HOUR`` on the empty recording) — the same
-rule as the retune. **Best** means F1 averaged over the quiet and busy backgrounds.
+**Admissible** means under all three budgets ``bench.py`` holds: ``MAX_PROBE_PER_MIN`` on both
+backgrounds, ``MAX_FALSE_POSITIVES_PER_HOUR`` on the empty recording, and
+``MAX_PRECISION_DROP`` between the backgrounds.
+
+**LoCo and CoactDetect are searched in their sliding form** (``window_mode="sliding"``, shipped
+2026-09-16): their counts slide and their nulls are exact, so ``thr_step_sec`` and the surrogate
+counts no longer apply and are not searched. **Best** means F1 averaged over the quiet and busy backgrounds.
 
 **What this cannot tell you:** everything is F1 against planted events on the simulator.
 Settings that shape a detector's window (context, integration, bin width) are the ones
@@ -70,7 +74,6 @@ SPACE = {
         "threshold_pctile": [97.0, 98.0, 99.0, 99.5, 99.9, 99.99],
         "bin_width_sec": [0.5, 1.0, 2.0, 3.0, 5.0],
         "context_win_sec": [30.0, 60.0, 120.0, 240.0, 480.0],
-        "thr_step_sec": [5.0, 15.0, 30.0, 60.0],
         "merge_gap_sec": [0.5, 1.0, 2.0, 4.0, 8.0],
     },
     "sync": {
@@ -129,8 +132,7 @@ def valid(det: str, p: dict) -> bool:
     """Settings that make sense together. Rejects a window shorter than what fills it."""
     if det == "loco":
         return (p["bin_width_sec"] * 4 <= p["context_win_sec"]
-                and p["merge_gap_sec"] < p["context_win_sec"]
-                and p["thr_step_sec"] <= p["context_win_sec"])
+                and p["merge_gap_sec"] < p["context_win_sec"])
     if det == "coact":
         return p["int_win_sec"] * 4 <= p["context_win_sec"]
     if det == "rate":
@@ -220,16 +222,21 @@ class Evaluator:
         q, b, n = (self.cache[(k[0], k[1], r)] for r in (*REGIMES, NULL))
         return dict(f1_quiet=q["f1"], f1_busy=b["f1"],
                     mean_f1=(q["f1"] + b["f1"]) / 2,
+                    precision_quiet=q["precision"], precision_busy=b["precision"],
                     probe_quiet=q["probe_per_min"], probe_busy=b["probe_per_min"],
                     null_per_hour=n["null_per_hour"])
 
 
 def admissible(det: str, s: dict) -> bool:
+    """Under all three budgets bench.py holds: the probe on both backgrounds, the empty
+    recording, and the precision swing between the backgrounds."""
     from bugarach import bench
     ceiling = bench.MAX_PROBE_PER_MIN[det]
+    swing = abs(s["precision_quiet"] - s["precision_busy"])
     return (math.isfinite(s["f1_quiet"]) and math.isfinite(s["f1_busy"])
             and s["probe_quiet"] <= ceiling and s["probe_busy"] <= ceiling
-            and s["null_per_hour"] <= bench.MAX_FALSE_POSITIVES_PER_HOUR[det])
+            and s["null_per_hour"] <= bench.MAX_FALSE_POSITIVES_PER_HOUR[det]
+            and math.isfinite(swing) and swing <= bench.MAX_PRECISION_DROP[det])
 
 
 # ------------------------------------------------------------------ the search
