@@ -42,5 +42,5 @@ packages = ["src/bugarach"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 markers = [
-    "serial: asserts on wall-clock time, so CI runs it alone after the parallel run (see ci.yml)",
+    "serial: must not share the machine or the checkout with other tests (wall-clock budgets, the built site/), so CI runs these alone after the parallel run (see ci.yml)",
 ]

@@ -105,11 +105,16 @@ jobs:
         # to keep them together. loadfile keeps each file on one worker, in file order —
         # the order the suite was written against.
         #
-        # -m serial runs AFTER, and alone. A test that asserts on wall-clock time measures
-        # the other three workers as much as the code: the briefing's 3-second budget
-        # read 3.1s on 3.11 with four workers loaded, and is absent from the 25 failed
-        # serial runs before this change. The
-        # budget is right for a session start and stays; the contention is what moves.
+        # -m serial runs AFTER, alone, and in file order. Two kinds of test cannot share
+        # the machine or the checkout, and both were found by this change's own CI runs:
+        #   - a wall-clock budget measures the other workers as much as the code. The
+        #     briefing's 3-second budget read 3.1s on 3.11 with four workers loaded, and
+        #     is absent from the 25 failed serial runs before this change. The budget is
+        #     right for a session start and stays.
+        #   - test_site_pages_render.py deletes and rebuilds the real site/, and
+        #     test_site_withholding.py reads it. Serially the build always comes first;
+        #     split, the reader's figure checks skipped on 3.13 and ran on 3.14 in the
+        #     same run. -rs is what made that visible, and why it stays on.
         # If the marker ever matches nothing, pytest exits 5 and this step goes red
         # rather than quietly running zero tests.
         env:
@@ -118,4 +123,4 @@ jobs:
         run: |
           echo "runner cores: $(nproc)"
           pytest -q -rs -n auto --dist loadfile -m "not serial"
-          pytest -q -m serial
+          pytest -q -rs -m serial
