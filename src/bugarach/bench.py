@@ -1152,6 +1152,32 @@ the probe a gate at selection time, not to corrupt the score.
 `docs/todo/2026-08-16-promiscuity-probe-cannot-fail.md`.
 """
 
+MAX_FALSE_POSITIVES_PER_HOUR = {
+    "rate": 1.0,       # measured: 0.0
+    "sync": 1.0,       # measured: 0.0
+    "loco": 3.0,       # measured: 1.3
+    "cicada": 6.0,     # measured: 3.1
+    "sce": 6.0,        # measured: 3.1
+    "coact": 7.0,      # measured: 4.4
+}
+"""Calls per hour each detector may report on :func:`make_null_recording`, where
+nothing was planted at all (:func:`false_positives_per_hour`).
+
+The **other** false-alarm budget, and not the same one as
+:data:`MAX_PROBE_PER_MIN`: the probe is a dense stretch inside an ordinary bench
+recording, this is a whole recording at the quiet background with nothing planted.
+A detector can pass one and fail the other — binned SCE fires about 6 times a
+minute in the probe at every threshold from 75 to 99.9, while on the empty
+recording its threshold decides nearly everything.
+
+**It lived in ``tests/test_bench.py`` until 2026-09-16 — the same defect the probe
+budget above had until 2026-08-22.** A regression test at the shipped setting
+cannot fail a calibration, so ``tools/retune_operating_points.py`` proposed a
+binned-SCE setting reporting 32 calls an hour here against this budget of 6, and
+found the budget only by failing it. Same convention as the probe: measured
+baselines plus slack, tightened in the commit that improves on them.
+"""
+
 
 class TooPromiscuous(ValueError):
     """The best-scoring point on the sweep fires too often on nothing.
