@@ -89,23 +89,41 @@ recording seeds 1000–1023):
    `origin/eval-field-size-candidates` already has `main` merged in as of `49fed1f`, including #594
    (every simulated recording now carries widths, drawn on a separate random stream, so event times do
    not move). If `main` has moved again, merge it in and say so in the first commit.
-3. **Environment.** Native Windows and WSL both work; nothing in this run needs one over the other,
-   and the Python is cross-OS by project rule (pathlib and environment variables, sapper SAP004). The
-   commands in this file are bash. On native Windows:
-   - the venv's interpreter is `.venv\Scripts\python.exe`, not `.venv/bin/python`;
-   - the commit hooks and `tools/*.sh` are shell scripts, so commit from Git Bash (it ships with Git
-     for Windows) or the gates do not run;
-   - **`--jobs` must be spawn-safe**: Windows starts worker processes by spawning, not forking, so the
-     worker is a top-level function and the entry point sits under `if __name__ == "__main__":`. A
-     tool that forks happily on Linux and the Mac fails here and nowhere else.
+3. **Environment — decided by Tony before anything is installed.** The workstation session's review
+   (2026-09-16) found no WSL distribution and no Python of any kind on the machine, and its session
+   briefing **failed in safe mode**: the hook was killed in its unpushed-work section, so no guard ran.
+   The Python in this repo is cross-OS by rule (pathlib and environment variables, sapper SAP004); the
+   *guards* are not: the session-start hook, the commit hooks, the board guard and `tools/*.sh` are
+   shell scripts, and on native Windows they ran slowly enough to be killed.
 
-   Build a venv if there is none: `python -m venv .venv`, then install with the `dev` extra
-   (`pip install -e ".[dev]"`; it carries torch). Record, in the board block and in the run's
-   `meta.json`: hostname, OS and whether it is WSL, logical CPU count, Python version, torch version.
+   **Recommended: WSL2 with Ubuntu**, because it keeps every guard native and the briefing working.
+   It needs admin rights and probably a reboot.
+   - Clone **inside the Linux filesystem** (`~/Developer/bugarach`), not under `/mnt/c`: file access
+     across that boundary is slow, and the bake-off generates thousands of recordings.
+   - Build the venv there: `python3 -m venv .venv && .venv/bin/pip install -e ".[dev]"` (the `dev`
+     extra carries torch).
+   - The Dropbox mount is on the Windows side. Point `BUGARACH_DARKROOM` at the darkroom's
+     `bugarach` folder under `/mnt/c/Users/<user>/<Dropbox folder>/…` **as an environment variable
+     only**: that path carries a person's name and must never be written into the repo (SAP004).
+     Check it with `.venv/bin/python -c "from bugarach.paths import darkroom; print(darkroom())"`.
+
+   **Fallback: native Windows Python** (for example through `uv`). Faster to install, and then:
+   - the venv's interpreter is `.venv\Scripts\python.exe`, not `.venv/bin/python`;
+   - commit from Git Bash (it ships with Git for Windows), or the gates do not run;
+   - **`--jobs` must be spawn-safe**: Windows starts worker processes by spawning, not forking, so the
+     worker is a top-level function and the entry point sits under `if __name__ == "__main__":`;
+   - expect the session briefing to keep failing, and **check the board by hand** at session start,
+     because nothing will print it for you.
+
+   Either way, record in the board block and in the run's `meta.json`: hostname, OS and whether it is
+   WSL, physical and logical CPU counts, RAM, Python version, torch version.
 4. **Threads.** `src/bugarach/learn/train.py` pins torch to **one intra-op thread** (`THREADS = 1`) and
    says the number is part of the result. Parallelism comes from running **processes**, one per fit.
    Do not raise `THREADS`. Training runs on the CPU; nothing in `train.py` moves a model to a GPU, and a
    GPU would not help without changing the code, which is out of scope.
+   **Run 22 jobs, not 48.** The machine has 24 physical cores and 48 logical ones. Jobs on hyperthread
+   siblings inflate each fit's wall time, and the readout reports those times; that is exactly the
+   flaw in the Mac's numbers. Leave two cores for the session itself.
 5. **Darkroom.** Figures for Tony go to `<darkroom>/bugarach/` through `bugarach.paths.darkroom()`
    (set `BUGARACH_DARKROOM` if the mount is not found). **Claim a new folder in `docs/SESSIONS.md` on
    `main` before the first write** — a one-block PR off `main`, as #595 did for
@@ -119,11 +137,13 @@ at training seed 0 and compare it with the Mac's file:
 ```bash
 PYTHONPATH=src .venv/bin/python -u tools/fair_bakeoff.py --spec docs/learned/generator_spec.json \
   --out <scratch>/repro --seeds-per-fold 6 --null-rates \
-  --learned tube,chorus_norm,line_length
+  --learned tube,chorus_norm,chorus_gain_norm,line_length
 ```
 
-(chorus_norm's seed-0 row lives in `docs/learned/field_size_candidates/chorus_repairs/chorus_norm/bakeoff.json`,
-the rest in `docs/learned/field_size_candidates/bakeoff.json` and `rest_of_registry/line_length/bakeoff.json`.)
+The Mac's seed-0 rows: `tube` and the six hand-written detectors in
+`docs/learned/field_size_candidates/bakeoff.json`; `chorus_norm` and `chorus_gain_norm` in
+`docs/learned/field_size_candidates/chorus_repairs/<model>/bakeoff.json`; `line_length` in
+`docs/learned/field_size_candidates/rest_of_registry/line_length/bakeoff.json`.
 
 - **The six hand-written detectors must match per fold exactly.** They are numpy with fixed seeds.
   If they do not, stop and find out why; nothing downstream is comparable until they do.
@@ -131,8 +151,9 @@ the rest in `docs/learned/field_size_candidates/bakeoff.json` and `rest_of_regis
   larger gap means this machine's training is not the Mac's, and every comparison with the Mac's
   numbers must say so; the tuned-versus-untuned comparison is then made **entirely on this machine**,
   with the untuned baseline rerun here (Gate 3 does that anyway).
-- **Time one fit of each learned model alone** (the logs print `train … s`). The Mac's times ran with 6
-  to 10 jobs sharing it and overstate a lone fit. These times set the budget in the next section.
+- **Time one fit of each learned model alone** (the logs print `train … s`): run the command above
+  with one model at a time, nothing else on the machine. The Mac's times ran with 6 to 10 jobs sharing
+  it and overstate a lone fit. These times are what the budget below is checked against.
 
 ## The design — nested cross-validation, both sides
 
@@ -157,9 +178,32 @@ For each candidate configuration, at training seed 0:
 3. Choose the configuration with the highest inner score. Ties go to fewer parameters, then fewer
    training steps.
 
-Then **refit the chosen configuration on all three training folds** at training seeds 0, 1, 2, 3 and 4,
-and score the held-out fold at each. The chosen configuration may differ between outer folds; that is
+**Half the inner fits are the same fit, so cache fits separately from scores.** An inner fit trains on
+two of the four folds, and only six pairs exist: the pair of folds 0 and 1 is the same fit whether
+fold 2 or fold 3 is the one held out. Key each **fit** (weights and the threshold it picked) by model,
+configuration hash, training seed and the **sorted** tuple of its recording seeds; score it on whichever
+fold needs it, and key each **score** by fit key and scored fold. Always pass recordings to
+`fold_maker` **sorted**: it takes the last two as the threshold-picking set and indexes the rest by
+position, so the same recordings in a different order are a different fit. This halves the tuning
+compute and changes no result.
+
+Then **refit the chosen configuration on the three training folds** at training seeds 0, 1, 2, 3 and
+4, and score the held-out fold at each. The chosen configuration may differ between outer folds; that is
 correct nested CV, and it is reported rather than hidden.
+
+**What a refit actually trains on — say this in the readout.** `train` fits on `min(10, n_fit)`
+recordings, and `fold_maker` hands it recordings by position, offset by the training seed. Checked on
+outer fold 0 (2026-09-16):
+- an **inner fit** gets 12 recordings: it fits on 10, all of the non-threshold ones, and picks its
+  threshold on the last 2;
+- an **outer refit** gets 18: it fits on **10 of the 16** non-threshold recordings and picks its
+  threshold on the same last 2 at every seed. **Which 10 alternates with the seed's parity**: seeds 0,
+  2 and 4 fit on one subset, seeds 1 and 3 on another, and six recordings go unused at any given
+  seed.
+
+So "five training seeds" varies the torch initialisation and two alternating recording subsets. Every
+bake-off in this project has worked this way, including the table this run tests; do not change it
+here, or the tuned numbers stop being comparable with the untuned ones.
 
 Tuning happens at training seed 0 only, to keep the cost down. Say so in the readout.
 
@@ -172,10 +216,23 @@ one knob to a grid. They have no training seed.
 
 ### Search spaces — declared before any result is seen
 
-Learned models: **24 configurations per model, drawn once with `random.Random(20260916)`** from the
-space below, the untuned bake-off setting always included as one of the 24 so tuning can only match or
-beat it on the inner score. If Gate 1's timings say 24 does not fit in one night, reduce **every**
-learned model's count equally, and write the number into `meta.json` before starting.
+Learned models: **24 configurations per model**, the untuned bake-off setting always one of them, so
+tuning can only match or beat it on the inner score. **The draw, exactly**, so anyone can recompute it
+and check it was declared rather than chosen:
+
+1. For each model, list every configuration as `itertools.product` over that model's axes **in the
+   order the table below lists them**: learning rate, training steps, then the model's own axes top to
+   bottom.
+2. Remove the untuned setting from the list.
+3. With a **fresh** `random.Random(20260916)` for each model, take `rng.sample(remaining, 23)`.
+4. Append the untuned setting as the 24th.
+
+Write the 24, in that order, into `meta.json` before the first fit. **Do not cut the 24.** The
+workstation's own estimate for one night: about 330 fits per model as first written, averaging 2.3
+times the untuned 900 steps, roughly 100 CPU hours in all, or 4 to 5 hours at 22 jobs, before the
+inner-fit cache above halves the tuning part. If Gate 1's lone-fit timings contradict that, stop and
+report the new estimate; if any cut is unavoidable, cut every learned model equally and record it in
+`meta.json` before starting.
 
 | model | axis | values | untuned setting |
 |---|---|---|---|
@@ -212,9 +269,13 @@ That is 72 configurations for coact and 54 for loco against 24 per learned model
 detectors get the larger budget**, deliberately, so a learned margin that survives cannot be blamed on
 under-tuning the reference. Say so in the readout.
 
-**Edge-of-grid check, on both sides.** If a chosen value sits at either end of its axis in any outer
-fold, flag it in the output. The project's standing rule is that an optimum at an edge means the search
-stopped while still climbing (`bench.EdgeOfRange`, and `pick_threshold`'s own warning).
+**Edge-of-grid check, on both sides, on axes of three values or more.** If a chosen value sits at
+either end of such an axis in any outer fold, flag it in the output; the project's standing rule is
+that an optimum at an edge means the search stopped while still climbing (`bench.EdgeOfRange`, and
+`pick_threshold`'s own warning). **Two-value axes are exempt** — `roi_width`, `roi_depth`, `width`,
+`max_ratio` — because both of their values are ends and the check would fire on every run. Say in
+the readout that they are unchecked. The training-steps axis starts at the untuned 900, so a chosen
+900 does flag; report it, since it means fewer steps than any tried might have done as well.
 
 ### What to report, per outer fold and overall
 
@@ -243,9 +304,9 @@ copying: `bench.fold_split`, `bench.pool_scores`, `bench.run_detector`, `bench.O
 
 Requirements, each from something that has already cost this project a night:
 
-- **One result file per fit**, keyed by model, configuration hash, outer fold, inner fold (or `outer`)
-  and training seed, written atomically. A rerun skips keys that exist. A crash at hour five must not
-  cost hours one to four.
+- **One result file per fit and one per score**, keyed as in *Half the inner fits are the same fit*
+  above, written atomically (write to a temporary name, then rename). A rerun skips keys that exist. A
+  crash at hour five must not cost hours one to four.
 - **`--jobs N`** runs fits as separate processes. Each process keeps `THREADS = 1`.
 - **`--quick`** shrinks everything for a smoke run: 2 configurations per model, 100 steps, 2 folds of
   2 recordings, the hand-written grids thinned to 2 points per axis.
@@ -257,8 +318,10 @@ Requirements, each from something that has already cost this project a night:
   run on the Mac recorded `git_dirty: true` because it wrote into an untracked repo folder mid-run. Copy
   the final JSONs into `docs/learned/tuned_vs_coact/` in the commit that reports them.
 - **A test**, `tests/test_tune_learned_vs_coact.py`, running `--quick` on one learned model and coact
-  and asserting: no held-out recording seed ever appears in a fit or a threshold pick, the result files
-  resume, and the declared untuned configuration is among the draws. Keep it under about a minute:
+  and asserting: no held-out recording seed ever appears in a fit or a threshold pick; the result files
+  resume; the declared untuned configuration is the 24th draw and the other 23 match the procedure
+  above; and a fit reached from two different outer folds is trained once and scored twice. Keep it
+  under about a minute:
   the suite has no slow marker to hide behind, only `serial` (in `pyproject.toml`), which is for tests
   that must not share the machine.
 
@@ -302,5 +365,12 @@ Open a PR from `tune-learned-vs-coact` against `eval-field-size-candidates` whil
 against `main` once #596 has merged. Do not set auto-merge on a PR whose base is another session's
 branch. Update this handoff's status line below in the same PR.
 
-**Status:** not started. The Mac session's runs finished at 13:27 on 2026-09-16 and it holds no CPU;
-CI on #596 was still running when this was written.
+**Status:** not started. **Reviewed by the workstation session on 2026-09-16** (nothing changed or
+claimed there). Its five corrections are folded in above: the inner-fit cache keyed by sorted
+recordings, the exact configuration draw, the edge check limited to axes of three values or more, what
+a refit trains on (corrected again against the code: 10 of 16 recordings, alternating with the seed's
+parity, not "the extra six feed the threshold"), and `chorus_gain_norm` in Gate 1. Its budget and job
+count are adopted. **Blocked on one decision by Tony: WSL2 or native Windows Python** (Setup step 3).
+After that: claim the local board, create the worktree, run Gate 1 with fits timed one at a time.
+⚠ PR #596 was still open with CI running; if review changes a model's code, results tuned against an
+older commit go stale, which the commit recorded in `meta.json` makes visible.
