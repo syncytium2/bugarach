@@ -5,10 +5,38 @@ tomorrow."* The choice he made: **ship the review with the shipped settings, and
 every declared setting overnight as a measurement** — its result goes into the document, and no
 operating point changes tomorrow.
 
+## 0. Changed at 16:00 — LoCo and CoactDetect now slide
+
+Tony, ~15:50: *"the loco and coact should slide not step"* — filed 2026-09-07
+(`docs/todo/2026-09-07-detector-calls-move-with-the-grid.md`) and never done. Then: *"fix loco
+and coact for tonights run. start with how much slower they are."*
+
+- **The first run (stepped) was stopped at 15:46**, mid stage 1; its files are in
+  `stepped-run-stopped/` in the darkroom folder. Its LoCo results were chasing a smaller and
+  smaller threshold step — the binned detector approximating a slide.
+- **Branch `sliding-loco-coact`** (pushed, **not merged**, merged into `full-search`):
+  `src/bugarach/detectors/sliding.py`, a `window_mode="sliding"` branch in `coact.py` and
+  `loco.py`, shipped `OPERATING_POINTS` switched to sliding, `MAX_PRECISION_DROP` moved into
+  `bench.py`, `tests/test_sliding_window.py`.
+  - The count is an exact step function of distinct ROIs in a trailing window; the null is
+    **computed, not drawn** — each ROI's catch probability under a uniform circular shift in
+    closed form, the null count an exact Poisson-binomial. No random numbers.
+  - **Shift probe, same three real TTX baselines:** both keep **100% of calls at every shift
+    0.1–0.9 s**, matched within 0.05 s (binned: LoCo 47% mean, CoactDetect 0% at that tolerance;
+    64% / 70% at the September probe's 1 s).
+  - **Cost: 2–4× binned**, 0.06–2.2 s per recording.
+  - Binned stays as the MATLAB port; its parity tests pass unchanged.
+- **Not landed, and why:** at their binned-tuned values, sliding LoCo and CoactDetect call more
+  and fail `test_precision_survives_the_regime_shift` (LoCo precision 0.53 busy vs 0.67 quiet,
+  budget 0.10). The overnight search chooses new values under that budget; **set them in
+  `OPERATING_POINTS` before merging**, then CI.
+- **Still binned:** the browser viewer's `loco.js` / `coact.js`, and `docs/forks.md` has no entry
+  yet. Both are owed before this is finished.
+
 ## 1. What is running
 
-- **Process:** detached (`Start-Process`, hidden), PID 28648 on this Windows machine, 44 workers.
-  Started 15:25.
+- **Process:** detached (`Start-Process`, hidden), **PID 34692**, 44 workers, **started 16:06**
+  with LoCo and CoactDetect sliding (the 15:25 stepped run, PID 28648, was stopped).
 - **Command** (from `bugarach-worktrees/full-search`, `PYTHONPATH=src`):
   `python tools/search_all_settings.py --workers 44 --full loco --out "<darkroom>/bugarach/2026-09-16-full-search"`
 - **Output**, all in `<darkroom>/bugarach/2026-09-16-full-search/`:
@@ -71,9 +99,12 @@ false alarms. Tony saw this; no ruling yet.
 ## 4. Tomorrow, in order
 
 1. **Read `search.json` / the figures.** Release the darkroom claim in `docs/SESSIONS.md` (git board)
-   once `stage` is `finished`, and mark `065/full-search` DONE on the local board.
-2. **Land this branch** (`full-search`): the tool, its tests, this handoff moved to
-   `docs/handoffs/` or deleted. It changes no operating point.
+   once `stage` is `finished`, and mark `065/full-search` and `065/sliding-loco-coact` DONE on the
+   local board.
+2. **Land sliding LoCo and CoactDetect** (§0): take their new threshold values from the search
+   (held-out, all three budgets), set them in `OPERATING_POINTS` on `sliding-loco-coact`, add the
+   `docs/forks.md` entry, and merge. This one *does* change operating points — Tony asked for it.
+   Then land `full-search` (tool, tests; this handoff to `docs/handoffs/` or deleted).
 3. **The review document is on branch `detector-review-doc` (PR #587).** Its numbers predate all
    three merges above — locust's widths, binned SCE's scoring, the retuned points. Merge `main` into
    it and regenerate: `tools/make_detector_review.py`. ⚠ Its selection "rounds" come from
