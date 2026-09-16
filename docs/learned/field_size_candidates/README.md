@@ -120,8 +120,19 @@ zero is drawn at 0.1 on the log axis. Seed 1 is
   per hour.
 - **chorus does not train.** At both seeds and in every fold its threshold sat at the bottom of the
   grid (0.0001) and it scored F1 0.125, the same failure `tiny` has always shown. Its *t* values in
-  the JSON are arithmetic on a constant and mean nothing. Whether a lower learning rate changes this
-  is untested; running it would be a separate, labelled experiment.
+  the JSON are arithmetic on a constant and mean nothing.
+  **Why: its per-cell encoder starts deaf, and nothing reaches it to fix that**
+  ([`why_chorus.txt`](why_chorus.txt), from `tools/diagnose_chorus_training.py`). At
+  initialisation one onset moves a cell's vote by at most 0.0003 on a 0-to-1 scale, at three torch
+  seeds; the mean over 32 ROIs then divides that by 32. The gradient reaching the encoder is
+  1.5 × 10⁻⁶ against 0.41 at the head, about 270,000 times smaller. The loss does not fall in 900
+  steps (1.82 at the first step, 1.88 at the last) where `line`'s falls to about 0.1 by step 200.
+  After training the pooled mean differs by less than 0.0001 between event frames and background,
+  and the output probability spans 0.567 to 0.652. **It is not the learning rate**: at 1e-3 the loss
+  curve is the same to two decimals. `line` works because its per-cell stage is built with gain: a
+  smear normalised to peak one, then a sigmoid with gain 8, so one onset moves a vote most of the
+  way from 0 to 1 at the first step. That `tiny`'s identical 0.125 has the same cause is likely and
+  untested.
 - **line, the best learned model at home, carries worst**: 0.005 and 0.145 F1 on Cossart, with
   three and two folds of no hits. A share-of-field-lit statistic thresholded at 32 ROIs does not
   survive 566.

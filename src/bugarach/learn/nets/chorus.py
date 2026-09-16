@@ -17,7 +17,7 @@ from bugarach.learn.nets import _dilated_stack, _torch, receptive_field, registe
 __all__ = ["build_chorus"]
 
 
-@register("chorus", note="DOES NOT TRAIN at lr 1e-2 (docs/learned/field_size_candidates). A -- keeps the cell axis until after the "
+@register("chorus", note="DOES NOT TRAIN: its per-cell encoder starts deaf (docs/learned/field_size_candidates/why_chorus.txt). A -- keeps the cell axis until after the "
                          "temporal filter, then pools it into several symmetric "
                          "statistics instead of one sum",
           roi_width=4, roi_depth=4, head_width=8, head_depth=8, top_m=4)
