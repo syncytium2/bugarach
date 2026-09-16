@@ -117,10 +117,22 @@ td.wrap-cell{white-space:normal; min-width:16rem}
 
 .breakout{max-width:1000px; margin-inline:auto}
 .breakout.wide{max-width:1120px}
+/* draughtsman checked these at 1203px and the 9.5px type floor is what it
+   checked; squeezing them into the prose column undoes that check. */
+.breakout.figwide{max-width:1203px}
 
 figure{margin:0; background:var(--surface); border:1px solid var(--rule);
   border-radius:5px; padding:22px 20px 16px; box-shadow:var(--shadow)}
 figure svg{display:block; width:100%; height:auto; max-width:100%}
+
+/* A draughtsman drawing sets its own type colours as inline styles, which outrank
+   any host rule by design — so it cannot be recoloured for a dark page, and the
+   honest thing is to give it the light plate it was drawn for rather than a dark
+   ground its ink was never chosen against. The BOX fills it does expose, as
+   --ds-* custom properties with light fallbacks, so they stay as they are. */
+.arch{background:#FBFCFB; border:1px solid #E4E8E6; border-radius:4px;
+  padding:14px 12px; color:#1a1a1a; overflow-x:auto}
+.arch svg{min-width:1000px}
 figcaption{font-size:.845rem; color:var(--muted); line-height:1.6; margin-top:14px;
   padding-top:13px; border-top:1px solid var(--rule)}
 figcaption b{color:var(--ink); font-weight:600}
@@ -196,7 +208,8 @@ text.tick.b{fill:var(--surrogate); stroke:none}
       <span class="chip on">two corpora measured</span>
       <span class="chip">six nets evaluated</span>
       <span class="chip">three classes proposed</span>
-      <span class="chip no">nothing trained here</span>
+      <span class="chip on">three nets built and drawn</span>
+      <span class="chip no">none of them trained</span>
       <span class="chip no">no murderboard &mdash; asked for</span>
     </div>
     <p class="byline">
@@ -231,13 +244,23 @@ text.tick.b{fill:var(--surrogate); stroke:none}
       that artifact first.</strong>
     </div>
     <div class="note warn">
-      <strong>&#9888; Nothing here was trained, traced or scored.</strong> This session ran in a
-      container where <code>torch</code> would not install. Every F1, every transfer number and
-      every corpus statistic below is read out of a file already in the tree and cited to it. The
-      two data figures are computed from those files by
-      <code>tools/probe_field_size.py</code>; the five network figures are <strong>schematics</strong>
-      and say so on their own faces. Three of the four networks drawn do not exist, so there is
-      nothing for draughtsman to trace.
+      <strong>&#9888; The three networks exist and are drawn from themselves. None of them has
+      been trained or scored.</strong> Each is one file in <code>src/bugarach/learn/nets/</code>
+      with one <code>@register</code> line, so each is already in the bake-off roster, the lab
+      server's capabilities and the browser's model picker — as <em>registered and not run</em>,
+      which is a state the bake-off records rather than hides. <strong>Figures 3 to 6 are
+      draughtsman drawings of a <code>torch.jit.trace</code> of the built module</strong>: every
+      shape, parameter count, kernel width and dilation in them is read off that trace by node id
+      and none is typed, and <code>draughtsman check</code> proved every traced operation lands in
+      exactly one drawn box before any of them was written. A figure says what a model computes.
+      <strong>It says nothing whatever about whether the model works</strong>, and no number in
+      this document is evidence that any of the three does.
+    </div>
+    <div class="note">
+      Every F1, every transfer number and every corpus statistic below is read out of an artifact
+      already committed in the tree and is cited where it is used. The two data figures are
+      computed from those artifacts by <code>tools/probe_field_size.py</code>. Figure 7 is the one
+      hand-drawn picture here, and it is a map of a design space rather than of a model.
     </div>
   </div>
 </section>
@@ -420,16 +443,18 @@ text.tick.b{fill:var(--surrogate); stroke:none}
   </div>
 </section>
 
-<div class="breakout" style="margin-block:26px 34px">
+<div class="breakout figwide" style="margin-block:26px 34px">
   <figure>
-    <!--FIG3-->
-    <figcaption><b>Figure 3. Where the cell axis ends.</b> The shipped <code>tube</code>, stage by
-    stage, with the unit of what leaves each stage written underneath it. The red box is the
-    reduction: after it, the field size survives only as a divisor, and no later stage can ask how
-    many cells fired. The dashed line is the bypass &mdash; the pooled brightness reaching the head
-    on its own channel, carrying the absolute activity level that the difference-of-Gaussian kernel
-    exists to cancel. <b>Schematic.</b> The traced drawing of the real module is
-    <code>docs/learned/architecture.svg</code>.</figcaption>
+    <div class="arch"><!--FIG3--></div>
+    <figcaption><b>Figure 3. The shipped tube, and where its cell axis ends.</b> Drawn by
+    draughtsman from a trace of <code>build_tube()</code>; this is the front page's own figure.
+    Read it left to right and stop at <b>mean over cells</b>: what leaves that box is
+    <code>1&#215;600</code> where what entered was <code>30&#215;600</code>. After it the field size
+    survives only as a divisor, and no later stage can ask how many cells fired. The lower edge
+    labelled <b>bypass</b> is the pooled brightness reaching the head on its own channel, carrying
+    the absolute activity level the difference-of-Gaussian bank exists to cancel. <b>The guard and
+    the ratio variants both act to the right of that reduction</b>, which is why all four tubes
+    behave alike when the field changes size.</figcaption>
   </figure>
 </div>
 
@@ -682,26 +707,30 @@ text.tick.b{fill:var(--surrogate); stroke:none}
   </div>
 </section>
 
-<div class="breakout" style="margin-block:22px 30px">
+<div class="breakout figwide" style="margin-block:22px 30px">
   <figure>
-    <!--FIG4-->
-    <figcaption><b>Figure 4. chorus.</b> One shared temporal filter is run on every cell&rsquo;s own
-    row, each cell&rsquo;s contribution is bounded, and only then is the field pooled &mdash; into
-    several symmetric statistics rather than one. The head reads how the activity is distributed,
-    not only how much of it there is. <b>Schematic; this network does not exist.</b></figcaption>
+    <div class="arch"><!--FIG4--></div>
+    <figcaption><b>Figure 4. chorus</b>, traced from <code>build_chorus()</code> &mdash; 1,897
+    parameters against <code>tube</code>&rsquo;s 1,149. One shared filter runs on every
+    cell&rsquo;s own row (<code>30&#215;4&#215;600</code> leaves it, so the cell axis is still
+    there), each cell&rsquo;s contribution is bounded, and only then does the field fan into three
+    symmetric statistics and rejoin. Compare the shapes with Figure 3, the shipped tube: the
+    reduction to one trace happens six boxes later and returns twelve channels rather than one.
+    <b>Untrained and unscored.</b></figcaption>
   </figure>
 </div>
 
 <section class="col">
   <div class="stack">
-    <pre><span class="c"># chorus, the part that matters. x is (batch, cells, frames).</span>
-h = phi(x.reshape(B*N, 1, T)).reshape(B, N, C, T)   <span class="c"># shared weights, per cell</span>
-v = h.sigmoid()                                     <span class="c"># bounded: one cell, one vote</span>
-pooled = cat([v.mean(dim=1),                        <span class="c"># the level</span>
-              v.std(dim=1),                         <span class="c"># the spread across the field</span>
-              v.topk(m, dim=1).values.mean(dim=1)], <span class="c"># the loudest m</span>
-             dim=1)                                 <span class="c"># (B, 3C, T): no N</span>
-return rho(pooled)</pre>
+    <pre><span class="c"># src/bugarach/learn/nets/chorus.py, the part that matters.</span>
+h = self.roi(x.reshape(b * n, 1, t))            <span class="c"># shared weights, per cell</span>
+h = torch.sigmoid(h).reshape(b, n, -1, t)      <span class="c"># one cell, one vote (soft)</span>
+srt, _ = h.sort(dim=1, descending=True)
+z = torch.cat([h.mean(dim=1),                  <span class="c"># the level</span>
+               h.std(dim=1, unbiased=False),   <span class="c"># the spread</span>
+               srt[:, :self.m].mean(dim=1)],   <span class="c"># the loudest few</span>
+              dim=1)                           <span class="c"># (b, 3C, t): no n</span>
+return self.head(z).squeeze(1)</pre>
     <p><strong>Why it answers the field-size question.</strong> The mean and the standard deviation
     of a bounded per-cell score both have the same expectation at 9 cells and at 1,050; only their
     sampling error shrinks. The top-<em>m</em> channel is an order statistic, which is the one
@@ -755,25 +784,26 @@ return rho(pooled)</pre>
   </div>
 </section>
 
-<div class="breakout" style="margin-block:22px 30px">
+<div class="breakout figwide" style="margin-block:22px 30px">
   <figure>
-    <!--FIG5-->
-    <figcaption><b>Figure 5. gauge.</b> The feature stage runs twice &mdash; once on the window and
-    once on each of B surrogate copies in which every cell&rsquo;s row has been rolled by its own
-    random offset &mdash; and what leaves the layer is the observation expressed in units of its own
-    null. Downstream stages then read a quantity whose null distribution does not move with the
-    field size, the background rate or the sampling interval. <b>Schematic; this network does not
-    exist.</b></figcaption>
+    <div class="arch"><!--FIG5--></div>
+    <figcaption><b>Figure 5. gauge</b>, traced from <code>build_gauge()</code> &mdash; 1,125
+    parameters, fewer than <code>tube</code>, because the bypass channel is gone and the head is
+    shorter. The difference-of-Gaussian bank is <code>tube</code>&rsquo;s, unchanged, and it feeds
+    two paths: the window itself, and eight surrogate copies in which every cell has been rolled by
+    its own amount. The two meet at <b>standardise against the null</b>, and what leaves that box
+    is the observation in units of its own null. <b>Untrained and unscored.</b></figcaption>
   </figure>
 </div>
 
 <section class="col">
   <div class="stack">
-    <pre><span class="c"># gauge wraps ANY feature stage. `roll_rows` shifts each cell's row on its own.</span>
-f_obs = feat(x)                                     <span class="c"># (B, C, T)</span>
-f_null = stack([feat(roll_rows(x, g)) for g in gens])   <span class="c"># (n_null, B, C, T)</span>
-z = (f_obs - f_null.mean(0)) / (f_null.std(0) + eps)
-return head(z)                                      <span class="c"># downstream is pivotal</span></pre>
+    <pre><span class="c"># src/bugarach/learn/nets/gauge.py. `_shifted` rolls each cell on its own.</span>
+obs  = self._feature(x, kern)                   <span class="c"># (b, n_scales, t)</span>
+null = self._feature(self._shifted(x), kern)   <span class="c"># all 8 draws in one pass</span>
+null = null.reshape(b, self.n_null, -1, t)
+z = (obs - null.mean(1)) / (null.std(1, unbiased=False) + eps)
+return self.head(z).squeeze(1)                 <span class="c"># no bypass; z is pivotal</span></pre>
     <p><strong>Why it is the right shape.</strong> The tube&rsquo;s own screen document identified
     this in one sentence and then did not act on it: area-normalized subtraction &ldquo;cancels the
     <em>mean</em> of a rate change and not its <em>variance</em>.&rdquo; The guard changed where the
@@ -782,9 +812,10 @@ return head(z)                                      <span class="c"># downstream
     constant-false-alarm-rate detection with the reference estimated by resampling instead of by
     assuming a noise model &mdash; and the resampling is a circular shift, which costs one tensor
     operation.</p>
-    <p><strong>What it costs.</strong> B+1 passes through the feature stage. At B&nbsp;=&nbsp;15
-    that is 16&#215;, which on <code>tube</code>&rsquo;s 0.014 s per fold is still a fifth of a
-    second. Two reductions are available and both need measuring rather than assuming: draw the
+    <p><strong>What it costs.</strong> One pass per surrogate draw plus one for the window.
+    The shipped default is <strong>8 draws</strong>, so nine passes through the feature stage,
+    which on <code>tube</code>&rsquo;s 0.014 s per fold is about an eighth of a second &mdash; an
+    estimate from the arithmetic, not a measurement, and the first thing to measure. Two reductions are available and both need measuring rather than assuming: draw the
     surrogate set once per training window instead of once per step, and at inference estimate the
     null on a coarse sliding block rather than per frame.</p>
     <div class="note warn"><strong>&#9888; This class inherits the surrogate problem, whole.</strong>
@@ -821,24 +852,27 @@ return head(z)                                      <span class="c"># downstream
   </div>
 </section>
 
-<div class="breakout" style="margin-block:22px 30px">
+<div class="breakout figwide" style="margin-block:22px 30px">
   <figure>
-    <!--FIG6-->
-    <figcaption><b>Figure 6. quorum.</b> Each cell&rsquo;s onset is scored against that cell&rsquo;s
-    own trailing occupancy, the cells are sorted within each frame, and the decision reads the top
-    <em>m</em> &mdash; where <em>m</em> grows with the field as a power whose exponent is fitted.
-    An exponent of 0 is a fixed count; an exponent of 1 is a fixed fraction; Figure 2 says the
-    answer is in between. <b>Schematic; this network does not exist.</b></figcaption>
+    <div class="arch"><!--FIG6--></div>
+    <figcaption><b>Figure 6. quorum</b>, traced from <code>build_quorum()</code> &mdash; 1,467
+    parameters, of which exactly <b>two</b> are the rule this proposal is about: the coefficient
+    and the exponent in <em>m</em>, in the box with no edge into it, because the only thing it
+    reads from the recording is how many cells there are. An exponent of zero is a fixed count and
+    one is a fixed fraction; Figure 2, the chance floor, says the answer is in between.
+    <b>Untrained and unscored.</b></figcaption>
   </figure>
 </div>
 
 <section class="col">
   <div class="stack">
-    <pre><span class="c"># quorum. `occ` is each cell's own occupancy over a long trailing window.</span>
-s = x * -(occ(x, w).clamp_min(eps).log())        <span class="c"># a quiet cell counts for more</span>
-m = (a * N ** b).ceil().clamp(1, N)              <span class="c"># b fitted, initialised at 0.5</span>
-q = soft_topk_mean(s, m, dim=1)                  <span class="c"># an order statistic over CELLS</span>
-return head(q)</pre>
+    <pre><span class="c"># src/bugarach/learn/nets/quorum.py. `occ` is each cell's own occupancy.</span>
+s = x * -(occ.clamp_min(eps).log())            <span class="c"># a quiet cell counts for more</span>
+srt, _ = s.sort(dim=1, descending=True)        <span class="c"># an order statistic over CELLS</span>
+m = coefficient * float(n) ** self.exponent()  <span class="c"># exponent fitted in [0, 1]</span>
+w = torch.sigmoid((m - rank) / self.temp)      <span class="c"># a soft cut, so m stays a tensor</span>
+return self.head(torch.cat([(srt * w).sum(1, keepdim=True) / w.sum(),
+                            s.mean(1, keepdim=True)], dim=1)).squeeze(1)</pre>
     <p><strong>Why the cell axis and not the time axis.</strong> This is ordered-statistic
     constant-false-alarm-rate detection, and it was already on the list once: V3 of the tube screen,
     the censored surround, which was deliberately left out because an order statistic over a
@@ -846,15 +880,19 @@ return head(q)</pre>
     &mdash; 0.014 s to scan a fold. Over the <em>cell</em> axis the cost is a different shape
     entirely: a partial sort of <em>N</em> values per frame, which is one kernel, not a sliding
     window. That distinction is the reason this is worth running where V3 was not.</p>
-    <p><strong>What it costs.</strong> A top-<em>k</em> over the cell axis per frame. Cheaper than
-    <code>chorus</code>, more than <code>tube</code>. The per-cell occupancy is a box filter and is
-    free.</p>
-    <div class="note warn"><strong>&#9888; Two things to watch.</strong> An order statistic is not
-    differentiable at ties, so this needs a soft sort or a straight-through estimator, and which one
-    is a real choice rather than a detail. And the fitted exponent is a new free parameter, so the
-    tube&rsquo;s own rule applies to it: <em>if a fitted value runs to the end of its range, the
-    model is telling you the range was wrong.</em> Report the range with the value, every
-    time.</div>
+    <p><strong>What it costs.</strong> A full sort over the cell axis per frame &mdash; a sort
+    rather than a top-<em>k</em>, because the depth is a tensor and a top-<em>k</em> needs an
+    integer. Cheaper than <code>chorus</code>, dearer than <code>tube</code>. The per-cell
+    occupancy is a box filter and is free. None of that is measured.</p>
+    <div class="note warn"><strong>&#9888; Two things to watch.</strong> A hard top-<em>m</em> would need an
+    integer depth, and deriving that integer from a trained parameter is exactly the hazard
+    <code>tube</code>&rsquo;s max-pool fell into &mdash; a Python value baked out of a tensor,
+    frozen into the graph and into every figure drawn from it. The build resolves that with
+    sigmoid weights over rank, so <em>m</em> stays a tensor and the gradient reaches the exponent;
+    whether that soft cut costs recall against a hard one is unmeasured. And the fitted exponent is
+    a new free parameter, so the tube&rsquo;s own rule applies to it: <em>if a fitted value runs to
+    the end of its range, the model is telling you the range was wrong.</em> Report the range with
+    the value, every time.</div>
     <p><strong>What it would have to show.</strong> That the fitted exponent lands strictly inside
     its bounds &mdash; if it goes to 0 or 1, one of the two rules was right after all, and that is
     a result worth having either way. That recall holds when a tenth of the cells are made ten times
@@ -939,9 +977,16 @@ return head(q)</pre>
   <div class="stack">
     <h2>What none of this establishes</h2>
     <ul>
-      <li><strong>Nothing here was trained, traced or scored.</strong> Every performance number is
-      read out of an artifact already committed in the tree and named where it is used. The three
-      architectures are designs; no line of them has been written.</li>
+      <li><strong>None of the three has been trained, and none has been scored.</strong> They
+      build, they run at every field size from one cell to a thousand, they trace, and their
+      figures pass coverage. That is the whole of what is established about them. Every
+      performance number on this page belongs to a model that already existed and is cited where
+      it is used.</li>
+      <li><strong>Registering them changes what other runs report.</strong> The bake-off's
+      <code>registered_but_not_run</code> list is no longer empty, the lab server advertises three
+      more architectures and the browser's model picker shows them. That is the registry working
+      as designed &mdash; but a reader who sees a name in a picker will assume it has a number, and
+      it does not.</li>
       <li><strong>The chance floor assumes independent cells at one rate.</strong> Real cells have
       a hard same-cell interval floor and heterogeneous rates, and those two errors push the true
       floor in opposite directions. Figure 2 is an ordering, not an operating point.</li>
@@ -952,6 +997,12 @@ return head(q)</pre>
       shape is inherited from this lab, because that export yielded no usable baseline window, and
       a background is not a detail for detectors that estimate one. Those numbers are the best
       evidence in the tree and they are not publishable.</li>
+      <li><strong>Two of the three carry a traced constant that a figure must not quote.</strong>
+      <code>gauge</code> inherits <code>tube</code>'s max-pool width, which is read from a trained
+      parameter, and <code>quorum</code> bakes the cell count into its exponent. Both are declared
+      architectural in their specs and neither is drawn. It is the same hazard
+      <code>tube</code>'s own figure was caught on, and the reason to state it is that
+      <code>check</code> will keep letting it through as long as the declaration stands.</li>
       <li><strong>No prior-art pass has been run on any of the three.</strong> The set-encoder,
       constant-false-alarm-rate and order-statistic literatures are named because that is where
       each idea comes from, and naming a lineage is not the same as establishing that a
@@ -976,9 +1027,16 @@ return head(q)</pre>
   screen: <code>docs/todo/2026-08-23-four-variants-of-the-tube.md</code>. Preparation facts:
   <code>docs/FOUNDATIONS.md</code> &sect;9.</p>
   <p style="margin-top:14px">Figures 1 and 2 are drawn from the committed assessments by
-  <code>tools/probe_field_size.py</code> and <code>tools/make_field_size_figures.py</code>;
-  Figures 3 to 7 are schematics drawn by <code>tools/make_net_diagrams.py</code> and carry no
-  measured quantity. This page is built from
+  <code>tools/probe_field_size.py</code> and <code>tools/make_field_size_figures.py</code>.
+  <strong>Figures 3 to 6 are drawn by draughtsman</strong> &mdash;
+  <code>python tools/make_architecture_diagram.py --arch chorus</code>, and the same for
+  <code>gauge</code>, <code>quorum</code> and <code>tube</code> &mdash; which traces the built
+  module, checks that every traced operation lands in exactly one drawn box, and only then
+  renders. The specs that say which operations collapse into which box are
+  <code>docs/learned/&lt;name&gt;.spec.json</code> and contain no numbers at all. The suite
+  regenerates all four and byte-compares, so a model moving under its own figure turns it red.
+  Figure 7 is hand-drawn by <code>tools/make_net_diagrams.py</code> and carries no measured
+  quantity. This page is built from
   <code>docs/proposals/2026-09-16-nine-cells-to-a-thousand.src.html</code> by
   <code>tools/build_net_design_page.py</code> &mdash; edit the source and rebuild, never the
   output.</p>

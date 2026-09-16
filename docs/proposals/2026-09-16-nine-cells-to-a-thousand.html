@@ -117,10 +117,22 @@ td.wrap-cell{white-space:normal; min-width:16rem}
 
 .breakout{max-width:1000px; margin-inline:auto}
 .breakout.wide{max-width:1120px}
+/* draughtsman checked these at 1203px and the 9.5px type floor is what it
+   checked; squeezing them into the prose column undoes that check. */
+.breakout.figwide{max-width:1203px}
 
 figure{margin:0; background:var(--surface); border:1px solid var(--rule);
   border-radius:5px; padding:22px 20px 16px; box-shadow:var(--shadow)}
 figure svg{display:block; width:100%; height:auto; max-width:100%}
+
+/* A draughtsman drawing sets its own type colours as inline styles, which outrank
+   any host rule by design — so it cannot be recoloured for a dark page, and the
+   honest thing is to give it the light plate it was drawn for rather than a dark
+   ground its ink was never chosen against. The BOX fills it does expose, as
+   --ds-* custom properties with light fallbacks, so they stay as they are. */
+.arch{background:#FBFCFB; border:1px solid #E4E8E6; border-radius:4px;
+  padding:14px 12px; color:#1a1a1a; overflow-x:auto}
+.arch svg{min-width:1000px}
 figcaption{font-size:.845rem; color:var(--muted); line-height:1.6; margin-top:14px;
   padding-top:13px; border-top:1px solid var(--rule)}
 figcaption b{color:var(--ink); font-weight:600}
@@ -196,7 +208,8 @@ text.tick.b{fill:var(--surrogate); stroke:none}
       <span class="chip on">two corpora measured</span>
       <span class="chip">six nets evaluated</span>
       <span class="chip">three classes proposed</span>
-      <span class="chip no">nothing trained here</span>
+      <span class="chip on">three nets built and drawn</span>
+      <span class="chip no">none of them trained</span>
       <span class="chip no">no murderboard &mdash; asked for</span>
     </div>
     <p class="byline">
@@ -231,13 +244,23 @@ text.tick.b{fill:var(--surrogate); stroke:none}
       that artifact first.</strong>
     </div>
     <div class="note warn">
-      <strong>&#9888; Nothing here was trained, traced or scored.</strong> This session ran in a
-      container where <code>torch</code> would not install. Every F1, every transfer number and
-      every corpus statistic below is read out of a file already in the tree and cited to it. The
-      two data figures are computed from those files by
-      <code>tools/probe_field_size.py</code>; the five network figures are <strong>schematics</strong>
-      and say so on their own faces. Three of the four networks drawn do not exist, so there is
-      nothing for draughtsman to trace.
+      <strong>&#9888; The three networks exist and are drawn from themselves. None of them has
+      been trained or scored.</strong> Each is one file in <code>src/bugarach/learn/nets/</code>
+      with one <code>@register</code> line, so each is already in the bake-off roster, the lab
+      server's capabilities and the browser's model picker — as <em>registered and not run</em>,
+      which is a state the bake-off records rather than hides. <strong>Figures 3 to 6 are
+      draughtsman drawings of a <code>torch.jit.trace</code> of the built module</strong>: every
+      shape, parameter count, kernel width and dilation in them is read off that trace by node id
+      and none is typed, and <code>draughtsman check</code> proved every traced operation lands in
+      exactly one drawn box before any of them was written. A figure says what a model computes.
+      <strong>It says nothing whatever about whether the model works</strong>, and no number in
+      this document is evidence that any of the three does.
+    </div>
+    <div class="note">
+      Every F1, every transfer number and every corpus statistic below is read out of an artifact
+      already committed in the tree and is cited where it is used. The two data figures are
+      computed from those artifacts by <code>tools/probe_field_size.py</code>. Figure 7 is the one
+      hand-drawn picture here, and it is a map of a design space rather than of a model.
     </div>
   </div>
 </section>
@@ -522,71 +545,55 @@ text.tick.b{fill:var(--surrogate); stroke:none}
   </div>
 </section>
 
-<div class="breakout" style="margin-block:26px 34px">
+<div class="breakout figwide" style="margin-block:26px 34px">
   <figure>
-    <svg viewBox="0 0 880 264" role="img" aria-label="The tube pipeline, with the cell axis ending at the mean over cells">
-<defs><marker id="ar" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L8,4 L0,8 z" style="fill:var(--rule-strong)"/></marker></defs>
-<text class="dtitle" x="14" y="20">what all four tubes read</text>
-<rect class="rastbg" x="22" y="42" width="67.0" height="46.0" rx="2"/>
-<rect class="mkr" x="52.0" y="44.0" width="5.0" height="5.0"/>
-<rect class="mkr" x="52.0" y="51.0" width="5.0" height="5.0"/>
-<rect class="mkr" x="52.0" y="58.0" width="5.0" height="5.0"/>
-<rect class="mkr" x="52.0" y="65.0" width="5.0" height="5.0"/>
-<rect class="mkr" x="52.0" y="72.0" width="5.0" height="5.0"/>
-<rect class="mkr" x="52.0" y="79.0" width="5.0" height="5.0"/>
-<rect class="mkr" x="24.0" y="44.0" width="5.0" height="5.0"/>
-<rect class="mkr" x="31.0" y="58.0" width="5.0" height="5.0"/>
-<rect class="mkr" x="38.0" y="79.0" width="5.0" height="5.0"/>
-<rect class="mkr" x="66.0" y="51.0" width="5.0" height="5.0"/>
-<rect class="mkr" x="73.0" y="65.0" width="5.0" height="5.0"/>
-<rect class="mkr" x="80.0" y="72.0" width="5.0" height="5.0"/>
-<rect class="mkr" x="80.0" y="44.0" width="5.0" height="5.0"/>
-<rect class="mkr" x="66.0" y="79.0" width="5.0" height="5.0"/>
-<path class="lanetri" d="M50.5,32.0 L58.5,32.0 L54.5,39.0 z"/>
-<text class="nunit" x="55" y="112" text-anchor="middle">9 cells × frames</text>
-<text class="nunit" x="55" y="124" text-anchor="middle">binary</text>
-<rect class="nbox" x="112.0" y="44" width="134.8" height="52" rx="3"/>
-<text class="nname" x="179.4" y="60.0" text-anchor="middle">widen each</text>
-<text class="nname" x="179.4" y="73.0" text-anchor="middle">onset</text>
-<text class="nunit" x="179.4" y="111.0" text-anchor="middle">cells × frames</text>
-<rect class="nbox warn" x="266.8" y="44" width="134.8" height="52" rx="3"/>
-<text class="nname" x="334.2" y="60.0" text-anchor="middle">mean over</text>
-<text class="nname" x="334.2" y="73.0" text-anchor="middle">cells</text>
-<text class="nunit" x="334.2" y="111.0" text-anchor="middle">ONE trace</text>
-<text class="nunit" x="334.2" y="123.0" text-anchor="middle">a fraction, 0 to 1</text>
-<line class="arw" x1="246.8" y1="70.0" x2="262.8" y2="70.0" marker-end="url(#ar)"/>
-<rect class="nbox" x="421.6" y="44" width="134.8" height="52" rx="3"/>
-<text class="nname" x="489.0" y="60.0" text-anchor="middle">difference-of-</text>
-<text class="nname" x="489.0" y="73.0" text-anchor="middle">Gaussian bank</text>
-<text class="nunit" x="489.0" y="111.0" text-anchor="middle">4 traces</text>
-<text class="nunit" x="489.0" y="123.0" text-anchor="middle">zero-integral</text>
-<line class="arw" x1="401.6" y1="70.0" x2="417.6" y2="70.0" marker-end="url(#ar)"/>
-<rect class="nbox" x="576.4" y="44" width="134.8" height="52" rx="3"/>
-<text class="nname" x="643.8" y="60.0" text-anchor="middle">dilated</text>
-<text class="nname" x="643.8" y="73.0" text-anchor="middle">stack</text>
-<text class="nunit" x="643.8" y="111.0" text-anchor="middle">8 wide, 6 deep</text>
-<line class="arw" x1="556.4" y1="70.0" x2="572.4" y2="70.0" marker-end="url(#ar)"/>
-<rect class="nbox" x="731.2" y="44" width="134.8" height="52" rx="3"/>
-<text class="nname" x="798.6" y="60.0" text-anchor="middle">per-frame</text>
-<text class="nname" x="798.6" y="73.0" text-anchor="middle">score</text>
-<text class="nunit" x="798.6" y="111.0" text-anchor="middle">1 × frames</text>
-<line class="arw" x1="711.2" y1="70.0" x2="727.2" y2="70.0" marker-end="url(#ar)"/>
-<line class="arw" x1="94" y1="70" x2="108" y2="70" marker-end="url(#ar)"/>
-<path class="bypass" d="M401.6,88.0 C489.0,182 489.0,182 572.4,88.0" marker-end="url(#ar)"/>
-<text class="nunit warn" x="489.0" y="196" text-anchor="middle">the bypass — the absolute level, un-normalized</text>
-<text class="flag" x="334.2" y="150" text-anchor="middle">the cell axis ends here</text>
-<text class="nunit" x="334.2" y="164" text-anchor="middle">below this stage the field size is only a divisor,</text>
-<text class="nunit" x="334.2" y="176" text-anchor="middle">and nothing later can ask how many cells fired</text>
-<text class="dnote" x="14" y="226.0">The guard moves a hole into the surround; the ratio replaces the subtraction with a difference of logs. Both act to the RIGHT of</text>
-<text class="dnote" x="14" y="240.0">the flag, so all four variants share this stage and share its behaviour when the field changes size.</text>
-</svg>
-    <figcaption><b>Figure 3. Where the cell axis ends.</b> The shipped <code>tube</code>, stage by
-    stage, with the unit of what leaves each stage written underneath it. The red box is the
-    reduction: after it, the field size survives only as a divisor, and no later stage can ask how
-    many cells fired. The dashed line is the bypass &mdash; the pooled brightness reaching the head
-    on its own channel, carrying the absolute activity level that the difference-of-Gaussian kernel
-    exists to cancel. <b>Schematic.</b> The traced drawing of the real module is
-    <code>docs/learned/architecture.svg</code>.</figcaption>
+    <div class="arch"><svg xmlns="http://www.w3.org/2000/svg" class="draughtsman" role="img" aria-label="tube — a coordinated-event detector" viewBox="0 0 1199.15 343" width="1203px" height="3.58in">
+<title>tube — a coordinated-event detector</title>
+<desc>tube — a coordinated-event detector: 7 stages over 47 traced operations, 1149 parameters.</desc>
+<defs><marker id="ds-arrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0.6 L8 4 L0 7.4 Z" style="fill:currentColor"/></marker></defs>
+<text class="ds-title" x="12" y="15" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:12.0px;font-weight:600;fill:currentColor">tube — a coordinated-event detector</text>
+<text class="ds-subtitle" x="12" y="29" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:currentColor;opacity:0.62">1149 parameters · 30×600 in, 600 out</text>
+<g class="ds-body" transform="translate(0 36)">
+<path class="ds-edge ds-edge-solid" data-from="raster" data-to="widen" d="M107.16 90.01 C134.16 90.01 134.16 90.01 161.16 90.01" style="fill:none;stroke:currentColor;stroke-width:1.4" marker-end="url(#ds-arrow)"/>
+<path class="ds-edge ds-edge-solid" data-from="widen" data-to="mean" d="M284.15 90.01 C311.15 90.01 311.15 90 338.15 90" style="fill:none;stroke:currentColor;stroke-width:1.4" marker-end="url(#ds-arrow)"/>
+<path class="ds-edge ds-edge-solid" data-from="mean" data-to="concat" d="M451.21 90 C478.21 90 478.21 196 505.21 196 C597.1 196 597.1 196 688.99 196 C715.99 196 715.99 90 742.99 90" style="fill:none;stroke:currentColor;stroke-width:1.4" marker-end="url(#ds-arrow)"/><text class="ds-edge-label" x="597.11" y="188" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:currentColor;opacity:0.62">bypass</text>
+<path class="ds-edge ds-edge-solid" data-from="mean" data-to="dog" d="M451.21 90 C478.21 90 478.21 90 505.21 90" style="fill:none;stroke:currentColor;stroke-width:1.4" marker-end="url(#ds-arrow)"/>
+<path class="ds-edge ds-edge-solid" data-from="dog" data-to="concat" d="M688.99 90 C715.99 90 715.99 90 742.99 90" style="fill:none;stroke:currentColor;stroke-width:1.4" marker-end="url(#ds-arrow)"/>
+<path class="ds-edge ds-edge-solid" data-from="concat" data-to="head" d="M836.29 90 C863.29 90 863.29 89.99 890.29 89.99" style="fill:none;stroke:currentColor;stroke-width:1.4" marker-end="url(#ds-arrow)"/>
+<path class="ds-edge ds-edge-solid" data-from="head" data-to="score" d="M1015.39 89.99 C1042.39 89.99 1042.39 89.99 1069.39 89.99" style="fill:none;stroke:currentColor;stroke-width:1.4" marker-end="url(#ds-arrow)"/>
+<g class="ds-stage ds-kind-input" data-stage="raster"><rect x="16" y="54.76" width="91.16" height="70.5" rx="4" style="fill:var(--ds-fill-input,#f2f2f0);stroke:var(--ds-stroke-input,#8a8a86);stroke-width:1.2"/><text x="61.58" y="75.76" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:12.0px;font-weight:600;fill:#1a1a1a">onset raster</text><text x="61.58" y="88.26" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:#5b5b5b">30×600</text><text x="61.58" y="100.76" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:#5b5b5b">cells × frames</text><text x="61.58" y="113.26" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:#5b5b5b">binary</text></g>
+<g class="ds-stage ds-kind-pool" data-stage="widen"><rect x="161.16" y="61.01" width="122.99" height="58" rx="4" style="fill:var(--ds-fill-pool,#e4eef5);stroke:var(--ds-stroke-pool,#6f93a8);stroke-width:1.2"/><text x="222.66" y="82.01" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:12.0px;font-weight:600;fill:#1a1a1a">widen each onset</text><text x="222.66" y="94.51" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:#5b5b5b">max-pool, width fitted</text><text x="222.66" y="107.01" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:#5b5b5b">30×600</text></g>
+<g class="ds-stage ds-kind-reduce" data-stage="mean"><rect x="338.15" y="61" width="113.06" height="58" rx="4" style="fill:var(--ds-fill-reduce,#d5e5ef);stroke:var(--ds-stroke-reduce,#5b829a);stroke-width:1.2"/><text x="394.68" y="82" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:12.0px;font-weight:600;fill:#1a1a1a">mean over cells</text><text x="394.68" y="94.5" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:#5b5b5b">1×600</text><text x="394.68" y="107" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:#5b5b5b">all cells → one trace</text></g>
+<g class="ds-stage ds-kind-kernel" data-stage="dog"><rect x="505.21" y="16" width="183.78" height="148" rx="4" style="fill:var(--ds-fill-kernel,#eef6f1);stroke:var(--ds-stroke-kernel,#7fae99);stroke-width:1.2"/><text x="597.1" y="37" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:12.0px;font-weight:600;fill:#1a1a1a">difference-of-Gaussian bank</text><text x="597.1" y="49.5" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:#5b5b5b">26 ops, 12 learned params</text><text x="597.1" y="62" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:#5b5b5b">kernel 257, area-normalized</text><text x="597.1" y="74.5" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:#5b5b5b">4×600</text><text x="597.1" y="87" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:#5b5b5b">channels × frames, from here on</text><rect class="ds-lane" x="512.21" y="95" width="169.78" height="12" rx="2" style="fill:#ffffff;fill-opacity:0.62;stroke:var(--ds-stroke-kernel,#7fae99);stroke-width:0.7"/><text x="597.1" y="103.5" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:#1a1a1a">σ₁</text><rect class="ds-lane" x="512.21" y="110" width="169.78" height="12" rx="2" style="fill:#ffffff;fill-opacity:0.62;stroke:var(--ds-stroke-kernel,#7fae99);stroke-width:0.7"/><text x="597.1" y="118.5" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:#1a1a1a">σ₂</text><rect class="ds-lane" x="512.21" y="125" width="169.78" height="12" rx="2" style="fill:#ffffff;fill-opacity:0.62;stroke:var(--ds-stroke-kernel,#7fae99);stroke-width:0.7"/><text x="597.1" y="133.5" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:#1a1a1a">σ₃</text><rect class="ds-lane" x="512.21" y="140" width="169.78" height="12" rx="2" style="fill:#ffffff;fill-opacity:0.62;stroke:var(--ds-stroke-kernel,#7fae99);stroke-width:0.7"/><text x="597.1" y="148.5" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:#1a1a1a">σ₄</text></g>
+<g class="ds-stage ds-kind-concat" data-stage="concat"><rect x="742.99" y="61" width="93.3" height="58" rx="4" style="fill:var(--ds-fill-concat,#ece6f2);stroke:var(--ds-stroke-concat,#8d7ba8);stroke-width:1.2"/><text x="789.64" y="82" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:12.0px;font-weight:600;fill:#1a1a1a">concatenate</text><text x="789.64" y="94.5" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:#5b5b5b">5 channels</text><text x="789.64" y="107" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:#5b5b5b">5×600</text></g>
+<g class="ds-stage ds-kind-stack" data-stage="head"><rect x="890.29" y="54.74" width="125.1" height="70.5" rx="4" style="fill:var(--ds-fill-stack,#d1e4d9);stroke:var(--ds-stroke-stack,#5a8a71);stroke-width:1.2"/><text x="952.84" y="75.74" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:12.0px;font-weight:600;fill:#1a1a1a">dilated conv stack</text><text x="952.84" y="88.24" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:#5b5b5b">kernel 3, dilation 1 → 32</text><text x="952.84" y="100.74" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:#5b5b5b">1128 params</text><text x="952.84" y="113.24" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:#5b5b5b">8×600</text></g>
+<g class="ds-stage ds-kind-output" data-stage="score"><rect x="1069.39" y="48.49" width="113.77" height="83" rx="4" style="fill:var(--ds-fill-output,#f2f2f0);stroke:var(--ds-stroke-output,#8a8a86);stroke-width:1.2"/><text x="1126.27" y="69.49" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:12.0px;font-weight:600;fill:#1a1a1a">per-frame score</text><text x="1126.27" y="81.99" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:#5b5b5b">kernel 1</text><text x="1126.27" y="94.49" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:#5b5b5b">9 params</text><text x="1126.27" y="106.99" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:#5b5b5b">600</text><text x="1126.27" y="119.49" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:#5b5b5b">one score per frame</text></g>
+</g>
+<g class="ds-legend">
+<rect class="ds-legend-swatch ds-kind-kernel" x="12" y="262" width="9" height="9" rx="2" style="fill:var(--ds-fill-kernel,#eef6f1);stroke:var(--ds-stroke-kernel,#7fae99);stroke-width:1"/>
+<text class="ds-legend-label" x="27" y="270.5" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;font-weight:600;fill:currentColor">Convolution</text>
+<text class="ds-legend-share" x="86.17" y="270.5" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:currentColor;opacity:0.62">38 ops, 1140 params</text>
+<rect class="ds-legend-swatch ds-kind-pool" x="12" y="277" width="9" height="9" rx="2" style="fill:var(--ds-fill-pool,#e4eef5);stroke:var(--ds-stroke-pool,#6f93a8);stroke-width:1"/>
+<text class="ds-legend-label" x="27" y="285.5" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;font-weight:600;fill:currentColor">Pool / reduce</text>
+<text class="ds-legend-share" x="92.33" y="285.5" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:currentColor;opacity:0.62">6 ops</text>
+<rect class="ds-legend-swatch ds-kind-concat" x="12" y="292" width="9" height="9" rx="2" style="fill:var(--ds-fill-concat,#ece6f2);stroke:var(--ds-stroke-concat,#8d7ba8);stroke-width:1"/>
+<text class="ds-legend-label" x="27" y="300.5" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;font-weight:600;fill:currentColor">Concat / join</text>
+<text class="ds-legend-share" x="88.97" y="300.5" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:currentColor;opacity:0.62">1 op</text>
+<rect class="ds-legend-swatch ds-kind-input" x="12" y="307" width="9" height="9" rx="2" style="fill:var(--ds-fill-input,#f2f2f0);stroke:var(--ds-stroke-input,#8a8a86);stroke-width:1"/>
+<text class="ds-legend-label" x="27" y="315.5" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;font-weight:600;fill:currentColor">Input / output</text>
+<text class="ds-legend-share" x="91.79" y="315.5" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:currentColor;opacity:0.62">2 ops, 9 params</text>
+</g>
+<text class="ds-caption" x="12" y="331.5" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:currentColor;opacity:0.62">Drawn by draughtsman from a torch.jit.trace of the built model; every quantity is read off the trace by node id, none typed by hand. The kernel bank collapses 26 traced operations.</text>
+</svg></div>
+    <figcaption><b>Figure 3. The shipped tube, and where its cell axis ends.</b> Drawn by
+    draughtsman from a trace of <code>build_tube()</code>; this is the front page's own figure.
+    Read it left to right and stop at <b>mean over cells</b>: what leaves that box is
+    <code>1&#215;600</code> where what entered was <code>30&#215;600</code>. After it the field size
+    survives only as a divisor, and no later stage can ask how many cells fired. The lower edge
+    labelled <b>bypass</b> is the pooled brightness reaching the head on its own channel, carrying
+    the absolute activity level the difference-of-Gaussian bank exists to cancel. <b>The guard and
+    the ratio variants both act to the right of that reduction</b>, which is why all four tubes
+    behave alike when the field changes size.</figcaption>
   </figure>
 </div>
 
@@ -844,9 +851,9 @@ text.tick.b{fill:var(--surrogate); stroke:none}
 <text class="nunit" x="440.0" y="146" text-anchor="middle">how the field is summarized into one number</text>
 <text class="axl" x="614.4" y="128" text-anchor="middle">B</text>
 <text class="nunit" x="614.4" y="146" text-anchor="middle">what the number is compared against</text>
-<text class="dnote" x="14" y="176.0">The shipped tube fills all three: A is nothing, C is a mean, and B is a difference of Gaussians in time. The 2×2 that produced</text>
-<text class="dnote" x="14" y="190.0">the guard and the ratio variants moved B alone, twice, which is why none of the four can differ from the others when the field</text>
-<text class="dnote" x="14" y="204.0">changes size. Each proposal moves one axis, with the shipped tube as the control, re-measured in the same run.</text>
+<text class="dnote" x="14" y="190.0">The shipped tube fills all three: A is nothing, C is a mean, and B is a difference of Gaussians in time. The 2×2 that produced</text>
+<text class="dnote" x="14" y="204.0">the guard and the ratio variants moved B alone, twice, which is why none of the four can differ from the others when the field</text>
+<text class="dnote" x="14" y="218.0">changes size. Each proposal moves one axis, with the shipped tube as the control, re-measured in the same run.</text>
 </svg>
     <figcaption><b>Figure 7. Three axes, one skeleton.</b> Every coordination net in this project
     fills the same three slots: what each cell contributes before anything is pooled (A), how the
@@ -873,71 +880,78 @@ text.tick.b{fill:var(--surrogate); stroke:none}
   </div>
 </section>
 
-<div class="breakout" style="margin-block:22px 30px">
+<div class="breakout figwide" style="margin-block:22px 30px">
   <figure>
-    <svg viewBox="0 0 880 226" role="img" aria-label="chorus: a per-cell filter, a bounded vote, and a symmetric pool that returns several statistics">
-<defs><marker id="ar" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L8,4 L0,8 z" style="fill:var(--rule-strong)"/></marker></defs>
-<text class="dtitle" x="14" y="20">chorus — the cell axis survives the filter</text>
-<rect class="rastbg" x="14" y="42" width="67.0" height="46.0" rx="2"/>
-<rect class="mkr" x="44.0" y="44.0" width="5.0" height="5.0"/>
-<rect class="mkr" x="44.0" y="51.0" width="5.0" height="5.0"/>
-<rect class="mkr" x="44.0" y="58.0" width="5.0" height="5.0"/>
-<rect class="mkr" x="44.0" y="65.0" width="5.0" height="5.0"/>
-<rect class="mkr" x="44.0" y="72.0" width="5.0" height="5.0"/>
-<rect class="mkr" x="44.0" y="79.0" width="5.0" height="5.0"/>
-<rect class="mkr" x="16.0" y="44.0" width="5.0" height="5.0"/>
-<rect class="mkr" x="23.0" y="58.0" width="5.0" height="5.0"/>
-<rect class="mkr" x="30.0" y="79.0" width="5.0" height="5.0"/>
-<rect class="mkr" x="58.0" y="51.0" width="5.0" height="5.0"/>
-<rect class="mkr" x="65.0" y="65.0" width="5.0" height="5.0"/>
-<rect class="mkr" x="72.0" y="72.0" width="5.0" height="5.0"/>
-<rect class="mkr" x="72.0" y="44.0" width="5.0" height="5.0"/>
-<rect class="mkr" x="58.0" y="79.0" width="5.0" height="5.0"/>
-<path class="lanetri" d="M42.5,32.0 L50.5,32.0 L46.5,39.0 z"/>
-<rect class="nbox" x="112.0" y="44" width="173.5" height="52" rx="3"/>
-<text class="nname" x="198.8" y="60.0" text-anchor="middle">one shared filter,</text>
-<text class="nname" x="198.8" y="73.0" text-anchor="middle">run on each cell</text>
-<text class="nunit" x="198.8" y="111.0" text-anchor="middle">cells × channels × frames</text>
-<rect class="nbox" x="305.5" y="44" width="173.5" height="52" rx="3"/>
-<text class="nname" x="392.2" y="60.0" text-anchor="middle">bounded vote</text>
-<text class="nname" x="392.2" y="73.0" text-anchor="middle">per cell</text>
-<text class="nunit" x="392.2" y="111.0" text-anchor="middle">one cell, one vote</text>
-<line class="arw" x1="285.5" y1="70.0" x2="301.5" y2="70.0" marker-end="url(#ar)"/>
-<rect class="nbox on" x="499.0" y="44" width="173.5" height="52" rx="3"/>
-<text class="nname" x="585.8" y="60.0" text-anchor="middle">symmetric pool</text>
-<text class="nname" x="585.8" y="73.0" text-anchor="middle">over cells</text>
-<text class="nunit" x="585.8" y="111.0" text-anchor="middle">mean · spread · top-m</text>
-<text class="nunit" x="585.8" y="123.0" text-anchor="middle">the SHAPE, not the level</text>
-<line class="arw" x1="479.0" y1="70.0" x2="495.0" y2="70.0" marker-end="url(#ar)"/>
-<rect class="nbox" x="692.5" y="44" width="173.5" height="52" rx="3"/>
-<text class="nname" x="779.2" y="60.0" text-anchor="middle">read the</text>
-<text class="nname" x="779.2" y="73.0" text-anchor="middle">pooled shape</text>
-<text class="nunit" x="779.2" y="111.0" text-anchor="middle">1 × frames</text>
-<line class="arw" x1="672.5" y1="70.0" x2="688.5" y2="70.0" marker-end="url(#ar)"/>
-<line class="arw" x1="94" y1="70" x2="108" y2="70" marker-end="url(#ar)"/>
-<text class="flag on" x="585.8" y="148" text-anchor="middle">every cell is still a cell here</text>
-<text class="dnote" x="14" y="176.0">The pool returns several symmetric functions instead of one sum, so the head sees how the activity is DISTRIBUTED across the</text>
-<text class="dnote" x="14" y="190.0">field and not only how much of it there is. Mean and top-m both carry over a change of field size; a sum does not. This is the</text>
-<text class="dnote" x="14" y="204.0">Deep Sets shape (Zaheer and colleagues, 2017), and `tiny` is already a member of the family — which is the reason to re-run</text>
-<text class="dnote" x="14" y="218.0">`tiny` under control before building anything new.</text>
-</svg>
-    <figcaption><b>Figure 4. chorus.</b> One shared temporal filter is run on every cell&rsquo;s own
-    row, each cell&rsquo;s contribution is bounded, and only then is the field pooled &mdash; into
-    several symmetric statistics rather than one. The head reads how the activity is distributed,
-    not only how much of it there is. <b>Schematic; this network does not exist.</b></figcaption>
+    <div class="arch"><svg xmlns="http://www.w3.org/2000/svg" class="draughtsman" role="img" aria-label="chorus — the cell axis survives the filter" viewBox="0 0 1177.07 626.02" width="1203px" height="6.66in">
+<title>chorus — the cell axis survives the filter</title>
+<desc>chorus — the cell axis survives the filter: 11 stages over 38 traced operations, 1897 parameters.</desc>
+<defs><marker id="ds-arrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0.6 L8 4 L0 7.4 Z" style="fill:currentColor"/></marker></defs>
+<text class="ds-title" x="12" y="15" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:12.0px;font-weight:600;fill:currentColor">chorus — the cell axis survives the filter</text>
+<text class="ds-subtitle" x="12" y="29" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:currentColor;opacity:0.62">1897 parameters · 1×30×600 in, 1×600 out</text>
+<g class="ds-body" transform="translate(0 36)">
+<path class="ds-edge ds-edge-solid" data-from="raster" data-to="fold" d="M134.16 51.25 C161.16 51.25 161.16 67.51 188.16 67.51" style="fill:none;stroke:currentColor;stroke-width:1.4" marker-end="url(#ds-arrow)"/>
+<path class="ds-edge ds-edge-solid" data-from="fold" data-to="roi" d="M348.39 67.51 C375.39 67.51 375.39 91.96 402.39 91.96" style="fill:none;stroke:currentColor;stroke-width:1.4" marker-end="url(#ds-arrow)"/>
+<path class="ds-edge ds-edge-solid" data-from="roi" data-to="vote" d="M540.91 91.96 C567.91 91.96 567.91 124.66 594.91 124.66" style="fill:none;stroke:currentColor;stroke-width:1.4" marker-end="url(#ds-arrow)"/>
+<path class="ds-edge ds-edge-solid" data-from="vote" data-to="unfold" d="M726.62 124.66 C753.62 124.66 753.62 165.72 780.62 165.72" style="fill:none;stroke:currentColor;stroke-width:1.4" marker-end="url(#ds-arrow)"/>
+<path class="ds-edge ds-edge-solid" data-from="unfold" data-to="mean" d="M959.44 165.72 C988.33 165.72 988.33 131.22 1017.22 131.22" style="fill:none;stroke:currentColor;stroke-width:1.4" marker-end="url(#ds-arrow)"/>
+<path class="ds-edge ds-edge-solid" data-from="unfold" data-to="spread" d="M959.44 165.72 C986.44 165.72 986.44 215.22 1013.44 215.22" style="fill:none;stroke:currentColor;stroke-width:1.4" marker-end="url(#ds-arrow)"/>
+<path class="ds-edge ds-edge-solid" data-from="unfold" data-to="top" d="M959.44 165.72 C987.79 165.72 987.79 299.22 1016.15 299.22" style="fill:none;stroke:currentColor;stroke-width:1.4" marker-end="url(#ds-arrow)"/>
+<path class="ds-edge ds-edge-solid" data-from="mean" data-to="concat" d="M1130.29 131.22 L1152.07 131.22 Q1161.07 131.22 1161.07 140.22 L1161.07 349.22 Q1161.07 358.22 1152.07 358.22 L25 358.22 Q16 358.22 16 367.22 L16 446.77 Q16 455.77 25 455.77 L43 455.77" style="fill:none;stroke:currentColor;stroke-width:1.4" marker-end="url(#ds-arrow)"/>
+<path class="ds-edge ds-edge-solid" data-from="spread" data-to="concat" d="M1134.07 215.22 L1152.07 215.22 Q1161.07 215.22 1161.07 224.22 L1161.07 349.22 Q1161.07 358.22 1152.07 358.22 L25 358.22 Q16 358.22 16 367.22 L16 446.77 Q16 455.77 25 455.77 L43 455.77" style="fill:none;stroke:currentColor;stroke-width:1.4" marker-end="url(#ds-arrow)"/>
+<path class="ds-edge ds-edge-solid" data-from="top" data-to="concat" d="M1131.35 299.22 L1152.07 299.22 Q1161.07 299.22 1161.07 308.22 L1161.07 349.22 Q1161.07 358.22 1152.07 358.22 L25 358.22 Q16 358.22 16 367.22 L16 446.77 Q16 455.77 25 455.77 L43 455.77" style="fill:none;stroke:currentColor;stroke-width:1.4" marker-end="url(#ds-arrow)"/>
+<path class="ds-edge ds-edge-solid" data-from="concat" data-to="head" d="M178.95 455.77 C205.95 455.77 205.95 438.41 232.95 438.41" style="fill:none;stroke:currentColor;stroke-width:1.4" marker-end="url(#ds-arrow)"/>
+<path class="ds-edge ds-edge-solid" data-from="head" data-to="score" d="M360.45 438.41 C387.45 438.41 387.45 429.72 414.45 429.72" style="fill:none;stroke:currentColor;stroke-width:1.4" marker-end="url(#ds-arrow)"/>
+<g class="ds-stage ds-kind-input" data-stage="raster"><rect x="43" y="16" width="91.16" height="70.5" rx="4" style="fill:var(--ds-fill-input,#f2f2f0);stroke:var(--ds-stroke-input,#8a8a86);stroke-width:1.2"/><text x="88.58" y="37" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:12.0px;font-weight:600;fill:#1a1a1a">onset raster</text><text x="88.58" y="49.5" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:#5b5b5b">1×30×600</text><text x="88.58" y="62" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:#5b5b5b">cells × frames</text><text x="88.58" y="74.5" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:#5b5b5b">binary</text></g>
+<g class="ds-stage ds-kind-op" data-stage="fold"><rect x="188.16" y="32.26" width="160.23" height="70.5" rx="4" style="fill:var(--ds-fill-op,#f0f0ef);stroke:var(--ds-stroke-op,#8a8a86);stroke-width:1.2"/><text x="268.28" y="53.26" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:12.0px;font-weight:600;fill:#1a1a1a">one cell at a time</text><text x="268.28" y="65.76" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:#5b5b5b">30×1×600</text><text x="268.28" y="78.26" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:#5b5b5b">each cell on its own row</text><text x="268.28" y="90.76" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:#5b5b5b">the cell axis moved, not reduced</text></g>
+<g class="ds-stage ds-kind-stack" data-stage="roi"><rect x="402.39" y="50.46" width="138.52" height="83" rx="4" style="fill:var(--ds-fill-stack,#d1e4d9);stroke:var(--ds-stroke-stack,#5a8a71);stroke-width:1.2"/><text x="471.65" y="71.46" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:12.0px;font-weight:600;fill:#1a1a1a">shared filter, per cell</text><text x="471.65" y="83.96" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:#5b5b5b">kernel 3, dilation 1 → 8</text><text x="471.65" y="96.46" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:#5b5b5b">192 params</text><text x="471.65" y="108.96" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:#5b5b5b">30×4×600</text><text x="471.65" y="121.46" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:#5b5b5b">cells × channels × frames</text></g>
+<g class="ds-stage ds-kind-op" data-stage="vote"><rect x="594.91" y="89.41" width="131.71" height="70.5" rx="4" style="fill:var(--ds-fill-op,#f0f0ef);stroke:var(--ds-stroke-op,#8a8a86);stroke-width:1.2"/><text x="660.77" y="110.41" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:12.0px;font-weight:600;fill:#1a1a1a">bounded vote</text><text x="660.77" y="122.91" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:#5b5b5b">30×4×600</text><text x="660.77" y="135.41" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:#5b5b5b">cells × channels × frames</text><text x="660.77" y="147.91" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:#5b5b5b">one cell, one vote (soft)</text></g>
+<g class="ds-stage ds-kind-op" data-stage="unfold"><rect x="780.62" y="136.72" width="178.81" height="58" rx="4" style="fill:var(--ds-fill-op,#f0f0ef);stroke:var(--ds-stroke-op,#8a8a86);stroke-width:1.2"/><text x="870.03" y="157.72" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:12.0px;font-weight:600;fill:#1a1a1a">cells back on their own axis</text><text x="870.03" y="170.22" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:#5b5b5b">1×30×4×600</text><text x="870.03" y="182.72" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:#5b5b5b">batch × cells × channels × frames</text></g>
+<g class="ds-stage ds-kind-reduce" data-stage="mean"><rect x="1017.22" y="102.22" width="113.06" height="58" rx="4" style="fill:var(--ds-fill-reduce,#d5e5ef);stroke:var(--ds-stroke-reduce,#5b829a);stroke-width:1.2"/><text x="1073.75" y="123.22" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:12.0px;font-weight:600;fill:#1a1a1a">mean over cells</text><text x="1073.75" y="135.72" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:#5b5b5b">1×4×600</text><text x="1073.75" y="148.22" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:#5b5b5b">the level</text></g>
+<g class="ds-stage ds-kind-reduce" data-stage="spread"><rect x="1013.44" y="186.22" width="120.63" height="58" rx="4" style="fill:var(--ds-fill-reduce,#d5e5ef);stroke:var(--ds-stroke-reduce,#5b829a);stroke-width:1.2"/><text x="1073.75" y="207.22" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:12.0px;font-weight:600;fill:#1a1a1a">spread over cells</text><text x="1073.75" y="219.72" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:#5b5b5b">1×4×600</text><text x="1073.75" y="232.22" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:#5b5b5b">how uneven the field is</text></g>
+<g class="ds-stage ds-kind-reduce" data-stage="top"><rect x="1016.15" y="270.22" width="115.2" height="58" rx="4" style="fill:var(--ds-fill-reduce,#d5e5ef);stroke:var(--ds-stroke-reduce,#5b829a);stroke-width:1.2"/><text x="1073.75" y="291.22" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:12.0px;font-weight:600;fill:#1a1a1a">the loudest cells</text><text x="1073.75" y="303.72" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:#5b5b5b">1×4×600</text><text x="1073.75" y="316.22" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:#5b5b5b">sort, then the first few</text></g>
+<g class="ds-stage ds-kind-concat" data-stage="concat"><rect x="43" y="420.52" width="135.95" height="70.5" rx="4" style="fill:var(--ds-fill-concat,#ece6f2);stroke:var(--ds-stroke-concat,#8d7ba8);stroke-width:1.2"/><text x="110.97" y="441.52" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:12.0px;font-weight:600;fill:#1a1a1a">concatenate</text><text x="110.97" y="454.02" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:#5b5b5b">12 channels</text><text x="110.97" y="466.52" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:#5b5b5b">1×12×600</text><text x="110.97" y="479.02" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:#5b5b5b">batch × channels × frames</text></g>
+<g class="ds-stage ds-kind-stack" data-stage="head"><rect x="232.95" y="403.16" width="127.5" height="70.5" rx="4" style="fill:var(--ds-fill-stack,#d1e4d9);stroke:var(--ds-stroke-stack,#5a8a71);stroke-width:1.2"/><text x="296.7" y="424.16" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:12.0px;font-weight:600;fill:#1a1a1a">dilated conv stack</text><text x="296.7" y="436.66" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:#5b5b5b">kernel 3, dilation 1 → 128</text><text x="296.7" y="449.16" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:#5b5b5b">1696 params</text><text x="296.7" y="461.66" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:#5b5b5b">1×8×600</text></g>
+<g class="ds-stage ds-kind-output" data-stage="score"><rect x="414.45" y="388.22" width="113.77" height="83" rx="4" style="fill:var(--ds-fill-output,#f2f2f0);stroke:var(--ds-stroke-output,#8a8a86);stroke-width:1.2"/><text x="471.33" y="409.22" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:12.0px;font-weight:600;fill:#1a1a1a">per-frame score</text><text x="471.33" y="421.72" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:#5b5b5b">kernel 1</text><text x="471.33" y="434.22" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:#5b5b5b">9 params</text><text x="471.33" y="446.72" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:#5b5b5b">1×600</text><text x="471.33" y="459.22" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:#5b5b5b">one score per frame</text></g>
+</g>
+<g class="ds-legend">
+<rect class="ds-legend-swatch ds-kind-stack" x="12" y="551.02" width="9" height="9" rx="2" style="fill:var(--ds-fill-stack,#d1e4d9);stroke:var(--ds-stroke-stack,#5a8a71);stroke-width:1"/>
+<text class="ds-legend-label" x="27" y="559.52" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;font-weight:600;fill:currentColor">Convolution</text>
+<text class="ds-legend-share" x="86.17" y="559.52" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:currentColor;opacity:0.62">25 ops, 1888 params</text>
+<rect class="ds-legend-swatch ds-kind-reduce" x="12" y="566.02" width="9" height="9" rx="2" style="fill:var(--ds-fill-reduce,#d5e5ef);stroke:var(--ds-stroke-reduce,#5b829a);stroke-width:1"/>
+<text class="ds-legend-label" x="27" y="574.52" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;font-weight:600;fill:currentColor">Pool / reduce</text>
+<text class="ds-legend-share" x="92.33" y="574.52" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:currentColor;opacity:0.62">6 ops</text>
+<rect class="ds-legend-swatch ds-kind-concat" x="12" y="581.02" width="9" height="9" rx="2" style="fill:var(--ds-fill-concat,#ece6f2);stroke:var(--ds-stroke-concat,#8d7ba8);stroke-width:1"/>
+<text class="ds-legend-label" x="27" y="589.52" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;font-weight:600;fill:currentColor">Concat / join</text>
+<text class="ds-legend-share" x="88.97" y="589.52" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:currentColor;opacity:0.62">1 op</text>
+<rect class="ds-legend-swatch ds-kind-input" x="12" y="596.02" width="9" height="9" rx="2" style="fill:var(--ds-fill-input,#f2f2f0);stroke:var(--ds-stroke-input,#8a8a86);stroke-width:1"/>
+<text class="ds-legend-label" x="27" y="604.52" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;font-weight:600;fill:currentColor">Input / output</text>
+<text class="ds-legend-share" x="91.79" y="604.52" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:currentColor;opacity:0.62">2 ops, 9 params</text>
+<rect class="ds-legend-swatch ds-kind-op" x="12" y="611.02" width="9" height="9" rx="2" style="fill:var(--ds-fill-op,#f0f0ef);stroke:var(--ds-stroke-op,#8a8a86);stroke-width:1"/>
+<text class="ds-legend-label" x="27" y="619.52" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;font-weight:600;fill:currentColor">Other</text>
+<text class="ds-legend-share" x="58.19" y="619.52" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:currentColor;opacity:0.62">4 ops</text>
+</g>
+</svg></div>
+    <figcaption><b>Figure 4. chorus</b>, traced from <code>build_chorus()</code> &mdash; 1,897
+    parameters against <code>tube</code>&rsquo;s 1,149. One shared filter runs on every
+    cell&rsquo;s own row (<code>30&#215;4&#215;600</code> leaves it, so the cell axis is still
+    there), each cell&rsquo;s contribution is bounded, and only then does the field fan into three
+    symmetric statistics and rejoin. Compare the shapes with Figure 3, the shipped tube: the
+    reduction to one trace happens six boxes later and returns twelve channels rather than one.
+    <b>Untrained and unscored.</b></figcaption>
   </figure>
 </div>
 
 <section class="col">
   <div class="stack">
-    <pre><span class="c"># chorus, the part that matters. x is (batch, cells, frames).</span>
-h = phi(x.reshape(B*N, 1, T)).reshape(B, N, C, T)   <span class="c"># shared weights, per cell</span>
-v = h.sigmoid()                                     <span class="c"># bounded: one cell, one vote</span>
-pooled = cat([v.mean(dim=1),                        <span class="c"># the level</span>
-              v.std(dim=1),                         <span class="c"># the spread across the field</span>
-              v.topk(m, dim=1).values.mean(dim=1)], <span class="c"># the loudest m</span>
-             dim=1)                                 <span class="c"># (B, 3C, T): no N</span>
-return rho(pooled)</pre>
+    <pre><span class="c"># src/bugarach/learn/nets/chorus.py, the part that matters.</span>
+h = self.roi(x.reshape(b * n, 1, t))            <span class="c"># shared weights, per cell</span>
+h = torch.sigmoid(h).reshape(b, n, -1, t)      <span class="c"># one cell, one vote (soft)</span>
+srt, _ = h.sort(dim=1, descending=True)
+z = torch.cat([h.mean(dim=1),                  <span class="c"># the level</span>
+               h.std(dim=1, unbiased=False),   <span class="c"># the spread</span>
+               srt[:, :self.m].mean(dim=1)],   <span class="c"># the loudest few</span>
+              dim=1)                           <span class="c"># (b, 3C, t): no n</span>
+return self.head(z).squeeze(1)</pre>
     <p><strong>Why it answers the field-size question.</strong> The mean and the standard deviation
     of a bounded per-cell score both have the same expectation at 9 cells and at 1,050; only their
     sampling error shrinks. The top-<em>m</em> channel is an order statistic, which is the one
@@ -991,110 +1005,65 @@ return rho(pooled)</pre>
   </div>
 </section>
 
-<div class="breakout" style="margin-block:22px 30px">
+<div class="breakout figwide" style="margin-block:22px 30px">
   <figure>
-    <svg viewBox="0 0 880 340" role="img" aria-label="gauge: the feature stage is run on the window and on B surrogate copies, and the output is standardized against them">
-<defs><marker id="ar" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L8,4 L0,8 z" style="fill:var(--rule-strong)"/></marker></defs>
-<text class="dtitle" x="14" y="20">gauge — the bar is built from the recording being judged</text>
-<rect class="rastbg" x="14" y="48" width="67.0" height="46.0" rx="2"/>
-<rect class="mkr" x="44.0" y="50.0" width="5.0" height="5.0"/>
-<rect class="mkr" x="44.0" y="57.0" width="5.0" height="5.0"/>
-<rect class="mkr" x="44.0" y="64.0" width="5.0" height="5.0"/>
-<rect class="mkr" x="44.0" y="71.0" width="5.0" height="5.0"/>
-<rect class="mkr" x="44.0" y="78.0" width="5.0" height="5.0"/>
-<rect class="mkr" x="44.0" y="85.0" width="5.0" height="5.0"/>
-<rect class="mkr" x="16.0" y="50.0" width="5.0" height="5.0"/>
-<rect class="mkr" x="23.0" y="64.0" width="5.0" height="5.0"/>
-<rect class="mkr" x="30.0" y="85.0" width="5.0" height="5.0"/>
-<rect class="mkr" x="58.0" y="57.0" width="5.0" height="5.0"/>
-<rect class="mkr" x="65.0" y="71.0" width="5.0" height="5.0"/>
-<rect class="mkr" x="72.0" y="78.0" width="5.0" height="5.0"/>
-<rect class="mkr" x="72.0" y="50.0" width="5.0" height="5.0"/>
-<rect class="mkr" x="58.0" y="85.0" width="5.0" height="5.0"/>
-<path class="lanetri" d="M42.5,38.0 L50.5,38.0 L46.5,45.0 z"/>
-<text class="nunit" x="48" y="118" text-anchor="middle">the window</text>
-<rect class="rastbg" x="14" y="150" width="43.6" height="30.400000000000002" rx="2"/>
-<rect class="mkr" x="38.0" y="156.4" width="2.4" height="2.4"/>
-<rect class="mkr" x="38.0" y="160.8" width="2.4" height="2.4"/>
-<rect class="mkr" x="38.0" y="165.2" width="2.4" height="2.4"/>
-<rect class="mkr" x="38.0" y="169.6" width="2.4" height="2.4"/>
-<rect class="mkr" x="38.0" y="174.0" width="2.4" height="2.4"/>
-<rect class="mkr" x="38.0" y="152.0" width="2.4" height="2.4"/>
-<rect class="mkr" x="16.0" y="152.0" width="2.4" height="2.4"/>
-<rect class="mkr" x="20.4" y="160.8" width="2.4" height="2.4"/>
-<rect class="mkr" x="24.8" y="174.0" width="2.4" height="2.4"/>
-<rect class="mkr" x="42.4" y="156.4" width="2.4" height="2.4"/>
-<rect class="mkr" x="46.8" y="165.2" width="2.4" height="2.4"/>
-<rect class="mkr" x="51.2" y="169.6" width="2.4" height="2.4"/>
-<rect class="mkr" x="51.2" y="152.0" width="2.4" height="2.4"/>
-<rect class="mkr" x="42.4" y="174.0" width="2.4" height="2.4"/>
-<rect class="rastbg" x="14" y="180" width="43.6" height="30.400000000000002" rx="2"/>
-<rect class="mkr" x="46.8" y="190.8" width="2.4" height="2.4"/>
-<rect class="mkr" x="46.8" y="195.2" width="2.4" height="2.4"/>
-<rect class="mkr" x="46.8" y="199.6" width="2.4" height="2.4"/>
-<rect class="mkr" x="46.8" y="204.0" width="2.4" height="2.4"/>
-<rect class="mkr" x="46.8" y="182.0" width="2.4" height="2.4"/>
-<rect class="mkr" x="46.8" y="186.4" width="2.4" height="2.4"/>
-<rect class="mkr" x="20.4" y="186.4" width="2.4" height="2.4"/>
-<rect class="mkr" x="24.8" y="195.2" width="2.4" height="2.4"/>
-<rect class="mkr" x="29.2" y="182.0" width="2.4" height="2.4"/>
-<rect class="mkr" x="46.8" y="190.8" width="2.4" height="2.4"/>
-<rect class="mkr" x="51.2" y="199.6" width="2.4" height="2.4"/>
-<rect class="mkr" x="16.0" y="204.0" width="2.4" height="2.4"/>
-<rect class="mkr" x="16.0" y="186.4" width="2.4" height="2.4"/>
-<rect class="mkr" x="46.8" y="182.0" width="2.4" height="2.4"/>
-<rect class="rastbg" x="14" y="210" width="43.6" height="30.400000000000002" rx="2"/>
-<rect class="mkr" x="16.0" y="225.2" width="2.4" height="2.4"/>
-<rect class="mkr" x="16.0" y="229.6" width="2.4" height="2.4"/>
-<rect class="mkr" x="16.0" y="234.0" width="2.4" height="2.4"/>
-<rect class="mkr" x="16.0" y="212.0" width="2.4" height="2.4"/>
-<rect class="mkr" x="16.0" y="216.4" width="2.4" height="2.4"/>
-<rect class="mkr" x="16.0" y="220.8" width="2.4" height="2.4"/>
-<rect class="mkr" x="24.8" y="220.8" width="2.4" height="2.4"/>
-<rect class="mkr" x="29.2" y="229.6" width="2.4" height="2.4"/>
-<rect class="mkr" x="33.6" y="216.4" width="2.4" height="2.4"/>
-<rect class="mkr" x="51.2" y="225.2" width="2.4" height="2.4"/>
-<rect class="mkr" x="16.0" y="234.0" width="2.4" height="2.4"/>
-<rect class="mkr" x="20.4" y="212.0" width="2.4" height="2.4"/>
-<rect class="mkr" x="20.4" y="220.8" width="2.4" height="2.4"/>
-<rect class="mkr" x="51.2" y="216.4" width="2.4" height="2.4"/>
-<text class="nunit" x="48" y="248" text-anchor="middle">B copies, each cell|rolled on its own</text>
-<rect class="nbox" x="128.0" y="50.0" width="168.0" height="52" rx="3"/>
-<text class="nname" x="212.0" y="80.0" text-anchor="middle">any feature stage</text>
-<rect class="nbox" x="128.0" y="200.0" width="168.0" height="52" rx="3"/>
-<text class="nname" x="212.0" y="230.0" text-anchor="middle">the same stage, shared weights</text>
-<line class="arw" x1="94" y1="76" x2="124.0" y2="76" marker-end="url(#ar)"/>
-<line class="arw" x1="94" y1="226" x2="124.0" y2="226" marker-end="url(#ar)"/>
-<rect class="nbox on" x="340.0" y="116.0" width="196.0" height="68" rx="3"/>
-<text class="nname" x="438.0" y="140.0" text-anchor="middle">standardize</text>
-<text class="nunit" x="438.0" y="158.0" text-anchor="middle">(observed &#8722; null mean) &#247; null spread</text>
-<path class="arw" d="M296.0,76.0 L326.0,76.0 L326.0,142.0 L336.0,142.0" marker-end="url(#ar)" fill="none"/>
-<path class="arw" d="M296.0,226.0 L326.0,226.0 L326.0,150.0 L336.0,150.0" marker-end="url(#ar)" fill="none"/>
-<rect class="nbox" x="570.0" y="116.0" width="296.0" height="68" rx="3"/>
-<text class="nname" x="718.0" y="146.0" text-anchor="middle">head → score</text>
-<line class="arw" x1="536.0" y1="146.0" x2="566.0" y2="146.0" marker-end="url(#ar)"/>
-<text class="flag on" x="438.0" y="196.0" text-anchor="middle">what leaves here has the same null at 9 cells and at 1,050</text>
-<text class="dnote" x="14" y="286.0">A roll is one tensor operation and costs nothing; what it costs is B extra passes through the feature stage, and that is the</text>
-<text class="dnote" x="14" y="300.0">number to measure first. The shift destroys timing ACROSS cells and preserves each cell’s own rate and intervals exactly — which</text>
-<text class="dnote" x="14" y="314.0">is why the same surrogate is under scrutiny elsewhere in this project, and why this one has to clear the same leak screen before</text>
-<text class="dnote" x="14" y="328.0">it is trusted.</text>
-</svg>
-    <figcaption><b>Figure 5. gauge.</b> The feature stage runs twice &mdash; once on the window and
-    once on each of B surrogate copies in which every cell&rsquo;s row has been rolled by its own
-    random offset &mdash; and what leaves the layer is the observation expressed in units of its own
-    null. Downstream stages then read a quantity whose null distribution does not move with the
-    field size, the background rate or the sampling interval. <b>Schematic; this network does not
-    exist.</b></figcaption>
+    <div class="arch"><svg xmlns="http://www.w3.org/2000/svg" class="draughtsman" role="img" aria-label="gauge — the bar is built from the recording being judged" viewBox="0 0 995.14 562.72" width="1203px" height="7.09in">
+<title>gauge — the bar is built from the recording being judged</title>
+<desc>gauge — the bar is built from the recording being judged: 8 stages over 75 traced operations, 1125 parameters.</desc>
+<defs><marker id="ds-arrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0.6 L8 4 L0 7.4 Z" style="fill:currentColor"/></marker></defs>
+<text class="ds-title" x="12" y="15" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:12.0px;font-weight:600;fill:currentColor">gauge — the bar is built from the recording being judged</text>
+<text class="ds-subtitle" x="12" y="29" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:currentColor;opacity:0.62">1125 parameters · 1×30×600 in, 1×600 out</text>
+<g class="ds-body" transform="translate(0 36)">
+<path class="ds-edge ds-edge-solid" data-from="raster" data-to="observed" d="M180.47 102.97 C230.62 102.97 230.62 150.68 280.78 150.68" style="fill:none;stroke:currentColor;stroke-width:1.4" marker-end="url(#ds-arrow)"/>
+<path class="ds-edge ds-edge-solid" data-from="raster" data-to="shift" d="M180.47 102.97 C236.99 102.97 236.99 66.68 293.5 66.68" style="fill:none;stroke:currentColor;stroke-width:1.4" marker-end="url(#ds-arrow)"/>
+<path class="ds-edge ds-edge-solid" data-from="bank" data-to="observed" d="M226.78 231.97 C253.78 231.97 253.78 150.68 280.78 150.68" style="fill:none;stroke:currentColor;stroke-width:1.4" marker-end="url(#ds-arrow)"/><text class="ds-edge-label" x="253.78" y="183.33" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:currentColor;opacity:0.62">kernels</text>
+<path class="ds-edge ds-edge-solid" data-from="shift" data-to="null" d="M452.51 66.68 C485.88 66.68 485.88 54.33 519.24 54.33" style="fill:none;stroke:currentColor;stroke-width:1.4" marker-end="url(#ds-arrow)"/>
+<path class="ds-edge ds-edge-solid" data-from="bank" data-to="null" d="M226.78 231.97 C253.78 231.97 253.78 211.68 280.78 211.68 C373.01 211.68 373.01 211.68 465.24 211.68 C492.24 211.68 492.24 54.33 519.24 54.33" style="fill:none;stroke:currentColor;stroke-width:1.4" marker-end="url(#ds-arrow)"/><text class="ds-edge-label" x="427.34" y="203.68" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:currentColor;opacity:0.62">the same kernels</text>
+<path class="ds-edge ds-edge-solid" data-from="observed" data-to="standardize" d="M465.24 150.68 C492.24 150.68 492.24 115.33 519.24 115.33 C619.27 115.33 619.27 115.33 719.3 115.33 C746.3 115.33 746.3 45 773.3 45" style="fill:none;stroke:currentColor;stroke-width:1.4" marker-end="url(#ds-arrow)"/>
+<path class="ds-edge ds-edge-solid" data-from="null" data-to="standardize" d="M719.3 54.33 C746.3 54.33 746.3 45 773.3 45" style="fill:none;stroke:currentColor;stroke-width:1.4" marker-end="url(#ds-arrow)"/>
+<path class="ds-edge ds-edge-solid" data-from="standardize" data-to="head" d="M952.14 45 L970.14 45 Q979.14 45 979.14 54 L979.14 320.72 Q979.14 329.72 970.14 329.72 L25 329.72 Q16 329.72 16 338.72 L16 395.35 Q16 404.35 25 404.35 L43 404.35" style="fill:none;stroke:currentColor;stroke-width:1.4" marker-end="url(#ds-arrow)"/>
+<path class="ds-edge ds-edge-solid" data-from="head" data-to="score" d="M168.1 404.35 C195.1 404.35 195.1 401.22 222.1 401.22" style="fill:none;stroke:currentColor;stroke-width:1.4" marker-end="url(#ds-arrow)"/>
+<g class="ds-stage ds-kind-input" data-stage="raster"><rect x="89.31" y="67.72" width="91.16" height="70.5" rx="4" style="fill:var(--ds-fill-input,#f2f2f0);stroke:var(--ds-stroke-input,#8a8a86);stroke-width:1.2"/><text x="134.89" y="88.72" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:12.0px;font-weight:600;fill:#1a1a1a">onset raster</text><text x="134.89" y="101.22" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:#5b5b5b">1×30×600</text><text x="134.89" y="113.72" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:#5b5b5b">cells × frames</text><text x="134.89" y="126.22" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:#5b5b5b">binary</text></g>
+<g class="ds-stage ds-kind-kernel" data-stage="bank"><rect x="43" y="164.22" width="183.78" height="135.5" rx="4" style="fill:var(--ds-fill-kernel,#eef6f1);stroke:var(--ds-stroke-kernel,#7fae99);stroke-width:1.2"/><text x="134.89" y="185.22" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:12.0px;font-weight:600;fill:#1a1a1a">difference-of-Gaussian bank</text><text x="134.89" y="197.72" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:#5b5b5b">12 learned params</text><text x="134.89" y="210.22" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:#5b5b5b">kernel 257, area-normalised</text><text x="134.89" y="222.72" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:#5b5b5b">4×1×257</text><rect class="ds-lane" x="50" y="230.72" width="169.78" height="12" rx="2" style="fill:#ffffff;fill-opacity:0.62;stroke:var(--ds-stroke-kernel,#7fae99);stroke-width:0.7"/><text x="134.89" y="239.22" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:#1a1a1a">σ₁</text><rect class="ds-lane" x="50" y="245.72" width="169.78" height="12" rx="2" style="fill:#ffffff;fill-opacity:0.62;stroke:var(--ds-stroke-kernel,#7fae99);stroke-width:0.7"/><text x="134.89" y="254.22" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:#1a1a1a">σ₂</text><rect class="ds-lane" x="50" y="260.72" width="169.78" height="12" rx="2" style="fill:#ffffff;fill-opacity:0.62;stroke:var(--ds-stroke-kernel,#7fae99);stroke-width:0.7"/><text x="134.89" y="269.22" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:#1a1a1a">σ₃</text><rect class="ds-lane" x="50" y="275.72" width="169.78" height="12" rx="2" style="fill:#ffffff;fill-opacity:0.62;stroke:var(--ds-stroke-kernel,#7fae99);stroke-width:0.7"/><text x="134.89" y="284.22" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:#1a1a1a">σ₄</text></g>
+<g class="ds-stage ds-kind-reduce" data-stage="observed"><rect x="280.78" y="121.68" width="184.46" height="58" rx="4" style="fill:var(--ds-fill-reduce,#d5e5ef);stroke:var(--ds-stroke-reduce,#5b829a);stroke-width:1.2"/><text x="373.01" y="142.68" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:12.0px;font-weight:600;fill:#1a1a1a">widen, mean over cells, filter</text><text x="373.01" y="155.18" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:#5b5b5b">1×4×600</text><text x="373.01" y="167.68" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:#5b5b5b">the window itself</text></g>
+<g class="ds-stage ds-kind-op" data-stage="shift"><rect x="293.5" y="37.68" width="159.01" height="58" rx="4" style="fill:var(--ds-fill-op,#f0f0ef);stroke:var(--ds-stroke-op,#8a8a86);stroke-width:1.2"/><text x="373.01" y="58.68" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:12.0px;font-weight:600;fill:#1a1a1a">roll every cell on its own</text><text x="373.01" y="71.18" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:#5b5b5b">8×30×600</text><text x="373.01" y="83.68" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:#5b5b5b">draws × cells × frames</text></g>
+<g class="ds-stage ds-kind-reduce" data-stage="null"><rect x="519.24" y="25.33" width="200.06" height="58" rx="4" style="fill:var(--ds-fill-reduce,#d5e5ef);stroke:var(--ds-stroke-reduce,#5b829a);stroke-width:1.2"/><text x="619.27" y="46.33" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:12.0px;font-weight:600;fill:#1a1a1a">the same stages, on the copies</text><text x="619.27" y="58.83" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:#5b5b5b">8×4×600</text><text x="619.27" y="71.33" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:#5b5b5b">draws × channels × frames</text></g>
+<g class="ds-stage ds-kind-reduce" data-stage="standardize"><rect x="773.3" y="16" width="178.84" height="58" rx="4" style="fill:var(--ds-fill-reduce,#d5e5ef);stroke:var(--ds-stroke-reduce,#5b829a);stroke-width:1.2"/><text x="862.72" y="37" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:12.0px;font-weight:600;fill:#1a1a1a">standardise against the null</text><text x="862.72" y="49.5" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:#5b5b5b">1×4×600</text><text x="862.72" y="62" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:#5b5b5b">(observed − null mean) ÷ null spread</text></g>
+<g class="ds-stage ds-kind-stack" data-stage="head"><rect x="43" y="369.1" width="125.1" height="70.5" rx="4" style="fill:var(--ds-fill-stack,#d1e4d9);stroke:var(--ds-stroke-stack,#5a8a71);stroke-width:1.2"/><text x="105.55" y="390.1" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:12.0px;font-weight:600;fill:#1a1a1a">dilated conv stack</text><text x="105.55" y="402.6" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:#5b5b5b">kernel 3, dilation 1 → 32</text><text x="105.55" y="415.1" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:#5b5b5b">1104 params</text><text x="105.55" y="427.6" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:#5b5b5b">1×8×600</text></g>
+<g class="ds-stage ds-kind-output" data-stage="score"><rect x="222.1" y="359.72" width="113.77" height="83" rx="4" style="fill:var(--ds-fill-output,#f2f2f0);stroke:var(--ds-stroke-output,#8a8a86);stroke-width:1.2"/><text x="278.98" y="380.72" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:12.0px;font-weight:600;fill:#1a1a1a">per-frame score</text><text x="278.98" y="393.22" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:#5b5b5b">kernel 1</text><text x="278.98" y="405.72" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:#5b5b5b">9 params</text><text x="278.98" y="418.22" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:#5b5b5b">1×600</text><text x="278.98" y="430.72" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:#5b5b5b">one score per frame</text></g>
+</g>
+<g class="ds-legend">
+<rect class="ds-legend-swatch ds-kind-kernel" x="12" y="502.72" width="9" height="9" rx="2" style="fill:var(--ds-fill-kernel,#eef6f1);stroke:var(--ds-stroke-kernel,#7fae99);stroke-width:1"/>
+<text class="ds-legend-label" x="27" y="511.22" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;font-weight:600;fill:currentColor">Convolution</text>
+<text class="ds-legend-share" x="86.17" y="511.22" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:currentColor;opacity:0.62">37 ops, 1116 params</text>
+<rect class="ds-legend-swatch ds-kind-reduce" x="12" y="517.72" width="9" height="9" rx="2" style="fill:var(--ds-fill-reduce,#d5e5ef);stroke:var(--ds-stroke-reduce,#5b829a);stroke-width:1"/>
+<text class="ds-legend-label" x="27" y="526.22" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;font-weight:600;fill:currentColor">Pool / reduce</text>
+<text class="ds-legend-share" x="92.33" y="526.22" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:currentColor;opacity:0.62">20 ops</text>
+<rect class="ds-legend-swatch ds-kind-input" x="12" y="532.72" width="9" height="9" rx="2" style="fill:var(--ds-fill-input,#f2f2f0);stroke:var(--ds-stroke-input,#8a8a86);stroke-width:1"/>
+<text class="ds-legend-label" x="27" y="541.22" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;font-weight:600;fill:currentColor">Input / output</text>
+<text class="ds-legend-share" x="91.79" y="541.22" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:currentColor;opacity:0.62">2 ops, 9 params</text>
+<rect class="ds-legend-swatch ds-kind-op" x="12" y="547.72" width="9" height="9" rx="2" style="fill:var(--ds-fill-op,#f0f0ef);stroke:var(--ds-stroke-op,#8a8a86);stroke-width:1"/>
+<text class="ds-legend-label" x="27" y="556.22" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;font-weight:600;fill:currentColor">Other</text>
+<text class="ds-legend-share" x="58.19" y="556.22" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:currentColor;opacity:0.62">16 ops</text>
+</g>
+</svg></div>
+    <figcaption><b>Figure 5. gauge</b>, traced from <code>build_gauge()</code> &mdash; 1,125
+    parameters, fewer than <code>tube</code>, because the bypass channel is gone and the head is
+    shorter. The difference-of-Gaussian bank is <code>tube</code>&rsquo;s, unchanged, and it feeds
+    two paths: the window itself, and eight surrogate copies in which every cell has been rolled by
+    its own amount. The two meet at <b>standardise against the null</b>, and what leaves that box
+    is the observation in units of its own null. <b>Untrained and unscored.</b></figcaption>
   </figure>
 </div>
 
 <section class="col">
   <div class="stack">
-    <pre><span class="c"># gauge wraps ANY feature stage. `roll_rows` shifts each cell's row on its own.</span>
-f_obs = feat(x)                                     <span class="c"># (B, C, T)</span>
-f_null = stack([feat(roll_rows(x, g)) for g in gens])   <span class="c"># (n_null, B, C, T)</span>
-z = (f_obs - f_null.mean(0)) / (f_null.std(0) + eps)
-return head(z)                                      <span class="c"># downstream is pivotal</span></pre>
+    <pre><span class="c"># src/bugarach/learn/nets/gauge.py. `_shifted` rolls each cell on its own.</span>
+obs  = self._feature(x, kern)                   <span class="c"># (b, n_scales, t)</span>
+null = self._feature(self._shifted(x), kern)   <span class="c"># all 8 draws in one pass</span>
+null = null.reshape(b, self.n_null, -1, t)
+z = (obs - null.mean(1)) / (null.std(1, unbiased=False) + eps)
+return self.head(z).squeeze(1)                 <span class="c"># no bypass; z is pivotal</span></pre>
     <p><strong>Why it is the right shape.</strong> The tube&rsquo;s own screen document identified
     this in one sentence and then did not act on it: area-normalized subtraction &ldquo;cancels the
     <em>mean</em> of a rate change and not its <em>variance</em>.&rdquo; The guard changed where the
@@ -1103,9 +1072,10 @@ return head(z)                                      <span class="c"># downstream
     constant-false-alarm-rate detection with the reference estimated by resampling instead of by
     assuming a noise model &mdash; and the resampling is a circular shift, which costs one tensor
     operation.</p>
-    <p><strong>What it costs.</strong> B+1 passes through the feature stage. At B&nbsp;=&nbsp;15
-    that is 16&#215;, which on <code>tube</code>&rsquo;s 0.014 s per fold is still a fifth of a
-    second. Two reductions are available and both need measuring rather than assuming: draw the
+    <p><strong>What it costs.</strong> One pass per surrogate draw plus one for the window.
+    The shipped default is <strong>8 draws</strong>, so nine passes through the feature stage,
+    which on <code>tube</code>&rsquo;s 0.014 s per fold is about an eighth of a second &mdash; an
+    estimate from the arithmetic, not a measurement, and the first thing to measure. Two reductions are available and both need measuring rather than assuming: draw the
     surrogate set once per training window instead of once per step, and at inference estimate the
     null on a coarse sliding block rather than per frame.</p>
     <div class="note warn"><strong>&#9888; This class inherits the surrogate problem, whole.</strong>
@@ -1142,70 +1112,70 @@ return head(z)                                      <span class="c"># downstream
   </div>
 </section>
 
-<div class="breakout" style="margin-block:22px 30px">
+<div class="breakout figwide" style="margin-block:22px 30px">
   <figure>
-    <svg viewBox="0 0 880 230" role="img" aria-label="quorum: per-cell surprise, a sort over cells, and a top-m pool whose m grows with the field size at a fitted exponent">
-<defs><marker id="ar" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L8,4 L0,8 z" style="fill:var(--rule-strong)"/></marker></defs>
-<text class="dtitle" x="14" y="20">quorum — a rank, not a count and not a fraction</text>
-<rect class="rastbg" x="14" y="42" width="67.0" height="46.0" rx="2"/>
-<rect class="mkr" x="44.0" y="44.0" width="5.0" height="5.0"/>
-<rect class="mkr" x="44.0" y="51.0" width="5.0" height="5.0"/>
-<rect class="mkr" x="44.0" y="58.0" width="5.0" height="5.0"/>
-<rect class="mkr" x="44.0" y="65.0" width="5.0" height="5.0"/>
-<rect class="mkr" x="44.0" y="72.0" width="5.0" height="5.0"/>
-<rect class="mkr" x="44.0" y="79.0" width="5.0" height="5.0"/>
-<rect class="mkr" x="16.0" y="44.0" width="5.0" height="5.0"/>
-<rect class="mkr" x="23.0" y="58.0" width="5.0" height="5.0"/>
-<rect class="mkr" x="30.0" y="79.0" width="5.0" height="5.0"/>
-<rect class="mkr" x="58.0" y="51.0" width="5.0" height="5.0"/>
-<rect class="mkr" x="65.0" y="65.0" width="5.0" height="5.0"/>
-<rect class="mkr" x="72.0" y="72.0" width="5.0" height="5.0"/>
-<rect class="mkr" x="72.0" y="44.0" width="5.0" height="5.0"/>
-<rect class="mkr" x="58.0" y="79.0" width="5.0" height="5.0"/>
-<path class="lanetri" d="M42.5,32.0 L50.5,32.0 L46.5,39.0 z"/>
-<rect class="nbox" x="112.0" y="44" width="173.5" height="52" rx="3"/>
-<text class="nname" x="198.8" y="60.0" text-anchor="middle">score each cell</text>
-<text class="nname" x="198.8" y="73.0" text-anchor="middle">against ITS OWN rate</text>
-<text class="nunit" x="198.8" y="111.0" text-anchor="middle">a surprise per cell</text>
-<text class="nunit" x="198.8" y="123.0" text-anchor="middle">busy cells are worth less</text>
-<rect class="nbox" x="305.5" y="44" width="173.5" height="52" rx="3"/>
-<text class="nname" x="392.2" y="60.0" text-anchor="middle">sort the cells</text>
-<text class="nname" x="392.2" y="73.0" text-anchor="middle">within each frame</text>
-<text class="nunit" x="392.2" y="111.0" text-anchor="middle">an ordered column</text>
-<line class="arw" x1="285.5" y1="70.0" x2="301.5" y2="70.0" marker-end="url(#ar)"/>
-<rect class="nbox on" x="499.0" y="44" width="173.5" height="52" rx="3"/>
-<text class="nname" x="585.8" y="60.0" text-anchor="middle">take the top m,</text>
-<text class="nname" x="585.8" y="73.0" text-anchor="middle">m = a × N to the power b</text>
-<text class="nunit" x="585.8" y="111.0" text-anchor="middle">b fitted between</text>
-<text class="nunit" x="585.8" y="123.0" text-anchor="middle">0 and 1</text>
-<line class="arw" x1="479.0" y1="70.0" x2="495.0" y2="70.0" marker-end="url(#ar)"/>
-<rect class="nbox" x="692.5" y="44" width="173.5" height="52" rx="3"/>
-<text class="nname" x="779.2" y="60.0" text-anchor="middle">head</text>
-<text class="nname" x="779.2" y="73.0" text-anchor="middle">→ score</text>
-<text class="nunit" x="779.2" y="111.0" text-anchor="middle">1 × frames</text>
-<line class="arw" x1="672.5" y1="70.0" x2="688.5" y2="70.0" marker-end="url(#ar)"/>
-<line class="arw" x1="94" y1="70" x2="108" y2="70" marker-end="url(#ar)"/>
-<text class="flag on" x="585.8" y="148" text-anchor="middle">b = 0 is a fixed count · b = 1 is a fixed fraction</text>
-<text class="dnote" x="14" y="176.0">Figure 2, the chance floor, says the honest rule lies between those two bounds, so the exponent is fitted rather than chosen and</text>
-<text class="dnote" x="14" y="190.0">its fitted value is itself the result. If it runs to a bound, one of the two rules was right after all. This is</text>
-<text class="dnote" x="14" y="204.0">ordered-statistic CFAR moved off the time axis and onto the cell axis — the censored surround the tube screen left out, where a</text>
-<text class="dnote" x="14" y="218.0">partial sort over cells costs one kernel instead of a sliding window.</text>
-</svg>
-    <figcaption><b>Figure 6. quorum.</b> Each cell&rsquo;s onset is scored against that cell&rsquo;s
-    own trailing occupancy, the cells are sorted within each frame, and the decision reads the top
-    <em>m</em> &mdash; where <em>m</em> grows with the field as a power whose exponent is fitted.
-    An exponent of 0 is a fixed count; an exponent of 1 is a fixed fraction; Figure 2 says the
-    answer is in between. <b>Schematic; this network does not exist.</b></figcaption>
+    <div class="arch"><svg xmlns="http://www.w3.org/2000/svg" class="draughtsman" role="img" aria-label="quorum — a rank, not a count and not a fraction" viewBox="0 0 1127.74 507.49" width="1203px" height="5.64in">
+<title>quorum — a rank, not a count and not a fraction</title>
+<desc>quorum — a rank, not a count and not a fraction: 9 stages over 44 traced operations, 1467 parameters.</desc>
+<defs><marker id="ds-arrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0.6 L8 4 L0 7.4 Z" style="fill:currentColor"/></marker></defs>
+<text class="ds-title" x="12" y="15" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:12.0px;font-weight:600;fill:currentColor">quorum — a rank, not a count and not a fraction</text>
+<text class="ds-subtitle" x="12" y="29" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:currentColor;opacity:0.62">1467 parameters · 1×30×600 in, 1×600 out</text>
+<g class="ds-body" transform="translate(0 36)">
+<path class="ds-edge ds-edge-solid" data-from="raster" data-to="surprise" d="M170.66 92.16 C215.91 92.16 215.91 97.42 261.16 97.42" style="fill:none;stroke:currentColor;stroke-width:1.4" marker-end="url(#ds-arrow)"/>
+<path class="ds-edge ds-edge-solid" data-from="surprise" data-to="sort" d="M483.11 97.42 C512.75 97.42 512.75 63.32 542.39 63.32" style="fill:none;stroke:currentColor;stroke-width:1.4" marker-end="url(#ds-arrow)"/>
+<path class="ds-edge ds-edge-solid" data-from="surprise" data-to="field" d="M483.11 97.42 C510.11 97.42 510.11 147.32 537.11 147.32" style="fill:none;stroke:currentColor;stroke-width:1.4" marker-end="url(#ds-arrow)"/>
+<path class="ds-edge ds-edge-solid" data-from="sort" data-to="quorum" d="M694.7 63.32 C724.34 63.32 724.34 52.85 753.98 52.85" style="fill:none;stroke:currentColor;stroke-width:1.4" marker-end="url(#ds-arrow)"/>
+<path class="ds-edge ds-edge-solid" data-from="depth" data-to="quorum" d="M207.16 194.24 C234.16 194.24 234.16 199.9 261.16 199.9 C372.14 199.9 372.14 199.9 483.11 199.9 C510.11 199.9 510.11 208.32 537.11 208.32 C618.54 208.32 618.54 208.32 699.98 208.32 C726.98 208.32 726.98 52.85 753.98 52.85" style="fill:none;stroke:currentColor;stroke-width:1.4" marker-end="url(#ds-arrow)"/><text class="ds-edge-label" x="535.41" y="200.05" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:currentColor;opacity:0.62">how deep</text>
+<path class="ds-edge ds-edge-solid" data-from="quorum" data-to="concat" d="M937.44 52.85 C964.44 52.85 964.44 45 991.44 45" style="fill:none;stroke:currentColor;stroke-width:1.4" marker-end="url(#ds-arrow)"/>
+<path class="ds-edge ds-edge-solid" data-from="field" data-to="concat" d="M699.98 147.32 C726.98 147.32 726.98 113.85 753.98 113.85 C845.71 113.85 845.71 113.85 937.44 113.85 C964.44 113.85 964.44 45 991.44 45" style="fill:none;stroke:currentColor;stroke-width:1.4" marker-end="url(#ds-arrow)"/>
+<path class="ds-edge ds-edge-solid" data-from="concat" data-to="head" d="M1084.74 45 L1102.74 45 Q1111.74 45 1111.74 54 L1111.74 250.49 Q1111.74 259.49 1102.74 259.49 L25 259.49 Q16 259.49 16 268.49 L16 324.6 Q16 333.6 25 333.6 L43 333.6" style="fill:none;stroke:currentColor;stroke-width:1.4" marker-end="url(#ds-arrow)"/>
+<path class="ds-edge ds-edge-solid" data-from="head" data-to="score" d="M170.5 333.6 C197.5 333.6 197.5 330.99 224.5 330.99" style="fill:none;stroke:currentColor;stroke-width:1.4" marker-end="url(#ds-arrow)"/>
+<g class="ds-stage ds-kind-input" data-stage="raster"><rect x="79.5" y="56.91" width="91.16" height="70.5" rx="4" style="fill:var(--ds-fill-input,#f2f2f0);stroke:var(--ds-stroke-input,#8a8a86);stroke-width:1.2"/><text x="125.08" y="77.91" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:12.0px;font-weight:600;fill:#1a1a1a">onset raster</text><text x="125.08" y="90.41" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:#5b5b5b">1×30×600</text><text x="125.08" y="102.91" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:#5b5b5b">cells × frames</text><text x="125.08" y="115.41" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:#5b5b5b">binary</text></g>
+<g class="ds-stage ds-kind-op" data-stage="surprise"><rect x="261.16" y="62.17" width="221.95" height="70.5" rx="4" style="fill:var(--ds-fill-op,#f0f0ef);stroke:var(--ds-stroke-op,#8a8a86);stroke-width:1.2"/><text x="372.14" y="83.17" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:12.0px;font-weight:600;fill:#1a1a1a">score each cell against its own rate</text><text x="372.14" y="95.67" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:#5b5b5b">box filter, width 601 frames</text><text x="372.14" y="108.17" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:#5b5b5b">1×30×600</text><text x="372.14" y="120.67" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:#5b5b5b">a busy cell's onset is worth less</text></g>
+<g class="ds-stage ds-kind-reduce" data-stage="sort"><rect x="542.39" y="34.32" width="152.31" height="58" rx="4" style="fill:var(--ds-fill-reduce,#d5e5ef);stroke:var(--ds-stroke-reduce,#5b829a);stroke-width:1.2"/><text x="618.54" y="55.32" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:12.0px;font-weight:600;fill:#1a1a1a">sort the cells</text><text x="618.54" y="67.82" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:#5b5b5b">1×30×600</text><text x="618.54" y="80.32" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:#5b5b5b">within each frame, descending</text></g>
+<g class="ds-stage ds-kind-op" data-stage="depth"><rect x="43" y="158.99" width="164.16" height="70.5" rx="4" style="fill:var(--ds-fill-op,#f0f0ef);stroke:var(--ds-stroke-op,#8a8a86);stroke-width:1.2"/><text x="125.08" y="179.99" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:12.0px;font-weight:600;fill:#1a1a1a">a soft quorum at m</text><text x="125.08" y="192.49" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:#5b5b5b">2 params</text><text x="125.08" y="204.99" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:#5b5b5b">m = coefficient × cells ^ exponent</text><text x="125.08" y="217.49" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:#5b5b5b">1×30×1</text></g>
+<g class="ds-stage ds-kind-reduce" data-stage="quorum"><rect x="753.98" y="23.85" width="183.47" height="58" rx="4" style="fill:var(--ds-fill-reduce,#d5e5ef);stroke:var(--ds-stroke-reduce,#5b829a);stroke-width:1.2"/><text x="845.71" y="44.85" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:12.0px;font-weight:600;fill:#1a1a1a">the quorum's surprise</text><text x="845.71" y="57.35" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:#5b5b5b">1×1×600</text><text x="845.71" y="69.85" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:#5b5b5b">weighted mean over the deepest cells</text></g>
+<g class="ds-stage ds-kind-reduce" data-stage="field"><rect x="537.11" y="118.32" width="162.86" height="58" rx="4" style="fill:var(--ds-fill-reduce,#d5e5ef);stroke:var(--ds-stroke-reduce,#5b829a);stroke-width:1.2"/><text x="618.54" y="139.32" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:12.0px;font-weight:600;fill:#1a1a1a">the whole field's surprise</text><text x="618.54" y="151.82" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:#5b5b5b">1×1×600</text><text x="618.54" y="164.32" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:#5b5b5b">mean over every cell</text></g>
+<g class="ds-stage ds-kind-concat" data-stage="concat"><rect x="991.44" y="16" width="93.3" height="58" rx="4" style="fill:var(--ds-fill-concat,#ece6f2);stroke:var(--ds-stroke-concat,#8d7ba8);stroke-width:1.2"/><text x="1038.09" y="37" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:12.0px;font-weight:600;fill:#1a1a1a">concatenate</text><text x="1038.09" y="49.5" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:#5b5b5b">2 channels</text><text x="1038.09" y="62" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:#5b5b5b">1×2×600</text></g>
+<g class="ds-stage ds-kind-stack" data-stage="head"><rect x="43" y="298.35" width="127.5" height="70.5" rx="4" style="fill:var(--ds-fill-stack,#d1e4d9);stroke:var(--ds-stroke-stack,#5a8a71);stroke-width:1.2"/><text x="106.75" y="319.35" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:12.0px;font-weight:600;fill:#1a1a1a">dilated conv stack</text><text x="106.75" y="331.85" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:#5b5b5b">kernel 3, dilation 1 → 128</text><text x="106.75" y="344.35" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:#5b5b5b">1456 params</text><text x="106.75" y="356.85" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:#5b5b5b">1×8×600</text></g>
+<g class="ds-stage ds-kind-output" data-stage="score"><rect x="224.5" y="289.49" width="113.77" height="83" rx="4" style="fill:var(--ds-fill-output,#f2f2f0);stroke:var(--ds-stroke-output,#8a8a86);stroke-width:1.2"/><text x="281.38" y="310.49" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:12.0px;font-weight:600;fill:#1a1a1a">per-frame score</text><text x="281.38" y="322.99" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:#5b5b5b">kernel 1</text><text x="281.38" y="335.49" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:#5b5b5b">9 params</text><text x="281.38" y="347.99" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:#5b5b5b">1×600</text><text x="281.38" y="360.49" text-anchor="middle" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:#5b5b5b">one score per frame</text></g>
+</g>
+<g class="ds-legend">
+<rect class="ds-legend-swatch ds-kind-stack" x="12" y="432.49" width="9" height="9" rx="2" style="fill:var(--ds-fill-stack,#d1e4d9);stroke:var(--ds-stroke-stack,#5a8a71);stroke-width:1"/>
+<text class="ds-legend-label" x="27" y="440.99" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;font-weight:600;fill:currentColor">Convolution</text>
+<text class="ds-legend-share" x="86.17" y="440.99" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:currentColor;opacity:0.62">16 ops, 1456 params</text>
+<rect class="ds-legend-swatch ds-kind-reduce" x="12" y="447.49" width="9" height="9" rx="2" style="fill:var(--ds-fill-reduce,#d5e5ef);stroke:var(--ds-stroke-reduce,#5b829a);stroke-width:1"/>
+<text class="ds-legend-label" x="27" y="455.99" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;font-weight:600;fill:currentColor">Pool / reduce</text>
+<text class="ds-legend-share" x="92.33" y="455.99" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:currentColor;opacity:0.62">7 ops</text>
+<rect class="ds-legend-swatch ds-kind-concat" x="12" y="462.49" width="9" height="9" rx="2" style="fill:var(--ds-fill-concat,#ece6f2);stroke:var(--ds-stroke-concat,#8d7ba8);stroke-width:1"/>
+<text class="ds-legend-label" x="27" y="470.99" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;font-weight:600;fill:currentColor">Concat / join</text>
+<text class="ds-legend-share" x="88.97" y="470.99" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:currentColor;opacity:0.62">1 op</text>
+<rect class="ds-legend-swatch ds-kind-input" x="12" y="477.49" width="9" height="9" rx="2" style="fill:var(--ds-fill-input,#f2f2f0);stroke:var(--ds-stroke-input,#8a8a86);stroke-width:1"/>
+<text class="ds-legend-label" x="27" y="485.99" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;font-weight:600;fill:currentColor">Input / output</text>
+<text class="ds-legend-share" x="91.79" y="485.99" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:currentColor;opacity:0.62">2 ops, 9 params</text>
+<rect class="ds-legend-swatch ds-kind-op" x="12" y="492.49" width="9" height="9" rx="2" style="fill:var(--ds-fill-op,#f0f0ef);stroke:var(--ds-stroke-op,#8a8a86);stroke-width:1"/>
+<text class="ds-legend-label" x="27" y="500.99" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;font-weight:600;fill:currentColor">Other</text>
+<text class="ds-legend-share" x="58.19" y="500.99" style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:9.5px;fill:currentColor;opacity:0.62">18 ops, 2 params</text>
+</g>
+</svg></div>
+    <figcaption><b>Figure 6. quorum</b>, traced from <code>build_quorum()</code> &mdash; 1,467
+    parameters, of which exactly <b>two</b> are the rule this proposal is about: the coefficient
+    and the exponent in <em>m</em>, in the box with no edge into it, because the only thing it
+    reads from the recording is how many cells there are. An exponent of zero is a fixed count and
+    one is a fixed fraction; Figure 2, the chance floor, says the answer is in between.
+    <b>Untrained and unscored.</b></figcaption>
   </figure>
 </div>
 
 <section class="col">
   <div class="stack">
-    <pre><span class="c"># quorum. `occ` is each cell's own occupancy over a long trailing window.</span>
-s = x * -(occ(x, w).clamp_min(eps).log())        <span class="c"># a quiet cell counts for more</span>
-m = (a * N ** b).ceil().clamp(1, N)              <span class="c"># b fitted, initialised at 0.5</span>
-q = soft_topk_mean(s, m, dim=1)                  <span class="c"># an order statistic over CELLS</span>
-return head(q)</pre>
+    <pre><span class="c"># src/bugarach/learn/nets/quorum.py. `occ` is each cell's own occupancy.</span>
+s = x * -(occ.clamp_min(eps).log())            <span class="c"># a quiet cell counts for more</span>
+srt, _ = s.sort(dim=1, descending=True)        <span class="c"># an order statistic over CELLS</span>
+m = coefficient * float(n) ** self.exponent()  <span class="c"># exponent fitted in [0, 1]</span>
+w = torch.sigmoid((m - rank) / self.temp)      <span class="c"># a soft cut, so m stays a tensor</span>
+return self.head(torch.cat([(srt * w).sum(1, keepdim=True) / w.sum(),
+                            s.mean(1, keepdim=True)], dim=1)).squeeze(1)</pre>
     <p><strong>Why the cell axis and not the time axis.</strong> This is ordered-statistic
     constant-false-alarm-rate detection, and it was already on the list once: V3 of the tube screen,
     the censored surround, which was deliberately left out because an order statistic over a
@@ -1213,15 +1183,19 @@ return head(q)</pre>
     &mdash; 0.014 s to scan a fold. Over the <em>cell</em> axis the cost is a different shape
     entirely: a partial sort of <em>N</em> values per frame, which is one kernel, not a sliding
     window. That distinction is the reason this is worth running where V3 was not.</p>
-    <p><strong>What it costs.</strong> A top-<em>k</em> over the cell axis per frame. Cheaper than
-    <code>chorus</code>, more than <code>tube</code>. The per-cell occupancy is a box filter and is
-    free.</p>
-    <div class="note warn"><strong>&#9888; Two things to watch.</strong> An order statistic is not
-    differentiable at ties, so this needs a soft sort or a straight-through estimator, and which one
-    is a real choice rather than a detail. And the fitted exponent is a new free parameter, so the
-    tube&rsquo;s own rule applies to it: <em>if a fitted value runs to the end of its range, the
-    model is telling you the range was wrong.</em> Report the range with the value, every
-    time.</div>
+    <p><strong>What it costs.</strong> A full sort over the cell axis per frame &mdash; a sort
+    rather than a top-<em>k</em>, because the depth is a tensor and a top-<em>k</em> needs an
+    integer. Cheaper than <code>chorus</code>, dearer than <code>tube</code>. The per-cell
+    occupancy is a box filter and is free. None of that is measured.</p>
+    <div class="note warn"><strong>&#9888; Two things to watch.</strong> A hard top-<em>m</em> would need an
+    integer depth, and deriving that integer from a trained parameter is exactly the hazard
+    <code>tube</code>&rsquo;s max-pool fell into &mdash; a Python value baked out of a tensor,
+    frozen into the graph and into every figure drawn from it. The build resolves that with
+    sigmoid weights over rank, so <em>m</em> stays a tensor and the gradient reaches the exponent;
+    whether that soft cut costs recall against a hard one is unmeasured. And the fitted exponent is
+    a new free parameter, so the tube&rsquo;s own rule applies to it: <em>if a fitted value runs to
+    the end of its range, the model is telling you the range was wrong.</em> Report the range with
+    the value, every time.</div>
     <p><strong>What it would have to show.</strong> That the fitted exponent lands strictly inside
     its bounds &mdash; if it goes to 0 or 1, one of the two rules was right after all, and that is
     a result worth having either way. That recall holds when a tenth of the cells are made ten times
@@ -1306,9 +1280,16 @@ return head(q)</pre>
   <div class="stack">
     <h2>What none of this establishes</h2>
     <ul>
-      <li><strong>Nothing here was trained, traced or scored.</strong> Every performance number is
-      read out of an artifact already committed in the tree and named where it is used. The three
-      architectures are designs; no line of them has been written.</li>
+      <li><strong>None of the three has been trained, and none has been scored.</strong> They
+      build, they run at every field size from one cell to a thousand, they trace, and their
+      figures pass coverage. That is the whole of what is established about them. Every
+      performance number on this page belongs to a model that already existed and is cited where
+      it is used.</li>
+      <li><strong>Registering them changes what other runs report.</strong> The bake-off's
+      <code>registered_but_not_run</code> list is no longer empty, the lab server advertises three
+      more architectures and the browser's model picker shows them. That is the registry working
+      as designed &mdash; but a reader who sees a name in a picker will assume it has a number, and
+      it does not.</li>
       <li><strong>The chance floor assumes independent cells at one rate.</strong> Real cells have
       a hard same-cell interval floor and heterogeneous rates, and those two errors push the true
       floor in opposite directions. Figure 2 is an ordering, not an operating point.</li>
@@ -1319,6 +1300,12 @@ return head(q)</pre>
       shape is inherited from this lab, because that export yielded no usable baseline window, and
       a background is not a detail for detectors that estimate one. Those numbers are the best
       evidence in the tree and they are not publishable.</li>
+      <li><strong>Two of the three carry a traced constant that a figure must not quote.</strong>
+      <code>gauge</code> inherits <code>tube</code>'s max-pool width, which is read from a trained
+      parameter, and <code>quorum</code> bakes the cell count into its exponent. Both are declared
+      architectural in their specs and neither is drawn. It is the same hazard
+      <code>tube</code>'s own figure was caught on, and the reason to state it is that
+      <code>check</code> will keep letting it through as long as the declaration stands.</li>
       <li><strong>No prior-art pass has been run on any of the three.</strong> The set-encoder,
       constant-false-alarm-rate and order-statistic literatures are named because that is where
       each idea comes from, and naming a lineage is not the same as establishing that a
@@ -1343,9 +1330,16 @@ return head(q)</pre>
   screen: <code>docs/todo/2026-08-23-four-variants-of-the-tube.md</code>. Preparation facts:
   <code>docs/FOUNDATIONS.md</code> &sect;9.</p>
   <p style="margin-top:14px">Figures 1 and 2 are drawn from the committed assessments by
-  <code>tools/probe_field_size.py</code> and <code>tools/make_field_size_figures.py</code>;
-  Figures 3 to 7 are schematics drawn by <code>tools/make_net_diagrams.py</code> and carry no
-  measured quantity. This page is built from
+  <code>tools/probe_field_size.py</code> and <code>tools/make_field_size_figures.py</code>.
+  <strong>Figures 3 to 6 are drawn by draughtsman</strong> &mdash;
+  <code>python tools/make_architecture_diagram.py --arch chorus</code>, and the same for
+  <code>gauge</code>, <code>quorum</code> and <code>tube</code> &mdash; which traces the built
+  module, checks that every traced operation lands in exactly one drawn box, and only then
+  renders. The specs that say which operations collapse into which box are
+  <code>docs/learned/&lt;name&gt;.spec.json</code> and contain no numbers at all. The suite
+  regenerates all four and byte-compares, so a model moving under its own figure turns it red.
+  Figure 7 is hand-drawn by <code>tools/make_net_diagrams.py</code> and carries no measured
+  quantity. This page is built from
   <code>docs/proposals/2026-09-16-nine-cells-to-a-thousand.src.html</code> by
   <code>tools/build_net_design_page.py</code> &mdash; edit the source and rebuild, never the
   output.</p>

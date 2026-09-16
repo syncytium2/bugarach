@@ -1,0 +1,215 @@
+{
+  "draughtsman": "0",
+  "graph": "graph.json",
+  "title": "quorum \u2014 a rank, not a count and not a fraction",
+  "subtitle": "{model.params} parameters \u00b7 {model.input_shape} in, {node:n0187.out_shape} out",
+  "output": {
+    "width": "1203px",
+    "min_type": "9.5px"
+  },
+  "stages": [
+    {
+      "id": "raster",
+      "name": "onset raster",
+      "kind": "input",
+      "nodes": [
+        "in1"
+      ],
+      "detail": [
+        "{stage.out_shape}",
+        "cells \u00d7 frames",
+        "binary"
+      ]
+    },
+    {
+      "id": "surprise",
+      "name": "score each cell against its own rate",
+      "kind": "op",
+      "nodes": [
+        "n0017",
+        "n0021",
+        "n0030",
+        "n0032",
+        "n0034",
+        "n0035",
+        "n0036",
+        "n0037"
+      ],
+      "detail": [
+        "box filter, width {node:n0030.constants.kernel_size} frames",
+        "{stage.out_shape}",
+        "a busy cell's onset is worth less"
+      ],
+      "note": "A long box filter gives each cell its own occupancy; minus its log, applied where that cell fired, is the surprise. The width is a configuration value, fixed across a screen. This is the only place in the estate where per-cell rate heterogeneity reaches the arithmetic."
+    },
+    {
+      "id": "sort",
+      "name": "sort the cells",
+      "kind": "reduce",
+      "nodes": [
+        "n0040"
+      ],
+      "detail": [
+        "{stage.out_shape}",
+        "within each frame, descending"
+      ],
+      "note": "An order statistic over the CELL axis. The censored surround the tube screen left out was one over the TIME axis, where it costs a sliding window; here it is one sort per frame."
+    },
+    {
+      "id": "depth",
+      "name": "a soft quorum at m",
+      "kind": "op",
+      "nodes": [
+        "n0043",
+        "n0050",
+        "n0054",
+        "n0055",
+        "n0058",
+        "n0060",
+        "n0061",
+        "n0063",
+        "n0065",
+        "n0066"
+      ],
+      "detail": [
+        "{stage.params} params",
+        "m = coefficient \u00d7 cells ^ exponent",
+        "{stage.out_shape}"
+      ],
+      "note": "Both free parameters live here, and the only thing this stage reads from the recording is HOW MANY CELLS it has \u2014 a shape, not a tensor, which is why no edge reaches it. The exponent is clamped to the two rules it interpolates, so a fitted value at either bound is the model saying one of them was right after all."
+    },
+    {
+      "id": "quorum",
+      "name": "the quorum's surprise",
+      "kind": "reduce",
+      "nodes": [
+        "n0067",
+        "n0072",
+        "n0074",
+        "n0076",
+        "n0077"
+      ],
+      "detail": [
+        "{stage.out_shape}",
+        "weighted mean over the deepest cells"
+      ]
+    },
+    {
+      "id": "field",
+      "name": "the whole field's surprise",
+      "kind": "reduce",
+      "nodes": [
+        "n0082"
+      ],
+      "detail": [
+        "{stage.out_shape}",
+        "mean over every cell"
+      ],
+      "note": "The contrast channel. A quorum that is loud only because the whole field is loud is not coordination, and the head needs both numbers to tell the difference."
+    },
+    {
+      "id": "concat",
+      "name": "concatenate",
+      "kind": "concat",
+      "nodes": [
+        "n0085"
+      ],
+      "detail": [
+        "{stage.out_shape[1]} channels",
+        "{stage.out_shape}"
+      ]
+    },
+    {
+      "id": "head",
+      "name": "dilated conv stack",
+      "kind": "stack",
+      "nodes": [
+        "n0121",
+        "n0122",
+        "n0129",
+        "n0130",
+        "n0137",
+        "n0138",
+        "n0145",
+        "n0146",
+        "n0153",
+        "n0154",
+        "n0161",
+        "n0162",
+        "n0169",
+        "n0170",
+        "n0177",
+        "n0178"
+      ],
+      "detail": [
+        "kernel {node:n0121.weight_shape[2]}, dilation {node:n0121.constants.dilation} \u2192 {node:n0177.constants.dilation}",
+        "{stage.params} params",
+        "{stage.out_shape}"
+      ]
+    },
+    {
+      "id": "score",
+      "name": "per-frame score",
+      "kind": "output",
+      "nodes": [
+        "n0185",
+        "n0187"
+      ],
+      "detail": [
+        "kernel {node:n0185.weight_shape[2]}",
+        "{stage.params} params",
+        "{stage.out_shape}",
+        "one score per frame"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "from": "raster",
+      "to": "surprise"
+    },
+    {
+      "from": "surprise",
+      "to": "sort"
+    },
+    {
+      "from": "surprise",
+      "to": "field"
+    },
+    {
+      "from": "sort",
+      "to": "quorum"
+    },
+    {
+      "from": "depth",
+      "to": "quorum",
+      "label": "how deep"
+    },
+    {
+      "from": "quorum",
+      "to": "concat"
+    },
+    {
+      "from": "field",
+      "to": "concat"
+    },
+    {
+      "from": "concat",
+      "to": "head"
+    },
+    {
+      "from": "head",
+      "to": "score"
+    }
+  ],
+  "layout": {
+    "orientation": "lr",
+    "legend": true,
+    "wrap": 1100
+  },
+  "constants": {
+    "n0030.constants.kernel_size": "Architectural. `occupancy_frames` is a configuration value on the builder, fixed for a screen, and no gradient reaches it.",
+    "n0121.constants.dilation": "Architectural \u2014 _dilated_stack sets d = 2 ** i from the layer index.",
+    "n0177.constants.dilation": "Architectural, as above \u2014 the last dilated layer."
+  }
+}

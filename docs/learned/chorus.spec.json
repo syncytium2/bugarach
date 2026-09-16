@@ -1,0 +1,246 @@
+{
+  "draughtsman": "0",
+  "graph": "graph.json",
+  "title": "chorus \u2014 the cell axis survives the filter",
+  "subtitle": "{model.params} parameters \u00b7 {model.input_shape} in, {node:n0212.out_shape} out",
+  "stages": [
+    {
+      "id": "raster",
+      "name": "onset raster",
+      "kind": "input",
+      "nodes": [
+        "in1"
+      ],
+      "detail": [
+        "{stage.out_shape}",
+        "cells \u00d7 frames",
+        "binary"
+      ]
+    },
+    {
+      "id": "fold",
+      "name": "one cell at a time",
+      "kind": "op",
+      "nodes": [
+        "n0015",
+        "n0019"
+      ],
+      "detail": [
+        "{stage.out_shape}",
+        "each cell on its own row",
+        "the cell axis moved, not reduced"
+      ],
+      "note": "The cell axis is moved out of the way so one shared filter can run on every cell. It comes back at `unfold`; nothing is reduced here."
+    },
+    {
+      "id": "roi",
+      "name": "shared filter, per cell",
+      "kind": "stack",
+      "nodes": [
+        "n0043",
+        "n0044",
+        "n0051",
+        "n0052",
+        "n0059",
+        "n0060",
+        "n0067",
+        "n0068",
+        "n0075"
+      ],
+      "detail": [
+        "kernel {node:n0043.weight_shape[2]}, dilation {node:n0043.constants.dilation} \u2192 {node:n0067.constants.dilation}",
+        "{stage.params} params",
+        "{stage.out_shape}",
+        "cells \u00d7 channels \u00d7 frames"
+      ],
+      "note": "One set of weights, run on every cell's own row. This is the stage `tube` does not have: it filters BEFORE the field is pooled rather than after."
+    },
+    {
+      "id": "vote",
+      "name": "bounded vote",
+      "kind": "op",
+      "nodes": [
+        "n0076"
+      ],
+      "detail": [
+        "{stage.out_shape}",
+        "cells \u00d7 channels \u00d7 frames",
+        "one cell, one vote (soft)"
+      ],
+      "note": "Bounding each cell's contribution before pooling is what stops one busy cell from counting as a crowd."
+    },
+    {
+      "id": "unfold",
+      "name": "cells back on their own axis",
+      "kind": "op",
+      "nodes": [
+        "n0079"
+      ],
+      "detail": [
+        "{stage.out_shape}",
+        "batch \u00d7 cells \u00d7 channels \u00d7 frames"
+      ]
+    },
+    {
+      "id": "mean",
+      "name": "mean over cells",
+      "kind": "reduce",
+      "nodes": [
+        "n0084"
+      ],
+      "detail": [
+        "{stage.out_shape}",
+        "the level"
+      ]
+    },
+    {
+      "id": "spread",
+      "name": "spread over cells",
+      "kind": "reduce",
+      "nodes": [
+        "n0089"
+      ],
+      "detail": [
+        "{stage.out_shape}",
+        "how uneven the field is"
+      ]
+    },
+    {
+      "id": "top",
+      "name": "the loudest cells",
+      "kind": "reduce",
+      "nodes": [
+        "n0092",
+        "n0097",
+        "n0102",
+        "n0107"
+      ],
+      "detail": [
+        "{stage.out_shape}",
+        "sort, then the first few"
+      ],
+      "note": "An order statistic over cells. Sorted and sliced rather than a top-k against the traced cell count, because comparing against a traced shape bakes a Python value into the graph."
+    },
+    {
+      "id": "concat",
+      "name": "concatenate",
+      "kind": "concat",
+      "nodes": [
+        "n0110"
+      ],
+      "detail": [
+        "{stage.out_shape[1]} channels",
+        "{stage.out_shape}",
+        "batch \u00d7 channels \u00d7 frames"
+      ],
+      "note": "Three symmetric statistics, none of which carries the cell count. Every one has the same expectation at nine cells and at a thousand."
+    },
+    {
+      "id": "head",
+      "name": "dilated conv stack",
+      "kind": "stack",
+      "nodes": [
+        "n0146",
+        "n0147",
+        "n0154",
+        "n0155",
+        "n0162",
+        "n0163",
+        "n0170",
+        "n0171",
+        "n0178",
+        "n0179",
+        "n0186",
+        "n0187",
+        "n0194",
+        "n0195",
+        "n0202",
+        "n0203"
+      ],
+      "detail": [
+        "kernel {node:n0146.weight_shape[2]}, dilation {node:n0146.constants.dilation} \u2192 {node:n0202.constants.dilation}",
+        "{stage.params} params",
+        "{stage.out_shape}"
+      ]
+    },
+    {
+      "id": "score",
+      "name": "per-frame score",
+      "kind": "output",
+      "nodes": [
+        "n0210",
+        "n0212"
+      ],
+      "detail": [
+        "kernel {node:n0210.weight_shape[2]}",
+        "{stage.params} params",
+        "{stage.out_shape}",
+        "one score per frame"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "from": "raster",
+      "to": "fold"
+    },
+    {
+      "from": "fold",
+      "to": "roi"
+    },
+    {
+      "from": "roi",
+      "to": "vote"
+    },
+    {
+      "from": "vote",
+      "to": "unfold"
+    },
+    {
+      "from": "unfold",
+      "to": "mean"
+    },
+    {
+      "from": "unfold",
+      "to": "spread"
+    },
+    {
+      "from": "unfold",
+      "to": "top"
+    },
+    {
+      "from": "mean",
+      "to": "concat"
+    },
+    {
+      "from": "spread",
+      "to": "concat"
+    },
+    {
+      "from": "top",
+      "to": "concat"
+    },
+    {
+      "from": "concat",
+      "to": "head"
+    },
+    {
+      "from": "head",
+      "to": "score"
+    }
+  ],
+  "layout": {
+    "orientation": "lr",
+    "legend": true
+  },
+  "output": {
+    "width": "1203px",
+    "min_type": "9.5px"
+  },
+  "constants": {
+    "n0043.constants.dilation": "Architectural. _dilated_stack sets d = 2 ** i from the layer index, so the schedule is fixed by `roi_depth` and no gradient reaches it.",
+    "n0067.constants.dilation": "Architectural, as above \u2014 the last dilated layer of the per-cell stack.",
+    "n0146.constants.dilation": "Architectural \u2014 the head's first dilated layer.",
+    "n0202.constants.dilation": "Architectural \u2014 the head's last dilated layer."
+  }
+}

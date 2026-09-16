@@ -25,13 +25,24 @@ REPO = Path(__file__).resolve().parent.parent
 SRC = REPO / "docs/proposals/2026-09-16-nine-cells-to-a-thousand.src.html"
 PAGE = "2026-09-16-nine-cells-to-a-thousand.html"
 
+#: Figures drawn into a scratch directory on every build, from the committed
+#: numbers. Regenerated rather than linked so the page cannot disagree with the
+#: probe that produced it.
 FIGS = {"FIG1": "field_size_fig1.svg",
         "FIG2": "field_size_fig2.svg",
-        "FIG3": "net_fig3_tube.svg",
-        "FIG4": "net_fig4_chorus.svg",
-        "FIG5": "net_fig5_gauge.svg",
-        "FIG6": "net_fig6_quorum.svg",
         "FIG7": "net_fig7_axes.svg"}
+
+#: Figures drawn by DRAUGHTSMAN from a torch.jit.trace of the built module, with
+#: coverage checked before anything is written. These are committed, because
+#: drawing them needs torch and the page must build without it; the suite
+#: regenerates and byte-compares them (`tests/test_architecture_diagram_is_current`),
+#: so a model moving under its own figure turns the suite red rather than going
+#: unnoticed. A hand-drawn schematic of a model that EXISTS is a second description
+#: that can drift from it, which is the whole reason draughtsman is in this repo.
+TRACED = {"FIG3": "architecture.svg",
+          "FIG4": "chorus.svg",
+          "FIG5": "gauge.svg",
+          "FIG6": "quorum.svg"}
 
 
 def build() -> str:
@@ -41,6 +52,12 @@ def build() -> str:
             subprocess.run([sys.executable, str(REPO / "tools" / tool), "--out", tmp],
                            check=True, stdout=subprocess.DEVNULL)
         html = SRC.read_text()
+        for token, name in TRACED.items():
+            marker = f"<!--{token}-->"
+            if marker not in html:
+                raise SystemExit(f"{SRC.name}: no placeholder for {token}")
+            html = html.replace(
+                marker, (REPO / "docs/learned" / name).read_text().strip())
         for token, name in FIGS.items():
             marker = f"<!--{token}-->"
             if marker not in html:
