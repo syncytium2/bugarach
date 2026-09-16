@@ -399,7 +399,7 @@ one figure later — so it was shortened and anchored clear of it.
 straight out of the code*. What the figure actually runs is `bugarach.bench.OPERATING_POINTS` — the
 declared operating point for each program — and that table is half tuned:
 
-| program | everyday setting | where it came from |
+| program | stored setting | where it came from |
 | --- | --- | --- |
 | CoactDetect | `alpha=1e-4`, 2 s bins, 60 s surround | tuned — the explore_sce FAST point, **not** the `coact_detect` signature default of `alpha=0.01`, a hundred times looser |
 | LoCo | `threshold_pctile=99.9` | tuned — measured-regime F1 optimum |
@@ -423,3 +423,30 @@ remembering: when a banned term goes, check that its replacement still means the
 - Section 9 gains a paragraph naming the two kinds of setting, saying which three programs were tuned and
   which three were untouched, and closing with the part a reader should carry away — **the tuned three
   were tuned on recordings from the same simulator that made the test recordings.**
+
+## 31. "everyday setting" — a word I coined and then defined with itself (2026-09-16)
+
+*"what does 'everyday' mean?"*
+
+Note 30 replaced a false word ("default") with an invented one. The sentence read:
+
+> each program runs at its **everyday setting**, the one the project runs it at.
+
+**The gloss is the term restated.** "Everyday setting" is defined as "the one the project runs it at",
+which tells a reader nothing they could not have guessed from the adjective, and hides the two facts that
+actually matter: it is a *single stored value*, and it is *the same one on every recording*. Bolding it
+made it worse — bold announces a defined term, so a reader waits for a definition that never comes.
+
+This is note 27's fault wearing different clothes, one revision later. There the writing skipped the
+mechanism; here it skipped the definition. Both times the chain was in my head.
+
+**Applied — by deleting the term rather than renaming it.** A reader does not need a name for this; they
+need to know what runs. The paragraph now says each program runs at a single stored value for its main
+setting, the same on every recording, and that Figure {{NUM:fig_scores}} is the only place that value is
+set aside. The two kinds are then told apart by where they came from — tuned on simulated recordings, or
+the value the program was first written with — which is the distinction the section exists to make.
+
+**The rule worth keeping:** when a banned word goes, the replacement needs the same scrutiny the original
+got. "shipped" → "default" was false (note 30); "default" → "everyday" was undefined (this note). Three
+passes to say a simple thing, because each fix was checked against the complaint instead of against the
+reader.

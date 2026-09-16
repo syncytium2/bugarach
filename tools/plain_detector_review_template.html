@@ -385,15 +385,17 @@ is high only when both are high. (Its technical name is the F1 score.)</p>
 {{T.n_recordings_scored}} test recordings and split them into {{T.n_tests}} groups of {{T.per_test}}. For
 each group, we picked the best setting using the other {{T.n_choose}} recordings, then scored the program
 on the {{T.per_test}} it had never seen.</p>
-<p><b>There are two kinds of setting in this document, and the difference matters.</b> The scores in
-Figure {{NUM:fig_scores}} come from the rounds just described. Everywhere else — the busy stretch below,
-and every call on a real recording — each program runs at its <b>everyday setting</b>, the one the project
-runs it at. Those everyday settings did not all arrive the same way. CoactDetect, LoCo and locust were
-tuned: somebody ran them on simulated recordings and kept the value that scored best, and CoactDetect's
-value ended up a hundred times stricter than the one its code came with. rate+context, binned SCE and
-SPIKE-synch still run at the value their code came with, untouched. So half of the six carry a tuned
-value and half do not — and the tuned three were tuned on recordings from the same simulator that made
-every test recording here.</p>
+<p><b>Those rounds happen only in Figure {{NUM:fig_scores}}.</b> Apart from that one figure, each program
+runs at a single stored value for its main setting — the same value on every recording, real or
+simulated, and the one that produced every call this project has ever reported. Figure
+{{NUM:fig_scores}} sets that stored value aside and picks a fresh one for each round; nothing else
+does.</p>
+<p><b>Those stored values did not all arrive the same way.</b> For CoactDetect, LoCo and locust, somebody
+ran the program on simulated recordings and kept the value that scored best. CoactDetect's ended up a
+hundred times stricter than the value the program was first written with. For rate+context, binned SCE
+and SPIKE-synch, the stored value <i>is</i> the value the program was first written with — nobody has
+tuned it. So half of the six carry a tuned value and half do not, and the tuned three were tuned on
+recordings from the same simulator that made every test recording here.</p>
 
 <h2 id="s10">{{SEC:scores}}. Scores on the simulated recordings</h2>
 <figure>{{FIG:fig_scores}}
@@ -412,9 +414,8 @@ that comes from how its calls are timed: when we score it over its whole 10-seco
 <figcaption><b>Figure {{NUM:fig_busy}}. Finding real events inside a busy stretch.</b> A: the share of
 mid-sized planted events each program found outside the busy stretch (black) and inside it (orange). The
 gray tick shows what calling at random would find inside. B: false alarms per minute inside the busy
-stretch, on a scale where each step is ten times more. Every program here runs at the setting the project
-uses on the real recordings, which is not the setting chosen for Figure
-{{NUM:fig_scores}}.</figcaption></figure>
+stretch, on a scale where each step is ten times more. Every program here runs at its stored setting, not
+at the freshly chosen setting of Figure {{NUM:fig_scores}}.</figcaption></figure>
 <p><b>Busy stretches are where the programs split apart</b> (Figure {{NUM:fig_busy}}). The recordings
 above never put a coordinated event inside the busy stretch, so a program that goes quiet there looks
 good even if it has gone blind. To find out which, we made {{T.block_recordings}} new recordings with

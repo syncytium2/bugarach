@@ -17,7 +17,7 @@ exposed is narrower and worth deciding on.
 
 Half the table was calibrated and half is whatever the function signature came with:
 
-| detector | everyday setting | origin |
+| detector | stored setting | origin |
 | --- | --- | --- |
 | CoactDetect | `alpha=1e-4` | tuned — explore_sce FAST point, **not** the signature's `0.01` |
 | LoCo | `threshold_pctile=99.9` | tuned — measured-regime F1 optimum |
@@ -28,10 +28,10 @@ Half the table was calibrated and half is whatever the function signature came w
 
 ## What tuning is worth, measured
 
-F1, everyday setting against the round-selected setting (`measurements/shipped.json` and the
+F1, stored setting against the round-selected setting (`measurements/shipped.json` and the
 `perf_*` keys of `numbers.json`, 2026-09-15 review build):
 
-| detector | origin | quiet everyday → tuned | busy everyday → tuned |
+| detector | origin | quiet stored → tuned | busy stored → tuned |
 | --- | --- | --- | --- |
 | CoactDetect | tuned | 0.74 → 0.74 | 0.67 → 0.65 |
 | LoCo | tuned | 0.72 → 0.73 | 0.65 → 0.66 |
@@ -40,7 +40,7 @@ F1, everyday setting against the round-selected setting (`measurements/shipped.j
 | binned SCE | code default | 0.37 → **0.45** | 0.45 → **0.63** |
 | SPIKE-synch | code default | 0.49 → 0.53 | 0.47 → 0.51 |
 
-**The three calibrated ones gain nothing**, which is the check working: their everyday setting already
+**The three calibrated ones gain nothing**, which is the check working: their stored setting already
 sits where the sweep puts the optimum. Every gain belongs to a detector nobody calibrated.
 
 **On the busy background the ranking changes.** binned SCE goes from last (0.45) to third (0.63),
