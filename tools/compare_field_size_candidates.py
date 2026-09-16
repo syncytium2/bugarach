@@ -46,17 +46,51 @@ import numpy as np  # noqa: E402
 PAIRS = [("gauge", "tube_no_bypass", "standardise against own null"),
          ("tube_no_bypass", "tube", "remove the bypass"),
          ("chorus", "line", "add spread and loudest-few channels"),
+         ("chorus_line", "line", "add spread and loudest-few channels to line"),
+         ("chorus_gain", "chorus", "input gain on chorus's encoder"),
+         ("chorus_norm", "chorus", "standardise chorus's encoder output"),
+         ("chorus_gain_norm", "chorus", "standardise, then line's vote"),
+         ("chorus_gain_norm", "chorus_norm", "line's vote on top of standardising"),
          ("gauge", "coact", "gauge against CoactDetect"),
          ("chorus", "coact", "chorus against CoactDetect"),
+         ("chorus_line", "coact", "chorus_line against CoactDetect"),
+         ("chorus_gain", "coact", "chorus_gain against CoactDetect"),
+         ("chorus_norm", "coact", "chorus_norm against CoactDetect"),
+         ("chorus_gain_norm", "coact", "chorus_gain_norm against CoactDetect"),
          ("tube", "coact", "tube against CoactDetect"),
          ("line", "coact", "line against CoactDetect")]
 
-ORDER = ["tube", "tube_no_bypass", "gauge", "line", "chorus", "coact", "loco"]
+ORDER = ["tube", "tube_no_bypass", "gauge", "line", "chorus_line", "chorus",
+         "chorus_gain", "chorus_norm", "chorus_gain_norm", "coact", "loco"]
 """Grouped by family and control, never sorted by score: at four folds these are
 intervals, not an ordering."""
 
 LABEL = {"tube": "tube", "tube_no_bypass": "tube\nno bypass", "gauge": "gauge",
-         "line": "line", "chorus": "chorus", "coact": "CoactDetect", "loco": "LoCo"}
+         "line": "line", "chorus": "chorus", "coact": "CoactDetect", "loco": "LoCo",
+         "chorus_line": "chorus\non line", "chorus_gain": "chorus\ngain",
+         "chorus_norm": "chorus\nnorm", "chorus_gain_norm": "chorus\ngain+norm"}
+
+
+def merge(bakes: list[dict]) -> dict:
+    """Several runs on the same folds, seeds and training seed, as one.
+
+    Learned rows are taken from every file; the hand-written rows from the first file
+    that scored them (a ``--skip-hand-written`` run has none). A model that appears in
+    two files must be the same model, so the first one read wins and the rest are
+    ignored rather than averaged.
+    """
+    first = bakes[0]
+    for b in bakes[1:]:
+        for key in ("folds", "seeds_per_fold", "train_seed", "transfer", "seeds"):
+            if b[key] != first[key]:
+                raise SystemExit(f"cannot merge runs that differ in {key}")
+    out = dict(first, hand_written={}, learned={})
+    for b in bakes:
+        if not out["hand_written"] and b["hand_written"]:
+            out["hand_written"] = b["hand_written"]
+        for name, row in b["learned"].items():
+            out["learned"].setdefault(name, row)
+    return out
 
 HOME, AWAY = "#2a78d6", "#eb6834"
 """Categorical slots one and two of the default palette; validated light-mode, worst
@@ -153,7 +187,7 @@ def draw(summary: dict, path: Path) -> None:
     models = summary["models"]
     pm = summary["per_model"]
     has_null = any("null_fa_per_hour_home" in pm[m] for m in models)
-    fig = plt.figure(figsize=(13.5, 8.6 if has_null else 4.8))
+    fig = plt.figure(figsize=(max(13.5, 1.95 * len(models)), 8.6 if has_null else 4.8))
     grid = fig.add_gridspec(2 if has_null else 1, len(models),
                             height_ratios=[1.25, 1] if has_null else [1],
                             hspace=0.42, wspace=0.22)
@@ -225,14 +259,24 @@ def draw(summary: dict, path: Path) -> None:
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--home", type=Path, required=True)
-    ap.add_argument("--transfer", type=Path, required=True)
+    ap.add_argument("--home", type=Path, nargs="+", required=True,
+                    help="one or more home runs on the same folds; merged")
+    ap.add_argument("--transfer", type=Path, nargs="+", required=True,
+                    help="one or more transfer runs on the same folds; merged")
+    ap.add_argument("--models", default=None,
+                    help="comma-separated subset of models to draw and pair, in ORDER")
     ap.add_argument("--out", default=None, help="default: the darkroom")
     ap.add_argument("--also", default=None, help="a second copy, usually the repo")
     a = ap.parse_args(argv)
 
-    summary = summarise(json.loads(a.home.read_text()),
-                        json.loads(a.transfer.read_text()))
+    summary = summarise(merge([json.loads(p.read_text()) for p in a.home]),
+                        merge([json.loads(p.read_text()) for p in a.transfer]))
+    if a.models:
+        keep = [m.strip() for m in a.models.split(",")]
+        summary["models"] = [m for m in summary["models"] if m in keep]
+        summary["per_model"] = {m: summary["per_model"][m] for m in summary["models"]}
+        summary["pairs"] = [p for p in summary["pairs"]
+                            if p["a"] in keep and p["b"] in keep]
     out = a.out
     if out is None:
         from bugarach.paths import darkroom
