@@ -26,32 +26,6 @@
   a tenth the learning rate of the model that works, so the comparison is uncontrolled.
 - **Every learned number is one training run per fold.** No seed error bars anywhere.
 
-## Three more architectures exist, and none of them has a number
-
-**Added 2026-09-16**, with the field-size proposal
-[`proposals/2026-09-16-nine-cells-to-a-thousand.html`](proposals/2026-09-16-nine-cells-to-a-thousand.html).
-Each is one file in `src/bugarach/learn/nets/` and one `@register` line, so each is already in
-the registry the app, the lab server and the bake-off read:
-
-| net | params | the one axis it moves |
-|---|---|---|
-| `chorus` | 1,897 | keeps the cell axis until after the temporal filter; pools into mean, spread and the loudest few, instead of one mean |
-| `gauge` | 1,125 | `tube`'s kernel bank, standardised against a null built by rolling the recording's own cells. No bypass |
-| `quorum` | 1,467 | scores each cell against its own rate, then an order statistic over cells whose depth is a **fitted** power of the field size |
-
-⚠ **None is trained and none is scored, and a session meeting one of these names should
-assume nothing else.** They build, they run from one cell to a thousand, they survive a
-checkpoint round trip, they reach `detect_folder` in the six ports' contract, and their
-figures are draughtsman drawings of a trace of the built module. That is the whole of it.
-`tools/fair_bakeoff.py`'s `LEARNED` roster does **not** include them, deliberately — running
-them at a guessed learning rate would confound the mechanism with its optimisation, which is
-the mistake this page already records against the per-cell architecture — so a bake-off lists
-them under `registered_but_not_run` and that is the honest state.
-
-**Before any of them is fitted, item 1 below is the run that matters**, and it is about
-`tiny` rather than about them: `chorus` is the family `tiny` already failed in, at a tenth of
-`tube`'s learning rate, and that comparison was never controlled.
-
 ## What is not established, and must not be claimed
 
 - **Nothing here says any detector is right about a real slice.** The data set is

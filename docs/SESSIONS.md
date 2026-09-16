@@ -11,30 +11,22 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 ---
 
 ### vm/net-design — DARKROOM claim RELEASED 2026-09-16: `bugarach/2026-09-16-net-design/`
-- **Status:** **RELEASED — the folder holds `README.md` and nothing else, and that is the whole
-  of what this session could put there.** ⚠ **The page itself did not make it.** The connector
-  takes inline text only, and re-typing a 90 KB generated file through it would have produced a
-  different file wearing the same name. The note says so in its own second paragraph and gives
-  the one command that fixes it from a machine with the mount:
-  `python3 tools/build_net_design_page.py --also docs/proposals`. **Whoever runs it next, run
-  that first.** The page is readable meanwhile at the artifact link in the note.
-  Was ACTIVE, claimed before writing. Tony asked for an evaluation of the data and of
-  `tube`, `trace` and the tube variants, and for three new classes of net with diagrams, against
-  the problem that a recording carries anywhere from 9 to 1,050 cells. No murderboard, on his
-  instruction.
-- **Writes:** one new folder only — the proposal page and the closed-form field-size numbers it
-  draws. Nothing existing in the darkroom is touched.
-- ⚠ **Written through the Dropbox connector, not a mount.** This session runs in a remote
-  container with no darkroom mount and no `.venv`; `torch` would not install, so **nothing here
-  is trained, traced or scored**. Every measured number on the page is read from an artifact
-  already committed in this tree, and the three architectures are designs rather than code.
-- **Second write, same claim, 2026-09-16:** `UPDATE-the-nets-are-drawn-by-draughtsman.md`. The
-  three proposed nets were built and their figures are now draughtsman drawings of a trace of the
-  built module rather than hand-drawn schematics; the note records what `check` refused while the
-  specs were written, and that none of the three is trained or scored.
-- **Released when:** the page is in the folder and its repo copy is on a PR.
-
----
+- **Status:** **RELEASED — the folder holds two notes and no page.** The connector this session
+  reached Dropbox through takes inline text only, and re-typing a 90 KB generated file through it
+  would have produced a different file wearing the same name.
+- ⚠ **BOTH NOTES ARE NOW PARTLY WRONG, and the folder has no third note saying so.** A review on
+  PR #589 found three things the session had missed: the per-cell rate the numbers rest on is a
+  **median of medians**, which `adapt.py` documents as a trap and which comes out six times below
+  FOUNDATIONS §9's own range for the same quantity; an architecture called **`line` already
+  exists** on `unsup/rigid-shift-controls`, so the note's claim that it does not is false and one
+  of the three proposed nets largely duplicates it; and `gauge` is **not permutation invariant**,
+  which is the one ledger row the page calls structural everywhere. **Whoever opens that folder
+  next: the corrected rate is 0.0097 Hz, the cross-lab rate ratio is 2.4× and not 19.6×, and the
+  page needs rewriting around `line` before any of it is quoted.**
+- **Writes:** `README.md`, then `UPDATE-the-nets-are-drawn-by-draughtsman.md`. Nothing existing in
+  the darkroom was touched.
+- **Released when:** released. The corrected page is not in the repo either — it moved to
+  `claude/net-design-proposal-hw8rve`, unmerged, when #589 was split down to the probe.
 
 ### Mac/rigid-shift-darkroom-fix — DARKROOM claim RELEASED 2026-09-15: `bugarach/2026-09-15-rigid-shift-look/` and the stray `bugarach/bugarach/`
 - **Status:** **RELEASED — `cossart/` moved into the look folder, the stray folder removed, and the

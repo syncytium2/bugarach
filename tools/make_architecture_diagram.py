@@ -104,26 +104,6 @@ LEARNED = ROOT / "docs" / "learned"
 #: with a `min_type` floor. `build_site.lead_model` picks between them; the learned
 #: pages inline only the wide one.
 DRAWABLE = {
-    # The three classes proposed on 2026-09-16. Each is drawn the same way the tube
-    # is -- traced from the built module, checked for coverage, rendered -- because a
-    # hand-drawn schematic of a model that exists is a second description that can
-    # drift from it. ⚠ NONE OF THEM HAS BEEN TRAINED OR SCORED: a figure says what a
-    # model computes, never that it works.
-    "chorus": {
-        "figures": {"chorus.svg": LEARNED / "chorus.spec.json"},
-        "target": "bugarach.learn.nets.chorus:build_chorus",
-        "input_shape": [1, 30, 600],
-    },
-    "gauge": {
-        "figures": {"gauge.svg": LEARNED / "gauge.spec.json"},
-        "target": "bugarach.learn.nets.gauge:build_gauge",
-        "input_shape": [1, 30, 600],
-    },
-    "quorum": {
-        "figures": {"quorum.svg": LEARNED / "quorum.spec.json"},
-        "target": "bugarach.learn.nets.quorum:build_quorum",
-        "input_shape": [1, 30, 600],
-    },
     "tube": {
         "figures": {
             "architecture.svg": LEARNED / "architecture.spec.json",

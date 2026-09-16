@@ -30,6 +30,28 @@ to beat, not a measurement of any of them.
    range moves by two orders of magnitude between corpora is a transfer failure
    waiting in the arithmetic.
 
+⚠ **THE PER-CELL RATE IS A MEAN, AND THE FIRST VERSION OF THIS PROBE USED A MEDIAN.**
+That was wrong, and this repository had already written the reason down.
+``assessment_*.json`` carries ``roi_rate_med``, a median over windows of each window's
+**median** per-ROI rate — and on this lab's folder **128 of 340 windows have a median of
+zero**, because more than half the cells in those windows never fire inside them. The
+median-of-medians comes out at 0.00083 Hz, which is six times *below* the bottom of the
+baseline interquartile range FOUNDATIONS §9 gives for the same quantity (0.0052–0.0190 Hz)
+— a number a session should have refused on sight, and did not. `src/bugarach/adapt.py`
+documents the identical trap in its own header, calls it "a third trap", and moved to the
+mean for exactly this reason.
+
+So the rate here is the **mean**: each window's onsets divided by its cells and its
+seconds, then the median of that across windows. It lands at 0.0097 Hz, inside §9's range.
+Both statistics are reported, because the correction is only checkable if the wrong one is
+still visible beside the right one.
+
+**What the correction moves.** The cross-lab rate ratio falls from 19.6× to **2.4×**, so
+the field-size and rate axes are *not* comparably confounded after all — field size differs
+117× and rate 2.4×, and the cross-lab difference is mostly field size. The floor itself
+rises everywhere. What survives is the shape: the floor still grows sub-linearly, so
+neither a fixed count nor a fixed fraction is the right rule.
+
 WHAT IT DOES NOT SETTLE. The null is independent cells at a single homogeneous rate,
 which real recordings are not: per-cell rates are heterogeneous and onsets are not
 independent within a cell (there is a dead-time floor — 0.40 s fast, 3.20 s slow on
@@ -53,10 +75,12 @@ REPO = Path(__file__).resolve().parent.parent
 # this probe is not a loader, so it states the grid it is reasoning on instead.
 DT_SEC = 0.1
 
-# `tube` widens every onset to 2*kmin+1 frames before the mean over cells, where kmin
-# is read from a fitted centre width. Fitted widths seen so far are ~4-7 samples
-# (src/bugarach/learn/nets/tube.py), so 4 samples -> 9 frames is the middle of the
-# observed range. It is a stated assumption, not a measurement.
+# `tube` widens every onset to 2*kmin+1 frames before the mean over cells, where kmin is
+# read from a fitted centre width. Fitted widths seen so far are ~4-7 samples
+# (src/bugarach/learn/nets/tube.py), so 4 samples -> 9 frames is the BOTTOM of the observed
+# range, not its middle -- an earlier comment here said middle and was wrong. Every floor
+# below scales with this, so it travels in the JSON and is named in the prose rather than
+# left to the reader to discover. It is a stated assumption, not a measurement.
 WIDEN_FRAMES = 9
 
 # One chance frame per hour of recording. A budget, chosen to be stated rather than
@@ -102,10 +126,18 @@ def _median(values):
 
 
 def corpus(path: Path, label: str, short: str) -> dict:
-    """Field size, per-cell rate and participation, read off a committed assessment."""
+    """Field size, per-cell rate and participation, read off a committed assessment.
+
+    The rate is the median across windows of each window's MEAN per-ROI rate, computed
+    here from the window's own onset count rather than read from ``roi_rate_med`` — see
+    the module docstring for why that field cannot be used.
+    """
     rows = json.loads(path.read_text())["rows"]
     sizes = sorted(r["n_roi"] for r in rows)
-    rate = _median(r.get("roi_rate_med") for r in rows)
+    rate = _median(
+        r["n_events_win"] / r["n_roi"] / r["window_sec"] for r in rows
+        if r.get("n_events_win") is not None and r.get("n_roi") and r.get("window_sec"))
+    rate_med_of_med = _median(r.get("roi_rate_med") for r in rows)
     return {
         "label": label,
         "short": short,
@@ -116,7 +148,11 @@ def corpus(path: Path, label: str, short: str) -> dict:
         "n_roi_median": sizes[len(sizes) // 2],
         "n_roi_p75": sizes[(3 * len(sizes)) // 4],
         "n_roi_max": sizes[-1],
-        "roi_rate_med_hz": rate,
+        "roi_rate_mean_hz": rate,
+        "rate_statistic": "median across windows of each window's mean per-ROI rate",
+        "roi_rate_med_hz_SUPERSEDED": rate_med_of_med,
+        "n_windows_with_zero_median": sum(1 for r in rows
+                                          if r.get("roi_rate_med") == 0),
         "participants_med": _median(r.get("part_n_obs") for r in rows),
         "p_frame": rate * DT_SEC * WIDEN_FRAMES,
     }
