@@ -45,15 +45,34 @@ built for field size, and the supervised bake-off at home and carried is the sta
 F1 is the mean over 4 folds. A fold with planted events and no hits counts as F1 0, not as missing
 (`folds_with_no_hits_read_as_zero` in each `compare_seed*/field_size_candidates.json` lists them).
 
-| model | F1 home, seed 0 | F1 home, seed 1 | F1 on Cossart, seed 0 | F1 on Cossart, seed 1 |
+The **probe** columns are the busy-window false alarms (`hot_fa`): every simulated recording carries
+a 300 s stretch, 1,200 s to 1,500 s, where every ROI fires at 0.06 Hz with nothing planted. That is
+6.2 times the home background (0.0097 Hz) and 2.6 times the Cossart background (0.0233 Hz). A fold
+holds 6 held-out recordings, so its count covers 30 minutes of busy window; the table gives the mean
+over folds converted to **false alarms per hour of busy window** (count × 2). Probe firings are left
+out of precision, so they do not show up in F1.
+
+Each cell gives the seed 0 value, then the seed 1 value. The hand-written detectors have no seed, so they get one value.
+
+| model | F1 home | F1 on Cossart | probe home, per hour | probe on Cossart, per hour |
 |---|---|---|---|---|
-| gauge | 0.526 | 0.513 | **0.668** | **0.585** |
-| tube_no_bypass | 0.639 | 0.669 | 0.229 | 0.230 |
-| tube | 0.656 | 0.635 | 0.140 | 0.244 |
-| line | 0.666 | 0.710 | 0.005 | 0.145 |
-| chorus | 0.125 | 0.125 | 0.125 | 0.125 |
-| CoactDetect | 0.645 | (no seed) | 0.774 | (no seed) |
-| LoCo | 0.653 | (no seed) | 0.707 | (no seed) |
+| gauge | 0.526 / 0.513 | **0.668 / 0.585** | 112 / 79.5 | 26.5 / 31.5 |
+| tube_no_bypass | 0.639 / 0.669 | 0.229 / 0.230 | 101.5 / 108 | 0 / 0 |
+| tube | 0.656 / 0.635 | 0.140 / 0.244 | 125.5 / 101.5 | 0 / 0 |
+| line | 0.666 / 0.710 | 0.005 / 0.145 | 8.5 / 34.5 | 0 / 0 |
+| chorus | 0.125 / 0.125 | 0.125 / 0.125 | 0 / 0 | 0 / 0 |
+| CoactDetect | 0.645 | 0.774 | 5.5 | 25 |
+| LoCo | 0.653 | 0.707 | 14 | 27 |
+
+Per-fold probe counts are in each `bakeoff*.json` under `per_fold[].hot_fa`.
+
+⚠ **A probe count of zero is only evidence from a model that fires.** On Cossart, `tube`,
+`tube_no_bypass` and `line` fire almost nowhere (F1 0.005 to 0.244), and chorus fires in the same few
+places whatever its input, so their zeros there say they are nearly silent, not that they resist a
+busy window. gauge's 26.5 and 31.5 per hour on Cossart sit level with CoactDetect's 25 and LoCo's 27.
+At home gauge fires in the busy window about as often as the two tubes (80 to 126 per hour) and 15
+to 20 times as often as CoactDetect: standardising against its own null did not buy busy-window
+robustness on a 32-ROI field.
 
 `tube` at seed 0 reproduces the shipped 24-recording bake-off's 0.656 exactly, so adding the
 `bypass` flag did not move the shipped model.
