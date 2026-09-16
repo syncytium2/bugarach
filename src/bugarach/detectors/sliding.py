@@ -64,28 +64,95 @@ def pieces(ev: list[np.ndarray], w: float, t_lo: float, t_hi: float):
     return starts[keep], ends[keep], S[keep]
 
 
-def catch_probabilities(ev: list[np.ndarray], lo: float, hi: float, w: float) -> np.ndarray:
-    """Per ROI with events in ``[lo, hi]``: P(caught by a width-``w`` window) under a
-    uniform circular shift of its in-context events around a circle of length ``hi - lo``."""
-    L = hi - lo
+def catch_from_positions(positions: list[np.ndarray], L: float, w: float) -> np.ndarray:
+    """P(caught) for each non-empty ROI, given its events' positions on a circle of length
+    ``L``. The slow, obvious form: the reference for :class:`EventIndex`, and what the
+    guard uses, where the circle is assembled from two pieces of the context."""
     if L <= 0:
         return np.empty(0)
-    if w >= L:
-        return np.array([1.0 for v in ev if np.any((v >= lo) & (v <= hi))])
     out = []
-    for v in ev:
-        a = np.searchsorted(v, lo, side="left")
-        b = np.searchsorted(v, hi, side="right")
-        if b <= a:
+    for x in positions:
+        if x.size == 0:
             continue
-        x = np.sort(np.mod(v[a:b] - lo, L))
+        if w >= L:
+            out.append(1.0)
+            continue
+        x = np.sort(np.mod(x, L))
         gaps = np.diff(np.r_[x, x[0] + L])
         out.append(np.minimum(gaps, w).sum() / L)
     return np.asarray(out, dtype=float)
 
 
+def catch_probabilities(ev: list[np.ndarray], lo: float, hi: float, w: float) -> np.ndarray:
+    """Per ROI with events in ``[lo, hi)``: P(caught by a width-``w`` window) under a
+    uniform circular shift of its in-context events around a circle of length ``hi - lo``.
+    One-off form; a detector evaluating many contexts builds an :class:`EventIndex`."""
+    return EventIndex(ev).catch_probabilities(lo, hi, w)
+
+
+class EventIndex:
+    """Every ROI's sorted events in one flat array, so a context query is a handful of
+    vectorised calls rather than a loop over ROIs.
+
+    Events are keyed ``roi * scale + (t - base)``; ``scale`` exceeds any query offset, so
+    one ``searchsorted`` over the key finds every ROI's slice of a context at once.
+    """
+
+    def __init__(self, ev: list[np.ndarray]):
+        lens = np.array([v.size for v in ev], dtype=int)
+        self.n = len(ev)
+        self.t = np.concatenate(ev).astype(float) if lens.sum() else np.empty(0)
+        roi = np.repeat(np.arange(self.n), lens)
+        self.base = float(self.t.min()) if self.t.size else 0.0
+        span = float(self.t.max() - self.base) if self.t.size else 0.0
+        self.margin = span + 1e5
+        self.scale = 4.0 * self.margin
+        self.key = roi * self.scale + (self.t - self.base)
+        self.rows = np.arange(self.n) * self.scale
+
+    def _offset(self, t: float) -> float:
+        return float(np.clip(t - self.base, -self.margin, self.margin * 2))
+
+    def catch_probabilities(self, lo: float, hi: float, w: float) -> np.ndarray:
+        L = hi - lo
+        if L <= 0 or self.t.size == 0:
+            return np.empty(0)
+        a = np.searchsorted(self.key, self.rows + self._offset(lo), side="left")
+        b = np.searchsorted(self.key, self.rows + self._offset(hi), side="left")
+        cnt = b - a
+        nz = cnt > 0
+        if not nz.any():
+            return np.empty(0)
+        a, cnt = a[nz], cnt[nz]
+        if w >= L:
+            return np.ones(a.size)
+        offs = np.cumsum(cnt) - cnt
+        idx = np.repeat(a - offs, cnt) + np.arange(cnt.sum())
+        x = self.t[idx] - lo
+        nxt = np.empty_like(x)
+        nxt[:-1] = x[1:]
+        last = offs + cnt - 1
+        nxt[last] = x[offs] + L                   # each ROI wraps to its own first event
+        return np.add.reduceat(np.minimum(nxt - x, w), offs) / L
+
+
 def poisson_binomial(p: np.ndarray) -> np.ndarray:
-    """P(count = k), k = 0..len(p), for independent Bernoulli(p_i)."""
+    """P(count = k), k = 0..len(p), for independent Bernoulli(p_i).
+
+    From the characteristic function at the n+1 roots of unity and one FFT (Hong 2013,
+    the DFT-CF method): one vectorised product instead of a loop over ROIs. Checked
+    against :func:`_poisson_binomial_loop` in the tests."""
+    n = p.size
+    if n == 0:
+        return np.ones(1)
+    z = np.exp(2j * np.pi * np.arange(n + 1) / (n + 1))
+    phi = np.prod(1 - p[:, None] + p[:, None] * z[None, :], axis=0)
+    pmf = np.real(np.fft.fft(phi)) / (n + 1)
+    return np.clip(pmf, 0.0, None)
+
+
+def _poisson_binomial_loop(p: np.ndarray) -> np.ndarray:
+    """The recursion, one ROI at a time — the reference :func:`poisson_binomial` must match."""
     dist = np.zeros(p.size + 1)
     dist[0] = 1.0
     for i, pi in enumerate(p, start=1):

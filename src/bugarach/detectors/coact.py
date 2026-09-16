@@ -319,16 +319,22 @@ def _coact_sliding(trains, t_range, *, int_win_sec, context_win_sec, min_rois, a
 
     An episode's onset is its first participating event and its width runs to the
     last (``tightness``, as LoCo reports), not a bin edge.
+
+    The guard follows the binned path exactly — a band of ``guard_sec`` centred on the
+    window is excised from the context, and ``guard_norm`` decides whether the two
+    remaining pieces are laid end to end (``compact``) or kept on the full-length
+    circle with a hole (``exposure``) — with the catch probabilities computed on that
+    circle instead of sampled.
     """
     from bugarach.detectors import sliding as sl
 
     if detection_mode != "threshold":
         raise ValueError('window_mode="sliding" supports detection_mode="threshold" only')
-    if guard_sec > 0:
-        raise ValueError('window_mode="sliding" does not implement a guard yet')
+    guard_norm = opts_extra.get("guard_norm", "compact")
     t0, t1 = t_range
     w, C = float(int_win_sec), float(context_win_sec)
     ev = clip_sorted(trains, t0, t1)
+    index = sl.EventIndex(ev)
     starts, ends, S = sl.pieces(ev, w, t0, t1)
     n_p = starts.size
     z = np.full(n_p, np.nan)
@@ -336,7 +342,20 @@ def _coact_sliding(trains, t_range, *, int_win_sec, context_win_sec, min_rois, a
     nullmean = np.full(n_p, np.nan)
     for i in np.flatnonzero(S >= min_rois):
         c = starts[i] - w / 2
-        p = sl.catch_probabilities(ev, max(t0, c - C / 2), min(t1, c + C / 2), w)
+        c_lo, c_hi = max(t0, c - C / 2), min(t1, c + C / 2)
+        if guard_sec > 0:
+            left = max(c_lo, min(c - guard_sec / 2, c_hi))
+            right = min(c_hi, max(c + guard_sec / 2, c_lo))
+            retained = (left - c_lo) + (c_hi - right)
+            if retained <= w:
+                continue                  # no reference left to estimate from
+            shift = (left - c_lo) - right if guard_norm == "compact" else -c_lo
+            parts = [np.concatenate((v[(v >= c_lo) & (v < left)] - c_lo,
+                                     v[(v > right) & (v <= c_hi)] + shift)) for v in ev]
+            L = retained if guard_norm == "compact" else (c_hi - c_lo)
+            p = sl.catch_from_positions(parts, L, w)
+        else:
+            p = index.catch_probabilities(c_lo, c_hi, w)
         mu, sd = sl.moments(p)
         nullmean[i] = mu
         if sd > 0:

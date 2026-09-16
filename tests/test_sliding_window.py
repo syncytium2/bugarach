@@ -78,10 +78,59 @@ def test_shifting_the_recording_moves_every_call_by_the_shift(name):
         np.testing.assert_allclose(got, ref, atol=1e-6)
 
 
-def test_sliding_refuses_what_it_does_not_implement():
+def test_the_index_equals_the_obvious_form_for_every_context():
+    ev = _trains(seed=4, n_roi=30, T=600.0, rate=0.05)
+    index = sl.EventIndex(ev)
+    rng = np.random.RandomState(5)
+    for _ in range(300):
+        lo = rng.uniform(-20, 580)
+        hi = lo + rng.uniform(0.5, 150)
+        w = rng.choice([0.5, 1.0, 2.0, 10.0])
+        fast = index.catch_probabilities(lo, hi, w)
+        slow = sl.catch_from_positions([v[(v >= lo) & (v < hi)] - lo for v in ev], hi - lo, w)
+        np.testing.assert_allclose(fast, slow, atol=1e-12)
+
+
+@pytest.mark.parametrize("n", [1, 5, 34, 405])
+def test_the_one_call_null_equals_the_recursion(n):
+    p = np.random.RandomState(n).uniform(0, 0.6, n)
+    np.testing.assert_allclose(sl.poisson_binomial(p), sl._poisson_binomial_loop(p), atol=1e-12)
+
+
+def _burst_trains():
+    """Sparse background, and every ROI firing within 0.5 s at t = 150."""
+    ev = _trains(seed=7, n_roi=15, T=300.0, rate=0.02)
+    return [np.sort(np.r_[v[np.abs(v - 150) > 5], 150.0 + 0.03 * i]) for i, v in enumerate(ev)]
+
+
+def test_the_coact_guard_keeps_the_burst_out_of_its_own_null():
     from bugarach.detectors.coact import coact_detect
-    ev = _trains()
+    ev = _burst_trains()
+    kw = dict(int_win_sec=2.0, context_win_sec=40.0, alpha=1e-4, window_mode="sliding")
+    plain = coact_detect(ev, (0.0, 300.0), **kw)
+    for norm in ("compact", "exposure"):
+        guarded = coact_detect(ev, (0.0, 300.0), guard_sec=10.0, guard_norm=norm, **kw)
+        at = np.flatnonzero(np.abs(guarded.ctr - 151) < 1.5)
+        i = at[np.nanargmax(guarded.obs[at])]
+        j = np.flatnonzero(plain.ctr == guarded.ctr[i])[0]
+        assert guarded.nullmean_prof[i] < plain.nullmean_prof[j], norm
+        assert guarded.z_prof[i] > plain.z_prof[j], norm
+
+
+def test_the_loco_guard_lowers_the_bar_at_the_burst():
+    from bugarach.io import slice_from_events
+    from bugarach.detectors.loco import loco_detect
+    s = slice_from_events({"events": _burst_trains()}, dt=0.1)
+    kw = dict(bin_width_sec=1.0, context_win_sec=60.0, threshold_pctile=99.0,
+              merge_gap_sec=2.0, window_mode="sliding")
+    plain = loco_detect(s, **kw).streams["events"].signal
+    guarded = loco_detect(s, guard_sec=10.0, **kw).streams["events"].signal
+    i = int(np.nanargmax(np.where(np.abs(guarded.t - 151) < 1.5, guarded.y, -1)))
+    j = np.flatnonzero(plain.t == guarded.t[i])[0]
+    assert guarded.threshold[i] <= plain.threshold[j]
+
+
+def test_sliding_refuses_peak_mode_rather_than_guessing():
+    from bugarach.detectors.coact import coact_detect
     with pytest.raises(ValueError, match="threshold"):
-        coact_detect(ev, (0.0, 300.0), window_mode="sliding", detection_mode="peak")
-    with pytest.raises(ValueError, match="guard"):
-        coact_detect(ev, (0.0, 300.0), window_mode="sliding", guard_sec=5.0)
+        coact_detect(_trains(), (0.0, 300.0), window_mode="sliding", detection_mode="peak")
