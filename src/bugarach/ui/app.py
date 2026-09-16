@@ -444,8 +444,11 @@ def _compute(det: str, s: Slice, ext, params: dict, *, dt: float):
                 m = (res.signal.t >= seg["win_start"]) & \
                     (res.signal.t <= seg["win_end"])
                 thr[m] = seg["value"]
+            # the bin run, not width_sec: the lane draws and scores this tuple,
+            # and SCE's width is the event spread inside the bin, which can end
+            # before the events the call was made on (SceStream.extent_sec)
             out[name] = StreamResult(res.signal.t, res.signal.y,
-                                     (res.onset_sec, res.width_sec),
+                                     (res.onset_sec, res.extent_sec),
                                      {"threshold": thr}, res)
     elif det == "cicada":
         r = cicada_detect(s, rng_seed=RNG_SEED, emit_signal=True,

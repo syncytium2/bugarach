@@ -50,7 +50,7 @@ function sceDetect(trains, range, opts) {
   const u = rng32(o.seed === undefined ? 20260706 : o.seed);
 
   const wLo = range[0], wHi = range[1];
-  const empty = { starts: [], ends: [], widths: [], magnitude: [],
+  const empty = { starts: [], ends: [], widths: [], extents: [], magnitude: [],
                   magTotal: [], threshold: NaN, obs: new Float64Array(0),
                   bctr: new Float64Array(0), nEvents: 0 };
   if (wHi <= wLo) return empty;
@@ -132,7 +132,7 @@ function sceDetect(trains, range, opts) {
   }
   runs.push([cs, ce]);
 
-  const starts = [], ends = [], widths = [], mag = [], magTotal = [];
+  const starts = [], ends = [], widths = [], extents = [], mag = [], magTotal = [];
   for (const [fb, lb] of runs) {
     let mx = -Infinity;
     for (let b = fb; b <= lb; b++) if (obs[b] > mx) mx = obs[b];
@@ -150,9 +150,15 @@ function sceDetect(trains, range, opts) {
     starts.push(wLo + fb * bw);
     widths.push(w);
     ends.push(wLo + fb * bw + (Number.isNaN(w) ? 0 : w));
+    // THE STRETCH THE CALL WAS MADE ON, which `widths` is not: that is the event
+    // spread inside the bin (the generate_sce contract, and detections.csv's
+    // "tightness"), and read from the bin's start it can end before the events
+    // the call was made on. This is first bin's start to last bin's end, clipped
+    // to the window, and it is what the sweep scores — SceStream.extent_sec.
+    extents.push(Math.min(wLo + (lb + 1) * bw, wHi) - (wLo + fb * bw));
     mag.push(mx);
     magTotal.push(rois.size);
   }
-  return { starts, ends, widths, magnitude: mag, magTotal, threshold: thr,
+  return { starts, ends, widths, extents, magnitude: mag, magTotal, threshold: thr,
            obs, bctr, nEvents: starts.length };
 }
