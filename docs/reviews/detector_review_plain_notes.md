@@ -450,3 +450,67 @@ the value the program was first written with — which is the distinction the se
 got. "shipped" → "default" was false (note 30); "default" → "everyday" was undefined (this note). Three
 passes to say a simple thing, because each fix was checked against the complaint instead of against the
 reader.
+
+## 32. "mid-sized planted events (18% of cells take part)" (2026-09-16)
+
+*"what is 'mid-sized planted events found (18% of cells take part)? figure 15. i think you mean detection
+of coordinated events with a minimum number of ROIs? not sure how to say that to a sixth grader, but what
+we've got now is not it"*
+
+**Not a minimum — a size, and the label buried the one fact that makes it interesting.** Planted events
+come in three sizes, 30 / 18 / 10% of the 33 cells: **10, 6 and 3 cells**. Figure 15 scores only the
+middle one.
+
+Two faults:
+
+1. **A percentage against a total the panel never gives.** "18% of cells" is arithmetic homework, and
+   `bugarach.ui` house rules already say every number carries its unit — a count is a number.
+2. **"mid-sized" says it sits between the other two, which is the least important thing about it.**
+   `bench.py`'s own table records the measurement: `participation` was a 50–100% guess until 2026-08-13,
+   and the measured value is **6 of ~33 ROI = 18%**. So 18% is not a middle band — **it is the size a real
+   coordinated event actually is.** Figure 15 scores the programs at the realistic size, which is the
+   whole reason that row was chosen, and the label hid it.
+
+Worth separating from the thing Tony guessed it might be: `min_rois=3` is the detectors' own floor
+(coact, loco and sce all refuse fewer than 3 cells) and is a different quantity. The 10% size = 3 cells
+sits right at that floor, which is why it is the hardest case on the bench.
+
+**Applied.** Panel A's title is now *"events joined by 6 of the 33 cells — the usual real size"*. Section
+7 introduces all three sizes as counts, says 6 cells is what the lab measured, and says three of the six
+programs will not call anything smaller than 3 cells. The simulator figure's legend read
+"mid-sized: 18% of cells (6 cells)" and now reads "planted event, 6 cells — the usual real size". The
+body's "of mid-sized events" became "of the 6-cell events". The word is gone from the document.
+
+## 33. Figure 15B: "false alarms per minute in the busy stretch" (2026-09-16)
+
+Read against the code, the count is narrower than the label. `_blockrecall_one` counts calls whose
+**start** lies in `BLOCK_PLACE` (1240–1460 s, a 220 s window inset in the 5-minute busy stretch) **and**
+which are more than 10 s from either of the two events planted inside it, over a denominator of
+220 s minus 20 s per planted event.
+
+So it is not "per minute of the busy stretch" — it is *per minute of the part of the busy stretch with no
+planted event near it*, which is the right thing to count and was not what the label said.
+
+**Applied.** The panel title is now "false alarms in the busy stretch" with the per-minute scale named on
+the axis below it, and the caption says what a false alarm is here: *the calls a program made inside the
+busy stretch with no planted event near them.*
+
+## 34. Section 10's title, and four rows nobody explained (2026-09-16)
+
+*"part 10. change to 'detection on real recordings'. put a note that tube refers to learned models
+underdevelopment, outside the scope of the current document"*
+
+**Applied**, and the second half was a real hole rather than a wording preference. Note 21 cut the learned
+models out of this document into a companion — but the real-recording figures are drawn from
+`ALL10 = CODED + LEARNED4`, so **five figures still show four lanes named tube, tube-guard, tube-ratio and
+tube-ratio-guard**, and after the cut the word "tube" appeared nowhere in the prose. A reader met four
+unexplained rows and had nothing to look them up with. Grep could not find it either: those figures are
+PNG, so the names are not in the page text.
+
+Section 10 now opens with a note saying the four rows are learned models — shown examples and worked out
+their own rule, rather than following written steps — still being built, not among this document's six
+algorithms, and neither tested nor judged here. They stay drawn so the rows are not silently missing.
+
+**The lesson is about the cut, not the note.** Removing a subject from prose does not remove it from
+figures that were built from a detector list. When something leaves a document, grep the *builders* for
+the list that still includes it.

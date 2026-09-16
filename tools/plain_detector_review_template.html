@@ -62,7 +62,7 @@ how we tested them, and why they sometimes disagree with your own eyes.</p>
   <li><a href="#s8">Simulated recordings, where we know the answer</a></li>
   <li><a href="#s9">How we grade a program</a></li>
   <li><a href="#s10">Scores on the simulated recordings</a></li>
-  <li><a href="#s11">The programs on real recordings</a></li>
+  <li><a href="#s11">Detection on real recordings</a></li>
   <li><a href="#s12">Where your eye and the programs disagree</a></li>
   <li><a href="#s13">What this means</a></li>
   <li><a href="#refs">Where the ideas come from</a></li>
@@ -312,9 +312,14 @@ layers:</p>
   {{T.quiet_per_hour}} events per cell per hour) and a <b>busy background</b> (about {{T.busy_per_hour}}).
   Those match the quieter and busier untreated recordings in the lab's data ({{T.real_p25_per_hour}} and
   {{T.real_p75_per_hour}} per hour).</li>
-  <li><b>Planted events:</b> {{T.n_planted}} coordinated events that we put in on purpose, joined by 30%,
-  18% or 10% of the cells. The cells in one event start a little apart, not at exactly the same moment.
-  Planted events are at least {{T.min_sep_min}} minutes apart.</li>
+  <li><b>Planted events:</b> {{T.n_planted}} coordinated events that we put in on purpose. They come in
+  three sizes, counted by how many of the {{T.bench_n_roi}} cells join in: {{T.big_cells}} cells,
+  {{T.mid_cells}} cells, or {{T.small_cells}} cells. <b>{{T.mid_cells}} cells is the size that
+  matters</b> — that is what the lab measured in real recordings, so it is the size a real coordinated
+  event usually has. The
+  {{T.small_cells}}-cell size is the hardest case any program is asked to handle; three of the six will
+  not call a lineup smaller than that at all. The cells in one event start a little apart, not at exactly
+  the same moment. Planted events are at least {{T.min_sep_min}} minutes apart.</li>
   <li><b>A busy stretch:</b> from minute {{T.hot_from}} to minute {{T.hot_to}}, every cell gets about
   {{T.hot_per_hour}} extra random events per hour. Nothing is planted there, so any call there is a
   false alarm.</li>
@@ -412,17 +417,20 @@ that comes from how its calls are timed: when we score it over its whole 10-seco
 {{T.sce_fair_quiet}}. locust ({{T.f1q_cicada}}) and SPIKE-synch ({{T.f1q_sync}}) scored lower.</p>
 <figure>{{FIG:fig_busy}}
 <figcaption><b>Figure {{NUM:fig_busy}}. Finding real events inside a busy stretch.</b> A: the share of
-mid-sized planted events each program found outside the busy stretch (black) and inside it (orange). The
-gray tick shows what calling at random would find inside. B: false alarms per minute inside the busy
-stretch, on a scale where each step is ten times more. Every program here runs at its stored setting, not
-at the freshly chosen setting of Figure {{NUM:fig_scores}}.</figcaption></figure>
+planted events each program found, counting only the events joined by {{T.mid_cells}} of the
+{{T.bench_n_roi}} cells — the size a real coordinated event usually has (Section {{SEC:sim}}). Black is
+outside the busy stretch, orange inside it. The gray tick shows what calling at random would find inside.
+B: the calls a program made inside the busy stretch with no planted event near them — its false alarms —
+counted per minute, on a scale where each step is ten times more. Every program here runs at its stored
+setting, not at the freshly chosen setting of Figure {{NUM:fig_scores}}.</figcaption></figure>
 <p><b>Busy stretches are where the programs split apart</b> (Figure {{NUM:fig_busy}}). The recordings
 above never put a coordinated event inside the busy stretch, so a program that goes quiet there looks
 good even if it has gone blind. To find out which, we made {{T.block_recordings}} new recordings with
 coordinated events planted <i>inside</i> the busy stretch.</p>
 <ul>
   <li>CoactDetect and LoCo, which judge chance from nearby time, stay quiet in the busy stretch, but they
-  also miss most real events there: CoactDetect found {{T.out_coact}} of mid-sized events outside it and
+  also miss most real events there: CoactDetect found {{T.out_coact}} of the {{T.mid_cells}}-cell events
+  outside it and
   {{T.in_coact}} inside.</li>
   <li>locust and binned SCE, which judge chance from the whole recording, keep calling in the busy stretch:
   about {{T.fa_cicada}} and {{T.fa_sce}} false alarms per minute. binned SCE calls all the way through it,
@@ -432,9 +440,15 @@ coordinated events planted <i>inside</i> the busy stretch.</p>
   held up.</li>
 </ul>
 
-<h2 id="s11">{{SEC:real}}. The programs on real recordings</h2>
+<h2 id="s11">{{SEC:real}}. Detection on real recordings</h2>
 <p><b>A real recording has no answer key.</b> The figures in this section show where each program made
 calls. No figure here can show whether a call is right.</p>
+<p><b>Four extra rows, and they are not part of this review.</b> The figures in this section and the next
+carry {{T.n_learned}} rows whose names begin with <b>tube</b>. Those are <b>learned models</b> — programs
+that were shown examples and worked out their own rule, rather than following steps somebody wrote. They
+are still being built, none of this document's {{T.n_coded}} algorithms is one of them, and nothing here
+tests or judges them. They are drawn only so the rows are not silently missing. Treat them as work in
+progress; a separate document covers them.</p>
 <p>The lab tests two drugs. <b>TTX</b> (tetrodotoxin) blocks the fast electrical signals most nerve cells
 use. <b>Senktide</b> switches on a sensor these cells carry, the neurokinin 3 receptor
 (<a href="https://doi.org/10.1523/JNEUROSCI.1569-09.2009">Navarro and others, 2009</a>). Many

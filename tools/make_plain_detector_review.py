@@ -1334,10 +1334,13 @@ def fig_simulator(W, numbers):
     r.xaxis_time(label="time in the recording", target=10)
     y = 412
     for pct, col in sorted(sizes.items(), reverse=True):
-        lab = {30: "large", 18: "mid-sized", 10: "small"}.get(pct, "")
-        f.rich(L + {30: 0, 18: 190, 10: 400}.get(pct, 0), y,
+        #: Cell counts, not fractions — and the middle size is named for what it IS (the
+        #: measured real size), not for where it sits between the other two.
+        note = {18: " — the usual real size"}.get(pct, "")
+        f.rich(L + {30: 0, 18: 190, 10: 430}.get(pct, 0), y,
                [("▼ ", dict(color=col, weight=700)),
-                (f"{lab}: {pct}% of cells ({round(pct / 100 * sim['n_roi'])} cells)", dict(color=MUTED))], size=12)
+                (f"planted event, {round(pct / 100 * sim['n_roi'])} cells{note}", dict(color=MUTED))],
+               size=12)
     f.rich(L + 600, y, [("▽ ", dict(color="#555", weight=700)), ("decoy: built the same way, not counted", dict(color=MUTED))], size=12)
     f.rich(L, y + 22, [("▬ ", dict(color="#f0c9a0", weight=700)),
                        (f"busy stretch: every cell gets extra random events, nothing planted", dict(color=MUTED))], size=12)
@@ -1424,7 +1427,13 @@ def fig_busy(W, numbers, dets=CODED):
     dets = list(dets)
     f = Figure(1000, 470)
     X, PW = 170, 460
-    f.text(X, 24, "A · mid-sized planted events found (18% of cells take part)", size=13, weight=600)
+    #: "18% of cells take part" asked the reader to do arithmetic against a total the panel
+    #: never gives, and "mid-sized" implies an arbitrary middle band. It is the MEASURED size:
+    #: bench.py's own table records real coordinated events recruiting 6 of ~33 ROI. Say the count.
+    n_roi = int(numbers["bench_n_roi"])
+    cells = int(round(0.18 * n_roi))
+    f.text(X, 24, f"A · events joined by {cells} of the {n_roi} cells — the usual real size",
+           size=13, weight=600)
     p = f.panel(X, 36, PW, 340, (0, 1), (len(dets) - 0.5, -0.5))
     for v in (0, 0.25, 0.5, 0.75, 1.0):
         Xv = float(p.px(v))
@@ -1441,7 +1450,7 @@ def fig_busy(W, numbers, dets=CODED):
         f.line(float(p.px(ch)), Y - 9, float(p.px(ch)), Y + 9, color="#999", width=2)
     p.xaxis_values([0, 0.25, 0.5, 0.75, 1.0], fmt="{:.0%}", label="share of planted events found")
     X2, PW2 = 720, 240
-    f.text(X2, 24, "B · false alarms per minute in the stretch", size=13, weight=600)
+    f.text(X2, 24, "B · false alarms in the busy stretch", size=13, weight=600)
     q = f.panel(X2, 36, PW2, 340, (-2, 1.3), (len(dets) - 0.5, -0.5))
     for v in (-2, -1, 0, 1):
         Xv = float(q.px(v))
@@ -1730,6 +1739,14 @@ def _display_values(W, N) -> dict:
         n_stripes=real["n_stripes"], n_stripes_in=real["n_in"], n_stripes_out=real["n_stripes"] - real["n_in"],
         n_few=real["n_few"], n_few_out=real["n_few_out"], n_real_recordings=real["n_recordings"],
         stripe_pct=_pct(real["stripe_frac"]), weak_cells=real["weak_cells"],
+        #: Event sizes as CELL COUNTS, not fractions. Tony, 2026-09-16: a percentage of a
+        #: total the reader does not have in front of them is arithmetic homework, and
+        #: "mid-sized" hid that 18% is the measured real size (bench.py: 6 of ~33 ROI).
+        bench_n_roi=N["bench_n_roi"],
+        big_cells=int(round(0.30 * N["bench_n_roi"])),
+        mid_cells=int(round(0.18 * N["bench_n_roi"])),
+        small_cells=int(round(0.10 * N["bench_n_roi"])),
+        n_coded=len(CODED), n_learned=len(LEARNED4),
     )
     for reg, tag in (("baseline_quiet", "q"), ("baseline_busy", "b")):
         for d in CODED + LEARNED4:
