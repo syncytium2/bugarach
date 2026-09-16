@@ -62,6 +62,13 @@ from pathlib import Path
 
 REGIMES = ("baseline_quiet", "baseline_busy")
 NULL = "null"
+#: The crowded tail (bench.TAIL_RECORDING): planted events 6 s apart and more of them,
+#: fitted to the most crowded real recordings. A CHECK on held-out candidates, never a
+#: selection input — bench.py forbids calibrating on it. It exists here because the
+#: settings a search is most likely to fit to the bench's 120 s spacing (context windows,
+#: minimum distances) are exactly the ones this recording punishes.
+TAIL = ("tail_quiet", "tail_busy")
+N_TAIL = 12
 MAX_ROUNDS = 4
 MAX_EXTENSIONS = 3
 MOVE_EPS = 0.002
@@ -184,7 +191,10 @@ def _job(args):
                                           per_seed=rates if keep else None)
     scores = []
     for s in seeds:
-        rec, gt = bench.make_recording(regime, s)
+        if regime in TAIL:
+            rec, gt = bench.make_tail_recording("baseline_" + regime.split("_", 1)[1], s)
+        else:
+            rec, gt = bench.make_recording(regime, s)
         scores.append(score_stream(gt, bench.run_detector(det, rec, **params)))
     r = bench.pool_scores(scores, detector=det, regime=regime, seeds=tuple(seeds))
     return (det, items, regime), dict(f1=r.f1, recall=r.recall, precision=r.precision,
@@ -340,11 +350,14 @@ def held_out(pool, candidates, seeds, log=print):
     from bugarach import bench
 
     jobs = []
+    tail_seeds = list(seeds)[:N_TAIL]
     for d, cands in candidates.items():
         for name, p in cands.items():
             k = _key(d, p)
             for regime in (*REGIMES, NULL):
                 jobs.append((d, k[1], regime, list(seeds), True))
+            for regime in TAIL:
+                jobs.append((d, k[1], regime, tail_seeds, False))
     t0 = time.time()
     res = {key: val for key, val in pool.imap_unordered(_job, jobs, chunksize=1)}
     log(f"  held-out: {len(jobs)} evaluations in {time.time() - t0:.0f} s")
@@ -367,6 +380,11 @@ def held_out(pool, candidates, seeds, log=print):
 
         full = list(range(len(seeds)))
         base = [mean_f1("shipped", idx) for idx in idx_draws]
+
+        def tail_f1(name):
+            k = _key(d, cands[name])
+            return sum(res[(d, k[1], r)]["f1"] for r in TAIL) / len(TAIL)
+
         out[d] = {}
         for name, p in cands.items():
             q, b, n = (per[name][r] for r in (*REGIMES, NULL))
@@ -378,6 +396,8 @@ def held_out(pool, candidates, seeds, log=print):
                 probe_quiet_per_hour=60 * q["probe_per_min"],
                 probe_busy_per_hour=60 * b["probe_per_min"],
                 null_per_hour=n["null_per_hour"],
+                crowded_mean_f1=tail_f1(name),
+                crowded_gain_vs_shipped=tail_f1(name) - tail_f1("shipped"),
                 gain_vs_shipped=dict(
                     mid=float(np.median(gains)) if gains else None,
                     lo=float(np.percentile(gains, 2.5)) if gains else None,
@@ -429,13 +449,17 @@ def render(rep: dict, dest: Path) -> list[Path]:
             gain = ("" if name == "shipped" or g["mid"] is None else
                     f"{g['mid']:+.3f} ({g['lo']:+.3f} to {g['hi']:+.3f})")
             sel = rep["selection"].get(d, {}).get(name)
+            crowd = f"{c['crowded_mean_f1']:.3f}"
+            if name != "shipped":
+                crowd += f" ({c['crowded_gain_vs_shipped']:+.3f})"
             rows.append(
                 f"<tr class='{'ship' if name == 'shipped' else ''}'><td>{NAMES[d]}</td>"
                 f"<td>{name}</td><td>{changed}</td>"
                 f"<td>{'' if sel is None else f'{sel:.3f}'}</td>"
                 f"<td>{c['f1_quiet']:.3f}</td><td>{c['f1_busy']:.3f}</td><td>{c['mean_f1']:.3f}</td>"
                 f"<td>{gain}</td><td>{c['probe_quiet_per_hour']:.0f} / {c['probe_busy_per_hour']:.0f}</td>"
-                f"<td>{c['null_per_hour']:.1f}</td></tr>")
+                f"<td>{c['null_per_hour']:.1f}</td>"
+                f"<td>{crowd}</td></tr>")
 
     heat = []
     for fig_i, (d, pg) in enumerate(rep.get("pairs", {}).items(), start=2):
@@ -512,11 +536,12 @@ minus the shipped point's, with its 95% bootstrap interval ({BOOTSTRAP} resample
 the interval includes zero the search found nothing the bench can tell apart from the shipped point.
 Only candidates under both false-alarm limits were eligible. False alarms are per hour: in a dense
 stretch with nothing planted inside an ordinary recording (quiet / busy background), and on a whole
-recording with nothing planted. F1 is the harmonic mean of recall and precision.</p>
+recording with nothing planted. The last column scores each candidate on {N_TAIL} crowded recordings per background (planted events as little as 6 s apart, fitted to the most crowded real recordings), never used for choosing: a setting that only works because the ordinary bench spaces planted events 120 s apart loses here. F1 is the harmonic mean of recall and precision.</p>
 <table><tr><th>detector</th><th>candidate</th><th>settings that differ from shipped</th>
 <th>mean F1, chosen on</th><th>F1 quiet</th><th>F1 busy</th><th>mean F1</th>
 <th>gain vs shipped (95% interval)</th><th>false alarms/hour, empty stretch (quiet / busy)</th>
-<th>false alarms/hour, empty recording</th></tr>{"".join(rows)}</table>
+<th>false alarms/hour, empty recording</th>
+<th>mean F1, crowded recordings (change vs shipped)</th></tr>{"".join(rows)}</table>
 {full}
 <div class="heats">{"".join(heat)}</div>
 """
