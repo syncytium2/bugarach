@@ -78,6 +78,7 @@ def coact_detect(
     peak_min_distance_sec: float = 0.0,
     guard_sec: float = 0.0,
     guard_norm: str = "compact",
+    window_mode: str = "binned",
 ) -> CoactDetection:
     """Distinct-ROI coincidence vs a rolling rate-local circular-shift null.
 
@@ -91,7 +92,24 @@ def coact_detect(
     excised events *and* the excised span. ``"exposure"`` removes only the
     events. They differ by a factor the guard applies to every bin whether or
     not it excised anything; see ``docs/reviews/guard_prior_art_2026-08-26.md``.
+
+    ``window_mode="sliding"`` counts in a window that slides instead of fixed bins and
+    computes the null exactly instead of sampling it (:mod:`bugarach.detectors.sliding`),
+    so the calls do not move when the recording is shifted. ``"binned"`` is the MATLAB
+    port and what the parity fixtures pin. Sliding supports threshold mode without a
+    guard; ``n_surrogates`` and ``rng_seed`` do not apply to it.
     """
+    if window_mode not in ("binned", "sliding"):
+        raise ValueError('window_mode must be "binned" or "sliding"')
+    if window_mode == "sliding":
+        return _coact_sliding(trains, t_range, int_win_sec=int_win_sec,
+                              context_win_sec=context_win_sec, min_rois=min_rois,
+                              alpha=alpha, merge_gap_sec=merge_gap_sec,
+                              detection_mode=detection_mode, guard_sec=guard_sec,
+                              opts_extra=dict(n_surrogates=n_surrogates, rng_seed=rng_seed,
+                                              guard_norm=guard_norm,
+                                              peak_prominence=peak_prominence,
+                                              peak_min_distance_sec=peak_min_distance_sec))
     if detection_mode not in ("threshold", "peak"):
         raise ValueError('detection_mode must be "threshold" or "peak"')
     if guard_norm not in ("compact", "exposure"):
@@ -285,5 +303,75 @@ def coact_detect(
         signal=DetectorSignal(t=ctr, y=obs, ref=nullmean, threshold=None,
                               hilite=np.empty((0, 2)),
                               name="coact / local null", kind="local_coincidence"),
+        ext=t_range, opts=opts,
+    )
+
+
+def _coact_sliding(trains, t_range, *, int_win_sec, context_win_sec, min_rois, alpha,
+                   merge_gap_sec, detection_mode, guard_sec, opts_extra) -> CoactDetection:
+    """CoactDetect in a sliding window with the exact rate-local null.
+
+    Same statistic (distinct ROIs in a window of ``int_win_sec``), same null (each
+    ROI's events circularly shifted within a context of ``context_win_sec`` centred on
+    the window, clipped to the recording), same one-sided Gaussian z-test and ``alpha``
+    — evaluated on every piece of the sliding count instead of on fixed bins, with the
+    null's mean and standard deviation computed rather than estimated from draws.
+
+    An episode's onset is its first participating event and its width runs to the
+    last (``tightness``, as LoCo reports), not a bin edge.
+    """
+    from bugarach.detectors import sliding as sl
+
+    if detection_mode != "threshold":
+        raise ValueError('window_mode="sliding" supports detection_mode="threshold" only')
+    if guard_sec > 0:
+        raise ValueError('window_mode="sliding" does not implement a guard yet')
+    t0, t1 = t_range
+    w, C = float(int_win_sec), float(context_win_sec)
+    ev = clip_sorted(trains, t0, t1)
+    starts, ends, S = sl.pieces(ev, w, t0, t1)
+    n_p = starts.size
+    z = np.full(n_p, np.nan)
+    pval = np.full(n_p, np.nan)
+    nullmean = np.full(n_p, np.nan)
+    for i in np.flatnonzero(S >= min_rois):
+        c = starts[i] - w / 2
+        p = sl.catch_probabilities(ev, max(t0, c - C / 2), min(t1, c + C / 2), w)
+        mu, sd = sl.moments(p)
+        nullmean[i] = mu
+        if sd > 0:
+            z[i] = (S[i] - mu) / sd
+            pval[i] = 0.5 * erfc(z[i] / sqrt(2))
+        elif S[i] > mu:
+            z[i], pval[i] = np.inf, 0.0
+        else:
+            z[i], pval[i] = 0.0, 1.0
+    with np.errstate(invalid="ignore"):
+        sig = np.flatnonzero((S >= min_rois) & (pval <= alpha))
+
+    runs = sl.merge_runs(starts[sig], ends[sig], merge_gap_sec)
+    n = len(runs)
+    onset, width = np.zeros(n), np.zeros(n)
+    ev_nrois, ev_z, ev_p = np.zeros(n), np.zeros(n), np.zeros(n)
+    for k, (a, b) in enumerate(runs):
+        idx = sig[a:b + 1]
+        tfirst, tlast, _ = sl.span_of(ev, starts[idx[0]] - w, ends[idx[-1]])
+        onset[k], width[k] = tfirst, tlast - tfirst
+        ev_nrois[k] = S[idx].max()
+        ev_z[k] = np.nanmax(z[idx])
+        ev_p[k] = np.nanmin(pval[idx])
+    nan = np.full(n, np.nan)
+    opts = {"int_win_sec": int_win_sec, "context_win_sec": context_win_sec,
+            "min_rois": min_rois, "alpha": alpha, "merge_gap_sec": merge_gap_sec,
+            "detection_mode": detection_mode, "guard_sec": guard_sec,
+            "window_mode": "sliding", **opts_extra}
+    return CoactDetection(
+        onset_sec=onset, width_sec=width, strength=ev_z.copy(), nrois=ev_nrois,
+        z=ev_z, p=ev_p, peak_sec=nan, t50rise=nan.copy(), t50fall=nan.copy(),
+        width_kind="tightness",
+        ctr=starts, obs=S, z_prof=z, pval_prof=pval, nullmean_prof=nullmean,
+        signal=DetectorSignal(t=starts, y=S, ref=nullmean, threshold=None,
+                              hilite=np.empty((0, 2)),
+                              name="coact / local null (sliding)", kind="local_coincidence"),
         ext=t_range, opts=opts,
     )

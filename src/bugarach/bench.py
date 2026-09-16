@@ -185,8 +185,13 @@ RETUNE = ("tools/retune_operating_points.py 2026-09-16 (48 recordings per point,
           "bootstrap gain interval excludes zero)")
 OPERATING_POINTS: dict[str, OperatingPoint] = {
     "loco": OperatingPoint(
+        # Sliding since 2026-09-16 (detectors/sliding.py): binned, a sub-second shift of
+        # a real recording kept 64% of its calls; sliding keeps all of them. thr_step_sec
+        # and n_surrogates do not apply in this mode and are kept only for the binned
+        # path. ⚠ threshold_pctile below was tuned BINNED and is re-searched overnight.
         params=dict(bin_width_sec=1.0, context_win_sec=120.0, thr_step_sec=15.0,
-                    merge_gap_sec=2.0, threshold_pctile=99.5, n_surrogates=100),
+                    merge_gap_sec=2.0, threshold_pctile=99.5, n_surrogates=100,
+                    window_mode="sliding"),
         source=f"{RETUNE}: 99.9 -> 99.5, mean F1 0.669 -> 0.686, gain +0.017 "
                "(interval +0.005 to +0.029); 0.16 firings/min in the empty stretch on "
                "both backgrounds (limit 1), 1.7 calls/hour on the empty recording "
@@ -236,8 +241,12 @@ OPERATING_POINTS: dict[str, OperatingPoint] = {
         knob="threshold_pctile", grid=(10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 75.0,
                                        80.0, 85.0, 90.0, 95.0, 98.0, 99.0, 99.5, 99.9)),
     "coact": OperatingPoint(
+        # Sliding since 2026-09-16 (detectors/sliding.py), with the null computed rather
+        # than drawn: binned, a sub-second shift kept 70% of calls, and the loss grew with
+        # the shift because every candidate bin re-used one random stream. n_surrogates
+        # does not apply in this mode. ⚠ alpha was tuned BINNED; re-searched overnight.
         params=dict(int_win_sec=2.0, context_win_sec=60.0, alpha=1e-4,
-                    n_surrogates=100),
+                    n_surrogates=100, window_mode="sliding"),
         source="explore_sce viewer FAST point — NOT the coact_detect signature "
                f"default of alpha=0.01, which scores F1 0.72 here. Confirmed by {RETUNE}: "
                "already the best value within both budgets (mean F1 0.700).",
@@ -1188,6 +1197,25 @@ is — CICADA reads F1 0.09 that way against 0.68 upstream, on 599 hot-window
 detections out of 601 false alarms. The fix for "the alarm cannot ring" is to give
 the probe a gate at selection time, not to corrupt the score.
 `docs/todo/2026-08-16-promiscuity-probe-cannot-fail.md`.
+"""
+
+MAX_PRECISION_DROP = {
+    "loco": 0.10,      # measured: 0.01
+    "coact": 0.10,     # measured: 0.01
+    "rate": 0.10,      # measured: 0.01
+    "sync": 0.10,      # measured: 0.01
+    "cicada": 0.20,    # measured: 0.10
+    "sce": 0.50,       # measured: 0.46 — a real degradation, recorded not excused
+}
+"""How far precision may differ between the quiet and busy backgrounds at one setting.
+
+Tuned where events are easy to see, deployed where they are not: upstream measured
+precision falling 90 -> 45 (RateDetect) and 75 -> 30 (spike-sync) when dense-tuned
+settings met sparse data. **Moved here from ``tests/test_bench.py`` on 2026-09-16 for
+the third time that day's reason** — a budget a test holds cannot gate a calibration.
+Switching LoCo and CoactDetect to a sliding window broke it at their binned settings
+(precision 0.53 busy against 0.67 quiet for LoCo), and ``tools/search_all_settings.py``
+now refuses such a setting instead of proposing it.
 """
 
 MAX_FALSE_POSITIVES_PER_HOUR = {
