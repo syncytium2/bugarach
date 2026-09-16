@@ -24,19 +24,40 @@ and coact for tonights run. start with how much slower they are."*
   - **Shift probe, same three real TTX baselines:** both keep **100% of calls at every shift
     0.1–0.9 s**, matched within 0.05 s (binned: LoCo 47% mean, CoactDetect 0% at that tolerance;
     64% / 70% at the September probe's 1 s).
-  - **Cost: 2–4× binned**, 0.06–2.2 s per recording.
-  - Binned stays as the MATLAB port; its parity tests pass unchanged.
+  - **Cost: none after optimisation** (16:45): 0.25–0.75× the binned time. The prototype was 2–4×.
+  - **Guard supported** in sliding mode for both; peak mode refused rather than approximated.
+  - Binned stays as the MATLAB port; its parity tests pass unchanged. `docs/forks.md` §14 records it.
 - **Not landed, and why:** at their binned-tuned values, sliding LoCo and CoactDetect call more
-  and fail `test_precision_survives_the_regime_shift` (LoCo precision 0.53 busy vs 0.67 quiet,
-  budget 0.10). The overnight search chooses new values under that budget; **set them in
-  `OPERATING_POINTS` before merging**, then CI.
-- **Still binned:** the browser viewer's `loco.js` / `coact.js`, and `docs/forks.md` has no entry
-  yet. Both are owed before this is finished.
+  and break budgets — `test_precision_survives_the_regime_shift` fails, and the prototype run
+  measured them over the empty-recording limit (LoCo 4.0/h vs 3, CoactDetect 7.7/h vs 7). The
+  search chooses values under all three budgets; **set them in `OPERATING_POINTS` before
+  merging**, then CI.
+- **⚠ Another session is running a big job on LoCo/CoactDetect** (Tony, ~16:40; likely branch
+  `tune-learned-vs-coact`). Nothing here went to `main` for that reason. Merging sliding changes
+  what their code runs if they merge `main` — coordinate before landing.
+- **Still binned:** the browser viewer's `loco.js` / `coact.js`. Owed.
+
+**Preliminary held-out result, from the prototype run (16:06–16:16, superseded by the run below
+— same method, slightly different edge handling):**
+
+| detector | candidate | changed | held-out mean F1 | gain (95% interval) | empty-recording false alarms/h (limit) |
+|---|---|---|---|---|---|
+| LoCo | shipped | — | 0.721 | — | 4.0 (3) — over |
+| LoCo | pair | threshold 99.5 → 99.9, context 120 → 240 s | 0.721 | −0.001 (−0.011 to +0.010) | 1.6 |
+| CoactDetect | shipped | — | 0.713 | — | 7.7 (7) — over |
+| CoactDetect | rounds | alpha 1e-4 → 1e-5, context 60 → 240 s | 0.741 | +0.028 (+0.019 to +0.039) | 6.3 |
+| locust | rounds | percentile 99.99, sync frames 2, **min distance 4 → 128 frames (12.8 s)** | 0.666 | +0.119 (+0.108 to +0.132) | 5.2 |
+| binned SCE, rate+context, SPIKE-synch | — | nothing moved | | | |
+
+**The winners are the settings most likely to fit the bench's 120 s spacing** (240 s contexts, a
+12.8 s refractory), which is why the current run adds a crowded-recording column (below).
 
 ## 1. What is running
 
-- **Process:** detached (`Start-Process`, hidden), **PID 34692**, 44 workers, **started 16:06**
-  with LoCo and CoactDetect sliding (the 15:25 stepped run, PID 28648, was stopped).
+- **Process:** detached (`Start-Process`, hidden), **PID 37124**, 44 workers, **started 16:51**
+  on the final sliding code, with every held-out candidate also scored on 12 crowded recordings
+  per background (`bench.make_tail_recording`) — a check, never a selection input. Earlier runs'
+  files are in `stepped-run-stopped/` and `prototype-run-stopped/`.
 - **Command** (from `bugarach-worktrees/full-search`, `PYTHONPATH=src`):
   `python tools/search_all_settings.py --workers 44 --full loco --out "<darkroom>/bugarach/2026-09-16-full-search"`
 - **Output**, all in `<darkroom>/bugarach/2026-09-16-full-search/`:
