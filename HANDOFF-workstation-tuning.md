@@ -595,8 +595,19 @@ by −0.0034, −0.0212, −0.0053 and +0.0069 F1, and is deterministic on this 
 training code is identical between `239f176` and `7fc052d`. The Mac recorded neither its torch version
 nor its uncommitted changes, so CPU float differences cannot be separated from those changes. **Tony
 ruled the `tube` miss a training difference between machines, not a defect**, and the Gate 1 wording
-now keeps the hard stop for the six only. `tube` fits take about 1.4 times the Mac's. **Next:** steps 2
-and 3, then the estimate from step 3's times against the 9-hour limit, then the tool and `--quick`, the
-pre-launch checks, and launch. `tools/compare_bakeoff_runs.py` needs a test before #596's branch merges.
+now keeps the hard stop for the six only. `tube` fits take about 1.4 times the Mac's.
+**Gate 1 step 2 done:** at the tip, `tube` is identical to step 1; CoactDetect, LoCo and SPIKE-synch are
+still exact against the Mac; locust, rate+context and binned SCE differ, each for a known change (#593,
+#594, #597's added grid values). **Gate 1 step 3 STOPPED on `chorus_gain_norm`:** folds 0 and 1 (0.6703
+and 0.6975 F1) are further from both Mac seeds than the Mac's own largest seed-to-seed gap (0.0316 F1).
+It picked the Mac seed 0's threshold on all 4 folds, so the weights differ, not the operating point; the
+committed code on its path is unchanged since the Mac's commits; it is not the failed-training signature.
+Not known: whether it is deterministic here, or one unlucky draw. `chorus_norm` is inside the stop;
+`line_length` did not run. Provisional training estimate, from this machine's lone fits: 65 CPU hours,
+about 3 hours of wall time at 22 jobs, a floor that ignores the larger configurations' cost per step.
+All of it: [`docs/learned/tuned_vs_coact/gate1/README.md`](docs/learned/tuned_vs_coact/gate1/README.md).
+**Next:** a ruling on the `chorus_gain_norm` stop; then `line_length`, the final estimate against the
+9-hour limit, the tool and `--quick`, the pre-launch checks, and launch.
+`tools/compare_bakeoff_runs.py` needs a test before #596's branch merges.
 ⚠ PR #596 was still open with CI running; if review changes a model's code, results tuned against an
 older commit go stale, which the commit recorded in `meta.json` makes visible.

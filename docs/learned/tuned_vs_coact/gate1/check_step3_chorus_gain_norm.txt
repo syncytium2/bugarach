@@ -1,0 +1,6 @@
+chorus_gain_norm: Mac largest seed-to-seed gap 0.0316 F1
+  fold 0: F1 0.6703  Mac seed 0 0.7256 (diff -0.0553)  Mac seed 1 0.7203 (diff -0.0501)  threshold 0.9908  train 185.3 s  <- FURTHER THAN THE SEED GAP FROM BOTH
+  fold 1: F1 0.6975  Mac seed 0 0.7545 (diff -0.0571)  Mac seed 1 0.7624 (diff -0.0649)  threshold 0.95  train 211.1 s  <- FURTHER THAN THE SEED GAP FROM BOTH
+  fold 2: F1 0.6772  Mac seed 0 0.7193 (diff -0.0421)  Mac seed 1 0.6885 (diff -0.0114)  threshold 0.9838  train 208.2 s
+  fold 3: F1 0.7589  Mac seed 0 0.7488 (diff +0.0101)  Mac seed 1 0.7172 (diff +0.0418)  threshold 0.9838  train 211.3 s
+chorus_gain_norm: STOP: fold 0 further than 0.0316 F1 from both Mac seeds; fold 1 further than 0.0316 F1 from both Mac seeds

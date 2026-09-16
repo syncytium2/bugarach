@@ -1,0 +1,6 @@
+chorus_norm: Mac largest seed-to-seed gap 0.0358 F1
+  fold 0: F1 0.7444  Mac seed 0 0.7568 (diff -0.0124)  Mac seed 1 0.7570 (diff -0.0126)  threshold 0.9716  train 214.7 s
+  fold 1: F1 0.7424  Mac seed 0 0.7489 (diff -0.0065)  Mac seed 1 0.7847 (diff -0.0423)  threshold 0.9838  train 200.6 s
+  fold 2: F1 0.7163  Mac seed 0 0.6932 (diff +0.0231)  Mac seed 1 0.6935 (diff +0.0227)  threshold 0.9908  train 198.0 s
+  fold 3: F1 0.7642  Mac seed 0 0.7656 (diff -0.0014)  Mac seed 1 0.7890 (diff -0.0248)  threshold 0.9838  train 197.7 s
+chorus_norm: no stop
