@@ -2414,4 +2414,4 @@ session's work is not a sweep.
 - **Writes:** `retune.json` (the sweep, 48 bench recordings per point, both backgrounds, bootstrap
   intervals) and `best_parameters.html` / `best_parameters.png` (Figure 1), from
   `tools/retune_operating_points.py` on branch `best-parameters`.
-- **Released:** at write.
+- **Released:** 2026-09-16, at write. Holds nothing.

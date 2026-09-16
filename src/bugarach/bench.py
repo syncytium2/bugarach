@@ -169,12 +169,31 @@ class OperatingPoint:
 # Provenance matters more than the numbers: a bench whose settings have no
 # recorded origin cannot be compared to constellation/'s MATLAB campaign, and
 # cannot be re-derived when a calibration moves.
+#
+# **All six swept knobs were retuned together on 2026-09-16** by
+# `tools/retune_operating_points.py` (RETUNE below): 48 bench recordings per point on
+# both backgrounds and on the empty recording, grids widened until no optimum sat on
+# an edge, candidates limited to values under BOTH false-alarm budgets
+# (MAX_PROBE_PER_MIN on both backgrounds, MAX_FALSE_POSITIVES_PER_HOUR), the best by F1
+# averaged over the two backgrounds — and a stored value moved ONLY where the gain's
+# 95% bootstrap interval excludes zero. Three moved (sce, loco, rate); three were
+# already best or within noise (coact, sync, cicada). Figure and numbers:
+# <darkroom>/bugarach/2026-09-16-best-parameters/. Only the one swept knob per
+# detector was searched; every other parameter below is as it was.
+RETUNE = ("tools/retune_operating_points.py 2026-09-16 (48 recordings per point, both "
+          "backgrounds, both false-alarm budgets, mean F1, moved only if the 95% "
+          "bootstrap gain interval excludes zero)")
 OPERATING_POINTS: dict[str, OperatingPoint] = {
     "loco": OperatingPoint(
         params=dict(bin_width_sec=1.0, context_win_sec=120.0, thr_step_sec=15.0,
-                    merge_gap_sec=2.0, threshold_pctile=99.9, n_surrogates=100),
-        source="measured-regime F1 optimum, FAST (loco_detect docstring)",
-        knob="threshold_pctile", grid=(99.0, 99.5, 99.9, 99.99, 99.999, 99.9999)),
+                    merge_gap_sec=2.0, threshold_pctile=99.5, n_surrogates=100),
+        source=f"{RETUNE}: 99.9 -> 99.5, mean F1 0.669 -> 0.686, gain +0.017 "
+               "(interval +0.005 to +0.029); 0.16 firings/min in the empty stretch on "
+               "both backgrounds (limit 1), 1.7 calls/hour on the empty recording "
+               "(limit 3). Was the measured-regime F1 optimum of 2026-08-13 "
+               "(loco_detect docstring), found on an older bench.",
+        knob="threshold_pctile", grid=(97.0, 98.0, 99.0, 99.5, 99.9, 99.99, 99.999,
+                                       99.9999)),
     "cicada": OperatingPoint(
         # Each event held active for its own width, as the folder sent it
         # (FOUNDATIONS §7). Until 2026-09-16 this was `active_duration_sec=1.0`, so
@@ -191,39 +210,58 @@ OPERATING_POINTS: dict[str, OperatingPoint] = {
                "mean F1 0.542 vs 0.548, a tie, so the setting that fires half as "
                "often on nothing stays. Previously retuned 99.99 -> 99.999 on "
                "2026-08-20 at the fixed 1 s (cicada.py). SLOW's percentile has no "
-               "bench evidence at either duration.",
+               f"bench evidence at either duration. Confirmed by {RETUNE}: 99.99 "
+               "scores +0.010 mean F1 with an interval of -0.002 to +0.025, which "
+               "includes zero, so 99.999 stays.",
         # Extended 2026-08-20 when REGIMES moved to the approved export folder: at the
         # corrected (busier) quiet endpoint the old top, 99.99999, was still the
         # peak and the search was still climbing. A busier background needs a
         # stricter percentile, so the grid needs room above the operating point
         # rather than ending at it.
-        knob="sce_percentile", grid=(90.0, 99.0, 99.9, 99.99, 99.999, 99.9999,
-                                     99.99999, 99.999999, 99.9999999)),
+        knob="sce_percentile", grid=(90.0, 99.0, 99.9, 99.95, 99.99, 99.995, 99.999,
+                                     99.9995, 99.9999, 99.99999)),
     "sce": OperatingPoint(
-        params=dict(bin_width_sec=10.0, threshold_pctile=99.0, n_surrogates=200),
-        source="sce_detect defaults (generate_sce contract)",
-        # Extended downward for the same reason and in the opposite direction:
-        # on the approved recordings SCE's F1 peaked at the old floor of 90 and was
-        # still climbing, so it wants a LOOSER threshold where cicada wants a
-        # stricter one. Two detectors, one change of source recordings, opposite responses.
-        knob="threshold_pctile", grid=(75.0, 80.0, 85.0, 90.0, 95.0, 98.0, 99.0,
-                                       99.5, 99.9)),
+        params=dict(bin_width_sec=10.0, threshold_pctile=98.0, n_surrogates=200),
+        # ⚠ The F1 optimum is much looser — 75, mean F1 0.665 — and it is excluded by
+        # the empty-recording budget, not by noise: 41.8 calls/hour there against a
+        # limit of 6, where 98 makes 3.4. Whether that trade is worth it is Tony's call
+        # (docs/todo/2026-09-16-binned-sce-trades-false-alarms-for-f1.md). In the
+        # dense probe stretch this knob barely matters (about 5.7 firings/min at every
+        # threshold); on the empty recording it decides nearly everything.
+        source=f"{RETUNE}: 99 -> 98, mean F1 0.490 -> 0.525, gain +0.035 (interval "
+               "+0.022 to +0.048); 3.4 calls/hour on the empty recording (limit 6), "
+               "where 95 already makes 8.2. Was the sce_detect default (generate_sce "
+               "contract), never tuned. Scored over each call's own bins "
+               "(score.EXTENT_FIELD).",
+        knob="threshold_pctile", grid=(10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 75.0,
+                                       80.0, 85.0, 90.0, 95.0, 98.0, 99.0, 99.5, 99.9)),
     "coact": OperatingPoint(
         params=dict(int_win_sec=2.0, context_win_sec=60.0, alpha=1e-4,
                     n_surrogates=100),
         source="explore_sce viewer FAST point — NOT the coact_detect signature "
-               "default of alpha=0.01, which scores F1 0.72 here",
-        knob="alpha", grid=(1e-1, 3e-2, 1e-2, 1e-3, 1e-4, 1e-5, 1e-6, 1e-7)),
+               f"default of alpha=0.01, which scores F1 0.72 here. Confirmed by {RETUNE}: "
+               "already the best value within both budgets (mean F1 0.700).",
+        knob="alpha", grid=(1e-1, 3e-2, 1e-2, 3e-3, 1e-3, 3e-4, 1e-4, 3e-5, 1e-5, 1e-6,
+                            1e-7)),
     "rate": OperatingPoint(
-        params=dict(excess_threshold_hz=5.0, context_win=60.0, rate_win=1.0,
+        params=dict(excess_threshold_hz=4.5, context_win=60.0, rate_win=1.0,
                     grid_dt=0.1),
-        source="rate_detect defaults; grid_dt is the generator's own 0.1 s grid",
-        knob="excess_threshold_hz", grid=(0.5, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 8.0),
+        source=f"{RETUNE}: 5.0 -> 4.5 Hz, mean F1 0.606 -> 0.630, gain +0.024 "
+               "(interval +0.012 to +0.037); 1.13 / 1.68 firings/min in the empty "
+               "stretch (quiet / busy, limit 2), 0.1 calls/hour on the empty recording "
+               "(limit 1). 4.0 scores about the same and is over the limit on busy. Was "
+               "the rate_detect default, never tuned. grid_dt is the generator's own "
+               "0.1 s grid.",
+        knob="excess_threshold_hz", grid=(0.5, 1.0, 2.0, 3.0, 3.5, 4.0, 4.5, 5.0, 6.0,
+                                          8.0),
         takes_rng=False),
     "sync": OperatingPoint(
         params=dict(tau_max=0.25, max_gap=0.5, C_threshold=0.1, C_min=0.1),
-        source="viewer FAST defaults (sync_detect docstring)",
-        knob="C_threshold", grid=(0.005, 0.01, 0.02, 0.04, 0.08, 0.12),
+        source="viewer FAST defaults (sync_detect docstring). Confirmed by "
+               f"{RETUNE}: every looser value fires over the limit of 1/min in the busy "
+               "empty stretch, and 0.12 ties it (mean F1 0.449).",
+        knob="C_threshold", grid=(0.005, 0.01, 0.02, 0.04, 0.06, 0.08, 0.1, 0.12, 0.16,
+                                  0.2, 0.3),
         takes_rng=False),
 }
 
