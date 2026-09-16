@@ -1987,7 +1987,7 @@ def fig_count_published(W):
         p.hline(rep, color=RED, width=1.6, dash="5 4", x0=e["field_lo"], x1=e["field_hi"])
         for i_, ln in enumerate(("reported by", "Eddleston and", "others, 2026")):
             f.text(X + PW + 6, float(p.py(rep)) - 10 + 14 * i_, ln, size=11, color=RED)
-        p.xaxis_values([5, 10, 15, 20, 25, 30], label="number of cells")
+        p.xaxis_values([5, 10, 15, 20, 25, 30], label="total number of cells")
     spans = []
     for rate in P["curves"]:
         spans += [("▬ ", dict(color=shades.get(rate, MUTED), weight=700)),
