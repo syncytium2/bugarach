@@ -1240,30 +1240,33 @@ def _plural(n, word):
 #: The steps each algorithm follows, in the words the page uses. {..} are filled from its
 #: settings so the pictures and the settings cannot drift apart.
 STEPS = {
-    "rate": ["Add up every event from every neuron, in a 1-second window that slides along.",
+    "rate": ["Add up every event from every neuron, in a {win:g}-second window that slides along.",
              "Work out the average of that number over the {ctx:g} seconds around each moment.",
              "Set the bar at that average plus {ex:g} events per second.",
              "Call a coordinated event wherever the count goes over the bar."],
+    # NO FIGURE OR SECTION NUMBER IN HERE. Numbers are counted when the page is built, and this text is
+    # drawn into a figure before that; "(Figure 4)" was right when written and wrong after one move.
     "coact": ["Cut time into {bin:g}-second bins. Count how many different neurons have an event in each.",
               "For a bin with at least 3 neurons, take the {ctx:g} seconds around it and make "
-              "{ns} shifted copies (Figure 4).",
-              "Set the bar well above what the copies give: their average plus 3.72 times their "
+              "{ns} shifted copies of them.",
+              "Set the bar well above what the copies give: their average plus {z:.2f} times their "
               "typical spread.",
               "Call the bin if the real count is over the bar."],
     "loco": ["Cut time into {bin:g}-second bins. Count how many different neurons have an event in each.",
-             "Every {step:g} seconds, make {ns} shifted copies of the minute before and of the minute after.",
-             "On each side, find the count that only 1 copied bin in 1,000 goes over. "
+             "Every {step:g} seconds, make {ns} shifted copies of the {half:g} seconds before and of the "
+             "{half:g} seconds after.",
+             "On each side, find the count that only 1 copied bin in {loco_1in} goes over. "
              "The bar is the higher of the two sides.",
              "Call a bin if its count is over the bar and at least 3 neurons take part."],
     "sce": ["Cut time into {bin:g}-second bins. Count how many different neurons have an event in each.",
             "Make {ns} shifted copies of the whole stretch being studied.",
-            "Pool every bin from every copy. The bar is the count that only 1 bin in 100 goes over. "
+            "Pool every bin from every copy. The bar is the count that only 1 bin in {sce_1in} goes over. "
             "It is one bar for the whole stretch.",
             "Call a bin if its count is over the bar and at least 3 neurons take part."],
     "cicada": ["Switch each neuron on for a fixed {on:g} second after each of its events (see the caption).",
                "Count how many neurons are on in every 0.1-second frame.",
                "Make {ns} shifted copies of the whole recording. The bar is the count that only 1 frame "
-               "in 100,000 goes over.",
+               "in {cic_1in} goes over.",
                "Call each peak of the count that reaches the bar."],
     "sync": ["Give every event a score from 0 to 1: the share of the other neurons that have an event "
              "close to it. This part is a published measure (its authors call it “SPIKE-synchronization”).",
@@ -1276,13 +1279,70 @@ STEPS = {
 }
 
 
-def _steps_text(det, st):
-    fill = dict(ctx=st.get("context_win", st.get("context_win_sec", 60)),
+def _one_in(pctile) -> str:
+    """A percentile bar as a plain chance: 99.9 -> "1,000" (1 in 1,000 goes over)."""
+    return f"{round(100.0 / (100.0 - float(pctile))):,}"
+
+
+def _fill(st):
+    """Every number the step text and the Settings box quote, computed from the program's own settings,
+    so neither can describe a setting the program no longer uses."""
+    from statistics import NormalDist
+    alpha = float(st.get("alpha", 1e-4))
+    ctx = st.get("context_win", st.get("context_win_sec", 60))
+    return dict(ctx=ctx, half=float(ctx) / 2, win=st.get("rate_win", 1.0),
                 ex=st.get("excess_threshold_hz", 5), bin=st.get("int_win_sec", st.get("bin_width_sec", 1)),
                 ns=st.get("n_surrogates", 100), step=st.get("thr_step_sec", 15),
                 on=st.get("active_duration_sec", 1), tau=st.get("tau_max", 0.25),
-                bar=st.get("C_threshold", 0.1))
+                bar=st.get("C_threshold", 0.1), cmin=st.get("C_min", 0.1), gap=st.get("max_gap", 0.5),
+                merge=st.get("merge_gap_sec", 2.0), alpha_1in=f"{round(1 / alpha):,}",
+                z=NormalDist().inv_cdf(1 - alpha),
+                loco_1in=_one_in(st.get("threshold_pctile", 99.9)),
+                sce_1in=_one_in(st.get("threshold_pctile", 99.0)),
+                cic_1in=_one_in(st.get("sce_percentile", 99.999)))
+
+
+def _steps_text(det, st):
+    fill = _fill(st)
     return [s.format(**fill) for s in STEPS[det]]
+
+
+def _settings_rows(det, st):
+    """The settings a reader should see first: (value, what it is). Tony, 2026-09-16: "emphasize the
+    parameters, so rate is the context window (60s), the counting window (1s) and the excess event
+    threshold (5)". Values are read from the settings the figure was run with."""
+    v = _fill(st)
+    rows = {
+        "rate": [(f"{v['ctx']:g} s", "context window, centred on each moment"),
+                 (f"{v['win']:g} s", "counting window"),
+                 (f"{v['ex']:g} per second", "excess events over the average (the bar)")],
+        "coact": [(f"{v['bin']:g} s", "bin width"),
+                  (f"{v['ctx']:g} s", "context window copied around each bin"),
+                  (f"1 in {v['alpha_1in']}", "chance allowed per bin (sets the bar)"),
+                  (f"{v['ns']}", "shifted copies per bin"),
+                  ("3 neurons", "fewest neurons a bin needs to be tested")],
+        "loco": [(f"{v['bin']:g} s", "bin width"),
+                 (f"{v['half']:g} s", "context copied on each side"),
+                 (f"every {v['step']:g} s", "how often the bar is worked out again"),
+                 (f"1 in {v['loco_1in']}", "chance allowed per bin (sets the bar)"),
+                 (f"{v['ns']}", "shifted copies each time"),
+                 (f"{v['merge']:g} s", "calls closer than this merge into one"),
+                 ("3 neurons", "fewest neurons a call needs")],
+        "sce": [(f"{v['bin']:g} s", "bin width"),
+                (f"1 in {v['sce_1in']}", "chance allowed per bin (sets the bar)"),
+                (f"{v['ns']}", "shifted copies of the whole stretch"),
+                ("3 neurons", "fewest neurons a call needs")],
+        "cicada": [(f"{v['on']:g} s", "each event keeps its neuron on (fixed)"),
+                   ("0.1 s", "frame length"),
+                   (f"1 in {v['cic_1in']}", "chance allowed per frame (sets the bar)"),
+                   (f"{v['ns']}", "shifted copies of the whole recording")],
+        "sync": [(f"{v['tau']:g} s", "longest gap still counted as close"),
+                 (f"{v['bar']:g}", "score that starts a call (the bar)"),
+                 (f"{v['cmin']:g}", "score that keeps a call going"),
+                 (f"{v['gap']:g} s", "longest dip a call can bridge"),
+                 ("3 events", "fewest events a call needs")],
+    }
+    return rows[det]
 
 
 #: What each line in the measurement panel IS, said beside the line itself. A key at the
@@ -1374,6 +1434,19 @@ def fig_algorithm(W, det):
     for i, s in enumerate(_steps_text(det, st)):
         f.step_badge(32, y - 4, str(i + 1), color=COLORS[det])
         y = f.para(52, y, s, width_chars=40, size=13) + 12
+    # THE SETTINGS, where the eye lands next: each value in bold, in the program's colour, before what it
+    # is. They are the knobs every later section tunes, so they are named here, beside the steps.
+    rows = _settings_rows(det, st)
+    top = y + 4
+    f.text(28, top + 20, "Settings", size=14, weight=700)
+    yy = top + 44
+    for val, lab in rows:
+        f.rich(28, yy, [(val, dict(color=COLORS[det], weight=700))], size=14)
+        f.text(132, yy, lab, size=12, color=INK_T)
+        yy += 21
+    # 360 wide, not 400: at 400 the box ran into the measurement panel's rotated axis label
+    f.rect(16, top, 360, yy - top - 6, stroke=COLORS[det], width=1.4, rx=6)
+    y = yy
     # the chance picture under the recipe
     hy = max(y + 30, 330)
     if det == "coact":
@@ -1427,7 +1500,8 @@ def fig_algorithm(W, det):
                     color=MUTED)
         f.para(20, yb + 14,
                "Both window widths are settings, like the bar: they could be tuned, and so far they "
-               "have not been. Only the bar has been swept (Section 9).", width_chars=46, size=12,
+               "have not been. Only the bar has been swept (see how programs are graded).", width_chars=46,
+               size=12,
                color=MUTED)
     elif det == "sync":
         n = sim["n_roi"]
@@ -1503,7 +1577,8 @@ def fig_algorithm(W, det):
         xx += 16 + 7.0 * len(lab) + 14
         if xx > 900:
             xx, ky = 460, ky + 20
-    f.h = ky + 20
+    # the left column now holds steps, settings and a chance picture, and can run past the right one
+    f.h = max(ky + 20, hy + 230)
     return f
 
 

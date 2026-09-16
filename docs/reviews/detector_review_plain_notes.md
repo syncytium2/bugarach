@@ -692,3 +692,37 @@ times or nothing was written — so no occurrence was changed twice or silently 
 **A correction to pass on:** armory's first reply said `tools/lab_excluded.py` imports openpyxl the venv
 lacks. That file was deleted from main in 51c5586 (2026-08-20); armory was reading a stale mirror, and the
 summary given to Tony repeated the error.
+
+## 39. Neurons, coordinated events, a moved section, and settings on every program figure (2026-09-16)
+
+A run of notes, applied as they came:
+
+- **"cells" → "neurons" throughout** (templates, companion, figure text, darkroom prose). Builder text was
+  changed only inside display strings, found with the tokenizer; data keys survive. SAP019.
+- **Short version** opens with Tony's framing: calcium signals recorded in neurons, the times of calcium
+  events written down, and whether they happen in many neurons at around the same time.
+- **Figure 1B** "20 s of the recording in A"; stripes are "short, vertical".
+- **Figure 2** is "Different answers from different programs on the same data", describes its raster as one
+  neuron per row and one tick per calcium event, and says this example does not appear to hold any
+  coordinated events — worded from the clear-stripe count (none in its 13 minutes).
+- **Figure 3's x-axes** count seconds within each minute (the same fault the algorithm figures had).
+- **Figure 4** caption opens with how events are numbered, and that a shift keeps the order unless an event
+  wraps.
+- **"The shift is the better choice, not the right answer"** — no copy method is exact, or everyone would use
+  it; heading and text now say so. **"That last column"** named the provenance column; it now names the
+  column saying where each program learns what chance is.
+- **"Lineup" is gone.** Tony: spell the idea out once, then say coordinated event — including the ones chance
+  produces. The word-list definition no longer contains "more than chance"; the programs ask which
+  coordinated events hold more neurons than chance explains. SAP019 blocks the lineup family.
+- **The interval section moved up**, split: Section 4 (after coordinated events are shown to happen by chance)
+  holds the rule, why an interval beats a bin, no single bar fits real recordings, and the published rule
+  under chance — every later term it names carries a pointer. The score comparison is now "How the interval
+  rule scores" inside the scores section.
+- **Settings on every program figure.** Tony: "emphasize the parameters, so rate is the context window (60s),
+  the counting window (1s) and the excess event threshold (5)". Each figure has a Settings box under the
+  steps, value first in bold. Values and the step text are computed from the program's settings — which
+  surfaced three numbers written into step text by hand ("1 in 1,000", "1 in 100", "1 in 100,000", "3.72
+  times") that would have gone stale at tonight's retune, and two hard-coded cross-references ("(Figure
+  4)", "(Section 9)") that the section move had already made wrong. **Figure text drawn by the builder must
+  not carry a figure or section number**: they are counted when the page is built, after the figure is
+  drawn.
