@@ -10,6 +10,22 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
+### Mac/tube-ssl-report — DARKROOM claim ACTIVE 2026-09-16: `bugarach/2026-09-16-tube-self-supervised/`
+- **Status:** **ACTIVE — claimed before writing.** Tony asked for the full test through to real data
+  and a report for the morning, murderboard authorized. The overnight report was reviewed twice; the
+  blind second round returned fifty-one findings and the report was rewritten around them.
+- **Writes:** one new folder only — the two rebuilt figures and one real-recording lanes figure.
+  Nothing existing in the darkroom is touched, and the 2026-09-15 rigid-shift-look folder is
+  read-only from here.
+- ⚠ **The lanes figure holds a real baseline raster, so it stays in the darkroom** (FOUNDATIONS §5,
+  whose released-by-name exception is *"a list of one, not a category"*): no repo copy of that
+  figure, and the report links it by name rather than embedding it. The two bake-off/training
+  figures are synthetic-derived and do have repo copies.
+- **Touches:** `docs/learned/tube_self_supervised/`, `docs/reviews/tube-self-supervised-2026-09-16*`,
+  `tools/make_line_sensors_figure.py`, `tools/make_tube_ssl_figure.py`, `tools/make_tube_real_lanes.py`.
+- **Goal:** unsupervised-learning.
+- **Released when:** the figures are in the folder and the rewritten report is on the PR.
+
 ### WSMIP065/detector-review-doc — DARKROOM claim ACTIVE 2026-09-15: `bugarach/2026-09-15-detector-review/`
 - **Status:** **ACTIVE — claimed before writing.** Tony asked for a document for external review:
   every detector (coded and learned) with a figure of how it decides, surrogates, the simulator,

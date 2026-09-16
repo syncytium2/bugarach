@@ -31,11 +31,25 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
 DEFAULT_SLICE = "20240813_39"
-LANES = [("coact", "CoactDetect"), ("loco", "LoCo"),
-         ("supervised tube label-free", "tube, supervised"),
-         ("ssl tube J10", "tube, no labels (J 10 s)"),
-         ("ssl tube_guard J10", "tube_guard, no labels (J 10 s)")]
-COLORS = {"CoactDetect": "#1f4e79", "LoCo": "#2e7d32", "tube, supervised": "#555555",
+
+#: The lane sets this tool knows how to draw, selected with ``--family``. ``line`` is the default
+#: because it is the family the 2026-09-16 report argues about, and because the claim that most
+#: needs a picture — half the calls from `line` trained against rigid shift land where no ROI has
+#: an onset — is a claim about *these* rows. ``tube`` is kept so the earlier renders reproduce.
+LANE_SETS = {
+    "line": [("coact", "CoactDetect"), ("loco", "LoCo"),
+             ("supervised line label-free", "line, supervised"),
+             ("ssl line J10", "line, no labels (J 10 s)"),
+             ("ssl line J20", "line, no labels (J 20 s)")],
+    "tube": [("coact", "CoactDetect"), ("loco", "LoCo"),
+             ("supervised tube label-free", "tube, supervised"),
+             ("ssl tube J10", "tube, no labels (J 10 s)"),
+             ("ssl tube_guard J10", "tube_guard, no labels (J 10 s)")],
+}
+LANES = LANE_SETS["line"]
+COLORS = {"CoactDetect": "#1f4e79", "LoCo": "#2e7d32",
+          "line, supervised": "#555555", "tube, supervised": "#555555",
+          "line, no labels (J 10 s)": "#c07a12", "line, no labels (J 20 s)": "#7b3294",
           "tube, no labels (J 10 s)": "#c07a12", "tube_guard, no labels (J 10 s)": "#7b3294"}
 
 
@@ -90,7 +104,11 @@ def main(argv=None):
     ap.add_argument("--slice", dest="slice_id", default=DEFAULT_SLICE)
     ap.add_argument("--zoom", type=float, default=120.0)
     ap.add_argument("--width", type=int, default=1100)
+    ap.add_argument("--family", choices=sorted(LANE_SETS), default="line",
+                    help="which architecture family to draw lanes for (default: line)")
     a = ap.parse_args(argv)
+    global LANES
+    LANES = LANE_SETS[a.family]
     events = json.loads((Path(a.run) / "events.json").read_text())
     figs, headers = build(events, a.slice_id, a.zoom, a.width)
     import panel as pn

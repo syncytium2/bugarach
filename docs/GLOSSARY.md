@@ -26,7 +26,8 @@ always by proper name:
   - **binned SCE** — surrogate-thresholded coactivity per trimmed region
     window (generate_sce port).
   - **locust** — sliding-window coactivity with per-cell roll null. Derived
-    from the Cossart lab's **CICADA** (Denis et al. 2020) and **modified**, in
+    from the Cossart lab's **CICADA** (software: Zenodo `10.5281/zenodo.10041434`;
+    framework: Hamon et al. 2026) and **modified**, in
     both cases by changing what it is *fed* rather than what it computes: it gets
     the events already in the folder rather than running CICADA's own transient
     detection, and it gets each event's duration from the producer rather than
