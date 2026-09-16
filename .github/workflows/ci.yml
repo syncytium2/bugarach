@@ -104,9 +104,18 @@ jobs:
         # been aimed, and 3.11 went red with `aimed_at: None` while 3.13 and 3.14 happened
         # to keep them together. loadfile keeps each file on one worker, in file order —
         # the order the suite was written against.
+        #
+        # -m serial runs AFTER, and alone. A test that asserts on wall-clock time measures
+        # the other three workers as much as the code: the briefing's 3-second budget
+        # read 3.1s on 3.11 with four workers loaded, and is absent from the 25 failed
+        # serial runs before this change. The
+        # budget is right for a session start and stays; the contention is what moves.
+        # If the marker ever matches nothing, pytest exits 5 and this step goes red
+        # rather than quietly running zero tests.
         env:
           GH_TOKEN: ${{ github.token }}
           BUGARACH_REQUIRE_PR_API: "1"
         run: |
           echo "runner cores: $(nproc)"
-          pytest -q -n auto --dist loadfile
+          pytest -q -n auto --dist loadfile -m "not serial"
+          pytest -q -m serial
