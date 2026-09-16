@@ -223,10 +223,19 @@ difference that matters most is <b>where each program looks to learn what chance
 <tr><td>locust</td><td>cells "switched on" after each of their events</td><td>shifted copies of the whole recording</td><td>the coordinated-event stage of CICADA, from the Cossart lab, modified here</td></tr>
 <tr><td>SPIKE-synch</td><td>how close each event is to events in other cells</td><td>no copies: each cell's own gaps between events</td><td>Kreuz and colleagues' published measure, with R. DeFazio's peak-finding step added to turn its scores into calls</td></tr>
 </table>
-<p>Looking <b>nearby</b> means the bar rises when cells get busy, so chance lineups in a busy stretch
-are not called. The cost is that a small real event in a busy stretch can be missed too. Looking at
-<b>the whole recording</b> gives one bar for everything, so a busy stretch can pass it again and again.
-Figures {{NUM:fig_alg_rate}} to {{NUM:fig_alg_sync}} show each program's steps on the same simulated
+<p>That last column decides how a program behaves when the cells get busy, so it is worth following
+through slowly.</p>
+<p><b>CoactDetect, LoCo and rate+context work from the surrounding seconds.</b> Each of them measures
+chance from the minute around the moment it is testing — by making shifted copies of that minute, or, for
+rate+context, by averaging it. When the cells in that minute brighten more often, those copies produce
+bigger counts, and the count a bin has to beat is computed from them, so it goes up as well. A chance
+lineup inside a busy stretch therefore fails to beat it. The cost is that a small real coordinated event
+in the same stretch has to beat that raised count too, and often cannot.</p>
+<p><b>binned SCE and locust work from the whole recording at once.</b> Each of them measures chance one
+time, from copies of the entire stretch it was given, and uses the single count that comes out of it
+everywhere. That count was fixed before the busy stretch arrived and does not move when it does, so
+every bin in the busy stretch can beat it, one after another.</p>
+<p>Figures {{NUM:fig_alg_rate}} to {{NUM:fig_alg_sync}} show each program's steps on the same simulated
 recording. Each figure has two views: a quiet minute holding one real coordinated event (A), and a
 minute inside a busy stretch where nothing was put in, so every call there is a mistake (B).</p>
 

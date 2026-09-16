@@ -407,6 +407,48 @@ RULES = [
         fixture_bad="the fit reaches 847 mHz where the data reaches 486",
         fixture_good="the fit reaches 847 mHz where the data reach 486, and data is None",
     ),
+    Rule(
+        id="SAP016", level="BLOCK",
+        # THE SENTENCE THAT READS FINE AND EXPLAINS NOTHING. Tony, 2026-09-16, on
+        # "Looking nearby means the bar rises when cells get busy, so chance lineups
+        # in a busy stretch are not called": "it sort of makes sense to a human, and
+        # there's nothing wrong at first, but then 'looking' what do you mean? ...
+        # What bar? how did it rise?"
+        #
+        # The shape is an ACTIVITY STANDING IN FOR AN ACTOR: a gerund phrase is made
+        # the subject of an explanation, so nobody does anything, and the verb after
+        # "means" describes a result whose mechanism is now unstatable. The writer
+        # knows the chain and skips it; the reader gets the conclusion and a fog.
+        #
+        # The repair is always the same and is always available: name who does it,
+        # say what they compute, then say what follows. "CoactDetect draws its chance
+        # copies from the surrounding minute, so a busier stretch gives bigger copy
+        # counts, which raises the count a bin has to beat."
+        #
+        # DELIBERATELY NARROW — the plain-language templates only, where sixth-grade
+        # prose is the requirement and every sentence is meant to survive a reader
+        # with no background. Tree-wide it would fire on working notes, where the
+        # shorthand is between people who share the chain. See docs/sapper_feedback/.
+        # `[^.]` rather than `\w+\s+` between the two halves, because the first draft of
+        # this rule could not fire on the sentence it was written for: the page says
+        # "Looking <b>nearby</b> means", and inline markup does not match \w. A prose rule
+        # scanning HTML has to be able to read through the tags.
+        pattern=r"\b(Looking|Judging|Counting|Shifting|Choosing|Using|Taking|Setting|"
+                r"Measuring|Comparing|Scoring|Picking|Running|Keeping|Drawing)\b"
+                r"[^.]{0,45}?\bmeans\b",
+        include=["tools/plain_*_template.html"], exclude=["tools/sapper.py"],
+        message="AN ACTIVITY IS STANDING IN FOR AN ACTOR, and the mechanism is "
+                "gone with it (Tony, 2026-09-16). \"Looking nearby means the bar "
+                "rises\" — looking by whom? which bar? raised by what? A gerund "
+                "made the subject of an explanation lets the writer skip the chain "
+                "they already know. Name the program, say what it computes, then "
+                "say what follows: \"CoactDetect draws its chance copies from the "
+                "surrounding minute, so a busier stretch gives bigger copy counts, "
+                "which raises the count a bin has to beat.\"",
+        fixture_bad="<p>Looking nearby means the bar rises when cells get busy.</p>",
+        fixture_good="<p>CoactDetect draws its copies from the surrounding minute, so a "
+                     "busier stretch raises the count a bin has to beat.</p>",
+    ),
 ]
 
 
