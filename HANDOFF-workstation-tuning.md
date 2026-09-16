@@ -633,9 +633,17 @@ committed code on its path is unchanged since the Mac's commits; it is not the f
 Not known: whether it is deterministic here, or one unlucky draw. `chorus_norm` is inside the stop;
 `line_length` did not run. Provisional training estimate, from this machine's lone fits: 65 CPU hours,
 about 3 hours of wall time at 22 jobs, a floor that ignores the larger configurations' cost per step.
+**Decision 7: CoactDetect and LoCo slide.** `sliding-loco-coact` merged at `425ab2e`; 118 of 120
+selected tests pass, and the 2 failures are that branch's known precision-swing budget breaks at the
+binned-tuned values. **Gate 1 step 2 redone on the sliding code** (`2c58092`): locust, rate+context,
+binned SCE, SPIKE-synch and `tube` equal the binned step 2 exactly; sliding CoactDetect and LoCo are
+deterministic and score mean F1 0.681 and 0.687 (binned 0.645 and 0.653), calibrating in 0.46 and 0.28
+times binned's time. Untuned, against sliding CoactDetect, `chorus_norm` leads by +0.061 F1 and
+`chorus_gain_norm` by +0.020 on this machine.
 All of it: [`docs/learned/tuned_vs_coact/gate1/README.md`](docs/learned/tuned_vs_coact/gate1/README.md).
 **Next:** a ruling on the `chorus_gain_norm` stop; then `line_length`, the final estimate against the
-9-hour limit, the tool and `--quick`, the pre-launch checks, and launch.
+9-hour limit, a check of the home spec's event spacing against the 240 s context, the tool and
+`--quick`, the pre-launch checks, and launch.
 `tools/compare_bakeoff_runs.py` needs a test before #596's branch merges.
 ⚠ PR #596 was still open with CI running; if review changes a model's code, results tuned against an
 older commit go stale, which the commit recorded in `meta.json` makes visible.

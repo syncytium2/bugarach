@@ -12,6 +12,7 @@ Run 2026-09-16 on the workstation (WSMIP064) by the session that holds branch `t
 |---|---|
 | 1, at `7fc052d` | Six hand-written detectors exact. `tube` missed 0.02 F1 by 0.0012 on one fold; **Tony ruled it a training difference between machines, not a defect.** |
 | 2, at the tip | `tube` identical to step 1. CoactDetect, LoCo and SPIKE-synch still exact against the Mac; locust, rate+context and binned SCE differ, each for a known change. See [*Step 2*](#step-2-this-machines-baseline-at-the-tip). |
+| 2, redone on sliding CoactDetect and LoCo | **The baseline this run uses** (Tony: *"use sliding versions. redo step 2"*). The other four hand-written detectors and `tube` equal the binned step 2 exactly. Sliding CoactDetect scores mean F1 0.681 and LoCo 0.687, against 0.645 and 0.653 binned. See [*Step 2, redone*](#step-2-redone-on-sliding-coactdetect-and-loco). |
 | 3, at the tip | `chorus_norm` inside the stop. **`chorus_gain_norm` fired the stop**: on folds 0 and 1 it is further from both Mac seeds than the Mac's own seeds are from each other. `line_length` did not run. See [*Step 3*](#step-3-lone-fit-timings-and-the-stop). |
 
 **What is needed:** a ruling on the `chorus_gain_norm` stop. The sections below say what is known about
@@ -147,6 +148,63 @@ does not record); comparisons in [`compare_step2_vs_mac.txt`](compare_step2_vs_m
 | cicada | 99.95, 99.95, 99.95, 99.95 / 99.9 on all 4 | 0.5690, 0.5517, 0.5299, 0.5126 | 0.5531, 0.5714, 0.5395, 0.5559 | #594: events held active for their own width; #597 added 99.95 to the grid |
 | rate | 3.5 Hz on all 4 / 3 Hz on all 4 | 0.6364, 0.6070, 0.6000, 0.6162 | 0.6075, 0.5872, 0.5801, 0.6000 | #597 added 3.5 Hz to the grid |
 | sce | 80, 80, 80, 75 / 80 on all 4 | 0.5684, 0.6263, 0.5263, 0.5586 | 0.4316, 0.5152, 0.4498, 0.4600 | #593: calls scored over their whole bin; #597 extended the grid below 75 |
+
+## Step 2, redone on sliding CoactDetect and LoCo
+
+Tony, 2026-09-16: *"use sliding versions. redo step 2."* Branch `sliding-loco-coact` (`005ae98`, not on
+`main`) is merged at `425ab2e`, and `OPERATING_POINTS` runs CoactDetect and LoCo with
+`window_mode="sliding"`, the exact null computed rather than drawn, at the values tuned binned. The
+first step 2 above stays as the binned baseline.
+
+Run at `2c58092`, 4 min 34 s:
+[`step2b_sliding_six_tube/bakeoff.json`](step2b_sliding_six_tube/bakeoff.json),
+[log](step2b_sliding_six_tube.log), [`environment.json`](step2b_sliding_six_tube/environment.json);
+comparison with the binned step 2 in [`compare_step2b_vs_step2.txt`](compare_step2b_vs_step2.txt).
+
+- **Everything that should not have moved did not.** Locust, rate+context, binned SCE, SPIKE-synch and
+  `tube` equal the binned step 2 on every result field.
+- **Sliding CoactDetect and LoCo are deterministic.** Their calls on recordings 1000, 1013 and 1023 are
+  identical under two different `rng_seed` values (the null draws no random numbers), checked in
+  process with [`sliding_determinism.py`](sliding_determinism.py).
+- **They have no Mac reference**, so this is this machine's baseline, not a reproduction.
+- **Tests after the merge:** 118 of 120 pass across `test_sliding_window.py`, `test_bench.py`,
+  `test_loco_detect.py`, `test_coact_detect.py` and `test_fair_bakeoff_transfer.py`. The 2 failures are
+  the ones the sliding branch already records: at the binned-tuned values, sliding LoCo's precision swings
+  0.13 between backgrounds and CoactDetect's 0.11, against a budget of 0.10
+  (`test_precision_survives_the_regime_shift`).
+
+**Table 6.** Sliding against binned, per fold, at each detector's calibrated knob. Busy-window false
+alarms are counts over the fold's 6 recordings; quiet-field false alarms are per hour on the 0.54 twins;
+calibration seconds are for the fold.
+
+| detector | fold | F1, sliding / binned | knob, sliding / binned | precision, sliding / binned | recall, sliding / binned | detections, sliding / binned | busy-window false alarms, sliding / binned | quiet-field false alarms per hour, sliding / binned | calibration, sliding / binned |
+|---|---|---|---|---|---|---|---|---|---|
+| coact | 0 | 0.6603 / 0.6599 | 1e-5 / 1e-4 | 0.580 / 0.607 | 0.767 / 0.722 | 122 / 110 | 3 / 3 | 2.72 / 2.55 | 4.9 / 10.7 s |
+| coact | 1 | 0.7222 / 0.6699 | 1e-5 / 1e-4 | 0.619 / 0.595 | 0.867 / 0.767 | 126 / 116 | 0 / 0 | 4.94 / 2.55 | 4.8 / 10.6 s |
+| coact | 2 | 0.6761 / 0.6213 | 1e-5 / 1e-3 | 0.585 / 0.503 | 0.800 / 0.811 | 123 / 151 | 0 / 6 | 2.89 / 2.72 | 4.6 / 10.2 s |
+| coact | 3 | 0.6667 / 0.6300 | 1e-5 / 1e-4 | 0.590 / 0.573 | 0.767 / 0.700 | 119 / 112 | 2 / 2 | 2.55 / 2.04 | 4.9 / 10.6 s |
+| loco | 0 | 0.6914 / 0.6505 | 99.5 / 99 | 0.549 / 0.578 | 0.933 / 0.744 | 168 / 125 | 15 / 9 | 2.89 / 2.38 | 7.5 / 26.8 s |
+| loco | 1 | 0.7130 / 0.6763 | 99.5 / 99 | 0.586 / 0.598 | 0.911 / 0.778 | 151 / 121 | 11 / 4 | 4.43 / 2.04 | 7.5 / 26.4 s |
+| loco | 2 | 0.6193 / 0.6301 | 99.9 / 99 | 0.570 / 0.535 | 0.678 / 0.767 | 108 / 137 | 1 / 8 | 1.36 / 1.36 | 7.1 / 25.5 s |
+| loco | 3 | 0.7241 / 0.6540 | 99.5 / 99 | 0.592 / 0.570 | 0.933 / 0.767 | 156 / 128 | 14 / 7 | 2.89 / 0.68 | 7.5 / 26.0 s |
+
+Means over the 4 folds: CoactDetect **0.6813 F1 sliding** against 0.6453 binned; LoCo **0.6870 F1
+sliding** against 0.6527 binned. CoactDetect's `alpha` of 1e-5 and LoCo's 99.5 and 99.9 are interior
+points of their grids. Sliding CoactDetect calibrates in about 0.46 times binned's time and LoCo in about
+0.28 times, which also shortens the hand-written side of the tuning run.
+
+**What this does to the margin the tuning run tests, before any tuning.** Untuned, one training seed,
+this machine: the learned models' F1 from step 3 and step 1, minus sliding CoactDetect's, per fold. This
+is a description of the starting point, not a result.
+
+| model | − sliding CoactDetect, folds 0, 1, 2, 3 (F1) | mean (F1) |
+|---|---|---|
+| `chorus_norm` | +0.0841, +0.0201, +0.0402, +0.0975 | +0.0605 |
+| `chorus_gain_norm` | +0.0100, −0.0247, +0.0011, +0.0923 | +0.0197 |
+| `tube` | −0.0093, −0.0525, −0.0583, −0.0032 | −0.0308 |
+
+Against binned CoactDetect on the Mac the handoff's table showed `chorus_norm` +0.103 and
+`chorus_gain_norm` +0.084, averaged over two seeds; part of that lead was the binned reference.
 
 ## Step 3: lone-fit timings, and the stop
 
