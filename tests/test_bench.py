@@ -113,14 +113,7 @@ def bench():
 # measured precision falling 90 -> 45 (RateDetect) and 75 -> 30 (spike-sync)
 # when dense-tuned settings met sparse data, and drew it as a figure.
 
-MAX_PRECISION_DROP = {
-    "loco": 0.10,      # measured: 0.01
-    "coact": 0.10,     # measured: 0.01
-    "rate": 0.10,      # measured: 0.01
-    "sync": 0.10,      # measured: 0.01
-    "cicada": 0.20,    # measured: 0.10
-    "sce": 0.50,       # measured: 0.46 — a real degradation, recorded not excused
-}
+from bugarach.bench import MAX_PRECISION_DROP  # noqa: E402 — the budget is bench's
 
 
 @pytest.mark.parametrize("name", DETECTORS)

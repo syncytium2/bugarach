@@ -341,6 +341,7 @@ def loco_detect(
     detection_mode: str = "threshold",
     peak_prominence: float = 0.0,
     peak_min_distance_sec: float = 0.0,
+    window_mode: str = "binned",
 ) -> LocoDetection:
     """Run LoCo on every stream of a slice (declaration order, one RNG stream).
 
@@ -369,6 +370,10 @@ def loco_detect(
             "wrap would cross it")
     if detection_mode not in ("threshold", "peak"):
         raise ValueError('detection_mode must be "threshold" or "peak"')
+    if window_mode not in ("binned", "sliding"):
+        raise ValueError('window_mode must be "binned" or "sliding"')
+    if window_mode == "sliding" and (detection_mode != "threshold" or guard_sec):
+        raise ValueError('window_mode="sliding" supports threshold mode without a guard')
 
     names = list(s.streams)
     binw = per_stream_param(bin_width_sec, names, "bin_width_sec", (1.0, 2.0))
@@ -402,7 +407,7 @@ def loco_detect(
             clamp_context_to_region=clamp_context_to_region,
             detection_mode=detection_mode, peak_prominence=peak_prominence,
             peak_min_distance_sec=peak_min_distance_sec,
-            guard_sec=guard_sec,
+            guard_sec=guard_sec, window_mode=window_mode,
         )
 
     params = {
@@ -416,7 +421,7 @@ def loco_detect(
         "rng_seed": rng_seed, "detection_mode": detection_mode,
         "peak_prominence": peak_prominence,
         "peak_min_distance_sec": peak_min_distance_sec,
-        "recording_extent": ext,
+        "recording_extent": ext, "window_mode": window_mode,
     }
     return LocoDetection(slice_id=s.slice_id, streams=results,
                          regions=rw, ext=ext, params=params)
@@ -486,10 +491,15 @@ def _detect_stream(trains, rw, ext, rng, *, binw, mgap, ctx, pctile, tstep,
                    min_rois, n_surrogates, null_context_mode,
                    clamp_context_to_region, detection_mode,
                    peak_prominence, peak_min_distance_sec,
-                   guard_sec=0.0) -> LocoStream:
+                   guard_sec=0.0, window_mode="binned") -> LocoStream:
     t_lo, t_hi = ext
     half_ctx = ctx / 2
     ev = clip_sorted(trains, t_lo, t_hi)
+    if window_mode == "sliding":
+        return _detect_stream_sliding(ev, rw, ext, binw=binw, mgap=mgap, ctx=ctx,
+                                      pctile=pctile, min_rois=min_rois,
+                                      null_context_mode=null_context_mode,
+                                      clamp_context_to_region=clamp_context_to_region)
 
     edges = matlab_colon(t_lo, binw, t_hi)
     if edges.size < 2:
@@ -594,5 +604,66 @@ def _detect_stream(trains, rw, ext, rng, *, binw, mgap, ctx, pctile, tstep,
         signal=DetectorSignal(t=bc, y=s_obs, ref=np.full(nb, np.nan),
                               threshold=thr_bin, hilite=np.empty((0, 2)),
                               name="distinct ROIs / bin (local)",
+                              kind="local_coincidence"),
+    )
+
+
+def _detect_stream_sliding(ev, rw, ext, *, binw, mgap, ctx, pctile, min_rois,
+                           null_context_mode, clamp_context_to_region) -> LocoStream:
+    """LoCo in a sliding window with the exact rate-local null.
+
+    Same statistic (distinct ROIs in a window of ``binw``), same null (each ROI's
+    events circularly shifted within a half-context on each side, the bar the larger of
+    the two with ``maxlt``, clamped to the region), same percentile — evaluated at
+    every piece of the sliding count, with the null's percentile computed exactly
+    instead of pooled from draws. ``thr_step_sec`` and ``n_surrogates`` do not apply:
+    the bar is computed where the count is, not on anchors.
+    """
+    from bugarach.detectors import sliding as sl
+
+    t_lo, t_hi = ext
+    half = ctx / 2
+    starts, ends, S = sl.pieces(ev, binw, t_lo, t_hi)
+    thr = np.full(starts.size, np.nan)
+
+    def bar(lo, hi):
+        if hi <= lo:
+            return np.inf
+        return sl.quantile(sl.catch_probabilities(ev, lo, hi, binw), pctile)
+
+    for i in np.flatnonzero(S >= min_rois):
+        c = starts[i] - binw / 2
+        rs, re = _region_of(c, rw, ext, clamp_context_to_region)
+        if null_context_mode == "maxlt":
+            thr[i] = max(bar(max(c - half, rs), c), bar(c, min(c + half, re)))
+        else:
+            thr[i] = bar(max(c - half, rs), min(c + half, re))
+    with np.errstate(invalid="ignore"):
+        fire = np.flatnonzero((S >= min_rois) & (S > thr))
+
+    runs = sl.merge_runs(starts[fire], ends[fire], mgap)
+    n = len(runs)
+    onset, mag, mag_t = np.zeros(n), np.zeros(n), np.zeros(n)
+    width, thr_ev = np.zeros(n), np.zeros(n)
+    region, meets, in_win = [], np.zeros(n, bool), np.zeros(n, bool)
+    for k, (a, b) in enumerate(runs):
+        idx = fire[a:b + 1]
+        tfirst, tlast, nrec = sl.span_of(ev, starts[idx[0]] - binw, ends[idx[-1]])
+        pk = idx[int(np.argmax(S[idx]))]
+        onset[k], width[k] = tfirst, tlast - tfirst
+        mag[k], mag_t[k], thr_ev[k] = S[pk], nrec, thr[pk]
+        lab, mf, iw = _tag_region(tfirst, rw)
+        region.append(lab)
+        meets[k], in_win[k] = mf, iw
+    nan = np.full(n, np.nan)
+    return LocoStream(
+        onset_sec=onset, magnitude=mag, mag_total=mag_t, width_sec=width,
+        strength=mag.copy(), threshold=thr_ev, region=region,
+        in_stats_window=in_win, meets_floor=meets,
+        peak_sec=nan, t50rise=nan.copy(), t50fall=nan.copy(),
+        width_kind="tightness",
+        signal=DetectorSignal(t=starts, y=S, ref=np.full(starts.size, np.nan),
+                              threshold=thr, hilite=np.empty((0, 2)),
+                              name="distinct ROIs / window (local, sliding)",
                               kind="local_coincidence"),
     )
