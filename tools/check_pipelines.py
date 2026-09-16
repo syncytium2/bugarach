@@ -62,10 +62,22 @@ def _on_disk(root: Path) -> set[str]:
 
 
 def check(index: Path) -> list[str]:
-    """Return a list of problems; empty means the index and the directory agree."""
+    """Return a list of problems; empty means the index and the directory agree.
+
+    A tree with NEITHER an index nor any route has nothing to disagree about and passes.
+    That is not leniency — it is what makes this safe to run from `.githooks/pre-commit`,
+    which fires on every branch including ones cut before pipelines existed. A gate that
+    blocks unrelated commits on an old branch gets disabled, and then it guards nothing.
+    A directory holding routes with no index is still a failure: that is the silent decay.
+    """
     problems: list[str] = []
     if not index.is_file():
-        return [f"{index} does not exist — the index a session is told to read first is missing"]
+        orphans = _on_disk(index.parent)
+        if not orphans:
+            return []
+        return [
+            f"{index.name} does not exist, but {len(orphans)} route(s) do "
+            f"({', '.join(sorted(orphans))}) — they exist and nothing lists them"]
 
     text = index.read_text(encoding="utf-8")
     root = index.parent
@@ -126,9 +138,21 @@ def selftest() -> int:
             ok = bool(got) == want_problem
             cases.append((name, ok, got))
 
+    def no_index_case(name, files, *, want_problem):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            (root / PIPELINE_DIR_NAME).mkdir(parents=True, exist_ok=True)
+            for n, b in files.items():
+                (root / PIPELINE_DIR_NAME / n).write_text(b, encoding="utf-8")
+            got = check(root / "pipelines.md")
+            cases.append((name, bool(got) == want_problem, got))
+
     row = "- [the x route](pipelines/x.md) — does x\n"
     case("clean index passes", row, {"x.md": GOOD_BODY}, want_problem=False)
     case("empty index fails", "", {}, want_problem=True)
+    # A branch cut before pipelines existed must not be blocked by the pre-commit hook.
+    no_index_case("no index and no routes passes", {}, want_problem=False)
+    no_index_case("routes with no index at all fails", {"x.md": GOOD_BODY}, want_problem=True)
     case("index with prose but no links fails", "nothing here yet\n", {}, want_problem=True)
     case("row pointing at a missing file fails", row, {}, want_problem=True)
     case("pipeline missing from the index fails", row,
@@ -137,6 +161,25 @@ def selftest() -> int:
          {"x.md": "# Pipeline: x\n\nnothing useful\n"}, want_problem=True)
     case("two listed and present pass", row + "- [y](pipelines/y.md) — does y\n",
          {"x.md": GOOD_BODY, "y.md": GOOD_BODY}, want_problem=False)
+
+    # Exercise main() itself, not only check(). The summary line has its own clean-case
+    # branches and crashed on one of them while every check() rule above reported ok.
+    def cli_case(name, files, *, want_code):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            if files is not None:
+                (root / PIPELINE_DIR_NAME).mkdir(parents=True, exist_ok=True)
+                for n, b in files.items():
+                    (root / PIPELINE_DIR_NAME / n).write_text(b, encoding="utf-8")
+                (root / "pipelines.md").write_text(
+                    "# Pipelines\n\n- [x](pipelines/x.md) — x\n", encoding="utf-8")
+            got = main([str(root / "pipelines.md")])
+            cases.append((name, got == want_code, f"exit {got}"))
+
+    cli_case("CLI on a tree with no pipelines exits 0", None, want_code=0)
+    cli_case("CLI on a healthy tree exits 0", {"x.md": GOOD_BODY}, want_code=0)
+    cli_case("CLI on a broken tree exits 1", {"x.md": GOOD_BODY, "orphan.md": GOOD_BODY},
+             want_code=1)
 
     failed = [(n, g) for n, ok, g in cases if not ok]
     for name, ok, got in cases:
@@ -161,6 +204,13 @@ def main(argv=None) -> int:
         for p in problems:
             print(f"  {p}", file=sys.stderr)
         return 1
+    # The clean case has TWO shapes and the summary must not assume the first. Reading the
+    # index unconditionally here crashed on a tree with no pipelines at all — the very case
+    # `check` was just taught to pass, and the one the pre-commit hook meets on an old
+    # branch. The selftest exercised `check`, not this, which is how it survived.
+    if not index.is_file():
+        print("check_pipelines: no pipelines in this tree yet — nothing to disagree about")
+        return 0
     n = len(_listed(index.read_text(encoding="utf-8")))
     print(f"check_pipelines: {index.name} and {PIPELINE_DIR_NAME}/ agree — {n} route(s), "
           f"each listed, present, and saying what it is for")

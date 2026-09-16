@@ -344,6 +344,21 @@ render() {
     echo "   git config core.hooksPath .githooks"
   fi
 
+  # --- 3b. is there already a route to this result? -------------------------------
+  # TWO LINES, deliberately. `docs/pipelines.md` opens by claiming it is the first place
+  # a session looks, and until 2026-09-16 nothing made a session look: the string
+  # "pipelines" appeared in no briefing, hook or protocol file in this tree.
+  # `check_pipelines.py` verifies the index and the directory agree, which is a
+  # DIFFERENT failure -- a correct index nobody is told to open fails exactly as
+  # silently as an unlisted route, and it fails at the moment it matters. The cost is
+  # ~140 bytes against a budget that has already lost a whole board to a spill, so it
+  # stays terse and stays inside the opening 2KB a spill preserves. (armory-63 found
+  # the gap, 2026-09-16.)
+  if [ -r docs/pipelines.md ]; then
+    echo
+    echo "routes: docs/pipelines.md — check BEFORE designing a run; one may exist."
+  fi
+
   # --- 4. the machine-local board is a precondition, not a suggestion -------------
   # The vendored hook prints "(no board yet — create it ...)" and that has proved
   # too quiet: on 2026-08-18 a session read it, worked all day across two worktrees
