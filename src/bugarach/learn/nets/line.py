@@ -17,13 +17,13 @@ from bugarach.learn.nets import _dilated_stack, _torch, receptive_field, registe
 __all__ = ["build_line"]
 
 
-@register("line", note="count the lit ROIs, then centre-surround that count in time — "
-                       "Tony's vertical line, 2026-09-15: a long line is coordination, "
-                       "two ROIs are not, and fuzz is a background",
+@register("line", note="two sensors — how much of the field is lit (relative length) and how "
+                       "tightly it is lit (orientation, as temporal concentration) — then "
+                       "centre-surround that count in time. Tony's vertical line, 2026-09-15",
           n_scales=4, width=8, depth=6, max_center_frames=128, max_ratio=40.0,
-          vote_gain=8.0)
+          vote_gain=8.0, orientation=True)
 def build_line(*, n_scales=4, width=8, depth=6, max_center_frames=128,
-               max_ratio=40.0, vote_gain=8.0):
+               max_ratio=40.0, vote_gain=8.0, orientation=True, eps=1e-3):
     """How many distinct ROIs are lit right now, judged against its own background.
 
     Tony, 2026-09-15, on the tube models trained against rigid shift: *"i wonder if
@@ -69,12 +69,28 @@ def build_line(*, n_scales=4, width=8, depth=6, max_center_frames=128,
     smear is widest. Probe it behaviourally (``tools/probe_line_vs_fuzz.py``); do
     not assert it.
 
-    ⚠ **A sharpness channel is deliberately absent.** The obvious addition is the
-    count at a narrow width minus the count at a broad one, to separate a line from
-    fuzz directly. The difference of Gaussians already does that in time, and adding
-    a second mechanism in the same first version would make a result impossible to
-    attribute. If ``line`` fails to separate fuzz, that channel is the next
-    experiment, not a patch to fold in quietly.
+    **Two sensors, and the second one arrived on 2026-09-15.** Tony: *"so two sensors,
+    orientation and length (relative to the number of rois)"*, then *"make line
+    sensitive to both orientation (vertical line) and relative length"*.
+
+    * **Relative length** is the count above: a **mean** over ROIs, so it is the share
+      of the field that is lit and not a raw tally — the quantity that is 0.5 when half
+      the ROIs fire, at any field size.
+    * **Orientation** is the ratio of the count at a narrow smear to the count at the
+      next wider one, one channel per adjacent pair. A vertical line has the same
+      participants at every width, so its ratios sit near 1; a recruitment spread over
+      seconds gathers members only as the smear widens, so its narrow count is a
+      fraction of its broad one.
+
+    ⚠ **Orientation here is NOT the orientation of the image.** This model is
+    permutation-invariant over ROIs by construction and `encode` sorts rows by rate, so
+    a tilted line and a random spread are the same object to it — the tilt is a fact
+    about the row order, which is a coordinate. What survives the sort is **temporal
+    concentration**, and that is what these channels measure. A figure can show a tilt;
+    an order-free detector cannot, and one that claimed to would be reading the sort.
+
+    Set ``orientation=False`` to build the length-only model this file shipped first —
+    the ablation, so the second sensor's contribution stays attributable.
     """
     torch = _torch()
     nn = torch.nn
@@ -97,7 +113,11 @@ def build_line(*, n_scales=4, width=8, depth=6, max_center_frames=128,
                 [math.log(2.0 * (2 ** i)) for i in range(n_scales)]))
             self.log_ratio = nn.Parameter(torch.full((n_scales,), math.log(8.0)))
             self.gain = nn.Parameter(torch.ones(n_scales))
-            self.head = _dilated_stack(nn, 2 * n_scales, 1, width, depth)
+            self.orientation = bool(orientation)
+            # counts (relative length) + the difference-of-Gaussian responses, plus one
+            # orientation channel per adjacent pair of smear widths.
+            c_in = 2 * n_scales + (n_scales - 1 if self.orientation else 0)
+            self.head = _dilated_stack(nn, c_in, 1, width, depth)
 
         def _smear(self, device):
             """Per-ROI Gaussians, PEAK-normalised: one onset reaches 1 at any width."""
@@ -133,6 +153,14 @@ def build_line(*, n_scales=4, width=8, depth=6, max_center_frames=128,
                 torch.nn.functional.conv1d(count[:, i:i + 1], self._dog(x.device)[i:i + 1],
                                            padding=self.k)[:, 0]
                 for i in range(count.shape[1])], dim=1)
-            return self.head(torch.cat([count, resp], dim=1)).squeeze(1)
+            channels = [count, resp]
+            if self.orientation:
+                # --- orientation: how much of the count survives a NARROWER smear ----
+                # Same participants at every width -> near 1, a vertical line. Members
+                # gathered only as the smear widens -> well below 1, a spread. The ROI
+                # axis is already gone here, so this is temporal concentration and not
+                # the image's tilt, which no order-free model can see.
+                channels.append(count[:, :-1] / (count[:, 1:] + eps))
+            return self.head(torch.cat(channels, dim=1)).squeeze(1)
 
     return Line()
