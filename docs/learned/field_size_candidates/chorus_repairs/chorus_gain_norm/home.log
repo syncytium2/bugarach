@@ -1,0 +1,8 @@
+data set: 24 recordings, 4 folds (6 each)
+  1410 recording-minutes total
+  chorus_gain_norm fold 0: F1 0.726  thr 0.9908  train 166.2s  detect 1.19s
+  chorus_gain_norm fold 1: F1 0.755  thr 0.9500  train 171.0s  detect 1.22s
+  chorus_gain_norm fold 2: F1 0.719  thr 0.9838  train 158.7s  detect 1.08s
+  chorus_gain_norm fold 3: F1 0.749  thr 0.9838  train 154.5s  detect 1.05s
+
+wrote docs/learned/field_size_candidates/chorus_repairs/chorus_gain_norm/bakeoff.json

@@ -1,0 +1,8 @@
+data set: 24 recordings, 4 folds (6 each)
+  1410 recording-minutes total
+  chorus_line fold 0: F1 0.712  thr 0.9838  train 84.0s  detect 0.72s
+  chorus_line fold 1: F1 0.731  thr 0.9838  train 95.9s  detect 0.79s
+  chorus_line fold 2: F1 0.630  thr 0.9838  train 85.6s  detect 0.69s
+  chorus_line fold 3: F1 0.670  thr 0.9908  train 95.9s  detect 1.03s
+
+wrote docs/learned/field_size_candidates/chorus_repairs/chorus_line/bakeoff.json

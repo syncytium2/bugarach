@@ -137,6 +137,59 @@ zero is drawn at 0.1 on the log axis. Seed 1 is
   three and two folds of no hits. A share-of-field-lit statistic thresholded at 32 ROIs does not
   survive 566.
 
+## Repairing chorus: it trains, it is the best model at home, and it does not carry
+
+Four versions, each run the same way (4 folds of 6, training seed 0, learning rate 1e-2, at home and
+carried to Cossart, with the null twins), in [`chorus_repairs/`](chorus_repairs/). Their six
+hand-written rows come from the seed-0 run above, which scored the same folds
+(`--skip-hand-written`; the six are deterministic).
+
+| version | the change | vote change for one onset at initialisation |
+|---|---|---|
+| chorus | none, the failed control | 0.0002 to 0.0003 |
+| chorus_line | `line`'s per-cell stage (peak-one smear, sigmoid with gain 8) with chorus's spread and loudest-four channels | 0.96 |
+| chorus_gain | chorus's encoder, with a learnable gain on the raster started at 1,000 | 0.57 to 0.61 |
+| chorus_norm | chorus's encoder, each cell's output standardised over time | 0.22 to 0.51 |
+| chorus_gain_norm | standardised, then `line`'s vote: learnable gain started at 8 and a bias | 0.73 to 0.99 |
+
+The initialisation column is from [`tools/probe_untrained_response.py`](../../../tools/probe_untrained_response.py)
+at two torch seeds; 1,000 was chosen there, before any training, as the smallest input gain that moved
+a vote by more than half.
+
+| model | F1 home | F1 on Cossart | probe home, per hour | null twins home, per hour at 1× / 0.54× / 0.25× |
+|---|---|---|---|---|
+| chorus_norm | **0.741** | 0.171 | 2.0 | 7.1 / 2.7 / 1.3 |
+| chorus_gain_norm | **0.737** | 0 | 1.5 | 5.1 / 2.1 / 0.6 |
+| chorus_line | 0.686 | 0 | 4.5 | 8.4 / 1.7 / 0.1 |
+| chorus_gain | 0.678 | 0 | 2.5 | 8.5 / 1.8 / 0.3 |
+| line | 0.666 | 0.005 | 8.5 | 8.7 / 2.5 / 0.6 |
+| chorus | 0.125 | 0.125 | 0 | 1.0 / 1.0 / 1.0 |
+| CoactDetect | 0.645 | 0.774 | 5.5 | 6.0 / 2.5 / 0.5 |
+
+Paired against CoactDetect at home: chorus_norm +0.096 F1 (*t* 6.7), chorus_gain_norm +0.092
+(*t* 8.2), chorus_line +0.041 (*t* 3.6), chorus_gain +0.032 (*t* 2.0). chorus_line against `line`:
++0.020 (*t* 1.5).
+
+![F1 per fold and false alarms against background rate, for line, the chorus versions and the hand-written detectors](chorus_repairs/compare_seed0/field_size_candidates.png)
+
+**Figure 2. The chorus repairs, training seed 0.** Drawn as Figure 1. Darkroom copy:
+`<darkroom>/bugarach/field-size-candidates/chorus-repairs-seed0/`.
+
+- **Every repair trains.** The failure was the deaf per-cell stage and nothing else: each of the four
+  ways of giving it gain lifts chorus from 0.125 to 0.68–0.74 at home.
+- **At home, the standardised versions are the best models in this project's bake-off**, 0.09 F1
+  above CoactDetect at *t* 6.7 and 8.2 on 3 degrees of freedom, with fewer busy-window false alarms
+  than CoactDetect (1.5 and 2.0 per hour against 5.5) and quiet-field false alarms that fall as the
+  field empties, as they should. A learned per-cell encoder that trains beats `line`'s hand-built one
+  by about 0.07; the extra pooled channels on `line`'s stage add only 0.02, inside the noise.
+- **None of them carries.** On the Cossart spec chorus_line, chorus_gain and chorus_gain_norm make
+  **no detections at all** in any fold, and chorus_norm makes 1 to 60 per fold against 90 planted
+  events. This is what the field-size argument predicts for their pools: a mean over ROIs is a
+  fraction of the field and the loudest-four channel is a fixed count, and a threshold learned on
+  either at 32 ROIs does not hold at 566. Training them made that failure visible; it did not cause it.
+- **One training seed only.** The home margins are large next to the seed-to-seed movement seen for
+  the other models (up to 0.04), but the second seed has not been run.
+
 ## Limits
 
 - Simulation only, and the Cossart spec is unreviewed with an inherited background.
