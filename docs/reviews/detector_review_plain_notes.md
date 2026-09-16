@@ -629,3 +629,34 @@ section does **not** compare against it. Eddleston 2026's numbers are consistent
   the slowest reported rate, lighter).
 - Two figure overlaps caught on render and fixed before publishing: a margin label running into the next
   panel's axis label, and line labels touching a raster frame.
+
+## 37. The question was an interval, not a bin (2026-09-16)
+
+*"our goal is a document to review what coordination is and how we detect it with the 'programs'. in that
+document we need to address the simple question why not just use a minimum number of events within an
+interval"*
+
+Note 36 built the section around **counting cells in fixed bins**, with Herbison's interval rule as a side
+case. That answered a neighbouring question. The section is now built on **the interval rule** — at least x
+different cells brightening within w seconds, the window opening at every event — with a 2 s interval
+(CoactDetect's length) as the main case, 10 s and Herbison's chained 10 s rule as the others.
+
+**Fixed bins stay in one place, because they carry a finding of their own: the bin edge.** An event that
+falls across a bin boundary is split between two bins. On the simulated recordings, with the same 6-cell
+bar, fixed 2 s bins found 25% of 6-cell events within an eighth of a bin of an edge and 100% mid-bin; the
+sliding interval found 100% everywhere. **CoactDetect and LoCo count in fixed bins too** (checked in
+`coact.py` and `loco.py`: non-overlapping bins from the recording start) and lose events the same way,
+more mildly — CoactDetect 85% at an edge against 100% mid-bin, LoCo 74% against 92%. New Figure "What a bin
+edge costs". Worth a todo if the overnight search does not already vary bin offsets.
+
+**A measurement trap caught before it shipped.** The first real-recording measure of the interval rule
+counted chance *calls*. Overlapping windows merge into one call, so a recording where chance crosses the bar
+continuously makes a single long call and reads as "reached less than once in 10 minutes" — which would have
+put the busiest slices at a bar of 2. The measure now counts separate, non-overlapping windows that reach
+the bar (`_n_windows`), and the busiest slices sit where they should, near the top. Same trap as the
+per-minute count in note 36, third time: **a rule whose calls can merge must never be counted by its
+calls.**
+
+Simulated-recording numbers under the interval rule (2 s): best bar 4 cells quiet (0.71, CoactDetect 0.74),
+6 busy (0.67, CoactDetect 0.67); the quiet bar on the busy background 0.43; at the best bars it calls 95% and
+87% of the empty busy stretch. Real-recording numbers are in the darkroom page.

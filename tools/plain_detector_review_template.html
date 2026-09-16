@@ -62,7 +62,7 @@ how we tested them, and why they sometimes disagree with your own eyes.</p>
   <li><a href="#s8">Simulated recordings, where we know the answer</a></li>
   <li><a href="#s9">How we grade a program</a></li>
   <li><a href="#s10">Scores on the simulated recordings</a></li>
-  <li><a href="#s14">Why not just count cells in a bin?</a></li>
+  <li><a href="#s14">Why not just ask for a minimum number of events in an interval?</a></li>
   <li><a href="#s11">Detection on real recordings</a></li>
   <li><a href="#s12">Where your eye and the programs disagree</a></li>
   <li><a href="#s13">What this means</a></li>
@@ -456,17 +456,17 @@ coordinated events planted <i>inside</i> the busy stretch.</p>
   held up.</li>
 </ul>
 
-<h2 id="s14">{{SEC:count}}. Why not just count cells in a bin?</h2>
+<h2 id="s14">{{SEC:count}}. Why not just ask for a minimum number of events in an interval?</h2>
 <figure>{{FIG:fig_count_rule}}
-<figcaption><b>Figure {{NUM:fig_count_rule}}. The counting rule.</b> Left: its steps. A and B: the same two
+<figcaption><b>Figure {{NUM:fig_count_rule}}. The interval rule.</b> Left: its steps. A and B: the same two
 simulated minutes as Figures {{NUM:fig_alg_rate}} to {{NUM:fig_alg_sync}}. Above each raster: the planted
-event (▼) and the rule's calls. Below: how many different cells brightened in each {{T.cnt_bin}}-second bin,
-and the bar of {{T.cnt_one_bar}} cells — the one bar that scored best across both simulated backgrounds
-(Figure {{NUM:fig_count_bar}}).</figcaption></figure>
+event (▼) and the rule's calls. Below: at each moment, how many different cells brighten in the
+{{T.cnt_w}} seconds that follow, and the bar of {{T.cnt_one_bar}} cells — the one bar that scored best
+across both simulated backgrounds (Figure {{NUM:fig_count_bar}}).</figcaption></figure>
 <p>Every program in this document does a lot of work to decide what chance looks like. There is a much
-simpler rule: cut the recording into short bins, count how many different cells brighten in each bin, and
-call a coordinated event wherever that count reaches a fixed number (Figure {{NUM:fig_count_rule}}). No
-copies, and no chance. So why not use it?</p>
+simpler rule: call a coordinated event whenever at least a set number of cells brighten within a short
+interval of each other (Figure {{NUM:fig_count_rule}}). Each cell counts once, however many times it
+brightens inside the interval. No copies, and no chance. So why not use it?</p>
 <p>Labs that study these same cells use rules like it. Allan Herbison's lab, recording brain slices as this
 lab does, calls a <b>synchronized event</b> whenever the event peaks of at least 2 cells fall within 10
 seconds of each other, and adds any further cell whose peak falls within 10 seconds of the one before
@@ -476,47 +476,70 @@ cells, is used in the lab's slice papers through 2026
 <a href="https://doi.org/10.1111/jne.70170">Eddleston and others, 2026</a>). Aleisha Moore and coworkers,
 recording these cells in living mice, called an episode synchronized when every recorded cell brightened
 (<a href="https://doi.org/10.1073/pnas.2117767119">Moore, Coolen and Lehman, 2022</a>). None of these
-papers checks its rule against chance. This section does.</p>
+papers checks its rule against chance. This section does, with an interval of {{T.cnt_w}} seconds — the
+length CoactDetect counts in — and with Herbison's rule as published.</p>
 
-<h3>On simulated recordings, counting can score well</h3>
+<h3>On simulated recordings, the rule can score well</h3>
 <figure>{{FIG:fig_count_bar}}
-<figcaption><b>Figure {{NUM:fig_count_bar}}. What the bar does.</b> The counting rule with
-{{T.cnt_bin}}-second bins, run on the same {{T.n_recordings_scored}} simulated recordings as the six
+<figcaption><b>Figure {{NUM:fig_count_bar}}. What the bar does.</b> The interval rule with a
+{{T.cnt_w}}-second interval, run on the same {{T.n_recordings_scored}} simulated recordings as the six
 programs and graded the same way, at every bar from {{T.cnt_x_lo}} to {{T.cnt_x_hi}} cells. A: the overall
 score. B: how much of the busy stretch, where nothing is planted, sits under a call or within {{T.tol}}
 seconds of one. Rings mark the bar with the best score on each background. Dashed teal lines: CoactDetect at
 its stored setting on the same recordings; in B, CoactDetect and LoCo both call less than 1% of the
 stretch.</figcaption></figure>
-<p><b>With the right bar, counting scores about as well as the best programs.</b> With a bar of
+<p><b>With the right bar, the rule scores about as well as the best programs.</b> With a bar of
 {{T.cnt_best_quiet}} cells it scored {{T.cnt_f1_best_quiet}} on the quiet background; CoactDetect scored
 {{T.cnt_coact_f1_quiet}} on the same recordings (Figure {{NUM:fig_count_bar}}, A). That is a real result.
-It also flatters counting a little, because its bar was picked on these very recordings, with the answers in
-hand.</p>
+It also flatters the rule a little, because its bar was picked on these very recordings, with the answers
+in hand.</p>
 <p><b>But the right bar depends on the recording.</b> On the busy background the best bar is
 {{T.cnt_best_busy}} cells. Use the quiet background's bar of {{T.cnt_best_quiet}} there and the score falls
 to {{T.cnt_quiet_bar_on_busy}}. The one bar that does best on both backgrounds together,
 {{T.cnt_one_bar}} cells, scores {{T.cnt_f1_one_quiet}} on the quiet background and {{T.cnt_f1_one_busy}} on
 the busy one.</p>
 <p><b>And the bar that scores best calls most of the busy stretch, where nothing was planted</b> (Figure
-{{NUM:fig_count_bar}}, B). At its best bar, counting called {{T.cnt_empty_best_quiet}} of that stretch on
+{{NUM:fig_count_bar}}, B). At its best bar, the rule called {{T.cnt_empty_best_quiet}} of that stretch on
 the quiet background and {{T.cnt_empty_best_busy}} on the busy one. On the busy background, CoactDetect
-called {{T.cnt_coact_empty_busy}} of the stretch and LoCo {{T.cnt_loco_empty_busy}}. Bins of 10 seconds did no better:
-counting with them called at least {{T.cnt10_empty}} of the stretch at its best bars. Herbison's rule, run
+called {{T.cnt_coact_empty_busy}} of the stretch and LoCo {{T.cnt_loco_empty_busy}}. A 10-second interval
+did no better: its best bars ({{T.cnt10_best_quiet}} cells on the quiet background, {{T.cnt10_best_busy}}
+on the busy one) scored {{T.cnt10_f1_quiet}} and {{T.cnt10_f1_busy}}, and called at least {{T.cnt10_empty}}
+of the stretch.
+Herbison's rule, run
 exactly as published, called at least {{T.herb_empty_busy}} of it and scored {{T.herb_f1_quiet}} on the
 quiet background and {{T.herb_f1_busy}} on the busy one — though our simulated recordings hold {{T.n_cells_sim}} cells, more than the 8 to 29
 in view in that lab's slices, and a rule built for fewer cells is reached more easily with more.</p>
 <p>The overall score did not show this, because calls inside the busy stretch are kept out of it and counted
 on their own (Section {{SEC:grading}}). Two of the six programs have the same weakness: binned SCE, which
-also counts cells in bins but sets one bar from the whole recording, called {{T.cnt_sce_empty_busy}} of the
+counts cells in bins and sets one bar from the whole recording, called {{T.cnt_sce_empty_busy}} of the
 stretch, and locust called {{T.cnt_cicada_empty_busy}}. CoactDetect and LoCo avoid it by setting their bar
 from the minutes around each moment, so a busy stretch raises its own bar.</p>
+
+<h3>Why an interval and not a bin</h3>
+<figure>{{FIG:fig_count_edge}}
+<figcaption><b>Figure {{NUM:fig_count_edge}}. What a bin edge costs.</b> Every planted event joined by 6
+cells ({{T.edge_n}} events, both simulated backgrounds), grouped by how far it fell from the nearest edge of
+a bin, and the share each rule found. Counting within a sliding {{T.edge_bin}}-second window and counting in
+fixed {{T.edge_bin}}-second bins use the same bar ({{T.edge_x}} cells), so the bin edge is the only
+difference between them. CoactDetect counts in fixed 2-second bins and LoCo in fixed 1-second bins; each is
+measured against its own bins.</figcaption></figure>
+<p>An even simpler version of the rule cuts the recording into fixed bins and counts the cells in each. It
+has a flaw of its own: a coordinated event that falls across the edge between two bins is split, some of its
+cells landing in one bin and the rest in the next, so neither bin may reach the bar. With a bar of
+{{T.edge_x}} cells, fixed {{T.edge_bin}}-second bins found {{T.edge_bin_at}} of the 6-cell events that fell
+close to an edge (within an eighth of a bin), against {{T.edge_bin_mid}} of those in the middle of a bin. A window that slides along with the
+events cannot split one, and found {{T.edge_int_at}} of them wherever they fell (Figure
+{{NUM:fig_count_edge}}). Herbison's rule slides in this way, which is one thing it gets right. Two of the six
+programs count in fixed bins and pay a smaller price for it: CoactDetect found {{T.edge_coact_at}} of the
+events at an edge against {{T.edge_coact_mid}} mid-bin, and LoCo {{T.edge_loco_at}} against
+{{T.edge_loco_mid}}.</p>
 
 <h3>On real recordings, no single bar fits</h3>
 <figure>{{FIG:fig_count_slices}}
 <figcaption><b>Figure {{NUM:fig_count_slices}}. The bar each real recording needs.</b> One dot for each of
 the lab's {{T.cnt_n_real}} untreated recordings: the stretch before any drug, brief events. For each one we
-made {{T.cnt_draws}} shifted copies and found the smallest bar, in cells per {{T.cnt_bin}}-second bin, that
-chance reaches less than once every 10 minutes. Orange: recordings where chance reaches the bar of
+made {{T.cnt_draws}} shifted copies and found the smallest bar, in cells within {{T.cnt_w}} seconds, that
+chance reaches less than once every 10 minutes (counting separate {{T.cnt_w}}-second windows). Orange: recordings where chance reaches the bar of
 {{T.cnt_one_bar}} cells from Figure {{NUM:fig_count_bar}} more often than that. Dotted line: how busy the
 simulated busy stretch is, busier than {{T.cnt_block_slower}} of the {{T.cnt_n_real}} real
 recordings.</figcaption></figure>
@@ -558,9 +581,10 @@ shows why a count needs a chance comparison beside it: without one, there is no 
 count chance alone would have produced.</p>
 
 <h3>What this means</h3>
-<p>Counting cells in bins is not wrong, and on quiet simulated recordings it does about as well as any
-program here. What a fixed bar cannot do is tell a busy stretch from a coordinated one, because the bar does
-not move when the cells get busier. Shifted copies (Section {{SEC:copies}}) let a program set its bar from
+<p>Asking for a minimum number of cells within an interval is not wrong, and on quiet simulated recordings
+it does about as well as any program here. What a fixed bar cannot do is tell a busy stretch from a
+coordinated one, because the bar does not move when the cells get busier. Counting in fixed bins instead of
+a sliding interval adds a second problem, the bin edge, and two of the six programs share it. Shifted copies (Section {{SEC:copies}}) let a program set its bar from
 the recording's own chance, and CoactDetect and LoCo go one step further, setting it from the minutes
 around each moment. That is what the extra work buys.</p>
 
@@ -767,7 +791,7 @@ raster would call those stripes.</p>
   cell's own pattern as well, which is why it gets chance wrong (Section {{SEC:shuffle}}).</dd>
   <dt>Simulate, simulator</dt><dd>To produce a recording ourselves instead of measuring one, choosing in
   advance when the cells act together. The simulator is the program that writes those recordings.</dd>
-  <dt>Synchronized event</dt><dd>The name Allan Herbison's lab uses for a call of its counting rule: at least 2
+  <dt>Synchronized event</dt><dd>The name Allan Herbison's lab uses for a call of its interval rule: at least 2
   cells whose event peaks fall within 10 seconds of each other (Section {{SEC:count}}).</dd>
   <dt>TTX (tetrodotoxin)</dt><dd>A drug that blocks the fast electrical signals most nerve cells use.</dd>
 </dl>

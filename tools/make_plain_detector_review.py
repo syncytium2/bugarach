@@ -623,18 +623,20 @@ def stage_real(work: Path, review: Path) -> None:
 
 
 # ----------------------------------------------------------------------- stage: count
-# "Why not just count cells in a bin?" Tony, 2026-09-16: more than x events in a bin is a
-# coordinated event — "that's what everyone else does" [not true, he adds, but Herbison and
-# Moore do it]. The answer is a measurement, not an argument: the rule is run on the same
-# simulated recordings and graded the same way as the six programs, then asked how much chance
-# it lets through on the lab's own untreated recordings and at the published rates.
+# "Why not just use a minimum number of events within an interval?" Tony, 2026-09-16 — the simple
+# approach Herbison's and Moore's labs take to coordination. The answer is a measurement, not an
+# argument: the rule is run on the same simulated recordings and graded the same way as the six
+# programs, then asked how much chance it lets through on the lab's own untreated recordings and
+# at the published rates.
 #
-# The counting is binned SCE's own `_coactivity` (different cells with an event in a bin), so
-# the rule differs from binned SCE in exactly one thing: its bar is a fixed number instead of a
-# percentile of shifted copies.
-COUNT_BINS = (2.0, 10.0)            # CoactDetect's bin, and binned SCE's
+# THE RULE IS AN INTERVAL, NOT A BIN. The first version of this section counted cells in fixed
+# bins, which is not what Tony asked and not what Herbison's lab does (their interval slides with
+# the events). Fixed bins stay in one place only: the bin-edge comparison, because an event that
+# falls across a bin edge is split between two bins, and CoactDetect and LoCo count in fixed bins.
+INTERVALS = (2.0, 10.0)             # 2 s: a coordinated event's timescale here; 10 s: Herbison's interval
+FIG_W = 2.0                         # the interval the figures draw
+EDGE_BIN = 2.0                      # the fixed bin the edge comparison uses (CoactDetect's)
 COUNT_XS = tuple(range(2, 13))
-FIG_BIN = 2.0                       # the bin the figures draw
 REAL_XS = tuple(range(2, 31))
 CHANCE_DRAWS = 20
 HERB_WIN = 10.0                     # Han et al. 2023, Methods: each peak within 10 s of the previous
@@ -661,6 +663,50 @@ def _count_rule_calls(obs, t_lo, bw, x):
     br = np.flatnonzero(np.diff(on) != 1)
     s, e = np.r_[on[0], on[br + 1]], np.r_[on[br], on[-1]]
     return t_lo + s * bw, (e - s + 1) * bw
+
+
+def _reach(parts, at, w):
+    """For each time in `at`: how many different cells have an event in [time, time + w]."""
+    at = np.asarray(at, float)
+    n = np.zeros(at.size, int)
+    for v in parts:
+        if v.size:
+            k = np.searchsorted(v, at, side="left")
+            nxt = np.where(k < v.size, v[np.minimum(k, v.size - 1)], np.inf)
+            n += nxt <= at + w
+    return n
+
+
+def _interval_events(trains, w):
+    """Every event time, sorted, with the number of different cells in the w seconds from it."""
+    parts = [np.sort(np.asarray(v, float)) for v in trains]
+    t = np.sort(np.concatenate(parts)) if parts else np.empty(0)
+    return t, _reach(parts, t, w)
+
+
+def _n_windows(t, reach, w, x):
+    """How many w-second windows, none overlapping another, reach x cells (earliest first)."""
+    s = t[reach >= x]
+    n, i = 0, 0
+    while i < s.size:
+        n += 1
+        i = int(np.searchsorted(s, s[i] + w, side="right"))
+    return n
+
+
+def _interval_calls(trains, w, x, pre=None):
+    """The interval rule: wherever at least x different cells have events within w seconds of the
+    first of them, call. The window opens at every event, so no edge can split a lineup; windows
+    that overlap make one call, from its first event to its last."""
+    t, reach = pre if pre is not None else _interval_events(trains, w)
+    q = np.flatnonzero(reach >= x)
+    if q.size == 0:
+        return np.empty(0), np.empty(0)
+    s = t[q]
+    e = t[np.searchsorted(t, s + w, side="right") - 1]
+    new = np.r_[True, s[1:] > np.maximum.accumulate(e)[:-1]]
+    idx = np.flatnonzero(new)
+    return s[idx], np.maximum.reduceat(e, idx) - s[idx]
 
 
 def _herbison_calls(trains, k=2, win=HERB_WIN):
@@ -725,20 +771,30 @@ def _count_bench_one(job):
         add(d, on, wd)
     t_lo, t_hi = ext
     L = t_hi - t_lo
-    rel = [np.asarray(v, float) - t_lo for v in trains]
-    for bw in COUNT_BINS:
-        obs = _coactivity(rel, np.zeros(len(rel)), L, t_lo, t_lo, t_hi, bw, int(np.ceil(L / bw)))
+    for w in INTERVALS:
+        pre = _interval_events(trains, w)
         for x in COUNT_XS:
-            add(f"count|{bw:g}|{x}", *_count_rule_calls(obs, t_lo, bw, x))
+            add(f"interval|{w:g}|{x}", *_interval_calls(trains, w, x, pre))
+    rel = [np.asarray(v, float) - t_lo for v in trains]
+    obs = _coactivity(rel, np.zeros(len(rel)), L, t_lo, t_lo, t_hi, EDGE_BIN, int(np.ceil(L / EDGE_BIN)))
+    for x in COUNT_XS:
+        add(f"bin|{EDGE_BIN:g}|{x}", *_count_rule_calls(obs, t_lo, EDGE_BIN, x))
     for k in HERB_KS:
         add(f"herbison|{k}", *_herbison_calls(trains, k)[:2])
-    return regime, seed, out
+    # Where each planted event falls against a bin grid starting at the recording's start — the
+    # grid CoactDetect (2 s) and LoCo (1 s) count on — as a share of a bin: 0 on an edge, 0.5 mid-bin.
+    edge = []
+    for i, e in enumerate(gt.events):
+        pos = {f"{g:g}": float(min(((e.time - t_lo) % g) / g, 1 - ((e.time - t_lo) % g) / g)) for g in (1.0, 2.0)}
+        edge.append(dict(frac=e.frac, pos=pos,
+                         hit={k: bool(v[0].hits[i]) for k, v in out.items()
+                              if k in ("coact", "loco") or k.startswith(("bin|", f"interval|{EDGE_BIN:g}|"))}))
+    return regime, seed, out, edge
 
 
 def _count_real_one(job):
     """One untreated baseline: how often chance alone reaches each bar, from shifted copies."""
     rid, dt, win, trains = job
-    from bugarach.detectors.sce import _coactivity
     from bugarach.surrogates import circular_shift
     L = int(win[1] - win[0])
     tr = [np.asarray(v, np.int64) - int(win[0]) for v in trains]
@@ -748,17 +804,16 @@ def _count_real_one(job):
     draws = [circular_shift(tr, (0, L), (rid, "why-not-count", k)).trains for k in range(CHANCE_DRAWS)]
     out = dict(n_roi=n, minutes=minutes,
                rate=float(sum(np.size(v) for v in tr)) / max(1, n) / minutes)
-    for bw in COUNT_BINS:
-        nb = max(1, int(np.floor(dur / bw)))
-
-        def counts(tt):
-            rel = [np.asarray(v, float) * dt for v in tt]
-            return _coactivity(rel, np.zeros(n), dur, 0.0, 0.0, nb * bw - 1e-9, bw, nb)
-        sur = [counts(d) for d in draws]
-        per10 = [float(np.mean([np.sum(c >= x) for c in sur])) / minutes * 10 for x in REAL_XS]
-        need = next((x for x, v in zip(REAL_XS, per10) if v < 1.0), None)
-        out[f"chance_per10|{bw:g}"] = per10
-        out[f"need|{bw:g}"] = need
+    secs = [[np.asarray(v, float) * dt for v in d] for d in draws]
+    for w in INTERVALS:
+        pres = [_interval_events(d, w) for d in secs]
+        # SEPARATE windows reaching the bar, not calls: overlapping windows merge into one call, so a
+        # recording where chance crosses the bar all the time would make one long call and read as
+        # "reached less than once" — the per-minute trap the busy-stretch measure already fell into.
+        per10 = [float(np.mean([_n_windows(t, reach, w, x) for t, reach in pres])) / minutes * 10
+                 for x in REAL_XS]
+        out[f"chance_per10|{w:g}"] = per10
+        out[f"need|{w:g}"] = next((x for x, v in zip(REAL_XS, per10) if v < 1.0), None)
     return out
 
 
@@ -784,7 +839,6 @@ def stage_count(work: Path) -> None:
     from concurrent.futures import ProcessPoolExecutor
 
     from bugarach import bench, dataset
-    from bugarach.detectors.sce import _coactivity
     from bugarach.io import load_folder
     from bugarach.surrogate_stats import recordings_from_slices
 
@@ -797,32 +851,44 @@ def stage_count(work: Path) -> None:
     for reg in regimes:
         table[reg] = {}
         for name in runs[0][2]:
-            got = [o[name] for r, _, o in runs if r == reg]
+            got = [o[name] for r, _, o, _ in runs if r == reg]
             p = bench.pool_scores([g[0] for g in got], detector=name.split("|")[0], regime=reg, seeds=seeds)
             table[reg][name] = dict(f1=p.f1, recall6=p.recall_at(0.18), recall3=p.recall_at(0.10),
                                     empty=sum(g[1][0] for g in got) / sum(g[1][1] for g in got))
-    f1 = lambda reg, bw, x: np.nan_to_num(table[reg][f"count|{bw:g}|{x}"]["f1"])   # noqa: E731
-    best = {f"{bw:g}": {reg: int(max(COUNT_XS, key=lambda x: f1(reg, bw, x))) for reg in regimes}
-            for bw in COUNT_BINS}
-    one_bar = {f"{bw:g}": int(max(COUNT_XS, key=lambda x: f1(regimes[0], bw, x) + f1(regimes[1], bw, x)))
-               for bw in COUNT_BINS}
+    f1 = lambda reg, key, x: np.nan_to_num(table[reg][f"{key}|{x}"]["f1"])   # noqa: E731
+    keys = [f"interval|{w:g}" for w in INTERVALS] + [f"bin|{EDGE_BIN:g}"]
+    best = {k: {reg: int(max(COUNT_XS, key=lambda x: f1(reg, k, x))) for reg in regimes} for k in keys}
+    one_bar = {k: int(max(COUNT_XS, key=lambda x: f1(regimes[0], k, x) + f1(regimes[1], k, x))) for k in keys}
     rec = bench.BENCH_RECORDING
     block_rate = {reg: (bench.REGIMES[reg]["bg_rate_hz"] + rec["hot_rate_hz"]) * 60 for reg in regimes}
 
+    # ---- the bin edge: 6-cell events found, by where they fall against the bin grid ------------
+    # The same bar for the fixed bin and the interval (the interval's one bar), so the only
+    # difference between those two lines is the edge.
+    x_edge = one_bar[f"interval|{EDGE_BIN:g}"]
+    rules = {"bin": (f"bin|{EDGE_BIN:g}|{x_edge}", "2"), "interval": (f"interval|{EDGE_BIN:g}|{x_edge}", "2"),
+             "coact": ("coact", "2"), "loco": ("loco", "1")}
+    groups = np.linspace(0.0, 0.5, 5)
+    edge = {}
+    events = [e for *_, ev in runs for e in ev if abs(e["frac"] - 0.18) < 1e-9]
+    for name, (hk, grid) in rules.items():
+        pos = np.array([e["pos"][grid] for e in events])
+        hit = np.array([e["hit"][hk] for e in events], bool)
+        edge[name] = [dict(lo=float(a), hi=float(b), n=int(np.sum((pos >= a) & (pos <= b if b == 0.5 else pos < b))),
+                           found=float(hit[(pos >= a) & (pos <= b if b == 0.5 else pos < b)].mean()))
+                      for a, b in zip(groups[:-1], groups[1:])]
+
     # ---- the picture: the rule on the simulated minutes the algorithm figures use -------------
     sim = json.loads((work / "plain.json").read_text())["sim"]
-    ext = sim["ext"]
-    L = ext[1] - ext[0]
-    nb = int(np.ceil(L / FIG_BIN))
-    rel = [np.asarray(v, float) - ext[0] for v in sim["full_trains"]]
-    obs = _coactivity(rel, np.zeros(len(rel)), L, ext[0], ext[0], ext[1], FIG_BIN, nb)
-    ctr = ext[0] + (np.arange(nb) + 0.5) * FIG_BIN
-    on, wd = _count_rule_calls(obs, ext[0], FIG_BIN, one_bar[f"{FIG_BIN:g}"])
+    full = [np.asarray(v, float) for v in sim["full_trains"]]
+    xd = one_bar[f"interval|{FIG_W:g}"]
+    on, wd = _interval_calls(full, FIG_W, xd)
+    parts = [np.sort(v) for v in full]
     demo = {}
     for key in ("A", "B"):
-        w = sim[key]["win"]
-        t, y = _clip(ctr, obs, w, pad=FIG_BIN)
-        demo[key] = dict(t=t, y=y, calls=_calls_in(on, wd, w))
+        win = sim[key]["win"]
+        grid = np.arange(win[0], win[1] + 1e-9, 0.1)
+        demo[key] = dict(t=np.round(grid, 2), y=_reach(parts, grid, FIG_W), calls=_calls_in(on, wd, win))
 
     # ---- real untreated baselines: how much chance a fixed bar lets through -------------------
     with warnings.catch_warnings():
@@ -833,14 +899,17 @@ def stage_count(work: Path) -> None:
     with ProcessPoolExecutor(12) as ex:
         real = list(ex.map(_count_real_one, jobs))
 
-    out = dict(bins=list(COUNT_BINS), xs=list(COUNT_XS), fig_bin=FIG_BIN, real_xs=list(REAL_XS),
-               bench=table, best=best, one_bar=one_bar, block_rate_per_min=block_rate,
+    out = dict(intervals=list(INTERVALS), xs=list(COUNT_XS), fig_w=FIG_W, edge_bin=EDGE_BIN,
+               real_xs=list(REAL_XS), bench=table, best=best, one_bar=one_bar,
+               block_rate_per_min=block_rate, edge=edge, x_edge=x_edge, n_edge_events=len(events),
                demo=demo, real=real, n_skipped=len(skipped), herb_ks=list(HERB_KS),
                published=_published_chance())
     put(work, "count", out)
-    b = f"{FIG_BIN:g}"
-    print(f"  count: {b} s bins — best bar quiet {best[b]['baseline_quiet']}, busy {best[b]['baseline_busy']}, "
-          f"one bar {one_bar[b]}; {len(real)} real baselines ({len(skipped)} skipped)")
+    k = f"interval|{FIG_W:g}"
+    print(f"  count: {FIG_W:g} s interval — best bar quiet {best[k]['baseline_quiet']}, busy "
+          f"{best[k]['baseline_busy']}, one bar {one_bar[k]}; {len(real)} real baselines ({len(skipped)} skipped)")
+    print("  edge (6-cell events found, edge -> mid-bin):",
+          {n: [round(g["found"], 2) for g in v] for n, v in edge.items()})
 
 
 # ----------------------------------------------------------------------- figures
@@ -1705,16 +1774,16 @@ def fig_count_rule(W):
     """The rule's steps, on the same two simulated minutes every algorithm figure uses."""
     from svgfig import Figure, MUTED, nice_ticks
     sim, C = W["sim"], W["count"]
-    bw = C["fig_bin"]
-    x = C["one_bar"][f"{bw:g}"]
+    bw = C["fig_w"]
+    x = C["one_bar"][f"interval|{bw:g}"]
     ev = sim["event"]
     f = Figure(1000, 700)
-    f.text(20, 26, "How the counting rule decides", size=16, weight=700)
+    f.text(20, 26, "How the interval rule decides", size=16, weight=700)
     y = 56
-    for i, s in enumerate((f"Cut the recording into bins {bw:g} seconds long.",
-                           "In each bin, count how many different cells brighten at least once.",
-                           f"Wherever that count reaches {x} cells, call a coordinated event. Bins side "
-                           "by side that both reach it make one call.",
+    for i, s in enumerate((f"Slide a window {bw:g} seconds long along the recording.",
+                           "Wherever it sits, count how many different cells brighten inside it.",
+                           f"Wherever that count reaches {x} cells, call a coordinated event. Windows "
+                           "that overlap make one call.",
                            "No copies are made. The bar is the same number in every recording.")):
         f.step_badge(32, y - 4, str(i + 1), color=COUNT_C)
         y = f.para(52, y, s, width_chars=40, size=13) + 12
@@ -1735,18 +1804,21 @@ def fig_count_rule(W):
         f.text(X + Wd, 116, _plural(n_calls, "call"), size=12, anchor="end", color=MUTED)
         r = f.panel(X, 122, Wd, 178, win, (0, 1))
         r.raster(_by_activity(D["trains"]), width=1.1)
-        ymax = max(10, x + 3)
+        # one scale for both minutes, so the two counts can be compared by eye
+        ymax = int(max(10, x + 3, *[np.nanmax(_arr(C["demo"][k_]["y"])) + 1 for k_ in ("A", "B")]))
+        ymax += ymax % 2
         p = f.panel(X, 352, Wd, 200, win, (0, ymax))
-        p.bars(_arr(K["t"]), _arr(K["y"]), color="#cdb99a", width_frac=0.85)
+        p.steps(_arr(K["t"]), _arr(K["y"]), color=COUNT_C, width=1.5)
         p.hline(x, color=BARC, width=1.8, dash="5 4")
         p.yaxis(nice_ticks(0, ymax, 4), fmt="{:g}", grid=True)
         if j == 0:
             # named above the panel, never on it (Tony, 2026-09-16: no text on the data)
-            f.rich(X, 320, [("▬ ", dict(color="#cdb99a", weight=700)),
-                            (f"different cells in each {bw:g} s bin", dict(color=MUTED))], size=11)
+            f.rich(X, 320, [("▬ ", dict(color=COUNT_C, weight=700)),
+                            (f"different cells in the {bw:g} s window starting here", dict(color=MUTED))],
+                   size=11)
             f.rich(X, 336, [("- - ", dict(color=BARC, weight=700)),
                             (f"the bar: {x} cells, in every recording", dict(color=MUTED))], size=11)
-            p.ylabel("cells", lines=["different cells", f"in each {bw:g} s bin"], dx=40)
+            p.ylabel("cells", lines=["different cells", f"in the next {bw:g} s"], dx=40)
             r.ylabel(f"{sim['n_roi']} cells", dx=14)
             f.text(X - 8, 72, "planted", size=11, anchor="end", color=MUTED)
             f.text(X - 8, 91, "calls", size=11, anchor="end", color=MUTED)
@@ -1763,7 +1835,8 @@ def fig_count_bar(W):
     """What the bar does to the score, and to calls where nothing was planted."""
     from svgfig import Figure, MUTED
     C = W["count"]
-    bw = C["fig_bin"]
+    bw = C["fig_w"]
+    rk = f"interval|{bw:g}"
     xs = C["xs"]
     B = C["bench"]
     regs = (("baseline_quiet", QUIET_C, "quiet background"), ("baseline_busy", BUSY_C, "busy background"))
@@ -1779,11 +1852,11 @@ def fig_count_bar(W):
         p = f.panel(X, 40, PW, PH, (xs[0] - 0.5, xs[-1] + 0.5), ylim)
         p.yaxis(ticks, fmt="{:g}", grid=True, label=ylab, dx=44)
         for reg, col, _ in regs:
-            vals = [scale * np.nan_to_num(B[reg][f"count|{bw:g}|{x}"][key]) for x in xs]
+            vals = [scale * np.nan_to_num(B[reg][f"{rk}|{x}"][key]) for x in xs]
             p.curve(xs, vals, color=col, width=2)
             p.dots(xs, vals, color=col, r=3.2)
-            bx = C["best"][f"{bw:g}"][reg]
-            v = scale * np.nan_to_num(B[reg][f"count|{bw:g}|{bx}"][key])
+            bx = C["best"][rk][reg]
+            v = scale * np.nan_to_num(B[reg][f"{rk}|{bx}"][key])
             f.add(f"<circle cx='{float(p.px(bx)):.1f}' cy='{float(p.py(v)):.1f}' r='8' fill='none' "
                   f"stroke='{col}' stroke-width='1.8'/>")
         # the references sit in the margin to the right of the frame, never over the curves
@@ -1798,7 +1871,7 @@ def fig_count_bar(W):
             p.hline(v, color=cc, width=1.4, dash="4 4")
             f.text(X + PW + 6, float(p.py(v)) - 10, "CoactDetect", size=11, color=cc)
             f.text(X + PW + 6, float(p.py(v)) + 4, "and LoCo", size=11, color=cc)
-        p.xaxis_values(xs, label=f"the bar: different cells in one {bw:g} s bin")
+        p.xaxis_values(xs, label=f"the bar: different cells within {bw:g} s")
     f.rich(80, 430, [("● ", dict(color=QUIET_C, weight=700)), ("quiet background   ", dict(color=MUTED)),
                      ("● ", dict(color=BUSY_C, weight=700)), ("busy background   ", dict(color=MUTED)),
                      ("◯ ", dict(color=MUTED, weight=700)), ("the bar with the best score   ", dict(color=MUTED)),
@@ -1813,15 +1886,16 @@ def fig_count_slices(W):
     """One dot per untreated real recording: the bar its own chance needs."""
     from svgfig import Figure, MUTED
     C = W["count"]
-    bw = C["fig_bin"]
-    x1 = C["one_bar"][f"{bw:g}"]
+    bw = C["fig_w"]
+    x1 = C["one_bar"][f"interval|{bw:g}"]
     R = C["real"]
+    top = max([r[f"need|{bw:g}"] or 0 for r in R] + [x1]) + 1
     f = Figure(1000, 470)
     X, Y, PW, PH = 110, 44, 600, 320
     f.text(X, 24, f"{len(R)} untreated recordings, one dot each", size=13, weight=600)
-    p = f.panel(X, Y, PW, PH, (-2.5, 1.0), (0, 11))
-    p.yaxis([0, 2, 4, 6, 8, 10], fmt="{:g}", grid=True)
-    p.ylabel("cells", lines=[f"cells needed in one {bw:g} s bin so that", "chance reaches it less than once",
+    p = f.panel(X, Y, PW, PH, (-2.5, 1.0), (0, top))
+    p.yaxis(list(range(0, top + 1, 2)), fmt="{:g}", grid=True)
+    p.ylabel("cells", lines=[f"cells needed within {bw:g} s so that", "chance reaches it less than once",
                              "every 10 minutes"], dx=62)
     rate_q = C["block_rate_per_min"]["baseline_quiet"]
     Xb = float(p.px(math.log10(rate_q)))
@@ -1847,6 +1921,41 @@ def fig_count_slices(W):
                     ("● ", dict(color="#7a7a7a", weight=700)),
                     (f"a bar of {x1} is enough, or more than enough", dict(color=MUTED))], size=12)
     f.h = 450
+    return f
+
+
+def fig_count_edge(W):
+    """What a fixed bin edge costs: events found, by where they fall against the bin grid."""
+    from svgfig import Figure, MUTED
+    C = W["count"]
+    E = C["edge"]
+    x = C["x_edge"]
+    bw = C["edge_bin"]
+    lines = (("interval", COUNT_C, f"counting within a sliding {bw:g} s window, bar of {x} cells", "", 2.4),
+             ("bin", "#b59a6a", f"counting in fixed {bw:g} s bins, the same bar", "5 4", 2.4),
+             ("coact", COLORS["coact"], f"CoactDetect (fixed {bw:g} s bins)", "", 1.8),
+             ("loco", COLORS["loco"], "LoCo (fixed 1 s bins)", "", 1.8))
+    f = Figure(1000, 440)
+    X, Y, PW, PH = 90, 40, 520, 300
+    f.text(X, 24, "Events joined by 6 cells: the share found, by where each fell against the bins",
+           size=13, weight=600)
+    p = f.panel(X, Y, PW, PH, (0, 0.5), (0, 1.05))
+    p.yaxis([0, 0.25, 0.5, 0.75, 1.0], fmt="{:.0%}", grid=True, label="share found", dx=46)
+    for key, col, _, dash, wdt in lines:
+        xs = [(g["lo"] + g["hi"]) / 2 for g in E[key]]
+        ys = [g["found"] for g in E[key]]
+        p.curve(xs, ys, color=col, width=wdt, dash=dash or None)
+        p.dots(xs, ys, color=col, r=3.6)
+    p.xaxis_values([0, 0.125, 0.25, 0.375, 0.5],
+                   label="distance from the nearest bin edge, as a share of the bin (0.5 = the middle)")
+    ly = Y + 10
+    for key, col, lab, dash, _ in lines:
+        f.rich(X + PW + 24, ly, [("▬ ", dict(color=col, weight=700)), (lab, dict(color=MUTED))], size=12)
+        ly += 22
+    ns = ", ".join(str(g["n"]) for g in E["bin"])
+    f.text(X + PW + 24, ly + 14, f"{C['n_edge_events']} planted events, both backgrounds;", size=11, color=MUTED)
+    f.text(X + PW + 24, ly + 30, f"{ns} in the four groups, left to right", size=11, color=MUTED)
+    f.h = 420
     return f
 
 
@@ -2089,6 +2198,7 @@ def stage_figures(work: Path, review: Path) -> None:
     figs.update({"fig_simulator": fig_simulator(W, numbers), "fig_grading": fig_grading(W, numbers),
                  "fig_scores": fig_scores(W, numbers), "fig_busy": fig_busy(W, numbers),
                  "fig_count_rule": fig_count_rule(W), "fig_count_bar": fig_count_bar(W),
+                 "fig_count_edge": fig_count_edge(W),
                  "fig_count_slices": fig_count_slices(W), "fig_count_published": fig_count_published(W)})
     for name, label, stream in (("real_ttx_brief", "TTX", "fast"), ("real_ttx_long", "TTX", "slow"),
                                 ("real_senk_brief", "senktide", "fast"),
@@ -2132,10 +2242,11 @@ def _count_values(W) -> dict:
     """The counting section's numbers. Every one is read off the `count` stage, so the prose cannot
     drift from the measurement; the published papers' own figures are the only constants."""
     C = W["count"]
-    bw = f"{C['fig_bin']:g}"
+    bw = f"{C['fig_w']:g}"
+    rk = f"interval|{bw}"
     B = C["bench"]
     q, b = "baseline_quiet", "baseline_busy"
-    bq, bb, one = C["best"][bw][q], C["best"][bw][b], C["one_bar"][bw]
+    bq, bb, one = C["best"][rk][q], C["best"][rk][b], C["one_bar"][rk]
     f2 = lambda v: f"{v:.2f}"                                         # noqa: E731
     pc = lambda v: f"{100 * v:.0f}%" if v >= 0.01 else f"{100 * v:.1f}%"   # noqa: E731
     # for "at least X%": round DOWN, or 99.5% prints as "at least 100%"
@@ -2148,17 +2259,26 @@ def _count_values(W) -> dict:
     per10 = np.array([r[f"chance_per10|{bw}"][i1] for r in R])
     e = C["published"]["eddleston"]
     ch = e["chance"][str(e["field"])]
-    ten = max(B[reg][f"count|10|{C['best']['10'][reg]}"]["empty"] for reg in (q, b))
-    ten_min = min(B[reg][f"count|10|{C['best']['10'][reg]}"]["empty"] for reg in (q, b))
+    r10 = "interval|10"
+    ten_min = min(B[reg][f"{r10}|{C['best'][r10][reg]}"]["empty"] for reg in (q, b))
+    E = C["edge"]
     return dict(
-        cnt_bin=bw, cnt_x_lo=C["xs"][0], cnt_x_hi=C["xs"][-1], cnt_one_bar=one,
+        cnt_w=bw, cnt_x_lo=C["xs"][0], cnt_x_hi=C["xs"][-1], cnt_one_bar=one,
         cnt_best_quiet=bq, cnt_best_busy=bb,
-        cnt_f1_best_quiet=f2(B[q][f"count|{bw}|{bq}"]["f1"]), cnt_f1_best_busy=f2(B[b][f"count|{bw}|{bb}"]["f1"]),
-        cnt_f1_one_quiet=f2(B[q][f"count|{bw}|{one}"]["f1"]), cnt_f1_one_busy=f2(B[b][f"count|{bw}|{one}"]["f1"]),
-        cnt_quiet_bar_on_busy=f2(B[b][f"count|{bw}|{bq}"]["f1"]),
-        cnt_empty_best_quiet=pc(B[q][f"count|{bw}|{bq}"]["empty"]),
-        cnt_empty_best_busy=pc(B[b][f"count|{bw}|{bb}"]["empty"]),
-        cnt10_empty=floor_pc(ten_min), cnt10_empty_max=pc(ten),
+        cnt_f1_best_quiet=f2(B[q][f"{rk}|{bq}"]["f1"]), cnt_f1_best_busy=f2(B[b][f"{rk}|{bb}"]["f1"]),
+        cnt_f1_one_quiet=f2(B[q][f"{rk}|{one}"]["f1"]), cnt_f1_one_busy=f2(B[b][f"{rk}|{one}"]["f1"]),
+        cnt_quiet_bar_on_busy=f2(B[b][f"{rk}|{bq}"]["f1"]),
+        cnt_empty_best_quiet=pc(B[q][f"{rk}|{bq}"]["empty"]),
+        cnt_empty_best_busy=pc(B[b][f"{rk}|{bb}"]["empty"]),
+        cnt10_best_quiet=C["best"][r10][q], cnt10_best_busy=C["best"][r10][b],
+        cnt10_f1_quiet=f2(B[q][f"{r10}|{C['best'][r10][q]}"]["f1"]),
+        cnt10_f1_busy=f2(B[b][f"{r10}|{C['best'][r10][b]}"]["f1"]),
+        cnt10_empty=floor_pc(ten_min),
+        edge_bin=f"{C['edge_bin']:g}", edge_x=C["x_edge"], edge_n=C["n_edge_events"],
+        edge_bin_at=pc(E["bin"][0]["found"]), edge_bin_mid=pc(E["bin"][-1]["found"]),
+        edge_int_at=pc(E["interval"][0]["found"]),
+        edge_coact_at=pc(E["coact"][0]["found"]), edge_coact_mid=pc(E["coact"][-1]["found"]),
+        edge_loco_at=pc(E["loco"][0]["found"]), edge_loco_mid=pc(E["loco"][-1]["found"]),
         cnt_coact_f1_quiet=f2(B[q]["coact"]["f1"]), cnt_coact_f1_busy=f2(B[b]["coact"]["f1"]),
         **{f"cnt_{d}_empty_busy": pc(B[b][d]["empty"]) for d in CODED},
         herb_f1_quiet=f2(B[q]["herbison|2"]["f1"]), herb_f1_busy=f2(B[b]["herbison|2"]["f1"]),
