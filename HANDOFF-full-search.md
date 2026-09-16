@@ -52,6 +52,25 @@ and coact for tonights run. start with how much slower they are."*
 **The winners are the settings most likely to fit the bench's 120 s spacing** (240 s contexts, a
 12.8 s refractory), which is why the current run adds a crowded-recording column (below).
 
+**Final run, stages 1–3 (16:51–16:55, the numbers to use).** Held-out on recordings 49–96; crowded
+= 12 tail recordings per background, change vs shipped:
+
+| detector | candidate | changed | held-out mean F1 | gain (95% interval) | crowded mean F1 | empty-recording FA/h (limit) |
+|---|---|---|---|---|---|---|
+| LoCo | shipped | — | 0.720 | — | 0.869 | **4.0 (3) — over** |
+| LoCo | pair | threshold 99.9, context 240 s | 0.721 | +0.000 (−0.011 to +0.012) | 0.825 (**−0.044**) | 1.6 |
+| CoactDetect | shipped | — | 0.712 | — | 0.859 | **7.7 (7) — over** |
+| CoactDetect | rounds | alpha 1e-5, context 240 s | 0.741 | +0.028 (+0.020 to +0.039) | 0.837 (**−0.022**) | 6.3 |
+| locust | rounds | percentile 99.99, sync frames 2, min distance 128 frames | 0.666 | +0.119 (+0.108 to +0.132) | 0.794 (**+0.149**) | 5.2 |
+| binned SCE, rate+context, SPIKE-synch | — | nothing moved | 0.545 / 0.621 / 0.453 | | | |
+
+Reading it: **the 240 s contexts lose on crowded recordings** — a bench-spacing gain, as feared.
+Sliding LoCo and CoactDetect still need values under the empty-recording limit that do *not* lean
+on a long context; look in LoCo's full grid (stage 4, `search.json` → `full.loco.top`) for an
+admissible point with context ≤ 120 s, and check the crowded column before choosing. **locust's
+12.8 s minimum distance survives the crowded check (+0.149)** — the strongest finding of the night,
+and worth a look on real calls before adopting.
+
 ## 1. What is running
 
 - **Process:** detached (`Start-Process`, hidden), **PID 37124**, 44 workers, **started 16:51**
