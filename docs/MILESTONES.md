@@ -51,12 +51,12 @@ decided K"* — one of them an incident report about decisions being ignored. A 
 
 ## Open — nothing here is a milestone yet
 
-First, because it is what a session starting now most needs. **Seven items; five stop forward
-motion, two block promotion.** (Corrected 2026-09-16: the line said six while the table held five.)
+First, because it is what a session starting now most needs. **Seven items; four stop forward
+motion, three block promotion.** (Corrected 2026-09-16: the line said six while the table held five.)
 
 | what | owner | blocks |
 |---|---|---|
-| **Land [PR #588](https://github.com/syncytium2/bugarach/pull/588)** — the rigid-shift controls, label-free training of four architectures, the `line` counting architecture, its report and the pipelines index. Pushed, draft, **not merged**; conflicts only in `docs/SESSIONS.md`. Its report was rewritten after a blind round returned fifty-one findings and **has not been re-reviewed** ([the todo](todo/2026-09-16-land-pr-588-and-finish-the-rigid-shift-report.md)) | next session | every milestone row for that work — none can be written until its commits are on `main` — and quoting any number from `docs/learned/tube_self_supervised/` |
+| **A third blind murderboard round on the rigid-shift report** — [PR #588](https://github.com/syncytium2/bugarach/pull/588) landed 2026-09-16, but its report was rewritten after a blind round returned fifty-one findings and the rewrite **has not been reviewed**; its run record is filed `Mode: retrospective` for that reason ([the todo](todo/2026-09-16-land-pr-588-and-finish-the-rigid-shift-report.md)) | next session | quoting or promoting any number from `docs/learned/tube_self_supervised/`, and moving the two `held` rows in section C that cite it |
 | **Four decisions from the rigid-shift report**: concentration sensor on by default; does 10–45 s shared modulation count as coordination; another attempt at the label-free objective; which firing rate the label-free threshold targets | **Tony** | the next label-free training run |
 | **How does the promiscuity probe enter the score?** Two rules are live and pick opposite winners for the rate detector | **Tony** — waiting since 2026-08-25 | the re-fit, RESET §7 step 5 |
 | **Run a MAHICE review on the approved folder** — nobody has annotated a sample, so no K is set and no events are confirmed. Expert attention, not compute | **Tony** | quoting any transfer figure |
@@ -96,6 +96,9 @@ motion, two block promotion.** (Corrected 2026-09-16: the line said six while th
 | Detectors and models are objects in a folder | and every run records the code that produced it | decided | `ced0da4` | `docs/adr/0005-detectors-and-models-are-objects-in-a-folder.md` | current |
 | No ranking; a table of performance | a scoreboard implies an ordering the spreads do not support | decided | `41b1aff` | `docs/performance_table.md` | current |
 | The 24-seed run | top-four spread collapses 0.043 → 0.011 ΔF1; **locust crosses its promiscuity ceiling**, 30.62/min against 25 | measured | `1684dd9` | `docs/learned/bakeoff_24seed.md` | held — do not promote; the input data may be revised |
+| Rigid shift at 10–20 s as the negative class | shifting every ROI of a recording by one shared offset reads at chance (0.49–0.53) on lab fast, lab slow and Cossart, so the rise under rigid shift is removed cross-ROI structure; and at 10–20 s rigid shift also removes shared modulation slower than an event, present on lab slow and Cossart and absent on lab fast | ⚠ evidence | `8efda4a` | `docs/learned/rigid_shift_look/controls` | open — whether slow shared modulation counts as coordination is Tony's to rule, and the shared-offset control has not been shown able to fail on lab fast; blocks choosing *J* for the next label-free run |
+| Training against rigid shift alone | four architectures trained with rigid shift as the only negative, on simulated and on real lab fast-stream recordings, reach 0.34–0.49 F1 at a truth-reading threshold against 0.65–0.70 supervised, and **do not beat random initialisation** at the label-free threshold | measured | `75f7e5a` | `docs/learned/tube_self_supervised/README.md` | held — the rewritten report is owed a third blind review round; one training seed per fold |
+| `line`, a counting architecture | counts how many ROIs are lit and judges that count against its own background; takes the top mean F1 in the supervised bake-off (0.713) but **not separably from CoactDetect** (+0.063, t(3) = 1.31), and its one-sensor ablation is indistinguishable from CoactDetect (+0.005, t(3) = 0.34). Its "one ROI, one vote" cap bounds the vote's height, not its time integral | measured | `75f7e5a` | `src/bugarach/learn/nets/line.py` | held — bake-off promotion is Tony's; the report is owed a third blind review round |
 
 ## D. The data contract
 
@@ -144,3 +147,4 @@ motion, two block promotion.** (Corrected 2026-09-16: the line said six while th
 | The briefing reaches the session | it had been spilling at 17,568B with most of it reaching nobody; a size canary is now its first line | built | `8810566` | `docs/handoffs/2026-08-25-the-session-hooks.md` | current |
 | CI installs torch | it had been declared for ten days and never installed | decided | `77f286d` | `docs/adr/0004-ci-installs-torch-from-the-cpu-wheel-index.md` | current |
 | An index of where things are | every finding has an address, keyed on the words you would grep for | built | `81cc134` | `docs/INDEX.md` | current — ⚠ an index inherits the errors of what it indexes; its line 41 carried a wrong claim inside a read-this-first flag |
+| An index of established routes to a result | `docs/pipelines.md` lists the named, repeatable routes, starting with the one that evaluated `line`; `check_pipelines.py` refuses a route missing from the index or a row pointing at nothing, runs in the pre-commit hook and the suite, and the session briefing names the index. Armory owned no convention for this anywhere in the estate | built | `d0453de` | `docs/pipelines.md` | current — one route so far; its required fields are deliberately few until a second route shows which ones generalise |
