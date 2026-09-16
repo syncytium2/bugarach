@@ -250,3 +250,46 @@ Two things followed from the cut and are worth keeping:
 nothing; decoys stand for lineups that are real coincidence and should not count; and the honest price —
 no program reading only event times can tell a decoy from a planted event, which is why the best possible
 score is about 0.83 and why that ceiling is in the test on purpose.
+
+## 20. "Each cell holds a dye that glows brighter" is wrong (2026-09-16)
+
+These are GCaMP6f-expressing neurons. Nothing is added to the cells: the mice carry the gene, and the
+cells build the protein themselves.
+
+**Applied**, in two sentences a sixth grader can follow, plus a word-list entry. Left out as more than
+the reader needs: that GCaMP6f descends from a jellyfish protein, and that "6f" marks the fast variant.
+
+## 21. "Active" is a loaded word here ⚠ (2026-09-16)
+
+The follow-up to note 20, and the more important half. *"the word active is loaded (TTX fails to block
+calcium events and coordinated events)"*. Saying a calcium event means the cell "became active" smuggles
+in the mechanism that this lab's own data contradict — FOUNDATIONS §9, where calcium events and
+coordination both persist under TTX.
+
+**Applied.** The page now describes only what is observed: the calcium inside a cell goes up, the protein
+brightens, the brightening fades as the calcium clears. A calcium event "says the calcium inside that
+cell went up. It does not say why, and this document does not assume why" — with the forward pointer to
+the TTX section, where the distinction pays off. "Active" is gone from the body text; cells *brighten*,
+and where rate matters they are *busy*. High potassium is described by what it produces (calcium events
+in healthy cells), not by making cells "active".
+
+**Keep this rule for every future document out of this project**: describe the observation, not the
+mechanism, wherever the mechanism is what the lab is still arguing about.
+
+## 22. A sixth grader can handle "bin" (2026-09-16)
+
+"Piece" was a euphemism, and it cost precision — the programs genuinely differ in their bin widths, and
+"2-second piece" reads as an arbitrary chunk rather than a grid.
+
+**Applied throughout**, not only in Section 3: a word that changes halfway through a document is worse
+than either choice. *Bin* is defined where it first appears, in Section 3, and has a word-list entry.
+
+### Caught while applying this: Figure 1's caption described the figure it replaced
+
+The orienting figure (note 6) went in, and its caption still said "one minute of a recording with 33
+cells ... this recording is simulated". The figure is ten minutes of a real one. No check would have
+caught it: the build only verifies that tokens resolve.
+
+**Fixed**, and made harder to repeat: the caption is now written from the figure's own numbers
+(`{{T.orient_n_roi}}`, `{{T.orient_n_stripes}}`, `{{T.orient_biggest}}`), so a caption that drifts from its
+figure now fails the build instead of reading plausibly.

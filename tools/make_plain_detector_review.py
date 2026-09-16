@@ -283,7 +283,7 @@ def stage_toys(work: Path) -> None:
     starts = [9.3, 9.2, 9.4, 9.25, 3.5, 15.6]
     bursty = [np.round(a + np.arange(4) * 0.22, 2) for a in starts]
     # Evenly firing cells: one event every 2.5 s, each cell on its own random beat, so
-    # nothing is coordinated. The 2 s piece where most of them happen to fall is tested.
+    # nothing is coordinated. The 2 s bin where most of them happen to fall is tested.
     phases = np.random.RandomState(5).uniform(0, 2.5, 6)
     even = [np.round(np.mod(p + np.arange(8) * 2.5, L), 2) for p in phases]
     grid = np.arange(0.0, L - 2.0 + 1e-9, 0.1)
@@ -325,26 +325,26 @@ def stage_toys(work: Path) -> None:
         while np.min(np.diff(v)) < 3.0:
             v = np.sort(r2.uniform(0, SL, 4))
         cells.append(v)
-    for i in range(4):                       # four of the six act together in the test piece
+    for i in range(4):                       # four of the six act together in the test bin
         cells[i][int(np.argmin(np.abs(cells[i] - 30.0)))] = 30.0 + r2.uniform(-0.3, 0.3)
         cells[i] = np.sort(np.round(cells[i], 2))
     cells = [np.round(v, 2) for v in cells]
 
-    def in_piece(trs):
+    def in_bin(trs):
         return sum(1 for v in trs if np.any((np.asarray(v) >= PIECE[0]) & (np.asarray(v) < PIECE[1])))
 
     counts, examples = [], []
     for i in range(200):
         offs = [r2.uniform(0, SL) for _ in cells]
         cp = [np.mod(v + o, SL) for v, o in zip(cells, offs)]
-        counts.append(in_piece(cp))
+        counts.append(in_bin(cp))
         if i < 3:
             examples.append(dict(
                 count=counts[-1], shifts=[round(float(o), 1) for o in offs],
                 numbered=[[[round(float(t), 2), n + 1] for n, t in enumerate(v)] for v in cp]))
-    obs = in_piece(cells)
+    obs = in_bin(cells)
     out["steps"] = dict(
-        length=SL, piece=list(PIECE), observed=obs, n_copies=len(counts),
+        length=SL, bin=list(PIECE), observed=obs, n_copies=len(counts),
         numbered=[[[round(float(t), 2), n + 1] for n, t in enumerate(v)] for v in cells],
         examples=examples, hist=np.bincount(counts, minlength=7)[:7].tolist(),
         bar=float(np.percentile(counts, 99)),
@@ -689,9 +689,9 @@ def fig_orient(W):
     rz.raster(_by_activity(c["trains"]), width=2.0)
     rz.xaxis_time(offset=top, target=2, label="seconds")
     lane.span(z[0], z[1], row_y=58, row_h=3, color="#9a9a9a", min_px=4)
-    f.text(L, 516, "Each row is one cell. Each tick is one moment that cell lit up.", size=13,
+    f.text(L, 516, "Each row is one cell. Each tick is one moment that cell brightened.", size=13,
            color=MUTED)
-    f.text(L, 536, "Where a column of ticks lines up, many cells lit up together. ▼ marks each one.",
+    f.text(L, 536, "Where a column of ticks lines up, many cells brightened together. ▼ marks each one.",
            size=13, color=MUTED)
     f.h = 556
     return f
@@ -752,10 +752,10 @@ def fig_chance(W):
         q.bars(_arr(c["t"]), _arr(c["y"]), color="#6d8fb3", width_frac=0.9)
         q.yaxis(nice_ticks(0, ymax, 3), grid=True)
         if key == "A":
-            q.ylabel("cells in each", lines=["cells lit up in", "each 2 s piece"], dx=40)
+            q.ylabel("cells in each", lines=["cells that brightened", "in each 2 s bin"], dx=40)
         q.xaxis_time(label="time in the recording")
         mx = int(np.nanmax(_arr(c["y"])))
-        f.text(X + 390, 244, f"most in one piece: {mx} cells", size=12, anchor="end", color="#333")
+        f.text(X + 390, 244, f"most in one bin: {mx} cells", size=12, anchor="end", color="#333")
     return f
 
 
@@ -788,22 +788,22 @@ def fig_chance_steps(W):
     """
     from svgfig import Figure, MUTED, nice_ticks
     S = W["toys"]["steps"]
-    L, piece = S["length"], tuple(S["piece"])
+    L, bin = S["length"], tuple(S["bin"])
     f = Figure(1000, 560)
     # step 1: the recording
     X1, W1 = 60, 260
     f.step_badge(X1 + 8, 22, "1")
     f.text(X1 + 26, 27, "Count the recording", size=14, weight=600)
-    f.para(X1, 50, f"How many cells light up inside the 2-second piece being tested? Here: "
+    f.para(X1, 50, f"How many cells light up inside the 2-second bin being tested? Here: "
                    f"{S['observed']} of 6.", width_chars=38, size=12, color=MUTED)
     lane = f.panel(X1, 96, W1, 14, (0, L), (0, 1), frame=False)
-    lane.span(*piece, row_y=98, row_h=11, color="#9bb7d4", min_px=5)
+    lane.span(*bin, row_y=98, row_h=11, color="#9bb7d4", min_px=5)
     r = f.panel(X1, 112, W1, 150, (0, L), (0, 1))
-    _numbered(f, r, S["numbered"], size=12, bold_in=piece)
+    _numbered(f, r, S["numbered"], size=12, bold_in=bin)
     r.xaxis_time(target=3)
     f.text(X1, 312, "Six cells, one row each. Each event carries its", size=11, color=MUTED)
     f.text(X1, 328, "number in that cell's own order, so a row can be", size=11, color=MUTED)
-    f.text(X1, 344, "followed when it slides. Blue bar: the piece tested.", size=11, color=MUTED)
+    f.text(X1, 344, "followed when it slides. Blue bar: the bin tested.", size=11, color=MUTED)
     # step 2: shifted copies
     X2, W2 = 370, 250
     f.step_badge(X2 + 8, 22, "2")
@@ -813,9 +813,9 @@ def fig_chance_steps(W):
     yy = 112
     for i, ex in enumerate(S["examples"]):
         ln = f.panel(X2, yy, W2, 12, (0, L), (0, 1), frame=False)
-        ln.span(*piece, row_y=yy + 1, row_h=10, color="#9bb7d4", min_px=5)
+        ln.span(*bin, row_y=yy + 1, row_h=10, color="#9bb7d4", min_px=5)
         rr = f.panel(X2, yy + 14, W2, 100, (0, L), (0, 1))
-        _numbered(f, rr, ex["numbered"], size=11, bold_in=piece)
+        _numbered(f, rr, ex["numbered"], size=11, bold_in=bin)
         for j, sh in enumerate(ex["shifts"]):
             row_y = yy + 14 + 100 - (j + 0.5) * (100 / len(ex["shifts"])) + 4
             f.text(X2 - 6, row_y, f"+{sh:g}s", size=9, anchor="end", color="#9a9a9a")
@@ -834,7 +834,7 @@ def fig_chance_steps(W):
     h = f.panel(X3, 112, W3, 180, (-0.6, 6.6), (0, ymax))
     h.bars(np.arange(7), hist, color="#b9c6d6", width_frac=0.85)
     h.yaxis(nice_ticks(0, ymax, 4), fmt="{:,.0f}", label=f"copies (of {S['n_copies']})", dx=36)
-    h.xaxis_values([0, 2, 4, 6], label="cells in the piece")
+    h.xaxis_values([0, 2, 4, 6], label="cells in the bin")
     X = float(h.px(S["bar"]))
     f.line(X, 112, X, 292, color=BARC, width=2, dash="5 4")
     f.text(X + 5, 126, "the bar", size=12, weight=600)
@@ -857,10 +857,10 @@ def fig_shift_shuffle(W, numbers):
     f = Figure(980, 900)
     rows = [("bursty", "A · cells that fire in bursts", 40,
              "A shuffle breaks the bursts apart, so events spread over more of the recording and more "
-             "cells land in any piece by chance. The bar comes out too high and the real burst is missed."),
+             "cells land in any bin by chance. The bar comes out too high and the real burst is missed."),
             ("even", "B · cells that fire at a steady beat", 410,
-             "A shuffle lets a cell's events pile up in one piece and leave others empty, so fewer cells "
-             "reach any piece by chance. The bar comes out too low and a chance lineup is called.")]
+             "A shuffle lets a cell's events pile up in one bin and leave others empty, so fewer cells "
+             "reach any bin by chance. The bar comes out too low and a chance lineup is called.")]
     for key, title, Y, story in rows:
         D = T[key]
         b = D["bin"]
@@ -877,7 +877,7 @@ def fig_shift_shuffle(W, numbers):
             r.raster(trs, width=1.4)
             r.xaxis_values([0, 10, 20], fmt="{:g}s")
             cnt = sum(1 for v in trs if np.any((np.asarray(v) >= b[0]) & (np.asarray(v) < b[1])))
-            f.text(X + 170, Y + 236, f"{_plural(cnt, 'cell')} in the piece", size=11, anchor="end", color=MUTED)
+            f.text(X + 170, Y + 236, f"{_plural(cnt, 'cell')} in the bin", size=11, anchor="end", color=MUTED)
         for j, (lab, hist, col, pv) in enumerate((("5,000 shifted copies", D["shift_hist"], SHIFT_C, D["p_shift"]),
                                                   ("5,000 shuffled copies", D["shuffle_hist"], SHUF_C, D["p_shuffle"]))):
             X = 690 + j * 150
@@ -894,7 +894,7 @@ def fig_shift_shuffle(W, numbers):
             f.text(X + 60, Y + 236, f"reach {D['observed']}: {share}", size=11, anchor="middle", color=MUTED)
             f.text(X + 60, Y + 252, f"→ {verdict}", size=12, anchor="middle", weight=700,
                    color=GREEN if (verdict == "called") == (key == "bursty") else RED)
-        f.text(765, Y + 272, "x: cells in the piece · ▼ the recording's count", size=11, anchor="middle",
+        f.text(765, Y + 272, "x: cells in the bin · ▼ the recording's count", size=11, anchor="middle",
                color=MUTED, italic=True)
     # C: the lab's own recordings
     Y = 750
@@ -902,9 +902,9 @@ def fig_shift_shuffle(W, numbers):
            weight=600)
     d = numbers["sur_fast_doubles"]
     n6 = numbers["sur_fast_n6"]
-    groups = [("events landing in a 2-second piece their own cell already filled, per 1,000 events",
+    groups = [("events landing in a 2-second bin their own cell already filled, per 1,000 events",
                [math.floor(v + 0.5) for v in (d["real"], d["shift"], d["shuffle"])], "{:.0f}", 120, 40),
-              ("share of 2-second pieces where 6 or more cells light up",
+              ("share of 2-second bins where 6 or more cells light up",
                [100 * n6["real"], 100 * n6["shift"], 100 * n6["shuffle"]], "{:.2f}%", 2.0, 520)]
     for lab, vals, fmt, vmax, X in groups:
         f.text(X, Y + 22, lab, size=12, color=MUTED)
@@ -933,22 +933,22 @@ STEPS = {
              "Work out the average of that number over the {ctx:g} seconds around each moment.",
              "Set the bar at that average plus {ex:g} events per second.",
              "Call a coordinated event wherever the count goes over the bar."],
-    "coact": ["Cut time into {bin:g}-second pieces. Count how many different cells light up in each.",
-              "For a piece with at least 3 cells, take the {ctx:g} seconds around it and make "
+    "coact": ["Cut time into {bin:g}-second bins. Count how many different cells light up in each.",
+              "For a bin with at least 3 cells, take the {ctx:g} seconds around it and make "
               "{ns} shifted copies (Figure 4).",
               "Set the bar well above what the copies give: their average plus 3.72 times their "
               "typical spread.",
-              "Call the piece if the real count is over the bar."],
-    "loco": ["Cut time into {bin:g}-second pieces. Count how many different cells light up in each.",
+              "Call the bin if the real count is over the bar."],
+    "loco": ["Cut time into {bin:g}-second bins. Count how many different cells light up in each.",
              "Every {step:g} seconds, make {ns} shifted copies of the minute before and of the minute after.",
-             "On each side, find the count that only 1 copied piece in 1,000 goes over. "
+             "On each side, find the count that only 1 copied bin in 1,000 goes over. "
              "The bar is the higher of the two sides.",
-             "Call a piece if its count is over the bar and at least 3 cells take part."],
-    "sce": ["Cut time into {bin:g}-second pieces. Count how many different cells light up in each.",
+             "Call a bin if its count is over the bar and at least 3 cells take part."],
+    "sce": ["Cut time into {bin:g}-second bins. Count how many different cells light up in each.",
             "Make {ns} shifted copies of the whole stretch being studied.",
-            "Pool every piece from every copy. The bar is the count that only 1 piece in 100 goes over. "
+            "Pool every bin from every copy. The bar is the count that only 1 bin in 100 goes over. "
             "It is one bar for the whole stretch.",
-            "Call a piece if its count is over the bar and at least 3 cells take part."],
+            "Call a bin if its count is over the bar and at least 3 cells take part."],
     "cicada": ["Switch each cell on for a fixed {on:g} second after each of its events (see the caption).",
                "Count how many cells are on in every 0.1-second frame.",
                "Make {ns} shifted copies of the whole recording. The bar is the count that only 1 frame "
@@ -980,18 +980,18 @@ def _steps_text(det, st):
 LINE_LABELS = {
     "rate": [("events per second, every cell added up", "rate", "y"),
              ("the average nearby", GREY, "ref"), ("the bar", BARC, "bar")],
-    "coact": [("cells in each 2 s piece", "coact", "y"), ("the copies' average", GREY, "mean"),
+    "coact": [("cells in each 2 s bin", "coact", "y"), ("the copies' average", GREY, "mean"),
               ("the bar", BARC, "bar")],
-    "loco": [("cells in each 1 s piece", "loco", "y"), ("the bar", BARC, "bar")],
-    "sce": [("cells in each 10 s piece", "sce", "y"), ("the bar", BARC, "bar")],
+    "loco": [("cells in each 1 s bin", "loco", "y"), ("the bar", BARC, "bar")],
+    "sce": [("cells in each 10 s bin", "sce", "y"), ("the bar", BARC, "bar")],
     "cicada": [("cells switched on", "cicada", "y"), ("the bar", BARC, "bar")],
     "sync": [("score of each event", "sync", "py"), ("the bar", BARC, None)],
 }
 
 MEASURE = {"rate": ("events per second", "all cells added up", (0, 14)),
-           "coact": ("cells per 2 s piece", "", (0, 14)),
-           "loco": ("cells per 1 s piece", "", (0, 14)),
-           "sce": ("cells per 10 s piece", "", (0, 24)),
+           "coact": ("cells per 2 s bin", "", (0, 14)),
+           "loco": ("cells per 1 s bin", "", (0, 14)),
+           "sce": ("cells per 10 s bin", "", (0, 24)),
            "cicada": ("cells switched on", "per 0.1 s frame", (0, 14)),
            "sync": ("score (0 to 1)", "", (0, 0.3))}
 
@@ -1017,7 +1017,7 @@ def _measure(p, det, D):
 
 
 def _hist_panel(f, X, Y, Wd, Hh, hist, *, observed, bar, color, xlabel, title, log=False,
-                xmax=None, ylabel="copied pieces"):
+                xmax=None, ylabel="copied bins"):
     from svgfig import MUTED, nice_ticks
     hist = np.asarray(hist, float)
     xmax = xmax or len(hist) - 1
@@ -1071,19 +1071,19 @@ def fig_algorithm(W, det):
             _hist_panel(f, 80 + j * 190, hy + 20, 130, 120, hist, observed=qq["observed"], bar=qq["bar"],
                         color="#b9c6d6", xlabel="cells", title=lab, xmax=14,
                         ylabel="copies" if j == 0 else "")
-        f.text(20, hy - 4, "100 shifted copies of the 60 s around one piece:", size=12, color=MUTED)
+        f.text(20, hy - 4, "100 shifted copies of the 60 s around one bin:", size=12, color=MUTED)
     elif det == "loco":
         q = sim["chance_loco"]
         for j, (side, lab, p999) in enumerate((("before", "the minute before", q["p999_before"]),
                                                ("after", "the minute after", q["p999_after"]))):
             _hist_panel(f, 80 + j * 190, hy + 20, 130, 120, q[side], observed=q["observed"] if j else None,
                         bar=p999, color="#c9b6e4", xlabel="cells", title=lab, log=True, xmax=10,
-                        ylabel="copied pieces" if j == 0 else "")
+                        ylabel="copied bins" if j == 0 else "")
         f.text(20, hy - 4, "100 shifted copies of each side of the planted event:", size=12, color=MUTED)
     elif det == "sce":
         q = sim["chance_sce"]
         _hist_panel(f, 80, hy + 20, 250, 120, q["hist"], observed=q["observed"], bar=q["bar"],
-                    color="#b8dcb8", xlabel="cells in a 10 s piece", title="every piece of 200 copies",
+                    color="#b8dcb8", xlabel="cells in a 10 s bin", title="every bin of 200 copies",
                     log=True, xmax=20)
         f.text(20, hy - 4, "200 shifted copies of the whole recording, pooled:", size=12, color=MUTED)
     elif det == "cicada":
@@ -1185,10 +1185,10 @@ def fig_algorithm(W, det):
     ky = 625
     keys = {"rate": [("—", COLORS["rate"], "events per second"), ("—", GREY, "local average"),
                      ("┄", BARC, "the bar")],
-            "coact": [("—", COLORS["coact"], "cells per piece"), ("●", GREY, "copies' average"),
+            "coact": [("—", COLORS["coact"], "cells per bin"), ("●", GREY, "copies' average"),
                       ("━", BARC, "the bar (drawn where tested)")],
-            "loco": [("—", COLORS["loco"], "cells per piece"), ("┄", BARC, "the bar")],
-            "sce": [("—", COLORS["sce"], "cells per piece"), ("┄", BARC, "the bar")],
+            "loco": [("—", COLORS["loco"], "cells per bin"), ("┄", BARC, "the bar")],
+            "sce": [("—", COLORS["sce"], "cells per bin"), ("┄", BARC, "the bar")],
             "cicada": [("—", COLORS["cicada"], "cells switched on"), ("┄", BARC, "the bar")],
             "sync": [("●", COLORS["sync"], "each event's score"), ("—", "#7a2a00", "frame score"),
                      ("—", BARC, "the bar")]}[det]
@@ -1397,7 +1397,7 @@ def fig_scores(W, numbers, dets=CODED):
     f.rich(170, 440, [("●", dict(color=INK_T, weight=700)), (" average   ", dict(color=MUTED)),
                       ("━", dict(color=INK_T, weight=700)), (" lowest to highest across the 4 tests   ", dict(color=MUTED)),
                       ("○", dict(color=COLORS["sce"], weight=700)),
-                      (" binned SCE scored over its whole 10 s pieces   ", dict(color=MUTED)),
+                      (" binned SCE scored over its whole 10 s bins   ", dict(color=MUTED)),
                       ("┄", dict(color=BARC, weight=700)), (f" best possible ({ceil:.2f})", dict(color=MUTED))],
            size=12)
     f.h = 460

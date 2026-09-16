@@ -36,10 +36,11 @@ how we tested them, and why they sometimes disagree with your own eyes.</p>
 <div class="box">
 <h3>The short version</h3>
 <ul>
-  <li>The lab records brain cells through a microscope with a digital camera. A cell lights up when it
-  is active. We want to find the moments when <b>many cells light up together</b>. Computer programs
-  have to find those moments, because there are far too many recordings to go through by hand.</li>
-  <li>Cells also light up on their own, so some of them line up <b>just by chance</b>. Every program has
+  <li>The lab records brain cells through a microscope with a digital camera. A cell brightens whenever
+  the calcium inside it goes up. We want to find the moments when <b>many cells brighten together</b>.
+  Computer programs have to find those moments, because there are far too many recordings to go through
+  by hand.</li>
+  <li>Cells brighten on their own as well, so some of them line up <b>just by chance</b>. Every program has
   to separate real teamwork from chance lineups, and each program uses a different set of steps to do
   that.</li>
   <li>A real recording has no answer key: nobody knows for certain which moments are real. So we also
@@ -70,22 +71,30 @@ how we tested them, and why they sometimes disagree with your own eyes.</p>
 
 <h2 id="s1">{{SEC:records}}. What the lab records</h2>
 <figure>{{FIG:fig_orient}}
-<figcaption><b>Figure {{NUM:fig_orient}}. How to read a raster.</b> One minute of a recording with
-{{T.n_cells_sim}} cells (A), and 4 seconds of it (B). Each row is one cell. Each tick is one moment that
-cell lit up. Where many cells light up at once, their ticks stack into a short up-and-down stripe, and
-the ▼ above the raster points down at one. This particular recording is simulated, so we know exactly
-where that stripe is (Section {{SEC:sim}}).</figcaption></figure>
-<p>Figure {{NUM:fig_orient}} is the picture everything else in this document is built on. Here is where
-it comes from.</p>
+<figcaption><b>Figure {{NUM:fig_orient}}. How to read a raster.</b> A: ten minutes of one real recording
+of {{T.orient_n_roi}} cells. Each row is one cell, and each tick is one moment that cell brightened. Where
+the ticks stack into a short up-and-down stripe, many cells brightened at nearly the same moment; a ▼
+above the raster points down at each one our rule counts (Section {{SEC:eye}}), {{T.orient_n_stripes}} of
+them in these ten minutes, the largest joined by {{T.orient_biggest}} of the {{T.orient_n_roi}} cells.
+B: twenty seconds around one of them, so a single tick is visible.</figcaption></figure>
+<p>Figure {{NUM:fig_orient}} is the picture everything else in this document is built on: the stripes are
+what we are trying to find. Here is where it comes from.</p>
 <p>The lab studies a small group of brain cells called <b>KNDy neurons</b>. These cells sit in the part
 of the brain that controls hormones, and they help run the body's reproductive system
 (<a href="https://doi.org/10.1210/en.2010-0022">Lehman and others, 2010</a>). The lab keeps thin slices
 of mouse brain alive in a dish and records them through a microscope with a digital camera, about ten
 pictures a second.</p>
-<p>Each cell holds a dye that glows brighter when the cell is active. A short brightening is a
-<b>calcium event</b>. A separate program goes through the pictures, finds each brightening and writes
-down the moment it happened. That program keeps two lists: one for <b>brief events</b> and one for much
-<b>longer events</b>.</p>
+<p>What makes a cell visible? These mice carry an extra gene, so the cells build a glowing protein of
+their own called <b>GCaMP6f</b>. Nothing is added to them; they make it themselves. The protein is dim
+on its own and bright when <b>calcium</b> is around it. So when the amount of calcium inside a cell goes
+up, that cell brightens for a moment and then fades again as the calcium clears.</p>
+<p>That brief brightening is a <b>calcium event</b>, and it is the whole of what we observe. It says the
+calcium inside that cell went up. It does not say why, and this document does not assume why — which
+matters later, because one of the drugs in Section {{SEC:real}} blocks the electrical signals that are
+usually behind a calcium rise, and the events carry on regardless.</p>
+<p>A separate program goes through the pictures, finds each brightening and writes down the moment it
+happened. That program keeps two lists: one for <b>brief events</b> and one for much <b>longer
+events</b>.</p>
 <p>Those lists of moments are all the programs in this document ever see. None of them looks at the
 pictures. We draw a list as a <b>raster</b>, the picture above: one row per cell, one tick per event.
 A short stripe in a raster means many cells lit up at nearly the same moment. That is a
@@ -118,11 +127,15 @@ do know, and where the programs and a person's eye disagree.</p>
 <figure>{{FIG:fig_chance}}
 <figcaption><b>Figure {{NUM:fig_chance}}. Busy cells line up by chance.</b> Two minutes of a simulated
 recording, so we know what was put in. The bars below each raster count how many cells light up in each
-2-second piece of time. A: quiet cells, with one real coordinated event (▼). B: a stretch of the same
+2-second bin. A: quiet cells, with one real coordinated event (▼). B: a stretch of the same
 recording where every cell was made busier and <b>nothing was put in</b>.</figcaption></figure>
-<p>Why is finding coordinated events hard? Because cells light up on their own all the time, and when
-they do it often, some of them land close together by luck alone. In Figure {{NUM:fig_chance}}B nothing
-was put in, and yet {{T.busy_max}} cells still light up inside the same 2-second piece.</p>
+<p>Why is finding coordinated events hard? Because cells brighten on their own all the time, and when
+they do it often, some of them land close together by luck alone.</p>
+<p>To count that, cut the recording into short stretches of equal length — a <b>bin</b> is one of those
+stretches, 2 seconds long in Figure {{NUM:fig_chance}} — and count how many different cells brightened
+inside each one. Most programs in this document work from a count like that, and they differ in how long
+they make their bins. In Figure {{NUM:fig_chance}}B nothing at all was put in, and yet {{T.busy_max}}
+cells still brightened inside the same 2-second bin.</p>
 <p>So counting cells is not enough. A program has to ask a harder question: <b>are more cells lining up
 right now than chance alone would produce?</b> To answer it, the program needs to know what chance
 looks like in this particular recording.</p>
@@ -130,9 +143,9 @@ looks like in this particular recording.</p>
 <h2 id="s4">{{SEC:copies}}. Measuring chance with shifted copies</h2>
 <figure>{{FIG:fig_chance_steps}}
 <figcaption><b>Figure {{NUM:fig_chance_steps}}. How shifted copies measure chance, in four steps.</b>
-The example is one 2-second piece of a simulated recording, judged the way CoactDetect judges it
+The example is one 2-second bin of a simulated recording, judged the way CoactDetect judges it
 (Section {{SEC:algorithms}}). The real count is {{T.coact_obs}} cells. In 100 shifted copies of the minute around it,
-chance almost never puts more than 2 cells in the piece. The copies here were drawn again for this
+chance almost never puts more than 2 cells in the bin. The copies here were drawn again for this
 picture in the same way the program draws its own. The bar ({{T.coact_bar_quiet}} cells) is the
 program's own.</figcaption></figure>
 <p>Four of the six programs measure chance the same basic way, the way Figure {{NUM:fig_chance_steps}}
@@ -147,9 +160,9 @@ hundred copies tells the program how high a real count has to be before it means
 <h2 id="s5">{{SEC:shuffle}}. Why shift, not shuffle</h2>
 <figure>{{FIG:fig_shift_shuffle}}
 <figcaption><b>Figure {{NUM:fig_shift_shuffle}}. A shuffle gets chance wrong both ways; a shift gets
-it right.</b> A and B: six invented cells over 20 seconds, with the tested 2-second piece marked in
+it right.</b> A and B: six invented cells over 20 seconds, with the tested 2-second bin marked in
 blue above each raster. The raster on the left is the recording, then one shifted copy and one
-shuffled copy. The bars on the right count, over 5,000 copies, how many cells landed in the piece.
+shuffled copy. The bars on the right count, over 5,000 copies, how many cells landed in the bin.
 The ▼ marks the recording's own count. "Called" means fewer than 5 copies in 100 reached that
 count. C: the same comparison on the lab's own untreated recordings (brief events).</figcaption></figure>
 <p>There is another common way to make a chance copy: <b>shuffle</b> the recording. A shuffle keeps the
@@ -158,19 +171,19 @@ fair, and it is not: a shuffle also destroys each cell's own pattern, and then t
 wrong. Figure {{NUM:fig_shift_shuffle}} shows the bar going wrong in <b>both directions</b>.</p>
 <ul>
   <li><b>Cells that fire in bursts</b> (A). A shuffle breaks each burst apart and spreads the events out.
-  Now more cells land in any given piece by chance, so the bar comes out <b>too high</b>. A real burst of
+  Now more cells land in any given bin by chance, so the bar comes out <b>too high</b>. A real burst of
   {{T.bursty_cells}} cells, which shifted copies reach only {{T.bursty_shift}} of the time, is reached by
   {{T.bursty_shuffle}} of shuffled copies. The shuffle calls it chance and <b>misses a real event</b>.</li>
-  <li><b>Cells that fire at a steady beat</b> (B). A shuffle lets a cell's events pile up in some pieces
-  and leave others empty. Now fewer cells reach any piece by chance, so the bar comes out <b>too
-  low</b>. Here {{T.even_cells}} cells land in one piece purely by luck. Shifted copies do that
+  <li><b>Cells that fire at a steady beat</b> (B). A shuffle lets a cell's events pile up in some bins
+  and leave others empty. Now fewer cells reach any bin by chance, so the bar comes out <b>too
+  low</b>. Here {{T.even_cells}} cells land in one bin purely by luck. Shifted copies do that
   {{T.even_shift}} of the time, so the shift correctly says "chance". Shuffled copies do it only
   {{T.even_shuffle}} of the time, so the shuffle <b>calls a chance lineup</b>.</li>
 </ul>
 <p>The lab's own brief events behave like the steady-beat cells (C). In {{T.n_baselines}} untreated
-recordings, a shuffle drops {{T.doubles_shuffle}} of every 1,000 events into a piece their own cell had
+recordings, a shuffle drops {{T.doubles_shuffle}} of every 1,000 events into a bin their own cell had
 already filled, against {{T.doubles_real}} in the real recording and {{T.doubles_shift}} after a shift.
-As a result, shuffled copies say 6 or more cells line up in {{T.n6_shuffle}} of pieces, and shifted
+As a result, shuffled copies say 6 or more cells line up in {{T.n6_shuffle}} of bins, and shifted
 copies say {{T.n6_shift}}. A bar built from shuffles would sit too low. That is why every program here
 that makes copies uses the shift.</p>
 <p>Even the shift is not perfect. Real recordings have more very large lineups than shifted copies
@@ -185,9 +198,9 @@ difference that matters most is <b>where each program looks to learn what chance
 <table>
 <tr><th>algorithm</th><th>what it counts</th><th>where it learns what chance looks like</th><th>where it comes from</th></tr>
 <tr><td>rate+context</td><td>events per second, from all cells added up</td><td>the average of the nearby minute (no copies)</td><td>written in this lab by R. DeFazio</td></tr>
-<tr><td>CoactDetect</td><td>cells lit in each 2-second piece</td><td>shifted copies of the nearby minute</td><td>R. DeFazio's design, built for this project</td></tr>
-<tr><td>LoCo</td><td>cells lit in each 1-second piece</td><td>shifted copies of the minute before and the minute after</td><td>R. DeFazio's design, built for this project</td></tr>
-<tr><td>binned SCE</td><td>cells lit in each 10-second piece</td><td>shifted copies of the whole stretch being studied</td><td>the rule published by Cossart, Aronov and Yuste (2003); written here</td></tr>
+<tr><td>CoactDetect</td><td>cells lit in each 2-second bin</td><td>shifted copies of the nearby minute</td><td>R. DeFazio's design, built for this project</td></tr>
+<tr><td>LoCo</td><td>cells lit in each 1-second bin</td><td>shifted copies of the minute before and the minute after</td><td>R. DeFazio's design, built for this project</td></tr>
+<tr><td>binned SCE</td><td>cells lit in each 10-second bin</td><td>shifted copies of the whole stretch being studied</td><td>the rule published by Cossart, Aronov and Yuste (2003); written here</td></tr>
 <tr><td>locust</td><td>cells "switched on" after each of their events</td><td>shifted copies of the whole recording</td><td>the coordinated-event stage of CICADA, from the Cossart lab, modified here</td></tr>
 <tr><td>SPIKE-synch</td><td>how close each event is to events in other cells</td><td>no copies: each cell's own gaps between events</td><td>Kreuz and colleagues' published measure, with R. DeFazio's peak-finding step added to turn its scores into calls</td></tr>
 </table>
@@ -207,11 +220,11 @@ more, so it sometimes crosses the bar by chance.</figcaption></figure>
 
 <h3>CoactDetect</h3>
 <figure>{{FIG:fig_alg_coact}}
-<figcaption><b>Figure {{NUM:fig_alg_coact}}. CoactDetect.</b> For each 2-second piece with at least 3
+<figcaption><b>Figure {{NUM:fig_alg_coact}}. CoactDetect.</b> For each 2-second bin with at least 3
 cells, it makes {{T.coact_ns}} shifted copies of the minute around it. Bottom left: the copies' counts in a
 quiet minute and in a busy one. In the quiet minute the bar is {{T.coact_bar_quiet}} cells and the real
 event has {{T.coact_obs}}. In the busy minute the bar rises to about {{T.coact_bar_busy}} cells, so even the
-busiest piece ({{T.coact_obs_busy}} cells) is not called.</figcaption></figure>
+busiest bin ({{T.coact_obs_busy}} cells) is not called.</figcaption></figure>
 
 <h3>LoCo</h3>
 <figure>{{FIG:fig_alg_loco}}
@@ -224,7 +237,7 @@ side of the real event (the up-and-down scale grows ten times at each step).</fi
 <figure>{{FIG:fig_alg_sce}}
 <figcaption><b>Figure {{NUM:fig_alg_sce}}. binned SCE</b> ("SCE" stands for synchronous calcium event).
 It makes {{T.sce_ns}} shifted copies of the whole stretch and sets one bar for all of it. A: the real
-event shares its 10-second piece with other events. Its count equals the bar but does not go over,
+event shares its 10-second bin with other events. Its count equals the bar but does not go over,
 so it is missed. B: the bar was set mostly by quiet minutes, so the busy minute passes it again and
 again.</figcaption></figure>
 
@@ -287,7 +300,7 @@ saw would find all {{T.n_planted}} planted events and look excellent, while tell
 whether it can separate coordination from coincidence. Decoys take that route away: they look exactly
 like the real thing, so calling everything now costs as many wrong answers as it buys right ones.</p>
 <p>They also stand for something real. In a live recording some lineups genuinely are coincidence — cells
-that happen to go off together, or that share a slow drift in how active they are, with nothing
+that happen to go off together, or that share a slow drift in how often they brighten, with nothing
 coordinating them. A person reading the raster would not count those. Decoys put that same population of
 "real lineups that should not count" into the test.</p>
 <p>The price is worth stating plainly: <b>a program that sees only event times cannot tell a decoy from a
@@ -325,7 +338,7 @@ is the average over the {{T.n_tests}} groups; the line runs from the lowest to t
 <p>On the quiet background, three programs scored about the same (Figure {{NUM:fig_scores}}): CoactDetect
 {{T.f1q_coact}}, LoCo {{T.f1q_loco}} and rate+context {{T.f1q_rate}}. The best possible was about {{T.ceiling}}. With this many test recordings we cannot say
 that any one of them is truly better than the others. binned SCE looks worse ({{T.f1q_sce}}), but most of
-that comes from how its calls are timed: when we score it over its whole 10-second pieces, it reaches
+that comes from how its calls are timed: when we score it over its whole 10-second bins, it reaches
 {{T.sce_fair_quiet}}. locust ({{T.f1q_cicada}}) and SPIKE-synch ({{T.f1q_sync}}) scored lower.</p>
 <figure>{{FIG:fig_busy}}
 <figcaption><b>Figure {{NUM:fig_busy}}. Finding real events inside a busy stretch.</b> A: the share of
@@ -355,7 +368,8 @@ calls. No figure here can show whether a call is right.</p>
 <p>The lab tests two drugs. <b>TTX</b> (tetrodotoxin) blocks the fast electrical signals most nerve cells
 use. <b>Senktide</b> switches on a sensor these cells carry, the neurokinin 3 receptor
 (<a href="https://doi.org/10.1523/JNEUROSCI.1569-09.2009">Navarro and others, 2009</a>). Many
-recordings end with <b>high potassium</b>, which makes healthy cells active. One might expect TTX to stop
+recordings end with <b>high potassium</b>, which makes healthy cells produce calcium events, so a cell
+that stays dark through it was probably never going to show us anything. One might expect TTX to stop
 all teamwork between cells, which would give us a ready-made answer key. In this lab's recordings TTX
 does not stop it: events and lineups continue under the drug. So a TTX recording cannot serve as a "no
 coordination" test.</p>
@@ -497,18 +511,25 @@ raster would call those stripes.</p>
   <dt>Analysis window</dt><dd>A stretch of a recording the lab marks for study. Some programs look only inside
   these windows.</dd>
   <dt>Bar</dt><dd>The level a program's count must pass before it makes a call.</dd>
+  <dt>Bin</dt><dd>One of the short, equal stretches of time a recording is cut into before counting — 1, 2
+  or 10 seconds long, depending on the program.</dd>
   <dt>Brief events, long events</dt><dd>The lab's event-finding program keeps short brightenings and much longer
   ones in two separate lists. Each list is studied on its own.</dd>
-  <dt>Calcium event</dt><dd>A short brightening of one cell in the recording, which means the cell was
-  active.</dd>
+  <dt>Calcium event</dt><dd>A short brightening of one cell in the recording, which means calcium entered
+  that cell and then cleared again. It is what we observe; what caused the rise is a separate
+  question.</dd>
+  <dt>GCaMP6f</dt><dd>The glowing protein these cells build themselves, from a gene the mice carry. It is
+  dim on its own and bright when calcium is around it, which is what makes a rise in calcium visible
+  under the microscope.</dd>
   <dt>Call</dt><dd>One moment a program marks as a coordinated event. A call is that program's claim, not a
   fact about the cells.</dd>
   <dt>Clear stripe</dt><dd>Our rule for a lineup anyone can see on a raster (Figure {{NUM:fig_eye}}).</dd>
-  <dt>Coordinated event</dt><dd>A moment when many cells become active together, more than chance explains.</dd>
+  <dt>Coordinated event</dt><dd>A moment when many cells brighten together, more than chance explains.</dd>
   <dt>Decoy</dt><dd>A lineup put into a simulated recording the same way a planted event is, but left off
   the answer key.</dd>
   <dt>False alarm</dt><dd>A call where there was no planted event.</dd>
-  <dt>High potassium</dt><dd>A solution that makes healthy cells active, often used at the end of a recording.</dd>
+  <dt>High potassium</dt><dd>A solution that makes healthy cells produce calcium events, often used at the
+  end of a recording as a check that a quiet cell could have shown something.</dd>
   <dt>Overall score (F1 score)</dt><dd>One number from 0 to 1 that is high only when a program both finds most
   planted events and makes few false alarms.</dd>
   <dt>Planted event</dt><dd>A coordinated event we put into a simulated recording on purpose, at a time we
