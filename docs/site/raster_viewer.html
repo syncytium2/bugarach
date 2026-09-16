@@ -1264,7 +1264,7 @@
       </div>
       <div class="ctl" id="dRateCtl">
         <label for="dThr">excess threshold (Hz)</label>
-        <input id="dThr" type="number" min="0.1" max="50" step="0.5" value="5" autocomplete="off" data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other">
+        <input id="dThr" type="number" min="0.1" max="50" step="0.5" value="4.5" autocomplete="off" data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other">
         <label for="dRate">rate window (s)</label>
         <input id="dRate" type="number" min="0.1" max="30" step="0.1" value="1" autocomplete="off" data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other">
         <label for="dCtx">context window (s)</label>
@@ -1286,7 +1286,7 @@
         <label for="lCtx">context window (s)</label>
         <input id="lCtx" type="number" min="10" max="1200" step="10" value="120" autocomplete="off" data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other">
         <label for="lPct">threshold percentile</label>
-        <input id="lPct" type="number" min="90" max="99.9999" step="0.1" value="99.9" autocomplete="off" data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other">
+        <input id="lPct" type="number" min="90" max="99.9999" step="0.1" value="99.5" autocomplete="off" data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other">
         <label for="lSur">surrogates</label>
         <input id="lSur" type="number" min="20" max="1000" step="20" value="100" autocomplete="off" data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other">
       </div>
@@ -1304,7 +1304,7 @@
         <label for="sBin">bin width (s)</label>
         <input id="sBin" type="number" min="1" max="120" step="1" value="10" autocomplete="off" data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other">
         <label for="sPct">threshold percentile</label>
-        <input id="sPct" type="number" min="80" max="99.99" step="0.1" value="99" autocomplete="off" data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other">
+        <input id="sPct" type="number" min="80" max="99.99" step="0.1" value="98" autocomplete="off" data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other">
         <label for="sSur">surrogates</label>
         <input id="sSur" type="number" min="20" max="2000" step="20" value="200" autocomplete="off" data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other">
       </div>
@@ -11168,7 +11168,7 @@ registerDetector(
        exists, or declared `fixed`. */
     params: { excessThresholdHz: "dThr", rateWin: "dRate", contextWin: "dCtx" },
     knob: { key: "excessThresholdHz", input: "dThr", name: "excess threshold", unit: "Hz",
-            scale: "linear", grid: [0.5, 1, 2, 3, 4, 5, 6, 8] },
+            scale: "linear", grid: [0.5, 1, 2, 3, 3.5, 4, 4.5, 5, 6, 8] },
   }
 );
 
@@ -11485,7 +11485,7 @@ registerDetector(
       + "stage knock rather than coordination. They are counted here and drawn "
       + "like the rest; deciding what to do with them is yours." : null,
     knob: { key: "CThreshold", input: "dC", name: "C to start an event", unit: "",
-            scale: "log", grid: [0.005, 0.01, 0.02, 0.04, 0.08, 0.12] },
+            scale: "log", grid: [0.005, 0.01, 0.02, 0.04, 0.06, 0.08, 0.1, 0.12, 0.16, 0.2, 0.3] },
   }
 );
 

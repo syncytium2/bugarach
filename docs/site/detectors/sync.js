@@ -72,7 +72,7 @@ registerDetector(
       + "stage knock rather than coordination. They are counted here and drawn "
       + "like the rest; deciding what to do with them is yours." : null,
     knob: { key: "CThreshold", input: "dC", name: "C to start an event", unit: "",
-            scale: "log", grid: [0.005, 0.01, 0.02, 0.04, 0.08, 0.12] },
+            scale: "log", grid: [0.005, 0.01, 0.02, 0.04, 0.06, 0.08, 0.1, 0.12, 0.16, 0.2, 0.3] },
   }
 );
 
