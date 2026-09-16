@@ -35,6 +35,12 @@ questions. Each is written into the section it changes; this list is the index.
 6. **It runs overnight, unattended.** Launched so that closed terminals, a closed VS Code and an ended
    session do not stop it, on a machine checked for sleep, restarts and WSL idle shutdown first. See
    *Running it overnight, unattended*.
+7. **CoactDetect and LoCo slide** (Tony, later on 2026-09-16: *"use sliding versions. redo step 2"*).
+   The reference detectors are `window_mode="sliding"`, with the exact null, from branch
+   `sliding-loco-coact` (`005ae98`, merged here at `425ab2e`; not on `main`). The binned ports are not
+   compared against. The overnight settings search on branch `full-search` concerns only the six
+   hand-written detectors' own operating points and does not change this run. Gate 1 step 2 is redone on
+   the sliding code; see *Gate 1*, *Two selections* and *Search spaces*.
 
 ## The question, in one paragraph
 
@@ -200,6 +206,11 @@ did not move: recordings 1000, 1013 and 1023 hash identically at `7fc052d` and a
 rise times, amplitudes, ground truth; checked 2026-09-16), and learned detections carry no
 `extent_sec`, so the scoring change of #593 does not reach them.
 
+**Step 2 is redone on the sliding code** (decision 7). The first step 2 ran binned CoactDetect and LoCo
+and stays in the record as the binned baseline. In the rerun, CoactDetect and LoCo are new detectors, so
+they have no Mac reference; the other four hand-written detectors and `tube` must equal the first step 2
+exactly, since nothing they run changed.
+
 **Step 3 — lone-fit timings, at the tip.** `chorus_norm`, `chorus_gain_norm` and `line_length`, one model
 per process. Record each model's per-fold difference from the Mac. A difference means this machine's
 training is not the Mac's, and every comparison with the Mac's numbers must say so; the
@@ -307,6 +318,15 @@ refuse everything. The 1.6 is `bench`'s own ratio of CoactDetect's empty-recordi
 rate (7.0 against 4.4). Tony may change it until the run starts; `meta.json` records it, and it does not
 move after.
 
+**The reference is sliding CoactDetect** (decision 7) at `OPERATING_POINTS["coact"].params` as of this
+branch: `window_mode="sliding"` at the binned-tuned values (`int_win_sec` 2.0, `context_win_sec` 60,
+`alpha` 1e-4). Those values are not a calibrated sliding point: the `full-search` handoff measured
+sliding CoactDetect there at 7.7 false alarms per hour on the empty recording, against `bench`'s limit
+of 7. The budget does not need it to be calibrated, only fixed and measured on training recordings; but
+the 1.6 was derived from binned CoactDetect's ratio, so say in the readout that it was carried over.
+Write the reference's parameters into `meta.json`. If `sliding-loco-coact` later sets new shipped
+values, this run keeps the ones it declared.
+
 **Primary, ungated.** Exactly as the two sections above describe: a learned fit keeps the threshold
 `train` picked, and the highest pooled inner F1 wins, on both sides.
 
@@ -393,8 +413,16 @@ own **as of the tip, after #597** (decision 3), written out here so the declarat
 | loco | `bin_width_sec` | 0.5, 1.0, 2.0 | 1.0 |
 | loco | `context_win_sec` | 60, 120, 240 | 120 |
 
-Every other parameter stays at `OPERATING_POINTS` as of the tip. That is 99 configurations for coact
-and 72 for loco against 24 per learned model. **The hand-written
+Every other parameter stays at `OPERATING_POINTS` as of the tip, **including `window_mode="sliding"`**
+for both (decision 7). In sliding mode `int_win_sec` and `bin_width_sec` are the width of the sliding
+window, and `n_surrogates` and `thr_step_sec` do not apply, so no axis is spent on them. That is 99
+configurations for coact and 72 for loco against 24 per learned model.
+
+⚠ **The long context values may win for a reason that does not transfer.** The `full-search` run found
+240 s contexts gaining on held-out bench recordings and losing on crowded ones, which it reads as fitting
+the bench's spacing of planted events (at least 120 s apart). LoCo's grid here includes 240 s. Whether
+the home spec (`docs/learned/generator_spec.json`) spaces its events the same way has not been checked;
+check it before launch, and if it does, flag any chosen 240 s context in the readout. **The hand-written
 detectors get the larger budget**, deliberately, so a learned margin that survives cannot be blamed on
 under-tuning the reference. Say so in the readout.
 
