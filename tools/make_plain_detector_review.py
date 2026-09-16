@@ -1395,17 +1395,25 @@ def fig_scores(W, numbers, dets=CODED):
             f.line(float(p.px(v["f1_min"])), Y, float(p.px(v["f1_max"])), Y, color=COLORS[d], width=3)
             f.add(f"<circle cx='{float(p.px(v['f1'])):.1f}' cy='{Y:.1f}' r='6' fill='{COLORS[d]}'/>")
             if d == "sce":
+                # binned SCE's second score, SAID rather than coded as a hollow marker. A
+                # second symbol makes the reader carry a key across the page to find out
+                # that it is the same program measured a second way (Tony, 2026-09-16:
+                # "the open symbol is confusing"). An arrow and four words do not.
                 fb = numbers["sce_rescore"]["quiet" if "quiet" in reg else "busy"]["full_bin"]["tuned_f1"]
-                f.add(f"<circle cx='{float(p.px(fb)):.1f}' cy='{Y:.1f}' r='6' fill='#fff' stroke='{COLORS[d]}' stroke-width='2'/>")
+                xf = float(p.px(fb))
+                f.line(float(p.px(v["f1"])) + 8, Y, xf - 8, Y, color=COLORS[d], width=1,
+                       dash="2 3")
+                f.add(f"<circle cx='{xf:.1f}' cy='{Y:.1f}' r='6' fill='{COLORS[d]}'/>")
+                f.text(Xc - 10, Y + 20, "both dots are binned SCE (see the text)",
+                       size=10, anchor="end", color=COLORS[d])
             if j == 0:
                 f.text(X - 10, Y + 4, NAMES[d], size=13, anchor="end", color=INK_T)
         p.xaxis_values([0, 0.2, 0.4, 0.6, 0.8, 1.0], label="overall score (0 to 1; higher is better)")
     f.rich(170, 440, [("●", dict(color=INK_T, weight=700)), (" average   ", dict(color=MUTED)),
-                      ("━", dict(color=INK_T, weight=700)), (" lowest to highest across the 4 tests   ", dict(color=MUTED)),
-                      ("○", dict(color=COLORS["sce"], weight=700)),
-                      (" binned SCE scored over its whole 10 s bins   ", dict(color=MUTED)),
-                      ("┄", dict(color=BARC, weight=700)), (f" best possible ({ceil:.2f})", dict(color=MUTED))],
-           size=12)
+                      ("━", dict(color=INK_T, weight=700)),
+                      (" lowest to highest across the 4 tests   ", dict(color=MUTED)),
+                      ("┄", dict(color=BARC, weight=700)),
+                      (f" best possible ({ceil:.2f})", dict(color=MUTED))], size=12)
     f.h = 460
     return f
 
@@ -1746,6 +1754,12 @@ def _display_values(W, N) -> dict:
                     T[f"rw_{label}_{stream}_{g}_{d}"] = n
                 for w, mhz in v["window_rate_mhz"].items():
                     T[f"rate_{label}_{stream}_{g}_{w.replace(' ', '').replace('+', 'plus')}"] = f"{mhz * 3.6:.0f}"
+    # how bunched the busiest cells are, counted in 30 s stretches: 1 means as even as
+    # chance allows. The simulator's busiest cells are the defect Section 7 owns up to.
+    T["bunch_real_busy"] = f"{N['gen_real_fano_by_rate']['over_100']['w30']:.1f}"
+    T["bunch_sim_busy"] = f"{N['gen_fitted_fano_by_rate']['over_100']['w30']:.1f}"
+    T["bunch_real_quiet"] = f"{N['gen_real_fano_by_rate']['under_50']['w30']:.1f}"
+    T["bunch_sim_quiet"] = f"{N['gen_fitted_fano_by_rate']['under_50']['w30']:.1f}"
     st_ = W["toys"]["steps"]
     T["steps_cells"] = 6
     T["steps_observed"] = st_["observed"]

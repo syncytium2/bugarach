@@ -1,8 +1,62 @@
-# Handoff — the detector review for outside readers (session 065, 2026-09-15)
+# Handoff — the detector review for outside readers (session 065, 2026-09-15 → 09-16)
 
 > Its own thread. The root `HANDOFF.md` is a different thread; neither supersedes the other.
 > When this thread is finished, delete this file (or move it to `docs/handoffs/` if anything
 > below is still worth reading). Not murderboarded; working notes.
+
+## 2026-09-16 — LIVE REVIEW IN PROGRESS. Read this section first.
+
+**Tony is reading the plain-language page and sending notes one at a time. The loop is: he sends a
+note, it goes in [`docs/reviews/detector_review_plain_notes.md`](docs/reviews/detector_review_plain_notes.md)
+with its diagnosis, and it is applied in the same turn.** He said to apply as we go
+("start with that feedback for the next revision"), so nothing waits for a batch. **That notes file
+is the state of this work** — 28 notes so far, each with what was wrong and what was done. Read it
+before touching the page.
+
+**Where the work is.** Branch `detector-review-doc`, PR [#587](https://github.com/syncytium2/bugarach/pull/587),
+everything pushed. Two pages in `<darkroom>/bugarach/2026-09-15-detector-review-plain/`:
+
+| file | what it is |
+|---|---|
+| `detector_review_plain.html` | the document under review — 20 figures, ~8,000 words, six programs |
+| `learned_detectors_plain.html` | the four neural networks, cut out of the main page on his instruction and held back unreviewed |
+| `real_prose.json` | every sentence about real recordings; the page cannot build without it, and it stays out of the repo (FOUNDATIONS §5) |
+| `_work/plain.json` | all measurements the figures and tokens are drawn from |
+
+**Rebuild:** `PYTHONPATH="src;tools" python tools/make_plain_detector_review.py --from-review
+<darkroom>/bugarach/2026-09-15-detector-review --stages page` (add `figures` when a figure changes;
+`sim`/`toys`/`tube`/`real` only when the underlying measurement does — `real` takes ~8 minutes).
+
+### What this session learned that the next one should not relearn
+
+- **Captions do not follow their figures.** Twice a figure was replaced and its caption survived,
+  reading plausibly and describing data that was no longer there. Captions that state a fact about
+  the data are now written from that figure's own measured tokens, which is the only form the build
+  can check. **If you replace a figure, rewrite its caption from the tokens.**
+- **Section numbers are computed** from the template (`{{SEC:key}}`), never typed. A restructure
+  that leaves a stale "Section 8" is the failure this prevents.
+- **Raster geometry is already settled** in `bugarach.ui.diagnostic`: marks at a third of the row
+  pitch, rows sorted by how busy each cell is. The first figures used 0.8 and every column looked
+  solid. Do not re-derive this.
+- **Text must not touch the data.** Labels go above the panel frame, where collision is impossible.
+  He will find any overlap, and he is right to.
+- **SAP016** now blocks one prose failure (an activity standing in for an actor) in the two
+  `plain_*_template.html` files. Its limits are in `docs/sapper_feedback/2026-09-16-*`.
+
+### Open, and needing Tony rather than work
+
+1. ⚠ **locust ran at a fixed 1 second**, not the producer's measured event durations —
+   [`todo/2026-09-16-locust-ran-at-a-fixed-one-second.md`](docs/todo/2026-09-16-locust-ran-at-a-fixed-one-second.md).
+   Every locust number in both reviews assumes the flat second, and its percentile was tuned with it.
+2. **Figure 2** (the disagreement figure) holds **zero clear stripes** in the 13 minutes it shows.
+   Honest about disagreement, poor as a picture of coordination. Note 8; he has not said to replace it.
+3. **Whether the two event lists (brief/long) should be named at all.** He said "no need to mention
+   fast and slow for this document"; taken narrowly so far (note 16), and the real-recording figures
+   are still split by them.
+4. **binned SCE's scoring mismatch** — the older todo from 2026-09-15, still waiting.
+5. **CI on #587 is red** and was before this work: the session briefing runs ~29B over its 9,150B
+   budget because this PR adds a third waiting-on-Tony todo. A shorter title does not fix it (the
+   section is capped and refills). Do not raise the budget.
 
 ## Update, later on 2026-09-15: Tony rejected the review; a plain-language rebuild is in the darkroom
 

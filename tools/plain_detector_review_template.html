@@ -337,11 +337,39 @@ score is about {{T.ceiling}} instead of 1.0, and no program in this document cou
 matter how good it was. That ceiling is deliberate. It is the part of the problem that no cleverness
 inside a program can solve, and keeping it in the test stops us from reading a high score as a solved
 problem.</p>
-<p><b>What the simulator gets wrong.</b> Its busiest cells bunch their events together far more than real
-busy cells do. Its large lineups are rarer than real ones. Every simulated recording has
-{{T.n_cells_sim}} cells, while real recordings run from about half that to more. And how far apart the
-cells in a real coordinated event start is not well measured. So a good score on simulated recordings
-does not promise a good score on real ones.</p>
+<h3>What the simulator gets wrong, and why it is still wrong</h3>
+<p>Four things. The obvious question is why we do not simply fix them, and the four answers are
+different, which is the point worth taking away.</p>
+<ol>
+  <li><b>Its busiest cells bunch their events together far more than real busy cells do.</b> Count each
+  cell's events in 30-second stretches and see how much those counts vary: 1 means as even as chance
+  allows. Real busy cells sit near {{T.bunch_real_busy}}; the simulator's sit near {{T.bunch_sim_busy}}.
+  <i>Why it stands:</i> we know the cause — the simulator makes each cell's rate rise and fall by the same
+  relative swing, so the busier the cell, the wilder the swing — and a better background model is open
+  work. It is not a patch, because every score in this document was measured against this background, so
+  changing it means running the whole test again.</li>
+  <li><b>Its large lineups are rarer than real ones.</b> In real recordings, 8 or more cells line up about
+  {{T.real_over_shift_8}} times as often as chance predicts; the simulator does not reproduce that.
+  <i>Why it stands:</i> this is the hard one. The simulator can only contain coordination we already know
+  how to describe — so many cells, starting within so many tenths of a second. Whatever produces the big
+  lineups in real recordings has not been described yet. Building it into the simulator would mean
+  already knowing the answer these programs are supposed to find.</li>
+  <li><b>Every simulated recording has {{T.n_cells_sim}} cells</b>, while real ones run from about half
+  that to more, and several of the programs have rules that depend on how many cells there are.
+  <i>Why it stands:</i> this one is genuinely easy — the count is a setting. It has not been changed
+  because changing it would make these scores incomparable with the ones before them. The right fix is to
+  run the whole test at several cell counts and report the spread, which costs compute rather than
+  thought.</li>
+  <li><b>How far apart the cells in a real coordinated event start is not well measured.</b>
+  <i>Why it stands:</i> the measurement does not yet work. Run it on a simulated recording built with a
+  known spread and it does not return that spread, so there is nothing trustworthy to copy from the real
+  recordings. A better estimator has to come first.</li>
+</ol>
+<p>Underneath three of those four is the same limit: <b>a simulator can only hold what we already know
+how to write down.</b> The parts of a real recording we most want to test a program against are exactly
+the parts nobody can describe yet. That is not a reason to stop using simulated recordings — they are the
+only place an answer key exists — but it is the reason a good score here is not a promise about real
+data, and the reason Section {{SEC:real}} exists.</p>
 
 <h2 id="s9">{{SEC:grading}}. How we grade a program</h2>
 <figure>{{FIG:fig_grading}}
@@ -362,7 +390,10 @@ on the {{T.per_test}} it had never seen.</p>
 <figure>{{FIG:fig_scores}}
 <figcaption><b>Figure {{NUM:fig_scores}}. Overall scores on recordings each program never saw.</b> Each dot
 is the average over the {{T.n_tests}} groups; the line runs from the lowest to the highest group.
-</figcaption></figure>
+<b>binned SCE has two dots</b> because it can be scored two ways: the left one is how the project's
+standard run scores it, and the right one scores each of its calls over the whole 10-second bin the call
+came from. The difference is in how the call's time is reported, not in what the program found, and the
+right-hand dot is the fairer of the two.</figcaption></figure>
 <p>On the quiet background, three programs scored about the same (Figure {{NUM:fig_scores}}): CoactDetect
 {{T.f1q_coact}}, LoCo {{T.f1q_loco}} and rate+context {{T.f1q_rate}}. The best possible was about {{T.ceiling}}. With this many test recordings we cannot say
 that any one of them is truly better than the others. binned SCE looks worse ({{T.f1q_sce}}), but most of
