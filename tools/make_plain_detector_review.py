@@ -1027,31 +1027,40 @@ INK_T = "#111111"
 
 
 def fig_chance(W):
-    from svgfig import Figure, nice_ticks
+    from svgfig import Figure, MUTED, nice_ticks
     sim = W["sim"]
-    f = Figure(960, 400)
+    f = Figure(960, 440)
     cols = [("A", "A · quiet neurons, one real coordinated event", 80),
             ("B", "B · busy neurons, nothing planted", 530)]
     for key, title, X in cols:
         D = sim[key]
+        win = D["win"]
         f.text(X, 26, title, size=13, weight=600)
-        lane = f.panel(X, 36, 390, 22, D["win"], (0, 1))
+        # BOTH PANELS ARE ONE MINUTE, and the axes say so: seconds from the start of each minute, with
+        # where the minute sits in the recording under the title. Clock times on the axis made the
+        # reader subtract to find the width (Tony, 2026-09-16: "don't make me get a calculator") —
+        # the same fault already fixed in the algorithm figures.
+        f.text(X, 42, f"one minute, from {_clock(win[0])} into the recording", size=11, color=MUTED)
+        lane = f.panel(X, 52, 390, 22, win, (0, 1))
         if key == "A":
-            lane.down_triangle(sim["event"]["time"], 47, color=INK_T, size=11)
-        r = f.panel(X, 64, 390, 170, D["win"], (0, 1))
+            lane.down_triangle(sim["event"]["time"], 63, color=INK_T, size=11)
+        r = f.panel(X, 80, 390, 170, win, (0, 1))
         r.raster(_by_activity(D["trains"]))
         if key == "A":
             r.ylabel(f"{sim['n_roi']} neurons", dx=16)
         c = D["coact"]
         ymax = 12
-        q = f.panel(X, 250, 390, 100, D["win"], (0, ymax))
-        q.bars(_arr(c["t"]), _arr(c["y"]), color="#6d8fb3", width_frac=0.9)
+        q = f.panel(X, 266, 390, 100, win, (0, ymax))
+        ct, cy = _arr(c["t"]), _arr(c["y"])
+        inside = (ct - 1.0 >= win[0] - 1e-6) & (ct + 1.0 <= win[1] + 1e-6)   # whole 2 s bins only
+        q.bars(ct[inside], cy[inside], color="#6d8fb3", width_frac=0.9)
         q.yaxis(nice_ticks(0, ymax, 3), grid=True)
         if key == "A":
             q.ylabel("neurons in each", lines=["neurons with an event", "in each 2 s bin"], dx=40)
-        q.xaxis_time(label="time in the recording")
+        q.xaxis_time(offset=win[0], target=4, label="seconds from the start of this minute")
         mx = int(np.nanmax(_arr(c["y"])))
-        f.text(X + 390, 244, f"most in one bin: {mx} neurons", size=12, anchor="end", color="#333")
+        f.text(X + 390, 260, f"most in one bin: {mx} neurons", size=12, anchor="end", color="#333")
+    f.h = 420
     return f
 
 

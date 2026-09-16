@@ -145,10 +145,11 @@ looks like in this particular recording.</p>
 <h2 id="s4">{{SEC:copies}}. Measuring chance with shifted copies</h2>
 <figure>{{FIG:fig_chance_steps}}
 <figcaption><b>Figure {{NUM:fig_chance_steps}}. How shifted copies measure chance, in four steps.</b>
-A small simulated example: {{T.steps_cells}} neurons over one minute, with one {{T.steps_bin}}-second bin
-picked out for testing. {{T.steps_observed}} of the {{T.steps_cells}} neurons have an event inside that bin.
-Every event is drawn as its number in its own neuron's order, so a row can be followed when it slides, and
-the slide given to each row is printed beside it. Of {{T.steps_copies}} shifted copies, {{T.steps_share}}
+Each event is labeled by its order in its own neuron: the first is 1, the second 2, and so on. Shifting a
+row does not change that order, unless an event runs off one end and comes back in at the other — which is
+why a shifted row can read 3, 4, 1, 2. A small simulated example: {{T.steps_cells}} neurons over one minute,
+with one {{T.steps_bin}}-second bin picked out for testing. {{T.steps_observed}} of the {{T.steps_cells}}
+neurons have an event inside that bin. The slide given to each row is printed beside it. Of {{T.steps_copies}} shifted copies, {{T.steps_share}}
 reach {{T.steps_observed}} neurons in that bin. The simulated recording is small enough to read; the
 programs do the same thing on recordings of {{T.n_cells_sim}} neurons and more.</figcaption></figure>
 <p>Four of the six programs measure chance the same basic way, the way Figure {{NUM:fig_chance_steps}}
