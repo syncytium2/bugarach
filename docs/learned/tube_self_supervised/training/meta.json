@@ -1,11 +1,12 @@
 {
   "tag": "tube-ssl-2026-09-15",
-  "started": "2026-09-15T18:58:05-0400",
+  "started": "2026-09-15T22:00:26-0400",
   "quick": false,
   "models": [
     "tube",
     "tube_guard",
-    "line"
+    "line",
+    "line_length"
   ],
   "J_sec": [
     10.0,
@@ -35,6 +36,6 @@
   "merge_gap_frames": 20,
   "spec": "generator_spec.json",
   "exploratory": true,
-  "n_tasks": 216,
-  "seconds": 1528.998594045639
+  "n_tasks": 288,
+  "seconds": 2767.211658000946
 }
