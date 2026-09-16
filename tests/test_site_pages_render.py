@@ -42,6 +42,11 @@ from pathlib import Path
 
 import pytest
 
+# serial: the fixture below deletes and rebuilds the real site/ (build_site.py rmtrees it),
+# and test_site_withholding.py reads it. In a parallel run a reader on another worker could
+# see it absent or half-written. See ci.yml.
+pytestmark = pytest.mark.serial
+
 REPO = Path(__file__).resolve().parent.parent
 SITE = REPO / "site"
 

@@ -5,6 +5,14 @@ on:
     branches: [main]
   pull_request:
 
+# A push to a PR branch makes the run still going on that branch worthless, and before this
+# block it ran to the end anyway: detector-review-doc pushed five times in 25 minutes on
+# 2026-09-16 and all five ran their full 13–18 minutes. Cancelled only on pull requests, so
+# every commit that lands on main keeps a finished result of its own.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 # Read-only, and named rather than left to the default so a reader can see what CI
 # is allowed to do. pull-requests: read is what tests/test_handoff_is_honest.py needs
 # to ask whether the work a root HANDOFF.md claims is in flight has actually landed.
@@ -46,7 +54,7 @@ jobs:
           # `surrogates` is Elephant, pinned: without it the surrogate screen's 98 tests
           # (tests/test_surrogates.py and its neighbours) skip, and a green tick here
           # would say nothing about the generators the screen measured.
-          pip install -e ".[ui,dl,surrogates]" pytest playwright
+          pip install -e ".[ui,dl,surrogates]" pytest pytest-xdist playwright
       - name: Install the browser the webapp tests drive
         # The viewer is JavaScript, so checking it means running it. Without a
         # browser here those tests SKIP rather than fail, which is the worst of
@@ -82,7 +90,37 @@ jobs:
         # BUGARACH_REQUIRE_BROWSER does for the browser step above: a guard that can go
         # quiet on its own is a green tick that looked at nothing. It only bites when a
         # root HANDOFF.md exists — rare, and precisely when the answer matters.
+        #
+        # -n auto, because this step was ~15 of each leg's ~17 minutes and ran on one core
+        # of a runner that has four (public repositories get the 4-core runner). Setup —
+        # pip, the browser, the PySpike build — is about two minutes, so caching it could
+        # never have been the fix. Every server a test starts binds port 0.
+        #
+        # --dist loadfile, because the default hands out single tests and a file's tests
+        # are not independent of each other. The webapp suites share one module-scoped
+        # page and build on it in order: test_webapp_unchecked_generator.py aims the
+        # generator in one test and the next two read that aim. On this change's first
+        # CI run the default scheduler put those two on a worker whose page had never
+        # been aimed, and 3.11 went red with `aimed_at: None` while 3.13 and 3.14 happened
+        # to keep them together. loadfile keeps each file on one worker, in file order —
+        # the order the suite was written against.
+        #
+        # -m serial runs AFTER, alone, and in file order. Two kinds of test cannot share
+        # the machine or the checkout, and both were found by this change's own CI runs:
+        #   - a wall-clock budget measures the other workers as much as the code. The
+        #     briefing's 3-second budget read 3.1s on 3.11 with four workers loaded, and
+        #     is absent from the 25 failed serial runs before this change. The budget is
+        #     right for a session start and stays.
+        #   - test_site_pages_render.py deletes and rebuilds the real site/, and
+        #     test_site_withholding.py reads it. Serially the build always comes first;
+        #     split, the reader's figure checks skipped on 3.13 and ran on 3.14 in the
+        #     same run. -rs is what made that visible, and why it stays on.
+        # If the marker ever matches nothing, pytest exits 5 and this step goes red
+        # rather than quietly running zero tests.
         env:
           GH_TOKEN: ${{ github.token }}
           BUGARACH_REQUIRE_PR_API: "1"
-        run: pytest -q
+        run: |
+          echo "runner cores: $(nproc)"
+          pytest -q -rs -n auto --dist loadfile -m "not serial"
+          pytest -q -rs -m serial
