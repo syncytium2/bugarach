@@ -10,6 +10,26 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
+### Mac/tube-ssl-report — DARKROOM claim RELEASED 2026-09-16: `bugarach/2026-09-16-tube-self-supervised/`
+- **Status:** **RELEASED — the two rebuilt figures and the real-recording lanes figure (two views,
+  HTML and PNG) are in the folder; repo copies of the two synthetic-derived figures are on the PR.**
+  Was ACTIVE, claimed before writing. Tony asked for the full test through to real data and a report
+  for the morning, murderboard authorized. The blind second round returned fifty-one findings and the
+  report was rewritten around them.
+- **Holds:** also wrote three PNGs to `darkroom/unsup-rule-as-code/` via `tools/show.py`, to put them
+  in front of Tony where a `SendUserFile` call cannot be trusted to have delivered.
+- **Writes:** one new folder only — the two rebuilt figures and one real-recording lanes figure.
+  Nothing existing in the darkroom is touched, and the 2026-09-15 rigid-shift-look folder is
+  read-only from here.
+- ⚠ **The lanes figure holds a real baseline raster, so it stays in the darkroom** (FOUNDATIONS §5,
+  whose released-by-name exception is *"a list of one, not a category"*): no repo copy of that
+  figure, and the report links it by name rather than embedding it. The two bake-off/training
+  figures are synthetic-derived and do have repo copies.
+- **Touches:** `docs/learned/tube_self_supervised/`, `docs/reviews/tube-self-supervised-2026-09-16*`,
+  `tools/make_line_sensors_figure.py`, `tools/make_tube_ssl_figure.py`, `tools/make_tube_real_lanes.py`.
+- **Goal:** unsupervised-learning.
+- **Released when:** the figures are in the folder and the rewritten report is on the PR.
+
 ### vm/net-design — DARKROOM claim RELEASED 2026-09-16: `bugarach/2026-09-16-net-design/`
 - **Status:** **RELEASED — the folder holds two notes and no page.** The connector this session
   reached Dropbox through takes inline text only, and re-typing a 90 KB generated file through it

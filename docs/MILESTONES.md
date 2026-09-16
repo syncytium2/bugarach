@@ -51,11 +51,13 @@ decided K"* — one of them an incident report about decisions being ignored. A 
 
 ## Open — nothing here is a milestone yet
 
-First, because it is what a session starting now most needs. **Six items; four stop forward
-motion, two block promotion.**
+First, because it is what a session starting now most needs. **Seven items; five stop forward
+motion, two block promotion.** (Corrected 2026-09-16: the line said six while the table held five.)
 
 | what | owner | blocks |
 |---|---|---|
+| **Land [PR #588](https://github.com/syncytium2/bugarach/pull/588)** — the rigid-shift controls, label-free training of four architectures, the `line` counting architecture, its report and the pipelines index. Pushed, draft, **not merged**; conflicts only in `docs/SESSIONS.md`. Its report was rewritten after a blind round returned fifty-one findings and **has not been re-reviewed** ([the todo](todo/2026-09-16-land-pr-588-and-finish-the-rigid-shift-report.md)) | next session | every milestone row for that work — none can be written until its commits are on `main` — and quoting any number from `docs/learned/tube_self_supervised/` |
+| **Four decisions from the rigid-shift report**: concentration sensor on by default; does 10–45 s shared modulation count as coordination; another attempt at the label-free objective; which firing rate the label-free threshold targets | **Tony** | the next label-free training run |
 | **How does the promiscuity probe enter the score?** Two rules are live and pick opposite winners for the rate detector | **Tony** — waiting since 2026-08-25 | the re-fit, RESET §7 step 5 |
 | **Run a MAHICE review on the approved folder** — nobody has annotated a sample, so no K is set and no events are confirmed. Expert attention, not compute | **Tony** | quoting any transfer figure |
 | **Run-record naming** | **Tony** | the run store |

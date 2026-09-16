@@ -1,0 +1,72 @@
+{
+  "tag": "tube-aggregate-2026-09-15",
+  "started": "2026-09-15T15:11:48-0400",
+  "limit": null,
+  "n_boot": 1000,
+  "J_sec": {
+    "fast": [
+      5.0,
+      10.0,
+      20.0,
+      40.0
+    ],
+    "slow": [
+      5.6,
+      11.2,
+      22.4,
+      44.8
+    ]
+  },
+  "centres_frames": [
+    1,
+    2,
+    4,
+    8,
+    16,
+    32,
+    64,
+    128
+  ],
+  "surround_ratio": 8.0,
+  "widen_frames": 1,
+  "n_twins": 20,
+  "features": [
+    "trace_mean",
+    "trace_sd",
+    "trace_p99",
+    "c1_sd",
+    "c1_p1",
+    "c1_p99",
+    "c1_max",
+    "c2_sd",
+    "c2_p1",
+    "c2_p99",
+    "c2_max",
+    "c4_sd",
+    "c4_p1",
+    "c4_p99",
+    "c4_max",
+    "c8_sd",
+    "c8_p1",
+    "c8_p99",
+    "c8_max",
+    "c16_sd",
+    "c16_p1",
+    "c16_p99",
+    "c16_max",
+    "c32_sd",
+    "c32_p1",
+    "c32_p99",
+    "c32_max",
+    "c64_sd",
+    "c64_p1",
+    "c64_p99",
+    "c64_max",
+    "c128_sd",
+    "c128_p1",
+    "c128_p99",
+    "c128_max"
+  ],
+  "exploratory": true,
+  "seconds": 34.205161809921265
+}
