@@ -11465,7 +11465,10 @@ const fmtKnob = v => v >= 0.1 ? String(v)
 function sweepPoint(trains, range, which, base, knob, value, truth, tolSec, extra) {
   const cfg = { ...base, [knob.key]: value };
   const d = DETECTORS[which].run(trains, range, cfg, extra);
-  const widths = d.widths || d.starts.map((s, i) => d.ends[i] - s);
+  /* `extents` first: a detector whose width is not the stretch its call covers
+     says so there (binned SCE — its width is the event spread inside the bin),
+     the same rule `bugarach.score.score_stream` applies with `extent_sec`. */
+  const widths = d.extents || d.widths || d.starts.map((s, i) => d.ends[i] - s);
   return { knob: value,
            ...scoreDetections(truth.times, truth.fracs, d.starts, widths, tolSec,
                               truth.hotWindow || null) };

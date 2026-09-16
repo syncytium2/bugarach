@@ -11298,7 +11298,7 @@ function sceDetect(trains, range, opts) {
   const u = rng32(o.seed === undefined ? 20260706 : o.seed);
 
   const wLo = range[0], wHi = range[1];
-  const empty = { starts: [], ends: [], widths: [], magnitude: [],
+  const empty = { starts: [], ends: [], widths: [], extents: [], magnitude: [],
                   magTotal: [], threshold: NaN, obs: new Float64Array(0),
                   bctr: new Float64Array(0), nEvents: 0 };
   if (wHi <= wLo) return empty;
@@ -11380,7 +11380,7 @@ function sceDetect(trains, range, opts) {
   }
   runs.push([cs, ce]);
 
-  const starts = [], ends = [], widths = [], mag = [], magTotal = [];
+  const starts = [], ends = [], widths = [], extents = [], mag = [], magTotal = [];
   for (const [fb, lb] of runs) {
     let mx = -Infinity;
     for (let b = fb; b <= lb; b++) if (obs[b] > mx) mx = obs[b];
@@ -11398,10 +11398,16 @@ function sceDetect(trains, range, opts) {
     starts.push(wLo + fb * bw);
     widths.push(w);
     ends.push(wLo + fb * bw + (Number.isNaN(w) ? 0 : w));
+    // THE STRETCH THE CALL WAS MADE ON, which `widths` is not: that is the event
+    // spread inside the bin (the generate_sce contract, and detections.csv's
+    // "tightness"), and read from the bin's start it can end before the events
+    // the call was made on. This is first bin's start to last bin's end, clipped
+    // to the window, and it is what the sweep scores — SceStream.extent_sec.
+    extents.push(Math.min(wLo + (lb + 1) * bw, wHi) - (wLo + fb * bw));
     mag.push(mx);
     magTotal.push(rois.size);
   }
-  return { starts, ends, widths, magnitude: mag, magTotal, threshold: thr,
+  return { starts, ends, widths, extents, magnitude: mag, magTotal, threshold: thr,
            obs, bctr, nEvents: starts.length };
 }
 
@@ -12366,7 +12372,10 @@ const fmtKnob = v => v >= 0.1 ? String(v)
 function sweepPoint(trains, range, which, base, knob, value, truth, tolSec, extra) {
   const cfg = { ...base, [knob.key]: value };
   const d = DETECTORS[which].run(trains, range, cfg, extra);
-  const widths = d.widths || d.starts.map((s, i) => d.ends[i] - s);
+  /* `extents` first: a detector whose width is not the stretch its call covers
+     says so there (binned SCE — its width is the event spread inside the bin),
+     the same rule `bugarach.score.score_stream` applies with `extent_sec`. */
+  const widths = d.extents || d.widths || d.starts.map((s, i) => d.ends[i] - s);
   return { knob: value,
            ...scoreDetections(truth.times, truth.fracs, d.starts, widths, tolSec,
                               truth.hotWindow || null) };

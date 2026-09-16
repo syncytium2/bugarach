@@ -278,6 +278,20 @@ def score_detections(gt, onsets, *, widths=None, tol_sec: float = TOL_SEC) -> Sc
 
 _ONSET_FIELDS = (("onset_sec", "width_sec"), ("locs", "widths"))
 
+EXTENT_FIELD = "extent_sec"
+"""Where a detector declares the stretch a call covers, when its width is not it.
+
+A reported width is whatever the detector's contract says it is, and for binned
+SCE that is the spread of the events inside the bin (``tlast - tfirst``), not the
+bin. Scored as ``[onset, onset + width]`` that stretch starts at the bin edge and
+can end seconds before the events the call was made on — a planted event late in
+its bin read as a miss plus a false alarm. The contract stays (parity locks it,
+and ``detections.csv`` carries it); the detector adds this field beside it, and
+:func:`score_stream` prefers it. A detector without the field is scored on its
+width exactly as before. Ruling: Tony, 2026-09-16,
+``docs/todo/2026-09-15-binned-sce-calls-are-scored-over-the-wrong-stretch.md``.
+"""
+
 
 def score_stream(gt, det, *, tol_sec: float = TOL_SEC) -> Score:
     """Score a detector's own result object, spans included.
@@ -290,13 +304,18 @@ def score_stream(gt, det, *, tol_sec: float = TOL_SEC) -> Score:
     so the right call is the short one.
 
     Handles either field convention: ``onset_sec``/``width_sec`` (SCE, LoCo,
-    CICADA, CoactDetect) or ``locs``/``widths`` (RateDetect, spike-sync).
+    CICADA, CoactDetect) or ``locs``/``widths`` (RateDetect, spike-sync). A
+    result that carries :data:`EXTENT_FIELD` is scored over that stretch instead
+    of its width — binned SCE does, because its width is an event spread rather
+    than the stretch its call covers.
     """
     for onset_field, width_field in _ONSET_FIELDS:
         if hasattr(det, onset_field):
+            widths = getattr(det, EXTENT_FIELD, None)
+            if widths is None:
+                widths = getattr(det, width_field, None)
             return score_detections(gt, getattr(det, onset_field),
-                                    widths=getattr(det, width_field, None),
-                                    tol_sec=tol_sec)
+                                    widths=widths, tol_sec=tol_sec)
     raise TypeError(
         f"{type(det).__name__} carries no detection times — expected one of "
         f"{[f[0] for f in _ONSET_FIELDS]}. Pass the arrays to score_detections "
