@@ -178,11 +178,21 @@ The Mac's seed-0 rows: `tube` and the six hand-written detectors in
 
 **Step 1 — floats, at the Mac's code.** In a detached worktree at `7fc052d`, `--learned tube`.
 `7fc052d` comes before #593 (binned SCE scored over its bin) and #594 (every recording carries widths),
-and has the grids from before #597, so **all six hand-written detectors must match the Mac per fold,
-exactly. No exemptions.** `tube` should match within 0.02 F1. The Mac's references were produced from
-working trees with uncommitted changes (at `239f176`, `3bf3271` and `af407f2`), so a mismatch cannot be
-blamed on floats alone: **stop and report it either way**; nothing downstream is comparable until it is
-explained.
+and has the grids from before #597.
+
+Two rules, and they are different kinds of rule:
+- **The six hand-written detectors: a hard stop.** They are numpy with fixed seeds, so all six must
+  match the Mac per fold, exactly, on every result field. No exemptions. A mismatch means the
+  recordings, the detectors or the scorer differ, and nothing downstream is comparable until it is
+  explained: stop and report. The Mac's references were produced from working trees with uncommitted
+  changes (at `239f176`, `3bf3271` and `af407f2`), so say which cause is known and which is not.
+- **`tube`: a tolerance, not a stop.** It should match within 0.02 F1. A miss means this machine's
+  training is not the Mac's: every comparison with the Mac's learned numbers says so, and tuned against
+  untuned is compared on this machine, as it is anyway. Record the miss and go on.
+
+**Result, 2026-09-16** ([`docs/learned/tuned_vs_coact/gate1/README.md`](docs/learned/tuned_vs_coact/gate1/README.md)):
+the six matched exactly. `tube` missed by 0.0012 F1 on one fold, which the first wording of this step
+treated as a stop; Tony ruled it a training difference between machines, not a defect.
 
 **Step 2 — this machine's baseline, at the tip.** The six plus `tube`. Differences from the Mac are
 expected and belong to #593, #594 and #597, not to this machine; report them as such. The generator
@@ -191,11 +201,19 @@ rise times, amplitudes, ground truth; checked 2026-09-16), and learned detection
 `extent_sec`, so the scoring change of #593 does not reach them.
 
 **Step 3 — lone-fit timings, at the tip.** `chorus_norm`, `chorus_gain_norm` and `line_length`, one model
-per process. Each should match the Mac per fold within 0.02 F1; record the largest difference. A larger
-gap means this machine's training is not the Mac's, and every comparison with the Mac's numbers must
-say so; the tuned-versus-untuned comparison is made on this machine regardless. The logs print
-`train … s`: these times, not the Mac's (which ran with 6 to 10 jobs sharing the machine), set the
-estimate in *Search spaces*, and the estimate decides whether the run fits in one night.
+per process. Record each model's per-fold difference from the Mac. A difference means this machine's
+training is not the Mac's, and every comparison with the Mac's numbers must say so; the
+tuned-versus-untuned comparison is made on this machine regardless. The logs print `train … s`: these
+times, not the Mac's (which ran with 6 to 10 jobs sharing the machine), set the estimate in *Search
+spaces*, and the estimate decides whether the run fits in one night.
+
+**Step 3 keeps one stop** (Tony, 2026-09-16). Stop and report if either happens; anything smaller is
+recorded, not a stop:
+- **A fold further from both Mac seeds than the Mac's own seeds are from each other.** For a model, the
+  Mac's largest seed-to-seed gap is the largest per-fold |F1 at seed 1 − F1 at seed 0| in
+  [`learned_vs_coact.json`](docs/learned/field_size_candidates/learned_vs_coact.json). Stop if on any fold
+  this machine's F1 is further than that from **both** Mac seeds.
+- **The failed-training signature:** F1 near 0.125 with the threshold at 0.0001, on any fold.
 
 ## The design — nested cross-validation, both sides
 
@@ -450,7 +468,14 @@ Requirements, each from something that has already cost this project a night:
 - **`meta.json` written before the first fit**: the declared search spaces, the configuration draw
   and its seed, the budget, the machine record from Setup, the git commit, and
   `registered: sorted(ARCHITECTURES)` beside `registered_but_not_run`, as the pipeline's stage 1 gate
-  requires.
+  requires. Also **Gate 1's reproduction record**, as three facts: `tube` at `7fc052d` differs from the
+  Mac per fold by −0.0034, −0.0212, −0.0053 and +0.0069 F1, and is deterministic on this machine; the
+  committed training code is identical between `239f176` and `7fc052d`; the Mac recorded neither its
+  torch version nor its uncommitted changes, so CPU float differences cannot be separated from those
+  changes. Add step 3's per-model differences beside them.
+- **The torch version in everything this run writes**: `meta.json`, `progress.json`, and every fit and
+  score file. `fair_bakeoff.py`'s provenance does not record it, which is why the Mac's
+  numbers cannot be attributed.
 - **Outputs outside the repo while running** (a scratch folder, or the darkroom once claimed). Every
   run on the Mac recorded `git_dirty: true` because it wrote into an untracked repo folder mid-run. Copy
   the final JSONs into `docs/learned/tuned_vs_coact/` in the commit that reports them.
@@ -563,7 +588,15 @@ same way; nothing under `src/` imports it. `darkroom()` finds the darkroom witho
 **In progress:** board claimed, worktree `tune-learned-vs-coact` created, `main` (#597) merged at
 `259d717`. **2026-09-16: Tony's decisions are written in** (the list at the top: scripted run, Gate 1 at
 `7fc052d` with no exemptions, the tip's grids, option D, comparison only, unattended overnight). The
-budget margin is 1.6 until the run starts. **Next:** Gate 1, then the tool and `--quick`, then the
-pre-launch checks in *Running it overnight, unattended*, then launch.
+budget margin is 1.6 until the run starts.
+**Gate 1 step 1 done** ([`docs/learned/tuned_vs_coact/gate1/README.md`](docs/learned/tuned_vs_coact/gate1/README.md)):
+the six hand-written detectors match the Mac exactly. `tube` at `7fc052d` differs from the Mac per fold
+by −0.0034, −0.0212, −0.0053 and +0.0069 F1, and is deterministic on this machine. The committed
+training code is identical between `239f176` and `7fc052d`. The Mac recorded neither its torch version
+nor its uncommitted changes, so CPU float differences cannot be separated from those changes. **Tony
+ruled the `tube` miss a training difference between machines, not a defect**, and the Gate 1 wording
+now keeps the hard stop for the six only. `tube` fits take about 1.4 times the Mac's. **Next:** steps 2
+and 3, then the estimate from step 3's times against the 9-hour limit, then the tool and `--quick`, the
+pre-launch checks, and launch. `tools/compare_bakeoff_runs.py` needs a test before #596's branch merges.
 ⚠ PR #596 was still open with CI running; if review changes a model's code, results tuned against an
 older commit go stale, which the commit recorded in `meta.json` makes visible.
