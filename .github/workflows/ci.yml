@@ -94,9 +94,19 @@ jobs:
         # -n auto, because this step was ~15 of each leg's ~17 minutes and ran on one core
         # of a runner that has four (public repositories get the 4-core runner). Setup —
         # pip, the browser, the PySpike build — is about two minutes, so caching it could
-        # never have been the fix. Every server a test starts binds port 0, and module
-        # fixtures are per worker, so the suite needs no changes to run split.
+        # never have been the fix. Every server a test starts binds port 0.
+        #
+        # --dist loadfile, because the default hands out single tests and a file's tests
+        # are not independent of each other. The webapp suites share one module-scoped
+        # page and build on it in order: test_webapp_unchecked_generator.py aims the
+        # generator in one test and the next two read that aim. On this change's first
+        # CI run the default scheduler put those two on a worker whose page had never
+        # been aimed, and 3.11 went red with `aimed_at: None` while 3.13 and 3.14 happened
+        # to keep them together. loadfile keeps each file on one worker, in file order —
+        # the order the suite was written against.
         env:
           GH_TOKEN: ${{ github.token }}
           BUGARACH_REQUIRE_PR_API: "1"
-        run: pytest -q -n auto
+        run: |
+          echo "runner cores: $(nproc)"
+          pytest -q -n auto --dist loadfile
