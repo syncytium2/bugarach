@@ -1965,8 +1965,10 @@ def fig_count_published(W):
     P = W["count"]["published"]
     e = P["eddleston"]
     shades = {"7": "#c9b79c", "13.4": "#5a4527"}
-    words = {"7": "7 events per cell per hour, the slowest rate these papers report",
-             "13.4": "13.4 events per cell per hour, the 2026 paper's rate"}
+    words = {"7": "7 events per cell per hour, the slowest reported (Han and others, 2023)",
+             "13.4": "13.4 events per cell per hour, the rate in Eddleston and others (2026)"}
+    # NAME THE PAPER ON THE FIGURE. The first version said only "the 2026 paper", so a reader looking at
+    # the figure could not tell which paper it meant (Tony, 2026-09-16: "what published 2026 paper?").
     f = Figure(1000, 460)
     for j, (key, title, ylim, ticks, ylab, rep) in enumerate((
             ("mse_per_cell_h", "A · synchronized events per cell per hour", (0, 4), [0, 1, 2, 3, 4],
@@ -1983,8 +1985,8 @@ def fig_count_published(W):
         for rate, rows in P["curves"].items():
             p.curve([r_["cells"] for r_ in rows], [r_[key] for r_ in rows], color=shades.get(rate, MUTED), width=2)
         p.hline(rep, color=RED, width=1.6, dash="5 4", x0=e["field_lo"], x1=e["field_hi"])
-        f.text(X + PW + 6, float(p.py(rep)) - 4, "reported,", size=11, color=RED)
-        f.text(X + PW + 6, float(p.py(rep)) + 10, "2026 paper", size=11, color=RED)
+        for i_, ln in enumerate(("reported by", "Eddleston and", "others, 2026")):
+            f.text(X + PW + 6, float(p.py(rep)) - 10 + 14 * i_, ln, size=11, color=RED)
         p.xaxis_values([4, 8, 13, 20, 29], label="cells in view")
     spans = []
     for rate in P["curves"]:
@@ -1992,9 +1994,9 @@ def fig_count_published(W):
                   (words.get(rate, f"{float(rate):g} events per cell per hour") + "   ", dict(color=MUTED))]
     f.rich(90, 400, spans, size=12)
     f.rich(90, 420, [("▮ ", dict(color="#e2dbcf", weight=700)),
-                     (f"{e['field_lo']} to {e['field_hi']} cells in view, as the 2026 paper reports   ",
+                     (f"{e['field_lo']} to {e['field_hi']} cells in view, as Eddleston and others (2026) report   ",
                       dict(color=MUTED)),
-                     ("- - ", dict(color=RED, weight=700)), ("what that paper reports", dict(color=MUTED))],
+                     ("- - ", dict(color=RED, weight=700)), ("the averages they report", dict(color=MUTED))],
            size=12)
     f.h = 440
     return f
