@@ -10,6 +10,14 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
+### WSMIP065/why-not-count — DARKROOM claim ACTIVE 2026-09-16: `bugarach/2026-09-16-why-not-count/`
+- **Status:** **ACTIVE — claimed before writing.** Tony asked for a plain answer to "why not just count
+  events in a time bin, and call more than x of them a coordinated event?" This session tests that
+  fixed-count rule the same way the six detectors are tested, on the bench and on real recordings.
+- **Writes:** one new folder only — figures, a short page, and the builder's `_work/` measurements.
+- ⚠ **Will hold real-recording figures**, so the page stays in the darkroom (FOUNDATIONS §5).
+- **Released when:** the page is in the folder and the builder is pushed on the `detector-review-doc` PR.
+
 ### WSMIP065/detector-review-plain — DARKROOM claim RELEASED 2026-09-15: `bugarach/2026-09-15-detector-review-plain/`
 - **Status:** **RELEASED — `detector_review_plain.html`, its figures, `real_prose.json` and `_work/`
   are in the folder; the builder is on the `detector-review-doc` PR.** Was ACTIVE, claimed before
