@@ -56,13 +56,13 @@ how we tested them, and why they sometimes disagree with your own eyes.</p>
   <li><a href="#s1">What the lab records</a></li>
   <li><a href="#s2">The problem</a></li>
   <li><a href="#s3">Coordinated events happen by chance</a></li>
+  <li><a href="#s14">Why not just ask for a minimum number of events in an interval?</a></li>
   <li><a href="#s4">Measuring chance with shifted copies</a></li>
   <li><a href="#s5">Why shift, not shuffle</a></li>
   <li><a href="#s6">The six algorithms</a></li>
   <li><a href="#s8">Simulated recordings, where we know the answer</a></li>
   <li><a href="#s9">How we grade a program</a></li>
   <li><a href="#s10">Scores on the simulated recordings</a></li>
-  <li><a href="#s14">Why not just ask for a minimum number of events in an interval?</a></li>
   <li><a href="#s11">Detection on real recordings</a></li>
   <li><a href="#s12">Where your eye and the programs disagree</a></li>
   <li><a href="#s13">What this means</a></li>
@@ -142,6 +142,110 @@ neurons still had events inside the same 2-second bin.</p>
 <p>So counting neurons is not enough. A program has to ask a harder question: <b>does this coordinated event hold
 more neurons than chance alone would produce?</b> To answer it, the program needs to know what chance
 looks like in this particular recording.</p>
+
+<h2 id="s14">{{SEC:count}}. Why not just ask for a minimum number of events in an interval?</h2>
+<figure>{{FIG:fig_count_rule}}
+<figcaption><b>Figure {{NUM:fig_count_rule}}. The interval rule.</b> Left: its steps. A and B: the same two
+simulated minutes as Figure {{NUM:fig_chance}}. Above each raster: the planted coordinated event (▼) and the
+rule's calls. Below: at each moment, how many different neurons have an event in the {{T.cnt_w}} seconds that
+follow, and a bar of {{T.cnt_one_bar}} neurons — the single bar that scores best on the simulated recordings
+every program in this document is tested on (Section {{SEC:scores}}).</figcaption></figure>
+<p>Figure {{NUM:fig_chance}} shows the difficulty: coordinated events happen by chance, and more often when
+neurons are busy. The simplest answer takes chance out of the picture altogether: call a coordinated event
+whenever at least a set number of neurons have calcium events within a short interval of each other (Figure
+{{NUM:fig_count_rule}}). Each neuron counts once, however many events it has inside the interval. No copies,
+and no chance. So why not use it?</p>
+<p>Labs that study these same neurons use rules like it. Allan Herbison's lab, recording brain slices as this
+lab does, calls a <b>"synchronized event"</b> whenever the event peaks of at least 2 neurons fall within 10
+seconds of each other, and adds any further neuron whose peak falls within 10 seconds of the one before
+(<a href="https://doi.org/10.1016/j.celrep.2022.111914">Han and others, 2023</a>). The same rule, still at 2
+neurons, is used in the lab's slice papers through 2026
+(<a href="https://doi.org/10.1210/endocr/bqad167">Morris and Herbison, 2023</a>;
+<a href="https://doi.org/10.1111/jne.70170">Eddleston and others, 2026</a>). Aleisha Moore and coworkers,
+recording these neurons in living mice, called an episode a "synchronized episode" when every recorded neuron
+had a calcium event (<a href="https://doi.org/10.1073/pnas.2117767119">Moore, Coolen and Lehman, 2022</a>).
+None of these papers checks its rule against chance. This section asks how much chance such a rule lets
+through, with an interval of {{T.cnt_w}} seconds and with Herbison's rule as published. How the rule scores
+against the six programs comes later (Section {{SEC:scores}}), once the programs and the scoring have been
+explained.</p>
+
+<h3>Why an interval and not a bin</h3>
+<figure>{{FIG:fig_count_edge}}
+<figcaption><b>Figure {{NUM:fig_count_edge}}. What a bin edge costs.</b> Every coordinated event joined by 6
+neurons that we planted in simulated recordings ({{T.edge_n}} events; Section {{SEC:sim}} describes the
+recordings), grouped by how far it fell from the nearest edge of a bin, and the share each rule found.
+Counting within a sliding {{T.edge_bin}}-second window and counting in fixed {{T.edge_bin}}-second bins use
+the same bar ({{T.edge_x}} neurons), so the bin edge is the only difference between them. CoactDetect and
+LoCo, two of the programs in Section {{SEC:algorithms}}, count in fixed 2-second and 1-second bins; each is
+measured against its own bins.</figcaption></figure>
+<p>An even simpler version of the rule cuts the recording into fixed bins and counts the neurons in each. It
+has a flaw of its own: a coordinated event that falls across the edge between two bins is split, some of its
+neurons landing in one bin and the rest in the next, so neither bin may reach the bar. With a bar of
+{{T.edge_x}} neurons, fixed {{T.edge_bin}}-second bins found {{T.edge_bin_at}} of the 6-neuron events that fell
+close to an edge (within an eighth of a bin), against {{T.edge_bin_mid}} of those in the middle of a bin. A
+window that slides along with the events cannot split one, and found {{T.edge_int_at}} of them wherever they
+fell (Figure {{NUM:fig_count_edge}}). Herbison's rule slides in this way, which is one thing it gets right.
+Two of the six programs count in fixed bins and pay a smaller price for it: CoactDetect found
+{{T.edge_coact_at}} of the events at an edge against {{T.edge_coact_mid}} mid-bin, and LoCo
+{{T.edge_loco_at}} against {{T.edge_loco_mid}}.</p>
+
+<h3>On real recordings, no single bar fits</h3>
+<figure>{{FIG:fig_count_slices}}
+<figcaption><b>Figure {{NUM:fig_count_slices}}. The bar each real recording needs.</b> One dot for each of
+the lab's {{T.cnt_n_real}} untreated recordings: the stretch before any drug, brief events. For each one we
+made {{T.cnt_draws}} shifted copies (Section {{SEC:copies}} explains them) and found the smallest bar, in
+neurons within {{T.cnt_w}} seconds, that chance reaches less than once every 10 minutes (counting separate
+{{T.cnt_w}}-second windows). Orange: recordings where chance reaches the bar of {{T.cnt_one_bar}} neurons from
+Figure {{NUM:fig_count_rule}} more often than that. Dotted line: how busy the busy stretch in our simulated
+recordings is (Section {{SEC:sim}}), busier than {{T.cnt_block_slower}} of the {{T.cnt_n_real}} real
+recordings.</figcaption></figure>
+<p>Real recordings differ a great deal from one another. Across the lab's {{T.cnt_n_real}} untreated
+recordings, neurons had between {{T.cnt_rate_min}} and {{T.cnt_rate_max}} events per neuron per minute on
+average — between {{T.cnt_rate_p10}} and {{T.cnt_rate_p90}} in eight recordings out of ten — and a recording
+held {{T.cnt_cells_min}} to {{T.cnt_cells_max}} neurons. The bar that holds chance to less than once in 10
+minutes climbs with how busy the neurons are, from {{T.cnt_need_min}} neurons to {{T.cnt_need_max}} (Figure
+{{NUM:fig_count_slices}}). A bar of {{T.cnt_one_bar}} neurons lets chance through in {{T.cnt_n_loose}} of the
+{{T.cnt_n_real}} recordings — in one of them {{T.cnt_loose_max}} times every 10 minutes — while in
+{{T.cnt_n_strict}} recordings a bar of 3 neurons would already have been enough.</p>
+<p>That is the real trouble with a fixed bar. A drug that gives neurons more calcium events moves a recording
+to the right in Figure {{NUM:fig_count_slices}}. With a fixed bar, that recording then gets more coordinated
+events called, even if nothing about how the neurons work together has changed.</p>
+
+<h3>At the published rate, what does chance give?</h3>
+<figure>{{FIG:fig_count_published}}
+<figcaption><b>Figure {{NUM:fig_count_published}}. The published rule, on neurons that fire
+independently.</b> Simulated neurons that each have calcium events at random, at a steady rate, with no link
+to one another, run through Herbison's rule (at least 2 neurons, each peak within 10 seconds of the one
+before), for {{T.pub_cells_lo}} to {{T.pub_cells_hi}} neurons, {{T.pub_hours}} simulated hours for each number
+of neurons. A: "synchronized events" per neuron per hour — the number of those events divided by the number
+of neurons and hours, the way the papers count it. B: the average number of neurons in each event, over every
+event the simulation produced. The paper's 3.7 is not a whole number because it is an average of each
+slice's average, over 38 slices (3.7 ± 0.2 neurons, mean ± standard error). Shaded: the
+{{T.pub_field_lo}} to {{T.pub_field_hi}} neurons reported by Eddleston, Morris and Herbison (2026),
+<i>GABA receptor modulation of arcuate kisspeptin neuron bursting and synchronization activity in female
+mice</i>, <a href="https://doi.org/10.1111/jne.70170">J Neuroendocrinol 38:e70170</a>. Dashed red: the
+averages that paper reports. The dark curve uses that paper's own event rate, so it is the one to read
+against the dashed line.</figcaption></figure>
+<p>None of these papers compares its rule with chance, so we made the simplest version of that comparison
+(Figure {{NUM:fig_count_published}}). In the most recent paper, neurons had {{T.pub_rep_rate}} calcium events
+per neuron per hour, and the paper reports {{T.pub_rep_mse}} "synchronized events" per neuron per hour, each
+joined by {{T.pub_rep_cells}} neurons ({{T.pub_rep_share}}% of the neurons in view) on average
+(<a href="https://doi.org/10.1111/jne.70170">Eddleston and others, 2026</a>). Neurons that fire completely
+independently at that rate, in a field of {{T.pub_field}} neurons — about the average those two numbers
+imply — meet the rule {{T.pub_chance_mse}} times per neuron per hour, with {{T.pub_chance_cells}} neurons in
+each.</p>
+<p>So at that rate, independent neurons alone produce about as many "synchronized events" as the paper
+reports, but smaller ones: the events the paper found hold more neurons than chance events do. Real neurons do
+not fire at a steady rate, and none of the paper's data went into this, so it is not a verdict on its
+findings. It shows why a count needs a chance comparison beside it: without one, there is no way to tell how
+much of the count chance alone would have produced.</p>
+
+<h3>What this means</h3>
+<p>Asking for a minimum number of neurons within an interval is not wrong. What a fixed bar cannot do is tell
+a busy recording from a coordinated one, because the bar does not move when the neurons get busier, and on
+real recordings the bar that chance allows moves a long way. Counting in fixed bins instead of a sliding
+interval adds a second problem, the bin edge. The shifted copies of the next section let a program set its
+bar from the recording's own chance instead.</p>
 
 <h2 id="s4">{{SEC:copies}}. Measuring chance with shifted copies</h2>
 <figure>{{FIG:fig_chance_steps}}
@@ -460,142 +564,41 @@ coordinated events planted <i>inside</i> the busy stretch.</p>
   held up.</li>
 </ul>
 
-<h2 id="s14">{{SEC:count}}. Why not just ask for a minimum number of events in an interval?</h2>
-<figure>{{FIG:fig_count_rule}}
-<figcaption><b>Figure {{NUM:fig_count_rule}}. The interval rule.</b> Left: its steps. A and B: the same two
-simulated minutes as Figures {{NUM:fig_alg_rate}} to {{NUM:fig_alg_sync}}. Above each raster: the planted
-event (▼) and the rule's calls. Below: at each moment, how many different neurons have an event in the
-{{T.cnt_w}} seconds that follow, and the bar of {{T.cnt_one_bar}} neurons — the one bar that scored best
-across both simulated backgrounds (Figure {{NUM:fig_count_bar}}).</figcaption></figure>
-<p>Every program in this document does a lot of work to decide what chance looks like. There is a much
-simpler rule: call a coordinated event whenever at least a set number of neurons have calcium events within a short
-interval of each other (Figure {{NUM:fig_count_rule}}). Each neuron counts once, however many events it
-has inside the interval. No copies, and no chance. So why not use it?</p>
-<p>Labs that study these same neurons use rules like it. Allan Herbison's lab, recording brain slices as this
-lab does, calls a <b>"synchronized event"</b> whenever the event peaks of at least 2 neurons fall within 10
-seconds of each other, and adds any further neuron whose peak falls within 10 seconds of the one before
-(<a href="https://doi.org/10.1016/j.celrep.2022.111914">Han and others, 2023</a>). The same rule, still at 2
-neurons, is used in the lab's slice papers through 2026
-(<a href="https://doi.org/10.1210/endocr/bqad167">Morris and Herbison, 2023</a>;
-<a href="https://doi.org/10.1111/jne.70170">Eddleston and others, 2026</a>). Aleisha Moore and coworkers,
-recording these neurons in living mice, called an episode a "synchronized episode" when every recorded neuron had a calcium event
-(<a href="https://doi.org/10.1073/pnas.2117767119">Moore, Coolen and Lehman, 2022</a>). None of these
-papers checks its rule against chance. This section does, with an interval of {{T.cnt_w}} seconds — the
-length CoactDetect counts in — and with Herbison's rule as published.</p>
-
-<h3>On simulated recordings, the rule can score well</h3>
+<h3>How the interval rule scores</h3>
 <figure>{{FIG:fig_count_bar}}
-<figcaption><b>Figure {{NUM:fig_count_bar}}. What the bar does.</b> The interval rule with a
-{{T.cnt_w}}-second interval, run on the same {{T.n_recordings_scored}} simulated recordings as the six
-programs and graded the same way, at every bar from {{T.cnt_x_lo}} to {{T.cnt_x_hi}} neurons. A: the overall
-score. B: how much of the busy stretch, where nothing is planted, sits under a call or within {{T.tol}}
-seconds of one. Rings mark the bar with the best score on each background. Dashed teal lines: CoactDetect at
-its stored setting on the same recordings; in B, CoactDetect and LoCo both call less than 1% of the
-stretch.</figcaption></figure>
+<figcaption><b>Figure {{NUM:fig_count_bar}}. What the bar does.</b> The interval rule from Section
+{{SEC:count}}, with a {{T.cnt_w}}-second interval, run on the same {{T.n_recordings_scored}} simulated
+recordings as the six programs and graded the same way, at every bar from {{T.cnt_x_lo}} to {{T.cnt_x_hi}}
+neurons. A: the overall score. B: how much of the busy stretch, where nothing is planted, sits under a call or
+within {{T.tol}} seconds of one. Rings mark the bar with the best score on each background. Dashed teal lines:
+CoactDetect at its stored setting on the same recordings; in B, CoactDetect and LoCo both call less than 1% of
+the stretch.</figcaption></figure>
 <p><b>With the right bar, the rule scores about as well as the best programs.</b> With a bar of
 {{T.cnt_best_quiet}} neurons it scored {{T.cnt_f1_best_quiet}} on the quiet background; CoactDetect scored
-{{T.cnt_coact_f1_quiet}} on the same recordings (Figure {{NUM:fig_count_bar}}, A). That is a real result.
-It also flatters the rule a little, because its bar was picked on these very recordings, with the answers
-in hand.</p>
+{{T.cnt_coact_f1_quiet}} on the same recordings (Figure {{NUM:fig_count_bar}}, A). That is a real result. It
+also flatters the rule a little, because its bar was picked on these very recordings, with the answers in
+hand.</p>
 <p><b>But the right bar depends on the recording.</b> On the busy background the best bar is
 {{T.cnt_best_busy}} neurons. Use the quiet background's bar of {{T.cnt_best_quiet}} there and the score falls
 to {{T.cnt_quiet_bar_on_busy}}. The one bar that does best on both backgrounds together,
 {{T.cnt_one_bar}} neurons, scores {{T.cnt_f1_one_quiet}} on the quiet background and {{T.cnt_f1_one_busy}} on
 the busy one.</p>
 <p><b>And the bar that scores best calls most of the busy stretch, where nothing was planted</b> (Figure
-{{NUM:fig_count_bar}}, B). At its best bar, the rule called {{T.cnt_empty_best_quiet}} of that stretch on
-the quiet background and {{T.cnt_empty_best_busy}} on the busy one. On the busy background, CoactDetect
-called {{T.cnt_coact_empty_busy}} of the stretch and LoCo {{T.cnt_loco_empty_busy}}. A 10-second interval
-did no better: its best bars ({{T.cnt10_best_quiet}} neurons on the quiet background, {{T.cnt10_best_busy}}
-on the busy one) scored {{T.cnt10_f1_quiet}} and {{T.cnt10_f1_busy}}, and called at least {{T.cnt10_empty}}
-of the stretch.
-Herbison's rule, run
-exactly as published, called at least {{T.herb_empty_busy}} of it and scored {{T.herb_f1_quiet}} on the
-quiet background and {{T.herb_f1_busy}} on the busy one — though our simulated recordings hold {{T.n_cells_sim}} neurons, more than the 8 to 29
-in view in that lab's slices, and a rule built for fewer neurons is reached more easily with more.</p>
+{{NUM:fig_count_bar}}, B). At its best bar, the rule called {{T.cnt_empty_best_quiet}} of that stretch on the
+quiet background and {{T.cnt_empty_best_busy}} on the busy one. On the busy background, CoactDetect called
+{{T.cnt_coact_empty_busy}} of the stretch and LoCo {{T.cnt_loco_empty_busy}}. A 10-second interval did no
+better: its best bars ({{T.cnt10_best_quiet}} neurons on the quiet background, {{T.cnt10_best_busy}} on the
+busy one) scored {{T.cnt10_f1_quiet}} and {{T.cnt10_f1_busy}}, and called at least {{T.cnt10_empty}} of the
+stretch. Herbison's rule, run exactly as published, called at least {{T.herb_empty_busy}} of it and scored
+{{T.herb_f1_quiet}} on the quiet background and {{T.herb_f1_busy}} on the busy one — though our simulated
+recordings hold {{T.n_cells_sim}} neurons, more than the 8 to 29 in view in that lab's slices, and a rule
+built for fewer neurons is reached more easily with more.</p>
 <p>The overall score did not show this, because calls inside the busy stretch are kept out of it and counted
 on their own (Section {{SEC:grading}}). Two of the six programs have the same weakness: binned SCE, which
 counts neurons in bins and sets one bar from the whole recording, called {{T.cnt_sce_empty_busy}} of the
 stretch, and locust called {{T.cnt_cicada_empty_busy}}. CoactDetect and LoCo avoid it by setting their bar
-from the minutes around each moment, so a busy stretch raises its own bar.</p>
-
-<h3>Why an interval and not a bin</h3>
-<figure>{{FIG:fig_count_edge}}
-<figcaption><b>Figure {{NUM:fig_count_edge}}. What a bin edge costs.</b> Every planted event joined by 6
-neurons ({{T.edge_n}} events, both simulated backgrounds), grouped by how far it fell from the nearest edge of
-a bin, and the share each rule found. Counting within a sliding {{T.edge_bin}}-second window and counting in
-fixed {{T.edge_bin}}-second bins use the same bar ({{T.edge_x}} neurons), so the bin edge is the only
-difference between them. CoactDetect counts in fixed 2-second bins and LoCo in fixed 1-second bins; each is
-measured against its own bins.</figcaption></figure>
-<p>An even simpler version of the rule cuts the recording into fixed bins and counts the neurons in each. It
-has a flaw of its own: a coordinated event that falls across the edge between two bins is split, some of its
-neurons landing in one bin and the rest in the next, so neither bin may reach the bar. With a bar of
-{{T.edge_x}} neurons, fixed {{T.edge_bin}}-second bins found {{T.edge_bin_at}} of the 6-neuron events that fell
-close to an edge (within an eighth of a bin), against {{T.edge_bin_mid}} of those in the middle of a bin. A window that slides along with the
-events cannot split one, and found {{T.edge_int_at}} of them wherever they fell (Figure
-{{NUM:fig_count_edge}}). Herbison's rule slides in this way, which is one thing it gets right. Two of the six
-programs count in fixed bins and pay a smaller price for it: CoactDetect found {{T.edge_coact_at}} of the
-events at an edge against {{T.edge_coact_mid}} mid-bin, and LoCo {{T.edge_loco_at}} against
-{{T.edge_loco_mid}}.</p>
-
-<h3>On real recordings, no single bar fits</h3>
-<figure>{{FIG:fig_count_slices}}
-<figcaption><b>Figure {{NUM:fig_count_slices}}. The bar each real recording needs.</b> One dot for each of
-the lab's {{T.cnt_n_real}} untreated recordings: the stretch before any drug, brief events. For each one we
-made {{T.cnt_draws}} shifted copies and found the smallest bar, in neurons within {{T.cnt_w}} seconds, that
-chance reaches less than once every 10 minutes (counting separate {{T.cnt_w}}-second windows). Orange: recordings where chance reaches the bar of
-{{T.cnt_one_bar}} neurons from Figure {{NUM:fig_count_bar}} more often than that. Dotted line: how busy the
-simulated busy stretch is, busier than {{T.cnt_block_slower}} of the {{T.cnt_n_real}} real
-recordings.</figcaption></figure>
-<p>Real recordings differ far more than the two simulated backgrounds do. Across the lab's
-{{T.cnt_n_real}} untreated recordings, neurons had between {{T.cnt_rate_min}} and
-{{T.cnt_rate_max}} events per neuron per minute on average — between {{T.cnt_rate_p10}} and {{T.cnt_rate_p90}} in
-eight recordings out of ten — and a recording held {{T.cnt_cells_min}} to {{T.cnt_cells_max}} neurons. The
-bar that holds chance to less than once in 10 minutes climbs with how busy the neurons are, from
-{{T.cnt_need_min}} neurons to {{T.cnt_need_max}} (Figure {{NUM:fig_count_slices}}). A bar of
-{{T.cnt_one_bar}} neurons lets chance through in {{T.cnt_n_loose}} of the {{T.cnt_n_real}} recordings — in
-one of them {{T.cnt_loose_max}} times every 10 minutes — while in {{T.cnt_n_strict}} recordings a bar of 3
-neurons would already have been enough.</p>
-<p>That is the real trouble with a fixed bar. A drug that gives neurons more calcium events moves a recording
-to the right in Figure {{NUM:fig_count_slices}}. With a fixed bar, that recording then shows more
-"coordinated events" even if nothing about how the neurons work together has changed.</p>
-
-<h3>At the published rate, what does chance give?</h3>
-<figure>{{FIG:fig_count_published}}
-<figcaption><b>Figure {{NUM:fig_count_published}}. The published rule, on neurons that fire
-independently.</b> Simulated neurons that each have calcium events at random, at a steady rate, with no link to one
-another, run through Herbison's rule (at least 2 neurons, each peak within 10 seconds of the one before), for
-{{T.pub_cells_lo}} to {{T.pub_cells_hi}} neurons, {{T.pub_hours}} simulated hours for each number of neurons.
-A: "synchronized events" per neuron per hour — the number of those events divided by the number of neurons and hours,
-the way the papers count it. B: the average number of neurons in each event, over every event the simulation
-produced. The paper's 3.7 is not a whole number because it is an average of each slice's average, over 38
-slices (3.7 ± 0.2 neurons, mean ± standard error). Shaded: the
-{{T.pub_field_lo}} to {{T.pub_field_hi}} neurons reported by Eddleston, Morris and Herbison (2026),
-<i>GABA receptor modulation of arcuate kisspeptin neuron bursting and synchronization activity in female
-mice</i>, <a href="https://doi.org/10.1111/jne.70170">J Neuroendocrinol 38:e70170</a>. Dashed red: the
-averages that paper reports. The dark curve uses that paper's own event rate, so it is the one to read
-against the dashed line.</figcaption></figure>
-<p>None of these papers compares its rule with chance, so we made the simplest version of that comparison
-(Figure {{NUM:fig_count_published}}). In the most recent paper, neurons had {{T.pub_rep_rate}} calcium events
-per neuron per hour, and the paper reports {{T.pub_rep_mse}} "synchronized events" per neuron per hour, each joined by
-{{T.pub_rep_cells}} neurons ({{T.pub_rep_share}}% of the neurons in view) on average
-(<a href="https://doi.org/10.1111/jne.70170">Eddleston and others, 2026</a>). Neurons that fire completely
-independently at that rate, in a field of {{T.pub_field}} neurons — about the average those two numbers
-imply — meet the rule {{T.pub_chance_mse}} times per neuron per hour, with {{T.pub_chance_cells}} neurons in
-each.</p>
-<p>So at that rate, independent neurons alone produce about as many "synchronized events" as the paper reports,
-but smaller ones: the events the paper found hold more neurons than chance events do. Real neurons do not fire
-at a steady rate, and none of the paper's data went into this, so it is not a verdict on its findings. It
-shows why a count needs a chance comparison beside it: without one, there is no way to tell how much of the
-count chance alone would have produced.</p>
-
-<h3>What this means</h3>
-<p>Asking for a minimum number of neurons within an interval is not wrong, and on quiet simulated recordings
-it does about as well as any program here. What a fixed bar cannot do is tell a busy stretch from a
-coordinated one, because the bar does not move when the neurons get busier. Counting in fixed bins instead of
-a sliding interval adds a second problem, the bin edge, and two of the six programs share it. Shifted copies (Section {{SEC:copies}}) let a program set its bar from
-the recording's own chance, and CoactDetect and LoCo go one step further, setting it from the minutes
-around each moment. That is what the extra work buys.</p>
+from the minutes around each moment, so a busy stretch raises its own bar. That is what the extra work
+buys.</p>
 
 <h2 id="s11">{{SEC:real}}. Detection on real recordings</h2>
 <p><b>A real recording has no answer key.</b> The figures in this section show where each program made
