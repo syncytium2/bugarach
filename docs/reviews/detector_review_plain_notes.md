@@ -379,3 +379,47 @@ invisible.
 
 The house rule this belongs under already existed — CLAUDE.md, nothing competing with the marks — and the
 first version broke it by putting text on the data.
+
+## 29. The open symbol in the scores figure (2026-09-16)
+
+*"figure 14 the open symbol is confusing"* — binned SCE's second score was drawn as a hollow marker, and
+nothing on the page said a hollow marker meant anything. A reader has to guess that it is the same
+program.
+
+**Applied.** Both scores are now solid dots in binned SCE's own colour, joined by a dashed hairline, with
+one short line in the figure saying both dots are binned SCE and the caption carrying the reason. The
+first attempt put that line where it crossed the "best possible" rule — the overlap complaint of note 28,
+one figure later — so it was shortened and anchored clear of it.
+
+## 30. "Every program here uses its default setting" — is that optimized? (2026-09-16)
+
+*"figure 15 says every program uses default setting, is that optimized?"*
+
+**The caption was wrong, and wrong in the direction that hides something.** "Default" reads as *untouched,
+straight out of the code*. What the figure actually runs is `bugarach.bench.OPERATING_POINTS` — the
+declared operating point for each program — and that table is half tuned:
+
+| program | everyday setting | where it came from |
+| --- | --- | --- |
+| CoactDetect | `alpha=1e-4`, 2 s bins, 60 s surround | tuned — the explore_sce FAST point, **not** the `coact_detect` signature default of `alpha=0.01`, a hundred times looser |
+| LoCo | `threshold_pctile=99.9` | tuned — measured-regime F1 optimum |
+| locust | `sce_percentile=99.999` | tuned — calibrated FAST pair; retuned from 99.99 on 2026-08-20 |
+| rate+context | `excess_threshold_hz=5.0` | the function's own defaults |
+| binned SCE | `threshold_pctile=99.0`, 10 s bins | the function's own defaults (generate_sce contract) |
+| SPIKE-synch | `C_threshold=0.1` | the viewer's FAST defaults |
+
+`bench.py`'s own module docstring makes the point in terms: it **refuses** to run a detector at whatever
+its signature defaults to, because CoactDetect at `alpha=0.01` scores F1 0.72 where the calibrated point
+scores 1.00 on the sparse regime. So the one word "default" asserted the exact thing the bench was built
+to prevent.
+
+The older document called this setting **"shipped"**, which was accurate and which Tony banned as jargon
+(note 1). Replacing it with "default" swapped a jargon word for a *false* word — the failure mode worth
+remembering: when a banned term goes, check that its replacement still means the same thing.
+
+**Applied**, in two places rather than one, because the question is really about the whole document:
+- The caption now says the program runs at the setting the project uses on the real recordings, and
+  points at the scores figure as the one that does **not**.
+- Section 9 gains a paragraph naming the two kinds of setting, saying which three programs were tuned and
+  which three were untouched, and closing with the part a reader should carry away — **the tuned three
+  were tuned on recordings from the same simulator that made the test recordings.**
