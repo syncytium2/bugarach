@@ -17,7 +17,8 @@ from bugarach.learn.nets import _dilated_stack, _torch, receptive_field, registe
 __all__ = ["build_gauge"]
 
 
-@register("gauge", note="UNTRAINED, UNSCORED. B -- the same centre-surround as `tube`, "
+@register("gauge", note="SIMULATION ONLY; false alarms climb on quiet fields "
+                        "(docs/learned/field_size_candidates). B -- the same centre-surround as `tube`, "
                         "standardised against a null built by shifting the "
                         "recording's own cells; no bypass",
           n_scales=4, width=8, depth=6, max_center_frames=128, max_ratio=40.0,
