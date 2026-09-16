@@ -1,0 +1,8 @@
+data set: 24 recordings, 4 folds (6 each)
+  1410 recording-minutes total
+  tube_guard fold 0: F1 0.701  thr 0.9838  train 9.6s  detect 0.08s
+  tube_guard fold 1: F1 0.667  thr 0.9948  train 8.6s  detect 0.08s
+  tube_guard fold 2: F1 0.642  thr 0.9948  train 8.4s  detect 0.08s
+  tube_guard fold 3: F1 0.643  thr 0.9838  train 8.4s  detect 0.08s
+
+wrote docs/learned/field_size_candidates/rest_of_registry/tube_guard/bakeoff_seed1.json

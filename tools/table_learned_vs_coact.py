@@ -78,9 +78,13 @@ def build(runs: list[dict]) -> dict:
     busy_hours = ((hot[1] - hot[0]) * first["seeds_per_fold"] / 3600.0) if hot else None
 
     by_model: dict[str, dict[int, dict]] = {}
+    lr: dict[str, float] = {}
     for r in runs:
+        ran = (r.get("provenance", {}).get("learned_architectures", {}) or {}).get("ran", {})
         for name, row in r["learned"].items():
             by_model.setdefault(name, {}).setdefault(int(r["train_seed"]), row)
+            if name in ran and ran[name].get("lr") is not None:
+                lr.setdefault(name, ran[name]["lr"])
 
     rows = []
     for name in [m for m in ORDER if m in by_model] + sorted(set(by_model) - set(ORDER)):
@@ -104,6 +108,7 @@ def build(runs: list[dict]) -> dict:
             entry["quiet_field"] = {"factor": float(quietest),
                                     "per_hour": float(np.mean(
                                         [f["null_fa_per_hour"][quietest] for f in folds0]))}
+        entry["learning_rate"] = lr.get(name)
         entry["n_params"] = base.get("n_params")
         entry["train_sec_per_fold"] = float(np.mean([f["train_sec"] for f in folds0]))
         rows.append(entry)
@@ -131,7 +136,7 @@ def markdown(tab: dict) -> str:
     head = ["model"] + [f"F1, seed {s}" for s in seeds] + \
            [f"− CoactDetect, seed {s}" for s in seeds] + \
            ["− CoactDetect, seed average", "probe, per hour", "quiet field, per hour",
-            "parameters", "training s per fold"]
+            "learning rate", "parameters", "training s per fold"]
     lines = ["| " + " | ".join(head) + " |", "|" + "---|" * len(head)]
     for r in tab["rows"]:
         cells = [r["model"]]
@@ -143,6 +148,7 @@ def markdown(tab: dict) -> str:
                      else "one seed")
         cells.append(f"{r['probe_per_hour']:.1f}" if r["probe_per_hour"] is not None else "—")
         cells.append(f"{r['quiet_field']['per_hour']:.1f}" if "quiet_field" in r else "—")
+        cells.append(f"{r['learning_rate']:g}" if r["learning_rate"] is not None else "—")
         cells.append(f"{r['n_params']:,}" if r["n_params"] is not None else "—")
         cells.append(f"{r['train_sec_per_fold']:.0f}")
         lines.append("| " + " | ".join(cells) + " |")
@@ -150,7 +156,7 @@ def markdown(tab: dict) -> str:
     cells = ["CoactDetect"] + [f"{ref['f1_mean']:.3f}"] * len(seeds) + ["—"] * len(seeds) + \
             ["—", f"{ref['probe_per_hour']:.1f}" if ref["probe_per_hour"] is not None else "—",
              f"{ref['quiet_field']['per_hour']:.1f}" if "quiet_field" in ref else "—",
-             "0", "—"]
+             "—", "0", "—"]
     lines.append("| " + " | ".join(cells) + " |")
     return "\n".join(lines) + "\n"
 

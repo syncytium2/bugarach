@@ -1,0 +1,8 @@
+data set: 24 recordings, 4 folds (6 each)
+  1410 recording-minutes total
+  tube_ratio fold 0: F1 0.563  thr 0.9908  train 12.6s  detect 0.11s
+  tube_ratio fold 1: F1 0.559  thr 0.9983  train 12.5s  detect 0.10s
+  tube_ratio fold 2: F1 0.469  thr 0.9983  train 11.8s  detect 0.09s
+  tube_ratio fold 3: F1 0.510  thr 0.9970  train 11.2s  detect 0.09s
+
+wrote docs/learned/field_size_candidates/rest_of_registry/tube_ratio/bakeoff.json

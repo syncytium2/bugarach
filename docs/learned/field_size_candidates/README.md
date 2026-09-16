@@ -1,4 +1,4 @@
-# The field-size candidates, on simulation: gauge carries to 566 ROIs, and has a quiet-field problem
+# The learned detectors against CoactDetect, and the field-size candidates, on simulation
 
 > **Working material, not murderboarded.** Same standing as the handoffs and
 > [`../../pipelines/learned-model-evaluation.md`](../../pipelines/learned-model-evaluation.md). Every
@@ -9,6 +9,61 @@
 Run 2026-09-16 on branch `eval-field-size-candidates`. The candidates are two of the three designs in
 the proposal held back from #589 (branch `claude/net-design-proposal-hw8rve`). `quorum` did not run:
 every bench recording has one field size, so its exponent cannot be identified yet.
+
+## Every learned model against CoactDetect, at home
+
+All 15 registered learned models, fitted and scored on the same 24 simulated home recordings
+(32 ROIs, 4 folds of 6), each at two torch training seeds, paired fold by fold against CoactDetect
+on the same folds. Built by [`tools/table_learned_vs_coact.py`](../../../tools/table_learned_vs_coact.py);
+the numbers are in [`learned_vs_coact.json`](learned_vs_coact.json) and the table in
+[`learned_vs_coact.md`](learned_vs_coact.md).
+
+| model | F1, seed 0 | F1, seed 1 | − CoactDetect, seed 0 | − CoactDetect, seed 1 | − CoactDetect, seed average | probe, per hour | quiet field, per hour | learning rate | parameters | training s per fold |
+|---|---|---|---|---|---|---|---|---|---|---|
+| tube | 0.656 | 0.635 | +0.011 (*t* +1.4) | -0.010 (*t* -0.6) | +0.000 (*t* +0.0) | 125.5 | 0.3 | 0.01 | 1,149 | 8 |
+| tube_no_bypass | 0.639 | 0.669 | -0.006 (*t* -0.5) | +0.024 (*t* +1.8) | +0.009 (*t* +0.8) | 101.5 | 0.5 | 0.01 | 1,125 | 8 |
+| tube_guard | 0.648 | 0.663 | +0.003 (*t* +0.2) | +0.018 (*t* +1.9) | +0.010 (*t* +0.9) | 88.5 | 0.4 | 0.01 | 1,149 | 10 |
+| tube_ratio | 0.525 | 0.518 | -0.120 (*t* -10.2) | -0.127 (*t* -4.5) | -0.124 (*t* -7.7) | 0.0 | 3.4 | 0.01 | 1,149 | 12 |
+| tube_ratio_guard | 0.391 | 0.503 | -0.254 (*t* -5.1) | -0.142 (*t* -6.3) | -0.198 (*t* -7.4) | 0.0 | 24.3 | 0.01 | 1,149 | 11 |
+| gauge | 0.526 | 0.513 | -0.119 (*t* -3.9) | -0.133 (*t* -3.1) | -0.126 (*t* -4.7) | 112.0 | 76.8 | 0.01 | 1,125 | 31 |
+| line | 0.666 | 0.710 | +0.021 (*t* +0.9) | +0.065 (*t* +7.3) | +0.043 (*t* +3.9) | 8.5 | 0.6 | 0.01 | 1,305 | 61 |
+| line_length | 0.704 | 0.691 | +0.058 (*t* +3.5) | +0.046 (*t* +4.0) | +0.052 (*t* +4.5) | 16.5 | 0.6 | 0.01 | 1,233 | 62 |
+| chorus_line | 0.686 | 0.659 | +0.041 (*t* +3.6) | +0.014 (*t* +0.7) | +0.027 (*t* +2.2) | 4.5 | 0.1 | 0.01 | 1,497 | 90 |
+| chorus | 0.125 | 0.125 | -0.520 | -0.520 | -0.520 | 0.0 | 1.0 | 0.01 | 1,897 | 95 |
+| chorus_gain | 0.678 | 0.679 | +0.032 (*t* +2.0) | +0.033 (*t* +5.8) | +0.033 (*t* +3.3) | 2.5 | 0.3 | 0.01 | 1,898 | 112 |
+| **chorus_norm** | **0.741** | **0.756** | **+0.096 (*t* +6.7)** | **+0.111 (*t* +6.1)** | **+0.103 (*t* +6.5)** | 2.0 | 1.3 | 0.01 | 1,897 | 157 |
+| **chorus_gain_norm** | **0.737** | **0.722** | **+0.092 (*t* +8.2)** | **+0.077 (*t* +10.0)** | **+0.084 (*t* +10.2)** | 1.5 | 0.6 | 0.01 | 1,905 | 163 |
+| trace | 0.125 | 0.125 | -0.520 | -0.520 | -0.520 | 0.0 | 1.0 | 0.001 | 2,065 | 11 |
+| tiny | 0.125 | 0.125 | -0.520 | -0.520 | -0.520 | 0.0 | 1.0 | 0.001 | 2,393 | 84 |
+| CoactDetect | 0.645 | 0.645 | — | — | — | 5.5 | 0.5 | — | 0 | — |
+
+How to read the columns:
+
+- **− CoactDetect** is the model's F1 minus CoactDetect's, per fold, averaged over 4 folds, with a
+  paired *t* on 3 degrees of freedom. The seed-average column pairs the mean of the two seeds' F1 in
+  each fold. CoactDetect has no training seed, so its row repeats. For `chorus`, `trace` and `tiny`,
+  which sit at F1 0.125 in every fold, the *t* is arithmetic on a constant and is left out.
+- **probe** is busy-window false alarms per hour of busy window: every recording carries 300 s where
+  every ROI fires at 0.06 Hz with nothing planted, and a fold holds 30 minutes of it. From seed 0.
+- **quiet field** is false alarms per hour on null twins of the held-out recordings with nothing
+  planted, at 0.25 times the background rate. From seed 0.
+- **training s per fold** was measured with 6 to 10 runs sharing the machine, so it ranks models
+  but overstates what one run alone takes.
+- `trace` and `tiny` train at 1e-3, the rate they have always run at; every other model at 1e-2.
+
+What the table says:
+
+- **Two learned models clearly beat CoactDetect at home, and both are repaired choruses.** chorus_norm
+  by 0.103 F1 on the seed average (*t* 6.5) and chorus_gain_norm by 0.084 (*t* 10.2), each ahead at
+  both seeds and with fewer busy-window false alarms than CoactDetect (2.0 and 1.5 per hour against
+  5.5). Both standardise each cell's encoder output over time.
+- **`line_length` and `line` beat it by less**, 0.052 and 0.043 on the seed average, and `line` moved
+  0.044 between seeds. chorus_gain (+0.033) and chorus_line (+0.027) are smaller again.
+- **The tube family ties CoactDetect on F1** (`tube`, `tube_no_bypass`, `tube_guard` within 0.01)
+  and fires 16 to 23 times as often in the busy window. The ratio tubes and gauge are 0.12 to 0.20
+  below it.
+- **`chorus`, `trace` and `tiny` do not train**, and for `chorus` the cause is measured
+  ([`why_chorus.txt`](why_chorus.txt)). `trace` and `tiny` were not diagnosed here.
 
 ## What ran
 

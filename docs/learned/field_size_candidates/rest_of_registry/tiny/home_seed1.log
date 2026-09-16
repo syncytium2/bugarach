@@ -1,0 +1,10 @@
+data set: 24 recordings, 4 folds (6 each)
+  1410 recording-minutes total
+src/bugarach/learn/train.py:221: RuntimeWarning: threshold 0.0001 sits at the edge of the searched grid [0.0001, 0.9999] — the search was still climbing when it stopped, so this is not an operating point. Widen it.
+  thr, gap = pick_threshold(model, make_recording, dt=dt, seed=seed,
+  tiny    fold 0: F1 0.125  thr 0.0001  train 85.1s  detect 0.74s
+  tiny    fold 1: F1 0.125  thr 0.0001  train 82.1s  detect 0.72s
+  tiny    fold 2: F1 0.125  thr 0.0001  train 79.4s  detect 0.68s
+  tiny    fold 3: F1 0.125  thr 0.0001  train 74.0s  detect 0.69s
+
+wrote docs/learned/field_size_candidates/rest_of_registry/tiny/bakeoff_seed1.json

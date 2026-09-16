@@ -1,0 +1,8 @@
+data set: 24 recordings, 4 folds (6 each)
+  1410 recording-minutes total
+  line_length fold 0: F1 0.740  thr 0.9948  train 68.3s  detect 0.46s
+  line_length fold 1: F1 0.732  thr 0.9908  train 60.5s  detect 0.45s
+  line_length fold 2: F1 0.632  thr 0.9716  train 60.6s  detect 0.47s
+  line_length fold 3: F1 0.710  thr 0.9908  train 60.3s  detect 0.58s
+
+wrote docs/learned/field_size_candidates/rest_of_registry/line_length/bakeoff.json
