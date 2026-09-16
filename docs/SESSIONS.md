@@ -2407,7 +2407,10 @@ session's work is not a sweep.
 - **Writes:** `field_size_candidates.png` and `field_size_candidates.json` from
   `tools/compare_field_size_candidates.py` (branch `eval-field-size-candidates`), one pair per training
   seed, plus copies placed with `tools/show.py`.
-- **Released:** at session end, or earlier when the figures are final.
+- **Released:** 2026-09-16, at session end; holds nothing. Written: `seed0/`, `seed1/` and
+  `chorus-repairs-seed0/` (each `field_size_candidates.png` and `.json`), and `learned_vs_coact.md`
+  and `.json` at the folder's top. The workstation's tuning run was told to claim its own folder
+  (`HANDOFF-workstation-tuning.md` on `eval-field-size-candidates`), not this one.
 
 ### darkroom/bugarach/2026-09-16-best-parameters/ — the gated retune of all six operating points (065/best-parameters)
 - **Claimed:** 2026-09-16, before the first write. A new folder, so nothing existing is overwritten.
