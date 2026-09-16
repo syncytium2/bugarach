@@ -1,0 +1,31 @@
+data set: 24 recordings, 4 folds (6 each)
+  1410 recording-minutes total
+  chorus_gain_norm fold 0: F1 0.670  thr 0.9908  train 197.9s  detect 1.92s
+  chorus_gain_norm fold 1: F1 0.697  thr 0.9500  train 210.8s  detect 1.85s
+  chorus_gain_norm fold 2: F1 0.677  thr 0.9838  train 209.9s  detect 1.94s
+  chorus_gain_norm fold 3: F1 0.759  thr 0.9838  train 219.5s  detect 1.81s
+
+wrote ~/runs/gate1/step3b_chorus_gain_norm_seed0_rerun/bakeoff.json
+	Command being timed: "~/bugarach/.venv/bin/python -u tools/fair_bakeoff.py --spec docs/learned/generator_spec.json --seeds-per-fold 6 --null-rates --out ~/runs/gate1/step3b_chorus_gain_norm_seed0_rerun --skip-hand-written --learned chorus_gain_norm --train-seed 0"
+	User time (seconds): 620.27
+	System time (seconds): 251.71
+	Percent of CPU this job got: 100%
+	Elapsed (wall clock) time (h:mm:ss or m:ss): 14:29.33
+	Average shared text size (kbytes): 0
+	Average unshared data size (kbytes): 0
+	Average stack size (kbytes): 0
+	Average total size (kbytes): 0
+	Maximum resident set size (kbytes): 753880
+	Average resident set size (kbytes): 0
+	Major (requiring I/O) page faults: 189
+	Minor (reclaiming a frame) page faults: 237913626
+	Voluntary context switches: 2751
+	Involuntary context switches: 2944
+	Swaps: 0
+	File system inputs: 771920
+	File system outputs: 56
+	Socket messages sent: 0
+	Socket messages received: 0
+	Signals delivered: 0
+	Page size (bytes): 4096
+	Exit status: 0

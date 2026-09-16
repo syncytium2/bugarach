@@ -6,17 +6,17 @@
 
 Run 2026-09-16 on the workstation (WSMIP064) by the session that holds branch `tune-learned-vs-coact`.
 
-## Where Gate 1 stands: stopped in step 3, on `chorus_gain_norm`
+## Where Gate 1 stands: step 3's stop explained, `line_length` still to run
 
 | step | result |
 |---|---|
 | 1, at `7fc052d` | Six hand-written detectors exact. `tube` missed 0.02 F1 by 0.0012 on one fold; **Tony ruled it a training difference between machines, not a defect.** |
 | 2, at the tip | `tube` identical to step 1. CoactDetect, LoCo and SPIKE-synch still exact against the Mac; locust, rate+context and binned SCE differ, each for a known change. See [*Step 2*](#step-2-this-machines-baseline-at-the-tip). |
 | 2, redone on sliding CoactDetect and LoCo | **The baseline this run uses** (Tony: *"use sliding versions. redo step 2"*). The other four hand-written detectors and `tube` equal the binned step 2 exactly. Sliding CoactDetect scores mean F1 0.681 and LoCo 0.687, against 0.645 and 0.653 binned. See [*Step 2, redone*](#step-2-redone-on-sliding-coactdetect-and-loco). |
-| 3, at the tip | `chorus_norm` inside the stop. **`chorus_gain_norm` fired the stop**: on folds 0 and 1 it is further from both Mac seeds than the Mac's own seeds are from each other. `line_length` did not run. See [*Step 3*](#step-3-lone-fit-timings-and-the-stop). |
+| 3, at the tip | `chorus_norm` inside the stop. **`chorus_gain_norm` fired the stop** on folds 0 and 1 at seed 0. **Rerun:** deterministic; seed 1 passes; this machine's seeds differ by up to 0.078 F1 against the Mac's 0.032, and seed-averaged the machines agree within 0.007 F1, so seed 0 was a low draw. `line_length` did not run. See [*Step 3*](#step-3-lone-fit-timings-and-the-stop). |
 
-**What is needed:** a ruling on the `chorus_gain_norm` stop. The sections below say what is known about
-it and what is not.
+**What is needed:** a ruling to lift the `chorus_gain_norm` stop and run `line_length`, and a decision on
+whether tuning at one training seed is enough (see [*The reruns*](#the-reruns-deterministic-and-a-low-draw)).
 
 ## Step 1: result and ruling
 
@@ -259,11 +259,48 @@ differ from the Mac's seed 0 on 3 of 4 folds, and it stays inside the stop.
 **Not known:**
 - **Whether it is this machine's floats or the Mac's uncommitted changes.** Both Mac files come from
   working trees with uncommitted changes, and neither records a torch version.
-- **Whether it is deterministic here.** `tube` was; `chorus_gain_norm` has not been rerun (about 14
-  minutes).
-- **Whether it is one unlucky draw.** A second training seed here would say whether this machine's
-  seed-to-seed spread for `chorus_gain_norm` is wider than the Mac's two seeds suggest; two seeds are a
-  thin estimate of a spread.
+- ~~Whether it is deterministic here~~ and ~~whether it is one unlucky draw~~: both answered by the
+  reruns below.
+
+### The reruns: deterministic, and a low draw
+
+Tony, 2026-09-16, on the recommendation to rerun before going on: *"do it"*. At `e823335`, one process
+at a time, nothing else running:
+[`step3b_chorus_gain_norm_seed0_rerun/`](step3b_chorus_gain_norm_seed0_rerun/bakeoff.json) (training seed
+0 again, 14 min 30 s, [log](step3b_chorus_gain_norm_seed0_rerun.log)) and
+[`step3c_chorus_gain_norm_seed1/`](step3c_chorus_gain_norm_seed1/bakeoff_seed1.json) (training seed 1,
+14 min 57 s, [log](step3c_chorus_gain_norm_seed1.log)).
+
+- **Deterministic.** Seed 0 again equals step 3 on every result field, every fold
+  ([`compare_step3b_seed0_rerun_vs_step3.txt`](compare_step3b_seed0_rerun_vs_step3.txt)).
+- **Seed 1 passes the stop.** Every fold is within 0.0294 F1 of one Mac seed or the other
+  ([`check_step3_chorus_gain_norm_seed1.txt`](check_step3_chorus_gain_norm_seed1.txt)).
+- **This machine's seeds are further apart than the Mac's.** Its largest per-fold seed-to-seed gap is
+  **0.0779 F1**, against the Mac's 0.0316 F1. The Mac's two seeds understated the spread, and seed 0 here
+  is a low draw inside it.
+- **Seed-averaged, the two machines agree within 0.007 F1**: 0.7226 here, 0.7296 on the Mac.
+
+**Table 7.** `chorus_gain_norm` per fold, both training seeds, both machines.
+
+| fold | F1, workstation seed 0 | F1, workstation seed 1 | seed 1 − seed 0, workstation | F1, Mac seed 0 | F1, Mac seed 1 | seed 1 − seed 0, Mac | threshold, workstation seed 1 / Mac seed 1 |
+|---|---|---|---|---|---|---|---|
+| 0 | 0.6703 | 0.7373 | +0.0670 | 0.7256 | 0.7203 | −0.0052 | 0.9838 / 0.9716 |
+| 1 | 0.6975 | 0.7753 | **+0.0779** | 0.7545 | 0.7624 | +0.0078 | 0.9500 / 0.9838 |
+| 2 | 0.6772 | 0.7179 | +0.0408 | 0.7193 | 0.6885 | −0.0308 | 0.9838 / 0.9838 |
+| 3 | 0.7589 | 0.7464 | −0.0125 | 0.7488 | 0.7172 | −0.0316 | 0.9948 / 0.9838 |
+| mean | 0.7010 | 0.7442 | | 0.7371 | 0.7221 | | |
+
+**What it means for the stop.** The stop measured distance in units of the Mac's seed-to-seed gap, and
+for `chorus_gain_norm` two Mac seeds put that unit at 0.0316 F1 when this machine shows it can be at
+least 0.078 F1. The stop fired on a real low draw, not on a defect. Against sliding CoactDetect (step 2,
+redone), `chorus_gain_norm` seed-averaged leads by +0.0435, +0.0142, +0.0215 and +0.0860 F1 per fold,
+mean **+0.0413 F1**; seed 0 alone had put it at +0.020.
+
+**What it means for the tuning design, flagged rather than decided.** The handoff tunes at training seed
+0 only. For `chorus_gain_norm`, one seed moves a fold by up to 0.078 F1, which is likely larger than the
+differences between many of the 24 configurations. A selection made at one seed may then be choosing
+seed luck as much as configuration. Nothing in Gate 1 measures configuration differences, so this is a
+question for the design, not a finding.
 
 ## Timing: this machine is slower per fit than the Mac
 

@@ -1,0 +1,6 @@
+chorus_gain_norm   fold 0: F1 0.6703 vs 0.6703 (diff +0.0000)  threshold 0.9908 vs 0.9908  train 197.9s vs 185.3s  other fields differing: 0
+chorus_gain_norm   fold 1: F1 0.6975 vs 0.6975 (diff +0.0000)  threshold 0.95 vs 0.95  train 210.8s vs 211.1s  other fields differing: 0
+chorus_gain_norm   fold 2: F1 0.6772 vs 0.6772 (diff +0.0000)  threshold 0.9838 vs 0.9838  train 209.9s vs 208.2s  other fields differing: 0
+chorus_gain_norm   fold 3: F1 0.7589 vs 0.7589 (diff +0.0000)  threshold 0.9838 vs 0.9838  train 219.5s vs 211.3s  other fields differing: 0
+chorus_gain_norm   largest |F1 diff| 0.0000 -> within 0.0
+ALL MATCH

@@ -640,8 +640,14 @@ binned SCE, SPIKE-synch and `tube` equal the binned step 2 exactly; sliding Coac
 deterministic and score mean F1 0.681 and 0.687 (binned 0.645 and 0.653), calibrating in 0.46 and 0.28
 times binned's time. Untuned, against sliding CoactDetect, `chorus_norm` leads by +0.061 F1 and
 `chorus_gain_norm` by +0.020 on this machine.
+**The `chorus_gain_norm` stop, rerun** (Tony: *"do it"*): seed 0 again is identical, so it is
+deterministic; seed 1 passes the stop on every fold; this machine's seeds differ per fold by up to 0.0779
+F1 against the Mac's 0.0316, and seed-averaged the machines agree within 0.007 F1 (0.7226 here, 0.7296
+on the Mac). Seed 0 was a low draw, not a defect. Seed-averaged, `chorus_gain_norm` leads sliding
+CoactDetect by +0.041 F1. ⚠ **Flagged for the design, not decided:** one seed moves `chorus_gain_norm` by
+up to 0.078 F1 on a fold, likely more than many configurations differ, and this plan tunes at seed 0 only.
 All of it: [`docs/learned/tuned_vs_coact/gate1/README.md`](docs/learned/tuned_vs_coact/gate1/README.md).
-**Next:** a ruling on the `chorus_gain_norm` stop; then `line_length`, the final estimate against the
+**Next:** a ruling to lift the stop, and on tuning at one seed; then `line_length`, the final estimate against the
 9-hour limit, a check of the home spec's event spacing against the 240 s context, the tool and
 `--quick`, the pre-launch checks, and launch.
 `tools/compare_bakeoff_runs.py` needs a test before #596's branch merges.
