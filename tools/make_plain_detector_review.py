@@ -985,9 +985,9 @@ def fig_orient(W):
     rz.raster(_by_activity(c["trains"]), width=2.0)
     rz.xaxis_time(offset=top, target=2, label="seconds")
     lane.span(z[0], z[1], row_y=58, row_h=3, color="#9a9a9a", min_px=4)
-    f.text(L, 516, "Each row is one cell. Each tick is one moment that cell brightened.", size=13,
+    f.text(L, 516, "Each row is one cell. Each tick is one calcium event in that cell.", size=13,
            color=MUTED)
-    f.text(L, 536, "Where a column of ticks lines up, many cells brightened together. ▼ marks each one.",
+    f.text(L, 536, "Where a column of ticks lines up, many cells had events together. ▼ marks each one.",
            size=13, color=MUTED)
     f.h = 556
     return f
@@ -1048,7 +1048,7 @@ def fig_chance(W):
         q.bars(_arr(c["t"]), _arr(c["y"]), color="#6d8fb3", width_frac=0.9)
         q.yaxis(nice_ticks(0, ymax, 3), grid=True)
         if key == "A":
-            q.ylabel("cells in each", lines=["cells that brightened", "in each 2 s bin"], dx=40)
+            q.ylabel("cells in each", lines=["cells with an event", "in each 2 s bin"], dx=40)
         q.xaxis_time(label="time in the recording")
         mx = int(np.nanmax(_arr(c["y"])))
         f.text(X + 390, 244, f"most in one bin: {mx} cells", size=12, anchor="end", color="#333")
@@ -1090,7 +1090,7 @@ def fig_chance_steps(W):
     X1, W1 = 60, 260
     f.step_badge(X1 + 8, 22, "1")
     f.text(X1 + 26, 27, "Count the recording", size=14, weight=600)
-    f.para(X1, 50, f"How many cells light up inside the 2-second bin being tested? Here: "
+    f.para(X1, 50, f"How many cells have an event inside the 2-second bin being tested? Here: "
                    f"{S['observed']} of 6.", width_chars=38, size=12, color=MUTED)
     lane = f.panel(X1, 96, W1, 14, (0, L), (0, 1), frame=False)
     lane.span(*bin, row_y=98, row_h=11, color="#9bb7d4", min_px=5)
@@ -1206,7 +1206,7 @@ def fig_shift_shuffle(W, numbers):
     n6 = numbers["sur_fast_n6"]
     groups = [("events landing in a 2-second bin their own cell already filled, per 1,000 events",
                [math.floor(v + 0.5) for v in (d["real"], d["shift"], d["shuffle"])], "{:.0f}", 120, 40),
-              ("share of 2-second bins where 6 or more cells brighten",
+              ("share of 2-second bins where 6 or more cells have an event",
                [100 * n6["real"], 100 * n6["shift"], 100 * n6["shuffle"]], "{:.2f}%", 2.0, 520)]
     for lab, vals, fmt, vmax, X in groups:
         f.text(X, Y + 22, lab, size=12, color=MUTED)
@@ -1235,18 +1235,18 @@ STEPS = {
              "Work out the average of that number over the {ctx:g} seconds around each moment.",
              "Set the bar at that average plus {ex:g} events per second.",
              "Call a coordinated event wherever the count goes over the bar."],
-    "coact": ["Cut time into {bin:g}-second bins. Count how many different cells light up in each.",
+    "coact": ["Cut time into {bin:g}-second bins. Count how many different cells have an event in each.",
               "For a bin with at least 3 cells, take the {ctx:g} seconds around it and make "
               "{ns} shifted copies (Figure 4).",
               "Set the bar well above what the copies give: their average plus 3.72 times their "
               "typical spread.",
               "Call the bin if the real count is over the bar."],
-    "loco": ["Cut time into {bin:g}-second bins. Count how many different cells light up in each.",
+    "loco": ["Cut time into {bin:g}-second bins. Count how many different cells have an event in each.",
              "Every {step:g} seconds, make {ns} shifted copies of the minute before and of the minute after.",
              "On each side, find the count that only 1 copied bin in 1,000 goes over. "
              "The bar is the higher of the two sides.",
              "Call a bin if its count is over the bar and at least 3 cells take part."],
-    "sce": ["Cut time into {bin:g}-second bins. Count how many different cells light up in each.",
+    "sce": ["Cut time into {bin:g}-second bins. Count how many different cells have an event in each.",
             "Make {ns} shifted copies of the whole stretch being studied.",
             "Pool every bin from every copy. The bar is the count that only 1 bin in 100 goes over. "
             "It is one bar for the whole stretch.",
@@ -1257,7 +1257,7 @@ STEPS = {
                "in 100,000 goes over.",
                "Call each peak of the count that reaches the bar."],
     "sync": ["Give every event a score from 0 to 1: the share of the other cells that have an event "
-             "close to it. This part is a published measure (SPIKE-synchronization).",
+             "close to it. This part is a published measure (its authors call it “SPIKE-synchronization”).",
              "“Close” is judged from each cell's own gaps between its events, and is never more "
              "than {tau:g} seconds.",
              "Spread those per-event scores into a continuous line over time, by averaging the scores "
@@ -1507,15 +1507,15 @@ def fig_network(W):
     z = (ev["time"] - 3.0, ev["time"] + 3.0)
     boxes = [(20, 40), (350, 40), (680, 40), (20, 420), (350, 420), (680, 420)]
     titles = ["What goes in", f"Stretch each event to {T['widen_s']:g} s",
-              "Brightness: share of cells lit",
+              "The share of cells with an event",
               "Compare now with the seconds around it", "A small stack of layers",
               "The score, and the call"]
     words = ["The list of event times, as a raster: 1 where a cell has an event in a 0.1 s frame, 0 elsewhere.",
              "Each event is widened a little, so events a few frames apart can overlap.",
-             "At each frame, the share of cells that are lit. A coordinated event is a bright flash.",
-             "Four filters subtract the brightness over the surrounding seconds from the brightness right "
+             "At each frame, the share of cells with a calcium event. A coordinated event is a sudden jump in that share.",
+             "Four filters subtract that share over the surrounding seconds from the share right "
              "now. The widths of the filters were learned.",
-             f"Six layers of simple arithmetic combine the four comparisons and the brightness. Training "
+             f"Six layers of simple arithmetic combine the four comparisons and the share itself. Training "
              f"adjusted {T['n_params']:,} numbers in all.",
              f"A score from 0 to 1 for every frame. Where it passes the call level ({T['threshold']:.2f}), "
              f"the network makes a call."]
@@ -1540,7 +1540,7 @@ def fig_network(W):
                 f.rect(x0, 150 + PH - (i + 1) * rh + rh * 0.1, max(1.2, float(r2.px(t + T["dt"])) - x0), rh * 0.8,
                        fill=INK_T)
     r2.xaxis_time(target=3)
-    # 3 brightness
+    # 3 the share of cells with an event
     ta, ba = _arr(A["t"]), _arr(A["bright"])
     p3 = f.panel(700, 150, PW - 20, PH, A["win"], (0, 30))
     p3.curve(ta, ba, color=COLORS["tube"], width=1.1)
@@ -1585,7 +1585,7 @@ def fig_network(W):
         f.text(700 + PW - 20, Y - 4, "A · planted event, quiet cells" if key == "A" else
                "B · busy stretch, nothing planted", size=11, anchor="end", color=MUTED)
     # arrows between the stages
-    p3.ylabel("cells lit", dx=44)
+    p3.ylabel("cells with an event", dx=44)
     f.text(700, 146, "zoomed out to 60 s", size=11, color=MUTED)
     for (x1, y1, x2, y2) in ((315, 250, 360, 250), (645, 250, 690, 250),
                              (330, 600, 372, 600), (640, 600, 692, 600)):
@@ -1781,7 +1781,7 @@ def fig_count_rule(W):
     f.text(20, 26, "How the interval rule decides", size=16, weight=700)
     y = 56
     for i, s in enumerate((f"Slide a window {bw:g} seconds long along the recording.",
-                           "Wherever it sits, count how many different cells brighten inside it.",
+                           "Wherever it sits, count how many different cells have an event inside it.",
                            f"Wherever that count reaches {x} cells, call a coordinated event. Windows "
                            "that overlap make one call.",
                            "No copies are made. The bar is the same number in every recording.")):
@@ -1971,9 +1971,9 @@ def fig_count_published(W):
     # the figure could not tell which paper it meant (Tony, 2026-09-16: "what published 2026 paper?").
     f = Figure(1000, 460)
     for j, (key, title, ylim, ticks, ylab, rep) in enumerate((
-            ("mse_per_cell_h", "A · synchronized events per cell per hour", (0, 4), [0, 1, 2, 3, 4],
+            ("mse_per_cell_h", "A · “synchronized events” per cell per hour", (0, 4), [0, 1, 2, 3, 4],
              "events per cell per hour", e["mse"]),
-            ("cells_per", "B · cells in each synchronized event", (2, 4.5), [2, 3, 4], "cells in each event",
+            ("cells_per", "B · cells in each “synchronized event”", (2, 4.5), [2, 3, 4], "cells in each event",
              e["cells_per"]))):
         X, PW, PH = 90 + j * 470, 330, 290
         f.text(X, 24, title, size=13, weight=600)

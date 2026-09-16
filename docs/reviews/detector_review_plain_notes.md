@@ -660,3 +660,35 @@ calls.**
 Simulated-recording numbers under the interval rule (2 s): best bar 4 cells quiet (0.71, CoactDetect 0.74),
 6 busy (0.67, CoactDetect 0.67); the quiet bar on the busy background 0.43; at the best bars it calls 95% and
 87% of the empty busy stretch. Real-recording numbers are in the darkroom page.
+
+## 38. Figure 20's paper, its x-axis, and one vocabulary for events ⚠ RULE (2026-09-16)
+
+Three notes in a row.
+
+1. *"figure 20 what published 2026 paper does this discuss?"* — the figure and caption said only "the 2026
+   paper". Both now name **Eddleston, Morris & Herbison (2026)**, with title and DOI in the caption; the
+   lighter curve names its source (Han et al. 2023).
+2. *"the x-axis should be number of cells"* — it read "cells in view" on ticks at 4, 8, 13, 20, 29. Now
+   "number of cells", every 5.
+3. *"'a cell brightened 13.4 times an hour' this is not ok. 'a cell with 13.4 events per hour' is ok. remove
+   the word brighten and its relatives. at the beginning define a calcium event as an increase followed by a
+   decrease in brightness. use events instead of brightness"*, then *"use calcium event for individual
+   events in a cell, use coordinated event for coordinated calcium events. do not use 'synchronized' unless
+   another author uses that term, then use quotes"*.
+
+**Applied** across the template, the figure text in the builder, the learned-models companion and the
+darkroom's `real_prose.json` — about forty places. Section 1 now defines a calcium event as an increase
+followed by a decrease in one cell's brightness and says the document calls it a calcium event, or an event,
+from there on; the protein paragraph says GCaMP6f "gives off more light" instead of "is dim / bright". Herbison's
+and Moore's terms appear in quotes ("synchronized event", "synchronized episode"), as do "synchronous calcium
+event" (SCE), "SPIKE-synchronization" and "event synchronization". Paper titles are left as published.
+
+The replacements ran as one checked pass — every old string had to match exactly the expected number of
+times or nothing was written — so no occurrence was changed twice or silently missed.
+
+**Mechanized as SAP018**, scoped to the plain templates and their builder; rationale and limits in
+[`sapper_feedback/2026-09-16-calcium-event-vocabulary.md`](../sapper_feedback/2026-09-16-calcium-event-vocabulary.md).
+
+**A correction to pass on:** armory's first reply said `tools/lab_excluded.py` imports openpyxl the venv
+lacks. That file was deleted from main in 51c5586 (2026-08-20); armory was reading a stale mirror, and the
+summary given to Tony repeated the error.

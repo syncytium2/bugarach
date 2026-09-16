@@ -30,17 +30,17 @@
 </style>
 <main>
 <h1>Finding cells that act together</h1>
-<p class="lede">How six computer programs decide when many brain cells light up at the same time,
+<p class="lede">How six computer programs decide when many brain cells have calcium events at the same time,
 how we tested them, and why they sometimes disagree with your own eyes.</p>
 
 <div class="box">
 <h3>The short version</h3>
 <ul>
-  <li>The lab records brain cells through a microscope with a digital camera. A cell brightens whenever
-  the calcium inside it goes up. We want to find the moments when <b>many cells brighten together</b>.
+  <li>The lab records brain cells through a microscope with a digital camera. What it sees in each cell are
+  <b>calcium events</b>. We want to find the moments when <b>many cells have calcium events together</b>.
   Computer programs have to find those moments, because there are far too many recordings to go through
   by hand.</li>
-  <li>Cells brighten on their own as well, so some of them line up <b>just by chance</b>. Every program has
+  <li>Cells have calcium events on their own as well, so some of them line up <b>just by chance</b>. Every program has
   to separate real teamwork from chance lineups, and each program uses a different set of steps to do
   that.</li>
   <li>A real recording has no answer key: nobody knows for certain which moments are real. So we also
@@ -73,8 +73,8 @@ how we tested them, and why they sometimes disagree with your own eyes.</p>
 <h2 id="s1">{{SEC:records}}. What the lab records</h2>
 <figure>{{FIG:fig_orient}}
 <figcaption><b>Figure {{NUM:fig_orient}}. How to read a raster.</b> A: ten minutes of one real recording
-of {{T.orient_n_roi}} cells. Each row is one cell, and each tick is one moment that cell brightened. Where
-the ticks stack into a short up-and-down stripe, many cells brightened at nearly the same moment; a ▼
+of {{T.orient_n_roi}} cells. Each row is one cell, and each tick is one calcium event in that cell. Where
+the ticks stack into a short up-and-down stripe, many cells had calcium events at nearly the same moment; a ▼
 above the raster points down at each one our rule counts (Section {{SEC:eye}}), {{T.orient_n_stripes}} of
 them in these ten minutes, the largest joined by {{T.orient_biggest}} of the {{T.orient_n_roi}} cells.
 B: twenty seconds around one of them, so a single tick is visible.</figcaption></figure>
@@ -85,20 +85,21 @@ of the brain that controls hormones, and they help run the body's reproductive s
 (<a href="https://doi.org/10.1210/en.2010-0022">Lehman and others, 2010</a>). The lab keeps thin slices
 of mouse brain alive in a dish and records them through a microscope with a digital camera, about ten
 pictures a second.</p>
-<p>What makes a cell visible? These mice carry an extra gene, so the cells build a glowing protein of
-their own called <b>GCaMP6f</b>. Nothing is added to them; they make it themselves. The protein is dim
-on its own and bright when <b>calcium</b> is around it. So when the amount of calcium inside a cell goes
-up, that cell brightens for a moment and then fades again as the calcium clears.</p>
-<p>That brief brightening is a <b>calcium event</b>, and it is the whole of what we observe. It says the
+<p>What makes a cell visible? These mice carry an extra gene, so the cells build a fluorescent protein of
+their own called <b>GCaMP6f</b>. Nothing is added to them; they make it themselves. The protein gives off
+more light when <b>calcium</b> is around it, so the camera sees each cell's brightness follow the calcium
+inside it.</p>
+<p>A <b>calcium event</b> is an increase followed by a decrease in one cell's brightness. It is the whole of
+what we observe, and from here on this document calls it a calcium event, or just an event. It says the
 calcium inside that cell went up. It does not say why, and this document does not assume why — which
 matters later, because one of the drugs in Section {{SEC:real}} blocks the electrical signals that are
 usually behind a calcium rise, and the events carry on regardless.</p>
-<p>A separate program goes through the pictures, finds each brightening and writes down the moment it
+<p>A separate program goes through the pictures, finds each calcium event and writes down the moment it
 happened. That program keeps two lists: one for <b>brief events</b> and one for much <b>longer
 events</b>.</p>
 <p>Those lists of moments are all the programs in this document ever see. None of them looks at the
 pictures. We draw a list as a <b>raster</b>, the picture above: one row per cell, one tick per event.
-A short stripe in a raster means many cells lit up at nearly the same moment. That is a
+A short stripe in a raster means many cells had calcium events at nearly the same moment. That is a
 <b>coordinated event</b>, and finding coordinated events is the whole job.</p>
 
 <h2 id="s2">{{SEC:problem}}. The problem</h2>
@@ -127,16 +128,16 @@ do know, and where the programs and a person's eye disagree.</p>
 <h2 id="s3">{{SEC:chance}}. Lineups happen by chance</h2>
 <figure>{{FIG:fig_chance}}
 <figcaption><b>Figure {{NUM:fig_chance}}. Busy cells line up by chance.</b> Two minutes of a simulated
-recording, so we know what was put in. The bars below each raster count how many cells light up in each
+recording, so we know what was put in. The bars below each raster count how many cells have a calcium event in each
 2-second bin. A: quiet cells, with one real coordinated event (▼). B: a stretch of the same
 recording where every cell was made busier and <b>nothing was put in</b>.</figcaption></figure>
-<p>Why is finding coordinated events hard? Because cells brighten on their own all the time, and when
-they do it often, some of them land close together by luck alone.</p>
+<p>Why is finding coordinated events hard? Because cells have calcium events on their own all the time, and when
+they have them often, some of them land close together by luck alone.</p>
 <p>To count that, cut the recording into short stretches of equal length — a <b>bin</b> is one of those
-stretches, 2 seconds long in Figure {{NUM:fig_chance}} — and count how many different cells brightened
+stretches, 2 seconds long in Figure {{NUM:fig_chance}} — and count how many different cells had an event
 inside each one. Most programs in this document work from a count like that, and they differ in how long
 they make their bins. In Figure {{NUM:fig_chance}}B nothing at all was put in, and yet {{T.busy_max}}
-cells still brightened inside the same 2-second bin.</p>
+cells still had events inside the same 2-second bin.</p>
 <p>So counting cells is not enough. A program has to ask a harder question: <b>are more cells lining up
 right now than chance alone would produce?</b> To answer it, the program needs to know what chance
 looks like in this particular recording.</p>
@@ -145,7 +146,7 @@ looks like in this particular recording.</p>
 <figure>{{FIG:fig_chance_steps}}
 <figcaption><b>Figure {{NUM:fig_chance_steps}}. How shifted copies measure chance, in four steps.</b>
 A small simulated example: {{T.steps_cells}} cells over one minute, with one {{T.steps_bin}}-second bin
-picked out for testing. {{T.steps_observed}} of the {{T.steps_cells}} cells brighten inside that bin.
+picked out for testing. {{T.steps_observed}} of the {{T.steps_cells}} cells have an event inside that bin.
 Every event is drawn as its number in its own cell's order, so a row can be followed when it slides, and
 the slide given to each row is printed beside it. Of {{T.steps_copies}} shifted copies, {{T.steps_share}}
 reach {{T.steps_observed}} cells in that bin. The simulated recording is small enough to read; the
@@ -154,7 +155,7 @@ programs do the same thing on recordings of {{T.n_cells_sim}} cells and more.</f
 shows. The program makes <b>shifted copies</b> of the recording. To make one copy, it slides each cell's
 whole row of events left or right by that cell's own random amount; events pushed off one end come back
 in at the other end.</p>
-<p>A shifted copy keeps everything about each cell on its own: how often that cell brightens, and whether
+<p>A shifted copy keeps everything about each cell on its own: how many events that cell has, and whether
 its events come in bursts or at a steady beat. What a shift destroys is <b>the timing between cells</b>.
 So a lineup that survives in a copy is, as far as the shift can tell, a lineup that chance can produce.
 Counting lineups in a hundred copies tells the program how high a real count has to be before it means
@@ -218,9 +219,9 @@ difference that matters most is <b>where each program looks to learn what chance
 <table>
 <tr><th>algorithm</th><th>what it counts</th><th>where it learns what chance looks like</th><th>where it comes from</th></tr>
 <tr><td>rate+context</td><td>events per second, from all cells added up</td><td>the average of the nearby minute (no copies)</td><td>written in this lab by R. DeFazio</td></tr>
-<tr><td>CoactDetect</td><td>cells lit in each 2-second bin</td><td>shifted copies of the nearby minute</td><td>R. DeFazio's design, built for this project</td></tr>
-<tr><td>LoCo</td><td>cells lit in each 1-second bin</td><td>shifted copies of the minute before and the minute after</td><td>R. DeFazio's design, built for this project</td></tr>
-<tr><td>binned SCE</td><td>cells lit in each 10-second bin</td><td>shifted copies of the whole stretch being studied</td><td>the rule published by Cossart, Aronov and Yuste (2003); written here</td></tr>
+<tr><td>CoactDetect</td><td>cells with an event in each 2-second bin</td><td>shifted copies of the nearby minute</td><td>R. DeFazio's design, built for this project</td></tr>
+<tr><td>LoCo</td><td>cells with an event in each 1-second bin</td><td>shifted copies of the minute before and the minute after</td><td>R. DeFazio's design, built for this project</td></tr>
+<tr><td>binned SCE</td><td>cells with an event in each 10-second bin</td><td>shifted copies of the whole stretch being studied</td><td>the rule published by Cossart, Aronov and Yuste (2003); written here</td></tr>
 <tr><td>locust</td><td>cells "switched on" after each of their events</td><td>shifted copies of the whole recording</td><td>the coordinated-event stage of CICADA, from the Cossart lab, modified here</td></tr>
 <tr><td>SPIKE-synch</td><td>how close each event is to events in other cells</td><td>no copies: each cell's own gaps between events</td><td>Kreuz and colleagues' published measure, with R. DeFazio's peak-finding step added to turn its scores into calls</td></tr>
 </table>
@@ -228,7 +229,7 @@ difference that matters most is <b>where each program looks to learn what chance
 through slowly.</p>
 <p><b>CoactDetect, LoCo and rate+context work from the surrounding seconds.</b> Each of them measures
 chance from the minute around the moment it is testing — by making shifted copies of that minute, or, for
-rate+context, by averaging it. When the cells in that minute brighten more often, those copies produce
+rate+context, by averaging it. When the cells in that minute have events more often, those copies produce
 bigger counts, and the count a bin has to beat is computed from them, so it goes up as well. A chance
 lineup inside a busy stretch therefore fails to beat it. The cost is that a small real coordinated event
 in the same stretch has to beat that raised count too, and often cannot.</p>
@@ -264,7 +265,7 @@ side of the real event (the up-and-down scale grows ten times at each step).</fi
 
 <h3>binned SCE</h3>
 <figure>{{FIG:fig_alg_sce}}
-<figcaption><b>Figure {{NUM:fig_alg_sce}}. binned SCE</b> ("SCE" stands for synchronous calcium event).
+<figcaption><b>Figure {{NUM:fig_alg_sce}}. binned SCE</b> ("SCE" stands for "synchronous calcium event", its authors' name for it).
 It makes {{T.sce_ns}} shifted copies of the whole stretch and sets one bar for all of it. A: the real
 event shares its 10-second bin with other events. Its count equals the bar but does not go over,
 so it is missed. B: the bar was set mostly by quiet minutes, so the busy minute passes it again and
@@ -274,7 +275,7 @@ again.</figcaption></figure>
 <figure>{{FIG:fig_alg_cicada}}
 <figcaption><b>Figure {{NUM:fig_alg_cicada}}. locust.</b> ⚠ Each event switches its cell "on" for a fixed
 {{T.cicada_on}} second here. locust is meant to be a duration-based program: the lab measures how long
-each brightening lasts, and the program can hold each cell on for that cell's own measured time. Every
+each calcium event lasts, and the program can hold each cell on for that cell's own measured time. Every
 number in this document was produced with the fixed second instead, and the bar was tuned to match it.
 Which of the two should stand is an open question for the project. The count is how many cells are on at once. The bar comes from {{T.cicada_ns}}
 shifted copies of the whole recording and is set so that only 1 frame in 100,000 goes over. A: the real
@@ -334,7 +335,7 @@ saw would find all {{T.n_planted}} planted events and look excellent, while tell
 whether it can separate coordination from coincidence. Decoys take that route away: they look exactly
 like the real thing, so calling everything now costs as many wrong answers as it buys right ones.</p>
 <p>They also stand for something real. In a live recording some lineups genuinely are coincidence — cells
-that happen to go off together, or that share a slow drift in how often they brighten, with nothing
+that happen to go off together, or that share a slow drift in how often they have events, with nothing
 coordinating them. A person reading the raster would not count those. Decoys put that same population of
 "real lineups that should not count" into the test.</p>
 <p>The price is worth stating plainly: <b>a program that sees only event times cannot tell a decoy from a
@@ -460,21 +461,21 @@ coordinated events planted <i>inside</i> the busy stretch.</p>
 <figure>{{FIG:fig_count_rule}}
 <figcaption><b>Figure {{NUM:fig_count_rule}}. The interval rule.</b> Left: its steps. A and B: the same two
 simulated minutes as Figures {{NUM:fig_alg_rate}} to {{NUM:fig_alg_sync}}. Above each raster: the planted
-event (▼) and the rule's calls. Below: at each moment, how many different cells brighten in the
+event (▼) and the rule's calls. Below: at each moment, how many different cells have an event in the
 {{T.cnt_w}} seconds that follow, and the bar of {{T.cnt_one_bar}} cells — the one bar that scored best
 across both simulated backgrounds (Figure {{NUM:fig_count_bar}}).</figcaption></figure>
 <p>Every program in this document does a lot of work to decide what chance looks like. There is a much
-simpler rule: call a coordinated event whenever at least a set number of cells brighten within a short
-interval of each other (Figure {{NUM:fig_count_rule}}). Each cell counts once, however many times it
-brightens inside the interval. No copies, and no chance. So why not use it?</p>
+simpler rule: call a coordinated event whenever at least a set number of cells have calcium events within a short
+interval of each other (Figure {{NUM:fig_count_rule}}). Each cell counts once, however many events it
+has inside the interval. No copies, and no chance. So why not use it?</p>
 <p>Labs that study these same cells use rules like it. Allan Herbison's lab, recording brain slices as this
-lab does, calls a <b>synchronized event</b> whenever the event peaks of at least 2 cells fall within 10
+lab does, calls a <b>"synchronized event"</b> whenever the event peaks of at least 2 cells fall within 10
 seconds of each other, and adds any further cell whose peak falls within 10 seconds of the one before
 (<a href="https://doi.org/10.1016/j.celrep.2022.111914">Han and others, 2023</a>). The same rule, still at 2
 cells, is used in the lab's slice papers through 2026
 (<a href="https://doi.org/10.1210/endocr/bqad167">Morris and Herbison, 2023</a>;
 <a href="https://doi.org/10.1111/jne.70170">Eddleston and others, 2026</a>). Aleisha Moore and coworkers,
-recording these cells in living mice, called an episode synchronized when every recorded cell brightened
+recording these cells in living mice, called an episode a "synchronized episode" when every recorded cell had a calcium event
 (<a href="https://doi.org/10.1073/pnas.2117767119">Moore, Coolen and Lehman, 2022</a>). None of these
 papers checks its rule against chance. This section does, with an interval of {{T.cnt_w}} seconds — the
 length CoactDetect counts in — and with Herbison's rule as published.</p>
@@ -544,25 +545,25 @@ chance reaches less than once every 10 minutes (counting separate {{T.cnt_w}}-se
 simulated busy stretch is, busier than {{T.cnt_block_slower}} of the {{T.cnt_n_real}} real
 recordings.</figcaption></figure>
 <p>Real recordings differ far more than the two simulated backgrounds do. Across the lab's
-{{T.cnt_n_real}} untreated recordings, a cell brightened between {{T.cnt_rate_min}} and
-{{T.cnt_rate_max}} times a minute on average — between {{T.cnt_rate_p10}} and {{T.cnt_rate_p90}} times in
+{{T.cnt_n_real}} untreated recordings, cells had between {{T.cnt_rate_min}} and
+{{T.cnt_rate_max}} events per cell per minute on average — between {{T.cnt_rate_p10}} and {{T.cnt_rate_p90}} in
 eight recordings out of ten — and a recording held {{T.cnt_cells_min}} to {{T.cnt_cells_max}} cells. The
 bar that holds chance to less than once in 10 minutes climbs with how busy the cells are, from
 {{T.cnt_need_min}} cells to {{T.cnt_need_max}} (Figure {{NUM:fig_count_slices}}). A bar of
 {{T.cnt_one_bar}} cells lets chance through in {{T.cnt_n_loose}} of the {{T.cnt_n_real}} recordings — in
 one of them {{T.cnt_loose_max}} times every 10 minutes — while in {{T.cnt_n_strict}} recordings a bar of 3
 cells would already have been enough.</p>
-<p>That is the real trouble with a fixed bar. A drug that makes cells brighten more often moves a recording
+<p>That is the real trouble with a fixed bar. A drug that gives cells more calcium events moves a recording
 to the right in Figure {{NUM:fig_count_slices}}. With a fixed bar, that recording then shows more
 "coordinated events" even if nothing about how the cells work together has changed.</p>
 
 <h3>At the published rate, what does chance give?</h3>
 <figure>{{FIG:fig_count_published}}
 <figcaption><b>Figure {{NUM:fig_count_published}}. The published rule, on cells that fire
-independently.</b> Simulated cells that each brighten at random, at a steady rate, with no link to one
+independently.</b> Simulated cells that each have calcium events at random, at a steady rate, with no link to one
 another, run through Herbison's rule (at least 2 cells, each peak within 10 seconds of the one before), for
 {{T.pub_cells_lo}} to {{T.pub_cells_hi}} cells, {{T.pub_hours}} simulated hours for each number of cells.
-A: synchronized events per cell per hour — the number of events divided by the number of cells and hours,
+A: "synchronized events" per cell per hour — the number of those events divided by the number of cells and hours,
 the way the papers count it. B: the average number of cells in each event. Shaded: the
 {{T.pub_field_lo}} to {{T.pub_field_hi}} cells reported by Eddleston, Morris and Herbison (2026),
 <i>GABA receptor modulation of arcuate kisspeptin neuron bursting and synchronization activity in female
@@ -570,14 +571,14 @@ mice</i>, <a href="https://doi.org/10.1111/jne.70170">J Neuroendocrinol 38:e7017
 averages that paper reports. The dark curve uses that paper's own event rate, so it is the one to read
 against the dashed line.</figcaption></figure>
 <p>None of these papers compares its rule with chance, so we made the simplest version of that comparison
-(Figure {{NUM:fig_count_published}}). In the most recent paper, a cell brightened {{T.pub_rep_rate}} times
-an hour, and the paper reports {{T.pub_rep_mse}} synchronized events per cell per hour, each joined by
+(Figure {{NUM:fig_count_published}}). In the most recent paper, cells had {{T.pub_rep_rate}} calcium events
+per cell per hour, and the paper reports {{T.pub_rep_mse}} "synchronized events" per cell per hour, each joined by
 {{T.pub_rep_cells}} cells ({{T.pub_rep_share}}% of the cells in view) on average
 (<a href="https://doi.org/10.1111/jne.70170">Eddleston and others, 2026</a>). Cells that fire completely
 independently at that rate, in a field of {{T.pub_field}} cells — about the average those two numbers
 imply — meet the rule {{T.pub_chance_mse}} times per cell per hour, with {{T.pub_chance_cells}} cells in
 each.</p>
-<p>So at that rate, independent cells alone produce about as many synchronized events as the paper reports,
+<p>So at that rate, independent cells alone produce about as many "synchronized events" as the paper reports,
 but smaller ones: the events the paper found hold more cells than chance events do. Real cells do not fire
 at a steady rate, and none of the paper's data went into this, so it is not a verdict on its findings. It
 shows why a count needs a chance comparison beside it: without one, there is no way to tell how much of the
@@ -700,7 +701,7 @@ raster would call those stripes.</p>
   <a href="https://doi.org/10.1038/nature01614">doi.org/10.1038/nature01614</a>, which used the shuffling
   method of Mao B.Q. and others (2001), <i>Neuron</i> 32:883–898,
   <a href="https://doi.org/10.1016/S0896-6273(01)00518-9">doi.org/10.1016/S0896-6273(01)00518-9</a>.
-  Synchronous calcium events: Malvache A. and others (2016), <i>Science</i> 353:1280–1283,
+  "Synchronous calcium events": Malvache A. and others (2016), <i>Science</i> 353:1280–1283,
   <a href="https://doi.org/10.1126/science.aaf3319">doi.org/10.1126/science.aaf3319</a>.</li>
   <li><b>locust</b> is adapted from CICADA (Calcium Imaging Complete Automated Data Analysis), from the Cossart
   lab: Denis J., Dard R., Quiroli E., Cossart R., Picardo M. (2020), Zenodo,
@@ -709,10 +710,10 @@ raster would call those stripes.</p>
   <a href="https://gitlab.com/cossartlab/cicada_analysis">gitlab.com/cossartlab/cicada_analysis</a>.
   locust is fed the lab's own event list, holds each event on for a fixed time, and uses its own bar, so its
   results are its own; nobody has compared them with CICADA's.</li>
-  <li><b>SPIKE-synch</b> uses the SPIKE-synchronization measure: Kreuz T., Mulansky M., Bozanic N. (2015).
+  <li><b>SPIKE-synch</b> uses the measure its authors call "SPIKE-synchronization": Kreuz T., Mulansky M., Bozanic N. (2015).
   SPIKY. <i>J Neurophysiol</i> 113:3432–3445,
-  <a href="https://doi.org/10.1152/jn.00848.2014">doi.org/10.1152/jn.00848.2014</a>; built on event
-  synchronization, Quian Quiroga R., Kreuz T., Grassberger P. (2002), <i>Phys Rev E</i> 66:041904,
+  <a href="https://doi.org/10.1152/jn.00848.2014">doi.org/10.1152/jn.00848.2014</a>; built on "event
+  synchronization", Quian Quiroga R., Kreuz T., Grassberger P. (2002), <i>Phys Rev E</i> 66:041904,
   <a href="https://doi.org/10.1103/PhysRevE.66.041904">doi.org/10.1103/PhysRevE.66.041904</a>. The version
   followed here: Mulansky M., Kreuz T. (2016), PySpike, <i>SoftwareX</i> 5:183–189,
   <a href="https://doi.org/10.1016/j.softx.2016.07.006">doi.org/10.1016/j.softx.2016.07.006</a>.
@@ -747,8 +748,8 @@ raster would call those stripes.</p>
   again in Morris P.G., Herbison A.E. (2023), <i>Endocrinology</i> 164:bqad167,
   <a href="https://doi.org/10.1210/endocr/bqad167">doi.org/10.1210/endocr/bqad167</a>, and Eddleston T.,
   Morris P.G., Herbison A.E. (2026), <i>J Neuroendocrinol</i> 38:e70170,
-  <a href="https://doi.org/10.1111/jne.70170">doi.org/10.1111/jne.70170</a>. Episodes in which every recorded
-  cell brightened, in living mice: Moore A.M., Coolen L.M., Lehman M.N. (2022), <i>PNAS</i> 119:e2117767119,
+  <a href="https://doi.org/10.1111/jne.70170">doi.org/10.1111/jne.70170</a>. "Synchronized episodes", in which every recorded
+  cell had a calcium event, in living mice: Moore A.M., Coolen L.M., Lehman M.N. (2022), <i>PNAS</i> 119:e2117767119,
   <a href="https://doi.org/10.1073/pnas.2117767119">doi.org/10.1073/pnas.2117767119</a>. The chance
   comparison in Figure {{NUM:fig_count_published}} is ours; it uses only the averages those papers
   report.</li>
@@ -763,18 +764,18 @@ raster would call those stripes.</p>
   <dt>Bar</dt><dd>The level a program's count must pass before it makes a call.</dd>
   <dt>Bin</dt><dd>One of the short, equal stretches of time a recording is cut into before counting — 1, 2
   or 10 seconds long, depending on the program.</dd>
-  <dt>Brief events, long events</dt><dd>The lab's event-finding program keeps short brightenings and much longer
+  <dt>Brief events, long events</dt><dd>The lab's event-finding program keeps short calcium events and much longer
   ones in two separate lists. Each list is studied on its own.</dd>
-  <dt>Calcium event</dt><dd>A short brightening of one cell in the recording: calcium inside that cell went
+  <dt>Calcium event</dt><dd>An increase followed by a decrease in one cell's brightness: calcium inside that cell went
   up and then cleared again. It is what we observe; what caused the rise is a separate
   question.</dd>
-  <dt>GCaMP6f</dt><dd>The glowing protein these cells build themselves, from a gene the mice carry. It is
-  dim on its own and bright when calcium is around it, which is what makes a rise in calcium visible
-  under the microscope.</dd>
+  <dt>GCaMP6f</dt><dd>The fluorescent protein these cells build themselves, from a gene the mice carry. It gives off more
+  light when calcium is around it, which is what makes a rise in calcium visible under the
+  microscope.</dd>
   <dt>Call</dt><dd>One moment a program marks as a coordinated event. A call is that program's claim, not a
   fact about the cells.</dd>
   <dt>Clear stripe</dt><dd>Our rule for a lineup anyone can see on a raster (Figure {{NUM:fig_eye}}).</dd>
-  <dt>Coordinated event</dt><dd>A moment when many cells brighten together, more than chance explains.</dd>
+  <dt>Coordinated event</dt><dd>A moment when many cells have calcium events together, more than chance explains.</dd>
   <dt>Decoy</dt><dd>A lineup put into a simulated recording the same way a planted event is, but left off
   the answer key.</dd>
   <dt>False alarm</dt><dd>A call where there was no planted event.</dd>
@@ -794,7 +795,7 @@ raster would call those stripes.</p>
   cell's own pattern as well, which is why it gets chance wrong (Section {{SEC:shuffle}}).</dd>
   <dt>Simulate, simulator</dt><dd>To produce a recording ourselves instead of measuring one, choosing in
   advance when the cells act together. The simulator is the program that writes those recordings.</dd>
-  <dt>Synchronized event</dt><dd>The name Allan Herbison's lab uses for a call of its interval rule: at least 2
+  <dt>"Synchronized event"</dt><dd>The term Allan Herbison's lab uses for a call of its interval rule: at least 2
   cells whose event peaks fall within 10 seconds of each other (Section {{SEC:count}}).</dd>
   <dt>TTX (tetrodotoxin)</dt><dd>A drug that blocks the fast electrical signals most nerve cells use.</dd>
 </dl>

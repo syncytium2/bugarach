@@ -482,6 +482,30 @@ RULES = [
         fixture_bad="at the freshly chosen setting of Figure 14.",
         fixture_good="at the setting each round picked from the recordings it could see.",
     ),
+    Rule(
+        id="SAP018", level="BLOCK",
+        # SAY WHAT WAS OBSERVED, IN ONE VOCABULARY. Tony, 2026-09-16, on "a cell brightened 13.4
+        # times an hour": not ok — "a cell with 13.4 events per hour" is. The house vocabulary for
+        # the plain-language documents:
+        #   * a CALCIUM EVENT is defined once, at the start, as an increase followed by a decrease in
+        #     brightness; after that the text says calcium event, or event — never "brighten",
+        #     "light up", "lit up";
+        #   * a COORDINATED EVENT is a coordinated calcium event;
+        #   * "synchronized" / "synchronous" appear only as another author's term, in quotes.
+        # "Brightness" itself stays legal: the definition needs it once. Paper titles containing
+        # "synchronization" stay legal too, which is why the synchron- half matches only the -ized and
+        # -ous forms, and only when no opening quote precedes them.
+        pattern=r"\bbright(en|ens|ened|ening|enings)\b|\blights? up\b|\blit up\b"
+                r"|(?<![\"“‘'])\b[Ss]ynchroni[sz]ed\b|(?<![\"“‘'])\b[Ss]ynchronous\b",
+        include=["tools/plain_*_template.html", "tools/make_plain_detector_review.py"],
+        exclude=["tools/sapper.py"],
+        message="PLAIN-DOCUMENT VOCABULARY (Tony, 2026-09-16). Say calcium event (one cell) or "
+                "coordinated event (many cells), not \"brighten\" / \"light up\": a calcium event is "
+                "defined once as an increase followed by a decrease in brightness, and after that it "
+                "is an event. Use \"synchronized\" only as another author's term, inside quotes.",
+        fixture_bad="<p>In the most recent paper, a cell brightened 13.4 times an hour.</p>",
+        fixture_good='<p>cells had 13.4 calcium events per cell per hour, and "synchronized events".</p>',
+    ),
 ]
 
 

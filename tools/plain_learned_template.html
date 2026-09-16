@@ -50,12 +50,12 @@ Stage 6: A is a quiet minute holding one real coordinated event, which the netwo
 inside a busy stretch where nothing was put in, and the score crosses the call level once, so the network
 makes one mistake.</figcaption></figure>
 <p>The design is called <b>tube</b>, from the picture its author had in mind: looking down a dark tube
-while the recording slides past, a coordinated event goes by as a bright flash. What the network is given
-is the same raster the six algorithms get — no pictures, no cell identities, just which cell lit up
+while the recording slides past, a coordinated event goes by as a sudden jump. What the network is given
+is the same raster the six algorithms get — no pictures, no cell identities, just which cell had a calcium event
 when.</p>
-<p>There are four versions. <b>tube</b> is the one drawn above. <b>tube-guard</b> ignores the brightness
+<p>There are four versions. <b>tube</b> is the one drawn above. <b>tube-guard</b> ignores the share of cells with events
 immediately around the moment it is scoring, so a real event cannot inflate its own comparison.
-<b>tube-ratio</b> divides by the surrounding brightness instead of subtracting it. <b>tube-ratio-guard</b>
+<b>tube-ratio</b> divides by the surrounding share instead of subtracting it. <b>tube-ratio-guard</b>
 does both.</p>
 
 <h2 id="w3">3. How they score</h2>
