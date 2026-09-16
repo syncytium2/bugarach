@@ -672,6 +672,54 @@ one pass and it wants doing together.
 
 ---
 
+## 14 · LoCo and CoactDetect: a sliding window with an exact null (live) vs bins with a sampled one
+
+**Live:** `window_mode="sliding"` in `loco_detect` and `coact_detect`, shipped in
+`bench.OPERATING_POINTS` since 2026-09-16 (Tony: *"the loco and coact should slide not
+step"*). Implemented in `src/bugarach/detectors/sliding.py`.
+
+**Alternative:** `window_mode="binned"` — the MATLAB ports, still the functions' default
+signature, and what `tests/test_loco_detect.py` and `tests/test_coact_detect.py` pin at
+1e-9. No parity test is exempted: the binned path is unchanged.
+
+**Why.** Shift a real recording by a fraction of a second and the binned detectors called
+different events — 64% of LoCo's calls and 70% of CoactDetect's survived, with
+CoactDetect's loss growing with the shift
+([`todo/2026-09-07-detector-calls-move-with-the-grid.md`](todo/2026-09-07-detector-calls-move-with-the-grid.md)).
+Two causes, and sliding the window fixes only the first:
+
+1. **Bins laid from the start of the recording.** The sliding count is the exact step
+   function of distinct ROIs in a trailing window, changing only where an event enters or
+   leaves it.
+2. **A null drawn from one random stream, consumed bin by bin** (anchor by anchor for
+   LoCo). A shift that changed one candidate moved every later draw. The null is now
+   computed: under a uniform circular shift, an ROI's chance of landing in a window of
+   width *w* on a circle of length *L* is the covered part of the circle —
+   `sum(min(w, gap to the next event)) / L` — and the null count is a Poisson-binomial
+   with those probabilities. CoactDetect takes its exact mean and standard deviation;
+   LoCo takes its exact percentile. The Monte Carlo estimated exactly this distribution.
+
+| on three real TTX baselines, shifts 0.1–0.9 s | calls kept, binned | calls kept, sliding |
+|---|---|---|
+| LoCo | 64% (September probe, 1 s match) | **100% at every shift** (0.05 s match) |
+| CoactDetect | 70% (same) | **100% at every shift** |
+
+**Cost:** none — sliding runs in 0.25–0.75× the binned time, because the exact null is
+cheaper than 100–200 draws per candidate.
+
+**What changes for a caller:**
+- `thr_step_sec` and `n_surrogates` do not apply in sliding mode (no anchors, no draws).
+- An episode's onset is its first participating event and its width runs to the last
+  (`tightness`) for both detectors; binned CoactDetect reported a bin edge.
+- The guard works as in binned mode. Peak mode is refused rather than approximated.
+- The settings tuned binned do not carry over: at them, sliding LoCo and CoactDetect call
+  more and break the empty-recording and precision-swing budgets. The values that ship
+  come from `tools/search_all_settings.py` run in sliding mode.
+- **The browser viewer's `loco.js` and `coact.js` are still binned**, so the two readers
+  disagree for these two detectors until they are ported.
+
+---
+
 ## What is still genuinely open
 
 Not forks — nobody has taken a side.
