@@ -21,7 +21,8 @@ __all__ = ["build_chorus"]
                          "temporal filter, then pools it into several symmetric "
                          "statistics instead of one sum",
           roi_width=4, roi_depth=4, head_width=8, head_depth=8, top_m=4)
-def build_chorus(*, roi_width=4, roi_depth=4, head_width=8, head_depth=8, top_m=4):
+def build_chorus(*, roi_width=4, roi_depth=4, head_width=8, head_depth=8, top_m=4,
+                 input_gain=None, norm=False, vote_gain=None, eps=1e-6):
     """Filter every cell, bound its vote, and pool the field into its SHAPE.
 
     ``tube`` averages the cell axis away in its second stage and everything after
@@ -56,22 +57,59 @@ def build_chorus(*, roi_width=4, roi_depth=4, head_width=8, head_depth=8, top_m=
     with the field is a different mechanism and it is ``quorum``'s; crossing the two
     before either is measured would repeat the mistake the tube screen names in its
     own text.
+
+    ⚠ **As built above, the per-cell encoder starts deaf and never trains**
+    (``docs/learned/field_size_candidates/why_chorus.txt``): one onset moves a vote by
+    at most 0.0003 at initialisation, and the encoder's gradient is about 270,000
+    times smaller than the head's. Three options, each off by default so ``chorus``
+    itself is unchanged and stays the failed control:
+
+    * ``input_gain`` -- a learnable gain on the raster before the encoder, started at
+      this value, so an onset dominates the convolutions' biases instead of vanishing
+      under them (``chorus_gain``).
+    * ``norm`` -- each cell's encoder output standardised over time, channel by
+      channel, before the vote; a cell with no onsets in the window comes out 0
+      (``chorus_norm``). The statistics are taken over whatever window the model is
+      given, so a 4,096-frame training crop and a whole recording at inference are
+      standardised over different spans.
+    * ``vote_gain`` -- ``line``'s vote on the standardised output,
+      ``sigmoid(gain * (z - bias))`` with a learnable gain started at this value and a
+      learnable bias started at 0.5 (``chorus_gain_norm``, with ``norm``).
     """
     torch = _torch()
     nn = torch.nn
+
+    import math
 
     class Chorus(nn.Module):
         def __init__(self):
             super().__init__()
             self.m = int(top_m)
+            self.norm = bool(norm)
             self.roi = _dilated_stack(nn, 1, roi_width, roi_width, roi_depth)
+            if input_gain is not None:
+                self.log_input_gain = nn.Parameter(
+                    torch.tensor(math.log(float(input_gain))))
+            if vote_gain is not None:
+                self.vote_gain = nn.Parameter(torch.full((roi_width,), float(vote_gain)))
+                self.vote_bias = nn.Parameter(torch.full((roi_width,), 0.5))
             # three pooled statistics, each `roi_width` channels wide
             self.head = _dilated_stack(nn, 3 * roi_width, 1, head_width, head_depth)
 
         def forward(self, x):                       # (B, n_roi, T)
             b, n, t = x.shape
-            h = self.roi(x.reshape(b * n, 1, t))
-            h = torch.sigmoid(h)                    # <- one cell, one vote (soft)
+            xr = x.reshape(b * n, 1, t)
+            if input_gain is not None:
+                xr = xr * torch.exp(self.log_input_gain)
+            h = self.roi(xr)
+            if self.norm:
+                h = (h - h.mean(dim=2, keepdim=True)) / (
+                    h.std(dim=2, keepdim=True, unbiased=False) + eps)
+            if vote_gain is not None:
+                h = torch.sigmoid(self.vote_gain.view(1, -1, 1)
+                                  * (h - self.vote_bias.view(1, -1, 1)))
+            else:
+                h = torch.sigmoid(h)                # <- one cell, one vote (soft)
             h = h.reshape(b, n, -1, t)
 
             # The pool. Every one of these is symmetric in the cell axis, so the

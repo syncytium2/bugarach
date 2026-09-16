@@ -54,7 +54,8 @@ from pathlib import Path
 import numpy as np
 
 LEARNED = ("tube", "tube_guard", "tube_ratio", "tube_ratio_guard", "trace", "tiny",
-           "line", "line_length", "tube_no_bypass", "gauge", "chorus")
+           "line", "line_length", "tube_no_bypass", "gauge", "chorus",
+           "chorus_gain", "chorus_norm", "chorus_gain_norm", "chorus_line")
 LR = {"tube": 1e-2, "trace": 1e-3, "tiny": 1e-3,
       # THE 2x2 RUNS AT THE CONTROL'S LEARNING RATE, DELIBERATELY. `tube`'s 1e-2 is
       # what every published tube number was fitted under, and the three variants
@@ -71,7 +72,11 @@ LR = {"tube": 1e-2, "trace": 1e-3, "tiny": 1e-3,
       # same reason. `gauge` differs from `tube_no_bypass` by standardising against
       # its own shifted null; `chorus` differs from `line` by two extra pooled
       # channels. A per-model rate would make either comparison uncontrolled.
-      "tube_no_bypass": 1e-2, "gauge": 1e-2, "chorus": 1e-2}
+      "tube_no_bypass": 1e-2, "gauge": 1e-2, "chorus": 1e-2,
+      # chorus's repairs, same rate: each differs from chorus by where its per-cell
+      # stage gets its gain, and chorus_line differs from line by two pooled channels.
+      "chorus_gain": 1e-2, "chorus_norm": 1e-2, "chorus_gain_norm": 1e-2,
+      "chorus_line": 1e-2}
 
 # THE QUIET-FIELD NEGATIVE. The hot-window probe is a busy stretch with nothing
 # planted, so a model that divides by its surround passes it by arithmetic: the
@@ -129,7 +134,8 @@ def _null_twin(spec: dict, factor: float) -> dict:
 
 def run(spec: dict, *, folds: int, seeds_per_fold: int, quick: bool,
         train_seed: int = 0, score_spec: dict | None = None,
-        learned: tuple = LEARNED, null_rates: tuple = ()) -> dict:
+        learned: tuple = LEARNED, null_rates: tuple = (),
+        hand_written: bool = True) -> dict:
     from bugarach import provenance
     from bugarach.bench import (DETECTORS, OPERATING_POINTS, fold_split,
                                 pool_scores, run_detector)
@@ -263,7 +269,11 @@ def run(spec: dict, *, folds: int, seeds_per_fold: int, quick: bool,
     }
 
     # ---- the six: calibrate on train folds, score on the held-out fold ------
-    for det in DETECTORS:
+    # --skip-hand-written: the six are deterministic, so a run that only adds learned
+    # models can take their rows from an earlier run on the same folds. The record
+    # says they were skipped rather than leaving an empty dict to be read as zero.
+    out["provenance"]["hand_written_skipped"] = not hand_written
+    for det in (DETECTORS if hand_written else ()):
         op = OPERATING_POINTS[det]
         grid = op.grid if not quick else op.grid[::2]
         per_fold = []
@@ -420,6 +430,10 @@ def main(argv=None) -> int:
                    help="comma-separated subset of the learned architectures to "
                         "sweep; default all of LEARNED. What was left out is "
                         "recorded as registered_but_not_run.")
+    p.add_argument("--skip-hand-written", action="store_true",
+                   help="do not calibrate or score the six hand-written detectors; "
+                        "for a run that only adds learned models to folds an earlier "
+                        "run already scored them on. Recorded in provenance.")
     p.add_argument("--null-rates", action="store_true",
                    help="also score every detector on quiet-field null twins of "
                         f"each held-out recording, at {NULL_RATE_FACTORS} times "
@@ -438,7 +452,7 @@ def main(argv=None) -> int:
     a.out.mkdir(parents=True, exist_ok=True)
     res = run(spec, folds=a.folds, seeds_per_fold=a.seeds_per_fold,
               quick=a.quick, train_seed=a.train_seed, score_spec=score_spec,
-              learned=learned,
+              learned=learned, hand_written=not a.skip_hand_written,
               null_rates=NULL_RATE_FACTORS if a.null_rates else ())
     stem = "bakeoff_quick" if a.quick else "bakeoff"
     if res["transfer"]:
