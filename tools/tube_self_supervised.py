@@ -59,9 +59,11 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 TAG = "tube-ssl-2026-09-15"
-MODELS = ("tube", "tube_guard", "line", "line_length")
+MODELS = ("tube", "tube_guard", "line", "line_length", "line_bound")
 """``line`` joined on 2026-09-15: it counts the lit ROIs before pooling, so it is the
-architecture whose distinctness the tube models lack (``bugarach.learn.nets.line``)."""
+architecture whose distinctness the tube models lack (``bugarach.learn.nets.line``).
+``line_bound`` joined on 2026-09-16: ``line`` with its vote bounded in time as well as height,
+so whether that bound matters is measured in the same run."""
 J_SEC = (10.0, 20.0)
 TRAIN_SEEDS = (0, 1, 2)
 N_FOLDS, SEEDS_PER_FOLD = 4, 2
@@ -230,9 +232,16 @@ def probs(model, raster):
 
 
 def quantile_grid(z_all):
-    """Descending candidate thresholds: just above the maximum, then upper quantiles."""
+    """Descending candidate thresholds: just above the maximum, then quantiles down to the
+    minimum.
+
+    ⚠ Until 2026-09-16 the grid stopped at the MEDIAN score, so the lowest threshold on offer
+    let half of all frames fire, and the truth-reading search had no guard to say when it
+    stopped there. The untrained arm's detections covering nearly a whole recording is what
+    that floor looks like. The grid now reaches the minimum, and ``pick_threshold`` reports
+    an optimum on either end."""
     z = np.concatenate([np.ravel(v) for v in z_all])
-    qs = np.quantile(z, 1.0 - np.geomspace(0.5, 1e-6, 90))
+    qs = np.quantile(z, 1.0 - np.geomspace(1.0, 1e-6, 120))
     return np.unique(np.concatenate([[z.max() + 1e-6], qs]))[::-1]
 
 
@@ -256,7 +265,12 @@ def label_free_threshold(p_surs, minutes, rate_per_10min):
         if max(n_events(ps, thr) for ps in p_surs) > allowed:
             break
         chosen = float(thr)
-    return chosen
+    else:
+        # No threshold on the grid ever exceeded the rate, so the scan fell through to the
+        # grid's floor — the degenerate case the downward scan was written to avoid. Said
+        # rather than returned silently.
+        return chosen, True
+    return chosen, False
 
 
 def score_held_out(model, held, dt, J_sec, oracles, label):
@@ -270,6 +284,18 @@ def score_held_out(model, held, dt, J_sec, oracles, label):
     for k in oracles:
         per[k] = []
     thresholds = {k: [] for k in per}
+    shape = {k: {"width_sec_median": [], "width_sec_max": [], "coverage_share": [],
+                 "at_grid_floor": []} for k in per}
+
+    def record(k, thr, det, enc, gt, L, floor=False):
+        per[k].append(score_stream(gt, det.to_seconds(enc)))
+        thresholds[k].append(thr)
+        w = np.asarray(det.width_frame, float)
+        shape[k]["width_sec_median"].append(float(np.median(w) * dt) if w.size else None)
+        shape[k]["width_sec_max"].append(float(w.max() * dt) if w.size else None)
+        shape[k]["coverage_share"].append(float(w.sum() / L))
+        shape[k]["at_grid_floor"].append(bool(floor))
+
     for sd_ in te:
         sl, gt = sim_recording(sd_)
         enc = encode(sl, dt=dt)
@@ -281,61 +307,86 @@ def score_held_out(model, held, dt, J_sec, oracles, label):
                   for _ in range(N_SURR_THRESHOLD)]
         minutes = L * dt / 60.0
         for r in RATES_PER_10MIN:
-            thr = label_free_threshold(p_surs, minutes, r)
-            det = decode(p, threshold=thr, merge_gap_frames=MERGE_GAP)
-            per[f"label_free_{r:g}"].append(score_stream(gt, det.to_seconds(enc)))
-            thresholds[f"label_free_{r:g}"].append(thr)
+            thr, floor = label_free_threshold(p_surs, minutes, r)
+            record(f"label_free_{r:g}", thr, decode(p, threshold=thr, merge_gap_frames=MERGE_GAP),
+                   enc, gt, L, floor)
         for k, thr in oracles.items():
-            if thr is None:
+            if thr is None or not np.isfinite(thr):
                 continue
-            det = decode(p, threshold=thr, merge_gap_frames=MERGE_GAP)
-            per[k].append(score_stream(gt, det.to_seconds(enc)))
-            thresholds[k].append(thr)
+            record(k, thr, decode(p, threshold=thr, merge_gap_frames=MERGE_GAP), enc, gt, L)
     out = {}
     for k, scs in per.items():
         if not scs:
+            # Said, not skipped: an oracle that found no scoring threshold is a row with a
+            # reason, where it used to be indistinguishable from an arm that had no oracle.
+            out[k] = {"f1": None, "not_scored": "no threshold on the grid scored"}
             continue
         b = pool_scores(scs, detector=label, regime="heldout", seeds=te)
         out[k] = {"f1": b.f1, "recall": b.recall, "precision": b.precision,
                   "n_planted": b.n_planted, "n_hit": b.n_hit, "n_detected": b.n_detected,
-                  "hot_fa": b.hot_fa, "thresholds": thresholds[k]}
+                  "hot_fa": b.hot_fa, "thresholds": thresholds[k], **shape[k]}
     return out
 
 
+def fit_and_val_seeds(held):
+    """The training folds' recordings split as ``fold_maker`` splits them: (fit, validation)."""
+    from bugarach.learn.train import fold_maker
+    seeds = list(split().train(held))
+    _, n_fit, n_val = fold_maker(sim_recording, seeds)
+    return seeds[:n_fit], seeds[n_fit:], n_val
+
+
 def oracle_threshold(model, held, dt, seed):
-    """F1-best logit threshold on the training folds' threshold-validation recordings — the same
-    recordings ``pick_threshold`` reads (``fold_maker``'s validation block), with its pooled F1
-    rule, over a quantile grid in logit space. Reads planted truth: comparison only."""
-    from bugarach.bench import pool_scores
-    from bugarach.learn.encode import decode, encode
-    from bugarach.learn.train import VAL_SEED_BLOCK, fold_maker
-    from bugarach.score import score_stream
-    mk, _, _ = fold_maker(sim_recording, list(split().train(held)))
-    seeds = [VAL_SEED_BLOCK + seed * 1000 + i for i in range(4)]
-    scored = []
-    for s in seeds:
-        sl, gt = mk(s)
-        enc = encode(sl, dt=dt)
-        scored.append((probs(model, enc.raster), enc, gt))
-    best, best_f1 = None, -1.0
-    for thr in quantile_grid([z for z, _, _ in scored]):
-        scs = [score_stream(gt, decode(z, threshold=float(thr),
-                                        merge_gap_frames=MERGE_GAP).to_seconds(enc))
-               for z, enc, gt in scored]
-        b = pool_scores(scs, detector="oracle", regime="val", seeds=seeds)
-        if b.n_planted and np.isfinite(b.f1) and b.f1 > best_f1:
-            best, best_f1 = float(thr), b.f1
-    return best
+    """F1-best logit threshold on the training folds' threshold-validation recordings, picked by
+    ``bugarach.learn.train.pick_threshold`` itself over a quantile grid in logit space. Reads
+    planted truth: comparison only. Returns ``(threshold, report)``.
+
+    ⚠ This used to re-derive ``pick_threshold`` and dropped its edge-of-grid guard; it also
+    asked for four validation seeds that ``fold_maker`` serves from two recordings. It now
+    calls the function, with ``fold_maker``'s own ``n_val``, and the report says whether the
+    choice sat on the grid's floor or ceiling."""
+    import warnings
+    from bugarach.learn.train import fold_maker, pick_threshold
+    mk, _, n_val = fold_maker(sim_recording, list(split().train(held)))
+    report: dict = {}
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", RuntimeWarning)   # recorded in `report` instead
+        thr, _ = pick_threshold(model, mk, dt=dt, seed=seed, n_val=n_val,
+                                merge_gap_frames=MERGE_GAP, grid=quantile_grid, logits=True,
+                                report=report)
+    return (float(thr) if np.isfinite(thr) else None), report
+
+
+def thinned(trains, share, rng):
+    """Each ROI keeps a random ``1 - share`` of its onsets, in place: counts fall, timing and
+    cross-ROI alignment of what remains do not move."""
+    return [np.asarray(t)[rng.random_sample(len(t)) >= share] for t in trains]
+
+
+THIN_SHARE = 0.2
+"""The positive control's size: a fifth of every ROI's onsets removed."""
 
 
 def paired_checks(model, held, J_sec, label):
-    """Paired crop scores: held-out real vs shared offset and vs rigid shift; unplanted twins."""
+    """Paired crop scores on held-out real recordings, plus unplanted twins.
+
+    * ``real_vs_rigid_shift`` — what the objective paid for.
+    * ``real_vs_shared_offset`` — both crops at the same index. ⚠ Weak by construction: the
+      two rasters differ by one global translation and every model here is convolutional, so
+      the crops largely share frames and many pairs tie (reported as ``tie_share``, counted
+      half). Kept so the change from the previous run is visible.
+    * ``real_vs_shared_offset_independent_crop`` — the surrogate crop drawn at an index
+      independent of the real one, so a tie means the model scores two different stretches
+      identically rather than one stretch twice.
+    * ``real_vs_thinned`` — the POSITIVE control: a fifth of every ROI's onsets removed, same
+      crop. A count leak is exactly this kind of change, so a check that reads chance here as
+      well has no power to see one. It must move.
+    """
     import look_rigid_shift_controls as lc
     out = {}
     rows = [r for r in real_recordings() if r["fold"] == held]
-    # Each entry is (real score, surrogate score). A shared offset only translates the crop and
-    # tube is a convolution, so exact ties are common and are counted as half, not as losses.
-    wins = {"real_vs_shared_offset": [], "real_vs_rigid_shift": []}
+    wins = {"real_vs_shared_offset": [], "real_vs_shared_offset_independent_crop": [],
+            "real_vs_rigid_shift": [], "real_vs_thinned": []}
     for r in rows:
         Jf = J_sec / r["dt"]
         margin = int(np.ceil(Jf)) + 1
@@ -344,14 +395,23 @@ def paired_checks(model, held, J_sec, label):
         real = raster_of(r["trains"], L)
         shared = raster_of(rigid_frames(r["trains"], L, Jf, rng, shared=True), L)
         rigid = raster_of(rigid_frames(r["trains"], L, Jf, rng), L)
+        # Drawn from its own stream so the three draws above match the previous run's.
+        rng_extra = np.random.RandomState(seed31("check-extra", label, r["id"], J_sec))
+        thin = raster_of(thinned(r["trains"], THIN_SHARE, rng_extra), L)
+        starts = list(range(margin, L - margin - CROP + 1, CROP))
         import torch
         with torch.no_grad():
-            for a in range(margin, L - margin - CROP + 1, CROP):
+            for a in starts:
                 s_r = float(crop_score(model, real[:, a:a + CROP]))
                 wins["real_vs_shared_offset"].append(
                     (s_r, float(crop_score(model, shared[:, a:a + CROP]))))
+                b = int(rng_extra.randint(margin, L - margin - CROP + 1))
+                wins["real_vs_shared_offset_independent_crop"].append(
+                    (s_r, float(crop_score(model, shared[:, b:b + CROP]))))
                 wins["real_vs_rigid_shift"].append(
                     (s_r, float(crop_score(model, rigid[:, a:a + CROP]))))
+                wins["real_vs_thinned"].append(
+                    (s_r, float(crop_score(model, thin[:, a:a + CROP]))))
     for k, v in wins.items():
         out[k] = paired_summary(v)
     tw = []
@@ -391,6 +451,13 @@ def widths_sec(model, dt):
         return None
 
 
+def fitted_parameters(model):
+    """Every parameter outside the dilated head, by name, as fitted — so a width, ratio, gain or
+    vote setting quoted from this run is read from its row and not from a re-fit."""
+    return {n: p.detach().numpy().astype(float).tolist()
+            for n, p in model.named_parameters() if not n.startswith("head.")}
+
+
 # -- tasks ------------------------------------------------------------------------------------
 
 def task(args):
@@ -410,29 +477,36 @@ def task(args):
                    lr=fb.LR[name], seed=seed)
         model, n_par, hist = tr.model, tr.n_params, tr.history
         p = min(max(float(tr.threshold), 1e-12), 1 - 1e-12)
+        thr, res["oracle_report"] = oracle_threshold(model, held, dt, seed)
         # The bake-off's own operating point, as a logit so it applies to logit scores.
-        oracles = {"oracle": oracle_threshold(model, held, dt, seed),
-                   "oracle_bakeoff_rule": float(np.log(p / (1 - p)))}
+        oracles = {"oracle": thr, "oracle_bakeoff_rule": float(np.log(p / (1 - p)))}
     elif arm == "untrained":
         import torch
         from bugarach.learn.nets import ARCHITECTURES, n_params
         torch.manual_seed(seed)
         model = ARCHITECTURES[name].make().eval()
         n_par, hist = n_params(model), []
-        oracles = {"oracle": oracle_threshold(model, held, dt, seed)}
+        thr, res["oracle_report"] = oracle_threshold(model, held, dt, seed)
+        oracles = {"oracle": thr}
     else:
         if arm == "ssl_sim":
-            items = sim_items(list(split().train(held)), dt)
+            # The fit block only. Until 2026-09-16 this arm trained on every training-fold
+            # recording, the validation block included, so its truth-reading threshold was
+            # picked on recordings it had trained on, where the supervised arm's was not.
+            fit, _, _ = fit_and_val_seeds(held)
+            items = sim_items(fit, dt)
         else:
             items = [r for r in real_recordings() if r["fold"] != held]
         bank = bank_for(items, J_sec, (arm, held))
         model, n_par, hist = ssl_train(name, bank, seed, fb.LR[name])
         res["n_train_recordings"] = len(bank)
-        oracles = {"oracle": oracle_threshold(model, held, dt, seed)}
+        thr, res["oracle_report"] = oracle_threshold(model, held, dt, seed)
+        oracles = {"oracle": thr}
     res["n_params"] = int(n_par)
     res["history"] = hist
     res["train_seconds"] = time.time() - t0
     res["centre_widths_sec"] = widths_sec(model, dt)
+    res["fitted_parameters"] = fitted_parameters(model)
     res["scores"] = score_held_out(model, held, dt, J_sec, oracles, label)
     if arm in ("ssl_sim", "ssl_real", "untrained"):
         res["checks"] = paired_checks(model, held, J_sec, label)
@@ -460,8 +534,14 @@ def main(argv=None):
                 for J in J_SEC:
                     for arm in ("ssl_sim", "ssl_real"):
                         tasks.append((arm, name, J, seed, held, a.quick))
+    from bugarach import provenance
+    from bugarach.learn.nets import ARCHITECTURES
     meta = {"tag": TAG, "started": time.strftime("%Y-%m-%dT%H:%M:%S%z"), "quick": a.quick,
-            "models": MODELS, "J_sec": J_SEC, "train_seeds": seeds, "folds": folds,
+            "models": MODELS, "registered": sorted(ARCHITECTURES),
+            "registered_but_not_run": sorted(set(ARCHITECTURES) - set(MODELS)),
+            "provenance": provenance.stamp(produced_by="tools/tube_self_supervised.py"),
+            "thin_share": THIN_SHARE,
+            "J_sec": J_SEC, "train_seeds": seeds, "folds": folds,
             "crop": CROP, "batch": BATCH, "steps": 60 if a.quick else STEPS,
             "topk_frac": TOPK_FRAC, "n_bank": N_BANK, "rates_per_10min": RATES_PER_10MIN,
             "merge_gap_frames": MERGE_GAP, "spec": str(SPEC_PATH.name), "exploratory": True,
@@ -472,7 +552,8 @@ def main(argv=None):
         for i, r in enumerate(pool.imap_unordered(task, tasks)):
             with open(out / "results.jsonl", "a") as fh:
                 fh.write(json.dumps(r, default=float) + "\n")
-            f1 = {k: round(v["f1"], 3) for k, v in r["scores"].items()}
+            f1 = {k: (None if v["f1"] is None else round(v["f1"], 3))
+                  for k, v in r["scores"].items()}
             print(f"[{time.time() - t0:6.0f}s] {i + 1}/{len(tasks)} {r['arm']} {r['model']} "
                   f"J{r['J_sec']:g} s{r['train_seed']} fold{r['held_fold']} {f1}", flush=True)
     meta["seconds"] = time.time() - t0

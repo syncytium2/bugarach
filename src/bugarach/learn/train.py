@@ -226,12 +226,27 @@ def train(name: str, make_recording, *, dt: float = 0.1, n_train: int = 12,
 
 
 def pick_threshold(model, make_recording, *, dt, seed, n_val: int = 4,
-                   stream=None, merge_gap_frames: int = 20):
+                   stream=None, merge_gap_frames: int = 20, grid=None,
+                   logits: bool = False, report: dict | None = None):
     """Choose the one operating point, on held-out **training-distribution** data.
 
     Never on the bench. A threshold tuned against the recordings a model is then
     scored on is the benchmark leaking into the model, which is a subtler version
     of the mistake this project already paid for twice.
+
+    ``grid`` replaces the default probability grid: an array of candidates, or a
+    callable given the per-recording score arrays that returns one. ``logits=True``
+    thresholds the model's raw output instead of its sigmoid — a model trained by a
+    ranking loss has no fixed scale, and its sigmoid rounds to exactly 1.0. Both exist
+    so a caller that needs another grid calls this function and keeps its edge guard,
+    rather than re-deriving the search without it, which is what
+    ``tools/tube_self_supervised.py`` did until 2026-09-16. In logit mode a search in
+    which no candidate scored returns ``nan``, not 0.5, which is a probability.
+
+    ``report``, when given, is filled with what a result row should carry: the grid's
+    ends, whether the choice sat on one, the F1 there, and how many validation seeds
+    were read. ⚠ ``fold_maker`` serves those seeds modulo its validation block, so
+    asking for more seeds than it holds repeats recordings; pass its ``n_val``.
     """
     import torch
 
@@ -243,7 +258,8 @@ def pick_threshold(model, make_recording, *, dt, seed, n_val: int = 4,
         sl, gt = make_recording(s)
         enc = encode(sl, dt=dt, stream=stream)
         with torch.no_grad():
-            p = torch.sigmoid(model(torch.from_numpy(enc.raster).unsqueeze(0)))
+            z = model(torch.from_numpy(enc.raster).unsqueeze(0))
+            p = z if logits else torch.sigmoid(z)
         scored.append((p.squeeze(0).numpy(), enc, gt))
 
     # The grid must BRACKET the optimum. `tube` first picked 0.95 — the top of a
@@ -260,9 +276,14 @@ def pick_threshold(model, make_recording, *, dt, seed, n_val: int = 4,
     # went straight through the floor and the warning below fired on the first
     # architecture of the first fold. A grid open at one end is only half a
     # search, and which half it is depends on data the search does not control.
-    grid = np.unique(np.concatenate([np.geomspace(1e-4, 0.05, 12),
-                                     np.arange(0.05, 0.95, 0.05),
-                                     1.0 - np.geomspace(0.05, 1e-4, 12)]))
+    if grid is None:
+        grid = np.unique(np.concatenate([np.geomspace(1e-4, 0.05, 12),
+                                         np.arange(0.05, 0.95, 0.05),
+                                         1.0 - np.geomspace(0.05, 1e-4, 12)]))
+    elif callable(grid):
+        grid = np.unique(np.asarray(grid([p for p, _, _ in scored]), float))
+    else:
+        grid = np.unique(np.asarray(grid, float))
     # Pooled by `bench.pool_scores`, like everything else scored against this
     # benchmark. Selecting the operating point under one rule and reporting it
     # under another is the same defect as scoring two detectors differently, and
@@ -272,7 +293,7 @@ def pick_threshold(model, make_recording, *, dt, seed, n_val: int = 4,
     # so it chose a stricter point than the reported metric wanted.
     from bugarach.bench import pool_scores
 
-    best, best_f1 = 0.5, -1.0
+    best, best_f1 = (float("nan") if logits else 0.5), -1.0
     for thr in grid:
         scs = []
         for p, enc, gt in scored:
@@ -285,7 +306,13 @@ def pick_threshold(model, make_recording, *, dt, seed, n_val: int = 4,
         f1 = pooled.f1
         if np.isfinite(f1) and f1 > best_f1:
             best_f1, best = f1, float(thr)
-    if best >= grid[-1] - 1e-12 or best <= grid[0] + 1e-12:
+    at_edge = bool(best >= grid[-1] - 1e-12 or best <= grid[0] + 1e-12)
+    if report is not None:
+        report.update(grid_min=float(grid[0]), grid_max=float(grid[-1]),
+                      n_grid=int(grid.size), at_edge=at_edge,
+                      f1=(float(best_f1) if best_f1 >= 0 else None),
+                      n_val_seeds=len(seeds))
+    if at_edge:
         import warnings
         warnings.warn(
             f"threshold {best:.4g} sits at the edge of the searched grid "

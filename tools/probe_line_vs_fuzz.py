@@ -120,7 +120,7 @@ def main(argv=None):
     import fair_bakeoff as fb
     pin_threads()
     models = {}
-    for name in ("tube", "tube_guard", "line", "line_length"):
+    for name in ts.MODELS:
         torch.manual_seed(0)
         models[f"untrained {name}"] = ARCHITECTURES[name].make().eval()
         mk, n_fit, _ = fold_maker(ts.sim_recording, list(fold_split(

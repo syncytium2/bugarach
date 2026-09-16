@@ -108,9 +108,9 @@ def leak_task(args):
     stream, J_sec, n_boot, limit = args
     recs, _ = lr.load(stream, limit)
     keep, _ = lr.feature_mask()
-    Xr, Xrig, Xsh, mice, slices, groups = [], [], [], [], [], []
-    drop = {"rigid_shift": [0, 0], "shared_shift": [0, 0]}
-    per_rec_drop = {"rigid_shift": [], "shared_shift": []}
+    Xr, Xrig, Xsh, Xdi, mice, slices, groups = [], [], [], [], [], [], []
+    drop = {"rigid_shift": [0, 0], "shared_shift": [0, 0], "uniform_dither": [0, 0]}
+    per_rec_drop = {"rigid_shift": [], "shared_shift": [], "uniform_dither": []}
     for r in recs:
         Jf = round(J_sec / r.dt, 9)
         rig = sg.generate("rigid_shift", r.trains, r.window,
@@ -121,16 +121,26 @@ def leak_task(args):
         sh, s_in, s_out = shared_shift(r.trains, r.window, ("leak", r.recording_id, stream, Jf), Jf)
         drop["shared_shift"][0] += s_in; drop["shared_shift"][1] += s_in - s_out
         per_rec_drop["shared_shift"].append((s_in - s_out) / max(1, s_in))
+        # The POSITIVE control (added 2026-09-16): per-onset dither at the same J, the screen's
+        # known-bad candidate. It breaks every ROI's interval floor, which these per-ROI features
+        # can see, so a cell where the classifier reads chance for it too has no power there.
+        di = sg.generate("uniform_dither", r.trains, r.window,
+                         (TAG, "leak", r.recording_id, stream, "uniform_dither", Jf), J=Jf)
+        d_in = int(di.info["n_in"].sum()); d_out = int(di.info["n_out"].sum())
+        drop["uniform_dither"][0] += d_in; drop["uniform_dither"][1] += d_in - d_out
+        per_rec_drop["uniform_dither"].append((d_in - d_out) / max(1, d_in))
         wins = lr.interior_windows(r)
         if not wins:
             continue
         band = max(1, int(np.floor(lr.EDGE_SEC / r.dt + 0.5)))
         a, b = sd.pair_features([r.trains] * len(wins), [rig.trains] * len(wins), wins, band)
         _, c = sd.pair_features([r.trains] * len(wins), [sh] * len(wins), wins, band)
+        _, d = sd.pair_features([r.trains] * len(wins), [di.trains] * len(wins), wins, band)
         Xr.append(a[:, keep]); Xrig.append(b[:, keep]); Xsh.append(c[:, keep])
+        Xdi.append(d[:, keep])
         mice += [r.mouse] * len(wins); slices += [r.recording_id] * len(wins)
         groups += [r.group or ""] * len(wins)
-    Xr, Xrig, Xsh = np.vstack(Xr), np.vstack(Xrig), np.vstack(Xsh)
+    Xr, Xrig, Xsh, Xdi = np.vstack(Xr), np.vstack(Xrig), np.vstack(Xsh), np.vstack(Xdi)
     mice, slices, groups = np.asarray(mice), np.asarray(slices), np.asarray(groups)
 
     res = {"stream": stream, "J_sec": J_sec, "n_pairs": int(len(mice)),
@@ -138,7 +148,7 @@ def leak_task(args):
            "n_recordings": len(recs)}
     look_seed = lr.seed31("leak", stream, "rigid_shift", J_sec)
     res["rigid_shift_look_seed_accuracy"] = float(lr.cv_correct(Xr, Xrig, mice, look_seed).mean())
-    for name, Xs in (("rigid_shift", Xrig), ("shared_shift", Xsh)):
+    for name, Xs in (("rigid_shift", Xrig), ("shared_shift", Xsh), ("uniform_dither", Xdi)):
         seeds = [seed31("folds", stream, J_sec, i) for i in range(FOLD_SEEDS)]
         accs = [float(lr.cv_correct(Xr, Xs, mice, s_).mean()) for s_ in seeds]
         seed = seed31("leak", stream, name, J_sec)
@@ -281,6 +291,9 @@ def main(argv=None):
     ap.add_argument("--limit", type=int, default=None)
     ap.add_argument("--quick", action="store_true")
     ap.add_argument("--jobs", type=int, default=12)
+    ap.add_argument("--leak-only", action="store_true",
+                    help="run the leak cells only (shared offset, rigid shift, the dither "
+                         "positive control); skip destruction")
     a = ap.parse_args(argv)
     import os
     os.environ[lr.ROLE_ENV] = a.role
@@ -300,7 +313,7 @@ def main(argv=None):
     for stream in streams:
         for J in J_SEC[stream]:
             tasks.append(("leak", (stream, J, n_boot, a.limit)))
-        for bin_sec in lr.BINS_SEC[stream]:
+        for bin_sec in ((() if a.leak_only else lr.BINS_SEC[stream])):
             if lab:
                 # The graded control beside the look's own twins and K; rigid shift is in the look.
                 specs = [(p, lr.K_SCAN, ()) for p in lr.PARTICIPATION]

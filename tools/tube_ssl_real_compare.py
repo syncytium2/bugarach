@@ -57,9 +57,11 @@ import tube_self_supervised as ts                            # noqa: E402
 TAG = "tube-ssl-real-2026-09-15"
 RATE = 2.0
 PAD_FRAMES = 2
-TOL_SEC = 1.0
+AGREE_TOL_SEC = 1.0
+"""Agreement tolerance. Named apart from `bugarach.score.TOL_SEC` (2.5 s) on purpose: agreement
+is a many-to-one overlap share, not the scorer's one-to-one match, so it is not a recall."""
 N_RANDOM = 20
-MODELS = ("tube", "tube_guard", "line", "line_length")
+MODELS = ts.MODELS
 J_SEC = (10.0, 20.0)
 SEEDS = (0, 1, 2)
 
@@ -82,7 +84,7 @@ def call_recording(model, r, J_sec, label):
     rng = np.random.RandomState(seed31("thr", label, r["id"]))
     z_s = [ts.probs(model, ts.raster_of(ts.rigid_frames(r["trains"], L, J_sec / dt, rng), L))
            for _ in range(ts.N_SURR_THRESHOLD)]
-    thr = ts.label_free_threshold(z_s, L * dt / 60.0, RATE)
+    thr, _ = ts.label_free_threshold(z_s, L * dt / 60.0, RATE)
     return thr, z
 
 
@@ -186,7 +188,7 @@ def measure(detector_events, rows_by_id):
                 for on, wd in evs:
                     rois = participation(r, on, wd)
                     part.append(len(rois))
-                    one_s = int(round(TOL_SEC / r["dt"]))
+                    one_s = int(round(AGREE_TOL_SEC / r["dt"]))
                     wide.append(len(participation(r, on, wd, pad=one_s)))
                     if len(rois) == 2:
                         pairs[tuple(rois)] = pairs.get(tuple(rois), 0) + 1
@@ -230,11 +232,11 @@ def agreement(a_runs, b_runs, rows_by_id, rng):
             be = np.asarray([o + w for o, w in b.get(rid, [])])
             for on, wd in evs:
                 tot += 1
-                hit += bool(bo.size and np.any((bo - TOL_SEC <= on + wd) & (be + TOL_SEC >= on)))
+                hit += bool(bo.size and np.any((bo - AGREE_TOL_SEC <= on + wd) & (be + AGREE_TOL_SEC >= on)))
                 c = 0
                 for _ in range(N_RANDOM):
                     s = w0 + (on - w0 + rng.uniform(0, w1 - w0)) % (w1 - w0)
-                    c += bool(bo.size and np.any((bo - TOL_SEC <= s + wd) & (be + TOL_SEC >= s)))
+                    c += bool(bo.size and np.any((bo - AGREE_TOL_SEC <= s + wd) & (be + AGREE_TOL_SEC >= s)))
                 hit_c += c / N_RANDOM
     return {"share": hit / max(tot, 1), "chance": hit_c / max(tot, 1), "n": tot}
 
