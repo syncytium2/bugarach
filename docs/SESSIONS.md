@@ -10,13 +10,16 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
-### WSMIP065/why-not-count — DARKROOM claim ACTIVE 2026-09-16: `bugarach/2026-09-16-why-not-count/`
-- **Status:** **ACTIVE — claimed before writing.** Tony asked for a plain answer to "why not just count
-  events in a time bin, and call more than x of them a coordinated event?" This session tests that
-  fixed-count rule the same way the six detectors are tested, on the bench and on real recordings.
-- **Writes:** one new folder only — figures, a short page, and the builder's `_work/` measurements.
-- ⚠ **Will hold real-recording figures**, so the page stays in the darkroom (FOUNDATIONS §5).
-- **Released when:** the page is in the folder and the builder is pushed on the `detector-review-doc` PR.
+### WSMIP065/why-not-count — DARKROOM claim RELEASED 2026-09-16: `bugarach/2026-09-15-detector-review-plain/` (reopened); `bugarach/2026-09-16-why-not-count/` never created
+- **Status:** **RELEASED — the section, its four figures and the `count` measurements are in the
+  plain-review folder; the builder is pushed on the `detector-review-doc` PR.** Tony asked "why not just
+  count events in a time bin?" and chose to answer it as a section of the plain-language review rather
+  than a page of its own, so the writes went to that review's existing folder. The folder first claimed
+  here was never created.
+- **Wrote:** `fig_count_*.png`, the rebuilt `detector_review_plain.html`, and a `count` key in
+  `_work/plain.json` — nothing outside `2026-09-15-detector-review-plain/`.
+- ⚠ **Holds real-recording figures** (the untreated-baseline bar figure), so the page stays in the
+  darkroom (FOUNDATIONS §5).
 
 ### WSMIP065/detector-review-plain — DARKROOM claim RELEASED 2026-09-15: `bugarach/2026-09-15-detector-review-plain/`
 - **Status:** **RELEASED — `detector_review_plain.html`, its figures, `real_prose.json` and `_work/`

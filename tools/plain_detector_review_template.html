@@ -62,6 +62,7 @@ how we tested them, and why they sometimes disagree with your own eyes.</p>
   <li><a href="#s8">Simulated recordings, where we know the answer</a></li>
   <li><a href="#s9">How we grade a program</a></li>
   <li><a href="#s10">Scores on the simulated recordings</a></li>
+  <li><a href="#s14">Why not just count cells in a bin?</a></li>
   <li><a href="#s11">Detection on real recordings</a></li>
   <li><a href="#s12">Where your eye and the programs disagree</a></li>
   <li><a href="#s13">What this means</a></li>
@@ -386,6 +387,11 @@ call is a <b>false alarm</b>, including a call on a decoy.</p>
 <p>From those we get two numbers: the share of planted events a program <b>found</b>, and the share of
 its calls that were <b>right</b>. The <b>overall score</b> combines them into one number from 0 to 1. It
 is high only when both are high. (Its technical name is the F1 score.)</p>
+<p>Calls inside the busy stretch are false alarms too, but they are kept out of the "right" share and
+counted on their own (Figure {{NUM:fig_busy}}, B). That stretch is busier than {{T.cnt_block_slower}} of the
+lab's {{T.cnt_n_real}} untreated recordings, and folded into the score it would mostly measure how hard the
+test was set. The cost is that the overall score cannot see a program that calls all the way through a busy
+stretch, so that has to be checked separately (Figure {{NUM:fig_count_bar}}, B).</p>
 <p>Most programs have one main setting that raises or lowers their bar. To choose it fairly, we made
 {{T.n_recordings_scored}} test recordings and split them into {{T.n_tests}} groups of {{T.per_test}}. For
 each group, we picked the best setting using the other {{T.n_choose}} recordings, then scored the program
@@ -449,6 +455,114 @@ coordinated events planted <i>inside</i> the busy stretch.</p>
   {{T.fa_rate}} false alarms per minute). When we made the stretch three times busier, none of the programs
   held up.</li>
 </ul>
+
+<h2 id="s14">{{SEC:count}}. Why not just count cells in a bin?</h2>
+<figure>{{FIG:fig_count_rule}}
+<figcaption><b>Figure {{NUM:fig_count_rule}}. The counting rule.</b> Left: its steps. A and B: the same two
+simulated minutes as Figures {{NUM:fig_alg_rate}} to {{NUM:fig_alg_sync}}. Above each raster: the planted
+event (▼) and the rule's calls. Below: how many different cells brightened in each {{T.cnt_bin}}-second bin,
+and the bar of {{T.cnt_one_bar}} cells — the one bar that scored best across both simulated backgrounds
+(Figure {{NUM:fig_count_bar}}).</figcaption></figure>
+<p>Every program in this document does a lot of work to decide what chance looks like. There is a much
+simpler rule: cut the recording into short bins, count how many different cells brighten in each bin, and
+call a coordinated event wherever that count reaches a fixed number (Figure {{NUM:fig_count_rule}}). No
+copies, and no chance. So why not use it?</p>
+<p>Labs that study these same cells use rules like it. Allan Herbison's lab, recording brain slices as this
+lab does, calls a <b>synchronized event</b> whenever the event peaks of at least 2 cells fall within 10
+seconds of each other, and adds any further cell whose peak falls within 10 seconds of the one before
+(<a href="https://doi.org/10.1016/j.celrep.2022.111914">Han and others, 2023</a>). The same rule, still at 2
+cells, is used in the lab's slice papers through 2026
+(<a href="https://doi.org/10.1210/endocr/bqad167">Morris and Herbison, 2023</a>;
+<a href="https://doi.org/10.1111/jne.70170">Eddleston and others, 2026</a>). Aleisha Moore and coworkers,
+recording these cells in living mice, called an episode synchronized when every recorded cell brightened
+(<a href="https://doi.org/10.1073/pnas.2117767119">Moore, Coolen and Lehman, 2022</a>). None of these
+papers checks its rule against chance. This section does.</p>
+
+<h3>On simulated recordings, counting can score well</h3>
+<figure>{{FIG:fig_count_bar}}
+<figcaption><b>Figure {{NUM:fig_count_bar}}. What the bar does.</b> The counting rule with
+{{T.cnt_bin}}-second bins, run on the same {{T.n_recordings_scored}} simulated recordings as the six
+programs and graded the same way, at every bar from {{T.cnt_x_lo}} to {{T.cnt_x_hi}} cells. A: the overall
+score. B: how much of the busy stretch, where nothing is planted, sits under a call or within {{T.tol}}
+seconds of one. Rings mark the bar with the best score on each background. Dashed teal lines: CoactDetect at
+its stored setting on the same recordings; in B, CoactDetect and LoCo both call less than 1% of the
+stretch.</figcaption></figure>
+<p><b>With the right bar, counting scores about as well as the best programs.</b> With a bar of
+{{T.cnt_best_quiet}} cells it scored {{T.cnt_f1_best_quiet}} on the quiet background; CoactDetect scored
+{{T.cnt_coact_f1_quiet}} on the same recordings (Figure {{NUM:fig_count_bar}}, A). That is a real result.
+It also flatters counting a little, because its bar was picked on these very recordings, with the answers in
+hand.</p>
+<p><b>But the right bar depends on the recording.</b> On the busy background the best bar is
+{{T.cnt_best_busy}} cells. Use the quiet background's bar of {{T.cnt_best_quiet}} there and the score falls
+to {{T.cnt_quiet_bar_on_busy}}. The one bar that does best on both backgrounds together,
+{{T.cnt_one_bar}} cells, scores {{T.cnt_f1_one_quiet}} on the quiet background and {{T.cnt_f1_one_busy}} on
+the busy one.</p>
+<p><b>And the bar that scores best calls most of the busy stretch, where nothing was planted</b> (Figure
+{{NUM:fig_count_bar}}, B). At its best bar, counting called {{T.cnt_empty_best_quiet}} of that stretch on
+the quiet background and {{T.cnt_empty_best_busy}} on the busy one. On the busy background, CoactDetect
+called {{T.cnt_coact_empty_busy}} of the stretch and LoCo {{T.cnt_loco_empty_busy}}. Bins of 10 seconds did no better:
+counting with them called at least {{T.cnt10_empty}} of the stretch at its best bars. Herbison's rule, run
+exactly as published, called at least {{T.herb_empty_busy}} of it and scored {{T.herb_f1_quiet}} on the
+quiet background and {{T.herb_f1_busy}} on the busy one — though our simulated recordings hold {{T.n_cells_sim}} cells, more than the 8 to 29
+in view in that lab's slices, and a rule built for fewer cells is reached more easily with more.</p>
+<p>The overall score did not show this, because calls inside the busy stretch are kept out of it and counted
+on their own (Section {{SEC:grading}}). Two of the six programs have the same weakness: binned SCE, which
+also counts cells in bins but sets one bar from the whole recording, called {{T.cnt_sce_empty_busy}} of the
+stretch, and locust called {{T.cnt_cicada_empty_busy}}. CoactDetect and LoCo avoid it by setting their bar
+from the minutes around each moment, so a busy stretch raises its own bar.</p>
+
+<h3>On real recordings, no single bar fits</h3>
+<figure>{{FIG:fig_count_slices}}
+<figcaption><b>Figure {{NUM:fig_count_slices}}. The bar each real recording needs.</b> One dot for each of
+the lab's {{T.cnt_n_real}} untreated recordings: the stretch before any drug, brief events. For each one we
+made {{T.cnt_draws}} shifted copies and found the smallest bar, in cells per {{T.cnt_bin}}-second bin, that
+chance reaches less than once every 10 minutes. Orange: recordings where chance reaches the bar of
+{{T.cnt_one_bar}} cells from Figure {{NUM:fig_count_bar}} more often than that. Dotted line: how busy the
+simulated busy stretch is, busier than {{T.cnt_block_slower}} of the {{T.cnt_n_real}} real
+recordings.</figcaption></figure>
+<p>Real recordings differ far more than the two simulated backgrounds do. Across the lab's
+{{T.cnt_n_real}} untreated recordings, a cell brightened between {{T.cnt_rate_min}} and
+{{T.cnt_rate_max}} times a minute on average — between {{T.cnt_rate_p10}} and {{T.cnt_rate_p90}} times in
+eight recordings out of ten — and a recording held {{T.cnt_cells_min}} to {{T.cnt_cells_max}} cells. The
+bar that holds chance to less than once in 10 minutes climbs with how busy the cells are, from
+{{T.cnt_need_min}} cells to {{T.cnt_need_max}} (Figure {{NUM:fig_count_slices}}). A bar of
+{{T.cnt_one_bar}} cells lets chance through in {{T.cnt_n_loose}} of the {{T.cnt_n_real}} recordings — in
+one of them {{T.cnt_loose_max}} times every 10 minutes — while in {{T.cnt_n_strict}} recordings a bar of 3
+cells would already have been enough.</p>
+<p>That is the real trouble with a fixed bar. A drug that makes cells brighten more often moves a recording
+to the right in Figure {{NUM:fig_count_slices}}. With a fixed bar, that recording then shows more
+"coordinated events" even if nothing about how the cells work together has changed.</p>
+
+<h3>At the published rate, what does chance give?</h3>
+<figure>{{FIG:fig_count_published}}
+<figcaption><b>Figure {{NUM:fig_count_published}}. The published rule, on cells that fire
+independently.</b> Simulated cells that each brighten at random, at a steady rate, with no link to one
+another, run through Herbison's rule (at least 2 cells, each peak within 10 seconds of the one before), for
+fields of {{T.pub_cells_lo}} to {{T.pub_cells_hi}} cells, {{T.pub_hours}} simulated hours for each point.
+A: synchronized events per cell per hour — the number of events divided by the number of cells and hours,
+the way the papers count it. B: the average number of cells in each event. Shaded: the
+{{T.pub_field_lo}} to {{T.pub_field_hi}} cells in view that the 2026 paper reports. Dashed red: that
+paper's reported averages.</figcaption></figure>
+<p>None of these papers compares its rule with chance, so we made the simplest version of that comparison
+(Figure {{NUM:fig_count_published}}). In the most recent paper, a cell brightened {{T.pub_rep_rate}} times
+an hour, and the paper reports {{T.pub_rep_mse}} synchronized events per cell per hour, each joined by
+{{T.pub_rep_cells}} cells ({{T.pub_rep_share}}% of the cells in view) on average
+(<a href="https://doi.org/10.1111/jne.70170">Eddleston and others, 2026</a>). Cells that fire completely
+independently at that rate, in a field of {{T.pub_field}} cells — about the average those two numbers
+imply — meet the rule {{T.pub_chance_mse}} times per cell per hour, with {{T.pub_chance_cells}} cells in
+each.</p>
+<p>So at that rate, independent cells alone produce about as many synchronized events as the paper reports,
+but smaller ones: the events the paper found hold more cells than chance events do. Real cells do not fire
+at a steady rate, and none of the paper's data went into this, so it is not a verdict on its findings. It
+shows why a count needs a chance comparison beside it: without one, there is no way to tell how much of the
+count chance alone would have produced.</p>
+
+<h3>What this means</h3>
+<p>Counting cells in bins is not wrong, and on quiet simulated recordings it does about as well as any
+program here. What a fixed bar cannot do is tell a busy stretch from a coordinated one, because the bar does
+not move when the cells get busier. Shifted copies (Section {{SEC:copies}}) let a program set its bar from
+the recording's own chance, and CoactDetect and LoCo go one step further, setting it from the minutes
+around each moment. That is what the extra work buys.</p>
 
 <h2 id="s11">{{SEC:real}}. Detection on real recordings</h2>
 <p><b>A real recording has no answer key.</b> The figures in this section show where each program made
@@ -598,6 +712,19 @@ raster would call those stripes.</p>
   <li><b>Simulated test recordings with a known answer</b> are established practice: Mölter J., Avitan L.,
   Goodhill G.J. (2018), above. The simulator, the grading and the tests in this document were built by
   this project.</li>
+  <li><b>Counting cells together, in labs that study these cells.</b> The slice rule (at least 2 cells, each
+  peak within 10 seconds of the one before) is defined in Han S.Y., Morris P.G., Kim J.C., Guru S.,
+  Pardo-Navarro M., Yeo S.H., McQuillan H.J., Herbison A.E. (2023). Mechanism of kisspeptin neuron
+  synchronization for pulsatile hormone secretion in male mice. <i>Cell Reports</i> 42:111914,
+  <a href="https://doi.org/10.1016/j.celrep.2022.111914">doi.org/10.1016/j.celrep.2022.111914</a>, and used
+  again in Morris P.G., Herbison A.E. (2023), <i>Endocrinology</i> 164:bqad167,
+  <a href="https://doi.org/10.1210/endocr/bqad167">doi.org/10.1210/endocr/bqad167</a>, and Eddleston T.,
+  Morris P.G., Herbison A.E. (2026), <i>J Neuroendocrinol</i> 38:e70170,
+  <a href="https://doi.org/10.1111/jne.70170">doi.org/10.1111/jne.70170</a>. Episodes in which every recorded
+  cell brightened, in living mice: Moore A.M., Coolen L.M., Lehman M.N. (2022), <i>PNAS</i> 119:e2117767119,
+  <a href="https://doi.org/10.1073/pnas.2117767119">doi.org/10.1073/pnas.2117767119</a>. The chance
+  comparison in Figure {{NUM:fig_count_published}} is ours; it uses only the averages those papers
+  report.</li>
 </ol>
 
 <h2 id="words">Word list</h2>
@@ -611,8 +738,8 @@ raster would call those stripes.</p>
   or 10 seconds long, depending on the program.</dd>
   <dt>Brief events, long events</dt><dd>The lab's event-finding program keeps short brightenings and much longer
   ones in two separate lists. Each list is studied on its own.</dd>
-  <dt>Calcium event</dt><dd>A short brightening of one cell in the recording, which means calcium entered
-  that cell and then cleared again. It is what we observe; what caused the rise is a separate
+  <dt>Calcium event</dt><dd>A short brightening of one cell in the recording: calcium inside that cell went
+  up and then cleared again. It is what we observe; what caused the rise is a separate
   question.</dd>
   <dt>GCaMP6f</dt><dd>The glowing protein these cells build themselves, from a gene the mice carry. It is
   dim on its own and bright when calcium is around it, which is what makes a rise in calcium visible
@@ -640,6 +767,8 @@ raster would call those stripes.</p>
   cell's own pattern as well, which is why it gets chance wrong (Section {{SEC:shuffle}}).</dd>
   <dt>Simulate, simulator</dt><dd>To produce a recording ourselves instead of measuring one, choosing in
   advance when the cells act together. The simulator is the program that writes those recordings.</dd>
+  <dt>Synchronized event</dt><dd>The name Allan Herbison's lab uses for a call of its counting rule: at least 2
+  cells whose event peaks fall within 10 seconds of each other (Section {{SEC:count}}).</dd>
   <dt>TTX (tetrodotoxin)</dt><dd>A drug that blocks the fast electrical signals most nerve cells use.</dd>
 </dl>
 <p style="color:var(--muted);font-size:14px;margin-top:40px">Built {{T.built}}. Every number in the text is filled

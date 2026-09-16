@@ -563,3 +563,69 @@ the data. The caption now reads "not at the setting a round picked in Figure 14"
   console, `UnicodeEncodeError` on `⚠`). `--staged` and CI are unaffected, which is why nobody hit it.
   Workaround for now: `PYTHONIOENCODING=utf-8`. Filed as a todo.
 - 31 WARN-level SAP015 hits ("data" as singular) are standing tree-wide, none from this work.
+
+## 36. "Why not just count events in a time bin?" — a new section, answered by measurement (2026-09-16)
+
+*"while we wait on the re-optimization, i think it is important to address the simple question of why not
+just count events in a time bin. more than x events in the bin is a coordinated event. 'that's what everyone
+else does' [not true i know, but Herbison and Moore do it]"* — then, asked where it should live: a section in
+this review; and the chance comparison at the published rate included, neutrally.
+
+**Built as Section "Why not just count cells in a bin?"**, after the scores, with four figures and a new
+builder stage (`count`). The rule is tested, not argued with: it runs on the same 24 simulated recordings,
+graded the same way as the six programs, and on the lab's untreated baselines.
+
+### What the literature actually does (read from the shelf copies in Dropbox `01-lit/lit/`)
+
+The premise needed one correction. **Herbison's lab does not use bins.** Han et al. 2023 (Methods): an mSE
+is events from at least 2 cells peaking within 10 s of each other, and further cells join if they peak within
+10 s *of the previous peak in the mSE* — a chain, with no ceiling on duration. The same rule, at 2 cells,
+runs through Morris & Herbison 2023 and Eddleston et al. 2026. **Moore, Coolen & Lehman 2022** (in vivo)
+call an episode synchronized when *all* recorded cells rise. None of the four compares its rule with
+chance. The Dropbox survey spreadsheets (`herbison_moore_arnkiss_calcium_imaging_survey.xlsx`,
+`herbison_event_frequency_2x2.xlsx`) already tabulated these papers and were read before building.
+
+**"Per cell, per hour" was ambiguous and is settled by the papers' own arithmetic.** Morris & Herbison 2023
+convert 0.66/cell/h for ≥5-cell events into "an overall rate of 9.4 per hour within the experimental field
+of view" by multiplying by cells (16.4 per slice) — so it is *count ÷ cells ÷ hours*. Under that reading
+their headline 10.3 mSEs/cell/h against 14.7 events/cell/h cannot hold (each mSE needs ≥2 events), so the
+section does **not** compare against it. Eddleston 2026's numbers are consistent under it (2.6 × 3.7 cells
+≤ 13.4), and that is the paper the chance comparison uses.
+
+### What the measurement says (simulated recordings; real-recording numbers are in the darkroom page)
+
+- **With the right bar, counting scores as well as the best programs** — 0.73 with a 3-cell bar in 2 s
+  bins on the quiet background, against CoactDetect's 0.74 on the same recordings. Said plainly in the
+  section, with the caveat that the bar was picked on those very recordings.
+- **The right bar moves with the background** (3 cells quiet, 5 busy); the quiet bar on the busy background
+  scores 0.31.
+- **At its best bars it calls 84–99% of the empty busy stretch** (2 s and 10 s bins); CoactDetect 0.6% and
+  LoCo 0.2%. Herbison's rule as published calls ≥99% — with the section noting our recordings hold 33
+  cells, more than their 8–29.
+- binned SCE (95%) and locust (27%) share the weakness: a bar set from the whole recording does not rise in
+  a busy stretch.
+- **Published rule under independent firing**, at Eddleston's 13.4 events/cell/h and a 13-cell field:
+  about 3.0 mSEs/cell/h with 2.5 cells each, against the reported 2.6 with 3.7 cells. Stated both ways —
+  chance reaches the reported *rate*, but the reported events are *larger* than chance events — and
+  explicitly not a verdict on their data.
+
+### Two corrections this surfaced in the existing page
+
+- **The grading section implied calls in the busy stretch count against the score.** They are false alarms,
+  but `BenchResult.precision` leaves the probe out of F1 by design. A paragraph now says so, and says the
+  cost: the overall score cannot see a program that calls straight through a busy stretch. That blindness is
+  exactly how counting's good score hid 84–99% calling.
+- **Word list, "Calcium event": "calcium entered that cell"** assumed a mechanism (entry, not release) — the
+  note-21 fault. Now "calcium inside that cell went up".
+
+### Measurement choices worth knowing
+
+- **Calling on nothing is measured as the share of 1-second moments in the empty stretch within the
+  scoring tolerance of a call**, not calls per minute. The first exploration used per-minute counts and they
+  ran *backwards*: a low bar merges the whole stretch into one call, which counts as one false alarm.
+- The counting reuses binned SCE's own `_coactivity`, so the rule differs from binned SCE in the bar alone.
+- The first draft of the published-rule figure drew chance curves at 7.0/11.3/14.7 events/cell/h beside
+  Eddleston's reported line at 13.4 — a comparison that was not like for like. It now draws 13.4 (and 7.0,
+  the slowest reported rate, lighter).
+- Two figure overlaps caught on render and fixed before publishing: a margin label running into the next
+  panel's axis label, and line labels touching a raster frame.

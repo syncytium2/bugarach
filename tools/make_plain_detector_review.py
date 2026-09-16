@@ -622,6 +622,227 @@ def stage_real(work: Path, review: Path) -> None:
         print("   close-up", k, v["key"], [round((x - v["anchor"]) / 60, 2) for x in v["win"]])
 
 
+# ----------------------------------------------------------------------- stage: count
+# "Why not just count cells in a bin?" Tony, 2026-09-16: more than x events in a bin is a
+# coordinated event — "that's what everyone else does" [not true, he adds, but Herbison and
+# Moore do it]. The answer is a measurement, not an argument: the rule is run on the same
+# simulated recordings and graded the same way as the six programs, then asked how much chance
+# it lets through on the lab's own untreated recordings and at the published rates.
+#
+# The counting is binned SCE's own `_coactivity` (different cells with an event in a bin), so
+# the rule differs from binned SCE in exactly one thing: its bar is a fixed number instead of a
+# percentile of shifted copies.
+COUNT_BINS = (2.0, 10.0)            # CoactDetect's bin, and binned SCE's
+COUNT_XS = tuple(range(2, 13))
+FIG_BIN = 2.0                       # the bin the figures draw
+REAL_XS = tuple(range(2, 31))
+CHANCE_DRAWS = 20
+HERB_WIN = 10.0                     # Han et al. 2023, Methods: each peak within 10 s of the previous
+HERB_KS = (2, 3, 4, 5, 6, 8)        # 2 is the published value
+#: Events per cell per hour. 13.4 is the 2026 paper's own rate, so its chance curve is the one the
+#: dashed "reported" line may be read against; 7.0 is the slowest rate the slice papers report (Han
+#: et al. 2023, gonadectomized males). A curve at any other rate beside that line would invite a
+#: comparison that is not like for like — the first draft drew 7.0/11.3/14.7 and did exactly that.
+PUB_RATES = (7.0, 13.4)
+PUB_CELLS = tuple(range(4, 31))
+PUB_HOURS = 100.0
+#: Eddleston, Morris & Herbison 2026, Results: 13.4 events/cell/h, 2.6 mSEs/cell/h, 3.7 cells
+#: (29.1%) per mSE, 8-29 cells in view. 3.7 / 0.291 puts the average field near 13 cells. The one
+#: paper of the set whose reported numbers are consistent with the "divide by cells" reading of
+#: "per cell, per hour" that Morris & Herbison 2023 use when they convert 0.66/cell/h to a field rate.
+EDDLESTON = dict(rate=13.4, mse=2.6, cells_per=3.7, share=29.1, field_lo=8, field_hi=29, field=13)
+
+
+def _count_rule_calls(obs, t_lo, bw, x):
+    """Bins reaching x cells; bins that touch make one call spanning all of them."""
+    on = np.flatnonzero(np.asarray(obs) >= x)
+    if on.size == 0:
+        return np.empty(0), np.empty(0)
+    br = np.flatnonzero(np.diff(on) != 1)
+    s, e = np.r_[on[0], on[br + 1]], np.r_[on[br], on[-1]]
+    return t_lo + s * bw, (e - s + 1) * bw
+
+
+def _herbison_calls(trains, k=2, win=HERB_WIN):
+    """The published slice rule, as Han et al. 2023 state it: events from at least k cells, each
+    peaking within `win` seconds of the previous peak already in the event. Returns onsets,
+    spans and how many different cells each event holds."""
+    parts = [np.asarray(v, float) for v in trains]
+    t = np.concatenate(parts) if parts else np.empty(0)
+    if t.size == 0:
+        return np.empty(0), np.empty(0), np.empty(0, int)
+    c = np.concatenate([np.full(v.size, i) for i, v in enumerate(parts)])
+    o = np.argsort(t, kind="stable")
+    t, c = t[o], c[o]
+    starts = np.r_[0, np.flatnonzero(np.diff(t) > win) + 1]
+    ends = np.r_[starts[1:], t.size]
+    on, wd, size = [], [], []
+    for a, b in zip(starts, ends):
+        n = np.unique(c[a:b]).size
+        if n >= k:
+            on.append(t[a])
+            wd.append(t[b - 1] - t[a])
+            size.append(n)
+    return np.array(on), np.array(wd), np.array(size, int)
+
+
+def _near_share(on, wd, block, tol):
+    """1-second moments of an empty block that sit within the scoring tolerance of a call.
+
+    The unit the first review's busy-stretch chance line used. It judges a point call and a
+    long call alike, which a count of calls per minute does not: a rule that calls one span
+    across the whole block makes ONE call there, and a per-minute count reads that as quiet."""
+    grid = np.arange(block[0], block[1], 1.0)
+    on, wd = np.asarray(on, float), np.asarray(wd, float)
+    if on.size == 0:
+        return 0, int(grid.size)
+    hi = on + np.where(np.isfinite(wd), wd, 0.0)
+    near = np.zeros(grid.size, bool)
+    for a, b in zip(on, hi):
+        near |= (grid >= a - tol) & (grid <= b + tol)
+    return int(near.sum()), int(grid.size)
+
+
+def _count_bench_one(job):
+    regime, seed = job
+    from bugarach import bench
+    from bugarach.detectors.rate import recording_extent, stream_trains
+    from bugarach.detectors.sce import _coactivity
+    from bugarach.score import TOL_SEC, score_detections
+    s, gt = bench.make_recording(regime, seed)
+    block = gt.params["hot_window"]
+    ext = recording_extent(s)
+    trains = stream_trains(s.streams[bench.STREAM], ext)
+    out = {}
+
+    def add(name, on, wd):
+        out[name] = (score_detections(gt, on, widths=wd), _near_share(on, wd, block, TOL_SEC))
+    for d in CODED:
+        r = bench.run_detector(d, s)
+        on, wd = (r.onset_sec, r.width_sec) if hasattr(r, "onset_sec") else (r.locs, r.widths)
+        if d == "sce":       # a binned call spans its bin (the scoring figure's right-hand dot)
+            wd = np.full(np.size(on), float(bench.OPERATING_POINTS["sce"].params["bin_width_sec"]))
+        add(d, on, wd)
+    t_lo, t_hi = ext
+    L = t_hi - t_lo
+    rel = [np.asarray(v, float) - t_lo for v in trains]
+    for bw in COUNT_BINS:
+        obs = _coactivity(rel, np.zeros(len(rel)), L, t_lo, t_lo, t_hi, bw, int(np.ceil(L / bw)))
+        for x in COUNT_XS:
+            add(f"count|{bw:g}|{x}", *_count_rule_calls(obs, t_lo, bw, x))
+    for k in HERB_KS:
+        add(f"herbison|{k}", *_herbison_calls(trains, k)[:2])
+    return regime, seed, out
+
+
+def _count_real_one(job):
+    """One untreated baseline: how often chance alone reaches each bar, from shifted copies."""
+    rid, dt, win, trains = job
+    from bugarach.detectors.sce import _coactivity
+    from bugarach.surrogates import circular_shift
+    L = int(win[1] - win[0])
+    tr = [np.asarray(v, np.int64) - int(win[0]) for v in trains]
+    n = len(tr)
+    dur = L * dt
+    minutes = dur / 60.0
+    draws = [circular_shift(tr, (0, L), (rid, "why-not-count", k)).trains for k in range(CHANCE_DRAWS)]
+    out = dict(n_roi=n, minutes=minutes,
+               rate=float(sum(np.size(v) for v in tr)) / max(1, n) / minutes)
+    for bw in COUNT_BINS:
+        nb = max(1, int(np.floor(dur / bw)))
+
+        def counts(tt):
+            rel = [np.asarray(v, float) * dt for v in tt]
+            return _coactivity(rel, np.zeros(n), dur, 0.0, 0.0, nb * bw - 1e-9, bw, nb)
+        sur = [counts(d) for d in draws]
+        per10 = [float(np.mean([np.sum(c >= x) for c in sur])) / minutes * 10 for x in REAL_XS]
+        need = next((x for x, v in zip(REAL_XS, per10) if v < 1.0), None)
+        out[f"chance_per10|{bw:g}"] = per10
+        out[f"need|{bw:g}"] = need
+    return out
+
+
+def _published_chance():
+    """Cells that each fire at random, independently, at a published rate, run through the
+    published rule. The plainest possible null — real cells do not fire evenly — so it is the
+    size of the number a chance check would have to beat, not a verdict on anyone's data."""
+    rng = np.random.default_rng(20260916)
+
+    def one(rate_h, n_cells, hours):
+        T = hours * 3600.0
+        trains = [np.sort(rng.uniform(0, T, rng.poisson(rate_h * hours))) for _ in range(n_cells)]
+        on, _, size = _herbison_calls(trains, 2)
+        return dict(mse_per_cell_h=on.size / n_cells / hours,
+                    cells_per=float(size.mean()) if size.size else float("nan"))
+    curves = {f"{r:g}": [dict(cells=n, **one(r, n, PUB_HOURS)) for n in PUB_CELLS] for r in PUB_RATES}
+    e = EDDLESTON
+    at = {str(n): one(e["rate"], n, 5 * PUB_HOURS) for n in (e["field_lo"], e["field"], e["field_hi"])}
+    return dict(curves=curves, eddleston=dict(e, chance=at))
+
+
+def stage_count(work: Path) -> None:
+    from concurrent.futures import ProcessPoolExecutor
+
+    from bugarach import bench, dataset
+    from bugarach.detectors.sce import _coactivity
+    from bugarach.io import load_folder
+    from bugarach.surrogate_stats import recordings_from_slices
+
+    # ---- the bench: the same 24 recordings, the same grading ---------------------------------
+    seeds = bench.fold_split(n_folds=4, seeds_per_fold=6).seeds
+    regimes = ("baseline_quiet", "baseline_busy")
+    with ProcessPoolExecutor(12) as ex:
+        runs = list(ex.map(_count_bench_one, [(r, sd) for r in regimes for sd in seeds]))
+    table = {}
+    for reg in regimes:
+        table[reg] = {}
+        for name in runs[0][2]:
+            got = [o[name] for r, _, o in runs if r == reg]
+            p = bench.pool_scores([g[0] for g in got], detector=name.split("|")[0], regime=reg, seeds=seeds)
+            table[reg][name] = dict(f1=p.f1, recall6=p.recall_at(0.18), recall3=p.recall_at(0.10),
+                                    empty=sum(g[1][0] for g in got) / sum(g[1][1] for g in got))
+    f1 = lambda reg, bw, x: np.nan_to_num(table[reg][f"count|{bw:g}|{x}"]["f1"])   # noqa: E731
+    best = {f"{bw:g}": {reg: int(max(COUNT_XS, key=lambda x: f1(reg, bw, x))) for reg in regimes}
+            for bw in COUNT_BINS}
+    one_bar = {f"{bw:g}": int(max(COUNT_XS, key=lambda x: f1(regimes[0], bw, x) + f1(regimes[1], bw, x)))
+               for bw in COUNT_BINS}
+    rec = bench.BENCH_RECORDING
+    block_rate = {reg: (bench.REGIMES[reg]["bg_rate_hz"] + rec["hot_rate_hz"]) * 60 for reg in regimes}
+
+    # ---- the picture: the rule on the simulated minutes the algorithm figures use -------------
+    sim = json.loads((work / "plain.json").read_text())["sim"]
+    ext = sim["ext"]
+    L = ext[1] - ext[0]
+    nb = int(np.ceil(L / FIG_BIN))
+    rel = [np.asarray(v, float) - ext[0] for v in sim["full_trains"]]
+    obs = _coactivity(rel, np.zeros(len(rel)), L, ext[0], ext[0], ext[1], FIG_BIN, nb)
+    ctr = ext[0] + (np.arange(nb) + 0.5) * FIG_BIN
+    on, wd = _count_rule_calls(obs, ext[0], FIG_BIN, one_bar[f"{FIG_BIN:g}"])
+    demo = {}
+    for key in ("A", "B"):
+        w = sim[key]["win"]
+        t, y = _clip(ctr, obs, w, pad=FIG_BIN)
+        demo[key] = dict(t=t, y=y, calls=_calls_in(on, wd, w))
+
+    # ---- real untreated baselines: how much chance a fixed bar lets through -------------------
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        slices = load_folder(dataset.current("steps_excluded"))
+    recs, skipped = recordings_from_slices(slices, "fast")
+    jobs = [(r.recording_id, float(r.dt), tuple(r.window), [np.asarray(v) for v in r.trains]) for r in recs]
+    with ProcessPoolExecutor(12) as ex:
+        real = list(ex.map(_count_real_one, jobs))
+
+    out = dict(bins=list(COUNT_BINS), xs=list(COUNT_XS), fig_bin=FIG_BIN, real_xs=list(REAL_XS),
+               bench=table, best=best, one_bar=one_bar, block_rate_per_min=block_rate,
+               demo=demo, real=real, n_skipped=len(skipped), herb_ks=list(HERB_KS),
+               published=_published_chance())
+    put(work, "count", out)
+    b = f"{FIG_BIN:g}"
+    print(f"  count: {b} s bins — best bar quiet {best[b]['baseline_quiet']}, busy {best[b]['baseline_busy']}, "
+          f"one bar {one_bar[b]}; {len(real)} real baselines ({len(skipped)} skipped)")
+
+
 # ----------------------------------------------------------------------- figures
 GREEN, RED, GREY, BARC = "#1b7f3b", "#b3261e", "#8c8c8c", "#111111"
 SHIFT_C, SHUF_C = "#1f6fb2", "#d9730d"
@@ -1475,6 +1696,201 @@ def fig_busy(W, numbers, dets=CODED):
     return f
 
 
+# ----------------------------------------------------------------------- figures: the counting rule
+COUNT_C = "#8a6d3b"
+QUIET_C, BUSY_C = INK_T, "#d9730d"
+
+
+def fig_count_rule(W):
+    """The rule's steps, on the same two simulated minutes every algorithm figure uses."""
+    from svgfig import Figure, MUTED, nice_ticks
+    sim, C = W["sim"], W["count"]
+    bw = C["fig_bin"]
+    x = C["one_bar"][f"{bw:g}"]
+    ev = sim["event"]
+    f = Figure(1000, 700)
+    f.text(20, 26, "How the counting rule decides", size=16, weight=700)
+    y = 56
+    for i, s in enumerate((f"Cut the recording into bins {bw:g} seconds long.",
+                           "In each bin, count how many different cells brighten at least once.",
+                           f"Wherever that count reaches {x} cells, call a coordinated event. Bins side "
+                           "by side that both reach it make one call.",
+                           "No copies are made. The bar is the same number in every recording.")):
+        f.step_badge(32, y - 4, str(i + 1), color=COUNT_C)
+        y = f.para(52, y, s, width_chars=40, size=13) + 12
+    for j, (key, title) in enumerate((("A", "A · a planted event (quiet cells)"),
+                                      ("B", "B · a busy stretch, nothing planted"))):
+        D, K = sim[key], C["demo"][key]
+        X, Wd = 450 + j * 275, 240
+        win = D["win"]
+        f.text(X, 26, title, size=13, weight=600)
+        f.text(X, 42, f"one minute, from {_clock(win[0])} into the recording", size=11, color=MUTED)
+        lane = f.panel(X, 52, Wd, 50, win, (0, 1))
+        if key == "A":
+            ok = _found(K["calls"], ev["time"])
+            lane.down_triangle(ev["time"], 64, color=GREEN if ok else RED, size=12)
+        for on, wd in K["calls"]:
+            lane.span(on, on + max(wd, 0.0), row_y=78, row_h=16, color=COUNT_C)
+        n_calls = sum(1 for on, wd in K["calls"] if on + wd >= win[0] and on <= win[1])
+        f.text(X + Wd, 116, _plural(n_calls, "call"), size=12, anchor="end", color=MUTED)
+        r = f.panel(X, 122, Wd, 178, win, (0, 1))
+        r.raster(_by_activity(D["trains"]), width=1.1)
+        ymax = max(10, x + 3)
+        p = f.panel(X, 352, Wd, 200, win, (0, ymax))
+        p.bars(_arr(K["t"]), _arr(K["y"]), color="#cdb99a", width_frac=0.85)
+        p.hline(x, color=BARC, width=1.8, dash="5 4")
+        p.yaxis(nice_ticks(0, ymax, 4), fmt="{:g}", grid=True)
+        if j == 0:
+            # named above the panel, never on it (Tony, 2026-09-16: no text on the data)
+            f.rich(X, 320, [("▬ ", dict(color="#cdb99a", weight=700)),
+                            (f"different cells in each {bw:g} s bin", dict(color=MUTED))], size=11)
+            f.rich(X, 336, [("- - ", dict(color=BARC, weight=700)),
+                            (f"the bar: {x} cells, in every recording", dict(color=MUTED))], size=11)
+            p.ylabel("cells", lines=["different cells", f"in each {bw:g} s bin"], dx=40)
+            r.ylabel(f"{sim['n_roi']} cells", dx=14)
+            f.text(X - 8, 72, "planted", size=11, anchor="end", color=MUTED)
+            f.text(X - 8, 91, "calls", size=11, anchor="end", color=MUTED)
+        p.xaxis_time(offset=win[0], target=4, label="seconds from the start of this minute")
+    xx, ky = 460, 625
+    for col, lab in ((GREEN, "planted event, found"), (RED, "planted event, missed")):
+        f.rich(xx, ky, [("▼ ", dict(color=col, weight=700)), (lab, dict(color=MUTED))], size=12)
+        xx += 16 + 7.0 * len(lab) + 14
+    f.h = ky + 20
+    return f
+
+
+def fig_count_bar(W):
+    """What the bar does to the score, and to calls where nothing was planted."""
+    from svgfig import Figure, MUTED
+    C = W["count"]
+    bw = C["fig_bin"]
+    xs = C["xs"]
+    B = C["bench"]
+    regs = (("baseline_quiet", QUIET_C, "quiet background"), ("baseline_busy", BUSY_C, "busy background"))
+    # Panel B sits far enough right that A's margin labels ("CoactDetect, busy") end before B's
+    # axis label begins; the first draft ran one into the other.
+    f = Figure(1030, 470)
+    for j, (key, title, ylim, ticks, ylab, scale) in enumerate((
+            ("f1", "A · the overall score, bar by bar", (0, 1), [0, 0.25, 0.5, 0.75, 1.0], "overall score", 1),
+            ("empty", "B · how much of the empty busy stretch it calls", (0, 100), [0, 25, 50, 75, 100],
+             "percent of the stretch", 100))):
+        X, PW, PH = (80, 330, 300) if j == 0 else (640, 300, 300)
+        f.text(X, 24, title, size=13, weight=600)
+        p = f.panel(X, 40, PW, PH, (xs[0] - 0.5, xs[-1] + 0.5), ylim)
+        p.yaxis(ticks, fmt="{:g}", grid=True, label=ylab, dx=44)
+        for reg, col, _ in regs:
+            vals = [scale * np.nan_to_num(B[reg][f"count|{bw:g}|{x}"][key]) for x in xs]
+            p.curve(xs, vals, color=col, width=2)
+            p.dots(xs, vals, color=col, r=3.2)
+            bx = C["best"][f"{bw:g}"][reg]
+            v = scale * np.nan_to_num(B[reg][f"count|{bw:g}|{bx}"][key])
+            f.add(f"<circle cx='{float(p.px(bx)):.1f}' cy='{float(p.py(v)):.1f}' r='8' fill='none' "
+                  f"stroke='{col}' stroke-width='1.8'/>")
+        # the references sit in the margin to the right of the frame, never over the curves
+        cc = COLORS["coact"]
+        if key == "f1":
+            for reg, word in (("baseline_quiet", "quiet"), ("baseline_busy", "busy")):
+                v = B[reg]["coact"]["f1"]
+                p.hline(v, color=cc, width=1.4, dash="4 4")
+                f.text(X + PW + 6, float(p.py(v)) + 4, f"CoactDetect, {word}", size=11, color=cc)
+        else:
+            v = 100 * max(B["baseline_busy"]["coact"]["empty"], B["baseline_busy"]["loco"]["empty"])
+            p.hline(v, color=cc, width=1.4, dash="4 4")
+            f.text(X + PW + 6, float(p.py(v)) - 10, "CoactDetect", size=11, color=cc)
+            f.text(X + PW + 6, float(p.py(v)) + 4, "and LoCo", size=11, color=cc)
+        p.xaxis_values(xs, label=f"the bar: different cells in one {bw:g} s bin")
+    f.rich(80, 430, [("● ", dict(color=QUIET_C, weight=700)), ("quiet background   ", dict(color=MUTED)),
+                     ("● ", dict(color=BUSY_C, weight=700)), ("busy background   ", dict(color=MUTED)),
+                     ("◯ ", dict(color=MUTED, weight=700)), ("the bar with the best score   ", dict(color=MUTED)),
+                     ("- - ", dict(color=COLORS["coact"], weight=700)),
+                     ("programs that judge chance from the minutes around each moment", dict(color=MUTED))],
+           size=12)
+    f.h = 450
+    return f
+
+
+def fig_count_slices(W):
+    """One dot per untreated real recording: the bar its own chance needs."""
+    from svgfig import Figure, MUTED
+    C = W["count"]
+    bw = C["fig_bin"]
+    x1 = C["one_bar"][f"{bw:g}"]
+    R = C["real"]
+    f = Figure(1000, 470)
+    X, Y, PW, PH = 110, 44, 600, 320
+    f.text(X, 24, f"{len(R)} untreated recordings, one dot each", size=13, weight=600)
+    p = f.panel(X, Y, PW, PH, (-2.5, 1.0), (0, 11))
+    p.yaxis([0, 2, 4, 6, 8, 10], fmt="{:g}", grid=True)
+    p.ylabel("cells", lines=[f"cells needed in one {bw:g} s bin so that", "chance reaches it less than once",
+                             "every 10 minutes"], dx=62)
+    rate_q = C["block_rate_per_min"]["baseline_quiet"]
+    Xb = float(p.px(math.log10(rate_q)))
+    f.line(Xb, Y, Xb, Y + PH, color=MUTED, width=1, dash="2 3")
+    f.text(Xb, Y - 6, "the simulated busy stretch", size=11, anchor="middle", color=MUTED)
+    for r in R:
+        need = r[f"need|{bw:g}"]
+        if need is None or r["rate"] <= 0:
+            continue
+        col = BUSY_C if need > x1 else "#7a7a7a"
+        p.dots([math.log10(r["rate"])], [need], color=col, r=4.2, opacity=0.75)
+    p.hline(x1, color=BARC, width=1.6, dash="5 4")
+    f.text(X + PW + 8, float(p.py(x1)) - 6, "the one bar that did best", size=11, color=INK_T)
+    f.text(X + PW + 8, float(p.py(x1)) + 8, f"on simulated recordings: {x1} cells", size=11, color=INK_T)
+    for v, lab in ((-2, "0.01"), (-1, "0.1"), (0, "1"), (1, "10")):
+        Xv = float(p.px(v))
+        f.line(Xv, Y + PH, Xv, Y + PH + 5, color=MUTED)
+        f.text(Xv, Y + PH + 18, lab, size=12, anchor="middle", color=MUTED)
+    f.text(X + PW / 2, Y + PH + 36, "events per cell per minute (each step is ten times more)", size=12,
+           anchor="middle", color=MUTED, italic=True)
+    f.rich(X, 430, [("● ", dict(color=BUSY_C, weight=700)),
+                    (f"a bar of {x1} lets chance through   ", dict(color=MUTED)),
+                    ("● ", dict(color="#7a7a7a", weight=700)),
+                    (f"a bar of {x1} is enough, or more than enough", dict(color=MUTED))], size=12)
+    f.h = 450
+    return f
+
+
+def fig_count_published(W):
+    """The published slice rule, run on cells that fire at random and independently."""
+    from svgfig import Figure, MUTED
+    P = W["count"]["published"]
+    e = P["eddleston"]
+    shades = {"7": "#c9b79c", "13.4": "#5a4527"}
+    words = {"7": "7 events per cell per hour, the slowest rate these papers report",
+             "13.4": "13.4 events per cell per hour, the 2026 paper's rate"}
+    f = Figure(1000, 460)
+    for j, (key, title, ylim, ticks, ylab, rep) in enumerate((
+            ("mse_per_cell_h", "A · synchronized events per cell per hour", (0, 4), [0, 1, 2, 3, 4],
+             "events per cell per hour", e["mse"]),
+            ("cells_per", "B · cells in each synchronized event", (2, 4.5), [2, 3, 4], "cells in each event",
+             e["cells_per"]))):
+        X, PW, PH = 90 + j * 470, 330, 290
+        f.text(X, 24, title, size=13, weight=600)
+        p = f.panel(X, 40, PW, PH, (PUB_CELLS[0], PUB_CELLS[-1]), ylim)
+        # the field sizes the 2026 paper reports, shaded behind everything
+        f.rect(float(p.px(e["field_lo"])), 40, float(p.px(e["field_hi"])) - float(p.px(e["field_lo"])), PH,
+               fill="#f1ede6")
+        p.yaxis(ticks, fmt="{:g}", grid=True, label=ylab, dx=40)
+        for rate, rows in P["curves"].items():
+            p.curve([r_["cells"] for r_ in rows], [r_[key] for r_ in rows], color=shades.get(rate, MUTED), width=2)
+        p.hline(rep, color=RED, width=1.6, dash="5 4", x0=e["field_lo"], x1=e["field_hi"])
+        f.text(X + PW + 6, float(p.py(rep)) - 4, "reported,", size=11, color=RED)
+        f.text(X + PW + 6, float(p.py(rep)) + 10, "2026 paper", size=11, color=RED)
+        p.xaxis_values([4, 8, 13, 20, 29], label="cells in view")
+    spans = []
+    for rate in P["curves"]:
+        spans += [("▬ ", dict(color=shades.get(rate, MUTED), weight=700)),
+                  (words.get(rate, f"{float(rate):g} events per cell per hour") + "   ", dict(color=MUTED))]
+    f.rich(90, 400, spans, size=12)
+    f.rich(90, 420, [("▮ ", dict(color="#e2dbcf", weight=700)),
+                     (f"{e['field_lo']} to {e['field_hi']} cells in view, as the 2026 paper reports   ",
+                      dict(color=MUTED)),
+                     ("- - ", dict(color=RED, weight=700)), ("what that paper reports", dict(color=MUTED))],
+           size=12)
+    f.h = 440
+    return f
+
+
 PERIOD_COLORS = {"baseline": "#bcc3cc", "senktide": "#c96f2a", "TTX": "#4a86c5", "high K+": "#7d7d7d"}
 
 
@@ -1671,7 +2087,9 @@ def stage_figures(work: Path, review: Path) -> None:
     for d in CODED:
         figs[f"fig_alg_{d}"] = fig_algorithm(W, d)
     figs.update({"fig_simulator": fig_simulator(W, numbers), "fig_grading": fig_grading(W, numbers),
-                 "fig_scores": fig_scores(W, numbers), "fig_busy": fig_busy(W, numbers)})
+                 "fig_scores": fig_scores(W, numbers), "fig_busy": fig_busy(W, numbers),
+                 "fig_count_rule": fig_count_rule(W), "fig_count_bar": fig_count_bar(W),
+                 "fig_count_slices": fig_count_slices(W), "fig_count_published": fig_count_published(W)})
     for name, label, stream in (("real_ttx_brief", "TTX", "fast"), ("real_ttx_long", "TTX", "slow"),
                                 ("real_senk_brief", "senktide", "fast"),
                                 ("real_senk_long", "senktide", "slow")):
@@ -1708,6 +2126,56 @@ def _round_disagreement(N) -> dict:
     lo, hi = (sorted(picks["cicada"], key=lambda s: float(s.replace(",", "")))[i] for i in (0, -1))
     return dict(n_setting_disagree=sum(1 for p in picks.values() if len(set(p)) > 1),
                 cicada_pick_lo=lo, cicada_pick_hi=hi)
+
+
+def _count_values(W) -> dict:
+    """The counting section's numbers. Every one is read off the `count` stage, so the prose cannot
+    drift from the measurement; the published papers' own figures are the only constants."""
+    C = W["count"]
+    bw = f"{C['fig_bin']:g}"
+    B = C["bench"]
+    q, b = "baseline_quiet", "baseline_busy"
+    bq, bb, one = C["best"][bw][q], C["best"][bw][b], C["one_bar"][bw]
+    f2 = lambda v: f"{v:.2f}"                                         # noqa: E731
+    pc = lambda v: f"{100 * v:.0f}%" if v >= 0.01 else f"{100 * v:.1f}%"   # noqa: E731
+    # for "at least X%": round DOWN, or 99.5% prints as "at least 100%"
+    floor_pc = lambda v: f"{math.floor(100 * v)}%"                       # noqa: E731
+    R = C["real"]
+    rate = np.array([r["rate"] for r in R])
+    cells = np.array([r["n_roi"] for r in R])
+    need = np.array([np.nan if r[f"need|{bw}"] is None else r[f"need|{bw}"] for r in R], float)
+    i1 = C["real_xs"].index(one)
+    per10 = np.array([r[f"chance_per10|{bw}"][i1] for r in R])
+    e = C["published"]["eddleston"]
+    ch = e["chance"][str(e["field"])]
+    ten = max(B[reg][f"count|10|{C['best']['10'][reg]}"]["empty"] for reg in (q, b))
+    ten_min = min(B[reg][f"count|10|{C['best']['10'][reg]}"]["empty"] for reg in (q, b))
+    return dict(
+        cnt_bin=bw, cnt_x_lo=C["xs"][0], cnt_x_hi=C["xs"][-1], cnt_one_bar=one,
+        cnt_best_quiet=bq, cnt_best_busy=bb,
+        cnt_f1_best_quiet=f2(B[q][f"count|{bw}|{bq}"]["f1"]), cnt_f1_best_busy=f2(B[b][f"count|{bw}|{bb}"]["f1"]),
+        cnt_f1_one_quiet=f2(B[q][f"count|{bw}|{one}"]["f1"]), cnt_f1_one_busy=f2(B[b][f"count|{bw}|{one}"]["f1"]),
+        cnt_quiet_bar_on_busy=f2(B[b][f"count|{bw}|{bq}"]["f1"]),
+        cnt_empty_best_quiet=pc(B[q][f"count|{bw}|{bq}"]["empty"]),
+        cnt_empty_best_busy=pc(B[b][f"count|{bw}|{bb}"]["empty"]),
+        cnt10_empty=floor_pc(ten_min), cnt10_empty_max=pc(ten),
+        cnt_coact_f1_quiet=f2(B[q]["coact"]["f1"]), cnt_coact_f1_busy=f2(B[b]["coact"]["f1"]),
+        **{f"cnt_{d}_empty_busy": pc(B[b][d]["empty"]) for d in CODED},
+        herb_f1_quiet=f2(B[q]["herbison|2"]["f1"]), herb_f1_busy=f2(B[b]["herbison|2"]["f1"]),
+        herb_empty_busy=floor_pc(min(B[q]["herbison|2"]["empty"], B[b]["herbison|2"]["empty"])),
+        cnt_n_real=len(R), cnt_draws=CHANCE_DRAWS,
+        cnt_rate_min=f"{rate.min():.3f}", cnt_rate_max=f"{rate.max():.0f}",
+        cnt_rate_p10=f"{np.percentile(rate, 10):.2f}", cnt_rate_p90=f"{np.percentile(rate, 90):.1f}",
+        cnt_cells_min=int(cells.min()), cnt_cells_max=int(cells.max()),
+        cnt_need_min=int(np.nanmin(need)), cnt_need_max=int(np.nanmax(need)),
+        cnt_n_loose=int(np.sum(need > one)), cnt_loose_max=f"{per10.max():.0f}",
+        cnt_n_strict=int(np.sum(need <= 3)),
+        cnt_block_slower=int(np.sum(rate < C["block_rate_per_min"][q])),
+        pub_cells_lo=PUB_CELLS[0], pub_cells_hi=PUB_CELLS[-1], pub_hours=f"{PUB_HOURS:g}",
+        pub_rep_rate=f"{e['rate']:g}", pub_rep_mse=f"{e['mse']:g}", pub_rep_cells=f"{e['cells_per']:g}",
+        pub_rep_share=f"{e['share']:g}", pub_field=e["field"], pub_field_lo=e["field_lo"],
+        pub_field_hi=e["field_hi"],
+        pub_chance_mse=f"{ch['mse_per_cell_h']:.1f}", pub_chance_cells=f"{ch['cells_per']:.1f}")
 
 
 def _display_values(W, N) -> dict:
@@ -1825,6 +2293,7 @@ def _display_values(W, N) -> dict:
     except OSError:
         sha = "unknown"
     T["built"] = f"{_dt.date.today().isoformat()} from commit {sha or 'unknown'} of the project's tools"
+    T.update(_count_values(W))
     return T
 
 
@@ -1931,7 +2400,7 @@ def main(argv=None) -> int:
         a.out = darkroom() / FOLDER_NAME
     work = a.out / "_work"
     work.mkdir(parents=True, exist_ok=True)
-    order = ["sim", "toys", "tube", "real", "figures", "page"]
+    order = ["sim", "toys", "tube", "real", "count", "figures", "page"]
     stages = order if a.stages == ["all"] else a.stages
     for st in stages:
         print("stage", st)
