@@ -17,7 +17,7 @@ adds what was missing:
 
 * ``sim``    — every algorithm's steps on one simulated recording, including the chance
   copies each one draws, redrawn for the picture the way the algorithm draws them.
-* ``toys``   — the shift-versus-shuffle demonstration, on made-up cells and on the lab's
+* ``toys``   — the shift-versus-shuffle demonstration, on invented cells and on the lab's
   own evenly firing cells (the first review's Figure 2 numbers).
 * ``tube``   — the neural network's stages, as signals, from one trained copy.
 * ``real``   — close-ups of real recordings where the eye and the detectors disagree,
@@ -258,7 +258,7 @@ def stage_sim(work: Path) -> None:
 
 # ----------------------------------------------------------------------- stage: toys
 def stage_toys(work: Path) -> None:
-    """Shift against shuffle on six made-up cells, in the two ways a shuffle goes wrong."""
+    """Shift against shuffle on six invented cells, in the two ways a shuffle goes wrong."""
     rng = np.random.RandomState(11)
     L = 20.0
 
@@ -1142,7 +1142,7 @@ def fig_grading(W, numbers):
            anchor="end")
     f.text(L - 8, 52, "planted events", size=12, anchor="end", color=MUTED)
     f.text(L - 8, 88, "calls", size=12, anchor="end", color=MUTED)
-    lane.xaxis_time(label="a made-up minute")
+    lane.xaxis_time(label="an invented minute, drawn to show the rule")
     f.text(L, 214, f"Green bands reach {tol:g} seconds either side of each planted event. A call that touches a "
                    f"band is a hit; each call can claim only one event.", size=12, color=MUTED)
     f.text(L, 234, "Here: found 2 of 3 planted events; 2 of 4 calls were right.", size=12, color=MUTED)

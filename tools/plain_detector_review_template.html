@@ -34,13 +34,17 @@ how we tested them, and why they sometimes disagree with your own eyes.</p>
 <div class="box">
 <h3>The short version</h3>
 <ul>
-  <li>The lab films brain cells that flash when they are active. We want to find the moments when
-  <b>many cells flash together</b>. We use computer programs to find them, because there are far too
-  many recordings to check by hand.</li>
-  <li>Cells also flash on their own, so some flashes line up <b>just by chance</b>. Every program has to
-  tell real teamwork from chance lineups. Each one does it with a different recipe.</li>
-  <li>On made-up recordings where we know the right answer, several programs do about equally well.
-  None of them is clearly best.</li>
+  <li>The lab records brain cells through a microscope with a digital camera. A cell lights up when it
+  is active. We want to find the moments when <b>many cells light up together</b>. Computer programs
+  have to find those moments, because there are far too many recordings to go through by hand.</li>
+  <li>Cells also light up on their own, so some of them line up <b>just by chance</b>. Every program has
+  to separate real teamwork from chance lineups, and each program uses a different set of steps to do
+  that.</li>
+  <li>A real recording has no answer key: nobody knows for certain which moments are real. So we also
+  <b>simulate</b> recordings — we produce them ourselves, choosing in advance when the cells act
+  together — and check what each program finds against what we put in.</li>
+  <li>On simulated recordings, several programs score about the same. None of them is clearly
+  best.</li>
   {{PROSE:short_real}}
 </ul>
 </div>
@@ -53,9 +57,9 @@ how we tested them, and why they sometimes disagree with your own eyes.</p>
   <li><a href="#s5">Why shift, not shuffle</a></li>
   <li><a href="#s6">The six algorithms</a></li>
   <li><a href="#s7">The neural networks</a></li>
-  <li><a href="#s8">Test recordings with a known answer</a></li>
+  <li><a href="#s8">Simulated recordings, where we know the answer</a></li>
   <li><a href="#s9">How we grade a program</a></li>
-  <li><a href="#s10">Scores on the test recordings</a></li>
+  <li><a href="#s10">Scores on the simulated recordings</a></li>
   <li><a href="#s11">The programs on real recordings</a></li>
   <li><a href="#s12">Where your eye and the programs disagree</a></li>
   <li><a href="#s13">What this means</a></li>
@@ -64,67 +68,84 @@ how we tested them, and why they sometimes disagree with your own eyes.</p>
 </ol></nav>
 
 <h2 id="s1">1. What the lab records</h2>
-<p>The lab studies a small group of brain cells called <b>KNDy neurons</b>. They sit in the part of the
-brain that controls hormones, and they help run the body's reproductive system
-(<a href="https://doi.org/10.1210/en.2010-0022">Lehman and others, 2010</a>). The lab keeps thin slices
-of mouse brain alive in a dish and films them under a microscope.</p>
-<p>Each cell holds a dye that glows brighter when the cell is active. A short brightening is called a
-<b>calcium event</b>. A program finds each event and writes down the moment it happened. It keeps two
-lists: one for <b>brief events</b> and one for much <b>longer events</b>.</p>
-<p>We draw those lists as a <b>raster</b> (Figure {{NUM:fig_raster}}). Each row is one cell and each tick
-is one event. When many cells light up at the same moment, their ticks stack into a short up-and-down
-stripe. That is a <b>coordinated event</b>, and finding those is the whole job.</p>
 <figure>{{FIG:fig_raster}}
-<figcaption><b>Figure {{NUM:fig_raster}}. How to read a raster.</b> One minute of a made-up recording with
-{{T.n_cells_sim}} cells (A), and 4 seconds of it (B). The ▼ above the raster points down at a moment when
-{{T.event_cells}} cells light up together. This recording is made up on purpose, so we know exactly where
-the real coordinated event is (Section 8).</figcaption></figure>
+<figcaption><b>Figure {{NUM:fig_raster}}. How to read a raster.</b> One minute of a recording with
+{{T.n_cells_sim}} cells (A), and 4 seconds of it (B). Each row is one cell. Each tick is one moment that
+cell lit up. Where many cells light up at once, their ticks stack into a short up-and-down stripe, and
+the ▼ above the raster points down at one. This particular recording is simulated, so we know exactly
+where that stripe is (Section 8).</figcaption></figure>
+<p>Figure {{NUM:fig_raster}} is the picture everything else in this document is built on. Here is where
+it comes from.</p>
+<p>The lab studies a small group of brain cells called <b>KNDy neurons</b>. These cells sit in the part
+of the brain that controls hormones, and they help run the body's reproductive system
+(<a href="https://doi.org/10.1210/en.2010-0022">Lehman and others, 2010</a>). The lab keeps thin slices
+of mouse brain alive in a dish and records them through a microscope with a digital camera, about ten
+pictures a second.</p>
+<p>Each cell holds a dye that glows brighter when the cell is active. A short brightening is a
+<b>calcium event</b>. A separate program goes through the pictures, finds each brightening and writes
+down the moment it happened. That program keeps two lists: one for <b>brief events</b> and one for much
+<b>longer events</b>.</p>
+<p>Those lists of moments are all the programs in this document ever see. None of them looks at the
+pictures. We draw a list as a <b>raster</b>, the picture above: one row per cell, one tick per event.
+A short stripe in a raster means many cells lit up at nearly the same moment. That is a
+<b>coordinated event</b>, and finding coordinated events is the whole job.</p>
 
 <h2 id="s2">2. The problem</h2>
-<p>Figure {{NUM:fig_problem}} shows a real recording. We gave the same list of events to six programs.
-Each program marks the moments it thinks are coordinated events. We call each mark a <b>call</b>.</p>
 <figure class="scroll">{{FIG:fig_problem}}
 <figcaption><b>Figure {{NUM:fig_problem}}. Same events, different answers.</b> {{PROSE:problem_caption}}
-Each colored row above the raster shows one program's calls. The top bar shows the part of the
-experiment (gray: before the drug; orange: the drug senktide). The thin black line under it marks the
-stretches the lab studies.</figcaption></figure>
-<p>{{PROSE:problem_text}} A real recording has no answer key, so we cannot simply look up who is right.
-This document explains how each program decides and how we tested them. It also looks closely at the
-places where the programs and a person's eye disagree.</p>
+Each colored row above the raster belongs to one program, and each colored mark is one moment that
+program picked out. The top bar shows the part of the experiment (gray: before the drug; orange: the
+drug senktide). The thin black line under it marks the stretches the lab studies.</figcaption></figure>
+<p>Figure {{NUM:fig_problem}} is a real recording. All six programs were given the same list of event
+times — the same raster, drawn at the bottom — and each program marked the moments where that program
+judged that cells had acted together. <b>One such mark is a call.</b> A call is a claim by a program, not a fact
+about the cells: it can be right or wrong, and nothing in the recording says which.</p>
+<p>{{PROSE:problem_text}} A real recording has no answer key, so we cannot look up who is right. This
+document explains how each program decides, how we tested the programs on recordings whose answer we
+do know, and where the programs and a person's eye disagree.</p>
 
 <h2 id="s3">3. Lineups happen by chance</h2>
-<p>Why is this hard? Cells light up on their own all the time. When cells are busy, some of their
-events will line up just by luck. Figure {{NUM:fig_chance}} shows this. On the left, quiet cells hardly
-ever line up, so the one real event stands out. On the right, the cells are busy and nothing real was
-added. Even so, up to {{T.busy_max}} cells land in the same 2-second piece by chance.</p>
 <figure>{{FIG:fig_chance}}
-<figcaption><b>Figure {{NUM:fig_chance}}. Busy cells line up by chance.</b> Two minutes of the made-up
-recording. The bars below each raster count how many cells light up in each 2-second piece of time.
-A: quiet cells, with one real coordinated event (▼). B: the same recording during a stretch where
-every cell was made busier and no coordinated event was added.</figcaption></figure>
-<p>So a program cannot just count cells. It must ask a better question: <b>are more cells lining up
-right now than chance would explain?</b> To answer that, it needs to know what chance looks like.</p>
+<figcaption><b>Figure {{NUM:fig_chance}}. Busy cells line up by chance.</b> Two minutes of a simulated
+recording, so we know what was put in. The bars below each raster count how many cells light up in each
+2-second piece of time. A: quiet cells, with one real coordinated event (▼). B: a stretch of the same
+recording where every cell was made busier and <b>nothing was put in</b>.</figcaption></figure>
+<p>Why is finding coordinated events hard? Because cells light up on their own all the time, and when
+they do it often, some of them land close together by luck alone. In Figure {{NUM:fig_chance}}B nothing
+was put in, and yet {{T.busy_max}} cells still light up inside the same 2-second piece.</p>
+<p>So counting cells is not enough. A program has to ask a harder question: <b>are more cells lining up
+right now than chance alone would produce?</b> To answer it, the program needs to know what chance
+looks like in this particular recording.</p>
 
 <h2 id="s4">4. Measuring chance with shifted copies</h2>
-<p>Four of the six programs measure chance the same basic way. They make <b>shifted copies</b> of the
-recording. To make a copy, the program slides each cell's whole row of events left or right by its own
-random amount. Events pushed off one end come back in at the other end.</p>
-<p>A shifted copy keeps everything about each cell: how often it fires, and whether its events come in
-bursts or at a steady beat. The only thing it breaks is <b>the timing between cells</b>. So any lineup
-left in a copy must be a chance lineup. Figure {{NUM:fig_chance_steps}} walks through the steps.</p>
 <figure>{{FIG:fig_chance_steps}}
 <figcaption><b>Figure {{NUM:fig_chance_steps}}. How shifted copies measure chance, in four steps.</b>
-The example is one 2-second piece of the made-up recording, judged the way CoactDetect judges it
+The example is one 2-second piece of a simulated recording, judged the way CoactDetect judges it
 (Section 6). The real count is {{T.coact_obs}} cells. In 100 shifted copies of the minute around it,
 chance almost never puts more than 2 cells in the piece. The copies here were drawn again for this
 picture in the same way the program draws its own. The bar ({{T.coact_bar_quiet}} cells) is the
 program's own.</figcaption></figure>
+<p>Four of the six programs measure chance the same basic way, the way Figure {{NUM:fig_chance_steps}}
+shows. The program makes <b>shifted copies</b> of the recording. To make one copy, it slides each cell's
+whole row of events left or right by that cell's own random amount; events pushed off one end come back
+in at the other end.</p>
+<p>A shifted copy keeps everything about each cell on its own: how often that cell lights up, and
+whether its events come in bursts or at a steady beat. What a shift destroys is <b>the timing between
+cells</b>. So a lineup that survives in a copy is a lineup chance can produce. Counting lineups in a
+hundred copies tells the program how high a real count has to be before it means anything.</p>
 
 <h2 id="s5">5. Why shift, not shuffle</h2>
-<p>There is another common way to make a chance copy: <b>shuffle</b> it. A shuffle keeps how many
-events each cell has, but drops every event at a brand-new random time. That sounds fair, but it
-changes each cell's own pattern, and that makes the chance bar wrong. Figure {{NUM:fig_shift_shuffle}}
-shows it going wrong in <b>both directions</b>.</p>
+<figure>{{FIG:fig_shift_shuffle}}
+<figcaption><b>Figure {{NUM:fig_shift_shuffle}}. A shuffle gets chance wrong both ways; a shift gets
+it right.</b> A and B: six invented cells over 20 seconds, with the tested 2-second piece marked in
+blue above each raster. The raster on the left is the recording, then one shifted copy and one
+shuffled copy. The bars on the right count, over 5,000 copies, how many cells landed in the piece.
+The ▼ marks the recording's own count. "Called" means fewer than 5 copies in 100 reached that
+count. C: the same comparison on the lab's own untreated recordings (brief events).</figcaption></figure>
+<p>There is another common way to make a chance copy: <b>shuffle</b> the recording. A shuffle keeps the
+number of events each cell has, but drops every one of them at a brand-new random time. That sounds
+fair, and it is not: a shuffle also destroys each cell's own pattern, and then the chance bar comes out
+wrong. Figure {{NUM:fig_shift_shuffle}} shows the bar going wrong in <b>both directions</b>.</p>
 <ul>
   <li><b>Cells that fire in bursts</b> (A). A shuffle breaks each burst apart and spreads the events out.
   Now more cells land in any given piece by chance, so the bar comes out <b>too high</b>. A real burst of
@@ -142,22 +163,15 @@ already filled, against {{T.doubles_real}} in the real recording and {{T.doubles
 As a result, shuffled copies say 6 or more cells line up in {{T.n6_shuffle}} of pieces, and shifted
 copies say {{T.n6_shift}}. A bar built from shuffles would sit too low. That is why every program here
 that makes copies uses the shift.</p>
-<figure>{{FIG:fig_shift_shuffle}}
-<figcaption><b>Figure {{NUM:fig_shift_shuffle}}. A shuffle gets chance wrong both ways; a shift gets
-it right.</b> A and B: six made-up cells over 20 seconds, with the tested 2-second piece marked in
-blue above each raster. The raster on the left is the recording, then one shifted copy and one
-shuffled copy. The bars on the right count, over 5,000 copies, how many cells landed in the piece.
-The ▼ marks the recording's own count. "Called" means fewer than 5 copies in 100 reached that
-count. C: the same comparison on the lab's own untreated recordings (brief events).</figcaption></figure>
 <p>Even the shift is not perfect. Real recordings have more very large lineups than shifted copies
 predict: 8 or more cells line up about {{T.real_over_shift_8}} times as often as the copies say. Part of
 that may be slow ups and downs that many cells share, which shifting also breaks.</p>
 
 <h2 id="s6">6. The six algorithms</h2>
-<p>An <b>algorithm</b> is a recipe: a fixed list of steps that the computer follows the same way every
-time. A person wrote each of these six recipes. They all ask the same question, <i>are more cells
-lining up right now than chance explains?</i>, but they follow different steps. The biggest difference is
-<b>where each one looks to learn what chance is</b>:</p>
+<p>An <b>algorithm</b> is a fixed list of steps, written out by a person, that the computer carries out
+in the same order every time. Six of the ten programs are algorithms of this kind. All six ask the same
+question, <i>are more cells lining up right now than chance explains?</i>, but the steps differ. The
+difference that matters most is <b>where each program looks to learn what chance is</b>:</p>
 <table>
 <tr><th>algorithm</th><th>what it counts</th><th>where it learns what chance looks like</th></tr>
 <tr><td>rate+context</td><td>events per second, from all cells added up</td><td>the average of the nearby minute (no copies)</td></tr>
@@ -170,9 +184,9 @@ lining up right now than chance explains?</i>, but they follow different steps. 
 <p>Looking <b>nearby</b> means the bar rises when cells get busy, so chance lineups in a busy stretch
 are not called. The cost is that a small real event in a busy stretch can be missed too. Looking at
 <b>the whole recording</b> gives one bar for everything, so a busy stretch can pass it again and again.
-Figures {{NUM:fig_alg_rate}} to {{NUM:fig_alg_sync}} show each recipe on the same made-up recording.
-Each figure has two views: a quiet minute with one real event (A), and a busy minute where nothing
-real was added, so any call there is a false alarm (B).</p>
+Figures {{NUM:fig_alg_rate}} to {{NUM:fig_alg_sync}} show each program's steps on the same simulated
+recording. Each figure has two views: a quiet minute holding one real coordinated event (A), and a
+minute inside a busy stretch where nothing was put in, so every call there is a mistake (B).</p>
 
 <h3>rate+context</h3>
 <figure>{{FIG:fig_alg_rate}}
@@ -192,7 +206,7 @@ busiest piece ({{T.coact_obs_busy}} cells) is not called.</figcaption></figure>
 <h3>LoCo</h3>
 <figure>{{FIG:fig_alg_loco}}
 <figcaption><b>Figure {{NUM:fig_alg_loco}}. LoCo.</b> The bar is set again every 15 seconds from
-{{T.loco_ns}} shifted copies of the minute before and the minute after. It uses whichever side gives the
+{{T.loco_ns}} shifted copies of the minute before and the minute after. LoCo takes whichever side gives the
 higher bar, so the bar goes up as soon as either side gets busy. Bottom left: the copies' counts on each
 side of the real event (the up-and-down scale grows ten times at each step).</figcaption></figure>
 
@@ -222,34 +236,43 @@ score stays just under the bar and the event is missed. An event joined by 3 cel
 than {{T.sync_max3}}.</figcaption></figure>
 
 <h2 id="s7">7. The neural networks</h2>
-<p>The other four programs were not written as recipes. Each one is a small <b>neural network</b>: a
-stack of simple arithmetic steps, each with numbers the computer can adjust. We showed it many made-up
-recordings where we knew the answer. After each example, the computer nudged the numbers so the
-network's output went up at real coordinated events and down everywhere else. That nudging is called
-<b>training</b>. When training ends, the numbers stay fixed, and the network works like any other
-program.</p>
-<p>The network's design is called <b>tube</b>. Imagine looking down a dark tube while the recording
-slides past. A coordinated event is a bright flash. Figure {{NUM:fig_network}} follows one recording
-through each stage of the network.</p>
 <figure>{{FIG:fig_network}}
 <figcaption><b>Figure {{NUM:fig_network}}. What happens inside the tube network.</b> Stages 1 and 2
 show 6 seconds around the real event; stage 3 zooms out to a minute. In stage 4, each learned filter
 gives weight to "right now" (the tall middle part) and subtracts the seconds around it (the shallow dips
 on each side). Its middle part was learned to be between {{T.tube_centre_lo}} and {{T.tube_centre_hi}}
-seconds wide. Stage 6: A is a quiet minute with one real event, which the network calls. B is a busy
-minute where nothing real was added; the score reaches the call level once there, so the network makes
-one false alarm.</figcaption></figure>
+seconds wide. Stage 6: A is a quiet minute holding one real coordinated event, which the network calls.
+B is a minute inside a busy stretch where nothing was put in; the score reaches the call level once, so
+the network makes one mistake.</figcaption></figure>
+<p>The four remaining programs were not written as steps at all. Each of the four is a small <b>neural
+network</b>: a stack of simple arithmetic operations, each holding numbers the computer can adjust. We
+showed the network many simulated recordings whose answer we knew. After each example, the computer
+nudged those numbers so the network's output rose at real coordinated events and fell everywhere else.
+That nudging is <b>training</b>. When training ends the numbers are fixed, and the network runs like any
+other program: event times in, calls out.</p>
+<p>This network's design is called <b>tube</b>, from the picture its author had in mind: looking down a
+dark tube while the recording slides past, a coordinated event goes by as a bright flash. Figure
+{{NUM:fig_network}} follows one recording through each stage of the network, with the real signal at
+every stage.</p>
 <p>There are four versions. <b>tube</b> is the one drawn above. <b>tube-guard</b> ignores the brightness
 right next to the moment it scores, so a real event does not push up its own comparison. <b>tube-ratio</b>
 divides by the surrounding brightness instead of subtracting it. <b>tube-ratio-guard</b> does both. All
-four were trained only on made-up recordings, and they were taught that busy stretches never hold a real
-event.</p>
+four were trained only on simulated recordings, and they were taught that busy stretches never hold a
+real coordinated event.</p>
 
-<h2 id="s8">8. Test recordings with a known answer</h2>
-<p>To grade a program we need recordings where we know every real event. So we built a program, the
-<b>simulator</b>, that makes up recordings in the same form as the lab's event lists (Figure
-{{NUM:fig_simulator}}). Each made-up recording has {{T.n_cells_sim}} cells and lasts {{T.minutes}} minutes.
-It is built in layers:</p>
+<h2 id="s8">8. Simulated recordings, where we know the answer</h2>
+<figure>{{FIG:fig_simulator}}
+<figcaption><b>Figure {{NUM:fig_simulator}}. One whole simulated recording.</b> Above the raster: where
+the planted events are (▼, colored by how many cells take part), the decoys (▽) and the busy stretch.
+This is the recording used in Figures {{NUM:fig_raster}} to {{NUM:fig_alg_sync}}.</figcaption></figure>
+<p>Section 2 left us with the problem that a real recording has no answer key. Here is the way around
+it. We <b>simulate</b> recordings: a program of our own writes out lists of event times in the same form
+the lab's event-finder produces, and we choose in advance when the cells act together. Since we put
+those moments in, we know where every one of them is, and we can check what each program finds against
+what we put in.</p>
+<p>The program that writes them is the <b>simulator</b>. Each simulated recording has
+{{T.n_cells_sim}} cells and lasts {{T.minutes}} minutes (Figure {{NUM:fig_simulator}}), and it is built in
+layers:</p>
 <ul>
   <li><b>Background:</b> each cell fires on its own, at its own rate. A few cells are busy and many are
   nearly silent, as in real recordings. We made two versions: a <b>quiet background</b> (about
@@ -267,22 +290,19 @@ It is built in layers:</p>
   can tell a decoy from a real event, so even a perfect program could score only about
   {{T.ceiling}}.</li>
 </ul>
-<figure>{{FIG:fig_simulator}}
-<figcaption><b>Figure {{NUM:fig_simulator}}. One whole made-up recording.</b> Above the raster: where the
-planted events (▼, colored by size), the decoys (▽) and the busy stretch are. This is the same recording
-used in Figures {{NUM:fig_raster}} to {{NUM:fig_alg_sync}}.</figcaption></figure>
 <p><b>What the simulator gets wrong.</b> Its busiest cells bunch their events together far more than real
-busy cells do. Its large lineups are rarer than real ones. It always has {{T.n_cells_sim}} cells, while
-real recordings have from about half that to more. And we are not sure how spread out real events are
-in time. So a good score on made-up recordings does not promise a good score on real ones.</p>
+busy cells do. Its large lineups are rarer than real ones. Every simulated recording has
+{{T.n_cells_sim}} cells, while real recordings run from about half that to more. And how far apart the
+cells in a real coordinated event start is not well measured. So a good score on simulated recordings
+does not promise a good score on real ones.</p>
 
 <h2 id="s9">9. How we grade a program</h2>
-<p>We compare each program's calls with the answer key (Figure {{NUM:fig_grading}}). A call that lands
-within {{T.tol}} seconds of a planted event is a <b>hit</b>. A planted event with no call is a
-<b>miss</b>. Any other call is a <b>false alarm</b>, including a call on a decoy.</p>
 <figure>{{FIG:fig_grading}}
-<figcaption><b>Figure {{NUM:fig_grading}}. Hits, misses and false alarms,</b> on a made-up
-minute.</figcaption></figure>
+<figcaption><b>Figure {{NUM:fig_grading}}. Hits, misses and false alarms,</b> on an invented minute drawn
+to show the rule.</figcaption></figure>
+<p>Grading compares each program's calls with the answer key. A call that lands within {{T.tol}} seconds
+of a planted event is a <b>hit</b>. A planted event with no call near it is a <b>miss</b>. Every other
+call is a <b>false alarm</b>, including a call on a decoy.</p>
 <p>From those we get two numbers: the share of planted events a program <b>found</b>, and the share of
 its calls that were <b>right</b>. The <b>overall score</b> combines them into one number from 0 to 1. It
 is high only when both are high. (Its technical name is the F1 score.)</p>
@@ -292,21 +312,27 @@ each group, we picked the best setting using the other {{T.n_choose}} recordings
 on the {{T.per_test}} it had never seen. The neural networks were trained the same way, never on the
 recordings they were scored on.</p>
 
-<h2 id="s10">10. Scores on the test recordings</h2>
+<h2 id="s10">10. Scores on the simulated recordings</h2>
+<figure>{{FIG:fig_scores}}
+<figcaption><b>Figure {{NUM:fig_scores}}. Overall scores on recordings each program never saw.</b> Each dot
+is the average over the {{T.n_tests}} groups; the line runs from the lowest to the highest group. The
+neural networks were trained three times each, so their lines cover more tries.</figcaption></figure>
 <p>On the quiet background, five programs scored about the same (Figure {{NUM:fig_scores}}): CoactDetect
 {{T.f1q_coact}}, LoCo {{T.f1q_loco}}, tube-guard {{T.f1q_tube_guard}}, tube {{T.f1q_tube}} and rate+context
 {{T.f1q_rate}}. The best possible was about {{T.ceiling}}. With this many test recordings we cannot say
 that any one of them is truly better than the others. binned SCE looks worse ({{T.f1q_sce}}), but most of
 that comes from how its calls are timed: when we score it over its whole 10-second pieces, it reaches
 {{T.sce_fair_quiet}}. locust ({{T.f1q_cicada}}) and SPIKE-synch ({{T.f1q_sync}}) scored lower.</p>
-<figure>{{FIG:fig_scores}}
-<figcaption><b>Figure {{NUM:fig_scores}}. Overall scores on recordings each program never saw.</b> Each dot
-is the average over the {{T.n_tests}} groups; the line runs from the lowest to the highest group. The
-neural networks were trained three times each, so their lines cover more tries.</figcaption></figure>
-<p><b>Busy stretches are where the programs split apart.</b> The test recordings never hide a real event
-inside the busy stretch, so a program that goes quiet there looks good even if it has gone blind. To check,
-we made {{T.block_recordings}} new recordings with real events planted <i>inside</i> the busy stretch
-(Figure {{NUM:fig_busy}}).</p>
+<figure>{{FIG:fig_busy}}
+<figcaption><b>Figure {{NUM:fig_busy}}. Finding real events inside a busy stretch.</b> A: the share of
+mid-sized planted events each program found outside the busy stretch (black) and inside it (orange). The
+gray tick shows what calling at random would find inside. B: false alarms per minute inside the busy
+stretch, on a scale where each step is ten times more. Every program here uses its default
+setting.</figcaption></figure>
+<p><b>Busy stretches are where the programs split apart</b> (Figure {{NUM:fig_busy}}). The recordings
+above never put a coordinated event inside the busy stretch, so a program that goes quiet there looks
+good even if it has gone blind. To find out which, we made {{T.block_recordings}} new recordings with
+coordinated events planted <i>inside</i> the busy stretch.</p>
 <ul>
   <li>CoactDetect and LoCo, which judge chance from nearby time, stay quiet in the busy stretch, but they
   also miss most real events there: CoactDetect found {{T.out_coact}} of mid-sized events outside it and
@@ -318,22 +344,17 @@ we made {{T.block_recordings}} new recordings with real events planted <i>inside
   {{T.fa_rate}} false alarms per minute). When we made the stretch three times busier, none of the programs
   held up.</li>
 </ul>
-<figure>{{FIG:fig_busy}}
-<figcaption><b>Figure {{NUM:fig_busy}}. Finding real events inside a busy stretch.</b> A: the share of
-mid-sized planted events each program found outside the busy stretch (black) and inside it (orange). The
-gray tick shows what calling at random would find inside. B: false alarms per minute inside the busy
-stretch, on a scale where each step is ten times more. Every program here uses its default
-setting.</figcaption></figure>
 
 <h2 id="s11">11. The programs on real recordings</h2>
 <p><b>A real recording has no answer key.</b> The figures in this section show where each program made
-calls. They cannot show whether a call is right.</p>
+calls. No figure here can show whether a call is right.</p>
 <p>The lab tests two drugs. <b>TTX</b> (tetrodotoxin) blocks the fast electrical signals most nerve cells
 use. <b>Senktide</b> switches on a sensor these cells carry, the neurokinin 3 receptor
 (<a href="https://doi.org/10.1523/JNEUROSCI.1569-09.2009">Navarro and others, 2009</a>). Many
 recordings end with <b>high potassium</b>, which makes healthy cells active. One might expect TTX to stop
-all teamwork between cells, which would give us a ready-made answer key. In this lab's recordings it does
-not: events and lineups continue under TTX. So TTX cannot serve as a "no coordination" test.</p>
+all teamwork between cells, which would give us a ready-made answer key. In this lab's recordings TTX
+does not stop it: events and lineups continue under the drug. So a TTX recording cannot serve as a "no
+coordination" test.</p>
 <p>The lab marks <b>analysis windows</b>: the stretches of each recording it studies. Six of the ten programs
 run only inside those windows. LoCo and locust run on the whole recording.</p>
 <p>{{PROSE:real_overview}}</p>
@@ -347,22 +368,23 @@ run only inside those windows. LoCo and locust run on the whole recording.</p>
 <figcaption><b>Figure {{NUM:real_senk_long}}. Senktide recordings, long events.</b> {{PROSE:cap_senk_long}}</figcaption></figure>
 
 <h2 id="s12">12. Where your eye and the programs disagree</h2>
-<p>Looking at Figures {{NUM:real_ttx_brief}} to {{NUM:real_senk_long}}, two things stand out. Some sharp
-stripes that anyone can see are missed by most programs. And some calls sit where the raster shows
-nothing special. We looked at both closely.</p>
-<p>First we needed a fair rule for "a stripe anyone can see". We counted a <b>clear stripe</b> when at least
-{{T.stripe_pct}} of a recording's cells start an event within 1 second, <i>and</i> that is at least twice as
-many as in the busiest seconds of the two minutes around it. The second part matters. In a busy stretch,
-a quarter of the cells often line up by chance, and nobody looking at the raster would point to those.</p>
+<p>Two things stand out in Figures {{NUM:real_ttx_brief}} to {{NUM:real_senk_long}}. Sharp stripes that
+anyone can see are sometimes missed by most programs, and some calls sit where the raster shows nothing
+special. Figure {{NUM:fig_eye}} looks closely at both.</p>
 <figure class="scroll">{{FIG:fig_eye}}
 <figcaption><b>Figure {{NUM:fig_eye}}. Close-ups of real recordings.</b> Above each raster: the part of the
-experiment (colored bar), the analysis windows (black line), each program's calls, and ▼ for every clear
-stripe. {{PROSE:cap_eye}}</figcaption></figure>
+experiment (colored bar), the analysis windows (black line), each program's calls, and a ▼ over every
+<b>clear stripe</b> — our name for a lineup anyone can see on the raster, counted where at least
+{{T.stripe_pct}} of the cells start an event within 1 second <i>and</i> at least twice as many cells take
+part as in the busiest seconds of the two minutes around it. {{PROSE:cap_eye}}</figcaption></figure>
+<p>The second half of that rule is what makes the ▼ marks match what a person would point at. Inside a
+busy stretch, a quarter of the cells often line up by chance alone (Section 3), and nobody reading the
+raster would call those stripes.</p>
 {{PROSE:eye_findings}}
 
 <h2 id="s13">13. What this means</h2>
 <ul>
-  <li><b>No program is shown to be best.</b> On made-up recordings, five score about the same.</li>
+  <li><b>No program is shown to be best.</b> On simulated recordings, five score about the same.</li>
   <li><b>Busy cells change every program's answer.</b> Some go blind in busy stretches, some call all through
   them. A drug that makes cells busier can change the calls even if teamwork between cells has not
   changed. Any study of a drug has to separate the two.</li>
@@ -372,7 +394,7 @@ stripe. {{PROSE:cap_eye}}</figcaption></figure>
 </ul>
 <h3>What could be wrong here</h3>
 <ul>
-  <li>Every score comes from made-up recordings, and the simulator is imperfect (Section 8).</li>
+  <li>Every score comes from simulated recordings, and the simulator is imperfect (Section 8).</li>
   <li>We ran no statistical test between the top programs, and the decoys cap every score.</li>
   <li>The neural networks were taught that busy stretches never hold a real event, which may be why some
   of them go blind there.</li>
@@ -461,7 +483,7 @@ stripe. {{PROSE:cap_eye}}</figcaption></figure>
   hide each other: Rohling H. (1983), <i>IEEE Trans Aerosp Electron Syst</i> 19:608–621,
   <a href="https://doi.org/10.1109/TAES.1983.309350">doi.org/10.1109/TAES.1983.309350</a>; Gandhi P.P.,
   Kassam S.A. (1988), 24:427–445, <a href="https://doi.org/10.1109/7.7185">doi.org/10.1109/7.7185</a>.</li>
-  <li><b>Neural networks that find events, and made-up test recordings.</b> Chambon S. and others (2019),
+  <li><b>Neural networks that find events, and simulated test recordings.</b> Chambon S. and others (2019),
   DOSED, <i>J Neurosci Methods</i> 321:64–78,
   <a href="https://doi.org/10.1016/j.jneumeth.2019.03.017">doi.org/10.1016/j.jneumeth.2019.03.017</a>;
   Navas-Olive A. and others (2022), <i>eLife</i> 11:e77772,
@@ -471,32 +493,38 @@ stripe. {{PROSE:cap_eye}}</figcaption></figure>
 
 <h2 id="words">Word list</h2>
 <dl class="words">
-  <dt>Algorithm</dt><dd>A recipe: a fixed list of steps a computer follows the same way every time. Six of the
-  programs here are algorithms written by a person.</dd>
+  <dt>Algorithm</dt><dd>A fixed list of steps, written out by a person, that a computer carries out in the
+  same order every time. Six of the ten programs here are algorithms.</dd>
   <dt>Analysis window</dt><dd>A stretch of a recording the lab marks for study. Some programs look only inside
   these windows.</dd>
   <dt>Bar</dt><dd>The level a program's count must pass before it makes a call.</dd>
   <dt>Brief events, long events</dt><dd>The lab's event-finding program keeps short brightenings and much longer
   ones in two separate lists. Each list is studied on its own.</dd>
-  <dt>Calcium event</dt><dd>A short brightening of one cell in the movie, which means the cell was active.</dd>
-  <dt>Call</dt><dd>A moment a program marks as a coordinated event. A call is a claim, not a fact.</dd>
-  <dt>Clear stripe</dt><dd>Our rule for a lineup anyone can see (Section 12).</dd>
+  <dt>Calcium event</dt><dd>A short brightening of one cell in the recording, which means the cell was
+  active.</dd>
+  <dt>Call</dt><dd>One moment a program marks as a coordinated event. A call is that program's claim, not a
+  fact about the cells.</dd>
+  <dt>Clear stripe</dt><dd>Our rule for a lineup anyone can see on a raster (Figure {{NUM:fig_eye}}).</dd>
   <dt>Coordinated event</dt><dd>A moment when many cells become active together, more than chance explains.</dd>
-  <dt>Decoy</dt><dd>A made-up lineup built like a planted event but left off the answer key.</dd>
+  <dt>Decoy</dt><dd>A lineup put into a simulated recording the same way a planted event is, but left off
+  the answer key.</dd>
   <dt>False alarm</dt><dd>A call where there was no planted event.</dd>
   <dt>High potassium</dt><dd>A solution that makes healthy cells active, often used at the end of a recording.</dd>
   <dt>Neural network</dt><dd>A stack of simple arithmetic steps whose numbers were adjusted by training on
   examples, instead of being written by a person.</dd>
   <dt>Overall score (F1 score)</dt><dd>One number from 0 to 1 that is high only when a program both finds most
   planted events and makes few false alarms.</dd>
-  <dt>Planted event</dt><dd>A coordinated event we put into a made-up recording on purpose.</dd>
+  <dt>Planted event</dt><dd>A coordinated event we put into a simulated recording on purpose, at a time we
+  chose.</dd>
   <dt>Raster</dt><dd>A picture of a recording: one row per cell, one tick per event.</dd>
   <dt>Senktide</dt><dd>A drug that switches on the neurokinin 3 receptor, a sensor these cells carry.</dd>
-  <dt>Shifted copy</dt><dd>A copy of a recording in which each cell's whole row of events is slid by its own
-  random amount. It keeps each cell's pattern and breaks only the timing between cells.</dd>
-  <dt>Shuffled copy</dt><dd>A copy in which every event is moved to a new random time. It changes each cell's
-  own pattern, which makes chance look wrong (Section 5).</dd>
-  <dt>Simulator</dt><dd>The program that makes up test recordings with a known answer.</dd>
+  <dt>Shifted copy</dt><dd>A copy of a recording in which each cell's whole row of events is slid by that
+  cell's own random amount. A shift keeps each cell's own pattern and breaks only the timing between
+  cells.</dd>
+  <dt>Shuffled copy</dt><dd>A copy in which every event is moved to a new random time. A shuffle changes each
+  cell's own pattern as well, which is why it gets chance wrong (Section 5).</dd>
+  <dt>Simulate, simulator</dt><dd>To produce a recording ourselves instead of measuring one, choosing in
+  advance when the cells act together. The simulator is the program that writes those recordings.</dd>
   <dt>Training</dt><dd>Adjusting a neural network's numbers, example by example, until its output matches the
   answer key.</dd>
   <dt>TTX (tetrodotoxin)</dt><dd>A drug that blocks the fast electrical signals most nerve cells use.</dd>
