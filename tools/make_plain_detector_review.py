@@ -2516,6 +2516,38 @@ def _display_values(W, N) -> dict:
 
 def stage_page(work: Path, review: Path) -> None:
     import base64
+    old = dict(OLD_REAL)
+
+    def figure(name):
+        if name in old:
+            b64 = base64.b64encode((review / old[name]).read_bytes()).decode()
+            return f"<img alt='' src='data:image/png;base64,{b64}'>"
+        svg = work / f"{name}.svg"
+        if not svg.exists():
+            raise SystemExit(f"no figure {name}: run --stages figures")
+        return svg.read_text(encoding="utf-8")
+
+    page, order, tok = _assemble_review(work, review, figure)
+    _write_page(page, work.parent / "detector_review_plain.html", len(order))
+
+    # The companion page: the learned models, held out of the review (Tony, 2026-09-16, "cut out
+    # the learned models for now ... keep the material in a separate document"). It reuses the
+    # same measurements and the same figure builders, so nothing was thrown away.
+    comp = LEARNED_TEMPLATE.read_text(encoding="utf-8")
+    comp = re.sub(r"\{\{FIG:([A-Za-z0-9_]+)\}\}", lambda m: figure(m.group(1)), comp)
+    comp = re.sub(r"\{\{T\.([A-Za-z0-9_]+)\}\}", tok, comp)
+    left = re.findall(r"\{\{[^}]*\}\}", comp)
+    if left:
+        raise SystemExit(f"unfilled tokens in the companion page: {left[:5]}")
+    _write_page(comp, work.parent / "learned_detectors_plain.html", 3)
+
+
+def _assemble_review(work: Path, review: Path, figure):
+    """The review with every token filled — prose, figure and section numbers, figures, values.
+
+    One assembly for every output format, so the HTML page and the Word document cannot drift
+    apart in wording or numbering; `figure(name)` returns each figure's markup for its format.
+    Returns (page, figure order, the token filler)."""
     W = json.loads((work / "plain.json").read_text())
     N = json.loads((review / "measurements" / "numbers.json").read_text())
     prose_file = work.parent / "real_prose.json"
@@ -2555,18 +2587,7 @@ def stage_page(work: Path, review: Path) -> None:
                              f"it has {', '.join(sec)}")
         return str(sec[m.group(1)])
     page = re.sub(r"\{\{SEC:([A-Za-z0-9_]+)\}\}", sec_rep, page)
-    old = dict(OLD_REAL)
-
-    def fig_rep(m):
-        name = m.group(1)
-        if name in old:
-            b64 = base64.b64encode((review / old[name]).read_bytes()).decode()
-            return f"<img alt='' src='data:image/png;base64,{b64}'>"
-        svg = work / f"{name}.svg"
-        if not svg.exists():
-            raise SystemExit(f"no figure {name}: run --stages figures")
-        return svg.read_text(encoding="utf-8")
-    page = re.sub(r"\{\{FIG:([A-Za-z0-9_]+)\}\}", fig_rep, page)
+    page = re.sub(r"\{\{FIG:([A-Za-z0-9_]+)\}\}", lambda m: figure(m.group(1)), page)
 
     def tok(m):
         key = m.group(1)
@@ -2577,18 +2598,138 @@ def stage_page(work: Path, review: Path) -> None:
     left = re.findall(r"\{\{[^}]*\}\}", page)
     if left:
         raise SystemExit(f"unfilled tokens: {left[:5]}")
-    _write_page(page, work.parent / "detector_review_plain.html", len(order))
+    return page, order, tok
 
-    # The companion page: the learned models, held out of the review (Tony, 2026-09-16, "cut out
-    # the learned models for now ... keep the material in a separate document"). It reuses the
-    # same measurements and the same figure builders, so nothing was thrown away.
-    comp = LEARNED_TEMPLATE.read_text(encoding="utf-8")
-    comp = re.sub(r"\{\{FIG:([A-Za-z0-9_]+)\}\}", fig_rep, comp)
-    comp = re.sub(r"\{\{T\.([A-Za-z0-9_]+)\}\}", tok, comp)
-    left = re.findall(r"\{\{[^}]*\}\}", comp)
-    if left:
-        raise SystemExit(f"unfilled tokens in the companion page: {left[:5]}")
-    _write_page(comp, work.parent / "learned_detectors_plain.html", 3)
+
+# ----------------------------------------------------------------------- stage: docx
+# Tony, 2026-09-16: "convert this to a word doc with nice in line figures. All legends and text should
+# be editable but do not redo figures except for size. Try to use one or two font sizes and one font.
+# This is the format the outside reviewers are used to."
+#
+# The Word document is a BUILD OUTPUT of the same assembly as the page, never a file to edit by hand:
+# reviewers' comments come back on it, and the fix goes into the template or the builder, then both
+# formats are rebuilt. Pandoc does the conversion — armory's choice, 2026-09-16: RStudio ships pandoc
+# 3.6.3 off the PATH, and it writes real Word headings, lists, links, tables, embedded images and
+# captions as editable paragraphs.
+DOCX_FONT = "Arial"
+DOCX_BODY_PT, DOCX_HEAD_PT = 11, 14                  # the two sizes
+DOCX_TEXT_W_IN, DOCX_TEXT_H_IN = 6.5, 8.4            # US letter, 1-inch margins, room for a caption line
+PANDOC_KNOWN = (Path(r"C:\Program Files\RStudio\resources\app\bin\quarto\bin\tools\pandoc.exe"),)
+
+
+def _pandoc() -> str:
+    import os
+    import shutil as _sh
+    for cand in (os.environ.get("PANDOC"), _sh.which("pandoc"), *map(str, PANDOC_KNOWN)):
+        if cand and Path(cand).exists():
+            return cand
+    raise SystemExit("no pandoc: set PANDOC, put pandoc on PATH, or install RStudio (it bundles one)")
+
+
+def _png_size(path: Path):
+    head = path.read_bytes()[:24]
+    return int.from_bytes(head[16:20], "big"), int.from_bytes(head[20:24], "big")
+
+
+def _reference_docx(pandoc: str, out: Path) -> Path:
+    """Pandoc's own reference document, restyled to one font in two sizes: 14 pt for the title and
+    section headings, 11 pt for everything else, all headings black."""
+    import subprocess
+    import zipfile
+    raw = subprocess.run([pandoc, "--print-default-data-file", "reference.docx"], capture_output=True,
+                         check=True).stdout
+    src = out.with_name(out.stem + ".orig.docx")
+    src.write_bytes(raw)
+    fonts = (f'<w:rFonts w:ascii="{DOCX_FONT}" w:hAnsi="{DOCX_FONT}" w:eastAsia="{DOCX_FONT}" '
+             f'w:cs="{DOCX_FONT}"/>')
+    big = {"Title", "Heading1", "Heading2", "TitleChar", "Heading1Char", "Heading2Char"}
+
+    def sizes(block, sz):
+        # pandoc writes `<w:sz w:val="24" />` with a space before the slash; the first version of this
+        # pattern required no space, changed only the fonts, and left 10/12/14/16/20/28 pt in the styles
+        block = re.sub(r'<w:sz w:val="\d+"\s*/>', f'<w:sz w:val="{sz}"/>', block)
+        return re.sub(r'<w:szCs w:val="\d+"\s*/>', f'<w:szCs w:val="{sz}"/>', block)
+
+    def restyle(m):
+        block = m.group(0)
+        sid = re.search(r'w:styleId="([^"]+)"', block)
+        sid = sid.group(1) if sid else ""
+        block = re.sub(r"<w:rFonts\b[^>]*/>", fonts, block)
+        block = sizes(block, 2 * (DOCX_HEAD_PT if sid in big else DOCX_BODY_PT))
+        if sid.startswith(("Heading", "Title")):
+            block = re.sub(r"<w:color\b[^>]*/>", '<w:color w:val="000000"/>', block)
+            # bold: with only two sizes, weight is what separates an 11 pt subheading from body text
+            if "<w:b/>" not in block and "<w:b />" not in block:
+                block = re.sub(r"<w:rPr>", "<w:rPr><w:b/><w:bCs/>", block, count=1)
+        if sid in ("Caption", "ImageCaption"):          # ImageCaption inherits from Caption
+            # a whole italic paragraph is hard to read; the bold "Figure N." already marks the caption
+            block = re.sub(r"<w:i(?:Cs)?\s*/>", "", block)     # <w:i/> and <w:iCs/>
+            block = re.sub(r"<w:spacing\b[^>]*/>", '<w:spacing w:before="60" w:after="240"/>', block)
+            if "<w:spacing" not in block:
+                if "<w:pPr>" in block:
+                    block = block.replace("<w:pPr>", '<w:pPr><w:spacing w:before="60" w:after="240"/>', 1)
+                else:
+                    block = re.sub(r"(<w:style\b[^>]*>(?:(?!<w:rPr>).)*?)(<w:rPr>)",
+                                   lambda m: m.group(1) + '<w:pPr><w:spacing w:before="60" w:after="240"/>'
+                                   '</w:pPr>' + m.group(2), block, count=1, flags=re.S)
+        if sid == "CaptionedFigure":
+            block = re.sub(r"<w:spacing\b[^>]*/>", '<w:spacing w:before="240" w:after="0"/>', block)
+            if "<w:spacing" not in block:
+                block = re.sub(r"<w:pPr>", '<w:pPr><w:spacing w:before="240" w:after="0"/>', block, count=1)
+        return block
+
+    # Letter paper, 1-inch margins. Without a page in the reference, pandoc caps figures at a narrower
+    # default text width (5.83 in) whatever width the figure asks for.
+    page = ('<w:pgSz w:w="12240" w:h="15840"/>'
+            '<w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" w:header="720" '
+            'w:footer="720" w:gutter="0"/>')
+    with zipfile.ZipFile(src) as zin:
+        styles = zin.read("word/styles.xml").decode("utf-8")
+        styles = re.sub(r"<w:style\b.*?</w:style>", restyle, styles, flags=re.S)
+        styles = re.sub(r"<w:docDefaults>.*?</w:docDefaults>",
+                        lambda m: sizes(re.sub(r"<w:rFonts\b[^>]*/>", fonts, m.group(0)), 2 * DOCX_BODY_PT),
+                        styles, count=1, flags=re.S)
+        doc = zin.read("word/document.xml").decode("utf-8")
+        doc = re.sub(r"<w:pgSz\b[^>]*/>|<w:pgMar\b[^>]*/>", "", doc)
+        if "<w:sectPr" in doc:
+            doc = re.sub(r"(<w:sectPr\b[^>]*>)", lambda m: m.group(1) + page, doc, count=1)
+        else:
+            doc = doc.replace("</w:body>", f"<w:sectPr>{page}</w:sectPr></w:body>")
+        with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as zout:
+            for item in zin.infolist():
+                data = (styles.encode("utf-8") if item.filename == "word/styles.xml" else
+                        doc.encode("utf-8") if item.filename == "word/document.xml" else zin.read(item))
+                zout.writestr(item, data)
+    src.unlink()
+    return out
+
+
+def stage_docx(work: Path, review: Path) -> None:
+    import subprocess
+    old = dict(OLD_REAL)
+    dest = work.parent
+
+    def figure(name):
+        png = review / old[name] if name in old else dest / f"{name}.png"
+        if not png.exists():
+            raise SystemExit(f"no figure {png.name}: run --stages figures")
+        w, h = _png_size(png)
+        # the page width, unless that makes a tall figure run off the page — then the page height
+        width = min(DOCX_TEXT_W_IN, DOCX_TEXT_H_IN * w / h)
+        return f'<img src="{png.as_posix()}" alt="" width="{width:.2f}in">'
+
+    page, order, _ = _assemble_review(work, review, figure)
+    # the page's title and style elements are for browsers; left in, pandoc would print the title twice
+    page = re.sub(r"<(title|style)>.*?</\1>", "", page, flags=re.S)
+    html_in = work / "detector_review_plain.docx.html"
+    html_in.write_text("<meta charset='utf-8'>\n" + page, encoding="utf-8")
+    pandoc = _pandoc()
+    # built in a local temp folder: inside the darkroom, Dropbox locks the scratch file mid-build
+    ref = _reference_docx(pandoc, Path(tempfile.mkdtemp(prefix="plain-docx-")) / "reference.docx")
+    out = dest / "detector_review_plain.docx"
+    subprocess.run([pandoc, str(html_in), "-f", "html", "-t", "docx", "--reference-doc", str(ref),
+                    "-o", str(out)], check=True)
+    print(f"  wrote {out.name}: {len(order)} figures, {DOCX_FONT} {DOCX_BODY_PT}/{DOCX_HEAD_PT} pt")
 
 
 def _write_page(page: str, out: Path, n_figs: int) -> None:
@@ -2617,12 +2758,12 @@ def main(argv=None) -> int:
         a.out = darkroom() / FOLDER_NAME
     work = a.out / "_work"
     work.mkdir(parents=True, exist_ok=True)
-    order = ["sim", "toys", "tube", "real", "count", "figures", "page"]
+    order = ["sim", "toys", "tube", "real", "count", "figures", "page", "docx"]
     stages = order if a.stages == ["all"] else a.stages
     for st in stages:
         print("stage", st)
         fn = globals()[f"stage_{st}"]
-        if st in ("real", "figures", "page"):
+        if st in ("real", "figures", "page", "docx"):
             fn(work, a.from_review)
         else:
             fn(work)
