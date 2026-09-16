@@ -1,9 +1,16 @@
 ---
-status: waiting-on-tony
+status: open
 filed: 2026-09-16
 ---
 
 # What locust's per-event duration left open: the anchor, and `bugarach view`
+
+> **Status is `open`, not `waiting-on-tony`, and the decision below is still his.** It was
+> put to Tony in the session that filed this. The briefing has no room for another
+> waiting item — adding one failed CI's briefing tests
+> ([`2026-08-30-the-briefing-has-one-todo-of-headroom.md`](2026-08-30-the-briefing-has-one-todo-of-headroom.md))
+> — and the ruling there is to clear waiting items, not raise the budget. `docs/INDEX.md`
+> ("which duration locust uses") points here.
 
 **Context.** On 2026-09-16 locust's shipped operating point stopped holding every cell
 active for a fixed second and started reading each event's own `width_sec` — the

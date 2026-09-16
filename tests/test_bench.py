@@ -47,19 +47,27 @@ SEEDS = (1, 2)
 # --- locust reads each event's width on the bench, and nothing else moves
 
 
-def test_widths_leave_every_other_detectors_recording_exactly_as_it_was():
+def test_widths_move_no_event_time():
     """The widths come off their own RNG, so the five that never read one see the
     same event times they saw before widths existed — to the bit."""
-    s, _ = make_recording("baseline_quiet", 3)
-    bare, _ = simulate_coordination(
-        seed=3, **{**BENCH_RECORDING, **REGIMES["baseline_quiet"]})
+    from bugarach import simulate
+
+    kw = {**BENCH_RECORDING, **REGIMES["baseline_quiet"]}
+    s, _ = simulate_coordination(seed=3, **kw)
+    real_draw = simulate._draw_widths
+    simulate._draw_widths = lambda per_roi, seed, grid: [np.full(len(c), 1.0)
+                                                         for c in per_roi]
+    try:
+        bare, _ = simulate_coordination(seed=3, **kw)
+    finally:
+        simulate._draw_widths = real_draw
     for name, st in s.streams.items():
         for got, want in zip(st.locs, bare.streams[name].locs, strict=True):
             np.testing.assert_array_equal(got, want)
 
 
 def test_bench_widths_follow_the_measured_distribution():
-    from bugarach.bench import MEASURED_WIDTH_QUANTILES, MEASURED_WIDTH_QUANTILE_LEVELS
+    from bugarach.simulate import MEASURED_WIDTH_QUANTILES, MEASURED_WIDTH_QUANTILE_LEVELS
 
     assert len(MEASURED_WIDTH_QUANTILES) == len(MEASURED_WIDTH_QUANTILE_LEVELS)
     assert list(MEASURED_WIDTH_QUANTILES) == sorted(MEASURED_WIDTH_QUANTILES)
