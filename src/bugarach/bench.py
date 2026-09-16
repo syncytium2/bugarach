@@ -925,6 +925,14 @@ rests on it. The exception is **binned SCE**, still climbing at 1.5 s because it
 10 s bins make its detections coarse and only a loose tolerance credits them —
 which is exactly what a single number hides and a curve shows.
 
+⚠ **Superseded 2026-09-16: the exception was the scorer's.** SCE had been scored
+over ``[bin start, bin start + event spread]``, which ends before events late in
+the bin, so extra tolerance kept reaching events its calls were made on. Scored
+over its own bin (``SceStream.extent_sec``), its curve is flat from the narrowest
+gap on this grid, and all six settle at or below the shipped tolerance —
+``tests/test_tolerance_curve.py`` and
+``docs/todo/2026-09-15-binned-sce-calls-are-scored-over-the-wrong-stretch.md``.
+
 Same grid as ``docs/learned/tolerance_sweep.json``, so figures and bench runs
 describe one sweep rather than two.
 """
@@ -999,7 +1007,8 @@ was about to fall off one. **``REGIMES`` is not changed by this** — moving the
 axis is a recalibration; this reports across the axis that already exists.
 
 **Why this matters more than the tolerance did.** Five of six detectors turned
-out flat across the tolerance grid, so that constant was granting slack nobody
+out flat across the tolerance grid (six, once binned SCE was scored over its own
+bin), so that constant was granting slack nobody
 used and no comparison rested on it. Nothing is flat across this one. And the
 treatment contrast the whole loop builds toward compares two windows at
 *different* backgrounds, so a detector's sensitivity to this axis is confounded
