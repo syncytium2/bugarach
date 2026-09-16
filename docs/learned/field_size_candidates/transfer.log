@@ -1,0 +1,52 @@
+data set: 24 recordings, 4 folds (6 each)
+  TRANSFER: fitted on --spec, scored on --score-spec. The held-out fold is a different generator, not a different seed.
+  1410 recording-minutes total
+  1031 recording-minutes in the scored corpus
+  loco    fold 0: F1 0.708  @threshold_pctile=99  cal 15.0s  detect 14.96s
+  loco    fold 1: F1 0.672  @threshold_pctile=99  cal 15.1s  detect 15.02s
+  loco    fold 2: F1 0.737  @threshold_pctile=99  cal 14.3s  detect 15.59s
+  loco    fold 3: F1 0.710  @threshold_pctile=99  cal 14.8s  detect 15.02s
+  cicada  fold 0: F1 0.427  @sce_percentile=99.9  cal 10.7s  detect 4.63s
+  cicada  fold 1: F1 0.414  @sce_percentile=99.9  cal 10.7s  detect 4.64s
+  cicada  fold 2: F1 0.409  @sce_percentile=99.9  cal 10.7s  detect 4.63s
+  cicada  fold 3: F1 0.411  @sce_percentile=99.9  cal 10.7s  detect 4.44s
+  sce     fold 0: F1 0.512  @threshold_pctile=80  cal 1.0s  detect 0.66s
+  sce     fold 1: F1 0.544  @threshold_pctile=80  cal 1.0s  detect 0.65s
+  sce     fold 2: F1 0.513  @threshold_pctile=80  cal 1.0s  detect 0.69s
+  sce     fold 3: F1 0.506  @threshold_pctile=80  cal 1.0s  detect 0.67s
+  coact   fold 0: F1 0.778  @alpha=0.0001  cal 4.8s  detect 16.56s
+  coact   fold 1: F1 0.775  @alpha=0.0001  cal 4.8s  detect 16.35s
+  coact   fold 2: F1 0.775  @alpha=0.001  cal 4.7s  detect 17.16s
+  coact   fold 3: F1 0.768  @alpha=0.0001  cal 4.8s  detect 17.12s
+  rate    fold 0: F1 0.168  @excess_threshold_hz=3  cal 0.6s  detect 0.09s
+  rate    fold 1: F1 0.172  @excess_threshold_hz=3  cal 0.6s  detect 0.09s
+  rate    fold 2: F1 0.183  @excess_threshold_hz=3  cal 0.6s  detect 0.09s
+  rate    fold 3: F1 0.172  @excess_threshold_hz=3  cal 0.6s  detect 0.09s
+  sync    fold 0: F1 nan  @C_threshold=0.08  cal 5.5s  detect 132.10s
+  sync    fold 1: F1 0.173  @C_threshold=0.04  cal 5.4s  detect 131.51s
+  sync    fold 2: F1 0.194  @C_threshold=0.04  cal 5.2s  detect 144.36s
+  sync    fold 3: F1 0.172  @C_threshold=0.04  cal 5.1s  detect 128.21s
+  tube    fold 0: F1 nan  thr 0.9908  train 8.3s  detect 0.48s
+  tube    fold 1: F1 0.252  thr 0.9838  train 7.2s  detect 0.47s
+  tube    fold 2: F1 0.294  thr 0.9716  train 7.2s  detect 0.46s
+  tube    fold 3: F1 0.016  thr 0.9908  train 7.2s  detect 0.45s
+  tube_no_bypass fold 0: F1 0.275  thr 0.9908  train 6.9s  detect 0.39s
+  tube_no_bypass fold 1: F1 0.278  thr 0.9838  train 7.0s  detect 0.38s
+  tube_no_bypass fold 2: F1 0.329  thr 0.9838  train 6.7s  detect 0.34s
+  tube_no_bypass fold 3: F1 0.033  thr 0.9948  train 6.7s  detect 0.31s
+  gauge   fold 0: F1 0.708  thr 0.9948  train 27.3s  detect 2.44s
+  gauge   fold 1: F1 0.726  thr 0.9838  train 26.5s  detect 2.40s
+  gauge   fold 2: F1 0.568  thr 0.9990  train 26.6s  detect 2.12s
+  gauge   fold 3: F1 0.670  thr 0.9948  train 26.6s  detect 2.42s
+  line    fold 0: F1 nan  thr 0.9970  train 53.9s  detect 18.08s
+  line    fold 1: F1 nan  thr 0.9908  train 52.6s  detect 18.22s
+  line    fold 2: F1 nan  thr 0.9948  train 53.2s  detect 21.39s
+  line    fold 3: F1 0.022  thr 0.9838  train 53.1s  detect 20.65s
+src/bugarach/learn/train.py:221: RuntimeWarning: threshold 0.0001 sits at the edge of the searched grid [0.0001, 0.9999] — the search was still climbing when it stopped, so this is not an operating point. Widen it.
+  thr, gap = pick_threshold(model, make_recording, dt=dt, seed=seed,
+  chorus  fold 0: F1 0.125  thr 0.0001  train 95.1s  detect 11.21s
+  chorus  fold 1: F1 0.125  thr 0.0001  train 95.1s  detect 10.76s
+  chorus  fold 2: F1 0.125  thr 0.0001  train 94.8s  detect 10.89s
+  chorus  fold 3: F1 0.125  thr 0.0001  train 94.7s  detect 10.72s
+
+wrote docs/learned/field_size_candidates/bakeoff_generator_spec_to_spec_k12.json

@@ -21,7 +21,7 @@ __all__ = ["build_tube"]
                        "bypass the kernel does not reach",
           n_scales=4, width=8, depth=6, max_center_frames=128, max_ratio=40.0)
 def build_tube(*, n_scales=4, width=8, depth=6, max_center_frames=128,
-               max_ratio=40.0):
+               max_ratio=40.0, bypass=True):
     """Look down a tube as the recording slides past.
 
     The tube is dark; onsets are specks. When several cells fire together a bright
@@ -82,6 +82,11 @@ def build_tube(*, n_scales=4, width=8, depth=6, max_center_frames=128,
     the search reporting that the range was wrong, not an answer. Raising it is
     how that gets tested; the default is the value everything published so far
     was fitted under, so nothing moves unless it is passed.
+
+    ``bypass=False`` removes the ``bright`` channel from the head's input, which is
+    item 4 of the learned-detector handoff. It is off only in ``tube_no_bypass``, the
+    control for ``gauge``: ``gauge`` drops the bypass as well as standardising, and
+    without this control a ``gauge`` score could not say which change moved it.
     """
     torch = _torch()
     nn = torch.nn
@@ -104,7 +109,9 @@ def build_tube(*, n_scales=4, width=8, depth=6, max_center_frames=128,
             self.log_center = nn.Parameter(torch.tensor(init))
             self.log_ratio = nn.Parameter(torch.full((n_scales,), math.log(8.0)))
             self.gain = nn.Parameter(torch.ones(n_scales))
-            self.head = _dilated_stack(nn, n_scales + 1, 1, width, depth)
+            self.bypass = bool(bypass)
+            self.head = _dilated_stack(nn, n_scales + int(self.bypass), 1, width,
+                                       depth)
 
         def _kernels(self, device):
             """Difference of Gaussians, centre minus surround, area-normalised so
@@ -149,6 +156,8 @@ def build_tube(*, n_scales=4, width=8, depth=6, max_center_frames=128,
             # the head alongside the zero-integral responses, so the kernel's DC
             # invariance is not the model's. Removing this channel is a filed
             # experiment, not a tidy-up: it moves every published number.
+            if not self.bypass:
+                return self.head(resp).squeeze(1)
             return self.head(torch.cat([bright, resp], dim=1)).squeeze(1)
 
     return Tube()
