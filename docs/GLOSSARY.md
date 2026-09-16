@@ -371,3 +371,39 @@ Added 2026-09-10, when that plan's review found them used undefined.
   no regions), and a 60-second cut of it, the unit its statistics are computed on.
   "Analysis window" here is the 60-second cut, not the producer's
   `analysis_start_sec`/`analysis_end_sec` span.
+- **rigid shift** — a surrogate that slides each ROI's **whole** train by one offset
+  drawn in ±*J*, keeping that ROI's rate and intervals while destroying alignment
+  between ROIs. Published as whole-train shifting (Pipa, Riehle & Grün 2007; Pipa
+  et al. 2008; Louis, Borgelt & Grün 2010). ⚠ The published form **wraps** the
+  train; this project's does not, and drops onsets pushed past the window's end.
+- **shared offset** — the control for rigid shift: **one** offset applied to every
+  ROI of a recording. Each ROI's train moves exactly as rigid shift moves it while
+  the ROIs stay aligned, so a classifier that separates real from a shared offset is
+  reading a per-ROI or edge artifact rather than removed coordination.
+- **label-free threshold** — an operating point set from a recording's own surrogate:
+  the lowest threshold at which a model fires no more than a stated number of events
+  per 10 minutes on rigid shifts of that recording. Reads no labels. The idea is
+  CFAR's (see **adaptive-threshold vocabulary**), with the surrogate standing in for
+  the reference cells; Dard et al. 2022 set their event threshold the same way, at
+  the 99th percentile of a per-cell circular shift.
+- **oracle threshold** — the F1-best threshold chosen **on planted truth**: a
+  comparison ceiling, never a usable rule. ⚠ Distinct from the parity **oracle**
+  under *validation vocabulary*, which is a MATLAB reference output.
+
+Added 2026-09-16, with the label-free detector work:
+
+- ***line*** (detector axis, a proper name like **CoactDetect**) — a learned detector
+  that smooths each ROI on its own, bounds it so a bursting ROI votes once, averages
+  those votes over ROIs, and judges the result against its own background with a
+  difference of Gaussians. `src/bugarach/learn/nets/line.py`.
+- ***line_length*** — `line` with its orientation channels removed: the registered
+  ablation that says what the second sensor is worth.
+- **relative length** — the share of a field that is lit at one moment: `line`'s
+  first sensor, a **mean** over ROIs rather than a tally, so it does not move with
+  ROI count.
+- **orientation, as temporal concentration** — `line`'s second sensor: the count at a
+  narrow smear divided by the count at the next wider one, one channel per adjacent
+  pair. Near 1 when the lit ROIs arrive together, well below 1 when they are gathered
+  only as the smear widens. ⚠ **Not the orientation of the raster image.** These
+  models are permutation-invariant over ROIs and the encoder sorts rows by rate, so a
+  tilt is a fact about row order, which no order-free model reads.

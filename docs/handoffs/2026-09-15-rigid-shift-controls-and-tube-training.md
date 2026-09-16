@@ -69,8 +69,11 @@ names; it passed for rigid shift on this folder. **Update that todo** when this 
 
 ## Stage 2 — tube trained against rigid shift (`tools/tube_self_supervised.py`)
 
-Results: [`learned/tube_self_supervised/training/`](../learned/tube_self_supervised/training/) (`results.jsonl`, 144 fits;
-`tube_ssl_fig.png`).
+Results: ⚠ **that folder was overwritten by the overnight re-run** and now holds 288 rows over four
+architectures, reported in [`learned/tube_self_supervised/README.md`](../learned/tube_self_supervised/README.md).
+This stage's own 144 fits over `tube` and `tube_guard` are no longer on disk; the numbers below are
+what it found. ⚠ **`line` in this page means the length-only build**, which the report calls
+`line_length`.
 
 - **Objective:** a ranking loss on the mean of the top 1 % of per-frame logits, real crop against
   the same crop rigid-shifted.
