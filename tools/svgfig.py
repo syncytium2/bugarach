@@ -198,7 +198,7 @@ class Panel:
         X = self.x - (dx if dx is not None else 36)
         cy = self.y + self.h / 2
         for i, ln in enumerate(lines):
-            off = (i - (len(lines) - 1) / 2) * (size + 2)
+            off = (i - (len(lines) - 1) / 2) * (size + 5)
             self.f.text(X + off, cy, ln, size=size, anchor="middle", color=MUTED, rotate=-90)
 
     # marks
