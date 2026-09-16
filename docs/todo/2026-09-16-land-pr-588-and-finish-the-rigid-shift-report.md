@@ -7,11 +7,18 @@ filed: 2026-09-16
 
 > **Tony, 2026-09-16:** *"we need to close up shop. write the status in milestones and a todo"*
 
-Everything from the 2026-09-15/16 sessions is on branch `unsup/rigid-shift-controls`,
-[PR #588](https://github.com/syncytium2/bugarach/pull/588), **pushed and not merged**. Nothing
-from it is on `main`, so none of it can be a milestone yet — `tools/check_milestones.py` refuses a
-row whose commit is not an ancestor of `origin/main`, correctly. The status line lives in
-`docs/MILESTONES.md` under *Open* until this lands.
+> **Progress, 2026-09-16 (Tony: *"do 1 and 2"*).** Steps 1 and 2 are **done**.
+> [PR #588](https://github.com/syncytium2/bugarach/pull/588) merged as `b4f09ab` with CI green on
+> Python 3.11, 3.13 and 3.14 — after its first CI run caught a regression of this session's own:
+> the pipelines line added to the session briefing put it 2 B over budget on a fresh clone, and
+> `merge_when_green.sh` refused the merge. Fixed in `d0453de`. The milestone rows are in
+> `docs/MILESTONES.md` section C (three) and section H (one). **Steps 3 and 4 remain**, and so does
+> everything under *Waiting on Tony*.
+
+Everything from the 2026-09-15/16 sessions was on branch `unsup/rigid-shift-controls`,
+[PR #588](https://github.com/syncytium2/bugarach/pull/588), and is now on `main`. Before it landed,
+none of it could be a milestone — `tools/check_milestones.py` refuses a row whose commit is not an
+ancestor of `origin/main`, correctly.
 
 ## What is on the branch
 
