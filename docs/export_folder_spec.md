@@ -101,6 +101,9 @@ hand.
 >   `bugarach view` and the bench all run `active_duration_sec=1.0`, so supplying width
 >   changes no number they currently produce. Per-event is an opt-in a caller selects
 >   through the API.
+>   **⚠ Superseded 2026-09-16 for `bugarach detect` and the bench**, which now run
+>   per-event on `width_sec` and decline locust, by name in `run.json`, for a folder
+>   that sends no width. `bugarach view` still runs the fixed second.
 >
 > Both halves have to be said. Giving only the second would repeat the mistake this
 > revision is correcting, in the other direction — which is what the first draft of this

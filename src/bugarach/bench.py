@@ -176,12 +176,22 @@ OPERATING_POINTS: dict[str, OperatingPoint] = {
         source="measured-regime F1 optimum, FAST (loco_detect docstring)",
         knob="threshold_pctile", grid=(99.0, 99.5, 99.9, 99.99, 99.999, 99.9999)),
     "cicada": OperatingPoint(
-        params=dict(sce_percentile=99.999, active_duration_sec=1.0, n_surrogates=100),
-        source="calibrated FAST pair (cicada_detect docstring); FAST percentile "
-               "retuned 99.99 -> 99.999 on 2026-08-20 with REGIMES — see cicada.py "
-               "for the measurement. Kept in step with the detector default on "
-               "purpose: a bench grading a configuration nobody deploys grades "
-               "nothing.",
+        # Each event held active for its own width, as the folder sent it
+        # (FOUNDATIONS §7). Until 2026-09-16 this was `active_duration_sec=1.0`, so
+        # every locust number — bench, bake-off and real recordings — came from a
+        # fixed second that ignored the width column. The anchor is unchanged: the
+        # default `locs`, which on a folder is the half-rise (export_folder_spec.md
+        # revision 8 calls that deliberate; the browser anchors on the peak).
+        params=dict(sce_percentile=99.999, active_duration_mode="per_event",
+                    duration_field="width", n_surrogates=100),
+        source="FAST percentile re-derived 2026-09-16 with per-event widths "
+               "(MEASURED_WIDTH_QUANTILES): pick_operating_point over 24 bench "
+               "recordings accepts 99.999 on baseline_quiet (F1 0.565, 7.9 firings/min "
+               "in the empty block) and 99.99 on baseline_busy (F1 0.540, 9.5/min); "
+               "mean F1 0.542 vs 0.548, a tie, so the setting that fires half as "
+               "often on nothing stays. Previously retuned 99.99 -> 99.999 on "
+               "2026-08-20 at the fixed 1 s (cicada.py). SLOW's percentile has no "
+               "bench evidence at either duration.",
         # Extended 2026-08-20 when REGIMES moved to the approved export folder: at the
         # corrected (busier) quiet endpoint the old top, 99.99999, was still the
         # peak and the search was still climbing. A busier background needs a
@@ -406,7 +416,9 @@ def make_recording(regime: str, seed: int, **overrides):
     """One bench recording. ``regime`` selects the background rate.
 
     Every regime here is derived from untreated recordings; there is no
-    treatment regime to accept. See :data:`REGIMES`.
+    treatment regime to accept. See :data:`REGIMES`. Like every simulated
+    recording it carries per-event widths for locust — see
+    :data:`bugarach.simulate.MEASURED_WIDTH_QUANTILES`.
     """
     if regime not in REGIMES:
         raise ValueError(f"unknown regime {regime!r} — have {sorted(REGIMES)}")
