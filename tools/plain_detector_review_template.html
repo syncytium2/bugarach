@@ -143,24 +143,31 @@ looks like in this particular recording.</p>
 <h2 id="s4">{{SEC:copies}}. Measuring chance with shifted copies</h2>
 <figure>{{FIG:fig_chance_steps}}
 <figcaption><b>Figure {{NUM:fig_chance_steps}}. How shifted copies measure chance, in four steps.</b>
-The example is one 2-second bin of a simulated recording, judged the way CoactDetect judges it
-(Section {{SEC:algorithms}}). The real count is {{T.coact_obs}} cells. In 100 shifted copies of the minute around it,
-chance almost never puts more than 2 cells in the bin. The copies here were drawn again for this
-picture in the same way the program draws its own. The bar ({{T.coact_bar_quiet}} cells) is the
-program's own.</figcaption></figure>
+A small simulated example: {{T.steps_cells}} cells over one minute, with one {{T.steps_bin}}-second bin
+picked out for testing. {{T.steps_observed}} of the {{T.steps_cells}} cells brighten inside that bin.
+Every event is drawn as its number in its own cell's order, so a row can be followed when it slides, and
+the slide given to each row is printed beside it. Of {{T.steps_copies}} shifted copies, {{T.steps_share}}
+reach {{T.steps_observed}} cells in that bin. The simulated recording is small enough to read; the
+programs do the same thing on recordings of {{T.n_cells_sim}} cells and more.</figcaption></figure>
 <p>Four of the six programs measure chance the same basic way, the way Figure {{NUM:fig_chance_steps}}
 shows. The program makes <b>shifted copies</b> of the recording. To make one copy, it slides each cell's
 whole row of events left or right by that cell's own random amount; events pushed off one end come back
 in at the other end.</p>
-<p>A shifted copy keeps everything about each cell on its own: how often that cell lights up, and
-whether its events come in bursts or at a steady beat. What a shift destroys is <b>the timing between
-cells</b>. So a lineup that survives in a copy is a lineup chance can produce. Counting lineups in a
-hundred copies tells the program how high a real count has to be before it means anything.</p>
+<p>A shifted copy keeps everything about each cell on its own: how often that cell brightens, and whether
+its events come in bursts or at a steady beat. What a shift destroys is <b>the timing between cells</b>.
+So a lineup that survives in a copy is, as far as the shift can tell, a lineup that chance can produce.
+Counting lineups in a hundred copies tells the program how high a real count has to be before it means
+anything. Section {{SEC:shuffle}} is about why this particular way of making copies, and about where it
+falls short.</p>
+<p><b>This is called a circular shift in the literature.</b> "Shift" because each row slides; "circular"
+because the recording is treated as a loop, so what falls off one end comes back at the other. If you go
+looking for the papers behind these programs — they are listed at the end, under <a href="#refs">Where the
+ideas come from</a> — that is the phrase to search for.</p>
 
 <h2 id="s5">{{SEC:shuffle}}. Why shift, not shuffle</h2>
 <figure>{{FIG:fig_shift_shuffle}}
 <figcaption><b>Figure {{NUM:fig_shift_shuffle}}. A shuffle gets chance wrong both ways; a shift gets
-it right.</b> A and B: six invented cells over 20 seconds, with the tested 2-second bin marked in
+it right.</b> A and B: six simulated cells over 20 seconds, with the tested 2-second bin marked in
 blue above each raster. The raster on the left is the recording, then one shifted copy and one
 shuffled copy. The bars on the right count, over 5,000 copies, how many cells landed in the bin.
 The ▼ marks the recording's own count. "Called" means fewer than 5 copies in 100 reached that
@@ -185,10 +192,22 @@ recordings, a shuffle drops {{T.doubles_shuffle}} of every 1,000 events into a b
 already filled, against {{T.doubles_real}} in the real recording and {{T.doubles_shift}} after a shift.
 As a result, shuffled copies say 6 or more cells line up in {{T.n6_shuffle}} of bins, and shifted
 copies say {{T.n6_shift}}. A bar built from shuffles would sit too low. That is why every program here
-that makes copies uses the shift.</p>
-<p>Even the shift is not perfect. Real recordings have more very large lineups than shifted copies
-predict: 8 or more cells line up about {{T.real_over_shift_8}} times as often as the copies say. Part of
-that may be slow ups and downs that many cells share, which shifting also breaks.</p>
+that makes copies uses the shift instead.</p>
+<h3>The shift is the better choice, not the right answer</h3>
+<p>It would be convenient if a shifted copy were a real recording with the coordination taken out and
+nothing else changed. It is not, and it is worth saying so plainly.</p>
+<ul>
+  <li><b>Real recordings line up more than the shift expects, even where nothing is coordinated.</b> Eight
+  or more cells line up about {{T.real_over_shift_8}} times as often in the recordings as in their shifted
+  copies. Some of that is probably slow rises and falls that many cells share, which a shift breaks along
+  with everything else.</li>
+  <li><b>A shifted copy carries traces of having been shifted.</b> In this project's own tests, a program
+  trained to tell a real recording from a shifted copy of it can sometimes do so. The shift leaves a
+  signature of its own, so a copy is not a silent, invisible version of the recording.</li>
+</ul>
+<p>So treat the shift as what it is: an idea that clearly helps, and that beats the obvious alternative,
+rather than a solved problem. Every bar in this document rests on it, and that is a limit on every
+number that follows.</p>
 
 <h2 id="s6">{{SEC:algorithms}}. The six algorithms</h2>
 <p>An <b>algorithm</b> is a fixed list of steps, written out by a person, that the computer carries out
@@ -317,7 +336,7 @@ does not promise a good score on real ones.</p>
 
 <h2 id="s9">{{SEC:grading}}. How we grade a program</h2>
 <figure>{{FIG:fig_grading}}
-<figcaption><b>Figure {{NUM:fig_grading}}. Hits, misses and false alarms,</b> on an invented minute drawn
+<figcaption><b>Figure {{NUM:fig_grading}}. Hits, misses and false alarms,</b> on a simulated minute drawn
 to show the rule.</figcaption></figure>
 <p>Grading compares each program's calls with the answer key. A call that lands within {{T.tol}} seconds
 of a planted event is a <b>hit</b>. A planted event with no call near it is a <b>miss</b>. Every other
@@ -413,6 +432,8 @@ raster would call those stripes.</p>
 <h3>What could be wrong here</h3>
 <ul>
   <li>Every score comes from simulated recordings, and the simulator is imperfect (Section {{SEC:sim}}).</li>
+  <li>Every bar in this document comes from shifted copies, and a shifted copy is not a perfect stand-in
+  for a recording with the coordination removed (Section {{SEC:shuffle}}).</li>
   <li>We ran no statistical test between the top programs, and the decoys cap every score.</li>
   <li>The "clear stripe" rule in Section {{SEC:eye}} is our own. A person may see stripes it misses, or miss some it
   counts.</li>
@@ -536,9 +557,10 @@ raster would call those stripes.</p>
   chose.</dd>
   <dt>Raster</dt><dd>A picture of a recording: one row per cell, one tick per event.</dd>
   <dt>Senktide</dt><dd>A drug that switches on the neurokinin 3 receptor, a sensor these cells carry.</dd>
-  <dt>Shifted copy</dt><dd>A copy of a recording in which each cell's whole row of events is slid by that
-  cell's own random amount. A shift keeps each cell's own pattern and breaks only the timing between
-  cells.</dd>
+  <dt>Shifted copy (a <i>circular shift</i>, in the research literature)</dt><dd>A copy of a recording in
+  which each cell's whole row of events is slid by that cell's own random amount, with events pushed off
+  one end coming back at the other. A shift keeps each cell's own pattern and breaks only the timing
+  between cells.</dd>
   <dt>Shuffled copy</dt><dd>A copy in which every event is moved to a new random time. A shuffle changes each
   cell's own pattern as well, which is why it gets chance wrong (Section {{SEC:shuffle}}).</dd>
   <dt>Simulate, simulator</dt><dd>To produce a recording ourselves instead of measuring one, choosing in

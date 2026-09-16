@@ -293,3 +293,51 @@ caught it: the build only verifies that tokens resolve.
 **Fixed**, and made harder to repeat: the caption is now written from the figure's own numbers
 (`{{T.orient_n_roi}}`, `{{T.orient_n_stripes}}`, `{{T.orient_biggest}}`), so a caption that drifts from its
 figure now fails the build instead of reading plausibly.
+
+## 23. Name the circular shift, in the literature's words (2026-09-16)
+
+Tony authorized the jargon explicitly: *"this is called a circular shift in the literature"*.
+
+**Applied** after the plain description, not in place of it, with why each half of the name fits and a
+pointer to the reference list. The word-list entry is headed "Shifted copy (a *circular shift*, in the
+research literature)".
+
+*Not done:* naming the shuffle's literature term. The field uses several (spike shuffling, random
+resampling, a Poisson surrogate) and picking one would assert more than we know. Say if you want one.
+
+## 24. Do not sell the circular shift as the answer ⚠ (2026-09-16)
+
+Tony: learned models seem able to **detect the circular shift itself as a cue**, so a shifted copy is not
+an invisible stand-in for the recording. (Told not to go looking for the measurement, and did not.)
+
+**Applied** as a subsection of Section 5, "The shift is the better choice, not the right answer", with
+two limits: real recordings line up more than the shift predicts even where nothing is coordinated, and a
+trained program can sometimes tell a shifted copy from the real thing. Section 4 no longer says a
+surviving lineup *is* chance — it says "as far as the shift can tell" — and "What could be wrong here"
+gains a matching bullet, because every bar in the document rests on the shift.
+
+## 25. "reach 4" is vague (2026-09-16)
+
+It never said reach *what*, and it was cells, not events.
+
+**Applied:** the histograms now read "copies with 4 or more cells in the bin: 0.3%", and the figure's foot
+says what makes a count a call ("a count that fewer than 5 copies in 100 reach is called").
+
+## 26. Do not introduce a second word for simulated data (2026-09-16)
+
+*"'invented' means something else to me, it does not signify simulated"*. Fair: I had split the vocabulary
+— *simulated* for the simulator's output, *invented* for the teaching examples drawn by hand — which
+buys nothing and costs the reader a distinction to track.
+
+**Applied:** one word, **simulated**, everywhere.
+
+### Caught while applying this: Figure 4's caption also described the data it replaced
+
+Same failure as the opening figure, one section over: the caption still described a 2-second bin of the
+33-cell bench recording with 7 cells in it, while the figure showed the six-cell example that replaced
+it. **Fixed and tied to its data** — `{{T.steps_cells}}`, `{{T.steps_observed}}`, `{{T.steps_copies}}`,
+`{{T.steps_share}}` — so it cannot drift again.
+
+**Two for two.** Both times a figure was replaced, its caption survived and read plausibly. Captions are
+now written from the figure's own measured numbers wherever they state a fact about the data, which is
+the only form the build can check.

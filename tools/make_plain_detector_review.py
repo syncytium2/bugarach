@@ -17,7 +17,7 @@ adds what was missing:
 
 * ``sim``    — every algorithm's steps on one simulated recording, including the chance
   copies each one draws, redrawn for the picture the way the algorithm draws them.
-* ``toys``   — the shift-versus-shuffle demonstration, on invented cells and on the lab's
+* ``toys``   — the shift-versus-shuffle demonstration, on simulated cells and on the lab's
   own evenly firing cells (the first review's Figure 2 numbers).
 * ``tube``   — the neural network's stages, as signals, from one trained copy.
 * ``real``   — close-ups of real recordings where the eye and the detectors disagree,
@@ -272,7 +272,7 @@ def stage_sim(work: Path) -> None:
 
 # ----------------------------------------------------------------------- stage: toys
 def stage_toys(work: Path) -> None:
-    """Shift against shuffle on six invented cells, in the two ways a shuffle goes wrong."""
+    """Shift against shuffle on six simulated cells, in the two ways a shuffle goes wrong."""
     rng = np.random.RandomState(11)
     L = 20.0
 
@@ -315,7 +315,7 @@ def stage_toys(work: Path) -> None:
     # ---- the numbered teaching example for the shifted-copy steps --------------------
     # Quiet cells will not do here: over one minute of the bench recording almost every cell
     # has a single event, so every number is "1" and nothing can be followed when a row
-    # slides. Six busier invented cells, numbered in their own firing order, is the form the
+    # slides. Six busier simulated cells, numbered in their own firing order, is the form the
     # lab's older MATLAB slide used, and the form Tony asked for back (2026-09-16).
     SL, PIECE = 60.0, (29.0, 31.0)
     r2 = np.random.RandomState(7)
@@ -779,10 +779,10 @@ def _numbered(f, p, numbered, *, size=11, color=INK_T, bold_in=None):
 
 
 def fig_chance_steps(W):
-    """The four steps, on six invented cells whose events are NUMBERED in firing order.
+    """The four steps, on six simulated cells whose events are NUMBERED in firing order.
 
     Numbers rather than ticks, because a tick cannot show that a row moved: every tick looks
-    like every other one, and the wrap at the end of the recording is invisible. Invented
+    like every other one, and the wrap at the end of the recording is invisible. Simulated
     cells rather than the bench recording, because a quiet cell has one event per minute and
     every number would read "1". Tony, 2026-09-16, resurrecting the lab's MATLAB slide.
     """
@@ -891,11 +891,17 @@ def fig_shift_shuffle(W, numbers):
             f.text(X + 60, Y + 62, lab, size=12, anchor="middle", weight=600, color=col)
             share = f"{pv * 100:.1f}%" if pv >= 0.001 else "under 0.1%"
             verdict = "called" if pv < 0.05 else "not called"
-            f.text(X + 60, Y + 236, f"reach {D['observed']}: {share}", size=11, anchor="middle", color=MUTED)
-            f.text(X + 60, Y + 252, f"→ {verdict}", size=12, anchor="middle", weight=700,
+            # Say what the number is a share OF. "reach 4: 0.3%" left the reader to guess
+            # (Tony, 2026-09-16); it is the share of copies whose count matched the recording's.
+            f.text(X + 60, Y + 232, f"copies with {D['observed']} or more", size=11, anchor="middle",
+                   color=MUTED)
+            f.text(X + 60, Y + 246, f"cells in the bin: {share}", size=11, anchor="middle", color=MUTED)
+            f.text(X + 60, Y + 264, f"→ {verdict}", size=12, anchor="middle", weight=700,
                    color=GREEN if (verdict == "called") == (key == "bursty") else RED)
-        f.text(765, Y + 272, "x: cells in the bin · ▼ the recording's count", size=11, anchor="middle",
-               color=MUTED, italic=True)
+        f.text(840, Y + 284, "across: cells in the bin · ▼ what the recording itself gave",
+               size=11, anchor="middle", color=MUTED, italic=True)
+        f.text(840, Y + 300, "a count that fewer than 5 copies in 100 reach is called",
+               size=11, anchor="middle", color=MUTED, italic=True)
     # C: the lab's own recordings
     Y = 750
     f.text(40, Y, "C · on the lab's own recordings (84 untreated recordings, brief events)", size=14,
@@ -904,7 +910,7 @@ def fig_shift_shuffle(W, numbers):
     n6 = numbers["sur_fast_n6"]
     groups = [("events landing in a 2-second bin their own cell already filled, per 1,000 events",
                [math.floor(v + 0.5) for v in (d["real"], d["shift"], d["shuffle"])], "{:.0f}", 120, 40),
-              ("share of 2-second bins where 6 or more cells light up",
+              ("share of 2-second bins where 6 or more cells brighten",
                [100 * n6["real"], 100 * n6["shift"], 100 * n6["shuffle"]], "{:.2f}%", 2.0, 520)]
     for lab, vals, fmt, vmax, X in groups:
         f.text(X, Y + 22, lab, size=12, color=MUTED)
@@ -1360,7 +1366,7 @@ def fig_grading(W, numbers):
            anchor="end")
     f.text(L - 8, 52, "planted events", size=12, anchor="end", color=MUTED)
     f.text(L - 8, 88, "calls", size=12, anchor="end", color=MUTED)
-    lane.xaxis_time(label="an invented minute, drawn to show the rule")
+    lane.xaxis_time(label="a simulated minute, drawn to show the rule")
     f.text(L, 214, f"Green bands reach {tol:g} seconds either side of each planted event. A call that touches a "
                    f"band is a hit; each call can claim only one event.", size=12, color=MUTED)
     f.text(L, 234, "Here: found 2 of 3 planted events; 2 of 4 calls were right.", size=12, color=MUTED)
@@ -1740,6 +1746,13 @@ def _display_values(W, N) -> dict:
                     T[f"rw_{label}_{stream}_{g}_{d}"] = n
                 for w, mhz in v["window_rate_mhz"].items():
                     T[f"rate_{label}_{stream}_{g}_{w.replace(' ', '').replace('+', 'plus')}"] = f"{mhz * 3.6:.0f}"
+    st_ = W["toys"]["steps"]
+    T["steps_cells"] = 6
+    T["steps_observed"] = st_["observed"]
+    T["steps_copies"] = f"{st_['n_copies']:,}"
+    T["steps_bin"] = f"{st_['bin'][1] - st_['bin'][0]:g}"
+    T["steps_share"] = (f"{st_['share_at_least'] * 100:.0f}%" if st_["share_at_least"] >= 0.01
+                        else "fewer than 1%")
     T["problem_n_roi"] = real["close"]["problem"]["n_roi"]
     T["orient_n_roi"] = real["close"]["orient"]["n_roi"]
     T["orient_n_stripes"] = len(real["close"]["orient"]["stripes"])
