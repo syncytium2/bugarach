@@ -60,6 +60,29 @@ def _score(tr, x):
         return tr.model(x).squeeze(0).numpy()
 
 
+@pytest.mark.parametrize("arch", sorted(ARCHITECTURES))
+def test_every_registered_architecture_survives_the_round_trip(tmp_path, arch):
+    """A checkpoint is how a model reaches another machine, so EVERY architecture
+    has to survive one — not just the one this file happens to name.
+
+    The rest of this file fixes `ARCH` on purpose: it is about the checkpoint's own
+    contract (refusals, provenance, no pickle) and one model exercises that. What it
+    could not see is an architecture whose state dict holds something the JSON
+    encoder does not handle. `gauge` holds an INTEGER buffer — the surrogate strides
+    — beside its float parameters, which is the first non-float tensor any model here
+    has carried, and nothing would have caught it going in.
+    """
+    torch.manual_seed(0)
+    model = ARCHITECTURES[arch].make()
+    tr = Trained(name=arch, model=model, threshold=0.5, n_params=n_params(model),
+                 dt=0.1, merge_gap_frames=20, train_seconds=0.0, threads=1)
+    path = checkpoint.save(tr, tmp_path / f"{arch}.json", trained_on="a_spec.json",
+                           train_seed=0, steps=1)
+    x = _raster()
+    assert np.allclose(_score(tr, x), _score(checkpoint.load(path), x), atol=1e-6), (
+        f"{arch} does not come back the same model it went in as")
+
+
 def test_a_reloaded_model_predicts_identically(tmp_path):
     tr = _trained()
     x = _raster()

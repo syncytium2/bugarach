@@ -10,6 +10,24 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
+### vm/net-design — DARKROOM claim RELEASED 2026-09-16: `bugarach/2026-09-16-net-design/`
+- **Status:** **RELEASED — the folder holds two notes and no page.** The connector this session
+  reached Dropbox through takes inline text only, and re-typing a 90 KB generated file through it
+  would have produced a different file wearing the same name.
+- ⚠ **BOTH NOTES ARE NOW PARTLY WRONG, and the folder has no third note saying so.** A review on
+  PR #589 found three things the session had missed: the per-cell rate the numbers rest on is a
+  **median of medians**, which `adapt.py` documents as a trap and which comes out six times below
+  FOUNDATIONS §9's own range for the same quantity; an architecture called **`line` already
+  exists** on `unsup/rigid-shift-controls`, so the note's claim that it does not is false and one
+  of the three proposed nets largely duplicates it; and `gauge` is **not permutation invariant**,
+  which is the one ledger row the page calls structural everywhere. **Whoever opens that folder
+  next: the corrected rate is 0.0097 Hz, the cross-lab rate ratio is 2.4× and not 19.6×, and the
+  page needs rewriting around `line` before any of it is quoted.**
+- **Writes:** `README.md`, then `UPDATE-the-nets-are-drawn-by-draughtsman.md`. Nothing existing in
+  the darkroom was touched.
+- **Released when:** released. The corrected page is not in the repo either — it moved to
+  `claude/net-design-proposal-hw8rve`, unmerged, when #589 was split down to the probe.
+
 ### Mac/rigid-shift-darkroom-fix — DARKROOM claim RELEASED 2026-09-15: `bugarach/2026-09-15-rigid-shift-look/` and the stray `bugarach/bugarach/`
 - **Status:** **RELEASED — `cossart/` moved into the look folder, the stray folder removed, and the
   note and all six figures byte-identical to the repo copy (checked with `cmp`).** Was ACTIVE,
