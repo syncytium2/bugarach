@@ -176,12 +176,22 @@ OPERATING_POINTS: dict[str, OperatingPoint] = {
         source="measured-regime F1 optimum, FAST (loco_detect docstring)",
         knob="threshold_pctile", grid=(99.0, 99.5, 99.9, 99.99, 99.999, 99.9999)),
     "cicada": OperatingPoint(
-        params=dict(sce_percentile=99.999, active_duration_sec=1.0, n_surrogates=100),
-        source="calibrated FAST pair (cicada_detect docstring); FAST percentile "
-               "retuned 99.99 -> 99.999 on 2026-08-20 with REGIMES — see cicada.py "
-               "for the measurement. Kept in step with the detector default on "
-               "purpose: a bench grading a configuration nobody deploys grades "
-               "nothing.",
+        # Each event held active for its own width, as the folder sent it
+        # (FOUNDATIONS §7). Until 2026-09-16 this was `active_duration_sec=1.0`, so
+        # every locust number — bench, bake-off and real recordings — came from a
+        # fixed second that ignored the width column. The anchor is unchanged: the
+        # default `locs`, which on a folder is the half-rise (export_folder_spec.md
+        # revision 8 calls that deliberate; the browser anchors on the peak).
+        params=dict(sce_percentile=99.999, active_duration_mode="per_event",
+                    duration_field="width", n_surrogates=100),
+        source="FAST percentile re-derived 2026-09-16 with per-event widths "
+               "(MEASURED_WIDTH_QUANTILES): pick_operating_point over 24 bench "
+               "recordings accepts 99.999 on baseline_quiet (F1 0.565, 7.9 firings/min "
+               "in the empty block) and 99.99 on baseline_busy (F1 0.540, 9.5/min); "
+               "mean F1 0.542 vs 0.548, a tie, so the setting that fires half as "
+               "often on nothing stays. Previously retuned 99.99 -> 99.999 on "
+               "2026-08-20 at the fixed 1 s (cicada.py). SLOW's percentile has no "
+               "bench evidence at either duration.",
         # Extended 2026-08-20 when REGIMES moved to the approved export folder: at the
         # corrected (busier) quiet endpoint the old top, 99.99999, was still the
         # peak and the search was still climbing. A busier background needs a
@@ -402,16 +412,84 @@ exist so the bench can fail a detector for firing on them.
 """
 
 
+MEASURED_WIDTH_QUANTILE_LEVELS = tuple(float(q) for q in range(100)) + (
+    99.5, 99.9, 99.99, 100.0)
+MEASURED_WIDTH_QUANTILES = (
+    0.4, 0.4, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5,
+    0.5, 0.5, 0.5, 0.5, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6,
+    0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.7, 0.7, 0.7, 0.7,
+    0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.8, 0.8,
+    0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.9,
+    0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 1.0,
+    1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.1, 1.1, 1.1,
+    1.1, 1.1, 1.1, 1.2, 1.2, 1.2, 1.2, 1.2, 1.2, 1.3,
+    1.3, 1.3, 1.3, 1.4, 1.4, 1.4, 1.4, 1.5, 1.5, 1.6,
+    1.6, 1.7, 1.7, 1.8, 1.9, 2.0, 2.2, 2.4, 2.7, 3.3,
+    4.2, 7.1, 17.93, 27.9)
+"""Seconds: the producer's FAST per-event ``width_sec``, at
+:data:`MEASURED_WIDTH_QUANTILE_LEVELS` percent.
+
+**Measured 2026-09-16** over every FAST event inside a baseline region of the
+``default`` export folder (``current_export.toml``): 47,225 events in 84
+recordings. Median 0.9 s, interquartile 0.6–1.2 s, 99th percentile 3.3 s. The
+levels thin out above the 99th percentile because a 1 % step there would spread
+one draw in a hundred evenly between 3.3 s and 27.9 s.
+
+**Why the bench needs it.** locust is the one detector that reads the width: it
+holds each cell active for that event's own duration. Until 2026-09-16 the bench
+and ``bugarach detect`` ran it at a fixed 1 s instead, and the percentile was tuned
+against that constant, so every locust number described a setting that ignores the
+column FOUNDATIONS §7 says it paints. A bench with no widths cannot grade the
+detector as it is meant to run.
+
+What the number *means* is the producer's business and is not written here
+(FOUNDATIONS §7, sapper SAP013). The bench draws from it and nothing else.
+"""
+
+_WIDTH_SEED_OFFSET = 7_919
+"""Widths come off their own RNG so drawing them moves no other detector's recording."""
+
+
+def with_measured_widths(pair, seed: int):
+    """Give a simulated recording the per-event width locust reads.
+
+    Each event gets a width drawn from :data:`MEASURED_WIDTH_QUANTILES` (inverse
+    CDF, linear between levels, rounded to the generator's grid), independently of
+    whether the event was planted — so the bench can re-derive a percentile under
+    per-event widths but cannot show widths carrying signal. The generator has one
+    time per event, so locust's anchor question does not arise here.
+
+    The draw uses its own ``RandomState``, so the five detectors that never read a
+    width see exactly the recording they saw before this existed.
+    """
+    s, gt = pair
+    rng = np.random.RandomState(int(seed) + _WIDTH_SEED_OFFSET)
+    grid = float(gt.params.get("grid_sec") or 0.0)
+    levels = np.asarray(MEASURED_WIDTH_QUANTILE_LEVELS) / 100.0
+    table = np.asarray(MEASURED_WIDTH_QUANTILES)
+    for stream in s.streams.values():
+        widths = []
+        for cell in stream.locs:
+            w = np.interp(rng.random_sample(len(cell)), levels, table)
+            if grid > 0:
+                w = np.maximum(grid, np.round(w / grid) * grid)
+            widths.append(w)
+        stream.width = widths
+        stream.width_def = "bench:MEASURED_WIDTH_QUANTILES"
+    return s, gt
+
+
 def make_recording(regime: str, seed: int, **overrides):
     """One bench recording. ``regime`` selects the background rate.
 
     Every regime here is derived from untreated recordings; there is no
-    treatment regime to accept. See :data:`REGIMES`.
+    treatment regime to accept. See :data:`REGIMES`. Carries per-event widths and
+    peaks for locust — see :func:`with_measured_widths`.
     """
     if regime not in REGIMES:
         raise ValueError(f"unknown regime {regime!r} — have {sorted(REGIMES)}")
-    return simulate_coordination(
-        seed=seed, **{**BENCH_RECORDING, **REGIMES[regime], **overrides})
+    return with_measured_widths(simulate_coordination(
+        seed=seed, **{**BENCH_RECORDING, **REGIMES[regime], **overrides}), seed)
 
 
 CROWDED_RECORDING = dict(BENCH_RECORDING, min_sep_sec=14.0, duration_sec=10800.0,
@@ -558,8 +636,8 @@ def make_tail_recording(regime: str, seed: int, **overrides):
     """
     if regime not in REGIMES:
         raise ValueError(f"unknown regime {regime!r} — have {sorted(REGIMES)}")
-    return simulate_coordination(
-        seed=seed, **{**TAIL_RECORDING, **REGIMES[regime], **overrides})
+    return with_measured_widths(simulate_coordination(
+        seed=seed, **{**TAIL_RECORDING, **REGIMES[regime], **overrides}), seed)
 
 
 CROWDING_GAP_SEC = 30.0
@@ -621,8 +699,8 @@ def make_crowded_recording(regime: str, seed: int, **overrides):
     """
     if regime not in REGIMES:
         raise ValueError(f"unknown regime {regime!r} — have {sorted(REGIMES)}")
-    return simulate_coordination(
-        seed=seed, **{**CROWDED_RECORDING, **REGIMES[regime], **overrides})
+    return with_measured_widths(simulate_coordination(
+        seed=seed, **{**CROWDED_RECORDING, **REGIMES[regime], **overrides}), seed)
 
 
 def make_null_recording(seed: int, **overrides):
@@ -633,8 +711,8 @@ def make_null_recording(seed: int, **overrides):
     there is none: every detection is a false positive *of this construction*.
     See :data:`NULL_RECORDING` for what that does and does not license.
     """
-    return simulate_coordination(
-        seed=seed, **{**BENCH_RECORDING, **NULL_RECORDING, **overrides})
+    return with_measured_widths(simulate_coordination(
+        seed=seed, **{**BENCH_RECORDING, **NULL_RECORDING, **overrides}), seed)
 
 
 def false_positives_per_hour(name: str, seeds=(1, 2, 3), **overrides) -> float:

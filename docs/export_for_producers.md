@@ -197,8 +197,11 @@ our two readers opens your folder, and the honest answer is different for each:
   its own refusal message. **Send `peak_sec` but no `width_sec` and that default turns
   every event into a one-frame active duration**, which floods the page with single-cell
   "events" and explains itself nowhere. Sending the width is the fix.
-- **Our Python commands use a fixed duration.** `bugarach detect` and `bugarach view`
-  do not run per-event, so sending width changes no number they currently produce.
+- **`bugarach detect` uses your width too, since 2026-09-16.** Each event keeps its cell
+  active for its own `width_sec`; a folder that sends no width gets every other detector
+  and a named reason in `run.json` for locust. Before that date it held every cell for a
+  fixed second, so a locust number from `detect` computed earlier did not use your
+  width. **`bugarach view` still uses the fixed second.**
 
 We are spelling out both because an earlier draft of this correction said only the second
 and would have told you your width did nothing.

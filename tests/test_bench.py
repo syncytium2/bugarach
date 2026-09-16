@@ -39,8 +39,56 @@ from bugarach.bench import (
     sweep,
 )
 from bugarach.detectors.rate import recording_extent, stream_trains
+from bugarach.simulate import simulate_coordination
 
 SEEDS = (1, 2)
+
+
+# --- locust reads each event's width on the bench, and nothing else moves
+
+
+def test_widths_leave_every_other_detectors_recording_exactly_as_it_was():
+    """The widths come off their own RNG, so the five that never read one see the
+    same event times they saw before widths existed — to the bit."""
+    s, _ = make_recording("baseline_quiet", 3)
+    bare, _ = simulate_coordination(
+        seed=3, **{**BENCH_RECORDING, **REGIMES["baseline_quiet"]})
+    for name, st in s.streams.items():
+        for got, want in zip(st.locs, bare.streams[name].locs, strict=True):
+            np.testing.assert_array_equal(got, want)
+
+
+def test_bench_widths_follow_the_measured_distribution():
+    from bugarach.bench import MEASURED_WIDTH_QUANTILES, MEASURED_WIDTH_QUANTILE_LEVELS
+
+    assert len(MEASURED_WIDTH_QUANTILES) == len(MEASURED_WIDTH_QUANTILE_LEVELS)
+    assert list(MEASURED_WIDTH_QUANTILES) == sorted(MEASURED_WIDTH_QUANTILES)
+    s, _ = make_recording("baseline_busy", 1)
+    w = np.concatenate([np.asarray(c) for st in s.streams.values() for c in st.width])
+    assert w.size > 1000 and np.isfinite(w).all()
+    assert np.median(w) == pytest.approx(0.9, abs=0.1)     # measured median, 0.9 s
+    assert np.percentile(w, 75) == pytest.approx(1.2, abs=0.1)
+
+
+def test_the_shipped_locust_reads_each_events_width():
+    """The guard against the fixed second coming back.
+
+    Until 2026-09-16 locust's operating point held every cell active for 1 s
+    whatever the folder's width said, and the percentile was tuned against that.
+    If this setting stops reading the column, stretching every width changes
+    nothing and this fails.
+    """
+    op = OPERATING_POINTS["cicada"].params
+    assert op["active_duration_mode"] == "per_event"
+    assert op["duration_field"] == "width"
+
+    s, _ = make_recording("baseline_quiet", 2)
+    as_sent = run_detector("cicada", s)
+    for st in s.streams.values():
+        st.width = [np.asarray(c) * 5.0 for c in st.width]
+    stretched = run_detector("cicada", s)
+    assert not np.array_equal(np.asarray(as_sent.onset_sec),
+                              np.asarray(stretched.onset_sec))
 
 
 @pytest.fixture(scope="module")

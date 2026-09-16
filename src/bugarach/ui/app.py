@@ -225,7 +225,12 @@ _SPECS = {
         # import-time check cannot see, because there is no bench value to
         # compare against. Named here so it is a decision rather than a leftover.
         ("n_synchronous_frames", "sync frames", 2, (1, 10), 1),
-        ("active_duration_sec", "fixed dur (s)", CALIBRATED, (0.1, 5.0), 0.1),
+        # ⚠ A literal, and a known gap. The shipped operating point stopped using a
+        # fixed duration on 2026-09-16 — locust reads each event's own width
+        # (bench.OPERATING_POINTS, detect_folder) — but this viewer still runs the
+        # fixed second, while its percentile below is the one calibrated for the
+        # per-event setting. Filed, not half-converted here.
+        ("active_duration_sec", "fixed dur (s)", 1.0, (0.1, 5.0), 0.1),
         # step is 1e-3, not 0.1: at the calibrated 99.999 a tenth-of-a-percent
         # spinner cannot reach a neighbouring value, so the arrows are useless
         # exactly where somebody would want to nudge it.
