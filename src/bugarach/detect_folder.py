@@ -117,7 +117,11 @@ DETECTORS = ("rate", "coact", "loco", "sce", "cicada", "sync")
 #: Which per-event time each detector anchors on. Recorded in
 #: ``detector_settings.csv`` rather than left implicit, because **the six do not
 #: agree and that is deliberate**: CICADA anchors on the peak (``locs``) and the
-#: rest on the half-rise (``t50rise``). The gap between the two runs ~0.3 s in a
+#: rest on the half-rise (``t50rise``). ⚠ **On a folder ``locs`` IS the half-rise**
+#: (``bugarach.io``), so from this path locust anchors on the half-rise too, which
+#: ``export_folder_spec.md`` revision 8 records as deliberate while the browser
+#: anchors on ``peak_sec``. The two readers disagree; that is open, not settled
+#: here. The gap between the two runs ~0.3 s in a
 #: fast stream and ~2 s in a slow one — wider than the tolerance a detection is
 #: scored at — so a reader who assumes one convention for all six reads the
 #: wrong thing off five columns. :mod:`bugarach.store` has the full note,
@@ -176,6 +180,9 @@ class RecordingDetections:
     skipped: str = ""
     """Non-empty means the recording produced nothing, and this says why. An
     empty result and an absent one are different findings."""
+    declined: dict[str, str] = field(default_factory=dict)
+    """Detectors that did not run on this recording while the others did, each with
+    its reason. Today only locust declines — see :func:`locust_declines`."""
 
 
 @dataclass
@@ -541,10 +548,37 @@ def _run_learned(trained, s, windows, want_streams, identity):
     return out
 
 
+def locust_declines(s: Slice) -> str | None:
+    """Why locust cannot run on this recording, or ``None`` when it can.
+
+    locust holds each cell active for the event's own **width**, as the folder
+    sent it (FOUNDATIONS §7). Running without one paints a duration nobody
+    measured — which is what this path did on every recording until 2026-09-16,
+    at a fixed second.
+
+    Checked across **every** stream, not only the one asked for: locust draws its
+    surrogates across all streams in one RNG sequence, so it runs on all or none.
+    """
+    missing = []
+    for name, st in s.streams.items():
+        if not st.has_width:
+            missing.append(f"stream {name!r} has no `width_sec` with its `width_def`")
+        elif any(np.isnan(np.asarray(w, dtype=float)).any() for w in st.width):
+            missing.append(f"stream {name!r} has events without a width")
+    if not missing:
+        return None
+    return ("locust holds each cell active for the event's own width from the "
+            "folder, and " + "; ".join(missing) + " (docs/export_folder_spec.md)")
+
+
 def detect_slice(s: Slice, *, detectors=DETECTORS, stream: str | None = None,
                  frame_interval_sec: float | None = None,
-                 overrides: dict | None = None, models=()):
+                 overrides: dict | None = None, models=(),
+                 declined: dict | None = None):
     """Run the detectors over one recording. Returns ``(events, windows)``.
+
+    ``declined``, when given, is filled with ``{detector: reason}`` for a detector
+    that could not run on this recording while the others did.
 
     ``models`` are reloaded checkpoints — :class:`~bugarach.learn.train.Trained`
     objects. They emit into the same contract as the six, so every reader of
@@ -584,6 +618,12 @@ def detect_slice(s: Slice, *, detectors=DETECTORS, stream: str | None = None,
         if name in FLAT:
             events.extend(_run_flat(name, s, windows, want, by_stream, identity))
             continue
+        if name == "cicada":
+            why = locust_declines(s)
+            if why is not None:
+                if declined is not None:
+                    declined[name] = why
+                continue
         # THE THREE NESTED PORTS TAKE THE WHOLE RECORDING and window it
         # themselves, drawing surrogates from one RNG stream across every stream
         # in declaration order — so there is no seam at which a per-stream
@@ -711,7 +751,7 @@ def detect_folder(folder, *, out_dir, detectors=DETECTORS,
         try:
             events, windows = detect_slice(
                 s, detectors=detectors, stream=stream, frame_interval_sec=dt,
-                overrides=overrides, models=loaded)
+                overrides=overrides, models=loaded, declined=rec.declined)
         except Exception as exc:                      # noqa: BLE001
             rec.skipped = f"{type(exc).__name__}: {exc}"
             rec.seconds = time.monotonic() - t0
@@ -797,6 +837,8 @@ def detect_folder(folder, *, out_dir, detectors=DETECTORS,
                 "(Tony 2026-08-18; FOUNDATIONS §4)"),
             "windows": windows_by_slice,
             "not_detected": {r.slice_id: r.skipped for r in run.skipped},
+            "declined": {r.slice_id: r.declined for r in run.records
+                         if r.declined} or None,
             "elapsed_sec": round(run.seconds, 3),
             # The four numbers that separate an empty result from an absent one,
             # so a reader does not have to infer it from a file's line count.

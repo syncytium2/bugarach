@@ -40,6 +40,14 @@ seven grid points and a largest rank change of two; flat field, same seeds, thre
 winners and a largest rank change of three. Mean own-range 0.132 against 0.170,
 so the axis shrank by about a quarter and did not go dead.
 
+**Re-measured 2026-09-16**, when locust's shipped setting stopped holding every cell
+for a fixed second and started reading each event's width. Same twelve seeds:
+fitted field, one winner (CoactDetect) and a largest rank change of two, mean
+own-range 0.133; flat field, three winners (CoactDetect, LoCo, rate+context) and a
+largest rank change of **two**, own-range 0.187. The winner contrast is unchanged;
+the rank-change contrast is gone — both fields now move a detector two places — so
+the paired test asserts the first strictly and the second only as "no worse".
+
 The regime argument does not change the curve. `baseline_quiet` and
 `baseline_busy` differ only in `bg_rate_hz`, which is the parameter the sweep
 replaces, so `evaluate_background_curve` returns the same numbers for either.
@@ -206,11 +214,15 @@ def test_the_reordering_was_the_flat_fields(curves, flat_curves):
         "the flat field used to have three winners along the axis; if it now has "
         "one, the comparison this test rests on has changed and the docstring "
         "is wrong")
-    assert _worst_rank_change(flat_curves) >= 3, (
-        "the flat field used to move a detector most of the way down the table")
-    assert _worst_rank_change(curves) < _worst_rank_change(flat_curves), (
+    assert len(_winners(curves)) < len(_winners(flat_curves)), (
         "the fitted field must be the more stable of the two, or the explanation "
         "in the module docstring is false")
+    # Was `>= 3` on the flat field and strictly less on the fitted one. Since locust
+    # runs per-event (2026-09-16) both fields move a detector at most two places, so
+    # rank change no longer separates them; the winner count above still does. See
+    # the module docstring's 2026-09-16 note before tightening this again.
+    assert _worst_rank_change(curves) <= _worst_rank_change(flat_curves), (
+        "the fitted field reorders the table further than the flat field does")
 
     fitted, flat = _mean_own_range(curves), _mean_own_range(flat_curves)
     assert fitted > 0.5 * flat, (

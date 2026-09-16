@@ -40,6 +40,7 @@ def test_it_runs_and_succeeds(briefing):
     assert out.returncode == 0, out.stderr
 
 
+@pytest.mark.serial  # a wall-clock budget; CI runs it after the parallel run, alone
 def test_it_is_fast_enough_to_be_unconditional(briefing):
     """It runs on the blocking session-start path, ahead of the generic hook.
     interface2 lost half a day to a SessionStart hook that took the whole

@@ -51,6 +51,7 @@ JS = """(cfg) => {
   const own = sceDetect(cfg.trains, cfg.tRange, opts);
   const given = sceDetect(cfg.trains, cfg.tRange, {...opts, threshold: cfg.pyThr});
   const pick = d => ({starts: d.starts, ends: d.ends, widths: d.widths,
+                      extents: d.extents,
                       magnitude: d.magnitude, magTotal: d.magTotal,
                       nEvents: d.nEvents});
   return {obs: Array.from(own.obs), bctr: Array.from(own.bctr),
@@ -118,10 +119,11 @@ def test_the_coactivity_and_its_grid_are_exact(js, py):
     assert got.max() >= OPTS["min_rois"] + 2, f"peak only {got.max()}"
 
 
-@pytest.mark.parametrize("field", ["starts", "widths", "magnitude", "magTotal"])
+@pytest.mark.parametrize("field", ["starts", "widths", "extents", "magnitude",
+                                   "magTotal"])
 def test_given_the_same_threshold_the_episodes_match_to_1e9(js, py, field):
     got = np.asarray(js["given"][field], dtype=float)
-    ref = {"starts": py["onset"], "widths": py["width"],
+    ref = {"starts": py["onset"], "widths": py["width"], "extents": py["extent"],
            "magnitude": py["mag"], "magTotal": py["mag_t"]}[field]
     ref = np.asarray(ref, dtype=float)
     assert js["given"]["nEvents"] == ref.size, (

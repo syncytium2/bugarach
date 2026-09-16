@@ -176,12 +176,22 @@ OPERATING_POINTS: dict[str, OperatingPoint] = {
         source="measured-regime F1 optimum, FAST (loco_detect docstring)",
         knob="threshold_pctile", grid=(99.0, 99.5, 99.9, 99.99, 99.999, 99.9999)),
     "cicada": OperatingPoint(
-        params=dict(sce_percentile=99.999, active_duration_sec=1.0, n_surrogates=100),
-        source="calibrated FAST pair (cicada_detect docstring); FAST percentile "
-               "retuned 99.99 -> 99.999 on 2026-08-20 with REGIMES — see cicada.py "
-               "for the measurement. Kept in step with the detector default on "
-               "purpose: a bench grading a configuration nobody deploys grades "
-               "nothing.",
+        # Each event held active for its own width, as the folder sent it
+        # (FOUNDATIONS §7). Until 2026-09-16 this was `active_duration_sec=1.0`, so
+        # every locust number — bench, bake-off and real recordings — came from a
+        # fixed second that ignored the width column. The anchor is unchanged: the
+        # default `locs`, which on a folder is the half-rise (export_folder_spec.md
+        # revision 8 calls that deliberate; the browser anchors on the peak).
+        params=dict(sce_percentile=99.999, active_duration_mode="per_event",
+                    duration_field="width", n_surrogates=100),
+        source="FAST percentile re-derived 2026-09-16 with per-event widths "
+               "(MEASURED_WIDTH_QUANTILES): pick_operating_point over 24 bench "
+               "recordings accepts 99.999 on baseline_quiet (F1 0.565, 7.9 firings/min "
+               "in the empty block) and 99.99 on baseline_busy (F1 0.540, 9.5/min); "
+               "mean F1 0.542 vs 0.548, a tie, so the setting that fires half as "
+               "often on nothing stays. Previously retuned 99.99 -> 99.999 on "
+               "2026-08-20 at the fixed 1 s (cicada.py). SLOW's percentile has no "
+               "bench evidence at either duration.",
         # Extended 2026-08-20 when REGIMES moved to the approved export folder: at the
         # corrected (busier) quiet endpoint the old top, 99.99999, was still the
         # peak and the search was still climbing. A busier background needs a
@@ -406,7 +416,9 @@ def make_recording(regime: str, seed: int, **overrides):
     """One bench recording. ``regime`` selects the background rate.
 
     Every regime here is derived from untreated recordings; there is no
-    treatment regime to accept. See :data:`REGIMES`.
+    treatment regime to accept. See :data:`REGIMES`. Like every simulated
+    recording it carries per-event widths for locust — see
+    :data:`bugarach.simulate.MEASURED_WIDTH_QUANTILES`.
     """
     if regime not in REGIMES:
         raise ValueError(f"unknown regime {regime!r} — have {sorted(REGIMES)}")
@@ -925,6 +937,14 @@ rests on it. The exception is **binned SCE**, still climbing at 1.5 s because it
 10 s bins make its detections coarse and only a loose tolerance credits them —
 which is exactly what a single number hides and a curve shows.
 
+⚠ **Superseded 2026-09-16: the exception was the scorer's.** SCE had been scored
+over ``[bin start, bin start + event spread]``, which ends before events late in
+the bin, so extra tolerance kept reaching events its calls were made on. Scored
+over its own bin (``SceStream.extent_sec``), its curve is flat from the narrowest
+gap on this grid, and all six settle at or below the shipped tolerance —
+``tests/test_tolerance_curve.py`` and
+``docs/todo/2026-09-15-binned-sce-calls-are-scored-over-the-wrong-stretch.md``.
+
 Same grid as ``docs/learned/tolerance_sweep.json``, so figures and bench runs
 describe one sweep rather than two.
 """
@@ -999,7 +1019,8 @@ was about to fall off one. **``REGIMES`` is not changed by this** — moving the
 axis is a recalibration; this reports across the axis that already exists.
 
 **Why this matters more than the tolerance did.** Five of six detectors turned
-out flat across the tolerance grid, so that constant was granting slack nobody
+out flat across the tolerance grid (six, once binned SCE was scored over its own
+bin), so that constant was granting slack nobody
 used and no comparison rested on it. Nothing is flat across this one. And the
 treatment contrast the whole loop builds toward compares two windows at
 *different* backgrounds, so a detector's sensitivity to this axis is confounded
