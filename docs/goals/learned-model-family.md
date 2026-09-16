@@ -1,0 +1,184 @@
+# Goal: a learned architecture that beats the hand-written detectors, and is known to
+
+> **The goal page for this work — start here.** The tree calls the same goal *the model track*, *the
+> learned detectors*, *the net design proposal*, *the field-size candidates* and *the bake-off*; they
+> are one goal. This page holds the goal, what is settled about it, what was tried and dropped, and
+> what is waiting on Tony, with a link beside every line. **The linked file wins** where the two
+> disagree, and a line found wrong is fixed in the same change as whatever you were doing.
+>
+> **Not the label-free goal.** Training *without labels* against a surrogate negative is a different
+> thread with its own page — [`unsupervised-learning.md`](unsupervised-learning.md). This page is
+> about the **architectures**: what shapes exist, which of them can learn, and what they score when a
+> simulator supplies the answer key. The two meet at stage 5 of the route below, and the tuned weights
+> from this goal are meant to be that one's starting point later.
+>
+> **Working material, not murderboarded** — same standing as [`pipeline.md`](../pipeline.md). No tree
+> counts; measured numbers are content and carry their source. How the page stays true is at the
+> bottom; the convention is in [`README.md`](README.md).
+>
+> **Written 2026-09-16** against `origin/main` at `a7fe2f8` and the open branches.
+
+---
+
+## The goal
+
+Six hand-written detectors set the bar, and the best of them sit within a few hundredths of F1 of each
+other, which is inside the spread. A learned detector earns its place only by clearing that bar
+**separably** — by a margin the fold-to-fold variation cannot explain — and by being understood well
+enough that its margin can be attributed to its shape rather than to its tuning budget. So the goal
+has two halves that have to move together: **expand the family** with architectures that test a
+specific idea about what coordination looks like, and **tune both sides fairly** so a win is about
+architecture and not about who got more knobs turned.
+
+Abbreviations used below: **F1**, the harmonic mean of recall and precision; **ROI**, region of
+interest (one imaged cell); ***t***, the paired *t* statistic over folds; **FA**, false alarm; **CV**,
+cross-validation.
+
+## Where it stands
+
+**There is a built route, and it is the best-organised thing in this goal.**
+[`pipelines/learned-model-evaluation.md`](../pipelines/learned-model-evaluation.md) walks a new
+architecture from registration to murderboard in eight stages, each with the gate it has to pass and
+the incident that put the gate there. Use it when a new architecture exists and someone needs a
+number for it; `tools/check_pipelines.py` keeps it honest.
+
+**The family doubled this week, on branches.** The registry is the folder — every module in
+`src/bugarach/learn/nets/` is imported and registers itself, so there is no name list to go stale.
+On `main` that folder holds **tube** and its three variants, **line** and its one-sensor ablation,
+and two controls, **trace** and **tiny**. Branch `tune-learned-vs-coact` ⚠ **unmerged** adds
+**gauge**, **tube_no_bypass**, and five **chorus** variants.
+
+**Two repaired chorus variants lead CoactDetect, and that margin is exactly what is under test.**
+On the home spec, `chorus_norm` beats CoactDetect by 0.103 F1 (*t* 6.5) and `chorus_gain_norm` by
+0.084 (*t* 10.2), paired over folds. But every learned model in that table ran at **one untuned
+setting** while CoactDetect had been tuned on one knob — so the margins might be about the tuning
+budget rather than the architecture.
+
+**The run that settles it is halted at its first gate.** The workstation tuning run gives both sides
+a declared budget under nested cross-validation at five training seeds. It stopped in Gate 1 step 3:
+`chorus_gain_norm` on two folds lands further from both of the Mac's seeds than the Mac's own two
+seeds are from each other, and **that needs a ruling before the run continues**
+(`docs/learned/tuned_vs_coact/gate1/README.md` on branch `tune-learned-vs-coact` ⚠ **not on `main`**).
+
+## What is settled
+
+**Strength** follows [`MILESTONES.md`](../MILESTONES.md): *measured* is a number from a run, *decided*
+is a ruling, *argued* is reasoning nobody has measured.
+
+### The family
+
+| finding | strength | source |
+|---|---|---|
+| **The folder is the registry.** Every module in `src/bugarach/learn/nets/` is imported by `pkgutil` and registers itself through `@register`, so to enumerate the family you list the folder. Nothing carries a hand-written name list that can drift | built | [`learn/nets/__init__.py`](../../src/bugarach/learn/nets/__init__.py) |
+| **On `main`: tube, tube_guard, tube_ratio, tube_ratio_guard, line, line_length, trace, tiny.** The four tube variants are the mechanism candidates; trace and tiny are controls | built | the folder |
+| **On branch `tune-learned-vs-coact`, seven more**: gauge, tube_no_bypass, chorus, chorus_gain, chorus_gain_norm, chorus_line, chorus_norm ⚠ **none of them is on `main`** | built | the folder on that branch |
+| **`line` counts how many ROIs are lit and judges that count against its own background.** It takes the top mean F1 in the supervised bake-off (0.713) but **not separably from CoactDetect** (+0.063, *t*(3) = 1.31), and its one-sensor ablation is indistinguishable from CoactDetect (+0.005, *t*(3) = 0.34) | measured, held | [`MILESTONES.md`](../MILESTONES.md) section C; [`line.py`](../../src/bugarach/learn/nets/line.py) |
+| **`tube` reproduces its shipped 24-recording F1 of 0.656 exactly** after the bypass flag was added, so `tube_no_bypass` is a controlled ablation and not a redefinition | measured | [PR #596](https://github.com/syncytium2/bugarach/pull/596) |
+
+### What the models score
+
+All of these are on **simulated recordings** — the simulator is the only place an answer key exists.
+The home spec is 32 ROIs, four folds of six recordings, two torch training seeds.
+
+| finding | strength | source |
+|---|---|---|
+| **chorus_norm +0.103 F1 over CoactDetect (*t* 6.5) and chorus_gain_norm +0.084 (*t* 10.2)**, seed-averaged, paired over four folds, both at fewer busy-window false alarms than CoactDetect | measured, two seeds, untuned | `docs/learned/field_size_candidates/README.md` and `learned_vs_coact.json` beside it ⚠ **on branch `tune-learned-vs-coact`, not on `main`** |
+| **line_length +0.052 (*t* 4.5); tube +0.000 (*t* 0.0)** against CoactDetect's 0.645. `tube` is the tuning-inflation control: it ties CoactDetect untuned, so if tuning lifts *it* clear too, the leaders' margins are about budget | measured, two seeds | same readout ⚠ **not on `main`** |
+| **gauge is the only learned model that carries to a larger field, and it is the worst of them at home.** On the 566-ROI Cossart spec it scores 0.67 / 0.59 where tube reaches 0.14 / 0.24 and line 0.005 / 0.15 — but on the home spec it scores 0.53 / 0.51 against CoactDetect's 0.65, and on an emptying field it fires 57 to 77 times an hour with nothing planted, where tube and CoactDetect fire less than once | measured, one run per seed | [PR #596](https://github.com/syncytium2/bugarach/pull/596) |
+| **gauge still trails CoactDetect on Cossart** by 0.11 to 0.19 F1. Carrying is not winning | measured | same |
+| **Every learned model was trained at one learning rate, 1e-2, on purpose**, while CoactDetect was tuned on one knob. That asymmetry is the reason the tuning run exists, and it is why none of the margins above can yet be attributed to architecture | measured from the code | [`tools/fair_bakeoff.py`](../../tools/fair_bakeoff.py) |
+
+### What fails to train, and why it matters
+
+| finding | strength | source |
+|---|---|---|
+| **`chorus` as first built does not train**: F1 0.125 flat, every fold, both seeds, threshold pinned to the grid floor. Diagnosed — its per-cell encoder **starts deaf**, at any learning rate — and repaired four ways, all of which now train | measured, then repaired | [PR #596](https://github.com/syncytium2/bugarach/pull/596); `docs/learned/field_size_candidates/why_chorus.txt` ⚠ **not on `main`** |
+| **`trace` and `tiny` show the same signature and were never diagnosed.** Their thresholds pin to the grid floor on three and four folds of four, so "detect everything" beat every stricter setting. The filed todo names those two; chorus makes it three, and chorus is the one that turned out to be a fixable defect rather than a property of the shape | measured | [the todo](../todo/2026-08-28-two-architectures-have-no-operating-point.md) |
+| **A model that starts deaf is a bug, not a verdict on the architecture.** That is the general lesson, and it is why a failed-training result now has to be diagnosed before it is reported as a finding about a shape | argued, from the chorus repair | the same readout ⚠ **not on `main`** |
+
+### Where the label-free half stands
+
+| finding | strength | source |
+|---|---|---|
+| **Four architectures trained with rigid shift as their only negative do not beat random initialisation** at the label-free threshold, reaching 0.34–0.49 F1 against 0.65–0.70 supervised | measured, held | [`MILESTONES.md`](../MILESTONES.md) section C; the goal page is [`unsupervised-learning.md`](unsupervised-learning.md) |
+
+## Tried and dropped — do not re-propose without new evidence
+
+- **`quorum`**, the third architecture in the original proposal. Built and drawn, then dropped from
+  the tuning branch: with one field size on the bench its exponent cannot be identified, so the bench
+  cannot tell the shape from a constant. It survives only on branch
+  `claude/net-design-proposal-hw8rve`. Bringing it back means giving the bench more than one field
+  size first.
+- **The field-size proposal as written.** Held back and owed a rewrite: it was drafted without knowing
+  `line` already existed — one of its three proposed nets largely duplicates it — and it rested on a
+  per-cell rate taken as a median of medians, which comes out about six times below the range
+  FOUNDATIONS §9 gives for the same quantity. [Todo](../todo/2026-09-16-the-field-size-proposal-must-be-rewritten-around-line.md).
+- **Running the tuning in the app.** The 2026-08-28 ruling that the next bake-off would run in the app
+  was reversed on 2026-09-16 — *"i believe these big runs need scripting and not in-app"* — on the
+  grounds that it had assumed the project was further along than it was.
+- **Integer stride shifts for gauge's null.** The first stride was 7 frames, inside the 9-frame
+  widening, and left 6.25 % of cell pairs aligned at 32 ROIs. Replaced by irrational phases
+  ([PR #596](https://github.com/syncytium2/bugarach/pull/596)).
+
+## Waiting on Tony
+
+Each is a decision, not a task, and nothing below it can be settled by a session.
+
+| decision | why it gates the goal | filed |
+|---|---|---|
+| **The Gate 1 step-3 stop.** `chorus_gain_norm` on folds 0 and 1 sits further from both Mac seeds than the Mac's seeds sit from each other. Is that a machine difference, as `tube`'s 0.0012 F1 miss was ruled, or a defect? | **The tuning run is halted on it**, and the tuning run is what decides whether chorus's margin is real | `docs/learned/tuned_vs_coact/gate1/README.md` ⚠ **not on `main`** |
+| **Whether [PR #596](https://github.com/syncytium2/bugarach/pull/596) merges.** Registering chorus and gauge puts them in the lab server's capabilities and in the browser's model picker | A model in the picker is a model a colleague can run on their own recordings; these have been run on simulation only, and gauge fires freely on an empty field | the PR, deliberately not set to auto-merge |
+| **Bake-off promotion**, for `line` and for anything the tuning run returns | [`MILESTONES.md`](../MILESTONES.md) reserves it; the `line` row is `held` | [`MILESTONES.md`](../MILESTONES.md) section C |
+| **Whether `trace` and `tiny` get the chorus treatment** — diagnosed as possibly-deaf, or recorded as shapes that cannot learn this task | Decides whether the no-operating-point todo is a bug report or a result | [todo](../todo/2026-08-28-two-architectures-have-no-operating-point.md) |
+
+## Open work a session can do without a ruling
+
+- **Diagnose `trace` and `tiny`** with the probe that caught chorus, before either is written up as an
+  architecture that cannot learn. The tool is `tools/probe_untrained_response.py` on branch
+  `tune-learned-vs-coact` — the gate a model should pass before anyone spends compute training it.
+- **[`model_track.md`](../model_track.md) has fallen behind the family it describes.** It never names
+  `line`, `chorus` or `gauge`, and its account of where the model stands is centre−surround.
+  [`MILESTONES.md`](../MILESTONES.md) section C is more current. Either bring it up to date or point
+  it here.
+- **The four tube variants still owe the controlled rate-step test** that would say which of them is
+  doing what. [Todo](../todo/2026-08-23-four-variants-of-the-tube.md).
+- **`build_tube`'s docstring asserts two guarantees the model does not deliver.**
+  [Todo](../todo/2026-08-27-the-model-does-not-do-what-its-docstring-says.md).
+- **The bake-off picks a threshold on the recordings it fitted on**, in the bake-off
+  ([todo](../todo/2026-08-27-the-threshold-is-picked-on-the-recordings-it-trained-on.md)) and in the
+  tube ablation ([todo](../todo/2026-08-28-the-ablation-still-picks-thresholds-on-its-fitting-data.md)).
+- **The learned models have never seen a real recording in training**, and a published route for
+  fixing that is filed. [Todo](../todo/2026-08-17-pretrain-on-the-six-then-fine-tune.md).
+- **The bake-off page transcribes numbers a token could substitute**, and it is stale.
+  [Todo](../todo/2026-08-28-the-bakeoff-page-transcribes-what-a-token-could-substitute.md).
+
+⚠ **Out of scope on Tony's word, 2026-09-16:** Cossart transfer — *"it's ok if the learned detectors
+don't automaticly work on cossart. don't get distracted"* — and, for the tuning run specifically, real
+recordings, label-free training, new architectures, and any edit to `bench.OPERATING_POINTS`. The
+operating points belong to [`coded-detector-optimization.md`](coded-detector-optimization.md).
+
+## Where the work lives
+
+| what | where |
+|---|---|
+| The route from a new architecture to a number | [`pipelines/learned-model-evaluation.md`](../pipelines/learned-model-evaluation.md) — eight stages, each with its gate |
+| The architectures | [`src/bugarach/learn/nets/`](../../src/bugarach/learn/) — the folder is the registry |
+| The bake-off | [`tools/fair_bakeoff.py`](../../tools/fair_bakeoff.py) — `--learned`, `--null-rates`, `--skip-hand-written`, `--train-seed` |
+| The tuning run's specification, and Tony's decisions of 2026-09-16 | `HANDOFF-workstation-tuning.md` on branch `tune-learned-vs-coact` ⚠ **not on `main`** |
+| The current scoreboard | `docs/learned/field_size_candidates/README.md` on that branch ⚠ **not on `main`** |
+| Gate 1, and the stop | `docs/learned/tuned_vs_coact/gate1/README.md` on that branch ⚠ **not on `main`** |
+| The proposal the three new shapes came from, and `quorum` | branch `claude/net-design-proposal-hw8rve` ⚠ **not on `main`**; its tip is an ancestor of `main` but the files were stripped back out before it merged |
+| Architecture diagrams | drawn by `syncytium2/draughtsman`; `line` beside `tube` at one scale is its queue item 13 |
+| Run outputs | `<darkroom>/bugarach/field-size-candidates/` and `<darkroom>/bugarach/2026-09-16-net-design/` — resolve with `bugarach.paths.darkroom()`. ⚠ Both notes in the net-design folder are partly wrong and the folder has no third note saying so |
+
+## Keeping this page true
+
+- **A result toward this goal updates this page in the same PR.** A decision moves from *Waiting on
+  Tony* to *What is settled* with its date. A dropped approach moves to *Tried and dropped* with its
+  reason.
+- **A session working on this goal says so on its board claim** (`Goal: learned-model-family`) and
+  names its branch `nets/<slug>`. Branches stay short-lived and land on `main`; the page, not a
+  branch, is what holds the goal together.
+- **Every ⚠ branch-only marker above is a debt.** When that branch lands, the marker comes off in the
+  same PR. Most of this goal's evidence currently lives where a reader on `main` cannot open it, which
+  is the condition this folder exists to end.
