@@ -117,5 +117,5 @@ jobs:
           BUGARACH_REQUIRE_PR_API: "1"
         run: |
           echo "runner cores: $(nproc)"
-          pytest -q -n auto --dist loadfile -m "not serial"
+          pytest -q -rs -n auto --dist loadfile -m "not serial"
           pytest -q -m serial
