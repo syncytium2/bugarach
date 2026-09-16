@@ -11,6 +11,31 @@
 > When this work lands, this file leaves the repo root: delete it if spent, or move it to
 > [`docs/handoffs/`](docs/handoffs/README.md) if anything in it is still worth reading.
 
+## Decisions of 2026-09-16 — they override anything below that disagrees
+
+Taken by Tony on 2026-09-16, after the workstation session proposed its Gate 1 and asked three
+questions. Each is written into the section it changes; this list is the index.
+
+1. **Scripted, not in the app.** The 2026-08-28 ruling that the next bake-off would run in the app
+   ([`docs/todo/2026-08-28-the-bakeoff-calibrates-without-the-gate.md`](docs/todo/2026-08-28-the-bakeoff-calibrates-without-the-gate.md))
+   rested, Tony says, on an assumption that the project was further along than it was: *"i believe
+   these big runs need scripting and not in-app."* This run is scripted.
+2. **Gate 1's float check runs at `7fc052d`, and all six hand-written detectors must match the Mac
+   exactly.** No exemption for locust or binned SCE. See *Gate 1*.
+3. **The tip's grids for the hand-written side**, after #597: 99 configurations for CoactDetect, 72 for
+   LoCo. See *Search spaces*.
+4. **False alarms: one set of fits, two selections, both declared now** (option D). **Primary:
+   ungated**, pooled F1 on both sides, as the table under test was built. **Secondary: gated**, by one
+   false-alarm budget shared by every model and anchored to CoactDetect at its shipped setting, with the
+   learned threshold inside the gate. See *Two selections from the same fits*.
+5. **Comparison only.** Tuned CoactDetect and LoCo exist to be compared against. They are never
+   proposed values for `bench.OPERATING_POINTS`, which belongs to `HANDOFF-detector-optimization.md` on
+   branch `detector-review-doc` (PR #587); its §4 lists the window widths searched here among the
+   parameters never varied. Do not edit `OPERATING_POINTS` from this branch.
+6. **It runs overnight, unattended.** Launched so that closed terminals, a closed VS Code and an ended
+   session do not stop it, on a machine checked for sleep, restarts and WSL idle shutdown first. See
+   *Running it overnight, unattended*.
+
 ## The question, in one paragraph
 
 On 24 simulated home recordings, two repaired versions of `chorus` beat CoactDetect by 0.08 to 0.10
@@ -131,13 +156,19 @@ recording seeds 1000–1023):
 
 ## Gate 1 — reproduce before tuning anything
 
-A different machine can compute different floats. Before any tuning, rerun one untuned home bake-off
-at training seed 0 and compare it with the Mac's file:
+A different machine can compute different floats. Before any tuning, three steps, **one process at a
+time with nothing else on the machine**, outputs under `~/runs/` (not `/tmp`; see *Things that will
+bite*).
+
+**Mechanics.** A worktree has no `.venv` of its own: run `~/bugarach/.venv/bin/python` with
+`PYTHONPATH=<worktree>/src`, and check that it imports the worktree's code. `fair_bakeoff.py --learned ""`
+falls back to every model, so the six hand-written detectors cannot run alone; run them with
+`--learned tube`, which is cheap.
 
 ```bash
-PYTHONPATH=src .venv/bin/python -u tools/fair_bakeoff.py --spec docs/learned/generator_spec.json \
-  --out <scratch>/repro --seeds-per-fold 6 --null-rates \
-  --learned tube,chorus_norm,chorus_gain_norm,line_length
+PYTHONPATH=<worktree>/src ~/bugarach/.venv/bin/python -u tools/fair_bakeoff.py \
+  --spec docs/learned/generator_spec.json --out ~/runs/gate1/<step> --seeds-per-fold 6 --null-rates \
+  --learned <models>
 ```
 
 The Mac's seed-0 rows: `tube` and the six hand-written detectors in
@@ -145,15 +176,26 @@ The Mac's seed-0 rows: `tube` and the six hand-written detectors in
 `docs/learned/field_size_candidates/chorus_repairs/<model>/bakeoff.json`; `line_length` in
 `docs/learned/field_size_candidates/rest_of_registry/line_length/bakeoff.json`.
 
-- **The six hand-written detectors must match per fold exactly.** They are numpy with fixed seeds.
-  If they do not, stop and find out why; nothing downstream is comparable until they do.
-- **The learned models should match per fold to within 0.02 F1.** Record the largest difference. A
-  larger gap means this machine's training is not the Mac's, and every comparison with the Mac's
-  numbers must say so; the tuned-versus-untuned comparison is then made **entirely on this machine**,
-  with the untuned baseline rerun here (Gate 3 does that anyway).
-- **Time one fit of each learned model alone** (the logs print `train … s`): run the command above
-  with one model at a time, nothing else on the machine. The Mac's times ran with 6 to 10 jobs sharing
-  it and overstate a lone fit. These times are what the budget below is checked against.
+**Step 1 — floats, at the Mac's code.** In a detached worktree at `7fc052d`, `--learned tube`.
+`7fc052d` comes before #593 (binned SCE scored over its bin) and #594 (every recording carries widths),
+and has the grids from before #597, so **all six hand-written detectors must match the Mac per fold,
+exactly. No exemptions.** `tube` should match within 0.02 F1. The Mac's references were produced from
+working trees with uncommitted changes (at `239f176`, `3bf3271` and `af407f2`), so a mismatch cannot be
+blamed on floats alone: **stop and report it either way**; nothing downstream is comparable until it is
+explained.
+
+**Step 2 — this machine's baseline, at the tip.** The six plus `tube`. Differences from the Mac are
+expected and belong to #593, #594 and #597, not to this machine; report them as such. The generator
+did not move: recordings 1000, 1013 and 1023 hash identically at `7fc052d` and at the tip (events,
+rise times, amplitudes, ground truth; checked 2026-09-16), and learned detections carry no
+`extent_sec`, so the scoring change of #593 does not reach them.
+
+**Step 3 — lone-fit timings, at the tip.** `chorus_norm`, `chorus_gain_norm` and `line_length`, one model
+per process. Each should match the Mac per fold within 0.02 F1; record the largest difference. A larger
+gap means this machine's training is not the Mac's, and every comparison with the Mac's numbers must
+say so; the tuned-versus-untuned comparison is made on this machine regardless. The logs print
+`train … s`: these times, not the Mac's (which ran with 6 to 10 jobs sharing the machine), set the
+estimate in *Search spaces*, and the estimate decides whether the run fits in one night.
 
 ## The design — nested cross-validation, both sides
 
@@ -214,6 +256,63 @@ outer fold, score every configuration in their grid on the 18 training-fold reco
 the best, and score the held-out fold once. This is `fair_bakeoff.py`'s calibration generalised from
 one knob to a grid. They have no training seed.
 
+### Two selections from the same fits — option D
+
+Every fit and every hand-written configuration is scored once; **two selections read those scores**,
+both declared here before any result exists. **The primary answers this run's question.** The secondary
+says whether that answer holds when no model may buy F1 by firing where nothing is planted.
+
+**Why a gate, and why not `main`'s.** F1 is scored only on recordings with planted events, so a
+configuration can raise it while firing more where nothing is planted, and a search over 24 to 99
+configurations will find such a configuration if one exists. For this lab the busy-window rate is not
+a nuisance: a detector that fires more when background firing rises reports "more coordination"
+whenever a treatment raises the rate. `bench`'s budgets (`MAX_PROBE_PER_MIN`,
+`MAX_FALSE_POSITIVES_PER_HOUR`) are each detector's **own** measured firing plus a margin, and no learned
+model has one, so gating one side with them would be unfair. The secondary uses **one budget for every
+model**, measured with the bake-off's own instruments.
+
+**The two false-alarm rates.** Reuse these; do not re-derive them.
+- **Busy-window false alarms per hour:** `hot_fa` from `score_stream` on the planted recordings, divided
+  by the hot window's duration (5 minutes per recording), as `tools/table_learned_vs_coact.py` converts it.
+- **Quiet-field false alarms per hour:** detections on `_null_twin(spec, 0.54)` recordings at seed
+  `recording seed + NULL_SEED_OFFSET`, as `null_fa_per_hour` in `fair_bakeoff.py` counts them. **The gate
+  uses factor 0.54**, the lower quartile of real untreated recordings. Factor 0.25 is a stress level below
+  anything measured: report it, never gate on it. The table this run tests shows 0.25 in its quiet-field
+  column, so every quoted quiet-field number says its factor.
+
+**The budget, per outer fold, from training recordings only.** On outer fold *h*'s 18 training
+recordings and their 0.54 twins, run CoactDetect at `OPERATING_POINTS["coact"].params` (nothing tuned)
+and measure both rates. Fold *h*'s budget is **1.6 times each rate**, for every model, CoactDetect and
+LoCo included. **Floor:** never below one false alarm in the measured duration (one per 1.5 busy-window
+hours; one per the 18 twins' total hours), so a reference that happens to fire zero times does not
+refuse everything. The 1.6 is `bench`'s own ratio of CoactDetect's empty-recording budget to its measured
+rate (7.0 against 4.4). Tony may change it until the run starts; `meta.json` records it, and it does not
+move after.
+
+**Primary, ungated.** Exactly as the two sections above describe: a learned fit keeps the threshold
+`train` picked, and the highest pooled inner F1 wins, on both sides.
+
+**Secondary, gated.** On the learned side the **threshold becomes part of the candidate**. A hand-written
+configuration already contains its threshold (`alpha`, a percentile), so gating a learned configuration
+at one fixed threshold would refuse it where a hand-written one could step down a notch.
+- *Hand-written:* candidates are the grid's configurations. Admissible if both rates on the 18 training
+  recordings are within fold *h*'s budget; the highest pooled F1 among the admissible wins.
+- *Learned:* candidates are (configuration, threshold) pairs over `pick_threshold`'s own threshold grid.
+  For each inner fit, compute the model's probabilities **once** per scored recording and per 0.54 twin,
+  then decode at every threshold exactly as `Trained.predict` does (`decode`, then `to_seconds`). Pool F1
+  and both rates over the 18 inner-scored recordings; admissible within budget; the highest pooled F1
+  wins. The chosen configuration's outer refits are decoded at **the chosen threshold**, not their own.
+  That carries a threshold chosen at training seed 0 across five seeds: say so in the readout, and report
+  how often the held-out rates exceed the budget.
+- **No admissible candidate in a fold:** report "no admissible configuration", and count that fold's
+  held-out F1 as 0 in the secondary comparison, the same rule as `NaN`.
+- Ties as in the primary. Where the two selections choose the same configuration, its outer refits are
+  shared (refits are keyed by configuration and seed).
+
+**Extract the threshold grid; do not copy it.** It is built inline in `pick_threshold`. Move it to a
+module-level constant in `src/bugarach/learn/train.py`, used by both, with no change in value. That is
+training code, not any model's code, and the existing tests of `pick_threshold` cover it.
+
 ### Search spaces — declared before any result is seen
 
 Learned models: **24 configurations per model**, the untuned bake-off setting always one of them, so
@@ -227,11 +326,21 @@ and check it was declared rather than chosen:
 3. With a **fresh** `random.Random(20260916)` for each model, take `rng.sample(remaining, 23)`.
 4. Append the untuned setting as the 24th.
 
-Write the 24, in that order, into `meta.json` before the first fit. **Do not cut the 24.** The
-workstation's own estimate for one night: about 330 fits per model as first written, averaging 2.3
-times the untuned 900 steps, roughly 100 CPU hours in all, or 4 to 5 hours at 22 jobs, before the
-inner-fit cache above halves the tuning part. If Gate 1's lone-fit timings contradict that, stop and
-report the new estimate; if any cut is unavoidable, cut every learned model equally and record it in
+Write the 24, in that order, into `meta.json` before the first fit. **Do not cut the 24.**
+
+**Hash normalised values.** Configurations are compared by value (`8 == 8.0`, so removing the untuned
+setting from the list works), but the cache key is a hash, and `json.dumps` writes `8` and `8.0`
+differently. `vote_gain` is registered as `8.0` and declared as `8` in the table below. Normalise every
+value (every number as a float) before hashing, or one configuration gets two keys.
+
+**The estimate, and when to stop.** Per learned model: 24 configurations × 6 distinct inner fits = 144
+inner fits, plus outer refits at 5 seeds × 4 folds for the untuned setting and for each selection's
+choice (40 to 60 refits), so about 190 to 200 fits. The drawn configurations average about 2.3 times the
+untuned 900 steps. Multiply by Gate 1's lone-fit times and divide by 22 jobs. On the Mac's inflated times
+that is roughly 50 CPU hours of training, about 2.5 hours of wall time, before scoring. Scoring adds
+inference on the scored recordings and 0.54 twins for every fit, and the hand-written grids on 24 planted
+recordings and 24 twins. **Write the estimate into `meta.json`. If it exceeds 9 hours of wall time, do
+not launch: report it.** If a cut is unavoidable, cut every learned model equally and record it in
 `meta.json` before starting.
 
 | model | axis | values | untuned setting |
@@ -254,18 +363,20 @@ Architecture axes pass through `train(name, mk, **arch_over)`, which forwards th
 builder; learning rate and steps are `train`'s own arguments.
 
 Hand-written detectors, **full grid** (they are cheap). The knob grids are `bench.OPERATING_POINTS`'
-own; the added axes bracket the shipped value on both sides:
+own **as of the tip, after #597** (decision 3), written out here so the declaration does not move if
+`bench` does; the added axes bracket the shipped value on both sides:
 
 | detector | axis | values | shipped |
 |---|---|---|---|
-| coact | `alpha` | the `OPERATING_POINTS` grid, 1e-1 to 1e-7 (8 values) | 1e-4 |
+| coact | `alpha` | 1e-1, 3e-2, 1e-2, 3e-3, 1e-3, 3e-4, 1e-4, 3e-5, 1e-5, 1e-6, 1e-7 (11 values) | 1e-4 |
 | coact | `int_win_sec` | 1.0, 2.0, 4.0 | 2.0 |
 | coact | `context_win_sec` | 30, 60, 120 | 60 |
-| loco | `threshold_pctile` | the `OPERATING_POINTS` grid, 99.0 to 99.9999 (6 values) | 99.9 |
+| loco | `threshold_pctile` | 97.0, 98.0, 99.0, 99.5, 99.9, 99.99, 99.999, 99.9999 (8 values) | 99.5 |
 | loco | `bin_width_sec` | 0.5, 1.0, 2.0 | 1.0 |
 | loco | `context_win_sec` | 60, 120, 240 | 120 |
 
-That is 72 configurations for coact and 54 for loco against 24 per learned model. **The hand-written
+Every other parameter stays at `OPERATING_POINTS` as of the tip. That is 99 configurations for coact
+and 72 for loco against 24 per learned model. **The hand-written
 detectors get the larger budget**, deliberately, so a learned margin that survives cannot be blamed on
 under-tuning the reference. Say so in the readout.
 
@@ -287,13 +398,20 @@ the readout that they are unchecked. The training-steps axis starts at the untun
   24-configuration draw's included default, refitted in the outer loop at the same five seeds.
 - The chosen configuration per outer fold, and whether the four agree.
 - Busy-window and quiet-field false alarms per hour for each chosen configuration, computed exactly as
-  `fair_bakeoff.py --null-rates` does (reuse `_null_twin` and the `hot_fa` count; do not re-derive them).
+  `fair_bakeoff.py --null-rates` does (reuse `_null_twin` and the `hot_fa` count; do not re-derive them),
+  at all three twin factors, each labelled with its factor.
+- **All of the above twice**, primary and secondary, side by side, never merged into one table. For the
+  secondary also: each fold's budget, the chosen (configuration, threshold), the number of admissible
+  candidates per model and fold, every "no admissible configuration", and the held-out rates against
+  the budget.
 - Wall time per fit, and total CPU hours.
 
 **A proposed reading, which Tony has not signed.** The margin *survives* if the tuned leader beats
 tuned CoactDetect in all four outer folds on the seed average, and `tube`, tuned the same way, does
-not clear tuned CoactDetect by a comparable amount. Report the numbers against this reading and **do
-not declare a winner**; the decision is his.
+not clear tuned CoactDetect by a comparable amount. Apply the same reading to the secondary. A margin
+that survives the primary but not the secondary is reported as **"wins only while firing more than the
+shared budget allows"**, never as a win. Report the numbers against this reading and **do not declare a
+winner**; the decision is his.
 
 ## Gate 2 — build the tool, smoke it, then run
 
@@ -307,6 +425,25 @@ Requirements, each from something that has already cost this project a night:
 - **One result file per fit and one per score**, keyed as in *Half the inner fits are the same fit*
   above, written atomically (write to a temporary name, then rename). A rerun skips keys that exist. A
   crash at hour five must not cost hours one to four.
+- **What a score file holds**, so both selections come from it without rerunning anything: for a
+  learned fit, per scored recording and per 0.54 twin, the counts `bench.pool_scores` pools (the
+  `score_stream` result's fields, `hot_fa` included) and the twin's detection count and duration, **at
+  every threshold of the grid**, with the fit's own threshold marked; for a hand-written configuration,
+  the same at its one setting. Twins at 1.0 and 0.25 are scored only for chosen configurations, on the
+  held-out fold.
+- **The shipped-CoactDetect reference** (the budget's source) is scored first, on all 24 recordings and
+  their 0.54 twins, and each fold's budget is pooled from its 18 training recordings. Write every fold's
+  budget into `meta.json` before the first learned fit.
+- **A fit that raises does not stop the run.** It writes an error file under its key (the traceback, the
+  configuration, the seed) and the run goes on; the summary lists every error. No silent retry. A
+  selection that needs an errored fit reports the configuration as missing rather than skipping it.
+- **`progress.json`**, rewritten atomically after every completed fit or score: done and total per
+  stage and per model, errors, fits per hour over the last hour, projected finish, and the commit.
+- **Queue in priority order**, so a night cut short still leaves complete answers for the most important
+  models: (1) the shipped-CoactDetect reference and budgets; (2) the hand-written grids; (3) the learned
+  models in the order `chorus_norm`, `tube`, `chorus_gain_norm`, `line_length`, each through inner fits,
+  both selections and outer refits. Idle workers take the next model's inner fits rather than wait for a
+  selection to finish.
 - **`--jobs N`** runs fits as separate processes. Each process keeps `THREADS = 1`.
 - **`--quick`** shrinks everything for a smoke run: 2 configurations per model, 100 steps, 2 folds of
   2 recordings, the hand-written grids thinned to 2 points per axis.
@@ -318,14 +455,57 @@ Requirements, each from something that has already cost this project a night:
   run on the Mac recorded `git_dirty: true` because it wrote into an untracked repo folder mid-run. Copy
   the final JSONs into `docs/learned/tuned_vs_coact/` in the commit that reports them.
 - **A test**, `tests/test_tune_learned_vs_coact.py`, running `--quick` on one learned model and coact
-  and asserting: no held-out recording seed ever appears in a fit or a threshold pick; the result files
-  resume; the declared untuned configuration is the 24th draw and the other 23 match the procedure
-  above; and a fit reached from two different outer folds is trained once and scored twice. Keep it
-  under about a minute:
+  and asserting: no held-out recording seed, **and no held-out recording's twin**, ever appears in a fit,
+  a threshold pick, a budget or either selection; the result files resume; the declared untuned
+  configuration is the 24th draw and the other 23 match the procedure above; a fit reached from two
+  different outer folds is trained once and scored twice; decoding a fit at its own threshold reproduces
+  `Trained.predict` exactly; pooling stored score rows equals pooling the live results; and `8` and
+  `8.0` hash to the same configuration key. Keep it under about a minute:
   the suite has no slow marker to hide behind, only `serial` (in `pyproject.toml`), which is for tests
   that must not share the machine.
 
-Then: `--quick` end to end, then the full run.
+Then: `--quick` end to end, then the full run, launched as the next section describes.
+
+## Running it overnight, unattended
+
+Tony, 2026-09-16: the full run goes overnight on the workstation with nobody watching. The resumable
+result files above make a crash cheap; this section makes a crash unlikely and the morning readable.
+
+**Before launch.** The session does these, with Tony present for anything that needs `sudo`.
+
+1. **Gates 1 and 2 have passed**, `--quick` has run end to end, and the estimate in `meta.json` is
+   under 9 hours of wall time. Push the branch, with this file's status line naming the commit about to
+   run, the budget margin, and the expected finish time.
+2. **Output directory `~/runs/tune-learned-vs-coact/`**, in the Linux filesystem. Not `/tmp`, not a
+   session scratchpad, not under `/mnt/c`.
+3. **Launch detached from every terminal, as a systemd unit**, so that closing VS Code, the Ubuntu
+   window or the Claude session does not end it. Ubuntu 26.04 under WSL runs systemd. Either
+   `sudo systemd-run --unit=tune-learned-vs-coact --uid=$USER -p WorkingDirectory=<worktree>
+   --setenv=PYTHONPATH=<worktree>/src …`, or run `sudo loginctl enable-linger $USER` once and then
+   `systemd-run --user`. Log to a file in the output directory as well as the journal. Do not rely on
+   `nohup` or `&`.
+4. **Prove that WSL keeps running with nothing attached; do not assume it.** WSL can stop an idle
+   distribution, or its whole VM, when no Windows-side client is attached, and that kills the unit.
+   Test it with the launcher chosen in step 3: a unit that writes a timestamp to a file every 30 seconds
+   for 15 minutes. Close every Ubuntu terminal and every VS Code window connected to WSL. After 10
+   minutes, check from Windows (`wsl -l -v`, then read the file). If the timestamps stopped, fix it
+   before launch, then test again. The likely fixes are an idle-timeout setting in
+   `%UserProfile%\.wslconfig`, or a minimised Windows terminal holding `wsl.exe -d Ubuntu -- sleep infinity`.
+5. **Windows must not sleep, hibernate or restart.** Check the power plan's sleep setting on mains
+   power and any pending Windows Update restart. This is a managed Enterprise machine, so a policy may
+   override the user setting: record what was found in the board block. Leave the machine plugged in
+   and signed in. Locking the screen is fine; signing out ends WSL.
+6. **Board.** The block's `Holds:` names 22 CPUs until the unit ends, and the expected finish time.
+
+**While it runs**, `progress.json` is the one place to look.
+
+**The morning after**, a new session reads `progress.json` and the log first.
+- If the unit died, it reruns the identical command (completed keys are skipped) and says in the
+  status line what was lost and why.
+- If it finished, it goes on to Gate 3.
+
+The unattended run commits and pushes nothing itself. Commits pass through hooks and the board guard,
+which need a session.
 
 ## Gate 3 — the readout
 
@@ -339,7 +519,8 @@ Then: `--quick` end to end, then the full run.
   Number it *Figure 1.* in its caption. Render it, look at it, put a copy in the claimed darkroom folder
   with `python3 tools/show.py <file>`, and give Tony the path it prints.
 - A *Limits* section: simulation only; four outer folds; tuning at one training seed; the hand-written
-  side's larger budget; any Gate 1 difference from the Mac.
+  side's larger budget; the secondary's threshold carried from seed 0 to all five seeds; the budget
+  anchored to one reference detector with a margin of 1.6; any Gate 1 difference from the Mac.
 - An [`docs/INDEX.md`](docs/INDEX.md) row pointing at the readout, in the same commit.
 
 ## Things that will bite
@@ -353,6 +534,11 @@ Then: `--quick` end to end, then the full run.
   configuration of any model lands at F1 0.125 with its threshold at 0.0001, that is the same failure:
   record it, do not tune around it silently.
 - **The Mac's quoted training times are inflated** by up to 10 concurrent jobs. Use Gate 1's.
+- **`/tmp` and session scratchpads are not durable.** `/tmp` can be cleared when the distribution
+  restarts, and a scratchpad belongs to the session that made it. Every output of this run goes under
+  `~/runs/`.
+- **The Mac's reference rows came from uncommitted working trees.** A Gate 1 mismatch can be those
+  changes, not floats; say which is known and which is not.
 - **Do not change `tools/fair_bakeoff.py`'s default behaviour.** Its transfer test
   (`tests/test_fair_bakeoff_transfer.py`) checks that the default path is unchanged.
 - **Push every completed stage promptly.** Push the branch `tune-learned-vs-coact` after Gate 1, after
@@ -374,7 +560,10 @@ count are adopted. **Setup step 3 decided (2026-09-16): WSL2.** Ubuntu 26.04, Py
 2.14.0+cpu, 24 physical / 48 logical CPUs, WSL memory 96 GB. The clone is at `~/bugarach`, not
 `~/Developer/bugarach`. Its venv lacks `pyspike` (no `python3-dev` to build it), which CI tolerates the
 same way; nothing under `src/` imports it. `darkroom()` finds the darkroom without `BUGARACH_DARKROOM`.
-**In progress:** board claimed, worktree `tune-learned-vs-coact` created; next, merge `main` (#597) and
-run Gate 1 with fits timed one at a time.
+**In progress:** board claimed, worktree `tune-learned-vs-coact` created, `main` (#597) merged at
+`259d717`. **2026-09-16: Tony's decisions are written in** (the list at the top: scripted run, Gate 1 at
+`7fc052d` with no exemptions, the tip's grids, option D, comparison only, unattended overnight). The
+budget margin is 1.6 until the run starts. **Next:** Gate 1, then the tool and `--quick`, then the
+pre-launch checks in *Running it overnight, unattended*, then launch.
 ⚠ PR #596 was still open with CI running; if review changes a model's code, results tuned against an
 older commit go stale, which the commit recorded in `meta.json` makes visible.
