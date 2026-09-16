@@ -10,10 +10,14 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
-### Mac/tube-ssl-report — DARKROOM claim ACTIVE 2026-09-16: `bugarach/2026-09-16-tube-self-supervised/`
-- **Status:** **ACTIVE — claimed before writing.** Tony asked for the full test through to real data
-  and a report for the morning, murderboard authorized. The overnight report was reviewed twice; the
-  blind second round returned fifty-one findings and the report was rewritten around them.
+### Mac/tube-ssl-report — DARKROOM claim RELEASED 2026-09-16: `bugarach/2026-09-16-tube-self-supervised/`
+- **Status:** **RELEASED — the two rebuilt figures and the real-recording lanes figure (two views,
+  HTML and PNG) are in the folder; repo copies of the two synthetic-derived figures are on the PR.**
+  Was ACTIVE, claimed before writing. Tony asked for the full test through to real data and a report
+  for the morning, murderboard authorized. The blind second round returned fifty-one findings and the
+  report was rewritten around them.
+- **Holds:** also wrote three PNGs to `darkroom/unsup-rule-as-code/` via `tools/show.py`, to put them
+  in front of Tony where a `SendUserFile` call cannot be trusted to have delivered.
 - **Writes:** one new folder only — the two rebuilt figures and one real-recording lanes figure.
   Nothing existing in the darkroom is touched, and the 2026-09-15 rigid-shift-look folder is
   read-only from here.
