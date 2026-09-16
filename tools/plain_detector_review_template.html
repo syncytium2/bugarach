@@ -393,8 +393,17 @@ on the {{T.per_test}} it had never seen.</p>
 <p><b>Those rounds happen only in Figure {{NUM:fig_scores}}.</b> Apart from that one figure, each program
 runs at a single stored value for its main setting — the same value on every recording, real or
 simulated, and the one that produced every call this project has ever reported. Figure
-{{NUM:fig_scores}} sets that stored value aside and picks a fresh one for each round; nothing else
-does.</p>
+{{NUM:fig_scores}} sets that stored value aside and lets each round pick its own; nothing else does.</p>
+<p><b>So why not keep the settings the rounds picked?</b> Because the rounds do not produce
+<i>a</i> setting. They produce {{T.n_tests}} of them, one per round, and for {{T.n_setting_disagree}} of
+the six programs those {{T.n_tests}} answers disagree with each other. locust is the clearest case: its
+rounds picked {{T.cicada_pick_lo}} and {{T.cicada_pick_hi}}, a thousandfold apart, from the same
+{{T.n_recordings_scored}} recordings. There is no single value there to install.</p>
+<p>That disagreement is not a flaw in the rounds; it is what they were built to reveal. A round answers a
+narrow question — <i>how well does this program do when its setting was picked without seeing the
+recordings it is graded on?</i> — and the answer is a score, not a value. Two further reasons not to
+install one: any setting picked this way is picked against the simulator, whose faults Section
+{{SEC:sim}} lists, and real recordings have no answer key, so nothing can be tuned on them at all.</p>
 <p><b>Those stored values did not all arrive the same way.</b> For CoactDetect, LoCo and locust, somebody
 ran the program on simulated recordings and kept the value that scored best. CoactDetect's ended up a
 hundred times stricter than the value the program was first written with. For rate+context, binned SCE
@@ -422,7 +431,8 @@ planted events each program found, counting only the events joined by {{T.mid_ce
 outside the busy stretch, orange inside it. The gray tick shows what calling at random would find inside.
 B: the calls a program made inside the busy stretch with no planted event near them — its false alarms —
 counted per minute, on a scale where each step is ten times more. Every program here runs at its stored
-setting, not at the freshly chosen setting of Figure {{NUM:fig_scores}}.</figcaption></figure>
+setting (Section {{SEC:grading}}), not at the setting a round picked in Figure
+{{NUM:fig_scores}}.</figcaption></figure>
 <p><b>Busy stretches are where the programs split apart</b> (Figure {{NUM:fig_busy}}). The recordings
 above never put a coordinated event inside the busy stretch, so a program that goes quiet there looks
 good even if it has gone blind. To find out which, we made {{T.block_recordings}} new recordings with

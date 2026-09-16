@@ -1696,6 +1696,20 @@ def _pct(v, nd=0):
     return f"{100 * v:.{nd}f}%"
 
 
+def _round_disagreement(N) -> dict:
+    """How many detectors' rounds picked different settings, and locust's spread.
+
+    The document has to answer "why not just keep the tuned setting?", and the honest
+    answer is that there is no single one: each round picks its own, and most detectors'
+    rounds disagree. Derived here rather than written into the prose so the claim cannot
+    outlive the measurement.
+    """
+    picks = {d: N[f"opt_quiet_{d}"]["picks"] for d in CODED}
+    lo, hi = (sorted(picks["cicada"], key=lambda s: float(s.replace(",", "")))[i] for i in (0, -1))
+    return dict(n_setting_disagree=sum(1 for p in picks.values() if len(set(p)) > 1),
+                cicada_pick_lo=lo, cicada_pick_hi=hi)
+
+
 def _display_values(W, N) -> dict:
     """Every number the page quotes, already worded. The template names them {{T.key}}."""
     sim, toys, tube, real = W["sim"], W["toys"], W["tube"], W["real"]
@@ -1747,6 +1761,10 @@ def _display_values(W, N) -> dict:
         mid_cells=int(round(0.18 * N["bench_n_roi"])),
         small_cells=int(round(0.10 * N["bench_n_roi"])),
         n_coded=len(CODED), n_learned=len(LEARNED4),
+        #: The rounds do not yield a deployable setting: they yield one per round, and most
+        #: detectors' rounds disagree. Tony asked why the stored value is not replaced by
+        #: "the tuned one" — this is the answer, and it has to come from the data.
+        **_round_disagreement(N),
     )
     for reg, tag in (("baseline_quiet", "q"), ("baseline_busy", "b")):
         for d in CODED + LEARNED4:

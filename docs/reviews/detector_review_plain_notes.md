@@ -514,3 +514,52 @@ algorithms, and neither tested nor judged here. They stay drawn so the rows are 
 **The lesson is about the cut, not the note.** Removing a subject from prose does not remove it from
 figures that were built from a detector list. When something leaves a document, grep the *builders* for
 the list that still includes it.
+
+## 35. "freshly chosen" — banned in perpetuity, and why the rounds' settings are not installed ⚠ RULE (2026-09-16)
+
+*"remind me why we don't use 'freshly chosen' settings of the previous figure? 'freshly chosen' is hereby
+banned in perpetuity"*
+
+**Two things in one note, and the phrase was hiding the answer to the question.**
+
+### The phrase
+
+An adjective doing a noun's work. "Freshly" flatters the value — fresh beats stale — while answering none
+of *chosen by whom*, *out of what*, *how many times*. And "the freshly chosen setting" is a **singular
+noun phrase for something that does not exist in the singular**.
+
+Third word tried for one idea in one review: **shipped** was jargon (note 1), **default** was false (note
+30), **freshly chosen** was decorative. The common cause is reaching for an adjective instead of naming
+the procedure. **Mechanized as SAP017**, tree-wide, rationale in
+[`sapper_feedback/2026-09-16-freshly-chosen-is-banned.md`](../sapper_feedback/2026-09-16-freshly-chosen-is-banned.md).
+
+### The answer it was hiding
+
+The rounds do not produce *a* setting. They produce **4, one per round**, and for **4 of the 6 detectors
+those 4 answers disagree** (`opt_quiet_*.picks`):
+
+| detector | the four rounds picked | agree? |
+| --- | --- | --- |
+| rate+context | 2, 2, 2, 2 | yes |
+| CoactDetect | 10,000 · 1,000 · 1,000 · 10,000 | no |
+| LoCo | 99 · 99 · 99.5 · 99 | no |
+| binned SCE | 75 · 75 · 75 · 85 | no |
+| locust | 99.9 · 99.9 · 99.9999 · 99.9999 | no — **a thousandfold spread** |
+| SPIKE-synch | 0.04 × 4 | yes |
+
+So "why not keep the tuned setting" has no referent: there are four, and they disagree. A round answers a
+narrow question — *how well does this program do when its setting was picked without seeing the
+recordings it is graded on?* — and the answer is **a score, not a value**. Two further reasons: a setting
+picked that way is picked against the simulator, whose faults Section 7 lists; and real recordings have no
+answer key, so nothing can be tuned on them at all.
+
+**Applied.** Section 9 gains both paragraphs, with the counts and locust's spread derived from the
+measurements by `_round_disagreement()` rather than written into the prose — so the claim cannot outlive
+the data. The caption now reads "not at the setting a round picked in Figure 14".
+
+### Two side findings
+
+- **`sapper --all` crashes on Windows when a finding's line contains a non-ASCII character** (cp1252
+  console, `UnicodeEncodeError` on `⚠`). `--staged` and CI are unaffected, which is why nobody hit it.
+  Workaround for now: `PYTHONIOENCODING=utf-8`. Filed as a todo.
+- 31 WARN-level SAP015 hits ("data" as singular) are standing tree-wide, none from this work.

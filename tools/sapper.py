@@ -449,6 +449,39 @@ RULES = [
         fixture_good="<p>CoactDetect draws its copies from the surrounding minute, so a "
                      "busier stretch raises the count a bin has to beat.</p>",
     ),
+    Rule(
+        id="SAP017", level="BLOCK",
+        # BANNED IN PERPETUITY. Tony, 2026-09-16, reading a figure caption that said a
+        # program ran at its stored setting "not at the freshly chosen setting of Figure
+        # 14": *"'freshly chosen' is hereby banned in perpetuity"*.
+        #
+        # The phrase is an adjective doing a noun's work. "Freshly" carries a whiff of
+        # approval — fresh is better than stale — while saying nothing about WHO chose,
+        # FROM WHAT, or WHEN, and here all three mattered: the rounds choose one value per
+        # round, from held-out simulated recordings, and for four of the six detectors the
+        # rounds disagreed with each other. A caption that says "freshly chosen" hides that
+        # there is no single chosen value to speak of.
+        #
+        # It is also the THIRD word tried for the same idea in one review — "shipped" was
+        # jargon, "default" was false, and this was decorative. The pattern behind all three
+        # is reaching for an adjective instead of naming the procedure, so the repair is
+        # always to name it: "the setting each round picked from the recordings it was
+        # allowed to see".
+        #
+        # Tree-wide, because a ban in perpetuity that only covers one document is not one.
+        # Exempt: this file, and the two places whose job is to record what was banned.
+        pattern=r"\bfresh(ly)?[\s-]+(chosen|picked|selected|tuned)\b",
+        include=["**"],
+        exclude=["tools/sapper.py", "docs/sapper_feedback/**", "docs/reviews/**"],
+        message="\"freshly chosen\" is BANNED IN PERPETUITY (Tony, 2026-09-16). The "
+                "adjective flatters the value and hides the procedure: who chose it, "
+                "out of what, and how many times? Name the procedure instead — \"the "
+                "setting each round picked from the recordings it was allowed to see\" "
+                "— which also makes it sayable that different rounds picked "
+                "differently.",
+        fixture_bad="at the freshly chosen setting of Figure 14.",
+        fixture_good="at the setting each round picked from the recordings it could see.",
+    ),
 ]
 
 
