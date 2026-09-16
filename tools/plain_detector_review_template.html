@@ -40,8 +40,8 @@ how we tested them, and why they sometimes disagree with your own eyes.</p>
   the times of the <b>calcium events</b> in those signals. We want to ask whether calcium events happen in
   <b>many neurons at around the same time</b>. Computer programs have to find those moments, because there are far too many recordings to go through
   by hand.</li>
-  <li>Neurons have calcium events on their own as well, so some of them line up <b>just by chance</b>. Every program has
-  to separate real teamwork from chance lineups, and each program uses a different set of steps to do
+  <li>Neurons have calcium events on their own as well, so some coordinated events happen <b>just by chance</b>. Every program has
+  to separate the coordinated events chance explains from the ones it does not, and each program uses a different set of steps to do
   that.</li>
   <li>A real recording has no answer key: nobody knows for certain which moments are real. So we also
   <b>simulate</b> recordings — we produce them ourselves, choosing in advance when the neurons act
@@ -55,7 +55,7 @@ how we tested them, and why they sometimes disagree with your own eyes.</p>
 <nav><ol>
   <li><a href="#s1">What the lab records</a></li>
   <li><a href="#s2">The problem</a></li>
-  <li><a href="#s3">Lineups happen by chance</a></li>
+  <li><a href="#s3">Coordinated events happen by chance</a></li>
   <li><a href="#s4">Measuring chance with shifted copies</a></li>
   <li><a href="#s5">Why shift, not shuffle</a></li>
   <li><a href="#s6">The six algorithms</a></li>
@@ -100,7 +100,8 @@ events</b>.</p>
 <p>Those lists of moments are all the programs in this document ever see. None of them looks at the
 pictures. We draw a list as a <b>raster</b>, the picture above: one row per neuron, one tick per event.
 A short, vertical stripe in a raster means many neurons had calcium events at nearly the same moment. That is a
-<b>coordinated event</b>, and finding coordinated events is the whole job.</p>
+<b>coordinated event</b>. Some coordinated events happen by chance alone, and telling those apart from the
+rest is the whole job.</p>
 
 <h2 id="s2">{{SEC:problem}}. The problem</h2>
 <figure class="scroll">{{FIG:fig_problem}}
@@ -125,9 +126,9 @@ about the neurons: it can be right or wrong, and nothing in the recording says w
 document explains how each program decides, how we tested the programs on recordings whose answer we
 do know, and where the programs and a person's eye disagree.</p>
 
-<h2 id="s3">{{SEC:chance}}. Lineups happen by chance</h2>
+<h2 id="s3">{{SEC:chance}}. Coordinated events happen by chance</h2>
 <figure>{{FIG:fig_chance}}
-<figcaption><b>Figure {{NUM:fig_chance}}. Busy neurons line up by chance.</b> Two minutes of a simulated
+<figcaption><b>Figure {{NUM:fig_chance}}. Busy neurons produce coordinated events by chance.</b> Two minutes of a simulated
 recording, so we know what was put in. The bars below each raster count how many neurons have a calcium event in each
 2-second bin. A: quiet neurons, with one real coordinated event (▼). B: a stretch of the same
 recording where every neuron was made busier and <b>nothing was put in</b>.</figcaption></figure>
@@ -138,8 +139,8 @@ stretches, 2 seconds long in Figure {{NUM:fig_chance}} — and count how many di
 inside each one. Most programs in this document work from a count like that, and they differ in how long
 they make their bins. In Figure {{NUM:fig_chance}}B nothing at all was put in, and yet {{T.busy_max}}
 neurons still had events inside the same 2-second bin.</p>
-<p>So counting neurons is not enough. A program has to ask a harder question: <b>are more neurons lining up
-right now than chance alone would produce?</b> To answer it, the program needs to know what chance
+<p>So counting neurons is not enough. A program has to ask a harder question: <b>does this coordinated event hold
+more neurons than chance alone would produce?</b> To answer it, the program needs to know what chance
 looks like in this particular recording.</p>
 
 <h2 id="s4">{{SEC:copies}}. Measuring chance with shifted copies</h2>
@@ -158,8 +159,8 @@ whole row of events left or right by that neuron's own random amount; events pus
 in at the other end.</p>
 <p>A shifted copy keeps everything about each neuron on its own: how many events that neuron has, and whether
 its events come in bursts or at a steady beat. What a shift destroys is <b>the timing between neurons</b>.
-So a lineup that survives in a copy is, as far as the shift can tell, a lineup that chance can produce.
-Counting lineups in a hundred copies tells the program how high a real count has to be before it means
+So a coordinated event that survives in a copy is, as far as the shift can tell, one that chance can produce.
+Counting coordinated events in a hundred copies tells the program how high a real count has to be before it means
 anything. Section {{SEC:shuffle}} is about why this particular way of making copies, and about where it
 falls short.</p>
 <p><b>This is called a circular shift in the literature.</b> "Shift" because each row slides; "circular"
@@ -188,20 +189,20 @@ wrong. Figure {{NUM:fig_shift_shuffle}} shows the bar going wrong in <b>both dir
   and leave others empty. Now fewer neurons reach any bin by chance, so the bar comes out <b>too
   low</b>. Here {{T.even_cells}} neurons land in one bin purely by luck. Shifted copies do that
   {{T.even_shift}} of the time, so the shift correctly says "chance". Shuffled copies do it only
-  {{T.even_shuffle}} of the time, so the shuffle <b>calls a chance lineup</b>.</li>
+  {{T.even_shuffle}} of the time, so the shuffle <b>calls a coordinated event that is only chance</b>.</li>
 </ul>
 <p>The lab's own brief events behave like the steady-beat neurons (C). In {{T.n_baselines}} untreated
 recordings, a shuffle drops {{T.doubles_shuffle}} of every 1,000 events into a bin their own neuron had
 already filled, against {{T.doubles_real}} in the real recording and {{T.doubles_shift}} after a shift.
-As a result, shuffled copies say 6 or more neurons line up in {{T.n6_shuffle}} of bins, and shifted
+As a result, shuffled copies say 6 or more neurons have events together in {{T.n6_shuffle}} of bins, and shifted
 copies say {{T.n6_shift}}. A bar built from shuffles would sit too low. That is why every program here
 that makes copies uses the shift instead.</p>
 <h3>The shift is better than a shuffle, and still not exact</h3>
 <p>It would be convenient if a shifted copy were a real recording with the coordination taken out and
 nothing else changed. It is not, and it is worth saying so plainly.</p>
 <ul>
-  <li><b>Real recordings line up more than the shift expects, even where nothing is coordinated.</b> Eight
-  or more neurons line up about {{T.real_over_shift_8}} times as often in the recordings as in their shifted
+  <li><b>Real recordings hold more large coordinated events than the shift expects.</b> Coordinated
+  events of eight or more neurons happen about {{T.real_over_shift_8}} times as often in the recordings as in their shifted
   copies. Some of that is probably slow rises and falls that many neurons share, which a shift breaks along
   with everything else.</li>
   <li><b>A shifted copy carries traces of having been shifted.</b> In this project's own tests, a program
@@ -216,7 +217,7 @@ number that follows.</p>
 <h2 id="s6">{{SEC:algorithms}}. The six algorithms</h2>
 <p>An <b>algorithm</b> is a fixed list of steps, written out by a person, that the computer carries out
 in the same order every time. All six programs here are algorithms of this kind, and all six ask the same
-question, <i>are more neurons lining up right now than chance explains?</i>, but the steps differ. The
+question, <i>does this coordinated event hold more neurons than chance explains?</i>, but the steps differ. The
 difference that matters most is <b>where each program looks to learn what chance is</b>:</p>
 <table>
 <tr><th>algorithm</th><th>what it counts</th><th>where it learns what chance looks like</th><th>where it comes from</th></tr>
@@ -232,8 +233,8 @@ when the neurons get busy, so it is worth following through slowly.</p>
 <p><b>CoactDetect, LoCo and rate+context work from the surrounding seconds.</b> Each of them measures
 chance from the minute around the moment it is testing — by making shifted copies of that minute, or, for
 rate+context, by averaging it. When the neurons in that minute have events more often, those copies produce
-bigger counts, and the count a bin has to beat is computed from them, so it goes up as well. A chance
-lineup inside a busy stretch therefore fails to beat it. The cost is that a small real coordinated event
+bigger counts, and the count a bin has to beat is computed from them, so it goes up as well. A coordinated
+event that chance produces inside a busy stretch therefore fails to beat it. The cost is that a small real coordinated event
 in the same stretch has to beat that raised count too, and often cannot.</p>
 <p><b>binned SCE and locust work from the whole recording at once.</b> Each of them measures chance one
 time, from copies of the entire stretch it was given, and uses the single count that comes out of it
@@ -322,24 +323,24 @@ layers:</p>
   matters</b> — that is what the lab measured in real recordings, so it is the size a real coordinated
   event usually has. The
   {{T.small_cells}}-neuron size is the hardest case any program is asked to handle; three of the six will
-  not call a lineup smaller than that at all. The neurons in one event start a little apart, not at exactly
+  not call a coordinated event smaller than that at all. The neurons in one event start a little apart, not at exactly
   the same moment. Planted events are at least {{T.min_sep_min}} minutes apart.</li>
   <li><b>A busy stretch:</b> from minute {{T.hot_from}} to minute {{T.hot_to}}, every neuron gets about
   {{T.hot_per_hour}} extra random events per hour. Nothing is planted there, so any call there is a
   false alarm.</li>
-  <li><b>Decoys:</b> {{T.n_decoys}} lineups built exactly like planted events, and deliberately left off
+  <li><b>Decoys:</b> {{T.n_decoys}} coordinated events built exactly like planted events, and deliberately left off
   the answer key.</li>
 </ul>
-<h3>Why we plant lineups and then refuse to count them</h3>
+<h3>Why we plant coordinated events and then refuse to count them</h3>
 <p>Decoys are the part of the recipe that surprises people, so here is the reasoning.</p>
-<p>The easiest way to score well on a test is to call everything. A program that marked every lineup it
+<p>The easiest way to score well on a test is to call everything. A program that marked every coordinated event it
 saw would find all {{T.n_planted}} planted events and look excellent, while telling us nothing about
 whether it can separate coordination from coincidence. Decoys take that route away: they look exactly
 like the real thing, so calling everything now costs as many wrong answers as it buys right ones.</p>
-<p>They also stand for something real. In a live recording some lineups genuinely are coincidence — neurons
+<p>They also stand for something real. In a live recording some coordinated events genuinely are coincidence — neurons
 that happen to go off together, or that share a slow drift in how often they have events, with nothing
 coordinating them. A person reading the raster would not count those. Decoys put that same population of
-"real lineups that should not count" into the test.</p>
+"real coordinated events that should not count" into the test.</p>
 <p>The price is worth stating plainly: <b>a program that sees only event times cannot tell a decoy from a
 planted event.</b> They are built the same way. So the test has a ceiling — the best possible overall
 score is about {{T.ceiling}} instead of 1.0, and no program in this document could reach the top no
@@ -357,11 +358,11 @@ different, which is the point worth taking away.</p>
   relative swing, so the busier the neuron, the wilder the swing — and a better background model is open
   work. It is not a patch, because every score in this document was measured against this background, so
   changing it means running the whole test again.</li>
-  <li><b>Its large lineups are rarer than real ones.</b> In real recordings, 8 or more neurons line up about
+  <li><b>Its large coordinated events are rarer than real ones.</b> In real recordings, coordinated events of 8 or more neurons happen about
   {{T.real_over_shift_8}} times as often as chance predicts; the simulator does not reproduce that.
   <i>Why it stands:</i> this is the hard one. The simulator can only contain coordination we already know
   how to describe — so many neurons, starting within so many tenths of a second. Whatever produces the big
-  lineups in real recordings has not been described yet. Building it into the simulator would mean
+  coordinated events in real recordings has not been described yet. Building it into the simulator would mean
   already knowing the answer these programs are supposed to find.</li>
   <li><b>Every simulated recording has {{T.n_cells_sim}} neurons</b>, while real ones run from about half
   that to more, and several of the programs have rules that depend on how many neurons there are.
@@ -611,7 +612,7 @@ use. <b>Senktide</b> switches on a sensor these neurons carry, the neurokinin 3 
 recordings end with <b>high potassium</b>, which makes healthy neurons produce calcium events, so a neuron
 that stays dark through it was probably never going to show us anything. One might expect TTX to stop
 all teamwork between neurons, which would give us a ready-made answer key. In this lab's recordings TTX
-does not stop it: events and lineups continue under the drug. So a TTX recording cannot serve as a "no
+does not stop it: calcium events and coordinated events continue under the drug. So a TTX recording cannot serve as a "no
 coordination" test.</p>
 <p>The lab marks <b>analysis windows</b>: the stretches of each recording it studies. Four of the six
 programs run only inside those windows. LoCo and locust run on the whole recording.</p>
@@ -632,11 +633,11 @@ special. Figure {{NUM:fig_eye}} looks closely at both.</p>
 <figure class="scroll">{{FIG:fig_eye}}
 <figcaption><b>Figure {{NUM:fig_eye}}. Close-ups of real recordings.</b> Above each raster: the part of the
 experiment (colored bar), the analysis windows (black line), each program's calls, and a ▼ over every
-<b>clear stripe</b> — our name for a lineup anyone can see on the raster, counted where at least
+<b>clear stripe</b> — our name for a coordinated event anyone can see on the raster, counted where at least
 {{T.stripe_pct}} of the neurons start an event within 1 second <i>and</i> at least twice as many neurons take
 part as in the busiest seconds of the two minutes around it. {{PROSE:cap_eye}}</figcaption></figure>
 <p>The second half of that rule is what makes the ▼ marks match what a person would point at. Inside a
-busy stretch, a quarter of the neurons often line up by chance alone (Section {{SEC:chance}}), and nobody reading the
+busy stretch, coordinated events joined by a quarter of the neurons often happen by chance alone (Section {{SEC:chance}}), and nobody reading the
 raster would call those stripes.</p>
 {{PROSE:eye_findings}}
 
@@ -646,7 +647,7 @@ raster would call those stripes.</p>
   <li><b>Busy neurons change every program's answer.</b> Some go blind in busy stretches, some call all through
   them. A drug that makes neurons busier can change the calls even if teamwork between neurons has not
   changed. Any study of a drug has to separate the two.</li>
-  <li><b>A call means "unusual for this recording", not "big".</b> In a quiet recording, 3 neurons lining up can
+  <li><b>A call means "unusual for this recording", not "big".</b> In a quiet recording, a coordinated event of 3 neurons can
   be rare enough to call. That is correct for the math and unconvincing to the eye.</li>
   {{PROSE:meaning_real}}
 </ul>
@@ -671,7 +672,7 @@ raster would call those stripes.</p>
   <a href="https://doi.org/10.1210/en.2010-0022">doi.org/10.1210/en.2010-0022</a>.
   Senktide and the neurokinin 3 receptor: Navarro V.M. and others (2009). <i>J Neurosci</i> 29:11859–11866.
   <a href="https://doi.org/10.1523/JNEUROSCI.1569-09.2009">doi.org/10.1523/JNEUROSCI.1569-09.2009</a>.</li>
-  <li><b>Testing for more lineups than chance</b> (the idea behind CoactDetect and LoCo). Grün S., Diesmann M.,
+  <li><b>Testing for more coordinated events than chance</b> (the idea behind CoactDetect and LoCo). Grün S., Diesmann M.,
   Aertsen A. (2002). Unitary events in multiple single-neuron spiking activity. I: Detection and significance,
   <i>Neural Computation</i> 14:43–80,
   <a href="https://doi.org/10.1162/089976602753284455">doi.org/10.1162/089976602753284455</a>;
@@ -778,9 +779,10 @@ raster would call those stripes.</p>
   microscope.</dd>
   <dt>Call</dt><dd>One moment a program marks as a coordinated event. A call is that program's claim, not a
   fact about the neurons.</dd>
-  <dt>Clear stripe</dt><dd>Our rule for a lineup anyone can see on a raster (Figure {{NUM:fig_eye}}).</dd>
-  <dt>Coordinated event</dt><dd>A moment when many neurons have calcium events together, more than chance explains.</dd>
-  <dt>Decoy</dt><dd>A lineup put into a simulated recording the same way a planted event is, but left off
+  <dt>Clear stripe</dt><dd>Our rule for a coordinated event anyone can see on a raster (Figure {{NUM:fig_eye}}).</dd>
+  <dt>Coordinated event</dt><dd>A moment when several neurons have calcium events at about the same time. Chance alone produces
+  some; the programs ask which ones hold more neurons than chance explains.</dd>
+  <dt>Decoy</dt><dd>A coordinated event put into a simulated recording the same way a planted event is, but left off
   the answer key.</dd>
   <dt>False alarm</dt><dd>A call where there was no planted event.</dd>
   <dt>High potassium</dt><dd>A solution that makes healthy neurons produce calcium events, often used at the

@@ -516,11 +516,17 @@ RULES = [
         # line matcher cannot tell those from drawn text; its display strings were converted with the
         # tokenizer instead. Two titles keep their words: Lehman et al. 2010's "(KNDy) cells of the
         # arcuate nucleus", and the journal Cell Reports.
-        pattern=r"(?<!\(KNDy\) )\bcells?\b|(?<!\(KNDy\) )\bcell's\b|\bCells?\b(?! Reports)",
+        #
+        # AND COORDINATED EVENTS, NOT LINEUPS. Tony, same day: spell the idea out once, then say
+        # "coordinated event" — for the ones chance produces too. A coined second noun made a reader
+        # ask whether a lineup and a coordinated event were different things.
+        pattern=r"(?<!\(KNDy\) )\bcells?\b|(?<!\(KNDy\) )\bcell's\b|\bCells?\b(?! Reports)"
+                r"|\b[Ll]ineups?\b|\b[Ll]in(e|es|ed|ing) up\b",
         include=["tools/plain_*_template.html"],
         exclude=["tools/sapper.py"],
-        message="NEURONS, NOT CELLS, in the plain-language documents (Tony, 2026-09-16). Say neuron / "
-                "neurons. Paper titles and the journal name Cell Reports are the only exceptions.",
+        message="PLAIN-DOCUMENT NOUNS (Tony, 2026-09-16): say neuron / neurons, not cell / cells (paper "
+                "titles and the journal Cell Reports excepted); and say coordinated event, not lineup or "
+                "line up — including the coordinated events chance produces.",
         fixture_bad="<p>Each row is one cell, and each tick is one calcium event.</p>",
         fixture_good="<p>Each row is one neuron. B/dynorphin (KNDy) cells of the arcuate nucleus. "
                      "<i>Cell Reports</i></p>",

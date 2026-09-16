@@ -987,7 +987,7 @@ def fig_orient(W):
     lane.span(z[0], z[1], row_y=58, row_h=3, color="#9a9a9a", min_px=4)
     f.text(L, 516, "Each row is one neuron. Each tick is one calcium event in that neuron.", size=13,
            color=MUTED)
-    f.text(L, 536, "Where a column of ticks lines up, many neurons had events together. ▼ marks each one.",
+    f.text(L, 536, "A short vertical stripe of ticks is a coordinated event. ▼ marks each clear one.",
            size=13, color=MUTED)
     f.h = 556
     return f
@@ -1165,7 +1165,7 @@ def fig_shift_shuffle(W, numbers):
              "neurons land in any bin by chance. The bar comes out too high and the real burst is missed."),
             ("even", "B · neurons that fire at a steady beat", 410,
              "A shuffle lets a neuron's events pile up in one bin and leave others empty, so fewer neurons "
-             "reach any bin by chance. The bar comes out too low and a chance lineup is called.")]
+             "reach any bin by chance. The bar comes out too low and a coordinated event that is only chance is called.")]
     for key, title, Y, story in rows:
         D = T[key]
         b = D["bin"]
@@ -2145,7 +2145,7 @@ def fig_eye(W, figs_real="18 to 21", dets=CODED):
     y = _closeup(f, C["busy"], 200, y + 10, 770, dets=dets,
                  title="B · a busy stretch inside the analysis window, with no stripe that stands out")
     y = _closeup(f, C["weak"], 200, y + 10, 770, show_weak=True, dets=dets,
-                 title="C · calls with no stripe under them (red box: 3 or fewer neurons line up)")
+                 title="C · calls with no stripe under them (red box: a coordinated event of 3 or fewer neurons)")
     # D: the tallies
     y += 10
     f.text(200, y, f"D · all {R['n_recordings']} recordings of Figures {figs_real}, both kinds of events",
@@ -2156,7 +2156,7 @@ def fig_eye(W, figs_real="18 to 21", dets=CODED):
     q = f.panel(640, y + 30, 330, len(dets) * 22, (0, 1), (len(dets) - 0.5, -0.5))
     f.text(200, y + 22, f"share of the {R['n_in']} clear stripes inside the windows it called", size=12,
            color=MUTED)
-    f.text(640, y + 22, "share of its calls with 3 or fewer neurons lined up", size=12, color=MUTED)
+    f.text(640, y + 22, "share of its calls on coordinated events of 3 or fewer neurons", size=12, color=MUTED)
     for i, d in enumerate(dets):
         t = T[d]
         Y = float(p.py(i))
