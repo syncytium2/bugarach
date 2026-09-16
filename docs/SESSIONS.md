@@ -28,6 +28,10 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
   container with no darkroom mount and no `.venv`; `torch` would not install, so **nothing here
   is trained, traced or scored**. Every measured number on the page is read from an artifact
   already committed in this tree, and the three architectures are designs rather than code.
+- **Second write, same claim, 2026-09-16:** `UPDATE-the-nets-are-drawn-by-draughtsman.md`. The
+  three proposed nets were built and their figures are now draughtsman drawings of a trace of the
+  built module rather than hand-drawn schematics; the note records what `check` refused while the
+  specs were written, and that none of the three is trained or scored.
 - **Released when:** the page is in the folder and its repo copy is on a PR.
 
 ---
