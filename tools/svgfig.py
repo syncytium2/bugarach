@@ -202,8 +202,15 @@ class Panel:
             self.f.text(X + off, cy, ln, size=size, anchor="middle", color=MUTED, rotate=-90)
 
     # marks
-    def raster(self, trains, *, color=INK, tick_frac=0.8, width=1.3):
-        """One row per cell, one tick per event, and nothing else — ever."""
+    def raster(self, trains, *, color=INK, tick_frac=0.34, width=1.3):
+        """One row per cell, one tick per event, and nothing else — ever.
+
+        ``tick_frac`` defaults low on purpose, and `bugarach.ui.diagnostic.raster_panel`
+        settled the same number for the same reason: a mark as tall as its own row makes
+        every column look solid whether or not anything is coordinated, so a mark stays
+        under about a third of the row pitch and a real coordinated event is then the only
+        thing that draws a vertical line. Rows should arrive sorted by how busy each cell
+        is, quietest at the bottom — that module's ``sort="freq"`` default."""
         n = len(trains)
         if not n:
             return

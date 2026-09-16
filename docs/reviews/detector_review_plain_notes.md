@@ -122,7 +122,131 @@ the body text should say it where the word first appears.
 moments". §2 defines it beside Figure 2, in the sentence describing that figure's marks — *"One such
 mark is a call. A call is a claim by a program, not a fact about the cells: it can be right or wrong."*
 
-**Done in the edit pass:** define it at first use, beside Figure 2 (which shows the marks), in one
+**Done in the edit pass — see note 8: Figure 2 is being replaced, so "beside Figure 2" moves with it.**
+Define it at first use, beside the figure that shows the marks, in one
 sentence that says what it is and what it is not, e.g. *each mark is one moment the program claims
 cells acted together — we call that a call, and a call can be wrong*. Then keep the short version's
 first mention after, not before, that.
+
+## 6. Open on a busy raster with a few coordinated events (2026-09-16)
+
+The document opened on a quiet simulated minute holding one planted event: it showed the machinery and
+not the phenomenon. A naive reader needs to see the thing itself first.
+
+**Applied.** Figure 1 is now ten minutes of a real recording with every clear stripe marked, plus a
+20-second close-up so a tick is a visible object. Picked by the builder as the ten minutes with the most
+clear stripes inside one analysis window (`best_orienting`), so it is the best available example rather
+than a chosen one.
+
+## 7. "A part of the recording those programs were never given to look at" (2026-09-16)
+
+Opaque, and it used *analysis window* before that term exists. It means: the lab marks which stretches
+to study, four of the six programs run only inside them, so the stripe was never shown to them — the
+program did not look and decide against it.
+
+**Applied**, in those words, in the short version.
+
+## 8. Figure 2 is a poor example: no clear coordinated events in it (2026-09-16)
+
+Correct, and measurable: **that recording holds zero clear stripes in the 13 minutes shown** (the
+stand-out rule of note 4). It is a good picture of programs disagreeing and a bad picture of coordination.
+
+**Applied in part.** The orienting figure (note 6) now carries the burden of showing what a coordinated
+event looks like, and Figure 2 is explicitly the disagreement figure, with the dense stretch it comes
+from re-used as panel B of the close-up figure. ⚠ **Still open:** whether Figure 2 should be replaced
+outright by a recording that has both clear events and disagreement.
+
+## 9. Resurrect the numbered events in the shifted-copy figure (2026-09-16)
+
+*"humans can't see the pattern shift without cues"*. The lab's older MATLAB slide
+(`constellation/coord_explainer/step1_shift.png`) numbered each cell's events in firing order and
+labelled each row's shift.
+
+**Applied.** Figure 4 is rebuilt that way: numbers, not ticks, and the shift given to each row printed
+beside it. It also moved off the bench recording onto six invented cells — on a quiet recording every
+cell has one event per minute, so every number read "1" and there was no pattern to follow.
+
+## 10. Figure 2 names programs that have not been introduced (2026-09-16)
+
+**Applied.** A short roster follows Figure 2: the six names, who built each, and a line saying the names
+are labels until Section 6. The caption says the same.
+
+## 11. locust must be identified as a modification of CICADA's coordination detector (2026-09-16)
+
+**Applied** in three places: the roster under Figure 2, the "where it comes from" column of the table in
+Section 6, and the locust figure's caption, which says what was changed (fed the lab's own event list,
+its own bar) and that its results have never been compared with CICADA's.
+
+## 12. Name the human behind each detector (2026-09-16)
+
+Tony's account: rate+context he built himself; CoactDetect and LoCo were his idea; binned SCE is Yuste
+and coworkers; SPIKE-synch is Kreuz's measure with his peak-detection idea on top to make the calls.
+
+**Applied** as a "where it comes from" column in the Section 6 table, and in the roster under Figure 2.
+The tube networks' attribution moved to the companion document with them.
+
+## 13. Show rate+context's two windows (2026-09-16)
+
+*"rate is 1s window, context is a centered 60s window (note these are parameters for optimizatoin
+too)"*. **Applied:** the figure now draws the 1-second counting window inside the 60-second context
+window, to scale, with the moment being scored marked, and says in as many words that both widths are
+settings that could be tuned and so far have not been — only the bar has.
+
+## 14. Figure 7 was not understandable to its own author (2026-09-16)
+
+**Applied in part**, via the raster and labelling fixes of notes 15 and 17, which reach every algorithm
+figure. The historical version worth mining is
+`constellation/coord_explainer/loco_vs_coactdetect.png`, which puts the whole decision on one
+histogram: the pooled null, the observed count, the bar, and the arithmetic that puts the bar there.
+⚠ **Still open:** rebuilding CoactDetect's figure around that single histogram.
+
+## 15. Figure 8: what is the purple line, what is the dashed line (2026-09-16)
+
+The key sat at the foot of the figure, far from the marks it named.
+
+**Applied:** every line in every algorithm figure is now labelled in its own colour, beside the line, in
+panel A. The key stays as a backstop.
+
+## 16. locust's durations: fixed 1 second, not the measured event width ⚠ FINDING (2026-09-16)
+
+Tony: *"locust is duration based ... i hope we are actually using FWHM and t_peak - t50rise"*. **We are
+not.** `cicada_detect` supports `active_duration_mode="per_event"` (the producer's own `width_sec`), but
+`bench.OPERATING_POINTS["cicada"]` passes `active_duration_sec=1.0` and leaves the mode at `"fixed"`.
+Every locust number in this project used a flat 1 second, and its 99.999 percentile was tuned against
+that. Filed as
+[`todo/2026-09-16-locust-ran-at-a-fixed-one-second.md`](../todo/2026-09-16-locust-ran-at-a-fixed-one-second.md),
+waiting on Tony. The document now says the fixed second is what ran and flags it ⚠.
+
+*Also noted:* "no need to mention fast and slow for this document" — taken narrowly, as not tying
+duration rules to the two streams. The two lists are still named where the real figures are split by
+them. ⚠ Say if they should go entirely.
+
+## 17. SPIKE-synch: a per-event synchrony score, made continuous, then peak-detected (2026-09-16)
+
+**Applied** to the step list and the caption. Confirmed in `sync.py`, which has both a threshold scan and
+a `peak` mode over the same continuous trace; the runs here use the threshold scan, and the document says
+the peaks are what turn scores into calls.
+
+## 18. Cut the learned models; keep them for a separate document (2026-09-16)
+
+**Applied.** Section 7 and its figure are gone; the networks are out of the scores, busy-stretch and
+close-up figures, the word list and the references. Nothing was discarded: they now have their own page,
+`learned_detectors_plain.html`, built by the same tool from the same measurements, marked as held back
+and not reviewed. The four real-recording figures were **redrawn here** rather than reused from the first
+review, which carried a lane per network.
+
+Two things followed from the cut and are worth keeping:
+
+- **Section numbers are no longer typed.** The template names sections by key (`{{SEC:eye}}`) and the
+  builder counts them, because this restructure would otherwise have left every "Section 8" pointing one
+  section too far. It refuses to build on a reference to a section that does not exist.
+- **Raster geometry** now follows what the project already settled (`bugarach.ui.diagnostic`): marks at a
+  third of the row pitch rather than 0.8 of it, and rows sorted by how busy each cell is. The earlier
+  figures made every column look solid, which is the exact failure that docstring warns about.
+
+## 19. Elaborate the motivation for decoys (2026-09-16)
+
+**Applied** as its own subsection in Section 7: calling everything would otherwise score well and prove
+nothing; decoys stand for lineups that are real coincidence and should not count; and the honest price —
+no program reading only event times can tell a decoy from a planted event, which is why the best possible
+score is about 0.83 and why that ceiling is in the test on purpose.

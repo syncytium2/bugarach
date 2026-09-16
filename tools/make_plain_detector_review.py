@@ -54,6 +54,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 FOLDER_NAME = "2026-09-15-detector-review-plain"
 TEMPLATE = Path(__file__).resolve().parent / "plain_detector_review_template.html"
+LEARNED_TEMPLATE = Path(__file__).resolve().parent / "plain_learned_template.html"
 
 SEED, REGIME = 3, "baseline_quiet"
 EVENT_T = 491.9                      # the planted event in the first review's view A
@@ -179,16 +180,29 @@ def stage_sim(work: Path) -> None:
                                   np.asarray(A["coact"]["y"], float), -1)))
     c0 = float(A["coact"]["t"][k])
     lo, hi = c0 - 30.0, c0 + 30.0
+    # THE EVENTS ARE NUMBERED, not drawn as bare ticks (Tony, 2026-09-16: "humans can't see
+    # the pattern shift without cues"; the lab's older MATLAB teaching slide numbered them).
+    # Each event carries its position in its own cell's sequence, so a slid row can be read as
+    # the same row — including where it wrapped, which is exactly what a bare tick hides.
+    # Only cells with an event in this minute are drawn, so the numbers stay readable; the
+    # counts, the bar and the histogram are over every cell, as the detector computes them.
+    ctx = [np.round(v[(v >= lo) & (v < hi)], 2) for v in trains]
+    rows = [i for i, v in enumerate(ctx) if v.size]
     counts, examples = [], []
     for i in range(100):
-        cp = [_shift(v[(v >= lo) & (v < hi)], lo, hi, rng) for v in trains]
+        offs = [rng.uniform(0, hi - lo) for _ in trains]
+        cp = [lo + np.mod(v - lo + o, hi - lo) for v, o in zip(ctx, offs)]
         counts.append(sum(1 for w in cp if np.any(np.abs(w - c0) < 1.0)))
         if i < 3:
-            examples.append(dict(trains=[np.round(np.sort(w), 2) for w in cp], count=counts[-1]))
+            examples.append(dict(
+                count=counts[-1], shifts=[round(float(offs[j]), 1) for j in rows],
+                numbered=[[[round(float(t), 2), n + 1] for n, t in enumerate(cp[j])] for j in rows]))
     out["chance_coact"] = dict(bin_center=c0, observed=A["coact"]["y"][k], counts=counts,
                                mean=A["coact"]["mean"][k], bar=A["coact"]["bar"][k],
-                               context=[lo, hi], examples=examples,
-                               observed_trains=[np.round(v[(v >= lo) & (v < hi)], 2) for v in trains])
+                               context=[lo, hi], examples=examples, n_rows_drawn=len(rows),
+                               observed_numbered=[[[round(float(t), 2), n + 1]
+                                                   for n, t in enumerate(ctx[j])] for j in rows],
+                               observed_trains=[ctx[j] for j in rows])
     # a busy-stretch bin for CoactDetect too
     B = out["B"]
     yb = np.asarray(B["coact"]["y"], float)
@@ -298,8 +312,48 @@ def stage_toys(work: Path) -> None:
                          mean_shift=float(np.mean(sh)), mean_shuffle=float(np.mean(sc)),
                          n_events=n, bin=list(bins[name]))
     out["length"] = L
+    # ---- the numbered teaching example for the shifted-copy steps --------------------
+    # Quiet cells will not do here: over one minute of the bench recording almost every cell
+    # has a single event, so every number is "1" and nothing can be followed when a row
+    # slides. Six busier invented cells, numbered in their own firing order, is the form the
+    # lab's older MATLAB slide used, and the form Tony asked for back (2026-09-16).
+    SL, PIECE = 60.0, (29.0, 31.0)
+    r2 = np.random.RandomState(7)
+    cells = []
+    for i in range(6):
+        v = np.sort(r2.uniform(0, SL, 4))
+        while np.min(np.diff(v)) < 3.0:
+            v = np.sort(r2.uniform(0, SL, 4))
+        cells.append(v)
+    for i in range(4):                       # four of the six act together in the test piece
+        cells[i][int(np.argmin(np.abs(cells[i] - 30.0)))] = 30.0 + r2.uniform(-0.3, 0.3)
+        cells[i] = np.sort(np.round(cells[i], 2))
+    cells = [np.round(v, 2) for v in cells]
+
+    def in_piece(trs):
+        return sum(1 for v in trs if np.any((np.asarray(v) >= PIECE[0]) & (np.asarray(v) < PIECE[1])))
+
+    counts, examples = [], []
+    for i in range(200):
+        offs = [r2.uniform(0, SL) for _ in cells]
+        cp = [np.mod(v + o, SL) for v, o in zip(cells, offs)]
+        counts.append(in_piece(cp))
+        if i < 3:
+            examples.append(dict(
+                count=counts[-1], shifts=[round(float(o), 1) for o in offs],
+                numbered=[[[round(float(t), 2), n + 1] for n, t in enumerate(v)] for v in cp]))
+    obs = in_piece(cells)
+    out["steps"] = dict(
+        length=SL, piece=list(PIECE), observed=obs, n_copies=len(counts),
+        numbered=[[[round(float(t), 2), n + 1] for n, t in enumerate(v)] for v in cells],
+        examples=examples, hist=np.bincount(counts, minlength=7)[:7].tolist(),
+        bar=float(np.percentile(counts, 99)),
+        share_at_least=float(np.mean(np.asarray(counts) >= obs)))
     put(work, "toys", out)
-    print("  toys:", {k: (v["p_shift"], v["p_shuffle"]) for k, v in out.items() if isinstance(v, dict)})
+    print("  toys:", {k: (v["p_shift"], v["p_shuffle"]) for k, v in out.items()
+                      if isinstance(v, dict) and "p_shift" in v},
+          "| steps:", out["steps"]["observed"], "of 6 observed,",
+          f"{out['steps']['share_at_least']:.1%} of copies reach it")
 
 
 # ----------------------------------------------------------------------- stage: tube
@@ -504,10 +558,26 @@ def stage_real(work: Path, review: Path) -> None:
         n_, k, t0 = max(cands, key=lambda c: c[0])
         return k, t0
 
+    def best_orienting(span=600.0):
+        """The stretch a newcomer should see first: the most clear stripes in ten minutes,
+        inside one analysis window of one recording, so nothing has to be explained yet."""
+        best = None
+        for k, r in rec.items():
+            for _, w0, w1 in r["windows"]:
+                ins = [sp for sp in r["stripes"] if w0 <= sp["t"] <= w1]
+                for sp in ins:
+                    t0 = min(max(sp["t"] - span / 2, w0), max(w1 - span, w0))
+                    n = sum(1 for x in ins if t0 <= x["t"] <= t0 + span)
+                    if best is None or (n, r["n_roi"]) > (best[0], rec[best[1]]["n_roi"]):
+                        best = (n, k, t0)
+        return best[1], best[2]
+
     ko, spo = best_outside()
     r = rec[ko]
     wend = max((w1 for _, w0, w1 in r["windows"] if w1 <= spo["t"]), default=spo["t"] - 60)
     close = {"outside": closeup(ko, min(wend - 60, spo["t"] - 90), spo["t"] + 90, "outside")}
+    ko_, t0 = best_orienting()
+    close["orient"] = closeup(ko_, t0, t0 + 600.0, "orient")
     kw, t0 = best_weak()
     close["weak"] = closeup(kw, t0, t0 + 60, "weak")
     # the first review's Figure 1A: the recording where the six disagree most
@@ -523,9 +593,28 @@ def stage_real(work: Path, review: Path) -> None:
     close["busy"] = closeup(kp, float(t0), float(t0) + 90, "busy")
     c = close["busy"]
     put(work, "busy_counts", {dd: sum(1 for on, _ in c["calls"][dd] if t0 <= on <= t0 + 90) for dd in ALL10})
+    # Whole recordings, for the overview figures. The first review's four PNGs are not reused
+    # any more: they carry a lane per learned model, and those left this document (Tony,
+    # 2026-09-16, "cut out the learned models for now"). Drawing them here also brings them
+    # under the raster rules the rest of the figures follow.
+    overview = {}
+    for k, r in rec.items():
+        a = r["anchor"]
+        lo = min([float(np.min(v)) for v in r["trains"] if len(v)] + [a])
+        hi = max([float(np.max(v)) for v in r["trains"] if len(v)] + [a])
+        overview[k] = dict(
+            label=r["label"], group=r["group"], stream=r["stream"], n_roi=r["n_roi"], anchor=a,
+            ext=[lo, hi], regions=r["regions"], windows=[[w0, w1] for _, w0, w1 in r["windows"]],
+            trains=[np.round(v, 1) for v in _by_activity(r["trains"])],
+            calls={dd: [[round(on, 1), round(max(wd, 0.0), 1)] for on, wd in r["calls"][dd]]
+                   for dd in CODED},
+            in_window={dd: sum(1 for on, _ in r["calls"][dd]
+                               if any(w0 <= on <= w1 for _, w0, w1 in r["windows"]))
+                       for dd in CODED},
+            stripes=[dict(t=sp["t"], cells=sp["cells"]) for sp in r["stripes"]])
     out = dict(n_stripes=n_stripes, n_in=n_in, n_few=n_few, n_few_out=n_few_out, tally=tally,
                close=close, stripe_frac=STRIPE_FRAC, stripe_s=STRIPE_S, weak_cells=WEAK_CELLS,
-               n_recordings=len({v["slice"] for v in rec.values()}))
+               n_recordings=len({v["slice"] for v in rec.values()}), overview=overview)
     put(work, "real", out)
     print(f"  real: {n_stripes} stripes, {n_in} inside windows, {n_few} called by <=3 of 10, "
           f"{n_few_out} of those outside")
@@ -540,6 +629,16 @@ SHIFT_C, SHUF_C = "#1f6fb2", "#d9730d"
 
 def _arr(v):
     return np.asarray([np.nan if x is None else x for x in v], float)
+
+
+def _by_activity(trains):
+    """Quietest cell at the bottom, busiest at the top, counted on what is drawn.
+
+    `bugarach.ui.diagnostic` sorts its rasters this way and says why: the order a store
+    happens to use is an arbitrary label, while how busy a cell is is a coordinate. Sorting
+    on the drawn stretch rather than the whole recording is the same module's fix of
+    2026-09-07."""
+    return [trains[i] for i in np.argsort([len(v) for v in trains], kind="stable")]
 
 
 def _lane_calls(p, fig, rows, calls, y0, row_h=16, gap=4, label_x=None, names=None, counts=True):
@@ -557,6 +656,45 @@ def _lane_calls(p, fig, rows, calls, y0, row_h=16, gap=4, label_x=None, names=No
                  anchor="end", color=MUTED)
         y += row_h + gap
     return y
+
+
+def fig_orient(W):
+    """The first picture in the document: a real recording, busy, with its coordinated
+    events marked. Nothing is explained yet, so there are no detector lanes on it — only
+    what a person can see. Tony, 2026-09-16: lead with a busy raster and a few events."""
+    from svgfig import Figure, MUTED
+    c = W["real"]["close"]["orient"]
+    f = Figure(1000, 560)
+    L, PW = 90, 700
+    win = c["win"]
+    f.text(L, 24, "A · ten minutes of one real recording", size=14, weight=600)
+    lane = f.panel(L, 34, PW, 22, win, (0, 1), frame=False)
+    stripes = sorted(c["stripes"], key=lambda s_: -s_["cells"])
+    for s_ in c["stripes"]:
+        lane.down_triangle(s_["t"] + 0.5, 44, color=INK_T, size=12)
+    f.text(L - 8, 48, "many cells", size=11, anchor="end", color=MUTED)
+    f.text(L - 8, 62, "at once", size=11, anchor="end", color=MUTED)
+    r = f.panel(L, 62, PW, 400, win, (0, 1))
+    r.raster(_by_activity(c["trains"]), width=1.2)
+    r.xaxis_time(offset=win[0], target=5, label="minutes")
+    r.ylabel(_plural(c["n_roi"], "cell"), dx=20)
+    # B: one stripe, close up, so a tick is a visible thing
+    top = stripes[0]["t"] if stripes else (win[0] + win[1]) / 2
+    z = (top - 10.0, top + 10.0)
+    ZX, ZW = 830, 150
+    f.text(ZX, 24, "B · 20 seconds of it", size=14, weight=600)
+    lz = f.panel(ZX, 34, ZW, 22, z, (0, 1), frame=False)
+    lz.down_triangle(top + 0.5, 44, color=INK_T, size=12)
+    rz = f.panel(ZX, 62, ZW, 400, z, (0, 1))
+    rz.raster(_by_activity(c["trains"]), width=2.0)
+    rz.xaxis_time(offset=top, target=2, label="seconds")
+    lane.span(z[0], z[1], row_y=58, row_h=3, color="#9a9a9a", min_px=4)
+    f.text(L, 516, "Each row is one cell. Each tick is one moment that cell lit up.", size=13,
+           color=MUTED)
+    f.text(L, 536, "Where a column of ticks lines up, many cells lit up together. ▼ marks each one.",
+           size=13, color=MUTED)
+    f.h = 556
+    return f
 
 
 def fig_raster(W):
@@ -605,7 +743,7 @@ def fig_chance(W):
         if key == "A":
             lane.down_triangle(sim["event"]["time"], 47, color=INK_T, size=11)
         r = f.panel(X, 64, 390, 170, D["win"], (0, 1))
-        r.raster(D["trains"])
+        r.raster(_by_activity(D["trains"]))
         if key == "A":
             r.ylabel(f"{sim['n_roi']} cells", dx=16)
         c = D["coact"]
@@ -621,69 +759,95 @@ def fig_chance(W):
     return f
 
 
+def _numbered(f, p, numbered, *, size=11, color=INK_T, bold_in=None):
+    """Each event drawn as its own number in its cell's sequence, one row per cell.
+
+    A tick cannot show a reader that a row MOVED — every tick looks like every other tick.
+    The number is the cue: the same digits appear in the copy, shifted along and wrapped
+    round at the end (Tony, 2026-09-16, resurrecting the lab's older teaching slide)."""
+    n = len(numbered)
+    if not n:
+        return
+    rh = p.h / n
+    for i, row in enumerate(numbered):
+        y = p.y + p.h - (i + 0.5) * rh + 4
+        for t, k in row:
+            if p.xlim[0] <= t <= p.xlim[1]:
+                inside = bold_in is not None and bold_in[0] <= t < bold_in[1]
+                f.text(float(p.px(t)), y, str(k), size=size + (1 if inside else 0), anchor="middle",
+                       weight=700 if inside else 400, color="#0b5fa8" if inside else color)
+
+
 def fig_chance_steps(W):
+    """The four steps, on six invented cells whose events are NUMBERED in firing order.
+
+    Numbers rather than ticks, because a tick cannot show that a row moved: every tick looks
+    like every other one, and the wrap at the end of the recording is invisible. Invented
+    cells rather than the bench recording, because a quiet cell has one event per minute and
+    every number would read "1". Tony, 2026-09-16, resurrecting the lab's MATLAB slide.
+    """
     from svgfig import Figure, MUTED, nice_ticks
-    ch = W["sim"]["chance_coact"]
-    ctx = ch["context"]
-    c0 = ch["bin_center"]
-    piece = (c0 - 1.0, c0 + 1.0)
-    f = Figure(960, 560)
-    # step 1: the real minute
+    S = W["toys"]["steps"]
+    L, piece = S["length"], tuple(S["piece"])
+    f = Figure(1000, 560)
+    # step 1: the recording
     X1, W1 = 60, 260
     f.step_badge(X1 + 8, 22, "1")
-    f.text(X1 + 26, 27, "Count the real recording", size=14, weight=600)
-    f.para(X1, 50, f"How many cells light up inside one 2-second piece? Here: {int(ch['observed'])} cells.",
-           width_chars=38, size=12, color=MUTED)
-    lane = f.panel(X1, 90, W1, 16, ctx, (0, 1), frame=False)
-    lane.span(*piece, row_y=92, row_h=12, color="#9bb7d4", min_px=4)
-    r = f.panel(X1, 110, W1, 180, ctx, (0, 1))
-    r.raster(ch["observed_trains"])
-    r.xaxis_time(target=3, label="the 60 seconds around the piece")
-    f.text(X1, 344, "blue bar above the raster: the 2-second piece", size=11, color=MUTED)
-    f.text(X1, 360, "being tested", size=11, color=MUTED)
+    f.text(X1 + 26, 27, "Count the recording", size=14, weight=600)
+    f.para(X1, 50, f"How many cells light up inside the 2-second piece being tested? Here: "
+                   f"{S['observed']} of 6.", width_chars=38, size=12, color=MUTED)
+    lane = f.panel(X1, 96, W1, 14, (0, L), (0, 1), frame=False)
+    lane.span(*piece, row_y=98, row_h=11, color="#9bb7d4", min_px=5)
+    r = f.panel(X1, 112, W1, 150, (0, L), (0, 1))
+    _numbered(f, r, S["numbered"], size=12, bold_in=piece)
+    r.xaxis_time(target=3)
+    f.text(X1, 312, "Six cells, one row each. Each event carries its", size=11, color=MUTED)
+    f.text(X1, 328, "number in that cell's own order, so a row can be", size=11, color=MUTED)
+    f.text(X1, 344, "followed when it slides. Blue bar: the piece tested.", size=11, color=MUTED)
     # step 2: shifted copies
-    X2, W2 = 360, 240
+    X2, W2 = 370, 250
     f.step_badge(X2 + 8, 22, "2")
     f.text(X2 + 26, 27, "Make a shifted copy", size=14, weight=600)
-    f.para(X2, 50, "Slide each cell's row left or right by its own random amount. Events that fall off one "
-                   "end come back at the other. Count again.", width_chars=40, size=12, color=MUTED)
-    yy = 110
-    for i, ex in enumerate(ch["examples"]):
-        ln = f.panel(X2, yy, W2, 12, ctx, (0, 1), frame=False)
-        ln.span(*piece, row_y=yy + 1, row_h=10, color="#9bb7d4", min_px=4)
-        rr = f.panel(X2, yy + 14, W2, 100, ctx, (0, 1))
-        rr.raster(ex["trains"], width=1.0)
-        f.text(X2 + W2 + 8, yy + 70, f"copy {i + 1}:", size=12, color=MUTED)
-        f.text(X2 + W2 + 8, yy + 86, _plural(ex["count"], "cell"), size=12, weight=600)
+    f.para(X2, 50, "Slide each cell's row by its own random amount. Events pushed off the end come back "
+                   "at the start. Count again.", width_chars=42, size=12, color=MUTED)
+    yy = 112
+    for i, ex in enumerate(S["examples"]):
+        ln = f.panel(X2, yy, W2, 12, (0, L), (0, 1), frame=False)
+        ln.span(*piece, row_y=yy + 1, row_h=10, color="#9bb7d4", min_px=5)
+        rr = f.panel(X2, yy + 14, W2, 100, (0, L), (0, 1))
+        _numbered(f, rr, ex["numbered"], size=11, bold_in=piece)
+        for j, sh in enumerate(ex["shifts"]):
+            row_y = yy + 14 + 100 - (j + 0.5) * (100 / len(ex["shifts"])) + 4
+            f.text(X2 - 6, row_y, f"+{sh:g}s", size=9, anchor="end", color="#9a9a9a")
+        f.text(X2 + W2 + 10, yy + 60, f"copy {i + 1}", size=11, color=MUTED)
+        f.text(X2 + W2 + 10, yy + 78, _plural(ex["count"], "cell"), size=12, weight=600)
         yy += 128
+    f.text(X2 - 30, yy + 2, "the slide given to each row", size=10, color="#9a9a9a")
     # step 3: many copies
-    X3, W3 = 740, 200
+    X3, W3 = 760, 190
     f.step_badge(X3 + 8, 22, "3")
-    f.text(X3 + 26, 27, "Repeat 100 times", size=14, weight=600)
-    f.para(X3, 50, "The counts from the copies show what chance gives.", width_chars=34, size=12,
+    f.text(X3 + 26, 27, f"Repeat {S['n_copies']} times", size=14, weight=600)
+    f.para(X3, 50, "The counts from the copies are what chance gives.", width_chars=32, size=12,
            color=MUTED)
-    counts = np.asarray(ch["counts"], int)
-    xmax = max(10, int(ch["observed"]) + 2)
-    hist = np.bincount(counts, minlength=xmax + 1)[:xmax + 1]
-    ymax = max(10, int(hist.max() * 1.15))
-    h = f.panel(X3, 110, W3, 200, (-0.6, xmax + 0.6), (0, ymax))
-    h.bars(np.arange(xmax + 1), hist, color="#b9c6d6", width_frac=0.85)
-    h.yaxis(nice_ticks(0, ymax, 4), label="copies (of 100)", dx=34)
-    h.xaxis_values(list(range(0, xmax + 1, 2)), label="cells in the piece")
-    bar = float(ch["bar"])
-    X = float(h.px(bar))
-    f.line(X, 110, X, 310, color=BARC, width=2, dash="5 4")
-    f.text(X + 4, 124, f"the bar", size=12, weight=600)
-    f.text(X + 4, 140, f"{bar:.1f} cells", size=12)
-    h.down_triangle(ch["observed"], 100, color=GREEN, size=12)
+    hist = np.asarray(S["hist"], float)
+    ymax = max(10.0, hist.max() * 1.15)
+    h = f.panel(X3, 112, W3, 180, (-0.6, 6.6), (0, ymax))
+    h.bars(np.arange(7), hist, color="#b9c6d6", width_frac=0.85)
+    h.yaxis(nice_ticks(0, ymax, 4), fmt="{:,.0f}", label=f"copies (of {S['n_copies']})", dx=36)
+    h.xaxis_values([0, 2, 4, 6], label="cells in the piece")
+    X = float(h.px(S["bar"]))
+    f.line(X, 112, X, 292, color=BARC, width=2, dash="5 4")
+    f.text(X + 5, 126, "the bar", size=12, weight=600)
+    h.down_triangle(S["observed"], 102, color=GREEN, size=12)
     # step 4: decide
-    f.step_badge(X3 + 8, 372, "4")
-    f.text(X3 + 26, 377, "Decide", size=14, weight=600)
-    f.para(X3, 400, f"The real count ({int(ch['observed'])}, green ▼) is above the bar that chance "
-                    f"almost never reaches, so this moment is called a coordinated event.",
-           width_chars=34, size=12, color=MUTED)
-    f.arrow(X1 + W1 + 12, 200, X2 - 12, 200)
-    f.h = 520
+    f.step_badge(X3 + 8, 350, "4")
+    f.text(X3 + 26, 355, "Decide", size=14, weight=600)
+    share = (f"{S['share_at_least'] * 100:.0f}%" if S["share_at_least"] >= 0.01
+             else f"under 1%")
+    f.para(X3, 378, f"Only {share} of the copies reach {S['observed']} cells, so the real moment "
+                    f"(green ▼) is called a coordinated event.", width_chars=32, size=12, color=MUTED)
+    f.arrow(X1 + W1 + 14, 180, X2 - 52, 180)
+    f.h = yy + 30
     return f
 
 
@@ -785,16 +949,19 @@ STEPS = {
             "Pool every piece from every copy. The bar is the count that only 1 piece in 100 goes over. "
             "It is one bar for the whole stretch.",
             "Call a piece if its count is over the bar and at least 3 cells take part."],
-    "cicada": ["Switch each cell on for {on:g} second after each of its events.",
+    "cicada": ["Switch each cell on for a fixed {on:g} second after each of its events (see the caption).",
                "Count how many cells are on in every 0.1-second frame.",
                "Make {ns} shifted copies of the whole recording. The bar is the count that only 1 frame "
                "in 100,000 goes over.",
                "Call each peak of the count that reaches the bar."],
-    "sync": ["Give every event a score: the share of the other cells that have an event close to it.",
-             "“Close” depends on each cell's own gaps between events, and is never more than "
-             "{tau:g} seconds.",
-             "Average the scores in each 0.1-second frame. The bar is a fixed {bar:g}.",
-             "Call a stretch that stays over the bar and holds at least 3 events. No copies are made."],
+    "sync": ["Give every event a score from 0 to 1: the share of the other cells that have an event "
+             "close to it. This part is a published measure (SPIKE-synchronization).",
+             "“Close” is judged from each cell's own gaps between its events, and is never more "
+             "than {tau:g} seconds.",
+             "Spread those per-event scores into a continuous line over time, by averaging the scores "
+             "of the events in each 0.1-second frame.",
+             "Find the peaks of that line. A peak that rises above {bar:g} and covers at least 3 events "
+             "becomes a call. No copies are made."],
 }
 
 
@@ -806,6 +973,20 @@ def _steps_text(det, st):
                 bar=st.get("C_threshold", 0.1))
     return [s.format(**fill) for s in STEPS[det]]
 
+
+#: What each line in the measurement panel IS, said beside the line itself. A key at the
+#: foot of the figure is not enough — Tony, 2026-09-16, on the LoCo figure: "what is the
+#: purple line, what is the dashed line". The reader should not have to travel to find out.
+LINE_LABELS = {
+    "rate": [("events per second, every cell added up", "rate", "y"),
+             ("the average nearby", GREY, "ref"), ("the bar", BARC, "bar")],
+    "coact": [("cells in each 2 s piece", "coact", "y"), ("the copies' average", GREY, "mean"),
+              ("the bar", BARC, "bar")],
+    "loco": [("cells in each 1 s piece", "loco", "y"), ("the bar", BARC, "bar")],
+    "sce": [("cells in each 10 s piece", "sce", "y"), ("the bar", BARC, "bar")],
+    "cicada": [("cells switched on", "cicada", "y"), ("the bar", BARC, "bar")],
+    "sync": [("score of each event", "sync", "py"), ("the bar", BARC, None)],
+}
 
 MEASURE = {"rate": ("events per second", "all cells added up", (0, 14)),
            "coact": ("cells per 2 s piece", "", (0, 14)),
@@ -912,10 +1093,30 @@ def fig_algorithm(W, det):
                     log=True, xmax=14, ylabel="copied frames")
         f.text(20, hy - 4, "100 shifted copies of the whole recording, pooled:", size=12, color=MUTED)
     elif det == "rate":
-        f.para(20, hy, "No copies. The bar is the local average plus a fixed amount, so it rises when "
-                       "cells get busier but does not care how much the count jumps around. It counts "
-                       "events, not cells, so one very busy cell can push the count over.",
-               width_chars=44, size=12, color=MUTED)
+        # The two windows, drawn to scale against each other: what gets counted (1 s) sits at
+        # the middle of what it is compared against (60 s). Tony, 2026-09-16 — and both are
+        # settings, not facts about the cells.
+        ctx_s = float(st.get("context_win", 60.0))
+        rate_s = float(st.get("rate_win", 1.0))
+        f.text(20, hy - 6, "The two windows, at one moment:", size=12, weight=600)
+        span = (-ctx_s / 2 - 6, ctx_s / 2 + 6)
+        wp = f.panel(60, hy + 18, 290, 52, span, (0, 1), frame=False)
+        wp.span(-ctx_s / 2, ctx_s / 2, row_y=hy + 22, row_h=18, color="#cfd9e6")
+        f.text(float(wp.px(0)), hy + 35, f"context window · {ctx_s:g} s", size=11, anchor="middle")
+        wp.span(-rate_s / 2, rate_s / 2, row_y=hy + 44, row_h=18, color=COLORS["rate"], min_px=3)
+        f.text(float(wp.px(0)) + 10, hy + 57, f"counting window · {rate_s:g} s", size=11)
+        f.line(float(wp.px(0)), hy + 14, float(wp.px(0)), hy + 66, color=BARC, width=1, dash="2 3")
+        f.text(float(wp.px(0)), hy + 10, "the moment being scored", size=10, anchor="middle", color=MUTED)
+        wp.xaxis_values([-30, 0, 30], fmt="{:g}s")
+        yb = f.para(20, hy + 108,
+                    f"rate+context counts every event from every cell inside the {rate_s:g}-second "
+                    f"window, and compares that with the average over the {ctx_s:g}-second window "
+                    f"centred on the same moment. No copies are made.", width_chars=46, size=12,
+                    color=MUTED)
+        f.para(20, yb + 14,
+               "Both window widths are settings, like the bar: they could be tuned, and so far they "
+               "have not been. Only the bar has been swept (Section 9).", width_chars=46, size=12,
+               color=MUTED)
     elif det == "sync":
         n = sim["n_roi"]
         f.text(20, hy, "Why small events cannot reach the bar:", size=12, color=MUTED)
@@ -951,10 +1152,27 @@ def fig_algorithm(W, det):
         n_calls = sum(1 for on, wd in calls if on + wd >= win[0] and on <= win[1])
         f.text(X + Wd, 100, _plural(n_calls, "call"), size=12, anchor="end", color=MUTED)
         r = f.panel(X, 106, Wd, 190, win, (0, 1))
-        r.raster(D["trains"], width=1.1)
+        r.raster(_by_activity(D["trains"]), width=1.1)
         label, sub, ylim = MEASURE[det]
         p = f.panel(X, 330, Wd, 220, win, ylim)
         _measure(p, det, D)
+        if j == 0:                       # name each line where it is drawn, not in a key
+            M = D[det]
+            used = []
+            for text, col, key in LINE_LABELS[det]:
+                col = COLORS.get(col, col)
+                if key and key in M and np.isfinite(_arr(M[key])).any():
+                    v = _arr(M[key])
+                    yv = float(np.nanmax(v)) if key in ("y", "py") else float(np.nanmedian(v))
+                else:
+                    yv = float(M.get("bar", ylim[1] * 0.4)) if not isinstance(M.get("bar"), list) \
+                        else ylim[1] * 0.4
+                yv = min(max(float(yv), ylim[0]), ylim[1])
+                ly = float(p.py(yv)) + (-8 if key in ("y", "py") else 14)
+                while any(abs(ly - u) < 15 for u in used):
+                    ly += 15
+                used.append(ly)
+                f.text(X + 6, min(max(ly, 344), 546), text, size=11, color=col, weight=600)
         ticks = nice_ticks(*ylim, 4)
         p.yaxis(ticks, fmt="{:g}", grid=True)
         if j == 0:
@@ -1149,10 +1367,10 @@ def fig_grading(W, numbers):
     return f
 
 
-def fig_scores(W, numbers):
+def fig_scores(W, numbers, dets=CODED):
     from svgfig import Figure, MUTED
+    dets = list(dets)
     f = Figure(1000, 470)
-    dets = list(CODED) + list(LEARNED4)
     ceil = numbers["f1_ceiling"]
     for j, (reg, title) in enumerate((("baseline_quiet", "A · quiet background"),
                                       ("baseline_busy", "B · busy background"))):
@@ -1186,10 +1404,10 @@ def fig_scores(W, numbers):
     return f
 
 
-def fig_busy(W, numbers):
+def fig_busy(W, numbers, dets=CODED):
     from svgfig import Figure, MUTED
     b = numbers["blockrecall"]["per_detector"]
-    dets = list(CODED) + list(LEARNED4)
+    dets = list(dets)
     f = Figure(1000, 470)
     X, PW = 170, 460
     f.text(X, 24, "A · mid-sized planted events found (18% of cells take part)", size=13, weight=600)
@@ -1288,6 +1506,66 @@ def _closeup(f, c, X, Y, PW, *, title, dets=ALL10, raster_h=180, show_weak=False
     return y + raster_h + 44
 
 
+GROUP_WORDS_PLAIN = {"DI": "females, one stage of the cycle", "MALE": "males",
+                     "ORX": "males, testes removed", "OVX": "females, ovaries removed"}
+
+
+def fig_real_overview(W, label, stream):
+    """One figure per drug per kind of event: four recordings, one from each group of mice.
+
+    Drawn here rather than reused from the first review, whose versions carried a lane for each
+    learned model. Those left this document (Tony, 2026-09-16), and redrawing brings these
+    under the same raster rules as every other figure."""
+    from svgfig import Figure, MUTED
+    ov = {k: v for k, v in W["real"]["overview"].items()
+          if v["label"] == label and v["stream"] == stream}
+    order = [k for g in ("DI", "MALE", "ORX", "OVX") for k in ov if ov[k]["group"] == g]
+    a0 = 0.0
+    lo = min(ov[k]["ext"][0] - ov[k]["anchor"] for k in order)
+    hi = max(ov[k]["ext"][1] - ov[k]["anchor"] for k in order)
+    span = (lo - 30, hi + 30)
+    L, PW = 180, 760
+    f = Figure(1000, 40 + len(order) * 260)
+    y = 30
+    for k in order:
+        c = ov[k]
+        f.rich(L - 172, y, [(c["group"], dict(weight=700)),
+                            (f" · {GROUP_WORDS_PLAIN.get(c['group'], '')}", dict(color=MUTED))],
+               size=12)
+        pl = f.panel(L, y + 6, PW, 16, span, (0, 1), frame=False)
+        for name, r0, r1 in c["regions"]:
+            pl.span(r0 - c["anchor"], r1 - c["anchor"], row_y=y + 8, row_h=7,
+                    color=PERIOD_COLORS.get(name, "#9e9e9e"))
+        for w0, w1 in c["windows"]:
+            pl.span(w0 - c["anchor"], w1 - c["anchor"], row_y=y + 18, row_h=3, color="#333")
+        yy = y + 26
+        lp = f.panel(L, yy, PW, len(CODED) * 12 + 4, span, (0, 1))
+        for i, d in enumerate(CODED):
+            ry = yy + 3 + i * 12
+            for on, wd in c["calls"][d]:
+                lp.span(on - c["anchor"], on + wd - c["anchor"], row_y=ry, row_h=8,
+                        color=COLORS[d], min_px=2)
+            f.text(L - 8, ry + 8, f"{NAMES[d]} · {_plural(c['in_window'][d], 'call')}", size=10,
+                   anchor="end", color=MUTED)
+        yy += len(CODED) * 12 + 8
+        r = f.panel(L, yy, PW, max(60, 3 * c["n_roi"]), span, (0, 1))
+        r.raster([np.asarray(v, float) - c["anchor"] for v in c["trains"]], width=1.0)
+        f.text(L - 8, yy + 14, _plural(c["n_roi"], "cell"), size=10, anchor="end", color=MUTED)
+        y = yy + max(60, 3 * c["n_roi"]) + 26
+        if k == order[-1]:
+            r.xaxis_time(target=6, label=f"minutes from the moment {label} arrives")
+            y += 34
+    f.rich(L, y, [("▬ ", dict(color="#bcc3cc", weight=700)), ("before the drug   ", dict(color=MUTED)),
+                  ("▬ ", dict(color=PERIOD_COLORS.get(label, "#9e9e9e"), weight=700)),
+                  (f"{label}   ", dict(color=MUTED)),
+                  ("▬ ", dict(color="#7d7d7d", weight=700)), ("high potassium   ", dict(color=MUTED)),
+                  ("▬ ", dict(color="#333", weight=700)),
+                  ("the stretches the lab studies; the count beside each name is that program's "
+                   "calls inside them", dict(color=MUTED))], size=11)
+    f.h = y + 20
+    return f
+
+
 def fig_problem(W):
     from svgfig import Figure
     c = W["real"]["close"]["problem"]
@@ -1297,24 +1575,24 @@ def fig_problem(W):
     return f
 
 
-def fig_eye(W, figs_real="18 to 21"):
+def fig_eye(W, figs_real="18 to 21", dets=CODED):
     from svgfig import Figure, MUTED
     R = W["real"]
     C = R["close"]
     f = Figure(1000, 1500)
     y = 24
-    y = _closeup(f, C["outside"], 200, y, 770,
+    y = _closeup(f, C["outside"], 200, y, 770, dets=dets,
                  title="A · clear stripes just outside the analysis window (black line)")
-    y = _closeup(f, C["busy"], 200, y + 10, 770,
+    y = _closeup(f, C["busy"], 200, y + 10, 770, dets=dets,
                  title="B · a busy stretch inside the analysis window, with no stripe that stands out")
-    y = _closeup(f, C["weak"], 200, y + 10, 770, show_weak=True,
+    y = _closeup(f, C["weak"], 200, y + 10, 770, show_weak=True, dets=dets,
                  title="C · calls with no stripe under them (red box: 3 or fewer cells line up)")
     # D: the tallies
     y += 10
     f.text(200, y, f"D · all {R['n_recordings']} recordings of Figures {figs_real}, both kinds of events",
            size=13, weight=600)
     T = R["tally"]
-    dets = list(ALL10)
+    dets = list(dets)
     p = f.panel(200, y + 30, 330, len(dets) * 22, (0, 1), (len(dets) - 0.5, -0.5))
     q = f.panel(640, y + 30, 330, len(dets) * 22, (0, 1), (len(dets) - 0.5, -0.5))
     f.text(200, y + 22, f"share of the {R['n_in']} clear stripes inside the windows it called", size=12,
@@ -1365,16 +1643,22 @@ def _render(figs: dict, work: Path, dest: Path) -> dict:
 def stage_figures(work: Path, review: Path) -> None:
     W = json.loads((work / "plain.json").read_text())
     numbers = json.loads((review / "measurements" / "numbers.json").read_text())
-    figs = {"fig_raster": fig_raster(W), "fig_problem": fig_problem(W), "fig_chance": fig_chance(W),
+    figs = {"fig_orient": fig_orient(W), "fig_problem": fig_problem(W), "fig_chance": fig_chance(W),
             "fig_chance_steps": fig_chance_steps(W), "fig_shift_shuffle": fig_shift_shuffle(W, numbers)}
     for d in CODED:
         figs[f"fig_alg_{d}"] = fig_algorithm(W, d)
-    figs.update({"fig_network": fig_network(W), "fig_simulator": fig_simulator(W, numbers),
-                 "fig_grading": fig_grading(W, numbers), "fig_scores": fig_scores(W, numbers),
-                 "fig_busy": fig_busy(W, numbers), "fig_eye": fig_eye(W)})
+    figs.update({"fig_simulator": fig_simulator(W, numbers), "fig_grading": fig_grading(W, numbers),
+                 "fig_scores": fig_scores(W, numbers), "fig_busy": fig_busy(W, numbers)})
+    for name, label, stream in (("real_ttx_brief", "TTX", "fast"), ("real_ttx_long", "TTX", "slow"),
+                                ("real_senk_brief", "senktide", "fast"),
+                                ("real_senk_long", "senktide", "slow")):
+        figs[name] = fig_real_overview(W, label, stream)
+    figs["fig_eye"] = fig_eye(W)
+    # the learned models live in their own document now (Tony, 2026-09-16)
+    figs["learned_network"] = fig_network(W)
+    figs["learned_scores"] = fig_scores(W, numbers, dets=LEARNED4)
+    figs["learned_busy"] = fig_busy(W, numbers, dets=LEARNED4)
     _render(figs, work, work.parent)
-    for name, fname in OLD_REAL:                 # the first review's real figures, copied beside
-        shutil.copyfile(review / fname, work.parent / f"{name}.png")
     print("  figures:", ", ".join(figs))
 
 
@@ -1457,6 +1741,10 @@ def _display_values(W, N) -> dict:
                 for w, mhz in v["window_rate_mhz"].items():
                     T[f"rate_{label}_{stream}_{g}_{w.replace(' ', '').replace('+', 'plus')}"] = f"{mhz * 3.6:.0f}"
     T["problem_n_roi"] = real["close"]["problem"]["n_roi"]
+    T["orient_n_roi"] = real["close"]["orient"]["n_roi"]
+    T["orient_n_stripes"] = len(real["close"]["orient"]["stripes"])
+    T["orient_minutes"] = f"{(real['close']['orient']['win'][1] - real['close']['orient']['win'][0]) / 60:g}"
+    T["orient_biggest"] = max((s_["cells"] for s_ in real["close"]["orient"]["stripes"]), default=0)
     T["outside_stripe_cells"] = max((s_["cells"] for s_ in real["close"]["outside"]["stripes"]), default=0)
     for close in ("outside", "busy", "weak"):
         c = real["close"][close]
@@ -1507,6 +1795,18 @@ def stage_page(work: Path, review: Path) -> None:
             raise SystemExit(f"{{{{NUM:{m.group(1)}}}}} names a figure the page never shows")
         return str(num[m.group(1)])
     page = re.sub(r"\{\{NUM:([A-Za-z0-9_]+)\}\}", num_rep, page)
+    # SECTION NUMBERS ARE COUNTED, NEVER TYPED. Sections have been added, removed and
+    # reordered through this review; a hard-coded "Section 8" in prose survives the move and
+    # then points at the wrong thing. The key is stable, the number is derived.
+    order_s = re.findall(r'<h2 id="s\d+">\{\{SEC:([A-Za-z0-9_]+)\}\}', page)
+    sec = {k: i + 1 for i, k in enumerate(order_s)}
+
+    def sec_rep(m):
+        if m.group(1) not in sec:
+            raise SystemExit(f"{{{{SEC:{m.group(1)}}}}} names a section this page does not have; "
+                             f"it has {', '.join(sec)}")
+        return str(sec[m.group(1)])
+    page = re.sub(r"\{\{SEC:([A-Za-z0-9_]+)\}\}", sec_rep, page)
     old = dict(OLD_REAL)
 
     def fig_rep(m):
@@ -1529,16 +1829,32 @@ def stage_page(work: Path, review: Path) -> None:
     left = re.findall(r"\{\{[^}]*\}\}", page)
     if left:
         raise SystemExit(f"unfilled tokens: {left[:5]}")
-    out = work.parent / "detector_review_plain.html"
-    # Opened from disk, a page with no declared charset is read as Latin-1 and every ▼ and –
-    # turns to mojibake (sapper SAP005). The template is body content; the head is added here.
+    _write_page(page, work.parent / "detector_review_plain.html", len(order))
+
+    # The companion page: the learned models, held out of the review (Tony, 2026-09-16, "cut out
+    # the learned models for now ... keep the material in a separate document"). It reuses the
+    # same measurements and the same figure builders, so nothing was thrown away.
+    comp = LEARNED_TEMPLATE.read_text(encoding="utf-8")
+    comp = re.sub(r"\{\{FIG:([A-Za-z0-9_]+)\}\}", fig_rep, comp)
+    comp = re.sub(r"\{\{T\.([A-Za-z0-9_]+)\}\}", tok, comp)
+    left = re.findall(r"\{\{[^}]*\}\}", comp)
+    if left:
+        raise SystemExit(f"unfilled tokens in the companion page: {left[:5]}")
+    _write_page(comp, work.parent / "learned_detectors_plain.html", 3)
+
+
+def _write_page(page: str, out: Path, n_figs: int) -> None:
+    """Wrap the body in a head and write it.
+
+    Opened from disk, a page with no declared charset is read as Latin-1 and every ▼ and –
+    turns to mojibake (sapper SAP005). The templates are body content; the head is added here."""
     title_and_style, _, body = page.partition("<main>")
     head = ('<!doctype html>\n<html lang="en"><head><meta charset="utf-8">'
             '<meta name="viewport" content="width=device-width, initial-scale=1">\n'
             + title_and_style + '</head><body>\n<main>')
     out.write_text(head + body + "\n</body></html>\n", encoding="utf-8")
     words = len(re.sub(r"<svg.*?</svg>|<[^>]+>", " ", page, flags=re.S).split())
-    print(f"  wrote {out.name}: {len(order)} figures, about {words:,} words of text")
+    print(f"  wrote {out.name}: {n_figs} figures, about {words:,} words of text")
 
 
 def main(argv=None) -> int:
