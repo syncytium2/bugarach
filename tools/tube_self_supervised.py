@@ -59,7 +59,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 TAG = "tube-ssl-2026-09-15"
-MODELS = ("tube", "tube_guard", "line")
+MODELS = ("tube", "tube_guard", "line", "line_length")
 """``line`` joined on 2026-09-15: it counts the lit ROIs before pooling, so it is the
 architecture whose distinctness the tube models lack (``bugarach.learn.nets.line``)."""
 J_SEC = (10.0, 20.0)

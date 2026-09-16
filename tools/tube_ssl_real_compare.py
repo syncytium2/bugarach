@@ -59,7 +59,7 @@ RATE = 2.0
 PAD_FRAMES = 2
 TOL_SEC = 1.0
 N_RANDOM = 20
-MODELS = ("tube", "tube_guard", "line")
+MODELS = ("tube", "tube_guard", "line", "line_length")
 J_SEC = (10.0, 20.0)
 SEEDS = (0, 1, 2)
 

@@ -13,7 +13,11 @@ synthetic field it plants, one at a time:
 
 * **line K** — K distinct ROIs, one onset each, inside one frame: the vertical line;
 * **burst K** — K/4 ROIs firing 4 times each inside 0.4 s: the same ink, a quarter of the line;
-* **fuzz K** — K distinct ROIs spread uniformly over 3 s: the same ROIs, no line.
+* **fuzz K** — K distinct ROIs spread uniformly over 3 s: the same ROIs, no line;
+* **wave K** — K distinct ROIs recruited one frame apart: the same ROIs, ordered rather than
+  scattered. To a model that is permutation-invariant over ROIs this is fuzz with a different
+  cover story, and that is the point of including it — the tilt a person sees in a raster is a
+  fact about the row order, which no order-free detector reads.
 
 A detector of coordination should rank line above burst and above fuzz at equal ink. Each model's
 score is the maximum of its per-frame output within ±2 s of the plant, minus the same maximum on
@@ -75,6 +79,9 @@ def plant(x, t0, kind, K, rng):
         span = int(FUZZ_SEC / DT)
         for r in rois:
             x[r, t0 + rng.randint(-span // 2, span // 2)] = 1.0
+    elif kind == "wave":
+        for i, r in enumerate(rois):
+            x[r, t0 - len(rois) // 2 + i] = 1.0
     else:                                                     # pragma: no cover
         raise ValueError(kind)
     return x
@@ -88,7 +95,7 @@ def peak(model, x, t0):
 
 def score_model(model):
     out = {}
-    for kind in ("line", "burst", "fuzz"):
+    for kind in ("line", "burst", "fuzz", "wave"):
         for K in K_VALUES:
             gaps = []
             for i in range(N_FIELDS):
@@ -113,7 +120,7 @@ def main(argv=None):
     import fair_bakeoff as fb
     pin_threads()
     models = {}
-    for name in ("tube", "tube_guard"):
+    for name in ("tube", "tube_guard", "line", "line_length"):
         torch.manual_seed(0)
         models[f"untrained {name}"] = ARCHITECTURES[name].make().eval()
         mk, n_fit, _ = fold_maker(ts.sim_recording, list(fold_split(
@@ -131,8 +138,8 @@ def main(argv=None):
         out[label] = score_model(m)
         r = out[label]
         print(f"{label:36s} " + "  ".join(
-            f"{k}: {r[k]:+.2f}" for k in ("line_4", "burst_4", "fuzz_4", "line_16", "burst_16",
-                                          "fuzz_16")), flush=True)
+            f"{k}: {r[k]:+.2f}" for k in ("line_16", "burst_16", "fuzz_16", "wave_16")),
+            flush=True)
     dest = Path(a.out)
     dest.mkdir(parents=True, exist_ok=True)
     (dest / "line_vs_fuzz.json").write_text(json.dumps(
