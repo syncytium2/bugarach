@@ -89,10 +89,19 @@ recording seeds 1000–1023):
    `origin/eval-field-size-candidates` already has `main` merged in as of `49fed1f`, including #594
    (every simulated recording now carries widths, drawn on a separate random stream, so event times do
    not move). If `main` has moved again, merge it in and say so in the first commit.
-3. **Environment.** On Windows, work inside WSL, never native Windows paths. Build a venv in the
-   worktree's parent checkout if there is none: `python3 -m venv .venv && .venv/bin/pip install -e ".[dev]"`
-   (the `dev` extra carries torch). Then record, in the board block and in the run's `meta.json`:
-   hostname, OS, `nproc`, Python version, torch version.
+3. **Environment.** Native Windows and WSL both work; nothing in this run needs one over the other,
+   and the Python is cross-OS by project rule (pathlib and environment variables, sapper SAP004). The
+   commands in this file are bash. On native Windows:
+   - the venv's interpreter is `.venv\Scripts\python.exe`, not `.venv/bin/python`;
+   - the commit hooks and `tools/*.sh` are shell scripts, so commit from Git Bash (it ships with Git
+     for Windows) or the gates do not run;
+   - **`--jobs` must be spawn-safe**: Windows starts worker processes by spawning, not forking, so the
+     worker is a top-level function and the entry point sits under `if __name__ == "__main__":`. A
+     tool that forks happily on Linux and the Mac fails here and nowhere else.
+
+   Build a venv if there is none: `python -m venv .venv`, then install with the `dev` extra
+   (`pip install -e ".[dev]"`; it carries torch). Record, in the board block and in the run's
+   `meta.json`: hostname, OS and whether it is WSL, logical CPU count, Python version, torch version.
 4. **Threads.** `src/bugarach/learn/train.py` pins torch to **one intra-op thread** (`THREADS = 1`) and
    says the number is part of the result. Parallelism comes from running **processes**, one per fit.
    Do not raise `THREADS`. Training runs on the CPU; nothing in `train.py` moves a model to a GPU, and a
