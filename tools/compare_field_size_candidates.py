@@ -68,9 +68,31 @@ def _rows(bake: dict) -> dict:
     return {**bake["hand_written"], **bake["learned"]}
 
 
-def _per_fold(row: dict, key: str = "f1") -> list[float]:
-    return [float(f[key]) if f[key] is not None else float("nan")
-            for f in sorted(row["per_fold"], key=lambda f: f["fold"])]
+def _f1(fold: dict) -> float:
+    """A fold's F1, with no hits on planted events counted as 0 rather than dropped.
+
+    ``bench`` returns NaN when recall and precision are both zero or precision is
+    undefined, which is right for a single score and wrong for a comparison: dropping
+    those folds averages a model over only the folds where it found something, which
+    flatters exactly the models that fail to transfer. A fold with planted events and
+    no hits scored 0 on them.
+    """
+    f1 = fold["f1"]
+    if f1 is not None and np.isfinite(f1):
+        return float(f1)
+    if fold.get("n_planted", 0) > 0 and fold.get("n_hit", 0) == 0:
+        return 0.0
+    return float("nan")
+
+
+def _per_fold(row: dict) -> list[float]:
+    return [_f1(f) for f in sorted(row["per_fold"], key=lambda f: f["fold"])]
+
+
+def _zeroed(row: dict) -> list[int]:
+    """Folds whose NaN F1 was read as 0, so the conversion is on the record."""
+    return [f["fold"] for f in row["per_fold"]
+            if not (f["f1"] is not None and np.isfinite(f["f1"])) and _f1(f) == 0.0]
 
 
 def _paired(a: list[float], b: list[float]) -> dict:
@@ -107,6 +129,8 @@ def summarise(home: dict, away: dict) -> dict:
     per_model = {}
     for m in models:
         entry = {"f1_home": _per_fold(h[m]), "f1_transfer": _per_fold(w[m]),
+                 "folds_with_no_hits_read_as_zero": {"home": _zeroed(h[m]),
+                                                     "transfer": _zeroed(w[m])},
                  "transfer_change": _paired(_per_fold(w[m]), _per_fold(h[m]))}
         for label, row in (("home", h[m]), ("transfer", w[m])):
             folds = sorted(row["per_fold"], key=lambda f: f["fold"])
@@ -129,9 +153,11 @@ def draw(summary: dict, path: Path) -> None:
     models = summary["models"]
     pm = summary["per_model"]
     has_null = any("null_fa_per_hour_home" in pm[m] for m in models)
-    fig, axes = plt.subplots(1, 2 if has_null else 1,
-                             figsize=(13.5 if has_null else 8, 4.8), squeeze=False)
-    ax = axes[0][0]
+    fig = plt.figure(figsize=(13.5, 8.6 if has_null else 4.8))
+    grid = fig.add_gridspec(2 if has_null else 1, len(models),
+                            height_ratios=[1.25, 1] if has_null else [1],
+                            hspace=0.42, wspace=0.22)
+    ax = fig.add_subplot(grid[0, :])
     x = np.arange(len(models))
     for i, m in enumerate(models):
         hf, af = pm[m]["f1_home"], pm[m]["f1_transfer"]
@@ -150,34 +176,49 @@ def draw(summary: dict, path: Path) -> None:
                label=f"carried to Cossart spec, {summary['transfer_spec_n_roi']} ROIs")
     ax.legend(frameon=False, loc="upper left", fontsize=9)
 
+    styled = [ax]
     if has_null:
-        bx = axes[0][1]
+        # One small panel per model, background rate on x from busy to quiet, so a
+        # model whose false alarms CLIMB as the field empties reads as a rising line.
         factors = sorted(pm[models[0]]["null_fa_per_hour_home"], key=float, reverse=True)
-        width = 0.8 / (2 * len(factors))
-        floor = 0.05
+        fx = np.arange(len(factors))
+        floor = 0.1
+        top = max([floor] + [v for m in models for label in ("home", "transfer")
+                             for vals in (pm[m].get(f"null_fa_per_hour_{label}") or {}).values()
+                             for v in vals]) * 1.6
+        first = None
         for i, m in enumerate(models):
-            for j, fac in enumerate(factors):
-                for k, (label, colour, filled) in enumerate(
-                        (("home", HOME, True), ("transfer", AWAY, False))):
-                    vals = pm[m].get(f"null_fa_per_hour_{label}", {}).get(fac)
-                    if vals is None:
-                        continue
-                    off = -0.4 + width * (2 * j + k + 0.5)
-                    v = [max(val, floor) for val in vals]
-                    bx.scatter([i + off] * len(v), v, s=22,
+            bx = fig.add_subplot(grid[1, i], sharey=first)
+            first = first or bx
+            for label, colour, filled, dx in (("home", HOME, True, -0.08),
+                                              ("transfer", AWAY, False, 0.08)):
+                table = pm[m].get(f"null_fa_per_hour_{label}")
+                if not table:
+                    continue
+                folds = np.array([[max(v, floor) for v in table[f]] for f in factors])
+                means = np.array([max(float(np.mean(table[f])), floor) for f in factors])
+                bx.plot(fx + dx, means, color=colour, lw=2, zorder=2)
+                for j in range(len(factors)):
+                    bx.scatter([fx[j] + dx] * folds.shape[1], folds[j], s=18,
                                color=colour if filled else "#fcfcfb",
-                               edgecolor=colour, linewidth=1.4, zorder=2)
-        bx.set_yscale("log")
-        bx.set_xticks(x, [LABEL.get(m, m) for m in models])
-        bx.set_ylabel("false alarms per hour, nothing planted\n"
-                      f"(zero drawn at {floor}; left to right in each group: "
-                      + ", ".join(f"{float(f):g}×" for f in factors) + " background)")
-    for a in axes[0]:
+                               edgecolor=colour, linewidth=1.2, zorder=3)
+            bx.set_yscale("log")
+            bx.set_ylim(floor * 0.7, top)
+            bx.set_xlim(-0.35, len(factors) - 0.65)
+            bx.set_xticks(fx, [f"{float(f):g}×" for f in factors], fontsize=8)
+            bx.set_xlabel(LABEL.get(m, m).replace("\n", " "), fontsize=9)
+            if i == 0:
+                bx.set_ylabel("false alarms per hour\nnothing planted (0 drawn at 0.1)")
+            else:
+                bx.tick_params(labelleft=False)
+            styled.append(bx)
+        fig.text(0.5, 0.015, "background rate, as a multiple of the spec's own, "
+                 "busy to quiet", ha="center", fontsize=9)
+    for a in styled:
         a.spines[["top", "right"]].set_visible(False)
         a.grid(axis="y", color="#e6e5df", lw=0.8)
         a.set_axisbelow(True)
-    fig.tight_layout()
-    fig.savefig(path, dpi=150)
+    fig.savefig(path, dpi=150, bbox_inches="tight")
     plt.close(fig)
 
 
