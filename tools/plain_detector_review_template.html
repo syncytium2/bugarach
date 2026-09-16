@@ -196,7 +196,7 @@ already filled, against {{T.doubles_real}} in the real recording and {{T.doubles
 As a result, shuffled copies say 6 or more neurons line up in {{T.n6_shuffle}} of bins, and shifted
 copies say {{T.n6_shift}}. A bar built from shuffles would sit too low. That is why every program here
 that makes copies uses the shift instead.</p>
-<h3>The shift is the better choice, not the right answer</h3>
+<h3>The shift is better than a shuffle, and still not exact</h3>
 <p>It would be convenient if a shifted copy were a real recording with the coordination taken out and
 nothing else changed. It is not, and it is worth saying so plainly.</p>
 <ul>
@@ -208,8 +208,9 @@ nothing else changed. It is not, and it is worth saying so plainly.</p>
   trained to tell a real recording from a shifted copy of it can sometimes do so. The shift leaves a
   signature of its own, so a copy is not a silent, invisible version of the recording.</li>
 </ul>
-<p>So treat the shift as what it is: an idea that clearly helps, and that beats the obvious alternative,
-rather than a solved problem. Every bar in this document rests on it, and that is a limit on every
+<p>No way of making chance copies is exact; if one were, every program would use it. So treat the shift as
+what it is: an idea that clearly helps, and that beats the obvious alternative, rather than a solved
+problem. Every bar in this document rests on it, and that is a limit on every
 number that follows.</p>
 
 <h2 id="s6">{{SEC:algorithms}}. The six algorithms</h2>
@@ -226,8 +227,8 @@ difference that matters most is <b>where each program looks to learn what chance
 <tr><td>locust</td><td>neurons "switched on" after each of their events</td><td>shifted copies of the whole recording</td><td>the coordinated-event stage of CICADA, from the Cossart lab, modified here</td></tr>
 <tr><td>SPIKE-synch</td><td>how close each event is to events in other neurons</td><td>no copies: each neuron's own gaps between events</td><td>Kreuz and colleagues' published measure, with R. DeFazio's peak-finding step added to turn its scores into calls</td></tr>
 </table>
-<p>That last column decides how a program behaves when the neurons get busy, so it is worth following
-through slowly.</p>
+<p>The third column, where each program learns what chance looks like, decides how that program behaves
+when the neurons get busy, so it is worth following through slowly.</p>
 <p><b>CoactDetect, LoCo and rate+context work from the surrounding seconds.</b> Each of them measures
 chance from the minute around the moment it is testing — by making shifted copies of that minute, or, for
 rate+context, by averaging it. When the neurons in that minute have events more often, those copies produce
