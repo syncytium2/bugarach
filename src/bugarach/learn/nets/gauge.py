@@ -17,8 +17,9 @@ from bugarach.learn.nets import _dilated_stack, _torch, receptive_field, registe
 __all__ = ["build_gauge"]
 
 
-@register("gauge", note="B -- the same centre-surround as `tube`, standardised against a "
-                        "null built by shifting the recording's own cells; no bypass",
+@register("gauge", note="UNTRAINED, UNSCORED. B -- the same centre-surround as `tube`, "
+                        "standardised against a null built by shifting the "
+                        "recording's own cells; no bypass",
           n_scales=4, width=8, depth=6, max_center_frames=128, max_ratio=40.0,
           n_null=8, eps=1e-6)
 def build_gauge(*, n_scales=4, width=8, depth=6, max_center_frames=128,

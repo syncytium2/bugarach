@@ -17,9 +17,9 @@ from bugarach.learn.nets import _dilated_stack, _torch, receptive_field, registe
 __all__ = ["build_quorum"]
 
 
-@register("quorum", note="C -- scores each cell against its own rate, then reads an order "
-                         "statistic over cells whose depth grows as a FITTED power of the "
-                         "field size",
+@register("quorum", note="UNTRAINED, UNSCORED. C -- scores each cell against its own rate, "
+                         "then reads an order statistic over cells whose depth "
+                         "grows as a FITTED power of the field size",
           occupancy_frames=601, head_width=8, head_depth=8, init_exponent=0.5,
           init_coefficient=0.5, temperature=1.0, eps=1e-6)
 def build_quorum(*, occupancy_frames=601, head_width=8, head_depth=8,

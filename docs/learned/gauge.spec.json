@@ -203,8 +203,7 @@
     },
     {
       "from": "bank",
-      "to": "observed",
-      "label": "kernels"
+      "to": "observed"
     },
     {
       "from": "shift",
