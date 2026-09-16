@@ -2408,3 +2408,10 @@ session's work is not a sweep.
   `tools/compare_field_size_candidates.py` (branch `eval-field-size-candidates`), one pair per training
   seed, plus copies placed with `tools/show.py`.
 - **Released:** at session end, or earlier when the figures are final.
+
+### darkroom/bugarach/2026-09-16-best-parameters/ — the gated retune of all six operating points (065/best-parameters)
+- **Claimed:** 2026-09-16, before the first write. A new folder, so nothing existing is overwritten.
+- **Writes:** `retune.json` (the sweep, 48 bench recordings per point, both backgrounds, bootstrap
+  intervals) and `best_parameters.html` / `best_parameters.png` (Figure 1), from
+  `tools/retune_operating_points.py` on branch `best-parameters`.
+- **Released:** at write.
