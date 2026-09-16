@@ -20,7 +20,7 @@
 </style>
 <main>
 <h1>The learned detectors</h1>
-<p class="lede">A companion to <i>Finding cells that act together</i>: four programs that were not written
+<p class="lede">A companion to <i>Finding neurons that act together</i>: four programs that were not written
 as steps, but trained on examples.</p>
 
 <div class="box hold">
@@ -51,9 +51,9 @@ inside a busy stretch where nothing was put in, and the score crosses the call l
 makes one mistake.</figcaption></figure>
 <p>The design is called <b>tube</b>, from the picture its author had in mind: looking down a dark tube
 while the recording slides past, a coordinated event goes by as a sudden jump. What the network is given
-is the same raster the six algorithms get — no pictures, no cell identities, just which cell had a calcium event
+is the same raster the six algorithms get — no pictures, no neuron identities, just which neuron had a calcium event
 when.</p>
-<p>There are four versions. <b>tube</b> is the one drawn above. <b>tube-guard</b> ignores the share of cells with events
+<p>There are four versions. <b>tube</b> is the one drawn above. <b>tube-guard</b> ignores the share of neurons with events
 immediately around the moment it is scoring, so a real event cannot inflate its own comparison.
 <b>tube-ratio</b> divides by the surrounding share instead of subtracting it. <b>tube-ratio-guard</b>
 does both.</p>

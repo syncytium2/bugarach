@@ -504,7 +504,26 @@ RULES = [
                 "defined once as an increase followed by a decrease in brightness, and after that it "
                 "is an event. Use \"synchronized\" only as another author's term, inside quotes.",
         fixture_bad="<p>In the most recent paper, a cell brightened 13.4 times an hour.</p>",
-        fixture_good='<p>cells had 13.4 calcium events per cell per hour, and "synchronized events".</p>',
+        fixture_good='<p>neurons had 13.4 calcium events per neuron per hour, and "synchronized events".</p>',
+    ),
+    Rule(
+        id="SAP019", level="BLOCK",
+        # NEURONS, NOT CELLS. Tony, 2026-09-16: "we can call brain cells neurons. i think we can replace
+        # cells with neurons throughout." The recordings are of neurons, and a second word for the same
+        # thing makes a reader wonder whether it is a second thing.
+        #
+        # Templates only. The builder's code is full of `cells` as an identifier and a data key, and a
+        # line matcher cannot tell those from drawn text; its display strings were converted with the
+        # tokenizer instead. Two titles keep their words: Lehman et al. 2010's "(KNDy) cells of the
+        # arcuate nucleus", and the journal Cell Reports.
+        pattern=r"(?<!\(KNDy\) )\bcells?\b|(?<!\(KNDy\) )\bcell's\b|\bCells?\b(?! Reports)",
+        include=["tools/plain_*_template.html"],
+        exclude=["tools/sapper.py"],
+        message="NEURONS, NOT CELLS, in the plain-language documents (Tony, 2026-09-16). Say neuron / "
+                "neurons. Paper titles and the journal name Cell Reports are the only exceptions.",
+        fixture_bad="<p>Each row is one cell, and each tick is one calcium event.</p>",
+        fixture_good="<p>Each row is one neuron. B/dynorphin (KNDy) cells of the arcuate nucleus. "
+                     "<i>Cell Reports</i></p>",
     ),
 ]
 

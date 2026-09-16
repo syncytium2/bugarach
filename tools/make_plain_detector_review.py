@@ -908,7 +908,7 @@ def stage_count(work: Path) -> None:
     k = f"interval|{FIG_W:g}"
     print(f"  count: {FIG_W:g} s interval — best bar quiet {best[k]['baseline_quiet']}, busy "
           f"{best[k]['baseline_busy']}, one bar {one_bar[k]}; {len(real)} real baselines ({len(skipped)} skipped)")
-    print("  edge (6-cell events found, edge -> mid-bin):",
+    print("  edge (6-neuron events found, edge -> mid-bin):",
           {n: [round(g["found"], 2) for g in v] for n, v in edge.items()})
 
 
@@ -968,26 +968,26 @@ def fig_orient(W):
     stripes = sorted(c["stripes"], key=lambda s_: -s_["cells"])
     for s_ in c["stripes"]:
         lane.down_triangle(s_["t"] + 0.5, 44, color=INK_T, size=12)
-    f.text(L - 8, 48, "many cells", size=11, anchor="end", color=MUTED)
+    f.text(L - 8, 48, "many neurons", size=11, anchor="end", color=MUTED)
     f.text(L - 8, 62, "at once", size=11, anchor="end", color=MUTED)
     r = f.panel(L, 62, PW, 400, win, (0, 1))
     r.raster(_by_activity(c["trains"]), width=1.2)
     r.xaxis_time(offset=win[0], target=5, label="minutes")
-    r.ylabel(_plural(c["n_roi"], "cell"), dx=20)
+    r.ylabel(_plural(c["n_roi"], "neuron"), dx=20)
     # B: one stripe, close up, so a tick is a visible thing
     top = stripes[0]["t"] if stripes else (win[0] + win[1]) / 2
     z = (top - 10.0, top + 10.0)
     ZX, ZW = 830, 150
-    f.text(ZX, 24, "B · 20 seconds of it", size=14, weight=600)
+    f.text(ZX, 24, "B · 20 s of the recording in A", size=14, weight=600)
     lz = f.panel(ZX, 34, ZW, 22, z, (0, 1), frame=False)
     lz.down_triangle(top + 0.5, 44, color=INK_T, size=12)
     rz = f.panel(ZX, 62, ZW, 400, z, (0, 1))
     rz.raster(_by_activity(c["trains"]), width=2.0)
     rz.xaxis_time(offset=top, target=2, label="seconds")
     lane.span(z[0], z[1], row_y=58, row_h=3, color="#9a9a9a", min_px=4)
-    f.text(L, 516, "Each row is one cell. Each tick is one calcium event in that cell.", size=13,
+    f.text(L, 516, "Each row is one neuron. Each tick is one calcium event in that neuron.", size=13,
            color=MUTED)
-    f.text(L, 536, "Where a column of ticks lines up, many cells had events together. ▼ marks each one.",
+    f.text(L, 536, "Where a column of ticks lines up, many neurons had events together. ▼ marks each one.",
            size=13, color=MUTED)
     f.h = 556
     return f
@@ -1006,7 +1006,7 @@ def fig_raster(W):
     r = f.panel(L, 92, PW, 250, A["win"], (0, 1))
     r.raster(A["trains"])
     r.xaxis_time(label="time in the recording")
-    r.ylabel(f"{sim['n_roi']} cells", dx=22)
+    r.ylabel(f"{sim['n_roi']} neurons", dx=22)
     # the zoom
     z0, z1 = ev["time"] - 2.0, ev["time"] + 2.0
     ZX, ZW = 700, 220
@@ -1030,8 +1030,8 @@ def fig_chance(W):
     from svgfig import Figure, nice_ticks
     sim = W["sim"]
     f = Figure(960, 400)
-    cols = [("A", "A · quiet cells, one real coordinated event", 80),
-            ("B", "B · busy cells, nothing planted", 530)]
+    cols = [("A", "A · quiet neurons, one real coordinated event", 80),
+            ("B", "B · busy neurons, nothing planted", 530)]
     for key, title, X in cols:
         D = sim[key]
         f.text(X, 26, title, size=13, weight=600)
@@ -1041,17 +1041,17 @@ def fig_chance(W):
         r = f.panel(X, 64, 390, 170, D["win"], (0, 1))
         r.raster(_by_activity(D["trains"]))
         if key == "A":
-            r.ylabel(f"{sim['n_roi']} cells", dx=16)
+            r.ylabel(f"{sim['n_roi']} neurons", dx=16)
         c = D["coact"]
         ymax = 12
         q = f.panel(X, 250, 390, 100, D["win"], (0, ymax))
         q.bars(_arr(c["t"]), _arr(c["y"]), color="#6d8fb3", width_frac=0.9)
         q.yaxis(nice_ticks(0, ymax, 3), grid=True)
         if key == "A":
-            q.ylabel("cells in each", lines=["cells with an event", "in each 2 s bin"], dx=40)
+            q.ylabel("neurons in each", lines=["neurons with an event", "in each 2 s bin"], dx=40)
         q.xaxis_time(label="time in the recording")
         mx = int(np.nanmax(_arr(c["y"])))
-        f.text(X + 390, 244, f"most in one bin: {mx} cells", size=12, anchor="end", color="#333")
+        f.text(X + 390, 244, f"most in one bin: {mx} neurons", size=12, anchor="end", color="#333")
     return f
 
 
@@ -1090,21 +1090,21 @@ def fig_chance_steps(W):
     X1, W1 = 60, 260
     f.step_badge(X1 + 8, 22, "1")
     f.text(X1 + 26, 27, "Count the recording", size=14, weight=600)
-    f.para(X1, 50, f"How many cells have an event inside the 2-second bin being tested? Here: "
+    f.para(X1, 50, f"How many neurons have an event inside the 2-second bin being tested? Here: "
                    f"{S['observed']} of 6.", width_chars=38, size=12, color=MUTED)
     lane = f.panel(X1, 96, W1, 14, (0, L), (0, 1), frame=False)
     lane.span(*bin, row_y=98, row_h=11, color="#9bb7d4", min_px=5)
     r = f.panel(X1, 112, W1, 150, (0, L), (0, 1))
     _numbered(f, r, S["numbered"], size=12, bold_in=bin)
     r.xaxis_time(target=3)
-    f.text(X1, 312, "Six cells, one row each. Each event carries its", size=11, color=MUTED)
-    f.text(X1, 328, "number in that cell's own order, so a row can be", size=11, color=MUTED)
+    f.text(X1, 312, "Six neurons, one row each. Each event carries its", size=11, color=MUTED)
+    f.text(X1, 328, "number in that neuron's own order, so a row can be", size=11, color=MUTED)
     f.text(X1, 344, "followed when it slides. Blue bar: the bin tested.", size=11, color=MUTED)
     # step 2: shifted copies
     X2, W2 = 370, 250
     f.step_badge(X2 + 8, 22, "2")
     f.text(X2 + 26, 27, "Make a shifted copy", size=14, weight=600)
-    f.para(X2, 50, "Slide each cell's row by its own random amount. Events pushed off the end come back "
+    f.para(X2, 50, "Slide each neuron's row by its own random amount. Events pushed off the end come back "
                    "at the start. Count again.", width_chars=42, size=12, color=MUTED)
     yy = 112
     for i, ex in enumerate(S["examples"]):
@@ -1116,7 +1116,7 @@ def fig_chance_steps(W):
             row_y = yy + 14 + 100 - (j + 0.5) * (100 / len(ex["shifts"])) + 4
             f.text(X2 - 6, row_y, f"+{sh:g}s", size=9, anchor="end", color="#9a9a9a")
         f.text(X2 + W2 + 10, yy + 60, f"copy {i + 1}", size=11, color=MUTED)
-        f.text(X2 + W2 + 10, yy + 78, _plural(ex["count"], "cell"), size=12, weight=600)
+        f.text(X2 + W2 + 10, yy + 78, _plural(ex["count"], "neuron"), size=12, weight=600)
         yy += 128
     f.text(X2 - 30, yy + 2, "the slide given to each row", size=10, color="#9a9a9a")
     # step 3: many copies
@@ -1130,7 +1130,7 @@ def fig_chance_steps(W):
     h = f.panel(X3, 112, W3, 180, (-0.6, 6.6), (0, ymax))
     h.bars(np.arange(7), hist, color="#b9c6d6", width_frac=0.85)
     h.yaxis(nice_ticks(0, ymax, 4), fmt="{:,.0f}", label=f"copies (of {S['n_copies']})", dx=36)
-    h.xaxis_values([0, 2, 4, 6], label="cells in the bin")
+    h.xaxis_values([0, 2, 4, 6], label="neurons in the bin")
     X = float(h.px(S["bar"]))
     f.line(X, 112, X, 292, color=BARC, width=2, dash="5 4")
     f.text(X + 5, 126, "the bar", size=12, weight=600)
@@ -1140,7 +1140,7 @@ def fig_chance_steps(W):
     f.text(X3 + 26, 355, "Decide", size=14, weight=600)
     share = (f"{S['share_at_least'] * 100:.0f}%" if S["share_at_least"] >= 0.01
              else f"under 1%")
-    f.para(X3, 378, f"Only {share} of the copies reach {S['observed']} cells, so the real moment "
+    f.para(X3, 378, f"Only {share} of the copies reach {S['observed']} neurons, so the real moment "
                     f"(green ▼) is called a coordinated event.", width_chars=32, size=12, color=MUTED)
     f.arrow(X1 + W1 + 14, 180, X2 - 52, 180)
     f.h = yy + 30
@@ -1151,11 +1151,11 @@ def fig_shift_shuffle(W, numbers):
     from svgfig import Figure, MUTED, nice_ticks
     T = W["toys"]
     f = Figure(980, 900)
-    rows = [("bursty", "A · cells that fire in bursts", 40,
+    rows = [("bursty", "A · neurons that fire in bursts", 40,
              "A shuffle breaks the bursts apart, so events spread over more of the recording and more "
-             "cells land in any bin by chance. The bar comes out too high and the real burst is missed."),
-            ("even", "B · cells that fire at a steady beat", 410,
-             "A shuffle lets a cell's events pile up in one bin and leave others empty, so fewer cells "
+             "neurons land in any bin by chance. The bar comes out too high and the real burst is missed."),
+            ("even", "B · neurons that fire at a steady beat", 410,
+             "A shuffle lets a neuron's events pile up in one bin and leave others empty, so fewer neurons "
              "reach any bin by chance. The bar comes out too low and a chance lineup is called.")]
     for key, title, Y, story in rows:
         D = T[key]
@@ -1173,7 +1173,7 @@ def fig_shift_shuffle(W, numbers):
             r.raster(trs, width=1.4)
             r.xaxis_values([0, 10, 20], fmt="{:g}s")
             cnt = sum(1 for v in trs if np.any((np.asarray(v) >= b[0]) & (np.asarray(v) < b[1])))
-            f.text(X + 170, Y + 236, f"{_plural(cnt, 'cell')} in the bin", size=11, anchor="end", color=MUTED)
+            f.text(X + 170, Y + 236, f"{_plural(cnt, 'neuron')} in the bin", size=11, anchor="end", color=MUTED)
         for j, (lab, hist, col, pv) in enumerate((("5,000 shifted copies", D["shift_hist"], SHIFT_C, D["p_shift"]),
                                                   ("5,000 shuffled copies", D["shuffle_hist"], SHUF_C, D["p_shuffle"]))):
             X = 690 + j * 150
@@ -1191,10 +1191,10 @@ def fig_shift_shuffle(W, numbers):
             # (Tony, 2026-09-16); it is the share of copies whose count matched the recording's.
             f.text(X + 60, Y + 232, f"copies with {D['observed']} or more", size=11, anchor="middle",
                    color=MUTED)
-            f.text(X + 60, Y + 246, f"cells in the bin: {share}", size=11, anchor="middle", color=MUTED)
+            f.text(X + 60, Y + 246, f"neurons in the bin: {share}", size=11, anchor="middle", color=MUTED)
             f.text(X + 60, Y + 264, f"→ {verdict}", size=12, anchor="middle", weight=700,
                    color=GREEN if (verdict == "called") == (key == "bursty") else RED)
-        f.text(840, Y + 284, "across: cells in the bin · ▼ what the recording itself gave",
+        f.text(840, Y + 284, "across: neurons in the bin · ▼ what the recording itself gave",
                size=11, anchor="middle", color=MUTED, italic=True)
         f.text(840, Y + 300, "a count that fewer than 5 copies in 100 reach is called",
                size=11, anchor="middle", color=MUTED, italic=True)
@@ -1204,9 +1204,9 @@ def fig_shift_shuffle(W, numbers):
            weight=600)
     d = numbers["sur_fast_doubles"]
     n6 = numbers["sur_fast_n6"]
-    groups = [("events landing in a 2-second bin their own cell already filled, per 1,000 events",
+    groups = [("events landing in a 2-second bin their own neuron already filled, per 1,000 events",
                [math.floor(v + 0.5) for v in (d["real"], d["shift"], d["shuffle"])], "{:.0f}", 120, 40),
-              ("share of 2-second bins where 6 or more cells have an event",
+              ("share of 2-second bins where 6 or more neurons have an event",
                [100 * n6["real"], 100 * n6["shift"], 100 * n6["shuffle"]], "{:.2f}%", 2.0, 520)]
     for lab, vals, fmt, vmax, X in groups:
         f.text(X, Y + 22, lab, size=12, color=MUTED)
@@ -1231,34 +1231,34 @@ def _plural(n, word):
 #: The steps each algorithm follows, in the words the page uses. {..} are filled from its
 #: settings so the pictures and the settings cannot drift apart.
 STEPS = {
-    "rate": ["Add up every event from every cell, in a 1-second window that slides along.",
+    "rate": ["Add up every event from every neuron, in a 1-second window that slides along.",
              "Work out the average of that number over the {ctx:g} seconds around each moment.",
              "Set the bar at that average plus {ex:g} events per second.",
              "Call a coordinated event wherever the count goes over the bar."],
-    "coact": ["Cut time into {bin:g}-second bins. Count how many different cells have an event in each.",
-              "For a bin with at least 3 cells, take the {ctx:g} seconds around it and make "
+    "coact": ["Cut time into {bin:g}-second bins. Count how many different neurons have an event in each.",
+              "For a bin with at least 3 neurons, take the {ctx:g} seconds around it and make "
               "{ns} shifted copies (Figure 4).",
               "Set the bar well above what the copies give: their average plus 3.72 times their "
               "typical spread.",
               "Call the bin if the real count is over the bar."],
-    "loco": ["Cut time into {bin:g}-second bins. Count how many different cells have an event in each.",
+    "loco": ["Cut time into {bin:g}-second bins. Count how many different neurons have an event in each.",
              "Every {step:g} seconds, make {ns} shifted copies of the minute before and of the minute after.",
              "On each side, find the count that only 1 copied bin in 1,000 goes over. "
              "The bar is the higher of the two sides.",
-             "Call a bin if its count is over the bar and at least 3 cells take part."],
-    "sce": ["Cut time into {bin:g}-second bins. Count how many different cells have an event in each.",
+             "Call a bin if its count is over the bar and at least 3 neurons take part."],
+    "sce": ["Cut time into {bin:g}-second bins. Count how many different neurons have an event in each.",
             "Make {ns} shifted copies of the whole stretch being studied.",
             "Pool every bin from every copy. The bar is the count that only 1 bin in 100 goes over. "
             "It is one bar for the whole stretch.",
-            "Call a bin if its count is over the bar and at least 3 cells take part."],
-    "cicada": ["Switch each cell on for a fixed {on:g} second after each of its events (see the caption).",
-               "Count how many cells are on in every 0.1-second frame.",
+            "Call a bin if its count is over the bar and at least 3 neurons take part."],
+    "cicada": ["Switch each neuron on for a fixed {on:g} second after each of its events (see the caption).",
+               "Count how many neurons are on in every 0.1-second frame.",
                "Make {ns} shifted copies of the whole recording. The bar is the count that only 1 frame "
                "in 100,000 goes over.",
                "Call each peak of the count that reaches the bar."],
-    "sync": ["Give every event a score from 0 to 1: the share of the other cells that have an event "
+    "sync": ["Give every event a score from 0 to 1: the share of the other neurons that have an event "
              "close to it. This part is a published measure (its authors call it “SPIKE-synchronization”).",
-             "“Close” is judged from each cell's own gaps between its events, and is never more "
+             "“Close” is judged from each neuron's own gaps between its events, and is never more "
              "than {tau:g} seconds.",
              "Spread those per-event scores into a continuous line over time, by averaging the scores "
              "of the events in each 0.1-second frame.",
@@ -1280,22 +1280,22 @@ def _steps_text(det, st):
 #: foot of the figure is not enough — Tony, 2026-09-16, on the LoCo figure: "what is the
 #: purple line, what is the dashed line". The reader should not have to travel to find out.
 LINE_LABELS = {
-    "rate": [("events per second, every cell added up", "rate", "y"),
+    "rate": [("events per second, every neuron added up", "rate", "y"),
              ("the average nearby", GREY, "ref"), ("the bar", BARC, "bar")],
-    "coact": [("cells in each 2 s bin", "coact", "y"), ("the copies' average", GREY, "mean"),
+    "coact": [("neurons in each 2 s bin", "coact", "y"), ("the copies' average", GREY, "mean"),
               ("the bar", BARC, "bar")],
-    "loco": [("cells in each 1 s bin", "loco", "y"), ("the bar", BARC, "bar")],
-    "sce": [("cells in each 10 s bin", "sce", "y"), ("the bar", BARC, "bar")],
-    "cicada": [("cells switched on", "cicada", "y"), ("the bar", BARC, "bar")],
+    "loco": [("neurons in each 1 s bin", "loco", "y"), ("the bar", BARC, "bar")],
+    "sce": [("neurons in each 10 s bin", "sce", "y"), ("the bar", BARC, "bar")],
+    "cicada": [("neurons switched on", "cicada", "y"), ("the bar", BARC, "bar")],
     "sync": [("score of each event", "sync", "py"),
              ("the continuous line those scores make", "#7a2a00", "cy"), ("the bar", BARC, None)],
 }
 
-MEASURE = {"rate": ("events per second", "all cells added up", (0, 14)),
-           "coact": ("cells per 2 s bin", "", (0, 14)),
-           "loco": ("cells per 1 s bin", "", (0, 14)),
-           "sce": ("cells per 10 s bin", "", (0, 24)),
-           "cicada": ("cells switched on", "per 0.1 s frame", (0, 14)),
+MEASURE = {"rate": ("events per second", "all neurons added up", (0, 14)),
+           "coact": ("neurons per 2 s bin", "", (0, 14)),
+           "loco": ("neurons per 1 s bin", "", (0, 14)),
+           "sce": ("neurons per 10 s bin", "", (0, 24)),
+           "cicada": ("neurons switched on", "per 0.1 s frame", (0, 14)),
            "sync": ("score (0 to 1)", "", (0, 0.3))}
 
 
@@ -1372,7 +1372,7 @@ def fig_algorithm(W, det):
         for j, (qq, lab) in enumerate(((q, "a quiet minute (A)"), (b, "a busy minute (B)"))):
             hist = np.bincount(np.asarray(qq["counts"], int), minlength=15)[:15]
             _hist_panel(f, 80 + j * 190, hy + 20, 130, 120, hist, observed=qq["observed"], bar=qq["bar"],
-                        color="#b9c6d6", xlabel="cells", title=lab, xmax=14,
+                        color="#b9c6d6", xlabel="neurons", title=lab, xmax=14,
                         ylabel="copies" if j == 0 else "")
         f.text(20, hy - 4, "100 shifted copies of the 60 s around one bin:", size=12, color=MUTED)
     elif det == "loco":
@@ -1380,19 +1380,19 @@ def fig_algorithm(W, det):
         for j, (side, lab, p999) in enumerate((("before", "the minute before", q["p999_before"]),
                                                ("after", "the minute after", q["p999_after"]))):
             _hist_panel(f, 80 + j * 190, hy + 20, 130, 120, q[side], observed=q["observed"] if j else None,
-                        bar=p999, color="#c9b6e4", xlabel="cells", title=lab, log=True, xmax=10,
+                        bar=p999, color="#c9b6e4", xlabel="neurons", title=lab, log=True, xmax=10,
                         ylabel="copied bins" if j == 0 else "")
         f.text(20, hy - 4, "100 shifted copies of each side of the planted event:", size=12, color=MUTED)
     elif det == "sce":
         q = sim["chance_sce"]
         _hist_panel(f, 80, hy + 20, 250, 120, q["hist"], observed=q["observed"], bar=q["bar"],
-                    color="#b8dcb8", xlabel="cells in a 10 s bin", title="every bin of 200 copies",
+                    color="#b8dcb8", xlabel="neurons in a 10 s bin", title="every bin of 200 copies",
                     log=True, xmax=20)
         f.text(20, hy - 4, "200 shifted copies of the whole recording, pooled:", size=12, color=MUTED)
     elif det == "cicada":
         q = sim["chance_cicada"]
         _hist_panel(f, 80, hy + 20, 250, 120, q["hist"], observed=q["observed"], bar=q["bar"],
-                    color="#f0b8da", xlabel="cells switched on in a frame", title="every frame of 100 copies",
+                    color="#f0b8da", xlabel="neurons switched on in a frame", title="every frame of 100 copies",
                     log=True, xmax=14, ylabel="copied frames")
         f.text(20, hy - 4, "100 shifted copies of the whole recording, pooled:", size=12, color=MUTED)
     elif det == "rate":
@@ -1412,7 +1412,7 @@ def fig_algorithm(W, det):
         f.text(float(wp.px(0)), hy + 10, "the moment being scored", size=10, anchor="middle", color=MUTED)
         wp.xaxis_values([-30, 0, 30], fmt="{:g}s")
         yb = f.para(20, hy + 108,
-                    f"rate+context counts every event from every cell inside the {rate_s:g}-second "
+                    f"rate+context counts every event from every neuron inside the {rate_s:g}-second "
                     f"window, and compares that with the average over the {ctx_s:g}-second window "
                     f"centred on the same moment. No copies are made.", width_chars=46, size=12,
                     color=MUTED)
@@ -1424,7 +1424,7 @@ def fig_algorithm(W, det):
         n = sim["n_roi"]
         f.text(20, hy, "Why small events cannot reach the bar:", size=12, color=MUTED)
         p = f.panel(40, hy + 40, 300, 26, (0, 0.3), (0, 1))
-        for k_, lab in ((3, "3 cells"), (ev["n_part"], f"{ev['n_part']} cells"), (10, "10 cells")):
+        for k_, lab in ((3, "3 neurons"), (ev["n_part"], f"{ev['n_part']} neurons"), (10, "10 neurons")):
             v = (k_ - 1) / (n - 1)
             X = float(p.px(v))
             f.line(X, hy + 40, X, hy + 66, color=COLORS["sync"], width=2)
@@ -1433,13 +1433,13 @@ def fig_algorithm(W, det):
         f.line(Xb, hy + 36, Xb, hy + 70, color=BARC, width=2.5)
         f.text(Xb, hy + 92, "bar", size=11, anchor="middle", weight=700)
         p.xaxis_values([0, 0.2, 0.3], fmt="{:.1f}")
-        f.text(40, hy + 20, "the highest score an event can reach, by how many cells join it:", size=11,
+        f.text(40, hy + 20, "the highest score an event can reach, by how many neurons join it:", size=11,
                color=MUTED)
-        f.para(20, hy + 110, f"With {n} cells, an event joined by k cells can score at most "
-                             f"(k−1) ÷ {n - 1}. An event joined by 3 cells tops out at "
+        f.para(20, hy + 110, f"With {n} neurons, an event joined by k neurons can score at most "
+                             f"(k−1) ÷ {n - 1}. An event joined by 3 neurons tops out at "
                              f"{2 / (n - 1):.2f}, below the bar.", width_chars=46, size=12, color=MUTED)
     # the two views
-    for j, (key, title) in enumerate((("A", "A · a planted event (quiet cells)"),
+    for j, (key, title) in enumerate((("A", "A · a planted event (quiet neurons)"),
                                       ("B", "B · a busy stretch, nothing planted"))):
         D = sim[key]
         X, Wd = 450 + j * 275, 240
@@ -1475,7 +1475,7 @@ def fig_algorithm(W, det):
         p.yaxis(ticks, fmt="{:g}", grid=True)
         if j == 0:
             p.ylabel(label, lines=[label] + ([sub] if sub else []), dx=40)
-            r.ylabel(f"{sim['n_roi']} cells", dx=14)
+            r.ylabel(f"{sim['n_roi']} neurons", dx=14)
             f.text(X - 8, 72, "planted", size=11, anchor="end", color=MUTED)
             f.text(X - 8, 91, "calls", size=11, anchor="end", color=MUTED)
         # BOTH VIEWS ARE ONE MINUTE, so both axes count seconds from the start of that
@@ -1507,12 +1507,12 @@ def fig_network(W):
     z = (ev["time"] - 3.0, ev["time"] + 3.0)
     boxes = [(20, 40), (350, 40), (680, 40), (20, 420), (350, 420), (680, 420)]
     titles = ["What goes in", f"Stretch each event to {T['widen_s']:g} s",
-              "The share of cells with an event",
+              "The share of neurons with an event",
               "Compare now with the seconds around it", "A small stack of layers",
               "The score, and the call"]
-    words = ["The list of event times, as a raster: 1 where a cell has an event in a 0.1 s frame, 0 elsewhere.",
+    words = ["The list of event times, as a raster: 1 where a neuron has an event in a 0.1 s frame, 0 elsewhere.",
              "Each event is widened a little, so events a few frames apart can overlap.",
-             "At each frame, the share of cells with a calcium event. A coordinated event is a sudden jump in that share.",
+             "At each frame, the share of neurons with a calcium event. A coordinated event is a sudden jump in that share.",
              "Four filters subtract that share over the surrounding seconds from the share right "
              "now. The widths of the filters were learned.",
              f"Six layers of simple arithmetic combine the four comparisons and the share itself. Training "
@@ -1528,7 +1528,7 @@ def fig_network(W):
     r = f.panel(40, 150, PW - 20, PH, z, (0, 1))
     r.raster(A["onsets"], width=2.0)
     r.xaxis_time(target=3)
-    r.ylabel(f"{sim['n_roi']} cells", dx=14)
+    r.ylabel(f"{sim['n_roi']} neurons", dx=14)
     # 2 widened
     r2 = f.panel(370, 150, PW - 20, PH, z, (0, 1))
     n = len(A["widened"])
@@ -1582,10 +1582,10 @@ def fig_network(W):
         ps.hline(T["threshold"], color=BARC, width=1.6)
         ps.yaxis([0, 0.5, 1], fmt="{:g}")
         ps.xaxis_time(target=3)
-        f.text(700 + PW - 20, Y - 4, "A · planted event, quiet cells" if key == "A" else
+        f.text(700 + PW - 20, Y - 4, "A · planted event, quiet neurons" if key == "A" else
                "B · busy stretch, nothing planted", size=11, anchor="end", color=MUTED)
     # arrows between the stages
-    p3.ylabel("cells with an event", dx=44)
+    p3.ylabel("neurons with an event", dx=44)
     f.text(700, 146, "zoomed out to 60 s", size=11, color=MUTED)
     for (x1, y1, x2, y2) in ((315, 250, 360, 250), (645, 250, 690, 250),
                              (330, 600, 372, 600), (640, 600, 692, 600)):
@@ -1620,7 +1620,7 @@ def fig_simulator(W, numbers):
     r = f.panel(L, 94, PW, 260, ext, (0, 1))
     order = np.argsort([len(v) for v in sim["full_trains"]], kind="stable")
     r.raster([sim["full_trains"][i] for i in order], width=0.9)
-    r.ylabel(f"{sim['n_roi']} cells", dx=14)
+    r.ylabel(f"{sim['n_roi']} neurons", dx=14)
     r.xaxis_time(label="time in the recording", target=10)
     y = 412
     for pct, col in sorted(sizes.items(), reverse=True):
@@ -1629,11 +1629,11 @@ def fig_simulator(W, numbers):
         note = {18: " — the usual real size"}.get(pct, "")
         f.rich(L + {30: 0, 18: 190, 10: 430}.get(pct, 0), y,
                [("▼ ", dict(color=col, weight=700)),
-                (f"planted event, {round(pct / 100 * sim['n_roi'])} cells{note}", dict(color=MUTED))],
+                (f"planted event, {round(pct / 100 * sim['n_roi'])} neurons{note}", dict(color=MUTED))],
                size=12)
     f.rich(L + 600, y, [("▽ ", dict(color="#555", weight=700)), ("decoy: built the same way, not counted", dict(color=MUTED))], size=12)
     f.rich(L, y + 22, [("▬ ", dict(color="#f0c9a0", weight=700)),
-                       (f"busy stretch: every cell gets extra random events, nothing planted", dict(color=MUTED))], size=12)
+                       (f"busy stretch: every neuron gets extra random events, nothing planted", dict(color=MUTED))], size=12)
     f.h = 450
     return f
 
@@ -1722,7 +1722,7 @@ def fig_busy(W, numbers, dets=CODED):
     #: bench.py's own table records real coordinated events recruiting 6 of ~33 ROI. Say the count.
     n_roi = int(numbers["bench_n_roi"])
     cells = int(round(0.18 * n_roi))
-    f.text(X, 24, f"A · events joined by {cells} of the {n_roi} cells — the usual real size",
+    f.text(X, 24, f"A · events joined by {cells} of the {n_roi} neurons — the usual real size",
            size=13, weight=600)
     p = f.panel(X, 36, PW, 340, (0, 1), (len(dets) - 0.5, -0.5))
     for v in (0, 0.25, 0.5, 0.75, 1.0):
@@ -1781,13 +1781,13 @@ def fig_count_rule(W):
     f.text(20, 26, "How the interval rule decides", size=16, weight=700)
     y = 56
     for i, s in enumerate((f"Slide a window {bw:g} seconds long along the recording.",
-                           "Wherever it sits, count how many different cells have an event inside it.",
-                           f"Wherever that count reaches {x} cells, call a coordinated event. Windows "
+                           "Wherever it sits, count how many different neurons have an event inside it.",
+                           f"Wherever that count reaches {x} neurons, call a coordinated event. Windows "
                            "that overlap make one call.",
                            "No copies are made. The bar is the same number in every recording.")):
         f.step_badge(32, y - 4, str(i + 1), color=COUNT_C)
         y = f.para(52, y, s, width_chars=40, size=13) + 12
-    for j, (key, title) in enumerate((("A", "A · a planted event (quiet cells)"),
+    for j, (key, title) in enumerate((("A", "A · a planted event (quiet neurons)"),
                                       ("B", "B · a busy stretch, nothing planted"))):
         D, K = sim[key], C["demo"][key]
         X, Wd = 450 + j * 275, 240
@@ -1814,12 +1814,12 @@ def fig_count_rule(W):
         if j == 0:
             # named above the panel, never on it (Tony, 2026-09-16: no text on the data)
             f.rich(X, 320, [("▬ ", dict(color=COUNT_C, weight=700)),
-                            (f"different cells in the {bw:g} s window starting here", dict(color=MUTED))],
+                            (f"different neurons in the {bw:g} s window starting here", dict(color=MUTED))],
                    size=11)
             f.rich(X, 336, [("- - ", dict(color=BARC, weight=700)),
-                            (f"the bar: {x} cells, in every recording", dict(color=MUTED))], size=11)
-            p.ylabel("cells", lines=["different cells", f"in the next {bw:g} s"], dx=40)
-            r.ylabel(f"{sim['n_roi']} cells", dx=14)
+                            (f"the bar: {x} neurons, in every recording", dict(color=MUTED))], size=11)
+            p.ylabel("neurons", lines=["different neurons", f"in the next {bw:g} s"], dx=40)
+            r.ylabel(f"{sim['n_roi']} neurons", dx=14)
             f.text(X - 8, 72, "planted", size=11, anchor="end", color=MUTED)
             f.text(X - 8, 91, "calls", size=11, anchor="end", color=MUTED)
         p.xaxis_time(offset=win[0], target=4, label="seconds from the start of this minute")
@@ -1871,7 +1871,7 @@ def fig_count_bar(W):
             p.hline(v, color=cc, width=1.4, dash="4 4")
             f.text(X + PW + 6, float(p.py(v)) - 10, "CoactDetect", size=11, color=cc)
             f.text(X + PW + 6, float(p.py(v)) + 4, "and LoCo", size=11, color=cc)
-        p.xaxis_values(xs, label=f"the bar: different cells within {bw:g} s")
+        p.xaxis_values(xs, label=f"the bar: different neurons within {bw:g} s")
     f.rich(80, 430, [("● ", dict(color=QUIET_C, weight=700)), ("quiet background   ", dict(color=MUTED)),
                      ("● ", dict(color=BUSY_C, weight=700)), ("busy background   ", dict(color=MUTED)),
                      ("◯ ", dict(color=MUTED, weight=700)), ("the bar with the best score   ", dict(color=MUTED)),
@@ -1895,7 +1895,7 @@ def fig_count_slices(W):
     f.text(X, 24, f"{len(R)} untreated recordings, one dot each", size=13, weight=600)
     p = f.panel(X, Y, PW, PH, (-2.5, 1.0), (0, top))
     p.yaxis(list(range(0, top + 1, 2)), fmt="{:g}", grid=True)
-    p.ylabel("cells", lines=[f"cells needed within {bw:g} s so that", "chance reaches it less than once",
+    p.ylabel("neurons", lines=[f"neurons needed within {bw:g} s so that", "chance reaches it less than once",
                              "every 10 minutes"], dx=62)
     rate_q = C["block_rate_per_min"]["baseline_quiet"]
     Xb = float(p.px(math.log10(rate_q)))
@@ -1909,12 +1909,12 @@ def fig_count_slices(W):
         p.dots([math.log10(r["rate"])], [need], color=col, r=4.2, opacity=0.75)
     p.hline(x1, color=BARC, width=1.6, dash="5 4")
     f.text(X + PW + 8, float(p.py(x1)) - 6, "the one bar that did best", size=11, color=INK_T)
-    f.text(X + PW + 8, float(p.py(x1)) + 8, f"on simulated recordings: {x1} cells", size=11, color=INK_T)
+    f.text(X + PW + 8, float(p.py(x1)) + 8, f"on simulated recordings: {x1} neurons", size=11, color=INK_T)
     for v, lab in ((-2, "0.01"), (-1, "0.1"), (0, "1"), (1, "10")):
         Xv = float(p.px(v))
         f.line(Xv, Y + PH, Xv, Y + PH + 5, color=MUTED)
         f.text(Xv, Y + PH + 18, lab, size=12, anchor="middle", color=MUTED)
-    f.text(X + PW / 2, Y + PH + 36, "events per cell per minute (each step is ten times more)", size=12,
+    f.text(X + PW / 2, Y + PH + 36, "events per neuron per minute (each step is ten times more)", size=12,
            anchor="middle", color=MUTED, italic=True)
     f.rich(X, 430, [("● ", dict(color=BUSY_C, weight=700)),
                     (f"a bar of {x1} lets chance through   ", dict(color=MUTED)),
@@ -1931,13 +1931,13 @@ def fig_count_edge(W):
     E = C["edge"]
     x = C["x_edge"]
     bw = C["edge_bin"]
-    lines = (("interval", COUNT_C, f"counting within a sliding {bw:g} s window, bar of {x} cells", "", 2.4),
+    lines = (("interval", COUNT_C, f"counting within a sliding {bw:g} s window, bar of {x} neurons", "", 2.4),
              ("bin", "#b59a6a", f"counting in fixed {bw:g} s bins, the same bar", "5 4", 2.4),
              ("coact", COLORS["coact"], f"CoactDetect (fixed {bw:g} s bins)", "", 1.8),
              ("loco", COLORS["loco"], "LoCo (fixed 1 s bins)", "", 1.8))
     f = Figure(1000, 440)
     X, Y, PW, PH = 90, 40, 520, 300
-    f.text(X, 24, "Events joined by 6 cells: the share found, by where each fell against the bins",
+    f.text(X, 24, "Events joined by 6 neurons: the share found, by where each fell against the bins",
            size=13, weight=600)
     p = f.panel(X, Y, PW, PH, (0, 0.5), (0, 1.05))
     p.yaxis([0, 0.25, 0.5, 0.75, 1.0], fmt="{:.0%}", grid=True, label="share found", dx=46)
@@ -1965,15 +1965,15 @@ def fig_count_published(W):
     P = W["count"]["published"]
     e = P["eddleston"]
     shades = {"7": "#c9b79c", "13.4": "#5a4527"}
-    words = {"7": "7 events per cell per hour, the slowest reported (Han and others, 2023)",
-             "13.4": "13.4 events per cell per hour, the rate in Eddleston and others (2026)"}
+    words = {"7": "7 events per neuron per hour, the slowest reported (Han and others, 2023)",
+             "13.4": "13.4 events per neuron per hour, the rate in Eddleston and others (2026)"}
     # NAME THE PAPER ON THE FIGURE. The first version said only "the 2026 paper", so a reader looking at
     # the figure could not tell which paper it meant (Tony, 2026-09-16: "what published 2026 paper?").
     f = Figure(1000, 460)
     for j, (key, title, ylim, ticks, ylab, rep) in enumerate((
-            ("mse_per_cell_h", "A · “synchronized events” per cell per hour", (0, 4), [0, 1, 2, 3, 4],
-             "events per cell per hour", e["mse"]),
-            ("cells_per", "B · cells in each “synchronized event”", (2, 4.5), [2, 3, 4], "cells in each event",
+            ("mse_per_cell_h", "A · “synchronized events” per neuron per hour", (0, 4), [0, 1, 2, 3, 4],
+             "events per neuron per hour", e["mse"]),
+            ("cells_per", "B · neurons in each “synchronized event”", (2, 4.5), [2, 3, 4], "neurons in each event",
              e["cells_per"]))):
         X, PW, PH = 90 + j * 470, 330, 290
         f.text(X, 24, title, size=13, weight=600)
@@ -1987,14 +1987,14 @@ def fig_count_published(W):
         p.hline(rep, color=RED, width=1.6, dash="5 4", x0=e["field_lo"], x1=e["field_hi"])
         for i_, ln in enumerate(("reported by", "Eddleston and", "others, 2026")):
             f.text(X + PW + 6, float(p.py(rep)) - 10 + 14 * i_, ln, size=11, color=RED)
-        p.xaxis_values([5, 10, 15, 20, 25, 30], label="total number of cells")
+        p.xaxis_values([5, 10, 15, 20, 25, 30], label="total number of neurons")
     spans = []
     for rate in P["curves"]:
         spans += [("▬ ", dict(color=shades.get(rate, MUTED), weight=700)),
-                  (words.get(rate, f"{float(rate):g} events per cell per hour") + "   ", dict(color=MUTED))]
+                  (words.get(rate, f"{float(rate):g} events per neuron per hour") + "   ", dict(color=MUTED))]
     f.rich(90, 400, spans, size=12)
     f.rich(90, 420, [("▮ ", dict(color="#e2dbcf", weight=700)),
-                     (f"{e['field_lo']} to {e['field_hi']} cells, as Eddleston and others (2026) report   ",
+                     (f"{e['field_lo']} to {e['field_hi']} neurons, as Eddleston and others (2026) report   ",
                       dict(color=MUTED)),
                      ("- - ", dict(color=RED, weight=700)), ("the averages they report", dict(color=MUTED))],
            size=12)
@@ -2052,7 +2052,7 @@ def _closeup(f, c, X, Y, PW, *, title, dets=ALL10, raster_h=180, show_weak=False
                  label=f"minutes from the start of {c['label']}")
     f.text(X - 8, y + raster_h / 2, f"{c['stream'] == 'fast' and 'brief' or 'long'} events",
            size=11, anchor="end", color=MUTED)
-    f.text(X - 8, y + raster_h / 2 + 14, _plural(c["n_roi"], "cell"), size=11, anchor="end", color=MUTED)
+    f.text(X - 8, y + raster_h / 2 + 14, _plural(c["n_roi"], "neuron"), size=11, anchor="end", color=MUTED)
     return y + raster_h + 44
 
 
@@ -2100,7 +2100,7 @@ def fig_real_overview(W, label, stream):
         yy += len(CODED) * 12 + 8
         r = f.panel(L, yy, PW, max(60, 3 * c["n_roi"]), span, (0, 1))
         r.raster([np.asarray(v, float) - c["anchor"] for v in c["trains"]], width=1.0)
-        f.text(L - 8, yy + 14, _plural(c["n_roi"], "cell"), size=10, anchor="end", color=MUTED)
+        f.text(L - 8, yy + 14, _plural(c["n_roi"], "neuron"), size=10, anchor="end", color=MUTED)
         y = yy + max(60, 3 * c["n_roi"]) + 26
         if k == order[-1]:
             r.xaxis_time(target=6, label=f"minutes from the moment {label} arrives")
@@ -2136,7 +2136,7 @@ def fig_eye(W, figs_real="18 to 21", dets=CODED):
     y = _closeup(f, C["busy"], 200, y + 10, 770, dets=dets,
                  title="B · a busy stretch inside the analysis window, with no stripe that stands out")
     y = _closeup(f, C["weak"], 200, y + 10, 770, show_weak=True, dets=dets,
-                 title="C · calls with no stripe under them (red box: 3 or fewer cells line up)")
+                 title="C · calls with no stripe under them (red box: 3 or fewer neurons line up)")
     # D: the tallies
     y += 10
     f.text(200, y, f"D · all {R['n_recordings']} recordings of Figures {figs_real}, both kinds of events",
@@ -2147,7 +2147,7 @@ def fig_eye(W, figs_real="18 to 21", dets=CODED):
     q = f.panel(640, y + 30, 330, len(dets) * 22, (0, 1), (len(dets) - 0.5, -0.5))
     f.text(200, y + 22, f"share of the {R['n_in']} clear stripes inside the windows it called", size=12,
            color=MUTED)
-    f.text(640, y + 22, "share of its calls with 3 or fewer cells lined up", size=12, color=MUTED)
+    f.text(640, y + 22, "share of its calls with 3 or fewer neurons lined up", size=12, color=MUTED)
     for i, d in enumerate(dets):
         t = T[d]
         Y = float(p.py(i))
@@ -2162,7 +2162,7 @@ def fig_eye(W, figs_real="18 to 21", dets=CODED):
     q.xaxis_values([0, 0.5, 1], fmt="{:.0%}")
     y2 = y + 30 + len(dets) * 22 + 40
     f.rich(200, y2, [("▼ ", dict(color=INK_T, weight=700)),
-                     (f"a clear stripe: at least {R['stripe_frac']:.0%} of the cells (and at least {MIN_CELLS}) "
+                     (f"a clear stripe: at least {R['stripe_frac']:.0%} of the neurons (and at least {MIN_CELLS}) "
                       f"start an event within {R['stripe_s']:g} second, and at least twice as many as in the "
                       f"busiest seconds around it", dict(color=MUTED))], size=12)
     f.rich(200, y2 + 20, [("▬ ", dict(color="#333", weight=700)), ("the analysis windows the lab marks   ", dict(color=MUTED)),
@@ -2393,6 +2393,10 @@ def _display_values(W, N) -> dict:
     T["steps_share"] = (f"{st_['share_at_least'] * 100:.0f}%" if st_["share_at_least"] >= 0.01
                         else "fewer than 1%")
     T["problem_n_roi"] = real["close"]["problem"]["n_roi"]
+    # Figure 2's recording holds no clear stripe (Tony, 2026-09-16: say so in the legend). Worded from
+    # the count, so the sentence cannot survive a change of recording that makes it false.
+    n_ps = len(real["close"]["problem"]["stripes"])
+    T["problem_stripes_words"] = "none" if n_ps == 0 else _plural(n_ps, "clear stripe")
     T["orient_n_roi"] = real["close"]["orient"]["n_roi"]
     T["orient_n_stripes"] = len(real["close"]["orient"]["stripes"])
     T["orient_minutes"] = f"{(real['close']['orient']['win'][1] - real['close']['orient']['win'][0]) / 60:g}"
