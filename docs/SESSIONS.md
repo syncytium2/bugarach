@@ -30,6 +30,41 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 - **Goal:** unsupervised-learning.
 - **Released when:** the figures are in the folder and the rewritten report is on the PR.
 
+### vm/net-design — DARKROOM claim RELEASED 2026-09-16: `bugarach/2026-09-16-net-design/`
+- **Status:** **RELEASED — the folder holds two notes and no page.** The connector this session
+  reached Dropbox through takes inline text only, and re-typing a 90 KB generated file through it
+  would have produced a different file wearing the same name.
+- ⚠ **BOTH NOTES ARE NOW PARTLY WRONG, and the folder has no third note saying so.** A review on
+  PR #589 found three things the session had missed: the per-cell rate the numbers rest on is a
+  **median of medians**, which `adapt.py` documents as a trap and which comes out six times below
+  FOUNDATIONS §9's own range for the same quantity; an architecture called **`line` already
+  exists** on `unsup/rigid-shift-controls`, so the note's claim that it does not is false and one
+  of the three proposed nets largely duplicates it; and `gauge` is **not permutation invariant**,
+  which is the one ledger row the page calls structural everywhere. **Whoever opens that folder
+  next: the corrected rate is 0.0097 Hz, the cross-lab rate ratio is 2.4× and not 19.6×, and the
+  page needs rewriting around `line` before any of it is quoted.**
+- **Writes:** `README.md`, then `UPDATE-the-nets-are-drawn-by-draughtsman.md`. Nothing existing in
+  the darkroom was touched.
+- **Released when:** released. The corrected page is not in the repo either — it moved to
+  `claude/net-design-proposal-hw8rve`, unmerged, when #589 was split down to the probe.
+
+### Mac/rigid-shift-darkroom-fix — DARKROOM claim RELEASED 2026-09-15: `bugarach/2026-09-15-rigid-shift-look/` and the stray `bugarach/bugarach/`
+- **Status:** **RELEASED — `cossart/` moved into the look folder, the stray folder removed, and the
+  note and all six figures byte-identical to the repo copy (checked with `cmp`).** Was ACTIVE,
+  claimed before writing. The murderboard of the rigid-shift look found the
+  darkroom copy broken. Earlier today the Cossart outputs and the updated note were copied to a
+  doubled path, `bugarach/bugarach/2026-09-15-rigid-shift-look/`, because `darkroom()` already ends
+  in `bugarach`. The folder Tony reads still holds the old note and the pre-fix figures.
+- **Writes:**
+  - move `cossart/` from the doubled path into the look folder, then remove the now-empty stray
+    `bugarach/bugarach/` (it holds only this session's copies);
+  - replace `README.md`, the top-level figures and the figures in `declared-displacements/` and
+    `larger-displacements/` with the current repo versions, which carry the correction banner and
+    the legend fix.
+
+  `README.html` and `.Rhistory` in the look folder are Tony's and are not touched.
+- **Released when:** the look folder matches the repo copy and the stray folder is gone.
+
 ### WSMIP065/detector-review-doc — DARKROOM claim ACTIVE 2026-09-15: `bugarach/2026-09-15-detector-review/`
 - **Status:** **ACTIVE — claimed before writing.** Tony asked for a document for external review:
   every detector (coded and learned) with a figure of how it decides, surrogates, the simulator,
