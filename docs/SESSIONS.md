@@ -10,8 +10,15 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
-### vm/net-design — DARKROOM claim ACTIVE 2026-09-16: `bugarach/2026-09-16-net-design/`
-- **Status:** **ACTIVE — claimed before writing.** Tony asked for an evaluation of the data and of
+### vm/net-design — DARKROOM claim RELEASED 2026-09-16: `bugarach/2026-09-16-net-design/`
+- **Status:** **RELEASED — the folder holds `README.md` and nothing else, and that is the whole
+  of what this session could put there.** ⚠ **The page itself did not make it.** The connector
+  takes inline text only, and re-typing a 90 KB generated file through it would have produced a
+  different file wearing the same name. The note says so in its own second paragraph and gives
+  the one command that fixes it from a machine with the mount:
+  `python3 tools/build_net_design_page.py --also docs/proposals`. **Whoever runs it next, run
+  that first.** The page is readable meanwhile at the artifact link in the note.
+  Was ACTIVE, claimed before writing. Tony asked for an evaluation of the data and of
   `tube`, `trace` and the tube variants, and for three new classes of net with diagrams, against
   the problem that a recording carries anywhere from 9 to 1,050 cells. No murderboard, on his
   instruction.
