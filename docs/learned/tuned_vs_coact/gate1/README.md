@@ -107,7 +107,7 @@ The mean over the 4 folds is 0.6505 F1 on the workstation and 0.6563 F1 on the M
 
 **Not known:**
 - **Which cause it is.** Torch 2.14.0+cpu on an x86 CPU can compute different floats than torch on the
-  Mac's arm64 CPU; SGD amplifies a small difference over 900 steps. Or the Mac's uncommitted changes may
+  Mac's arm64 CPU, and 900 training steps can amplify a small difference. Or the Mac's uncommitted changes may
   have touched training. The Mac's file records neither its torch version nor its diff, so the two
   cannot be told apart from the record.
 - **Whether the other three models differ by more.** `chorus_norm`, `chorus_gain_norm` and
