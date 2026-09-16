@@ -372,8 +372,8 @@ def loco_detect(
         raise ValueError('detection_mode must be "threshold" or "peak"')
     if window_mode not in ("binned", "sliding"):
         raise ValueError('window_mode must be "binned" or "sliding"')
-    if window_mode == "sliding" and (detection_mode != "threshold" or guard_sec):
-        raise ValueError('window_mode="sliding" supports threshold mode without a guard')
+    if window_mode == "sliding" and detection_mode != "threshold":
+        raise ValueError('window_mode="sliding" supports detection_mode="threshold" only')
 
     names = list(s.streams)
     binw = per_stream_param(bin_width_sec, names, "bin_width_sec", (1.0, 2.0))
@@ -499,7 +499,8 @@ def _detect_stream(trains, rw, ext, rng, *, binw, mgap, ctx, pctile, tstep,
         return _detect_stream_sliding(ev, rw, ext, binw=binw, mgap=mgap, ctx=ctx,
                                       pctile=pctile, min_rois=min_rois,
                                       null_context_mode=null_context_mode,
-                                      clamp_context_to_region=clamp_context_to_region)
+                                      clamp_context_to_region=clamp_context_to_region,
+                                      guard_sec=guard_sec)
 
     edges = matlab_colon(t_lo, binw, t_hi)
     if edges.size < 2:
@@ -609,7 +610,8 @@ def _detect_stream(trains, rw, ext, rng, *, binw, mgap, ctx, pctile, tstep,
 
 
 def _detect_stream_sliding(ev, rw, ext, *, binw, mgap, ctx, pctile, min_rois,
-                           null_context_mode, clamp_context_to_region) -> LocoStream:
+                           null_context_mode, clamp_context_to_region,
+                           guard_sec=0.0) -> LocoStream:
     """LoCo in a sliding window with the exact rate-local null.
 
     Same statistic (distinct ROIs in a window of ``binw``), same null (each ROI's
@@ -618,24 +620,29 @@ def _detect_stream_sliding(ev, rw, ext, *, binw, mgap, ctx, pctile, min_rois,
     every piece of the sliding count, with the null's percentile computed exactly
     instead of pooled from draws. ``thr_step_sec`` and ``n_surrogates`` do not apply:
     the bar is computed where the count is, not on anchors.
+
+    A guard pulls each ``maxlt`` half away from the window by ``guard_sec / 2``, as in
+    the binned path; the halves stay contiguous, so no compaction is needed.
     """
     from bugarach.detectors import sliding as sl
 
     t_lo, t_hi = ext
     half = ctx / 2
+    index = sl.EventIndex(ev)
     starts, ends, S = sl.pieces(ev, binw, t_lo, t_hi)
     thr = np.full(starts.size, np.nan)
 
     def bar(lo, hi):
         if hi <= lo:
             return np.inf
-        return sl.quantile(sl.catch_probabilities(ev, lo, hi, binw), pctile)
+        return sl.quantile(index.catch_probabilities(lo, hi, binw), pctile)
 
+    g = guard_sec / 2
     for i in np.flatnonzero(S >= min_rois):
         c = starts[i] - binw / 2
         rs, re = _region_of(c, rw, ext, clamp_context_to_region)
         if null_context_mode == "maxlt":
-            thr[i] = max(bar(max(c - half, rs), c), bar(c, min(c + half, re)))
+            thr[i] = max(bar(max(c - half, rs), c - g), bar(c + g, min(c + half, re)))
         else:
             thr[i] = bar(max(c - half, rs), min(c + half, re))
     with np.errstate(invalid="ignore"):
