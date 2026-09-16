@@ -93,6 +93,20 @@ picks 70 on both backgrounds before and after. Quiet goes from F1 0.536 to 0.701
 from 0.608 to 0.627, with the probe at 5.87 and 6.00 firings/min. On quiet, 70 and 75 tie
 after the change. Widening the committed grid is the retuning step, and it is still open.
 
+**The tolerance curve changed with it, and that is the clearest sign the defect was
+the scorer's.** `bench.TOLERANCE_GRID` and `tests/test_tolerance_curve.py` recorded binned
+SCE as the one detector whose F1 depends on the matching tolerance. On the quiet
+background at the shipped point, it went from 0.239 at a 0.1 s gap to 0.448 at 3 s and was
+still climbing. Scored over its bin it is 0.567 at every gap on the grid, flat from 0.1 s,
+so all six detectors now settle at or below the shipped 2.5 s. The extra tolerance had been
+reaching events that were late in bins the calls were made on. The tests now pin the flat
+curve, so they fail if the scorer goes back to reading `width_sec`. The ranking claim was
+restated too. The top two, CoactDetect and LoCo, never move between 0.4 s and 2.0 s. The
+one swap left is SCE against RateDetect in third and fourth at 2.0 s, where RateDetect's
+own curve steps from 0.564 to 0.590. `tools/make_decision_figure.py` and its committed
+figure still describe the old archived sweep, in which SCE climbs. They need a re-render
+before they are quoted.
+
 **Still owed:** the detector review's `sce_rescore` stage, the bake-off and any ranking of
 binned SCE need re-running on this scoring before a claim from them stands.
 Tests: `tests/test_sce_scored_extent.py` (a coordinated event 8 s into its bin, a miss plus
