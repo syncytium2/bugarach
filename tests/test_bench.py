@@ -643,14 +643,7 @@ def test_the_bench_is_reproducible():
 # foundations §15.1: coordination persists under TTX, and a detector returning
 # little in a TTX window is not thereby validated.
 
-MAX_FALSE_POSITIVES_PER_HOUR = {
-    "rate": 1.0,       # measured: 0.0
-    "sync": 1.0,       # measured: 0.0
-    "loco": 3.0,       # measured: 1.3
-    "cicada": 6.0,     # measured: 3.1
-    "sce": 6.0,        # measured: 3.1
-    "coact": 7.0,      # measured: 4.4
-}
+from bugarach.bench import MAX_FALSE_POSITIVES_PER_HOUR  # noqa: E402 — the budget is bench's
 
 
 @pytest.mark.parametrize("name", DETECTORS)
