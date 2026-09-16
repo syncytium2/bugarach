@@ -54,7 +54,7 @@ from pathlib import Path
 import numpy as np
 
 LEARNED = ("tube", "tube_guard", "tube_ratio", "tube_ratio_guard", "trace", "tiny",
-           "line", "line_length")
+           "line", "line_length", "tube_no_bypass", "gauge", "chorus")
 LR = {"tube": 1e-2, "trace": 1e-3, "tiny": 1e-3,
       # THE 2x2 RUNS AT THE CONTROL'S LEARNING RATE, DELIBERATELY. `tube`'s 1e-2 is
       # what every published tube number was fitted under, and the three variants
@@ -66,7 +66,27 @@ LR = {"tube": 1e-2, "trace": 1e-3, "tiny": 1e-3,
       # `line` runs at the control's rate too, for the same reason: it differs from
       # `tube` by where the ROI axis is collapsed, and tuning its rate would confound
       # the mechanism with its optimisation.
-      "line": 1e-2, "line_length": 1e-2}
+      "line": 1e-2, "line_length": 1e-2,
+      # The field-size candidates, and gauge's control, at the same rate and for the
+      # same reason. `gauge` differs from `tube_no_bypass` by standardising against
+      # its own shifted null; `chorus` differs from `line` by two extra pooled
+      # channels. A per-model rate would make either comparison uncontrolled.
+      "tube_no_bypass": 1e-2, "gauge": 1e-2, "chorus": 1e-2}
+
+# THE QUIET-FIELD NEGATIVE. The hot-window probe is a busy stretch with nothing
+# planted, so a model that divides by its surround passes it by arithmetic: the
+# denominator is large there. The failure such a model trades into is a SMALL
+# denominator, and until this existed the bench had no quiet stretch at all. So each
+# held-out recording gets null twins -- the scored spec with nothing planted, no
+# distractors, no hot window -- at these multiples of its background rate, scored at
+# the operating point already chosen. Every detection on a twin is a false alarm.
+#
+# 0.54 is baseline's own lower quartile of per-ROI rate over the lab mean
+# (0.0052 Hz of 0.0097 Hz, FOUNDATIONS section 9): a quiet slice that exists in
+# the untreated data. 0.25 is a stress level below anything measured, and is
+# labelled as one wherever it is reported.
+NULL_RATE_FACTORS = (1.0, 0.54, 0.25)
+NULL_SEED_OFFSET = 100_000
 
 
 def _rows(r, *, folds_note=None) -> dict:
@@ -99,8 +119,17 @@ def _timed_detect(fn, slices) -> tuple[list, float]:
     return out, time.perf_counter() - t0
 
 
+def _null_twin(spec: dict, factor: float) -> dict:
+    """The spec with nothing planted, at ``factor`` times its background rate."""
+    levels = spec.get("n_per_level")
+    return dict(spec, n_per_level=[0] * len(levels) if levels else [0],
+                n_distractors=0, hot_window=None, hot_rate_hz=0.0,
+                bg_rate_hz=spec["bg_rate_hz"] * factor)
+
+
 def run(spec: dict, *, folds: int, seeds_per_fold: int, quick: bool,
-        train_seed: int = 0, score_spec: dict | None = None) -> dict:
+        train_seed: int = 0, score_spec: dict | None = None,
+        learned: tuple = LEARNED, null_rates: tuple = ()) -> dict:
     from bugarach import provenance
     from bugarach.bench import (DETECTORS, OPERATING_POINTS, fold_split,
                                 pool_scores, run_detector)
@@ -154,6 +183,25 @@ def run(spec: dict, *, folds: int, seeds_per_fold: int, quick: bool,
             score_cache[seed] = _make_recording(score_spec, seed)
         return score_cache[seed]
 
+    null_cache: dict[tuple, tuple] = {}
+
+    def null_fa_per_hour(detect, te_seeds) -> dict:
+        """False alarms per hour on the held-out seeds' quiet-field twins."""
+        base = score_spec if transfer else spec
+        out_null = {}
+        for factor in null_rates:
+            n_fa, sec = 0, 0.0
+            for sd in te_seeds:
+                key = (sd, factor)
+                if key not in null_cache:
+                    null_cache[key] = _make_recording(_null_twin(base, factor),
+                                                      sd + NULL_SEED_OFFSET)
+                sl, gt = null_cache[key]
+                n_fa += score_stream(gt, detect(sl)).n_detected
+                sec += gt.params["duration_sec"]
+            out_null[f"{factor:g}"] = n_fa / (sec / 3600.0)
+        return out_null
+
     for s in all_seeds:                       # generate once, up front
         rec(s)
         if transfer:
@@ -205,9 +253,11 @@ def run(spec: dict, *, folds: int, seeds_per_fold: int, quick: bool,
             # roster is built on.
             learned_architectures={
                 "registered": sorted(ARCHITECTURES),
-                "ran": {name: {"lr": LR.get(name)} for name in LEARNED},
-                "registered_but_not_run": sorted(set(ARCHITECTURES) - set(LEARNED)),
+                "ran": {name: {"lr": LR.get(name)} for name in learned},
+                "registered_but_not_run": sorted(set(ARCHITECTURES) - set(learned)),
             },
+            null_rate_factors=list(null_rates),
+            null_seed_offset=NULL_SEED_OFFSET if null_rates else None,
         ),
         "hand_written": {}, "learned": {},
     }
@@ -251,7 +301,11 @@ def run(spec: dict, *, folds: int, seeds_per_fold: int, quick: bool,
             per_fold.append(dict(_rows(p), fold=held, knob=op.knob,
                                  knob_value=best_v, calibrate_sec=cal_sec,
                                  detect_sec=det_sec,
-                                 detect_x_realtime=te_sec / max(det_sec, 1e-9)))
+                                 detect_x_realtime=te_sec / max(det_sec, 1e-9),
+                                 null_fa_per_hour=null_fa_per_hour(
+                                     lambda sl: run_detector(det, sl,
+                                                             **{op.knob: best_v}),
+                                     te_seeds)))
             print(f"  {det:7} fold {held}: F1 {p.f1:.3f}  @{op.knob}={best_v:g}"
                   f"  cal {cal_sec:.1f}s  detect {det_sec:.2f}s")
 
@@ -265,12 +319,15 @@ def run(spec: dict, *, folds: int, seeds_per_fold: int, quick: bool,
             "detect_x_realtime": _spread([f["detect_x_realtime"]
                                           for f in per_fold]),
             "hot_fa": _spread([f["hot_fa"] for f in per_fold]),
+            "null_fa_per_hour": {k: _spread([f["null_fa_per_hour"][k]
+                                             for f in per_fold])
+                                 for k in per_fold[0]["null_fa_per_hour"]},
             "n_params": 0,
             "grid_points": len(grid),
         }
 
     # ---- the learned models: train on train folds, score on the held-out ----
-    for name in LEARNED:
+    for name in learned:
         per_fold = []
         for held in range(n_folds):
             tr_seeds = list(split.train(held))
@@ -310,7 +367,9 @@ def run(spec: dict, *, folds: int, seeds_per_fold: int, quick: bool,
             per_fold.append(dict(_rows(p), fold=held, threshold=float(tr.threshold),
                                  train_sec=train_sec, detect_sec=det_sec,
                                  detect_x_realtime=te_sec / max(det_sec, 1e-9),
-                                 n_params=int(tr.n_params)))
+                                 n_params=int(tr.n_params),
+                                 null_fa_per_hour=null_fa_per_hour(
+                                     lambda sl: tr.predict(sl)[0], te_seeds)))
             print(f"  {name:7} fold {held}: F1 {p.f1:.3f}  thr {tr.threshold:.4f}"
                   f"  train {train_sec:.1f}s  detect {det_sec:.2f}s")
 
@@ -324,6 +383,9 @@ def run(spec: dict, *, folds: int, seeds_per_fold: int, quick: bool,
             "detect_x_realtime": _spread([f["detect_x_realtime"]
                                           for f in per_fold]),
             "hot_fa": _spread([f["hot_fa"] for f in per_fold]),
+            "null_fa_per_hour": {k: _spread([f["null_fa_per_hour"][k]
+                                             for f in per_fold])
+                                 for k in per_fold[0]["null_fa_per_hour"]},
             "n_params": per_fold[0]["n_params"],
             "grid_points": None,
         }
@@ -354,14 +416,30 @@ def main(argv=None) -> int:
                    help="torch seed for the learned fits. Vary it across otherwise "
                         "identical runs to replicate each fold and get an error bar "
                         "on the OPTIMISER, not just on the data split.")
+    p.add_argument("--learned", default=None,
+                   help="comma-separated subset of the learned architectures to "
+                        "sweep; default all of LEARNED. What was left out is "
+                        "recorded as registered_but_not_run.")
+    p.add_argument("--null-rates", action="store_true",
+                   help="also score every detector on quiet-field null twins of "
+                        f"each held-out recording, at {NULL_RATE_FACTORS} times "
+                        "its background rate, reported as false alarms per hour")
     a = p.parse_args(argv)
+    learned = LEARNED
+    if a.learned:
+        learned = tuple(x.strip() for x in a.learned.split(",") if x.strip())
+        unknown = sorted(set(learned) - set(LEARNED))
+        if unknown:
+            p.error(f"--learned names {unknown}, which LEARNED does not list")
 
     spec = json.loads(a.spec.read_text())["generator"]
     score_spec = (json.loads(a.score_spec.read_text())["generator"]
                   if a.score_spec else None)
     a.out.mkdir(parents=True, exist_ok=True)
     res = run(spec, folds=a.folds, seeds_per_fold=a.seeds_per_fold,
-              quick=a.quick, train_seed=a.train_seed, score_spec=score_spec)
+              quick=a.quick, train_seed=a.train_seed, score_spec=score_spec,
+              learned=learned,
+              null_rates=NULL_RATE_FACTORS if a.null_rates else ())
     stem = "bakeoff_quick" if a.quick else "bakeoff"
     if res["transfer"]:
         # The file name has to carry BOTH corpora. A transfer result filed as
