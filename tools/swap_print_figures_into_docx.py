@@ -19,9 +19,10 @@ DOC = D / "detector_review_plain-td.docx"
 #: Only figures not yet swapped: a swapped figure's old bytes are gone from the docx, so a done pair would
 #: stop the run ("found n of m"). Done so far: fig_orient, fig_problem, fig_chance (1-3).
 #: Done so far: 1-3, 10-15 (swapped once, then redrawn shorter from the bytes kept in `swapped_v1/`).
-#: 18-19 also done.
-PAIRS = {f"{n}.png": f"print_figures/fig{21 + i}_{n}.png"
-         for i, n in enumerate(("real_ttx_brief", "real_ttx_long", "real_senk_brief", "real_senk_long"))}
+#: 18-19 and 21-24 also done.
+PAIRS = {"fig_eye.png": "print_figures/fig25_eye.png"}
+#: 6.5 in, the Word page's text width, in EMU (914400 per inch).
+FULL_WIDTH_EMU = 5943600
 
 
 def png_size(b):
@@ -61,10 +62,12 @@ for n, new in replace.items():
     if m is None:
         sys.exit(f"no drawing for {rid}")
     block = m.group(0)
-    cx = int(re.search(r'<wp:extent cx="(\d+)"', block).group(1))
+    # the full 6.5 in the print figures are drawn for: the builder had narrowed the tallest page figure
+    # (the eye close-ups, to 426 pt), which would have shrunk its 8 pt text to 7.3
+    cx = FULL_WIDTH_EMU
     cy = round(cx * h / w)
-    nb = re.sub(r'(<wp:extent cx="\d+" cy=")\d+(")', rf"\g<1>{cy}\g<2>", block)
-    nb = re.sub(r'(<a:ext cx="\d+" cy=")\d+(")', rf"\g<1>{cy}\g<2>", nb)
+    nb = re.sub(r'(<wp:extent cx=")\d+(" cy=")\d+(")', rf"\g<1>{cx}\g<2>{cy}\g<3>", block)
+    nb = re.sub(r'(<a:ext cx=")\d+(" cy=")\d+(")', rf"\g<1>{cx}\g<2>{cy}\g<3>", nb)
     doc = doc[:m.start()] + nb + doc[m.end():]
     print(n, rid, f"{w}x{h}px", f"height {cy / 914400:.2f} in")
 

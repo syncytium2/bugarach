@@ -92,7 +92,7 @@ def _time_axis(f, p, *, offset, step, label, minor=None):
         f.text(p.x + p.w / 2, p.y + p.h + 26, label, size=LABEL_PT, anchor="middle", color=MUTED, italic=True)
 
 
-def _closeup(f, c, X, Y, PW, *, title, dets, raster_h, tick_step, stripe_marks=True, show_weak=False):
+def _closeup(f, c, X, Y, PW, *, title, dets, raster_h, tick_step, stripe_marks=True, show_weak=False, ROW=11):
     """A real close-up for print: part-of-experiment strip, one call lane per program, clear stripes, raster.
     The page version's layout at print sizes (make_plain_detector_review._closeup)."""
     from make_plain_detector_review import COLORS, INK_T, NAMES, RED, _period_lane, _plural
@@ -105,18 +105,19 @@ def _closeup(f, c, X, Y, PW, *, title, dets, raster_h, tick_step, stripe_marks=T
     pl = f.panel(X, y, PW, 16, win, (0, 1), frame=False)
     _period_lane(f, pl, c, y + 2)
     y += 20
-    ROW = 11
+    bar = ROW - 3
     lp = f.panel(X, y, PW, len(dets) * ROW + 3, win, (0, 1))
     for i, d in enumerate(dets):
         ry = y + 2 + i * ROW
         weak = {round(on, 2) for on, _, _ in c["weak"].get(d, [])}
         for on, wd in c["calls"][d]:
-            lp.span(on, on + max(wd, 0.0), row_y=ry, row_h=8, color=COLORS[d], min_px=2)
+            lp.span(on, on + max(wd, 0.0), row_y=ry, row_h=bar, color=COLORS[d], min_px=2)
             if show_weak and round(on, 2) in weak:
                 a, b = float(lp.px(on)) - 2, float(lp.px(on + max(wd, 0.0))) + 2
-                f.rect(a, ry - 1.5, max(b - a, 5), 11, stroke=RED, width=1.2)
+                f.rect(a, ry - 1.5, max(b - a, 5), bar + 3, stroke=RED, width=1.2)
         n = sum(1 for on, _ in c["calls"][d] if win[0] <= on <= win[1])
-        f.text(X - 6, ry + 7.5, f"{NAMES[d]} · {_plural(n, 'call')}", size=TICK_PT, anchor="end", color=MUTED)
+        f.text(X - 6, ry + bar - 0.5, f"{NAMES[d]} · {_plural(n, 'call')}",
+               size=TICK_PT if ROW >= 11 else PRINT_MIN_PT, anchor="end", color=MUTED)
     y += len(dets) * ROW + 8
     sp = f.panel(X, y, PW, 12, win, (0, 1), frame=False)
     if stripe_marks:
@@ -126,11 +127,21 @@ def _closeup(f, c, X, Y, PW, *, title, dets, raster_h, tick_step, stripe_marks=T
     y += 14
     r = f.panel(X, y, PW, raster_h, win, (0, 1))
     r.raster(c["trains"], width=0.9)
-    _time_axis(f, r, offset=c["anchor"], step=tick_step, label=f"minutes from the start of {c['label']}")
+    if tick_step is None:   # 3 to 7 ticks whatever the window: a fixed minute gave a 1-minute close-up one tick
+        wlen = win[1] - win[0]
+        tick_step = next((s_ for s_ in (5, 10, 15, 20, 30, 60, 120, 300, 600) if wlen / s_ <= 7), 600)
+    lab = f"minutes from the start of {c['label']}"
+    compact = ROW < 11
+    _time_axis(f, r, offset=c["anchor"], step=float(tick_step), label=None if compact else lab)
+    if compact:             # beside the ticks, in the margin, so it cannot run into the next panel's title
+        f.text(X - 18, y + raster_h + 9, "minutes from the", size=PRINT_MIN_PT, anchor="end", color=MUTED,
+               italic=True)
+        f.text(X - 18, y + raster_h + 18.5, f"start of {c['label']}", size=PRINT_MIN_PT, anchor="end",
+               color=MUTED, italic=True)
     f.text(X - 6, y + raster_h / 2, f"{c['stream'] == 'fast' and 'brief' or 'long'} events", size=LABEL_PT,
            anchor="end", color=MUTED)
     f.text(X - 6, y + raster_h / 2 + 11, _plural(c["n_roi"], "neuron"), size=LABEL_PT, anchor="end", color=MUTED)
-    return y + raster_h + 34
+    return y + raster_h + (30 if compact else 34)
 
 
 def fig_problem(W):
@@ -602,6 +613,68 @@ def fig_real_overview(W, label, stream):
     return f
 
 
+def fig_eye(W):
+    """Figure 25, close-ups of real recordings (A-C) and the tallies over every real recording (D)."""
+    from make_plain_detector_review import CODED, COLORS, INK_T, MIN_CELLS, NAMES, PERIOD_COLORS
+    from svgfig import MUTED, Figure
+    R = W["real"]
+    C = R["close"]
+    dets = list(CODED)
+    f = Figure(PAGE_W, 900)
+    X, PW = 96, PAGE_W - 96 - 12
+    y = 10
+    for key, title, weak in (("outside", "A · clear stripes just outside the analysis window (black line)", False),
+                             ("busy", "B · a busy stretch inside the analysis window, no stripe that stands out",
+                              False),
+                             ("weak", "C · calls with no stripe under them (red box: a coordinated event of "
+                                      "3 or fewer neurons)", True)):
+        f.text(0, y, title, size=TITLE_PT, weight=600)
+        # raster 36, not 50: at 50 the figure was 721 pt, taller than the Word page
+        y = _closeup(f, C[key], X, y + 2, PW, title="", dets=dets, raster_h=36, tick_step=None, show_weak=weak,
+                     ROW=9)
+    # D: the tallies
+    T = R["tally"]
+    f.text(0, y, f"D · all {R['n_recordings']} real recordings of the previous four figures, both kinds of events",
+           size=TITLE_PT, weight=600)
+    PX, PPW, QX, QPW = 74, 150, 300, 108
+    f.text(PX, y + 13, f"share of the {R['n_in']} clear stripes inside", size=PRINT_MIN_PT, color=MUTED)
+    f.text(PX, y + 23, "the windows it called", size=PRINT_MIN_PT, color=MUTED)
+    f.text(QX, y + 13, "share of its calls on coordinated", size=PRINT_MIN_PT, color=MUTED)
+    f.text(QX, y + 23, "events of 3 or fewer neurons", size=PRINT_MIN_PT, color=MUTED)
+    ty, RH = y + 30, 10 * len(dets)
+    p = f.panel(PX, ty, PPW, RH, (0, 1), (len(dets) - 0.5, -0.5))
+    q = f.panel(QX, ty, QPW, RH, (0, 1), (len(dets) - 0.5, -0.5))
+    for i, d in enumerate(dets):
+        t = T[d]
+        Y = float(p.py(i))
+        v1 = t["called_in"] / max(t["stripes_in"], 1)
+        v2 = t["weak"] / max(t["calls"], 1)
+        f.rect(PX, Y - 3.5, float(p.px(v1)) - PX, 7, fill=COLORS[d])
+        f.text(float(p.px(v1)) + 3, Y + 3, f"{v1:.0%}", size=PRINT_MIN_PT)
+        f.rect(QX, Y - 3.5, float(q.px(v2)) - QX, 7, fill=COLORS[d])
+        f.text(float(q.px(v2)) + 3, Y + 3, f"{v2:.0%} of {t['calls']:,}", size=PRINT_MIN_PT)
+        f.text(PX - 6, Y + 3, NAMES[d], size=TICK_PT, anchor="end", color=INK_T)
+    for pan, x0, w in ((p, PX, PPW), (q, QX, QPW)):
+        for v in (0, 0.5, 1):
+            Xv = float(pan.px(v))
+            f.line(Xv, ty + RH, Xv, ty + RH + 3, color=MUTED)
+            f.text(Xv, ty + RH + 12, f"{v:.0%}", size=PRINT_MIN_PT, anchor="middle", color=MUTED)
+    y2 = ty + RH + 25
+    f.text(0, y2, "▼", size=LABEL_PT, weight=700, color=INK_T)
+    f.text(10, y2, f"a clear stripe: at least {R['stripe_frac']:.0%} of the neurons (and at least {MIN_CELLS}) start "
+                   f"an event within {R['stripe_s']:g} second, and at least twice", size=PRINT_MIN_PT, color=MUTED)
+    f.text(10, y2 + 10, "as many as in the busiest seconds around it", size=PRINT_MIN_PT, color=MUTED)
+    kx = 0
+    for col, lab in (("#333", "the analysis windows the lab marks"), (PERIOD_COLORS["baseline"], "baseline"),
+                     (PERIOD_COLORS["senktide"], "senktide"), (PERIOD_COLORS["TTX"], "TTX"),
+                     (PERIOD_COLORS["high K+"], "high potassium")):
+        f.text(kx, y2 + 23, "▬", size=LABEL_PT, weight=700, color=col)
+        f.text(kx + 11, y2 + 23, lab, size=PRINT_MIN_PT, color=MUTED)
+        kx += 11 + 3.9 * len(lab) + 12
+    f.h = y2 + 29
+    return f
+
+
 FIGURES = {"fig_orient": ("fig01_orient", fig_orient), "fig_problem": ("fig02_problem", fig_problem),
            "fig_chance": ("fig03_chance", fig_chance)}
 for _i, _d in enumerate(("rate", "coact", "loco", "sce", "cicada", "sync")):
@@ -610,6 +683,7 @@ FIGURES.update({"fig_scores": ("fig18_scores", fig_scores), "fig_busy": ("fig19_
 for _i, (_n, _l, _s) in enumerate((("real_ttx_brief", "TTX", "fast"), ("real_ttx_long", "TTX", "slow"),
                                    ("real_senk_brief", "senktide", "fast"), ("real_senk_long", "senktide", "slow"))):
     FIGURES[_n] = (f"fig{21 + _i}_{_n}", lambda W, _l=_l, _s=_s: fig_real_overview(W, _l, _s))
+FIGURES["fig_eye"] = ("fig25_eye", fig_eye)
 
 
 def render(figs: dict, out: Path) -> None:
