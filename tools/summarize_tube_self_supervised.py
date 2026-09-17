@@ -505,12 +505,13 @@ def main(argv=None):
     summary["leak_digest"] = leak_digest(summary["controls_lab"], summary["aggregate_leak"])
     p = run / "small_j_check" / "results.json"
     if p.exists():
-        # tools/check_small_j_mixes_events.py: whether the small-J control reads events too.
+        # tools/check_small_j_mixes_events.py: what each scorer responds to on synthetic twins,
+        # events or shared modulation, against rigid shift at 1.6, 10 and 20 s.
         doc = json.loads(p.read_text())
         summary["small_j_check"] = {"meta": {k: v for k, v in doc["meta"].items()
                                              if k != "provenance"},
-                                    "share_real_higher": {k: v["share_real_higher"] for k, v in
-                                                          doc["share_real_higher"].items()}}
+                                    "provenance": doc["meta"].get("provenance"),
+                                    "groups": doc["groups"]}
     (run / "summary.json").write_text(json.dumps(summary, indent=1, default=float))
     print(run / "summary.json")
 
