@@ -87,6 +87,24 @@ stays as the record.
 **Strength** follows [`MILESTONES.md`](../MILESTONES.md): *measured* is a number from a run, *decided*
 is a ruling, *argued* is reasoning nobody has measured.
 
+### How the next comparison runs on the bench (decided, Tony, 2026-09-17)
+
+Four rulings for goal 2's tuning run, taken one at a time with Tony. The rest of its design carries
+over from `HANDOFF-workstation-tuning.md` on `tune-learned-vs-coact`: nested cross-validation, two
+selections (F1 alone, and F1 under a shared false-alarm budget), three training seeds, and the GPU.
+
+| # | question | decided | why |
+|---|---|---|---|
+| 1 | **The bench's two backgrounds** (quiet 0.0052 Hz and busy 0.0190 Hz per ROI, `bench.REGIMES`) | **The same as goal 1.** Every recording seed is simulated at both rates, and a model is scored on the mean of the two backgrounds' pooled F1. A third, typical-rate background was considered and set aside *"for now"*: it would mean changing goal 1's search mid-course and re-choosing the shipped settings | both sides are then chosen on the same objective, which is what makes the comparison fair |
+| 2 | **What a net trains on** | **Mixed:** half quiet and half busy recordings for training, and one of each for picking the threshold | a net scored on both backgrounds should learn from both |
+| 3 | **Where the shared false-alarm budget is measured** | **The bench's own instruments:** the probe (the 5-minute stretch at 0.06 Hz inside every recording), counted in both backgrounds' recordings, and `bench.make_null_recording` (a whole recording at the quiet rate, nothing planted). **Reported, never used to select:** a no-event recording at the busy rate. **Dropped:** the home spec's 0.25× stress twin, which describes no real recording | the budget then measures what `MAX_PROBE_PER_MIN` and `MAX_FALSE_POSITIVES_PER_HOUR` measure. On the home spec the quiet twin was already this rate (0.54 × 0.0097 = 0.0052 Hz) |
+| 4 | **What the budget is anchored to** | **CoactDetect at the settings goal 1's every-knob search lands**, times the declared margin (1.6), with the exact values written into the run's declaration before it starts | it is the CoactDetect that will ship, and the run waits on goal 1's bench and grids anyway |
+
+**What the run still waits on, all from goal 1 (WSMIP065) through `main`:** the bench re-derived
+from `steps_excluded`, one grid declaration for the six coded detectors in `bench`, sliding LoCo and
+CoactDetect landed, and the every-knob CoactDetect values. Until then WSMIP064's GPU runs the home-spec
+shakedown, which gives way when this run is ready.
+
 ### The family
 
 | finding | strength | source |
