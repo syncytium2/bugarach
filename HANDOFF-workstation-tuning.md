@@ -680,7 +680,9 @@ needs his password):** a hidden Windows-side `wsl.exe -d Ubuntu -- bash -l
 terminals and the session, and that client keeps WSL from idling out; it stops on sign-out or a Windows
 restart. **Idle proof on the real run (Tony's choice):** with every VS Code window and Ubuntu terminal
 closed, `\\wsl$\Ubuntu\home\defazio\runs\tune-learned-vs-coact\progress.json` should show a recent `at`.
-**If the run stopped:** read `run.log` and `progress.json`, then start the launch script the same way
+**The run executes from this worktree: do not change `tools/` or `src/` here until it ends** (a restart
+would load them, and `meta.json` refuses a changed declaration). **If the run stopped:** read `run.log`
+and `progress.json`, then start the launch script the same way
 again; finished jobs are skipped. Say in this line what was lost and why. **When it finishes:** Gate 3.
 Copy `meta.json`, `configs/`, `selections/`, `chosen/` and `results.json` into
 `docs/learned/tuned_vs_coact/`; claim a darkroom folder on `docs/SESSIONS.md` (a PR off `main`) and put
