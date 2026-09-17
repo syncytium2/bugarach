@@ -26,8 +26,8 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 ### Mac/unsup-rigid-shift-report-residuals — DARKROOM claim ACTIVE 2026-09-17: `bugarach/2026-09-17-rigid-shift-report/`
 - **Status:** ACTIVE (bugarach-smoked-ratchet), claimed before writing. Tony ruled on 2026-09-17,
   after the report's fourth blind murderboard, that the real-derived outputs of the rigid-shift run
-  leave the repo for the darkroom (FOUNDATIONS §5: anything derived from real data is machine-local,
-  with no slice ids).
+  leave the repo for the darkroom (FOUNDATIONS §5: anything derived from real recordings stays
+  machine-local, with no slice ids).
 - **Writes:** one new folder only —
   - `real_compare/events.json` (per-recording event times, keyed by recording id) and
     `real_compare/checkpoints/` (models trained on real recordings), for this run and the one they
