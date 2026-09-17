@@ -137,15 +137,20 @@ def ssl_task(args):
              "fold": fold, "events": on_shift, "surrogate": True}]
 
 
-def sup_task(args):
-    name, seed, quick = args
+def fit_supervised(name, seed, quick=False):
+    """One supervised fit on every simulated recording of the bench split, as the bake-off fits."""
     import fair_bakeoff as fb
     from bugarach.bench import fold_split
     from bugarach.learn.train import fold_maker, train
     split = fold_split(n_folds=ts.N_FOLDS, seeds_per_fold=ts.SEEDS_PER_FOLD)
     mk, n_fit, _ = fold_maker(ts.sim_recording, list(split.seeds))
-    tr = train(name, mk, n_train=min(10, n_fit), steps=60 if quick else 900, crop=ts.CROP,
-               batch=ts.BATCH, lr=fb.LR[name], seed=seed)
+    return train(name, mk, n_train=min(10, n_fit), steps=60 if quick else 900, crop=ts.CROP,
+                 batch=ts.BATCH, lr=fb.LR[name], seed=seed)
+
+
+def sup_task(args):
+    name, seed, quick = args
+    tr = fit_supervised(name, seed, quick)
     p = min(max(float(tr.threshold), 1e-12), 1 - 1e-12)
     bake = float(np.log(p / (1 - p)))
     lf, bk, sh = {}, {}, {}
