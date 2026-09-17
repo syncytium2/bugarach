@@ -534,7 +534,8 @@ Each candidate was chosen on {n_sel} simulated recordings per background ("chose
 there) and then scored on {n_ho} different ones (every other F1 column). Gain is the held-out mean F1
 minus the shipped point's, with its 95% bootstrap interval ({BOOTSTRAP} resamples of recordings); where
 the interval includes zero the search found nothing the bench can tell apart from the shipped point.
-Only candidates under both false-alarm limits were eligible. False alarms are per hour: in a dense
+Only candidates under all three limits in bench.py were eligible — the two false-alarm limits and the
+largest allowed precision difference between the backgrounds. False alarms are per hour: in a dense
 stretch with nothing planted inside an ordinary recording (quiet / busy background), and on a whole
 recording with nothing planted. The last column scores each candidate on {N_TAIL} crowded recordings per background (planted events as little as 6 s apart, fitted to the most crowded real recordings), never used for choosing: a setting that only works because the ordinary bench spaces planted events 120 s apart loses here. F1 is the harmonic mean of recall and precision.</p>
 <table><tr><th>detector</th><th>candidate</th><th>settings that differ from shipped</th>

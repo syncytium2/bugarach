@@ -2421,5 +2421,4 @@ session's work is not a sweep.
 - **Writes:** `search.log`, `search.json` (written after each stage, so a stop mid-run keeps what
   finished) and `full_search.html` / `full_search.png` (the figure), from
   `tools/search_all_settings.py` on branch `full-search`. Measure-only: no operating point changes.
-- **Released:** when the run finishes and the figure is written; the handoff on branch `full-search`
-  says whether it has.
+- **Released:** 2026-09-17. The run finished 2026-09-16 17:02; holds nothing.
