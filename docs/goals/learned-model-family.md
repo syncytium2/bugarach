@@ -70,10 +70,15 @@ sides a declared budget under nested cross-validation. Gate 1 passed on 2026-09-
 was **lost at 01:57 on 2026-09-17**, when the university's privilege manager signed the user out
 (armory `FINDINGS.md` §20). Tony's rulings: WSL is a dead route there. Go native, and train on the GPU
 (`train(device=...)`, built the same day). Its status line is in `HANDOFF-workstation-tuning.md` on
-branch `tune-learned-vs-coact` ⚠ **not on `main`**. **It is running again as of 2026-09-17** (Tony),
-as declared on that branch. It is **exploratory, not final**: Tony is still troubleshooting and
-deciding which models and detectors to keep. The simulation change and goal 1's every-knob grids
-apply to the next comparison, not to this run:
+branch `tune-learned-vs-coact` ⚠ **not on `main`**. **Relaunched at 12:42 on 2026-09-17 as a GPU
+shakedown, not a result** (Tony: *"launch it"*, after choosing between waiting for goal 1 and running
+a stale test). Nothing had run between the loss and then. It runs on the retired home spec as declared
+on that branch, from Task Scheduler on the GPU (`--device cuda --gpu-jobs 2`), resumable. Its purposes:
+prove a long unattended GPU run on that machine before the one that matters, and show which of the
+nets' settings ever win. **No readout is planned from it, and it is stopped as soon as the next
+comparison needs the GPU.** Before relaunching, a GPU correctness check agreed with the CPU and the
+Mac: over three seeds each model's mean F1 is within 0.004 to 0.023 of the Mac's. The simulation change
+and goal 1's every-knob grids apply to the next comparison, not to this run:
 [`HANDOFF-coded-detectors.md`](../../HANDOFF-coded-detectors.md) §4. The untuned home-spec table above
 stays as the record.
 
