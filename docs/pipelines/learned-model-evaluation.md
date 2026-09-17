@@ -43,9 +43,15 @@ for s in 0 1 2; do
 done
 # 5  label-free training: every arm, both displacements, the zero-parameter baselines
 $PY tools/tube_self_supervised.py      --out $D/training --jobs 12
-# 6  real recordings — this stage WRITES the checkpoints; the probe then reads them
+# 6  real recordings — this stage WRITES the checkpoints; the probe then reads them.
+#    $D/real_compare/events.json and the checkpoints are real-derived: they go to a claimed
+#    darkroom folder, not into the repo, which keeps summary.json only (FOUNDATIONS §5)
 $PY tools/tube_ssl_real_compare.py --out $D/real_compare \
                                    --checkpoints $D/real_compare/checkpoints --jobs 12
+#    what the models learned, asked directly: every checkpoint on synthetic twins
+$PY tools/check_small_j_mixes_events.py --out $D/small_j_check --twins 30 --draws 2 --jobs 12 \
+                                   --checkpoints $D/real_compare/checkpoints/*.json \
+                                   --supervised-seeds 0 --untrained-seeds 0
 $PY tools/probe_line_vs_fuzz.py    --out $D/probe \
                                    --checkpoints $D/real_compare/checkpoints
 # 7  every number the report will quote, then the figures, which read it
@@ -55,6 +61,7 @@ $PY tools/make_surrogate_schematic_figure.py --also $D
 $PY tools/make_rigid_shift_gates_figure.py --run $D --also $D
 $PY tools/make_line_sensors_figure.py      --summary $D/summary.json --also $D
 $PY tools/make_tube_ssl_figure.py          --summary $D/summary.json --also $D
+$PY tools/make_twin_check_figure.py        --summary $D/summary.json --also $D
 $PY tools/make_tube_real_summary_figure.py --summary $D/summary.json --also $D
 $PY tools/make_tube_real_lanes.py     --run $D/real_compare --out <darkroom> --family <name>
 # 8  murderboard, blind round, loop until clean
