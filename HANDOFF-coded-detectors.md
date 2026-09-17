@@ -267,3 +267,14 @@ to keep. Nothing below edits WSMIP064's branch. It all arrives through `main`.
 
 - 2026-09-17 11:20 (WSMIP065): written; decisions and goals README on `main` via this PR. Next: §3
   step 1.
+- 2026-09-17 13:10 (WSMIP065): **§3 step 1 done, and the bench does not move.**
+  `tools/remeasure_bench.py` measured all 8 of the bench's measured constants on `steps_excluded`,
+  fast stream, baseline analysis windows (84 recordings; 80 in the shape fits), with 200 bootstrap
+  draws. Seven sit inside their 95% intervals. **`participation` (0.18) sits 0.0018 below its
+  interval (0.1818–0.2322; measured 0.1905)**, and 0.1818 is 6/33, the ratio the bench's docstring
+  rounds to 0.18. It waits on Tony and is listed in `bench.MEASURED_OUTSIDE_INTERVAL`. Record:
+  `docs/learned/bench_measured.json`. **The check:** `tests/test_bench_is_measured_on_the_declared_folder.py`
+  fails when the pointer names a different folder than the one measured, when a measured constant is
+  edited without re-measuring, or when a constant leaves its interval unacknowledged.
+  `fit_background_shape.py` now reads the analysis window (it had been measuring the raw period), and
+  it no longer passes a verdict at a fixed 5%. Next: §3 step 2.
