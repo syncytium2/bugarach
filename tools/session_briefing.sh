@@ -344,6 +344,7 @@ render() {
     echo "   git config core.hooksPath .githooks"
   fi
 
+
   # --- 4. the machine-local board is a precondition, not a suggestion -------------
   # The vendored hook prints "(no board yet — create it ...)" and that has proved
   # too quiet: on 2026-08-18 a session read it, worked all day across two worktrees
@@ -495,7 +496,16 @@ print(p if p else "")' 2>/dev/null)
   # will be. The address is the payload. Shortened 2026-08-31 because the three-line
   # form put the briefing 65B over budget on a fresh clone, and a degraded briefing
   # drops FOUNDATIONS §9's consequences, which is a worse loss than an anecdote.
-  echo "   can't find something, or about to build one?  docs/INDEX.md FIRST — keywords."
+  #
+  # `docs/pipelines.md` rides on this line rather than getting its own (2026-09-16).
+  # It claims to be the first place a session looks for an established route, and
+  # nothing made a session look — armory-63 found the string in no briefing, hook or
+  # protocol file. The first fix was a separate line early in the briefing. On CI it put
+  # the payload 2B over budget, degrading §9 to its claims, and pushed `data in:` past
+  # the 2KB a spill keeps: four tests red. "About to build one?" is already the question
+  # a route answers, and this line sits after both per-machine lines, so it costs
+  # sixteen bytes and moves nothing that must stay near the top.
+  echo "   can't find something, or about to build one?  docs/INDEX.md FIRST; routes: docs/pipelines.md."
   echo "   document deliverable (report, explainer, figure + caption, handoff)?"
   echo "     -> /murderboard <artifact> FIRST. Not a first draft."
   echo "   landing work?  branch + green PR; never commit on main."

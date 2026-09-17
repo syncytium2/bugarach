@@ -30,7 +30,7 @@ dl = ["torch>=2.0"]
 # adapter in src/bugarach/surrogates.py corrects defects found by running 1.2.1, and
 # a different release can move, fix or add them without anything here noticing.
 surrogates = ["elephant==1.2.1"]
-dev = ["pytest>=8", "pyspike", "panel>=1.4", "holoviews>=1.18", "markdown>=3.5",
+dev = ["pytest>=8", "pytest-xdist", "pyspike", "panel>=1.4", "holoviews>=1.18", "markdown>=3.5",
        "playwright>=1.40", "torch>=2.0", "elephant==1.2.1"]
 
 [project.scripts]
@@ -41,3 +41,6 @@ packages = ["src/bugarach"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+markers = [
+    "serial: must not share the machine or the checkout with other tests (wall-clock budgets, the built site/), so CI runs these alone after the parallel run (see ci.yml)",
+]

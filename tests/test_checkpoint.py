@@ -60,6 +60,29 @@ def _score(tr, x):
         return tr.model(x).squeeze(0).numpy()
 
 
+@pytest.mark.parametrize("arch", sorted(ARCHITECTURES))
+def test_every_registered_architecture_survives_the_round_trip(tmp_path, arch):
+    """A checkpoint is how a model reaches another machine, so EVERY architecture
+    has to survive one — not just the one this file happens to name.
+
+    The rest of this file fixes `ARCH` on purpose: it is about the checkpoint's own
+    contract (refusals, provenance, no pickle) and one model exercises that. What it
+    could not see is an architecture whose state dict holds something the JSON
+    encoder does not handle. `gauge` holds an INTEGER buffer — the surrogate strides
+    — beside its float parameters, which is the first non-float tensor any model here
+    has carried, and nothing would have caught it going in.
+    """
+    torch.manual_seed(0)
+    model = ARCHITECTURES[arch].make()
+    tr = Trained(name=arch, model=model, threshold=0.5, n_params=n_params(model),
+                 dt=0.1, merge_gap_frames=20, train_seconds=0.0, threads=1)
+    path = checkpoint.save(tr, tmp_path / f"{arch}.json", trained_on="a_spec.json",
+                           train_seed=0, steps=1)
+    x = _raster()
+    assert np.allclose(_score(tr, x), _score(checkpoint.load(path), x), atol=1e-6), (
+        f"{arch} does not come back the same model it went in as")
+
+
 def test_a_reloaded_model_predicts_identically(tmp_path):
     tr = _trained()
     x = _raster()
@@ -84,12 +107,82 @@ def test_the_operating_point_and_provenance_travel(tmp_path):
 
 
 def test_the_config_travels_so_a_moved_default_cannot_rebuild_another_model(tmp_path):
-    """The file records what it WAS, not what the name means now."""
+    """The file records what it WAS, not what the name means now. A model whose maker
+    recorded no config gets the registry's defaults, and the file says so."""
     tr = _trained()
     checkpoint.save(tr, tmp_path / "m.json", trained_on="x")
     doc = json.loads((tmp_path / "m.json").read_text())
     assert doc["cfg"] == dict(ARCHITECTURES[ARCH].cfg)
     assert doc["cfg"], "an empty cfg would make this guarantee vacuous"
+    assert doc["provenance"]["cfg_source"].startswith("registry defaults")
+
+
+def _tuned(**over):
+    torch.manual_seed(0)
+    cfg = {**ARCHITECTURES[ARCH].cfg, **over}
+    model = ARCHITECTURES[ARCH].make(**over)
+    return Trained(name=ARCH, model=model, threshold=0.9, n_params=n_params(model), dt=0.1,
+                   merge_gap_frames=20, threads=1, cfg=cfg,
+                   training={"optimizer": "Adam", "lr": 3e-2, "steps": 1800,
+                             "crop_frames": 4096, "batch": 3, "n_train": 10, "train_seed": 2,
+                             "threads": 1, "torch_version": torch.__version__})
+
+
+def test_a_tuned_config_that_changes_no_shape_reloads_as_itself(tmp_path):
+    """The silent case, and the one that mattered for a tuning run: `max_ratio` changes no
+    tensor, so a file carrying the registry's 40 loaded an 80-trained model without a word.
+    Its predictions differ once the fitted ratio exceeds 40, which is what these set."""
+    tr = _tuned(max_ratio=80.0)
+    with torch.no_grad():
+        tr.model.log_ratio.fill_(float(np.log(60.0)))
+    x = _raster()
+    checkpoint.save(tr, tmp_path / "m.json", trained_on="x")
+    back = checkpoint.load(tmp_path / "m.json")
+    assert back.cfg["max_ratio"] == 80.0
+    np.testing.assert_array_equal(_score(tr, x), _score(back, x))
+
+
+def test_a_tuned_config_that_changes_shapes_reloads_instead_of_being_refused(tmp_path):
+    tr = _tuned(n_scales=6, width=16)
+    checkpoint.save(tr, tmp_path / "m.json", trained_on="x")
+    back = checkpoint.load(tmp_path / "m.json")
+    assert (back.cfg["n_scales"], back.cfg["width"]) == (6, 16)
+    x = _raster()
+    np.testing.assert_array_equal(_score(tr, x), _score(back, x))
+
+
+def test_training_settings_travel_apart_from_the_config(tmp_path):
+    tr = _tuned(n_scales=6)
+    checkpoint.save(tr, tmp_path / "m.json", trained_on="x")
+    meta = checkpoint.peek(tmp_path / "m.json")
+    assert meta["training"]["lr"] == 3e-2 and meta["training"]["steps"] == 1800
+    assert "lr" not in meta["cfg"], "how it was fitted must not leak into what to build"
+    assert meta["provenance"]["cfg_source"] == "as built"
+    assert checkpoint.load(tmp_path / "m.json").training == meta["training"]
+
+
+def test_a_config_that_does_not_rebuild_the_model_is_refused_at_save(tmp_path):
+    tr = _tuned(n_scales=6)
+    tr.cfg = dict(ARCHITECTURES[ARCH].cfg)          # claims defaults, holds a 6-scale net
+    with pytest.raises(ValueError, match="does not rebuild"):
+        checkpoint.save(tr, tmp_path / "m.json", trained_on="x")
+
+
+def test_the_config_key_names_the_setting_not_its_spelling_or_one_fit_of_it(tmp_path):
+    base = {"n_scales": 4, "width": 8}
+    fit = {"optimizer": "Adam", "lr": 0.01, "steps": 900, "crop_frames": 4096, "batch": 3,
+           "n_train": 10}
+    k = checkpoint.config_key("tube", base, fit)
+    assert k == checkpoint.config_key("tube", {"width": 8.0, "n_scales": 4.0}, fit)
+    assert k == checkpoint.config_key("tube", base, {**fit, "train_seed": 4, "threads": 1,
+                                                     "torch_version": "x"})
+    assert k != checkpoint.config_key("tube", base, {**fit, "lr": 0.03})
+    assert k != checkpoint.config_key("tube", {**base, "width": 16}, fit)
+    assert k != checkpoint.config_key("line", base, fit)
+    tr = _tuned(n_scales=6)
+    checkpoint.save(tr, tmp_path / "m.json", trained_on="x")
+    doc = json.loads((tmp_path / "m.json").read_text())
+    assert doc["config_key"] == checkpoint.config_key(ARCH, tr.cfg, tr.training)
 
 
 def test_a_changed_shape_is_refused_with_both_shapes_named(tmp_path):

@@ -72,6 +72,32 @@ def _checkpoint(tmp_path: Path, *, name="tube", threshold=0.0) -> Path:
                            train_seed=0, steps=1)
 
 
+@pytest.mark.parametrize("arch", sorted(ARCHITECTURES))
+def test_every_registered_architecture_reaches_a_folder(tmp_path, arch):
+    """Saving a model is only half of taking it to another session; this is the
+    other half — the checkpoint reaching `detect_folder` and coming back in the six
+    ports' contract, for EVERY architecture rather than the one named below.
+
+    The test under this one is about the wiring and one model exercises it. What it
+    cannot see is an architecture that builds, trains and saves and then fails on the
+    way through detection — a reshape that assumes a channel count, a pool that
+    assumes more cells than a small recording has. Three architectures were added on
+    2026-09-16 and nothing would have checked any of them on this path.
+    """
+    import csv
+
+    folder = _folder(tmp_path)
+    ckpt = _checkpoint(tmp_path, name=arch)
+    run = detect_folder(folder, out_dir=tmp_path / "out", detectors=("coact",),
+                        models=(ckpt,))
+    rows = list(csv.DictReader(Path(run.paths["detections"]).open()))
+    learned = [r for r in rows if r["detector"] == arch]
+    assert learned, f"{arch} made no call at threshold 0 — the wiring is not reached"
+    assert set(rows[0]) == set(learned[0]), (
+        f"{arch}'s rows do not have the columns a hand-written call has")
+    assert learned[0]["mode"] == "learned"
+
+
 def test_a_saved_model_detects_on_a_folder_in_the_six_ports_contract(tmp_path):
     folder = _folder(tmp_path)
     ckpt = _checkpoint(tmp_path)

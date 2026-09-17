@@ -241,8 +241,11 @@ def test_score_stream_reads_the_spans_itself():
     from bugarach.detectors.sce import sce_detect
     s_, gt = simulate_coordination(seed=3)
     sce = sce_detect(s_).streams["events"]
+    # extent_sec, not width_sec: SCE's width is the event spread inside the bin,
+    # and the call is scored over the bin run it was made on
+    # (tests/test_sce_scored_extent.py has the case that tells the two apart)
     assert score_stream(gt, sce).recall == \
-        score_detections(gt, sce.onset_sec, widths=sce.width_sec).recall
+        score_detections(gt, sce.onset_sec, widths=sce.extent_sec).recall
 
 
 def test_score_stream_handles_the_other_field_convention():

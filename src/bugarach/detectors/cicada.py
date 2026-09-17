@@ -266,13 +266,30 @@ def cicada_detect(
     for name, stream in s.streams.items():
         trains = getattr(stream, onset_field) if onset_field != "t50rise" \
             else (stream.t50rise or stream.locs)
+        if trains is None:
+            # `peak` is None on a store and on a folder that did not send one.
+            # Falling back to `locs` would anchor a folder on its half-rise — a
+            # confident answer to a different question — so this names it instead.
+            raise ValueError(
+                f'locust anchors on onset_field="{onset_field}", and stream '
+                f'"{name}" of {s.slice_id!r} does not carry it. An export folder '
+                "gives locust its peak through `peak_sec` "
+                "(docs/export_folder_spec.md).")
         if active_duration_mode == "per_event":
             if duration_field == "rise_dur":
                 # Was: dur = rise_durations(stream). The mode survives; the
                 # derivation does not. See rise_durations' docstring.
                 rise_durations(stream)          # raises, and says why
-            elif duration_field and hasattr(stream, duration_field):
+            elif duration_field and getattr(stream, duration_field, None) is not None:
                 dur = getattr(stream, duration_field)
+                if any(np.isnan(np.asarray(d, dtype=float)).any() for d in dur):
+                    # A missing width cast to frames is an arbitrary integer, not
+                    # an error — the raster would silently hold cells on for it.
+                    raise ValueError(
+                        f'locust paints each event for its own "{duration_field}", '
+                        f'and stream "{name}" of {s.slice_id!r} has events without '
+                        "one. An export folder sends it as `width_sec` with its "
+                        "`width_def` (docs/export_folder_spec.md).")
             else:
                 raise ValueError(
                     'active_duration_mode="per_event" requires duration_field '

@@ -29,6 +29,11 @@ from pathlib import Path
 
 import pytest
 
+# serial: its figure checks read the site/ that test_site_pages_render.py builds, and run
+# only if that build came first. Serially it always does; split across workers it was a
+# coin toss, and a skip that depends on scheduling is coverage nobody can count on.
+pytestmark = pytest.mark.serial
+
 ROOT = Path(__file__).resolve().parents[1]
 VIEWER = ROOT / "docs/site/raster_viewer.html"
 sys.path.insert(0, str(ROOT / "tools"))

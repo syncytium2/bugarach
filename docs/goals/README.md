@@ -27,3 +27,16 @@ does and is the first thing a session reads when it picks that goal up.
 | goal | page | branch prefix |
 |---|---|---|
 | A coordinated-event detector that learns without labels | [`unsupervised-learning.md`](unsupervised-learning.md) | `unsup/` |
+| Every hand-written detector at a setting this bench chose | [`coded-detector-optimization.md`](coded-detector-optimization.md) | `opt/` |
+| A learned architecture that beats the hand-written detectors, separably | [`learned-model-family.md`](learned-model-family.md) | `nets/` |
+| A document about the detectors an outside reader can judge | [`detector-review-document.md`](detector-review-document.md) | `review/` |
+
+**Three of these four were written on 2026-09-16, and writing them is what found the problem they
+fix.** Asked where four goals stood, two independent searches of `main` reported that the detector
+review document did not exist and that detector optimization had nothing in flight. Both were reading
+the tree correctly: the work, and the only summary of it, sat together on unmerged branches. A goal
+whose account of itself lives on the branch it describes disappears the moment that branch lands — or,
+until then, is invisible to every session that starts from `main`, which is every session.
+
+**So a page may point at a branch, and it must say so.** Each of the three carries a ⚠ marker on every
+source that is not on `main` yet, and taking a marker off is part of landing the branch it names.

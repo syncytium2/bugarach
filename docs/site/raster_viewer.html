@@ -9,7 +9,7 @@
      rather than naming a sha this page could not know — the reasoning is at the
      visible stamp. -->
 <meta name="bugarach:born" content="2026-08-13">
-<meta name="bugarach:version-date" content="2026-09-14">
+<meta name="bugarach:version-date" content="2026-09-16">
 <meta name="bugarach:commit" content="content-addressed">
 <!--
   The raster viewer, client side.
@@ -1264,7 +1264,7 @@
       </div>
       <div class="ctl" id="dRateCtl">
         <label for="dThr">excess threshold (Hz)</label>
-        <input id="dThr" type="number" min="0.1" max="50" step="0.5" value="5" autocomplete="off" data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other">
+        <input id="dThr" type="number" min="0.1" max="50" step="0.5" value="4.5" autocomplete="off" data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other">
         <label for="dRate">rate window (s)</label>
         <input id="dRate" type="number" min="0.1" max="30" step="0.1" value="1" autocomplete="off" data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other">
         <label for="dCtx">context window (s)</label>
@@ -1286,7 +1286,7 @@
         <label for="lCtx">context window (s)</label>
         <input id="lCtx" type="number" min="10" max="1200" step="10" value="120" autocomplete="off" data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other">
         <label for="lPct">threshold percentile</label>
-        <input id="lPct" type="number" min="90" max="99.9999" step="0.1" value="99.9" autocomplete="off" data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other">
+        <input id="lPct" type="number" min="90" max="99.9999" step="0.1" value="99.5" autocomplete="off" data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other">
         <label for="lSur">surrogates</label>
         <input id="lSur" type="number" min="20" max="1000" step="20" value="100" autocomplete="off" data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other">
       </div>
@@ -1304,7 +1304,7 @@
         <label for="sBin">bin width (s)</label>
         <input id="sBin" type="number" min="1" max="120" step="1" value="10" autocomplete="off" data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other">
         <label for="sPct">threshold percentile</label>
-        <input id="sPct" type="number" min="80" max="99.99" step="0.1" value="99" autocomplete="off" data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other">
+        <input id="sPct" type="number" min="80" max="99.99" step="0.1" value="98" autocomplete="off" data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other">
         <label for="sSur">surrogates</label>
         <input id="sSur" type="number" min="20" max="2000" step="20" value="200" autocomplete="off" data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other">
       </div>
@@ -1916,10 +1916,10 @@
      a page edited without bumping it turns CI red instead of shipping a date
      that has quietly become a lie. Bump it when you edit this page. -->
 <p class="site-dates" data-bugarach-born="2026-08-13"
-   data-bugarach-version-date="2026-09-14"
+   data-bugarach-version-date="2026-09-16"
    data-bugarach-commit="content-addressed"
    style="margin:1.5rem max(1.2rem, calc(50% - 23rem));color:#666;font-size:.85rem">
-  First published 2026-08-13 · this version 2026-09-14 · identified by its own
+  First published 2026-08-13 · this version 2026-09-16 · identified by its own
   bytes rather than by a build stamp
 </p>
 
@@ -11168,7 +11168,7 @@ registerDetector(
        exists, or declared `fixed`. */
     params: { excessThresholdHz: "dThr", rateWin: "dRate", contextWin: "dCtx" },
     knob: { key: "excessThresholdHz", input: "dThr", name: "excess threshold", unit: "Hz",
-            scale: "linear", grid: [0.5, 1, 2, 3, 4, 5, 6, 8] },
+            scale: "linear", grid: [0.5, 1, 2, 3, 3.5, 4, 4.5, 5, 6, 8] },
   }
 );
 
@@ -11298,7 +11298,7 @@ function sceDetect(trains, range, opts) {
   const u = rng32(o.seed === undefined ? 20260706 : o.seed);
 
   const wLo = range[0], wHi = range[1];
-  const empty = { starts: [], ends: [], widths: [], magnitude: [],
+  const empty = { starts: [], ends: [], widths: [], extents: [], magnitude: [],
                   magTotal: [], threshold: NaN, obs: new Float64Array(0),
                   bctr: new Float64Array(0), nEvents: 0 };
   if (wHi <= wLo) return empty;
@@ -11380,7 +11380,7 @@ function sceDetect(trains, range, opts) {
   }
   runs.push([cs, ce]);
 
-  const starts = [], ends = [], widths = [], mag = [], magTotal = [];
+  const starts = [], ends = [], widths = [], extents = [], mag = [], magTotal = [];
   for (const [fb, lb] of runs) {
     let mx = -Infinity;
     for (let b = fb; b <= lb; b++) if (obs[b] > mx) mx = obs[b];
@@ -11398,10 +11398,16 @@ function sceDetect(trains, range, opts) {
     starts.push(wLo + fb * bw);
     widths.push(w);
     ends.push(wLo + fb * bw + (Number.isNaN(w) ? 0 : w));
+    // THE STRETCH THE CALL WAS MADE ON, which `widths` is not: that is the event
+    // spread inside the bin (the generate_sce contract, and detections.csv's
+    // "tightness"), and read from the bin's start it can end before the events
+    // the call was made on. This is first bin's start to last bin's end, clipped
+    // to the window, and it is what the sweep scores — SceStream.extent_sec.
+    extents.push(Math.min(wLo + (lb + 1) * bw, wHi) - (wLo + fb * bw));
     mag.push(mx);
     magTotal.push(rois.size);
   }
-  return { starts, ends, widths, magnitude: mag, magTotal, threshold: thr,
+  return { starts, ends, widths, extents, magnitude: mag, magTotal, threshold: thr,
            obs, bctr, nEvents: starts.length };
 }
 
@@ -11479,7 +11485,7 @@ registerDetector(
       + "stage knock rather than coordination. They are counted here and drawn "
       + "like the rest; deciding what to do with them is yours." : null,
     knob: { key: "CThreshold", input: "dC", name: "C to start an event", unit: "",
-            scale: "log", grid: [0.005, 0.01, 0.02, 0.04, 0.08, 0.12] },
+            scale: "log", grid: [0.005, 0.01, 0.02, 0.04, 0.06, 0.08, 0.1, 0.12, 0.16, 0.2, 0.3] },
   }
 );
 
@@ -12366,7 +12372,10 @@ const fmtKnob = v => v >= 0.1 ? String(v)
 function sweepPoint(trains, range, which, base, knob, value, truth, tolSec, extra) {
   const cfg = { ...base, [knob.key]: value };
   const d = DETECTORS[which].run(trains, range, cfg, extra);
-  const widths = d.widths || d.starts.map((s, i) => d.ends[i] - s);
+  /* `extents` first: a detector whose width is not the stretch its call covers
+     says so there (binned SCE — its width is the event spread inside the bin),
+     the same rule `bugarach.score.score_stream` applies with `extent_sec`. */
+  const widths = d.extents || d.widths || d.starts.map((s, i) => d.ends[i] - s);
   return { knob: value,
            ...scoreDetections(truth.times, truth.fracs, d.starts, widths, tolSec,
                               truth.hotWindow || null) };

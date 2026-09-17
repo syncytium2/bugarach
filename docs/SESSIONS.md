@@ -32,6 +32,43 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
   `_work/` measurements. It reads, and does not touch, `bugarach/2026-09-15-detector-review/`.
 - ⚠ **Holds real treatment rasters**, so the page stays in the darkroom (FOUNDATIONS §5).
 - **Released when:** the page is in the folder and the builder is pushed on the `detector-review-doc` PR.
+### Mac/tube-ssl-report — DARKROOM claim RELEASED 2026-09-16: `bugarach/2026-09-16-tube-self-supervised/`
+- **Status:** **RELEASED — the two rebuilt figures and the real-recording lanes figure (two views,
+  HTML and PNG) are in the folder; repo copies of the two synthetic-derived figures are on the PR.**
+  Was ACTIVE, claimed before writing. Tony asked for the full test through to real data and a report
+  for the morning, murderboard authorized. The blind second round returned fifty-one findings and the
+  report was rewritten around them.
+- **Holds:** also wrote three PNGs to `darkroom/unsup-rule-as-code/` via `tools/show.py`, to put them
+  in front of Tony where a `SendUserFile` call cannot be trusted to have delivered.
+- **Writes:** one new folder only — the two rebuilt figures and one real-recording lanes figure.
+  Nothing existing in the darkroom is touched, and the 2026-09-15 rigid-shift-look folder is
+  read-only from here.
+- ⚠ **The lanes figure holds a real baseline raster, so it stays in the darkroom** (FOUNDATIONS §5,
+  whose released-by-name exception is *"a list of one, not a category"*): no repo copy of that
+  figure, and the report links it by name rather than embedding it. The two bake-off/training
+  figures are synthetic-derived and do have repo copies.
+- **Touches:** `docs/learned/tube_self_supervised/`, `docs/reviews/tube-self-supervised-2026-09-16*`,
+  `tools/make_line_sensors_figure.py`, `tools/make_tube_ssl_figure.py`, `tools/make_tube_real_lanes.py`.
+- **Goal:** unsupervised-learning.
+- **Released when:** the figures are in the folder and the rewritten report is on the PR.
+
+### vm/net-design — DARKROOM claim RELEASED 2026-09-16: `bugarach/2026-09-16-net-design/`
+- **Status:** **RELEASED — the folder holds two notes and no page.** The connector this session
+  reached Dropbox through takes inline text only, and re-typing a 90 KB generated file through it
+  would have produced a different file wearing the same name.
+- ⚠ **BOTH NOTES ARE NOW PARTLY WRONG, and the folder has no third note saying so.** A review on
+  PR #589 found three things the session had missed: the per-cell rate the numbers rest on is a
+  **median of medians**, which `adapt.py` documents as a trap and which comes out six times below
+  FOUNDATIONS §9's own range for the same quantity; an architecture called **`line` already
+  exists** on `unsup/rigid-shift-controls`, so the note's claim that it does not is false and one
+  of the three proposed nets largely duplicates it; and `gauge` is **not permutation invariant**,
+  which is the one ledger row the page calls structural everywhere. **Whoever opens that folder
+  next: the corrected rate is 0.0097 Hz, the cross-lab rate ratio is 2.4× and not 19.6×, and the
+  page needs rewriting around `line` before any of it is quoted.**
+- **Writes:** `README.md`, then `UPDATE-the-nets-are-drawn-by-draughtsman.md`. Nothing existing in
+  the darkroom was touched.
+- **Released when:** released. The corrected page is not in the repo either — it moved to
+  `claude/net-design-proposal-hw8rve`, unmerged, when #589 was split down to the probe.
 
 ### Mac/rigid-shift-darkroom-fix — DARKROOM claim RELEASED 2026-09-15: `bugarach/2026-09-15-rigid-shift-look/` and the stray `bugarach/bugarach/`
 - **Status:** **RELEASED — `cossart/` moved into the look folder, the stray folder removed, and the
@@ -2390,3 +2427,20 @@ session's work is not a sweep.
 - **Re-claimed** the same day, before rewriting all 16: pages are now decided by treatment 1 alone, so a
   recording given senktide after TTX leaves the senktide page. Released again at write: 16 pages rewritten,
   TTX 38 recordings and senktide 29, the same counts as the producer's `_TTX` and `_SENKTIDE` folders. Holds nothing.
+
+### darkroom/bugarach/field-size-candidates/ — the field-size candidates' bake-off figure (bugarach-broad-harbor)
+- **Claimed:** 2026-09-16, before the first write. A new folder, so nothing existing is overwritten.
+- **Writes:** `field_size_candidates.png` and `field_size_candidates.json` from
+  `tools/compare_field_size_candidates.py` (branch `eval-field-size-candidates`), one pair per training
+  seed, plus copies placed with `tools/show.py`.
+- **Released:** 2026-09-16, at session end; holds nothing. Written: `seed0/`, `seed1/` and
+  `chorus-repairs-seed0/` (each `field_size_candidates.png` and `.json`), and `learned_vs_coact.md`
+  and `.json` at the folder's top. The workstation's tuning run was told to claim its own folder
+  (`HANDOFF-workstation-tuning.md` on `eval-field-size-candidates`), not this one.
+
+### darkroom/bugarach/2026-09-16-best-parameters/ — the gated retune of all six operating points (065/best-parameters)
+- **Claimed:** 2026-09-16, before the first write. A new folder, so nothing existing is overwritten.
+- **Writes:** `retune.json` (the sweep, 48 bench recordings per point, both backgrounds, bootstrap
+  intervals) and `best_parameters.html` / `best_parameters.png` (Figure 1), from
+  `tools/retune_operating_points.py` on branch `best-parameters`.
+- **Released:** 2026-09-16, at write. Holds nothing.

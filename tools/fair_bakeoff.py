@@ -53,7 +53,8 @@ from pathlib import Path
 
 import numpy as np
 
-LEARNED = ("tube", "tube_guard", "tube_ratio", "tube_ratio_guard", "trace", "tiny")
+LEARNED = ("tube", "tube_guard", "tube_ratio", "tube_ratio_guard", "trace", "tiny",
+           "line", "line_length")
 LR = {"tube": 1e-2, "trace": 1e-3, "tiny": 1e-3,
       # THE 2x2 RUNS AT THE CONTROL'S LEARNING RATE, DELIBERATELY. `tube`'s 1e-2 is
       # what every published tube number was fitted under, and the three variants
@@ -61,7 +62,11 @@ LR = {"tube": 1e-2, "trace": 1e-3, "tiny": 1e-3,
       # the mechanism with its optimisation -- the mistake `model_track.md` already
       # records against the per-cell architecture, which "trains at a tenth the
       # learning rate of the model that works, so the comparison is uncontrolled."
-      "tube_guard": 1e-2, "tube_ratio": 1e-2, "tube_ratio_guard": 1e-2}
+      "tube_guard": 1e-2, "tube_ratio": 1e-2, "tube_ratio_guard": 1e-2,
+      # `line` runs at the control's rate too, for the same reason: it differs from
+      # `tube` by where the ROI axis is collapsed, and tuning its rate would confound
+      # the mechanism with its optimisation.
+      "line": 1e-2, "line_length": 1e-2}
 
 
 def _rows(r, *, folds_note=None) -> dict:
