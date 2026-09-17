@@ -435,6 +435,59 @@ def constants(run: Path) -> dict:
     return out
 
 
+def leak_digest(controls_out: dict, aggregate_out: dict) -> dict:
+    """The ranges the report's prose quotes for the two leak tests, one key per sentence.
+
+    Per-ROI test: per stream and surrogate, accuracy (the mouse-grouped forced choice) at each
+    displacement, its range over displacements, and the lowest lower and highest upper 95 % bound.
+    Aggregate test: per comparison, the hand-built initial bank's accuracy at each displacement and
+    its range, the trace-only accuracy range, and each fitted model's range over folds and
+    displacements.
+    """
+    out = {"per_roi": {}, "aggregate": {}}
+    for key, cell in controls_out.items():
+        stream, J = key.split("|")
+        for name, v in cell.items():
+            d = out["per_roi"].setdefault(stream, {}).setdefault(
+                name, {"by_J": {}, "accuracy_range": [1.0, 0.0], "lowest_p2_5": 1.0,
+                       "highest_p97_5": 0.0})
+            b = v["by_mouse"]
+            d["by_J"][J] = {"accuracy": b["accuracy"], "p2_5": b["p2_5"], "p97_5": b["p97_5"]}
+            d["accuracy_range"] = [min(d["accuracy_range"][0], b["accuracy"]),
+                                   max(d["accuracy_range"][1], b["accuracy"])]
+            d["lowest_p2_5"] = min(d["lowest_p2_5"], b["p2_5"])
+            d["highest_p97_5"] = max(d["highest_p97_5"], b["p97_5"])
+    for cell in aggregate_out.get("init", []):
+        if cell["stream"] != "fast":
+            continue
+        for k in AGG_KEYS:
+            if k not in cell:
+                continue
+            d = out["aggregate"].setdefault(k, {"init_by_J": {}})
+            a = cell[k]["all"]
+            d["init_by_J"][f"{cell['J_sec']:g}"] = {"accuracy": a["accuracy"], "p2_5": a["p2_5"],
+                                                    "p97_5": a["p97_5"]}
+            if "trace" in cell[k]:
+                d.setdefault("init_trace_by_J", {})[f"{cell['J_sec']:g}"] = \
+                    cell[k]["trace"]["accuracy"]
+    for k, d in out["aggregate"].items():
+        acc = [v["accuracy"] for v in d["init_by_J"].values()]
+        d["init_accuracy_range"] = [min(acc), max(acc)]
+        if "init_trace_by_J" in d:
+            t = list(d["init_trace_by_J"].values())
+            d["init_trace_accuracy_range"] = [min(t), max(t)]
+        for model in aggregate_out.get("fitted", {}):
+            ranges = aggregate_out[f"fitted_{model}_all_accuracy_range_over_folds"]
+            vals = [x for key, r in ranges.items() if key.split("|")[0] == k for x in r]
+            if vals:
+                d[f"fitted_{model}_accuracy_range"] = [min(vals), max(vals)]
+            trace = [c[k]["trace"]["accuracy"] for c in aggregate_out["fitted"][model]
+                     if k in c and "trace" in c[k]]
+            if trace:
+                d[f"fitted_{model}_trace_accuracy_range"] = [min(trace), max(trace)]
+    return out
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -449,6 +502,7 @@ def main(argv=None):
                "bakeoff": bakeoff(run), "training": training(run), "aggregate_leak": aggregate(run),
                "controls_lab": controls(run), "real_compare": real(run, not a.no_edges),
                "probe": probe(run), "constants": constants(run)}
+    summary["leak_digest"] = leak_digest(summary["controls_lab"], summary["aggregate_leak"])
     (run / "summary.json").write_text(json.dumps(summary, indent=1, default=float))
     print(run / "summary.json")
 
