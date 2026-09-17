@@ -140,7 +140,7 @@ def test_pooling_stored_rows_equals_pooling_live_scores(run):
     from bugarach.score import score_stream
 
     out, plan = run["out"], run["plan"]
-    conf = plan.hand["coact"][0]
+    conf = plan.reference          # the budget's reference is scored on every recording
     doc = _json(T.hand_score_path(out, "coact", conf["config_key"]))
     names = plan.recordings(plan.split.seeds)
     live = []
@@ -222,10 +222,10 @@ def test_a_chosen_checkpoint_reloaded_in_a_fresh_process_reproduces_its_held_out
         assert row == want, (s, row, want)
 
 
-def test_a_chosen_settings_file_round_trips_the_sliding_parameters(run):
+def test_a_chosen_settings_file_round_trips_what_was_chosen(run):
     from bugarach.detect_folder import load_settings
 
-    out, plan = run["out"], run["plan"]
+    out = run["out"]
     for w in T.SELECTIONS:
         sel = _json(T.selection_path(out, w, 0, "coact"))
         if sel["config_key"] is None:
@@ -234,7 +234,6 @@ def test_a_chosen_settings_file_round_trips_the_sliding_parameters(run):
         declared = _json(T.config_path(out, "coact", sel["config_key"]))["params"]
         (got,) = params.values()
         assert got == declared
-        assert got["window_mode"] == "sliding"
         (prov,) = provenance.values()
         assert prov["fitted_config_key"] == sel["config_key"]
 
@@ -295,6 +294,49 @@ def test_the_declaration_writes_out_the_backgrounds_the_empty_recordings_and_the
     assert d["reference"]["params"] == json.loads(json.dumps(bench.OPERATING_POINTS["coact"].params))
     score = next((run["out"] / "scores" / "tube").rglob("*__fold*.json"))
     assert {T.regime_of(r) for r in _json(score)["rows"]} == {"quiet", "busy"}
+
+
+def test_the_per_fold_search_only_ever_sees_its_own_training_recordings(run):
+    """Option A's whole point: goal 1's search runs inside a fold and cannot reach the held-out one."""
+    out, plan = run["out"], run["plan"]
+    assert plan.hand_mode["coact"] == "search", "bench.FULL_GRIDS should put coact on the search path"
+    for h in plan.folds():
+        held = set(plan.fold_recordings([h]))
+        for w in T.SELECTIONS:
+            sel = _json(T.selection_path(out, w, h, "coact"))
+            searched = set(sel["pooled"]["recordings"])
+            assert searched == set(plan.fold_recordings(plan.training_folds(h)))
+            assert not searched & held
+            assert not {s - T.NULL_SEED_OFFSET for s in sel["pooled"]["twin_seeds"]} & _seeds(held)
+            scored = _json(T.searched_score_path(out, "coact", h, w))
+            assert set(scored["rows"]) == held, "the chosen settings are scored on the held-out fold"
+
+
+def test_the_gate_refuses_candidates_inside_the_fold_and_the_ungated_search_does_not(run):
+    out, plan = run["out"], run["plan"]
+    meta = _json(out / "meta.json")
+    refused = 0
+    for h in plan.folds():
+        b = meta["budgets"][str(h)]
+        ungated, gated = (_json(T.selection_path(out, w, h, "coact")) for w in T.SELECTIONS)
+        assert ungated["n_refused"] == 0, "no gate means no refusals"
+        refused += gated["n_refused"]
+        assert T.within(b, gated["inner_probe_per_hour"], gated["inner_quiet_per_hour"])
+        assert gated["inner_f1"] <= ungated["inner_f1"] + 1e-12, "the gate cannot raise the score"
+    assert refused > 0, "the gate never bit; the budget or the grid is not doing its job"
+
+
+def test_the_declaration_records_how_the_coded_side_was_searched(run):
+    from search_all_settings import MOVE_EPS
+
+    d = _json(run["out"] / "meta.json")["declaration"]
+    assert d["hand_mode"]["coact"] == "search"
+    assert d["hand_grid_source"]["coact"] == "bench.FULL_GRIDS"
+    assert d["hand_search"]["min_gain"] == MOVE_EPS == T.SEARCH_MIN_GAIN
+    assert d["hand_search"]["extend_ranges"] is False and d["hand_search"]["pairs"] is False
+    sel = _json(T.selection_path(run["out"], "ungated", 0, "coact"))
+    assert set(sel["grids"]) == set(dict(d["hand_axes"]["coact"])), "the grids walked are declared"
+    assert set(sel["edge_flags"]) <= set(sel["grids"])
 
 
 def test_a_home_spec_plan_still_names_recordings_by_seed():

@@ -106,6 +106,10 @@ BENCH_REGIMES = {"quiet": "baseline_quiet", "busy": "baseline_busy"}
 BENCH_NULLS = {"null_quiet": "baseline_quiet", "null_busy": "baseline_busy"}
 BENCH_GATE_NULL = "null_quiet"
 MAX_HAND_CONFIGS = 5000   # a full product past this is not what a coordinate-search grid means
+# search_all_settings.MOVE_EPS, the epsilon a move must beat. This tool's objective is F1-sized, so
+# the search's own default is the right one; it is passed rather than defaulted because a caller
+# scoring anything else silently never moves (WSMIP065, 2026-09-17).
+SEARCH_MIN_GAIN = 0.002
 GPU_LONE_FIT_SEC = {"tube": 4.2, "chorus_norm": 6.4, "chorus_gain_norm": 6.4,
                     "line_length": 10.4}   # WSMIP064, RTX A4000, untuned 900 steps, one process
 MODELS = ("chorus_norm", "tube", "chorus_gain_norm", "line_length")   # priority order
@@ -208,33 +212,32 @@ def hand_config(det: str, grid_values: dict | None, *, index) -> dict:
                 config_key=config_key(det, params))
 
 
-def hand_axes(det: str, quick: bool) -> tuple[list, str]:
-    """A coded detector's grid, and where it came from.
+def hand_axes(det: str, quick: bool) -> tuple[list, str, str]:
+    """A coded detector's grid, where it came from, and how it is searched.
 
     Goal 1 (WSMIP065) declares every knob's grid once, in ``bench.FULL_GRIDS``, for this tool and
-    its own search to import (``HANDOFF-coded-detectors.md`` §3 step 3). Until that lands, the
-    grids written out here for CoactDetect and LoCo stand in, and the declaration says which.
+    its own search to import (``HANDOFF-coded-detectors.md`` §3 step 3). Those grids are a
+    **coordinate search's**, per axis and never a product, so a detector that has one is searched
+    per outer fold through ``search_all_settings.choose_settings`` (option A,
+    ``docs/todo/2026-09-17-how-is-the-coded-side-searched-inside-nested-cross-validation.md``).
+    A detector without one falls back to this tool's own grids, walked as a product.
     """
     from bugarach import bench
 
     full = getattr(bench, "FULL_GRIDS", None)
     if full is not None and det in full:
-        g = full[det]
-        axes, source = [(a, list(v)) for a, v in (g.items() if isinstance(g, dict) else g)], \
-            "bench.FULL_GRIDS"
-    elif det in HAND_AXES:
-        axes, source = HAND_AXES[det], "tune_learned_vs_coact.HAND_AXES (bench.FULL_GRIDS not on this tree)"
-    else:
+        return [(a, list(v)) for a, v in full[det].items()], "bench.FULL_GRIDS", "search"
+    if det not in HAND_AXES:
         raise SystemExit(f"{det}: no grid. bench.FULL_GRIDS does not declare it and this tool has "
                          "none of its own; goal 1 supplies every coded detector's grid.")
+    axes = HAND_AXES[det]
     if quick:
         axes = [(a, [v[0], v[-1]]) for a, v in axes]
     n = math.prod(len(v) for _, v in axes)
     if n > MAX_HAND_CONFIGS:
-        raise SystemExit(f"{det}: {n} configurations as a full product ({source}). A grid that "
-                         "size is a coordinate search's, and nested CV over a coordinate search is "
-                         "not implemented here: decide how the coded side is searched first.")
-    return axes, source
+        raise SystemExit(f"{det}: {n} configurations as a full product. A grid that size is a "
+                         "coordinate search's; declare it in bench.FULL_GRIDS instead.")
+    return axes, "tune_learned_vs_coact.HAND_AXES (bench.FULL_GRIDS does not declare it)", "product"
 
 
 class Plan:
@@ -287,10 +290,14 @@ class Plan:
             self.configs[m] = [learned_config(m, d[i], index=i, is_untuned=(i == len(d) - 1),
                                               steps=100 if quick else None, n_train=self.n_train)
                                for i in idx]
-        self.hand, self.hand_axes, self.hand_grid_source = {}, {}, {}
+        self.hand, self.hand_axes, self.hand_grid_source, self.hand_mode = {}, {}, {}, {}
         for det in self.detectors:
-            axes, source = hand_axes(det, quick)
-            self.hand_axes[det], self.hand_grid_source[det] = axes, source
+            axes, source, mode = hand_axes(det, quick)
+            self.hand_axes[det], self.hand_grid_source[det], self.hand_mode[det] = axes, source, mode
+            if mode == "search":
+                # The candidates are not enumerable here: choose_settings walks them per fold.
+                self.hand[det] = []
+                continue
             names = [a for a, _ in axes]
             self.hand[det] = [hand_config(det, dict(zip(names, vals)), index=i) for i, vals in
                               enumerate(itertools.product(*[v for _, v in axes]))]
@@ -359,6 +366,11 @@ def score_path(out, model, key, seed, recs, fold):
 
 def hand_score_path(out, det, key):
     return Path(out) / "scores" / det / f"{key}.json"
+
+
+def searched_score_path(out, det, h, w):
+    """A searched detector's held-out scores: one file per outer fold and selection."""
+    return Path(out) / "scores" / det / f"outer{h}__{w}.json"
 
 
 def selection_path(out, which, h, name):
@@ -494,6 +506,8 @@ def run_job(job, out, sim, spec_path):
     try:
         if job["kind"] == "hand":
             _run_hand(job, sim)
+        elif job["kind"] == "search":
+            _run_search(job, Path(out), sim)
         else:
             _run_fit(job, Path(out), sim, spec_path)
         return dict(key=job["key"], status="ok", seconds=time.perf_counter() - t0)
@@ -503,6 +517,103 @@ def run_job(job, out, sim, spec_path):
                         traceback=traceback.format_exc(), torch=torch_version(),
                         at=time.strftime("%Y-%m-%dT%H:%M:%S%z")))
         return dict(key=job["key"], status="error", seconds=time.perf_counter() - t0)
+
+
+def _score_settings(det, params, sim, rids, seeds, twin_keys, busy_sec):
+    """One candidate on one set of recordings: the objective, the probe rates, the empty rate.
+
+    Everything the budget needs, measured where the recordings are. Goal 1's search never sees any
+    of it: it calls back for a number and a yes or no.
+    """
+    from bugarach.bench import run_detector
+    from bugarach.score import score_stream
+
+    items, twins = [], {}
+    for rid in rids:
+        sl, gt = _planted(sim, rid)
+        items.append((rid, score_row(score_stream(gt, run_detector(det, sl, **params)))))
+    for key in twin_keys:
+        twins[key] = {}
+        for sd in seeds:
+            tsl, tgt = _empty(sim, key, sd)
+            twins[key][str(sd)] = dict(
+                twin_seed=sd + NULL_SEED_OFFSET, duration_sec=float(tgt.params["duration_sec"]),
+                n_detected=int(score_stream(tgt, run_detector(det, tsl, **params)).n_detected))
+    plan_like = SimpleNamespace(busy_sec=busy_sec)
+    return dict(objective=objective(items, det), probe_per_hour=probe_rates(items, plan_like),
+                items=items, twins=twins)
+
+
+def _run_search(job, out, sim):
+    """Goal 1's coordinate search, run inside one outer fold, once per selection.
+
+    The recordings it is given are that fold's TRAINING recordings; the held-out fold is scored
+    only after the search has finished, with what it chose.
+    """
+    sys.path.insert(0, str(REPO / "tools"))
+    from search_all_settings import MOVE_EPS, choose_settings
+
+    from bugarach.learn.checkpoint import canonical, config_key
+
+    assert MOVE_EPS == SEARCH_MIN_GAIN, (
+        f"search_all_settings.MOVE_EPS is {MOVE_EPS}, this tool declares {SEARCH_MIN_GAIN}; "
+        "the declaration must say the epsilon the search actually used")
+
+    det, h = job["det"], job["outer_fold"]
+    budget = read_json(Path(out) / "meta.json")["budgets"][str(h)]
+    train, seeds = job["train_recordings"], job["train_seeds"]
+    gate, busy_sec = job["gate_key"], job["busy_sec"]
+    cache: dict = {}
+
+    def measured(params):
+        key = json.dumps(canonical(params), sort_keys=True)
+        if key not in cache:
+            cache[key] = _score_settings(det, params, sim, train, seeds, [gate], busy_sec)
+        return cache[key]
+
+    def score(params):
+        return measured(params)["objective"]
+
+    def admissible(params):
+        m = measured(params)
+        return within(budget, m["probe_per_hour"],
+                      quiet_rate(list(m["twins"][gate].values())))
+
+    t0 = time.perf_counter()
+    for w in SELECTIONS:
+        got = choose_settings(det, score=score,
+                              admissible=None if w == "ungated" else admissible,
+                              # An F1-sized objective, so MOVE_EPS is the right epsilon; passed
+                              # rather than defaulted because a caller scoring something else
+                              # silently never moves (WSMIP065, 2026-09-17).
+                              min_gain=MOVE_EPS, max_rounds=job["max_rounds"])
+        params = dict(got.params)
+        key = config_key(det, params)
+        write_json(config_path(Path(out), det, key),
+                   dict(detector=det, params=params, config_key=key, grid_index=None,
+                        is_shipped=None, chosen_by="search_all_settings.choose_settings",
+                        outer_fold=h, selection=w))
+        # The held-out fold, once, with what the search chose — and every empty recording, since
+        # the ones outside the gate are reported.
+        held = _score_settings(det, params, sim, job["test_recordings"], job["test_seeds"],
+                               job["twins"], busy_sec)
+        write_json(searched_score_path(Path(out), det, h, w),
+                   dict(config=f"configs/{det}/{key}.json", config_key=key, outer_fold=h,
+                        selection=w, rows=dict(held["items"]), twins=held["twins"],
+                        torch=torch_version(), host=socket.gethostname()))
+        train_m = measured(params)
+        write_json(selection_path(Path(out), w, h, det), dict(
+            detector=det, outer_fold=h, selection=w, config_key=key,
+            config=f"configs/{det}/{key}.json", budget=f"meta.json budgets[{h}]",
+            searched_by="search_all_settings.choose_settings (goal 1's grids, per fold)",
+            grids=got.grids, min_gain=MOVE_EPS, max_rounds=job["max_rounds"],
+            inner_f1=got.score, moves=got.moves, edge_flags=got.edges,
+            n_scored=got.n_scored, n_refused=got.n_refused,
+            inner_probe_per_hour=train_m["probe_per_hour"],
+            inner_quiet_per_hour=quiet_rate(list(train_m["twins"][gate].values())),
+            pooled=dict(recordings=list(train), recording_seeds=list(seeds),
+                        twin_seeds=[s + NULL_SEED_OFFSET for s in seeds]),
+            seconds=time.perf_counter() - t0))
 
 
 def _run_hand(job, sim):
@@ -623,6 +734,23 @@ def fit_job(plan, out, model, ci, seed, train_folds, score_folds, role, priority
                 priority=priority)
 
 
+def search_job(plan, out, det, h, priority):
+    """One coded detector, one outer fold: goal 1's coordinate search under both selections.
+
+    Both selections in one job because they share a score cache: the ungated search's work is the
+    gated one's too, and a second process could not reuse it.
+    """
+    return dict(kind="search", key=f"search/{det}/outer{h}", det=det, outer_fold=h,
+                train_recordings=plan.fold_recordings(plan.training_folds(h)),
+                train_seeds=sorted(plan.split.train(h)),
+                test_recordings=plan.fold_recordings([h]), test_seeds=sorted(plan.split.test(h)),
+                gate_key=plan.gate_key, twins=list(plan.twin_keys), busy_sec=plan.busy_sec,
+                max_rounds=2 if plan.quick else None,
+                outputs=[str(selection_path(out, w, h, det)) for w in SELECTIONS]
+                + [str(searched_score_path(out, det, h, w)) for w in SELECTIONS],
+                priority=priority)
+
+
 def hand_job(plan, out, conf, priority):
     det = conf["detector"]
     return dict(kind="hand", key=f"hand/{det}/{conf['config_key']}", det=det,
@@ -639,6 +767,10 @@ def job_done(job) -> bool:
 def plan_jobs(plan, out) -> list[dict]:
     jobs = []
     for d in plan.detectors:
+        if plan.hand_mode[d] == "search":
+            for h in plan.folds():
+                jobs.append(search_job(plan, out, d, h, (1, 0, 0, h)))
+            continue
         for conf in plan.hand[d]:
             jobs.append(hand_job(plan, out, conf, (1, 0, 0, conf["grid_index"])))
     pairs = list(itertools.combinations(plan.folds(), plan.n_folds - 2))
@@ -660,6 +792,8 @@ def plan_jobs(plan, out) -> list[dict]:
 def stage_of(job) -> str:
     if job["kind"] == "hand":
         return f"hand:{job['det']}"
+    if job["kind"] == "search":
+        return f"search:{job['det']}"
     return f"{job['role']}:{job['model']}"
 
 
@@ -939,7 +1073,15 @@ def declaration(plan) -> dict:
         untuned={m: UNTUNED[m] for m in plan.models}, draw_seed=DRAW_SEED,
         configurations={m: [c["config_key"] for c in plan.configs[m]] for m in plan.models},
         detectors=list(plan.detectors), hand_axes=dict(plan.hand_axes),
-        hand_grid_source=dict(plan.hand_grid_source),
+        hand_grid_source=dict(plan.hand_grid_source), hand_mode=dict(plan.hand_mode),
+        hand_search=dict(
+            how="search_all_settings.choose_settings per detector and outer fold, once per "
+                "selection, on that fold's training recordings only (option A, decided with "
+                "WSMIP065 on 2026-09-17)",
+            min_gain=SEARCH_MIN_GAIN, extend_ranges=False, pairs=False,
+            is_valid="bench.settings_are_valid",
+            note="the grids are goal 1's, per axis and never a product; an axis whose chosen value "
+                 "sits at an end is reported, not refused"),
         hand_configurations={d: [c["config_key"] for c in plan.hand[d]] for d in plan.detectors},
         reference=dict(config_key=plan.reference["config_key"], params=plan.reference["params"],
                        note="CoactDetect at bench.OPERATING_POINTS as this code found it (goal 2 "
@@ -1073,9 +1215,11 @@ def run(plan, out: Path, jobs: int, retry_errors: bool = False, gpu_jobs: int = 
         if "budgets" not in meta:
             return
         open_ = list(state["pending"].values()) + list(state["running"].values())
-        if "hand" not in selected and not any(j["kind"] == "hand" for j in open_):
+        # A searched detector writes its own selections, in the worker that ran its search.
+        product = [d for d in plan.detectors if plan.hand_mode[d] == "product"]
+        if product and "hand" not in selected and not any(j["kind"] == "hand" for j in open_):
             selected.add("hand")
-            for d in plan.detectors:
+            for d in product:
                 for h in plan.folds():
                     for w, doc in select_hand(plan, out, d, h, meta["budgets"][str(h)]).items():
                         write_json(selection_path(out, w, h, d), doc)
@@ -1276,7 +1420,8 @@ def summarize(plan, out) -> dict:
                     entry[w] = dict(config_key=None, f1=0.0, note="no admissible configuration"
                                     if sel else "not selected")
                     continue
-                doc = read_json(hand_score_path(out, d, sel["config_key"]))
+                doc = read_json(searched_score_path(out, d, h, w) if plan.hand_mode[d] == "search"
+                                else hand_score_path(out, d, sel["config_key"]))
                 seeds = plan.split.test(h)
                 items = [(rid, doc["rows"][rid]) for rid in plan.recordings(seeds)]
                 p = pooled([r for _, r in items], d)
@@ -1354,6 +1499,9 @@ def main(argv=None) -> int:
     p.add_argument("--gpu-jobs", type=int, default=1,
                    help="with --device cuda, how many learned fits run at once, in a pool of their "
                         "own (default 1)")
+    p.add_argument("--allow-binned-reference", action="store_true",
+                   help="run even though the budget's CoactDetect reference is the binned shipped "
+                        "point rather than goal 1's landed sliding values")
     p.add_argument("--simulation", choices=SIMULATIONS, default="bench",
                    help="bench (default): the bench's fitted field at its two backgrounds, goal 2's "
                         "next comparison. home: the retired home spec, docs/learned/generator_spec.json")
@@ -1371,6 +1519,17 @@ def main(argv=None) -> int:
                              "See docs/windows_workstation_setup.md, section 4.")
     plan = Plan(quick=a.quick, models=models, detectors=dets, device=a.device,
                 simulation=a.simulation)
+    # Decision 4: the budget is anchored to goal 1's landed every-knob CoactDetect. Its values
+    # reach this run through bench.OPERATING_POINTS, and until goal 1 lands them the shipped point
+    # is the binned one it is about to replace. A real run against that anchor would be measured
+    # against a reference nobody intends to ship.
+    if not a.quick and plan.reference["params"].get("window_mode") != "sliding" \
+            and not a.allow_binned_reference:
+        raise SystemExit(
+            "the budget's reference is CoactDetect at bench.OPERATING_POINTS, and this tree's is "
+            f"{plan.reference['params'].get('window_mode') or 'binned'}, not sliding. Goal 1 lands "
+            "the sliding every-knob values (HANDOFF-coded-detectors.md §3 step 4); wait for them, "
+            "or pass --allow-binned-reference and say in the readout which reference was used.")
     t0 = time.time()
     r = run(plan, a.out.expanduser(), a.jobs, retry_errors=a.retry_errors, gpu_jobs=a.gpu_jobs)
     n_ok = sum(1 for x in r["ran"] if x["status"] == "ok")

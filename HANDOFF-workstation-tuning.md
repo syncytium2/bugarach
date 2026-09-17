@@ -797,6 +797,23 @@ from Task Scheduler, not before the elevation's sign-out (about 12:09).
   - **GPU fits run in their own pool** of `--gpu-jobs` workers.
   - 15 tests pass (5 new, one per decision plus the home spec). A bench `--quick` run finished 23 of 23
     jobs on the CPU (36 s) and on the GPU (48 s).
-- **Still waiting on goal 1:** `bench.FULL_GRIDS`, sliding on `main`, and the every-knob CoactDetect
-  values. **Open question for goal 1 and Tony:** if the every-knob grids are a coordinate search rather
-  than a product, how the coded side is searched inside nested CV.
+- **The coded side is searched per fold — option A, agreed with WSMIP065 on 2026-09-17** (todo
+  `2026-09-17-how-is-the-coded-side-searched-inside-nested-cross-validation.md`; asked in #613 and
+  answered session to session over Remote Control once 065 came online). 065 built
+  `search_all_settings.choose_settings(detector, *, score, admissible=None, ...)` to 064's interface:
+  the search never sees a recording, a background, an empty recording, a budget or a pooling rule —
+  it calls back for a number and a yes or no, so the held-out fold is unreachable by construction.
+  **Adapter built here** (`--detectors` on the search path when `bench.FULL_GRIDS` declares them):
+  one job per detector and outer fold runs both selections against a shared score cache, writes the
+  chosen settings as a config, the selection with the search's provenance (moves, edges, candidates
+  scored and refused, the grids walked), and the held-out scores. `min_gain` is passed as
+  `MOVE_EPS`, and an assertion fails if the two ever disagree. `extend_ranges` stays off inside a
+  fold, and an edge is data, not a refusal. **A quick bench run:** 20 of 20 jobs, the gate refusing
+  16 of 30 candidates in fold 0 while the ungated search refused none. 18 tests pass.
+- ⚠ **The shipped CoactDetect went back to BINNED** on 065's branch (sliding broke the empty-recording
+  and precision budgets at binned-tuned values; the sliding point lands with goal 1 step 3). Since
+  decision 4 anchors the budget to `bench.OPERATING_POINTS` as the run finds it, **a full bench run now
+  refuses to start** unless the reference is sliding, or `--allow-binned-reference` is passed and the
+  readout says which reference it used.
+- **Still waiting on goal 1:** #619 to merge, then sliding and the every-knob CoactDetect values in
+  `OPERATING_POINTS`.
