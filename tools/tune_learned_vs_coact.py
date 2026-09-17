@@ -122,6 +122,21 @@ HAND_AXES = {   # the tip's grids after #597, written out (decision 3); sliding 
     "loco": [("threshold_pctile", [97.0, 98.0, 99.0, 99.5, 99.9, 99.99, 99.999, 99.9999]),
              ("bin_width_sec", [0.5, 1.0, 2.0]), ("context_win_sec", [60.0, 120.0, 240.0])],
 }
+WIDE_HAND_AXES = {
+    # Declared 2026-09-16 at 22:00, after the overnight run's declared grids tuned CoactDetect to
+    # an edge of every axis and LoCo to the edge of its context, and before any widened result:
+    # each axis whose declared optimum sat at an edge is extended past that edge; the others are
+    # unchanged. One widening round: if an optimum sits at an edge again, it is reported, not
+    # chased (Tony: "run the wider grid when you can").
+    "coact": [("alpha", [1e-1, 3e-2, 1e-2, 3e-3, 1e-3, 3e-4, 1e-4, 3e-5, 1e-5, 1e-6, 1e-7, 1e-8,
+                         1e-9, 1e-10, 1e-11, 1e-12]),
+              ("int_win_sec", [0.25, 0.5, 1.0, 2.0, 4.0]),
+              ("context_win_sec", [30.0, 60.0, 120.0, 240.0, 480.0, 960.0])],
+    "loco": [("threshold_pctile", [97.0, 98.0, 99.0, 99.5, 99.9, 99.99, 99.999, 99.9999]),
+             ("bin_width_sec", [0.5, 1.0, 2.0]),
+             ("context_win_sec", [60.0, 120.0, 240.0, 480.0, 960.0])],
+}
+HAND_GRIDS = {"declared": HAND_AXES, "wide": WIDE_HAND_AXES}
 TIE_RULES = {
     "learned_ungated": "highest pooled F1; then fewer parameters; then fewer training steps; "
                        "then earlier in the draw",
@@ -190,7 +205,8 @@ def hand_config(det: str, grid_values: dict | None, *, index) -> dict:
 class Plan:
     """What this invocation runs: the declaration, shrunk by ``--quick`` or subset flags."""
 
-    def __init__(self, *, quick: bool, models=MODELS, detectors=HAND, spec_path=SPEC_PATH):
+    def __init__(self, *, quick: bool, models=MODELS, detectors=HAND, spec_path=SPEC_PATH,
+                 hand_grid="declared"):
         from bugarach.bench import fold_split
 
         self.quick = quick
@@ -211,9 +227,11 @@ class Plan:
             self.configs[m] = [learned_config(m, d[i], index=i, is_untuned=(i == len(d) - 1),
                                               steps=100 if quick else None, n_train=self.n_train)
                                for i in idx]
+        self.hand_grid = hand_grid
+        self.hand_axes = {d: HAND_GRIDS[hand_grid][d] for d in self.detectors}
         self.hand = {}
         for det in self.detectors:
-            axes = [(a, [v[0], v[-1]] if quick else v) for a, v in HAND_AXES[det]]
+            axes = [(a, [v[0], v[-1]] if quick else v) for a, v in self.hand_axes[det]]
             names = [a for a, _ in axes]
             self.hand[det] = [hand_config(det, dict(zip(names, vals)), index=i) for i, vals in
                               enumerate(itertools.product(*[v for _, v in axes]))]
@@ -663,7 +681,7 @@ def select_hand(plan, out, det, h, budget) -> dict:
         doc = dict(common, selection=w, config_key=c["conf"]["config_key"],
                    config=f"configs/{det}/{c['conf']['config_key']}.json",
                    grid_index=c["conf"]["grid_index"], inner_f1=c["inner_f1"],
-                   edge_flags=edge_flags(c["conf"]["params"], HAND_AXES[det]))
+                   edge_flags=edge_flags(c["conf"]["params"], plan.hand_axes[det]))
         if w == "gated":
             doc.update(inner_busy_per_hour=c["inner_busy_per_hour"],
                        inner_quiet_per_hour=c["inner_quiet_per_hour"], n_admissible=n_adm)
@@ -738,7 +756,8 @@ def declaration(plan) -> dict:
         learned_axes={m: LEARNED_AXES[m] for m in plan.models},
         untuned={m: UNTUNED[m] for m in plan.models}, draw_seed=DRAW_SEED,
         configurations={m: [c["config_key"] for c in plan.configs[m]] for m in plan.models},
-        detectors=list(plan.detectors), hand_axes={d: HAND_AXES[d] for d in plan.detectors},
+        detectors=list(plan.detectors), hand_axes=plan.hand_axes,
+        **({} if plan.hand_grid == "declared" else dict(hand_grid=plan.hand_grid)),
         hand_configurations={d: [c["config_key"] for c in plan.hand[d]] for d in plan.detectors},
         reference=dict(config_key=plan.reference["config_key"],
                        note="sliding CoactDetect at OPERATING_POINTS as of this commit, the "
@@ -1101,6 +1120,9 @@ def main(argv=None) -> int:
     p.add_argument("--quick", action="store_true")
     p.add_argument("--models", default=",".join(MODELS))
     p.add_argument("--detectors", default=",".join(HAND))
+    p.add_argument("--hand-grid", choices=sorted(HAND_GRIDS), default="declared",
+                   help="'wide' is the widened CoactDetect/LoCo grid declared after the declared "
+                        "grid tuned to its edges; run it with --models '' into its own --out")
     p.add_argument("--retry-errors", action="store_true",
                    help="delete error files first, so those jobs run again")
     a = p.parse_args(argv)
@@ -1108,7 +1130,7 @@ def main(argv=None) -> int:
     dets = tuple(x for x in a.detectors.split(",") if x)
     assert set(models) <= set(MODELS) and set(dets) <= set(HAND)
     assert "coact" in dets, "the budget's reference is CoactDetect"
-    plan = Plan(quick=a.quick, models=models, detectors=dets)
+    plan = Plan(quick=a.quick, models=models, detectors=dets, hand_grid=a.hand_grid)
     t0 = time.time()
     r = run(plan, a.out.expanduser(), a.jobs, retry_errors=a.retry_errors)
     n_ok = sum(1 for x in r["ran"] if x["status"] == "ok")

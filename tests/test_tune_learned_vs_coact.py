@@ -232,3 +232,18 @@ def test_a_chosen_settings_file_round_trips_the_sliding_parameters(run):
         assert got["window_mode"] == "sliding"
         (prov,) = provenance.values()
         assert prov["fitted_config_key"] == sel["config_key"]
+
+
+def test_the_wide_reference_grid_contains_the_declared_one_and_leaves_its_declaration_alone():
+    declared = T.Plan(quick=False, models=(), hand_grid="declared")
+    wide = T.Plan(quick=False, models=(), hand_grid="wide")
+    assert "hand_grid" not in T.declaration(declared), "the overnight run's declaration must not move"
+    assert T.declaration(declared)["hand_axes"] == T.HAND_AXES
+    assert T.declaration(wide)["hand_grid"] == "wide"
+    for det in T.HAND:
+        for (a, narrow), (b, widened) in zip(T.HAND_AXES[det], T.WIDE_HAND_AXES[det]):
+            assert a == b and set(narrow) <= set(widened)
+        assert {c["config_key"] for c in declared.hand[det]} <= \
+            {c["config_key"] for c in wide.hand[det]}
+    assert len(wide.hand["coact"]) == 16 * 5 * 6 and len(wide.hand["loco"]) == 8 * 3 * 5
+    assert wide.reference["config_key"] == declared.reference["config_key"]
