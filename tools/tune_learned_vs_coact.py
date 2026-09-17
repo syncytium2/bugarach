@@ -190,10 +190,12 @@ def hand_config(det: str, grid_values: dict | None, *, index) -> dict:
 class Plan:
     """What this invocation runs: the declaration, shrunk by ``--quick`` or subset flags."""
 
-    def __init__(self, *, quick: bool, models=MODELS, detectors=HAND, spec_path=SPEC_PATH):
+    def __init__(self, *, quick: bool, models=MODELS, detectors=HAND, spec_path=SPEC_PATH,
+                 device: str = "cpu"):
         from bugarach.bench import fold_split
 
         self.quick = quick
+        self.device = device   # where learned fits train and score; part of the declaration
         self.models = tuple(models)
         self.detectors = tuple(detectors)
         self.spec_path = spec_path
@@ -324,14 +326,11 @@ def _recording(spec, seed, factor=None):
 
 
 def probabilities(trained, slice_):
-    """Per-frame probabilities, exactly as ``Trained.predict`` computes them."""
-    import torch
-
+    """Per-frame probabilities, exactly as ``Trained.predict`` computes them, on the model's device."""
+    from bugarach.learn import train as T
     from bugarach.learn.encode import encode
     enc = encode(slice_, dt=trained.dt)
-    with torch.no_grad():
-        p = torch.sigmoid(trained.model(torch.from_numpy(enc.raster).unsqueeze(0)))
-    return p.squeeze(0).numpy(), enc
+    return T.probabilities(trained.model, enc.raster), enc
 
 
 def decode_at(trained, p, enc, threshold):
@@ -406,7 +405,7 @@ def _run_fit(job, out, spec, spec_path):
         tr = train(job["model"], mk, n_train=n_train, steps=int(conf["training"]["steps"]),
                    crop=int(conf["training"]["crop_frames"]),
                    batch=int(conf["training"]["batch"]), lr=float(conf["training"]["lr"]),
-                   seed=seed, **conf["overrides"])
+                   seed=seed, device=job.get("device"), **conf["overrides"])
     train_sec = time.perf_counter() - t0
     assert VAL_SEED_BLOCK   # the threshold block is fold_maker's validation recordings, above
     grid = [float(t) for t in THRESHOLD_GRID]
@@ -467,6 +466,8 @@ def fit_job(plan, out, model, ci, seed, train_folds, score_folds, role, priority
     stem = fit_stem(out, model, conf["config_key"], seed, recs)
     return dict(kind="fit", role=role, key=f"fit/{model}/{conf['config_key']}/{stem.name}",
                 model=model, ci=ci, config_key=conf["config_key"], seed=seed,
+                # None on the CPU, so a CPU fit calls `train` exactly as it did before --device
+                device=None if plan.device == "cpu" else plan.device,
                 train_folds=sorted(train_folds), train_seeds=recs,
                 score_folds={int(f): plan.fold_seeds([f]) for f in sorted(score_folds)},
                 twins=list(TWIN_FACTORS) if role == "outer" else [GATE_TWIN],
@@ -680,6 +681,18 @@ def git_state() -> dict:
     return {"commit": run("rev-parse", "HEAD"), "dirty": bool(run("status", "--porcelain"))}
 
 
+def gpu() -> dict | None:
+    """The GPU a CUDA run trains on, and its driver; ``None`` when there is none."""
+    import torch
+
+    if not torch.cuda.is_available():
+        return None
+    driver = subprocess.run(["nvidia-smi", "--query-gpu=driver_version", "--format=csv,noheader"],
+                            capture_output=True, text=True).stdout.strip() or None
+    return dict(name=torch.cuda.get_device_name(0), driver=driver, cuda=torch.version.cuda,
+                memory_gb=round(torch.cuda.get_device_properties(0).total_memory / 2 ** 30, 1))
+
+
 def machine() -> dict:
     rel = platform.release()
     cores = set()
@@ -706,7 +719,7 @@ def machine() -> dict:
             "kernel": rel, "wsl": "microsoft" in rel.lower(), "cpus_logical": os.cpu_count(),
             "cpus_physical": len(cores) or None, "ram_gb": ram_gb,
             "python": platform.python_version(), "torch": torch_version(),
-            "numpy": np.__version__}
+            "numpy": np.__version__, "gpu": gpu()}
 
 
 def estimate(plan, jobs: int) -> dict:
@@ -746,7 +759,10 @@ def declaration(plan) -> dict:
         budget_margin=BUDGET_MARGIN, gate_twin_factor=GATE_TWIN, twin_factors=list(TWIN_FACTORS),
         busy_window_sec=plan.busy_sec, threshold_grid=[float(t) for t in THRESHOLD_GRID],
         tie_rules=TIE_RULES, registered=sorted(ARCHITECTURES),
-        registered_but_not_run=sorted(set(ARCHITECTURES) - set(plan.models)))
+        registered_but_not_run=sorted(set(ARCHITECTURES) - set(plan.models)),
+        device=dict(learned=plan.device, hand="cpu",
+                    note="GPU and CPU arithmetic differ, so every learned fit in one run comes from "
+                         "one device; on CUDA, train.deterministic_cuda makes a rerun fit identical"))
 
 
 def write_declaration(plan, out, jobs) -> dict:
@@ -814,7 +830,10 @@ def write_progress(out, state, git):
 
 # ---- the driver --------------------------------------------------------------------------------------
 
-def run(plan, out: Path, jobs: int, retry_errors: bool = False) -> dict:
+def run(plan, out: Path, jobs: int, retry_errors: bool = False, gpu_jobs: int | None = None) -> dict:
+    """``gpu_jobs`` caps how many learned fits run at once when they train on a GPU: one GPU is
+    the limit there, and on WSMIP064 more than one ``chorus_norm`` process at a time LOST about 30%
+    of fits per hour. The remaining ``jobs`` slots still run hand-written configurations on the CPU."""
     import multiprocessing as mp
 
     out = Path(out)
@@ -875,10 +894,20 @@ def run(plan, out: Path, jobs: int, retry_errors: bool = False) -> dict:
     with ProcessPoolExecutor(max_workers=jobs, mp_context=mp.get_context("spawn")) as ex:
         futures = {}
 
+        cap = gpu_jobs if plan.device != "cpu" else None
+
+        def startable(k):
+            if cap is None or state["pending"][k]["kind"] != "fit":
+                return True
+            return sum(1 for j in futures.values() if j["kind"] == "fit") < cap
+
         def drain():
             while state["pending"] or futures:
                 while state["pending"] and len(futures) < jobs:
-                    key = min(state["pending"], key=lambda k: state["pending"][k]["priority"])
+                    ready = [k for k in state["pending"] if startable(k)]
+                    if not ready:
+                        break
+                    key = min(ready, key=lambda k: state["pending"][k]["priority"])
                     job = state["pending"].pop(key)
                     state["running"][key] = job
                     futures[ex.submit(run_job, job, str(out), plan.spec, plan.spec_path)] = job
@@ -1103,14 +1132,24 @@ def main(argv=None) -> int:
     p.add_argument("--detectors", default=",".join(HAND))
     p.add_argument("--retry-errors", action="store_true",
                    help="delete error files first, so those jobs run again")
+    p.add_argument("--device", default="cpu",
+                   help="where learned fits train and score: cpu (default) or cuda. Declared: a "
+                        "run cannot be resumed on the other device")
+    p.add_argument("--gpu-jobs", type=int, default=1,
+                   help="with --device cuda, how many learned fits run at once (default 1)")
     a = p.parse_args(argv)
     models = tuple(x for x in a.models.split(",") if x)
     dets = tuple(x for x in a.detectors.split(",") if x)
     assert set(models) <= set(MODELS) and set(dets) <= set(HAND)
     assert "coact" in dets, "the budget's reference is CoactDetect"
-    plan = Plan(quick=a.quick, models=models, detectors=dets)
+    if a.device != "cpu":
+        import torch
+        if not torch.cuda.is_available():
+            raise SystemExit(f"--device {a.device}: torch {torch.__version__} sees no CUDA device. "
+                             "See docs/windows_workstation_setup.md, section 4.")
+    plan = Plan(quick=a.quick, models=models, detectors=dets, device=a.device)
     t0 = time.time()
-    r = run(plan, a.out.expanduser(), a.jobs, retry_errors=a.retry_errors)
+    r = run(plan, a.out.expanduser(), a.jobs, retry_errors=a.retry_errors, gpu_jobs=a.gpu_jobs)
     n_ok = sum(1 for x in r["ran"] if x["status"] == "ok")
     print(f"ran {len(r['ran'])} jobs ({n_ok} ok, {len(r['ran']) - n_ok} errors) in "
           f"{(time.time() - t0) / 60:.1f} min; results in {a.out / 'results.json'}")

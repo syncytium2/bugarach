@@ -730,3 +730,24 @@ full-search run found to favour bench recordings over crowded ones.
 `tools/compare_bakeoff_runs.py` needs a test before #596's branch merges.
 ⚠ PR #596 was still open with CI running; if review changes a model's code, results tuned against an
 older commit go stale, which the commit recorded in `meta.json` makes visible.
+**2026-09-17: THE OVERNIGHT RUN IS A TOTAL LOSS, AND THE RUN MOVES TO THE GPU ON NATIVE WINDOWS.** At
+01:57 the CyberArk agent signed the user out, about 12 hours after the elevation used to install WSL
+(Tony's reading: the elevation expired). That stopped WSL with the run inside it, and WSL2 would not
+start again (HCS `0x80070569`). Its partial results are unreachable. **Tony's rulings:** WSL is a dead
+route on this machine; assume total loss; go native with `uv`, then put the effort into the GPU.
+**Decision 9: learned fits train on the GPU.** The RTX A4000 fits an untuned `chorus_norm` in 6.4 s
+against 244 s on one CPU process; one GPU process gave the most fits per hour for `chorus_norm` and
+`line_length`, while `tube` gained from 8. The driver (536.67) could not run current CUDA torch, so it
+was updated to 582.78 under a 2-hour elevation granted about 10:09 (expect a sign-out about 12:09; armory
+`FINDINGS.md` §20). Setup, measurements and the driver steps are on `main` in
+`docs/windows_workstation_setup.md` (#606). **Built:** `train(device=...)`, which leaves the CPU default
+unchanged and turns on deterministic CUDA; `--device` and `--gpu-jobs` on
+`tools/tune_learned_vs_coact.py` (the device is declared, so a run cannot resume on the other one); and
+`--device` on `tools/fair_bakeoff.py`. Tests: `tests/test_learn_train_device.py` (the CPU default is
+unchanged; a repeated GPU fit gives identical weights; a GPU fit predicts, saves and reloads under the
+same config key), with the tool's 10 tests still passing. `--quick --device cuda` ran 69 of 69 jobs in
+1.4 minutes, against 4.5 on the CPU, resumed with nothing rerun, and refused a resume on the CPU.
+Environment: Windows 11, Python 3.14.7 via `uv`, torch 2.14.0+cu126, in this worktree's `.venv`.
+**Next:** a correctness check (an untuned GPU bake-off of the four models, compared per fold with Gate 1's
+CPU numbers, stopping on anything further away than the seed-to-seed spread); merge the wider reference
+grid (`tune-wider-reference-grid`); then launch from Task Scheduler, not before the elevation's sign-out.

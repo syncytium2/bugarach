@@ -74,6 +74,44 @@ def pin_threads(n: int = THREADS) -> int:
     return torch.get_num_threads()
 
 
+def deterministic_cuda() -> None:
+    """Make CUDA training repeatable: the same seed gives the same weights.
+
+    By default cuDNN and cuBLAS pick kernels whose reduction order varies from run to run, so a
+    fit repeated after a crash would not be the fit it replaces — the same defect `THREADS`
+    closes on the CPU. ``CUBLAS_WORKSPACE_CONFIG`` must be set before the process's first CUBLAS
+    call, which is why this runs before the model reaches the device. Process-wide and
+    idempotent; only :func:`train` on a CUDA device calls it, so the CPU path is untouched.
+    """
+    import os
+
+    import torch
+
+    os.environ.setdefault("CUBLAS_WORKSPACE_CONFIG", ":4096:8")
+    torch.backends.cudnn.benchmark = False
+    torch.backends.cudnn.deterministic = True
+    torch.use_deterministic_algorithms(True)
+
+
+def model_device(model):
+    """The device a model's parameters live on, so inference sends its input there."""
+    return next(model.parameters()).device
+
+
+def probabilities(model, raster):
+    """Per-frame probabilities for one encoded raster, on whatever device the model is on.
+
+    The one place inference crosses to the device and back: :func:`pick_threshold`,
+    :meth:`Trained.predict` and the tuning tool all call it, so a model trained on the GPU is
+    scored exactly as a CPU one is.
+    """
+    import torch
+
+    with torch.no_grad():
+        x = torch.from_numpy(raster).unsqueeze(0).to(model_device(model))
+        return torch.sigmoid(model(x)).squeeze(0).cpu().numpy()
+
+
 def fold_maker(rec, seeds, *, n_val: int = 2):
     """A ``make_recording`` that keeps fitting and threshold-picking apart.
 
@@ -144,12 +182,8 @@ class Trained:
         no other detector on the page was given, and the difference would land
         in the comparison without appearing in it.
         """
-        import torch
-
         enc = encode(slice_, dt=self.dt, stream=stream, extent=extent)
-        with torch.no_grad():
-            x = torch.from_numpy(enc.raster).unsqueeze(0)
-            p = torch.sigmoid(self.model(x)).squeeze(0).numpy()
+        p = probabilities(self.model, enc.raster)
         det = decode(p, threshold=self.threshold,
                      merge_gap_frames=self.merge_gap_frames)
         return det.to_seconds(enc), enc
@@ -163,22 +197,32 @@ def _recording(make, seed, dt, stream=None):
 
 def train(name: str, make_recording, *, dt: float = 0.1, n_train: int = 12,
           steps: int = 300, crop: int = 4096, batch: int = 4,
-          lr: float = 3e-3, seed: int = 0, stream=None, **arch_over) -> Trained:
+          lr: float = 3e-3, seed: int = 0, stream=None, device: str | None = None,
+          **arch_over) -> Trained:
     """Fit one architecture. Returns it with a threshold already chosen.
 
     make_recording: ``seed -> (slice, ground_truth)``. Called with seeds from the
       training block only.
     crop: training window in **frames**. Long enough to contain the local
       background a model must judge against, short enough to batch.
+    device: ``None`` (the default) trains on the CPU exactly as before this option existed.
+      ``"cuda"`` trains on the GPU with :func:`deterministic_cuda`, and the returned model stays
+      there, so its scoring runs there too. GPU and CPU arithmetic differ, so a run's fits must
+      all come from one device; ``training["device"]`` records which.
     """
     import time
 
     import torch
 
+    dev = torch.device(device) if device is not None else None
+    if dev is not None and dev.type == "cuda":
+        deterministic_cuda()
     torch.manual_seed(seed)
     threads = pin_threads()
     arch = ARCHITECTURES[name]
     model = arch.make(**arch_over)
+    if dev is not None:
+        model = model.to(dev)
     opt = torch.optim.Adam(model.parameters(), lr=lr)
 
     seeds = [TRAIN_SEED_BLOCK + seed * 1000 + i for i in range(n_train)]
@@ -189,6 +233,8 @@ def train(name: str, make_recording, *, dt: float = 0.1, n_train: int = 12,
     # answer "no" and scores 99% accuracy while detecting nothing.
     pos = float(np.mean([y.mean() for _, y in data]))
     pos_weight = torch.tensor([(1.0 - pos) / max(pos, 1e-6)], dtype=torch.float32)
+    if dev is not None:
+        pos_weight = pos_weight.to(dev)
     lossf = torch.nn.BCEWithLogitsLoss(pos_weight=pos_weight)
 
     # Where the events are, per recording. With ~0.5% positive frames a uniformly
@@ -228,6 +274,8 @@ def train(name: str, make_recording, *, dt: float = 0.1, n_train: int = 12,
         # but the model itself is ROI-count agnostic and that is the point.
         x = torch.stack(xs)
         y = torch.stack(ys)
+        if dev is not None:
+            x, y = x.to(dev), y.to(dev)
         opt.zero_grad()
         loss = lossf(model(x), y)
         loss.backward()
@@ -245,6 +293,13 @@ def train(name: str, make_recording, *, dt: float = 0.1, n_train: int = 12,
                 "threads": int(threads), "torch_version": torch.__version__,
                 "loss": "BCEWithLogitsLoss, pos_weight from the training recordings",
                 "threshold_rule": "pick_threshold, pooled F1 on the validation block"}
+    if dev is not None:
+        # Only when asked: a CPU fit's record stays byte-identical to one from before this option.
+        training["device"] = str(dev)
+        if dev.type == "cuda":
+            training["gpu"] = torch.cuda.get_device_name(dev)
+            training["cuda_version"] = torch.version.cuda
+            training["deterministic_algorithms"] = torch.are_deterministic_algorithms_enabled()
     return Trained(name=name, model=model, threshold=thr,
                    n_params=n_params(model), dt=dt, merge_gap_frames=gap,
                    train_seconds=train_seconds, history=hist, threads=threads,
@@ -259,8 +314,6 @@ def pick_threshold(model, make_recording, *, dt, seed, n_val: int = 4,
     scored on is the benchmark leaking into the model, which is a subtler version
     of the mistake this project already paid for twice.
     """
-    import torch
-
     seeds = [VAL_SEED_BLOCK + seed * 1000 + i for i in range(n_val)]
     assert not set(seeds) & set(BENCH_SEEDS)
 
@@ -268,9 +321,7 @@ def pick_threshold(model, make_recording, *, dt, seed, n_val: int = 4,
     for s in seeds:
         sl, gt = make_recording(s)
         enc = encode(sl, dt=dt, stream=stream)
-        with torch.no_grad():
-            p = torch.sigmoid(model(torch.from_numpy(enc.raster).unsqueeze(0)))
-        scored.append((p.squeeze(0).numpy(), enc, gt))
+        scored.append((probabilities(model, enc.raster), enc, gt))
 
     # The grid must BRACKET the optimum. `tube` first picked 0.95 — the top of a
     # 0.05-0.95 sweep — and this repo already refuses a boundary answer for the

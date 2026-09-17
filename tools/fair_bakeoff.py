@@ -135,7 +135,7 @@ def _null_twin(spec: dict, factor: float) -> dict:
 def run(spec: dict, *, folds: int, seeds_per_fold: int, quick: bool,
         train_seed: int = 0, score_spec: dict | None = None,
         learned: tuple = LEARNED, null_rates: tuple = (),
-        hand_written: bool = True) -> dict:
+        hand_written: bool = True, device: str | None = None) -> dict:
     from bugarach import provenance
     from bugarach.bench import (DETECTORS, OPERATING_POINTS, fold_split,
                                 pool_scores, run_detector)
@@ -259,7 +259,8 @@ def run(spec: dict, *, folds: int, seeds_per_fold: int, quick: bool,
             # roster is built on.
             learned_architectures={
                 "registered": sorted(ARCHITECTURES),
-                "ran": {name: {"lr": LR.get(name)} for name in learned},
+                "ran": {name: {"lr": LR.get(name), **({"device": device} if device else {})}
+                        for name in learned},
                 "registered_but_not_run": sorted(set(ARCHITECTURES) - set(learned)),
             },
             null_rate_factors=list(null_rates),
@@ -359,7 +360,7 @@ def run(spec: dict, *, folds: int, seeds_per_fold: int, quick: bool,
             # demonstrated nothing until this axis is populated.
             tr = train(name, mk, n_train=min(10, n_fit),
                        steps=300 if quick else 900, crop=4096, batch=3,
-                       lr=LR[name], seed=train_seed)
+                       lr=LR[name], seed=train_seed, device=device)
             train_sec = time.perf_counter() - t0
 
             # `mk` above closes over `rec`, so BOTH the weights and the
@@ -438,6 +439,10 @@ def main(argv=None) -> int:
                    help="also score every detector on quiet-field null twins of "
                         f"each held-out recording, at {NULL_RATE_FACTORS} times "
                         "its background rate, reported as false alarms per hour")
+    p.add_argument("--device", default=None,
+                   help="train the learned models on this torch device (e.g. cuda). Default: "
+                        "the CPU, exactly as before this option. Recorded in each model's "
+                        "training record")
     a = p.parse_args(argv)
     learned = LEARNED
     if a.learned:
@@ -453,7 +458,7 @@ def main(argv=None) -> int:
     res = run(spec, folds=a.folds, seeds_per_fold=a.seeds_per_fold,
               quick=a.quick, train_seed=a.train_seed, score_spec=score_spec,
               learned=learned, hand_written=not a.skip_hand_written,
-              null_rates=NULL_RATE_FACTORS if a.null_rates else ())
+              null_rates=NULL_RATE_FACTORS if a.null_rates else (), device=a.device)
     stem = "bakeoff_quick" if a.quick else "bakeoff"
     if res["transfer"]:
         # The file name has to carry BOTH corpora. A transfer result filed as
