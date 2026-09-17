@@ -17,6 +17,16 @@
 > bottom; the convention is in [`README.md`](README.md).
 >
 > **Written 2026-09-16** against `origin/main` at `a7fe2f8` and the open branches.
+>
+> ⚠ **Goals 2 and 3 of the program Tony set on 2026-09-17**, both owned by WSMIP064: *a fair
+> comparison of the coded detectors against the nets*, and *"final" supervised-learning results on the
+> current best simulation*. Five decisions bind them, in [`README.md`](README.md), *The current
+> program*. None of it is final. Two of them change the *next* comparison, not the run going now:
+> **the simulation becomes the bench's fitted field**, with the home spec `generator_spec.json`
+> retired for this program, and **fast stream first**. What that comparison needs from goal 1
+> (WSMIP065) is in
+> [`HANDOFF-coded-detectors.md`](../../HANDOFF-coded-detectors.md) §4. Where this page and those two
+> disagree, those two win until this page is brought up to date.
 
 ---
 
@@ -54,16 +64,46 @@ On the home spec, `chorus_norm` beats CoactDetect by 0.103 F1 (*t* 6.5) and `cho
 setting** while CoactDetect had been tuned on one knob — so the margins might be about the tuning
 budget rather than the architecture.
 
-**The run that settles it is halted at its first gate.** The workstation tuning run gives both sides
-a declared budget under nested cross-validation at five training seeds. It stopped in Gate 1 step 3:
-`chorus_gain_norm` on two folds lands further from both of the Mac's seeds than the Mac's own two
-seeds are from each other, and **that needs a ruling before the run continues**
-(`docs/learned/tuned_vs_coact/gate1/README.md` on branch `tune-learned-vs-coact` ⚠ **not on `main`**).
+**The run that settles it was lost, and is running again.** The workstation tuning run gives both
+sides a declared budget under nested cross-validation. Gate 1 passed on 2026-09-16: the
+`chorus_gain_norm` stop was ruled a low seed draw. The run launched under WSL on WSMIP064 at 21:52 and
+was **lost at 01:57 on 2026-09-17**, when the university's privilege manager signed the user out
+(armory `FINDINGS.md` §20). Tony's rulings: WSL is a dead route there. Go native, and train on the GPU
+(`train(device=...)`, built the same day). Its status line is in `HANDOFF-workstation-tuning.md` on
+branch `tune-learned-vs-coact` ⚠ **not on `main`**. **Relaunched at 12:42 on 2026-09-17 as a GPU
+shakedown, not a result** (Tony: *"launch it"*, after choosing between waiting for goal 1 and running
+a stale test). Nothing had run between the loss and then. It runs on the retired home spec as declared
+on that branch, from Task Scheduler on the GPU (`--device cuda --gpu-jobs 2`), resumable. Its purposes:
+prove a long unattended GPU run on that machine before the one that matters, and show which of the
+nets' settings ever win. **No readout is planned from it, and it is stopped as soon as the next
+comparison needs the GPU.** Before relaunching, a GPU correctness check agreed with the CPU and the
+Mac: over three seeds each model's mean F1 is within 0.004 to 0.023 of the Mac's. The simulation change
+and goal 1's every-knob grids apply to the next comparison, not to this run:
+[`HANDOFF-coded-detectors.md`](../../HANDOFF-coded-detectors.md) §4. The untuned home-spec table above
+stays as the record.
 
 ## What is settled
 
 **Strength** follows [`MILESTONES.md`](../MILESTONES.md): *measured* is a number from a run, *decided*
 is a ruling, *argued* is reasoning nobody has measured.
+
+### How the next comparison runs on the bench (decided, Tony, 2026-09-17)
+
+Four rulings for goal 2's tuning run, taken one at a time with Tony. The rest of its design carries
+over from `HANDOFF-workstation-tuning.md` on `tune-learned-vs-coact`: nested cross-validation, two
+selections (F1 alone, and F1 under a shared false-alarm budget), three training seeds, and the GPU.
+
+| # | question | decided | why |
+|---|---|---|---|
+| 1 | **The bench's two backgrounds** (quiet 0.0052 Hz and busy 0.0190 Hz per ROI, `bench.REGIMES`) | **The same as goal 1.** Every recording seed is simulated at both rates, and a model is scored on the mean of the two backgrounds' pooled F1. A third, typical-rate background was considered and set aside *"for now"*: it would mean changing goal 1's search mid-course and re-choosing the shipped settings | both sides are then chosen on the same objective, which is what makes the comparison fair |
+| 2 | **What a net trains on** | **Mixed:** half quiet and half busy recordings for training, and one of each for picking the threshold | a net scored on both backgrounds should learn from both |
+| 3 | **Where the shared false-alarm budget is measured** | **The bench's own instruments:** the probe (the 5-minute stretch at 0.06 Hz inside every recording), counted in both backgrounds' recordings, and `bench.make_null_recording` (a whole recording at the quiet rate, nothing planted). **Reported, never used to select:** a no-event recording at the busy rate. **Dropped:** the home spec's 0.25× stress twin, which describes no real recording | the budget then measures what `MAX_PROBE_PER_MIN` and `MAX_FALSE_POSITIVES_PER_HOUR` measure. On the home spec the quiet twin was already this rate (0.54 × 0.0097 = 0.0052 Hz) |
+| 4 | **What the budget is anchored to** | **CoactDetect at the settings goal 1's every-knob search lands**, times the declared margin (1.6), with the exact values written into the run's declaration before it starts | it is the CoactDetect that will ship, and the run waits on goal 1's bench and grids anyway |
+
+**What the run still waits on, all from goal 1 (WSMIP065) through `main`:** the bench re-derived
+from `steps_excluded`, one grid declaration for the six coded detectors in `bench`, sliding LoCo and
+CoactDetect landed, and the every-knob CoactDetect values. Until then WSMIP064's GPU runs the home-spec
+shakedown, which gives way when this run is ready.
 
 ### The family
 
@@ -126,7 +166,7 @@ Each is a decision, not a task, and nothing below it can be settled by a session
 
 | decision | why it gates the goal | filed |
 |---|---|---|
-| **The Gate 1 step-3 stop.** `chorus_gain_norm` on folds 0 and 1 sits further from both Mac seeds than the Mac's seeds sit from each other. Is that a machine difference, as `tube`'s 0.0012 F1 miss was ruled, or a defect? | **The tuning run is halted on it**, and the tuning run is what decides whether chorus's margin is real | `docs/learned/tuned_vs_coact/gate1/README.md` ⚠ **not on `main`** |
+| **Which models and detectors to keep** (Tony, 2026-09-17: *"we're still troubleshooting and figuring out what models/detectors to keep"*) | Decides what the next comparison, on the bench and against every-knob coded detectors, includes. (The Gate 1 step-3 stop that stood here was ruled on 2026-09-16: a low seed draw, not a defect) | [`HANDOFF-coded-detectors.md`](../../HANDOFF-coded-detectors.md) §4; `docs/learned/tuned_vs_coact/gate1/README.md` ⚠ **not on `main`** |
 | **Whether [PR #596](https://github.com/syncytium2/bugarach/pull/596) merges.** Registering chorus and gauge puts them in the lab server's capabilities and in the browser's model picker | A model in the picker is a model a colleague can run on their own recordings; these have been run on simulation only, and gauge fires freely on an empty field | the PR, deliberately not set to auto-merge |
 | **Bake-off promotion**, for `line` and for anything the tuning run returns | [`MILESTONES.md`](../MILESTONES.md) reserves it; the `line` row is `held` | [`MILESTONES.md`](../MILESTONES.md) section C |
 | **Whether `trace` and `tiny` get the chorus treatment** — diagnosed as possibly-deaf, or recorded as shapes that cannot learn this task | Decides whether the no-operating-point todo is a bug report or a result | [todo](../todo/2026-08-28-two-architectures-have-no-operating-point.md) |

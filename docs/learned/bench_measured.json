@@ -1,0 +1,75 @@
+{
+ "all_inside": false,
+ "bootstrap_draws": 200,
+ "commit": "c370dd6",
+ "folder": "2026-09-03_revised_2v_long_STEPS_EXCLUDED",
+ "k": 4,
+ "measured_on": "2026-09-17",
+ "recordings_in_shape_fits": 80,
+ "recordings_measured": 84,
+ "role": "steps_excluded",
+ "seed": 20260917,
+ "skipped": {},
+ "stream": "fast",
+ "surrogates": 1000,
+ "tool": "tools/remeasure_bench.py",
+ "values": {
+  "burst_shape_300s": {
+   "bench": 1.547,
+   "hi": 2.2617960052443684,
+   "inside": true,
+   "lo": 1.4090722894974441,
+   "measured": 1.7993285914642148
+  },
+  "burst_shape_60s": {
+   "bench": 1.388,
+   "hi": 2.105077291750049,
+   "inside": true,
+   "lo": 1.1523243531451752,
+   "measured": 1.5157493445300805
+  },
+  "jitter_sec": {
+   "bench": 0.36,
+   "hi": 0.3885563711179086,
+   "inside": true,
+   "lo": 0.24910312089650954,
+   "measured": 0.3193096515095778
+  },
+  "n_roi": {
+   "bench": 33.0,
+   "hi": 33.0,
+   "inside": true,
+   "lo": 27.0,
+   "measured": 31.5
+  },
+  "participation": {
+   "bench": 0.18,
+   "hi": 0.23217261904761907,
+   "inside": false,
+   "lo": 0.18181818181818182,
+   "measured": 0.19047619047619047
+  },
+  "rate_shape": {
+   "bench": 0.275,
+   "hi": 0.3396108485511683,
+   "inside": true,
+   "lo": 0.21773728533467776,
+   "measured": 0.26877880070616755
+  },
+  "regime_busy_hz": {
+   "bench": 0.019,
+   "hi": 0.023338017608359136,
+   "inside": true,
+   "lo": 0.016214954704469507,
+   "measured": 0.019035087719298245
+  },
+  "regime_quiet_hz": {
+   "bench": 0.0052,
+   "hi": 0.006624922530511061,
+   "inside": true,
+   "lo": 0.002843676480473214,
+   "measured": 0.005045489568515886
+  }
+ },
+ "window": "longest baseline region; the folder's analysis window inside it (assess_folder.generation_window)"
+}
