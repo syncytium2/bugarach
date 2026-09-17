@@ -672,7 +672,7 @@ force one); WSL 2.7.14 with systemd running, user lingering off, no idle timeout
 Tony's password. **Estimate for the declared draw:** a training floor of 200.7 CPU hours, 9.1 hours at
 22 jobs, before the larger configurations' extra cost per step (18 to 22 of each model's 24 are larger
 than untuned), 1,979 jobs before the outer refits the selections add.
-**LAUNCHED 2026-09-16 ~22:15** at the commit that adds this paragraph (`meta.json` records its sha), 22
+**LAUNCHED 2026-09-16 21:52 EDT** at the commit that adds this paragraph (`meta.json` records its sha), 22
 jobs, budget margin 1.6, into `~/runs/tune-learned-vs-coact/`. Floor finish about 07:30; likely later,
 by the larger configurations' cost. **How it is detached (Tony's choice over a systemd unit, since sudo
 needs his password):** a hidden Windows-side `wsl.exe -d Ubuntu -- bash -l
@@ -685,6 +685,17 @@ again; finished jobs are skipped. Say in this line what was lost and why. **When
 Copy `meta.json`, `configs/`, `selections/`, `chosen/` and `results.json` into
 `docs/learned/tuned_vs_coact/`; claim a darkroom folder on `docs/SESSIONS.md` (a PR off `main`) and put
 `fits/` and `scores/` there, not in git.
+⚠ **Found in the first minute, for Tony: the reference detectors' grids do not bracket their optimum.**
+The hand-written grids finished at 21:53 (171 configurations, no errors). In all four outer folds and
+both selections, CoactDetect chooses the grid's edge on every axis: `alpha` 1e-7 (1e-6 in fold 1),
+`int_win_sec` 1.0, `context_win_sec` 120; LoCo chooses `context_win_sec` 240 in every fold. By the
+project's edge rule the search stopped while still climbing, so tuned CoactDetect and LoCo are
+under-tuned, which favours the learned models and undercuts the reason the hand-written side got the
+larger budget. **This does not touch the learned run:** its budget is anchored to *shipped*
+CoactDetect, not tuned. The hand-written grids take seconds, so a widened, separately declared grid can
+be run in the morning into its own folder without disturbing anything. Not done, because it changes
+the declaration: Tony's call. The 240 s context caution above (the home spec's 171 s spacing) applies to
+any wider context too.
 `tools/compare_bakeoff_runs.py` needs a test before #596's branch merges.
 ⚠ PR #596 was still open with CI running; if review changes a model's code, results tuned against an
 older commit go stale, which the commit recorded in `meta.json` makes visible.
