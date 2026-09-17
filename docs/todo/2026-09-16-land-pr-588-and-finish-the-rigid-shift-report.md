@@ -7,7 +7,21 @@ filed: 2026-09-16
 
 > **Tony, 2026-09-16:** *"we need to close up shop. write the status in milestones and a todo"*
 
-> **Progress, 2026-09-17.** Steps 3 and 4 were done on branch `unsup/rigid-shift-report-residuals`
+> **Progress, 2026-09-17 evening — the report is delivered, unconverged.** The fourth blind round ran
+> ([record](../reviews/tube-self-supervised-2026-09-17-round4.md)) and found a scoring defect in the
+> real-recordings stage: events called on a rigid shift were scored against the *unshifted*
+> recording. Tony ruled **fix, rerun, deliver, no fifth round**; also that the twin check be softened
+> to described rather than tested, that the bake-off harness's shared folds be filed
+> ([todo](2026-09-17-two-bake-off-folds-train-the-same-model.md)), and that the real-derived outputs
+> move to the darkroom. All four are done: the stage is fixed (`95ec229`) and rerun with the
+> localization measures the round asked for, the page is rewritten around its own answer with six
+> figures, and `real_compare/events.json` and the 120 checkpoints are in
+> `bugarach/2026-09-17-rigid-shift-report/` while the repo keeps `summary.json`. **Remaining:** land
+> PR #603; then supersede the section C rows in `docs/MILESTONES.md`, pinned to its commits once they
+> are on `main`; release the darkroom claim; then the four decisions go to Tony. ⚠ The delivered text
+> has had **no blind pass**.
+
+> **Progress, 2026-09-17 (earlier).** Steps 3 and 4 were done on branch `unsup/rigid-shift-report-residuals`
 > (draft PR #603): the residuals were fixed and rerun, and a third blind round ran
 > ([record](../reviews/tube-self-supervised-2026-09-17-round3.md)). It reached the three-round cap
 > with a blocking finding, that the trained models' checks could not fail against slow shared
