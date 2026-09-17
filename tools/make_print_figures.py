@@ -19,6 +19,8 @@ import json
 import sys
 from pathlib import Path
 
+import numpy as np
+
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 #: The Word page's text width in points, the canvas width of every print figure.
@@ -70,7 +72,78 @@ def fig_orient(W):
     return f
 
 
-FIGURES = {"fig_orient": ("fig01_orient", fig_orient)}
+def _time_axis(f, p, *, offset, step, label, minor=None):
+    """Ticks every `step` seconds from `offset` (e.g. drug arrival), labeled in whole minutes or seconds,
+    denser than svgfig's automatic choice (Tony, 2026-09-17: "x-axis in figure 2 needs more ticks")."""
+    from svgfig import MUTED, fmt_time
+    lo, hi = p.xlim[0] - offset, p.xlim[1] - offset
+    k0, k1 = int(np.ceil(lo / step - 1e-9)), int(np.floor(hi / step + 1e-9))
+    for k in range(k0, k1 + 1):
+        t = k * step
+        X = float(p.px(t + offset))
+        f.line(X, p.y + p.h, X, p.y + p.h + 4, color=MUTED)
+        f.text(X, p.y + p.h + 13, "0" if k == 0 else fmt_time(t, step), size=TICK_PT, anchor="middle", color=MUTED)
+    if minor:
+        m0, m1 = int(np.ceil(lo / minor - 1e-9)), int(np.floor(hi / minor + 1e-9))
+        for k in range(m0, m1 + 1):
+            X = float(p.px(k * minor + offset))
+            f.line(X, p.y + p.h, X, p.y + p.h + 2, color=MUTED)
+    if label:
+        f.text(p.x + p.w / 2, p.y + p.h + 26, label, size=LABEL_PT, anchor="middle", color=MUTED, italic=True)
+
+
+def _closeup(f, c, X, Y, PW, *, title, dets, raster_h, tick_step, stripe_marks=True, show_weak=False):
+    """A real close-up for print: part-of-experiment strip, one call lane per program, clear stripes, raster.
+    The page version's layout at print sizes (make_plain_detector_review._closeup)."""
+    from make_plain_detector_review import COLORS, INK_T, NAMES, RED, _period_lane, _plural
+    from svgfig import MUTED
+    win = c["win"]
+    y = Y
+    if title:
+        f.text(X, y, title, size=TITLE_PT, weight=600)
+        y += 6
+    pl = f.panel(X, y, PW, 16, win, (0, 1), frame=False)
+    _period_lane(f, pl, c, y + 2)
+    y += 20
+    ROW = 11
+    lp = f.panel(X, y, PW, len(dets) * ROW + 3, win, (0, 1))
+    for i, d in enumerate(dets):
+        ry = y + 2 + i * ROW
+        weak = {round(on, 2) for on, _, _ in c["weak"].get(d, [])}
+        for on, wd in c["calls"][d]:
+            lp.span(on, on + max(wd, 0.0), row_y=ry, row_h=8, color=COLORS[d], min_px=2)
+            if show_weak and round(on, 2) in weak:
+                a, b = float(lp.px(on)) - 2, float(lp.px(on + max(wd, 0.0))) + 2
+                f.rect(a, ry - 1.5, max(b - a, 5), 11, stroke=RED, width=1.2)
+        n = sum(1 for on, _ in c["calls"][d] if win[0] <= on <= win[1])
+        f.text(X - 6, ry + 7.5, f"{NAMES[d]} · {_plural(n, 'call')}", size=TICK_PT, anchor="end", color=MUTED)
+    y += len(dets) * ROW + 8
+    sp = f.panel(X, y, PW, 12, win, (0, 1), frame=False)
+    if stripe_marks:
+        for s_ in c["stripes"]:
+            sp.down_triangle(s_["t"] + 0.5, y + 6, color=INK_T, size=7)
+        f.text(X - 6, y + 9, "clear stripes", size=TICK_PT, anchor="end", color=MUTED)
+    y += 14
+    r = f.panel(X, y, PW, raster_h, win, (0, 1))
+    r.raster(c["trains"], width=0.9)
+    _time_axis(f, r, offset=c["anchor"], step=tick_step, label=f"minutes from the start of {c['label']}")
+    f.text(X - 6, y + raster_h / 2, f"{c['stream'] == 'fast' and 'brief' or 'long'} events", size=LABEL_PT,
+           anchor="end", color=MUTED)
+    f.text(X - 6, y + raster_h / 2 + 11, _plural(c["n_roi"], "neuron"), size=LABEL_PT, anchor="end", color=MUTED)
+    return y + raster_h + 34
+
+
+def fig_problem(W):
+    """Figure 2, different answers from different programs: 13 minutes of one real recording."""
+    from make_plain_detector_review import CODED
+    from svgfig import Figure
+    c = W["real"]["close"]["problem"]
+    f = Figure(PAGE_W, 300)
+    f.h = _closeup(f, c, 104, 4, PAGE_W - 104 - 14, title="", dets=CODED, raster_h=150, tick_step=60.0)
+    return f
+
+
+FIGURES = {"fig_orient": ("fig01_orient", fig_orient), "fig_problem": ("fig02_problem", fig_problem)}
 
 
 def render(figs: dict, out: Path) -> None:
