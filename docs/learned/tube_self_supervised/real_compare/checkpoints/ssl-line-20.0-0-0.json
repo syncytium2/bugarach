@@ -11,6 +11,7 @@
   "vote_gain": 8.0,
   "orientation": true
  },
+ "config_key": "91889bf23c190692",
  "operating_point": {
   "threshold": 0.9999994693473284,
   "merge_gap_frames": 20,
@@ -23,7 +24,9 @@
   "axis": "frames; seconds enter only at dt"
  },
  "n_params": 1305,
+ "training": null,
  "provenance": {
+  "cfg_source": "registry defaults at save time: whatever made this model did not record the config it was built with",
   "trained_on": "lab fast baselines, mouse folds != 0",
   "train_seed": 0,
   "steps": 900,

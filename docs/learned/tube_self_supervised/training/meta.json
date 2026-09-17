@@ -1,6 +1,6 @@
 {
   "tag": "tube-ssl-2026-09-15",
-  "started": "2026-09-16T20:03:40-0400",
+  "started": "2026-09-17T06:44:12-0400",
   "quick": false,
   "models": [
     "tube",
@@ -28,14 +28,30 @@
   ],
   "provenance": {
     "bugarach_version": "0.1.0",
-    "git_commit": "b85b5c980e1a2fe327451b0d5914c7c90c30c36a",
-    "git_dirty": null,
-    "code_version": "0.1.0+gb85b5c9",
+    "git_commit": "28ea5ad0f446f10b416cf553550d48db7350d3cf",
+    "git_dirty": false,
+    "code_version": "0.1.0+g28ea5ad",
     "python": "3.14.5",
     "platform": "macOS-26.6.2-arm64-arm-64bit-Mach-O",
     "produced_by": "tools/tube_self_supervised.py"
   },
   "thin_share": 0.2,
+  "j_small_sec": 1.6,
+  "modulation": {
+    "period_sec": 40.0,
+    "depth": 0.9
+  },
+  "baselines": [
+    "count_share",
+    "count_excess",
+    "slow_modulation"
+  ],
+  "baseline_frames": {
+    "widen": 2,
+    "background": 301,
+    "slow": 101
+  },
+  "n_surrogates_per_label_free_threshold": 3,
   "J_sec": [
     10.0,
     20.0
@@ -64,6 +80,6 @@
   "merge_gap_frames": 20,
   "spec": "generator_spec.json",
   "exploratory": true,
-  "n_tasks": 360,
-  "seconds": 9195.51630282402
+  "n_tasks": 384,
+  "seconds": 9583.830492019653
 }

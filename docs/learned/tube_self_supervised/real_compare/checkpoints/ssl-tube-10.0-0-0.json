@@ -9,6 +9,7 @@
   "max_center_frames": 128,
   "max_ratio": 40.0
  },
+ "config_key": "a12f2b0c92e27e7e",
  "operating_point": {
   "threshold": 0.999999614952699,
   "merge_gap_frames": 20,
@@ -21,7 +22,9 @@
   "axis": "frames; seconds enter only at dt"
  },
  "n_params": 1149,
+ "training": null,
  "provenance": {
+  "cfg_source": "registry defaults at save time: whatever made this model did not record the config it was built with",
   "trained_on": "lab fast baselines, mouse folds != 0",
   "train_seed": 0,
   "steps": 900,
