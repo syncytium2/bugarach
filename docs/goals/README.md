@@ -39,9 +39,10 @@ not fair, and that was the objection to the untuned bake-off in the first place.
 3. **The simulation is the bench's fitted field** (`bench.BENCH_RECORDING` and its two `REGIMES`),
    for all three goals. `docs/learned/generator_spec.json` (the "home spec", derived from the closed
    `.mat` store and marked superseded in [`MILESTONES.md`](../MILESTONES.md)) is **retired for this
-   program**. WSMIP064's tuning run, running on 2026-09-17 as declared on its branch
-   (`tune-learned-vs-coact`), is not stopped by this. Its results are exploratory, and the switch
-   applies to what the nets are tuned on next. ⚠ The
+   program**. WSMIP064's tuning run on its branch (`tune-learned-vs-coact`) relaunched at 12:42 on
+   2026-09-17 as a **GPU shakedown on the home spec, not a result**. It is not stopped by this, and it
+   gives way when the next comparison needs the GPU. The switch applies to what the nets are tuned on
+   next. ⚠ The
    bench's own measured values do not yet come from `steps_excluded` either. `MEASURED_RATE_SHAPE` and
    `MEASURED_BURST_SHAPE` were fitted by `tools/fit_background_shape.py` on the `.mat` archive, and
    `MEASURED_PROVENANCE` is a MATLAB summary over 84 baseline windows. Re-deriving them from the folder
@@ -58,7 +59,7 @@ not fair, and that was the objection to the untuned bake-off in the first place.
 
 **Division of labour.** WSMIP065 owns goal 1. It lands sliding LoCo and CoactDetect, re-derives the
 bench from the folder, and supplies the every-knob reference grids. WSMIP064 owns goals 2 and 3: the
-nested tuning (running again as of 2026-09-17, per Tony) and the fair comparison. WSMIP065 runs no net fits. The machines
+nested tuning (a GPU shakedown on the home spec since 12:42 on 2026-09-17; the real run waits on goal 1) and the fair comparison. WSMIP065 runs no net fits. The machines
 share nothing but `origin`, so **everything one needs from the other goes through `main`**: this
 section, the goal pages, and the handoff files at the root.
 
