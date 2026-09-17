@@ -1,0 +1,6 @@
+{
+ "torch": "2.14.0+cpu",
+ "python": "3.14.4",
+ "platform": "Linux-6.18.33.2-microsoft-standard-WSL2-x86_64-with-glibc2.43",
+ "git_commit": "d58a56bb3b013ac7855925f0e537d40ddccb4ded"
+}

@@ -647,7 +647,15 @@ on the Mac). Seed 0 was a low draw, not a defect. Seed-averaged, `chorus_gain_no
 CoactDetect by +0.041 F1. ⚠ **Flagged for the design, not decided:** one seed moves `chorus_gain_norm` by
 up to 0.078 F1 on a fold, likely more than many configurations differ, and this plan tunes at seed 0 only.
 All of it: [`docs/learned/tuned_vs_coact/gate1/README.md`](docs/learned/tuned_vs_coact/gate1/README.md).
-**Next:** a ruling to lift the stop, and on tuning at one seed; then `line_length`, the final estimate against the
+**Stop lifted** (Tony: *"go for it"*). **`line_length` passes step 3** (every fold within 0.022 F1 of a
+Mac seed) but trains at 204.0 s per fit against the Mac's 62.4 s, 3.3 times, unexplained; the others run
+1.25 to 1.4 times. **Gate 1 is complete.** Training floor from this machine's lone fits: 80.9 CPU hours,
+3.7 hours at 22 jobs, with one seed per configuration; 6.3 hours with two; 8.9 hours with three.
+**Open, Tony asked:** how many training seeds per configuration. At one seed, seed noise alone puts about
+0.04 F1 (two standard deviations) between two configurations' inner scores; at two, 0.030; at three,
+0.024. The reported numbers stay honest either way (nested), and the noise biases only against the
+learned side, since the hand-written detectors are deterministic.
+**Next:** that decision; then the final estimate against the
 9-hour limit, a check of the home spec's event spacing against the 240 s context, the tool and
 `--quick`, the pre-launch checks, and launch.
 `tools/compare_bakeoff_runs.py` needs a test before #596's branch merges.

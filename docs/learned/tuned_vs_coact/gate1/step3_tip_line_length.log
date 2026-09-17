@@ -1,0 +1,31 @@
+data set: 24 recordings, 4 folds (6 each)
+  1410 recording-minutes total
+  line_length fold 0: F1 0.738  thr 0.9948  train 211.3s  detect 2.30s
+  line_length fold 1: F1 0.732  thr 0.9908  train 202.8s  detect 2.24s
+  line_length fold 2: F1 0.653  thr 0.9838  train 206.5s  detect 2.20s
+  line_length fold 3: F1 0.704  thr 0.9908  train 195.4s  detect 2.13s
+
+wrote ~/runs/gate1/step3_tip_line_length/bakeoff.json
+	Command being timed: "~/bugarach/.venv/bin/python -u tools/fair_bakeoff.py --spec docs/learned/generator_spec.json --seeds-per-fold 6 --null-rates --out ~/runs/gate1/step3_tip_line_length --skip-hand-written --learned line_length"
+	User time (seconds): 840.03
+	System time (seconds): 15.87
+	Percent of CPU this job got: 100%
+	Elapsed (wall clock) time (h:mm:ss or m:ss): 14:12.29
+	Average shared text size (kbytes): 0
+	Average unshared data size (kbytes): 0
+	Average stack size (kbytes): 0
+	Average total size (kbytes): 0
+	Maximum resident set size (kbytes): 619748
+	Average resident set size (kbytes): 0
+	Major (requiring I/O) page faults: 189
+	Minor (reclaiming a frame) page faults: 13176541
+	Voluntary context switches: 2740
+	Involuntary context switches: 2760
+	Swaps: 0
+	File system inputs: 768696
+	File system outputs: 56
+	Socket messages sent: 0
+	Socket messages received: 0
+	Signals delivered: 0
+	Page size (bytes): 4096
+	Exit status: 0

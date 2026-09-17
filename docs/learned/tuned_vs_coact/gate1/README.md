@@ -6,17 +6,19 @@
 
 Run 2026-09-16 on the workstation (WSMIP064) by the session that holds branch `tune-learned-vs-coact`.
 
-## Where Gate 1 stands: step 3's stop explained, `line_length` still to run
+## Where Gate 1 stands: complete; one design question open
 
 | step | result |
 |---|---|
 | 1, at `7fc052d` | Six hand-written detectors exact. `tube` missed 0.02 F1 by 0.0012 on one fold; **Tony ruled it a training difference between machines, not a defect.** |
 | 2, at the tip | `tube` identical to step 1. CoactDetect, LoCo and SPIKE-synch still exact against the Mac; locust, rate+context and binned SCE differ, each for a known change. See [*Step 2*](#step-2-this-machines-baseline-at-the-tip). |
 | 2, redone on sliding CoactDetect and LoCo | **The baseline this run uses** (Tony: *"use sliding versions. redo step 2"*). The other four hand-written detectors and `tube` equal the binned step 2 exactly. Sliding CoactDetect scores mean F1 0.681 and LoCo 0.687, against 0.645 and 0.653 binned. See [*Step 2, redone*](#step-2-redone-on-sliding-coactdetect-and-loco). |
-| 3, at the tip | `chorus_norm` inside the stop. **`chorus_gain_norm` fired the stop** on folds 0 and 1 at seed 0. **Rerun:** deterministic; seed 1 passes; this machine's seeds differ by up to 0.078 F1 against the Mac's 0.032, and seed-averaged the machines agree within 0.007 F1, so seed 0 was a low draw. `line_length` did not run. See [*Step 3*](#step-3-lone-fit-timings-and-the-stop). |
+| 3, at the tip | `chorus_norm` inside the stop. **`chorus_gain_norm` fired the stop** on folds 0 and 1 at seed 0. **Rerun:** deterministic; seed 1 passes; this machine's seeds differ by up to 0.078 F1 against the Mac's 0.032, and seed-averaged the machines agree within 0.007 F1, so seed 0 was a low draw. `line_length` passes, but trains 3.3 times slower than on the Mac. See [*Step 3*](#step-3-lone-fit-timings-and-the-stop). |
 
-**What is needed:** a ruling to lift the `chorus_gain_norm` stop and run `line_length`, and a decision on
-whether tuning at one training seed is enough (see [*The reruns*](#the-reruns-deterministic-and-a-low-draw)).
+**What is needed:** how many training seeds each configuration's inner score averages. At one seed, the
+declared design, seed noise alone puts about 0.04 F1 of scatter between two configurations; see
+[*The reruns*](#the-reruns-deterministic-and-a-low-draw) and, for the cost,
+[*The estimate*](#the-estimate-from-this-machines-lone-fits).
 
 ## Step 1: result and ruling
 
@@ -219,7 +221,7 @@ per model is in `check_step3_<model>.txt` here.
 |---|---|---|---|
 | `chorus_norm` | 14 min 2 s | [`step3_tip_chorus_norm/`](step3_tip_chorus_norm/bakeoff.json), [log](step3_tip_chorus_norm.log), [check](check_step3_chorus_norm.txt) | no stop |
 | `chorus_gain_norm` | 14 min 8 s | [`step3_tip_chorus_gain_norm/`](step3_tip_chorus_gain_norm/bakeoff.json), [log](step3_tip_chorus_gain_norm.log), [check](check_step3_chorus_gain_norm.txt) | **stop, folds 0 and 1** |
-| `line_length` | not run | | |
+| `line_length` | 14 min 12 s, after Tony lifted the stop (*"go for it"*) | [`step3_tip_line_length/`](step3_tip_line_length/bakeoff.json), [log](step3_tip_line_length.log), [check](check_step3_line_length.txt) | no stop: F1 0.7378, 0.7321, 0.6532, 0.7042, each within 0.022 of a Mac seed (Mac seed gap 0.0472) |
 
 **Table 5.** Per-fold F1 at training seed 0 on this machine against both Mac seeds. The Mac's largest
 seed-to-seed gap is 0.0358 F1 for `chorus_norm` and 0.0316 F1 for `chorus_gain_norm`.
@@ -296,11 +298,32 @@ least 0.078 F1. The stop fired on a real low draw, not on a defect. Against slid
 redone), `chorus_gain_norm` seed-averaged leads by +0.0435, +0.0142, +0.0215 and +0.0860 F1 per fold,
 mean **+0.0413 F1**; seed 0 alone had put it at +0.020.
 
-**What it means for the tuning design, flagged rather than decided.** The handoff tunes at training seed
-0 only. For `chorus_gain_norm`, one seed moves a fold by up to 0.078 F1, which is likely larger than the
-differences between many of the 24 configurations. A selection made at one seed may then be choosing
-seed luck as much as configuration. Nothing in Gate 1 measures configuration differences, so this is a
-question for the design, not a finding.
+**What it means for the tuning design: how noisy a one-seed selection is.** The handoff picks each
+learned model's configuration by its inner score at training seed 0 only. From the 20 per-fold
+seed-to-seed gaps available (two seeds of each of the four models on the Mac, and `chorus_gain_norm`'s
+two here), a one-seed F1 on a fold of 6 recordings scatters by a standard deviation of about 0.026. The
+inner score pools 3 inner folds, each its own fit, and two configurations are scored on the same
+recordings, so the seed noise in the difference between two configurations' inner scores is:
+
+**Table 9.** Seed noise in a selection, by seeds averaged per configuration
+([`seed_noise.py`](seed_noise.py), output in [`seed_noise.txt`](seed_noise.txt)).
+
+| seeds per configuration | standard deviation of a difference between two configurations | two standard deviations |
+|---|---|---|
+| 1 | 0.021 F1 | 0.042 F1 |
+| 2 | 0.015 F1 | 0.030 F1 |
+| 3 | 0.012 F1 | 0.024 F1 |
+| 5 | 0.009 F1 | 0.019 F1 |
+
+So at one seed, two configurations whose true inner scores differ by less than about 0.04 F1 are not
+reliably ordered. How far apart the 24 configurations truly are has not been measured. Two consequences
+hold either way:
+- **The reported numbers stay honest.** Nested cross-validation scores the chosen configuration on a fold
+  the choice never saw, at 5 seeds, so noise in the choice can pick a worse configuration but cannot
+  inflate what is reported.
+- **The noise falls on one side only.** The hand-written detectors are deterministic, so their selection
+  carries no seed noise. A noisy learned selection can only cost the learned models, which biases the
+  comparison against them.
 
 ## Timing: this machine is slower per fit than the Mac
 
@@ -313,30 +336,36 @@ the workstation's ran alone.
 | `tube`, step 2 | 13.4 s | 11.1 s | 11.3 s | 11.1 s | 11.7 s |
 | `chorus_norm` | 214.7 / 157.5 s | 200.6 / 155.8 s | 198.0 / 160.3 s | 197.7 / 154.5 s | 202.8 / 157.1 s, 1.3× |
 | `chorus_gain_norm` | 185.3 / 166.2 s | 211.1 / 171.0 s | 208.2 / 158.7 s | 211.3 / 154.5 s | 204.0 / 162.6 s, 1.25× |
+| `line_length` | 211.3 / 68.3 s | 202.8 / 60.5 s | 206.5 / 60.6 s | 195.4 / 60.3 s | 204.0 / 62.4 s, **3.3×** |
 
 Calibrating the six hand-written detectors in step 1, summed over 4 folds, took 0.95 to 1.6 times the
 Mac's: cicada 74.5 s against 45.8 s, coact 30.8 s against 20.8 s, loco 78.5 s against 64.5 s, rate 2.4 s
 against 2.5 s, sce 6.9 s against 4.5 s, sync 27.4 s against 23.4 s.
 
-### The estimate, provisional because `line_length` did not run
+**`line_length` is the outlier: 3.3 times the Mac's.** Its fits took 211.3, 202.8, 206.5 and 195.4 s
+here (mean 204.0 s) against 68.3, 60.5, 60.6 and 60.3 s on the Mac (mean 62.4 s), and detection on a
+fold took 2.1 to 2.3 s against 0.45 to 0.58 s, about 4.7 times. The other models run 1.25 to 1.4 times
+the Mac's. Why is not known; nothing has profiled it. It now costs as much as either `chorus` model.
 
-Per learned model, about 204 fits (144 inner fits and up to 60 outer refits), each averaging 2.3 times
-the untuned 900 steps, at this machine's lone untuned fit time. `line_length` has no time from this
-machine; it is taken as the Mac's 62.4 s times 1.3.
+### The estimate, from this machine's lone fits
 
-| model | lone untuned fit | training, CPU hours |
-|---|---|---|
-| `tube` | 11.7 s | 1.5 |
-| `chorus_norm` | 202.8 s | 26.4 |
-| `chorus_gain_norm` | 204.0 s | 26.6 |
-| `line_length` | about 81 s (assumed) | 10.6 |
-| **total** | | **65.1 CPU hours, about 3.0 hours of wall time at 22 jobs** |
+Per learned model, the inner fits are 6 fold pairs × 24 configurations × *k* training seeds, plus up to
+60 outer refits (5 seeds × 4 folds × the untuned setting and each selection's choice). Each fit averages
+2.3 times the untuned 900 steps and is costed at this machine's lone untuned fit time: `tube` 11.7 s,
+`chorus_norm` 202.8 s, `chorus_gain_norm` 204.0 s, `line_length` 204.0 s.
 
-**This is a floor, not a forecast**, for two reasons. The 2.3 counts steps only: configurations with
+**Table 8.** Training cost by the number of training seeds each configuration's inner score averages.
+
+| seeds per configuration (*k*) | fits per learned model | training, CPU hours | wall time at 22 jobs |
+|---|---|---|---|
+| 1, as the handoff declares | 204 | 80.9 | **3.7 hours** |
+| 2 | 348 | 138.4 | **6.3 hours** |
+| 3 | 492 | 195.7 | **8.9 hours** |
+
+**These are floors, not forecasts**, for two reasons. The 2.3 counts steps only: configurations with
 `roi_width` 8, `roi_depth` 6, `width` 16 or `n_scales` 6 cost more per step than the untuned setting, and
-nothing has measured by how much. And 22 concurrent fits may each run slower than one fit alone.
-Scoring the hand-written grids is minutes. The 9-hour limit leaves room for a threefold overrun on the
-floor, which is worth measuring before launch rather than assuming.
+nothing has measured by how much. And 22 concurrent fits may each run slower than one fit alone. Scoring
+the hand-written grids is minutes.
 
 ## The machine
 
