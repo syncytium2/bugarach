@@ -675,6 +675,507 @@ def fig_eye(W):
     return f
 
 
+def _key(f, x, y, items, *, gap=14, size=TICK_PT):
+    """One legend row: (glyph, colour, words) items, left to right; returns the x after the last."""
+    from svgfig import MUTED
+    for glyph, col, lab in items:
+        f.text(x, y, glyph, size=LABEL_PT, weight=700, color=col)
+        gw = 12 if len(glyph) == 1 else 16
+        f.text(x + gw, y, lab, size=size, color=MUTED)
+        x += gw + 3.9 * len(lab) + gap
+    return x
+
+
+def _xticks(f, p, ticks, fmt="{:g}", *, label=None, size=TICK_PT):
+    from svgfig import MUTED
+    for v in ticks:
+        Xv = float(p.px(v))
+        f.line(Xv, p.y + p.h, Xv, p.y + p.h + 3, color=MUTED)
+        f.text(Xv, p.y + p.h + 12, v if isinstance(v, str) else fmt.format(v), size=size, anchor="middle",
+               color=MUTED)
+    if label:
+        f.text(p.x + p.w / 2, p.y + p.h + 24, label, size=LABEL_PT, anchor="middle", color=MUTED, italic=True)
+
+
+def _yticks(f, p, ticks, fmt="{:g}", *, grid=True, size=TICK_PT):
+    from svgfig import MUTED
+    for v in ticks:
+        Yv = float(p.py(v))
+        if grid:
+            f.line(p.x, Yv, p.x + p.w, Yv, color="#e6e6e6")
+        f.line(p.x - 3, Yv, p.x, Yv, color=MUTED)
+        f.text(p.x - 5, Yv + 3, fmt.format(v), size=size, anchor="end", color=MUTED)
+
+
+def fig_count_rule(W):
+    """Figure 4, how the interval rule decides: steps across the top, a planted event (A) and a busy
+    stretch (B) below."""
+    from make_plain_detector_review import (BARC, COUNT_C, GREEN, INK_T, RED, _arr, _by_activity, _clock,
+                                            _found, _plural)
+    from svgfig import MUTED, Figure, nice_ticks
+    sim, C = W["sim"], W["count"]
+    bw = C["fig_w"]
+    x = C["one_bar"][f"interval|{bw:g}"]
+    ev = sim["event"]
+    f = Figure(PAGE_W, 700)
+    f.text(0, 11, "How the interval rule decides", size=TITLE_PT + 1, weight=700)
+    y = 28
+    for i, s in enumerate((f"Slide a window {bw:g} seconds long along the recording.",
+                           "Wherever it sits, count how many different neurons have an event inside it.",
+                           f"Wherever that count reaches {x} neurons, call a coordinated event. Windows "
+                           "that overlap make one call.",
+                           "It never asks what chance would produce. The bar is the same number in every "
+                           "recording.")):
+        f.add(f"<circle cx='7' cy='{y - 3:.1f}' r='6' fill='{COUNT_C}'/>")
+        f.text(7, y, str(i + 1), size=PRINT_MIN_PT, anchor="middle", weight=700, color="#fff")
+        y = f.para(18, y, s, width_chars=112, size=LABEL_PT, lh=1.3) + 4
+    y0 = y + 14
+    L, VW, GAP = 52, 186, 30
+    ymax = int(max(10, x + 3, *[np.nanmax(_arr(C["demo"][k_]["y"])) + 1 for k_ in ("A", "B")]))
+    ymax += ymax % 2
+    for j, (key, title) in enumerate((("A", "A · a planted event (quiet neurons)"),
+                                      ("B", "B · a busy stretch, nothing planted"))):
+        D, K = sim[key], C["demo"][key]
+        X = L + j * (VW + GAP)
+        win = D["win"]
+        f.text(X, y0, title, size=TITLE_PT, weight=600)
+        f.text(X, y0 + 11, f"one minute, from {_clock(win[0])} into the recording", size=PRINT_MIN_PT, color=MUTED)
+        ly = y0 + 16
+        lane = f.panel(X, ly, VW, 26, win, (0, 1))
+        if key == "A":
+            lane.down_triangle(ev["time"], ly + 8, color=GREEN if _found(K["calls"], ev["time"]) else RED, size=8)
+        for on, wd in K["calls"]:
+            lane.span(on, on + max(wd, 0.0), row_y=ly + 15, row_h=8, color=COUNT_C, min_px=2)
+        n_calls = sum(1 for on, wd in K["calls"] if on + wd >= win[0] and on <= win[1])
+        f.text(X + VW - 3, ly + 9, _plural(n_calls, "call"), size=PRINT_MIN_PT, anchor="end", color=MUTED)
+        ry = ly + 30
+        r = f.panel(X, ry, VW, 80, win, (0, 1))
+        r.raster(_by_activity(D["trains"]), width=0.8)
+        my = ry + 80 + 8 + 26
+        p = f.panel(X, my + 6, VW, 84, win, (0, ymax))
+        _yticks(f, p, nice_ticks(0, ymax, 4))
+        p.steps(_arr(K["t"]), _arr(K["y"]), color=COUNT_C, width=1.1)
+        p.hline(x, color=BARC, width=1.3, dash="4 3")
+        if j == 0:
+            r.ylabel(f"{sim['n_roi']} neurons", size=LABEL_PT, dx=12)
+            f.text(X - 5, ly + 11, "planted", size=PRINT_MIN_PT, anchor="end", color=MUTED)
+            f.text(X - 5, ly + 22, "calls", size=PRINT_MIN_PT, anchor="end", color=MUTED)
+            p.ylabel("neurons", lines=["different neurons", f"in the next {bw:g} s"], size=PRINT_MIN_PT, dx=34)
+        _time_axis(f, p, offset=win[0], step=15.0, label="seconds from the start of this minute")
+    _key(f, L, my - 12, [("▬", COUNT_C, f"different neurons in the {bw:g} s window starting here")])
+    _key(f, L, my, [("- -", BARC, f"the bar: {x} neurons, in every recording")])
+    by = my + 6 + 84 + 42
+    _key(f, L, by, [("▼", GREEN, "planted event, found"), ("▼", RED, "planted event, missed")])
+    f.h = by + 8
+    return f
+
+
+def fig_count_edge(W):
+    """Figure 5, what a fixed bin edge costs: share of planted events found, by where they fall on the grid."""
+    from make_plain_detector_review import COLORS, COUNT_C
+    from svgfig import MUTED, Figure
+    C = W["count"]
+    E = C["edge"]
+    x = C["x_edge"]
+    bw = C["edge_bin"]
+    lines = (("interval", COUNT_C, f"counting within a sliding {bw:g} s window, bar of {x} neurons", "", 1.8),
+             ("bin", "#b59a6a", f"counting in fixed {bw:g} s bins, the same bar", "4 3", 1.8),
+             ("coact", COLORS["coact"], f"CoactDetect (fixed {bw:g} s bins)", "", 1.3),
+             ("loco", COLORS["loco"], "LoCo (fixed 1 s bins)", "", 1.3))
+    f = Figure(PAGE_W, 400)
+    f.text(0, 11, "Events joined by 6 neurons: the share found, by where each fell against the bins",
+           size=TITLE_PT, weight=600)
+    X, Y, PW, PH = 52, 24, 400, 170
+    p = f.panel(X, Y, PW, PH, (0, 0.5), (0, 1.05))
+    _yticks(f, p, [0, 0.25, 0.5, 0.75, 1.0], "{:.0%}")
+    p.ylabel("share found", size=LABEL_PT, dx=38)
+    for key, col, _, dash, wdt in lines:
+        xs = [(g["lo"] + g["hi"]) / 2 for g in E[key]]
+        ys = [g["found"] for g in E[key]]
+        p.curve(xs, ys, color=col, width=wdt, dash=dash or None)
+        p.dots(xs, ys, color=col, r=2.4)
+    _xticks(f, p, [0, 0.125, 0.25, 0.375, 0.5],
+            label="distance from the nearest bin edge, as a share of the bin (0.5 = the middle)")
+    ly = Y + PH + 42
+    for i, (key, col, lab, dash, _) in enumerate(lines):
+        _key(f, X + (i % 2) * 214, ly + (i // 2) * 12, [("▬", col, lab)], size=PRINT_MIN_PT)
+    ns = ", ".join(str(g["n"]) for g in E["bin"])
+    f.text(X, ly + 28, f"{C['n_edge_events']} planted events, both backgrounds; {ns} in the four groups, "
+                       "left to right", size=PRINT_MIN_PT, color=MUTED)
+    f.h = ly + 34
+    return f
+
+
+def fig_count_slices(W):
+    """Figure 6, one dot per untreated real recording: the bar its own chance needs."""
+    import math
+
+    from make_plain_detector_review import BARC, BUSY_C, INK_T
+    from svgfig import MUTED, Figure
+    C = W["count"]
+    bw = C["fig_w"]
+    x1 = C["one_bar"][f"interval|{bw:g}"]
+    R = C["real"]
+    top = max([r[f"need|{bw:g}"] or 0 for r in R] + [x1]) + 1
+    f = Figure(PAGE_W, 400)
+    X, Y, PW, PH = 70, 32, 288, 190
+    f.text(0, 11, f"{len(R)} untreated recordings, one dot each", size=TITLE_PT, weight=600)
+    p = f.panel(X, Y, PW, PH, (-2.5, 1.0), (0, top))
+    _yticks(f, p, list(range(0, top + 1, 2)))
+    p.ylabel("neurons", lines=[f"neurons needed within {bw:g} s so that", "chance reaches it less than once",
+                               "every 10 minutes"], size=PRINT_MIN_PT, dx=48)
+    rate_q = C["block_rate_per_min"]["baseline_quiet"]
+    Xb = float(p.px(math.log10(rate_q)))
+    f.line(Xb, Y, Xb, Y + PH, color=MUTED, width=0.8, dash="2 2")
+    f.text(Xb, Y - 4, "the simulated busy stretch", size=PRINT_MIN_PT, anchor="middle", color=MUTED)
+    for r in R:
+        need = r[f"need|{bw:g}"]
+        if need is None or r["rate"] <= 0:
+            continue
+        p.dots([math.log10(r["rate"])], [need], color=BUSY_C if need > x1 else "#7a7a7a", r=2.8, opacity=0.75)
+    p.hline(x1, color=BARC, width=1.2, dash="4 3")
+    for i, ln in enumerate(("the one bar that did", "best on simulated", f"recordings: {x1} neurons")):
+        f.text(X + PW + 6, float(p.py(x1)) - 8 + 10 * i, ln, size=TICK_PT, color=INK_T)
+    # log ticks, labelled with the rate itself rather than its exponent
+    for v, lab in ((-2, "0.01"), (-1, "0.1"), (0, "1"), (1, "10")):
+        Xv = float(p.px(v))
+        f.line(Xv, Y + PH, Xv, Y + PH + 3, color=MUTED)
+        f.text(Xv, Y + PH + 12, lab, size=TICK_PT, anchor="middle", color=MUTED)
+    f.text(X + PW / 2, Y + PH + 24, "events per neuron per minute (each step is ten times more)", size=LABEL_PT,
+           anchor="middle", color=MUTED, italic=True)
+    ky = Y + PH + 42
+    _key(f, X, ky, [("●", BUSY_C, f"a bar of {x1} lets chance through"),
+                    ("●", "#7a7a7a", f"a bar of {x1} is enough, or more than enough")])
+    f.h = ky + 8
+    return f
+
+
+def fig_count_published(W):
+    """Figure 7, the published slice rule run on neurons that fire at random and independently."""
+    from make_plain_detector_review import PUB_CELLS, RED
+    from svgfig import MUTED, Figure
+    P = W["count"]["published"]
+    e = P["eddleston"]
+    shades = {"7": "#c9b79c", "13.4": "#5a4527"}
+    words = {"7": "7 events per neuron per hour, the slowest reported (Han and others, 2023)",
+             "13.4": "13.4 events per neuron per hour, the rate in Eddleston and others (2026)"}
+    f = Figure(PAGE_W, 400)
+    TOP, PH = 22, 170
+    for j, (key, title, ylim, ticks, ylab, rep) in enumerate((
+            ("mse_per_cell_h", "A · mSEs per neuron per hour", (0, 4), [0, 1, 2, 3, 4],
+             "mSEs per neuron per hour", e["mse"]),
+            ("cells_per", "B · neurons in each mSE", (2, 4.5), [2, 3, 4], "neurons in each mSE",
+             e["cells_per"]))):
+        X, PW = (40, 150) if j == 0 else (292, 120)
+        f.text(X - 30, 11, title, size=TITLE_PT, weight=600)
+        p = f.panel(X, TOP, PW, PH, (PUB_CELLS[0], PUB_CELLS[-1]), ylim)
+        f.rect(float(p.px(e["field_lo"])), TOP, float(p.px(e["field_hi"])) - float(p.px(e["field_lo"])), PH,
+               fill="#f1ede6")
+        _yticks(f, p, ticks)
+        p.ylabel(ylab, size=PRINT_MIN_PT, dx=20)
+        for rate, rows in P["curves"].items():
+            p.curve([r_["cells"] for r_ in rows], [r_[key] for r_ in rows], color=shades.get(rate, MUTED),
+                    width=1.5)
+        p.hline(rep, color=RED, width=1.2, dash="4 3", x0=e["field_lo"], x1=e["field_hi"])
+        for i_, ln in enumerate(("reported by", "Eddleston and", "others, 2026")):
+            f.text(X + PW + 4, float(p.py(rep)) - 7 + 10 * i_, ln, size=PRINT_MIN_PT, color=RED)
+        _xticks(f, p, [5, 10, 15, 20, 25, 30], label="total number of neurons")
+    ky = TOP + PH + 42
+    for i, rate in enumerate(P["curves"]):
+        _key(f, 10, ky + 11 * i, [("▬", shades.get(rate, MUTED),
+                                   words.get(rate, f"{float(rate):g} events per neuron per hour"))])
+    ky += 11 * len(P["curves"])
+    _key(f, 10, ky, [("▮", "#e2dbcf", f"{e['field_lo']} to {e['field_hi']} neurons, as Eddleston and others "
+                                      "(2026) report"), ("- -", RED, "the averages they report")])
+    f.h = ky + 8
+    return f
+
+
+def fig_chance_steps(W):
+    """Figure 8, the four steps of a shifted-copy test, on six simulated neurons with numbered events.
+    Print layout: steps 1 and 3 side by side, step 2's three copies across the full width, step 4 below."""
+    from make_plain_detector_review import BARC, GREEN, INK_T, _numbered, _plural
+    from svgfig import MUTED, Figure, nice_ticks
+    S = W["toys"]["steps"]
+    L, bin_ = S["length"], tuple(S["bin"])
+    BLUE = "#9bb7d4"
+    f = Figure(PAGE_W, 600)
+
+    def badge(x, y, n, title):
+        f.add(f"<circle cx='{x + 6}' cy='{y - 3.5:.1f}' r='6.5' fill='#333'/>")
+        f.text(x + 6, y, n, size=PRINT_MIN_PT, anchor="middle", weight=700, color="#fff")
+        f.text(x + 17, y, title, size=TITLE_PT, weight=600)
+
+    # step 1
+    X1, W1 = 14, 200
+    badge(X1 - 6, 11, "1", "Count the recording")
+    f.para(X1, 25, f"How many neurons have an event inside the 2-second bin being tested? Here: {S['observed']} "
+                   "of 6.", width_chars=46, size=TICK_PT, color=MUTED, lh=1.25)
+    lane = f.panel(X1, 44, W1, 8, (0, L), (0, 1), frame=False)
+    lane.span(*bin_, row_y=45, row_h=6, color=BLUE, min_px=4)
+    r = f.panel(X1, 54, W1, 96, (0, L), (0, 1))
+    _numbered(f, r, S["numbered"], size=8, bold_in=bin_)
+    _xticks(f, r, [0, L / 2, L], fmt="{:g}s")
+    f.para(X1, 175, "Six neurons, one row each. Each event carries its number in that neuron's own order, so a "
+                    "row can be followed when it slides. Blue bar: the bin tested.", width_chars=46,
+           size=PRINT_MIN_PT, color=MUTED, lh=1.25)
+    # step 3
+    X3, W3 = 290, 160
+    badge(X3 - 40, 11, "3", f"Repeat {S['n_copies']} times")
+    f.text(X3 - 34, 25, "The counts from the copies are what chance gives.", size=TICK_PT, color=MUTED)
+    hist = np.asarray(S["hist"], float)
+    ymax = max(10.0, hist.max() * 1.15)
+    h = f.panel(X3, 54, W3, 96, (-0.6, 6.6), (0, ymax))
+    h.bars(np.arange(7), hist, color="#b9c6d6", width_frac=0.85)
+    _yticks(f, h, nice_ticks(0, ymax, 4), "{:,.0f}", grid=False)
+    h.ylabel("copies", lines=[f"copies (of {S['n_copies']})"], size=PRINT_MIN_PT, dx=26)
+    _xticks(f, h, [0, 2, 4, 6], label="neurons in the bin")
+    Xb = float(h.px(S["bar"]))
+    f.line(Xb, 54, Xb, 150, color=BARC, width=1.4, dash="4 3")
+    f.text(Xb + 4, 64, "the bar", size=TICK_PT, weight=600)
+    h.down_triangle(S["observed"], 50, color=GREEN, size=8)
+    # step 2
+    y2 = 222
+    badge(X1 - 6, y2, "2", "Make a shifted copy")
+    f.text(X1 + 118, y2, "Slide each neuron's row by its own random amount. Events pushed off", size=TICK_PT,
+           color=MUTED)
+    f.text(X1 + 118, y2 + 11, "the end come back at the start. Count again.", size=TICK_PT, color=MUTED)
+    CW, cy = 112, y2 + 24
+    for i, ex in enumerate(S["examples"]):
+        X = 44 + i * (CW + 42)
+        ln = f.panel(X, cy, CW, 8, (0, L), (0, 1), frame=False)
+        ln.span(*bin_, row_y=cy + 1, row_h=6, color=BLUE, min_px=4)
+        rr = f.panel(X, cy + 10, CW, 84, (0, L), (0, 1))
+        _numbered(f, rr, ex["numbered"], size=8, bold_in=bin_)
+        n_ = len(ex["shifts"])
+        for j, sh in enumerate(ex["shifts"]):
+            ry_ = cy + 10 + 84 - (j + 0.5) * (84 / n_) + 3
+            f.text(X - 3, ry_, f"+{sh:g}s", size=PRINT_MIN_PT, anchor="end", color="#8a8a8a")
+        f.text(X, cy + 106, f"copy {i + 1}:", size=TICK_PT, color=MUTED)
+        f.text(X + 34, cy + 106, _plural(ex["count"], "neuron"), size=TICK_PT, weight=700, color=INK_T)
+    f.text(14, cy + 118, "grey: the slide given to each row", size=PRINT_MIN_PT, color="#8a8a8a")
+    # step 4
+    y4 = cy + 140
+    badge(X1 - 6, y4, "4", "Decide")
+    share = f"{S['share_at_least'] * 100:.0f}%" if S["share_at_least"] >= 0.01 else "under 1%"
+    f.text(X1 + 50, y4, f"Only {share} of the copies reach {S['observed']} neurons, so the real moment",
+           size=TICK_PT, color=MUTED)
+    f.text(X1 + 50, y4 + 11, "(green ▼ in step 3) is called a coordinated event.", size=TICK_PT, color=MUTED)
+    f.h = y4 + 17
+    return f
+
+
+def fig_shift_shuffle(W):
+    """Figure 9, shifted copies against shuffled copies: bursty neurons (A), a steady beat (B), and the lab's
+    own recordings (C)."""
+    import math
+
+    from make_plain_detector_review import GREEN, INK_T, RED, SHIFT_C, SHUF_C, _plural
+    from svgfig import MUTED, Figure
+    T = W["toys"]
+    numbers = W["_numbers"]
+    f = Figure(PAGE_W, 700)
+    rows = [("bursty", "A · neurons with events in bursts",
+             "A shuffle breaks the bursts apart, so events spread over more of the recording and more neurons land "
+             "in any bin by chance. The bar comes out too high and the burst that was put in is missed."),
+            ("even", "B · neurons with events at a steady beat",
+             "A shuffle lets a neuron's events pile up in one bin and leave others empty, so fewer neurons reach any "
+             "bin by chance. The bar comes out too low and a coordinated event that is only chance is called.")]
+    Y = 11
+    for key, title, story in rows:
+        D = T[key]
+        b = D["bin"]
+        f.text(0, Y, title, size=TITLE_PT, weight=600)
+        yy = f.para(0, Y + 12, story, width_chars=116, size=TICK_PT, color=MUTED, lh=1.25)
+        py = yy + 14
+        for j, (lab, trs, col) in enumerate((("the recording", D["trains"], INK_T),
+                                             ("one shifted copy", D["shift_example"], SHIFT_C),
+                                             ("one shuffled copy", D["shuffle_example"], SHUF_C))):
+            # 74 wide with 18 between: at 80 and 12 one raster's "20s" ran into the next one's "0s"
+            X = 8 + j * 96
+            f.text(X, py, lab, size=TICK_PT, weight=600, color=col)
+            ln = f.panel(X, py + 4, 76, 6, (0, T["length"]), (0, 1), frame=False)
+            ln.span(*b, row_y=py + 4, row_h=5, color="#9bb7d4")
+            r = f.panel(X, py + 11, 76, 64, (0, T["length"]), (0, 1))
+            r.raster(trs, width=1.0)
+            _xticks(f, r, [0, 10, 20], "{:g}s", size=PRINT_MIN_PT)
+            cnt = sum(1 for v in trs if np.any((np.asarray(v) >= b[0]) & (np.asarray(v) < b[1])))
+            f.text(X + 76, py + 11 + 64 + 23, f"{_plural(cnt, 'neuron')} in the bin", size=PRINT_MIN_PT,
+                   anchor="end", color=MUTED)
+        for j, (lab, hist, col, pv) in enumerate((("5,000 shifted", D["shift_hist"], SHIFT_C, D["p_shift"]),
+                                                  ("5,000 shuffled", D["shuffle_hist"], SHUF_C, D["p_shuffle"]))):
+            X = 320 + j * 80
+            h = f.panel(X, py + 11, 62, 64, (-0.6, 6.6), (0, 2500))
+            h.bars(np.arange(7), hist, color=col, width_frac=0.8)
+            _xticks(f, h, [0, 2, 4, 6], size=PRINT_MIN_PT)
+            if j == 0:
+                _yticks(f, h, [0, 1000, 2000], "{:,.0f}", grid=False, size=PRINT_MIN_PT)
+                h.ylabel("copies", size=PRINT_MIN_PT, dx=30)
+            h.down_triangle(D["observed"], py + 9, color=INK_T, size=6)
+            f.text(X + 31, py - 8, lab, size=TICK_PT, anchor="middle", weight=600, color=col)
+            f.text(X + 31, py + 1, "copies", size=TICK_PT, anchor="middle", weight=600, color=col)
+            share = f"{pv * 100:.1f}%" if pv >= 0.001 else "under 0.1%"
+            verdict = "called" if pv < 0.05 else "not called"
+            by = py + 11 + 64 + 23
+            f.text(X + 31, by, f"with {D['observed']} or more", size=PRINT_MIN_PT, anchor="middle", color=MUTED)
+            f.text(X + 31, by + 9, f"neurons: {share}", size=PRINT_MIN_PT, anchor="middle", color=MUTED)
+            f.text(X + 31, by + 19, f"→ {verdict}", size=TICK_PT, anchor="middle", weight=700,
+                   color=GREEN if (verdict == "called") == (key == "bursty") else RED)
+        Y = py + 11 + 64 + 23 + 36
+    f.text(PAGE_W, Y - 4, "histograms: across, neurons in the bin · ▼ what the recording itself gave · a count "
+                          "that fewer than 5 copies in 100 reach is called", size=PRINT_MIN_PT, anchor="end",
+           color=MUTED, italic=True)
+    # C: the lab's own recordings
+    Y += 16
+    f.text(0, Y, "C · on the lab's own recordings (84 untreated recordings, brief events)", size=TITLE_PT, weight=600)
+    d = numbers["sur_fast_doubles"]
+    n6 = numbers["sur_fast_n6"]
+    groups = [(("events landing in a 2-second bin their own", "neuron already filled, per 1,000 events"),
+               [math.floor(v + 0.5) for v in (d["real"], d["shift"], d["shuffle"])], "{:.0f}", 120, 0),
+              (("share of 2-second bins where 6 or more", "neurons have an event"),
+               [100 * n6["real"], 100 * n6["shift"], 100 * n6["shuffle"]], "{:.2f}%", 2.0, 240)]
+    for (l1, l2), vals, fmt, vmax, X in groups:
+        f.text(X, Y + 13, l1, size=TICK_PT, color=MUTED)
+        f.text(X, Y + 23, l2, size=TICK_PT, color=MUTED)
+        for i, (nm, v, col) in enumerate((("recording", vals[0], INK_T), ("shifted", vals[1], SHIFT_C),
+                                          ("shuffled", vals[2], SHUF_C))):
+            yy = Y + 30 + i * 13
+            f.text(X + 46, yy + 8, nm, size=TICK_PT, anchor="end", color=col, weight=600)
+            wbar = 150 * v / vmax
+            f.rect(X + 50, yy, wbar, 9, fill=col)
+            f.text(X + 54 + wbar, yy + 8, fmt.format(v), size=TICK_PT, color=INK_T)
+    f.h = Y + 30 + 3 * 13 + 4
+    return f
+
+
+def fig_simulator(W):
+    """Figure 16, one simulated recording: planted events, decoys, the busy stretch, and the raster."""
+    from svgfig import MUTED, Figure
+    sim = W["sim"]
+    bench = W["_numbers"]["bench"]
+    ext = sim["ext"]
+    f = Figure(PAGE_W, 400)
+    L, PW = 58, PAGE_W - 58 - 8
+    lane = f.panel(L, 4, PW, 38, ext, (0, 1))
+    sizes = {max(bench["participation_pct"]): "#08306b", sorted(bench["participation_pct"])[1]: "#2171b5",
+             min(bench["participation_pct"]): "#6baed6"}
+    for t, k in sim["planted"]:
+        pct = min(sizes, key=lambda p_: abs(p_ - 100 * k / sim["n_roi"]))
+        lane.down_triangle(t, 12, color=sizes[pct], size=7)
+    for t, k in sim["decoys"]:
+        lane.down_triangle(t, 24, color="#555", size=6.5, hollow=True)
+    h0, h1 = sim["hot"]
+    lane.span(h0, h1, row_y=32, row_h=7, color="#f0c9a0")
+    f.text(L - 5, 14, "planted", size=TICK_PT, anchor="end", color=MUTED)
+    f.text(L - 5, 26, "decoys", size=TICK_PT, anchor="end", color=MUTED)
+    f.text(L - 5, 38, "busy stretch", size=TICK_PT, anchor="end", color=MUTED)
+    r = f.panel(L, 46, PW, 170, ext, (0, 1))
+    order = np.argsort([len(v) for v in sim["full_trains"]], kind="stable")
+    r.raster([sim["full_trains"][i] for i in order], width=0.6)
+    r.ylabel(f"{sim['n_roi']} neurons", size=LABEL_PT, dx=10)
+    span_s = ext[1] - ext[0]
+    _time_axis(f, r, offset=ext[0], step=300.0 if span_s > 1800 else 120.0, label="time in the recording")
+    ky = 46 + 170 + 42
+    items = []
+    for pct, col in sorted(sizes.items(), reverse=True):
+        note = {18: ", the usual real size"}.get(pct, "")
+        items.append(("▼", col, f"planted event, {round(pct / 100 * sim['n_roi'])} neurons{note}"))
+    _key(f, L, ky, items[:2])
+    _key(f, L, ky + 11, items[2:] + [("▽", "#555", "decoy: built the same way, not counted")])
+    _key(f, L, ky + 22, [("▬", "#f0c9a0", "busy stretch: every neuron gets extra random events, nothing planted")])
+    f.h = ky + 28
+    return f
+
+
+def fig_grading(W):
+    """Figure 17, how calls are graded against planted events, on a made-up minute."""
+    from make_plain_detector_review import GREEN, RED
+    from svgfig import MUTED, Figure
+    tol = W["_numbers"]["tol_s"]
+    f = Figure(PAGE_W, 200)
+    L, PW, win = 76, PAGE_W - 76 - 8, (0, 60)
+    planted = [8, 27, 50]
+    calls = [(7.2, 1.5), (26.0, 0.8), (27.9, 0.6), (40.0, 1.0)]
+    lane = f.panel(L, 4, PW, 76, win, (0, 1))
+    for t in planted:
+        lane.span(t - tol, t + tol, row_y=6, row_h=16, color="#dff0e3")
+    for t, ok in zip(planted, (True, True, False)):
+        lane.down_triangle(t, 14, color=GREEN if ok else RED, size=8)
+    labels = [("hit",), ("hit",), ("false alarm: a second", "call on the same event"),
+              ("false alarm:", "nothing planted here")]
+    for (on, wd), lab, row in zip(calls, labels, (0, 0, 1, 0)):
+        yy = 30 + row * 24
+        col = GREEN if lab[0] == "hit" else RED
+        lane.span(on, on + wd, row_y=yy, row_h=9, color=col)
+        for i, ln in enumerate(lab):
+            f.text(float(lane.px(on + wd)) + 4, yy + 8 + 9 * i, ln, size=TICK_PT, color=col)
+    # two lines: on one it ran back into the second planted event's band
+    f.text(float(lane.px(50 - tol)) - 4, 13, "miss: no call near", size=TICK_PT, color=RED, anchor="end")
+    f.text(float(lane.px(50 - tol)) - 4, 22, "this planted event", size=TICK_PT, color=RED, anchor="end")
+    f.text(L - 5, 17, "planted events", size=TICK_PT, anchor="end", color=MUTED)
+    f.text(L - 5, 40, "calls", size=TICK_PT, anchor="end", color=MUTED)
+    _time_axis(f, lane, offset=0.0, step=10.0, label="a simulated minute, drawn to show the rule")
+    y = f.para(0, 4 + 76 + 42, f"Green bands reach {tol:g} seconds either side of each planted event. A call that "
+                               f"touches a band is a hit; each planted event counts only one call.",
+               width_chars=108, size=TICK_PT, color=MUTED, lh=1.25)
+    f.text(0, y, "Here: found 2 of 3 planted events; 2 of 4 calls were right.", size=TICK_PT, color=MUTED)
+    f.h = y + 6
+    return f
+
+
+def fig_count_bar(W):
+    """Figure 20, what the interval rule's bar does to the overall score (A) and to calls in the empty busy
+    stretch (B)."""
+    from make_plain_detector_review import BUSY_C, COLORS, QUIET_C
+    from svgfig import MUTED, Figure
+    C = W["count"]
+    bw = C["fig_w"]
+    rk = f"interval|{bw:g}"
+    xs = C["xs"]
+    B = C["bench"]
+    regs = (("baseline_quiet", QUIET_C), ("baseline_busy", BUSY_C))
+    f = Figure(PAGE_W, 400)
+    TOP, PH = 30, 150
+    cc = COLORS["coact"]
+    for j, (key, t1, t2, ylim, ticks, ylab, scale) in enumerate((
+            ("f1", "A · the overall score,", "bar by bar", (0, 1), [0, 0.25, 0.5, 0.75, 1.0], "overall score", 1),
+            ("empty", "B · how much of the empty", "busy stretch it calls", (0, 100), [0, 25, 50, 75, 100],
+             "percent of the stretch", 100))):
+        X, PW = (44, 146) if j == 0 else (300, 112)
+        f.text(X, 11, t1, size=TITLE_PT, weight=600)
+        f.text(X, 23, t2, size=TITLE_PT, weight=600)
+        p = f.panel(X, TOP, PW, PH, (xs[0] - 0.5, xs[-1] + 0.5), ylim)
+        _yticks(f, p, ticks)
+        p.ylabel(ylab, size=LABEL_PT, dx=32 if j == 0 else 28)
+        for reg, col in regs:
+            vals = [scale * np.nan_to_num(B[reg][f"{rk}|{x}"][key]) for x in xs]
+            p.curve(xs, vals, color=col, width=1.4)
+            p.dots(xs, vals, color=col, r=2.2)
+            bx = C["best"][rk][reg]
+            v = scale * np.nan_to_num(B[reg][f"{rk}|{bx}"][key])
+            f.add(f"<circle cx='{float(p.px(bx)):.1f}' cy='{float(p.py(v)):.1f}' r='5' fill='none' "
+                  f"stroke='{col}' stroke-width='1.2'/>")
+        if key == "f1":
+            for reg, word in (("baseline_quiet", "quiet"), ("baseline_busy", "busy")):
+                v = B[reg]["coact"]["f1"]
+                p.hline(v, color=cc, width=1.0, dash="3 3")
+                f.text(X + PW + 4, float(p.py(v)) + 3, f"CoactDetect, {word}", size=PRINT_MIN_PT, color=cc)
+        else:
+            v = 100 * max(B["baseline_busy"]["coact"]["empty"], B["baseline_busy"]["loco"]["empty"])
+            p.hline(v, color=cc, width=1.0, dash="3 3")
+            f.text(X + PW + 4, float(p.py(v)) - 6, "CoactDetect", size=PRINT_MIN_PT, color=cc)
+            f.text(X + PW + 4, float(p.py(v)) + 4, "and LoCo", size=PRINT_MIN_PT, color=cc)
+        # every other bar labelled in the narrower panel: all of them ran together ("101112")
+        _xticks(f, p, xs if j == 0 else [v for v in xs if v % 2 == 0],
+                label=f"the bar: different neurons within {bw:g} s")
+    ky = TOP + PH + 44
+    _key(f, 44, ky, [("●", QUIET_C, "quiet background"), ("●", BUSY_C, "busy background"),
+                     ("◯", MUTED, "the bar with the best score")])
+    _key(f, 44, ky + 11, [("- -", cc, "programs that judge chance from the minutes around each moment")])
+    f.h = ky + 17
+    return f
+
+
 FIGURES = {"fig_orient": ("fig01_orient", fig_orient), "fig_problem": ("fig02_problem", fig_problem),
            "fig_chance": ("fig03_chance", fig_chance)}
 for _i, _d in enumerate(("rate", "coact", "loco", "sce", "cicada", "sync")):
@@ -684,6 +1185,15 @@ for _i, (_n, _l, _s) in enumerate((("real_ttx_brief", "TTX", "fast"), ("real_ttx
                                    ("real_senk_brief", "senktide", "fast"), ("real_senk_long", "senktide", "slow"))):
     FIGURES[_n] = (f"fig{21 + _i}_{_n}", lambda W, _l=_l, _s=_s: fig_real_overview(W, _l, _s))
 FIGURES["fig_eye"] = ("fig25_eye", fig_eye)
+FIGURES.update({"fig_count_rule": ("fig04_count_rule", fig_count_rule),
+                "fig_count_edge": ("fig05_count_edge", fig_count_edge),
+                "fig_count_slices": ("fig06_count_slices", fig_count_slices),
+                "fig_count_published": ("fig07_count_published", fig_count_published),
+                "fig_chance_steps": ("fig08_chance_steps", fig_chance_steps),
+                "fig_shift_shuffle": ("fig09_shift_shuffle", fig_shift_shuffle),
+                "fig_simulator": ("fig16_simulator", fig_simulator),
+                "fig_grading": ("fig17_grading", fig_grading),
+                "fig_count_bar": ("fig20_count_bar", fig_count_bar)})
 
 
 def render(figs: dict, out: Path) -> None:

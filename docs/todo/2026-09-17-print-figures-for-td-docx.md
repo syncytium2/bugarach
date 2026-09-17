@@ -35,4 +35,11 @@ Never rebuild over it (`make_plain_detector_review.py --stages docx` writes the 
 | 19 | fig_busy | done, two-line panel titles (fig19_busy) | yes |
 | 21-24 | real_{ttx,senk}_{brief,long} | done: names once in a key, counts per row (fig21-24_real_*) | yes, caption on the same page |
 | 25 | fig_eye | done at 646 pt, placed at the full 6.5 in (the builder had narrowed it to 426 pt) | yes; fills its page, caption starts on the next (as before) |
-| next | 4 count_rule, 5 count_edge, 6 count_slices, 7 count_published, 8 chance_steps, 9 shift_shuffle, 16 simulator, 17 grading, 20 count_bar | | no |
+| 4-9, 16, 17, 20 | count_rule, count_edge, count_slices, count_published, chance_steps, shift_shuffle, simulator, grading, count_bar | done (fig04-09, 16, 17, 20) | yes |
+
+**All 25 in the -td docx, 2026-09-17.** Word PDF: 40 pages, every figure at 6.5 in, every caption on its figure's
+page except Figure 25 (fills its page; its long caption starts on the next, as before). PDF beside the docx:
+`detector_review_plain-td.pdf`. Backups: `detector_review_plain-td.before-print-figures.docx` (Tony's copy before
+any swap) and `.before-program-figures.docx`.
+
+Left for Tony: nothing in the figures depends on him; he has not seen the print versions of 4-25.

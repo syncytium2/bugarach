@@ -19,8 +19,12 @@ DOC = D / "detector_review_plain-td.docx"
 #: Only figures not yet swapped: a swapped figure's old bytes are gone from the docx, so a done pair would
 #: stop the run ("found n of m"). Done so far: fig_orient, fig_problem, fig_chance (1-3).
 #: Done so far: 1-3, 10-15 (swapped once, then redrawn shorter from the bytes kept in `swapped_v1/`).
-#: 18-19 and 21-24 also done.
-PAIRS = {"fig_eye.png": "print_figures/fig25_eye.png"}
+#: 18-19 and 21-25 also done; this run: the last nine.
+PAIRS = {f"{n}.png": f"print_figures/{s}.png" for n, s in (
+    ("fig_count_rule", "fig04_count_rule"), ("fig_count_edge", "fig05_count_edge"),
+    ("fig_count_slices", "fig06_count_slices"), ("fig_count_published", "fig07_count_published"),
+    ("fig_chance_steps", "fig08_chance_steps"), ("fig_shift_shuffle", "fig09_shift_shuffle"),
+    ("fig_simulator", "fig16_simulator"), ("fig_grading", "fig17_grading"), ("fig_count_bar", "fig20_count_bar"))}
 #: 6.5 in, the Word page's text width, in EMU (914400 per inch).
 FULL_WIDTH_EMU = 5943600
 
