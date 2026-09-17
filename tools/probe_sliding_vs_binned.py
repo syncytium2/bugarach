@@ -108,13 +108,17 @@ def timing(recordings):
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--folder", default="2026-09-03_revised_2v_long_STEPS_EXCLUDED_TTX",
-                    help="export folder name (resolved under the data root)")
+    ap.add_argument("--role", default=bench.MEASURED_ROLE,
+                    help="which current_export.toml role to read (default: the one the bench "
+                         "is measured on). The 2026-09-17 program reads only this folder")
     ap.add_argument("--n", type=int, default=3, help="recordings to use")
     ap.add_argument("--tol", type=float, default=0.05, help="seconds within which a call is kept")
     ap.add_argument("--only", choices=("shift", "timing"), default=None)
     a = ap.parse_args(argv)
-    recordings = load_folder(dataset.resolve(a.folder))[:a.n]
+    # Was a folder NAME, and the name was the TTX subset: `..._STEPS_EXCLUDED_TTX`. Tony,
+    # 2026-09-17: *"you should only work from the steps excluded folder"* — the subsets are
+    # views of it and are not inputs. The parent holds the same recordings.
+    recordings = load_folder(dataset.current(a.role))[:a.n]
     if a.only in (None, "shift"):
         shift_check(recordings, a.tol)
     if a.only in (None, "timing"):

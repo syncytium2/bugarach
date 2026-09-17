@@ -286,3 +286,17 @@ to keep. Nothing below edits WSMIP064's branch. It all arrives through `main`.
   edited without re-measuring, or when a constant leaves its interval unacknowledged.
   `fit_background_shape.py` now reads the analysis window (it had been measuring the raw period), and
   it no longer passes a verdict at a fixed 5%. Next: §3 step 2.
+- 2026-09-17 15:05 (WSMIP065): **§3 step 2 done. The two modes disagree only in ways forks.md §14
+  predicts, so nothing here blocks landing sliding.**
+  *Reproduced:* the 48 tests of the sliding branch pass, and `probe_sliding_vs_binned.py` (repointed
+  from the TTX subset to `steps_excluded`) gives sliding 100% of calls kept at every shift of
+  0.1–0.9 s against binned 41% for LoCo and 0% for CoactDetect at a 0.05 s match, in 0.23–0.41 times
+  the time.
+  *On real recordings* (`tools/compare_sliding_vs_binned.py`, 84 baseline analysis windows, fast
+  stream): LoCo 598 → 923 calls, CoactDetect 436 → 583, at the **binned-tuned** settings. Sliding
+  never calls fewer for LoCo (59 recordings call more) and calls fewer in 4 for CoactDetect. A median
+  1.00 of binned calls are also made sliding (within 2.5 s), and 0.40 / 0.33 of sliding calls are new.
+  **CoactDetect's shared onsets move a median +0.30 s** (median absolute 0.50 s) where LoCo's move
+  0.00 s — the bin edge becoming the first participating event, which is the whole of why only half
+  of CoactDetect's calls match at 0.5 s. Run, figures and note:
+  `<darkroom>/bugarach/2026-09-17-sliding-vs-binned/`. Next: §3 step 3, the every-knob search.
