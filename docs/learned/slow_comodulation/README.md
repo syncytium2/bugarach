@@ -386,13 +386,18 @@ DI result in particular should be read with that in view.
   label-free models were trained on fast-stream baselines and on simulated recordings.
 - **The models trained on simulated recordings saw the planted 5-minute block on both sides too**,
   since a rigid shift leaves it in place (Figure 3, panel E).
-- **A check on the unmerged branch is consistent at a 40 s modulation, and is not independent.** It
-  uses this thread's own models and crops, and its shared modulation is a sinusoid with a 40 s
-  period at depth 0.9 — nothing at a minute or more was tested against a model. There, models
-  trained against a rigid shift score a recording with planted events above its 1.6 s shift in
-  95.8–100 % of paired crops, and a shared-modulation recording above its shift in 52.4–54.1 %
-  (1.6 s) and 54.9–62.4 % (20 s), as condition means over 12 fits each. The 20 s figure means the
-  models do respond to a 40 s modulation, right at the boundary named above.
+- **A check on the unmerged branch points the same way at a 40 s modulation. It is not independent,
+  and its authors deliver it as described rather than tested.** It uses this thread's own models and
+  crops; its shared modulation is a sinusoid with a 40 s period at depth 0.9, so nothing at a minute
+  or more was tested against a model. There, models trained against a rigid shift score a recording
+  with planted events above its 1.6 s shift in 95.8–100 % of paired crops, and a shared-modulation
+  recording above its shift in 52.4–54.1 % (1.6 s) and 54.9–62.4 % (20 s), as condition means over
+  12 fits each. ⚠ **The 1.6 s cell has no power to show anything**: on that branch's own reading the
+  measure reads 0.550 there against 0.546 on its own null, so the near-50 % figure is not evidence
+  that the models ignore modulation. The numbers carry no intervals, they rest on about 120
+  correlated crop pairs, and that work is being rerun after its own review found a scoring defect
+  elsewhere in the same stage. The 20 s figure is the usable one: the models do respond to a 40 s
+  modulation, right at the boundary named above.
 
 ## The decision this sets up
 
@@ -441,7 +446,15 @@ anyone has asked the producer, or the Dard et al. authors, about shared slow cha
   onset is the first frame of an inferred active run, not the beginning of a transient, so compare
   shapes across folders, not lags to the second.
 - **The field-step exclusion leaves a 4 s gap across all ROIs** where a step fell inside a baseline
-  window: three recordings, 12 s in 27 hours.
+  window: three recordings, 12 s in 27 hours. Those gaps are shared across ROIs and the circular
+  shift does not carry them, which is the same mismatch the removal arms' null was built to fix. A
+  gap of width *g* removes pairs at every lag up to about *g*, so a 4 s gap acts in the same band as
+  the slow stream's 2.7–5.4 s dip — **the reason it is not the explanation there is the amount, not
+  the shape**: 12 s in 27 hours is 0.01 % of the analysed time, against a dip of −0.56 pooled over
+  84 recordings. What decides whether such a gap matters is the width of the measure's own window,
+  not the share of time it occupies: a measure counting coincidences within a fraction of a second,
+  or scoring crops a few minutes long, would feel one 4 s shared gap far more than the minute-scale
+  ratios here do.
 - **Baseline only, by rule.** Nothing here says what treatment does.
 
 ## Published lineage
