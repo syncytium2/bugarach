@@ -17,6 +17,15 @@
 > bottom; the convention is in [`README.md`](README.md).
 >
 > **Written 2026-09-16** against `origin/main` at `a7fe2f8` and the open branches.
+>
+> ⚠ **Goals 2 and 3 of the program Tony set on 2026-09-17**, both owned by WSMIP064: *a fair
+> comparison of the coded detectors against the nets*, and *"final" supervised-learning results on the
+> current best simulation*. Five decisions bind them, in [`README.md`](README.md), *The current
+> program*. Two of them change the tuning run as declared. **The simulation becomes the bench's fitted
+> field**; the home spec `generator_spec.json` is retired for this program. **Fast stream first.**
+> What the relaunch needs from goal 1 (WSMIP065) is in
+> [`HANDOFF-coded-detectors.md`](../../HANDOFF-coded-detectors.md) §4. Where this page and those two
+> disagree, those two win until this page is brought up to date.
 
 ---
 
@@ -54,11 +63,16 @@ On the home spec, `chorus_norm` beats CoactDetect by 0.103 F1 (*t* 6.5) and `cho
 setting** while CoactDetect had been tuned on one knob — so the margins might be about the tuning
 budget rather than the architecture.
 
-**The run that settles it is halted at its first gate.** The workstation tuning run gives both sides
-a declared budget under nested cross-validation at five training seeds. It stopped in Gate 1 step 3:
-`chorus_gain_norm` on two folds lands further from both of the Mac's seeds than the Mac's own two
-seeds are from each other, and **that needs a ruling before the run continues**
-(`docs/learned/tuned_vs_coact/gate1/README.md` on branch `tune-learned-vs-coact` ⚠ **not on `main`**).
+**The run that settles it was lost, and relaunches on the GPU.** The workstation tuning run gives both
+sides a declared budget under nested cross-validation. Gate 1 passed on 2026-09-16: the
+`chorus_gain_norm` stop was ruled a low seed draw. The run launched under WSL on WSMIP064 at 21:52 and
+was **lost at 01:57 on 2026-09-17**, when the university's privilege manager signed the user out
+(armory `FINDINGS.md` §20). Tony's rulings: WSL is a dead route there. Go native, and train on the GPU
+(`train(device=...)`, built the same day). Its status line is in `HANDOFF-workstation-tuning.md` on
+branch `tune-learned-vs-coact` ⚠ **not on `main`**. **As of 2026-09-17 the relaunch waits** on the
+simulation change and on goal 1's every-knob grids and values:
+[`HANDOFF-coded-detectors.md`](../../HANDOFF-coded-detectors.md) §4. The untuned home-spec table above
+stays as the record. It is not the comparison goal 2 reports.
 
 ## What is settled
 
@@ -126,7 +140,7 @@ Each is a decision, not a task, and nothing below it can be settled by a session
 
 | decision | why it gates the goal | filed |
 |---|---|---|
-| **The Gate 1 step-3 stop.** `chorus_gain_norm` on folds 0 and 1 sits further from both Mac seeds than the Mac's seeds sit from each other. Is that a machine difference, as `tube`'s 0.0012 F1 miss was ruled, or a defect? | **The tuning run is halted on it**, and the tuning run is what decides whether chorus's margin is real | `docs/learned/tuned_vs_coact/gate1/README.md` ⚠ **not on `main`** |
+| **When the relaunch goes**: after goal 1's every-knob search lands (hours if the re-derived bench does not move), or sooner against coded detectors tuned on a partial grid | A sooner relaunch reopens the unfairness goal 2 exists to remove. (The Gate 1 step-3 stop that stood here was ruled on 2026-09-16: a low seed draw, not a defect) | [`HANDOFF-coded-detectors.md`](../../HANDOFF-coded-detectors.md) §4; `docs/learned/tuned_vs_coact/gate1/README.md` ⚠ **not on `main`** |
 | **Whether [PR #596](https://github.com/syncytium2/bugarach/pull/596) merges.** Registering chorus and gauge puts them in the lab server's capabilities and in the browser's model picker | A model in the picker is a model a colleague can run on their own recordings; these have been run on simulation only, and gauge fires freely on an empty field | the PR, deliberately not set to auto-merge |
 | **Bake-off promotion**, for `line` and for anything the tuning run returns | [`MILESTONES.md`](../MILESTONES.md) reserves it; the `line` row is `held` | [`MILESTONES.md`](../MILESTONES.md) section C |
 | **Whether `trace` and `tiny` get the chorus treatment** — diagnosed as possibly-deaf, or recorded as shapes that cannot learn this task | Decides whether the no-operating-point todo is a bug report or a result | [todo](../todo/2026-08-28-two-architectures-have-no-operating-point.md) |
