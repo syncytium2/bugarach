@@ -2,9 +2,9 @@
  "produced_by": "tools/summarize_tube_self_supervised.py",
  "provenance": {
   "bugarach_version": "0.1.0",
-  "git_commit": "f55db21003921ce2693d3ecccfec3ad13057a96a",
-  "git_dirty": true,
-  "code_version": "0.1.0+gf55db21.dirty",
+  "git_commit": "4a08d402816fc527b200ac73fac567c31b30b983",
+  "git_dirty": false,
+  "code_version": "0.1.0+g4a08d40",
   "python": "3.14.5",
   "platform": "macOS-26.6.2-arm64-arm-64bit-Mach-O",
   "produced_by": "tools/summarize_tube_self_supervised.py"
