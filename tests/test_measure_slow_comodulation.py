@@ -45,7 +45,22 @@ def test_pair_count_matches_brute_force(L):
     got, _ = msc.pair_counts(trains, L, DT)
     np.testing.assert_allclose(got, want, atol=1e-6)
     if L > 3000:
-        assert want[msc.lag_bins(DT, max_lag)[450]] >= 0      # a bin past 40 s was reached
+        b = msc.lag_bins(DT, max_lag)[450]                    # 45 s of lag
+        assert b >= 0 and msc.LAG_EDGES_SEC[b] > 40           # a bin past 40 s was reached
+        assert want[b] > 0                                     # and it holds pairs
+
+
+def test_removal_arms_are_divided_by_their_own_null():
+    """Independent trains with events removed must read about 1, not below: the removal arms'
+    null is the circular shift of the removed trains."""
+    rows = []
+    for i in range(12):
+        trains, L, dt = msc.synthetic_recording("sim_events", 900 + i)
+        arms, _, _ = msc.arms_for(trains, L, dt, ("null", i), 2, "fast")
+        rows.append(dict(arms=arms, mouse=str(i)))
+    assert msc.null_of("minus_coact") == "circular_minus_coact"
+    _, vr = msc.pooled(rows, "minus_coact")
+    assert np.all(np.abs(vr[:2] - 1.0) < 0.15), vr
 
 
 def test_same_roi_pairs_are_not_counted():
@@ -111,7 +126,8 @@ def test_arms_trim_both_ends_by_the_largest_displacement():
     trains, L, dt = msc.synthetic_recording("shared_20s", 7)
     arms, _, used = msc.arms_for(trains, L, dt, ("t",), 1, None)
     assert used == pytest.approx(L * dt - 2 * msc.TRIM_SEC)
-    assert set(arms) == {"real", "circular", "block_120", "rigid_1.6", "rigid_10", "rigid_20"}
+    assert set(arms) == {"real", "circular", "circular_single", "block_120", "rigid_1.6",
+                         "rigid_10", "rigid_20"}
 
 
 def _world(world, n=10):

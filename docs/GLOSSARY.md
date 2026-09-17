@@ -389,6 +389,9 @@ Added 2026-09-10, when that plan's review found them used undefined.
   CFAR's (see **adaptive-threshold vocabulary**), with the surrogate standing in for
   the reference cells; Dard et al. 2022 set their event threshold the same way, at
   the 99th percentile of a per-cell circular shift.
+- **oracle threshold** — the F1-best threshold chosen **on planted truth**: a
+  comparison ceiling, never a usable rule. ⚠ Distinct from the parity **oracle**
+  under *validation vocabulary*, which is a MATLAB reference output.
 
 **Shared-activity vocabulary** — added 2026-09-17 with
 [`learned/slow_comodulation/`](learned/slow_comodulation/README.md).
@@ -396,9 +399,10 @@ Added 2026-09-10, when that plan's review found them used undefined.
 - **shared modulation (co-modulation)** — every ROI's onset rate rising and falling
   together without any two onsets being aligned. Distinct from a **coordinated event**,
   where onsets align within a fraction of a second.
-- **drift** — shared modulation slower than about a minute. Whether it is coordination,
+- **drift** — shared modulation over a minute or more. Whether it is coordination,
   background or a producer question is an open decision.
-- **excess coincidence** — onset pairs between distinct ROIs at a given lag, pooled over
+- **excess coincidence** — onset pairs between distinct ROIs at a given lag *ℓ* (not τ,
+  which is the dead time above), pooled over
   ROI pairs and recordings, divided by the count expected if each pair fired
   independently at its observed totals, minus one. 0 means no more than chance at the
   window's average rates; summed over every lag to the window's length it is zero by
@@ -408,17 +412,20 @@ Added 2026-09-10, when that plan's review found them used undefined.
   (coordinated events), a broad low excess out to tens of seconds or minutes (shared
   modulation), and a deficit at a few seconds (on the lab slow stream, after events).
 - **count-variance ratio** — the variance of the population onset count (onsets summed
-  over ROIs in a bin) divided by its variance after a **circular shift**; 1 means no
-  shared structure at that bin width. What a detector that counts lit ROIs responds to.
-- **circular shift** — each ROI's whole train slid by its own lag, wrapping round the
+  over ROIs in a bin) divided by its variance after a **circular shift of the same
+  onsets**; 1 means no shared structure at that bin width. What a detector that counts
+  lit ROIs responds to. Schluter's (1984) variance ratio; it grows with the number of
+  ROIs for the same pairwise correlation.
+- **circular shift** — each ROI's whole train slid by its own lag, wrapping around the
   window: removes every relation between ROIs at every timescale. The assessor's null.
 - **block control** — the circular shift done inside each fixed block (2 minutes on the
   slow co-modulation page) separately. Keeps every ROI's count per block, so it keeps
   shared change in block counts **from any source, events included**. In the code,
-  `surrogates.window_circular_shift`, registered as a known-bad control.
-- **oracle threshold** — the F1-best threshold chosen **on planted truth**: a
-  comparison ceiling, never a usable rule. ⚠ Distinct from the parity **oracle**
-  under *validation vocabulary*, which is a MATLAB reference output.
+  `surrogates.window_circular_shift`, registered as a known-bad control. A variant of
+  interval jitter, which re-places onsets independently inside fixed windows.
+- **promiscuity probe** — the benchmark generator's whole-field dense block
+  (`hot_window` in `generator_spec.json`, 1,200–1,500 s): every ROI's rate raised at
+  once, so it is also shared drift.
 
 Added 2026-09-16, with the label-free detector work:
 
