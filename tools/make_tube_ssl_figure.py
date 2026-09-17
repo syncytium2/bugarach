@@ -1,10 +1,24 @@
 #!/usr/bin/env python3
-"""Draw Stage 2 of the tube plan: planted-truth F1 by arm, and the paired leak checks.
+"""Draw what training against rigid shift bought: scores by arm, what a truth-reading score is made
+of, and the paired checks beside the controls that can fail them.
 
-    python tools/make_tube_ssl_figure.py --run <folder> --out <folder>
+    python tools/make_tube_ssl_figure.py --summary <run>/summary.json
+        [--out <folder>] [--also <folder>]
 
-Reads ``results.jsonl`` from ``tools/tube_self_supervised.py``; writes ``tube_ssl_fig.png``.
-A fit with no true positive on the held-out fold is drawn at F1 0.
+Reads the ``training`` block of ``summary.json`` (``tools/summarize_tube_self_supervised.py``);
+writes ``tube_ssl_fig.png``. Every mark is a cell mean: one arm, one displacement, one model,
+averaged over its fits (a fit with no true positive scores 0). Exploratory.
+
+Stacked so each panel reads at page width:
+
+* **A** — planted-truth F1 at the label-free threshold, one subpanel per event-rate budget, by
+  training arm, with the zero-parameter count baselines in the last columns.
+* **B** — planted-truth F1 at the truth-reading threshold against the share of the held-out
+  recording the detections cover there. A score earned by covering nearly everything is not
+  detection.
+* **C** — the paired checks, grouped by what each one can show: the nulls that must read chance,
+  the positive control that must move, what the objective paid for, and the two checks that
+  separate coordination from slow shared modulation.
 """
 
 from __future__ import annotations
@@ -17,125 +31,171 @@ import matplotlib
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
-import numpy as np  # noqa: E402
 from matplotlib.lines import Line2D  # noqa: E402
+from figure_destination import add_arguments, save  # noqa: E402
+from matplotlib.transforms import blended_transform_factory  # noqa: E402
 
-ARMS = [("supervised", None, "supervised"),
-        ("untrained", None, "untrained"),
-        ("ssl_sim", 10.0, "sim\n10 s"),
-        ("ssl_sim", 20.0, "sim\n20 s"),
-        ("ssl_real", 10.0, "real\n10 s"),
-        ("ssl_real", 20.0, "real\n20 s")]
-"""The last four arms are trained against rigid shift with no labels, on simulated (sim) or real
-lab recordings, at each displacement."""
-MODELS = {"tube": ("#6b6b6b", "o", -0.30), "tube_guard": ("#a8a8a8", "s", -0.15),
-          "line": ("#2a78d6", "o", 0.0), "line_length": ("#eb6834", "s", 0.15),
-          "line_bound": ("#1baf7a", "D", 0.30)}
-"""Every architecture in the results file gets a column. The three `line` builds take the first
-three categorical slots of the dataviz reference palette, which pass its colour-vision check on
-every pair; the tube family stays grey as context. Shape separates builds inside a family, because
-colour alone did not: a blind reviewer measured the two greys at a contrast ratio of 1.36."""
+plt.rcParams.update({"font.size": 10.5, "axes.labelsize": 10.5, "xtick.labelsize": 9.5,
+                     "ytick.labelsize": 10, "legend.fontsize": 9.5})
 
-CHECKS = [("real_vs_shared_offset", "shared\noffset,\nsame crop"),
-          ("real_vs_shared_offset_independent_crop", "shared\noffset,\nother crop"),
-          ("unplanted_twin_vs_rigid_shift", "twin vs\nrigid\nshift"),
-          ("real_vs_thinned", "a fifth\nof onsets\nremoved"),
-          ("real_vs_rigid_shift", "rigid\nshift")]
-"""The first three should read 0.5. The fourth is the POSITIVE control, added 2026-09-16: a
-count change the checks must be able to see, or their 0.5 says nothing. The fifth is what the
-objective paid for."""
+MODELS = {"tube": ("#6b6b6b", "o"), "tube_guard": ("#a8a8a8", "s"), "line": ("#2a78d6", "o"),
+          "line_length": ("#eb6834", "s"), "line_bound": ("#1baf7a", "D")}
+"""The same inks as every other figure of the report: the three `line` builds on the first three
+categorical slots of the dataviz reference palette, the tube family grey. Shape separates the two
+greys, whose contrast ratio is only 1.36."""
+BASELINES = {"count_share": "^", "count_excess": "P", "slow_modulation": "X"}
+"""Zero-parameter scorers, in black: no model ink, so they never read as a trained build."""
+BASELINE_LABEL = {"count_share": "count share", "count_excess": "count excess",
+                  "slow_modulation": "slow modulation"}
+ARMS = [("supervised", None, "supervised"), ("untrained", None, "untrained"),
+        ("ssl_sim", 10.0, "sim, 10 s"), ("ssl_sim", 20.0, "sim, 20 s"),
+        ("ssl_real", 10.0, "real, 10 s"), ("ssl_real", 20.0, "real, 20 s"),
+        ("baseline", 10.0, "count, 10 s"), ("baseline", 20.0, "count, 20 s")]
+BUDGETS = [("label_free_0.5", "≤ 0.5 events per 10 min"), ("label_free_1", "≤ 1 event per 10 min"),
+           ("label_free_2", "≤ 2 events per 10 min")]
+CHECK_GROUPS = [
+    ("must read chance", [("real_vs_shared_offset", "shared\noffset,\nsame crop"),
+                          ("real_vs_shared_offset_independent_crop", "shared\noffset,\nother crop"),
+                          ("unplanted_twin_vs_rigid_shift", "stationary\ntwin"),
+                          ("independent_modulation_twin_vs_rigid_shift",
+                           "independent\nmodulation\ntwin")]),
+    ("must move", [("real_vs_thinned", "a fifth of\nonsets\nremoved")]),
+    ("trained for", [("real_vs_rigid_shift", "rigid shift\nat training J")]),
+    ("coordination, or\nslow modulation?",
+     [("real_vs_rigid_shift_small_J", "rigid shift\nat small J"),
+      ("shared_modulation_twin_vs_rigid_shift", "shared\nmodulation\ntwin")])]
+YLIM_F1 = (-0.03, 0.9)
 
-YLIM = (-0.03, 0.9)
-"""Shared by panels A and B *and* by Figure 1's bake-off axis, so a score carries between them."""
+
+def dodge(n, i, width):
+    return (i - (n - 1) / 2) * width / max(1, n - 1) if n > 1 else 0.0
 
 
-def f1(v):
-    x = v.get("f1")
-    return 0.0 if x is None or not np.isfinite(x) else float(x)
+def counted(ns, unit):
+    """'12 fits', '1 fit', or '11 or 12 fits' when cells differ."""
+    return " or ".join(map(str, ns)) + " " + unit + ("" if ns == [1] else "s")
+
+
+def cell(cells, arm, J, model):
+    return cells.get(f"{arm}|{J}|{model}")
+
+
+def mark(ax, x, y, model, arm, ms=6.0):
+    """Model ink and shape; open for the untrained arm and the simulated arm, so supervised and
+    trained-on-real read as the filled marks. Count baselines in black."""
+    if model in BASELINES:
+        ax.plot([x], [y], BASELINES[model], ms=ms + 1, color="#111111", mew=0.8, zorder=3)
+        return
+    c, mk = MODELS[model]
+    hollow = arm in ("untrained", "ssl_sim")
+    ax.plot([x], [y], mk, ms=ms, color="white" if hollow else c, mec=c, mew=1.3, zorder=3)
 
 
 def main(argv=None):
     ap = argparse.ArgumentParser()
-    ap.add_argument("--run", required=True)
-    ap.add_argument("--out", required=True)
+    ap.add_argument("--summary", required=True)
+    add_arguments(ap)
     a = ap.parse_args(argv)
-    R = [json.loads(line) for line in open(Path(a.run) / "results.jsonl")]
-    n_fits = {len([r for r in R if r["arm"] == arm and r["model"] == m
-                   and (J is None or r["J_sec"] == J)]) for arm, J, _ in ARMS for m in MODELS}
-    fig, axes = plt.subplots(1, 3, figsize=(16.5, 5.4),
-                             gridspec_kw={"width_ratios": [1.45, 1.45, 1.2]})
-    rs = np.random.RandomState(0)
-    cover = [float(np.median(r["scores"]["oracle"]["coverage_share"])) for r in R
-             if r["arm"] == "untrained" and r["scores"].get("oracle", {}).get("coverage_share")]
-    for ax, key, letter, title in ((axes[0], "oracle", "A",
-                                    "truth-reading threshold (reads planted truth)"),
-                                   (axes[1], "label_free_2", "B",
-                                    "label-free threshold (≤ 2 events per 10 min)")):
+    s = json.loads(Path(a.summary).read_text())
+    cells = s["training"]["cells"]
+    j_small = s["constants"]["training"]["j_small_sec"]
+    n_fits = sorted({c["n_fits"] for c in cells.values() if c["arm"] != "baseline"})
+    n_base = sorted({c["n_fits"] for c in cells.values() if c["arm"] == "baseline"})
+
+    fig = plt.figure(figsize=(10.5, 16.0))
+    gs = fig.add_gridspec(3, 3, height_ratios=[0.9, 0.95, 1.05], hspace=0.6, wspace=0.1)
+
+    for col, (key, title) in enumerate(BUDGETS):
+        ax = fig.add_subplot(gs[0, col])
         for i, (arm, J, _) in enumerate(ARMS):
-            for m, (c, mk, dx) in MODELS.items():
-                vals = [f1(r["scores"].get(key, {})) for r in R if r["arm"] == arm
-                        and r["model"] == m and (J is None or r["J_sec"] == J)]
-                if not vals:
-                    continue
-                x = i + dx + rs.uniform(-0.03, 0.03, len(vals))
-                ax.plot(x, vals, mk, color=c, ms=3.4, alpha=0.75, mew=0.4, mec="white")
-                ax.plot([i + dx - 0.06, i + dx + 0.06], [np.mean(vals)] * 2, color=c, lw=2.5)
-        u = [i for i, (arm, _, _) in enumerate(ARMS) if arm == "untrained"]
-        for i in u:
-            ax.axvspan(i - 0.45, i + 0.45, color="#c0392b", alpha=0.07, zorder=0)
-        if u and key == "oracle" and cover:
-            # Read from the rows, not typed: the median share of each held-out recording that the
-            # untrained fits' detections cover at their truth-reading threshold.
-            ax.annotate(f"detections cover\n{min(cover):.0%}–{max(cover):.0%} of\nthe recording",
-                        (u[0], 0.74), ha="center", fontsize=8, color="#c0392b")
-        ax.set_xticks(range(len(ARMS)), [lab for _, _, lab in ARMS], fontsize=8.5)
-        ax.set_xlabel("training arm (the last four read no labels)", fontsize=9)
-        ax.set_ylim(*YLIM)
-        ax.set_ylabel(f"planted-truth F1, held-out fold\n{title}", fontsize=9)
-        ax.text(0.02, 0.97, letter, transform=ax.transAxes, fontsize=12, fontweight="bold",
-                va="top")
-    bx = axes[2]
-    for i, (k, _) in enumerate(CHECKS):
-        for m, (c, mk, dx) in MODELS.items():
-            vals = [r["checks"][k]["share_real_higher"] for r in R
-                    if r["arm"] == "ssl_real" and r["model"] == m and k in r.get("checks", {})
-                    and r["checks"][k]["share_real_higher"] is not None]
-            if not vals:
-                continue
-            x = i + dx + rs.uniform(-0.03, 0.03, len(vals))
-            bx.plot(x, vals, mk, color=c, ms=3.4, alpha=0.75, mew=0.4, mec="white")
-            bx.plot([i + dx - 0.06, i + dx + 0.06], [np.mean(vals)] * 2, color=c, lw=2.5)
-    bx.axvspan(2.5, 3.5, color="#2e7d32", alpha=0.06, zorder=0)
-    bx.axhline(0.5, color="0.55", ls=":", lw=0.9)
-    bx.set_xticks(range(len(CHECKS)), [lab for _, lab in CHECKS], fontsize=8)
-    bx.set_xlabel("paired check (first three: should read 0.5; shaded: must move)", fontsize=9)
-    bx.set_ylim(0.0, 1.0)
-    bx.set_ylabel("share of held-out crops where real scores higher\n"
-                  "(trained on real lab recordings, both displacements)", fontsize=9)
-    bx.text(0.03, 0.97, "C", transform=bx.transAxes, fontsize=12, fontweight="bold", va="top")
-    handles = [Line2D([], [], color=c, marker=mk, ls="", alpha=0.75, mew=0.4, mec="white", label=m)
-               for m, (c, mk, _) in MODELS.items()]
-    per_arm = "/".join(str(n) for n in sorted(n_fits))
-    handles += [Line2D([], [], color="0.3", lw=2.5,
-                       label=f"bar: mean over fits — {per_arm} per column in A and B,\n"
-                             "twice that in C (both displacements pooled)"),
-                Line2D([], [], color="0.3", marker="o", ls="", alpha=0.75,
-                       label="dot: one fit (no true positive scores 0)"),
-                Line2D([], [], color="#c0392b", lw=6, alpha=0.2,
-                       label="shaded red: not a baseline — see the caption"),
-                Line2D([], [], color="0.55", ls=":", label="chance, 0.5 (panel C)")]
-    fig.legend(handles=handles, loc="upper center", ncol=5, frameon=False, fontsize=8.5)
-    fig.text(0.5, 0.855, "no labels = trained against rigid shift at displacement J, on simulated "
-                         "(sim) or real lab recordings · panels A and B share one F1 scale with "
-                         "Figure 1 · the ≤ 0.5 and ≤ 1 events per 10 min thresholds are in the "
-                         "report's table, not drawn here",
-             ha="center", fontsize=8, color="0.35")
-    fig.tight_layout(rect=(0, 0, 1, 0.83))
-    out = Path(a.out)
-    out.mkdir(parents=True, exist_ok=True)
-    p = out / "tube_ssl_fig.png"
-    fig.savefig(p, dpi=150)
-    print(p)
+            names = list(BASELINES) if arm == "baseline" else list(MODELS)
+            for k, m in enumerate(names):
+                c = cell(cells, arm, J, m)
+                if c and key in c["scores"]:
+                    mark(ax, i + dodge(len(names), k, 0.62), c["scores"][key]["f1_mean"], m, arm,
+                         ms=5.0)
+        ax.axvline(5.5, color="0.75", lw=0.8)
+        ax.set_xticks(range(len(ARMS)), [lab for _, _, lab in ARMS], fontsize=9, rotation=90)
+        ax.set_xlim(-0.6, len(ARMS) - 0.4)
+        ax.set_ylim(*YLIM_F1)
+        ax.set_title(title, fontsize=10)
+        if col == 0:
+            ax.set_ylabel("planted-truth F1, held-out fold\nlabel-free threshold")
+            ax.text(-0.36, 1.08, "A", transform=ax.transAxes, fontsize=13, fontweight="bold",
+                    va="bottom")
+        else:
+            ax.tick_params(labelleft=False)
+        if col == 1:
+            ax.set_xlabel("training arm: sim and real are trained against rigid shift at J = 10 s "
+                          "or 20 s,\non simulated or real lab recordings, with no labels; count: "
+                          "a zero-parameter baseline")
+
+    bx = fig.add_subplot(gs[1, :2])
+    for c in cells.values():
+        o = c["scores"].get("oracle", {})
+        cov = o.get("coverage_share_median")
+        if cov is None:
+            continue
+        mark(bx, cov, o["f1_mean"], c["model"], c["arm"], ms=6.5)
+    bx.set_xlim(-0.03, 1.03)
+    bx.set_ylim(*YLIM_F1)
+    bx.set_xlabel("share of the held-out recording the detections cover\n"
+                  "(median over recordings and fits)")
+    bx.set_ylabel("planted-truth F1, held-out fold\ntruth-reading threshold")
+    bx.text(-0.2, 1.02, "B", transform=bx.transAxes, fontsize=13, fontweight="bold", va="bottom")
+    lx = fig.add_subplot(gs[1, 2])
+    lx.axis("off")
+    lx.legend(handles=[Line2D([], [], color=c, marker=mk, ls="", ms=7, mec=c, mew=1.3, label=m)
+                       for m, (c, mk) in MODELS.items()]
+              + [Line2D([], [], color="#111111", marker=mk, ls="", ms=8, mew=0.8,
+                        label=f"{BASELINE_LABEL[b]}\n(no parameters)")
+                 for b, mk in BASELINES.items()]
+              + [Line2D([], [], color="0.3", marker="o", ls="", ms=7,
+                        label="filled: supervised, or\ntrained on real recordings"),
+                 Line2D([], [], color="0.3", marker="o", ls="", ms=7, mfc="white", mew=1.3,
+                        label="open: untrained, or trained\non simulated recordings")],
+              loc="center left", frameon=False,
+              title=f"every mark: a cell mean over\n{counted(n_fits, 'fit')} (count baselines:\n"
+                    f"{counted(n_base, 'held-out fold')})",
+              title_fontsize=9.5, alignment="left")
+
+    cx = fig.add_subplot(gs[2, :])
+    x = 0.0
+    ticks, labels, bounds = [], [], []
+    lanes = [("ssl_sim", -0.27, [(J, m) for J in (10.0, 20.0) for m in MODELS]),
+             ("ssl_real", 0.0, [(J, m) for J in (10.0, 20.0) for m in MODELS]),
+             ("baseline", 0.27, [(J, b) for J in (10.0, 20.0) for b in BASELINES])]
+    for group, checks in CHECK_GROUPS:
+        start = x
+        for key, lab in checks:
+            for arm, off, members in lanes:
+                for k, (J, m) in enumerate(members):
+                    c = cell(cells, arm, J, m)
+                    if c and key in c["checks"]:
+                        mark(cx, x + off + dodge(len(members), k, 0.2),
+                             c["checks"][key]["share_mean"], m, arm, ms=4.5)
+            ticks.append(x)
+            labels.append(lab)
+            x += 1
+        bounds.append((start, x - 1, group))
+        x += 0.5
+    tr = blended_transform_factory(cx.transData, cx.transAxes)
+    for i, (lo, hi, group) in enumerate(bounds):
+        cx.text((lo + hi) / 2, 1.02, group, transform=tr, ha="center", va="bottom", fontsize=9.5)
+        if i:
+            cx.axvline(lo - 0.75, color="0.75", lw=0.8)
+    cx.axhline(0.5, color="0.55", ls=":", lw=1)
+    cx.set_xticks(ticks, labels, fontsize=8.6)
+    cx.set_xlim(-0.6, x - 0.9)
+    cx.set_ylim(0.0, 1.0)
+    cx.set_ylabel("share of held-out crops where the\nreal crop scores higher (ties: half)")
+    cx.set_xlabel(f"paired check. Within each: trained on simulated, trained on real, count "
+                  f"baselines; both J pooled; small J = {j_small:g} s")
+    cx.text(-0.1, 1.12, "C", transform=cx.transAxes, fontsize=13, fontweight="bold", va="bottom")
+    fig.text(0.5, 0.012, "dotted line: chance, 0.5 · J: the rigid-shift displacement",
+             ha="center", fontsize=9.5, color="0.3")
+    fig.subplots_adjust(left=0.13, right=0.98, top=0.96, bottom=0.08)
+    save(fig, "tube_ssl_fig.png", a, subfolder="tube_self_supervised")
 
 
 if __name__ == "__main__":
