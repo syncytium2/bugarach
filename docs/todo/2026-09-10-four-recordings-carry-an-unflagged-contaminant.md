@@ -92,6 +92,27 @@ slow-co-modulation branch). So every group difference is also a between-day diff
 answer about the pinned ROIs removes the artifact while leaving that untouched. Do not let the reply
 read as clearance for a group claim; it is clearance for one of its two confounds.
 
+## Reads made while writing this up, recorded so the next session has a worked example
+
+Two reads of `slices.csv` were made on 2026-09-17 after the ruling and before the gate landed, both
+of metadata only — `slice_id`, `date`, `group_id`, no event data, no detector run:
+
+1. **which group the four contaminated recordings are in** (all DI), to check a claim before putting
+   it on a page;
+2. **how many imaging dates the export spans and whether any holds more than one group** (48 dates,
+   none), to establish the confound above.
+
+Both were used to **weaken** claims already published, not to produce a result, which is the
+distinction that matters when the gate is live and an acknowledgement is needed. The
+slow-co-modulation session declined the same read for the opposite reason and named it exactly: its
+honest override reason would have been *"I wanted a number for a sentence"*, which is the use the
+gate exists to refuse. Both calls look right from here — the difference is what the number was for,
+not how small the read was.
+
+Once `dataset.current()` refuses this folder, **even these reads need
+`BUGARACH_ACK_CONTAMINATION`**, and the reason should say which claim the number is being used to
+retract. A reason naming a deadline, a convenience, or a sentence that wants a figure is not one.
+
 ## Closes when
 
 Either the producer withdraws or flags them, or Tony rules that they stay unflagged and the decision
