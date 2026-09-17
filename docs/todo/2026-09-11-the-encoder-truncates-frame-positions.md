@@ -27,6 +27,13 @@ sits on the same grid point.
 The overnight surrogate screen sidesteps it by working in frame indices throughout
 ([the plan](../proposals/2026-09-10-surrogate-evaluation-overnight.md)).
 
+**Measured again, 2026-09-17** (the rigid-shift report's fourth blind murderboard, role 7): truncation
+moves **31–35 %** of real onsets (two recordings checked) and **26 %** of simulated onsets one frame
+early. The rigid-shift run feeds real recordings through `surrogate_stats.recordings_from_slices`,
+which **rounds**, while its arm trained on simulated recordings goes through `encode`, which
+truncates, so the two arms see differently mapped frames. On 12 recordings at one threshold, rounding
+against truncating moved `count_excess` from 54 to 59 events and a supervised `tube` from 74 to 72.
+
 Related: [the encoder clips onsets onto the boundary frames](2026-09-10-the-encoder-clips-onsets-onto-the-boundary-frames.md).
 
 ## Closes when

@@ -26,15 +26,21 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 ### Mac/unsup-rigid-shift-report-residuals — DARKROOM claim ACTIVE 2026-09-17: `bugarach/2026-09-17-rigid-shift-report/`
 - **Status:** ACTIVE (bugarach-smoked-ratchet), claimed before writing. Tony ruled on 2026-09-17,
   after the report's fourth blind murderboard, that the real-derived outputs of the rigid-shift run
-  leave the repo for the darkroom (FOUNDATIONS §5: anything derived from real data stays
-  machine-local, no slice ids).
+  leave the repo for the darkroom (FOUNDATIONS §5: anything derived from real recordings stays
+  machine-local, with no slice ids).
 - **Writes:** one new folder only —
   - `real_compare/events.json` (per-recording event times, keyed by recording id) and
     `real_compare/checkpoints/` (models trained on real recordings), for this run and the one they
     replace;
-  - the report's five figures and a copy of the report, the reader's copy per CLAUDE.md.
+  - the report's six figures and a copy of the report, the reader's copy per CLAUDE.md.
 
   Nothing existing in the darkroom is touched.
+- **Holds:** written 2026-09-17, about 10 MB — `real_compare/` (the rerun's `events.json` and all
+  120 checkpoints), `superseded_run/real_compare/` (the copies removed from the repo tree),
+  `figures/` (six PNGs), `report-README.md` and `summary.json`. The repo tree now keeps
+  `real_compare/summary.json` alone. Also wrote one PNG to
+  `darkroom/unsup-rigid-shift-report-residuals/` via `tools/show.py`, which names its folder after
+  the worktree, to put the real-recordings figure in front of Tony.
 - ⚠ **The files being moved are also in git history on `main`** since PR #588. Moving them out of the
   tree is not a retraction, and this claim does not say it is.
 - **Touches:** `docs/learned/tube_self_supervised/` (branch `unsup/rigid-shift-report-residuals`,

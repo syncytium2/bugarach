@@ -27,7 +27,10 @@ def main(argv=None):
     ap.add_argument("--run", required=True)
     ap.add_argument("--out", required=True)
     a = ap.parse_args(argv)
-    R = json.loads((Path(a.run) / "results.json").read_text())
+    # The `init` bank only: tube at initialisation, the bank this figure was drawn for. The fitted
+    # bank (added 2026-09-16) is drawn by tools/make_rigid_shift_gates_figure.py.
+    R = [r for r in json.loads((Path(a.run) / "results.json").read_text())
+         if r.get("bank", "init") == "init"]
     meta = json.loads((Path(a.run) / "meta.json").read_text())
     centres = meta["centres_frames"]
     streams = ["fast", "slow"]

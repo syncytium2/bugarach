@@ -1,6 +1,7 @@
 {
   "stats": {
     "coact": {
+      "on_rigid_shift_J_sec": null,
       "events_per_10min": 2.7022168963451167,
       "n_events": 451,
       "n_runs": 1,
@@ -8,50 +9,137 @@
       "participation_share_ge3": 1.0,
       "participation_share_le2": 0.0,
       "random_participation_median": 1.0,
-      "random_share_ge3": 0.18403547671840353,
+      "random_share_ge3": 0.18758314855875832,
+      "activity_random_participation_median": 1.0,
+      "activity_random_share_ge3": 0.3301552106430155,
+      "share_ge3_minus_activity_chance_ci95_by_mouse": [
+        0.6184494766205172,
+        0.726879379623147
+      ],
+      "n_mice": 37,
+      "share_ge3_by_group": {
+        "MALE": 1.0,
+        "ORX": 1.0,
+        "OVX": 1.0,
+        "DI": 1.0
+      },
+      "n_events_by_group": {
+        "MALE": 144,
+        "ORX": 28,
+        "OVX": 57,
+        "DI": 222
+      },
+      "empty_span_share": 0.0,
+      "near_coactive_1s_share": 0.9024390243902439,
+      "near_coactive_3s_share": 0.9024390243902439,
+      "activity_random_near_coactive_1s_share": 0.3574279379157428,
+      "activity_random_near_coactive_3s_share": 0.5137472283813748,
+      "edge_within_5s_share": 0.03325942350332594,
+      "edge_within_12.8s_share": 0.04656319290465632,
+      "edge_within_5s_uniform_expectation": 0.008392611430537125,
+      "edge_within_12.8s_uniform_expectation": 0.021485085262175057,
       "participation_1s_median": 7.0,
       "participation_1s_share_ge3": 1.0,
       "random_participation_1s_median": 1.0,
-      "random_1s_share_ge3": 0.270509977827051,
+      "random_1s_share_ge3": 0.28536585365853656,
       "top_pair_share_median": null,
       "n_recordings_with_pairs": 0,
       "events_per_run": 451.0
     },
     "loco": {
-      "events_per_10min": 2.5704014379868183,
-      "n_events": 429,
+      "on_rigid_shift_J_sec": null,
+      "events_per_10min": 3.72079089275015,
+      "n_events": 621,
       "n_runs": 1,
-      "participation_median": 7.0,
+      "participation_median": 6.0,
       "participation_share_ge3": 1.0,
       "participation_share_le2": 0.0,
       "random_participation_median": 0.0,
-      "random_share_ge3": 0.08624708624708624,
-      "participation_1s_median": 8.0,
+      "random_share_ge3": 0.09082125603864734,
+      "activity_random_participation_median": 1.0,
+      "activity_random_share_ge3": 0.1642512077294686,
+      "share_ge3_minus_activity_chance_ci95_by_mouse": [
+        0.7976800970195347,
+        0.8793021314843348
+      ],
+      "n_mice": 39,
+      "share_ge3_by_group": {
+        "MALE": 1.0,
+        "ORX": 1.0,
+        "OVX": 1.0,
+        "DI": 1.0
+      },
+      "n_events_by_group": {
+        "MALE": 165,
+        "ORX": 41,
+        "OVX": 85,
+        "DI": 330
+      },
+      "empty_span_share": 0.0,
+      "near_coactive_1s_share": 0.9565217391304348,
+      "near_coactive_3s_share": 0.9581320450885669,
+      "activity_random_near_coactive_1s_share": 0.3219001610305958,
+      "activity_random_near_coactive_3s_share": 0.5331723027375201,
+      "edge_within_5s_share": 0.0,
+      "edge_within_12.8s_share": 0.011272141706924315,
+      "edge_within_5s_uniform_expectation": 0.008392611430537125,
+      "edge_within_12.8s_uniform_expectation": 0.021485085262175057,
+      "participation_1s_median": 7.0,
       "participation_1s_share_ge3": 1.0,
       "random_participation_1s_median": 1.0,
-      "random_1s_share_ge3": 0.2540792540792541,
+      "random_1s_share_ge3": 0.27326892109500805,
       "top_pair_share_median": null,
       "n_recordings_with_pairs": 0,
-      "events_per_run": 429.0
+      "events_per_run": 621.0
     },
     "supervised tube label-free": {
-      "events_per_10min": 4.6195326542840025,
-      "n_events": 2313,
+      "on_rigid_shift_J_sec": null,
+      "events_per_10min": 4.56960255642101,
+      "n_events": 2288,
       "n_runs": 3,
       "participation_median": 5.0,
-      "participation_share_ge3": 0.8028534370946823,
-      "participation_share_le2": 0.19714656290531776,
+      "participation_share_ge3": 0.798513986013986,
+      "participation_share_le2": 0.20148601398601398,
       "random_participation_median": 0.0,
-      "random_share_ge3": 0.06571552096843926,
+      "random_share_ge3": 0.05961538461538462,
+      "activity_random_participation_median": 0.0,
+      "activity_random_share_ge3": 0.12189685314685314,
+      "share_ge3_minus_activity_chance_ci95_by_mouse": [
+        0.6158884437953388,
+        0.7214317847961806
+      ],
+      "n_mice": 44,
+      "share_ge3_by_group": {
+        "MALE": 0.8244837758112095,
+        "ORX": 0.4766081871345029,
+        "OVX": 0.7270341207349081,
+        "DI": 0.9334836527621195
+      },
+      "n_events_by_group": {
+        "MALE": 678,
+        "ORX": 342,
+        "OVX": 381,
+        "DI": 887
+      },
+      "empty_span_share": 0.06905594405594405,
+      "near_coactive_1s_share": 0.7613636363636364,
+      "near_coactive_3s_share": 0.7670454545454546,
+      "activity_random_near_coactive_1s_share": 0.23457167832167833,
+      "activity_random_near_coactive_3s_share": 0.3993444055944056,
+      "edge_within_5s_share": 0.04283216783216783,
+      "edge_within_12.8s_share": 0.05856643356643357,
+      "edge_within_5s_uniform_expectation": 0.008392611430537126,
+      "edge_within_12.8s_uniform_expectation": 0.02148508526217505,
       "participation_1s_median": 5.0,
-      "participation_1s_share_ge3": 0.8664072632944229,
+      "participation_1s_share_ge3": 0.8675699300699301,
       "random_participation_1s_median": 1.0,
-      "random_1s_share_ge3": 0.18979680069174232,
-      "top_pair_share_median": 0.3333333333333333,
-      "n_recordings_with_pairs": 39,
-      "events_per_run": 771.0
+      "random_1s_share_ge3": 0.1868444055944056,
+      "top_pair_share_median": 0.4,
+      "n_recordings_with_pairs": 37,
+      "events_per_run": 762.6666666666666
     },
     "supervised tube bake-off threshold": {
+      "on_rigid_shift_J_sec": null,
       "events_per_10min": 6.498901537847014,
       "n_events": 3254,
       "n_runs": 3,
@@ -59,67 +147,321 @@
       "participation_share_ge3": 0.7811923786109404,
       "participation_share_le2": 0.21880762138905963,
       "random_participation_median": 0.0,
-      "random_share_ge3": 0.09834050399508297,
+      "random_share_ge3": 0.09913952059004302,
+      "activity_random_participation_median": 1.0,
+      "activity_random_share_ge3": 0.15749846342962506,
+      "share_ge3_minus_activity_chance_ci95_by_mouse": [
+        0.5506946273340831,
+        0.6847063250345602
+      ],
+      "n_mice": 41,
+      "share_ge3_by_group": {
+        "MALE": 0.7458823529411764,
+        "ORX": 0.5733333333333334,
+        "OVX": 0.7424242424242424,
+        "DI": 0.8485845951283739
+      },
+      "n_events_by_group": {
+        "MALE": 850,
+        "ORX": 225,
+        "OVX": 660,
+        "DI": 1519
+      },
+      "empty_span_share": 0.053165334972341736,
+      "near_coactive_1s_share": 0.7452366318377381,
+      "near_coactive_3s_share": 0.7547633681622619,
+      "activity_random_near_coactive_1s_share": 0.2968961278426552,
+      "activity_random_near_coactive_3s_share": 0.49262446220036876,
+      "edge_within_5s_share": 0.018746158574062692,
+      "edge_within_12.8s_share": 0.03380454824830977,
+      "edge_within_5s_uniform_expectation": 0.008392611430537126,
+      "edge_within_12.8s_uniform_expectation": 0.02148508526217505,
       "participation_1s_median": 5.0,
       "participation_1s_share_ge3": 0.8494161032575291,
       "random_participation_1s_median": 1.0,
-      "random_1s_share_ge3": 0.29870928088506454,
+      "random_1s_share_ge3": 0.2999078057775046,
       "top_pair_share_median": 0.3333333333333333,
       "n_recordings_with_pairs": 51,
       "events_per_run": 1084.6666666666667
     },
+    "supervised tube label-free, on its rigid shift": {
+      "on_rigid_shift_J_sec": 10.0,
+      "events_per_10min": 1.6516876373077691,
+      "n_events": 827,
+      "n_runs": 3,
+      "participation_median": 3.0,
+      "participation_share_ge3": 0.5126964933494559,
+      "participation_share_le2": 0.4873035066505441,
+      "random_participation_median": 0.0,
+      "random_share_ge3": 0.022974607013301087,
+      "activity_random_participation_median": 0.0,
+      "activity_random_share_ge3": 0.046674727932285366,
+      "share_ge3_minus_activity_chance_ci95_by_mouse": [
+        0.3775539180445723,
+        0.546117142950509
+      ],
+      "n_mice": 44,
+      "share_ge3_by_group": {
+        "MALE": 0.5843621399176955,
+        "ORX": 0.22641509433962265,
+        "OVX": 0.49214659685863876,
+        "DI": 0.7734806629834254
+      },
+      "n_events_by_group": {
+        "MALE": 243,
+        "ORX": 212,
+        "OVX": 191,
+        "DI": 181
+      },
+      "empty_span_share": 0.1185006045949214,
+      "near_coactive_1s_share": 0.42200725513905685,
+      "near_coactive_3s_share": 0.4244256348246675,
+      "activity_random_near_coactive_1s_share": 0.08295042321644498,
+      "activity_random_near_coactive_3s_share": 0.14969770253929868,
+      "edge_within_5s_share": 0.05078597339782346,
+      "edge_within_12.8s_share": 0.0773881499395405,
+      "edge_within_5s_uniform_expectation": 0.008392611430537126,
+      "edge_within_12.8s_uniform_expectation": 0.02148508526217505,
+      "participation_1s_median": 3.0,
+      "participation_1s_share_ge3": 0.6553808948004837,
+      "random_participation_1s_median": 1.0,
+      "random_1s_share_ge3": 0.1295042321644498,
+      "top_pair_share_median": 0.5,
+      "n_recordings_with_pairs": 31,
+      "events_per_run": 275.6666666666667
+    },
     "ssl tube J10": {
-      "events_per_10min": 6.299181146395047,
-      "n_events": 3154,
+      "on_rigid_shift_J_sec": null,
+      "events_per_10min": 6.207309766327142,
+      "n_events": 3108,
       "n_runs": 3,
       "participation_median": 0.0,
-      "participation_share_ge3": 0.15948002536461636,
-      "participation_share_le2": 0.8405199746353836,
+      "participation_share_ge3": 0.15122265122265122,
+      "participation_share_le2": 0.8487773487773488,
       "random_participation_median": 0.0,
-      "random_share_ge3": 0.08449587824984148,
+      "random_share_ge3": 0.08259330759330759,
+      "activity_random_participation_median": 0.0,
+      "activity_random_share_ge3": 0.13545688545688545,
+      "share_ge3_minus_activity_chance_ci95_by_mouse": [
+        -0.03041714672315447,
+        0.06940930924403668
+      ],
+      "n_mice": 44,
+      "share_ge3_by_group": {
+        "ORX": 0.05352112676056338,
+        "OVX": 0.10858585858585859,
+        "MALE": 0.21169590643274855,
+        "DI": 0.1511318242343542
+      },
+      "n_events_by_group": {
+        "ORX": 355,
+        "OVX": 396,
+        "MALE": 855,
+        "DI": 1502
+      },
+      "empty_span_share": 0.7252252252252253,
+      "near_coactive_1s_share": 0.5231660231660231,
+      "near_coactive_3s_share": 0.7213642213642214,
+      "activity_random_near_coactive_1s_share": 0.2885456885456886,
+      "activity_random_near_coactive_3s_share": 0.48841698841698844,
+      "edge_within_5s_share": 0.027992277992277992,
+      "edge_within_12.8s_share": 0.0546975546975547,
+      "edge_within_5s_uniform_expectation": 0.008392611430537126,
+      "edge_within_12.8s_uniform_expectation": 0.02148508526217505,
       "participation_1s_median": 3.0,
-      "participation_1s_share_ge3": 0.5133164235890932,
+      "participation_1s_share_ge3": 0.510939510939511,
       "random_participation_1s_median": 1.0,
-      "random_1s_share_ge3": 0.2707672796448954,
+      "random_1s_share_ge3": 0.27007722007722007,
       "top_pair_share_median": 0.25,
-      "n_recordings_with_pairs": 43,
-      "events_per_run": 1051.3333333333333
+      "n_recordings_with_pairs": 42,
+      "events_per_run": 1036.0
+    },
+    "ssl tube J10, on its rigid shift": {
+      "on_rigid_shift_J_sec": 10.0,
+      "events_per_10min": 1.543838625923707,
+      "n_events": 773,
+      "n_runs": 3,
+      "participation_median": 0.0,
+      "participation_share_ge3": 0.08020698576972833,
+      "participation_share_le2": 0.9197930142302717,
+      "random_participation_median": 0.0,
+      "random_share_ge3": 0.029624838292367398,
+      "activity_random_participation_median": 0.0,
+      "activity_random_share_ge3": 0.050452781371280724,
+      "share_ge3_minus_activity_chance_ci95_by_mouse": [
+        0.0029341027071088438,
+        0.06423556317895937
+      ],
+      "n_mice": 44,
+      "share_ge3_by_group": {
+        "ORX": 0.017857142857142856,
+        "OVX": 0.05521472392638037,
+        "MALE": 0.13452914798206278,
+        "DI": 0.1165644171779141
+      },
+      "n_events_by_group": {
+        "ORX": 224,
+        "OVX": 163,
+        "MALE": 223,
+        "DI": 163
+      },
+      "empty_span_share": 0.7943078913324709,
+      "near_coactive_1s_share": 0.2664941785252264,
+      "near_coactive_3s_share": 0.40620957309184996,
+      "activity_random_near_coactive_1s_share": 0.08861578266494179,
+      "activity_random_near_coactive_3s_share": 0.1611901681759379,
+      "edge_within_5s_share": 0.08279430789133248,
+      "edge_within_12.8s_share": 0.12677878395860284,
+      "edge_within_5s_uniform_expectation": 0.008392611430537126,
+      "edge_within_12.8s_uniform_expectation": 0.02148508526217505,
+      "participation_1s_median": 1.0,
+      "participation_1s_share_ge3": 0.3298835705045278,
+      "random_participation_1s_median": 1.0,
+      "random_1s_share_ge3": 0.13363518758085383,
+      "top_pair_share_median": 0.29166666666666663,
+      "n_recordings_with_pairs": 2,
+      "events_per_run": 257.6666666666667
     },
     "ssl tube J20": {
-      "events_per_10min": 5.658078689834232,
-      "n_events": 2833,
+      "on_rigid_shift_J_sec": null,
+      "events_per_10min": 5.67006191332135,
+      "n_events": 2839,
       "n_runs": 3,
       "participation_median": 0.0,
-      "participation_share_ge3": 0.12813272149664667,
-      "participation_share_le2": 0.8718672785033533,
+      "participation_share_ge3": 0.12786192321239873,
+      "participation_share_le2": 0.8721380767876012,
       "random_participation_median": 0.0,
-      "random_share_ge3": 0.07483233321567243,
+      "random_share_ge3": 0.07294822120464953,
+      "activity_random_participation_median": 0.0,
+      "activity_random_share_ge3": 0.12803804156393095,
+      "share_ge3_minus_activity_chance_ci95_by_mouse": [
+        -0.031529073958479,
+        0.03713380505576463
+      ],
+      "n_mice": 44,
+      "share_ge3_by_group": {
+        "ORX": 0.07365439093484419,
+        "OVX": 0.08035714285714286,
+        "MALE": 0.11487303506650544,
+        "DI": 0.17010734929810073
+      },
+      "n_events_by_group": {
+        "ORX": 353,
+        "OVX": 448,
+        "MALE": 827,
+        "DI": 1211
+      },
+      "empty_span_share": 0.7330045790771398,
+      "near_coactive_1s_share": 0.4247974638957379,
+      "near_coactive_3s_share": 0.7544910179640718,
+      "activity_random_near_coactive_1s_share": 0.25540683339203946,
+      "activity_random_near_coactive_3s_share": 0.4384290243043325,
+      "edge_within_5s_share": 0.023952095808383235,
+      "edge_within_12.8s_share": 0.0510743219443466,
+      "edge_within_5s_uniform_expectation": 0.008392611430537126,
+      "edge_within_12.8s_uniform_expectation": 0.02148508526217505,
       "participation_1s_median": 2.0,
-      "participation_1s_share_ge3": 0.4041651959054006,
+      "participation_1s_share_ge3": 0.40471997182106373,
       "random_participation_1s_median": 1.0,
-      "random_1s_share_ge3": 0.22520296505471232,
+      "random_1s_share_ge3": 0.21944346600915815,
       "top_pair_share_median": 0.3333333333333333,
       "n_recordings_with_pairs": 26,
-      "events_per_run": 944.3333333333334
+      "events_per_run": 946.3333333333334
+    },
+    "ssl tube J20, on its rigid shift": {
+      "on_rigid_shift_J_sec": 20.0,
+      "events_per_10min": 1.4719392850009987,
+      "n_events": 737,
+      "n_runs": 3,
+      "participation_median": 0.0,
+      "participation_share_ge3": 0.036635006784260515,
+      "participation_share_le2": 0.9633649932157394,
+      "random_participation_median": 0.0,
+      "random_share_ge3": 0.02564450474898236,
+      "activity_random_participation_median": 0.0,
+      "activity_random_share_ge3": 0.04056987788331072,
+      "share_ge3_minus_activity_chance_ci95_by_mouse": [
+        -0.017452093019471936,
+        0.009881485281185876
+      ],
+      "n_mice": 44,
+      "share_ge3_by_group": {
+        "ORX": 0.01702127659574468,
+        "OVX": 0.028735632183908046,
+        "MALE": 0.031578947368421054,
+        "DI": 0.08695652173913043
+      },
+      "n_events_by_group": {
+        "ORX": 235,
+        "OVX": 174,
+        "MALE": 190,
+        "DI": 138
+      },
+      "empty_span_share": 0.8398914518317503,
+      "near_coactive_1s_share": 0.19402985074626866,
+      "near_coactive_3s_share": 0.39077340569877883,
+      "activity_random_near_coactive_1s_share": 0.0689280868385346,
+      "activity_random_near_coactive_3s_share": 0.12672998643147898,
+      "edge_within_5s_share": 0.04613297150610583,
+      "edge_within_12.8s_share": 0.08819538670284939,
+      "edge_within_5s_uniform_expectation": 0.008392611430537126,
+      "edge_within_12.8s_uniform_expectation": 0.02148508526217505,
+      "participation_1s_median": 1.0,
+      "participation_1s_share_ge3": 0.23066485753052918,
+      "random_participation_1s_median": 0.0,
+      "random_1s_share_ge3": 0.11546811397557666,
+      "top_pair_share_median": 0.6666666666666666,
+      "n_recordings_with_pairs": 2,
+      "events_per_run": 245.66666666666666
     },
     "supervised tube_guard label-free": {
-      "events_per_10min": 5.006990213700819,
-      "n_events": 2507,
+      "on_rigid_shift_J_sec": null,
+      "events_per_10min": 4.897143998402237,
+      "n_events": 2452,
       "n_runs": 3,
       "participation_median": 5.0,
-      "participation_share_ge3": 0.8372556840845632,
-      "participation_share_le2": 0.16274431591543678,
+      "participation_share_ge3": 0.8303425774877651,
+      "participation_share_le2": 0.16965742251223492,
       "random_participation_median": 0.0,
-      "random_share_ge3": 0.07618667730355005,
-      "participation_1s_median": 5.0,
-      "participation_1s_share_ge3": 0.8795372955723972,
+      "random_share_ge3": 0.07185970636215334,
+      "activity_random_participation_median": 0.0,
+      "activity_random_share_ge3": 0.13902936378466557,
+      "share_ge3_minus_activity_chance_ci95_by_mouse": [
+        0.6346495700238212,
+        0.7321465176860323
+      ],
+      "n_mice": 44,
+      "share_ge3_by_group": {
+        "MALE": 0.8429172510518934,
+        "ORX": 0.4797843665768194,
+        "OVX": 0.8017751479289941,
+        "DI": 0.9572815533980582
+      },
+      "n_events_by_group": {
+        "MALE": 713,
+        "ORX": 371,
+        "OVX": 338,
+        "DI": 1030
+      },
+      "empty_span_share": 0.05261011419249592,
+      "near_coactive_1s_share": 0.7964926590538336,
+      "near_coactive_3s_share": 0.8062805872756933,
+      "activity_random_near_coactive_1s_share": 0.2559135399673736,
+      "activity_random_near_coactive_3s_share": 0.4294861337683524,
+      "edge_within_5s_share": 0.037520391517128875,
+      "edge_within_12.8s_share": 0.054241435562805876,
+      "edge_within_5s_uniform_expectation": 0.008392611430537126,
+      "edge_within_12.8s_uniform_expectation": 0.02148508526217505,
+      "participation_1s_median": 6.0,
+      "participation_1s_share_ge3": 0.8739804241435563,
       "random_participation_1s_median": 1.0,
-      "random_1s_share_ge3": 0.21061029118468289,
-      "top_pair_share_median": 0.5,
+      "random_1s_share_ge3": 0.21500815660685155,
+      "top_pair_share_median": 0.55,
       "n_recordings_with_pairs": 34,
-      "events_per_run": 835.6666666666666
+      "events_per_run": 817.3333333333334
     },
     "supervised tube_guard bake-off threshold": {
+      "on_rigid_shift_J_sec": null,
       "events_per_10min": 6.740563211503894,
       "n_events": 3375,
       "n_runs": 3,
@@ -127,67 +469,321 @@
       "participation_share_ge3": 0.8088888888888889,
       "participation_share_le2": 0.19111111111111112,
       "random_participation_median": 0.0,
-      "random_share_ge3": 0.12088888888888889,
+      "random_share_ge3": 0.11825185185185186,
+      "activity_random_participation_median": 1.0,
+      "activity_random_share_ge3": 0.17845925925925926,
+      "share_ge3_minus_activity_chance_ci95_by_mouse": [
+        0.5586128324153126,
+        0.6945739131673275
+      ],
+      "n_mice": 40,
+      "share_ge3_by_group": {
+        "MALE": 0.7481296758104738,
+        "ORX": 0.6666666666666666,
+        "OVX": 0.7478134110787172,
+        "DI": 0.8747826086956522
+      },
+      "n_events_by_group": {
+        "MALE": 802,
+        "ORX": 162,
+        "OVX": 686,
+        "DI": 1725
+      },
+      "empty_span_share": 0.05185185185185185,
+      "near_coactive_1s_share": 0.786074074074074,
+      "near_coactive_3s_share": 0.7991111111111111,
+      "activity_random_near_coactive_1s_share": 0.32515555555555553,
+      "activity_random_near_coactive_3s_share": 0.527525925925926,
+      "edge_within_5s_share": 0.021925925925925925,
+      "edge_within_12.8s_share": 0.03911111111111111,
+      "edge_within_5s_uniform_expectation": 0.008392611430537126,
+      "edge_within_12.8s_uniform_expectation": 0.02148508526217505,
       "participation_1s_median": 5.0,
       "participation_1s_share_ge3": 0.8693333333333333,
       "random_participation_1s_median": 1.0,
-      "random_1s_share_ge3": 0.33214814814814814,
+      "random_1s_share_ge3": 0.3336,
       "top_pair_share_median": 0.4,
       "n_recordings_with_pairs": 39,
       "events_per_run": 1125.0
     },
+    "supervised tube_guard label-free, on its rigid shift": {
+      "on_rigid_shift_J_sec": 10.0,
+      "events_per_10min": 1.5578190533253444,
+      "n_events": 780,
+      "n_runs": 3,
+      "participation_median": 3.0,
+      "participation_share_ge3": 0.5089743589743589,
+      "participation_share_le2": 0.491025641025641,
+      "random_participation_median": 0.0,
+      "random_share_ge3": 0.024743589743589745,
+      "activity_random_participation_median": 0.0,
+      "activity_random_share_ge3": 0.046538461538461535,
+      "share_ge3_minus_activity_chance_ci95_by_mouse": [
+        0.38388912244912027,
+        0.5407836648315071
+      ],
+      "n_mice": 44,
+      "share_ge3_by_group": {
+        "MALE": 0.6081081081081081,
+        "ORX": 0.1889400921658986,
+        "OVX": 0.49707602339181284,
+        "DI": 0.8
+      },
+      "n_events_by_group": {
+        "MALE": 222,
+        "ORX": 217,
+        "OVX": 171,
+        "DI": 170
+      },
+      "empty_span_share": 0.12307692307692308,
+      "near_coactive_1s_share": 0.42948717948717946,
+      "near_coactive_3s_share": 0.42948717948717946,
+      "activity_random_near_coactive_1s_share": 0.07717948717948718,
+      "activity_random_near_coactive_3s_share": 0.1412820512820513,
+      "edge_within_5s_share": 0.046153846153846156,
+      "edge_within_12.8s_share": 0.07051282051282051,
+      "edge_within_5s_uniform_expectation": 0.008392611430537126,
+      "edge_within_12.8s_uniform_expectation": 0.02148508526217505,
+      "participation_1s_median": 3.0,
+      "participation_1s_share_ge3": 0.6512820512820513,
+      "random_participation_1s_median": 1.0,
+      "random_1s_share_ge3": 0.11602564102564103,
+      "top_pair_share_median": 0.3666666666666667,
+      "n_recordings_with_pairs": 28,
+      "events_per_run": 260.0
+    },
     "ssl tube_guard J10": {
-      "events_per_10min": 6.484921110445376,
-      "n_events": 3247,
+      "on_rigid_shift_J_sec": null,
+      "events_per_10min": 6.604753345316557,
+      "n_events": 3307,
       "n_runs": 3,
       "participation_median": 0.0,
-      "participation_share_ge3": 0.1847859562673237,
-      "participation_share_le2": 0.8152140437326764,
+      "participation_share_ge3": 0.1835500453583308,
+      "participation_share_le2": 0.8164499546416691,
       "random_participation_median": 0.0,
-      "random_share_ge3": 0.08623344625808439,
+      "random_share_ge3": 0.08959782280012095,
+      "activity_random_participation_median": 0.0,
+      "activity_random_share_ge3": 0.14596310855760508,
+      "share_ge3_minus_activity_chance_ci95_by_mouse": [
+        -0.015710938576316953,
+        0.0892335577073323
+      ],
+      "n_mice": 44,
+      "share_ge3_by_group": {
+        "ORX": 0.0951219512195122,
+        "OVX": 0.11883408071748879,
+        "MALE": 0.25028968713789107,
+        "DI": 0.18828715365239296
+      },
+      "n_events_by_group": {
+        "ORX": 410,
+        "OVX": 446,
+        "MALE": 863,
+        "DI": 1588
+      },
+      "empty_span_share": 0.6903537949803448,
+      "near_coactive_1s_share": 0.5228303598427578,
+      "near_coactive_3s_share": 0.7450861808285455,
+      "activity_random_near_coactive_1s_share": 0.28856970063501663,
+      "activity_random_near_coactive_3s_share": 0.4747807680677351,
+      "edge_within_5s_share": 0.021771998790444513,
+      "edge_within_12.8s_share": 0.044148775325068036,
+      "edge_within_5s_uniform_expectation": 0.008392611430537126,
+      "edge_within_12.8s_uniform_expectation": 0.02148508526217505,
       "participation_1s_median": 3.0,
-      "participation_1s_share_ge3": 0.5180166307360641,
+      "participation_1s_share_ge3": 0.5161778046567886,
       "random_participation_1s_median": 1.0,
-      "random_1s_share_ge3": 0.25700646750846934,
+      "random_1s_share_ge3": 0.2606894466283641,
       "top_pair_share_median": 0.3333333333333333,
-      "n_recordings_with_pairs": 48,
-      "events_per_run": 1082.3333333333333
+      "n_recordings_with_pairs": 49,
+      "events_per_run": 1102.3333333333333
+    },
+    "ssl tube_guard J10, on its rigid shift": {
+      "on_rigid_shift_J_sec": 10.0,
+      "events_per_10min": 1.5518274415817854,
+      "n_events": 777,
+      "n_runs": 3,
+      "participation_median": 0.0,
+      "participation_share_ge3": 0.06177606177606178,
+      "participation_share_le2": 0.9382239382239382,
+      "random_participation_median": 0.0,
+      "random_share_ge3": 0.019305019305019305,
+      "activity_random_participation_median": 0.0,
+      "activity_random_share_ge3": 0.03667953667953668,
+      "share_ge3_minus_activity_chance_ci95_by_mouse": [
+        0.006755538586269958,
+        0.042553612856962075
+      ],
+      "n_mice": 44,
+      "share_ge3_by_group": {
+        "ORX": 0.025830258302583026,
+        "OVX": 0.06179775280898876,
+        "MALE": 0.07936507936507936,
+        "DI": 0.1079136690647482
+      },
+      "n_events_by_group": {
+        "ORX": 271,
+        "OVX": 178,
+        "MALE": 189,
+        "DI": 139
+      },
+      "empty_span_share": 0.7992277992277992,
+      "near_coactive_1s_share": 0.2805662805662806,
+      "near_coactive_3s_share": 0.4144144144144144,
+      "activity_random_near_coactive_1s_share": 0.07207207207207207,
+      "activity_random_near_coactive_3s_share": 0.13191763191763192,
+      "edge_within_5s_share": 0.03474903474903475,
+      "edge_within_12.8s_share": 0.06435006435006435,
+      "edge_within_5s_uniform_expectation": 0.008392611430537126,
+      "edge_within_12.8s_uniform_expectation": 0.02148508526217505,
+      "participation_1s_median": 1.0,
+      "participation_1s_share_ge3": 0.3063063063063063,
+      "random_participation_1s_median": 0.0,
+      "random_1s_share_ge3": 0.11325611325611326,
+      "top_pair_share_median": 0.6666666666666666,
+      "n_recordings_with_pairs": 1,
+      "events_per_run": 259.0
     },
     "ssl tube_guard J20": {
-      "events_per_10min": 6.640703015777911,
-      "n_events": 3325,
+      "on_rigid_shift_J_sec": null,
+      "events_per_10min": 6.720591172358698,
+      "n_events": 3365,
       "n_runs": 3,
       "participation_median": 0.0,
-      "participation_share_ge3": 0.1606015037593985,
-      "participation_share_le2": 0.8393984962406015,
+      "participation_share_ge3": 0.16047548291233285,
+      "participation_share_le2": 0.8395245170876672,
       "random_participation_median": 0.0,
-      "random_share_ge3": 0.08165413533834587,
+      "random_share_ge3": 0.08216939078751857,
+      "activity_random_participation_median": 0.0,
+      "activity_random_share_ge3": 0.13836552748885586,
+      "share_ge3_minus_activity_chance_ci95_by_mouse": [
+        -0.008230391256892327,
+        0.06379806936306105
+      ],
+      "n_mice": 44,
+      "share_ge3_by_group": {
+        "ORX": 0.1271186440677966,
+        "OVX": 0.1010989010989011,
+        "MALE": 0.14271356783919598,
+        "DI": 0.19666880204996798
+      },
+      "n_events_by_group": {
+        "ORX": 354,
+        "OVX": 455,
+        "MALE": 995,
+        "DI": 1561
+      },
+      "empty_span_share": 0.7054977711738485,
+      "near_coactive_1s_share": 0.4603268945022288,
+      "near_coactive_3s_share": 0.700148588410104,
+      "activity_random_near_coactive_1s_share": 0.28199108469539375,
+      "activity_random_near_coactive_3s_share": 0.4750668647845468,
+      "edge_within_5s_share": 0.0237741456166419,
+      "edge_within_12.8s_share": 0.04843982169390788,
+      "edge_within_5s_uniform_expectation": 0.008392611430537126,
+      "edge_within_12.8s_uniform_expectation": 0.02148508526217505,
       "participation_1s_median": 2.0,
-      "participation_1s_share_ge3": 0.4637593984962406,
+      "participation_1s_share_ge3": 0.46270430906389304,
       "random_participation_1s_median": 1.0,
-      "random_1s_share_ge3": 0.24962406015037594,
-      "top_pair_share_median": 0.26785714285714285,
+      "random_1s_share_ge3": 0.2564933135215453,
+      "top_pair_share_median": 0.3333333333333333,
       "n_recordings_with_pairs": 36,
-      "events_per_run": 1108.3333333333333
+      "events_per_run": 1121.6666666666667
+    },
+    "ssl tube_guard J20, on its rigid shift": {
+      "on_rigid_shift_J_sec": 20.0,
+      "events_per_10min": 1.4659476732574397,
+      "n_events": 734,
+      "n_runs": 3,
+      "participation_median": 0.0,
+      "participation_share_ge3": 0.043596730245231606,
+      "participation_share_le2": 0.9564032697547684,
+      "random_participation_median": 0.0,
+      "random_share_ge3": 0.03174386920980926,
+      "activity_random_participation_median": 0.0,
+      "activity_random_share_ge3": 0.045231607629427795,
+      "share_ge3_minus_activity_chance_ci95_by_mouse": [
+        -0.01302810547295841,
+        0.011613833813026322
+      ],
+      "n_mice": 44,
+      "share_ge3_by_group": {
+        "ORX": 0.029411764705882353,
+        "OVX": 0.044444444444444446,
+        "MALE": 0.02403846153846154,
+        "DI": 0.09154929577464789
+      },
+      "n_events_by_group": {
+        "ORX": 204,
+        "OVX": 180,
+        "MALE": 208,
+        "DI": 142
+      },
+      "empty_span_share": 0.7983651226158038,
+      "near_coactive_1s_share": 0.22615803814713897,
+      "near_coactive_3s_share": 0.3787465940054496,
+      "activity_random_near_coactive_1s_share": 0.08160762942779291,
+      "activity_random_near_coactive_3s_share": 0.14536784741144415,
+      "edge_within_5s_share": 0.06403269754768393,
+      "edge_within_12.8s_share": 0.0994550408719346,
+      "edge_within_5s_uniform_expectation": 0.008392611430537126,
+      "edge_within_12.8s_uniform_expectation": 0.02148508526217505,
+      "participation_1s_median": 1.0,
+      "participation_1s_share_ge3": 0.2615803814713896,
+      "random_participation_1s_median": 1.0,
+      "random_1s_share_ge3": 0.13732970027247957,
+      "top_pair_share_median": 0.6666666666666666,
+      "n_recordings_with_pairs": 2,
+      "events_per_run": 244.66666666666666
     },
     "supervised line label-free": {
-      "events_per_10min": 4.945076892350709,
-      "n_events": 2476,
+      "on_rigid_shift_J_sec": null,
+      "events_per_10min": 4.927102057120032,
+      "n_events": 2467,
       "n_runs": 3,
       "participation_median": 4.0,
-      "participation_share_ge3": 0.8166397415185783,
-      "participation_share_le2": 0.18336025848142165,
+      "participation_share_ge3": 0.8111066072152412,
+      "participation_share_le2": 0.1888933927847588,
       "random_participation_median": 0.0,
-      "random_share_ge3": 0.06825525040387723,
+      "random_share_ge3": 0.0728820429671666,
+      "activity_random_participation_median": 0.0,
+      "activity_random_share_ge3": 0.1372111876773409,
+      "share_ge3_minus_activity_chance_ci95_by_mouse": [
+        0.6228230136831359,
+        0.7141669612052911
+      ],
+      "n_mice": 44,
+      "share_ge3_by_group": {
+        "MALE": 0.8387096774193549,
+        "ORX": 0.5,
+        "OVX": 0.7421052631578947,
+        "DI": 0.9221789883268483
+      },
+      "n_events_by_group": {
+        "MALE": 713,
+        "ORX": 346,
+        "OVX": 380,
+        "DI": 1028
+      },
+      "empty_span_share": 0.04418321848398865,
+      "near_coactive_1s_share": 0.7653019862180787,
+      "near_coactive_3s_share": 0.7766518038102959,
+      "activity_random_near_coactive_1s_share": 0.249006890960681,
+      "activity_random_near_coactive_3s_share": 0.42776651803810295,
+      "edge_within_5s_share": 0.039724361572760436,
+      "edge_within_12.8s_share": 0.05796513984596676,
+      "edge_within_5s_uniform_expectation": 0.008392611430537126,
+      "edge_within_12.8s_uniform_expectation": 0.02148508526217505,
       "participation_1s_median": 5.0,
-      "participation_1s_share_ge3": 0.8764135702746365,
+      "participation_1s_share_ge3": 0.8723145520875557,
       "random_participation_1s_median": 1.0,
-      "random_1s_share_ge3": 0.2069870759289176,
+      "random_1s_share_ge3": 0.20936359951357925,
       "top_pair_share_median": 0.3333333333333333,
-      "n_recordings_with_pairs": 33,
-      "events_per_run": 825.3333333333334
+      "n_recordings_with_pairs": 38,
+      "events_per_run": 822.3333333333334
     },
     "supervised line bake-off threshold": {
+      "on_rigid_shift_J_sec": null,
       "events_per_10min": 5.48831635710006,
       "n_events": 2748,
       "n_runs": 3,
@@ -195,67 +791,321 @@
       "participation_share_ge3": 0.74745269286754,
       "participation_share_le2": 0.25254730713246,
       "random_participation_median": 0.0,
-      "random_share_ge3": 0.07660116448326056,
+      "random_share_ge3": 0.07812954876273653,
+      "activity_random_participation_median": 0.0,
+      "activity_random_share_ge3": 0.1390829694323144,
+      "share_ge3_minus_activity_chance_ci95_by_mouse": [
+        0.5261641664235581,
+        0.6793690729319268
+      ],
+      "n_mice": 41,
+      "share_ge3_by_group": {
+        "MALE": 0.7210191082802547,
+        "ORX": 0.5614973262032086,
+        "OVX": 0.6740331491712708,
+        "DI": 0.8055162659123055
+      },
+      "n_events_by_group": {
+        "MALE": 785,
+        "ORX": 187,
+        "OVX": 362,
+        "DI": 1414
+      },
+      "empty_span_share": 0.04585152838427948,
+      "near_coactive_1s_share": 0.7070596797671034,
+      "near_coactive_3s_share": 0.7241630276564774,
+      "activity_random_near_coactive_1s_share": 0.25676855895196504,
+      "activity_random_near_coactive_3s_share": 0.43777292576419213,
+      "edge_within_5s_share": 0.017467248908296942,
+      "edge_within_12.8s_share": 0.03275109170305677,
+      "edge_within_5s_uniform_expectation": 0.008392611430537126,
+      "edge_within_12.8s_uniform_expectation": 0.02148508526217505,
       "participation_1s_median": 5.0,
       "participation_1s_share_ge3": 0.8096797671033479,
       "random_participation_1s_median": 1.0,
-      "random_1s_share_ge3": 0.21743085880640467,
+      "random_1s_share_ge3": 0.22066957787481806,
       "top_pair_share_median": 0.3333333333333333,
       "n_recordings_with_pairs": 50,
       "events_per_run": 916.0
     },
+    "supervised line label-free, on its rigid shift": {
+      "on_rigid_shift_J_sec": 10.0,
+      "events_per_10min": 1.6277211903335331,
+      "n_events": 815,
+      "n_runs": 3,
+      "participation_median": 3.0,
+      "participation_share_ge3": 0.5177914110429448,
+      "participation_share_le2": 0.4822085889570552,
+      "random_participation_median": 0.0,
+      "random_share_ge3": 0.02687116564417178,
+      "activity_random_participation_median": 0.0,
+      "activity_random_share_ge3": 0.04220858895705522,
+      "share_ge3_minus_activity_chance_ci95_by_mouse": [
+        0.3879186239413254,
+        0.5669973940533151
+      ],
+      "n_mice": 44,
+      "share_ge3_by_group": {
+        "MALE": 0.6160714285714286,
+        "ORX": 0.25,
+        "OVX": 0.5079365079365079,
+        "DI": 0.7415730337078652
+      },
+      "n_events_by_group": {
+        "MALE": 224,
+        "ORX": 224,
+        "OVX": 189,
+        "DI": 178
+      },
+      "empty_span_share": 0.08834355828220859,
+      "near_coactive_1s_share": 0.37300613496932516,
+      "near_coactive_3s_share": 0.37791411042944784,
+      "activity_random_near_coactive_1s_share": 0.07803680981595092,
+      "activity_random_near_coactive_3s_share": 0.14638036809815952,
+      "edge_within_5s_share": 0.051533742331288344,
+      "edge_within_12.8s_share": 0.09447852760736196,
+      "edge_within_5s_uniform_expectation": 0.008392611430537126,
+      "edge_within_12.8s_uniform_expectation": 0.02148508526217505,
+      "participation_1s_median": 3.0,
+      "participation_1s_share_ge3": 0.6355828220858896,
+      "random_participation_1s_median": 1.0,
+      "random_1s_share_ge3": 0.13030674846625767,
+      "top_pair_share_median": 0.4,
+      "n_recordings_with_pairs": 30,
+      "events_per_run": 271.6666666666667
+    },
     "ssl line J10": {
-      "events_per_10min": 5.702017175953665,
-      "n_events": 2855,
+      "on_rigid_shift_J_sec": null,
+      "events_per_10min": 5.721989215098861,
+      "n_events": 2865,
       "n_runs": 3,
       "participation_median": 1.0,
-      "participation_share_ge3": 0.21646234676007006,
-      "participation_share_le2": 0.78353765323993,
+      "participation_share_ge3": 0.21780104712041884,
+      "participation_share_le2": 0.7821989528795812,
       "random_participation_median": 0.0,
-      "random_share_ge3": 0.10507880910683012,
+      "random_share_ge3": 0.10261780104712041,
+      "activity_random_participation_median": 1.0,
+      "activity_random_share_ge3": 0.17012216404886563,
+      "share_ge3_minus_activity_chance_ci95_by_mouse": [
+        0.007973438058910626,
+        0.09081647133517512
+      ],
+      "n_mice": 44,
+      "share_ge3_by_group": {
+        "ORX": 0.1407185628742515,
+        "OVX": 0.14096916299559473,
+        "MALE": 0.213768115942029,
+        "DI": 0.2690152121697358
+      },
+      "n_events_by_group": {
+        "ORX": 334,
+        "OVX": 454,
+        "MALE": 828,
+        "DI": 1249
+      },
+      "empty_span_share": 0.6041884816753926,
+      "near_coactive_1s_share": 0.42652705061082025,
+      "near_coactive_3s_share": 0.7165794066317627,
+      "activity_random_near_coactive_1s_share": 0.2879581151832461,
+      "activity_random_near_coactive_3s_share": 0.4692146596858639,
+      "edge_within_5s_share": 0.0237347294938918,
+      "edge_within_12.8s_share": 0.04712041884816754,
+      "edge_within_5s_uniform_expectation": 0.008392611430537126,
+      "edge_within_12.8s_uniform_expectation": 0.02148508526217505,
       "participation_1s_median": 2.0,
-      "participation_1s_share_ge3": 0.4840630472854641,
+      "participation_1s_share_ge3": 0.4827225130890052,
       "random_participation_1s_median": 1.0,
-      "random_1s_share_ge3": 0.26199649737302977,
+      "random_1s_share_ge3": 0.2662478184991274,
       "top_pair_share_median": 0.3333333333333333,
       "n_recordings_with_pairs": 39,
-      "events_per_run": 951.6666666666666
+      "events_per_run": 955.0
     },
-    "ssl line J20": {
-      "events_per_10min": 5.73197523467146,
-      "n_events": 2870,
+    "ssl line J10, on its rigid shift": {
+      "on_rigid_shift_J_sec": 10.0,
+      "events_per_10min": 1.4299980027960855,
+      "n_events": 716,
       "n_runs": 3,
       "participation_median": 0.0,
-      "participation_share_ge3": 0.13902439024390245,
-      "participation_share_le2": 0.8609756097560975,
+      "participation_share_ge3": 0.11592178770949721,
+      "participation_share_le2": 0.8840782122905028,
       "random_participation_median": 0.0,
-      "random_share_ge3": 0.10331010452961673,
-      "participation_1s_median": 4.0,
-      "participation_1s_share_ge3": 0.627177700348432,
+      "random_share_ge3": 0.046508379888268156,
+      "activity_random_participation_median": 0.0,
+      "activity_random_share_ge3": 0.06075418994413408,
+      "share_ge3_minus_activity_chance_ci95_by_mouse": [
+        0.030592922311419923,
+        0.08495778655208454
+      ],
+      "n_mice": 44,
+      "share_ge3_by_group": {
+        "ORX": 0.08095238095238096,
+        "OVX": 0.07100591715976332,
+        "MALE": 0.11290322580645161,
+        "DI": 0.2185430463576159
+      },
+      "n_events_by_group": {
+        "ORX": 210,
+        "OVX": 169,
+        "MALE": 186,
+        "DI": 151
+      },
+      "empty_span_share": 0.6871508379888268,
+      "near_coactive_1s_share": 0.21368715083798884,
+      "near_coactive_3s_share": 0.39385474860335196,
+      "activity_random_near_coactive_1s_share": 0.09301675977653631,
+      "activity_random_near_coactive_3s_share": 0.15307262569832403,
+      "edge_within_5s_share": 0.03770949720670391,
+      "edge_within_12.8s_share": 0.06564245810055866,
+      "edge_within_5s_uniform_expectation": 0.008392611430537126,
+      "edge_within_12.8s_uniform_expectation": 0.02148508526217505,
+      "participation_1s_median": 2.0,
+      "participation_1s_share_ge3": 0.32821229050279327,
       "random_participation_1s_median": 1.0,
-      "random_1s_share_ge3": 0.2564459930313589,
-      "top_pair_share_median": 0.29166666666666663,
-      "n_recordings_with_pairs": 28,
-      "events_per_run": 956.6666666666666
+      "random_1s_share_ge3": 0.14231843575418995,
+      "top_pair_share_median": 0.3333333333333333,
+      "n_recordings_with_pairs": 7,
+      "events_per_run": 238.66666666666666
+    },
+    "ssl line J20": {
+      "on_rigid_shift_J_sec": null,
+      "events_per_10min": 5.686039544637508,
+      "n_events": 2847,
+      "n_runs": 3,
+      "participation_median": 0.0,
+      "participation_share_ge3": 0.1380400421496312,
+      "participation_share_le2": 0.8619599578503688,
+      "random_participation_median": 0.0,
+      "random_share_ge3": 0.10077274323849666,
+      "activity_random_participation_median": 1.0,
+      "activity_random_share_ge3": 0.16055497014401124,
+      "share_ge3_minus_activity_chance_ci95_by_mouse": [
+        -0.06126325419778091,
+        0.014354991278158992
+      ],
+      "n_mice": 44,
+      "share_ge3_by_group": {
+        "ORX": 0.06382978723404255,
+        "OVX": 0.1564245810055866,
+        "MALE": 0.15162907268170425,
+        "DI": 0.14600760456273765
+      },
+      "n_events_by_group": {
+        "ORX": 376,
+        "OVX": 358,
+        "MALE": 798,
+        "DI": 1315
+      },
+      "empty_span_share": 0.6996838777660696,
+      "near_coactive_1s_share": 0.6195995785036881,
+      "near_coactive_3s_share": 0.7832806462943449,
+      "activity_random_near_coactive_1s_share": 0.2848261327713382,
+      "activity_random_near_coactive_3s_share": 0.4661749209694415,
+      "edge_within_5s_share": 0.03723217421847559,
+      "edge_within_12.8s_share": 0.0547945205479452,
+      "edge_within_5s_uniform_expectation": 0.008392611430537126,
+      "edge_within_12.8s_uniform_expectation": 0.02148508526217505,
+      "participation_1s_median": 4.0,
+      "participation_1s_share_ge3": 0.6297857393747804,
+      "random_participation_1s_median": 1.0,
+      "random_1s_share_ge3": 0.2617843343870741,
+      "top_pair_share_median": 0.3333333333333333,
+      "n_recordings_with_pairs": 29,
+      "events_per_run": 949.0
+    },
+    "ssl line J20, on its rigid shift": {
+      "on_rigid_shift_J_sec": 20.0,
+      "events_per_10min": 1.3021769522668265,
+      "n_events": 652,
+      "n_runs": 3,
+      "participation_median": 0.0,
+      "participation_share_ge3": 0.049079754601226995,
+      "participation_share_le2": 0.950920245398773,
+      "random_participation_median": 0.0,
+      "random_share_ge3": 0.04647239263803681,
+      "activity_random_participation_median": 0.0,
+      "activity_random_share_ge3": 0.061503067484662576,
+      "share_ge3_minus_activity_chance_ci95_by_mouse": [
+        -0.02738130881094953,
+        0.0032450691933674026
+      ],
+      "n_mice": 44,
+      "share_ge3_by_group": {
+        "ORX": 0.009523809523809525,
+        "OVX": 0.07801418439716312,
+        "MALE": 0.03296703296703297,
+        "DI": 0.1092436974789916
+      },
+      "n_events_by_group": {
+        "ORX": 210,
+        "OVX": 141,
+        "MALE": 182,
+        "DI": 119
+      },
+      "empty_span_share": 0.808282208588957,
+      "near_coactive_1s_share": 0.32515337423312884,
+      "near_coactive_3s_share": 0.4279141104294479,
+      "activity_random_near_coactive_1s_share": 0.08788343558282209,
+      "activity_random_near_coactive_3s_share": 0.1467791411042945,
+      "edge_within_5s_share": 0.08742331288343558,
+      "edge_within_12.8s_share": 0.10429447852760736,
+      "edge_within_5s_uniform_expectation": 0.008392611430537126,
+      "edge_within_12.8s_uniform_expectation": 0.02148508526217505,
+      "participation_1s_median": 2.0,
+      "participation_1s_share_ge3": 0.36809815950920244,
+      "random_participation_1s_median": 1.0,
+      "random_1s_share_ge3": 0.1476993865030675,
+      "top_pair_share_median": null,
+      "n_recordings_with_pairs": 0,
+      "events_per_run": 217.33333333333334
     },
     "supervised line_length label-free": {
-      "events_per_10min": 4.238066706610745,
-      "n_events": 2122,
+      "on_rigid_shift_J_sec": null,
+      "events_per_10min": 4.272019173157579,
+      "n_events": 2139,
       "n_runs": 3,
       "participation_median": 4.0,
-      "participation_share_ge3": 0.8058435438265787,
-      "participation_share_le2": 0.1941564561734213,
+      "participation_share_ge3": 0.80411407199626,
+      "participation_share_le2": 0.19588592800374008,
       "random_participation_median": 0.0,
-      "random_share_ge3": 0.06715362865221489,
+      "random_share_ge3": 0.06895745675549322,
+      "activity_random_participation_median": 1.0,
+      "activity_random_share_ge3": 0.13688639551192147,
+      "share_ge3_minus_activity_chance_ci95_by_mouse": [
+        0.6044111221014674,
+        0.7153848171850054
+      ],
+      "n_mice": 44,
+      "share_ge3_by_group": {
+        "MALE": 0.8509615384615384,
+        "ORX": 0.47368421052631576,
+        "OVX": 0.7515337423312883,
+        "DI": 0.9232585596221959
+      },
+      "n_events_by_group": {
+        "MALE": 624,
+        "ORX": 342,
+        "OVX": 326,
+        "DI": 847
+      },
+      "empty_span_share": 0.03927068723702665,
+      "near_coactive_1s_share": 0.7367928938756428,
+      "near_coactive_3s_share": 0.7381954184198224,
+      "activity_random_near_coactive_1s_share": 0.23983169705469845,
+      "activity_random_near_coactive_3s_share": 0.4066853669939224,
+      "edge_within_5s_share": 0.05049088359046283,
+      "edge_within_12.8s_share": 0.06778868630201028,
+      "edge_within_5s_uniform_expectation": 0.008392611430537126,
+      "edge_within_12.8s_uniform_expectation": 0.02148508526217505,
       "participation_1s_median": 5.0,
-      "participation_1s_share_ge3": 0.8619227144203582,
+      "participation_1s_share_ge3": 0.865825151940159,
       "random_participation_1s_median": 1.0,
-      "random_1s_share_ge3": 0.1859095193213949,
+      "random_1s_share_ge3": 0.19242636746143058,
       "top_pair_share_median": 0.3333333333333333,
-      "n_recordings_with_pairs": 33,
-      "events_per_run": 707.3333333333334
+      "n_recordings_with_pairs": 37,
+      "events_per_run": 713.0
     },
     "supervised line_length bake-off threshold": {
+      "on_rigid_shift_J_sec": null,
       "events_per_10min": 5.206710605152786,
       "n_events": 2607,
       "n_runs": 3,
@@ -263,382 +1113,1355 @@
       "participation_share_ge3": 0.7330264672036824,
       "participation_share_le2": 0.2669735327963176,
       "random_participation_median": 0.0,
-      "random_share_ge3": 0.07460682777138473,
+      "random_share_ge3": 0.07153816647487533,
+      "activity_random_participation_median": 1.0,
+      "activity_random_share_ge3": 0.13647871116225546,
+      "share_ge3_minus_activity_chance_ci95_by_mouse": [
+        0.5141940313671932,
+        0.6671100577403246
+      ],
+      "n_mice": 40,
+      "share_ge3_by_group": {
+        "MALE": 0.7293519695044473,
+        "ORX": 0.5598290598290598,
+        "OVX": 0.6363636363636364,
+        "DI": 0.7957860615883307
+      },
+      "n_events_by_group": {
+        "MALE": 787,
+        "ORX": 234,
+        "OVX": 352,
+        "DI": 1234
+      },
+      "empty_span_share": 0.031837360951285004,
+      "near_coactive_1s_share": 0.6735711545838128,
+      "near_coactive_3s_share": 0.6735711545838128,
+      "activity_random_near_coactive_1s_share": 0.2376294591484465,
+      "activity_random_near_coactive_3s_share": 0.4079018028385117,
+      "edge_within_5s_share": 0.016494054468738015,
+      "edge_within_12.8s_share": 0.03068661296509398,
+      "edge_within_5s_uniform_expectation": 0.008392611430537126,
+      "edge_within_12.8s_uniform_expectation": 0.02148508526217505,
       "participation_1s_median": 4.0,
       "participation_1s_share_ge3": 0.80897583429229,
       "random_participation_1s_median": 1.0,
-      "random_1s_share_ge3": 0.20406597621787495,
+      "random_1s_share_ge3": 0.20414269275028768,
       "top_pair_share_median": 0.4,
       "n_recordings_with_pairs": 46,
       "events_per_run": 869.0
     },
+    "supervised line_length label-free, on its rigid shift": {
+      "on_rigid_shift_J_sec": 10.0,
+      "events_per_10min": 1.5658078689834232,
+      "n_events": 784,
+      "n_runs": 3,
+      "participation_median": 2.0,
+      "participation_share_ge3": 0.46938775510204084,
+      "participation_share_le2": 0.5306122448979592,
+      "random_participation_median": 0.0,
+      "random_share_ge3": 0.03086734693877551,
+      "activity_random_participation_median": 0.0,
+      "activity_random_share_ge3": 0.054209183673469385,
+      "share_ge3_minus_activity_chance_ci95_by_mouse": [
+        0.3459205437455481,
+        0.48491643665645334
+      ],
+      "n_mice": 44,
+      "share_ge3_by_group": {
+        "MALE": 0.5387931034482759,
+        "ORX": 0.25,
+        "OVX": 0.48026315789473684,
+        "DI": 0.6388888888888888
+      },
+      "n_events_by_group": {
+        "MALE": 232,
+        "ORX": 220,
+        "OVX": 152,
+        "DI": 180
+      },
+      "empty_span_share": 0.08290816326530612,
+      "near_coactive_1s_share": 0.3201530612244898,
+      "near_coactive_3s_share": 0.32142857142857145,
+      "activity_random_near_coactive_1s_share": 0.08125,
+      "activity_random_near_coactive_3s_share": 0.14464285714285716,
+      "edge_within_5s_share": 0.06377551020408163,
+      "edge_within_12.8s_share": 0.09693877551020408,
+      "edge_within_5s_uniform_expectation": 0.008392611430537126,
+      "edge_within_12.8s_uniform_expectation": 0.02148508526217505,
+      "participation_1s_median": 3.0,
+      "participation_1s_share_ge3": 0.6428571428571429,
+      "random_participation_1s_median": 1.0,
+      "random_1s_share_ge3": 0.1246173469387755,
+      "top_pair_share_median": 0.5,
+      "n_recordings_with_pairs": 33,
+      "events_per_run": 261.3333333333333
+    },
     "ssl line_length J10": {
-      "events_per_10min": 6.409027361693629,
-      "n_events": 3209,
+      "on_rigid_shift_J_sec": null,
+      "events_per_10min": 6.468943479129219,
+      "n_events": 3239,
       "n_runs": 3,
       "participation_median": 1.0,
-      "participation_share_ge3": 0.23808039887815519,
-      "participation_share_le2": 0.7619196011218448,
+      "participation_share_ge3": 0.23711021920345784,
+      "participation_share_le2": 0.7628897807965421,
       "random_participation_median": 0.0,
-      "random_share_ge3": 0.08803365534434403,
+      "random_share_ge3": 0.09271380055572707,
+      "activity_random_participation_median": 0.0,
+      "activity_random_share_ge3": 0.1475455387465267,
+      "share_ge3_minus_activity_chance_ci95_by_mouse": [
+        0.05665186418933069,
+        0.12918542193988736
+      ],
+      "n_mice": 44,
+      "share_ge3_by_group": {
+        "ORX": 0.08771929824561403,
+        "OVX": 0.20081967213114754,
+        "MALE": 0.2960829493087558,
+        "DI": 0.25471698113207547
+      },
+      "n_events_by_group": {
+        "ORX": 399,
+        "OVX": 488,
+        "MALE": 868,
+        "DI": 1484
+      },
+      "empty_span_share": 0.6177832664402594,
+      "near_coactive_1s_share": 0.4853349799320778,
+      "near_coactive_3s_share": 0.748070392096326,
+      "activity_random_near_coactive_1s_share": 0.28731089842543994,
+      "activity_random_near_coactive_3s_share": 0.47258413090460016,
+      "edge_within_5s_share": 0.019141710404445816,
+      "edge_within_12.8s_share": 0.04137079345476999,
+      "edge_within_5s_uniform_expectation": 0.008392611430537126,
+      "edge_within_12.8s_uniform_expectation": 0.02148508526217505,
       "participation_1s_median": 3.0,
-      "participation_1s_share_ge3": 0.5316297912122157,
+      "participation_1s_share_ge3": 0.5294844087681383,
       "random_participation_1s_median": 1.0,
-      "random_1s_share_ge3": 0.25288251791835464,
-      "top_pair_share_median": 0.2902097902097902,
+      "random_1s_share_ge3": 0.26251929607903673,
+      "top_pair_share_median": 0.303030303030303,
       "n_recordings_with_pairs": 50,
-      "events_per_run": 1069.6666666666667
+      "events_per_run": 1079.6666666666667
     },
-    "ssl line_length J20": {
-      "events_per_10min": 6.712602356700619,
-      "n_events": 3361,
+    "ssl line_length J10, on its rigid shift": {
+      "on_rigid_shift_J_sec": 10.0,
+      "events_per_10min": 1.5837827042141002,
+      "n_events": 793,
       "n_runs": 3,
       "participation_median": 0.0,
-      "participation_share_ge3": 0.18327878607557274,
-      "participation_share_le2": 0.8167212139244272,
+      "participation_share_ge3": 0.09709962168978563,
+      "participation_share_le2": 0.9029003783102144,
       "random_participation_median": 0.0,
-      "random_share_ge3": 0.07304373698304076,
+      "random_share_ge3": 0.01866330390920555,
+      "activity_random_participation_median": 0.0,
+      "activity_random_share_ge3": 0.033921815889029004,
+      "share_ge3_minus_activity_chance_ci95_by_mouse": [
+        0.03186674669867947,
+        0.09958867121944734
+      ],
+      "n_mice": 44,
+      "share_ge3_by_group": {
+        "ORX": 0.040160642570281124,
+        "OVX": 0.040697674418604654,
+        "MALE": 0.16113744075829384,
+        "DI": 0.16149068322981366
+      },
+      "n_events_by_group": {
+        "ORX": 249,
+        "OVX": 172,
+        "MALE": 211,
+        "DI": 161
+      },
+      "empty_span_share": 0.742749054224464,
+      "near_coactive_1s_share": 0.2673392181588903,
+      "near_coactive_3s_share": 0.4274905422446406,
+      "activity_random_near_coactive_1s_share": 0.07540983606557378,
+      "activity_random_near_coactive_3s_share": 0.14274905422446407,
+      "edge_within_5s_share": 0.012610340479192938,
+      "edge_within_12.8s_share": 0.03530895334174023,
+      "edge_within_5s_uniform_expectation": 0.008392611430537126,
+      "edge_within_12.8s_uniform_expectation": 0.02148508526217505,
       "participation_1s_median": 2.0,
-      "participation_1s_share_ge3": 0.4775364474858673,
-      "random_participation_1s_median": 1.0,
-      "random_1s_share_ge3": 0.24680154715858377,
+      "participation_1s_share_ge3": 0.3442622950819672,
+      "random_participation_1s_median": 0.0,
+      "random_1s_share_ge3": 0.12068095838587642,
       "top_pair_share_median": 0.3333333333333333,
-      "n_recordings_with_pairs": 51,
-      "events_per_run": 1120.3333333333333
+      "n_recordings_with_pairs": 5,
+      "events_per_run": 264.3333333333333
+    },
+    "ssl line_length J20": {
+      "on_rigid_shift_J_sec": null,
+      "events_per_10min": 6.746554823247454,
+      "n_events": 3378,
+      "n_runs": 3,
+      "participation_median": 0.0,
+      "participation_share_ge3": 0.18413262285375961,
+      "participation_share_le2": 0.8158673771462404,
+      "random_participation_median": 0.0,
+      "random_share_ge3": 0.07915926583777383,
+      "activity_random_participation_median": 0.0,
+      "activity_random_share_ge3": 0.13380698638247485,
+      "share_ge3_minus_activity_chance_ci95_by_mouse": [
+        0.0037028141678796755,
+        0.09379221223251814
+      ],
+      "n_mice": 44,
+      "share_ge3_by_group": {
+        "ORX": 0.07616707616707617,
+        "OVX": 0.13390928725701945,
+        "MALE": 0.22580645161290322,
+        "DI": 0.20261031696706028
+      },
+      "n_events_by_group": {
+        "ORX": 407,
+        "OVX": 463,
+        "MALE": 899,
+        "DI": 1609
+      },
+      "empty_span_share": 0.679692125518058,
+      "near_coactive_1s_share": 0.41681468324452337,
+      "near_coactive_3s_share": 0.6941977501480165,
+      "activity_random_near_coactive_1s_share": 0.2755180580224985,
+      "activity_random_near_coactive_3s_share": 0.4675843694493783,
+      "edge_within_5s_share": 0.017465956187092953,
+      "edge_within_12.8s_share": 0.03433984606275903,
+      "edge_within_5s_uniform_expectation": 0.008392611430537126,
+      "edge_within_12.8s_uniform_expectation": 0.02148508526217505,
+      "participation_1s_median": 2.0,
+      "participation_1s_share_ge3": 0.4763173475429248,
+      "random_participation_1s_median": 1.0,
+      "random_1s_share_ge3": 0.2503256364712848,
+      "top_pair_share_median": 0.29166666666666663,
+      "n_recordings_with_pairs": 50,
+      "events_per_run": 1126.0
+    },
+    "ssl line_length J20, on its rigid shift": {
+      "on_rigid_shift_J_sec": 20.0,
+      "events_per_10min": 1.5598162572398642,
+      "n_events": 781,
+      "n_runs": 3,
+      "participation_median": 0.0,
+      "participation_share_ge3": 0.06402048655569782,
+      "participation_share_le2": 0.9359795134443022,
+      "random_participation_median": 0.0,
+      "random_share_ge3": 0.014852752880921895,
+      "activity_random_participation_median": 0.0,
+      "activity_random_share_ge3": 0.026888604353393086,
+      "share_ge3_minus_activity_chance_ci95_by_mouse": [
+        0.014799928682094288,
+        0.061873724053724044
+      ],
+      "n_mice": 44,
+      "share_ge3_by_group": {
+        "ORX": 0.01680672268907563,
+        "OVX": 0.07058823529411765,
+        "MALE": 0.06572769953051644,
+        "DI": 0.125
+      },
+      "n_events_by_group": {
+        "ORX": 238,
+        "OVX": 170,
+        "MALE": 213,
+        "DI": 160
+      },
+      "empty_span_share": 0.7784891165172856,
+      "near_coactive_1s_share": 0.21895006402048656,
+      "near_coactive_3s_share": 0.382842509603073,
+      "activity_random_near_coactive_1s_share": 0.0764404609475032,
+      "activity_random_near_coactive_3s_share": 0.13137003841229195,
+      "edge_within_5s_share": 0.0076824583866837385,
+      "edge_within_12.8s_share": 0.012804097311139564,
+      "edge_within_5s_uniform_expectation": 0.008392611430537126,
+      "edge_within_12.8s_uniform_expectation": 0.02148508526217505,
+      "participation_1s_median": 2.0,
+      "participation_1s_share_ge3": 0.30217669654289375,
+      "random_participation_1s_median": 0.0,
+      "random_1s_share_ge3": 0.11613316261203585,
+      "top_pair_share_median": 0.3333333333333333,
+      "n_recordings_with_pairs": 6,
+      "events_per_run": 260.3333333333333
+    },
+    "supervised line_bound label-free": {
+      "on_rigid_shift_J_sec": null,
+      "events_per_10min": 4.63750748951468,
+      "n_events": 2322,
+      "n_runs": 3,
+      "participation_median": 5.0,
+      "participation_share_ge3": 0.8135228251507322,
+      "participation_share_le2": 0.18647717484926787,
+      "random_participation_median": 0.0,
+      "random_share_ge3": 0.06916451335055986,
+      "activity_random_participation_median": 0.0,
+      "activity_random_share_ge3": 0.13083548664944014,
+      "share_ge3_minus_activity_chance_ci95_by_mouse": [
+        0.6220111428145461,
+        0.7275893192451609
+      ],
+      "n_mice": 44,
+      "share_ge3_by_group": {
+        "MALE": 0.8569206842923794,
+        "ORX": 0.4582043343653251,
+        "OVX": 0.7109826589595376,
+        "DI": 0.9346534653465347
+      },
+      "n_events_by_group": {
+        "MALE": 643,
+        "ORX": 323,
+        "OVX": 346,
+        "DI": 1010
+      },
+      "empty_span_share": 0.040051679586563305,
+      "near_coactive_1s_share": 0.7850990525409131,
+      "near_coactive_3s_share": 0.788975021533161,
+      "activity_random_near_coactive_1s_share": 0.2569767441860465,
+      "activity_random_near_coactive_3s_share": 0.4325581395348837,
+      "edge_within_5s_share": 0.056847545219638244,
+      "edge_within_12.8s_share": 0.06718346253229975,
+      "edge_within_5s_uniform_expectation": 0.008392611430537126,
+      "edge_within_12.8s_uniform_expectation": 0.02148508526217505,
+      "participation_1s_median": 5.0,
+      "participation_1s_share_ge3": 0.8901808785529716,
+      "random_participation_1s_median": 1.0,
+      "random_1s_share_ge3": 0.21343669250645994,
+      "top_pair_share_median": 0.5,
+      "n_recordings_with_pairs": 28,
+      "events_per_run": 774.0
+    },
+    "supervised line_bound bake-off threshold": {
+      "on_rigid_shift_J_sec": null,
+      "events_per_10min": 7.31775514280008,
+      "n_events": 3664,
+      "n_runs": 3,
+      "participation_median": 4.0,
+      "participation_share_ge3": 0.7647379912663755,
+      "participation_share_le2": 0.23526200873362446,
+      "random_participation_median": 0.0,
+      "random_share_ge3": 0.09975436681222707,
+      "activity_random_participation_median": 1.0,
+      "activity_random_share_ge3": 0.15794213973799126,
+      "share_ge3_minus_activity_chance_ci95_by_mouse": [
+        0.5421761589213384,
+        0.6642348323973295
+      ],
+      "n_mice": 40,
+      "share_ge3_by_group": {
+        "MALE": 0.7520408163265306,
+        "ORX": 0.594017094017094,
+        "OVX": 0.6633499170812603,
+        "DI": 0.826204656199242
+      },
+      "n_events_by_group": {
+        "MALE": 980,
+        "ORX": 234,
+        "OVX": 603,
+        "DI": 1847
+      },
+      "empty_span_share": 0.02074235807860262,
+      "near_coactive_1s_share": 0.7197052401746725,
+      "near_coactive_3s_share": 0.7295305676855895,
+      "activity_random_near_coactive_1s_share": 0.2908024017467249,
+      "activity_random_near_coactive_3s_share": 0.47707423580786024,
+      "edge_within_5s_share": 0.018558951965065504,
+      "edge_within_12.8s_share": 0.035753275109170306,
+      "edge_within_5s_uniform_expectation": 0.008392611430537126,
+      "edge_within_12.8s_uniform_expectation": 0.02148508526217505,
+      "participation_1s_median": 5.0,
+      "participation_1s_share_ge3": 0.8665393013100436,
+      "random_participation_1s_median": 1.0,
+      "random_1s_share_ge3": 0.2813045851528384,
+      "top_pair_share_median": 0.3333333333333333,
+      "n_recordings_with_pairs": 64,
+      "events_per_run": 1221.3333333333333
+    },
+    "supervised line_bound label-free, on its rigid shift": {
+      "on_rigid_shift_J_sec": 10.0,
+      "events_per_10min": 1.511883363291392,
+      "n_events": 757,
+      "n_runs": 3,
+      "participation_median": 2.0,
+      "participation_share_ge3": 0.43989431968295906,
+      "participation_share_le2": 0.560105680317041,
+      "random_participation_median": 0.0,
+      "random_share_ge3": 0.023778071334214,
+      "activity_random_participation_median": 0.0,
+      "activity_random_share_ge3": 0.04332892998678996,
+      "share_ge3_minus_activity_chance_ci95_by_mouse": [
+        0.32168260694585826,
+        0.4698621455122301
+      ],
+      "n_mice": 44,
+      "share_ge3_by_group": {
+        "MALE": 0.5169082125603864,
+        "ORX": 0.19457013574660634,
+        "OVX": 0.5,
+        "DI": 0.6241610738255033
+      },
+      "n_events_by_group": {
+        "MALE": 207,
+        "ORX": 221,
+        "OVX": 180,
+        "DI": 149
+      },
+      "empty_span_share": 0.12417437252311757,
+      "near_coactive_1s_share": 0.3513870541611625,
+      "near_coactive_3s_share": 0.35667107001321,
+      "activity_random_near_coactive_1s_share": 0.08533685601056804,
+      "activity_random_near_coactive_3s_share": 0.15165125495376486,
+      "edge_within_5s_share": 0.10171730515191546,
+      "edge_within_12.8s_share": 0.13210039630118892,
+      "edge_within_5s_uniform_expectation": 0.008392611430537126,
+      "edge_within_12.8s_uniform_expectation": 0.02148508526217505,
+      "participation_1s_median": 3.0,
+      "participation_1s_share_ge3": 0.6578599735799208,
+      "random_participation_1s_median": 1.0,
+      "random_1s_share_ge3": 0.12549537648612946,
+      "top_pair_share_median": 0.3333333333333333,
+      "n_recordings_with_pairs": 19,
+      "events_per_run": 252.33333333333334
+    },
+    "ssl line_bound J10": {
+      "on_rigid_shift_J_sec": null,
+      "events_per_10min": 6.333133612941881,
+      "n_events": 3171,
+      "n_runs": 3,
+      "participation_median": 0.0,
+      "participation_share_ge3": 0.20340586565752128,
+      "participation_share_le2": 0.7965941343424787,
+      "random_participation_median": 0.0,
+      "random_share_ge3": 0.13241879533270262,
+      "activity_random_participation_median": 1.0,
+      "activity_random_share_ge3": 0.20728476821192052,
+      "share_ge3_minus_activity_chance_ci95_by_mouse": [
+        -0.02984150992847867,
+        0.023611602190139077
+      ],
+      "n_mice": 44,
+      "share_ge3_by_group": {
+        "ORX": 0.07225433526011561,
+        "OVX": 0.14015151515151514,
+        "MALE": 0.2206896551724138,
+        "DI": 0.24807288016818502
+      },
+      "n_events_by_group": {
+        "ORX": 346,
+        "OVX": 528,
+        "MALE": 870,
+        "DI": 1427
+      },
+      "empty_span_share": 0.6099022390413119,
+      "near_coactive_1s_share": 0.44906969410280667,
+      "near_coactive_3s_share": 0.7256385998107853,
+      "activity_random_near_coactive_1s_share": 0.3064963733837906,
+      "activity_random_near_coactive_3s_share": 0.47969094922737304,
+      "edge_within_5s_share": 0.027751497950173447,
+      "edge_within_12.8s_share": 0.049511195206559444,
+      "edge_within_5s_uniform_expectation": 0.008392611430537126,
+      "edge_within_12.8s_uniform_expectation": 0.02148508526217505,
+      "participation_1s_median": 2.0,
+      "participation_1s_share_ge3": 0.48312835067801957,
+      "random_participation_1s_median": 1.0,
+      "random_1s_share_ge3": 0.2828445285398928,
+      "top_pair_share_median": 0.25,
+      "n_recordings_with_pairs": 47,
+      "events_per_run": 1057.0
+    },
+    "ssl line_bound J10, on its rigid shift": {
+      "on_rigid_shift_J_sec": 10.0,
+      "events_per_10min": 1.5777910924705412,
+      "n_events": 790,
+      "n_runs": 3,
+      "participation_median": 0.0,
+      "participation_share_ge3": 0.08354430379746836,
+      "participation_share_le2": 0.9164556962025316,
+      "random_participation_median": 0.0,
+      "random_share_ge3": 0.02721518987341772,
+      "activity_random_participation_median": 0.0,
+      "activity_random_share_ge3": 0.05012658227848101,
+      "share_ge3_minus_activity_chance_ci95_by_mouse": [
+        0.015091981132075475,
+        0.05138693604905825
+      ],
+      "n_mice": 44,
+      "share_ge3_by_group": {
+        "ORX": 0.03153153153153153,
+        "OVX": 0.07142857142857142,
+        "MALE": 0.08547008547008547,
+        "DI": 0.16265060240963855
+      },
+      "n_events_by_group": {
+        "ORX": 222,
+        "OVX": 168,
+        "MALE": 234,
+        "DI": 166
+      },
+      "empty_span_share": 0.6759493670886076,
+      "near_coactive_1s_share": 0.2,
+      "near_coactive_3s_share": 0.35063291139240504,
+      "activity_random_near_coactive_1s_share": 0.08506329113924051,
+      "activity_random_near_coactive_3s_share": 0.15468354430379747,
+      "edge_within_5s_share": 0.04810126582278481,
+      "edge_within_12.8s_share": 0.08607594936708861,
+      "edge_within_5s_uniform_expectation": 0.008392611430537126,
+      "edge_within_12.8s_uniform_expectation": 0.02148508526217505,
+      "participation_1s_median": 1.0,
+      "participation_1s_share_ge3": 0.2810126582278481,
+      "random_participation_1s_median": 1.0,
+      "random_1s_share_ge3": 0.12417721518987342,
+      "top_pair_share_median": 0.3333333333333333,
+      "n_recordings_with_pairs": 1,
+      "events_per_run": 263.3333333333333
+    },
+    "ssl line_bound J20": {
+      "on_rigid_shift_J_sec": null,
+      "events_per_10min": 6.261234272019173,
+      "n_events": 3135,
+      "n_runs": 3,
+      "participation_median": 0.0,
+      "participation_share_ge3": 0.17575757575757575,
+      "participation_share_le2": 0.8242424242424242,
+      "random_participation_median": 0.0,
+      "random_share_ge3": 0.11346092503987242,
+      "activity_random_participation_median": 1.0,
+      "activity_random_share_ge3": 0.1769377990430622,
+      "share_ge3_minus_activity_chance_ci95_by_mouse": [
+        -0.03334892294257815,
+        0.03344363785507778
+      ],
+      "n_mice": 44,
+      "share_ge3_by_group": {
+        "ORX": 0.06845965770171149,
+        "OVX": 0.11666666666666667,
+        "MALE": 0.14534883720930233,
+        "DI": 0.2413554633471646
+      },
+      "n_events_by_group": {
+        "ORX": 409,
+        "OVX": 420,
+        "MALE": 860,
+        "DI": 1446
+      },
+      "empty_span_share": 0.6188197767145136,
+      "near_coactive_1s_share": 0.34800637958532693,
+      "near_coactive_3s_share": 0.671451355661882,
+      "activity_random_near_coactive_1s_share": 0.2938755980861244,
+      "activity_random_near_coactive_3s_share": 0.4733652312599681,
+      "edge_within_5s_share": 0.011483253588516746,
+      "edge_within_12.8s_share": 0.03094098883572568,
+      "edge_within_5s_uniform_expectation": 0.008392611430537126,
+      "edge_within_12.8s_uniform_expectation": 0.02148508526217505,
+      "participation_1s_median": 2.0,
+      "participation_1s_share_ge3": 0.41818181818181815,
+      "random_participation_1s_median": 1.0,
+      "random_1s_share_ge3": 0.2721212121212121,
+      "top_pair_share_median": 0.3333333333333333,
+      "n_recordings_with_pairs": 45,
+      "events_per_run": 1045.0
+    },
+    "ssl line_bound J20, on its rigid shift": {
+      "on_rigid_shift_J_sec": 20.0,
+      "events_per_10min": 1.481925304573597,
+      "n_events": 742,
+      "n_runs": 3,
+      "participation_median": 0.0,
+      "participation_share_ge3": 0.057951482479784364,
+      "participation_share_le2": 0.9420485175202157,
+      "random_participation_median": 0.0,
+      "random_share_ge3": 0.0238544474393531,
+      "activity_random_participation_median": 0.0,
+      "activity_random_share_ge3": 0.03840970350404313,
+      "share_ge3_minus_activity_chance_ci95_by_mouse": [
+        0.000818216224199682,
+        0.04091164453524003
+      ],
+      "n_mice": 44,
+      "share_ge3_by_group": {
+        "ORX": 0.0091324200913242,
+        "OVX": 0.052941176470588235,
+        "MALE": 0.04326923076923077,
+        "DI": 0.15862068965517243
+      },
+      "n_events_by_group": {
+        "ORX": 219,
+        "OVX": 170,
+        "MALE": 208,
+        "DI": 145
+      },
+      "empty_span_share": 0.7304582210242587,
+      "near_coactive_1s_share": 0.1334231805929919,
+      "near_coactive_3s_share": 0.35983827493261455,
+      "activity_random_near_coactive_1s_share": 0.07695417789757412,
+      "activity_random_near_coactive_3s_share": 0.14433962264150943,
+      "edge_within_5s_share": 0.005390835579514825,
+      "edge_within_12.8s_share": 0.025606469002695417,
+      "edge_within_5s_uniform_expectation": 0.008392611430537126,
+      "edge_within_12.8s_uniform_expectation": 0.02148508526217505,
+      "participation_1s_median": 1.0,
+      "participation_1s_share_ge3": 0.2223719676549865,
+      "random_participation_1s_median": 1.0,
+      "random_1s_share_ge3": 0.13584905660377358,
+      "top_pair_share_median": 0.41666666666666663,
+      "n_recordings_with_pairs": 4,
+      "events_per_run": 247.33333333333334
+    },
+    "baseline count_share label-free": {
+      "on_rigid_shift_J_sec": null,
+      "events_per_10min": 3.7387657279808266,
+      "n_events": 624,
+      "n_runs": 1,
+      "participation_median": 6.0,
+      "participation_share_ge3": 0.9599358974358975,
+      "participation_share_le2": 0.04006410256410257,
+      "random_participation_median": 0.0,
+      "random_share_ge3": 0.06570512820512821,
+      "activity_random_participation_median": 0.0,
+      "activity_random_share_ge3": 0.12115384615384615,
+      "share_ge3_minus_activity_chance_ci95_by_mouse": [
+        0.8020977482647429,
+        0.8712096400774162
+      ],
+      "n_mice": 42,
+      "share_ge3_by_group": {
+        "MALE": 0.9424083769633508,
+        "ORX": 0.76,
+        "OVX": 0.9649122807017544,
+        "DI": 1.0
+      },
+      "n_events_by_group": {
+        "MALE": 191,
+        "ORX": 50,
+        "OVX": 57,
+        "DI": 326
+      },
+      "empty_span_share": 0.03685897435897436,
+      "near_coactive_1s_share": 0.9599358974358975,
+      "near_coactive_3s_share": 0.9599358974358975,
+      "activity_random_near_coactive_1s_share": 0.2939102564102564,
+      "activity_random_near_coactive_3s_share": 0.5139423076923076,
+      "edge_within_5s_share": 0.035256410256410256,
+      "edge_within_12.8s_share": 0.05448717948717949,
+      "edge_within_5s_uniform_expectation": 0.008392611430537125,
+      "edge_within_12.8s_uniform_expectation": 0.021485085262175057,
+      "participation_1s_median": 7.0,
+      "participation_1s_share_ge3": 0.9631410256410257,
+      "random_participation_1s_median": 1.0,
+      "random_1s_share_ge3": 0.2512820512820513,
+      "top_pair_share_median": 0.4583333333333333,
+      "n_recordings_with_pairs": 4,
+      "events_per_run": 624.0
+    },
+    "baseline count_share label-free, on its rigid shift": {
+      "on_rigid_shift_J_sec": 10.0,
+      "events_per_10min": 0.4134212103055722,
+      "n_events": 69,
+      "n_runs": 1,
+      "participation_median": 3.0,
+      "participation_share_ge3": 0.7391304347826086,
+      "participation_share_le2": 0.2608695652173913,
+      "random_participation_median": 0.0,
+      "random_share_ge3": 0.021739130434782608,
+      "activity_random_participation_median": 0.0,
+      "activity_random_share_ge3": 0.03768115942028986,
+      "share_ge3_minus_activity_chance_ci95_by_mouse": [
+        0.5458035714285714,
+        0.8349798224374494
+      ],
+      "n_mice": 30,
+      "share_ge3_by_group": {
+        "MALE": 0.75,
+        "ORX": 0.35714285714285715,
+        "OVX": 0.8235294117647058,
+        "DI": 1.0
+      },
+      "n_events_by_group": {
+        "MALE": 24,
+        "ORX": 14,
+        "OVX": 17,
+        "DI": 14
+      },
+      "empty_span_share": 0.10144927536231885,
+      "near_coactive_1s_share": 0.7391304347826086,
+      "near_coactive_3s_share": 0.7391304347826086,
+      "activity_random_near_coactive_1s_share": 0.12318840579710146,
+      "activity_random_near_coactive_3s_share": 0.2,
+      "edge_within_5s_share": 0.057971014492753624,
+      "edge_within_12.8s_share": 0.08695652173913043,
+      "edge_within_5s_uniform_expectation": 0.008392611430537125,
+      "edge_within_12.8s_uniform_expectation": 0.021485085262175057,
+      "participation_1s_median": 4.0,
+      "participation_1s_share_ge3": 0.782608695652174,
+      "random_participation_1s_median": 0.0,
+      "random_1s_share_ge3": 0.13043478260869565,
+      "top_pair_share_median": 0.25,
+      "n_recordings_with_pairs": 1,
+      "events_per_run": 69.0
+    },
+    "baseline count_excess label-free": {
+      "on_rigid_shift_J_sec": null,
+      "events_per_10min": 6.285200718993409,
+      "n_events": 1049,
+      "n_runs": 1,
+      "participation_median": 5.0,
+      "participation_share_ge3": 0.9027645376549094,
+      "participation_share_le2": 0.09723546234509056,
+      "random_participation_median": 0.0,
+      "random_share_ge3": 0.06606291706387035,
+      "activity_random_participation_median": 0.0,
+      "activity_random_share_ge3": 0.11487130600571974,
+      "share_ge3_minus_activity_chance_ci95_by_mouse": [
+        0.7342748766849436,
+        0.8238325883522883
+      ],
+      "n_mice": 43,
+      "share_ge3_by_group": {
+        "MALE": 0.8884892086330936,
+        "ORX": 0.5576923076923077,
+        "OVX": 0.864516129032258,
+        "DI": 0.9921875
+      },
+      "n_events_by_group": {
+        "MALE": 278,
+        "ORX": 104,
+        "OVX": 155,
+        "DI": 512
+      },
+      "empty_span_share": 0.06863679694947569,
+      "near_coactive_1s_share": 0.9027645376549094,
+      "near_coactive_3s_share": 0.9027645376549094,
+      "activity_random_near_coactive_1s_share": 0.28207816968541466,
+      "activity_random_near_coactive_3s_share": 0.4828408007626311,
+      "edge_within_5s_share": 0.0219256434699714,
+      "edge_within_12.8s_share": 0.04003813155386082,
+      "edge_within_5s_uniform_expectation": 0.008392611430537125,
+      "edge_within_12.8s_uniform_expectation": 0.021485085262175057,
+      "participation_1s_median": 6.0,
+      "participation_1s_share_ge3": 0.9075309818875119,
+      "random_participation_1s_median": 1.0,
+      "random_1s_share_ge3": 0.2530981887511916,
+      "top_pair_share_median": 0.6666666666666666,
+      "n_recordings_with_pairs": 15,
+      "events_per_run": 1049.0
+    },
+    "baseline count_excess label-free, on its rigid shift": {
+      "on_rigid_shift_J_sec": 10.0,
+      "events_per_10min": 1.5398442180946674,
+      "n_events": 257,
+      "n_runs": 1,
+      "participation_median": 3.0,
+      "participation_share_ge3": 0.6459143968871596,
+      "participation_share_le2": 0.3540856031128405,
+      "random_participation_median": 0.0,
+      "random_share_ge3": 0.017120622568093387,
+      "activity_random_participation_median": 0.0,
+      "activity_random_share_ge3": 0.03385214007782101,
+      "share_ge3_minus_activity_chance_ci95_by_mouse": [
+        0.49649126349019895,
+        0.7191702127659575
+      ],
+      "n_mice": 41,
+      "share_ge3_by_group": {
+        "MALE": 0.726027397260274,
+        "ORX": 0.19047619047619047,
+        "OVX": 0.7,
+        "DI": 0.9672131147540983
+      },
+      "n_events_by_group": {
+        "MALE": 73,
+        "ORX": 63,
+        "OVX": 60,
+        "DI": 61
+      },
+      "empty_span_share": 0.15953307392996108,
+      "near_coactive_1s_share": 0.642023346303502,
+      "near_coactive_3s_share": 0.642023346303502,
+      "activity_random_near_coactive_1s_share": 0.08715953307392996,
+      "activity_random_near_coactive_3s_share": 0.16186770428015565,
+      "edge_within_5s_share": 0.007782101167315175,
+      "edge_within_12.8s_share": 0.03501945525291829,
+      "edge_within_5s_uniform_expectation": 0.008392611430537125,
+      "edge_within_12.8s_uniform_expectation": 0.021485085262175057,
+      "participation_1s_median": 3.0,
+      "participation_1s_share_ge3": 0.6575875486381323,
+      "random_participation_1s_median": 1.0,
+      "random_1s_share_ge3": 0.13073929961089495,
+      "top_pair_share_median": 0.6666666666666666,
+      "n_recordings_with_pairs": 9,
+      "events_per_run": 257.0
+    },
+    "baseline slow_modulation label-free": {
+      "on_rigid_shift_J_sec": null,
+      "events_per_10min": 1.8334331935290593,
+      "n_events": 306,
+      "n_runs": 1,
+      "participation_median": 3.0,
+      "participation_share_ge3": 0.5228758169934641,
+      "participation_share_le2": 0.477124183006536,
+      "random_participation_median": 1.0,
+      "random_share_ge3": 0.21862745098039216,
+      "activity_random_participation_median": 1.0,
+      "activity_random_share_ge3": 0.31176470588235294,
+      "share_ge3_minus_activity_chance_ci95_by_mouse": [
+        0.1703880258663652,
+        0.2515182421526823
+      ],
+      "n_mice": 44,
+      "share_ge3_by_group": {
+        "MALE": 0.5256410256410257,
+        "ORX": 0.2903225806451613,
+        "OVX": 0.46551724137931033,
+        "DI": 0.6851851851851852
+      },
+      "n_events_by_group": {
+        "MALE": 78,
+        "ORX": 62,
+        "OVX": 58,
+        "DI": 108
+      },
+      "empty_span_share": 0.2581699346405229,
+      "near_coactive_1s_share": 0.5882352941176471,
+      "near_coactive_3s_share": 0.673202614379085,
+      "activity_random_near_coactive_1s_share": 0.2849673202614379,
+      "activity_random_near_coactive_3s_share": 0.3957516339869281,
+      "edge_within_5s_share": 0.06535947712418301,
+      "edge_within_12.8s_share": 0.09803921568627451,
+      "edge_within_5s_uniform_expectation": 0.008392611430537125,
+      "edge_within_12.8s_uniform_expectation": 0.021485085262175057,
+      "participation_1s_median": 5.0,
+      "participation_1s_share_ge3": 0.6993464052287581,
+      "random_participation_1s_median": 1.0,
+      "random_1s_share_ge3": 0.3277777777777778,
+      "top_pair_share_median": 0.5,
+      "n_recordings_with_pairs": 2,
+      "events_per_run": 306.0
+    },
+    "baseline slow_modulation label-free, on its rigid shift": {
+      "on_rigid_shift_J_sec": 10.0,
+      "events_per_10min": 1.2522468544038345,
+      "n_events": 209,
+      "n_runs": 1,
+      "participation_median": 2.0,
+      "participation_share_ge3": 0.44976076555023925,
+      "participation_share_le2": 0.5502392344497608,
+      "random_participation_median": 1.0,
+      "random_share_ge3": 0.16507177033492823,
+      "activity_random_participation_median": 1.0,
+      "activity_random_share_ge3": 0.2507177033492823,
+      "share_ge3_minus_activity_chance_ci95_by_mouse": [
+        0.14836204282515392,
+        0.2494961078676675
+      ],
+      "n_mice": 44,
+      "share_ge3_by_group": {
+        "MALE": 0.3877551020408163,
+        "ORX": 0.2545454545454545,
+        "OVX": 0.4090909090909091,
+        "DI": 0.7049180327868853
+      },
+      "n_events_by_group": {
+        "MALE": 49,
+        "ORX": 55,
+        "OVX": 44,
+        "DI": 61
+      },
+      "empty_span_share": 0.20574162679425836,
+      "near_coactive_1s_share": 0.37320574162679426,
+      "near_coactive_3s_share": 0.42105263157894735,
+      "activity_random_near_coactive_1s_share": 0.1215311004784689,
+      "activity_random_near_coactive_3s_share": 0.17703349282296652,
+      "edge_within_5s_share": 0.03827751196172249,
+      "edge_within_12.8s_share": 0.05263157894736842,
+      "edge_within_5s_uniform_expectation": 0.008392611430537125,
+      "edge_within_12.8s_uniform_expectation": 0.021485085262175057,
+      "participation_1s_median": 3.0,
+      "participation_1s_share_ge3": 0.6028708133971292,
+      "random_participation_1s_median": 1.0,
+      "random_1s_share_ge3": 0.24497607655502393,
+      "top_pair_share_median": null,
+      "n_recordings_with_pairs": 0,
+      "events_per_run": 209.0
     }
   },
   "agreement": {
     "coact -> loco": {
-      "share": 0.70509977827051,
-      "chance": 0.05875831485587597,
+      "share": 0.7804878048780488,
+      "chance": 0.073059866962306,
       "n": 451
     },
     "loco -> coact": {
-      "share": 0.7738927738927739,
-      "chance": 0.0679487179487181,
-      "n": 429
+      "share": 0.5909822866344605,
+      "chance": 0.0588566827697262,
+      "n": 621
     },
     "supervised tube label-free -> coact": {
-      "share": 0.47297881539126674,
-      "chance": 0.05177258971033234,
-      "n": 2313
+      "share": 0.4715909090909091,
+      "chance": 0.052403846153845565,
+      "n": 2288
     },
     "supervised tube label-free -> loco": {
-      "share": 0.4280155642023346,
-      "chance": 0.03179853004755698,
-      "n": 2313
+      "share": 0.5257867132867133,
+      "chance": 0.04326923076923022,
+      "n": 2288
     },
     "coact -> supervised tube label-free": {
-      "share": 0.8292682926829268,
-      "chance": 0.09135254988913524,
-      "n": 451
+      "share": 0.7908351810790836,
+      "chance": 0.08924611973392414,
+      "n": 1353
     },
     "loco -> supervised tube label-free": {
-      "share": 0.8018648018648019,
-      "chance": 0.0672494172494174,
-      "n": 429
+      "share": 0.6462694578636607,
+      "chance": 0.052388620504561896,
+      "n": 1863
     },
     "supervised tube bake-off threshold -> coact": {
       "share": 0.32913337430854334,
-      "chance": 0.047280270436385864,
+      "chance": 0.04718807621389035,
       "n": 3254
     },
     "supervised tube bake-off threshold -> loco": {
-      "share": 0.30762138905961894,
-      "chance": 0.03146896127842602,
+      "share": 0.3887523048555624,
+      "chance": 0.044760295021511715,
       "n": 3254
     },
     "coact -> supervised tube bake-off threshold": {
-      "share": 0.8713968957871396,
-      "chance": 0.12716186252771616,
-      "n": 451
+      "share": 0.7841832963784183,
+      "chance": 0.11167775314116792,
+      "n": 1353
     },
     "loco -> supervised tube bake-off threshold": {
-      "share": 0.8764568764568764,
-      "chance": 0.09615384615384609,
-      "n": 429
+      "share": 0.679549114331723,
+      "chance": 0.07979066022544289,
+      "n": 1863
     },
     "ssl tube J10 -> coact": {
-      "share": 0.25237793278376663,
-      "chance": 0.047891566265059984,
-      "n": 3154
+      "share": 0.24517374517374518,
+      "chance": 0.04634813384813354,
+      "n": 3108
     },
     "ssl tube J10 -> loco": {
-      "share": 0.20862396956246038,
-      "chance": 0.03541534559289737,
-      "n": 3154
+      "share": 0.2625482625482625,
+      "chance": 0.047377734877734695,
+      "n": 3108
     },
     "coact -> ssl tube J10": {
-      "share": 0.6740576496674058,
-      "chance": 0.11940133037694006,
-      "n": 451
+      "share": 0.5269770879526977,
+      "chance": 0.10025868440502556,
+      "n": 1353
     },
     "loco -> ssl tube J10": {
-      "share": 0.7272727272727273,
-      "chance": 0.09137529137529127,
-      "n": 429
+      "share": 0.4428341384863124,
+      "chance": 0.080756843800322,
+      "n": 1863
     },
     "ssl tube J20 -> coact": {
-      "share": 0.2788563360395341,
-      "chance": 0.054341687257324356,
-      "n": 2833
+      "share": 0.27826699542092287,
+      "chance": 0.05387460373370895,
+      "n": 2839
     },
     "ssl tube J20 -> loco": {
-      "share": 0.1817860924814684,
-      "chance": 0.03443346276032427,
-      "n": 2833
+      "share": 0.22824938358576963,
+      "chance": 0.04677703416695974,
+      "n": 2839
     },
     "coact -> ssl tube J20": {
-      "share": 0.4567627494456763,
-      "chance": 0.11751662971175159,
-      "n": 451
+      "share": 0.5336289726533628,
+      "chance": 0.10846267553584614,
+      "n": 1353
     },
     "loco -> ssl tube J20": {
-      "share": 0.358974358974359,
-      "chance": 0.08368298368298366,
-      "n": 429
+      "share": 0.34728931830381105,
+      "chance": 0.07171229200214664,
+      "n": 1863
     },
     "supervised tube_guard label-free -> coact": {
-      "share": 0.4623055444754687,
-      "chance": 0.05438771439968069,
-      "n": 2507
+      "share": 0.46288743882544864,
+      "chance": 0.052977161500815224,
+      "n": 2452
     },
     "supervised tube_guard label-free -> loco": {
-      "share": 0.43478260869565216,
-      "chance": 0.03709613083366525,
-      "n": 2507
+      "share": 0.5432300163132137,
+      "chance": 0.04553425774877591,
+      "n": 2452
     },
     "coact -> supervised tube_guard label-free": {
-      "share": 0.8536585365853658,
-      "chance": 0.10565410199556531,
-      "n": 451
+      "share": 0.8248337028824834,
+      "chance": 0.09604582409460397,
+      "n": 1353
     },
     "loco -> supervised tube_guard label-free": {
-      "share": 0.8717948717948718,
-      "chance": 0.07319347319347333,
-      "n": 429
+      "share": 0.714975845410628,
+      "chance": 0.061460010735372314,
+      "n": 1863
     },
     "supervised tube_guard bake-off threshold -> coact": {
       "share": 0.33244444444444443,
-      "chance": 0.04668148148148141,
+      "chance": 0.04712592592592602,
       "n": 3375
     },
     "supervised tube_guard bake-off threshold -> loco": {
-      "share": 0.32266666666666666,
-      "chance": 0.03401481481481422,
+      "share": 0.41185185185185186,
+      "chance": 0.04874074074074093,
       "n": 3375
     },
     "coact -> supervised tube_guard bake-off threshold": {
-      "share": 0.7960088691796009,
-      "chance": 0.1070953436807095,
-      "n": 451
+      "share": 0.8100517368810052,
+      "chance": 0.11337767923133762,
+      "n": 1353
     },
     "loco -> supervised tube_guard bake-off threshold": {
-      "share": 0.8484848484848485,
-      "chance": 0.08799533799533801,
-      "n": 429
+      "share": 0.7461084272678475,
+      "chance": 0.09229736983360148,
+      "n": 1863
     },
     "ssl tube_guard J10 -> coact": {
-      "share": 0.2796427471512165,
-      "chance": 0.05218663381583005,
-      "n": 3247
+      "share": 0.27789537345025705,
+      "chance": 0.05385545811914128,
+      "n": 3307
     },
     "ssl tube_guard J10 -> loco": {
-      "share": 0.227594702802587,
-      "chance": 0.038527871881736404,
-      "n": 3247
+      "share": 0.27970970668279405,
+      "chance": 0.05185969156335053,
+      "n": 3307
     },
     "coact -> ssl tube_guard J10": {
-      "share": 0.6674057649667405,
-      "chance": 0.1259423503325942,
-      "n": 451
+      "share": 0.6223207686622321,
+      "chance": 0.12302291204730209,
+      "n": 1353
     },
     "loco -> ssl tube_guard J10": {
-      "share": 0.7738927738927739,
-      "chance": 0.09662004662004652,
-      "n": 429
+      "share": 0.5067096081588836,
+      "chance": 0.09251207729468576,
+      "n": 1863
     },
     "ssl tube_guard J20 -> coact": {
-      "share": 0.24030075187969924,
-      "chance": 0.05037593984962422,
-      "n": 3325
+      "share": 0.23952451708766717,
+      "chance": 0.05074294205052036,
+      "n": 3365
     },
     "ssl tube_guard J20 -> loco": {
-      "share": 0.18285714285714286,
-      "chance": 0.03603007518796933,
-      "n": 3325
+      "share": 0.22704309063893016,
+      "chance": 0.050193164933135276,
+      "n": 3365
     },
     "coact -> ssl tube_guard J20": {
-      "share": 0.5432372505543237,
-      "chance": 0.13292682926829263,
-      "n": 451
+      "share": 0.5454545454545454,
+      "chance": 0.122172949002217,
+      "n": 1353
     },
     "loco -> ssl tube_guard J20": {
-      "share": 0.5454545454545454,
-      "chance": 0.09965034965034957,
-      "n": 429
+      "share": 0.4133118625872249,
+      "chance": 0.08727858293075648,
+      "n": 1863
     },
     "supervised line label-free -> coact": {
-      "share": 0.4438610662358643,
-      "chance": 0.05470516962843268,
-      "n": 2476
+      "share": 0.44710174300770167,
+      "chance": 0.055695176327523056,
+      "n": 2467
     },
     "supervised line label-free -> loco": {
-      "share": 0.3990306946688207,
-      "chance": 0.03768174474959569,
-      "n": 2476
+      "share": 0.4989866234292663,
+      "chance": 0.045905958654235336,
+      "n": 2467
     },
     "coact -> supervised line label-free": {
-      "share": 0.7738359201773836,
-      "chance": 0.10099778270509967,
-      "n": 451
+      "share": 0.804138950480414,
+      "chance": 0.09907612712490715,
+      "n": 1353
     },
     "loco -> supervised line label-free": {
-      "share": 0.7575757575757576,
-      "chance": 0.07167832167832183,
-      "n": 429
+      "share": 0.6618357487922706,
+      "chance": 0.06390230810520593,
+      "n": 1863
     },
     "supervised line bake-off threshold -> coact": {
       "share": 0.38828238719068414,
-      "chance": 0.05387554585152813,
+      "chance": 0.0525291120815136,
       "n": 2748
     },
     "supervised line bake-off threshold -> loco": {
-      "share": 0.35662299854439594,
-      "chance": 0.036044395924308074,
+      "share": 0.43631732168850074,
+      "chance": 0.04679767103347835,
       "n": 2748
     },
     "coact -> supervised line bake-off threshold": {
-      "share": 0.8004434589800443,
-      "chance": 0.12228381374722845,
-      "n": 451
+      "share": 0.7782705099778271,
+      "chance": 0.11049519586104914,
+      "n": 1353
     },
     "loco -> supervised line bake-off threshold": {
-      "share": 0.7762237762237763,
-      "chance": 0.08006993006993014,
-      "n": 429
+      "share": 0.644122383252818,
+      "chance": 0.06902844873859305,
+      "n": 1863
     },
     "ssl line J10 -> coact": {
-      "share": 0.27215411558669,
-      "chance": 0.06339754816112131,
-      "n": 2855
+      "share": 0.2712041884816754,
+      "chance": 0.06368237347294994,
+      "n": 2865
     },
     "ssl line J10 -> loco": {
-      "share": 0.19124343257443083,
-      "chance": 0.04476357267950911,
-      "n": 2855
+      "share": 0.2286212914485166,
+      "chance": 0.05783595113438061,
+      "n": 2865
     },
     "coact -> ssl line J10": {
-      "share": 0.6053215077605322,
-      "chance": 0.10975609756097549,
-      "n": 451
+      "share": 0.5964523281596452,
+      "chance": 0.18891352549889184,
+      "n": 1353
     },
     "loco -> ssl line J10": {
-      "share": 0.46853146853146854,
-      "chance": 0.09289044289044271,
-      "n": 429
+      "share": 0.46806226516371446,
+      "chance": 0.1922705314009674,
+      "n": 1863
     },
     "ssl line J20 -> coact": {
-      "share": 0.30452961672473866,
-      "chance": 0.056184668989546986,
-      "n": 2870
+      "share": 0.30698981383912893,
+      "chance": 0.05797330523357918,
+      "n": 2847
     },
     "ssl line J20 -> loco": {
-      "share": 0.25435540069686413,
-      "chance": 0.04130662020905865,
-      "n": 2870
+      "share": 0.3396557780119424,
+      "chance": 0.05735862311204791,
+      "n": 2847
     },
     "coact -> ssl line J20": {
-      "share": 0.7161862527716186,
-      "chance": 0.12139689578713947,
-      "n": 451
+      "share": 0.6851441241685144,
+      "chance": 0.2073170731707317,
+      "n": 1353
     },
     "loco -> ssl line J20": {
-      "share": 0.6783216783216783,
-      "chance": 0.09848484848484843,
-      "n": 429
+      "share": 0.618894256575416,
+      "chance": 0.17866344605475065,
+      "n": 1863
     },
     "supervised line_length label-free -> coact": {
-      "share": 0.4311969839773798,
-      "chance": 0.05355796418473102,
-      "n": 2122
+      "share": 0.4305750350631136,
+      "chance": 0.05191678354371154,
+      "n": 2139
     },
     "supervised line_length label-free -> loco": {
-      "share": 0.38124410933082,
-      "chance": 0.034566446748350355,
-      "n": 2122
+      "share": 0.4749883122954652,
+      "chance": 0.04647031323048101,
+      "n": 2139
     },
     "coact -> supervised line_length label-free": {
-      "share": 0.7450110864745011,
-      "chance": 0.0919068736141906,
-      "n": 451
+      "share": 0.679970436067997,
+      "chance": 0.08584626755358389,
+      "n": 1353
     },
     "loco -> supervised line_length label-free": {
-      "share": 0.6876456876456877,
-      "chance": 0.06247086247086261,
-      "n": 429
+      "share": 0.5453569511540526,
+      "chance": 0.052898550724637124,
+      "n": 1863
     },
     "supervised line_length bake-off threshold -> coact": {
       "share": 0.3670886075949367,
-      "chance": 0.05260836210203267,
+      "chance": 0.052570003835826364,
       "n": 2607
     },
     "supervised line_length bake-off threshold -> loco": {
-      "share": 0.32642884541618716,
-      "chance": 0.03331415420022972,
+      "share": 0.4065976217874952,
+      "chance": 0.04415036440352836,
       "n": 2607
     },
     "coact -> supervised line_length bake-off threshold": {
-      "share": 0.738359201773836,
-      "chance": 0.1092017738359202,
-      "n": 451
+      "share": 0.7065779748706578,
+      "chance": 0.10321507760532117,
+      "n": 1353
     },
     "loco -> supervised line_length bake-off threshold": {
-      "share": 0.6876456876456877,
-      "chance": 0.07109557109557124,
-      "n": 429
+      "share": 0.5689747718733226,
+      "chance": 0.06366076221148627,
+      "n": 1863
     },
     "ssl line_length J10 -> coact": {
-      "share": 0.2832658148956061,
-      "chance": 0.052119040199439214,
-      "n": 3209
+      "share": 0.28002469898116705,
+      "chance": 0.05344242050015453,
+      "n": 3239
     },
     "ssl line_length J10 -> loco": {
-      "share": 0.22717357432221877,
-      "chance": 0.03719227173574268,
-      "n": 3209
+      "share": 0.2710713183081198,
+      "chance": 0.05077184316146958,
+      "n": 3239
     },
     "coact -> ssl line_length J10": {
-      "share": 0.5365853658536586,
-      "chance": 0.11762749445676268,
-      "n": 451
+      "share": 0.6274944567627494,
+      "chance": 0.1221359940872136,
+      "n": 1353
     },
     "loco -> ssl line_length J10": {
-      "share": 0.48484848484848486,
-      "chance": 0.0923076923076923,
-      "n": 429
+      "share": 0.47718733225979604,
+      "chance": 0.0891572732152442,
+      "n": 1863
     },
     "ssl line_length J20 -> coact": {
-      "share": 0.20202320737875631,
-      "chance": 0.05212734305266317,
-      "n": 3361
+      "share": 0.20219064535227946,
+      "chance": 0.051657785671995485,
+      "n": 3378
     },
     "ssl line_length J20 -> loco": {
-      "share": 0.15828622433799464,
-      "chance": 0.03562927700089203,
-      "n": 3361
+      "share": 0.20663114268798105,
+      "chance": 0.04826820603907651,
+      "n": 3378
     },
     "coact -> ssl line_length J20": {
-      "share": 0.3946784922394678,
-      "chance": 0.12328159645232807,
-      "n": 451
+      "share": 0.4796747967479675,
+      "chance": 0.12376201034737609,
+      "n": 1353
     },
     "loco -> ssl line_length J20": {
-      "share": 0.2680652680652681,
-      "chance": 0.09160839160839157,
-      "n": 429
+      "share": 0.38217928073000534,
+      "chance": 0.08880837359098226,
+      "n": 1863
+    },
+    "supervised line_bound label-free -> coact": {
+      "share": 0.46554694229112836,
+      "chance": 0.052282515073212195,
+      "n": 2322
+    },
+    "supervised line_bound label-free -> loco": {
+      "share": 0.520671834625323,
+      "chance": 0.04605943152454724,
+      "n": 2322
+    },
+    "coact -> supervised line_bound label-free": {
+      "share": 0.7923133776792314,
+      "chance": 0.08906134515890554,
+      "n": 1353
+    },
+    "loco -> supervised line_bound label-free": {
+      "share": 0.6489533011272142,
+      "chance": 0.05759527643585543,
+      "n": 1863
+    },
+    "supervised line_bound bake-off threshold -> coact": {
+      "share": 0.31277292576419213,
+      "chance": 0.04773471615720533,
+      "n": 3664
+    },
+    "supervised line_bound bake-off threshold -> loco": {
+      "share": 0.3714519650655022,
+      "chance": 0.04661572052401753,
+      "n": 3664
+    },
+    "coact -> supervised line_bound bake-off threshold": {
+      "share": 0.8366592756836659,
+      "chance": 0.12893569844789357,
+      "n": 1353
+    },
+    "loco -> supervised line_bound bake-off threshold": {
+      "share": 0.7310789049919485,
+      "chance": 0.09530327428878188,
+      "n": 1863
+    },
+    "ssl line_bound J10 -> coact": {
+      "share": 0.2686849574266793,
+      "chance": 0.06286660359508069,
+      "n": 3171
+    },
+    "ssl line_bound J10 -> loco": {
+      "share": 0.2636392305266477,
+      "chance": 0.06184169031851178,
+      "n": 3171
+    },
+    "coact -> ssl line_bound J10": {
+      "share": 0.5609756097560976,
+      "chance": 0.14294161123429416,
+      "n": 1353
+    },
+    "loco -> ssl line_bound J10": {
+      "share": 0.46967257112184646,
+      "chance": 0.10303274288781547,
+      "n": 1863
+    },
+    "ssl line_bound J20 -> coact": {
+      "share": 0.20988835725677832,
+      "chance": 0.05368421052631597,
+      "n": 3135
+    },
+    "ssl line_bound J20 -> loco": {
+      "share": 0.17384370015948963,
+      "chance": 0.052918660287081414,
+      "n": 3135
+    },
+    "coact -> ssl line_bound J20": {
+      "share": 0.4656319290465632,
+      "chance": 0.12095343680709539,
+      "n": 1353
+    },
+    "loco -> ssl line_bound J20": {
+      "share": 0.3070316693505099,
+      "chance": 0.08982823403113242,
+      "n": 1863
+    },
+    "baseline count_share label-free -> coact": {
+      "share": 0.5416666666666666,
+      "chance": 0.052804487179487276,
+      "n": 624
+    },
+    "baseline count_share label-free -> loco": {
+      "share": 0.7003205128205128,
+      "chance": 0.051442307692307856,
+      "n": 624
+    },
+    "coact -> baseline count_share label-free": {
+      "share": 0.7073170731707317,
+      "chance": 0.07361419068736148,
+      "n": 451
+    },
+    "loco -> baseline count_share label-free": {
+      "share": 0.6972624798711755,
+      "chance": 0.05024154589371998,
+      "n": 621
+    },
+    "baseline count_excess label-free -> coact": {
+      "share": 0.3822688274547188,
+      "chance": 0.04537654909437552,
+      "n": 1049
+    },
+    "baseline count_excess label-free -> loco": {
+      "share": 0.5176358436606292,
+      "chance": 0.047330791229742486,
+      "n": 1049
+    },
+    "coact -> baseline count_excess label-free": {
+      "share": 0.844789356984479,
+      "chance": 0.10498891352549877,
+      "n": 451
+    },
+    "loco -> baseline count_excess label-free": {
+      "share": 0.8679549114331723,
+      "chance": 0.07834138486312386,
+      "n": 621
+    },
+    "baseline slow_modulation label-free -> coact": {
+      "share": 0.35947712418300654,
+      "chance": 0.0684640522875818,
+      "n": 306
+    },
+    "baseline slow_modulation label-free -> loco": {
+      "share": 0.3562091503267974,
+      "chance": 0.07532679738562102,
+      "n": 306
+    },
+    "coact -> baseline slow_modulation label-free": {
+      "share": 0.25942350332594233,
+      "chance": 0.048558758314856024,
+      "n": 451
+    },
+    "loco -> baseline slow_modulation label-free": {
+      "share": 0.22705314009661837,
+      "chance": 0.036231884057971155,
+      "n": 621
     }
   },
-  "seconds": 1451.1088390350342,
+  "provenance": {
+    "bugarach_version": "0.1.0",
+    "git_commit": "95ec22989cab7dfda3cea5b5937bc90e14b0dc9e",
+    "git_dirty": false,
+    "code_version": "0.1.0+g95ec229",
+    "python": "3.14.5",
+    "platform": "macOS-26.6.2-arm64-arm-64bit-Mach-O",
+    "produced_by": "tools/tube_ssl_real_compare.py"
+  },
+  "sup_threshold_j_sec": 10.0,
+  "n_random_per_event": 10,
+  "seconds": 5975.206759929657,
   "quick": false
 }
