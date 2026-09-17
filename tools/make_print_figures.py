@@ -431,10 +431,117 @@ def _measure_print(p, det, D, page_measure):
         p.hline(M["bar"], color=BARC, width=1.3, dash="4 3")
 
 
+def fig_scores(W):
+    """Figure 18, the six programs' overall scores on held-out simulated recordings, quiet (A) and busy (B)."""
+    from make_plain_detector_review import BARC, CODED, COLORS, GRID_C, INK_T, NAMES
+    from svgfig import MUTED, Figure
+    numbers = W["_numbers"]
+    dets = list(CODED)
+    f = Figure(PAGE_W, 300)
+    ceil = numbers["f1_ceiling"]
+    TOP, RH = 22, 22 * len(dets)
+    for j, (reg, title) in enumerate((("baseline_quiet", "A · quiet background"),
+                                      ("baseline_busy", "B · busy background"))):
+        X, PW = 76 + j * 200, 178
+        f.text(X, 12, title, size=TITLE_PT, weight=600)
+        p = f.panel(X, TOP, PW, RH, (0, 1), (len(dets) - 0.5, -0.5))
+        for v in (0, 0.2, 0.4, 0.6, 0.8, 1.0):
+            Xv = float(p.px(v))
+            f.line(Xv, TOP, Xv, TOP + RH, color=GRID_C)
+            f.line(Xv, TOP + RH, Xv, TOP + RH + 3, color=MUTED)
+            f.text(Xv, TOP + RH + 12, f"{v:g}", size=TICK_PT, anchor="middle", color=MUTED)
+        Xc = float(p.px(ceil))
+        f.line(Xc, TOP, Xc, TOP + RH, color=BARC, dash="4 3", width=1.1)
+        for i, d in enumerate(dets):
+            v = numbers[f"stored_{reg}_{d}"]
+            Y = float(p.py(i))
+            f.line(float(p.px(v["f1_min"])), Y, float(p.px(v["f1_max"])), Y, color=COLORS[d], width=2.2)
+            f.add(f"<circle cx='{float(p.px(v['f1'])):.1f}' cy='{Y:.1f}' r='4' fill='{COLORS[d]}'/>")
+            if j == 0:
+                f.text(X - 6, Y + 3, NAMES[d], size=LABEL_PT, anchor="end", color=INK_T)
+        f.text(X + PW / 2, TOP + RH + 25, "overall score (0 to 1; higher is better)", size=LABEL_PT,
+               anchor="middle", color=MUTED, italic=True)
+    sr = numbers["stored_rounds"]
+    ky = TOP + RH + 44
+    kx = 76
+    for glyph, col, lab in (("●", INK_T, f"all {sr['n_recordings']} recordings"),
+                            ("━", INK_T, f"lowest to highest of {sr['n_groups']} groups of {sr['per_group']}"),
+                            ("┄", BARC, f"best possible ({ceil:.2f})")):
+        f.text(kx, ky, glyph, size=LABEL_PT, weight=700, color=col)
+        f.text(kx + 11, ky, lab, size=TICK_PT, color=MUTED)
+        kx += 11 + 3.9 * len(lab) + 16
+    f.h = ky + 8
+    return f
+
+
+def fig_busy(W):
+    """Figure 19, the busy stretch: planted events found outside and inside it (A), false alarms inside (B)."""
+    import math
+
+    from make_plain_detector_review import CODED, COLORS, GRID_C, INK_T, NAMES
+    from svgfig import MUTED, Figure
+    numbers = W["_numbers"]
+    b = numbers["blockrecall"]["per_detector"]
+    dets = list(CODED)
+    f = Figure(PAGE_W, 300)
+    n_roi = int(numbers["bench_n_roi"])
+    cells = int(round(0.18 * n_roi))
+    TOP, RH = 34, 22 * len(dets)
+    X, PW = 76, 214
+    f.text(X, 11, f"A · events joined by {cells} of the {n_roi} neurons,", size=TITLE_PT, weight=600)
+    f.text(X, 24, "the usual real size", size=TITLE_PT, weight=600)
+    p = f.panel(X, TOP, PW, RH, (0, 1), (len(dets) - 0.5, -0.5))
+    for v in (0, 0.25, 0.5, 0.75, 1.0):
+        Xv = float(p.px(v))
+        f.line(Xv, TOP, Xv, TOP + RH, color=GRID_C)
+        f.line(Xv, TOP + RH, Xv, TOP + RH + 3, color=MUTED)
+        f.text(Xv, TOP + RH + 12, f"{v:.0%}", size=TICK_PT, anchor="middle", color=MUTED)
+    for i, d in enumerate(dets):
+        v = b[d]["p18"]
+        Y = float(p.py(i))
+        xo, xi = float(p.px(v["outside"])), float(p.px(v["inside"]))
+        f.line(xo, Y, xi, Y, color="#bbb", width=1.6)
+        ch = float(p.px(v["chance"]))
+        f.line(ch, Y - 6, ch, Y + 6, color="#999", width=1.6)
+        f.add(f"<circle cx='{xo:.1f}' cy='{Y:.1f}' r='4' fill='{INK_T}'/>")
+        f.add(f"<circle cx='{xi:.1f}' cy='{Y:.1f}' r='4' fill='#d9730d'/>")
+        f.text(X - 6, Y + 3, NAMES[d], size=LABEL_PT, anchor="end", color=INK_T)
+    f.text(X + PW / 2, TOP + RH + 25, "share of planted events found", size=LABEL_PT, anchor="middle",
+           color=MUTED, italic=True)
+    X2, PW2 = 318, 120
+    f.text(X2, 11, "B · false alarms", size=TITLE_PT, weight=600)
+    f.text(X2, 24, "in the busy stretch", size=TITLE_PT, weight=600)
+    q = f.panel(X2, TOP, PW2, RH, (-2, 1.3), (len(dets) - 0.5, -0.5))
+    for k_, lab in zip((-2, -1, 0, 1), ("0.01", "0.1", "1", "10")):
+        Xv = float(q.px(k_))
+        f.line(Xv, TOP, Xv, TOP + RH, color=GRID_C)
+        f.line(Xv, TOP + RH, Xv, TOP + RH + 3, color=MUTED)
+        f.text(Xv, TOP + RH + 12, lab, size=TICK_PT, anchor="middle", color=MUTED)
+    for i, d in enumerate(dets):
+        cpm = b[d]["calls_per_min"]
+        Y = float(q.py(i))
+        xv = float(q.px(math.log10(max(cpm, 0.01))))
+        f.rect(X2, Y - 5, xv - X2, 10, fill=COLORS[d])
+        f.text(xv + 4, Y + 3, f"{cpm:.2f}" if cpm >= 0.01 else "under 0.01", size=PRINT_MIN_PT, color=INK_T)
+    f.text(X2 + PW2 / 2, TOP + RH + 25, "per minute", size=LABEL_PT, anchor="middle", color=MUTED, italic=True)
+    f.text(X2 + PW2 / 2, TOP + RH + 36, "(each step is ten times more)", size=PRINT_MIN_PT, anchor="middle",
+           color=MUTED, italic=True)
+    ky = TOP + RH + 56
+    kx = 76
+    for glyph, col, lab in (("●", INK_T, "outside the busy stretch"), ("●", "#d9730d", "inside it"),
+                            ("|", "#999", "what calling at random would find inside")):
+        f.text(kx, ky, glyph, size=LABEL_PT, weight=700, color=col)
+        f.text(kx + 9, ky, lab, size=TICK_PT, color=MUTED)
+        kx += 9 + 3.9 * len(lab) + 16
+    f.h = ky + 8
+    return f
+
+
 FIGURES = {"fig_orient": ("fig01_orient", fig_orient), "fig_problem": ("fig02_problem", fig_problem),
            "fig_chance": ("fig03_chance", fig_chance)}
 for _i, _d in enumerate(("rate", "coact", "loco", "sce", "cicada", "sync")):
     FIGURES[f"fig_alg_{_d}"] = (f"fig{10 + _i}_alg_{_d}", lambda W, _d=_d: fig_algorithm(W, _d))
+FIGURES.update({"fig_scores": ("fig18_scores", fig_scores), "fig_busy": ("fig19_busy", fig_busy)})
 
 
 def render(figs: dict, out: Path) -> None:
@@ -458,6 +565,9 @@ def main(argv=None) -> int:
     ap.add_argument("--figs", nargs="+", default=list(FIGURES))
     a = ap.parse_args(argv)
     W = json.loads((a.plain / "_work" / "plain.json").read_text())
+    # the held-out scores the page quotes: the review rebuilt on the stored settings (make_detector_review.py)
+    nums = a.plain / "_review_best" / "_work" / "numbers.json"
+    W["_numbers"] = json.loads(nums.read_text()) if nums.exists() else None
     figs = {FIGURES[n][0]: FIGURES[n][1](W) for n in a.figs}
     render(figs, a.plain / "print_figures")
     return 0
