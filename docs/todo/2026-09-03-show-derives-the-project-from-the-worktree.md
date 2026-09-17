@@ -58,6 +58,36 @@ explicitly. Worth a line in `CLAUDE.md` only if the upstream fix stalls; a worka
 in a durable doc that outlives the bug is its own defect, and this repo has paid for
 that one twice.
 
+## It stalled, and the scattering is what this page predicted
+
+**2026-09-17, found by Tony:** *"you are bugarach why are you posting to the root of
+dropbox?"* — two weeks on, `show.py` is unchanged upstream, and the darkroom root held
+**five** folders named after worktrees, three of them empty. This page had described
+the outcome in the future tense (*"a week of sessions delivering figures produces a
+darkroom full of folders named after branches"*); it had happened.
+
+| folder at the root | written | held |
+|---|---|---|
+| `unsup-rigid-shift-report-residuals` | 2026-09-17 | one PNG, a duplicate of the copy inside the run's claimed folder |
+| `unsup-rule-as-code` | 2026-09-16 | three PNGs, one of them a **real-recording lanes figure** (FOUNDATIONS §5 material sitting a level above bugarach's own folder) |
+| `turbo-takes-the-width` | 2026-09-12 | two PNGs |
+| `ci-covers-the-send-gate`, `ci-covers-the-vendored-two` | 2026-09-02 | empty; another repo's worktrees, same defect |
+| `proj` | 2026-09-11 | empty — `show.py --selftest` creates `<review root>/proj` in the **real** darkroom, which is a third defect worth sending upstream with the other two |
+
+Cleaned up the same day: the duplicate was deleted, and `unsup-rule-as-code` and
+`turbo-takes-the-width` were moved to `<darkroom>/bugarach/strays-from-the-darkroom-root/`,
+keeping their folder names so whoever wrote them can still find their files. The empty
+folders belonging to other repositories were left alone.
+
+**So the `CLAUDE.md` line is now warranted, and it is mechanized rather than
+remembered.** Sapper **SAP016** blocks `python3 tools/show.py <file>` on any line that
+does not name `--project`, and `CLAUDE.md`'s darkroom paragraph — which taught the bare
+form, and is where this session learned it — now carries the flag and the reason. This
+page is excluded from the rule, because it is where the wrong form is shown as wrong.
+
+The prose caution above still holds for the *next* workaround: when upstream lands the
+`--git-common-dir` fix, SAP016 and the `CLAUDE.md` sentence come out together.
+
 ---
 
 # Second defect: `show.py` dies on a file that is already in the darkroom
