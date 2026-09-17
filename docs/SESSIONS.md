@@ -10,6 +10,20 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
+### WSMIP065/plain-review-best-settings — DARKROOM claim ACTIVE 2026-09-17: `bugarach/2026-09-15-detector-review-plain/`
+- **Status:** **ACTIVE — claimed before writing.** Tony, 2026-09-17: the overnight searches all failed,
+  and the Word version of the plain review is to be completed on the current best settings (#597's).
+  Every settings-dependent number and figure is rebuilt: scores at the stored settings on the 24 test
+  recordings (none used to choose them), the busy-stretch test, the real-recording calls and their four
+  figures, Figure 2's recording by a stated rule, then the `.docx`.
+- **Writes:** inside that one folder only — the rebuilt page, docx and figures, `_work/`, and a new
+  `_review_best/` holding the first review's measurements rebuilt at the stored settings (the first
+  review's own folder, `2026-09-15-detector-review/`, is read and not touched).
+- ⚠ **Holds real treatment rasters**, so everything stays in the darkroom (FOUNDATIONS §5).
+- **Touches:** `tools/make_plain_detector_review.py`, `tools/plain_detector_review_template.html`,
+  `tools/make_detector_review.py`.
+- **Released when:** the rebuilt `.docx` is in the folder and the builders are pushed on `detector-review-doc`.
+
 ### WSMIP065/why-not-count — DARKROOM claim RELEASED 2026-09-16: `bugarach/2026-09-15-detector-review-plain/` (reopened); `bugarach/2026-09-16-why-not-count/` never created
 - **Status:** **RELEASED — the section, its four figures and the `count` measurements are in the
   plain-review folder; the builder is pushed on the `detector-review-doc` PR.** Tony asked "why not just
