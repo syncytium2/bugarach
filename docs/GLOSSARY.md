@@ -402,11 +402,16 @@ Added 2026-09-10, when that plan's review found them used undefined.
   the ROIs stay aligned, so a classifier that separates real from a shared offset is
   reading a per-ROI or edge artifact rather than removed coordination.
 - **label-free threshold** — an operating point set from a recording's own surrogate:
-  the lowest threshold at which a model fires no more than a stated number of events
-  per 10 minutes on rigid shifts of that recording. Reads no labels. The idea is
-  CFAR's (see **adaptive-threshold vocabulary**), with the surrogate standing in for
-  the reference cells; Dard et al. 2022 set their event threshold the same way, at
-  the 99th percentile of a per-cell circular shift.
+  scanning thresholds downward from the top, the last one before the model fires more
+  than a stated number of events per 10 minutes on any of three rigid shifts of that
+  recording. Reads no labels. Scanned downward because the event count is not monotone:
+  low enough, the whole recording merges into one detection. ⚠ It caps the rate on the
+  shifts, not on the recording, so a model can fire well above the stated rate on the
+  recording itself; and where no threshold ever exceeds the rate the scan falls to the
+  grid's lowest value, which the tool records. The idea is closer to a surrogate
+  threshold than to CFAR's (see **adaptive-threshold vocabulary**): Dard et al. 2022 set
+  their event threshold the same way, at the 99th percentile of a per-cell circular
+  shift.
 - **oracle threshold** — the F1-best threshold chosen **on planted truth**: a
   comparison, never a usable rule. The rigid-shift report calls it the **truth-reading
   threshold**. ⚠ Not a ceiling: it is picked on two validation recordings, and a

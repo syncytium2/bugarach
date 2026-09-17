@@ -50,9 +50,12 @@ $PY tools/probe_line_vs_fuzz.py    --out $D/probe \
                                    --checkpoints $D/real_compare/checkpoints
 # 7  every number the report will quote, then the figures, which read it
 $PY tools/summarize_tube_self_supervised.py --run $D
-$PY tools/make_rigid_shift_gates_figure.py --run $D --out $D
-$PY tools/make_line_sensors_figure.py --summary $D/summary.json --probe $D/probe --out $D
-$PY tools/make_tube_ssl_figure.py     --run $D/training --out $D
+#    each figure tool writes to the darkroom by default; --also keeps the repo copy
+$PY tools/make_surrogate_schematic_figure.py --also $D
+$PY tools/make_rigid_shift_gates_figure.py --run $D --also $D
+$PY tools/make_line_sensors_figure.py      --summary $D/summary.json --also $D
+$PY tools/make_tube_ssl_figure.py          --summary $D/summary.json --also $D
+$PY tools/make_tube_real_summary_figure.py --summary $D/summary.json --also $D
 $PY tools/make_tube_real_lanes.py     --run $D/real_compare --out <darkroom> --family <name>
 # 8  murderboard, blind round, loop until clean
 ```
