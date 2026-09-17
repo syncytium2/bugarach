@@ -35,8 +35,8 @@ from figure_destination import add_arguments, save  # noqa: E402
 plt.rcParams.update({"font.size": 10.5, "axes.labelsize": 10.5, "xtick.labelsize": 10,
                      "ytick.labelsize": 9.5, "legend.fontsize": 9.5})
 
-MODELS = {"tube": ("#6b6b6b", "o"), "tube_guard": ("#a8a8a8", "s"), "line": ("#2a78d6", "o"),
-          "line_length": ("#eb6834", "s"), "line_bound": ("#1baf7a", "D")}
+MODELS = {"line": ("#2a78d6", "o"), "line_length": ("#eb6834", "s"),
+          "line_bound": ("#1baf7a", "D"), "tube": ("#6b6b6b", "o"), "tube_guard": ("#a8a8a8", "s")}
 """Model inks and shapes as in every other figure of the report."""
 BASELINES = {"count_share": ("count share", "^"), "count_excess": ("count excess", "P"),
              "slow_modulation": ("slow modulation", "X")}

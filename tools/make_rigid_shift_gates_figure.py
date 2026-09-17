@@ -14,7 +14,8 @@ Four panels, stacked two by two so each reads at page width:
   statistics at telling a recording from rigid shift, a shared offset, per-onset dither and a
   per-ROI circular shift, by displacement.
 * **C — the aggregate test on real recordings, lab fast.** The same forced choice read off the
-  cells-mean channels: `tube` at initialisation, and what fitted `tube` and `line` heads receive.
+  cells-mean channels: a hand-built centre-surround bank at `tube`'s initial scales and beyond, and
+  what fitted `tube` and `line` heads receive.
 * **D — the aggregate test on synthetic twins.** Planted events, shared slow modulation with no
   events, independent modulation, and the stationary twin, each against its own rigid shift.
 
@@ -44,7 +45,7 @@ CONTROLS = [("rigid_shift", "rigid shift", "#4a3aa7", "o", True),
             ("shared_shift", "shared offset: should read chance", "#333333", "s", False),
             ("uniform_dither", "per-onset dither: must separate", "#e87ba4", "D", True),
             ("circular_shift", "per-ROI circular shift", "#eda100", "^", True)]
-BANKS = [("init", "tube at initial parameters", "#9a9a9a", "s"),
+BANKS = [("init", "hand-built bank at tube's initial scales", "#9a9a9a", "s"),
          ("tube", "fitted tube (four folds)", "#6b6b6b", "o"),
          ("line", "fitted line (four folds)", "#2a78d6", "o")]
 TWINS = [("planted_vs_rigid_shift", "planted events: must separate", "#111111", "o", True),
@@ -124,9 +125,9 @@ def main(argv=None):
     ax.text(0.02, 0.97, "C", transform=ax.transAxes, fontsize=13, fontweight="bold", va="top")
     ax.legend(handles=[Line2D([], [], color=c, marker=m, ls="", ms=7, label=lab)
                        for _, lab, c, m in BANKS]
-              + [Line2D([], [], color="0.3", marker="o", ls="", ms=7,
+              + [Line2D([], [], color="0.2", marker="D", ls="", ms=7,
                         label="filled: vs rigid shift"),
-                 Line2D([], [], color="0.3", marker="o", ls="", ms=7, mfc="white",
+                 Line2D([], [], color="0.2", marker="D", ls="", ms=7, mfc="white",
                         label="open: vs shared offset (should read chance)")],
               loc="upper center", bbox_to_anchor=(0.5, -0.13), ncol=1, frameon=False)
 
@@ -144,7 +145,7 @@ def main(argv=None):
     ax.set_ylim(*YLIM)
     ax.set_xlabel("displacement J (s)")
     ax.set_ylabel("synthetic twins against their rigid shift:\n"
-                  "accuracy from tube's initial channels")
+                  "accuracy from the hand-built initial bank")
     ax.text(0.02, 0.97, "D", transform=ax.transAxes, fontsize=13, fontweight="bold", va="top")
     ax.legend(handles=[Line2D([], [], color=c, marker=m, ls="", ms=7, mfc=c if f else "white",
                               mec=c, mew=1.4, label=lab) for _, lab, c, m, f in TWINS],

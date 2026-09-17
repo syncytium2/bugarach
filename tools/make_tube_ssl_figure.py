@@ -38,8 +38,8 @@ from matplotlib.transforms import blended_transform_factory  # noqa: E402
 plt.rcParams.update({"font.size": 10.5, "axes.labelsize": 10.5, "xtick.labelsize": 9.5,
                      "ytick.labelsize": 10, "legend.fontsize": 9.5})
 
-MODELS = {"tube": ("#6b6b6b", "o"), "tube_guard": ("#a8a8a8", "s"), "line": ("#2a78d6", "o"),
-          "line_length": ("#eb6834", "s"), "line_bound": ("#1baf7a", "D")}
+MODELS = {"line": ("#2a78d6", "o"), "line_length": ("#eb6834", "s"),
+          "line_bound": ("#1baf7a", "D"), "tube": ("#6b6b6b", "o"), "tube_guard": ("#a8a8a8", "s")}
 """The same inks as every other figure of the report: the three `line` builds on the first three
 categorical slots of the dataviz reference palette, the tube family grey. Shape separates the two
 greys, whose contrast ratio is only 1.36."""
