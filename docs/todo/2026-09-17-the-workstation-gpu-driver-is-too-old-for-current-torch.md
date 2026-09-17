@@ -1,9 +1,18 @@
 ---
-status: open
+status: done
 filed: 2026-09-17
 ---
 
 # The workstation's GPU driver is too old for current torch, so its GPU work is pinned to torch 2.5.1 and Python 3.12
+
+> **Done, the same day.** Tony had admin rights for two hours from 10:09 and chose to update. WSMIP064
+> now runs NVIDIA **582.78** (R580 U11, the RTX production branch, released 2026-07-30), installed
+> silently in 4 minutes with no reboot. `torch.zeros(1, device="cuda")` works on **torch
+> 2.14.0+cu126 and Python 3.14**, so the pin below no longer applies, and fit times are unchanged:
+> `chorus_norm` 568 fits per hour, `line_length` 348, one process each. The steps, the download's
+> size, signature and hash, and a GPU-against-CPU table are in
+> [`../windows_workstation_setup.md`](../windows_workstation_setup.md), written for WSMIP065.
+> The body below is the record from before the update, and is left as filed.
 
 **Filed at Tony's instruction**, the day the tuning run moved from the CPU to the GPU on the Windows
 workstation WSMIP064. The driver needs updating, and updating it needs admin rights.
