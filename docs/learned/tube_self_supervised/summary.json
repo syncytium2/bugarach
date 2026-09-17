@@ -2,9 +2,9 @@
  "produced_by": "tools/summarize_tube_self_supervised.py",
  "provenance": {
   "bugarach_version": "0.1.0",
-  "git_commit": "0f7f769ecb6bc04efd8e8dd1c7a3a0d687d93395",
+  "git_commit": "c82f560f353e4b63f2a54858c6722116a2ef1286",
   "git_dirty": true,
-  "code_version": "0.1.0+g0f7f769.dirty",
+  "code_version": "0.1.0+gc82f560.dirty",
   "python": "3.14.5",
   "platform": "macOS-26.6.2-arm64-arm-64bit-Mach-O",
   "produced_by": "tools/summarize_tube_self_supervised.py"
@@ -15482,7 +15482,91 @@
      }
     ]
    }
-  }
+  },
+  "untrained_vs_trained": {
+   "oracle": {
+    "best_untrained_model": "line_length",
+    "best_untrained_f1": 0.5590729523456047,
+    "n_trained_cells": 20,
+    "n_trained_cells_below_best_untrained": 11,
+    "trained_f1_range": [
+     0.47635432638544967,
+     0.6203968214130043
+    ],
+    "untrained_f1_range": [
+     0.5025452245893596,
+     0.5590729523456047
+    ]
+   },
+   "label_free_2": {
+    "best_untrained_model": "line_length",
+    "best_untrained_f1": 0.2905209920575868,
+    "n_trained_cells": 20,
+    "n_trained_cells_below_best_untrained": 14,
+    "trained_f1_range": [
+     0.2187782804139035,
+     0.38593856891242656
+    ],
+    "untrained_f1_range": [
+     0.0,
+     0.2905209920575868
+    ]
+   },
+   "label_free_1": {
+    "best_untrained_model": "line_length",
+    "best_untrained_f1": 0.09288246419482055,
+    "n_trained_cells": 20,
+    "n_trained_cells_below_best_untrained": 0,
+    "trained_f1_range": [
+     0.12591246160299868,
+     0.32182523869620233
+    ],
+    "untrained_f1_range": [
+     0.0,
+     0.09288246419482055
+    ]
+   },
+   "label_free_0.5": {
+    "best_untrained_model": "line_length",
+    "best_untrained_f1": 0.03920505871725384,
+    "n_trained_cells": 20,
+    "n_trained_cells_below_best_untrained": 0,
+    "trained_f1_range": [
+     0.0699851405208548,
+     0.24953541115688468
+    ],
+    "untrained_f1_range": [
+     0.0,
+     0.03920505871725384
+    ]
+   }
+  },
+  "oracle_at_edge_fits_total": 4,
+  "oracle_at_edge_models": [
+   "line"
+  ],
+  "cells_covering_over_half_at_truth_reading": [
+   "ssl_real|10.0|line",
+   "ssl_real|10.0|line_bound",
+   "ssl_real|10.0|line_length",
+   "ssl_real|10.0|tube",
+   "ssl_real|10.0|tube_guard",
+   "ssl_real|20.0|line",
+   "ssl_real|20.0|line_bound",
+   "ssl_real|20.0|line_length",
+   "ssl_real|20.0|tube",
+   "ssl_real|20.0|tube_guard",
+   "ssl_sim|10.0|tube",
+   "ssl_sim|10.0|tube_guard",
+   "ssl_sim|20.0|line_bound",
+   "ssl_sim|20.0|tube",
+   "ssl_sim|20.0|tube_guard",
+   "untrained|None|line",
+   "untrained|None|line_bound",
+   "untrained|None|line_length",
+   "untrained|None|tube",
+   "untrained|None|tube_guard"
+  ]
  },
  "aggregate_leak": {
   "init": [

@@ -181,6 +181,27 @@ def training(run: Path) -> dict:
         if widths:
             c["fitted_parameters_by_fit"] = widths
         out["cells"][f"{arm}|{J}|{model}"] = c
+    # The comparisons the report's prose makes about the untrained arm, computed here so the
+    # sentences quote them: where the best untrained model sits among the trained cells, and
+    # which cells reach their truth-reading score by covering most of each recording.
+    cells = out["cells"].values()
+    for key in ("oracle", "label_free_2", "label_free_1", "label_free_0.5"):
+        untrained = {c["model"]: c["scores"][key]["f1_mean"] for c in cells
+                     if c["arm"] == "untrained" and key in c["scores"]}
+        trained = {f"{c['arm']}|{c['J_sec']:g}|{c['model']}": c["scores"][key]["f1_mean"]
+                   for c in cells if c["arm"] in ("ssl_sim", "ssl_real") and key in c["scores"]}
+        best = max(untrained, key=untrained.get)
+        out.setdefault("untrained_vs_trained", {})[key] = {
+            "best_untrained_model": best, "best_untrained_f1": untrained[best],
+            "n_trained_cells": len(trained),
+            "n_trained_cells_below_best_untrained": sum(v < untrained[best] for v in trained.values()),
+            "trained_f1_range": [min(trained.values()), max(trained.values())],
+            "untrained_f1_range": [min(untrained.values()), max(untrained.values())]}
+    out["oracle_at_edge_fits_total"] = int(sum(c["oracle_at_edge_fits"] for c in cells))
+    out["oracle_at_edge_models"] = sorted({c["model"] for c in cells if c["oracle_at_edge_fits"]})
+    out["cells_covering_over_half_at_truth_reading"] = sorted(
+        k for k, c in out["cells"].items()
+        if (c["scores"].get("oracle", {}).get("coverage_share_median") or 0) > 0.5)
     return out
 
 
