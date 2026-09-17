@@ -41,6 +41,10 @@ questions. Each is written into the section it changes; this list is the index.
    compared against. The overnight settings search on branch `full-search` concerns only the six
    hand-written detectors' own operating points and does not change this run. Gate 1 step 2 is redone on
    the sliding code; see *Gate 1*, *Two selections* and *Search spaces*.
+8. **Three training seeds per configuration, and no 9-hour cutoff** (Tony, 2026-09-16, after Gate 1:
+   *"9 hours is arbitrary. nothing is waiting on these days… a run until noon is fine but not a cutoff.
+   run 3 seeds"*). Every learned configuration's inner score pools training seeds 0, 1 and 2. The
+   estimate is still written into `meta.json` and reported; it no longer decides whether to launch.
 
 ## The question, in one paragraph
 
@@ -239,13 +243,15 @@ The held-out fold's 6 recordings are touched once, at the end, by the chosen con
 
 ### Choosing a learned model's configuration — inner CV on the training folds
 
-For each candidate configuration, at training seed 0:
+For each candidate configuration, at training seeds 0, 1 and 2 (decision 8):
 
-1. For each of the three training folds *j*: fit on the other two training folds (12 recordings) with
-   `fold_maker(rec, those_seeds)` exactly as `fair_bakeoff.py` does, so the model's own threshold is
-   picked on recordings its fit never saw; then score fold *j*'s 6 recordings.
-2. The configuration's **inner score** is F1 pooled over all 18 inner-scored recordings with
-   `bench.pool_scores` — pooled, not averaged over the three inner folds.
+1. For each of the three training folds *j* and each seed: fit on the other two training folds (12
+   recordings) with `fold_maker(rec, those_seeds)` exactly as `fair_bakeoff.py` does, so the model's own
+   threshold is picked on recordings its fit never saw; then score fold *j*'s 6 recordings.
+2. The configuration's **inner score** is F1 pooled with `bench.pool_scores` over all 54 inner-scored
+   (recording, seed) rows — 18 recordings × 3 seeds, pooled, not averaged over folds or seeds. An inner
+   fit has 10 fitting recordings and uses all 10 at every seed, so its seeds differ in the torch
+   initialisation and the crops drawn, not in the recordings.
 3. Choose the configuration with the highest inner score. Ties go to fewer parameters, then fewer
    training steps.
 
@@ -276,7 +282,9 @@ So "five training seeds" varies the torch initialisation and two alternating rec
 bake-off in this project has worked this way, including the table this run tests; do not change it
 here, or the tuned numbers stop being comparable with the untuned ones.
 
-Tuning happens at training seed 0 only, to keep the cost down. Say so in the readout.
+Tuning pools training seeds 0, 1 and 2 (decision 8). Gate 1 measured a one-seed selection's noise at
+about 0.04 F1 between two configurations (two standard deviations), and three seeds bring it to about
+0.024; say so in the readout, with Gate 1's Table 9.
 
 ### Choosing a hand-written detector's configuration — the training folds directly
 
@@ -371,15 +379,14 @@ setting from the list works), but the cache key is a hash, and `json.dumps` writ
 differently. `vote_gain` is registered as `8.0` and declared as `8` in the table below. Normalise every
 value (every number as a float) before hashing, or one configuration gets two keys.
 
-**The estimate, and when to stop.** Per learned model: 24 configurations × 6 distinct inner fits = 144
+**The estimate.** Per learned model: 24 configurations × 6 distinct inner fold pairs × 3 seeds = 432
 inner fits, plus outer refits at 5 seeds × 4 folds for the untuned setting and for each selection's
-choice (40 to 60 refits), so about 190 to 200 fits. The drawn configurations average about 2.3 times the
-untuned 900 steps. Multiply by Gate 1's lone-fit times and divide by 22 jobs. On the Mac's inflated times
-that is roughly 50 CPU hours of training, about 2.5 hours of wall time, before scoring. Scoring adds
-inference on the scored recordings and 0.54 twins for every fit, and the hand-written grids on 24 planted
-recordings and 24 twins. **Write the estimate into `meta.json`. If it exceeds 9 hours of wall time, do
-not launch: report it.** If a cut is unavoidable, cut every learned model equally and record it in
-`meta.json` before starting.
+choice (40 to 60 refits), so about 470 to 490 fits. The drawn configurations average about 2.3 times the
+untuned 900 steps. From Gate 1's lone-fit times on this machine that is a floor of about 196 CPU hours of
+training, 8.9 hours at 22 jobs, before scoring and before the larger configurations' extra cost per step.
+Scoring adds inference on the scored recordings and 0.54 twins for every fit, and the hand-written grids
+on 24 planted recordings and 24 twins. **Write the estimate into `meta.json` and report it; it does not
+gate the launch** (decision 8). Do not cut the 24.
 
 | model | axis | values | untuned setting |
 |---|---|---|---|
@@ -526,8 +533,8 @@ result files above make a crash cheap; this section makes a crash unlikely and t
 
 **Before launch.** The session does these, with Tony present for anything that needs `sudo`.
 
-1. **Gates 1 and 2 have passed**, `--quick` has run end to end, and the estimate in `meta.json` is
-   under 9 hours of wall time. Push the branch, with this file's status line naming the commit about to
+1. **Gates 1 and 2 have passed**, `--quick` has run end to end, and the estimate is in `meta.json`
+   (it does not gate the launch; decision 8). Push the branch, with this file's status line naming the commit about to
    run, the budget margin, and the expected finish time.
 2. **Output directory `~/runs/tune-learned-vs-coact/`**, in the Linux filesystem. Not `/tmp`, not a
    session scratchpad, not under `/mnt/c`.
@@ -651,13 +658,10 @@ All of it: [`docs/learned/tuned_vs_coact/gate1/README.md`](docs/learned/tuned_vs
 Mac seed) but trains at 204.0 s per fit against the Mac's 62.4 s, 3.3 times, unexplained; the others run
 1.25 to 1.4 times. **Gate 1 is complete.** Training floor from this machine's lone fits: 80.9 CPU hours,
 3.7 hours at 22 jobs, with one seed per configuration; 6.3 hours with two; 8.9 hours with three.
-**Open, Tony asked:** how many training seeds per configuration. At one seed, seed noise alone puts about
-0.04 F1 (two standard deviations) between two configurations' inner scores; at two, 0.030; at three,
-0.024. The reported numbers stay honest either way (nested), and the noise biases only against the
-learned side, since the hand-written detectors are deterministic.
-**Next:** that decision; then the final estimate against the
-9-hour limit, a check of the home spec's event spacing against the 240 s context, the tool and
-`--quick`, the pre-launch checks, and launch.
+At one seed, seed noise alone puts about 0.04 F1 (two standard deviations) between two configurations'
+inner scores; at two, 0.030; at three, 0.024. **Decision 8: three seeds, no 9-hour cutoff.**
+**Next:** Gate 2 (the tool, its test, `--quick`), a check of the home spec's event spacing against the
+240 s context, the pre-launch checks, and launch.
 `tools/compare_bakeoff_runs.py` needs a test before #596's branch merges.
 ⚠ PR #596 was still open with CI running; if review changes a model's code, results tuned against an
 older commit go stale, which the commit recorded in `meta.json` makes visible.
