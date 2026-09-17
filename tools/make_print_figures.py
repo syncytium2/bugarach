@@ -143,7 +143,55 @@ def fig_problem(W):
     return f
 
 
-FIGURES = {"fig_orient": ("fig01_orient", fig_orient), "fig_problem": ("fig02_problem", fig_problem)}
+def fig_chance(W):
+    """Figure 3, busy neurons produce coordinated events by chance: a quiet minute with one planted event (A)
+    and a busy minute with nothing planted (B), each with its count of neurons per 2 s bin."""
+    from make_plain_detector_review import INK_T, _arr, _by_activity, _clock
+    from svgfig import MUTED, Figure, nice_ticks
+    sim = W["sim"]
+    f = Figure(PAGE_W, 300)
+    CW = 180
+    cols = [("A", ("A · quiet neurons,", "one planted coordinated event"), 62),
+            ("B", ("B · busy neurons,", "nothing planted"), 280)]
+    for key, (t1, t2), X in cols:
+        D = sim[key]
+        win = D["win"]
+        f.text(X, 11, t1, size=TITLE_PT, weight=600)
+        f.text(X, 23, t2, size=TITLE_PT, weight=600)
+        f.text(X, 35, f"one minute, from {_clock(win[0])} into the recording", size=PRINT_MIN_PT, color=MUTED)
+        lane = f.panel(X, 40, CW, 13, win, (0, 1))
+        if key == "A":
+            lane.down_triangle(sim["event"]["time"], 47, color=INK_T, size=7)
+        r = f.panel(X, 57, CW, 110, win, (0, 1))
+        r.raster(_by_activity(D["trains"]), width=0.9)
+        if key == "A":
+            f.text(X - 6, 49, "planted", size=TICK_PT, anchor="end", color=MUTED)
+            r.ylabel(f"{sim['n_roi']} neurons", size=LABEL_PT, dx=10)
+        c = D["coact"]
+        ymax = 12
+        q = f.panel(X, 186, CW, 62, win, (0, ymax))
+        ct, cy = _arr(c["t"]), _arr(c["y"])
+        inside = (ct - 1.0 >= win[0] - 1e-6) & (ct + 1.0 <= win[1] + 1e-6)   # whole 2 s bins only
+        q.bars(ct[inside], cy[inside], color="#6d8fb3", width_frac=0.9)
+        q.yaxis(nice_ticks(0, ymax, 3), grid=True, size=TICK_PT)
+        if key == "A":
+            q.ylabel("neurons in each", lines=["neurons with an event", "in each 2 s bin"], size=TICK_PT, dx=30)
+        q.xaxis_time(offset=win[0], target=4, label="seconds from the start of this minute", size=TICK_PT)
+        mx = int(np.nanmax(cy[inside]))
+        if key == "B":
+            # the tallest bin, marked where it stands (Tony, 2026-09-17: "put an asterisk by the peak")
+            k = int(np.nanargmax(np.where(inside, cy, -1)))
+            f.text(float(q.px(ct[k])), float(q.py(cy[k])) - 2, "*", size=13, anchor="middle", weight=700,
+                   color=INK_T)
+            f.text(X + CW, 180, f"* most in one bin: {mx} neurons", size=TICK_PT, anchor="end", color=INK_T)
+        else:
+            f.text(X + CW, 180, f"most in one bin: {mx} neurons", size=TICK_PT, anchor="end", color=INK_T)
+    f.h = 186 + 62 + 44
+    return f
+
+
+FIGURES = {"fig_orient": ("fig01_orient", fig_orient), "fig_problem": ("fig02_problem", fig_problem),
+           "fig_chance": ("fig03_chance", fig_chance)}
 
 
 def render(figs: dict, out: Path) -> None:
