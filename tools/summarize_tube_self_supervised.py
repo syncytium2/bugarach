@@ -33,7 +33,6 @@ from __future__ import annotations
 import argparse
 import json
 import math
-import os
 import sys
 from collections import defaultdict
 from pathlib import Path
@@ -47,7 +46,6 @@ LN2 = math.log(2.0)
 COMPARISONS = (("line", "line_length"), ("line", "coact"), ("line_length", "coact"),
                ("line_bound", "line"), ("line_bound", "coact"), ("line", "tube"),
                ("tube", "coact"), ("coact", "loco"))
-EDGE_SEC = (5.0, 12.8)
 LOSS_LAST_LOGGED = 5
 """Logged steps (every 50 steps) averaged for a fit's final loss."""
 AGG_KEYS = ("real_vs_rigid_shift", "real_vs_shared_offset", "unplanted_vs_rigid_shift",
@@ -339,37 +337,75 @@ def controls(run: Path) -> dict:
         for r in R}
 
 
-def real(run: Path, with_edges: bool) -> dict:
+REAL_FAMILIES = {
+    "supervised": lambda k: k.startswith("supervised ") and k.endswith(" label-free"),
+    "supervised, bake-off threshold": lambda k: k.endswith(" bake-off threshold"),
+    "trained against rigid shift": lambda k: k.startswith("ssl ") and "rigid shift" not in k,
+    "count_excess": lambda k: k == "baseline count_excess label-free",
+    "count_share": lambda k: k == "baseline count_share label-free",
+    "slow_modulation": lambda k: k == "baseline slow_modulation label-free",
+}
+"""Detector families the report quotes ranges for, each also read on its fresh rigid shift."""
+
+
+def real(run: Path) -> dict:
+    """The real-recordings stage's own summary, plus the ranges the report quotes per family.
+
+    Everything is read from ``real_compare/summary.json``: the per-recording event file and the
+    checkpoints stay machine-local (FOUNDATIONS §5, Tony's ruling of 2026-09-17), and the stage
+    computes window-edge shares itself."""
     p = run / "real_compare" / "summary.json"
     if not p.exists():
         return {}
     s = json.loads(p.read_text())
-    out = {"stats": s["stats"], "agreement": s["agreement"]}
-    if with_edges:
-        os.environ.setdefault("LOOK_ROLE", "steps_excluded")
-        import look_rigid_shift as lr
-        recs, _ = lr.load("fast", None)
-        win = {r.recording_id: (r.window[0] * r.dt, r.window[1] * r.dt) for r in recs}
-        ev = json.loads((run / "real_compare" / "events.json").read_text())
-        edges = {}
-        for det, runs in ev.items():
-            n = 0
-            near = {e: 0 for e in EDGE_SEC}
-            span = 0.0
-            for one in runs:
-                for rid, evs in one.items():
-                    a, b = win[rid]
-                    span += b - a
-                    for on, _ in evs:
-                        n += 1
-                        for e in EDGE_SEC:
-                            near[e] += min(on - a, b - on) < e
-            edges[det] = {f"within_{e:g}s": near[e] / max(1, n) for e in EDGE_SEC}
-            edges[det]["n_events"] = n
-            edges[det]["uniform_expectation"] = {
-                f"within_{e:g}s": float(np.mean([2 * e / (b - a) for a, b in win.values()]))
-                for e in EDGE_SEC}
-        out["edge_shares"] = edges
+    stats = s["stats"]
+    out = {"stats": stats, "agreement": s["agreement"],
+           "edge_shares": {det: {"within_5s": v.get("edge_within_5s_share"),
+                                 "within_12.8s": v.get("edge_within_12.8s_share"),
+                                 "n_events": v["n_events"],
+                                 "uniform_expectation": {
+                                     "within_5s": v.get("edge_within_5s_uniform_expectation"),
+                                     "within_12.8s": v.get("edge_within_12.8s_uniform_expectation")}}
+                           for det, v in stats.items()}}
+
+    def rng(vals):
+        vals = [x for x in vals if x is not None]
+        return [min(vals), max(vals)] if vals else None
+
+    digest = {}
+    for fam, pick in REAL_FAMILIES.items():
+        for on_shift in (False, True):
+            keys = [k for k in stats if pick(k.replace(", on its rigid shift", ""))
+                    and k.endswith(", on its rigid shift") == on_shift]
+            if not keys:
+                continue
+            v = [stats[k] for k in keys]
+            excess = [x["participation_share_ge3"] - x["activity_random_share_ge3"] for x in v]
+            ci = [x.get("share_ge3_minus_activity_chance_ci95_by_mouse") for x in v]
+            digest[fam + (", on its rigid shift" if on_shift else "")] = {
+                "detectors": keys,
+                "events_per_10min": rng(x["events_per_10min"] for x in v),
+                "share_ge3": rng(x["participation_share_ge3"] for x in v),
+                "activity_chance_share_ge3": rng(x["activity_random_share_ge3"] for x in v),
+                "excess_over_own_chance": rng(excess),
+                "n_excess_ci_above_zero": sum(bool(c) and c[0] > 0 for c in ci),
+                "n_excess_ci_below_zero": sum(bool(c) and c[1] < 0 for c in ci),
+                "n_conditions": len(v),
+                "median_participation": rng(x["participation_median"] for x in v),
+                "empty_span_share": rng(x.get("empty_span_share") for x in v),
+                **{f"near_coactive_{t}_share": rng(x.get(f"near_coactive_{t}_share") for x in v)
+                   for t in ("1s", "3s")},
+                **{f"activity_chance_near_coactive_{t}_share":
+                   rng(x.get(f"activity_random_near_coactive_{t}_share") for x in v)
+                   for t in ("1s", "3s")},
+                "edge_within_5s_share": rng(x.get("edge_within_5s_share") for x in v),
+                "share_ge3_by_group": {g: rng(x.get("share_ge3_by_group", {}).get(g) for x in v)
+                                       for g in sorted({g for x in v
+                                                        for g in x.get("share_ge3_by_group", {})})},
+            }
+    out["digest"] = digest
+    out["constants"] = {k: s.get(k) for k in ("sup_threshold_j_sec", "n_random_per_event",
+                                              "provenance", "seconds")}
     return out
 
 
@@ -492,15 +528,13 @@ def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--run", required=True)
-    ap.add_argument("--no-edges", action="store_true",
-                    help="skip the window-edge shares, which read the export folder")
     a = ap.parse_args(argv)
     run = Path(a.run)
     from bugarach import provenance
     summary = {"produced_by": "tools/summarize_tube_self_supervised.py",
                "provenance": provenance.stamp(produced_by="tools/summarize_tube_self_supervised.py"),
                "bakeoff": bakeoff(run), "training": training(run), "aggregate_leak": aggregate(run),
-               "controls_lab": controls(run), "real_compare": real(run, not a.no_edges),
+               "controls_lab": controls(run), "real_compare": real(run),
                "probe": probe(run), "constants": constants(run)}
     summary["leak_digest"] = leak_digest(summary["controls_lab"], summary["aggregate_leak"])
     p = run / "small_j_check" / "results.json"
