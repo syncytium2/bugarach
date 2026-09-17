@@ -30,8 +30,12 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 - **Released when:** the folder holds the files and the branch that removes them from the tree has
   landed.
 
-### Mac/unsup-slow-comodulation — DARKROOM claim ACTIVE 2026-09-17: `bugarach/2026-09-17-slow-comodulation/`
-- **Status:** ACTIVE (bugarach-quiet-raven). Tony: *"i think i need a figure or a doc to explain
+### Mac/unsup-slow-comodulation — DARKROOM claim RELEASED 2026-09-17: `bugarach/2026-09-17-slow-comodulation/`
+- **Status:** RELEASED. The folder is written and nobody holds it: the explainer, its six figures,
+  `results.json` and `summary.json`, `one_recording.png` (a single real recording, so darkroom only),
+  and `round3-roles-held/` — one murderboard role report that `check_quotes` refuses in the public
+  tree over published words, waiting on Tony's ruling. The page landed as PR #614.
+  Was ACTIVE (bugarach-quiet-raven). Tony: *"i think i need a figure or a doc to explain
   this slow co-modulation. i've been trying to ignore it so far, but now i feel i cannot."*
 - **Writes:** one new folder only — the explainer page, its figures and the measurement's
   `results.json`. Nothing existing in the darkroom is touched; the 2026-09-15 and 2026-09-16
