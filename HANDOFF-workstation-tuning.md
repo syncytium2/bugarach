@@ -827,6 +827,15 @@ from Task Scheduler, not before the elevation's sign-out (about 12:09).
   edge is visible without opening a selection file. **If a gated selection lands on the top of
   `int_win_sec` (5.0 s), tell 065**: the axis widens in goal 1's search, where the value ships, and
   never per fold here.
+- **Two rulings by Tony on 2026-09-17, via WSMIP065 (#621), that reach this side only if goal 2 ever
+  reads real recordings** — it does not today, and no number here moves:
+  - **This training run is baseline only** (*"for this training run use only baseline"*). The
+    program's "run on the full slice" half is **held** until he lifts it, so nothing scores a
+    treatment window.
+  - **A baseline shorter than 15 minutes is not measured**, `bench.MIN_BASELINE_SEC = 900.0`
+    (*"baselines shorter than 15 minutes should be ignored"*). Nothing in the declared folder is
+    affected — its shortest baseline is 17.0 minutes. **Import the constant; never write 900**: it is
+    his ruling, not a derived filter.
 - **Still waiting on goal 1:** step 3's every-knob values in `OPERATING_POINTS`, which is what the
   budget's reference anchors to and what the refuse-to-start guard waits for. 065 treats goal 2 as
-  blocked on it and Tony knows.
+  blocked on it, Tony knows, and 065 starts step 3 next.
