@@ -230,8 +230,8 @@ averages that paper reports. The dark curve uses that paper's own event rate, so
 against the dashed line.</figcaption></figure>
 <p>Two of these papers show that drugs blocking glutamate signals between neurons cut the number of these
 events sharply (<a href="https://doi.org/10.1016/j.celrep.2022.111914">Han and others, 2023</a>;
-<a href="https://doi.org/10.1210/endocr/bqad167">Morris and Herbison, 2023</a>), which is good evidence
-that many of them are not chance. None compares the rule's count with what neurons would produce if their
+<a href="https://doi.org/10.1210/endocr/bqad167">Morris and Herbison, 2023</a>), though the same drugs also
+cut how often each neuron has events, which by itself lowers the count chance gives. None compares the rule's count with what neurons would produce if their
 calcium events were independent, so we made the simplest version of that comparison (Figure
 {{NUM:fig_count_published}}). In the most recent paper, neurons had {{T.pub_rep_rate}} calcium events per
 neuron per hour, and the paper reports {{T.pub_rep_mse}} miniature synchronization events per neuron per hour,
@@ -244,9 +244,10 @@ count by the number of neurons, and one of them describes the result as how ofte
 an event (<a href="https://doi.org/10.1016/j.celrep.2022.111914">Han and others, 2023</a>). Read as a count
 divided by neurons, as Figure {{NUM:fig_count_published}} does, independent neurons give {{T.pub_chance_mse}}
 against the paper's {{T.pub_rep_mse}}. Read as how often each neuron takes part, they give
-{{T.pub_chance_part}} against {{T.pub_rep_mse}}. Either way, independent neurons at the paper's rate meet the
-rule at least as often as the paper reports, in smaller events: the events the paper found hold more
-neurons than chance events do. Real neurons do not have events at a steady rate, and none of the paper's data
+{{T.pub_chance_part}} against {{T.pub_rep_mse}}. Either way, in a field of about {{T.pub_field}} neurons,
+independent neurons at the paper's rate meet the rule about as often as the paper reports or more, in smaller
+events. The field size matters: with 8 neurons in view chance falls a little below the reported rate, and
+with 29 chance events hold as many neurons as the reported ones (Figure {{NUM:fig_count_published}}). Real neurons do not have events at a steady rate, and none of the paper's data
 went into this, so it is not a verdict on its findings. It shows why a count needs a chance comparison
 beside it.</p>
 
@@ -372,9 +373,9 @@ more, so it sometimes crosses the bar by chance.</figcaption></figure>
 <figure>{{FIG:fig_alg_coact}}
 <figcaption><b>Figure {{NUM:fig_alg_coact}}. CoactDetect.</b> For each 2-second bin with at least 3
 neurons, CoactDetect makes {{T.coact_ns}} shifted copies of the minute around it. The two small bar charts under the settings: the copies'
-counts in a quiet minute and in a busy one. The "1 in {{T.coact_alpha_1in}}" in its settings is nominal: the
-bar is the copies' average plus a set number of spreads, which gives that rate only if the counts follow a
-bell curve, and with small counts chance crosses it more often. In the quiet minute the bar is {{T.coact_bar_quiet}} neurons and the real
+counts in a quiet minute and in a busy one. The "1 in {{T.coact_alpha_1in}}" in its settings is what the
+program aims for, not what it gets: the bar is worked out from how much the copies' counts usually vary, and
+with counts this small chance goes over it more often than that. In the quiet minute the bar is {{T.coact_bar_quiet}} neurons and the real
 event has {{T.coact_obs}}. In the busy minute the bar rises to about {{T.coact_bar_busy}} neurons, so even the
 busiest bin ({{T.coact_obs_busy}} neurons) is not called.</figcaption></figure>
 
@@ -517,8 +518,9 @@ lowers their bar. On {{T.retune_date}} all six went through the same search proc
 setting was tried at a range of values on {{T.n_retune}} simulated recordings of each background. The one
 with the best overall score across both backgrounds won, but it replaced the value already stored only if
 its gain was clearly larger than chance variation between recordings (a 95% range for the gain that
-excludes zero). The value moved for {{T.retune_moved}}; for {{T.retune_kept}} nothing beat the stored value by
-more than that.</p>
+excludes zero). The value moved for {{T.retune_moved}}; {{T.retune_kept}} kept their stored values, because
+nothing beat them by more than that or, for SPIKE-synch, because every value that scored better broke its
+false-alarm limit (below).</p>
 <p><b>A value was also allowed only if the program stayed under its own two limits on false alarms, and those
 limits differ from program to program.</b> Each was set from how often that program called where nothing was
 planted before the search, with some room added, so it stops a program from getting worse rather than holding
@@ -628,9 +630,7 @@ with no events through it was probably never going to show us anything. One migh
 coordination between neurons, which would give us a ready-made answer key, and in the Herbison lab's slices
 TTX stopped all calcium events (<a href="https://doi.org/10.1016/j.celrep.2022.111914">Han and others,
 2023</a>). In this lab's recordings it does not: calcium events continue under TTX, and so do coordinated
-events. Measured on brief events, coordination falls, to about half its level before the drug in the typical
-recording; measured on long events it continues, and in close to half of the recordings it is at or above
-its level before the drug. So a TTX recording cannot serve as a "no coordination" test here.</p>
+events. So a TTX recording cannot serve as a "no coordination" test here.</p>
 <p>The lab marks <b>analysis windows</b>: the stretches of each recording it studies. Four of the six
 programs run only inside those windows. LoCo and locust run on the whole recording.</p>
 <p>{{PROSE:real_overview}}</p>
@@ -645,7 +645,7 @@ programs run only inside those windows. LoCo and locust run on the whole recordi
 
 <h2 id="s12">{{SEC:eye}}. Where your eye and the programs disagree</h2>
 <p>Two things stand out in Figures {{NUM:real_ttx_brief}} to {{NUM:real_senk_long}}. Sharp stripes that
-anyone can see are sometimes missed by most programs, and some calls sit where the raster shows nothing
+anyone can see, and whether the programs call them; and calls that sit where the raster shows nothing
 special. Figure {{NUM:fig_eye}} looks closely at both.</p>
 <figure class="scroll">{{FIG:fig_eye}}
 <figcaption><b>Figure {{NUM:fig_eye}}. Close-ups of real recordings.</b> Above each raster: the part of the
@@ -678,8 +678,10 @@ rate+context's own test, so rate+context agreeing with it is partly built in.</p
   <li>Every score comes from simulated recordings, and the simulator is imperfect (Section {{SEC:sim}}).</li>
   <li>The bars of the four programs that make copies come from shifted copies, and a shifted copy is not a
   perfect stand-in for a recording with the coordination removed (Section {{SEC:shuffle}}).</li>
-  <li>The chance levels in the programs' settings ("1 in 10,000" and so on) are nominal. Each program tests
-  many bins, and none corrects for that, so some chance calls are built into every recording.</li>
+  <li>The chance levels in the programs' settings ("1 in 10,000" and so on) are what the settings aim for,
+  per bin. Each program checks thousands of bins, so a few calls by chance happen in every recording.</li>
+  <li>The settings were searched and scored on simulated brief events only; the same settings are used on
+  long events.</li>
   <li>Each program's own false-alarm limits kept it from getting worse during the settings search; they are
   not one standard for all six (Section {{SEC:grading}}).</li>
   <li>We ran no statistical test between the top programs, and the decoys cap every score.</li>
@@ -731,8 +733,9 @@ rate+context's own test, so rate+context agreeing with it is partly built in.</p
   reshuffling of Mao B.Q. and others (2001), <i>Neuron</i> 32:883–898,
   <a href="https://doi.org/10.1016/S0896-6273(01)00518-9">doi.org/10.1016/S0896-6273(01)00518-9</a>: each
   neuron's gaps between events are kept and put in a random order, which is not the shuffle of Section
-  {{SEC:shuffle}}. binned SCE is adapted from that rule, with 10-second bins, shifted copies and a bar set per
-  bin. "Synchronous calcium events", the Cossart lab's later name: Malvache A. and others (2016), <i>Science</i> 353:1280–1283,
+  {{SEC:shuffle}}. binned SCE is adapted from that rule, with 10-second bins, shifted copies, and one bar for
+  each stretch studied that 1 copied bin in 50 goes over; theirs was a count reached anywhere in only 5% of
+  whole shuffled recordings. "Synchronous calcium events", the Cossart lab's later name: Malvache A. and others (2016), <i>Science</i> 353:1280–1283,
   <a href="https://doi.org/10.1126/science.aaf3319">doi.org/10.1126/science.aaf3319</a>.</li>
   <li><b>locust</b> is adapted from CICADA (Calcium Imaging Complete Automated Data Analysis), from the Cossart
   lab: Denis J., Dard R., Quiroli E., Cossart R., Picardo M. (2020), software release, Zenodo,
