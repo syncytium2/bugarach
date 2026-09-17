@@ -35,19 +35,23 @@ PY=<venv>/bin/python ; export PYTHONPATH=src
 # 1  register the architecture and its ablation      (code change, no command)
 # 2  what does the contrast already contain, before anything is trained on it?
 $PY tools/tube_aggregate_leak.py       --out $D/aggregate_leak --jobs 12
-# 3  controls that can fail
-$PY tools/look_rigid_shift_controls.py --out $D/controls --jobs 12
-# 4  supervised bake-off, against the ablation AND the hand-written detectors
-$PY tools/fair_bakeoff.py --spec docs/learned/generator_spec.json --out $D/bakeoff
-# 5  label-free training, every arm and both displacements
+# 3  controls that can fail (the leak cells; destruction lives in the rigid-shift look)
+$PY tools/look_rigid_shift_controls.py --role steps_excluded --leak-only --out $D/controls_lab --jobs 12
+# 4  supervised bake-off, against the ablation AND the hand-written detectors, at three seeds
+for s in 0 1 2; do
+  $PY tools/fair_bakeoff.py --spec docs/learned/generator_spec.json --train-seed $s --out $D/bakeoff_seed$s
+done
+# 5  label-free training: every arm, both displacements, the zero-parameter baselines
 $PY tools/tube_self_supervised.py      --out $D/training --jobs 12
 # 6  real recordings — this stage WRITES the checkpoints; the probe then reads them
 $PY tools/tube_ssl_real_compare.py --out $D/real_compare \
                                    --checkpoints $D/real_compare/checkpoints --jobs 12
 $PY tools/probe_line_vs_fuzz.py    --out $D/probe \
                                    --checkpoints $D/real_compare/checkpoints
-# 7  figures
-$PY tools/make_line_sensors_figure.py --bakeoff $D/bakeoff --probe $D/probe --out $D
+# 7  every number the report will quote, then the figures, which read it
+$PY tools/summarize_tube_self_supervised.py --run $D
+$PY tools/make_rigid_shift_gates_figure.py --run $D --out $D
+$PY tools/make_line_sensors_figure.py --summary $D/summary.json --probe $D/probe --out $D
 $PY tools/make_tube_ssl_figure.py     --run $D/training --out $D
 $PY tools/make_tube_real_lanes.py     --run $D/real_compare --out <darkroom> --family <name>
 # 8  murderboard, blind round, loop until clean
@@ -122,10 +126,27 @@ any power there; it is an untested instrument, not evidence.
 on crops taken at the same index from a globally-shifted raster are largely comparing identical
 frames.
 
-> *The incident:* the shared-offset control read 0.49–0.53 and was presented as excluding a per-ROI
-> leak. On the lab fast stream — the stream the whole experiment ran on — **the same classifier
-> never rose above chance for the surrogate either**, at any displacement. And 26–42 % of its
-> comparisons were ties. It also could not, by construction, detect the one leak the run did find.
+> *The incident (first report, 2026-09-16):* the shared-offset control read 0.49–0.53 and was
+> presented as excluding a per-ROI leak. On the lab fast stream — the stream the whole experiment ran
+> on — **the same classifier never rose above chance for the surrogate either**, at any
+> displacement. And 26–42 % of its comparisons were ties. It also could not, by construction,
+> detect the one leak the run did find.
+
+**Gate — name the alternative each control rejects, and construct its opposite.** A positive
+control shows power only against the failure it was built to produce. Write down, for every null
+check, the most plausible thing other than the effect that would also make it pass, and build the
+input that has that thing and not the effect. If the check passes on that input too, it cannot tell
+the two apart.
+
+> *The incident (third murderboard of the same report, 2026-09-17):* the controls had been repaired
+> to carry positive controls — per-onset dither in the per-ROI test, a thinned copy in the paired
+> checks — and all of them passed. A reviewer built a scorer with **no events at all**, only a slow
+> rate change shared by every ROI, and ran it through the paired checks: every one passed. Dither
+> breaks same-ROI intervals, which rigid shift never does, and thinning moves counts; neither is
+> the alternative that mattered, which was slow co-modulation. The stationary synthetic twin could
+> not fail under rigid shift at all. The repair that answered it was a small-displacement shift
+> (slow modulation survives it, sub-second alignment does not), twins that carry shared and
+> independent modulation, and zero-parameter scorers run through the same checks.
 
 ## Stage 4 — Supervised bake-off, against the right comparators
 
@@ -166,10 +187,18 @@ will pin to the grid floor silently.
 
 **Gate — run the untrained control for *every* model, and check each one is actually collapsed.**
 
-> *The incident:* the untrained arm was dismissed as "no working baseline", quoting two of four
-> models. Untrained `line_length` scored 0.272 at the label-free threshold — beating **nine of the
-> sixteen trained cells** — and untrained `tube` at the truth-reading threshold beat **every**
-> trained cell. The honest claim was much narrower: training did not beat random initialisation.
+> *The incident (first report, 2026-09-16):* the untrained arm was dismissed as "no working
+> baseline", quoting two of four models. Untrained `line_length` scored 0.272 at the label-free
+> threshold — beating **nine of the sixteen trained cells** — and untrained `tube` at the
+> truth-reading threshold beat **every** trained cell. The claim that run supported was narrower:
+> training did not beat random initialisation. ⚠ The rerun of 2026-09-16/17 overturned even that at
+> the stricter label-free rates, and found the untrained arm's truth-reading score came from
+> detections covering most of each recording — see the report, not this incident, for the result.
+
+**Gate — measure the untrained arm's detections, not only its score, and add a detector that fires
+with nothing learned.** An untrained network that fires nothing, or fires everywhere, is not the
+comparator a claim that "training bought something" needs. Record detection width and the share of
+the recording covered, and run a zero-parameter count scorer through the same thresholds.
 
 ## Stage 6 — Real recordings
 
