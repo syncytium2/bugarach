@@ -113,6 +113,15 @@ class Trained:
     history: list = field(default_factory=list)
     threads: int = 0
     """Intra-op threads this was fitted at — a condition of the number, not trivia."""
+    cfg: dict | None = None
+    """The architecture config the model was BUILT with: the registry's defaults with every
+    override applied. ``None`` when whatever made this object did not record it. Until
+    2026-09-16 nothing did, so a checkpoint wrote the registry's defaults in its place and a
+    tuned model (``n_scales=6``, ``max_ratio=80``) could not be reloaded as itself."""
+    training: dict | None = None
+    """How the weights were fitted — optimiser settings, crop, batch, training recordings,
+    seed, torch version. Separate from ``cfg`` on purpose: ``cfg`` says what to build, this
+    says how it was fitted, and a tuning run varies both."""
 
     def predict(self, slice_, *, stream=None, extent=None):
         """Detections in the six ports' contract, ready for ``score_stream``.
@@ -220,9 +229,16 @@ def train(name: str, make_recording, *, dt: float = 0.1, n_train: int = 12,
     model.eval()
     thr, gap = pick_threshold(model, make_recording, dt=dt, seed=seed,
                               stream=stream)
+    training = {"optimizer": "Adam", "lr": float(lr), "steps": int(steps),
+                "crop_frames": int(crop), "batch": int(batch), "n_train": int(n_train),
+                "train_seed": int(seed), "dt_sec": float(dt), "stream": stream,
+                "threads": int(threads), "torch_version": torch.__version__,
+                "loss": "BCEWithLogitsLoss, pos_weight from the training recordings",
+                "threshold_rule": "pick_threshold, pooled F1 on the validation block"}
     return Trained(name=name, model=model, threshold=thr,
                    n_params=n_params(model), dt=dt, merge_gap_frames=gap,
-                   train_seconds=train_seconds, history=hist, threads=threads)
+                   train_seconds=train_seconds, history=hist, threads=threads,
+                   cfg={**arch.cfg, **arch_over}, training=training)
 
 
 def pick_threshold(model, make_recording, *, dt, seed, n_val: int = 4,
