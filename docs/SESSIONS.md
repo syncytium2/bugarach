@@ -10,6 +10,26 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
+### Mac/unsup-rigid-shift-report-residuals — DARKROOM claim ACTIVE 2026-09-17: `bugarach/2026-09-17-rigid-shift-report/`
+- **Status:** ACTIVE (bugarach-smoked-ratchet), claimed before writing. Tony ruled on 2026-09-17,
+  after the report's fourth blind murderboard, that the real-derived outputs of the rigid-shift run
+  leave the repo for the darkroom (FOUNDATIONS §5: anything derived from real data stays
+  machine-local, no slice ids).
+- **Writes:** one new folder only —
+  - `real_compare/events.json` (per-recording event times, keyed by recording id) and
+    `real_compare/checkpoints/` (models trained on real recordings), for this run and the one they
+    replace;
+  - the report's five figures and a copy of the report, the reader's copy per CLAUDE.md.
+
+  Nothing existing in the darkroom is touched.
+- ⚠ **The files being moved are also in git history on `main`** since PR #588. Moving them out of the
+  tree is not a retraction, and this claim does not say it is.
+- **Touches:** `docs/learned/tube_self_supervised/` (branch `unsup/rigid-shift-report-residuals`,
+  PR #603), `docs/SESSIONS.md`.
+- **Goal:** unsupervised-learning.
+- **Released when:** the folder holds the files and the branch that removes them from the tree has
+  landed.
+
 ### Mac/unsup-slow-comodulation — DARKROOM claim ACTIVE 2026-09-17: `bugarach/2026-09-17-slow-comodulation/`
 - **Status:** ACTIVE (bugarach-quiet-raven). Tony: *"i think i need a figure or a doc to explain
   this slow co-modulation. i've been trying to ignore it so far, but now i feel i cannot."*
@@ -2431,3 +2451,10 @@ session's work is not a sweep.
   intervals) and `best_parameters.html` / `best_parameters.png` (Figure 1), from
   `tools/retune_operating_points.py` on branch `best-parameters`.
 - **Released:** 2026-09-16, at write. Holds nothing.
+
+### darkroom/bugarach/2026-09-16-full-search/ — every declared setting of all six detectors, searched overnight (065/full-search)
+- **Claimed:** 2026-09-16, before the first write. A new folder, so nothing existing is overwritten.
+- **Writes:** `search.log`, `search.json` (written after each stage, so a stop mid-run keeps what
+  finished) and `full_search.html` / `full_search.png` (the figure), from
+  `tools/search_all_settings.py` on branch `full-search`. Measure-only: no operating point changes.
+- **Released:** 2026-09-17. The run finished 2026-09-16 17:02; holds nothing.

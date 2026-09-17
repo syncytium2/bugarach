@@ -190,6 +190,90 @@ what switching them cost and who decided to spend it.
 MEASURED_BURST_BINS = (300.0, 60.0)
 """Bin widths (s) the shapes in `MEASURED_BURST_SHAPE` were fitted at."""
 
+FULL_GRIDS: dict[str, dict[str, tuple]] = {
+    "loco": {
+        "threshold_pctile": (97.0, 98.0, 99.0, 99.5, 99.9, 99.99),
+        "bin_width_sec": (0.5, 1.0, 2.0, 3.0, 5.0),
+        "context_win_sec": (30.0, 60.0, 120.0, 240.0, 480.0),
+        "merge_gap_sec": (0.5, 1.0, 2.0, 4.0, 8.0),
+    },
+    "sync": {
+        "C_threshold": (0.02, 0.04, 0.06, 0.08, 0.1, 0.12, 0.16),
+        "C_min": (0.02, 0.05, 0.1, 0.15, 0.2),
+        "tau_max": (0.1, 0.25, 0.5, 1.0, 2.0),
+        "max_gap": (0.1, 0.25, 0.5, 1.0, 2.0),
+    },
+    "coact": {
+        "alpha": (1e-2, 3e-3, 1e-3, 3e-4, 1e-4, 3e-5, 1e-5, 1e-6),
+        "int_win_sec": (0.5, 1.0, 2.0, 3.0, 5.0),
+        "context_win_sec": (20.0, 30.0, 60.0, 120.0, 240.0),
+    },
+    "rate": {
+        "excess_threshold_hz": (3.0, 3.5, 4.0, 4.5, 5.0, 6.0, 8.0),
+        "context_win": (20.0, 30.0, 60.0, 120.0, 240.0),
+        "rate_win": (0.5, 1.0, 2.0, 3.0, 5.0),
+    },
+    "sce": {
+        "threshold_pctile": (70.0, 75.0, 80.0, 85.0, 90.0, 95.0, 98.0, 99.0, 99.5),
+        "bin_width_sec": (2.0, 5.0, 10.0, 15.0, 20.0, 30.0),
+    },
+    "cicada": {
+        "sce_percentile": (99.9, 99.95, 99.99, 99.995, 99.999, 99.9995, 99.9999),
+        "n_synchronous_frames": (1, 2, 3, 5, 10),
+        "sce_min_distance_frames": (1, 2, 4, 8, 16),
+    },
+}
+"""The values each detector's settings are searched over — **one declaration, both
+machines**.
+
+**Per axis, never a product.** The search that reads this
+(``tools/search_all_settings.choose_settings``) moves one setting at a time with the rest
+held at the current best, so what it visits is a **sum** over axes. A product of these
+axes is not runnable, and no caller should build one: goal 2's nested cross-validation
+calls the search inside each outer fold instead of enumerating a grid
+(``docs/todo/2026-09-17-how-is-the-coded-side-searched-inside-nested-cross-validation.md``,
+option A, decided 2026-09-17).
+
+**Two consumers, one list, on purpose.** Goal 1 searches these for the values the
+detectors ship at; goal 2 searches the same axes inside each of its outer folds, so the
+comparison tunes the coded side over the space the shipped values came from. Two copies of
+a grid is how the two machines came to tune different things on 2026-09-16.
+
+⚠ **These are the DECLARED settings, not yet every knob.** Goal 1 step 3 widens this to
+every parameter a detector takes bar the data's own — ``min_rois``, the merge gaps, the
+guards and the categorical axes — as ``HANDOFF-coded-detectors.md`` §3 step 3 inventories
+them. The *shape* is what callers bind to, and it does not change when the axes grow.
+"""
+
+FULL_GRID_PAIRS: dict[str, tuple[str, str]] = {
+    "sce": ("threshold_pctile", "bin_width_sec"),
+    "loco": ("threshold_pctile", "context_win_sec"),
+    "cicada": ("sce_percentile", "n_synchronous_frames"),
+}
+"""Pairs worth walking as a full two-setting grid, where one setting's best depends on
+where the other sits. A coordinate search can miss a diagonal ridge, and these are the
+ridges this project has met. Optional for a caller: goal 2 leaves them off inside a fold,
+because a pair is a product and it pays for one per fold."""
+
+
+def settings_are_valid(det: str, p: dict) -> bool:
+    """Do these settings make sense together?
+
+    Rejects a context window shorter than what fills it, and a floor above its own
+    threshold. It lives here rather than in the search so that a caller walking
+    :data:`FULL_GRIDS` rejects the same combinations this project's own search does.
+    """
+    if det == "loco":
+        return (p["bin_width_sec"] * 4 <= p["context_win_sec"]
+                and p["merge_gap_sec"] < p["context_win_sec"])
+    if det == "coact":
+        return p["int_win_sec"] * 4 <= p["context_win_sec"]
+    if det == "rate":
+        return p["rate_win"] * 4 <= p["context_win"]
+    if det == "sync":
+        return p["C_min"] <= p["C_threshold"]
+    return True
+
 
 def measured_constants() -> dict[str, float]:
     """Every value in this module that claims to be measured off real recordings.
@@ -253,13 +337,17 @@ RETUNE = ("tools/retune_operating_points.py 2026-09-16 (48 recordings per point,
           "bootstrap gain interval excludes zero)")
 OPERATING_POINTS: dict[str, OperatingPoint] = {
     "loco": OperatingPoint(
-        # Sliding since 2026-09-16 (detectors/sliding.py): binned, a sub-second shift of
-        # a real recording kept 64% of its calls; sliding keeps all of them. thr_step_sec
-        # and n_surrogates do not apply in this mode and are kept only for the binned
-        # path. ⚠ threshold_pctile below was tuned BINNED and is re-searched overnight.
+        # ⚠ STILL BINNED, and the sliding mode is built and waiting for a value.
+        # `detectors/sliding.py` gives this detector a window that slides: a sub-second
+        # shift of a real recording keeps 64% of the binned calls and 100% of the sliding
+        # ones (`tools/probe_sliding_vs_binned.py`), and on the 84 real baseline windows
+        # sliding is a superset of binned (`tools/compare_sliding_vs_binned.py`). What it
+        # is NOT yet is calibrated: at the threshold below, tuned binned, sliding fires
+        # 4.0 calls/hour on the empty recording against a limit of 3 and swings precision
+        # past `MAX_PRECISION_DROP`. The switch lands with the value goal 1 step 3 chooses,
+        # not before — a shipped operating point is a calibrated one.
         params=dict(bin_width_sec=1.0, context_win_sec=120.0, thr_step_sec=15.0,
-                    merge_gap_sec=2.0, threshold_pctile=99.5, n_surrogates=100,
-                    window_mode="sliding"),
+                    merge_gap_sec=2.0, threshold_pctile=99.5, n_surrogates=100),
         source=f"{RETUNE}: 99.9 -> 99.5, mean F1 0.669 -> 0.686, gain +0.017 "
                "(interval +0.005 to +0.029); 0.16 firings/min in the empty stretch on "
                "both backgrounds (limit 1), 1.7 calls/hour on the empty recording "
@@ -309,12 +397,14 @@ OPERATING_POINTS: dict[str, OperatingPoint] = {
         knob="threshold_pctile", grid=(10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 75.0,
                                        80.0, 85.0, 90.0, 95.0, 98.0, 99.0, 99.5, 99.9)),
     "coact": OperatingPoint(
-        # Sliding since 2026-09-16 (detectors/sliding.py), with the null computed rather
-        # than drawn: binned, a sub-second shift kept 70% of calls, and the loss grew with
-        # the shift because every candidate bin re-used one random stream. n_surrogates
-        # does not apply in this mode. ⚠ alpha was tuned BINNED; re-searched overnight.
+        # ⚠ STILL BINNED, for the reason on `loco` above. Sliding is built
+        # (`detectors/sliding.py`), with the null computed rather than drawn: binned, a
+        # sub-second shift keeps 0% of this detector's calls at a 0.05 s match, and the
+        # loss grew with the shift because every candidate bin re-used one random stream.
+        # At the alpha below, tuned binned, sliding fires 7.7 calls/hour on the empty
+        # recording against a limit of 7. The switch lands with goal 1 step 3's value.
         params=dict(int_win_sec=2.0, context_win_sec=60.0, alpha=1e-4,
-                    n_surrogates=100, window_mode="sliding"),
+                    n_surrogates=100),
         source="explore_sce viewer FAST point — NOT the coact_detect signature "
                f"default of alpha=0.01, which scores F1 0.72 here. Confirmed by {RETUNE}: "
                "already the best value within both budgets (mean F1 0.700).",

@@ -170,10 +170,27 @@ windows, so any shift in the fitted values can be attributed.
 
 **How to search**, reusing `tools/search_all_settings.py` rather than writing a new tool:
 
-- **One declaration of the grids, on `main`, imported by both machines.** Put the every-knob grids
-  in `bench` (for example `bench.FULL_GRIDS`) and have `search_all_settings.py` and WSMIP064's
-  `tune_learned_vs_coact.py` both import it. Two copies of a grid are how the two machines came to
-  tune different things on 2026-09-16.
+- **One declaration of the grids, on `main`, imported by both machines.** ✅ Landed 2026-09-17:
+  `bench.FULL_GRIDS` (per axis, never a product), `bench.FULL_GRID_PAIRS` and
+  `bench.settings_are_valid`, read by `search_all_settings.py` here and by
+  `tune_learned_vs_coact.py` on WSMIP064. Two copies of a grid are how the two machines came to
+  tune different things on 2026-09-16. **The axes are still the declared settings**; widening them
+  to the inventory above is the rest of this step, and the shape callers bind to does not change.
+  **Goal 2 searches them per outer fold** through
+  `search_all_settings.choose_settings(detector, *, score, admissible=None, …)`, a callable over
+  the caller's own callbacks — it never sees a recording, a budget or a pooling rule, so nothing
+  about a configuration can be chosen with the fold it is scored on. Inside a fold the declared
+  grid stays fixed and an edge is returned as data; goal 1's own search keeps extending until the
+  optimum is bracketed. The decision and its options:
+  [`docs/todo/2026-09-17-how-is-the-coded-side-searched-inside-nested-cross-validation.md`](docs/todo/2026-09-17-how-is-the-coded-side-searched-inside-nested-cross-validation.md).
+  ⚠ **WSMIP064 asks, before these grids are declared** (2026-09-17; its session cannot reach this
+  machine directly, so the question travels through `main`): the grids are a **coordinate search's**,
+  and goal 2 scores the coded side under **nested cross-validation**, where every candidate is scored
+  on each outer fold's training recordings. Every knob as a product is not runnable, and
+  `tune_learned_vs_coact.py` refuses a product over 5,000 configurations rather than guess. Three
+  options, and 064's recommendation (run this search inside each outer fold), are in
+  [`docs/todo/2026-09-17-how-is-the-coded-side-searched-inside-nested-cross-validation.md`](docs/todo/2026-09-17-how-is-the-coded-side-searched-inside-nested-cross-validation.md).
+  **Deciding after the grids are declared means declaring them twice.**
 - **Replace the silent extension cap.** An optimum still at an edge after the last extension is
   reported as `EdgeOfRange`, the bench's own refusal, and never written as a result.
 - **Categorical settings** (`detection_mode`, `guard_norm`, `null_context_mode`, `threshold_mode`,
@@ -278,3 +295,17 @@ to keep. Nothing below edits WSMIP064's branch. It all arrives through `main`.
   edited without re-measuring, or when a constant leaves its interval unacknowledged.
   `fit_background_shape.py` now reads the analysis window (it had been measuring the raw period), and
   it no longer passes a verdict at a fixed 5%. Next: §3 step 2.
+- 2026-09-17 15:05 (WSMIP065): **§3 step 2 done. The two modes disagree only in ways forks.md §14
+  predicts, so nothing here blocks landing sliding.**
+  *Reproduced:* the 48 tests of the sliding branch pass, and `probe_sliding_vs_binned.py` (repointed
+  from the TTX subset to `steps_excluded`) gives sliding 100% of calls kept at every shift of
+  0.1–0.9 s against binned 41% for LoCo and 0% for CoactDetect at a 0.05 s match, in 0.23–0.41 times
+  the time.
+  *On real recordings* (`tools/compare_sliding_vs_binned.py`, 84 baseline analysis windows, fast
+  stream): LoCo 598 → 923 calls, CoactDetect 436 → 583, at the **binned-tuned** settings. Sliding
+  never calls fewer for LoCo (59 recordings call more) and calls fewer in 4 for CoactDetect. A median
+  1.00 of binned calls are also made sliding (within 2.5 s), and 0.40 / 0.33 of sliding calls are new.
+  **CoactDetect's shared onsets move a median +0.30 s** (median absolute 0.50 s) where LoCo's move
+  0.00 s — the bin edge becoming the first participating event, which is the whole of why only half
+  of CoactDetect's calls match at 0.5 s. Run, figures and note:
+  `<darkroom>/bugarach/2026-09-17-sliding-vs-binned/`. Next: §3 step 3, the every-knob search.
