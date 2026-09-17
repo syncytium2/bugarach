@@ -74,7 +74,7 @@ def paired(a, b):
 # -- bake-off -----------------------------------------------------------------------------------
 
 def bakeoff(run: Path) -> dict:
-    dirs = sorted(run.glob("bakeoff_seed*"))
+    dirs = sorted(d for d in run.glob("bakeoff_seed*") if d.is_dir())
     if not dirs:
         return {}
     per = defaultdict(lambda: defaultdict(dict))       # det -> seed -> fold -> row
