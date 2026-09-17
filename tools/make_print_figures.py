@@ -190,8 +190,251 @@ def fig_chance(W):
     return f
 
 
+def _hist(f, X, Y, Wd, Hh, hist, *, observed, bar, color, xlabel, title, log=False, xmax=None, ylabel=""):
+    """The chance histogram at print sizes (make_plain_detector_review._hist_panel)."""
+    import math
+
+    from make_plain_detector_review import BARC, GREEN
+    from svgfig import MUTED, nice_ticks
+    hist = np.asarray(hist, float)
+    xmax = xmax or len(hist) - 1
+    hist = hist[:xmax + 1]
+    f.text(X, Y - 8, title, size=LABEL_PT, weight=600)
+    if log:
+        vals = np.where(hist > 0, np.log10(np.maximum(hist, 1)), np.nan)
+        top = math.ceil(np.nanmax(vals))
+        p = f.panel(X, Y, Wd, Hh, (-0.6, xmax + 0.6), (0, top))
+        p.bars(np.arange(xmax + 1), vals, color=color, width_frac=0.85)
+        for v in range(0, top + 1, 2):
+            Yp = float(p.py(v))
+            f.line(X - 3, Yp, X, Yp, color=MUTED)
+            f.text(X - 5, Yp + 3, f"{10 ** v:,.0f}", size=PRINT_MIN_PT, anchor="end", color=MUTED)
+        if ylabel:   # clear of the widest tick label ("1,000,000" ran into "copied frames")
+            p.ylabel(ylabel, size=PRINT_MIN_PT, dx=round(12 + 4.2 * len(f"{10 ** top:,.0f}")))
+    else:
+        top = max(1.0, hist.max() * 1.15)
+        p = f.panel(X, Y, Wd, Hh, (-0.6, xmax + 0.6), (0, top))
+        p.bars(np.arange(xmax + 1), hist, color=color, width_frac=0.85)
+        for v in nice_ticks(0, top, 3):
+            Yp = float(p.py(v))
+            f.line(X - 3, Yp, X, Yp, color=MUTED)
+            f.text(X - 5, Yp + 3, f"{v:,.0f}", size=PRINT_MIN_PT, anchor="end", color=MUTED)
+        if ylabel:
+            p.ylabel(ylabel, size=PRINT_MIN_PT, dx=26)
+    step = 2 if xmax <= 14 else 5
+    for v in range(0, xmax + 1, step):
+        Xv = float(p.px(v))
+        f.line(Xv, Y + Hh, Xv, Y + Hh + 3, color=MUTED)
+        f.text(Xv, Y + Hh + 12, f"{v:g}", size=PRINT_MIN_PT, anchor="middle", color=MUTED)
+    f.text(X + Wd / 2, Y + Hh + 23, xlabel, size=PRINT_MIN_PT, anchor="middle", color=MUTED, italic=True)
+    if bar is not None and np.isfinite(bar):
+        Xb = float(p.px(bar))
+        f.line(Xb, Y, Xb, Y + Hh, color=BARC, width=1.5, dash="4 3")
+        f.text(Xb + 3, Y + 10, "bar", size=PRINT_MIN_PT, weight=600)
+    if observed is not None:
+        p.down_triangle(observed, Y - 1, color=GREEN, size=8)
+    return p
+
+
+def fig_algorithm(W, det):
+    """Figures 10-15, how each program decides: its steps and settings across the top, then what it sees
+    in a planted event (A) and in a busy stretch (B) across the full width."""
+    from make_plain_detector_review import (BARC, COLORS, GREEN, INK_T, LINE_LABELS, MEASURE, NAMES, RED,
+                                            _by_activity, _clock, _found, _measure, _plural, _settings_rows,
+                                            _steps_text)
+    from svgfig import MUTED, Figure, nice_ticks
+    sim = W["sim"]
+    st = sim["settings"][det]
+    ev = sim["event"]
+    col = COLORS[det]
+    f = Figure(PAGE_W, 700)
+
+    # the steps, full width
+    f.text(0, 11, f"How {NAMES[det]} decides", size=TITLE_PT + 1, weight=700)
+    y = 28
+    for i, s in enumerate(_steps_text(det, st)):
+        f.add(f"<circle cx='7' cy='{y - 3:.1f}' r='6' fill='{col}'/>")
+        f.text(7, y, str(i + 1), size=PRINT_MIN_PT, anchor="middle", weight=700, color="#fff")
+        y = f.para(18, y, s, width_chars=112, size=LABEL_PT, lh=1.3) + 4
+
+    # the settings (left) beside the chance picture (right)
+    top = y + 2
+    rows = _settings_rows(det, st)
+    lab_x = max(66, 8 + 4.4 * max(len(v_) for v_, _ in rows) + 8)   # "4.5 per second" ran into its label
+    SW = max(222, round(lab_x + 3.75 * max(len(l_) for _, l_ in rows) + 10))
+    f.text(8, top + 14, "Settings", size=TITLE_PT, weight=700)
+    yy = top + 28
+    for val, lab in rows:
+        f.text(8, yy, val, size=LABEL_PT, weight=700, color=col)
+        f.text(lab_x, yy, lab, size=PRINT_MIN_PT, color=INK_T)
+        yy += 12
+    f.rect(1, top, SW, yy - top - 4, stroke=col, width=1.1, rx=4)
+    box_bottom = yy - 4
+
+    R = SW + 14                       # the chance picture's column
+    RW = PAGE_W - R
+    hy = top + 12
+    if det in ("coact", "loco"):
+        if det == "coact":
+            q, b = sim["chance_coact"], sim["chance_coact_B"]
+            f.text(R, hy - 2, "100 shifted copies of the 60 s around one bin:", size=PRINT_MIN_PT, color=MUTED)
+            parts = [(np.bincount(np.asarray(qq["counts"], int), minlength=15)[:15], qq["observed"], qq["bar"],
+                      lab) for qq, lab in ((q, "a quiet minute (A)"), (b, "a busy minute (B)"))]
+            kw = dict(color="#b9c6d6", log=False, xmax=14, ylabel="copies")
+        else:
+            q = sim["chance_loco"]
+            f.text(R, hy - 2, "100 shifted copies of each side of the planted event:", size=PRINT_MIN_PT,
+                   color=MUTED)
+            parts = [(q["before"], None, q["p999_before"], "the minute before"),
+                     (q["after"], q["observed"], q["p999_after"], "the minute after")]
+            kw = dict(color="#c9b6e4", log=True, xmax=10, ylabel="copied bins")
+        HW = (RW - 80 - 6) // 2
+        for j, (h, obs, bar, lab) in enumerate(parts):
+            X = R + 40 + j * (HW + 40)
+            _hist(f, X, hy + 22, HW, 62, h, observed=obs, bar=bar, xlabel="neurons", title=lab,
+                  **{**kw, "ylabel": kw["ylabel"] if j == 0 else ""})
+        chance_bottom = hy + 22 + 62 + 26
+    elif det in ("sce", "cicada"):
+        if det == "sce":
+            q = sim["chance_sce"]
+            head, kw = "200 shifted copies of the whole recording, pooled:", dict(
+                color="#b8dcb8", xlabel="neurons in a 10 s bin", title="every bin of 200 copies", xmax=20,
+                ylabel="copied bins")
+        else:
+            q = sim["chance_cicada"]
+            head, kw = "100 shifted copies of the whole recording, pooled:", dict(
+                color="#f0b8da", xlabel="neurons switched on in a frame", title="every frame of 100 copies",
+                xmax=14, ylabel="copied frames")
+        f.text(R, hy - 2, head, size=PRINT_MIN_PT, color=MUTED)
+        _hist(f, R + 58, hy + 22, RW - 64, 62, q["hist"], observed=q["observed"], bar=q["bar"], log=True, **kw)
+        chance_bottom = hy + 22 + 62 + 26
+    elif det == "rate":
+        ctx_s = float(st.get("context_win", 60.0))
+        rate_s = float(st.get("rate_win", 1.0))
+        f.text(R, hy - 2, "The two windows, at one moment:", size=LABEL_PT, weight=600)
+        span = (-ctx_s / 2 - 6, ctx_s / 2 + 6)
+        wp = f.panel(R + 8, hy + 14, RW - 16, 40, span, (0, 1), frame=False)
+        X0 = float(wp.px(0))
+        f.text(X0, hy + 12, "the moment being scored", size=PRINT_MIN_PT, anchor="middle", color=MUTED)
+        wp.span(-ctx_s / 2, ctx_s / 2, row_y=hy + 17, row_h=14, color="#cfd9e6")
+        f.text(float(wp.px(-ctx_s / 2)) + 4, hy + 27, f"context window · {ctx_s:g} s", size=PRINT_MIN_PT)
+        wp.span(-rate_s / 2, rate_s / 2, row_y=hy + 34, row_h=14, color=COLORS["rate"], min_px=3)
+        f.text(X0 + 6, hy + 44, f"counting window · {rate_s:g} s", size=PRINT_MIN_PT)
+        f.line(X0, hy + 15, X0, hy + 52, color=BARC, width=0.8, dash="2 2")
+        for v in (-30, 0, 30):
+            Xv = float(wp.px(v))
+            f.line(Xv, hy + 54, Xv, hy + 57, color=MUTED)
+            f.text(Xv, hy + 65, f"{v:g}s", size=PRINT_MIN_PT, anchor="middle", color=MUTED)
+        yb = f.para(R, hy + 82, f"Every event from every neuron inside the {rate_s:g} s window is counted and "
+                                f"compared with the average over the {ctx_s:g} s window centred on the same "
+                                f"moment. No copies are made.", width_chars=50, size=PRINT_MIN_PT, color=MUTED)
+        chance_bottom = f.para(R, yb + 3, "Both widths are settings, like the bar. So far only the bar has "
+                                          "been tuned.", width_chars=50, size=PRINT_MIN_PT, color=MUTED)
+    else:  # sync
+        n = sim["n_roi"]
+        f.text(R, hy - 2, "Why small events cannot reach the bar:", size=LABEL_PT, weight=600)
+        f.text(R, hy + 10, "the highest score an event can reach, by neurons joining it:", size=PRINT_MIN_PT,
+               color=MUTED)
+        p = f.panel(R + 10, hy + 32, RW - 24, 20, (0, 0.3), (0, 1))
+        for k_ in sorted({3, ev["n_part"], 10}):
+            v = (k_ - 1) / (n - 1)
+            X = float(p.px(v))
+            f.line(X, hy + 32, X, hy + 52, color=COLORS["sync"], width=1.6)
+            f.text(X, hy + 28, f"{k_} neurons", size=PRINT_MIN_PT, anchor="middle", color=COLORS["sync"])
+        Xb = float(p.px(st.get("C_threshold", 0.1)))
+        f.line(Xb, hy + 30, Xb, hy + 55, color=BARC, width=2)
+        for v in (0, 0.1, 0.2, 0.3):
+            Xv = float(p.px(v))
+            f.line(Xv, hy + 52, Xv, hy + 55, color=MUTED)
+            f.text(Xv, hy + 64, f"{v:.1f}", size=PRINT_MIN_PT, anchor="middle", color=MUTED)
+        f.text(Xb, hy + 74, "bar", size=PRINT_MIN_PT, anchor="middle", weight=700)
+        chance_bottom = f.para(R, hy + 90, f"With {n} neurons, an event joined by k neurons can score at most "
+                                           f"(k−1) ÷ {n - 1}. An event joined by 3 neurons tops out at "
+                                           f"{2 / (n - 1):.2f}, below the bar.", width_chars=50,
+                               size=PRINT_MIN_PT, color=MUTED)
+
+    # the two views, full width
+    y0 = max(box_bottom, chance_bottom) + 18
+    L, VW, GAP = 52, 186, 30
+    label, sub, ylim = MEASURE[det]
+    for j, (key, title) in enumerate((("A", "A · a planted event (quiet neurons)"),
+                                      ("B", "B · a busy stretch, nothing planted"))):
+        D = sim[key]
+        X = L + j * (VW + GAP)
+        win = D["win"]
+        f.text(X, y0, title, size=TITLE_PT, weight=600)
+        f.text(X, y0 + 11, f"one minute, from {_clock(win[0])} into the recording", size=PRINT_MIN_PT,
+               color=MUTED)
+        calls = D[f"{det}_calls"]
+        ly = y0 + 16
+        lane = f.panel(X, ly, VW, 26, win, (0, 1))
+        if key == "A":
+            ok = _found(calls, ev["time"])
+            lane.down_triangle(ev["time"], ly + 8, color=GREEN if ok else RED, size=8)
+        for on, wd in calls:
+            lane.span(on, on + max(wd, 0.0), row_y=ly + 15, row_h=8, color=col, min_px=2)
+        n_calls = sum(1 for on, wd in calls if on + wd >= win[0] and on <= win[1])
+        f.text(X + VW - 3, ly + 9, _plural(n_calls, "call"), size=PRINT_MIN_PT, anchor="end", color=MUTED)
+        ry = ly + 30
+        # 80 and 84, not 96: at 96 SPIKE-synch's figure pushed its caption onto the next Word page
+        r = f.panel(X, ry, VW, 80, win, (0, 1))
+        r.raster(_by_activity(D["trains"]), width=0.8)
+        my = ry + 80 + 8 + 14 * 1            # room for the line key below
+        p = f.panel(X, my + 8, VW, 84, win, ylim)
+        _measure_print(p, det, D, _measure)
+        for v in nice_ticks(*ylim, 4):
+            Yv = float(p.py(v))
+            f.line(X, Yv, X + VW, Yv, color="#ececec")
+            f.line(X - 3, Yv, X, Yv, color=MUTED)
+            f.text(X - 5, Yv + 3, f"{v:g}", size=PRINT_MIN_PT, anchor="end", color=MUTED)
+        if j == 0:
+            r.ylabel(f"{sim['n_roi']} neurons", size=LABEL_PT, dx=12)
+            f.text(X - 5, ly + 11, "planted", size=PRINT_MIN_PT, anchor="end", color=MUTED)
+            f.text(X - 5, ly + 22, "calls", size=PRINT_MIN_PT, anchor="end", color=MUTED)
+            p.ylabel(label, lines=[label] + ([sub] if sub else []), size=PRINT_MIN_PT, dx=34 if sub else 30)
+        _time_axis(f, p, offset=win[0], step=15.0, label="seconds from the start of this minute")
+    # what each line is, named between raster and measurement, once, across both columns
+    kx, ky = L, my + 2
+    for text, c_, _k in LINE_LABELS[det]:
+        f.text(kx, ky, "▬", size=LABEL_PT, weight=700, color=COLORS.get(c_, c_))
+        f.text(kx + 11, ky, text, size=PRINT_MIN_PT, color=MUTED)
+        kx += 11 + 3.7 * len(text) + 16
+    by = my + 8 + 84 + 42
+    kx = L
+    for c_, lab in ((GREEN, "planted event, found"), (RED, "planted event, missed")):
+        f.text(kx, by, "▼", size=LABEL_PT, weight=700, color=c_)
+        f.text(kx + 11, by, lab, size=PRINT_MIN_PT, color=MUTED)
+        kx += 11 + 3.7 * len(lab) + 18
+    f.h = by + 8
+    return f
+
+
+def _measure_print(p, det, D, page_measure):
+    """The measurement lines, thinner than the page's for a panel a fifth the size."""
+    from make_plain_detector_review import BARC, COLORS, GREY, _arr
+    c = COLORS[det]
+    M = D[det]
+    if det == "rate":
+        p.curve(_arr(M["t"]), _arr(M["ref"]), color=GREY, width=1.6)
+        p.curve(_arr(M["t"]), _arr(M["y"]), color=c, width=0.9)
+        p.curve(_arr(M["t"]), _arr(M["bar"]), color=BARC, width=1.3, dash="4 3")
+    elif det == "coact":
+        p.steps(_arr(M["t"]), _arr(M["y"]), color=c, width=1.1)
+        p.dots(_arr(M["t"]), _arr(M["mean"]), color=GREY, r=1.6)
+        p.dashes(_arr(M["t"]), _arr(M["bar"]), color=BARC, half_width=3, width=1.6)
+    elif det in ("loco", "sce", "cicada"):
+        p.steps(_arr(M["t"]), _arr(M["y"]), color=c, width=1.0 if det != "cicada" else 0.7)
+        p.steps(_arr(M["t"]), _arr(M["bar"]), color=BARC, width=1.3, dash="4 3")
+    else:
+        p.dots(_arr(M["px"]), _arr(M["py"]), color=c, r=1.5, opacity=0.8)
+        p.curve(_arr(M["cx"]), _arr(M["cy"]), color="#7a2a00", width=0.8)
+        p.hline(M["bar"], color=BARC, width=1.3, dash="4 3")
+
+
 FIGURES = {"fig_orient": ("fig01_orient", fig_orient), "fig_problem": ("fig02_problem", fig_problem),
            "fig_chance": ("fig03_chance", fig_chance)}
+for _i, _d in enumerate(("rate", "coact", "loco", "sce", "cicada", "sync")):
+    FIGURES[f"fig_alg_{_d}"] = (f"fig{10 + _i}_alg_{_d}", lambda W, _d=_d: fig_algorithm(W, _d))
 
 
 def render(figs: dict, out: Path) -> None:

@@ -16,9 +16,11 @@ from bugarach.paths import darkroom  # noqa: E402
 
 D = darkroom() / "2026-09-15-detector-review-plain"
 DOC = D / "detector_review_plain-td.docx"
-PAIRS = {"fig_orient.png": "print_figures/fig01_orient.png",
-         "fig_problem.png": "print_figures/fig02_problem.png",
-         "fig_chance.png": "print_figures/fig03_chance.png"}
+#: Only figures not yet swapped: a swapped figure's old bytes are gone from the docx, so a done pair would
+#: stop the run ("found n of m"). Done so far: fig_orient, fig_problem, fig_chance (1-3).
+#: Figures 10-15 were swapped once and then redrawn shorter; `swapped_v1/` holds the bytes now in the docx.
+PAIRS = {f"print_figures/swapped_v1/fig{10 + i}_alg_{d}.png": f"print_figures/fig{10 + i}_alg_{d}.png"
+         for i, d in enumerate(("rate", "coact", "loco", "sce", "cicada", "sync"))}
 
 
 def png_size(b):
