@@ -52,9 +52,15 @@ shift's dropped onsets never enter):
   removed, membership by CoactDetect's own half-open bins, CoactDetect at the project's
   calibrated point (``detect_folder.detector_params``). It fires only where at least three ROIs
   coincide, so two-ROI coincidences and events too weak for its test stay.
-* ``circular_minus_coact`` — the circular shift of the removed trains: the null for the two
-  removal arms, which have fewer onsets than the recording.
+* ``circular_mask`` — the null for every removal arm: a circular shift run inside the stretches no
+  episode covers, so the null keeps each ROI's onset count and carries the same shared,
+  episode-shaped holes the removal cuts.
+* ``circular_minus_coact`` — the circular shift of the already-removed trains. Kept only to show
+  what the mask-matched null buys: it scatters each ROI's holes to its own phase, so the shared
+  holes read as shared change and the ratio comes out too high.
 * ``minus_coact_block_120`` — the block control applied after that removal.
+* ``minus_coact_rigid_20`` — rigid shift at *J* = 20 s applied after that removal: what a rigid
+  shift leaves once the detectable events are gone.
 * ``circular_single`` — one circular draw scored against the 8-draw mean: the per-recording
   reference for how often a ratio exceeds 1 by chance.
 
@@ -106,6 +112,10 @@ LAG_EDGES_SEC = tuple(float(x) for x in np.concatenate(
 """Short bins 0.3 s wide so every recording's frame interval (at most 0.119 s) puts at least two
 lag frames in each; an edge at exactly 1 s; log-spaced from there to 300 s."""
 VAR_BIN_SEC = (1.0, 10.0, 60.0)
+N_SINGLE = 3
+"""Single circular draws per recording, each scored against the 8-draw circular mean: how often a
+per-recording ratio from one surrogate realization exceeds 1 by chance. ``circular_ref8`` is a
+second 8-draw mean, the matching reference for arms that are themselves means of 8 draws."""
 FOLDERS = (("steps_excluded", "fast"), ("steps_excluded", "slow"), ("cossart", "events"))
 
 COACT_NOTE = ("CoactDetect runs at detect_folder.detector_params('coact', ...) on both streams: "
@@ -175,7 +185,9 @@ def pair_counts(trains, L: int, dt: float) -> tuple[np.ndarray, np.ndarray]:
 def count_variance(trains, L: int, dt: float) -> np.ndarray:
     """Variance of the population onset count in full bins of each width in ``VAR_BIN_SEC``, then
     the same after a straight line fitted to the bin counts is removed (residual sum of squares
-    over n − 2). The second half separates a steady rise or fall across the window from swings."""
+    over n − 2). ⚠ The line also absorbs the linear part of any change slower than about half the
+    window, so the detrended ratio is not a trend test: the trend-free 5-minute synthetic world
+    loses about a third of its 1-minute excess to it."""
     pop = raster(trains, L).sum(axis=0)
     raw, detr = [], []
     for w in VAR_BIN_SEC:
@@ -205,10 +217,16 @@ def unpack(v) -> dict:
                 var_detrended=v[2 * nb + nv:2 * nb + 2 * nv])
 
 
-NULL_OF = {"minus_coact": "circular_minus_coact", "minus_coact_block_120": "circular_minus_coact"}
-"""Each count-variance ratio is divided by the circular shift of the same onsets: the arms with
-CoactDetect's episodes removed have fewer onsets than the recording, so their null is the
-circular shift of the removed trains, not of the recording."""
+NULL_OF = {"minus_coact": "circular_mask", "minus_coact_block_120": "circular_mask",
+           "minus_coact_rigid_20": "circular_mask"}
+"""Each count-variance ratio is divided by a surrogate of the same onsets (``null_of``), and for
+the arms with CoactDetect's episodes removed that surrogate must carry the same holes. Deleting
+every onset inside an episode cuts gaps that are **shared across ROIs**; a null that shifts each
+ROI on its own and then deletes *its own* onsets scatters those gaps to separate phases, and the
+shared gaps are then scored as shared change. So ``circular_mask`` shifts each ROI circularly
+**within the frames no episode covers**: its onset count survives exactly, and the holes stay
+where the arm has them. The mismatched version is kept as ``circular_minus_coact`` so the
+difference can be read rather than asserted."""
 
 
 def null_of(arm: str) -> str:
@@ -232,6 +250,7 @@ def coact_removed(trains, L_full: int, dt: float, stream: str):
     params = detector_params("coact", frame_interval_sec=dt, stream=stream)
     sec = [np.asarray(t, float) * dt for t in trains]
     det = coact_detect(sec, (0.0, L_full * dt), **params)
+    episodes = list(zip(np.asarray(det.onset_sec, float), np.asarray(det.width_sec, float)))
     out, n_in, n_out = [], 0, 0
     for t, ts in zip(trains, sec):
         inside = np.zeros(t.size, bool)
@@ -240,9 +259,47 @@ def coact_removed(trains, L_full: int, dt: float, stream: str):
         out.append(np.asarray(t, np.int64)[~inside])
         n_in += t.size
         n_out += int(inside.sum())
-    return out, dict(coact_events=int(det.n_events), share_removed=n_out / max(n_in, 1),
+    return out, episodes, dict(coact_events=int(det.n_events), share_removed=n_out / max(n_in, 1),
                      events_per_10min=det.n_events / (L_full * dt / 600.0),
                      episode_share_of_time=float(np.sum(det.width_sec)) / (L_full * dt))
+
+
+def surviving_frames(episodes, L: int, dt: float, trim: int) -> np.ndarray:
+    """The frames of the trimmed window that no CoactDetect episode covers, by the same half-open
+    membership the removal uses."""
+    keep = np.ones(L, bool)
+    for a, w in episodes:
+        i0 = int(np.ceil(a / dt - 1e-9)) - trim
+        i1 = int(np.ceil((a + w) / dt - 1e-9)) - trim
+        keep[max(i0, 0):max(i1, 0)] = False
+    return keep
+
+
+def masked_circular_shift(trains, keep: np.ndarray, r) -> list:
+    """Circular shift run **inside the surviving stretches**: each ROI's onsets are mapped to
+    their position among the frames no episode covers, shifted circularly there by that ROI's own
+    offset, and mapped back.
+
+    This is the null the removal arms need, and neither simpler construction is. Shifting the
+    already-removed trains across the whole window scatters each ROI's episode-shaped holes to its
+    own phase, so the holes — which the removal cuts in every ROI at once — read as shared change
+    and the ratio comes out too high. Shifting the full trains and then cutting the same episodes
+    keeps the holes but not the counts: the removal takes onsets where they are dense, the mask
+    takes them in proportion to time, the null ends up with more onsets than the arm, and the ratio
+    comes out too low. Shifting within the surviving frames keeps **both** — every ROI's onset
+    count exactly, and not one onset inside an episode.
+    """
+    idx = np.flatnonzero(keep)
+    if idx.size == 0:
+        return [np.asarray(t, np.int64)[:0] for t in trains]
+    pos = np.full(keep.size, -1, np.int64)
+    pos[idx] = np.arange(idx.size)
+    out = []
+    for t in trains:
+        p = pos[np.asarray(t, np.int64)]
+        p = p[p >= 0]
+        out.append(np.sort(idx[(p + r.randint(idx.size)) % idx.size]))
+    return out
 
 
 def arms_for(trains_full, L_full: int, dt: float, key, draws: int, stream: str | None):
@@ -256,8 +313,11 @@ def arms_for(trains_full, L_full: int, dt: float, key, draws: int, stream: str |
 
     res["circular"] = mean_over(
         lambda d: sg.circular_shift(tr, (0, L), (TAG, *key, "circular", d)).trains, "circular")
-    res["circular_single"] = measure(
-        sg.circular_shift(tr, (0, L), (TAG, *key, "circular-single")).trains, L, dt)
+    for d in range(N_SINGLE):
+        res[f"circular_single_{d}"] = measure(
+            sg.circular_shift(tr, (0, L), (TAG, *key, "circular-single", d)).trains, L, dt)
+    res["circular_ref8"] = mean_over(
+        lambda d: sg.circular_shift(tr, (0, L), (TAG, *key, "circular-ref8", d)).trains, "ref8")
     res["block_120"] = mean_over(
         lambda d: sg.window_circular_shift(tr, (0, L), (TAG, *key, "block", d),
                                            analysis_window=block).trains, "block")
@@ -268,14 +328,22 @@ def arms_for(trains_full, L_full: int, dt: float, key, draws: int, stream: str |
             "rigid")
     extra = {}
     if stream in ("fast", "slow"):
-        removed, extra = coact_removed(trains_full, L_full, dt, stream)
+        removed, episodes, extra = coact_removed(trains_full, L_full, dt, stream)
         rt = trimmed(removed, L_full, trim)[0]
+
+        keep = surviving_frames(episodes, L, dt, trim)
         res["minus_coact"] = measure(rt, L, dt)
+        res["circular_mask"] = mean_over(
+            lambda d: masked_circular_shift(rt, keep, rng(*key, "mask-circular", d)), "mask")
         res["circular_minus_coact"] = mean_over(
             lambda d: sg.circular_shift(rt, (0, L), (TAG, *key, "coact-circular", d)).trains, "cc")
         res["minus_coact_block_120"] = mean_over(
             lambda d: sg.window_circular_shift(rt, (0, L), (TAG, *key, "coact-block", d),
                                                analysis_window=block).trains, "cb")
+        res["minus_coact_rigid_20"] = mean_over(
+            lambda d: trimmed(rigid_frames(removed, L_full, 20.0 / dt,
+                                           rng(*key, "coact-rigid", d)), L_full, trim)[0],
+            "cr")
     return {k: list(map(float, v)) for k, v in res.items()}, extra, L * dt
 
 
@@ -296,6 +364,24 @@ def load(role: str, stream: str, limit: int | None):
         if refused:
             raise SystemExit(f"refusing non-baseline windows in {stream}: {refused}")
     return recs, skipped
+
+
+def active_and_correlation(trains_full, L_full: int, dt: float) -> dict:
+    """ROIs with at least one onset in the trimmed window, and the mean correlation between two such
+    ROIs' onset counts in full 1-minute bins (pairs where both counts vary). A denominator and a
+    per-pair size only: no ROI is removed from any arm."""
+    trim = int(np.ceil(TRIM_SEC / dt))
+    tr, L = trimmed(trains_full, L_full, trim)
+    f = int(round(60.0 / dt))
+    nb = L // f
+    X = raster(tr, L)[:, :nb * f].reshape(len(tr), nb, f).sum(axis=2)
+    active = int(np.sum(X.sum(axis=1) > 0))
+    varying = X[X.std(axis=1) > 0]
+    corr = np.nan
+    if varying.shape[0] > 1 and nb > 2:
+        C = np.corrcoef(varying)
+        corr = float(C[np.triu_indices_from(C, k=1)].mean())
+    return dict(n_active_roi=active, pairwise_count_corr_1min=corr)
 
 
 def minute_counts(trains_full, L_full: int, dt: float, key) -> dict:
@@ -330,6 +416,7 @@ def real_task(args):
                                      draws, stream if role == "steps_excluded" else None)
     extra["counts_per_minute"] = minute_counts(trains, b - a, rec.dt,
                                                (role, stream, rec.recording_id))
+    extra.update(active_and_correlation(trains, b - a, rec.dt))
     return dict(role=role, stream=stream, recording_id=rec.recording_id, mouse=rec.mouse,
                 group=rec.group, dt=rec.dt, n_roi=len(rec.trains),
                 n_onsets=int(sum(len(t) for t in rec.trains)), analysed_sec=used_sec,
@@ -344,8 +431,11 @@ def generator_spec() -> dict:
 
 SIM_WORLDS = {
     "benchmark": {},
-    "sim_background": dict(hot_rate_hz=0.0, n_distractors=0, n_per_level=(0, 0, 0)),
-    "sim_events": dict(hot_rate_hz=0.0, n_distractors=0),
+    # The probe is switched off the way bench.NULL_RECORDING switches it off: without
+    # hot_window=None the generator still keeps planted events out of the probe's span.
+    "sim_background": dict(hot_window=None, hot_rate_hz=0.0, ramp_sec=0.0, n_distractors=0,
+                           n_per_level=(0, 0, 0)),
+    "sim_events": dict(hot_window=None, hot_rate_hz=0.0, ramp_sec=0.0, n_distractors=0),
     "sim_hot_window": dict(n_distractors=0, n_per_level=(0, 0, 0)),
 }
 OU_WORLDS = ("shared_20s", "drift_5min", "shallow_1min")
@@ -400,12 +490,12 @@ def syn_task(args):
 
 # -- summary ----------------------------------------------------------------------------------
 
-def pooled(rows, arm, detrended=False):
+def pooled(rows, arm, detrended=False, null=None):
     """(excess per lag bin, count-variance ratio per bin width). The ratio divides by the circular
     shift of the same onsets (``null_of``); ``detrended`` uses each bin count series after a
     straight line is removed, in the arm and in its null alike."""
     U = [unpack(r["arms"][arm]) for r in rows]
-    C = [unpack(r["arms"][null_of(arm)]) for r in rows]
+    C = [unpack(r["arms"][null or null_of(arm)]) for r in rows]
     key = "var_detrended" if detrended else "var"
     o = np.sum([u["obs"] for u in U], axis=0)
     e = np.sum([u["exp"] for u in U], axis=0)
@@ -449,20 +539,27 @@ def summarise(rows, n_boot: int, key):
                 var_detrended_hi=np.nanpercentile(bvd, 97.5, axis=0).tolist())
     exp_by_mouse = np.array([np.sum([unpack(r["arms"]["real"])["exp"][1:].sum()
                                      for r in by_mouse[m]]) for m in mice])
-    var_by_mouse = np.array([np.sum([unpack(r["arms"]["circular"])["var"][-1]
-                                     for r in by_mouse[m]]) for m in mice])
 
     def kish(w):
         return float(w.sum() ** 2 / np.sum(w ** 2)) if np.sum(w ** 2) else None
 
+    effective = {}
+    for arm in ("real", "minus_coact_block_120"):
+        if arm not in arms:
+            continue
+        pw = np.array([np.sum([unpack(r["arms"][arm])["exp"][1:].sum() for r in by_mouse[m]])
+                       for m in mice])
+        vw = np.array([np.sum([unpack(r["arms"][null_of(arm)])["var"][-1] for r in by_mouse[m]])
+                       for m in mice])
+        effective[arm] = dict(by_pairs=kish(pw), by_variance=kish(vw))
     top = float(exp_by_mouse.max() / exp_by_mouse.sum()) if exp_by_mouse.sum() else None
     return dict(n_recordings=len(rows), n_mice=len(mice), top_mouse_share_of_pairs=top,
-                effective_mice_by_pairs=kish(exp_by_mouse),
-                effective_mice_by_variance=kish(var_by_mouse), arms=out)
+                effective_mice=effective, arms=out)
 
 
 CONTRASTS = (("real", "rigid_20"), ("real", "block_120"), ("real", "minus_coact_block_120"),
-             ("minus_coact", "minus_coact_block_120"))
+             ("minus_coact", "minus_coact_block_120"),
+             ("minus_coact_block_120", "minus_coact_rigid_20"))
 
 
 def _var_ratio(rows, arm):
@@ -477,8 +574,11 @@ def checks(rows, n_boot: int, key) -> dict:
     * ``per_recording`` — each recording's own count-variance ratio (arm ÷ its circular arm): the
       median, the quartiles and the share above 1, so a pooled number can be seen not to rest on a
       few recordings.
-    * ``leave_heaviest_out`` — the pooled ratio with the five recordings carrying the most onset
-      pairs dropped.
+    * ``leave_heaviest_out`` — the pooled ratio with the five heaviest recordings dropped, heaviest
+      by each arm's own null variance for the ratio and by expected onset pairs for the excess.
+    * ``null_single_draw`` / ``null_8_draw_mean`` — chance references for the share above 1.
+    * ``pairwise_count_corr_1min`` — the mean correlation between two active ROIs' 1-minute counts,
+      a per-pair size that does not grow with the number of ROIs.
     * ``removal_share_pooled`` — the share of onsets CoactDetect removal took, weighted as the
       pooled curves weight recordings (by expected onset pairs), beside the plain median.
     """
@@ -499,49 +599,129 @@ def checks(rows, n_boot: int, key) -> dict:
         out["paired"][f"{a} - {b}"] = dict(
             diff=d.tolist(), lo=np.nanpercentile(boots, 2.5, axis=0).tolist(),
             hi=np.nanpercentile(boots, 97.5, axis=0).tolist())
-    n_roi = np.array([r["n_roi"] for r in rows], float)
+    n_active = np.array([r.get("n_active_roi", r["n_roi"]) for r in rows], float)
+
+    def per_rec(arm, null):
+        with np.errstate(invalid="ignore", divide="ignore"):
+            return (np.array([unpack(r["arms"][arm])["var"] / unpack(r["arms"][null])["var"]
+                              for r in rows]),
+                    np.array([unpack(r["arms"][arm])["var_detrended"]
+                              / unpack(r["arms"][null])["var_detrended"] for r in rows]))
+
     for arm in ("real", "rigid_20", "block_120", "minus_coact", "minus_coact_block_120",
-                "circular_single"):
+                "minus_coact_rigid_20"):
         if arm not in arms:
             continue
+        per, per_d = per_rec(arm, null_of(arm))
         with np.errstate(invalid="ignore", divide="ignore"):
-            per = np.array([unpack(r["arms"][arm])["var"] / unpack(r["arms"][null_of(arm)])["var"]
-                            for r in rows])
-            per_d = np.array([unpack(r["arms"][arm])["var_detrended"]
-                              / unpack(r["arms"][null_of(arm)])["var_detrended"] for r in rows])
-            per_pair = (per - 1.0) / np.maximum(n_roi - 1, 1)[:, None]
+            per_pair = (per - 1.0) / np.maximum(n_active - 1, 1)[:, None]
         out["per_recording"][arm] = dict(
             median=np.nanmedian(per, axis=0).tolist(),
             q25=np.nanpercentile(per, 25, axis=0).tolist(),
             q75=np.nanpercentile(per, 75, axis=0).tolist(),
             share_above_1=np.nanmean(per > 1, axis=0).tolist(),
             detrended_median=np.nanmedian(per_d, axis=0).tolist(),
-            per_pair_median=np.nanmedian(per_pair, axis=0).tolist())
-    out["per_recording_null"] = (
-        "circular_single: one circular draw scored against the 8-draw circular mean — the share "
-        "above 1 a recording with independent ROIs would show")
+            per_active_pair_median=np.nanmedian(per_pair, axis=0).tolist())
+    # Chance references for the per-recording share above 1: single draws against the 8-draw mean
+    # (for the recording as it is and one-realization arms), and an 8-draw mean against another
+    # (for arms that are themselves means of 8 draws).
+    singles = [per_rec(f"circular_single_{d}", "circular")[0] for d in range(N_SINGLE)
+               if f"circular_single_{d}" in arms]
+    if singles:
+        s = np.concatenate(singles)
+        out["null_single_draw"] = dict(median=np.nanmedian(s, axis=0).tolist(),
+                                       share_above_1=np.nanmean(s > 1, axis=0).tolist())
+    if "circular_ref8" in arms:
+        s = per_rec("circular_ref8", "circular")[0]
+        out["null_8_draw_mean"] = dict(median=np.nanmedian(s, axis=0).tolist(),
+                                       share_above_1=np.nanmean(s > 1, axis=0).tolist())
+    if "circular_mask" in arms and "circular_minus_coact" in arms:
+        out["removal_null_choice"] = {
+            arm: dict(mask_matched=_var_ratio(rows, arm).tolist(),
+                      mismatched=pooled(rows, arm, null="circular_minus_coact")[1].tolist(),
+                      mask_matched_detrended=pooled(rows, arm, detrended=True)[1].tolist(),
+                      mismatched_detrended=pooled(rows, arm, detrended=True,
+                                                  null="circular_minus_coact")[1].tolist())
+            for arm in ("minus_coact", "minus_coact_block_120") if arm in arms}
+        out["removal_null_choice_note"] = (
+            "mask_matched divides by the circular shift of the full trains with the recording's "
+            "own episodes then cut out; mismatched divides by the circular shift of the already-"
+            "removed trains, which scatters each ROI's holes to its own phase")
+    corr = np.array([r.get("pairwise_count_corr_1min", np.nan) for r in rows], float)
+    out["pairwise_count_corr_1min"] = dict(median=float(np.nanmedian(corr)),
+                                           q25=float(np.nanpercentile(corr, 25)),
+                                           q75=float(np.nanpercentile(corr, 75)))
+    out["active_roi_share_median"] = float(np.median(
+        n_active / np.array([r["n_roi"] for r in rows], float)))
     weight = np.array([unpack(r["arms"]["real"])["exp"][1:].sum() for r in rows])
-    vweight = np.array([unpack(r["arms"]["circular"])["var"][-1] for r in rows])
     heavy = set(np.argsort(weight)[-5:].tolist())
-    vheavy = set(np.argsort(vweight)[-5:].tolist())
     rest = [r for i, r in enumerate(rows) if i not in heavy]
-    vrest = [r for i, r in enumerate(rows) if i not in vheavy]
     out["heaviest_five_share_of_pairs"] = float(np.sort(weight)[-5:].sum() / weight.sum())
-    out["heaviest_five_share_of_variance"] = float(np.sort(vweight)[-5:].sum() / vweight.sum())
-    out["leave_heaviest_out"] = {arm: dict(var_ratio=_var_ratio(vrest, arm).tolist(),
-                                           excess=pooled(rest, arm)[0].tolist())
-                                 for arm in ("real", "rigid_20", "block_120",
-                                             "minus_coact_block_120") if arm in arms}
+    out["leave_heaviest_out"] = {}
+    for arm in ("real", "rigid_20", "block_120", "minus_coact_block_120"):
+        if arm not in arms:
+            continue
+        vweight = np.array([unpack(r["arms"][null_of(arm)])["var"][-1] for r in rows])
+        vheavy = set(np.argsort(vweight)[-5:].tolist())
+        vrest = [r for i, r in enumerate(rows) if i not in vheavy]
+        out["leave_heaviest_out"][arm] = dict(
+            var_ratio=_var_ratio(vrest, arm).tolist(), excess=pooled(rest, arm)[0].tolist(),
+            heaviest_five_share_of_variance=float(np.sort(vweight)[-5:].sum() / vweight.sum()))
     out["leave_heaviest_out_note"] = ("var_ratio drops the five recordings with the largest "
-                                      "circular 1-minute variance (Figure 1's weight); excess "
-                                      "drops the five with the most expected onset pairs "
-                                      "(the correlograms' weight)")
+                                      "1-minute variance under the arm's own null, which is the "
+                                      "weight the count-variance figure gives them; excess drops "
+                                      "the five with the most expected onset pairs, which is the "
+                                      "weight the correlograms give them")
     if "share_removed" in rows[0]:
         sh = np.array([r["share_removed"] for r in rows])
         out["removal_share_pooled"] = float(np.sum(sh * weight) / weight.sum())
         out["removal_time_share_pooled"] = float(
             np.sum(np.array([r["episode_share_of_time"] for r in rows]) * weight) / weight.sum())
     return out
+
+
+def flagged_contaminant_ids() -> list[str]:
+    """The recordings the producer's own note says carry the motion-correction contaminant, read
+    from ``current_export.toml`` rather than retyped. A view, never a filter: the export folder
+    is the input, and the analysis keeps every recording in it."""
+    import re
+    import tomllib
+    cfg = tomllib.loads((ROOT / "current_export.toml").read_text())
+    for section in cfg.values():
+        note = " ".join(section.get("note", "").split()) if isinstance(section, dict) else ""
+        if "pinned" in note and "frame floor" in note:
+            return sorted(set(re.findall(r"`(\d{8}_\d+)`", note)))
+    return []
+
+
+def flagged_sensitivity(rows, ids) -> dict:
+    """The pooled 1-minute count-variance ratio with and without the producer-flagged recordings,
+    overall and for each group that holds one, and the share of the pooled excess variance (arm
+    variance minus its null's, summed over recordings) they carry. No identifiers kept."""
+    flagged = [r for r in rows if r["recording_id"] in ids]
+    if not flagged:
+        return dict(n_flagged=0)
+    rest = [r for r in rows if r["recording_id"] not in ids]
+    arms = [a for a in ("real", "minus_coact_block_120") if a in rows[0]["arms"]]
+
+    def excess_var(rs, arm):
+        return sum(unpack(r["arms"][arm])["var"][-1] - unpack(r["arms"][null_of(arm)])["var"][-1]
+                   for r in rs)
+
+    groups = sorted({r["group"] for r in flagged if r.get("group")})
+
+    def ratios(rs):
+        return {arm: _var_ratio(rs, arm).tolist() for arm in arms}
+
+    return dict(
+        n_flagged=len(flagged),
+        flagged_groups={g: sum(r.get("group") == g for r in flagged) for g in groups},
+        all=ratios(rows), without=ratios(rest),
+        share_of_excess_variance_1min={arm: float(excess_var(flagged, arm) / excess_var(rows, arm))
+                                       for arm in arms},
+        by_group={g: dict(all=ratios([r for r in rows if r.get("group") == g]),
+                          without=ratios([r for r in rest if r.get("group") == g]))
+                  for g in groups})
 
 
 def group_checks(rows, n_boot: int, key) -> dict:
@@ -567,6 +747,7 @@ def summary_only(R) -> dict:
         rows = F["rows"]
         entry = dict(summary=F["summary"], by_group=F["by_group"], checks=F.get("checks"),
                      checks_by_group=F.get("checks_by_group"),
+                     flagged_contaminant=F.get("flagged_contaminant"),
                      analysed_hours=sum(r["analysed_sec"] for r in rows) / 3600.0,
                      window_min_range=[min(r["analysed_sec"] + 2 * TRIM_SEC for r in rows) / 60,
                                        max(r["analysed_sec"] + 2 * TRIM_SEC for r in rows) / 60],
@@ -618,6 +799,7 @@ def main(argv=None):
                              for g in sorted({r["group"] for r in rows if r["group"]})}
             F["checks"] = checks(rows, a.boot, (role, stream))
             F["checks_by_group"] = group_checks(rows, a.boot, (role, stream))
+            F["flagged_contaminant"] = flagged_sensitivity(rows, flagged_contaminant_ids())
         (a.out / "results.json").write_text(json.dumps(R))
         (a.out / "summary.json").write_text(json.dumps(summary_only(R), indent=1))
         print(f"resummarised {a.out}")
@@ -625,7 +807,7 @@ def main(argv=None):
     t0 = time.time()
     R = dict(tag=TAG, lag_edges_sec=list(LAG_EDGES_SEC), var_bin_sec=list(VAR_BIN_SEC),
              J_sec=list(J_SEC), trim_sec=TRIM_SEC, block_sec=BLOCK_SEC, coact=COACT_NOTE,
-             generator_spec=generator_spec(), ou_worlds=OU, draws=a.draws, folders={},
+             generator_spec=generator_spec(), ou_worlds=OU, draws=a.draws, jobs=a.jobs, folders={},
              synthetic={})
     with mp.Pool(a.jobs) as pool:
         if not a.no_real:
@@ -640,6 +822,8 @@ def main(argv=None):
                               for g in sorted({r["group"] for r in rows if r["group"]})})
                 R["folders"][name]["checks"] = checks(rows, a.boot, (role, stream))
                 R["folders"][name]["checks_by_group"] = group_checks(rows, a.boot, (role, stream))
+                R["folders"][name]["flagged_contaminant"] = flagged_sensitivity(
+                    rows, flagged_contaminant_ids())
                 print(f"{name}: {len(rows)} recordings, {time.time() - t0:.0f} s", flush=True)
         if not a.no_synthetic:
             for world in SYN_WORLDS:

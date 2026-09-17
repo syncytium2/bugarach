@@ -50,17 +50,48 @@ def test_pair_count_matches_brute_force(L):
         assert want[b] > 0                                     # and it holds pairs
 
 
-def test_removal_arms_are_divided_by_their_own_null():
-    """Independent trains with events removed must read about 1, not below: the removal arms'
-    null is the circular shift of the removed trains."""
+def _heavy_removal(seed, n_roi=14, L=9000, dt=0.1):
+    """Independent background in every ROI plus a whole-field event every 9 s, so CoactDetect
+    removes the events and about 60 % of the onsets and what is left is independent by
+    construction: any removal arm must then read about 1 against its null."""
+    rs = np.random.RandomState(seed)
+    events = np.arange(300, L - 300, 90)
+    trains = [np.unique(np.clip(np.concatenate([rs.randint(0, L, size=90), events]), 0, L - 1))
+              for _ in range(n_roi)]
+    return trains, L, dt
+
+
+def test_the_removal_null_keeps_both_the_holes_and_the_counts():
+    """The null for the removal arms shifts each ROI inside the stretches no episode covers, so
+    it carries the arm's episode-shaped holes and its onset count. The earlier null — the circular
+    shift of the already-removed trains — fails the first half, and that is what is tested."""
+    trains, L, dt = _heavy_removal(500)
+    removed, episodes, extra = msc.coact_removed(trains, L, dt, "fast")
+    assert extra["share_removed"] > 0.3 and len(episodes) > 20
+    trim = int(np.ceil(msc.TRIM_SEC / dt))
+    rt, Lt = msc.trimmed(removed, L, trim)
+    keep = msc.surviving_frames(episodes, Lt, dt, trim)
+    shifted = msc.masked_circular_shift(rt, keep, np.random.RandomState(0))
+    assert [len(t) for t in shifted] == [len(t) for t in rt]           # every count survives
+    assert all(keep[np.asarray(t, np.int64)].all() for t in shifted)   # no onset inside an episode
+    mismatched = msc.sg.circular_shift(rt, (0, Lt), ("x", 1)).trains
+    assert sum(int((~keep[np.asarray(t, np.int64)]).sum()) for t in mismatched) > 0
+
+
+@pytest.mark.parametrize("arm", ["minus_coact", "minus_coact_block_120"])
+def test_removal_arms_read_one_when_what_survives_is_independent(arm):
+    """At every bin width the page reads, the 1-minute bin included — and the null the tool used
+    before reads above it, which is the defect this guards."""
     rows = []
-    for i in range(12):
-        trains, L, dt = msc.synthetic_recording("sim_events", 900 + i)
-        arms, _, _ = msc.arms_for(trains, L, dt, ("null", i), 2, "fast")
+    for i in range(10):
+        trains, L, dt = _heavy_removal(500 + i)
+        arms, _, _ = msc.arms_for(trains, L, dt, ("heavy", i), 2, "fast")
         rows.append(dict(arms=arms, mouse=str(i)))
-    assert msc.null_of("minus_coact") == "circular_minus_coact"
-    _, vr = msc.pooled(rows, "minus_coact")
-    assert np.all(np.abs(vr[:2] - 1.0) < 0.15), vr
+    assert msc.null_of(arm) == "circular_mask"
+    vr = msc.pooled(rows, arm)[1]
+    assert np.all(np.abs(vr - 1.0) < 0.25), vr
+    mismatched = msc.pooled(rows, arm, null="circular_minus_coact")[1]
+    assert mismatched[0] > vr[0], (mismatched, vr)
 
 
 def test_same_roi_pairs_are_not_counted():
@@ -122,11 +153,25 @@ def test_count_variance_is_the_variance_of_the_binned_population_count():
     assert msc.count_variance(trains, L, DT)[1] == pytest.approx(want)
 
 
+def test_detrended_variance_is_the_residual_variance_of_a_fitted_line():
+    rs = np.random.RandomState(8)
+    L = 12000
+    trains = [np.unique(rs.randint(0, L, size=80)) for _ in range(5)]
+    pop = msc.raster(trains, L).sum(axis=0)
+    c = pop.reshape(20, 600).sum(axis=1)
+    x = np.arange(20.0)
+    resid = c - np.polyval(np.polyfit(x, c, 1), x)
+    want = np.sum(resid ** 2) / 18
+    got = msc.count_variance(trains, L, DT)
+    assert got[len(msc.VAR_BIN_SEC) + 2] == pytest.approx(want)
+
+
 def test_arms_trim_both_ends_by_the_largest_displacement():
     trains, L, dt = msc.synthetic_recording("shared_20s", 7)
     arms, _, used = msc.arms_for(trains, L, dt, ("t",), 1, None)
     assert used == pytest.approx(L * dt - 2 * msc.TRIM_SEC)
-    assert set(arms) == {"real", "circular", "circular_single", "block_120", "rigid_1.6",
+    assert set(arms) == {"real", "circular", "circular_ref8", "circular_single_0",
+                         "circular_single_1", "circular_single_2", "block_120", "rigid_1.6",
                          "rigid_10", "rigid_20"}
 
 

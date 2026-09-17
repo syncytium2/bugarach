@@ -408,9 +408,14 @@ Added 2026-09-10, when that plan's review found them used undefined.
   window's average rates; summed over every lag to the window's length it is zero by
   construction. The **population cross-correlogram** is excess coincidence against lag
   (Perkel, Gerstein & Moore 1967).
-- **peak / shoulder / dip** — on that correlogram: a narrow excess at sub-second lags
-  (coordinated events), a broad low excess out to tens of seconds or minutes (shared
-  modulation), and a deficit at a few seconds (on the lab slow stream, after events).
+- **peak / shoulder / dip** — on that correlogram: a narrow excess at sub-second lags, a
+  broad low excess out to tens of seconds or minutes, and a **dip**, fewer pairs than
+  chance at a given lag. Each is a shape, not a cause: what produces it is argued
+  separately, and the zero-sum construction above means a peak somewhere forces a
+  deficit elsewhere.
+- **arm** — one treatment of the same recording measured the same way: the recording as
+  it is, a surrogate of it, or the recording with something removed. Every arm is
+  divided by a **null** chosen to share everything with it but the structure under test.
 - **count-variance ratio** — the variance of the population onset count (onsets summed
   over ROIs in a bin) divided by its variance after a **circular shift of the same
   onsets**; 1 means no shared structure at that bin width. What a detector that counts
@@ -426,6 +431,16 @@ Added 2026-09-10, when that plan's review found them used undefined.
 - **promiscuity probe** — the benchmark generator's whole-field dense block
   (`hot_window` in `generator_spec.json`, 1,200–1,500 s): every ROI's rate raised at
   once, so it is also shared drift.
+- **lit** — an ROI with at least one onset in the bin being counted. "Share of ROIs lit"
+  is a count of ROIs, never of onsets.
+- **mask-matched null** — the null for an arm with stretches of time cut out of it.
+  Deleting onsets inside detected episodes cuts gaps that are shared across ROIs, so the
+  null has to carry the same gaps or they are scored as shared change. Built by shifting
+  each ROI circularly **inside the surviving stretches**, which keeps its onset count and
+  leaves the gaps where the arm has them.
+- **effective mice** — Kish's effective sample size on the weights a pooled number
+  actually uses, so a count of animals cannot stand in for how many the estimate leans
+  on. Fewer than the animals counted whenever the weights are uneven.
 
 Added 2026-09-16, with the label-free detector work:
 

@@ -41,24 +41,29 @@ from matplotlib.lines import Line2D  # noqa: E402
 from matplotlib.patches import Patch  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from bugarach import surrogates as sg  # noqa: E402
 from bugarach.time_axis import label as tlabel  # noqa: E402
 from bugarach.time_axis import ticks as tticks  # noqa: E402
+from tube_self_supervised import rigid_frames  # noqa: E402
 
 FOLDER = "2026-09-17-slow-comodulation"
 DARKROOM_ONLY = ("one_recording.png",)
-plt.rcParams.update({"font.size": 13, "axes.labelsize": 13, "xtick.labelsize": 12,
-                     "ytick.labelsize": 12, "legend.fontsize": 12})
+plt.rcParams.update({"font.size": 14, "axes.labelsize": 14, "xtick.labelsize": 13,
+                     "ytick.labelsize": 13, "legend.fontsize": 13})
 
 ARM = {  # colour, line style, width, marker, label
     "real": ("#000000", "-", 2.6, "o", "as recorded"),
-    "circular": ("#969696", "-", 1.5, "s", "circular shift (the null)"),
+    "circular": ("#969696", "-", 1.5, "s", "circular shift (independent ROIs)"),
     "block_120": ("#7b3294", "-", 1.8, "D", "block control"),
-    "rigid_1.6": ("#6baed6", "-", 1.8, "v", "rigid shift, J = 1.6 s"),
-    "rigid_10": ("#2171b5", "-", 1.8, "v", "rigid shift, J = 10 s"),
-    "rigid_20": ("#08306b", (0, (5, 2)), 2.0, "v", "rigid shift, J = 20 s"),
+    "rigid_1.6": ("#6baed6", "-", 1.8, "X", "rigid shift, J = 1.6 s"),
+    "rigid_10": ("#2171b5", "-", 1.8, "X", "rigid shift, J = 10 s"),
+    "rigid_20": ("#08306b", (0, (5, 2)), 2.0, "X", "rigid shift, J = 20 s"),
     "minus_coact": ("#238b45", "-", 1.8, "^", "CoactDetect episodes removed"),
     "minus_coact_block_120": ("#238b45", (0, (1, 1.5)), 2.2, "^",
                               "episodes removed, then block control"),
+    "minus_coact_rigid_20": ("#66c2a4", (0, (5, 2)), 2.0, "^",
+                             "episodes removed, then rigid shift, J = 20 s"),
 }
 WORLD = {  # colour, style, label
     "sim_events": ("#d95f02", "-", "planted events"),
@@ -71,7 +76,8 @@ WORLD = {  # colour, style, label
 }
 DATASET = {"steps_excluded/fast": "lab, fast stream", "steps_excluded/slow": "lab, slow stream",
            "cossart/events": "Dard et al. 2022"}
-GROUP_INK = {"DI": "#17becf", "MALE": "#bcbd22", "ORX": "#c49c94", "OVX": "#ff9896"}
+GROUP_INK = {"DI": "#0f9fb5", "MALE": "#b8860b", "ORX": "#6b3e26", "OVX": "#c51b7d"}
+"""Four hues that differ in lightness as well as hue, so the thin dashed lines separate."""
 GROUP_ORDER = ("DI", "MALE", "ORX", "OVX")
 LAG_TICKS = (0.3, 1.0, 5.0, 15.0, 60.0, 300.0)
 BAND_HATCH = {"minus_coact": "////"}
@@ -112,16 +118,29 @@ def curve(ax, R, S, arm, band=False):
             ax.fill_between(centres(R), v["lo"], v["hi"], color=c, alpha=0.15, lw=0)
 
 
-def off_scale(ax, R, S, arms, hi):
-    """A small down-pointing mark at the top edge above any lag bin where a curve leaves the view."""
+def off_scale(ax, R, curves, hi, lo=None):
+    """Marks at the panel's edge above (or below) any lag bin where one of ``curves`` leaves the
+    view: a down-pointing mark at the top edge, an up-pointing one at the bottom. Returns whether
+    any mark was drawn, so a legend lists the mark only when it appears."""
     x = centres(R)
     over = np.zeros(len(x), bool)
-    for arm in arms:
-        if arm in S["arms"]:
-            over |= np.asarray(S["arms"][arm]["excess"]) > hi
+    under = np.zeros(len(x), bool)
+    for c in curves:
+        c = np.asarray(c, float)
+        over |= c > hi
+        if lo is not None:
+            under |= c < lo
     if over.any():
-        ax.plot(x[over], np.full(over.sum(), hi), marker="v", ls="none", color="0.45", ms=6,
+        ax.plot(x[over], np.full(over.sum(), hi), marker="v", ls="none", color="0.35", ms=9,
                 clip_on=False, zorder=5)
+    if under.any():
+        ax.plot(x[under], np.full(under.sum(), lo), marker="^", ls="none", color="0.35", ms=9,
+                clip_on=False, zorder=5)
+    return bool(over.any() or under.any())
+
+
+def arm_curves(S, arms):
+    return [S["arms"][a]["excess"] for a in arms if a in S["arms"]]
 
 
 def arm_handles(arms, band_arms=()):
@@ -156,6 +175,19 @@ def _lit_share(ax, trains, dt, t1, bin_sec=10.0):
     ax.set_xlim(0, t1 * 1.01)
 
 
+def _counts_per_minute(trains, dt, L, arm, seed):
+    """The population onset count per minute — what the count-variance ratio measures — for the
+    world as generated, one rigid shift of it and one circular shift of it."""
+    r = np.random.RandomState(seed)
+    if arm == "rigid_20":
+        trains = rigid_frames(trains, L, 20.0 / dt, r)
+    elif arm == "circular":
+        trains = sg.circular_shift(trains, (0, L), ("figure", "circular", seed)).trains
+    edges = np.arange(0, L * dt + 60.0, 60.0)
+    allt = np.concatenate([np.asarray(t, float) * dt for t in trains]) if trains else np.array([])
+    return edges, np.histogram(allt, edges)[0]
+
+
 def _busiest(trains, dt, L, zoom, within):
     from bugarach.detectors._shared import distinct_coact
     edges = np.arange(0.0, L * dt + within, within)
@@ -172,30 +204,51 @@ def _time_ticks(ax, t0, t1):
 def fig1(R, out):
     syn = R["synthetic"]
     worlds = ("sim_events", "shared_20s", "drift_5min")
-    fig = plt.figure(figsize=(12, 13.2))
-    gs = fig.add_gridspec(4, 3, height_ratios=(0.8, 1.6, 2.1, 2.1), hspace=0.55, wspace=0.14)
+    fig = plt.figure(figsize=(12, 13.6))
+    gs = fig.add_gridspec(4, 3, height_ratios=(1.15, 1.5, 2.0, 2.0), hspace=0.55, wspace=0.14)
     zoom = 60.0
+    count_axes, top = [], []
     for col, world in enumerate(worlds):
         row = next(r for r in syn[world]["rows"] if r["raster"] is not None)
         dt, L = row["dt"], row["L"]
         span = min(L * dt, 1200.0)
         a = fig.add_subplot(gs[0, col])
-        _lit_share(a, row["raster"], dt, span)
-        a.set_ylim(0, 0.5)
-        _time_ticks(a, 0.0, span)
+        # The recording is drawn first and the rigid shift over it, so where the shift follows the
+        # recording its dashes read on top of the black instead of vanishing under it.
+        for arm, lw in (("circular", 1.6), ("real", 2.4), ("rigid_20", 2.0)):
+            edges, counts = _counts_per_minute(row["raster"], dt, L, arm, 11 + col)
+            keep = edges[:-1] < span
+            a.step(edges[:-1][keep] / 60.0 + 0.5, counts[keep], where="mid",
+                   color=ARM[arm][0], lw=lw, ls=ARM[arm][1])
+            top.append(counts[keep].max())
+        tk = tticks(0, span)
+        a.set_xticks([t / 60.0 for t in tk], [tlabel(t) for t in tk])
+        a.set_xlim(0, span / 60.0)
         a.set_xlabel("time (first 20 minutes)", labelpad=1)
-        a.set_ylabel(f"{WORLD[world][2]}\nshare lit per 10 s", fontsize=11, color=WORLD[world][0])
-        if col:
+        count_axes.append(a)
+        if col == 0:
+            a.set_ylabel(f"onsets per minute,\nall {len(row['raster'])} ROIs", fontsize=12)
+        else:
             a.set_yticklabels([])
+        a.text(0.98, 0.95, WORLD[world][2], transform=a.transAxes, ha="right", va="top",
+               fontsize=12, color=WORLD[world][0],
+               bbox=dict(boxstyle="square,pad=0.1", fc="white", ec="none", alpha=0.9))
         tag(a, "ABC"[col])
         s0 = _busiest(row["raster"], dt, L, zoom, 2.0 if world == "sim_events" else zoom)
         b = fig.add_subplot(gs[1, col])
         _raster(b, row["raster"], dt, s0, s0 + zoom)
         _time_ticks(b, s0, s0 + zoom)
         b.set_xlabel(f"1-minute zoom from {tlabel(round(s0))}", labelpad=1)
-        b.set_ylabel(f"{WORLD[world][2]}\n{len(row['raster'])} ROIs", fontsize=11,
-                     color=WORLD[world][0])
+        if col == 0:
+            b.set_ylabel(f"{len(row['raster'])} ROIs", fontsize=12)
         tag(b, "DEF"[col], x=-0.001, y=1.12)
+    for a in count_axes:
+        a.set_ylim(0, max(top) * 1.08)
+    fig.legend(handles=[Line2D([], [], color=ARM[k][0], lw=ARM[k][2], ls=ARM[k][1], label=lab)
+                        for k, lab in (("real", "the world as generated"),
+                                       ("rigid_20", "one rigid shift, J = 20 s"),
+                                       ("circular", "one circular shift"))],
+               loc="upper center", ncol=3, frameon=False, bbox_to_anchor=(0.54, 1.0))
     x = centres(R)
     for r, (scale, letter) in enumerate((("log", "G"), ("linear", "H"))):
         ax = fig.add_subplot(gs[2 + r, :])
@@ -213,11 +266,12 @@ def fig1(R, out):
             ax.set_xlabel("lag between two ROIs' onsets (linear scale: equal widths are equal "
                           "durations)")
         ax.set_ylim(-0.15, 0.9)
-        ax.set_ylabel("excess coincidence\n(observed ÷ chance − 1)")
+        ax.set_ylabel("excess coincidence\n(observed ÷ chance − 1)" +
+                      ("\ncolors as in G" if letter == "H" else ""))
         tag(ax, letter)
         if r == 0:
             ax.legend(frameon=False, loc="upper right")
-    fig.subplots_adjust(left=0.1, right=0.98, top=0.97, bottom=0.05)
+    fig.subplots_adjust(left=0.1, right=0.98, top=0.945, bottom=0.05)
     fig.savefig(out / "fig1_two_kinds.png", dpi=150)
     plt.close(fig)
 
@@ -228,11 +282,16 @@ def fig2(R, out):
     """Schematic on fixed numbers: four onset trains over 4 minutes sharing one aligned event near
     1m40s, and what each surrogate does to them."""
     T, block = 240.0, 120.0
-    base = [np.array([20.0, 100.0, 170.0]), np.array([55.0, 100.4, 210.0]),
+    # ROI 2's onset at 102.5 s is inside the flagged episode without belonging to the aligned
+    # event: removal deletes it too, which is the property the lab arms rest on.
+    base = [np.array([20.0, 100.0, 170.0]), np.array([55.0, 100.4, 102.5, 210.0]),
             np.array([8.0, 99.7, 140.0, 228.0]), np.array([100.2, 190.0])]
+    episode = (99.0, 103.5)
     rigid_off = [9.0, -12.0, 15.0, 6.0]          # ROI 3's last onset leaves the window
     circ_off = [74.0, 150.0, 30.0, 205.0]
-    blk_off = [[40.0, 85.0], [100.0, 20.0], [65.0, 5.0], [90.0, 44.0]]
+    # Second-block offsets chosen so the drawn draw holds no chance three-ROI alignment of its
+    # own: a surrogate meant to show alignment destroyed should not display a fresh one.
+    blk_off = [[40.0, 85.0], [100.0, 20.0], [65.0, 60.0], [90.0, 80.0]]
 
     def blocky(t, offs):
         parts = []
@@ -241,14 +300,23 @@ def fig2(R, out):
             parts.append((s - a + o) % block + a)
         return np.sort(np.concatenate(parts))
 
+    removed = [t[(t < episode[0]) | (t >= episode[1])] for t in base]
     rows = [("as recorded", base, None),
+            ("episode removed\n(CoactDetect)", removed, "cut"),
             ("rigid shift\n(J = 20 s)", [np.sort(t + o) for t, o in zip(base, rigid_off)], "drop"),
             ("circular shift", [np.sort((t + o) % T) for t, o in zip(base, circ_off)], None),
             ("block control", [blocky(t, o) for t, o in zip(base, blk_off)], "block")]
-    fig = plt.figure(figsize=(12, 8.4))
-    gs = fig.add_gridspec(5, 1, height_ratios=(1, 1, 1, 0.22, 1), hspace=0.32)
-    axes = [fig.add_subplot(gs[i]) for i in (0, 1, 2, 4)]
-    lane = fig.add_subplot(gs[3], sharex=axes[3])
+    fig = plt.figure(figsize=(12, 10.2))
+    gs = fig.add_gridspec(7, 1, height_ratios=(1, 0.22, 1, 1, 1, 0.22, 1), hspace=0.34)
+    axes = [fig.add_subplot(gs[i]) for i in (0, 2, 3, 4, 6)]
+    ep_lane = fig.add_subplot(gs[1], sharex=axes[0])
+    lane = fig.add_subplot(gs[5], sharex=axes[4])
+    ep_lane.set_ylim(0, 1)
+    ep_lane.axis("off")
+    ep_lane.plot([np.mean(episode)], [0.35], marker="v", color="#238b45", ms=11, clip_on=False)
+    ep_lane.text(np.mean(episode) - 5, 0.35, "flagged episode, 99–103.5 s: every onset inside it is "
+                 "deleted,\nwhether or not it belongs to the event", ha="right",
+                 va="center", fontsize=11, color="#238b45")
     for i, (ax, (lab, trains, note)) in enumerate(zip(axes, rows)):
         dropped = []
         for r, t in enumerate(trains):
@@ -259,12 +327,16 @@ def fig2(R, out):
         ax.set_yticks([0.5, 1.5, 2.5, 3.5], ["ROI 1", "ROI 2", "ROI 3", "ROI 4"], fontsize=11)
         ax.set_xlim(-4, T + 4)
         ax.set_ylabel(lab, fontsize=12, rotation=0, ha="right", va="center", labelpad=58)
-        tag(ax, "ABCD"[i], x=-0.001, y=1.2)
-        if i < 3:
+        tag(ax, "ABCDE"[i], x=-0.001, y=1.2)
+        if i < 4:
             ax.set_xticklabels([])
         if note == "drop" and dropped:
             ax.text(1.0, 1.02, f"{len(dropped)} onset pushed past 4m is dropped", transform=ax.transAxes,
                     ha="right", va="bottom", fontsize=11, color="0.3")
+        if note == "cut":
+            n = sum(len(a) - len(b) for a, b in zip(base, removed))
+            ax.text(1.0, 1.02, f"{n} onsets deleted, 1 of them not part of the event",
+                    transform=ax.transAxes, ha="right", va="bottom", fontsize=11, color="0.3")
     lane.set_ylim(0, 1)
     lane.axis("off")
     lane.plot([block], [0.35], marker="v", color="#7b3294", ms=11, clip_on=False)
@@ -272,7 +344,7 @@ def fig2(R, out):
     tk = tticks(0, T)
     axes[-1].set_xticks(tk, [tlabel(t) for t in tk])
     axes[-1].set_xlabel("time (schematic)")
-    fig.subplots_adjust(left=0.2, right=0.98, top=0.95, bottom=0.08)
+    fig.subplots_adjust(left=0.24, right=0.98, top=0.95, bottom=0.08)
     fig.savefig(out / "fig2_the_surrogates.png", dpi=150)
     plt.close(fig)
 
@@ -284,8 +356,9 @@ def fig3(R, out):
     worlds = ("sim_events", "shared_20s", "drift_5min", "shallow_1min", "benchmark")
     arms = ("circular", "rigid_1.6", "rigid_10", "rigid_20", "block_120",
             "minus_coact_block_120", "real")
-    fig = plt.figure(figsize=(12.5, 15))
-    gs = fig.add_gridspec(4, 2, height_ratios=(1, 1, 1, 1.05), hspace=0.42, wspace=0.28)
+    fig = plt.figure(figsize=(12.5, 14.2))
+    gs = fig.add_gridspec(4, 2, height_ratios=(1, 1, 1, 0.85), hspace=0.42, wspace=0.3)
+    marked = False
     for i, world in enumerate(worlds):
         ax = fig.add_subplot(gs[i // 2, i % 2])
         S = syn[world]["summary"]
@@ -295,8 +368,8 @@ def fig3(R, out):
         top = 1.75 if world == "benchmark" else (0.25 if world == "shallow_1min" else 0.9)
         low = -0.05 if world == "shallow_1min" else -0.15
         ax.set_ylim(low, top)
-        off_scale(ax, R, S, arms, top)
-        ax.set_ylabel(f"excess coincidence, y to {top:g}\n{WORLD[world][2]}", fontsize=12)
+        marked |= off_scale(ax, R, arm_curves(S, arms), top, low)
+        ax.set_ylabel(f"excess coincidence\n{WORLD[world][2]}", fontsize=12)
         tag(ax, "ABCDE"[i])
     # F: count-variance ratios at 1 minute for every world and arm
     ax = fig.add_subplot(gs[2, 1])
@@ -313,15 +386,18 @@ def fig3(R, out):
     ax.set_yscale("log")
     ax.set_yticks([0.5, 1, 2, 5, 10], ["0.5", "1", "2", "5", "10"])
     ax.yaxis.set_minor_locator(matplotlib.ticker.NullLocator())
-    ax.set_xticks(range(len(ws)), ["events", "20 s", "5 min", "shallow\n1 min", "bench-\nmark",
-                                   "back-\nground"], fontsize=11)
+    ax.set_xticks(range(len(ws)), ["events", "20s", "5m", "shallow\n1m", "bench-\nmark",
+                                   "back-\nground"], fontsize=12)
+    ax.set_xlabel("synthetic world")
     ax.set_ylabel("count variance ÷ independent,\n1-minute bins (log scale)", fontsize=12)
     tag(ax, "F")
     h = arm_handles(arms)
     h += [Line2D([], [], color=ARM[a][0], marker=ARM[a][3], ls="none", ms=8,
                  label=f"F: {ARM[a][4]}") for a in bar_arms]
     h.append(Line2D([], [], color="0.5", ls=(0, (4, 2)), label="F: independent ROIs (= 1)"))
-    h.append(Line2D([], [], color="0.45", marker="v", ls="none", ms=6, label="curve above the view"))
+    if marked:
+        h.append(Line2D([], [], color="0.35", marker="v", ls="none", ms=9,
+                        label="curve beyond the view"))
     lax = fig.add_subplot(gs[3, :])
     lax.axis("off")
     lax.legend(handles=h, loc="upper center", ncol=2, frameon=False)
@@ -334,7 +410,7 @@ def fig3(R, out):
 
 def fig4(R, out):
     names = [n for n in DATASET if n in R["folders"]]
-    arms = ("real", "rigid_20", "block_120", "minus_coact_block_120")
+    arms = ("real", "rigid_20", "block_120", "minus_coact_block_120", "minus_coact_rigid_20")
     widths = R["var_bin_sec"]
     fig, axes = plt.subplots(1, len(names), figsize=(12.5, 5.6), sharey=True)
     for i, (ax, name) in enumerate(zip(axes, names)):
@@ -343,7 +419,7 @@ def fig4(R, out):
             v = S["arms"].get(arm)
             if not v:
                 continue
-            x = np.arange(len(widths)) + (j - 1.5) * 0.19
+            x = np.arange(len(widths)) + (j - 2.0) * 0.17
             y = np.asarray(v["var_ratio"])
             lo, hi = np.asarray(v["var_lo"]), np.asarray(v["var_hi"])
             ax.errorbar(x, y, yerr=[y - lo, hi - y], fmt=ARM[arm][3], color=ARM[arm][0], ms=8,
@@ -363,7 +439,7 @@ def fig4(R, out):
         tag(ax, "ABC"[i])
     axes[0].set_ylabel("population count variance ÷ that of\nindependent ROIs (log scale)")
     h = [Line2D([], [], color=ARM[a][0], marker=ARM[a][3], ls="none", ms=8,
-                label=ARM[a][4] + (" (lab only)" if a == "minus_coact_block_120" else ""))
+                label=ARM[a][4] + (" (lab only)" if a.startswith("minus_coact") else ""))
          for a in arms]
     h += [Line2D([], [], color="0.3", marker="o", mfc="white", ls="none", ms=7, mew=1.6,
                  label="hollow: straight-line trend removed"),
@@ -387,6 +463,7 @@ def fig5(R, out):
             "minus_coact_block_120", "real")
     fig = plt.figure(figsize=(12.5, 12.5))
     gs = fig.add_gridspec(3, len(names), height_ratios=(1, 1.3, 0.62), hspace=0.2, wspace=0.42)
+    marked = False
     for c, name in enumerate(names):
         S = R["folders"][name]["summary"]
         for r in range(2):
@@ -400,15 +477,20 @@ def fig5(R, out):
             else:
                 lo, hi = ZOOM[name]
                 ax.set_ylim(lo, hi)
-                off_scale(ax, R, S, arms, hi)
-                ax.set_ylabel(f"{DATASET[name]}, zoomed to {hi:g}\n{S['n_recordings']} recordings, "
+                marked |= off_scale(ax, R, arm_curves(S, arms), hi, lo)
+                ax.set_ylabel(f"{DATASET[name]}, zoomed\n{S['n_recordings']} recordings, "
                               f"{S['n_mice']} mice", fontsize=12)
     lax = fig.add_subplot(gs[2, :])
     lax.axis("off")
     h = arm_handles(arms, band_arms=("real", "minus_coact"))
-    h.append(Line2D([], [], color="0.45", marker="v", ls="none", ms=6, label="curve above the view"))
+    for hh in h:
+        if "CoactDetect" in hh.get_label() or "episodes removed" in hh.get_label():
+            hh.set_label(hh.get_label() + " (lab only)")
+    if marked:
+        h.append(Line2D([], [], color="0.35", marker="v", ls="none", ms=9,
+                        label="curve beyond the view (▼ above, ▲ below)"))
     lax.legend(handles=h, loc="upper center", ncol=2, frameon=False)
-    fig.subplots_adjust(left=0.08, right=0.99, top=0.98, bottom=0.02)
+    fig.subplots_adjust(left=0.08, right=0.965, top=0.98, bottom=0.02)
     fig.savefig(out / "fig5_recordings.png", dpi=150)
     plt.close(fig)
 
@@ -422,29 +504,29 @@ def fig6(R, out):
     fig = plt.figure(figsize=(12.5, 11.5))
     gs = fig.add_gridspec(3, len(names), height_ratios=(1, 1, 0.55), hspace=0.22, wspace=0.26)
     x = centres(R)
+    marked = [False]
     for c, name in enumerate(names):
         G = R["folders"][name]["by_group"]
         for r, arm in enumerate(("real", "minus_coact_block_120")):
             ax = fig.add_subplot(gs[r, c])
-            vals = []
+            vals, curves = [], []
             for g in GROUP_ORDER:
                 if g not in G:
                     continue
                 v = G[g]["arms"][arm]
-                ax.plot(x, v["excess"], color=GROUP_INK[g], lw=2.4)
-                ax.plot(x, v["excess_equal_mice"], color=GROUP_INK[g], lw=1.4, ls=(0, (2, 2)))
+                ax.plot(x, v["excess"], color=GROUP_INK[g], lw=2.6)
+                ax.plot(x, v["excess_equal_mice"], color=GROUP_INK[g], lw=1.8, ls=(0, (3, 2)))
                 vals += [e for e, lag in zip(v["excess"], x) if lag > 2]
+                curves += [v["excess"], v["excess_equal_mice"]]
             lag_axis(ax, R, xlabel=(r == 1))
             hi = 0.8 if r == 0 else max(0.35, float(np.nanmax(vals)) * 1.3)
             lo = -0.8 if r == 0 else -0.1
             ax.set_ylim(lo, hi)
-            for g in GROUP_ORDER:
-                if g in G:
-                    off_scale(ax, R, G[g], [arm], hi)
+            marked[0] |= off_scale(ax, R, curves, hi, lo)
             tag(ax, "ABCD"[r * 2 + c])
-            ax.set_ylabel(f"excess coincidence, y to {hi:.2g}\n{DATASET[name]}, "
+            ax.set_ylabel(f"excess coincidence\n{DATASET[name]}, "
                           f"{'as recorded' if arm == 'real' else 'episodes removed + block control'}",
-                          fontsize=11)
+                          fontsize=12)
     h = []
     for g in GROUP_ORDER:
         if g not in R["folders"][names[0]]["by_group"]:
@@ -458,10 +540,12 @@ def fig6(R, out):
         S0 = R["folders"][names[0]]["by_group"][g]
         h.append(Line2D([], [], color=GROUP_INK[g], lw=2.4,
                         label=f"{g} · {S0['n_recordings']} recordings, {S0['n_mice']} mice; "
-                              f"heaviest mouse holds {', '.join(parts)} of pairs"))
-    h += [Line2D([], [], color="0.3", lw=2.4, label="pooled over recordings"),
-          Line2D([], [], color="0.3", lw=1.4, ls=(0, (2, 2)), label="each mouse weighted equally"),
-          Line2D([], [], color="0.45", marker="v", ls="none", ms=6, label="curve above the view")]
+                              f"top-contributing mouse holds {', '.join(parts)} of onset pairs"))
+    h += [Line2D([], [], color="0.3", lw=2.6, label="pooled over recordings"),
+          Line2D([], [], color="0.3", lw=1.8, ls=(0, (3, 2)), label="each mouse weighted equally")]
+    if marked[0]:
+        h += [Line2D([], [], color="0.35", marker="v", ls="none", ms=9,
+                     label="curve above the view (▲ below it)")]
     lax = fig.add_subplot(gs[2, :])
     lax.axis("off")
     lax.legend(handles=h, loc="upper center", ncol=1, frameon=False)
