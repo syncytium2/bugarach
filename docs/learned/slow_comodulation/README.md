@@ -358,6 +358,15 @@ separated from imaging day on this export — no imaging date holds more than on
 ([recording identity](../recording_identity.md)) — so these are differences between groups of
 recordings, not group differences.
 
+**A different measure on the same recordings orders the groups the same way.** The rigid-shift
+report's run counts how often a detector's events hold three or more ROIs, which is a detector's
+call rate rather than a count variance, and it puts ORX lowest and DI highest by a wide margin
+(0.46–0.50 against 0.92–0.96 for its supervised detectors, with the same ordering for the
+hand-written references and for a counter with no fitted parameters). This is worth knowing and is
+not extra evidence: it is the same 84 recordings seen through another statistic, so it says the
+ordering is in the recordings rather than in the count-variance ratio — and it says nothing at all
+about the imaging-day confound, which both measures share.
+
 **The four recordings with a known motion-correction contaminant are in this analysis, and all four
 are DI.** The producer's own note records that non-rigid motion correction pinned 12 ROIs to the
 frame floor in four recordings, unflagged in any column
