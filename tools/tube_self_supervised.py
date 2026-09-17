@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
-"""Stage 2 of the tube plan: train `tube` and `tube_guard` with rigid shift as the only negative,
-then score them on the planted-truth bake-off beside the supervised fit. Exploratory.
+"""Stage 2 of the tube plan: train every model in ``MODELS`` with rigid shift as the only negative,
+then score them on the planted-truth bake-off beside supervised, untrained and zero-parameter
+scorers. Exploratory.
 
     python tools/tube_self_supervised.py --out <folder>
     python tools/tube_self_supervised.py --out <folder> --quick --jobs 12
@@ -9,6 +10,9 @@ Runs only because Stage 1 (``tools/tube_aggregate_leak.py``) passed on the lab f
 classifier reading tube's cells-mean channel could not tell real from a shared offset, nor an
 unplanted twin from its rigid shift, while real against rigid shift separated at event-width
 kernel scales. That is the aggregate-channel test the tube foot-gun todo asks for first.
+⚠ A murderboard (2026-09-17) found that licence narrower than it reads: the unplanted twin cannot
+fail under rigid shift, and nothing in Stage 1 could tell sub-second coordination from slow shared
+modulation. The small-J check and the modulation twins in ``paired_checks`` exist for that.
 
 **The objective.** A crop of a recording and the same crop of its rigid shift go through the
 model; each crop's score is the mean of its top 1 % per-frame logits (events are sparse, so a
@@ -30,17 +34,24 @@ spec, 4 folds of 2 recordings) and three torch seeds:
 * ``supervised`` — ``bugarach.learn.train.train`` exactly as the bake-off runs it: the control,
   re-measured in this run.
 * ``untrained`` — the architecture at initialisation: what the objective adds.
+* ``baseline`` — the zero-parameter scorers in ``BASELINES``, one row per displacement, no seed:
+  what a detector that fires with nothing learned scores under the same rules.
 
 **Two thresholds** for every model on the held-out fold:
 
-* *label-free* — per recording, the lowest threshold at which the model fires no more than
-  ``r`` events per 10 minutes on three rigid shifts of **that recording**; ``r`` in 0.5, 1, 2.
-* *oracle* — ``pick_threshold`` on the training folds' planted truth, the bake-off's own rule.
-  For comparison with the supervised fit only; it reads labels.
+* *label-free* — per recording, found by scanning thresholds DOWN from the top of a quantile grid
+  and stopping at the first at which any of three rigid shifts of **that recording** fires more
+  than ``r`` events per 10 minutes; ``r`` in 0.5, 1, 2. A scan that never exceeds the rate falls
+  to the grid's floor, and is recorded (``at_grid_floor``).
+* *oracle* (the report's truth-reading threshold) — ``pick_threshold`` on the training folds'
+  planted truth, the bake-off's own rule, with its edge report. It reads labels.
 
-**Checks on each self-supervised model:** paired score of held-out real crops against their
-shared offset (must be ~0.5) and against their rigid shift; unplanted twins against their rigid
-shift (must be ~0.5); the fitted centre widths in seconds.
+**Paired checks on every model** (``paired_checks``): held-out real crops against their rigid shift
+at the training J and at ``J_SMALL_SEC``, against a shared offset at the same and at an independent
+crop, and against a thinned copy; synthetic twins (stationary, shared-modulation,
+independent-modulation) against their rigid shift. The docstring of ``paired_checks`` says what
+each can and cannot fail on. Also stored per fit: fitted centre widths in seconds and every
+parameter outside the head.
 """
 
 from __future__ import annotations
