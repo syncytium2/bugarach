@@ -748,6 +748,20 @@ unchanged; a repeated GPU fit gives identical weights; a GPU fit predicts, saves
 same config key), with the tool's 10 tests still passing. `--quick --device cuda` ran 69 of 69 jobs in
 1.4 minutes, against 4.5 on the CPU, resumed with nothing rerun, and refused a resume on the CPU.
 Environment: Windows 11, Python 3.14.7 via `uv`, torch 2.14.0+cu126, in this worktree's `.venv`.
-**Next:** a correctness check (an untuned GPU bake-off of the four models, compared per fold with Gate 1's
-CPU numbers, stopping on anything further away than the seed-to-seed spread); merge the wider reference
-grid (`tune-wider-reference-grid`); then launch from Task Scheduler, not before the elevation's sign-out.
+**GPU correctness check, 2026-09-17** (untuned home bake-off, 4 folds of 6, `--device cuda`, training
+seeds 0, 1 and 2; files in `docs/learned/tuned_vs_coact/gpu_check/`; 3 minutes 19 seconds per seed for
+all four models). At seed 0 the Gate 1 stop fired once: `chorus_norm` fold 0 at 0.707 F1, 0.050 from both
+Mac seeds against the Mac's own largest gap of 0.036. Seeds 1 and 2 settle it as a low draw: 0.713 and
+0.772 on that fold, 0.734 and 0.739 as means. Mean F1 over four folds, GPU averaged over three seeds
+against the Mac averaged over two: `tube` 0.650 against 0.646 (+0.004); `chorus_norm` 0.730 against 0.749
+(−0.019); `chorus_gain_norm` 0.717 against 0.730 (−0.012); `line_length` 0.674 against 0.697 (−0.023).
+`line_length`'s gap is one seed: at seed 2, fold 0 scored 0.500 at a threshold of 0.9983 (recall 0.42)
+and fold 2 scored 0.577 at 0.9838 (precision 0.41), while seeds 0 and 1 average 0.704. That looks like
+threshold picking on two recordings rather than the device, but no CPU fit at seed 2 exists to show it.
+The GPU's seed-to-seed spread per fold is 0.038 to 0.065 (0.267 with that fold), against the Mac's
+0.032 to 0.060 over two seeds. **Reading, not decided:** three of four models average 0.012 to 0.023 F1
+below the Mac on the GPU, within reach of seed noise. If it is a real device effect it lowers every
+learned F1, and CoactDetect runs on the CPU either way, so it shrinks the margins this run tests: the
+conservative direction. Every fit in the run is on one device, so tuned against untuned is unaffected.
+**Next:** Tony's go on the GPU; merge the wider reference grid (`tune-wider-reference-grid`); then launch
+from Task Scheduler, not before the elevation's sign-out (about 12:09).
